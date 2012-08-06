@@ -261,9 +261,9 @@ typedef struct
 }
 jsTexture;
 
-#define _RGL_MAX_TEXTURE_COORDS	8
-#define _RGL_MAX_TEXTURE_IMAGE_UNITS	16
-#define _RGL_MAX_VERTEX_TEXTURE_IMAGE_UNITS	4
+#define MAX_TEXTURE_COORDS	8
+#define MAX_TEXTURE_IMAGE_UNITS	16
+#define MAX_VERTEX_TEXTURE_IMAGE_UNITS	4
 
 #define MAX_TEXTURE_UNITS 4
 
@@ -491,10 +491,6 @@ struct PSGLcontext
    int			MatrixMode;
    jsMatrixStack	ModelViewMatrixStack;
    jsMatrixStack	ProjectionMatrixStack;
-   GLfloat		LocalToScreenMatrixf[ELEMENTS_IN_MATRIX];
-   GLfloat 		InverseModelViewMatrixf[ELEMENTS_IN_MATRIX];
-   GLboolean		InverseModelViewValid;
-   GLfloat		ScalingFactor;
    jsViewPort		ViewPort;
    jsAttributeState defaultAttribs0;
    jsAttributeState *attribs;
@@ -502,7 +498,6 @@ struct PSGLcontext
    GLuint			attribSetName;
    GLboolean		attribSetDirty;
    jsColorRGBAf	ClearColor;
-   jsColorRGBAf	AccumClearColor;
    GLboolean		ShaderSRGBRemap;
    GLboolean		Blending;
    GLboolean		BlendingMrt[3];
@@ -516,11 +511,11 @@ struct PSGLcontext
    jsTexNameSpace textureNameSpace;
    GLuint		ActiveTexture;
    GLuint		CS_ActiveTexture;
-   jsTextureImageUnit	TextureImageUnits[_RGL_MAX_TEXTURE_IMAGE_UNITS];
+   jsTextureImageUnit	TextureImageUnits[MAX_TEXTURE_IMAGE_UNITS];
    jsTextureImageUnit* CurrentImageUnit;
-   jsTextureCoordsUnit	TextureCoordsUnits[_RGL_MAX_TEXTURE_COORDS];
+   jsTextureCoordsUnit	TextureCoordsUnits[MAX_TEXTURE_COORDS];
    jsTextureCoordsUnit* CurrentCoordsUnit;
-   jsTexture *VertexTextureImages[_RGL_MAX_VERTEX_TEXTURE_IMAGE_UNITS];
+   jsTexture *VertexTextureImages[MAX_VERTEX_TEXTURE_IMAGE_UNITS];
    GLsizei		packAlignment;
    GLsizei		unpackAlignment;
    jsTexNameSpace	bufferObjectNameSpace;
@@ -585,8 +580,6 @@ typedef struct MemoryBlockManager_t_
 
 typedef unsigned long jsName;
 
-void _RGLInitNameSpace( struct jsNameSpace * name );
-void _RGLFreeNameSpace( struct jsNameSpace * name );
 jsName _RGLCreateName( struct jsNameSpace * ns, void* object );
 unsigned int _RGLIsName( struct jsNameSpace* ns, jsName name );
 void _RGLEraseName( struct jsNameSpace* ns, jsName name );

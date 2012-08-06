@@ -436,10 +436,6 @@ static void _RGLFreeBufferObject( jsBufferObject *buffer )
    }
 }
 
-static void _RGLUnbindBufferObject( PSGLcontext *LContext, GLuint name )
-{
-}
-
 GLAPI void APIENTRY glBindBuffer( GLenum target, GLuint name )
 {
     PSGLcontext *LContext = _CurrentContext;
@@ -1207,14 +1203,15 @@ static void _RGLPlatformCopyGPUTexture( jsTexture* texture )
    }
 }
 
-static void _RGLPlatformFreeGcmTexture( jsTexture* texture )
+static void _RGLPlatformFreeGcmTexture(jsTexture* texture)
 {
-    RGLTexture *gcmTexture = ( RGLTexture * )texture->platformTexture;
-    switch ( gcmTexture->pool )
+    RGLTexture *gcmTexture = (RGLTexture *)texture->platformTexture;
+
+    switch (gcmTexture->pool)
     {
         case SURFACE_POOL_LINEAR:
         case SURFACE_POOL_SYSTEM:
-            gmmFree( gcmTexture->gpuAddressId );
+            gmmFree(gcmTexture->gpuAddressId);
         case SURFACE_POOL_NONE:
             break;
         default:
@@ -1229,6 +1226,7 @@ static void _RGLPlatformFreeGcmTexture( jsTexture* texture )
 void _RGLPlatformDropTexture( jsTexture *texture )
 {
    RGLTexture * gcmTexture = (RGLTexture *)texture->platformTexture;
+
    if(gcmTexture->pbo != NULL)
    {
       _RGLPlatformCopyGPUTexture(texture);
@@ -1291,7 +1289,7 @@ static void _RGLPlatformChooseGPUFormatAndLayout(
 
    newLayout->baseWidth = image->width;
    newLayout->baseHeight = image->height;
-   newLayout->internalFormat = ( RGLEnum )image->internalFormat;
+   newLayout->internalFormat = (RGLEnum)image->internalFormat;
    newLayout->pixelBits = _RGLPlatformGetBitsPerPixel( newLayout->internalFormat );
    newLayout->pitch = pitch ? pitch : _RGLPad( _RGLGetPixelSize( texture->image->format, texture->image->type )*texture->image->width, 64);
 }
@@ -1308,7 +1306,7 @@ void _RGLPlatformDropUnboundTextures(GLenum pool)
       if(!texture || (texture->referenceBuffer != 0))
          continue;
 
-      for (j = 0; j < _RGL_MAX_VERTEX_TEXTURE_IMAGE_UNITS; ++j)
+      for (j = 0; j < MAX_VERTEX_TEXTURE_IMAGE_UNITS; ++j)
       {
          if (LContext->VertexTextureImages[j] == texture)
 	 {
@@ -1317,7 +1315,7 @@ void _RGLPlatformDropUnboundTextures(GLenum pool)
 	 }
       }
 
-      for ( j = 0; j < _RGL_MAX_TEXTURE_IMAGE_UNITS; ++j)
+      for ( j = 0; j < MAX_TEXTURE_IMAGE_UNITS; ++j)
       {
          jsTextureImageUnit *tu = LContext->TextureImageUnits + j;
 	 if (tu->bound2D == i)
@@ -1872,24 +1870,7 @@ void cgRTCgcFree( void )
     _cgRTCgcFreeCompiledProgramHook = 0;
 }
 
-void _RGLInitNameSpace( jsNameSpace * name )
-{
-   name->data = NULL;
-   name->firstFree = NULL;
-   name->capacity = 0;
-}
-
-void _RGLFreeNameSpace( jsNameSpace * ns )
-{
-   if ( ns->data )
-      free( ns->data );
-
-   ns->data = NULL;
-   ns->capacity = 0;
-   ns->firstFree = NULL;
-}
-
-jsName _RGLCreateName( jsNameSpace * ns, void* object )
+jsName _RGLCreateName(jsNameSpace * ns, void* object)
 {
    if ( ns->firstFree == NULL )
    {
@@ -1923,7 +1904,7 @@ jsName _RGLCreateName( jsNameSpace * ns, void* object )
    return result + 1;
 }
 
-unsigned int _RGLIsName( jsNameSpace* ns, jsName name )
+unsigned int _RGLIsName(jsNameSpace* ns, jsName name)
 {
    if ( RGL_UNLIKELY( name == 0 ) )
       return 0;
@@ -1936,15 +1917,15 @@ unsigned int _RGLIsName( jsNameSpace* ns, jsName name )
    void** value = ( void** )ns->data[name];
 
    if ( RGL_UNLIKELY( value == NULL ||
-   ( value >= ns->data && value < ns->data + ns->capacity ) ) )
+   (value >= ns->data && value < ns->data + ns->capacity)))
       return 0;
 
    return 1;
 }
 
-void _RGLEraseName( jsNameSpace* ns, jsName name )
+void _RGLEraseName(jsNameSpace* ns, jsName name)
 {
-   if ( _RGLIsName( ns, name ) )
+   if(_RGLIsName( ns, name))
    {
       --name;
       ns->data[name] = ns->firstFree;
@@ -1963,7 +1944,7 @@ void _RGLTexNameSpaceInit( jsTexNameSpace *ns, jsTexNameSpaceCreateFunction crea
 
 void _RGLTexNameSpaceFree( jsTexNameSpace *ns )
 {
-   for ( GLuint i = 1;i < ns->capacity;++i )
+   for(GLuint i = 1; i < ns->capacity; ++i)
       if ( ns->data[i] ) ns->destroy( ns->data[i] );
 
    if(ns->data != NULL)
@@ -2000,15 +1981,17 @@ GLboolean _RGLTexNameSpaceCreateNameLazy( jsTexNameSpace *ns, GLuint name )
     if ( name >= ns->capacity )
     {
         int newCapacity = name >= ns->capacity + CAPACITY_INCR ? name + 1 : ns->capacity + CAPACITY_INCR;
-        void **newData = ( void ** )realloc( ns->data, newCapacity * sizeof( void * ) );
-        memset( newData + ns->capacity, 0, ( newCapacity - ns->capacity )*sizeof( void * ) );
+        void **newData = (void**)realloc(ns->data, newCapacity * sizeof(void*));
+        memset( newData + ns->capacity, 0, (newCapacity - ns->capacity )*sizeof(void*));
         ns->data = newData;
         ns->capacity = newCapacity;
     }
-    if ( !ns->data[name] )
+
+    if (!ns->data[name])
     {
         ns->data[name] = ns->create();
-        if ( ns->data[name] ) return GL_TRUE;
+        if(ns->data[name])
+           return GL_TRUE;
     }
     return GL_FALSE;
 }
@@ -4774,17 +4757,17 @@ static GLboolean _RGLPlatformTexturePBOImage(
 
 static GLboolean _RGLPlatformTextureReference( jsTexture *texture, GLuint pitch, jsBufferObject *bufferObject, GLintptr offset )
 {
-    RGLTexture *gcmTexture = ( RGLTexture * )texture->platformTexture;
+    RGLTexture *gcmTexture = (RGLTexture *)texture->platformTexture;
 
     RGLTextureLayout newLayout;
-    _RGLPlatformChooseGPUFormatAndLayout( texture, GL_TRUE, pitch, &newLayout );
+    _RGLPlatformChooseGPUFormatAndLayout(texture, GL_TRUE, pitch, &newLayout);
 
     texture->isRenderTarget = GL_TRUE;
 
-    if ( gcmTexture->gpuAddressId != GMM_ERROR )
+    if(gcmTexture->gpuAddressId != GMM_ERROR)
         _RGLPlatformDestroyTexture( texture );
 
-    RGLBufferObject *gcmBuffer = ( RGLBufferObject * ) & bufferObject->platformBufferObject;
+    RGLBufferObject *gcmBuffer = (RGLBufferObject *)& bufferObject->platformBufferObject;
 
     gcmTexture->gpuLayout = newLayout;
     gcmTexture->pool = gcmBuffer->pool;
@@ -4792,9 +4775,9 @@ static GLboolean _RGLPlatformTextureReference( jsTexture *texture, GLuint pitch,
     gcmTexture->gpuAddressIdOffset = offset;
     gcmTexture->gpuSize = _RGLPad( newLayout.baseHeight * newLayout.pitch, 1);
 
-    texture->revalidate &= ~( TEXTURE_REVALIDATE_LAYOUT | TEXTURE_REVALIDATE_IMAGES );
+    texture->revalidate &= ~(TEXTURE_REVALIDATE_LAYOUT | TEXTURE_REVALIDATE_IMAGES);
     texture->revalidate |= TEXTURE_REVALIDATE_PARAMETERS;
-    _RGLTextureTouchFBOs( texture );
+    _RGLTextureTouchFBOs(texture);
     return GL_TRUE;
 }
 
@@ -5108,7 +5091,7 @@ static GLuint _RGLValidateStates( void )
 
     if ( RGL_UNLIKELY( needValidate & PSGL_VALIDATE_VERTEX_TEXTURES_USED ) )
     {
-	    for ( int unit = 0; unit < _RGL_MAX_VERTEX_TEXTURE_IMAGE_UNITS; ++unit )
+	    for ( int unit = 0; unit < MAX_VERTEX_TEXTURE_IMAGE_UNITS; ++unit )
 	    {
 		    jsTexture *texture = LContext->VertexTextureImages[unit];
 		    if ( texture )
@@ -5230,9 +5213,6 @@ static void _RGLResetContext( PSGLcontext *LContext )
     _RGLTexNameSpaceResetNames( &LContext->framebufferNameSpace );
     _RGLTexNameSpaceResetNames( &LContext->attribSetNameSpace );
 
-    LContext->InverseModelViewValid = GL_FALSE;
-    LContext->ScalingFactor = 1.f;
-
     LContext->ViewPort.X = 0;
     LContext->ViewPort.Y = 0;
     LContext->ViewPort.XSize = 0;
@@ -5242,10 +5222,6 @@ static void _RGLResetContext( PSGLcontext *LContext )
     LContext->ClearColor.G = 0.f;
     LContext->ClearColor.B = 0.f;
     LContext->ClearColor.A = 0.f;
-    LContext->AccumClearColor.R = 0.f;
-    LContext->AccumClearColor.G = 0.f;
-    LContext->AccumClearColor.B = 0.f;
-    LContext->AccumClearColor.A = 0.f;
 
     LContext->ShaderSRGBRemap = GL_FALSE;
 
@@ -5264,13 +5240,13 @@ static void _RGLResetContext( PSGLcontext *LContext )
     LContext->BlendFactorSrcAlpha = GL_ONE;
     LContext->BlendFactorDestAlpha = GL_ZERO;
 
-    for ( int i = 0;i < _RGL_MAX_TEXTURE_COORDS;++i )
+    for ( int i = 0;i < MAX_TEXTURE_COORDS;++i )
     {
         jsTextureCoordsUnit *tu = LContext->TextureCoordsUnits + i;
         tu->revalidate = 0;
         _RGLMatrixStackReset( &( tu->TextureMatrixStack ) );
     }
-    for ( int i = 0;i < _RGL_MAX_TEXTURE_IMAGE_UNITS;++i )
+    for ( int i = 0;i < MAX_TEXTURE_IMAGE_UNITS;++i )
     {
         jsTextureImageUnit *tu = LContext->TextureImageUnits + i;
         tu->bound2D = 0;
@@ -5285,7 +5261,7 @@ static void _RGLResetContext( PSGLcontext *LContext )
 
         tu->currentTexture = NULL;
     }
-    for ( int i = 0;i < _RGL_MAX_VERTEX_TEXTURE_IMAGE_UNITS;++i )
+    for(int i = 0; i < MAX_VERTEX_TEXTURE_IMAGE_UNITS; ++i)
         LContext->VertexTextureImages[i] = NULL;
 
     LContext->ActiveTexture = 0;
@@ -5400,7 +5376,7 @@ PSGLcontext* psglCreateContext (void)
         return NULL;
     }
 
-    for ( int i = 0; i < _RGL_MAX_TEXTURE_COORDS; i++ )
+    for ( int i = 0; i < MAX_TEXTURE_COORDS; i++ )
     {
         _RGLMatrixStackInit(&( LContext->TextureCoordsUnits[i].TextureMatrixStack), MAX_TEXTURE_STACK_DEPTH);
         if ( !LContext->TextureCoordsUnits[i].TextureMatrixStack.MatrixStackf )
@@ -5412,7 +5388,7 @@ PSGLcontext* psglCreateContext (void)
 
     _RGLTexNameSpaceInit( &LContext->textureNameSpace, ( jsTexNameSpaceCreateFunction )_RGLAllocateTexture, ( jsTexNameSpaceDestroyFunction )_RGLFreeTexture );
 
-    for ( int i = 0;i < _RGL_MAX_TEXTURE_IMAGE_UNITS;++i )
+    for ( int i = 0;i < MAX_TEXTURE_IMAGE_UNITS;++i )
     {
         jsTextureImageUnit *tu = LContext->TextureImageUnits + i;
 
@@ -5436,9 +5412,17 @@ PSGLcontext* psglCreateContext (void)
     LContext->RGLcgErrorCallbackFunction = NULL;
     LContext->RGLcgContextHead = ( CGcontext )NULL;
 	
-    _RGLInitNameSpace( &LContext->cgProgramNameSpace );
-    _RGLInitNameSpace( &LContext->cgParameterNameSpace );
-    _RGLInitNameSpace( &LContext->cgContextNameSpace );
+    LContext->cgProgramNameSpace.data = NULL;
+    LContext->cgProgramNameSpace.firstFree = NULL;
+    LContext->cgProgramNameSpace.capacity = 0;
+
+    LContext->cgParameterNameSpace.data = NULL;
+    LContext->cgParameterNameSpace.firstFree = NULL;
+    LContext->cgParameterNameSpace.capacity = 0;
+
+    LContext->cgContextNameSpace.data = NULL;
+    LContext->cgContextNameSpace.firstFree = NULL;
+    LContext->cgContextNameSpace.capacity = 0;
 
     _RGLResetContext( LContext );
 
@@ -5483,19 +5467,37 @@ void  psglDestroyContext( PSGLcontext* LContext )
         cgDestroyContext( LContext->RGLcgContextHead );
         _CurrentContext = current;
     }
-    _RGLFreeNameSpace( &LContext->cgProgramNameSpace );
-    _RGLFreeNameSpace( &LContext->cgParameterNameSpace );
-    _RGLFreeNameSpace( &LContext->cgContextNameSpace );
+
+    if (LContext->cgProgramNameSpace.data)
+       free( LContext->cgProgramNameSpace.data );
+
+    LContext->cgProgramNameSpace.data = NULL;
+    LContext->cgProgramNameSpace.capacity = 0;
+    LContext->cgProgramNameSpace.firstFree = NULL;
+
+    if (LContext->cgParameterNameSpace.data)
+       free( LContext->cgParameterNameSpace.data );
+
+    LContext->cgParameterNameSpace.data = NULL;
+    LContext->cgParameterNameSpace.capacity = 0;
+    LContext->cgParameterNameSpace.firstFree = NULL;
+
+    if (LContext->cgContextNameSpace.data)
+       free( LContext->cgContextNameSpace.data );
+
+    LContext->cgContextNameSpace.data = NULL;
+    LContext->cgContextNameSpace.capacity = 0;
+    LContext->cgContextNameSpace.firstFree = NULL;
 
     if ( _RGLContextDestroyHook ) _RGLContextDestroyHook( LContext );
 
     _RGLMatrixStackClear( &( LContext->ModelViewMatrixStack ) );
     _RGLMatrixStackClear( &( LContext->ProjectionMatrixStack ) );
 
-    for ( int i = 0; i < _RGL_MAX_TEXTURE_COORDS; i++ )
+    for ( int i = 0; i < MAX_TEXTURE_COORDS; i++ )
         _RGLMatrixStackClear( &( LContext->TextureCoordsUnits[i].TextureMatrixStack ) );
 
-    for ( int i = 0; i < _RGL_MAX_TEXTURE_IMAGE_UNITS; ++i )
+    for ( int i = 0; i < MAX_TEXTURE_IMAGE_UNITS; ++i )
     {
         jsTextureImageUnit* tu = LContext->TextureImageUnits + i;
         if ( tu->default2D ) _RGLFreeTexture( tu->default2D );
@@ -5912,8 +5914,6 @@ GLAPI void APIENTRY glOrthof( GLfloat left, GLfloat right, GLfloat bottom, GLflo
     LMatrix[15] = L30 * m03 + L31 * m13 + L32 * m23 + L33;
 
     LMatrixStack->dirty = GL_TRUE;
-    if ( LContext->MatrixMode == GL_MODELVIEW )
-        LContext->InverseModelViewValid = GL_FALSE;
 }
 
 GLAPI void APIENTRY glVertexPointer( GLint size, GLenum type, GLsizei stride, const GLvoid* pointer )
@@ -6255,7 +6255,7 @@ GLAPI void APIENTRY glGenTextures( GLsizei n, GLuint *textures )
 static void _RGLTextureUnbind( PSGLcontext* context, GLuint name )
 {
     int unit;
-    for (unit = 0; unit < _RGL_MAX_TEXTURE_IMAGE_UNITS; ++unit)
+    for (unit = 0; unit < MAX_TEXTURE_IMAGE_UNITS; ++unit)
     {
         jsTextureImageUnit *tu = context->TextureImageUnits + unit;
         GLboolean dirty = GL_FALSE;
@@ -6273,7 +6273,7 @@ static void _RGLTextureUnbind( PSGLcontext* context, GLuint name )
     if(_RGLTexNameSpaceIsName( &context->textureNameSpace, name))
     {
         jsTexture*texture = ( jsTexture * )context->textureNameSpace.data[name];
-        for ( unit = 0;unit < _RGL_MAX_VERTEX_TEXTURE_IMAGE_UNITS; ++unit )
+        for ( unit = 0;unit < MAX_VERTEX_TEXTURE_IMAGE_UNITS; ++unit )
         {
             if ( context->VertexTextureImages[unit] == texture )
             {
@@ -6287,12 +6287,14 @@ static void _RGLTextureUnbind( PSGLcontext* context, GLuint name )
 GLAPI void APIENTRY glDeleteTextures( GLsizei n, const GLuint *textures )
 {
    PSGLcontext*	LContext = _CurrentContext;
-   for ( int i = 0;i < n;++i )
-      if ( textures[i] )
-         _RGLTextureUnbind( LContext, textures[i] );
+
+   for(int i = 0;i < n; ++i)
+      if(textures[i])
+         _RGLTextureUnbind(LContext, textures[i]);
 
    _RGLTexNameSpaceDeleteNames( &LContext->textureNameSpace, n, textures );
 } 
+
 GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param )
 {
    PSGLcontext*	LContext = _CurrentContext;
@@ -6303,8 +6305,7 @@ GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param )
 	   case GL_TEXTURE_MIN_FILTER:
 		   texture->minFilter = param;
 		   if ( texture->referenceBuffer == 0 )
-		   {
-			   texture->revalidate |= TEXTURE_REVALIDATE_LAYOUT; }
+                      texture->revalidate |= TEXTURE_REVALIDATE_LAYOUT;
 		   break;
 	   case GL_TEXTURE_MAG_FILTER:
 		   texture->magFilter = param;
@@ -6333,8 +6334,10 @@ GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param )
 	   case GL_TEXTURE_GAMMA_REMAP_A_SCE:
 		   {
 			   GLuint bit = 1 << ( pname - GL_TEXTURE_GAMMA_REMAP_R_SCE );
-			   if ( param ) texture->gammaRemap |= bit;
-			   else texture->gammaRemap &= ~bit;
+			   if(param)
+                              texture->gammaRemap |= bit;
+			   else
+                              texture->gammaRemap &= ~bit;
 		   }
 		   break;
 	   default:
@@ -6372,22 +6375,6 @@ static void _RGLReallocateImages( jsTexture *texture, GLsizei dimension )
    texture->imageCount = n;
 }
 
-static int _RGLGetImage( GLenum target, GLint level, jsTexture **texture, jsImage **image, GLsizei reallocateSize )
-{
-   PSGLcontext*	LContext = _CurrentContext;
-   jsTextureImageUnit *unit = LContext->CurrentImageUnit;
-
-   jsTexture *tex = _RGLGetCurrentTexture( unit, GL_TEXTURE_2D );
-
-   if ( level >= ( int )tex->imageCount )
-      _RGLReallocateImages( tex, reallocateSize );
-
-   *image = tex->image;
-   *texture = tex;
-   return 0;
-}
-
-
 GLAPI void APIENTRY glTexImage2D( GLenum target, GLint level, GLint internalFormat,
 GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels )
 {
@@ -6395,7 +6382,15 @@ GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const G
     jsTexture *texture;
     jsImage *image;
 
-     _RGLGetImage( GL_TEXTURE_2D, 0, &texture, &image, MAX( width, height ) );
+   jsTextureImageUnit *unit = LContext->CurrentImageUnit;
+
+   jsTexture *tex = _RGLGetCurrentTexture(unit, GL_TEXTURE_2D);
+
+   if(0 >= (int)tex->imageCount)
+      _RGLReallocateImages(tex, MAX(width, height));
+
+   image = tex->image;
+   texture = tex;
 
     image->dataState = IMAGE_DATASTATE_UNSET;
 
@@ -6463,8 +6458,8 @@ GLAPI void APIENTRY glActiveTexture(GLenum texture)
 
    int unit = texture - GL_TEXTURE0;
    LContext->ActiveTexture = unit;
-   LContext->CurrentImageUnit = unit < _RGL_MAX_TEXTURE_IMAGE_UNITS ? LContext->TextureImageUnits + unit : NULL;
-   LContext->CurrentCoordsUnit = unit < _RGL_MAX_TEXTURE_COORDS ? LContext->TextureCoordsUnits + unit : NULL;
+   LContext->CurrentImageUnit = unit < MAX_TEXTURE_IMAGE_UNITS ? LContext->TextureImageUnits + unit : NULL;
+   LContext->CurrentCoordsUnit = unit < MAX_TEXTURE_COORDS ? LContext->TextureCoordsUnits + unit : NULL;
 }
 
 GLAPI void APIENTRY glClientActiveTexture(GLenum texture)
