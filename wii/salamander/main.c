@@ -112,7 +112,6 @@ static void get_environment_settings(void)
 int main(int argc, char *argv[])
 {
 #ifdef HAVE_LOGGER
-   g_extern.verbose = true;
    logger_init();
 #endif
 
