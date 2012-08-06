@@ -247,10 +247,18 @@ static const int out_latency = 64;
 static const bool audio_sync = true;
 
 // Experimental rate control
+#ifdef GEKKO
+static const bool rate_control = true;
+#else
 static const bool rate_control = false;
+#endif
 
 // Rate control delta. Defines how much rate_control is allowed to adjust input rate.
+#ifdef GEKKO
+static const float rate_control_delta = 0.006;
+#else
 static const float rate_control_delta = 0.005;
+#endif
 
 //////////////
 // Misc
