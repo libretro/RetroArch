@@ -22,7 +22,7 @@ CELL_MK_DIR		?= $(CELL_SDK)/samples/mk
 include $(CELL_MK_DIR)/sdk.makedef.mk
 
 PPU_TARGET		= retroarch.elf
-SALAMANDER_TARGET	= retroarch-salamander.elf
+SALAMANDER_TARGET	= retroarch-salamander_ps3.elf
 
 EBOOT_PATH		= ps3/pkg/USRDIR/EBOOT.BIN
 CORE_PATH		= ps3/pkg/USRDIR/cores/CORE.SELF
