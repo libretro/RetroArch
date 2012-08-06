@@ -550,11 +550,6 @@ struct PSGLcontext
 #define RGL_LIKELY(COND) (COND)
 #define RGL_UNLIKELY(COND) (COND)
 
-static inline float _RGLClampf( const float value )
-{
-   return MAX( MIN( value, 1.f ), 0.f );
-}
-
 static inline unsigned int endianSwapWord( unsigned int v )
 {
    return ( v&0xff ) << 24 | ( v&0xff00 ) << 8 |
@@ -575,13 +570,6 @@ static inline int _RGLLog2( unsigned int i )
 static inline unsigned long _RGLPad(unsigned long x, unsigned long pad)
 {
    return ( x + pad - 1 ) / pad*pad;
-}
-
-static inline char* _RGLPadPtr(const char* p, unsigned int pad)
-{
-   intptr_t x = (intptr_t)p;
-   x = ( x + pad - 1 ) / pad * pad;
-   return ( char* )x;
 }
 
 typedef struct MemoryBlockManager_t_
@@ -798,7 +786,7 @@ struct RGLResource
    char *  dmaPushBuffer;
    GLuint  dmaPushBufferSize;
    void*   dmaControl;
-   RGLSemaphoreMemory    *semaphores;
+   RGLSemaphoreMemory *semaphores;
 };
 
 typedef volatile struct
@@ -927,7 +915,7 @@ static inline GLuint _RGLPlatformGetBitsPerPixel( GLenum internalFormat )
 }
 
 
-void static inline _RGLFifoGlViewport( GLint x, GLint y, GLsizei width, GLsizei height, GLclampf zNear = 0.0f, GLclampf zFar = 1.0f )
+static inline void _RGLFifoGlViewport( GLint x, GLint y, GLsizei width, GLsizei height, GLclampf zNear = 0.0f, GLclampf zFar = 1.0f )
 {
    RGLViewportState *vp = &_RGLState.state.viewport;
    RGLRenderTarget *rt = &_RGLState.renderTarget;
