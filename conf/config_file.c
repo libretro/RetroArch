@@ -329,13 +329,7 @@ static config_file_t *config_file_new_internal(const char *path, unsigned depth)
    }
 
    conf->include_depth = depth;
-
-#ifdef RARCH_CONSOLE
-   // This will create the file if it doesn't exist, and start reading at beginning.
-   FILE *file = fopen(path, "a+");
-#else
-   FILE *file = fopen(path, "r");
-#endif
+   FILE *file = fopen(path, "r+");
 
    if (!file)
    {
