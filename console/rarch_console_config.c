@@ -67,6 +67,8 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       CONFIG_GET_BOOL(video.vsync, "video_vsync");
       CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
       CONFIG_GET_STRING(audio.device, "audio_device");
+      CONFIG_GET_BOOL(audio.rate_control, "audio_rate_control");
+      CONFIG_GET_FLOAT(audio.rate_control_delta, "audio_rate_control_delta");
 
       for (unsigned i = 0; i < 7; i++)
       {
@@ -133,6 +135,8 @@ void rarch_config_save(const char * conf_name)
       config_set_bool(conf, "video_smooth", g_settings.video.smooth);
       config_set_bool(conf, "video_vsync", g_settings.video.vsync);
       config_set_string(conf, "audio_device", g_settings.audio.device);
+      config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
+      config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
 
       for (unsigned i = 0; i < 7; i++)
       {

@@ -242,10 +242,6 @@ int main(void)
    retro_get_system_info(&wii_core_info);
    RARCH_LOG("Core: %s\n", wii_core_info.library_name);
 
-   g_settings.audio.rate_control = true;
-   g_settings.audio.rate_control_delta = 0.006;
-   g_console.block_config_read = true;
-
    wii_video_init();
 
    const char *extension = default_paths.executable_extension;
