@@ -35,6 +35,7 @@ HAVE_SDL = 1
 HAVE_OPENGL = 1
 HAVE_DYLIB = 1
 HAVE_NETPLAY = 1
+HAVE_STDIN_CMD = 1
 HAVE_THREADS = 1
 DYNAMIC = 1
 
@@ -114,9 +115,14 @@ ifeq ($(HAVE_DYLIB), 1)
    DEFINES += -DHAVE_DYLIB
 endif
 
+ifeq ($(HAVE_STDIN_CMD), 1)
+   DEFINES += -DHAVE_COMMAND -DHAVE_STDIN_CMD
+   OBJ += command.o
+endif
+
 ifeq ($(HAVE_NETPLAY), 1)
-   DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD -DHAVE_COMMAND
-   OBJ += netplay.o command.o
+   DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD
+   OBJ += netplay.o
    LIBS += -lws2_32
 endif
 

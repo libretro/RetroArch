@@ -267,8 +267,7 @@ static size_t read_stdin(char *buf, size_t size)
       avail = size;
 
    DWORD has_read = 0;
-   ret = ReadFile(hnd, buf, avail, &has_read, NULL);
-   if (!ret)
+   if (!ReadFile(hnd, buf, avail, &has_read, NULL))
       return 0;
 
    return has_read;
