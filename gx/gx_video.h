@@ -16,8 +16,10 @@
 #ifndef _GX_VIDEO_H__
 #define _GX_VIDEO_H__
 
-void wii_video_init(uint32_t *menu_buffer);
-void wii_video_deinit(void);
+typedef struct gx_video
+{
+   uint32_t *menu_data;
+} gx_video_t;
 
 #endif
 

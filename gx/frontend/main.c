@@ -46,7 +46,7 @@
 FILE * log_fp;
 #endif
 
-static uint32_t menu_framebuf[RGUI_WIDTH * RGUI_HEIGHT];
+uint32_t menu_framebuf[320 * 240];
 
 char app_dir[PATH_MAX];
 struct retro_system_info wii_core_info;
@@ -244,7 +244,10 @@ int main(void)
    retro_get_system_info(&wii_core_info);
    RARCH_LOG("Core: %s\n", wii_core_info.library_name);
 
-   wii_video_init(menu_framebuf);
+   video_wii.start();
+
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
+   gx->menu_data = menu_framebuf;
 
    char tmp_path[PATH_MAX];
    const char *extension = default_paths.executable_extension;
@@ -289,7 +292,7 @@ int main(void)
    if(g_console.emulator_initialized)
       rarch_main_deinit();
 
-   wii_video_deinit();
+   video_wii.stop();
    input_wii.free(NULL);
 
 #ifdef HAVE_FILE_LOGGER

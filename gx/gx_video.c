@@ -44,8 +44,6 @@ struct
    GXTexObj obj;
 } menu_tex ATTRIBUTE_ALIGN(32);
 
-uint32_t *menu_data;
-
 uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
 uint8_t display_list[1024] ATTRIBUTE_ALIGN(32);
 size_t display_list_size;
@@ -156,8 +154,50 @@ static void build_disp_list(void)
    display_list_size = GX_EndDispList();
 }
 
-void wii_video_init(uint32_t *menu_buffer)
+static void gx_stop(void)
 {
+   GX_AbortFrame();
+   GX_Flush();
+   VIDEO_SetBlack(true);
+   VIDEO_Flush();
+
+   for (unsigned i = 0; i < 2; i++)
+      free(MEM_K1_TO_K0(g_framebuf[i]));
+}
+
+static void gx_restart(void)
+{
+}
+
+static void *wii_init(const video_info_t *video,
+      const input_driver_t **input, void **input_data)
+{
+   if (driver.video_data)
+      return driver.video_data;
+
+   gx_video_t *gx = (gx_video_t*)calloc(1, sizeof(gx_video_t));
+   if (!gx)
+      return NULL;
+
+   g_filter = video->smooth ? GX_LINEAR : GX_NEAR;
+   g_vsync = video->vsync;
+
+   return gx;
+}
+
+static void gx_start(void)
+{
+   video_info_t video_info = {0};
+
+   video_info.vsync = g_settings.video.vsync;
+   video_info.force_aspect = false;
+   video_info.fullscreen = true;
+   video_info.smooth = g_settings.video.smooth;
+   video_info.input_scale = 2;
+
+   driver.video_data = wii_init(&video_info, NULL, NULL);
+
+   //gx_video_t *gx = (gx_video_t*)driver.video_data;
    VIDEO_Init();
    GXRModeObj *mode = VIDEO_GetPreferredMode(NULL);
    setup_video_mode(mode);
@@ -172,29 +212,6 @@ void wii_video_init(uint32_t *menu_buffer)
 
    g_filter = true;
    g_vsync = true;
-   menu_data = menu_buffer;
-}
-
-void wii_video_deinit(void)
-{
-   GX_AbortFrame();
-   GX_Flush();
-   VIDEO_SetBlack(true);
-   VIDEO_Flush();
-
-   for (unsigned i = 0; i < 2; i++)
-      free(MEM_K1_TO_K0(g_framebuf[i]));
-}
-
-static void *wii_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
-{
-   g_filter = video->smooth ? GX_LINEAR : GX_NEAR;
-   g_vsync = video->vsync;
-
-   *input = NULL;
-   *input_data = NULL;
-   return (void*)-1;
 }
 
 #if 0
@@ -318,6 +335,7 @@ static void update_texture_asm(const uint32_t *src,
 static void update_texture(const uint32_t *src,
       unsigned width, unsigned height, unsigned pitch)
 {
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
 #if 0
    if (!(width & 3) && !(height & 3))
    {
@@ -349,6 +367,7 @@ static void update_texture(const uint32_t *src,
       uint16_t *line[4];
       for (uint32_t y = 0; y < 240; y += 4)
       {
+         uint32_t *menu_data = gx->menu_data;
          // fetch the next 4 scanlines
          line[0] = (uint16_t *) &menu_data[(y + 0) * 320];
          line[1] = (uint16_t *) &menu_data[(y + 1) * 320];
@@ -450,4 +469,7 @@ const video_driver_t video_wii = {
    .free = wii_free,
    .ident = "wii",
    .set_rotation = wii_set_rotation,
+   .start = gx_start,
+   .stop = gx_stop,
+   .restart = gx_restart,
 };
