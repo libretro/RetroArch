@@ -191,6 +191,16 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
 		   snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [Custom Scaling Factor] is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 		   break;
 #endif
+#ifdef _XBOX1
+      case SETTING_FLICKER_FILTER:
+         set_setting_label_color(items,g_console.flicker_filter == 0, currentsetting);
+		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%d", g_console.flicker_filter);
+         break;
+      case SETTING_SOFT_DISPLAY_FILTER:
+         set_setting_label_write_on_or_off(items, g_console.soft_display_filter_enable, currentsetting);
+         set_setting_label_color(items,g_console.soft_display_filter_enable, currentsetting);
+		   break;
+#endif
 	   case SETTING_HW_OVERSCAN_AMOUNT:
          set_setting_label_color(items,g_console.overscan_amount == 0.0f, currentsetting);
 		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%f", g_console.overscan_amount);
@@ -1267,6 +1277,34 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 			   apply_scaling(FBO_INIT);
 		   }
 		   break;
+#endif
+#ifdef _XBOX1
+      case SETTING_FLICKER_FILTER:
+         if(input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+		   {
+            if(g_console.flicker_filter > 0)
+               g_console.flicker_filter--;
+		   }
+		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+		   {
+            if(g_console.flicker_filter < 5)
+               g_console.flicker_filter++;
+		   }
+		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+			   g_console.flicker_filter = 0;
+		   }
+         break;
+      case SETTING_SOFT_DISPLAY_FILTER:
+         if(input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
+		   {
+			   g_console.soft_display_filter_enable = !g_console.soft_display_filter_enable;
+		   }
+		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
+		   {
+            g_console.soft_display_filter_enable = true;
+		   }
+         break;
 #endif
 	   case SETTING_HW_OVERSCAN_AMOUNT:
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))

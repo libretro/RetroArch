@@ -365,6 +365,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    bool menu_enabled = g_console.menu_enable;
    bool fps_enable = g_console.fps_info_msg_enable;
+   unsigned flicker_filter = g_console.flicker_filter;
+   bool soft_filter_enable = g_console.soft_display_filter_enable;
 
    if (d3d->last_width != width || d3d->last_height != height) //240*160
    {
@@ -439,6 +441,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
    d3d->d3d_render_device->BeginScene();
+   d3d->d3d_render_device->SetFlickerFilter(flicker_filter);
+   d3d->d3d_render_device->SetSoftDisplayFilter(soft_filter_enable);
    d3d->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
    d3d->d3d_render_device->EndScene();
 

@@ -122,6 +122,28 @@ item rmenu_items[MAX_NO_OF_CONTROLS_SETTINGS] =
       WHITE,
    },
 #endif
+#ifdef _XBOX1
+   {
+      SETTING_FLICKER_FILTER,
+      "Flicker Filter",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Toggle the [Flicker Filter].",
+      WHITE,
+   },
+   {
+      SETTING_SOFT_DISPLAY_FILTER,
+      "Soft Display Filter",
+      "",
+      0.0f,
+      0.0f,
+      YELLOW,
+      "INFO - Toggle the [Soft Display Filter].",
+      WHITE,
+   },
+#endif
    {
       SETTING_HW_OVERSCAN_AMOUNT,
       "Overscan",
