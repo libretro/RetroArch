@@ -238,7 +238,6 @@ static void network_cmd_pre_frame(rarch_cmd_t *handle)
 
 #ifdef _WIN32
 // Oh you, Win32 ... <_<
-// TODO: Untested! Might not compile nor work.
 static size_t read_stdin(char *buf, size_t size)
 {
    HANDLE hnd = GetStdHandle(STD_INPUT_HANDLE);
@@ -248,16 +247,45 @@ static size_t read_stdin(char *buf, size_t size)
    // Check first if we're a pipe
    // (not console).
    DWORD avail = 0;
+   bool echo = false;
 
    // If not a pipe, check if we're running in a console.
    if (!PeekNamedPipe(hnd, NULL, 0, NULL, &avail, NULL))
    {
-      DWORD mode;
+      DWORD mode = 0;
       if (!GetConsoleMode(hnd, &mode))
          return 0;
 
-      if (!GetNumberOfConsoleInputEvents(hnd, &avail))
+      if ((mode & (ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT))
+            && !SetConsoleMode(hnd, mode & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT)))
          return 0;
+
+      // Win32, Y U NO SANE NONBLOCK READ!?
+      DWORD has_read = 0;
+      INPUT_RECORD recs[256];
+      if (!PeekConsoleInput(hnd, recs, sizeof(recs) / sizeof(recs[0]), &has_read))
+         return 0;
+
+      bool has_key = false;
+      for (DWORD i = 0; i < has_read; i++)
+      {
+         // Very crude, but should get the job done ...
+         if (recs[i].EventType == KEY_EVENT &&
+               recs[i].Event.KeyEvent.bKeyDown &&
+               (isgraph(recs[i].Event.KeyEvent.wVirtualKeyCode) || recs[i].Event.KeyEvent.wVirtualKeyCode == VK_RETURN))
+         {
+            has_key = true;
+            echo    = true;
+            avail   = size;
+            break;
+         }
+      }
+
+      if (!has_key)
+      {
+         FlushConsoleInputBuffer(hnd);
+         return 0;
+      }
    }
 
    if (!avail)
@@ -269,6 +297,21 @@ static size_t read_stdin(char *buf, size_t size)
    DWORD has_read = 0;
    if (!ReadFile(hnd, buf, avail, &has_read, NULL))
       return 0;
+
+   for (DWORD i = 0; i < has_read; i++)
+      if (buf[i] == '\r')
+         buf[i] = '\n';
+
+   // Console won't echo for us while in non-line mode, so do it manually ...
+   if (echo)
+   {
+      HANDLE hnd_out = GetStdHandle(STD_OUTPUT_HANDLE);
+      if (hnd_out != INVALID_HANDLE_VALUE)
+      {
+         DWORD has_written;
+         WriteConsole(hnd_out, buf, has_read, &has_written, NULL);
+      }
+   }
 
    return has_read;
 }
@@ -297,7 +340,7 @@ static void stdin_cmd_pre_frame(rarch_cmd_t *handle)
    if (!handle->stdin_enable)
       return;
 
-   size_t ret = read_stdin(handle->stdin_buf, STDIN_BUF_SIZE - handle->stdin_buf_ptr - 1);
+   size_t ret = read_stdin(handle->stdin_buf + handle->stdin_buf_ptr, STDIN_BUF_SIZE - handle->stdin_buf_ptr - 1);
    if (ret == 0)
       return;
 
