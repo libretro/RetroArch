@@ -127,7 +127,7 @@ VIDEO DRIVER
 #if defined(HAVE_OPENGL)
 #include "../../gfx/gl.c"
 #elif defined(GEKKO)
-#include "../../wii/gx_video.c"
+#include "../../gx/gx_video.c"
 #endif
 
 #include "../../gfx/gfx_common.c"
@@ -161,7 +161,7 @@ INPUT
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/ps3_input.c"
 #elif defined(GEKKO)
-#include "../../wii/gx_input.c"
+#include "../../gx/gx_input.c"
 #elif defined(_XBOX)
 #include "../../xdk/xdk_xinput_input.c"
 #endif
@@ -213,7 +213,7 @@ AUDIO
 #elif defined(_XBOX360)
 #include "../../360/xdk360_audio.cpp"
 #elif defined(GEKKO)
-#include "../../wii/gx_audio.c"
+#include "../../gx/gx_audio.c"
 #endif
 
 #ifdef HAVE_DSOUND
@@ -262,7 +262,7 @@ MAIN
 #if defined(_XBOX)
 #include "../../xdk/frontend/main.c"
 #elif defined(GEKKO)
-#include "../../wii/frontend/main.c"
+#include "../../gx/frontend/main.c"
 #endif
 
 /*============================================================

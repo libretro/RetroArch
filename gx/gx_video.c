@@ -15,7 +15,7 @@
 
 #include "../driver.h"
 #include "../general.h"
-#include "driver.h"
+#include "gx_video.h"
 #include <gccore.h>
 #include <ogcsys.h>
 #include <malloc.h>

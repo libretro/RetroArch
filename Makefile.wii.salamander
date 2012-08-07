@@ -25,7 +25,7 @@ CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map,--section-start,.init=0x81200000
 LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
 
-OBJ = wii/salamander/main.o console/rarch_console_exec.o console/rarch_console_libretro_mgmt.o file_path.o compat/compat.o conf/config_file.o console/exec/dol.o
+OBJ = gx/salamander/main.o console/rarch_console_exec.o console/rarch_console_libretro_mgmt.o file_path.o compat/compat.o conf/config_file.o console/exec/dol.o
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -62,7 +62,7 @@ $(ELF_TARGET): $(OBJ)
 	$(LD) -r -b binary -o $@ $<
 
 pkg: all
-	cp -r $(DOL_TARGET) wii/pkg/boot.dol
+	cp -r $(DOL_TARGET) gx/pkg/boot.dol
 
 clean:
 	rm -f $(DOL_TARGET)

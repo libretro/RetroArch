@@ -62,7 +62,7 @@ $(ELF_TARGET): $(OBJ)
 	$(LD) -r -b binary -o $@ $<
 
 pkg: all
-	cp -r $(DOL_TARGET) wii/pkg/CORE.dol
+	cp -r $(DOL_TARGET) gx/pkg/CORE.dol
 
 clean:
 	rm -f $(DOL_TARGET)

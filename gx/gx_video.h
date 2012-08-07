@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef WII_VIDEO_H__
-#define WII_VIDEO_H__
+#ifndef _GX_VIDEO_H__
+#define _GX_VIDEO_H__
 
 void wii_video_init(uint32_t *menu_buffer);
 void wii_video_deinit(void);
