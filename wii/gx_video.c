@@ -38,6 +38,14 @@ struct
    GXTexObj obj;
 } static g_tex ATTRIBUTE_ALIGN(32);
 
+struct
+{
+   uint32_t data[240 * 320];
+   GXTexObj obj;
+} static menu_tex ATTRIBUTE_ALIGN(32);
+
+static uint32_t *menu_data;
+
 static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
 static uint8_t display_list[1024] ATTRIBUTE_ALIGN(32);
 static size_t display_list_size;
@@ -120,6 +128,8 @@ static void init_vtx(GXRModeObj *mode)
    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
    GX_InvVtxCache();
 
+   GX_SetBlendMode(GX_BM_BLEND, GX_BL_ONE, GX_BL_INVSRCALPHA, 0);
+
    GX_Flush();
 }
 
@@ -127,7 +137,8 @@ static void init_texture(unsigned width, unsigned height)
 {
    GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjLOD(&g_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
-   GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
+   GX_InitTexObj(&menu_tex.obj, menu_tex.data, 320, 240, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   GX_InitTexObjLOD(&menu_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_InvalidateTexAll();
 }
 
@@ -145,7 +156,7 @@ static void build_disp_list(void)
    display_list_size = GX_EndDispList();
 }
 
-void wii_video_init(void)
+void wii_video_init(uint32_t *menu_buffer)
 {
    VIDEO_Init();
    GXRModeObj *mode = VIDEO_GetPreferredMode(NULL);
@@ -161,6 +172,7 @@ void wii_video_init(void)
 
    g_filter = true;
    g_vsync = true;
+   menu_data = menu_buffer;
 }
 
 void wii_video_deinit(void)
@@ -289,6 +301,20 @@ static void update_texture_asm(const uint32_t *src,
    src += pitch; \
 }
 
+#define BLIT_16(x) \
+{ \
+   block[0 + 0 ] = line[x][0]; \
+   block[0 + 16] = line[x][1]; \
+   block[1 + 0 ] = line[x][2]; \
+   block[1 + 16] = line[x][3]; \
+   block[2 + 0 ] = line[x][4]; \
+   block[2 + 16] = line[x][5]; \
+   block[3 + 0 ] = line[x][6]; \
+   block[3 + 16] = line[x][7]; \
+   block += 4; \
+   line[x] += 8; \
+}
+
 static void update_texture(const uint32_t *src,
       unsigned width, unsigned height, unsigned pitch)
 {
@@ -317,8 +343,33 @@ static void update_texture(const uint32_t *src,
       }
    }
 
+   // TODO: only convert when menu is visible
+   {
+      uint16_t *block = (uint16_t *) menu_tex.data;
+      uint16_t *line[4];
+      for (uint32_t y = 0; y < 240; y += 4)
+      {
+         // fetch the next 4 scanlines
+         line[0] = (uint16_t *) &menu_data[(y + 0) * 320];
+         line[1] = (uint16_t *) &menu_data[(y + 1) * 320];
+         line[2] = (uint16_t *) &menu_data[(y + 2) * 320];
+         line[3] = (uint16_t *) &menu_data[(y + 3) * 320];
+
+         for (unsigned x = 0; x < 320; x += 4)
+         {
+            BLIT_16(0)
+            BLIT_16(1)
+            BLIT_16(2)
+            BLIT_16(3)
+
+            block += 16;
+         }
+      }
+   }
+
    init_texture(width, height);
    DCFlushRange(g_tex.data, sizeof(g_tex.data));
+   DCFlushRange(menu_tex.data, sizeof(menu_tex.data));
    GX_InvalidateTexAll();
 }
 
@@ -329,8 +380,8 @@ static bool wii_frame(void *data, const void *frame,
    (void)data;
    (void)msg;
 
-   if(!frame)
-      return true;
+   //if(!frame)
+   //   return true;
 
    while (g_vsync && !g_draw_done)
       LWP_ThreadSleep(g_video_cond);
@@ -338,8 +389,18 @@ static bool wii_frame(void *data, const void *frame,
    g_draw_done = false;
    g_current_framebuf ^= 1;
    update_texture(frame, width, height, pitch);
-   GX_CallDispList(display_list, display_list_size);
-   GX_DrawDone();
+   if (frame)
+   {
+      GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
+      GX_CallDispList(display_list, display_list_size);
+      GX_DrawDone();
+   }
+   else // TODO: in-game menu still needs this
+   {
+      GX_LoadTexObj(&menu_tex.obj, GX_TEXMAP0);
+      GX_CallDispList(display_list, display_list_size);
+      GX_DrawDone();
+   }
 
    GX_CopyDisp(g_framebuf[g_current_framebuf], GX_TRUE);
    GX_Flush();

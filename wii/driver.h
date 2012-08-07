@@ -16,7 +16,7 @@
 #ifndef WII_VIDEO_H__
 #define WII_VIDEO_H__
 
-void wii_video_init(void);
+void wii_video_init(uint32_t *menu_buffer);
 void wii_video_deinit(void);
 
 void wii_input_init(void);

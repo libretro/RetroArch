@@ -35,7 +35,7 @@ extern char app_dir[PATH_MAX];
 
 struct rgui_handle
 {
-   uint16_t *frame_buf;
+   uint32_t *frame_buf;
    size_t frame_buf_pitch;
    const uint8_t *font_buf;
 
@@ -49,8 +49,8 @@ struct rgui_handle
 
    char path_buf[PATH_MAX];
 
-   uint16_t font_white[256][FONT_HEIGHT][FONT_WIDTH];
-   uint16_t font_green[256][FONT_HEIGHT][FONT_WIDTH];
+   uint32_t font_white[256][FONT_HEIGHT][FONT_WIDTH];
+   uint32_t font_green[256][FONT_HEIGHT][FONT_WIDTH];
 };
 
 static const char *rgui_device_lables[] = {
@@ -89,8 +89,8 @@ static inline bool rgui_is_filebrowser_menu(rgui_file_type_t menu_type)
    return (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE);
 }
 
-static void copy_glyph(uint16_t glyph_white[FONT_HEIGHT][FONT_WIDTH],
-      uint16_t glyph_green[FONT_HEIGHT][FONT_WIDTH],
+static void copy_glyph(uint32_t glyph_white[FONT_HEIGHT][FONT_WIDTH],
+      uint32_t glyph_green[FONT_HEIGHT][FONT_WIDTH],
       const uint8_t *buf)
 {
    for (int y = 0; y < FONT_HEIGHT; y++)
@@ -102,8 +102,8 @@ static void copy_glyph(uint16_t glyph_white[FONT_HEIGHT][FONT_WIDTH],
             ((uint32_t)buf[3 * (-y * 256 + x) + 1] << 8) |
             ((uint32_t)buf[3 * (-y * 256 + x) + 2] << 16);
 
-         glyph_white[y][x] = col == 0xff ? 0 : 0x7fff;
-         glyph_green[y][x] = col == 0xff ? 0 : (5 << 10) | (20 << 5) | (5 << 0);
+         glyph_white[y][x] = col == 0xff ? 0 : 0xffffffff;
+         glyph_green[y][x] = col == 0xff ? 0 : (255 << 24) | (40 << 16) | (160 << 8) | (40 << 0);
       }
    }
 }
@@ -121,7 +121,7 @@ static void init_font(rgui_handle_t *rgui, const char *path)
 }
 
 rgui_handle_t *rgui_init(const char *base_path,
-      uint16_t *buf, size_t buf_pitch,
+      uint32_t *buf, size_t buf_pitch,
       const uint8_t *font_buf,
       rgui_folder_enum_cb_t folder_cb, void *userdata)
 {
@@ -150,32 +150,32 @@ void rgui_free(rgui_handle_t *rgui)
    free(rgui);
 }
 
-static uint16_t gray_filler(unsigned x, unsigned y)
+static uint32_t gray_filler(unsigned x, unsigned y)
 {
    x >>= 1;
    y >>= 1;
-   uint16_t col = ((x + y) & 1) + 1;
-   col <<= 1;
-   return (col << 0) | (col << 5) | (col << 10);
+   unsigned col = ((x + y) & 1) + 1;
+   col <<= 4;
+   return (224 << 24) | (col << 16) | (col << 8) | (col << 0);
 }
 
-static uint16_t green_filler(unsigned x, unsigned y)
+static uint32_t green_filler(unsigned x, unsigned y)
 {
    x >>= 1;
    y >>= 1;
-   uint16_t col = ((x + y) & 1) + 1;
-   col <<= 1;
-   return (col << 0) | (col << 6) | (col << 10);
+   unsigned col = ((x + y) & 1) + 1;
+   col <<= 3;
+   return (224 << 24) | (col << 16) | (col << 10) | (col << 0);
 }
 
-static void fill_rect(uint16_t *buf, unsigned pitch,
+static void fill_rect(uint32_t *buf, unsigned pitch,
       unsigned x, unsigned y,
       unsigned width, unsigned height,
-      uint16_t (*col)(unsigned x, unsigned y))
+      uint32_t (*col)(unsigned x, unsigned y))
 {
    for (unsigned j = y; j < y + height; j++)
       for (unsigned i = x; i < x + width; i++)
-         buf[j * (pitch >> 1) + i] = col(i, j);
+         buf[j * (pitch >> 2) + i] = col(i, j);
 }
 
 static void blit_line(rgui_handle_t *rgui,
@@ -187,12 +187,12 @@ static void blit_line(rgui_handle_t *rgui,
       {
          for (unsigned i = 0; i < FONT_WIDTH; i++)
          {
-            uint16_t col = green ? 
+            uint32_t col = green ? 
                rgui->font_green[(unsigned char)*message][j][i] :
                rgui->font_white[(unsigned char)*message][j][i];
 
             if (col)
-               rgui->frame_buf[(y + j) * (rgui->frame_buf_pitch >> 1) + (x + i)] = col;
+               rgui->frame_buf[(y + j) * (rgui->frame_buf_pitch >> 2) + (x + i)] = col;
          }
       }
 
@@ -511,7 +511,7 @@ static const char *rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t acti
       label = app_dir;
    const char *dir = 0;
    rgui_file_type_t menu_type = 0;
-   size_t directory_ptr;
+   size_t directory_ptr = 0;
    rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
    if (rgui->need_refresh)
@@ -588,7 +588,7 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    bool found = false;
    const char *dir = 0;
    rgui_file_type_t menu_type = 0;
-   size_t directory_ptr;
+   size_t directory_ptr = 0;
    rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
    if (menu_type == RGUI_SETTINGS || rgui_is_controller_menu(menu_type))

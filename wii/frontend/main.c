@@ -44,7 +44,7 @@
 FILE * log_fp;
 #endif
 
-static uint16_t menu_framebuf[RGUI_WIDTH * RGUI_HEIGHT];
+static uint32_t menu_framebuf[RGUI_WIDTH * RGUI_HEIGHT];
 
 char app_dir[PATH_MAX];
 struct retro_system_info wii_core_info;
@@ -181,9 +181,9 @@ static bool get_rom_path(rgui_handle_t *rgui)
       }
 
       const char *ret = rgui_iterate(rgui, action);
-      video_wii.frame(NULL, menu_framebuf,
-            RGUI_WIDTH, RGUI_HEIGHT,
-            RGUI_WIDTH * sizeof(uint16_t), NULL);
+      video_wii.frame(NULL, NULL,
+            0, 0,
+            0, NULL);
 
       if (ret)
       {
@@ -242,7 +242,7 @@ int main(void)
    retro_get_system_info(&wii_core_info);
    RARCH_LOG("Core: %s\n", wii_core_info.library_name);
 
-   wii_video_init();
+   wii_video_init(menu_framebuf);
 
    char tmp_path[PATH_MAX];
    const char *extension = default_paths.executable_extension;
@@ -262,7 +262,7 @@ int main(void)
    input_wii.post_init();
 
    rgui_handle_t *rgui = rgui_init("",
-         menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
+         menu_framebuf, RGUI_WIDTH * sizeof(uint32_t),
          _binary_console_font_bmp_start, folder_cb, NULL);
    rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 
