@@ -130,9 +130,13 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
 
 static bool get_rom_path(rgui_handle_t *rgui)
 {
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
+
    uint16_t old_input_state = 0;
    bool can_quit = false;
    bool first = true;
+
+   gx->menu_render = true;
 
    for (;;)
    {
@@ -183,9 +187,8 @@ static bool get_rom_path(rgui_handle_t *rgui)
       }
 
       const char *ret = rgui_iterate(rgui, action);
-      video_wii.frame(NULL, NULL,
-            0, 0,
-            0, NULL);
+
+      rarch_render_cached_frame();
 
       if (ret)
       {
@@ -275,6 +278,7 @@ int main(void)
 
    while (get_rom_path(rgui) && ret == 0)
    {
+      gx->menu_render = false;
       bool repeat = false;
 
       input_wii.poll(NULL);

@@ -18,6 +18,7 @@
 
 typedef struct gx_video
 {
+   bool menu_render;
    uint32_t *menu_data;
 } gx_video_t;
 

@@ -362,6 +362,7 @@ static void update_texture(const uint32_t *src,
    }
 
    // TODO: only convert when menu is visible
+   if(gx->menu_render)
    {
       uint16_t *block = (uint16_t *) menu_tex.data;
       uint16_t *line[4];
@@ -396,11 +397,14 @@ static bool wii_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
+   bool menu_render = gx->menu_render;
+
    (void)data;
    (void)msg;
 
-   //if(!frame)
-   //   return true;
+   if(!frame && !menu_render)
+      return true;
 
    while (g_vsync && !g_draw_done)
       LWP_ThreadSleep(g_video_cond);
@@ -408,13 +412,15 @@ static bool wii_frame(void *data, const void *frame,
    g_draw_done = false;
    g_current_framebuf ^= 1;
    update_texture(frame, width, height, pitch);
+
    if (frame)
    {
       GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
       GX_CallDispList(display_list, display_list_size);
       GX_DrawDone();
    }
-   else // TODO: in-game menu still needs this
+
+   if(menu_render)
    {
       GX_LoadTexObj(&menu_tex.obj, GX_TEXMAP0);
       GX_CallDispList(display_list, display_list_size);
