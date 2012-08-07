@@ -59,10 +59,6 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
       CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
 #endif
-#ifdef _XBOX360
-      CONFIG_GET_BOOL_CONSOLE(gamma_correction_enable, "gamma_correction_enable");
-      CONFIG_GET_INT_CONSOLE(color_format, "color_format");
-#endif
       CONFIG_GET_BOOL(video.smooth, "video_smooth");
       CONFIG_GET_BOOL(video.vsync, "video_vsync");
       CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
@@ -100,6 +96,14 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       CONFIG_GET_INT_CONSOLE(sound_mode, "sound_mode");
 #ifdef HAVE_ZLIB
       CONFIG_GET_INT_CONSOLE(zip_extract_mode, "zip_extract_mode");
+#endif
+#ifdef _XBOX360
+      CONFIG_GET_BOOL_CONSOLE(gamma_correction_enable, "gamma_correction_enable");
+      CONFIG_GET_INT_CONSOLE(color_format, "color_format");
+#endif
+#ifdef _XBOX1
+      CONFIG_GET_INT_CONSOLE(flicker_filter, "fliker_filter");
+      CONFIG_GET_BOOL_CONSOLE(soft_display_filter_enable, "soft_display_filter_enable");
 #endif
       CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
       CONFIG_GET_FLOAT_CONSOLE(menu_font_size, "menu_font_size");
@@ -152,9 +156,13 @@ void rarch_config_save(const char * conf_name)
 #endif
       config_set_bool(conf, "overscan_enable", g_console.overscan_enable);
       config_set_bool(conf, "screenshots_enable", g_console.screenshots_enable);
-#ifdef _XBOX
+#ifdef _XBOX360
       config_set_bool(conf, "gamma_correction_enable", g_console.gamma_correction_enable);
       config_set_int(conf, "color_format", g_console.color_format);
+#endif
+#ifdef _XBOX1
+      config_set_bool(conf, "soft_display_filter_enable", g_console.soft_display_filter_enable);
+      config_set_int(conf, "flicker_filter", g_console.flicker_filter);
 #endif
       config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
       config_set_bool(conf, "triple_buffering_enable", g_console.triple_buffering_enable);

@@ -386,6 +386,10 @@ void rarch_settings_set_default (const input_driver_t *input)
    g_console.color_format = 0;
    g_console.gamma_correction_enable = 1;
 #endif
+#ifdef _XBOX1
+   g_console.flicker_filter = 1;
+   g_console.soft_display_filter_enable = false;
+#endif
 #ifdef HAVE_ZLIB
    g_console.zip_extract_mode = 0;
 #endif
