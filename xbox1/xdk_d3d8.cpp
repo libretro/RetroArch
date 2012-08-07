@@ -33,6 +33,7 @@
 
 wchar_t strw_buffer[128];
 unsigned font_x, font_y;
+FLOAT angle;
 
 static void check_window(xdk_d3d_video_t *d3d)
 {
@@ -147,31 +148,26 @@ static void xdk_d3d_set_rotation(void * data, unsigned orientation)
 {
    (void)data;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-   FLOAT angle;
 
    switch(orientation)
    {
       case ORIENTATION_NORMAL:
          angle = M_PI * 0 / 180;
+         RARCH_LOG("D3D8: Set rotation to ORIENTATION_NORMAL\n");
 	 break;
       case ORIENTATION_VERTICAL:
          angle = M_PI * 270 / 180;
+         RARCH_LOG("D3D8: Set rotation to ORIENTATION_VERTICAL\n");
          break;
       case ORIENTATION_FLIPPED:
          angle = M_PI * 180 / 180;
+         RARCH_LOG("D3D8: Set rotation to ORIENTATION_FLIPPED\n");
          break;
       case ORIENTATION_FLIPPED_ROTATED:
          angle = M_PI * 90 / 180;
+         RARCH_LOG("D3D8: Set rotation to ORIENTATION_FLIPPED_ROTATED\n");
          break;
    }
-
-   /*
-   D3DXMATRIX p_out;
-   D3DXMatrixIdentity(&p_out);
-   d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &p_out);
-
-   d3d->should_resize = TRUE;
-   */
 }
 
 static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **input, void **input_data)
@@ -187,7 +183,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    if (!d3d->d3d_device)
    {
       free(d3d);
-      RARCH_ERR("Failed to create a D3D8 object.\n");
+      RARCH_ERR("D3D8: Failed to create a D3D8 object.\n");
       return NULL;
    }
 
@@ -429,13 +425,16 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 
-   D3DXMATRIX p_out;
+   d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
+
+   D3DXMATRIX p_out, p_rotate;
    D3DXMatrixIdentity(&p_out);
-   d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &p_out);
+   D3DXMatrixRotationZ(&p_rotate, angle);
+
+   d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &p_rotate);
    d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &p_out);
    d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &p_out);
 
-   d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
    d3d->d3d_render_device->SetStreamSource(0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
@@ -483,7 +482,7 @@ static void xdk_d3d_set_nonblock_state(void *data, bool state)
 
    if(d3d->vsync)
    {
-      RARCH_LOG("D3D Vsync => %s\n", state ? "off" : "on");
+      RARCH_LOG("D3D8: Vsync => %s\n", state ? "off" : "on");
       gfx_ctx_set_swap_interval(state ? 0 : 1, TRUE);
    }
 }

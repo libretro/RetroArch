@@ -249,7 +249,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 int main(int argc, char *argv[])
 {
 #if defined(_XBOX)
-   XINPUT_STATE state;
+   XINPUT_STATE state; //C4101
 
    get_environment_settings();
 
