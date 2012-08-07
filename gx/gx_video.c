@@ -24,31 +24,31 @@
 
 // All very hardcoded for now.
 
-static void *g_framebuf[2];
-static unsigned g_current_framebuf;
+void *g_framebuf[2];
+unsigned g_current_framebuf;
 
-static unsigned g_filter;
-static bool g_vsync;
-static lwpq_t g_video_cond;
-static volatile bool g_draw_done;
+unsigned g_filter;
+bool g_vsync;
+lwpq_t g_video_cond;
+volatile bool g_draw_done;
 
 struct
 {
    uint32_t data[512 * 256];
    GXTexObj obj;
-} static g_tex ATTRIBUTE_ALIGN(32);
+} g_tex ATTRIBUTE_ALIGN(32);
 
 struct
 {
    uint32_t data[240 * 320];
    GXTexObj obj;
-} static menu_tex ATTRIBUTE_ALIGN(32);
+} menu_tex ATTRIBUTE_ALIGN(32);
 
-static uint32_t *menu_data;
+uint32_t *menu_data;
 
-static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
-static uint8_t display_list[1024] ATTRIBUTE_ALIGN(32);
-static size_t display_list_size;
+uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
+uint8_t display_list[1024] ATTRIBUTE_ALIGN(32);
+size_t display_list_size;
 
 static void retrace_callback(u32 retrace_count)
 {
@@ -78,14 +78,14 @@ static void setup_video_mode(GXRModeObj *mode)
       VIDEO_WaitVSync();
 }
 
-static float verts[16] ATTRIBUTE_ALIGN(32)  = {
+float verts[16] ATTRIBUTE_ALIGN(32)  = {
    -1,  1, -0.5,
    -1, -1, -0.5,
     1, -1, -0.5,
     1,  1, -0.5,
 };
 
-static float tex_coords[8] ATTRIBUTE_ALIGN(32) = {
+float tex_coords[8] ATTRIBUTE_ALIGN(32) = {
    0, 0,
    0, 1,
    1, 1,
