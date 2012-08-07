@@ -36,7 +36,9 @@
 #include <unistd.h>
 #include <dirent.h>
 
+#ifdef HW_RVL
 #include <sdcard/wiisd_io.h>
+#endif
 #include <sdcard/gcsd.h>
 #include <fat.h>
 
