@@ -19,8 +19,5 @@
 void wii_video_init(uint32_t *menu_buffer);
 void wii_video_deinit(void);
 
-void wii_input_init(void);
-void wii_input_deinit(void);
-
 #endif
 
