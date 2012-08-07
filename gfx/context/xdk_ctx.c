@@ -88,7 +88,7 @@ void gfx_ctx_clear(void)
 #ifdef _XBOX1
    device_ptr->d3d_render_device->BeginScene();
    device_ptr->d3d_render_device->SetFlickerFilter(1);
-   device_ptr->d3d_render_device->SetSoftDisplayFilter(1);
+   device_ptr->d3d_render_device->SetSoftDisplayFilter(false);
 #endif
 }
 
