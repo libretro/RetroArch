@@ -22,8 +22,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// All very hardcoded for now.
-
 void *g_framebuf[2];
 unsigned g_current_framebuf;
 
@@ -47,6 +45,41 @@ struct
 uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
 uint8_t display_list[1024] ATTRIBUTE_ALIGN(32);
 size_t display_list_size;
+
+float verts[16] ATTRIBUTE_ALIGN(32) = {
+   -1,  1, -0.5,
+   -1, -1, -0.5,
+    1, -1, -0.5,
+    1,  1, -0.5,
+};
+
+float tex_coords[8] ATTRIBUTE_ALIGN(32) = {
+   0, 0,
+   0, 1,
+   1, 1,
+   1, 0,
+};
+
+float vertexes_90[8] ATTRIBUTE_ALIGN(32) = {
+   0, 1,
+   1, 1,
+   1, 0,
+   0, 0
+};
+
+float vertexes_180[8] ATTRIBUTE_ALIGN(32) = {
+   1, 1,
+   1, 0,
+   0, 0,
+   0, 1
+};
+
+float vertexes_270[8] ATTRIBUTE_ALIGN(32) = {
+   1, 0,
+   0, 0,
+   0, 1,
+   1, 1
+};
 
 static void retrace_callback(u32 retrace_count)
 {
@@ -75,20 +108,6 @@ static void setup_video_mode(GXRModeObj *mode)
    if (mode->viTVMode & VI_NON_INTERLACE)
       VIDEO_WaitVSync();
 }
-
-float verts[16] ATTRIBUTE_ALIGN(32)  = {
-   -1,  1, -0.5,
-   -1, -1, -0.5,
-    1, -1, -0.5,
-    1,  1, -0.5,
-};
-
-float tex_coords[8] ATTRIBUTE_ALIGN(32) = {
-   0, 0,
-   0, 1,
-   1, 1,
-   1, 0,
-};
 
 static void init_vtx(GXRModeObj *mode)
 {
