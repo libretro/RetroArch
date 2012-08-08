@@ -27,6 +27,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef _WIN32
+#include <fcntl.h>
+#include <unistd.h>
+#endif
+
 #define DEFAULT_NETWORK_CMD_PORT 55355
 #define STDIN_BUF_SIZE 4096
 
@@ -114,7 +119,9 @@ rarch_cmd_t *rarch_cmd_new(bool stdin_enable, bool network_enable, uint16_t port
    (void)stdin_enable;
 #endif
 
+#ifdef HAVE_NETWORK_CMD
    freeaddrinfo(res);
+#endif
    return handle;
 
 error:
@@ -128,8 +135,10 @@ error:
 
 void rarch_cmd_free(rarch_cmd_t *handle)
 {
+#ifdef HAVE_NETWORK_CMD
    if (handle->net_fd >= 0)
       close(handle->net_fd);
+#endif
 
    free(handle);
 }
