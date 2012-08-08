@@ -410,6 +410,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
 #ifdef HW_RVL
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
          g_console.soft_display_filter_enable = !g_console.soft_display_filter_enable;
+	 gx->should_resize = true;
          break;
 #endif
       case RGUI_SETTINGS_VIDEO_GAMMA:

@@ -429,14 +429,13 @@ static bool wii_frame(void *data, const void *frame,
    if(!frame && !menu_render)
       return true;
 
-#ifdef HW_RVL
-   VIDEO_SetTrapFilter(g_console.soft_display_filter_enable);
-#endif
-
    gx->frame_count++;
 
    if(should_resize)
    {
+#ifdef HW_RVL
+      VIDEO_SetTrapFilter(g_console.soft_display_filter_enable);
+#endif
       GX_SetDispCopyGamma(g_console.gamma_correction);
       gx->should_resize = false;
    }
