@@ -319,6 +319,11 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_VIDEO_FILTER:
             snprintf(type_str, sizeof(type_str), g_settings.video.smooth ? "Bilinear filtering" : "Point filtering");
             break;
+#ifdef HW_RVL
+         case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
+            snprintf(type_str, sizeof(type_str), g_console.soft_display_filter_enable ? "ON" : "OFF");
+            break;
+#endif
          case RGUI_SETTINGS_VIDEO_GAMMA:
             snprintf(type_str, sizeof(type_str), "%d", g_console.gamma_correction);
             break;
@@ -402,6 +407,11 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          else
             rarch_settings_change(S_HW_TEXTURE_FILTER);
          break;
+#ifdef HW_RVL
+      case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
+         g_console.soft_display_filter_enable = !g_console.soft_display_filter_enable;
+         break;
+#endif
       case RGUI_SETTINGS_VIDEO_GAMMA:
          if (action == RGUI_ACTION_START)
          {
@@ -542,6 +552,9 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_clear(rgui->folder_buf);
 
    RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
+#ifdef HW_RVL
+   RGUI_MENU_ITEM("VI Trap filtering", RGUI_SETTINGS_VIDEO_SOFT_FILTER);
+#endif
    RGUI_MENU_ITEM("Gamma", RGUI_SETTINGS_VIDEO_GAMMA);
    RGUI_MENU_ITEM("Rotation", RGUI_SETTINGS_VIDEO_ROTATION);
    RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);

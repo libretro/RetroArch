@@ -312,6 +312,12 @@ void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t 
    }
 }
 
+#if defined(_XBOX360)
+#define DEFAULT_GAMMA 1
+#elif defined(GEKKO)
+#define DEFAULT_GAMMA 0
+#endif
+
 void rarch_settings_set_default (const input_driver_t *input)
 {
    // g_settings
@@ -385,13 +391,11 @@ void rarch_settings_set_default (const input_driver_t *input)
 #ifdef _XBOX360
    g_console.color_format = 0;
 #endif
-#if defined(_XBOX360) || defined(GEKKO)
-   g_console.gamma_correction = 1;
-#endif
+   g_console.gamma_correction = DEFAULT_GAMMA;
 #ifdef _XBOX1
    g_console.flicker_filter = 1;
-   g_console.soft_display_filter_enable = false;
 #endif
+   g_console.soft_display_filter_enable = true;
 #ifdef HAVE_ZLIB
    g_console.zip_extract_mode = 0;
 #endif
