@@ -310,7 +310,7 @@ static void wii_input_poll(void *data)
             state |= y > 0 ? GX_GC_RSTICK_UP : GX_GC_RSTICK_DOWN;
          }
 
-         if ((state & (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
+         if ((state & (GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
             quit_gc = true;
       }
 
@@ -375,7 +375,7 @@ static void wii_input_poll(void *data)
                state |= (down & WPAD_CLASSIC_BUTTON_ZL) ? GX_CLASSIC_ZL_TRIGGER : 0;
                state |= (down & WPAD_CLASSIC_BUTTON_ZR) ? GX_CLASSIC_ZR_TRIGGER : 0;
 
-	       if((down & WPAD_CLASSIC_BUTTON_HOME) && (down & WPAD_CLASSIC_BUTTON_ZL) && (down & WPAD_CLASSIC_BUTTON_ZR))
+               if((down & WPAD_CLASSIC_BUTTON_HOME) && (down & WPAD_CLASSIC_BUTTON_ZL) && (down & WPAD_CLASSIC_BUTTON_ZR))
                   quit_classic = true;
 
                s8 x = wii_stick_x(exp.classic.ljs);
