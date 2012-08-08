@@ -162,6 +162,7 @@ static void menu_loop(void)
       static const struct retro_keybind _quit_binds[] = {
 	      { 0, 0, (enum retro_key)0, (GX_CLASSIC_HOME), 0 },
 	      { 0, 0, (enum retro_key)0, (GX_WIIMOTE_HOME), 0 },
+              { 0, 0, (enum retro_key)0, (GX_QUIT_KEY), 0 },
       };
 
       const struct retro_keybind *quit_binds[] = {
@@ -173,6 +174,9 @@ static void menu_loop(void)
 
       input_state |= input_wii.input_state(NULL, quit_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 1) ? (GX_WIIMOTE_HOME) : 0;
+
+      input_state |= input_wii.input_state(NULL, quit_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 2) ? (GX_QUIT_KEY) : 0;
 
 
       uint64_t trigger_state = input_state & ~old_input_state;
@@ -214,19 +218,26 @@ static void menu_loop(void)
 
       old_input_state = input_state;
 
-      bool quit_key_pressed = ((trigger_state & GX_WIIMOTE_HOME) || (trigger_state & GX_CLASSIC_HOME)) ? true : false;
+      bool goto_menu_key_pressed = ((trigger_state & GX_WIIMOTE_HOME) || (trigger_state & GX_CLASSIC_HOME)) ? true : false;
+      bool quit_key_pressed = (trigger_state & GX_QUIT_KEY) ? true : false;
 
       if(IS_TIMER_EXPIRED(gx))
       {
          // if we want to force goto the emulation loop, skip this
          if(g_console.mode_switch != MODE_EMULATION)
          {
-            if(quit_key_pressed)
+            if(goto_menu_key_pressed)
             {
-               g_console.menu_enable = (quit_key_pressed && g_console.emulator_initialized) ? false : true;
+               g_console.menu_enable = (goto_menu_key_pressed && g_console.emulator_initialized) ? false : true;
                g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
             }
          }
+      }
+
+      if(quit_key_pressed)
+      {
+         g_console.menu_enable = false;
+         g_console.mode_switch = MODE_EXIT;
       }
 
       // set a timer delay so that we don't instantly switch back to the menu when

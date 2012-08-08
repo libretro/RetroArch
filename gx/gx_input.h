@@ -82,6 +82,7 @@ enum
    GX_NUNCHUK_LEFT         = 1ULL << 58,
    GX_NUNCHUK_RIGHT        = 1ULL << 59,
 #endif
+   GX_QUIT_KEY             = 1ULL << 60,
 };
 
 enum wii_device_id

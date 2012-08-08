@@ -258,6 +258,9 @@ static void wii_input_post_init(void)
 static void wii_input_poll(void *data)
 {
    (void)data;
+   bool quit_gc = false;
+   bool quit_classic = false;
+   bool quit_wiimote = false;
 
    PAD_ScanPads();
 #ifdef HW_RVL
@@ -282,6 +285,9 @@ static void wii_input_poll(void *data)
          state |= (down & PAD_TRIGGER_Z) ? GX_GC_Z_TRIGGER : 0;
          state |= (PAD_TriggerL(port) > 127) ? GX_GC_L_TRIGGER : 0;
          state |= (PAD_TriggerR(port) > 127) ? GX_GC_R_TRIGGER : 0;
+
+         if((down & PAD_BUTTON_A) && (PAD_TriggerL(port) > 127) && (PAD_TriggerR(port) > 127) && (down & PAD_TRIGGER_Z) && (down & PAD_BUTTON_START) && (down & PAD_BUTTON_A))
+            quit_gc = true;
 
          s8 x = PAD_StickX(port);
          s8 y = PAD_StickY(port);
@@ -319,6 +325,9 @@ static void wii_input_poll(void *data)
          state |= (down & WPAD_BUTTON_PLUS) ? GX_WIIMOTE_PLUS : 0;
          state |= (down & WPAD_BUTTON_MINUS) ? GX_WIIMOTE_MINUS : 0;
          state |= (down & WPAD_BUTTON_HOME) ? GX_WIIMOTE_HOME : 0;
+
+         if((down & WPAD_BUTTON_HOME) && (down & WPAD_BUTTON_B))
+            quit_wiimote = true;
 
          expansion_t exp;
          WPAD_Expansion(port, &exp);
@@ -366,6 +375,9 @@ static void wii_input_poll(void *data)
                state |= (down & WPAD_CLASSIC_BUTTON_ZL) ? GX_CLASSIC_ZL_TRIGGER : 0;
                state |= (down & WPAD_CLASSIC_BUTTON_ZR) ? GX_CLASSIC_ZR_TRIGGER : 0;
 
+	       if((down & WPAD_CLASSIC_BUTTON_HOME) && (down & WPAD_CLASSIC_BUTTON_ZL) && (down & WPAD_CLASSIC_BUTTON_ZR))
+                  quit_classic = true;
+
                s8 x = wii_stick_x(exp.classic.ljs);
                s8 y = wii_stick_y(exp.classic.ljs);
 
@@ -407,6 +419,9 @@ static void wii_input_poll(void *data)
          state |= GX_WIIMOTE_HOME;
       }
 
+      if (quit_gc || quit_wiimote || quit_classic)
+         state |= GX_QUIT_KEY;
+
       pad_state[port] = state;
    }
 
@@ -428,10 +443,11 @@ static bool wii_key_pressed(void *data, int key)
       case RARCH_QUIT_KEY:
       if(IS_TIMER_EXPIRED(gx))
       {
-         uint64_t quit_pressed_classic = pad_state[0] & GX_CLASSIC_HOME;
-         uint64_t quit_pressed_wiimote = pad_state[0] & GX_WIIMOTE_HOME;
+         uint64_t goto_menu_pressed_classic = pad_state[0] & GX_CLASSIC_HOME;
+         uint64_t goto_menu_pressed_wiimote = pad_state[0] & GX_WIIMOTE_HOME;
+         uint64_t quit_rarch = pad_state[0] & GX_QUIT_KEY;
          bool retval = false;
-         g_console.menu_enable = ((quit_pressed_classic || quit_pressed_wiimote) && IS_TIMER_EXPIRED(gx));
+         g_console.menu_enable = ((goto_menu_pressed_classic || goto_menu_pressed_wiimote || quit_rarch) && IS_TIMER_EXPIRED(gx));
 
          if(g_console.menu_enable)
          {
@@ -439,6 +455,9 @@ static bool wii_key_pressed(void *data, int key)
 	    SET_TIMER_EXPIRATION(gx, 30);
             retval = g_console.menu_enable;
          }
+
+         if(quit_rarch)
+            g_console.mode_switch = MODE_EXIT;
 
 	 retval = g_console.menu_enable;
          return retval;
