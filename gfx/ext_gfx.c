@@ -59,31 +59,34 @@ static void input_ext_poll(void *data)
 
 static int16_t input_ext_input_state(void *data, const struct retro_keybind **retro_keybinds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
-   input_ext_t *ext = (input_ext_t*)data;
-
-   unsigned player = port + 1;
-
-   if (id >= RARCH_BIND_LIST_END)
-      return 0;
-
-   const struct retro_keybind *rarch_bind = &retro_keybinds[player - 1][id];
-   if (!rarch_bind->valid)
-      return 0;
-
+   input_ext_t *ext          = (input_ext_t*)data;
+   unsigned player           = port + 1;
    struct rarch_keybind bind = {0};
 
    switch (device)
    {
       case RETRO_DEVICE_KEYBOARD:
+         if (id >= RETROK_LAST)
+            return 0;
+
          bind.key     = id;
          bind.joykey  = NO_BTN;
          bind.joyaxis = AXIS_NONE;
          break;
 
       default:
+      {
+         if (id >= RARCH_BIND_LIST_END)
+            return 0;
+
+         const struct retro_keybind *rarch_bind = &retro_keybinds[player - 1][id];
+         if (!rarch_bind->valid)
+            return 0;
+
          bind.key     = rarch_bind->key;
          bind.joykey  = rarch_bind->joykey;
          bind.joyaxis = rarch_bind->joyaxis;
+      }
    }
 
    return ext->driver->input_state(ext->handle, &bind, player);
