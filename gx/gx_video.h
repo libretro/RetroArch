@@ -19,6 +19,7 @@
 typedef struct gx_video
 {
    bool menu_render;
+   bool should_resize;
    uint32_t frame_count;
    uint32_t *menu_data;
 } gx_video_t;

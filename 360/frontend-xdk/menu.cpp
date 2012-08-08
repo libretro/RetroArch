@@ -248,7 +248,7 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_console.info_msg_enable ? L"Info messages: ON" : L"Info messages: OFF");
    m_settingslist.SetText(SETTING_EMU_MENUS, g_console.menus_hd_enable ? L"Menus: HD" : L"Menus: SD");
-   m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+   m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
@@ -672,8 +672,8 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    m_settingslist.SetText(SETTING_EMU_MENUS, g_console.menus_hd_enable ? L"Menus: HD" : L"Menus: SD");
 	    break;
 	 case SETTING_GAMMA_CORRECTION_ENABLED:
-	    g_console.gamma_correction_enable = !g_console.gamma_correction_enable;
-	    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+	    g_console.gamma_correction = g_console.gamma_correction ? 0 : 1;
+	    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
 	    if(g_console.info_msg_enable)
            rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
 	    break;

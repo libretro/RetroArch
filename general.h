@@ -193,10 +193,10 @@ struct settings
 #ifdef RARCH_CONSOLE
 typedef struct
 {
-   uint32_t x;
-   uint32_t y;
-   uint32_t width;
-   uint32_t height;
+   unsigned x;
+   unsigned y;
+   unsigned width;
+   unsigned height;
 } rarch_viewport_t;
 
 struct console_settings
@@ -218,7 +218,6 @@ struct console_settings
 #endif
    bool initialize_rarch_enable;
    bool info_msg_enable;
-   bool gamma_correction_enable;
    bool ingame_menu_enable;
    bool menu_enable;
    bool overscan_enable;
@@ -227,31 +226,32 @@ struct console_settings
    bool throttle_enable;
    bool triple_buffering_enable;
    float overscan_amount;
-   uint32_t aspect_ratio_index;
+   unsigned aspect_ratio_index;
    struct
    {
       rarch_viewport_t custom_vp;
    } viewports;
-   uint32_t emulator_initialized;
-   uint32_t external_launcher_support;
-   uint32_t screen_orientation;
-   uint32_t current_resolution_index;
-   uint32_t current_resolution_id;
-   uint32_t ingame_menu_item;
-   uint32_t initial_resolution_id;
-   uint32_t map_dpad_to_stick;
-   uint32_t mode_switch;
-   uint32_t sound_mode;
+   unsigned gamma_correction;
+   unsigned emulator_initialized;
+   unsigned external_launcher_support;
+   unsigned screen_orientation;
+   unsigned current_resolution_index;
+   unsigned current_resolution_id;
+   unsigned ingame_menu_item;
+   unsigned initial_resolution_id;
+   unsigned map_dpad_to_stick;
+   unsigned mode_switch;
+   unsigned sound_mode;
    uint32_t *supported_resolutions;
-   uint32_t supported_resolutions_count;
-   uint32_t control_timer_expiration_frame_count;
-   uint32_t timer_expiration_frame_count;
-   uint32_t input_loop;
+   unsigned supported_resolutions_count;
+   unsigned control_timer_expiration_frame_count;
+   unsigned timer_expiration_frame_count;
+   unsigned input_loop;
 #ifdef HAVE_ZLIB
-   uint32_t zip_extract_mode;
+   unsigned zip_extract_mode;
 #endif
 #ifdef _XBOX
-   uint32_t color_format;
+   unsigned color_format;
    DWORD volume_device_type;
 #endif
    char cgp_path[PATH_MAX];

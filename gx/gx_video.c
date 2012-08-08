@@ -226,7 +226,7 @@ static void gx_start(void)
    setup_video_mode(mode);
 
    GX_Init(gx_fifo, sizeof(gx_fifo));
-   GX_SetDispCopyGamma(GX_GM_1_0);
+   GX_SetDispCopyGamma(g_console.gamma_correction);
    GX_SetCullMode(GX_CULL_NONE);
    GX_SetClipMode(GX_CLIP_DISABLE);
 
@@ -421,6 +421,7 @@ static bool wii_frame(void *data, const void *frame,
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    bool menu_render = gx->menu_render;
+   bool should_resize = gx->should_resize;
 
    (void)data;
    (void)msg;
@@ -429,6 +430,12 @@ static bool wii_frame(void *data, const void *frame,
       return true;
 
    gx->frame_count++;
+
+   if(should_resize)
+   {
+      GX_SetDispCopyGamma(g_console.gamma_correction);
+      gx->should_resize = false;
+   }
 
    while (g_vsync && !g_draw_done)
       LWP_ThreadSleep(g_video_cond);

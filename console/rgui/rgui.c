@@ -319,6 +319,9 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_VIDEO_FILTER:
             snprintf(type_str, sizeof(type_str), g_settings.video.smooth ? "Bilinear filtering" : "Point filtering");
             break;
+         case RGUI_SETTINGS_VIDEO_GAMMA:
+            snprintf(type_str, sizeof(type_str), "%d", g_console.gamma_correction);
+            break;
          case RGUI_SETTINGS_VIDEO_ROTATION:
             {
                char rotate_msg[64];
@@ -378,9 +381,19 @@ static void render_text(rgui_handle_t *rgui)
    render_messagebox(rgui, msg_queue_pull(g_extern.msg_queue));
 }
 
+#ifdef GEKKO
+#define MAX_GAMMA_SETTING 2
+#else
+#define MAX_GAMMA_SETTING 1
+#endif
+
 static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t action, rgui_file_type_t menu_type)
 {
    unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
+#ifdef GEKKO
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
+#endif
+
    switch (setting)
    {
       case RGUI_SETTINGS_VIDEO_FILTER:
@@ -388,6 +401,35 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             rarch_settings_default(S_DEF_HW_TEXTURE_FILTER);
          else
             rarch_settings_change(S_HW_TEXTURE_FILTER);
+         break;
+      case RGUI_SETTINGS_VIDEO_GAMMA:
+         if (action == RGUI_ACTION_START)
+         {
+            g_console.gamma_correction = 0;
+#ifdef GEKKO
+            gx->should_resize = true;
+#endif
+         }
+         else if (action == RGUI_ACTION_LEFT)
+         {
+            if(g_console.gamma_correction > 0)
+            {
+               g_console.gamma_correction--;
+#ifdef GEKKO
+               gx->should_resize = true;
+#endif
+            }
+         }
+         else if (action == RGUI_ACTION_RIGHT)
+         {
+            if(g_console.gamma_correction < MAX_GAMMA_SETTING)
+            {
+               g_console.gamma_correction++;
+#ifdef GEKKO
+               gx->should_resize = true;
+#endif
+            }
+         }
          break;
       case RGUI_SETTINGS_VIDEO_ROTATION:
          if (action == RGUI_ACTION_START)
@@ -500,6 +542,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_clear(rgui->folder_buf);
 
    RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
+   RGUI_MENU_ITEM("Gamma", RGUI_SETTINGS_VIDEO_GAMMA);
    RGUI_MENU_ITEM("Rotation", RGUI_SETTINGS_VIDEO_ROTATION);
    RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
    RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);

@@ -98,9 +98,9 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       CONFIG_GET_INT_CONSOLE(zip_extract_mode, "zip_extract_mode");
 #endif
 #ifdef _XBOX360
-      CONFIG_GET_BOOL_CONSOLE(gamma_correction_enable, "gamma_correction_enable");
       CONFIG_GET_INT_CONSOLE(color_format, "color_format");
 #endif
+      CONFIG_GET_BOOL_CONSOLE(gamma_correction, "gamma_correction");
 #ifdef _XBOX1
       CONFIG_GET_INT_CONSOLE(flicker_filter, "fliker_filter");
       CONFIG_GET_BOOL_CONSOLE(soft_display_filter_enable, "soft_display_filter_enable");
@@ -156,8 +156,8 @@ void rarch_config_save(const char * conf_name)
 #endif
       config_set_bool(conf, "overscan_enable", g_console.overscan_enable);
       config_set_bool(conf, "screenshots_enable", g_console.screenshots_enable);
+      config_set_bool(conf, "gamma_correction", g_console.gamma_correction);
 #ifdef _XBOX360
-      config_set_bool(conf, "gamma_correction_enable", g_console.gamma_correction_enable);
       config_set_int(conf, "color_format", g_console.color_format);
 #endif
 #ifdef _XBOX1
