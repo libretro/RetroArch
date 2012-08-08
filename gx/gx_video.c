@@ -61,26 +61,28 @@ float tex_coords[8] ATTRIBUTE_ALIGN(32) = {
    1, 0,
 };
 
-float vertexes_90[8] ATTRIBUTE_ALIGN(32) = {
+float tex_coords_90[8] ATTRIBUTE_ALIGN(32) = {
    0, 1,
    1, 1,
    1, 0,
    0, 0
 };
 
-float vertexes_180[8] ATTRIBUTE_ALIGN(32) = {
+float tex_coords_180[8] ATTRIBUTE_ALIGN(32) = {
    1, 1,
    1, 0,
    0, 0,
    0, 1
 };
 
-float vertexes_270[8] ATTRIBUTE_ALIGN(32) = {
+float tex_coords_270[8] ATTRIBUTE_ALIGN(32) = {
    1, 0,
    0, 0,
    0, 1,
    1, 1
 };
+
+float *vertex_ptr = tex_coords;
 
 static void retrace_callback(u32 retrace_count)
 {
@@ -138,7 +140,7 @@ static void init_vtx(GXRModeObj *mode)
    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
    GX_SetArray(GX_VA_POS, verts, 3 * sizeof(float));
-   GX_SetArray(GX_VA_TEX0, tex_coords, 2 * sizeof(float));
+   GX_SetArray(GX_VA_TEX0, vertex_ptr, 2 * sizeof(float));
 
    GX_SetNumTexGens(1);
    GX_SetNumChans(0);
@@ -485,7 +487,23 @@ static void wii_set_rotation(void * data, uint32_t orientation)
    (void)data;
    (void)orientation;
 
-   /* TODO */
+   switch(orientation)
+   {
+      case ORIENTATION_NORMAL:
+         vertex_ptr = tex_coords;
+         break;
+      case ORIENTATION_VERTICAL:
+         vertex_ptr = tex_coords_90;
+         break;
+      case ORIENTATION_FLIPPED:
+         vertex_ptr = tex_coords_180;
+         break;
+      case ORIENTATION_FLIPPED_ROTATED:
+         vertex_ptr = tex_coords_270;
+         break;
+   }
+
+   GX_SetArray(GX_VA_TEX0, vertex_ptr, 2 * sizeof(float));
 }
 
 const video_driver_t video_wii = {

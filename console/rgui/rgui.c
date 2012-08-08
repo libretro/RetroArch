@@ -319,6 +319,13 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_VIDEO_FILTER:
             snprintf(type_str, sizeof(type_str), g_settings.video.smooth ? "Bilinear filtering" : "Point filtering");
             break;
+         case RGUI_SETTINGS_VIDEO_ROTATION:
+            {
+               char rotate_msg[64];
+               rarch_settings_create_menu_item_label(rotate_msg, S_LBL_ROTATION, sizeof(rotate_msg));
+	       snprintf(type_str, sizeof(type_str), rotate_msg);
+            }
+            break;
          case RGUI_SETTINGS_AUDIO_MUTE:
             snprintf(type_str, sizeof(type_str), g_extern.audio_data.mute ? "ON" : "OFF");
             break;
@@ -381,6 +388,29 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             rarch_settings_default(S_DEF_HW_TEXTURE_FILTER);
          else
             rarch_settings_change(S_HW_TEXTURE_FILTER);
+         break;
+      case RGUI_SETTINGS_VIDEO_ROTATION:
+         if (action == RGUI_ACTION_START)
+         {
+            rarch_settings_default(S_DEF_AUDIO_CONTROL_RATE);
+#ifdef GEKKO
+	    video_wii.set_rotation(NULL, g_console.screen_orientation);
+#endif
+         }
+         else if (action == RGUI_ACTION_LEFT)
+         {
+            rarch_settings_change(S_ROTATION_DECREMENT);
+#ifdef GEKKO
+	    video_wii.set_rotation(NULL, g_console.screen_orientation);
+#endif
+         }
+         else if (action == RGUI_ACTION_RIGHT)
+         {
+	    rarch_settings_change(S_ROTATION_INCREMENT);
+#ifdef GEKKO
+	    video_wii.set_rotation(NULL, g_console.screen_orientation);
+#endif
+         }
          break;
       case RGUI_SETTINGS_AUDIO_MUTE:
          if (action == RGUI_ACTION_START)
@@ -470,6 +500,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_clear(rgui->folder_buf);
 
    RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
+   RGUI_MENU_ITEM("Rotation", RGUI_SETTINGS_VIDEO_ROTATION);
    RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
    RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);
    RGUI_MENU_ITEM("Core", RGUI_SETTINGS_CORE);

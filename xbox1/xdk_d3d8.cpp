@@ -153,19 +153,15 @@ static void xdk_d3d_set_rotation(void * data, unsigned orientation)
    {
       case ORIENTATION_NORMAL:
          angle = M_PI * 0 / 180;
-         RARCH_LOG("D3D8: Set rotation to ORIENTATION_NORMAL\n");
 	 break;
       case ORIENTATION_VERTICAL:
          angle = M_PI * 270 / 180;
-         RARCH_LOG("D3D8: Set rotation to ORIENTATION_VERTICAL\n");
          break;
       case ORIENTATION_FLIPPED:
          angle = M_PI * 180 / 180;
-         RARCH_LOG("D3D8: Set rotation to ORIENTATION_FLIPPED\n");
          break;
       case ORIENTATION_FLIPPED_ROTATED:
          angle = M_PI * 90 / 180;
-         RARCH_LOG("D3D8: Set rotation to ORIENTATION_FLIPPED_ROTATED\n");
          break;
    }
 }
