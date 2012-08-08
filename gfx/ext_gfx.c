@@ -65,16 +65,7 @@ static int16_t input_ext_input_state(void *data, const struct retro_keybind **re
 
    switch (device)
    {
-      case RETRO_DEVICE_KEYBOARD:
-         if (id >= RETROK_LAST)
-            return 0;
-
-         bind.key     = id;
-         bind.joykey  = NO_BTN;
-         bind.joyaxis = AXIS_NONE;
-         break;
-
-      default:
+      case RETRO_DEVICE_JOYPAD:
       {
          if (id >= RARCH_BIND_LIST_END)
             return 0;
@@ -86,7 +77,22 @@ static int16_t input_ext_input_state(void *data, const struct retro_keybind **re
          bind.key     = rarch_bind->key;
          bind.joykey  = rarch_bind->joykey;
          bind.joyaxis = rarch_bind->joyaxis;
+         break;
       }
+
+      // TODO: RETRO_DEVICE_ANALOG.
+
+      case RETRO_DEVICE_KEYBOARD:
+         if (id >= RETROK_LAST)
+            return 0;
+
+         bind.key     = id;
+         bind.joykey  = NO_BTN;
+         bind.joyaxis = AXIS_NONE;
+         break;
+
+      default:
+         return 0;
    }
 
    return ext->driver->input_state(ext->handle, &bind, player);
