@@ -286,9 +286,6 @@ static void wii_input_poll(void *data)
          state |= (PAD_TriggerL(port) > 127) ? GX_GC_L_TRIGGER : 0;
          state |= (PAD_TriggerR(port) > 127) ? GX_GC_R_TRIGGER : 0;
 
-         if((down & PAD_BUTTON_A) && (PAD_TriggerL(port) > 127) && (PAD_TriggerR(port) > 127) && (down & PAD_TRIGGER_Z) && (down & PAD_BUTTON_START) && (down & PAD_BUTTON_A))
-            quit_gc = true;
-
          s8 x = PAD_StickX(port);
          s8 y = PAD_StickY(port);
 
@@ -312,6 +309,9 @@ static void wii_input_poll(void *data)
          {
             state |= y > 0 ? GX_GC_RSTICK_UP : GX_GC_RSTICK_DOWN;
          }
+
+         if ((state & (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
+            quit_gc = true;
       }
 
 #ifdef HW_RVL
@@ -414,7 +414,7 @@ static void wii_input_poll(void *data)
       }
 #endif
 
-      if ((state & (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_START | GX_GC_Z_TRIGGER | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
+      if ((state & (GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
       {
          state |= GX_WIIMOTE_HOME;
       }
