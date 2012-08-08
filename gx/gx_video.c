@@ -1,5 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2012 - Daniel De Matteis
+ *  Copyright (C) 2012 - Michael Lelli
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -25,7 +27,6 @@
 void *g_framebuf[2];
 unsigned g_current_framebuf;
 
-unsigned g_filter;
 bool g_vsync;
 lwpq_t g_video_cond;
 volatile bool g_draw_done;
@@ -152,6 +153,8 @@ static void init_vtx(GXRModeObj *mode)
 
 static void init_texture(unsigned width, unsigned height)
 {
+   unsigned g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
+
    GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjLOD(&g_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_InitTexObj(&menu_tex.obj, menu_tex.data, 320, 240, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
@@ -198,7 +201,6 @@ static void *wii_init(const video_info_t *video,
    if (!gx)
       return NULL;
 
-   g_filter = video->smooth ? GX_LINEAR : GX_NEAR;
    g_vsync = video->vsync;
 
    return gx;
@@ -229,7 +231,6 @@ static void gx_start(void)
    init_vtx(mode);
    build_disp_list();
 
-   g_filter = true;
    g_vsync = true;
 }
 
@@ -424,6 +425,8 @@ static bool wii_frame(void *data, const void *frame,
 
    if(!frame && !menu_render)
       return true;
+
+   gx->frame_count++;
 
    while (g_vsync && !g_draw_done)
       LWP_ThreadSleep(g_video_cond);

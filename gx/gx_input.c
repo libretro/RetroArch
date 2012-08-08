@@ -420,10 +420,29 @@ static void wii_input_poll(void *data)
 static bool wii_key_pressed(void *data, int key)
 {
    (void)data;
+
+   gx_video_t *gx = driver.video_data;
+
    switch (key)
    {
       case RARCH_QUIT_KEY:
-         return pad_state[0] & (GX_CLASSIC_HOME | GX_WIIMOTE_HOME) ? true : false;
+      if(IS_TIMER_EXPIRED(gx))
+      {
+         uint64_t quit_pressed_classic = pad_state[0] & GX_CLASSIC_HOME;
+         uint64_t quit_pressed_wiimote = pad_state[0] & GX_WIIMOTE_HOME;
+         bool retval = false;
+         g_console.menu_enable = ((quit_pressed_classic || quit_pressed_wiimote) && IS_TIMER_EXPIRED(gx));
+
+         if(g_console.menu_enable)
+         {
+            g_console.mode_switch = MODE_MENU;
+	    SET_TIMER_EXPIRATION(gx, 30);
+            retval = g_console.menu_enable;
+         }
+
+	 retval = g_console.menu_enable;
+         return retval;
+      }
       default:
          return false;
    }

@@ -47,6 +47,7 @@ FILE * log_fp;
 #endif
 
 uint32_t menu_framebuf[320 * 240];
+rgui_handle_t *rgui;
 
 char app_dir[PATH_MAX];
 struct retro_system_info wii_core_info;
@@ -80,6 +81,8 @@ enum
    GX_DEVICE_NAV_EXIT,
    GX_DEVICE_NAV_LAST
 };
+
+extern uint8_t _binary_console_font_bmp_start[];
 
 static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       void *userdata, void *ctx)
@@ -128,19 +131,25 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
    return true;
 }
 
-static bool get_rom_path(rgui_handle_t *rgui)
+static void menu_loop(void)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
 
-   uint16_t old_input_state = 0;
-   bool can_quit = false;
+   uint64_t old_input_state = 0;
    bool first = true;
+
+   g_console.menu_enable = true;
+
+   if(g_console.ingame_menu_enable)
+   {
+      //TODO: fill in some stuff here to bring up ingame menu
+   }
 
    gx->menu_render = true;
 
-   for (;;)
+   do
    {
-      uint16_t input_state = 0;
+      uint64_t input_state = 0;
 
       input_wii.poll(NULL);
 
@@ -150,19 +159,30 @@ static bool get_rom_path(rgui_handle_t *rgui)
                RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
       }
 
-      uint16_t trigger_state = input_state & ~old_input_state;
+      static const struct retro_keybind _quit_binds[] = {
+	      { 0, 0, (enum retro_key)0, (GX_CLASSIC_HOME), 0 },
+	      { 0, 0, (enum retro_key)0, (GX_WIIMOTE_HOME), 0 },
+      };
+
+      const struct retro_keybind *quit_binds[] = {
+	      _quit_binds
+      };
+
+      input_state |= input_wii.input_state(NULL, quit_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 0) ? (GX_CLASSIC_HOME) : 0;
+
+      input_state |= input_wii.input_state(NULL, quit_binds, false,
+         RETRO_DEVICE_JOYPAD, 0, 1) ? (GX_WIIMOTE_HOME) : 0;
+
+
+      uint64_t trigger_state = input_state & ~old_input_state;
       rgui_action_t action = RGUI_ACTION_NOOP;
 
       // don't run anything first frame, only capture held inputs for old_input_state
       if (!first)
       {
          if (trigger_state & (1 << GX_DEVICE_NAV_EXIT))
-         {
-            if (can_quit)
-               return false;
-         }
-         else
-            can_quit = true;
+            g_console.mode_switch = MODE_EXIT;
 
          if (trigger_state & (1 << GX_DEVICE_NAV_B))
             action = RGUI_ACTION_CANCEL;
@@ -188,24 +208,58 @@ static bool get_rom_path(rgui_handle_t *rgui)
 
       const char *ret = rgui_iterate(rgui, action);
 
+      (void)ret;
+
       rarch_render_cached_frame();
 
-      if (ret)
+      old_input_state = input_state;
+
+      bool quit_key_pressed = ((trigger_state & GX_WIIMOTE_HOME) || (trigger_state & GX_CLASSIC_HOME)) ? true : false;
+
+      if(IS_TIMER_EXPIRED(gx))
       {
-         g_console.initialize_rarch_enable = true;
-         strlcpy(g_console.rom_path, ret, sizeof(g_console.rom_path));
-         if (rarch_startup(NULL))
-            return true;
+         // if we want to force goto the emulation loop, skip this
+         if(g_console.mode_switch != MODE_EMULATION)
+         {
+            if(quit_key_pressed)
+            {
+               g_console.menu_enable = (quit_key_pressed && g_console.emulator_initialized) ? false : true;
+               g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
+            }
+         }
       }
 
-      old_input_state = input_state;
-      rarch_sleep(10);
-   }
+      // set a timer delay so that we don't instantly switch back to the menu when
+      // press and holding QUIT in the emulation loop (lasts for 30 frame ticks)
+      if(g_console.mode_switch == MODE_EMULATION)
+      {
+         SET_TIMER_EXPIRATION(gx, 30);
+      }
+
+   }while(g_console.menu_enable);
+
+   gx->menu_render = false;
+
+   g_console.ingame_menu_enable = false;
+}
+
+static void menu_init(void)
+{
+   rgui = rgui_init("",
+         menu_framebuf, RGUI_WIDTH * sizeof(uint32_t),
+         _binary_console_font_bmp_start, folder_cb, NULL);
+   rgui_iterate(rgui, RGUI_ACTION_REFRESH);
+
+   g_console.mode_switch = MODE_MENU;
+}
+
+static void menu_free(void)
+{
+   rgui_free(rgui);
 }
 
 int rarch_main(int argc, char **argv);
 
-extern uint8_t _binary_console_font_bmp_start[];
 
 static void get_environment_settings(void)
 {
@@ -269,19 +323,15 @@ int main(void)
 
    input_wii.post_init();
 
-   rgui_handle_t *rgui = rgui_init("",
-         menu_framebuf, RGUI_WIDTH * sizeof(uint32_t),
-         _binary_console_font_bmp_start, folder_cb, NULL);
-   rgui_iterate(rgui, RGUI_ACTION_REFRESH);
+   menu_init();
 
-   int ret = 0;
-
-   while (get_rom_path(rgui) && ret == 0)
+begin_loop:
+   if(g_console.mode_switch == MODE_EMULATION)
    {
-      gx->menu_render = false;
       bool repeat = false;
 
       input_wii.poll(NULL);
+      audio_start_func();
 
       do{
          repeat = rarch_main_iterate();
@@ -289,15 +339,25 @@ int main(void)
 
       audio_stop_func();
    }
+   else if(g_console.mode_switch == MODE_MENU)
+   {
+      menu_loop();
+      rarch_startup(default_paths.config_file);
+   }
+   else
+      goto begin_shutdown;
+   goto begin_loop;
 
+begin_shutdown:
    if(path_file_exists(default_paths.config_file))
       rarch_config_save(default_paths.config_file);
 
    if(g_console.emulator_initialized)
       rarch_main_deinit();
 
-   video_wii.stop();
    input_wii.free(NULL);
+   video_wii.stop();
+   menu_free();
 
 #ifdef HAVE_FILE_LOGGER
    fclose(log_fp);
@@ -306,11 +366,9 @@ int main(void)
    logger_shutdown();
 #endif
 
-   rgui_free(rgui);
-
    if(g_console.return_to_launcher)
       rarch_console_exec(g_console.launch_app_on_exit);
 
-   return ret;
+   return 1;
 }
 
