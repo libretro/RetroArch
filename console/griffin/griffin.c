@@ -127,9 +127,6 @@ VIDEO DRIVER
 #if defined(HAVE_OPENGL)
 #include "../../gfx/gl.c"
 #elif defined(GEKKO)
-#ifdef HW_RVL
-#include "../../gx/vi_encoder.c"
-#endif
 #include "../../gx/gx_video.c"
 #endif
 

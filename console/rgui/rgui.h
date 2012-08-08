@@ -34,9 +34,6 @@ typedef enum
 
    // settings options are done here too
    RGUI_SETTINGS_VIDEO_FILTER,
-#ifdef HW_RVL
-   RGUI_SETTINGS_VIDEO_SOFT_FILTER,
-#endif
    RGUI_SETTINGS_VIDEO_GAMMA,
    RGUI_SETTINGS_VIDEO_ROTATION,
    RGUI_SETTINGS_AUDIO_MUTE,

@@ -214,8 +214,8 @@ struct console_settings
 #endif
 #ifdef _XBOX1
    unsigned flicker_filter;
-#endif
    bool soft_display_filter_enable;
+#endif
    bool initialize_rarch_enable;
    bool info_msg_enable;
    bool ingame_menu_enable;
