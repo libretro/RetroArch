@@ -63,21 +63,30 @@ static int16_t input_ext_input_state(void *data, const struct retro_keybind **re
 
    unsigned player = port + 1;
 
-   if (id < RARCH_BIND_LIST_END)
-   {
-      const struct retro_keybind *rarch_bind = &retro_keybinds[player - 1][id];
-      if (!rarch_bind->valid)
-         return 0;
-
-      struct rarch_keybind bind = {0};
-      bind.key = rarch_bind->key;
-      bind.joykey = rarch_bind->joykey;
-      bind.joyaxis = rarch_bind->joyaxis;
-
-      return ext->driver->input_state(ext->handle, &bind, player);
-   }
-   else
+   if (id >= RARCH_BIND_LIST_END)
       return 0;
+
+   const struct retro_keybind *rarch_bind = &retro_keybinds[player - 1][id];
+   if (!rarch_bind->valid)
+      return 0;
+
+   struct rarch_keybind bind = {0};
+
+   switch (device)
+   {
+      case RETRO_DEVICE_KEYBOARD:
+         bind.key     = id;
+         bind.joykey  = NO_BTN;
+         bind.joyaxis = AXIS_NONE;
+         break;
+
+      default:
+         bind.key     = rarch_bind->key;
+         bind.joykey  = rarch_bind->joykey;
+         bind.joyaxis = rarch_bind->joyaxis;
+   }
+
+   return ext->driver->input_state(ext->handle, &bind, player);
 }
 
 static bool input_ext_key_pressed(void *data, int key)
@@ -91,8 +100,8 @@ static bool input_ext_key_pressed(void *data, int key)
          return false;
 
       struct rarch_keybind bind = {0};
-      bind.key = rarch_bind->key;
-      bind.joykey = rarch_bind->joykey;
+      bind.key     = rarch_bind->key;
+      bind.joykey  = rarch_bind->joykey;
       bind.joyaxis = rarch_bind->joyaxis;
 
       return ext->driver->input_state(ext->handle, &bind, 1);
