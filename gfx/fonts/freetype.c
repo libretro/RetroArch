@@ -282,7 +282,7 @@ void gl_render_msg(void *data, const char *msg)
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
    gl_set_projection(gl, &ortho, true);
 #else
-   (void)gl;
+   (void)data;
    (void)msg;
 #endif
 }
