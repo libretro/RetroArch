@@ -75,15 +75,15 @@ bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
       if (path_file_exists(tmp_pathnewfile))
       {
          // if libretro core already exists, this means we are
-	 // upgrading the libretro core - so delete pre-existing
-	 // file first.
+         // upgrading the libretro core - so delete pre-existing
+         // file first.
 
          RARCH_LOG("Upgrading emulator core...\n");
-	 ret = remove(tmp_pathnewfile);
+         ret = remove(tmp_pathnewfile);
 
-	 if (ret == 0)
+         if (ret == 0)
             RARCH_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-	 else
+         else
             RARCH_ERR("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
       }
 
@@ -93,14 +93,14 @@ bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
       if (ret == 0)
       {
          RARCH_LOG("libretro core [%s] renamed to: [%s].\n", full_path, tmp_pathnewfile);
-	 strlcpy(libretro_core_installed, tmp_pathnewfile, sizeof_libretro_core);
-	 ret = 1;
+         strlcpy(libretro_core_installed, tmp_pathnewfile, sizeof_libretro_core);
+         ret = 1;
       }
       else
       {
          RARCH_ERR("Failed to rename CORE executable.\n");
-	 RARCH_WARN("CORE executable was not found, or some other errors occurred. Will attempt to load libretro core path from config file.\n");
-	 ret = 0;
+         RARCH_WARN("CORE executable was not found, or some other errors occurred. Will attempt to load libretro core path from config file.\n");
+         ret = 0;
       }
    }
 
@@ -151,22 +151,28 @@ void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first
 
    if(first_exe)
    {
-#ifdef _XBOX
+#if defined(_XBOX) || defined(GEKKO)
       char fname_tmp[PATH_MAX];
       fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
 
+#ifdef _XBOX
       if(strcmp(fname_tmp, "RetroArch-Salamander.xex") == 0)
+#elif defined(GEKKO)
+      if(strcmp(fname_tmp, "boot.dol") == 0)
+#else
+#error This case not handled
+#endif
       {
          RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
-	 first_exe = dir_list->elems[1].data;
-	 fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
+         first_exe = dir_list->elems[1].data;
+         fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
 
-	 if(!first_exe)
-	 {
+         if(!first_exe)
+         {
             RARCH_ERR("Unlikely error happened - no second entry - no choice but to set it to RetroArch Salamander\n");
-	    first_exe = dir_list->elems[0].data;
-	    fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
-	 }
+            first_exe = dir_list->elems[0].data;
+            fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
+         }
       }
 
       strlcpy(first_file, fname_tmp, size_of_first_file);

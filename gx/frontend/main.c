@@ -159,13 +159,13 @@ static void menu_loop(void)
       }
 
       static const struct retro_keybind _quit_binds[] = {
-	      { 0, 0, (enum retro_key)0, (GX_CLASSIC_HOME), 0 },
-	      { 0, 0, (enum retro_key)0, (GX_WIIMOTE_HOME), 0 },
-              { 0, 0, (enum retro_key)0, (GX_QUIT_KEY), 0 },
+         { 0, 0, (enum retro_key)0, (GX_CLASSIC_HOME), 0 },
+         { 0, 0, (enum retro_key)0, (GX_WIIMOTE_HOME), 0 },
+         { 0, 0, (enum retro_key)0, (GX_QUIT_KEY), 0 },
       };
 
       const struct retro_keybind *quit_binds[] = {
-	      _quit_binds
+         _quit_binds
       };
 
       input_state |= input_gx.input_state(NULL, quit_binds, false,

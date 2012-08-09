@@ -331,7 +331,7 @@ static void render_text(rgui_handle_t *rgui)
             {
                char rotate_msg[64];
                rarch_settings_create_menu_item_label(rotate_msg, S_LBL_ROTATION, sizeof(rotate_msg));
-	       snprintf(type_str, sizeof(type_str), rotate_msg);
+               snprintf(type_str, sizeof(type_str), rotate_msg);
             }
             break;
          case RGUI_SETTINGS_AUDIO_MUTE:
@@ -410,7 +410,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
 #ifdef HW_RVL
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
          g_console.soft_display_filter_enable = !g_console.soft_display_filter_enable;
-	 gx->should_resize = true;
+         gx->should_resize = true;
          break;
 #endif
       case RGUI_SETTINGS_VIDEO_GAMMA:
@@ -447,21 +447,21 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          {
             rarch_settings_default(S_DEF_AUDIO_CONTROL_RATE);
 #ifdef GEKKO
-	    video_gx.set_rotation(NULL, g_console.screen_orientation);
+            video_gx.set_rotation(NULL, g_console.screen_orientation);
 #endif
          }
          else if (action == RGUI_ACTION_LEFT)
          {
             rarch_settings_change(S_ROTATION_DECREMENT);
 #ifdef GEKKO
-	    video_gx.set_rotation(NULL, g_console.screen_orientation);
+            video_gx.set_rotation(NULL, g_console.screen_orientation);
 #endif
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
-	    rarch_settings_change(S_ROTATION_INCREMENT);
+            rarch_settings_change(S_ROTATION_INCREMENT);
 #ifdef GEKKO
-	    video_gx.set_rotation(NULL, g_console.screen_orientation);
+            video_gx.set_rotation(NULL, g_console.screen_orientation);
 #endif
          }
          break;
@@ -479,24 +479,17 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          else if (action == RGUI_ACTION_RIGHT)
             rarch_settings_change(S_AUDIO_CONTROL_RATE_INCREMENT);
          break;
-
-      /*case RGUI_SETTINGS_CORE:
-      {
-         // !!JUST FOR TESTING!!
-         char boot_dol[PATH_MAX];
-         char temp_dol[PATH_MAX];
-         char temp2_dol[PATH_MAX];
-
-         snprintf(boot_dol, sizeof(boot_dol), "%s%s", app_dir, "boot.dol");
-         snprintf(temp_dol, sizeof(temp_dol), "%s%s", app_dir, "temp.dol");
-         snprintf(temp2_dol, sizeof(temp2_dol), "%s%s", app_dir, "temp2.dol");
-
-         rename(boot_dol, temp2_dol);
-         rename(temp_dol, boot_dol);
-         rename(temp2_dol, temp_dol);
+      case RGUI_SETTINGS_RESTART:
+         if (action == RGUI_ACTION_OK)
+         {
+#ifdef GEKKO
+            snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "boot.dol");
+#endif
+            g_console.return_to_launcher = true;
+            g_console.mode_switch = MODE_EXIT;
+            g_console.menu_enable = false;
+         }
          break;
-      }*/
-
       // controllers
       case RGUI_SETTINGS_BIND_DEVICE:
          g_settings.input.device[port] += RARCH_DEVICE_LAST;
@@ -565,6 +558,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2);
    RGUI_MENU_ITEM("Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3);
    RGUI_MENU_ITEM("Controller #4 Config", RGUI_SETTINGS_CONTROLLER_4);
+   RGUI_MENU_ITEM("Restart RetroArch", RGUI_SETTINGS_RESTART);
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
@@ -760,7 +754,7 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          {
             if (menu_type == RGUI_SETTINGS_CORE)
             {
-               // CORE SWITCHING CODE GOES HERE
+               strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
                rgui->directory_ptr = directory_ptr;
                rgui->need_refresh = true;
                rgui_list_pop(rgui->path_stack);
