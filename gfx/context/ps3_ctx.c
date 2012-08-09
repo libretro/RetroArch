@@ -37,32 +37,6 @@ static struct texture_image menu_texture;
 static PSGLdevice* gl_device;
 static PSGLcontext* gl_context;
 
-// Other vertex orientations
-static const GLfloat vertexes_90[] = {
-   0, 1,
-   1, 1,
-   1, 0,
-   0, 0
-};
-
-static const GLfloat vertexes_180[] = {
-   1, 1,
-   1, 0,
-   0, 0,
-   0, 1
-};
-
-static const GLfloat vertexes_270[] = {
-   1, 0,
-   0, 0,
-   0, 1,
-   1, 1
-};
-
-//forward decls
-extern const GLfloat *vertex_ptr;
-extern const GLfloat *default_vertex_ptr;
-
 void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 {
    (void)inited;
