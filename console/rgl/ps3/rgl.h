@@ -774,7 +774,7 @@ struct RGLResource
    RGLSemaphoreMemory *semaphores;
 };
 
-typedef struct
+typedef volatile struct
 {
    GLuint Ignored00[0x010];
    GLuint Put;
