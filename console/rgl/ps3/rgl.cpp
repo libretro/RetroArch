@@ -1683,8 +1683,6 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
 
    if ( newmask )
    {
-      cellGcmSetScissorInline( &_RGLState.fifo, 0, 0, 4095, 4095);
-
       static float _RGLClearVertexBuffer[12] __attribute__((aligned(128))) =
       {
          -1.f, -1.f, 0.f,

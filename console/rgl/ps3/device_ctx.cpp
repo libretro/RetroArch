@@ -260,23 +260,7 @@ static GLboolean _RGLInitFromRM( RGLResource *rmResource )
    cellGcmSetBlendEquationInline( &_RGLState.fifo, CELL_GCM_FUNC_ADD, CELL_GCM_FUNC_ADD );
    cellGcmSetBlendFuncInline( &_RGLState.fifo, CELL_GCM_ONE, CELL_GCM_ZERO, CELL_GCM_ONE, CELL_GCM_ZERO );
    cellGcmSetClearColorInline( &_RGLState.fifo, hwColor);
-   cellGcmSetAlphaTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetBlendEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetAlphaTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetBlendEnableMrtInline( &_RGLState.fifo, CELL_GCM_FALSE, CELL_GCM_FALSE, CELL_GCM_FALSE);
-   cellGcmSetLogicOpEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetCullFaceEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetCullFaceEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetDepthBoundsTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetDepthTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetPolygonOffsetFillEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetPolygonOffsetLineEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetRestartIndexEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetFragmentProgramGammaEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
    cellGcmSetScissorInline( &_RGLState.fifo, 0, 0, 4095, 4095);
-   cellGcmSetStencilTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetTwoSidedStencilTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetTwoSideLightEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
    cellGcmSetVertexAttribOutputMaskInline( &_RGLState.fifo, s->vertexProgramAttribMask & s->fragmentProgramAttribMask);
 
    cellGcmSetPointSpriteControlInline( &_RGLState.fifo, CELL_GCM_FALSE, 1, 0);
@@ -1233,11 +1217,6 @@ GLAPI void psglSwap(void)
       else
          cellGcmSetWaitFlip();
    }
-
-   cellGcmSetPolySmoothEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetLineStippleEnableInline( &_RGLState.fifo, CELL_GCM_FALSE );
-   cellGcmSetPolygonStippleEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetDepthBoundsTestEnable( &_RGLState.fifo, CELL_GCM_FALSE);
 
    LContext->needValidate = PSGL_VALIDATE_ALL;
 
