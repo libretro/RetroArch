@@ -453,6 +453,8 @@ inline int _RGLGetProgramProfileIndex( CGprofile profile )
       return -1;
 }
 
+CGGL_API void cgGLSetMatrixParameterfc( CGparameter param, const float *matrix );
+
 #ifdef __cplusplus
 }
 #endif

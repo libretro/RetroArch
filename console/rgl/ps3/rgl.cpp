@@ -8413,3 +8413,9 @@ unsigned int _RGLGetTypeColCount( CGtype parameterType )
     int typeIndex = parameterType - 1 - CG_TYPE_START_ENUM;
     return _typesColCount[typeIndex];
 }
+
+CGGL_API void cgGLSetMatrixParameterfc( CGparameter param, const float *matrix )
+{
+    CgRuntimeParameter* ptr = _cgGetParamPtr( param );
+    ptr->settercIndex( ptr, matrix, CG_GETINDEX( param ) );
+}
