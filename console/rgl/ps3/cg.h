@@ -419,20 +419,6 @@ static inline const CgParameterResource *_RGLGetParameterResource( const _CGprog
    return ( CgParameterResource * )( program->parameterResources + entry->typeIndex );
 }
 
-static inline CGtype _RGLGetParameterCGtype( const _CGprogram *program, const CgParameterEntry *entry )
-{
-   if ( entry->flags & CGP_RTCREATED )
-      return ( CGtype )entry->typeIndex;
-   else
-   {
-      const CgParameterResource *parameterResource = _RGLGetParameterResource( program, entry );
-      if ( parameterResource )
-         return ( CGtype )parameterResource->type;
-   }
-
-   return CG_UNKNOWN_TYPE;
-}
-
 static inline const CgParameterArray *_RGLGetParameterArray( const _CGprogram *program, const CgParameterEntry *entry )
 {
    return ( CgParameterArray* )( program->parameterResources + entry->typeIndex );

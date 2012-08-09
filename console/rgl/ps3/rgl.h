@@ -260,10 +260,6 @@ jsTexture;
 
 #define MAX_TEXTURE_UNITS 4
 
-#define _RGL_MAX_MODELVIEW_STACK_DEPTH 16
-#define _RGL_MAX_PROJECTION_STACK_DEPTH 2
-#define MAX_TEXTURE_STACK_DEPTH 2
-
 #define MAX_VERTEX_ATTRIBS	16
 
 typedef struct
@@ -450,8 +446,6 @@ struct jsBufferObject
    RGL::Vector<jsAttribSet *> attribSets;
    void *platformBufferObject[];
 };
-
-#define ELEMENTS_IN_MATRIX	16
 
 typedef struct jsNameSpace
 {

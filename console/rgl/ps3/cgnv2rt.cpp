@@ -104,9 +104,62 @@ static bool bIsVertexProgram = true;
 
 static int getStride(CgBaseType *type);
 static int getSizeofSubArray(_CGNVCONTAINERS &containers, int dimensionIndex, int dimensionCount, int endianness);
-static unsigned int stringTableFind( std::vector<char> &stringTable, const char* str);
-static unsigned int stringTableAdd( std::vector<char> &stringTable, const char* str );
-static unsigned int stringTableAddUnique( std::vector<char> &stringTable, const char* str );
+
+static unsigned int stringTableFind( std::vector<char> &stringTable, const char* str  )
+{
+   const char* data = &stringTable[0];
+   size_t size = stringTable.size();
+   const char *end = data + size;
+
+   size_t length = strlen(str);
+
+   if (length+1 > size)
+	   return 0;
+
+   data += length;
+
+   const char *p = (char*)memchr(data,'\0',end-data);
+   while (p && (end-data)>0)
+   {
+	   if (!memcmp(p - length, str, length))
+              return (unsigned int)(p - length - &stringTable[0]);
+
+	   data = p+1;	
+	   p = (char*)memchr(data,'\0',end-data);
+   }
+   return 0;
+}
+
+static unsigned int stringTableAdd( std::vector<char> &stringTable, const char* str )
+{
+   unsigned int ret = (unsigned int)stringTable.size();
+
+   if ( ret == 0 )
+   {
+      stringTable.push_back('\0');
+      ret = 1;
+   }
+
+   size_t stringLength = strlen(str) + 1;
+   stringTable.resize(ret + stringLength);
+   memcpy(&stringTable[0] + ret,str,stringLength);
+
+   return ret;
+}
+
+static unsigned int stringTableAddUnique( std::vector<char> &stringTable, const char* str )
+{
+   if ( stringTable.size() == 0 )
+      stringTable.push_back('\0');
+
+   unsigned int ret = stringTableFind(stringTable, str);
+
+   if (ret == 0 && str[0] != '\0')
+      ret = stringTableAdd(stringTable, str);
+
+   return ret;
+}
+
 template<class Type> static size_t array_size(std::vector<Type> &array);
 template<class Type> static void array_push(char* &parameterOffset, std::vector<Type> &array);
 inline static unsigned int swap16(const unsigned int v);
