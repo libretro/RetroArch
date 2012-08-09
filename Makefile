@@ -135,7 +135,7 @@ ifeq ($(HAVE_X11), 1)
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
-   OBJ += gfx/gl.o gfx/fonts/freetype.o
+   OBJ += gfx/gl.o gfx/fonts/freetype.o gfx/math/matrix.o
 ifeq ($(OSX),1)
    LIBS += -framework OpenGL
 else

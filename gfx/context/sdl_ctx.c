@@ -26,6 +26,7 @@
 #endif
 
 #include "sdl_ctx.h"
+#include "../math/matrix.h"
 
 // SDL 1.2 is portable, sure, but you still need some platform specific workarounds ;)
 // Hopefully SDL 1.3 will solve this more cleanly :D
@@ -441,13 +442,28 @@ void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 #ifdef HAVE_OPENGL
 void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)
 {
+   // TODO: Explicitly setting matrix modes is not used for GLES 2.0.
    glMatrixMode(GL_PROJECTION);
-   glLoadIdentity();
+
+   // Calculate projection.
+   math_matrix proj;
+   matrix_ortho(&proj, ortho->left, ortho->right,
+         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
 
    if (allow_rotate)
-      glRotatef(gl->rotation, 0, 0, 1);
+   {
+      math_matrix rot;
+      matrix_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
+      matrix_multiply(&proj, &rot, &proj);
+   }
 
-   glOrtho(ortho->left, ortho->right, ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
+   // Load matrix directly into GL.
+   // TODO: For GLES 2.0 or similar, we should keep this matrix
+   // somewhere and pass it directly to the shader.
+   // It should probably be part of gl_t ...
+   glLoadMatrixf(proj.data);
+
+   // TODO: Explicitly setting matrix modes is not used for GLES 2.0.
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 }
