@@ -1021,8 +1021,6 @@ static void set_program_attributes(unsigned i)
    prg[i].frame_cnt_v = cgGetNamedParameter(prg[i].vprg, "IN.frame_count");
    prg[i].frame_dir_v = cgGetNamedParameter(prg[i].vprg, "IN.frame_direction");
    prg[i].mvp = cgGetNamedParameter(prg[i].vprg, "modelViewProj");
-   if (prg[i].mvp)
-      cgGLSetStateMatrixParameter(prg[i].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 
    if (i == RARCH_CG_MENU_SHADER_INDEX)
       return;
@@ -1133,8 +1131,6 @@ bool gl_cg_init(const char *path)
       return false;
 
    prg[0].mvp = cgGetNamedParameter(prg[0].vprg, "modelViewProj");
-   if (prg[0].mvp)
-      cgGLSetStateMatrixParameter(prg[0].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
 
    for (unsigned i = 1; i <= cg_shader_num; i++)
       set_program_attributes(i);
