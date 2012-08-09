@@ -680,9 +680,7 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
    if (menu_type == RGUI_SETTINGS || rgui_is_controller_menu(menu_type))
-   {
       return rgui_settings_iterate(rgui, action);
-   }
 
    if (rgui->need_refresh)
       action = RGUI_ACTION_NOOP;

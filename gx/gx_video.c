@@ -220,7 +220,6 @@ static void gx_start(void)
 
    driver.video_data = gx_init(&video_info, NULL, NULL);
 
-   //gx_video_t *gx = (gx_video_t*)driver.video_data;
    VIDEO_Init();
    GXRModeObj *mode = VIDEO_GetPreferredMode(NULL);
    setup_video_mode(mode);

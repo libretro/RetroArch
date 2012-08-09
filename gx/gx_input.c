@@ -294,25 +294,17 @@ static void gx_input_poll(void *data)
          s8 y = PAD_StickY(port);
 
          if (abs(x) > JOYSTICK_THRESHOLD)
-         {
             state |= x > 0 ? GX_GC_LSTICK_RIGHT : GX_GC_LSTICK_LEFT;
-         }
          if (abs(y) > JOYSTICK_THRESHOLD)
-         {
             state |= y > 0 ? GX_GC_LSTICK_UP : GX_GC_LSTICK_DOWN;
-         }
          
          x = PAD_SubStickX(port);
          y = PAD_SubStickY(port);
 
          if (abs(x) > JOYSTICK_THRESHOLD)
-         {
             state |= x > 0 ? GX_GC_RSTICK_RIGHT : GX_GC_RSTICK_LEFT;
-         }
          if (abs(y) > JOYSTICK_THRESHOLD)
-         {
             state |= y > 0 ? GX_GC_RSTICK_UP : GX_GC_RSTICK_DOWN;
-         }
 
          if ((state & (GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
             quit_gc = true;
@@ -352,13 +344,9 @@ static void gx_input_poll(void *data)
                s8 y = gx_stick_y(exp.nunchuk.js);
 
                if (abs(x) > JOYSTICK_THRESHOLD)
-               {
                   state |= x > 0 ? GX_NUNCHUK_RIGHT : GX_NUNCHUK_LEFT;
-               }
                if (abs(y) > JOYSTICK_THRESHOLD)
-               {
                   state |= y > 0 ? GX_NUNCHUK_UP : GX_NUNCHUK_DOWN;
-               }
                break;
             }
             case WPAD_EXP_CLASSIC:
@@ -408,23 +396,14 @@ static void gx_input_poll(void *data)
                   u8 rs_x = exp.classic.rjs.pos.x;
                   u8 rs_y = exp.classic.rjs.pos.y;
 
-                  if(ls_x > 40)
-                     state |= GX_CLASSIC_LSTICK_RIGHT;
-                  if(ls_x < 25)
-                     state |= GX_CLASSIC_LSTICK_LEFT;
-                  if(ls_y > 45)
-                     state |= GX_CLASSIC_LSTICK_UP;
-                  if(ls_y < 20)
-                     state |= GX_CLASSIC_LSTICK_DOWN;
-
-                  if(rs_x > 40)
-                     state |= GX_CLASSIC_RSTICK_RIGHT;
-                  if(rs_x < 25)
-                     state |= GX_CLASSIC_RSTICK_LEFT;
-                  if(rs_y > 45)
-                     state |= GX_CLASSIC_RSTICK_UP;
-                  if(rs_y < 20)
-                     state |= GX_CLASSIC_RSTICK_DOWN;
+		  state |= (ls_x > 40) ? GX_CLASSIC_LSTICK_RIGHT : 0;
+		  state |= (ls_x < 25) ? GX_CLASSIC_LSTICK_LEFT : 0;
+		  state |= (ls_y > 45) ? GX_CLASSIC_LSTICK_UP : 0;
+		  state |= (ls_y < 20) ? GX_CLASSIC_LSTICK_DOWN : 0;
+		  state |= (rs_x > 40) ? GX_CLASSIC_RSTICK_RIGHT : 0;
+		  state |= (rs_x < 25) ? GX_CLASSIC_RSTICK_LEFT: 0;
+		  state |= (rs_y > 45) ? GX_CLASSIC_RSTICK_UP : 0;
+		  state |= (rs_y < 20) ? GX_CLASSIC_RSTICK_DOWN : 0;
                }
                // do not return, fall through for wiimote d-pad
             }
@@ -440,9 +419,7 @@ static void gx_input_poll(void *data)
 #endif
 
       if ((state & (GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
-      {
          state |= GX_WIIMOTE_HOME;
-      }
 
       if (quit_gc
 #ifdef HW_RVL
