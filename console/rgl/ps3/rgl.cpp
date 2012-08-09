@@ -5166,25 +5166,8 @@ PSGLcontext *psglGetCurrentContext()
    return _CurrentContext;
 }
 
-const GLfloat _RGLIdentityMatrixf[ELEMENTS_IN_MATRIX] =
-{
-   1.f, 0.f, 0.f, 0.f,
-   0.f, 1.f, 0.f, 0.f,
-   0.f, 0.f, 1.f, 0.f,
-   0.f, 0.f, 0.f, 1.f
-};
-
-static void _RGLMatrixStackReset( jsMatrixStack* LMatrixStack )
-{
-   LMatrixStack->MatrixStackPtr = 0;
-   memcpy( LMatrixStack->MatrixStackf, _RGLIdentityMatrixf, sizeof(GLfloat)*ELEMENTS_IN_MATRIX );
-   LMatrixStack->dirty = GL_TRUE;
-}
-
 static void _RGLResetContext( PSGLcontext *LContext )
 {
-    _RGLMatrixStackReset( &( LContext->ModelViewMatrixStack ) );
-    _RGLMatrixStackReset( &( LContext->ProjectionMatrixStack ) );
     _RGLTexNameSpaceResetNames( &LContext->textureNameSpace );
     _RGLTexNameSpaceResetNames( &LContext->bufferObjectNameSpace );
     _RGLTexNameSpaceResetNames( &LContext->framebufferNameSpace );
@@ -5265,16 +5248,6 @@ static void _RGLResetContext( PSGLcontext *LContext )
     LContext->AllowTXPDemotion = GL_FALSE; 
 }
 
-static void _RGLMatrixStackInit( jsMatrixStack* LMatrixStack, GLuint depth )
-{
-   LMatrixStack->MatrixStackf = (GLfloat *)malloc( sizeof(GLfloat)*ELEMENTS_IN_MATRIX * depth );
-
-   if (!LMatrixStack->MatrixStackf)
-      return;
-
-   _RGLMatrixStackReset(LMatrixStack);
-}
-
 static jsTexture *_RGLAllocateTexture (void)
 {
     GLuint size = sizeof( jsTexture ) + sizeof( RGLTexture);
@@ -5331,21 +5304,6 @@ PSGLcontext* psglCreateContext (void)
     memset( LContext, 0, sizeof( PSGLcontext ) );
 
     LContext->error = GL_NO_ERROR;
-    LContext->MatrixMode = GL_MODELVIEW;
-
-    _RGLMatrixStackInit( &( LContext->ModelViewMatrixStack ), _RGL_MAX_MODELVIEW_STACK_DEPTH );
-    if ( !LContext->ModelViewMatrixStack.MatrixStackf )
-    {
-        psglDestroyContext( LContext );
-        return NULL;
-    }
-    _RGLMatrixStackInit( &( LContext->ProjectionMatrixStack ), _RGL_MAX_PROJECTION_STACK_DEPTH );
-    if ( !LContext->ProjectionMatrixStack.MatrixStackf )
-    {
-        psglDestroyContext( LContext );
-        return NULL;
-    }
-
     _RGLTexNameSpaceInit( &LContext->textureNameSpace, ( jsTexNameSpaceCreateFunction )_RGLAllocateTexture, ( jsTexNameSpaceDestroyFunction )_RGLFreeTexture );
 
     for ( int i = 0;i < MAX_TEXTURE_IMAGE_UNITS;++i )
@@ -5399,15 +5357,6 @@ void  psglResetCurrentContext (void)
     context->needValidate |= PSGL_VALIDATE_ALL;
 }
 
-static void _RGLMatrixStackClear( jsMatrixStack* LMatrixStack )
-{
-    if(LMatrixStack->MatrixStackf)
-       free( LMatrixStack->MatrixStackf );
-    LMatrixStack->MatrixStackf = NULL;
-    LMatrixStack->MatrixStackPtr = 0;
-    LMatrixStack->dirty = GL_FALSE;
-}
-
 static bool context_shutdown = false;
 
 void  psglDestroyContext( PSGLcontext* LContext )
@@ -5451,9 +5400,6 @@ void  psglDestroyContext( PSGLcontext* LContext )
 
     if ( _RGLContextDestroyHook ) _RGLContextDestroyHook( LContext );
 
-    _RGLMatrixStackClear( &( LContext->ModelViewMatrixStack ) );
-    _RGLMatrixStackClear( &( LContext->ProjectionMatrixStack ) );
-
     for ( int i = 0; i < MAX_TEXTURE_IMAGE_UNITS; ++i )
     {
         jsTextureImageUnit* tu = LContext->TextureImageUnits + i;
@@ -5484,36 +5430,7 @@ void _RGLAttachContext( PSGLdevice *device, PSGLcontext* context )
    }
    context->needValidate = PSGL_VALIDATE_ALL;
 
-   context->ModelViewMatrixStack.dirty = GL_TRUE;
-   context->ProjectionMatrixStack.dirty = GL_TRUE;
    context->attribs->DirtyMask = ( 1 << MAX_VERTEX_ATTRIBS ) - 1;
-}
-
-GLAPI void APIENTRY glGetFloatv( GLenum pname, GLfloat* params )
-{
-    PSGLcontext* LContext = _CurrentContext;
-    jsMatrixStack* LMatrixStack = NULL;
-    GLfloat *LMatrix = NULL;
-
-    switch (pname)
-    {
-        case GL_MODELVIEW_MATRIX:
-	    LMatrixStack = &((LContext)->ModelViewMatrixStack);
-	    if (LMatrixStack)
-               LMatrix = LMatrixStack->MatrixStackf + LMatrixStack->MatrixStackPtr * ELEMENTS_IN_MATRIX;
-            break;
-        case GL_PROJECTION_MATRIX:
-	    LMatrixStack = &((LContext)->ProjectionMatrixStack);
-	    if (LMatrixStack)
-               LMatrix = LMatrixStack->MatrixStackf + LMatrixStack->MatrixStackPtr * ELEMENTS_IN_MATRIX;
-            break;
-        case GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT:
-	    return;
-        default:
-            _RGLSetError( GL_INVALID_ENUM );
-            return;
-    }
-    memcpy(params, LMatrixStack->MatrixStackf + LMatrixStack->MatrixStackPtr * ELEMENTS_IN_MATRIX, sizeof(GLfloat) * ELEMENTS_IN_MATRIX);
 }
 
 GLAPI void APIENTRY glEnable( GLenum cap )
@@ -5751,104 +5668,6 @@ void psglExit (void)
 }
 
 #undef __STRICT_ANSI__
-
-GLAPI void APIENTRY glLoadIdentity(void)
-{
-   PSGLcontext* LContext = _CurrentContext;
-   jsMatrixStack* LMatrixStack = NULL;
-
-   switch(LContext->MatrixMode)
-   {
-      case GL_MODELVIEW:
-         LMatrixStack = &((LContext)->ModelViewMatrixStack);
-	 break;
-      case GL_PROJECTION:
-	 LMatrixStack = &((LContext)->ProjectionMatrixStack);
-	 break;
-      default:
-	 break;
-   }
-
-   memcpy( LMatrixStack->MatrixStackf + LMatrixStack->MatrixStackPtr * ELEMENTS_IN_MATRIX, _RGLIdentityMatrixf, sizeof(GLfloat)*ELEMENTS_IN_MATRIX );
-
-   LMatrixStack->dirty = GL_TRUE;
-}
-
-GLAPI void APIENTRY glMatrixMode( GLenum mode )
-{
-   PSGLcontext* LContext = _CurrentContext;
-   LContext->MatrixMode = mode;
-}
-
-GLAPI void APIENTRY glOrthof( GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar )
-{
-    PSGLcontext* LContext = _CurrentContext;
-    jsMatrixStack* LMatrixStack = NULL;
-    GLfloat *LMatrix = NULL;
-
-    switch(LContext->MatrixMode)
-    {
-       case GL_MODELVIEW:
-          LMatrixStack = &((LContext)->ModelViewMatrixStack);
-	  break;
-       case GL_PROJECTION:
-	  LMatrixStack = &((LContext)->ProjectionMatrixStack);
-	  break;
-       default:
-	  break;
-    }
-
-    if (LMatrixStack)
-       LMatrix = LMatrixStack->MatrixStackf + LMatrixStack->MatrixStackPtr * ELEMENTS_IN_MATRIX;
-
-    GLfloat L00, L01, L02, L03, L10, L11, L12, L13, L20, L21, L22, L23, L30, L31, L32, L33;
-
-    GLfloat m00 = 2.f / ( right - left );
-    GLfloat m03 = -( right + left ) / ( right - left );
-    GLfloat m11 = 2.f / ( top - bottom );
-    GLfloat m13 = -( top + bottom ) / ( top - bottom );
-    GLfloat m22 = -2.f / ( zFar - zNear );
-    GLfloat m23 = -( zFar + zNear ) / ( zFar - zNear );
-
-    L00 = LMatrix[0];
-    L01 = LMatrix[4];
-    L02 = LMatrix[8];
-    L03 = LMatrix[12];
-    L10 = LMatrix[1];
-    L11 = LMatrix[5];
-    L12 = LMatrix[9];
-    L13 = LMatrix[13];
-    L20 = LMatrix[2];
-    L21 = LMatrix[6];
-    L22 = LMatrix[10];
-    L23 = LMatrix[14];
-    L30 = LMatrix[3];
-    L31 = LMatrix[7];
-    L32 = LMatrix[11];
-    L33 = LMatrix[15];
-
-    LMatrix[0] *= m00;
-    LMatrix[4] *= m11;
-    LMatrix[8] *= m22;
-    LMatrix[12] = L00 * m03 + L01 * m13 + L02 * m23 + L03;
-
-    LMatrix[1] *= m00;
-    LMatrix[5] *= m11;
-    LMatrix[9] *= m22;
-    LMatrix[13] = L10 * m03 + L11 * m13 + L12 * m23 + L13;
-
-    LMatrix[2] *= m00;
-    LMatrix[6] *= m11;
-    LMatrix[10] *= m22;
-    LMatrix[14] = L20 * m03 + L21 * m13 + L22 * m23 + L23;
-
-    LMatrix[3] *= m00;
-    LMatrix[7] *= m11;
-    LMatrix[11] *= m22;
-    LMatrix[15] = L30 * m03 + L31 * m13 + L32 * m23 + L33;
-
-    LMatrixStack->dirty = GL_TRUE;
-}
 
 GLAPI void APIENTRY glVertexPointer( GLint size, GLenum type, GLsizei stride, const GLvoid* pointer )
 {
@@ -7965,61 +7784,6 @@ CGGL_API void cgGLDisableClientState( CGparameter param )
 
     GLuint index = ( GLuint )( parameterResource->resource - CG_ATTR0 );
     _RGLDisableVertexAttribArrayNV( index );
-}
-
-CGGL_API void cgGLSetStateMatrixParameter( CGparameter param,
-        CGGLenum matrix,
-        CGGLenum transform )
-{
-    float m[4][4];
-    switch ( matrix )
-    {
-        case CG_GL_MODELVIEW_MATRIX:
-            glGetFloatv( GL_MODELVIEW_MATRIX, ( float* )m );
-            break;
-        case CG_GL_PROJECTION_MATRIX:
-            glGetFloatv( GL_PROJECTION_MATRIX, ( float* )m );
-            break;
-        case CG_GL_TEXTURE_MATRIX:
-            glGetFloatv( GL_TEXTURE_MATRIX, ( float* )m );
-            break;
-        case CG_GL_MODELVIEW_PROJECTION_MATRIX:
-        {
-            float mv[4][4], p[4][4];
-            glGetFloatv( GL_MODELVIEW_MATRIX, ( float* )mv );
-            glGetFloatv( GL_PROJECTION_MATRIX, ( float* )p );
-
-#define M(I,J) \
-			m[I][J] = mv[I][0]*p[0][J] + mv[I][1]*p[1][J] + mv[I][2]*p[2][J] + mv[I][3]*p[3][J]
-            M( 0, 0 ); M( 0, 1 ); M( 0, 2 ); M( 0, 3 );
-            M( 1, 0 ); M( 1, 1 ); M( 1, 2 ); M( 1, 3 );
-            M( 2, 0 ); M( 2, 1 ); M( 2, 2 ); M( 2, 3 );
-            M( 3, 0 ); M( 3, 1 ); M( 3, 2 ); M( 3, 3 );
-#undef M
-        }
-        break;
-        default:
-            _RGLCgRaiseError( CG_INVALID_ENUMERANT_ERROR );
-            return;
-    }
-
-    CgRuntimeParameter* ptr = _cgGetParamPtr( param );
-
-    CGtype parameterType = _RGLGetParameterCGtype( ptr->program, ptr->parameterEntry );
-    if ( RGL_LIKELY( parameterType == CG_FLOAT4x4 ) )
-    {
-        ptr->settercIndex( ptr, m, CG_GETINDEX( param ) );
-    }
-    else
-    {
-        float packedmatrix[16];
-        unsigned int rows = _RGLGetTypeRowCount( parameterType );
-        unsigned int cols = _RGLGetTypeColCount( parameterType );
-        for ( GLuint row = 0; row < rows; ++row )
-            for ( GLuint j = 0; j < cols; ++j )
-                packedmatrix[row*cols + j] = m[j][row];
-        ptr->setterrIndex( ptr, packedmatrix, CG_GETINDEX( param ) );
-    }
 }
 
 CGGL_API void cgGLSetTextureParameter( CGparameter param, GLuint texobj )

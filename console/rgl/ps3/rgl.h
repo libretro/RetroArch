@@ -182,13 +182,6 @@ typedef struct
 
 typedef struct
 {
-   GLfloat * MatrixStackf;
-   int		MatrixStackPtr;
-   GLboolean dirty;
-} jsMatrixStack;
-
-typedef struct
-{
    int	X, Y, XSize, YSize;
 } jsViewPort;
 
@@ -482,9 +475,6 @@ jsTexNameSpace;
 struct PSGLcontext
 {
    GLenum		error;
-   int			MatrixMode;
-   jsMatrixStack	ModelViewMatrixStack;
-   jsMatrixStack	ProjectionMatrixStack;
    jsViewPort		ViewPort;
    jsAttributeState defaultAttribs0;
    jsAttributeState *attribs;

@@ -1220,8 +1220,6 @@ GLAPI void psglSwap(void)
 
    LContext->needValidate = PSGL_VALIDATE_ALL;
 
-   LContext->ModelViewMatrixStack.dirty = GL_TRUE;
-   LContext->ProjectionMatrixStack.dirty = GL_TRUE;
    LContext->attribs->DirtyMask = (1 << MAX_VERTEX_ATTRIBS) - 1;
 
    cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
