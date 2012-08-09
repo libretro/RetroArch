@@ -257,6 +257,8 @@ static void wii_input_post_init(void)
 
 static void wii_input_poll(void *data)
 {
+   //TODO: Hack, analog stick twitchiness needs to be properly fixed
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
    (void)data;
    bool quit_gc = false;
    bool quit_classic = false;
@@ -378,28 +380,44 @@ static void wii_input_poll(void *data)
                if((down & WPAD_CLASSIC_BUTTON_HOME) && (down & WPAD_CLASSIC_BUTTON_ZL) && (down & WPAD_CLASSIC_BUTTON_ZR))
                   quit_classic = true;
 
-               s8 x = wii_stick_x(exp.classic.ljs);
-               s8 y = wii_stick_y(exp.classic.ljs);
+	       //TODO: Hack, analog stick twitchiness needs to be properly fixed
+               if(gx->menu_render)
+               {
+                  s8 x = wii_stick_x(exp.classic.ljs);
+                  s8 y = wii_stick_y(exp.classic.ljs);
 
-               if (abs(x) > JOYSTICK_THRESHOLD)
-               {
-                  state |= x > 0 ? GX_CLASSIC_LSTICK_RIGHT : GX_CLASSIC_LSTICK_LEFT;
-               }
-               if (abs(y) > JOYSTICK_THRESHOLD)
-               {
-                  state |= y > 0 ? GX_CLASSIC_LSTICK_UP : GX_CLASSIC_LSTICK_DOWN;
-               }
+                  if (abs(x) > JOYSTICK_THRESHOLD)
+                     state |= x > 0 ? GX_CLASSIC_LSTICK_RIGHT : GX_CLASSIC_LSTICK_LEFT;
+                  if (abs(y) > JOYSTICK_THRESHOLD)
+                     state |= y > 0 ? GX_CLASSIC_LSTICK_UP : GX_CLASSIC_LSTICK_DOWN;
 
-               x = wii_stick_x(exp.classic.rjs);
-               y = wii_stick_y(exp.classic.rjs);
+                  x = wii_stick_x(exp.classic.rjs);
+                  y = wii_stick_y(exp.classic.rjs);
 
-               if (abs(x) > JOYSTICK_THRESHOLD)
-               {
-                  state |= x > 0 ? GX_CLASSIC_RSTICK_RIGHT : GX_CLASSIC_RSTICK_LEFT;
+                  if (abs(x) > JOYSTICK_THRESHOLD)
+                     state |= x > 0 ? GX_CLASSIC_RSTICK_RIGHT : GX_CLASSIC_RSTICK_LEFT;
+                  if (abs(y) > JOYSTICK_THRESHOLD)
+                     state |= y > 0 ? GX_CLASSIC_RSTICK_UP : GX_CLASSIC_RSTICK_DOWN;
                }
-               if (abs(y) > JOYSTICK_THRESHOLD)
+               else
                {
-                  state |= y > 0 ? GX_CLASSIC_RSTICK_UP : GX_CLASSIC_RSTICK_DOWN;
+                  if(exp.classic.ljs.pos.x > 40)
+                     state |= GX_CLASSIC_LSTICK_RIGHT;
+                  if(exp.classic.ljs.pos.x < 25)
+                     state |= GX_CLASSIC_LSTICK_LEFT;
+                  if(exp.classic.ljs.pos.y > 45)
+                     state |= GX_CLASSIC_LSTICK_UP;
+                  if(exp.classic.ljs.pos.y < 20)
+                     state |= GX_CLASSIC_LSTICK_DOWN;
+
+                  if(exp.classic.rjs.pos.x > 40)
+                     state |= GX_CLASSIC_RSTICK_RIGHT;
+                  if(exp.classic.rjs.pos.x < 25)
+                     state |= GX_CLASSIC_RSTICK_LEFT;
+                  if(exp.classic.rjs.pos.y > 45)
+                     state |= GX_CLASSIC_RSTICK_UP;
+                  if(exp.classic.rjs.pos.y < 20)
+                     state |= GX_CLASSIC_RSTICK_DOWN;
                }
                // do not return, fall through for wiimote d-pad
             }
