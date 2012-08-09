@@ -1106,9 +1106,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glDisable(GL_DITHER);
    glClearColor(0, 0, 0, 1);
 
-   glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
-
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
    glEnableClientState(GL_COLOR_ARRAY);
