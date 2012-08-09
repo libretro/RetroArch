@@ -81,8 +81,6 @@
 #define cellPadEnd ioPadEnd
 
 #define now_connect connected
-
-#define CELL_PAD_CTRL_LEFT BTN_LEFT
 #endif
 
 /*============================================================
