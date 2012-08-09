@@ -401,22 +401,27 @@ static void wii_input_poll(void *data)
                }
                else
                {
-                  if(exp.classic.ljs.pos.x > 40)
+                  u8 ls_x = exp.classic.ljs.pos.x;
+                  u8 ls_y = exp.classic.ljs.pos.y;
+                  u8 rs_x = exp.classic.rjs.pos.x;
+                  u8 rs_y = exp.classic.rjs.pos.y;
+
+                  if(ls_x > 40)
                      state |= GX_CLASSIC_LSTICK_RIGHT;
-                  if(exp.classic.ljs.pos.x < 25)
+                  if(ls_x < 25)
                      state |= GX_CLASSIC_LSTICK_LEFT;
-                  if(exp.classic.ljs.pos.y > 45)
+                  if(ls_y > 45)
                      state |= GX_CLASSIC_LSTICK_UP;
-                  if(exp.classic.ljs.pos.y < 20)
+                  if(ls_y < 20)
                      state |= GX_CLASSIC_LSTICK_DOWN;
 
-                  if(exp.classic.rjs.pos.x > 40)
+                  if(rs_x > 40)
                      state |= GX_CLASSIC_RSTICK_RIGHT;
-                  if(exp.classic.rjs.pos.x < 25)
+                  if(rs_x < 25)
                      state |= GX_CLASSIC_RSTICK_LEFT;
-                  if(exp.classic.rjs.pos.y > 45)
+                  if(rs_y > 45)
                      state |= GX_CLASSIC_RSTICK_UP;
-                  if(exp.classic.rjs.pos.y < 20)
+                  if(rs_y < 20)
                      state |= GX_CLASSIC_RSTICK_DOWN;
                }
                // do not return, fall through for wiimote d-pad
