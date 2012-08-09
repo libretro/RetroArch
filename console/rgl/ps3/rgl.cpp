@@ -1684,8 +1684,6 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
    if ( newmask )
    {
       cellGcmSetScissorInline( &_RGLState.fifo, 0, 0, 4095, 4095);
-      cellGcmSetDepthTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-      cellGcmSetStencilTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
 
       static float _RGLClearVertexBuffer[12] __attribute__((aligned(128))) =
       {
@@ -4880,13 +4878,10 @@ void _RGLFifoGlSetRenderTarget( RGLRenderTargetEx const * const args )
 
    grt->antialias = CELL_GCM_SURFACE_CENTER_1;
 
-   cellGcmSetAntiAliasingControlInline( &_RGLState.fifo, CELL_GCM_FALSE, CELL_GCM_FALSE, CELL_GCM_FALSE, 0xFFFF);
-
    grt->type = CELL_GCM_SURFACE_PITCH;
    _RGLSetTarget( rt, args );
 
    cellGcmSetSurfaceInline( &_RGLState.fifo, grt);
-   cellGcmSetDepthTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
 }
 
 void _RGLSetError( GLenum error ) {}
@@ -4973,7 +4968,6 @@ static GLuint _RGLValidateStates( void )
 	    _RGLFifoWaitForFreeSpace( &_RGLState.fifo, 7 + 5 * conf.instructionCount );
 
 	    cellGcmSetVertexProgramLoadInline( &_RGLState.fifo, &conf, vs->ucode);
-	    cellGcmSetUserClipPlaneControlInline( &_RGLState.fifo, 0, 0, 0, 0, 0, 0 );
 
 	    RGLInterpolantState *s = &_RGLState.state.interpolant;
 	    s->vertexProgramAttribMask = vs->header.vertexProgram.attributeOutputMask;

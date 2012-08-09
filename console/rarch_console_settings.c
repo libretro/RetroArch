@@ -314,7 +314,7 @@ void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t 
 
 #if defined(_XBOX360)
 #define DEFAULT_GAMMA 1
-#elif defined(GEKKO)
+#else
 #define DEFAULT_GAMMA 0
 #endif
 
