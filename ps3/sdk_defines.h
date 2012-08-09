@@ -311,6 +311,20 @@
 #endif
 
 /*============================================================
+	SEMAPHORE PROTOTYPES
+============================================================ */
+
+#ifdef __PSL1GHT__
+#include <sys/sem.h>
+#define sys_semaphore_attribute_t sys_sem_attr_t
+#define sys_semaphore_value_t s32
+
+#define sys_semaphore_create sysSemCreate
+#define sys_semaphore_destroy sysSemDestroy
+#define sys_semaphore_post sysSemPost
+#endif
+
+/*============================================================
 	MEMORY PROTOTYPES
 ============================================================ */
 
