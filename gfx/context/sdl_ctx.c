@@ -466,6 +466,8 @@ void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_r
    // TODO: Explicitly setting matrix modes is not used for GLES 2.0.
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
+
+   gl->mvp = proj;
 }
 #endif
 

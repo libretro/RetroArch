@@ -149,10 +149,10 @@ static void gl_cg_reset_attrib(void)
    cg_attrib_index = 0;
 }
 
-void gl_cg_set_proj_matrix(void)
+void gl_cg_set_proj_matrix(const math_matrix *mat)
 {
    if (cg_active && prg[active_index].mvp)
-      cgGLSetStateMatrixParameter(prg[active_index].mvp, CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
+      cgGLSetMatrixParameterfc(prg[active_index].mvp, mat->data);
 }
 
 #define set_param_2f(param, x, y) \

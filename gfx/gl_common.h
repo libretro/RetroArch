@@ -18,6 +18,7 @@
 
 #include "../general.h"
 #include "fonts/fonts.h"
+#include "math/matrix.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -179,6 +180,7 @@ typedef struct gl
    unsigned last_height[TEXTURES];
    unsigned tex_w, tex_h;
    GLfloat tex_coords[8];
+   math_matrix mvp;
 
 #ifdef __CELLOS_LV2__
    GLuint pbo;

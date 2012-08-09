@@ -19,12 +19,13 @@
 
 #include "../boolean.h"
 #include "gl_common.h"
+#include "math/matrix.h"
 
 bool gl_glsl_init(const char *path);
 
 void gl_glsl_deinit(void);
 
-void gl_glsl_set_proj_matrix(void);
+void gl_glsl_set_proj_matrix(const math_matrix *mat);
 
 void gl_glsl_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 

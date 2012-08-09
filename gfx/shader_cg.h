@@ -19,6 +19,7 @@
 
 #include "../boolean.h"
 #include "gl_common.h"
+#include "math/matrix.h"
 #include <stdint.h>
 
 bool gl_cg_init(const char *path);
@@ -26,7 +27,7 @@ bool gl_cg_reinit(const char *path);
 
 void gl_cg_deinit(void);
 
-void gl_cg_set_proj_matrix(void);
+void gl_cg_set_proj_matrix(const math_matrix *mat);
 
 void gl_cg_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 

@@ -1225,8 +1225,12 @@ void gl_glsl_set_params(unsigned width, unsigned height,
    }
 }
 
-void gl_glsl_set_proj_matrix(void)
-{}
+void gl_glsl_set_proj_matrix(const math_matrix *mat)
+{
+   // If we're using FF-based GL, this matrix
+   // will be implicitly passed to the shader.
+   (void)mat;
+}
 
 void gl_glsl_use(unsigned index)
 {

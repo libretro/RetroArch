@@ -356,34 +356,19 @@ const char *ps3_get_resolution_label(uint32_t resolution)
 
 void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)
 {
-   glMatrixMode(GL_PROJECTION);
-   glLoadIdentity();
+   // Calculate projection.
+   math_matrix proj;
+   matrix_ortho(&proj, ortho->left, ortho->right,
+         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
 
    if (allow_rotate)
    {
-      switch (gl->rotation)
-      {
-         case 90:
-            vertex_ptr = vertexes_90;
-            break;
-         case 180:
-            vertex_ptr = vertexes_180;
-            break;
-         case 270:
-            vertex_ptr = vertexes_270;
-            break;
-         case 0:
-         default:
-            vertex_ptr = default_vertex_ptr;
-            break;
-      }
+      math_matrix rot;
+      matrix_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
+      matrix_multiply(&proj, &rot, &proj);
    }
 
-   glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
-
-   glOrtho(ortho->left, ortho->right, ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
-   glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
+   gl->mvp = proj;
 }
 
 void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index)

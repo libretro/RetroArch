@@ -203,14 +203,14 @@ static inline void gl_shader_deinit(void)
 #endif
 }
 
-static inline void gl_shader_set_proj_matrix(void)
+static inline void gl_shader_set_proj_matrix(const math_matrix *mat)
 {
 #ifdef HAVE_CG
-   gl_cg_set_proj_matrix();
+   gl_cg_set_proj_matrix(mat);
 #endif
 
 #ifdef HAVE_XML
-   gl_glsl_set_proj_matrix();
+   gl_glsl_set_proj_matrix(mat);
 #endif
 }
 
@@ -440,7 +440,7 @@ void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
 #endif
 
    gfx_ctx_set_projection(gl, ortho, allow_rotate);
-   gl_shader_set_proj_matrix();
+   gl_shader_set_proj_matrix(&gl->mvp);
 }
 
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
