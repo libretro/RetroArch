@@ -2799,69 +2799,53 @@ static inline void gmmLocalMemcpy(
     const uint32_t moveSize
 )
 {
-	CellGcmContextData *thisContext = &_RGLState.fifo;
-    int32_t offset = 0;
-    int32_t sizeLeft = moveSize;
-    int32_t dimension = 4096;
+   CellGcmContextData *thisContext = &_RGLState.fifo;
+   int32_t offset = 0;
+   int32_t sizeLeft = moveSize;
+   int32_t dimension = 4096;
 
-    while (sizeLeft)
-    {
-        while(sizeLeft >= dimension*dimension*4)
-        {
-            cellGcmSetTransferImage(thisContext,
-                                    CELL_GCM_TRANSFER_LOCAL_TO_LOCAL,
-                                    dstOffset+offset,
-                                    dimension*4,
-                                    0,
-                                    0,
-                                    srcOffset+offset,
-                                    dimension*4,
-                                    0,
-                                    0,
-                                    dimension,
-                                    dimension,
-                                    4);
-
-            offset = offset + dimension*dimension*4;
-            sizeLeft = sizeLeft - (dimension*dimension*4);
-        }
-
-        dimension = dimension >> 1;
-
-        if (dimension == 32)
-            break;
-    }
-
-    if (sizeLeft)
-    {
-        cellGcmSetTransferImage(thisContext, 
-                                CELL_GCM_TRANSFER_LOCAL_TO_LOCAL,
-                                dstOffset+offset,
-                                sizeLeft,
-                                0,
-                                0,
-                                srcOffset+offset,
-                                sizeLeft,
-                                0,
-                                0,
-                                sizeLeft/4,
-                                1,
-                                4);
-    }
-}
-
-static inline void gmmMemcpy(const uint32_t dstOffset, const uint32_t srcOffset, const uint32_t moveSize)
-{
-   if (dstOffset + moveSize <= srcOffset)
-      gmmLocalMemcpy(dstOffset, srcOffset, moveSize);
-   else
+   while (sizeLeft)
    {
-      uint32_t moveBlockSize = srcOffset-dstOffset;
-      uint32_t iterations = (moveSize+moveBlockSize-1)/moveBlockSize;
+      while(sizeLeft >= dimension*dimension*4)
+      {
+         cellGcmSetTransferImage(thisContext,
+			 CELL_GCM_TRANSFER_LOCAL_TO_LOCAL,
+			 dstOffset+offset,
+			 dimension*4,
+			 0,
+			 0,
+			 srcOffset+offset,
+			 dimension*4,
+			 0,
+			 0,
+			 dimension,
+			 dimension,
+			 4);
 
-      for (uint32_t i = 0; i < iterations; i++)
-         gmmLocalMemcpy(dstOffset+(i*moveBlockSize), srcOffset+(i*moveBlockSize), moveBlockSize);
+	 offset = offset + dimension*dimension*4;
+	 sizeLeft = sizeLeft - (dimension*dimension*4);
+      }
+
+      dimension = dimension >> 1;
+
+      if (dimension == 32)
+         break;
    }
+
+   if (sizeLeft)
+      cellGcmSetTransferImage(thisContext, 
+			   CELL_GCM_TRANSFER_LOCAL_TO_LOCAL,
+			   dstOffset+offset,
+			   sizeLeft,
+			   0,
+			   0,
+			   srcOffset+offset,
+			   sizeLeft,
+			   0,
+			   0,
+			   sizeLeft/4,
+			   1,
+			   4);
 }
 
 static uint8_t gmmInternalSweep (void)
@@ -2912,7 +2896,16 @@ static uint8_t gmmInternalSweep (void)
 
                 totalMoveSize += moveSize;
 
-                gmmMemcpy(dstOffset, srcOffset, moveSize);
+		if (dstOffset + moveSize <= srcOffset)
+		   gmmLocalMemcpy(dstOffset, srcOffset, moveSize);
+		else
+		{
+                   uint32_t moveBlockSize = srcOffset-dstOffset;
+		   uint32_t iterations = (moveSize+moveBlockSize-1)/moveBlockSize;
+
+		   for (uint32_t i = 0; i < iterations; i++)
+                      gmmLocalMemcpy(dstOffset+(i*moveBlockSize), srcOffset+(i*moveBlockSize), moveBlockSize);
+		}
 
                 pTempBlock = pSrcBlock;
 
@@ -2949,13 +2942,23 @@ static uint8_t gmmInternalSweep (void)
                                              pAllocator->startAddress :
                                              pBlock->pPrev->base.address + pBlock->pPrev->base.size;
                     uint32_t pinSrcAddress = pTempBlock->base.address;
+                    uint32_t moveSize = pTempBlock->base.size;
 
                     dstOffset = gmmAddressToOffset(pinDstAddress, 0);
                     srcOffset = gmmAddressToOffset(pinSrcAddress, 0);
 
-                    totalMoveSize += pTempBlock->base.size;
+                    totalMoveSize += moveSize;
 
-                    gmmMemcpy(dstOffset, srcOffset, pTempBlock->base.size);
+		    if (dstOffset + moveSize <= srcOffset)
+		       gmmLocalMemcpy(dstOffset, srcOffset, moveSize);
+		    else
+		    {
+                       uint32_t moveBlockSize = srcOffset-dstOffset;
+		       uint32_t iterations = (moveSize+moveBlockSize-1)/moveBlockSize;
+
+		       for (uint32_t i = 0; i < iterations; i++)
+                          gmmLocalMemcpy(dstOffset+(i*moveBlockSize), srcOffset+(i*moveBlockSize), moveBlockSize);
+		    }
 
                     pTempBlock->base.address = pinDstAddress;
 
@@ -3068,26 +3071,6 @@ static void gmmFreeAll (void)
     }
 }
 
-static void gmmRemoveFree(
-    GmmAllocator *pAllocator,
-    GmmBlock *pBlock,
-    uint8_t freeIndex
-)
-{
-
-    if (pBlock == pAllocator->pFreeHead[freeIndex])
-        pAllocator->pFreeHead[freeIndex] = pBlock->pNextFree;
-
-    if (pBlock == pAllocator->pFreeTail[freeIndex])
-        pAllocator->pFreeTail[freeIndex] = pBlock->pPrevFree;
-
-    if (pBlock->pNextFree)
-        pBlock->pNextFree->pPrevFree = pBlock->pPrevFree;
-
-    if (pBlock->pPrevFree)
-        pBlock->pPrevFree->pNextFree = pBlock->pNextFree;
-}
-
 static uint32_t gmmFindFreeBlock(
     GmmAllocator    *pAllocator,
     uint32_t        size
@@ -3142,7 +3125,16 @@ static uint32_t gmmFindFreeBlock(
             gmmAddFree(pAllocator, pNewBlock);
         }
         pBlock->base.size = size;
-        gmmRemoveFree(pAllocator, pBlock, freeIndex);
+
+        if (pBlock == pAllocator->pFreeHead[freeIndex])
+           pAllocator->pFreeHead[freeIndex] = pBlock->pNextFree;
+        if (pBlock == pAllocator->pFreeTail[freeIndex])
+           pAllocator->pFreeTail[freeIndex] = pBlock->pPrevFree;
+        if (pBlock->pNextFree)
+           pBlock->pNextFree->pPrevFree = pBlock->pPrevFree;
+        if (pBlock->pPrevFree)
+           pBlock->pPrevFree->pNextFree = pBlock->pNextFree;
+
         retId = (uint32_t)pBlock;
     }
 
@@ -3205,7 +3197,6 @@ uint32_t gmmAlloc(const uint8_t isTile, const uint32_t size)
    return retId;
 }
 
-
 static int _RGLLoadFPShader( _CGprogram *program )
 {
    unsigned int ucodeSize = program->header.instructionCount * 16;
@@ -3227,16 +3218,6 @@ static int _RGLLoadFPShader( _CGprogram *program )
 
    gmmFree( id );
    return GL_TRUE;
-}
-
-static void _RGLUnloadFPShader( _CGprogram *program )
-{
-   if ( program->loadProgramId != GMM_ERROR )
-   {
-      gmmFree( program->loadProgramId );
-      program->loadProgramId = GMM_ERROR;
-      program->loadProgramOffset = 0;
-   }
 }
 
 void _RGLPlatformSetVertexRegister4fv( unsigned int reg, const float * __restrict v ) {}
@@ -4238,7 +4219,14 @@ void _RGLPlatformProgramErase( void* platformProgram )
     _CGprogram* program = ( _CGprogram* )platformProgram;
 
     if ( program->loadProgramId != GMM_ERROR )
-        _RGLUnloadFPShader( program );
+    {
+       if ( program->loadProgramId != GMM_ERROR )
+       {
+          gmmFree( program->loadProgramId );
+	  program->loadProgramId = GMM_ERROR;
+	  program->loadProgramOffset = 0;
+       }
+    }
 
     if ( program->runtimeParameters )
     {
@@ -4834,32 +4822,6 @@ static inline void _RGLSetColorDepthBuffers( RGLRenderTarget *rt, RGLRenderTarge
     }
 }
 
-static inline void _RGLSetTarget( RGLRenderTarget *rt, RGLRenderTargetEx const * const args )
-{
-    CellGcmSurface *   grt = &rt->gcmRenderTarget;
-
-    switch ( rt->colorBufferCount )
-    {
-        case 0:
-            grt->colorTarget = CELL_GCM_SURFACE_TARGET_NONE;
-            break;
-        case 1:
-            grt->colorTarget = CELL_GCM_SURFACE_TARGET_1;
-            break;
-        case 2:
-            grt->colorTarget = CELL_GCM_SURFACE_TARGET_MRT1;
-            break;
-        case 3:
-            grt->colorTarget = CELL_GCM_SURFACE_TARGET_MRT2;
-            break;
-        case 4:
-            grt->colorTarget = CELL_GCM_SURFACE_TARGET_MRT3;
-            break;
-        default:
-            break;
-    }
-}
-
 void _RGLFifoGlSetRenderTarget( RGLRenderTargetEx const * const args )
 {
    RGLRenderTarget *rt = &_RGLState.renderTarget;
@@ -4877,14 +4839,37 @@ void _RGLFifoGlSetRenderTarget( RGLRenderTargetEx const * const args )
    grt->antialias = CELL_GCM_SURFACE_CENTER_1;
 
    grt->type = CELL_GCM_SURFACE_PITCH;
-   _RGLSetTarget( rt, args );
+
+   switch ( rt->colorBufferCount )
+   {
+      case 0:
+         grt->colorTarget = CELL_GCM_SURFACE_TARGET_NONE;
+	 break;
+      case 1:
+	 grt->colorTarget = CELL_GCM_SURFACE_TARGET_1;
+	 break;
+      case 2:
+	 grt->colorTarget = CELL_GCM_SURFACE_TARGET_MRT1;
+	 break;
+      case 3:
+	 grt->colorTarget = CELL_GCM_SURFACE_TARGET_MRT2;
+	 break;
+      case 4:
+	 grt->colorTarget = CELL_GCM_SURFACE_TARGET_MRT3;
+	 break;
+      default:
+	 break;
+   }
 
    cellGcmSetSurfaceInline( &_RGLState.fifo, grt);
 }
 
-void _RGLSetError( GLenum error ) {}
+void _RGLSetError( GLenum error )
+{
+   RARCH_ERR("Error code: %d\n", error);
+}
 
-GLAPI GLenum APIENTRY glGetError()
+GLAPI GLenum APIENTRY glGetError(void)
 {
     if ( !_CurrentContext )
 	return GL_INVALID_OPERATION;
@@ -4897,17 +4882,13 @@ GLAPI GLenum APIENTRY glGetError()
     }
 }
 
-static uint32_t * _RGLFifoWaitForFreeSpace( RGLFifo *fifo, GLuint spaceInWords )
-{
-   if ( fifo->current + spaceInWords + 1024 > fifo->end )
-      _RGLOutOfSpaceCallback( fifo, spaceInWords );
-
-   return _RGLState.fifo.current;
-}
-
 static inline void _RGLPushProgramPushBuffer( _CGprogram * cgprog )
 {
-   _RGLFifoWaitForFreeSpace( &_RGLState.fifo,  cgprog->constantPushBufferWordSize + 4 + 32); 
+   RGLFifo *fifo = &_RGLState.fifo;
+   GLuint spaceInWords = cgprog->constantPushBufferWordSize + 4 + 32;
+
+   if ( fifo->current + spaceInWords + 1024 > fifo->end )
+      _RGLOutOfSpaceCallback( fifo, spaceInWords );
 
    uint32_t padding_in_word = ( ( 0x10-(((uint32_t)_RGLState.fifo.current)&0xf))&0xf )>>2;
    uint32_t padded_size = ( ((cgprog->constantPushBufferWordSize)<<2) + 0xf )&~0xf;
@@ -4963,7 +4944,11 @@ static GLuint _RGLValidateStates( void )
 	    conf.registerCount = vs->header.vertexProgram.registerCount;
 	    conf.attributeInputMask = vs->header.attributeInputMask;
 
-	    _RGLFifoWaitForFreeSpace( &_RGLState.fifo, 7 + 5 * conf.instructionCount );
+	    RGLFifo *fifo = &_RGLState.fifo;
+	    GLuint spaceInWords = 7 + 5 * conf.instructionCount;
+
+	    if ( fifo->current + spaceInWords + 1024 > fifo->end )
+               _RGLOutOfSpaceCallback( fifo, spaceInWords );
 
 	    cellGcmSetVertexProgramLoadInline( &_RGLState.fifo, &conf, vs->ucode);
 
@@ -5232,12 +5217,6 @@ static void _RGLResetContext( PSGLcontext *LContext )
     LContext->BlendFactorSrcAlpha = GL_ONE;
     LContext->BlendFactorDestAlpha = GL_ZERO;
 
-    for ( int i = 0;i < MAX_TEXTURE_COORDS;++i )
-    {
-        jsTextureCoordsUnit *tu = LContext->TextureCoordsUnits + i;
-        tu->revalidate = 0;
-        _RGLMatrixStackReset( &( tu->TextureMatrixStack ) );
-    }
     for ( int i = 0;i < MAX_TEXTURE_IMAGE_UNITS;++i )
     {
         jsTextureImageUnit *tu = LContext->TextureImageUnits + i;
@@ -5258,7 +5237,6 @@ static void _RGLResetContext( PSGLcontext *LContext )
 
     LContext->ActiveTexture = 0;
     LContext->CurrentImageUnit = LContext->TextureImageUnits;
-    LContext->CurrentCoordsUnit = LContext->TextureCoordsUnits;
 
     LContext->packAlignment = 4;
     LContext->unpackAlignment = 4;
@@ -5366,16 +5344,6 @@ PSGLcontext* psglCreateContext (void)
     {
         psglDestroyContext( LContext );
         return NULL;
-    }
-
-    for ( int i = 0; i < MAX_TEXTURE_COORDS; i++ )
-    {
-        _RGLMatrixStackInit(&( LContext->TextureCoordsUnits[i].TextureMatrixStack), MAX_TEXTURE_STACK_DEPTH);
-        if ( !LContext->TextureCoordsUnits[i].TextureMatrixStack.MatrixStackf )
-        {
-            psglDestroyContext( LContext );
-            return NULL;
-        }
     }
 
     _RGLTexNameSpaceInit( &LContext->textureNameSpace, ( jsTexNameSpaceCreateFunction )_RGLAllocateTexture, ( jsTexNameSpaceDestroyFunction )_RGLFreeTexture );
@@ -5486,9 +5454,6 @@ void  psglDestroyContext( PSGLcontext* LContext )
     _RGLMatrixStackClear( &( LContext->ModelViewMatrixStack ) );
     _RGLMatrixStackClear( &( LContext->ProjectionMatrixStack ) );
 
-    for ( int i = 0; i < MAX_TEXTURE_COORDS; i++ )
-        _RGLMatrixStackClear( &( LContext->TextureCoordsUnits[i].TextureMatrixStack ) );
-
     for ( int i = 0; i < MAX_TEXTURE_IMAGE_UNITS; ++i )
     {
         jsTextureImageUnit* tu = LContext->TextureImageUnits + i;
@@ -5519,9 +5484,6 @@ void _RGLAttachContext( PSGLdevice *device, PSGLcontext* context )
    }
    context->needValidate = PSGL_VALIDATE_ALL;
 
-   for (int unit = 0; unit < MAX_TEXTURE_UNITS; unit++)
-      context->TextureCoordsUnits[unit].TextureMatrixStack.dirty = GL_TRUE;
-
    context->ModelViewMatrixStack.dirty = GL_TRUE;
    context->ProjectionMatrixStack.dirty = GL_TRUE;
    context->attribs->DirtyMask = ( 1 << MAX_VERTEX_ATTRIBS ) - 1;
@@ -5542,14 +5504,6 @@ GLAPI void APIENTRY glGetFloatv( GLenum pname, GLfloat* params )
             break;
         case GL_PROJECTION_MATRIX:
 	    LMatrixStack = &((LContext)->ProjectionMatrixStack);
-	    if (LMatrixStack)
-               LMatrix = LMatrixStack->MatrixStackf + LMatrixStack->MatrixStackPtr * ELEMENTS_IN_MATRIX;
-            break;
-        case GL_TEXTURE_MATRIX:
-	    if ((LContext)->CurrentCoordsUnit)
-               LMatrixStack = &((LContext)->CurrentCoordsUnit->TextureMatrixStack);
-	    else
-               LMatrixStack = NULL;
 	    if (LMatrixStack)
                LMatrix = LMatrixStack->MatrixStackf + LMatrixStack->MatrixStackPtr * ELEMENTS_IN_MATRIX;
             break;
@@ -5811,12 +5765,6 @@ GLAPI void APIENTRY glLoadIdentity(void)
       case GL_PROJECTION:
 	 LMatrixStack = &((LContext)->ProjectionMatrixStack);
 	 break;
-      case GL_TEXTURE:
-	 if ((LContext)->CurrentCoordsUnit)
-            LMatrixStack = &((LContext)->CurrentCoordsUnit->TextureMatrixStack);
-	 else 
-            LMatrixStack=NULL;
-	 break;
       default:
 	 break;
    }
@@ -5845,12 +5793,6 @@ GLAPI void APIENTRY glOrthof( GLfloat left, GLfloat right, GLfloat bottom, GLflo
 	  break;
        case GL_PROJECTION:
 	  LMatrixStack = &((LContext)->ProjectionMatrixStack);
-	  break;
-       case GL_TEXTURE:
-	  if ((LContext)->CurrentCoordsUnit)
-             LMatrixStack = &((LContext)->CurrentCoordsUnit->TextureMatrixStack);
-	  else 
-             LMatrixStack=NULL;
 	  break;
        default:
 	  break;
@@ -6451,7 +6393,6 @@ GLAPI void APIENTRY glActiveTexture(GLenum texture)
    int unit = texture - GL_TEXTURE0;
    LContext->ActiveTexture = unit;
    LContext->CurrentImageUnit = unit < MAX_TEXTURE_IMAGE_UNITS ? LContext->TextureImageUnits + unit : NULL;
-   LContext->CurrentCoordsUnit = unit < MAX_TEXTURE_COORDS ? LContext->TextureCoordsUnits + unit : NULL;
 }
 
 GLAPI void APIENTRY glClientActiveTexture(GLenum texture)

@@ -283,12 +283,6 @@ typedef struct
    jsTexture* currentTexture;
 } jsTextureImageUnit;
 
-typedef struct
-{
-   GLuint		revalidate;
-   jsMatrixStack	TextureMatrixStack;
-} jsTextureCoordsUnit;
-
 enum
 {
    FRAMEBUFFER_ATTACHMENT_NONE,
@@ -513,8 +507,6 @@ struct PSGLcontext
    GLuint		CS_ActiveTexture;
    jsTextureImageUnit	TextureImageUnits[MAX_TEXTURE_IMAGE_UNITS];
    jsTextureImageUnit* CurrentImageUnit;
-   jsTextureCoordsUnit	TextureCoordsUnits[MAX_TEXTURE_COORDS];
-   jsTextureCoordsUnit* CurrentCoordsUnit;
    jsTexture *VertexTextureImages[MAX_VERTEX_TEXTURE_IMAGE_UNITS];
    GLsizei		packAlignment;
    GLsizei		unpackAlignment;

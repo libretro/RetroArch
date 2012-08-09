@@ -1220,9 +1220,6 @@ GLAPI void psglSwap(void)
 
    LContext->needValidate = PSGL_VALIDATE_ALL;
 
-   for(int unit = 0; unit < MAX_TEXTURE_UNITS; unit++)
-      LContext->TextureCoordsUnits[unit].TextureMatrixStack.dirty = GL_TRUE;
-
    LContext->ModelViewMatrixStack.dirty = GL_TRUE;
    LContext->ProjectionMatrixStack.dirty = GL_TRUE;
    LContext->attribs->DirtyMask = (1 << MAX_VERTEX_ATTRIBS) - 1;
