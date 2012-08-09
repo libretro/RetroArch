@@ -447,21 +447,21 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          {
             rarch_settings_default(S_DEF_AUDIO_CONTROL_RATE);
 #ifdef GEKKO
-	    video_wii.set_rotation(NULL, g_console.screen_orientation);
+	    video_gx.set_rotation(NULL, g_console.screen_orientation);
 #endif
          }
          else if (action == RGUI_ACTION_LEFT)
          {
             rarch_settings_change(S_ROTATION_DECREMENT);
 #ifdef GEKKO
-	    video_wii.set_rotation(NULL, g_console.screen_orientation);
+	    video_gx.set_rotation(NULL, g_console.screen_orientation);
 #endif
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
 	    rarch_settings_change(S_ROTATION_INCREMENT);
 #ifdef GEKKO
-	    video_wii.set_rotation(NULL, g_console.screen_orientation);
+	    video_gx.set_rotation(NULL, g_console.screen_orientation);
 #endif
          }
          break;
@@ -507,9 +507,9 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          else if (action == RGUI_ACTION_RIGHT)
             g_settings.input.device[port]++;
          g_settings.input.device[port] %= RARCH_DEVICE_LAST;
-         input_wii.set_default_keybind_lut(g_settings.input.device[port], port);
+         input_gx.set_default_keybind_lut(g_settings.input.device[port], port);
          rarch_input_set_default_keybinds(port);
-         input_wii.set_analog_dpad_mapping(g_settings.input.device[port], g_settings.input.dpad_emulation[port], port);
+         input_gx.set_analog_dpad_mapping(g_settings.input.device[port], g_settings.input.dpad_emulation[port], port);
          break;
       case RGUI_SETTINGS_BIND_UP:
       case RGUI_SETTINGS_BIND_DOWN:

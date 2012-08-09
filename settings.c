@@ -66,7 +66,7 @@ const char *config_get_default_audio(void)
       case AUDIO_PS3:
          return "ps3";
       case AUDIO_WII:
-         return "wii";
+         return "gx";
       case AUDIO_NULL:
          return "null";
       default:
@@ -81,7 +81,7 @@ const char *config_get_default_video(void)
       case VIDEO_GL:
          return "gl";
       case VIDEO_WII:
-         return "wii";
+         return "gx";
       case VIDEO_XENON360:
          return "xenon360";
       case VIDEO_XDK_D3D:
@@ -116,7 +116,7 @@ const char *config_get_default_input(void)
       case INPUT_XINPUT:
          return "xinput";
       case INPUT_WII:
-         return "wii";
+         return "gx";
       case INPUT_LINUXRAW:
          return "linuxraw";
       case INPUT_NULL:

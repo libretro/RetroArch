@@ -85,7 +85,7 @@ enum
    GX_QUIT_KEY             = 1ULL << 60,
 };
 
-enum wii_device_id
+enum gx_device_id
 {
    GX_DEVICE_GC_ID_JOYPAD_A = 0,
    GX_DEVICE_GC_ID_JOYPAD_B,

@@ -193,7 +193,7 @@ static void gx_restart(void)
 {
 }
 
-static void *wii_init(const video_info_t *video,
+static void *gx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    if (driver.video_data)
@@ -218,7 +218,7 @@ static void gx_start(void)
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
 
-   driver.video_data = wii_init(&video_info, NULL, NULL);
+   driver.video_data = gx_init(&video_info, NULL, NULL);
 
    //gx_video_t *gx = (gx_video_t*)driver.video_data;
    VIDEO_Init();
@@ -415,7 +415,7 @@ static void update_texture(const uint32_t *src,
    GX_InvalidateTexAll();
 }
 
-static bool wii_frame(void *data, const void *frame,
+static bool gx_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
@@ -469,30 +469,30 @@ static bool wii_frame(void *data, const void *frame,
    return true;
 }
 
-static void wii_set_nonblock_state(void *data, bool state)
+static void gx_set_nonblock_state(void *data, bool state)
 {
    (void)data;
    g_vsync = !state;
 }
 
-static bool wii_alive(void *data)
+static bool gx_alive(void *data)
 {
    (void)data;
    return true;
 }
 
-static bool wii_focus(void *data)
+static bool gx_focus(void *data)
 {
    (void)data;
    return true;
 }
 
-static void wii_free(void *data)
+static void gx_free(void *data)
 {
    (void)data;
 }
 
-static void wii_set_rotation(void * data, uint32_t orientation)
+static void gx_set_rotation(void * data, uint32_t orientation)
 {
    (void)data;
    (void)orientation;
@@ -516,15 +516,15 @@ static void wii_set_rotation(void * data, uint32_t orientation)
    GX_SetArray(GX_VA_TEX0, vertex_ptr, 2 * sizeof(float));
 }
 
-const video_driver_t video_wii = {
-   .init = wii_init,
-   .frame = wii_frame,
-   .alive = wii_alive,
-   .set_nonblock_state = wii_set_nonblock_state,
-   .focus = wii_focus,
-   .free = wii_free,
-   .ident = "wii",
-   .set_rotation = wii_set_rotation,
+const video_driver_t video_gx = {
+   .init = gx_init,
+   .frame = gx_frame,
+   .alive = gx_alive,
+   .set_nonblock_state = gx_set_nonblock_state,
+   .focus = gx_focus,
+   .free = gx_free,
+   .ident = "gx",
+   .set_rotation = gx_set_rotation,
    .start = gx_start,
    .stop = gx_stop,
    .restart = gx_restart,

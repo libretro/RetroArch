@@ -131,7 +131,7 @@ const struct platform_bind platform_keys[] = {
 const unsigned int platform_keys_size = sizeof(platform_keys);
 static bool g_quit;
 
-static int16_t wii_input_state(void *data, const struct retro_keybind **binds,
+static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
@@ -144,7 +144,7 @@ static int16_t wii_input_state(void *data, const struct retro_keybind **binds,
    return (binds[port][id].joykey & pad_state[port]) ? 1 : 0;
 }
 
-static void wii_free_input(void *data)
+static void gx_free_input(void *data)
 {
    (void)data;
 }
@@ -154,7 +154,7 @@ static void reset_callback(void)
    g_quit = true;
 }
 
-static void wii_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
+static void gx_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
 {
    switch (device)
    {
@@ -233,7 +233,7 @@ static void wii_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad
    }
 }
 
-static void *wii_input_initialize(void)
+static void *gx_input_initialize(void)
 {
    PAD_Init();
 #ifdef HW_RVL
@@ -246,23 +246,25 @@ static void *wii_input_initialize(void)
 
 #define STUB_DEVICE 0
 
-static void wii_input_post_init(void)
+static void gx_input_post_init(void)
 {
    for(unsigned i = 0; i < MAX_PADS; i++)
-      wii_input_set_analog_dpad_mapping(STUB_DEVICE, g_settings.input.dpad_emulation[i], i);
+      gx_input_set_analog_dpad_mapping(STUB_DEVICE, g_settings.input.dpad_emulation[i], i);
 }
 
-#define wii_stick_x(x) ((s8)((sin((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
-#define wii_stick_y(x) ((s8)((cos((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
+#define gx_stick_x(x) ((s8)((sin((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
+#define gx_stick_y(x) ((s8)((cos((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
 
-static void wii_input_poll(void *data)
+static void gx_input_poll(void *data)
 {
    //TODO: Hack, analog stick twitchiness needs to be properly fixed
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    (void)data;
    bool quit_gc = false;
+#ifdef HW_RVL
    bool quit_classic = false;
    bool quit_wiimote = false;
+#endif
 
    PAD_ScanPads();
 #ifdef HW_RVL
@@ -346,8 +348,8 @@ static void wii_input_poll(void *data)
                state |= (down & WPAD_NUNCHUK_BUTTON_Z) ? GX_NUNCHUK_Z : 0;
                state |= (down & WPAD_NUNCHUK_BUTTON_C) ? GX_NUNCHUK_C : 0;
 
-               s8 x = wii_stick_x(exp.nunchuk.js);
-               s8 y = wii_stick_y(exp.nunchuk.js);
+               s8 x = gx_stick_x(exp.nunchuk.js);
+               s8 y = gx_stick_y(exp.nunchuk.js);
 
                if (abs(x) > JOYSTICK_THRESHOLD)
                {
@@ -383,16 +385,16 @@ static void wii_input_poll(void *data)
 	       //TODO: Hack, analog stick twitchiness needs to be properly fixed
                if(gx->menu_render)
                {
-                  s8 x = wii_stick_x(exp.classic.ljs);
-                  s8 y = wii_stick_y(exp.classic.ljs);
+                  s8 x = gx_stick_x(exp.classic.ljs);
+                  s8 y = gx_stick_y(exp.classic.ljs);
 
                   if (abs(x) > JOYSTICK_THRESHOLD)
                      state |= x > 0 ? GX_CLASSIC_LSTICK_RIGHT : GX_CLASSIC_LSTICK_LEFT;
                   if (abs(y) > JOYSTICK_THRESHOLD)
                      state |= y > 0 ? GX_CLASSIC_LSTICK_UP : GX_CLASSIC_LSTICK_DOWN;
 
-                  x = wii_stick_x(exp.classic.rjs);
-                  y = wii_stick_y(exp.classic.rjs);
+                  x = gx_stick_x(exp.classic.rjs);
+                  y = gx_stick_y(exp.classic.rjs);
 
                   if (abs(x) > JOYSTICK_THRESHOLD)
                      state |= x > 0 ? GX_CLASSIC_RSTICK_RIGHT : GX_CLASSIC_RSTICK_LEFT;
@@ -442,7 +444,11 @@ static void wii_input_poll(void *data)
          state |= GX_WIIMOTE_HOME;
       }
 
-      if (quit_gc || quit_wiimote || quit_classic)
+      if (quit_gc
+#ifdef HW_RVL
+      || quit_wiimote || quit_classic
+#endif
+      )
          state |= GX_QUIT_KEY;
 
       pad_state[port] = state;
@@ -455,7 +461,7 @@ static void wii_input_poll(void *data)
    }
 }
 
-static bool wii_key_pressed(void *data, int key)
+static bool gx_key_pressed(void *data, int key)
 {
    (void)data;
 
@@ -466,11 +472,17 @@ static bool wii_key_pressed(void *data, int key)
       case RARCH_QUIT_KEY:
       if(IS_TIMER_EXPIRED(gx))
       {
+#ifdef HW_RVL
          uint64_t goto_menu_pressed_classic = pad_state[0] & GX_CLASSIC_HOME;
          uint64_t goto_menu_pressed_wiimote = pad_state[0] & GX_WIIMOTE_HOME;
+#endif
          uint64_t quit_rarch = pad_state[0] & GX_QUIT_KEY;
          bool retval = false;
-         g_console.menu_enable = ((goto_menu_pressed_classic || goto_menu_pressed_wiimote || quit_rarch) && IS_TIMER_EXPIRED(gx));
+         g_console.menu_enable = ((quit_rarch
+#ifdef HW_RVL
+ || goto_menu_pressed_classic || goto_menu_pressed_wiimote) 
+#endif
+ && IS_TIMER_EXPIRED(gx));
 
          if(g_console.menu_enable)
          {
@@ -490,7 +502,7 @@ static bool wii_key_pressed(void *data, int key)
    }
 }
 
-static void wii_set_default_keybind_lut(unsigned device, unsigned port)
+static void gx_set_default_keybind_lut(unsigned device, unsigned port)
 {
    (void)port;
 
@@ -575,15 +587,15 @@ static void wii_set_default_keybind_lut(unsigned device, unsigned port)
    }
 }
 
-const input_driver_t input_wii = {
-   .init = wii_input_initialize,
-   .poll = wii_input_poll,
-   .input_state = wii_input_state,
-   .key_pressed = wii_key_pressed,
-   .free = wii_free_input,
-   .set_default_keybind_lut = wii_set_default_keybind_lut,
-   .set_analog_dpad_mapping = wii_input_set_analog_dpad_mapping,
-   .post_init = wii_input_post_init,
+const input_driver_t input_gx = {
+   .init = gx_input_initialize,
+   .poll = gx_input_poll,
+   .input_state = gx_input_state,
+   .key_pressed = gx_key_pressed,
+   .free = gx_free_input,
+   .set_default_keybind_lut = gx_set_default_keybind_lut,
+   .set_analog_dpad_mapping = gx_input_set_analog_dpad_mapping,
+   .post_init = gx_input_post_init,
    .max_pads = MAX_PADS,
-   .ident = "wii",
+   .ident = "gx",
 };

@@ -38,9 +38,9 @@ typedef struct
 
    lwpq_t cond;
    bool nonblock;
-} wii_audio_t;
+} gx_audio_t;
 
-static wii_audio_t *g_audio;
+static gx_audio_t *g_audio;
 
 static void dma_callback(void)
 {
@@ -53,7 +53,7 @@ static void dma_callback(void)
    LWP_ThreadSignal(g_audio->cond);
 }
 
-static void *wii_audio_init(const char *device, unsigned rate, unsigned latency)
+static void *gx_audio_init(const char *device, unsigned rate, unsigned latency)
 {
    AUDIO_Init(NULL);
    AUDIO_RegisterDMACallback(dma_callback);
@@ -91,9 +91,9 @@ static void *wii_audio_init(const char *device, unsigned rate, unsigned latency)
    return g_audio;
 }
 
-static ssize_t wii_audio_write(void *data, const void *buf_, size_t size)
+static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
 {
-   wii_audio_t *wa = data;
+   gx_audio_t *wa = data;
 
    size_t frames = size >> 2;
    const uint32_t *buf = buf_;
@@ -122,27 +122,27 @@ static ssize_t wii_audio_write(void *data, const void *buf_, size_t size)
    return size;
 }
 
-static bool wii_audio_stop(void *data)
+static bool gx_audio_stop(void *data)
 {
    (void)data;
    AUDIO_StopDMA();
    return true;
 }
 
-static void wii_audio_set_nonblock_state(void *data, bool state)
+static void gx_audio_set_nonblock_state(void *data, bool state)
 {
-   wii_audio_t *wa = data;
+   gx_audio_t *wa = data;
    wa->nonblock = state;
 }
 
-static bool wii_audio_start(void *data)
+static bool gx_audio_start(void *data)
 {
    (void)data;
    AUDIO_StartDMA();
    return true;
 }
 
-static void wii_audio_free(void *data)
+static void gx_audio_free(void *data)
 {
    AUDIO_StopDMA();
    AUDIO_RegisterDMACallback(NULL);
@@ -156,27 +156,27 @@ static void wii_audio_free(void *data)
    g_audio = NULL;
 }
 
-static size_t wii_audio_write_avail(void *data)
+static size_t gx_audio_write_avail(void *data)
 {
-   wii_audio_t *wa = data;
+   gx_audio_t *wa = data;
    return ((wa->dma_busy - wa->dma_write + BLOCKS) & (BLOCKS - 1)) * CHUNK_SIZE;
 }
 
-static size_t wii_audio_buffer_size(void *data)
+static size_t gx_audio_buffer_size(void *data)
 {
    (void)data;
    return BLOCKS * CHUNK_SIZE;
 }
 
-const audio_driver_t audio_wii = {
-   .init = wii_audio_init,
-   .write = wii_audio_write,
-   .stop = wii_audio_stop,
-   .start = wii_audio_start,
-   .set_nonblock_state = wii_audio_set_nonblock_state,
-   .free = wii_audio_free,
-   .ident = "wii",
-   .write_avail = wii_audio_write_avail,
-   .buffer_size = wii_audio_buffer_size,
+const audio_driver_t audio_gx = {
+   .init = gx_audio_init,
+   .write = gx_audio_write,
+   .stop = gx_audio_stop,
+   .start = gx_audio_start,
+   .set_nonblock_state = gx_audio_set_nonblock_state,
+   .free = gx_audio_free,
+   .ident = "gx",
+   .write_avail = gx_audio_write_avail,
+   .buffer_size = gx_audio_buffer_size,
 };
 

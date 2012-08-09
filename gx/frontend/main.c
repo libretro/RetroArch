@@ -50,7 +50,6 @@ uint32_t menu_framebuf[320 * 240];
 rgui_handle_t *rgui;
 
 char app_dir[PATH_MAX];
-struct retro_system_info wii_core_info;
 
 static const struct retro_keybind _wii_nav_binds[] = {
    { 0, 0, 0, GX_GC_UP | GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_CLASSIC_UP | GX_CLASSIC_LSTICK_UP | GX_CLASSIC_RSTICK_UP | GX_WIIMOTE_UP | GX_NUNCHUK_UP, 0 },
@@ -151,11 +150,11 @@ static void menu_loop(void)
    {
       uint64_t input_state = 0;
 
-      input_wii.poll(NULL);
+      input_gx.poll(NULL);
 
       for (unsigned i = 0; i < GX_DEVICE_NAV_LAST; i++)
       {
-         input_state |= input_wii.input_state(NULL, wii_nav_binds, 0,
+         input_state |= input_gx.input_state(NULL, wii_nav_binds, 0,
                RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
       }
 
@@ -169,13 +168,13 @@ static void menu_loop(void)
 	      _quit_binds
       };
 
-      input_state |= input_wii.input_state(NULL, quit_binds, false,
+      input_state |= input_gx.input_state(NULL, quit_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 0) ? (GX_CLASSIC_HOME) : 0;
 
-      input_state |= input_wii.input_state(NULL, quit_binds, false,
+      input_state |= input_gx.input_state(NULL, quit_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 1) ? (GX_WIIMOTE_HOME) : 0;
 
-      input_state |= input_wii.input_state(NULL, quit_binds, false,
+      input_state |= input_gx.input_state(NULL, quit_binds, false,
          RETRO_DEVICE_JOYPAD, 0, 2) ? (GX_QUIT_KEY) : 0;
 
 
@@ -307,12 +306,9 @@ int main(void)
 #endif
 
    config_set_defaults();
-   input_wii.init();
+   input_gx.init();
 
-   retro_get_system_info(&wii_core_info);
-   RARCH_LOG("Core: %s\n", wii_core_info.library_name);
-
-   video_wii.start();
+   video_gx.start();
 
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    gx->menu_data = menu_framebuf;
@@ -328,11 +324,11 @@ int main(void)
    bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
    default_paths.config_file, extension);
 
-   rarch_settings_set_default(&input_wii);
+   rarch_settings_set_default(&input_gx);
    rarch_config_load(default_paths.config_file, path_prefix, extension, find_libretro_file);
    init_libretro_sym();
 
-   input_wii.post_init();
+   input_gx.post_init();
 
    menu_init();
 
@@ -341,7 +337,7 @@ begin_loop:
    {
       bool repeat = false;
 
-      input_wii.poll(NULL);
+      input_gx.poll(NULL);
       audio_start_func();
 
       do{
@@ -366,8 +362,8 @@ begin_shutdown:
    if(g_console.emulator_initialized)
       rarch_main_deinit();
 
-   input_wii.free(NULL);
-   video_wii.stop();
+   input_gx.free(NULL);
+   video_gx.stop();
    menu_free();
 
 #ifdef HAVE_FILE_LOGGER

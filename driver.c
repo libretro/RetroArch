@@ -73,7 +73,7 @@ static const audio_driver_t *audio_drivers[] = {
    &audio_xdk360,
 #endif
 #ifdef GEKKO
-   &audio_wii,
+   &audio_gx,
 #endif
    &audio_null,
 };
@@ -98,7 +98,7 @@ static const video_driver_t *video_drivers[] = {
    &video_ext,
 #endif
 #ifdef GEKKO
-   &video_wii,
+   &video_gx,
 #endif
 #ifdef HAVE_RPI
    &video_rpi,
@@ -123,7 +123,7 @@ static const input_driver_t *input_drivers[] = {
    &input_xinput,
 #endif
 #ifdef GEKKO
-   &input_wii,
+   &input_gx,
 #endif
 #ifdef IS_LINUX
    &input_linuxraw,
