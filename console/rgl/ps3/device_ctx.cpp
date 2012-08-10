@@ -1050,22 +1050,6 @@ PSGLdevice* psglCreateDeviceExtended(const PSGLdeviceParameters *parameters )
     return device;
 }
 
-GLfloat psglGetDeviceAspectRatio(const PSGLdevice * device)
-{
-   CellVideoOutState videoState;
-   cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &videoState);
-
-   switch (videoState.displayMode.aspect)
-   {
-      case CELL_VIDEO_OUT_ASPECT_4_3:
-         return 4.0f/3.0f;
-      case CELL_VIDEO_OUT_ASPECT_16_9:
-	 return 16.0f/9.0f;
-   }
-
-   return 16.0f/9.0f;
-}
-
 void psglGetDeviceDimensions(const PSGLdevice * device, GLuint *width, GLuint *height)
 {
    *width = device->deviceParameters.width;

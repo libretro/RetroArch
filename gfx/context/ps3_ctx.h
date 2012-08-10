@@ -19,6 +19,7 @@
 
 void gfx_ctx_get_available_resolutions (void);
 int gfx_ctx_check_resolution(unsigned resolution_id);
+float gfx_ctx_get_aspect_ratio(void);
 unsigned gfx_ctx_get_resolution_width(unsigned resolution_id);
 unsigned gfx_ctx_get_resolution_height(unsigned resolution_id);
 void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate);

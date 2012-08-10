@@ -1005,7 +1005,6 @@ extern void psglExit();
 
 PSGLdevice *psglCreateDeviceAuto( GLenum colorFormat, GLenum depthFormat, GLenum multisamplingMode );
 PSGLdevice *psglCreateDeviceExtended( const PSGLdeviceParameters *parameters );
-GLfloat psglGetDeviceAspectRatio(const PSGLdevice *device );
 void psglGetDeviceDimensions(const PSGLdevice *device, GLuint *width, GLuint *height );
 void psglDestroyDevice( PSGLdevice* device );
 

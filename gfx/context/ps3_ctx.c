@@ -58,6 +58,22 @@ unsigned gfx_ctx_get_resolution_height(unsigned resolution_id)
    return resolution.height;
 }
 
+float gfx_ctx_get_aspect_ratio(void)
+{
+   CellVideoOutState videoState;
+   cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &videoState);
+
+   switch (videoState.displayMode.aspect)
+   {
+      case CELL_VIDEO_OUT_ASPECT_4_3:
+         return 4.0f/3.0f;
+      case CELL_VIDEO_OUT_ASPECT_16_9:
+	 return 16.0f/9.0f;
+   }
+
+   return 16.0f/9.0f;
+}
+
 void gfx_ctx_get_available_resolutions (void)
 {
    bool defaultresolution;
