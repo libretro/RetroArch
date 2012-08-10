@@ -37,15 +37,6 @@ extern void _RGLFifoGlSetRenderTarget( RGLRenderTargetEx const * const args );
 
 typedef struct
 {
-   int id;
-   GLuint offset;
-   GLuint size;
-   GLuint pitch;
-   GLuint bank;
-} jsTiledRegion;
-
-typedef struct
-{
    jsTiledRegion region[MAX_TILED_REGIONS];
 } jsTiledMemoryManager;
 
@@ -59,6 +50,9 @@ static volatile uint32_t *labelAddress = NULL;
 static const uint32_t WaitLabelIndex = 111;
 extern GLuint nvFenceCounter;
 RGLState _RGLState;
+
+extern GmmAllocator *pGmmLocalAllocator;
+extern GmmAllocator *pGmmMainAllocator;
 
 typedef struct
 {
@@ -1161,7 +1155,54 @@ PSGLdevice *psglGetCurrentDevice(void)
    return _CurrentDevice;
 }
 
-extern void gmmUpdateFreeList (const uint8_t location);
+static void gmmRemovePendingFree(GmmAllocator *pAllocator, GmmBlock *pBlock)
+{
+    if (pBlock == pAllocator->pPendingFreeHead)
+        pAllocator->pPendingFreeHead = pBlock->pNextFree;
+
+    if (pBlock == pAllocator->pPendingFreeTail)
+        pAllocator->pPendingFreeTail = pBlock->pPrevFree;
+
+    if (pBlock->pNextFree)
+        pBlock->pNextFree->pPrevFree = pBlock->pPrevFree;
+
+    if (pBlock->pPrevFree)
+        pBlock->pPrevFree->pNextFree = pBlock->pNextFree;
+}
+
+extern void gmmAddFree(GmmAllocator *pAllocator, GmmBlock *pBlock);
+
+static void gmmUpdateFreeLists (void)
+{
+    for(int i = 0; i < 2; i++)
+    {
+       uint8_t location = i == 0 ? CELL_GCM_LOCATION_LOCAL : CELL_GCM_LOCATION_MAIN;
+       GmmAllocator    *pAllocator;
+       const uint32_t  fence = _RGLState.semaphores->userSemaphores[SEMA_FENCE].val;
+       GmmBlock        *pBlock = NULL;
+       GmmBlock        *pTemp = NULL;
+
+       pAllocator = (location == CELL_GCM_LOCATION_LOCAL) ? 
+	       pGmmLocalAllocator : 
+	       pGmmMainAllocator;
+    
+       pBlock = pAllocator->pPendingFreeHead;
+
+       while (pBlock)
+       {
+          pTemp = pBlock->pNextFree;
+
+	  if ( !(( fence - pBlock->fence ) & 0x80000000 ) )
+	  {
+             gmmRemovePendingFree(pAllocator, pBlock);
+	     gmmAddFree(pAllocator, pBlock);
+	  }
+
+	  pBlock = pTemp;
+       }
+    }
+
+}
 
 GLAPI void psglSwap(void)
 {
@@ -1169,8 +1210,7 @@ GLAPI void psglSwap(void)
    PSGLdevice *device = _CurrentDevice;
    RGLFifo *fifo = &_RGLState.fifo;
 
-   gmmUpdateFreeList(CELL_GCM_LOCATION_LOCAL);
-   gmmUpdateFreeList(CELL_GCM_LOCATION_MAIN);
+   gmmUpdateFreeLists();
 
    RGLDevice *gcmDevice = ( RGLDevice * )device->platformDevice;
 
@@ -1299,12 +1339,4 @@ GLboolean _RGLTryResizeTileRegion(GLuint address, GLuint size, void* data)
    _RGLFifoFinish( &_RGLState.fifo );
 
    return GL_TRUE;
-}
-
-void _RGLGetTileRegionInfo(void* data, GLuint *address, GLuint *size)
-{
-   jsTiledRegion* region = ( jsTiledRegion* )data;
-
-   *address = region->offset;
-   *size = region->size;
 }

@@ -2080,21 +2080,6 @@ static uint32_t gmmInitFixedAllocator (void)
    return CELL_OK;
 }
 
-static void gmmRemovePendingFree(GmmAllocator *pAllocator, GmmBlock *pBlock)
-{
-    if (pBlock == pAllocator->pPendingFreeHead)
-        pAllocator->pPendingFreeHead = pBlock->pNextFree;
-
-    if (pBlock == pAllocator->pPendingFreeTail)
-        pAllocator->pPendingFreeTail = pBlock->pPrevFree;
-
-    if (pBlock->pNextFree)
-        pBlock->pNextFree->pPrevFree = pBlock->pPrevFree;
-
-    if (pBlock->pPrevFree)
-        pBlock->pPrevFree->pNextFree = pBlock->pNextFree;
-}
-
 static uint8_t gmmSizeToFreeIndex(uint32_t size)
 {
     if (size >= GMM_FREE_BIN_0 && size < GMM_FREE_BIN_1)
@@ -2143,7 +2128,7 @@ static uint8_t gmmSizeToFreeIndex(uint32_t size)
         return 21;
 }
 
-static void gmmAddFree(GmmAllocator *pAllocator, GmmBlock *pBlock)
+void gmmAddFree(GmmAllocator *pAllocator, GmmBlock *pBlock)
 {
     uint8_t freeIndex = gmmSizeToFreeIndex(pBlock->base.size);
 
@@ -2187,34 +2172,6 @@ static void gmmAddFree(GmmAllocator *pAllocator, GmmBlock *pBlock)
     }
 }
 
-void gmmUpdateFreeList (const uint8_t location)
-{
-    GmmAllocator    *pAllocator;
-    const uint32_t  fence = _RGLState.semaphores->userSemaphores[SEMA_FENCE].val;
-    GmmBlock        *pBlock = NULL;
-    GmmBlock        *pTemp = NULL;
-
-    pAllocator = (location == CELL_GCM_LOCATION_LOCAL) ? 
-                 pGmmLocalAllocator : 
-                 pGmmMainAllocator;
-    
-
-    pBlock = pAllocator->pPendingFreeHead;
-
-    while (pBlock)
-    {
-        pTemp = pBlock->pNextFree;
-
-        if ( !(( fence - pBlock->fence ) & 0x80000000 ) )
-        {
-            gmmRemovePendingFree(pAllocator, pBlock);
-            gmmAddFree(pAllocator, pBlock);
-        }
-
-        pBlock = pTemp;
-    }
-
-}
 
 static void *gmmAllocFixed(uint8_t isTile)
 {
@@ -2380,6 +2337,14 @@ char *gmmIdToAddress(const uint32_t id)
     }while(1);
 
     return (char *)pBaseBlock->address;
+}
+
+static void _RGLGetTileRegionInfo(void* data, GLuint *address, GLuint *size)
+{
+   jsTiledRegion* region = ( jsTiledRegion* )data;
+
+   *address = region->offset;
+   *size = region->size;
 }
 
 static GmmBlock *gmmAllocBlock(GmmAllocator *pAllocator, uint32_t size)

@@ -185,6 +185,15 @@ typedef struct
    int	X, Y, XSize, YSize;
 } jsViewPort;
 
+typedef struct
+{
+   int id;
+   GLuint offset;
+   GLuint size;
+   GLuint pitch;
+   GLuint bank;
+} jsTiledRegion;
+
 enum
 {
    IMAGE_DATASTATE_UNSET = 0x0,
@@ -860,7 +869,6 @@ void _RGLSetNativeCgVertexProgram( const void *header );
 void _RGLSetNativeCgFragmentProgram( const void *header );
 
 GLboolean _RGLTryResizeTileRegion( GLuint address, GLuint size, void* data );
-void _RGLGetTileRegionInfo( void* data, GLuint *address, GLuint *size );
 
 static inline GLuint _RGLPlatformGetBitsPerPixel( GLenum internalFormat )
 {
