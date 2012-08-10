@@ -83,8 +83,10 @@ void gfx_ctx_swap_buffers(void)
 void gfx_ctx_clear(void)
 {
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
+#ifdef _XBOX1
    unsigned flicker_filter = g_console.flicker_filter;
    bool soft_filter_enable = g_console.soft_display_filter_enable;
+#endif
 
    device_ptr->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
       D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);

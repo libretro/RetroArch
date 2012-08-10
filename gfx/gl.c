@@ -292,7 +292,59 @@ static void gl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
 
 #ifdef HAVE_FBO
 static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
-      unsigned vp_width, unsigned vp_height);
+      unsigned vp_width, unsigned vp_height)
+{
+   unsigned last_width = width;
+   unsigned last_height = height;
+   unsigned last_max_width = gl->tex_w;
+   unsigned last_max_height = gl->tex_h;
+   // Calculate viewports for FBOs.
+   for (int i = 0; i < gl->fbo_pass; i++)
+   {
+      switch (gl->fbo_scale[i].type_x)
+      {
+         case RARCH_SCALE_INPUT:
+            gl->fbo_rect[i].img_width = last_width * gl->fbo_scale[i].scale_x;
+            gl->fbo_rect[i].max_img_width = last_max_width * gl->fbo_scale[i].scale_x;
+            break;
+
+         case RARCH_SCALE_ABSOLUTE:
+            gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].abs_x;
+            break;
+
+         case RARCH_SCALE_VIEWPORT:
+            gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].scale_x * vp_width;
+            break;
+
+         default:
+            break;
+      }
+
+      switch (gl->fbo_scale[i].type_y)
+      {
+         case RARCH_SCALE_INPUT:
+            gl->fbo_rect[i].img_height = last_height * gl->fbo_scale[i].scale_y;
+            gl->fbo_rect[i].max_img_height = last_max_height * gl->fbo_scale[i].scale_y;
+            break;
+
+         case RARCH_SCALE_ABSOLUTE:
+            gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].abs_y;
+            break;
+
+         case RARCH_SCALE_VIEWPORT:
+            gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].scale_y * vp_height;
+            break;
+
+         default:
+            break;
+      }
+
+      last_width = gl->fbo_rect[i].img_width;
+      last_height = gl->fbo_rect[i].img_height;
+      last_max_width = gl->fbo_rect[i].max_img_width;
+      last_max_height = gl->fbo_rect[i].max_img_height;
+   }
+}
 
 static void gl_create_fbo_textures(gl_t *gl)
 {
@@ -533,60 +585,6 @@ static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yam
 }
 
 #ifdef HAVE_FBO
-static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
-      unsigned vp_width, unsigned vp_height)
-{
-   unsigned last_width = width;
-   unsigned last_height = height;
-   unsigned last_max_width = gl->tex_w;
-   unsigned last_max_height = gl->tex_h;
-   // Calculate viewports for FBOs.
-   for (int i = 0; i < gl->fbo_pass; i++)
-   {
-      switch (gl->fbo_scale[i].type_x)
-      {
-         case RARCH_SCALE_INPUT:
-            gl->fbo_rect[i].img_width = last_width * gl->fbo_scale[i].scale_x;
-            gl->fbo_rect[i].max_img_width = last_max_width * gl->fbo_scale[i].scale_x;
-            break;
-
-         case RARCH_SCALE_ABSOLUTE:
-            gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].abs_x;
-            break;
-
-         case RARCH_SCALE_VIEWPORT:
-            gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].scale_x * vp_width;
-            break;
-
-         default:
-            break;
-      }
-
-      switch (gl->fbo_scale[i].type_y)
-      {
-         case RARCH_SCALE_INPUT:
-            gl->fbo_rect[i].img_height = last_height * gl->fbo_scale[i].scale_y;
-            gl->fbo_rect[i].max_img_height = last_max_height * gl->fbo_scale[i].scale_y;
-            break;
-
-         case RARCH_SCALE_ABSOLUTE:
-            gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].abs_y;
-            break;
-
-         case RARCH_SCALE_VIEWPORT:
-            gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].scale_y * vp_height;
-            break;
-
-         default:
-            break;
-      }
-
-      last_width = gl->fbo_rect[i].img_width;
-      last_height = gl->fbo_rect[i].img_height;
-      last_max_width = gl->fbo_rect[i].max_img_width;
-      last_max_height = gl->fbo_rect[i].max_img_height;
-   }
-}
 
 static inline void gl_start_frame_fbo(gl_t *gl)
 {
@@ -1062,7 +1060,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    RARCH_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
 
-#if defined(HAVE_CG_MENU) && defined(RARCH_CONSOLE)
+#if defined(HAVE_CG_MENU)
    RARCH_LOG("Initializing menu shader ...\n");
    gl_cg_set_menu_shader(default_paths.menu_shader_file);
 #endif
