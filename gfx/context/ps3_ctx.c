@@ -257,10 +257,14 @@ void gfx_ctx_get_available_resolutions (void)
    defaultresolution = true;
 
    uint32_t videomode[] = {
-      CELL_VIDEO_OUT_RESOLUTION_480, CELL_VIDEO_OUT_RESOLUTION_576,
-      CELL_VIDEO_OUT_RESOLUTION_960x1080, CELL_VIDEO_OUT_RESOLUTION_720,
-      CELL_VIDEO_OUT_RESOLUTION_1280x1080, CELL_VIDEO_OUT_RESOLUTION_1440x1080,
-      CELL_VIDEO_OUT_RESOLUTION_1600x1080, CELL_VIDEO_OUT_RESOLUTION_1080
+      CELL_VIDEO_OUT_RESOLUTION_480,
+      CELL_VIDEO_OUT_RESOLUTION_576,
+      CELL_VIDEO_OUT_RESOLUTION_960x1080,
+      CELL_VIDEO_OUT_RESOLUTION_720,
+      CELL_VIDEO_OUT_RESOLUTION_1280x1080,
+      CELL_VIDEO_OUT_RESOLUTION_1440x1080,
+      CELL_VIDEO_OUT_RESOLUTION_1600x1080,
+      CELL_VIDEO_OUT_RESOLUTION_1080
    };
 
    num_videomodes = sizeof(videomode) / sizeof(uint32_t);
@@ -303,29 +307,20 @@ int gfx_ctx_check_resolution(unsigned resolution_id)
    return cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, resolution_id, CELL_VIDEO_OUT_ASPECT_AUTO, 0);
 }
 
-const char *ps3_get_resolution_label(uint32_t resolution)
+unsigned gfx_ctx_get_resolution_width(unsigned resolution_id)
 {
-   switch (resolution)
-   {
-      case CELL_VIDEO_OUT_RESOLUTION_480:
-	      return  "720x480";
-      case CELL_VIDEO_OUT_RESOLUTION_576:
-	      return "720x576"; 
-      case CELL_VIDEO_OUT_RESOLUTION_720:
-	      return "1280x720";
-      case CELL_VIDEO_OUT_RESOLUTION_960x1080:
-	      return "960x1080";
-      case CELL_VIDEO_OUT_RESOLUTION_1280x1080:
-	      return "1280x1080";
-      case CELL_VIDEO_OUT_RESOLUTION_1440x1080:
-	      return "1440x1080";
-      case CELL_VIDEO_OUT_RESOLUTION_1600x1080:
-	      return "1600x1080";
-      case CELL_VIDEO_OUT_RESOLUTION_1080:
-	      return "1920x1080";
-      default:
-	      return "Unknown";
-   }
+   CellVideoOutResolution resolution;
+   cellVideoOutGetResolution(resolution_id, &resolution);
+
+   return resolution.width;
+}
+
+unsigned gfx_ctx_get_resolution_height(unsigned resolution_id)
+{
+   CellVideoOutResolution resolution;
+   cellVideoOutGetResolution(resolution_id, &resolution);
+
+   return resolution.height;
 }
 
 void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)

@@ -136,8 +136,12 @@ static void set_setting_label(menu * current_menu, item *items, unsigned current
    {
 #ifdef __CELLOS_LV2__
 	   case SETTING_CHANGE_RESOLUTION:
-         set_setting_label_color(items,g_console.initial_resolution_id == g_console.supported_resolutions[g_console.current_resolution_index], currentsetting);
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), ps3_get_resolution_label(g_console.supported_resolutions[g_console.current_resolution_index]));
+                   {
+                      unsigned width = gfx_ctx_get_resolution_width(g_console.supported_resolutions[g_console.current_resolution_index]);
+                      unsigned height = gfx_ctx_get_resolution_height(g_console.supported_resolutions[g_console.current_resolution_index]);
+		      set_setting_label_color(items,g_console.initial_resolution_id == g_console.supported_resolutions[g_console.current_resolution_index], currentsetting);
+		      snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%dx%d", width, height);
+                   }
 		   break;
 #endif
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
@@ -603,9 +607,6 @@ static void menu_stack_push(item *items, unsigned menu_id)
    if(do_refresh)
       menu_stack_refresh(items, current_menu);
 }
-
-//forward decls
-extern const char *ps3_get_resolution_label(unsigned resolution);
 
 static void display_menubar(menu *current_menu)
 {
