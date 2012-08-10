@@ -23,8 +23,6 @@
 #include <sdcard/gcsd.h>
 #include <fat.h>
 
-#include "../gx_input.h"
-
 #include "../../console/rarch_console.h"
 #include "../../console/rarch_console_exec.h"
 #include "../../console/rarch_console_libretro_mgmt.h"
@@ -37,11 +35,7 @@
 #include "../../general.h"
 #include "../../file.h"
 
-char LIBRETRO_DIR_PATH[512];
-char SYS_CONFIG_FILE[512];
 char libretro_path[512];
-char PORT_DIR[512];
-char app_dir[512];
 
 default_paths_t default_paths;
 
@@ -52,7 +46,7 @@ static void find_and_set_first_file(void)
 
    char first_file[512] = {0};
    rarch_manage_libretro_set_first_file(first_file, sizeof(first_file),
-   LIBRETRO_DIR_PATH, "dol");
+   default_paths.core_dir, "dol");
 
    if(first_file[0])
       strlcpy(libretro_path, first_file, sizeof(libretro_path));
@@ -65,12 +59,12 @@ static void init_settings(void)
    char tmp_str[512];
    bool config_file_exists;
 
-   if(!path_file_exists(SYS_CONFIG_FILE))
+   if(!path_file_exists(default_paths.config_file))
    {
       FILE * f;
       config_file_exists = false;
-      RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
-      f = fopen(SYS_CONFIG_FILE, "w");
+      RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", default_paths.config_file);
+      f = fopen(default_paths.config_file, "w");
       fclose(f);
    }
    else
@@ -78,7 +72,7 @@ static void init_settings(void)
 
    //try to find CORE executable
    char core_executable[1024];
-   snprintf(core_executable, sizeof(core_executable), "%s/CORE.dol", LIBRETRO_DIR_PATH);
+   snprintf(core_executable, sizeof(core_executable), "%s/CORE.dol", default_paths.core_dir);
 
    if(path_file_exists(core_executable))
    {
@@ -90,7 +84,7 @@ static void init_settings(void)
    {
       if(config_file_exists)
       {
-         config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
+         config_file_t * conf = config_file_new(default_paths.config_file);
          config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
          snprintf(libretro_path, sizeof(libretro_path), tmp_str);
       }
@@ -106,9 +100,16 @@ static void init_settings(void)
 
 static void get_environment_settings(void)
 {
-   getcwd(PORT_DIR, MAXPATHLEN);
-   snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%sretroarch.cfg", PORT_DIR);
-   snprintf(LIBRETRO_DIR_PATH, sizeof(LIBRETRO_DIR_PATH), PORT_DIR);
+   getcwd(default_paths.port_dir, MAXPATHLEN);
+   snprintf(default_paths.core_dir, sizeof(default_paths.core_dir), default_paths.port_dir);
+   snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%sretroarch.cfg", default_paths.port_dir);
+   snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.core_dir);
+   snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.core_dir);
+   snprintf(default_paths.filesystem_root_dir, sizeof(default_paths.filesystem_root_dir), "/");
+   snprintf(default_paths.filebrowser_startup_dir, sizeof(default_paths.filebrowser_startup_dir), default_paths.filesystem_root_dir);
+   snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.core_dir);
+   snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/presets/input", default_paths.core_dir);
+   strlcpy(default_paths.executable_extension, ".dol", sizeof(default_paths.executable_extension));
    snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "boot.dol");
 }
 
@@ -123,7 +124,6 @@ int main(int argc, char *argv[])
 #endif
 
    fatInitDefault();
-   getcwd(app_dir, sizeof(app_dir));
 
    get_environment_settings();
 
