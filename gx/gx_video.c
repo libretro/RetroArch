@@ -235,10 +235,11 @@ static void gx_start(void)
    g_vsync = true;
 }
 
-#if 0
-// TODO: Fix
+#define ASM_BLITTER
 
-static void update_texture_asm(const uint32_t *src,
+#ifdef ASM_BLITTER
+
+static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src,
       unsigned width, unsigned height, unsigned pitch)
 {
    register uint32_t tmp0, tmp1, tmp2, tmp3, line2, line2b, line3, line3b, line4, line4b, line5;
@@ -357,8 +358,8 @@ static void update_texture(const uint32_t *src,
       unsigned width, unsigned height, unsigned pitch)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
-#if 0
-   if (!(width & 3) && !(height & 3))
+#ifdef ASM_BLITTER
+   if (width && height && !(width & 3) && !(height & 3))
    {
       update_texture_asm(src, width, height, pitch);
    }
@@ -382,7 +383,6 @@ static void update_texture(const uint32_t *src,
       }
    }
 
-   // TODO: only convert when menu is visible
    if(gx->menu_render)
    {
       uint16_t *block = (uint16_t *) menu_tex.data;
