@@ -41,6 +41,8 @@ char LIBRETRO_DIR_PATH[PATH_MAX];
 char SYS_CONFIG_FILE[PATH_MAX];
 char libretro_path[PATH_MAX];
 
+default_paths_t default_paths;
+
 static void find_and_set_first_file(void)
 {
    //Last fallback - we'll need to start the first executable file 
@@ -156,8 +158,11 @@ static void get_environment_settings (void)
 	    break;
       }
    }
+
+   strlcpy(default_paths.salamander_file, "RetroArch-Salamander.xex", sizeof(default_paths.salamander_file));
 #elif defined(_XBOX1)
    strlcpy(SYS_CONFIG_FILE, "D:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
+   strlcpy(default_paths.salamander_file, "RetroArch-Salamander.xbe", sizeof(default_paths.salamander_file));
 #endif
 }
 

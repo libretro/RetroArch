@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include "../boolean.h"
 #include "../file.h"
+#include "rarch_console.h"
 
 #include "rarch_console_libretro_mgmt.h"
 
@@ -151,17 +152,11 @@ void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first
 
    if(first_exe)
    {
-#if defined(_XBOX) || defined(GEKKO)
+#ifdef IS_SALAMANDER
       char fname_tmp[PATH_MAX];
       fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
 
-#ifdef _XBOX
-      if(strcmp(fname_tmp, "RetroArch-Salamander.xex") == 0)
-#elif defined(GEKKO)
-      if(strcmp(fname_tmp, "boot.dol") == 0)
-#else
-#error This case not handled
-#endif
+      if(strncmp(fname_tmp, default_paths.salamander_file, sizeof(fname_tmp)) == 0)
       {
          RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
          first_exe = dir_list->elems[1].data;

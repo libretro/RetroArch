@@ -43,6 +43,8 @@ char libretro_path[512];
 char PORT_DIR[512];
 char app_dir[512];
 
+default_paths_t default_paths;
+
 static void find_and_set_first_file(void)
 {
    //Last fallback - we'll need to start the first executable file 
@@ -107,6 +109,7 @@ static void get_environment_settings(void)
    getcwd(PORT_DIR, MAXPATHLEN);
    snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%sretroarch.cfg", PORT_DIR);
    snprintf(LIBRETRO_DIR_PATH, sizeof(LIBRETRO_DIR_PATH), PORT_DIR);
+   snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "boot.dol");
 }
 
 int main(int argc, char *argv[])

@@ -50,6 +50,8 @@ char LIBRETRO_DIR_PATH[PATH_MAX];
 char SYS_CONFIG_FILE[PATH_MAX];
 char libretro_path[PATH_MAX];
 
+default_paths_t default_paths;
+
 static void find_and_set_first_file(void)
 {
    //Last fallback - we'll need to start the first executable file 
@@ -160,6 +162,7 @@ static void get_environment_settings (void)
       snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/retroarch.cfg", usrDirPath);
       snprintf(LIBRETRO_DIR_PATH, sizeof(LIBRETRO_DIR_PATH), "%s/cores", usrDirPath);
    }
+   snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "");
 }
 
 //dummy - just to avoid the emitted warnings
