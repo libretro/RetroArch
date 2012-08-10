@@ -36,8 +36,9 @@
 #define PATH_MAX 512
 #endif
 
-#include "../../console/rarch_console_libretro_mgmt.h"
+#include "../../console/rarch_console.h"
 #include "../../console/rarch_console_exec.h"
+#include "../../console/rarch_console_libretro_mgmt.h"
 
 #include "../../retroarch_logger.h"
 #include "../../file.h"
