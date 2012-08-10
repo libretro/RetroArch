@@ -334,7 +334,9 @@ begin_loop:
    else if(g_console.mode_switch == MODE_MENU)
    {
       menu_loop();
-      rarch_startup(default_paths.config_file);
+
+      if (g_console.mode_switch != MODE_EXIT)
+         rarch_startup(default_paths.config_file);
    }
    else
       goto begin_shutdown;
