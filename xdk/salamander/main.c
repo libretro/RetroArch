@@ -162,7 +162,7 @@ static void get_environment_settings (void)
    strlcpy(default_paths.salamander_file, "RetroArch-Salamander.xex", sizeof(default_paths.salamander_file));
 #elif defined(_XBOX1)
    strlcpy(SYS_CONFIG_FILE, "D:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
-   strlcpy(default_paths.salamander_file, "RetroArch-Salamander.xbe", sizeof(default_paths.salamander_file));
+   strlcpy(default_paths.salamander_file, "default.xbe", sizeof(default_paths.salamander_file));
 #endif
 }
 
