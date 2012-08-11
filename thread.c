@@ -22,7 +22,7 @@
 #elif defined(_XBOX)
 #include <xtl.h>
 #elif defined(GEKKO)
-#include "gx/gx_pthread.h"
+#include "thread/gx_pthread.h"
 #else
 #include <pthread.h>
 #include <time.h>
