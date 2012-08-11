@@ -21,7 +21,7 @@
 #include <gccore.h>
 #include <ogc/cond.h>
 
-#define STACKSIZE 8*1024
+#define STACKSIZE (8 * 1024)
 
 typedef lwp_t pthread_t;
 typedef mutex_t pthread_mutex_t;
@@ -41,24 +41,41 @@ static inline int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutex
    return LWP_MutexInit(mutex, 0);
 }
 
-static inline int pthread_mutex_destroy(pthread_mutex_t *mutex){ return LWP_MutexDestroy(*mutex);}
+static inline int pthread_mutex_destroy(pthread_mutex_t *mutex)
+{
+   return LWP_MutexDestroy(*mutex);
+}
 
-static inline int pthread_mutex_lock(pthread_mutex_t *mutex) { return LWP_MutexLock(*mutex); }
+static inline int pthread_mutex_lock(pthread_mutex_t *mutex)
+{
+   return LWP_MutexLock(*mutex);
+}
 
-static inline int pthread_mutex_unlock(pthread_mutex_t *mutex) { return LWP_MutexUnlock(*mutex); }
+static inline int pthread_mutex_unlock(pthread_mutex_t *mutex)
+{
+   return LWP_MutexUnlock(*mutex);
+}
 
-static inline int pthread_join(pthread_t thread, void**retval) { return LWP_JoinThread(thread, NULL); }
+static inline int pthread_join(pthread_t thread, void **retval)
+{
+   // FIXME: Shouldn't the second arg to LWP_JoinThread take retval?
+   (void)retval;
+   return LWP_JoinThread(thread, NULL);
+}
 
-static inline int pthread_mutex_trylock(pthread_mutex_t *mutex){ return LWP_MutexTryLock(*mutex);}
+static inline int pthread_mutex_trylock(pthread_mutex_t *mutex)
+{
+   return LWP_MutexTryLock(*mutex);
+}
 
 static inline int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
-   return LWP_CondWait(*(cond), *(mutex));
+   return LWP_CondWait(*cond, *mutex);
 }
 
 static inline int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime)
 {
-   return LWP_CondWait(*(cond), *(mutex));
+   return LWP_CondWait(*cond, *mutex);
 }
 
 static inline int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
@@ -68,12 +85,12 @@ static inline int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr
 
 static inline int pthread_cond_signal(pthread_cond_t *cond)
 {
-   return LWP_CondSignal(*(cond));
+   return LWP_CondSignal(*cond);
 }
 
 static inline int pthread_cond_destroy(pthread_cond_t *cond)
 {
-   return LWP_CondDestroy(*(cond));
+   return LWP_CondDestroy(*cond);
 }
 
 #endif
