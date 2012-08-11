@@ -51,6 +51,7 @@ rgui_handle_t *rgui;
 
 char app_dir[PATH_MAX];
 
+#if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
 static devoptab_t dotab_stdout = {
    "stdout",   // device name
    0,          // size of file structure
@@ -76,6 +77,7 @@ static devoptab_t dotab_stdout = {
    NULL,       // device fsync_r
    NULL,       // deviceData;
 };
+#endif
 
 #ifdef HAVE_LOGGER
 int gx_logger_net(struct _reent *r, int fd, const char *ptr, size_t len)
