@@ -51,6 +51,52 @@ rgui_handle_t *rgui;
 
 char app_dir[PATH_MAX];
 
+static devoptab_t dotab_stdout = {
+   "stdout",   // device name
+   0,          // size of file structure
+   NULL,       // device open
+   NULL,       // device close
+   NULL,       // device write
+   NULL,       // device read
+   NULL,       // device seek
+   NULL,       // device fstat
+   NULL,       // device stat
+   NULL,       // device link
+   NULL,       // device unlink
+   NULL,       // device chdir
+   NULL,       // device rename
+   NULL,       // device mkdir
+   0,          // dirStateSize
+   NULL,       // device diropen_r
+   NULL,       // device dirreset_r
+   NULL,       // device dirnext_r
+   NULL,       // device dirclose_r
+   NULL,       // device statvfs_r
+   NULL,       // device ftrunctate_r
+   NULL,       // device fsync_r
+   NULL,       // deviceData;
+};
+
+#ifdef HAVE_LOGGER
+int gx_logger_net(struct _reent *r, int fd, const char *ptr, size_t len)
+{
+   static char temp[4000];
+   size_t l = len >= 4000 ? 3999 : len;
+   memcpy(temp, ptr, l);
+   temp[l] = 0;
+   logger_send("%s", temp);
+   return len;
+}
+#endif
+
+#ifdef HAVE_FILE_LOGGER
+int gx_logger_file(struct _reent *r, int fd, const char *ptr, size_t len)
+{
+   fwrite(ptr, 1, len, log_fp);
+   return len;
+}
+#endif
+
 static const struct retro_keybind _wii_nav_binds[] = {
    { 0, 0, 0, GX_GC_UP | GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_CLASSIC_UP | GX_CLASSIC_LSTICK_UP | GX_CLASSIC_RSTICK_UP | GX_WIIMOTE_UP | GX_NUNCHUK_UP, 0 },
    { 0, 0, 0, GX_GC_DOWN | GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_CLASSIC_DOWN | GX_CLASSIC_LSTICK_DOWN | GX_CLASSIC_RSTICK_DOWN | GX_WIIMOTE_DOWN | GX_NUNCHUK_DOWN, 0 },
@@ -299,10 +345,16 @@ int main(void)
 #ifdef HAVE_LOGGER
    g_extern.verbose = true;
    logger_init();
+   devoptab_list[STD_OUT] = &dotab_stdout;
+   devoptab_list[STD_ERR] = &dotab_stdout;
+   dotab_stdout.write_r = gx_logger_net;
 #endif
 #ifdef HAVE_FILE_LOGGER
    g_extern.verbose = true;
    log_fp = fopen("/retroarch-log.txt", "w");
+   devoptab_list[STD_OUT] = &dotab_stdout;
+   devoptab_list[STD_ERR] = &dotab_stdout;
+   dotab_stdout.write_r = gx_logger_file;
 #endif
 
    config_set_defaults();
