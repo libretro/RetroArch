@@ -1,4 +1,4 @@
-RARCH_VERSION		= "0.9.6"
+RARCH_VERSION		= "0.9.7-rc1"
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
