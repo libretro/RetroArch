@@ -192,8 +192,37 @@ void init_drivers_pre(void)
    find_input_driver();
 }
 
+static void adjust_system_rates(void)
+{
+   const struct retro_system_timing *info = &g_extern.system.av_info.timing;
+
+   float timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
+   if (timing_skew > 0.05f) // We don't want to adjust pitch too much. If we have extreme cases, just don't readjust at all.
+   {
+      RARCH_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
+            g_settings.video.refresh_rate,
+            (float)info->fps);
+
+      // We won't be able to do VSync reliably as game FPS > monitor FPS.
+      if (info->fps > g_settings.video.refresh_rate)
+      {
+         g_settings.video.vsync = false;
+         RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
+      }
+
+      g_settings.video.refresh_rate = info->fps;
+   }
+
+   g_settings.audio.in_rate = info->sample_rate *
+      (g_settings.video.refresh_rate / info->fps);
+
+   RARCH_LOG("Set audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
+}
+
 void init_drivers(void)
 {
+   adjust_system_rates();
+
    init_video_input();
    init_audio();
 }
@@ -278,26 +307,6 @@ static void deinit_dsp_plugin(void)
 }
 #endif
 
-static void adjust_audio_input_rate(void)
-{
-   const struct retro_system_timing *info = &g_extern.system.av_info.timing;
-
-   float timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
-   if (timing_skew > 0.05f) // We don't want to adjust pitch too much. If we have extreme cases, just don't readjust at all.
-   {
-      RARCH_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
-            g_settings.video.refresh_rate,
-            (float)info->fps);
-
-      g_settings.video.refresh_rate = info->fps;
-   }
-
-   g_settings.audio.in_rate = info->sample_rate *
-      (g_settings.video.refresh_rate / info->fps);
-
-   RARCH_LOG("Set audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
-}
-
 void init_audio(void)
 {
    // Accomodate rewind since at some point we might have two full buffers.
@@ -320,8 +329,6 @@ void init_audio(void)
       g_extern.audio_active = false;
       return;
    }
-
-   adjust_audio_input_rate();
 
    driver.audio_data = audio_init_func(*g_settings.audio.device ? g_settings.audio.device : NULL,
          g_settings.audio.out_rate, g_settings.audio.latency);
