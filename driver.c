@@ -208,6 +208,9 @@ static void adjust_system_rates(void)
       {
          g_settings.video.vsync = false;
          RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
+#ifdef RARCH_CONSOLE
+         video_set_nonblock_state_func(false);
+#endif
       }
 
       g_settings.video.refresh_rate = info->fps;
