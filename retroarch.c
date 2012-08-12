@@ -459,7 +459,7 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
    };
 
    int16_t res = 0;
-   if (id < RARCH_FIRST_META_KEY)
+   if (id < RARCH_FIRST_META_KEY || device == RETRO_DEVICE_KEYBOARD)
       res = input_input_state_func(binds, port, device, index, id);
 
 #ifdef HAVE_BSV_MOVIE
