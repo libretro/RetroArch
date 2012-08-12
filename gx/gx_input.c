@@ -464,14 +464,14 @@ static bool gx_key_pressed(void *data, int key)
          if(g_console.menu_enable)
          {
             g_console.mode_switch = MODE_MENU;
-	    SET_TIMER_EXPIRATION(gx, 30);
-            retval = g_console.menu_enable;
+            g_console.ingame_menu_enable = true;
+            SET_TIMER_EXPIRATION(gx, 30);
          }
 
          if(quit_rarch)
             g_console.mode_switch = MODE_EXIT;
 
-	 retval = g_console.menu_enable;
+         retval = g_console.menu_enable;
          return retval;
       }
       default:

@@ -321,6 +321,9 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), "(DEV)");
             w = 5;
             break;
+         case RGUI_SETTINGS_SAVESTATE_SLOT:
+            snprintf(type_str, sizeof(type_str), "%d", g_extern.state_slot);
+            break;
          case RGUI_SETTINGS_VIDEO_FILTER:
             snprintf(type_str, sizeof(type_str), g_settings.video.smooth ? "Bilinear filtering" : "Point filtering");
             break;
@@ -406,6 +409,25 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
 
    switch (setting)
    {
+      case RGUI_SETTINGS_SAVESTATE_SLOT:
+         if (action == RGUI_ACTION_START)
+            rarch_settings_default(S_DEF_SAVE_STATE);
+         else if (action == RGUI_ACTION_LEFT)
+            rarch_settings_change(S_SAVESTATE_DECREMENT);
+         else if (action == RGUI_ACTION_RIGHT)
+            rarch_settings_change(S_SAVESTATE_INCREMENT);
+         break;
+      case RGUI_SETTINGS_SAVESTATE_SAVE:
+      case RGUI_SETTINGS_SAVESTATE_LOAD:
+         if (action == RGUI_ACTION_OK)
+         {
+            if (setting == RGUI_SETTINGS_SAVESTATE_SAVE)
+               rarch_save_state();
+            else
+               rarch_load_state();
+            rarch_settings_change(S_RETURN_TO_GAME);
+         }
+         break;
       case RGUI_SETTINGS_VIDEO_FILTER:
          if (action == RGUI_ACTION_START)
             rarch_settings_default(S_DEF_HW_TEXTURE_FILTER);
@@ -490,9 +512,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
 #ifdef GEKKO
             snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "boot.dol");
 #endif
-            g_console.return_to_launcher = true;
-            g_console.mode_switch = MODE_EXIT;
-            g_console.menu_enable = false;
+            rarch_settings_change(S_RETURN_TO_LAUNCHER);
          }
          break;
       // controllers
@@ -550,6 +570,12 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->folder_buf);
 
+   if (g_console.ingame_menu_enable)
+   {
+      RGUI_MENU_ITEM("Savestate Slot", RGUI_SETTINGS_SAVESTATE_SLOT);
+      RGUI_MENU_ITEM("Save State", RGUI_SETTINGS_SAVESTATE_SAVE);
+      RGUI_MENU_ITEM("Load State", RGUI_SETTINGS_SAVESTATE_LOAD);
+   }
    RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
 #ifdef HW_RVL
    RGUI_MENU_ITEM("VI Trap filtering", RGUI_SETTINGS_VIDEO_SOFT_FILTER);
