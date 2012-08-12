@@ -29,7 +29,7 @@
 #define TERM_START_X 15
 #define TERM_START_Y 27
 #define TERM_WIDTH (((RGUI_WIDTH - TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
-#define TERM_HEIGHT (((RGUI_HEIGHT - TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)))
+#define TERM_HEIGHT (((RGUI_HEIGHT - TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
 
 extern char app_dir[PATH_MAX];
 
@@ -289,6 +289,11 @@ static void render_text(rgui_handle_t *rgui)
       snprintf(title, sizeof(title), "FILE BROWSER: %s", dir);
    }
    blit_line(rgui, TERM_START_X + 15, 15, title, true);
+
+   struct retro_system_info info;
+   retro_get_system_info(&info);
+   snprintf(title, sizeof(title), "CORE: %s %s", info.library_name, info.library_version);
+   blit_line(rgui, TERM_START_X + 15, (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, title, true);
 
    unsigned x = TERM_START_X;
    unsigned y = TERM_START_Y;
