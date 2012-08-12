@@ -983,12 +983,10 @@ static void gl_free(void *data)
 
 static void gl_set_nonblock_state(void *data, bool state)
 {
-   gl_t *gl = (gl_t*)data;
-   if (gl->vsync)
-   {
-      RARCH_LOG("GL VSync => %s\n", state ? "off" : "on");
-      gfx_ctx_set_swap_interval(state ? 0 : 1, true);
-   }
+   (void)data;
+
+   RARCH_LOG("GL VSync => %s\n", state ? "off" : "on");
+   gfx_ctx_set_swap_interval(state ? 0 : 1, true);
 }
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
