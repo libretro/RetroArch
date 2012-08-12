@@ -100,7 +100,7 @@ fi
 
 check_pkgconf XML libxml-2.0
 check_pkgconf SDL_IMAGE SDL_image
-check_pkgconf LIBPNG libpng
+check_pkgconf LIBPNG libpng 1.5
 
 if [ "$HAVE_THREADS" != 'no' ]; then
    if [ "$HAVE_FFMPEG" != 'no' ]; then
