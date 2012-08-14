@@ -480,6 +480,31 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
 ////////////
 
+void gl_set_coords(const struct gl_coords *coords, unsigned unit)
+{
+   pglClientActiveTexture(GL_TEXTURE0 + unit);
+
+   if (coords->vertex)
+   {
+      glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
+      glEnableClientState(GL_VERTEX_ARRAY);
+   }
+
+   if (coords->color)
+   {
+      glColorPointer(4, GL_FLOAT, 0, coords->color);
+      glEnableClientState(GL_COLOR_ARRAY);
+   }
+
+   if (coords->tex_coord)
+   {
+      glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
+      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   }
+
+   pglClientActiveTexture(GL_TEXTURE0);
+}
+
 void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
 {
 #ifdef RARCH_CONSOLE
@@ -567,10 +592,9 @@ static inline void set_lut_texture_coords(const GLfloat *coords)
 {
 #if defined(HAVE_XML) || defined(HAVE_CG)
    // For texture images.
-   pglClientActiveTexture(GL_TEXTURE1);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glTexCoordPointer(2, GL_FLOAT, 0, coords);
-   pglClientActiveTexture(GL_TEXTURE0);
+   struct gl_coords co = {0};
+   co.tex_coord        = coords;
+   gl_set_coords(&co, 1);
 #else
    (void)coords;
 #endif
@@ -597,7 +621,7 @@ static inline void gl_start_frame_fbo(gl_t *gl)
    // consistent texture coordinates.
    // We will "flip" it in place on last pass.
    if (gl->render_to_tex)
-      glVertexPointer(2, GL_FLOAT, 0, vertexes);
+      gl->coords.vertex = vertexes;
 }
 
 static void gl_check_fbo_dimensions(gl_t *gl)
@@ -638,7 +662,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
    GLfloat fbo_tex_coords[8] = {0.0f};
 
    // Render the rest of our passes.
-   glTexCoordPointer(2, GL_FLOAT, 0, fbo_tex_coords);
+   gl->coords.tex_coord = fbo_tex_coords;
 
    // It's kinda handy ... :)
    const struct gl_fbo_rect *prev_rect;
@@ -680,6 +704,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
             gl->vp_width, gl->vp_height, gl->frame_count, 
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
+      gl_set_coords(&gl->coords, 0);
       glDrawArrays(GL_QUADS, 0, 4);
 
       fbo_tex_info_cnt++;
@@ -706,10 +731,12 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
          gl->vp_width, gl->vp_height, gl->frame_count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
-   glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
+   gl->coords.vertex = vertex_ptr;
+
+   gl_set_coords(&gl->coords, 0);
    glDrawArrays(GL_QUADS, 0, 4);
 
-   glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
+   gl->coords.tex_coord = gl->tex_coords;
 }
 #endif
 
@@ -862,7 +889,9 @@ static void gl_render_menu(gl_t *gl)
    glActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture_id);
 
-   glVertexPointer(2, GL_FLOAT, 0, default_vertex_ptr);
+   gl->coords.vertex = default_vertex_ptr;
+
+   gl_set_coords(&gl->coords, 0);
    glDrawArrays(GL_QUADS, 0, 4); 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
@@ -919,6 +948,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          gl->frame_count, 
          &tex_info, gl->prev_info, NULL, 0);
 
+   gl_set_coords(&gl->coords, 0);
    glDrawArrays(GL_QUADS, 0, 4);
 
 #ifdef HAVE_FBO
@@ -1102,14 +1132,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glDisable(GL_DITHER);
    glClearColor(0, 0, 0, 1);
 
-   glEnableClientState(GL_VERTEX_ARRAY);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glEnableClientState(GL_COLOR_ARRAY);
-   glVertexPointer(2, GL_FLOAT, 0, vertex_ptr);
-
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
-   glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
-   glColorPointer(4, GL_FLOAT, 0, white_color);
+   gl->coords.vertex    = vertex_ptr;
+   gl->coords.tex_coord = gl->tex_coords;
+   gl->coords.color     = white_color;
+   gl_set_coords(&gl->coords, 0);
 
    set_lut_texture_coords(tex_coords);
 

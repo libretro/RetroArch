@@ -241,7 +241,8 @@ void gl_render_msg(void *data, const char *msg)
    GLfloat font_tex_coords[8];
 
    glBindTexture(GL_TEXTURE_2D, gl->font_tex);
-   glTexCoordPointer(2, GL_FLOAT, 0, font_tex_coords);
+
+   gl->coords.tex_coord = font_tex_coords;
 
    struct font_output_list out;
 
@@ -264,17 +265,20 @@ void gl_render_msg(void *data, const char *msg)
    }
    calculate_font_coords(gl, font_vertex, font_vertex_dark, font_tex_coords);
    
-   glVertexPointer(2, GL_FLOAT, 0, font_vertex_dark);
-   glColorPointer(4, GL_FLOAT, 0, gl->font_color_dark);
+   gl->coords.vertex = font_vertex_dark;
+   gl->coords.color  = gl->font_color_dark;
+   gl_set_coords(&gl->coords, 0);
    glDrawArrays(GL_QUADS, 0, 4);
-   glVertexPointer(2, GL_FLOAT, 0, font_vertex);
-   glColorPointer(4, GL_FLOAT, 0, gl->font_color);
+
+   gl->coords.vertex = font_vertex;
+   gl->coords.color  = gl->font_color;
+   gl_set_coords(&gl->coords, 0);
    glDrawArrays(GL_QUADS, 0, 4);
 
    // Post - Go back to old rendering path.
-   glTexCoordPointer(2, GL_FLOAT, 0, gl->tex_coords);
-   glVertexPointer(2, GL_FLOAT, 0, vertexes_flipped);
-   glColorPointer(4, GL_FLOAT, 0, white_color);
+   gl->coords.vertex = vertexes_flipped;
+   gl->coords.tex_coord = gl->tex_coords;
+   gl->coords.color = white_color;
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    glDisable(GL_BLEND);

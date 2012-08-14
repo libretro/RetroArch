@@ -125,6 +125,13 @@ struct gl_tex_info
    GLfloat coord[8];
 };
 
+struct gl_coords
+{
+   const GLfloat *vertex;
+   const GLfloat *color;
+   const GLfloat *tex_coord;
+};
+
 #define MAX_SHADERS 16
 
 #if defined(HAVE_XML) || defined(HAVE_CG)
@@ -182,6 +189,8 @@ typedef struct gl
    GLfloat tex_coords[8];
    math_matrix mvp;
 
+   struct gl_coords coords;
+
 #ifdef __CELLOS_LV2__
    GLuint pbo;
 #endif
@@ -225,6 +234,7 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 void gl_shader_use(unsigned index);
 void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate);
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate);
+void gl_set_coords(const struct gl_coords *coords, unsigned unit);
 
 void gl_init_fbo(gl_t *gl, unsigned width, unsigned height);
 void gl_deinit_fbo(gl_t *gl);
