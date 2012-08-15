@@ -368,6 +368,31 @@
 
 #define CELL_GCM_COMPMODE_DISABLED 0
 
+#define CELL_GCM_TRANSFER_LOCAL_TO_LOCAL 0
+
+#define CELL_GCM_TEXTURE_REMAP_ORDER_XYXY (0)
+#define CELL_GCM_TEXTURE_REMAP_ORDER_XXXY (1)
+
+#define CELL_GCM_TEXTURE_UNSIGNED_REMAP_NORMAL (0)
+
+#define CELL_GCM_TEXTURE_REMAP_FROM_A (0)
+#define CELL_GCM_TEXTURE_REMAP_FROM_R (1)
+#define CELL_GCM_TEXTURE_REMAP_FROM_G (2)
+#define CELL_GCM_TEXTURE_REMAP_FROM_B (3)
+
+#define CELL_GCM_TEXTURE_REMAP_ZERO (0)
+#define CELL_GCM_TEXTURE_REMAP_ONE (1)
+#define CELL_GCM_TEXTURE_REMAP_REMAP (2)
+
+#define CELL_GCM_MAX_TEXIMAGE_COUNT (16)
+
+#define CELL_GCM_TEXTURE_WRAP (1)
+
+#define CELL_GCM_TEXTURE_NR (0x00)
+#define CELL_GCM_TEXTURE_LN (0x20)
+
+#define CELL_GCM_TEXTURE_B8 (0x81)
+
 #define CELL_RESC_720x480 RESC_720x480
 #define CELL_RESC_720x576 RESC_720x576
 #define CELL_RESC_1280x720 RESC_1280x720
@@ -481,7 +506,17 @@
 #define cellGcmSetTextureFilterInline rsxTextureFilter
 #define cellGcmSetTextureControlInline rsxTextureControl
 #define cellGcmSetCullFaceEnableInline rsxSetCullFaceEnable
-#define cellGcmSetShadeModeInline rxSetShadeModel
+#define cellGcmSetShadeModeInline rsxSetShadeModel
+#define cellGcmSetTransferImage rsxSetTransferImage
+#define cellGcmSetBlendColor rsxSetBlendColor
+#define cellGcmSetBlendEquation rsxSetBlendEquation
+#define cellGcmSetBlendFunc rsxSetBlendFunc
+#define cellGcmSetClearColor rsxSetClearColor
+#define cellGcmSetScissor rsxSetScissor
+#define celGcmSetInvalidateVertexCache(fifo) rsxInvalidateTextureCache(fifo, GCM_INVALIDATE_VERTEX_TEXTURE)
+#else
+#define cellGcmSetTransferImage cellGcmSetTransferImageInline
+#define celGcmSetInvalidateVertexCache cellGcmSetInvalidateVertexCacheInline
 #endif
 
 /*============================================================
@@ -497,5 +532,8 @@
 #define CELL_GCM_METHOD_DATA_TEXTURE_CONTROL0(val0, minlod, maxlod, filter) (((minlod << 2) | (filter) << 4) | (maxlod << 7) | (minlod << 19) | (val0 << 31))
 #define CELL_GCM_METHOD_DATA_TEXTURE_ADDRESS(wraps, wrapt, wrapr,  unsignedremap, zfunc, gamma) ((wraps) | ((0) << 4) | ((wrapt) << 8) | (unsignedremap << 12) | ((wrapr) << 16) | (gamma << 20) | (zfunc << 28))
 #endif
+
+#define CELL_GCM_REMAP_MODE(order, inputA, inputR, inputG, inputB, outputA, outputR, outputG, outputB) \
+	(((order)<<16)|((inputA))|((inputR)<<2)|((inputG)<<4)|((inputB)<<6)|((outputA)<<8)|((outputR)<<10)|((outputG)<<12)|((outputB)<<14))
 
 #endif

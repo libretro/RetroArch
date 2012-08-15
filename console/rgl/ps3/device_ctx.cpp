@@ -248,26 +248,24 @@ static GLboolean _RGLInitFromRM( RGLResource *rmResource )
 
    ref = RGL_CLAMPF_01(ref);
 
-   cellGcmSetAlphaFuncInline( &_RGLState.fifo, CELL_GCM_ALWAYS, RGL_QUICK_FLOAT2UINT( ref * 255.0f ));
+   cellGcmSetBlendColor( &_RGLState.fifo, hwColor, hwColor);
+   cellGcmSetBlendEquation( &_RGLState.fifo, CELL_GCM_FUNC_ADD, CELL_GCM_FUNC_ADD );
+   cellGcmSetBlendFunc( &_RGLState.fifo, CELL_GCM_ONE, CELL_GCM_ZERO, CELL_GCM_ONE, CELL_GCM_ZERO );
+   cellGcmSetClearColor( &_RGLState.fifo, hwColor);
+   cellGcmSetScissor( &_RGLState.fifo, 0, 0, 4095, 4095);
+   cellGcmSetVertexAttribOutputMask( &_RGLState.fifo, s->vertexProgramAttribMask & s->fragmentProgramAttribMask);
 
-   cellGcmSetBlendColorInline( &_RGLState.fifo, hwColor, hwColor);
-   cellGcmSetBlendEquationInline( &_RGLState.fifo, CELL_GCM_FUNC_ADD, CELL_GCM_FUNC_ADD );
-   cellGcmSetBlendFuncInline( &_RGLState.fifo, CELL_GCM_ONE, CELL_GCM_ZERO, CELL_GCM_ONE, CELL_GCM_ZERO );
-   cellGcmSetClearColorInline( &_RGLState.fifo, hwColor);
-   cellGcmSetScissorInline( &_RGLState.fifo, 0, 0, 4095, 4095);
-   cellGcmSetVertexAttribOutputMaskInline( &_RGLState.fifo, s->vertexProgramAttribMask & s->fragmentProgramAttribMask);
+   cellGcmSetPointSpriteControl( &_RGLState.fifo, CELL_GCM_FALSE, 1, 0);
+   cellGcmSetFrequencyDividerOperation( &_RGLState.fifo, 0);
 
-   cellGcmSetPointSpriteControlInline( &_RGLState.fifo, CELL_GCM_FALSE, 1, 0);
-   cellGcmSetFrequencyDividerOperationInline( &_RGLState.fifo, 0);
-
-   cellGcmSetRestartIndexInline( &_RGLState.fifo, 0);
-   cellGcmSetShadeModeInline( &_RGLState.fifo, CELL_GCM_SMOOTH);
+   cellGcmSetRestartIndex( &_RGLState.fifo, 0);
+   cellGcmSetShadeMode( &_RGLState.fifo, CELL_GCM_SMOOTH);
 
    for (i = 0; i < CELL_GCM_MAX_TEXIMAGE_COUNT; i++)
    {
-      cellGcmSetTextureAddressInline( &_RGLState.fifo, i, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_CLAMP_TO_EDGE, CELL_GCM_TEXTURE_UNSIGNED_REMAP_NORMAL, CELL_GCM_TEXTURE_ZFUNC_NEVER, 0 );
-      cellGcmSetTextureFilterInline( &_RGLState.fifo, i, 0, CELL_GCM_TEXTURE_NEAREST_LINEAR, CELL_GCM_TEXTURE_LINEAR, CELL_GCM_TEXTURE_CONVOLUTION_QUINCUNX );
-      cellGcmSetTextureControlInline( &_RGLState.fifo, i, CELL_GCM_TRUE, 0, 12 << 8, CELL_GCM_TEXTURE_MAX_ANISO_1 );
+      cellGcmSetTextureAddress( &_RGLState.fifo, i, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_CLAMP_TO_EDGE, CELL_GCM_TEXTURE_UNSIGNED_REMAP_NORMAL, CELL_GCM_TEXTURE_ZFUNC_NEVER, 0 );
+      cellGcmSetTextureFilter( &_RGLState.fifo, i, 0, CELL_GCM_TEXTURE_NEAREST_LINEAR, CELL_GCM_TEXTURE_LINEAR, CELL_GCM_TEXTURE_CONVOLUTION_QUINCUNX );
+      cellGcmSetTextureControl( &_RGLState.fifo, i, CELL_GCM_TRUE, 0, 12 << 8, CELL_GCM_TEXTURE_MAX_ANISO_1 );
    }
 
    _RGLFifoGlViewport( 0, 0, CELL_GCM_MAX_RT_DIMENSION, CELL_GCM_MAX_RT_DIMENSION, 0.0f, 1.0f );
@@ -948,7 +946,7 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
       _RGLSetDisplayMode(vm, gcmDevice->color[0].bpp*8, gcmDevice->color[0].pitch);
 
       cellGcmSetFlipMode(gcmDevice->vsync ? CELL_GCM_DISPLAY_VSYNC : CELL_GCM_DISPLAY_HSYNC);
-      cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+      cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
       _RGLFifoFinish( &_RGLState.fifo );
 
       for (int i = 0; i < params->bufferingMode; ++i)
@@ -1066,7 +1064,7 @@ void psglDestroyDevice(PSGLdevice *device)
    RGLDevice *gcmDevice = ( RGLDevice * )device->platformDevice;
    PSGLdeviceParameters* params = &device->deviceParameters;
 
-   cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+   cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
    _RGLFifoFinish( &_RGLState.fifo );
 
    if ( rescIsEnabled( params ) )
@@ -1106,7 +1104,7 @@ static void *_RGLPlatformRasterInit (void)
 {
    RGLDriver *driver = (RGLDriver*)malloc(sizeof(RGLDriver));
 
-   cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+   cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
    _RGLFifoFinish( &_RGLState.fifo );
    memset( driver, 0, sizeof( RGLDriver ) );
    driver->rt.yInverted = CELL_GCM_TRUE;
@@ -1246,13 +1244,13 @@ GLAPI void psglSwap(void)
 
    LContext->attribs->DirtyMask = (1 << MAX_VERTEX_ATTRIBS) - 1;
 
-   cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+   cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
 
    _RGLFifoFlush(fifo);
 
    while(sys_semaphore_wait(FlipSem, 1000) != CELL_OK);
 
-   cellGcmSetInvalidateVertexCacheInline(&_RGLState.fifo);
+   cellGcmSetInvalidateVertexCache(&_RGLState.fifo);
    _RGLFifoFlush(fifo);
 
    if (device->deviceParameters.bufferingMode == PSGL_BUFFERING_MODE_DOUBLE)

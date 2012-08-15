@@ -823,7 +823,7 @@ static inline void TransferDataVidToVid(transfer_params_t *params)
     GLuint dstOffset_tmp = gmmAddressToOffset(pBaseBlock_dst->address, pBaseBlock_dst->isMain) + params->dst_id_offset;
     GLuint srcOffset_tmp = gmmAddressToOffset(pBaseBlock_src->address, pBaseBlock_src->isMain) + params->src_id_offset;
 
-    cellGcmSetTransferImageInline( (RGLFifo*)params->fifo_ptr, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, dstOffset_tmp, params->dst_pitch, params->dst_x, params->dst_y, srcOffset_tmp, params->src_pitch, params->src_x, params->src_y, params->width, params->height, params->bpp);
+    cellGcmSetTransferImage( (RGLFifo*)params->fifo_ptr, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, dstOffset_tmp, params->dst_pitch, params->dst_x, params->dst_y, srcOffset_tmp, params->src_pitch, params->src_x, params->src_y, params->width, params->height, params->bpp);
 }
 
 typedef struct RGLRenderTarget RGLRenderTarget;

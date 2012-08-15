@@ -624,7 +624,7 @@ static void _RGLPlatformBufferObjectSetData( jsBufferObject* bufferObject, GLint
 		     }
 		     break;
 		  default:
-                     cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+                     cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
 		     _RGLFifoFinish( &_RGLState.fifo );
 		     memcpy( gmmIdToAddress( dstId ) + offset, src, size );
 		     break;
@@ -732,7 +732,7 @@ static GLvoid _RGLPlatformBufferObjectCopyData( jsBufferObject* bufferObjectDst,
             _RGLMemcpy( dst->bufferId, 0, dst->pitch, src->bufferId, src->bufferSize );
             break;
         case SURFACE_POOL_SYSTEM:
-	    cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+	    cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
 	    _RGLFifoFinish( &_RGLState.fifo );
             memcpy( gmmIdToAddress( dst->bufferId ), gmmIdToAddress( src->bufferId ),
             src->bufferSize );
@@ -1149,7 +1149,7 @@ static void _RGLPlatformCopyGPUTexture( jsTexture* texture )
    {
       _RGLImageAllocCPUStorage( image );
 
-      cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+      cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
       _RGLFifoFinish( &_RGLState.fifo );
 
       char* gpuData = gmmIdToAddress(gcmTexture->gpuAddressId) + gcmTexture->gpuAddressIdOffset;
@@ -1701,7 +1701,7 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
       gmmFree( bufferId );
    }
 
-   cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+   cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
    _RGLFifoFlush( fifo );
 }
 
@@ -4273,7 +4273,7 @@ static char *_RGLPlatformBufferObjectMap( jsBufferObject* bufferObject, GLenum a
 	}
 	else
 	{
-		cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+		cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
 		_RGLFifoFinish( &_RGLState.fifo );
 	}
 
@@ -5333,7 +5333,7 @@ void  psglDestroyContext( PSGLcontext* LContext )
 
     if ( _CurrentContext == LContext )
     {
-	cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+	cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
         _RGLFifoFinish( &_RGLState.fifo );
     }
 
@@ -5569,7 +5569,7 @@ GLAPI void APIENTRY glFlush(void)
    if ( RGL_UNLIKELY( LContext->needValidate ) )
       _RGLValidateStates();
 
-   cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+   cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
 
    _RGLFifoFlush( fifo );
 }
@@ -5577,7 +5577,7 @@ GLAPI void APIENTRY glFlush(void)
 GLAPI void APIENTRY glFinish(void)
 {
    glFlush();
-   cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+   cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
    _RGLFifoFinish( &_RGLState.fifo );
 }
 
@@ -5623,7 +5623,7 @@ void psglExit (void)
    if ( LContext )
    {
       glFlush();
-      cellGcmSetInvalidateVertexCacheInline ( &_RGLState.fifo);
+      cellGcmSetInvalidateVertexCache ( &_RGLState.fifo);
       _RGLFifoFinish( &_RGLState.fifo );
 
       psglMakeCurrent( NULL, NULL );
@@ -5990,7 +5990,7 @@ GLAPI void APIENTRY glDrawArrays( GLenum mode, GLint first, GLsizei count )
    if(driver->invalidateVertexCache)
    {
       driver->invalidateVertexCache = GL_FALSE;
-      cellGcmSetInvalidateVertexCacheInline ( &_RGLState.fifo);
+      cellGcmSetInvalidateVertexCache ( &_RGLState.fifo);
    }
 
    GmmBaseBlock *pBaseBlock = (GmmBaseBlock *)driver->fpLoadProgramId;
