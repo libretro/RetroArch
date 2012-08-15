@@ -243,64 +243,6 @@ DECLARE_PACKED_TYPE(GL_##REALTYPE,PACKED_TYPE(REALTYPE,N,S1,S2,S3,S4,REV),N,S1,S
 #define GET_BITS(to,from,first,count) if ((count)>0) to=((GLfloat)(((from)>>(first))&((1<<(count))-1)))/(GLfloat)((1<<((count==0)?1:count))-1)
 #define PUT_BITS(from,to,first,count) if ((count)>0) to|=((unsigned int)((from)*((GLfloat)((1<<((count==0)?1:count))-1))))<<(first);
 
-static inline void _RGLFifoGlVertexAttribPointer
-(
-    GLuint          index,
-    GLint           size,
-    RGLEnum       type,
-    GLboolean       normalized,
-    GLsizei         stride,
-    GLushort        frequency,
-    GLuint          offset
-)
-{
-
-   switch(size)
-   {
-      case 0:
-         stride = 0;
-	 normalized = 0;
-	 type = RGL_FLOAT;
-	 offset = 0;
-	 break;
-      case 1:
-      case 2:
-      case 3:
-      case 4:
-	 break;
-      default:
-	 break;
-   }
-
-    uint8_t gcmType = 0;
-    switch ( type )
-    {
-       case RGL_UNSIGNED_BYTE:
-          if (normalized)
-             gcmType = CELL_GCM_VERTEX_UB;
-	  else
-             gcmType = CELL_GCM_VERTEX_UB256;
-	  break;
-       case RGL_SHORT:
-	  gcmType = normalized ? CELL_GCM_VERTEX_S1 : CELL_GCM_VERTEX_S32K;
-	  break;
-       case RGL_FLOAT:
-	  gcmType = CELL_GCM_VERTEX_F;
-	  break;
-       case RGL_HALF_FLOAT:
-	  gcmType = CELL_GCM_VERTEX_SF;
-	  break;
-       case RGL_CMP:
-	  size = 1;
-	  gcmType = CELL_GCM_VERTEX_CMP;
-	  break;
-       default:
-	  break;
-    }
-
-   cellGcmSetVertexDataArrayInline( &_RGLState.fifo, index, frequency, stride, size, gcmType, CELL_GCM_LOCATION_LOCAL, offset );
-}
-
 static void _RGLResetAttributeState( jsAttributeState* as )
 {
     for(int i = 0; i < MAX_VERTEX_ATTRIBS; ++i)
@@ -1742,12 +1684,14 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
       GLuint bufferId = gmmAlloc(0, sizeof(_RGLClearVertexBuffer));
       memcpy( gmmIdToAddress(bufferId), _RGLClearVertexBuffer, sizeof( _RGLClearVertexBuffer ) );
       GmmBaseBlock *pBaseBlock = (GmmBaseBlock *)bufferId;
-      _RGLFifoGlVertexAttribPointer( 0, 3, RGL_FLOAT, CELL_GCM_FALSE, 3*sizeof( GLfloat ), 1, gmmAddressToOffset(pBaseBlock->address, pBaseBlock->isMain));
+
+      cellGcmSetVertexDataArrayInline( &_RGLState.fifo, 0 /* index */, 1/* frequency */, 3 * sizeof(GLfloat)/*stride */, 3 /* size */, CELL_GCM_VERTEX_F /* gcmType */, CELL_GCM_LOCATION_LOCAL, gmmAddressToOffset(pBaseBlock->address, pBaseBlock->isMain)/* offset */);
+
       RGLBIT_TRUE( LContext->attribs->DirtyMask, 0 );
 
       for(int i = 1; i < MAX_VERTEX_ATTRIBS; ++i)
       {
-         _RGLFifoGlVertexAttribPointer( i, 0, RGL_FLOAT, 0, 0, 0, 0 );
+	 cellGcmSetVertexDataArrayInline( &_RGLState.fifo, i/* index */, 0/* frequency */, 0/*stride */, 0/* size */, CELL_GCM_VERTEX_F /*gcmType */, CELL_GCM_LOCATION_LOCAL, 0/* offset */ );
 	 RGLBIT_TRUE( LContext->attribs->DirtyMask, i );
       }
       cellGcmSetVertexData4fInline( &_RGLState.fifo, _RGL_ATTRIB_PRIMARY_COLOR_INDEX, (GLfloat*)&LContext->ClearColor);
@@ -5891,9 +5835,10 @@ static GLuint _RGLValidateAttributesSlow( jsDrawParams *dparams)
             continue;
 
 	 jsAttribute* attrib = as->attrib + i;
+
 	 if ( RGLBIT_GET( as->EnabledMask, i ) )
 	 {
-            const GLsizei stride = attrib->clientStride;
+            GLsizei stride = attrib->clientStride;
 	    const GLuint freq = attrib->frequency;
 
 	    if ( RGL_UNLIKELY( dparams->attribXferSize[i] ) )
@@ -5921,12 +5866,43 @@ static GLuint _RGLValidateAttributesSlow( jsDrawParams *dparams)
 	       gpuOffset = gmmAddressToOffset(pBaseBlock->address, pBaseBlock->isMain) + (( const GLubyte* )attrib->clientData - ( const GLubyte* )NULL );
 	    }
 
-	    _RGLFifoGlVertexAttribPointer( i, attrib->clientSize,
-            ( RGLEnum )attrib->clientType, attrib->normalized, stride, freq, gpuOffset );
+	    if(attrib->clientSize == 0)
+	    {
+               stride = 0;
+	       attrib->normalized = 0;
+	       attrib->clientType = RGL_FLOAT;
+	       gpuOffset = 0;
+	    }
+
+	    uint8_t gcmType = 0;
+
+	    switch ( (RGLEnum)attrib->clientType )
+	    {
+		    case RGL_UNSIGNED_BYTE:
+			    gcmType = attrib->normalized ? CELL_GCM_VERTEX_UB : CELL_GCM_VERTEX_UB256;
+			    break;
+		    case RGL_SHORT:
+			    gcmType = attrib->normalized ? CELL_GCM_VERTEX_S1 : CELL_GCM_VERTEX_S32K;
+			    break;
+		    case RGL_FLOAT:
+			    gcmType = CELL_GCM_VERTEX_F;
+			    break;
+		    case RGL_HALF_FLOAT:
+			    gcmType = CELL_GCM_VERTEX_SF;
+			    break;
+		    case RGL_CMP:
+			    attrib->clientSize = 1;
+			    gcmType = CELL_GCM_VERTEX_CMP;
+			    break;
+		    default:
+			    break;
+	    }
+
+	    cellGcmSetVertexDataArrayInline( &_RGLState.fifo, i, freq, stride, attrib->clientSize, gcmType, CELL_GCM_LOCATION_LOCAL, gpuOffset );
 	 }
 	 else
 	 {
-            _RGLFifoGlVertexAttribPointer( i, 0, RGL_FLOAT, 0, 0, 0, 0 );
+	    cellGcmSetVertexDataArrayInline( &_RGLState.fifo, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
 	    cellGcmSetVertexData4fInline( &_RGLState.fifo, i,attrib->value);
 	 }
       }
@@ -7520,9 +7496,7 @@ static _CGparameter *_cgGetNamedParameter( _CGprogram* progPtr, const char* name
                 break;
                 case CGP_STRUCTURE:
                     if ( done )
-                    {
                         itemIndex = ( int )( currentEntry - program->parametersEntries );
-                    }
                     else
                     {
                         const CgParameterStructure *parameterStructure = _RGLGetParameterStructure( program, currentEntry );
