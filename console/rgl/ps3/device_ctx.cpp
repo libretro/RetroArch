@@ -248,6 +248,7 @@ static GLboolean _RGLInitFromRM( RGLResource *rmResource )
 
    ref = RGL_CLAMPF_01(ref);
 
+   cellGcmSetAlphaFunc( &_RGLState.fifo, CELL_GCM_ALWAYS, RGL_QUICK_FLOAT2UINT( ref * 255.0f ));
    cellGcmSetBlendColor( &_RGLState.fifo, hwColor, hwColor);
    cellGcmSetBlendEquation( &_RGLState.fifo, CELL_GCM_FUNC_ADD, CELL_GCM_FUNC_ADD );
    cellGcmSetBlendFunc( &_RGLState.fifo, CELL_GCM_ONE, CELL_GCM_ZERO, CELL_GCM_ONE, CELL_GCM_ZERO );
