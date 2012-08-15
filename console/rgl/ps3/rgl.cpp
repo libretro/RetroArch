@@ -4329,11 +4329,7 @@ static void _RGLPlatformDestroyTexture( jsTexture* texture )
     _RGLTextureTouchFBOs( texture );
 }
 
-#ifdef __PSL1GHT__
-#define CELL_GCM_METHOD_HEADER_TEXTURE_OFFSET(unit, val) (((val) << (18)) | ((0x00001a00) + (unit) * 0x20))
-#define CELL_GCM_METHOD_DATA_TEXTURE_OFFSET(val) (val)
-#define CELL_GCM_METHOD_DATA_TEXTURE_CONTROL3(pitch, depth) ((pitch) | ((depth) << 20))
-#else
+#ifndef __PSL1GHT__
 #include <cell/gcm/gcm_method_data.h>
 #endif
 
