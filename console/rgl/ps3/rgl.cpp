@@ -1464,34 +1464,34 @@ static void _RGLPlatformValidateTextureResources( jsTexture *texture )
 
 	    const GLuint pixelBytes = layout->pixelBits / 8;
 
-	    RGLSurface src = {
-		source:		SURFACE_SOURCE_TEMPORARY,
-		width:		0,
-		height:		0,
-		bpp:		pixelBytes,
-		pitch:		0,
-		format:		layout->internalFormat,
-		pool:		SURFACE_POOL_LINEAR,
-		ppuData:     NULL,
-		dataId:      GMM_ERROR,
-		dataIdOffset:0,
-	    };
+	    RGLSurface src;
+	    src.source             = SURFACE_SOURCE_TEMPORARY;
+	    src.width              = 0;
+	    src.height             = 0;
+	    src.bpp                = pixelBytes;
+	    src.pitch              = 0;
+	    src.format             = layout->internalFormat;
+	    src.pool               = SURFACE_POOL_LINEAR;
+	    src.ppuData            = NULL;
+	    src.dataId             = GMM_ERROR;
+	    src.dataIdOffset       = 0;
 
-	    RGLSurface dst = {
-		source:		SURFACE_SOURCE_TEXTURE,
-		width:		0,
-		height:		0,
-		bpp:		pixelBytes,
-		pitch:		layout->pitch,
-		format:		layout->internalFormat,
-		pool:		SURFACE_POOL_SYSTEM,
-		ppuData:     NULL,
-		dataId:      GMM_ERROR,
-		dataIdOffset:0,
-	    };
+	    RGLSurface dst;
+	    dst.source             = SURFACE_SOURCE_TEXTURE;
+	    dst.width              = 0;
+	    dst.height             = 0;
+	    dst.bpp                = pixelBytes;
+	    dst.pitch              = layout->pitch;
+	    dst.format             = layout->internalFormat;
+	    dst.pool               = SURFACE_POOL_SYSTEM;
+	    dst.ppuData            = NULL;
+	    dst.dataId             = GMM_ERROR;
+	    dst.dataIdOffset       = 0;
 
 	    GLuint bounceBufferId = GMM_ERROR;
+
 	    jsImage *image = texture->image;
+
 	    if(image->dataState == IMAGE_DATASTATE_HOST)
 	    {
 		    src.ppuData = image->data;
@@ -4703,36 +4703,33 @@ static GLboolean _RGLPlatformTexturePBOImage(
     else
     {
         const GLuint bytesPerPixel = newLayout.pixelBits / 8;
-        RGLSurface src =
-	{
-                source:		SURFACE_SOURCE_PBO,
-		width:		image->width,
-		height:		image->height,
-		bpp:		bytesPerPixel,
-		pitch:		pboPitch,
-		format:		newLayout.internalFormat,
-		pool:		SURFACE_POOL_LINEAR,
-		ppuData:    NULL,
-		dataId:     gpuId,
-		dataIdOffset: gpuIdOffset, 
-	};
+
+        RGLSurface src;
+        src.source             = SURFACE_SOURCE_PBO;
+        src.width              = image->width;
+        src.height             = image->height;
+        src.bpp                = bytesPerPixel;
+        src.pitch              = pboPitch;
+        src.format             = newLayout.internalFormat;
+        src.pool               = SURFACE_POOL_LINEAR;
+        src.ppuData            = NULL;
+        src.dataId             = gpuId;
+        src.dataIdOffset       = gpuIdOffset;
 
         texture->revalidate |= TEXTURE_REVALIDATE_LAYOUT;
         _RGLPlatformValidateTextureResources( texture );
 
-        RGLSurface dst =
-	{
-                source:		SURFACE_SOURCE_TEXTURE,
-		width:		image->width,
-		height:		image->height,
-		bpp:		bytesPerPixel,
-		pitch:		gcmTexture->gpuLayout.pitch,
-		format:		gcmTexture->gpuLayout.internalFormat,
-		pool:		gcmTexture->pool,
-		ppuData:    NULL,
-		dataId:     gcmTexture->gpuAddressId,
-		dataIdOffset: gcmTexture->gpuAddressIdOffset,
-	};
+        RGLSurface dst;
+        dst.source             = SURFACE_SOURCE_TEXTURE;
+        dst.width              = image->width;
+        dst.height             = image->height;
+        dst.bpp                = bytesPerPixel;
+        dst.pitch              = gcmTexture->gpuLayout.pitch;
+        dst.format             = gcmTexture->gpuLayout.internalFormat;
+        dst.pool               = gcmTexture->pool;
+        dst.ppuData            = NULL;
+        dst.dataId             = gcmTexture->gpuAddressId;
+        dst.dataIdOffset       = gcmTexture->gpuAddressIdOffset;
 
 	transfer_params_t transfer_params;
 
