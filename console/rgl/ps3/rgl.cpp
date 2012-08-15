@@ -31,8 +31,6 @@
 
 #define pad(x, pad) (((x) + (pad) - 1 ) / (pad) * (pad))
 
-#define gmmAddressToOffset(address, isMain) ((isMain) ? (address)-pGmmMainAllocator->memoryBase : (address)-pGmmLocalAllocator->memoryBase)
-
 #define GL_UNSIGNED_SHORT_8_8		GL_UNSIGNED_SHORT_8_8_SCE
 #define GL_UNSIGNED_SHORT_8_8_REV	GL_UNSIGNED_SHORT_8_8_REV_SCE
 #define GL_UNSIGNED_INT_16_16		GL_UNSIGNED_INT_16_16_SCE
@@ -126,7 +124,7 @@ static inline float _RGLFloatFrom_GL_FLOAT(type_GL_FLOAT v)
 
 typedef GLhalfARB type_GL_HALF_FLOAT_ARB;
 
-const char *findSectionInPlace(const char* memory,unsigned int /*size*/,const char *name, size_t *sectionSize)
+static const char *findSectionInPlace(const char* memory,unsigned int /*size*/,const char *name, size_t *sectionSize)
 {
    const Elf32_Ehdr *ehdr = (const Elf32_Ehdr*)memory;
 	
@@ -149,7 +147,7 @@ const char *findSectionInPlace(const char* memory,unsigned int /*size*/,const ch
    return NULL;
 }
 
-const char *findSymbolSectionInPlace(const char *memory, unsigned int /*size*/, size_t *symbolSize, size_t *symbolCount, const char **symbolstrtab)
+static const char *findSymbolSectionInPlace(const char *memory, unsigned int /*size*/, size_t *symbolSize, size_t *symbolCount, const char **symbolstrtab)
 {
    const Elf32_Ehdr *ehdr = (const Elf32_Ehdr*)memory;
 	
@@ -172,7 +170,7 @@ const char *findSymbolSectionInPlace(const char *memory, unsigned int /*size*/, 
    return NULL;
 }
 
-int lookupSymbolValueInPlace(const char* symbolSection, size_t symbolSize, size_t symbolCount, const char *symbolstrtab, const char *name)
+static int lookupSymbolValueInPlace(const char* symbolSection, size_t symbolSize, size_t symbolCount, const char *symbolstrtab, const char *name)
 {
    for (size_t i = 0; i < symbolCount; i++)
    {
@@ -186,7 +184,7 @@ int lookupSymbolValueInPlace(const char* symbolSection, size_t symbolSize, size_
    return -1;
 }
 
-const char *getSymbolByIndexInPlace(const char* symbolSection, size_t symbolSize, size_t symbolCount,  const char *symbolstrtab, int index)
+static const char *getSymbolByIndexInPlace(const char* symbolSection, size_t symbolSize, size_t symbolCount,  const char *symbolstrtab, int index)
 {
    Elf32_Sym* elf_sym = (Elf32_Sym*)symbolSection + index;
    return symbolstrtab + elf_sym->st_name;
@@ -562,17 +560,25 @@ static void _RGLMemcpy( const GLuint dstId, unsigned dstOffset, unsigned int pit
    {
       const GLuint firstBytes = MIN( pitch - dstOffsetAlign, size );
 
-      _RGLTransferDataVidToVid(
-		      dstId,
-		      0,
-		      pitch,
-		      dstOffsetAlign / 2, dstOffset / pitch,
-		      srcId,
-		      srcOffset,
-		      pitch,
-		      0, 0,
-		      firstBytes / 2, 1,
-		      2 );
+      transfer_params_t transfer_params;
+
+      transfer_params.dst_id        = dstId;
+      transfer_params.dst_id_offset = 0;
+      transfer_params.dst_pitch     = pitch;
+      transfer_params.dst_x         = dstOffsetAlign / 2;
+      transfer_params.dst_y         = dstOffset / pitch;
+      transfer_params.src_id        = srcId;
+      transfer_params.src_id_offset = srcOffset;
+      transfer_params.src_pitch     = pitch;
+      transfer_params.src_x         = 0;
+      transfer_params.src_y         = 0;
+      transfer_params.width         = firstBytes / 2;
+      transfer_params.height        = 1;
+      transfer_params.bpp           = 2;
+      transfer_params.fifo_ptr      = &_RGLState.fifo;
+
+      TransferDataVidToVid(&transfer_params);
+
       dstOffset += firstBytes;
       srcOffset += firstBytes;
       size -= firstBytes;
@@ -580,30 +586,50 @@ static void _RGLMemcpy( const GLuint dstId, unsigned dstOffset, unsigned int pit
 
    const GLuint fullLines = size / pitch;
    const GLuint extraBytes = size % pitch;
+
    if ( fullLines )
-      _RGLTransferDataVidToVid(
-		      dstId,
-		      0,
-		      pitch,
-		      0, dstOffset / pitch,
-		      srcId,
-		      srcOffset,
-		      pitch,
-		      0, 0,
-		      pitch / 2, fullLines,
-		      2 );
+   {
+      transfer_params_t transfer_params;
+
+      transfer_params.dst_id        = dstId;
+      transfer_params.dst_id_offset = 0;
+      transfer_params.dst_pitch     = pitch;
+      transfer_params.dst_x         = 0;
+      transfer_params.dst_y         = dstOffset / pitch;
+      transfer_params.src_id        = srcId;
+      transfer_params.src_id_offset = srcOffset;
+      transfer_params.src_pitch     = pitch;
+      transfer_params.src_x         = 0;
+      transfer_params.src_y         = 0;
+      transfer_params.width         = pitch / 2;
+      transfer_params.height        = fullLines;
+      transfer_params.bpp           = 2;
+      transfer_params.fifo_ptr      = &_RGLState.fifo;
+
+      TransferDataVidToVid(&transfer_params);
+   }
+
    if ( extraBytes )
-      _RGLTransferDataVidToVid(
-		      dstId,
-		      0,
-		      pitch,
-		      0, fullLines + dstOffset / pitch,
-		      srcId,
-		      srcOffset,
-		      pitch,
-		      0, fullLines,
-		      extraBytes / 2, 1,
-		      2 );
+   {
+      transfer_params_t transfer_params;
+
+      transfer_params.dst_id        = dstId;
+      transfer_params.dst_id_offset = 0;
+      transfer_params.dst_pitch     = pitch;
+      transfer_params.dst_x         = 0;
+      transfer_params.dst_y         = fullLines + dstOffset / pitch;
+      transfer_params.src_id        = srcId;
+      transfer_params.src_id_offset = srcOffset;
+      transfer_params.src_pitch     = pitch;
+      transfer_params.src_x         = 0;
+      transfer_params.src_y         = fullLines;
+      transfer_params.width         = extraBytes / 2;
+      transfer_params.height        = 1;
+      transfer_params.bpp           = 2;
+      transfer_params.fifo_ptr      = &_RGLState.fifo;
+
+      TransferDataVidToVid(&transfer_params);
+   }
 }
 
 static void _RGLPlatformBufferObjectSetData( jsBufferObject* bufferObject, GLintptr offset, GLsizeiptr size, const GLvoid *data, GLboolean tryImmediateCopy )
@@ -1491,7 +1517,24 @@ static void _RGLPlatformValidateTextureResources( jsTexture *texture )
 		    dst.dataId = gcmTexture->gpuAddressId;
 		    dst.dataIdOffset = gcmTexture->gpuAddressIdOffset;
 
-		    _RGLTransferDataVidToVid( dst.dataId, dst.dataIdOffset, dst.pitch ? dst.pitch : (dst.bpp * dst.width), 0, 0, src.dataId, src.dataIdOffset, src.pitch ? src.pitch : (src.bpp * src.width), 0, 0, src.width, src.height, src.bpp );
+		    transfer_params_t transfer_params;
+
+		    transfer_params.dst_id        = dst.dataId;
+		    transfer_params.dst_id_offset = dst.dataIdOffset;
+		    transfer_params.dst_pitch     = dst.pitch ? dst.pitch : (dst.bpp * dst.width);
+		    transfer_params.dst_x         = 0;
+		    transfer_params.dst_y         = 0;
+		    transfer_params.src_id        = src.dataId;
+		    transfer_params.src_id_offset = src.dataIdOffset;
+		    transfer_params.src_pitch     = src.pitch ? src.pitch : (src.bpp * src.width);
+		    transfer_params.src_x         = 0;
+		    transfer_params.src_y         = 0;
+		    transfer_params.width         = src.width;
+		    transfer_params.height        = src.height;
+		    transfer_params.bpp           = src.bpp;
+		    transfer_params.fifo_ptr      = &_RGLState.fifo;
+
+		    TransferDataVidToVid(&transfer_params);
 
 		    _RGLImageFreeCPUStorage( image );
 		    image->dataState |= IMAGE_DATASTATE_GPU;
@@ -4691,7 +4734,24 @@ static GLboolean _RGLPlatformTexturePBOImage(
 		dataIdOffset: gcmTexture->gpuAddressIdOffset,
 	};
 
-	_RGLTransferDataVidToVid( dst.dataId, dst.dataIdOffset, dst.pitch ? dst.pitch : (dst.bpp * dst.width), 0, 0, src.dataId, src.dataIdOffset, src.pitch ? src.pitch : (src.bpp * src.width), 0, 0, width, height, src.bpp );
+	transfer_params_t transfer_params;
+
+	transfer_params.dst_id        = dst.dataId;
+	transfer_params.dst_id_offset = dst.dataIdOffset;
+	transfer_params.dst_pitch     = dst.pitch ? dst.pitch : (dst.bpp * dst.width);
+	transfer_params.dst_x         = 0;
+	transfer_params.dst_y         = 0;
+	transfer_params.src_id        = src.dataId;
+	transfer_params.src_id_offset = src.dataIdOffset;
+	transfer_params.src_pitch     = src.pitch ? src.pitch : (src.bpp * src.width);
+	transfer_params.src_x         = 0;
+	transfer_params.src_y         = 0;
+	transfer_params.width         = width;
+	transfer_params.height        = height;
+	transfer_params.bpp           = src.bpp;
+	transfer_params.fifo_ptr      = &_RGLState.fifo;
+
+	TransferDataVidToVid(&transfer_params);
     }
 
     _RGLImageFreeCPUStorage( image );

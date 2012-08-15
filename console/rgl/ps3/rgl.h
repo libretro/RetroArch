@@ -22,6 +22,8 @@ typedef struct _CGcontext *CGcontext;
 #define SUBPIXEL_ADJUST (0.5/(1<<12))
 
 #define gmmIdIsMain(id) (((GmmBaseBlock *)id)->isMain)
+#define gmmAddressToOffset(address, isMain) ((isMain) ? (address)-pGmmMainAllocator->memoryBase : (address)-pGmmLocalAllocator->memoryBase)
+
 
 #ifdef __cplusplus
 extern "C"
@@ -678,6 +680,9 @@ typedef struct GmmAllocator
    uint32_t    totalSize;
 } GmmAllocator;
 
+extern GmmAllocator *pGmmLocalAllocator;
+extern GmmAllocator *pGmmMainAllocator;
+
 uint32_t gmmInit(
     const void *localMemoryBase,
     const void *localStartAddress,
@@ -711,14 +716,23 @@ void gmmSetTileAttrib(const uint32_t id, const uint32_t tag, void *pData);
 					  COMMAND_BUFFER = (typeof(COMMAND_BUFFER))gcmContext.current;   \
 					  }
 
-#define _RGLTransferDataVidToVid(dstId, dstIdOffset, dstPitch, dstX, dstY, srcId, srcIdOffset, srcPitch, srcX, srcY, width, height, bytesPerPixel) \
-{ \
-    GmmBaseBlock *pBaseBlock_dst = (GmmBaseBlock *)dstId; \
-    GmmBaseBlock *pBaseBlock_src = (GmmBaseBlock *)srcId; \
-    GLuint dstOffset_tmp = gmmAddressToOffset(pBaseBlock_dst->address, pBaseBlock_dst->isMain) + dstIdOffset; \
-    GLuint srcOffset_tmp = gmmAddressToOffset(pBaseBlock_src->address, pBaseBlock_src->isMain) + srcIdOffset; \
-    cellGcmSetTransferImageInline( &_RGLState.fifo, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, dstOffset_tmp, (dstPitch), (dstX), (dstY), (srcOffset_tmp), (srcPitch), (srcX), (srcY), (width), (height), (bytesPerPixel) ); \
-}
+typedef struct
+{
+   unsigned dst_id;
+   unsigned dst_id_offset;
+   unsigned dst_pitch;
+   unsigned dst_x;
+   unsigned dst_y;
+   unsigned src_id;
+   unsigned src_id_offset;
+   unsigned src_pitch;
+   unsigned src_x;
+   unsigned src_y;
+   unsigned width;
+   unsigned height;
+   unsigned bpp;
+   void *fifo_ptr;
+} transfer_params_t;
 
 #define HOST_BUFFER_ALIGNMENT 128
 
@@ -800,6 +814,17 @@ struct RGLFifo: public CellGcmContextData
    uint32_t *dmaPushBufferGPU;
    int spuid;
 };
+
+static inline void TransferDataVidToVid(transfer_params_t *params)
+{
+    GmmBaseBlock *pBaseBlock_dst = (GmmBaseBlock *)params->dst_id;
+    GmmBaseBlock *pBaseBlock_src = (GmmBaseBlock *)params->src_id;
+
+    GLuint dstOffset_tmp = gmmAddressToOffset(pBaseBlock_dst->address, pBaseBlock_dst->isMain) + params->dst_id_offset;
+    GLuint srcOffset_tmp = gmmAddressToOffset(pBaseBlock_src->address, pBaseBlock_src->isMain) + params->src_id_offset;
+
+    cellGcmSetTransferImageInline( (RGLFifo*)params->fifo_ptr, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, dstOffset_tmp, params->dst_pitch, params->dst_x, params->dst_y, srcOffset_tmp, params->src_pitch, params->src_x, params->src_y, params->width, params->height, params->bpp);
+}
 
 typedef struct RGLRenderTarget RGLRenderTarget;
 typedef struct RGLCachedState RGLCachedState;
