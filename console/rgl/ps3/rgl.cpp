@@ -4329,7 +4329,13 @@ static void _RGLPlatformDestroyTexture( jsTexture* texture )
     _RGLTextureTouchFBOs( texture );
 }
 
+#ifdef __PSL1GHT__
+#define CELL_GCM_METHOD_HEADER_TEXTURE_OFFSET(unit, val) (((val) << (18)) | ((0x00001a00) + (unit) * 0x20))
+#define CELL_GCM_METHOD_DATA_TEXTURE_OFFSET(val) (val)
+#define CELL_GCM_METHOD_DATA_TEXTURE_CONTROL3(pitch, depth) ((pitch) | ((depth) << 20))
+#else
 #include <cell/gcm/gcm_method_data.h>
+#endif
 
 static void _RGLPlatformValidateTextureStage( int unit, jsTexture* texture )
 {
@@ -4379,7 +4385,7 @@ static void _RGLPlatformValidateTextureStage( int unit, jsTexture* texture )
 	current[7] = CELL_GCM_METHOD_DATA_TEXTURE_IMAGE_RECT(
 			platformTexture->gcmTexture.height,
 			platformTexture->gcmTexture.width);
-	current[8] = CELL_GCM_METHOD_DATA_TEXTURE_BORDER_COLOR(0);
+	current[8] = 0;
 	current[9] = CELL_GCM_METHOD_HEADER_TEXTURE_CONTROL3(unit,1);
 	current[10] = CELL_GCM_METHOD_DATA_TEXTURE_CONTROL3(
 			platformTexture->gcmTexture.pitch,
