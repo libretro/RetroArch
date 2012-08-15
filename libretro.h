@@ -383,6 +383,8 @@ struct retro_system_info
                                   // If false, ::data and ::size are guaranteed to be valid, but ::path might not be valid.
                                   // This is typically set to true for libretro implementations that must load from file.
                                   // Implementations should strive for setting this to false, as it allows the frontend to perform patching, etc.
+   bool        nonblock_state;    // If true, this indicates that the game's fps is above 60 and that vsync should
+                                  // be deactivated before startup
 
    bool        block_extract;     // If true, the frontend is not allowed to extract any archives before loading the real ROM.
                                   // Necessary for certain libretro implementations that load games from zipped archives.
