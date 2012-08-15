@@ -72,6 +72,7 @@ static void set_fast_forward_button(bool new_button_state, bool new_hold_button_
 
    if (update_sync)
    {
+	   RARCH_LOG("Video active = %u, VSync = %u, Force nonblock = %u\n", g_extern.video_active, g_settings.video.vsync, g_extern.system.force_nonblock);
       // Only apply non-block-state for video if we're using vsync.
       if (g_extern.video_active && g_settings.video.vsync && !g_extern.system.force_nonblock)
          video_set_nonblock_state_func(syncing_state);

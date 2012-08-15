@@ -148,7 +148,8 @@ void rarch_settings_change(unsigned setting)
          g_settings.video.fbo_scale_y += 1.0f;
          break;
       case S_THROTTLE:
-         g_console.throttle_enable = !g_console.throttle_enable;
+         if(!g_extern.system.force_nonblock)
+            g_console.throttle_enable = !g_console.throttle_enable;
          break;
       case S_TRIPLE_BUFFERING:
          g_console.triple_buffering_enable = !g_console.triple_buffering_enable;
@@ -189,7 +190,8 @@ void rarch_settings_default(unsigned setting)
          g_console.screen_orientation = ORIENTATION_NORMAL;
          break;
       case S_DEF_THROTTLE:
-         g_console.throttle_enable = true;
+         if(!g_extern.system.force_nonblock)
+            g_console.throttle_enable = true;
          break;
       case S_DEF_TRIPLE_BUFFERING:
          g_console.triple_buffering_enable = true;
