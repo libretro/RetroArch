@@ -194,6 +194,7 @@ void init_drivers_pre(void)
 
 static void adjust_system_rates(void)
 {
+   g_extern.system.force_nonblock = false;
    const struct retro_system_timing *info = &g_extern.system.av_info.timing;
 
    float timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
@@ -206,20 +207,21 @@ static void adjust_system_rates(void)
       // We won't be able to do VSync reliably as game FPS > monitor FPS.
       if (info->fps > g_settings.video.refresh_rate)
       {
-         g_settings.video.vsync = false;
+         g_extern.system.force_nonblock = true;
          RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
-#ifdef RARCH_CONSOLE
-         video_set_nonblock_state_func(true);
-#endif
       }
 
-      g_settings.video.refresh_rate = info->fps;
+      g_settings.audio.in_rate = info->sample_rate;
    }
-
-   g_settings.audio.in_rate = info->sample_rate *
-      (g_settings.video.refresh_rate / info->fps);
+   else
+      g_settings.audio.in_rate = info->sample_rate *
+         (g_settings.video.refresh_rate / info->fps);
 
    RARCH_LOG("Set audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
+
+#ifdef RARCH_CONSOLE
+   video_set_nonblock_state_func(!g_settings.video.vsync || g_extern.system.force_nonblock);
+#endif
 }
 
 void init_drivers(void)
@@ -596,7 +598,7 @@ void init_video_input(void)
    video.width = width;
    video.height = height;
    video.fullscreen = g_settings.video.fullscreen;
-   video.vsync = g_settings.video.vsync;
+   video.vsync = g_settings.video.vsync && !g_extern.system.force_nonblock;
    video.force_aspect = g_settings.video.force_aspect;
    video.smooth = g_settings.video.smooth;
    video.input_scale = scale;

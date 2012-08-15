@@ -338,6 +338,8 @@ struct global
       bool shutdown;
       unsigned performance_level;
       bool rgb32;
+
+      bool force_nonblock;
    } system;
 
    struct
