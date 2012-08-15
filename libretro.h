@@ -332,8 +332,9 @@ enum retro_key
                                            // about too demanding implementations.
                                            // 
                                            // The levels are "floating", but roughly defined as:
-                                           // 1: Low-powered devices such as Raspberry Pi, smart phones, tablets, etc.
-                                           // 2: Medium-spec consoles, such as PS3/360, with sub-par CPUs.
+                                           // 0: Low-powered embedded devices such as Raspberry Pi
+                                           // 1: 6th generation consoles, such as Wii/Xbox 1, and phones, tablets, etc.
+                                           // 2: 7th generation consoles, such as PS3/360, with sub-par CPUs.
                                            // 3: Modern desktop/laptops with reasonably powerful CPUs.
                                            // 4: High-end desktops with very powerful CPUs.
                                            //
