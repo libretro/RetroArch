@@ -345,6 +345,7 @@ void rarch_settings_set_default (const input_driver_t *input)
    g_settings.video.render_to_texture = true;
    g_settings.video.smooth = true;
    g_settings.video.vsync = true;
+   g_settings.video.refresh_rate = 59.92;
 
    strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
 
