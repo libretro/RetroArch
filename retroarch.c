@@ -506,7 +506,6 @@ static void print_features(void)
    _PSUPP(fbo, "FBO", "OpenGL render-to-texture (multi-pass shaders)");
    _PSUPP(dynamic, "Dynamic", "Dynamic run-time loading of libretro library");
    _PSUPP(ffmpeg, "FFmpeg", "On-the-fly recording of gameplay with libavcodec");
-   _PSUPP(x264rgb, "x264 RGB", "x264 lossless RGB recording for FFmpeg");
    _PSUPP(configfile, "Config file", "Configuration file support");
    _PSUPP(freetype, "FreeType", "TTF font rendering with FreeType");
    _PSUPP(netplay, "Netplay", "Peer-to-peer netplay");

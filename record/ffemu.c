@@ -154,7 +154,6 @@ static bool ffemu_init_audio(struct ff_audio_info *audio, struct ffemu_params *p
 
 static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_params *param)
 {
-#ifdef HAVE_X264RGB
    AVCodec *codec = NULL;
    if (g_settings.video.h264_record)
    {
@@ -165,9 +164,7 @@ static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_par
    }
    else
       codec = avcodec_find_encoder_by_name("ffv1");
-#else
-   AVCodec *codec = avcodec_find_encoder_by_name("ffv1");
-#endif
+
    if (!codec)
       return false;
 
@@ -185,11 +182,7 @@ static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_par
       video->pix_size = sizeof(uint32_t);
    }
 
-#ifdef HAVE_X264RGB
    video->pix_fmt = g_settings.video.h264_record ? PIX_FMT_BGR24 : PIX_FMT_RGB32;
-#else
-   video->pix_fmt = PIX_FMT_RGB32;
-#endif
 
 #ifdef HAVE_FFMPEG_ALLOC_CONTEXT3
    video->codec = avcodec_alloc_context3(codec);
@@ -208,7 +201,6 @@ static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_par
    AVDictionary *opts = NULL;
 #endif
 
-#ifdef HAVE_X264RGB
    if (g_settings.video.h264_record)
    {
       video->codec->thread_count = 3;
@@ -216,9 +208,6 @@ static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_par
    }
    else
       video->codec->thread_count = 2;
-#else
-   video->codec->thread_count = 2;
-#endif
 
 #ifdef HAVE_FFMPEG_AVCODEC_OPEN2
    if (avcodec_open2(video->codec, codec, &opts) != 0)
@@ -298,10 +287,10 @@ static bool ffemu_init_muxer(ffemu_t *handle)
       handle->audio.codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
    handle->muxer.astream = stream;
 
-#ifdef HAVE_X264RGB // Avoids a warning at end about non-monotonically increasing DTS values. It seems to be harmless to disable this.
+   // Avoids a warning at end about non-monotonically increasing DTS values.
+   // It seems to be harmless to disable this.
    if (g_settings.video.h264_record)
       ctx->oformat->flags |= AVFMT_TS_NONSTRICT;
-#endif
 
    av_dict_set(&ctx->metadata, "title", "RetroArch video dump", 0); 
 

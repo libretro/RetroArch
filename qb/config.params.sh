@@ -2,7 +2,6 @@ HAVE_DYNAMIC=yes        # Disable dynamic loading of libretro library
 HAVE_LIBRETRO=          # libretro library used
 HAVE_THREADS=auto       # Threading support
 HAVE_FFMPEG=auto        # Enable FFmpeg recording support
-HAVE_X264RGB=no         # Enable lossless X264 RGB recording
 HAVE_DYLIB=auto         # Enable dynamic loading support
 HAVE_NETPLAY=auto       # Enable netplay support
 HAVE_CONFIGFILE=yes     # Disable support for config file
