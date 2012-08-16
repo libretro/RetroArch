@@ -285,12 +285,13 @@ struct global
    bool video_active;
    bool force_fullscreen;
 
-   bool has_mouse[2];
-   bool has_scope[2];
+   bool disconnect_device[MAX_PLAYERS];
+   bool has_mouse[MAX_PLAYERS];
+   bool has_dualanalog[MAX_PLAYERS];
+   bool has_scope;
    bool has_justifier;
    bool has_justifiers;
    bool has_multitap;
-   bool disconnect_device[2];
 
    FILE *rom_file;
    enum rarch_game_type game_type;

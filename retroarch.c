@@ -560,13 +560,15 @@ static void print_help(void)
    puts("\t-B/--bsxslot: Path to BSX slotted rom. Load BSX BIOS as the regular rom.");
    puts("\t--sufamiA: Path to A slot of Sufami Turbo. Load Sufami base cart as regular rom.");
    puts("\t--sufamiB: Path to B slot of Sufami Turbo.");
-   puts("\t-m/--mouse: Connect a virtual mouse into designated port of the SNES (1 or 2)."); 
-   puts("\t\tThis argument can be specified several times to connect more mice.");
-   puts("\t-N/--nodevice: Disconnects the controller device connected to the emulated SNES (1 or 2).");
-   puts("\t-p/--scope: Connect a virtual SuperScope into port 2 of the SNES.");
-   puts("\t-j/--justifier: Connect a virtual Konami Justifier into port 2 of the SNES.");
-   puts("\t-J/--justifiers: Daisy chain two virtual Konami Justifiers into port 2 of the SNES.");
-   puts("\t-4/--multitap: Connect a multitap to port 2 of the SNES.");
+
+   printf("\t-N/--nodevice: Disconnects controller device connected to port (1 to %d).\n", MAX_PLAYERS);
+   printf("\t-A/--dualanalog: Connect a DualAnalog controller to port (1 to %d).\n", MAX_PLAYERS);
+   printf("\t-m/--mouse: Connect a mouse into port of the device (1 to %d).\n", MAX_PLAYERS); 
+   puts("\t-p/--scope: Connect a virtual SuperScope into port 2. (SNES specific).");
+   puts("\t-j/--justifier: Connect a virtual Konami Justifier into port 2. (SNES specific).");
+   puts("\t-J/--justifiers: Daisy chain two virtual Konami Justifiers into port 2. (SNES specific).");
+   puts("\t-4/--multitap: Connect a SNES multitap to port 2. (SNES specific).");
+
 #ifdef HAVE_BSV_MOVIE
    puts("\t-P/--bsvplay: Playback a BSV movie file.");
    puts("\t-R/--bsvrecord: Start recording a BSV movie file from the beginning.");
@@ -727,11 +729,12 @@ static void parse_input(int argc, char *argv[])
       { "mouse", 1, NULL, 'm' },
       { "nodevice", 1, NULL, 'N' },
       { "scope", 0, NULL, 'p' },
+      { "justifier", 0, NULL, 'j' },
+      { "justifiers", 0, NULL, 'J' },
+      { "dualanalog", 1, NULL, 'A' },
       { "savestate", 1, NULL, 'S' },
       { "bsx", 1, NULL, 'b' },
       { "bsxslot", 1, NULL, 'B' },
-      { "justifier", 0, NULL, 'j' },
-      { "justifiers", 0, NULL, 'J' },
       { "multitap", 0, NULL, '4' },
       { "sufamiA", 1, NULL, 'Y' },
       { "sufamiB", 1, NULL, 'Z' },
@@ -791,7 +794,7 @@ static void parse_input(int argc, char *argv[])
 #define BSV_MOVIE_ARG
 #endif
 
-   const char *optstring = "hs:fvS:m:p4jJg:b:B:Y:Z:U:DN:X:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+   const char *optstring = "hs:fvS:m:p4jJA:g:b:B:Y:Z:U:DN:X:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for (;;)
    {
       val = 0;
@@ -817,6 +820,17 @@ static void parse_input(int argc, char *argv[])
 
          case 'J':
             g_extern.has_justifiers = true;
+            break;
+
+         case 'A':
+            port = strtol(optarg, NULL, 0);
+            if (port < 1 || port > MAX_PLAYERS)
+            {
+               RARCH_ERR("Connect dualanalog to a valid port.\n");
+               print_help();
+               rarch_fail(1, "parse_input()");
+            }
+            g_extern.has_dualanalog[port - 1] = true;
             break;
 
          case 's':
@@ -864,9 +878,9 @@ static void parse_input(int argc, char *argv[])
 
          case 'm':
             port = strtol(optarg, NULL, 0);
-            if (port < 1 || port > 2)
+            if (port < 1 || port > MAX_PLAYERS)
             {
-               RARCH_ERR("Connect mouse to port 1 or 2.\n");
+               RARCH_ERR("Connect mouse to a valid port.\n");
                print_help();
                rarch_fail(1, "parse_input()");
             }
@@ -875,9 +889,9 @@ static void parse_input(int argc, char *argv[])
 
          case 'N':
             port = strtol(optarg, NULL, 0);
-            if (port < 1 || port > 2)
+            if (port < 1 || port > MAX_PLAYERS)
             {
-               RARCH_ERR("Disconnected device from port 1 or 2.\n");
+               RARCH_ERR("Disconnect device from a valid port.\n");
                print_help();
                rarch_fail(1, "parse_input()");
             }
@@ -885,7 +899,7 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'p':
-            g_extern.has_scope[1] = true;
+            g_extern.has_scope = true;
             break;
 
 #ifdef HAVE_CONFIGFILE
@@ -1054,9 +1068,27 @@ static void parse_input(int argc, char *argv[])
       verify_stdin_paths();
 }
 
-// TODO: Add rest of the controllers.
 static void init_controllers(void)
 {
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   {
+      if (g_extern.disconnect_device[i])
+      {
+         RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
+         pretro_set_controller_port_device(i, RETRO_DEVICE_NONE);
+      }
+      else if (g_extern.has_dualanalog[i])
+      {
+         RARCH_LOG("Connecting dualanalog to port %u.\n", i + 1);
+         pretro_set_controller_port_device(i, RETRO_DEVICE_ANALOG);
+      }
+      else if (g_extern.has_mouse[i])
+      {
+         RARCH_LOG("Connecting mouse to port %u.\n", i + 1);
+         pretro_set_controller_port_device(i, RETRO_DEVICE_MOUSE);
+      }
+   }
+
    if (g_extern.has_justifier)
    {
       RARCH_LOG("Connecting Justifier to port 2.\n");
@@ -1072,26 +1104,10 @@ static void init_controllers(void)
       RARCH_LOG("Connecting Multitap to port 2.\n");
       pretro_set_controller_port_device(1, RETRO_DEVICE_JOYPAD_MULTITAP);
    }
-   else
+   else if (g_extern.has_scope)
    {
-      for (unsigned i = 0; i < 2; i++)
-      {
-         if (g_extern.disconnect_device[i])
-         {
-            RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
-            pretro_set_controller_port_device(i, RETRO_DEVICE_NONE);
-         }
-         else if (g_extern.has_mouse[i])
-         {
-            RARCH_LOG("Connecting mouse to port %u.\n", i + 1);
-            pretro_set_controller_port_device(i, RETRO_DEVICE_MOUSE);
-         }
-         else if (g_extern.has_scope[i])
-         {
-            RARCH_LOG("Connecting scope to port %u.\n", i + 1);
-            pretro_set_controller_port_device(i, RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE);
-         }
-      }
+      RARCH_LOG("Connecting scope to port 2.\n");
+      pretro_set_controller_port_device(1, RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE);
    }
 }
 
