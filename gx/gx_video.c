@@ -17,6 +17,7 @@
 
 #include "../driver.h"
 #include "../general.h"
+#include "../console/rarch_console_video.h"
 #include "gx_video.h"
 #include <gccore.h>
 #include <ogcsys.h>
@@ -45,6 +46,7 @@ struct
 
 uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
 uint8_t display_list[1024] ATTRIBUTE_ALIGN(32);
+uint16_t gx_width, gx_height;
 size_t display_list_size;
 
 float verts[16] ATTRIBUTE_ALIGN(32) = {
@@ -83,6 +85,19 @@ float tex_coords_270[8] ATTRIBUTE_ALIGN(32) = {
 };
 
 float *vertex_ptr = tex_coords;
+
+void gx_set_aspect_ratio(void *data, unsigned aspectratio_idx)
+{
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
+
+   if (g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
+      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+
+   g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
+   g_settings.video.force_aspect = false;
+   gx->keep_aspect = true;
+   gx->should_resize = true;
+}
 
 static void retrace_callback(u32 retrace_count)
 {
@@ -205,6 +220,7 @@ static void *gx_init(const video_info_t *video,
 
    g_vsync = video->vsync;
 
+   gx->should_resize = true;
    return gx;
 }
 
@@ -233,6 +249,8 @@ static void gx_start(void)
    build_disp_list();
 
    g_vsync = true;
+   gx_width = mode->fbWidth;
+   gx_height = mode->efbHeight;
 }
 
 #define ASM_BLITTER
@@ -414,6 +432,57 @@ static void update_texture(const uint32_t *src,
    GX_InvalidateTexAll();
 }
 
+static void gx_resize(gx_video_t *gx)
+{
+   unsigned x = 0, y = 0, width = gx_width, height = gx_height;
+
+#ifdef HW_RVL
+   VIDEO_SetTrapFilter(g_console.soft_display_filter_enable);
+#endif
+   GX_SetDispCopyGamma(g_console.gamma_correction);
+
+   if (gx->keep_aspect)
+   {
+      float desired_aspect = g_settings.video.aspect_ratio;
+      float device_aspect = CONF_GetAspectRatio() == CONF_ASPECT_4_3 ? 4.0 / 3.0 : 16.0 / 9.0;
+      float delta;
+
+#ifdef RARCH_CONSOLE
+      if (g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
+      {
+         // TODO
+         /*x      = g_console.viewports.custom_vp.x;
+         y      = g_console.viewports.custom_vp.y;
+         width  = g_console.viewports.custom_vp.width;
+         height = g_console.viewports.custom_vp.height;*/
+      }
+      else
+#endif
+      {
+         if (fabs(device_aspect - desired_aspect) < 0.0001)
+         {
+            // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
+            // assume they are actually equal.
+         }
+         else if (device_aspect > desired_aspect)
+         {
+            delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
+            x     = (unsigned)(width * (0.5 - delta));
+            width = (unsigned)(2.0 * width * delta);
+         }
+         else
+         {
+            delta  = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
+            y      = (unsigned)(height * (0.5 - delta));
+            height = (unsigned)(2.0 * height * delta);
+         }
+      }
+   }
+
+   GX_SetViewport(x, y, width, height, 0, 1);
+   gx->should_resize = false;
+}
+
 static bool gx_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
@@ -432,11 +501,7 @@ static bool gx_frame(void *data, const void *frame,
 
    if(should_resize)
    {
-#ifdef HW_RVL
-      VIDEO_SetTrapFilter(g_console.soft_display_filter_enable);
-#endif
-      GX_SetDispCopyGamma(g_console.gamma_correction);
-      gx->should_resize = false;
+      gx_resize(gx);
    }
 
    while (g_vsync && !g_draw_done)
