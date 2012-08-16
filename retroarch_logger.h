@@ -29,8 +29,11 @@
    } while (0)
 #else
 #define RARCH_LOG(...) do { \
-      fprintf(stderr, "RetroArch: " __VA_ARGS__); \
-      fflush(stderr); \
+      if (g_extern.verbose) \
+      { \
+         fprintf(stderr, "RetroArch: " __VA_ARGS__); \
+         fflush(stderr); \
+      } \
    } while (0)
 #endif
 #endif
