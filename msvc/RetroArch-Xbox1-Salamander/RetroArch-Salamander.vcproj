@@ -372,7 +372,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\console\salamander\main.c">
+				RelativePath="..\..\xdk\salamander\main.c">
 				<FileConfiguration
 					Name="Debug|Xbox">
 					<Tool
