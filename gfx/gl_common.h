@@ -211,7 +211,7 @@ typedef struct gl
 } gl_t;
 
 // Windows ... <_<
-#if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
+#ifdef _WIN32
 extern PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture;
 extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #else

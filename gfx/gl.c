@@ -129,7 +129,7 @@ static bool load_fbo_proc(void) { return true; }
 #endif
 #endif
 
-#if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
+#ifdef _WIN32
 PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture = NULL;
 PFNGLACTIVETEXTUREPROC pglActiveTexture = NULL;
 static inline bool load_gl_proc(void)
@@ -1067,8 +1067,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 #endif
 
-#if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
-   // Win32 GL lib doesn't have some functions needed for XML shaders.
+#ifdef _WIN32
+   // Win32 GL lib doesn't have some functions needed.
    // Need to load dynamically :(
    if (!load_gl_proc())
    {
