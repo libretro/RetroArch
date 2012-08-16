@@ -22,7 +22,7 @@ LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
-LDFLAGS := $(MACHDEP)
+LDFLAGS := $(MACHDEP) -T gx/ld/rvl.ld
 LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
 
 OBJ = console/griffin/griffin.o console/font.bmpobj console/rzlib/rzlib.o
