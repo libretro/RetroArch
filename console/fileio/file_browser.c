@@ -26,6 +26,9 @@ const char * path, const char * extensions)
       strlcpy(filebrowser->dir[stack_size], path, 
          sizeof(filebrowser->dir[stack_size]));
 
+      if(filebrowser->current_dir.list != NULL)
+         dir_list_free(filebrowser->current_dir.list);
+
       filebrowser->current_dir.list = list;
       filebrowser->current_dir.ptr   = 0;
 

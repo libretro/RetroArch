@@ -2297,6 +2297,19 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 #endif
 }
 
+static void rmenu_filebrowser_init(void)
+{
+   menu_stack_push(rmenu_items, FILE_BROWSER_MENU);
+   filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), default_paths.filebrowser_startup_dir);
+   filebrowser_set_root(&tmpBrowser, default_paths.filesystem_root_dir);
+}
+
+static void rmenu_filebrowser_free(void)
+{
+   filebrowser_free(&browser);
+   filebrowser_free(&tmpBrowser);
+}
+
 void menu_init (void)
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
@@ -2309,19 +2322,6 @@ void menu_init (void)
    snprintf(m_title, sizeof(m_title), "Libretro core: %s %s", id, info.library_version);
 
    rmenu_filebrowser_init();
-}
-
-static void rmenu_filebrowser_init(void)
-{
-   menu_stack_push(rmenu_items, FILE_BROWSER_MENU);
-   filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), default_paths.filebrowser_startup_dir);
-   filebrowser_set_root(&tmpBrowser, default_paths.filesystem_root_dir);
-}
-
-static void rmenu_filebrowser_free(void)
-{
-   filebrowser_free(&browser);
-   filebrowser_free(&tmpBrowser);
 }
 
 void menu_free (void)
