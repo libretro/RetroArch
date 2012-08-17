@@ -2307,16 +2307,23 @@ void menu_init (void)
    retro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
    snprintf(m_title, sizeof(m_title), "Libretro core: %s %s", id, info.library_version);
+}
 
+static void filebrowser_init(void)
+{
    menu_stack_push(rmenu_items, FILE_BROWSER_MENU);
    filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), default_paths.filebrowser_startup_dir);
    filebrowser_set_root(&tmpBrowser, default_paths.filesystem_root_dir);
 }
 
-void menu_free (void)
+static void filebrowser_free(void)
 {
    filebrowser_free(&browser);
    filebrowser_free(&tmpBrowser);
+}
+
+void menu_free (void)
+{
 }
 
 void menu_loop(void)
@@ -2325,6 +2332,8 @@ void menu_loop(void)
 
    g_console.menu_enable = true;
    device_ptr->block_swap = true;
+
+   filebrowser_init();
 
    if(g_console.ingame_menu_enable)
       menu_stack_push(ingame_menu_settings, INGAME_MENU);
@@ -2606,6 +2615,8 @@ void menu_loop(void)
    texture_image_free(&m_menuMainBG);
    texture_image_free(&m_menuMainRomSelectPanel);
 #endif
+
+   filebrowser_free();
 
    if(g_console.ingame_menu_enable)
       menu_stack_decrement();
