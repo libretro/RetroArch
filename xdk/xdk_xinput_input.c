@@ -29,7 +29,7 @@
 #include "xdk_xinput_input.h"
 
 static uint64_t state[MAX_PADS];
-static unsigned pads_connected;
+unsigned pads_connected;
 
 #ifdef _XBOX1
 HANDLE gamepads[MAX_PADS];

@@ -92,7 +92,7 @@ static bool set_libretro_core_as_launch;
 filebrowser_t browser;
 filebrowser_t tmpBrowser;
 unsigned set_shader = 0;
-static unsigned currently_selected_controller_menu = 0;
+unsigned currently_selected_controller_menu = 0;
 char m_title[256];
 
 static uint64_t old_state = 0;
@@ -2077,7 +2077,7 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 {
    char comment[256], overscan_msg[64];
    char strw_buffer[256];
-   static unsigned menuitem_colors[MENU_ITEM_LAST];
+   unsigned menuitem_colors[MENU_ITEM_LAST];
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    float x_position = POSITION_X;
@@ -2374,7 +2374,7 @@ void menu_loop(void)
 
       input_ptr.poll(NULL);
 
-      static const struct retro_keybind *binds[MAX_PLAYERS] = {
+      const struct retro_keybind *binds[MAX_PLAYERS] = {
 	      g_settings.input.binds[0],
 	      g_settings.input.binds[1],
 	      g_settings.input.binds[2],
@@ -2385,7 +2385,7 @@ void menu_loop(void)
 	      g_settings.input.binds[7],
       };
 
-      static const struct retro_keybind _analog_binds[] = {
+      const struct retro_keybind _analog_binds[] = {
 	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT), 0 },
 	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT), 0 },
 	      { 0, 0, (enum retro_key)0, (1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP), 0 },
