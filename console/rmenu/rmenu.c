@@ -2319,19 +2319,6 @@ void menu_init (void)
    // Quick hack to properly center the romlist in 720p, 
    // it might need more work though (font size and rom selector size -> needs more memory)
    // Init rom list coords
-   // Load background image
-   if(width == 640)
-   {
-      texture_image_load("D:\\Media\\main-menu_480p.png", &m_menuMainBG);
-      m_menuMainRomListPos_x = 60;
-      m_menuMainRomListPos_y = 80;
-   }
-   else if(width == 1280)
-   {
-      texture_image_load("D:\\Media\\main-menu_720p.png", &m_menuMainBG);
-      m_menuMainRomListPos_x = 360;
-      m_menuMainRomListPos_y = 130;
-   }
 
    // Load rom selector panel
    texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &m_menuMainRomSelectPanel);
@@ -2349,7 +2336,6 @@ void menu_free (void)
    filebrowser_free(&tmpBrowser);
 
 #ifdef _XBOX1
-   texture_image_free(&m_menuMainBG);
    texture_image_free(&m_menuMainRomSelectPanel);
 #endif
 }
@@ -2363,6 +2349,24 @@ void menu_loop(void)
 
    if(g_console.ingame_menu_enable)
       menu_stack_push(ingame_menu_settings, INGAME_MENU);
+
+#ifdef _XBOX1
+   int width  = device_ptr->d3dpp.BackBufferWidth;
+
+   // Load background image
+   if(width == 640)
+   {
+      texture_image_load("D:\\Media\\main-menu_480p.png", &m_menuMainBG);
+      m_menuMainRomListPos_x = 60;
+      m_menuMainRomListPos_y = 80;
+   }
+   else if(width == 1280)
+   {
+      texture_image_load("D:\\Media\\main-menu_720p.png", &m_menuMainBG);
+      m_menuMainRomListPos_x = 360;
+      m_menuMainRomListPos_y = 130;
+   }
+#endif
 
    do
    {
@@ -2609,6 +2613,10 @@ void menu_loop(void)
 
 #ifdef __CELLOS_LV2__
    device_ptr->menu_render = false;
+#endif
+
+#ifdef _XBOX1
+   texture_image_free(&m_menuMainBG);
 #endif
 
    if(g_console.ingame_menu_enable)
