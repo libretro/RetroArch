@@ -2311,33 +2311,12 @@ void menu_init (void)
    menu_stack_push(rmenu_items, FILE_BROWSER_MENU);
    filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), default_paths.filebrowser_startup_dir);
    filebrowser_set_root(&tmpBrowser, default_paths.filesystem_root_dir);
-
-#ifdef _XBOX1
-   // Backbuffer width
-   int width  = device_ptr->d3dpp.BackBufferWidth;
-
-   // Quick hack to properly center the romlist in 720p, 
-   // it might need more work though (font size and rom selector size -> needs more memory)
-   // Init rom list coords
-
-   // Load rom selector panel
-   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &m_menuMainRomSelectPanel);
-   
-   //Display some text
-   //Center the text (hardcoded)
-   xpos = width == 640 ? 65 : 400;
-   ypos = width == 640 ? 430 : 670;
-#endif
 }
 
 void menu_free (void)
 {
    filebrowser_free(&browser);
    filebrowser_free(&tmpBrowser);
-
-#ifdef _XBOX1
-   texture_image_free(&m_menuMainRomSelectPanel);
-#endif
 }
 
 void menu_loop(void)
@@ -2366,6 +2345,14 @@ void menu_loop(void)
       m_menuMainRomListPos_x = 360;
       m_menuMainRomListPos_y = 130;
    }
+
+   // Load rom selector panel
+   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &m_menuMainRomSelectPanel);
+   
+   //Display some text
+   //Center the text (hardcoded)
+   xpos = width == 640 ? 65 : 400;
+   ypos = width == 640 ? 430 : 670;
 #endif
 
    do
@@ -2617,6 +2604,7 @@ void menu_loop(void)
 
 #ifdef _XBOX1
    texture_image_free(&m_menuMainBG);
+   texture_image_free(&m_menuMainRomSelectPanel);
 #endif
 
    if(g_console.ingame_menu_enable)
