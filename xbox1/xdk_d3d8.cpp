@@ -299,7 +299,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
 	   D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf);
 
-   static const DrawVerticeFormats init_verts[] = {
+   const DrawVerticeFormats init_verts[] = {
       { -1.0f, -1.0f, 1.0f, 0.0f, 1.0f },
       {  1.0f, -1.0f, 1.0f, 1.0f, 1.0f },
       { -1.0f,  1.0f, 1.0f, 0.0f, 0.0f },
@@ -444,7 +444,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
    if(fps_enable)
    {
-      static MEMORYSTATUS stat;
+      MEMORYSTATUS stat;
       GlobalMemoryStatus(&stat);
 
       //Output memory usage
