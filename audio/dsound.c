@@ -22,7 +22,7 @@
 // succeed
 #define DSERR_PRIOLEVELNEEDED           MAKE_DSHRESULT(70)
 // Send the audio signal (stereo, without attenuation) to all existing speakers
-DSMIXBINVOLUMEPAIR dsmbvp[8] = {
+static DSMIXBINVOLUMEPAIR dsmbvp[8] = {
    { DSMIXBIN_FRONT_LEFT,    DSBVOLUME_MAX },
    { DSMIXBIN_FRONT_RIGHT,   DSBVOLUME_MAX },
    { DSMIXBIN_FRONT_CENTER,  DSBVOLUME_MAX },
@@ -33,7 +33,7 @@ DSMIXBINVOLUMEPAIR dsmbvp[8] = {
    { DSMIXBIN_LOW_FREQUENCY, DSBVOLUME_MAX },
 };
    
-DSMIXBINS dsmb;
+static DSMIXBINS dsmb;
 #endif
 
 #include "../driver.h"
