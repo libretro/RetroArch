@@ -73,12 +73,12 @@
 typedef struct
 {
    unsigned char enum_id;		/* enum ID of item				*/
-   char text[128];			/* item label					*/
-   char setting_text[256];		/* setting label				*/
+   char text[64];			/* item label					*/
+   char setting_text[64];		/* setting label				*/
    float text_xpos;			/* text X position (upper left corner)		*/
    float text_ypos;			/* text Y position (upper left corner)		*/
    unsigned text_color;			/* text color					*/
-   char comment[256];			/* item comment					*/
+   char comment[192];			/* item comment					*/
    unsigned item_color;			/* color of item 				*/
    unsigned char page;			/* page						*/
 } item;
