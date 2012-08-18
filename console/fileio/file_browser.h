@@ -26,13 +26,13 @@
 typedef struct
 {
    uint32_t directory_stack_size;
-   char dir[MAX_DIR_STACK][512]; 
+   char dir[MAX_DIR_STACK][MAX_PATH]; 
    struct {
 	   struct string_list *list;
 	   size_t ptr;
    } current_dir;
-   char root_dir[PATH_MAX];
-   char extensions[PATH_MAX];
+   char root_dir[MAX_PATH];
+   char extensions[MAX_PATH];
 } filebrowser_t;
 
 typedef enum
