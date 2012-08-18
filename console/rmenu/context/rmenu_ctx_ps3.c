@@ -27,7 +27,31 @@ static void rmenu_ctx_ps3_blend(bool enable)
    gfx_ctx_set_blend(enable);
 }
 
+static void rmenu_ctx_ps3_init_textures(void)
+{
+}
+
+static void rmenu_ctx_ps3_free_textures(void)
+{
+   gl_t *gl = driver.video_data;
+   gl->menu_render = false;
+}
+
+static void rmenu_ctx_ps3_render_selection_panel(rmenu_position_t *position)
+{
+   (void)position;
+}
+
+static void rmenu_ctx_ps3_render_bg(rmenu_position_t *position)
+{
+   (void)position;
+}
+
 const rmenu_context_t rmenu_ctx_ps3 = {
    .clear = rmenu_ctx_ps3_clear,
    .blend = rmenu_ctx_ps3_blend, 
+   .free_textures = rmenu_ctx_ps3_free_textures,
+   .init_textures = rmenu_ctx_ps3_init_textures,
+   .render_selection_panel = rmenu_ctx_ps3_render_selection_panel,
+   .render_bg = rmenu_ctx_ps3_render_bg,
 };

@@ -70,21 +70,6 @@
 #define INPUT_SCALE 2
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
-#ifdef _XBOX1
-#include "../../gfx/fonts/xdk1_xfonts.h"
-
-#define ROM_PANEL_WIDTH 510
-#define ROM_PANEL_HEIGHT 20
-
-int xpos, ypos;
-texture_image m_menuMainRomSelectPanel;
-texture_image m_menuMainBG;
-
-// Rom list coords
-int m_menuMainRomListPos_x;
-int m_menuMainRomListPos_y;
-#endif
-
 menu menuStack[10];
 int menuStackindex = 0;
 static bool set_libretro_core_as_launch;
@@ -679,12 +664,10 @@ static void display_menubar(menu *current_menu)
          break;
    }
 
-#ifdef _XBOX1
-   //Render background image
-   m_menuMainBG.x = 0;
-   m_menuMainBG.y = 0;
-   texture_image_render(&m_menuMainBG);
-#else
+   rmenu_position_t position = {0};
+   context->render_bg(&position);
+
+#ifdef __CELLOS_LV2__
    render_msg_place_func(x_position, 0.05f, 1.4f, WHITE, current_menu->title);
    render_msg_place_func(0.3f, 0.06f, 0.82f, WHITE, m_title);
    render_msg_place_func(0.80f, 0.015f, 0.82f, WHITE, rarch_version);
@@ -746,18 +729,17 @@ static void browser_render(filebrowser_t * b, float current_x, float current_y, 
       fill_pathname_base(fname_tmp, b->current_dir.list->elems[i].data, sizeof(fname_tmp));
       currentY = currentY + ySpacing;
 
-#ifdef _XBOX1
       //check if this is the currently selected file
       const char *current_pathname = filebrowser_get_current_path(b);
       if(strcmp(current_pathname, b->current_dir.list->elems[i].data) == 0)
       {
-         m_menuMainRomSelectPanel.x = currentX;
-         m_menuMainRomSelectPanel.y = currentY;
-         m_menuMainRomSelectPanel.width = ROM_PANEL_WIDTH;
-         m_menuMainRomSelectPanel.height = ROM_PANEL_HEIGHT;
-         texture_image_render(&m_menuMainRomSelectPanel);
+         rmenu_position_t position = {0};
+         position.x = currentX;
+         position.y = currentY;
+         context->render_selection_panel(&position);
       }
 
+#ifdef _XBOX1
       render_msg_place_func(currentX, currentY, 0, 0, fname_tmp);
 #else
       render_msg_place_func(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->current_dir.list->elems[i].attr.b ? GREEN : WHITE, fname_tmp);
@@ -1800,16 +1782,15 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
       {
          render_msg_place_func(items[i].text_xpos, items[i].text_ypos, FONT_SIZE, current_menu->selected == items[i].enum_id ? YELLOW : items[i].item_color, items[i].text);
          render_msg_place_func(x_position_center, items[i].text_ypos, FONT_SIZE, items[i].text_color, items[i].setting_text);
-#ifdef _XBOX1
+
          if(current_menu->selected == items[i].enum_id)
          {
-            m_menuMainRomSelectPanel.x = x_position;
-            m_menuMainRomSelectPanel.y = items[i].text_ypos;
-            m_menuMainRomSelectPanel.width = ROM_PANEL_WIDTH;
-            m_menuMainRomSelectPanel.height = ROM_PANEL_HEIGHT;
-            texture_image_render(&m_menuMainRomSelectPanel);
+            rmenu_position_t position = {0};
+            position.x = x_position;
+            position.y = items[i].text_ypos;
+
+            context->render_selection_panel(&position);
          }
-#endif
       }
    }
 
@@ -2286,14 +2267,11 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
    render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_RETURN_TO_DASHBOARD)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_DASHBOARD), "Return to Dashboard");
 
    render_msg_place_func(x_position, comment_y_position, font_size, WHITE, comment);
-   
-#ifdef _XBOX1
-   m_menuMainRomSelectPanel.x = x_position;
-   m_menuMainRomSelectPanel.y = (y_position+(y_position_increment*g_console.ingame_menu_item));
-   m_menuMainRomSelectPanel.width = ROM_PANEL_WIDTH;
-   m_menuMainRomSelectPanel.height = ROM_PANEL_HEIGHT;
-   texture_image_render(&m_menuMainRomSelectPanel);
-#endif
+
+   rmenu_position_t position = {0};
+   position.x = x_position;
+   position.y = (y_position+(y_position_increment*g_console.ingame_menu_item));
+   context->render_selection_panel(&position);
 }
 
 static void rmenu_filebrowser_init(void)
@@ -2345,31 +2323,7 @@ void menu_loop(void)
    if(g_console.ingame_menu_enable)
       menu_stack_push(ingame_menu_settings, INGAME_MENU);
 
-#ifdef _XBOX1
-   int width  = device_ptr->d3dpp.BackBufferWidth;
-
-   // Load background image
-   if(width == 640)
-   {
-      texture_image_load("D:\\Media\\main-menu_480p.png", &m_menuMainBG);
-      m_menuMainRomListPos_x = 60;
-      m_menuMainRomListPos_y = 80;
-   }
-   else if(width == 1280)
-   {
-      texture_image_load("D:\\Media\\main-menu_720p.png", &m_menuMainBG);
-      m_menuMainRomListPos_x = 360;
-      m_menuMainRomListPos_y = 130;
-   }
-
-   // Load rom selector panel
-   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &m_menuMainRomSelectPanel);
-   
-   //Display some text
-   //Center the text (hardcoded)
-   xpos = width == 640 ? 65 : 400;
-   ypos = width == 640 ? 430 : 670;
-#endif
+   context->init_textures();
 
    do
    {
@@ -2378,6 +2332,13 @@ void menu_loop(void)
       uint64_t input_state = 0;
       static bool first_held = false;
       menu *current_menu = menu_stack_get_current_ptr();
+
+      float x_position = POSITION_X;
+      float starting_y_position = POSITION_Y_START;
+      float y_position_increment = POSITION_Y_INCREMENT;
+      float msg_queue_x_position = MSG_QUEUE_X_POSITION;
+      float msg_queue_y_position = MSG_QUEUE_Y_POSITION;
+      float msg_queue_font_size= MSG_QUEUE_FONT_SIZE;
 
       input_ptr.poll(NULL);
 
@@ -2547,10 +2508,6 @@ void menu_loop(void)
 		      break;
       }
 
-      float x_position = POSITION_X;
-      float starting_y_position = POSITION_Y_START;
-      float y_position_increment = POSITION_Y_INCREMENT;
-
       switch(current_menu->category_id)
       {
          case CATEGORY_FILEBROWSER:
@@ -2593,9 +2550,6 @@ void menu_loop(void)
       }
 
       const char * message = msg_queue_pull(g_extern.msg_queue);
-      float msg_queue_x_position = MSG_QUEUE_X_POSITION;
-      float msg_queue_y_position = MSG_QUEUE_Y_POSITION;
-      float msg_queue_font_size= MSG_QUEUE_FONT_SIZE;
 
       if (message && g_console.info_msg_enable)
       {
@@ -2614,15 +2568,7 @@ void menu_loop(void)
          context->blend(false);
    }while(g_console.menu_enable);
 
-#ifdef __CELLOS_LV2__
-   device_ptr->menu_render = false;
-#endif
-
-#ifdef _XBOX1
-   texture_image_free(&m_menuMainBG);
-   texture_image_free(&m_menuMainRomSelectPanel);
-#endif
-
+   context->free_textures();
 
    if(g_console.ingame_menu_enable)
       menu_stack_decrement();

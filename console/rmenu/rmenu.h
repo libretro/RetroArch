@@ -94,6 +94,25 @@ typedef struct
    unsigned char category_id;
 } menu;
 
+typedef struct rmenu_position
+{
+   float x;
+   float y;
+   float width;
+   float height;
+} rmenu_position_t;
+
+
+typedef struct rmenu_context
+{
+   void (*clear)(void); 
+   void (*blend)(bool enable);
+   void (*free_textures)(void);
+   void (*init_textures)(void);
+   void (*render_selection_panel)(rmenu_position_t *position);
+   void (*render_bg)(rmenu_position_t *position);
+} rmenu_context_t;
+
 enum
 {
    CATEGORY_FILEBROWSER,
@@ -223,12 +242,6 @@ enum
 #define MAX_NO_OF_EMU_AUDIO_SETTINGS			SETTING_EMU_AUDIO_DEFAULT_ALL+1
 #define MAX_NO_OF_PATH_SETTINGS				SETTING_PATH_DEFAULT_ALL+1
 #define MAX_NO_OF_CONTROLS_SETTINGS			SETTING_CONTROLS_DEFAULT_ALL+1
-
-typedef struct rmenu_context
-{
-   void (*clear)(void); 
-   void (*blend)(bool enable);
-} rmenu_context_t;
 
 void menu_init (void);
 void menu_loop (void);
