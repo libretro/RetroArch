@@ -106,10 +106,18 @@ typedef struct rmenu_default_positions
 {
    float x_position;
    float x_position_center;
+   float y_position;
    float comment_y_position;
    float y_position_increment;
+   float starting_y_position;
    float comment_two_y_position;
    float font_size;
+   float msg_queue_x_position;
+   float msg_queue_y_position;
+   float msg_queue_font_size;
+   float msg_prev_next_y_position;
+   float current_path_font_size;
+   float current_path_y_position;
 } rmenu_default_positions_t;
 
 typedef struct rmenu_context

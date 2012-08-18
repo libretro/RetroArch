@@ -399,29 +399,27 @@ menu *menu_stack_get_current_ptr (void)
 
 static void menu_stack_refresh (item *items, menu *current_menu)
 {
-   int page, i, j;
-   float y_position;
-   float increment_step = POSITION_Y_INCREMENT;
-   float x_position = POSITION_X;
+   rmenu_default_positions_t default_pos = {0};
+   int page = 0;
+   int j = 0;
+   int i;
 
-   page = 0;
-   j = 0;
-   y_position = POSITION_Y_BEGIN;
+   context->set_default_pos(&default_pos);
 
    for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
    {
       if(!(j < (NUM_ENTRY_PER_PAGE)))
       {
          j = 0;
-         y_position = POSITION_Y_BEGIN;
+         default_pos.y_position = POSITION_Y_BEGIN;
          page++;
       }
 
-      items[i].text_xpos = x_position;
-      items[i].text_ypos = y_position; 
+      items[i].text_xpos = default_pos.x_position;
+      items[i].text_ypos = default_pos.y_position; 
       items[i].page = page;
       set_setting_label(current_menu, items, i);
-      y_position += increment_step;
+      default_pos.y_position += default_pos.y_position_increment;
       j++;
    }
 }
@@ -594,25 +592,22 @@ static void display_menubar(menu *current_menu)
    filebrowser_t *fb = &browser;
    char current_path[256], rarch_version[128];
 
-   float x_position = POSITION_X;
-   float font_size = HARDCODE_FONT_SIZE;
-   float current_path_y_position = CURRENT_PATH_Y_POSITION;
-   float current_path_font_size = CURRENT_PATH_FONT_SIZE;
-   float msg_prev_next_y_position = MSG_PREV_NEXT_Y_POSITION;
+   rmenu_default_positions_t default_pos;
+   context->set_default_pos(&default_pos);
 
    snprintf(rarch_version, sizeof(rarch_version), "v%s", PACKAGE_VERSION);
 
    switch(current_menu->enum_id)
    {
       case GENERAL_VIDEO_MENU:
-	 render_msg_place_func(x_position, msg_prev_next_y_position, font_size, WHITE, "NEXT ->");
+	 render_msg_place_func(default_pos.x_position, default_pos.msg_prev_next_y_position, default_pos.font_size, WHITE, "NEXT ->");
          break;
       case GENERAL_AUDIO_MENU:
       case EMU_GENERAL_MENU:
       case EMU_VIDEO_MENU:
       case EMU_AUDIO_MENU:
       case PATH_MENU:
-	 render_msg_place_func(x_position, msg_prev_next_y_position, font_size, WHITE, "<- PREV | NEXT ->");
+	 render_msg_place_func(default_pos.x_position, default_pos.msg_prev_next_y_position, default_pos.font_size, WHITE, "<- PREV | NEXT ->");
          break;
       case CONTROLS_MENU:
       case INGAME_MENU_RESIZE:
@@ -628,7 +623,7 @@ static void display_menubar(menu *current_menu)
 #endif
       case PATH_SRAM_DIR_CHOICE:
       case PATH_SYSTEM_DIR_CHOICE:
-	 render_msg_place_func(x_position, msg_prev_next_y_position, font_size, WHITE, "<- PREV");
+	 render_msg_place_func(default_pos.x_position, default_pos.msg_prev_next_y_position, default_pos.font_size, WHITE, "<- PREV");
          break;
       default:
          break;
@@ -651,7 +646,7 @@ static void display_menubar(menu *current_menu)
          fb = &tmpBrowser;
       case FILE_BROWSER_MENU:
 	 snprintf(current_path, sizeof(current_path), "PATH: %s", filebrowser_get_current_dir(fb));
-         render_msg_place_func(x_position, current_path_y_position, current_path_font_size, WHITE, current_path);
+         render_msg_place_func(default_pos.x_position, default_pos.current_path_y_position, default_pos.current_path_font_size, WHITE, current_path);
          break;
       default:
          break;
@@ -770,10 +765,8 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
 
    bool ret = true;
 
-   float x_position = POSITION_X;
-   float comment_y_position = COMMENT_Y_POSITION;
-   float comment_two_y_position = COMMENT_TWO_Y_POSITION;
-   float font_size = HARDCODE_FONT_SIZE;
+   rmenu_default_positions_t default_pos;
+   context->set_default_pos(&default_pos);
 
    switch(current_menu->enum_id)
    {
@@ -871,8 +864,8 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
    display_menubar(current_menu);
 
    snprintf(comment_two, sizeof(comment_two), "[%s] - return to settings [%s] - Reset Startdir", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
-   render_msg_place_func(x_position, comment_two_y_position, font_size, YELLOW, comment_two);
-   render_msg_place_func(x_position, comment_y_position, font_size, WHITE, comment);
+   render_msg_place_func(default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, comment_two);
+   render_msg_place_func(default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, comment);
 }
 
 static void select_directory(item *items, menu *current_menu, uint64_t input)
@@ -1854,13 +1847,8 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
 
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   float x_position = POSITION_X;
-   float x_position_center = POSITION_X_CENTER;
-   float font_size = HARDCODE_FONT_SIZE;
-
-   float y_position = POSITION_Y_BEGIN;
-   float y_position_increment = POSITION_Y_INCREMENT;
-   float comment_y_position = COMMENT_Y_POSITION;
+   rmenu_default_positions_t default_pos;
+   context->set_default_pos(&default_pos);
 
    g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
    gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
@@ -1956,60 +1944,60 @@ static void ingame_menu_resize(item *items, menu *current_menu, uint64_t input)
       snprintf(viewport_w, sizeof(viewport_w), "Viewport W: #%d", g_console.viewports.custom_vp.width);
       snprintf(viewport_h, sizeof(viewport_h), "Viewport H: #%d", g_console.viewports.custom_vp.height);
 
-      render_msg_place_func(x_position, y_position, font_size, GREEN, viewport_x);
-      render_msg_place_func(x_position, y_position+(y_position_increment*1), font_size, GREEN, viewport_y);
-      render_msg_place_func(x_position, y_position+(y_position_increment*2), font_size, GREEN, viewport_w);
-      render_msg_place_func(x_position, y_position+(y_position_increment*3), font_size, GREEN, viewport_h);
+      render_msg_place_func(default_pos.x_position, default_pos.y_position, default_pos.font_size, GREEN, viewport_x);
+      render_msg_place_func(default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*1), default_pos.font_size, GREEN, viewport_y);
+      render_msg_place_func(default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*2), default_pos.font_size, GREEN, viewport_w);
+      render_msg_place_func(default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*3), default_pos.font_size, GREEN, viewport_h);
 
-      render_msg_place_func(x_position, y_position+(y_position_increment*4), font_size, WHITE, "CONTROLS:");
+      render_msg_place_func(default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*4), default_pos.font_size, WHITE, "CONTROLS:");
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_LEFT));
-      render_msg_place_func (x_position, y_position+(y_position_increment*5), font_size,  WHITE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*5), font_size, WHITE, "- Viewport X --");
+      render_msg_place_func (default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*5), default_pos.font_size,  WHITE, msg);
+      render_msg_place_func (default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*5), default_pos.font_size, WHITE, "- Viewport X --");
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_RIGHT));
-      render_msg_place_func (x_position, y_position+(y_position_increment*6), font_size, WHITE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*6), font_size, WHITE, "- Viewport X ++");
+      render_msg_place_func (default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*6), default_pos.font_size, WHITE, msg);
+      render_msg_place_func (default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*6), default_pos.font_size, WHITE, "- Viewport X ++");
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_UP), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_UP));
-      render_msg_place_func (x_position, y_position+(y_position_increment*7), font_size, WHITE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*7), font_size, WHITE, "- Viewport Y ++");
+      render_msg_place_func (default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*7), default_pos.font_size, WHITE, msg);
+      render_msg_place_func (default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*7), default_pos.font_size, WHITE, "- Viewport Y ++");
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_DOWN), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_LEFT_DPAD_DOWN));
-      render_msg_place_func (x_position, y_position+(y_position_increment*8), font_size, WHITE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*8), font_size, WHITE, "- Viewport Y --");
+      render_msg_place_func (default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*8), default_pos.font_size, WHITE, msg);
+      render_msg_place_func (default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*8), default_pos.font_size, WHITE, "- Viewport Y --");
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_LEFT));
-      render_msg_place_func (x_position, y_position+(y_position_increment*9), font_size, WHITE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*9), font_size, WHITE, "- Viewport W --");
+      render_msg_place_func (default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*9), default_pos.font_size, WHITE, msg);
+      render_msg_place_func (default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*9), default_pos.font_size, WHITE, "- Viewport W --");
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_RIGHT));
-      render_msg_place_func (x_position, y_position+(y_position_increment*10), font_size, WHITE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*10), font_size, WHITE, "- Viewport W ++");
+      render_msg_place_func (default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*10), default_pos.font_size, WHITE, msg);
+      render_msg_place_func (default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*10), default_pos.font_size, WHITE, "- Viewport W ++");
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L2), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_UP));
-      render_msg_place_func (x_position, y_position+(y_position_increment*11), font_size, WHITE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*11), font_size, WHITE, "- Viewport H ++");
+      render_msg_place_func (default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*11), default_pos.font_size, WHITE, msg);
+      render_msg_place_func (default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*11), default_pos.font_size, WHITE, "- Viewport H ++");
 
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R2), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_ANALOG_RIGHT_DPAD_DOWN));
-      render_msg_place_func (x_position, y_position+(y_position_increment*12), font_size, WHITE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*12), font_size, WHITE, "- Viewport H --");
+      render_msg_place_func (default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*12), default_pos.font_size, WHITE, msg);
+      render_msg_place_func (default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*12), default_pos.font_size, WHITE, "- Viewport H --");
 
       snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X));
-      render_msg_place_func (x_position, y_position+(y_position_increment*13), font_size, WHITE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*13), font_size, WHITE, "- Reset To Defaults");
+      render_msg_place_func (default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*13), default_pos.font_size, WHITE, msg);
+      render_msg_place_func (default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*13), default_pos.font_size, WHITE, "- Reset To Defaults");
 
       snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_Y));
-      render_msg_place_func (x_position, y_position+(y_position_increment*14), font_size, WHITE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*14), font_size, WHITE, "- Show Game");
+      render_msg_place_func (default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*14), default_pos.font_size, WHITE, msg);
+      render_msg_place_func (default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*14), default_pos.font_size, WHITE, "- Show Game");
 
       snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
-      render_msg_place_func (x_position, y_position+(y_position_increment*15), font_size, WHITE, msg);
-      render_msg_place_func (x_position_center, y_position+(y_position_increment*15), font_size, WHITE, "- Go back");
+      render_msg_place_func (default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*15), default_pos.font_size, WHITE, msg);
+      render_msg_place_func (default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*15), default_pos.font_size, WHITE, "- Go back");
 
       snprintf(msg, sizeof(msg), "Allows you to resize the screen.\nPress [%s] to reset to defaults, and [%s] to go back.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
-      render_msg_place_func (x_position, comment_y_position, font_size, WHITE, msg);
+      render_msg_place_func (default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, msg);
    }
 }
 
@@ -2039,12 +2027,8 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
    unsigned menuitem_colors[MENU_ITEM_LAST];
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   float x_position = POSITION_X;
-   float y_position = POSITION_Y_BEGIN;
-   float comment_y_position = COMMENT_Y_POSITION;
-   float font_size = HARDCODE_FONT_SIZE;
-
-   float y_position_increment = POSITION_Y_INCREMENT;
+   rmenu_default_positions_t default_pos;
+   context->set_default_pos(&default_pos);
 
    for(int i = 0; i < MENU_ITEM_LAST; i++)
       menuitem_colors[i] = GREEN;
@@ -2203,50 +2187,50 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
    display_menubar(current_menu);
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
-   render_msg_place_func(x_position, y_position, font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), strw_buffer);
+   render_msg_place_func(default_pos.x_position, default_pos.y_position, default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), strw_buffer);
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
-   render_msg_place_func(x_position, y_position+(y_position_increment*MENU_ITEM_SAVE_STATE), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), strw_buffer);
+   render_msg_place_func(default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_SAVE_STATE), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), strw_buffer);
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
-   render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), strw_buffer);
+   render_msg_place_func(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), strw_buffer);
 
    snprintf(overscan_msg, sizeof(overscan_msg), "Overscan: %f", g_console.overscan_amount);
-   render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), overscan_msg);
+   render_msg_place_func(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_OVERSCAN_AMOUNT)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), overscan_msg);
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
-   render_msg_place_func (x_position, (y_position+(y_position_increment*MENU_ITEM_ORIENTATION)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), strw_buffer);
+   render_msg_place_func (default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_ORIENTATION)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), strw_buffer);
 
 #ifdef HAVE_FBO
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
-   render_msg_place_func (x_position, (y_position+(y_position_increment*MENU_ITEM_SCALE_FACTOR)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), strw_buffer);
+   render_msg_place_func (default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_SCALE_FACTOR)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), strw_buffer);
 #endif
 
-   render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_RESIZE_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE), "Resize Mode");
+   render_msg_place_func(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_RESIZE_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE), "Resize Mode");
 
-   render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_FRAME_ADVANCE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_FRAME_ADVANCE), "Frame Advance");
+   render_msg_place_func(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_FRAME_ADVANCE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_FRAME_ADVANCE), "Frame Advance");
 
-   render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_SCREENSHOT_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCREENSHOT_MODE), "Screenshot Mode");
+   render_msg_place_func(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_SCREENSHOT_MODE)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCREENSHOT_MODE), "Screenshot Mode");
 
-   render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_RESET)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESET), "Reset");
+   render_msg_place_func(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_RESET)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESET), "Reset");
 
-   render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_RETURN_TO_GAME)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME), "Return to Game");
+   render_msg_place_func(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_RETURN_TO_GAME)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME), "Return to Game");
 
-   render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_RETURN_TO_MENU)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU), "Return to Menu");
+   render_msg_place_func(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_RETURN_TO_MENU)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU), "Return to Menu");
 
-   render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_CHANGE_LIBRETRO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBRETRO), "Change libretro core");
+   render_msg_place_func(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_CHANGE_LIBRETRO)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBRETRO), "Change libretro core");
 
 #ifdef HAVE_MULTIMAN
-   render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");
+   render_msg_place_func(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");
 #endif
 
-   render_msg_place_func(x_position, (y_position+(y_position_increment*MENU_ITEM_RETURN_TO_DASHBOARD)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_DASHBOARD), "Return to Dashboard");
+   render_msg_place_func(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_RETURN_TO_DASHBOARD)), font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_DASHBOARD), "Return to Dashboard");
 
-   render_msg_place_func(x_position, comment_y_position, font_size, WHITE, comment);
+   render_msg_place_func(default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, comment);
 
    rmenu_position_t position = {0};
-   position.x = x_position;
-   position.y = (y_position+(y_position_increment*g_console.ingame_menu_item));
+   position.x = default_pos.x_position;
+   position.y = (default_pos.y_position+(default_pos.y_position_increment*g_console.ingame_menu_item));
    context->render_selection_panel(&position);
 }
 
@@ -2265,8 +2249,11 @@ static void rmenu_filebrowser_free(void)
 
 void menu_init (void)
 {
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-   (void)device_ptr;
+#if defined(__CELLOS_LV2__)
+   context = &rmenu_ctx_ps3;
+#elif defined(_XBOX1)
+   context = (rmenu_context_t*)&rmenu_ctx_xdk;
+#endif
 
    //Set libretro filename and version to variable
    struct retro_system_info info;
@@ -2275,12 +2262,6 @@ void menu_init (void)
    snprintf(m_title, sizeof(m_title), "Libretro core: %s %s", id, info.library_version);
 
    rmenu_filebrowser_init();
-
-#if defined(__CELLOS_LV2__)
-   context = &rmenu_ctx_ps3;
-#elif defined(_XBOX1)
-   context = (rmenu_context_t*)&rmenu_ctx_xdk;
-#endif
 }
 
 void menu_free (void)
@@ -2309,12 +2290,8 @@ void menu_loop(void)
       static bool first_held = false;
       menu *current_menu = menu_stack_get_current_ptr();
 
-      float x_position = POSITION_X;
-      float starting_y_position = POSITION_Y_START;
-      float y_position_increment = POSITION_Y_INCREMENT;
-      float msg_queue_x_position = MSG_QUEUE_X_POSITION;
-      float msg_queue_y_position = MSG_QUEUE_Y_POSITION;
-      float msg_queue_font_size= MSG_QUEUE_FONT_SIZE;
+      rmenu_default_positions_t default_pos;
+      context->set_default_pos(&default_pos);
 
       input_ptr.poll(NULL);
 
@@ -2487,7 +2464,7 @@ void menu_loop(void)
       switch(current_menu->category_id)
       {
          case CATEGORY_FILEBROWSER:
-            browser_render(fb, x_position, starting_y_position, y_position_increment);
+            browser_render(fb, default_pos.x_position, default_pos.starting_y_position, default_pos.y_position_increment);
             break;
          case CATEGORY_SETTINGS:
          case CATEGORY_INGAME_MENU:
@@ -2529,8 +2506,7 @@ void menu_loop(void)
 
       if (message && g_console.info_msg_enable)
       {
-         RARCH_LOG("x: %f, y: %f\n", msg_queue_x_position, msg_queue_y_position);
-         render_msg_place_func(msg_queue_x_position, msg_queue_y_position, msg_queue_font_size, WHITE, message);
+         render_msg_place_func(default_pos.msg_queue_x_position, default_pos.msg_queue_y_position, default_pos.msg_queue_font_size, WHITE, message);
       }
 
       context->swap_buffers();

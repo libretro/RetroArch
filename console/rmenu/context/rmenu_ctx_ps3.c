@@ -63,10 +63,18 @@ static void rmenu_ctx_ps3_set_default_pos(rmenu_default_positions_t *position)
 {
    position->x_position = POSITION_X;
    position->x_position_center = POSITION_X_CENTER;
+   position->y_position = POSITION_Y_BEGIN;
    position->comment_y_position = COMMENT_Y_POSITION;
    position->y_position_increment = POSITION_Y_INCREMENT;
+   position->starting_y_position = POSITION_Y_START;
    position->comment_two_y_position = COMMENT_TWO_Y_POSITION;
    position->font_size = HARDCODE_FONT_SIZE;
+   position->msg_queue_x_position = MSG_QUEUE_X_POSITION;
+   position->msg_queue_y_position = MSG_QUEUE_Y_POSITION;
+   position->msg_queue_font_size= MSG_QUEUE_FONT_SIZE;
+   position->msg_prev_next_y_position = MSG_PREV_NEXT_Y_POSITION;
+   position->current_path_font_size = CURRENT_PATH_FONT_SIZE;
+   position->current_path_y_position = CURRENT_PATH_Y_POSITION;
 }
 
 const rmenu_context_t rmenu_ctx_ps3 = {
