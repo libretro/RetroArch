@@ -284,7 +284,7 @@ int main(int argc, char *argv[])
 #endif
 #endif
 
-   video_start_func();
+   video_gl.start();
 
 #ifdef HAVE_OSKUTIL
    oskutil_init(&g_console.oskutil_handle, 0);
@@ -342,7 +342,7 @@ begin_shutdown:
       rarch_main_deinit();
 
    input_ps3.free(NULL);
-   video_stop_func();
+   video_gl.stop();
    menu_free();
 
 #ifdef HAVE_OSKUTIL

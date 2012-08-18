@@ -95,6 +95,8 @@ unsigned set_shader = 0;
 unsigned currently_selected_controller_menu = 0;
 char m_title[256];
 
+static const rmenu_context_t *context;
+
 static uint64_t old_state = 0;
 
 typedef enum {
@@ -1017,7 +1019,7 @@ static void rarch_filename_input_and_save (unsigned filename_type)
 
    while(OSK_IS_RUNNING(g_console.oskutil_handle))
    {
-      gfx_ctx_clear();
+      context->clear();
       gfx_ctx_swap_buffers();
 #ifdef HAVE_SYSUTILS
       cellSysutilCheckCallback();
@@ -1053,7 +1055,7 @@ static void rarch_filename_input_and_save (unsigned filename_type)
       while(OSK_IS_RUNNING(g_console.oskutil_handle))
       {
          /* OSK Util gets updated */
-         gfx_ctx_clear();
+         context->clear();
          gfx_ctx_swap_buffers();
 #ifdef HAVE_SYSUTILS
          cellSysutilCheckCallback();
@@ -1427,7 +1429,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 			   oskutil_start(&g_console.oskutil_handle);
 			   while(OSK_IS_RUNNING(g_console.oskutil_handle))
 			   {
-				   gfx_ctx_clear();
+				   context->clear();
 				   gfx_ctx_swap_buffers();
 #ifdef HAVE_SYSUTILS
 				   cellSysutilCheckCallback();
@@ -2319,6 +2321,12 @@ void menu_init (void)
    snprintf(m_title, sizeof(m_title), "Libretro core: %s %s", id, info.library_version);
 
    rmenu_filebrowser_init();
+
+#if defined(__CELLOS_LV2__)
+   context = &rmenu_ctx_ps3;
+#elif defined(_XBOX1)
+   context = (rmenu_context_t*)&rmenu_ctx_xdk;
+#endif
 }
 
 void menu_free (void)
@@ -2474,7 +2482,7 @@ void menu_loop(void)
          }
       }
       
-      gfx_ctx_clear();
+      context->clear();
 
       if(current_menu->enum_id == INGAME_MENU_RESIZE && (trig_state & RETRO_DEVICE_ID_JOYPAD_Y) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
       {
@@ -2484,7 +2492,7 @@ void menu_loop(void)
       }
       else
       {
-         gfx_ctx_set_blend(true);
+         context->blend(true);
 #ifdef __CELLOS_LV2__
          device_ptr->menu_render = true;
 #endif
@@ -2603,7 +2611,7 @@ void menu_loop(void)
       if(current_menu->enum_id == INGAME_MENU_RESIZE && (old_state & (1 << RETRO_DEVICE_ID_JOYPAD_Y)) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
       { }
       else
-         gfx_ctx_set_blend(false);
+         context->blend(false);
    }while(g_console.menu_enable);
 
 #ifdef __CELLOS_LV2__

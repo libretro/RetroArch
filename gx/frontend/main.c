@@ -362,7 +362,7 @@ int main(void)
    config_set_defaults();
    input_gx.init();
 
-   video_start_func();
+   video_gx.start();
 
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    gx->menu_data = menu_framebuf;
@@ -420,7 +420,7 @@ begin_shutdown:
 
    input_gx.free(NULL);
 
-   video_stop_func();
+   video_gx.stop();
    menu_free();
 
 #ifdef HAVE_FILE_LOGGER

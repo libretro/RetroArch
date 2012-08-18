@@ -224,6 +224,12 @@ enum
 #define MAX_NO_OF_PATH_SETTINGS				SETTING_PATH_DEFAULT_ALL+1
 #define MAX_NO_OF_CONTROLS_SETTINGS			SETTING_CONTROLS_DEFAULT_ALL+1
 
+typedef struct rmenu_context
+{
+   void (*clear)(void); 
+   void (*blend)(bool enable);
+} rmenu_context_t;
+
 void menu_init (void);
 void menu_loop (void);
 void menu_free (void);
