@@ -28,6 +28,6 @@ static void rmenu_ctx_xdk_blend(bool enable)
 }
 
 const rmenu_context_t rmenu_ctx_xdk = {
-   .clear = rmenu_ctx_xdk_clear,
-   .blend = rmenu_ctx_xdk_blend, 
+   rmenu_ctx_xdk_clear,
+   rmenu_ctx_xdk_blend, 
 };
