@@ -656,7 +656,7 @@ static void display_menubar(menu *current_menu)
    context->render_bg(&position);
 
 #ifdef __CELLOS_LV2__
-   render_msg_place_func(x_position, 0.05f, 1.4f, WHITE, current_menu->title);
+   render_msg_place_func(default_pos.x_position, 0.05f, 1.4f, WHITE, current_menu->title);
    render_msg_place_func(0.3f, 0.06f, 0.82f, WHITE, m_title);
    render_msg_place_func(0.80f, 0.015f, 0.82f, WHITE, rarch_version);
 #endif
