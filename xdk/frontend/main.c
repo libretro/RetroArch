@@ -170,11 +170,7 @@ int main(int argc, char *argv[])
 
    input_xinput.post_init();
 
-#if defined(HAVE_D3D8) || defined(HAVE_D3D9)
-   video_xdk_d3d.start();
-#else
-   video_null.start();
-#endif
+   video_start_func();
 
    system_init();
 
@@ -210,11 +206,7 @@ begin_shutdown:
       rarch_config_save(default_paths.config_file);
 
    menu_free();
-#if defined(HAVE_D3D8) || defined(HAVE_D3D9)
-   video_xdk_d3d.stop();
-#else
-   video_null.stop();
-#endif
+   video_stop_func();
    input_xinput.free(NULL);
 
    if(g_console.return_to_launcher)

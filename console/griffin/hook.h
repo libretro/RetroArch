@@ -39,6 +39,8 @@
 #define video_free_func()                       gl_free(driver.video_data)
 #define video_set_rotation_func(rotation)	gl_set_rotation(driver.video_data, rotation)
 #define video_set_aspect_ratio_func(aspectratio_idx) gfx_ctx_set_aspect_ratio(driver.video_data, aspectratio_idx)
+#define video_stop_func()			gl_stop()
+#define video_start_func()			gl_start()
 
 #define gfx_ctx_window_has_focus()		(true)
 
@@ -66,6 +68,8 @@
 #define video_free_func()                       xdk_d3d_free(driver.video_data)
 #define video_set_rotation_func(rotation)	xdk_d3d_set_rotation(driver.video_data, rotation)
 #define video_set_aspect_ratio_func(aspectratio_idx) gfx_ctx_set_aspect_ratio(driver.video_data, aspectratio_idx)
+#define video_stop_func()			xdk_d3d_stop()
+#define video_start_func()			xdk_d3d_start()
 
 #define gfx_ctx_window_has_focus()		(true)
 
@@ -92,6 +96,8 @@
 #define video_free_func()                       gx_free(driver.video_data)
 #define video_set_rotation_func(orientation)	gx_set_rotation(driver.video_data, orientation)
 #define video_set_aspect_ratio_func(aspectratio_idx) gx_set_aspect_ratio(driver.video_data, aspectratio_idx)
+#define video_stop_func()			gx_stop()
+#define video_start_func()			gx_start()
 
 #define input_init_func()                       gx_input_initialize()
 #define input_poll_func()                       gx_input_poll(driver.input_data)
@@ -117,6 +123,8 @@
 #define video_free_func()                       null_gfx_free(driver.video_data)
 #define video_set_rotation_func(orientation)	(true)
 #define video_set_aspect_ratio_func(aspectratio_idx) (true)
+#define video_stop_func()			null_gfx_stop()
+#define video_start_func()			null_gfx_start()
 
 #define input_init_func()                       null_input_init()
 #define input_poll_func()                       null_input_poll(driver.input_data)

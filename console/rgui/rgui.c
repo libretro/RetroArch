@@ -54,7 +54,7 @@ struct rgui_handle
    uint32_t font_green[256][FONT_HEIGHT][FONT_WIDTH];
 };
 
-static const char *rgui_device_lables[] = {
+static const char *rgui_device_labels[] = {
    "GameCube Controller",
    "Wiimote",
    "Wiimote + Nunchuk",
@@ -83,11 +83,6 @@ static const unsigned rgui_controller_lut[] = {
 static inline bool rgui_is_controller_menu(rgui_file_type_t menu_type)
 {
    return (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4);
-}
-
-static inline bool rgui_is_filebrowser_menu(rgui_file_type_t menu_type)
-{
-   return (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE);
 }
 
 static void copy_glyph(uint32_t glyph_white[FONT_HEIGHT][FONT_WIDTH],
@@ -277,18 +272,14 @@ static void render_text(rgui_handle_t *rgui)
    const char *dir = 0;
    rgui_file_type_t menu_type = 0;
    rgui_list_back(rgui->path_stack, &dir, &menu_type, NULL);
+
    if (menu_type == RGUI_SETTINGS_CORE)
-   {
       snprintf(title, sizeof(title), "CORE SELECTION");
-   }
    else if (rgui_is_controller_menu(menu_type) || menu_type == RGUI_SETTINGS)
-   {
       snprintf(title, sizeof(title), "SETTINGS: %s", dir);
-   }
    else
-   {
       snprintf(title, sizeof(title), "FILE BROWSER: %s", dir);
-   }
+
    blit_line(rgui, TERM_START_X + 15, 15, title, true);
 
    struct retro_system_info info;
@@ -360,7 +351,7 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), "...");
             break;
          case RGUI_SETTINGS_BIND_DEVICE:
-            snprintf(type_str, sizeof(type_str), "%s", rgui_device_lables[g_settings.input.device[port]]);
+            snprintf(type_str, sizeof(type_str), "%s", rgui_device_labels[g_settings.input.device[port]]);
             break;
          case RGUI_SETTINGS_BIND_UP:
          case RGUI_SETTINGS_BIND_DOWN:
@@ -407,9 +398,7 @@ static void render_text(rgui_handle_t *rgui)
 static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t action, rgui_file_type_t menu_type)
 {
    unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
-#ifdef GEKKO
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
-#endif
+   void *data = (gx_video_t*)driver.video_data;
 
    switch (setting)
    {
@@ -440,8 +429,11 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          break;
 #ifdef HW_RVL
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
-         g_console.soft_display_filter_enable = !g_console.soft_display_filter_enable;
-         gx->should_resize = true;
+         {
+	    gx_video_t *gx = (gx_video_t*)data;
+            g_console.soft_display_filter_enable = !g_console.soft_display_filter_enable;
+            gx->should_resize = true;
+         }
          break;
 #endif
       case RGUI_SETTINGS_VIDEO_GAMMA:
@@ -449,6 +441,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          {
             g_console.gamma_correction = 0;
 #ifdef GEKKO
+	    gx_video_t *gx = (gx_video_t*)data;
             gx->should_resize = true;
 #endif
          }
@@ -458,6 +451,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             {
                g_console.gamma_correction--;
 #ifdef GEKKO
+	       gx_video_t *gx = (gx_video_t*)data;
                gx->should_resize = true;
 #endif
             }
@@ -468,6 +462,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             {
                g_console.gamma_correction++;
 #ifdef GEKKO
+	       gx_video_t *gx = (gx_video_t*)data;
                gx->should_resize = true;
 #endif
             }
@@ -486,23 +481,17 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          if (action == RGUI_ACTION_START)
          {
             rarch_settings_default(S_DEF_AUDIO_CONTROL_RATE);
-#ifdef GEKKO
-            video_gx.set_rotation(NULL, g_console.screen_orientation);
-#endif
+            video_set_rotation_func(g_console.screen_orientation);
          }
          else if (action == RGUI_ACTION_LEFT)
          {
             rarch_settings_change(S_ROTATION_DECREMENT);
-#ifdef GEKKO
-            video_gx.set_rotation(NULL, g_console.screen_orientation);
-#endif
+            video_set_rotation_func(g_console.screen_orientation);
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
             rarch_settings_change(S_ROTATION_INCREMENT);
-#ifdef GEKKO
-            video_gx.set_rotation(NULL, g_console.screen_orientation);
-#endif
+            video_set_rotation_func(g_console.screen_orientation);
          }
          break;
       case RGUI_SETTINGS_AUDIO_MUTE:
@@ -696,7 +685,7 @@ static const char *rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t acti
 
    rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
-   if (rgui->need_refresh && !rgui_is_filebrowser_menu(menu_type))
+   if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE))
    {
       rgui->need_refresh = false;
       if (rgui_is_controller_menu(menu_type))
@@ -841,7 +830,7 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    // refresh values in case the stack changed
    rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
-   if (rgui->need_refresh && rgui_is_filebrowser_menu(menu_type))
+   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE))
    {
       rgui->need_refresh = false;
       rgui_list_clear(rgui->folder_buf);
