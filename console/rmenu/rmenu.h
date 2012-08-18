@@ -111,6 +111,7 @@ typedef struct rmenu_context
    void (*init_textures)(void);
    void (*render_selection_panel)(rmenu_position_t *position);
    void (*render_bg)(rmenu_position_t *position);
+   void (*swap_buffers)(void);
 } rmenu_context_t;
 
 enum

@@ -14,6 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_SYSUTILS
+#include <cell/sysmodule.h>
+#endif
+
 #include "../rmenu.h"
 #include "../../../gfx/context/ps3_ctx.h"
 
@@ -47,6 +51,14 @@ static void rmenu_ctx_ps3_render_bg(rmenu_position_t *position)
    (void)position;
 }
 
+static void rmenu_ctx_ps3_swap_buffers(void)
+{
+   gfx_ctx_swap_buffers();
+#ifdef HAVE_SYSUTILS
+      cellSysutilCheckCallback();
+#endif
+}
+
 const rmenu_context_t rmenu_ctx_ps3 = {
    .clear = rmenu_ctx_ps3_clear,
    .blend = rmenu_ctx_ps3_blend, 
@@ -54,4 +66,5 @@ const rmenu_context_t rmenu_ctx_ps3 = {
    .init_textures = rmenu_ctx_ps3_init_textures,
    .render_selection_panel = rmenu_ctx_ps3_render_selection_panel,
    .render_bg = rmenu_ctx_ps3_render_bg,
+   .swap_buffers = rmenu_ctx_ps3_swap_buffers,
 };

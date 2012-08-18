@@ -89,6 +89,11 @@ static void rmenu_ctx_xdk_render_bg(rmenu_position_t *position)
    texture_image_render(&m_menuMainBG);
 }
 
+static void rmenu_ctx_xdk_swap_buffers(void)
+{
+   gfx_ctx_swap_buffers();
+}
+
 const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_clear,
    rmenu_ctx_xdk_blend,
@@ -96,4 +101,5 @@ const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_init_textures,
    rmenu_ctx_xdk_render_selection_panel,
    rmenu_ctx_xdk_render_bg,
+   rmenu_ctx_xdk_swap_buffers,
 };

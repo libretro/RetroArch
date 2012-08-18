@@ -16,7 +16,6 @@
 
 #if defined(__CELLOS_LV2__)
 #include <sdk_version.h>
-#include <cell/sysmodule.h>
 #include <sysutil/sysutil_screenshot.h>
 
 #if(CELL_SDK_VERSION > 0x340000)
@@ -50,12 +49,6 @@
 #include "../../gfx/gl_font.h"
 #endif
 #include "../../gfx/gfx_context.h"
-
-#if defined(__CELLOS_LV2__)
-#include "../../gfx/context/ps3_ctx.h"
-#elif defined(_XBOX)
-#include "../../gfx/context/xdk_ctx.h"
-#endif
 
 #if defined(HAVE_CG)
 #include "../../gfx/shader_cg.h"
@@ -1002,10 +995,7 @@ static void rarch_filename_input_and_save (unsigned filename_type)
    while(OSK_IS_RUNNING(g_console.oskutil_handle))
    {
       context->clear();
-      gfx_ctx_swap_buffers();
-#ifdef HAVE_SYSUTILS
-      cellSysutilCheckCallback();
-#endif
+      context->swap_buffers();
    }
 
    if(g_console.oskutil_handle.text_can_be_fetched)
@@ -1038,10 +1028,7 @@ static void rarch_filename_input_and_save (unsigned filename_type)
       {
          /* OSK Util gets updated */
          context->clear();
-         gfx_ctx_swap_buffers();
-#ifdef HAVE_SYSUTILS
-         cellSysutilCheckCallback();
-#endif
+	 context->swap_buffers();
       }
 
       if(g_console.oskutil_handle.text_can_be_fetched)
@@ -1412,10 +1399,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 			   while(OSK_IS_RUNNING(g_console.oskutil_handle))
 			   {
 				   context->clear();
-				   gfx_ctx_swap_buffers();
-#ifdef HAVE_SYSUTILS
-				   cellSysutilCheckCallback();
-#endif
+				   context->swap_buffers();
 			   }
 
 			   if(g_console.oskutil_handle.text_can_be_fetched)
@@ -2557,10 +2541,7 @@ void menu_loop(void)
          render_msg_place_func(msg_queue_x_position, msg_queue_y_position, msg_queue_font_size, WHITE, message);
       }
 
-      gfx_ctx_swap_buffers();
-#ifdef HAVE_SYSUTILS
-      cellSysutilCheckCallback();
-#endif
+      context->swap_buffers();
 
       if(current_menu->enum_id == INGAME_MENU_RESIZE && (old_state & (1 << RETRO_DEVICE_ID_JOYPAD_Y)) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
       { }
