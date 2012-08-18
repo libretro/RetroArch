@@ -18,7 +18,13 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+
+#if defined(_WIN32)
+#include <direct.h>
+#else
 #include <sys/stat.h>
+#endif
+
 #include "../boolean.h"
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
@@ -77,7 +83,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir,
       if(is_dir)
       {
 #ifdef _WIN32
-         mkdir(write_filename);
+         _mkdir(write_filename);
 #else
          mkdir(write_filename, S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR);
 #endif
