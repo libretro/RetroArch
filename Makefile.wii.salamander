@@ -7,12 +7,24 @@ DEBUG			= 0
 HAVE_LOGGER		= 0
 HAVE_FILE_LOGGER	= 0
 
+# system platform
+system_platform = unix
+ifeq ($(shell uname -a),)
+EXE_EXT = .exe
+   system_platform = win
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+   system_platform = osx
+else ifneq ($(findstring MINGW,$(shell uname -a)),)
+   system_platform = win
+endif
+
 PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.7"
 PC_DEVELOPMENT_UDP_PORT		= 3490
 
-CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc
-CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++
-LD = $(DEVKITPPC)/bin/powerpc-eabi-ld
+CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
+CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
+LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
+ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
 
 DOL_TARGET := retroarch-salamander_gx.dol
 ELF_TARGET := retroarch-salamander_gx.elf
@@ -50,7 +62,7 @@ endif
 all: $(DOL_TARGET)
 
 %.dol: %.elf
-	$(DEVKITPPC)/bin/elf2dol $< $@
+	$(ELF2DOL) $< $@
 
 $(ELF_TARGET): $(OBJ)
 	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(LIBS)
