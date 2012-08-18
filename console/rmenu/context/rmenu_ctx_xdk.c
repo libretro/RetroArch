@@ -20,6 +20,23 @@
 #define ROM_PANEL_WIDTH 510
 #define ROM_PANEL_HEIGHT 20
 
+#define POSITION_X m_menuMainRomListPos_x
+#define POSITION_X_CENTER (m_menuMainRomListPos_x + 350)
+#define POSITION_Y_START m_menuMainRomListPos_y
+#define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
+#define POSITION_Y_INCREMENT 20
+#define COMMENT_Y_POSITION (ypos - ((POSITION_Y_INCREMENT/2) * 3))
+#define COMMENT_TWO_Y_POSITION (ypos - ((POSITION_Y_INCREMENT/2) * 1))
+
+#define MSG_QUEUE_X_POSITION POSITION_X
+#define MSG_QUEUE_Y_POSITION (ypos - ((POSITION_Y_INCREMENT/2) * 7) + 5)
+#define MSG_QUEUE_FONT_SIZE HARDCODE_FONT_SIZE
+
+#define MSG_PREV_NEXT_Y_POSITION 24
+
+#define CURRENT_PATH_Y_POSITION (m_menuMainRomListPos_y - ((POSITION_Y_INCREMENT/2)))
+#define CURRENT_PATH_FONT_SIZE 21
+
 int xpos, ypos;
 texture_image m_menuMainRomSelectPanel;
 texture_image m_menuMainBG;
@@ -112,6 +129,12 @@ static void rmenu_ctx_xdk_set_default_pos(rmenu_default_positions_t *position)
    position->current_path_y_position = CURRENT_PATH_Y_POSITION;
 }
 
+static void rmenu_ctx_xdk_render_msg(float xpos, float ypos, float scale, float color, const char *msg, ...)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xfonts_render_msg_place(d3d, xpos, ypos, scale, msg);
+}
+
 const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_clear,
    rmenu_ctx_xdk_blend,
@@ -119,6 +142,7 @@ const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_init_textures,
    rmenu_ctx_xdk_render_selection_panel,
    rmenu_ctx_xdk_render_bg,
+   rmenu_ctx_xdk_render_msg,
    rmenu_ctx_xdk_swap_buffers,
    rmenu_ctx_xdk_set_default_pos,
 };

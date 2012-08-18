@@ -22,52 +22,18 @@
 #define input_ptr input_ps3
 #define video_ptr video_gl
 #define DEVICE_PTR device_ptr
-#define HARDCODE_FONT_SIZE 0.91f
 #define FONT_SIZE (g_console.menu_font_size)
-#define render_msg_place_func(xpos, ypos, scale, color, msg) gl_render_msg_place(DEVICE_PTR, xpos, ypos, scale, color, msg)
 
 #define NUM_ENTRY_PER_PAGE 15
-#define POSITION_X 0.09f
-#define POSITION_X_CENTER 0.5f
-#define POSITION_Y_START 0.17f
-#define POSITION_Y_INCREMENT 0.035f
-#define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
-#define COMMENT_TWO_Y_POSITION 0.91f
-#define COMMENT_Y_POSITION 0.82f
-
-#define MSG_QUEUE_X_POSITION g_settings.video.msg_pos_x
-#define MSG_QUEUE_Y_POSITION 0.76f
-#define MSG_QUEUE_FONT_SIZE 1.03f
-
-#define MSG_PREV_NEXT_Y_POSITION 0.03f
-#define CURRENT_PATH_Y_POSITION 0.15f
-#define CURRENT_PATH_FONT_SIZE FONT_SIZE
 #elif defined(_XBOX1)
 #define DEVICE_CAST xdk_d3d_video_t*
 #define input_ptr input_xinput
 #define video_ptr video_xdk_d3d
 #define DEVICE_PTR device_ptr
 #define HARDCODE_FONT_SIZE 21
-#define FONT_SIZE 21
-#define render_msg_place_func(xpos, ypos, scale, color, msg) xfonts_render_msg_place(DEVICE_PTR, xpos, ypos, scale, msg)
+#define FONT_SIZE 21 
 
 #define NUM_ENTRY_PER_PAGE 12
-#define POSITION_X m_menuMainRomListPos_x
-#define POSITION_X_CENTER (m_menuMainRomListPos_x + 350)
-#define POSITION_Y_START m_menuMainRomListPos_y
-#define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
-#define POSITION_Y_INCREMENT 20
-#define COMMENT_Y_POSITION (ypos - ((POSITION_Y_INCREMENT/2) * 3))
-#define COMMENT_TWO_Y_POSITION (ypos - ((POSITION_Y_INCREMENT/2) * 1))
-
-#define MSG_QUEUE_X_POSITION POSITION_X
-#define MSG_QUEUE_Y_POSITION (ypos - ((POSITION_Y_INCREMENT/2) * 7) + 5)
-#define MSG_QUEUE_FONT_SIZE HARDCODE_FONT_SIZE
-
-#define MSG_PREV_NEXT_Y_POSITION 24
-
-#define CURRENT_PATH_Y_POSITION (m_menuMainRomListPos_y - ((POSITION_Y_INCREMENT/2)))
-#define CURRENT_PATH_FONT_SIZE 21
 #endif
 
 typedef struct
@@ -128,6 +94,7 @@ typedef struct rmenu_context
    void (*init_textures)(void);
    void (*render_selection_panel)(rmenu_position_t *position);
    void (*render_bg)(rmenu_position_t *position);
+   void (*render_msg)(float xpos, float ypos, float scale, float color, const char *msg, ...);
    void (*swap_buffers)(void);
    void (*set_default_pos)(rmenu_default_positions_t *position);
 } rmenu_context_t;
