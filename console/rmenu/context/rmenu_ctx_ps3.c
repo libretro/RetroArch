@@ -59,6 +59,16 @@ static void rmenu_ctx_ps3_swap_buffers(void)
 #endif
 }
 
+static void rmenu_ctx_ps3_set_default_pos(rmenu_default_positions_t *position)
+{
+   position->x_position = POSITION_X;
+   position->x_position_center = POSITION_X_CENTER;
+   position->comment_y_position = COMMENT_Y_POSITION;
+   position->y_position_increment = POSITION_Y_INCREMENT;
+   position->comment_two_y_position = COMMENT_TWO_Y_POSITION;
+   position->font_size = HARDCODE_FONT_SIZE;
+}
+
 const rmenu_context_t rmenu_ctx_ps3 = {
    .clear = rmenu_ctx_ps3_clear,
    .blend = rmenu_ctx_ps3_blend, 
@@ -67,4 +77,5 @@ const rmenu_context_t rmenu_ctx_ps3 = {
    .render_selection_panel = rmenu_ctx_ps3_render_selection_panel,
    .render_bg = rmenu_ctx_ps3_render_bg,
    .swap_buffers = rmenu_ctx_ps3_swap_buffers,
+   .set_default_pos = rmenu_ctx_ps3_set_default_pos,
 };

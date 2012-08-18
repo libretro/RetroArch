@@ -881,11 +881,9 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
    bool ret = true;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   float x_position = POSITION_X;
-   float comment_y_position = COMMENT_Y_POSITION;
-   float y_position_increment = POSITION_Y_INCREMENT;
-   float comment_two_y_position = COMMENT_TWO_Y_POSITION;
-   float font_size = HARDCODE_FONT_SIZE;
+   rmenu_default_positions_t default_pos;
+
+   context->set_default_pos(&default_pos);
 
    bool is_dir = filebrowser_get_current_path_isdir(&tmpBrowser);
    browser_update(&tmpBrowser, input, "empty");
@@ -957,13 +955,13 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
    display_menubar(current_menu);
 
    snprintf(msg, sizeof(msg), "[%s] - Enter dir | [%s] - Go back", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X));
-   render_msg_place_func(x_position, comment_two_y_position, font_size, YELLOW, msg);
+   render_msg_place_func(default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, msg);
 
    snprintf(msg, sizeof(msg), "[%s] - Reset to startdir", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
-   render_msg_place_func(x_position, comment_two_y_position + (y_position_increment * 1), FONT_SIZE, YELLOW, msg);
+   render_msg_place_func(default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), FONT_SIZE, YELLOW, msg);
 
    snprintf(msg, sizeof(msg), "INFO - Browse to a directory and assign it as the path by\npressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_Y));
-   render_msg_place_func(x_position, comment_y_position, font_size, WHITE, msg);
+   render_msg_place_func(default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, msg);
 }
 
 static void set_keybind_digital(uint64_t default_retro_joypad_id, uint64_t input)
@@ -1734,12 +1732,9 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
    char msg[256];
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   float x_position = POSITION_X;
-   float x_position_center = POSITION_X_CENTER;
-   float y_position_increment = POSITION_Y_INCREMENT;
-   float comment_y_position = COMMENT_Y_POSITION;
-   float comment_two_y_position = COMMENT_TWO_Y_POSITION;
-   float font_size = HARDCODE_FONT_SIZE;
+   rmenu_default_positions_t default_pos;
+
+   context->set_default_pos(&default_pos);
 
    settings_action_t action = SETTINGS_ACTION_NOOP;
 
@@ -1765,12 +1760,12 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
       if(items[i].page == current_menu->page)
       {
          render_msg_place_func(items[i].text_xpos, items[i].text_ypos, FONT_SIZE, current_menu->selected == items[i].enum_id ? YELLOW : items[i].item_color, items[i].text);
-         render_msg_place_func(x_position_center, items[i].text_ypos, FONT_SIZE, items[i].text_color, items[i].setting_text);
+         render_msg_place_func(default_pos.x_position_center, items[i].text_ypos, FONT_SIZE, items[i].text_color, items[i].setting_text);
 
          if(current_menu->selected == items[i].enum_id)
          {
             rmenu_position_t position = {0};
-            position.x = x_position;
+            position.x = default_pos.x_position;
             position.y = items[i].text_ypos;
 
             context->render_selection_panel(&position);
@@ -1778,12 +1773,12 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
       }
    }
 
-   render_msg_place_func(x_position, comment_y_position, font_size, WHITE, items[current_menu->selected].comment);
+   render_msg_place_func(default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, items[current_menu->selected].comment);
 
    snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game | [%s] - go forward", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R));
-   render_msg_place_func(x_position, comment_two_y_position, FONT_SIZE, YELLOW, msg);
+   render_msg_place_func(default_pos.x_position, default_pos.comment_two_y_position, FONT_SIZE, YELLOW, msg);
    snprintf(msg, sizeof(msg), "[%s] - default | [%s]/[%s] - go back", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
-   render_msg_place_func(x_position, comment_two_y_position + (y_position_increment * 1), FONT_SIZE, YELLOW, msg);
+   render_msg_place_func(default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), FONT_SIZE, YELLOW, msg);
 }
 
 static void menu_romselect_iterate(filebrowser_t *filebrowser, item *items, menu_romselect_action_t action)
@@ -1813,12 +1808,9 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, item *items, menu
 static void select_rom(item *items, menu *current_menu, uint64_t input)
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
+   rmenu_default_positions_t default_pos;
 
-   float x_position = POSITION_X;
-   float comment_y_position = COMMENT_Y_POSITION;
-   float y_position_increment = POSITION_Y_INCREMENT;
-   float comment_two_y_position = COMMENT_TWO_Y_POSITION;
-   float font_size = HARDCODE_FONT_SIZE;
+   context->set_default_pos(&default_pos);
 
    browser_update(&browser, input, rarch_console_get_rom_ext());
 
@@ -1844,15 +1836,15 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
    else
       snprintf(msg, sizeof(msg), "INFO - Press [%s] to load the game.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 
-   render_msg_place_func(x_position, comment_y_position, font_size, WHITE, msg);
+   render_msg_place_func(default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, msg);
 
    display_menubar(current_menu);
 
    snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3));
    snprintf(msg2, sizeof(msg2), "[%s] - Settings", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_SELECT));
 
-   render_msg_place_func   (x_position, comment_two_y_position, FONT_SIZE, YELLOW, msg);
-   render_msg_place_func(x_position, comment_two_y_position + (y_position_increment * 1), FONT_SIZE, YELLOW, msg2);
+   render_msg_place_func(default_pos.x_position, default_pos.comment_two_y_position, FONT_SIZE, YELLOW, msg);
+   render_msg_place_func(default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), FONT_SIZE, YELLOW, msg2);
 }
 
 

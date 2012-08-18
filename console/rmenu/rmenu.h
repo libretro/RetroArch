@@ -102,6 +102,15 @@ typedef struct rmenu_position
    float height;
 } rmenu_position_t;
 
+typedef struct rmenu_default_positions
+{
+   float x_position;
+   float x_position_center;
+   float comment_y_position;
+   float y_position_increment;
+   float comment_two_y_position;
+   float font_size;
+} rmenu_default_positions_t;
 
 typedef struct rmenu_context
 {
@@ -112,6 +121,7 @@ typedef struct rmenu_context
    void (*render_selection_panel)(rmenu_position_t *position);
    void (*render_bg)(rmenu_position_t *position);
    void (*swap_buffers)(void);
+   void (*set_default_pos)(rmenu_default_positions_t *position);
 } rmenu_context_t;
 
 enum
