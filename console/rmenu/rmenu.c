@@ -2210,13 +2210,10 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
 	 case MENU_ITEM_RETURN_TO_MULTIMAN:
 	    if(input & (1 << RETRO_DEVICE_ID_JOYPAD_B))
 	    {
-          if(path_file_exists(default_paths.multiman_self_file))
-          {
-             strlcpy(g_console.launch_app_on_exit, default_paths.multiman_self_file,
-                sizeof(g_console.launch_app_on_exit));
-             
-             rarch_settings_change(S_RETURN_TO_DASHBOARD);
-          }
+               RARCH_LOG("Boot Multiman: %s.\n", default_paths.multiman_self_file);
+	       strlcpy(g_console.launch_app_on_exit, default_paths.multiman_self_file,
+                 sizeof(g_console.launch_app_on_exit));
+	       rarch_settings_change(S_RETURN_TO_LAUNCHER);
 	    }
 	    snprintf(comment, sizeof(comment), "Press [%s] to quit RetroArch and return to multiMAN.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;

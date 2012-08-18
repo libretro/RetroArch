@@ -123,17 +123,9 @@ static void get_environment_settings(int argc, char *argv[])
 #endif
 
 #ifdef HAVE_MULTIMAN
-   if(argc > 1)
-   {
-      /* launched from external launcher */
-      strlcpy(default_paths.multiman_self_file, argv[2], sizeof(default_paths.multiman_self_file));
-   }
-   else
-   {
-      /* not launched from external launcher, set default path */
-      strlcpy(default_paths.multiman_self_file, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
-         sizeof(default_paths.multiman_self_file));
-   }
+   /* not launched from external launcher, set default path */
+   strlcpy(default_paths.multiman_self_file, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
+      sizeof(default_paths.multiman_self_file));
 
    if(path_file_exists(default_paths.multiman_self_file) && argc > 1 &&  path_file_exists(argv[1]))
    {

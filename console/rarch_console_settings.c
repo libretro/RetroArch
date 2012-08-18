@@ -106,6 +106,7 @@ void rarch_settings_change(unsigned setting)
       case S_RETURN_TO_LAUNCHER:
          g_console.return_to_launcher = true;
          g_console.menu_enable = false;
+         g_console.initialize_rarch_enable = false;
          g_console.mode_switch = MODE_EXIT;
          break;
       case S_RETURN_TO_MENU:
