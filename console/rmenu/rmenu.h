@@ -21,16 +21,12 @@
 #define DEVICE_CAST gl_t*
 #define input_ptr input_ps3
 #define video_ptr video_gl
-#define FONT_SIZE (g_console.menu_font_size)
 
-#define NUM_ENTRY_PER_PAGE 15
 #elif defined(_XBOX1)
 #define DEVICE_CAST xdk_d3d_video_t*
 #define input_ptr input_xinput
 #define video_ptr video_xdk_d3d
-#define FONT_SIZE 21 
 
-#define NUM_ENTRY_PER_PAGE 12
 #endif
 
 typedef struct
@@ -81,6 +77,8 @@ typedef struct rmenu_default_positions
    float msg_prev_next_y_position;
    float current_path_font_size;
    float current_path_y_position;
+   float variable_font_size;
+   unsigned entries_per_page;
 } rmenu_default_positions_t;
 
 typedef struct rmenu_context

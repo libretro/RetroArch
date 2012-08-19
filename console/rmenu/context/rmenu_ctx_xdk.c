@@ -39,6 +39,10 @@
 #define CURRENT_PATH_Y_POSITION (m_menuMainRomListPos_y - ((POSITION_Y_INCREMENT/2)))
 #define CURRENT_PATH_FONT_SIZE 21
 
+#define FONT_SIZE 21 
+
+#define NUM_ENTRY_PER_PAGE 12
+
 int xpos, ypos;
 texture_image m_menuMainRomSelectPanel;
 texture_image m_menuMainBG;
@@ -129,6 +133,8 @@ static void rmenu_ctx_xdk_set_default_pos(rmenu_default_positions_t *position)
    position->msg_prev_next_y_position = MSG_PREV_NEXT_Y_POSITION;
    position->current_path_font_size = CURRENT_PATH_FONT_SIZE;
    position->current_path_y_position = CURRENT_PATH_Y_POSITION;
+   position->variable_font_size = FONT_SIZE;
+   position->entries_per_page = NUM_ENTRY_PER_PAGE;
 }
 
 static void rmenu_ctx_xdk_render_msg(float xpos, float ypos, float scale, unsigned color, const char *msg, ...)

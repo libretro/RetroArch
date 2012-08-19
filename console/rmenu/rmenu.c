@@ -408,7 +408,7 @@ static void menu_stack_refresh (item *items, menu *current_menu)
 
    for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
    {
-      if(!(j < (NUM_ENTRY_PER_PAGE)))
+      if(!(j < default_pos.entries_per_page))
       {
          j = 0;
          default_pos.y_position = POSITION_Y_BEGIN;
@@ -694,37 +694,35 @@ static void browser_update(filebrowser_t * b, uint64_t input, const char *extens
       rarch_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
 }
 
-static void browser_render(filebrowser_t * b, float current_x, float current_y, float y_spacing)
+static void browser_render(filebrowser_t * b)
 {
    unsigned file_count = b->current_dir.list->size;
    unsigned int current_index, page_number, page_base, i;
-   float currentX, currentY, ySpacing;
+
+   rmenu_default_positions_t default_pos;
+   context->set_default_pos(&default_pos);
 
    current_index = b->current_dir.ptr;
-   page_number = current_index / NUM_ENTRY_PER_PAGE;
-   page_base = page_number * NUM_ENTRY_PER_PAGE;
+   page_number = current_index / default_pos.entries_per_page;
+   page_base = page_number * default_pos.entries_per_page;
 
-   currentX = current_x;
-   currentY = current_y;
-   ySpacing = y_spacing;
-
-   for ( i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
+   for ( i = page_base; i < file_count && i < page_base + default_pos.entries_per_page; ++i)
    {
       char fname_tmp[256];
       fill_pathname_base(fname_tmp, b->current_dir.list->elems[i].data, sizeof(fname_tmp));
-      currentY = currentY + ySpacing;
+      default_pos.starting_y_position += default_pos.y_position_increment;
 
       //check if this is the currently selected file
       const char *current_pathname = filebrowser_get_current_path(b);
       if(strcmp(current_pathname, b->current_dir.list->elems[i].data) == 0)
       {
          rmenu_position_t position = {0};
-         position.x = currentX;
-         position.y = currentY;
+         position.x = default_pos.x_position;
+         position.y = default_pos.starting_y_position;
          context->render_selection_panel(&position);
       }
 
-      context->render_msg(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->current_dir.list->elems[i].attr.b ? GREEN : WHITE, fname_tmp);
+      context->render_msg(default_pos.x_position, default_pos.starting_y_position, default_pos.variable_font_size, i == current_index ? RED : b->current_dir.list->elems[i].attr.b ? GREEN : WHITE, fname_tmp);
    }
 }
 
@@ -941,7 +939,7 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
    context->render_msg(default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, msg);
 
    snprintf(msg, sizeof(msg), "[%s] - Reset to startdir", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
-   context->render_msg(default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), FONT_SIZE, YELLOW, msg);
+   context->render_msg(default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), default_pos.font_size, YELLOW, msg);
 
    snprintf(msg, sizeof(msg), "INFO - Browse to a directory and assign it as the path by\npressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_Y));
    context->render_msg(default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, msg);
@@ -1741,8 +1739,8 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
    {
       if(items[i].page == current_menu->page)
       {
-         context->render_msg(items[i].text_xpos, items[i].text_ypos, FONT_SIZE, current_menu->selected == items[i].enum_id ? YELLOW : items[i].item_color, items[i].text);
-         context->render_msg(default_pos.x_position_center, items[i].text_ypos, FONT_SIZE, items[i].text_color, items[i].setting_text);
+         context->render_msg(items[i].text_xpos, items[i].text_ypos, default_pos.variable_font_size, current_menu->selected == items[i].enum_id ? YELLOW : items[i].item_color, items[i].text);
+         context->render_msg(default_pos.x_position_center, items[i].text_ypos, default_pos.variable_font_size, items[i].text_color, items[i].setting_text);
 
          if(current_menu->selected == items[i].enum_id)
          {
@@ -1758,9 +1756,9 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
    context->render_msg(default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, items[current_menu->selected].comment);
 
    snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game | [%s] - go forward", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R));
-   context->render_msg(default_pos.x_position, default_pos.comment_two_y_position, FONT_SIZE, YELLOW, msg);
+   context->render_msg(default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, msg);
    snprintf(msg, sizeof(msg), "[%s] - default | [%s]/[%s] - go back", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
-   context->render_msg(default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), FONT_SIZE, YELLOW, msg);
+   context->render_msg(default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), default_pos.font_size, YELLOW, msg);
 }
 
 static void menu_romselect_iterate(filebrowser_t *filebrowser, item *items, menu_romselect_action_t action)
@@ -1824,8 +1822,8 @@ static void select_rom(item *items, menu *current_menu, uint64_t input)
    snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3));
    snprintf(msg2, sizeof(msg2), "[%s] - Settings", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_SELECT));
 
-   context->render_msg(default_pos.x_position, default_pos.comment_two_y_position, FONT_SIZE, YELLOW, msg);
-   context->render_msg(default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), FONT_SIZE, YELLOW, msg2);
+   context->render_msg(default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, msg);
+   context->render_msg(default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), default_pos.font_size, YELLOW, msg2);
 }
 
 
@@ -2443,7 +2441,7 @@ void menu_loop(void)
       switch(current_menu->category_id)
       {
          case CATEGORY_FILEBROWSER:
-            browser_render(fb, default_pos.x_position, default_pos.starting_y_position, default_pos.y_position_increment);
+            browser_render(fb);
             break;
          case CATEGORY_SETTINGS:
          case CATEGORY_INGAME_MENU:

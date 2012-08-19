@@ -38,6 +38,10 @@
 #define CURRENT_PATH_Y_POSITION 0.15f
 #define CURRENT_PATH_FONT_SIZE FONT_SIZE
 
+#define FONT_SIZE (g_console.menu_font_size)
+
+#define NUM_ENTRY_PER_PAGE 15
+
 static void rmenu_ctx_ps3_clear(void)
 {
    gfx_ctx_clear();
@@ -92,6 +96,8 @@ static void rmenu_ctx_ps3_set_default_pos(rmenu_default_positions_t *position)
    position->msg_prev_next_y_position = MSG_PREV_NEXT_Y_POSITION;
    position->current_path_font_size = CURRENT_PATH_FONT_SIZE;
    position->current_path_y_position = CURRENT_PATH_Y_POSITION;
+   position->variable_font_size = FONT_SIZE;
+   position->entries_per_page = NUM_ENTRY_PER_PAGE;
 }
 
 static void rmenu_ctx_ps3_render_msg(float xpos, float ypos, float scale, unsigned color, const char *msg, ...)
