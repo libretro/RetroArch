@@ -129,7 +129,7 @@ static void rmenu_ctx_xdk_set_default_pos(rmenu_default_positions_t *position)
    position->current_path_y_position = CURRENT_PATH_Y_POSITION;
 }
 
-static void rmenu_ctx_xdk_render_msg(float xpos, float ypos, float scale, float color, const char *msg, ...)
+static void rmenu_ctx_xdk_render_msg(float xpos, float ypos, float scale, unsigned color, const char *msg, ...)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    xfonts_render_msg_place(d3d, xpos, ypos, scale, msg);

@@ -588,7 +588,6 @@ static void menu_stack_push(item *items, unsigned menu_id)
 
 static void display_menubar(menu *current_menu)
 {
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    filebrowser_t *fb = &browser;
    char current_path[256], rarch_version[128];
 
@@ -697,8 +696,6 @@ static void browser_update(filebrowser_t * b, uint64_t input, const char *extens
 
 static void browser_render(filebrowser_t * b, float current_x, float current_y, float y_spacing)
 {
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-
    unsigned file_count = b->current_dir.list->size;
    unsigned int current_index, page_number, page_base, i;
    float currentX, currentY, ySpacing;
@@ -757,8 +754,6 @@ static void apply_scaling (unsigned init_mode)
 static void select_file(item *items, menu *current_menu, uint64_t input)
 {
    char extensions[256], object[256], comment[256], comment_two[256], path[PATH_MAX];
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-
    bool ret = true;
 
    rmenu_default_positions_t default_pos;
@@ -868,7 +863,6 @@ static void select_directory(item *items, menu *current_menu, uint64_t input)
 {
    char path[1024], msg[256];
    bool ret = true;
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    rmenu_default_positions_t default_pos;
 
@@ -1719,7 +1713,6 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
 {
    unsigned i;
    char msg[256];
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    rmenu_default_positions_t default_pos;
 
@@ -1796,7 +1789,6 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, item *items, menu
 
 static void select_rom(item *items, menu *current_menu, uint64_t input)
 {
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    rmenu_default_positions_t default_pos;
 
    context->set_default_pos(&default_pos);
@@ -2002,8 +1994,6 @@ static void ingame_menu_screenshot(item *items, menu *current_menu, uint64_t inp
    (void)items;
    (void)current_menu;
 
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-
    if(g_console.ingame_menu_enable)
    {
       if(input & (1 << RETRO_DEVICE_ID_JOYPAD_A))
@@ -2019,7 +2009,6 @@ static void ingame_menu(item *items, menu *current_menu, uint64_t input)
    char comment[256], overscan_msg[64];
    char strw_buffer[256];
    unsigned menuitem_colors[MENU_ITEM_LAST];
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    rmenu_default_positions_t default_pos;
    context->set_default_pos(&default_pos);

@@ -94,10 +94,11 @@ static void rmenu_ctx_ps3_set_default_pos(rmenu_default_positions_t *position)
    position->current_path_y_position = CURRENT_PATH_Y_POSITION;
 }
 
-static void rmenu_ctx_ps3_render_msg(float xpos, float ypos, float scale, float color, const char *msg, ...)
+static void rmenu_ctx_ps3_render_msg(float xpos, float ypos, float scale, unsigned color, const char *msg, ...)
 {
    gl_t *gl = driver.video_data;
-   gl_render_msg_place(gl, xpos, ypos, scale, color, msg)
+
+   gl_render_msg_place(gl, xpos, ypos, scale, color, msg);
 }
 
 static void rmenu_ctx_ps3_render_menu_enable(bool enable)

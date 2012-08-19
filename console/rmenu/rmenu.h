@@ -95,7 +95,7 @@ typedef struct rmenu_context
    void (*render_selection_panel)(rmenu_position_t *position);
    void (*render_bg)(rmenu_position_t *position);
    void (*render_menu_enable)(bool enable);
-   void (*render_msg)(float xpos, float ypos, float scale, float color, const char *msg, ...);
+   void (*render_msg)(float xpos, float ypos, float scale, unsigned color, const char *msg, ...);
    void (*swap_buffers)(void);
    void (*set_default_pos)(rmenu_default_positions_t *position);
 } rmenu_context_t;
