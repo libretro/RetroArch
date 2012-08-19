@@ -457,14 +457,10 @@ static void menu_stack_refresh (item *items, menu *current_menu)
       if(!(j < default_pos.entries_per_page))
       {
          j = 0;
-         default_pos.y_position = POSITION_Y_BEGIN;
          page++;
       }
 
-      items[i].text_xpos = default_pos.x_position;
-      items[i].text_ypos = default_pos.y_position; 
       items[i].page = page;
-      default_pos.y_position += default_pos.y_position_increment;
       j++;
    }
 }
@@ -1793,7 +1789,7 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
          {
             rmenu_position_t position = {0};
             position.x = default_pos.x_position;
-            position.y = items[i].text_ypos;
+            position.y = default_pos.starting_y_position;
 
             context->render_selection_panel(&position);
 	    context->render_msg(default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, current_item.comment);

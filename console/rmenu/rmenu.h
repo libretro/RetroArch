@@ -34,8 +34,6 @@ typedef struct
    unsigned char enum_id;		/* enum ID of item				*/
    char text[64];			/* item label					*/
    char setting_text[64];		/* setting label				*/
-   float text_xpos;			/* text X position (upper left corner)		*/
-   float text_ypos;			/* text Y position (upper left corner)		*/
    char comment[192];			/* item comment					*/
    unsigned char page;			/* page						*/
 } item;
