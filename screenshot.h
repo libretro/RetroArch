@@ -17,9 +17,12 @@
 #define __RARCH_SCREENSHOT_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include "boolean.h"
 
 bool screenshot_dump(const char *folder, const void *frame, 
       unsigned width, unsigned height, int pitch, bool bgr24);
+
+void screenshot_generate_filename(char *filename, size_t size);
 
 #endif
