@@ -26,7 +26,7 @@
 #define SCREEN_SIZE_Y_DEFAULT 480
 
 #define SAFE_AREA_PCT_4x3     85
-#define SAFE_AREA_PCT_HDTV    90
+#define SAFE_AREA_PCT_HDTV    70
 
 typedef struct
 {
