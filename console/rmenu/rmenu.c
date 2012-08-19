@@ -401,7 +401,7 @@ static void menu_stack_refresh (item *items, menu *current_menu)
 {
    rmenu_default_positions_t default_pos = {0};
    int page = 0;
-   int j = 0;
+   unsigned j = 0;
    int i;
 
    context->set_default_pos(&default_pos);
