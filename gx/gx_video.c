@@ -199,6 +199,7 @@ static void gx_stop(void)
    GX_Flush();
    VIDEO_SetBlack(true);
    VIDEO_Flush();
+   VIDEO_WaitVSync();
 
    for (unsigned i = 0; i < 2; i++)
       free(MEM_K1_TO_K0(g_framebuf[i]));
@@ -492,7 +493,11 @@ static bool gx_frame(void *data, const void *frame,
    bool should_resize = gx->should_resize;
 
    (void)data;
-   (void)msg;
+
+   if (msg)
+      snprintf(gx->msg, sizeof(gx->msg), "%s", msg);
+   else
+      gx->msg[0] = 0;
 
    if(!frame && !menu_render)
       return true;
@@ -504,7 +509,7 @@ static bool gx_frame(void *data, const void *frame,
       gx_resize(gx);
    }
 
-   while (g_vsync && !g_draw_done)
+   while ((g_vsync || menu_render) && !g_draw_done)
       LWP_ThreadSleep(g_video_cond);
 
    g_draw_done = false;

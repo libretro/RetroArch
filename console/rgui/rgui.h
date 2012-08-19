@@ -37,6 +37,7 @@ typedef enum
    RGUI_SETTINGS_SAVESTATE_SAVE,
    RGUI_SETTINGS_SAVESTATE_LOAD,
    RGUI_SETTINGS_SCREENSHOT,
+   RGUI_SETTINGS_RESTART_GAME,
    RGUI_SETTINGS_VIDEO_FILTER,
 #ifdef HW_RVL
    RGUI_SETTINGS_VIDEO_SOFT_FILTER,
@@ -51,7 +52,7 @@ typedef enum
    RGUI_SETTINGS_CONTROLLER_2,
    RGUI_SETTINGS_CONTROLLER_3,
    RGUI_SETTINGS_CONTROLLER_4,
-   RGUI_SETTINGS_RESTART,
+   RGUI_SETTINGS_RESTART_EMULATOR,
 
    RGUI_SETTINGS_BIND_DEVICE,
    RGUI_SETTINGS_BIND_UP,
@@ -101,7 +102,7 @@ rgui_handle_t *rgui_init(const char *base_path,
       const uint8_t *font_buf,
       rgui_folder_enum_cb_t folder_cb, void *userdata);
 
-const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action);
+void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action);
 
 void rgui_free(rgui_handle_t *rgui);
 

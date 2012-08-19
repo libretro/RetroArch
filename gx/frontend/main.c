@@ -182,12 +182,6 @@ static void menu_loop(void)
    bool first = true;
 
    g_console.menu_enable = true;
-
-   if(g_console.ingame_menu_enable)
-   {
-      //TODO: fill in some stuff here to bring up ingame menu
-   }
-
    gx->menu_render = true;
 
    do
@@ -253,9 +247,7 @@ static void menu_loop(void)
          first = false;
       }
 
-      const char *ret = rgui_iterate(rgui, action);
-
-      (void)ret;
+      rgui_iterate(rgui, action);
 
       rarch_render_cached_frame();
 
@@ -336,7 +328,6 @@ int main(void)
 #endif
 
    fatInitDefault();
-
    get_environment_settings();
 
 #ifdef HAVE_LOGGER
@@ -417,11 +408,10 @@ begin_shutdown:
    video_gx.stop();
    menu_free();
 
-#ifdef HAVE_FILE_LOGGER
-   fclose(log_fp);
-#endif
 #ifdef HAVE_LOGGER
    logger_shutdown();
+#elif defined(HAVE_FILE_LOGGER)
+   fclose(log_fp);
 #endif
 
    if(g_console.return_to_launcher)

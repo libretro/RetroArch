@@ -46,6 +46,7 @@ struct rgui_handle
    rgui_list_t *folder_buf;
    int directory_ptr;
    bool need_refresh;
+   bool msg_force;
 
    char path_buf[PATH_MAX];
 
@@ -385,7 +386,23 @@ static void render_text(rgui_handle_t *rgui)
       blit_line(rgui, x, y, message, i == rgui->directory_ptr);
    }
 
-   render_messagebox(rgui, msg_queue_pull(g_extern.msg_queue));
+   const char *message_queue;
+#ifdef GEKKO
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
+   if (rgui->msg_force)
+   {
+      message_queue = msg_queue_pull(g_extern.msg_queue);
+      rgui->msg_force = false;
+   }
+   else
+   {
+      message_queue = gx->msg;
+   }
+#else
+   message_queue = msg_queue_pull(g_extern.msg_queue);
+#endif
+   render_messagebox(rgui, message_queue);
+
 }
 
 #ifdef GEKKO
@@ -397,7 +414,9 @@ static void render_text(rgui_handle_t *rgui)
 static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t action, rgui_file_type_t menu_type)
 {
    unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
-   void *data = (gx_video_t*)driver.video_data;
+#ifdef GEKKO
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
+#endif
 
    switch (setting)
    {
@@ -437,6 +456,13 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             msg_queue_push(g_extern.msg_queue, r ? "Screenshot saved" : "Screenshot failed to save", 1, S_DELAY_90);
          }
          break;
+      case RGUI_SETTINGS_RESTART_GAME:
+         if (action == RGUI_ACTION_OK)
+         {
+            rarch_settings_change(S_RETURN_TO_GAME);
+            rarch_game_reset();
+         }
+         break;
       case RGUI_SETTINGS_VIDEO_FILTER:
          if (action == RGUI_ACTION_START)
             rarch_settings_default(S_DEF_HW_TEXTURE_FILTER);
@@ -446,7 +472,6 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
 #ifdef HW_RVL
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
          {
-	    gx_video_t *gx = (gx_video_t*)data;
             g_console.soft_display_filter_enable = !g_console.soft_display_filter_enable;
             gx->should_resize = true;
          }
@@ -457,7 +482,6 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          {
             g_console.gamma_correction = 0;
 #ifdef GEKKO
-	    gx_video_t *gx = (gx_video_t*)data;
             gx->should_resize = true;
 #endif
          }
@@ -467,7 +491,6 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             {
                g_console.gamma_correction--;
 #ifdef GEKKO
-	       gx_video_t *gx = (gx_video_t*)data;
                gx->should_resize = true;
 #endif
             }
@@ -478,7 +501,6 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             {
                g_console.gamma_correction++;
 #ifdef GEKKO
-	       gx_video_t *gx = (gx_video_t*)data;
                gx->should_resize = true;
 #endif
             }
@@ -524,7 +546,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          else if (action == RGUI_ACTION_RIGHT)
             rarch_settings_change(S_AUDIO_CONTROL_RATE_INCREMENT);
          break;
-      case RGUI_SETTINGS_RESTART:
+      case RGUI_SETTINGS_RESTART_EMULATOR:
          if (action == RGUI_ACTION_OK)
          {
 #ifdef GEKKO
@@ -594,6 +616,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
       RGUI_MENU_ITEM("Save State", RGUI_SETTINGS_SAVESTATE_SAVE);
       RGUI_MENU_ITEM("Load State", RGUI_SETTINGS_SAVESTATE_LOAD);
       RGUI_MENU_ITEM("Take Screenshot", RGUI_SETTINGS_SCREENSHOT);
+      RGUI_MENU_ITEM("Restart Game", RGUI_SETTINGS_RESTART_GAME);
    }
    RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
 #ifdef HW_RVL
@@ -609,7 +632,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2);
    RGUI_MENU_ITEM("Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3);
    RGUI_MENU_ITEM("Controller #4 Config", RGUI_SETTINGS_CONTROLLER_4);
-   RGUI_MENU_ITEM("Restart RetroArch", RGUI_SETTINGS_RESTART);
+   RGUI_MENU_ITEM("Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR);
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
@@ -635,7 +658,7 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("R3", RGUI_SETTINGS_BIND_R3);
 }
 
-static const char *rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
+void rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
    rgui_file_type_t type = 0;
    const char *label = 0;
@@ -713,12 +736,11 @@ static const char *rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t acti
 
    render_text(rgui);
 
-   return NULL;
+   return;
 }
 
-const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
+void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
-   bool found = false;
    const char *dir = 0;
    rgui_file_type_t menu_type = 0;
    size_t directory_ptr = 0;
@@ -772,7 +794,7 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_OK:
       {
          if (rgui_list_size(rgui->folder_buf) == 0)
-            return NULL;
+            return;
 
          const char *path = 0;
          rgui_file_type_t type = 0;
@@ -815,7 +837,7 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             {
                snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s", dir, path);
                rarch_console_load_game_wrap(rgui->path_buf, g_console.zip_extract_mode, S_DELAY_1);
-               found = true;
+               rgui->msg_force = true;
             }
          }
          break;
@@ -860,6 +882,4 @@ const char *rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    }
 
    render_text(rgui);
-
-   return found ? rgui->path_buf : NULL;
 }

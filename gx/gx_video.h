@@ -23,6 +23,7 @@ typedef struct gx_video
    bool keep_aspect;
    uint32_t frame_count;
    uint32_t *menu_data;
+   char msg[128];
 } gx_video_t;
 
 void gx_set_aspect_ratio(void *data, unsigned aspectratio_idx);
