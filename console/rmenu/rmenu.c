@@ -91,297 +91,292 @@ typedef enum {
    MENU_ROMSELECT_ACTION_NOOP,
 } menu_romselect_action_t;
 
-static void set_setting_label_write_on_or_off(item *items, bool cond, unsigned currentsetting)
+static void set_setting_label_write_on_or_off(char *setting_text, bool cond, unsigned currentsetting)
 {
    if(cond)
-      snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "ON");
+      snprintf(setting_text, sizeof(setting_text), "ON");
    else
-      snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "OFF");
+      snprintf(setting_text, sizeof(setting_text), "OFF");
 }
 
-static void set_setting_label_color(item *items, bool cond, unsigned currentsetting)
-{
-   if(cond)
-      items[currentsetting].text_color = GREEN;
-   else
-      items[currentsetting].text_color = ORANGE;
-}
-
-static void set_setting_label(menu * current_menu, item *items, unsigned currentsetting)
+static void set_setting_label(unsigned i, menu * current_menu, item *items, item *current_item)
 {
    char fname[PATH_MAX];
    (void)fname;
 
+   unsigned currentsetting = i;
+
    switch(currentsetting)
    {
 #ifdef __CELLOS_LV2__
-	   case SETTING_CHANGE_RESOLUTION:
-                   {
-                      unsigned width = gfx_ctx_get_resolution_width(g_console.supported_resolutions[g_console.current_resolution_index]);
-                      unsigned height = gfx_ctx_get_resolution_height(g_console.supported_resolutions[g_console.current_resolution_index]);
-		      set_setting_label_color(items,g_console.initial_resolution_id == g_console.supported_resolutions[g_console.current_resolution_index], currentsetting);
-		      snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%dx%d", width, height);
-                   }
-		   break;
+      case SETTING_CHANGE_RESOLUTION:
+      {
+         unsigned width = gfx_ctx_get_resolution_width(g_console.supported_resolutions[g_console.current_resolution_index]);
+	 unsigned height = gfx_ctx_get_resolution_height(g_console.supported_resolutions[g_console.current_resolution_index]);
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%dx%d", width, height);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Change the display resolution.");
+      }
+      break;
 #endif
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-	   case SETTING_SHADER_PRESETS:
-         set_setting_label_color(items,true, currentsetting);
-		   fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), fname);
-		   break;
-	   case SETTING_SHADER:
-		   fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%s", fname);
-         set_setting_label_color(items,strcmp(g_settings.video.cg_shader_path, default_paths.shader_file) == 0, currentsetting);
-		   break;
-	   case SETTING_SHADER_2:
-		   fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%s", fname);
-         set_setting_label_color(items,strcmp(g_settings.video.second_pass_shader, default_paths.shader_file) == 0,
-            currentsetting);
-		   break;
+      case SETTING_SHADER_PRESETS:
+	 fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), fname);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a [CG Preset] script.");
+	 break;
+      case SETTING_SHADER:
+	 fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", fname);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a shader as [Shader #1]. NOTE: Some shaders might be\ntoo slow at 1080p. If you experience any slowdown, try another shader.");
+	 break;
+      case SETTING_SHADER_2:
+	 fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", fname);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a shader as [Shader #2]. NOTE: Some shaders might be\ntoo slow at 1080p. If you experience any slowdown, try another shader.");
+	 break;
 #endif
-	   case SETTING_FONT_SIZE:
-         set_setting_label_color(items,g_console.menu_font_size == 1.0f, currentsetting);
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%f", g_console.menu_font_size);
-		   break;
-	   case SETTING_KEEP_ASPECT_RATIO:
-         set_setting_label_color(items,g_console.aspect_ratio_index == ASPECT_RATIO_4_3, currentsetting);
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), aspectratio_lut[g_console.aspect_ratio_index].name);
-		   break;
-	   case SETTING_HW_TEXTURE_FILTER:
-         set_setting_label_color(items,g_settings.video.smooth, currentsetting);
-		   if(g_settings.video.smooth)
-            snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Bilinear");
-		   else
-            snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Point");
-		   break;
+      case SETTING_FONT_SIZE:
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_console.menu_font_size);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Increase or decrease the [Font Size].");
+	 break;
+      case SETTING_KEEP_ASPECT_RATIO:
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), aspectratio_lut[g_console.aspect_ratio_index].name);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select an [Aspect Ratio].");
+	 break;
+      case SETTING_HW_TEXTURE_FILTER:
+	 if(g_settings.video.smooth)
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Bilinear");
+	 else
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Point");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Hardware filtering #1 is set to [%s].", current_item->setting_text);
+	 break;
 #ifdef HAVE_FBO
-	   case SETTING_HW_TEXTURE_FILTER_2:
-         set_setting_label_color(items,g_settings.video.second_pass_smooth, currentsetting);
-		   if(g_settings.video.second_pass_smooth)
-            snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Bilinear");
-		   else
-            snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Point");
-		   break;
-	   case SETTING_SCALE_ENABLED:
-         set_setting_label_write_on_or_off(items, g_console.fbo_enabled, currentsetting);
-         set_setting_label_color(items,g_console.fbo_enabled, currentsetting);
-		   break;
-	   case SETTING_SCALE_FACTOR:
-         set_setting_label_color(items,g_settings.video.fbo_scale_x == 2.0f, currentsetting);
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
-		   snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [Custom Scaling Factor] is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
-		   break;
+      case SETTING_HW_TEXTURE_FILTER_2:
+	 if(g_settings.video.second_pass_smooth)
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Bilinear");
+	 else
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Point");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Hardware filtering #1 is set to [%s].", current_item->setting_text);
+	 break;
+      case SETTING_SCALE_ENABLED:
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.fbo_enabled, currentsetting);
+	 snprintf(current_item->comment, sizeof(current_item->comment), g_console.fbo_enabled ? "INFO - [Custom Scaling] is set to 'ON' - 2x shaders will look much\nbetter, and you can select a shader for [Shader #2]." : "INFO - [Custom Scaling] is set to 'OFF'.");
+	 break;
+      case SETTING_SCALE_FACTOR:
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
+	 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom Scaling Factor] is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
+	 break;
 #endif
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
-         set_setting_label_color(items,g_console.flicker_filter == 0, currentsetting);
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%d", g_console.flicker_filter);
-         break;
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_console.flicker_filter);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Flicker Filter].");
+	 break;
       case SETTING_SOFT_DISPLAY_FILTER:
-         set_setting_label_write_on_or_off(items, g_console.soft_display_filter_enable, currentsetting);
-         set_setting_label_color(items,g_console.soft_display_filter_enable, currentsetting);
-		   break;
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.soft_display_filter_enable, currentsetting);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Soft Display Filter].");
+	 break;
 #endif
-	   case SETTING_HW_OVERSCAN_AMOUNT:
-         set_setting_label_color(items,g_console.overscan_amount == 0.0f, currentsetting);
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%f", g_console.overscan_amount);
-		   break;
-	   case SETTING_THROTTLE_MODE:
-         set_setting_label_write_on_or_off(items, g_console.throttle_enable, currentsetting);
-         set_setting_label_color(items,g_console.throttle_enable, currentsetting);
-		   break;
-	   case SETTING_TRIPLE_BUFFERING:
-         set_setting_label_write_on_or_off(items, g_console.triple_buffering_enable, currentsetting);
-         set_setting_label_color(items,g_console.triple_buffering_enable, currentsetting);
-		   break;
-	   case SETTING_ENABLE_SCREENSHOTS:
-         set_setting_label_write_on_or_off(items, g_console.screenshots_enable, currentsetting);
-         set_setting_label_color(items,g_console.screenshots_enable, currentsetting);
-		   break;
+      case SETTING_HW_OVERSCAN_AMOUNT:
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_console.overscan_amount);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Adjust or decrease [Overscan]. Set this to higher than 0.000\nif the screen doesn't fit on your TV/monitor.");
+	 break;
+      case SETTING_THROTTLE_MODE:
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.throttle_enable, currentsetting);
+	 break;
+      case SETTING_TRIPLE_BUFFERING:
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.triple_buffering_enable, currentsetting);
+	 break;
+      case SETTING_ENABLE_SCREENSHOTS:
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.screenshots_enable, currentsetting);
+	 break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Automatically load the currently selected [CG Preset] file on startup.");
+         break;
 #endif
-	   case SETTING_DEFAULT_VIDEO_ALL:
-		   break;
-	   case SETTING_SOUND_MODE:
-		   switch(g_console.sound_mode)
-		   {
-            case SOUND_MODE_NORMAL:
-               snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), 
-                  "INFO - [Sound Output] is set to 'Normal'.");
-               snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Normal");
-               items[currentsetting].text_color = GREEN;
-               break;
+      case SETTING_DEFAULT_VIDEO_ALL:
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [General Video Settings] back to their 'DEFAULT' values.");
+	 break;
+      case SETTING_SOUND_MODE:
+	 switch(g_console.sound_mode)
+	 {
+		 case SOUND_MODE_NORMAL:
+			 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Sound Output] is set to 'Normal'.");
+			 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Normal");
+			 break;
 #ifdef HAVE_RSOUND
-            case SOUND_MODE_RSOUND:
-               snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), 
-                  "INFO - [Sound Output] is set to 'RSound'." );
-               snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "RSound");
-               items[currentsetting].text_color = ORANGE;
-               break;
+		 case SOUND_MODE_RSOUND:
+			 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Sound Output] is set to 'RSound'." );
+			 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "RSound");
+			 break;
 #endif
 #ifdef HAVE_HEADSET
-            case SOUND_MODE_HEADSET:
-               snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), 
-                  "INFO - [Sound Output] is set to 'USB/Bluetooth Headset'.");
-               snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "USB/Bluetooth Headset");
-               items[currentsetting].text_color = ORANGE;
-               break;
+		 case SOUND_MODE_HEADSET:
+			 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Sound Output] is set to 'USB/Bluetooth Headset'.");
+			 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "USB/Bluetooth Headset");
+			 break;
 #endif
-            default:
-               break;
-         }
-		   break;
+		 default:
+			 break;
+	 }
+	 break;
 #ifdef HAVE_RSOUND
-	   case SETTING_RSOUND_SERVER_IP_ADDRESS:
-         set_setting_label_color(items,strcmp(g_settings.audio.device,"0.0.0.0") == 0, currentsetting);
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), g_settings.audio.device);
-		   break;
+      case SETTING_RSOUND_SERVER_IP_ADDRESS:
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_settings.audio.device);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Enter the IP Address of the [RSound Audio Server]. IP address\nmust be an IPv4 32-bits address, eg: '192.168.1.7'.");
+	 break;
 #endif
-	   case SETTING_DEFAULT_AUDIO_ALL:
-		   break;
-	   case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-         set_setting_label_color(items,g_extern.state_slot == 0, currentsetting);
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%d", g_extern.state_slot);
-		   break;
-		   /* emu-specific */
-	   case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-         set_setting_label_write_on_or_off(items, g_console.fps_info_msg_enable, currentsetting);
-         set_setting_label_color(items,g_console.fps_info_msg_enable, currentsetting);
-		   break;
-	   case SETTING_EMU_SHOW_INFO_MSG:
-         set_setting_label_write_on_or_off(items, g_console.info_msg_enable, currentsetting);
-         set_setting_label_color(items,g_console.info_msg_enable, currentsetting);
-		   break;
-	   case SETTING_EMU_REWIND_ENABLED:
-         set_setting_label_write_on_or_off(items, g_settings.rewind_enable, currentsetting);
-		   if(g_settings.rewind_enable)
-		   {
-            items[currentsetting].text_color = ORANGE;
-		      snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [Rewind] feature is set to 'ON'.");
-		   }
-		   else
-		   {
-            items[currentsetting].text_color = GREEN;
-            snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [Rewind] feature is set to 'OFF'.");
-		   }
-		   break;
+      case SETTING_DEFAULT_AUDIO_ALL:
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [General Audio Settings] back to their 'DEFAULT' values.");
+	 break;
+      case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.state_slot);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the current savestate slot (can also be configured ingame).");
+	 break;
+	 /* emu-specific */
+      case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.fps_info_msg_enable, currentsetting);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen debug messages.");
+	 break;
+      case SETTING_EMU_SHOW_INFO_MSG:
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.info_msg_enable, currentsetting);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen info messages in the menu.");
+	 break;
+      case SETTING_EMU_REWIND_ENABLED:
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_settings.rewind_enable, currentsetting);
+	 if(g_settings.rewind_enable)
+	    snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Rewind] feature is set to 'ON'.");
+	 else
+	    snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Rewind] feature is set to 'OFF'.");
+	 break;
       case SETTING_ZIP_EXTRACT:
-         set_setting_label_color(items,g_console.zip_extract_mode == ZIP_EXTRACT_TO_CURRENT_DIR, currentsetting);
-         switch(g_console.zip_extract_mode)
-         {
-            case ZIP_EXTRACT_TO_CURRENT_DIR:
-               snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Current dir");
-               snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [ZIP Extract Mode] is set to 'Current dir'.\nZIP files are extracted to the current directory.");
-               break;
-            case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
-               snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Current dir and load first file");
-               snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [ZIP Extract Mode] is set to 'Current dir and load first file'.\nZIP files are extracted to the current directory, and the first game is automatically loaded.");
-               break;
-            case ZIP_EXTRACT_TO_CACHE_DIR:
-               snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "Cache dir");
-               snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [ZIP Extract Mode] is set to 'Cache dir'.\nZIP files are extracted to the cache directory (dev_hdd1).");
-               break;
-         }
-         break;
-	   case SETTING_RARCH_DEFAULT_EMU:
-         fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
-         snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%s", fname);
-         items[currentsetting].text_color = GREEN;
-		   break;
-	   case SETTING_EMU_AUDIO_MUTE:
-         set_setting_label_write_on_or_off(items, g_extern.audio_data.mute, currentsetting);
-         set_setting_label_color(items,!g_extern.audio_data.mute, currentsetting);
-		   if(g_extern.audio_data.mute)
-            snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [Audio Mute] feature is set to 'ON'. The game audio will be muted.");
-		   else
-            snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [Audio Mute] feature is set to 'OFF'.");
-		   break;
-	   case SETTING_ENABLE_CUSTOM_BGM:
-         set_setting_label_write_on_or_off(items, g_console.custom_bgm_enable, currentsetting);
-         set_setting_label_color(items,g_console.custom_bgm_enable, currentsetting);
-		   break;
-	   case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-         set_setting_label_color(items,!(strcmp(g_console.default_rom_startup_dir, "/")), currentsetting);
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), g_console.default_rom_startup_dir);
-		   break;
-	   case SETTING_PATH_SAVESTATES_DIRECTORY:
-         set_setting_label_color(items,!(strcmp(g_console.default_savestate_dir, default_paths.port_dir)), currentsetting);
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), g_console.default_savestate_dir);
-		   break;
-	   case SETTING_PATH_SRAM_DIRECTORY:
-         set_setting_label_color(items,!(strcmp(g_console.default_sram_dir, default_paths.port_dir)), currentsetting);
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), g_console.default_sram_dir);
-		   break;
+	 switch(g_console.zip_extract_mode)
+	 {
+		 case ZIP_EXTRACT_TO_CURRENT_DIR:
+			 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir");
+			 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [ZIP Extract Mode] is set to 'Current dir'.\nZIP files are extracted to the current directory.");
+			 break;
+		 case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
+			 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir and load first file");
+			 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [ZIP Extract Mode] is set to 'Current dir and load first file'.\nZIP files are extracted to the current directory, and the first game is automatically loaded.");
+			 break;
+		 case ZIP_EXTRACT_TO_CACHE_DIR:
+			 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Cache dir");
+			 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [ZIP Extract Mode] is set to 'Cache dir'.\nZIP files are extracted to the cache directory (dev_hdd1).");
+			 break;
+	 }
+	 break;
+      case SETTING_RARCH_DEFAULT_EMU:
+	 fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", fname);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a default emulator core to launch at start-up.");
+	 break;
+      case SETTING_EMU_AUDIO_MUTE:
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_extern.audio_data.mute, currentsetting);
+	 if(g_extern.audio_data.mute)
+		 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Audio Mute] feature is set to 'ON'. The game audio will be muted.");
+	 else
+		 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Audio Mute] feature is set to 'OFF'.");
+	 break;
+      case SETTING_ENABLE_CUSTOM_BGM:
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.custom_bgm_enable, currentsetting);
+	 break;
+      case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.default_rom_startup_dir);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default [Startup ROM directory]. NOTE: You will have to\nrestart the emulator for this change to have any effect.");
+	 break;
+      case SETTING_PATH_SAVESTATES_DIRECTORY:
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.default_savestate_dir);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default path where all the savestate files will be saved to.");
+	 break;
+      case SETTING_PATH_SRAM_DIRECTORY:
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.default_sram_dir);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default SRAM (SaveRAM) directory path. All the\nbattery backup saves will be stored in this directory.");
+	 break;
 #ifdef HAVE_XML
-	   case SETTING_PATH_CHEATS:
-         set_setting_label_color(items,!(strcmp(g_settings.cheat_database, default_paths.port_dir)), currentsetting);
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), g_settings.cheat_database);
-		   break;
+      case SETTING_PATH_CHEATS:
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_settings.cheat_database);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default [Cheatfile directory] path. All CHT (cheat) files\nwill be stored here.");
+	 break;
 #endif
-	   case SETTING_PATH_SYSTEM:
-         set_setting_label_color(items,!(strcmp(g_settings.system_directory, default_paths.system_dir)), currentsetting);
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), g_settings.system_directory);
-		   break;
-	   case SETTING_ENABLE_SRAM_PATH:
-         set_setting_label_write_on_or_off(items, g_console.default_sram_dir_enable, currentsetting);
-         set_setting_label_color(items,!g_console.default_sram_dir_enable, currentsetting);
-		   break;
-	   case SETTING_ENABLE_STATE_PATH:
-         set_setting_label_write_on_or_off(items, g_console.default_savestate_dir_enable, currentsetting);
-         set_setting_label_color(items,!g_console.default_savestate_dir_enable, currentsetting);
-		   break;
-	   case SETTING_CONTROLS_SCHEME:
-         set_setting_label_color(items,strcmp(g_console.input_cfg_path,"") == 0, currentsetting);
-		   snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - Input scheme preset [%s] is selected.", g_console.input_cfg_path);
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), g_console.input_cfg_path);
-		   break;
-	   case SETTING_CONTROLS_NUMBER:
-         set_setting_label_color(items,currently_selected_controller_menu == 0, currentsetting);
-		   snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "Controller %d is currently selected.", currently_selected_controller_menu+1);
-		   snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), "%d", currently_selected_controller_menu+1);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT:
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START:
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN:
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT:
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT:
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A:
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X:
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L:
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2:
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2:
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3:
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
-		   {
-            set_setting_label_color(items,g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey == rarch_default_keybind_lut[currentsetting-FIRST_CONTROL_BIND], currentsetting);
-		      const char * value = rarch_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey);
-		      unsigned id = currentsetting - FIRST_CONTROL_BIND;
-		      snprintf(items[currentsetting].text, sizeof(items[currentsetting].text), rarch_input_get_default_keybind_name(id));
-		      snprintf(items[currentsetting].comment, sizeof(items[currentsetting].comment), "INFO - [%s] is mapped to action:\n[%s].", items[currentsetting].text, value);
-		      snprintf(items[currentsetting].setting_text, sizeof(items[currentsetting].setting_text), value);
-		   }
-		   break;
-	   case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-	   case SETTING_CONTROLS_DEFAULT_ALL:
-	   case SETTING_EMU_VIDEO_DEFAULT_ALL:
-	   case SETTING_EMU_AUDIO_DEFAULT_ALL:
-	   case SETTING_PATH_DEFAULT_ALL:
-	   case SETTING_EMU_DEFAULT_ALL:
+      case SETTING_PATH_SYSTEM:
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_settings.system_directory);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default [System directory] path. System files like\nBIOS files, etc. will be stored here.");
+	 break;
+      case SETTING_ENABLE_SRAM_PATH:
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.default_sram_dir_enable, currentsetting);
+	 break;
+      case SETTING_ENABLE_STATE_PATH:
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.default_savestate_dir_enable, currentsetting);
+	 break;
+      case SETTING_CONTROLS_SCHEME:
+	 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Input scheme preset [%s] is selected.", g_console.input_cfg_path);
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.input_cfg_path);
+	 break;
+      case SETTING_CONTROLS_NUMBER:
+	 snprintf(current_item->comment, sizeof(current_item->comment), "Controller %d is currently selected.", currently_selected_controller_menu+1);
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", currently_selected_controller_menu+1);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT:
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START:
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN:
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT:
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT:
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A:
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X:
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L:
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2:
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2:
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3:
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
+         {
+	    const char * value = rarch_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey);
+	    unsigned id = currentsetting - FIRST_CONTROL_BIND;
+	    snprintf(items[currentsetting].text, sizeof(items[currentsetting].text), rarch_input_get_default_keybind_name(id));
+	    snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [%s] is mapped to action:\n[%s].", items[currentsetting].text, value);
+	    snprintf(current_item->setting_text, sizeof(current_item->setting_text), value);
+	 }
+	 break;
+      case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Save the [Custom Controls] settings to file.");
+         break;
+      case SETTING_CONTROLS_DEFAULT_ALL:
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
+         snprintf(current_item->comment, sizeof(current_item->comment), "IFNO - Set all [Controls] back to their 'DEFAULT' values.");
+         break;
+      case SETTING_EMU_VIDEO_DEFAULT_ALL:
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set [all RetroArch Video settings] back to their 'DEFAULT' values.");
+         break;
+      case SETTING_EMU_AUDIO_DEFAULT_ALL:
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [RetroArch Audio settings] back to their 'DEFAULT' values.");
+         break;
+      case SETTING_PATH_DEFAULT_ALL:
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [Path settings] back to their 'DEFAULT' values.");
+         break;
+      case SETTING_EMU_DEFAULT_ALL:
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set [all RetroArch settings] back to their 'DEFAULT' values.");
+         break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-	   case SETTING_SAVE_SHADER_PRESET:
+      case SETTING_SAVE_SHADER_PRESET:
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Save the current video settings to a [CG Preset] (CGP) file.");
+	 break;
 #endif
-         set_setting_label_color(items, current_menu->selected == currentsetting, currentsetting);
-		   break;
-	   default:
-		   break;
+      default:
+	 break;
    }
 }
 
@@ -418,7 +413,6 @@ static void menu_stack_refresh (item *items, menu *current_menu)
       items[i].text_xpos = default_pos.x_position;
       items[i].text_ypos = default_pos.y_position; 
       items[i].page = page;
-      set_setting_label(current_menu, items, i);
       default_pos.y_position += default_pos.y_position_increment;
       j++;
    }
@@ -1658,8 +1652,6 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   }
 		   break;
    }
-
-   set_setting_label(current_menu, items, switchvalue);
 }
 
 static void settings_iterate(menu *current_menu, item *items, settings_action_t action)
@@ -1735,12 +1727,15 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
 
    display_menubar(current_menu);
 
+
    for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
    {
+      item current_item;
+      set_setting_label(i, current_menu, items, &current_item);
       if(items[i].page == current_menu->page)
       {
-         context->render_msg(items[i].text_xpos, items[i].text_ypos, default_pos.variable_font_size, current_menu->selected == items[i].enum_id ? YELLOW : items[i].item_color, items[i].text);
-         context->render_msg(default_pos.x_position_center, items[i].text_ypos, default_pos.variable_font_size, items[i].text_color, items[i].setting_text);
+         context->render_msg(items[i].text_xpos, items[i].text_ypos, default_pos.variable_font_size, current_menu->selected == items[i].enum_id ? YELLOW : WHITE, items[i].text);
+         context->render_msg(default_pos.x_position_center, items[i].text_ypos, default_pos.variable_font_size, WHITE, current_item.setting_text);
 
          if(current_menu->selected == items[i].enum_id)
          {
@@ -1749,11 +1744,10 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
             position.y = items[i].text_ypos;
 
             context->render_selection_panel(&position);
+	    context->render_msg(default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, current_item.comment);
          }
       }
    }
-
-   context->render_msg(default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, items[current_menu->selected].comment);
 
    snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game | [%s] - go forward", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R));
    context->render_msg(default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, msg);
@@ -2262,6 +2256,9 @@ void menu_loop(void)
       menu_stack_push(ingame_menu_settings, INGAME_MENU);
 
    context->init_textures();
+
+   RARCH_LOG("rmenu items: %d\n", sizeof(rmenu_items));
+   RARCH_LOG("rmenu stack: %d\n", sizeof(menuStack));
 
    do
    {

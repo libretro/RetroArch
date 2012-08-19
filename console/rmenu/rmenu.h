@@ -36,9 +36,7 @@ typedef struct
    char setting_text[64];		/* setting label				*/
    float text_xpos;			/* text X position (upper left corner)		*/
    float text_ypos;			/* text Y position (upper left corner)		*/
-   unsigned text_color;			/* text color					*/
    char comment[192];			/* item comment					*/
-   unsigned item_color;			/* color of item 				*/
    unsigned char page;			/* page						*/
 } item;
 
