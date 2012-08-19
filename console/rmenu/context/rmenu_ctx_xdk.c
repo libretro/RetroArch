@@ -135,6 +135,10 @@ static void rmenu_ctx_xdk_render_msg(float xpos, float ypos, float scale, float 
    xfonts_render_msg_place(d3d, xpos, ypos, scale, msg);
 }
 
+static void rmenu_ctx_xdk_render_menu_enable(bool enable)
+{
+}
+
 const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_clear,
    rmenu_ctx_xdk_blend,
@@ -142,6 +146,7 @@ const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_init_textures,
    rmenu_ctx_xdk_render_selection_panel,
    rmenu_ctx_xdk_render_bg,
+   rmenu_ctx_xdk_render_menu_enable,
    rmenu_ctx_xdk_render_msg,
    rmenu_ctx_xdk_swap_buffers,
    rmenu_ctx_xdk_set_default_pos,

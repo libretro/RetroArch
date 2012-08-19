@@ -727,11 +727,7 @@ static void browser_render(filebrowser_t * b, float current_x, float current_y, 
          context->render_selection_panel(&position);
       }
 
-#ifdef _XBOX1
-      context->render_msg(currentX, currentY, 0, 0, fname_tmp);
-#else
       context->render_msg(currentX, currentY, FONT_SIZE, i == current_index ? RED : b->current_dir.list->elems[i].attr.b ? GREEN : WHITE, fname_tmp);
-#endif
    }
 }
 
@@ -2013,9 +2009,7 @@ static void ingame_menu_screenshot(item *items, menu *current_menu, uint64_t inp
       if(input & (1 << RETRO_DEVICE_ID_JOYPAD_A))
       {
          menu_stack_decrement();
-#ifdef __CELLOS_LV2__
-         device_ptr->menu_render = true;
-#endif
+         context->render_menu_enable(true);
       }
    }
 }
@@ -2400,16 +2394,12 @@ void menu_loop(void)
 
       if(current_menu->enum_id == INGAME_MENU_RESIZE && (trig_state & RETRO_DEVICE_ID_JOYPAD_Y) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
       {
-#ifdef __CELLOS_LV2__
-         device_ptr->menu_render = false;
-#endif
+         context->render_menu_enable(false);
       }
       else
       {
          context->blend(true);
-#ifdef __CELLOS_LV2__
-         device_ptr->menu_render = true;
-#endif
+         context->render_menu_enable(true);
       }
 
       rarch_render_cached_frame();

@@ -100,6 +100,12 @@ static void rmenu_ctx_ps3_render_msg(float xpos, float ypos, float scale, float 
    gl_render_msg_place(gl, xpos, ypos, scale, color, msg)
 }
 
+static void rmenu_ctx_ps3_render_menu_enable(bool enable)
+{
+   gl_t *gl = driver.video_data;
+   gl->menu_render = enable;
+}
+
 const rmenu_context_t rmenu_ctx_ps3 = {
    .clear = rmenu_ctx_ps3_clear,
    .blend = rmenu_ctx_ps3_blend, 
@@ -107,6 +113,7 @@ const rmenu_context_t rmenu_ctx_ps3 = {
    .init_textures = rmenu_ctx_ps3_init_textures,
    .render_selection_panel = rmenu_ctx_ps3_render_selection_panel,
    .render_bg = rmenu_ctx_ps3_render_bg,
+   .render_menu_enable = rmenu_ctx_ps3_render_menu_enable,
    .render_msg = rmenu_ctx_ps3_render_msg,
    .swap_buffers = rmenu_ctx_ps3_swap_buffers,
    .set_default_pos = rmenu_ctx_ps3_set_default_pos,
