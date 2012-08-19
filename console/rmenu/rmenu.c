@@ -443,28 +443,6 @@ menu *menu_stack_get_current_ptr (void)
    return current_menu;
 }
 
-static void menu_stack_refresh (item *items, menu *current_menu)
-{
-   rmenu_default_positions_t default_pos = {0};
-   int page = 0;
-   unsigned j = 0;
-   int i;
-
-   context->set_default_pos(&default_pos);
-
-   for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
-   {
-      if(!(j < default_pos.entries_per_page))
-      {
-         j = 0;
-         page++;
-      }
-
-      items[i].page = page;
-      j++;
-   }
-}
-
 static void menu_stack_push(item *items, unsigned menu_id)
 {
    static bool first_push_do_not_increment = true;
@@ -624,7 +602,26 @@ static void menu_stack_push(item *items, unsigned menu_id)
    }
 
    if(do_refresh)
-      menu_stack_refresh(items, current_menu);
+   {
+      rmenu_default_positions_t default_pos = {0};
+      int page = 0;
+      unsigned j = 0;
+      int i;
+
+      context->set_default_pos(&default_pos);
+
+      for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
+      {
+         if(!(j < default_pos.entries_per_page))
+	 {
+            j = 0;
+	    page++;
+	 }
+
+	 items[i].page = page;
+	 j++;
+      }
+   }
 }
 
 static void display_menubar(menu *current_menu)
@@ -852,7 +849,6 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
                      strlcpy(g_settings.video.second_pass_shader, path, sizeof(g_settings.video.second_pass_shader));
                      break;
                }
-               menu_stack_refresh(items, current_menu);
                break;
             case PRESET_CHOICE:
                strlcpy(g_console.cgp_path, path, sizeof(g_console.cgp_path));
@@ -866,7 +862,6 @@ static void select_file(item *items, menu *current_menu, uint64_t input)
             case INPUT_PRESET_CHOICE:
                strlcpy(g_console.input_cfg_path, path, sizeof(g_console.input_cfg_path));
                config_read_keybinds(path);
-               menu_stack_refresh(items, current_menu);
                break;
             case BORDER_CHOICE:
                break;
@@ -1149,7 +1144,6 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   {
 			   rarch_load_shader(1, NULL);
 			   strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
-			   menu_stack_refresh(items, current_menu);
 		   }
 		   break;
 	   case SETTING_SHADER_2:
@@ -1163,7 +1157,6 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   {
 			   rarch_load_shader(2, NULL);
 			   strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
-			   menu_stack_refresh(items, current_menu);
 		   }
 		   break;
 #endif
@@ -1575,27 +1568,15 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		   break;
 	   case SETTING_ENABLE_SRAM_PATH:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)))
-		   {
-            g_console.default_sram_dir_enable = !g_console.default_sram_dir_enable;
-		      menu_stack_refresh(items, current_menu);
-		   }
+                      g_console.default_sram_dir_enable = !g_console.default_sram_dir_enable;
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-		   {
-            g_console.default_sram_dir_enable = true;
-		      menu_stack_refresh(items, current_menu);
-		   }
+                      g_console.default_sram_dir_enable = true;
 		   break;
 	   case SETTING_ENABLE_STATE_PATH:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)))
-		   {
-            g_console.default_savestate_dir_enable = !g_console.default_savestate_dir_enable;
-		      menu_stack_refresh(items, current_menu);
-		   }
+                      g_console.default_savestate_dir_enable = !g_console.default_savestate_dir_enable;
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-		   {
-            g_console.default_savestate_dir_enable = true;
-		      menu_stack_refresh(items, current_menu);
-		   }
+                      g_console.default_savestate_dir_enable = true;
 		   break;
 	   case SETTING_PATH_DEFAULT_ALL:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
@@ -1606,8 +1587,6 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 		      strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
 #endif
 		      strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
-
-		      menu_stack_refresh(items, current_menu);
 		   }
 		   break;
 	   case SETTING_CONTROLS_SCHEME:
@@ -1616,22 +1595,18 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
             menu_stack_push(items, INPUT_PRESET_CHOICE);
 		      filebrowser_set_root_and_ext(&tmpBrowser, EXT_INPUT_PRESETS, default_paths.input_presets_dir);
 		   }
-		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
-			   menu_stack_refresh(items, current_menu);
 		   break;
 	   case SETTING_CONTROLS_NUMBER:
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
 		   {
-            if(currently_selected_controller_menu != 0)
-               currently_selected_controller_menu--;
-		      menu_stack_refresh(items, current_menu);
+                      if(currently_selected_controller_menu != 0)
+                         currently_selected_controller_menu--;
 		   }
 
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)))
 		   {
-            if(currently_selected_controller_menu < 6)
-               currently_selected_controller_menu++;
-		      menu_stack_refresh(items, current_menu);
+                      if (currently_selected_controller_menu < 6)
+                         currently_selected_controller_menu++;
 		   }
 
 		   if(input & (1 << RETRO_DEVICE_ID_JOYPAD_START))
@@ -1693,10 +1668,7 @@ static void producesettingentry(menu *current_menu, item *items, unsigned switch
 #endif
 	   case SETTING_CONTROLS_DEFAULT_ALL:
 		   if((input & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_B)) || (input & (1 << RETRO_DEVICE_ID_JOYPAD_START)))
-		   {
-            rarch_input_set_default_keybinds(currently_selected_controller_menu);
-		      menu_stack_refresh(items, current_menu);
-		   }
+                      rarch_input_set_default_keybinds(currently_selected_controller_menu);
 		   break;
    }
 }
