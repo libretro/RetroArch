@@ -1778,7 +1778,6 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
 
    display_menubar(current_menu);
 
-
    for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
    {
       item current_item;
@@ -1786,8 +1785,9 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
 
       if(items[i].page == current_menu->page)
       {
-         context->render_msg(items[i].text_xpos, items[i].text_ypos, default_pos.variable_font_size, current_menu->selected == items[i].enum_id ? YELLOW : WHITE, current_item.text);
-         context->render_msg(default_pos.x_position_center, items[i].text_ypos, default_pos.variable_font_size, WHITE, current_item.setting_text);
+         default_pos.starting_y_position += default_pos.y_position_increment;
+         context->render_msg(default_pos.x_position, default_pos.starting_y_position, default_pos.variable_font_size, current_menu->selected == items[i].enum_id ? YELLOW : WHITE, current_item.text);
+         context->render_msg(default_pos.x_position_center, default_pos.starting_y_position, default_pos.variable_font_size, WHITE, current_item.setting_text);
 
          if(current_menu->selected == items[i].enum_id)
          {
