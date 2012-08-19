@@ -99,7 +99,7 @@ static void set_setting_label_write_on_or_off(char *setting_text, bool cond, uns
       snprintf(setting_text, sizeof(setting_text), "OFF");
 }
 
-static void set_setting_label(unsigned i, menu * current_menu, item *items, item *current_item)
+static void set_setting_label(unsigned i, item *current_item)
 {
    char fname[PATH_MAX];
    (void)fname;
@@ -113,6 +113,7 @@ static void set_setting_label(unsigned i, menu * current_menu, item *items, item
       {
          unsigned width = gfx_ctx_get_resolution_width(g_console.supported_resolutions[g_console.current_resolution_index]);
 	 unsigned height = gfx_ctx_get_resolution_height(g_console.supported_resolutions[g_console.current_resolution_index]);
+         snprintf(current_item->text, sizeof(current_item->text), "Resolution");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%dx%d", width, height);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Change the display resolution.");
       }
@@ -120,30 +121,36 @@ static void set_setting_label(unsigned i, menu * current_menu, item *items, item
 #endif
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_SHADER_PRESETS:
+         snprintf(current_item->text, sizeof(current_item->text), "Shader Presets (CGP)");
 	 fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), fname);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a [CG Preset] script.");
 	 break;
       case SETTING_SHADER:
 	 fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
+         snprintf(current_item->text, sizeof(current_item->text), "Shader #1");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", fname);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a shader as [Shader #1]. NOTE: Some shaders might be\ntoo slow at 1080p. If you experience any slowdown, try another shader.");
 	 break;
       case SETTING_SHADER_2:
 	 fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
+         snprintf(current_item->text, sizeof(current_item->text), "Shader #2");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", fname);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a shader as [Shader #2]. NOTE: Some shaders might be\ntoo slow at 1080p. If you experience any slowdown, try another shader.");
 	 break;
 #endif
       case SETTING_FONT_SIZE:
+         snprintf(current_item->text, sizeof(current_item->text), "Font Size");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_console.menu_font_size);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Increase or decrease the [Font Size].");
 	 break;
       case SETTING_KEEP_ASPECT_RATIO:
+         snprintf(current_item->text, sizeof(current_item->text), "Aspect Ratio");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), aspectratio_lut[g_console.aspect_ratio_index].name);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select an [Aspect Ratio].");
 	 break;
       case SETTING_HW_TEXTURE_FILTER:
+         snprintf(current_item->text, sizeof(current_item->text), "Hardware filtering #1");
 	 if(g_settings.video.smooth)
             snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Bilinear");
 	 else
@@ -152,6 +159,7 @@ static void set_setting_label(unsigned i, menu * current_menu, item *items, item
 	 break;
 #ifdef HAVE_FBO
       case SETTING_HW_TEXTURE_FILTER_2:
+         snprintf(current_item->text, sizeof(current_item->text), "Hardware filtering #2");
 	 if(g_settings.video.second_pass_smooth)
             snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Bilinear");
 	 else
@@ -159,51 +167,62 @@ static void set_setting_label(unsigned i, menu * current_menu, item *items, item
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Hardware filtering #2 is set to [%s].", current_item->setting_text);
 	 break;
       case SETTING_SCALE_ENABLED:
+         snprintf(current_item->text, sizeof(current_item->text), "Custom Scaling/Dual Shaders");
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.fbo_enabled, currentsetting);
 	 snprintf(current_item->comment, sizeof(current_item->comment), g_console.fbo_enabled ? "INFO - [Custom Scaling] is set to 'ON' - 2x shaders will look much\nbetter, and you can select a shader for [Shader #2]." : "INFO - [Custom Scaling] is set to 'OFF'.");
 	 break;
       case SETTING_SCALE_FACTOR:
+         snprintf(current_item->text, sizeof(current_item->text), "Custom Scaling Factor");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 	 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom Scaling Factor] is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
 	 break;
 #endif
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
+         snprintf(current_item->text, sizeof(current_item->text), "Flicker Filter");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_console.flicker_filter);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Flicker Filter].");
 	 break;
       case SETTING_SOFT_DISPLAY_FILTER:
+         snprintf(current_item->text, sizeof(current_item->text), "Soft Display Filter");
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.soft_display_filter_enable, currentsetting);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Soft Display Filter].");
 	 break;
 #endif
       case SETTING_HW_OVERSCAN_AMOUNT:
+         snprintf(current_item->text, sizeof(current_item->text), "Overscan");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_console.overscan_amount);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Adjust or decrease [Overscan]. Set this to higher than 0.000\nif the screen doesn't fit on your TV/monitor.");
 	 break;
       case SETTING_THROTTLE_MODE:
+         snprintf(current_item->text, sizeof(current_item->text), "Throttle Mode");
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.throttle_enable, currentsetting);
          snprintf(current_item->comment, sizeof(current_item->comment), g_console.throttle_enable ? "INFO - [Throttle Mode] is 'ON' - Vsync is enabled." : "INFO - [Throttle Mode] is 'OFF' - Vsync is disabled.");
 	 break;
       case SETTING_TRIPLE_BUFFERING:
+         snprintf(current_item->text, sizeof(current_item->text), "Triple Buffering");
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.triple_buffering_enable, currentsetting);
          snprintf(current_item->comment, sizeof(current_item->comment), g_console.triple_buffering_enable ? "INFO - [Triple Buffering] is set to 'ON'." : "INFO - [Triple Buffering] is set to 'OFF'.");
 	 break;
       case SETTING_ENABLE_SCREENSHOTS:
+         snprintf(current_item->text, sizeof(current_item->text), "Screenshot Option");
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.screenshots_enable, currentsetting);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Screenshots feature is set to '%s'.", g_console.screenshots_enable ? "ON" : "OFF");
 	 break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
+         snprintf(current_item->text, sizeof(current_item->text), "APPLY SHADER PRESET ON STARTUP");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Automatically load the currently selected [CG Preset] file on startup.");
          break;
 #endif
       case SETTING_DEFAULT_VIDEO_ALL:
+         snprintf(current_item->text, sizeof(current_item->text), "DEFAULTS");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [General Video Settings] back to their 'DEFAULT' values.");
 	 break;
       case SETTING_SOUND_MODE:
+         snprintf(current_item->text, sizeof(current_item->text), "Sound Output");
 	 switch(g_console.sound_mode)
 	 {
 		 case SOUND_MODE_NORMAL:
@@ -228,28 +247,34 @@ static void set_setting_label(unsigned i, menu * current_menu, item *items, item
 	 break;
 #ifdef HAVE_RSOUND
       case SETTING_RSOUND_SERVER_IP_ADDRESS:
+         snprintf(current_item->text, sizeof(current_item->text), "RSound Server IP Address");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_settings.audio.device);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Enter the IP Address of the [RSound Audio Server]. IP address\nmust be an IPv4 32-bits address, eg: '192.168.1.7'.");
 	 break;
 #endif
       case SETTING_DEFAULT_AUDIO_ALL:
+         snprintf(current_item->text, sizeof(current_item->text), "DEFAULTS");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [General Audio Settings] back to their 'DEFAULT' values.");
 	 break;
       case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
+         snprintf(current_item->text, sizeof(current_item->text), "Current save state slot");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.state_slot);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the currently selected savestate slot.");
 	 break;
 	 /* emu-specific */
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
+         snprintf(current_item->text, sizeof(current_item->text), "Debug info messages");
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.fps_info_msg_enable, currentsetting);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen debug messages.");
 	 break;
       case SETTING_EMU_SHOW_INFO_MSG:
+         snprintf(current_item->text, sizeof(current_item->text), "Info messages");
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.info_msg_enable, currentsetting);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen info messages in the menu.");
 	 break;
       case SETTING_EMU_REWIND_ENABLED:
+         snprintf(current_item->text, sizeof(current_item->text), "Rewind option");
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_settings.rewind_enable, currentsetting);
 	 if(g_settings.rewind_enable)
 	    snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Rewind] feature is set to 'ON'.");
@@ -257,6 +282,7 @@ static void set_setting_label(unsigned i, menu * current_menu, item *items, item
 	    snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Rewind] feature is set to 'OFF'.");
 	 break;
       case SETTING_ZIP_EXTRACT:
+         snprintf(current_item->text, sizeof(current_item->text), "ZIP Extract Option");
 	 switch(g_console.zip_extract_mode)
 	 {
 		 case ZIP_EXTRACT_TO_CURRENT_DIR:
@@ -274,11 +300,13 @@ static void set_setting_label(unsigned i, menu * current_menu, item *items, item
 	 }
 	 break;
       case SETTING_RARCH_DEFAULT_EMU:
+         snprintf(current_item->text, sizeof(current_item->text), "Default libretro core");
 	 fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", fname);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a default emulator core to launch at start-up.");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a default libretro core to launch at start-up.");
 	 break;
       case SETTING_EMU_AUDIO_MUTE:
+         snprintf(current_item->text, sizeof(current_item->text), "Mute Audio");
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_extern.audio_data.mute, currentsetting);
 	 if(g_extern.audio_data.mute)
 		 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Audio Mute] feature is set to 'ON'. The game audio will be muted.");
@@ -286,44 +314,54 @@ static void set_setting_label(unsigned i, menu * current_menu, item *items, item
 		 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Audio Mute] feature is set to 'OFF'.");
 	 break;
       case SETTING_ENABLE_CUSTOM_BGM:
+         snprintf(current_item->text, sizeof(current_item->text), "Custom BGM Option");
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.custom_bgm_enable, currentsetting);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom BGM] is set to '%s'.", g_console.custom_bgm_enable ? "ON" : "OFF");
 	 break;
       case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
+         snprintf(current_item->text, sizeof(current_item->text), "Startup ROM Directory");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.default_rom_startup_dir);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default [Startup ROM directory]. NOTE: You will have to\nrestart the emulator for this change to have any effect.");
 	 break;
       case SETTING_PATH_SAVESTATES_DIRECTORY:
+         snprintf(current_item->text, sizeof(current_item->text), "Savestate Directory");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.default_savestate_dir);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default path where all the savestate files will be saved to.");
 	 break;
       case SETTING_PATH_SRAM_DIRECTORY:
+         snprintf(current_item->text, sizeof(current_item->text), "SRAM Directory");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.default_sram_dir);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default SRAM (SaveRAM) directory path. All the\nbattery backup saves will be stored in this directory.");
 	 break;
 #ifdef HAVE_XML
       case SETTING_PATH_CHEATS:
+         snprintf(current_item->text, sizeof(current_item->text), "Cheatfile Directory");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_settings.cheat_database);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default [Cheatfile directory] path. All CHT (cheat) files\nwill be stored here.");
 	 break;
 #endif
       case SETTING_PATH_SYSTEM:
+         snprintf(current_item->text, sizeof(current_item->text), "System Directory");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_settings.system_directory);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default [System directory] path. System files like\nBIOS files, etc. will be stored here.");
 	 break;
       case SETTING_ENABLE_SRAM_PATH:
+         snprintf(current_item->text, sizeof(current_item->text), "Custom SRAM Dir Enable");
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.default_sram_dir_enable, currentsetting);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom SRAM Dir Path] is set to '%s'.", g_console.default_sram_dir_enable ? "ON" : "OFF");
 	 break;
       case SETTING_ENABLE_STATE_PATH:
+         snprintf(current_item->text, sizeof(current_item->text), "Custom Savestate Dir Enable");
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.default_savestate_dir_enable, currentsetting);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom Savestate Dir Path] is set to '%s'.", g_console.default_savestate_dir_enable ? "ON" : "OFF");
 	 break;
       case SETTING_CONTROLS_SCHEME:
+         snprintf(current_item->text, sizeof(current_item->text), "Control Scheme Preset");
 	 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Input scheme preset [%s] is selected.", g_console.input_cfg_path);
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.input_cfg_path);
 	 break;
       case SETTING_CONTROLS_NUMBER:
+         snprintf(current_item->text, sizeof(current_item->text), "Controller No");
 	 snprintf(current_item->comment, sizeof(current_item->comment), "Controller %d is currently selected.", currently_selected_controller_menu+1);
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", currently_selected_controller_menu+1);
 	 break;
@@ -346,37 +384,44 @@ static void set_setting_label(unsigned i, menu * current_menu, item *items, item
          {
 	    const char * value = rarch_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey);
 	    unsigned id = currentsetting - FIRST_CONTROL_BIND;
-	    snprintf(items[currentsetting].text, sizeof(items[currentsetting].text), rarch_input_get_default_keybind_name(id));
-	    snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [%s] is mapped to action:\n[%s].", items[currentsetting].text, value);
+	    snprintf(current_item->text, sizeof(current_item->text), rarch_input_get_default_keybind_name(id));
+	    snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [%s] is mapped to action:\n[%s].", current_item->text, value);
 	    snprintf(current_item->setting_text, sizeof(current_item->setting_text), value);
 	 }
 	 break;
       case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
+         snprintf(current_item->text, sizeof(current_item->text), "SAVE CUSTOM CONTROLS");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Save the [Custom Controls] settings to file.");
          break;
       case SETTING_CONTROLS_DEFAULT_ALL:
+         snprintf(current_item->text, sizeof(current_item->text), "DEFAULTS");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
          snprintf(current_item->comment, sizeof(current_item->comment), "IFNO - Set all [Controls] back to their 'DEFAULT' values.");
          break;
       case SETTING_EMU_VIDEO_DEFAULT_ALL:
+         snprintf(current_item->text, sizeof(current_item->text), "DEFAULTS");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set [all RetroArch Video settings] back to their 'DEFAULT' values.");
          break;
       case SETTING_EMU_AUDIO_DEFAULT_ALL:
+         snprintf(current_item->text, sizeof(current_item->text), "DEFAULTS");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [RetroArch Audio settings] back to their 'DEFAULT' values.");
          break;
       case SETTING_PATH_DEFAULT_ALL:
+         snprintf(current_item->text, sizeof(current_item->text), "DEFAULTS");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [Path settings] back to their 'DEFAULT' values.");
          break;
       case SETTING_EMU_DEFAULT_ALL:
+         snprintf(current_item->text, sizeof(current_item->text), "DEFAULTS");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set [all RetroArch settings] back to their 'DEFAULT' values.");
          break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_SAVE_SHADER_PRESET:
+         snprintf(current_item->text, sizeof(current_item->text), "SAVE SETTINGS AS CGP PRESET");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Save the current video settings to a [CG Preset] (CGP) file.");
 	 break;
@@ -1737,10 +1782,11 @@ static void select_setting(item *items, menu *current_menu, uint64_t input)
    for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
    {
       item current_item;
-      set_setting_label(i, current_menu, items, &current_item);
+      set_setting_label(i, &current_item);
+
       if(items[i].page == current_menu->page)
       {
-         context->render_msg(items[i].text_xpos, items[i].text_ypos, default_pos.variable_font_size, current_menu->selected == items[i].enum_id ? YELLOW : WHITE, items[i].text);
+         context->render_msg(items[i].text_xpos, items[i].text_ypos, default_pos.variable_font_size, current_menu->selected == items[i].enum_id ? YELLOW : WHITE, current_item.text);
          context->render_msg(default_pos.x_position_center, items[i].text_ypos, default_pos.variable_font_size, WHITE, current_item.setting_text);
 
          if(current_menu->selected == items[i].enum_id)
