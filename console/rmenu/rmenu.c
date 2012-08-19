@@ -156,7 +156,7 @@ static void set_setting_label(unsigned i, menu * current_menu, item *items, item
             snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Bilinear");
 	 else
             snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Point");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Hardware filtering #1 is set to [%s].", current_item->setting_text);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Hardware filtering #2 is set to [%s].", current_item->setting_text);
 	 break;
       case SETTING_SCALE_ENABLED:
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.fbo_enabled, currentsetting);
@@ -183,12 +183,15 @@ static void set_setting_label(unsigned i, menu * current_menu, item *items, item
 	 break;
       case SETTING_THROTTLE_MODE:
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.throttle_enable, currentsetting);
+         snprintf(current_item->comment, sizeof(current_item->comment), g_console.throttle_enable ? "INFO - [Throttle Mode] is 'ON' - Vsync is enabled." : "INFO - [Throttle Mode] is 'OFF' - Vsync is disabled.");
 	 break;
       case SETTING_TRIPLE_BUFFERING:
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.triple_buffering_enable, currentsetting);
+         snprintf(current_item->comment, sizeof(current_item->comment), g_console.triple_buffering_enable ? "INFO - [Triple Buffering] is set to 'ON'." : "INFO - [Triple Buffering] is set to 'OFF'.");
 	 break;
       case SETTING_ENABLE_SCREENSHOTS:
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.screenshots_enable, currentsetting);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Screenshots feature is set to '%s'.", g_console.screenshots_enable ? "ON" : "OFF");
 	 break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
@@ -235,7 +238,7 @@ static void set_setting_label(unsigned i, menu * current_menu, item *items, item
 	 break;
       case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.state_slot);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the current savestate slot (can also be configured ingame).");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the currently selected savestate slot.");
 	 break;
 	 /* emu-specific */
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
@@ -258,15 +261,15 @@ static void set_setting_label(unsigned i, menu * current_menu, item *items, item
 	 {
 		 case ZIP_EXTRACT_TO_CURRENT_DIR:
 			 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir");
-			 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [ZIP Extract Mode] is set to 'Current dir'.\nZIP files are extracted to the current directory.");
+			 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to the current dir.");
 			 break;
 		 case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
 			 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir and load first file");
-			 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [ZIP Extract Mode] is set to 'Current dir and load first file'.\nZIP files are extracted to the current directory, and the first game is automatically loaded.");
+			 snprintf(current_item->comment, sizeof(current_item->comment), "NFO - ZIP files are extracted to the current dir, and the first game is automatically loaded.");
 			 break;
 		 case ZIP_EXTRACT_TO_CACHE_DIR:
 			 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Cache dir");
-			 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [ZIP Extract Mode] is set to 'Cache dir'.\nZIP files are extracted to the cache directory (dev_hdd1).");
+			 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to the cache dir.");
 			 break;
 	 }
 	 break;
@@ -284,6 +287,7 @@ static void set_setting_label(unsigned i, menu * current_menu, item *items, item
 	 break;
       case SETTING_ENABLE_CUSTOM_BGM:
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.custom_bgm_enable, currentsetting);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom BGM] is set to '%s'.", g_console.custom_bgm_enable ? "ON" : "OFF");
 	 break;
       case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.default_rom_startup_dir);
@@ -309,9 +313,11 @@ static void set_setting_label(unsigned i, menu * current_menu, item *items, item
 	 break;
       case SETTING_ENABLE_SRAM_PATH:
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.default_sram_dir_enable, currentsetting);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom SRAM Dir Path] is set to '%s'.", g_console.default_sram_dir_enable ? "ON" : "OFF");
 	 break;
       case SETTING_ENABLE_STATE_PATH:
 	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.default_savestate_dir_enable, currentsetting);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom Savestate Dir Path] is set to '%s'.", g_console.default_savestate_dir_enable ? "ON" : "OFF");
 	 break;
       case SETTING_CONTROLS_SCHEME:
 	 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Input scheme preset [%s] is selected.", g_console.input_cfg_path);
