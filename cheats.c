@@ -234,7 +234,7 @@ static void cheat_manager_save_config(cheat_manager_t *handle, const char *path,
 #endif
 }
 
-cheat_manager_t* cheat_manager_new(const char *path)
+cheat_manager_t *cheat_manager_new(const char *path)
 {
    LIBXML_TEST_VERSION;
 
@@ -295,7 +295,7 @@ cheat_manager_t* cheat_manager_new(const char *path)
          if (!sha256)
             continue;
 
-         if (strcmp((const char*)sha256, g_extern.sha256) == 0)
+         if (*g_extern.sha256 && strcmp((const char*)sha256, g_extern.sha256) == 0)
          {
             xmlFree(sha256);
             break;
