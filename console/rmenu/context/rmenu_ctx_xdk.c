@@ -20,6 +20,8 @@
 #define ROM_PANEL_WIDTH 510
 #define ROM_PANEL_HEIGHT 20
 
+#define HARDCODE_FONT_SIZE 21
+
 #define POSITION_X m_menuMainRomListPos_x
 #define POSITION_X_CENTER (m_menuMainRomListPos_x + 350)
 #define POSITION_Y_START m_menuMainRomListPos_y

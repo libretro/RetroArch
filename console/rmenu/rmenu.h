@@ -21,7 +21,6 @@
 #define DEVICE_CAST gl_t*
 #define input_ptr input_ps3
 #define video_ptr video_gl
-#define DEVICE_PTR device_ptr
 #define FONT_SIZE (g_console.menu_font_size)
 
 #define NUM_ENTRY_PER_PAGE 15
@@ -29,8 +28,6 @@
 #define DEVICE_CAST xdk_d3d_video_t*
 #define input_ptr input_xinput
 #define video_ptr video_xdk_d3d
-#define DEVICE_PTR device_ptr
-#define HARDCODE_FONT_SIZE 21
 #define FONT_SIZE 21 
 
 #define NUM_ENTRY_PER_PAGE 12
