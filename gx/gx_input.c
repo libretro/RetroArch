@@ -33,7 +33,7 @@
 #include "../libretro.h"
 #include <stdlib.h>
 
-#define JOYSTICK_THRESHOLD 64
+#define JOYSTICK_THRESHOLD 48
 
 #define MAX_PADS 4
 

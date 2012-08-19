@@ -49,8 +49,6 @@ FILE * log_fp;
 uint32_t menu_framebuf[320 * 240];
 rgui_handle_t *rgui;
 
-char app_dir[PATH_MAX];
-
 #if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
 static devoptab_t dotab_stdout = {
    "stdout",   // device name
@@ -89,9 +87,7 @@ int gx_logger_net(struct _reent *r, int fd, const char *ptr, size_t len)
    logger_send("%s", temp);
    return len;
 }
-#endif
-
-#ifdef HAVE_FILE_LOGGER
+#elif defined(HAVE_FILE_LOGGER)
 int gx_logger_file(struct _reent *r, int fd, const char *ptr, size_t len)
 {
    fwrite(ptr, 1, len, log_fp);
@@ -340,7 +336,6 @@ int main(void)
 #endif
 
    fatInitDefault();
-   getcwd(app_dir, sizeof(app_dir));
 
    get_environment_settings();
 
@@ -350,8 +345,7 @@ int main(void)
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
    dotab_stdout.write_r = gx_logger_net;
-#endif
-#ifdef HAVE_FILE_LOGGER
+#elif defined(HAVE_FILE_LOGGER)
    g_extern.verbose = true;
    log_fp = fopen("/retroarch-log.txt", "w");
    devoptab_list[STD_OUT] = &dotab_stdout;

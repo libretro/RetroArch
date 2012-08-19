@@ -16,6 +16,7 @@
 #include "rgui.h"
 #include "list.h"
 #include "../rarch_console_video.h"
+#include "../../screenshot.h"
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -31,8 +32,6 @@
 #define TERM_START_Y 27
 #define TERM_WIDTH (((RGUI_WIDTH - TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
 #define TERM_HEIGHT (((RGUI_HEIGHT - TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
-
-extern char app_dir[PATH_MAX];
 
 struct rgui_handle
 {
@@ -421,6 +420,23 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             rarch_settings_change(S_RETURN_TO_GAME);
          }
          break;
+      case RGUI_SETTINGS_SCREENSHOT:
+         if (action == RGUI_ACTION_OK)
+         {
+            const uint16_t *data = (const uint16_t*)g_extern.frame_cache.data;
+            unsigned width       = g_extern.frame_cache.width;
+            unsigned height      = g_extern.frame_cache.height;
+            int pitch            = g_extern.frame_cache.pitch;
+
+            // Negative pitch is needed as screenshot takes bottom-up,
+            // but we use top-down.
+            bool r = screenshot_dump(default_paths.savestate_dir,
+                  data + (height - 1) * (pitch >> 1), 
+                  width, height, -pitch, false);
+
+            msg_queue_push(g_extern.msg_queue, r ? "Screenshot saved" : "Screenshot failed to save", 1, S_DELAY_90);
+         }
+         break;
       case RGUI_SETTINGS_VIDEO_FILTER:
          if (action == RGUI_ACTION_START)
             rarch_settings_default(S_DEF_HW_TEXTURE_FILTER);
@@ -577,6 +593,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
       RGUI_MENU_ITEM("Savestate Slot", RGUI_SETTINGS_SAVESTATE_SLOT);
       RGUI_MENU_ITEM("Save State", RGUI_SETTINGS_SAVESTATE_SAVE);
       RGUI_MENU_ITEM("Load State", RGUI_SETTINGS_SAVESTATE_LOAD);
+      RGUI_MENU_ITEM("Take Screenshot", RGUI_SETTINGS_SCREENSHOT);
    }
    RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
 #ifdef HW_RVL
@@ -624,7 +641,7 @@ static const char *rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t acti
    const char *label = 0;
    rgui_list_at(rgui->folder_buf, rgui->directory_ptr, &label, &type, NULL);
    if (type == RGUI_SETTINGS_CORE)
-      label = app_dir;
+      label = default_paths.port_dir;
    const char *dir = 0;
    rgui_file_type_t menu_type = 0;
    size_t directory_ptr = 0;

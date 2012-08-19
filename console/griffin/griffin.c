@@ -304,6 +304,7 @@ MENU
 #endif
 
 #ifdef HAVE_RGUI
+#include "../../screenshot.c"
 #include "../rgui/rgui.c"
 #include "../rgui/list.c"
 #endif
