@@ -81,7 +81,7 @@ static void filebrowser_fetch_directory_entries(const char *path,
    for(unsigned i = 0; i < browser->current_dir.list->size; i++)
    {
       char fname_tmp[256];
-	  fill_pathname_base(fname_tmp, browser->current_dir.list->elems[i].data, sizeof(fname_tmp));
+      fill_pathname_base(fname_tmp, browser->current_dir.list->elems[i].data, sizeof(fname_tmp));
       convert_char_to_wchar(strw_buffer, fname_tmp, sizeof(strw_buffer));
       romlist->SetText(i, strw_buffer);
    }
@@ -259,6 +259,8 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_SHADER_2, strw_buffer);
    rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
+   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
+   m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
 
    return 0;
 }
@@ -722,6 +724,14 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    g_console.fbo_enabled = !g_console.fbo_enabled;
 	    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
 	    gfx_ctx_set_fbo(g_console.fbo_enabled);
+	    break;
+         case SETTING_ZIP_EXTRACT:
+	    if(g_console.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
+               g_console.zip_extract_mode++;
+	    else
+               g_console.zip_extract_mode = 0;
+	    rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
+	    m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
 	    break;
       }
    }

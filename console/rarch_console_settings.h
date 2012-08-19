@@ -101,6 +101,7 @@ enum
    S_LBL_SCALE_FACTOR,
    S_LBL_LOAD_STATE_SLOT,
    S_LBL_SAVE_STATE_SLOT,
+   S_LBL_ZIP_EXTRACT,
 };
 
 void rarch_settings_change(unsigned setting);

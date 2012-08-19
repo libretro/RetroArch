@@ -312,6 +312,24 @@ void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t 
       case S_LBL_SAVE_STATE_SLOT:
          snprintf(str, size, "Save State #%d", g_extern.state_slot);
          break;
+      case S_LBL_ZIP_EXTRACT:
+	 {
+            char msg[128];
+	    switch(g_console.zip_extract_mode)
+            {
+               case ZIP_EXTRACT_TO_CURRENT_DIR:
+                  snprintf(msg, sizeof(msg), "Current dir");
+                  break;
+               case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
+                  snprintf(msg, sizeof(msg), "Current dir and load first file");
+                  break;
+			   case ZIP_EXTRACT_TO_CACHE_DIR:
+                  snprintf(msg, sizeof(msg), "Cache dir");
+                  break;
+            }
+            snprintf(str, size, "ZIP Extract: %s", msg);
+	 }
+         break;
    }
 }
 

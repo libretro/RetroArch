@@ -17,10 +17,8 @@
 #ifndef _MENU_XUI_H_
 #define _MENU_XUI_H_
 
-#ifdef _XBOX360
 #include <xui.h>
 #include <xuiapp.h>
-#endif
 
 enum
 {
@@ -34,7 +32,8 @@ enum
    SETTING_HW_TEXTURE_FILTER,
    SETTING_HW_TEXTURE_FILTER_2,
    SETTING_SCALE_ENABLED,
-   SETTING_SCALE_FACTOR
+   SETTING_SCALE_FACTOR,
+   SETTING_ZIP_EXTRACT,
 };
 
 enum
@@ -64,7 +63,6 @@ enum
    INPUT_LOOP_RESIZE_MODE
 };
 
-#ifdef _XBOX360
 class CRetroArch : public CXuiModule
 {
    public:
@@ -216,8 +214,5 @@ class CRetroArchControls: public CXuiSceneImpl
 
       XUI_IMPLEMENT_CLASS(CRetroArchControls, L"RetroArchControls", XUI_CLASS_SCENE)
 };
-
-extern CRetroArch app;
-#endif
 
 #endif
