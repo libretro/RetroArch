@@ -38,17 +38,6 @@ typedef struct
    unsigned char page;			/* page						*/
 } item;
 
-typedef struct
-{
-   char title[64];
-   unsigned char enum_id;
-   unsigned char selected;
-   unsigned char page;
-   unsigned char first_setting;
-   unsigned char max_settings;
-   unsigned char category_id;
-} menu;
-
 typedef struct rmenu_position
 {
    float x;

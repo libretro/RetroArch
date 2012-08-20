@@ -61,8 +61,6 @@
 #define INPUT_SCALE 2
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
-menu menuStack[10];
-int menuStackindex = 0;
 static bool set_libretro_core_as_launch;
 
 filebrowser_t browser;
@@ -489,176 +487,6 @@ static void set_setting_label(unsigned i, item *current_item)
    }
 }
 
-static void menu_stack_decrement(void)
-{
-   if(menuStackindex > 0)
-      menuStackindex--;
-}
-
-menu *menu_stack_get_current_ptr (void)
-{
-   menu *current_menu = &menuStack[menuStackindex];
-   return current_menu;
-}
-
-static void menu_stack_push(unsigned menu_id)
-{
-   static bool first_push_do_not_increment = true;
-
-   if(!first_push_do_not_increment)
-      menuStackindex++;
-   else
-      first_push_do_not_increment = false;
-
-   menu *current_menu = menu_stack_get_current_ptr();
-
-   switch(menu_id)
-   {
-      case INGAME_MENU:
-         strlcpy(current_menu->title, "Ingame Menu", sizeof(current_menu->title));
-         current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
-         current_menu->page = 0;
-         current_menu->category_id = CATEGORY_INGAME_MENU;
-         break;
-      case INGAME_MENU_RESIZE:
-         strlcpy(current_menu->title, "Resize Menu", sizeof(current_menu->title));
-         current_menu->enum_id = INGAME_MENU_RESIZE;
-         current_menu->selected = 0;
-         current_menu->page = 0;
-         current_menu->category_id = CATEGORY_INGAME_MENU;
-         break;
-      case INGAME_MENU_SCREENSHOT:
-         strlcpy(current_menu->title, "Ingame Menu", sizeof(current_menu->title));
-         current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
-         current_menu->page = 0;
-         current_menu->category_id = CATEGORY_INGAME_MENU;
-         break;
-      case FILE_BROWSER_MENU:
-         strlcpy(current_menu->title, "Filebrowser", sizeof(current_menu->title));
-         current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
-         current_menu->page = 0;
-         current_menu->category_id = CATEGORY_FILEBROWSER;
-         break;
-      case LIBRETRO_CHOICE:
-         strlcpy(current_menu->title, "Libretro", sizeof(current_menu->title));
-         current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
-         current_menu->page = 0;
-         current_menu->category_id = CATEGORY_FILEBROWSER;
-         break;
-      case PRESET_CHOICE:
-         strlcpy(current_menu->title, "Shader", sizeof(current_menu->title));
-         current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
-         current_menu->page = 0;
-         current_menu->category_id = CATEGORY_FILEBROWSER;
-         break;
-      case INPUT_PRESET_CHOICE:
-         strlcpy(current_menu->title, "Input", sizeof(current_menu->title));
-         current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
-         current_menu->page = 0;
-         current_menu->category_id = CATEGORY_FILEBROWSER;
-         break;
-      case SHADER_CHOICE:
-         strlcpy(current_menu->title, "Shaders", sizeof(current_menu->title));
-         current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
-         current_menu->page = 0;
-         current_menu->category_id = CATEGORY_FILEBROWSER;
-         break;
-      case BORDER_CHOICE:
-         strlcpy(current_menu->title, "Borders", sizeof(current_menu->title));
-         current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
-         current_menu->page = 0;
-         current_menu->category_id = CATEGORY_FILEBROWSER;
-         break;
-      case PATH_DEFAULT_ROM_DIR_CHOICE:
-      case PATH_SAVESTATES_DIR_CHOICE:
-      case PATH_SRAM_DIR_CHOICE:
-#ifdef HAVE_XML
-      case PATH_CHEATS_DIR_CHOICE:
-#endif
-      case PATH_SYSTEM_DIR_CHOICE:
-         strlcpy(current_menu->title, "Path", sizeof(current_menu->title));
-         current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
-         current_menu->page = 0;
-         current_menu->category_id = CATEGORY_FILEBROWSER;
-         break;
-      case GENERAL_VIDEO_MENU:
-         strlcpy(current_menu->title, "Video", sizeof(current_menu->title));
-         current_menu->enum_id = GENERAL_VIDEO_MENU;
-         current_menu->selected = FIRST_VIDEO_SETTING;
-         current_menu->page = 0;
-         current_menu->first_setting = FIRST_VIDEO_SETTING;
-         current_menu->max_settings = MAX_NO_OF_VIDEO_SETTINGS;
-         current_menu->category_id = CATEGORY_SETTINGS;
-	 break;
-      case GENERAL_AUDIO_MENU:
-         strlcpy(current_menu->title, "Audio", sizeof(current_menu->title));
-         current_menu->enum_id = GENERAL_AUDIO_MENU;
-         current_menu->selected = FIRST_AUDIO_SETTING;
-         current_menu->page = 0;
-         current_menu->first_setting = FIRST_AUDIO_SETTING;
-         current_menu->max_settings = MAX_NO_OF_AUDIO_SETTINGS;
-         current_menu->category_id = CATEGORY_SETTINGS;
-	 break;
-      case EMU_GENERAL_MENU:
-         strlcpy(current_menu->title, "Retro", sizeof(current_menu->title));
-         current_menu->enum_id = EMU_GENERAL_MENU;
-         current_menu->selected = FIRST_EMU_SETTING;
-         current_menu->page = 0;
-         current_menu->first_setting = FIRST_EMU_SETTING;
-         current_menu->max_settings = MAX_NO_OF_EMU_SETTINGS;
-         current_menu->category_id = CATEGORY_SETTINGS;
-	 break;
-      case EMU_VIDEO_MENU:
-         strlcpy(current_menu->title, "Retro Video", sizeof(current_menu->title));
-         current_menu->enum_id = EMU_VIDEO_MENU;
-         current_menu->selected = FIRST_EMU_VIDEO_SETTING;
-         current_menu->page = 0;
-         current_menu->first_setting = FIRST_EMU_VIDEO_SETTING;
-         current_menu->max_settings = MAX_NO_OF_EMU_VIDEO_SETTINGS;
-         current_menu->category_id = CATEGORY_SETTINGS;
-	 break;
-      case EMU_AUDIO_MENU:
-         strlcpy(current_menu->title, "Retro Audio", sizeof(current_menu->title));
-         current_menu->enum_id = EMU_AUDIO_MENU;
-         current_menu->selected = FIRST_EMU_AUDIO_SETTING;
-         current_menu->page = 0;
-         current_menu->first_setting = FIRST_EMU_AUDIO_SETTING;
-         current_menu->max_settings = MAX_NO_OF_EMU_AUDIO_SETTINGS;
-         current_menu->category_id = CATEGORY_SETTINGS;
-	 break;
-      case PATH_MENU:
-         strlcpy(current_menu->title, "Path", sizeof(current_menu->title));
-         current_menu->enum_id = PATH_MENU;
-         current_menu->selected = FIRST_PATH_SETTING;
-         current_menu->page = 0;
-         current_menu->first_setting = FIRST_PATH_SETTING;
-         current_menu->max_settings = MAX_NO_OF_PATH_SETTINGS;
-         current_menu->category_id = CATEGORY_SETTINGS;
-         break;
-      case CONTROLS_MENU:
-         strlcpy(current_menu->title, "Controls", sizeof(current_menu->title));
-         current_menu->enum_id = CONTROLS_MENU;
-         current_menu->selected = FIRST_CONTROLS_SETTING_PAGE_1;
-         current_menu->page = 0;
-         current_menu->first_setting = FIRST_CONTROLS_SETTING_PAGE_1;
-         current_menu->max_settings = MAX_NO_OF_CONTROLS_SETTINGS;
-         current_menu->category_id = CATEGORY_SETTINGS;
-	 break;
-       default:
-         break;
-   }
-
-}
-
 static void display_menubar(menu *current_menu)
 {
    filebrowser_t *fb = &browser;
@@ -912,14 +740,14 @@ static void select_file(menu *current_menu, uint64_t input)
                break;
          }
          
-         menu_stack_decrement();
+         menu_stack_pop();
       }
 
       if(!ret)
          rarch_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
    }
    else if (input & (1 << RMENU_DEVICE_NAV_X))
-      menu_stack_decrement();
+      menu_stack_pop();
 
    display_menubar(current_menu);
 
@@ -966,7 +794,7 @@ static void select_directory(menu *current_menu, uint64_t input)
                strlcpy(g_settings.system_directory, path, sizeof(g_settings.system_directory));
                break;
          }
-         menu_stack_decrement();
+         menu_stack_pop();
       }
    }
    else if (input & (1 << RMENU_DEVICE_NAV_X))
@@ -993,7 +821,7 @@ static void select_directory(menu *current_menu, uint64_t input)
             break;
       }
 
-      menu_stack_decrement();
+      menu_stack_pop();
    }
    else if (input & (1 << RMENU_DEVICE_NAV_B))
    {
@@ -1713,7 +1541,7 @@ static void settings_iterate(menu *current_menu, item *items, settings_action_t 
             current_menu->page = items[current_menu->selected].page;
          break;
       case SETTINGS_ACTION_TAB_PREVIOUS:
-         menu_stack_decrement();
+         menu_stack_pop();
          break;
       case SETTINGS_ACTION_TAB_NEXT:
          switch(current_menu->enum_id)
@@ -1969,7 +1797,7 @@ static void ingame_menu_resize(menu *current_menu, uint64_t input)
 
    if (input & (1 << RMENU_DEVICE_NAV_A))
    {
-      menu_stack_decrement();
+      menu_stack_pop();
       show_menu_screen = true;
    }
 
@@ -2054,7 +1882,7 @@ static void ingame_menu_screenshot(menu *current_menu, uint64_t input)
    {
       if(input & (1 << RMENU_DEVICE_NAV_A))
       {
-         menu_stack_decrement();
+         menu_stack_pop();
          context->render_menu_enable(true);
       }
 
@@ -2313,7 +2141,6 @@ void menu_free (void)
    rmenu_filebrowser_free();
 }
 
-
 void menu_loop(void)
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
@@ -2321,13 +2148,10 @@ void menu_loop(void)
    g_console.menu_enable = true;
    device_ptr->block_swap = true;
 
-
    if(g_console.ingame_menu_enable)
       menu_stack_push(INGAME_MENU);
 
    context->init_textures();
-
-   RARCH_LOG("rmenu stack: %d\n", sizeof(menuStack));
 
    do
    {
@@ -2500,7 +2324,7 @@ void menu_loop(void)
    context->free_textures();
 
    if(g_console.ingame_menu_enable)
-      menu_stack_decrement();
+      menu_stack_pop();
 
    device_ptr->block_swap = false;
 

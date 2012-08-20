@@ -307,6 +307,7 @@ MENU
 #elif defined(_XBOX1)
 #include "../rmenu/context/rmenu_ctx_xdk.c"
 #endif
+#include "../rmenu/rmenu_stack.c"
 #include "../rmenu/rmenu.c"
 #endif
 
