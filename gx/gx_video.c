@@ -481,9 +481,6 @@ static void gx_resize(gx_video_t *gx)
    unsigned degrees;
    switch(g_orientation)
    {
-      case ORIENTATION_NORMAL:
-         degrees = 0;
-         break;
       case ORIENTATION_VERTICAL:
          degrees = 90;
          break;
@@ -492,6 +489,9 @@ static void gx_resize(gx_video_t *gx)
          break;
       case ORIENTATION_FLIPPED_ROTATED:
          degrees = 270;
+         break;
+      default:
+         degrees = 0;
          break;
    }
    guMtxIdentity(m2);

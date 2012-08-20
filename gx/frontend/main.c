@@ -105,6 +105,7 @@ static const struct retro_keybind _wii_nav_binds[] = {
    { 0, 0, 0, GX_GC_START | GX_CLASSIC_PLUS | GX_WIIMOTE_PLUS, 0 },
    { 0, 0, 0, GX_GC_Z_TRIGGER | GX_CLASSIC_MINUS | GX_WIIMOTE_MINUS, 0 },
    { 0, 0, 0, GX_WIIMOTE_HOME | GX_CLASSIC_HOME, 0 },
+   { 0, 0, 0, GX_QUIT_KEY, 0 },
 };
 
 static const struct retro_keybind *wii_nav_binds[] = {
@@ -121,7 +122,8 @@ enum
    GX_DEVICE_NAV_B,
    GX_DEVICE_NAV_START,
    GX_DEVICE_NAV_SELECT,
-   GX_DEVICE_NAV_EXIT,
+   GX_DEVICE_NAV_MENU,
+   GX_DEVICE_NAV_QUIT,
    GX_DEVICE_NAV_LAST
 };
 
@@ -178,7 +180,7 @@ static void menu_loop(void)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
 
-   uint64_t old_input_state = 0;
+   uint16_t old_input_state = 0;
    bool first = true;
 
    g_console.menu_enable = true;
@@ -186,7 +188,7 @@ static void menu_loop(void)
 
    do
    {
-      uint64_t input_state = 0;
+      uint16_t input_state = 0;
 
       input_gx.poll(NULL);
 
@@ -196,35 +198,12 @@ static void menu_loop(void)
                RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
       }
 
-      static const struct retro_keybind _quit_binds[] = {
-         { 0, 0, (enum retro_key)0, (GX_CLASSIC_HOME), 0 },
-         { 0, 0, (enum retro_key)0, (GX_WIIMOTE_HOME), 0 },
-         { 0, 0, (enum retro_key)0, (GX_QUIT_KEY), 0 },
-      };
-
-      const struct retro_keybind *quit_binds[] = {
-         _quit_binds
-      };
-
-      input_state |= input_gx.input_state(NULL, quit_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 0) ? (GX_CLASSIC_HOME) : 0;
-
-      input_state |= input_gx.input_state(NULL, quit_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 1) ? (GX_WIIMOTE_HOME) : 0;
-
-      input_state |= input_gx.input_state(NULL, quit_binds, false,
-         RETRO_DEVICE_JOYPAD, 0, 2) ? (GX_QUIT_KEY) : 0;
-
-
-      uint64_t trigger_state = input_state & ~old_input_state;
+      uint16_t trigger_state = input_state & ~old_input_state;
       rgui_action_t action = RGUI_ACTION_NOOP;
 
       // don't run anything first frame, only capture held inputs for old_input_state
       if (!first)
       {
-         if (trigger_state & (1 << GX_DEVICE_NAV_EXIT))
-            g_console.mode_switch = MODE_EXIT;
-
          if (trigger_state & (1 << GX_DEVICE_NAV_B))
             action = RGUI_ACTION_CANCEL;
          else if (trigger_state & (1 << GX_DEVICE_NAV_A))
@@ -253,8 +232,8 @@ static void menu_loop(void)
 
       old_input_state = input_state;
 
-      bool goto_menu_key_pressed = ((trigger_state & GX_WIIMOTE_HOME) || (trigger_state & GX_CLASSIC_HOME)) ? true : false;
-      bool quit_key_pressed = (trigger_state & GX_QUIT_KEY) ? true : false;
+      bool goto_menu_key_pressed = (trigger_state & (1 << GX_DEVICE_NAV_MENU));
+      bool quit_key_pressed = (trigger_state & (1 << GX_DEVICE_NAV_QUIT));
 
       if(IS_TIMER_EXPIRED(gx))
       {
