@@ -186,6 +186,7 @@ typedef struct video_driver
    void (*start)(void);
    void (*stop)(void);
    void (*restart)(void);
+   void (*apply_state_changes)(void);
 #endif
 
    void (*set_rotation)(void *data, unsigned rotation);

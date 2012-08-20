@@ -476,7 +476,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
          {
             g_console.soft_display_filter_enable = !g_console.soft_display_filter_enable;
-            gx->should_resize = true;
+            driver.video->apply_state_changes();
          }
          break;
 #endif
@@ -484,18 +484,14 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          if (action == RGUI_ACTION_START)
          {
             g_console.gamma_correction = 0;
-#ifdef GEKKO
-            gx->should_resize = true;
-#endif
+            driver.video->apply_state_changes();
          }
          else if (action == RGUI_ACTION_LEFT)
          {
             if(g_console.gamma_correction > 0)
             {
                g_console.gamma_correction--;
-#ifdef GEKKO
-               gx->should_resize = true;
-#endif
+	       driver.video->apply_state_changes();
             }
          }
          else if (action == RGUI_ACTION_RIGHT)
@@ -503,9 +499,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             if(g_console.gamma_correction < MAX_GAMMA_SETTING)
             {
                g_console.gamma_correction++;
-#ifdef GEKKO
-               gx->should_resize = true;
-#endif
+	       driver.video->apply_state_changes();
             }
          }
          break;
@@ -539,23 +533,17 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          if (action == RGUI_ACTION_START)
          {
             rarch_settings_default(S_DEF_OVERSCAN);
-#ifdef GEKKO
-            gx->should_resize = true;
-#endif
+	    driver.video->apply_state_changes();
          }
          else if (action == RGUI_ACTION_LEFT)
          {
             rarch_settings_change(S_OVERSCAN_DECREMENT);
-#ifdef GEKKO
-            gx->should_resize = true;
-#endif
+	    driver.video->apply_state_changes();
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
             rarch_settings_change(S_OVERSCAN_INCREMENT);
-#ifdef GEKKO
-            gx->should_resize = true;
-#endif
+	    driver.video->apply_state_changes();
          }
          break;
       case RGUI_SETTINGS_AUDIO_MUTE:

@@ -1337,6 +1337,13 @@ static void gl_restart(void)
    SET_TIMER_EXPIRATION(gl, 30);
 #endif
 }
+
+static void gl_apply_state_changes(void)
+{
+   gl_t *gl = (gl_t*)driver.video_data;
+   gl->should_resize = true;
+}
+
 #endif
 
 const video_driver_t video_gl = {
@@ -1359,6 +1366,7 @@ const video_driver_t video_gl = {
    gl_start,
    gl_stop,
    gl_restart,
+   gl_apply_state_changes,
 #endif
 
    gl_set_rotation,

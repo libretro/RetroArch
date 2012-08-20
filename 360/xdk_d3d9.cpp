@@ -817,6 +817,12 @@ static void xdk_d3d_stop(void)
    xdk_d3d_free(data);
 }
 
+static void xdk_d3d_apply_state_changes(void)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   d3d->should_resize = true;
+}
+
 const video_driver_t video_xdk_d3d = {
    xdk_d3d_init,
    xdk_d3d_frame,
@@ -829,5 +835,6 @@ const video_driver_t video_xdk_d3d = {
    xdk_d3d_start,
    xdk_d3d_stop,
    xdk_d3d_restart,
+   xdk_d3d_apply_state_changes,
    xdk_d3d_set_rotation,
 };
