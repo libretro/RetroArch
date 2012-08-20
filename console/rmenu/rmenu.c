@@ -147,13 +147,7 @@ enum
    RMENU_DEVICE_NAV_LAST
 };
 
-static void set_setting_label_write_on_or_off(char *setting_text, bool cond, unsigned currentsetting)
-{
-   if(cond)
-      snprintf(setting_text, sizeof(setting_text), "ON");
-   else
-      snprintf(setting_text, sizeof(setting_text), "OFF");
-}
+#define set_setting_label_write_on_or_off(setting_text, cond) snprintf(setting_text, sizeof(setting_text), cond ? "ON" : "OFF")
 
 static void set_setting_label(unsigned i, item *current_item)
 {
@@ -225,7 +219,7 @@ static void set_setting_label(unsigned i, item *current_item)
 	 break;
       case SETTING_SCALE_ENABLED:
          snprintf(current_item->text, sizeof(current_item->text), "Custom Scaling/Dual Shaders");
-	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.fbo_enabled, currentsetting);
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.fbo_enabled);
 	 snprintf(current_item->comment, sizeof(current_item->comment), g_console.fbo_enabled ? "INFO - [Custom Scaling] is set to 'ON' - 2x shaders will look much\nbetter, and you can select a shader for [Shader #2]." : "INFO - [Custom Scaling] is set to 'OFF'.");
 	 break;
       case SETTING_SCALE_FACTOR:
@@ -242,7 +236,7 @@ static void set_setting_label(unsigned i, item *current_item)
 	 break;
       case SETTING_SOFT_DISPLAY_FILTER:
          snprintf(current_item->text, sizeof(current_item->text), "Soft Display Filter");
-	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.soft_display_filter_enable, currentsetting);
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.soft_display_filter_enable);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Soft Display Filter].");
 	 break;
 #endif
@@ -253,17 +247,17 @@ static void set_setting_label(unsigned i, item *current_item)
 	 break;
       case SETTING_THROTTLE_MODE:
          snprintf(current_item->text, sizeof(current_item->text), "Throttle Mode");
-	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.throttle_enable, currentsetting);
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.throttle_enable);
          snprintf(current_item->comment, sizeof(current_item->comment), g_console.throttle_enable ? "INFO - [Throttle Mode] is 'ON' - Vsync is enabled." : "INFO - [Throttle Mode] is 'OFF' - Vsync is disabled.");
 	 break;
       case SETTING_TRIPLE_BUFFERING:
          snprintf(current_item->text, sizeof(current_item->text), "Triple Buffering");
-	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.triple_buffering_enable, currentsetting);
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.triple_buffering_enable);
          snprintf(current_item->comment, sizeof(current_item->comment), g_console.triple_buffering_enable ? "INFO - [Triple Buffering] is set to 'ON'." : "INFO - [Triple Buffering] is set to 'OFF'.");
 	 break;
       case SETTING_ENABLE_SCREENSHOTS:
          snprintf(current_item->text, sizeof(current_item->text), "Screenshot Option");
-	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.screenshots_enable, currentsetting);
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.screenshots_enable);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Screenshots feature is set to '%s'.", g_console.screenshots_enable ? "ON" : "OFF");
 	 break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
@@ -322,17 +316,17 @@ static void set_setting_label(unsigned i, item *current_item)
 	 /* emu-specific */
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
          snprintf(current_item->text, sizeof(current_item->text), "Debug info messages");
-	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.fps_info_msg_enable, currentsetting);
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.fps_info_msg_enable);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen debug messages.");
 	 break;
       case SETTING_EMU_SHOW_INFO_MSG:
          snprintf(current_item->text, sizeof(current_item->text), "Info messages");
-	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.info_msg_enable, currentsetting);
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.info_msg_enable);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen info messages in the menu.");
 	 break;
       case SETTING_EMU_REWIND_ENABLED:
          snprintf(current_item->text, sizeof(current_item->text), "Rewind option");
-	 set_setting_label_write_on_or_off(current_item->setting_text, g_settings.rewind_enable, currentsetting);
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_settings.rewind_enable);
 	 if(g_settings.rewind_enable)
 	    snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Rewind] feature is set to 'ON'.");
 	 else
@@ -364,7 +358,7 @@ static void set_setting_label(unsigned i, item *current_item)
 	 break;
       case SETTING_EMU_AUDIO_MUTE:
          snprintf(current_item->text, sizeof(current_item->text), "Mute Audio");
-	 set_setting_label_write_on_or_off(current_item->setting_text, g_extern.audio_data.mute, currentsetting);
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_extern.audio_data.mute);
 	 if(g_extern.audio_data.mute)
 		 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Audio Mute] feature is set to 'ON'. The game audio will be muted.");
 	 else
@@ -372,7 +366,7 @@ static void set_setting_label(unsigned i, item *current_item)
 	 break;
       case SETTING_ENABLE_CUSTOM_BGM:
          snprintf(current_item->text, sizeof(current_item->text), "Custom BGM Option");
-	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.custom_bgm_enable, currentsetting);
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.custom_bgm_enable);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom BGM] is set to '%s'.", g_console.custom_bgm_enable ? "ON" : "OFF");
 	 break;
       case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
@@ -404,12 +398,12 @@ static void set_setting_label(unsigned i, item *current_item)
 	 break;
       case SETTING_ENABLE_SRAM_PATH:
          snprintf(current_item->text, sizeof(current_item->text), "Custom SRAM Dir Enable");
-	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.default_sram_dir_enable, currentsetting);
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.default_sram_dir_enable);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom SRAM Dir Path] is set to '%s'.", g_console.default_sram_dir_enable ? "ON" : "OFF");
 	 break;
       case SETTING_ENABLE_STATE_PATH:
          snprintf(current_item->text, sizeof(current_item->text), "Custom Savestate Dir Enable");
-	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.default_savestate_dir_enable, currentsetting);
+	 set_setting_label_write_on_or_off(current_item->setting_text, g_console.default_savestate_dir_enable);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom Savestate Dir Path] is set to '%s'.", g_console.default_savestate_dir_enable ? "ON" : "OFF");
 	 break;
       case SETTING_CONTROLS_SCHEME:
@@ -653,7 +647,7 @@ static void apply_scaling (unsigned init_mode)
 
 static void select_file(menu *current_menu, uint64_t input)
 {
-   char extensions[256], object[256], comment[256], comment_two[256], path[PATH_MAX];
+   char extensions[256], comment[256], path[PATH_MAX];
    bool ret = true;
 
    rmenu_default_positions_t default_pos;
@@ -663,27 +657,22 @@ static void select_file(menu *current_menu, uint64_t input)
    {
       case SHADER_CHOICE:
          strlcpy(extensions, EXT_SHADERS, sizeof(extensions));
-         strlcpy(object, "Shader", sizeof(object));
          snprintf(comment, sizeof(comment), "INFO - Select a shader by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
          break;
       case PRESET_CHOICE:
          strlcpy(extensions, EXT_CGP_PRESETS, sizeof(extensions));
-         strlcpy(object, "Shader preset", sizeof(object));
          snprintf(comment, sizeof(comment), "INFO - Select a shader preset by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
          break;
       case INPUT_PRESET_CHOICE:
          strlcpy(extensions, EXT_INPUT_PRESETS, sizeof(extensions));
-         strlcpy(object, "Input preset", sizeof(object));
          snprintf(comment, sizeof(comment), "INFO - Select an input preset by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
          break;
       case BORDER_CHOICE:
          strlcpy(extensions, EXT_IMAGES, sizeof(extensions));
-         strlcpy(object, "Border image file", sizeof(object));
          snprintf(comment, sizeof(comment), "INFO - Select a border image file by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
          break;
       case LIBRETRO_CHOICE:
          strlcpy(extensions, EXT_EXECUTABLES, sizeof(extensions));
-         strlcpy(object, "Libretro core", sizeof(object));
          snprintf(comment, sizeof(comment), "INFO - Select a Libretro core by pressing [%s].", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
          break;
    }
@@ -752,14 +741,14 @@ static void select_file(menu *current_menu, uint64_t input)
 
    display_menubar(current_menu);
 
-   snprintf(comment_two, sizeof(comment_two), "[%s] - return to settings [%s] - Reset Startdir", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
-   context->render_msg(default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, comment_two);
    context->render_msg(default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, comment);
+   snprintf(comment, sizeof(comment), "[%s] - return to settings [%s] - Reset Startdir", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
+   context->render_msg(default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, comment);
 }
 
 static void select_directory(menu *current_menu, uint64_t input)
 {
-   char path[1024], msg[256];
+   char path[PATH_MAX], msg[256];
    bool ret = true;
 
    rmenu_default_positions_t default_pos;
@@ -1665,6 +1654,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
 
 static void select_rom(menu *current_menu, uint64_t input)
 {
+   char msg[128];
    rmenu_default_positions_t default_pos;
 
    context->set_default_pos(&default_pos);
@@ -1683,7 +1673,6 @@ static void select_rom(menu *current_menu, uint64_t input)
 
    bool is_dir = filebrowser_get_current_path_isdir(&browser);
 
-   char msg[128], msg2[128];
 
    if (is_dir)
    {
@@ -1698,10 +1687,10 @@ static void select_rom(menu *current_menu, uint64_t input)
    display_menubar(current_menu);
 
    snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3));
-   snprintf(msg2, sizeof(msg2), "[%s] - Settings", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_SELECT));
-
    context->render_msg(default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, msg);
-   context->render_msg(default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), default_pos.font_size, YELLOW, msg2);
+
+   snprintf(msg, sizeof(msg), "[%s] - Settings", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_SELECT));
+   context->render_msg(default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), default_pos.font_size, YELLOW, msg);
 }
 
 static bool show_menu_screen = true;
@@ -1721,18 +1710,14 @@ static void ingame_menu_resize(menu *current_menu, uint64_t input)
 #ifdef _XBOX
       if(g_console.viewports.custom_vp.x >= 4)
 #endif
-      {
          g_console.viewports.custom_vp.x -= 4;
-      }
    }
    else if(input & (1 << RMENU_DEVICE_NAV_LEFT) && (input & ~(1 << RMENU_DEVICE_NAV_LEFT_ANALOG_L)))
    {
 #ifdef _XBOX
       if(g_console.viewports.custom_vp.x > 0)
 #endif
-      {
          g_console.viewports.custom_vp.x -= 1;
-      }
    }
 
    if(input & (1 << RMENU_DEVICE_NAV_RIGHT_ANALOG_L))
@@ -1750,18 +1735,14 @@ static void ingame_menu_resize(menu *current_menu, uint64_t input)
 #ifdef _XBOX
       if(g_console.viewports.custom_vp.y >= 4)
 #endif
-      {
          g_console.viewports.custom_vp.y -= 4;
-      }
    }
    else if(input & (1 << RMENU_DEVICE_NAV_DOWN) && (input & ~(1 << RMENU_DEVICE_NAV_DOWN_ANALOG_L)))
    {
 #ifdef _XBOX
       if(g_console.viewports.custom_vp.y > 0)
 #endif
-      {
          g_console.viewports.custom_vp.y -= 1;
-      }
    }
 
    if(input & (1 << RMENU_DEVICE_NAV_LEFT_ANALOG_R))
@@ -1805,7 +1786,7 @@ static void ingame_menu_resize(menu *current_menu, uint64_t input)
 
    if(show_menu_screen)
    {
-      char viewport_x[64], viewport_y[64], viewport_w[64], viewport_h[64];
+      char viewport_x[32], viewport_y[32], viewport_w[32], viewport_h[32];
       char msg[256];
       display_menubar(current_menu);
 
@@ -1884,16 +1865,13 @@ static void ingame_menu_screenshot(menu *current_menu, uint64_t input)
       }
 
       if(input & (1 << RMENU_DEVICE_NAV_B))
-      {
          context->screenshot_dump(NULL);
-      }
    }
 }
 
 static void ingame_menu(menu *current_menu, uint64_t input)
 {
-   char comment[256], overscan_msg[64];
-   char strw_buffer[256];
+   char comment[256], strw_buffer[256];
    unsigned menuitem_colors[MENU_ITEM_LAST];
 
    rmenu_default_positions_t default_pos;
@@ -2064,8 +2042,8 @@ static void ingame_menu(menu *current_menu, uint64_t input)
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
    context->render_msg(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), strw_buffer);
 
-   snprintf(overscan_msg, sizeof(overscan_msg), "Overscan: %f", g_console.overscan_amount);
-   context->render_msg(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_OVERSCAN_AMOUNT)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), overscan_msg);
+   snprintf(strw_buffer, sizeof(strw_buffer), "Overscan: %f", g_console.overscan_amount);
+   context->render_msg(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_OVERSCAN_AMOUNT)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), strw_buffer);
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
    context->render_msg (default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_ORIENTATION)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), strw_buffer);
