@@ -47,7 +47,7 @@ enum
 };
 
 extern uint64_t rarch_default_keybind_lut[RARCH_FIRST_META_KEY];
-extern char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][256];
+extern char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][32];
 
 const char *rarch_input_find_platform_key_label(uint64_t joykey);
 

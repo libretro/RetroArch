@@ -77,7 +77,7 @@ enum rotation
 
 #define LAST_ORIENTATION (ORIENTATION_END-1)
 
-extern char rotation_lut[ASPECT_RATIO_END][PATH_MAX];
+extern char rotation_lut[ASPECT_RATIO_END][32];
 
 /* ABGR color format defines */
 

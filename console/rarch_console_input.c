@@ -30,7 +30,7 @@ struct platform_bind
 
 uint64_t rarch_default_keybind_lut[RARCH_FIRST_META_KEY];
 
-char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][] = {
+char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][32] = {
    "RetroPad Button B",          /* RETRO_DEVICE_ID_JOYPAD_B      */
    "RetroPad Button Y",          /* RETRO_DEVICE_ID_JOYPAD_Y      */
    "RetroPad Button Select",     /* RETRO_DEVICE_ID_JOYPAD_SELECT */
