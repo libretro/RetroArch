@@ -58,6 +58,7 @@ enum aspect_ratio
    ASPECT_RATIO_30_17,
    ASPECT_RATIO_32_9,
    ASPECT_RATIO_AUTO,
+   ASPECT_RATIO_CORE,
    ASPECT_RATIO_CUSTOM,
 
    ASPECT_RATIO_END,
@@ -101,6 +102,7 @@ struct aspect_ratio_elem
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
 extern void rarch_set_auto_viewport(unsigned width, unsigned height);
+extern void rarch_set_core_viewport();
 extern void rarch_load_shader(unsigned slot, const char *path);
 
 #endif

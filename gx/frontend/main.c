@@ -377,6 +377,10 @@ begin_loop:
       bool repeat = false;
 
       input_gx.poll(NULL);
+
+      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+      rarch_set_core_viewport();
+
       audio_start_func();
 
       do{
