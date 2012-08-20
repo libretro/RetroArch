@@ -2020,12 +2020,16 @@ static void ingame_menu(menu *current_menu, uint64_t input)
    {
       if(g_console.ingame_menu_item > 0)
          g_console.ingame_menu_item--;
+      else
+         g_console.ingame_menu_item = MENU_ITEM_LAST - 1;
    }
 
    if(input & (1 << RMENU_DEVICE_NAV_DOWN))
    {
       if(g_console.ingame_menu_item < (MENU_ITEM_LAST-1))
          g_console.ingame_menu_item++;
+      else
+         g_console.ingame_menu_item = 0;
    }
 
    if((input & (1 << RMENU_DEVICE_NAV_L3)) && (input & (1 << RMENU_DEVICE_NAV_R3)))
