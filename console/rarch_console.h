@@ -73,7 +73,11 @@ enum
    SOUND_MODE_LAST
 };
 
+#ifdef _WIN32
+#define MAXIMUM_PATH 260
+#else
 #define MAXIMUM_PATH 512
+#endif
 
 typedef struct
 {
@@ -90,6 +94,7 @@ typedef struct
    char filebrowser_startup_dir[MAXIMUM_PATH];
    char filesystem_root_dir[MAXIMUM_PATH];
    char input_presets_dir[MAXIMUM_PATH];
+   char screenshots_dir[MAXIMUM_PATH];
 #ifdef HAVE_MULTIMAN
    char multiman_self_file[MAXIMUM_PATH];
 #endif

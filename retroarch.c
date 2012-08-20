@@ -88,7 +88,7 @@ static void set_fast_forward_button(bool new_button_state, bool new_hold_button_
    old_hold_button_state = new_hold_button_state;
 }
 
-#ifdef HAVE_SCREENSHOTS
+#if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
 static bool take_screenshot_viewport(void)
 {
    unsigned width = 0, height = 0;
@@ -2237,7 +2237,7 @@ static void check_cheats(void)
 }
 #endif
 
-#ifdef HAVE_SCREENSHOTS
+#if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
 static void check_screenshot(void)
 {
    static bool old_pressed = false;
@@ -2301,7 +2301,7 @@ static void check_netplay_flip(void)
 
 static void do_state_checks(void)
 {
-#ifdef HAVE_SCREENSHOTS
+#if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
    check_screenshot();
 #endif
 #ifndef RARCH_CONSOLE

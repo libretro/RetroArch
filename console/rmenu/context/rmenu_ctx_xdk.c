@@ -15,6 +15,7 @@
  */
 
 #include "../rmenu.h"
+#include "../../screenshot.h"
 #include "../../gfx/context/xdk_ctx.h"
 
 #define ROM_PANEL_WIDTH 510
@@ -153,7 +154,19 @@ static void rmenu_ctx_xdk_screenshot_enable(bool enable)
 
 static void rmenu_ctx_xdk_screenshot_dump(void *data)
 {
-   (void)data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   char filename[PATH_MAX];
+   char shotname[PATH_MAX];
+
+   screenshot_generate_filename(shotname, sizeof(shotname));
+   snprintf(filename, sizeof(filename), "%s\\%s", default_paths.screenshots_dir, shotname);
+   
+   D3DSurface *surf = NULL;
+   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
+   XGWriteSurfaceToFile(surf, filename);
+   surf->Release();
+
+   msg_queue_push(g_extern.msg_queue, "Screenshot saved.", 1, 30);
 }
 
 const rmenu_context_t rmenu_ctx_xdk = {
