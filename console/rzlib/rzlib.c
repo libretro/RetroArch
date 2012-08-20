@@ -59,7 +59,6 @@ struct internal_state
 	inflate_blocks_statef *blocks;            /* current inflate_blocks state */
 };
 
-const unsigned int border[] = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
 
 typedef enum {        /* waiting for "i:"=input, "o:"=output, "x:"=nothing */
       START,    /* x: set up for LEN */
@@ -147,8 +146,7 @@ inflate_codes_statef *inflate_codes_new(unsigned int bl, unsigned int bd, inflat
 {
 	inflate_codes_statef *c;
 
-	if ((c = (inflate_codes_statef *)
-				ZALLOC(z,1,sizeof(struct inflate_codes_state))) != 0)
+	if ((c = (inflate_codes_statef *)ZALLOC(z,1,sizeof(struct inflate_codes_state))) != 0)
 	{
 		c->mode = START;
 		c->lbits = (Byte)bl;
@@ -735,8 +733,8 @@ int inflate_trees_dynamic(unsigned int nl, unsigned int nd, unsigned int *c, uns
 	return Z_OK;
 }
 
-unsigned int fixed_bl = 9;
-unsigned int fixed_bd = 5;
+#define FIXED_BL 9
+#define FIXED_BD 5
 
 inflate_huft fixed_tl[] = {
     {{{96,7}},256}, {{{0,8}},80}, {{{0,8}},16}, {{{84,8}},115},
@@ -882,11 +880,12 @@ inflate_huft fixed_td[] = {
 
 int inflate_trees_fixed(unsigned int * bl, unsigned int *bd, inflate_huft ** tl, inflate_huft ** td, z_streamp z)
 {
-	*bl = fixed_bl;
-	*bd = fixed_bd;
-	*tl = fixed_tl;
-	*td = fixed_td;
-	return Z_OK;
+   *bl = FIXED_BL;
+   *bd = FIXED_BD;
+   *tl = fixed_tl;
+   *td = fixed_td;
+
+   return Z_OK;
 }
 
 /* infblock.c -- interpret and process block types to last block
@@ -940,10 +939,11 @@ int inflate_blocks(inflate_blocks_statef *s, z_streamp z, int r)
 	unsigned int t;               /* temporary storage */
 	unsigned long b;              /* bit buffer */
 	unsigned int k;               /* bits in bit buffer */
-	Bytef *p;             /* input data pointer */
+	Bytef *p;                     /* input data pointer */
 	unsigned int n;               /* bytes available there */
-	Bytef *q;             /* output window write pointer */
+	Bytef *q;                     /* output window write pointer */
 	unsigned int m;               /* bytes to end of window or read pointer */
+	const unsigned int border[] = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
 
 	/* copy input/output information to locals (UPDATE macro restores) */
 	LOAD

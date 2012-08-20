@@ -579,7 +579,7 @@ static void gx_free(void *data)
    (void)data;
 }
 
-static void gx_set_rotation(void * data, uint32_t orientation)
+static void gx_set_rotation(void * data, unsigned orientation)
 {
    (void)data;
    gx_video_t *gx = (gx_video_t*)driver.video_data;

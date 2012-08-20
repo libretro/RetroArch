@@ -67,7 +67,7 @@ bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
    if (path_file_exists(full_path))
    {
       size_t sizeof_libretro_core = sizeof(libretro_core_installed);
-      char tmp_path2[1024], tmp_pathnewfile[1024];
+      char tmp_path2[PATH_MAX], tmp_pathnewfile[PATH_MAX];
 
       rarch_console_name_from_id(tmp_path2, sizeof(tmp_path2));
       strlcat(tmp_path2, extension, sizeof(tmp_path2));

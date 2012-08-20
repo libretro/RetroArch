@@ -50,7 +50,7 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "Custom",        0.0f }
 };
 
-char rotation_lut[ASPECT_RATIO_END][PATH_MAX] =
+char rotation_lut[ASPECT_RATIO_END][] =
 {
    "Normal",
    "Vertical",
