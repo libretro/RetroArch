@@ -14,6 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if defined(__CELLOS_LV2__)
+#include <sdk_version.h>
+#include <sysutil/sysutil_screenshot.h>
+#endif
+
 #ifdef HAVE_SYSUTILS
 #include <cell/sysmodule.h>
 #endif
@@ -113,6 +118,32 @@ static void rmenu_ctx_ps3_render_menu_enable(bool enable)
    gl->menu_render = enable;
 }
 
+static void rmenu_ctx_ps3_screenshot_enable(bool enable)
+{
+#if(CELL_SDK_VERSION > 0x340000)
+   if(enable)
+   {
+      cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+      CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
+
+      screenshot_param.photo_title = "RetroArch PS3";
+      screenshot_param.game_title = "RetroArch PS3";
+      cellScreenShotSetParameter (&screenshot_param);
+      cellScreenShotEnable();
+   }
+   else
+   {
+      cellScreenShotDisable();
+      cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+   }
+#endif
+}
+
+static void rmenu_ctx_ps3_screenshot_dump(void *data)
+{
+   (void)data;
+}
+
 const rmenu_context_t rmenu_ctx_ps3 = {
    .clear = rmenu_ctx_ps3_clear,
    .blend = rmenu_ctx_ps3_blend, 
@@ -122,6 +153,8 @@ const rmenu_context_t rmenu_ctx_ps3 = {
    .render_bg = rmenu_ctx_ps3_render_bg,
    .render_menu_enable = rmenu_ctx_ps3_render_menu_enable,
    .render_msg = rmenu_ctx_ps3_render_msg,
+    .screenshot_enable = rmenu_ctx_ps3_screenshot_enable,
+    .screenshot_dump = rmenu_ctx_ps3_screenshot_dump,
    .swap_buffers = rmenu_ctx_ps3_swap_buffers,
    .set_default_pos = rmenu_ctx_ps3_set_default_pos,
 };

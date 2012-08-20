@@ -147,6 +147,15 @@ static void rmenu_ctx_xdk_render_menu_enable(bool enable)
 {
 }
 
+static void rmenu_ctx_xdk_screenshot_enable(bool enable)
+{
+}
+
+static void rmenu_ctx_xdk_screenshot_dump(void *data)
+{
+   (void)data;
+}
+
 const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_clear,
    rmenu_ctx_xdk_blend,
@@ -156,6 +165,8 @@ const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_render_bg,
    rmenu_ctx_xdk_render_menu_enable,
    rmenu_ctx_xdk_render_msg,
+   rmenu_ctx_xdk_screenshot_enable,
+   rmenu_ctx_xdk_screenshot_dump,
    rmenu_ctx_xdk_swap_buffers,
    rmenu_ctx_xdk_set_default_pos,
 };

@@ -16,7 +16,6 @@
 
 #if defined(__CELLOS_LV2__)
 #include <sdk_version.h>
-#include <sysutil/sysutil_screenshot.h>
 
 #if(CELL_SDK_VERSION > 0x340000)
 #include <sysutil/sysutil_bgmplayback.h>
@@ -1374,30 +1373,13 @@ static void producesettingentry(menu *current_menu, unsigned switchvalue, uint64
 	   case SETTING_ENABLE_SCREENSHOTS:
 		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 		   {
-#if(CELL_SDK_VERSION > 0x340000)
-			   g_console.screenshots_enable = !g_console.screenshots_enable;
-			   if(g_console.screenshots_enable)
-			   {
-				   cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
-				   CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
-
-				   screenshot_param.photo_title = "RetroArch PS3";
-				   screenshot_param.game_title = "RetroArch PS3";
-				   cellScreenShotSetParameter (&screenshot_param);
-				   cellScreenShotEnable();
-			   }
-			   else
-			   {
-				   cellScreenShotDisable();
-				   cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
-			   }
-#endif
+                      g_console.screenshots_enable = !g_console.screenshots_enable;
+                      context->screenshot_enable(g_console.screenshots_enable);
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
 		   {
-#if(CELL_SDK_VERSION > 0x340000)
-			   g_console.screenshots_enable = true;
-#endif
+                      g_console.screenshots_enable = true;
+                      context->screenshot_enable(g_console.screenshots_enable);
 		   }
 		   break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
@@ -2074,6 +2056,11 @@ static void ingame_menu_screenshot(menu *current_menu, uint64_t input)
       {
          menu_stack_decrement();
          context->render_menu_enable(true);
+      }
+
+      if(input & (1 << RMENU_DEVICE_NAV_B))
+      {
+         context->screenshot_dump(NULL);
       }
    }
 }
