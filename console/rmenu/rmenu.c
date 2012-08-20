@@ -161,6 +161,7 @@ static void set_setting_label(unsigned i, item *current_item)
    (void)fname;
 
    unsigned currentsetting = i;
+   current_item->enum_id = i;
 
    switch(currentsetting)
    {
@@ -1566,8 +1567,7 @@ static void settings_iterate(menu *current_menu, item *items, settings_action_t 
 
 static void select_setting(menu *current_menu, uint64_t input)
 {
-#include "rmenu_entries.h"
-   item *items = rmenu_items;
+   item items[current_menu->max_settings];
    unsigned i;
    char msg[256];
 
@@ -1575,22 +1575,20 @@ static void select_setting(menu *current_menu, uint64_t input)
 
    context->set_default_pos(&default_pos);
 
+   unsigned j = 0;
+   int page = 0;
+   for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
    {
-      int page = 0;
-      unsigned j = 0;
-      int i;
+      set_setting_label(i, &items[i]);
 
-      for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
+      if(!(j < default_pos.entries_per_page))
       {
-         if(!(j < default_pos.entries_per_page))
-	 {
-            j = 0;
-	    page++;
-	 }
-
-	 items[i].page = page;
-	 j++;
+         j = 0;
+         page++;
       }
+
+      items[i].page = page;
+      j++;
    }
 
    settings_action_t action = SETTINGS_ACTION_NOOP;
@@ -1615,14 +1613,11 @@ static void select_setting(menu *current_menu, uint64_t input)
 
    for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
    {
-      item current_item;
-      set_setting_label(i, &current_item);
-
       if(items[i].page == current_menu->page)
       {
          default_pos.starting_y_position += default_pos.y_position_increment;
-         context->render_msg(default_pos.x_position, default_pos.starting_y_position, default_pos.variable_font_size, current_menu->selected == items[i].enum_id ? YELLOW : WHITE, current_item.text);
-         context->render_msg(default_pos.x_position_center, default_pos.starting_y_position, default_pos.variable_font_size, WHITE, current_item.setting_text);
+         context->render_msg(default_pos.x_position, default_pos.starting_y_position, default_pos.variable_font_size, current_menu->selected == items[i].enum_id ? YELLOW : WHITE, items[i].text);
+         context->render_msg(default_pos.x_position_center, default_pos.starting_y_position, default_pos.variable_font_size, WHITE, items[i].setting_text);
 
          if(current_menu->selected == items[i].enum_id)
          {
@@ -1631,7 +1626,7 @@ static void select_setting(menu *current_menu, uint64_t input)
             position.y = default_pos.starting_y_position;
 
             context->render_selection_panel(&position);
-	    context->render_msg(default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, current_item.comment);
+	    context->render_msg(default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, items[i].comment);
          }
       }
    }
