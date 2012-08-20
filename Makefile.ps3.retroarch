@@ -16,6 +16,17 @@ PC_DEVELOPMENT_UDP_PORT		= 3490
 CELL_MK_DIR		?= $(CELL_SDK)/samples/mk
 include $(CELL_MK_DIR)/sdk.makedef.mk
 
+# system platform
+system_platform = unix
+ifeq ($(shell uname -a),)
+EXE_EXT = .exe
+   system_platform = win
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+   system_platform = osx
+else ifneq ($(findstring MINGW,$(shell uname -a)),)
+   system_platform = win
+endif
+
 PPU_LIB_TARGET		= libretroarch_ps3.a
 
 LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
@@ -35,10 +46,11 @@ ifeq ($(CELL_BUILD_TOOLS), SNC)
 	PPU_CXX	= $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
 	PPU_CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
 	SNC_PPU_AR = $(CELL_SDK)/host-win32/sn/bin/ps3snarl.exe
-else
+else ifneq($(system_platform), win)
 	PPU_CXX	= $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-g++.exe
 	PPU_CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
 	PPU_CXXLD = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ld.exe
+	PPU_AR = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ar.exe
 endif
 
 PPU_RANLIB = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ranlib.exe

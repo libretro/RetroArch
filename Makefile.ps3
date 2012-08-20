@@ -30,6 +30,17 @@ CORE_PATH		= ps3/pkg/USRDIR/cores/CORE.SELF
 LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
 INCDIRS = -I. -Ips3 -Icommon
 
+# system platform
+system_platform = unix
+ifeq ($(shell uname -a),)
+EXE_EXT = .exe
+   system_platform = win
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+   system_platform = osx
+else ifneq ($(findstring MINGW,$(shell uname -a)),)
+   system_platform = win
+endif
+
 PKG_SCRIPT		= ps3/ps3py/pkg.py
 ifeq ($(shell uname), Linux)
 PKG_FINALIZE         	= package_finalize
@@ -49,7 +60,7 @@ PPU_SRCS		= ps3/frontend/main.c
 
 ifeq ($(HAVE_RGL), 1)
 DEFINES			= -DHAVE_RGL
-GL_LIBS			:= -lrgl_ps3
+GL_LIBS			:= -L. -lrgl_ps3
 else
 GL_LIBS			:= -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt -lPSGL -lPSGLcgc
 endif
@@ -58,10 +69,11 @@ ifeq ($(CELL_BUILD_TOOLS), SNC)
 	PPU_CXXLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe
 	PPU_CXX	= $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
 	PPU_CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
-else
+else ifneq($(system_platform), win)
 	PPU_CXX	= $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-g++.exe
 	PPU_CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
 	PPU_CXXLD = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ld.exe
+	PPU_CCLD = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ld.exe
 endif
 
 
