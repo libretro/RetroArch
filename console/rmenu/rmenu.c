@@ -1567,7 +1567,7 @@ static void settings_iterate(menu *current_menu, item *items, settings_action_t 
 
 static void select_setting(menu *current_menu, uint64_t input)
 {
-   item items[current_menu->max_settings];
+   item *items = (item*)malloc(current_menu->max_settings * sizeof(*items));
    unsigned i;
    char msg[256];
 
@@ -1630,6 +1630,8 @@ static void select_setting(menu *current_menu, uint64_t input)
          }
       }
    }
+
+   free(items);
 
    snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game | [%s] - go forward", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R));
    context->render_msg(default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, msg);
