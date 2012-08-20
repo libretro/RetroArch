@@ -29,6 +29,8 @@ HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 
    snprintf(szSourceDevice, sizeof(szSourceDevice), "\\Device\\%s", szDevice);
    snprintf(szDestinationDrive, sizeof(szDestinationDrive), "\\??\\%s", szDrive);
+   RARCH_LOG("xbox_io_mount() - source device: %s.\n", szSourceDevice);
+   RARCH_LOG("xbox_io_mount() - destination drive: %s.\n", szDestinationDrive);
 
    STRING DeviceName =
    {
