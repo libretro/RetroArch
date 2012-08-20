@@ -31,9 +31,11 @@ PPU_TARGET		= retroarch-salamander_ps3.elf
 ifeq ($(CELL_BUILD_TOOLS),SNC)
 	PPU_CFLAGS		+= -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 -Xunroll=1 -Xautovecreg=1 
 	PPU_CXXFLAGS		+= -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 -Xunroll=1 -Xautovecreg=1
+	PPU_CXXLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe
 	PPU_CLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe
 	PPU_CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
-else ifneq($(system_platform), win)
+else
+ifneq($(system_platform), win)
 	PPU_CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
 	PPU_CLD = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ld.exe
 endif
