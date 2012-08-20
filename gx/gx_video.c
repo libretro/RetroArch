@@ -31,6 +31,7 @@ unsigned g_current_framebuf;
 bool g_vsync;
 lwpq_t g_video_cond;
 volatile bool g_draw_done;
+uint32_t g_orientation;
 
 struct
 {
@@ -56,35 +57,12 @@ float verts[16] ATTRIBUTE_ALIGN(32) = {
     1,  1, -0.5,
 };
 
-float tex_coords[8] ATTRIBUTE_ALIGN(32) = {
+float vertex_ptr[8] ATTRIBUTE_ALIGN(32) = {
    0, 0,
    0, 1,
    1, 1,
    1, 0,
 };
-
-float tex_coords_90[8] ATTRIBUTE_ALIGN(32) = {
-   0, 1,
-   1, 1,
-   1, 0,
-   0, 0
-};
-
-float tex_coords_180[8] ATTRIBUTE_ALIGN(32) = {
-   1, 1,
-   1, 0,
-   0, 0,
-   0, 1
-};
-
-float tex_coords_270[8] ATTRIBUTE_ALIGN(32) = {
-   1, 0,
-   0, 0,
-   0, 1,
-   1, 1
-};
-
-float *vertex_ptr = tex_coords;
 
 void gx_set_aspect_ratio(void *data, unsigned aspectratio_idx)
 {
@@ -119,6 +97,7 @@ static void setup_video_mode(GXRModeObj *mode)
 
    g_current_framebuf = 0;
    g_draw_done = true;
+   g_orientation = ORIENTATION_NORMAL;
    LWP_InitQueue(&g_video_cond);
    VIDEO_SetNextFramebuffer(g_framebuf[0]);
    VIDEO_SetPostRetraceCallback(retrace_callback);
@@ -197,6 +176,7 @@ static void build_disp_list(void)
 
 static void gx_stop(void)
 {
+   GX_DrawDone();
    GX_AbortFrame();
    GX_Flush();
    VIDEO_SetBlack(true);
@@ -447,7 +427,11 @@ static void gx_resize(gx_video_t *gx)
    if (gx->keep_aspect)
    {
       float desired_aspect = g_settings.video.aspect_ratio;
+      if (desired_aspect == 0.0)
+         desired_aspect = 1.0;
       float device_aspect = CONF_GetAspectRatio() == CONF_ASPECT_4_3 ? 4.0 / 3.0 : 16.0 / 9.0;
+      if (g_orientation == ORIENTATION_VERTICAL || g_orientation == ORIENTATION_FLIPPED_ROTATED)
+         desired_aspect = 1.0 / desired_aspect;
       float delta;
 
 #ifdef RARCH_CONSOLE
@@ -483,6 +467,38 @@ static void gx_resize(gx_video_t *gx)
    }
 
    GX_SetViewport(x, y, width, height, 0, 1);
+
+   Mtx44 m1, m2;
+   float top = 1, bottom = -1, left = -1, right = 1;
+   if (g_console.overscan_enable)
+   {
+      top -= g_console.overscan_amount / 2;
+      left += g_console.overscan_amount / 2;
+      right -= g_console.overscan_amount / 2;
+      bottom += g_console.overscan_amount / 2;
+   }
+   guOrtho(m1, top, bottom, left, right, 0, 1);
+   unsigned degrees;
+   switch(g_orientation)
+   {
+      case ORIENTATION_NORMAL:
+         degrees = 0;
+         break;
+      case ORIENTATION_VERTICAL:
+         degrees = 90;
+         break;
+      case ORIENTATION_FLIPPED:
+         degrees = 180;
+         break;
+      case ORIENTATION_FLIPPED_ROTATED:
+         degrees = 270;
+         break;
+   }
+   guMtxIdentity(m2);
+   guMtxRotDeg(m2, 'Z', degrees);
+   guMtxConcat(m1, m2, m1);
+   GX_LoadPosMtxImm(m1, GX_PNMTX0);
+
    gx->should_resize = false;
 }
 
@@ -566,25 +582,9 @@ static void gx_free(void *data)
 static void gx_set_rotation(void * data, uint32_t orientation)
 {
    (void)data;
-   (void)orientation;
-
-   switch(orientation)
-   {
-      case ORIENTATION_NORMAL:
-         vertex_ptr = tex_coords;
-         break;
-      case ORIENTATION_VERTICAL:
-         vertex_ptr = tex_coords_90;
-         break;
-      case ORIENTATION_FLIPPED:
-         vertex_ptr = tex_coords_180;
-         break;
-      case ORIENTATION_FLIPPED_ROTATED:
-         vertex_ptr = tex_coords_270;
-         break;
-   }
-
-   GX_SetArray(GX_VA_TEX0, vertex_ptr, 2 * sizeof(float));
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
+   g_orientation = orientation;
+   gx->should_resize = true;
 }
 
 const video_driver_t video_gx = {

@@ -330,6 +330,9 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
             snprintf(type_str, sizeof(type_str), "%s", aspectratio_lut[g_console.aspect_ratio_index].name);
             break;
+         case RGUI_SETTINGS_VIDEO_OVERSCAN:
+            snprintf(type_str, sizeof(type_str), "%.2f", g_console.overscan_amount);
+            break;
          case RGUI_SETTINGS_VIDEO_ROTATION:
             {
                char rotate_msg[64];
@@ -532,6 +535,29 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             video_set_rotation_func(g_console.screen_orientation);
          }
          break;
+      case RGUI_SETTINGS_VIDEO_OVERSCAN:
+         if (action == RGUI_ACTION_START)
+         {
+            rarch_settings_default(S_DEF_OVERSCAN);
+#ifdef GEKKO
+            gx->should_resize = true;
+#endif
+         }
+         else if (action == RGUI_ACTION_LEFT)
+         {
+            rarch_settings_change(S_OVERSCAN_DECREMENT);
+#ifdef GEKKO
+            gx->should_resize = true;
+#endif
+         }
+         else if (action == RGUI_ACTION_RIGHT)
+         {
+            rarch_settings_change(S_OVERSCAN_INCREMENT);
+#ifdef GEKKO
+            gx->should_resize = true;
+#endif
+         }
+         break;
       case RGUI_SETTINGS_AUDIO_MUTE:
          if (action == RGUI_ACTION_START)
             rarch_settings_default(S_DEF_AUDIO_MUTE);
@@ -624,6 +650,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #endif
    RGUI_MENU_ITEM("Gamma", RGUI_SETTINGS_VIDEO_GAMMA);
    RGUI_MENU_ITEM("Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO);
+   RGUI_MENU_ITEM("Overscan", RGUI_SETTINGS_VIDEO_OVERSCAN);
    RGUI_MENU_ITEM("Rotation", RGUI_SETTINGS_VIDEO_ROTATION);
    RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
    RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);
