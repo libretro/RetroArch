@@ -348,6 +348,7 @@ int main(void)
    input_gx.init();
 
    video_gx.start();
+   driver.video = &video_gx;
 
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    gx->menu_data = menu_framebuf;

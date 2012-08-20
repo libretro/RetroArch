@@ -98,6 +98,8 @@
 #define video_set_aspect_ratio_func(aspectratio_idx) gx_set_aspect_ratio(driver.video_data, aspectratio_idx)
 #define video_stop_func()			gx_stop()
 #define video_start_func()			gx_start()
+#define video_viewport_size_func(width, height) ((void)0)
+#define video_read_viewport_func(buffer)        (false)
 
 #define input_init_func()                       gx_input_initialize()
 #define input_poll_func()                       gx_input_poll(driver.input_data)
