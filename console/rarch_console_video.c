@@ -83,6 +83,10 @@ void rarch_set_auto_viewport(unsigned width, unsigned height)
 void rarch_set_core_viewport()
 {
    struct retro_system_av_info info;
+
+   if (!g_console.emulator_initialized)
+      return;
+
    retro_get_system_av_info(&info);
 
    // fallback to 1:1 pixel ratio if none provided
