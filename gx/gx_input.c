@@ -487,7 +487,7 @@ static void gx_set_default_keybind_lut(unsigned device, unsigned port)
    {
 #ifdef HW_RVL
       case GX_DEVICE_WIIMOTE:
-         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_B].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_1].joykey;
          rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_A].joykey;
          rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_MINUS].joykey;
          rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_PLUS].joykey;
@@ -495,8 +495,8 @@ static void gx_set_default_keybind_lut(unsigned device, unsigned port)
          rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_DOWN].joykey;
          rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_LEFT].joykey;
          rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_RIGHT].joykey;
-         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_1].joykey;
-         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_2].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_2].joykey;
+         rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_B].joykey;
          rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]      = 0;
          rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]      = 0;
          rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = 0;
