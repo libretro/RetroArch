@@ -796,7 +796,7 @@ void rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    const char *label = 0;
    rgui_list_at(rgui->folder_buf, rgui->directory_ptr, &label, &type, NULL);
    if (type == RGUI_SETTINGS_CORE)
-      label = default_paths.port_dir;
+      label = default_paths.core_dir;
    const char *dir = 0;
    rgui_file_type_t menu_type = 0;
    size_t directory_ptr = 0;

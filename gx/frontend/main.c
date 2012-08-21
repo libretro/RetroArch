@@ -285,19 +285,55 @@ static void menu_free(void)
 
 int rarch_main(int argc, char **argv);
 
-
 static void get_environment_settings(void)
 {
-   getcwd(default_paths.port_dir, MAXPATHLEN);
-   snprintf(default_paths.core_dir, sizeof(default_paths.core_dir), default_paths.port_dir);
-   snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%sretroarch.cfg", default_paths.port_dir);
-   snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.core_dir);
-   snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.core_dir);
+   snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/retroarch");
+   getcwd(default_paths.core_dir, MAXPATHLEN);
+   snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
+   snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.port_dir);
+   snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.port_dir);
    snprintf(default_paths.filesystem_root_dir, sizeof(default_paths.filesystem_root_dir), "/");
    snprintf(default_paths.filebrowser_startup_dir, sizeof(default_paths.filebrowser_startup_dir), default_paths.filesystem_root_dir);
-   snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.core_dir);
-   snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/presets/input", default_paths.core_dir);
+   snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.port_dir);
+   snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.port_dir);
    strlcpy(default_paths.executable_extension, ".dol", sizeof(default_paths.executable_extension));
+   //RARCH_LOG("port_dir: %s\n", default_paths.port_dir);
+   RARCH_LOG("core_dir: %s\n", default_paths.core_dir);
+}
+
+#define MAKE_FILE(x) {\
+   if (!path_file_exists((x)))\
+   {\
+      RARCH_WARN("File \"%s\" does not exists, creating\n", (x));\
+      FILE *f = fopen((x), "wb");\
+      if (!f)\
+      {\
+         RARCH_ERR("Could not create file \"%s\"\n", (x));\
+      }\
+      fclose(f);\
+   }\
+}
+
+#define MAKE_DIR(x) {\
+   if (!path_is_directory((x)))\
+   {\
+      RARCH_WARN("Directory \"%s\" does not exists, creating\n", (x));\
+      if (mkdir((x), 0777) != 0)\
+      {\
+         RARCH_ERR("Could not create directory \"%s\"\n", (x));\
+      }\
+   }\
+}
+
+static void make_directories(void)
+{
+   MAKE_DIR(default_paths.port_dir);
+   MAKE_DIR(default_paths.system_dir);
+   MAKE_DIR(default_paths.savestate_dir);
+   MAKE_DIR(default_paths.sram_dir);
+   MAKE_DIR(default_paths.input_presets_dir);
+
+   MAKE_FILE(default_paths.config_file);
 }
 
 int main(void)
@@ -307,7 +343,6 @@ int main(void)
 #endif
 
    fatInitDefault();
-   get_environment_settings();
 
 #ifdef HAVE_LOGGER
    g_extern.verbose = true;
@@ -323,6 +358,8 @@ int main(void)
    dotab_stdout.write_r = gx_logger_file;
 #endif
 
+   get_environment_settings();
+   make_directories();
    config_set_defaults();
    input_gx.init();
 

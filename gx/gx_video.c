@@ -194,7 +194,6 @@ static void gx_restart(void)
 static void *gx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   RARCH_LOG("GX_INIT\n");
    if (driver.video_data)
       return driver.video_data;
 
@@ -212,7 +211,6 @@ static void *gx_init(const video_info_t *video,
 
 static void gx_start(void)
 {
-   RARCH_LOG("GX_START\n");
    video_info_t video_info = {0};
 
    video_info.vsync = g_settings.video.vsync;
