@@ -437,11 +437,18 @@ static void gx_resize(gx_video_t *gx)
 #ifdef RARCH_CONSOLE
       if (g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
       {
-         // TODO
-         /*x      = g_console.viewports.custom_vp.x;
+         if (!g_console.viewports.custom_vp.width || !g_console.viewports.custom_vp.height)
+         {
+            g_console.viewports.custom_vp.x = 0;
+            g_console.viewports.custom_vp.y = 0;
+            g_console.viewports.custom_vp.width = gx_width;
+            g_console.viewports.custom_vp.height = gx_height;
+         }
+
+         x      = g_console.viewports.custom_vp.x;
          y      = g_console.viewports.custom_vp.y;
          width  = g_console.viewports.custom_vp.width;
-         height = g_console.viewports.custom_vp.height;*/
+         height = g_console.viewports.custom_vp.height;
       }
       else
 #endif

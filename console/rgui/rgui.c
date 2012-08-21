@@ -85,6 +85,11 @@ static inline bool rgui_is_controller_menu(rgui_file_type_t menu_type)
    return (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4);
 }
 
+static inline bool rgui_is_viewport_menu(rgui_file_type_t menu_type)
+{
+   return (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2);
+}
+
 static void copy_glyph(uint32_t glyph_white[FONT_HEIGHT][FONT_WIDTH],
       uint32_t glyph_green[FONT_HEIGHT][FONT_WIDTH],
       const uint8_t *buf)
@@ -275,7 +280,7 @@ static void render_text(rgui_handle_t *rgui)
 
    if (menu_type == RGUI_SETTINGS_CORE)
       snprintf(title, sizeof(title), "CORE SELECTION");
-   else if (rgui_is_controller_menu(menu_type) || menu_type == RGUI_SETTINGS)
+   else if (rgui_is_controller_menu(menu_type) || rgui_is_viewport_menu(menu_type) || menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "SETTINGS: %s", dir);
    else
       snprintf(title, sizeof(title), "FILE BROWSER: %s", dir);
@@ -405,7 +410,6 @@ static void render_text(rgui_handle_t *rgui)
    message_queue = msg_queue_pull(g_extern.msg_queue);
 #endif
    render_messagebox(rgui, message_queue);
-
 }
 
 #ifdef GEKKO
@@ -635,6 +639,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #endif
    RGUI_MENU_ITEM("Gamma", RGUI_SETTINGS_VIDEO_GAMMA);
    RGUI_MENU_ITEM("Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO);
+   RGUI_MENU_ITEM("Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT);
    RGUI_MENU_ITEM("Overscan", RGUI_SETTINGS_VIDEO_OVERSCAN);
    RGUI_MENU_ITEM("Rotation", RGUI_SETTINGS_VIDEO_ROTATION);
    RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
@@ -670,6 +675,101 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("R3", RGUI_SETTINGS_BIND_R3);
 }
 
+
+void rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
+{
+   rgui_file_type_t menu_type = 0;
+   rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
+
+   switch (action)
+   {
+      case RGUI_ACTION_UP:
+         if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
+         {
+            g_console.viewports.custom_vp.y -= 1;
+            g_console.viewports.custom_vp.height += 1;
+         }
+         else
+         {
+            g_console.viewports.custom_vp.height -= 1;
+         }
+         driver.video->apply_state_changes();
+         break;
+      case RGUI_ACTION_DOWN:
+         if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
+         {
+            g_console.viewports.custom_vp.y += 1;
+            g_console.viewports.custom_vp.height -= 1;
+         }
+         else
+         {
+            g_console.viewports.custom_vp.height += 1;
+         }
+         driver.video->apply_state_changes();
+         break;
+      case RGUI_ACTION_LEFT:
+         if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
+         {
+            g_console.viewports.custom_vp.x -= 1;
+            g_console.viewports.custom_vp.width += 1;
+         }
+         else
+         {
+            g_console.viewports.custom_vp.width -= 1;
+         }
+         driver.video->apply_state_changes();
+         break;
+      case RGUI_ACTION_RIGHT:
+         if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
+         {
+            g_console.viewports.custom_vp.x += 1;
+            g_console.viewports.custom_vp.width -= 1;
+         }
+         else
+         {
+            g_console.viewports.custom_vp.width += 1;
+         }
+         driver.video->apply_state_changes();
+         break;
+      case RGUI_ACTION_CANCEL:
+         if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
+         {
+            rgui_list_pop(rgui->path_stack);
+            rgui_list_push(rgui->path_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
+         }
+         else
+         {
+            rgui_list_pop(rgui->path_stack);
+         }
+         break;
+      case RGUI_ACTION_OK:
+         if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
+         {
+            rgui_list_pop(rgui->path_stack);
+            rgui_list_push(rgui->path_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT_2, 0);
+         }
+         else
+         {
+            rgui_list_pop(rgui->path_stack);
+         }
+         break;
+      case RGUI_ACTION_SETTINGS:
+         rgui_list_pop(rgui->path_stack);
+         break;
+      default:
+         break;
+   }
+
+   rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
+
+   render_text(rgui);
+
+   if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
+      render_messagebox(rgui, "Set Upper-Left Corner");
+   else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
+      render_messagebox(rgui, "Set Bottom-Right Corner");
+}
+
 void rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
    rgui_file_type_t type = 0;
@@ -703,12 +803,10 @@ void rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
       case RGUI_ACTION_CANCEL:
       case RGUI_ACTION_SETTINGS:
-      {
          rgui_list_pop(rgui->path_stack);
          rgui->directory_ptr = directory_ptr;
          rgui->need_refresh = true;
          break;
-      }
 
       case RGUI_ACTION_LEFT:
       case RGUI_ACTION_RIGHT:
@@ -719,6 +817,12 @@ void rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui_list_push(rgui->path_stack, label, type, rgui->directory_ptr);
             rgui->directory_ptr = 0;
             rgui->need_refresh = true;
+         }
+         else if (type == RGUI_SETTINGS_CUSTOM_VIEWPORT && action == RGUI_ACTION_OK)
+         {
+            rgui_list_push(rgui->path_stack, "", type, rgui->directory_ptr);
+            g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
+            video_set_aspect_ratio_func(g_console.aspect_ratio_index);
          }
          else
          {
@@ -760,7 +864,8 @@ void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
    if (menu_type == RGUI_SETTINGS || rgui_is_controller_menu(menu_type))
       return rgui_settings_iterate(rgui, action);
-
+   else if (rgui_is_viewport_menu(menu_type))
+      return rgui_viewport_iterate(rgui, action);
    if (rgui->need_refresh)
       action = RGUI_ACTION_NOOP;
 
