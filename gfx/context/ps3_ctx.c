@@ -331,6 +331,29 @@ void gfx_ctx_set_fbo(bool enable)
    gl->render_to_tex = enable;
 }
 
+#define INPUT_SCALE 2
+
+void gfx_ctx_apply_fbo_state_changes(unsigned mode)
+{
+   gl_t *gl = driver.video_data;
+
+   switch(mode)
+   {
+      case FBO_DEINIT:
+         gl_deinit_fbo(gl);
+         break;
+      case FBO_INIT:
+         gl_init_fbo(gl, RARCH_SCALE_BASE * INPUT_SCALE,
+            RARCH_SCALE_BASE * INPUT_SCALE);
+         break;
+      case FBO_REINIT:
+         gl_deinit_fbo(gl);
+         gl_init_fbo(gl, RARCH_SCALE_BASE * INPUT_SCALE,
+			 RARCH_SCALE_BASE * INPUT_SCALE);
+         break;
+   }
+}
+
 void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)
 {
    // Calculate projection.

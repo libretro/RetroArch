@@ -1293,6 +1293,15 @@ static void gl_start(void)
 #ifdef HAVE_CG_MENU
    gfx_ctx_menu_init();
 #endif
+
+// FBO mode has to be enabled once even if FBO mode has to be 
+// turned off
+   if (!g_console.fbo_enabled)
+   {
+      gfx_ctx_apply_fbo_state_changes(FBO_DEINIT);
+      gfx_ctx_apply_fbo_state_changes(FBO_INIT);
+      gfx_ctx_apply_fbo_state_changes(FBO_DEINIT);
+   }
 }
 
 static void gl_stop(void)

@@ -58,7 +58,6 @@
 
 #include "rmenu.h"
 
-#define INPUT_SCALE 2
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
 static bool set_libretro_core_as_launch;
@@ -622,29 +621,6 @@ static void browser_render(filebrowser_t * b)
    }
 }
 
-#ifdef __CELLOS_LV2__
-static void apply_scaling (unsigned init_mode)
-{
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-
-   switch(init_mode)
-   {
-      case FBO_DEINIT:
-         gl_deinit_fbo(device_ptr);
-         break;
-      case FBO_INIT:
-         gl_init_fbo(device_ptr, RARCH_SCALE_BASE * INPUT_SCALE,
-            RARCH_SCALE_BASE * INPUT_SCALE);
-         break;
-      case FBO_REINIT:
-         gl_deinit_fbo(device_ptr);
-         gl_init_fbo(device_ptr, RARCH_SCALE_BASE * INPUT_SCALE,
-			 RARCH_SCALE_BASE * INPUT_SCALE);
-         break;
-   }
-}
-#endif
-
 static void select_file(menu *current_menu, uint64_t input)
 {
    char extensions[256], comment[256], path[PATH_MAX];
@@ -705,11 +681,11 @@ static void select_file(menu *current_menu, uint64_t input)
                break;
             case PRESET_CHOICE:
                strlcpy(g_console.cgp_path, path, sizeof(g_console.cgp_path));
-               apply_scaling(FBO_DEINIT);
+               gfx_ctx_apply_fbo_state_changes(FBO_DEINIT);
 #ifdef HAVE_OPENGL
                gl_cg_reinit(path);
 #endif
-               apply_scaling(FBO_INIT);
+               gfx_ctx_apply_fbo_state_changes(FBO_INIT);
                break;
 #endif
             case INPUT_PRESET_CHOICE:
@@ -1078,8 +1054,8 @@ static void producesettingentry(menu *current_menu, unsigned switchvalue, uint64
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
 		   {
 			   rarch_settings_default(S_DEF_SCALE_ENABLED);
-			   apply_scaling(FBO_DEINIT);
-			   apply_scaling(FBO_INIT);
+			   gfx_ctx_apply_fbo_state_changes(FBO_DEINIT);
+			   gfx_ctx_apply_fbo_state_changes(FBO_INIT);
 		   }
 		   break;
 	   case SETTING_SCALE_FACTOR:
@@ -1092,7 +1068,7 @@ static void producesettingentry(menu *current_menu, unsigned switchvalue, uint64
                if(should_decrement)
                {
                   rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
-                  apply_scaling(FBO_REINIT);
+                  gfx_ctx_apply_fbo_state_changes(FBO_REINIT);
                }
             }
 		   }
@@ -1104,15 +1080,15 @@ static void producesettingentry(menu *current_menu, unsigned switchvalue, uint64
 				   if(should_increment)
 				   {
 					   rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
-					   apply_scaling(FBO_REINIT);
+					   gfx_ctx_apply_fbo_state_changes(FBO_REINIT);
 				   }
 			   }
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
 		   {
 			   rarch_settings_default(S_DEF_SCALE_FACTOR);
-			   apply_scaling(FBO_DEINIT);
-			   apply_scaling(FBO_INIT);
+			   gfx_ctx_apply_fbo_state_changes(FBO_DEINIT);
+			   gfx_ctx_apply_fbo_state_changes(FBO_INIT);
 		   }
 		   break;
 #endif
