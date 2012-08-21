@@ -494,7 +494,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
 	    if (g_console.info_msg_enable)
-           rarch_settings_msg(S_MSG_NOT_IMPLEMENTED, S_DELAY_180);
+           gfx_ctx_xdk_screenshot_dump(NULL);
 	    break;
 	 case MENU_ITEM_RESET:
             if (g_console.emulator_initialized)
@@ -524,6 +524,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    retro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
 
+   GetChildById(L"XuiLogo", &m_logoimage);
    GetChildById(L"XuiBtnRomBrowser", &m_filebrowser);
    GetChildById(L"XuiBtnSettings", &m_settings);
    GetChildById(L"XuiBtnQuickMenu", &m_quick_menu);

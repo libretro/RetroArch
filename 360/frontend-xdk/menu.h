@@ -89,6 +89,7 @@ class CRetroArchMain: public CXuiSceneImpl
       CXuiControl m_quit;
       CXuiTextElement m_title;
       CXuiTextElement m_core;
+	  CXuiControl m_logoimage;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
       HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );

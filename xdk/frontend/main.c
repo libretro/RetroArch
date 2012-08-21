@@ -118,6 +118,7 @@ static void get_environment_settings (void)
    strlcpy(default_paths.cache_dir, "cache:\\", sizeof(default_paths.cache_dir));
 #endif
    strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));
+   strlcpy(default_paths.screenshots_dir, "game:", sizeof(default_paths.screenshots_dir));
    strlcpy(default_paths.shader_file, "game:\\media\\shaders\\stock.cg", sizeof(default_paths.shader_file));
    strlcpy(default_paths.config_file, "game:\\retroarch.cfg", sizeof(default_paths.config_file));
    strlcpy(default_paths.system_dir, "game:\\system\\", sizeof(default_paths.system_dir));

@@ -22,6 +22,7 @@
 #include "config.h"
 #endif
 
+#include "../../screenshot.h"
 #include "xdk_ctx.h"
 
 #if defined(_XBOX1)
@@ -142,6 +143,32 @@ void gfx_ctx_set_fbo(bool enable)
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    d3d->fbo_enabled = enable;
+}
+
+void gfx_ctx_xdk_screenshot_dump(void *data)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   HRESULT ret = S_OK;
+   char filename[PATH_MAX];
+   char shotname[PATH_MAX];
+
+   screenshot_generate_filename(shotname, sizeof(shotname));
+   snprintf(filename, sizeof(filename), "%s\\%s", default_paths.screenshots_dir, shotname);
+   
+#if defined(_XBOX1)
+   D3DSurface *surf = NULL;
+   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
+   ret = XGWriteSurfaceToFile(surf, filename);
+   surf->Release();
+#elif defined(_XBOX360)
+   ret = D3DXSaveTextureToFile(filename, D3DXIFF_BMP, d3d->lpTexture, NULL);
+#endif
+
+   if(ret == S_OK)
+   {
+      RARCH_LOG("Screenshot saved: %s.\n", filename);
+      msg_queue_push(g_extern.msg_queue, "Screenshot saved.", 1, 30);
+   }
 }
 
 /*============================================================
