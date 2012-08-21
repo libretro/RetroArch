@@ -244,12 +244,10 @@ static void *gx_input_initialize(void)
    return (void*)-1;
 }
 
-#define STUB_DEVICE 0
-
 static void gx_input_post_init(void)
 {
    for(unsigned i = 0; i < MAX_PADS; i++)
-      gx_input_set_analog_dpad_mapping(STUB_DEVICE, g_settings.input.dpad_emulation[i], i);
+      gx_input_set_analog_dpad_mapping(g_settings.input.device[i], g_settings.input.dpad_emulation[i], i);
 }
 
 #define gx_stick_x(x) ((s8)((sin((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
@@ -370,7 +368,7 @@ static void gx_input_poll(void *data)
                if((down & WPAD_CLASSIC_BUTTON_HOME) && (down & WPAD_CLASSIC_BUTTON_ZL) && (down & WPAD_CLASSIC_BUTTON_ZR))
                   quit_classic = true;
 
-	       //TODO: Hack, analog stick twitchiness needs to be properly fixed
+               //TODO: Hack, analog stick twitchiness needs to be properly fixed
                if(gx->menu_render)
                {
                   s8 x = gx_stick_x(exp.classic.ljs);
@@ -396,14 +394,14 @@ static void gx_input_poll(void *data)
                   u8 rs_x = exp.classic.rjs.pos.x;
                   u8 rs_y = exp.classic.rjs.pos.y;
 
-		  state |= (ls_x > 40) ? GX_CLASSIC_LSTICK_RIGHT : 0;
-		  state |= (ls_x < 25) ? GX_CLASSIC_LSTICK_LEFT : 0;
-		  state |= (ls_y > 45) ? GX_CLASSIC_LSTICK_UP : 0;
-		  state |= (ls_y < 20) ? GX_CLASSIC_LSTICK_DOWN : 0;
-		  state |= (rs_x > 40) ? GX_CLASSIC_RSTICK_RIGHT : 0;
-		  state |= (rs_x < 25) ? GX_CLASSIC_RSTICK_LEFT: 0;
-		  state |= (rs_y > 45) ? GX_CLASSIC_RSTICK_UP : 0;
-		  state |= (rs_y < 20) ? GX_CLASSIC_RSTICK_DOWN : 0;
+                  state |= (ls_x > 40) ? GX_CLASSIC_LSTICK_RIGHT : 0;
+                  state |= (ls_x < 25) ? GX_CLASSIC_LSTICK_LEFT : 0;
+                  state |= (ls_y > 45) ? GX_CLASSIC_LSTICK_UP : 0;
+                  state |= (ls_y < 20) ? GX_CLASSIC_LSTICK_DOWN : 0;
+                  state |= (rs_x > 40) ? GX_CLASSIC_RSTICK_RIGHT : 0;
+                  state |= (rs_x < 25) ? GX_CLASSIC_RSTICK_LEFT: 0;
+                  state |= (rs_y > 45) ? GX_CLASSIC_RSTICK_UP : 0;
+                  state |= (rs_y < 20) ? GX_CLASSIC_RSTICK_DOWN : 0;
                }
                // do not return, fall through for wiimote d-pad
             }

@@ -71,6 +71,8 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
          char cfg[64];
          snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
          CONFIG_GET_INT(input.dpad_emulation[i], cfg);
+         snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
+         CONFIG_GET_INT(input.device[i], cfg);
       }
 
       // g_console
@@ -147,6 +149,8 @@ void rarch_config_save(const char * conf_name)
          char cfg[64];
          snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
          config_set_int(conf, cfg, g_settings.input.dpad_emulation[i]);
+         snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
+         config_set_int(conf, cfg, g_settings.input.device[i]);
       }
 
 #ifdef RARCH_CONSOLE
