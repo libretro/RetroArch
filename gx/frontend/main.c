@@ -182,6 +182,8 @@ static void menu_loop(void)
 
    uint16_t old_input_state = 0;
    bool first = true;
+   bool first_held = false;
+   bool initial_held = true;
 
    g_console.menu_enable = true;
    gx->menu_render = true;
@@ -199,16 +201,36 @@ static void menu_loop(void)
       }
 
       uint16_t trigger_state = input_state & ~old_input_state;
+      bool do_held = (input_state & ((1 << GX_DEVICE_NAV_UP) | (1 << GX_DEVICE_NAV_DOWN) | (1 << GX_DEVICE_NAV_LEFT) | (1 << GX_DEVICE_NAV_RIGHT))) && !(input_state & ((1 << GX_DEVICE_NAV_MENU) | (1 << GX_DEVICE_NAV_QUIT)));
+
+      if(do_held)
+      {
+         if(!first_held)
+         {
+            first_held = true;
+            SET_TIMER_EXPIRATION(gx, (initial_held) ? 15 : 7);
+         }
+
+         if(IS_TIMER_EXPIRED(gx))
+         {
+            first_held = false;
+            trigger_state = input_state; //second input frame set as current frame
+         }
+
+         initial_held = false;
+      }
+      else
+      {
+         first_held = false;
+         initial_held = true;
+      }
+
       rgui_action_t action = RGUI_ACTION_NOOP;
 
       // don't run anything first frame, only capture held inputs for old_input_state
       if (!first)
       {
-         if (trigger_state & (1 << GX_DEVICE_NAV_B))
-            action = RGUI_ACTION_CANCEL;
-         else if (trigger_state & (1 << GX_DEVICE_NAV_A))
-            action = RGUI_ACTION_OK;
-         else if (trigger_state & (1 << GX_DEVICE_NAV_UP))
+         if (trigger_state & (1 << GX_DEVICE_NAV_UP))
             action = RGUI_ACTION_UP;
          else if (trigger_state & (1 << GX_DEVICE_NAV_DOWN))
             action = RGUI_ACTION_DOWN;
@@ -216,6 +238,10 @@ static void menu_loop(void)
             action = RGUI_ACTION_LEFT;
          else if (trigger_state & (1 << GX_DEVICE_NAV_RIGHT))
             action = RGUI_ACTION_RIGHT;
+         else if (trigger_state & (1 << GX_DEVICE_NAV_B))
+            action = RGUI_ACTION_CANCEL;
+         else if (trigger_state & (1 << GX_DEVICE_NAV_A))
+            action = RGUI_ACTION_OK;
          else if (trigger_state & (1 << GX_DEVICE_NAV_START))
             action = RGUI_ACTION_START;
          else if (trigger_state & (1 << GX_DEVICE_NAV_SELECT))
