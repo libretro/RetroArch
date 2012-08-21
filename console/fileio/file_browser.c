@@ -23,8 +23,7 @@ const char *path, const char * extensions)
 
    if(list != NULL)
    {
-      strlcpy(filebrowser->dir[stack_size], path, 
-         sizeof(filebrowser->dir[stack_size]));
+      strlcpy(filebrowser->directory_path, path, sizeof(filebrowser->directory_path));
 
       if(filebrowser->current_dir.list != NULL)
          dir_list_free(filebrowser->current_dir.list);
@@ -90,20 +89,33 @@ bool with_extension)
 static bool filebrowser_pop_directory (filebrowser_t * filebrowser)
 {
    bool ret = true;
+   char previous_dir[PATH_MAX], directory_path_tmp[PATH_MAX];
    unsigned pop_dir = filebrowser->directory_stack_size;
 
    if (filebrowser->directory_stack_size > 0)
       pop_dir -= 1;
 
-   ret = filebrowser_parse_directory(filebrowser, pop_dir, filebrowser->dir[pop_dir],
+   fill_pathname_basedir(previous_dir, filebrowser->directory_path, sizeof(previous_dir));
+   strlcpy(directory_path_tmp, filebrowser->directory_path, sizeof(directory_path_tmp));
+
+   //test first if previous directory can be accessed
+   ret = filebrowser_parse_directory(filebrowser, pop_dir, previous_dir,
    filebrowser->extensions);
+
+   if(!ret)
+   {
+      //revert to previous directory
+      strlcpy(filebrowser->directory_path, directory_path_tmp, sizeof(filebrowser->directory_path));
+      ret = filebrowser_parse_directory(filebrowser, pop_dir, filebrowser->directory_path,
+      filebrowser->extensions);
+   }
 
    return ret;
 }
 
 const char *filebrowser_get_current_dir (filebrowser_t *filebrowser)
 {
-   return filebrowser->dir[filebrowser->directory_stack_size];
+   return filebrowser->directory_path;
 }
 
 const char *filebrowser_get_current_path (filebrowser_t *filebrowser)

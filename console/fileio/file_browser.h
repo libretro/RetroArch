@@ -17,8 +17,6 @@
 #ifndef FILEBROWSER_H_
 #define FILEBROWSER_H_
 
-#define MAX_DIR_STACK   25
-
 #include <stdint.h>
 #include <stdlib.h>
 #include "../../general.h"
@@ -26,7 +24,7 @@
 typedef struct
 {
    unsigned char directory_stack_size;
-   char dir[MAX_DIR_STACK][PATH_MAX]; 
+   char directory_path[PATH_MAX]; 
    struct {
       struct string_list *list;
       size_t ptr;
