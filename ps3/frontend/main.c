@@ -41,6 +41,7 @@
 #include <np.h>
 #include <np/drm.h>
 
+#include "../../gfx/context/ps3_ctx.h"
 #include "../ps3_input.h"
 
 #include "../../gfx/gl_common.h"
@@ -285,6 +286,7 @@ int main(int argc, char *argv[])
 #endif
 
    video_gl.start();
+   driver.video = &video_gl;
 
 #ifdef HAVE_OSKUTIL
    oskutil_init(&g_console.oskutil_handle, 0);

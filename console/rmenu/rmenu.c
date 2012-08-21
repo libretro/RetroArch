@@ -2108,15 +2108,19 @@ void menu_loop(void)
 
    context->init_textures();
 
+   menu current_menu;
+   menu_stack_force_refresh();
+
    do
    {
       //first button input frame
       uint64_t input_state_first_frame = 0;
       uint64_t input_state = 0;
       static bool first_held = false;
-      menu *current_menu = menu_stack_get_current_ptr();
-
       rmenu_default_positions_t default_pos;
+
+      menu_stack_get_current_ptr(&current_menu);
+
       context->set_default_pos(&default_pos);
 
       input_ptr.poll(NULL);
@@ -2141,7 +2145,7 @@ void menu_loop(void)
       }
 
       bool analog_sticks_pressed = (input_state & (1 << RMENU_DEVICE_NAV_LEFT_ANALOG_L)) || (input_state & (1 << RMENU_DEVICE_NAV_RIGHT_ANALOG_L)) || (input_state & (1 << RMENU_DEVICE_NAV_UP_ANALOG_L)) || (input_state & (1 << RMENU_DEVICE_NAV_DOWN_ANALOG_L)) || (input_state & (1 << RMENU_DEVICE_NAV_LEFT_ANALOG_R)) || (input_state & (1 << RMENU_DEVICE_NAV_RIGHT_ANALOG_R)) || (input_state & (1 << RMENU_DEVICE_NAV_UP_ANALOG_R)) || (input_state & (1 << RMENU_DEVICE_NAV_DOWN_ANALOG_R));
-      bool shoulder_buttons_pressed = ((input_state & (1 << RMENU_DEVICE_NAV_L2)) || (input_state & (1 << RMENU_DEVICE_NAV_R2))) && current_menu->category_id != CATEGORY_SETTINGS;
+      bool shoulder_buttons_pressed = ((input_state & (1 << RMENU_DEVICE_NAV_L2)) || (input_state & (1 << RMENU_DEVICE_NAV_R2))) && current_menu.category_id != CATEGORY_SETTINGS;
       bool do_held = analog_sticks_pressed || shoulder_buttons_pressed;
 
       if(do_held)
@@ -2161,7 +2165,7 @@ void menu_loop(void)
 
       context->clear();
 
-      if(!show_menu_screen || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
+      if(!show_menu_screen || current_menu.enum_id == INGAME_MENU_SCREENSHOT)
       {
          context->render_menu_enable(false);
       }
@@ -2175,10 +2179,10 @@ void menu_loop(void)
 
       filebrowser_t * fb = &browser;
 
-      switch(current_menu->enum_id)
+      switch(current_menu.enum_id)
       {
 	      case FILE_BROWSER_MENU:
-		      select_rom(current_menu, trig_state);
+		      select_rom(&current_menu, trig_state);
 		      fb = &browser;
 		      break;
 	      case GENERAL_VIDEO_MENU:
@@ -2188,14 +2192,14 @@ void menu_loop(void)
 	      case EMU_AUDIO_MENU:
 	      case PATH_MENU:
 	      case CONTROLS_MENU:
-		      select_setting(current_menu, trig_state);
+		      select_setting(&current_menu, trig_state);
 		      break;
 	      case SHADER_CHOICE:
 	      case PRESET_CHOICE:
 	      case BORDER_CHOICE:
 	      case LIBRETRO_CHOICE:
 	      case INPUT_PRESET_CHOICE:
-		      select_file(current_menu, trig_state);
+		      select_file(&current_menu, trig_state);
 		      fb = &tmpBrowser;
 		      break;
 	      case PATH_SAVESTATES_DIR_CHOICE:
@@ -2205,22 +2209,22 @@ void menu_loop(void)
 #endif
          case PATH_SRAM_DIR_CHOICE:
          case PATH_SYSTEM_DIR_CHOICE:
-		      select_directory(current_menu, trig_state);
+		      select_directory(&current_menu, trig_state);
 		      fb = &tmpBrowser;
 		      break;
 	      case INGAME_MENU:
 		      if(g_console.ingame_menu_enable)
-			      ingame_menu(current_menu, trig_state);
+                         ingame_menu(&current_menu, trig_state);
 		      break;
 	      case INGAME_MENU_RESIZE:
-		      ingame_menu_resize(current_menu, trig_state);
+		      ingame_menu_resize(&current_menu, trig_state);
 		      break;
 	      case INGAME_MENU_SCREENSHOT:
-		      ingame_menu_screenshot(current_menu, trig_state);
+		      ingame_menu_screenshot(&current_menu, trig_state);
 		      break;
       }
 
-      switch(current_menu->category_id)
+      switch(current_menu.category_id)
       {
          case CATEGORY_FILEBROWSER:
             browser_render(fb);
@@ -2270,7 +2274,7 @@ void menu_loop(void)
 
       context->swap_buffers();
 
-      if(current_menu->enum_id == INGAME_MENU_RESIZE && (old_state & (1 << RMENU_DEVICE_NAV_Y)) || current_menu->enum_id == INGAME_MENU_SCREENSHOT)
+      if(current_menu.enum_id == INGAME_MENU_RESIZE && (old_state & (1 << RMENU_DEVICE_NAV_Y)) || current_menu.enum_id == INGAME_MENU_SCREENSHOT)
       { }
       else
          context->blend(false);

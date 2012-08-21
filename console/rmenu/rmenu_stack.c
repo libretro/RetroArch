@@ -16,30 +16,36 @@
 
 #include "rmenu_stack.h"
 
-menu menuStack[10];
-int stack_idx = 0;
+static unsigned char menu_stack_enum_array[10];
+static unsigned stack_idx = 0;
+static bool need_refresh = false;
 
 static void menu_stack_pop(void)
 {
    if(stack_idx > 0)
+   {
       stack_idx--;
+      need_refresh = true;
+   }
 }
 
-menu *menu_stack_get_current_ptr (void)
+static void menu_stack_force_refresh(void)
 {
-   return &menuStack[stack_idx];
+   need_refresh = true;
 }
 
 static void menu_stack_push(unsigned menu_id)
 {
-   static bool first_push_do_not_increment = true;
+   menu_stack_enum_array[++stack_idx] = menu_id;
+   need_refresh = true;
+}
 
-   if(!first_push_do_not_increment)
-      stack_idx++;
-   else
-      first_push_do_not_increment = false;
+static void menu_stack_get_current_ptr(menu *current_menu)
+{
+   if(!need_refresh)
+      return;
 
-   menu *current_menu = menu_stack_get_current_ptr();
+   unsigned menu_id = menu_stack_enum_array[stack_idx];
 
    switch(menu_id)
    {
@@ -185,4 +191,6 @@ static void menu_stack_push(unsigned menu_id)
        default:
          break;
    }
+
+   need_refresh = false;
 }

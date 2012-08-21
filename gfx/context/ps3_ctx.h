@@ -17,6 +17,8 @@
 #ifndef _PS3_CTX_H
 #define _PS3_CTX_H
 
+#include "../gl_common.h"
+
 void gfx_ctx_get_available_resolutions (void);
 int gfx_ctx_check_resolution(unsigned resolution_id);
 float gfx_ctx_get_aspect_ratio(void);
