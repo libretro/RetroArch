@@ -355,7 +355,7 @@ void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index)
 
    if (g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
       rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
-   else if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
+   else if(g_console.aspect_ratio_index == ASPECT_RATIO_CORE)
       rarch_set_core_viewport();
 
    g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
