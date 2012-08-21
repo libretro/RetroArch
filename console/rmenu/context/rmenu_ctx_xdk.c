@@ -154,7 +154,7 @@ static void rmenu_ctx_xdk_screenshot_enable(bool enable)
 
 static void rmenu_ctx_xdk_screenshot_dump(void *data)
 {
-   gfx_ctx_xdk_screenshot_dump();
+   gfx_ctx_xdk_screenshot_dump(NULL);
 }
 
 const rmenu_context_t rmenu_ctx_xdk = {

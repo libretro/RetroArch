@@ -22,6 +22,8 @@
 #include "config.h"
 #endif
 
+#include <xgraphics.h>
+
 #include "../../screenshot.h"
 #include "xdk_ctx.h"
 
@@ -161,7 +163,8 @@ void gfx_ctx_xdk_screenshot_dump(void *data)
    ret = XGWriteSurfaceToFile(surf, filename);
    surf->Release();
 #elif defined(_XBOX360)
-   ret = D3DXSaveTextureToFile(filename, D3DXIFF_BMP, d3d->lpTexture, NULL);
+   ret = 1; //false
+   //ret = D3DXSaveTextureToFile(filename, D3DXIFF_BMP, d3d->lpTexture, NULL);
 #endif
 
    if(ret == S_OK)
