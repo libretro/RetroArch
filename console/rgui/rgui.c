@@ -318,7 +318,8 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), "(DEV)");
             w = 5;
             break;
-         case RGUI_SETTINGS_SAVESTATE_SLOT:
+	 case RGUI_SETTINGS_SAVESTATE_SAVE:
+	 case RGUI_SETTINGS_SAVESTATE_LOAD:
             snprintf(type_str, sizeof(type_str), "%d", g_extern.state_slot);
             break;
          case RGUI_SETTINGS_VIDEO_FILTER:
@@ -424,14 +425,6 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
 
    switch (setting)
    {
-      case RGUI_SETTINGS_SAVESTATE_SLOT:
-         if (action == RGUI_ACTION_START)
-            rarch_settings_default(S_DEF_SAVE_STATE);
-         else if (action == RGUI_ACTION_LEFT)
-            rarch_settings_change(S_SAVESTATE_DECREMENT);
-         else if (action == RGUI_ACTION_RIGHT)
-            rarch_settings_change(S_SAVESTATE_INCREMENT);
-         break;
       case RGUI_SETTINGS_SAVESTATE_SAVE:
       case RGUI_SETTINGS_SAVESTATE_LOAD:
          if (action == RGUI_ACTION_OK)
@@ -442,6 +435,12 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
                rarch_load_state();
             rarch_settings_change(S_RETURN_TO_GAME);
          }
+         else if (action == RGUI_ACTION_START)
+            rarch_settings_default(S_DEF_SAVE_STATE);
+         else if (action == RGUI_ACTION_LEFT)
+            rarch_settings_change(S_SAVESTATE_DECREMENT);
+         else if (action == RGUI_ACTION_RIGHT)
+            rarch_settings_change(S_SAVESTATE_INCREMENT);
          break;
       case RGUI_SETTINGS_SCREENSHOT:
          if (action == RGUI_ACTION_OK)
@@ -627,7 +626,6 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 
    if (g_console.ingame_menu_enable)
    {
-      RGUI_MENU_ITEM("Savestate Slot", RGUI_SETTINGS_SAVESTATE_SLOT);
       RGUI_MENU_ITEM("Save State", RGUI_SETTINGS_SAVESTATE_SAVE);
       RGUI_MENU_ITEM("Load State", RGUI_SETTINGS_SAVESTATE_LOAD);
       RGUI_MENU_ITEM("Take Screenshot", RGUI_SETTINGS_SCREENSHOT);
