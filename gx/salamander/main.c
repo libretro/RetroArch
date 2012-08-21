@@ -100,15 +100,15 @@ static void init_settings(void)
 
 static void get_environment_settings(void)
 {
-   getcwd(default_paths.port_dir, MAXPATHLEN);
-   snprintf(default_paths.core_dir, sizeof(default_paths.core_dir), default_paths.port_dir);
-   snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%sretroarch.cfg", default_paths.port_dir);
-   snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.core_dir);
-   snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.core_dir);
+   snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/retroarch");
+   getcwd(default_paths.core_dir, MAXPATHLEN);
+   snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
+   snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.port_dir);
+   snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.port_dir);
    snprintf(default_paths.filesystem_root_dir, sizeof(default_paths.filesystem_root_dir), "/");
    snprintf(default_paths.filebrowser_startup_dir, sizeof(default_paths.filebrowser_startup_dir), default_paths.filesystem_root_dir);
-   snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.core_dir);
-   snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/presets/input", default_paths.core_dir);
+   snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.port_dir);
+   snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.port_dir);
    strlcpy(default_paths.executable_extension, ".dol", sizeof(default_paths.executable_extension));
    snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "boot.dol");
 }
