@@ -193,8 +193,8 @@ struct settings
 #ifdef RARCH_CONSOLE
 typedef struct
 {
-   unsigned x;
-   unsigned y;
+   int x;
+   int y;
    unsigned width;
    unsigned height;
 } rarch_viewport_t;

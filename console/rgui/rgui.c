@@ -678,6 +678,9 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 
 void rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
+#ifdef GEKKO
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
+#endif
    rgui_file_type_t menu_type = 0;
    rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
 
@@ -752,6 +755,23 @@ void rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          {
             rgui_list_pop(rgui->path_stack);
          }
+         break;
+      case RGUI_ACTION_START:
+#ifdef GEKKO
+         if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
+         {
+            g_console.viewports.custom_vp.width += g_console.viewports.custom_vp.x;
+            g_console.viewports.custom_vp.height += g_console.viewports.custom_vp.y;
+            g_console.viewports.custom_vp.x = 0;
+            g_console.viewports.custom_vp.y = 0;
+         }
+         else
+         {
+            g_console.viewports.custom_vp.width = gx->win_width - g_console.viewports.custom_vp.x;
+            g_console.viewports.custom_vp.height = gx->win_height - g_console.viewports.custom_vp.y;
+         }
+#endif
+         driver.video->apply_state_changes();
          break;
       case RGUI_ACTION_SETTINGS:
          rgui_list_pop(rgui->path_stack);

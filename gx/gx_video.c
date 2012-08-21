@@ -194,6 +194,7 @@ static void gx_restart(void)
 static void *gx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
+   RARCH_LOG("GX_INIT\n");
    if (driver.video_data)
       return driver.video_data;
 
@@ -203,12 +204,15 @@ static void *gx_init(const video_info_t *video,
 
    g_vsync = video->vsync;
 
+   gx->win_width = gx_width;
+   gx->win_height = gx_height;
    gx->should_resize = true;
    return gx;
 }
 
 static void gx_start(void)
 {
+   RARCH_LOG("GX_START\n");
    video_info_t video_info = {0};
 
    video_info.vsync = g_settings.video.vsync;
@@ -216,8 +220,6 @@ static void gx_start(void)
    video_info.fullscreen = true;
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
-
-   driver.video_data = gx_init(&video_info, NULL, NULL);
 
    VIDEO_Init();
    GXRModeObj *mode = VIDEO_GetPreferredMode(NULL);
@@ -234,6 +236,8 @@ static void gx_start(void)
    g_vsync = true;
    gx_width = mode->fbWidth;
    gx_height = mode->efbHeight;
+
+   driver.video_data = gx_init(&video_info, NULL, NULL);
 }
 
 #define ASM_BLITTER
@@ -417,7 +421,8 @@ static void update_texture(const uint32_t *src,
 
 static void gx_resize(gx_video_t *gx)
 {
-   unsigned x = 0, y = 0, width = gx_width, height = gx_height;
+   int x = 0, y = 0;
+   unsigned width = gx->win_width, height = gx->win_height;
 
 #ifdef HW_RVL
    VIDEO_SetTrapFilter(g_console.soft_display_filter_enable);
@@ -441,8 +446,8 @@ static void gx_resize(gx_video_t *gx)
          {
             g_console.viewports.custom_vp.x = 0;
             g_console.viewports.custom_vp.y = 0;
-            g_console.viewports.custom_vp.width = gx_width;
-            g_console.viewports.custom_vp.height = gx_height;
+            g_console.viewports.custom_vp.width = gx->win_width;
+            g_console.viewports.custom_vp.height = gx->win_height;
          }
 
          x      = g_console.viewports.custom_vp.x;

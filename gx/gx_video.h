@@ -23,6 +23,8 @@ typedef struct gx_video
    bool keep_aspect;
    uint32_t frame_count;
    uint32_t *menu_data;
+   unsigned win_width;
+   unsigned win_height;
    char msg[128];
 } gx_video_t;
 
