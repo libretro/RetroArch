@@ -382,6 +382,13 @@ int main(void)
 
    rarch_settings_set_default(&input_gx);
    rarch_config_load(default_paths.config_file, path_prefix, extension, find_libretro_file);
+
+   char core_name[64];
+   rarch_console_name_from_id(core_name, sizeof(core_name));
+   char input_path[1024];
+   snprintf(input_path, sizeof(input_path), "%s/%s.cfg", default_paths.input_presets_dir, core_name);
+   config_read_keybinds(input_path);
+
    init_libretro_sym();
 
    input_gx.post_init();
@@ -436,6 +443,7 @@ begin_shutdown:
 
    if(g_console.return_to_launcher)
       rarch_console_exec(g_console.launch_app_on_exit);
+   config_save_keybinds(input_path);
 
    return 1;
 }

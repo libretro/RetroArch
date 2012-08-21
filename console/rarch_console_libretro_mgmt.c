@@ -23,7 +23,7 @@
 
 #ifndef IS_SALAMANDER
 
-static void rarch_console_name_from_id(char *name, size_t size)
+void rarch_console_name_from_id(char *name, size_t size)
 {
    if (size == 0)
       return;
