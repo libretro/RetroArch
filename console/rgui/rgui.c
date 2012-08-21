@@ -362,6 +362,9 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_BIND_DEVICE:
             snprintf(type_str, sizeof(type_str), "%s", rgui_device_labels[g_settings.input.device[port]]);
             break;
+         case RGUI_SETTINGS_BIND_DPAD_EMULATION:
+            snprintf(type_str, sizeof(type_str), "%s", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[port]]);
+            break;
          case RGUI_SETTINGS_BIND_UP:
          case RGUI_SETTINGS_BIND_DOWN:
          case RGUI_SETTINGS_BIND_LEFT:
@@ -583,6 +586,17 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          rarch_input_set_default_keybinds(port);
          input_gx.set_analog_dpad_mapping(g_settings.input.device[port], g_settings.input.dpad_emulation[port], port);
          break;
+      case RGUI_SETTINGS_BIND_DPAD_EMULATION:
+         g_settings.input.dpad_emulation[port] += DPAD_EMULATION_LAST;
+         if (action == RGUI_ACTION_START)
+            g_settings.input.dpad_emulation[port] = DPAD_EMULATION_LSTICK;
+         else if (action == RGUI_ACTION_LEFT)
+            g_settings.input.dpad_emulation[port]--;
+         else if (action == RGUI_ACTION_RIGHT)
+            g_settings.input.dpad_emulation[port]++;
+         g_settings.input.dpad_emulation[port] %= DPAD_EMULATION_LAST;
+         input_gx.set_analog_dpad_mapping(g_settings.input.device[port], g_settings.input.dpad_emulation[port], port);
+         break;
       case RGUI_SETTINGS_BIND_UP:
       case RGUI_SETTINGS_BIND_DOWN:
       case RGUI_SETTINGS_BIND_LEFT:
@@ -655,6 +669,7 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
    rgui_list_clear(rgui->folder_buf);
 
    RGUI_MENU_ITEM("Device", RGUI_SETTINGS_BIND_DEVICE);
+   RGUI_MENU_ITEM("DPad Emulation", RGUI_SETTINGS_BIND_DPAD_EMULATION);
    RGUI_MENU_ITEM("Up", RGUI_SETTINGS_BIND_UP);
    RGUI_MENU_ITEM("Down", RGUI_SETTINGS_BIND_DOWN);
    RGUI_MENU_ITEM("Left", RGUI_SETTINGS_BIND_LEFT);
