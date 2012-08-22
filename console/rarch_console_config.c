@@ -21,12 +21,12 @@
 
 #include "rarch_console_config.h"
 
-void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool find_libretro_path)
+void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool upgrade_core_succeeded)
 {
       char libretro_path_tmp[PATH_MAX];
 
       //if a core has been upgraded, settings need to saved at the end
-      if(!find_libretro_path)
+      if(upgrade_core_succeeded)
          snprintf(libretro_path_tmp, sizeof(libretro_path_tmp), g_settings.libretro);
       
 
@@ -116,7 +116,7 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
       CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
 
-      if(!find_libretro_path)
+      if(upgrade_core_succeeded)
       {
          //save config file with new libretro path
          snprintf(g_settings.libretro, sizeof(g_settings.libretro), libretro_path_tmp);

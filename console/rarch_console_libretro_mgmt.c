@@ -57,7 +57,7 @@ void rarch_console_name_from_id(char *name, size_t size)
 bool rarch_configure_libretro_core(const char *core_exe_path, const char *tmp_path,
  const char *libretro_path, const char *config_path, const char *extension)
 {
-   bool find_libretro_file = false;
+   bool upgrade_core_succeeded = false;
 
    g_extern.verbose = true;
 
@@ -93,18 +93,18 @@ bool rarch_configure_libretro_core(const char *core_exe_path, const char *tmp_pa
       {
          RARCH_LOG("libretro core [%s] renamed to: [%s].\n", core_exe_path, tmp_pathnewfile);
          snprintf(g_settings.libretro, sizeof(g_settings.libretro), tmp_pathnewfile);
+         upgrade_core_succeeded = true;
       }
       else
       {
          RARCH_ERR("Failed to rename CORE executable.\n");
          RARCH_WARN("CORE executable was not found, or some other error occurred. Will attempt to load libretro core path from config file.\n");
-         find_libretro_file = true;
       }
    }
 
    g_extern.verbose = false;
 
-   return find_libretro_file;
+   return upgrade_core_succeeded;
 }
 
 bool rarch_manage_libretro_extension_supported(const char *filename)
