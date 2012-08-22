@@ -38,8 +38,6 @@
 
 DWORD volume_device_type;
 
-char LIBRETRO_DIR_PATH[PATH_MAX];
-char SYS_CONFIG_FILE[PATH_MAX];
 char libretro_path[PATH_MAX];
 
 default_paths_t default_paths;
