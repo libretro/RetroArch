@@ -23,9 +23,12 @@
 
 void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool find_libretro_path)
 {
-      //if a core has been upgraded, settings need to be saved
+      char libretro_path_tmp[PATH_MAX];
+
+      //if a core has been upgraded, settings need to saved at the end
       if(!find_libretro_path)
-         rarch_config_save(conf_name);
+         snprintf(libretro_path_tmp, sizeof(libretro_path_tmp), g_settings.libretro);
+      
 
       config_file_t * conf = config_file_new(conf_name);
 
@@ -112,6 +115,13 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       // g_extern
       CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
       CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
+
+      if(!find_libretro_path)
+      {
+         //save config file with new libretro path
+         snprintf(g_settings.libretro, sizeof(g_settings.libretro), libretro_path_tmp);
+         rarch_config_save(conf_name);
+      }
 }
 
 void rarch_config_save(const char * conf_name)
