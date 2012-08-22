@@ -44,11 +44,8 @@
 #include "../../file.h"
 
 static uint8_t np_pool[NP_POOL_SIZE];
-char usrDirPath[PATH_MAX];
 SYS_PROCESS_PARAM(1001, 0x100000)
 
-char LIBRETRO_DIR_PATH[PATH_MAX];
-char SYS_CONFIG_FILE[PATH_MAX];
 char libretro_path[PATH_MAX];
 
 default_paths_t default_paths;
@@ -59,11 +56,13 @@ static void find_and_set_first_file(void)
    // we can find in the RetroArch cores directory
 
    char first_file[PATH_MAX];
-   rarch_manage_libretro_set_first_file(first_file, sizeof(first_file),
-   LIBRETRO_DIR_PATH, "SELF");
+   rarch_manage_libretro_set_first_file(first_file, sizeof(first_file), default_paths.core_dir, "SELF");
 
    if(first_file)
-      strlcpy(libretro_path, first_file, sizeof(libretro_path));
+   {
+      snprintf(libretro_path, sizeof(libretro_path), "%s/%s", default_paths.core_dir, first_file);
+      RARCH_LOG("libretro_path now set to: %s.\n", libretro_path);
+   }
    else
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
 }
@@ -71,22 +70,14 @@ static void find_and_set_first_file(void)
 static void init_settings(void)
 {
    char tmp_str[PATH_MAX];
-   bool config_file_exists;
+   bool config_file_exists = false;
 
-   if(!path_file_exists(SYS_CONFIG_FILE))
-   {
-      FILE * f;
-      config_file_exists = false;
-      RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
-      f = fopen(SYS_CONFIG_FILE, "w");
-      fclose(f);
-   }
-   else
+   if(path_file_exists(default_paths.config_file))
       config_file_exists = true;
 
    //try to find CORE executable
    char core_executable[1024];
-   snprintf(core_executable, sizeof(core_executable), "%s/CORE.SELF", LIBRETRO_DIR_PATH);
+   snprintf(core_executable, sizeof(core_executable), "%s/CORE.SELF", default_paths.core_dir);
 
    if(path_file_exists(core_executable))
    {
@@ -98,12 +89,12 @@ static void init_settings(void)
    {
       if(config_file_exists)
       {
-         config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
+         config_file_t * conf = config_file_new(default_paths.config_file);
 	 config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
 	 snprintf(libretro_path, sizeof(libretro_path), tmp_str);
       }
 
-      if(!config_file_exists || !strcmp(libretro_path, ""))
+      if(!config_file_exists || strcmp(libretro_path, "") == 0)
          find_and_set_first_file();
       else
       {
@@ -146,7 +137,7 @@ static void get_environment_settings (void)
       if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) == CELL_GAME_ATTRIBUTE_APP_HOME)
          RARCH_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 
-      ret = cellGameContentPermit(contentInfoPath, usrDirPath);
+      ret = cellGameContentPermit(contentInfoPath, default_paths.port_dir);
 
       if(ret < 0)
       {
@@ -156,12 +147,28 @@ static void get_environment_settings (void)
       {
          RARCH_LOG("cellGameContentPermit() OK.\n");
 	 RARCH_LOG("contentInfoPath : [%s].\n", contentInfoPath);
-	 RARCH_LOG("usrDirPath : [%s].\n", usrDirPath);
+	 RARCH_LOG("usrDirPath : [%s].\n", default_paths.port_dir);
       }
 
+#ifdef HAVE_HDD_CACHE_PARTITION
+      snprintf(default_paths.cache_dir, sizeof(default_paths.cache_dir), "/dev_hdd1/");
+#endif
+      snprintf(default_paths.core_dir, sizeof(default_paths.core_dir), "%s/cores", default_paths.port_dir);
+      snprintf(default_paths.executable_extension, sizeof(default_paths.executable_extension), ".SELF");
+      snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.core_dir);
+      snprintf(default_paths.filesystem_root_dir, sizeof(default_paths.filesystem_root_dir), "/");
+      snprintf(default_paths.filebrowser_startup_dir, sizeof(default_paths.filebrowser_startup_dir), default_paths.filesystem_root_dir);
+      snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.core_dir);
+
+      snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.core_dir);
+
       /* now we fill in all the variables */
-      snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/retroarch.cfg", usrDirPath);
-      snprintf(LIBRETRO_DIR_PATH, sizeof(LIBRETRO_DIR_PATH), "%s/cores", usrDirPath);
+      snprintf(default_paths.border_file, sizeof(default_paths.border_file), "%s/borders/Centered-1080p/mega-man-2.png", default_paths.core_dir);
+      snprintf(default_paths.menu_border_file, sizeof(default_paths.menu_border_file), "%s/borders/Menu/main-menu.png", default_paths.core_dir);
+      snprintf(default_paths.cgp_dir, sizeof(default_paths.cgp_dir), "%s/presets", default_paths.core_dir);
+      snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.cgp_dir);
+      snprintf(default_paths.border_dir, sizeof(default_paths.border_dir), "%s/borders", default_paths.core_dir);
+      snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
    }
    snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "");
 }

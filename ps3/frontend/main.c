@@ -337,8 +337,7 @@ begin_loop:
    goto begin_loop;
 
 begin_shutdown:
-   if(path_file_exists(default_paths.config_file))
-      rarch_config_save(default_paths.config_file);
+   rarch_config_save(default_paths.config_file);
 
    if(g_console.emulator_initialized)
       rarch_main_deinit();
