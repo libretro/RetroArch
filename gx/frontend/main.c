@@ -314,9 +314,14 @@ int rarch_main(int argc, char **argv);
 static void get_environment_settings(void)
 {
    getcwd(default_paths.core_dir, MAXPATHLEN);
-   *(strrchr(default_paths.core_dir, '/')) = 0;
+   char *last_slash = strrchr(default_paths.core_dir, '/');
+   if (last_slash)
+      *last_slash = 0;
    char *device_end = strchr(default_paths.core_dir, '/');
-   snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "%.*s/retroarch", device_end - default_paths.core_dir, default_paths.core_dir);
+   if (device_end)
+      snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "%.*s/retroarch", device_end - default_paths.core_dir, default_paths.core_dir);
+   else
+      snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/retroarch");
    snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
    snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.port_dir);
    snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.port_dir);
