@@ -109,6 +109,14 @@ static void init_settings(void)
       {
          RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
       }
+
+      if (!config_file_exists)
+      {
+         config_file_t *new_conf = config_file_new(NULL);
+         config_set_string(new_conf, "libretro_path", libretro_path);
+         config_file_write(new_conf, default_paths.config_file);
+         config_file_free(new_conf);
+      }
    }
 }
 
