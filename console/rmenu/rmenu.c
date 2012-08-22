@@ -58,7 +58,6 @@
 
 #include "rmenu.h"
 
-#define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
 static bool set_libretro_core_as_launch;
 
@@ -489,7 +488,7 @@ static void populate_setting_item(unsigned i, item *current_item)
 static void display_menubar(menu *current_menu)
 {
    filebrowser_t *fb = &browser;
-   char current_path[256], rarch_version[128];
+   char current_path[256], rarch_version[128], msg[128];
 
    rmenu_default_positions_t default_pos;
    context->set_default_pos(&default_pos);
@@ -499,14 +498,16 @@ static void display_menubar(menu *current_menu)
    switch(current_menu->enum_id)
    {
       case GENERAL_VIDEO_MENU:
-	 context->render_msg(default_pos.x_position, default_pos.msg_prev_next_y_position, default_pos.font_size, WHITE, "NEXT ->");
+	 snprintf(msg, sizeof(msg), "NEXT -> [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R));
+         context->render_msg(default_pos.x_position, default_pos.current_path_y_position, default_pos.current_path_font_size, WHITE, msg);
          break;
       case GENERAL_AUDIO_MENU:
       case EMU_GENERAL_MENU:
       case EMU_VIDEO_MENU:
       case EMU_AUDIO_MENU:
       case PATH_MENU:
-	 context->render_msg(default_pos.x_position, default_pos.msg_prev_next_y_position, default_pos.font_size, WHITE, "<- PREV | NEXT ->");
+	 snprintf(msg, sizeof(msg), "[%s] <- PREV | NEXT -> [%s]", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R));
+         context->render_msg(default_pos.x_position, default_pos.current_path_y_position, default_pos.current_path_font_size, WHITE, msg);
          break;
       case CONTROLS_MENU:
       case INGAME_MENU_RESIZE:
@@ -522,7 +523,8 @@ static void display_menubar(menu *current_menu)
 #endif
       case PATH_SRAM_DIR_CHOICE:
       case PATH_SYSTEM_DIR_CHOICE:
-	 context->render_msg(default_pos.x_position, default_pos.msg_prev_next_y_position, default_pos.font_size, WHITE, "<- PREV");
+	 snprintf(msg, sizeof(msg), "[%s] <- PREV", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L));
+         context->render_msg(default_pos.x_position, default_pos.current_path_y_position, default_pos.current_path_font_size, WHITE, msg);
          break;
       default:
          break;
@@ -554,9 +556,9 @@ static void display_menubar(menu *current_menu)
    rmenu_position_t position = {0};
    context->render_bg(&position);
 
+   context->render_msg(default_pos.core_msg_x_position, default_pos.core_msg_y_position, default_pos.core_msg_font_size, WHITE, m_title);
 #ifdef __CELLOS_LV2__
    context->render_msg(default_pos.x_position, 0.05f, 1.4f, WHITE, current_menu->title);
-   context->render_msg(0.3f, 0.06f, 0.82f, WHITE, m_title);
    context->render_msg(0.80f, 0.015f, 0.82f, WHITE, rarch_version);
 #endif
 }
@@ -1642,9 +1644,9 @@ static void select_setting(menu *current_menu, uint64_t input)
 
    free(items);
 
-   snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game | [%s] - go forward", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R));
+   snprintf(msg, sizeof(msg), "[%s] + [%s] - Resume game", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R3));
    context->render_msg(default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, msg);
-   snprintf(msg, sizeof(msg), "[%s] - default | [%s]/[%s] - go back", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
+   snprintf(msg, sizeof(msg), "[%s] - Reset to default", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
    context->render_msg(default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), default_pos.font_size, YELLOW, msg);
 }
 
@@ -1891,7 +1893,7 @@ static void ingame_menu_resize(menu *current_menu, uint64_t input)
       context->render_msg (default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*15), default_pos.font_size, WHITE, msg);
       context->render_msg (default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*15), default_pos.font_size, WHITE, "- Go back");
 
-      snprintf(msg, sizeof(msg), "Allows you to resize the screen.\nPress [%s] to reset to defaults, and [%s] to go back.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
+      snprintf(msg, sizeof(msg), "Press [%s] to reset to defaults.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X));
       context->render_msg (default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, msg);
    }
 }
@@ -1913,6 +1915,8 @@ static void ingame_menu_screenshot(menu *current_menu, uint64_t input)
    }
 }
 
+#define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
+
 static void ingame_menu(menu *current_menu, uint64_t input)
 {
    char comment[256], strw_buffer[256];
@@ -1922,7 +1926,7 @@ static void ingame_menu(menu *current_menu, uint64_t input)
    context->set_default_pos(&default_pos);
 
    for(int i = 0; i < MENU_ITEM_LAST; i++)
-      menuitem_colors[i] = GREEN;
+      menuitem_colors[i] = WHITE;
 
    menuitem_colors[g_console.ingame_menu_item] = RED;
 
@@ -2003,7 +2007,7 @@ static void ingame_menu(menu *current_menu, uint64_t input)
 	 case MENU_ITEM_RESIZE_MODE:
 	    if(input & (1 << RMENU_DEVICE_NAV_B))
 	       menu_stack_push(INGAME_MENU_RESIZE);
-	    snprintf(comment, sizeof(comment), "Allows you to resize the screen.\nPress [%s] to reset to defaults, and [%s] to go back.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
+	    snprintf(comment, sizeof(comment), "Allows you to resize the screen.");
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
 	    if(input & (1 << RMENU_DEVICE_NAV_B))
@@ -2154,7 +2158,7 @@ void menu_init (void)
    struct retro_system_info info;
    retro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
-   snprintf(m_title, sizeof(m_title), "Libretro core: %s %s", id, info.library_version);
+   snprintf(m_title, sizeof(m_title), "Core: %s %s", id, info.library_version);
 
    rmenu_filebrowser_init();
 }

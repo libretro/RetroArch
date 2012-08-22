@@ -63,6 +63,9 @@ typedef struct rmenu_default_positions
    float current_path_font_size;
    float current_path_y_position;
    float variable_font_size;
+   float core_msg_x_position;
+   float core_msg_y_position;
+   float core_msg_font_size;
    unsigned entries_per_page;
 } rmenu_default_positions_t;
 

@@ -114,6 +114,9 @@ static void rmenu_ctx_ps3_set_default_pos(rmenu_default_positions_t *position)
    position->current_path_y_position = CURRENT_PATH_Y_POSITION;
    position->variable_font_size = FONT_SIZE;
    position->entries_per_page = NUM_ENTRY_PER_PAGE;
+   position->core_msg_x_position = 0.3f;
+   position->core_msg_y_position = 0.06f;
+   position->core_msg_font_size = COMMENT_Y_POSITION;
 }
 
 static void rmenu_ctx_ps3_render_msg(float xpos, float ypos, float scale, unsigned color, const char *msg, ...)

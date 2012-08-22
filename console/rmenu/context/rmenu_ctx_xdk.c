@@ -148,6 +148,9 @@ static void rmenu_ctx_xdk_set_default_pos(rmenu_default_positions_t *position)
    position->current_path_y_position = CURRENT_PATH_Y_POSITION;
    position->variable_font_size = FONT_SIZE;
    position->entries_per_page = NUM_ENTRY_PER_PAGE;
+   position->core_msg_x_position = default_pos.x_position;
+   position->core_msg_y_position = default_pos.msg_prev_next_y_position + 0.01f;
+   position->core_msg_font_size = default_pos.font_size;
 }
 
 static void rmenu_ctx_xdk_render_msg(float xpos, float ypos, float scale, unsigned color, const char *msg, ...)
