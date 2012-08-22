@@ -1946,7 +1946,7 @@ static void ingame_menu(menu *current_menu, uint64_t input)
             if(input & (1 << RMENU_DEVICE_NAV_RIGHT))
                rarch_state_slot_increase();
             
-            snprintf(comment, sizeof(comment), "Press [%s] / [%s] to change slots.\nPress [%s] to load the state from the current state slot.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
+            snprintf(comment, sizeof(comment), "Press [%s] to load the current state.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
             break;
          case MENU_ITEM_SAVE_STATE:
             if(input & (1 << RMENU_DEVICE_NAV_B))
@@ -1960,15 +1960,15 @@ static void ingame_menu(menu *current_menu, uint64_t input)
             if(input & (1 << RMENU_DEVICE_NAV_RIGHT))
                rarch_state_slot_increase();
             
-            snprintf(comment, sizeof(comment), "Press [%s] / [%s] to change slots.\nPress [%s] to save the state to the current state slot.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
+            snprintf(comment, sizeof(comment), "Press [%s] to save the current state.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
             break;
          case MENU_ITEM_KEEP_ASPECT_RATIO:
             set_setting_action(current_menu, SETTING_KEEP_ASPECT_RATIO, input);
-            snprintf(comment, sizeof(comment), "Press [%s] / [%s] to change the [Aspect Ratio].\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
+            snprintf(comment, sizeof(comment), "Press [%s] to reset back to default values.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
             break;
          case MENU_ITEM_OVERSCAN_AMOUNT:
             set_setting_action(current_menu, SETTING_HW_OVERSCAN_AMOUNT, input);
-            snprintf(comment, sizeof(comment), "Press [%s] / [%s] to change the [Overscan] settings.\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
+            snprintf(comment, sizeof(comment), "Press [%s] to reset back to default values.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
             break;
          case MENU_ITEM_ORIENTATION:
             if(input & (1 << RMENU_DEVICE_NAV_LEFT))
@@ -1988,12 +1988,12 @@ static void ingame_menu(menu *current_menu, uint64_t input)
                rarch_settings_default(S_DEF_ROTATION);
                video_ptr.set_rotation(NULL, g_console.screen_orientation);
             }
-            snprintf(comment, sizeof(comment), "Press [%s] / [%s] to change the [Orientation] settings.\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
+            snprintf(comment, sizeof(comment), "Press [%s] to reset back to default values.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
             break;
 #ifdef HAVE_FBO
 	 case MENU_ITEM_SCALE_FACTOR:
        set_setting_action(current_menu, SETTING_SCALE_FACTOR, input);
-	    snprintf(comment, sizeof(comment), "Press [%s] / [%s] to change the [Scaling] settings.\nPress [%s] to reset back to default values.",rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
+	    snprintf(comment, sizeof(comment), "Press [%s] to reset back to default values.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
 	    break;
 #endif
 	 case MENU_ITEM_FRAME_ADVANCE:
@@ -2002,7 +2002,7 @@ static void ingame_menu(menu *current_menu, uint64_t input)
           rarch_settings_change(S_FRAME_ADVANCE);
 	       g_console.ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
 	    }
-	    snprintf(comment, sizeof(comment), "Press [%s], [%s] or [%s] to step one frame.\nPressing the button rapidly will advance the frame more slowly.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L2), rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_R2));
+	    snprintf(comment, sizeof(comment), "Press [%s] to step one frame.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
 	    if(input & (1 << RMENU_DEVICE_NAV_B))
@@ -2012,7 +2012,7 @@ static void ingame_menu(menu *current_menu, uint64_t input)
 	 case MENU_ITEM_SCREENSHOT_MODE:
 	    if(input & (1 << RMENU_DEVICE_NAV_B))
 	       menu_stack_push(INGAME_MENU_SCREENSHOT);
-	    snprintf(comment, sizeof(comment), "Allows you to take a screenshot without any text.\nPress [%s] to go back to the in-game menu.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
+	    snprintf(comment, sizeof(comment), "Press [%s] to go back to the in-game menu.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_A));
 	    break;
 	 case MENU_ITEM_RETURN_TO_GAME:
 	    if(input & (1 << RMENU_DEVICE_NAV_B))
@@ -2158,7 +2158,7 @@ void menu_init (void)
    struct retro_system_info info;
    retro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
-   snprintf(m_title, sizeof(m_title), "Core: %s %s", id, info.library_version);
+   snprintf(m_title, sizeof(m_title), "%s %s", id, info.library_version);
 
    rmenu_filebrowser_init();
 }
