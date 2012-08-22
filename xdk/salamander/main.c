@@ -101,10 +101,20 @@ static void init_settings(void)
       }
 
       if(!config_file_exists || strcmp(libretro_path, "") == 0)
+      {
          find_and_set_first_file();
+      }
       else
       {
          RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
+      }
+
+      if (!config_file_exists)
+      {
+         config_file_t *new_conf = config_file_new(NULL);
+         config_set_string(new_conf, "libretro_path", libretro_path);
+         config_file_write(new_conf, default_paths.config_file);
+         config_file_free(new_conf);
       }
    }
 }
