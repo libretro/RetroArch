@@ -59,8 +59,10 @@ enum
 
 enum
 {
+   INPUT_LOOP_NONE = 0,
    INPUT_LOOP_MENU,
-   INPUT_LOOP_RESIZE_MODE
+   INPUT_LOOP_RESIZE_MODE,
+   INPUT_LOOP_FILEBROWSER
 };
 
 class CRetroArch : public CXuiModule

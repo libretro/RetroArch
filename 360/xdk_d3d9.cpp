@@ -742,11 +742,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    /* XBox 360 specific font code */
    if (msg && !menu_enabled)
    {
-      if(IS_TIMER_EXPIRED(d3d))
-      {
-         xdk360_console_format(msg);
-         SET_TIMER_EXPIRATION(d3d, 30);
-      }
+	   xdk360_console_format(msg);
 
       xdk360_console_draw();
    }
