@@ -54,19 +54,17 @@ void rarch_console_name_from_id(char *name, size_t size)
    }
 }
 
-bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
+bool rarch_configure_libretro_core(const char *core_exe_path, const char *tmp_path,
  const char *libretro_path, const char *config_path, const char *extension)
 {
-   bool ret = false;
    bool find_libretro_file = false;
-   char libretro_core_installed[1024];
 
    g_extern.verbose = true;
 
    //install and rename libretro core first if 'CORE' executable exists
-   if (path_file_exists(full_path))
+   if (path_file_exists(core_exe_path))
    {
-      size_t sizeof_libretro_core = sizeof(libretro_core_installed);
+      bool ret = false;
       char tmp_path2[PATH_MAX], tmp_pathnewfile[PATH_MAX];
 
       rarch_console_name_from_id(tmp_path2, sizeof(tmp_path2));
@@ -89,30 +87,23 @@ bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
       }
 
       //now attempt the renaming.
-      ret = rename(full_path, tmp_pathnewfile);
+      ret = rename(core_exe_path, tmp_pathnewfile);
 
       if (ret == 0)
       {
-         RARCH_LOG("libretro core [%s] renamed to: [%s].\n", full_path, tmp_pathnewfile);
-         strlcpy(libretro_core_installed, tmp_pathnewfile, sizeof_libretro_core);
-         ret = 1;
+         RARCH_LOG("libretro core [%s] renamed to: [%s].\n", core_exe_path, tmp_pathnewfile);
+         snprintf(g_settings.libretro, sizeof(g_settings.libretro), tmp_pathnewfile);
       }
       else
       {
+         
          RARCH_ERR("Failed to rename CORE executable.\n");
-         RARCH_WARN("CORE executable was not found, or some other errors occurred. Will attempt to load libretro core path from config file.\n");
-         ret = 0;
+         RARCH_WARN("CORE executable was not found, or some other error occurred. Will attempt to load libretro core path from config file.\n");
+	 find_libretro_file = true;
       }
    }
 
    g_extern.verbose = false;
-
-   //if we have just installed a libretro core, set libretro path in settings to newly installed libretro core
-
-   if(ret)
-      strlcpy(g_settings.libretro, libretro_core_installed, sizeof(g_settings.libretro));
-   else
-      find_libretro_file = true;
 
    return find_libretro_file;
 }
@@ -134,6 +125,14 @@ bool rarch_manage_libretro_extension_supported(const char *filename)
 }
 
 #endif
+
+bool rarch_manage_libretro_exists(const char *path)
+{
+   if(path_file_exists(path))
+      return true;
+   else
+      return false;
+}
 
 void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext)
 {

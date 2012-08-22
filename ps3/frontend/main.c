@@ -253,10 +253,10 @@ int main(int argc, char *argv[])
    const char *extension = default_paths.executable_extension;
    const input_driver_t *input = &input_ps3;
 
-   char full_path[1024];
-   snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
+   char core_exe_path[1024];
+   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
 
-   bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
+   bool find_libretro_file = rarch_configure_libretro_core(core_exe_path, path_prefix, path_prefix, 
    default_paths.config_file, extension);
 
    rarch_settings_set_default(input);

@@ -43,6 +43,8 @@ bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
 
 // Transforms a library id to a name suitable as a pathname.
 bool rarch_manage_libretro_extension_supported(const char *filename);
+bool rarch_manage_libretro_exists(const char *path);
 #endif
+
 
 #endif
