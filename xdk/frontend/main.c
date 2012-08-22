@@ -135,6 +135,7 @@ static void system_init(void)
 
    // Mount drives
    xbox_io_mount("A:", "cdrom0");
+   xbox_io_mount("C:", "Harddisk0\\Partition1");
    xbox_io_mount("E:", "Harddisk0\\Partition1");
    xbox_io_mount("Z:", "Harddisk0\\Partition2");
    xbox_io_mount("F:", "Harddisk0\\Partition6");
