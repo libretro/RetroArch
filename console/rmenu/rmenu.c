@@ -233,7 +233,7 @@ static void populate_setting_item(unsigned i, item *current_item)
 	 break;
       case SETTING_SOFT_DISPLAY_FILTER:
          snprintf(current_item->text, sizeof(current_item->text), "Soft Display Filter");
-         snprintf(setting_text, sizeof(current_item->setting_text), g_console.soft_display_filter_enable ? "ON" : "OFF")
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.soft_display_filter_enable ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Soft Display Filter].");
 	 break;
 #endif
