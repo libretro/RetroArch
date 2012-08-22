@@ -111,7 +111,7 @@ static int list_comp(const void *a_, const void *b_)
    if (a->type != b->type)
       return a->type == RGUI_FILE_DIRECTORY ? -1 : 1;
 
-   return strcmp(a->path, b->path);
+   return strcasecmp(a->path, b->path);
 }
 
 void rgui_list_sort(rgui_list_t *list)
