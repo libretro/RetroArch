@@ -871,7 +871,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       else if(tmp_browser->current_dir.list->elems[index].attr.b)
       {
          snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
-		 filebrowser_set_root_and_ext(tmp_browser, rarch_console_get_rom_ext(), path);
+		 filebrowser_set_root_and_ext(tmp_browser, "xex|XEX", path);
    uint64_t action = (1 << RMENU_DEVICE_NAV_B);
          filebrowser_fetch_directory_entries(tmp_browser, action, &m_romlist, &m_rompathtitle);
       }
