@@ -92,7 +92,7 @@ void rarch_settings_change(unsigned setting)
          g_console.ingame_menu_enable = false;
          g_console.mode_switch = MODE_EXIT;
          break;
-      case S_RETURN_TO_DASHBOARD:
+      case S_QUIT_RARCH:
          g_console.menu_enable = false;
          g_console.initialize_rarch_enable = false;
          g_console.mode_switch = MODE_EXIT;

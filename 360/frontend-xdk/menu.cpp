@@ -823,8 +823,8 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    if (g_console.emulator_initialized)
                rarch_settings_change(S_RETURN_TO_GAME);
 	    break;
-	 case MENU_ITEM_RETURN_TO_DASHBOARD:
-	    rarch_settings_change(S_RETURN_TO_DASHBOARD);
+	 case MENU_ITEM_QUIT_RARCH:
+	    rarch_settings_change(S_QUIT_RARCH);
 	    break;
       }
    }
@@ -1028,7 +1028,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       NavigateForward(app.hRetroArchSettings);
    }
    else if ( hObjPressed == m_quit )
-      rarch_settings_change(S_RETURN_TO_DASHBOARD);
+      rarch_settings_change(S_QUIT_RARCH);
 
    bHandled = TRUE;
    return 0;

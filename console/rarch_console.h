@@ -51,7 +51,8 @@ enum {
 #ifdef HAVE_MULTIMAN
    MENU_ITEM_RETURN_TO_MULTIMAN,
 #endif
-   MENU_ITEM_RETURN_TO_DASHBOARD
+   MENU_ITEM_QUIT_RARCH,
+   MENU_ITEM_LAST
 };
 
 enum
@@ -111,7 +112,5 @@ typedef struct
 } default_paths_t;
 
 extern default_paths_t default_paths;
-
-#define MENU_ITEM_LAST MENU_ITEM_RETURN_TO_DASHBOARD+1
 
 #endif

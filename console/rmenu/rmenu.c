@@ -354,6 +354,11 @@ static void populate_setting_item(unsigned i, item *current_item)
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", fname);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a default libretro core to launch at start-up.");
 	 break;
+      case SETTING_QUIT_RARCH:
+         snprintf(current_item->text, sizeof(current_item->text), "Quit RetroArch and save settings ");
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Quits RetroArch and saves the settings.");
+	 break;
       case SETTING_EMU_AUDIO_MUTE:
          snprintf(current_item->text, sizeof(current_item->text), "Mute Audio");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.audio_data.mute ? "ON" : "OFF");
@@ -1317,6 +1322,12 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 		   {
 		   }
 		   break;
+	   case SETTING_QUIT_RARCH:
+		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+		   {
+                      rarch_settings_change(S_QUIT_RARCH);
+                   }
+                   break;
 	   case SETTING_EMU_AUDIO_MUTE:
 		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
             rarch_settings_change(S_AUDIO_MUTE);
@@ -2083,9 +2094,9 @@ static void ingame_menu(menu *current_menu, uint64_t input)
 	    snprintf(comment, sizeof(comment), "Press [%s] to quit RetroArch and return to multiMAN.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
 #endif
-	 case MENU_ITEM_RETURN_TO_DASHBOARD:
+	 case MENU_ITEM_QUIT_RARCH:
 	    if(input & (1 << RMENU_DEVICE_NAV_B))
-          rarch_settings_change(S_RETURN_TO_DASHBOARD);
+          rarch_settings_change(S_QUIT_RARCH);
 
 	    snprintf(comment, sizeof(comment), "Press [%s] to quit RetroArch.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
@@ -2150,7 +2161,7 @@ static void ingame_menu(menu *current_menu, uint64_t input)
    context->render_msg(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");
 #endif
 
-   context->render_msg(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_RETURN_TO_DASHBOARD)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_DASHBOARD), "Return to Dashboard");
+   context->render_msg(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_QUIT_RARCH)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_QUIT_RARCH), "Quit RetroArch");
 
    context->render_msg(default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, comment);
 
@@ -2341,15 +2352,18 @@ void menu_loop(void)
          // if we want to force goto the emulation loop, skip this
          if(g_console.mode_switch != MODE_EMULATION)
          {
+            if(g_console.mode_switch == MODE_EXIT)
+            {
+            }
             // for ingame menu, we need a different precondition because menu_enable
             // can be set to false when going back from ingame menu to menu
-            if(g_console.ingame_menu_enable == true)
+            else if(g_console.ingame_menu_enable == true)
             {
                //we want to force exit when mode_switch is set to MODE_EXIT
                if(g_console.mode_switch != MODE_EXIT)
                   g_console.mode_switch = (((old_state & (1 << RMENU_DEVICE_NAV_L3)) && (old_state & (1 << RMENU_DEVICE_NAV_R3)) && g_console.emulator_initialized)) ? MODE_EMULATION : MODE_MENU;
             }
-            else
+	    else
             {
                g_console.menu_enable = !(((old_state & (1 << RMENU_DEVICE_NAV_L3)) && (old_state & (1 << RMENU_DEVICE_NAV_R3)) && g_console.emulator_initialized));
                g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
