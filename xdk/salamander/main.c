@@ -54,12 +54,19 @@ static void find_and_set_first_file(void)
 #if defined(_XBOX360)
    "game:\\", "xex"
 #elif defined(_XBOX1)
-   "D:\\", "xbe"
+   "D:", "xbe"
 #endif
 );
 
    if(first_file)
+   {
+#ifdef _XBOX1
+      snprintf(libretro_path, sizeof(libretro_path), "D:\\%s", first_file);
+#else
       strlcpy(libretro_path, first_file, sizeof(libretro_path));
+#endif
+      RARCH_LOG("libretro_path now set to: %s.\n", libretro_path);
+   }
    else
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
 }
@@ -67,17 +74,9 @@ static void find_and_set_first_file(void)
 static void init_settings(void)
 {
    char tmp_str[PATH_MAX];
-   bool config_file_exists;
+   bool config_file_exists = false;
 
-   if(!path_file_exists(SYS_CONFIG_FILE))
-   {
-      FILE * f;
-      config_file_exists = false;
-      RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", SYS_CONFIG_FILE);
-      f = fopen(SYS_CONFIG_FILE, "w");
-      fclose(f);
-   }
-   else
+   if(path_file_exists(SYS_CONFIG_FILE))
       config_file_exists = true;
 
    //try to find CORE executable
@@ -99,11 +98,11 @@ static void init_settings(void)
       if(config_file_exists)
       {
          config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
-	 config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
-	 snprintf(libretro_path, sizeof(libretro_path), tmp_str);
+         config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
+         snprintf(libretro_path, sizeof(libretro_path), tmp_str);
       }
 
-      if(!config_file_exists || !strcmp(libretro_path, ""))
+      if(!config_file_exists || strcmp(libretro_path, "") == 0)
          find_and_set_first_file();
       else
       {
@@ -170,6 +169,7 @@ static void get_environment_settings (void)
 int main(int argc, char *argv[])
 {
    XINPUT_STATE state;
+   (void)state;
 
    get_environment_settings();
 

@@ -27,7 +27,15 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       config_file_t * conf = config_file_new(conf_name);
 
       if(!conf)
+      {
+#ifdef RARCH_CONSOLE
+         FILE * f;
+         RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", conf_name);
+         f = fopen(conf_name, "w");
+         fclose(f);
+#endif
          return;
+      }
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
       if(find_libretro_path)
@@ -122,7 +130,10 @@ void rarch_config_save(const char * conf_name)
       config_file_t * conf = config_file_new(conf_name);
 
       if(!conf)
+      {
+         RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", conf_name);
          return;
+      }
 
       // g_settings
       config_set_string(conf, "libretro_path", g_settings.libretro);
