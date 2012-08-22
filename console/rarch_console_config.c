@@ -38,7 +38,7 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       }
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-      if(find_libretro_path)
+      if(find_libretro_path || !g_settings.libretro[0])
       {
          CONFIG_GET_STRING(libretro, "libretro_path");
 
