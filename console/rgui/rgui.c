@@ -33,6 +33,12 @@
 #define TERM_WIDTH (((RGUI_WIDTH - TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
 #define TERM_HEIGHT (((RGUI_HEIGHT - TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
 
+#ifdef HAVE_HDD_CACHE_PARTITION
+#define LAST_ZIP_EXTRACT ZIP_EXTRACT_TO_CACHE_DIR
+#else
+#define LAST_ZIP_EXTRACT ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE
+#endif
+
 struct rgui_handle
 {
    uint32_t *frame_buf;
@@ -318,8 +324,8 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), "(DEV)");
             w = 5;
             break;
-	 case RGUI_SETTINGS_SAVESTATE_SAVE:
-	 case RGUI_SETTINGS_SAVESTATE_LOAD:
+         case RGUI_SETTINGS_SAVESTATE_SAVE:
+         case RGUI_SETTINGS_SAVESTATE_LOAD:
             snprintf(type_str, sizeof(type_str), "%d", g_extern.state_slot);
             break;
          case RGUI_SETTINGS_VIDEO_FILTER:
@@ -352,6 +358,21 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
             snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
             break;
+         case RGUI_SETTINGS_ZIP_EXTRACT:
+            switch(g_console.zip_extract_mode)
+            {
+               case ZIP_EXTRACT_TO_CURRENT_DIR:
+                  snprintf(type_str, sizeof(type_str), "Current");
+                  break;
+               case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
+                  snprintf(type_str, sizeof(type_str), "Current + Load");
+                  break;
+               case ZIP_EXTRACT_TO_CACHE_DIR:
+                  snprintf(type_str, sizeof(type_str), "Cache");
+                  break;
+            }
+            break;
+         case RGUI_SETTINGS_CUSTOM_VIEWPORT:
          case RGUI_SETTINGS_CORE:
          case RGUI_SETTINGS_CONTROLLER_1:
          case RGUI_SETTINGS_CONTROLLER_2:
@@ -388,10 +409,25 @@ static void render_text(rgui_handle_t *rgui)
             w = 0;
             break;
       }
+
+      const char *entry_title;
+      char tmp[TERM_WIDTH];
+      size_t path_len = strlen(path);
+      // trim long filenames
+      if ((type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY) && path_len > TERM_WIDTH - (w + 1 + 2))
+      {
+         snprintf(tmp, sizeof(tmp), "%.*s...%s", TERM_WIDTH - (w + 1 + 2) - 8, path, &path[path_len - 5]);
+         entry_title = tmp;
+      }
+      else
+      {
+         entry_title = path;
+      }
+
       snprintf(message, sizeof(message), "%c %-*s %-*s\n",
             i == rgui->directory_ptr ? '>' : ' ',
             TERM_WIDTH - (w + 1 + 2),
-            path,
+            entry_title,
             w,
             type_str);
 
@@ -563,14 +599,26 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          else if (action == RGUI_ACTION_RIGHT)
             rarch_settings_change(S_AUDIO_CONTROL_RATE_INCREMENT);
          break;
+      case RGUI_SETTINGS_ZIP_EXTRACT:
+         if (action == RGUI_ACTION_START)
+            g_console.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR;
+         else if (action == RGUI_ACTION_LEFT && g_console.zip_extract_mode > 0)
+            g_console.zip_extract_mode--;
+         else if (action == RGUI_ACTION_RIGHT && g_console.zip_extract_mode < LAST_ZIP_EXTRACT)
+            g_console.zip_extract_mode++;
+         break;
       case RGUI_SETTINGS_RESTART_EMULATOR:
          if (action == RGUI_ACTION_OK)
          {
 #ifdef GEKKO
-            snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "boot.dol");
+            snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s/boot.dol", default_paths.core_dir);
 #endif
             rarch_settings_change(S_RETURN_TO_LAUNCHER);
          }
+         break;
+      case RGUI_SETTINGS_QUIT_EMULATOR:
+         if (action == RGUI_ACTION_OK)
+            rarch_settings_change(S_QUIT);
          break;
       // controllers
       case RGUI_SETTINGS_BIND_DEVICE:
@@ -656,12 +704,14 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("Rotation", RGUI_SETTINGS_VIDEO_ROTATION);
    RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
    RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);
+   RGUI_MENU_ITEM("Zip Extract Directory", RGUI_SETTINGS_ZIP_EXTRACT);
    RGUI_MENU_ITEM("Core", RGUI_SETTINGS_CORE);
    RGUI_MENU_ITEM("Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1);
    RGUI_MENU_ITEM("Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2);
    RGUI_MENU_ITEM("Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3);
    RGUI_MENU_ITEM("Controller #4 Config", RGUI_SETTINGS_CONTROLLER_4);
    RGUI_MENU_ITEM("Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR);
+   RGUI_MENU_ITEM("Exit RetroArch", RGUI_SETTINGS_QUIT_EMULATOR);
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
@@ -987,6 +1037,7 @@ void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             {
                snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s", dir, path);
                rarch_console_load_game_wrap(rgui->path_buf, g_console.zip_extract_mode, S_DELAY_1);
+               rgui->need_refresh = true; // in case of zip extract
                rgui->msg_force = true;
             }
          }
@@ -1019,7 +1070,7 @@ void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    // refresh values in case the stack changed
    rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
-   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE))
+   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE) && g_console.mode_switch == MODE_MENU)
    {
       rgui->need_refresh = false;
       rgui_list_clear(rgui->folder_buf);
