@@ -47,6 +47,17 @@
 
 #define NUM_ENTRY_PER_PAGE 15
 
+#define DRIVE_MAPPING_SIZE 4
+
+const char drive_mappings[DRIVE_MAPPING_SIZE][32] = {
+   "/app_home/",
+   "/dev_hdd0/",
+   "/dev_hdd1/",
+   "/host_root/"
+};
+
+unsigned char drive_mapping_idx = 1;
+
 static void rmenu_ctx_ps3_clear(void)
 {
    gfx_ctx_clear();
@@ -144,6 +155,20 @@ static void rmenu_ctx_ps3_screenshot_dump(void *data)
    (void)data;
 }
 
+static const char * rmenu_ctx_ps3_drive_mapping_previous(void)
+{
+   if(drive_mapping_idx > 0)
+      drive_mapping_idx--;
+   return drive_mappings[drive_mapping_idx];
+}
+
+static const char * rmenu_ctx_ps3_drive_mapping_next(void)
+{
+   if((drive_mapping_idx + 1) < DRIVE_MAPPING_SIZE)
+      drive_mapping_idx++;
+   return drive_mappings[drive_mapping_idx];
+}
+
 const rmenu_context_t rmenu_ctx_ps3 = {
    .clear = rmenu_ctx_ps3_clear,
    .blend = rmenu_ctx_ps3_blend, 
@@ -157,4 +182,6 @@ const rmenu_context_t rmenu_ctx_ps3 = {
     .screenshot_dump = rmenu_ctx_ps3_screenshot_dump,
    .swap_buffers = rmenu_ctx_ps3_swap_buffers,
    .set_default_pos = rmenu_ctx_ps3_set_default_pos,
+   .drive_mapping_prev = rmenu_ctx_ps3_drive_mapping_previous,
+   .drive_mapping_next = rmenu_ctx_ps3_drive_mapping_next,
 };

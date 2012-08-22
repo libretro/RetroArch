@@ -84,6 +84,8 @@ typedef enum {
    MENU_ROMSELECT_ACTION_OK,
    MENU_ROMSELECT_ACTION_GOTO_SETTINGS,
    MENU_ROMSELECT_ACTION_NOOP,
+   MENU_DRIVE_MAPPING_PREV,
+   MENU_DRIVE_MAPPING_NEXT
 } menu_romselect_action_t;
 
 static const struct retro_keybind _rmenu_nav_binds[] = {
@@ -1652,6 +1654,26 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
 
    switch(action)
    {
+      case MENU_DRIVE_MAPPING_PREV:
+         {
+            const char * drive_map = context->drive_mapping_prev();
+            if(drive_map != NULL)
+            {
+               filebrowser_set_root_and_ext(filebrowser, rarch_console_get_rom_ext(), drive_map);
+               browser_update(filebrowser, 1 << RMENU_DEVICE_NAV_B, rarch_console_get_rom_ext());
+            }
+         }
+         break;
+      case MENU_DRIVE_MAPPING_NEXT:
+         {
+            const char * drive_map = context->drive_mapping_next();
+            if(drive_map != NULL)
+            {
+               filebrowser_set_root_and_ext(filebrowser, rarch_console_get_rom_ext(), drive_map);
+               browser_update(filebrowser, 1 << RMENU_DEVICE_NAV_B, rarch_console_get_rom_ext());
+            }
+         }
+         break;
       case MENU_ROMSELECT_ACTION_OK:
          if(filebrowser_get_current_path_isdir(filebrowser))
             ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
@@ -1685,6 +1707,10 @@ static void select_rom(menu *current_menu, uint64_t input)
       action = MENU_ROMSELECT_ACTION_GOTO_SETTINGS;
    else if (input & (1 << RMENU_DEVICE_NAV_B))
       action = MENU_ROMSELECT_ACTION_OK;
+   else if (input & (1 << RMENU_DEVICE_NAV_L1))
+      action = MENU_DRIVE_MAPPING_PREV;
+   else if (input & (1 << RMENU_DEVICE_NAV_R1))
+      action = MENU_DRIVE_MAPPING_NEXT;
 
    if (action != MENU_ROMSELECT_ACTION_NOOP)
       menu_romselect_iterate(&browser, action);

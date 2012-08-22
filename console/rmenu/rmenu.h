@@ -80,6 +80,8 @@ typedef struct rmenu_context
    void (*screenshot_dump)(void *data);
    void (*swap_buffers)(void);
    void (*set_default_pos)(rmenu_default_positions_t *position);
+   const char * (*drive_mapping_prev)(void);
+   const char * (*drive_mapping_next)(void);
 } rmenu_context_t;
 
 enum

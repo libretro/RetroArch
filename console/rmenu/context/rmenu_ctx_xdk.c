@@ -44,6 +44,18 @@
 
 #define NUM_ENTRY_PER_PAGE 12
 
+#define DRIVE_MAPPING_SIZE 5
+
+const char drive_mappings[DRIVE_MAPPING_SIZE][32] = {
+   "C:",
+   "D:",
+   "E:",
+   "F:",
+   "G:"
+};
+
+unsigned char drive_mapping_idx = 1;
+
 int xpos, ypos;
 texture_image m_menuMainRomSelectPanel;
 texture_image m_menuMainBG;
@@ -157,6 +169,20 @@ static void rmenu_ctx_xdk_screenshot_dump(void *data)
    gfx_ctx_xdk_screenshot_dump(NULL);
 }
 
+static const char * rmenu_ctx_xdk_drive_mapping_previous(void)
+{
+   if(drive_mapping_idx > 0)
+      drive_mapping_idx--;
+   return drive_mappings[drive_mapping_idx];
+}
+
+static const char * rmenu_ctx_xdk_drive_mapping_next(void)
+{
+   if((drive_mapping_idx + 1) < DRIVE_MAPPING_SIZE)
+      drive_mapping_idx++;
+   return drive_mappings[drive_mapping_idx];
+}
+
 const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_clear,
    rmenu_ctx_xdk_blend,
@@ -170,4 +196,6 @@ const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_screenshot_dump,
    rmenu_ctx_xdk_swap_buffers,
    rmenu_ctx_xdk_set_default_pos,
+   rmenu_ctx_xdk_drive_mapping_previous,
+   rmenu_ctx_xdk_drive_mapping_next,
 };
