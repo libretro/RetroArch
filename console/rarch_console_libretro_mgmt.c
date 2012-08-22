@@ -126,14 +126,6 @@ bool rarch_manage_libretro_extension_supported(const char *filename)
 
 #endif
 
-bool rarch_manage_libretro_exists(const char *path)
-{
-   if(path_file_exists(path))
-      return true;
-   else
-      return false;
-}
-
 void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext)
 {
    struct string_list *dir_list = dir_list_new(libretro_path, exe_ext, false);
@@ -151,7 +143,6 @@ void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first
 
    if(first_exe)
    {
-#ifdef IS_SALAMANDER
       char fname_tmp[PATH_MAX];
       fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
 
@@ -170,9 +161,6 @@ void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first
       }
 
       strlcpy(first_file, fname_tmp, size_of_first_file);
-#else
-      strlcpy(first_file, first_exe, size_of_first_file);
-#endif
       RARCH_LOG("Set first entry in libretro core dir to libretro path: [%s].\n", first_file);
    }
 
