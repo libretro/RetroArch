@@ -130,12 +130,9 @@ static void get_environment_settings (void)
 static void system_init(void)
 {
 #ifdef _XBOX1
-   // Set file cache size
-   XSetFileCacheSize(8 * 1024 * 1024);
-
    // Mount drives
    xbox_io_mount("A:", "cdrom0");
-   xbox_io_mount("C:", "Harddisk0\\Partition1");
+   xbox_io_mount("C:", "Harddisk0\\Partition0");
    xbox_io_mount("E:", "Harddisk0\\Partition1");
    xbox_io_mount("Z:", "Harddisk0\\Partition2");
    xbox_io_mount("F:", "Harddisk0\\Partition6");

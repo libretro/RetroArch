@@ -54,7 +54,7 @@ const char drive_mappings[DRIVE_MAPPING_SIZE][32] = {
    "G:"
 };
 
-unsigned char drive_mapping_idx = 1;
+unsigned char drive_mapping_idx = 2;
 
 int xpos, ypos;
 texture_image m_menuMainRomSelectPanel;
