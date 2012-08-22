@@ -230,6 +230,9 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
       m_controlslist.SetText(i, strw_buffer);
    }
 
+   snprintf(buttons[0], sizeof(buttons[0]), "D-Pad Emulation: %s", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[controlno]]);
+   convert_char_to_wchar(strw_buffer, buttons[0], sizeof(strw_buffer));
+   m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
    m_controlslist.SetText(SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
    
    return 0;
@@ -257,28 +260,69 @@ HRESULT CRetroArchControls::OnControlNavigate(
    switch(pControlNavigateData->nControlNavigate)
    {
       case XUI_CONTROL_NAVIGATE_LEFT:
-         if(current_index > 0 && current_index != SETTING_CONTROLS_DEFAULT_ALL)
-         {
-            rarch_input_set_keybind(controlno, KEYBIND_DECREMENT, current_index);
-            snprintf(button, sizeof(button), "%s #%d: %s", rarch_input_get_default_keybind_name(current_index), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
-            convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
-            m_controlslist.SetText(current_index, strw_buffer);
-         }
+		  switch(current_index)
+		  {
+			case SETTING_CONTROLS_DPAD_EMULATION:
+				switch(g_settings.input.dpad_emulation[controlno])
+				{
+					case DPAD_EMULATION_NONE:
+						break;
+					case DPAD_EMULATION_LSTICK:
+						g_settings.input.dpad_emulation[controlno] = DPAD_EMULATION_NONE;
+						input_xinput.set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[controlno], controlno);
+						break;
+					case DPAD_EMULATION_RSTICK:
+						g_settings.input.dpad_emulation[controlno] = DPAD_EMULATION_LSTICK;
+						input_xinput.set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[controlno], controlno);
+						break;
+				}
+			  break;
+			case SETTING_CONTROLS_DEFAULT_ALL:
+			  break;
+		     default:
+				 rarch_input_set_keybind(controlno, KEYBIND_DECREMENT, current_index);
+				 snprintf(button, sizeof(button), "%s #%d: %s", rarch_input_get_default_keybind_name(current_index), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+				 convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
+				 m_controlslist.SetText(current_index, strw_buffer);
+				 break;
+		  }
          break;
       case XUI_CONTROL_NAVIGATE_RIGHT:
-         if(current_index < RARCH_FIRST_META_KEY && current_index != SETTING_CONTROLS_DEFAULT_ALL)
-         {
-            rarch_input_set_keybind(controlno, KEYBIND_INCREMENT, current_index);
-            snprintf(button, sizeof(button), "%s #%d: %s", rarch_input_get_default_keybind_name(current_index), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
-            convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
-            m_controlslist.SetText(current_index, strw_buffer);
-         }
+		  switch(current_index)
+		  {
+			case SETTING_CONTROLS_DPAD_EMULATION:
+				switch(g_settings.input.dpad_emulation[controlno])
+				{
+					case DPAD_EMULATION_NONE:
+						g_settings.input.dpad_emulation[controlno] = DPAD_EMULATION_LSTICK;
+						input_xinput.set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[controlno], controlno);
+						break;
+					case DPAD_EMULATION_LSTICK:
+						g_settings.input.dpad_emulation[controlno] = DPAD_EMULATION_RSTICK;
+						input_xinput.set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[controlno], controlno);
+						break;
+					case DPAD_EMULATION_RSTICK:
+						break;
+				}
+			  break;
+			case SETTING_CONTROLS_DEFAULT_ALL:
+			  break;
+			default:
+				rarch_input_set_keybind(controlno, KEYBIND_INCREMENT, current_index);
+				snprintf(button, sizeof(button), "%s #%d: %s", rarch_input_get_default_keybind_name(current_index), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+				convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
+				m_controlslist.SetText(current_index, strw_buffer);
+				break;
+		  }
          break;
       case XUI_CONTROL_NAVIGATE_UP:
       case XUI_CONTROL_NAVIGATE_DOWN:
          break;
    }
 
+   snprintf(button, sizeof(button), "D-Pad Emulation: %s", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[controlno]]);
+   convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
+   m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
    m_controlslist.SetText(SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
 
 	return 0;
@@ -296,6 +340,8 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
       switch(current_index)
       {
+		 case SETTING_CONTROLS_DPAD_EMULATION:
+		  break;
          case SETTING_CONTROLS_DEFAULT_ALL:
             rarch_input_set_default_keybinds(0);
 
@@ -318,6 +364,9 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
       }
    }
 
+   snprintf(buttons[current_index], sizeof(buttons[current_index]), "D-Pad Emulation: %s", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[controlno]]);
+   convert_char_to_wchar(strw_buffer, buttons[current_index], sizeof(strw_buffer));
+   m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
    m_controlslist.SetText(SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
 
    bHandled = TRUE;
