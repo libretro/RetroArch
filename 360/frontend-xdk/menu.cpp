@@ -268,12 +268,10 @@ HRESULT CRetroArchControls::OnControlNavigate(
 					case DPAD_EMULATION_NONE:
 						break;
 					case DPAD_EMULATION_LSTICK:
-						g_settings.input.dpad_emulation[controlno] = DPAD_EMULATION_NONE;
-						input_xinput.set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[controlno], controlno);
+						input_xinput.set_analog_dpad_mapping(0, DPAD_EMULATION_NONE, controlno);
 						break;
 					case DPAD_EMULATION_RSTICK:
-						g_settings.input.dpad_emulation[controlno] = DPAD_EMULATION_LSTICK;
-						input_xinput.set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[controlno], controlno);
+						input_xinput.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, controlno);
 						break;
 				}
 			  break;
@@ -294,12 +292,10 @@ HRESULT CRetroArchControls::OnControlNavigate(
 				switch(g_settings.input.dpad_emulation[controlno])
 				{
 					case DPAD_EMULATION_NONE:
-						g_settings.input.dpad_emulation[controlno] = DPAD_EMULATION_LSTICK;
-						input_xinput.set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[controlno], controlno);
+						input_xinput.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, controlno);
 						break;
 					case DPAD_EMULATION_LSTICK:
-						g_settings.input.dpad_emulation[controlno] = DPAD_EMULATION_RSTICK;
-						input_xinput.set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[controlno], controlno);
+						input_xinput.set_analog_dpad_mapping(0, DPAD_EMULATION_RSTICK, controlno);
 						break;
 					case DPAD_EMULATION_RSTICK:
 						break;
