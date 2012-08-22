@@ -54,6 +54,17 @@ static void find_and_set_first_file(void)
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
 }
 
+#define MAKE_DIR(x) {\
+   if (!path_is_directory((x)))\
+   {\
+      RARCH_WARN("Directory \"%s\" does not exists, creating\n", (x));\
+      if (mkdir((x), 0777) != 0)\
+      {\
+         RARCH_ERR("Could not create directory \"%s\"\n", (x));\
+      }\
+   }\
+}
+
 static void init_settings(void)
 {
    char tmp_str[512];
@@ -64,6 +75,7 @@ static void init_settings(void)
       FILE * f;
       config_file_exists = false;
       RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", default_paths.config_file);
+      MAKE_DIR(default_paths.port_dir);
       f = fopen(default_paths.config_file, "w");
       fclose(f);
    }
@@ -86,6 +98,7 @@ static void init_settings(void)
       {
          config_file_t * conf = config_file_new(default_paths.config_file);
          config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
+         config_file_free(conf);
          snprintf(libretro_path, sizeof(libretro_path), tmp_str);
       }
 
@@ -94,6 +107,14 @@ static void init_settings(void)
       else
       {
          RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
+      }
+
+      if (!config_file_exists)
+      {
+         config_file_t *new_conf = config_file_new(NULL);
+         config_set_string(new_conf, "libretro_path", libretro_path);
+         config_file_write(new_conf, default_paths.config_file);
+         config_file_free(new_conf);
       }
    }
 }
