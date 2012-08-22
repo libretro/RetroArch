@@ -20,10 +20,13 @@
 #include "../conf/config_file_macros.h"
 
 #include "rarch_console_config.h"
-#include "rarch_console_libretro_mgmt.h"
 
 void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool find_libretro_path)
 {
+      //if a core has been upgraded, settings need to be saved
+      if(!find_libretro_path)
+         rarch_config_save(conf_name);
+
       config_file_t * conf = config_file_new(conf_name);
 
       if(!conf)
@@ -37,23 +40,9 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
          return;
       }
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-      if(find_libretro_path || !g_settings.libretro[0])
-      {
-         CONFIG_GET_STRING(libretro, "libretro_path");
-
-         if(!path_file_exists(g_settings.libretro))
-         {
-            char first_file[PATH_MAX];
-            rarch_manage_libretro_set_first_file(first_file, sizeof(first_file), libretro_dir_path, exe_ext);
-            if(first_file != NULL)
-               strlcpy(g_settings.libretro, first_file, sizeof(g_settings.libretro));
-         }
-      }
-#endif
-
       // g_settings
 
+      CONFIG_GET_STRING(libretro, "libretro_path");
       CONFIG_GET_STRING(system_directory, "system_directory");
 #ifdef HAVE_XML
       CONFIG_GET_STRING(cheat_database, "cheat_database");
