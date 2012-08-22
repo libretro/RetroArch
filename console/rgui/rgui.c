@@ -266,7 +266,7 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
 
 static void render_text(rgui_handle_t *rgui)
 {
-   if (rgui->need_refresh)
+   if (rgui->need_refresh && g_console.mode_switch == MODE_MENU)
       return;
 
    size_t begin = rgui->directory_ptr >= TERM_HEIGHT / 2 ?

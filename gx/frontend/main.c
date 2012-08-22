@@ -323,8 +323,6 @@ static void get_environment_settings(void)
    snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.port_dir);
    snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.port_dir);
    strlcpy(default_paths.executable_extension, ".dol", sizeof(default_paths.executable_extension));
-   //RARCH_LOG("port_dir: %s\n", default_paths.port_dir);
-   RARCH_LOG("core_dir: %s\n", default_paths.core_dir);
 }
 
 #define MAKE_FILE(x) {\
