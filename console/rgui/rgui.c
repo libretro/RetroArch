@@ -491,7 +491,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
 
             // Negative pitch is needed as screenshot takes bottom-up,
             // but we use top-down.
-            bool r = screenshot_dump(default_paths.savestate_dir,
+            bool r = screenshot_dump(default_paths.port_dir,
                   data + (height - 1) * (pitch >> 1), 
                   width, height, -pitch, false);
 
