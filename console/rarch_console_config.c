@@ -104,7 +104,8 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
 #endif
       CONFIG_GET_BOOL_CONSOLE(gamma_correction, "gamma_correction");
 #ifdef _XBOX1
-      CONFIG_GET_INT_CONSOLE(flicker_filter, "fliker_filter");
+      CONFIG_GET_INT_CONSOLE(flicker_filter, "flicker_filter");
+      CONFIG_GET_INT_CONSOLE(sound_volume_level, "sound_volume_level");
 #endif
       CONFIG_GET_BOOL_CONSOLE(soft_display_filter_enable, "soft_display_filter_enable");
       CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
@@ -167,6 +168,7 @@ void rarch_config_save(const char * conf_name)
       config_set_bool(conf, "soft_display_filter_enable", g_console.soft_display_filter_enable);
 #ifdef _XBOX1
       config_set_int(conf, "flicker_filter", g_console.flicker_filter);
+      config_set_int(conf, "sound_volume_level", g_console.sound_volume_level);
 #endif
       config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
       config_set_bool(conf, "triple_buffering_enable", g_console.triple_buffering_enable);

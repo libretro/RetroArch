@@ -358,10 +358,20 @@ static void populate_setting_item(unsigned i, item *current_item)
          snprintf(current_item->text, sizeof(current_item->text), "Mute Audio");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.audio_data.mute ? "ON" : "OFF");
 	 if(g_extern.audio_data.mute)
-		 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Audio Mute] feature is set to 'ON'. The game audio will be muted.");
+		 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Audio Mute] is set to 'ON'. The game audio will be muted.");
 	 else
-		 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Audio Mute] feature is set to 'OFF'.");
+		 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Audio Mute] is set to 'OFF'.");
 	 break;
+#ifdef _XBOX1
+      case SETTING_EMU_AUDIO_SOUND_VOLUME_LEVEL:
+         snprintf(current_item->text, sizeof(current_item->text), "Volume Level");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.sound_volume_level ? "Loud" : "Normal");
+	 if(g_extern.audio_data.mute)
+       snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Volume Level] is set to 'Loud'");
+	 else
+		 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Volume Level' is set to 'Normal'.");
+         break;
+#endif
       case SETTING_ENABLE_CUSTOM_BGM:
          snprintf(current_item->text, sizeof(current_item->text), "Custom BGM Option");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.custom_bgm_enable ? "ON" : "OFF");
@@ -1314,6 +1324,23 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
             rarch_settings_default(S_DEF_AUDIO_MUTE);
 		   break;
+#ifdef _XBOX1
+      case SETTING_EMU_AUDIO_SOUND_VOLUME_LEVEL:
+		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+         {
+            g_console.sound_volume_level = !g_console.sound_volume_level;
+            if(g_console.info_msg_enable)
+               rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+         }
+
+		   if(input & (1 << RMENU_DEVICE_NAV_START))
+         {
+            g_console.sound_volume_level = 0;
+            if(g_console.info_msg_enable)
+               rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+         }
+         break;
+#endif
 	   case SETTING_ENABLE_CUSTOM_BGM:
 		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 		   {

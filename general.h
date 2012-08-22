@@ -214,6 +214,7 @@ struct console_settings
 #endif
 #ifdef _XBOX1
    unsigned flicker_filter;
+   unsigned sound_volume_level;
 #endif
    bool soft_display_filter_enable;
    bool initialize_rarch_enable;
