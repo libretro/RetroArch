@@ -404,7 +404,7 @@ int main(void)
 
    char tmp_path[PATH_MAX];
    const char *extension = default_paths.executable_extension;
-   snprintf(tmp_path, sizeof(tmp_path), default_paths.core_dir);
+   snprintf(tmp_path, sizeof(tmp_path), "%s/", default_paths.core_dir);
    const char *path_prefix = tmp_path; 
 
    char full_path[1024];

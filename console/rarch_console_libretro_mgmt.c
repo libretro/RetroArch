@@ -96,10 +96,9 @@ bool rarch_configure_libretro_core(const char *core_exe_path, const char *tmp_pa
       }
       else
       {
-         
          RARCH_ERR("Failed to rename CORE executable.\n");
          RARCH_WARN("CORE executable was not found, or some other error occurred. Will attempt to load libretro core path from config file.\n");
-	 find_libretro_file = true;
+         find_libretro_file = true;
       }
    }
 
