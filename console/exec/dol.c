@@ -62,10 +62,13 @@ uint32_t *load_dol_image (void *dolstart)
          DCFlushRangeNoSync ((void *) dolfile->data_start[i], dolfile->data_size[i]);
       }
 
-      RARCH_LOG("clearing bss\n");
+      // clearing bss will mess up loading the huge fba core, so we let libogc's startup routine do it
+      // we also cross our fingers and pray to god launching the loader from the fba core doens't overwrite
+      // anything too important in this section
+      /* RARCH_LOG("clearing bss\n");
 
       memset ((void *) dolfile->bss_start, 0, dolfile->bss_size);
-      DCFlushRange((void *) dolfile->bss_start, dolfile->bss_size);
+      DCFlushRange((void *) dolfile->bss_start, dolfile->bss_size); */
 
       return (uint32_t *) dolfile->entry_point;
    }
