@@ -413,6 +413,11 @@ static void populate_setting_item(unsigned i, item *current_item)
 	 snprintf(current_item->comment, sizeof(current_item->comment), "Controller %d is currently selected.", currently_selected_controller_menu+1);
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", currently_selected_controller_menu+1);
 	 break;
+      case SETTING_DPAD_EMULATION:
+         snprintf(current_item->text, sizeof(current_item->text), "D-Pad Emulation");
+	 snprintf(current_item->comment, sizeof(current_item->comment), "[%s] from Controller %d is mapped to D-pad.", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[currently_selected_controller_menu]], currently_selected_controller_menu+1);
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[currently_selected_controller_menu]]);
+         break;
       case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
       case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
       case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT:
@@ -1427,6 +1432,40 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
 			   currently_selected_controller_menu = 0;
 		   break; 
+	   case SETTING_DPAD_EMULATION:
+		   if(input & (1 << RMENU_DEVICE_NAV_LEFT))
+		   {
+                      switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
+		      {
+                         case DPAD_EMULATION_NONE:
+			    break;
+			 case DPAD_EMULATION_LSTICK:
+			    input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_NONE, currently_selected_controller_menu);
+			    break;
+			 case DPAD_EMULATION_RSTICK:
+			    input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
+			    break;
+		      }
+		   }
+
+		   if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+		   {
+                      switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
+		      {
+                         case DPAD_EMULATION_NONE:
+                            input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
+			    break;
+			 case DPAD_EMULATION_LSTICK:
+			    input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_RSTICK, currently_selected_controller_menu);
+			    break;
+			 case DPAD_EMULATION_RSTICK:
+			    break;
+		      }
+		   }
+
+		   if(input & (1 << RMENU_DEVICE_NAV_START))
+                      input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
+                   break;
 	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
 		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_UP, input);
 		   break;
