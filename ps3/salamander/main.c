@@ -169,8 +169,8 @@ static void get_environment_settings (void)
       snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.cgp_dir);
       snprintf(default_paths.border_dir, sizeof(default_paths.border_dir), "%s/borders", default_paths.core_dir);
       snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
+      snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "EBOOT.BIN");
    }
-   snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "");
 }
 
 //dummy - just to avoid the emitted warnings

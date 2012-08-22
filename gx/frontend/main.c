@@ -323,6 +323,7 @@ static void get_environment_settings(void)
    snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.port_dir);
    snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.port_dir);
    strlcpy(default_paths.executable_extension, ".dol", sizeof(default_paths.executable_extension));
+   snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "boot.dol");
 }
 
 #define MAKE_FILE(x) {\

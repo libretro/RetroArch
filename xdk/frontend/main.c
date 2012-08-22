@@ -113,6 +113,7 @@ static void get_environment_settings (void)
    strlcpy(default_paths.executable_extension, ".xbe", sizeof(default_paths.executable_extension));
    strlcpy(default_paths.filebrowser_startup_dir, "D:", sizeof(default_paths.filebrowser_startup_dir));
    strlcpy(default_paths.screenshots_dir, "D:\\screenshots", sizeof(default_paths.screenshots_dir));
+   snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "default.xbe");
 #elif defined(_XBOX360)
 #ifdef HAVE_HDD_CACHE_PARTITION
    strlcpy(default_paths.cache_dir, "cache:\\", sizeof(default_paths.cache_dir));
@@ -124,6 +125,7 @@ static void get_environment_settings (void)
    strlcpy(default_paths.system_dir, "game:\\system\\", sizeof(default_paths.system_dir));
    strlcpy(default_paths.executable_extension, ".xex", sizeof(default_paths.executable_extension));
    strlcpy(default_paths.filebrowser_startup_dir, "game:", sizeof(default_paths.filebrowser_startup_dir));
+   snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "default.xex");
 #endif
 }
 
