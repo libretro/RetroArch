@@ -37,7 +37,7 @@
 #include <dirent.h>
 
 #ifdef HW_RVL
-#include <sdcard/wiisd_io.h>
+#include <ogc/ios.h>
 #endif
 #include <sdcard/gcsd.h>
 #include <fat.h>
@@ -313,8 +313,10 @@ int rarch_main(int argc, char **argv);
 
 static void get_environment_settings(void)
 {
-   snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/retroarch");
    getcwd(default_paths.core_dir, MAXPATHLEN);
+   *(strrchr(default_paths.core_dir, '/')) = 0;
+   char *device_end = strchr(default_paths.core_dir, '/');
+   snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "%.*s/retroarch", device_end - default_paths.core_dir, default_paths.core_dir);
    snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
    snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.port_dir);
    snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.port_dir);
@@ -364,6 +366,7 @@ static void make_directories(void)
 int main(void)
 {
 #ifdef HW_RVL
+   IOS_ReloadIOS(IOS_GetVersion());
    L2Enhance();
 #endif
 

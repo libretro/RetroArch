@@ -30,6 +30,10 @@
 #include <ogc/lwp_threads.h>
 #include <ogc/system.h>
 #include <gctypes.h>
+#ifdef HW_RVL
+#include <sdcard/wiisd_io.h>
+#include <ogc/usbstorage.h>
+#endif
 #include "exec/dol.h"
 #endif
 
@@ -88,6 +92,10 @@ void rarch_console_exec(const char *path)
 #endif
    fatUnmount("carda:");
    fatUnmount("cardb:");
+#ifdef HW_RVL
+   __io_wiisd.shutdown();
+   __io_usbstorage.shutdown();
+#endif
    uint32_t *ep = load_dol_image(mem);
    
    if (ep[1] == ARGV_MAGIC)

@@ -18,6 +18,7 @@
 #include "../../boolean.h"
 #include <stddef.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include <sdcard/wiisd_io.h>
 #include <sdcard/gcsd.h>
@@ -67,7 +68,7 @@ static void find_and_set_first_file(void)
 
 static void init_settings(void)
 {
-   char tmp_str[512];
+   char tmp_str[512] = {0};
    bool config_file_exists;
 
    if(!path_file_exists(default_paths.config_file))
@@ -108,21 +109,15 @@ static void init_settings(void)
       {
          RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
       }
-
-      if (!config_file_exists)
-      {
-         config_file_t *new_conf = config_file_new(NULL);
-         config_set_string(new_conf, "libretro_path", libretro_path);
-         config_file_write(new_conf, default_paths.config_file);
-         config_file_free(new_conf);
-      }
    }
 }
 
 static void get_environment_settings(void)
 {
-   snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/retroarch");
    getcwd(default_paths.core_dir, MAXPATHLEN);
+   *(strrchr(default_paths.core_dir, '/')) = 0;
+   char *device_end = strchr(default_paths.core_dir, '/');
+   snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "%.*s/retroarch", device_end - default_paths.core_dir, default_paths.core_dir);
    snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
    snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.port_dir);
    snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.port_dir);
@@ -137,6 +132,7 @@ static void get_environment_settings(void)
 int main(int argc, char *argv[])
 {
 #ifdef HW_RVL
+   IOS_ReloadIOS(IOS_GetVersion());
    L2Enhance();
 #endif
 
