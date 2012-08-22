@@ -81,27 +81,27 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">
     <LinkIncremental>true</LinkIncremental>
-    <ImageXexOutput>$(OutDir)$(ProjectName).xex</ImageXexOutput>
+    <ImageXexOutput>$(OutDir)default.xex</ImageXexOutput>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">
     <LinkIncremental>true</LinkIncremental>
-    <ImageXexOutput>$(OutDir)$(ProjectName).xex</ImageXexOutput>
+    <ImageXexOutput>$(OutDir)default.xex</ImageXexOutput>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">
     <LinkIncremental>false</LinkIncremental>
-    <ImageXexOutput>$(OutDir)$(ProjectName).xex</ImageXexOutput>
+    <ImageXexOutput>$(OutDir)default.xex</ImageXexOutput>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">
     <LinkIncremental>false</LinkIncremental>
-    <ImageXexOutput>$(OutDir)$(ProjectName).xex</ImageXexOutput>
+    <ImageXexOutput>$(OutDir)default.xex</ImageXexOutput>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">
     <LinkIncremental>false</LinkIncremental>
-    <ImageXexOutput>$(OutDir)$(ProjectName).xex</ImageXexOutput>
+    <ImageXexOutput>$(OutDir)default.xex</ImageXexOutput>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">
     <LinkIncremental>false</LinkIncremental>
-    <ImageXexOutput>$(OutDir)$(ProjectName).xex</ImageXexOutput>
+    <ImageXexOutput>$(OutDir)default.xex</ImageXexOutput>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">
     <ClCompile>

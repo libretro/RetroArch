@@ -52,7 +52,7 @@ static void find_and_set_first_file(void)
    char first_file[PATH_MAX];
    rarch_manage_libretro_set_first_file(first_file, sizeof(first_file),
 #if defined(_XBOX360)
-   "game:\\", "xex"
+   "game:", "xex"
 #elif defined(_XBOX1)
    "D:", "xbe"
 #endif
@@ -76,7 +76,7 @@ static void init_settings(void)
    char tmp_str[PATH_MAX];
    bool config_file_exists = false;
 
-   if(path_file_exists(SYS_CONFIG_FILE))
+   if(path_file_exists(default_paths.config_file))
       config_file_exists = true;
 
    //try to find CORE executable
@@ -97,7 +97,7 @@ static void init_settings(void)
    {
       if(config_file_exists)
       {
-         config_file_t * conf = config_file_new(SYS_CONFIG_FILE);
+		  config_file_t * conf = config_file_new(default_paths.config_file);
          config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
          snprintf(libretro_path, sizeof(libretro_path), tmp_str);
       }
@@ -158,11 +158,24 @@ static void get_environment_settings (void)
 	    break;
       }
    }
+#endif
 
-   strlcpy(default_paths.salamander_file, "RetroArch-Salamander.xex", sizeof(default_paths.salamander_file));
-#elif defined(_XBOX1)
-   strlcpy(SYS_CONFIG_FILE, "D:\\retroarch.cfg", sizeof(SYS_CONFIG_FILE));
+#if defined(_XBOX1)
+   strlcpy(default_paths.core_dir, "D:", sizeof(default_paths.core_dir));
+   strlcpy(default_paths.config_file, "D:\\retroarch.cfg", sizeof(default_paths.config_file));
+   strlcpy(default_paths.system_dir, "D:\\system", sizeof(default_paths.system_dir));
+   strlcpy(default_paths.filesystem_root_dir, "D:", sizeof(default_paths.filesystem_root_dir));
+   strlcpy(default_paths.executable_extension, ".xbe", sizeof(default_paths.executable_extension));
+   strlcpy(default_paths.filebrowser_startup_dir, "D:", sizeof(default_paths.filebrowser_startup_dir));
+   strlcpy(default_paths.screenshots_dir, "D:\\screenshots", sizeof(default_paths.screenshots_dir));
    strlcpy(default_paths.salamander_file, "default.xbe", sizeof(default_paths.salamander_file));
+#elif defined(_XBOX360)
+   strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));
+   strlcpy(default_paths.screenshots_dir, "game:", sizeof(default_paths.screenshots_dir));
+   strlcpy(default_paths.config_file, "game:\\retroarch.cfg", sizeof(default_paths.config_file));
+   strlcpy(default_paths.system_dir, "game:\\system\\", sizeof(default_paths.system_dir));
+   strlcpy(default_paths.executable_extension, ".xex", sizeof(default_paths.executable_extension));
+   snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "default.xex");
 #endif
 }
 
