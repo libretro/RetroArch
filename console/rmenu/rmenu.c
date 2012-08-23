@@ -526,18 +526,6 @@ static void display_menubar(menu *current_menu)
          break;
       case CONTROLS_MENU:
       case INGAME_MENU_RESIZE:
-      case SHADER_CHOICE:
-      case PRESET_CHOICE:
-      case BORDER_CHOICE:
-      case LIBRETRO_CHOICE:
-      case INPUT_PRESET_CHOICE:
-      case PATH_SAVESTATES_DIR_CHOICE:
-      case PATH_DEFAULT_ROM_DIR_CHOICE:
-#ifdef HAVE_XML
-      case PATH_CHEATS_DIR_CHOICE:
-#endif
-      case PATH_SRAM_DIR_CHOICE:
-      case PATH_SYSTEM_DIR_CHOICE:
 	 snprintf(msg, sizeof(msg), "[%s] <- PREV", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_L));
          context->render_msg(default_pos.x_position, default_pos.current_path_y_position, default_pos.current_path_font_size, WHITE, msg);
          break;
