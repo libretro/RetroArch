@@ -122,7 +122,10 @@ do_build()
    if [ "$BUILD_PHOENIX_GUI" = "yes" ]; then
       zip "$ZIP_BASE" retroarch-phoenix.exe retroarch-phoenix.cfg
    fi
-   mv -v "$ZIP_BASE" "../$ZIP_FULL" || die "Failed to move final build ..."
+
+   cp -v "$ZIP_BASE" "../$ZIP_FULL" || die "Failed to move final build ..."
+   mv -v "$ZIP_BASE" ..
+   zip "../$ZIP_BASE" *.dll retroarch-redist-version || die "Failed to build full/redist ..."
    
    cd ..
 }
