@@ -96,7 +96,7 @@ static inline void copy_swapped(uint32_t * restrict dst, const uint32_t * restri
 {
    for (size_t i = 0; i < size; i++)
    {
-      uint32_t s = src[x];
+      uint32_t s = src[i];
       dst[i] = (s >> 16) | (s << 16);
    }
 }
