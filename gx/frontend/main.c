@@ -148,6 +148,13 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       return true;
    }
 
+   char exts[256];
+   if (core_chooser)
+      strlcpy(exts, "dol|DOL", sizeof(exts));
+   else
+      strlcpy(exts, rarch_console_get_rom_ext(), sizeof(exts));
+   struct string_list *ext_list = string_split(exts, "|");
+
    char _dir[PATH_MAX];
    snprintf(_dir, sizeof(_dir), "%s/", directory);
    DIR *dir = opendir(_dir);
@@ -158,35 +165,37 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
    while ((entry = readdir(dir)))
    {
       char stat_path[PATH_MAX];
+      const char *file_ext = path_get_extension(entry->d_name);
       snprintf(stat_path, sizeof(stat_path), "%s/%s", directory, entry->d_name);
+      bool is_dir;
 
 #ifdef _DIRENT_HAVE_D_TYPE
-      if (entry->d_type != DT_REG && entry->d_type != DT_DIR)
+      is_dir = (entry->d_type == DT_DIR);
+      if (entry->d_type != DT_REG && !is_dir)
          continue;
 #else
       struct stat st;
       if (stat(stat_path, &st) < 0)
          continue;
 
-      if (!S_ISDIR(st.st_mode) && !S_ISREG(st.st_mode))
+      is_dir = S_ISDIR(st.st_mode);
+      if (!S_ISREG(st.st_mode) && !is_dir)
          continue;
 #endif
 
-      if (core_chooser && (strstr(entry->d_name, default_paths.executable_extension) != entry->d_name + strlen(entry->d_name) - 4 ||
-         strcasecmp(entry->d_name, default_paths.salamander_file) == 0))
+      if (core_chooser && (is_dir || strcasecmp(entry->d_name, default_paths.salamander_file) == 0))
+         continue;
+
+      if (!is_dir && ext_list && !string_list_find_elem_prefix(ext_list, ".", file_ext))
          continue;
 
       file_cb(ctx,
             entry->d_name,
-#ifdef _DIRENT_HAVE_D_TYPE
-            (entry->d_type == DT_DIR)
-#else
-            S_ISDIR(st.st_mode)
-#endif
-            ? RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
+            is_dir ? RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
    }
 
    closedir(dir);
+   string_list_free(ext_list);
    return true;
 }
 
