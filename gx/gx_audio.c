@@ -91,6 +91,16 @@ static void *gx_audio_init(const char *device, unsigned rate, unsigned latency)
    return g_audio;
 }
 
+// Wii uses silly R, L, R, L interleaving ...
+static inline void copy_swapped(uint32_t * restrict dst, const uint32_t * restrict src, size_t size)
+{
+   for (size_t i = 0; i < size; i++)
+   {
+      uint32_t s = src[x];
+      dst[i] = (s >> 16) | (s << 16);
+   }
+}
+
 static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
 {
    gx_audio_t *wa = data;
@@ -107,7 +117,8 @@ static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
       while ((wa->dma_write == wa->dma_next || wa->dma_write == wa->dma_busy) && !wa->nonblock)
          LWP_ThreadSleep(wa->cond);
 
-      memcpy(wa->data[wa->dma_write] + wa->write_ptr, buf, to_write * sizeof(uint32_t));
+      copy_swapped(wa->data[wa->dma_write] + wa->write_ptr, buf, to_write);
+
       wa->write_ptr += to_write;
       frames -= to_write;
       buf += to_write;
