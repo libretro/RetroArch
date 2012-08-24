@@ -32,7 +32,10 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <dirent.h>
+#ifndef _DIRENT_HAVE_D_TYPE
 #include <sys/stat.h>
+#endif
 #include <unistd.h>
 #include <dirent.h>
 
@@ -156,20 +159,31 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
    {
       char stat_path[PATH_MAX];
       snprintf(stat_path, sizeof(stat_path), "%s/%s", directory, entry->d_name);
+
+#ifdef _DIRENT_HAVE_D_TYPE
+      if (entry->d_type != DT_REG && entry->d_type != DT_DIR)
+         continue;
+#else
       struct stat st;
       if (stat(stat_path, &st) < 0)
          continue;
 
       if (!S_ISDIR(st.st_mode) && !S_ISREG(st.st_mode))
          continue;
+#endif
 
-      if (core_chooser && (strstr(entry->d_name, ".dol") != entry->d_name + strlen(entry->d_name) - 4 ||
-         strcasecmp(entry->d_name, "boot.dol") == 0))
+      if (core_chooser && (strstr(entry->d_name, default_paths.executable_extension) != entry->d_name + strlen(entry->d_name) - 4 ||
+         strcasecmp(entry->d_name, default_paths.salamander_file) == 0))
          continue;
 
       file_cb(ctx,
-            entry->d_name, S_ISDIR(st.st_mode) ?
-            RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
+            entry->d_name,
+#ifdef _DIRENT_HAVE_D_TYPE
+            (entry->d_type == DT_DIR)
+#else
+            S_ISDIR(st.st_mode)
+#endif
+            ? RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
    }
 
    closedir(dir);
