@@ -174,64 +174,47 @@ static void build_disp_list(void)
    display_list_size = GX_EndDispList();
 }
 
-//#define TAKE_VIEWPORT_SCREENSHOT_ON_EXIT
+//#define TAKE_EFB_SCREENSHOT_ON_EXIT
 
-#ifdef TAKE_VIEWPORT_SCREENSHOT_ON_EXIT
+#ifdef TAKE_EFB_SCREENSHOT_ON_EXIT
 
-#define _SS_SHIFTL(v, s, w)	\
-    ((uint32_t) (((uint32_t)(v) & ((0x01 << (w)) - 1)) << (s)))
-#define _SS_SHIFTR(v, s, w)	\
-    ((uint32_t)(((uint32_t)(v) >> (s)) & ((0x01 << (w)) - 1)))
-
-// Coded by Crayon for GRRLIB (http://code.google.com/p/grrlib)
-static void gx_viewport_screenshot()
+// Adapted from code by Crayon for GRRLIB (http://code.google.com/p/grrlib)
+static void gx_efb_screenshot()
 {
-    uint32_t x,y, tmpy, tmpxy, regval, val, i;
-    unsigned char * tmpbuffer = (unsigned char *)malloc(640*480*3);
-    memset(tmpbuffer, 0, 640*480*3);
-
-    for(y=0; y < 480; y++)
-    {
-        tmpy = y * 640*3;
-        for(x=0; x < 640; x++)
-        {
-            regval = 0xc8000000|(_SS_SHIFTL(x,2,10));
-            regval = (regval&~0x3FF000)|(_SS_SHIFTL(y,12,10));
-            val = *(uint32_t*)regval;
-            tmpxy = x * 3 + tmpy;
-            tmpbuffer[tmpxy  ] = val&0xff;             // R
-            tmpbuffer[tmpxy+1] = _SS_SHIFTR(val,8,8);  // G
-            tmpbuffer[tmpxy+2] = _SS_SHIFTR(val,16,8); // B
-        }
-    }
+   int x, y;
 
    uint8_t tga_header[] = {0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x02, 0xE0, 0x01, 0x18, 0x00};
-
    FILE *out = fopen("/screenshot.tga", "wb");
 
    if (!out)
-   {
-      free(tmpbuffer);
       return;
-   }
-   fwrite(tga_header, 1, sizeof(tga_header), out);
-   uint8_t *line = &tmpbuffer[640 * 479 * 3];
-   for (i = 0; i < 480; i++)
-   {
-      fwrite(line, 1, 640 * 3, out);
-      line -= 640 * 3;
-   }
-   fclose(out);
 
-   free(tmpbuffer);
+   fwrite(tga_header, 1, sizeof(tga_header), out);
+
+   for (y = 479; y >= 0; --y)
+   {
+      uint8_t line[640 * 3];
+      unsigned i = 0;
+      for (x = 0; x < 640; x++)
+      {
+         GXColor color;
+         GX_PeekARGB(x, y, &color);
+         line[i++] = color.b;
+         line[i++] = color.g;
+         line[i++] = color.r;
+      }
+      fwrite(line, 1, sizeof(line), out);
+   }
+
+   fclose(out);
 }
 
 #endif
 
 static void gx_stop(void)
 {
-#ifdef TAKE_VIEWPORT_SCREENSHOT_ON_EXIT
-   gx_viewport_screenshot();
+#ifdef TAKE_EFB_SCREENSHOT_ON_EXIT
+   gx_efb_screenshot();
 #endif
    GX_DrawDone();
    GX_AbortFrame();
@@ -597,7 +580,7 @@ static bool gx_frame(void *data, const void *frame,
       GX_DrawDone();
    }
 
-#ifdef TAKE_VIEWPORT_SCREENSHOT_ON_EXIT
+#ifdef TAKE_EFB_SCREENSHOT_ON_EXIT
    GX_CopyDisp(g_framebuf[g_current_framebuf], GX_FALSE);
 #else
    GX_CopyDisp(g_framebuf[g_current_framebuf], GX_TRUE);
