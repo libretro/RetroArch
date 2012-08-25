@@ -1257,7 +1257,7 @@ static void init_recording(void)
       params.out_width           = width;
       params.out_height          = height;
       params.fb_width            = next_pow2(width);
-      params.out_height          = next_pow2(height);
+      params.fb_height           = next_pow2(height);
       params.aspect_ratio        = (float)width / height;
       params.pix_fmt             = FFEMU_PIX_BGR24;
       g_extern.record_gpu_width  = width;
