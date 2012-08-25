@@ -189,6 +189,8 @@ static void readjust_audio_input_rate(void)
 }
 
 #ifdef HAVE_FFMPEG
+static void deinit_recording(void);
+
 static void recording_dump_frame(const void *data, unsigned width, unsigned height, size_t pitch)
 {
    struct ffemu_video_data ffemu_data = {0};
@@ -207,27 +209,17 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
          return;
       }
 
-      // User has resized. We're kinda fucked now, but we just have to go through with it.
-      // Resize in ffmpeg if we have to ...
+      // User has resized. We're kinda fucked now.
       if (gpu_w != g_extern.record_gpu_width || gpu_h != g_extern.record_gpu_height)
       {
-         RARCH_WARN("Resize has taken place. Image quality in recording will now lower dramatically as output is fixed resolution.\n");
+         static const char msg[] = "Recording terminated due to resize.";
+         RARCH_WARN("%s\n", msg);
+         msg_queue_clear(g_extern.msg_queue);
+         msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
-         uint8_t *new_buffer = (uint8_t*)realloc(g_extern.record_gpu_buffer, gpu_w * gpu_h * 3);
-         if (!new_buffer)
-         {
-            RARCH_ERR("Failed to realloce GPU record buffer. Will revert back to raw data. This will probably not work right ...\n");
-
-            free(g_extern.record_gpu_buffer);
-            g_extern.record_gpu_buffer = NULL;
-
-            recording_dump_frame(data, width, height, pitch);
-            return;
-         }
-
-         g_extern.record_gpu_buffer = new_buffer;
-         g_extern.record_gpu_width  = gpu_w;
-         g_extern.record_gpu_height = gpu_h;
+         deinit_recording();
+         g_extern.recording = false;
+         return;
       }
 
       // Big bottleneck. Also adds one frame "delay" to video output as we haven't rendered the current frame yet.
@@ -1336,6 +1328,7 @@ static void deinit_recording(void)
    {
       ffemu_finalize(g_extern.rec);
       ffemu_free(g_extern.rec);
+      g_extern.rec = NULL;
 
       free(g_extern.record_gpu_buffer);
       g_extern.record_gpu_buffer = NULL;
