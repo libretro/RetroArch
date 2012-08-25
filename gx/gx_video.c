@@ -41,7 +41,7 @@ struct
 
 struct
 {
-   uint32_t data[240 * 320];
+   uint32_t data[240 * 160];
    GXTexObj obj;
 } menu_tex ATTRIBUTE_ALIGN(32);
 
@@ -155,7 +155,7 @@ static void init_texture(unsigned width, unsigned height)
 
    GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjLOD(&g_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
-   GX_InitTexObj(&menu_tex.obj, menu_tex.data, 320, 240, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   GX_InitTexObj(&menu_tex.obj, menu_tex.data, 320, 240, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjLOD(&menu_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_InvalidateTexAll();
 }
@@ -299,12 +299,10 @@ static void gx_start(void)
 
 #ifdef ASM_BLITTER
 
-static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src,
-      unsigned width, unsigned height, unsigned pitch)
+static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src, const uint32_t *dst,
+      unsigned width, unsigned height, unsigned pitch, unsigned ormask)
 {
    register uint32_t tmp0, tmp1, tmp2, tmp3, line2, line2b, line3, line3b, line4, line4b, line5;
-   register uint32_t ormask = 0x80008000u;
-   register uint32_t *dst = g_tex.data;
 
    __asm__ __volatile__ (
       "     srwi     %[width],   %[width],   2           \n"
@@ -379,12 +377,9 @@ static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src,
 
 #endif
 
-// Set MSB to get full RGB555.
-#define RGB15toRGB5A3(col) ((col) | 0x80008000u)
-
 #define BLIT_LINE(off) \
 { \
-   const uint32_t *tmp_src = src; \
+   const uint32_t *tmp_src = src2; \
    uint32_t *tmp_dst = dst; \
    for (unsigned x = 0; x < width2; x += 8, tmp_src += 8, tmp_dst += 32) \
    { \
@@ -397,21 +392,7 @@ static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src,
       tmp_dst[24 + off] = RGB15toRGB5A3(tmp_src[6]); \
       tmp_dst[25 + off] = RGB15toRGB5A3(tmp_src[7]); \
    } \
-   src += pitch; \
-}
-
-#define BLIT_16(x) \
-{ \
-   block[0 + 0 ] = line[x][0]; \
-   block[0 + 16] = line[x][1]; \
-   block[1 + 0 ] = line[x][2]; \
-   block[1 + 16] = line[x][3]; \
-   block[2 + 0 ] = line[x][4]; \
-   block[2 + 16] = line[x][5]; \
-   block[3 + 0 ] = line[x][6]; \
-   block[3 + 16] = line[x][7]; \
-   block += 4; \
-   line[x] += 8; \
+   src2 += tmp_pitch; \
 }
 
 static void update_texture(const uint32_t *src,
@@ -421,51 +402,52 @@ static void update_texture(const uint32_t *src,
 #ifdef ASM_BLITTER
    if (width && height && !(width & 3) && !(height & 3))
    {
-      update_texture_asm(src, width, height, pitch);
+      update_texture_asm(src, g_tex.data, width, height, pitch, 0x80008000U);
    }
    else
 #endif
    {
-      pitch >>= 2;
       width &= ~15;
       height &= ~3;
+      unsigned tmp_pitch = pitch >> 2;
       unsigned width2 = width >> 1;
 
       // Texture data is 4x4 tiled @ 15bpp.
       // Use 32-bit to transfer more data per cycle.
+      const uint32_t *src2 = src;
       uint32_t *dst = g_tex.data;
       for (unsigned i = 0; i < height; i += 4, dst += 4 * width2)
       {
+         // Set MSB to get full RGB555.
+#define RGB15toRGB5A3(col) ((col) | 0x80008000u)
          BLIT_LINE(0)
          BLIT_LINE(2)
          BLIT_LINE(4)
          BLIT_LINE(6)
+#undef RGB15toRGB5A3
       }
    }
 
    if(gx->menu_render)
    {
-      uint16_t *block = (uint16_t *) menu_tex.data;
-      uint16_t *line[4];
-      for (uint32_t y = 0; y < 240; y += 4)
+#ifdef ASM_BLITTER
+      update_texture_asm(gx->menu_data, menu_tex.data, 320, 240, 320 * 2, 0x00000000U);
+#else
+      unsigned tmp_pitch = (320 * 2) >> 2;
+      unsigned width2 = 320 >> 1;
+
+      const uint32_t *src2 = gx->menu_data;
+      uint32_t *dst = menu_tex.data;
+      for (unsigned i = 0; i < 240; i += 4, dst += 4 * width2)
       {
-         uint32_t *menu_data = gx->menu_data;
-         // fetch the next 4 scanlines
-         line[0] = (uint16_t *) &menu_data[(y + 0) * 320];
-         line[1] = (uint16_t *) &menu_data[(y + 1) * 320];
-         line[2] = (uint16_t *) &menu_data[(y + 2) * 320];
-         line[3] = (uint16_t *) &menu_data[(y + 3) * 320];
-
-         for (unsigned x = 0; x < 320; x += 4)
-         {
-            BLIT_16(0)
-            BLIT_16(1)
-            BLIT_16(2)
-            BLIT_16(3)
-
-            block += 16;
-         }
+#define RGB15toRGB5A3(col) (col)
+         BLIT_LINE(0)
+         BLIT_LINE(2)
+         BLIT_LINE(4)
+         BLIT_LINE(6)
+#undef RGB15toRGB5A3
       }
+#endif
    }
 
    init_texture(width, height);

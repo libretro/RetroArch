@@ -103,7 +103,7 @@ typedef bool (*rgui_folder_enum_cb_t)(const char *directory,
 #define RGUI_HEIGHT 240
 
 rgui_handle_t *rgui_init(const char *base_path,
-      uint32_t *framebuf, size_t framebuf_pitch,
+      uint16_t *framebuf, size_t framebuf_pitch,
       const uint8_t *font_buf,
       rgui_folder_enum_cb_t folder_cb, void *userdata);
 

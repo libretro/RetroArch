@@ -49,7 +49,7 @@
 FILE * log_fp;
 #endif
 
-uint32_t menu_framebuf[320 * 240];
+uint16_t menu_framebuf[320 * 240];
 rgui_handle_t *rgui;
 
 #if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
@@ -423,7 +423,7 @@ int main(void)
    driver.video = &video_gx;
 
    gx_video_t *gx = (gx_video_t*)driver.video_data;
-   gx->menu_data = menu_framebuf;
+   gx->menu_data = (uint32_t *) menu_framebuf;
 
    char tmp_path[PATH_MAX];
    const char *extension = default_paths.executable_extension;

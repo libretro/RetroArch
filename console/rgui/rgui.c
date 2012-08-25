@@ -41,7 +41,7 @@
 
 struct rgui_handle
 {
-   uint32_t *frame_buf;
+   uint16_t *frame_buf;
    size_t frame_buf_pitch;
    const uint8_t *font_buf;
 
@@ -56,8 +56,8 @@ struct rgui_handle
 
    char path_buf[PATH_MAX];
 
-   uint32_t font_white[256][FONT_HEIGHT][FONT_WIDTH];
-   uint32_t font_green[256][FONT_HEIGHT][FONT_WIDTH];
+   uint16_t font_white[256][FONT_HEIGHT][FONT_WIDTH];
+   uint16_t font_green[256][FONT_HEIGHT][FONT_WIDTH];
 };
 
 static const char *rgui_device_labels[] = {
@@ -96,8 +96,8 @@ static inline bool rgui_is_viewport_menu(rgui_file_type_t menu_type)
    return (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2);
 }
 
-static void copy_glyph(uint32_t glyph_white[FONT_HEIGHT][FONT_WIDTH],
-      uint32_t glyph_green[FONT_HEIGHT][FONT_WIDTH],
+static void copy_glyph(uint16_t glyph_white[FONT_HEIGHT][FONT_WIDTH],
+      uint16_t glyph_green[FONT_HEIGHT][FONT_WIDTH],
       const uint8_t *buf)
 {
    for (int y = 0; y < FONT_HEIGHT; y++)
@@ -109,8 +109,8 @@ static void copy_glyph(uint32_t glyph_white[FONT_HEIGHT][FONT_WIDTH],
             ((uint32_t)buf[3 * (-y * 256 + x) + 1] << 8) |
             ((uint32_t)buf[3 * (-y * 256 + x) + 2] << 16);
 
-         glyph_white[y][x] = col == 0xff ? 0 : 0xffffffff;
-         glyph_green[y][x] = col == 0xff ? 0 : (255 << 24) | (40 << 16) | (160 << 8) | (40 << 0);
+         glyph_white[y][x] = (col == 0xff) ? 0 : 0x7fff;
+         glyph_green[y][x] = (col == 0xff) ? 0 : (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12);
       }
    }
 }
@@ -128,7 +128,7 @@ static void init_font(rgui_handle_t *rgui, const char *path)
 }
 
 rgui_handle_t *rgui_init(const char *base_path,
-      uint32_t *buf, size_t buf_pitch,
+      uint16_t *buf, size_t buf_pitch,
       const uint8_t *font_buf,
       rgui_folder_enum_cb_t folder_cb, void *userdata)
 {
@@ -157,28 +157,26 @@ void rgui_free(rgui_handle_t *rgui)
    free(rgui);
 }
 
-static uint32_t gray_filler(unsigned x, unsigned y)
+static uint16_t gray_filler(unsigned x, unsigned y)
 {
    x >>= 1;
    y >>= 1;
    unsigned col = ((x + y) & 1) + 1;
-   col <<= 4;
-   return (224 << 24) | (col << 16) | (col << 8) | (col << 0);
+   return (6 << 12) | (col << 8) | (col << 4) | (col << 0);
 }
 
-static uint32_t green_filler(unsigned x, unsigned y)
+static uint16_t green_filler(unsigned x, unsigned y)
 {
    x >>= 1;
    y >>= 1;
    unsigned col = ((x + y) & 1) + 1;
-   col <<= 3;
-   return (224 << 24) | (col << 16) | (col << 10) | (col << 0);
+   return (6 << 12) | (col << 8) | (col << 5) | (col << 0);
 }
 
-static void fill_rect(uint32_t *buf, unsigned pitch,
+static void fill_rect(uint16_t *buf, unsigned pitch,
       unsigned x, unsigned y,
       unsigned width, unsigned height,
-      uint32_t (*col)(unsigned x, unsigned y))
+      uint16_t (*col)(unsigned x, unsigned y))
 {
    for (unsigned j = y; j < y + height; j++)
       for (unsigned i = x; i < x + width; i++)
@@ -194,7 +192,7 @@ static void blit_line(rgui_handle_t *rgui,
       {
          for (unsigned i = 0; i < FONT_WIDTH; i++)
          {
-            uint32_t col = green ? 
+            uint16_t col = green ? 
                rgui->font_green[(unsigned char)*message][j][i] :
                rgui->font_white[(unsigned char)*message][j][i];
 
