@@ -200,8 +200,11 @@ static const bool hires_record = false;
 // Enables lossless RGB H.264 recording if possible (if not, FFV1 is used).
 static const bool h264_record = true;
 
-// Record post-filtered (CPU filter) video rather than raw SNES output.
+// Record post-filtered (CPU filter) video rather than raw game output.
 static const bool post_filter_record = false;
+
+// Record post-shaded GPU output instead of raw game footage if available.
+static const bool gpu_record = false;
 
 // OSD-messages
 static const bool font_enable = true;

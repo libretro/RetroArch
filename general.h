@@ -127,6 +127,7 @@ struct settings
       bool hires_record;
       bool h264_record;
       bool post_filter_record;
+      bool gpu_record;
 
       bool allow_rotate;
       char external_driver[PATH_MAX];
@@ -447,6 +448,10 @@ struct global
    bool recording;
    unsigned record_width;
    unsigned record_height;
+
+   uint8_t *record_gpu_buffer;
+   size_t record_gpu_width;
+   size_t record_gpu_height;
 #endif
 
    struct

@@ -23,6 +23,13 @@
 extern "C" {
 #endif
 
+enum ffemu_pix_format
+{
+   FFEMU_PIX_XRGB1555 = 0,
+   FFEMU_PIX_BGR24,
+   FFEMU_PIX_ARGB8888
+};
+
 // Parameters passed to ffemu_new()
 struct ffemu_params
 {
@@ -46,8 +53,7 @@ struct ffemu_params
    // Audio channels.
    unsigned channels;
 
-   // If input is ARGB or XRGB1555.
-   bool rgb32;
+   enum ffemu_pix_format pix_fmt;
 
    // Filename to dump to.
    const char *filename;
@@ -58,7 +64,7 @@ struct ffemu_video_data
    const void *data;
    unsigned width;
    unsigned height;
-   unsigned pitch;
+   int pitch;
    bool is_dupe;
 };
 

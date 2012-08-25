@@ -188,6 +188,72 @@ static void readjust_audio_input_rate(void)
    //      g_extern.audio_data.src_ratio, g_extern.audio_data.orig_src_ratio);
 }
 
+#ifdef HAVE_FFMPEG
+static void recording_dump_frame(const void *data, unsigned width, unsigned height, size_t pitch)
+{
+   struct ffemu_video_data ffemu_data = {0};
+
+   if (g_extern.record_gpu_buffer)
+   {
+      unsigned gpu_w = 0, gpu_h = 0;
+      video_viewport_size_func(&gpu_w, &gpu_h);
+      if (!gpu_w || !gpu_h)
+      {
+         RARCH_WARN("Viewport size calculation failed! Will continue using raw data. This will probably not work right ...\n");
+         free(g_extern.record_gpu_buffer);
+         g_extern.record_gpu_buffer = NULL;
+
+         recording_dump_frame(data, width, height, pitch);
+         return;
+      }
+
+      // User has resized. We're kinda fucked now, but we just have to go through with it.
+      // Resize in ffmpeg if we have to ...
+      if (gpu_w != g_extern.record_gpu_width || gpu_h != g_extern.record_gpu_height)
+      {
+         RARCH_WARN("Resize has taken place. Image quality in recording will now lower dramatically as output is fixed resolution.\n");
+
+         uint8_t *new_buffer = (uint8_t*)realloc(g_extern.record_gpu_buffer, gpu_w * gpu_h * 3);
+         if (!new_buffer)
+         {
+            RARCH_ERR("Failed to realloce GPU record buffer. Will revert back to raw data. This will probably not work right ...\n");
+
+            free(g_extern.record_gpu_buffer);
+            g_extern.record_gpu_buffer = NULL;
+
+            recording_dump_frame(data, width, height, pitch);
+            return;
+         }
+
+         g_extern.record_gpu_buffer = new_buffer;
+         g_extern.record_gpu_width  = gpu_w;
+         g_extern.record_gpu_height = gpu_h;
+      }
+
+      // Big bottleneck. Also adds one frame "delay" to video output as we haven't rendered the current frame yet.
+      // It will probably improve performance a lot though, who knows.
+      video_read_viewport_func(g_extern.record_gpu_buffer);
+
+      ffemu_data.pitch  = g_extern.record_gpu_width * 3;
+      ffemu_data.width  = g_extern.record_gpu_width;
+      ffemu_data.height = g_extern.record_gpu_height;
+      ffemu_data.data   = g_extern.record_gpu_buffer + (ffemu_data.height - 1) * ffemu_data.pitch;
+
+      ffemu_data.pitch  = -ffemu_data.pitch;
+   }
+   else
+   {
+      ffemu_data.data    = data;
+      ffemu_data.pitch   = pitch;
+      ffemu_data.width   = width;
+      ffemu_data.height  = height;
+      ffemu_data.is_dupe = !data;
+   }
+
+   ffemu_push_video(g_extern.rec, &ffemu_data);
+}
+#endif
+
 static void video_frame(const void *data, unsigned width, unsigned height, size_t pitch)
 {
 #ifndef RARCH_CONSOLE
@@ -198,16 +264,8 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
    // Slightly messy code,
    // but we really need to do processing before blocking on VSync for best possible scheduling.
 #ifdef HAVE_FFMPEG
-   if (g_extern.recording && (!g_extern.filter.active || !g_settings.video.post_filter_record || !data))
-   {
-      struct ffemu_video_data ffemu_data = {0};
-      ffemu_data.data = data;
-      ffemu_data.pitch = pitch;
-      ffemu_data.width = width;
-      ffemu_data.height = height;
-      ffemu_data.is_dupe = !data;
-      ffemu_push_video(g_extern.rec, &ffemu_data);
-   }
+   if (g_extern.recording && (!g_extern.filter.active || !g_settings.video.post_filter_record || !data || g_extern.record_gpu_buffer))
+      recording_dump_frame(data, width, height, pitch);
 #endif
 
    const char *msg = msg_queue_pull(g_extern.msg_queue);
@@ -223,14 +281,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 
 #ifdef HAVE_FFMPEG
       if (g_extern.recording && g_settings.video.post_filter_record)
-      {
-         struct ffemu_video_data ffemu_data = {0};
-         ffemu_data.data = g_extern.filter.buffer;
-         ffemu_data.pitch = g_extern.filter.pitch;
-         ffemu_data.width = owidth;
-         ffemu_data.height = oheight;
-         ffemu_push_video(g_extern.rec, &ffemu_data);
-      }
+         recording_dump_frame(g_extern.filter.buffer, owidth, oheight, g_extern.filter.pitch);
 #endif
 
       if (!video_frame_func(g_extern.filter.buffer, owidth, oheight, g_extern.filter.pitch, msg))
@@ -1196,47 +1247,86 @@ static void init_recording(void)
    params.filename   = g_extern.record_path;
    params.fps        = fps;
    params.samplerate = samplerate;
-   params.rgb32      = g_extern.system.rgb32;
+   params.pix_fmt    = g_extern.system.rgb32 ? FFEMU_PIX_ARGB8888 : FFEMU_PIX_XRGB1555;
 
-   if (g_extern.record_width || g_extern.record_height)
+   if (g_settings.video.gpu_record && driver.video->read_viewport)
    {
-      params.out_width = g_extern.record_width;
-      params.out_height = g_extern.record_height;
-   }
-   else if (g_settings.video.hires_record)
-   {
-      params.out_width *= 2;
-      params.out_height *= 2;
-   }
+      unsigned width = 0, height = 0;
+      video_viewport_size_func(&width, &height);
 
-   if (g_settings.video.force_aspect && (g_settings.video.aspect_ratio > 0.0f))
-      params.aspect_ratio = g_settings.video.aspect_ratio;
+      if (!width || !height)
+      {
+         RARCH_ERR("Failed to get viewport information from video driver. "
+               "Cannot start recording ...\n");
+         g_extern.recording = false;
+         return;
+      }
+
+      params.out_width           = width;
+      params.out_height          = height;
+      params.fb_width            = next_pow2(width);
+      params.out_height          = next_pow2(height);
+      params.aspect_ratio        = (float)width / height;
+      params.pix_fmt             = FFEMU_PIX_BGR24;
+      g_extern.record_gpu_width  = width;
+      g_extern.record_gpu_height = height;
+
+      RARCH_LOG("Detected viewport of %u x %u\n",
+            width, height);
+
+      g_extern.record_gpu_buffer = (uint8_t*)malloc(width * height * 3);
+      if (!g_extern.record_gpu_buffer)
+      {
+         RARCH_ERR("Failed to allocate GPU record buffer.\n");
+         g_extern.recording = false;
+         return;
+      }
+   }
    else
-      params.aspect_ratio = (float)params.out_width / params.out_height;
-
-   if (g_settings.video.post_filter_record && g_extern.filter.active)
    {
-      g_extern.filter.psize(&params.out_width, &params.out_height);
-      params.rgb32 = true;
+      if (g_extern.record_width || g_extern.record_height)
+      {
+         params.out_width = g_extern.record_width;
+         params.out_height = g_extern.record_height;
+      }
+      else if (g_settings.video.hires_record)
+      {
+         params.out_width  *= 2;
+         params.out_height *= 2;
+      }
 
-      unsigned max_width = params.fb_width;
-      unsigned max_height = params.fb_height;
-      g_extern.filter.psize(&max_width, &max_height);
-      params.fb_width = next_pow2(max_width);
-      params.fb_height = next_pow2(max_height);
+      if (g_settings.video.force_aspect && (g_settings.video.aspect_ratio > 0.0f))
+         params.aspect_ratio = g_settings.video.aspect_ratio;
+      else
+         params.aspect_ratio = (float)params.out_width / params.out_height;
+
+      if (g_settings.video.post_filter_record && g_extern.filter.active)
+      {
+         g_extern.filter.psize(&params.out_width, &params.out_height);
+         params.pix_fmt = FFEMU_PIX_ARGB8888;
+
+         unsigned max_width  = params.fb_width;
+         unsigned max_height = params.fb_height;
+         g_extern.filter.psize(&max_width, &max_height);
+         params.fb_width  = next_pow2(max_width);
+         params.fb_height = next_pow2(max_height);
+      }
    }
 
-   RARCH_LOG("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u 32-bit: %s)\n",
+   RARCH_LOG("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
          g_extern.record_path,
          params.out_width, params.out_height,
          params.fb_width, params.fb_height,
-         params.rgb32 ? "yes" : "no");
+         (unsigned)params.pix_fmt);
 
    g_extern.rec = ffemu_new(&params);
    if (!g_extern.rec)
    {
       RARCH_ERR("Failed to start FFmpeg recording.\n");
       g_extern.recording = false;
+
+      free(g_extern.record_gpu_buffer);
+      g_extern.record_gpu_buffer = NULL;
    }
 }
 
@@ -1246,6 +1336,9 @@ static void deinit_recording(void)
    {
       ffemu_finalize(g_extern.rec);
       ffemu_free(g_extern.rec);
+
+      free(g_extern.record_gpu_buffer);
+      g_extern.record_gpu_buffer = NULL;
    }
 }
 #endif

@@ -178,6 +178,7 @@ void config_set_defaults(void)
    g_settings.video.hires_record = hires_record;
    g_settings.video.h264_record = h264_record;
    g_settings.video.post_filter_record = post_filter_record;
+   g_settings.video.gpu_record = gpu_record;
 
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
@@ -390,6 +391,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.hires_record, "video_hires_record");
    CONFIG_GET_BOOL(video.h264_record, "video_h264_record");
    CONFIG_GET_BOOL(video.post_filter_record, "video_post_filter_record");
+   CONFIG_GET_BOOL(video.gpu_record, "video_gpu_record");
 
 #ifdef HAVE_DYLIB
    CONFIG_GET_STRING(video.filter_path, "video_filter");

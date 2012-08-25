@@ -170,16 +170,29 @@ static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_par
 
    video->encoder = codec;
 
-#if AV_HAVE_BIGENDIAN
-   video->fmt = PIX_FMT_RGB555BE;
-#else
-   video->fmt = PIX_FMT_RGB555LE;
-#endif
-   video->pix_size = sizeof(uint16_t);
-   if (param->rgb32)
+   switch (param->pix_fmt)
    {
-      video->fmt = PIX_FMT_RGB32;
-      video->pix_size = sizeof(uint32_t);
+      case FFEMU_PIX_XRGB1555:
+#if AV_HAVE_BIGENDIAN
+         video->fmt = PIX_FMT_RGB555BE;
+#else
+         video->fmt = PIX_FMT_RGB555LE;
+#endif
+         video->pix_size = 2;
+         break;
+
+      case FFEMU_PIX_BGR24:
+         video->fmt = PIX_FMT_BGR24;
+         video->pix_size = 3;
+         break;
+
+      case FFEMU_PIX_ARGB8888:
+         video->fmt = PIX_FMT_RGB32;
+         video->pix_size = 4;
+         break;
+
+      default:
+         return false;
    }
 
    video->pix_fmt = g_settings.video.h264_record ? PIX_FMT_BGR24 : PIX_FMT_RGB32;
@@ -474,7 +487,7 @@ bool ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
 
    fifo_write(handle->attr_fifo, &attr_data, sizeof(attr_data));
 
-   unsigned offset = 0;
+   int offset = 0;
    for (unsigned y = 0; y < attr_data.height; y++, offset += data->pitch)
       fifo_write(handle->video_fifo, (const uint8_t*)data->data + offset, attr_data.pitch);
 
