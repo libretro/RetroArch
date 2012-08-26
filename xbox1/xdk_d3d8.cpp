@@ -22,7 +22,7 @@
 #include "../driver.h"
 #include "xdk_d3d8.h"
 
-#include "../../gfx/fonts/xdk1_xfonts.h"
+#include "./../gfx/fonts/xdk1_xfonts.h"
 #include "./../gfx/gfx_context.h"
 #include "../general.h"
 #include "../message.h"
