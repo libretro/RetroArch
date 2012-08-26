@@ -128,6 +128,7 @@ struct settings
       bool h264_record;
       bool post_filter_record;
       bool gpu_record;
+      bool gpu_screenshot;
 
       bool allow_rotate;
       char external_driver[PATH_MAX];

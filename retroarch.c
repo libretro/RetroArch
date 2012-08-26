@@ -141,7 +141,7 @@ static void take_screenshot(void)
 
    bool ret = false;
 
-   if (driver.video->read_viewport && driver.video->viewport_size)
+   if (g_settings.video.gpu_screenshot && driver.video->read_viewport && driver.video->viewport_size)
       ret = take_screenshot_viewport();
    else if (g_extern.frame_cache.data)
       ret = take_screenshot_raw();

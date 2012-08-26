@@ -203,6 +203,9 @@ static const bool h264_record = true;
 // Record post-filtered (CPU filter) video rather than raw game output.
 static const bool post_filter_record = false;
 
+// Screenshots post-shaded GPU output if available.
+static const bool gpu_screenshot = true;
+
 // Record post-shaded GPU output instead of raw game footage if available.
 static const bool gpu_record = false;
 
