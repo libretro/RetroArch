@@ -27,13 +27,13 @@ void xfonts_render_msg_place(void *data, float x, float y, float scale, const ch
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
    d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
-   d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
+   //d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
 
    wchar_t str[256];
    convert_char_to_wchar(str, msg, sizeof(str));
    d3d->debug_font->TextOut(d3d->pFrontBuffer, str, (unsigned)-1, x, y);
-   d3d->debug_font->TextOut(d3d->pBackBuffer, str, (unsigned)-1, x, y);
+   //d3d->debug_font->TextOut(d3d->pBackBuffer, str, (unsigned)-1, x, y);
 
    d3d->pFrontBuffer->Release();
-   d3d->pBackBuffer->Release();
+   //d3d->pBackBuffer->Release();
 }
