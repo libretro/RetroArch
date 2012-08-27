@@ -16,6 +16,7 @@
 #include "rgui.h"
 #include "list.h"
 #include "../rarch_console_video.h"
+#include "../font.h"
 #include "../../screenshot.h"
 #include <stdlib.h>
 #include <stddef.h>
@@ -23,8 +24,6 @@
 #include <string.h>
 #include <limits.h>
 
-#define FONT_WIDTH 5
-#define FONT_HEIGHT 10
 #define FONT_WIDTH_STRIDE (FONT_WIDTH + 1)
 #define FONT_HEIGHT_STRIDE (FONT_HEIGHT + 1)
 
@@ -55,7 +54,8 @@ struct rgui_handle
 
    char path_buf[PATH_MAX];
 
-   uint8_t font[256][(FONT_HEIGHT * FONT_WIDTH + 7) / 8];
+   uint8_t *font;
+   bool alloc_font;
 };
 
 static const char *rgui_device_labels[] = {
@@ -94,8 +94,7 @@ static inline bool rgui_is_viewport_menu(rgui_file_type_t menu_type)
    return (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2);
 }
 
-static void copy_glyph(uint8_t glyph[(FONT_HEIGHT * FONT_WIDTH + 7) / 8],
-      const uint8_t *buf)
+static void copy_glyph(uint8_t *glyph, const uint8_t *buf)
 {
    for (int y = 0; y < FONT_HEIGHT; y++)
    {
@@ -117,18 +116,20 @@ static void copy_glyph(uint8_t glyph[(FONT_HEIGHT * FONT_WIDTH + 7) / 8],
 
 static void init_font(rgui_handle_t *rgui, const uint8_t *font_bmp_buf)
 {
+   rgui->font = (uint8_t *) calloc(1, FONT_OFFSET(256));
+   rgui->alloc_font = true;
    for (unsigned i = 0; i < 256; i++)
    {
       unsigned y = i / 16;
       unsigned x = i % 16;
-      copy_glyph(rgui->font[i],
+      copy_glyph(&rgui->font[FONT_OFFSET(i)],
             font_bmp_buf + 54 + 3 * (256 * (255 - 16 * y) + 16 * x));
    }
 }
 
 rgui_handle_t *rgui_init(const char *base_path,
       uint16_t *framebuf, size_t framebuf_pitch,
-      const uint8_t *font_bmp_buf, const uint8_t *font_bin_buf,
+      const uint8_t *font_bmp_buf, uint8_t *font_bin_buf,
       rgui_folder_enum_cb_t folder_cb, void *userdata)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
@@ -146,7 +147,7 @@ rgui_handle_t *rgui_init(const char *base_path,
    if (font_bmp_buf)
       init_font(rgui, font_bmp_buf);
    else if (font_bin_buf)
-      memcpy(rgui->font, font_bin_buf, sizeof(rgui->font));
+      rgui->font = font_bin_buf;
    else
    {
       RARCH_ERR("no font bmp or bin, abort");
@@ -160,6 +161,8 @@ void rgui_free(rgui_handle_t *rgui)
 {
    rgui_list_free(rgui->path_stack);
    rgui_list_free(rgui->folder_buf);
+   if (rgui->alloc_font)
+      free(rgui->font);
    free(rgui);
 }
 
@@ -200,7 +203,7 @@ static void blit_line(rgui_handle_t *rgui,
          {
             uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
             unsigned offset = (i + j * FONT_WIDTH) >> 3;
-            bool col = (rgui->font[(unsigned char)*message][offset] & rem);
+            bool col = (rgui->font[FONT_OFFSET((unsigned char)*message) + offset] & rem);
 
             if (col)
                rgui->frame_buf[(y + j) * (rgui->frame_buf_pitch >> 2) + (x + i)] = green ?

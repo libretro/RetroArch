@@ -22,6 +22,7 @@
 #include "../../libretro.h"
 
 #include "../../console/rgui/rgui.h"
+#include "../../console/font.h"
 
 #include "../../console/rarch_console_exec.h"
 #include "../../console/rarch_console_input.h"
@@ -129,9 +130,6 @@ enum
    GX_DEVICE_NAV_QUIT,
    GX_DEVICE_NAV_LAST
 };
-
-//extern uint8_t _binary_console_font_bmp_start[];
-extern uint8_t _binary_console_font_bin_start[];
 
 static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       void *userdata, void *ctx)
@@ -322,7 +320,7 @@ static void menu_init(void)
 {
    rgui = rgui_init("",
          menu_framebuf, RGUI_WIDTH * sizeof(uint32_t),
-         NULL, _binary_console_font_bin_start, folder_cb, NULL);
+         NULL /* _binary_console_font_bmp_start */, _binary_console_font_bin_start, folder_cb, NULL);
    rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 
    g_console.mode_switch = MODE_MENU;
