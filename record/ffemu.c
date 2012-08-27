@@ -20,8 +20,6 @@ extern "C" {
 #endif
 #include <libavcodec/avcodec.h>
 #include <libavutil/mathematics.h>
-#include <libavutil/avutil.h>
-#include <libavutil/avstring.h>
 #include <libavutil/opt.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
@@ -300,10 +298,12 @@ static bool ffemu_init_muxer(ffemu_t *handle)
       handle->audio.codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
    handle->muxer.astream = stream;
 
+#ifdef AVFMT_TS_NONSTRICT
    // Avoids a warning at end about non-monotonically increasing DTS values.
    // It seems to be harmless to disable this.
    if (g_settings.video.h264_record)
       ctx->oformat->flags |= AVFMT_TS_NONSTRICT;
+#endif
 
    av_dict_set(&ctx->metadata, "title", "RetroArch video dump", 0); 
 
