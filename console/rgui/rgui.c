@@ -24,9 +24,6 @@
 #include <string.h>
 #include <limits.h>
 
-#define FONT_WIDTH_STRIDE (FONT_WIDTH + 1)
-#define FONT_HEIGHT_STRIDE (FONT_HEIGHT + 1)
-
 #define TERM_START_X 15
 #define TERM_START_Y 27
 #define TERM_WIDTH (((RGUI_WIDTH - TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
@@ -380,6 +377,9 @@ static void render_text(rgui_handle_t *rgui)
                   break;
             }
             break;
+         case RGUI_SETTINGS_DEBUG_TEXT:
+            snprintf(type_str, sizeof(type_str), g_console.fps_info_msg_enable ? "ON" : "OFF");
+            break;
          case RGUI_SETTINGS_CUSTOM_VIEWPORT:
          case RGUI_SETTINGS_CORE:
          case RGUI_SETTINGS_CONTROLLER_1:
@@ -615,6 +615,12 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          else if (action == RGUI_ACTION_RIGHT && g_console.zip_extract_mode < LAST_ZIP_EXTRACT)
             g_console.zip_extract_mode++;
          break;
+      case RGUI_SETTINGS_DEBUG_TEXT:
+         if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
+            g_console.fps_info_msg_enable = false;
+         else if (action == RGUI_ACTION_RIGHT)
+            g_console.fps_info_msg_enable = true;
+         break;
       case RGUI_SETTINGS_RESTART_EMULATOR:
          if (action == RGUI_ACTION_OK)
          {
@@ -718,6 +724,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2);
    RGUI_MENU_ITEM("Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3);
    RGUI_MENU_ITEM("Controller #4 Config", RGUI_SETTINGS_CONTROLLER_4);
+   RGUI_MENU_ITEM("Debug Text", RGUI_SETTINGS_DEBUG_TEXT);
    RGUI_MENU_ITEM("Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR);
    RGUI_MENU_ITEM("Exit RetroArch", RGUI_SETTINGS_QUIT_EMULATOR);
 }

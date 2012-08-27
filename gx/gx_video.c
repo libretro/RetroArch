@@ -18,6 +18,8 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../console/rarch_console_video.h"
+#include "../console/font.h"
+#include "../gfx/gfx_common.h"
 #include "gx_video.h"
 #include <gccore.h>
 #include <ogcsys.h>
@@ -534,6 +536,66 @@ static void gx_resize(gx_video_t *gx)
    gx->should_resize = false;
 }
 
+static void gx_blit_line(unsigned x, unsigned y, const char *message)
+{
+   const GXColor b = {
+      .r = 0x00,
+      .g = 0x00,
+      .b = 0x00,
+      .a = 0xff
+   };
+
+   const GXColor w = {
+      .r = 0xff,
+      .g = 0xff,
+      .b = 0xff,
+      .a = 0xff
+   };
+
+   unsigned h;
+
+   for (h = 0; h < FONT_HEIGHT * 2; h++)
+   {
+      GX_PokeARGB(x, y + h, b);
+      GX_PokeARGB(x + 1, y + h, b);
+   }
+
+   x += 2;
+
+   while (*message)
+   {
+      for (unsigned j = 0; j < FONT_HEIGHT; j++)
+      {
+         for (unsigned i = 0; i < FONT_WIDTH; i++)
+         {
+            GXColor c;
+            uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
+            unsigned offset = (i + j * FONT_WIDTH) >> 3;
+            bool col = (_binary_console_font_bin_start[FONT_OFFSET((unsigned char) *message) + offset] & rem);
+
+            if (col)
+               c = w;
+            else
+               c = b;
+
+            GX_PokeARGB(x + (i * 2),     y + (j * 2), c);
+            GX_PokeARGB(x + (i * 2) + 1, y + (j * 2), c);
+            GX_PokeARGB(x + (i * 2) + 1, y + (j * 2) + 1, c);
+            GX_PokeARGB(x + (i * 2),     y + (j * 2) + 1, c);
+         }
+      }
+
+      for (unsigned h = 0; h < FONT_HEIGHT * 2; h++)
+      {
+         GX_PokeARGB(x + (FONT_WIDTH * 2), y + h, b);
+         GX_PokeARGB(x + (FONT_WIDTH * 2) + 1, y + h, b);
+      }
+
+      x += FONT_WIDTH_STRIDE * 2;
+      message++;
+   }
+}
+
 static bool gx_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
@@ -578,6 +640,26 @@ static bool gx_frame(void *data, const void *frame,
       GX_LoadTexObj(&menu_tex.obj, GX_TEXMAP0);
       GX_CallDispList(display_list, display_list_size);
       GX_DrawDone();
+   }
+
+   if (g_console.fps_info_msg_enable)
+   {
+      static char fps_txt[128];
+      char mem1_txt[128];
+      unsigned x = 15;
+      unsigned y = 15;
+
+      gfx_window_title(fps_txt, sizeof(fps_txt));
+      gx_blit_line(x, y, fps_txt);
+      y += FONT_HEIGHT * 2;
+      snprintf(mem1_txt, sizeof(mem1_txt), "MEM1: %8d / 25165824", SYS_GetArena1Size()); /* 25165824 = 0x01800000 */
+      gx_blit_line(x, y, mem1_txt);
+#ifdef HW_RVL
+      y += FONT_HEIGHT * 2;
+      char mem2_txt[128];
+      snprintf(mem2_txt, sizeof(mem2_txt), "MEM2: %8d / 67108864", SYS_GetArena2Size()); /* 67108864 = 0x04000000 */
+      gx_blit_line(x, y, mem2_txt);
+#endif
    }
 
 #ifdef TAKE_EFB_SCREENSHOT_ON_EXIT

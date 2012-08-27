@@ -18,6 +18,8 @@
 
 #define FONT_WIDTH 5
 #define FONT_HEIGHT 10
+#define FONT_WIDTH_STRIDE (FONT_WIDTH + 1)
+#define FONT_HEIGHT_STRIDE (FONT_HEIGHT + 1)
 
 #define FONT_OFFSET(x) ((x) * ((FONT_HEIGHT * FONT_WIDTH + 7) / 8))
 
