@@ -37,7 +37,7 @@ CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map -T gx/ld/rvl.ld
 LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
 
-OBJ = console/griffin/griffin.o console/font.bmpobj console/rzlib/rzlib.o
+OBJ = console/griffin/griffin.o console/font.binobj console/rzlib/rzlib.o
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -71,6 +71,9 @@ $(ELF_TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 %.bmpobj: %.bmp
+	$(LD) -r -b binary -o $@ $<
+
+%.binobj: %.bin
 	$(LD) -r -b binary -o $@ $<
 
 pkg: all

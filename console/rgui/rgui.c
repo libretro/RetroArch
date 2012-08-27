@@ -43,7 +43,6 @@ struct rgui_handle
 {
    uint16_t *frame_buf;
    size_t frame_buf_pitch;
-   const uint8_t *font_buf;
 
    rgui_folder_enum_cb_t folder_cb;
    void *userdata;
@@ -56,8 +55,7 @@ struct rgui_handle
 
    char path_buf[PATH_MAX];
 
-   uint16_t font_white[256][FONT_HEIGHT][FONT_WIDTH];
-   uint16_t font_green[256][FONT_HEIGHT][FONT_WIDTH];
+   uint8_t font[256][(FONT_HEIGHT * FONT_WIDTH + 7) / 8];
 };
 
 static const char *rgui_device_labels[] = {
@@ -96,8 +94,7 @@ static inline bool rgui_is_viewport_menu(rgui_file_type_t menu_type)
    return (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2);
 }
 
-static void copy_glyph(uint16_t glyph_white[FONT_HEIGHT][FONT_WIDTH],
-      uint16_t glyph_green[FONT_HEIGHT][FONT_WIDTH],
+static void copy_glyph(uint8_t glyph[(FONT_HEIGHT * FONT_WIDTH + 7) / 8],
       const uint8_t *buf)
 {
    for (int y = 0; y < FONT_HEIGHT; y++)
@@ -109,34 +106,35 @@ static void copy_glyph(uint16_t glyph_white[FONT_HEIGHT][FONT_WIDTH],
             ((uint32_t)buf[3 * (-y * 256 + x) + 1] << 8) |
             ((uint32_t)buf[3 * (-y * 256 + x) + 2] << 16);
 
-         glyph_white[y][x] = (col == 0xff) ? 0 : 0x7fff;
-         glyph_green[y][x] = (col == 0xff) ? 0 : (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12);
+         uint8_t rem = 1 << ((x + y * FONT_WIDTH) & 7);
+         unsigned offset = (x + y * FONT_WIDTH) >> 3;
+
+         if (col != 0xff)
+            glyph[offset] |= rem;
       }
    }
 }
 
-static void init_font(rgui_handle_t *rgui, const char *path)
+static void init_font(rgui_handle_t *rgui, const uint8_t *font_bmp_buf)
 {
    for (unsigned i = 0; i < 256; i++)
    {
       unsigned y = i / 16;
       unsigned x = i % 16;
-      copy_glyph(rgui->font_white[i],
-            rgui->font_green[i],
-            rgui->font_buf + 54 + 3 * (256 * (255 - 16 * y) + 16 * x));
+      copy_glyph(rgui->font[i],
+            font_bmp_buf + 54 + 3 * (256 * (255 - 16 * y) + 16 * x));
    }
 }
 
 rgui_handle_t *rgui_init(const char *base_path,
-      uint16_t *buf, size_t buf_pitch,
-      const uint8_t *font_buf,
+      uint16_t *framebuf, size_t framebuf_pitch,
+      const uint8_t *font_bmp_buf, const uint8_t *font_bin_buf,
       rgui_folder_enum_cb_t folder_cb, void *userdata)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
-   rgui->frame_buf = buf;
-   rgui->frame_buf_pitch = buf_pitch;
-   rgui->font_buf = font_buf;
+   rgui->frame_buf = framebuf;
+   rgui->frame_buf_pitch = framebuf_pitch;
 
    rgui->folder_cb = folder_cb;
    rgui->userdata = userdata;
@@ -145,7 +143,15 @@ rgui_handle_t *rgui_init(const char *base_path,
    rgui->folder_buf = rgui_list_new();
    rgui_list_push(rgui->path_stack, base_path, RGUI_FILE_DIRECTORY, 0);
 
-   init_font(rgui, "font.bmp");
+   if (font_bmp_buf)
+      init_font(rgui, font_bmp_buf);
+   else if (font_bin_buf)
+      memcpy(rgui->font, font_bin_buf, sizeof(rgui->font));
+   else
+   {
+      RARCH_ERR("no font bmp or bin, abort");
+      rarch_settings_change(S_QUIT);
+   }
 
    return rgui;
 }
@@ -192,12 +198,13 @@ static void blit_line(rgui_handle_t *rgui,
       {
          for (unsigned i = 0; i < FONT_WIDTH; i++)
          {
-            uint16_t col = green ? 
-               rgui->font_green[(unsigned char)*message][j][i] :
-               rgui->font_white[(unsigned char)*message][j][i];
+            uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
+            unsigned offset = (i + j * FONT_WIDTH) >> 3;
+            bool col = (rgui->font[(unsigned char)*message][offset] & rem);
 
             if (col)
-               rgui->frame_buf[(y + j) * (rgui->frame_buf_pitch >> 2) + (x + i)] = col;
+               rgui->frame_buf[(y + j) * (rgui->frame_buf_pitch >> 2) + (x + i)] = green ?
+               (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
          }
       }
 
