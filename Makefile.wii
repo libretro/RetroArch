@@ -34,7 +34,7 @@ LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
-LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map -T gx/ld/rvl.ld
+LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size -T gx/ld/rvl.ld
 LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
 
 OBJ = console/griffin/griffin.o console/font.binobj console/rzlib/rzlib.o

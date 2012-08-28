@@ -28,6 +28,8 @@
 #include "../../console/rarch_console_input.h"
 #include "../../console/rarch_console_main_wrap.h"
 
+#include "../mem2_manager.h"
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -395,6 +397,7 @@ int main(void)
 #ifdef HW_RVL
    IOS_ReloadIOS(IOS_GetVersion());
    L2Enhance();
+   gx_init_mem2();
 #endif
 
    fatInitDefault();

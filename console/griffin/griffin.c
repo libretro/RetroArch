@@ -133,6 +133,7 @@ VIDEO DRIVER
 #elif defined(GEKKO)
 #ifdef HW_RVL
 #include "../../gx/vi_encoder.c"
+#include "../../gx/mem2_manager.c"
 #endif
 #include "../../gx/gx_video.c"
 #endif

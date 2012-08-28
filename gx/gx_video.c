@@ -20,12 +20,15 @@
 #include "../console/rarch_console_video.h"
 #include "../console/font.h"
 #include "../gfx/gfx_common.h"
+#include "mem2_manager.h"
 #include "gx_video.h"
 #include <gccore.h>
 #include <ogcsys.h>
 #include <malloc.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define SYSMEM1_SIZE 0x01800000
 
 void *g_framebuf[2];
 unsigned g_current_framebuf;
@@ -652,12 +655,12 @@ static bool gx_frame(void *data, const void *frame,
       gfx_window_title(fps_txt, sizeof(fps_txt));
       gx_blit_line(x, y, fps_txt);
       y += FONT_HEIGHT * 2;
-      snprintf(mem1_txt, sizeof(mem1_txt), "MEM1: %8d / 25165824", SYS_GetArena1Size()); /* 25165824 = 0x01800000 */
+      snprintf(mem1_txt, sizeof(mem1_txt), "MEM1: %8d / %8d", SYSMEM1_SIZE - SYS_GetArena1Size(), SYSMEM1_SIZE);
       gx_blit_line(x, y, mem1_txt);
 #ifdef HW_RVL
       y += FONT_HEIGHT * 2;
       char mem2_txt[128];
-      snprintf(mem2_txt, sizeof(mem2_txt), "MEM2: %8d / 67108864", SYS_GetArena2Size()); /* 67108864 = 0x04000000 */
+      snprintf(mem2_txt, sizeof(mem2_txt), "MEM2: %8d / %8d", gx_mem2_used(), gx_mem2_total());
       gx_blit_line(x, y, mem2_txt);
 #endif
    }
