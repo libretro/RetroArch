@@ -1,8 +1,12 @@
 *.o
 *.bmpobj
+*.binobj
 *.so
 *.dll
 *.a
+*.elf
+*.dol
+*.map
 /retroarch
 /retroarch.*
 /config.h
