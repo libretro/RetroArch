@@ -44,6 +44,8 @@
 
 #ifdef HW_RVL
 #include <ogc/ios.h>
+#include <ogc/usbstorage.h>
+#include <sdcard/wiisd_io.h>
 #endif
 #include <sdcard/gcsd.h>
 #include <fat.h>
@@ -51,6 +53,20 @@
 #ifdef HAVE_FILE_LOGGER
 FILE * log_fp;
 #endif
+
+enum
+{
+   GX_DEVICE_SD = 0,
+   GX_DEVICE_USB,
+   GX_DEVICE_END
+};
+
+static struct {
+   bool mounted;
+   const DISC_INTERFACE *interface;
+   const char *name;
+} gx_devices[GX_DEVICE_END];
+static mutex_t gx_device_mutex;
 
 uint16_t menu_framebuf[320 * 240];
 rgui_handle_t *rgui;
@@ -101,6 +117,29 @@ int gx_logger_file(struct _reent *r, int fd, const char *ptr, size_t len)
 }
 #endif
 
+static void *gx_devthread(void *a)
+{
+   while (1)
+   {
+      LWP_MutexLock(gx_device_mutex);
+      unsigned i;
+      for (i = 0; i < GX_DEVICE_END; i++)
+      {
+         if (gx_devices[i].mounted && !gx_devices[i].interface->isInserted())
+         {
+            gx_devices[i].mounted = false;
+            char n[8];
+            snprintf(n, sizeof(n), "%s:", gx_devices[i].name);
+            fatUnmount(n);
+         }
+      }
+      LWP_MutexUnlock(gx_device_mutex);
+      usleep(100000);
+   }
+
+   return NULL;
+}
+
 static const struct retro_keybind _wii_nav_binds[] = {
    { 0, 0, 0, GX_GC_UP | GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_CLASSIC_UP | GX_CLASSIC_LSTICK_UP | GX_CLASSIC_RSTICK_UP | GX_WIIMOTE_UP | GX_NUNCHUK_UP, 0 },
    { 0, 0, 0, GX_GC_DOWN | GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_CLASSIC_DOWN | GX_CLASSIC_LSTICK_DOWN | GX_CLASSIC_RSTICK_DOWN | GX_WIIMOTE_DOWN | GX_NUNCHUK_DOWN, 0 },
@@ -133,6 +172,15 @@ enum
    GX_DEVICE_NAV_LAST
 };
 
+static int gx_get_device_from_path(const char *path)
+{
+   if (strstr(path, "sd:") == path)
+      return GX_DEVICE_SD;
+   if (strstr(path, "usb:") == path)
+      return GX_DEVICE_USB;
+   return -1;
+}
+
 static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       void *userdata, void *ctx)
 {
@@ -148,6 +196,14 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       file_cb(ctx, "cardb:", RGUI_FILE_DEVICE, 0);
       return true;
    }
+
+   LWP_MutexLock(gx_device_mutex);
+   int dev = gx_get_device_from_path(directory);
+
+   if (dev != -1 && !gx_devices[dev].mounted && gx_devices[dev].interface->isInserted())
+      fatMountSimple(gx_devices[dev].name, gx_devices[dev].interface);
+
+   LWP_MutexUnlock(gx_device_mutex);
 
    char exts[256];
    if (core_chooser)
@@ -414,6 +470,18 @@ int main(void)
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
    dotab_stdout.write_r = gx_logger_file;
+#endif
+
+#ifdef HW_RVL
+   lwp_t gx_device_thread;
+   gx_devices[GX_DEVICE_SD].interface = &__io_wiisd;
+   gx_devices[GX_DEVICE_SD].name = "sd";
+   gx_devices[GX_DEVICE_SD].mounted = fatMountSimple(gx_devices[GX_DEVICE_SD].name, gx_devices[GX_DEVICE_SD].interface);
+   gx_devices[GX_DEVICE_USB].interface = &__io_usbstorage;
+   gx_devices[GX_DEVICE_USB].name = "usb";
+   gx_devices[GX_DEVICE_USB].mounted = fatMountSimple(gx_devices[GX_DEVICE_USB].name, gx_devices[GX_DEVICE_USB].interface);
+   LWP_MutexInit(&gx_device_mutex, false);
+   LWP_CreateThread(&gx_device_thread, gx_devthread, NULL, NULL, 0, 66);
 #endif
 
    get_environment_settings();
