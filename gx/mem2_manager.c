@@ -60,16 +60,16 @@ static u32 __lwp_heap_block_size(heap_cntrl *theheap, void *ptr)
    return dsize;
 }
 
-#define ROUNDUP32(v)				(((u32)(v) + 0x1f) & ~0x1f)
+#define ROUNDUP32(v) (((u32)(v) + 0x1f) & ~0x1f)
 
 static heap_cntrl gx_mem2_heap;
 
 bool gx_init_mem2()  
 {
    u32 level;
-   u32 size = SYS_GetArena2Size();
-
    _CPU_ISR_Disable(level);
+
+   u32 size = SYS_GetArena2Size() - 1024 * 128; // leave some MEM2 for libogc
 
    void *heap_ptr = (void *) ROUNDUP32(((u32) SYS_GetArena2Hi() - size));
 
