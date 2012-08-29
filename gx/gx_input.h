@@ -70,7 +70,7 @@ enum
    GX_WIIMOTE_2            = 1ULL << 46,
    GX_WIIMOTE_PLUS         = 1ULL << 47,
    GX_WIIMOTE_MINUS        = 1ULL << 48,
-   GX_WIIMOTE_HOME         = 1ULL << 49,
+   //GX_WIIMOTE_HOME         = 1ULL << 49,
    GX_WIIMOTE_UP           = 1ULL << 50,
    GX_WIIMOTE_DOWN         = 1ULL << 51,
    GX_WIIMOTE_LEFT         = 1ULL << 52,
@@ -82,6 +82,7 @@ enum
    GX_NUNCHUK_LEFT         = 1ULL << 58,
    GX_NUNCHUK_RIGHT        = 1ULL << 59,
 #endif
+   GX_WIIMOTE_HOME         = 1ULL << 49, // needed on GameCube as "fake" menu button
    GX_QUIT_KEY             = 1ULL << 60,
 };
 

@@ -1,6 +1,6 @@
 ###
 ##
-# Makefile for RetroArch Wii.
+# Makefile for RetroArch GameCube.
 ##
 
 DEBUG			= 0
@@ -26,16 +26,16 @@ CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
 LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
 ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
 
-DOL_TARGET := retroarch_gx.dol
-ELF_TARGET := retroarch_gx.elf
+DOL_TARGET := retroarch_gx_gc.dol
+ELF_TARGET := retroarch_gx_gc.elf
 
 INCLUDE := -I. -I$(DEVKITPRO)/libogc/include
-LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
+LIBDIRS := -L$(DEVKITPRO)/libogc/lib/cube -L.
 
-MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
+MACHDEP := -DGEKKO -DHW_DOL -mogc -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
-LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size -T gx/ld/rvl.ld
-LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
+LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map -T gx/ld/ogc.ld
+LIBS := -lfat -lretro_wii -logc
 
 OBJ = console/griffin/griffin.o console/font.binobj console/rzlib/rzlib.o
 
@@ -77,7 +77,7 @@ $(ELF_TARGET): $(OBJ)
 	$(LD) -r -b binary -o $@ $<
 
 pkg: all
-	cp -r $(DOL_TARGET) gx/pkg/CORE.dol
+#	cp -r $(DOL_TARGET) gx/pkg/CORE.dol
 
 clean:
 	rm -f $(DOL_TARGET)

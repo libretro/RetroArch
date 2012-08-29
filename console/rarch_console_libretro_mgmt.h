@@ -25,7 +25,7 @@ enum
 #ifdef HAVE_MULTIMAN
    EXTERN_LAUNCHER_MULTIMAN,
 #endif
-#ifdef HW_RVL
+#ifdef GEKKO
    EXTERN_LAUNCHER_CHANNEL,
 #endif
 };

@@ -62,13 +62,6 @@ enum
    GX_DEVICE_END
 };
 
-static struct {
-   bool mounted;
-   const DISC_INTERFACE *interface;
-   const char *name;
-} gx_devices[GX_DEVICE_END];
-static mutex_t gx_device_mutex;
-
 uint16_t menu_framebuf[320 * 240];
 rgui_handle_t *rgui;
 
@@ -100,23 +93,13 @@ static devoptab_t dotab_stdout = {
 };
 #endif
 
-#ifdef HAVE_LOGGER
-int gx_logger_net(struct _reent *r, int fd, const char *ptr, size_t len)
-{
-   static char temp[4000];
-   size_t l = len >= 4000 ? 3999 : len;
-   memcpy(temp, ptr, l);
-   temp[l] = 0;
-   logger_send("%s", temp);
-   return len;
-}
-#elif defined(HAVE_FILE_LOGGER)
-int gx_logger_file(struct _reent *r, int fd, const char *ptr, size_t len)
-{
-   fwrite(ptr, 1, len, log_fp);
-   return len;
-}
-#endif
+#ifdef HW_RVL
+static struct {
+   bool mounted;
+   const DISC_INTERFACE *interface;
+   const char *name;
+} gx_devices[GX_DEVICE_END];
+static mutex_t gx_device_mutex;
 
 static void *gx_devthread(void *a)
 {
@@ -141,7 +124,36 @@ static void *gx_devthread(void *a)
    return NULL;
 }
 
-static const struct retro_keybind _wii_nav_binds[] = {
+static int gx_get_device_from_path(const char *path)
+{
+   if (strstr(path, "sd:") == path)
+      return GX_DEVICE_SD;
+   if (strstr(path, "usb:") == path)
+      return GX_DEVICE_USB;
+   return -1;
+}
+#endif
+
+#ifdef HAVE_LOGGER
+int gx_logger_net(struct _reent *r, int fd, const char *ptr, size_t len)
+{
+   static char temp[4000];
+   size_t l = len >= 4000 ? 3999 : len;
+   memcpy(temp, ptr, l);
+   temp[l] = 0;
+   logger_send("%s", temp);
+   return len;
+}
+#elif defined(HAVE_FILE_LOGGER)
+int gx_logger_file(struct _reent *r, int fd, const char *ptr, size_t len)
+{
+   fwrite(ptr, 1, len, log_fp);
+   return len;
+}
+#endif
+
+static const struct retro_keybind _gx_nav_binds[] = {
+#ifdef HW_RVL
    { 0, 0, 0, GX_GC_UP | GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_CLASSIC_UP | GX_CLASSIC_LSTICK_UP | GX_CLASSIC_RSTICK_UP | GX_WIIMOTE_UP | GX_NUNCHUK_UP, 0 },
    { 0, 0, 0, GX_GC_DOWN | GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_CLASSIC_DOWN | GX_CLASSIC_LSTICK_DOWN | GX_CLASSIC_RSTICK_DOWN | GX_WIIMOTE_DOWN | GX_NUNCHUK_DOWN, 0 },
    { 0, 0, 0, GX_GC_LEFT | GX_GC_LSTICK_LEFT | GX_GC_RSTICK_LEFT | GX_CLASSIC_LEFT | GX_CLASSIC_LSTICK_LEFT | GX_CLASSIC_RSTICK_LEFT | GX_WIIMOTE_LEFT | GX_NUNCHUK_LEFT, 0 },
@@ -151,11 +163,22 @@ static const struct retro_keybind _wii_nav_binds[] = {
    { 0, 0, 0, GX_GC_START | GX_CLASSIC_PLUS | GX_WIIMOTE_PLUS, 0 },
    { 0, 0, 0, GX_GC_Z_TRIGGER | GX_CLASSIC_MINUS | GX_WIIMOTE_MINUS, 0 },
    { 0, 0, 0, GX_WIIMOTE_HOME | GX_CLASSIC_HOME, 0 },
+#else
+   { 0, 0, 0, GX_GC_UP | GX_GC_LSTICK_UP | GX_GC_RSTICK_UP, 0 },
+   { 0, 0, 0, GX_GC_DOWN | GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN, 0 },
+   { 0, 0, 0, GX_GC_LEFT | GX_GC_LSTICK_LEFT | GX_GC_RSTICK_LEFT, 0 },
+   { 0, 0, 0, GX_GC_RIGHT | GX_GC_LSTICK_RIGHT | GX_GC_RSTICK_RIGHT, 0 },
+   { 0, 0, 0, GX_GC_A, 0 },
+   { 0, 0, 0, GX_GC_B, 0 },
+   { 0, 0, 0, GX_GC_START, 0 },
+   { 0, 0, 0, GX_GC_Z_TRIGGER, 0 },
+   { 0, 0, 0, GX_WIIMOTE_HOME, 0 },
+#endif
    { 0, 0, 0, GX_QUIT_KEY, 0 },
 };
 
-static const struct retro_keybind *wii_nav_binds[] = {
-   _wii_nav_binds
+static const struct retro_keybind *gx_nav_binds[] = {
+   _gx_nav_binds
 };
 
 enum
@@ -173,15 +196,6 @@ enum
    GX_DEVICE_NAV_LAST
 };
 
-static int gx_get_device_from_path(const char *path)
-{
-   if (strstr(path, "sd:") == path)
-      return GX_DEVICE_SD;
-   if (strstr(path, "usb:") == path)
-      return GX_DEVICE_USB;
-   return -1;
-}
-
 static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       void *userdata, void *ctx)
 {
@@ -198,6 +212,7 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       return true;
    }
 
+#ifdef HW_RVL
    LWP_MutexLock(gx_device_mutex);
    int dev = gx_get_device_from_path(directory);
 
@@ -205,6 +220,7 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       fatMountSimple(gx_devices[dev].name, gx_devices[dev].interface);
 
    LWP_MutexUnlock(gx_device_mutex);
+#endif
 
    char exts[256];
    if (core_chooser)
@@ -277,7 +293,7 @@ static void menu_loop(void)
 
       for (unsigned i = 0; i < GX_DEVICE_NAV_LAST; i++)
       {
-         input_state |= input_gx.input_state(NULL, wii_nav_binds, 0,
+         input_state |= input_gx.input_state(NULL, gx_nav_binds, 0,
                RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
       }
 

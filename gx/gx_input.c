@@ -155,10 +155,12 @@ static void reset_callback(void)
    g_menu = true;
 }
 
+#ifdef HW_RVL
 static void power_callback(void)
 {
    g_quit = true;
 }
+#endif
 
 static void gx_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
 {
@@ -246,7 +248,9 @@ static void *gx_input_initialize(void)
    WPAD_Init();
 #endif
    SYS_SetResetCallback(reset_callback);
+#ifdef HW_RVL
    SYS_SetPowerCallback(power_callback);
+#endif
    return (void*)-1;
 }
 
@@ -261,8 +265,10 @@ static void gx_input_post_init(void)
 
 static void gx_input_poll(void *data)
 {
+#ifdef HW_RVL
    //TODO: Hack, analog stick twitchiness needs to be properly fixed
    gx_video_t *gx = (gx_video_t*)driver.video_data;
+#endif
    (void)data;
    bool quit_gc = false;
 #ifdef HW_RVL
@@ -467,7 +473,9 @@ static bool gx_key_pressed(void *data, int key)
          bool retval = false;
          g_console.menu_enable = ((quit_rarch
 #ifdef HW_RVL
- || goto_menu_pressed_classic || goto_menu_pressed_wiimote) 
+ || goto_menu_pressed_classic || goto_menu_pressed_wiimote)
+#else
+ )
 #endif
  && IS_TIMER_EXPIRED(gx));
 

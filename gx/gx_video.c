@@ -459,7 +459,11 @@ static void gx_resize(gx_video_t *gx)
       float desired_aspect = g_settings.video.aspect_ratio;
       if (desired_aspect == 0.0)
          desired_aspect = 1.0;
+#ifdef HW_RVL
       float device_aspect = CONF_GetAspectRatio() == CONF_ASPECT_4_3 ? 4.0 / 3.0 : 16.0 / 9.0;
+#else
+      float device_aspect = 4.0 / 3.0;
+#endif
       if (g_orientation == ORIENTATION_VERTICAL || g_orientation == ORIENTATION_FLIPPED_ROTATED)
          desired_aspect = 1.0 / desired_aspect;
       float delta;
