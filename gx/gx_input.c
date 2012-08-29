@@ -129,6 +129,7 @@ const struct platform_bind platform_keys[] = {
 };
 
 const unsigned int platform_keys_size = sizeof(platform_keys);
+static bool g_menu;
 static bool g_quit;
 
 static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
@@ -150,6 +151,11 @@ static void gx_free_input(void *data)
 }
 
 static void reset_callback(void)
+{
+   g_menu = true;
+}
+
+static void power_callback(void)
 {
    g_quit = true;
 }
@@ -240,7 +246,7 @@ static void *gx_input_initialize(void)
    WPAD_Init();
 #endif
    SYS_SetResetCallback(reset_callback);
-   SYS_SetPowerCallback(reset_callback);
+   SYS_SetPowerCallback(power_callback);
    return (void*)-1;
 }
 
@@ -429,9 +435,15 @@ static void gx_input_poll(void *data)
       pad_state[port] = state;
    }
 
-   if (g_quit)
+   if (g_menu)
    {
       pad_state[0] |= GX_WIIMOTE_HOME;
+      g_menu = false;
+   }
+
+   if (g_quit)
+   {
+      pad_state[0] |= GX_QUIT_KEY;
       g_quit = false;
    }
 }
