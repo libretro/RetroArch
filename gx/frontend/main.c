@@ -27,6 +27,7 @@
 #include "../../console/rarch_console_exec.h"
 #include "../../console/rarch_console_input.h"
 #include "../../console/rarch_console_main_wrap.h"
+#include "../../console/rarch_console_settings.h"
 
 #include "../mem2_manager.h"
 
@@ -379,9 +380,9 @@ static void menu_init(void)
    rgui = rgui_init("",
          menu_framebuf, RGUI_WIDTH * sizeof(uint32_t),
          NULL /* _binary_console_font_bmp_start */, _binary_console_font_bin_start, folder_cb, NULL);
-   rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 
    g_console.mode_switch = MODE_MENU;
+   rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 }
 
 static void menu_free(void)
@@ -401,16 +402,16 @@ static void get_environment_settings(void)
    if (device_end)
       snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "%.*s/retroarch", device_end - default_paths.core_dir, default_paths.core_dir);
    else
-      snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/retroarch");
+      strlcpy(default_paths.port_dir, "/retroarch", sizeof(default_paths.port_dir));
    snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
    snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.port_dir);
    snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.port_dir);
-   snprintf(default_paths.filesystem_root_dir, sizeof(default_paths.filesystem_root_dir), "/");
+   strlcpy(default_paths.filesystem_root_dir, "/", sizeof(default_paths.filesystem_root_dir));
    snprintf(default_paths.filebrowser_startup_dir, sizeof(default_paths.filebrowser_startup_dir), default_paths.filesystem_root_dir);
    snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.port_dir);
    snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.port_dir);
    strlcpy(default_paths.executable_extension, ".dol", sizeof(default_paths.executable_extension));
-   snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "boot.dol");
+   strlcpy(default_paths.salamander_file, "boot.dol", sizeof(default_paths.salamander_file));
 }
 
 #define MAKE_FILE(x) {\
@@ -448,7 +449,7 @@ static void make_directories(void)
    MAKE_FILE(default_paths.config_file);
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
 #ifdef HW_RVL
    IOS_ReloadIOS(IOS_GetVersion());
@@ -521,6 +522,26 @@ int main(void)
 
    menu_init();
 
+   if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
+   {
+      char rom[PATH_MAX];
+      g_console.external_launcher_support = EXTERN_LAUNCHER_CHANNEL;
+      snprintf(rom, sizeof(rom), "%s%s", argv[1], argv[2]);
+      g_console.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE;
+      rarch_console_load_game_wrap(rom, g_console.zip_extract_mode, S_DELAY_1);
+
+      rgui_iterate(rgui, RGUI_ACTION_MESSAGE);
+      gx->menu_render = true;
+      rarch_render_cached_frame();
+      gx->menu_render = false;
+
+      rarch_startup(default_paths.config_file);
+   }
+   else
+   {
+      g_console.external_launcher_support = EXTERN_LAUNCHER_SALAMANDER;
+   }
+
 begin_loop:
    if(g_console.mode_switch == MODE_EMULATION)
    {
@@ -551,6 +572,7 @@ begin_loop:
 
 begin_shutdown:
    rarch_config_save(default_paths.config_file);
+   config_save_keybinds(input_path);
 
    if(g_console.emulator_initialized)
       rarch_main_deinit();
@@ -568,8 +590,7 @@ begin_shutdown:
 
    if(g_console.return_to_launcher)
       rarch_console_exec(g_console.launch_app_on_exit);
-   config_save_keybinds(input_path);
 
-   return 1;
+   exit(0);
 }
 

@@ -271,7 +271,7 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
 
 static void render_text(rgui_handle_t *rgui)
 {
-   if (rgui->need_refresh && g_console.mode_switch == MODE_MENU)
+   if (rgui->need_refresh && g_console.mode_switch == MODE_MENU && !rgui->msg_force)
       return;
 
    size_t begin = rgui->directory_ptr >= TERM_HEIGHT / 2 ?
@@ -776,6 +776,7 @@ void rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          driver.video->apply_state_changes();
          break;
+
       case RGUI_ACTION_DOWN:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
@@ -788,6 +789,7 @@ void rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          driver.video->apply_state_changes();
          break;
+
       case RGUI_ACTION_LEFT:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
@@ -800,6 +802,7 @@ void rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          driver.video->apply_state_changes();
          break;
+
       case RGUI_ACTION_RIGHT:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
@@ -812,6 +815,7 @@ void rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          driver.video->apply_state_changes();
          break;
+
       case RGUI_ACTION_CANCEL:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
          {
@@ -823,6 +827,7 @@ void rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui_list_pop(rgui->path_stack);
          }
          break;
+
       case RGUI_ACTION_OK:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
@@ -834,6 +839,7 @@ void rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui_list_pop(rgui->path_stack);
          }
          break;
+
       case RGUI_ACTION_START:
 #ifdef GEKKO
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
@@ -851,9 +857,15 @@ void rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
 #endif
          driver.video->apply_state_changes();
          break;
+
       case RGUI_ACTION_SETTINGS:
          rgui_list_pop(rgui->path_stack);
          break;
+
+      case RGUI_ACTION_MESSAGE:
+         rgui->msg_force = true;
+         break;
+
       default:
          break;
    }
@@ -933,6 +945,10 @@ void rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          rgui->need_refresh = true;
          break;
 
+      case RGUI_ACTION_MESSAGE:
+         rgui->msg_force = true;
+         break;
+
       default:
          break;
    }
@@ -964,7 +980,7 @@ void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
       return rgui_settings_iterate(rgui, action);
    else if (rgui_is_viewport_menu(menu_type))
       return rgui_viewport_iterate(rgui, action);
-   if (rgui->need_refresh)
+   if (rgui->need_refresh && action != RGUI_ACTION_MESSAGE)
       action = RGUI_ACTION_NOOP;
 
    switch (action)
@@ -1077,6 +1093,10 @@ void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui->directory_ptr = 0;
          }
          return rgui_settings_iterate(rgui, RGUI_ACTION_REFRESH);
+
+      case RGUI_ACTION_MESSAGE:
+         rgui->msg_force = true;
+         break;
 
       default:
          break;

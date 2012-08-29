@@ -18,22 +18,25 @@ u32 MALLOC_MEM2 = 0;
 
 static __inline__ heap_block *__lwp_heap_blockat(heap_block *block, u32 offset)
 {
-   return (heap_block*) ((char*) block + offset);
+   return (heap_block *) ((char *) block + offset);
 }
 
 static __inline__ heap_block *__lwp_heap_usrblockat(void *ptr)
 {
-   u32 offset = *(((u32*) ptr) - 1);
+   u32 offset = *(((u32 *) ptr) - 1);
    return __lwp_heap_blockat(ptr, -offset + -HEAP_BLOCK_USED_OVERHEAD);
 }
+
 static __inline__ bool __lwp_heap_blockin(heap_cntrl *heap, heap_block *block)
 {
-   return ((u32) block >= (u32) heap->start && (u32) block <= (u32)heap->final);
+   return ((u32) block >= (u32) heap->start && (u32) block <= (u32) heap->final);
 }
+
 static __inline__ bool __lwp_heap_blockfree(heap_block *block)
 {
    return !(block->front_flag & HEAP_BLOCK_USED);
 }
+
 static __inline__ u32 __lwp_heap_blocksize(heap_block *block)
 {
    return (block->front_flag & ~HEAP_BLOCK_USED);
