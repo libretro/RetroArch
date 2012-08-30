@@ -163,11 +163,11 @@ int main(int argc, char *argv[])
       init_settings();
    }
 
+   rarch_console_exec(libretro_path);
+
 #ifdef HAVE_LOGGER
    logger_shutdown();
 #endif
-
-   rarch_console_exec(libretro_path);
 
    return 1;
 }

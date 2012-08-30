@@ -25,20 +25,46 @@
 #include <np/drm.h>
 #elif defined(_XBOX)
 #include <xtl.h>
-#elif defined(GEKKO)
+#elif defined(HW_RVL)
+#include <string.h>
 #include <fat.h>
+#include <gctypes.h>
+#include <ogc/cache.h>
 #include <ogc/lwp_threads.h>
 #include <ogc/system.h>
-#include <gctypes.h>
-#ifdef HW_RVL
-#include <sdcard/wiisd_io.h>
 #include <ogc/usbstorage.h>
-#endif
-#include "exec/dol.h"
+#include <sdcard/wiisd_io.h>
 #endif
 
 #include "rarch_console_exec.h"
 #include "../retroarch_logger.h"
+
+#ifdef HW_RVL
+#define EXECUTE_ADDR ((uint8_t *) 0x91800000)
+#define BOOTER_ADDR ((uint8_t *) 0x93000000)
+#define ARGS_ADDR ((uint8_t *) 0x93200000)
+
+extern uint8_t _binary_gx_app_booter_app_booter_bin_start[];
+extern uint8_t _binary_gx_app_booter_app_booter_bin_end[];
+extern void __exception_closeall(void);
+
+// NOTE: this does not update the path to point to the new loading .dol file.
+// we only need it for keeping the current directory anyway.
+void dol_copy_argv_path(void)
+{
+   struct __argv *argv = (struct __argv *) ARGS_ADDR;
+   memset(ARGS_ADDR, 0, sizeof(struct __argv));
+   char *cmdline = (char *) ARGS_ADDR + sizeof(struct __argv);
+   argv->argvMagic = ARGV_MAGIC;
+   argv->commandLine = cmdline;
+   size_t len = strlen(__system_argv->argv[0]);
+   memcpy(cmdline, __system_argv->argv[0], ++len);
+   cmdline[len++] = 0;
+   cmdline[len++] = 0;
+   argv->length = len;
+   DCFlushRange(ARGS_ADDR, sizeof(struct __argv) + argv->length);
+}
+#endif
 
 void rarch_console_exec(const char *path)
 {
@@ -73,7 +99,7 @@ void rarch_console_exec(const char *path)
    sys_net_finalize_network();
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
-#elif defined(GEKKO)
+#elif defined(HW_RVL)
    FILE * fp = fopen(path, "rb");
    if (fp == NULL)
    {
@@ -83,29 +109,26 @@ void rarch_console_exec(const char *path)
    fseek(fp, 0, SEEK_END);
    size_t size = ftell(fp);
    fseek(fp, 0, SEEK_SET);
-   uint8_t *mem = (uint8_t *)0x92000000; // should be safe for this small program to use
-   fread(mem, 1, size, fp);
+   fread(EXECUTE_ADDR, 1, size, fp);
    fclose(fp);
-#ifdef HW_RVL
-   fatUnmount("sd:");
-   fatUnmount("usb:");
-#endif
+   DCFlushRange(EXECUTE_ADDR, size);
+
+   dol_copy_argv_path();
+
    fatUnmount("carda:");
    fatUnmount("cardb:");
-#ifdef HW_RVL
+   fatUnmount("sd:");
+   fatUnmount("usb:");
    __io_wiisd.shutdown();
    __io_usbstorage.shutdown();
-#endif
-   uint32_t *ep = load_dol_image(mem);
-   
-   if (ep[1] == ARGV_MAGIC)
-      dol_copy_argv((struct __argv *) &ep[2]);
 
-   RARCH_LOG("jumping to 0x%08X\n", (uint32_t) ep);
+   size_t booter_size = _binary_gx_app_booter_app_booter_bin_end - _binary_gx_app_booter_app_booter_bin_start;
+   memcpy(BOOTER_ADDR, _binary_gx_app_booter_app_booter_bin_start, booter_size);
+   DCFlushRange(BOOTER_ADDR, booter_size);
 
+   RARCH_LOG("jumping to %08x\n", BOOTER_ADDR);
    SYS_ResetSystem(SYS_SHUTDOWN,0,0);
-
-   __lwp_thread_stopmultitasking((void(*)()) ep);
+   __lwp_thread_stopmultitasking((void (*)(void)) BOOTER_ADDR);
 #else
    RARCH_WARN("External loading of executables is not supported for this platform.\n");
 #endif

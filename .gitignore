@@ -21,3 +21,4 @@ Debug
 Release
 ipch
 *.user
+gx/app_booter/app_booter.bin

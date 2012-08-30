@@ -34,10 +34,12 @@ LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
-LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map,--section-start,.init=0x81200000
+LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map
 LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
 
-OBJ = gx/salamander/main.o console/rarch_console_exec.o console/rarch_console_libretro_mgmt.o file_path.o compat/compat.o conf/config_file.o console/exec/dol.o
+APP_BOOTER_DIR = gx/app_booter
+
+OBJ = gx/salamander/main.o console/rarch_console_exec.o console/rarch_console_libretro_mgmt.o file_path.o compat/compat.o conf/config_file.o $(APP_BOOTER_DIR)/app_booter.binobj
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -70,8 +72,11 @@ $(ELF_TARGET): $(OBJ)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-%.bmpobj: %.bmp
+%.binobj: %.bin
 	$(LD) -r -b binary -o $@ $<
+
+$(APP_BOOTER_DIR)/app_booter.bin:
+	$(MAKE) -C $(APP_BOOTER_DIR)
 
 pkg: all
 	cp -r $(DOL_TARGET) gx/pkg/boot.dol
@@ -80,6 +85,7 @@ clean:
 	rm -f $(DOL_TARGET)
 	rm -f $(ELF_TARGET)
 	rm -f $(OBJ)
+	$(MAKE) -C $(APP_BOOTER_DIR) clean
 
 .PHONY: clean
 
