@@ -465,19 +465,14 @@ static bool gx_key_pressed(void *data, int key)
       case RARCH_QUIT_KEY:
       if(IS_TIMER_EXPIRED(gx))
       {
+         uint64_t goto_menu_pressed = pad_state[0] & (GX_WIIMOTE_HOME
 #ifdef HW_RVL
-         uint64_t goto_menu_pressed_classic = pad_state[0] & GX_CLASSIC_HOME;
-         uint64_t goto_menu_pressed_wiimote = pad_state[0] & GX_WIIMOTE_HOME;
+ | GX_CLASSIC_HOME
 #endif
+ );
          uint64_t quit_rarch = pad_state[0] & GX_QUIT_KEY;
          bool retval = false;
-         g_console.menu_enable = ((quit_rarch
-#ifdef HW_RVL
- || goto_menu_pressed_classic || goto_menu_pressed_wiimote)
-#else
- )
-#endif
- && IS_TIMER_EXPIRED(gx));
+         g_console.menu_enable = ((quit_rarch || goto_menu_pressed) && IS_TIMER_EXPIRED(gx));
 
          if(g_console.menu_enable)
          {
