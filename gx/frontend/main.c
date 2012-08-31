@@ -410,6 +410,9 @@ int rarch_main(int argc, char **argv);
 
 static void get_environment_settings(void)
 {
+#ifdef HW_DOL
+   chdir("carda:/retroarch/cores");
+#endif
    getcwd(default_paths.core_dir, MAXPATHLEN);
    char *last_slash = strrchr(default_paths.core_dir, '/');
    if (last_slash)

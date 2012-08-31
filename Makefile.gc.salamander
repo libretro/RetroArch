@@ -1,14 +1,11 @@
 ###
 ##
-# Makefile for RetroArch Wii.
+# Makefile for RetroArch GameCube.
 ##
 
 DEBUG			= 0
 HAVE_LOGGER		= 0
 HAVE_FILE_LOGGER	= 0
-
-PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.7"
-PC_DEVELOPMENT_UDP_PORT		= 3490
 
 # system platform
 system_platform = unix
@@ -21,25 +18,28 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
+PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.7"
+PC_DEVELOPMENT_UDP_PORT		= 3490
+
 CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
 LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
 ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
 
-DOL_TARGET := retroarch_gx.dol
-ELF_TARGET := retroarch_gx.elf
+DOL_TARGET := retroarch-salamander_gx_gc.dol
+ELF_TARGET := retroarch-salamander_gx_gc.elf
 
 INCLUDE := -I. -I$(DEVKITPRO)/libogc/include
-LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
+LIBDIRS := -L$(DEVKITPRO)/libogc/lib/cube -L.
 
-MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
+MACHDEP := -DGEKKO -DHW_DOL -mogc -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
-LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size -T gx/ld/rvl.ld
-LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
+LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map
+LIBS := -lfat -lretro_wii -logc
 
 APP_BOOTER_DIR = gx/app_booter
 
-OBJ = console/griffin/griffin.o console/font.binobj console/rzlib/rzlib.o $(APP_BOOTER_DIR)/app_booter_wii.binobj
+OBJ = gx/salamander/main.o console/rarch_console_exec.o console/rarch_console_libretro_mgmt.o file_path.o compat/compat.o conf/config_file.o $(APP_BOOTER_DIR)/app_booter_gc.binobj
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -53,7 +53,7 @@ CFLAGS		+= -DHAVE_FILE_LOGGER
 CFLAGS          += -Iconsole/logger
 endif
 
-CFLAGS += -std=gnu99 -DHAVE_DEFAULT_RETROPAD_INPUT -DHAVE_RGUI -DHAVE_THREAD -DRARCH_CONSOLE -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_RARCH_EXEC -DHAVE_CONFIGFILE=1 -DGEKKO -DHAVE_ZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DHAVE_SCREENSHOTS -DPACKAGE_VERSION=\"0.9.7\" -Dmain=rarch_main -Wno-char-subscripts 
+CFLAGS += -std=gnu99 -DHAVE_DEFAULT_RETROPAD_INPUT -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_RARCH_EXEC -DHAVE_CONFIGFILE=1 -DGEKKO -DPACKAGE_VERSION=\"0.9.7\" -Wno-char-subscripts 
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
@@ -72,23 +72,20 @@ $(ELF_TARGET): $(OBJ)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-%.bmpobj: %.bmp
-	$(LD) -r -b binary -o $@ $<
-
 %.binobj: %.bin
 	$(LD) -r -b binary -o $@ $<
 
-$(APP_BOOTER_DIR)/app_booter_wii.bin:
-	$(MAKE) -C $(APP_BOOTER_DIR) platform=wii
+$(APP_BOOTER_DIR)/app_booter_gc.bin:
+	$(MAKE) -C $(APP_BOOTER_DIR) platform=gc
 
 pkg: all
-	cp -r $(DOL_TARGET) gx/pkg/CORE.dol
+	#cp -r $(DOL_TARGET) gx/pkg/boot.dol
 
 clean:
 	rm -f $(DOL_TARGET)
 	rm -f $(ELF_TARGET)
 	rm -f $(OBJ)
-	$(MAKE) -C $(APP_BOOTER_DIR) platform=wii clean
+	$(MAKE) -C $(APP_BOOTER_DIR) platform=gc clean
 
 .PHONY: clean
 

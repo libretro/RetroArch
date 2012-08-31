@@ -37,7 +37,9 @@ CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map -T gx/ld/ogc.ld
 LIBS := -lfat -lretro_wii -logc
 
-OBJ = console/griffin/griffin.o console/font.binobj console/rzlib/rzlib.o
+APP_BOOTER_DIR = gx/app_booter
+
+OBJ = console/griffin/griffin.o console/font.binobj console/rzlib/rzlib.o $(APP_BOOTER_DIR)/app_booter_gc.binobj
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -76,6 +78,9 @@ $(ELF_TARGET): $(OBJ)
 %.binobj: %.bin
 	$(LD) -r -b binary -o $@ $<
 
+$(APP_BOOTER_DIR)/app_booter_gc.bin:
+	$(MAKE) -C $(APP_BOOTER_DIR) platform=gc
+
 pkg: all
 #	cp -r $(DOL_TARGET) gx/pkg/CORE.dol
 
@@ -83,6 +88,7 @@ clean:
 	rm -f $(DOL_TARGET)
 	rm -f $(ELF_TARGET)
 	rm -f $(OBJ)
+	$(MAKE) -C $(APP_BOOTER_DIR) platform=gc clean
 
 .PHONY: clean
 

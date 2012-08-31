@@ -39,7 +39,7 @@ LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
 
 APP_BOOTER_DIR = gx/app_booter
 
-OBJ = gx/salamander/main.o console/rarch_console_exec.o console/rarch_console_libretro_mgmt.o file_path.o compat/compat.o conf/config_file.o $(APP_BOOTER_DIR)/app_booter.binobj
+OBJ = gx/salamander/main.o console/rarch_console_exec.o console/rarch_console_libretro_mgmt.o file_path.o compat/compat.o conf/config_file.o $(APP_BOOTER_DIR)/app_booter_wii.binobj
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -53,7 +53,7 @@ CFLAGS		+= -DHAVE_FILE_LOGGER
 CFLAGS          += -Iconsole/logger
 endif
 
-CFLAGS += -std=gnu99 -DHAVE_DEFAULT_RETROPAD_INPUT -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_RARCH_EXEC -DHAVE_CONFIGFILE=1 -DGEKKO -DHW_RVL -DPACKAGE_VERSION=\"0.9.7\" -Wno-char-subscripts 
+CFLAGS += -std=gnu99 -DHAVE_DEFAULT_RETROPAD_INPUT -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_RARCH_EXEC -DHAVE_CONFIGFILE=1 -DGEKKO -DPACKAGE_VERSION=\"0.9.7\" -Wno-char-subscripts 
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
@@ -75,8 +75,8 @@ $(ELF_TARGET): $(OBJ)
 %.binobj: %.bin
 	$(LD) -r -b binary -o $@ $<
 
-$(APP_BOOTER_DIR)/app_booter.bin:
-	$(MAKE) -C $(APP_BOOTER_DIR)
+$(APP_BOOTER_DIR)/app_booter_wii.bin:
+	$(MAKE) -C $(APP_BOOTER_DIR) platform=wii
 
 pkg: all
 	cp -r $(DOL_TARGET) gx/pkg/boot.dol
@@ -85,7 +85,7 @@ clean:
 	rm -f $(DOL_TARGET)
 	rm -f $(ELF_TARGET)
 	rm -f $(OBJ)
-	$(MAKE) -C $(APP_BOOTER_DIR) clean
+	$(MAKE) -C $(APP_BOOTER_DIR) platform=wii clean
 
 .PHONY: clean
 
