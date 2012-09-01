@@ -64,10 +64,10 @@ extern uint8_t _binary_gx_app_booter_app_booter_wii_bin_end[];
 #define BOOTER_ADDR ((uint8_t *) 0x81300000)
 extern void __exception_closeall(void);
 
-extern uint8_t _binary_gx_app_booter_app_booter_gc_bin_start[];
-extern uint8_t _binary_gx_app_booter_app_booter_gc_bin_end[];
-#define booter_start _binary_gx_app_booter_app_booter_gc_bin_start
-#define booter_end _binary_gx_app_booter_app_booter_gc_bin_end
+extern uint8_t _binary_gx_app_booter_app_booter_ngc_bin_start[];
+extern uint8_t _binary_gx_app_booter_app_booter_ngc_bin_end[];
+#define booter_start _binary_gx_app_booter_app_booter_ngc_bin_start
+#define booter_end _binary_gx_app_booter_app_booter_ngc_bin_end
 
 #endif
 

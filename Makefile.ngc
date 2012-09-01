@@ -35,11 +35,11 @@ LIBDIRS := -L$(DEVKITPRO)/libogc/lib/cube -L.
 MACHDEP := -DGEKKO -DHW_DOL -mogc -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map -T gx/ld/ogc.ld
-LIBS := -lfat -logc
+LIBS := -lfat -lretro_ngc -logc
 
 APP_BOOTER_DIR = gx/app_booter
 
-OBJ = console/griffin/griffin.o console/font.binobj console/rzlib/rzlib.o $(APP_BOOTER_DIR)/app_booter_gc.binobj
+OBJ = console/griffin/griffin.o console/font.binobj console/rzlib/rzlib.o $(APP_BOOTER_DIR)/app_booter_ngc.binobj
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -79,7 +79,7 @@ $(ELF_TARGET): $(OBJ)
 %.binobj: %.bin
 	$(LD) -r -b binary -o $@ $<
 
-$(APP_BOOTER_DIR)/app_booter_gc.bin:
+$(APP_BOOTER_DIR)/app_booter_ngc.bin:
 	$(MAKE) -C $(APP_BOOTER_DIR) platform=ngc
 
 pkg: all

@@ -29,7 +29,9 @@
 #include "../../console/rarch_console_main_wrap.h"
 #include "../../console/rarch_console_settings.h"
 
-#include "../mem2_manager.h"
+#ifdef HW_RVL
+#include "../wii/mem2_manager.h"
+#endif
 
 #include <stdlib.h>
 #include <stddef.h>

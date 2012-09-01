@@ -22,8 +22,8 @@ ifeq ($(platform),wii)
    BIN_TARGET := app_booter_wii.bin
    ELF_TARGET := app_booter_wii.elf
 else
-   BIN_TARGET := app_booter_gc.bin
-   ELF_TARGET := app_booter_gc.elf
+   BIN_TARGET := app_booter_ngc.bin
+   ELF_TARGET := app_booter_ngc.elf
 endif
 
 INCLUDE := -I. -I$(DEVKITPRO)/libogc/include

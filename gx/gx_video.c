@@ -20,7 +20,11 @@
 #include "../console/rarch_console_video.h"
 #include "../console/font.h"
 #include "../gfx/gfx_common.h"
-#include "mem2_manager.h"
+
+#ifdef HW_RVL
+#include "../wii/mem2_manager.h"
+#endif
+
 #include "gx_video.h"
 #include <gccore.h>
 #include <ogcsys.h>
