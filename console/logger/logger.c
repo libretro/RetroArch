@@ -125,7 +125,7 @@ static int if_down(int sid)
    (void)sid;
 #ifdef __CELLOS_LV2__
    cellNetCtlTerm();
-#elif defined(GEKKO)
+#elif defined(GEKKO) && !defined(HW_DOL)
    net_deinit();
 #endif
    return (0);

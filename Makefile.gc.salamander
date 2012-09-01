@@ -46,6 +46,7 @@ CFLAGS		+= -DHAVE_LOGGER
 CFLAGS          += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
 CFLAGS          += -Iconsole/logger
 OBJ             += console/logger/logger.o
+LIBS += -lbba
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
