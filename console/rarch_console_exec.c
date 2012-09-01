@@ -144,6 +144,7 @@ void rarch_console_exec(const char *path)
    size_t size;
    size_t offset = 0;
 
+   AR_Reset();
    AR_Init(NULL, 0);
    while ((size = fread(buffer, 1, sizeof(buffer), fp)) != 0)
    {

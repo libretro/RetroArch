@@ -18,6 +18,8 @@
 #define _SHIFTR(v, s, w) \
     ((u32)(((u32)(v) >> (s)) & ((0x01 << (w)) - 1)))
 
+static uint8_t buffer[0x800];
+
 static vu16* const _dspReg = (u16*) 0xCC005000;
 static __inline__ void __ARClearInterrupt()
 {
@@ -67,12 +69,41 @@ void *memset(void *b, int c, size_t len)
 
 void *memcpy(void *dst, const void *src, size_t len)
 {
-#ifdef HW_DOL 
+#ifdef HW_DOL
    if (((unsigned) src & ~0x00FFFFFF) == 0)
    {
-      __ARReadDMA((u32) dst, (u32) src + ARAMSTART, len);
+      size_t i;
+      u32 _dst = (u32) dst, _src = (u32) src;
 
-      return dst;
+      if ((_src & 0x1F) != 0)
+      {
+         unsigned templen = 32 - (_src & 0x1F);
+         unsigned offset = 32 - templen;
+         __ARReadDMA((u32) buffer, (u32) (_src & ~0x1F) + ARAMSTART, 32);
+         memcpy((void *) _dst, &buffer[offset], templen > len ? len : templen);
+         _src += templen;
+         _dst += templen;
+         if (templen >= len)
+            return (void *) _dst;
+         len -= templen;
+      }
+
+      size_t blocks = len >> 11;
+      for (i = 0; i < blocks; i++)
+      {
+         __ARReadDMA(_dst, _src + ARAMSTART, sizeof(buffer));
+         _src += sizeof(buffer);
+         _dst += sizeof(buffer);
+         len -= sizeof(buffer);
+      }
+
+      if (len)
+      {
+         __ARReadDMA((u32) buffer, _src + ARAMSTART, sizeof(buffer));
+         memcpy((void *) _dst, buffer, len);
+      }
+
+      return (void *) _dst;
    }
 #endif
    size_t i;
