@@ -24,7 +24,7 @@
 #include <arpa/inet.h>
 #endif
 
-#ifdef HW_RVL
+#ifdef GEKKO
 #include <network.h>
 #endif
 
