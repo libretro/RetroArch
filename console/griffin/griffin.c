@@ -128,8 +128,8 @@ VIDEO DRIVER
 #include "../../gfx/gl.c"
 #elif defined(GEKKO)
 #ifdef HW_RVL
-#include "../../gx/vi_encoder.c"
-#include "../../gx/mem2_manager.c"
+#include "../../wii/vi_encoder.c"
+#include "../../wii/mem2_manager.c"
 #endif
 #include "../../gx/gx_video.c"
 #endif

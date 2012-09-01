@@ -26,8 +26,8 @@ CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
 LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
 ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
 
-DOL_TARGET := retroarch_gx.dol
-ELF_TARGET := retroarch_gx.elf
+DOL_TARGET := retroarch_wii.dol
+ELF_TARGET := retroarch_wii.elf
 
 INCLUDE := -I. -I$(DEVKITPRO)/libogc/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
@@ -82,7 +82,7 @@ $(APP_BOOTER_DIR)/app_booter_wii.bin:
 	$(MAKE) -C $(APP_BOOTER_DIR) platform=wii
 
 pkg: all
-	cp -r $(DOL_TARGET) gx/pkg/CORE.dol
+	cp -r $(DOL_TARGET) wii/pkg/CORE.dol
 
 clean:
 	rm -f $(DOL_TARGET)

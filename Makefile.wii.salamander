@@ -26,8 +26,8 @@ CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
 LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
 ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
 
-DOL_TARGET := retroarch-salamander_gx.dol
-ELF_TARGET := retroarch-salamander_gx.elf
+DOL_TARGET := retroarch-salamander_wii.dol
+ELF_TARGET := retroarch-salamander_wii.elf
 
 INCLUDE := -I. -I$(DEVKITPRO)/libogc/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
@@ -35,7 +35,7 @@ LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map
-LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
+LIBS := -lfat -lwiiuse -logc -lbte
 
 APP_BOOTER_DIR = gx/app_booter
 
