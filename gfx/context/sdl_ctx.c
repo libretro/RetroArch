@@ -399,6 +399,7 @@ void gfx_ctx_check_window(bool *quit,
 #endif
 }
 
+#ifndef __APPLE__
 bool gfx_ctx_get_wm_info(SDL_SysWMinfo *info)
 {
 #ifdef XENON
@@ -415,6 +416,7 @@ bool gfx_ctx_get_wm_info(SDL_SysWMinfo *info)
    return SDL_GetWMInfo(info) == 1;
 #endif
 }
+#endif
 
 bool gfx_ctx_window_has_focus(void)
 {

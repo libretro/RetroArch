@@ -33,7 +33,7 @@
 #define VID_HANDLE xdk_d3d_video_t
 #endif
 
-#ifdef HAVE_SDL
+#if defined(HAVE_SDL) && !defined(__APPLE__)
 #include "SDL_syswm.h"
 #endif
 
@@ -56,7 +56,7 @@ void gfx_ctx_check_window(bool *quit,
 
 void gfx_ctx_set_resize(unsigned width, unsigned height);
 
-#ifdef HAVE_SDL
+#if defined(HAVE_SDL) && !defined(__APPLE__)
 bool gfx_ctx_get_wm_info(SDL_SysWMinfo *info);
 #endif
 
