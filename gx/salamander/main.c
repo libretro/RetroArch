@@ -123,7 +123,7 @@ static void init_settings(void)
 static void get_environment_settings(void)
 {
 #ifdef HW_DOL
-   chdir("carda:/retroarch/cores");
+   chdir("carda:/retroarch");
 #endif
    getcwd(default_paths.core_dir, MAXPATHLEN);
    char *last_slash = strrchr(default_paths.core_dir, '/');
