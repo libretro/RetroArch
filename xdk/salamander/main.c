@@ -100,7 +100,7 @@ static void init_settings(void)
          snprintf(libretro_path, sizeof(libretro_path), tmp_str);
       }
 
-      if(!config_file_exists || strcmp(libretro_path, "") == 0)
+      if(!config_file_exists || !strcmp(libretro_path, ""))
       {
          find_and_set_first_file();
       }
