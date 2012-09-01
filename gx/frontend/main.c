@@ -30,7 +30,7 @@
 #include "../../console/rarch_console_settings.h"
 
 #ifdef HW_RVL
-#include "../wii/mem2_manager.h"
+#include "../../wii/mem2_manager.h"
 #endif
 
 #include <stdlib.h>
