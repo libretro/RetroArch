@@ -70,7 +70,7 @@ void *memset(void *b, int c, size_t len)
 void *memcpy(void *dst, const void *src, size_t len)
 {
 #ifdef HW_DOL
-   if (((unsigned) src & ~0x00FFFFFF) == 0)
+   if (((unsigned) src & 0x80000000) == 0)
    {
       size_t i;
       u32 _dst = (u32) dst, _src = (u32) src;
@@ -105,11 +105,14 @@ void *memcpy(void *dst, const void *src, size_t len)
 
       return (void *) _dst;
    }
+   else
 #endif
-   size_t i;
+   {
+      size_t i;
 
-   for (i = 0; i < len; i++)
-      ((unsigned char *)dst)[i] = ((unsigned char *)src)[i];
+      for (i = 0; i < len; i++)
+         ((unsigned char *)dst)[i] = ((unsigned char *)src)[i];
 
-   return dst;
+      return dst;
+   }
 }
