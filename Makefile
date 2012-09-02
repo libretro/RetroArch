@@ -49,7 +49,6 @@ endif
 
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
-   DEFINES += -DIS_LINUX
    OBJ += input/linuxraw_input.o
 endif
 
@@ -135,7 +134,6 @@ ifeq ($(SCALER_NO_SIMD), 1)
 endif
 ifeq ($(SCALER_PERF), 1)
    DEFINES += -DSCALER_PERF
-   LIBS += -lrt
 endif
 
 ifeq ($(HAVE_X11), 1)

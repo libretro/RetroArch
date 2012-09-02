@@ -65,6 +65,9 @@ ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
    LIBS += -lSDL
    DEFINES += -ISDL -DHAVE_SDL
+ifeq ($(SCALER_NO_SIMD), 1)
+   DEFINES += -DSCALER_NO_SIMD
+endif
 endif
 
 ifeq ($(HAVE_THREADS), 1)

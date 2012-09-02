@@ -35,7 +35,7 @@
 #include <ogc/lwp_watchdog.h>
 #endif
 
-#if IS_LINUX
+#ifdef __linux__
 #include <unistd.h>
 #include <errno.h>
 #include <sys/wait.h>
