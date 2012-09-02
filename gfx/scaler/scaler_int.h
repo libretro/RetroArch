@@ -21,5 +21,11 @@
 void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output, int stride);
 void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input, int stride);
 
+void scaler_argb8888_point_special(const struct scaler_ctx *ctx,
+      void *output, const void *input,
+      int out_width, int out_height,
+      int in_width, int in_height,
+      int out_stride, int in_stride);
+
 #endif
 

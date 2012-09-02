@@ -15,6 +15,7 @@
 
 
 #include "filter.h"
+#include "scaler_int.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -56,6 +57,8 @@ static bool gen_filter_point(struct scaler_ctx *ctx)
 
    gen_filter_point_sub(&ctx->horiz, ctx->out_width, x_pos, x_step);
    gen_filter_point_sub(&ctx->vert, ctx->out_height, y_pos, y_step);
+
+   ctx->scaler_special = scaler_argb8888_point_special;
 
    return true;
 }

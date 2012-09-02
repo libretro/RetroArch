@@ -63,6 +63,8 @@ struct scaler_ctx
          const void*, int);
    void (*scaler_vert)(const struct scaler_ctx*,
          void*, int);
+   void (*scaler_special)(const struct scaler_ctx*,
+         void*, const void*, int, int, int, int, int, int);
 
    void (*in_pixconv)(void*, const void*, int, int, int, int);
    void (*out_pixconv)(void*, const void*, int, int, int, int);

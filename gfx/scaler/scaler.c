@@ -139,6 +139,8 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
       ctx->unscaled     = false;
    }
 
+   ctx->scaler_special = NULL;
+
    if (!allocate_frames(ctx))
       return false;
 
@@ -192,13 +194,50 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
    clock_gettime(CLOCK_MONOTONIC, &start_tv);
 #endif
 
-   if (ctx->unscaled)
+   if (ctx->unscaled) // Just perform straight pixel conversion.
    {
       ctx->direct_pixconv(output, input,
             ctx->out_width, ctx->out_height,
             ctx->out_stride, ctx->in_stride);
    }
-   else
+   else if (ctx->scaler_special) // Take some special, and (hopefully) more optimized path.
+   {
+      const void *inp = input;
+      int in_stride   = ctx->in_stride;
+
+      if (ctx->in_fmt != SCALER_FMT_ARGB8888)
+      {
+         ctx->in_pixconv(ctx->input.frame, input,
+               ctx->in_width, ctx->in_height,
+               ctx->input.stride, ctx->in_stride);
+
+         inp       = ctx->input.frame;
+         in_stride = ctx->input.stride;
+      }
+
+      bool conv_out  = ctx->out_fmt != SCALER_FMT_ARGB8888;
+      void *outp     = output;
+      int out_stride = ctx->out_stride;
+
+      if (conv_out)
+      {
+         outp       = ctx->output.frame;
+         out_stride = ctx->output.stride;
+      }
+
+      ctx->scaler_special(ctx, outp, inp,
+            ctx->out_width, ctx->out_height,
+            ctx->in_width, ctx->in_height,
+            out_stride, in_stride);
+
+      if (conv_out)
+      {
+         ctx->out_pixconv(output, ctx->output.frame,
+               ctx->out_width, ctx->out_height,
+               ctx->out_stride, ctx->output.stride);
+      }
+   }
+   else // Take generic filter path.
    {
       if (ctx->in_fmt != SCALER_FMT_ARGB8888)
       {
@@ -229,5 +268,4 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
    ctx->elapsed_frames++;
 #endif
 }
-
 
