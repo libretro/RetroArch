@@ -603,7 +603,9 @@ static bool ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_da
          handle->video.scaler.in_height = data->height;
          handle->video.scaler.in_stride = data->pitch;
 
-         handle->video.scaler.scaler_type = SCALER_TYPE_POINT;
+         // Attempt to preserve more information if we scale down.
+         bool shrunk = handle->params.out_width < data->width || handle->params.out_height < data->height;
+         handle->video.scaler.scaler_type = shrunk ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
 
          handle->video.scaler.out_width  = handle->params.out_width;
          handle->video.scaler.out_height = handle->params.out_height;

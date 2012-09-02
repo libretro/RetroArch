@@ -17,8 +17,8 @@
 #define SCALER_H__
 
 #include <stdint.h>
-#include <stdbool.h>
 #include <stddef.h>
+#include "../../boolean.h"
 
 #define FILTER_UNITY (1 << 14)
 
