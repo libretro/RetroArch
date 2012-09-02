@@ -354,7 +354,7 @@ enum retro_key
 #define RETRO_ENVIRONMENT_SET_PIXEL_FORMAT 10
                                            // const enum retro_pixel_format * --
                                            // Sets the internal pixel format used by the implementation.
-                                           // The default pixel format is RETRO_PIXEL_FORMAT_XRGB1555.
+                                           // The default pixel format is RETRO_PIXEL_FORMAT_0RGB1555.
                                            // If the call returns false, the frontend does not support this pixel format.
                                            // This function should be called inside retro_load_game() or retro_get_system_av_info().
 
