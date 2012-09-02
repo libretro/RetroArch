@@ -40,6 +40,10 @@ extern "C" {
 #include "ffemu.h"
 #include <assert.h>
 
+#ifdef FFEMU_PERF
+#include <time.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif

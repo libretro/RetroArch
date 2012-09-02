@@ -130,6 +130,14 @@ ifeq ($(HAVE_SDL), 1)
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
 
+ifeq ($(SCALER_NO_SIMD), 1)
+   DEFINES += -DSCALER_NO_SIMD
+endif
+ifeq ($(SCALER_PERF), 1)
+   DEFINES += -DSCALER_PERF
+   LIBS += -lrt
+endif
+
 ifeq ($(HAVE_X11), 1)
    LIBS += $(X11_LIBS)
    DEFINES += $(X11_CFLAGS)
@@ -298,6 +306,7 @@ clean:
 	rm -f gfx/fonts/*.o
 	rm -f gfx/context/*.o
 	rm -f gfx/py_state/*.o
+	rm -f gfx/scaler/*.o
 	rm -f compat/*.o
 	rm -f record/*.o
 	rm -f input/*.o

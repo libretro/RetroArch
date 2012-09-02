@@ -90,12 +90,17 @@ struct scaler_ctx
       uint32_t *frame;
       int stride;
    } output;
+
+#ifdef SCALER_PERF
+   double elapsed_time_ms;
+   unsigned elapsed_frames;
+#endif
 };
 
 bool scaler_ctx_gen_filter(struct scaler_ctx *ctx);
 void scaler_ctx_gen_reset(struct scaler_ctx *ctx);
 
-void scaler_ctx_scale(const struct scaler_ctx *ctx,
+void scaler_ctx_scale(struct scaler_ctx *ctx,
       void *output, const void *input);
 
 void *scaler_alloc(size_t elem_size, size_t size);

@@ -15,6 +15,10 @@
 
 #include "scaler_int.h"
 
+#ifdef SCALER_NO_SIMD
+#undef __SSE2__
+#endif
+
 #if defined(__SSE2__)
 #include <emmintrin.h>
 #endif

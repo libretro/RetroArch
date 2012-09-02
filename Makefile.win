@@ -218,6 +218,7 @@ clean:
 	rm -f audio/xaudio-c/*.o
 	rm -f compat/*.o
 	rm -f conf/*.o
+	rm -f gfx/scaler/*.o
 	rm -f gfx/*.o
 	rm -f gfx/context/*.o
 	rm -f gfx/fonts/*.o

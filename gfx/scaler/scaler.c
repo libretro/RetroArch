@@ -22,6 +22,10 @@
 #include <stdio.h>
 #include <math.h>
 
+#ifdef SCALER_PERF
+#include <time.h>
+#endif
+
 // In case aligned allocs are needed later ...
 void *scaler_alloc(size_t elem_size, size_t size)
 {
@@ -157,6 +161,14 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
 
 void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
 {
+#ifdef SCALER_PERF
+   if (ctx->elapsed_frames)
+      fprintf(stderr, "[Scaler]: ms / frame: %.3f\n", ctx->elapsed_time_ms / ctx->elapsed_frames);
+
+   ctx->elapsed_time_ms = 0.0;
+   ctx->elapsed_frames  = 0;
+#endif
+
    scaler_free(ctx->horiz.filter);
    scaler_free(ctx->horiz.filter_pos);
    scaler_free(ctx->vert.filter);
@@ -172,9 +184,14 @@ void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
    memset(&ctx->output, 0, sizeof(ctx->output));
 }
 
-void scaler_ctx_scale(const struct scaler_ctx *ctx,
+void scaler_ctx_scale(struct scaler_ctx *ctx,
       void *output, const void *input)
 {
+#ifdef SCALER_PERF
+   struct timespec start_tv, end_tv;
+   clock_gettime(CLOCK_MONOTONIC, &start_tv);
+#endif
+
    if (ctx->unscaled)
    {
       ctx->direct_pixconv(output, input,
@@ -205,6 +222,12 @@ void scaler_ctx_scale(const struct scaler_ctx *ctx,
       else
          ctx->scaler_vert(ctx, output, ctx->out_stride);
    }
+
+#ifdef SCALER_PERF
+   clock_gettime(CLOCK_MONOTONIC, &end_tv);
+   ctx->elapsed_time_ms += (end_tv.tv_sec - start_tv.tv_sec) * 1000.0 + (end_tv.tv_nsec - start_tv.tv_nsec) / 1000000.0;
+   ctx->elapsed_frames++;
+#endif
 }
 
 

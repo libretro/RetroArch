@@ -19,6 +19,10 @@
 #include <string.h>
 #include <stdio.h>
 
+#ifdef SCALER_NO_SIMD
+#undef __SSE2__
+#endif
+
 #if defined(__SSE2__)
 #include <emmintrin.h>
 #endif
@@ -31,11 +35,11 @@ void conv_0rgb1555_argb8888(void *output_, const void *input_,
    const uint16_t *input = (const uint16_t*)input_;
    uint32_t *output      = (uint32_t*)output_;
 
-   __m128i pix_mask_r  = _mm_set1_epi16(0x1f << 10);
-   __m128i pix_mask_gb = _mm_set1_epi16(0x1f <<  5);
-   __m128i mul15_mid   = _mm_set1_epi16(0x4200);
-   __m128i mul15_hi    = _mm_set1_epi16(0x0210);
-   __m128i a           = _mm_set1_epi16(0x00ff);
+   const __m128i pix_mask_r  = _mm_set1_epi16(0x1f << 10);
+   const __m128i pix_mask_gb = _mm_set1_epi16(0x1f <<  5);
+   const __m128i mul15_mid   = _mm_set1_epi16(0x4200);
+   const __m128i mul15_hi    = _mm_set1_epi16(0x0210);
+   const __m128i a           = _mm_set1_epi16(0x00ff);
 
    int max_width = width - 7;
 
@@ -44,7 +48,7 @@ void conv_0rgb1555_argb8888(void *output_, const void *input_,
       int w;
       for (w = 0; w < max_width; w += 8)
       {
-         __m128i in = _mm_loadu_si128((const __m128i*)(input + w));
+         const __m128i in = _mm_loadu_si128((const __m128i*)(input + w));
          __m128i r = _mm_and_si128(in, pix_mask_r);
          __m128i g = _mm_and_si128(in, pix_mask_gb);
          __m128i b = _mm_and_si128(_mm_slli_epi16(in, 5), pix_mask_gb);
@@ -105,6 +109,121 @@ void conv_0rgb1555_argb8888(void *output_, const void *input_,
 }
 #endif
 
+#if defined(__SSE2__)
+// :( TODO: Make this saner.
+static inline void store_bgr24_sse2(void *output, __m128i a, __m128i b, __m128i c, __m128i d)
+{
+   const __m128i mask_0 = _mm_set_epi32(0, 0, 0, 0x00ffffff);
+   const __m128i mask_1 = _mm_set_epi32(0, 0, 0x00ffffff, 0);
+   const __m128i mask_2 = _mm_set_epi32(0, 0x00ffffff, 0, 0);
+   const __m128i mask_3 = _mm_set_epi32(0x00ffffff, 0, 0, 0);
+
+   __m128i a0 = _mm_and_si128(a, mask_0);
+   __m128i a1 = _mm_srli_si128(_mm_and_si128(a, mask_1),  1);
+   __m128i a2 = _mm_srli_si128(_mm_and_si128(a, mask_2),  2);
+   __m128i a3 = _mm_srli_si128(_mm_and_si128(a, mask_3),  3);
+   __m128i a4 = _mm_slli_si128(_mm_and_si128(b, mask_0), 12);
+   __m128i a5 = _mm_slli_si128(_mm_and_si128(b, mask_1), 11);
+
+   __m128i b0 = _mm_srli_si128(_mm_and_si128(b, mask_1), 5);
+   __m128i b1 = _mm_srli_si128(_mm_and_si128(b, mask_2), 6);
+   __m128i b2 = _mm_srli_si128(_mm_and_si128(b, mask_3), 7);
+   __m128i b3 = _mm_slli_si128(_mm_and_si128(c, mask_0), 8);
+   __m128i b4 = _mm_slli_si128(_mm_and_si128(c, mask_1), 7);
+   __m128i b5 = _mm_slli_si128(_mm_and_si128(c, mask_2), 6);
+
+   __m128i c0 = _mm_srli_si128(_mm_and_si128(c, mask_2), 10);
+   __m128i c1 = _mm_srli_si128(_mm_and_si128(c, mask_3), 11);
+   __m128i c2 = _mm_slli_si128(_mm_and_si128(d, mask_0),  4);
+   __m128i c3 = _mm_slli_si128(_mm_and_si128(d, mask_1),  3);
+   __m128i c4 = _mm_slli_si128(_mm_and_si128(d, mask_2),  2);
+   __m128i c5 = _mm_slli_si128(_mm_and_si128(d, mask_3),  1);
+
+   __m128i *out = output;
+
+   _mm_storeu_si128(out + 0,
+         _mm_or_si128(a0, _mm_or_si128(a1, _mm_or_si128(a2, _mm_or_si128(a3, _mm_or_si128(a4, a5))))));
+
+   _mm_storeu_si128(out + 1,
+         _mm_or_si128(b0, _mm_or_si128(b1, _mm_or_si128(b2, _mm_or_si128(b3, _mm_or_si128(b4, b5))))));
+
+   _mm_storeu_si128(out + 2,
+         _mm_or_si128(c0, _mm_or_si128(c1, _mm_or_si128(c2, _mm_or_si128(c3, _mm_or_si128(c4, c5))))));
+}
+
+void conv_0rgb1555_bgr24(void *output_, const void *input_,
+      int width, int height,
+      int out_stride, int in_stride)
+{
+   const uint16_t *input = (const uint16_t*)input_;
+   uint8_t *output       = (uint8_t*)output_;
+
+   const __m128i pix_mask_r  = _mm_set1_epi16(0x1f << 10);
+   const __m128i pix_mask_gb = _mm_set1_epi16(0x1f <<  5);
+   const __m128i mul15_mid   = _mm_set1_epi16(0x4200);
+   const __m128i mul15_hi    = _mm_set1_epi16(0x0210);
+   const __m128i a           = _mm_set1_epi16(0x00ff);
+
+   int max_width = width - 15;
+
+   for (int h = 0; h < height; h++, output += out_stride, input += in_stride >> 1)
+   {
+      uint8_t *out = output;
+
+      int w;
+      for (w = 0; w < max_width; w += 16, out += 48)
+      {
+         const __m128i in0 = _mm_loadu_si128((const __m128i*)(input + w + 0));
+         const __m128i in1 = _mm_loadu_si128((const __m128i*)(input + w + 8));
+         __m128i r0 = _mm_and_si128(in0, pix_mask_r);
+         __m128i r1 = _mm_and_si128(in1, pix_mask_r);
+         __m128i g0 = _mm_and_si128(in0, pix_mask_gb);
+         __m128i g1 = _mm_and_si128(in1, pix_mask_gb);
+         __m128i b0 = _mm_and_si128(_mm_slli_epi16(in0, 5), pix_mask_gb);
+         __m128i b1 = _mm_and_si128(_mm_slli_epi16(in1, 5), pix_mask_gb);
+
+         r0 = _mm_mulhi_epi16(r0, mul15_hi);
+         r1 = _mm_mulhi_epi16(r1, mul15_hi);
+         g0 = _mm_mulhi_epi16(g0, mul15_mid);
+         g1 = _mm_mulhi_epi16(g1, mul15_mid);
+         b0 = _mm_mulhi_epi16(b0, mul15_mid);
+         b1 = _mm_mulhi_epi16(b1, mul15_mid);
+
+         __m128i res_lo_bg0 = _mm_unpacklo_epi8(b0, g0);
+         __m128i res_lo_bg1 = _mm_unpacklo_epi8(b1, g1);
+         __m128i res_hi_bg0 = _mm_unpackhi_epi8(b0, g0);
+         __m128i res_hi_bg1 = _mm_unpackhi_epi8(b1, g1);
+         __m128i res_lo_ra0 = _mm_unpacklo_epi8(r0, a);
+         __m128i res_lo_ra1 = _mm_unpacklo_epi8(r1, a);
+         __m128i res_hi_ra0 = _mm_unpackhi_epi8(r0, a);
+         __m128i res_hi_ra1 = _mm_unpackhi_epi8(r1, a);
+
+         __m128i res_lo0 = _mm_or_si128(res_lo_bg0, _mm_slli_si128(res_lo_ra0, 2));
+         __m128i res_lo1 = _mm_or_si128(res_lo_bg1, _mm_slli_si128(res_lo_ra1, 2));
+         __m128i res_hi0 = _mm_or_si128(res_hi_bg0, _mm_slli_si128(res_hi_ra0, 2));
+         __m128i res_hi1 = _mm_or_si128(res_hi_bg1, _mm_slli_si128(res_hi_ra1, 2));
+
+         // Non-POT pixel sizes ftl :(
+         store_bgr24_sse2(out, res_lo0, res_hi0, res_lo1, res_hi1);
+      }
+
+      for (; w < width; w++)
+      {
+         uint32_t col = input[w];
+         uint32_t b = (col >>  0) & 0x1f;
+         uint32_t g = (col >>  5) & 0x1f;
+         uint32_t r = (col >> 10) & 0x1f;
+         b = (b << 3) | (b >> 2);
+         g = (g << 3) | (g >> 2);
+         r = (r << 3) | (r >> 2);
+
+         *out++ = b;
+         *out++ = g;
+         *out++ = r;
+      }
+   }
+}
+#else
 void conv_0rgb1555_bgr24(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)
@@ -131,6 +250,7 @@ void conv_0rgb1555_bgr24(void *output_, const void *input_,
       }
    }
 }
+#endif
 
 void conv_bgr24_argb8888(void *output_, const void *input_,
       int width, int height,
@@ -172,12 +292,46 @@ void conv_argb8888_0rgb1555(void *output_, const void *input_,
    }
 }
 
+#if defined(__SSE2__)
 void conv_argb8888_bgr24(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)
 {
    const uint32_t *input = (const uint32_t*)input_;
-   uint8_t *output = (uint8_t*)output_;
+   uint8_t *output       = (uint8_t*)output_;
+
+   int max_width = width - 15;
+
+   for (int h = 0; h < height; h++, output += out_stride, input += in_stride >> 2)
+   {
+      uint8_t *out = output;
+      int w;
+
+      for (w = 0; w < max_width; w += 16, out += 48)
+      {
+         store_bgr24_sse2(out,
+               _mm_loadu_si128((const __m128i*)(input + w +  0)),
+               _mm_loadu_si128((const __m128i*)(input + w +  4)),
+               _mm_loadu_si128((const __m128i*)(input + w +  8)),
+               _mm_loadu_si128((const __m128i*)(input + w + 12)));
+      }
+
+      for (; w < width; w++)
+      {
+         uint32_t col = input[w];
+         *out++ = (uint8_t)(col >>  0);
+         *out++ = (uint8_t)(col >>  8);
+         *out++ = (uint8_t)(col >> 16);
+      }
+   }
+}
+#else
+void conv_argb8888_bgr24(void *output_, const void *input_,
+      int width, int height,
+      int out_stride, int in_stride)
+{
+   const uint32_t *input = (const uint32_t*)input_;
+   uint8_t *output       = (uint8_t*)output_;
 
    for (int h = 0; h < height; h++, output += out_stride, input += in_stride >> 2)
    {
@@ -191,6 +345,7 @@ void conv_argb8888_bgr24(void *output_, const void *input_,
       }
    }
 }
+#endif
 
 void conv_copy(void *output_, const void *input_,
       int width, int height,
