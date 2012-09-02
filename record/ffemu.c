@@ -24,7 +24,6 @@ extern "C" {
 #include <libavutil/avstring.h>
 #include <libavutil/opt.h>
 #include <libavformat/avformat.h>
-#include <libswscale/swscale.h>
 #include <libavutil/avconfig.h>
 #ifdef __cplusplus
 }
@@ -37,6 +36,7 @@ extern "C" {
 #include "../fifo_buffer.h"
 #include "../thread.h"
 #include "../general.h"
+#include "../gfx/scaler/scaler.h"
 #include "ffemu.h"
 #include <assert.h>
 
@@ -56,13 +56,12 @@ struct ff_video_info
    uint8_t *outbuf;
    size_t outbuf_size;
 
-   enum PixelFormat fmt;
    enum PixelFormat pix_fmt;
    size_t pix_size;
 
    AVFormatContext *format;
 
-   struct SwsContext *sws_ctx;
+   struct scaler_ctx scaler;
 };
 
 struct ff_audio_info
@@ -173,21 +172,17 @@ static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_par
    switch (param->pix_fmt)
    {
       case FFEMU_PIX_XRGB1555:
-#if AV_HAVE_BIGENDIAN
-         video->fmt = PIX_FMT_RGB555BE;
-#else
-         video->fmt = PIX_FMT_RGB555LE;
-#endif
+         video->scaler.in_fmt = SCALER_FMT_0RGB1555;
          video->pix_size = 2;
          break;
 
       case FFEMU_PIX_BGR24:
-         video->fmt = PIX_FMT_BGR24;
+         video->scaler.in_fmt = SCALER_FMT_BGR24;
          video->pix_size = 3;
          break;
 
       case FFEMU_PIX_ARGB8888:
-         video->fmt = PIX_FMT_RGB32;
+         video->scaler.in_fmt = SCALER_FMT_ARGB8888;
          video->pix_size = 4;
          break;
 
@@ -195,7 +190,16 @@ static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_par
          return false;
    }
 
-   video->pix_fmt = g_settings.video.h264_record ? PIX_FMT_BGR24 : PIX_FMT_RGB32;
+   if (g_settings.video.h264_record)
+   {
+      video->pix_fmt = PIX_FMT_BGR24;
+      video->scaler.out_fmt = SCALER_FMT_BGR24;
+   }
+   else
+   {
+      video->pix_fmt = PIX_FMT_RGB32;
+      video->scaler.out_fmt = SCALER_FMT_ARGB8888;
+   }
 
 #ifdef HAVE_FFMPEG_ALLOC_CONTEXT3
    video->codec = avcodec_alloc_context3(codec);
@@ -443,8 +447,7 @@ void ffemu_free(ffemu_t *handle)
       if (handle->video.conv_frame_buf)
          av_free(handle->video.conv_frame_buf);
 
-      if (handle->video.sws_ctx)
-         sws_freeContext(handle->video.sws_ctx);
+      scaler_ctx_gen_reset(&handle->video.scaler);
 
       free(handle);
    }
@@ -594,14 +597,22 @@ static bool ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_da
 {
    if (!data->is_dupe)
    {
-      handle->video.sws_ctx = sws_getCachedContext(handle->video.sws_ctx, data->width, data->height, handle->video.fmt,
-            handle->params.out_width, handle->params.out_height, handle->video.pix_fmt, SWS_POINT,
-            NULL, NULL, NULL);
+      if (data->width != handle->video.scaler.in_width || data->height != handle->video.scaler.in_height)
+      {
+         handle->video.scaler.in_width  = data->width;
+         handle->video.scaler.in_height = data->height;
+         handle->video.scaler.in_stride = data->pitch;
 
-      int linesize = data->pitch;
+         handle->video.scaler.scaler_type = SCALER_TYPE_POINT;
 
-      sws_scale(handle->video.sws_ctx, (const uint8_t* const*)&data->data, &linesize, 0,
-            data->height, handle->video.conv_frame->data, handle->video.conv_frame->linesize);
+         handle->video.scaler.out_width  = handle->params.out_width;
+         handle->video.scaler.out_height = handle->params.out_height;
+         handle->video.scaler.out_stride = handle->video.conv_frame->linesize[0];
+
+         scaler_ctx_gen_filter(&handle->video.scaler);
+      }
+
+      scaler_ctx_scale(&handle->video.scaler, handle->video.conv_frame->data[0], data->data);
    }
 
    handle->video.conv_frame->pts = handle->video.frame_cnt;
