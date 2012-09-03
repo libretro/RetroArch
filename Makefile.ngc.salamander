@@ -37,9 +37,7 @@ CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map
 LIBS := -lfat -logc
 
-APP_BOOTER_DIR = gx/app_booter
-
-OBJ = gx/salamander/main.o console/rarch_console_exec.o console/rarch_console_libretro_mgmt.o file_path.o compat/compat.o conf/config_file.o $(APP_BOOTER_DIR)/app_booter_ngc.binobj
+OBJ = gx/salamander/main.o console/rarch_console_exec.o console/rarch_console_libretro_mgmt.o file_path.o compat/compat.o conf/config_file.o ngc/ssaram.o ngc/sidestep.o
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -73,20 +71,13 @@ $(ELF_TARGET): $(OBJ)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-%.binobj: %.bin
-	$(LD) -r -b binary -o $@ $<
-
-$(APP_BOOTER_DIR)/app_booter_ngc.bin:
-	$(MAKE) -C $(APP_BOOTER_DIR) platform=ngc
-
 pkg: all
-	cp -r $(DOL_TARGET) gx/pkg/boot.dol
+	cp -r $(DOL_TARGET) ngc/pkg/boot.dol
 
 clean:
 	rm -f $(DOL_TARGET)
 	rm -f $(ELF_TARGET)
 	rm -f $(OBJ)
-	$(MAKE) -C $(APP_BOOTER_DIR) platform=ngc clean
 
 .PHONY: clean
 

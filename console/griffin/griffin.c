@@ -32,6 +32,11 @@ CONSOLE EXTENSIONS
 #include "../rarch_console_main_wrap.c"
 #endif
 
+#ifdef HW_DOL
+#include "../../ngc/ssaram.c"
+#include "../../ngc/sidestep.c"
+#endif
+
 #ifdef HAVE_RARCH_EXEC
 #include "../rarch_console_exec.c"
 #endif

@@ -18,26 +18,15 @@ CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
 OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy$(EXE_EXT)
 
-ifeq ($(platform),wii)
-   BIN_TARGET := app_booter_wii.bin
-   ELF_TARGET := app_booter_wii.elf
-else
-   BIN_TARGET := app_booter_ngc.bin
-   ELF_TARGET := app_booter_ngc.elf
-endif
+BIN_TARGET := app_booter.bin
+ELF_TARGET := app_booter.elf
 
 INCLUDE := -I. -I$(DEVKITPRO)/libogc/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii
 
-MACHDEP := -mno-eabi -mno-sdata -mcpu=750
+MACHDEP := -DHW_RVL -DGEKKO -mno-eabi -mno-sdata -mcpu=750
 # todo: find out why -Os spits out linker errors
 CFLAGS += -Wall -O2 -ffreestanding -std=gnu99 $(MACHDEP) $(INCLUDE)
-
-ifeq ($(platform),wii)
-   CFLAGS += -DHW_RVL
-else
-   CFLAGS += -DHW_DOL
-endif
 
 LDFLAGS := -T link.ld
 

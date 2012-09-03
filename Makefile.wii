@@ -37,9 +37,9 @@ CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size -T gx/ld/rvl.ld
 LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
 
-APP_BOOTER_DIR = gx/app_booter
+APP_BOOTER_DIR = wii/app_booter
 
-OBJ = console/griffin/griffin.o console/font.binobj console/rzlib/rzlib.o $(APP_BOOTER_DIR)/app_booter_wii.binobj
+OBJ = console/griffin/griffin.o console/font.binobj console/rzlib/rzlib.o $(APP_BOOTER_DIR)/app_booter.binobj
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -78,8 +78,8 @@ $(ELF_TARGET): $(OBJ)
 %.binobj: %.bin
 	$(LD) -r -b binary -o $@ $<
 
-$(APP_BOOTER_DIR)/app_booter_wii.bin:
-	$(MAKE) -C $(APP_BOOTER_DIR) platform=wii
+$(APP_BOOTER_DIR)/app_booter.bin:
+	$(MAKE) -C $(APP_BOOTER_DIR)
 
 pkg: all
 	cp -r $(DOL_TARGET) wii/pkg/CORE.dol
@@ -88,7 +88,7 @@ clean:
 	rm -f $(DOL_TARGET)
 	rm -f $(ELF_TARGET)
 	rm -f $(OBJ)
-	$(MAKE) -C $(APP_BOOTER_DIR) platform=wii clean
+	$(MAKE) -C $(APP_BOOTER_DIR) clean
 
 .PHONY: clean
 

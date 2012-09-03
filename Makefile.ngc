@@ -37,9 +37,7 @@ CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map -T gx/ld/ogc.ld
 LIBS := -lfat -lretro_ngc -logc
 
-APP_BOOTER_DIR = gx/app_booter
-
-OBJ = console/griffin/griffin.o console/font.binobj console/rzlib/rzlib.o $(APP_BOOTER_DIR)/app_booter_ngc.binobj
+OBJ = console/griffin/griffin.o console/font.binobj console/rzlib/rzlib.o
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -73,23 +71,19 @@ $(ELF_TARGET): $(OBJ)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-%.bmpobj: %.bmp
-	$(LD) -r -b binary -o $@ $<
-
 %.binobj: %.bin
 	$(LD) -r -b binary -o $@ $<
 
-$(APP_BOOTER_DIR)/app_booter_ngc.bin:
-	$(MAKE) -C $(APP_BOOTER_DIR) platform=ngc
+%.bmpobj: %.bmp
+	$(LD) -r -b binary -o $@ $<
 
 pkg: all
-	cp -r $(DOL_TARGET) gx/pkg/CORE.dol
+	cp -r $(DOL_TARGET) ngc/pkg/CORE.dol
 
 clean:
 	rm -f $(DOL_TARGET)
 	rm -f $(ELF_TARGET)
 	rm -f $(OBJ)
-	$(MAKE) -C $(APP_BOOTER_DIR) platform=ngc clean
 
 .PHONY: clean
 
