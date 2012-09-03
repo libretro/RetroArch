@@ -20,6 +20,7 @@
 
 #include "sidestep.h"
 #include "ssaram.h"
+#include "../retroarch_logger.h"
 
 #define ARAMSTART 0x8000
 
@@ -153,6 +154,7 @@ void ARAMRun(u32 entrypoint, u32 dst, u32 src, u32 len)
 
   /*** Boot the bugger :D ***/
   stub = (BOOTSTUB) p;
+  RARCH_LOG("Launching relocated stub at %08x\n", (unsigned) p);
   stub((u32) entrypoint, dst, src, len | 0x80000000, len >> 5, dst);
 }
 
@@ -225,6 +227,8 @@ static void DOLMinMax(DOLHEADER * dol)
 
   /*** Some OLD dols, Xrick in particular, require ~128k clear memory ***/
   maxaddress += 0x20000;
+
+  RARCH_LOG("Min Address: %08x     Max Address: %08x\n", minaddress, maxaddress);
 }
 
 /****************************************************************************
@@ -242,7 +246,10 @@ int DOLtoARAM(const char *dol_name)
   FILE *f = fopen(dol_name, "rb");
   
   if (!f)
-    return 1;
+  {
+    RARCH_ERR("Could not open\"%s\"\n", dol_name);
+    return 0;
+  }
 
   fread(&dolhead, 1, sizeof(DOLHEADER), f);
   /*** Make sure ARAM subsystem is alive! ***/
@@ -254,7 +261,10 @@ int DOLtoARAM(const char *dol_name)
 
   /*** First, does this look like a DOL? ***/
   if (dolhdr->textOffset[0] != DOLHDRLENGTH)
+  {
+    RARCH_ERR("\"%s\" is not a .dol file\n", dol_name);
     return 0;
+  }
 
   /*** Get DOL stats ***/
   DOLMinMax(dolhdr);
