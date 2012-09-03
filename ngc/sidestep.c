@@ -282,14 +282,14 @@ int DOLtoARAM(const char *dol_name)
       for (j = 0; j < count; j++)
       {
         fread(dol_readbuf, 1, sizeof(dol_readbuf), f);
-        ARAMPut(dol_readbuf, (char *) ((dolhdr->textAddress[i] - minaddress) + (sizeof(dol_readbuf) * i) + ARAMSTART),
+        ARAMPut(dol_readbuf, (char *) ((dolhdr->textAddress[i] - minaddress) + (sizeof(dol_readbuf) * j) + ARAMSTART),
                 sizeof(dol_readbuf));
       }
       unsigned remaining = dolhdr->textLength[i] % sizeof(dol_readbuf);
       if (remaining)
       {
         fread(dol_readbuf, 1, remaining, f);
-        ARAMPut(dol_readbuf, (char *) ((dolhdr->textAddress[i] - minaddress) + (count * i) + ARAMSTART),
+        ARAMPut(dol_readbuf, (char *) ((dolhdr->textAddress[i] - minaddress) + (sizeof(dol_readbuf) * count) + ARAMSTART),
                 remaining);
       }
     }
@@ -305,14 +305,14 @@ int DOLtoARAM(const char *dol_name)
       for (j = 0; j < count; j++)
       {
         fread(dol_readbuf, 1, sizeof(dol_readbuf), f);
-        ARAMPut(dol_readbuf, (char *) ((dolhdr->dataAddress[i] - minaddress) + (sizeof(dol_readbuf) * i) + ARAMSTART),
+        ARAMPut(dol_readbuf, (char *) ((dolhdr->dataAddress[i] - minaddress) + (sizeof(dol_readbuf) * j) + ARAMSTART),
                 sizeof(dol_readbuf));
       }
       unsigned remaining = dolhdr->dataLength[i] % sizeof(dol_readbuf);
       if (remaining)
       {
         fread(dol_readbuf, 1, remaining, f);
-        ARAMPut(dol_readbuf, (char *) ((dolhdr->dataAddress[i] - minaddress) + (count * i) + ARAMSTART),
+        ARAMPut(dol_readbuf, (char *) ((dolhdr->dataAddress[i] - minaddress) + (sizeof(dol_readbuf) * count) + ARAMSTART),
                 remaining);
       }
     }
