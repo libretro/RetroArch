@@ -479,6 +479,8 @@ void retro_get_system_info(struct retro_system_info *info);
 
 // Gets information about system audio/video timings and geometry.
 // Can be called only after retro_load_game() has successfully completed.
+// NOTE: The implementation of this function might not initialize every variable if needed.
+// E.g. geom.aspect_ratio might not be initialized if core doesn't desire a particular aspect ratio.
 void retro_get_system_av_info(struct retro_system_av_info *info);
 
 // Sets device to be used for player 'port'.
