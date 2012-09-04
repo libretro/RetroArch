@@ -82,18 +82,14 @@ void rarch_set_auto_viewport(unsigned width, unsigned height)
 
 void rarch_set_core_viewport()
 {
-   struct retro_system_av_info info;
-
    if (!g_console.emulator_initialized)
       return;
 
-   retro_get_system_av_info(&info);
-
    // fallback to 1:1 pixel ratio if none provided
-   if (info.geometry.aspect_ratio == 0.0)
-      aspectratio_lut[ASPECT_RATIO_CORE].value = (float) info.geometry.base_width / info.geometry.base_height;
+   if (g_extern.system.av_info.geometry.aspect_ratio == 0.0)
+      aspectratio_lut[ASPECT_RATIO_CORE].value = (float) g_extern.system.av_info.geometry.base_width / g_extern.system.av_info.geometry.base_height;
    else
-      aspectratio_lut[ASPECT_RATIO_CORE].value = info.geometry.aspect_ratio;
+      aspectratio_lut[ASPECT_RATIO_CORE].value = g_extern.system.av_info.geometry.aspect_ratio;
 }
 
 #if defined(HAVE_HLSL) || defined(HAVE_CG) || defined(HAVE_GLSL)
