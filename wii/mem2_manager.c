@@ -211,7 +211,7 @@ void *__real_strdup(const char *s);
 void *__real_strndup(const char *s, size_t n);
 size_t __real_malloc_usable_size(void *p);
 
-void *__wrap_malloc(size_t size)
+__attribute__ ((used)) void *__wrap_malloc(size_t size)
 {
    void *p = __real_malloc(size);
    if (p != 0)
@@ -219,7 +219,7 @@ void *__wrap_malloc(size_t size)
    return _mem2_malloc(size);
 }
 
-void *__wrap_calloc(size_t n, size_t size)
+__attribute__ ((used)) void *__wrap_calloc(size_t n, size_t size)
 {
    void *p = __real_calloc(n, size);
    if (p != 0)
@@ -227,7 +227,7 @@ void *__wrap_calloc(size_t n, size_t size)
    return _mem2_calloc(n, size);
 }
 
-void *__wrap_memalign(size_t a, size_t size)
+__attribute__ ((used)) void *__wrap_memalign(size_t a, size_t size)
 {
    void *p = __real_memalign(a, size);
    if (p != 0)
@@ -235,7 +235,7 @@ void *__wrap_memalign(size_t a, size_t size)
    return _mem2_memalign(a, size);
 }
 
-void __wrap_free(void *p)
+__attribute__ ((used)) void __wrap_free(void *p)
 {
    if (!p)
       return;
@@ -246,7 +246,7 @@ void __wrap_free(void *p)
       __real_free(p);
 }
 
-void *__wrap_realloc(void *p, size_t size)
+__attribute__ ((used)) void *__wrap_realloc(void *p, size_t size)
 {
    void *n;
    // ptr from mem2
@@ -282,7 +282,7 @@ void *__wrap_realloc(void *p, size_t size)
    return n;
 }
 
-void *__wrap_strdup(const char *s)
+__attribute__ ((used)) void *__wrap_strdup(const char *s)
 {
    void *p = __real_strdup(s);
    if (p != 0)
@@ -290,7 +290,7 @@ void *__wrap_strdup(const char *s)
    return _mem2_strdup(s);
 }
 
-void *__wrap_strndup(const char *s, size_t n)
+__attribute__ ((used)) void *__wrap_strndup(const char *s, size_t n)
 {
    void *p = __real_strndup(s, n);
    if (p != 0)
@@ -298,7 +298,7 @@ void *__wrap_strndup(const char *s, size_t n)
    return _mem2_strndup(s, n);
 }
 
-size_t __wrap_malloc_usable_size(void *p)
+__attribute__ ((used)) size_t __wrap_malloc_usable_size(void *p)
 {
    if (((u32) p & 0x10000000) != 0)
       return __lwp_heap_block_size(&gx_mem2_heap, p);
