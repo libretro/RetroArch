@@ -185,7 +185,19 @@ void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input_, int
          }
 
          res       = _mm_adds_epi16(_mm_srli_si128(res, 8), res);
+
+#ifdef __x86_64__
          output[w] = _mm_cvtsi128_si64(res);
+#else // 32-bit doesn't have si64. Do it in two steps.
+         union
+         {
+            uint32_t *u32;
+            uint64_t *u64;
+         } u;
+         u.u64 = output + w;
+         u.u32[0] = _mm_cvtsi128_si32(res);
+         u.u32[1] = _mm_cvtsi128_si32(_mm_srli_si128(res, 4));
+#endif
       }
    }
 }
