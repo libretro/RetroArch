@@ -568,13 +568,45 @@ bool config_get_array(config_file_t *conf, const char *key, char *buf, size_t si
    while (list)
    {
       if (strcmp(key, list->key) == 0)
+         return strlcpy(buf, list->value, size) < size;
+      list = list->next;
+   }
+   return false;
+}
+
+bool config_get_path(config_file_t *conf, const char *key, char *buf, size_t size)
+{
+#if defined(_WIN32) || defined(RARCH_CONSOLE)
+   return config_get_array(conf, key, buf, size);
+#else
+   struct entry_list *list = conf->entries;
+
+   while (list)
+   {
+      if (strcmp(key, list->key) == 0)
       {
-         strlcpy(buf, list->value, size);
-         return true;
+         const char *value = list->value;
+         if (*value == '~')
+         {
+            const char *home = getenv("HOME");
+            if (home)
+            {
+               size_t src_size = strlcpy(buf, home, size);
+               if (src_size >= size)
+                  return false;
+
+               buf  += src_size;
+               size -= src_size;
+               value++;
+            }
+         }
+
+         return strlcpy(buf, value, size) < size;
       }
       list = list->next;
    }
    return false;
+#endif
 }
 
 bool config_get_bool(config_file_t *conf, const char *key, bool *in)

@@ -47,16 +47,21 @@
 #define CONFIG_GET_STRING_BASE(conf, base, var, key) \
    config_get_array(conf, key, base.var, sizeof(base.var))
 
+#define CONFIG_GET_PATH_BASE(conf, base, var, key) \
+   config_get_path(conf, key, base.var, sizeof(base.var))
+
 #define CONFIG_GET_BOOL(var, key) CONFIG_GET_BOOL_BASE(conf, g_settings, var, key)
 #define CONFIG_GET_INT(var, key) CONFIG_GET_INT_BASE(conf, g_settings, var, key)
 #define CONFIG_GET_UINT64(var, key) CONFIG_GET_UINT64_BASE(conf, g_settings, var, key)
 #define CONFIG_GET_FLOAT(var, key) CONFIG_GET_FLOAT_BASE(conf, g_settings, var, key)
 #define CONFIG_GET_STRING(var, key) CONFIG_GET_STRING_BASE(conf, g_settings, var, key)
+#define CONFIG_GET_PATH(var, key) CONFIG_GET_PATH_BASE(conf, g_settings, var, key)
 
 #define CONFIG_GET_BOOL_EXTERN(var, key) CONFIG_GET_BOOL_BASE(conf, g_extern, var, key)
 #define CONFIG_GET_INT_EXTERN(var, key) CONFIG_GET_INT_BASE(conf, g_extern, var, key)
 #define CONFIG_GET_FLOAT_EXTERN(var, key) CONFIG_GET_FLOAT_BASE(conf, g_extern, var, key)
 #define CONFIG_GET_STRING_EXTERN(var, key) CONFIG_GET_STRING_BASE(conf, g_extern, var, key)
+#define CONFIG_GET_PATH_EXTERN(var, key) CONFIG_GET_PATH_BASE(conf, g_extern, var, key)
 
 #ifdef RARCH_CONSOLE
 #define CONFIG_GET_BOOL_CONSOLE(var, key) CONFIG_GET_BOOL_BASE(conf, g_console, var, key)

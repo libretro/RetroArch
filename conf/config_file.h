@@ -63,6 +63,8 @@ bool config_get_char(config_file_t *conf, const char *entry, char *in);
 bool config_get_string(config_file_t *conf, const char *entry, char **in);
 // Extracts a string to a preallocated buffer. Avoid memory allocation.
 bool config_get_array(config_file_t *conf, const char *entry, char *in, size_t size);
+// Extracts a string to a preallocated buffer. Avoid memory allocation. Recognized magic like ~/. Similar to config_get_array() otherwise.
+bool config_get_path(config_file_t *conf, const char *entry, char *in, size_t size);
 // Extracts a boolean from config. Valid boolean true are "true" and "1". Valid false are "false" and "0". Other values will be treated as an error.
 bool config_get_bool(config_file_t *conf, const char *entry, bool *in);
 

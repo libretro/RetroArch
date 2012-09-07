@@ -363,9 +363,9 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.aspect_ratio_auto, "video_aspect_ratio_auto");
    CONFIG_GET_FLOAT(video.refresh_rate, "video_refresh_rate");
 
-   CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
-   CONFIG_GET_STRING(video.bsnes_shader_path, "video_bsnes_shader");
-   CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
+   CONFIG_GET_PATH(video.cg_shader_path, "video_cg_shader");
+   CONFIG_GET_PATH(video.bsnes_shader_path, "video_bsnes_shader");
+   CONFIG_GET_PATH(video.second_pass_shader, "video_second_pass_shader");
    CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
    CONFIG_GET_FLOAT(video.fbo_scale_x, "video_fbo_scale_x");
    CONFIG_GET_FLOAT(video.fbo_scale_y, "video_fbo_scale_y");
@@ -373,7 +373,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.allow_rotate, "video_allow_rotate");
 
 #ifdef HAVE_FREETYPE
-   CONFIG_GET_STRING(video.font_path, "video_font_path");
+   CONFIG_GET_PATH(video.font_path, "video_font_path");
    CONFIG_GET_INT(video.font_size, "video_font_size");
    CONFIG_GET_BOOL(video.font_enable, "video_font_enable");
    CONFIG_GET_BOOL(video.font_scale, "video_font_scale");
@@ -396,9 +396,9 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.gpu_screenshot, "video_gpu_screenshot");
 
 #ifdef HAVE_DYLIB
-   CONFIG_GET_STRING(video.filter_path, "video_filter");
-   CONFIG_GET_STRING(video.external_driver, "video_external_driver");
-   CONFIG_GET_STRING(audio.external_driver, "audio_external_driver");
+   CONFIG_GET_PATH(video.filter_path, "video_filter");
+   CONFIG_GET_PATH(video.external_driver, "video_external_driver");
+   CONFIG_GET_PATH(audio.external_driver, "audio_external_driver");
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_XML)
@@ -416,8 +416,7 @@ bool config_load_file(const char *path)
 #endif
 
 #if defined(HAVE_XML)
-   if (config_get_array(conf, "video_shader_dir", tmp_str, sizeof(tmp_str)))
-      fill_pathname_shell(g_settings.video.shader_dir, tmp_str, sizeof(g_settings.video.shader_dir));
+   CONFIG_GET_PATH(video.shader_dir, "video_shader_dir");
 #endif
 
    CONFIG_GET_FLOAT(input.axis_threshold, "input_axis_threshold");
@@ -442,15 +441,13 @@ bool config_load_file(const char *path)
 
    CONFIG_GET_STRING(video.driver, "video_driver");
    CONFIG_GET_STRING(audio.driver, "audio_driver");
-   CONFIG_GET_STRING(audio.dsp_plugin, "audio_dsp_plugin");
+   CONFIG_GET_PATH(audio.dsp_plugin, "audio_dsp_plugin");
    CONFIG_GET_STRING(input.driver, "input_driver");
 
    if (!*g_settings.libretro)
-      CONFIG_GET_STRING(libretro, "libretro_path");
+      CONFIG_GET_PATH(libretro, "libretro_path");
 
-   if (config_get_array(conf, "screenshot_directory", tmp_str, sizeof(tmp_str)))
-      fill_pathname_shell(g_settings.screenshot_directory, tmp_str, sizeof(g_settings.screenshot_directory));
-
+   CONFIG_GET_PATH(screenshot_directory, "screenshot_directory");
    if (*g_settings.screenshot_directory && !path_is_directory(g_settings.screenshot_directory))
    {
       RARCH_WARN("screenshot_directory is not an existing directory, ignoring ...\n");
@@ -471,8 +468,8 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(pause_nonactive, "pause_nonactive");
    CONFIG_GET_INT(autosave_interval, "autosave_interval");
 
-   CONFIG_GET_STRING(cheat_database, "cheat_database_path");
-   CONFIG_GET_STRING(cheat_settings_path, "cheat_settings_path");
+   CONFIG_GET_PATH(cheat_database, "cheat_database_path");
+   CONFIG_GET_PATH(cheat_settings_path, "cheat_settings_path");
 
    CONFIG_GET_BOOL(block_sram_overwrite, "block_sram_overwrite");
    CONFIG_GET_BOOL(savestate_auto_index, "savestate_auto_index");
@@ -494,36 +491,29 @@ bool config_load_file(const char *path)
       }
    }
 
-   if (!g_extern.has_set_save_path && config_get_array(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
+   if (!g_extern.has_set_save_path && config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
-      char tmp[PATH_MAX];
-      fill_pathname_shell(tmp, tmp_str, sizeof(tmp));
-
-      if (path_is_directory(tmp))
+      if (path_is_directory(tmp_str))
       {
-         strlcpy(g_extern.savefile_name_srm, tmp, sizeof(g_extern.savefile_name_srm));
+         strlcpy(g_extern.savefile_name_srm, tmp_str, sizeof(g_extern.savefile_name_srm));
          fill_pathname_dir(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
       }
       else
          RARCH_WARN("savefile_directory is not a directory, ignoring ....\n");
    }
 
-   if (!g_extern.has_set_state_path && config_get_array(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
+   if (!g_extern.has_set_state_path && config_get_path(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
-      char tmp[PATH_MAX];
-      fill_pathname_shell(tmp, tmp_str, sizeof(tmp));
-
-      if (path_is_directory(tmp))
+      if (path_is_directory(tmp_str))
       {
-         strlcpy(g_extern.savestate_name, tmp, sizeof(g_extern.savestate_name));
+         strlcpy(g_extern.savestate_name, tmp_str, sizeof(g_extern.savestate_name));
          fill_pathname_dir(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
       }
       else
          RARCH_WARN("savestate_directory is not a directory, ignoring ...\n");
    }
 
-   if (config_get_array(conf, "system_directory", tmp_str, sizeof(tmp_str)))
-      fill_pathname_shell(g_settings.system_directory, tmp_str, sizeof(g_settings.system_directory));
+   CONFIG_GET_PATH(system_directory, "system_directory");
 
    config_read_keybinds_conf(conf);
 
