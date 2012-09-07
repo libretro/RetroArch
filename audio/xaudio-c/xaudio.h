@@ -3,7 +3,7 @@
    authors: OV2, Themaister
 */
 
-// Kinda stripped down. Only contains the bare essentials used in SSNES.
+// Kinda stripped down. Only contains the bare essentials used in RetroArch.
 
 #ifndef XAUDIO2_MINGW_H
 #define XAUDIO2_MINGW_H

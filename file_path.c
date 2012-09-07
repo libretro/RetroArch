@@ -424,6 +424,27 @@ void fill_pathname_basedir(char *out_dir, const char *in_path, size_t size)
    }
 }
 
+void fill_pathname_shell(char *out_path, const char *in_path, size_t size)
+{
+#if !defined(_WIN32) && !defined(RARCH_CONSOLE)
+   if (*in_path == '~')
+   {
+      const char *home = getenv("HOME");
+      if (home)
+      {
+         size_t src_size = strlcpy(out_path, home, size);
+         rarch_assert(src_size < size);
+
+         out_path += src_size;
+         size -= src_size;
+         in_path++;
+      }
+   }
+#endif
+
+   rarch_assert(strlcpy(out_path, in_path, size) < size);
+}
+
 size_t convert_char_to_wchar(wchar_t *out_wchar, const char *in_char, size_t size)
 {
    return mbstowcs(out_wchar, in_char, size / sizeof(wchar_t));
@@ -433,3 +454,4 @@ size_t convert_wchar_to_char(char *out_char, const wchar_t *in_wchar, size_t siz
 {
    return wcstombs(out_char, in_wchar, size);
 }
+

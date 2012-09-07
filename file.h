@@ -99,6 +99,9 @@ void fill_pathname_base(char *out_path, const char *in_path, size_t size);
 // If in_path is a path without any slashes (relative current directory), out_path will get path ".".
 void fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
 
+// Copies string, and attempts to replace magic like ~/, etc with proper paths, like a shell would.
+void fill_pathname_shell(char *out_path, const char *in_path, size_t size);
+
 size_t convert_char_to_wchar(wchar_t *out_wchar, const char *in_char, size_t size);
 size_t convert_wchar_to_char(char *out_char, const wchar_t *in_wchar, size_t size);
 

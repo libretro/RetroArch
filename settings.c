@@ -416,7 +416,8 @@ bool config_load_file(const char *path)
 #endif
 
 #if defined(HAVE_XML)
-   CONFIG_GET_STRING(video.shader_dir, "video_shader_dir");
+   if (config_get_array(conf, "video_shader_dir", tmp_str, sizeof(tmp_str)))
+      fill_pathname_shell(g_settings.video.shader_dir, tmp_str, sizeof(g_settings.video.shader_dir));
 #endif
 
    CONFIG_GET_FLOAT(input.axis_threshold, "input_axis_threshold");
@@ -447,7 +448,9 @@ bool config_load_file(const char *path)
    if (!*g_settings.libretro)
       CONFIG_GET_STRING(libretro, "libretro_path");
 
-   CONFIG_GET_STRING(screenshot_directory, "screenshot_directory");
+   if (config_get_array(conf, "screenshot_directory", tmp_str, sizeof(tmp_str)))
+      fill_pathname_shell(g_settings.screenshot_directory, tmp_str, sizeof(g_settings.screenshot_directory));
+
    if (*g_settings.screenshot_directory && !path_is_directory(g_settings.screenshot_directory))
    {
       RARCH_WARN("screenshot_directory is not an existing directory, ignoring ...\n");
@@ -493,9 +496,12 @@ bool config_load_file(const char *path)
 
    if (!g_extern.has_set_save_path && config_get_array(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
-      if (path_is_directory(tmp_str))
+      char tmp[PATH_MAX];
+      fill_pathname_shell(tmp, tmp_str, sizeof(tmp));
+
+      if (path_is_directory(tmp))
       {
-         strlcpy(g_extern.savefile_name_srm, tmp_str, sizeof(g_extern.savefile_name_srm));
+         strlcpy(g_extern.savefile_name_srm, tmp, sizeof(g_extern.savefile_name_srm));
          fill_pathname_dir(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
       }
       else
@@ -504,16 +510,20 @@ bool config_load_file(const char *path)
 
    if (!g_extern.has_set_state_path && config_get_array(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
-      if (path_is_directory(tmp_str))
+      char tmp[PATH_MAX];
+      fill_pathname_shell(tmp, tmp_str, sizeof(tmp));
+
+      if (path_is_directory(tmp))
       {
-         strlcpy(g_extern.savestate_name, tmp_str, sizeof(g_extern.savestate_name));
+         strlcpy(g_extern.savestate_name, tmp, sizeof(g_extern.savestate_name));
          fill_pathname_dir(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
       }
       else
          RARCH_WARN("savestate_directory is not a directory, ignoring ...\n");
    }
 
-   CONFIG_GET_STRING(system_directory, "system_directory");
+   if (config_get_array(conf, "system_directory", tmp_str, sizeof(tmp_str)))
+      fill_pathname_shell(g_settings.system_directory, tmp_str, sizeof(g_settings.system_directory));
 
    config_read_keybinds_conf(conf);
 
