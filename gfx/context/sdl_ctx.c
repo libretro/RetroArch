@@ -175,7 +175,7 @@ bool gfx_ctx_set_video_mode(
       SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
    }
 
-   g_window = SDL_CreateWindow("SSNES", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+   g_window = SDL_CreateWindow("RetroArch", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
       width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : resizable));
    if (!g_window)
    {

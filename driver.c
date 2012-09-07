@@ -276,7 +276,7 @@ static void init_dsp_plugin(void)
 
    if (g_extern.audio_data.dsp_plugin->api_version != RARCH_DSP_API_VERSION)
    {
-      RARCH_ERR("DSP plugin API mismatch. SSNES: %d, Plugin: %d\n", RARCH_DSP_API_VERSION, g_extern.audio_data.dsp_plugin->api_version);
+      RARCH_ERR("DSP plugin API mismatch. RetroArch: %d, Plugin: %d\n", RARCH_DSP_API_VERSION, g_extern.audio_data.dsp_plugin->api_version);
       goto error;
    }
 

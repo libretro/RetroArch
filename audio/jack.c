@@ -138,7 +138,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
    size_t bufsize = 0;
    int parsed = 0;
 
-   jd->client = jack_client_open("SSNES", JackNullOption, NULL);
+   jd->client = jack_client_open("RetroArch", JackNullOption, NULL);
    if (jd->client == NULL)
       goto error;
 

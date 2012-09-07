@@ -349,7 +349,7 @@ static void dump_to_file_desperate(const void *data, size_t size, int type)
       goto error;
 
    char path[PATH_MAX];
-   snprintf(path, sizeof(path), "%s/SSNES-recovery-", base);
+   snprintf(path, sizeof(path), "%s/RetroArch-recovery-", base);
    char timebuf[PATH_MAX];
 
    time_t time_;

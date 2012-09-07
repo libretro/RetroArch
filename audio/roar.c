@@ -37,7 +37,7 @@ static void *ra_init(const char *device, unsigned rate, unsigned latency)
       return NULL;
 
    roar_vs_t *vss;
-   if ((vss = roar_vs_new_simple(device, "SSNES", rate, 2, ROAR_CODEC_PCM_S, 16, ROAR_DIR_PLAY, &err)) == NULL)
+   if ((vss = roar_vs_new_simple(device, "RetroArch", rate, 2, ROAR_CODEC_PCM_S, 16, ROAR_DIR_PLAY, &err)) == NULL)
    {
       RARCH_ERR("RoarAudio: \"%s\"\n", roar_vs_strerr(err));
       free(roar);
