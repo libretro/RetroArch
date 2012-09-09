@@ -36,6 +36,12 @@
 #include <GL3/gl3.h>
 #include <GL3/gl3ext.h>
 #define GL_QUADS 0x0007
+#elif defined(HAVE_OPENGLES2)
+#include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
+#elif defined(HAVE_OPENGLES1)
+#include <GLES/gl.h>
+#include <GLES/glext.h>
 #else
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
@@ -224,6 +230,11 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #define RARCH_GL_TEXTURE_TYPE GL_ARGB_SCE
 #define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8
 #define RARCH_GL_FORMAT16 GL_RGB5_A1
+#elif defined(HAVE_OPENGLES)
+#define RARCH_GL_INTERNAL_FORMAT GL_RGBA
+#define RARCH_GL_TEXTURE_TYPE GL_RGBA
+#define RARCH_GL_FORMAT32 GL_UNSIGNED_INT
+#define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT
 #else
 #define RARCH_GL_INTERNAL_FORMAT GL_RGBA
 #define RARCH_GL_TEXTURE_TYPE GL_BGRA
