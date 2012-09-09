@@ -357,6 +357,14 @@ enum retro_key
                                            // The default pixel format is RETRO_PIXEL_FORMAT_0RGB1555.
                                            // If the call returns false, the frontend does not support this pixel format.
                                            // This function should be called inside retro_load_game() or retro_get_system_av_info().
+                                           //
+#define RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS 11
+                                           // const struct retro_input_descriptor * --
+                                           // Sets an array of retro_input_descriptors.
+                                           // It is up to the frontend to present this in a usable way.
+                                           // The array is terminated by retro_input_descriptor::description being set to NULL.
+                                           // This function can be called at any time, but it is recommended to call it as early as possible.
+
 
 enum retro_pixel_format
 {
@@ -370,8 +378,25 @@ struct retro_message
    unsigned    frames;     // Duration in frames of message.
 };
 
+// Describes how the libretro implementation maps a libretro input bind
+// to its internal input system through a human readable string.
+// This string can be used to better let a user configure input.
+struct retro_input_descriptor
+{
+   // Associates given parameters with a description.
+   unsigned port;
+   unsigned device;
+   unsigned index;
+   unsigned id;
+
+   const char *description; // Human readable description for parameters.
+                            // The pointer must remain valid until retro_unload_game() is called.
+};
+
 struct retro_system_info
 {
+   // All pointers are owned by libretro implementation, and pointers must remain valid until retro_deinit() is called.
+
    const char *library_name;      // Descriptive name of library. Should not contain any version numbers, etc.
    const char *library_version;   // Descriptive version of core.
 

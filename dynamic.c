@@ -352,6 +352,49 @@ static bool environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS:
+      {
+         memset(g_extern.system.input_desc_btn, 0, sizeof(g_extern.system.input_desc_btn));
+
+         const struct retro_input_descriptor *desc = (const struct retro_input_descriptor*)data;
+         for (; desc->description; desc++)
+         {
+            if (desc->port >= MAX_PLAYERS)
+               continue;
+
+            if (desc->device != RETRO_DEVICE_JOYPAD) // Ignore all others for now.
+               continue;
+
+            if (desc->id >= RARCH_FIRST_ANALOG_BIND)
+               continue;
+
+            g_extern.system.input_desc_btn[desc->port][desc->id] = desc->description;
+         }
+
+         static const char *libretro_btn_desc[] = {
+            "B (bottom)", "Y (left)", "Select", "Start",
+            "D-Pad Up", "D-Pad Down", "D-Pad Left", "D-Pad Right",
+            "A (right)", "X (up)",
+            "L", "R", "L2", "R2", "L3", "R3",
+         };
+
+         RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
+         for (unsigned p = 0; p < MAX_PLAYERS; p++)
+         {
+            for (unsigned id = 0; id < RARCH_FIRST_ANALOG_BIND; id++)
+            {
+               const char *desc = g_extern.system.input_desc_btn[p][id];
+               if (desc)
+               {
+                  RARCH_LOG("\tRetroPad, Player %u, Button \"%s\" => \"%s\"\n",
+                        p + 1, libretro_btn_desc[id], desc);
+               }
+            }
+         }
+
+         break;
+      }
+
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;

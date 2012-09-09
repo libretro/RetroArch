@@ -170,6 +170,16 @@ void retro_run(void)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
+   struct retro_input_descriptor desc[] = {
+      { .port = 0, .device = RETRO_DEVICE_JOYPAD, .index = 0, .id = RETRO_DEVICE_ID_JOYPAD_LEFT,  .description = "Left" },
+      { .port = 0, .device = RETRO_DEVICE_JOYPAD, .index = 0, .id = RETRO_DEVICE_ID_JOYPAD_UP,    .description = "Up" },
+      { .port = 0, .device = RETRO_DEVICE_JOYPAD, .index = 0, .id = RETRO_DEVICE_ID_JOYPAD_DOWN,  .description = "Down" },
+      { .port = 0, .device = RETRO_DEVICE_JOYPAD, .index = 0, .id = RETRO_DEVICE_ID_JOYPAD_RIGHT, .description = "Right" },
+      { 0 },
+   };
+
+   environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
+
    (void)info;
    return true;
 }

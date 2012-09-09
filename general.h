@@ -344,6 +344,8 @@ struct global
       bool rgb32;
 
       bool force_nonblock;
+
+      const char *input_desc_btn[MAX_PLAYERS][RARCH_FIRST_ANALOG_BIND];
    } system;
 
    struct
