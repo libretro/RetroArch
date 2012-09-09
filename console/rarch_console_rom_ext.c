@@ -50,7 +50,11 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, u
    bool extract_zip_and_load_game_cond = false;
    bool load_game = !extract_zip_cond;
 
+#ifdef ANDROID
+   pretro_get_system_info(&info);
+#else
    retro_get_system_info(&info);
+#endif
    block_zip_extract = info.block_extract;
 
    snprintf(rom_path_temp, sizeof(rom_path_temp), path);

@@ -125,7 +125,7 @@ static const input_driver_t *input_drivers[] = {
 #ifdef GEKKO
    &input_gx,
 #endif
-#ifdef __linux__
+#if defined(__linux__) && !defined(ANDROID)
    &input_linuxraw,
 #endif
    &input_null,
