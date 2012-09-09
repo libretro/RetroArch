@@ -17,12 +17,18 @@
 #ifndef __RARCH_LOGGER_H
 #define __RARCH_LOGGER_H
 
+#ifdef ANDROID
+#include <android/log.h>
+#endif
+
 #if defined(RARCH_CONSOLE) && (defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER) || defined(_XBOX1))
 #include <logger_override.h>
 #else
 
 #ifndef RARCH_LOG
-#ifdef IS_SALAMANDER
+#if defined(ANDROID)
+#define  RARCH_LOG(...)  __android_log_print(ANDROID_LOG_INFO,"RetroArch: ",__VA_ARGS__)
+#elif defined(IS_SALAMANDER)
 #define RARCH_LOG(...) do { \
       fprintf(stderr, "RetroArch Salamander: " __VA_ARGS__); \
       fflush(stderr); \
@@ -39,7 +45,9 @@
 #endif
 
 #ifndef RARCH_ERR
-#ifdef IS_SALAMANDER
+#if defined(ANDROID)
+#define  RARCH_ERR(...)  __android_log_print(ANDROID_LOG_INFO, "RetroArch [ERROR] :: ",__VA_ARGS__)
+#elif defined(IS_SALAMANDER)
 #define RARCH_ERR(...) do { \
       fprintf(stderr, "RetroArch Salamander [ERROR] :: " __VA_ARGS__); \
       fflush(stderr); \
@@ -53,7 +61,9 @@
 #endif
 
 #ifndef RARCH_WARN
-#ifdef IS_SALAMANDER
+#if defined(ANDROID)
+#define  RARCH_WARN(...)  __android_log_print(ANDROID_LOG_INFO, "RetroArch [WARN] :: ",__VA_ARGS__)
+#elif defined(IS_SALAMANDER)
 #define RARCH_WARN(...) do { \
       fprintf(stderr, "RetroArch Salamander [WARN] :: " __VA_ARGS__); \
       fflush(stderr); \
