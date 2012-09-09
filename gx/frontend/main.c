@@ -520,6 +520,7 @@ int main(int argc, char *argv[])
    char tmp_path[PATH_MAX];
    const char *extension = default_paths.executable_extension;
    snprintf(tmp_path, sizeof(tmp_path), "%s/", default_paths.core_dir);
+   const input_driver_t *input = &input_gx;
    const char *path_prefix = tmp_path; 
 
    char full_path[1024];
@@ -528,7 +529,8 @@ int main(int argc, char *argv[])
    bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
    default_paths.config_file, extension);
 
-   rarch_settings_set_default(&input_gx);
+   rarch_settings_set_default();
+   rarch_input_set_controls_default(input);
    rarch_config_load(default_paths.config_file, path_prefix, extension, find_libretro_file);
 
    char core_name[64];

@@ -166,7 +166,8 @@ int main(int argc, char *argv[])
    bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
    default_paths.config_file, extension);
 
-   rarch_settings_set_default(input);
+   rarch_settings_set_default();
+   rarch_input_set_controls_default(input);
    rarch_config_load(default_paths.config_file, path_prefix, extension, find_libretro_file);
    init_libretro_sym();
 
