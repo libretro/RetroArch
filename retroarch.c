@@ -767,7 +767,7 @@ static void parse_input(int argc, char *argv[])
       { "verbose", 0, NULL, 'v' },
       { "gameboy", 1, NULL, 'g' },
 #ifdef HAVE_CONFIGFILE
-      { "config", 0, NULL, 'c' },
+      { "config", 1, NULL, 'c' },
 #endif
       { "mouse", 1, NULL, 'm' },
       { "nodevice", 1, NULL, 'N' },
