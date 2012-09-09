@@ -139,7 +139,7 @@ static inline void store_bgr24_sse2(void *output, __m128i a, __m128i b, __m128i 
    __m128i c4 = _mm_slli_si128(_mm_and_si128(d, mask_2),  2);
    __m128i c5 = _mm_slli_si128(_mm_and_si128(d, mask_3),  1);
 
-   __m128i *out = output;
+   __m128i *out = (__m128i*)output;
 
    _mm_storeu_si128(out + 0,
          _mm_or_si128(a0, _mm_or_si128(a1, _mm_or_si128(a2, _mm_or_si128(a3, _mm_or_si128(a4, a5))))));

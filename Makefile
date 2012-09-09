@@ -302,6 +302,7 @@ clean:
 	rm -f conf/*.o
 	rm -f gfx/*.o
 	rm -f gfx/fonts/*.o
+	rm -f gfx/math/*.o
 	rm -f gfx/context/*.o
 	rm -f gfx/py_state/*.o
 	rm -f gfx/scaler/*.o

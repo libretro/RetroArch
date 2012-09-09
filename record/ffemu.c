@@ -601,7 +601,7 @@ static bool ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_da
 {
    if (!data->is_dupe)
    {
-      if (data->width != handle->video.scaler.in_width || data->height != handle->video.scaler.in_height)
+      if ((int)data->width != handle->video.scaler.in_width || (int)data->height != handle->video.scaler.in_height)
       {
          handle->video.scaler.in_width  = data->width;
          handle->video.scaler.in_height = data->height;
