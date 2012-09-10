@@ -348,6 +348,10 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
 
 static void gl_create_fbo_textures(gl_t *gl)
 {
+#ifdef HAVE_GL_PBO
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+#endif
+
    glGenTextures(gl->fbo_pass, gl->fbo_texture);
 
    GLuint base_filt = g_settings.video.second_pass_smooth ? GL_LINEAR : GL_NEAREST;
@@ -379,6 +383,10 @@ static void gl_create_fbo_textures(gl_t *gl)
    }
 
    glBindTexture(GL_TEXTURE_2D, 0);
+
+#ifdef HAVE_GL_PBO
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, gl->pbo);
+#endif
 }
 
 static bool gl_create_fbo_targets(gl_t *gl)
@@ -658,10 +666,19 @@ static void gl_check_fbo_dimensions(gl_t *gl)
 
          pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
          glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
+
+#ifdef HAVE_GL_PBO
+         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+#endif
+
          glTexImage2D(GL_TEXTURE_2D,
                0, RARCH_GL_INTERNAL_FORMAT, gl->fbo_rect[i].width, gl->fbo_rect[i].height,
                0, RARCH_GL_TEXTURE_TYPE,
                RARCH_GL_FORMAT32, NULL);
+
+#ifdef HAVE_GL_PBO
+         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, gl->pbo);
+#endif
 
          pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
@@ -789,9 +806,16 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
 		      gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
 		      gl->tex_w * gl->tex_h * gl->base_size,
 		      gl->empty_buf);
+#elif defined(HAVE_GL_PBO)
+      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(gl->tex_w));
+      glBufferSubData(GL_PIXEL_UNPACK_BUFFER,
+            0, gl->tex_w * gl->tex_h * gl->base_size, gl->empty_buf);
+
+      glTexSubImage2D(GL_TEXTURE_2D,
+            0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
+            gl->texture_fmt, NULL);
 #else
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
-
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
             gl->texture_fmt, gl->empty_buf);
@@ -862,22 +886,34 @@ static void gl_init_textures(gl_t *gl)
    }
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
-#else
+#elif defined(HAVE_GL_PBO)
 static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
-#ifndef HAVE_OPENGLES
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
+   const uint8_t *frame_copy = frame;
+   size_t frame_copy_size    = width * gl->base_size;
+
+   uint8_t *data = (uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+   if (!data)
+      return;
+
+   for (unsigned h = 0; h < height; h++, data += frame_copy_size, frame_copy += pitch)
+      memcpy(data, frame_copy, frame_copy_size);
+   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 
    glTexSubImage2D(GL_TEXTURE_2D,
          0, 0, 0, width, height, gl->texture_type,
-         gl->texture_fmt, frame);
-#else
-   // Use PBO to get same effect as GL_UNPACK_ROW_LENGTH.
-#endif
+         gl->texture_fmt, NULL);
 }
 
 static void gl_init_textures(gl_t *gl)
 {
+   void *buf = glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+   if (buf)
+   {
+      memset(buf, 0, gl->tex_w * gl->tex_h * gl->base_size);
+      glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+   }
+
    glGenTextures(TEXTURES, gl->texture);
    for (unsigned i = 0; i < TEXTURES; i++)
    {
@@ -894,10 +930,34 @@ static void gl_init_textures(gl_t *gl)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
 
-#ifndef HAVE_OPENGLES
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
-#endif
+      glTexImage2D(GL_TEXTURE_2D,
+            0, RARCH_GL_INTERNAL_FORMAT, gl->tex_w, gl->tex_h, 0, gl->texture_type,
+            gl->texture_fmt, NULL);
+   }
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+}
+#else
+static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
+{
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
+   glTexSubImage2D(GL_TEXTURE_2D,
+         0, 0, 0, width, height, gl->texture_type,
+         gl->texture_fmt, frame);
+}
 
+static void gl_init_textures(gl_t *gl)
+{
+   glGenTextures(TEXTURES, gl->texture);
+   for (unsigned i = 0; i < TEXTURES; i++)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
+
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
       glTexImage2D(GL_TEXTURE_2D,
             0, RARCH_GL_INTERNAL_FORMAT, gl->tex_w, gl->tex_h, 0, gl->texture_type,
             gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
@@ -1045,6 +1105,9 @@ static void gl_free(void *data)
 #ifdef HAVE_OPENGL_TEXREF
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
    glDeleteBuffers(1, &gl->pbo);
+#elif defined(HAVE_GL_PBO)
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+   glDeleteBuffers(1, &gl->pbo);
 #endif
 
 #ifdef HAVE_FBO
@@ -1191,11 +1254,16 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
    gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
 
-#ifdef HAVE_OPENGL_TEXREF
+#if defined(HAVE_OPENGL_TEXREF)
    glGenBuffers(1, &gl->pbo);
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
    glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
          gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
+#elif defined(HAVE_GL_PBO)
+   glGenBuffers(1, &gl->pbo);
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, gl->pbo);
+   glBufferData(GL_PIXEL_UNPACK_BUFFER,
+         gl->tex_w * gl->tex_h * gl->base_size, NULL, GL_STREAM_DRAW);
 #endif
 
    // Empty buffer that we use to clear out the texture with on res change.

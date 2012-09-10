@@ -197,7 +197,7 @@ typedef struct gl
 
    struct gl_coords coords;
 
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__) || defined(HAVE_GL_PBO)
    GLuint pbo;
 #endif
    GLenum texture_type; // XBGR1555 or ARGB

@@ -127,11 +127,16 @@ static void calculate_msg_geometry(const struct font_output *head, struct font_r
    rect->height = y_max - y_min;
 }
 
+// TODO: Doesn't really use PBO ...
 static void adjust_power_of_two(gl_t *gl, struct font_rect *geom)
 {
    // Some systems really hate NPOT textures.
    geom->pot_width = next_pow2(geom->width);
    geom->pot_height = next_pow2(geom->height);
+
+#ifdef HAVE_GL_PBO
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+#endif
 
    if ((geom->pot_width > gl->font_tex_w) || (geom->pot_height > gl->font_tex_h))
    {
@@ -146,15 +151,25 @@ static void adjust_power_of_two(gl_t *gl, struct font_rect *geom)
       gl->font_tex_w = geom->pot_width;
       gl->font_tex_h = geom->pot_height;
    }
+
+#ifdef HAVE_GL_PBO
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, gl->pbo);
+#endif
 }
 
 // Old style "blitting", so we can render all the fonts in one go.
 // TODO: Is it possible that fonts could overlap if we blit without alpha blending?
 static void blit_fonts(gl_t *gl, const struct font_output *head, const struct font_rect *geom)
 {
+#ifdef HAVE_GL_PBO
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+#endif
+
    // Clear out earlier fonts.
    glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->font_tex_w);
+
    glTexSubImage2D(GL_TEXTURE_2D,
          0, 0, 0, gl->font_tex_w, gl->font_tex_h,
          GL_LUMINANCE, GL_UNSIGNED_BYTE, gl->font_tex_empty_buf);
@@ -174,6 +189,11 @@ static void blit_fonts(gl_t *gl, const struct font_output *head, const struct fo
 
       head = head->next;
    }
+
+#ifdef HAVE_GL_PBO
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, gl->pbo);
+#endif
 }
 
 static void calculate_font_coords(gl_t *gl,
