@@ -297,8 +297,8 @@ static void gx_input_poll(void *data)
          state |= (down & PAD_BUTTON_RIGHT) ? GX_GC_RIGHT : 0;
          state |= (down & PAD_BUTTON_START) ? GX_GC_START : 0;
          state |= (down & PAD_TRIGGER_Z) ? GX_GC_Z_TRIGGER : 0;
-         state |= (PAD_TriggerL(port) > 127) ? GX_GC_L_TRIGGER : 0;
-         state |= (PAD_TriggerR(port) > 127) ? GX_GC_R_TRIGGER : 0;
+         state |= ((down & PAD_TRIGGER_L) || PAD_TriggerL(port) > 127) ? GX_GC_L_TRIGGER : 0;
+         state |= ((down & PAD_TRIGGER_R) || PAD_TriggerR(port) > 127) ? GX_GC_R_TRIGGER : 0;
 
          s8 x = PAD_StickX(port);
          s8 y = PAD_StickY(port);
