@@ -1332,7 +1332,7 @@ static bool gl_xml_shader(void *data, const char *path)
 }
 #endif
 
-#ifndef HAVE_RGL
+#if !defined(HAVE_RGL) && !defined(HAVE_OPENGLES)
 static void gl_viewport_size(void *data, unsigned *width, unsigned *height)
 {
    (void)data;
@@ -1352,17 +1352,11 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    glGetIntegerv(GL_VIEWPORT, vp);
 
    glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(vp[2]));
-#ifdef HAVE_OPENGLES
-   /* stub - Doesn't support GL_PACK_ROW_LENGTH without extension */
-   if(!use_pack_row_length) { }
-   else
-#else
    glPixelStorei(GL_PACK_ROW_LENGTH, vp[2]);
-#endif
 
    glReadPixels(vp[0], vp[1],
          vp[2], vp[3],
-         RARCH_GL_TEXTURE_TYPE, GL_UNSIGNED_BYTE, buffer);
+         GL_BGR, GL_UNSIGNED_BYTE, buffer);
 
    return true;
 }
@@ -1486,7 +1480,7 @@ const video_driver_t video_gl = {
 
    gl_set_rotation,
 
-#ifndef HAVE_RGL
+#if !defined(HAVE_RGL) && !defined(HAVE_OPENGLES)
    gl_viewport_size,
    gl_read_viewport,
 #else
