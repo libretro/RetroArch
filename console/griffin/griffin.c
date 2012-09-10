@@ -91,6 +91,8 @@ VIDEO CONTEXT
 #include "../../gfx/context/ps3_ctx.c"
 #elif defined(_XBOX)
 #include "../../gfx/context/xdk_ctx.c"
+#else
+#include "../../gfx/context/null_ctx.c"
 #endif
 
 #endif
