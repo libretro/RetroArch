@@ -484,7 +484,7 @@ static void load_texture_data(GLuint *obj, const struct texture_image *img, bool
          0, GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8, img->pixels);
 #else
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, img->width);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    glTexImage2D(GL_TEXTURE_2D,
          0, GL_RGBA, img->width, img->height,
          0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8, img->pixels);

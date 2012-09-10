@@ -9,6 +9,7 @@ HAVE_OPENGL=yes         # Disable OpenGL support
 HAVE_CG=auto            # Enable Cg shader support
 HAVE_XML=auto           # Enable bSNES-style XML shader support
 HAVE_FBO=auto           # Enable render-to-texture (FBO) support
+HAVE_PBO=no             # Enable pixel buffer object (PBO) support
 HAVE_ALSA=auto          # Enable ALSA support
 HAVE_OSS=auto           # Enable OSS support
 HAVE_RSOUND=auto        # Enable RSound support

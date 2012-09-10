@@ -24,6 +24,8 @@
 #include "../config.h"
 #endif
 
+#include <string.h>
+
 #if defined(__APPLE__)
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
@@ -35,7 +37,6 @@
 #include <EGL/egl.h>
 #include <GL3/gl3.h>
 #include <GL3/gl3ext.h>
-#define GL_QUADS 0x0007
 #elif defined(HAVE_OPENGLES2)
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
@@ -48,6 +49,16 @@
 #include <GL/glext.h>
 #endif
 
+static inline bool gl_query_extension(const char *ext)
+{
+   const char *str = (const char*)glGetString(GL_EXTENSIONS);
+   bool ret = str && strstr(str, ext);
+   RARCH_LOG("Querying GL extension: %s => %s\n",
+         ext, ret ? "exists" : "doesn't exist");
+
+   return ret;
+}
+
 static inline bool gl_check_error(void)
 {
    int error = glGetError();
@@ -57,18 +68,18 @@ static inline bool gl_check_error(void)
          RARCH_ERR("GL: Invalid enum.\n");
          break;
       case GL_INVALID_VALUE:
-         RARCH_ERR("GL: Invalid value. (You're not alone.)\n");
+         RARCH_ERR("GL: Invalid value.\n");
          break;
       case GL_INVALID_OPERATION:
          RARCH_ERR("GL: Invalid operation.\n");
          break;
       case GL_OUT_OF_MEMORY:
-         RARCH_ERR("GL: Out of memory. Harhar.\n");
+         RARCH_ERR("GL: Out of memory.\n");
          break;
       case GL_NO_ERROR:
          return true;
       default:
-         RARCH_ERR("Non specified error :v\n");
+         RARCH_ERR("Non specified GL error.\n");
    }
 
    return false;
@@ -197,9 +208,7 @@ typedef struct gl
 
    struct gl_coords coords;
 
-#if defined(__CELLOS_LV2__) || defined(HAVE_GL_PBO)
    GLuint pbo;
-#endif
    GLenum texture_type; // XBGR1555 or ARGB
    GLenum texture_fmt;
    unsigned base_size; // 2 or 4

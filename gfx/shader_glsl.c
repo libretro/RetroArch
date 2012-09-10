@@ -380,7 +380,7 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, linear ? GL_LINEAR : GL_NEAREST);
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, img.width);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    glTexImage2D(GL_TEXTURE_2D,
          0, GL_RGBA, img.width, img.height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8, img.pixels);
 
