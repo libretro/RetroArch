@@ -189,12 +189,12 @@ static void calculate_font_coords(gl_t *gl,
    GLfloat hy = (GLfloat)gl->font_last_height / (gl->vp_height * scale_factor) + ly;
 
    font_vertex[0] = lx;
-   font_vertex[1] = ly;
-   font_vertex[2] = lx;
-   font_vertex[3] = hy;
-   font_vertex[4] = hx;
-   font_vertex[5] = hy;
+   font_vertex[2] = hx;
+   font_vertex[4] = lx;
    font_vertex[6] = hx;
+   font_vertex[1] = hy;
+   font_vertex[3] = hy;
+   font_vertex[5] = ly;
    font_vertex[7] = ly;
 
    GLfloat shift_x = 2.0f / gl->vp_width;
@@ -211,12 +211,12 @@ static void calculate_font_coords(gl_t *gl,
    hy = 1.0f;
 
    font_tex_coords[0] = lx;
-   font_tex_coords[1] = hy;
-   font_tex_coords[2] = lx;
-   font_tex_coords[3] = ly;
-   font_tex_coords[4] = hx;
-   font_tex_coords[5] = ly;
+   font_tex_coords[2] = hx;
+   font_tex_coords[4] = lx;
    font_tex_coords[6] = hx;
+   font_tex_coords[1] = ly;
+   font_tex_coords[3] = ly;
+   font_tex_coords[5] = hy;
    font_tex_coords[7] = hy;
 }
 
@@ -268,12 +268,12 @@ void gl_render_msg(void *data, const char *msg)
    gl->coords.vertex = font_vertex_dark;
    gl->coords.color  = gl->font_color_dark;
    gl_set_coords(&gl->coords, 0);
-   glDrawArrays(GL_QUADS, 0, 4);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->coords.vertex = font_vertex;
    gl->coords.color  = gl->font_color;
    gl_set_coords(&gl->coords, 0);
-   glDrawArrays(GL_QUADS, 0, 4);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    // Post - Go back to old rendering path.
    gl->coords.vertex = vertexes_flipped;

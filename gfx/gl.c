@@ -48,35 +48,30 @@
 #include "shader_glsl.h"
 #endif
 
-#ifdef HAVE_OPENGLES
-bool use_unpack_row_length = false;
-bool use_pack_row_length = false;
-#endif
-
 extern const GLfloat vertexes_flipped[];
 extern const GLfloat white_color[];
 
 // Used for the last pass when rendering to the back buffer.
 const GLfloat vertexes_flipped[] = {
-   0, 0,
    0, 1,
    1, 1,
+   0, 0,
    1, 0
 };
 
 // Used when rendering to an FBO.
 // Texture coords have to be aligned with vertex coordinates.
 static const GLfloat vertexes[] = {
-   0, 1,
    0, 0,
    1, 0,
+   0, 1,
    1, 1
 };
 
 static const GLfloat tex_coords[] = {
-   0, 1,
    0, 0,
    1, 0,
+   0, 1,
    1, 1
 };
 
@@ -359,8 +354,9 @@ static void gl_create_fbo_textures(gl_t *gl)
    for (int i = 0; i < gl->fbo_pass; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
+
 #ifdef HAVE_OPENGLES
-      /* Doesn't support GL_CLAMP_TO_BORDER */
+      // Doesn't support GL_CLAMP_TO_BORDER. NOTE: This will be a serious problem for some shaders.
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 #else
@@ -494,7 +490,9 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 #ifdef HAVE_OPENGLES
 void gl_set_coords(const struct gl_coords *coords, unsigned unit)
 {
-   /* stub */
+   (void)coords;
+   (void)unit;
+   // Should be able to use FF-style with GLES1.
 }
 #else
 void gl_set_coords(const struct gl_coords *coords, unsigned unit)
@@ -620,9 +618,10 @@ static inline void set_lut_texture_coords(const GLfloat *coords)
 
 static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yamt)
 {
-   coords[1] = yamt;
-   coords[4] = xamt;
+   coords[2] = xamt;
    coords[6] = xamt;
+
+   coords[5] = yamt;
    coords[7] = yamt;
 }
 
@@ -723,11 +722,8 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
       gl_set_coords(&gl->coords, 0);
-#ifdef HAVE_OPENGLES
-      /* stub - Doesn't support GL_QUADS */
-#else
-      glDrawArrays(GL_QUADS, 0, 4);
-#endif
+
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
       fbo_tex_info_cnt++;
    }
@@ -756,11 +752,8 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
    gl->coords.vertex = vertex_ptr;
 
    gl_set_coords(&gl->coords, 0);
-#ifdef HAVE_OPENGLES
-   /* stub - Doesn't support GL_QUADS */
-#else
-   glDrawArrays(GL_QUADS, 0, 4);
-#endif
+
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->coords.tex_coord = gl->tex_coords;
 }
@@ -798,13 +791,6 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
 		      gl->empty_buf);
 #else
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
-#ifdef HAVE_OPENGLES
-   /* stub - Doesn't support GL_UNPACK_ROW_LENGTH without extension */
-   if(!use_unpack_row_length) { }
-   else
-#else
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
-#endif
 
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
@@ -858,7 +844,7 @@ static void gl_init_textures(gl_t *gl)
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
 
 #ifdef HAVE_OPENGLES
-      /* Doesn't support GL_CLAMP_TO_BORDER */
+      // Doesn't support GL_CLAMP_TO_BORDER. NOTE: This will be a serious issue with some shaders.
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 #else
@@ -879,16 +865,15 @@ static void gl_init_textures(gl_t *gl)
 #else
 static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
-#ifdef HAVE_OPENGLES
-   /* stub - Doesn't support GL_UNPACK_ROW_LENGTH without extension */
-   if(!use_unpack_row_length) { }
-   else
-#else
+#ifndef HAVE_OPENGLES
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
-#endif
+
    glTexSubImage2D(GL_TEXTURE_2D,
          0, 0, 0, width, height, gl->texture_type,
          gl->texture_fmt, frame);
+#else
+   // Use PBO to get same effect as GL_UNPACK_ROW_LENGTH.
+#endif
 }
 
 static void gl_init_textures(gl_t *gl)
@@ -899,7 +884,7 @@ static void gl_init_textures(gl_t *gl)
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
 
 #ifdef HAVE_OPENGLES
-      /* Doesn't support GL_CLAMP_TO_BORDER */
+      // Doesn't support GL_CLAMP_TO_BORDER. Will have issues with some shaders ...
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 #else
@@ -909,12 +894,10 @@ static void gl_init_textures(gl_t *gl)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
 
-#ifdef HAVE_OPENGLES
-   if(!use_unpack_row_length) { }
-   else
-#else
+#ifndef HAVE_OPENGLES
       glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
 #endif
+
       glTexImage2D(GL_TEXTURE_2D,
             0, RARCH_GL_INTERNAL_FORMAT, gl->tex_w, gl->tex_h, 0, gl->texture_type,
             gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
@@ -947,11 +930,9 @@ static void gl_render_menu(gl_t *gl)
    gl->coords.vertex = default_vertex_ptr;
 
    gl_set_coords(&gl->coords, 0);
-#ifdef HAVE_OPENGLES
-      /* Doesn't support GL_QUADS */
-#else
-   glDrawArrays(GL_QUADS, 0, 4); 
-#endif
+
+   glDrawArrays(GL_TRIANGLESTRIP, 0, 4); 
+
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 #endif
@@ -1008,11 +989,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          &tex_info, gl->prev_info, NULL, 0);
 
    gl_set_coords(&gl->coords, 0);
-#ifdef HAVE_OPENGLES
-   /* Doesn't support GL_QUADS */
-#else
-   glDrawArrays(GL_QUADS, 0, 4);
-#endif
+
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
@@ -1041,7 +1019,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    return true;
 }
 
-static void gl_free_arrays(void)
+static void gl_disable_client_arrays(void)
 {
 #ifndef HAVE_OPENGLES
    glDisableClientState(GL_VERTEX_ARRAY);
@@ -1061,7 +1039,7 @@ static void gl_free(void *data)
 
    gl_deinit_font(gl);
    gl_shader_deinit();
-   gl_free_arrays();
+   gl_disable_client_arrays();
    glDeleteTextures(TEXTURES, gl->texture);
 
 #ifdef HAVE_OPENGL_TEXREF
@@ -1089,34 +1067,8 @@ static void gl_set_nonblock_state(void *data, bool state)
    gfx_ctx_set_swap_interval(state ? 0 : 1, true);
 }
 
-#ifdef HAVE_OPENGLES
-static bool gl_check_extensions(char *extension_name)
-{
-   char *p = (char *) glGetString(GL_EXTENSIONS);
-   char *end;
-   int extNameLen;
-
-   extNameLen = strlen(extension_name);
-   end = p + strlen(p);
-
-   while (p < end)
-   {
-      int n = strcspn(p, " ");
-      if ((extNameLen == n) && (strncmp(extension_name, p, n) == 0))
-         return true;
-
-      p += (n + 1);
-   }
-   return false;
-}
-#endif
-
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-#ifdef HAVE_OPENGLES
-   if(gl_check_extensions("GL_EXT_unpack_subimage"))
-      use_unpack_row_length = true;
-#endif
 #ifdef _WIN32
    gfx_set_dwm();
 #endif
