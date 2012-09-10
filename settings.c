@@ -336,6 +336,19 @@ bool config_load_file(const char *path)
    if (conf == NULL)
       return true;
 
+   char *save;
+   char tmp_append_path[PATH_MAX]; // Don't destroy append_config_path.
+   strlcpy(tmp_append_path, g_extern.append_config_path, sizeof(tmp_append_path));
+   const char *extra_path = strtok_r(tmp_append_path, ",", &save);
+   while (extra_path)
+   {
+      RARCH_LOG("Appending config \"%s\"\n", extra_path);
+      bool ret = config_append_file(conf, extra_path);
+      if (!ret)
+         RARCH_ERR("Failed to append config \"%s\"\n", extra_path);
+      extra_path = strtok_r(NULL, ";", &save);
+   }
+
    if (g_extern.verbose)
    {
       fprintf(stderr, "=== Config ===\n");

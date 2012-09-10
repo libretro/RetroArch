@@ -312,6 +312,23 @@ static bool parse_line(config_file_t *conf, struct entry_list *list, char *line)
    return true;
 }
 
+bool config_append_file(config_file_t *conf, const char *path)
+{
+   config_file_t *new_conf = config_file_new(path);
+   if (!new_conf)
+      return false;
+
+   if (new_conf->tail)
+   {
+      new_conf->tail->next = conf->entries;
+      conf->entries        = new_conf->entries; // Pilfer.
+      new_conf->entries    = NULL;
+   }
+
+   config_file_free(new_conf);
+   return true;
+}
+
 static config_file_t *config_file_new_internal(const char *path, unsigned depth)
 {
    struct config_file *conf = (struct config_file*)calloc(1, sizeof(*conf));

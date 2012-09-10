@@ -308,6 +308,7 @@ struct global
 
 #ifdef HAVE_CONFIGFILE
    char config_path[PATH_MAX];
+   char append_config_path[PATH_MAX];
 #endif
    
    char basename[PATH_MAX];

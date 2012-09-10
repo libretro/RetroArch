@@ -594,6 +594,8 @@ static void print_help(void)
    puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
 #ifdef HAVE_CONFIGFILE
    puts("\t-c/--config: Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
+   puts("\t--appendconfig: Extra config files are loaded in, and take priority over config selected in -c (or default).");
+   puts("\t\tMultiple configs are delimited by ','.");
 #endif
 #ifdef HAVE_DYNAMIC
    puts("\t-L/--libretro: Path to libretro implementation. Overrides any config setting.");
@@ -768,6 +770,7 @@ static void parse_input(int argc, char *argv[])
       { "gameboy", 1, NULL, 'g' },
 #ifdef HAVE_CONFIGFILE
       { "config", 1, NULL, 'c' },
+      { "appendconfig", 1, &val, 'C' },
 #endif
       { "mouse", 1, NULL, 'm' },
       { "nodevice", 1, NULL, 'N' },
@@ -1047,6 +1050,10 @@ static void parse_input(int argc, char *argv[])
                      rarch_fail(1, "network_cmd_send()");
                   break;
 #endif
+
+               case 'C':
+                  strlcpy(g_extern.append_config_path, optarg, sizeof(g_extern.append_config_path));
+                  break;
 
                case 'B':
                   strlcpy(g_extern.bps_name, optarg, sizeof(g_extern.bps_name));
