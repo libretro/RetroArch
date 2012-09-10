@@ -15,36 +15,36 @@
  */
 
 #include "../../driver.h"
+#include "../gl_common.h"
+#include "null_ctx.h"
 
 #include <stdint.h>
 
-#include "../gl_common.h"
-
-#include "null_ctx.h"
-
 int gfx_ctx_check_resolution(unsigned resolution_id)
 {
+   (void)resolution_id;
    return 0;
 }
 
 unsigned gfx_ctx_get_resolution_width(unsigned resolution_id)
 {
+   (void)resolution_id;
    return 0;
 }
 
 unsigned gfx_ctx_get_resolution_height(unsigned resolution_id)
 {
+   (void)resolution_id;
    return 0;
 }
 
 float gfx_ctx_get_aspect_ratio(void)
 {
-   return 4.0f/3.0f;
+   return 4.0f / 3.0f;
 }
 
-void gfx_ctx_get_available_resolutions (void)
-{
-}
+void gfx_ctx_get_available_resolutions(void)
+{}
 
 void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 {
@@ -55,31 +55,40 @@ void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+   (void)quit;
+   (void)resize;
+   (void)width;
+   (void)height;
+   (void)frame_count;
 }
 
 void gfx_ctx_swap_buffers(void)
-{
-}
+{}
 
 void gfx_ctx_clear(void)
-{
-}
+{}
 
 void gfx_ctx_set_blend(bool enable)
+{}
+
+void gfx_ctx_set_resize(unsigned width, unsigned height)
 {
+   (void)width;
+   (void)height;
 }
-
-void gfx_ctx_set_resize(unsigned width, unsigned height) { }
-
 
 bool gfx_ctx_menu_init(void)
-{
-}
+{}
 
-void gfx_ctx_update_window_title(bool reset) { }
+void gfx_ctx_update_window_title(bool reset)
+{
+   (void)reset;
+}
 
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
+   (void)width;
+   (void)height;
 }
 
 bool gfx_ctx_init(void)
@@ -91,35 +100,51 @@ bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen)
 {
+   (void)width;
+   (void)height;
+   (void)bits;
+   (void)fullscreen;
    return true;
 }
 
 void gfx_ctx_destroy(void)
-{
-}
+{}
 
-void gfx_ctx_input_driver(const input_driver_t **input, void **input_data) { }
+void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+{
+   *input = NULL;
+   *input_data = NULL;
+}
 
 void gfx_ctx_set_filtering(unsigned index, bool set_smooth)
 {
+   (void)index;
+   (void)set_smooth;
 }
 
 void gfx_ctx_set_fbo(bool enable)
 {
+   (void)enable;
 }
 
 void gfx_ctx_apply_fbo_state_changes(unsigned mode)
 {
+   (void)mode;
 }
 
 void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)
 {
+   (void)gl;
+   (void)ortho;
+   (void)allow_rotate;
 }
 
 void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
+   (void)data;
+   (void)aspectratio_index;
 }
 
 void gfx_ctx_set_overscan(void)
-{
-}
+{}
+
