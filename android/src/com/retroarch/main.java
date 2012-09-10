@@ -17,6 +17,11 @@ import android.os.Bundle;
 
 public class main extends Activity
 {
+	static
+	{
+		System.loadLibrary("retroarch");
+	}
+	
 	private GLSurfaceView ctx_gl;
 	
     @Override
