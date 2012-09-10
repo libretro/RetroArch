@@ -67,17 +67,17 @@ If PATH is a directory, RetroArch will treat this as the config file directory, 
 When loading a rom from stdin, the path must be a full path, however.
 If a config cannot be found when using directory path, the default config path will be used instead.
 
-.TP
-\fB--appendconfig PATH\fR
-Appends a different set of config files to the config file loaded in -c (or default).
-Multiple config files are delimited by ','.
-Every config file will be appended in order where the key-value pairs of the next config file takes priority over the old ones.
-
 .IP
 Unix-like systems will look in $XDG_CONFIG_HOME/retroarch/retroarch.cfg first. Then it will try $HOME/.retroarch.cfg. Last, it will try /etc/retroarch.cfg. If no configuration is found, default settings will be assumed. A configuration file does not need to define every possible option, only those that should be overridden.
 
 .IP
 Windows will look in retroarch.cfg in same folder where retroarch.exe resides.
+
+.TP
+\fB--appendconfig PATH\fR
+Appends a different set of config files to the config file loaded in -c (or default).
+Multiple config files are delimited by ','.
+Every config file will be appended in order where the key-value pairs of the next config file takes priority over the old ones.
 
 .TP
 \fB--gameboy PATH, -g PATH\fR
