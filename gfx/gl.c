@@ -133,10 +133,10 @@ static bool load_fbo_proc(void) { return true; }
 PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture;
 PFNGLACTIVETEXTUREPROC pglActiveTexture;
 static PFNGLBINDBUFFERPROC pglBindBuffer;
-static PFNGLBUFFERSUBDATA pglBufferSubData;
-static PFNGLBUFFERDATA pglBufferData;
-static PFNGLMAPBUFFER pglMapBuffer;
-static PFNGLUNMAPBUFFER pglUnmapBuffer;
+static PFNGLBUFFERSUBDATAPROC pglBufferSubData;
+static PFNGLBUFFERDATAPROC pglBufferData;
+static PFNGLMAPBUFFERPROC pglMapBuffer;
+static PFNGLUNMAPBUFFERPROC pglUnmapBuffer;
 static inline bool load_gl_proc_win32(void)
 {
    LOAD_SYM(glClientActiveTexture);
