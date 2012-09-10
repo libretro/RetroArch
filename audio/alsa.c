@@ -124,8 +124,9 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
    alsa_t *alsa = (alsa_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;
 
+   bool eagain_retry         = true;
    snd_pcm_sframes_t written = 0;
-   snd_pcm_sframes_t size = snd_pcm_bytes_to_frames(alsa->pcm, size_);
+   snd_pcm_sframes_t size    = snd_pcm_bytes_to_frames(alsa->pcm, size_);
 
    while (size)
    {
@@ -135,7 +136,11 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
          if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
          {
             if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
+            {
+               RARCH_ERR("[ALSA]: (#1) Failed to recover from error (%s)\n",
+                     snd_strerror(rc));
                return -1;
+            }
             continue;
          }
       }
@@ -145,18 +150,36 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
       if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
       {
          if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
+         {
+            RARCH_ERR("[ALSA]: (#2) Failed to recover from error (%s)\n",
+                  snd_strerror(frames));
             return -1;
+         }
 
          break;
       }
       else if (frames == -EAGAIN && alsa->nonblock)
-         break;
+      {
+         RARCH_WARN("[ALSA]: poll() was signaled, but EAGAIN returned from write.\n"
+               "Your ALSA driver might be subtly broken.\n");
+
+         if (eagain_retry)
+         {
+            eagain_retry = false;
+            continue;
+         }
+         else
+            return written;
+      }
       else if (frames < 0)
+      {
+         RARCH_ERR("[ALSA]: Unknown error occured (%s).\n", snd_strerror(frames));
          return -1;
+      }
 
       written += frames;
-      buf += (frames << 1) * (alsa->has_float ? sizeof(float) : sizeof(int16_t));
-      size -= frames;
+      buf     += (frames << 1) * (alsa->has_float ? sizeof(float) : sizeof(int16_t));
+      size    -= frames;
    }
 
    return written;
