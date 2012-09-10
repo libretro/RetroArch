@@ -814,6 +814,7 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
             gl->texture_fmt, NULL);
 #else
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->tex_w);
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
             gl->texture_fmt, gl->empty_buf);
