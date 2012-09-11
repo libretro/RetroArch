@@ -19,7 +19,9 @@
 #include <stddef.h>
 #include <string.h>
 
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <sdk_version.h>
+#endif
 #include <sys/process.h>
 #ifdef HAVE_SYSUTILS
 #include <sysutil/sysutil_screenshot.h>
@@ -37,9 +39,11 @@
 #ifdef HAVE_SYSMODULES
 #include <cell/sysmodule.h>
 #endif
+#ifdef HAVE_NETPLAY
 #include <netex/net.h>
 #include <np.h>
 #include <np/drm.h>
+#endif
 
 #include "../../gfx/context/ps3_ctx.h"
 #include "../ps3_input.h"
@@ -205,9 +209,11 @@ static void get_environment_settings(int argc, char *argv[])
       snprintf(default_paths.cgp_dir, sizeof(default_paths.cgp_dir), "%s/presets", default_paths.core_dir);
       snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.cgp_dir);
       snprintf(default_paths.border_dir, sizeof(default_paths.border_dir), "%s/borders", default_paths.core_dir);
+#if defined(HAVE_CG) || defined(HAVE_GLSL)
       snprintf(default_paths.shader_dir, sizeof(default_paths.shader_dir), "%s/shaders", default_paths.core_dir);
       snprintf(default_paths.shader_file, sizeof(default_paths.shader_file), "%s/shaders/stock.cg", default_paths.core_dir);
       snprintf(default_paths.menu_shader_file, sizeof(default_paths.menu_shader_file), "%s/shaders/Borders/Menu/border-only-rarch.cg", default_paths.core_dir);
+#endif
       snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
       snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "EBOOT.BIN");
    }

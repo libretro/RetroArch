@@ -26,8 +26,6 @@ LIBS := -lretro_psl1ght -laudio -lEGL -lGL -lio -lm -ljpgdec -lpngdec -lsysutil
 
 OBJ = console/griffin/griffin.o console/rzlib/rzlib.o
 
-OBJ += console/rgl/ps3/device_ctx.o console/rgl/ps3/rgl.o console/rgl/ps3/cgbio.o console/rgl/ps3/cgnv2rt.o
-
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
 CFLAGS          += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)

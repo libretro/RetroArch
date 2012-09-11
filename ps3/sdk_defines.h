@@ -537,3 +537,12 @@
 	(((order)<<16)|((inputA))|((inputR)<<2)|((inputG)<<4)|((inputB)<<6)|((outputA)<<8)|((outputR)<<10)|((outputG)<<12)|((outputB)<<14))
 
 #endif
+
+#ifdef __PSL1GHT__
+#include <sysutil/game.h>
+#define CellGameContentSize sysGameContentSize
+#define cellGameContentPermit sysGameContentPermit
+#define cellGameBootCheck sysGameBootCheck
+
+#define CELL_GAME_ATTRIBUTE_APP_HOME              (1 <<1) /* boot from / app_home/PS3_GAME */
+#endif

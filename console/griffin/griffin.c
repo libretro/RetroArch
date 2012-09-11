@@ -276,6 +276,8 @@ MAIN
 #include "../../xdk/frontend/main.c"
 #elif defined(GEKKO)
 #include "../../gx/frontend/main.c"
+#elif defined(__PSL1GHT__)
+#include "../../ps3/frontend/main.c"
 #endif
 
 /*============================================================
