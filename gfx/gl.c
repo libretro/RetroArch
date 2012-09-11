@@ -370,6 +370,12 @@ static void gl_create_fbo_textures(gl_t *gl)
 
 #if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES1)
       // Doesn't support GL_CLAMP_TO_BORDER. NOTE: This will be a serious problem for some shaders.
+      //
+      // NOTE2: We still need to query if GL_CLAMP_TO_BORDER is supported even if compiling with
+      // OpenGL ES 1 because none of these defines are in any system headers except for what every
+      // Android GPU supports (which doesn't include GL_CLAMP_TO_BORDER) - move the underlying value 
+      // for GL_CLAMP_TO_BORDER to some variable that we'll use here and query at gl_init if 
+      // GL_CLAMP_TO_BORDER is available
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 #else
