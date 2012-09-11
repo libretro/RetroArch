@@ -27,8 +27,6 @@ bool gl_cg_reinit(const char *path);
 
 void gl_cg_deinit(void);
 
-void gl_cg_set_proj_matrix(const math_matrix *mat);
-
 void gl_cg_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
@@ -44,6 +42,10 @@ unsigned gl_cg_num(void);
 
 bool gl_cg_filter_type(unsigned index, bool *smooth);
 void gl_cg_shader_scale(unsigned index, struct gl_fbo_scale *scale);
+
+bool gl_cg_set_mvp(const math_matrix *mat);
+bool gl_cg_set_coords(const struct gl_coords *coords);
+
 
 // Used on PS3, but not really platform specific.
 

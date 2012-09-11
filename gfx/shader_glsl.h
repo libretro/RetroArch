@@ -25,8 +25,6 @@ bool gl_glsl_init(const char *path);
 
 void gl_glsl_deinit(void);
 
-void gl_glsl_set_proj_matrix(const math_matrix *mat);
-
 void gl_glsl_set_params(unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
@@ -41,5 +39,8 @@ unsigned gl_glsl_num(void);
 
 bool gl_glsl_filter_type(unsigned index, bool *smooth);
 void gl_glsl_shader_scale(unsigned index, struct gl_fbo_scale *scale);
+
+bool gl_glsl_set_coords(const struct gl_coords *coords);
+bool gl_glsl_set_mvp(const math_matrix *mat);
 
 #endif

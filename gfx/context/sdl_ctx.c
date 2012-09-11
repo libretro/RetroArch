@@ -444,9 +444,6 @@ void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 #ifdef HAVE_OPENGL
 void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)
 {
-   // TODO: Explicitly setting matrix modes is not used for GLES 2.0.
-   glMatrixMode(GL_PROJECTION);
-
    // Calculate projection.
    math_matrix proj;
    matrix_ortho(&proj, ortho->left, ortho->right,
@@ -458,16 +455,6 @@ void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_r
       matrix_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
       matrix_multiply(&proj, &rot, &proj);
    }
-
-   // Load matrix directly into GL.
-   // TODO: For GLES 2.0 or similar, we should keep this matrix
-   // somewhere and pass it directly to the shader.
-   // It should probably be part of gl_t ...
-   glLoadMatrixf(proj.data);
-
-   // TODO: Explicitly setting matrix modes is not used for GLES 2.0.
-   glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
 
    gl->mvp = proj;
 }

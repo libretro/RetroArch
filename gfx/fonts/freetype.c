@@ -271,18 +271,18 @@ void gl_render_msg(void *data, const char *msg)
    
    gl->coords.vertex = font_vertex_dark;
    gl->coords.color  = gl->font_color_dark;
-   gl_set_coords(&gl->coords, 0);
+   gl_shader_set_coords(&gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->coords.vertex = font_vertex;
    gl->coords.color  = gl->font_color;
-   gl_set_coords(&gl->coords, 0);
+   gl_shader_set_coords(&gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    // Post - Go back to old rendering path.
-   gl->coords.vertex = vertexes_flipped;
+   gl->coords.vertex    = vertexes_flipped;
    gl->coords.tex_coord = gl->tex_coords;
-   gl->coords.color = white_color;
+   gl->coords.color     = white_color;
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    glDisable(GL_BLEND);

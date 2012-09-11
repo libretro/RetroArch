@@ -59,6 +59,7 @@
 #define pglUniform1f glUniform1f
 #define pglUniform2fv glUniform2fv
 #define pglUniform4fv glUniform4fv
+#define pglUniformMatrix4fv glUniformMatrix4fv
 #define pglGetShaderiv glGetShaderiv
 #define pglGetShaderInfoLog glGetShaderInfoLog
 #define pglGetProgramiv glGetProgramiv
@@ -84,6 +85,7 @@ static PFNGLUNIFORM1IPROC pglUniform1i = NULL;
 static PFNGLUNIFORM1FPROC pglUniform1f = NULL;
 static PFNGLUNIFORM2FVPROC pglUniform2fv = NULL;
 static PFNGLUNIFORM4FVPROC pglUniform4fv = NULL;
+static PFNGLUNIFORMMATRIX4FVPROC pglUniformMatrix4fv = NULL;
 static PFNGLGETSHADERIVPROC pglGetShaderiv = NULL;
 static PFNGLGETSHADERINFOLOGPROC pglGetShaderInfoLog = NULL;
 static PFNGLGETPROGRAMIVPROC pglGetProgramiv = NULL;
@@ -109,6 +111,7 @@ enum filter_type
 };
 
 static bool glsl_enable = false;
+static bool glsl_modern = false;
 static GLuint gl_program[MAX_PROGRAMS] = {0};
 static enum filter_type gl_filter_type[MAX_PROGRAMS] = {RARCH_GL_NOFORCE};
 static struct gl_fbo_scale gl_scale[MAX_PROGRAMS];
@@ -126,9 +129,8 @@ static char gl_tracker_script[PATH_MAX];
 static char gl_tracker_script_class[64];
 static xmlChar *gl_script_program = NULL;
 
-static GLint gl_attribs[PREV_TEXTURES + 1 + MAX_PROGRAMS];
+static GLint gl_attribs[PREV_TEXTURES + 1 + 4 + MAX_PROGRAMS];
 static unsigned gl_attrib_index = 0;
-
 
 struct shader_program
 {
@@ -146,7 +148,7 @@ struct shader_program
    bool valid_scale;
 };
 
-static const char *stock_vertex =
+static const char *stock_vertex_legacy =
    "varying vec4 color;\n"
    "void main() {\n"
    "   gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
@@ -154,12 +156,34 @@ static const char *stock_vertex =
    "   color = gl_Color;\n"
    "}";
 
-static const char *stock_fragment =
+static const char *stock_fragment_legacy =
    "uniform sampler2D rubyTexture;\n"
    "varying vec4 color;\n"
    "void main() {\n"
    "   gl_FragColor = color * texture2D(rubyTexture, gl_TexCoord[0].xy);\n"
    "}";
+
+static const char *stock_vertex_modern =
+   "attribute vec2 rubyTexCoord;\n"
+   "attribute vec2 rubyVertexCoord;\n"
+   "attribute vec4 rubyColor;\n"
+   "uniform mat4 rubyMVPMatrix;\n"
+   "varying vec2 tex_coord;\n"
+   "varying vec4 color;\n"
+   "void main() {\n"
+   "   gl_Position = rubyMVPMatrix * vec4(rubyVertexCoord, 0.0, 1.0);\n"
+   "   tex_coord = rubyTexCoord;\n"
+   "   color = rubyColor;\n"
+   "}";
+
+static const char *stock_fragment_modern =
+   "uniform sampler2D rubyTexture;\n"
+   "varying vec2 tex_coord;\n"
+   "varying vec4 color;\n"
+   "void main() {\n"
+   "   gl_FragColor = color * texture2D(rubyTexture, tex_coord);\n"
+   "}";
+
 
 static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
 {
@@ -620,19 +644,30 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
 
    for (cur = head; cur; cur = cur->next)
    {
-      if (cur->type == XML_ELEMENT_NODE && strcmp((const char*)cur->name, "shader") == 0)
-      {
-         xmlChar *attr;
-         attr = xmlGetProp(cur, (const xmlChar*)"language");
-         if (attr && strcmp((const char*)attr, "GLSL") == 0)
-         {
-            xmlFree(attr);
-            break;
-         }
+      if (cur->type != XML_ELEMENT_NODE)
+         continue;
+      if (strcmp((const char*)cur->name, "shader") != 0)
+         continue;
 
-         if (attr)
-            xmlFree(attr);
+      xmlChar *attr;
+      attr = xmlGetProp(cur, (const xmlChar*)"language");
+      if (attr && strcmp((const char*)attr, "GLSL") != 0)
+      {
+         xmlFree(attr);
+         continue;
       }
+
+      if (attr)
+         xmlFree(attr);
+
+      attr        = xmlGetProp(cur, (const xmlChar*)"style");
+      glsl_modern = attr && (strcmp((const char*)attr, "GLES2") == 0);
+      if (attr)
+         xmlFree(attr);
+
+      if (glsl_modern)
+         RARCH_LOG("[GL]: Shader reports a GLES2 style shader.\n");
+      break;
    }
 
    if (!cur) // We couldn't find any GLSL shader :(
@@ -875,6 +910,7 @@ bool gl_glsl_init(const char *path)
    LOAD_GL_SYM(Uniform1f);
    LOAD_GL_SYM(Uniform2fv);
    LOAD_GL_SYM(Uniform4fv);
+   LOAD_GL_SYM(UniformMatrix4fv);
    LOAD_GL_SYM(GetShaderiv);
    LOAD_GL_SYM(GetShaderInfoLog);
    LOAD_GL_SYM(GetProgramiv);
@@ -894,7 +930,7 @@ bool gl_glsl_init(const char *path)
    bool shader_support = pglCreateProgram && pglUseProgram && pglCreateShader
       && pglDeleteShader && pglShaderSource && pglCompileShader && pglAttachShader
       && pglDetachShader && pglLinkProgram && pglGetUniformLocation
-      && pglUniform1i && pglUniform1f && pglUniform2fv && pglUniform4fv
+      && pglUniform1i && pglUniform1f && pglUniform2fv && pglUniform4fv && pglUniformMatrix4fv
       && pglGetShaderiv && pglGetShaderInfoLog && pglGetProgramiv && pglGetProgramInfoLog 
       && pglDeleteProgram && pglGetAttachedShaders
       && pglGetAttribLocation && pglEnableVertexAttribArray && pglDisableVertexAttribArray
@@ -907,13 +943,6 @@ bool gl_glsl_init(const char *path)
       return false;
    }
 
-   struct shader_program stock_prog = {0};
-   stock_prog.vertex = strdup(stock_vertex);
-   stock_prog.fragment = strdup(stock_fragment);
-
-   if (!compile_programs(&gl_program[0], &stock_prog, 1))
-      return false;
-
    struct shader_program progs[MAX_PROGRAMS];
    unsigned num_progs = get_xml_shaders(path, progs, MAX_PROGRAMS - 1);
 
@@ -923,16 +952,26 @@ bool gl_glsl_init(const char *path)
       return false;
    }
 
+   struct shader_program stock_prog = {0};
+   stock_prog.vertex   = strdup(glsl_modern ? stock_vertex_modern   : stock_vertex_legacy);
+   stock_prog.fragment = strdup(glsl_modern ? stock_fragment_modern : stock_fragment_legacy);
+
+   if (!compile_programs(&gl_program[0], &stock_prog, 1))
+   {
+      RARCH_ERR("GLSL stock programs failed to compile.\n");
+      return false;
+   }
+
    for (unsigned i = 0; i < num_progs; i++)
    {
-      gl_filter_type[i + 1] = progs[i].filter;
-      gl_scale[i + 1].type_x = progs[i].type_x;
-      gl_scale[i + 1].type_y = progs[i].type_y;
+      gl_filter_type[i + 1]   = progs[i].filter;
+      gl_scale[i + 1].type_x  = progs[i].type_x;
+      gl_scale[i + 1].type_y  = progs[i].type_y;
       gl_scale[i + 1].scale_x = progs[i].scale_x;
       gl_scale[i + 1].scale_y = progs[i].scale_y;
-      gl_scale[i + 1].abs_x = progs[i].abs_x;
-      gl_scale[i + 1].abs_y = progs[i].abs_y;
-      gl_scale[i + 1].valid = progs[i].valid_scale;
+      gl_scale[i + 1].abs_x   = progs[i].abs_x;
+      gl_scale[i + 1].abs_y   = progs[i].abs_y;
+      gl_scale[i + 1].valid   = progs[i].valid_scale;
    }
 
    if (!compile_programs(&gl_program[1], progs, num_progs))
@@ -960,8 +999,8 @@ bool gl_glsl_init(const char *path)
    if (gl_tracker_info_cnt > 0)
    {
       struct state_tracker_info info = {0};
-      info.wram = (uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
-      info.info = gl_tracker_info;
+      info.wram      = (uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+      info.info      = gl_tracker_info;
       info.info_elem = gl_tracker_info_cnt;
 
 #ifdef HAVE_PYTHON
@@ -972,7 +1011,7 @@ bool gl_glsl_init(const char *path)
       else
          info.script = NULL;
 
-      info.script_class = *gl_tracker_script_class ? gl_tracker_script_class : NULL;
+      info.script_class   = *gl_tracker_script_class ? gl_tracker_script_class : NULL;
       info.script_is_file = *gl_tracker_script;
 #endif
 
@@ -1019,18 +1058,20 @@ void gl_glsl_deinit(void)
    }
 
    memset(gl_program, 0, sizeof(gl_program));
-   glsl_enable = false;
+   glsl_enable  = false;
    active_index = 0;
 
    gl_tracker_info_cnt = 0;
    memset(gl_tracker_info, 0, sizeof(gl_tracker_info));
    memset(gl_tracker_script, 0, sizeof(gl_tracker_script));
    memset(gl_tracker_script_class, 0, sizeof(gl_tracker_script_class));
+
    if (gl_script_program)
    {
       xmlFree(gl_script_program);
       gl_script_program = NULL;
    }
+
    if (gl_state_tracker)
    {
       state_tracker_free(gl_state_tracker);
@@ -1225,11 +1266,67 @@ void gl_glsl_set_params(unsigned width, unsigned height,
    }
 }
 
-void gl_glsl_set_proj_matrix(const math_matrix *mat)
+bool gl_glsl_set_mvp(const math_matrix *mat)
 {
-   // If we're using FF-based GL, this matrix
-   // will be implicitly passed to the shader.
-   (void)mat;
+   if (!glsl_enable || !glsl_modern)
+      return false;
+
+   int loc = pglGetUniformLocation(gl_program[active_index], "rubyMVPMatrix");
+   if (loc >= 0)
+      pglUniformMatrix4fv(loc, 1, GL_FALSE, mat->data);
+   return true;
+}
+
+bool gl_glsl_set_coords(const struct gl_coords *coords)
+{
+   if (!glsl_enable || !glsl_modern)
+      return false;
+
+   if (coords->tex_coord)
+   {
+      int loc = pglGetAttribLocation(gl_program[active_index], "rubyTexCoord");
+      if (loc >= 0)
+      {
+         pglEnableVertexAttribArray(loc);
+         pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, coords->tex_coord);
+         gl_attribs[gl_attrib_index++] = loc;
+      }
+   }
+
+   if (coords->vertex)
+   {
+      int loc = pglGetAttribLocation(gl_program[active_index], "rubyVertexCoord");
+      if (loc >= 0)
+      {
+         pglEnableVertexAttribArray(loc);
+         pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, coords->vertex);
+         gl_attribs[gl_attrib_index++] = loc;
+      }
+   }
+
+   if (coords->color)
+   {
+      int loc = pglGetAttribLocation(gl_program[active_index], "rubyColor");
+      if (loc >= 0)
+      {
+         pglEnableVertexAttribArray(loc);
+         pglVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, 0, coords->color);
+         gl_attribs[gl_attrib_index++] = loc;
+      }
+   }
+
+   if (coords->lut_tex_coord)
+   {
+      int loc = pglGetAttribLocation(gl_program[active_index], "rubyLUTTexCoord");
+      if (loc >= 0)
+      {
+         pglEnableVertexAttribArray(loc);
+         pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, coords->lut_tex_coord);
+         gl_attribs[gl_attrib_index++] = loc;
+      }
+   }
+
+   return true;
 }
 
 void gl_glsl_use(unsigned index)

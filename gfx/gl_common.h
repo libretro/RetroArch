@@ -147,6 +147,7 @@ struct gl_coords
    const GLfloat *vertex;
    const GLfloat *color;
    const GLfloat *tex_coord;
+   const GLfloat *lut_tex_coord;
 };
 
 #define MAX_SHADERS 16
@@ -255,7 +256,7 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 void gl_shader_use(unsigned index);
 void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate);
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate);
-void gl_set_coords(const struct gl_coords *coords, unsigned unit);
+void gl_shader_set_coords(const struct gl_coords *coords, const math_matrix *mat);
 
 void gl_init_fbo(gl_t *gl, unsigned width, unsigned height);
 void gl_deinit_fbo(gl_t *gl);

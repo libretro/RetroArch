@@ -149,10 +149,21 @@ static void gl_cg_reset_attrib(void)
    cg_attrib_index = 0;
 }
 
-void gl_cg_set_proj_matrix(const math_matrix *mat)
+bool gl_cg_set_mvp(const math_matrix *mat)
 {
    if (cg_active && prg[active_index].mvp)
+   {
       cgGLSetMatrixParameterfc(prg[active_index].mvp, mat->data);
+      return true;
+   }
+   else
+      return false;
+}
+
+bool gl_cg_set_coords(const struct gl_coords *coords)
+{
+   (void)coords;
+   return false;
 }
 
 #define set_param_2f(param, x, y) \

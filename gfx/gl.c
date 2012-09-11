@@ -216,15 +216,81 @@ static inline void gl_shader_deinit(void)
 #endif
 }
 
-static inline void gl_shader_set_proj_matrix(const math_matrix *mat)
+#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGL_MODERN)
+static void gl_set_coords(const struct gl_coords *coords)
 {
-#ifdef HAVE_CG
-   gl_cg_set_proj_matrix(mat);
+   (void)coords;
+}
+
+static void gl_set_mvp(const math_matrix *mat)
+{
+   (void)mat;
+}
+#else
+static void gl_set_coords(const struct gl_coords *coords)
+{
+   pglClientActiveTexture(GL_TEXTURE0);
+
+   if (coords->vertex)
+   {
+      glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
+      glEnableClientState(GL_VERTEX_ARRAY);
+   }
+
+   if (coords->color)
+   {
+      glColorPointer(4, GL_FLOAT, 0, coords->color);
+      glEnableClientState(GL_COLOR_ARRAY);
+   }
+
+   if (coords->tex_coord)
+   {
+      glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
+      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   }
+
+   if (coords->lut_tex_coord)
+   {
+      pglClientActiveTexture(GL_TEXTURE1);
+      glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
+      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+      pglClientActiveTexture(GL_TEXTURE0);
+   }
+}
+
+static void gl_set_mvp(const math_matrix *mat)
+{
+   glMatrixMode(GL_PROJECTION);
+   glLoadMatrixf(mat->data);
+   glMatrixMode(GL_MODELVIEW);
+   glLoadIdentity();
+}
 #endif
 
+void gl_shader_set_coords(const struct gl_coords *coords, const math_matrix *mat)
+{
+   bool ret_coords = false;
+   bool ret_mvp    = false;
+
 #ifdef HAVE_XML
-   gl_glsl_set_proj_matrix(mat);
+   if (!ret_coords)
+      ret_coords |= gl_glsl_set_coords(coords);
+   if (!ret_mvp)
+      ret_mvp    |= gl_glsl_set_mvp(mat);
 #endif
+
+#ifdef HAVE_CG
+   if (!ret_coords)
+      ret_coords |= gl_cg_set_coords(coords);
+   if (!ret_mvp)
+      ret_mvp    |= gl_cg_set_mvp(mat);
+#endif
+
+   // Fall back to FF-style if needed.
+   if (!ret_coords)
+      gl_set_coords(coords);
+   if (!ret_mvp)
+      gl_set_mvp(mat);
 }
 
 static inline void gl_shader_set_params(unsigned width, unsigned height, 
@@ -494,40 +560,6 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
 ////////////
 
-#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES1)|| defined(HAVE_OPENGL_MODERN)
-void gl_set_coords(const struct gl_coords *coords, unsigned unit)
-{
-   (void)coords;
-   (void)unit;
-   /* TODO - stub */
-}
-#else
-void gl_set_coords(const struct gl_coords *coords, unsigned unit)
-{
-   pglClientActiveTexture(GL_TEXTURE0 + unit);
-
-   if (coords->vertex)
-   {
-      glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
-      glEnableClientState(GL_VERTEX_ARRAY);
-   }
-
-   if (coords->color)
-   {
-      glColorPointer(4, GL_FLOAT, 0, coords->color);
-      glEnableClientState(GL_COLOR_ARRAY);
-   }
-
-   if (coords->tex_coord)
-   {
-      glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
-      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   }
-
-   pglClientActiveTexture(GL_TEXTURE0);
-}
-#endif
-
 void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
 {
 #ifdef RARCH_CONSOLE
@@ -540,7 +572,7 @@ void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
 #endif
 
    gfx_ctx_set_projection(gl, ortho, allow_rotate);
-   gl_shader_set_proj_matrix(&gl->mvp);
+   gl_shader_set_coords(&gl->coords, &gl->mvp);
 }
 
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
@@ -609,18 +641,6 @@ static void gl_set_rotation(void *data, unsigned rotation)
    gl_t *gl = (gl_t*)driver.video_data;
    gl->rotation = 90 * rotation;
    gl_set_projection(gl, &ortho, true);
-}
-
-static inline void set_lut_texture_coords(const GLfloat *coords)
-{
-#if defined(HAVE_XML) || defined(HAVE_CG)
-   // For texture images.
-   struct gl_coords co = {0};
-   co.tex_coord        = coords;
-   gl_set_coords(&co, 1);
-#else
-   (void)coords;
-#endif
 }
 
 static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yamt)
@@ -729,7 +749,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
             gl->vp_width, gl->vp_height, gl->frame_count, 
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
-      gl_set_coords(&gl->coords, 0);
+      gl_shader_set_coords(&gl->coords, &gl->mvp);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
       fbo_tex_info_cnt++;
@@ -758,7 +778,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
 
    gl->coords.vertex = vertex_ptr;
 
-   gl_set_coords(&gl->coords, 0);
+   gl_shader_set_coords(&gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->coords.tex_coord = gl->tex_coords;
@@ -1003,7 +1023,7 @@ static void gl_render_menu(gl_t *gl)
 
    gl->coords.vertex = default_vertex_ptr;
 
-   gl_set_coords(&gl->coords, 0);
+   gl_shader_set_coords(&gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -1061,7 +1081,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          gl->frame_count, 
          &tex_info, gl->prev_info, NULL, 0);
 
-   gl_set_coords(&gl->coords, 0);
+   gl_shader_set_coords(&gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 #ifdef HAVE_FBO
@@ -1292,12 +1312,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glClearColor(0, 0, 0, 1);
 
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
-   gl->coords.vertex    = vertex_ptr;
-   gl->coords.tex_coord = gl->tex_coords;
-   gl->coords.color     = white_color;
-   gl_set_coords(&gl->coords, 0);
-
-   set_lut_texture_coords(tex_coords);
+   gl->coords.vertex         = vertex_ptr;
+   gl->coords.tex_coord      = gl->tex_coords;
+   gl->coords.color          = white_color;
+   gl->coords.lut_tex_coord  = tex_coords;
+   gl_shader_set_coords(&gl->coords, &gl->mvp);
 
    gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
    gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
