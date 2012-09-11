@@ -52,7 +52,9 @@
 
 #include "../../console/rarch_console.h"
 #include "../../console/rarch_console_exec.h"
+
 #include "../../console/rarch_console_libretro_mgmt.h"
+
 #include "../../console/rarch_console_input.h"
 #include "../../console/rarch_console_config.h"
 #include "../../console/rarch_console_settings.h"
@@ -67,10 +69,14 @@
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 
+#ifdef HAVE_HDD_CACHE_PARTITION
 #define CACHE_ID "ABCD12345"
-#define NP_POOL_SIZE (128*1024)
+#endif
 
+#ifndef __PSL1GHT__
+#define NP_POOL_SIZE (128*1024)
 static uint8_t np_pool[NP_POOL_SIZE];
+#endif
 
 int rarch_main(int argc, char *argv[]);
 
@@ -83,6 +89,9 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 {
    (void) param;
    (void) userdata;
+#ifdef HAVE_OSKUTIL
+   oskutil_params *osk = g_console.oskutil_handle;
+#endif
    gl_t *gl = driver.video_data;
 
    switch (status)
@@ -93,11 +102,11 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 	 break;
 #ifdef HAVE_OSKUTIL
       case CELL_SYSUTIL_OSKDIALOG_FINISHED:
-	 oskutil_close(&g_console.oskutil_handle);
-	 oskutil_finished(&g_console.oskutil_handle);
+	 oskutil_close(osk);
+	 oskutil_finished(osk);
 	 break;
       case CELL_SYSUTIL_OSKDIALOG_UNLOADED:
-	 oskutil_unload(&g_console.oskutil_handle);
+	 oskutil_unload(osk);
 	 break;
 #endif
    }
@@ -239,13 +248,17 @@ int main(int argc, char *argv[])
    cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_NP);
 #endif
 
+#ifndef __PSL1GHT__
    sys_net_initialize_network();
+#endif
 
 #ifdef HAVE_LOGGER
    logger_init();
 #endif
 
+#ifndef __PSL1GHT__
    sceNpInit(NP_POOL_SIZE, np_pool);
+#endif
 
    rarch_main_clear_state();
    get_environment_settings(argc, argv);
@@ -262,8 +275,12 @@ int main(int argc, char *argv[])
    char core_exe_path[1024];
    snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
 
+#ifdef HAVE_LIBRETRO_MANAGEMENT
    bool find_libretro_file = rarch_configure_libretro_core(core_exe_path, path_prefix, path_prefix, 
    default_paths.config_file, extension);
+#else
+   bool find_libretro_file = false;
+#endif
 
    rarch_settings_set_default();
    rarch_input_set_controls_default(input);
@@ -297,7 +314,8 @@ int main(int argc, char *argv[])
    driver.video = &video_gl;
 
 #ifdef HAVE_OSKUTIL
-   oskutil_init(&g_console.oskutil_handle, 0);
+   oskutil_params *osk = g_console.oskutil_handle;
+   oskutil_init(osk, 0);
 #endif
 
    menu_init();
@@ -355,8 +373,11 @@ begin_shutdown:
    menu_free();
 
 #ifdef HAVE_OSKUTIL
-   if(g_console.oskutil_handle.is_running)
-      oskutil_unload(&g_console.oskutil_handle);
+   if(g_console.oskutil_handle)
+   {
+      oskutil_params *osk = g_console.oskutil_handle;
+      oskutil_unload(osk);
+   }
 #endif
 
 #ifdef HAVE_LOGGER

@@ -15,10 +15,9 @@
  */
 
 #include "../../driver.h"
+#include "../../ps3/sdk_defines.h"
 
 #include <stdint.h>
-
-#include <sys/spu_initialize.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -34,8 +33,11 @@
 #endif
 
 static struct texture_image menu_texture;
+
+#if defined(HAVE_PSGL)
 static PSGLdevice* gl_device;
 static PSGLcontext* gl_context;
+#endif
 
 int gfx_ctx_check_resolution(unsigned resolution_id)
 {
@@ -135,13 +137,15 @@ void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 {
    (void)inited;
 
+#if defined(HAVE_PSGL)
    if (gl_context)
    {
       if (interval)
-         glEnable(GL_VSYNC_SCE);
+         glEnable(GL_VSYNC);
       else
-         glDisable(GL_VSYNC_SCE);
+         glDisable(GL_VSYNC);
    }
+#endif
 }
 
 void gfx_ctx_check_window(bool *quit,
@@ -171,7 +175,9 @@ bool gfx_ctx_window_has_focus(void)
 
 void gfx_ctx_swap_buffers(void)
 {
+#if defined(HAVE_PSGL)
    psglSwap();
+#endif
 }
 
 void gfx_ctx_clear(void)
@@ -231,11 +237,14 @@ void gfx_ctx_update_window_title(bool reset) { }
 
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
+#if defined(HAVE_PSGL)
    psglGetDeviceDimensions(gl_device, width, height); 
+#endif
 }
 
 bool gfx_ctx_init(void)
 {
+#if defined(HAVE_PSGL)
    PSGLinitOptions options = {
 	   .enable = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS,
 	   .maxSPUs = 1,
@@ -276,6 +285,7 @@ bool gfx_ctx_init(void)
 
    psglMakeCurrent(gl_context, gl_device);
    psglResetCurrentContext();
+#endif
 
    return true;
 }
@@ -289,10 +299,12 @@ bool gfx_ctx_set_video_mode(
 
 void gfx_ctx_destroy(void)
 {
+#if defined(HAVE_PSGL)
    psglDestroyContext(gl_context);
    psglDestroyDevice(gl_device);
 
    psglExit();
+#endif
 }
 
 void gfx_ctx_input_driver(const input_driver_t **input, void **input_data) { }

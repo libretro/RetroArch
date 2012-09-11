@@ -130,7 +130,7 @@ typedef struct
 
 void oskutil_write_message(oskutil_params *params, const wchar_t* msg);
 void oskutil_write_initial_message(oskutil_params *params, const wchar_t* msg);
-void oskutil_init(oskutil_params *params, unsigned int containersize);
+void oskutil_init(oskutil_params *params, unsigned containersize);
 bool oskutil_start(oskutil_params *params);
 void oskutil_stop(oskutil_params *params);
 void oskutil_finished(oskutil_params *params);

@@ -22,7 +22,7 @@ LIBDIRS := -L$(PS3DEV)/ppu/lib -L$(PS3DEV)/portlibs/ppu/lib -L.
 MACHDEP := -D__CELLOS_LV2__ -D__PSL1GHT__
 CFLAGS += -Wall $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
-LIBS := -lretro_psl1ght -laudio -lEGL -lGL -lio -lm -ljpgdec -lpngdec -lsysutil
+LIBS := -lretro_psl1ght -laudio -lGL -lEGL -lrsx -lgcm_sys -lnet -lio -lsysutil -lsysmodule  -lm -ljpgdec -lpngdec -llv2
 
 OBJ = console/griffin/griffin.o console/rzlib/rzlib.o
 
@@ -38,7 +38,7 @@ endif
 
 RSXGL_DEFINES = -D__RSX__ -DGL3_PROTOTYPES
 
-SHARED_FLAGS := -DHAVE_FILEBROWSER $(RSXGL_DEFINES) -DHAVE_OSKUTIL -DHAVE_OPENGL -DHAVE_OPENGL_MODERN -DHAVE_FBO -DHAVE_MOUSE -DHAVE_DEFAULT_RETROPAD_INPUT -DRARCH_CONSOLE -DHAVE_CONFIGFILE=1 -DHAVE_ZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DPACKAGE_VERSION=\"0.9.7\" -Dmain=rarch_main -Wno-char-subscripts
+SHARED_FLAGS := -DHAVE_FILEBROWSER $(RSXGL_DEFINES) -DHAVE_OSKUTIL -DHAVE_OPENGL -DHAVE_OPENGL_MODERN -DHAVE_VID_CONTEXT -DHAVE_FBO -DHAVE_MOUSE -DHAVE_DEFAULT_RETROPAD_INPUT -DRARCH_CONSOLE -DHAVE_CONFIGFILE=1 -DHAVE_ZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DPACKAGE_VERSION=\"0.9.7\" -Dmain=rarch_main -Wno-char-subscripts
 CFLAGS += -std=gnu99 $(SHARED_FLAGS)
 CXXFLAGS += $(SHARED_FLAGS)
 
@@ -52,7 +52,7 @@ endif
 all: $(ELF_TARGET)
 
 $(ELF_TARGET): $(OBJ)
-	$(CC) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(LIBS)
+	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(LIBS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<

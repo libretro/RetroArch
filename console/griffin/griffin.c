@@ -127,11 +127,8 @@ VIDEO IMAGE
 VIDEO DRIVER
 ============================================================ */
 
-#if defined(__CELLOS_LV2__)
-#include "../../gfx/math/matrix.c"
-#endif
-
 #if defined(HAVE_OPENGL)
+#include "../../gfx/math/matrix.c"
 #include "../../gfx/gl.c"
 #elif defined(GEKKO)
 #ifdef HW_RVL

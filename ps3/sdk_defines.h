@@ -324,6 +324,7 @@
 ============================================================ */
 
 #ifdef __PSL1GHT__
+#include <sysutil/video.h>
 #define CELL_GCM_FALSE GCM_FALSE
 #define CELL_GCM_TRUE GCM_TRUE
 
@@ -491,6 +492,7 @@
 #define cellVideoOutConfigure videoConfigure
 #define cellVideoOutGetState videoGetState
 #define cellVideoOutGetResolution videoGetResolution
+#define cellVideoOutGetResolutionAvailability videoGetResolutionAvailability
 
 #define cellGcmSetViewportInline rsxSetViewport
 #define cellGcmSetReferenceCommandInline rsxSetReferenceCommand
@@ -545,4 +547,12 @@
 #define cellGameBootCheck sysGameBootCheck
 
 #define CELL_GAME_ATTRIBUTE_APP_HOME              (1 <<1) /* boot from / app_home/PS3_GAME */
+#define CELL_GAME_DIRNAME_SIZE			32
+
+#define CELL_GAME_GAMETYPE_SYS		0
+#define CELL_GAME_GAMETYPE_DISC		1
+#define CELL_GAME_GAMETYPE_HDD		2
+#define CELL_GAME_GAMETYPE_GAMEDATA	3
+#define CELL_GAME_GAMETYPE_HOME		4
+
 #endif

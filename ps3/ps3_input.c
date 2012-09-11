@@ -129,7 +129,7 @@ const struct platform_bind platform_keys[] = {
    { PS3_GAMEPAD_DPAD_DOWN | PS3_GAMEPAD_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
 };
 
-const unsigned int platform_keys_size = sizeof(platform_keys);
+const unsigned platform_keys_size = sizeof(platform_keys);
 
 static uint64_t state[MAX_PADS];
 static unsigned pads_connected;
@@ -270,7 +270,7 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
 
 #define OSK_IN_USE 1
 
-void oskutil_init(oskutil_params *params, unsigned int containersize)
+void oskutil_init(oskutil_params *params, unsigned containersize)
 {
    params->flags = 0;
    params->is_running = false;
