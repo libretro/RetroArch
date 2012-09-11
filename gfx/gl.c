@@ -368,20 +368,8 @@ static void gl_create_fbo_textures(gl_t *gl)
    {
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
 
-#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES1)
-      // Doesn't support GL_CLAMP_TO_BORDER. NOTE: This will be a serious problem for some shaders.
-      //
-      // NOTE2: We still need to query if GL_CLAMP_TO_BORDER is supported even if compiling with
-      // OpenGL ES 1 because none of these defines are in any system headers except for what every
-      // Android GPU supports (which doesn't include GL_CLAMP_TO_BORDER) - move the underlying value 
-      // for GL_CLAMP_TO_BORDER to some variable that we'll use here and query at gl_init if 
-      // GL_CLAMP_TO_BORDER is available
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-#else
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-#endif
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
 
       GLuint filter_type = base_filt;
       bool smooth = false;
@@ -821,7 +809,10 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
       pglBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 #else
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * gl->base_size));
+
+#ifdef GL_UNPACK_ROW_LENGTH
       glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
             gl->texture_fmt, gl->empty_buf);
@@ -873,8 +864,8 @@ static void gl_init_textures(gl_t *gl)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
 
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
 
@@ -922,14 +913,8 @@ static void gl_init_textures(gl_t *gl)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
 
-#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES1)
-      // Doesn't support GL_CLAMP_TO_BORDER. Will have issues with some shaders ...
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-#else
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-#endif
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
 
@@ -943,11 +928,32 @@ static void gl_init_textures(gl_t *gl)
 static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
    glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * gl->base_size));
+
+#ifdef GL_UNPACK_ROW_LENGTH
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
    glTexSubImage2D(GL_TEXTURE_2D,
          0, 0, 0, width, height, gl->texture_type,
          gl->texture_fmt, frame);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#else
+   unsigned pitch_width = pitch / gl->base_size;
+   if (width == pitch_width) // Take optimal path
+   {
+      glTexSubImage2D(GL_TEXTURE_2D,
+            0, 0, 0, width, height, gl->texture_type,
+            gl->texture_fmt, frame);
+   }
+   else // Copy texture line by line :(
+   {
+      const uint8_t *src = (const uint8_t*)frame;
+      for (unsigned i = 0; i < height; i++, src += pitch)
+      {
+         glTexSubImage2D(GL_TEXTURE_2D,
+               0, 0, i, width, 1,
+               gl->texture_type, gl->texture_fmt, src);
+      }
+   }
+#endif
 }
 
 static void gl_init_textures(gl_t *gl)
@@ -957,12 +963,15 @@ static void gl_init_textures(gl_t *gl)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
 
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
 
+#ifdef GL_UNPACK_ROW_LENGTH
       glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
+
       glTexImage2D(GL_TEXTURE_2D,
             0, RARCH_GL_INTERNAL_FORMAT, gl->tex_w, gl->tex_h, 0, gl->texture_type,
             gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
@@ -1135,6 +1144,44 @@ static void gl_set_nonblock_state(void *data, bool state)
    gfx_ctx_set_swap_interval(state ? 0 : 1, true);
 }
 
+static bool resolve_extensions(gl_t *gl)
+{
+#ifdef _WIN32
+   // Win32 GL lib doesn't have some elementary functions needed.
+   // Need to load dynamically :(
+   if (!load_gl_proc_win32())
+      return false;
+#endif
+
+#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES1)
+   // Doesn't support GL_CLAMP_TO_BORDER. NOTE: This will be a serious problem for some shaders.
+   //
+   // NOTE2: We still need to query if GL_CLAMP_TO_BORDER is supported even if compiling with
+   // OpenGL ES 1 because none of these defines are in any system headers except for what every
+   // Android GPU supports (which doesn't include GL_CLAMP_TO_BORDER) - move the underlying value 
+   // for GL_CLAMP_TO_BORDER to some variable that we'll use here and query at gl_init if 
+   // GL_CLAMP_TO_BORDER is available
+   gl->border_type = GL_CLAMP_TO_EDGE;
+#else
+   gl->border_type = GL_CLAMP_TO_BORDER;
+#endif
+
+#ifdef HAVE_PBO
+   RARCH_LOG("[GL]: Using PBOs.\n");
+   if (!gl_query_extension("GL_ARB_pixel_buffer_object"))
+   {
+      RARCH_ERR("[GL]: PBOs are enabled, but extension does not exist ...\n");
+      return false;
+   }
+#endif
+
+#ifndef GL_UNPACK_ROW_LENGTH
+   RARCH_WARN("[GL]: GL_UNPACK_ROW_LENGTH is not defined. Texture uploads will possibly be slower than optimal.\n");
+#endif
+
+   return true;
+}
+
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
 #ifdef _WIN32
@@ -1183,27 +1230,12 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 #endif
 
-#ifdef _WIN32
-   // Win32 GL lib doesn't have some elementary functions needed.
-   // Need to load dynamically :(
-   if (!load_gl_proc_win32())
+   if (!resolve_extensions(gl))
    {
       gfx_ctx_destroy();
       free(gl);
       return NULL;
    }
-#endif
-
-#ifdef HAVE_PBO
-   RARCH_LOG("[GL]: Using PBOs.\n");
-   if (!gl_query_extension("GL_ARB_pixel_buffer_object"))
-   {
-      RARCH_ERR("[GL]: PBOs are enabled, but extension does not exist ...\n");
-      gfx_ctx_destroy();
-      free(gl);
-      return NULL;
-   }
-#endif
 
    gl->vsync = video->vsync;
    gl->fullscreen = video->fullscreen;

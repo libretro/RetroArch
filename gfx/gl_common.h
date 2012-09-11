@@ -211,6 +211,7 @@ typedef struct gl
    GLuint pbo;
    GLenum texture_type; // XBGR1555 or ARGB
    GLenum texture_fmt;
+   GLenum border_type;
    unsigned base_size; // 2 or 4
 
 #ifdef HAVE_FREETYPE
