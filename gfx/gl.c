@@ -1401,7 +1401,7 @@ static bool gl_xml_shader(void *data, const char *path)
 }
 #endif
 
-#if !defined(HAVE_RGL) && !defined(HAVE_OPENGLES)
+#if !defined(__CELLOS_LV2__) && !defined(HAVE_OPENGLES)
 static void gl_viewport_size(void *data, unsigned *width, unsigned *height)
 {
    (void)data;
@@ -1549,7 +1549,7 @@ const video_driver_t video_gl = {
 
    gl_set_rotation,
 
-#if !defined(HAVE_RGL) && !defined(HAVE_OPENGLES)
+#if !defined(__CELLOS_LV2__) && !defined(HAVE_OPENGLES)
    gl_viewport_size,
    gl_read_viewport,
 #else
