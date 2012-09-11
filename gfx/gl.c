@@ -13,8 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Legacy FF OpenGL / OpenGL ES 1.1 driver */
-
 #include "../driver.h"
 
 #include <stdint.h>
@@ -507,7 +505,7 @@ void gl_set_coords(const struct gl_coords *coords, unsigned unit)
 {
    (void)coords;
    (void)unit;
-   // Should be able to use FF-style with GLES1.
+   /* TODO - stub */
 }
 #else
 void gl_set_coords(const struct gl_coords *coords, unsigned unit)
@@ -1080,7 +1078,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 static void gl_disable_client_arrays(void)
 {
-#if !defined(HAVE_OPENGLES) && !defined(HAVE_OPENGL_MODERN)
+#if defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_MODERN)
+   /* TODO - stub */
+#else
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDisableClientState(GL_COLOR_ARRAY);
