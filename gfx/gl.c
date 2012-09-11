@@ -798,7 +798,7 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
       gl->last_width[gl->tex_index] = width;
       gl->last_height[gl->tex_index] = height;
 
-#ifdef HAVE_OPENGL_TEXREF
+#if defined(HAVE_PSGL)
       glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
 		      gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
 		      gl->tex_w * gl->tex_h * gl->base_size,
@@ -838,7 +838,7 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
    }
 }
 
-#ifdef __CELLOS_LV2__
+#if defined(HAVE_PSGL)
 static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
    if (!gl->fbo_inited)
@@ -1101,7 +1101,7 @@ static void gl_free(void *data)
    gl_disable_client_arrays();
    glDeleteTextures(TEXTURES, gl->texture);
 
-#ifdef HAVE_OPENGL_TEXREF
+#if defined(HAVE_PSGL)
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
    glDeleteBuffers(1, &gl->pbo);
 #elif defined(HAVE_PBO)
@@ -1264,7 +1264,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
    gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
 
-#if defined(HAVE_OPENGL_TEXREF)
+#if defined(HAVE_PSGL)
    glGenBuffers(1, &gl->pbo);
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
    glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE,

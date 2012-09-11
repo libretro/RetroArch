@@ -29,11 +29,11 @@
 #if defined(__APPLE__)
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
-#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+#elif defined(HAVE_PSGL)
 #include <PSGL/psgl.h>
 #include <PSGL/psglu.h>
 #include <GLES/glext.h>
-#elif defined(__CELLOS_LV2__) && defined(__PSL1GHT__)
+#elif defined(HAVE_OPENGL_MODERN)
 #include <EGL/egl.h>
 #include <GL3/gl3.h>
 #include <GL3/gl3ext.h>
@@ -234,7 +234,7 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #define pglActiveTexture glActiveTexture
 #endif
 
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+#if defined(HAVE_PSGL)
 #define RARCH_GL_INTERNAL_FORMAT GL_ARGB_SCE
 #define RARCH_GL_TEXTURE_TYPE GL_ARGB_SCE
 #define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8
