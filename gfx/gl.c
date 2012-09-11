@@ -368,7 +368,7 @@ static void gl_create_fbo_textures(gl_t *gl)
    {
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
 
-#ifdef HAVE_OPENGLES
+#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES11)
       // Doesn't support GL_CLAMP_TO_BORDER. NOTE: This will be a serious problem for some shaders.
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -500,7 +500,7 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
 ////////////
 
-#if defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_MODERN)
+#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES11)|| defined(HAVE_OPENGL_MODERN)
 void gl_set_coords(const struct gl_coords *coords, unsigned unit)
 {
    (void)coords;
@@ -916,7 +916,7 @@ static void gl_init_textures(gl_t *gl)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
 
-#ifdef HAVE_OPENGLES
+#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES11)
       // Doesn't support GL_CLAMP_TO_BORDER. Will have issues with some shaders ...
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -1078,7 +1078,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 static void gl_disable_client_arrays(void)
 {
-#if defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_MODERN)
+#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES11) || defined(HAVE_OPENGL_MODERN)
    /* TODO - stub */
 #else
    glDisableClientState(GL_VERTEX_ARRAY);
