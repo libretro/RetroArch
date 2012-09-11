@@ -880,7 +880,7 @@ static void gl_init_textures(gl_t *gl)
 #elif defined(HAVE_PBO)
 static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
-   const uint8_t *frame_copy = frame;
+   const uint8_t *frame_copy = (const uint8_t*)frame;
    size_t frame_copy_size    = width * gl->base_size;
 
    pglBindBuffer(GL_PIXEL_UNPACK_BUFFER, gl->pbo);
