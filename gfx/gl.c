@@ -502,7 +502,7 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
 ////////////
 
-#ifdef HAVE_OPENGLES
+#if defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_MODERN)
 void gl_set_coords(const struct gl_coords *coords, unsigned unit)
 {
    (void)coords;
@@ -1080,7 +1080,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 static void gl_disable_client_arrays(void)
 {
-#ifndef HAVE_OPENGLES
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_OPENGL_MODERN)
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDisableClientState(GL_COLOR_ARRAY);
