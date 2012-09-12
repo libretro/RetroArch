@@ -61,6 +61,7 @@ unsigned rgui_gx_resolutions[GX_RESOLUTIONS_LAST] = {
 unsigned rgui_current_gx_resolution = GX_RESOLUTIONS_DEFAULT;
 #endif
 
+unsigned RGUI_WIDTH = 320;
 unsigned RGUI_HEIGHT = 240;
 
 struct rgui_handle
@@ -214,7 +215,7 @@ static void fill_rect(uint16_t *buf, unsigned pitch,
 {
    for (unsigned j = y; j < y + height; j++)
       for (unsigned i = x; i < x + width; i++)
-         buf[j * (pitch >> 2) + i] = col(i, j);
+         buf[j * (pitch >> 1) + i] = col(i, j);
 }
 
 static void blit_line(rgui_handle_t *rgui,
@@ -231,7 +232,7 @@ static void blit_line(rgui_handle_t *rgui,
             bool col = (rgui->font[FONT_OFFSET((unsigned char)*message) + offset] & rem);
 
             if (col)
-               rgui->frame_buf[(y + j) * (rgui->frame_buf_pitch >> 2) + (x + i)] = green ?
+               rgui->frame_buf[(y + j) * (rgui->frame_buf_pitch >> 1) + (x + i)] = green ?
                (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
          }
       }
@@ -465,9 +466,9 @@ static void render_text(rgui_handle_t *rgui)
          entry_title = path;
       }
 
-      snprintf(message, sizeof(message), "%c %-*s %-*s\n",
+      snprintf(message, sizeof(message), "%c %-*.*s %-*s\n",
             i == rgui->directory_ptr ? '>' : ' ',
-            TERM_WIDTH - (w + 1 + 2),
+            TERM_WIDTH - (w + 1 + 2), TERM_WIDTH - (w + 1 + 2),
             entry_title,
             w,
             type_str);
@@ -562,34 +563,21 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
 #endif
 #ifdef GEKKO
       case RGUI_SETTINGS_VIDEO_RESOLUTION:
+         if (action == RGUI_ACTION_LEFT)
          {
-            unsigned newHeight;
-
-            if (action == RGUI_ACTION_LEFT)
+            if(rgui_current_gx_resolution > 0)
             {
-               if(rgui_current_gx_resolution > 0)
-               {
-                  rgui_current_gx_resolution--;
-                  gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution]);
-               }
+               rgui_current_gx_resolution--;
+               gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution]);
             }
-            else if (action == RGUI_ACTION_RIGHT)
+         }
+         else if (action == RGUI_ACTION_RIGHT)
+         {
+            if(rgui_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
             {
-               if(rgui_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
-               {
-                  rgui_current_gx_resolution++;
-                  gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution]);
-               }
+               rgui_current_gx_resolution++;
+               gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution]);
             }
-
-            sscanf(gx_get_video_mode(), "%u", &newHeight);
-            if (newHeight > 300)
-               newHeight /= 2;
-
-            if (newHeight < 240)
-               RGUI_HEIGHT = newHeight;
-            else
-               RGUI_HEIGHT = 240;
          }
          break;
 #endif
@@ -951,6 +939,7 @@ void rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
 void rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
+   rgui->frame_buf_pitch = RGUI_WIDTH * 2;
    rgui_file_type_t type = 0;
    const char *label = 0;
    rgui_list_at(rgui->folder_buf, rgui->directory_ptr, &label, &type, NULL);

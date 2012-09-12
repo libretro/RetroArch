@@ -104,7 +104,7 @@ typedef void (*rgui_file_enum_cb_t)(void *ctx,
 typedef bool (*rgui_folder_enum_cb_t)(const char *directory,
       rgui_file_enum_cb_t file_cb, void *userdata, void *ctx);
 
-#define RGUI_WIDTH 320
+extern unsigned RGUI_WIDTH;
 extern unsigned RGUI_HEIGHT;
 
 rgui_handle_t *rgui_init(const char *base_path,

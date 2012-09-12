@@ -396,7 +396,7 @@ static void menu_loop(void)
 static void menu_init(void)
 {
    rgui = rgui_init("",
-         menu_framebuf, RGUI_WIDTH * sizeof(uint32_t),
+         menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
          NULL /* _binary_console_font_bmp_start */, _binary_console_font_bin_start, folder_cb, NULL);
 
    g_console.mode_switch = MODE_MENU;
