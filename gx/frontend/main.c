@@ -64,7 +64,7 @@ enum
    GX_DEVICE_END
 };
 
-uint16_t menu_framebuf[320 * 240];
+uint16_t menu_framebuf[400 * 240];
 rgui_handle_t *rgui;
 
 #if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)

@@ -51,7 +51,7 @@ struct
 
 struct
 {
-   uint32_t data[240 * 160];
+   uint32_t data[240 * 200];
    GXTexObj obj;
 } menu_tex ATTRIBUTE_ALIGN(32);
 
@@ -215,10 +215,10 @@ config:
    RGUI_HEIGHT &= ~3;
    if (RGUI_HEIGHT > 240)
       RGUI_HEIGHT = 240;
-   RGUI_WIDTH = gx_mode.fbWidth / 2;
+   RGUI_WIDTH = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
    RGUI_WIDTH &= ~3;
-   if (RGUI_WIDTH > 320)
-      RGUI_WIDTH = 320;
+   if (RGUI_WIDTH > 400)
+      RGUI_WIDTH = 400;
 
    VIDEO_Configure(&gx_mode);
    VIDEO_SetNextFramebuffer(g_framebuf[g_current_framebuf]);
@@ -724,14 +724,17 @@ static void gx_blit_line(unsigned x, unsigned y, const char *message)
    if (!*message)
       return;
 
+   bool double_width = gx_mode.fbWidth > 400;
+   unsigned width = (double_width ? 2 : 1);
    unsigned height = FONT_HEIGHT * (gx->double_strike ? 1 : 2);
    for (h = 0; h < height; h++)
    {
       GX_PokeARGB(x, y + h, b);
-      GX_PokeARGB(x + 1, y + h, b);
+      if (double_width)
+         GX_PokeARGB(x + 1, y + h, b);
    }
 
-   x += 2;
+   x += (double_width ? 2 : 1);
 
    while (*message)
    {
@@ -751,26 +754,31 @@ static void gx_blit_line(unsigned x, unsigned y, const char *message)
 
             if (!gx->double_strike)
             {
-               GX_PokeARGB(x + (i * 2),     y + (j * 2),     c);
-               GX_PokeARGB(x + (i * 2) + 1, y + (j * 2),     c);
-               GX_PokeARGB(x + (i * 2) + 1, y + (j * 2) + 1, c);
-               GX_PokeARGB(x + (i * 2),     y + (j * 2) + 1, c);
+               GX_PokeARGB(x + (i * width),     y + (j * 2),     c);
+               if (double_width)
+               {
+                  GX_PokeARGB(x + (i * width) + 1, y + (j * 2),     c);
+                  GX_PokeARGB(x + (i * width) + 1, y + (j * 2) + 1, c);
+               }
+               GX_PokeARGB(x + (i * width),     y + (j * 2) + 1, c);
             }
             else
             {
-               GX_PokeARGB(x + (i * 2),     y + j, c);
-               GX_PokeARGB(x + (i * 2) + 1, y + j, c);
+               GX_PokeARGB(x + (i * width),     y + j, c);
+               if (double_width)
+                  GX_PokeARGB(x + (i * width) + 1, y + j, c);
             }
          }
       }
 
       for (unsigned h = 0; h < height; h++)
       {
-         GX_PokeARGB(x + (FONT_WIDTH * 2), y + h, b);
-         GX_PokeARGB(x + (FONT_WIDTH * 2) + 1, y + h, b);
+         GX_PokeARGB(x + (FONT_WIDTH * width), y + h, b);
+         if (double_width)
+            GX_PokeARGB(x + (FONT_WIDTH * width) + 1, y + h, b);
       }
 
-      x += FONT_WIDTH_STRIDE * 2;
+      x += FONT_WIDTH_STRIDE * (double_width ? 2 : 1);
       message++;
    }
 }
