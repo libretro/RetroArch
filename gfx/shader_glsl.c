@@ -708,6 +708,13 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       }
       else if (strcmp((const char*)cur->name, "fragment") == 0)
       {
+         if (glsl_modern && !prog[num].vertex)
+         {
+            RARCH_ERR("Modern GLSL was chosen and vertex shader was not provided. This is an error.\n");
+            xmlFree(content);
+            goto error;
+         }
+
          prog[num].fragment = (char*)content;
          if (!get_xml_attrs(&prog[num], cur))
          {
