@@ -78,7 +78,9 @@ int gfx_ctx_check_resolution(unsigned resolution_id);
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_D3D9) || defined(HAVE_D3D8)
+typedef void (*gfx_ctx_proc_t)(void);
 void gfx_ctx_set_projection(VID_HANDLE *gl, const struct gl_ortho *ortho, bool allow_rotate);
+gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *sym);
 #endif
 
 #endif

@@ -38,6 +38,11 @@ static SDL_Window *g_window;
 static SDL_GLContext g_ctx;
 #endif
 
+#define GL_SYM_WRAP(symbol, proc) if (!symbol) { \
+   gfx_ctx_proc_t sym = gfx_ctx_get_proc_address(proc); \
+   memcpy(&(symbol), &sym, sizeof(sym)); \
+}
+
 static bool g_fullscreen;
 static unsigned g_interval;
 
@@ -55,7 +60,7 @@ void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 #if defined(_WIN32)
       static BOOL (APIENTRY *wgl_swap_interval)(int) = NULL;
       if (!wgl_swap_interval)
-         SDL_SYM_WRAP(wgl_swap_interval, "wglSwapIntervalEXT");
+         GL_SYM_WRAP(wgl_swap_interval, "wglSwapIntervalEXT");
       if (wgl_swap_interval)
          success = wgl_swap_interval(g_interval);
 #elif defined(__APPLE__) && defined(HAVE_OPENGL)
@@ -64,9 +69,9 @@ void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 #else
       static int (*glx_swap_interval)(int) = NULL;
       if (!glx_swap_interval) 
-         SDL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalSGI");
+         GL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalSGI");
       if (!glx_swap_interval)
-         SDL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalMESA");
+         GL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalMESA");
 
       if (glx_swap_interval)
          success = glx_swap_interval(g_interval) == 0;
@@ -457,6 +462,19 @@ void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_r
    }
 
    gl->mvp = proj;
+}
+
+// Enforce void (*)(void) as it's not really legal to cast void* to fn-pointer.
+// POSIX allows this, but strict C99 doesn't.
+gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
+{
+   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
+   gfx_ctx_proc_t ret;
+
+   void *sym__ = SDL_GL_GetProcAddress(symbol);
+   memcpy(&ret, &sym__, sizeof(void*));
+
+   return ret;
 }
 #endif
 

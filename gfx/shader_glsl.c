@@ -890,7 +890,10 @@ static void gl_glsl_reset_attrib(void)
    gl_attrib_index = 0;
 }
 
-#define LOAD_GL_SYM(SYM) if (!pgl##SYM) { SDL_SYM_WRAP(pgl##SYM, "gl" #SYM) }
+#define LOAD_GL_SYM(SYM) if (!pgl##SYM) { \
+   gfx_ctx_proc_t sym = gfx_ctx_get_proc_address("gl" #SYM); \
+   memcpy(&(pgl##SYM), &sym, sizeof(sym)); \
+}
 
 bool gl_glsl_init(const char *path)
 {
