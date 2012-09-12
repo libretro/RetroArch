@@ -45,10 +45,7 @@
 #include <GL/glext.h>
 #endif
 
-#define NO_SDL_GLEXT
 #include "gfx_context.h"
-#include "context/sdl_ctx.h"
-#include "SDL_opengl.h"
 #include <stdlib.h>
 
 #include <libxml/parser.h>
@@ -56,7 +53,6 @@
 
 #include "gl_common.h"
 #include "image.h"
-
 
 #ifdef __APPLE__
 #define pglCreateProgram glCreateProgram
