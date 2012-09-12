@@ -54,33 +54,6 @@
 #include "gl_common.h"
 #include "image.h"
 
-#ifdef __APPLE__
-#define pglCreateProgram glCreateProgram
-#define pglUseProgram glUseProgram
-#define pglCreateShader glCreateShader
-#define pglDeleteShader glDeleteShader
-#define pglShaderSource glShaderSource
-#define pglCompileShader glCompileShader
-#define pglAttachShader glAttachShader
-#define pglDetachShader glDetachShader
-#define pglLinkProgram glLinkProgram
-#define pglGetUniformLocation glGetUniformLocation
-#define pglUniform1i glUniform1i
-#define pglUniform1f glUniform1f
-#define pglUniform2fv glUniform2fv
-#define pglUniform4fv glUniform4fv
-#define pglUniformMatrix4fv glUniformMatrix4fv
-#define pglGetShaderiv glGetShaderiv
-#define pglGetShaderInfoLog glGetShaderInfoLog
-#define pglGetProgramiv glGetProgramiv
-#define pglGetProgramInfoLog glGetProgramInfoLog
-#define pglDeleteProgram glDeleteProgram
-#define pglGetAttachedShaders glGetAttachedShaders
-#define pglGetAttribLocation glGetAttribLocation
-#define pglEnableVertexAttribArray glEnableVertexAttribArray
-#define pglDisableVertexAttribArray glDisableVertexAttribArray
-#define pglVertexAttribPointer glVertexAttribPointer
-#else
 static PFNGLCREATEPROGRAMPROC pglCreateProgram = NULL;
 static PFNGLUSEPROGRAMPROC pglUseProgram = NULL;
 static PFNGLCREATESHADERPROC pglCreateShader = NULL;
@@ -106,7 +79,6 @@ static PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation = NULL;
 static PFNGLENABLEVERTEXATTRIBARRAYPROC pglEnableVertexAttribArray = NULL;
 static PFNGLDISABLEVERTEXATTRIBARRAYPROC pglDisableVertexAttribArray = NULL;
 static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer = NULL;
-#endif
 
 #define MAX_PROGRAMS 16
 #define MAX_TEXTURES 8
@@ -914,7 +886,6 @@ static void gl_glsl_reset_attrib(void)
 
 bool gl_glsl_init(const char *path)
 {
-#ifndef __APPLE__
    // Load shader functions.
    LOAD_GL_SYM(CreateProgram);
    LOAD_GL_SYM(UseProgram);
@@ -941,12 +912,8 @@ bool gl_glsl_init(const char *path)
    LOAD_GL_SYM(EnableVertexAttribArray);
    LOAD_GL_SYM(DisableVertexAttribArray);
    LOAD_GL_SYM(VertexAttribPointer);
-#endif
 
    RARCH_LOG("Checking GLSL shader support ...\n");
-#ifdef __APPLE__
-   const bool shader_support = true;
-#else
    bool shader_support = pglCreateProgram && pglUseProgram && pglCreateShader
       && pglDeleteShader && pglShaderSource && pglCompileShader && pglAttachShader
       && pglDetachShader && pglLinkProgram && pglGetUniformLocation
@@ -955,7 +922,6 @@ bool gl_glsl_init(const char *path)
       && pglDeleteProgram && pglGetAttachedShaders
       && pglGetAttribLocation && pglEnableVertexAttribArray && pglDisableVertexAttribArray
       && pglVertexAttribPointer;
-#endif
 
    if (!shader_support)
    {
