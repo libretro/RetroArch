@@ -22,14 +22,28 @@
 #include "state_tracker.h"
 #include "../dynamic.h"
 
-#ifdef __APPLE__
+#if defined(__APPLE__)
 #include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+#elif defined(HAVE_PSGL)
+#include <PSGL/psgl.h>
+#include <PSGL/psglu.h>
+#include <GLES/glext.h>
+#elif defined(HAVE_OPENGL_MODERN)
+#include <EGL/egl.h>
+#include <GL3/gl3.h>
+#include <GL3/gl3ext.h>
+#elif defined(HAVE_OPENGLES2)
+#include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
+#elif defined(HAVE_OPENGLES1)
+#include <GLES/gl.h>
+#include <GLES/glext.h>
 #else
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <GL/glext.h>
 #endif
-
 
 #define NO_SDL_GLEXT
 #include "gfx_context.h"
