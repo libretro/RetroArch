@@ -112,11 +112,7 @@ sdl_dinput_t* sdl_dinput_init(void)
       goto error;
    }
 
-#if SDL_MODERN
-   di->hWnd = info.info.win.window;
-#else
    di->hWnd = info.window;
-#endif
 
 #ifdef __cplusplus
    if (FAILED(DirectInput8Create(

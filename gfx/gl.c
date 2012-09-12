@@ -33,8 +33,6 @@
 #include "../compat/strl.h"
 
 #ifdef HAVE_SDL
-#define NO_SDL_GLEXT
-#include "context/sdl_ctx.h"
 #include "../input/rarch_sdl_input.h"
 #endif
 
