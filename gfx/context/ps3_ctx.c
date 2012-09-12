@@ -32,7 +32,9 @@
 #define glOrtho glOrthof
 #endif
 
+#ifdef HAVE_CG_MENU
 static struct texture_image menu_texture;
+#endif
 
 #if defined(HAVE_PSGL)
 static PSGLdevice* gl_device;
