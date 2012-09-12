@@ -83,16 +83,14 @@ static void retrace_callback(u32 retrace_count)
    LWP_ThreadSignal(g_video_cond);
 }
 
-void gx_set_video_mode(unsigned lines)
+void gx_set_video_mode(unsigned fbWidth, unsigned lines)
 {
    VIDEO_SetBlack(true);
-   VIDEO_ClearFrameBuffer(&gx_mode, g_framebuf[0], COLOR_BLACK);
-   VIDEO_ClearFrameBuffer(&gx_mode, g_framebuf[1], COLOR_BLACK);
    VIDEO_Flush();
    gx_video_t *gx = (gx_video_t*)driver.video_data;
-   unsigned fbWidth = 640;
    unsigned modetype;
    unsigned viHeightMultiplier = 1;
+   unsigned viWidth = 640;
 #if defined(HW_RVL)
    bool progressive = CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable();
    unsigned tvmode;
@@ -137,40 +135,36 @@ void gx_set_video_mode(unsigned lines)
          break;
    }
 
-   switch (lines)
+   if (lines == 0 || fbWidth == 0)
    {
-      case 224:
-      case 239:
-         fbWidth = 512;
-         modetype = VI_NON_INTERLACE;
-         viHeightMultiplier = 2;
-         break;
-      case 448:
-      case 478:
-         fbWidth = 512;
-         modetype = (progressive) ? VI_PROGRESSIVE : VI_INTERLACE;
-         break;
-      case 240:
-      case 288:
-         // don't do 288 progressive on NTSC or EURGB60, but the video corruption it makes is pretty awesome
-         if (lines == 288 && (tvmode == VI_NTSC || tvmode == VI_EURGB60))
-            lines = 240;
+      VIDEO_GetPreferredMode(&gx_mode);
+      goto config;
+   }
 
-         modetype = VI_NON_INTERLACE;
-         viHeightMultiplier = 2;
-         break;
-      default:
-         gx_mode = *VIDEO_GetPreferredMode(NULL);
-         goto config;
+   if (lines <= max_height / 2)
+   {
+      modetype = VI_NON_INTERLACE;
+      viHeightMultiplier = 2;
+   }
+   else
+   {
+      modetype = (progressive) ? VI_PROGRESSIVE : VI_INTERLACE;
+   }
+
+   if (lines > max_height)
+      lines = max_height;
+   if (fbWidth > max_width)
+   {
+      fbWidth = viWidth = max_width;
    }
 
    gx_mode.viTVMode = VI_TVMODE(tvmode, modetype);
    gx_mode.fbWidth = fbWidth;
    gx_mode.efbHeight = lines;
    gx_mode.xfbHeight = lines;
-   gx_mode.viXOrigin = (max_width - 640) / 2;
-   gx_mode.viWidth = 640;
+   gx_mode.viWidth = viWidth;
    gx_mode.viHeight = lines * viHeightMultiplier;
+   gx_mode.viXOrigin = (max_width - gx_mode.viWidth) / 2;
    if (viHeightMultiplier == 2)
       gx_mode.viYOrigin = (max_height / 2 - gx_mode.viHeight / 2) / 2;
    else
@@ -221,7 +215,9 @@ config:
       RGUI_WIDTH = 400;
 
    VIDEO_Configure(&gx_mode);
-   VIDEO_SetNextFramebuffer(g_framebuf[g_current_framebuf]);
+   VIDEO_ClearFrameBuffer(&gx_mode, g_framebuf[0], COLOR_BLACK);
+   VIDEO_ClearFrameBuffer(&gx_mode, g_framebuf[1], COLOR_BLACK);
+   VIDEO_SetNextFramebuffer(g_framebuf[0]);
    VIDEO_SetPostRetraceCallback(retrace_callback);
    VIDEO_SetBlack(false);
    VIDEO_Flush();
@@ -246,8 +242,8 @@ config:
 
 const char *gx_get_video_mode()
 {
-   static char format[5];
-   snprintf(format, sizeof(format), "%.3u%c", gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE ? 'i' : 'p');
+   static char format[16];
+   snprintf(format, sizeof(format), "%.3ux%.3u%c", gx_mode.fbWidth, gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE ? 'i' : 'p');
    return format;
 }
 
@@ -276,8 +272,8 @@ static void setup_video_mode()
    g_orientation = ORIENTATION_NORMAL;
    LWP_InitQueue(&g_video_cond);
 
-   gx_mode = *VIDEO_GetPreferredMode(NULL);
-   gx_set_video_mode(0);
+   VIDEO_GetPreferredMode(&gx_mode);
+   gx_set_video_mode(0, 0);
 }
 
 static void init_texture(unsigned width, unsigned height)
@@ -790,6 +786,7 @@ static bool gx_frame(void *data, const void *frame,
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    bool menu_render = gx->menu_render;
    bool should_resize = gx->should_resize;
+   u8 clear_efb = GX_FALSE;
 
    (void)data;
 
@@ -811,6 +808,7 @@ static bool gx_frame(void *data, const void *frame,
    if(should_resize)
    {
       gx_resize(gx);
+      clear_efb = GX_TRUE;
    }
 
    while ((g_vsync || menu_render) && !g_draw_done)
@@ -861,7 +859,7 @@ static bool gx_frame(void *data, const void *frame,
 #endif
    }
 
-   GX_CopyDisp(g_framebuf[g_current_framebuf], GX_FALSE);
+   GX_CopyDisp(g_framebuf[g_current_framebuf], clear_efb);
    GX_Flush();
    VIDEO_SetNextFramebuffer(g_framebuf[g_current_framebuf]);
    VIDEO_Flush();

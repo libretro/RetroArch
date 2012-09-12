@@ -38,24 +38,34 @@
 #ifdef GEKKO
 enum
 {
-   GX_RESOLUTIONS_224 = 0,
-   GX_RESOLUTIONS_239,
-   GX_RESOLUTIONS_240,
-   GX_RESOLUTIONS_288,
-   GX_RESOLUTIONS_448,
-   GX_RESOLUTIONS_478,
+   GX_RESOLUTIONS_384_224 = 0,
+   GX_RESOLUTIONS_512_224,
+   GX_RESOLUTIONS_640_224,
+   GX_RESOLUTIONS_512_239,
+   GX_RESOLUTIONS_512_240,
+   GX_RESOLUTIONS_640_240,
+   GX_RESOLUTIONS_640_288,
+   GX_RESOLUTIONS_384_448,
+   GX_RESOLUTIONS_512_448,
+   GX_RESOLUTIONS_640_448,
+   GX_RESOLUTIONS_512_478,
    GX_RESOLUTIONS_DEFAULT,
    GX_RESOLUTIONS_LAST,
 };
 
-unsigned rgui_gx_resolutions[GX_RESOLUTIONS_LAST] = {
-   224,
-   239,
-   240,
-   288,
-   448,
-   478,
-   0,
+unsigned rgui_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
+   { 384, 224 },
+   { 512, 224 },
+   { 640, 224 },
+   { 512, 239 },
+   { 512, 240 },
+   { 640, 240 },
+   { 640, 288 },
+   { 384, 448 },
+   { 512, 448 },
+   { 640, 448 },
+   { 512, 478 },
+   { 0, 0 }
 };
 
 unsigned rgui_current_gx_resolution = GX_RESOLUTIONS_DEFAULT;
@@ -568,7 +578,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             if(rgui_current_gx_resolution > 0)
             {
                rgui_current_gx_resolution--;
-               gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution]);
+               gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution][0], rgui_gx_resolutions[rgui_current_gx_resolution][1]);
             }
          }
          else if (action == RGUI_ACTION_RIGHT)
@@ -576,7 +586,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             if(rgui_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
             {
                rgui_current_gx_resolution++;
-               gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution]);
+               gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution][0], rgui_gx_resolutions[rgui_current_gx_resolution][1]);
             }
          }
          break;
