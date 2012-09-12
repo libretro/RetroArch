@@ -217,7 +217,7 @@ static inline void gl_shader_deinit(void)
 #endif
 }
 
-#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGL_MODERN)
+#if defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_MODERN)
 static void gl_set_coords(const struct gl_coords *coords)
 {
    (void)coords;
@@ -1174,7 +1174,7 @@ static bool resolve_extensions(gl_t *gl)
       return false;
 #endif
 
-#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES1)
+#if defined(HAVE_OPENGLES)
    // Doesn't support GL_CLAMP_TO_BORDER. NOTE: This will be a serious problem for some shaders.
    //
    // NOTE2: We still need to query if GL_CLAMP_TO_BORDER is supported even if compiling with
