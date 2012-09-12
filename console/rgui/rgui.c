@@ -35,6 +35,34 @@
 #define LAST_ZIP_EXTRACT ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE
 #endif
 
+#ifdef GEKKO
+enum
+{
+   GX_RESOLUTIONS_224 = 0,
+   GX_RESOLUTIONS_239,
+   GX_RESOLUTIONS_240,
+   GX_RESOLUTIONS_288,
+   GX_RESOLUTIONS_448,
+   GX_RESOLUTIONS_478,
+   GX_RESOLUTIONS_DEFAULT,
+   GX_RESOLUTIONS_LAST,
+};
+
+unsigned rgui_gx_resolutions[GX_RESOLUTIONS_LAST] = {
+   224,
+   239,
+   240,
+   288,
+   448,
+   478,
+   0,
+};
+
+unsigned rgui_current_gx_resolution = GX_RESOLUTIONS_DEFAULT;
+#endif
+
+unsigned RGUI_HEIGHT = 240;
+
 struct rgui_handle
 {
    uint16_t *frame_buf;
@@ -341,6 +369,11 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), g_console.soft_display_filter_enable ? "ON" : "OFF");
             break;
 #endif
+#ifdef GEKKO
+         case RGUI_SETTINGS_VIDEO_RESOLUTION:
+            snprintf(type_str, sizeof(type_str), "%s", gx_get_video_mode());
+            break;
+#endif
          case RGUI_SETTINGS_VIDEO_GAMMA:
             snprintf(type_str, sizeof(type_str), "%d", g_console.gamma_correction);
             break;
@@ -527,6 +560,39 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          }
          break;
 #endif
+#ifdef GEKKO
+      case RGUI_SETTINGS_VIDEO_RESOLUTION:
+         {
+            unsigned newHeight;
+
+            if (action == RGUI_ACTION_LEFT)
+            {
+               if(rgui_current_gx_resolution > 0)
+               {
+                  rgui_current_gx_resolution--;
+                  gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution]);
+               }
+            }
+            else if (action == RGUI_ACTION_RIGHT)
+            {
+               if(rgui_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
+               {
+                  rgui_current_gx_resolution++;
+                  gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution]);
+               }
+            }
+
+            sscanf(gx_get_video_mode(), "%u", &newHeight);
+            if (newHeight > 300)
+               newHeight /= 2;
+
+            if (newHeight < 240)
+               RGUI_HEIGHT = newHeight;
+            else
+               RGUI_HEIGHT = 240;
+         }
+         break;
+#endif
       case RGUI_SETTINGS_VIDEO_GAMMA:
          if (action == RGUI_ACTION_START)
          {
@@ -710,6 +776,9 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
 #ifdef HW_RVL
    RGUI_MENU_ITEM("VI Trap filtering", RGUI_SETTINGS_VIDEO_SOFT_FILTER);
+#endif
+#ifdef GEKKO
+   RGUI_MENU_ITEM("Screen Resolution", RGUI_SETTINGS_VIDEO_RESOLUTION);
 #endif
    RGUI_MENU_ITEM("Gamma", RGUI_SETTINGS_VIDEO_GAMMA);
    RGUI_MENU_ITEM("Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO);

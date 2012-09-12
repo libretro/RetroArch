@@ -19,6 +19,7 @@
 #include "../general.h"
 #include "../console/rarch_console_video.h"
 #include "../console/font.h"
+#include "../console/rgui/rgui.h"
 #include "../gfx/gfx_common.h"
 
 #ifdef HW_RVL
@@ -58,6 +59,8 @@ uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
 uint8_t display_list[1024] ATTRIBUTE_ALIGN(32);
 uint16_t gx_width, gx_height;
 size_t display_list_size;
+GXRModeObj gx_mode;
+unsigned gx_old_width, gx_old_height;
 
 float verts[16] ATTRIBUTE_ALIGN(32) = {
    -1,  1, -0.5,
@@ -72,6 +75,169 @@ float vertex_ptr[8] ATTRIBUTE_ALIGN(32) = {
    1, 1,
    1, 0,
 };
+
+static void retrace_callback(u32 retrace_count)
+{
+   (void)retrace_count;
+   g_draw_done = true;
+   LWP_ThreadSignal(g_video_cond);
+}
+
+void gx_set_video_mode(unsigned lines)
+{
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
+   unsigned fbWidth = 640;
+   unsigned modetype;
+   unsigned viHeightMultiplier = 1;
+#if defined(HW_RVL)
+   bool progressive = CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable();
+   unsigned tvmode;
+   switch (CONF_GetVideo())
+   {
+      case CONF_VIDEO_PAL:
+         if (CONF_GetEuRGB60() > 0)
+            tvmode = VI_PAL;
+         else
+            tvmode = VI_EURGB60;
+         break;
+      case CONF_VIDEO_MPAL:
+         tvmode = VI_MPAL;
+         break;
+      default:
+         tvmode = VI_NTSC;
+         break;
+   }
+#else
+   bool progressive = VIDEO_HaveComponentCable();
+   unsigned tvmode = VIDEO_GetCurrentTvMode();
+#endif
+   unsigned max_width, max_height;
+   switch (tvmode)
+   {
+      case VI_PAL:
+         max_width = VI_MAX_WIDTH_PAL;
+         max_height = VI_MAX_HEIGHT_PAL;
+         break;
+      case VI_MPAL:
+         max_width = VI_MAX_WIDTH_MPAL;
+         max_height = VI_MAX_HEIGHT_MPAL;
+         break;
+      case VI_EURGB60:
+         max_width = VI_MAX_WIDTH_NTSC;
+         max_height = VI_MAX_HEIGHT_NTSC;
+         break;
+      default:
+         tvmode = VI_NTSC;
+         max_width = VI_MAX_WIDTH_EURGB60;
+         max_height = VI_MAX_HEIGHT_EURGB60;
+         break;
+   }
+
+   switch (lines)
+   {
+      case 224:
+      case 239:
+         fbWidth = 512;
+         modetype = VI_NON_INTERLACE;
+         viHeightMultiplier = 2;
+         break;
+      case 448:
+      case 478:
+         fbWidth = 512;
+         modetype = (progressive) ? VI_PROGRESSIVE : VI_INTERLACE;
+         break;
+      case 240:
+      case 288:
+         // don't do 288 progressive on NTSC or EURGB60, but the video corruption it makes is pretty awesome
+         if (lines == 288 && (tvmode == VI_NTSC || tvmode == VI_EURGB60))
+            lines = 240;
+
+         modetype = VI_NON_INTERLACE;
+         viHeightMultiplier = 2;
+         break;
+      default:
+         gx_mode = *VIDEO_GetPreferredMode(NULL);
+         goto config;
+   }
+
+   gx_mode.viTVMode = VI_TVMODE(tvmode, modetype);
+   gx_mode.fbWidth = fbWidth;
+   gx_mode.efbHeight = lines;
+   gx_mode.xfbHeight = lines;
+   gx_mode.viXOrigin = (max_width - 640) / 2;
+   gx_mode.viWidth = 640;
+   gx_mode.viHeight = lines * viHeightMultiplier;
+   if (viHeightMultiplier == 2)
+      gx_mode.viYOrigin = (max_height / 2 - gx_mode.viHeight / 2) / 2;
+   else
+      gx_mode.viYOrigin = (max_height - gx_mode.viHeight) / 2;
+   gx_mode.xfbMode = modetype == VI_INTERLACE ? VI_XFBMODE_DF : VI_XFBMODE_SF;
+   gx_mode.field_rendering = GX_FALSE;
+   gx_mode.aa = GX_FALSE;
+
+   for (unsigned i = 0; i < 12; i++)
+      gx_mode.sample_pattern[i][0] = gx_mode.sample_pattern[i][1] = 6;
+
+   if (modetype == VI_INTERLACE)
+   {
+      gx_mode.vfilter[0] = 8;
+      gx_mode.vfilter[1] = 8;
+      gx_mode.vfilter[2] = 10;
+      gx_mode.vfilter[3] = 12;
+      gx_mode.vfilter[4] = 10;
+      gx_mode.vfilter[5] = 8;
+      gx_mode.vfilter[6] = 8;
+   }
+   else
+   {
+      gx_mode.vfilter[0] = 0;
+      gx_mode.vfilter[1] = 0;
+      gx_mode.vfilter[2] = 21;
+      gx_mode.vfilter[3] = 22;
+      gx_mode.vfilter[4] = 21;
+      gx_mode.vfilter[5] = 0;
+      gx_mode.vfilter[6] = 0;
+   }
+
+config:
+   RARCH_LOG("GX Resolution: %dx%d (%s)\n", gx_mode.fbWidth, gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE ? "interlaced" : "progressive");
+
+   gx->win_width = gx_mode.fbWidth;
+   gx->win_height = gx_mode.efbHeight;
+   gx->should_resize = true;
+
+   VIDEO_Configure(&gx_mode);
+   VIDEO_SetNextFramebuffer(g_framebuf[g_current_framebuf]);
+   VIDEO_SetPostRetraceCallback(retrace_callback);
+   VIDEO_SetBlack(false);
+   VIDEO_Flush();
+   //VIDEO_WaitVSync();
+   //if (gx_mode.viTVMode & VI_NON_INTERLACE)
+   //   VIDEO_WaitVSync();
+
+   GX_SetViewport(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1);
+   GX_SetDispCopyYScale(GX_GetYScaleFactor(gx_mode.efbHeight, gx_mode.xfbHeight));
+   //GX_SetScissor(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
+   GX_SetDispCopySrc(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
+   GX_SetDispCopyDst(gx_mode.fbWidth, gx_mode.xfbHeight);
+   GX_SetCopyFilter(gx_mode.aa, gx_mode.sample_pattern, (gx_mode.xfbMode == VI_XFBMODE_SF) ? GX_FALSE : GX_TRUE,
+         gx_mode.vfilter);
+   GX_SetCopyClear((GXColor) { 0, 0, 0, 0xff }, GX_MAX_Z24);
+   GX_SetFieldMode(gx_mode.field_rendering, (gx_mode.viHeight == 2 * gx_mode.xfbHeight) ? GX_ENABLE : GX_DISABLE);
+   GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
+   GX_InvalidateTexAll();
+
+   VIDEO_ClearFrameBuffer(&gx_mode, g_framebuf[0], COLOR_BLACK);
+   VIDEO_ClearFrameBuffer(&gx_mode, g_framebuf[1], COLOR_BLACK);
+   g_current_framebuf = 0;
+}
+
+const char *gx_get_video_mode()
+{
+   static char format[5];
+   snprintf(format, sizeof(format), "%.3u%c", gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE ? 'i' : 'p');
+   return format;
+}
 
 void gx_set_aspect_ratio(void *data, unsigned aspectratio_idx)
 {
@@ -88,47 +254,34 @@ void gx_set_aspect_ratio(void *data, unsigned aspectratio_idx)
    gx->should_resize = true;
 }
 
-static void retrace_callback(u32 retrace_count)
+static void setup_video_mode()
 {
-   (void)retrace_count;
-   g_draw_done = true;
-   LWP_ThreadSignal(g_video_cond);
-}
-
-static void setup_video_mode(GXRModeObj *mode)
-{
-   VIDEO_Configure(mode);
    for (unsigned i = 0; i < 2; i++)
-   {
-      g_framebuf[i] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(mode));
-      VIDEO_ClearFrameBuffer(mode, g_framebuf[i], COLOR_BLACK);
-   }
+      g_framebuf[i] = MEM_K0_TO_K1(memalign(32, 640 * 576 * VI_DISPLAY_PIX_SZ));
 
    g_current_framebuf = 0;
    g_draw_done = true;
    g_orientation = ORIENTATION_NORMAL;
    LWP_InitQueue(&g_video_cond);
-   VIDEO_SetNextFramebuffer(g_framebuf[0]);
-   VIDEO_SetPostRetraceCallback(retrace_callback);
-   VIDEO_SetBlack(false);
-   VIDEO_Flush();
-   VIDEO_WaitVSync();
-   if (mode->viTVMode & VI_NON_INTERLACE)
-      VIDEO_WaitVSync();
+
+   gx_set_video_mode(0);
 }
 
-static void init_vtx(GXRModeObj *mode)
+static void init_texture(unsigned width, unsigned height)
 {
-   GX_SetViewport(0, 0, mode->fbWidth, mode->efbHeight, 0, 1);
-   GX_SetDispCopyYScale(GX_GetYScaleFactor(mode->efbHeight, mode->xfbHeight));
-   GX_SetScissor(0, 0, mode->fbWidth, mode->efbHeight);
-   GX_SetDispCopySrc(0, 0, mode->fbWidth, mode->efbHeight);
-   GX_SetDispCopyDst(mode->fbWidth, mode->xfbHeight);
-   GX_SetCopyFilter(mode->aa, mode->sample_pattern, (mode->xfbMode == VI_XFBMODE_SF) ? GX_FALSE : GX_TRUE,
-         mode->vfilter);
-   GX_SetCopyClear((GXColor) { 0, 0, 0, 0xff }, GX_MAX_Z24);
-   GX_SetFieldMode(mode->field_rendering, (mode->viHeight == 2 * mode->xfbHeight) ? GX_ENABLE : GX_DISABLE);
+   unsigned g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
 
+   GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   GX_InitTexObjLOD(&g_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
+   GX_InitTexObj(&menu_tex.obj, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   GX_InitTexObjLOD(&menu_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
+   GX_InvalidateTexAll();
+}
+
+static void init_vtx()
+{
+   GX_SetCullMode(GX_CULL_NONE);
+   GX_SetClipMode(GX_CLIP_DISABLE);
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
    GX_SetZMode(GX_ENABLE, GX_ALWAYS, GX_ENABLE);
    GX_SetColorUpdate(GX_TRUE);
@@ -155,18 +308,8 @@ static void init_vtx(GXRModeObj *mode)
 
    GX_SetBlendMode(GX_BM_BLEND, GX_BL_ONE, GX_BL_INVSRCALPHA, 0);
 
+   init_texture(4, 4); // for menu texture
    GX_Flush();
-}
-
-static void init_texture(unsigned width, unsigned height)
-{
-   unsigned g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
-
-   GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
-   GX_InitTexObjLOD(&g_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
-   GX_InitTexObj(&menu_tex.obj, menu_tex.data, 320, 240, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
-   GX_InitTexObjLOD(&menu_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
-   GX_InvalidateTexAll();
 }
 
 static void build_disp_list(void)
@@ -243,18 +386,14 @@ static void gx_restart(void)
 static void *gx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
+   g_vsync = video->vsync;
+
    if (driver.video_data)
       return driver.video_data;
 
    gx_video_t *gx = (gx_video_t*)calloc(1, sizeof(gx_video_t));
    if (!gx)
       return NULL;
-
-   g_vsync = video->vsync;
-
-   gx->win_width = gx_width;
-   gx->win_height = gx_height;
-   gx->should_resize = true;
    return gx;
 }
 
@@ -268,23 +407,20 @@ static void gx_start(void)
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
 
+   driver.video_data = gx_init(&video_info, NULL, NULL);
+
    VIDEO_Init();
-   GXRModeObj *mode = VIDEO_GetPreferredMode(NULL);
-   setup_video_mode(mode);
-
    GX_Init(gx_fifo, sizeof(gx_fifo));
-   GX_SetDispCopyGamma(g_console.gamma_correction);
-   GX_SetCullMode(GX_CULL_NONE);
-   GX_SetClipMode(GX_CLIP_DISABLE);
 
-   init_vtx(mode);
+   setup_video_mode();
+   init_vtx();
    build_disp_list();
 
-   g_vsync = true;
-   gx_width = mode->fbWidth;
-   gx_height = mode->efbHeight;
-
-   driver.video_data = gx_init(&video_info, NULL, NULL);
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
+   gx->win_width = gx_mode.fbWidth;
+   gx->win_height = gx_mode.efbHeight;
+   gx->should_resize = true;
+   gx_old_width = gx_old_height = 0;
 }
 
 #define ASM_BLITTER
@@ -423,14 +559,14 @@ static void update_texture(const uint32_t *src,
    if(gx->menu_render)
    {
 #ifdef ASM_BLITTER
-      update_texture_asm(gx->menu_data, menu_tex.data, 320, 240, 320 * 2, 0x00000000U);
+      update_texture_asm(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2, 0x00000000U);
 #else
-      unsigned tmp_pitch = (320 * 2) >> 2;
-      unsigned width2 = 320 >> 1;
+      unsigned tmp_pitch = (RGUI_WIDTH * 2) >> 2;
+      unsigned width2 = RGUI_WIDTH >> 1;
 
       const uint32_t *src2 = gx->menu_data;
       uint32_t *dst = menu_tex.data;
-      for (unsigned i = 0; i < 240; i += 4, dst += 4 * width2)
+      for (unsigned i = 0; i < RGUI_HEIGHT; i += 4, dst += 4 * width2)
       {
 #define RGB15toRGB5A3(col) (col)
          BLIT_LINE(0)
@@ -442,7 +578,6 @@ static void update_texture(const uint32_t *src,
 #endif
    }
 
-   init_texture(width, height);
    DCFlushRange(g_tex.data, sizeof(g_tex.data));
    DCFlushRange(menu_tex.data, sizeof(menu_tex.data));
    GX_InvalidateTexAll();
@@ -458,7 +593,7 @@ static void gx_resize(gx_video_t *gx)
 #endif
    GX_SetDispCopyGamma(g_console.gamma_correction);
 
-   if (gx->keep_aspect)
+   if (gx->keep_aspect && gx_mode.efbHeight >= 480) // ingore this for custom resolutions
    {
       float desired_aspect = g_settings.video.aspect_ratio;
       if (desired_aspect == 0.0)
@@ -544,6 +679,7 @@ static void gx_resize(gx_video_t *gx)
    guMtxConcat(m1, m2, m1);
    GX_LoadPosMtxImm(m1, GX_PNMTX0);
 
+   gx_old_width = gx_old_height = 0;
    gx->should_resize = false;
 }
 
@@ -634,6 +770,13 @@ static bool gx_frame(void *data, const void *frame,
 
    while ((g_vsync || menu_render) && !g_draw_done)
       LWP_ThreadSleep(g_video_cond);
+
+   if (width != gx_old_width || height != gx_old_height)
+   {
+      init_texture(width, height);
+      gx_old_width = width;
+      gx_old_height = height;
+   }
 
    g_draw_done = false;
    g_current_framebuf ^= 1;

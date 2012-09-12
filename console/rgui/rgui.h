@@ -41,6 +41,9 @@ typedef enum
 #ifdef HW_RVL
    RGUI_SETTINGS_VIDEO_SOFT_FILTER,
 #endif
+#ifdef GEKKO
+   RGUI_SETTINGS_VIDEO_RESOLUTION,
+#endif
    RGUI_SETTINGS_VIDEO_GAMMA,
    RGUI_SETTINGS_VIDEO_ASPECT_RATIO,
    RGUI_SETTINGS_CUSTOM_VIEWPORT,
@@ -102,7 +105,7 @@ typedef bool (*rgui_folder_enum_cb_t)(const char *directory,
       rgui_file_enum_cb_t file_cb, void *userdata, void *ctx);
 
 #define RGUI_WIDTH 320
-#define RGUI_HEIGHT 240
+extern unsigned RGUI_HEIGHT;
 
 rgui_handle_t *rgui_init(const char *base_path,
       uint16_t *framebuf, size_t framebuf_pitch,

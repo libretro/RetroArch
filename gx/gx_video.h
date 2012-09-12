@@ -28,6 +28,8 @@ typedef struct gx_video
    char msg[128];
 } gx_video_t;
 
+void gx_set_video_mode(unsigned lines);
+const char *gx_get_video_mode();
 void gx_set_aspect_ratio(void *data, unsigned aspectratio_idx);
 
 #endif
