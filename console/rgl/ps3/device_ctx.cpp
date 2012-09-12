@@ -115,11 +115,10 @@ static const int sysutilModeCount = sizeof( sysutilModes ) / sizeof( sysutilMode
 
 static inline void _RGLPrintIt( unsigned int v )
 {
-    printf( "%02x %02x %02x %02x : ", ( v >> 24 )&0xff, ( v >> 16 )&0xff, ( v >> 8 )&0xff, v&0xff );
+    RARCH_LOG( "%02x %02x %02x %02x : \n", ( v >> 24 )&0xff, ( v >> 16 )&0xff, ( v >> 8 )&0xff, v&0xff );
 
     for ( unsigned int mask = ( 0x1 << 31 ), i = 1; mask != 0; mask >>= 1, i++ )
-        printf("%d%s", ( v & mask ) ? 1 : 0, ( i % 8 == 0 ) ? " " : "");
-    printf( "\n" );
+        RARCH_LOG("%d%s\n", ( v & mask ) ? 1 : 0, ( i % 8 == 0 ) ? " " : "");
 }
 
 static inline void _RGLPrintFifoFromPut(unsigned int numWords) 

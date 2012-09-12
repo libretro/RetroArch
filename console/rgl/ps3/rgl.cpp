@@ -4390,7 +4390,7 @@ static void _RGLPlatformValidateTextureStage( int unit, jsTexture* texture )
     }
     else
     {
-        //printf("RGL WARN: Texture bound to unit %d is incomplete.\n", unit);
+        //RARCH_WARN("Texture bound to unit %d is incomplete.\n", unit);
 	GLuint remap = CELL_GCM_REMAP_MODE(
 			CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
 			CELL_GCM_TEXTURE_REMAP_FROM_A,
