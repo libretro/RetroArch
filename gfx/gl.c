@@ -98,11 +98,11 @@ static PFNGLDELETEFRAMEBUFFERSPROC pglDeleteFramebuffers = NULL;
 
 static bool load_fbo_proc(void)
 {
-   LOAD_SYM(glGenFramebuffers);
-   LOAD_SYM(glBindFramebuffer);
-   LOAD_SYM(glFramebufferTexture2D);
-   LOAD_SYM(glCheckFramebufferStatus);
-   LOAD_SYM(glDeleteFramebuffers);
+   LOAD_GL_SYM(GenFramebuffers);
+   LOAD_GL_SYM(BindFramebuffer);
+   LOAD_GL_SYM(FramebufferTexture2D);
+   LOAD_GL_SYM(CheckFramebufferStatus);
+   LOAD_GL_SYM(DeleteFramebuffers);
 
    return pglGenFramebuffers && pglBindFramebuffer && pglFramebufferTexture2D && 
       pglCheckFramebufferStatus && pglDeleteFramebuffers;
