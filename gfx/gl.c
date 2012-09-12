@@ -83,9 +83,10 @@ const GLfloat white_color[] = {
 const GLfloat *vertex_ptr = vertexes_flipped;
 const GLfloat *default_vertex_ptr = vertexes_flipped;
 
-#ifdef HAVE_SDL
-#define LOAD_SYM(sym) if (!p##sym) { SDL_SYM_WRAP(p##sym, #sym) }
-#endif
+#define LOAD_GL_SYM(SYM) if (!pgl##SYM) { \
+   gfx_ctx_proc_t sym = gfx_ctx_get_proc_address("gl" #SYM); \
+   memcpy(&(pgl##SYM), &sym, sizeof(sym)); \
+}
 
 #ifdef HAVE_FBO
 #if defined(_WIN32) && !defined(RARCH_CONSOLE)
@@ -137,13 +138,13 @@ static PFNGLMAPBUFFERPROC pglMapBuffer;
 static PFNGLUNMAPBUFFERPROC pglUnmapBuffer;
 static inline bool load_gl_proc_win32(void)
 {
-   LOAD_SYM(glClientActiveTexture);
-   LOAD_SYM(glActiveTexture);
-   LOAD_SYM(glBindBuffer);
-   LOAD_SYM(glBufferSubData);
-   LOAD_SYM(glBufferData);
-   LOAD_SYM(glMapBuffer);
-   LOAD_SYM(glUnmapBuffer);
+   LOAD_GL_SYM(ClientActiveTexture);
+   LOAD_GL_SYM(ActiveTexture);
+   LOAD_GL_SYM(BindBuffer);
+   LOAD_GL_SYM(BufferSubData);
+   LOAD_GL_SYM(BufferData);
+   LOAD_GL_SYM(MapBuffer);
+   LOAD_GL_SYM(UnmapBuffer);
    return pglClientActiveTexture && pglActiveTexture && pglBindBuffer &&
       pglBufferSubData && pglBufferData && pglMapBuffer && pglUnmapBuffer;
 }
