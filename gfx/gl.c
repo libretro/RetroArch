@@ -60,6 +60,12 @@
 #if defined(HAVE_OPENGLES2) // TODO: Figure out exactly what.
 #define NO_GL_CLAMP_TO_BORDER
 #endif
+
+#if defined(HAVE_PSGL)
+#define GL_RENDER_MODE GL_QUADS
+#else
+#define GL_RENDER_MODE GL_TRIANGLE_STRIP
+#endif
 //////
 
 extern const GLfloat vertexes_flipped[];
@@ -67,25 +73,40 @@ extern const GLfloat white_color[];
 
 // Used for the last pass when rendering to the back buffer.
 const GLfloat vertexes_flipped[] = {
+#if(GL_RENDER_MODE == GL_QUADS)
+   0, 0,
+#endif
    0, 1,
    1, 1,
+#if(GL_RENDER_MODE == GL_TRIANGLE_STRIP)
    0, 0,
+#endif
    1, 0
 };
 
 // Used when rendering to an FBO.
 // Texture coords have to be aligned with vertex coordinates.
 static const GLfloat vertexes[] = {
+#if(GL_RENDER_MODE == GL_QUADS)
+   0, 1,
+#endif
    0, 0,
    1, 0,
+#if(GL_RENDER_MODE == GL_TRIANGLE_STRIP)
    0, 1,
+#endif
    1, 1
 };
 
 static const GLfloat tex_coords[] = {
+#if(GL_RENDER_MODE == GL_QUADS)
+   0, 1,
+#endif
    0, 0,
    1, 0,
+#if(GL_RENDER_MODE == GL_TRIANGLE_STRIP)
    0, 1,
+#endif
    1, 1
 };
 
@@ -659,10 +680,16 @@ static void gl_set_rotation(void *data, unsigned rotation)
 
 static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yamt)
 {
+#if(GL_RENDER_MODE == GL_QUADS)
+   coords[1] = yamt;
+   coords[4] = xamt;
+#else
    coords[2] = xamt;
+   coords[5] = yamt;
+#endif
+
    coords[6] = xamt;
 
-   coords[5] = yamt;
    coords[7] = yamt;
 }
 
@@ -764,7 +791,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
       gl_shader_set_coords(&gl->coords, &gl->mvp);
-      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+      glDrawArrays(GL_RENDER_MODE, 0, 4);
 
       fbo_tex_info_cnt++;
    }
@@ -793,7 +820,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
    gl->coords.vertex = vertex_ptr;
 
    gl_shader_set_coords(&gl->coords, &gl->mvp);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glDrawArrays(GL_RENDER_MODE, 0, 4);
 
    gl->coords.tex_coord = gl->tex_coords;
 }
@@ -1038,7 +1065,7 @@ static void gl_render_menu(gl_t *gl)
    gl->coords.vertex = default_vertex_ptr;
 
    gl_shader_set_coords(&gl->coords, &gl->mvp);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
+   glDrawArrays(GL_RENDER_MODE, 0, 4); 
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
@@ -1096,7 +1123,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          &tex_info, gl->prev_info, NULL, 0);
 
    gl_shader_set_coords(&gl->coords, &gl->mvp);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glDrawArrays(GL_RENDER_MODE, 0, 4);
 
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
