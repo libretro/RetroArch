@@ -23,10 +23,9 @@ struct rarch_main_wrap
    const char *sram_path;
    const char *state_path;
    const char *config_path;
-   const char *libretro_path;
    bool verbose;
 };
 
-bool rarch_startup (const char *config_path, const char *libretro_path);
+bool rarch_startup (const char * config_path);
 
 #endif

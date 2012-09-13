@@ -127,7 +127,6 @@ static void get_environment_settings (void)
    strlcpy(default_paths.filebrowser_startup_dir, "game:", sizeof(default_paths.filebrowser_startup_dir));
    snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "default.xex");
 #endif
-   default_paths.libretro_path = NULL;
 }
 
 static void system_init(void)
@@ -202,7 +201,7 @@ begin_loop:
       menu_loop();
 
       if (g_console.mode_switch != MODE_EXIT)
-         rarch_startup(default_paths.config_file, default_paths.libretro_path);
+         rarch_startup(default_paths.config_file);
    }
    else
       goto begin_shutdown;

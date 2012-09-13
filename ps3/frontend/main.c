@@ -225,7 +225,6 @@ static void get_environment_settings(int argc, char *argv[])
 #endif
       snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
       snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "EBOOT.BIN");
-      default_paths.libretro_path = NULL:
    }
 
    g_extern.verbose = false;
@@ -331,7 +330,7 @@ int main(int argc, char *argv[])
 	 RARCH_LOG("Started from multiMAN, will auto-start game.\n");
 	 strlcpy(g_console.rom_path, argv[1], sizeof(g_console.rom_path));
          rarch_settings_change(S_START_RARCH);
-	 rarch_startup(default_paths.config_file, default_paths.libretro_path);
+	 rarch_startup(default_paths.config_file);
 	 break;
 #endif
       default:
@@ -356,7 +355,7 @@ begin_loop:
       menu_loop();
 
       if (g_console.mode_switch != MODE_EXIT)
-	 rarch_startup(default_paths.config_file, default_paths.libretro_path);
+         rarch_startup(default_paths.config_file);
    }
    else
       goto begin_shutdown;

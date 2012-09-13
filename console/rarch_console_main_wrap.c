@@ -49,12 +49,6 @@ static int rarch_main_init_wrap(const struct rarch_main_wrap *args)
       argv[argc++] = strdup(args->config_path);
    }
 
-   if (args->libretro_path)
-   {
-      argv[argc++] = strdup("-L");
-      argv[argc++] = strdup(args->libretro_path);
-   }
-
    if (args->verbose)
       argv[argc++] = strdup("-v");
 
@@ -77,7 +71,7 @@ static int rarch_main_init_wrap(const struct rarch_main_wrap *args)
    return ret;
 }
 
-bool rarch_startup (const char * config_path, const char * libretro_path)
+bool rarch_startup (const char * config_path)
 {
    bool retval = false;
 
@@ -90,7 +84,6 @@ bool rarch_startup (const char * config_path, const char * libretro_path)
 
       args.verbose = g_extern.verbose;
       args.config_path = config_path;
-      args.libretro_path = libretro_path;
       args.sram_path = g_console.default_sram_dir_enable ? g_console.default_sram_dir : NULL,
       args.state_path = g_console.default_savestate_dir_enable ? g_console.default_savestate_dir : NULL,
       args.rom_path = g_console.rom_path;
