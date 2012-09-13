@@ -61,7 +61,6 @@
 #define NO_GL_CLAMP_TO_BORDER
 #endif
 
-#define VERTEX_RENDER_MODE GL_TRIANGLE_STRIP
 // Used for the last pass when rendering to the back buffer.
 const GLfloat vertexes_flipped[] = {
    0, 1,
@@ -760,7 +759,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
       gl_shader_set_coords(&gl->coords, &gl->mvp);
-      glDrawArrays(VERTEX_RENDER_MODE, 0, 4);
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
       fbo_tex_info_cnt++;
    }
@@ -789,7 +788,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
    gl->coords.vertex = vertex_ptr;
 
    gl_shader_set_coords(&gl->coords, &gl->mvp);
-   glDrawArrays(VERTEX_RENDER_MODE, 0, 4);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->coords.tex_coord = gl->tex_coords;
 }
@@ -1034,7 +1033,7 @@ static void gl_render_menu(gl_t *gl)
    gl->coords.vertex = default_vertex_ptr;
 
    gl_shader_set_coords(&gl->coords, &gl->mvp);
-   glDrawArrays(VERTEX_RENDER_MODE, 0, 4); 
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
@@ -1092,7 +1091,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          &tex_info, gl->prev_info, NULL, 0);
 
    gl_shader_set_coords(&gl->coords, &gl->mvp);
-   glDrawArrays(VERTEX_RENDER_MODE, 0, 4);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
