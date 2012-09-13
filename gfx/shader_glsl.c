@@ -22,6 +22,10 @@
 #include "state_tracker.h"
 #include "../dynamic.h"
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #if defined(__APPLE__)
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
@@ -48,8 +52,10 @@
 #include "gfx_context.h"
 #include <stdlib.h>
 
+#ifdef HAVE_XML
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#endif
 
 #include "gl_common.h"
 #include "image.h"
@@ -109,7 +115,8 @@ static struct state_tracker_uniform_info gl_tracker_info[MAX_VARIABLES];
 static unsigned gl_tracker_info_cnt = 0;
 static char gl_tracker_script[PATH_MAX];
 static char gl_tracker_script_class[64];
-static xmlChar *gl_script_program = NULL;
+
+static char *gl_script_program = NULL;
 
 static GLint gl_attribs[PREV_TEXTURES + 1 + 4 + MAX_PROGRAMS];
 static unsigned gl_attrib_index = 0;
@@ -169,7 +176,7 @@ static const char *stock_fragment_modern =
    "   gl_FragColor = color * texture2D(rubyTexture, tex_coord);\n"
    "}";
 
-
+#ifdef HAVE_XML
 static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
 {
    prog->scale_x = 1.0;
@@ -463,7 +470,8 @@ static bool get_script(const char *path, xmlNodePtr ptr)
          RARCH_ERR("No content in script.\n");
          return false;
       }
-      gl_script_program = script;
+      gl_script_program = strdup((const char*)script);
+      xmlFree(script);
    }
 
    return true;
@@ -743,6 +751,7 @@ error:
    xmlFreeParserCtxt(ctx);
    return 0;
 }
+#endif // HAVE_XML
 
 static void print_shader_log(GLuint obj)
 {
@@ -932,6 +941,7 @@ bool gl_glsl_init(const char *path)
       return false;
    }
 
+#ifdef HAVE_XML
    struct shader_program progs[MAX_PROGRAMS];
    unsigned num_progs = get_xml_shaders(path, progs, MAX_PROGRAMS - 1);
 
@@ -940,6 +950,14 @@ bool gl_glsl_init(const char *path)
       RARCH_ERR("Couldn't find any valid shaders in XML file.\n");
       return false;
    }
+#else
+   RARCH_WARN("[GL]: HAVE_XML is not defined. Stock GLSL shaders will be used instead.\n");
+   unsigned num_progs = 1;
+   struct shader_program progs[1] = {{0}};
+   progs[0].vertex   = strdup(stock_vertex_modern);
+   progs[0].fragment = strdup(stock_fragment_modern);
+   glsl_modern       = true;
+#endif
 
    struct shader_program stock_prog = {0};
    stock_prog.vertex   = strdup(glsl_modern ? stock_vertex_modern   : stock_vertex_legacy);
@@ -966,6 +984,7 @@ bool gl_glsl_init(const char *path)
    if (!compile_programs(&gl_program[1], progs, num_progs))
       return false;
 
+#ifdef HAVE_XML
    // RetroArch custom two-pass with two different files.
    if (num_progs == 1 && *g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
    {
@@ -977,14 +996,16 @@ bool gl_glsl_init(const char *path)
       }
       else
       {
-         RARCH_ERR("Did not find valid shader in secondary shader file.\n");
+         RARCH_ERR("Did not find exactly one valid shader in secondary shader file.\n");
          return false;
       }
    }
+#endif
 
    //if (!gl_check_error())
    //   RARCH_WARN("Detected GL error.\n");
 
+#ifdef HAVE_XML
    if (gl_tracker_info_cnt > 0)
    {
       struct state_tracker_info info = {0};
@@ -996,7 +1017,7 @@ bool gl_glsl_init(const char *path)
       if (*gl_tracker_script)
          info.script = gl_tracker_script;
       else if (gl_script_program)
-         info.script = (const char*)gl_script_program;
+         info.script = gl_script_program;
       else
          info.script = NULL;
 
@@ -1008,9 +1029,10 @@ bool gl_glsl_init(const char *path)
       if (!gl_state_tracker)
          RARCH_WARN("Failed to init state tracker.\n");
    }
+#endif
    
-   glsl_enable = true;
-   gl_num_programs = num_progs;
+   glsl_enable                     = true;
+   gl_num_programs                 = num_progs;
    gl_program[gl_num_programs + 1] = gl_program[0];
 
    gl_glsl_reset_attrib();
@@ -1025,7 +1047,7 @@ void gl_glsl_deinit(void)
       pglUseProgram(0);
       for (unsigned i = 0; i <= gl_num_programs; i++)
       {
-         if (gl_program[i] == 0)
+         if (gl_program[i] == 0 || (i && gl_program[i] == gl_program[0]))
             continue;
 
          GLsizei count;
@@ -1057,7 +1079,7 @@ void gl_glsl_deinit(void)
 
    if (gl_script_program)
    {
-      xmlFree(gl_script_program);
+      free(gl_script_program);
       gl_script_program = NULL;
    }
 
