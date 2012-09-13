@@ -159,6 +159,9 @@ static const char *stock_vertex_modern =
    "}";
 
 static const char *stock_fragment_modern =
+   "#ifdef GL_ES\n"
+   "precision mediump float;\n"
+   "#endif\n"
    "uniform sampler2D rubyTexture;\n"
    "varying vec2 tex_coord;\n"
    "varying vec4 color;\n"
