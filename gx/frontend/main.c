@@ -433,6 +433,7 @@ static void get_environment_settings(void)
    snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.port_dir);
    strlcpy(default_paths.executable_extension, ".dol", sizeof(default_paths.executable_extension));
    strlcpy(default_paths.salamander_file, "boot.dol", sizeof(default_paths.salamander_file));
+   default_paths.libretro_path = NULL:
 }
 
 #define MAKE_FILE(x) {\
@@ -558,7 +559,7 @@ int main(int argc, char *argv[])
       rarch_render_cached_frame();
       gx->menu_render = false;
 
-      rarch_startup(default_paths.config_file);
+      rarch_startup(default_paths.config_file, default_paths.libretro_path);
    }
    else
    {
@@ -587,7 +588,7 @@ begin_loop:
       menu_loop();
 
       if (g_console.mode_switch != MODE_EXIT)
-         rarch_startup(default_paths.config_file);
+         rarch_startup(default_paths.config_file, default_paths.libretro_path);
    }
    else
       goto begin_shutdown;

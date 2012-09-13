@@ -106,6 +106,8 @@ typedef struct
    char shader_file[MAXIMUM_PATH];
    char shader_dir[MAXIMUM_PATH];
 #endif
+   char libretro_path[MAXIMUM_PATH]; /* set this to NULL if libretro cores
+					cannot be loaded dynamically. */
    char salamander_file[MAXIMUM_PATH];
    char sram_dir[MAXIMUM_PATH];
    char system_dir[MAXIMUM_PATH];
