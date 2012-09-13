@@ -44,6 +44,24 @@
 #include "shader_glsl.h"
 #endif
 
+// Platform specific workarounds/hacks.
+#if defined(__CELLOS_LV2__) || defined(HAVE_OPENGLES)
+#define NO_GL_READ_VIEWPORT
+#endif
+
+#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2)
+#define NO_GL_FF_VERTEX
+#endif
+
+#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
+#define NO_GL_FF_MATRIX
+#endif
+
+#if defined(HAVE_OPENGLES2) // TODO: Figure out exactly what.
+#define NO_GL_CLAMP_TO_BORDER
+#endif
+//////
+
 extern const GLfloat vertexes_flipped[];
 extern const GLfloat white_color[];
 
@@ -215,17 +233,7 @@ static inline void gl_shader_deinit(void)
 #endif
 }
 
-#if defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_MODERN)
-static void gl_set_coords(const struct gl_coords *coords)
-{
-   (void)coords;
-}
-
-static void gl_set_mvp(const math_matrix *mat)
-{
-   (void)mat;
-}
-#else
+#ifndef NO_GL_FF_VERTEX
 static void gl_set_coords(const struct gl_coords *coords)
 {
    pglClientActiveTexture(GL_TEXTURE0);
@@ -256,7 +264,9 @@ static void gl_set_coords(const struct gl_coords *coords)
       pglClientActiveTexture(GL_TEXTURE0);
    }
 }
+#endif
 
+#ifndef NO_GL_FF_MATRIX
 static void gl_set_mvp(const math_matrix *mat)
 {
    glMatrixMode(GL_PROJECTION);
@@ -285,11 +295,16 @@ void gl_shader_set_coords(const struct gl_coords *coords, const math_matrix *mat
       ret_mvp    |= gl_cg_set_mvp(mat);
 #endif
 
-   // Fall back to FF-style if needed.
+   // Fall back to FF-style if needed and possible.
+#ifndef NO_GL_FF_VERTEX
    if (!ret_coords)
       gl_set_coords(coords);
+#endif
+
+#ifndef NO_GL_FF_MATRIX
    if (!ret_mvp)
       gl_set_mvp(mat);
+#endif
 }
 
 static inline void gl_shader_set_params(unsigned width, unsigned height, 
@@ -1110,16 +1125,14 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    return true;
 }
 
+#ifndef NO_GL_FF_VERTEX
 static void gl_disable_client_arrays(void)
 {
-#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES1) || defined(HAVE_OPENGL_MODERN)
-   /* TODO - stub */
-#else
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDisableClientState(GL_COLOR_ARRAY);
-#endif
 }
+#endif
 
 static void gl_free(void *data)
 {
@@ -1132,7 +1145,11 @@ static void gl_free(void *data)
 
    gl_deinit_font(gl);
    gl_shader_deinit();
+
+#ifndef NO_GL_FF_VERTEX
    gl_disable_client_arrays();
+#endif
+
    glDeleteTextures(TEXTURES, gl->texture);
 
 #if defined(HAVE_PSGL)
@@ -1172,7 +1189,7 @@ static bool resolve_extensions(gl_t *gl)
       return false;
 #endif
 
-#if defined(HAVE_OPENGLES)
+#ifdef NO_GL_CLAMP_TO_BORDER
    // Doesn't support GL_CLAMP_TO_BORDER. NOTE: This will be a serious problem for some shaders.
    //
    // NOTE2: We still need to query if GL_CLAMP_TO_BORDER is supported even if compiling with
@@ -1419,7 +1436,7 @@ static bool gl_xml_shader(void *data, const char *path)
 }
 #endif
 
-#if !defined(__CELLOS_LV2__) && !defined(HAVE_OPENGLES)
+#ifndef NO_GL_READ_VIEWPORT
 static void gl_viewport_size(void *data, unsigned *width, unsigned *height)
 {
    (void)data;
@@ -1567,7 +1584,7 @@ const video_driver_t video_gl = {
 
    gl_set_rotation,
 
-#if !defined(__CELLOS_LV2__) && !defined(HAVE_OPENGLES)
+#ifndef NO_GL_READ_VIEWPORT
    gl_viewport_size,
    gl_read_viewport,
 #else
