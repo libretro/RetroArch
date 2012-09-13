@@ -17,6 +17,10 @@
 #include "../../driver.h"
 #include "../../ps3/sdk_defines.h"
 
+#ifndef __PSL1GHT__
+#include <sys/spu_initialize.h>
+#endif
+
 #include <stdint.h>
 
 #ifdef HAVE_CONFIG_H
@@ -143,9 +147,9 @@ void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
    if (gl_context)
    {
       if (interval)
-         glEnable(GL_VSYNC);
+         glEnable(GL_VSYNC_SCE);
       else
-         glDisable(GL_VSYNC);
+         glDisable(GL_VSYNC_SCE);
    }
 #endif
 }

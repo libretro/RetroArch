@@ -90,7 +90,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
    (void) param;
    (void) userdata;
 #ifdef HAVE_OSKUTIL
-   oskutil_params *osk = g_console.oskutil_handle;
+   oskutil_params *osk = &g_console.oskutil_handle;
 #endif
    gl_t *gl = driver.video_data;
 
@@ -314,7 +314,7 @@ int main(int argc, char *argv[])
    driver.video = &video_gl;
 
 #ifdef HAVE_OSKUTIL
-   oskutil_params *osk = g_console.oskutil_handle;
+   oskutil_params *osk = &g_console.oskutil_handle;
    oskutil_init(osk, 0);
 #endif
 
@@ -373,11 +373,8 @@ begin_shutdown:
    menu_free();
 
 #ifdef HAVE_OSKUTIL
-   if(g_console.oskutil_handle)
-   {
-      oskutil_params *osk = g_console.oskutil_handle;
+   if(osk)
       oskutil_unload(osk);
-   }
 #endif
 
 #ifdef HAVE_LOGGER

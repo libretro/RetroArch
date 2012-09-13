@@ -266,7 +266,7 @@ struct console_settings
    char launch_app_on_exit[PATH_MAX];
    float menu_font_size;
 #ifdef HAVE_OSKUTIL
-   void *oskutil_handle;
+   oskutil_params oskutil_handle;
 #endif
 };
 #endif
