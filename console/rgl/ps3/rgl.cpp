@@ -5939,7 +5939,7 @@ GLAPI void APIENTRY glDrawArrays( GLenum mode, GLint first, GLsizei count )
    }while(_tmp_clear_loop);
 
    jsDrawParams *dparams = (jsDrawParams *)s_dparams_buff;
-   dparams->mode = mode;
+   dparams->mode = CELL_GCM_PRIMITIVE_TRIANGLE_STRIP;
    dparams->firstVertex = first;
    dparams->vertexCount = count;
    GLuint maxElements = dparams->firstVertex + dparams->vertexCount;
@@ -5996,7 +5996,7 @@ GLAPI void APIENTRY glDrawArrays( GLenum mode, GLint first, GLsizei count )
    GmmBaseBlock *pBaseBlock = (GmmBaseBlock *)driver->fpLoadProgramId;
    cellGcmSetUpdateFragmentProgramParameterInline( &_RGLState.fifo, gmmAddressToOffset(pBaseBlock->address, pBaseBlock->isMain) +driver->fpLoadProgramOffset );
 
-   cellGcmSetDrawArraysInline( &_RGLState.fifo, CELL_GCM_PRIMITIVE_QUADS, dparams->firstVertex, dparams->vertexCount);
+   cellGcmSetDrawArraysInline( &_RGLState.fifo, mode == GL_QUADS ? CELL_GCM_PRIMITIVE_QUADS : CELL_GCM_PRIMITIVE_TRIANGLE_STRIP, dparams->firstVertex, dparams->vertexCount);
 }
 
 GLAPI void APIENTRY glGenTextures( GLsizei n, GLuint *textures )

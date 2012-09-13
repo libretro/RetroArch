@@ -61,43 +61,6 @@
 #define NO_GL_CLAMP_TO_BORDER
 #endif
 
-// FIXME: Support GL_TRIANGLE_STRIP in RGL.
-#if defined(HAVE_PSGL)
-#define VERTEX_RENDER_MODE GL_QUADS
-
-// Used for the last pass when rendering to the back buffer.
-const GLfloat vertexes_flipped[] = {
-   0, 0,
-   0, 1,
-   1, 1,
-   1, 0
-};
-
-// Used when rendering to an FBO.
-// Texture coords have to be aligned with vertex coordinates.
-static const GLfloat vertexes[] = {
-   0, 1,
-   0, 0,
-   1, 0,
-   1, 1
-};
-
-static const GLfloat tex_coords[] = {
-   0, 1,
-   0, 0,
-   1, 0,
-   1, 1
-};
-
-static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yamt)
-{
-   coords[1] = yamt;
-   coords[4] = xamt;
-   coords[6] = xamt;
-   coords[7] = yamt;
-}
-
-#else
 #define VERTEX_RENDER_MODE GL_TRIANGLE_STRIP
 // Used for the last pass when rendering to the back buffer.
 const GLfloat vertexes_flipped[] = {
@@ -130,7 +93,6 @@ static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yam
    coords[5] = yamt;
    coords[7] = yamt;
 }
-#endif
 
 const GLfloat white_color[] = {
    1, 1, 1, 1,
