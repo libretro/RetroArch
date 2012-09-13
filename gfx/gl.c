@@ -62,53 +62,83 @@
 #endif
 
 #if defined(HAVE_PSGL)
-#define GL_RENDER_MODE GL_QUADS
-#else
-#define GL_RENDER_MODE GL_TRIANGLE_STRIP
-#endif
-//////
 
-extern const GLfloat vertexes_flipped[];
-extern const GLfloat white_color[];
+#ifndef GL_RENDER_MODE
+#define GL_RENDER_MODE GL_QUADS
+#endif
 
 // Used for the last pass when rendering to the back buffer.
 const GLfloat vertexes_flipped[] = {
-#if(GL_RENDER_MODE == GL_QUADS)
    0, 0,
-#endif
    0, 1,
    1, 1,
-#if(GL_RENDER_MODE == GL_TRIANGLE_STRIP)
-   0, 0,
-#endif
    1, 0
 };
 
 // Used when rendering to an FBO.
 // Texture coords have to be aligned with vertex coordinates.
 static const GLfloat vertexes[] = {
-#if(GL_RENDER_MODE == GL_QUADS)
    0, 1,
-#endif
    0, 0,
    1, 0,
-#if(GL_RENDER_MODE == GL_TRIANGLE_STRIP)
-   0, 1,
-#endif
    1, 1
 };
 
 static const GLfloat tex_coords[] = {
-#if(GL_RENDER_MODE == GL_QUADS)
    0, 1,
-#endif
    0, 0,
    1, 0,
-#if(GL_RENDER_MODE == GL_TRIANGLE_STRIP)
-   0, 1,
-#endif
    1, 1
 };
+
+static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yamt)
+{
+   coords[1] = yamt;
+   coords[4] = xamt;
+   coords[6] = xamt;
+   coords[7] = yamt;
+}
+
+#else
+
+#ifndef GL_RENDER_MODE
+#define GL_RENDER_MODE GL_TRIANGLE_STRIP
+#endif
+
+// Used for the last pass when rendering to the back buffer.
+const GLfloat vertexes_flipped[] = {
+   0, 1,
+   1, 1,
+   0, 0,
+   1, 0
+};
+
+// Used when rendering to an FBO.
+// Texture coords have to be aligned with vertex coordinates.
+static const GLfloat vertexes[] = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static const GLfloat tex_coords[] = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yamt)
+{
+   coords[2] = xamt;
+   coords[6] = xamt;
+
+   coords[5] = yamt;
+   coords[7] = yamt;
+}
+
+#endif
 
 const GLfloat white_color[] = {
    1, 1, 1, 1,
@@ -676,21 +706,6 @@ static void gl_set_rotation(void *data, unsigned rotation)
    gl_t *gl = (gl_t*)driver.video_data;
    gl->rotation = 90 * rotation;
    gl_set_projection(gl, &ortho, true);
-}
-
-static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yamt)
-{
-#if(GL_RENDER_MODE == GL_QUADS)
-   coords[1] = yamt;
-   coords[4] = xamt;
-#else
-   coords[2] = xamt;
-   coords[5] = yamt;
-#endif
-
-   coords[6] = xamt;
-
-   coords[7] = yamt;
 }
 
 #ifdef HAVE_FBO
