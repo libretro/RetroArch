@@ -4580,7 +4580,7 @@ static GLboolean _RGLPlatformTexturePBOImage(
     const GLuint pboPitch = _RGLPad(_RGLGetPixelSize(format, type) * width, LContext->unpackAlignment );
     if (( pboPitch&3 ) != 0 )
     {
-        RARCH_WARN("PBO image pitch not a multiple of 4, using slow path.\n" );
+        //RARCH_WARN("PBO image pitch not a multiple of 4, using slow path.\n" );
         return GL_FALSE;
     }
 
@@ -4589,7 +4589,7 @@ static GLboolean _RGLPlatformTexturePBOImage(
 
     if ( gmmIdToOffset(gpuId)+gpuIdOffset & 63 )
     {
-        RARCH_WARN("PBO offset not 64-byte aligned, using slow path.\n");
+        //RARCH_WARN("PBO offset not 64-byte aligned, using slow path.\n");
         return GL_FALSE;
     }
 
@@ -4617,13 +4617,13 @@ static GLboolean _RGLPlatformTexturePBOImage(
 
     if (!formatOK )
     {
-        RARCH_WARN("PBO format/type requires conversion to texture internal format, using slow path.\n");
+        //RARCH_WARN("PBO format/type requires conversion to texture internal format, using slow path.\n");
         return GL_FALSE;
     }
 
     if (!_RGLTextureIsValid(texture))
     {
-        RARCH_WARN("PBO transfering to incomplete texture, using slow path.\n");
+        //RARCH_WARN("PBO transfering to incomplete texture, using slow path.\n");
         return GL_FALSE;
     }
 
@@ -5679,7 +5679,7 @@ static GLboolean _RGLPlatformNeedsConversion( const jsAttributeState* as, GLuint
         default:
             break;
     }
-    RARCH_WARN("Attribute %d needs conversion. Slow path ahead.\n", index);
+    //RARCH_WARN("Attribute %d needs conversion. Slow path ahead.\n", index);
     return GL_TRUE;
 }
 
@@ -6651,7 +6651,7 @@ CG_API CGprogram cgCreateProgram( CGcontext ctx,
 
         if ( program_type == CG_BINARY )
         {
-            RARCH_WARN("A binary shader is being loaded using a deprecated binary format.  Please use the cgnv2elf tool to convert to the new, memory-saving, faster-loading format.\n");
+            //RARCH_WARN("A binary shader is being loaded using a deprecated binary format.  Please use the cgnv2elf tool to convert to the new, memory-saving, faster-loading format.\n");
         }
 
         //convert from NV format to the runtime format

@@ -352,7 +352,7 @@ inline static CGresource _RGLGetBaseResource( CGresource resource )
 		case CG_UNDEFINED:
 			return CG_UNDEFINED;
 		default:
-			RARCH_WARN("Resource 0x%d is unknown here.\n", resource );
+			//RARCH_WARN("Resource 0x%d is unknown here.\n", resource );
 			return CG_UNDEFINED;
 	}
 }
