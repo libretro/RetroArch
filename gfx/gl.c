@@ -1202,7 +1202,7 @@ static bool resolve_extensions(gl_t *gl)
    gl->border_type = GL_CLAMP_TO_BORDER;
 #endif
 
-#ifdef HAVE_PBO
+#if defined(HAVE_PBO) && defined(ANDROID)
    RARCH_LOG("[GL]: Using PBOs.\n");
    if (!gl_query_extension("GL_ARB_pixel_buffer_object"))
    {
