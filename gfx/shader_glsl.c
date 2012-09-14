@@ -891,10 +891,16 @@ static void gl_glsl_reset_attrib(void)
    gl_attrib_index = 0;
 }
 
+// Platforms with broken get_proc_address.
+// Assume functions are available without proc_address.
+#ifdef __PSL1GHT__
+#define LOAD_GL_SYM(SYM) pgl##SYM = gl##SYM;
+#else
 #define LOAD_GL_SYM(SYM) if (!pgl##SYM) { \
    gfx_ctx_proc_t sym = gfx_ctx_get_proc_address("gl" #SYM); \
    memcpy(&(pgl##SYM), &sym, sizeof(sym)); \
 }
+#endif
 
 bool gl_glsl_init(const char *path)
 {
