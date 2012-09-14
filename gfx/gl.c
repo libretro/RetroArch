@@ -242,31 +242,19 @@ static void gl_set_coords(const struct gl_coords *coords)
 {
    pglClientActiveTexture(GL_TEXTURE0);
 
-   if (coords->vertex)
-   {
-      glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
-      glEnableClientState(GL_VERTEX_ARRAY);
-   }
+   glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
+   glEnableClientState(GL_VERTEX_ARRAY);
 
-   if (coords->color)
-   {
-      glColorPointer(4, GL_FLOAT, 0, coords->color);
-      glEnableClientState(GL_COLOR_ARRAY);
-   }
+   glColorPointer(4, GL_FLOAT, 0, coords->color);
+   glEnableClientState(GL_COLOR_ARRAY);
 
-   if (coords->tex_coord)
-   {
-      glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
-      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   }
+   glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-   if (coords->lut_tex_coord)
-   {
-      pglClientActiveTexture(GL_TEXTURE1);
-      glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
-      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-      pglClientActiveTexture(GL_TEXTURE0);
-   }
+   pglClientActiveTexture(GL_TEXTURE1);
+   glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   pglClientActiveTexture(GL_TEXTURE0);
 }
 #endif
 

@@ -1299,48 +1299,38 @@ bool gl_glsl_set_coords(const struct gl_coords *coords)
    if (!glsl_enable || !glsl_modern)
       return false;
 
-   if (coords->tex_coord)
+   int loc;
+
+   loc = pglGetAttribLocation(gl_program[active_index], "rubyTexCoord");
+   if (loc >= 0)
    {
-      int loc = pglGetAttribLocation(gl_program[active_index], "rubyTexCoord");
-      if (loc >= 0)
-      {
-         pglEnableVertexAttribArray(loc);
-         pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, coords->tex_coord);
-         gl_attribs[gl_attrib_index++] = loc;
-      }
+      pglEnableVertexAttribArray(loc);
+      pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, coords->tex_coord);
+      gl_attribs[gl_attrib_index++] = loc;
    }
 
-   if (coords->vertex)
+   loc = pglGetAttribLocation(gl_program[active_index], "rubyVertexCoord");
+   if (loc >= 0)
    {
-      int loc = pglGetAttribLocation(gl_program[active_index], "rubyVertexCoord");
-      if (loc >= 0)
-      {
-         pglEnableVertexAttribArray(loc);
-         pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, coords->vertex);
-         gl_attribs[gl_attrib_index++] = loc;
-      }
+      pglEnableVertexAttribArray(loc);
+      pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, coords->vertex);
+      gl_attribs[gl_attrib_index++] = loc;
    }
 
-   if (coords->color)
+   loc = pglGetAttribLocation(gl_program[active_index], "rubyColor");
+   if (loc >= 0)
    {
-      int loc = pglGetAttribLocation(gl_program[active_index], "rubyColor");
-      if (loc >= 0)
-      {
-         pglEnableVertexAttribArray(loc);
-         pglVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, 0, coords->color);
-         gl_attribs[gl_attrib_index++] = loc;
-      }
+      pglEnableVertexAttribArray(loc);
+      pglVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, 0, coords->color);
+      gl_attribs[gl_attrib_index++] = loc;
    }
 
-   if (coords->lut_tex_coord)
+   loc = pglGetAttribLocation(gl_program[active_index], "rubyLUTTexCoord");
+   if (loc >= 0)
    {
-      int loc = pglGetAttribLocation(gl_program[active_index], "rubyLUTTexCoord");
-      if (loc >= 0)
-      {
-         pglEnableVertexAttribArray(loc);
-         pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, coords->lut_tex_coord);
-         gl_attribs[gl_attrib_index++] = loc;
-      }
+      pglEnableVertexAttribArray(loc);
+      pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, coords->lut_tex_coord);
+      gl_attribs[gl_attrib_index++] = loc;
    }
 
    return true;
