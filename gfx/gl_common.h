@@ -35,6 +35,7 @@
 #include <GLES/glext.h>
 #elif defined(HAVE_OPENGL_MODERN)
 #include <EGL/egl.h>
+#include <EGL/eglext.h>
 #include <GL3/gl3.h>
 #include <GL3/gl3ext.h>
 #elif defined(HAVE_OPENGLES2)

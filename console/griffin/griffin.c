@@ -87,10 +87,12 @@ VIDEO CONTEXT
 
 #ifdef HAVE_VID_CONTEXT
 
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include "../../gfx/context/ps3_ctx.c"
 #elif defined(_XBOX)
 #include "../../gfx/context/xdk_ctx.c"
+#elif defined(HAVE_EGL)
+#include "../../gfx/context/egl_ctx.c"
 #else
 #include "../../gfx/context/null_ctx.c"
 #endif
@@ -155,14 +157,16 @@ VIDEO DRIVER
 FONTS
 ============================================================ */
 
+#if defined(HAVE_OPENGL) || defined(HAVE_D3D8) || defined(HAVE_D3D9)
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include "../../gfx/fonts/ps3_libdbgfont.c"
 #elif defined(_XBOX1)
 #include "../../gfx/fonts/xdk1_xfonts.c"
 #elif defined(_XBOX360)
 #include "../../gfx/fonts/xdk360_fonts.cpp"
-#elif !defined(GEKKO)
+#else
 #include "../../gfx/fonts/null_fonts.c"
+#endif
 #endif
 
 /*============================================================

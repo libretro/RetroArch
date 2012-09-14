@@ -898,7 +898,6 @@ static void gl_glsl_reset_attrib(void)
 
 bool gl_glsl_init(const char *path)
 {
-#ifndef __PSL1GHT__
    // Load shader functions.
    LOAD_GL_SYM(CreateProgram);
    LOAD_GL_SYM(UseProgram);
@@ -941,7 +940,6 @@ bool gl_glsl_init(const char *path)
       RARCH_ERR("GLSL shaders aren't supported by your OpenGL driver.\n");
       return false;
    }
-#endif
 
 #ifdef HAVE_XML
    struct shader_program progs[MAX_PROGRAMS];
