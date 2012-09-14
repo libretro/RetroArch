@@ -161,7 +161,7 @@ FONTS
 #include "../../gfx/fonts/xdk1_xfonts.c"
 #elif defined(_XBOX360)
 #include "../../gfx/fonts/xdk360_fonts.cpp"
-#elif defined(ANDROID)
+#elif !defined(GEKKO)
 #include "../../gfx/fonts/null_fonts.c"
 #endif
 

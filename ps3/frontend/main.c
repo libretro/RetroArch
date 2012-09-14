@@ -51,7 +51,10 @@
 #include "../../gfx/gl_common.h"
 
 #include "../../console/rarch_console.h"
+
+#ifdef HAVE_RARCH_EXEC
 #include "../../console/rarch_console_exec.h"
+#endif
 
 #include "../../console/rarch_console_libretro_mgmt.h"
 
@@ -110,6 +113,20 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 	 break;
 #endif
    }
+}
+#endif
+
+#ifdef __PSL1GHT__
+void menu_init (void)
+{
+}
+
+void menu_loop (void)
+{
+}
+
+void menu_free (void)
+{
 }
 #endif
 
@@ -399,8 +416,10 @@ begin_shutdown:
    }
 #endif
 
+#ifdef HAVE_RARCH_EXEC
    if(g_console.return_to_launcher)
       rarch_console_exec(g_console.launch_app_on_exit);
+#endif
 
    return 1;
 }
