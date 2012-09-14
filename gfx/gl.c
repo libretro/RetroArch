@@ -285,6 +285,9 @@ void gl_shader_set_coords(const struct gl_coords *coords, const math_matrix *mat
    bool ret_coords = false;
    bool ret_mvp    = false;
 
+   (void)ret_coords;
+   (void)ret_mvp;
+
 #ifdef HAVE_XML
    if (!ret_coords)
       ret_coords |= gl_glsl_set_coords(coords);
