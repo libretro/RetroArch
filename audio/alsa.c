@@ -158,7 +158,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
 
          break;
       }
-      else if (frames == -EAGAIN && alsa->nonblock)
+      else if (frames == -EAGAIN && !alsa->nonblock) // Definitely not supposed to happen.
       {
          RARCH_WARN("[ALSA]: poll() was signaled, but EAGAIN returned from write.\n"
                "Your ALSA driver might be subtly broken.\n");
@@ -170,6 +170,10 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
          }
          else
             return written;
+      }
+      else if (frames == -EAGAIN) // Expected if we're running nonblock.
+      {
+         return written;
       }
       else if (frames < 0)
       {
