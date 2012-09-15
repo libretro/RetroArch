@@ -535,8 +535,8 @@ static void load_texture_data(GLuint *obj, const struct texture_image *img, bool
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    glTexImage2D(GL_TEXTURE_2D,
-         0, GL_RGBA, img->width, img->height,
-         0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8, img->pixels);
+         0, RARCH_GL_INTERNAL_FORMAT, img->width, img->height,
+         0, RARCH_GL_TEXTURE_TYPE, RARCH_GL_FORMAT32, img->pixels);
 #endif
 
    free(img->pixels);
