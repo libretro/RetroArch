@@ -1004,6 +1004,14 @@ bool gl_glsl_init(const char *path)
       glsl_modern       = true;
    }
 
+#ifdef HAVE_OPENGLES2
+   if (!glsl_modern)
+   {
+      RARCH_ERR("[GL]: GLES context is used, but shader is not modern. Cannot use it.\n");
+      return false;
+   }
+#endif
+
    struct shader_program stock_prog = {0};
    stock_prog.vertex   = strdup(glsl_modern ? stock_vertex_modern   : stock_vertex_legacy);
    stock_prog.fragment = strdup(glsl_modern ? stock_fragment_modern : stock_fragment_legacy);
