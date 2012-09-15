@@ -176,6 +176,7 @@ typedef struct gl
    GLuint tex_filter;
 
    void *empty_buf;
+   void *conv_buffer;
 
    unsigned frame_count;
 
@@ -245,13 +246,34 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #elif defined(HAVE_OPENGLES)
 #define RARCH_GL_INTERNAL_FORMAT GL_RGBA
 #define RARCH_GL_TEXTURE_TYPE GL_RGBA
-#define RARCH_GL_FORMAT32 GL_UNSIGNED_INT
-#define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT
+#define RARCH_GL_FORMAT32 GL_UNSIGNED_BYTE
+#define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT_5_5_5_1
 #else
 #define RARCH_GL_INTERNAL_FORMAT GL_RGBA
 #define RARCH_GL_TEXTURE_TYPE GL_BGRA
 #define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
 #define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT_1_5_5_5_REV
+#endif
+
+// Platform specific workarounds/hacks.
+#if defined(__CELLOS_LV2__) || defined(HAVE_OPENGLES)
+#define NO_GL_READ_VIEWPORT
+#endif
+
+#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2)
+#define NO_GL_FF_VERTEX
+#endif
+
+#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
+#define NO_GL_FF_MATRIX
+#endif
+
+#if defined(HAVE_OPENGLES2) // TODO: Figure out exactly what.
+#define NO_GL_CLAMP_TO_BORDER
+#endif
+
+#if defined(HAVE_OPENGLES2) // It's an extension. Don't bother checking for it atm.
+#undef GL_UNPACK_ROW_LENGTH
 #endif
 
 void gl_shader_use(unsigned index);

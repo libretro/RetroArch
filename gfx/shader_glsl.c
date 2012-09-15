@@ -60,6 +60,33 @@
 #include "gl_common.h"
 #include "image.h"
 
+#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGL_MODERN)
+#define pglCreateProgram glCreateProgram
+#define pglUseProgram glUseProgram
+#define pglCreateShader glCreateShader
+#define pglDeleteShader glDeleteShader
+#define pglShaderSource glShaderSource
+#define pglCompileShader glCompileShader
+#define pglAttachShader glAttachShader
+#define pglDetachShader glDetachShader
+#define pglLinkProgram glLinkProgram
+#define pglGetUniformLocation glGetUniformLocation
+#define pglUniform1i glUniform1i
+#define pglUniform1f glUniform1f
+#define pglUniform2fv glUniform2fv
+#define pglUniform4fv glUniform4fv
+#define pglUniformMatrix4fv glUniformMatrix4fv
+#define pglGetShaderiv glGetShaderiv
+#define pglGetShaderInfoLog glGetShaderInfoLog
+#define pglGetProgramiv glGetProgramiv
+#define pglGetProgramInfoLog glGetProgramInfoLog
+#define pglDeleteProgram glDeleteProgram
+#define pglGetAttachedShaders glGetAttachedShaders
+#define pglGetAttribLocation glGetAttribLocation
+#define pglEnableVertexAttribArray glEnableVertexAttribArray
+#define pglDisableVertexAttribArray glDisableVertexAttribArray
+#define pglVertexAttribPointer glVertexAttribPointer
+#else
 static PFNGLCREATEPROGRAMPROC pglCreateProgram = NULL;
 static PFNGLUSEPROGRAMPROC pglUseProgram = NULL;
 static PFNGLCREATESHADERPROC pglCreateShader = NULL;
@@ -85,6 +112,13 @@ static PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation = NULL;
 static PFNGLENABLEVERTEXATTRIBARRAYPROC pglEnableVertexAttribArray = NULL;
 static PFNGLDISABLEVERTEXATTRIBARRAYPROC pglDisableVertexAttribArray = NULL;
 static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer = NULL;
+#endif
+
+#ifdef HAVE_OPENGLES2
+#define BORDER_FUNC GL_CLAMP_TO_EDGE
+#else
+#define BORDER_FUNC GL_CLAMP_TO_BORDER
+#endif
 
 #define MAX_PROGRAMS 16
 #define MAX_TEXTURES 8
@@ -390,15 +424,17 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
 
    pglActiveTexture(GL_TEXTURE0 + gl_teximage_cnt + 1);
    glBindTexture(GL_TEXTURE_2D, gl_teximage[gl_teximage_cnt]);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, BORDER_FUNC);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, BORDER_FUNC);
+
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, linear ? GL_LINEAR : GL_NEAREST);
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    glTexImage2D(GL_TEXTURE_2D,
-         0, GL_RGBA, img.width, img.height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8, img.pixels);
+         0, RARCH_GL_INTERNAL_FORMAT,
+         img.width, img.height, 0, RARCH_GL_TEXTURE_TYPE, GL_UNSIGNED_INT, img.pixels);
 
    pglActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, 0);
@@ -893,17 +929,14 @@ static void gl_glsl_reset_attrib(void)
 
 // Platforms with broken get_proc_address.
 // Assume functions are available without proc_address.
-#ifdef __PSL1GHT__
-#define LOAD_GL_SYM(SYM) pgl##SYM = gl##SYM;
-#else
 #define LOAD_GL_SYM(SYM) if (!pgl##SYM) { \
    gfx_ctx_proc_t sym = gfx_ctx_get_proc_address("gl" #SYM); \
    memcpy(&(pgl##SYM), &sym, sizeof(sym)); \
 }
-#endif
 
 bool gl_glsl_init(const char *path)
 {
+#if !defined(HAVE_OPENGLES2) && !defined(HAVE_OPENGL_MODERN)
    // Load shader functions.
    LOAD_GL_SYM(CreateProgram);
    LOAD_GL_SYM(UseProgram);
@@ -946,6 +979,7 @@ bool gl_glsl_init(const char *path)
       RARCH_ERR("GLSL shaders aren't supported by your OpenGL driver.\n");
       return false;
    }
+#endif
 
 #ifdef HAVE_XML
    struct shader_program progs[MAX_PROGRAMS];

@@ -185,16 +185,6 @@ void gfx_ctx_swap_buffers(void)
    SDL_GL_SwapBuffers();
 }
 
-bool gfx_ctx_key_pressed(int key)
-{
-   int num_keys;
-   Uint8 *keymap = SDL_GetKeyState(&num_keys);
-   if (key >= num_keys)
-      return false;
-
-   return keymap[key];
-}
-
 // 1.2 specific workaround for tiling WMs. In 1.3 we call GetSize directly, so we don't need to rely on
 // proper event handling (I hope).
 #if !defined(__APPLE__) && defined(SDL_VIDEO_DRIVER_X11)

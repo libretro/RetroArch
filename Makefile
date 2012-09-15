@@ -124,7 +124,7 @@ ifeq ($(HAVE_COREAUDIO), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o gfx/context/sdl_ctx.o input/sdl_input.o audio/sdl_audio.o fifo_buffer.o
+   OBJ += gfx/sdl_gfx.o input/sdl_input.o audio/sdl_audio.o fifo_buffer.o
    OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
@@ -143,10 +143,18 @@ endif
 
 ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o gfx/fonts/freetype.o gfx/math/matrix.o
+
 ifeq ($(OSX),1)
    LIBS += -framework OpenGL
 else
+ifeq ($(HAVE_GLES), 1)
+   LIBS += -lGL -lGLESv2 -lEGL
+   DEFINES += -DHAVE_OPENGLES -DHAVE_OPENGLES2
+   OBJ += gfx/context/xegl_ctx.o
+else
    LIBS += -lGL
+   OBJ += gfx/context/sdl_ctx.o
+endif
 endif
 endif
 endif

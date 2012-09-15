@@ -182,7 +182,15 @@ static void *sdl_input_init(void)
 
 static bool sdl_key_pressed(int key)
 {
-   return key < RETROK_LAST && gfx_ctx_key_pressed(keysym_lut[key]);
+   if (key >= RETROK_LAST)
+      return false;
+
+   int num_keys;
+   Uint8 *keymap = SDL_GetKeyState(&num_keys);
+   if (key >= num_keys)
+      return false;
+
+   return keymap[key];
 }
 
 #ifndef HAVE_DINPUT

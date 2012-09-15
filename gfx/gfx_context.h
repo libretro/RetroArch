@@ -49,8 +49,6 @@ void gfx_ctx_destroy(void);
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 void gfx_ctx_update_window_title(bool reset);
 
-bool gfx_ctx_key_pressed(int key);
-
 void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count);
 

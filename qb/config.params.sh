@@ -6,6 +6,7 @@ HAVE_DYLIB=auto         # Enable dynamic loading support
 HAVE_NETPLAY=auto       # Enable netplay support
 HAVE_CONFIGFILE=yes     # Disable support for config file
 HAVE_OPENGL=yes         # Disable OpenGL support
+HAVE_GLES=no            # Use X/EGL instead of desktop GL (experimental)
 HAVE_CG=auto            # Enable Cg shader support
 HAVE_XML=auto           # Enable bSNES-style XML shader support
 HAVE_FBO=auto           # Enable render-to-texture (FBO) support

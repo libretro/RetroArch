@@ -44,23 +44,6 @@
 #include "shader_glsl.h"
 #endif
 
-// Platform specific workarounds/hacks.
-#if defined(__CELLOS_LV2__) || defined(HAVE_OPENGLES)
-#define NO_GL_READ_VIEWPORT
-#endif
-
-#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2)
-#define NO_GL_FF_VERTEX
-#endif
-
-#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
-#define NO_GL_FF_MATRIX
-#endif
-
-#if defined(ANDROID) // TODO: Figure out exactly what.
-#define NO_GL_CLAMP_TO_BORDER
-#endif
-
 // Used for the last pass when rendering to the back buffer.
 const GLfloat vertexes_flipped[] = {
    0, 1,
@@ -127,6 +110,13 @@ static bool load_fbo_proc(void)
    return pglGenFramebuffers && pglBindFramebuffer && pglFramebufferTexture2D && 
       pglCheckFramebufferStatus && pglDeleteFramebuffers;
 }
+#elif defined(HAVE_OPENGLES2)
+#define pglGenFramebuffers glGenFramebuffers
+#define pglBindFramebuffer glBindFramebuffer
+#define pglFramebufferTexture2D glFramebufferTexture2D
+#define pglCheckFramebufferStatus glCheckFramebufferStatus
+#define pglDeleteFramebuffers glDeleteFramebuffers
+static bool load_fbo_proc(void) { return true; }
 #elif defined(HAVE_OPENGLES)
 #define pglGenFramebuffers glGenFramebuffersOES
 #define pglBindFramebuffer glBindFramebufferOES
@@ -136,7 +126,6 @@ static bool load_fbo_proc(void)
 #define GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
 #define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
 #define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
-#define glOrtho glOrthof
 static bool load_fbo_proc(void) { return true; }
 #else
 #define pglGenFramebuffers glGenFramebuffers
@@ -830,9 +819,6 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
 #else
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * gl->base_size));
 
-#ifdef GL_UNPACK_ROW_LENGTH
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-#endif
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
             gl->texture_fmt, gl->empty_buf);
@@ -949,6 +935,40 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
 {
    glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * gl->base_size));
 
+#ifdef HAVE_OPENGLES2 // Have to perform pixel format conversions as well. (ARGB1555 => RGBA5551), (ARGB8888 => RGBA8888) :(
+   if (gl->base_size == 4) // ARGB8888 => RGBA8888
+   {
+      const uint32_t *src  = (const uint32_t*)frame;
+      uint32_t *dst        = (uint32_t*)gl->conv_buffer;
+      unsigned pitch_width = pitch >> 2;
+
+      // GL_RGBA + GL_UNSIGNED_BYTE apparently means in byte order, so go with little endian for now (ABGR).
+      for (unsigned h = 0; h < height; h++, dst += width, src += pitch_width)
+      {
+         for (unsigned w = 0; w < width; w++)
+         {
+            uint32_t col = src[w];
+            dst[w] = ((col << 16) & 0x00ff0000) | ((col >> 16) & 0x000000ff) | (col & 0xff00ff00);
+         }
+      }
+   }
+   else // ARGB1555 => RGBA1555
+   {
+      // Go 32-bit at once.
+      unsigned half_width  = width >> 1;
+      const uint32_t *src  = (const uint32_t*)frame;
+      uint32_t *dst        = (uint32_t*)gl->conv_buffer;
+      unsigned pitch_width = pitch >> 2;
+
+      for (unsigned h = 0; h < height; h++, dst += half_width, src += pitch_width)
+         for (unsigned w = 0; w < half_width; w++)
+            dst[w] = (src[w] << 1) & 0xfffefffe;
+   }
+
+   glTexSubImage2D(GL_TEXTURE_2D,
+         0, 0, 0, width, height, gl->texture_type,
+         gl->texture_fmt, gl->conv_buffer);
+#else
 #ifdef GL_UNPACK_ROW_LENGTH
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
    glTexSubImage2D(GL_TEXTURE_2D,
@@ -974,6 +994,7 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
       }
    }
 #endif
+#endif
 }
 
 static void gl_init_textures(gl_t *gl)
@@ -987,10 +1008,6 @@ static void gl_init_textures(gl_t *gl)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
-
-#ifdef GL_UNPACK_ROW_LENGTH
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-#endif
 
       glTexImage2D(GL_TEXTURE_2D,
             0, RARCH_GL_INTERNAL_FORMAT, gl->tex_w, gl->tex_h, 0, gl->texture_type,
@@ -1152,8 +1169,8 @@ static void gl_free(void *data)
 
    gfx_ctx_destroy();
 
-   if (gl->empty_buf)
-      free(gl->empty_buf);
+   free(gl->empty_buf);
+   free(gl->conv_buffer);
 
    free(gl);
 }
@@ -1176,17 +1193,15 @@ static bool resolve_extensions(gl_t *gl)
 #endif
 
 #ifdef NO_GL_CLAMP_TO_BORDER
-   // Doesn't support GL_CLAMP_TO_BORDER. NOTE: This will be a serious problem for some shaders.
-   //
-   // NOTE2: We still need to query if GL_CLAMP_TO_BORDER is supported even if compiling with
-   // OpenGL ES 1 because none of these defines are in any system headers except for what every
-   // Android GPU supports (which doesn't include GL_CLAMP_TO_BORDER) - move the underlying value 
-   // for GL_CLAMP_TO_BORDER to some variable that we'll use here and query at gl_init if 
-   // GL_CLAMP_TO_BORDER is available
+   // NOTE: This will be a serious problem for some shaders.
    gl->border_type = GL_CLAMP_TO_EDGE;
 #else
    gl->border_type = GL_CLAMP_TO_BORDER;
 #endif
+
+   const char *ext = (const char*)glGetString(GL_EXTENSIONS);
+   if (ext)
+      RARCH_LOG("[GL] Supported extensions: %s\n", ext);
 
 #if defined(HAVE_PBO)
    RARCH_LOG("[GL]: Using PBOs.\n");
@@ -1195,10 +1210,6 @@ static bool resolve_extensions(gl_t *gl)
       RARCH_ERR("[GL]: PBOs are enabled, but extension does not exist ...\n");
       return false;
    }
-#endif
-
-#ifndef GL_UNPACK_ROW_LENGTH
-   RARCH_WARN("[GL]: GL_UNPACK_ROW_LENGTH is not defined. Texture uploads will possibly be slower than optimal.\n");
 #endif
 
    return true;
@@ -1289,7 +1300,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_init_fbo(gl, RARCH_SCALE_BASE * video->input_scale,
          RARCH_SCALE_BASE * video->input_scale);
 #endif
-   
+
    gl->keep_aspect = video->force_aspect;
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
@@ -1308,7 +1319,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->texture_fmt = video->rgb32 ? RARCH_GL_FORMAT32 : RARCH_GL_FORMAT16;
    gl->base_size = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
+#ifndef HAVE_OPENGLES
    glEnable(GL_TEXTURE_2D);
+#endif
+
    glDisable(GL_DEPTH_TEST);
    glDisable(GL_DITHER);
    glClearColor(0, 0, 0, 1);
@@ -1337,6 +1351,17 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(gl->tex_w * gl->tex_h, gl->base_size);
+
+#ifdef HAVE_OPENGLES2
+   gl->conv_buffer = calloc(gl->tex_w * gl->tex_h, gl->base_size);
+   if (!gl->conv_buffer)
+   {
+      gfx_ctx_destroy();
+      free(gl);
+      return NULL;
+   }
+#endif
+
    gl_init_textures(gl);
 
    for (unsigned i = 0; i < TEXTURES; i++)
@@ -1347,18 +1372,17 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    for (unsigned i = 0; i < TEXTURES; i++)
    {
-      gl->prev_info[i].tex = gl->texture[(gl->tex_index - (i + 1)) & TEXTURES_MASK];
+      gl->prev_info[i].tex           = gl->texture[(gl->tex_index - (i + 1)) & TEXTURES_MASK];
       gl->prev_info[i].input_size[0] = gl->tex_w;
-      gl->prev_info[i].tex_size[0] = gl->tex_w;
+      gl->prev_info[i].tex_size[0]   = gl->tex_w;
       gl->prev_info[i].input_size[1] = gl->tex_h;
-      gl->prev_info[i].tex_size[1] = gl->tex_h;
+      gl->prev_info[i].tex_size[1]   = gl->tex_h;
       memcpy(gl->prev_info[i].coord, tex_coords, sizeof(tex_coords)); 
    }
 
    gfx_ctx_input_driver(input, input_data);
    gl_init_font(gl, g_settings.video.font_path, g_settings.video.font_size);
 
-     
    if (!gl_check_error())
    {
       gfx_ctx_destroy();

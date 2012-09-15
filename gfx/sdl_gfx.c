@@ -292,7 +292,8 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 #ifdef HAVE_X11
    RARCH_LOG("Suspending screensaver (X11).\n");
    SDL_SysWMinfo wm_info;
-   if (gfx_ctx_get_wm_info(&wm_info))
+   SDL_VERSION(&wm_info.version);
+   if (SDL_GetWMInfo(&wm_info) == 1)
       gfx_suspend_screensaver(wm_info.info.x11.window);
    else
       RARCH_ERR("Failed to suspend screensaver.\n");

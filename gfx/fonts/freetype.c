@@ -33,8 +33,8 @@ void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size)
       {
          glGenTextures(1, &gl->font_tex);
          glBindTexture(GL_TEXTURE_2D, gl->font_tex);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
          glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -127,6 +127,12 @@ static void calculate_msg_geometry(const struct font_output *head, struct font_r
    rect->height = y_max - y_min;
 }
 
+#ifdef HAVE_OPENGLES2
+#define INTENSITY_FORMAT GL_LUMINANCE
+#else
+#define INTENSITY_FORMAT GL_INTENSITY8
+#endif
+
 static void adjust_power_of_two(gl_t *gl, struct font_rect *geom)
 {
    // Some systems really hate NPOT textures.
@@ -139,15 +145,12 @@ static void adjust_power_of_two(gl_t *gl, struct font_rect *geom)
       memset(gl->font_tex_empty_buf, 0, geom->pot_width * geom->pot_height);
 
       glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, geom->pot_width);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_INTENSITY8, geom->pot_width, geom->pot_height,
+      glTexImage2D(GL_TEXTURE_2D, 0, INTENSITY_FORMAT, geom->pot_width, geom->pot_height,
             0, GL_LUMINANCE, GL_UNSIGNED_BYTE, gl->font_tex_empty_buf);
 
       gl->font_tex_w = geom->pot_width;
       gl->font_tex_h = geom->pot_height;
    }
-
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 }
 
 // Old style "blitting", so we can render all the fonts in one go.
@@ -156,7 +159,6 @@ static void blit_fonts(gl_t *gl, const struct font_output *head, const struct fo
 {
    // Clear out earlier fonts.
    glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    glTexSubImage2D(GL_TEXTURE_2D,
          0, 0, 0, gl->font_tex_w, gl->font_tex_h,
          GL_LUMINANCE, GL_UNSIGNED_BYTE, gl->font_tex_empty_buf);
@@ -168,16 +170,37 @@ static void blit_fonts(gl_t *gl, const struct font_output *head, const struct fo
       int y = head->off_y - geom->y;
       y = gl->font_tex_h - head->height - y - 1;
 
-      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(head->pitch));
+      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(head->width));
+
+#ifdef GL_UNPACK_ROW_LENGTH
       glPixelStorei(GL_UNPACK_ROW_LENGTH, head->pitch);
       glTexSubImage2D(GL_TEXTURE_2D,
             0, x, y, head->width, head->height,
             GL_LUMINANCE, GL_UNSIGNED_BYTE, head->output);
+#else
+      if (head->width == head->pitch)
+      {
+         glTexSubImage2D(GL_TEXTURE_2D,
+               0, x, y, head->width, head->height,
+               GL_LUMINANCE, GL_UNSIGNED_BYTE, head->output);
+      }
+      else // Slower path
+      {
+         const uint8_t *src = head->output;
+         for (int i = 0; i < head->height; src += head->pitch, y++)
+         {
+            glTexSubImage2D(GL_TEXTURE_2D,
+                  0, x, y, head->width, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, src);
+         }
+      }
+#endif
 
       head = head->next;
    }
 
+#ifdef GL_UNPACK_ROW_LENGTH
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
 }
 
 static void calculate_font_coords(gl_t *gl,
