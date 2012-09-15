@@ -127,12 +127,6 @@ static void calculate_msg_geometry(const struct font_output *head, struct font_r
    rect->height = y_max - y_min;
 }
 
-#ifdef HAVE_OPENGLES2
-#define INTENSITY_FORMAT GL_LUMINANCE
-#else
-#define INTENSITY_FORMAT GL_INTENSITY8
-#endif
-
 static void adjust_power_of_two(gl_t *gl, struct font_rect *geom)
 {
    // Some systems really hate NPOT textures.
@@ -141,12 +135,12 @@ static void adjust_power_of_two(gl_t *gl, struct font_rect *geom)
 
    if ((geom->pot_width > gl->font_tex_w) || (geom->pot_height > gl->font_tex_h))
    {
-      gl->font_tex_empty_buf = realloc(gl->font_tex_empty_buf, geom->pot_width * geom->pot_height);
-      memset(gl->font_tex_empty_buf, 0, geom->pot_width * geom->pot_height);
+      gl->font_tex_empty_buf = realloc(gl->font_tex_empty_buf, geom->pot_width * geom->pot_height * 4);
+      memset(gl->font_tex_empty_buf, 0, geom->pot_width * geom->pot_height * 4);
 
       glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
-      glTexImage2D(GL_TEXTURE_2D, 0, INTENSITY_FORMAT, geom->pot_width, geom->pot_height,
-            0, GL_LUMINANCE, GL_UNSIGNED_BYTE, gl->font_tex_empty_buf);
+      glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT, geom->pot_width, geom->pot_height,
+            0, RARCH_GL_TEXTURE_TYPE, RARCH_GL_FORMAT32, gl->font_tex_empty_buf);
 
       gl->font_tex_w = geom->pot_width;
       gl->font_tex_h = geom->pot_height;
@@ -161,46 +155,30 @@ static void blit_fonts(gl_t *gl, const struct font_output *head, const struct fo
    glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
    glTexSubImage2D(GL_TEXTURE_2D,
          0, 0, 0, gl->font_tex_w, gl->font_tex_h,
-         GL_LUMINANCE, GL_UNSIGNED_BYTE, gl->font_tex_empty_buf);
+         RARCH_GL_TEXTURE_TYPE, RARCH_GL_FORMAT32, gl->font_tex_empty_buf);
 
    while (head)
    {
+      uint32_t *conv_buf = (uint32_t*)gl->font_tex_empty_buf;
+
       // head has top-left oriented coords.
       int x = head->off_x - geom->x;
       int y = head->off_y - geom->y;
       y = gl->font_tex_h - head->height - y - 1;
 
-      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(head->width));
+      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(head->width * 4));
 
-#ifdef GL_UNPACK_ROW_LENGTH
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, head->pitch);
+      const uint8_t *src = head->output;
+      for (unsigned h = 0; h < head->height; h++, src += head->pitch)
+         for (unsigned w = 0; w < head->width; w++)
+            *conv_buf++ = src[w] * 0x01010101; // Splat to 32-bit.
+
       glTexSubImage2D(GL_TEXTURE_2D,
             0, x, y, head->width, head->height,
-            GL_LUMINANCE, GL_UNSIGNED_BYTE, head->output);
-#else
-      if (head->width == head->pitch)
-      {
-         glTexSubImage2D(GL_TEXTURE_2D,
-               0, x, y, head->width, head->height,
-               GL_LUMINANCE, GL_UNSIGNED_BYTE, head->output);
-      }
-      else // Slower path
-      {
-         const uint8_t *src = head->output;
-         for (int i = 0; i < head->height; src += head->pitch, y++)
-         {
-            glTexSubImage2D(GL_TEXTURE_2D,
-                  0, x, y, head->width, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, src);
-         }
-      }
-#endif
+            RARCH_GL_TEXTURE_TYPE, RARCH_GL_FORMAT32, gl->font_tex_empty_buf);
 
       head = head->next;
    }
-
-#ifdef GL_UNPACK_ROW_LENGTH
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-#endif
 }
 
 static void calculate_font_coords(gl_t *gl,
