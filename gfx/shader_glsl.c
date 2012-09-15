@@ -981,23 +981,28 @@ bool gl_glsl_init(const char *path)
    }
 #endif
 
+   unsigned num_progs = 0;
+   struct shader_program progs[MAX_PROGRAMS] = {{0}};
 #ifdef HAVE_XML
-   struct shader_program progs[MAX_PROGRAMS];
-   unsigned num_progs = get_xml_shaders(path, progs, MAX_PROGRAMS - 1);
-
-   if (num_progs == 0)
+   if (path)
    {
-      RARCH_ERR("Couldn't find any valid shaders in XML file.\n");
-      return false;
+      num_progs = get_xml_shaders(path, progs, MAX_PROGRAMS - 1);
+
+      if (num_progs == 0)
+      {
+         RARCH_ERR("Couldn't find any valid shaders in XML file.\n");
+         return false;
+      }
    }
-#else
-   RARCH_WARN("[GL]: HAVE_XML is not defined. Stock GLSL shaders will be used instead.\n");
-   unsigned num_progs = 1;
-   struct shader_program progs[1] = {{0}};
-   progs[0].vertex   = strdup(stock_vertex_modern);
-   progs[0].fragment = strdup(stock_fragment_modern);
-   glsl_modern       = true;
+   else
 #endif
+   {
+      RARCH_WARN("[GL]: Stock GLSL shaders will be used.\n");
+      num_progs = 1;
+      progs[0].vertex   = strdup(stock_vertex_modern);
+      progs[0].fragment = strdup(stock_fragment_modern);
+      glsl_modern       = true;
+   }
 
    struct shader_program stock_prog = {0};
    stock_prog.vertex   = strdup(glsl_modern ? stock_vertex_modern   : stock_vertex_legacy);

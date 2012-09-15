@@ -166,6 +166,18 @@ static inline bool load_gl_proc_win32(void)
 #endif
 
 ////////////////// Shaders
+
+#ifdef HAVE_OPENGLES2
+static bool gl_shader_init(void) // We always need a shader alive in GLES2.
+{
+   const char *shader_path = NULL;
+   if ((g_settings.video.shader_type == RARCH_SHADER_AUTO || g_settings.video.shader_type == RARCH_SHADER_BSNES)
+         && *g_settings.video.bsnes_shader_path)
+      shader_path = g_settings.video.bsnes_shader_path;
+
+   return gl_glsl_init(shader_path);
+}
+#else
 static bool gl_shader_init(void)
 {
    switch (g_settings.video.shader_type)
@@ -203,6 +215,7 @@ static bool gl_shader_init(void)
 
    return true;
 }
+#endif
 
 void gl_shader_use(unsigned index)
 {
@@ -1316,8 +1329,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->tex_filter = video->smooth ? GL_LINEAR : GL_NEAREST;
 
    gl->texture_type = RARCH_GL_TEXTURE_TYPE;
-   gl->texture_fmt = video->rgb32 ? RARCH_GL_FORMAT32 : RARCH_GL_FORMAT16;
-   gl->base_size = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   gl->texture_fmt  = video->rgb32 ? RARCH_GL_FORMAT32 : RARCH_GL_FORMAT16;
+   gl->base_size    = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
 #ifndef HAVE_OPENGLES
    glEnable(GL_TEXTURE_2D);
