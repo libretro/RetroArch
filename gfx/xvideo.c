@@ -23,6 +23,7 @@
 #include "fonts/fonts.h"
 #endif
 #include "gfx_common.h"
+#include "../input/x11_input.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -538,6 +539,9 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    }
    else
       *input = NULL;
+
+   if (xinput)
+      x_input_set_disp_win((x11_input_t*)xinput, xv->display, xv->window);
 
    init_yuv_tables(xv);
    xv_init_font(xv, g_settings.video.font_path, g_settings.video.font_size);

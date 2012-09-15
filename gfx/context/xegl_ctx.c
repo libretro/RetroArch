@@ -21,11 +21,14 @@
 #include "../gfx_context.h"
 #include "../gl_common.h"
 #include "../gfx_common.h"
+#include "../../input/x11_input.h"
 
 #include <signal.h>
 #include <stdint.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 
 static Display *g_dpy;
 static Window   g_win;
@@ -211,6 +214,15 @@ bool gfx_ctx_init(void)
    if (g_inited)
       return false;
 
+   const EGLint egl_attribs[] = {
+      EGL_RED_SIZE,        1,
+      EGL_GREEN_SIZE,      1,
+      EGL_BLUE_SIZE,       1,
+      EGL_DEPTH_SIZE,      1,
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+      EGL_NONE,
+   };
+
    g_quit = 0;
 
    g_dpy = XOpenDisplay(NULL);
@@ -226,15 +238,6 @@ bool gfx_ctx_init(void)
       goto error;
 
    RARCH_LOG("[X/EGL]: EGL version: %d.%d\n", egl_major, egl_minor);
-
-   const EGLint egl_attribs[] = {
-      EGL_RED_SIZE,        1,
-      EGL_GREEN_SIZE,      1,
-      EGL_BLUE_SIZE,       1,
-      EGL_DEPTH_SIZE,      1,
-      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-      EGL_NONE,
-   };
 
    EGLint num_configs;
    if (!eglChooseConfig(g_egl_dpy, egl_attribs, &g_config, 1, &num_configs)
@@ -253,26 +256,34 @@ bool gfx_ctx_set_video_mode(
       unsigned bits, bool fullscreen)
 {
    (void)bits;
+
+   struct sigaction sa = {{0}};
+   sa.sa_handler = sighandler;
+   sa.sa_flags   = SA_RESTART;
+   sigemptyset(&sa.sa_mask);
+   sigaction(SIGINT, &sa, NULL);
+   sigaction(SIGTERM, &sa, NULL);
+
+   XVisualInfo temp = {0};
+   XSetWindowAttributes swa = {0};
+   XVisualInfo *vi = NULL;
+
    const EGLint egl_ctx_attribs[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2,
       EGL_NONE,
    };
 
-   XVisualInfo *vi = NULL;
-
    EGLint vid;
    if (!eglGetConfigAttrib(g_egl_dpy, g_config, EGL_NATIVE_VISUAL_ID, &vid))
       goto error;
 
-   XVisualInfo template = {0};
-   template.visualid    = vid;
+   temp.visualid = vid;
 
    EGLint num_visuals;
-   vi = XGetVisualInfo(g_dpy, VisualIDMask, &template, &num_visuals);
+   vi = XGetVisualInfo(g_dpy, VisualIDMask, &temp, &num_visuals);
    if (!vi)
       goto error;
 
-   XSetWindowAttributes swa = {0};
    swa.colormap = g_cmap = XCreateColormap(g_dpy, RootWindow(g_dpy, vi->screen),
          vi->visual, AllocNone);
    swa.event_mask = StructureNotifyMask;
@@ -306,15 +317,6 @@ bool gfx_ctx_set_video_mode(
    g_quit_atom = XInternAtom(g_dpy, "WM_DELETE_WINDOW", False);
    if (g_quit_atom)
       XSetWMProtocols(g_dpy, g_win, &g_quit_atom, 1);
-
-   // Catch signals.
-   struct sigaction sa = {
-      .sa_handler = sighandler,
-      .sa_flags = SA_RESTART,
-   };
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
 
    XFree(vi);
    g_has_focus = true;
@@ -377,6 +379,9 @@ void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
    void *xinput = input_x.init();
    *input       = xinput ? &input_x : NULL;
    *input_data  = xinput;
+
+   if (xinput)
+      x_input_set_disp_win((x11_input_t*)xinput, g_dpy, g_win);
 }
 
 void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)

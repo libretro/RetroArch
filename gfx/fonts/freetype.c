@@ -169,10 +169,10 @@ static void copy_glyph(const struct font_output *head, const struct font_rect *g
       y    = 0;
    }
 
-   if (x + font_width > width)
+   if (x + font_width > (int)width)
       font_width = width - x;
 
-   if (y + font_height > height)
+   if (y + font_height > (int)height)
       font_height = height - y;
 
    uint16_t *dst = buffer + y * width + x;

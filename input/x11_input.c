@@ -13,31 +13,24 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "driver.h"
-
-#include "SDL.h"
-#include "../boolean.h"
-#include "general.h"
-#include <stdint.h>
-#include <stdlib.h>
-#include "rarch_sdl_input.h"
-
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/keysym.h>
-
-typedef struct x11_input
-{
-   sdl_input_t *sdl;
-   Display *display;
-   char state[32];
-} x11_input_t;
+#include "x11_input.h"
 
 struct key_bind
 {
    unsigned x;
    enum retro_key sk;
 };
+
+void x_input_set_disp_win(x11_input_t *x11, Display *dpy, Window win)
+{
+   if (x11->display && !x11->inherit_disp)
+   {
+      x11->inherit_disp = true;
+      XCloseDisplay(x11->display);
+      x11->display = dpy;
+      x11->win     = win;
+   }
+}
 
 static unsigned keysym_lut[RETROK_LAST];
 static const struct key_bind lut_binds[] = {
@@ -269,14 +262,26 @@ static void x_input_free(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
    input_sdl.free(x11->sdl);
-   XCloseDisplay(x11->display);
+
+   if (!x11->inherit_disp)
+      XCloseDisplay(x11->display);
+
    free(data);
 }
 
 static void x_input_poll(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
-   XQueryKeymap(x11->display, x11->state);
+
+   Window win;
+   int rev;
+   XGetInputFocus(x11->display, &win, &rev);
+
+   if (win == x11->win)
+      XQueryKeymap(x11->display, x11->state);
+   else
+      memset(x11->state, 0, sizeof(x11->state));
+
    input_sdl.poll(x11->sdl);
 }
 
