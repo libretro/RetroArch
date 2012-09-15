@@ -102,10 +102,12 @@ struct cg_program
    CGprogram vprg;
    CGprogram fprg;
 
+#ifndef HAVE_PSGL
    CGparameter tex;
    CGparameter lut_tex;
    CGparameter color;
    CGparameter vertex;
+#endif
 
    CGparameter vid_size_f;
    CGparameter tex_size_f;
@@ -166,6 +168,13 @@ bool gl_cg_set_mvp(const math_matrix *mat)
       return false;
 }
 
+#ifdef HAVE_PSGL
+bool gl_cg_set_coords(const struct gl_coords *coords)
+{
+   (void)coords;
+   return false;
+}
+#else
 #define SET_COORD(name, coords_name, len) do { \
    if (prg[active_index].name) \
    { \
@@ -187,6 +196,7 @@ bool gl_cg_set_coords(const struct gl_coords *coords)
 
    return true;
 }
+#endif
 
 #define set_param_2f(param, x, y) \
    if (param) cgGLSetParameter2f(param, x, y)
@@ -1046,6 +1056,9 @@ end:
 
 static void set_program_base_attrib(unsigned i)
 {
+#ifdef HAVE_PSGL
+   (void)i;
+#else
    CGparameter param = cgGetFirstParameter(prg[i].vprg, CG_PROGRAM);
    for (; param; param = cgGetNextParameter(param))
    {
@@ -1067,6 +1080,7 @@ static void set_program_base_attrib(unsigned i)
       else if (strcmp(semantic, "TEXCOORD1") == 0)
          prg[i].lut_tex = param;
    }
+#endif
 }
 
 static void set_program_attributes(unsigned i)
