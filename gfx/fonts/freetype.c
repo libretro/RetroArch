@@ -74,8 +74,8 @@ void gl_deinit_font(gl_t *gl)
       font_renderer_free(gl->font);
       glDeleteTextures(1, &gl->font_tex);
 
-      if (gl->font_tex_empty_buf)
-         free(gl->font_tex_empty_buf);
+      if (gl->font_tex_buf)
+         free(gl->font_tex_buf);
    }
 #else
    (void)gl;
@@ -130,55 +130,74 @@ static void calculate_msg_geometry(const struct font_output *head, struct font_r
 static void adjust_power_of_two(gl_t *gl, struct font_rect *geom)
 {
    // Some systems really hate NPOT textures.
-   geom->pot_width = next_pow2(geom->width);
+   geom->pot_width  = next_pow2(geom->width);
    geom->pot_height = next_pow2(geom->height);
 
    if ((geom->pot_width > gl->font_tex_w) || (geom->pot_height > gl->font_tex_h))
    {
-      gl->font_tex_empty_buf = realloc(gl->font_tex_empty_buf, geom->pot_width * geom->pot_height * 4);
-      memset(gl->font_tex_empty_buf, 0, geom->pot_width * geom->pot_height * 4);
+      gl->font_tex_buf = (uint16_t*)realloc(gl->font_tex_buf,
+            geom->pot_width * geom->pot_height * sizeof(uint16_t));
 
-      glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
-      glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT, geom->pot_width, geom->pot_height,
-            0, RARCH_GL_TEXTURE_TYPE, RARCH_GL_FORMAT32, gl->font_tex_empty_buf);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, geom->pot_width, geom->pot_height,
+            0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL);
 
       gl->font_tex_w = geom->pot_width;
       gl->font_tex_h = geom->pot_height;
    }
 }
 
+static void copy_glyph(const struct font_output *head, const struct font_rect *geom, uint16_t *buffer, unsigned width, unsigned height)
+{
+   // head has top-left oriented coords.
+   int x = head->off_x - geom->x;
+   int y = head->off_y - geom->y;
+   y     = height - head->height - y - 1;
+
+   const uint8_t *src = head->output;
+   int font_width  = head->width  + ((x < 0) ? x : 0);
+   int font_height = head->height + ((y < 0) ? y : 0);
+
+   if (x < 0)
+   {
+      src += -x;
+      x    = 0;
+   }
+
+   if (y < 0)
+   {
+      src += -y * head->pitch;
+      y    = 0;
+   }
+
+   if (x + font_width > width)
+      font_width = width - x;
+
+   if (y + font_height > height)
+      font_height = height - y;
+
+   uint16_t *dst = buffer + y * width + x;
+
+   for (int h = 0; h < font_height; h++, dst += width, src += head->pitch)
+      for (int w = 0; w < font_width; w++)
+         dst[w] = 0xff | (src[w] << 8); // Assume little endian for now.
+}
+
 // Old style "blitting", so we can render all the fonts in one go.
 // TODO: Is it possible that fonts could overlap if we blit without alpha blending?
 static void blit_fonts(gl_t *gl, const struct font_output *head, const struct font_rect *geom)
 {
-   // Clear out earlier fonts.
-   glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
-   glTexSubImage2D(GL_TEXTURE_2D,
-         0, 0, 0, gl->font_tex_w, gl->font_tex_h,
-         RARCH_GL_TEXTURE_TYPE, RARCH_GL_FORMAT32, gl->font_tex_empty_buf);
+   memset(gl->font_tex_buf, 0, gl->font_tex_w * gl->font_tex_h * sizeof(uint16_t));
 
    while (head)
    {
-      uint32_t *conv_buf = (uint32_t*)gl->font_tex_empty_buf;
-
-      // head has top-left oriented coords.
-      int x = head->off_x - geom->x;
-      int y = head->off_y - geom->y;
-      y = gl->font_tex_h - head->height - y - 1;
-
-      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(head->width * 4));
-
-      const uint8_t *src = head->output;
-      for (unsigned h = 0; h < head->height; h++, src += head->pitch)
-         for (unsigned w = 0; w < head->width; w++)
-            *conv_buf++ = src[w] * 0x01010101; // Splat to 32-bit.
-
-      glTexSubImage2D(GL_TEXTURE_2D,
-            0, x, y, head->width, head->height,
-            RARCH_GL_TEXTURE_TYPE, RARCH_GL_FORMAT32, gl->font_tex_empty_buf);
-
+      copy_glyph(head, geom, gl->font_tex_buf, gl->font_tex_w, gl->font_tex_h);
       head = head->next;
    }
+
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
+   glTexSubImage2D(GL_TEXTURE_2D,
+      0, 0, 0, gl->font_tex_w, gl->font_tex_h,
+      GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, gl->font_tex_buf);
 }
 
 static void calculate_font_coords(gl_t *gl,
@@ -239,6 +258,7 @@ void gl_render_msg(void *data, const char *msg)
 
    gl_shader_use(0);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
+
    glEnable(GL_BLEND);
 
    GLfloat font_vertex[8]; 

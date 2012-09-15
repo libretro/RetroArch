@@ -1272,7 +1272,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
 #ifndef RARCH_CONSOLE
    gfx_ctx_update_window_title(true);
-
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 #endif
 

@@ -221,7 +221,7 @@ typedef struct gl
    font_renderer_t *font;
    GLuint font_tex;
    int font_tex_w, font_tex_h;
-   void *font_tex_empty_buf;
+   uint16_t *font_tex_buf;
    char font_last_msg[256];
    int font_last_width, font_last_height;
    GLfloat font_color[16];

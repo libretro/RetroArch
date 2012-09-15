@@ -427,7 +427,6 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, BORDER_FUNC);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, BORDER_FUNC);
-
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, linear ? GL_LINEAR : GL_NEAREST);
 
@@ -1154,7 +1153,7 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
 {
    // We enforce a certain layout for our various texture types in the texunits.
-   // - Regular SNES frame (rubyTexture) (always bound).
+   // - Regular frame (rubyTexture) (always bound).
    // - LUT textures (always bound).
    // - Original texture (always bound if meaningful).
    // - FBO textures (always bound if available).
