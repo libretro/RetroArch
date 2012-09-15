@@ -57,7 +57,7 @@
 #define NO_GL_FF_MATRIX
 #endif
 
-#if defined(HAVE_OPENGLES2) // TODO: Figure out exactly what.
+#if defined(ANDROID) // TODO: Figure out exactly what.
 #define NO_GL_CLAMP_TO_BORDER
 #endif
 
