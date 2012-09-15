@@ -66,18 +66,18 @@ static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
    switch (error)
    {
       case CG_INVALID_PARAM_HANDLE_ERROR:
-         RARCH_ERR("Invalid param handle.\n");
+         RARCH_ERR("CG: Invalid param handle.\n");
          break;
 
       case CG_INVALID_PARAMETER_ERROR:
-         RARCH_ERR("Invalid parameter.\n");
+         RARCH_ERR("CG: Invalid parameter.\n");
          break;
 
       default:
          break;
    }
 
-   RARCH_ERR("CG error!: \"%s\".\n", cgGetErrorString(error));
+   RARCH_ERR("CG error: \"%s\"\n", cgGetErrorString(error));
 }
 #endif
 
@@ -101,6 +101,12 @@ struct cg_program
 {
    CGprogram vprg;
    CGprogram fprg;
+
+   CGparameter tex;
+   CGparameter lut_tex;
+   CGparameter color;
+   CGparameter vertex;
+
    CGparameter vid_size_f;
    CGparameter tex_size_f;
    CGparameter out_size_f;
@@ -135,7 +141,7 @@ static GLuint lut_textures[MAX_TEXTURES];
 static unsigned lut_textures_num = 0;
 static char lut_textures_uniform[MAX_TEXTURES][64];
 
-static CGparameter cg_attribs[PREV_TEXTURES + 1 + RARCH_CG_MAX_SHADERS];
+static CGparameter cg_attribs[PREV_TEXTURES + 1 + 4 + RARCH_CG_MAX_SHADERS];
 static unsigned cg_attrib_index;
 
 #ifdef HAVE_CONFIGFILE
@@ -160,10 +166,26 @@ bool gl_cg_set_mvp(const math_matrix *mat)
       return false;
 }
 
+#define SET_COORD(name, coords_name, len) do { \
+   if (prg[active_index].name) \
+   { \
+      cgGLSetParameterPointer(prg[active_index].name, len, GL_FLOAT, 0, coords->coords_name); \
+      cgGLEnableClientState(prg[active_index].name); \
+      cg_attribs[cg_attrib_index++] = prg[active_index].name; \
+   } \
+} while(0)
+
 bool gl_cg_set_coords(const struct gl_coords *coords)
 {
-   (void)coords;
-   return false;
+   if (!cg_active)
+      return false;
+
+   SET_COORD(vertex, vertex, 2);
+   SET_COORD(tex, tex_coord, 2);
+   SET_COORD(lut_tex, lut_tex_coord, 2);
+   SET_COORD(color, color, 4);
+
+   return true;
 }
 
 #define set_param_2f(param, x, y) \
@@ -301,15 +323,16 @@ void gl_cg_set_params(unsigned width, unsigned height,
 
 static void gl_cg_deinit_progs(void)
 {
+   RARCH_LOG("CG: Destroying programs.\n");
    cgGLUnbindProgram(cgFProf);
    cgGLUnbindProgram(cgVProf);
 
    // Programs may alias [0].
    for (unsigned i = 1; i < RARCH_CG_MAX_SHADERS; i++)
    {
-      if (prg[i].fprg != prg[0].fprg)
+      if (prg[i].fprg && prg[i].fprg != prg[0].fprg)
          cgDestroyProgram(prg[i].fprg);
-      if (prg[i].vprg != prg[0].vprg)
+      if (prg[i].vprg && prg[i].vprg != prg[0].vprg)
          cgDestroyProgram(prg[i].vprg);
    }
 
@@ -358,6 +381,7 @@ static void gl_cg_deinit_context_state(void)
 #ifndef __CELLOS_LV2__
    if (cgCtx)
    {
+      RARCH_LOG("CG: Destroying context.\n");
       cgDestroyContext(cgCtx);
       cgCtx = NULL;
    }
@@ -434,6 +458,8 @@ end:
    return ret;
 }
 
+static void set_program_base_attrib(unsigned i);
+
 static bool load_stock(void)
 {
    if (!load_program(0, stock_cg_program, false))
@@ -441,6 +467,8 @@ static bool load_stock(void)
       RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
       return false;
    }
+
+   set_program_base_attrib(0);
 
    return true;
 }
@@ -580,7 +608,7 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
    struct state_tracker_info tracker_info = {0};
 
 #ifdef HAVE_PYTHON
-   char script_path[128];
+   char script_path[PATH_MAX];
    char *script = NULL;
    char *script_class = NULL; 
 #endif
@@ -1016,10 +1044,37 @@ end:
 #endif
 }
 
+static void set_program_base_attrib(unsigned i)
+{
+   CGparameter param = cgGetFirstParameter(prg[i].vprg, CG_PROGRAM);
+   for (; param; param = cgGetNextParameter(param))
+   {
+      if (cgGetParameterDirection(param) != CG_IN || cgGetParameterVariability(param) != CG_VARYING)
+         continue;
+
+      const char *semantic = cgGetParameterSemantic(param);
+      if (!semantic)
+         continue;
+
+      RARCH_LOG("CG: Found semantic \"%s\" in prog #%u.\n", semantic, i);
+
+      if (strcmp(semantic, "TEXCOORD") == 0 || strcmp(semantic, "TEXCOORD0") == 0)
+         prg[i].tex = param;
+      else if (strcmp(semantic, "COLOR") == 0 || strcmp(semantic, "COLOR0") == 0)
+         prg[i].color = param;
+      else if (strcmp(semantic, "POSITION") == 0)
+         prg[i].vertex = param;
+      else if (strcmp(semantic, "TEXCOORD1") == 0)
+         prg[i].lut_tex = param;
+   }
+}
+
 static void set_program_attributes(unsigned i)
 {
    cgGLBindProgram(prg[i].fprg);
    cgGLBindProgram(prg[i].vprg);
+
+   set_program_base_attrib(i);
 
    prg[i].vid_size_f = cgGetNamedParameter(prg[i].fprg, "IN.video_size");
    prg[i].tex_size_f = cgGetNamedParameter(prg[i].fprg, "IN.texture_size");
