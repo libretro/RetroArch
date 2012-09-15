@@ -182,8 +182,19 @@ void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
    if (!g_dpy || g_win == None)
    {
-      *width  = 0;
-      *height = 0;
+      Display *dpy = XOpenDisplay(NULL);
+      if (dpy)
+      {
+         int screen = DefaultScreen(dpy);
+         *width  = DisplayWidth(dpy, screen);
+         *height = DisplayHeight(dpy, screen);
+         XCloseDisplay(dpy);
+      }
+      else
+      {
+         *width  = 0;
+         *height = 0;
+      }
    }
    else
    {
