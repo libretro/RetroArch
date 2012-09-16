@@ -22,7 +22,9 @@
 #include <jni.h>
 #include "../boolean.h"
 
+#include "../console/rarch_console_main_wrap.h"
 #include "../console/rarch_console_rom_ext.h"
+#include "../console/rarch_console_settings.h"
 #include "../general.h"
 
 JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_load_game
@@ -40,4 +42,47 @@ JNIEXPORT jboolean JNICALL Java_com_retroarch_RRuntime_run_frame
    (JNIEnv *env, jclass class)
 {
    return rarch_main_iterate();
+}
+
+JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_startup
+   (JNIEnv *env, jclass class, jstring j_config_path)
+{
+   bool retval = false;
+   jboolean is_copy = false;
+   const char * config_path = (*env)->GetStringUTFChars(env, j_config_path, &is_copy);
+   
+   retval = rarch_startup(config_path);
+
+   (*env)->ReleaseStringUTFChars(env, j_config_path, config_path);
+}
+
+JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_deinit
+   (JNIEnv *env, jclass class)
+{
+   rarch_main_deinit();
+}
+
+JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_load_state
+   (JNIEnv *env, jclass class)
+{
+   rarch_load_state();
+}
+
+JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_save_state
+   (JNIEnv *env, jclass class)
+{
+   rarch_save_state();
+}
+
+JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_settings_change
+   (JNIEnv *env, jclass class, jint j_setting)
+{
+   unsigned setting = j_setting;
+   rarch_settings_change(setting);
+}
+
+JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_settings_set_defaults
+   (JNIEnv *env, jclass class)
+{
+   rarch_settings_set_default();
 }
