@@ -324,6 +324,8 @@ bool gfx_ctx_set_video_mode(
    if (g_quit_atom)
       XSetWMProtocols(g_dpy, g_win, &g_quit_atom, 1);
 
+   gfx_suspend_screensaver(g_win);
+
    XFree(vi);
    g_has_focus = true;
    g_inited    = true;
