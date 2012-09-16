@@ -101,6 +101,7 @@ void menu_init (void)
 
 void menu_loop (void)
 {
+	rarch_console_load_game_wrap("/dev_hdd0/game/SSNE10000/USRDIR/mm3.nes", 0, 0);
 }
 
 void menu_free (void)
