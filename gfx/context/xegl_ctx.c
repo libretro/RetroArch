@@ -219,6 +219,7 @@ bool gfx_ctx_init(void)
       return false;
 
    const EGLint egl_attribs[] = {
+      EGL_SURFACE_TYPE,    EGL_WINDOW_BIT,
       EGL_RED_SIZE,        1,
       EGL_GREEN_SIZE,      1,
       EGL_BLUE_SIZE,       1,
@@ -298,7 +299,8 @@ bool gfx_ctx_set_video_mode(
          CWBorderPixel | CWColormap | CWEventMask, &swa);
    XSetWindowBackground(g_dpy, g_win, 0);
 
-   eglBindAPI(EGL_OPENGL_ES2_BIT);
+   if (!eglBindAPI(EGL_OPENGL_ES_API))
+      goto error;
 
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, egl_ctx_attribs);
    if (!g_egl_ctx)

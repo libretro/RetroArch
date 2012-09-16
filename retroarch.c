@@ -1522,7 +1522,7 @@ static void init_command(void)
 
    if (g_settings.stdin_cmd_enable && driver.stdin_claimed)
    {
-      RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin."
+      RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
             "Cannot use this command interface.\n");
    }
 

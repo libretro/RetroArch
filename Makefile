@@ -150,12 +150,21 @@ else
 ifeq ($(HAVE_GLES), 1)
    LIBS += -lGLESv2 -lEGL
    DEFINES += -DHAVE_OPENGLES -DHAVE_OPENGLES2
-   OBJ += gfx/context/xegl_ctx.o
 else
    LIBS += -lGL
    OBJ += gfx/context/sdl_ctx.o
 endif
 endif
+endif
+endif
+
+ifeq ($(HAVE_KMS), 1)
+   OBJ += gfx/context/drm_egl_ctx.o
+   DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS)
+   LIBS += $(GBM_LIBS) $(DRM_LIBS)
+else
+ifeq ($(HAVE_GLES), 1)
+   OBJ += gfx/context/xegl_ctx.o
 endif
 endif
 

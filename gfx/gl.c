@@ -1252,18 +1252,17 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
-   unsigned full_x = 0, full_y = 0;
-   gfx_ctx_get_video_size(&full_x, &full_y);
-   RARCH_LOG("Detecting resolution %ux%u.\n", full_x, full_y);
+   gfx_ctx_get_video_size(&gl->full_x, &gl->full_y);
+   RARCH_LOG("Detecting screen resolution %ux%u.\n", gl->full_x, gl->full_y);
 
    gfx_ctx_set_swap_interval(video->vsync ? 1 : 0, false);
 
-   unsigned win_width = video->width;
+   unsigned win_width  = video->width;
    unsigned win_height = video->height;
    if (video->fullscreen && (win_width == 0) && (win_height == 0))
    {
-      win_width = full_x;
-      win_height = full_y;
+      win_width  = gl->full_x;
+      win_height = gl->full_y;
    }
 
    if (!gfx_ctx_set_video_mode(win_width, win_height,
@@ -1285,15 +1284,18 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
-   gl->vsync = video->vsync;
+   gl->vsync      = video->vsync;
    gl->fullscreen = video->fullscreen;
    
-   gl->full_x = full_x;
-   gl->full_y = full_y;
-   gl->win_width = win_width;
-   gl->win_height = win_height;
-
+   // Get real known video size, which might have been altered by context.
+   gfx_ctx_get_video_size(&gl->win_width, &gl->win_height);
    RARCH_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
+
+   if (gl->full_x || gl->full_y) // We got bogus from gfx_ctx_get_video_size. Replace.
+   {
+      gl->full_x = gl->win_width;
+      gl->full_y = gl->win_height;
+   }
 
 #if defined(HAVE_CG_MENU)
    RARCH_LOG("Initializing menu shader ...\n");
