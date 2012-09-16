@@ -148,7 +148,7 @@ void gfx_ctx_check_window(bool *quit,
             break;
 
          case MapNotify:
-            g_has_focus = false;
+            g_has_focus = true;
             break;
 
          case UnmapNotify:
