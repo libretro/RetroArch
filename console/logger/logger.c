@@ -15,10 +15,13 @@
  */
 
 #ifdef __CELLOS_LV2__
+#include "../../ps3/sdk_defines.h"
+#ifndef __PSL1GHT__
 #include <netex/net.h>
 #include <cell/sysmodule.h>
 #include <netex/libnetctl.h>
 #include <sys/timer.h>
+#endif
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

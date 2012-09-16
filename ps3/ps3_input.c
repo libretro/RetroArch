@@ -21,33 +21,7 @@
 #include <sdk_version.h>
 #endif
 
-#ifdef __PSL1GHT__
-#include <io/pad.h>
-#else
-#include <cell/pad.h>
-#endif
-
-#ifdef HAVE_MOUSE
-#ifdef __PSL1GHT__
-#include <io/mouse.h>
-#else
-#include <cell/mouse.h>
-#endif
-#endif
-
 #include <sys/memory.h>
-
-#ifdef HAVE_OSKUTIL
-#ifdef __PSL1GHT__
-#include <sysutil/osk.h>
-#else
-#include <sysutil/sysutil_oskdialog.h>
-#endif
-#endif
-
-#ifdef HAVE_SYSUTILS
-#include <sysutil/sysutil_common.h>
-#endif
 
 #include "sdk_defines.h"
 

@@ -19,31 +19,9 @@
 #include <stddef.h>
 #include <string.h>
 
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-#include <sdk_version.h>
-#endif
+#include "../sdk_defines.h"
+
 #include <sys/process.h>
-#ifdef HAVE_SYSUTILS
-#include <sysutil/sysutil_screenshot.h>
-#include <sysutil/sysutil_common.h>
-#include <sysutil/sysutil_gamecontent.h>
-#ifdef HAVE_HDD_CACHE_PARTITION
-#include <sysutil/sysutil_syscache.h>
-#endif
-#endif
-
-#if(CELL_SDK_VERSION > 0x340000)
-#include <sysutil/sysutil_bgmplayback.h>
-#endif
-
-#ifdef HAVE_SYSMODULES
-#include <cell/sysmodule.h>
-#endif
-#ifdef HAVE_NETPLAY
-#include <netex/net.h>
-#include <np.h>
-#include <np/drm.h>
-#endif
 
 #include "../../gfx/context/ps3_ctx.h"
 #include "../ps3_input.h"
@@ -257,8 +235,10 @@ int main(int argc, char *argv[])
 #ifdef HAVE_SYSMODULES
    cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
+#ifndef __PSL1GHT__
    cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_GAME);
    cellSysmoduleLoadModule(CELL_SYSMODULE_AVCONF_EXT);
+#endif
    cellSysmoduleLoadModule(CELL_SYSMODULE_PNGDEC);
    cellSysmoduleLoadModule(CELL_SYSMODULE_JPGDEC);
    cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
@@ -306,7 +286,7 @@ int main(int argc, char *argv[])
 
    input_ps3.post_init();
 
-#if(CELL_SDK_VERSION > 0x340000)
+#if (CELL_SDK_VERSION > 0x340000) && !defined(__PSL1GHT__)
    if (g_console.screenshots_enable)
    {
 #ifdef HAVE_SYSMODULES
@@ -398,13 +378,17 @@ begin_shutdown:
    logger_shutdown();
 #endif
 
-#ifdef HAVE_SYSMODULES
+#if defined(HAVE_SYSMODULES)
+#ifndef __PSL1GHT__
    if(g_console.screenshots_enable)
       cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+#endif
    cellSysmoduleUnloadModule(CELL_SYSMODULE_JPGDEC);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_PNGDEC);
+#ifndef __PSL1GHT__
    cellSysmoduleUnloadModule(CELL_SYSMODULE_AVCONF_EXT);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
+#endif
 #endif
 
 #ifdef HAVE_HDD_CACHE_PARTITION

@@ -17,11 +17,22 @@
 #ifndef _PS3_SDK_DEFINES_H
 #define _PS3_SDK_DEFINES_H
 
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+#include <sdk_version.h>
+#endif
+
 /*============================================================
 	AUDIO PROTOTYPES
 ============================================================ */
 
 #ifdef __PSL1GHT__
+#include <audio/audio.h>
+#include <sys/thread.h>
+
+#include <sys/event_queue.h>
+#include <lv2/mutex.h>
+#include <lv2/cond.h>
+
 /* define all the audio/audio port functions */
 #define cellAudioQuit audioQuit
 #define cellAudioInit audioInit
@@ -45,6 +56,9 @@
 #define sys_lwmutex_unlock sysLwMutexUnlock
 #define sys_lwmutex_create sysLwMutexCreate
 
+//forward decl. for audioAddData
+extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float volume);
+
 /* define all the lightweight condition functions */
 #define sys_lwcond_create sysLwCondCreate
 #define sys_lwcond_destroy sysLwCondDestroy
@@ -59,6 +73,10 @@
 #define sys_semaphore_t sys_sem_t
 
 #else
+#include <cell/audio.h>
+#include <sys/event.h>
+#include <sys/synchronization.h>
+
 #define numChannels nChannel
 #define numBlocks nBlock
 #define param_attrib attr
@@ -70,6 +88,7 @@
 ============================================================ */
 
 #ifdef __PSL1GHT__
+#include <io/pad.h>
 /* define all the ps3 pad structs */
 #define CellPadInfo2 padInfo2
 #define CellPadData padData
@@ -81,6 +100,8 @@
 #define cellPadEnd ioPadEnd
 
 #define now_connect connected
+#else
+#include <cell/pad.h>
 #endif
 
 /*============================================================
@@ -90,6 +111,8 @@
 #ifdef HAVE_MOUSE
 
 #ifdef __PSL1GHT__
+#include <io/mouse.h>
+
 /* define ps3 mouse structs */
 #define CellMouseInfo mouseInfo
 #define CellMouseData mouseData
@@ -110,6 +133,8 @@
 #define CELL_MOUSE_BUTTON_7 (1 << 6) /* Button 7 */
 #define CELL_MOUSE_BUTTON_8 (1 << 7) /* Button 8 */
 
+#else
+#include <cell/mouse.h>
 #endif
 
 #endif
@@ -121,6 +146,7 @@
 #ifdef HAVE_OSKUTIL
 
 #ifdef __PSL1GHT__
+#include <sysutil/osk.h>
 /* define all the OSK functions */
 #define pOskLoadAsync oskLoadAsync
 #define pOskSetLayoutMode oskSetLayoutMode
@@ -162,6 +188,7 @@
 #define CELL_OSKDIALOG_INPUT_FIELD_RESULT_NO_INPUT_TEXT (3)
 #define CELL_OSKDIALOG_STRING_SIZE (512)
 #else
+#include <sysutil/sysutil_oskdialog.h>
 /* define all the OSK functions */
 #define pOskLoadAsync cellOskDialogLoadAsync
 #define pOskSetLayoutMode cellOskDialogSetLayoutMode
@@ -540,6 +567,44 @@
 
 #endif
 
+
+/*============================================================
+	NETWORK PROTOTYPES
+============================================================ */
+
+#ifdef __PSL1GHT__
+#include <net/netctl.h>
+
+#define cellNetCtlInit netCtlInit
+#define cellNetCtlGetState netCtlGetState
+#define cellNetCtlTerm netCtlTerm
+
+#define CELL_NET_CTL_STATE_IPObtained NET_CTL_STATE_IPObtained
+#endif
+
+/*============================================================
+	NET PROTOTYPES
+============================================================ */
+
+#if defined(HAVE_NETPLAY)
+#ifdef __PSL1GHT__
+#include <net/net.h>
+
+#define socketselect select
+#define socketclose close
+
+#define sys_net_initialize_network netInitialize
+#else
+#include <netex/net.h>
+#include <np.h>
+#include <np/drm.h>
+#endif
+#endif
+
+/*============================================================
+	SYSUTIL PROTOTYPES
+============================================================ */
+
 #ifdef __PSL1GHT__
 #include <sysutil/game.h>
 #define CellGameContentSize sysGameContentSize
@@ -555,4 +620,49 @@
 #define CELL_GAME_GAMETYPE_GAMEDATA	3
 #define CELL_GAME_GAMETYPE_HOME		4
 
+#endif
+
+#if defined(HAVE_SYSUTILS)
+#ifdef __PSL1GHT__
+#include <sysutil/sysutil.h>
+
+#define CELL_SYSUTIL_REQUEST_EXITGAME SYSUTIL_EXIT_GAME
+
+#define cellSysutilRegisterCallback sysUtilRegisterCallback
+#define cellSysutilCheckCallback sysUtilCheckCallback
+#else
+#include <sysutil/sysutil_screenshot.h>
+#include <sysutil/sysutil_common.h>
+#include <sysutil/sysutil_gamecontent.h>
+#ifdef HAVE_HDD_CACHE_PARTITION
+#include <sysutil/sysutil_syscache.h>
+#endif
+#endif
+#endif
+
+#if(CELL_SDK_VERSION > 0x340000)
+#include <sysutil/sysutil_bgmplayback.h>
+#endif
+
+/*============================================================
+	SYSMODULE PROTOTYPES
+============================================================ */
+
+#if defined(HAVE_SYSMODULES)
+#ifdef __PSL1GHT__
+#include <sysmodule/sysmodule.h>
+
+#define CELL_SYSMODULE_IO SYSMODULE_IO
+#define CELL_SYSMODULE_FS SYSMODULE_FS
+#define CELL_SYSMODULE_NET SYSMODULE_NET
+#define CELL_SYSMODULE_SYSUTIL_NP SYSMODULE_SYSUTIL_NP
+#define CELL_SYSMODULE_JPGDEC SYSMODULE_JPGDEC
+#define CELL_SYSMODULE_PNGDEC SYSMODULE_PNGDEC
+
+#define cellSysmoduleLoadModule sysModuleLoad
+#define cellSysmoduleUnloadModule sysModuleUnload
+
+#else
+#include <cell/sysmodule.h>
+#endif
 #endif

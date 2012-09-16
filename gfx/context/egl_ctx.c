@@ -150,6 +150,7 @@ void gfx_ctx_set_overscan(void)
 
 // Enforce void (*)(void) as it's not really legal to cast void* to fn-pointer.
 // POSIX allows this, but strict C99 doesn't.
+#ifndef __PSL1GHT__
 gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 {
    rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
@@ -160,3 +161,4 @@ gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 
    return ret;
 }
+#endif
