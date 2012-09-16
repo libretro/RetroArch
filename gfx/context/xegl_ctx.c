@@ -114,7 +114,11 @@ void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 {
    g_interval = interval;
    if (inited)
-      eglSwapInterval(g_egl_dpy, g_interval);
+   {
+      RARCH_LOG("[X/EGL]: eglSwapInterval(%u)\n", g_interval);
+      if (!eglSwapInterval(g_egl_dpy, g_interval))
+         RARCH_ERR("[X/EGL]: eglSwapInterval() failed.\n");
+   }
 }
 
 void gfx_ctx_check_window(bool *quit,
