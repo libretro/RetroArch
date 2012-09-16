@@ -408,7 +408,7 @@ bool netplay_init_network(void)
       WSACleanup();
       return false;
    }
-#elif defined(__CELLOS_LV2__)
+#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
    sys_net_initialize_network();
 #else

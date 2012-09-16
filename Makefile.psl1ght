@@ -5,7 +5,7 @@
 RARCH_VERSION		= "0.9.7"
 
 DEBUG			= 0
-HAVE_LOGGER		= 1
+HAVE_LOGGER		= 0
 HAVE_FILE_LOGGER	= 0
 
 PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.7"
@@ -104,8 +104,8 @@ CXXFLAGS += $(SHARED_FLAGS)
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
 else
-   CFLAGS += -O3
-   CXXFLAGS += -03
+   CFLAGS += -O3 -g 
+   CXXFLAGS += -03 -g
 endif
 
 all: $(ELF_TARGET)
@@ -128,7 +128,7 @@ create-core:
 pkg: $(ELF_TARGET) create-npdrm-core
 	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
 
-pkg-signed: $(PPU_TARGET) create-core
+pkg-signed: $(ELF_TARGET) create-core
 	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION).pkg
 
 clean:
