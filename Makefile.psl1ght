@@ -88,7 +88,7 @@ OBJ = console/griffin/griffin.o console/rzlib/rzlib.o
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
 CFLAGS		+= -Iconsole/logger
-OBJ += console/logger/logger.o
+OBJ += console/logger/psl1ght_logger.o
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
