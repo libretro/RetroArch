@@ -79,9 +79,8 @@ static void set_fast_forward_button(bool new_button_state, bool new_hold_button_
       if (g_extern.audio_active)
          audio_set_nonblock_state_func(g_settings.audio.sync ? syncing_state : true);
 
-      if (syncing_state)
-         g_extern.audio_data.chunk_size =
-            syncing_state ? g_extern.audio_data.nonblock_chunk_size : g_extern.audio_data.block_chunk_size;
+      g_extern.audio_data.chunk_size =
+         syncing_state ? g_extern.audio_data.nonblock_chunk_size : g_extern.audio_data.block_chunk_size;
    }
 
    old_button_state = new_button_state;
