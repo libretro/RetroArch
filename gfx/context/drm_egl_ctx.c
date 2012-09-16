@@ -104,18 +104,16 @@ static void page_flip_handler(int fd, unsigned int frame, unsigned int sec, unsi
    (void)sec;
    (void)usec;
 
-   int *waiting = (int*)data;
-   *waiting     = 0;
+   bool *waiting = (bool*)data;
+   *waiting      = false;
 }
 
-void gfx_ctx_swap_buffers(void)
+static void wait_vsync(void)
 {
-   eglSwapBuffers(g_egl_dpy, g_egl_surf);
-   
    struct gbm_bo *next_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
    struct drm_fb *fb = drm_fb_get_from_bo(next_bo);
 
-   int waiting_for_flip = 1;
+   bool waiting_for_flip = true;
 
    int ret = drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
          DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip);
@@ -151,6 +149,25 @@ void gfx_ctx_swap_buffers(void)
 
    gbm_surface_release_buffer(g_gbm_surface, g_bo);
    g_bo = next_bo;
+}
+
+static void nowait_vsync(void)
+{
+   struct gbm_bo *next_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
+   drm_fb_get_from_bo(next_bo);
+
+   gbm_surface_release_buffer(g_gbm_surface, g_bo);
+   g_bo = next_bo;
+}
+
+void gfx_ctx_swap_buffers(void)
+{
+   eglSwapBuffers(g_egl_dpy, g_egl_surf);
+   
+   if (g_interval)
+      wait_vsync();
+   else
+      nowait_vsync();
 }
 
 void gfx_ctx_set_resize(unsigned width, unsigned height)
