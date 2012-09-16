@@ -399,7 +399,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
    if (audio_write_func(output_data, output_frames * sizeof(int16_t) * 2) < 0)
    {
-      fprintf(stderr, "RetroArch [ERROR]: Audio backend failed to write. Will continue without sound.\n");
+      RARCH_ERR("Audio backend failed to write. Will continue without sound.\n");
       return false;
    }
 #else
@@ -408,7 +408,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
       if (audio_write_func(g_extern.audio_data.mute ? empty_buf.f : output_data,
                output_frames * sizeof(float) * 2) < 0)
       {
-         fprintf(stderr, "RetroArch [ERROR]: Audio backend failed to write. Will continue without sound.\n");
+         RARCH_ERR("Audio backend failed to write. Will continue without sound.\n");
          return false;
       }
    }
@@ -423,7 +423,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
       if (audio_write_func(g_extern.audio_data.mute ? empty_buf.i : g_extern.audio_data.conv_outsamples,
                output_frames * sizeof(int16_t) * 2) < 0)
       {
-         fprintf(stderr, "RetroArch [ERROR]: Audio backend failed to write. Will continue without sound.\n");
+         RARCH_ERR("Audio backend failed to write. Will continue without sound.\n");
          return false;
       }
    }
