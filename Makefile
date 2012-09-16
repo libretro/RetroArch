@@ -148,7 +148,7 @@ ifeq ($(OSX),1)
    LIBS += -framework OpenGL
 else
 ifeq ($(HAVE_GLES), 1)
-   LIBS += -lGL -lGLESv2 -lEGL
+   LIBS += -lGLESv2 -lEGL
    DEFINES += -DHAVE_OPENGLES -DHAVE_OPENGLES2
    OBJ += gfx/context/xegl_ctx.o
 else
