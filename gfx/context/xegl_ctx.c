@@ -413,8 +413,6 @@ bool gfx_ctx_window_has_focus(void)
    return win == g_win && g_has_focus;
 }
 
-// Enforce void (*)(void) as it's not really legal to cast void* to fn-pointer.
-// POSIX allows this, but strict C99 doesn't.
 gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 {
    return eglGetProcAddress(symbol);
