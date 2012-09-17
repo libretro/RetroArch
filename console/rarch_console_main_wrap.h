@@ -23,6 +23,9 @@ struct rarch_main_wrap
    const char *sram_path;
    const char *state_path;
    const char *config_path;
+#ifdef HAVE_DYLIB
+   const char *libretro_path;
+#endif
    bool verbose;
 };
 
