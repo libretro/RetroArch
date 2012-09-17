@@ -61,7 +61,7 @@ static drmModeCrtcPtr g_orig_crtc;
 static unsigned g_fb_width; // Just use something for now.
 static unsigned g_fb_height;
 
-static struct gbm_bo *g_bo;
+static struct gbm_bo *g_bo, *g_next_bo;
 
 static drmModeRes *g_resources;
 static drmModeConnector *g_connector;
@@ -110,22 +110,10 @@ static void page_flip_handler(int fd, unsigned int frame, unsigned int sec, unsi
    *waiting      = false;
 }
 
-static void wait_vsync(void)
+static bool waiting_for_flip;
+
+static void wait_flip(void)
 {
-   struct gbm_bo *next_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
-   struct drm_fb *fb = drm_fb_get_from_bo(next_bo);
-
-   bool waiting_for_flip = true;
-
-   int ret = drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
-         DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip);
-
-   if (ret < 0)
-   {
-      RARCH_ERR("[KMS/EGL]: Failed to queue page flip.\n");
-      return;
-   }
-
    struct pollfd fds = {0};
    fds.fd     = g_drm_fd;
    fds.events = POLLIN;
@@ -149,14 +137,47 @@ static void wait_vsync(void)
          break;
    }
 
-   gbm_surface_release_buffer(g_gbm_surface, g_bo);
-   g_bo = next_bo;
+   gbm_surface_release_buffer(g_gbm_surface, g_bo); // This buffer is not on-screen anymore. Release it.
+   g_bo = g_next_bo; // This buffer is being shown now.
+}
+
+static void queue_flip(void)
+{
+   g_next_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
+   struct drm_fb *fb = drm_fb_get_from_bo(g_next_bo);
+
+   int ret = drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
+         DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip);
+
+   if (ret < 0)
+   {
+      RARCH_ERR("[KMS/EGL]: Failed to queue page flip.\n");
+      return;
+   }
+
+   waiting_for_flip = true;
+}
+
+static void wait_vsync(void)
+{
+   // I guess we have to wait for flip to have taken place before another flip can be queued up.
+   if (waiting_for_flip)
+      wait_flip();
+
+   queue_flip();
+
+   if (!gbm_surface_has_free_buffers(g_gbm_surface)) // We have to wait for this flip to finish.
+      wait_flip();
 }
 
 static void nowait_vsync(void)
 {
    struct gbm_bo *next_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
-   drm_fb_get_from_bo(next_bo);
+   struct drm_fb *fb = drm_fb_get_from_bo(next_bo);
+
+   int ret = drmModeSetCrtc(g_drm_fd, g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
+   if (ret < 0)
+      RARCH_ERR("[KMS/EGL]: Failed to set crtc in nowait_vsync().\n");
 
    gbm_surface_release_buffer(g_gbm_surface, g_bo);
    g_bo = next_bo;
@@ -403,8 +424,8 @@ bool gfx_ctx_set_video_mode(
    glClear(GL_COLOR_BUFFER_BIT);
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 
-   struct gbm_bo *bo = gbm_surface_lock_front_buffer(g_gbm_surface);
-   struct drm_fb *fb = drm_fb_get_from_bo(bo);
+   g_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
+   struct drm_fb *fb = drm_fb_get_from_bo(g_bo);
 
    int ret = drmModeSetCrtc(g_drm_fd, g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
    if (ret < 0)
