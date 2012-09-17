@@ -140,6 +140,10 @@ VIDEO DRIVER
 #include "../../gx/gx_video.c"
 #endif
 
+#ifdef HAVE_DYLIB
+#include "../../gfx/ext_gfx.c"
+#endif
+
 #include "../../gfx/gfx_common.c"
 
 #ifdef _XBOX
@@ -232,6 +236,10 @@ AUDIO
 
 #ifdef HAVE_DSOUND
 #include "../../audio/dsound.c"
+#endif
+
+#ifdef HAVE_DYLIB
+#include "../../audio/ext_audio.c"
 #endif
 
 #include "../../audio/null.c"

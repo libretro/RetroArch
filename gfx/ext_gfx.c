@@ -139,12 +139,35 @@ static void input_ext_free(void *data)
    }
 }
 
+#ifdef RARCH_CONSOLE
+static void input_ext_set_default_keybind_lut(unsigned device, unsigned port)
+{
+   (void)device;
+   (void)port;
+}
+
+static void input_ext_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
+{
+   (void)device;
+   (void)map_dpad_enum;
+   (void)controller_id;
+}
+
+static void input_ext_input_post_init(void) {}
+#endif
+
 static const input_driver_t input_ext = {
    input_ext_init,
    input_ext_poll,
    input_ext_input_state,
    input_ext_key_pressed,
    input_ext_free,
+#ifdef RARCH_CONSOLE
+   input_ext_set_default_keybind_lut,
+   input_ext_set_analog_dpad_mapping,
+   input_ext_input_post_init,
+   2,
+#endif
    "ext"
 };
 
@@ -375,6 +398,13 @@ static bool video_read_viewport(void *data, uint8_t *buffer)
    return ext->driver->read_viewport(ext->handle, buffer);
 }
 
+#ifdef RARCH_CONSOLE
+static void video_ext_gfx_start(void) {}
+static void video_ext_gfx_restart(void) {}
+static void video_ext_gfx_stop(void) {}
+static void video_ext_gfx_apply_state_changes(void) {}
+#endif
+
 const video_driver_t video_ext = {
    video_ext_init,
    video_ext_frame,
@@ -384,6 +414,12 @@ const video_driver_t video_ext = {
    NULL,
    video_ext_free,
    "ext",
+#ifdef RARCH_CONSOLE
+   video_ext_gfx_start,
+   video_ext_gfx_stop,
+   video_ext_gfx_restart,
+   video_ext_gfx_apply_state_changes,
+#endif
 
    video_set_rotation,
    video_viewport_size,

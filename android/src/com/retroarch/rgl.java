@@ -84,28 +84,28 @@ public class rgl implements GLSurfaceView.Renderer
 	
 	public void onSurfaceCreated(GL10 unused, EGLConfig config)
 	{
-       //background color
-       GLES20.glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-       
-       triangles_init();
-       shader_init();
+		//background color
+		GLES20.glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+
+		triangles_init();
+		shader_init();
 	}
 	
 	public void onDrawFrame(GL10 unused)
 	{
-       GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-       
-       GLES20.glUseProgram(cprg);
-       
-       // Triangle
-       GLES20.glVertexAttribPointer(v_position_handle, 3, GLES20.GL_FLOAT, false, 12, triangle_vbo);
-       GLES20.glEnableVertexAttribArray(v_position_handle);
-      
-       GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3);
+		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+
+		GLES20.glUseProgram(cprg);
+
+		// Triangle
+		GLES20.glVertexAttribPointer(v_position_handle, 3, GLES20.GL_FLOAT, false, 12, triangle_vbo);
+		GLES20.glEnableVertexAttribArray(v_position_handle);
+
+		GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3);
 	}
 	
 	public void onSurfaceChanged(GL10 unused, int width, int height)
 	{
-       GLES20.glViewport(0,  0, width, height);
+		GLES20.glViewport(0,  0, width, height);
 	}
 }
