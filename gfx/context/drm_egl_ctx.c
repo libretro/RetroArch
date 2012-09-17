@@ -103,6 +103,8 @@ static void page_flip_handler(int fd, unsigned int frame, unsigned int sec, unsi
    (void)frame;
    (void)sec;
    (void)usec;
+   
+   //fprintf(stderr, "Frame: %u, Time (ms). %.3f\n", frame, sec * 1000.0 + usec / 1000.0);
 
    bool *waiting = (bool*)data;
    *waiting      = false;
