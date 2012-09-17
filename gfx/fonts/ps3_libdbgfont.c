@@ -36,18 +36,19 @@ void gl_deinit_font(gl_t *gl)
    cellDbgFontExit();
 }
 
-void gl_render_msg(gl_t *gl, const char *msg)
+void gl_render_msg(void *data, const char *msg)
 {
-   cellDbgFontPrintf(g_settings.video.msg_pos_x, 0.75f, 1.06f, SILVER, msg);
-   cellDbgFontPrintf(g_settings.video.msg_pos_x, 0.75f, 1.05f, WHITE, msg);
+   (void)data;
+
+   cellDbgFontPrintf(g_settings.video.msg_pos_x, 0.76f, 1.04f, SILVER, msg);
+   cellDbgFontPrintf(g_settings.video.msg_pos_x, 0.76f, 1.03f, WHITE, msg);
+   cellDbgFontDraw();		//post
 }
 
-void gl_render_msg_place(float x, float y, float scale, uint32_t color, const char *msg)
+void gl_render_msg_place(void *data, float x, float y, float scale, uint32_t color, const char *msg)
 {
+   (void)data;
+
    cellDbgFontPrintf(x, y, scale, color, msg);
-}
-
-void gl_render_msg_post(gl_t *gl)
-{
-   cellDbgFontDraw();
+   cellDbgFontDraw();		//post
 }

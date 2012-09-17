@@ -200,8 +200,14 @@ static const bool hires_record = false;
 // Enables lossless RGB H.264 recording if possible (if not, FFV1 is used).
 static const bool h264_record = true;
 
-// Record post-filtered (CPU filter) video rather than raw SNES output.
+// Record post-filtered (CPU filter) video rather than raw game output.
 static const bool post_filter_record = false;
+
+// Screenshots post-shaded GPU output if available.
+static const bool gpu_screenshot = true;
+
+// Record post-shaded GPU output instead of raw game footage if available.
+static const bool gpu_record = false;
 
 // OSD-messages
 static const bool font_enable = true;
@@ -247,10 +253,18 @@ static const int out_latency = 64;
 static const bool audio_sync = true;
 
 // Experimental rate control
+#ifdef GEKKO
+static const bool rate_control = true;
+#else
 static const bool rate_control = false;
+#endif
 
 // Rate control delta. Defines how much rate_control is allowed to adjust input rate.
+#ifdef GEKKO
+static const float rate_control_delta = 0.006;
+#else
 static const float rate_control_delta = 0.005;
+#endif
 
 //////////////
 // Misc

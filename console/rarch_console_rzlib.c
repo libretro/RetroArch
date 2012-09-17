@@ -18,6 +18,13 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+
+#if defined(_WIN32)
+#include <direct.h>
+#else
+#include <sys/stat.h>
+#endif
+
 #include "../boolean.h"
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
@@ -29,6 +36,7 @@
 static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir, char *slash, char *write_filename, size_t write_filename_size, unsigned extract_zip_mode)
 {
    char filename_inzip[PATH_MAX];
+   bool is_dir = false;
    FILE *file_out = NULL;
 
    unz_file_info file_info;
@@ -63,19 +71,33 @@ static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir,
 #endif
    }
 
+   if(filename_inzip[strlen(filename_inzip) - 1] == '/')
+      is_dir = true;
+
    ret = unzOpenCurrentFile(uf);
    if (ret != UNZ_OK)
       RARCH_ERR("Error %d while trying to open ZIP file.\n", ret);
    else
    {
       /* success */
-      file_out = fopen(write_filename, "wb");
+      if(is_dir)
+      {
+#ifdef _WIN32
+         _mkdir(write_filename);
+#else
+         mkdir(write_filename, S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR);
+#endif
+      }
+      else
+      {
+         file_out = fopen(write_filename, "wb");
 
-      if (!file_out)
-         RARCH_ERR("Error opening %s.\n", write_filename);
+         if (!file_out)
+            RARCH_ERR("Error opening %s.\n", write_filename);
+      }
    }
 
-   if (file_out)
+   if (is_dir || file_out)
    {
       RARCH_LOG("Extracting: %s..\n", write_filename);
 
@@ -88,7 +110,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir,
             break;
          }
 
-         if (ret > 0)
+         if (ret > 0 && !is_dir)
          {
             if (fwrite(buf, ret, 1, file_out) != 1)
             {
@@ -99,7 +121,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir,
          }
       }while (ret > 0);
 
-      if (file_out)
+      if (!is_dir && file_out)
          fclose(file_out);
    }
 

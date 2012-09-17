@@ -39,9 +39,10 @@
 #define video_free_func()                       gl_free(driver.video_data)
 #define video_set_rotation_func(rotation)	gl_set_rotation(driver.video_data, rotation)
 #define video_set_aspect_ratio_func(aspectratio_idx) gfx_ctx_set_aspect_ratio(driver.video_data, aspectratio_idx)
+#define video_stop_func()			gl_stop()
+#define video_start_func()			gl_start()
 
 #define gfx_ctx_window_has_focus()		(true)
-#define gfx_ctx_swap_buffers()                  (psglSwap())
 
 #define input_init_func()                       ps3_input_initialize()
 #define input_poll_func()                       ps3_input_poll(driver.input_data)
@@ -67,9 +68,10 @@
 #define video_free_func()                       xdk_d3d_free(driver.video_data)
 #define video_set_rotation_func(rotation)	xdk_d3d_set_rotation(driver.video_data, rotation)
 #define video_set_aspect_ratio_func(aspectratio_idx) gfx_ctx_set_aspect_ratio(driver.video_data, aspectratio_idx)
+#define video_stop_func()			xdk_d3d_stop()
+#define video_start_func()			xdk_d3d_start()
 
 #define gfx_ctx_window_has_focus()		(true)
-#define gfx_ctx_swap_buffers()                  (d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL))
 
 #define input_init_func()                       xinput_input_init()
 #define input_poll_func()                       xinput_input_poll(driver.input_data)
@@ -84,23 +86,27 @@
 
 #elif defined(GEKKO)
 
-#define video_init_func(video_info, input, input_data) wii_init(video_info, input, input_data)
+#define video_init_func(video_info, input, input_data) gx_init(video_info, input, input_data)
 #define video_frame_func(data, width, height, pitch, msg) \
-                                                wii_frame(driver.video_data, data, width, height, pitch, msg)
-#define video_set_nonblock_state_func(state) wii_set_nonblock_state(driver.video_data, state)
-#define video_alive_func()                      wii_alive(driver.video_data)
-#define video_focus_func()                      wii_focus(driver.video_data)
+                                                gx_frame(driver.video_data, data, width, height, pitch, msg)
+#define video_set_nonblock_state_func(state) gx_set_nonblock_state(driver.video_data, state)
+#define video_alive_func()                      gx_alive(driver.video_data)
+#define video_focus_func()                      gx_focus(driver.video_data)
 #define video_xml_shader_func(path)             driver.video->xml_shader(driver.video_data, path)
-#define video_free_func()                       wii_free(driver.video_data)
-#define video_set_rotation_func(orientation)	wii_set_rotation(driver.video_data, orientation)
-#define video_set_aspect_ratio_func(aspectratio_idx) wii_set_aspect_ratio(driver.video_data, aspectratio_idx)
+#define video_free_func()                       gx_free(driver.video_data)
+#define video_set_rotation_func(orientation)	gx_set_rotation(driver.video_data, orientation)
+#define video_set_aspect_ratio_func(aspectratio_idx) gx_set_aspect_ratio(driver.video_data, aspectratio_idx)
+#define video_stop_func()			gx_stop()
+#define video_start_func()			gx_start()
+#define video_viewport_size_func(width, height) ((void)0)
+#define video_read_viewport_func(buffer)        (false)
 
-#define input_init_func()                       wii_input_initialize()
-#define input_poll_func()                       wii_input_poll(driver.input_data)
+#define input_init_func()                       gx_input_initialize()
+#define input_poll_func()                       gx_input_poll(driver.input_data)
 #define input_input_state_func(retro_keybinds, port, device, index, id) \
-                                                wii_input_state(driver.input_data, retro_keybinds, port, device, index, id)
-#define input_key_pressed_func(key)             wii_key_pressed(driver.input_data, key)
-#define input_free_func()                       wii_free_input(driver.input_data)
+                                                gx_input_state(driver.input_data, retro_keybinds, port, device, index, id)
+#define input_key_pressed_func(key)             gx_key_pressed(driver.input_data, key)
+#define input_free_func()                       gx_free_input(driver.input_data)
 #define gfx_ctx_window_has_focus()		(true)
 
 #else
@@ -119,6 +125,8 @@
 #define video_free_func()                       null_gfx_free(driver.video_data)
 #define video_set_rotation_func(orientation)	(true)
 #define video_set_aspect_ratio_func(aspectratio_idx) (true)
+#define video_stop_func()			null_gfx_stop()
+#define video_start_func()			null_gfx_start()
 
 #define input_init_func()                       null_input_init()
 #define input_poll_func()                       null_input_poll(driver.input_data)

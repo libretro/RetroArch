@@ -21,33 +21,7 @@
 #include <sdk_version.h>
 #endif
 
-#ifdef __PSL1GHT__
-#include <io/pad.h>
-#else
-#include <cell/pad.h>
-#endif
-
-#ifdef HAVE_MOUSE
-#ifdef __PSL1GHT__
-#include <io/mouse.h>
-#else
-#include <cell/mouse.h>
-#endif
-#endif
-
 #include <sys/memory.h>
-
-#ifdef HAVE_OSKUTIL
-#ifdef __PSL1GHT__
-#include <sysutil/osk.h>
-#else
-#include <sysutil/sysutil_oskdialog.h>
-#endif
-#endif
-
-#ifdef HAVE_SYSUTILS
-#include <sysutil/sysutil_common.h>
-#endif
 
 #include "sdk_defines.h"
 
@@ -129,7 +103,7 @@ const struct platform_bind platform_keys[] = {
    { PS3_GAMEPAD_DPAD_DOWN | PS3_GAMEPAD_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
 };
 
-const unsigned int platform_keys_size = sizeof(platform_keys);
+const unsigned platform_keys_size = sizeof(platform_keys);
 
 static uint64_t state[MAX_PADS];
 static unsigned pads_connected;
@@ -150,6 +124,32 @@ static void ps3_input_poll(void *data)
       if (state_tmp.len != 0)
       {
          state[i] = 0;
+#ifdef __PSL1GHT__
+         state[i] |= (state_tmp.BTN_LEFT) ? PS3_GAMEPAD_DPAD_LEFT : 0;
+         state[i] |= (state_tmp.BTN_DOWN) ? PS3_GAMEPAD_DPAD_DOWN : 0;
+         state[i] |= (state_tmp.BTN_RIGHT) ? PS3_GAMEPAD_DPAD_RIGHT : 0;
+         state[i] |= (state_tmp.BTN_UP) ? PS3_GAMEPAD_DPAD_UP : 0;
+         state[i] |= (state_tmp.BTN_START) ? PS3_GAMEPAD_START : 0;
+         state[i] |= (state_tmp.BTN_R3) ? PS3_GAMEPAD_R3 : 0;
+         state[i] |= (state_tmp.BTN_L3) ? PS3_GAMEPAD_L3 : 0;
+         state[i] |= (state_tmp.BTN_SELECT) ? PS3_GAMEPAD_SELECT : 0;
+         state[i] |= (state_tmp.BTN_TRIANGLE) ? PS3_GAMEPAD_TRIANGLE : 0;
+         state[i] |= (state_tmp.BTN_SQUARE) ? PS3_GAMEPAD_SQUARE : 0;
+         state[i] |= (state_tmp.BTN_CROSS) ? PS3_GAMEPAD_CROSS : 0;
+         state[i] |= (state_tmp.BTN_CIRCLE) ? PS3_GAMEPAD_CIRCLE : 0;
+         state[i] |= (state_tmp.BTN_R1) ? PS3_GAMEPAD_R1 : 0;
+         state[i] |= (state_tmp.BTN_L1) ? PS3_GAMEPAD_L1 : 0;
+         state[i] |= (state_tmp.BTN_R2) ? PS3_GAMEPAD_R2 : 0;
+         state[i] |= (state_tmp.BTN_L2) ? PS3_GAMEPAD_L2 : 0;
+         state[i] |= (state_tmp.ANA_L_H <= DEADZONE_LOW) ? PS3_GAMEPAD_LSTICK_LEFT_MASK : 0;
+         state[i] |= (state_tmp.ANA_L_H >= DEADZONE_HIGH) ? PS3_GAMEPAD_LSTICK_RIGHT_MASK : 0;
+         state[i] |= (state_tmp.ANA_L_V <= DEADZONE_LOW) ? PS3_GAMEPAD_LSTICK_UP_MASK : 0;
+         state[i] |= (state_tmp.ANA_L_V >= DEADZONE_HIGH) ? PS3_GAMEPAD_LSTICK_DOWN_MASK : 0;
+         state[i] |= (state_tmp.ANA_R_H <= DEADZONE_LOW) ? PS3_GAMEPAD_RSTICK_LEFT_MASK : 0;
+         state[i] |= (state_tmp.ANA_R_H >= DEADZONE_HIGH) ? PS3_GAMEPAD_RSTICK_RIGHT_MASK : 0;
+         state[i] |= (state_tmp.ANA_R_V <= DEADZONE_LOW) ? PS3_GAMEPAD_RSTICK_UP_MASK : 0;
+         state[i] |= (state_tmp.ANA_R_V >= DEADZONE_HIGH) ? PS3_GAMEPAD_RSTICK_DOWN_MASK : 0;
+#else
          state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_LEFT) ? PS3_GAMEPAD_DPAD_LEFT : 0;
          state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_DOWN) ? PS3_GAMEPAD_DPAD_DOWN : 0;
          state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_RIGHT) ? PS3_GAMEPAD_DPAD_RIGHT : 0;
@@ -174,6 +174,7 @@ static void ps3_input_poll(void *data)
          state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X] >= DEADZONE_HIGH) ? PS3_GAMEPAD_RSTICK_RIGHT_MASK : 0;
          state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y] <= DEADZONE_LOW) ? PS3_GAMEPAD_RSTICK_UP_MASK : 0;
          state[i] |= (state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y] >= DEADZONE_HIGH) ? PS3_GAMEPAD_RSTICK_DOWN_MASK : 0;
+#endif
       }
    }
 
@@ -243,7 +244,7 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
 
 #define OSK_IN_USE 1
 
-void oskutil_init(oskutil_params *params, unsigned int containersize)
+void oskutil_init(oskutil_params *params, unsigned containersize)
 {
    params->flags = 0;
    params->is_running = false;
@@ -376,18 +377,21 @@ static void ps3_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad
    switch(map_dpad_enum)
    {
       case DPAD_EMULATION_NONE:
+         g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_NONE;
          g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[PS3_DEVICE_ID_JOYPAD_UP].joykey;
 	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[PS3_DEVICE_ID_JOYPAD_DOWN].joykey;
 	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[PS3_DEVICE_ID_JOYPAD_LEFT].joykey;
 	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[PS3_DEVICE_ID_JOYPAD_RIGHT].joykey;
 	 break;
       case DPAD_EMULATION_LSTICK:
+         g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_LSTICK;
 	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[PS3_DEVICE_ID_LSTICK_UP_DPAD].joykey;
 	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[PS3_DEVICE_ID_LSTICK_DOWN_DPAD].joykey;
 	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[PS3_DEVICE_ID_LSTICK_LEFT_DPAD].joykey;
 	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[PS3_DEVICE_ID_LSTICK_RIGHT_DPAD].joykey;
 	 break;
       case DPAD_EMULATION_RSTICK:
+         g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_RSTICK;
 	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[PS3_DEVICE_ID_RSTICK_UP_DPAD].joykey;
 	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[PS3_DEVICE_ID_RSTICK_DOWN_DPAD].joykey;
 	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[PS3_DEVICE_ID_RSTICK_LEFT_DPAD].joykey;

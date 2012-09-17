@@ -61,7 +61,6 @@
 
 #define close(x) socketclose(x)
 
-
 /* 
  ****************************************************************************   
  Naming convention. Functions for use in API are called rsd_*(),         *
@@ -241,7 +240,7 @@ static int rsnd_connect_server( rsound_t *rd )
 
    /* Cleanup for errors. */
 error:
-   RSD_ERR("Connecting to server failed. \"%s\"", rd->host);
+   RSD_ERR("[RSound] Connecting to server failed. \"%s\"", rd->host);
 
    return -1;
 }
@@ -255,7 +254,7 @@ static int rsnd_send_header_info(rsound_t *rd)
    char *header = calloc(1, HEADER_SIZE);
    if (header == NULL)
    {
-      RSD_ERR("Could not allocate memory.");
+      RSD_ERR("[RSound] Could not allocate memory.");
       return -1;
    }
    uint16_t temp16;
@@ -310,7 +309,6 @@ static int rsnd_send_header_info(rsound_t *rd)
       default:
          break;
    }
-
 
    /* Since the values in the wave header we are interested in, are little endian (>_<), we need
       to determine whether we're running it or not, so we can byte swap accordingly. 
@@ -406,7 +404,7 @@ static int rsnd_get_backend_info ( rsound_t *rd )
 
    if ( rsnd_recv_chunk(rd->conn.socket, rsnd_header, RSND_HEADER_SIZE, 1) != RSND_HEADER_SIZE )
    {
-      RSD_ERR("Couldn't receive chunk.");
+      RSD_ERR("[RSound] Couldn't receive chunk.\n");
       return -1;
    }
 
@@ -434,7 +432,7 @@ static int rsnd_get_backend_info ( rsound_t *rd )
    rd->fifo_buffer = fifo_new (rd->buffer_size);
    if ( rd->fifo_buffer == NULL )
    {
-      RSD_ERR("Failed to create fifobuf");
+      RSD_ERR("[RSound] Failed to create FIFO buffer.\n");
       return -1;
    }
 
@@ -463,7 +461,7 @@ static int rsnd_get_backend_info ( rsound_t *rd )
    if ( rsnd_recv_chunk(rd->conn.socket, rsnd_header, RSND_HEADER_SIZE, 0) == RSND_HEADER_SIZE )
       rd->conn_type |= RSD_CONN_PROTO; 
    else
-   {  RSD_DEBUG("Failed to get new proto"); }
+   {  RSD_DEBUG("[RSound] Failed to get new proto.\n"); }
 
    // We no longer want to read from this socket.
 #ifdef _WIN32
@@ -487,7 +485,7 @@ static int rsnd_create_connection(rsound_t *rd)
       rc = rsnd_connect_server(rd);
       if (rc < 0)
       {
-         RSD_ERR("connect server failed!");
+         RSD_ERR("[RSound] connect server failed.\n");
          rsd_stop(rd);
          return -1;
       }
@@ -500,14 +498,14 @@ static int rsnd_create_connection(rsound_t *rd)
 
       if ( rsnd_poll(&fd, 1, 2000) < 0 )
       {
-         RSD_ERR("rsnd_poll failed!");
+         RSD_ERR("[RSound] rsnd_poll failed.\n");
          rsd_stop(rd);
          return -1;
       }
 
       if ( !(fd.revents & POLLOUT) )
       {
-         RSD_ERR("Poll didn't return what we wanted!");
+         RSD_ERR("[RSound] Poll didn't return what we wanted.\n");
          rsd_stop(rd);
          return -1;
       }
@@ -523,7 +521,7 @@ static int rsnd_create_connection(rsound_t *rd)
       rc = rsnd_send_header_info(rd);
       if (rc < 0)
       {
-         RSD_ERR("Send header failed!");
+         RSD_ERR("[RSound] Send header failed.\n");
          rsd_stop(rd);
          return -1;
       }
@@ -531,7 +529,7 @@ static int rsnd_create_connection(rsound_t *rd)
       rc = rsnd_get_backend_info(rd);
       if (rc < 0)
       {
-         RSD_ERR("Get backend info failed!");
+         RSD_ERR("[RSound] Get backend info failed.\n");
          rsd_stop(rd);
          return -1;
       }
@@ -539,7 +537,7 @@ static int rsnd_create_connection(rsound_t *rd)
       rc = rsnd_start_thread(rd);
       if (rc < 0)
       {
-         RSD_ERR("Starting thread failed!");
+         RSD_ERR("[RSound] Starting thread failed.\n");
          rsd_stop(rd);
          return -1;
       }
@@ -589,7 +587,7 @@ static ssize_t rsnd_send_chunk(int socket, const void* buf, size_t size, int blo
          rc = send(socket, (const char*)buf + wrote, send_size, 0);
          if ( rc < 0 )
          {
-            RSD_ERR("Error sending chunk, %s\n", strerror(errno));
+            RSD_ERR("[RSound] Error sending chunk, %s.\n", strerror(errno));
             return rc;
          }
          wrote += rc;
@@ -625,13 +623,13 @@ static ssize_t rsnd_recv_chunk(int socket, void *buf, size_t size, int blocking)
    {
       if ( rsnd_poll(&fd, 1, sleep_time) < 0 )
       {
-         RSD_ERR("Poll failed");
+         RSD_ERR("[RSound] Poll failed.\n");
          return -1;
       }
 
       if ( fd.revents & POLLHUP )
       {
-         RSD_ERR("Server hung up");
+         RSD_ERR("[RSound] Server hung up.\n");
          return -1;
       }
 
@@ -641,7 +639,7 @@ static ssize_t rsnd_recv_chunk(int socket, void *buf, size_t size, int blocking)
          rc = recv(socket, (char*)buf + has_read, read_size, 0);
          if ( rc <= 0 )
          {
-            RSD_ERR("Error receiving chunk, %s\n", strerror(errno));
+            RSD_ERR("[RSound] Error receiving chunk, %s.\n", strerror(errno));
             return rc;
          }
          has_read += rc;
@@ -650,7 +648,7 @@ static ssize_t rsnd_recv_chunk(int socket, void *buf, size_t size, int blocking)
       {
          if ( blocking )
          {
-            RSD_ERR("Block FAIL!");
+            RSD_ERR("[RSound] Block fail.\n");
             return -1;
          }
          else
@@ -735,19 +733,19 @@ static size_t rsnd_fill_buffer(rsound_t *rd, const char *buf, size_t size)
       pthread_mutex_lock(&rd->thread.cond_mutex);
       pthread_cond_signal(&rd->thread.cond);
 
-      RSD_DEBUG("rsnd_fill_buffer: Going to sleep.");
+      RSD_DEBUG("[RSound] rsnd_fill_buffer: Going to sleep.\n");
       pthread_cond_wait(&rd->thread.cond, &rd->thread.cond_mutex);
-      RSD_DEBUG("rsnd_fill_buffer: Woke up.");
+      RSD_DEBUG("[RSound] rsnd_fill_buffer: Woke up.\n");
       pthread_mutex_unlock(&rd->thread.cond_mutex);
    }
 
    pthread_mutex_lock(&rd->thread.mutex);
    fifo_write(rd->fifo_buffer, buf, size);
    pthread_mutex_unlock(&rd->thread.mutex);
-   //RSD_DEBUG("fill_buffer: Wrote to buffer.");
+   //RSD_DEBUG("[RSound] fill_buffer: Wrote to buffer.\n");
 
    /* Send signal to thread that buffer has been updated */
-   //RSD_DEBUG("fill_buffer: Waking up thread.");
+   //RSD_DEBUG("[RSound] fill_buffer: Waking up thread.\n");
    pthread_cond_signal(&rd->thread.cond);
 
    return size;
@@ -763,7 +761,7 @@ static int rsnd_start_thread(rsound_t *rd)
       if ( rc < 0 )
       {
          rd->thread_active = 0;
-         RSD_ERR("Failed to create thread.");
+         RSD_ERR("[RSound] Failed to create thread.");
          return -1;
       }
       return 0;
@@ -778,7 +776,7 @@ static int rsnd_stop_thread(rsound_t *rd)
    if ( rd->thread_active )
    {
 
-      RSD_DEBUG("Shutting down thread.");
+      RSD_DEBUG("[RSound] Shutting down thread.\n");
 
       pthread_mutex_lock(&rd->thread.cond_mutex);
       rd->thread_active = 0;
@@ -786,15 +784,15 @@ static int rsnd_stop_thread(rsound_t *rd)
       pthread_mutex_unlock(&rd->thread.cond_mutex);
 
       if ( pthread_join(rd->thread.threadId, NULL) < 0 )
-         RSD_WARN("*** Warning, did not terminate thread. ***");
+         RSD_WARN("[RSound] *** Warning, did not terminate thread. ***\n");
       else
-         RSD_DEBUG("Thread joined successfully.");
+         RSD_DEBUG("[RSound] Thread joined successfully.\n");
       
       return 0;
    }
    else
    {
-      RSD_DEBUG("Thread is already shut down.");
+      RSD_DEBUG("Thread is already shut down.\n");
       return 0;
    }
 }
@@ -811,7 +809,7 @@ static size_t rsnd_get_delay(rsound_t *rd)
 
    pthread_mutex_lock(&rd->thread.mutex);
    ptr += rd->delay_offset;
-   RSD_DEBUG("Offset: %d", rd->delay_offset);
+   RSD_DEBUG("Offset: %d.\n", rd->delay_offset);
    pthread_mutex_unlock(&rd->thread.mutex);
 
    if ( ptr < 0 )
@@ -1005,7 +1003,7 @@ static int rsnd_update_server_info(rsound_t *rd)
       delta += fifo_read_avail(rd->fifo_buffer);
       pthread_mutex_unlock(&rd->thread.mutex);
 
-      RSD_DEBUG("Delay: %d, Delta: %d", delay, delta);
+      RSD_DEBUG("[RSound] Delay: %d, Delta: %d.\n", delay, delta);
 
       // We only update the pointer if the data we got is quite recent.
       if ( rd->total_written - client_ptr < 4 * rd->backend_info.chunk_size && rd->total_written > client_ptr )
@@ -1020,7 +1018,7 @@ static int rsnd_update_server_info(rsound_t *rd)
          pthread_mutex_lock(&rd->thread.mutex);
          rd->delay_offset += offset_delta;
          pthread_mutex_unlock(&rd->thread.mutex);
-         RSD_DEBUG("Changed offset-delta: %d", offset_delta);
+         RSD_DEBUG("[RSound] Changed offset-delta: %d.\n", offset_delta);
       }
    }
 
@@ -1116,13 +1114,13 @@ static void* rsnd_thread ( void * thread_data )
 
          if ( rd->thread_active )
          {
-            RSD_DEBUG("Thread going to sleep.");
+            RSD_DEBUG("[RSound] Thread going to sleep.\n");
             pthread_cond_wait(&rd->thread.cond, &rd->thread.cond_mutex);
-            RSD_DEBUG("Thread woke up.");
+            RSD_DEBUG("[RSound] Thread woke up.\n");
          }
 
          pthread_mutex_unlock(&rd->thread.cond_mutex);
-         RSD_DEBUG("Thread unlocked cond_mutex.");
+         RSD_DEBUG("[RSound] Thread unlocked cond_mutex.\n");
       }
       /* Abort request, chap. */
       else
@@ -1170,7 +1168,7 @@ static void* rsnd_cb_thread(void *thread_data)
          {
             if ((int)rsd_delay_ms(rd) < rd->max_latency / 2)
             {
-               RSD_DEBUG("Callback thread: Requested %d bytes, got %d\n", (int)will_read, (int)ret);
+               RSD_DEBUG("[RSound] Callback thread: Requested %d bytes, got %d.\n", (int)will_read, (int)ret);
                memset(buffer + has_read, 0, will_read - ret);
                has_read += will_read - ret;
             }
@@ -1306,25 +1304,25 @@ int rsd_start(rsound_t *rsound)
 int rsd_exec(rsound_t *rsound)
 {
    assert(rsound != NULL);
-   RSD_DEBUG("rsd_exec()");
+   RSD_DEBUG("[RSound] rsd_exec().\n");
 
    // Makes sure we have a working connection
    if ( rsound->conn.socket < 0 )
    {
-      RSD_DEBUG("Calling rsd_start()");
+      RSD_DEBUG("[RSound] Calling rsd_start().\n");
       if ( rsd_start(rsound) < 0 )
       {
-         RSD_ERR("rsd_start() failed!");
+         RSD_ERR("[RSound] rsd_start() failed.\n");
          return -1;
       }
    }
 
-   RSD_DEBUG("Closing ctl");
+   RSD_DEBUG("[RSound] Closing ctl.\n");
    if ( rsnd_close_ctl(rsound) < 0 )
       return -1;
 
    int fd = rsound->conn.socket;
-   RSD_DEBUG("Socket: %d", fd);
+   RSD_DEBUG("[RSound] Socket: %d.\n", fd);
 
    rsnd_stop_thread(rsound);
 
@@ -1339,13 +1337,13 @@ int rsd_exec(rsound_t *rsound)
       fifo_read(rsound->fifo_buffer, buffer, sizeof(buffer));
       if ( rsnd_send_chunk(fd, buffer, sizeof(buffer), 1) != (ssize_t)sizeof(buffer) )
       {
-         RSD_DEBUG("Failed flushing buffer!");
+         RSD_DEBUG("[RSound] Failed flushing buffer.\n");
          close(fd);
          return -1;
       }
    }
 
-   RSD_DEBUG("Returning from rsd_exec()");
+   RSD_DEBUG("[RSound] Returning from rsd_exec().\n");
    rsd_free(rsound);
    return fd;
 }
@@ -1445,7 +1443,7 @@ void rsd_delay_wait(rsound_t *rd)
       if ( rd->max_latency < latency_ms )
       {
          int64_t sleep_ms = latency_ms - rd->max_latency;
-         RSD_DEBUG("Delay wait: %d ms\n", (int)sleep_ms);
+         RSD_DEBUG("[RSound] Delay wait: %d ms.\n", (int)sleep_ms);
          rsnd_sleep((int)sleep_ms);
       }
    }

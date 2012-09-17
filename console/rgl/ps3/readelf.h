@@ -58,12 +58,6 @@ typedef struct
 
 ELF_section_t *findSection(const ELF_t *elf, const char *name);
 int lookupSymbol(const ELF_t *elf, const char *name);
-const Elf32_Sym *getSymbolByIndex(const ELF_t *elf, int idx);
-
-const char *findSectionInPlace(const char* memory,unsigned int size,const char *name,size_t *sectionSize);
-const char *findSymbolSectionInPlace(const char *memory, unsigned int size, size_t *symbolSize, size_t *symbolCount, const char **symbolstrtab);
-int lookupSymbolValueInPlace(const char *symbolSection, size_t symbolSize, size_t symbolCount, const char *symbolstrtab, const char *name);
-const char *getSymbolByIndexInPlace(const char *symbolSection, size_t symbolSize, size_t symbolCount,  const char *symbolstrtab, int index);
 
 #ifdef __cplusplus
 }

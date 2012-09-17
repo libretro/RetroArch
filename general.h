@@ -41,7 +41,7 @@
 #include <time/time.h>
 #endif
 
-#if defined(XENON) || defined(__CELLOS_LV2__) || defined(_XBOX1)
+#if defined(XENON) || defined(__CELLOS_LV2__)
 #undef PATH_MAX
 #define PATH_MAX 4096
 #endif
@@ -127,6 +127,8 @@ struct settings
       bool hires_record;
       bool h264_record;
       bool post_filter_record;
+      bool gpu_record;
+      bool gpu_screenshot;
 
       bool allow_rotate;
       char external_driver[PATH_MAX];
@@ -193,10 +195,10 @@ struct settings
 #ifdef RARCH_CONSOLE
 typedef struct
 {
-   uint32_t x;
-   uint32_t y;
-   uint32_t width;
-   uint32_t height;
+   int x;
+   int y;
+   unsigned width;
+   unsigned height;
 } rarch_viewport_t;
 
 struct console_settings
@@ -207,14 +209,18 @@ struct console_settings
    bool default_sram_dir_enable;
    bool default_savestate_dir_enable;
    bool fbo_enabled;
-   bool fps_info_enable;
+   bool fps_info_msg_enable;
    bool frame_advance_enable;
 #ifdef _XBOX
    bool menus_hd_enable;
 #endif
+#ifdef _XBOX1
+   unsigned flicker_filter;
+   unsigned sound_volume_level;
+#endif
+   bool soft_display_filter_enable;
    bool initialize_rarch_enable;
    bool info_msg_enable;
-   bool gamma_correction_enable;
    bool ingame_menu_enable;
    bool menu_enable;
    bool overscan_enable;
@@ -223,31 +229,32 @@ struct console_settings
    bool throttle_enable;
    bool triple_buffering_enable;
    float overscan_amount;
-   uint32_t aspect_ratio_index;
+   unsigned aspect_ratio_index;
    struct
    {
       rarch_viewport_t custom_vp;
    } viewports;
-   uint32_t emulator_initialized;
-   uint32_t external_launcher_support;
-   uint32_t screen_orientation;
-   uint32_t current_resolution_index;
-   uint32_t current_resolution_id;
-   uint32_t ingame_menu_item;
-   uint32_t initial_resolution_id;
-   uint32_t map_dpad_to_stick;
-   uint32_t mode_switch;
-   uint32_t sound_mode;
+   unsigned gamma_correction;
+   unsigned emulator_initialized;
+   unsigned external_launcher_support;
+   unsigned screen_orientation;
+   unsigned current_resolution_index;
+   unsigned current_resolution_id;
+   unsigned ingame_menu_item;
+   unsigned initial_resolution_id;
+   unsigned map_dpad_to_stick;
+   unsigned mode_switch;
+   unsigned sound_mode;
    uint32_t *supported_resolutions;
-   uint32_t supported_resolutions_count;
-   uint32_t control_timer_expiration_frame_count;
-   uint32_t timer_expiration_frame_count;
-   uint32_t input_loop;
+   unsigned supported_resolutions_count;
+   unsigned control_timer_expiration_frame_count;
+   unsigned timer_expiration_frame_count;
+   unsigned input_loop;
 #ifdef HAVE_ZLIB
-   uint32_t zip_extract_mode;
+   unsigned zip_extract_mode;
 #endif
 #ifdef _XBOX
-   uint32_t color_format;
+   unsigned color_format;
    DWORD volume_device_type;
 #endif
    char cgp_path[PATH_MAX];
@@ -258,7 +265,7 @@ struct console_settings
    char default_sram_dir[PATH_MAX];
    char launch_app_on_exit[PATH_MAX];
    float menu_font_size;
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+#ifdef HAVE_OSKUTIL
    oskutil_params oskutil_handle;
 #endif
 };
@@ -281,12 +288,13 @@ struct global
    bool video_active;
    bool force_fullscreen;
 
-   bool has_mouse[2];
-   bool has_scope[2];
+   bool disconnect_device[MAX_PLAYERS];
+   bool has_mouse[MAX_PLAYERS];
+   bool has_dualanalog[MAX_PLAYERS];
+   bool has_scope;
    bool has_justifier;
    bool has_justifiers;
    bool has_multitap;
-   bool disconnect_device[2];
 
    FILE *rom_file;
    enum rarch_game_type game_type;
@@ -300,6 +308,7 @@ struct global
 
 #ifdef HAVE_CONFIGFILE
    char config_path[PATH_MAX];
+   char append_config_path[PATH_MAX];
 #endif
    
    char basename[PATH_MAX];
@@ -334,6 +343,10 @@ struct global
       bool shutdown;
       unsigned performance_level;
       bool rgb32;
+
+      bool force_nonblock;
+
+      const char *input_desc_btn[MAX_PLAYERS][RARCH_FIRST_ANALOG_BIND];
    } system;
 
    struct
@@ -439,6 +452,10 @@ struct global
    bool recording;
    unsigned record_width;
    unsigned record_height;
+
+   uint8_t *record_gpu_buffer;
+   size_t record_gpu_width;
+   size_t record_gpu_height;
 #endif
 
    struct

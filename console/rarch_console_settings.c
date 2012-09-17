@@ -92,7 +92,7 @@ void rarch_settings_change(unsigned setting)
          g_console.ingame_menu_enable = false;
          g_console.mode_switch = MODE_EXIT;
          break;
-      case S_RETURN_TO_DASHBOARD:
+      case S_QUIT_RARCH:
          g_console.menu_enable = false;
          g_console.initialize_rarch_enable = false;
          g_console.mode_switch = MODE_EXIT;
@@ -106,6 +106,7 @@ void rarch_settings_change(unsigned setting)
       case S_RETURN_TO_LAUNCHER:
          g_console.return_to_launcher = true;
          g_console.menu_enable = false;
+         g_console.initialize_rarch_enable = false;
          g_console.mode_switch = MODE_EXIT;
          break;
       case S_RETURN_TO_MENU:
@@ -148,7 +149,8 @@ void rarch_settings_change(unsigned setting)
          g_settings.video.fbo_scale_y += 1.0f;
          break;
       case S_THROTTLE:
-         g_console.throttle_enable = !g_console.throttle_enable;
+         if(!g_extern.system.force_nonblock)
+            g_console.throttle_enable = !g_console.throttle_enable;
          break;
       case S_TRIPLE_BUFFERING:
          g_console.triple_buffering_enable = !g_console.triple_buffering_enable;
@@ -189,7 +191,8 @@ void rarch_settings_default(unsigned setting)
          g_console.screen_orientation = ORIENTATION_NORMAL;
          break;
       case S_DEF_THROTTLE:
-         g_console.throttle_enable = true;
+         if(!g_extern.system.force_nonblock)
+            g_console.throttle_enable = true;
          break;
       case S_DEF_TRIPLE_BUFFERING:
          g_console.triple_buffering_enable = true;
@@ -257,13 +260,13 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
          snprintf(str, sizeof(str), "INFO - Resize the screen by moving around the two analog sticks.\nPress [RetroPad X] to reset to default values, and [RetroPad A] to go back.\nTo select the resized screen mode, set Aspect Ratio to: 'Custom'.");
          break;
       case S_MSG_RESTART_RARCH:
-         snprintf(str, sizeof(str), "INFO - You need to restart RetroArch for this change to take effect.");
+         snprintf(str, sizeof(str), "INFO - You need to restart RetroArch.");
          break;
       case S_MSG_SELECT_LIBRETRO_CORE:
-         snprintf(str, sizeof(str), "INFO - Select a Libretro core from the menu by pressing [RetroPad B].");
+         snprintf(str, sizeof(str), "INFO - Select a Libretro core from the menu.");
          break;
       case S_MSG_SELECT_SHADER:
-         snprintf(str, sizeof(str), "INFO - Select a shader from the menu by pressing [RetroPad A].");
+         snprintf(str, sizeof(str), "INFO - Select a shader from the menu.");
          break;
       case S_MSG_SHADER_LOADING_SUCCEEDED:
          snprintf(str, sizeof(str), "INFO - Shader successfully loaded.");
@@ -309,14 +312,40 @@ void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t 
       case S_LBL_SAVE_STATE_SLOT:
          snprintf(str, size, "Save State #%d", g_extern.state_slot);
          break;
+      case S_LBL_ZIP_EXTRACT:
+	 {
+            char msg[128];
+	    switch(g_console.zip_extract_mode)
+            {
+               case ZIP_EXTRACT_TO_CURRENT_DIR:
+                  snprintf(msg, sizeof(msg), "Current dir");
+                  break;
+               case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
+                  snprintf(msg, sizeof(msg), "Current dir and load first file");
+                  break;
+			   case ZIP_EXTRACT_TO_CACHE_DIR:
+                  snprintf(msg, sizeof(msg), "Cache dir");
+                  break;
+            }
+            snprintf(str, size, "ZIP Extract: %s", msg);
+	 }
+         break;
    }
 }
 
-void rarch_settings_set_default (const input_driver_t *input)
+#if defined(_XBOX360)
+#define DEFAULT_GAMMA 1
+#else
+#define DEFAULT_GAMMA 0
+#endif
+
+void rarch_settings_set_default(void)
 {
    // g_settings
    g_settings.rewind_enable = false;
+#ifdef HAVE_XML
    strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
+#endif
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
@@ -329,17 +358,21 @@ void rarch_settings_set_default (const input_driver_t *input)
    g_settings.video.fbo_scale_y = 2.0f;
 #endif
 
+#ifdef GEKKO
+   g_settings.audio.rate_control_delta = 0.006;
+   g_settings.audio.rate_control = true;
+#endif
+
    g_settings.video.render_to_texture = true;
    g_settings.video.smooth = true;
    g_settings.video.vsync = true;
+   g_settings.video.refresh_rate = 59.92;
 
    strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
 
    g_settings.video.msg_pos_x = 0.05f;
    g_settings.video.msg_pos_y = 0.90f;
    g_settings.video.aspect_ratio = -1.0f;
-
-   rarch_input_set_controls_default(input);
 
    // g_console
    g_console.block_config_read = true;
@@ -377,8 +410,13 @@ void rarch_settings_set_default (const input_driver_t *input)
    g_console.info_msg_enable = true;
 #ifdef _XBOX360
    g_console.color_format = 0;
-   g_console.gamma_correction_enable = 1;
 #endif
+   g_console.gamma_correction = DEFAULT_GAMMA;
+#ifdef _XBOX1
+   g_console.flicker_filter = 1;
+   g_console.sound_volume_level = 0;
+#endif
+   g_console.soft_display_filter_enable = true;
 #ifdef HAVE_ZLIB
    g_console.zip_extract_mode = 0;
 #endif

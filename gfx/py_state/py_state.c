@@ -102,67 +102,67 @@ static PyObject *py_read_input_meta(PyObject *self, PyObject *args)
    return PyBool_FromLong(ret);
 }
 
-static PyMethodDef SNESMethods[] = {
+static PyMethodDef RarchMethods[] = {
    { "read_wram",    py_read_wram,              METH_VARARGS, "Read WRAM from system." },
    { "input",        py_read_input,             METH_VARARGS, "Read input state from system." },
    { "input_meta",   py_read_input_meta,        METH_VARARGS, "Read RetroArch specific input." },
    { NULL, NULL, 0, NULL }
 };
 
-#define DECL_ATTR_SNES(attr) PyObject_SetAttrString(mod, #attr, PyLong_FromLong(RETRO_DEVICE_ID_JOYPAD_##attr))
-#define DECL_ATTR_SSNES(attr) PyObject_SetAttrString(mod, #attr, PyLong_FromLong(RARCH_##attr))
+#define DECL_ATTR_RETRO(attr) PyObject_SetAttrString(mod, #attr, PyLong_FromLong(RETRO_DEVICE_ID_JOYPAD_##attr))
+#define DECL_ATTR_RARCH(attr) PyObject_SetAttrString(mod, #attr, PyLong_FromLong(RARCH_##attr))
 static void py_set_attrs(PyObject *mod)
 {
-   DECL_ATTR_SNES(B);
-   DECL_ATTR_SNES(Y);
-   DECL_ATTR_SNES(SELECT);
-   DECL_ATTR_SNES(START);
-   DECL_ATTR_SNES(UP);
-   DECL_ATTR_SNES(DOWN);
-   DECL_ATTR_SNES(LEFT);
-   DECL_ATTR_SNES(RIGHT);
-   DECL_ATTR_SNES(A);
-   DECL_ATTR_SNES(X);
-   DECL_ATTR_SNES(L);
-   DECL_ATTR_SNES(R);
-   DECL_ATTR_SNES(L2);
-   DECL_ATTR_SNES(R2);
-   DECL_ATTR_SNES(L3);
-   DECL_ATTR_SNES(R3);
+   DECL_ATTR_RETRO(B);
+   DECL_ATTR_RETRO(Y);
+   DECL_ATTR_RETRO(SELECT);
+   DECL_ATTR_RETRO(START);
+   DECL_ATTR_RETRO(UP);
+   DECL_ATTR_RETRO(DOWN);
+   DECL_ATTR_RETRO(LEFT);
+   DECL_ATTR_RETRO(RIGHT);
+   DECL_ATTR_RETRO(A);
+   DECL_ATTR_RETRO(X);
+   DECL_ATTR_RETRO(L);
+   DECL_ATTR_RETRO(R);
+   DECL_ATTR_RETRO(L2);
+   DECL_ATTR_RETRO(R2);
+   DECL_ATTR_RETRO(L3);
+   DECL_ATTR_RETRO(R3);
 
-   DECL_ATTR_SSNES(FAST_FORWARD_KEY);
-   DECL_ATTR_SSNES(FAST_FORWARD_HOLD_KEY);
-   DECL_ATTR_SSNES(LOAD_STATE_KEY);
-   DECL_ATTR_SSNES(SAVE_STATE_KEY);
-   DECL_ATTR_SSNES(FULLSCREEN_TOGGLE_KEY);
-   DECL_ATTR_SSNES(QUIT_KEY);
-   DECL_ATTR_SSNES(STATE_SLOT_PLUS);
-   DECL_ATTR_SSNES(STATE_SLOT_MINUS);
-   DECL_ATTR_SSNES(AUDIO_INPUT_RATE_PLUS);
-   DECL_ATTR_SSNES(AUDIO_INPUT_RATE_MINUS);
-   DECL_ATTR_SSNES(REWIND);
-   DECL_ATTR_SSNES(MOVIE_RECORD_TOGGLE);
-   DECL_ATTR_SSNES(PAUSE_TOGGLE);
-   DECL_ATTR_SSNES(FRAMEADVANCE);
-   DECL_ATTR_SSNES(RESET);
-   DECL_ATTR_SSNES(SHADER_NEXT);
-   DECL_ATTR_SSNES(SHADER_PREV);
-   DECL_ATTR_SSNES(CHEAT_INDEX_PLUS);
-   DECL_ATTR_SSNES(CHEAT_INDEX_MINUS);
-   DECL_ATTR_SSNES(CHEAT_TOGGLE);
-   DECL_ATTR_SSNES(SCREENSHOT);
-   DECL_ATTR_SSNES(DSP_CONFIG);
-   DECL_ATTR_SSNES(MUTE);
+   DECL_ATTR_RARCH(FAST_FORWARD_KEY);
+   DECL_ATTR_RARCH(FAST_FORWARD_HOLD_KEY);
+   DECL_ATTR_RARCH(LOAD_STATE_KEY);
+   DECL_ATTR_RARCH(SAVE_STATE_KEY);
+   DECL_ATTR_RARCH(FULLSCREEN_TOGGLE_KEY);
+   DECL_ATTR_RARCH(QUIT_KEY);
+   DECL_ATTR_RARCH(STATE_SLOT_PLUS);
+   DECL_ATTR_RARCH(STATE_SLOT_MINUS);
+   DECL_ATTR_RARCH(AUDIO_INPUT_RATE_PLUS);
+   DECL_ATTR_RARCH(AUDIO_INPUT_RATE_MINUS);
+   DECL_ATTR_RARCH(REWIND);
+   DECL_ATTR_RARCH(MOVIE_RECORD_TOGGLE);
+   DECL_ATTR_RARCH(PAUSE_TOGGLE);
+   DECL_ATTR_RARCH(FRAMEADVANCE);
+   DECL_ATTR_RARCH(RESET);
+   DECL_ATTR_RARCH(SHADER_NEXT);
+   DECL_ATTR_RARCH(SHADER_PREV);
+   DECL_ATTR_RARCH(CHEAT_INDEX_PLUS);
+   DECL_ATTR_RARCH(CHEAT_INDEX_MINUS);
+   DECL_ATTR_RARCH(CHEAT_TOGGLE);
+   DECL_ATTR_RARCH(SCREENSHOT);
+   DECL_ATTR_RARCH(DSP_CONFIG);
+   DECL_ATTR_RARCH(MUTE);
 }
 
-static PyModuleDef SNESModule = {
-   PyModuleDef_HEAD_INIT, "snes", NULL, -1, SNESMethods,
+static PyModuleDef RarchModule = {
+   PyModuleDef_HEAD_INIT, "rarch", NULL, -1, RarchMethods,
    NULL, NULL, NULL, NULL
 };
 
-static PyObject* PyInit_SNES(void)
+static PyObject* PyInit_Retro(void)
 {
-   PyObject *mod = PyModule_Create(&SNESModule);
+   PyObject *mod = PyModule_Create(&RarchModule);
    if (!mod)
       return NULL;
 
@@ -238,7 +238,7 @@ static char *align_program(const char *program)
 py_state_t *py_state_new(const char *script, unsigned is_file, const char *pyclass)
 {
    RARCH_LOG("Initializing Python runtime ...\n");
-   PyImport_AppendInittab("snes", &PyInit_SNES);
+   PyImport_AppendInittab("rarch", &PyInit_Retro);
    Py_Initialize();
    RARCH_LOG("Initialized Python runtime.\n");
 

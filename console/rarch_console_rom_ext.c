@@ -41,51 +41,43 @@ static void rarch_console_load_game(const char *path)
 void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, unsigned delay)
 {
    const char *game_to_load;
-#ifdef HAVE_ZLIB
-   char first_file[PATH_MAX];
-#endif
+   char first_file_inzip[PATH_MAX];
    char rom_path_temp[PATH_MAX];
    char dir_path_temp[PATH_MAX];
    struct retro_system_info info;
    bool block_zip_extract = false;
+   bool extract_zip_cond = false;
+   bool extract_zip_and_load_game_cond = false;
+   bool load_game = !extract_zip_cond;
 
+#ifdef ANDROID
+   pretro_get_system_info(&info);
+#else
    retro_get_system_info(&info);
+#endif
    block_zip_extract = info.block_extract;
 
    snprintf(rom_path_temp, sizeof(rom_path_temp), path);
 
 #ifdef HAVE_ZLIB
-   bool extract_zip_cond = (strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP"))
+   extract_zip_cond = (strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP"))
    && !block_zip_extract;
-#else
-   bool extract_zip_cond = false;
-#endif
 
-#ifdef HAVE_ZLIB
    if(extract_zip_cond)
    {
       fill_pathname_basedir(dir_path_temp, rom_path_temp, sizeof(dir_path_temp));
-      rarch_extract_zipfile(rom_path_temp, dir_path_temp, first_file, sizeof(first_file), extract_zip_mode);
+      rarch_extract_zipfile(rom_path_temp, dir_path_temp, first_file_inzip, sizeof(first_file_inzip), extract_zip_mode);
 
-#ifndef GEKKO
       if(g_console.info_msg_enable)
-#endif
          rarch_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
    }
-#endif
 
-#ifdef HAVE_ZLIB
-   bool extract_zip_and_load_game_cond = (extract_zip_cond && 
+   extract_zip_and_load_game_cond = (extract_zip_cond && 
    g_console.zip_extract_mode == ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE);
-   bool load_game = (extract_zip_and_load_game_cond) || (!extract_zip_cond);
-#else
-   bool extract_zip_and_load_game_cond = false;
-   bool load_game = !extract_zip_cond;
-#endif
+   load_game = (extract_zip_and_load_game_cond) || (!extract_zip_cond);
 
-#ifdef HAVE_ZLIB
    if(extract_zip_and_load_game_cond)
-      game_to_load = first_file;
+      game_to_load = first_file_inzip;
    else
 #endif
       game_to_load = path;
@@ -94,9 +86,7 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, u
    {
       rarch_console_load_game(game_to_load);
 
-#ifndef GEKKO
       if(g_console.info_msg_enable)
-#endif
          rarch_settings_msg(S_MSG_LOADING_ROM, delay);
    }
 }

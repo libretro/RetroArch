@@ -195,8 +195,7 @@ end:
    free(lines);
 }
 
-bool screenshot_dump(const char *folder, const void *frame,
-      unsigned width, unsigned height, int pitch, bool bgr24)
+void screenshot_generate_filename(char *filename, size_t size)
 {
    time_t cur_time;
    time(&cur_time);
@@ -207,11 +206,17 @@ bool screenshot_dump(const char *folder, const void *frame,
 #define IMG_EXT "bmp"
 #endif
 
-   char timefmt[128];
-   strftime(timefmt, sizeof(timefmt), "RetroArch-%m%d-%H%M%S." IMG_EXT, localtime(&cur_time));
+   strftime(filename, size, "RetroArch-%m%d-%H%M%S." IMG_EXT, localtime(&cur_time));
+}
 
+bool screenshot_dump(const char *folder, const void *frame,
+      unsigned width, unsigned height, int pitch, bool bgr24)
+{
    char filename[PATH_MAX];
-   snprintf(filename, sizeof(filename), "%s/%s", folder, timefmt);
+   char shotname[PATH_MAX];
+
+   screenshot_generate_filename(shotname, sizeof(shotname));
+   snprintf(filename, sizeof(filename), "%s/%s", folder, shotname);
 
    FILE *file = fopen(filename, "wb");
    if (!file)

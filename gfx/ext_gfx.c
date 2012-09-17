@@ -59,25 +59,43 @@ static void input_ext_poll(void *data)
 
 static int16_t input_ext_input_state(void *data, const struct retro_keybind **retro_keybinds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
-   input_ext_t *ext = (input_ext_t*)data;
+   input_ext_t *ext          = (input_ext_t*)data;
+   unsigned player           = port + 1;
+   struct rarch_keybind bind = {0};
 
-   unsigned player = port + 1;
-
-   if (id < RARCH_BIND_LIST_END)
+   switch (device)
    {
-      const struct retro_keybind *rarch_bind = &retro_keybinds[player - 1][id];
-      if (!rarch_bind->valid)
+      case RETRO_DEVICE_JOYPAD:
+      {
+         if (id >= RARCH_BIND_LIST_END)
+            return 0;
+
+         const struct retro_keybind *rarch_bind = &retro_keybinds[player - 1][id];
+         if (!rarch_bind->valid)
+            return 0;
+
+         bind.key     = rarch_bind->key;
+         bind.joykey  = rarch_bind->joykey;
+         bind.joyaxis = rarch_bind->joyaxis;
+         break;
+      }
+
+      // TODO: RETRO_DEVICE_ANALOG.
+
+      case RETRO_DEVICE_KEYBOARD:
+         if (id >= RETROK_LAST)
+            return 0;
+
+         bind.key     = id;
+         bind.joykey  = NO_BTN;
+         bind.joyaxis = AXIS_NONE;
+         break;
+
+      default:
          return 0;
-
-      struct rarch_keybind bind = {0};
-      bind.key = rarch_bind->key;
-      bind.joykey = rarch_bind->joykey;
-      bind.joyaxis = rarch_bind->joyaxis;
-
-      return ext->driver->input_state(ext->handle, &bind, player);
    }
-   else
-      return 0;
+
+   return ext->driver->input_state(ext->handle, &bind, player);
 }
 
 static bool input_ext_key_pressed(void *data, int key)
@@ -91,8 +109,8 @@ static bool input_ext_key_pressed(void *data, int key)
          return false;
 
       struct rarch_keybind bind = {0};
-      bind.key = rarch_bind->key;
-      bind.joykey = rarch_bind->joykey;
+      bind.key     = rarch_bind->key;
+      bind.joykey  = rarch_bind->joykey;
       bind.joyaxis = rarch_bind->joyaxis;
 
       return ext->driver->input_state(ext->handle, &bind, 1);
@@ -121,12 +139,35 @@ static void input_ext_free(void *data)
    }
 }
 
+#ifdef RARCH_CONSOLE
+static void input_ext_set_default_keybind_lut(unsigned device, unsigned port)
+{
+   (void)device;
+   (void)port;
+}
+
+static void input_ext_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
+{
+   (void)device;
+   (void)map_dpad_enum;
+   (void)controller_id;
+}
+
+static void input_ext_input_post_init(void) {}
+#endif
+
 static const input_driver_t input_ext = {
    input_ext_init,
    input_ext_poll,
    input_ext_input_state,
    input_ext_key_pressed,
    input_ext_free,
+#ifdef RARCH_CONSOLE
+   input_ext_set_default_keybind_lut,
+   input_ext_set_analog_dpad_mapping,
+   input_ext_input_post_init,
+   2,
+#endif
    "ext"
 };
 
@@ -357,6 +398,13 @@ static bool video_read_viewport(void *data, uint8_t *buffer)
    return ext->driver->read_viewport(ext->handle, buffer);
 }
 
+#ifdef RARCH_CONSOLE
+static void video_ext_gfx_start(void) {}
+static void video_ext_gfx_restart(void) {}
+static void video_ext_gfx_stop(void) {}
+static void video_ext_gfx_apply_state_changes(void) {}
+#endif
+
 const video_driver_t video_ext = {
    video_ext_init,
    video_ext_frame,
@@ -366,6 +414,12 @@ const video_driver_t video_ext = {
    NULL,
    video_ext_free,
    "ext",
+#ifdef RARCH_CONSOLE
+   video_ext_gfx_start,
+   video_ext_gfx_stop,
+   video_ext_gfx_restart,
+   video_ext_gfx_apply_state_changes,
+#endif
 
    video_set_rotation,
    video_viewport_size,

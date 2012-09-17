@@ -186,6 +186,7 @@ typedef struct video_driver
    void (*start)(void);
    void (*stop)(void);
    void (*restart)(void);
+   void (*apply_state_changes)(void);
 #endif
 
    void (*set_rotation)(void *data, unsigned rotation);
@@ -237,10 +238,10 @@ extern const audio_driver_t audio_coreaudio;
 extern const audio_driver_t audio_xenon360;
 extern const audio_driver_t audio_xdk360;
 extern const audio_driver_t audio_ps3;
-extern const audio_driver_t audio_wii;
+extern const audio_driver_t audio_gx;
 extern const audio_driver_t audio_null;
 extern const video_driver_t video_gl;
-extern const video_driver_t video_wii;
+extern const video_driver_t video_gx;
 extern const video_driver_t video_xenon360;
 extern const video_driver_t video_xvideo;
 extern const video_driver_t video_xdk_d3d;
@@ -252,7 +253,7 @@ extern const input_driver_t input_sdl;
 extern const input_driver_t input_x;
 extern const input_driver_t input_ps3;
 extern const input_driver_t input_xenon360;
-extern const input_driver_t input_wii;
+extern const input_driver_t input_gx;
 extern const input_driver_t input_xinput;
 extern const input_driver_t input_linuxraw;
 extern const input_driver_t input_null;

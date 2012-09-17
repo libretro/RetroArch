@@ -46,12 +46,13 @@ enum {
    MENU_ITEM_SCREENSHOT_MODE,
    MENU_ITEM_RESET,
    MENU_ITEM_RETURN_TO_GAME,
-#ifdef __CELLOS_LV2__
    MENU_ITEM_RETURN_TO_MENU,
    MENU_ITEM_CHANGE_LIBRETRO,
+#ifdef HAVE_MULTIMAN
    MENU_ITEM_RETURN_TO_MULTIMAN,
 #endif
-   MENU_ITEM_RETURN_TO_DASHBOARD
+   MENU_ITEM_QUIT_RARCH,
+   MENU_ITEM_LAST
 };
 
 enum
@@ -70,9 +71,14 @@ enum
 #ifdef HAVE_HEADSET
    SOUND_MODE_HEADSET,
 #endif
+   SOUND_MODE_LAST
 };
 
+#ifdef _WIN32
+#define MAXIMUM_PATH 260
+#else
 #define MAXIMUM_PATH 512
+#endif
 
 typedef struct
 {
@@ -89,6 +95,7 @@ typedef struct
    char filebrowser_startup_dir[MAXIMUM_PATH];
    char filesystem_root_dir[MAXIMUM_PATH];
    char input_presets_dir[MAXIMUM_PATH];
+   char screenshots_dir[MAXIMUM_PATH];
 #ifdef HAVE_MULTIMAN
    char multiman_self_file[MAXIMUM_PATH];
 #endif
@@ -99,12 +106,11 @@ typedef struct
    char shader_file[MAXIMUM_PATH];
    char shader_dir[MAXIMUM_PATH];
 #endif
+   char salamander_file[MAXIMUM_PATH];
    char sram_dir[MAXIMUM_PATH];
    char system_dir[MAXIMUM_PATH];
 } default_paths_t;
 
 extern default_paths_t default_paths;
-
-#define MENU_ITEM_LAST MENU_ITEM_RETURN_TO_DASHBOARD+1
 
 #endif

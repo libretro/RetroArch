@@ -66,7 +66,7 @@ const char *config_get_default_audio(void)
       case AUDIO_PS3:
          return "ps3";
       case AUDIO_WII:
-         return "wii";
+         return "gx";
       case AUDIO_NULL:
          return "null";
       default:
@@ -81,7 +81,7 @@ const char *config_get_default_video(void)
       case VIDEO_GL:
          return "gl";
       case VIDEO_WII:
-         return "wii";
+         return "gx";
       case VIDEO_XENON360:
          return "xenon360";
       case VIDEO_XDK_D3D:
@@ -116,7 +116,7 @@ const char *config_get_default_input(void)
       case INPUT_XINPUT:
          return "xinput";
       case INPUT_WII:
-         return "wii";
+         return "gx";
       case INPUT_LINUXRAW:
          return "linuxraw";
       case INPUT_NULL:
@@ -178,6 +178,8 @@ void config_set_defaults(void)
    g_settings.video.hires_record = hires_record;
    g_settings.video.h264_record = h264_record;
    g_settings.video.post_filter_record = post_filter_record;
+   g_settings.video.gpu_record = gpu_record;
+   g_settings.video.gpu_screenshot = gpu_screenshot;
 
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
@@ -334,6 +336,19 @@ bool config_load_file(const char *path)
    if (conf == NULL)
       return true;
 
+   char *save;
+   char tmp_append_path[PATH_MAX]; // Don't destroy append_config_path.
+   strlcpy(tmp_append_path, g_extern.append_config_path, sizeof(tmp_append_path));
+   const char *extra_path = strtok_r(tmp_append_path, ",", &save);
+   while (extra_path)
+   {
+      RARCH_LOG("Appending config \"%s\"\n", extra_path);
+      bool ret = config_append_file(conf, extra_path);
+      if (!ret)
+         RARCH_ERR("Failed to append config \"%s\"\n", extra_path);
+      extra_path = strtok_r(NULL, ";", &save);
+   }
+
    if (g_extern.verbose)
    {
       fprintf(stderr, "=== Config ===\n");
@@ -361,9 +376,9 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.aspect_ratio_auto, "video_aspect_ratio_auto");
    CONFIG_GET_FLOAT(video.refresh_rate, "video_refresh_rate");
 
-   CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
-   CONFIG_GET_STRING(video.bsnes_shader_path, "video_bsnes_shader");
-   CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
+   CONFIG_GET_PATH(video.cg_shader_path, "video_cg_shader");
+   CONFIG_GET_PATH(video.bsnes_shader_path, "video_bsnes_shader");
+   CONFIG_GET_PATH(video.second_pass_shader, "video_second_pass_shader");
    CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
    CONFIG_GET_FLOAT(video.fbo_scale_x, "video_fbo_scale_x");
    CONFIG_GET_FLOAT(video.fbo_scale_y, "video_fbo_scale_y");
@@ -371,7 +386,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.allow_rotate, "video_allow_rotate");
 
 #ifdef HAVE_FREETYPE
-   CONFIG_GET_STRING(video.font_path, "video_font_path");
+   CONFIG_GET_PATH(video.font_path, "video_font_path");
    CONFIG_GET_INT(video.font_size, "video_font_size");
    CONFIG_GET_BOOL(video.font_enable, "video_font_enable");
    CONFIG_GET_BOOL(video.font_scale, "video_font_scale");
@@ -390,11 +405,13 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.hires_record, "video_hires_record");
    CONFIG_GET_BOOL(video.h264_record, "video_h264_record");
    CONFIG_GET_BOOL(video.post_filter_record, "video_post_filter_record");
+   CONFIG_GET_BOOL(video.gpu_record, "video_gpu_record");
+   CONFIG_GET_BOOL(video.gpu_screenshot, "video_gpu_screenshot");
 
 #ifdef HAVE_DYLIB
-   CONFIG_GET_STRING(video.filter_path, "video_filter");
-   CONFIG_GET_STRING(video.external_driver, "video_external_driver");
-   CONFIG_GET_STRING(audio.external_driver, "audio_external_driver");
+   CONFIG_GET_PATH(video.filter_path, "video_filter");
+   CONFIG_GET_PATH(video.external_driver, "video_external_driver");
+   CONFIG_GET_PATH(audio.external_driver, "audio_external_driver");
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_XML)
@@ -412,7 +429,7 @@ bool config_load_file(const char *path)
 #endif
 
 #if defined(HAVE_XML)
-   CONFIG_GET_STRING(video.shader_dir, "video_shader_dir");
+   CONFIG_GET_PATH(video.shader_dir, "video_shader_dir");
 #endif
 
    CONFIG_GET_FLOAT(input.axis_threshold, "input_axis_threshold");
@@ -437,13 +454,13 @@ bool config_load_file(const char *path)
 
    CONFIG_GET_STRING(video.driver, "video_driver");
    CONFIG_GET_STRING(audio.driver, "audio_driver");
-   CONFIG_GET_STRING(audio.dsp_plugin, "audio_dsp_plugin");
+   CONFIG_GET_PATH(audio.dsp_plugin, "audio_dsp_plugin");
    CONFIG_GET_STRING(input.driver, "input_driver");
 
    if (!*g_settings.libretro)
-      CONFIG_GET_STRING(libretro, "libretro_path");
+      CONFIG_GET_PATH(libretro, "libretro_path");
 
-   CONFIG_GET_STRING(screenshot_directory, "screenshot_directory");
+   CONFIG_GET_PATH(screenshot_directory, "screenshot_directory");
    if (*g_settings.screenshot_directory && !path_is_directory(g_settings.screenshot_directory))
    {
       RARCH_WARN("screenshot_directory is not an existing directory, ignoring ...\n");
@@ -464,8 +481,8 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(pause_nonactive, "pause_nonactive");
    CONFIG_GET_INT(autosave_interval, "autosave_interval");
 
-   CONFIG_GET_STRING(cheat_database, "cheat_database_path");
-   CONFIG_GET_STRING(cheat_settings_path, "cheat_settings_path");
+   CONFIG_GET_PATH(cheat_database, "cheat_database_path");
+   CONFIG_GET_PATH(cheat_settings_path, "cheat_settings_path");
 
    CONFIG_GET_BOOL(block_sram_overwrite, "block_sram_overwrite");
    CONFIG_GET_BOOL(savestate_auto_index, "savestate_auto_index");
@@ -487,7 +504,7 @@ bool config_load_file(const char *path)
       }
    }
 
-   if (!g_extern.has_set_save_path && config_get_array(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
+   if (!g_extern.has_set_save_path && config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
       if (path_is_directory(tmp_str))
       {
@@ -498,7 +515,7 @@ bool config_load_file(const char *path)
          RARCH_WARN("savefile_directory is not a directory, ignoring ....\n");
    }
 
-   if (!g_extern.has_set_state_path && config_get_array(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
+   if (!g_extern.has_set_state_path && config_get_path(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
       if (path_is_directory(tmp_str))
       {
@@ -509,7 +526,7 @@ bool config_load_file(const char *path)
          RARCH_WARN("savestate_directory is not a directory, ignoring ...\n");
    }
 
-   CONFIG_GET_STRING(system_directory, "system_directory");
+   CONFIG_GET_PATH(system_directory, "system_directory");
 
    config_read_keybinds_conf(conf);
 

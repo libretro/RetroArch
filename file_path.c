@@ -22,7 +22,7 @@
 #include "compat/strl.h"
 #include "compat/posix_string.h"
 
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <unistd.h> //stat() is defined here
 #define S_ISDIR(x) (x & CELL_FS_S_IFDIR)
 #endif
@@ -152,6 +152,24 @@ bool string_list_find_elem(const struct string_list *list, const char *elem)
    return false;
 }
 
+bool string_list_find_elem_prefix(const struct string_list *list, const char *prefix, const char *elem)
+{
+   if (!list)
+      return false;
+
+   char prefixed[PATH_MAX];
+   snprintf(prefixed, sizeof(prefixed), "%s%s", prefix, elem);
+
+   for (size_t i = 0; i < list->size; i++)
+   {
+      if (strcmp(list->elems[i].data, elem) == 0 ||
+            strcmp(list->elems[i].data, prefixed) == 0)
+         return true;
+   }
+
+   return false;
+}
+
 const char *path_get_extension(const char *path)
 {
    const char *ext = strrchr(path, '.');
@@ -222,7 +240,7 @@ struct string_list *dir_list_new(const char *dir, const char *ext, bool include_
       if (!include_dirs && is_dir)
          continue;
 
-      if (!is_dir && ext_list && !string_list_find_elem(ext_list, file_ext))
+      if (!is_dir && ext_list && !string_list_find_elem_prefix(ext_list, ".", file_ext))
          continue;
 
       char file_path[PATH_MAX];
@@ -279,7 +297,7 @@ struct string_list *dir_list_new(const char *dir, const char *ext, bool include_
       if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
          continue;
 
-      if (!is_dir && ext_list && !string_list_find_elem(ext_list, file_ext))
+      if (!is_dir && ext_list && !string_list_find_elem_prefix(ext_list, ".", file_ext))
          continue;
 
       char file_path[PATH_MAX];
@@ -415,3 +433,4 @@ size_t convert_wchar_to_char(char *out_char, const wchar_t *in_wchar, size_t siz
 {
    return wcstombs(out_char, in_wchar, size);
 }
+

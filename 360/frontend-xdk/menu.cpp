@@ -39,6 +39,35 @@ uint32_t set_shader = 0;
 wchar_t strw_buffer[PATH_MAX];
 char str_buffer[PATH_MAX];
 
+enum
+{
+   RMENU_DEVICE_NAV_UP = 0,
+   RMENU_DEVICE_NAV_DOWN,
+   RMENU_DEVICE_NAV_LEFT,
+   RMENU_DEVICE_NAV_RIGHT,
+   RMENU_DEVICE_NAV_UP_ANALOG_L,
+   RMENU_DEVICE_NAV_DOWN_ANALOG_L,
+   RMENU_DEVICE_NAV_LEFT_ANALOG_L,
+   RMENU_DEVICE_NAV_RIGHT_ANALOG_L,
+   RMENU_DEVICE_NAV_UP_ANALOG_R,
+   RMENU_DEVICE_NAV_DOWN_ANALOG_R,
+   RMENU_DEVICE_NAV_LEFT_ANALOG_R,
+   RMENU_DEVICE_NAV_RIGHT_ANALOG_R,
+   RMENU_DEVICE_NAV_B,
+   RMENU_DEVICE_NAV_A,
+   RMENU_DEVICE_NAV_X,
+   RMENU_DEVICE_NAV_Y,
+   RMENU_DEVICE_NAV_START,
+   RMENU_DEVICE_NAV_SELECT,
+   RMENU_DEVICE_NAV_L1,
+   RMENU_DEVICE_NAV_R1,
+   RMENU_DEVICE_NAV_L2,
+   RMENU_DEVICE_NAV_R2,
+   RMENU_DEVICE_NAV_L3,
+   RMENU_DEVICE_NAV_R3,
+   RMENU_DEVICE_NAV_LAST
+};
+
 /* Register custom classes */
 HRESULT CRetroArch::RegisterXuiClasses (void)
 {
@@ -67,12 +96,44 @@ HRESULT CRetroArch::UnregisterXuiClasses (void)
    return 0;
 }
 
-static void filebrowser_fetch_directory_entries(const char *path, 
- filebrowser_t * browser, CXuiList * romlist, CXuiTextElement * rompath_title)
+static void browser_update(filebrowser_t * b, uint64_t input, const char *extensions)
 {
-   filebrowser_push_directory(browser, path, true);
+   bool ret = true;
+   filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
 
-   convert_char_to_wchar(strw_buffer, path, sizeof(strw_buffer));
+   if (input & (1 << RMENU_DEVICE_NAV_DOWN))
+      action = FILEBROWSER_ACTION_DOWN;
+   else if (input & (1 << RMENU_DEVICE_NAV_UP))
+      action = FILEBROWSER_ACTION_UP;
+   else if (input & (1 << RMENU_DEVICE_NAV_RIGHT))
+      action = FILEBROWSER_ACTION_RIGHT;
+   else if (input & (1 << RMENU_DEVICE_NAV_LEFT))
+      action = FILEBROWSER_ACTION_LEFT;
+   else if (input & (1 << RMENU_DEVICE_NAV_R2))
+      action = FILEBROWSER_ACTION_SCROLL_DOWN;
+   else if (input & (1 << RMENU_DEVICE_NAV_L2))
+      action = FILEBROWSER_ACTION_SCROLL_UP;
+   else if (input & (1 << RMENU_DEVICE_NAV_A))
+      action = FILEBROWSER_ACTION_CANCEL;
+   else if (input & (1 << RMENU_DEVICE_NAV_START))
+   {
+      action = FILEBROWSER_ACTION_RESET;
+      filebrowser_set_root(b, default_paths.filesystem_root_dir);
+      strlcpy(b->extensions, extensions, sizeof(b->extensions));
+   }
+
+   if(action != FILEBROWSER_ACTION_NOOP)
+      ret = filebrowser_iterate(b, action);
+
+   if(!ret)
+      rarch_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
+}
+
+static void filebrowser_fetch_directory_entries(filebrowser_t * browser, uint64_t action, CXuiList * romlist, CXuiTextElement * rompath_title)
+{
+	browser_update(browser, action, browser->extensions); 
+
+   convert_char_to_wchar(strw_buffer, filebrowser_get_current_dir(browser), sizeof(strw_buffer));
    rompath_title->SetText(strw_buffer);
 
    romlist->DeleteItems(0, romlist->GetItemCount());
@@ -81,7 +142,7 @@ static void filebrowser_fetch_directory_entries(const char *path,
    for(unsigned i = 0; i < browser->current_dir.list->size; i++)
    {
       char fname_tmp[256];
-	  fill_pathname_base(fname_tmp, browser->current_dir.list->elems[i].data, sizeof(fname_tmp));
+      fill_pathname_base(fname_tmp, browser->current_dir.list->elems[i].data, sizeof(fname_tmp));
       convert_char_to_wchar(strw_buffer, fname_tmp, sizeof(strw_buffer));
       romlist->SetText(i, strw_buffer);
    }
@@ -95,37 +156,54 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiBtnGameDir", &m_dir_game);
    GetChildById(L"XuiBtnCacheDir", &m_dir_cache);
 
-   filebrowser_set_root(browser, g_console.default_rom_startup_dir);
-   strlcpy(tmp_browser->extensions, rarch_console_get_rom_ext(), sizeof(tmp_browser->extensions));
-   filebrowser_fetch_directory_entries(g_console.default_rom_startup_dir, 
-   browser, &m_romlist, &m_rompathtitle);
+   filebrowser_set_root_and_ext(browser, rarch_console_get_rom_ext(), g_console.default_rom_startup_dir);
+
+   uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+   filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
 
    return 0;
 }
 
-HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 {
-   GetChildById(L"XuiRomList", &m_romlist);
-   GetChildById(L"XuiBackButton1", &m_back);
-   GetChildById(L"XuiTxtRomPath", &m_rompathtitle);
+   char path[PATH_MAX];
 
-   filebrowser_set_root(tmp_browser, "game:");
-   strlcpy(tmp_browser->extensions, "xex|XEX", sizeof(tmp_browser->extensions));
-   filebrowser_fetch_directory_entries("game:", tmp_browser, &m_romlist, &m_rompathtitle);
+   if(hObjPressed == m_romlist)
+   {
+      int index = m_romlist.GetCurSel();
+      convert_wchar_to_char(str_buffer, (const wchar_t *)m_romlist.GetText(index), sizeof(str_buffer));
+      if(path_file_exists(browser->current_dir.list->elems[index].data))
+      {
+         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), str_buffer);
+         rarch_console_load_game_wrap(path, g_console.zip_extract_mode, S_DELAY_45);
+      }
+      else if(browser->current_dir.list->elems[index].attr.b)
+      {
+         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), str_buffer);
+		 uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+		 filebrowser_set_root_and_ext(browser, rarch_console_get_rom_ext(), path);
+         filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
+      }
+   }
+   else if (hObjPressed == m_dir_game)
+   {
+	   filebrowser_set_root_and_ext(browser, rarch_console_get_rom_ext(), g_console.default_rom_startup_dir);
+   uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+      filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
+   }
+#ifdef HAVE_HDD_CACHE_PARTITION
+   else if (hObjPressed == m_dir_cache)
+   {
+	   filebrowser_set_root_and_ext(browser, rarch_console_get_rom_ext(), "cache:");
+   uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+      filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
 
-   return 0;
-}
+      if (g_console.info_msg_enable)
+         rarch_settings_msg(S_MSG_CACHE_PARTITION, S_DELAY_180);
+   }
+#endif
 
-HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
-{
-   GetChildById(L"XuiRomList", &m_shaderlist);
-   GetChildById(L"XuiBackButton1", &m_back);
-   GetChildById(L"XuiTxtRomPath", &m_shaderpathtitle);
-
-   filebrowser_set_root(tmp_browser, "game:\\media\\shaders");
-   strlcpy(tmp_browser->extensions, "cg|CG", sizeof(tmp_browser->extensions));
-   filebrowser_fetch_directory_entries("game:\\media\\shaders", tmp_browser, 
-   &m_shaderlist, &m_shaderpathtitle);
+   bHandled = TRUE;
 
    return 0;
 }
@@ -151,6 +229,11 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
       convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer)); 
       m_controlslist.SetText(i, strw_buffer);
    }
+
+   snprintf(buttons[0], sizeof(buttons[0]), "D-Pad Emulation: %s", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[controlno]]);
+   convert_char_to_wchar(strw_buffer, buttons[0], sizeof(strw_buffer));
+   m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
+   m_controlslist.SetText(SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
    
    return 0;
 }
@@ -177,27 +260,66 @@ HRESULT CRetroArchControls::OnControlNavigate(
    switch(pControlNavigateData->nControlNavigate)
    {
       case XUI_CONTROL_NAVIGATE_LEFT:
-         if(current_index > 0 && current_index != SETTING_CONTROLS_DEFAULT_ALL)
-         {
-            rarch_input_set_keybind(controlno, KEYBIND_DECREMENT, current_index);
-            snprintf(button, sizeof(button), "%s #%d: %s", rarch_input_get_default_keybind_name(current_index), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
-            convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
-            m_controlslist.SetText(current_index, strw_buffer);
-         }
+		  switch(current_index)
+		  {
+			case SETTING_CONTROLS_DPAD_EMULATION:
+				switch(g_settings.input.dpad_emulation[controlno])
+				{
+					case DPAD_EMULATION_NONE:
+						break;
+					case DPAD_EMULATION_LSTICK:
+						input_xinput.set_analog_dpad_mapping(0, DPAD_EMULATION_NONE, controlno);
+						break;
+					case DPAD_EMULATION_RSTICK:
+						input_xinput.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, controlno);
+						break;
+				}
+			  break;
+			case SETTING_CONTROLS_DEFAULT_ALL:
+			  break;
+		     default:
+				 rarch_input_set_keybind(controlno, KEYBIND_DECREMENT, current_index);
+				 snprintf(button, sizeof(button), "%s #%d: %s", rarch_input_get_default_keybind_name(current_index), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+				 convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
+				 m_controlslist.SetText(current_index, strw_buffer);
+				 break;
+		  }
          break;
       case XUI_CONTROL_NAVIGATE_RIGHT:
-         if(current_index < RARCH_FIRST_META_KEY && current_index != SETTING_CONTROLS_DEFAULT_ALL)
-         {
-            rarch_input_set_keybind(controlno, KEYBIND_INCREMENT, current_index);
-            snprintf(button, sizeof(button), "%s #%d: %s", rarch_input_get_default_keybind_name(current_index), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
-            convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
-            m_controlslist.SetText(current_index, strw_buffer);
-         }
+		  switch(current_index)
+		  {
+			case SETTING_CONTROLS_DPAD_EMULATION:
+				switch(g_settings.input.dpad_emulation[controlno])
+				{
+					case DPAD_EMULATION_NONE:
+						input_xinput.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, controlno);
+						break;
+					case DPAD_EMULATION_LSTICK:
+						input_xinput.set_analog_dpad_mapping(0, DPAD_EMULATION_RSTICK, controlno);
+						break;
+					case DPAD_EMULATION_RSTICK:
+						break;
+				}
+			  break;
+			case SETTING_CONTROLS_DEFAULT_ALL:
+			  break;
+			default:
+				rarch_input_set_keybind(controlno, KEYBIND_INCREMENT, current_index);
+				snprintf(button, sizeof(button), "%s #%d: %s", rarch_input_get_default_keybind_name(current_index), controlno, rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
+				convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
+				m_controlslist.SetText(current_index, strw_buffer);
+				break;
+		  }
          break;
       case XUI_CONTROL_NAVIGATE_UP:
       case XUI_CONTROL_NAVIGATE_DOWN:
          break;
    }
+
+   snprintf(button, sizeof(button), "D-Pad Emulation: %s", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[controlno]]);
+   convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
+   m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
+   m_controlslist.SetText(SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
 
 	return 0;
 }
@@ -214,6 +336,8 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
       switch(current_index)
       {
+		 case SETTING_CONTROLS_DPAD_EMULATION:
+		  break;
          case SETTING_CONTROLS_DEFAULT_ALL:
             rarch_input_set_default_keybinds(0);
 
@@ -236,6 +360,11 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
       }
    }
 
+   snprintf(buttons[current_index], sizeof(buttons[current_index]), "D-Pad Emulation: %s", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[controlno]]);
+   convert_char_to_wchar(strw_buffer, buttons[current_index], sizeof(strw_buffer));
+   m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
+   m_controlslist.SetText(SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
+
    bHandled = TRUE;
    return 0;
 }
@@ -248,7 +377,7 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_console.info_msg_enable ? L"Info messages: ON" : L"Info messages: OFF");
    m_settingslist.SetText(SETTING_EMU_MENUS, g_console.menus_hd_enable ? L"Menus: HD" : L"Menus: SD");
-   m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+   m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
@@ -259,7 +388,102 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_SHADER_2, strw_buffer);
    rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
+   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
+   m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
 
+   return 0;
+}
+
+HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
+{
+   int current_index;
+   HRESULT hr;
+
+   if ( hObjPressed == m_settingslist)
+   {
+      current_index = m_settingslist.GetCurSel();
+
+      switch(current_index)
+      {
+         case SETTING_EMU_REWIND_ENABLED:
+            rarch_settings_change(S_REWIND);
+            m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
+			
+            if (g_console.info_msg_enable)
+	           rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+            break;
+	 case SETTING_EMU_SHOW_INFO_MSG:
+	    g_console.info_msg_enable = !g_console.info_msg_enable;
+	    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_console.info_msg_enable ? L"Info messages: ON" : L"Info messages: OFF");
+	    break;
+	 case SETTING_EMU_MENUS:
+	    g_console.menus_hd_enable = !g_console.menus_hd_enable;
+	    m_settingslist.SetText(SETTING_EMU_MENUS, g_console.menus_hd_enable ? L"Menus: HD" : L"Menus: SD");
+	    break;
+	 case SETTING_GAMMA_CORRECTION_ENABLED:
+	    g_console.gamma_correction = g_console.gamma_correction ? 0 : 1;
+	    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+	    if(g_console.info_msg_enable)
+           rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+	    break;
+	 case SETTING_COLOR_FORMAT:
+	    g_console.color_format = !g_console.color_format;
+	    m_settingslist.SetText(SETTING_COLOR_FORMAT, g_console.color_format ? L"Color format: 32bit ARGB" : L"Color format: 16bit RGBA");
+	    if(g_console.info_msg_enable)
+           rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+	    break;
+	 case SETTING_SHADER:
+	    set_shader = 1;
+	    hr = XuiSceneCreate(g_console.menus_hd_enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
+
+	    if (hr < 0)
+               RARCH_ERR("Failed to load scene.\n");
+
+	    hCur = app.hShaderBrowser;
+
+            if (g_console.info_msg_enable)
+               rarch_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
+
+	    NavigateForward(app.hShaderBrowser);
+	    break;
+	 case SETTING_SHADER_2:
+        set_shader = 2;
+	    hr = XuiSceneCreate(g_console.menus_hd_enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
+	    if (hr < 0)
+               RARCH_ERR("Failed to load scene.\n");
+
+	    hCur = app.hShaderBrowser;
+
+            if (g_console.info_msg_enable)
+               rarch_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
+
+	    NavigateForward(app.hShaderBrowser);
+	    break;
+	 case SETTING_HW_TEXTURE_FILTER:
+	    g_settings.video.smooth = !g_settings.video.smooth;
+	    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
+	    break;
+	 case SETTING_HW_TEXTURE_FILTER_2:
+	    g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
+	    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
+	    break;
+	 case SETTING_SCALE_ENABLED:
+	    g_console.fbo_enabled = !g_console.fbo_enabled;
+	    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
+	    gfx_ctx_set_fbo(g_console.fbo_enabled);
+	    break;
+         case SETTING_ZIP_EXTRACT:
+	    if(g_console.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
+               g_console.zip_extract_mode++;
+	    else
+               g_console.zip_extract_mode = 0;
+	    rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
+	    m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
+	    break;
+      }
+   }
+
+   bHandled = TRUE;
    return 0;
 }
 
@@ -275,6 +499,33 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
       case XUI_CONTROL_NAVIGATE_LEFT:
          switch(current_index)
          {
+			case SETTING_EMU_REWIND_ENABLED:
+				rarch_settings_change(S_REWIND);
+				m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
+				
+				if (g_console.info_msg_enable)
+					rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+				break;
+	 case SETTING_EMU_SHOW_INFO_MSG:
+	    g_console.info_msg_enable = !g_console.info_msg_enable;
+	    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_console.info_msg_enable ? L"Info messages: ON" : L"Info messages: OFF");
+	    break;
+	 case SETTING_EMU_MENUS:
+	    g_console.menus_hd_enable = !g_console.menus_hd_enable;
+	    m_settingslist.SetText(SETTING_EMU_MENUS, g_console.menus_hd_enable ? L"Menus: HD" : L"Menus: SD");
+	    break;
+	 case SETTING_GAMMA_CORRECTION_ENABLED:
+	    g_console.gamma_correction = g_console.gamma_correction ? 0 : 1;
+	    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+	    if(g_console.info_msg_enable)
+           rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+	    break;
+	 case SETTING_COLOR_FORMAT:
+	    g_console.color_format = !g_console.color_format;
+	    m_settingslist.SetText(SETTING_COLOR_FORMAT, g_console.color_format ? L"Color format: 32bit ARGB" : L"Color format: 16bit RGBA");
+	    if(g_console.info_msg_enable)
+           rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+	    break;
             case SETTING_SCALE_FACTOR:
                if(vid->fbo_enabled)
                {
@@ -286,6 +537,26 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                      m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
                   }
                }
+			   break;
+			case SETTING_ZIP_EXTRACT:
+				if(g_console.zip_extract_mode)
+					g_console.zip_extract_mode--;
+				rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
+				m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
+               break;
+	 case SETTING_HW_TEXTURE_FILTER:
+	    g_settings.video.smooth = !g_settings.video.smooth;
+	    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
+	    break;
+	 case SETTING_HW_TEXTURE_FILTER_2:
+	    g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
+	    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
+	    break;
+	 case SETTING_SCALE_ENABLED:
+	    g_console.fbo_enabled = !g_console.fbo_enabled;
+	    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
+	    gfx_ctx_set_fbo(g_console.fbo_enabled);
+	    break;
             default:
                break;
          }
@@ -293,6 +564,33 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
     case XUI_CONTROL_NAVIGATE_RIGHT:
         switch(current_index)
         {
+	 case SETTING_EMU_SHOW_INFO_MSG:
+	    g_console.info_msg_enable = !g_console.info_msg_enable;
+	    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_console.info_msg_enable ? L"Info messages: ON" : L"Info messages: OFF");
+	    break;
+	 case SETTING_EMU_MENUS:
+	    g_console.menus_hd_enable = !g_console.menus_hd_enable;
+	    m_settingslist.SetText(SETTING_EMU_MENUS, g_console.menus_hd_enable ? L"Menus: HD" : L"Menus: SD");
+	    break;
+	 case SETTING_GAMMA_CORRECTION_ENABLED:
+	    g_console.gamma_correction = g_console.gamma_correction ? 0 : 1;
+	    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+	    if(g_console.info_msg_enable)
+           rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+	    break;
+	 case SETTING_COLOR_FORMAT:
+	    g_console.color_format = !g_console.color_format;
+	    m_settingslist.SetText(SETTING_COLOR_FORMAT, g_console.color_format ? L"Color format: 32bit ARGB" : L"Color format: 16bit RGBA");
+	    if(g_console.info_msg_enable)
+           rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+	    break;
+			case SETTING_EMU_REWIND_ENABLED:
+				rarch_settings_change(S_REWIND);
+				m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
+				
+				if (g_console.info_msg_enable)
+					rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+				break;
             case SETTING_SCALE_FACTOR:
                 if(vid->fbo_enabled)
                 {
@@ -304,6 +602,26 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                        m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
                    }
                 }
+				break;
+			case SETTING_ZIP_EXTRACT:
+				if(g_console.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
+					g_console.zip_extract_mode++;
+				rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
+				m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
+				break;
+	 case SETTING_HW_TEXTURE_FILTER:
+	    g_settings.video.smooth = !g_settings.video.smooth;
+	    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
+	    break;
+	 case SETTING_HW_TEXTURE_FILTER_2:
+	    g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
+	    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
+	    break;
+	 case SETTING_SCALE_ENABLED:
+	    g_console.fbo_enabled = !g_console.fbo_enabled;
+	    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
+	    gfx_ctx_set_fbo(g_console.fbo_enabled);
+	    break;
             default:
                 break;
         }
@@ -492,7 +810,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    break;
 	 case MENU_ITEM_SCREENSHOT_MODE:
 	    if (g_console.info_msg_enable)
-           rarch_settings_msg(S_MSG_NOT_IMPLEMENTED, S_DELAY_180);
+           gfx_ctx_xdk_screenshot_dump(NULL);
 	    break;
 	 case MENU_ITEM_RESET:
             if (g_console.emulator_initialized)
@@ -505,8 +823,8 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    if (g_console.emulator_initialized)
                rarch_settings_change(S_RETURN_TO_GAME);
 	    break;
-	 case MENU_ITEM_RETURN_TO_DASHBOARD:
-	    rarch_settings_change(S_RETURN_TO_DASHBOARD);
+	 case MENU_ITEM_QUIT_RARCH:
+	    rarch_settings_change(S_QUIT_RARCH);
 	    break;
       }
    }
@@ -516,68 +834,15 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
    return 0;
 }
 
-HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
-   struct retro_system_info info;
-   retro_get_system_info(&info);
-   const char *id = info.library_name ? info.library_name : "Unknown";
+   GetChildById(L"XuiRomList", &m_shaderlist);
+   GetChildById(L"XuiBackButton1", &m_back);
+   GetChildById(L"XuiTxtRomPath", &m_shaderpathtitle);
 
-   GetChildById(L"XuiBtnRomBrowser", &m_filebrowser);
-   GetChildById(L"XuiBtnSettings", &m_settings);
-   GetChildById(L"XuiBtnQuickMenu", &m_quick_menu);
-   GetChildById(L"XuiBtnControls", &m_controls);
-   GetChildById(L"XuiBtnQuit", &m_quit);
-   GetChildById(L"XuiTxtTitle", &m_title);
-   GetChildById(L"XuiTxtCoreText", &m_core);
-   GetChildById(L"XuiBtnLibretroCore", &m_change_libretro_core);
-
-   char core_text[256];
-   snprintf(core_text, sizeof(core_text), "%s %s", id, info.library_version);
-
-   convert_char_to_wchar(strw_buffer, core_text, sizeof(strw_buffer));
-   m_core.SetText(strw_buffer);
-   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
-   m_title.SetText(strw_buffer);
-
-   return 0;
-}
-
-HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
-{
-   char path[PATH_MAX];
-
-   if(hObjPressed == m_romlist)
-   {
-      int index = m_romlist.GetCurSel();
-      convert_wchar_to_char(str_buffer, (const wchar_t *)m_romlist.GetText(index), sizeof(str_buffer));
-      if(path_file_exists(browser->current_dir.list->elems[index].data))
-      {
-         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), str_buffer);
-         rarch_console_load_game_wrap(path, g_console.zip_extract_mode, S_DELAY_45);
-      }
-      else if(browser->current_dir.list->elems[index].attr.b)
-      {
-         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), str_buffer);
-         filebrowser_fetch_directory_entries(path, browser, &m_romlist, &m_rompathtitle);
-      }
-   }
-   else if (hObjPressed == m_dir_game)
-   {
-      filebrowser_new(browser, g_console.default_rom_startup_dir, rarch_console_get_rom_ext());
-      filebrowser_fetch_directory_entries(g_console.default_rom_startup_dir, browser, &m_romlist, &m_rompathtitle);
-   }
-#ifdef HAVE_HDD_CACHE_PARTITION
-   else if (hObjPressed == m_dir_cache)
-   {
-      filebrowser_new(browser, "cache:", rarch_console_get_rom_ext());
-      filebrowser_fetch_directory_entries("cache:", browser, &m_romlist, &m_rompathtitle);
-
-      if (g_console.info_msg_enable)
-         rarch_settings_msg(S_MSG_CACHE_PARTITION, S_DELAY_180);
-   }
-#endif
-
-   bHandled = TRUE;
+   filebrowser_set_root_and_ext(tmp_browser, "cg|CG", "game:\\media\\shaders");
+   uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+   filebrowser_fetch_directory_entries(tmp_browser, action, &m_shaderlist, &m_shaderpathtitle);
 
    return 0;
 }
@@ -611,11 +876,26 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
       {
          convert_wchar_to_char(str_buffer, (const wchar_t *)m_shaderlist.GetText(index), sizeof(str_buffer));
          snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
-         filebrowser_fetch_directory_entries(path, tmp_browser, &m_shaderlist, &m_shaderpathtitle);
+		 filebrowser_set_root_and_ext(tmp_browser, "cg|CG", path);
+   uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+         filebrowser_fetch_directory_entries(tmp_browser, action, &m_shaderlist, &m_shaderpathtitle);
       }
    }
 
    bHandled = TRUE;
+
+   return 0;
+}
+
+HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
+{
+   GetChildById(L"XuiRomList", &m_romlist);
+   GetChildById(L"XuiBackButton1", &m_back);
+   GetChildById(L"XuiTxtRomPath", &m_rompathtitle);
+
+   filebrowser_set_root_and_ext(tmp_browser, "xex|XEX", "game:");
+   uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+   filebrowser_fetch_directory_entries(tmp_browser, action, &m_romlist, &m_rompathtitle);
 
    return 0;
 }
@@ -627,17 +907,18 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    if(hObjPressed == m_romlist)
    {
       int index = m_romlist.GetCurSel();
+      convert_wchar_to_char(str_buffer, (const wchar_t *)m_romlist.GetText(index), sizeof(str_buffer));
       if(path_file_exists(tmp_browser->current_dir.list->elems[index].data))
       {
-         convert_wchar_to_char(str_buffer, (const wchar_t *)m_romlist.GetText(index), sizeof(str_buffer));
          snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
          rarch_settings_change(S_RETURN_TO_LAUNCHER);
       }
       else if(tmp_browser->current_dir.list->elems[index].attr.b)
       {
-         convert_wchar_to_char(str_buffer, (const wchar_t *)m_romlist.GetText(index), sizeof(str_buffer));
-         snprintf(path, sizeof(path), "%s%s\\", filebrowser_get_current_dir(tmp_browser), str_buffer);
-         filebrowser_fetch_directory_entries(path, tmp_browser, &m_romlist, &m_rompathtitle);
+         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
+		 filebrowser_set_root_and_ext(tmp_browser, "xex|XEX", path);
+   uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+         filebrowser_fetch_directory_entries(tmp_browser, action, &m_romlist, &m_rompathtitle);
       }
    }
 
@@ -645,88 +926,32 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    return 0;
 }
 
-HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
+HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
-   int current_index;
-   HRESULT hr;
+   struct retro_system_info info;
+   retro_get_system_info(&info);
+   const char *id = info.library_name ? info.library_name : "Unknown";
 
-   if ( hObjPressed == m_settingslist)
-   {
-      current_index = m_settingslist.GetCurSel();
+   GetChildById(L"XuiLogo", &m_logoimage);
+   GetChildById(L"XuiBtnRomBrowser", &m_filebrowser);
+   GetChildById(L"XuiBtnSettings", &m_settings);
+   GetChildById(L"XuiBtnQuickMenu", &m_quick_menu);
+   GetChildById(L"XuiBtnControls", &m_controls);
+   GetChildById(L"XuiBtnQuit", &m_quit);
+   GetChildById(L"XuiTxtTitle", &m_title);
+   GetChildById(L"XuiTxtCoreText", &m_core);
+   GetChildById(L"XuiBtnLibretroCore", &m_change_libretro_core);
 
-      switch(current_index)
-      {
-         case SETTING_EMU_REWIND_ENABLED:
-            rarch_settings_change(S_REWIND);
-            m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-			
-            if (g_console.info_msg_enable)
-	           rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
-            break;
-	 case SETTING_EMU_SHOW_INFO_MSG:
-	    g_console.info_msg_enable = !g_console.info_msg_enable;
-	    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_console.info_msg_enable ? L"Info messages: ON" : L"Info messages: OFF");
-	    break;
-	 case SETTING_EMU_MENUS:
-	    g_console.menus_hd_enable = !g_console.menus_hd_enable;
-	    m_settingslist.SetText(SETTING_EMU_MENUS, g_console.menus_hd_enable ? L"Menus: HD" : L"Menus: SD");
-	    break;
-	 case SETTING_GAMMA_CORRECTION_ENABLED:
-	    g_console.gamma_correction_enable = !g_console.gamma_correction_enable;
-	    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_console.gamma_correction_enable ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-	    if(g_console.info_msg_enable)
-           rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
-	    break;
-	 case SETTING_COLOR_FORMAT:
-	    g_console.color_format = !g_console.color_format;
-	    m_settingslist.SetText(SETTING_COLOR_FORMAT, g_console.color_format ? L"Color format: 32bit ARGB" : L"Color format: 16bit RGBA");
-	    if(g_console.info_msg_enable)
-           rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
-	    break;
-	 case SETTING_SHADER:
-	    set_shader = 1;
-	    hr = XuiSceneCreate(g_console.menus_hd_enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
+   char core_text[256];
+   snprintf(core_text, sizeof(core_text), "%s %s", id, info.library_version);
 
-	    if (hr < 0)
-               RARCH_ERR("Failed to load scene.\n");
+   convert_char_to_wchar(strw_buffer, core_text, sizeof(strw_buffer));
+   m_core.SetText(strw_buffer);
+   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
+   m_title.SetText(strw_buffer);
 
-	    hCur = app.hShaderBrowser;
+  g_console.input_loop = INPUT_LOOP_NONE;
 
-            if (g_console.info_msg_enable)
-               rarch_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
-
-	    NavigateForward(app.hShaderBrowser);
-	    break;
-	 case SETTING_SHADER_2:
-        set_shader = 2;
-	    hr = XuiSceneCreate(g_console.menus_hd_enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
-	    if (hr < 0)
-               RARCH_ERR("Failed to load scene.\n");
-
-	    hCur = app.hShaderBrowser;
-
-            if (g_console.info_msg_enable)
-               rarch_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
-
-	    NavigateForward(app.hShaderBrowser);
-	    break;
-	 case SETTING_HW_TEXTURE_FILTER:
-	    g_settings.video.smooth = !g_settings.video.smooth;
-	    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
-	    break;
-	 case SETTING_HW_TEXTURE_FILTER_2:
-	    g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
-	    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
-	    break;
-	 case SETTING_SCALE_ENABLED:
-	    g_console.fbo_enabled = !g_console.fbo_enabled;
-	    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-	    gfx_ctx_set_fbo(g_console.fbo_enabled);
-	    break;
-      }
-   }
-
-   bHandled = TRUE;
    return 0;
 }
 
@@ -740,6 +965,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
    if ( hObjPressed == m_filebrowser )
    {
+      g_console.input_loop = INPUT_LOOP_FILEBROWSER;
       hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_filebrowser.xur", NULL, &app.hFileBrowser);
 
       if (hr < 0)
@@ -802,13 +1028,13 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       NavigateForward(app.hRetroArchSettings);
    }
    else if ( hObjPressed == m_quit )
-      rarch_settings_change(S_RETURN_TO_DASHBOARD);
+      rarch_settings_change(S_QUIT_RARCH);
 
    bHandled = TRUE;
    return 0;
 }
 
-int menu_init (void)
+void menu_init (void)
 {
    HRESULT hr;
 
@@ -821,7 +1047,7 @@ int menu_init (void)
    if (hr < 0)
    {
       RARCH_ERR("Failed initializing XUI application.\n");
-      return 1;
+      return;
    }
 
    /* Register font */
@@ -829,21 +1055,21 @@ int menu_init (void)
    if (hr < 0)
    {
       RARCH_ERR("Failed to register default typeface.\n");
-      return 1;
+      return;
    }
 
    hr = app.LoadSkin( L"file://game:/media/rarch_scene_skin.xur");
    if (hr < 0)
    {
       RARCH_ERR("Failed to load skin.\n");
-      return 1;
+      return;
    }
 
    hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_main.xur", NULL, &app.hMainScene);
    if (hr < 0)
    {
       RARCH_ERR("Failed to create scene 'rarch_main.xur'.\n");
-      return 1;
+      return;
    }
 
    hCur = app.hMainScene;
@@ -852,8 +1078,6 @@ int menu_init (void)
    browser = (filebrowser_t*)malloc(1 * sizeof(filebrowser_t));
    tmp_browser = (filebrowser_t*)malloc(1 * sizeof(filebrowser_t));
    filebrowser_new(browser, g_console.default_rom_startup_dir, rarch_console_get_rom_ext());
-
-   return 0;
 }
 
 void menu_free (void)
@@ -934,9 +1158,18 @@ void menu_loop(void)
 
       switch(g_console.input_loop)
       {
+     	  case INPUT_LOOP_FILEBROWSER:
+			  /*
+			  if(((state.Gamepad.wButtons & XINPUT_GAMEPAD_Y) && hCur != app.hMainScene))
+			  {
+				uint64_t action = (1 << RMENU_DEVICE_NAV_A);
+				browser_update(browser, action, rarch_console_get_rom_ext());
+				SET_TIMER_EXPIRATION(d3d, 15);
+			  }
+			  */
          case INPUT_LOOP_MENU:
             app.RunFrame(); /* Update XUI */
-            if(state.Gamepad.wButtons & XINPUT_GAMEPAD_B && hCur != app.hMainScene)
+            if((state.Gamepad.wButtons & XINPUT_GAMEPAD_B) && hCur != app.hMainScene)
                XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
             break;
          case INPUT_LOOP_RESIZE_MODE:
@@ -958,11 +1191,7 @@ void menu_loop(void)
 
       if (message)
       {
-         if(IS_TIMER_EXPIRED(d3d))
-         {
-            xdk360_console_format(message);
-            SET_TIMER_EXPIRATION(d3d, 30);
-         }
+		  xdk360_console_format(message);
          xdk360_console_draw();
       }
 

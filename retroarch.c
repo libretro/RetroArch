@@ -72,21 +72,22 @@ static void set_fast_forward_button(bool new_button_state, bool new_hold_button_
 
    if (update_sync)
    {
-      if (g_extern.video_active)
+      // Only apply non-block-state for video if we're using vsync.
+      if (g_extern.video_active && g_settings.video.vsync && !g_extern.system.force_nonblock)
          video_set_nonblock_state_func(syncing_state);
+
       if (g_extern.audio_active)
          audio_set_nonblock_state_func(g_settings.audio.sync ? syncing_state : true);
 
-      if (syncing_state)
-         g_extern.audio_data.chunk_size =
-            syncing_state ? g_extern.audio_data.nonblock_chunk_size : g_extern.audio_data.block_chunk_size;
+      g_extern.audio_data.chunk_size =
+         syncing_state ? g_extern.audio_data.nonblock_chunk_size : g_extern.audio_data.block_chunk_size;
    }
 
    old_button_state = new_button_state;
    old_hold_button_state = new_hold_button_state;
 }
 
-#ifdef HAVE_SCREENSHOTS
+#if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
 static bool take_screenshot_viewport(void)
 {
    unsigned width = 0, height = 0;
@@ -139,7 +140,7 @@ static void take_screenshot(void)
 
    bool ret = false;
 
-   if (driver.video->read_viewport && driver.video->viewport_size)
+   if (g_settings.video.gpu_screenshot && driver.video->read_viewport && driver.video->viewport_size)
       ret = take_screenshot_viewport();
    else if (g_extern.frame_cache.data)
       ret = take_screenshot_raw();
@@ -186,6 +187,64 @@ static void readjust_audio_input_rate(void)
    //      g_extern.audio_data.src_ratio, g_extern.audio_data.orig_src_ratio);
 }
 
+#ifdef HAVE_FFMPEG
+static void deinit_recording(void);
+
+static void recording_dump_frame(const void *data, unsigned width, unsigned height, size_t pitch)
+{
+   struct ffemu_video_data ffemu_data = {0};
+
+   if (g_extern.record_gpu_buffer)
+   {
+      unsigned gpu_w = 0, gpu_h = 0;
+      video_viewport_size_func(&gpu_w, &gpu_h);
+      if (!gpu_w || !gpu_h)
+      {
+         RARCH_WARN("Viewport size calculation failed! Will continue using raw data. This will probably not work right ...\n");
+         free(g_extern.record_gpu_buffer);
+         g_extern.record_gpu_buffer = NULL;
+
+         recording_dump_frame(data, width, height, pitch);
+         return;
+      }
+
+      // User has resized. We're kinda fucked now.
+      if (gpu_w != g_extern.record_gpu_width || gpu_h != g_extern.record_gpu_height)
+      {
+         static const char msg[] = "Recording terminated due to resize.";
+         RARCH_WARN("%s\n", msg);
+         msg_queue_clear(g_extern.msg_queue);
+         msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+
+         deinit_recording();
+         g_extern.recording = false;
+         return;
+      }
+
+      // Big bottleneck. Also adds one frame "delay" to video output as we haven't rendered the current frame yet.
+      // It will probably improve performance a lot though, who knows.
+      video_read_viewport_func(g_extern.record_gpu_buffer);
+
+      ffemu_data.pitch  = g_extern.record_gpu_width * 3;
+      ffemu_data.width  = g_extern.record_gpu_width;
+      ffemu_data.height = g_extern.record_gpu_height;
+      ffemu_data.data   = g_extern.record_gpu_buffer + (ffemu_data.height - 1) * ffemu_data.pitch;
+
+      ffemu_data.pitch  = -ffemu_data.pitch;
+   }
+   else
+   {
+      ffemu_data.data    = data;
+      ffemu_data.pitch   = pitch;
+      ffemu_data.width   = width;
+      ffemu_data.height  = height;
+      ffemu_data.is_dupe = !data;
+   }
+
+   ffemu_push_video(g_extern.rec, &ffemu_data);
+}
+#endif
+
 static void video_frame(const void *data, unsigned width, unsigned height, size_t pitch)
 {
 #ifndef RARCH_CONSOLE
@@ -196,16 +255,8 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
    // Slightly messy code,
    // but we really need to do processing before blocking on VSync for best possible scheduling.
 #ifdef HAVE_FFMPEG
-   if (g_extern.recording && (!g_extern.filter.active || !g_settings.video.post_filter_record || !data))
-   {
-      struct ffemu_video_data ffemu_data = {0};
-      ffemu_data.data = data;
-      ffemu_data.pitch = pitch;
-      ffemu_data.width = width;
-      ffemu_data.height = height;
-      ffemu_data.is_dupe = !data;
-      ffemu_push_video(g_extern.rec, &ffemu_data);
-   }
+   if (g_extern.recording && (!g_extern.filter.active || !g_settings.video.post_filter_record || !data || g_extern.record_gpu_buffer))
+      recording_dump_frame(data, width, height, pitch);
 #endif
 
    const char *msg = msg_queue_pull(g_extern.msg_queue);
@@ -221,14 +272,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 
 #ifdef HAVE_FFMPEG
       if (g_extern.recording && g_settings.video.post_filter_record)
-      {
-         struct ffemu_video_data ffemu_data = {0};
-         ffemu_data.data = g_extern.filter.buffer;
-         ffemu_data.pitch = g_extern.filter.pitch;
-         ffemu_data.width = owidth;
-         ffemu_data.height = oheight;
-         ffemu_push_video(g_extern.rec, &ffemu_data);
-      }
+         recording_dump_frame(g_extern.filter.buffer, owidth, oheight, g_extern.filter.pitch);
 #endif
 
       if (!video_frame_func(g_extern.filter.buffer, owidth, oheight, g_extern.filter.pitch, msg))
@@ -354,7 +398,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
    if (audio_write_func(output_data, output_frames * sizeof(int16_t) * 2) < 0)
    {
-      fprintf(stderr, "RetroArch [ERROR]: Audio backend failed to write. Will continue without sound.\n");
+      RARCH_ERR("Audio backend failed to write. Will continue without sound.\n");
       return false;
    }
 #else
@@ -363,7 +407,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
       if (audio_write_func(g_extern.audio_data.mute ? empty_buf.f : output_data,
                output_frames * sizeof(float) * 2) < 0)
       {
-         fprintf(stderr, "RetroArch [ERROR]: Audio backend failed to write. Will continue without sound.\n");
+         RARCH_ERR("Audio backend failed to write. Will continue without sound.\n");
          return false;
       }
    }
@@ -378,7 +422,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
       if (audio_write_func(g_extern.audio_data.mute ? empty_buf.i : g_extern.audio_data.conv_outsamples,
                output_frames * sizeof(int16_t) * 2) < 0)
       {
-         fprintf(stderr, "RetroArch [ERROR]: Audio backend failed to write. Will continue without sound.\n");
+         RARCH_ERR("Audio backend failed to write. Will continue without sound.\n");
          return false;
       }
    }
@@ -457,7 +501,7 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
    };
 
    int16_t res = 0;
-   if (id < RARCH_FIRST_META_KEY)
+   if (id < RARCH_FIRST_META_KEY || device == RETRO_DEVICE_KEYBOARD)
       res = input_input_state_func(binds, port, device, index, id);
 
 #ifdef HAVE_BSV_MOVIE
@@ -504,7 +548,6 @@ static void print_features(void)
    _PSUPP(fbo, "FBO", "OpenGL render-to-texture (multi-pass shaders)");
    _PSUPP(dynamic, "Dynamic", "Dynamic run-time loading of libretro library");
    _PSUPP(ffmpeg, "FFmpeg", "On-the-fly recording of gameplay with libavcodec");
-   _PSUPP(x264rgb, "x264 RGB", "x264 lossless RGB recording for FFmpeg");
    _PSUPP(configfile, "Config file", "Configuration file support");
    _PSUPP(freetype, "FreeType", "TTF font rendering with FreeType");
    _PSUPP(netplay, "Netplay", "Peer-to-peer netplay");
@@ -550,6 +593,8 @@ static void print_help(void)
    puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
 #ifdef HAVE_CONFIGFILE
    puts("\t-c/--config: Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
+   puts("\t--appendconfig: Extra config files are loaded in, and take priority over config selected in -c (or default).");
+   puts("\t\tMultiple configs are delimited by ','.");
 #endif
 #ifdef HAVE_DYNAMIC
    puts("\t-L/--libretro: Path to libretro implementation. Overrides any config setting.");
@@ -559,13 +604,15 @@ static void print_help(void)
    puts("\t-B/--bsxslot: Path to BSX slotted rom. Load BSX BIOS as the regular rom.");
    puts("\t--sufamiA: Path to A slot of Sufami Turbo. Load Sufami base cart as regular rom.");
    puts("\t--sufamiB: Path to B slot of Sufami Turbo.");
-   puts("\t-m/--mouse: Connect a virtual mouse into designated port of the SNES (1 or 2)."); 
-   puts("\t\tThis argument can be specified several times to connect more mice.");
-   puts("\t-N/--nodevice: Disconnects the controller device connected to the emulated SNES (1 or 2).");
-   puts("\t-p/--scope: Connect a virtual SuperScope into port 2 of the SNES.");
-   puts("\t-j/--justifier: Connect a virtual Konami Justifier into port 2 of the SNES.");
-   puts("\t-J/--justifiers: Daisy chain two virtual Konami Justifiers into port 2 of the SNES.");
-   puts("\t-4/--multitap: Connect a multitap to port 2 of the SNES.");
+
+   printf("\t-N/--nodevice: Disconnects controller device connected to port (1 to %d).\n", MAX_PLAYERS);
+   printf("\t-A/--dualanalog: Connect a DualAnalog controller to port (1 to %d).\n", MAX_PLAYERS);
+   printf("\t-m/--mouse: Connect a mouse into port of the device (1 to %d).\n", MAX_PLAYERS); 
+   puts("\t-p/--scope: Connect a virtual SuperScope into port 2. (SNES specific).");
+   puts("\t-j/--justifier: Connect a virtual Konami Justifier into port 2. (SNES specific).");
+   puts("\t-J/--justifiers: Daisy chain two virtual Konami Justifiers into port 2. (SNES specific).");
+   puts("\t-4/--multitap: Connect a SNES multitap to port 2. (SNES specific).");
+
 #ifdef HAVE_BSV_MOVIE
    puts("\t-P/--bsvplay: Playback a BSV movie file.");
    puts("\t-R/--bsvrecord: Start recording a BSV movie file from the beginning.");
@@ -721,16 +768,18 @@ static void parse_input(int argc, char *argv[])
       { "verbose", 0, NULL, 'v' },
       { "gameboy", 1, NULL, 'g' },
 #ifdef HAVE_CONFIGFILE
-      { "config", 0, NULL, 'c' },
+      { "config", 1, NULL, 'c' },
+      { "appendconfig", 1, &val, 'C' },
 #endif
       { "mouse", 1, NULL, 'm' },
       { "nodevice", 1, NULL, 'N' },
       { "scope", 0, NULL, 'p' },
+      { "justifier", 0, NULL, 'j' },
+      { "justifiers", 0, NULL, 'J' },
+      { "dualanalog", 1, NULL, 'A' },
       { "savestate", 1, NULL, 'S' },
       { "bsx", 1, NULL, 'b' },
       { "bsxslot", 1, NULL, 'B' },
-      { "justifier", 0, NULL, 'j' },
-      { "justifiers", 0, NULL, 'J' },
       { "multitap", 0, NULL, '4' },
       { "sufamiA", 1, NULL, 'Y' },
       { "sufamiB", 1, NULL, 'Z' },
@@ -790,7 +839,7 @@ static void parse_input(int argc, char *argv[])
 #define BSV_MOVIE_ARG
 #endif
 
-   const char *optstring = "hs:fvS:m:p4jJg:b:B:Y:Z:U:DN:X:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+   const char *optstring = "hs:fvS:m:p4jJA:g:b:B:Y:Z:U:DN:X:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
    for (;;)
    {
       val = 0;
@@ -816,6 +865,17 @@ static void parse_input(int argc, char *argv[])
 
          case 'J':
             g_extern.has_justifiers = true;
+            break;
+
+         case 'A':
+            port = strtol(optarg, NULL, 0);
+            if (port < 1 || port > MAX_PLAYERS)
+            {
+               RARCH_ERR("Connect dualanalog to a valid port.\n");
+               print_help();
+               rarch_fail(1, "parse_input()");
+            }
+            g_extern.has_dualanalog[port - 1] = true;
             break;
 
          case 's':
@@ -863,9 +923,9 @@ static void parse_input(int argc, char *argv[])
 
          case 'm':
             port = strtol(optarg, NULL, 0);
-            if (port < 1 || port > 2)
+            if (port < 1 || port > MAX_PLAYERS)
             {
-               RARCH_ERR("Connect mouse to port 1 or 2.\n");
+               RARCH_ERR("Connect mouse to a valid port.\n");
                print_help();
                rarch_fail(1, "parse_input()");
             }
@@ -874,9 +934,9 @@ static void parse_input(int argc, char *argv[])
 
          case 'N':
             port = strtol(optarg, NULL, 0);
-            if (port < 1 || port > 2)
+            if (port < 1 || port > MAX_PLAYERS)
             {
-               RARCH_ERR("Disconnected device from port 1 or 2.\n");
+               RARCH_ERR("Disconnect device from a valid port.\n");
                print_help();
                rarch_fail(1, "parse_input()");
             }
@@ -884,7 +944,7 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'p':
-            g_extern.has_scope[1] = true;
+            g_extern.has_scope = true;
             break;
 
 #ifdef HAVE_CONFIGFILE
@@ -990,6 +1050,10 @@ static void parse_input(int argc, char *argv[])
                   break;
 #endif
 
+               case 'C':
+                  strlcpy(g_extern.append_config_path, optarg, sizeof(g_extern.append_config_path));
+                  break;
+
                case 'B':
                   strlcpy(g_extern.bps_name, optarg, sizeof(g_extern.bps_name));
                   g_extern.bps_pref = true;
@@ -1053,9 +1117,27 @@ static void parse_input(int argc, char *argv[])
       verify_stdin_paths();
 }
 
-// TODO: Add rest of the controllers.
 static void init_controllers(void)
 {
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   {
+      if (g_extern.disconnect_device[i])
+      {
+         RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
+         pretro_set_controller_port_device(i, RETRO_DEVICE_NONE);
+      }
+      else if (g_extern.has_dualanalog[i])
+      {
+         RARCH_LOG("Connecting dualanalog to port %u.\n", i + 1);
+         pretro_set_controller_port_device(i, RETRO_DEVICE_ANALOG);
+      }
+      else if (g_extern.has_mouse[i])
+      {
+         RARCH_LOG("Connecting mouse to port %u.\n", i + 1);
+         pretro_set_controller_port_device(i, RETRO_DEVICE_MOUSE);
+      }
+   }
+
    if (g_extern.has_justifier)
    {
       RARCH_LOG("Connecting Justifier to port 2.\n");
@@ -1071,26 +1153,10 @@ static void init_controllers(void)
       RARCH_LOG("Connecting Multitap to port 2.\n");
       pretro_set_controller_port_device(1, RETRO_DEVICE_JOYPAD_MULTITAP);
    }
-   else
+   else if (g_extern.has_scope)
    {
-      for (unsigned i = 0; i < 2; i++)
-      {
-         if (g_extern.disconnect_device[i])
-         {
-            RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
-            pretro_set_controller_port_device(i, RETRO_DEVICE_NONE);
-         }
-         else if (g_extern.has_mouse[i])
-         {
-            RARCH_LOG("Connecting mouse to port %u.\n", i + 1);
-            pretro_set_controller_port_device(i, RETRO_DEVICE_MOUSE);
-         }
-         else if (g_extern.has_scope[i])
-         {
-            RARCH_LOG("Connecting scope to port %u.\n", i + 1);
-            pretro_set_controller_port_device(i, RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE);
-         }
-      }
+      RARCH_LOG("Connecting scope to port 2.\n");
+      pretro_set_controller_port_device(1, RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE);
    }
 }
 
@@ -1179,47 +1245,86 @@ static void init_recording(void)
    params.filename   = g_extern.record_path;
    params.fps        = fps;
    params.samplerate = samplerate;
-   params.rgb32      = g_extern.system.rgb32;
+   params.pix_fmt    = g_extern.system.rgb32 ? FFEMU_PIX_ARGB8888 : FFEMU_PIX_XRGB1555;
 
-   if (g_extern.record_width || g_extern.record_height)
+   if (g_settings.video.gpu_record && driver.video->read_viewport)
    {
-      params.out_width = g_extern.record_width;
-      params.out_height = g_extern.record_height;
-   }
-   else if (g_settings.video.hires_record)
-   {
-      params.out_width *= 2;
-      params.out_height *= 2;
-   }
+      unsigned width = 0, height = 0;
+      video_viewport_size_func(&width, &height);
 
-   if (g_settings.video.force_aspect && (g_settings.video.aspect_ratio > 0.0f))
-      params.aspect_ratio = g_settings.video.aspect_ratio;
+      if (!width || !height)
+      {
+         RARCH_ERR("Failed to get viewport information from video driver. "
+               "Cannot start recording ...\n");
+         g_extern.recording = false;
+         return;
+      }
+
+      params.out_width           = width;
+      params.out_height          = height;
+      params.fb_width            = next_pow2(width);
+      params.fb_height           = next_pow2(height);
+      params.aspect_ratio        = (float)width / height;
+      params.pix_fmt             = FFEMU_PIX_BGR24;
+      g_extern.record_gpu_width  = width;
+      g_extern.record_gpu_height = height;
+
+      RARCH_LOG("Detected viewport of %u x %u\n",
+            width, height);
+
+      g_extern.record_gpu_buffer = (uint8_t*)malloc(width * height * 3);
+      if (!g_extern.record_gpu_buffer)
+      {
+         RARCH_ERR("Failed to allocate GPU record buffer.\n");
+         g_extern.recording = false;
+         return;
+      }
+   }
    else
-      params.aspect_ratio = (float)params.out_width / params.out_height;
-
-   if (g_settings.video.post_filter_record && g_extern.filter.active)
    {
-      g_extern.filter.psize(&params.out_width, &params.out_height);
-      params.rgb32 = true;
+      if (g_extern.record_width || g_extern.record_height)
+      {
+         params.out_width = g_extern.record_width;
+         params.out_height = g_extern.record_height;
+      }
+      else if (g_settings.video.hires_record)
+      {
+         params.out_width  *= 2;
+         params.out_height *= 2;
+      }
 
-      unsigned max_width = params.fb_width;
-      unsigned max_height = params.fb_height;
-      g_extern.filter.psize(&max_width, &max_height);
-      params.fb_width = next_pow2(max_width);
-      params.fb_height = next_pow2(max_height);
+      if (g_settings.video.force_aspect && (g_settings.video.aspect_ratio > 0.0f))
+         params.aspect_ratio = g_settings.video.aspect_ratio;
+      else
+         params.aspect_ratio = (float)params.out_width / params.out_height;
+
+      if (g_settings.video.post_filter_record && g_extern.filter.active)
+      {
+         g_extern.filter.psize(&params.out_width, &params.out_height);
+         params.pix_fmt = FFEMU_PIX_ARGB8888;
+
+         unsigned max_width  = params.fb_width;
+         unsigned max_height = params.fb_height;
+         g_extern.filter.psize(&max_width, &max_height);
+         params.fb_width  = next_pow2(max_width);
+         params.fb_height = next_pow2(max_height);
+      }
    }
 
-   RARCH_LOG("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u 32-bit: %s)\n",
+   RARCH_LOG("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
          g_extern.record_path,
          params.out_width, params.out_height,
          params.fb_width, params.fb_height,
-         params.rgb32 ? "yes" : "no");
+         (unsigned)params.pix_fmt);
 
    g_extern.rec = ffemu_new(&params);
    if (!g_extern.rec)
    {
       RARCH_ERR("Failed to start FFmpeg recording.\n");
       g_extern.recording = false;
+
+      free(g_extern.record_gpu_buffer);
+      g_extern.record_gpu_buffer = NULL;
    }
 }
 
@@ -1229,6 +1334,10 @@ static void deinit_recording(void)
    {
       ffemu_finalize(g_extern.rec);
       ffemu_free(g_extern.rec);
+      g_extern.rec = NULL;
+
+      free(g_extern.record_gpu_buffer);
+      g_extern.record_gpu_buffer = NULL;
    }
 }
 #endif
@@ -1413,7 +1522,7 @@ static void init_command(void)
 
    if (g_settings.stdin_cmd_enable && driver.stdin_claimed)
    {
-      RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin."
+      RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
             "Cannot use this command interface.\n");
    }
 
@@ -2220,7 +2329,7 @@ static void check_cheats(void)
 }
 #endif
 
-#ifdef HAVE_SCREENSHOTS
+#if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
 static void check_screenshot(void)
 {
    static bool old_pressed = false;
@@ -2284,7 +2393,7 @@ static void check_netplay_flip(void)
 
 static void do_state_checks(void)
 {
-#ifdef HAVE_SCREENSHOTS
+#if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
    check_screenshot();
 #endif
 #ifndef RARCH_CONSOLE

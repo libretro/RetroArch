@@ -22,7 +22,7 @@
 				Optimization="3"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
-				PreprocessorDefinitions="_DEBUG;_XBOX;_XBOX1;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN;HAVE_RARCH_MAIN_WRAP;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DEFAULT_RETROPAD_INPUT;HAVE_CONFIGFILE;HAVE_VID_CONTEXT;HAVE_DSOUND;HAVE_D3D8;HAVE_FILEBROWSER"
+				PreprocessorDefinitions="_DEBUG;_XBOX;_XBOX1;HAVE_RMENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;PACKAGE_VERSION=\&quot;0.9.7\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN;HAVE_RARCH_MAIN_WRAP;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DEFAULT_RETROPAD_INPUT;HAVE_CONFIGFILE;HAVE_VID_CONTEXT;HAVE_DSOUND;HAVE_D3D8;HAVE_FILEBROWSER;HAVE_SCREENSHOTS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -52,11 +52,11 @@
 			<Tool
 				Name="XboxDeploymentTool"
 				RemotePath="xe:\$(SolutionName)\CORE.xbe"
-				AdditionalFiles="..\..\xbox1\Media;roms;system"
+				AdditionalFiles="..\..\xbox1\Media;roms;system;screenshots"
 				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="65536"
+				StackSize="262144"
 				IncludeDebugInfo="TRUE"
 				NoLibWarn="TRUE"/>
 		</Configuration>
@@ -72,7 +72,7 @@
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
-				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;PROFILE;HAVE_GRIFFIN;HAVE_RARCH_MAIN_WRAP;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DEFAULT_RETROPAD_INPUT;HAVE_CONFIGFILE;HAVE_VID_CONTEXT;HAVE_DSOUND;HAVE_D3D8;HAVE_FILEBROWSER"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;HAVE_RMENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;PACKAGE_VERSION=\&quot;0.9.7\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;PROFILE;HAVE_GRIFFIN;HAVE_RARCH_MAIN_WRAP;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DEFAULT_RETROPAD_INPUT;HAVE_CONFIGFILE;HAVE_VID_CONTEXT;HAVE_DSOUND;HAVE_D3D8;HAVE_FILEBROWSER;HAVE_SCREENSHOTS"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="TRUE"
@@ -106,12 +106,13 @@
 			<Tool
 				Name="XboxDeploymentTool"
 				RemotePath="xe:\$(SolutionName)\CORE.xbe"
-				AdditionalFiles="..\..\xbox1\Media;roms;system"
+				AdditionalFiles="..\..\xbox1\Media;roms;system;screenshots"
 				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="65536"
+				StackSize="262144"
 				IncludeDebugInfo="TRUE"
+				LimitAvailableMemoryTo64MB="FALSE"
 				NoLibWarn="TRUE"/>
 		</Configuration>
 		<Configuration
@@ -126,7 +127,7 @@
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
-				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;PROFILE;FASTCAP;HAVE_GRIFFIN;HAVE_RARCH_MAIN_WRAP;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DEFAULT_RETROPAD_INPUT;HAVE_CONFIGFILE;HAVE_VID_CONTEXT;HAVE_DSOUND;HAVE_D3D8;HAVE_FILEBROWSER"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;HAVE_RMENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;PACKAGE_VERSION=\&quot;0.9.7\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;PROFILE;FASTCAP;HAVE_GRIFFIN;HAVE_RARCH_MAIN_WRAP;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DEFAULT_RETROPAD_INPUT;HAVE_CONFIGFILE;HAVE_VID_CONTEXT;HAVE_DSOUND;HAVE_D3D8;HAVE_FILEBROWSER;HAVE_SCREENSHOTS"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="TRUE"
@@ -161,11 +162,11 @@
 			<Tool
 				Name="XboxDeploymentTool"
 				RemotePath="xe:\$(SolutionName)\CORE.xbe"
-				AdditionalFiles="..\..\xbox1\Media;roms;system"
+				AdditionalFiles="..\..\xbox1\Media;roms;system;screenshots"
 				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="65536"
+				StackSize="262144"
 				IncludeDebugInfo="TRUE"
 				NoLibWarn="TRUE"/>
 		</Configuration>
@@ -187,7 +188,7 @@
 				EnableFiberSafeOptimizations="TRUE"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
-				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN;inline=_inline;HAVE_RARCH_MAIN_WRAP;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DEFAULT_RETROPAD_INPUT;HAVE_CONFIGFILE;HAVE_VID_CONTEXT;HAVE_DSOUND;HAVE_D3D8;HAVE_FILEBROWSER"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;HAVE_RMENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;PACKAGE_VERSION=\&quot;0.9.7\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;HAVE_GRIFFIN;inline=_inline;HAVE_RARCH_MAIN_WRAP;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DEFAULT_RETROPAD_INPUT;HAVE_CONFIGFILE;HAVE_VID_CONTEXT;HAVE_DSOUND;HAVE_D3D8;HAVE_FILEBROWSER;HAVE_SCREENSHOTS"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="TRUE"
@@ -221,11 +222,11 @@
 			<Tool
 				Name="XboxDeploymentTool"
 				RemotePath="xe:\$(SolutionName)\CORE.xbe"
-				AdditionalFiles="..\..\xbox1\Media;roms;system"
+				AdditionalFiles="..\..\xbox1\Media;roms;system;screenshots"
 				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="65536"/>
+				StackSize="262144"/>
 		</Configuration>
 		<Configuration
 			Name="Release_LTCG|Xbox"
@@ -240,7 +241,7 @@
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
-				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;PACKAGE_VERSION=\&quot;0.9.6\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;LTCG;HAVE_GRIFFIN;HAVE_RARCH_MAIN_WRAP;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DEFAULT_RETROPAD_INPUT;HAVE_CONFIGFILE;HAVE_VID_CONTEXT;HAVE_DSOUND;HAVE_D3D8;HAVE_FILEBROWSER"
+				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;HAVE_RMENU;RARCH_CONSOLE;HAVE_XINPUT_XBOX1;PACKAGE_VERSION=\&quot;0.9.7\&quot;;__STDC_CONSTANT_MACROS;HAVE_ZLIB;LTCG;HAVE_GRIFFIN;HAVE_RARCH_MAIN_WRAP;HAVE_LIBRETRO_MANAGEMENT;HAVE_RARCH_EXEC;HAVE_DEFAULT_RETROPAD_INPUT;HAVE_CONFIGFILE;HAVE_VID_CONTEXT;HAVE_DSOUND;HAVE_D3D8;HAVE_FILEBROWSER;HAVE_SCREENSHOTS"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="TRUE"
@@ -274,11 +275,11 @@
 			<Tool
 				Name="XboxDeploymentTool"
 				RemotePath="xe:\$(SolutionName)\CORE.xbe"
-				AdditionalFiles="..\..\xbox1\Media;roms;system"
+				AdditionalFiles="..\..\xbox1\Media;roms;system;screenshots"
 				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="65536"/>
+				StackSize="262144"/>
 		</Configuration>
 	</Configurations>
 	<References>

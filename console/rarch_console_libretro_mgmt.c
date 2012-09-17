@@ -17,16 +17,13 @@
 #include <stdio.h>
 #include "../boolean.h"
 #include "../file.h"
+#include "rarch_console.h"
 
-// if a CORE executable exists (full_path), this means we have just installed
-// a new libretro port and therefore we need to change it to a more
-// sane name.
+#include "rarch_console_libretro_mgmt.h"
 
 #ifndef IS_SALAMANDER
 
-// Transforms a library id to a name suitable as a pathname.
-
-static void rarch_console_name_from_id(char *name, size_t size)
+void rarch_console_name_from_id(char *name, size_t size)
 {
    if (size == 0)
       return;
@@ -57,84 +54,57 @@ static void rarch_console_name_from_id(char *name, size_t size)
    }
 }
 
-static bool rarch_manage_libretro_install(char *libretro_core_installed, size_t sizeof_libretro_core, const char *full_path, const char *path, const char *exe_ext)
-{
-   int ret;
-   char tmp_path2[1024], tmp_pathnewfile[1024];
-
-   rarch_console_name_from_id(tmp_path2, sizeof(tmp_path2));
-   strlcat(tmp_path2, exe_ext, sizeof(tmp_path2));
-   snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", path, tmp_path2);
-
-   if (path_file_exists(tmp_pathnewfile))
-   {
-      // if libretro core already exists, this means we are
-      // upgrading the libretro core - so delete pre-existing
-      // file first.
-
-      RARCH_LOG("Upgrading emulator core...\n");
-      ret = remove(tmp_pathnewfile);
-
-      if (ret == 0)
-         RARCH_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-      else
-         RARCH_ERR("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-   }
-
-   //now attempt the renaming.
-   ret = rename(full_path, tmp_pathnewfile);
-
-   if (ret == 0)
-   {
-      RARCH_LOG("libretro core [%s] renamed to: [%s].\n", full_path, tmp_pathnewfile);
-      strlcpy(libretro_core_installed, tmp_pathnewfile, sizeof_libretro_core);
-      ret = 1;
-   }
-   else
-   {
-      RARCH_ERR("Failed to rename CORE executable.\n");
-      RARCH_WARN("CORE executable was not found, or some other errors occurred. Will attempt to load libretro core path from config file.\n");
-      ret = 0;
-   }
-
-   return ret;
-}
-
-static bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
+bool rarch_configure_libretro_core(const char *core_exe_path, const char *tmp_path,
  const char *libretro_path, const char *config_path, const char *extension)
 {
-   bool libretro_core_was_installed = false;
-   bool find_libretro_file = false;
-   char libretro_core_installed[1024];
+   bool upgrade_core_succeeded = false;
 
    g_extern.verbose = true;
 
    //install and rename libretro core first if 'CORE' executable exists
-   if (path_file_exists(full_path))
-      libretro_core_was_installed = rarch_manage_libretro_install(
-      libretro_core_installed, sizeof(libretro_core_installed), full_path, tmp_path, extension);
+   if (path_file_exists(core_exe_path))
+   {
+      bool ret = false;
+      char tmp_path2[PATH_MAX], tmp_pathnewfile[PATH_MAX];
+
+      rarch_console_name_from_id(tmp_path2, sizeof(tmp_path2));
+      strlcat(tmp_path2, extension, sizeof(tmp_path2));
+      snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", tmp_path, tmp_path2);
+
+      if (path_file_exists(tmp_pathnewfile))
+      {
+         // if libretro core already exists, this means we are
+         // upgrading the libretro core - so delete pre-existing
+         // file first.
+
+         RARCH_LOG("Upgrading emulator core...\n");
+         ret = remove(tmp_pathnewfile);
+
+         if (ret == 0)
+            RARCH_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+         else
+            RARCH_ERR("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+      }
+
+      //now attempt the renaming.
+      ret = rename(core_exe_path, tmp_pathnewfile);
+
+      if (ret == 0)
+      {
+         RARCH_LOG("libretro core [%s] renamed to: [%s].\n", core_exe_path, tmp_pathnewfile);
+         snprintf(g_settings.libretro, sizeof(g_settings.libretro), tmp_pathnewfile);
+         upgrade_core_succeeded = true;
+      }
+      else
+      {
+         RARCH_ERR("Failed to rename CORE executable.\n");
+         RARCH_WARN("CORE executable was not found, or some other error occurred. Will attempt to load libretro core path from config file.\n");
+      }
+   }
 
    g_extern.verbose = false;
 
-   //if we have just installed a libretro core, set libretro path in settings to newly installed libretro core
-
-   if(libretro_core_was_installed)
-      strlcpy(g_settings.libretro, libretro_core_installed, sizeof(g_settings.libretro));
-   else
-      find_libretro_file = true;
-
-   return find_libretro_file;
-}
-
-bool rarch_configure_libretro(const input_driver_t *input, const char *path_prefix, const char * extension)
-{
-   char full_path[1024];
-   snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
-
-   bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
-   default_paths.config_file, extension);
-
-   return find_libretro_file;
+   return upgrade_core_succeeded;
 }
 
 bool rarch_manage_libretro_extension_supported(const char *filename)
@@ -153,14 +123,10 @@ bool rarch_manage_libretro_extension_supported(const char *filename)
    return ext_supported;
 }
 
-
 #endif
 
 void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext)
 {
-   //We need to set libretro to the first entry in the cores
-   //directory so that it will be saved to the config file
-
    struct string_list *dir_list = dir_list_new(libretro_path, exe_ext, false);
 
    const char * first_exe;
@@ -176,28 +142,24 @@ void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first
 
    if(first_exe)
    {
-#ifdef _XBOX
       char fname_tmp[PATH_MAX];
       fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
 
-      if(strcmp(fname_tmp, "RetroArch-Salamander.xex") == 0)
+      if(strncmp(fname_tmp, default_paths.salamander_file, sizeof(fname_tmp)) == 0)
       {
          RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
-	 first_exe = dir_list->elems[1].data;
-	 fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
+         first_exe = dir_list->elems[1].data;
+         fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
 
-	 if(!first_exe)
-	 {
+         if(!first_exe)
+         {
             RARCH_ERR("Unlikely error happened - no second entry - no choice but to set it to RetroArch Salamander\n");
-	    first_exe = dir_list->elems[0].data;
-	    fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
-	 }
+            first_exe = dir_list->elems[0].data;
+            fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
+         }
       }
 
       strlcpy(first_file, fname_tmp, size_of_first_file);
-#else
-      strlcpy(first_file, first_exe, size_of_first_file);
-#endif
       RARCH_LOG("Set first entry in libretro core dir to libretro path: [%s].\n", first_file);
    }
 

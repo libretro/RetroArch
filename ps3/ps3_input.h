@@ -20,19 +20,7 @@
 #include <stdbool.h>
 #include <wchar.h>
 
-#ifdef HAVE_OSKUTIL
-#ifdef __PSL1GHT__
-#include <sysutil/osk.h>
-#else
-#include <sysutil/sysutil_oskdialog.h>
-#endif
-#endif
-
 #include "sdk_defines.h"
-
-#ifdef HAVE_SYSUTILS
-#include <sysutil/sysutil_common.h>
-#endif
 
 #ifndef __PSL1GHT__
 #define MAX_PADS 7
@@ -130,7 +118,7 @@ typedef struct
 
 void oskutil_write_message(oskutil_params *params, const wchar_t* msg);
 void oskutil_write_initial_message(oskutil_params *params, const wchar_t* msg);
-void oskutil_init(oskutil_params *params, unsigned int containersize);
+void oskutil_init(oskutil_params *params, unsigned containersize);
 bool oskutil_start(oskutil_params *params);
 void oskutil_stop(oskutil_params *params);
 void oskutil_finished(oskutil_params *params);

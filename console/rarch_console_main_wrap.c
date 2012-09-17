@@ -49,6 +49,14 @@ static int rarch_main_init_wrap(const struct rarch_main_wrap *args)
       argv[argc++] = strdup(args->config_path);
    }
 
+#ifdef HAVE_DYLIB
+   if (args->libretro_path)
+   {
+      argv[argc++] = strdup("-L");
+      argv[argc++] = strdup(args->libretro_path);
+   }
+#endif
+
    if (args->verbose)
       argv[argc++] = strdup("-v");
 
@@ -87,6 +95,9 @@ bool rarch_startup (const char * config_path)
       args.sram_path = g_console.default_sram_dir_enable ? g_console.default_sram_dir : NULL,
       args.state_path = g_console.default_savestate_dir_enable ? g_console.default_savestate_dir : NULL,
       args.rom_path = g_console.rom_path;
+#ifdef HAVE_DYLIB
+      args.libretro_path = g_settings.libretro;
+#endif
 
       int init_ret = rarch_main_init_wrap(&args);
       (void)init_ret;

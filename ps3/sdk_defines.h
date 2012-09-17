@@ -17,11 +17,22 @@
 #ifndef _PS3_SDK_DEFINES_H
 #define _PS3_SDK_DEFINES_H
 
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+#include <sdk_version.h>
+#endif
+
 /*============================================================
 	AUDIO PROTOTYPES
 ============================================================ */
 
 #ifdef __PSL1GHT__
+#include <audio/audio.h>
+#include <sys/thread.h>
+
+#include <sys/event_queue.h>
+#include <lv2/mutex.h>
+#include <lv2/cond.h>
+
 /* define all the audio/audio port functions */
 #define cellAudioQuit audioQuit
 #define cellAudioInit audioInit
@@ -45,6 +56,9 @@
 #define sys_lwmutex_unlock sysLwMutexUnlock
 #define sys_lwmutex_create sysLwMutexCreate
 
+//forward decl. for audioAddData
+extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float volume);
+
 /* define all the lightweight condition functions */
 #define sys_lwcond_create sysLwCondCreate
 #define sys_lwcond_destroy sysLwCondDestroy
@@ -59,6 +73,10 @@
 #define sys_semaphore_t sys_sem_t
 
 #else
+#include <cell/audio.h>
+#include <sys/event.h>
+#include <sys/synchronization.h>
+
 #define numChannels nChannel
 #define numBlocks nBlock
 #define param_attrib attr
@@ -70,6 +88,7 @@
 ============================================================ */
 
 #ifdef __PSL1GHT__
+#include <io/pad.h>
 /* define all the ps3 pad structs */
 #define CellPadInfo2 padInfo2
 #define CellPadData padData
@@ -81,6 +100,8 @@
 #define cellPadEnd ioPadEnd
 
 #define now_connect connected
+#else
+#include <cell/pad.h>
 #endif
 
 /*============================================================
@@ -90,6 +111,8 @@
 #ifdef HAVE_MOUSE
 
 #ifdef __PSL1GHT__
+#include <io/mouse.h>
+
 /* define ps3 mouse structs */
 #define CellMouseInfo mouseInfo
 #define CellMouseData mouseData
@@ -110,6 +133,8 @@
 #define CELL_MOUSE_BUTTON_7 (1 << 6) /* Button 7 */
 #define CELL_MOUSE_BUTTON_8 (1 << 7) /* Button 8 */
 
+#else
+#include <cell/mouse.h>
 #endif
 
 #endif
@@ -121,6 +146,7 @@
 #ifdef HAVE_OSKUTIL
 
 #ifdef __PSL1GHT__
+#include <sysutil/osk.h>
 /* define all the OSK functions */
 #define pOskLoadAsync oskLoadAsync
 #define pOskSetLayoutMode oskSetLayoutMode
@@ -162,6 +188,7 @@
 #define CELL_OSKDIALOG_INPUT_FIELD_RESULT_NO_INPUT_TEXT (3)
 #define CELL_OSKDIALOG_STRING_SIZE (512)
 #else
+#include <sysutil/sysutil_oskdialog.h>
 /* define all the OSK functions */
 #define pOskLoadAsync cellOskDialogLoadAsync
 #define pOskSetLayoutMode cellOskDialogSetLayoutMode
@@ -324,6 +351,7 @@
 ============================================================ */
 
 #ifdef __PSL1GHT__
+#include <sysutil/video.h>
 #define CELL_GCM_FALSE GCM_FALSE
 #define CELL_GCM_TRUE GCM_TRUE
 
@@ -362,6 +390,36 @@
 #define CELL_GCM_CLEAR_A GCM_CLEAR_A
 
 #define CELL_GCM_FUNC_ADD GCM_FUNC_ADD
+
+#define CELL_GCM_SMOOTH	(0x1D01)
+#define CELL_GCM_DEBUG_LEVEL2 2
+
+#define CELL_GCM_COMPMODE_DISABLED 0
+
+#define CELL_GCM_TRANSFER_LOCAL_TO_LOCAL 0
+
+#define CELL_GCM_TEXTURE_REMAP_ORDER_XYXY (0)
+#define CELL_GCM_TEXTURE_REMAP_ORDER_XXXY (1)
+
+#define CELL_GCM_TEXTURE_UNSIGNED_REMAP_NORMAL (0)
+
+#define CELL_GCM_TEXTURE_REMAP_FROM_A (0)
+#define CELL_GCM_TEXTURE_REMAP_FROM_R (1)
+#define CELL_GCM_TEXTURE_REMAP_FROM_G (2)
+#define CELL_GCM_TEXTURE_REMAP_FROM_B (3)
+
+#define CELL_GCM_TEXTURE_REMAP_ZERO (0)
+#define CELL_GCM_TEXTURE_REMAP_ONE (1)
+#define CELL_GCM_TEXTURE_REMAP_REMAP (2)
+
+#define CELL_GCM_MAX_TEXIMAGE_COUNT (16)
+
+#define CELL_GCM_TEXTURE_WRAP (1)
+
+#define CELL_GCM_TEXTURE_NR (0x00)
+#define CELL_GCM_TEXTURE_LN (0x20)
+
+#define CELL_GCM_TEXTURE_B8 (0x81)
 
 #define CELL_RESC_720x480 RESC_720x480
 #define CELL_RESC_720x576 RESC_720x576
@@ -461,6 +519,7 @@
 #define cellVideoOutConfigure videoConfigure
 #define cellVideoOutGetState videoGetState
 #define cellVideoOutGetResolution videoGetResolution
+#define cellVideoOutGetResolutionAvailability videoGetResolutionAvailability
 
 #define cellGcmSetViewportInline rsxSetViewport
 #define cellGcmSetReferenceCommandInline rsxSetReferenceCommand
@@ -476,7 +535,134 @@
 #define cellGcmSetTextureFilterInline rsxTextureFilter
 #define cellGcmSetTextureControlInline rsxTextureControl
 #define cellGcmSetCullFaceEnableInline rsxSetCullFaceEnable
-#define cellGcmSetShadeModeInline rxSetShadeModel
+#define cellGcmSetShadeModeInline rsxSetShadeModel
+#define cellGcmSetTransferImage rsxSetTransferImage
+#define cellGcmSetBlendColor rsxSetBlendColor
+#define cellGcmSetBlendEquation rsxSetBlendEquation
+#define cellGcmSetBlendFunc rsxSetBlendFunc
+#define cellGcmSetClearColor rsxSetClearColor
+#define cellGcmSetScissor rsxSetScissor
+#define celGcmSetInvalidateVertexCache(fifo) rsxInvalidateTextureCache(fifo, GCM_INVALIDATE_VERTEX_TEXTURE)
+#else
+#define cellGcmSetTransferImage cellGcmSetTransferImageInline
+#define celGcmSetInvalidateVertexCache cellGcmSetInvalidateVertexCacheInline
 #endif
 
+/*============================================================
+	GCM PROTOTYPES
+============================================================ */
+
+#ifdef __PSL1GHT__
+#define CELL_GCM_METHOD_HEADER_TEXTURE_OFFSET(unit, val) (((val) << (18)) | ((0x00001a00) + (unit) * 0x20))
+#define CELL_GCM_METHOD_DATA_TEXTURE_OFFSET(val) (val)
+#define CELL_GCM_METHOD_DATA_TEXTURE_CONTROL3(pitch, depth) ((pitch) | ((depth) << 20))
+#define CELL_GCM_METHOD_DATA_TEXTURE_IMAGE_RECT(height, width) ((height) | ((width) << 16))
+#define CELL_GCM_METHOD_DATA_TEXTURE_FILTER(bias, min, mag, filter) (((bias)) | ((filter) << 13) | ((min) << 16) | ((mag) << 24))
+#define CELL_GCM_METHOD_DATA_TEXTURE_CONTROL0(val0, minlod, maxlod, filter) (((minlod << 2) | (filter) << 4) | (maxlod << 7) | (minlod << 19) | (val0 << 31))
+#define CELL_GCM_METHOD_DATA_TEXTURE_ADDRESS(wraps, wrapt, wrapr,  unsignedremap, zfunc, gamma) ((wraps) | ((0) << 4) | ((wrapt) << 8) | (unsignedremap << 12) | ((wrapr) << 16) | (gamma << 20) | (zfunc << 28))
+#endif
+
+#define CELL_GCM_REMAP_MODE(order, inputA, inputR, inputG, inputB, outputA, outputR, outputG, outputB) \
+	(((order)<<16)|((inputA))|((inputR)<<2)|((inputG)<<4)|((inputB)<<6)|((outputA)<<8)|((outputR)<<10)|((outputG)<<12)|((outputB)<<14))
+
+#endif
+
+
+/*============================================================
+	NETWORK PROTOTYPES
+============================================================ */
+
+#ifdef __PSL1GHT__
+#include <net/netctl.h>
+
+#define cellNetCtlInit netCtlInit
+#define cellNetCtlGetState netCtlGetState
+#define cellNetCtlTerm netCtlTerm
+
+#define CELL_NET_CTL_STATE_IPObtained NET_CTL_STATE_IPObtained
+#endif
+
+/*============================================================
+	NET PROTOTYPES
+============================================================ */
+
+#if defined(HAVE_NETPLAY)
+#ifdef __PSL1GHT__
+#include <net/net.h>
+
+#define socketselect select
+#define socketclose close
+
+#define sys_net_initialize_network netInitialize
+#else
+#include <netex/net.h>
+#include <np.h>
+#include <np/drm.h>
+#endif
+#endif
+
+/*============================================================
+	SYSUTIL PROTOTYPES
+============================================================ */
+
+#ifdef __PSL1GHT__
+#include <sysutil/game.h>
+#define CellGameContentSize sysGameContentSize
+#define cellGameContentPermit sysGameContentPermit
+#define cellGameBootCheck sysGameBootCheck
+
+#define CELL_GAME_ATTRIBUTE_APP_HOME              (1 <<1) /* boot from / app_home/PS3_GAME */
+#define CELL_GAME_DIRNAME_SIZE			32
+
+#define CELL_GAME_GAMETYPE_SYS		0
+#define CELL_GAME_GAMETYPE_DISC		1
+#define CELL_GAME_GAMETYPE_HDD		2
+#define CELL_GAME_GAMETYPE_GAMEDATA	3
+#define CELL_GAME_GAMETYPE_HOME		4
+
+#endif
+
+#if defined(HAVE_SYSUTILS)
+#ifdef __PSL1GHT__
+#include <sysutil/sysutil.h>
+
+#define CELL_SYSUTIL_REQUEST_EXITGAME SYSUTIL_EXIT_GAME
+
+#define cellSysutilRegisterCallback sysUtilRegisterCallback
+#define cellSysutilCheckCallback sysUtilCheckCallback
+#else
+#include <sysutil/sysutil_screenshot.h>
+#include <sysutil/sysutil_common.h>
+#include <sysutil/sysutil_gamecontent.h>
+#ifdef HAVE_HDD_CACHE_PARTITION
+#include <sysutil/sysutil_syscache.h>
+#endif
+#endif
+#endif
+
+#if(CELL_SDK_VERSION > 0x340000)
+#include <sysutil/sysutil_bgmplayback.h>
+#endif
+
+/*============================================================
+	SYSMODULE PROTOTYPES
+============================================================ */
+
+#if defined(HAVE_SYSMODULES)
+#ifdef __PSL1GHT__
+#include <sysmodule/sysmodule.h>
+
+#define CELL_SYSMODULE_IO SYSMODULE_IO
+#define CELL_SYSMODULE_FS SYSMODULE_FS
+#define CELL_SYSMODULE_NET SYSMODULE_NET
+#define CELL_SYSMODULE_SYSUTIL_NP SYSMODULE_SYSUTIL_NP
+#define CELL_SYSMODULE_JPGDEC SYSMODULE_JPGDEC
+#define CELL_SYSMODULE_PNGDEC SYSMODULE_PNGDEC
+
+#define cellSysmoduleLoadModule sysModuleLoad
+#define cellSysmoduleUnloadModule sysModuleUnload
+
+#else
+#include <cell/sysmodule.h>
+#endif
 #endif

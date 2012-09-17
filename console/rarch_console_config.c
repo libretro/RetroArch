@@ -20,34 +20,36 @@
 #include "../conf/config_file_macros.h"
 
 #include "rarch_console_config.h"
-#include "rarch_console_libretro_mgmt.h"
 
-void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool find_libretro_path)
+void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool upgrade_core_succeeded)
 {
+      char libretro_path_tmp[PATH_MAX];
+
+      //if a core has been upgraded, settings need to saved at the end
+      if(upgrade_core_succeeded)
+         snprintf(libretro_path_tmp, sizeof(libretro_path_tmp), g_settings.libretro);
+      
+
       config_file_t * conf = config_file_new(conf_name);
 
       if(!conf)
+      {
+#ifdef RARCH_CONSOLE
+         FILE * f;
+         RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", conf_name);
+         f = fopen(conf_name, "w");
+         fclose(f);
+#endif
          return;
+      }
 
       // g_settings
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-      if(find_libretro_path)
-      {
-         CONFIG_GET_STRING(libretro, "libretro_path");
-
-         if(strcmp(g_settings.libretro, "") == 0)
-         {
-            char first_file[PATH_MAX];
-            rarch_manage_libretro_set_first_file(first_file, sizeof(first_file), libretro_dir_path, exe_ext);
-            if(first_file != NULL)
-               strlcpy(g_settings.libretro, first_file, sizeof(g_settings.libretro));
-         }
-      }
-#endif
-
+      CONFIG_GET_STRING(libretro, "libretro_path");
       CONFIG_GET_STRING(system_directory, "system_directory");
+#ifdef HAVE_XML
       CONFIG_GET_STRING(cheat_database, "cheat_database");
+#endif
       CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
       CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
 #ifdef HAVE_FBO
@@ -57,20 +59,20 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
       CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
 #endif
-#ifdef _XBOX360
-      CONFIG_GET_BOOL_CONSOLE(gamma_correction_enable, "gamma_correction_enable");
-      CONFIG_GET_INT_CONSOLE(color_format, "color_format");
-#endif
       CONFIG_GET_BOOL(video.smooth, "video_smooth");
       CONFIG_GET_BOOL(video.vsync, "video_vsync");
       CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
       CONFIG_GET_STRING(audio.device, "audio_device");
+      CONFIG_GET_BOOL(audio.rate_control, "audio_rate_control");
+      CONFIG_GET_FLOAT(audio.rate_control_delta, "audio_rate_control_delta");
 
       for (unsigned i = 0; i < 7; i++)
       {
          char cfg[64];
          snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
          CONFIG_GET_INT(input.dpad_emulation[i], cfg);
+         snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
+         CONFIG_GET_INT(input.device[i], cfg);
       }
 
       // g_console
@@ -97,6 +99,15 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
 #ifdef HAVE_ZLIB
       CONFIG_GET_INT_CONSOLE(zip_extract_mode, "zip_extract_mode");
 #endif
+#ifdef _XBOX360
+      CONFIG_GET_INT_CONSOLE(color_format, "color_format");
+#endif
+      CONFIG_GET_BOOL_CONSOLE(gamma_correction, "gamma_correction");
+#ifdef _XBOX1
+      CONFIG_GET_INT_CONSOLE(flicker_filter, "flicker_filter");
+      CONFIG_GET_INT_CONSOLE(sound_volume_level, "sound_volume_level");
+#endif
+      CONFIG_GET_BOOL_CONSOLE(soft_display_filter_enable, "soft_display_filter_enable");
       CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
       CONFIG_GET_FLOAT_CONSOLE(menu_font_size, "menu_font_size");
       CONFIG_GET_FLOAT_CONSOLE(overscan_amount, "overscan_amount");
@@ -104,6 +115,13 @@ void rarch_config_load(const char * conf_name, const char * libretro_dir_path, c
       // g_extern
       CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
       CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
+
+      if(upgrade_core_succeeded)
+      {
+         //save config file with new libretro path
+         snprintf(g_settings.libretro, sizeof(g_settings.libretro), libretro_path_tmp);
+         rarch_config_save(conf_name);
+      }
 }
 
 void rarch_config_save(const char * conf_name)
@@ -111,7 +129,10 @@ void rarch_config_save(const char * conf_name)
       config_file_t * conf = config_file_new(conf_name);
 
       if(!conf)
+      {
+         RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", conf_name);
          return;
+      }
 
       // g_settings
       config_set_string(conf, "libretro_path", g_settings.libretro);
@@ -131,12 +152,16 @@ void rarch_config_save(const char * conf_name)
       config_set_bool(conf, "video_smooth", g_settings.video.smooth);
       config_set_bool(conf, "video_vsync", g_settings.video.vsync);
       config_set_string(conf, "audio_device", g_settings.audio.device);
+      config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
+      config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
 
       for (unsigned i = 0; i < 7; i++)
       {
          char cfg[64];
          snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
          config_set_int(conf, cfg, g_settings.input.dpad_emulation[i]);
+         snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
+         config_set_int(conf, cfg, g_settings.input.device[i]);
       }
 
 #ifdef RARCH_CONSOLE
@@ -146,9 +171,14 @@ void rarch_config_save(const char * conf_name)
 #endif
       config_set_bool(conf, "overscan_enable", g_console.overscan_enable);
       config_set_bool(conf, "screenshots_enable", g_console.screenshots_enable);
-#ifdef _XBOX
-      config_set_bool(conf, "gamma_correction_enable", g_console.gamma_correction_enable);
+      config_set_bool(conf, "gamma_correction", g_console.gamma_correction);
+#ifdef _XBOX360
       config_set_int(conf, "color_format", g_console.color_format);
+#endif
+      config_set_bool(conf, "soft_display_filter_enable", g_console.soft_display_filter_enable);
+#ifdef _XBOX1
+      config_set_int(conf, "flicker_filter", g_console.flicker_filter);
+      config_set_int(conf, "sound_volume_level", g_console.sound_volume_level);
 #endif
       config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
       config_set_bool(conf, "triple_buffering_enable", g_console.triple_buffering_enable);

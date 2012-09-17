@@ -18,28 +18,10 @@
 #include "../general.h"
 #include <stdlib.h>
 
-#ifdef __PSL1GHT__
-#include <audio/audio.h>
-#include <sys/thread.h>
-#else
-#include <cell/audio.h>
-#endif
-
 #include <string.h>
 #include "../fifo_buffer.h"
 
 #include "sdk_defines.h"
-
-#ifdef __PSL1GHT__
-#include <sys/event_queue.h>
-#include <lv2/mutex.h>
-#include <lv2/cond.h>
-//forward decl. for audioAddData
-extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float volume);
-#else
-#include <sys/event.h>
-#include <sys/synchronization.h>
-#endif
 
 #define AUDIO_BLOCKS 8 // 8 or 16. Guess what we choose? :)
 #define AUDIO_CHANNELS 2 // All hail glorious stereo!

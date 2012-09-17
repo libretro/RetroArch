@@ -22,6 +22,8 @@ typedef struct _CGcontext *CGcontext;
 #define SUBPIXEL_ADJUST (0.5/(1<<12))
 
 #define gmmIdIsMain(id) (((GmmBaseBlock *)id)->isMain)
+#define gmmAddressToOffset(address, isMain) ((isMain) ? (address)-pGmmMainAllocator->memoryBase : (address)-pGmmLocalAllocator->memoryBase)
+
 
 #ifdef __cplusplus
 extern "C"
@@ -182,15 +184,17 @@ typedef struct
 
 typedef struct
 {
-   GLfloat * MatrixStackf;
-   int		MatrixStackPtr;
-   GLboolean dirty;
-} jsMatrixStack;
+   int	X, Y, XSize, YSize;
+} jsViewPort;
 
 typedef struct
 {
-   int	X, Y, XSize, YSize;
-} jsViewPort;
+   int id;
+   GLuint offset;
+   GLuint size;
+   GLuint pitch;
+   GLuint bank;
+} jsTiledRegion;
 
 enum
 {
@@ -261,15 +265,11 @@ typedef struct
 }
 jsTexture;
 
-#define _RGL_MAX_TEXTURE_COORDS	8
-#define _RGL_MAX_TEXTURE_IMAGE_UNITS	16
-#define _RGL_MAX_VERTEX_TEXTURE_IMAGE_UNITS	4
+#define MAX_TEXTURE_COORDS	8
+#define MAX_TEXTURE_IMAGE_UNITS	16
+#define MAX_VERTEX_TEXTURE_IMAGE_UNITS	4
 
 #define MAX_TEXTURE_UNITS 4
-
-#define _RGL_MAX_MODELVIEW_STACK_DEPTH 16
-#define _RGL_MAX_PROJECTION_STACK_DEPTH 2
-#define MAX_TEXTURE_STACK_DEPTH 2
 
 #define MAX_VERTEX_ATTRIBS	16
 
@@ -282,12 +282,6 @@ typedef struct
    jsColorRGBAf	envColor;
    jsTexture* currentTexture;
 } jsTextureImageUnit;
-
-typedef struct
-{
-   GLuint		revalidate;
-   jsMatrixStack	TextureMatrixStack;
-} jsTextureCoordsUnit;
 
 enum
 {
@@ -464,8 +458,6 @@ struct jsBufferObject
    void *platformBufferObject[];
 };
 
-#define ELEMENTS_IN_MATRIX	16
-
 typedef struct jsNameSpace
 {
    void** data;
@@ -488,13 +480,6 @@ jsTexNameSpace;
 struct PSGLcontext
 {
    GLenum		error;
-   int			MatrixMode;
-   jsMatrixStack	ModelViewMatrixStack;
-   jsMatrixStack	ProjectionMatrixStack;
-   GLfloat		LocalToScreenMatrixf[ELEMENTS_IN_MATRIX];
-   GLfloat 		InverseModelViewMatrixf[ELEMENTS_IN_MATRIX];
-   GLboolean		InverseModelViewValid;
-   GLfloat		ScalingFactor;
    jsViewPort		ViewPort;
    jsAttributeState defaultAttribs0;
    jsAttributeState *attribs;
@@ -502,7 +487,6 @@ struct PSGLcontext
    GLuint			attribSetName;
    GLboolean		attribSetDirty;
    jsColorRGBAf	ClearColor;
-   jsColorRGBAf	AccumClearColor;
    GLboolean		ShaderSRGBRemap;
    GLboolean		Blending;
    GLboolean		BlendingMrt[3];
@@ -516,11 +500,9 @@ struct PSGLcontext
    jsTexNameSpace textureNameSpace;
    GLuint		ActiveTexture;
    GLuint		CS_ActiveTexture;
-   jsTextureImageUnit	TextureImageUnits[_RGL_MAX_TEXTURE_IMAGE_UNITS];
+   jsTextureImageUnit	TextureImageUnits[MAX_TEXTURE_IMAGE_UNITS];
    jsTextureImageUnit* CurrentImageUnit;
-   jsTextureCoordsUnit	TextureCoordsUnits[_RGL_MAX_TEXTURE_COORDS];
-   jsTextureCoordsUnit* CurrentCoordsUnit;
-   jsTexture *VertexTextureImages[_RGL_MAX_VERTEX_TEXTURE_IMAGE_UNITS];
+   jsTexture *VertexTextureImages[MAX_VERTEX_TEXTURE_IMAGE_UNITS];
    GLsizei		packAlignment;
    GLsizei		unpackAlignment;
    jsTexNameSpace	bufferObjectNameSpace;
@@ -550,11 +532,6 @@ struct PSGLcontext
 #define RGL_LIKELY(COND) (COND)
 #define RGL_UNLIKELY(COND) (COND)
 
-static inline float _RGLClampf( const float value )
-{
-   return MAX( MIN( value, 1.f ), 0.f );
-}
-
 static inline unsigned int endianSwapWord( unsigned int v )
 {
    return ( v&0xff ) << 24 | ( v&0xff00 ) << 8 |
@@ -577,13 +554,6 @@ static inline unsigned long _RGLPad(unsigned long x, unsigned long pad)
    return ( x + pad - 1 ) / pad*pad;
 }
 
-static inline char* _RGLPadPtr(const char* p, unsigned int pad)
-{
-   intptr_t x = (intptr_t)p;
-   x = ( x + pad - 1 ) / pad * pad;
-   return ( char* )x;
-}
-
 typedef struct MemoryBlockManager_t_
 {
    char *memory;
@@ -597,8 +567,6 @@ typedef struct MemoryBlockManager_t_
 
 typedef unsigned long jsName;
 
-void _RGLInitNameSpace( struct jsNameSpace * name );
-void _RGLFreeNameSpace( struct jsNameSpace * name );
 jsName _RGLCreateName( struct jsNameSpace * ns, void* object );
 unsigned int _RGLIsName( struct jsNameSpace* ns, jsName name );
 void _RGLEraseName( struct jsNameSpace* ns, jsName name );
@@ -712,6 +680,9 @@ typedef struct GmmAllocator
    uint32_t    totalSize;
 } GmmAllocator;
 
+extern GmmAllocator *pGmmLocalAllocator;
+extern GmmAllocator *pGmmMainAllocator;
+
 uint32_t gmmInit(
     const void *localMemoryBase,
     const void *localStartAddress,
@@ -745,14 +716,23 @@ void gmmSetTileAttrib(const uint32_t id, const uint32_t tag, void *pData);
 					  COMMAND_BUFFER = (typeof(COMMAND_BUFFER))gcmContext.current;   \
 					  }
 
-#define _RGLTransferDataVidToVid(dstId, dstIdOffset, dstPitch, dstX, dstY, srcId, srcIdOffset, srcPitch, srcX, srcY, width, height, bytesPerPixel) \
-{ \
-    GmmBaseBlock *pBaseBlock_dst = (GmmBaseBlock *)dstId; \
-    GmmBaseBlock *pBaseBlock_src = (GmmBaseBlock *)srcId; \
-    GLuint dstOffset_tmp = gmmAddressToOffset(pBaseBlock_dst->address, pBaseBlock_dst->isMain) + dstIdOffset; \
-    GLuint srcOffset_tmp = gmmAddressToOffset(pBaseBlock_src->address, pBaseBlock_src->isMain) + srcIdOffset; \
-    cellGcmSetTransferImageInline( &_RGLState.fifo, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, dstOffset_tmp, (dstPitch), (dstX), (dstY), (srcOffset_tmp), (srcPitch), (srcX), (srcY), (width), (height), (bytesPerPixel) ); \
-}
+typedef struct
+{
+   unsigned dst_id;
+   unsigned dst_id_offset;
+   unsigned dst_pitch;
+   unsigned dst_x;
+   unsigned dst_y;
+   unsigned src_id;
+   unsigned src_id_offset;
+   unsigned src_pitch;
+   unsigned src_x;
+   unsigned src_y;
+   unsigned width;
+   unsigned height;
+   unsigned bpp;
+   void *fifo_ptr;
+} transfer_params_t;
 
 #define HOST_BUFFER_ALIGNMENT 128
 
@@ -798,7 +778,7 @@ struct RGLResource
    char *  dmaPushBuffer;
    GLuint  dmaPushBufferSize;
    void*   dmaControl;
-   RGLSemaphoreMemory    *semaphores;
+   RGLSemaphoreMemory *semaphores;
 };
 
 typedef volatile struct
@@ -834,6 +814,17 @@ struct RGLFifo: public CellGcmContextData
    uint32_t *dmaPushBufferGPU;
    int spuid;
 };
+
+static inline void TransferDataVidToVid(transfer_params_t *params)
+{
+    GmmBaseBlock *pBaseBlock_dst = (GmmBaseBlock *)params->dst_id;
+    GmmBaseBlock *pBaseBlock_src = (GmmBaseBlock *)params->src_id;
+
+    GLuint dstOffset_tmp = gmmAddressToOffset(pBaseBlock_dst->address, pBaseBlock_dst->isMain) + params->dst_id_offset;
+    GLuint srcOffset_tmp = gmmAddressToOffset(pBaseBlock_src->address, pBaseBlock_src->isMain) + params->src_id_offset;
+
+    cellGcmSetTransferImage( (RGLFifo*)params->fifo_ptr, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, dstOffset_tmp, params->dst_pitch, params->dst_x, params->dst_y, srcOffset_tmp, params->src_pitch, params->src_x, params->src_y, params->width, params->height, params->bpp);
+}
 
 typedef struct RGLRenderTarget RGLRenderTarget;
 typedef struct RGLCachedState RGLCachedState;
@@ -903,7 +894,6 @@ void _RGLSetNativeCgVertexProgram( const void *header );
 void _RGLSetNativeCgFragmentProgram( const void *header );
 
 GLboolean _RGLTryResizeTileRegion( GLuint address, GLuint size, void* data );
-void _RGLGetTileRegionInfo( void* data, GLuint *address, GLuint *size );
 
 static inline GLuint _RGLPlatformGetBitsPerPixel( GLenum internalFormat )
 {
@@ -927,7 +917,7 @@ static inline GLuint _RGLPlatformGetBitsPerPixel( GLenum internalFormat )
 }
 
 
-void static inline _RGLFifoGlViewport( GLint x, GLint y, GLsizei width, GLsizei height, GLclampf zNear = 0.0f, GLclampf zFar = 1.0f )
+static inline void _RGLFifoGlViewport( GLint x, GLint y, GLsizei width, GLsizei height, GLclampf zNear = 0.0f, GLclampf zFar = 1.0f )
 {
    RGLViewportState *vp = &_RGLState.state.viewport;
    RGLRenderTarget *rt = &_RGLState.renderTarget;
@@ -1040,7 +1030,6 @@ extern void psglExit();
 
 PSGLdevice *psglCreateDeviceAuto( GLenum colorFormat, GLenum depthFormat, GLenum multisamplingMode );
 PSGLdevice *psglCreateDeviceExtended( const PSGLdeviceParameters *parameters );
-GLfloat psglGetDeviceAspectRatio(const PSGLdevice *device );
 void psglGetDeviceDimensions(const PSGLdevice *device, GLuint *width, GLuint *height );
 void psglDestroyDevice( PSGLdevice* device );
 

@@ -1,8 +1,12 @@
 *.o
 *.bmpobj
+*.binobj
 *.so
 *.dll
 *.a
+*.elf
+*.dol
+*.map
 /retroarch
 /retroarch.*
 /config.h
@@ -17,3 +21,4 @@ Debug
 Release
 ipch
 *.user
+/wii/app_booter/app_booter.bin

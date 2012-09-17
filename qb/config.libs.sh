@@ -77,8 +77,10 @@ fi
 
 if [ "$OS" = Darwin ]; then
    check_lib FBO "-framework OpenGL" glFramebufferTexture2D
+   check_lib PBO "-framework OpenGL" glMapBuffer
 else
    check_lib FBO -lGL glFramebufferTexture2D
+   check_lib PBO -lGL glMapBuffer
 fi
 
 check_pkgconf RSOUND rsound 1.1
@@ -100,15 +102,14 @@ fi
 
 check_pkgconf XML libxml-2.0
 check_pkgconf SDL_IMAGE SDL_image
-check_pkgconf LIBPNG libpng
+check_pkgconf LIBPNG libpng 1.5
 
 if [ "$HAVE_THREADS" != 'no' ]; then
    if [ "$HAVE_FFMPEG" != 'no' ]; then
       check_pkgconf AVCODEC libavcodec
       check_pkgconf AVFORMAT libavformat
       check_pkgconf AVUTIL libavutil
-      check_pkgconf SWSCALE libswscale
-      ( [ "$HAVE_FFMPEG" = 'auto' ] && ( [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ] ) && HAVE_FFMPEG='no' ) || HAVE_FFMPEG='yes'
+      ( [ "$HAVE_FFMPEG" = 'auto' ] && ( [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] ) && HAVE_FFMPEG='no' ) || HAVE_FFMPEG='yes'
    fi
 
    if [ "$HAVE_FFMPEG" = 'yes' ]; then
@@ -120,16 +121,23 @@ if [ "$HAVE_THREADS" != 'no' ]; then
       check_lib FFMPEG_AVFORMAT_NEW_STREAM "$AVFORMAT_LIBS" avformat_new_stream
       check_lib FFMPEG_AVCODEC_ENCODE_VIDEO2 "$AVCODEC_LIBS" avcodec_encode_video2
    fi
-
-   if [ "$HAVE_FFMPEG" = 'no' ] && [ "$HAVE_X264RGB" = 'yes' ]; then
-      echo "x264 RGB recording is enabled, but FFmpeg is not. --enable-x264rgb will not have any effect."
-   fi
 else
    echo "Not building with threading support. Will skip FFmpeg."
    HAVE_FFMPEG='no'
 fi
 
 check_lib DYNAMIC "$DYLIB" dlopen
+
+if [ "$HAVE_KMS" = "yes" ]; then
+   check_pkgconf GBM gbm
+   check_pkgconf DRM libdrm
+
+   if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ]; then
+      HAVE_KMS=yes
+      HAVE_GLES=yes
+   fi
+fi
+check_lib GLES -lEGL eglCreateContext
 
 check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
@@ -148,6 +156,6 @@ check_pkgconf PYTHON python3
 add_define_make OS "$OS"
 
 # Creates config.mk and config.h.
-VARS="ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK COREAUDIO PULSE SDL OPENGL DYLIB GETOPT_LONG THREADS CG XML SDL_IMAGE LIBPNG DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL SWSCALE CONFIGFILE FREETYPE XVIDEO X11 XEXT NETPLAY NETWORK_CMD STDIN_CMD COMMAND SOCKET_LEGACY FBO STRL PYTHON FFMPEG_ALLOC_CONTEXT3 FFMPEG_AVCODEC_OPEN2 FFMPEG_AVIO_OPEN FFMPEG_AVFORMAT_WRITE_HEADER FFMPEG_AVFORMAT_NEW_STREAM FFMPEG_AVCODEC_ENCODE_AUDIO2 FFMPEG_AVCODEC_ENCODE_VIDEO2 X264RGB SINC FIXED_POINT BSV_MOVIE RPI"
+VARS="ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK COREAUDIO PULSE SDL OPENGL GLES KMS GBM DRM DYLIB GETOPT_LONG THREADS CG XML SDL_IMAGE LIBPNG DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL CONFIGFILE FREETYPE XVIDEO X11 XEXT NETPLAY NETWORK_CMD STDIN_CMD COMMAND SOCKET_LEGACY FBO PBO STRL PYTHON FFMPEG_ALLOC_CONTEXT3 FFMPEG_AVCODEC_OPEN2 FFMPEG_AVIO_OPEN FFMPEG_AVFORMAT_WRITE_HEADER FFMPEG_AVFORMAT_NEW_STREAM FFMPEG_AVCODEC_ENCODE_AUDIO2 FFMPEG_AVCODEC_ENCODE_VIDEO2 SINC FIXED_POINT BSV_MOVIE RPI"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS

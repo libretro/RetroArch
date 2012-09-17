@@ -22,6 +22,9 @@
 #include "config.h"
 #endif
 
+#include <xgraphics.h>
+
+#include "../../screenshot.h"
 #include "xdk_ctx.h"
 
 #if defined(_XBOX1)
@@ -31,6 +34,18 @@
 // for Xbox 360
 #define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
 #endif
+
+void gfx_ctx_set_blend(bool enable)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
+   if(enable)
+   {
+      d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+      d3d->d3d_render_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   }
+   d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, enable);
+}
 
 void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 {
@@ -59,13 +74,33 @@ void gfx_ctx_check_window(bool *quit,
 
 void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 
-#ifndef HAVE_GRIFFIN
 void gfx_ctx_swap_buffers(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+#ifdef _XBOX1
+   d3d->d3d_render_device->EndScene();
+#endif
    d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL);
 }
 
+void gfx_ctx_clear(void)
+{
+   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
+#ifdef _XBOX1
+   unsigned flicker_filter = g_console.flicker_filter;
+   bool soft_filter_enable = g_console.soft_display_filter_enable;
+#endif
+
+   device_ptr->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+      D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
+#ifdef _XBOX1
+   device_ptr->d3d_render_device->BeginScene();
+   device_ptr->d3d_render_device->SetFlickerFilter(flicker_filter);
+   device_ptr->d3d_render_device->SetSoftDisplayFilter(soft_filter_enable);
+#endif
+}
+
+#ifndef HAVE_GRIFFIN
 bool gfx_ctx_window_has_focus(void)
 {
    return true;
@@ -112,6 +147,33 @@ void gfx_ctx_set_fbo(bool enable)
    d3d->fbo_enabled = enable;
 }
 
+void gfx_ctx_xdk_screenshot_dump(void *data)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   HRESULT ret = S_OK;
+   char filename[PATH_MAX];
+   char shotname[PATH_MAX];
+
+   screenshot_generate_filename(shotname, sizeof(shotname));
+   snprintf(filename, sizeof(filename), "%s\\%s", default_paths.screenshots_dir, shotname);
+   
+#if defined(_XBOX1)
+   D3DSurface *surf = NULL;
+   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
+   ret = XGWriteSurfaceToFile(surf, filename);
+   surf->Release();
+#elif defined(_XBOX360)
+   ret = 1; //false
+   //ret = D3DXSaveTextureToFile(filename, D3DXIFF_BMP, d3d->lpTexture, NULL);
+#endif
+
+   if(ret == S_OK)
+   {
+      RARCH_LOG("Screenshot saved: %s.\n", filename);
+      msg_queue_push(g_extern.msg_queue, "Screenshot saved.", 1, 30);
+   }
+}
+
 /*============================================================
 	MISC
         TODO: Refactor
@@ -126,6 +188,8 @@ void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index)
 
    if(g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
       rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+   else if(g_console.aspect_ratio_index == ASPECT_RATIO_CORE)
+      rarch_set_core_viewport();
 
    g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
    g_settings.video.force_aspect = false;

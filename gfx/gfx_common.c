@@ -31,14 +31,18 @@
 #include <sys/sys_time.h>
 #endif
 
-#if IS_LINUX
+#ifdef GEKKO
+#include <ogc/lwp_watchdog.h>
+#endif
+
+#ifdef __linux__
 #include <unistd.h>
 #include <errno.h>
 #include <sys/wait.h>
 #endif
 
-#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(_MSC_VER)
-static int gettimeofday(struct timeval *val, void *dummy)
+#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(_MSC_VER) || defined(GEKKO)
+static int gettimeofday2(struct timeval *val, void *dummy)
 {
    (void)dummy;
 #if defined(_MSC_VER) && !defined(_XBOX360)
@@ -49,6 +53,8 @@ static int gettimeofday(struct timeval *val, void *dummy)
 
 #if defined(__CELLOS_LV2__)
    uint64_t usec = sys_time_get_system_time();
+#elif defined(GEKKO)
+   uint64_t usec = ticks_to_microsecs(gettime());
 #else
    uint64_t usec = msec * 1000;
 #endif
@@ -57,6 +63,9 @@ static int gettimeofday(struct timeval *val, void *dummy)
    val->tv_usec = usec % 1000000;
    return 0;
 }
+
+// GEKKO has gettimeofday, but it's not accurate enough for calculating FPS, so hack around it
+#define gettimeofday gettimeofday2
 #endif
 
 static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)

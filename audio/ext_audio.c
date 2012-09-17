@@ -86,7 +86,7 @@ static void *audio_ext_init(const char *device, unsigned rate, unsigned latency)
 
    if (ext->driver->api_version != RARCH_AUDIO_API_VERSION)
    {
-      RARCH_ERR("API mismatch in external audio plugin. SSNES: %d, Plugin: %d ...\n", RARCH_AUDIO_API_VERSION, ext->driver->api_version);
+      RARCH_ERR("API mismatch in external audio plugin. RetroArch: %d, Plugin: %d ...\n", RARCH_AUDIO_API_VERSION, ext->driver->api_version);
       goto error;
    }
 

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <app version="1">
-  <name>RetroArch Wii</name>
-  <coder>Themaister, Squarepusher2, ToadKing</coder>
-  <version>0.9.6</version>
+  <name>RetroArch GX</name>
+  <coder>Maister, Squarepusher, ToadKing</coder>
+  <version>0.9.7.1</version>
   <release_date>2012</release_date>
   <short_description>Multi-system emulator</short_description> 
-  <long_description>A port of RetroArch to the Wii.</long_description> 
+  <long_description>A port of RetroArch to the GameCube/Wii.</long_description> 
   <no_ios_reload/>
 </app>

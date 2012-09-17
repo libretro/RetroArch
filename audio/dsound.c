@@ -354,11 +354,14 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
    IDirectSoundBuffer_SetVolume(ds->dsb, DSBVOLUME_MAX);
 
 #ifdef _XBOX
-   dsmb.dwMixBinCount = 8;
-   dsmb.lpMixBinVolumePairs = dsmbvp;
-
-   IDirectSoundBuffer_SetHeadroom(ds->dsb, DSBHEADROOM_MIN);
-   IDirectSoundBuffer_SetMixBins(ds->dsb, &dsmb);
+   if(g_console.sound_volume_level == 1)
+   {
+      dsmb.dwMixBinCount = 8;
+      dsmb.lpMixBinVolumePairs = dsmbvp;
+      
+      IDirectSoundBuffer_SetHeadroom(ds->dsb, DSBHEADROOM_MIN);
+      IDirectSoundBuffer_SetMixBins(ds->dsb, &dsmb);
+   }
 #endif
 
    IDirectSoundBuffer_SetCurrentPosition(ds->dsb, 0);

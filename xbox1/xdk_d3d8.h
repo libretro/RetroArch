@@ -18,18 +18,10 @@
 #define _XDK_VIDEO_H
 
 #include <stdint.h>
-
-#ifdef _XBOX1
-#define XFONT_TRUETYPE // use true type fonts
-#endif
-
 #include <xfont.h>
 
 #include "../xdk/xdk_defines.h"
 
-#define SHOW_DEBUG_INFO
-
-#define DFONT_MAX	4096
 #define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZRHW | D3DFVF_TEX1)
 
 #define MIN_SCALING_FACTOR (1.0f)
@@ -62,6 +54,8 @@ typedef struct xdk_d3d_video
    unsigned frame_count;
    unsigned last_width;
    unsigned last_height;
+   unsigned win_width;
+   unsigned win_height;
    LPDIRECT3D d3d_device;
    LPDIRECT3DDEVICE d3d_render_device;
    LPDIRECT3DVERTEXBUFFER vertex_buf;

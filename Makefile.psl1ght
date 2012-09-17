@@ -2,6 +2,7 @@
 ##
 # Makefile for RetroArch PSL1GHT.
 ##
+RARCH_VERSION		= "0.9.7"
 
 DEBUG			= 0
 HAVE_LOGGER		= 0
@@ -14,7 +15,11 @@ CC = $(PS3DEV)/ppu/bin/ppu-gcc
 CXX = $(PS3DEV)/ppu/bin/ppu-g++
 LD = $(PS3DEV)/ppu/bin/ppu-ld
 
+CONTENT_ID_FULL		= UP0001-SSNE10000_00-0000000000000001
+
 ELF_TARGET := retroarch_psl1ght.elf
+EBOOT_PATH		= ps3/pkg/USRDIR/EBOOT.BIN
+CORE_PATH		= ps3/pkg/USRDIR/cores/CORE.SELF
 
 INCLUDE := -I. -I$(PS3DEV)/ppu/include
 LIBDIRS := -L$(PS3DEV)/ppu/lib -L$(PS3DEV)/portlibs/ppu/lib -L.
@@ -22,16 +27,68 @@ LIBDIRS := -L$(PS3DEV)/ppu/lib -L$(PS3DEV)/portlibs/ppu/lib -L.
 MACHDEP := -D__CELLOS_LV2__ -D__PSL1GHT__
 CFLAGS += -Wall $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
-LIBS := -lretro_psl1ght -laudio -lEGL -lGL -lio -lm -ljpgdec -lpngdec -lsysutil
+LIBS := -lretro_psl1ght -laudio -lGL -lEGL -lrsx -lgcm_sys -lnet -lio -lsysutil -lsysmodule  -lm -ljpgdec -lpngdec -llv2 -lnet -lnetctl
+
+# system platform
+system_platform = unix
+ifeq ($(shell uname -a),)
+EXE_EXT = .exe
+   system_platform = win
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+   system_platform = osx
+else ifneq ($(findstring MINGW,$(shell uname -a)),)
+   system_platform = win
+endif
+
+PKG_SCRIPT		= ps3/ps3py/pkg.py
+ifeq ($(shell uname), Linux)
+PKG_FINALIZE         	= package_finalize
+MAKE_SELF_WC		= make_self_wc
+MAKE_SELF		= make_self_npdrm
+PYTHON2			= python2
+GIT			= git
+else
+PKG_FINALIZE         	= package_finalize.exe
+MAKE_SELF_WC		= make_self_wc.exe
+MAKE_SELF		= make_self_npdrm.exe
+PYTHON2			= python2.exe
+GIT			= git.exe
+endif
+# system platform
+system_platform = unix
+ifeq ($(shell uname -a),)
+EXE_EXT = .exe
+   system_platform = win
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+   system_platform = osx
+else ifneq ($(findstring MINGW,$(shell uname -a)),)
+   system_platform = win
+endif
+
+PKG_SCRIPT		= ps3/ps3py/pkg.py
+ifeq ($(shell uname), Linux)
+PKG_FINALIZE         	= package_finalize
+MAKE_SELF_WC		= make_self_wc
+MAKE_SELF		= make_self_npdrm
+PYTHON2			= python2
+GIT			= git
+else
+PKG_FINALIZE         	= package_finalize.exe
+MAKE_SELF_WC		= make_self_wc.exe
+MAKE_SELF		= make_self_npdrm.exe
+PYTHON2			= python2.exe
+GIT			= git.exe
+endif
+
+MAKE_FSELF_NPDRM = $(CELL_SDK)/host-win32/bin/make_fself_npdrm.exe
+MAKE_PACKAGE_NPDRM = $(CELL_SDK)/host-win32/bin/make_package_npdrm.exe
 
 OBJ = console/griffin/griffin.o console/rzlib/rzlib.o
 
-OBJ += console/rgl/ps3/device_ctx.o console/rgl/ps3/rgl.o console/rgl/ps3/cgbio.o console/rgl/ps3/cgnv2rt.o
-
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
-CFLAGS          += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
-OBJ += console/logger/logger.o
+CFLAGS		+= -Iconsole/logger
+OBJ += console/logger/psl1ght_logger.o
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
@@ -40,27 +97,39 @@ endif
 
 RSXGL_DEFINES = -D__RSX__ -DGL3_PROTOTYPES
 
-SHARED_FLAGS := -DHAVE_FILEBROWSER $(RSXGL_DEFINES) -DHAVE_OSKUTIL -DHAVE_MOUSE -DHAVE_DEFAULT_RETROPAD_INPUT -DRARCH_CONSOLE -DHAVE_CONFIGFILE=1 -DHAVE_ZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DPACKAGE_VERSION=\"0.9.6\" -Dmain=rarch_main -Wno-char-subscripts
+SHARED_FLAGS := -DHAVE_FILEBROWSER $(RSXGL_DEFINES) -DHAVE_OPENGL -DHAVE_EGL -DHAVE_OPENGL_MODERN -DHAVE_GLSL -DHAVE_VID_CONTEXT -DHAVE_FBO -DHAVE_MOUSE -DHAVE_DEFAULT_RETROPAD_INPUT -DRARCH_CONSOLE -DHAVE_CONFIGFILE=1 -DHAVE_ZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_SYSMODULES -DHAVE_SYSUTILS -DHAVE_GRIFFIN=1 -DHAVE_NETPLAY=1 -DHAVE_SOCKET_LEGACY=1 -DPACKAGE_VERSION=\"0.9.7\" -Dmain=rarch_main -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT) -Wno-char-subscripts
 CFLAGS += -std=gnu99 $(SHARED_FLAGS)
 CXXFLAGS += $(SHARED_FLAGS)
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
 else
-   CFLAGS += -O3
-   CXXFLAGS += -03
+   CFLAGS += -O3 -g 
+   CXXFLAGS += -03 -g
 endif
 
 all: $(ELF_TARGET)
 
 $(ELF_TARGET): $(OBJ)
-	$(CC) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(LIBS)
+	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(LIBS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 %.o: %.cpp
 	$(CXX) $(CFLAGS) -c -o $@ $<
+
+create-npdrm-core:
+	$(MAKE_FSELF_NPDRM) $(ELF_TARGET) $(CORE_PATH)
+
+create-core:
+	$(MAKE_SELF_WC) $(ELF_TARGET) $(CORE_PATH)
+
+pkg: $(ELF_TARGET) create-npdrm-core
+	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
+
+pkg-signed: $(ELF_TARGET) create-core
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION).pkg
 
 clean:
 	rm -f $(ELF_TARGET)

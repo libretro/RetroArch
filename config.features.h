@@ -134,12 +134,6 @@ static const bool _ffmpeg_supp = true;
 static const bool _ffmpeg_supp = false;
 #endif
 
-#ifdef HAVE_X264RGB
-static const bool _x264rgb_supp = true;
-#else
-static const bool _x264rgb_supp = false;
-#endif
-
 #ifdef HAVE_CONFIGFILE
 static const bool _configfile_supp = true;
 #else

@@ -17,10 +17,8 @@
 #ifndef _MENU_XUI_H_
 #define _MENU_XUI_H_
 
-#ifdef _XBOX360
 #include <xui.h>
 #include <xuiapp.h>
-#endif
 
 enum
 {
@@ -34,7 +32,8 @@ enum
    SETTING_HW_TEXTURE_FILTER,
    SETTING_HW_TEXTURE_FILTER_2,
    SETTING_SCALE_ENABLED,
-   SETTING_SCALE_FACTOR
+   SETTING_SCALE_FACTOR,
+   SETTING_ZIP_EXTRACT,
 };
 
 enum
@@ -55,16 +54,18 @@ enum
    SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2,
    SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3,
    SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3,
+   SETTING_CONTROLS_DPAD_EMULATION,
    SETTING_CONTROLS_DEFAULT_ALL
 };
 
 enum
 {
+   INPUT_LOOP_NONE = 0,
    INPUT_LOOP_MENU,
-   INPUT_LOOP_RESIZE_MODE
+   INPUT_LOOP_RESIZE_MODE,
+   INPUT_LOOP_FILEBROWSER
 };
 
-#ifdef _XBOX360
 class CRetroArch : public CXuiModule
 {
    public:
@@ -91,6 +92,7 @@ class CRetroArchMain: public CXuiSceneImpl
       CXuiControl m_quit;
       CXuiTextElement m_title;
       CXuiTextElement m_core;
+	  CXuiControl m_logoimage;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
       HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
@@ -216,8 +218,5 @@ class CRetroArchControls: public CXuiSceneImpl
 
       XUI_IMPLEMENT_CLASS(CRetroArchControls, L"RetroArchControls", XUI_CLASS_SCENE)
 };
-
-extern CRetroArch app;
-#endif
 
 #endif

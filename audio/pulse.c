@@ -117,7 +117,7 @@ static void *pulse_init(const char *device, unsigned rate, unsigned latency)
    if (!pa->mainloop)
       goto error;
 
-   pa->context = pa_context_new(pa_threaded_mainloop_get_api(pa->mainloop), "SSNES");
+   pa->context = pa_context_new(pa_threaded_mainloop_get_api(pa->mainloop), "RetroArch");
    if (!pa->context)
       goto error;
 

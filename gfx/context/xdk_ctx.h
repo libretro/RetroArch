@@ -29,5 +29,6 @@ void gfx_ctx_set_projection(xdk_d3d_video_t *d3d, const struct gl_ortho *ortho, 
 void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index);
 void gfx_ctx_set_overscan(void);
 int gfx_ctx_check_resolution(unsigned resolution_id);
+void gfx_ctx_xdk_screenshot_dump(void *data);
 
 #endif

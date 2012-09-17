@@ -352,7 +352,7 @@ inline static CGresource _RGLGetBaseResource( CGresource resource )
 		case CG_UNDEFINED:
 			return CG_UNDEFINED;
 		default:
-			printf("RGL WARN: resource 0x%d is unknown here.\n", resource );
+			//RARCH_WARN("Resource 0x%d is unknown here.\n", resource );
 			return CG_UNDEFINED;
 	}
 }
@@ -419,20 +419,6 @@ static inline const CgParameterResource *_RGLGetParameterResource( const _CGprog
    return ( CgParameterResource * )( program->parameterResources + entry->typeIndex );
 }
 
-static inline CGtype _RGLGetParameterCGtype( const _CGprogram *program, const CgParameterEntry *entry )
-{
-   if ( entry->flags & CGP_RTCREATED )
-      return ( CGtype )entry->typeIndex;
-   else
-   {
-      const CgParameterResource *parameterResource = _RGLGetParameterResource( program, entry );
-      if ( parameterResource )
-         return ( CGtype )parameterResource->type;
-   }
-
-   return CG_UNKNOWN_TYPE;
-}
-
 static inline const CgParameterArray *_RGLGetParameterArray( const _CGprogram *program, const CgParameterEntry *entry )
 {
    return ( CgParameterArray* )( program->parameterResources + entry->typeIndex );
@@ -452,6 +438,8 @@ inline int _RGLGetProgramProfileIndex( CGprofile profile )
    else
       return -1;
 }
+
+CGGL_API void cgGLSetMatrixParameterfc( CGparameter param, const float *matrix );
 
 #ifdef __cplusplus
 }

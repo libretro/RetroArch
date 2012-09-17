@@ -32,6 +32,11 @@ CONSOLE EXTENSIONS
 #include "../rarch_console_main_wrap.c"
 #endif
 
+#ifdef HW_DOL
+#include "../../ngc/ssaram.c"
+#include "../../ngc/sidestep.c"
+#endif
+
 #ifdef HAVE_RARCH_EXEC
 #include "../rarch_console_exec.c"
 #endif
@@ -82,10 +87,14 @@ VIDEO CONTEXT
 
 #ifdef HAVE_VID_CONTEXT
 
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include "../../gfx/context/ps3_ctx.c"
 #elif defined(_XBOX)
 #include "../../gfx/context/xdk_ctx.c"
+#elif defined(HAVE_EGL)
+#include "../../gfx/context/egl_ctx.c"
+#else
+#include "../../gfx/context/null_ctx.c"
 #endif
 
 #endif
@@ -112,6 +121,8 @@ VIDEO IMAGE
 
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/image.c"
+#elif defined(_XBOX1)
+#include "../../xbox1/image.c"
 #endif
 
 /*============================================================
@@ -119,9 +130,18 @@ VIDEO DRIVER
 ============================================================ */
 
 #if defined(HAVE_OPENGL)
+#include "../../gfx/math/matrix.c"
 #include "../../gfx/gl.c"
 #elif defined(GEKKO)
-#include "../../wii/gx_video.c"
+#ifdef HW_RVL
+#include "../../wii/vi_encoder.c"
+#include "../../wii/mem2_manager.c"
+#endif
+#include "../../gx/gx_video.c"
+#endif
+
+#ifdef HAVE_DYLIB
+#include "../../gfx/ext_gfx.c"
 #endif
 
 #include "../../gfx/gfx_common.c"
@@ -141,12 +161,16 @@ VIDEO DRIVER
 FONTS
 ============================================================ */
 
+#if defined(HAVE_OPENGL) || defined(HAVE_D3D8) || defined(HAVE_D3D9)
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include "../../gfx/fonts/ps3_libdbgfont.c"
 #elif defined(_XBOX1)
 #include "../../gfx/fonts/xdk1_xfonts.c"
 #elif defined(_XBOX360)
 #include "../../gfx/fonts/xdk360_fonts.cpp"
+#else
+#include "../../gfx/fonts/null_fonts.c"
+#endif
 #endif
 
 /*============================================================
@@ -155,7 +179,7 @@ INPUT
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/ps3_input.c"
 #elif defined(GEKKO)
-#include "../../wii/gx_input.c"
+#include "../../gx/gx_input.c"
 #elif defined(_XBOX)
 #include "../../xdk/xdk_xinput_input.c"
 #endif
@@ -207,11 +231,15 @@ AUDIO
 #elif defined(_XBOX360)
 #include "../../360/xdk360_audio.cpp"
 #elif defined(GEKKO)
-#include "../../wii/gx_audio.c"
+#include "../../gx/gx_audio.c"
 #endif
 
 #ifdef HAVE_DSOUND
 #include "../../audio/dsound.c"
+#endif
+
+#ifdef HAVE_DYLIB
+#include "../../audio/ext_audio.c"
 #endif
 
 #include "../../audio/null.c"
@@ -256,7 +284,9 @@ MAIN
 #if defined(_XBOX)
 #include "../../xdk/frontend/main.c"
 #elif defined(GEKKO)
-#include "../../wii/frontend/main.c"
+#include "../../gx/frontend/main.c"
+#elif defined(__PSL1GHT__)
+#include "../../ps3/frontend/main.c"
 #endif
 
 /*============================================================
@@ -279,15 +309,32 @@ NETPLAY
 #endif
 
 /*============================================================
+SCREENSHOTS
+============================================================ */
+#ifdef HAVE_SCREENSHOTS
+#include "../../screenshot.c"
+#endif
+
+/*============================================================
 MENU
 ============================================================ */
+#ifdef HAVE_RMENU
+#if defined(__CELLOS_LV2__)
+#include "../rmenu/context/rmenu_ctx_ps3.c"
+#elif defined(_XBOX1)
+#include "../rmenu/context/rmenu_ctx_xdk.c"
+#endif
+#include "../rmenu/rmenu_stack.c"
+#include "../rmenu/rmenu.c"
+#endif
+
+#ifdef HAVE_RGUI
+#include "../rgui/rgui.c"
+#include "../rgui/list.c"
+#endif
+
 #if defined(_XBOX360)
 #include "../../360/frontend-xdk/menu.cpp"
 #elif defined(_XBOX1)
-#include "../../xbox1/frontend/menu.cpp"
 #include "../../xbox1/frontend/RetroLaunch/IoSupport.cpp"
-#include "../../xbox1/frontend/RetroLaunch/Surface.cpp"
-#elif defined(GEKKO)
-#include "../../wii/frontend/rgui.c"
-#include "../../wii/frontend/list.c"
 #endif

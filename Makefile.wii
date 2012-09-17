@@ -10,22 +10,36 @@ HAVE_FILE_LOGGER	= 0
 PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.7"
 PC_DEVELOPMENT_UDP_PORT		= 3490
 
-CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc
-CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++
-LD = $(DEVKITPPC)/bin/powerpc-eabi-ld
+# system platform
+system_platform = unix
+ifeq ($(shell uname -a),)
+EXE_EXT = .exe
+   system_platform = win
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+   system_platform = osx
+else ifneq ($(findstring MINGW,$(shell uname -a)),)
+   system_platform = win
+endif
 
-DOL_TARGET := retroarch.dol
-ELF_TARGET := retroarch.elf
+CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
+CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
+LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
+ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
+
+DOL_TARGET := retroarch_wii.dol
+ELF_TARGET := retroarch_wii.elf
 
 INCLUDE := -I. -I$(DEVKITPRO)/libogc/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
-LDFLAGS := $(MACHDEP)
+LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size -T gx/ld/rvl.ld
 LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
 
-OBJ = console/griffin/griffin.o console/font.bmpobj console/rzlib/rzlib.o
+APP_BOOTER_DIR = wii/app_booter
+
+OBJ = console/griffin/griffin.o console/font.binobj console/rzlib/rzlib.o $(APP_BOOTER_DIR)/app_booter.binobj
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -39,7 +53,7 @@ CFLAGS		+= -DHAVE_FILE_LOGGER
 CFLAGS          += -Iconsole/logger
 endif
 
-CFLAGS += -std=gnu99 -DHAVE_DEFAULT_RETROPAD_INPUT -DRARCH_CONSOLE -DHAVE_CONFIGFILE=1 -DGEKKO -DHW_RVL -DHAVE_ZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DPACKAGE_VERSION=\"0.9.6\" -Dmain=rarch_main -Wno-char-subscripts 
+CFLAGS += -std=gnu99 -DHAVE_DEFAULT_RETROPAD_INPUT -DHAVE_RGUI -DHAVE_THREAD -DRARCH_CONSOLE -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_RARCH_EXEC -DHAVE_CONFIGFILE=1 -DGEKKO -DHAVE_ZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DHAVE_SCREENSHOTS -DPACKAGE_VERSION=\"0.9.7\" -Dmain=rarch_main -Wno-char-subscripts 
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
@@ -50,7 +64,7 @@ endif
 all: $(DOL_TARGET)
 
 %.dol: %.elf
-	$(DEVKITPPC)/bin/elf2dol $< $@
+	$(ELF2DOL) $< $@
 
 $(ELF_TARGET): $(OBJ)
 	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(LIBS)
@@ -61,13 +75,20 @@ $(ELF_TARGET): $(OBJ)
 %.bmpobj: %.bmp
 	$(LD) -r -b binary -o $@ $<
 
+%.binobj: %.bin
+	$(LD) -r -b binary -o $@ $<
+
+$(APP_BOOTER_DIR)/app_booter.bin:
+	$(MAKE) -C $(APP_BOOTER_DIR)
+
 pkg: all
-	cp -r $(DOL_TARGET) wii/pkg/boot.dol
+	cp -r $(DOL_TARGET) wii/pkg/CORE.dol
 
 clean:
 	rm -f $(DOL_TARGET)
 	rm -f $(ELF_TARGET)
 	rm -f $(OBJ)
+	$(MAKE) -C $(APP_BOOTER_DIR) clean
 
 .PHONY: clean
 

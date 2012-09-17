@@ -17,9 +17,9 @@
 #ifndef RARCH_CONSOLE_VIDEO_H__
 #define RARCH_CONSOLE_VIDEO_H__
 
-#define IS_TIMER_NOT_EXPIRED(handle) (handle->frame_count < g_console.timer_expiration_frame_count)
-#define IS_TIMER_EXPIRED(handle) 	(!(IS_TIMER_NOT_EXPIRED(handle)))
-#define SET_TIMER_EXPIRATION(handle, value) (g_console.timer_expiration_frame_count = handle->frame_count + value)
+#define IS_TIMER_NOT_EXPIRED(handle) ((handle)->frame_count < g_console.timer_expiration_frame_count)
+#define IS_TIMER_EXPIRED(handle) 	(!(IS_TIMER_NOT_EXPIRED((handle))))
+#define SET_TIMER_EXPIRATION(handle, value) (g_console.timer_expiration_frame_count = (handle)->frame_count + (value))
 
 #define MIN_SCALING_FACTOR (1.0f)
 
@@ -58,6 +58,7 @@ enum aspect_ratio
    ASPECT_RATIO_30_17,
    ASPECT_RATIO_32_9,
    ASPECT_RATIO_AUTO,
+   ASPECT_RATIO_CORE,
    ASPECT_RATIO_CUSTOM,
 
    ASPECT_RATIO_END,
@@ -76,7 +77,7 @@ enum rotation
 
 #define LAST_ORIENTATION (ORIENTATION_END-1)
 
-extern char rotation_lut[ASPECT_RATIO_END][PATH_MAX];
+extern char rotation_lut[ASPECT_RATIO_END][32];
 
 /* ABGR color format defines */
 
@@ -101,6 +102,7 @@ struct aspect_ratio_elem
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
 extern void rarch_set_auto_viewport(unsigned width, unsigned height);
+extern void rarch_set_core_viewport();
 extern void rarch_load_shader(unsigned slot, const char *path);
 
 #endif

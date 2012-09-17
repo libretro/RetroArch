@@ -20,11 +20,13 @@
 #include <stdint.h>
 #include <string>
 
-#include "../../xdk/menu_shared.h"
-
-#ifdef _XBOX360
+#if defined(_XBOX360)
 #include <xfilecache.h>
 #include "../../360/frontend-xdk/menu.h"
+#include "../../xdk/menu_shared.h"
+#elif defined(_XBOX1)
+#include "../../xbox1/frontend/RetroLaunch/IoSupport.h"
+#include "../../console/rmenu/rmenu.h"
 #endif
 
 #include <xbdm.h>
@@ -104,22 +106,39 @@ static void get_environment_settings (void)
 #endif
 
 #if defined(_XBOX1)
-   /* FIXME: Hardcoded */
+   strlcpy(default_paths.core_dir, "D:", sizeof(default_paths.core_dir));
    strlcpy(default_paths.config_file, "D:\\retroarch.cfg", sizeof(default_paths.config_file));
-   strlcpy(default_paths.system_dir, "D:\\system\\", sizeof(default_paths.system_dir));
-   strlcpy(default_paths.filesystem_root_dir, "D:\\", sizeof(default_paths.filesystem_root_dir));
+   strlcpy(default_paths.system_dir, "D:\\system", sizeof(default_paths.system_dir));
+   strlcpy(default_paths.filesystem_root_dir, "D:", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.executable_extension, ".xbe", sizeof(default_paths.executable_extension));
    strlcpy(default_paths.filebrowser_startup_dir, "D:", sizeof(default_paths.filebrowser_startup_dir));
+   strlcpy(default_paths.screenshots_dir, "D:\\screenshots", sizeof(default_paths.screenshots_dir));
+   snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "default.xbe");
 #elif defined(_XBOX360)
 #ifdef HAVE_HDD_CACHE_PARTITION
    strlcpy(default_paths.cache_dir, "cache:\\", sizeof(default_paths.cache_dir));
 #endif
    strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));
+   strlcpy(default_paths.screenshots_dir, "game:", sizeof(default_paths.screenshots_dir));
    strlcpy(default_paths.shader_file, "game:\\media\\shaders\\stock.cg", sizeof(default_paths.shader_file));
    strlcpy(default_paths.config_file, "game:\\retroarch.cfg", sizeof(default_paths.config_file));
    strlcpy(default_paths.system_dir, "game:\\system\\", sizeof(default_paths.system_dir));
    strlcpy(default_paths.executable_extension, ".xex", sizeof(default_paths.executable_extension));
    strlcpy(default_paths.filebrowser_startup_dir, "game:", sizeof(default_paths.filebrowser_startup_dir));
+   snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "default.xex");
+#endif
+}
+
+static void system_init(void)
+{
+#ifdef _XBOX1
+   // Mount drives
+   xbox_io_mount("A:", "cdrom0");
+   xbox_io_mount("C:", "Harddisk0\\Partition0");
+   xbox_io_mount("E:", "Harddisk0\\Partition1");
+   xbox_io_mount("Z:", "Harddisk0\\Partition2");
+   xbox_io_mount("F:", "Harddisk0\\Partition6");
+   xbox_io_mount("G:", "Harddisk0\\Partition7");
 #endif
 }
 
@@ -132,22 +151,35 @@ int main(int argc, char *argv[])
    
    input_xinput.init();
 
+#ifdef _XBOX1
+   char path_prefix[256];
+   snprintf(path_prefix, sizeof(path_prefix), "D:\\");
+#else
    const char *path_prefix = default_paths.filesystem_root_dir;
+#endif
    const char *extension = default_paths.executable_extension;
    const input_driver_t *input = &input_xinput;
-   bool find_libretro_file = rarch_configure_libretro(input, path_prefix, extension);
 
-   rarch_settings_set_default(input);
+   char full_path[1024];
+   snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
+
+   bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
+   default_paths.config_file, extension);
+
+   rarch_settings_set_default();
+   rarch_input_set_controls_default(input);
    rarch_config_load(default_paths.config_file, path_prefix, extension, find_libretro_file);
    init_libretro_sym();
 
    input_xinput.post_init();
 
-#if defined(HAVE_D3D8) || defined(HAVE_D3D9)
+#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
    video_xdk_d3d.start();
 #else
    video_null.start();
 #endif
+
+   system_init();
 
    menu_init();
 
@@ -158,7 +190,7 @@ begin_loop:
 
       input_xinput.poll(NULL);
 
-      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+      video_set_aspect_ratio_func(g_console.aspect_ratio_index);
 
       do{
          repeat = rarch_main_iterate();
@@ -167,7 +199,9 @@ begin_loop:
    else if(g_console.mode_switch == MODE_MENU)
    {
       menu_loop();
-      rarch_startup(default_paths.config_file);
+
+      if (g_console.mode_switch != MODE_EXIT)
+         rarch_startup(default_paths.config_file);
    }
    else
       goto begin_shutdown;
@@ -175,8 +209,7 @@ begin_loop:
    goto begin_loop;
 
 begin_shutdown:
-   if(path_file_exists(default_paths.config_file))
-      rarch_config_save(default_paths.config_file);
+   rarch_config_save(default_paths.config_file);
 
    menu_free();
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9)

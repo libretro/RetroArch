@@ -22,7 +22,7 @@
 #include "../driver.h"
 #include "xdk_d3d8.h"
 
-#include "../../gfx/fonts/xdk1_xfonts.h"
+#include "./../gfx/fonts/xdk1_xfonts.h"
 #include "./../gfx/gfx_context.h"
 #include "../general.h"
 #include "../message.h"
@@ -33,6 +33,7 @@
 
 wchar_t strw_buffer[128];
 unsigned font_x, font_y;
+FLOAT angle;
 
 static void check_window(xdk_d3d_video_t *d3d)
 {
@@ -147,7 +148,6 @@ static void xdk_d3d_set_rotation(void * data, unsigned orientation)
 {
    (void)data;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-   FLOAT angle;
 
    switch(orientation)
    {
@@ -164,12 +164,6 @@ static void xdk_d3d_set_rotation(void * data, unsigned orientation)
          angle = M_PI * 90 / 180;
          break;
    }
-
-   D3DXMATRIX p_out;
-   D3DXMatrixIdentity(&p_out);
-   d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &p_out);
-
-   d3d->should_resize = TRUE;
 }
 
 static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **input, void **input_data)
@@ -185,7 +179,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    if (!d3d->d3d_device)
    {
       free(d3d);
-      RARCH_ERR("Failed to create a D3D8 object.\n");
+      RARCH_ERR("D3D8: Failed to create a D3D8 object.\n");
       return NULL;
    }
 
@@ -263,6 +257,8 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 	   }
    }
 
+   d3d->win_width = d3d->d3dpp.BackBufferWidth;
+   d3d->win_height = d3d->d3dpp.BackBufferHeight;
 
    if(d3d->d3dpp.BackBufferWidth > 640 && ((float)d3d->d3dpp.BackBufferHeight / (float)d3d->d3dpp.BackBufferWidth != 0.75) ||
       ((d3d->d3dpp.BackBufferWidth == 720) && (d3d->d3dpp.BackBufferHeight == 576))) // 16:9
@@ -303,7 +299,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
 	   D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf);
 
-   static const DrawVerticeFormats init_verts[] = {
+   const DrawVerticeFormats init_verts[] = {
       { -1.0f, -1.0f, 1.0f, 0.0f, 1.0f },
       {  1.0f, -1.0f, 1.0f, 1.0f, 1.0f },
       { -1.0f,  1.0f, 1.0f, 0.0f, 0.0f },
@@ -353,11 +349,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    font_x = 0;
    font_y = 0;
 
-   // TODO: place this somewhere else outside of xdk_d3d8.cpp
-#ifdef SHOW_DEBUG_INFO
-   g_console.fps_info_enable = true;
-#endif
-
    return d3d;
 }
 
@@ -369,7 +360,9 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    bool menu_enabled = g_console.menu_enable;
-   bool fps_enable = g_console.fps_info_enable;
+   bool fps_enable = g_console.fps_info_msg_enable;
+   unsigned flicker_filter = g_console.flicker_filter;
+   bool soft_filter_enable = g_console.soft_display_filter_enable;
 
    if (d3d->last_width != width || d3d->last_height != height) //240*160
    {
@@ -430,25 +423,29 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 
-   D3DXMATRIX p_out;
+   d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
+
+   D3DXMATRIX p_out, p_rotate;
    D3DXMatrixIdentity(&p_out);
-   d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &p_out);
+   D3DXMatrixRotationZ(&p_rotate, angle);
+
+   d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &p_rotate);
    d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &p_out);
    d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &p_out);
 
-   d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
    d3d->d3d_render_device->SetStreamSource(0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
    d3d->d3d_render_device->BeginScene();
+   d3d->d3d_render_device->SetFlickerFilter(flicker_filter);
+   d3d->d3d_render_device->SetSoftDisplayFilter(soft_filter_enable);
    d3d->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
    d3d->d3d_render_device->EndScene();
 
    if(fps_enable)
    {
-      static MEMORYSTATUS stat;
+      MEMORYSTATUS stat;
       GlobalMemoryStatus(&stat);
-      xfonts_render_msg_pre(d3d);
 
       //Output memory usage
 
@@ -467,10 +464,11 @@ static bool xdk_d3d_frame(void *data, const void *frame,
          }
          else if(buf_fps_last)
             xfonts_render_msg_place(d3d, font_x + 30, font_y + 70, 0 /* scale */, buf2);
-
-         xfonts_render_msg_post(d3d);
       }
    }
+
+   if (msg)
+      xfonts_render_msg_place(d3d, 60, 365, 0, msg); //TODO: dehardcode x/y here for HD (720p) mode
 
    if(!d3d->block_swap)
       gfx_ctx_swap_buffers();
@@ -484,7 +482,7 @@ static void xdk_d3d_set_nonblock_state(void *data, bool state)
 
    if(d3d->vsync)
    {
-      RARCH_LOG("D3D Vsync => %s\n", state ? "off" : "on");
+      RARCH_LOG("D3D8: Vsync => %s\n", state ? "off" : "on");
       gfx_ctx_set_swap_interval(state ? 0 : 1, TRUE);
    }
 }
@@ -530,6 +528,12 @@ static void xdk_d3d_stop(void)
    xdk_d3d_free(data);
 }
 
+static void xdk_d3d_apply_state_changes(void)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   d3d->should_resize = true;
+}
+
 const video_driver_t video_xdk_d3d = {
    xdk_d3d_init,
    xdk_d3d_frame,
@@ -542,5 +546,6 @@ const video_driver_t video_xdk_d3d = {
    xdk_d3d_start,
    xdk_d3d_stop,
    xdk_d3d_restart,
+   xdk_d3d_apply_state_changes,
    xdk_d3d_set_rotation,
 };

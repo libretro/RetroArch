@@ -349,7 +349,7 @@ static void dump_to_file_desperate(const void *data, size_t size, int type)
       goto error;
 
    char path[PATH_MAX];
-   snprintf(path, sizeof(path), "%s/SSNES-recovery-", base);
+   snprintf(path, sizeof(path), "%s/RetroArch-recovery-", base);
    char timebuf[PATH_MAX];
 
    time_t time_;
@@ -359,14 +359,14 @@ static void dump_to_file_desperate(const void *data, size_t size, int type)
    strlcat(path, ramtype2str(type), sizeof(path));
 
    if (dump_to_file(path, data, size))
-      RARCH_WARN("Succeeded in saving RAM data to \"%s\". Phew ... :D\n", path);
+      RARCH_WARN("Succeeded in saving RAM data to \"%s\".\n", path);
    else
       goto error;
 
    return;
 
 error:
-   RARCH_WARN("Failed ... Tough luck ... :(\n");
+   RARCH_WARN("Failed ... Cannot recover save file.\n");
 }
 
 bool save_state(const char *path)

@@ -18,10 +18,10 @@ PPU_TARGET_ADJUSTED := retroarch-libxenon.elf32
 LDDIRS = -L. -L$(DEVKITXENON)/usr/lib -L$(DEVKITXENON)/xenon/lib/32
 INCDIRS = -I. -I$(DEVKITXENON)/usr/include
 
-OBJ = fifo_buffer.o retroarch.o driver.o file.o file_path.o settings.o message.o rewind.o movie.o gfx/gfx_common.o patch.o compat/compat.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o 360/frontend-xenon/main.o 360/xenon360_audio.o 360/xenon360_input.o 360/xenon360_video.o
+OBJ = fifo_buffer.o retroarch.o driver.o file.o file_path.o settings.o message.o rewind.o movie.o gfx/gfx_common.o patch.o compat/compat.o screenshot.o audio/hermite.o dynamic.o audio/utils.o conf/config_file.o 360/frontend-xenon/main.o 360/xenon360_audio.o 360/xenon360_input.o 360/xenon360_video.o thread/xenon_sdl_threads.o
 
 LIBS = -lretro_xenon360 -lxenon -lm -lc
-DEFINES = -std=gnu99 -DHAVE_CONFIGFILE=1 -DPACKAGE_VERSION=\"0.9.6\" -DRARCH_CONSOLE -DHAVE_GETOPT_LONG=1 -Dmain=rarch_main
+DEFINES = -std=gnu99 -DHAVE_CONFIGFILE=1 -DPACKAGE_VERSION=\"0.9.7\" -DRARCH_CONSOLE -DHAVE_GETOPT_LONG=1 -Dmain=rarch_main
 DEFINES += -maltivec -mhard-float -m32 -mpowerpc64 -mcpu=cell -mtune=cell -fno-pic -g -Wall -DXENON $(INCDIRS)
 DEFINES += -u read -u _start -u exc_base
 

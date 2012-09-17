@@ -17,9 +17,13 @@
 #ifndef _PS3_CTX_H
 #define _PS3_CTX_H
 
+#include "../gl_common.h"
+
 void gfx_ctx_get_available_resolutions (void);
 int gfx_ctx_check_resolution(unsigned resolution_id);
-const char *ps3_get_resolution_label(uint32_t resolution);
+float gfx_ctx_get_aspect_ratio(void);
+unsigned gfx_ctx_get_resolution_width(unsigned resolution_id);
+unsigned gfx_ctx_get_resolution_height(unsigned resolution_id);
 void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate);
 void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index);
 void gfx_ctx_set_overscan(void);

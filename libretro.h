@@ -332,8 +332,9 @@ enum retro_key
                                            // about too demanding implementations.
                                            // 
                                            // The levels are "floating", but roughly defined as:
-                                           // 1: Low-powered devices such as Raspberry Pi, smart phones, tablets, etc.
-                                           // 2: Medium-spec consoles, such as PS3/360, with sub-par CPUs.
+                                           // 0: Low-powered embedded devices such as Raspberry Pi
+                                           // 1: 6th generation consoles, such as Wii/Xbox 1, and phones, tablets, etc.
+                                           // 2: 7th generation consoles, such as PS3/360, with sub-par CPUs.
                                            // 3: Modern desktop/laptops with reasonably powerful CPUs.
                                            // 4: High-end desktops with very powerful CPUs.
                                            //
@@ -353,9 +354,17 @@ enum retro_key
 #define RETRO_ENVIRONMENT_SET_PIXEL_FORMAT 10
                                            // const enum retro_pixel_format * --
                                            // Sets the internal pixel format used by the implementation.
-                                           // The default pixel format is RETRO_PIXEL_FORMAT_XRGB1555.
+                                           // The default pixel format is RETRO_PIXEL_FORMAT_0RGB1555.
                                            // If the call returns false, the frontend does not support this pixel format.
                                            // This function should be called inside retro_load_game() or retro_get_system_av_info().
+                                           //
+#define RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS 11
+                                           // const struct retro_input_descriptor * --
+                                           // Sets an array of retro_input_descriptors.
+                                           // It is up to the frontend to present this in a usable way.
+                                           // The array is terminated by retro_input_descriptor::description being set to NULL.
+                                           // This function can be called at any time, but it is recommended to call it as early as possible.
+
 
 enum retro_pixel_format
 {
@@ -369,8 +378,25 @@ struct retro_message
    unsigned    frames;     // Duration in frames of message.
 };
 
+// Describes how the libretro implementation maps a libretro input bind
+// to its internal input system through a human readable string.
+// This string can be used to better let a user configure input.
+struct retro_input_descriptor
+{
+   // Associates given parameters with a description.
+   unsigned port;
+   unsigned device;
+   unsigned index;
+   unsigned id;
+
+   const char *description; // Human readable description for parameters.
+                            // The pointer must remain valid until retro_unload_game() is called.
+};
+
 struct retro_system_info
 {
+   // All pointers are owned by libretro implementation, and pointers must remain valid until retro_deinit() is called.
+
    const char *library_name;      // Descriptive name of library. Should not contain any version numbers, etc.
    const char *library_version;   // Descriptive version of core.
 
@@ -478,6 +504,8 @@ void retro_get_system_info(struct retro_system_info *info);
 
 // Gets information about system audio/video timings and geometry.
 // Can be called only after retro_load_game() has successfully completed.
+// NOTE: The implementation of this function might not initialize every variable if needed.
+// E.g. geom.aspect_ratio might not be initialized if core doesn't desire a particular aspect ratio.
 void retro_get_system_av_info(struct retro_system_av_info *info);
 
 // Sets device to be used for player 'port'.

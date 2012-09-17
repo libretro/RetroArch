@@ -37,15 +37,6 @@ extern void _RGLFifoGlSetRenderTarget( RGLRenderTargetEx const * const args );
 
 typedef struct
 {
-   int id;
-   GLuint offset;
-   GLuint size;
-   GLuint pitch;
-   GLuint bank;
-} jsTiledRegion;
-
-typedef struct
-{
    jsTiledRegion region[MAX_TILED_REGIONS];
 } jsTiledMemoryManager;
 
@@ -59,6 +50,9 @@ static volatile uint32_t *labelAddress = NULL;
 static const uint32_t WaitLabelIndex = 111;
 extern GLuint nvFenceCounter;
 RGLState _RGLState;
+
+extern GmmAllocator *pGmmLocalAllocator;
+extern GmmAllocator *pGmmMainAllocator;
 
 typedef struct
 {
@@ -121,11 +115,10 @@ static const int sysutilModeCount = sizeof( sysutilModes ) / sizeof( sysutilMode
 
 static inline void _RGLPrintIt( unsigned int v )
 {
-    printf( "%02x %02x %02x %02x : ", ( v >> 24 )&0xff, ( v >> 16 )&0xff, ( v >> 8 )&0xff, v&0xff );
+    RARCH_LOG( "%02x %02x %02x %02x : \n", ( v >> 24 )&0xff, ( v >> 16 )&0xff, ( v >> 8 )&0xff, v&0xff );
 
     for ( unsigned int mask = ( 0x1 << 31 ), i = 1; mask != 0; mask >>= 1, i++ )
-        printf("%d%s", ( v & mask ) ? 1 : 0, ( i % 8 == 0 ) ? " " : "");
-    printf( "\n" );
+        RARCH_LOG("%d%s\n", ( v & mask ) ? 1 : 0, ( i % 8 == 0 ) ? " " : "");
 }
 
 static inline void _RGLPrintFifoFromPut(unsigned int numWords) 
@@ -254,42 +247,25 @@ static GLboolean _RGLInitFromRM( RGLResource *rmResource )
 
    ref = RGL_CLAMPF_01(ref);
 
-   cellGcmSetAlphaFuncInline( &_RGLState.fifo, CELL_GCM_ALWAYS, RGL_QUICK_FLOAT2UINT( ref * 255.0f ));
+   cellGcmSetAlphaFunc( &_RGLState.fifo, CELL_GCM_ALWAYS, RGL_QUICK_FLOAT2UINT( ref * 255.0f ));
+   cellGcmSetBlendColor( &_RGLState.fifo, hwColor, hwColor);
+   cellGcmSetBlendEquation( &_RGLState.fifo, CELL_GCM_FUNC_ADD, CELL_GCM_FUNC_ADD );
+   cellGcmSetBlendFunc( &_RGLState.fifo, CELL_GCM_ONE, CELL_GCM_ZERO, CELL_GCM_ONE, CELL_GCM_ZERO );
+   cellGcmSetClearColor( &_RGLState.fifo, hwColor);
+   cellGcmSetScissor( &_RGLState.fifo, 0, 0, 4095, 4095);
+   cellGcmSetVertexAttribOutputMask( &_RGLState.fifo, s->vertexProgramAttribMask & s->fragmentProgramAttribMask);
 
-   cellGcmSetBlendColorInline( &_RGLState.fifo, hwColor, hwColor);
-   cellGcmSetBlendEquationInline( &_RGLState.fifo, CELL_GCM_FUNC_ADD, CELL_GCM_FUNC_ADD );
-   cellGcmSetBlendFuncInline( &_RGLState.fifo, CELL_GCM_ONE, CELL_GCM_ZERO, CELL_GCM_ONE, CELL_GCM_ZERO );
-   cellGcmSetClearColorInline( &_RGLState.fifo, hwColor);
-   cellGcmSetAlphaTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetBlendEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetAlphaTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetBlendEnableMrtInline( &_RGLState.fifo, CELL_GCM_FALSE, CELL_GCM_FALSE, CELL_GCM_FALSE);
-   cellGcmSetLogicOpEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetCullFaceEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetCullFaceEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetDepthBoundsTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetDepthTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetPolygonOffsetFillEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetPolygonOffsetLineEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetRestartIndexEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetFragmentProgramGammaEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetScissorInline( &_RGLState.fifo, 0, 0, 4095, 4095);
-   cellGcmSetStencilTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetTwoSidedStencilTestEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetTwoSideLightEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetVertexAttribOutputMaskInline( &_RGLState.fifo, s->vertexProgramAttribMask & s->fragmentProgramAttribMask);
+   cellGcmSetPointSpriteControl( &_RGLState.fifo, CELL_GCM_FALSE, 1, 0);
+   cellGcmSetFrequencyDividerOperation( &_RGLState.fifo, 0);
 
-   cellGcmSetPointSpriteControlInline( &_RGLState.fifo, CELL_GCM_FALSE, 1, 0);
-   cellGcmSetFrequencyDividerOperationInline( &_RGLState.fifo, 0);
-
-   cellGcmSetRestartIndexInline( &_RGLState.fifo, 0);
-   cellGcmSetShadeModeInline( &_RGLState.fifo, CELL_GCM_SMOOTH);
+   cellGcmSetRestartIndex( &_RGLState.fifo, 0);
+   cellGcmSetShadeMode( &_RGLState.fifo, CELL_GCM_SMOOTH);
 
    for (i = 0; i < CELL_GCM_MAX_TEXIMAGE_COUNT; i++)
    {
-      cellGcmSetTextureAddressInline( &_RGLState.fifo, i, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_CLAMP_TO_EDGE, CELL_GCM_TEXTURE_UNSIGNED_REMAP_NORMAL, CELL_GCM_TEXTURE_ZFUNC_NEVER, 0 );
-      cellGcmSetTextureFilterInline( &_RGLState.fifo, i, 0, CELL_GCM_TEXTURE_NEAREST_LINEAR, CELL_GCM_TEXTURE_LINEAR, CELL_GCM_TEXTURE_CONVOLUTION_QUINCUNX );
-      cellGcmSetTextureControlInline( &_RGLState.fifo, i, CELL_GCM_TRUE, 0, 12 << 8, CELL_GCM_TEXTURE_MAX_ANISO_1 );
+      cellGcmSetTextureAddress( &_RGLState.fifo, i, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_WRAP, CELL_GCM_TEXTURE_CLAMP_TO_EDGE, CELL_GCM_TEXTURE_UNSIGNED_REMAP_NORMAL, CELL_GCM_TEXTURE_ZFUNC_NEVER, 0 );
+      cellGcmSetTextureFilter( &_RGLState.fifo, i, 0, CELL_GCM_TEXTURE_NEAREST_LINEAR, CELL_GCM_TEXTURE_LINEAR, CELL_GCM_TEXTURE_CONVOLUTION_QUINCUNX );
+      cellGcmSetTextureControl( &_RGLState.fifo, i, CELL_GCM_TRUE, 0, 12 << 8, CELL_GCM_TEXTURE_MAX_ANISO_1 );
    }
 
    _RGLFifoGlViewport( 0, 0, CELL_GCM_MAX_RT_DIMENSION, CELL_GCM_MAX_RT_DIMENSION, 0.0f, 1.0f );
@@ -970,7 +946,7 @@ static int _RGLPlatformCreateDevice( PSGLdevice* device )
       _RGLSetDisplayMode(vm, gcmDevice->color[0].bpp*8, gcmDevice->color[0].pitch);
 
       cellGcmSetFlipMode(gcmDevice->vsync ? CELL_GCM_DISPLAY_VSYNC : CELL_GCM_DISPLAY_HSYNC);
-      cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+      cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
       _RGLFifoFinish( &_RGLState.fifo );
 
       for (int i = 0; i < params->bufferingMode; ++i)
@@ -1072,22 +1048,6 @@ PSGLdevice* psglCreateDeviceExtended(const PSGLdeviceParameters *parameters )
     return device;
 }
 
-GLfloat psglGetDeviceAspectRatio(const PSGLdevice * device)
-{
-   CellVideoOutState videoState;
-   cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &videoState);
-
-   switch (videoState.displayMode.aspect)
-   {
-      case CELL_VIDEO_OUT_ASPECT_4_3:
-         return 4.0f/3.0f;
-      case CELL_VIDEO_OUT_ASPECT_16_9:
-	 return 16.0f/9.0f;
-   }
-
-   return 16.0f/9.0f;
-}
-
 void psglGetDeviceDimensions(const PSGLdevice * device, GLuint *width, GLuint *height)
 {
    *width = device->deviceParameters.width;
@@ -1104,7 +1064,7 @@ void psglDestroyDevice(PSGLdevice *device)
    RGLDevice *gcmDevice = ( RGLDevice * )device->platformDevice;
    PSGLdeviceParameters* params = &device->deviceParameters;
 
-   cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+   cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
    _RGLFifoFinish( &_RGLState.fifo );
 
    if ( rescIsEnabled( params ) )
@@ -1144,7 +1104,7 @@ static void *_RGLPlatformRasterInit (void)
 {
    RGLDriver *driver = (RGLDriver*)malloc(sizeof(RGLDriver));
 
-   cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+   cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
    _RGLFifoFinish( &_RGLState.fifo );
    memset( driver, 0, sizeof( RGLDriver ) );
    driver->rt.yInverted = CELL_GCM_TRUE;
@@ -1177,7 +1137,54 @@ PSGLdevice *psglGetCurrentDevice(void)
    return _CurrentDevice;
 }
 
-extern void gmmUpdateFreeList (const uint8_t location);
+static void gmmRemovePendingFree(GmmAllocator *pAllocator, GmmBlock *pBlock)
+{
+    if (pBlock == pAllocator->pPendingFreeHead)
+        pAllocator->pPendingFreeHead = pBlock->pNextFree;
+
+    if (pBlock == pAllocator->pPendingFreeTail)
+        pAllocator->pPendingFreeTail = pBlock->pPrevFree;
+
+    if (pBlock->pNextFree)
+        pBlock->pNextFree->pPrevFree = pBlock->pPrevFree;
+
+    if (pBlock->pPrevFree)
+        pBlock->pPrevFree->pNextFree = pBlock->pNextFree;
+}
+
+extern void gmmAddFree(GmmAllocator *pAllocator, GmmBlock *pBlock);
+
+static void gmmUpdateFreeLists (void)
+{
+    for(int i = 0; i < 2; i++)
+    {
+       uint8_t location = i == 0 ? CELL_GCM_LOCATION_LOCAL : CELL_GCM_LOCATION_MAIN;
+       GmmAllocator    *pAllocator;
+       const uint32_t  fence = _RGLState.semaphores->userSemaphores[SEMA_FENCE].val;
+       GmmBlock        *pBlock = NULL;
+       GmmBlock        *pTemp = NULL;
+
+       pAllocator = (location == CELL_GCM_LOCATION_LOCAL) ? 
+	       pGmmLocalAllocator : 
+	       pGmmMainAllocator;
+    
+       pBlock = pAllocator->pPendingFreeHead;
+
+       while (pBlock)
+       {
+          pTemp = pBlock->pNextFree;
+
+	  if ( !(( fence - pBlock->fence ) & 0x80000000 ) )
+	  {
+             gmmRemovePendingFree(pAllocator, pBlock);
+	     gmmAddFree(pAllocator, pBlock);
+	  }
+
+	  pBlock = pTemp;
+       }
+    }
+
+}
 
 GLAPI void psglSwap(void)
 {
@@ -1185,8 +1192,7 @@ GLAPI void psglSwap(void)
    PSGLdevice *device = _CurrentDevice;
    RGLFifo *fifo = &_RGLState.fifo;
 
-   gmmUpdateFreeList(CELL_GCM_LOCATION_LOCAL);
-   gmmUpdateFreeList(CELL_GCM_LOCATION_MAIN);
+   gmmUpdateFreeLists();
 
    RGLDevice *gcmDevice = ( RGLDevice * )device->platformDevice;
 
@@ -1234,27 +1240,17 @@ GLAPI void psglSwap(void)
          cellGcmSetWaitFlip();
    }
 
-   cellGcmSetPolySmoothEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetLineStippleEnableInline( &_RGLState.fifo, CELL_GCM_FALSE );
-   cellGcmSetPolygonStippleEnableInline( &_RGLState.fifo, CELL_GCM_FALSE);
-   cellGcmSetDepthBoundsTestEnable( &_RGLState.fifo, CELL_GCM_FALSE);
-
    LContext->needValidate = PSGL_VALIDATE_ALL;
 
-   for(int unit = 0; unit < MAX_TEXTURE_UNITS; unit++)
-      LContext->TextureCoordsUnits[unit].TextureMatrixStack.dirty = GL_TRUE;
-
-   LContext->ModelViewMatrixStack.dirty = GL_TRUE;
-   LContext->ProjectionMatrixStack.dirty = GL_TRUE;
    LContext->attribs->DirtyMask = (1 << MAX_VERTEX_ATTRIBS) - 1;
 
-   cellGcmSetInvalidateVertexCacheInline( &_RGLState.fifo);
+   cellGcmSetInvalidateVertexCache( &_RGLState.fifo);
 
    _RGLFifoFlush(fifo);
 
    while(sys_semaphore_wait(FlipSem, 1000) != CELL_OK);
 
-   cellGcmSetInvalidateVertexCacheInline(&_RGLState.fifo);
+   cellGcmSetInvalidateVertexCache(&_RGLState.fifo);
    _RGLFifoFlush(fifo);
 
    if (device->deviceParameters.bufferingMode == PSGL_BUFFERING_MODE_DOUBLE)
@@ -1325,12 +1321,4 @@ GLboolean _RGLTryResizeTileRegion(GLuint address, GLuint size, void* data)
    _RGLFifoFinish( &_RGLState.fifo );
 
    return GL_TRUE;
-}
-
-void _RGLGetTileRegionInfo(void* data, GLuint *address, GLuint *size)
-{
-   jsTiledRegion* region = ( jsTiledRegion* )data;
-
-   *address = region->offset;
-   *size = region->size;
 }

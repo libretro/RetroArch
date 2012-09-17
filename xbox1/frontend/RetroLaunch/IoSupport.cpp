@@ -24,106 +24,109 @@
 
 HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 {
-	char szSourceDevice[48];
-	char szDestinationDrive[16];
+   char szSourceDevice[48];
+   char szDestinationDrive[16];
 
-	snprintf(szSourceDevice, sizeof(szSourceDevice), "\\Device\\%s", szDevice);
-	snprintf(szDestinationDrive, sizeof(szDestinationDrive), "\\??\\%s", szDrive);
+   snprintf(szSourceDevice, sizeof(szSourceDevice), "\\Device\\%s", szDevice);
+   snprintf(szDestinationDrive, sizeof(szDestinationDrive), "\\??\\%s", szDrive);
+   RARCH_LOG("xbox_io_mount() - source device: %s.\n", szSourceDevice);
+   RARCH_LOG("xbox_io_mount() - destination drive: %s.\n", szDestinationDrive);
 
-	STRING DeviceName =
-	{
-		strlen(szSourceDevice),
-		strlen(szSourceDevice) + 1,
-		szSourceDevice
-	};
+   STRING DeviceName =
+   {
+      strlen(szSourceDevice),
+      strlen(szSourceDevice) + 1,
+      szSourceDevice
+   };
 
-	STRING LinkName =
-	{
-		strlen(szDestinationDrive),
-		strlen(szDestinationDrive) + 1,
-		szDestinationDrive
-	};
+   STRING LinkName =
+   {
+      strlen(szDestinationDrive),
+      strlen(szDestinationDrive) + 1,
+      szDestinationDrive
+   };
 
-	IoCreateSymbolicLink(&LinkName, &DeviceName);
+   IoCreateSymbolicLink(&LinkName, &DeviceName);
 
-	return S_OK;
+   return S_OK;
 }
 
 HRESULT xbox_io_unmount(char *szDrive)
 {
-	char szDestinationDrive[16];
-	snprintf(szDestinationDrive, sizeof(szDestinationDrive), "\\??\\%s", szDrive);
+   char szDestinationDrive[16];
+   snprintf(szDestinationDrive, sizeof(szDestinationDrive), "\\??\\%s", szDrive);
 
-	STRING LinkName =
-	{
-		strlen(szDestinationDrive),
-		strlen(szDestinationDrive) + 1,
-		szDestinationDrive
-	};
+   STRING LinkName =
+   {
+      strlen(szDestinationDrive),
+      strlen(szDestinationDrive) + 1,
+      szDestinationDrive
+   };
 
-	IoDeleteSymbolicLink(&LinkName);
+   IoDeleteSymbolicLink(&LinkName);
 
-	return S_OK;
+   return S_OK;
 }
 
 HRESULT xbox_io_remount(char *szDrive, char *szDevice)
 {
-	char szSourceDevice[48];
-	snprintf(szSourceDevice, sizeof(szSourceDevice), "\\Device\\%s", szDevice);
+   char szSourceDevice[48];
+   snprintf(szSourceDevice, sizeof(szSourceDevice), "\\Device\\%s", szDevice);
 
-	xbox_io_unmount(szDrive);
+   xbox_io_unmount(szDrive);
 
-	ANSI_STRING filename;
-	OBJECT_ATTRIBUTES attributes;
-	IO_STATUS_BLOCK status;
-	HANDLE hDevice;
-	NTSTATUS error;
-	DWORD dummy;
+   ANSI_STRING filename;
+   OBJECT_ATTRIBUTES attributes;
+   IO_STATUS_BLOCK status;
+   HANDLE hDevice;
+   NTSTATUS error;
+   DWORD dummy;
 
-	RtlInitAnsiString(&filename, szSourceDevice);
-	InitializeObjectAttributes(&attributes, &filename, OBJ_CASE_INSENSITIVE, NULL);
+   RtlInitAnsiString(&filename, szSourceDevice);
+   InitializeObjectAttributes(&attributes, &filename, OBJ_CASE_INSENSITIVE, NULL);
 
-	if (!NT_SUCCESS(error = NtCreateFile(&hDevice, GENERIC_READ |
+   if (!NT_SUCCESS(error = NtCreateFile(&hDevice, GENERIC_READ |
 	                                     SYNCHRONIZE | FILE_READ_ATTRIBUTES, &attributes, &status, NULL, 0,
 	                                     FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, FILE_OPEN,
 	                                     FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT)))
-	{
-		return E_FAIL;
-	}
+   {
+      return E_FAIL;
+   }
 
-	if (!DeviceIoControl(hDevice, FSCTL_DISMOUNT_VOLUME, NULL, 0, NULL, 0, &dummy, NULL))
-	{
-		CloseHandle(hDevice);
-		return E_FAIL;
-	}
+   if (!DeviceIoControl(hDevice, FSCTL_DISMOUNT_VOLUME, NULL, 0, NULL, 0, &dummy, NULL))
+   {
+      CloseHandle(hDevice);
+      return E_FAIL;
+   }
 
-	CloseHandle(hDevice);
-	xbox_io_mount(szDrive, szDevice);
+   CloseHandle(hDevice);
+   xbox_io_mount(szDrive, szDevice);
 
-	return S_OK;
+   return S_OK;
 }
 
 HRESULT xbox_io_remap(char *szMapping)
 {
-	char szMap[32];
-	strlcpy(szMap, szMapping, sizeof(szMap));
+   char szMap[32];
+   strlcpy(szMap, szMapping, sizeof(szMap));
 
-	char *pComma = strstr(szMap, ",");
-	if (pComma)
-	{
-		*pComma = 0;
+   char *pComma = strstr(szMap, ",");
 
-		// map device to drive letter
-		xbox_io_unmount(szMap);
-		xbox_io_mount(szMap, &pComma[1]);
-		return S_OK;
-	}
+   if (pComma)
+   {
+      *pComma = 0;
 
-	return E_FAIL;
+      // map device to drive letter
+      xbox_io_unmount(szMap);
+      xbox_io_mount(szMap, &pComma[1]);
+      return S_OK;
+   }
+
+   return E_FAIL;
 }
 
 HRESULT xbox_io_shutdown(void)
 {
-	HalInitiateShutdown();
-	return S_OK;
+   HalInitiateShutdown();
+   return S_OK;
 }

@@ -30,7 +30,7 @@ struct platform_bind
 
 uint64_t rarch_default_keybind_lut[RARCH_FIRST_META_KEY];
 
-char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][256] = {
+char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][32] = {
    "RetroPad Button B",          /* RETRO_DEVICE_ID_JOYPAD_B      */
    "RetroPad Button Y",          /* RETRO_DEVICE_ID_JOYPAD_Y      */
    "RetroPad Button Select",     /* RETRO_DEVICE_ID_JOYPAD_SELECT */
@@ -47,6 +47,12 @@ char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][256] = {
    "RetroPad Button R2",         /* RETRO_DEVICE_ID_JOYPAD_R2     */
    "RetroPad Button L3",         /* RETRO_DEVICE_ID_JOYPAD_L3     */
    "RetroPad Button R3",         /* RETRO_DEVICE_ID_JOYPAD_R3     */
+};
+
+char rarch_dpad_emulation_name_lut[KEYBIND_DEFAULT][32] = {
+   "None",           /* DPAD_EMULATION_NONE   */
+   "Left Stick",     /* DPAD_EMULATION_LSTICK */
+   "Right Stick",    /* DPAD_EMULATION_RSTICK */
 };
 
 extern const struct platform_bind platform_keys[];

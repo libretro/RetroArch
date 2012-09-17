@@ -73,7 +73,7 @@ static const audio_driver_t *audio_drivers[] = {
    &audio_xdk360,
 #endif
 #ifdef GEKKO
-   &audio_wii,
+   &audio_gx,
 #endif
    &audio_null,
 };
@@ -98,7 +98,7 @@ static const video_driver_t *video_drivers[] = {
    &video_ext,
 #endif
 #ifdef GEKKO
-   &video_wii,
+   &video_gx,
 #endif
 #ifdef HAVE_RPI
    &video_rpi,
@@ -123,9 +123,9 @@ static const input_driver_t *input_drivers[] = {
    &input_xinput,
 #endif
 #ifdef GEKKO
-   &input_wii,
+   &input_gx,
 #endif
-#ifdef IS_LINUX
+#if defined(__linux__) && !defined(ANDROID)
    &input_linuxraw,
 #endif
    &input_null,
@@ -192,8 +192,42 @@ void init_drivers_pre(void)
    find_input_driver();
 }
 
+static void adjust_system_rates(void)
+{
+   g_extern.system.force_nonblock = false;
+   const struct retro_system_timing *info = &g_extern.system.av_info.timing;
+
+   float timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
+   if (timing_skew > 0.05f) // We don't want to adjust pitch too much. If we have extreme cases, just don't readjust at all.
+   {
+      RARCH_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
+            g_settings.video.refresh_rate,
+            (float)info->fps);
+
+      // We won't be able to do VSync reliably as game FPS > monitor FPS.
+      if (info->fps > g_settings.video.refresh_rate)
+      {
+         g_extern.system.force_nonblock = true;
+         RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
+      }
+
+      g_settings.audio.in_rate = info->sample_rate;
+   }
+   else
+      g_settings.audio.in_rate = info->sample_rate *
+         (g_settings.video.refresh_rate / info->fps);
+
+   RARCH_LOG("Set audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
+
+#ifdef RARCH_CONSOLE
+   video_set_nonblock_state_func(!g_settings.video.vsync || g_extern.system.force_nonblock);
+#endif
+}
+
 void init_drivers(void)
 {
+   adjust_system_rates();
+
    init_video_input();
    init_audio();
 }
@@ -242,7 +276,7 @@ static void init_dsp_plugin(void)
 
    if (g_extern.audio_data.dsp_plugin->api_version != RARCH_DSP_API_VERSION)
    {
-      RARCH_ERR("DSP plugin API mismatch. SSNES: %d, Plugin: %d\n", RARCH_DSP_API_VERSION, g_extern.audio_data.dsp_plugin->api_version);
+      RARCH_ERR("DSP plugin API mismatch. RetroArch: %d, Plugin: %d\n", RARCH_DSP_API_VERSION, g_extern.audio_data.dsp_plugin->api_version);
       goto error;
    }
 
@@ -278,26 +312,6 @@ static void deinit_dsp_plugin(void)
 }
 #endif
 
-static void adjust_audio_input_rate(void)
-{
-   const struct retro_system_timing *info = &g_extern.system.av_info.timing;
-
-   float timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
-   if (timing_skew > 0.05f) // We don't want to adjust pitch too much. If we have extreme cases, just don't readjust at all.
-   {
-      RARCH_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
-            g_settings.video.refresh_rate,
-            (float)info->fps);
-
-      g_settings.video.refresh_rate = info->fps;
-   }
-
-   g_settings.audio.in_rate = info->sample_rate *
-      (g_settings.video.refresh_rate / info->fps);
-
-   RARCH_LOG("Set audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
-}
-
 void init_audio(void)
 {
    // Accomodate rewind since at some point we might have two full buffers.
@@ -320,8 +334,6 @@ void init_audio(void)
       g_extern.audio_active = false;
       return;
    }
-
-   adjust_audio_input_rate();
 
    driver.audio_data = audio_init_func(*g_settings.audio.device ? g_settings.audio.device : NULL,
          g_settings.audio.out_rate, g_settings.audio.latency);
@@ -586,7 +598,7 @@ void init_video_input(void)
    video.width = width;
    video.height = height;
    video.fullscreen = g_settings.video.fullscreen;
-   video.vsync = g_settings.video.vsync;
+   video.vsync = g_settings.video.vsync && !g_extern.system.force_nonblock;
    video.force_aspect = g_settings.video.force_aspect;
    video.smooth = g_settings.video.smooth;
    video.input_scale = scale;

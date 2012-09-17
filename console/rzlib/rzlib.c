@@ -59,8 +59,6 @@ struct internal_state
 	inflate_blocks_statef *blocks;            /* current inflate_blocks state */
 };
 
-static const unsigned int border[] = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
-
 
 typedef enum {        /* waiting for "i:"=input, "o:"=output, "x:"=nothing */
       START,    /* x: set up for LEN */
@@ -88,18 +86,18 @@ static int huft_build (
     unsigned int * );         /* space for values */
 
 /* Tables for deflate from PKZIP's appnote.txt. */
-static const unsigned int cplens[31] = { /* Copy lengths for literal codes 257..285 */
+const unsigned int cplens[31] = { /* Copy lengths for literal codes 257..285 */
         3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31,
         35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 0, 0};
         /* see note #13 above about 258 */
-static const unsigned int cplext[31] = { /* Extra bits for literal codes 257..285 */
+const unsigned int cplext[31] = { /* Extra bits for literal codes 257..285 */
         0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
         3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0, 112, 112}; /* 112==invalid */
-static const unsigned int cpdist[30] = { /* Copy offsets for distance codes 0..29 */
+const unsigned int cpdist[30] = { /* Copy offsets for distance codes 0..29 */
         1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193,
         257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145,
         8193, 12289, 16385, 24577};
-static const unsigned int cpdext[30] = { /* Extra bits for distance codes */
+const unsigned int cpdext[30] = { /* Extra bits for distance codes */
         0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,
         7, 7, 8, 8, 9, 9, 10, 10, 11, 11,
         12, 12, 13, 13};
@@ -148,8 +146,7 @@ inflate_codes_statef *inflate_codes_new(unsigned int bl, unsigned int bd, inflat
 {
 	inflate_codes_statef *c;
 
-	if ((c = (inflate_codes_statef *)
-				ZALLOC(z,1,sizeof(struct inflate_codes_state))) != 0)
+	if ((c = (inflate_codes_statef *)ZALLOC(z,1,sizeof(struct inflate_codes_state))) != 0)
 	{
 		c->mode = START;
 		c->lbits = (Byte)bl;
@@ -736,9 +733,10 @@ int inflate_trees_dynamic(unsigned int nl, unsigned int nd, unsigned int *c, uns
 	return Z_OK;
 }
 
-static unsigned int fixed_bl = 9;
-static unsigned int fixed_bd = 5;
-static inflate_huft fixed_tl[] = {
+#define FIXED_BL 9
+#define FIXED_BD 5
+
+inflate_huft fixed_tl[] = {
     {{{96,7}},256}, {{{0,8}},80}, {{{0,8}},16}, {{{84,8}},115},
     {{{82,7}},31}, {{{0,8}},112}, {{{0,8}},48}, {{{0,9}},192},
     {{{80,7}},10}, {{{0,8}},96}, {{{0,8}},32}, {{{0,9}},160},
@@ -869,7 +867,7 @@ static inflate_huft fixed_tl[] = {
     {{{0,8}},15}, {{{0,8}},143}, {{{0,8}},79}, {{{0,9}},255}
   };
 
-static inflate_huft fixed_td[] = {
+inflate_huft fixed_td[] = {
     {{{80,5}},1}, {{{87,5}},257}, {{{83,5}},17}, {{{91,5}},4097},
     {{{81,5}},5}, {{{89,5}},1025}, {{{85,5}},65}, {{{93,5}},16385},
     {{{80,5}},3}, {{{88,5}},513}, {{{84,5}},33}, {{{92,5}},8193},
@@ -882,11 +880,12 @@ static inflate_huft fixed_td[] = {
 
 int inflate_trees_fixed(unsigned int * bl, unsigned int *bd, inflate_huft ** tl, inflate_huft ** td, z_streamp z)
 {
-	*bl = fixed_bl;
-	*bd = fixed_bd;
-	*tl = fixed_tl;
-	*td = fixed_td;
-	return Z_OK;
+   *bl = FIXED_BL;
+   *bd = FIXED_BD;
+   *tl = fixed_tl;
+   *td = fixed_td;
+
+   return Z_OK;
 }
 
 /* infblock.c -- interpret and process block types to last block
@@ -940,10 +939,11 @@ int inflate_blocks(inflate_blocks_statef *s, z_streamp z, int r)
 	unsigned int t;               /* temporary storage */
 	unsigned long b;              /* bit buffer */
 	unsigned int k;               /* bits in bit buffer */
-	Bytef *p;             /* input data pointer */
+	Bytef *p;                     /* input data pointer */
 	unsigned int n;               /* bytes available there */
-	Bytef *q;             /* output window write pointer */
+	Bytef *q;                     /* output window write pointer */
 	unsigned int m;               /* bytes to end of window or read pointer */
+	const unsigned int border[] = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
 
 	/* copy input/output information to locals (UPDATE macro restores) */
 	LOAD
@@ -1284,7 +1284,7 @@ void  zcfree (voidpf opaque, voidpf ptr)
  * For conditions of distribution and use, see copyright notice in zlib.h 
  */
 
-static const unsigned long crc_table[256] = {
+const unsigned long crc_table[256] = {
   0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
   0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
   0xe0d5e91eL, 0x97d2d988L, 0x09b64c2bL, 0x7eb17cbdL, 0xe7b82d07L,
@@ -1466,7 +1466,7 @@ int  inflateInit2_(z_streamp z, int w, const char * version, int stream_size)
 }
 
 
-int  inflateInit_(z_streamp z, const char * version, int stream_size)
+int inflateInit_(z_streamp z, const char * version, int stream_size)
 {
 	return inflateInit2_(z, DEF_WBITS, version, stream_size);
 }
@@ -1616,7 +1616,7 @@ int  inflate(z_streamp z, int f)
 #  define Z_PRINTF_BUFSIZE 4096
 #endif
 
-static int gz_magic[2] = {0x1f, 0x8b}; /* gzip magic header */
+int gz_magic[2] = {0x1f, 0x8b}; /* gzip magic header */
 
 /* gzip flag byte */
 #define ASCII_FLAG   0x01 /* bit 0 set: file probably ascii text */

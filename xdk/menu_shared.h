@@ -17,7 +17,7 @@
 #ifndef _XDK_MENU_SHARED_H
 #define _XDK_MENU_SHARED_H
 
-int menu_init (void);
+void menu_init (void);
 void menu_free (void);
 void menu_loop (void);
 

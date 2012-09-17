@@ -13,31 +13,24 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "driver.h"
-
-#include "SDL.h"
-#include "../boolean.h"
-#include "general.h"
-#include <stdint.h>
-#include <stdlib.h>
-#include "rarch_sdl_input.h"
-
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/keysym.h>
-
-typedef struct x11_input
-{
-   sdl_input_t *sdl;
-   Display *display;
-   char state[32];
-} x11_input_t;
+#include "x11_input.h"
 
 struct key_bind
 {
    unsigned x;
    enum retro_key sk;
 };
+
+void x_input_set_disp_win(x11_input_t *x11, Display *dpy, Window win)
+{
+   if (x11->display && !x11->inherit_disp)
+   {
+      x11->inherit_disp = true;
+      XCloseDisplay(x11->display);
+      x11->display = dpy;
+      x11->win     = win;
+   }
+}
 
 static unsigned keysym_lut[RETROK_LAST];
 static const struct key_bind lut_binds[] = {
@@ -189,6 +182,56 @@ static bool x_bind_button_pressed(void *data, int key)
       input_sdl.key_pressed(x11->sdl, key);
 }
 
+static void conv_analog_id_to_bind_id(unsigned index, unsigned id,
+      unsigned *id_minus, unsigned *id_plus)
+{
+   switch ((index << 1) | id)
+   {
+      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
+         *id_minus = RARCH_ANALOG_LEFT_X_MINUS;
+         *id_plus  = RARCH_ANALOG_LEFT_X_PLUS;
+         break;
+
+      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
+         *id_minus = RARCH_ANALOG_LEFT_Y_MINUS;
+         *id_plus  = RARCH_ANALOG_LEFT_Y_PLUS;
+         break;
+
+      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X:
+         *id_minus = RARCH_ANALOG_RIGHT_X_MINUS;
+         *id_plus  = RARCH_ANALOG_RIGHT_X_PLUS;
+         break;
+
+      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
+         *id_minus = RARCH_ANALOG_RIGHT_Y_MINUS;
+         *id_plus  = RARCH_ANALOG_RIGHT_Y_PLUS;
+         break;
+   }
+}
+
+static int16_t x_analog_state(x11_input_t *x11, const struct retro_keybind **binds_,
+      unsigned port, unsigned index, unsigned id)
+{
+   const struct retro_keybind *binds = binds_[port];
+   if (id >= RARCH_BIND_LIST_END)
+      return 0;
+
+   unsigned id_minus = 0;
+   unsigned id_plus  = 0;
+
+   conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
+
+   const struct retro_keybind *bind_minus = &binds[id_minus];
+   const struct retro_keybind *bind_plus  = &binds[id_plus];
+   if (!bind_minus->valid || !bind_plus->valid)
+      return 0;
+
+   int16_t res_minus = x_is_pressed(x11, binds, id_minus) ? -0x7fff : 0;
+   int16_t res_plus  = x_is_pressed(x11, binds, id_plus)  ?  0x7fff : 0;
+
+   return res_plus + res_minus;
+}
+
 static int16_t x_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
    x11_input_t *x11 = (x11_input_t*)data;
@@ -203,7 +246,12 @@ static int16_t x_input_state(void *data, const struct retro_keybind **binds, uns
          return x_key_pressed(x11, id);
 
       case RETRO_DEVICE_ANALOG:
-         return input_sdl.input_state(x11->sdl, binds, port, device, index, id);
+      {
+         int16_t ret = input_sdl.input_state(x11->sdl, binds, port, device, index, id);
+         if (!ret)
+            ret = x_analog_state(x11, binds, port, index, id);
+         return ret;
+      }
 
       default:
          return 0;
@@ -214,14 +262,26 @@ static void x_input_free(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
    input_sdl.free(x11->sdl);
-   XCloseDisplay(x11->display);
+
+   if (!x11->inherit_disp)
+      XCloseDisplay(x11->display);
+
    free(data);
 }
 
 static void x_input_poll(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
-   XQueryKeymap(x11->display, x11->state);
+
+   Window win;
+   int rev;
+   XGetInputFocus(x11->display, &win, &rev);
+
+   if (win == x11->win)
+      XQueryKeymap(x11->display, x11->state);
+   else
+      memset(x11->state, 0, sizeof(x11->state));
+
    input_sdl.poll(x11->sdl);
 }
 

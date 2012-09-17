@@ -49,7 +49,6 @@ endif
 
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
-   DEFINES += -DIS_LINUX
    OBJ += input/linuxraw_input.o
 endif
 
@@ -125,9 +124,17 @@ ifeq ($(HAVE_COREAUDIO), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o gfx/context/sdl_ctx.o input/sdl_input.o audio/sdl_audio.o fifo_buffer.o
+   OBJ += gfx/sdl_gfx.o input/sdl_input.o audio/sdl_audio.o fifo_buffer.o
+   OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
+
+ifeq ($(SCALER_NO_SIMD), 1)
+   DEFINES += -DSCALER_NO_SIMD
+endif
+ifeq ($(SCALER_PERF), 1)
+   DEFINES += -DSCALER_PERF
+endif
 
 ifeq ($(HAVE_X11), 1)
    LIBS += $(X11_LIBS)
@@ -135,12 +142,29 @@ ifeq ($(HAVE_X11), 1)
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
-   OBJ += gfx/gl.o gfx/fonts/freetype.o
+   OBJ += gfx/gl.o gfx/fonts/freetype.o gfx/math/matrix.o
+
 ifeq ($(OSX),1)
    LIBS += -framework OpenGL
 else
+ifeq ($(HAVE_GLES), 1)
+   LIBS += -lGLESv2 -lEGL
+   DEFINES += -DHAVE_OPENGLES -DHAVE_OPENGLES2
+else
    LIBS += -lGL
+   OBJ += gfx/context/sdl_ctx.o
 endif
+endif
+endif
+endif
+
+ifeq ($(HAVE_KMS), 1)
+   OBJ += gfx/context/drm_egl_ctx.o
+   DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS)
+   LIBS += $(GBM_LIBS) $(DRM_LIBS)
+else
+ifeq ($(HAVE_GLES), 1)
+   OBJ += gfx/context/xegl_ctx.o
 endif
 endif
 
@@ -199,8 +223,8 @@ endif
 
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/ffemu.o
-   LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS)
-   DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS)
+   LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS)
+   DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS)
 endif
 
 ifeq ($(HAVE_DYNAMIC), 1)
@@ -295,8 +319,10 @@ clean:
 	rm -f conf/*.o
 	rm -f gfx/*.o
 	rm -f gfx/fonts/*.o
+	rm -f gfx/math/*.o
 	rm -f gfx/context/*.o
 	rm -f gfx/py_state/*.o
+	rm -f gfx/scaler/*.o
 	rm -f compat/*.o
 	rm -f record/*.o
 	rm -f input/*.o

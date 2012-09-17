@@ -33,7 +33,7 @@
 #define VID_HANDLE xdk_d3d_video_t
 #endif
 
-#ifdef HAVE_SDL
+#if defined(HAVE_SDL) && !defined(__APPLE__)
 #include "SDL_syswm.h"
 #endif
 
@@ -49,22 +49,19 @@ void gfx_ctx_destroy(void);
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 void gfx_ctx_update_window_title(bool reset);
 
-bool gfx_ctx_key_pressed(int key);
-
 void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count);
 
 void gfx_ctx_set_resize(unsigned width, unsigned height);
 
-#ifdef HAVE_SDL
+#if defined(HAVE_SDL) && !defined(__APPLE__)
 bool gfx_ctx_get_wm_info(SDL_SysWMinfo *info);
 #endif
 
 #ifndef HAVE_GRIFFIN
 bool gfx_ctx_window_has_focus(void);
-
-void gfx_ctx_swap_buffers(void);
 #endif
+void gfx_ctx_swap_buffers(void);
 
 void gfx_ctx_input_driver(const input_driver_t **input, void **input_data);
 
@@ -79,7 +76,9 @@ int gfx_ctx_check_resolution(unsigned resolution_id);
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_D3D9) || defined(HAVE_D3D8)
+typedef void (*gfx_ctx_proc_t)(void);
 void gfx_ctx_set_projection(VID_HANDLE *gl, const struct gl_ortho *ortho, bool allow_rotate);
+gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *sym);
 #endif
 
 #endif

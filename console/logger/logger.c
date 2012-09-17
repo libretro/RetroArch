@@ -15,16 +15,19 @@
  */
 
 #ifdef __CELLOS_LV2__
+#include "../../ps3/sdk_defines.h"
+#ifndef __PSL1GHT__
 #include <netex/net.h>
 #include <cell/sysmodule.h>
 #include <netex/libnetctl.h>
 #include <sys/timer.h>
+#endif
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #endif
 
-#ifdef HW_RVL
+#ifdef GEKKO
 #include <network.h>
 #endif
 
@@ -125,7 +128,7 @@ static int if_down(int sid)
    (void)sid;
 #ifdef __CELLOS_LV2__
    cellNetCtlTerm();
-#elif defined(GEKKO)
+#elif defined(GEKKO) && !defined(HW_DOL)
    net_deinit();
 #endif
    return (0);

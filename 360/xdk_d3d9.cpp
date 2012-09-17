@@ -456,13 +456,13 @@ static void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
    }
 
    d3d->d3d_render_device->CreateTexture(512 * g_settings.video.fbo_scale_x, 512 * g_settings.video.fbo_scale_y,
-         1, 0, g_console.gamma_correction_enable ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8,
+         1, 0, g_console.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8,
          0, &d3d->lpTexture_ot
 		 , NULL
 		 );
 
    d3d->d3d_render_device->CreateRenderTarget(512 * g_settings.video.fbo_scale_x, 512 * g_settings.video.fbo_scale_y,
-         g_console.gamma_correction_enable ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 
+         g_console.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 
 	      0, 0, &d3d->lpSurface, NULL);
 
    d3d->lpTexture_ot_as16srgb = *d3d->lpTexture_ot;
@@ -504,7 +504,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->d3dpp.BackBufferWidth         = d3d->video_mode.fIsHiDef ? 1280 : 640;
    d3d->d3dpp.BackBufferHeight        = d3d->video_mode.fIsHiDef ? 720 : 480;
 
-   if(g_console.gamma_correction_enable)
+   if(g_console.gamma_correction)
    {
       d3d->d3dpp.BackBufferFormat        = g_console.color_format ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : (D3DFORMAT)MAKESRGBFMT(D3DFMT_LIN_A1R5G5B5);
       d3d->d3dpp.FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
@@ -742,11 +742,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    /* XBox 360 specific font code */
    if (msg && !menu_enabled)
    {
-      if(IS_TIMER_EXPIRED(d3d))
-      {
-         xdk360_console_format(msg);
-         SET_TIMER_EXPIRATION(d3d, 30);
-      }
+	   xdk360_console_format(msg);
 
       xdk360_console_draw();
    }
@@ -817,6 +813,12 @@ static void xdk_d3d_stop(void)
    xdk_d3d_free(data);
 }
 
+static void xdk_d3d_apply_state_changes(void)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   d3d->should_resize = true;
+}
+
 const video_driver_t video_xdk_d3d = {
    xdk_d3d_init,
    xdk_d3d_frame,
@@ -829,5 +831,6 @@ const video_driver_t video_xdk_d3d = {
    xdk_d3d_start,
    xdk_d3d_stop,
    xdk_d3d_restart,
+   xdk_d3d_apply_state_changes,
    xdk_d3d_set_rotation,
 };

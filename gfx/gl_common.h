@@ -18,28 +18,46 @@
 
 #include "../general.h"
 #include "fonts/fonts.h"
+#include "math/matrix.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
 
+#include <string.h>
+
 #if defined(__APPLE__)
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
-#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+#elif defined(HAVE_PSGL)
 #include <PSGL/psgl.h>
 #include <PSGL/psglu.h>
 #include <GLES/glext.h>
-#elif defined(__CELLOS_LV2__) && defined(__PSL1GHT__)
+#elif defined(HAVE_OPENGL_MODERN)
 #include <EGL/egl.h>
+#include <EGL/eglext.h>
 #include <GL3/gl3.h>
 #include <GL3/gl3ext.h>
-#define GL_QUADS 0x0007
+#elif defined(HAVE_OPENGLES2)
+#include <GLES2/gl2.h>
+#elif defined(HAVE_OPENGLES1)
+#include <GLES/gl.h>
+#include <GLES/glext.h>
 #else
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <GL/glext.h>
 #endif
+
+static inline bool gl_query_extension(const char *ext)
+{
+   const char *str = (const char*)glGetString(GL_EXTENSIONS);
+   bool ret = str && strstr(str, ext);
+   RARCH_LOG("Querying GL extension: %s => %s\n",
+         ext, ret ? "exists" : "doesn't exist");
+
+   return ret;
+}
 
 static inline bool gl_check_error(void)
 {
@@ -50,18 +68,18 @@ static inline bool gl_check_error(void)
          RARCH_ERR("GL: Invalid enum.\n");
          break;
       case GL_INVALID_VALUE:
-         RARCH_ERR("GL: Invalid value. (You're not alone.)\n");
+         RARCH_ERR("GL: Invalid value.\n");
          break;
       case GL_INVALID_OPERATION:
          RARCH_ERR("GL: Invalid operation.\n");
          break;
       case GL_OUT_OF_MEMORY:
-         RARCH_ERR("GL: Out of memory. Harhar.\n");
+         RARCH_ERR("GL: Out of memory.\n");
          break;
       case GL_NO_ERROR:
          return true;
       default:
-         RARCH_ERR("Non specified error :v\n");
+         RARCH_ERR("Non specified GL error.\n");
    }
 
    return false;
@@ -124,6 +142,14 @@ struct gl_tex_info
    GLfloat coord[8];
 };
 
+struct gl_coords
+{
+   const GLfloat *vertex;
+   const GLfloat *color;
+   const GLfloat *tex_coord;
+   const GLfloat *lut_tex_coord;
+};
+
 #define MAX_SHADERS 16
 
 #if defined(HAVE_XML) || defined(HAVE_CG)
@@ -149,6 +175,7 @@ typedef struct gl
    GLuint tex_filter;
 
    void *empty_buf;
+   void *conv_buffer;
 
    unsigned frame_count;
 
@@ -179,19 +206,21 @@ typedef struct gl
    unsigned last_height[TEXTURES];
    unsigned tex_w, tex_h;
    GLfloat tex_coords[8];
+   math_matrix mvp;
 
-#ifdef __CELLOS_LV2__
+   struct gl_coords coords;
+
    GLuint pbo;
-#endif
    GLenum texture_type; // XBGR1555 or ARGB
    GLenum texture_fmt;
+   GLenum border_type;
    unsigned base_size; // 2 or 4
 
 #ifdef HAVE_FREETYPE
    font_renderer_t *font;
    GLuint font_tex;
    int font_tex_w, font_tex_h;
-   void *font_tex_empty_buf;
+   uint16_t *font_tex_buf;
    char font_last_msg[256];
    int font_last_width, font_last_height;
    GLfloat font_color[16];
@@ -200,7 +229,7 @@ typedef struct gl
 } gl_t;
 
 // Windows ... <_<
-#if (defined(HAVE_XML) || defined(HAVE_CG)) && defined(_WIN32)
+#ifdef _WIN32
 extern PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture;
 extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #else
@@ -208,11 +237,16 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #define pglActiveTexture glActiveTexture
 #endif
 
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+#if defined(HAVE_PSGL)
 #define RARCH_GL_INTERNAL_FORMAT GL_ARGB_SCE
 #define RARCH_GL_TEXTURE_TYPE GL_ARGB_SCE
 #define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8
 #define RARCH_GL_FORMAT16 GL_RGB5_A1
+#elif defined(HAVE_OPENGLES)
+#define RARCH_GL_INTERNAL_FORMAT GL_RGBA
+#define RARCH_GL_TEXTURE_TYPE GL_RGBA
+#define RARCH_GL_FORMAT32 GL_UNSIGNED_BYTE
+#define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT_5_5_5_1
 #else
 #define RARCH_GL_INTERNAL_FORMAT GL_RGBA
 #define RARCH_GL_TEXTURE_TYPE GL_BGRA
@@ -220,9 +254,31 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT_1_5_5_5_REV
 #endif
 
+// Platform specific workarounds/hacks.
+#if defined(__CELLOS_LV2__) || defined(HAVE_OPENGLES)
+#define NO_GL_READ_VIEWPORT
+#endif
+
+#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2)
+#define NO_GL_FF_VERTEX
+#endif
+
+#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
+#define NO_GL_FF_MATRIX
+#endif
+
+#if defined(HAVE_OPENGLES2) // TODO: Figure out exactly what.
+#define NO_GL_CLAMP_TO_BORDER
+#endif
+
+#if defined(HAVE_OPENGLES2) // It's an extension. Don't bother checking for it atm.
+#undef GL_UNPACK_ROW_LENGTH
+#endif
+
 void gl_shader_use(unsigned index);
 void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate);
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate);
+void gl_shader_set_coords(const struct gl_coords *coords, const math_matrix *mat);
 
 void gl_init_fbo(gl_t *gl, unsigned width, unsigned height);
 void gl_deinit_fbo(gl_t *gl);

@@ -25,17 +25,19 @@
 #include <OpenGL/gl.h>
 #endif
 
-#include "sdl_ctx.h"
+#include "SDL.h"
+
+#include "../math/matrix.h"
 
 // SDL 1.2 is portable, sure, but you still need some platform specific workarounds ;)
 // Hopefully SDL 1.3 will solve this more cleanly :D
 // Welcome to #ifdef HELL. :D
 //
 
-#if SDL_MODERN
-static SDL_Window *g_window;
-static SDL_GLContext g_ctx;
-#endif
+#define GL_SYM_WRAP(symbol, proc) if (!symbol) { \
+   gfx_ctx_proc_t sym = gfx_ctx_get_proc_address(proc); \
+   memcpy(&(symbol), &sym, sizeof(sym)); \
+}
 
 static bool g_fullscreen;
 static unsigned g_interval;
@@ -45,16 +47,12 @@ void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
    g_interval = interval;
 
    bool success = true;
-#if SDL_MODERN
-   if (g_window)
-      success = SDL_GL_SetSwapInterval(g_interval) == 0;
-#else
    if (inited)
    {
 #if defined(_WIN32)
       static BOOL (APIENTRY *wgl_swap_interval)(int) = NULL;
       if (!wgl_swap_interval)
-         SDL_SYM_WRAP(wgl_swap_interval, "wglSwapIntervalEXT");
+         GL_SYM_WRAP(wgl_swap_interval, "wglSwapIntervalEXT");
       if (wgl_swap_interval)
          success = wgl_swap_interval(g_interval);
 #elif defined(__APPLE__) && defined(HAVE_OPENGL)
@@ -63,9 +61,9 @@ void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 #else
       static int (*glx_swap_interval)(int) = NULL;
       if (!glx_swap_interval) 
-         SDL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalSGI");
+         GL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalSGI");
       if (!glx_swap_interval)
-         SDL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalMESA");
+         GL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalMESA");
 
       if (glx_swap_interval)
          success = glx_swap_interval(g_interval) == 0;
@@ -73,7 +71,6 @@ void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
          RARCH_WARN("Could not find GLX VSync call.\n");
 #endif
    }
-#endif
 
    if (!success)
       RARCH_WARN("Failed to set swap interval.\n");
@@ -81,11 +78,7 @@ void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 
 static void gfx_ctx_wm_set_caption(const char *str)
 {
-#if SDL_MODERN
-   SDL_SetWindowTitle(g_window, str);
-#else
    SDL_WM_SetCaption(str, NULL);
-#endif
 }
 
 void gfx_ctx_update_window_title(bool reset)
@@ -108,101 +101,48 @@ void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 
 bool gfx_ctx_init(void)
 {
-#if SDL_MODERN
-   bool ret = SDL_VideoInit(NULL) == 0;
-#else
    if (SDL_WasInit(SDL_INIT_VIDEO))
       return true;
 
    bool ret = SDL_Init(SDL_INIT_VIDEO) == 0;
-#endif
    if (!ret)
       RARCH_ERR("Failed to init SDL video.\n");
 
    return ret;
 }
 
-#if SDL_MODERN
-void gfx_ctx_destroy(void)
-{
-   if (g_ctx)
-      SDL_GL_DeleteContext(g_ctx);
-   if (g_window)
-      SDL_DestroyWindow(g_window);
-
-   g_ctx = NULL;
-   g_window = NULL;
-   SDL_VideoQuit();
-}
-#else
 void gfx_ctx_destroy(void) 
 {
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
-#endif
 
 bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen)
 {
-#if SDL_MODERN
-   if (g_window)
-      return true;
-#endif
-
-#if SDL_MODERN
-   static const int resizable = SDL_WINDOW_RESIZABLE;
-#else
 #ifndef __APPLE__ // Resizing on OSX is broken in 1.2 it seems :)
    static const int resizable = SDL_RESIZABLE;
 #else
    static const int resizable = 0;
 #endif
-#endif
 
    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-#if !SDL_MODERN
    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, g_interval);
-#endif
 
-#if SDL_MODERN
-   if (bits == 15)
-   {
-      SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
-      SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
-      SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
-   }
-
-   g_window = SDL_CreateWindow("SSNES", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-      width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : resizable));
-   if (!g_window)
-   {
-      RARCH_ERR("Failed to create SDL window.\n");
-      return false;
-   }
-
-   g_ctx = SDL_GL_CreateContext(g_window);
-#else
    if (!SDL_SetVideoMode(width, height, bits,
          SDL_OPENGL | (fullscreen ? SDL_FULLSCREEN : resizable)))
    {
       RARCH_ERR("Failed to create SDL window.\n");
       return false;
    }
-#endif
 
    int attr = 0;
-#if SDL_MODERN
-   SDL_GL_SetSwapInterval(g_interval);
-#else
    SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &attr);
    if (attr <= 0 && g_interval)
    {
       RARCH_WARN("SDL failed to setup VSync, attempting to recover using native calls.\n");
       gfx_ctx_set_swap_interval(g_interval, true);
    }
-#endif
 
    g_fullscreen = fullscreen;
 
@@ -232,50 +172,22 @@ bool gfx_ctx_set_video_mode(
 // SDL 1.3 luckily removes this quirk.
 void gfx_ctx_set_resize(unsigned width, unsigned height)
 {
-#if SDL_MODERN
-   (void)width;
-   (void)height;
-#else
 #ifndef __APPLE__ // Resizing on OSX is broken in 1.2 it seems :)
    static const int resizable = SDL_RESIZABLE;
 #else
    static const int resizable = 0;
 #endif
    SDL_SetVideoMode(width, height, 0, SDL_OPENGL | (g_fullscreen ? SDL_FULLSCREEN : resizable));
-#endif
 }
 
 void gfx_ctx_swap_buffers(void)
 {
-#if SDL_MODERN
-   SDL_GL_SwapWindow(g_window);
-#else
    SDL_GL_SwapBuffers();
-#endif
-}
-
-bool gfx_ctx_key_pressed(int key)
-{
-   int num_keys;
-#if SDL_MODERN
-   Uint8 *keymap = SDL_GetKeyboardState(&num_keys);
-   key = SDL_GetScancodeFromKey(key);
-   if (key >= num_keys)
-      return false;
-
-   return keymap[key];
-#else
-   Uint8 *keymap = SDL_GetKeyState(&num_keys);
-   if (key >= num_keys)
-      return false;
-
-   return keymap[key];
-#endif
 }
 
 // 1.2 specific workaround for tiling WMs. In 1.3 we call GetSize directly, so we don't need to rely on
 // proper event handling (I hope).
-#if !SDL_MODERN && !defined(__APPLE__) && defined(SDL_VIDEO_DRIVER_X11)
+#if !defined(__APPLE__) && defined(SDL_VIDEO_DRIVER_X11)
 // This X11 is set on OSX for some reason.
 static bool gfx_ctx_get_window_size(unsigned *width, unsigned *height)
 {
@@ -298,50 +210,7 @@ static bool gfx_ctx_get_window_size(unsigned *width, unsigned *height)
 }
 #endif
 
-#if SDL_MODERN
-static void check_window_modern(bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
-{
-   SDL_Event event;
-   while (SDL_PollEvent(&event))
-   {
-      switch (event.type)
-      {
-         case SDL_QUIT:
-            *quit = true;
-            return;
-
-         case SDL_WINDOWEVENT:
-            switch (event.window.event)
-            {
-               case SDL_WINDOWEVENT_CLOSE:
-                  *quit = true;
-                  return;
-
-               case SDL_WINDOWEVENT_RESIZED:
-                  *resize = true;
-                  *width = event.window.data1;
-                  *height = event.window.data2;
-                  break;
-            }
-            break;
-      }
-   }
-
-   if (!*resize)
-   {
-      int w, h;
-      SDL_GetWindowSize(g_window, &w, &h);
-      if (*width != (unsigned)w || *height != (unsigned)h)
-      {
-         *resize = true;
-         *width  = w;
-         *height = h;
-      }
-   }
-}
-#else
-static void check_window_legacy(bool *quit,
+static void check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    SDL_Event event;
@@ -382,8 +251,6 @@ static void check_window_legacy(bool *quit,
    }
 #endif
 }
-#endif
-
 
 void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
@@ -391,39 +258,25 @@ void gfx_ctx_check_window(bool *quit,
    *quit = false;
    *resize = false;
 
-#if SDL_MODERN
-   check_window_modern(quit, resize, width, height);
-#else
-   check_window_legacy(quit, resize, width, height, frame_count);
-#endif
+   check_window(quit, resize, width, height, frame_count);
 }
 
+#ifndef __APPLE__
 bool gfx_ctx_get_wm_info(SDL_SysWMinfo *info)
 {
 #ifdef XENON
    (void)info;
    return false;
-#elif SDL_MODERN
-   SDL_VERSION(&info->version);
-   if (g_window)
-      return SDL_GetWindowWMInfo(g_window, info);
-   else
-      return SDL_GetWMInfo(info) == 1;
 #else
    SDL_VERSION(&info->version);
    return SDL_GetWMInfo(info) == 1;
 #endif
 }
+#endif
 
 bool gfx_ctx_window_has_focus(void)
 {
-#if SDL_MODERN
-   Uint32 flags = SDL_GetWindowFlags(g_window);
-   flags &= SDL_WINDOW_INPUT_FOCUS;
-   return flags == SDL_WINDOW_INPUT_FOCUS;
-#else
    return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
-#endif
 }
 
 void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
@@ -441,15 +294,32 @@ void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 #ifdef HAVE_OPENGL
 void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)
 {
-   glMatrixMode(GL_PROJECTION);
-   glLoadIdentity();
+   // Calculate projection.
+   math_matrix proj;
+   matrix_ortho(&proj, ortho->left, ortho->right,
+         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
 
    if (allow_rotate)
-      glRotatef(gl->rotation, 0, 0, 1);
+   {
+      math_matrix rot;
+      matrix_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
+      matrix_multiply(&proj, &rot, &proj);
+   }
 
-   glOrtho(ortho->left, ortho->right, ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
-   glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
+   gl->mvp = proj;
+}
+
+// Enforce void (*)(void) as it's not really legal to cast void* to fn-pointer.
+// POSIX allows this, but strict C99 doesn't.
+gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
+{
+   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
+   gfx_ctx_proc_t ret;
+
+   void *sym__ = SDL_GL_GetProcAddress(symbol);
+   memcpy(&ret, &sym__, sizeof(void*));
+
+   return ret;
 }
 #endif
 

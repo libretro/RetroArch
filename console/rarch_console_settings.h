@@ -42,7 +42,7 @@ enum
    S_QUIT,
    S_RESOLUTION_PREVIOUS,
    S_RESOLUTION_NEXT,
-   S_RETURN_TO_DASHBOARD,
+   S_QUIT_RARCH,
    S_RETURN_TO_GAME,
    S_RETURN_TO_LAUNCHER,
    S_RETURN_TO_MENU,
@@ -101,12 +101,13 @@ enum
    S_LBL_SCALE_FACTOR,
    S_LBL_LOAD_STATE_SLOT,
    S_LBL_SAVE_STATE_SLOT,
+   S_LBL_ZIP_EXTRACT,
 };
 
 void rarch_settings_change(unsigned setting);
 void rarch_settings_default(unsigned setting);
 void rarch_settings_msg(unsigned setting, unsigned delay);
-void rarch_settings_set_default (const input_driver_t *input);
+void rarch_settings_set_default(void);
 
 void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t size);
 void rarch_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size);

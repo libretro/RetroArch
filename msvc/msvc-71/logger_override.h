@@ -19,6 +19,8 @@
 
 #include <stdarg.h>
 
+#include "../msvc_compat.h"
+
 static inline void RARCH_LOG(const char *msg, ...)
 {
    char msg_new[1024], buffer[1024];

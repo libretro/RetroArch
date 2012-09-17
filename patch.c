@@ -14,7 +14,7 @@
  */
 
 // BPS/UPS/IPS implementation from bSNES (nall::).
-// Modified for SSNES.
+// Modified for RetroArch.
 
 #include "patch.h"
 #include "hash.h"

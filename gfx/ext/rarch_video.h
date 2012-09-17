@@ -24,7 +24,7 @@ extern "C" {
 #define RARCH_API_CALLTYPE
 #endif
 
-#define RARCH_GRAPHICS_API_VERSION 3
+#define RARCH_GRAPHICS_API_VERSION 4
 
 // Since we don't want to rely on C++ or C99 for a proper boolean type,
 // make sure return semantics are perfectly clear ... ;)
@@ -170,17 +170,6 @@ typedef struct rarch_video_info
 // If any one of these are pressed, return 1 in state callback.
 struct rarch_keybind
 {
-   // If analog_x is true, we request an analog device to be polled
-   // rather than normal keys.
-   // The returned value should be the delta of 
-   // last frame and current frame in the X-axis.
-   int analog_x;
-   // If analog_y is true, we request an analog device to be polled
-   // rather than normal keys.
-   // The returned value should be the delta of 
-   // last frame and current frame in the Y-axis.
-   int analog_y;
-
    // Keyboard key. The key values use the SDL 1.2 keysyms, 
    // which probably need to be transformed to the native format.
    // The actual keysyms RetroArch uses are found in libretro.h.
@@ -210,10 +199,18 @@ typedef struct rarch_input_driver
    void (*poll)(void *data);
 
    // Queries input state for a certain key on a certain player.
-   // Players are 1 - 5.
+   // Players are 1 - 8.
    // For digital inputs, pressed key is 1, not pressed key is 0.
    // Analog values have same range as a signed 16-bit integer.
-   int (*input_state)(void *data, const struct rarch_keybind *bind,
+   short (*input_state)(void *data, const struct rarch_keybind *bind,
+         unsigned player);
+
+   // Queries analog input state for a certain key on a certain player in the range of [-0x8000, 0x7fff].
+   // Only the direction of the bind should be returned.
+   //
+   // E.g. if the bind has bind for negative axis 5, and the axis is pressed to the positive
+   // axis, the returned value should be 0.
+   short (*input_state_analog)(void *data, unsigned joyaxis,
          unsigned player);
 
    // Frees the input struct.

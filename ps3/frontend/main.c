@@ -19,35 +19,23 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <sdk_version.h>
+#include "../sdk_defines.h"
+
 #include <sys/process.h>
-#ifdef HAVE_SYSUTILS
-#include <sysutil/sysutil_screenshot.h>
-#include <sysutil/sysutil_common.h>
-#include <sysutil/sysutil_gamecontent.h>
-#ifdef HAVE_HDD_CACHE_PARTITION
-#include <sysutil/sysutil_syscache.h>
-#endif
-#endif
 
-#if(CELL_SDK_VERSION > 0x340000)
-#include <sysutil/sysutil_bgmplayback.h>
-#endif
-
-#ifdef HAVE_SYSMODULES
-#include <cell/sysmodule.h>
-#endif
-#include <netex/net.h>
-#include <np.h>
-#include <np/drm.h>
-
+#include "../../gfx/context/ps3_ctx.h"
 #include "../ps3_input.h"
 
 #include "../../gfx/gl_common.h"
 
 #include "../../console/rarch_console.h"
+
+#ifdef HAVE_RARCH_EXEC
 #include "../../console/rarch_console_exec.h"
+#endif
+
 #include "../../console/rarch_console_libretro_mgmt.h"
+
 #include "../../console/rarch_console_input.h"
 #include "../../console/rarch_console_config.h"
 #include "../../console/rarch_console_settings.h"
@@ -58,14 +46,18 @@
 #include "../../general.h"
 #include "../../file.h"
 
-#include "menu.h"
+#include "../../console/rmenu/rmenu.h"
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 
+#ifdef HAVE_HDD_CACHE_PARTITION
 #define CACHE_ID "ABCD12345"
-#define NP_POOL_SIZE (128*1024)
+#endif
 
+#ifndef __PSL1GHT__
+#define NP_POOL_SIZE (128*1024)
 static uint8_t np_pool[NP_POOL_SIZE];
+#endif
 
 int rarch_main(int argc, char *argv[]);
 
@@ -78,6 +70,9 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 {
    (void) param;
    (void) userdata;
+#ifdef HAVE_OSKUTIL
+   oskutil_params *osk = &g_console.oskutil_handle;
+#endif
    gl_t *gl = driver.video_data;
 
    switch (status)
@@ -88,14 +83,29 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 	 break;
 #ifdef HAVE_OSKUTIL
       case CELL_SYSUTIL_OSKDIALOG_FINISHED:
-	 oskutil_close(&g_console.oskutil_handle);
-	 oskutil_finished(&g_console.oskutil_handle);
+	 oskutil_close(osk);
+	 oskutil_finished(osk);
 	 break;
       case CELL_SYSUTIL_OSKDIALOG_UNLOADED:
-	 oskutil_unload(&g_console.oskutil_handle);
+	 oskutil_unload(osk);
 	 break;
 #endif
    }
+}
+#endif
+
+#ifdef __PSL1GHT__
+void menu_init (void)
+{
+}
+
+void menu_loop (void)
+{
+	rarch_console_load_game_wrap("/dev_hdd0/game/SSNE10000/USRDIR/mm3.nes", 0, 0);
+}
+
+void menu_free (void)
+{
 }
 #endif
 
@@ -123,17 +133,9 @@ static void get_environment_settings(int argc, char *argv[])
 #endif
 
 #ifdef HAVE_MULTIMAN
-   if(argc > 1)
-   {
-      /* launched from external launcher */
-      strlcpy(default_paths.multiman_self_file, argv[2], sizeof(default_paths.multiman_self_file));
-   }
-   else
-   {
-      /* not launched from external launcher, set default path */
-      strlcpy(default_paths.multiman_self_file, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
-         sizeof(default_paths.multiman_self_file));
-   }
+   /* not launched from external launcher, set default path */
+   strlcpy(default_paths.multiman_self_file, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
+      sizeof(default_paths.multiman_self_file));
 
    if(path_file_exists(default_paths.multiman_self_file) && argc > 1 &&  path_file_exists(argv[1]))
    {
@@ -212,10 +214,13 @@ static void get_environment_settings(int argc, char *argv[])
       snprintf(default_paths.cgp_dir, sizeof(default_paths.cgp_dir), "%s/presets", default_paths.core_dir);
       snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.cgp_dir);
       snprintf(default_paths.border_dir, sizeof(default_paths.border_dir), "%s/borders", default_paths.core_dir);
+#if defined(HAVE_CG) || defined(HAVE_GLSL)
       snprintf(default_paths.shader_dir, sizeof(default_paths.shader_dir), "%s/shaders", default_paths.core_dir);
       snprintf(default_paths.shader_file, sizeof(default_paths.shader_file), "%s/shaders/stock.cg", default_paths.core_dir);
       snprintf(default_paths.menu_shader_file, sizeof(default_paths.menu_shader_file), "%s/shaders/Borders/Menu/border-only-rarch.cg", default_paths.core_dir);
+#endif
       snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
+      snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "EBOOT.BIN");
    }
 
    g_extern.verbose = false;
@@ -231,21 +236,27 @@ int main(int argc, char *argv[])
 #ifdef HAVE_SYSMODULES
    cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
+#ifndef __PSL1GHT__
    cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_GAME);
    cellSysmoduleLoadModule(CELL_SYSMODULE_AVCONF_EXT);
+#endif
    cellSysmoduleLoadModule(CELL_SYSMODULE_PNGDEC);
    cellSysmoduleLoadModule(CELL_SYSMODULE_JPGDEC);
    cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
    cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_NP);
 #endif
 
+#ifndef __PSL1GHT__
    sys_net_initialize_network();
+#endif
 
 #ifdef HAVE_LOGGER
    logger_init();
 #endif
 
+#ifndef __PSL1GHT__
    sceNpInit(NP_POOL_SIZE, np_pool);
+#endif
 
    rarch_main_clear_state();
    get_environment_settings(argc, argv);
@@ -259,15 +270,24 @@ int main(int argc, char *argv[])
    const char *extension = default_paths.executable_extension;
    const input_driver_t *input = &input_ps3;
 
-   bool find_libretro_file = rarch_configure_libretro(input, path_prefix, extension);
+   char core_exe_path[1024];
+   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
 
-   rarch_settings_set_default(input);
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+   bool find_libretro_file = rarch_configure_libretro_core(core_exe_path, path_prefix, path_prefix, 
+   default_paths.config_file, extension);
+#else
+   bool find_libretro_file = false;
+#endif
+
+   rarch_settings_set_default();
+   rarch_input_set_controls_default(input);
    rarch_config_load(default_paths.config_file, path_prefix, extension, find_libretro_file);
    init_libretro_sym();
 
    input_ps3.post_init();
 
-#if(CELL_SDK_VERSION > 0x340000)
+#if (CELL_SDK_VERSION > 0x340000) && !defined(__PSL1GHT__)
    if (g_console.screenshots_enable)
    {
 #ifdef HAVE_SYSMODULES
@@ -289,10 +309,11 @@ int main(int argc, char *argv[])
 #endif
 
    video_gl.start();
-
+   driver.video = &video_gl;
 
 #ifdef HAVE_OSKUTIL
-   oskutil_init(&g_console.oskutil_handle, 0);
+   oskutil_params *osk = &g_console.oskutil_handle;
+   oskutil_init(osk, 0);
 #endif
 
    menu_init();
@@ -321,7 +342,7 @@ begin_loop:
 
       input_ps3.poll(NULL);
 
-      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+      video_set_aspect_ratio_func(g_console.aspect_ratio_index);
 
       do{
          repeat = rarch_main_iterate();
@@ -330,7 +351,9 @@ begin_loop:
    else if(g_console.mode_switch == MODE_MENU)
    {
       menu_loop();
-      rarch_startup(default_paths.config_file);
+
+      if (g_console.mode_switch != MODE_EXIT)
+         rarch_startup(default_paths.config_file);
    }
    else
       goto begin_shutdown;
@@ -338,8 +361,7 @@ begin_loop:
    goto begin_loop;
 
 begin_shutdown:
-   if(path_file_exists(default_paths.config_file))
-      rarch_config_save(default_paths.config_file);
+   rarch_config_save(default_paths.config_file);
 
    if(g_console.emulator_initialized)
       rarch_main_deinit();
@@ -349,21 +371,25 @@ begin_shutdown:
    menu_free();
 
 #ifdef HAVE_OSKUTIL
-   if(g_console.oskutil_handle.is_running)
-      oskutil_unload(&g_console.oskutil_handle);
+   if(osk)
+      oskutil_unload(osk);
 #endif
 
 #ifdef HAVE_LOGGER
    logger_shutdown();
 #endif
 
-#ifdef HAVE_SYSMODULES
+#if defined(HAVE_SYSMODULES)
+#ifndef __PSL1GHT__
    if(g_console.screenshots_enable)
       cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+#endif
    cellSysmoduleUnloadModule(CELL_SYSMODULE_JPGDEC);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_PNGDEC);
+#ifndef __PSL1GHT__
    cellSysmoduleUnloadModule(CELL_SYSMODULE_AVCONF_EXT);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
+#endif
 #endif
 
 #ifdef HAVE_HDD_CACHE_PARTITION
@@ -375,8 +401,10 @@ begin_shutdown:
    }
 #endif
 
+#ifdef HAVE_RARCH_EXEC
    if(g_console.return_to_launcher)
       rarch_console_exec(g_console.launch_app_on_exit);
+#endif
 
    return 1;
 }
