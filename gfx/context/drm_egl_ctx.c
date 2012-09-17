@@ -56,10 +56,16 @@ static drmModeModeInfo *g_drm_mode;
 static uint32_t g_crtc_id;
 static uint32_t g_connector_id;
 
+static drmModeCrtcPtr g_orig_crtc;
+
 static unsigned g_fb_width; // Just use something for now.
 static unsigned g_fb_height;
 
 static struct gbm_bo *g_bo;
+
+static drmModeRes *g_resources;
+static drmModeConnector *g_connector;
+static drmModeEncoder *g_encoder;
 
 struct drm_fb
 {
@@ -98,18 +104,16 @@ static void page_flip_handler(int fd, unsigned int frame, unsigned int sec, unsi
    (void)sec;
    (void)usec;
 
-   int *waiting = (int*)data;
-   *waiting     = 0;
+   bool *waiting = (bool*)data;
+   *waiting      = false;
 }
 
-void gfx_ctx_swap_buffers(void)
+static void wait_vsync(void)
 {
-   eglSwapBuffers(g_egl_dpy, g_egl_surf);
-   
    struct gbm_bo *next_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
    struct drm_fb *fb = drm_fb_get_from_bo(next_bo);
 
-   int waiting_for_flip = 1;
+   bool waiting_for_flip = true;
 
    int ret = drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
          DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip);
@@ -147,6 +151,25 @@ void gfx_ctx_swap_buffers(void)
    g_bo = next_bo;
 }
 
+static void nowait_vsync(void)
+{
+   struct gbm_bo *next_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
+   drm_fb_get_from_bo(next_bo);
+
+   gbm_surface_release_buffer(g_gbm_surface, g_bo);
+   g_bo = next_bo;
+}
+
+void gfx_ctx_swap_buffers(void)
+{
+   eglSwapBuffers(g_egl_dpy, g_egl_surf);
+   
+   if (g_interval)
+      wait_vsync();
+   else
+      nowait_vsync();
+}
+
 void gfx_ctx_set_resize(unsigned width, unsigned height)
 {
    (void)width;
@@ -167,15 +190,14 @@ void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 bool gfx_ctx_init(void)
 {
    if (g_inited)
+   {
+      RARCH_ERR("[KMS/EGL]: Driver does not support reinitialization yet.\n");
       return false;
+   }
 
    static const char *modules[] = {
       "i915", "radeon", "nouveau", "vmwgfx", "omapdrm", "exynos", NULL
    };
-
-   drmModeRes *resources       = NULL;
-   drmModeConnector *connector = NULL;
-   drmModeEncoder *encoder     = NULL;
 
    for (int i = 0; modules[i]; i++)
    {
@@ -194,32 +216,37 @@ bool gfx_ctx_init(void)
       goto error;
    }
 
-   resources = drmModeGetResources(g_drm_fd);
-   if (!resources)
+   g_resources = drmModeGetResources(g_drm_fd);
+   if (!g_resources)
    {
       RARCH_ERR("[KMS/EGL]: Couldn't get device resources.\n");
       goto error;
    }
 
-   for (int i = 0; i < resources->count_connectors; i++)
+   for (int i = 0; i < g_resources->count_connectors; i++)
    {
-      connector = drmModeGetConnector(g_drm_fd, resources->connectors[i]);
-      if (connector->connection == DRM_MODE_CONNECTED)
+      g_connector = drmModeGetConnector(g_drm_fd, g_resources->connectors[i]);
+      if (g_connector->connection == DRM_MODE_CONNECTED)
          break;
 
-      drmModeFreeConnector(connector);
-      connector = NULL;
+      drmModeFreeConnector(g_connector);
+      g_connector = NULL;
    }
 
-   if (!connector)
+   // TODO: Figure out what index for crtcs to use ...
+   g_orig_crtc = drmModeGetCrtc(g_drm_fd, g_resources->crtcs[0]);
+   if (!g_orig_crtc)
+      RARCH_WARN("[KMS/EGL]: Cannot find original CRTC.\n");
+
+   if (!g_connector)
    {
       RARCH_ERR("[KMS/EGL]: Couldn't get device connector.\n");
       goto error;
    }
 
-   for (int i = 0, area = 0; i < connector->count_modes; i++)
+   for (int i = 0, area = 0; i < g_connector->count_modes; i++)
    {
-      drmModeModeInfo *current_mode = &connector->modes[i];
+      drmModeModeInfo *current_mode = &g_connector->modes[i];
       int current_area = current_mode->hdisplay * current_mode->vdisplay;
       if (current_area > area)
       {
@@ -234,24 +261,24 @@ bool gfx_ctx_init(void)
       goto error;
    }
 
-	for (int i = 0; i < resources->count_encoders; i++)
+	for (int i = 0; i < g_resources->count_encoders; i++)
    {
-		encoder = drmModeGetEncoder(g_drm_fd, resources->encoders[i]);
-		if (encoder->encoder_id == connector->encoder_id)
+		g_encoder = drmModeGetEncoder(g_drm_fd, g_resources->encoders[i]);
+		if (g_encoder->encoder_id == g_connector->encoder_id)
 			break;
 
-		drmModeFreeEncoder(encoder);
-		encoder = NULL;
+		drmModeFreeEncoder(g_encoder);
+		g_encoder = NULL;
 	}
 
-	if (!encoder)
+	if (!g_encoder)
    {
       RARCH_ERR("[KMS/EGL]: Couldn't find DRM encoder.\n");
       goto error;
    }
 
-	g_crtc_id      = encoder->crtc_id;
-	g_connector_id = connector->connector_id;
+	g_crtc_id      = g_encoder->crtc_id;
+	g_connector_id = g_connector->connector_id;
 
    g_fb_width  = g_drm_mode->hdisplay;
    g_fb_height = g_drm_mode->vdisplay;
@@ -404,14 +431,63 @@ void gfx_ctx_destroy(void)
       eglTerminate(g_egl_dpy);
    }
 
+   // Be as careful as possible in deinit.
+   // If we screw up, the KMS tty will not restore.
+
    g_egl_ctx  = NULL;
    g_egl_surf = NULL;
    g_egl_dpy  = NULL;
    g_config   = 0;
 
-   drmClose(g_drm_fd);
+   // Restore original CRTC.
+   if (g_orig_crtc)
+   {
+      drmModeSetCrtc(g_drm_fd, g_orig_crtc->crtc_id,
+            g_orig_crtc->buffer_id,
+            g_orig_crtc->x,
+            g_orig_crtc->y,
+            &g_connector_id, 1, &g_orig_crtc->mode);
 
-   g_inited = false;
+      drmModeFreeCrtc(g_orig_crtc);
+   }
+
+   if (g_gbm_surface)
+      gbm_surface_destroy(g_gbm_surface);
+
+   if (g_gbm_dev)
+      gbm_device_destroy(g_gbm_dev);
+
+   if (g_encoder)
+      drmModeFreeEncoder(g_encoder);
+
+   if (g_connector)
+      drmModeFreeConnector(g_connector);
+
+   if (g_resources)
+      drmModeFreeResources(g_resources);
+
+   g_gbm_surface = NULL;
+   g_gbm_dev     = NULL;
+   g_encoder     = NULL;
+   g_connector   = NULL;
+   g_resources   = NULL;
+   g_orig_crtc   = NULL;
+
+   g_quit         = 0;
+   g_crtc_id      = 0;
+   g_connector_id = 0;
+
+   g_fb_width  = 0;
+   g_fb_height = 0;
+
+   // TODO: Do we have to free this?
+   g_bo = NULL;
+
+   drmClose(g_drm_fd);
+   g_drm_fd = -1;
+
+   // Reinitialization fails for now ...
+   //g_inited = false;
 }
 
 void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
