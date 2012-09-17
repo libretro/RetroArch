@@ -22,12 +22,14 @@
 #include <jni.h>
 #include "../boolean.h"
 
+#include "com_retroarch_rruntime.h"
+
 #include "../console/rarch_console_main_wrap.h"
 #include "../console/rarch_console_rom_ext.h"
 #include "../console/rarch_console_settings.h"
 #include "../general.h"
 
-JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_load_game
+JNIEXPORT void JNICALL Java_com_retroarch_rruntime_load_1game
    (JNIEnv *env, jclass class, jstring j_path, jint j_extract_zip_mode)
 {
    jboolean is_copy = false;
@@ -38,13 +40,13 @@ JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_load_game
    (*env)->ReleaseStringUTFChars(env, j_path, game_path);
 }
 
-JNIEXPORT jboolean JNICALL Java_com_retroarch_RRuntime_run_frame
+JNIEXPORT jboolean JNICALL Java_com_retroarch_rruntime_run_1frame
    (JNIEnv *env, jclass class)
 {
    return rarch_main_iterate();
 }
 
-JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_startup
+JNIEXPORT void JNICALL Java_com_retroarch_rruntime_startup
    (JNIEnv *env, jclass class, jstring j_config_path)
 {
    bool retval = false;
@@ -56,32 +58,32 @@ JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_startup
    (*env)->ReleaseStringUTFChars(env, j_config_path, config_path);
 }
 
-JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_deinit
+JNIEXPORT void JNICALL Java_com_retroarch_rruntime_deinit
    (JNIEnv *env, jclass class)
 {
    rarch_main_deinit();
 }
 
-JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_load_state
+JNIEXPORT void JNICALL Java_com_retroarch_rruntime_load_1state
    (JNIEnv *env, jclass class)
 {
    rarch_load_state();
 }
 
-JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_save_state
+JNIEXPORT void JNICALL Java_com_retroarch_rruntime_save_1state
    (JNIEnv *env, jclass class)
 {
    rarch_save_state();
 }
 
-JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_settings_change
+JNIEXPORT void JNICALL Java_com_retroarch_rruntime_settings_1change
    (JNIEnv *env, jclass class, jint j_setting)
 {
    unsigned setting = j_setting;
    rarch_settings_change(setting);
 }
 
-JNIEXPORT void JNICALL Java_com_retroarch_RRuntime_settings_set_defaults
+JNIEXPORT void JNICALL Java_com_retroarch_rruntime_settings_1set_1defaults
    (JNIEnv *env, jclass class)
 {
    rarch_settings_set_default();

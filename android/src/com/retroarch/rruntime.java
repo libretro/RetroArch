@@ -16,14 +16,14 @@
 
 package com.retroarch;
 
-public class RRuntime
+public class rruntime
 {	
 	static
 	{
 		System.loadLibrary("retroarch");
 	}	
 	
-	private RRuntime()
+	private rruntime()
 	{
 		
 	}
@@ -32,9 +32,7 @@ public class RRuntime
 
 	public static native boolean run_frame();
 
-	public static native startup(String j_config_path);
-	
-	public static native int loadRom(final String fileName);
+	public static native void startup(String j_config_path);
 	
 	public static native void deinit(); 
 	
