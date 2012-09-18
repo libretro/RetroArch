@@ -112,7 +112,7 @@ static void page_flip_handler(int fd, unsigned int frame, unsigned int sec, unsi
 
 static bool waiting_for_flip;
 
-static void wait_flip(void)
+static void wait_flip(bool block)
 {
    struct pollfd fds = {0};
    fds.fd     = g_drm_fd;
@@ -121,11 +121,13 @@ static void wait_flip(void)
    drmEventContext evctx   = {0};
    evctx.version           = DRM_EVENT_CONTEXT_VERSION;
    evctx.page_flip_handler = page_flip_handler;
+   
+   int timeout = block ? -1 : 0;
 
    while (waiting_for_flip)
    {
       fds.revents = 0;
-      if (poll(&fds, 1, -1) < 0)
+      if (poll(&fds, 1, timeout) < 0)
          break;
 
       if (fds.revents & (POLLHUP | POLLERR))
@@ -137,8 +139,11 @@ static void wait_flip(void)
          break;
    }
 
-   gbm_surface_release_buffer(g_gbm_surface, g_bo); // This buffer is not on-screen anymore. Release it.
-   g_bo = g_next_bo; // This buffer is being shown now.
+   if (!waiting_for_flip) // Page flip has taken place.
+   {
+      gbm_surface_release_buffer(g_gbm_surface, g_bo); // This buffer is not on-screen anymore. Release it to GBM.
+      g_bo = g_next_bo; // This buffer is being shown now.
+   }
 }
 
 static void queue_flip(void)
@@ -158,39 +163,26 @@ static void queue_flip(void)
    waiting_for_flip = true;
 }
 
-static void wait_vsync(void)
-{
-   // I guess we have to wait for flip to have taken place before another flip can be queued up.
-   if (waiting_for_flip)
-      wait_flip();
-
-   queue_flip();
-
-   if (!gbm_surface_has_free_buffers(g_gbm_surface)) // We have to wait for this flip to finish.
-      wait_flip();
-}
-
-static void nowait_vsync(void)
-{
-   struct gbm_bo *next_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
-   struct drm_fb *fb = drm_fb_get_from_bo(next_bo);
-
-   int ret = drmModeSetCrtc(g_drm_fd, g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
-   if (ret < 0)
-      RARCH_ERR("[KMS/EGL]: Failed to set crtc in nowait_vsync().\n");
-
-   gbm_surface_release_buffer(g_gbm_surface, g_bo);
-   g_bo = next_bo;
-}
-
 void gfx_ctx_swap_buffers(void)
 {
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
-   
-   if (g_interval)
-      wait_vsync();
-   else
-      nowait_vsync();
+
+   // I guess we have to wait for flip to have taken place before another flip can be queued up.
+   if (waiting_for_flip)
+   {
+      wait_flip(g_interval);
+      if (waiting_for_flip) // We are still waiting for a flip (nonblocking mode, just drop the frame).
+         return;
+   }
+
+   queue_flip();
+
+   // We have to wait for this flip to finish. This shouldn't happen as we have triple buffered page-flips.
+   if (!gbm_surface_has_free_buffers(g_gbm_surface))
+   {
+      RARCH_WARN("[KMS/EGL]: Triple buffering is not working correctly ...\n");
+      wait_flip(true);  
+   }
 }
 
 void gfx_ctx_set_resize(unsigned width, unsigned height)
