@@ -8,7 +8,7 @@
 
     <author name="lifning" website="http://libretro.org/"/>
 
-    <version major="0" minor="9" release="7" build="1" type="beta"/>
+    <version major="0" minor="9" release="7" build="2" type="beta"/>
 
     <titles>
       <title lang="en_US">RetroArch</title>
@@ -63,7 +63,7 @@
 
 
 
-  <application id="retroarch.lifning.001" appdata="retroarch">
+  <application id="retroarch.lifning.002" appdata="retroarch">
 
     <exec command="scripts/retroarch-phoenix.sh"/>
   

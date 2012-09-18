@@ -17,10 +17,10 @@ case "${BACKEND}" in
 		FILTER='NES (*.nes)|*.nes'
 		;;
 	libretro-pocketsnes.so | libretro-snes9x*.so | libretro-bsnes*.so)
-		FILTER='SNES (*.sfc)|*.sfc'
+		FILTER='SNES (*.sfc; *.smc)|*.sfc *.smc'
 		;;
 	libretro-gambatte.so)
-		FILTER='GBC (*.gb; *.gbc)|*.gb *.gbc'
+		FILTER='GBC (*.gb; *.gbc; *.sgb)|*.gb *.gbc *.sgb'
 		;;
 	libretro-meteor.so | libretro-vba.so | libretro-gpsp.so)
 		FILTER='GBA (*.gba)|*.gba'
@@ -31,8 +31,8 @@ case "${BACKEND}" in
 	libretro-genplus.so)
 		FILTER='Genesis/MegaDrive/SegaCD (*.md; *.gen; *.bin; *.iso)|*.md *.gen *.bin *.iso'
 		;;
-	libretro-pcsx-rearmed.so)
-		FILTER='Disc image (*.iso; *.bin; *.img)|*.iso *.bin *.img'
+	libretro-pcsx-rearmed.so | libretro-yabause.so)
+		FILTER='Disc image (*.iso; *.bin; *.img; *.cue)|*.iso *.bin *.img *.cue'
 		;;
 	libretro-prboom.so)
 		FILTER='Doom (*.wad)|*.wad'
