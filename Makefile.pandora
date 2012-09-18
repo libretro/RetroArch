@@ -11,7 +11,7 @@ all: $(BINDIR)/retroarch
 
 pnd: retroarch.pnd
 
-install: all $(BINDIR)/retroarch-joyconfig $(PNDDIR)/readme.html
+install: all $(BINDIR)/retroarch-joyconfig $(BINDIR)/retroarch-zip $(PNDDIR)/readme.html
 
 retroarch:
 	./configure --prefix=$PND_BASEDIR/$PRJ --disable-ffmpeg --disable-cg --disable-python --disable-libpng --disable-pulse --disable-jack --enable-gles --enable-xml
@@ -24,6 +24,10 @@ $(BINDIR)/retroarch: retroarch
 $(BINDIR)/retroarch-joyconfig: tools/retroarch-joyconfig
 	mkdir -p $(BINDIR)
 	cp tools/retroarch-joyconfig $(BINDIR)/retroarch-joyconfig
+
+$(BINDIR)/retroarch-zip: retroarch-zip
+	mkdir -p $(BINDIR)
+	cp retroarch-zip $(BINDIR)/retroarch-zip
 
 $(PNDDIR)/readme.html: README.md
 	markdown README.md > $(PNDDIR)/readme.html
