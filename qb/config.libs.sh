@@ -128,12 +128,14 @@ fi
 
 check_lib DYNAMIC "$DYLIB" dlopen
 
+HAVE_EGL=no
 if [ "$HAVE_KMS" = "yes" ]; then
    check_pkgconf GBM gbm
    check_pkgconf DRM libdrm
 
    if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ]; then
       HAVE_KMS=yes
+      HAVE_EGL=yes
    fi
 fi
 
