@@ -1,11 +1,12 @@
 #!/bin/sh
 
-export PATH="/mnt/utmp/retroarch/bin:${PATH:-"/usr/bin:/bin:/usr/local/bin"}"
-export LD_LIBRARY_PATH="/mnt/utmp/retroarch/lib:${LD_LIBRARY_PATH:-"/usr/lib:/lib"}"
-export HOME="/mnt/utmp/retroarch" XDG_CONFIG_HOME="/mnt/utmp/retroarch"
+export HOME="$(readlink -f $(dirname $0)/..)"
+export XDG_CONFIG_HOME="${HOME}"
+export PATH="${HOME}/bin:${PATH:-"/usr/bin:/bin:/usr/local/bin"}"
+export LD_LIBRARY_PATH="${HOME}/lib:${LD_LIBRARY_PATH:-"/usr/lib:/lib"}"
 
 if [ -d /mnt/utmp/retroarch/share ] ; then
-	export XDG_DATA_DIRS=/mnt/utmp/retroarch/share:$XDG_DATA_DIRS:/usr/share
+	export XDG_DATA_DIRS=${HOME}/share:$XDG_DATA_DIRS:/usr/share
 fi
 
 # use notaz's optimized driver
