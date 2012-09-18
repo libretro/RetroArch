@@ -16,7 +16,7 @@ case "${BACKEND}" in
 	libretro-fceu*.so | libretro-bnes.so)
 		FILTER='NES (*.nes)|*.nes'
 		;;
-	libretro-pocketsnes.so | libretro-snes9x*.so)
+	libretro-pocketsnes.so | libretro-snes9x*.so | libretro-bsnes*.so)
 		FILTER='SNES (*.sfc)|*.sfc'
 		;;
 	libretro-gambatte.so)
@@ -52,6 +52,5 @@ ROM=$(zenity --file-selection --file-filter="${FILTER}" "${LASTROM}")
 
 echo "${ROM}" > "${BACKEND}-lastrom.txt"
 
-# latest notaz SDL that knows what "pixelperfect" is
-exec env LD_PRELOAD=${HOME}/lib/libSDL-1.2.so.0.11.3 retroarch "${ROM}" -L "${HOME}/lib/${BACKEND}" "${@}"
+exec retroarch "${ROM}" -L "${HOME}/lib/${BACKEND}" "${@}"
 

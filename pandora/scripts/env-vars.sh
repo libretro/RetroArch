@@ -16,3 +16,7 @@ export SDL_AUDIODRIVER="alsa"
 # integral scaling
 export SDL_OMAP_LAYER_SIZE="pixelperfect"
 
+# load the libstdc++ from gcc-4.7 because phoenix and some cores don't build in anything less
+# preload latest notaz SDL that knows what "pixelperfect" is
+export LD_PRELOAD=${HOME}/lib/libstdc++.so.6:$HOME/lib/libSDL-1.2.so.0.11.3
+
