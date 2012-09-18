@@ -238,6 +238,7 @@ void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
    *height = g_fb_height;
 }
 
+#if 0
 static void reschedule_process(void)
 {
    struct sched_param param = {0};
@@ -268,6 +269,7 @@ static void reschedule_process(void)
    if (sched == SCHED_FIFO)
       RARCH_LOG("[KMS/EGL]: SCHED_FIFO prio: %d\n", param.sched_priority);
 }
+#endif
 
 bool gfx_ctx_init(void)
 {
@@ -277,7 +279,9 @@ bool gfx_ctx_init(void)
       return false;
    }
 
+#if 0
    reschedule_process();
+#endif
 
    static const char *modules[] = {
       "i915", "radeon", "nouveau", "vmwgfx", "omapdrm", "exynos", NULL
