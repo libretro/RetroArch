@@ -14,7 +14,7 @@ pnd: retroarch.pnd
 install: all $(BINDIR)/retroarch-joyconfig $(PNDDIR)/readme.html
 
 retroarch:
-	./configure --prefix=$PND_BASEDIR/$PRJ --disable-ffmpeg --disable-cg --disable-xml --disable-python --disable-libpng --disable-pulse --disable-opengl
+	./configure --prefix=$PND_BASEDIR/$PRJ --disable-ffmpeg --disable-cg --disable-python --disable-libpng --disable-pulse --disable-jack --enable-gles --enable-xml
 	make -f Makefile
 
 $(BINDIR)/retroarch: retroarch
