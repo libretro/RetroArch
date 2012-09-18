@@ -15,7 +15,7 @@
     </titles>
 
     <descriptions>
-      <description lang="en_US">Frontend to libretro</description>
+      <description lang="en_US">RetroArch is a modular multi-system emulator system that is designed to be fast, lightweight, and portable.</description>
     </descriptions>
 
     <icon src="icon.png"/>
@@ -69,7 +69,7 @@
   
     <author name="Themaister" website="http://themaister.net/retroarch.html"/>
 
-    <version major="0" minor="9" release="6" build="5"/>
+    <version major="0" minor="9" release="7" build="1"/>
     <osversion major="1" minor="0" release="0" build="0"/>
 
     <titles>
