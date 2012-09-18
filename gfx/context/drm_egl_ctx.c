@@ -32,6 +32,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sched.h>
+#include <sys/time.h>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -108,15 +109,14 @@ static unsigned last_page_flip;
 static uint64_t first_usec;
 static uint64_t last_usec;
 
+static uint64_t flip_request_usec;
+
 static unsigned missed_vblanks;
 static unsigned hit_vblanks;
 
 static void page_flip_handler(int fd, unsigned frame, unsigned sec, unsigned usec, void *data)
 {
    (void)fd;
-   (void)frame;
-   (void)sec;
-   (void)usec;
 
    uint64_t current_usec = (uint64_t)sec * 1000000 + usec;
    if (!first_page_flip)
@@ -135,15 +135,16 @@ static void page_flip_handler(int fd, unsigned frame, unsigned sec, unsigned use
          RARCH_LOG("[KMS/EGL]: Missed %u VBlank(s) (Frame: %u).\n",
                missed, frame - first_page_flip);
          missed_vblanks += missed;
+
+         unsigned flip_time = current_usec - flip_request_usec;
+         RARCH_LOG("\tDelta request => flip: %.5f ms.\n", flip_time / 1000.0);
       }
    }
 
    last_page_flip = frame;
    last_usec      = current_usec;
 
-
-   bool *waiting = (bool*)data;
-   *waiting      = false;
+   *(bool*)data = false;
 }
 
 static bool waiting_for_flip;
@@ -195,6 +196,10 @@ static void queue_flip(void)
       RARCH_ERR("[KMS/EGL]: Failed to queue page flip.\n");
       return;
    }
+
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+   flip_request_usec = (uint64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 
    waiting_for_flip = true;
 }
