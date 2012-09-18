@@ -687,6 +687,8 @@ static void set_paths(const char *path)
       RARCH_LOG("Redirecting save state to \"%s\".\n", g_extern.savestate_name);
    }
 
+   fill_pathname_basedir(g_settings.system_directory, path, sizeof(g_settings.system_directory));
+
 #ifdef HAVE_CONFIGFILE
    if (*g_extern.config_path && path_is_directory(g_extern.config_path))
    {
