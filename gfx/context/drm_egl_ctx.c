@@ -30,6 +30,8 @@
 #include <signal.h>
 #include <stdint.h>
 #include <signal.h>
+#include <unistd.h>
+#include <sched.h>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -236,6 +238,37 @@ void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
    *height = g_fb_height;
 }
 
+static void reschedule_process(void)
+{
+   struct sched_param param = {0};
+
+   // All-out real-time. Why not? :D
+   param.sched_priority = sched_get_priority_max(SCHED_FIFO);
+   if (sched_setscheduler(0, SCHED_FIFO, &param) < 0)
+      RARCH_ERR("[KMS/EGL]: Failed to set SCHED_FIFO priority.\n");
+
+   int sched = sched_getscheduler(getpid());
+
+   const char *scheduler;
+   switch (sched)
+   {
+      case SCHED_OTHER:
+         scheduler = "SCHED_OTHER";
+         break;
+
+      case SCHED_FIFO:
+         scheduler = "SCHED_FIFO";
+         break;
+
+      default:
+         scheduler = "Unrelated";
+   }
+
+   RARCH_LOG("[KMS/EGL]: Current scheduler: %s\n", scheduler);
+   if (sched == SCHED_FIFO)
+      RARCH_LOG("[KMS/EGL]: SCHED_FIFO prio: %d\n", param.sched_priority);
+}
+
 bool gfx_ctx_init(void)
 {
    if (g_inited)
@@ -243,6 +276,8 @@ bool gfx_ctx_init(void)
       RARCH_ERR("[KMS/EGL]: Driver does not support reinitialization yet.\n");
       return false;
    }
+
+   reschedule_process();
 
    static const char *modules[] = {
       "i915", "radeon", "nouveau", "vmwgfx", "omapdrm", "exynos", NULL
