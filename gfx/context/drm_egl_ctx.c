@@ -418,16 +418,6 @@ bool gfx_ctx_init(void)
    if (!eglInitialize(g_egl_dpy, &major, &minor))
       goto error;
 
-#ifdef HAVE_OPENGLES2
-   RARCH_LOG("[KMS/EGL]: Using OpenGL ES API.\n");
-   if (!eglBindAPI(EGL_OPENGL_ES_API))
-      goto error;
-#else
-   RARCH_LOG("[KMS/EGL]: Using OpenGL API.\n");
-   if (!eglBindAPI(EGL_OPENGL_API))
-      goto error;
-#endif
-
    EGLint n;
    if (!eglChooseConfig(g_egl_dpy, config_attribs, &g_config, 1, &n) || n != 1)
       goto error;

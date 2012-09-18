@@ -2,6 +2,7 @@ check_switch_c C99 -std=gnu99  "Cannot find C99 compatible compiler."
 
 check_switch_c NOUNUSED -Wno-unused-result
 add_define_make NOUNUSED "$HAVE_NOUNUSED"
+HAVE_EGL=no
 
 # There are still broken 64-bit Linux distros out there. :)
 [ -d /usr/lib64 ] && add_library_dirs /usr/lib64
@@ -11,14 +12,12 @@ add_define_make NOUNUSED "$HAVE_NOUNUSED"
 if [ "$OS" = 'BSD' ]; then DYLIB=-lc; else DYLIB=-ldl; fi
 
 [ -d /opt/vc/lib ] && add_library_dirs /opt/vc/lib
-check_lib RPI -lbcm_host bcm_host_init "-lvcos -lvchiq_arm" 
+check_lib VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm" 
 
-if [ "$HAVE_RPI" = 'yes' ]; then
+if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    [ -d /opt/vc/include ] && add_include_dirs /opt/vc/include
    [ -d /opt/vc/include/interface/vcos/pthreads ] && add_include_dirs /opt/vc/include/interface/vcos/pthreads
-
-   # the gles library gets messed up with the gl library if available, so turn it off
-   HAVE_OPENGL='no'
+   HAVE_GLES='yes'
 fi
 
 if [ "$LIBRETRO" ]; then
@@ -128,7 +127,6 @@ fi
 
 check_lib DYNAMIC "$DYLIB" dlopen
 
-HAVE_EGL=no
 if [ "$HAVE_KMS" = "yes" ]; then
    check_pkgconf GBM gbm
    check_pkgconf DRM libdrm
@@ -140,8 +138,10 @@ if [ "$HAVE_KMS" = "yes" ]; then
 fi
 
 [ "$HAVE_GLES" = "yes" ] && HAVE_EGL=yes
-check_pkgconf EGL egl
-check_pkgconf GLES glesv2
+if [ "$HAVE_VIDEOCORE" != "yes" ]; then
+   check_pkgconf EGL egl
+   check_pkgconf GLES glesv2
+fi
 
 check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
@@ -160,6 +160,6 @@ check_pkgconf PYTHON python3
 add_define_make OS "$OS"
 
 # Creates config.mk and config.h.
-VARS="ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK COREAUDIO PULSE SDL OPENGL GLES EGL KMS GBM DRM DYLIB GETOPT_LONG THREADS CG XML SDL_IMAGE LIBPNG DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL CONFIGFILE FREETYPE XVIDEO X11 XEXT NETPLAY NETWORK_CMD STDIN_CMD COMMAND SOCKET_LEGACY FBO PBO STRL PYTHON FFMPEG_ALLOC_CONTEXT3 FFMPEG_AVCODEC_OPEN2 FFMPEG_AVIO_OPEN FFMPEG_AVFORMAT_WRITE_HEADER FFMPEG_AVFORMAT_NEW_STREAM FFMPEG_AVCODEC_ENCODE_AUDIO2 FFMPEG_AVCODEC_ENCODE_VIDEO2 SINC FIXED_POINT BSV_MOVIE RPI"
+VARS="ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK COREAUDIO PULSE SDL OPENGL GLES EGL KMS GBM DRM DYLIB GETOPT_LONG THREADS CG XML SDL_IMAGE LIBPNG DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL CONFIGFILE FREETYPE XVIDEO X11 XEXT NETPLAY NETWORK_CMD STDIN_CMD COMMAND SOCKET_LEGACY FBO PBO STRL PYTHON FFMPEG_ALLOC_CONTEXT3 FFMPEG_AVCODEC_OPEN2 FFMPEG_AVIO_OPEN FFMPEG_AVFORMAT_WRITE_HEADER FFMPEG_AVFORMAT_NEW_STREAM FFMPEG_AVCODEC_ENCODE_AUDIO2 FFMPEG_AVCODEC_ENCODE_VIDEO2 SINC FIXED_POINT BSV_MOVIE VIDEOCORE"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS

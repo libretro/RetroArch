@@ -26,6 +26,10 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_EGL
+#include <EGL/egl.h>
+#endif
+
 #include "gl_common.h"
 #include "gl_font.h"
 #include "gfx_common.h"
@@ -1245,6 +1249,16 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_t *gl = (gl_t*)calloc(1, sizeof(gl_t));
    if (!gl)
       return NULL;
+
+#ifdef HAVE_EGL
+#ifdef HAVE_OPENGL_MODERN
+   if (!eglBindAPI(EGL_OPENGL_API))
+      return NULL;
+#elif defined (HAVE_OPENGLES)
+   if (!eglBindAPI(EGL_OPENGL_ES_API))
+      return NULL;
+#endif
+#endif
 
    if (!gfx_ctx_init())
    {

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  *  Copyright (C) 2012 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -15,16 +15,12 @@
  */
 
 #include <math.h>
-#include <unistd.h>
-#include <signal.h>
-#include <bcm_host.h>
 #include <VG/openvg.h>
 #include <VG/vgu.h>
 #include <EGL/egl.h>
-#include <EGL/eglext.h>
+#include "gfx_context.h"
 #include "../libretro.h"
 #include "../general.h"
-#include "../input/linuxraw_input.h"
 #include "../driver.h"
 
 #ifdef HAVE_FREETYPE
@@ -34,9 +30,6 @@
 
 typedef struct
 {
-   EGLDisplay mDisplay;
-   EGLSurface mSurface;
-   EGLContext mContext;
    uint32_t mScreenWidth;
    uint32_t mScreenHeight;
    float mScreenAspect;
@@ -46,6 +39,7 @@ typedef struct
    unsigned mRenderWidth;
    unsigned mRenderHeight;
    unsigned x1, y1, x2, y2;
+   unsigned frame_count;
    VGImageFormat mTexType;
    VGImage mImage;
    VGfloat mTransformMatrix[9];
@@ -64,110 +58,40 @@ typedef struct
 #endif
 } rpi_t;
 
-static volatile sig_atomic_t rpi_shutdown = 0;
-
-static void rpi_kill(int sig)
-{
-   (void)sig;
-   rpi_shutdown = 1;
-}
-
 static void rpi_set_nonblock_state(void *data, bool state)
 {
-   rpi_t *rpi = (rpi_t*)data;
-   eglSwapInterval(rpi->mDisplay, state ? 0 : 1);
+   (void)data;
+   gfx_ctx_set_swap_interval(state ? 0 : 1, true);
 }
 
 static void *rpi_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-   int32_t success;
-   EGLBoolean result;
-   EGLint num_config;
    rpi_t *rpi = (rpi_t*)calloc(1, sizeof(rpi_t));
-   *input = NULL;
+   if (!rpi)
+      return NULL;
 
-   static EGL_DISPMANX_WINDOW_T nativewindow;
+   if (!eglBindAPI(EGL_OPENVG_API))
+      return NULL;
 
-   DISPMANX_ELEMENT_HANDLE_T dispman_element;
-   DISPMANX_DISPLAY_HANDLE_T dispman_display;
-   DISPMANX_UPDATE_HANDLE_T dispman_update;
-   DISPMANX_MODEINFO_T dispman_modeinfo;
-   VC_RECT_T dst_rect;
-   VC_RECT_T src_rect;
-
-   static const EGLint attribute_list[] =
+   if (!gfx_ctx_init())
    {
-      EGL_RED_SIZE, 8,
-      EGL_GREEN_SIZE, 8,
-      EGL_BLUE_SIZE, 8,
-      EGL_ALPHA_SIZE, 8,
-      EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-      EGL_NONE
-   };
+      free(rpi);
+      return NULL;
+   }
 
-   EGLConfig config;
+   gfx_ctx_get_video_size(&rpi->mScreenWidth, &rpi->mScreenHeight);
+   RARCH_LOG("Detecting screen resolution %ux%u.\n", rpi->mScreenWidth, rpi->mScreenHeight);
 
-   bcm_host_init();
-
-   // get an EGL display connection
-   rpi->mDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-   rarch_assert(rpi->mDisplay != EGL_NO_DISPLAY);
-
-   // initialize the EGL display connection
-   result = eglInitialize(rpi->mDisplay, NULL, NULL);
-   rarch_assert(result != EGL_FALSE);
-   eglBindAPI(EGL_OPENVG_API);
-
-   // get an appropriate EGL frame buffer configuration
-   result = eglChooseConfig(rpi->mDisplay, attribute_list, &config, 1, &num_config);
-   rarch_assert(result != EGL_FALSE);
-
-   // create an EGL rendering context
-   rpi->mContext = eglCreateContext(rpi->mDisplay, config, EGL_NO_CONTEXT, NULL);
-   rarch_assert(rpi->mContext != EGL_NO_CONTEXT);
-
-   // create an EGL window surface
-   success = graphics_get_display_size(0 /* LCD */, &rpi->mScreenWidth, &rpi->mScreenHeight);
-   rarch_assert(success >= 0);
-
-   dst_rect.x = 0;
-   dst_rect.y = 0;
-   dst_rect.width = rpi->mScreenWidth;
-   dst_rect.height = rpi->mScreenHeight;
-
-   src_rect.x = 0;
-   src_rect.y = 0;
-   src_rect.width = rpi->mScreenWidth << 16;
-   src_rect.height = rpi->mScreenHeight << 16;
-
-   dispman_display = vc_dispmanx_display_open(0 /* LCD */);
-   vc_dispmanx_display_get_info(dispman_display, &dispman_modeinfo);
-   dispman_update = vc_dispmanx_update_start(0);
-
-   dispman_element = vc_dispmanx_element_add(dispman_update, dispman_display,
-      0 /*layer*/, &dst_rect, 0 /*src*/,
-      &src_rect, DISPMANX_PROTECTION_NONE, 0 /*alpha*/, 0 /*clamp*/, DISPMANX_NO_ROTATE);
-
-   nativewindow.element = dispman_element;
-   nativewindow.width = rpi->mScreenWidth;
-   nativewindow.height = rpi->mScreenHeight;
-   vc_dispmanx_update_submit_sync(dispman_update);
-
-   rpi->mSurface = eglCreateWindowSurface(rpi->mDisplay, config, &nativewindow, NULL);
-   rarch_assert(rpi->mSurface != EGL_NO_SURFACE);
-
-   // connect the context to the surface
-   result = eglMakeCurrent(rpi->mDisplay, rpi->mSurface, rpi->mSurface, rpi->mContext);
-   rarch_assert(result != EGL_FALSE);
+   gfx_ctx_set_swap_interval(video->vsync ? 1 : 0, false);
 
    rpi->mTexType = video->rgb32 ? VG_sABGR_8888 : VG_sARGB_1555;
    rpi->mKeepAspect = video->force_aspect;
 
    // check for SD televisions: they should always be 4:3
-   if (dispman_modeinfo.width == 720 && (dispman_modeinfo.height == 480 || dispman_modeinfo.height == 576))
+   if (rpi->mScreenWidth == 720 && (rpi->mScreenHeight == 480 || rpi->mScreenHeight == 576))
       rpi->mScreenAspect = 4.0f / 3.0f;
    else
-      rpi->mScreenAspect = (float)dispman_modeinfo.width / dispman_modeinfo.height;
+      rpi->mScreenAspect = (float)rpi->mScreenWidth / rpi->mScreenHeight;
 
    VGfloat clearColor[4] = {0, 0, 0, 1};
    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
@@ -182,12 +106,7 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
          video->smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
    rpi_set_nonblock_state(rpi, !video->vsync);
 
-   linuxraw_input_t *linuxraw_input = (linuxraw_input_t*)input_linuxraw.init();
-   if (linuxraw_input)
-   {
-      *input = (const input_driver_t *)&input_linuxraw;
-      *input_data = linuxraw_input;
-   }
+   gfx_ctx_input_driver(input, input_data);
 
 #ifdef HAVE_FREETYPE
    if (g_settings.video.font_enable)
@@ -219,13 +138,6 @@ static void *rpi_init(const video_info_t *video, const input_driver_t **input, v
    }
 #endif
 
-   struct sigaction sa;
-   sa.sa_handler = rpi_kill;
-   sa.sa_flags = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-
    return rpi;
 }
 
@@ -245,11 +157,7 @@ static void rpi_free(void *data)
    }
 #endif
 
-   // Release EGL resources
-   eglMakeCurrent(rpi->mDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-   eglDestroySurface(rpi->mDisplay, rpi->mSurface);
-   eglDestroyContext(rpi->mDisplay, rpi->mContext);
-   eglTerminate(rpi->mDisplay);
+   gfx_ctx_destroy();
 
    free(rpi);
 }
@@ -385,6 +293,7 @@ static void rpi_calculate_quad(rpi_t *rpi)
 static bool rpi_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    rpi_t *rpi = (rpi_t*)data;
+   rpi->frame_count++;
 
    if (width != rpi->mRenderWidth || height != rpi->mRenderHeight)
    {
@@ -407,27 +316,35 @@ static bool rpi_frame(void *data, const void *frame, unsigned width, unsigned he
    vgDrawImage(rpi->mImage);
 
 #ifdef HAVE_FREETYPE
-   if (msg && rpi->mFontsOn)
-      rpi_draw_message(rpi, msg);
+   //if (msg && rpi->mFontsOn)
+   //   rpi_draw_message(rpi, msg);
+   static char temp[4096];
+   gfx_window_title(temp, 4096);
+   rpi_draw_message(rpi, temp);
 #else
    (void)msg;
 #endif
 
-   eglSwapBuffers(rpi->mDisplay, rpi->mSurface);
+   gfx_ctx_swap_buffers();
 
    return true;
 }
 
 static bool rpi_alive(void *data)
 {
-   (void)data;
-   return !rpi_shutdown;
+   rpi_t *rpi = (rpi_t*)data;
+   bool quit, resize;
+
+   gfx_ctx_check_window(&quit,
+         &resize, &rpi->mScreenWidth, &rpi->mScreenHeight,
+         rpi->frame_count);
+   return !quit;
 }
 
 static bool rpi_focus(void *data)
 {
    (void)data;
-   return true;
+   return gfx_ctx_window_has_focus();
 }
 
 const video_driver_t video_rpi = {

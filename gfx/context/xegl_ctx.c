@@ -299,9 +299,6 @@ bool gfx_ctx_set_video_mode(
          CWBorderPixel | CWColormap | CWEventMask, &swa);
    XSetWindowBackground(g_dpy, g_win, 0);
 
-   if (!eglBindAPI(EGL_OPENGL_ES_API))
-      goto error;
-
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, egl_ctx_attribs);
    if (!g_egl_ctx)
       goto error;

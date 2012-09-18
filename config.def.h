@@ -68,7 +68,7 @@ enum
    INPUT_NULL
 };
 
-#if defined(HAVE_RPI)
+#if defined(HAVE_VIDEOCORE)
 #define VIDEO_DEFAULT_DRIVER VIDEO_RPI
 #elif defined(HAVE_OPENGL) || defined(__CELLOS_LV2__)
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL
