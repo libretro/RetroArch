@@ -526,7 +526,7 @@ bool config_load_file(const char *path)
          RARCH_WARN("savestate_directory is not a directory, ignoring ...\n");
    }
 
-   if (!config_get_path(conf, g_settings.system_directory, "system_directory", sizeof(g_settings.system_directory)))
+   if (!config_get_path(conf, "system_directory", g_settings.system_directory, sizeof(g_settings.system_directory)))
    {
       RARCH_WARN("system_directory is not set in config. Assuming system directory is same folder as game: \"%s\".\n",
             g_settings.system_directory);
