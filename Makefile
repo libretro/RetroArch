@@ -82,9 +82,11 @@ endif
 ifeq ($(HAVE_OSS), 1)
    OBJ += audio/oss.o
 endif
+
 ifeq ($(HAVE_OSS_BSD), 1)
    OBJ += audio/oss.o
 endif
+
 ifeq ($(HAVE_OSS_LIB), 1)
    LIBS += -lossaudio
 endif
@@ -94,24 +96,28 @@ ifeq ($(HAVE_ALSA), 1)
    LIBS += $(ALSA_LIBS)
    DEFINES += $(ALSA_CFLAGS)
 endif
+
 ifeq ($(HAVE_ROAR), 1)
    OBJ += audio/roar.o
    LIBS += $(ROAR_LIBS)
    DEFINES += $(ROAR_CFLAGS)
 endif
+
 ifeq ($(HAVE_AL), 1)
    OBJ += audio/openal.o
-ifeq ($(OSX),1)
-   LIBS += -framework OpenAL
-else
-   LIBS += -lopenal
+   ifeq ($(OSX),1)
+      LIBS += -framework OpenAL
+   else
+      LIBS += -lopenal
+   endif
 endif
-endif
+
 ifeq ($(HAVE_JACK),1)
    OBJ += audio/jack.o
    LIBS += $(JACK_LIBS)
    DEFINES += $(JACK_CFLAGS)
 endif
+
 ifeq ($(HAVE_PULSE), 1)
    OBJ += audio/pulse.o
    LIBS += $(PULSE_LIBS)
@@ -129,43 +135,46 @@ ifeq ($(HAVE_SDL), 1)
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
 
-ifeq ($(SCALER_NO_SIMD), 1)
-   DEFINES += -DSCALER_NO_SIMD
-endif
-ifeq ($(SCALER_PERF), 1)
-   DEFINES += -DSCALER_PERF
-endif
+   ifeq ($(SCALER_NO_SIMD), 1)
+      DEFINES += -DSCALER_NO_SIMD
+   endif
 
-ifeq ($(HAVE_X11), 1)
-   LIBS += $(X11_LIBS)
-   DEFINES += $(X11_CFLAGS)
-endif
+   ifeq ($(SCALER_PERF), 1)
+      DEFINES += -DSCALER_PERF
+   endif
 
-ifeq ($(HAVE_OPENGL), 1)
-   OBJ += gfx/gl.o gfx/fonts/freetype.o gfx/math/matrix.o
+   ifeq ($(HAVE_X11), 1)
+      LIBS += $(X11_LIBS)
+      DEFINES += $(X11_CFLAGS)
+   endif
 
-ifeq ($(OSX),1)
-   LIBS += -framework OpenGL
-else
-ifeq ($(HAVE_GLES), 1)
-   LIBS += -lGLESv2 -lEGL
-   DEFINES += -DHAVE_OPENGLES -DHAVE_OPENGLES2
-else
-   LIBS += -lGL
-   OBJ += gfx/context/sdl_ctx.o
-endif
-endif
-endif
-endif
+   ifeq ($(HAVE_OPENGL), 1)
+      OBJ += gfx/gl.o gfx/fonts/freetype.o gfx/math/matrix.o
 
-ifeq ($(HAVE_KMS), 1)
-   OBJ += gfx/context/drm_egl_ctx.o
-   DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS)
-   LIBS += $(GBM_LIBS) $(DRM_LIBS)
-else
-ifeq ($(HAVE_GLES), 1)
-   OBJ += gfx/context/xegl_ctx.o
-endif
+      ifeq ($(OSX), 1)
+         LIBS += -framework OpenGL
+      else
+         ifeq ($(HAVE_KMS), 1)
+            OBJ += gfx/context/drm_egl_ctx.o
+            DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
+            LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
+         else ifeq ($(HAVE_GLES), 1)
+            OBJ += gfx/context/xegl_ctx.o
+            DEFINES += $(EGL_CFLAGS)
+            LIBS += $(EGL_LIBS)
+         else
+            LIBS += -lGL
+            OBJ += gfx/context/sdl_ctx.o
+         endif
+
+         ifeq ($(HAVE_GLES), 1)
+            LIBS += -lGLESv2
+            DEFINES += -DHAVE_OPENGLES -DHAVE_OPENGLES2
+         else
+            LIBS += -lGL
+         endif
+      endif
+   endif
 endif
 
 ifeq ($(HAVE_RPI), 1)
@@ -189,9 +198,9 @@ ifeq ($(HAVE_XML), 1)
    LIBS += $(XML_LIBS)
    DEFINES += $(XML_CFLAGS)
 
-ifeq ($(HAVE_OPENGL), 1)
-   OBJ += gfx/shader_glsl.o 
-endif
+   ifeq ($(HAVE_OPENGL), 1)
+      OBJ += gfx/shader_glsl.o 
+   endif
 endif
 
 ifeq ($(HAVE_XML), 1)
@@ -262,11 +271,11 @@ CFLAGS += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) -g -I. -pedantic
 ifeq ($(CXX_BUILD), 1)
    CFLAGS += -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS
 else
-ifneq ($(findstring icc,$(CC)),)
-   CFLAGS += -std=c99 -D_GNU_SOURCE
-else
-   CFLAGS += -std=gnu99
-endif
+   ifneq ($(findstring icc,$(CC)),)
+      CFLAGS += -std=c99 -D_GNU_SOURCE
+   else
+      CFLAGS += -std=gnu99
+   endif
 endif
 
 ifeq ($(NOUNUSED), yes)

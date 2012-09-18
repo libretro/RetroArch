@@ -22,6 +22,10 @@
 #include "../gl_common.h"
 #include "../gfx_common.h"
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include <errno.h>
 #include <signal.h>
 #include <stdint.h>
@@ -321,7 +325,11 @@ bool gfx_ctx_init(void)
       EGL_GREEN_SIZE,      1,
       EGL_BLUE_SIZE,       1,
       EGL_ALPHA_SIZE,      0,
+#ifdef HAVE_OPENGLES2
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+#else
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
+#endif
       EGL_NONE
    };
 
@@ -336,8 +344,15 @@ bool gfx_ctx_init(void)
    if (!eglInitialize(g_egl_dpy, &major, &minor))
       goto error;
 
+#ifdef HAVE_OPENGLES2
+   RARCH_LOG("[KMS/EGL]: Using OpenGL ES API.\n");
    if (!eglBindAPI(EGL_OPENGL_ES_API))
       goto error;
+#else
+   RARCH_LOG("[KMS/EGL]: Using OpenGL API.\n");
+   if (!eglBindAPI(EGL_OPENGL_API))
+      goto error;
+#endif
 
    EGLint n;
    if (!eglChooseConfig(g_egl_dpy, config_attribs, &g_config, 1, &n) || n != 1)
