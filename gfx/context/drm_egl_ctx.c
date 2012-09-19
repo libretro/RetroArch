@@ -399,9 +399,9 @@ bool gfx_ctx_init(void)
       EGL_GREEN_SIZE,      1,
       EGL_BLUE_SIZE,       1,
       EGL_ALPHA_SIZE,      0,
-#ifdef HAVE_OPENGLES2
+#if defined(HAVE_OPENGLES2)
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-#else
+#elif defined(HAVE_OPENGL)
       EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
 #endif
       EGL_NONE
