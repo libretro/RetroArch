@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 source "$(dirname $0)/env-vars.sh"
 
@@ -39,6 +39,12 @@ case "${BACKEND}" in
 		;;
 esac
 
+# bit hackish, silently adds supported archive formats to file listings.
+# worth noting that the pandora itself doesn't have 7z in firmware by default.
+if [[ ! "${FILTER}" =~ ^Arcade ]] ; then
+	FILTER="${FILTER} *.zip *.rar *.7z"
+fi
+
 # try to point the file chooser at the last used path, if there is one.
 LASTROM=
 if [ -r "${BACKEND}-lastrom.txt" ] ; then
@@ -52,5 +58,9 @@ ROM=$(zenity --file-selection --file-filter="${FILTER}" "${LASTROM}")
 
 echo "${ROM}" > "${BACKEND}-lastrom.txt"
 
-exec retroarch "${ROM}" -L "${HOME}/lib/${BACKEND}" "${@}"
+if [[ "${ROM}" =~ \.(zip|rar|7z)$ ]] && [[ ! "${FILTER}" =~ ^Arcade ]] ; then
+	source retroarch-zip "${ROM}" -L "${HOME}/lib/${BACKEND}" "${@}"
+else
+	exec retroarch "${ROM}" -L "${HOME}/lib/${BACKEND}" "${@}"
+fi
 
