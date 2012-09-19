@@ -99,7 +99,6 @@ else
    HAVE_CG='no'
 fi
 
-check_pkgconf XML libxml-2.0
 check_pkgconf SDL_IMAGE SDL_image
 check_pkgconf LIBPNG libpng 1.5
 
@@ -137,12 +136,13 @@ if [ "$HAVE_KMS" = "yes" ]; then
    fi
 fi
 
-[ "$HAVE_GLES" = "yes" ] && HAVE_EGL=yes
+[ "$HAVE_GLES" = "yes" ] && HAVE_EGL=yes && HAVE_XML=yes
 if [ "$HAVE_VIDEOCORE" != "yes" ]; then
    check_pkgconf EGL egl
    check_pkgconf GLES glesv2
 fi
 
+check_pkgconf XML libxml-2.0
 check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
 check_pkgconf XEXT xext
