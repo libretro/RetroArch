@@ -1251,11 +1251,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
 
 #ifdef HAVE_EGL
-#ifdef HAVE_OPENGL_MODERN
-   if (!eglBindAPI(EGL_OPENGL_API))
-      return NULL;
-#elif defined (HAVE_OPENGLES)
+#ifdef HAVE_OPENGLES
    if (!eglBindAPI(EGL_OPENGL_ES_API))
+      return NULL;
+#else
+   if (!eglBindAPI(EGL_OPENGL_API))
       return NULL;
 #endif
 #endif
