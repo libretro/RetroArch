@@ -8,8 +8,8 @@
 die()
 {
    echo "Error: $1"
-   rm "$TMPROM"
-   rm -r "$TMPDIR"
+   rm "${TMPROM}"
+   rm -r "${TMPDIR}"
    exit 1
 }
 
@@ -25,53 +25,32 @@ shift
 extract_zip()
 {
    which unzip >/dev/null 2>&1 || die "Cannot find unzip"
-   which zipinfo >/dev/null 2>&1 || die "Cannot find zipinfo"
-   FILENAME="`zipinfo -1 \"$1\" | grep '\.s[mf]c$' | head -n1`"
-   if [ -z "$FILENAME" ]; then
-      die "Cannot find .smc nor .sfc file in archive"
-   fi
-
-   # The people who made the [!] naming convention obviously have never used regex ... <_<
-   FILENAME_FIXED="`echo $FILENAME | sed -e 's|\[|\\\\[|g' -e 's|!|\\\\!|g' -e 's|\]|\\\\]|g'`"
-
-   unzip -p "$1" "$FILENAME_FIXED" > "$TMPROM"
+   unzip "$1" -d "${TMPDIR}" >/dev/null 2>&1 || die "Couldn't extract from archive"
 }
 
 extract_7z()
 {
    which 7z >/dev/null 2>&1 || die "Cannot find 7z"
-   7z x "$1" -o"$TMPDIR" >/dev/null 2>&1 || die "Couldn't extract from archive"
-   FILENAME="`ls \"$TMPDIR\" | grep '\.s[mf]c$' | head -n1`"
-   if [ -z "$FILENAME" ]; then
-      die "Cannot find .smc nor .sfc file in archive"
-   fi
-
-   mv "${TMPDIR}/${FILENAME}" "$TMPROM"
+   7z x "$1" -o"${TMPDIR}" >/dev/null 2>&1 || die "Couldn't extract from archive"
 }
 
 extract_rar()
 {
    which unrar >/dev/null 2>&1 || die "Cannot find unrar"
-   unrar x "$1" "$TMPDIR" >/dev/null 2>&1 || die "Couldn't extract from archive"
-   FILENAME="`ls \"$TMPDIR\" | grep '\.s[mf]c$' | head -n1`"
-   if [ -z "$FILENAME" ]; then
-      die "Cannot find .smc nor .sfc file in archive"
-   fi
-
-   mv "${TMPDIR}/${FILENAME}" "$TMPROM"
+   unrar x "$1" "${TMPDIR}" >/dev/null 2>&1 || die "Couldn't extract from archive"
 }
 
-case "$COMP_FILE" in
+case "${COMP_FILE}" in
    *.zip )
-      extract_zip "$COMP_FILE"
+      extract_zip "${COMP_FILE}"
       EXTENSION=".zip"
       ;;
    *.7z )
-      extract_7z "$COMP_FILE"
+      extract_7z "${COMP_FILE}"
       EXTENSION=".7z"
       ;;
    *.rar )
-      extract_rar "$COMP_FILE"
+      extract_rar "${COMP_FILE}"
       EXTENSION=".rar"
       ;;
    * )
@@ -79,17 +58,25 @@ case "$COMP_FILE" in
       ;;
 esac
 
-SAVENAME="`basename \"$COMP_FILE\" $EXTENSION`"
-DIRNAME="`dirname \"$COMP_FILE\"`"
+# pick the largest non-directory in the root of the unpacked archive
+FILENAME="`ls -Sp \"${TMPDIR}\" | grep -v /$ | head -n1`"
+if [ -z "${FILENAME}" ]; then
+	die "Cannot find any files in root of archive"
+fi
+mv "${TMPDIR}/${FILENAME}" "${TMPROM}"
+
+SAVENAME="`basename \"${COMP_FILE}\" ${EXTENSION}`"
+DIRNAME="`dirname \"${COMP_FILE}\"`"
 SAVENAME="${SAVENAME}.srm"
 
-RetroArch_PATH="`which retroarch`"
-if [ -z "$RetroArch_PATH" ]; then
+EXE="`which retroarch`"
+if [ -z "${EXE}" ]; then
    die "Cannot find RetroArch in path."
 fi
 
-echo "Temp ROM: $TMPROM"
+echo "Temp ROM: ${TMPROM}"
 echo "Savename: ${DIRNAME}/${SAVENAME}"
-"$RetroArch_PATH" "$TMPROM" -s "${DIRNAME}/${SAVENAME}" "$@"
-rm "$TMPROM"
-rm -r "$TMPDIR"
+"${EXE}" "${TMPROM}" -s "${DIRNAME}/${SAVENAME}" "$@"
+rm "${TMPROM}"
+rm -r "${TMPDIR}"
+
