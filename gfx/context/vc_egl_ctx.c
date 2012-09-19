@@ -128,6 +128,12 @@ bool gfx_ctx_init(void)
       EGL_NONE
    };
 
+   static const EGLint context_attributes[] =
+   {
+      EGL_CONTEXT_CLIENT_VERSION, 2,
+      EGL_NONE
+   };
+
    bcm_host_init();
 
    // get an EGL display connection
@@ -143,7 +149,7 @@ bool gfx_ctx_init(void)
    rarch_assert(result != EGL_FALSE);
 
    // create an EGL rendering context
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, NULL);
+   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (driver.video == &video_gl) ? context_attributes : NULL);
    rarch_assert(g_egl_ctx != EGL_NO_CONTEXT);
 
    // create an EGL window surface
