@@ -132,8 +132,8 @@ static void page_flip_handler(int fd, unsigned frame, unsigned sec, unsigned use
          hit_vblanks++;
       else
       {
-         RARCH_LOG("[KMS/EGL]: Missed %u VBlank(s) (Frame: %u).\n",
-               missed, frame - first_page_flip);
+         RARCH_LOG("[KMS/EGL]: Missed %u VBlank(s) (Frame: %u, DRM frame: %u).\n",
+               missed, frame - first_page_flip, frame);
          missed_vblanks += missed;
 
          unsigned flip_time = current_usec - flip_request_usec;
