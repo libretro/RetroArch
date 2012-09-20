@@ -316,11 +316,8 @@ static bool rpi_frame(void *data, const void *frame, unsigned width, unsigned he
    vgDrawImage(rpi->mImage);
 
 #ifdef HAVE_FREETYPE
-   //if (msg && rpi->mFontsOn)
-   //   rpi_draw_message(rpi, msg);
-   static char temp[4096];
-   gfx_window_title(temp, 4096);
-   rpi_draw_message(rpi, temp);
+   if (msg && rpi->mFontsOn)
+      rpi_draw_message(rpi, msg);
 #else
    (void)msg;
 #endif
