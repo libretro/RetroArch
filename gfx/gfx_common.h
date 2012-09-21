@@ -26,7 +26,7 @@
 bool gfx_window_title(char *buf, size_t size);
 void gfx_window_title_reset(void);
 
-#ifdef HAVE_X11
+#if defined(HAVE_X11) && !defined(__APPLE__)
 #include <X11/Xlib.h>
 void gfx_suspend_screensaver(Window wnd);
 #endif

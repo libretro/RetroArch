@@ -289,7 +289,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 
    SDL_ShowCursor(SDL_DISABLE);
 
-#ifdef HAVE_X11
+#if defined(HAVE_X11) && !defined(__APPLE__)
    RARCH_LOG("Suspending screensaver (X11).\n");
    SDL_SysWMinfo wm_info;
    SDL_VERSION(&wm_info.version);
