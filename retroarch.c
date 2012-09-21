@@ -2304,9 +2304,9 @@ static void check_shader_dir(void)
       msg_queue_clear(g_extern.msg_queue);
 
       char msg[512];
-      snprintf(msg, sizeof(msg), "Shader #%u: \"%s\"", (unsigned)g_extern.shader_dir.ptr, shader);
+      snprintf(msg, sizeof(msg), "Shader #%u: \"%s\".", (unsigned)g_extern.shader_dir.ptr, shader);
       msg_queue_push(g_extern.msg_queue, msg, 1, 120);
-      RARCH_LOG("Applying shader \"%s\"\n", shader);
+      RARCH_LOG("Applying shader \"%s\".\n", shader);
 
       if (!video_set_shader_func(type, shader))
          RARCH_WARN("Failed to apply shader.\n");

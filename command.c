@@ -149,6 +149,13 @@ struct cmd_map
    unsigned id;
 };
 
+struct cmd_action_map
+{
+   const char *str;
+   bool (*action)(const char *arg);
+   const char *arg_desc;
+};
+
 static const struct cmd_map map[] = {
    { "FAST_FORWARD",           RARCH_FAST_FORWARD_KEY },
    { "FAST_FORWARD_HOLD",      RARCH_FAST_FORWARD_HOLD_KEY },
@@ -177,18 +184,94 @@ static const struct cmd_map map[] = {
    { "SLOWMOTION",             RARCH_SLOWMOTION },
 };
 
-static void parse_sub_msg(rarch_cmd_t *handle, const char *tok)
+static bool cmd_set_shader(const char *arg)
+{
+   if (!driver.video->set_shader)
+      return false;
+
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
+   const char *ext = strrchr(arg, '.');
+
+   if (ext)
+   {
+      if (strcmp(ext, ".shader") == 0)
+         type = RARCH_SHADER_BSNES;
+      else if (strcmp(ext, ".cg") == 0 || strcmp(ext, ".cgp") == 0)
+         type = RARCH_SHADER_CG;
+   }
+
+   if (type == RARCH_SHADER_NONE)
+      return false;
+
+   msg_queue_clear(g_extern.msg_queue);
+
+   char msg[512];
+   snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
+   msg_queue_push(g_extern.msg_queue, msg, 1, 120);
+   RARCH_LOG("Applying shader \"%s\".\n", arg);
+
+   return video_set_shader_func(type, arg);
+}
+
+static const struct cmd_action_map action_map[] = {
+   { "SET_SHADER", cmd_set_shader, "<shader path>" },
+};
+
+static bool command_get_arg(const char *tok, const char **arg, unsigned *index)
 {
    for (unsigned i = 0; i < sizeof(map) / sizeof(map[0]); i++)
    {
       if (strcmp(tok, map[i].str) == 0)
       {
-         handle->state[map[i].id] = true;
-         return;
+         if (arg)
+            *arg = NULL;
+
+         if (index)
+            *index = i;
+
+         return true;
       }
    }
 
-   RARCH_WARN("Unrecognized command \"%s\" received.\n", tok);
+   for (unsigned i = 0; i < sizeof(action_map) / sizeof(action_map[0]); i++)
+   {
+      const char *str = strstr(tok, action_map[i].str);
+      if (str == tok)
+      {
+         const char *argument = str + strlen(action_map[i].str);
+         if (*argument != ' ')
+            return false;
+
+         if (arg)
+            *arg = argument + 1;
+
+         if (index)
+            *index = i;
+
+         return true;
+      }
+   }
+
+   return false;
+}
+
+static void parse_sub_msg(rarch_cmd_t *handle, const char *tok)
+{
+   const char *arg = NULL;
+   unsigned index  = 0;
+
+   if (command_get_arg(tok, &arg, &index))
+   {
+      if (arg)
+      {
+         if (!action_map[index].action(arg))
+            RARCH_ERR("Command \"%s\" failed.\n", arg);
+      }
+      else
+         handle->state[map[index].id] = true;
+   }
+   else
+      RARCH_WARN("Unrecognized command \"%s\" received.\n", tok);
 }
 
 static void parse_msg(rarch_cmd_t *handle, char *buf)
@@ -447,16 +530,16 @@ end:
 
 static bool verify_command(const char *cmd)
 {
-   for (unsigned i = 0; i < sizeof(map) / sizeof(map[0]); i++)
-   {
-      if (strcmp(map[i].str, cmd) == 0)
-         return true;
-   }
+   if (command_get_arg(cmd, NULL, NULL))
+      return true;
 
    RARCH_ERR("Command \"%s\" is not recognized by RetroArch.\n", cmd);
    RARCH_ERR("\tValid commands:\n");
    for (unsigned i = 0; i < sizeof(map) / sizeof(map[0]); i++)
       RARCH_ERR("\t\t%s\n", map[i].str);
+
+   for (unsigned i = 0; i < sizeof(action_map) / sizeof(action_map[0]); i++)
+      RARCH_ERR("\t\t%s %s\n", action_map[i].str, action_map[i].arg_desc);
 
    return false;
 }
