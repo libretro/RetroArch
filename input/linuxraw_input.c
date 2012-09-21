@@ -256,6 +256,56 @@ static bool linuxraw_bind_button_pressed(void *data, int key)
       input_sdl.key_pressed(linuxraw->sdl, key);
 }
 
+static void conv_analog_id_to_bind_id(unsigned index, unsigned id,
+      unsigned *id_minus, unsigned *id_plus)
+{
+   switch ((index << 1) | id)
+   {
+      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
+         *id_minus = RARCH_ANALOG_LEFT_X_MINUS;
+         *id_plus  = RARCH_ANALOG_LEFT_X_PLUS;
+         break;
+
+      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
+         *id_minus = RARCH_ANALOG_LEFT_Y_MINUS;
+         *id_plus  = RARCH_ANALOG_LEFT_Y_PLUS;
+         break;
+
+      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X:
+         *id_minus = RARCH_ANALOG_RIGHT_X_MINUS;
+         *id_plus  = RARCH_ANALOG_RIGHT_X_PLUS;
+         break;
+
+      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
+         *id_minus = RARCH_ANALOG_RIGHT_Y_MINUS;
+         *id_plus  = RARCH_ANALOG_RIGHT_Y_PLUS;
+         break;
+   }
+}
+
+static int16_t raw_analog_state(linuxraw_input_t *linuxraw, const struct retro_keybind **binds_,
+      unsigned port, unsigned index, unsigned id)
+{
+   const struct retro_keybind *binds = binds_[port];
+   if (id >= RARCH_BIND_LIST_END)
+      return 0;
+
+   unsigned id_minus = 0;
+   unsigned id_plus  = 0;
+
+   conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
+
+   const struct retro_keybind *bind_minus = &binds[id_minus];
+   const struct retro_keybind *bind_plus  = &binds[id_plus];
+   if (!bind_minus->valid || !bind_plus->valid)
+      return 0;
+
+   int16_t res_minus = linuxraw_is_pressed(linuxraw, binds, id_minus) ? -0x7fff : 0;
+   int16_t res_plus  = linuxraw_is_pressed(linuxraw, binds, id_plus)  ?  0x7fff : 0;
+
+   return res_plus + res_minus;
+}
+
 static int16_t linuxraw_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
@@ -265,6 +315,14 @@ static int16_t linuxraw_input_state(void *data, const struct retro_keybind **bin
       case RETRO_DEVICE_JOYPAD:
          return linuxraw_is_pressed(linuxraw, binds[port], id) ||
             input_sdl.input_state(linuxraw->sdl, binds, port, device, index, id);
+
+      case RETRO_DEVICE_ANALOG:
+      {
+         int16_t ret = input_sdl.input_state(linuxraw->sdl, binds, port, device, index, id);
+         if (!ret)
+            ret = raw_analog_state(linuxraw, binds, port, index, id);
+         return ret;
+      }
 
       default:
          return 0;
