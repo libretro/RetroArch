@@ -60,7 +60,7 @@ static bool write_header_png(FILE *file, unsigned width, unsigned height)
          PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
    png_write_info(png_ptr, png_info_ptr);
-   png_set_compression_level(png_ptr, 9);
+   png_set_compression_level(png_ptr, 2);
 
    return true;
 
