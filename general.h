@@ -73,14 +73,6 @@
 
 #define MAX_PLAYERS 8
 
-enum rarch_shader_type
-{
-   RARCH_SHADER_CG,
-   RARCH_SHADER_BSNES,
-   RARCH_SHADER_AUTO,
-   RARCH_SHADER_NONE
-};
-
 // All config related settings go here.
 struct settings
 {

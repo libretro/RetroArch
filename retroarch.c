@@ -2264,7 +2264,7 @@ static void check_shader_dir(void)
    static bool old_pressed_next = false;
    static bool old_pressed_prev = false;
 
-   if (!g_extern.shader_dir.list || !driver.video->xml_shader)
+   if (!g_extern.shader_dir.list || !driver.video->set_shader)
       return;
 
    bool should_apply = false;
@@ -2286,18 +2286,29 @@ static void check_shader_dir(void)
 
    if (should_apply)
    {
-      const char *shader = g_extern.shader_dir.list->elems[g_extern.shader_dir.ptr].data;
+      const char *shader          = g_extern.shader_dir.list->elems[g_extern.shader_dir.ptr].data;
+      enum rarch_shader_type type = RARCH_SHADER_NONE;
 
-      strlcpy(g_settings.video.bsnes_shader_path, shader, sizeof(g_settings.video.bsnes_shader_path));
-      g_settings.video.shader_type = RARCH_SHADER_BSNES;
+      const char *ext = strrchr(shader, '.');
+      if (ext)
+      {
+         if (strcmp(ext, ".shader") == 0)
+            type = RARCH_SHADER_BSNES;
+         else if (strcmp(ext, ".cg") == 0 || strcmp(ext, ".cgp") == 0)
+            type = RARCH_SHADER_CG;
+      }
+
+      if (type == RARCH_SHADER_NONE)
+         return;
 
       msg_queue_clear(g_extern.msg_queue);
+
       char msg[512];
-      snprintf(msg, sizeof(msg), "XML shader #%u: \"%s\"", (unsigned)g_extern.shader_dir.ptr, shader);
+      snprintf(msg, sizeof(msg), "Shader #%u: \"%s\"", (unsigned)g_extern.shader_dir.ptr, shader);
       msg_queue_push(g_extern.msg_queue, msg, 1, 120);
       RARCH_LOG("Applying shader \"%s\"\n", shader);
 
-      if (!video_xml_shader_func(shader))
+      if (!video_set_shader_func(type, shader))
          RARCH_WARN("Failed to apply shader.\n");
    }
 

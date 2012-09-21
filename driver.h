@@ -105,6 +105,14 @@ struct retro_keybind
    uint32_t joyaxis;
 };
 
+enum rarch_shader_type
+{
+   RARCH_SHADER_CG,
+   RARCH_SHADER_BSNES,
+   RARCH_SHADER_AUTO,
+   RARCH_SHADER_NONE
+};
+
 typedef struct video_info
 {
    unsigned width;
@@ -177,7 +185,7 @@ typedef struct video_driver
    // Is the window still active?
    bool (*alive)(void *data);
    bool (*focus)(void *data); // Does the window have focus?
-   bool (*xml_shader)(void *data, const char *path); // Sets XML-shader. Might not be implemented.
+   bool (*set_shader)(void *data, enum rarch_shader_type type, const char *path); // Sets shader. Might not be implemented.
    void (*free)(void *data);
    const char *ident;
 
@@ -281,7 +289,7 @@ extern const input_driver_t input_null;
 #define video_set_nonblock_state_func(state) driver.video->set_nonblock_state(driver.video_data, state)
 #define video_alive_func()                      driver.video->alive(driver.video_data)
 #define video_focus_func()                      driver.video->focus(driver.video_data)
-#define video_xml_shader_func(path)             driver.video->xml_shader(driver.video_data, path)
+#define video_set_shader_func(type, path)       driver.video->set_shader(driver.video_data, type, path)
 #define video_set_rotation_func(rotate)         driver.video->set_rotation(driver.video_data, rotate)
 #define video_set_aspect_ratio_func(aspect_idx) driver.video->set_aspect_ratio(driver.video_data, aspect_idx)
 #define video_viewport_size_func(width, height) driver.video->viewport_size(driver.video_data, width, height)

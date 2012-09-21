@@ -1447,8 +1447,8 @@ static bool gl_focus(void *data)
    return gfx_ctx_window_has_focus();
 }
 
-#ifdef HAVE_XML
-static bool gl_xml_shader(void *data, const char *path)
+#if defined(HAVE_XML) || defined(HAVE_CG)
+static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *path)
 {
    gl_t *gl = (gl_t*)data;
 
@@ -1459,8 +1459,26 @@ static bool gl_xml_shader(void *data, const char *path)
 
    gl_shader_deinit();
 
-   if (!gl_glsl_init(path))
-      return false;
+   switch (type)
+   {
+#ifdef HAVE_XML
+      case RARCH_SHADER_BSNES:
+         if (!gl_glsl_init(path))
+            return false;
+         break;
+#endif
+
+#ifdef HAVE_CG
+      case RARCH_SHADER_CG:
+         if (!gl_cg_init(path))
+            return false;
+         break;
+#endif
+
+      default:
+         RARCH_ERR("Invalid shader type in gl_set_shader().\n");
+         return false;
+   }
 
 #ifdef HAVE_FBO
    // Set up render to texture again.
@@ -1607,8 +1625,8 @@ const video_driver_t video_gl = {
    gl_alive,
    gl_focus,
 
-#ifdef HAVE_XML
-   gl_xml_shader,
+#if defined(HAVE_XML) || defined(HAVE_CG)
+   gl_set_shader,
 #else
    NULL,
 #endif

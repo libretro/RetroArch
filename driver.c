@@ -528,7 +528,7 @@ static void init_shader_dir(void)
    if (!*g_settings.video.shader_dir)
       return;
 
-   g_extern.shader_dir.list = dir_list_new(g_settings.video.shader_dir, "shader", false);
+   g_extern.shader_dir.list = dir_list_new(g_settings.video.shader_dir, "shader|cg|cgp", false);
    if (g_extern.shader_dir.list->size == 0)
    {
       deinit_shader_dir();
