@@ -298,7 +298,7 @@ enum retro_key
                                            // Boolean value whether or not the implementation should use overscan, or crop away overscan.
                                            //
 #define RETRO_ENVIRONMENT_GET_CAN_DUPE  3  // bool * --
-                                           // Boolean value whether or not RetroArch supports frame duping,
+                                           // Boolean value whether or not frontend supports frame duping,
                                            // passing NULL to video frame callback.
                                            //
 #define RETRO_ENVIRONMENT_GET_VARIABLE  4  // struct retro_variable * --
