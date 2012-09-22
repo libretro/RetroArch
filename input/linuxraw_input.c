@@ -25,6 +25,7 @@
 #include "../general.h"
 #include "linuxraw_input.h"
 #include "rarch_sdl_input.h"
+#include "input_common.h"
 
 static long oldKbmd = 0xffff;
 static struct termios oldTerm, newTerm;
@@ -256,33 +257,6 @@ static bool linuxraw_bind_button_pressed(void *data, int key)
       input_sdl.key_pressed(linuxraw->sdl, key);
 }
 
-static void conv_analog_id_to_bind_id(unsigned index, unsigned id,
-      unsigned *id_minus, unsigned *id_plus)
-{
-   switch ((index << 1) | id)
-   {
-      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-         *id_minus = RARCH_ANALOG_LEFT_X_MINUS;
-         *id_plus  = RARCH_ANALOG_LEFT_X_PLUS;
-         break;
-
-      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-         *id_minus = RARCH_ANALOG_LEFT_Y_MINUS;
-         *id_plus  = RARCH_ANALOG_LEFT_Y_PLUS;
-         break;
-
-      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-         *id_minus = RARCH_ANALOG_RIGHT_X_MINUS;
-         *id_plus  = RARCH_ANALOG_RIGHT_X_PLUS;
-         break;
-
-      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-         *id_minus = RARCH_ANALOG_RIGHT_Y_MINUS;
-         *id_plus  = RARCH_ANALOG_RIGHT_Y_PLUS;
-         break;
-   }
-}
-
 static int16_t raw_analog_state(linuxraw_input_t *linuxraw, const struct retro_keybind **binds_,
       unsigned port, unsigned index, unsigned id)
 {
@@ -293,7 +267,7 @@ static int16_t raw_analog_state(linuxraw_input_t *linuxraw, const struct retro_k
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
 
-   conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
 
    const struct retro_keybind *bind_minus = &binds[id_minus];
    const struct retro_keybind *bind_plus  = &binds[id_plus];
