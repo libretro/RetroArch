@@ -113,7 +113,7 @@ error:
 static bool cmd_init_stdin(rarch_cmd_t *handle)
 {
 #ifndef _WIN32
-   if (stdin_enable && !socket_nonblock(STDIN_FILENO))
+   if (!socket_nonblock(STDIN_FILENO))
       return false;
 #endif
 
