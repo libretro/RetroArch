@@ -279,10 +279,7 @@ static void reschedule_process(void)
 bool gfx_ctx_init(void)
 {
    if (g_inited)
-   {
-      RARCH_ERR("[KMS/EGL]: Driver does not support reinitialization yet.\n");
       return false;
-   }
 
 #if 0
    reschedule_process();
@@ -570,6 +567,7 @@ void gfx_ctx_destroy(void)
    g_connector   = NULL;
    g_resources   = NULL;
    g_orig_crtc   = NULL;
+   g_drm_mode    = NULL;
 
    g_quit         = 0;
    g_crtc_id      = 0;
@@ -578,10 +576,11 @@ void gfx_ctx_destroy(void)
    g_fb_width  = 0;
    g_fb_height = 0;
 
-   // TODO: Do we have to free this?
-   g_bo = NULL;
+   g_bo      = NULL;
+   g_next_bo = NULL;
 
-   drmClose(g_drm_fd);
+   if (g_drm_fd >= 0)
+      drmClose(g_drm_fd);
    g_drm_fd = -1;
 
    unsigned frames = last_page_flip - first_page_flip;
@@ -594,8 +593,7 @@ void gfx_ctx_destroy(void)
    RARCH_WARN("[KMS/EGL]: Performance stats: Missed VBlanks: %u, Perfect VBlanks: %u\n", 
          missed_vblanks, hit_vblanks);
 
-   // Reinitialization fails for now ...
-   //g_inited = false;
+   g_inited = false;
 }
 
 void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)

@@ -160,6 +160,8 @@ static void linuxraw_resetKbmd()
       tcsetattr(0, TCSAFLUSH, &oldTerm);
       oldKbmd = 0xffff;
    }
+
+   driver.stdin_claimed = false;
 }
 
 static void linuxraw_exitGracefully(int sig)
