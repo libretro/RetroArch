@@ -512,6 +512,10 @@ error:
 
 void gfx_ctx_destroy(void)
 {
+   // Make sure we acknowledge all page-flips.
+   if (waiting_for_flip)
+      wait_flip(true);
+
    if (g_egl_dpy)
    {
       if (g_egl_ctx)
