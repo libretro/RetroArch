@@ -60,19 +60,13 @@ static bool socket_nonblock(int fd)
 #endif
 }
 
-rarch_cmd_t *rarch_cmd_new(bool stdin_enable, bool network_enable, uint16_t port)
-{
-   rarch_cmd_t *handle = (rarch_cmd_t*)calloc(1, sizeof(*handle));
-   if (!handle)
-      return NULL;
-
 #ifdef HAVE_NETWORK_CMD
-   if (network_enable && !netplay_init_network())
-      return NULL;
+static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
+{
+   if (!netplay_init_network())
+      return false;
 
    RARCH_LOG("Bringing up command interface on port %hu.\n", (unsigned short)port);
-
-   handle->net_fd = -1;
 
    struct addrinfo hints, *res = NULL;
    memset(&hints, 0, sizeof(hints));
@@ -104,31 +98,57 @@ rarch_cmd_t *rarch_cmd_new(bool stdin_enable, bool network_enable, uint16_t port
       RARCH_ERR("Failed to bind socket.\n");
       goto error;
    }
+
+   freeaddrinfo(res);
+   return true;
+
+error:
+   if (res)
+      freeaddrinfo(res);
+   return false;
+}
+#endif
+
+#ifdef HAVE_STDIN_CMD
+static bool cmd_init_stdin(rarch_cmd_t *handle)
+{
+#ifndef _WIN32
+   if (stdin_enable && !socket_nonblock(STDIN_FILENO))
+      return false;
+#endif
+
+   handle->stdin_enable = true;
+   return true;
+}
+#endif
+
+rarch_cmd_t *rarch_cmd_new(bool stdin_enable, bool network_enable, uint16_t port)
+{
+   rarch_cmd_t *handle = (rarch_cmd_t*)calloc(1, sizeof(*handle));
+   if (!handle)
+      return NULL;
+
+   handle->net_fd       = -1;
+   handle->stdin_enable = stdin_enable;
+
+#ifdef HAVE_NETWORK_CMD
+   if (network_enable && !cmd_init_network(handle, port))
+      goto error;
 #else
    (void)network_enable;
    (void)port;
 #endif
 
 #ifdef HAVE_STDIN_CMD
-#ifndef _WIN32
-   if (stdin_enable && !socket_nonblock(STDIN_FILENO))
+   if (stdin_enable && !cmd_init_stdin(handle))
       goto error;
-#endif
-   handle->stdin_enable = stdin_enable;
 #else
    (void)stdin_enable;
 #endif
 
-#ifdef HAVE_NETWORK_CMD
-   freeaddrinfo(res);
-#endif
    return handle;
 
 error:
-#ifdef HAVE_NETWORK_CMD
-   if (res)
-      freeaddrinfo(res);
-#endif
    rarch_cmd_free(handle);
    return NULL;
 }
