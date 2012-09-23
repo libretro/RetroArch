@@ -1219,9 +1219,12 @@ static bool resolve_extensions(gl_t *gl)
    gl->border_type = GL_CLAMP_TO_BORDER;
 #endif
 
+   // Useful for debugging, but kinda obnoxious.
+#if 0
    const char *ext = (const char*)glGetString(GL_EXTENSIONS);
    if (ext)
       RARCH_LOG("[GL] Supported extensions: %s\n", ext);
+#endif
 
 #if defined(HAVE_PBO)
    RARCH_LOG("[GL]: Using PBOs.\n");
