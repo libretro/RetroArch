@@ -160,8 +160,7 @@ ifeq ($(HAVE_SDL), 1)
             LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
          else ifeq ($(HAVE_VIDEOCORE), 1)
             OBJ += gfx/context/vc_egl_ctx.o
-            # videocore's libEGL needs libGLESv2 linked as well
-            LIBS += -lGLESv2 -lEGL
+            # videocore's libs set later
          else ifeq ($(HAVE_GLES), 1)
             OBJ += gfx/context/xegl_ctx.o
             DEFINES += $(EGL_CFLAGS)
@@ -179,10 +178,15 @@ ifeq ($(HAVE_SDL), 1)
          endif
       endif
    endif
+
+   ifeq ($(HAVE_VG), 1)
+      OBJ += gfx/vg.o
+      DEFINES += $(VG_CFLAGS)
+      LIBS += $(VG_LIBS)
+   endif
 endif
 
 ifeq ($(HAVE_VIDEOCORE), 1)
-   OBJ += gfx/rpi.o
    LIBS += -lOpenVG -lGLESv2 -lEGL -lbcm_host -lvcos -lvchiq_arm
 endif
 

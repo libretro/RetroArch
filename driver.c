@@ -100,8 +100,8 @@ static const video_driver_t *video_drivers[] = {
 #ifdef GEKKO
    &video_gx,
 #endif
-#ifdef HAVE_VIDEOCORE
-   &video_rpi,
+#ifdef HAVE_VG
+   &video_vg,
 #endif
    &video_null,
 };

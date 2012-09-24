@@ -56,134 +56,134 @@ typedef struct
    VGPaint mPaintFg;
    VGPaint mPaintBg;
 #endif
-} rpi_t;
+} vg_t;
 
-static void rpi_set_nonblock_state(void *data, bool state)
+static void vg_set_nonblock_state(void *data, bool state)
 {
    (void)data;
    gfx_ctx_set_swap_interval(state ? 0 : 1, true);
 }
 
-static void *rpi_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+static void *vg_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-   rpi_t *rpi = (rpi_t*)calloc(1, sizeof(rpi_t));
-   if (!rpi)
+   vg_t *vg = (vg_t*)calloc(1, sizeof(vg_t));
+   if (!vg)
       return NULL;
 
-   if (!eglBindAPI(EGL_OPENVG_API))
+   if (!eglBindAPI(EGL_vg_API))
       return NULL;
 
    if (!gfx_ctx_init())
    {
-      free(rpi);
+      free(vg);
       return NULL;
    }
 
-   gfx_ctx_get_video_size(&rpi->mScreenWidth, &rpi->mScreenHeight);
-   RARCH_LOG("Detecting screen resolution %ux%u.\n", rpi->mScreenWidth, rpi->mScreenHeight);
+   gfx_ctx_get_video_size(&vg->mScreenWidth, &vg->mScreenHeight);
+   RARCH_LOG("Detecting screen resolution %ux%u.\n", vg->mScreenWidth, vg->mScreenHeight);
 
    gfx_ctx_set_swap_interval(video->vsync ? 1 : 0, false);
 
-   rpi->mTexType = video->rgb32 ? VG_sABGR_8888 : VG_sARGB_1555;
-   rpi->mKeepAspect = video->force_aspect;
+   vg->mTexType = video->rgb32 ? VG_sABGR_8888 : VG_sARGB_1555;
+   vg->mKeepAspect = video->force_aspect;
 
    // check for SD televisions: they should always be 4:3
-   if (rpi->mScreenWidth == 720 && (rpi->mScreenHeight == 480 || rpi->mScreenHeight == 576))
-      rpi->mScreenAspect = 4.0f / 3.0f;
+   if ((vg->mScreenWidth == 640 || vg->mScreenWidth == 720) && (vg->mScreenHeight == 480 || vg->mScreenHeight == 576))
+      vg->mScreenAspect = 4.0f / 3.0f;
    else
-      rpi->mScreenAspect = (float)rpi->mScreenWidth / rpi->mScreenHeight;
+      vg->mScreenAspect = (float)vg->mScreenWidth / vg->mScreenHeight;
 
    VGfloat clearColor[4] = {0, 0, 0, 1};
    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
 
-   rpi->mTextureWidth = rpi->mTextureHeight = video->input_scale * RARCH_SCALE_BASE;
+   vg->mTextureWidth = vg->mTextureHeight = video->input_scale * RARCH_SCALE_BASE;
    // We can't use the native format because there's no sXRGB_1555 type and
    // emulation cores can send 0 in the top bit. We lose some speed on
    // conversion but I doubt it has any real affect, since we are only drawing
    // one image at the end of the day. Still keep the alpha channel for ABGR.
-   rpi->mImage = vgCreateImage(video->rgb32 ? VG_sABGR_8888 : VG_sXBGR_8888,
-         rpi->mTextureWidth, rpi->mTextureHeight,
+   vg->mImage = vgCreateImage(video->rgb32 ? VG_sABGR_8888 : VG_sXBGR_8888,
+         vg->mTextureWidth, vg->mTextureHeight,
          video->smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
-   rpi_set_nonblock_state(rpi, !video->vsync);
+   vg_set_nonblock_state(vg, !video->vsync);
 
    gfx_ctx_input_driver(input, input_data);
 
 #ifdef HAVE_FREETYPE
    if (g_settings.video.font_enable)
    {
-      rpi->mFont = vgCreateFont(0);
-      rpi->mFontHeight = g_settings.video.font_size * (g_settings.video.font_scale ? (float) rpi->mScreenWidth / 1280.0f : 1.0f);
+      vg->mFont = vgCreateFont(0);
+      vg->mFontHeight = g_settings.video.font_size * (g_settings.video.font_scale ? (float) vg->mScreenWidth / 1280.0f : 1.0f);
 
       const char *path = g_settings.video.font_path;
       if (!*path || !path_file_exists(path))
          path = font_renderer_get_default_font();
 
-      rpi->mFontRenderer = font_renderer_new(path, rpi->mFontHeight);
+      vg->mFontRenderer = font_renderer_new(path, vg->mFontHeight);
 
-      if (rpi->mFont != VG_INVALID_HANDLE && rpi->mFontRenderer)
+      if (vg->mFont != VG_INVALID_HANDLE && vg->mFontRenderer)
       {
-         rpi->mFontsOn = true;
+         vg->mFontsOn = true;
 
-         rpi->mPaintFg = vgCreatePaint();
-         rpi->mPaintBg = vgCreatePaint();
+         vg->mPaintFg = vgCreatePaint();
+         vg->mPaintBg = vgCreatePaint();
          VGfloat paintFg[] = { g_settings.video.msg_color_r, g_settings.video.msg_color_g, g_settings.video.msg_color_b, 1.0f };
          VGfloat paintBg[] = { g_settings.video.msg_color_r / 2.0f, g_settings.video.msg_color_g / 2.0f, g_settings.video.msg_color_b / 2.0f, 0.5f };
 
-         vgSetParameteri(rpi->mPaintFg, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
-         vgSetParameterfv(rpi->mPaintFg, VG_PAINT_COLOR, 4, paintFg);
+         vgSetParameteri(vg->mPaintFg, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
+         vgSetParameterfv(vg->mPaintFg, VG_PAINT_COLOR, 4, paintFg);
 
-         vgSetParameteri(rpi->mPaintBg, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
-         vgSetParameterfv(rpi->mPaintBg, VG_PAINT_COLOR, 4, paintBg);
+         vgSetParameteri(vg->mPaintBg, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
+         vgSetParameterfv(vg->mPaintBg, VG_PAINT_COLOR, 4, paintBg);
       }
    }
 #endif
 
-   return rpi;
+   return vg;
 }
 
-static void rpi_free(void *data)
+static void vg_free(void *data)
 {
-   rpi_t *rpi = (rpi_t*)data;
+   vg_t *vg = (vg_t*)data;
 
-   vgDestroyImage(rpi->mImage);
+   vgDestroyImage(vg->mImage);
 
 #ifdef HAVE_FREETYPE
-   if (rpi->mFontsOn)
+   if (vg->mFontsOn)
    {
-      vgDestroyFont(rpi->mFont);
-      font_renderer_free(rpi->mFontRenderer);
-      vgDestroyPaint(rpi->mPaintFg);
-      vgDestroyPaint(rpi->mPaintBg);
+      vgDestroyFont(vg->mFont);
+      font_renderer_free(vg->mFontRenderer);
+      vgDestroyPaint(vg->mPaintFg);
+      vgDestroyPaint(vg->mPaintBg);
    }
 #endif
 
    gfx_ctx_destroy();
 
-   free(rpi);
+   free(vg);
 }
 
 #ifdef HAVE_FREETYPE
 
-static void rpi_render_message(rpi_t *rpi, const char *msg)
+static void vg_render_message(vg_t *vg, const char *msg)
 {
-   free(rpi->mLastMsg);
-   rpi->mLastMsg = strdup(msg);
+   free(vg->mLastMsg);
+   vg->mLastMsg = strdup(msg);
 
-   if (rpi->mMsgLength)
+   if (vg->mMsgLength)
    {
-      while (--rpi->mMsgLength)
-         vgClearGlyph(rpi->mFont, rpi->mMsgLength);
+      while (--vg->mMsgLength)
+         vgClearGlyph(vg->mFont, vg->mMsgLength);
 
-      vgClearGlyph(rpi->mFont, 0);
+      vgClearGlyph(vg->mFont, 0);
    }
 
    struct font_output_list out;
-   font_renderer_msg(rpi->mFontRenderer, msg, &out);
+   font_renderer_msg(vg->mFontRenderer, msg, &out);
    struct font_output *head = out.head;
 
    while (head)
    {
-      if (rpi->mMsgLength >= 1024)
+      if (vg->mMsgLength >= 1024)
          break;
 
       VGfloat origin[2], escapement[2];
@@ -200,40 +200,40 @@ static void rpi_render_message(rpi_t *rpi, const char *msg)
       for (unsigned i = 0; i < head->height; i++)
          vgImageSubData(img, head->output + head->pitch * i, head->pitch, VG_A_8, 0, head->height - i - 1, head->width, 1);
 
-      vgSetGlyphToImage(rpi->mFont, rpi->mMsgLength, img, origin, escapement);
+      vgSetGlyphToImage(vg->mFont, vg->mMsgLength, img, origin, escapement);
       vgDestroyImage(img);
 
-      rpi->mMsgLength++;
+      vg->mMsgLength++;
       head = head->next;
    }
 
    font_renderer_free_output(&out);
 
-   for (unsigned i = 0; i < rpi->mMsgLength; i++)
-      rpi->mGlyphIndices[i] = i;
+   for (unsigned i = 0; i < vg->mMsgLength; i++)
+      vg->mGlyphIndices[i] = i;
 }
 
-static void rpi_draw_message(rpi_t *rpi, const char *msg)
+static void vg_draw_message(vg_t *vg, const char *msg)
 {
-   if (!rpi->mLastMsg || strcmp(rpi->mLastMsg, msg))
-      rpi_render_message(rpi, msg);
+   if (!vg->mLastMsg || strcmp(vg->mLastMsg, msg))
+      vg_render_message(vg, msg);
 
    vgSeti(VG_SCISSORING, VG_FALSE);
    vgSeti(VG_IMAGE_MODE, VG_DRAW_IMAGE_STENCIL);
 
    VGfloat origins[] = {
-      rpi->mScreenWidth * g_settings.video.msg_pos_x - 2.0f,
-      rpi->mScreenHeight * g_settings.video.msg_pos_y - 2.0f,
+      vg->mScreenWidth * g_settings.video.msg_pos_x - 2.0f,
+      vg->mScreenHeight * g_settings.video.msg_pos_y - 2.0f,
    };
 
    vgSetfv(VG_GLYPH_ORIGIN, 2, origins);
-   vgSetPaint(rpi->mPaintBg, VG_FILL_PATH);
-   vgDrawGlyphs(rpi->mFont, rpi->mMsgLength, rpi->mGlyphIndices, NULL, NULL, VG_FILL_PATH, VG_TRUE);
+   vgSetPaint(vg->mPaintBg, VG_FILL_PATH);
+   vgDrawGlyphs(vg->mFont, vg->mMsgLength, vg->mGlyphIndices, NULL, NULL, VG_FILL_PATH, VG_TRUE);
    origins[0] += 2.0f;
    origins[1] += 2.0f;
    vgSetfv(VG_GLYPH_ORIGIN, 2, origins);
-   vgSetPaint(rpi->mPaintFg, VG_FILL_PATH);
-   vgDrawGlyphs(rpi->mFont, rpi->mMsgLength, rpi->mGlyphIndices, NULL, NULL, VG_FILL_PATH, VG_TRUE);
+   vgSetPaint(vg->mPaintFg, VG_FILL_PATH);
+   vgDrawGlyphs(vg->mFont, vg->mMsgLength, vg->mGlyphIndices, NULL, NULL, VG_FILL_PATH, VG_TRUE);
 
    vgSeti(VG_SCISSORING, VG_TRUE);
    vgSeti(VG_IMAGE_MODE, VG_DRAW_IMAGE_NORMAL);
@@ -241,83 +241,83 @@ static void rpi_draw_message(rpi_t *rpi, const char *msg)
 
 #endif
 
-static void rpi_calculate_quad(rpi_t *rpi)
+static void vg_calculate_quad(vg_t *vg)
 {
    // set viewport for aspect ratio, taken from the OpenGL driver
-   if (rpi->mKeepAspect)
+   if (vg->mKeepAspect)
    {
       float desired_aspect = g_settings.video.aspect_ratio;
 
       // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff),
       // assume they are actually equal.
-      if (fabs(rpi->mScreenAspect - desired_aspect) < 0.0001)
+      if (fabs(vg->mScreenAspect - desired_aspect) < 0.0001)
       {
-         rpi->x1 = 0;
-         rpi->y1 = 0;
-         rpi->x2 = rpi->mScreenWidth;
-         rpi->y2 = rpi->mScreenHeight;
+         vg->x1 = 0;
+         vg->y1 = 0;
+         vg->x2 = vg->mScreenWidth;
+         vg->y2 = vg->mScreenHeight;
       }
-      else if (rpi->mScreenAspect > desired_aspect)
+      else if (vg->mScreenAspect > desired_aspect)
       {
-         float delta = (desired_aspect / rpi->mScreenAspect - 1.0) / 2.0 + 0.5;
-         rpi->x1 = rpi->mScreenWidth * (0.5 - delta);
-         rpi->y1 = 0;
-         rpi->x2 = 2.0 * rpi->mScreenWidth * delta + rpi->x1;
-         rpi->y2 = rpi->mScreenHeight + rpi->y1;
+         float delta = (desired_aspect / vg->mScreenAspect - 1.0) / 2.0 + 0.5;
+         vg->x1 = vg->mScreenWidth * (0.5 - delta);
+         vg->y1 = 0;
+         vg->x2 = 2.0 * vg->mScreenWidth * delta + vg->x1;
+         vg->y2 = vg->mScreenHeight + vg->y1;
       }
       else
       {
-         float delta = (rpi->mScreenAspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         rpi->x1 = 0;
-         rpi->y1 = rpi->mScreenHeight * (0.5 - delta);
-         rpi->x2 = rpi->mScreenWidth + rpi->x1;
-         rpi->y2 = 2.0 * rpi->mScreenHeight * delta + rpi->y1;
+         float delta = (vg->mScreenAspect / desired_aspect - 1.0) / 2.0 + 0.5;
+         vg->x1 = 0;
+         vg->y1 = vg->mScreenHeight * (0.5 - delta);
+         vg->x2 = vg->mScreenWidth + vg->x1;
+         vg->y2 = 2.0 * vg->mScreenHeight * delta + vg->y1;
       }
    }
    else
    {
-      rpi->x1 = 0;
-      rpi->y1 = 0;
-      rpi->x2 = rpi->mScreenWidth;
-      rpi->y2 = rpi->mScreenHeight;
+      vg->x1 = 0;
+      vg->y1 = 0;
+      vg->x2 = vg->mScreenWidth;
+      vg->y2 = vg->mScreenHeight;
    }
 
-   rpi->scissor[0] = rpi->x1;
-   rpi->scissor[1] = rpi->y1;
-   rpi->scissor[2] = rpi->x2 - rpi->x1;
-   rpi->scissor[3] = rpi->y2 - rpi->y1;
+   vg->scissor[0] = vg->x1;
+   vg->scissor[1] = vg->y1;
+   vg->scissor[2] = vg->x2 - vg->x1;
+   vg->scissor[3] = vg->y2 - vg->y1;
 
-   vgSetiv(VG_SCISSOR_RECTS, 4, rpi->scissor);
+   vgSetiv(VG_SCISSOR_RECTS, 4, vg->scissor);
 }
 
-static bool rpi_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
+static bool vg_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   rpi_t *rpi = (rpi_t*)data;
-   rpi->frame_count++;
+   vg_t *vg = (vg_t*)data;
+   vg->frame_count++;
 
-   if (width != rpi->mRenderWidth || height != rpi->mRenderHeight)
+   if (width != vg->mRenderWidth || height != vg->mRenderHeight)
    {
-      rpi->mRenderWidth = width;
-      rpi->mRenderHeight = height;
-      rpi_calculate_quad(rpi);
+      vg->mRenderWidth = width;
+      vg->mRenderHeight = height;
+      vg_calculate_quad(vg);
       vguComputeWarpQuadToQuad(
-         rpi->x1, rpi->y1, rpi->x2, rpi->y1, rpi->x2, rpi->y2, rpi->x1, rpi->y2,
+         vg->x1, vg->y1, vg->x2, vg->y1, vg->x2, vg->y2, vg->x1, vg->y2,
          // needs to be flipped, Khronos loves their bottom-left origin
          0, height, width, height, width, 0, 0, 0,
-         rpi->mTransformMatrix);
+         vg->mTransformMatrix);
       vgSeti(VG_MATRIX_MODE, VG_MATRIX_IMAGE_USER_TO_SURFACE);
-      vgLoadMatrix(rpi->mTransformMatrix);
+      vgLoadMatrix(vg->mTransformMatrix);
    }
    vgSeti(VG_SCISSORING, VG_FALSE);
-   vgClear(0, 0, rpi->mScreenWidth, rpi->mScreenHeight);
+   vgClear(0, 0, vg->mScreenWidth, vg->mScreenHeight);
    vgSeti(VG_SCISSORING, VG_TRUE);
 
-   vgImageSubData(rpi->mImage, frame, pitch, rpi->mTexType, 0, 0, width, height);
-   vgDrawImage(rpi->mImage);
+   vgImageSubData(vg->mImage, frame, pitch, vg->mTexType, 0, 0, width, height);
+   vgDrawImage(vg->mImage);
 
 #ifdef HAVE_FREETYPE
-   if (msg && rpi->mFontsOn)
-      rpi_draw_message(rpi, msg);
+   if (msg && vg->mFontsOn)
+      vg_draw_message(vg, msg);
 #else
    (void)msg;
 #endif
@@ -327,30 +327,30 @@ static bool rpi_frame(void *data, const void *frame, unsigned width, unsigned he
    return true;
 }
 
-static bool rpi_alive(void *data)
+static bool vg_alive(void *data)
 {
-   rpi_t *rpi = (rpi_t*)data;
+   vg_t *vg = (vg_t*)data;
    bool quit, resize;
 
    gfx_ctx_check_window(&quit,
-         &resize, &rpi->mScreenWidth, &rpi->mScreenHeight,
-         rpi->frame_count);
+         &resize, &vg->mScreenWidth, &vg->mScreenHeight,
+         vg->frame_count);
    return !quit;
 }
 
-static bool rpi_focus(void *data)
+static bool vg_focus(void *data)
 {
    (void)data;
    return gfx_ctx_window_has_focus();
 }
 
-const video_driver_t video_rpi = {
-   rpi_init,
-   rpi_frame,
-   rpi_set_nonblock_state,
-   rpi_alive,
-   rpi_focus,
+const video_driver_t video_vg = {
+   vg_init,
+   vg_frame,
+   vg_set_nonblock_state,
+   vg_alive,
+   vg_focus,
    NULL,
-   rpi_free,
-   "rpi"
+   vg_free,
+   "vg"
 };

@@ -92,8 +92,8 @@ const char *config_get_default_video(void)
          return "sdl";
       case VIDEO_EXT:
          return "ext";
-      case VIDEO_RPI:
-         return "rpi";
+      case VIDEO_VG:
+         return "vg";
       case VIDEO_NULL:
          return "null";
       default:

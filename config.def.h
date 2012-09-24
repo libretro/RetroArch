@@ -37,7 +37,7 @@ enum
    VIDEO_WII,
    VIDEO_XENON360,
    VIDEO_XDK_D3D,
-   VIDEO_RPI,
+   VIDEO_VG,
    VIDEO_NULL,
 
    AUDIO_RSOUND,
@@ -69,7 +69,7 @@ enum
 };
 
 #if defined(HAVE_VIDEOCORE)
-#define VIDEO_DEFAULT_DRIVER VIDEO_RPI
+#define VIDEO_DEFAULT_DRIVER VIDEO_VG
 #elif defined(HAVE_OPENGL) || defined(__CELLOS_LV2__)
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL
 #elif defined(GEKKO)
@@ -78,6 +78,8 @@ enum
 #define VIDEO_DEFAULT_DRIVER VIDEO_XENON360
 #elif (defined(_XBOX1) || defined(_XBOX360)) && (defined(HAVE_D3D8) || defined(HAVE_D3D9))
 #define VIDEO_DEFAULT_DRIVER VIDEO_XDK_D3D
+#elif defined(HAVE_VG)
+#define VIDEO_DEFAULT_DRIVER VIDEO_VG
 #elif defined(HAVE_XVIDEO)
 #define VIDEO_DEFAULT_DRIVER VIDEO_XVIDEO
 #elif defined(HAVE_SDL)
