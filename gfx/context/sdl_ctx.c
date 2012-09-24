@@ -292,23 +292,6 @@ void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 }
 
 #ifdef HAVE_OPENGL
-void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)
-{
-   // Calculate projection.
-   math_matrix proj;
-   matrix_ortho(&proj, ortho->left, ortho->right,
-         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
-
-   if (allow_rotate)
-   {
-      math_matrix rot;
-      matrix_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
-      matrix_multiply(&proj, &rot, &proj);
-   }
-
-   gl->mvp = proj;
-}
-
 // Enforce void (*)(void) as it's not really legal to cast void* to fn-pointer.
 // POSIX allows this, but strict C99 doesn't.
 gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)

@@ -589,7 +589,19 @@ void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
    }
 #endif
 
-   gfx_ctx_set_projection(gl, ortho, allow_rotate);
+   // Calculate projection.
+   math_matrix proj;
+   matrix_ortho(&proj, ortho->left, ortho->right,
+         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
+
+   if (allow_rotate)
+   {
+      math_matrix rot;
+      matrix_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
+      matrix_multiply(&proj, &rot, &proj);
+   }
+
+   gl->mvp = proj;
    gl_shader_set_coords(&gl->coords, &gl->mvp);
 }
 

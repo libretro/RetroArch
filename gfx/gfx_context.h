@@ -29,10 +29,6 @@
 #define VID_HANDLE gl_t
 #endif
 
-#if defined(HAVE_D3D8) || defined(HAVE_D3D9)
-#define VID_HANDLE xdk_d3d_video_t
-#endif
-
 #if defined(HAVE_SDL) && !defined(__APPLE__)
 #include "SDL_syswm.h"
 #endif
@@ -75,10 +71,11 @@ void gfx_ctx_get_available_resolutions(void);
 int gfx_ctx_check_resolution(unsigned resolution_id);
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_D3D9) || defined(HAVE_D3D8)
 typedef void (*gfx_ctx_proc_t)(void);
-void gfx_ctx_set_projection(VID_HANDLE *gl, const struct gl_ortho *ortho, bool allow_rotate);
 gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *sym);
+
+#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
+void gfx_ctx_set_projection(xdk_d3d_video_t *vid, const struct gl_ortho *ortho, bool allow_rotate);
 #endif
 
 #endif

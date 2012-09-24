@@ -224,7 +224,11 @@ bool gfx_ctx_init(void)
       EGL_GREEN_SIZE,      1,
       EGL_BLUE_SIZE,       1,
       EGL_DEPTH_SIZE,      1,
+#ifdef HAVE_OPENGLES2
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+#else
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
+#endif
       EGL_NONE,
    };
 
@@ -387,23 +391,6 @@ void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 
    if (xinput)
       x_input_set_disp_win((x11_input_t*)xinput, g_dpy, g_win);
-}
-
-void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)
-{
-   // Calculate projection.
-   math_matrix proj;
-   matrix_ortho(&proj, ortho->left, ortho->right,
-         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
-
-   if (allow_rotate)
-   {
-      math_matrix rot;
-      matrix_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
-      matrix_multiply(&proj, &rot, &proj);
-   }
-
-   gl->mvp = proj;
 }
 
 bool gfx_ctx_window_has_focus(void)

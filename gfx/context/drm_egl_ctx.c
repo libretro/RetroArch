@@ -603,23 +603,6 @@ void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
    *input_data      = linuxinput;
 }
 
-void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)
-{
-   // Calculate projection.
-   math_matrix proj;
-   matrix_ortho(&proj, ortho->left, ortho->right,
-         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
-
-   if (allow_rotate)
-   {
-      math_matrix rot;
-      matrix_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
-      matrix_multiply(&proj, &rot, &proj);
-   }
-
-   gl->mvp = proj;
-}
-
 bool gfx_ctx_window_has_focus(void)
 {
    return g_inited;
