@@ -223,7 +223,15 @@ static void alsa_free(void *data)
 static size_t alsa_write_avail(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
-   return snd_pcm_frames_to_bytes(alsa->pcm, snd_pcm_avail_update(alsa->pcm));
+
+   snd_pcm_sframes_t avail = snd_pcm_avail_update(alsa->pcm);
+   if (avail < 0)
+   {
+      RARCH_WARN("[ALSA]: avail_update() failed: %s\n", snd_strerror(avail));
+      return alsa->buffer_size;
+   }
+
+   return snd_pcm_frames_to_bytes(alsa->pcm, avail);
 }
 
 static size_t alsa_buffer_size(void *data)
