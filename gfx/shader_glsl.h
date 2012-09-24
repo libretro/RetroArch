@@ -19,6 +19,7 @@
 
 #include "../boolean.h"
 #include "gl_common.h"
+#include "gfx_context.h"
 #include "math/matrix.h"
 
 bool gl_glsl_init(const char *path);
@@ -42,5 +43,7 @@ void gl_glsl_shader_scale(unsigned index, struct gl_fbo_scale *scale);
 
 bool gl_glsl_set_coords(const struct gl_coords *coords);
 bool gl_glsl_set_mvp(const math_matrix *mat);
+
+void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*));
 
 #endif

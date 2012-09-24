@@ -26,10 +26,6 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_EGL
-#include <EGL/egl.h>
-#endif
-
 #include "gl_common.h"
 #include "gl_font.h"
 #include "gfx_common.h"
@@ -94,7 +90,7 @@ const GLfloat *vertex_ptr = vertexes_flipped;
 const GLfloat *default_vertex_ptr = vertexes_flipped;
 
 #define LOAD_GL_SYM(SYM) if (!pgl##SYM) { \
-   gfx_ctx_proc_t sym = gfx_ctx_get_proc_address("gl" #SYM); \
+   gfx_ctx_proc_t sym = gl->driver->get_proc_address("gl" #SYM); \
    memcpy(&(pgl##SYM), &sym, sizeof(sym)); \
 }
 
@@ -106,7 +102,7 @@ static PFNGLFRAMEBUFFERTEXTURE2DPROC pglFramebufferTexture2D = NULL;
 static PFNGLCHECKFRAMEBUFFERSTATUSPROC pglCheckFramebufferStatus = NULL;
 static PFNGLDELETEFRAMEBUFFERSPROC pglDeleteFramebuffers = NULL;
 
-static bool load_fbo_proc(void)
+static bool load_fbo_proc(gl_t *gl)
 {
    LOAD_GL_SYM(GenFramebuffers);
    LOAD_GL_SYM(BindFramebuffer);
@@ -123,7 +119,7 @@ static bool load_fbo_proc(void)
 #define pglFramebufferTexture2D glFramebufferTexture2D
 #define pglCheckFramebufferStatus glCheckFramebufferStatus
 #define pglDeleteFramebuffers glDeleteFramebuffers
-static bool load_fbo_proc(void) { return true; }
+#define load_fbo_proc(gl) (true)
 #elif defined(HAVE_OPENGLES)
 #define pglGenFramebuffers glGenFramebuffersOES
 #define pglBindFramebuffer glBindFramebufferOES
@@ -133,14 +129,14 @@ static bool load_fbo_proc(void) { return true; }
 #define GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
 #define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
 #define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
-static bool load_fbo_proc(void) { return true; }
+#define load_fbo_proc(gl) (true)
 #else
 #define pglGenFramebuffers glGenFramebuffers
 #define pglBindFramebuffer glBindFramebuffer
 #define pglFramebufferTexture2D glFramebufferTexture2D
 #define pglCheckFramebufferStatus glCheckFramebufferStatus
 #define pglDeleteFramebuffers glDeleteFramebuffers
-static bool load_fbo_proc(void) { return true; }
+#define load_fbo_proc(gl) (true)
 #endif
 #endif
 
@@ -152,7 +148,7 @@ static PFNGLBUFFERSUBDATAPROC pglBufferSubData;
 static PFNGLBUFFERDATAPROC pglBufferData;
 static PFNGLMAPBUFFERPROC pglMapBuffer;
 static PFNGLUNMAPBUFFERPROC pglUnmapBuffer;
-static inline bool load_gl_proc_win32(void)
+static inline bool load_gl_proc_win32(gl_t *gl)
 {
    LOAD_GL_SYM(ClientActiveTexture);
    LOAD_GL_SYM(ActiveTexture);
@@ -521,7 +517,7 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    if (gl_shader_num() == 1 && !scale.valid && !g_settings.video.render_to_texture)
       return;
 
-   if (!load_fbo_proc())
+   if (!load_fbo_proc(gl))
    {
       RARCH_ERR("Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
       return;
@@ -1102,7 +1098,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (gl->should_resize)
    {
       gl->should_resize = false;
-      gfx_ctx_set_resize(gl->win_width, gl->win_height);
+      gl->driver->set_resize(gl->win_width, gl->win_height);
 
       // On resize, we might have to recreate our FBOs due to "Viewport" scale, and set a new viewport.
       gl_update_resize(gl);
@@ -1144,13 +1140,13 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl_render_msg(gl, msg);
 
 #ifndef RARCH_CONSOLE
-   gfx_ctx_update_window_title(false);
+   gl->driver->update_window_title(false);
 #endif
 
 #ifdef RARCH_CONSOLE
    if (!gl->block_swap)
 #endif
-      gfx_ctx_swap_buffers();
+      gl->driver->swap_buffers();
 
 #ifdef HAVE_CG_MENU
    if (gl->menu_render)
@@ -1199,7 +1195,7 @@ static void gl_free(void *data)
    gl_deinit_fbo(gl);
 #endif
 
-   gfx_ctx_destroy();
+   gl->driver->destroy();
 
    free(gl->empty_buf);
    free(gl->conv_buffer);
@@ -1209,10 +1205,10 @@ static void gl_free(void *data)
 
 static void gl_set_nonblock_state(void *data, bool state)
 {
-   (void)data;
+   gl_t *gl = (gl_t*)data;
 
    RARCH_LOG("GL VSync => %s\n", state ? "off" : "on");
-   gfx_ctx_set_swap_interval(state ? 0 : 1, true);
+   gl->driver->swap_interval(state ? 0 : 1);
 }
 
 static bool resolve_extensions(gl_t *gl)
@@ -1220,7 +1216,7 @@ static bool resolve_extensions(gl_t *gl)
 #ifdef _WIN32
    // Win32 GL lib doesn't have some elementary functions needed.
    // Need to load dynamically :(
-   if (!load_gl_proc_win32())
+   if (!load_gl_proc_win32(gl))
       return false;
 #endif
 
@@ -1265,26 +1261,23 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!gl)
       return NULL;
 
-#ifdef HAVE_EGL
 #ifdef HAVE_OPENGLES
-   if (!eglBindAPI(EGL_OPENGL_ES_API))
-      return NULL;
+   gl->driver = gfx_ctx_init_first(GFX_CTX_OPENGL_ES_API);
 #else
-   if (!eglBindAPI(EGL_OPENGL_API))
-      return NULL;
+   gl->driver = gfx_ctx_init_first(GFX_CTX_OPENGL_API);
 #endif
-#endif
-
-   if (!gfx_ctx_init())
+   if (!gl->driver)
    {
       free(gl);
       return NULL;
    }
 
-   gfx_ctx_get_video_size(&gl->full_x, &gl->full_y);
+   RARCH_LOG("Found GL context: %s\n", gl->driver->ident);
+
+   gl->driver->get_video_size(&gl->full_x, &gl->full_y);
    RARCH_LOG("Detecting screen resolution %ux%u.\n", gl->full_x, gl->full_y);
 
-   gfx_ctx_set_swap_interval(video->vsync ? 1 : 0, false);
+   gl->driver->swap_interval(video->vsync ? 1 : 0);
 
    unsigned win_width  = video->width;
    unsigned win_height = video->height;
@@ -1294,7 +1287,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       win_height = gl->full_y;
    }
 
-   if (!gfx_ctx_set_video_mode(win_width, win_height,
+   if (!gl->driver->set_video_mode(win_width, win_height,
             g_settings.video.force_16bit ? 15 : 0, video->fullscreen))
    {
       free(gl);
@@ -1302,13 +1295,13 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
 #ifndef RARCH_CONSOLE
-   gfx_ctx_update_window_title(true);
+   gl->driver->update_window_title(true);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 #endif
 
    if (!resolve_extensions(gl))
    {
-      gfx_ctx_destroy();
+      gl->driver->destroy();
       free(gl);
       return NULL;
    }
@@ -1317,7 +1310,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->fullscreen = video->fullscreen;
    
    // Get real known video size, which might have been altered by context.
-   gfx_ctx_get_video_size(&gl->win_width, &gl->win_height);
+   gl->driver->get_video_size(&gl->win_width, &gl->win_height);
    RARCH_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
 
    if (gl->full_x || gl->full_y) // We got bogus from gfx_ctx_get_video_size. Replace.
@@ -1331,10 +1324,14 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_cg_set_menu_shader(default_paths.menu_shader_file);
 #endif
 
+#ifdef HAVE_XML
+   gl_glsl_set_get_proc_address(gl->driver->get_proc_address);
+#endif
+
    if (!gl_shader_init())
    {
       RARCH_ERR("Shader init failed.\n");
-      gfx_ctx_destroy();
+      gl->driver->destroy();
       free(gl);
       return NULL;
    }
@@ -1402,7 +1399,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->conv_buffer = calloc(gl->tex_w * gl->tex_h, gl->base_size);
    if (!gl->conv_buffer)
    {
-      gfx_ctx_destroy();
+      gl->driver->destroy();
       free(gl);
       return NULL;
    }
@@ -1426,12 +1423,12 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       memcpy(gl->prev_info[i].coord, tex_coords, sizeof(tex_coords)); 
    }
 
-   gfx_ctx_input_driver(input, input_data);
+   gl->driver->input_driver(input, input_data);
    gl_init_font(gl, g_settings.video.font_path, g_settings.video.font_size);
 
    if (!gl_check_error())
    {
-      gfx_ctx_destroy();
+      gl->driver->destroy();
       free(gl);
       return NULL;
    }
@@ -1444,7 +1441,7 @@ static bool gl_alive(void *data)
    gl_t *gl = (gl_t*)data;
    bool quit, resize;
 
-   gfx_ctx_check_window(&quit,
+   gl->driver->check_window(&quit,
          &resize, &gl->win_width, &gl->win_height,
          gl->frame_count);
 
@@ -1458,8 +1455,8 @@ static bool gl_alive(void *data)
 
 static bool gl_focus(void *data)
 {
-   (void)data;
-   return gfx_ctx_window_has_focus();
+   gl_t *gl = (gl_t*)data;
+   return gl->driver->has_focus();
 }
 
 #if defined(HAVE_XML) || defined(HAVE_CG)
@@ -1553,29 +1550,25 @@ static void gl_start(void)
    video_info.fullscreen = true;
    if (g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
    {
-      video_info.width = g_console.viewports.custom_vp.width;
+      video_info.width  = g_console.viewports.custom_vp.width;
       video_info.height = g_console.viewports.custom_vp.height;
    }
    driver.video_data = gl_init(&video_info, NULL, NULL);
 
-#ifdef HAVE_FBO
-   gfx_ctx_set_fbo(g_console.fbo_enabled);
-#endif
-
-   gfx_ctx_get_available_resolutions();
-
-#ifdef HAVE_CG_MENU
-   gfx_ctx_menu_init();
-#endif
+   if (gl->driver->set_fbo)
+      gl->driver->set_fbo(g_console.fbo_enabled);
+   gl->driver->get_available_resolutions();
+   if (gl->driver->menu_init)
+      gl->driver->menu_init();
 
 #ifdef HAVE_FBO
 // FBO mode has to be enabled once even if FBO mode has to be 
 // turned off
    if (!g_console.fbo_enabled)
    {
-      gfx_ctx_apply_fbo_state_changes(FBO_DEINIT);
-      gfx_ctx_apply_fbo_state_changes(FBO_INIT);
-      gfx_ctx_apply_fbo_state_changes(FBO_DEINIT);
+      gl->driver->apply_fbo_state_changes(FBO_DEINIT);
+      gl->driver->apply_fbo_state_changes(FBO_INIT);
+      gl->driver->apply_fbo_state_changes(FBO_DEINIT);
    }
 #endif
 }
@@ -1589,22 +1582,16 @@ static void gl_stop(void)
 
 static void gl_restart(void)
 {
-#ifdef HAVE_CG_MENU
-   bool should_menu_render;
-#endif
-#ifdef RARCH_CONSOLE
-   bool should_block_swap;
-#endif
    gl_t *gl = driver.video_data;
 
    if (!gl)
 	   return;
 
 #ifdef RARCH_CONSOLE
-   should_block_swap = gl->block_swap;
+   bool should_block_swap = gl->block_swap;
 #endif
 #ifdef HAVE_CG_MENU
-   should_menu_render = gl->menu_render;
+   bool should_menu_render = gl->menu_render;
 #endif
 
    gl_stop();

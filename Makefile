@@ -129,19 +129,19 @@ ifeq ($(HAVE_COREAUDIO), 1)
    LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
 endif
 
+ifeq ($(SCALER_NO_SIMD), 1)
+   DEFINES += -DSCALER_NO_SIMD
+endif
+
+ifeq ($(SCALER_PERF), 1)
+   DEFINES += -DSCALER_PERF
+endif
+
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl_gfx.o input/sdl_input.o audio/sdl_audio.o fifo_buffer.o
    OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
-
-   ifeq ($(SCALER_NO_SIMD), 1)
-      DEFINES += -DSCALER_NO_SIMD
-   endif
-
-   ifeq ($(SCALER_PERF), 1)
-      DEFINES += -DSCALER_PERF
-   endif
 
    ifeq ($(HAVE_X11), 1)
       LIBS += $(X11_LIBS)
@@ -149,7 +149,7 @@ ifeq ($(HAVE_SDL), 1)
    endif
 
    ifeq ($(HAVE_OPENGL), 1)
-      OBJ += gfx/gl.o gfx/fonts/freetype.o gfx/math/matrix.o
+      OBJ += gfx/gl.o gfx/gfx_context.o gfx/fonts/freetype.o gfx/math/matrix.o
 
       ifeq ($(OSX), 1)
          LIBS += -framework OpenGL
@@ -158,24 +158,29 @@ ifeq ($(HAVE_SDL), 1)
             OBJ += gfx/context/drm_egl_ctx.o
             DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
             LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
-         else ifeq ($(HAVE_VIDEOCORE), 1)
+         endif
+         ifeq ($(HAVE_VIDEOCORE), 1)
             OBJ += gfx/context/vc_egl_ctx.o
             # videocore's libs set later
-         else ifeq ($(HAVE_GLES), 1)
+         endif
+
+         ifeq ($(HAVE_X11), 1)
+         ifeq ($(HAVE_EGL), 1)
             OBJ += gfx/context/xegl_ctx.o
             DEFINES += $(EGL_CFLAGS)
             LIBS += $(EGL_LIBS)
-         else
-            LIBS += -lGL
-            OBJ += gfx/context/sdl_ctx.o
          endif
+         endif
+   
+      endif
 
-         ifeq ($(HAVE_GLES), 1)
-            LIBS += -lGLESv2
-            DEFINES += -DHAVE_OPENGLES -DHAVE_OPENGLES2
-         else
-            LIBS += -lGL
-         endif
+      OBJ += gfx/context/sdl_ctx.o
+		
+      ifeq ($(HAVE_GLES), 1)
+         LIBS += -lGLESv2
+         DEFINES += -DHAVE_OPENGLES -DHAVE_OPENGLES2
+      else
+         LIBS += -lGL
       endif
    endif
 

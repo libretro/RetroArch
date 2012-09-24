@@ -44,12 +44,16 @@ static EGLConfig g_config;
 static volatile sig_atomic_t g_quit;
 static bool g_inited;
 static unsigned g_interval;
+static enum gfx_ctx_api g_api;
 
 static void sighandler(int sig)
 {
    (void)sig;
    g_quit = 1;
 }
+
+static void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
+static void gfx_ctx_destroy(void);
 
 static void hide_mouse(void)
 {
@@ -110,10 +114,10 @@ static void set_windowed_fullscreen(void)
          &xev);
 }
 
-void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
+static void gfx_ctx_swap_interval(unsigned interval)
 {
    g_interval = interval;
-   if (inited)
+   if (g_egl_dpy)
    {
       RARCH_LOG("[X/EGL]: eglSwapInterval(%u)\n", g_interval);
       if (!eglSwapInterval(g_egl_dpy, g_interval))
@@ -121,7 +125,7 @@ void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
    }
 }
 
-void gfx_ctx_check_window(bool *quit,
+static void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)frame_count;
@@ -164,18 +168,18 @@ void gfx_ctx_check_window(bool *quit,
    *quit = g_quit;
 }
 
-void gfx_ctx_swap_buffers(void)
+static void gfx_ctx_swap_buffers(void)
 {
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
-void gfx_ctx_set_resize(unsigned width, unsigned height)
+static void gfx_ctx_set_resize(unsigned width, unsigned height)
 {
    (void)width;
    (void)height;
 }
 
-void gfx_ctx_update_window_title(bool reset)
+static void gfx_ctx_update_window_title(bool reset)
 {
    if (reset)
       gfx_window_title_reset();
@@ -185,7 +189,7 @@ void gfx_ctx_update_window_title(bool reset)
       XStoreName(g_dpy, g_win, buf);
 }
 
-void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
    if (!g_dpy || g_win == None)
    {
@@ -213,7 +217,7 @@ void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
    }
 }
 
-bool gfx_ctx_init(void)
+static bool gfx_ctx_init(void)
 {
    if (g_inited)
       return false;
@@ -260,7 +264,7 @@ error:
    return false;
 }
 
-bool gfx_ctx_set_video_mode(
+static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen)
 {
@@ -326,6 +330,7 @@ bool gfx_ctx_set_video_mode(
       XSetWMProtocols(g_dpy, g_win, &g_quit_atom, 1);
 
    gfx_suspend_screensaver(g_win);
+   gfx_ctx_swap_interval(g_interval);
 
    XFree(vi);
    g_has_focus = true;
@@ -341,7 +346,7 @@ error:
    return false;
 }
 
-void gfx_ctx_destroy(void)
+static void gfx_ctx_destroy(void)
 {
    if (g_egl_dpy)
    {
@@ -383,7 +388,7 @@ void gfx_ctx_destroy(void)
    g_inited = false;
 }
 
-void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 {
    void *xinput = input_x.init();
    *input       = xinput ? &input_x : NULL;
@@ -393,7 +398,7 @@ void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
       x_input_set_disp_win((x11_input_t*)xinput, g_dpy, g_win);
 }
 
-bool gfx_ctx_window_has_focus(void)
+static bool gfx_ctx_has_focus(void)
 {
    if (!g_inited)
       return false;
@@ -405,8 +410,41 @@ bool gfx_ctx_window_has_focus(void)
    return win == g_win && g_has_focus;
 }
 
-gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
+static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 {
    return eglGetProcAddress(symbol);
 }
+
+static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
+{
+   g_api = api;
+   switch (api)
+   {
+      case GFX_CTX_OPENGL_API:
+         return eglBindAPI(EGL_OPENGL_API);
+      case GFX_CTX_OPENGL_ES_API:
+         return eglBindAPI(EGL_OPENGL_ES_API);
+      case GFX_CTX_OPENVG_API:
+         return eglBindAPI(EGL_OPENVG_API);
+      default:
+         return false;
+   }
+}
+
+const gfx_ctx_driver_t gfx_ctx_x_egl = {
+   gfx_ctx_init,
+   gfx_ctx_destroy,
+   gfx_ctx_bind_api,
+   gfx_ctx_swap_interval,
+   gfx_ctx_set_video_mode,
+   gfx_ctx_get_video_size,
+   gfx_ctx_update_window_title,
+   gfx_ctx_check_window,
+   gfx_ctx_set_resize,
+   gfx_ctx_has_focus,
+   gfx_ctx_swap_buffers,
+   gfx_ctx_input_driver,
+   gfx_ctx_get_proc_address,
+   "x-egl",
+};
 

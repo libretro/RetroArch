@@ -43,6 +43,7 @@ static EGLConfig g_config;
 
 static volatile sig_atomic_t g_quit;
 static bool g_inited;
+static gfx_ctx_api g_api;
 
 static unsigned g_fb_width; // Just use something for now.
 static unsigned g_fb_height;
@@ -59,12 +60,12 @@ static void sighandler(int sig)
    g_quit = 1;
 }
 
-void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
+static void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
 {
    eglSwapInterval(g_egl_dpy, interval);
 }
 
-void gfx_ctx_check_window(bool *quit,
+static void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)frame_count;
@@ -75,29 +76,29 @@ void gfx_ctx_check_window(bool *quit,
    *quit   = g_quit;
 }
 
-void gfx_ctx_swap_buffers(void)
+static void gfx_ctx_swap_buffers(void)
 {
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
-void gfx_ctx_set_resize(unsigned width, unsigned height)
+static void gfx_ctx_set_resize(unsigned width, unsigned height)
 {
    (void)width;
    (void)height;
 }
 
-void gfx_ctx_update_window_title(bool reset)
+static void gfx_ctx_update_window_title(bool reset)
 {
    (void)reset;
 }
 
-void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
    *width  = g_fb_width;
    *height = g_fb_height;
 }
 
-bool gfx_ctx_init(void)
+static bool gfx_ctx_init(void)
 {
    if (g_inited)
    {
@@ -189,7 +190,7 @@ bool gfx_ctx_init(void)
    return true;
 }
 
-bool gfx_ctx_set_video_mode(
+static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen)
 {
@@ -208,7 +209,7 @@ bool gfx_ctx_set_video_mode(
    return true;
 }
 
-void gfx_ctx_destroy(void)
+static void gfx_ctx_destroy(void)
 {
    if (g_egl_dpy)
    {
@@ -227,39 +228,56 @@ void gfx_ctx_destroy(void)
    g_egl_surf = NULL;
    g_egl_dpy  = NULL;
    g_config   = 0;
-   g_inited = false;
+   g_inited   = false;
 }
 
-void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 {
    void *linuxinput = input_linuxraw.init();
    *input           = linuxinput ? &input_linuxraw : NULL;
    *input_data      = linuxinput;
 }
 
-void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)
-{
-   // Calculate projection.
-   math_matrix proj;
-   matrix_ortho(&proj, ortho->left, ortho->right,
-         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
-
-   if (allow_rotate)
-   {
-      math_matrix rot;
-      matrix_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
-      matrix_multiply(&proj, &rot, &proj);
-   }
-
-   gl->mvp = proj;
-}
-
-bool gfx_ctx_window_has_focus(void)
+static bool gfx_ctx_window_has_focus(void)
 {
    return g_inited;
 }
 
-gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
+static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 {
    return eglGetProcAddress(symbol);
 }
+
+static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
+{
+   g_api = api;
+   switch (api)
+   {
+      case GFX_CTX_OPENGL_API:
+         return eglBindAPI(EGL_OPENGL_API);
+      case GFX_CTX_OPENGL_ES_API:
+         return eglBindAPI(EGL_OPENGL_ES_API);
+      case GFX_CTX_OPENVG_API:
+         return eglBindAPI(EGL_OPENVG_API);
+      default:
+         return false;
+   }
+}
+
+const gfx_ctx_driver_t gfx_ctx_videocore = {
+   gfx_ctx_init,
+   gfx_ctx_destroy,
+   gfx_ctx_bind_api,
+   gfx_ctx_swap_interval,
+   gfx_ctx_set_video_mode,
+   gfx_ctx_get_video_size,
+   gfx_ctx_update_window_title,
+   gfx_ctx_check_window,
+   gfx_ctx_set_resize,
+   gfx_ctx_has_focus,
+   gfx_ctx_swap_buffers,
+   gfx_ctx_input_driver,
+   gfx_ctx_get_proc_address,
+   "videocore",
+};
+

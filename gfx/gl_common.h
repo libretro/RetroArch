@@ -19,6 +19,7 @@
 #include "../general.h"
 #include "fonts/fonts.h"
 #include "math/matrix.h"
+#include "gfx_context.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -161,13 +162,7 @@ struct gl_coords
 
 typedef struct gl
 {
-#ifdef RARCH_CONSOLE
-   bool block_swap;
-#endif
-#ifdef HAVE_CG_MENU
-   bool menu_render;
-   GLuint menu_texture_id;
-#endif
+   const gfx_ctx_driver_t *driver;
    bool vsync;
    GLuint texture[TEXTURES];
    unsigned tex_index; // For use with PREV.
@@ -225,6 +220,14 @@ typedef struct gl
    int font_last_width, font_last_height;
    GLfloat font_color[16];
    GLfloat font_color_dark[16];
+#endif
+
+#ifdef RARCH_CONSOLE
+   bool block_swap;
+#endif
+#ifdef HAVE_CG_MENU
+   bool menu_render;
+   GLuint menu_texture_id;
 #endif
 } gl_t;
 

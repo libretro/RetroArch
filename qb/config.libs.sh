@@ -127,18 +127,23 @@ fi
 
 check_lib DYNAMIC "$DYLIB" dlopen
 
-if [ "$HAVE_KMS" = "yes" ]; then
-   check_pkgconf GBM gbm
-   check_pkgconf DRM libdrm
-
+check_pkgconf GBM gbm 9.1.0
+check_pkgconf DRM libdrm
+if [ "$HAVE_KMS" != "no" ]; then
    if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ]; then
       HAVE_KMS=yes
-      HAVE_EGL=yes
+      HAVE_EGL=yes # Required
+   elif [ "$HAVE_KMS" = "yes" ]; then
+      echo "Cannot find libgbm and/or libdrm libraries required."
+      exit 1
+   else
+      HAVE_KMS=no
    fi
 fi
 
 [ "$HAVE_GLES" = "yes" ] && HAVE_EGL=yes && HAVE_XML=yes
 [ "$HAVE_VG" = "yes" ] && HAVE_EGL=yes
+
 if [ "$HAVE_VIDEOCORE" != "yes" ]; then
    check_pkgconf EGL egl
    check_pkgconf GLES glesv2

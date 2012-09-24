@@ -41,13 +41,16 @@
 
 static bool g_fullscreen;
 static unsigned g_interval;
+static bool g_inited;
 
-void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
+static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol);
+
+static void gfx_ctx_swap_interval(unsigned interval)
 {
    g_interval = interval;
 
    bool success = true;
-   if (inited)
+   if (g_inited)
    {
 #if defined(_WIN32)
       static BOOL (APIENTRY *wgl_swap_interval)(int) = NULL;
@@ -81,7 +84,7 @@ static void gfx_ctx_wm_set_caption(const char *str)
    SDL_WM_SetCaption(str, NULL);
 }
 
-void gfx_ctx_update_window_title(bool reset)
+static void gfx_ctx_update_window_title(bool reset)
 {
    if (reset)
       gfx_window_title_reset();
@@ -91,15 +94,15 @@ void gfx_ctx_update_window_title(bool reset)
       gfx_ctx_wm_set_caption(buf);
 }
 
-void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
    const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
    rarch_assert(video_info);
-   *width = video_info->current_w;
+   *width  = video_info->current_w;
    *height = video_info->current_h;
 }
 
-bool gfx_ctx_init(void)
+static bool gfx_ctx_init(void)
 {
    if (SDL_WasInit(SDL_INIT_VIDEO))
       return true;
@@ -111,12 +114,13 @@ bool gfx_ctx_init(void)
    return ret;
 }
 
-void gfx_ctx_destroy(void) 
+static void gfx_ctx_destroy(void) 
 {
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
+   g_inited = false;
 }
 
-bool gfx_ctx_set_video_mode(
+static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen)
 {
@@ -136,12 +140,14 @@ bool gfx_ctx_set_video_mode(
       return false;
    }
 
+   g_inited = true;
+
    int attr = 0;
    SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &attr);
    if (attr <= 0 && g_interval)
    {
       RARCH_WARN("SDL failed to setup VSync, attempting to recover using native calls.\n");
-      gfx_ctx_set_swap_interval(g_interval, true);
+      gfx_ctx_swap_interval(g_interval);
    }
 
    g_fullscreen = fullscreen;
@@ -158,8 +164,9 @@ bool gfx_ctx_set_video_mode(
 #if defined(HAVE_X11) && !defined(__APPLE__)
    RARCH_LOG("Suspending screensaver (X11).\n");
    SDL_SysWMinfo info;
+   SDL_VERSION(&info.version);
 
-   if (gfx_ctx_get_wm_info(&info))
+   if (SDL_GetWMInfo(&info) == 1)
       gfx_suspend_screensaver(info.info.x11.window);
    else
       RARCH_ERR("Failed to get SDL WM info, cannot suspend screensaver.\n");
@@ -169,8 +176,7 @@ bool gfx_ctx_set_video_mode(
 }
 
 // SDL 1.2 has an awkward model where you need to "confirm" window resizing.
-// SDL 1.3 luckily removes this quirk.
-void gfx_ctx_set_resize(unsigned width, unsigned height)
+static void gfx_ctx_set_resize(unsigned width, unsigned height)
 {
 #ifndef __APPLE__ // Resizing on OSX is broken in 1.2 it seems :)
    static const int resizable = SDL_RESIZABLE;
@@ -180,14 +186,13 @@ void gfx_ctx_set_resize(unsigned width, unsigned height)
    SDL_SetVideoMode(width, height, 0, SDL_OPENGL | (g_fullscreen ? SDL_FULLSCREEN : resizable));
 }
 
-void gfx_ctx_swap_buffers(void)
+static void gfx_ctx_swap_buffers(void)
 {
    SDL_GL_SwapBuffers();
 }
 
-// 1.2 specific workaround for tiling WMs. In 1.3 we call GetSize directly, so we don't need to rely on
-// proper event handling (I hope).
-#if !defined(__APPLE__) && defined(SDL_VIDEO_DRIVER_X11)
+// 1.2 specific workaround for tiling WMs.
+#if defined(HAVE_X11) && !defined(__APPLE__)
 // This X11 is set on OSX for some reason.
 static bool gfx_ctx_get_window_size(unsigned *width, unsigned *height)
 {
@@ -210,9 +215,12 @@ static bool gfx_ctx_get_window_size(unsigned *width, unsigned *height)
 }
 #endif
 
-static void check_window(bool *quit,
+static void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+   *quit   = false;
+   *resize = false;
+
    SDL_Event event;
    while (SDL_PollEvent(&event))
    {
@@ -230,7 +238,7 @@ static void check_window(bool *quit,
       }
    }
 
-#if defined(SDL_VIDEO_DRIVER_X11) && !defined(__APPLE__)
+#if defined(HAVE_X11) && !defined(__APPLE__)
    if (!*resize && !g_fullscreen)
    {
       unsigned new_width, new_height;
@@ -252,34 +260,12 @@ static void check_window(bool *quit,
 #endif
 }
 
-void gfx_ctx_check_window(bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
-{
-   *quit = false;
-   *resize = false;
-
-   check_window(quit, resize, width, height, frame_count);
-}
-
-#ifndef __APPLE__
-bool gfx_ctx_get_wm_info(SDL_SysWMinfo *info)
-{
-#ifdef XENON
-   (void)info;
-   return false;
-#else
-   SDL_VERSION(&info->version);
-   return SDL_GetWMInfo(info) == 1;
-#endif
-}
-#endif
-
-bool gfx_ctx_window_has_focus(void)
+static bool gfx_ctx_has_focus(void)
 {
    return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
 }
 
-void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 {
    void *sdl_input = input_sdl.init();
    if (sdl_input)
@@ -291,12 +277,13 @@ void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
       *input = NULL;
 }
 
-#ifdef HAVE_OPENGL
 // Enforce void (*)(void) as it's not really legal to cast void* to fn-pointer.
 // POSIX allows this, but strict C99 doesn't.
-gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
+static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 {
+   // This will not fail on any system RetroArch would run on, but let's just be defensive.
    rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
+
    gfx_ctx_proc_t ret;
 
    void *sym__ = SDL_GL_GetProcAddress(symbol);
@@ -304,5 +291,26 @@ gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 
    return ret;
 }
-#endif
+
+static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
+{
+   return api == GFX_CTX_OPENGL_API;
+}
+
+const gfx_ctx_driver_t gfx_ctx_sdl_gl = {
+   gfx_ctx_init,
+   gfx_ctx_destroy,
+   gfx_ctx_bind_api,
+   gfx_ctx_swap_interval,
+   gfx_ctx_set_video_mode,
+   gfx_ctx_get_video_size,
+   gfx_ctx_update_window_title,
+   gfx_ctx_check_window,
+   gfx_ctx_set_resize,
+   gfx_ctx_has_focus,
+   gfx_ctx_swap_buffers,
+   gfx_ctx_input_driver,
+   gfx_ctx_get_proc_address,
+   "sdl-gl",
+};
 

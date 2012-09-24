@@ -139,10 +139,8 @@ void gfx_ctx_get_available_resolutions (void)
    g_console.check_available_resolutions = true;
 }
 
-void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
+void gfx_ctx_set_swap_interval(unsigned interval)
 {
-   (void)inited;
-
 #if defined(HAVE_PSGL)
    if (gl_context)
    {
@@ -172,12 +170,10 @@ void gfx_ctx_check_window(bool *quit,
       *resize = true;
 }
 
-#ifndef HAVE_GRIFFIN
-bool gfx_ctx_window_has_focus(void)
+bool gfx_ctx_has_focus(void)
 {
    return true;
 }
-#endif
 
 void gfx_ctx_swap_buffers(void)
 {
@@ -413,3 +409,40 @@ void gfx_ctx_set_overscan(void)
 
    gl->should_resize = true;
 }
+
+static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
+{
+   return api == GFX_CTX_OPENGL_API || GFX_CTX_OPENGL_ES_API;
+}
+
+const gfx_ctx_driver_t gfx_ctx_ps3 = {
+   gfx_ctx_init,
+   gfx_ctx_destroy,
+   gfx_ctx_bind_api,
+   gfx_ctx_set_swap_interval,
+   gfx_ctx_set_video_mode,
+   gfx_ctx_get_video_size,
+   gfx_ctx_update_window_title,
+   gfx_ctx_check_window,
+   gfx_ctx_set_resize,
+   gfx_ctx_has_focus,
+   gfx_ctx_swap_buffers,
+   gfx_ctx_input_driver,
+   gfx_ctx_get_proc_address,
+   "ps3",
+
+   // RARCH_CONSOLE stuff.
+   gfx_set_filtering,
+   gfx_get_available_resolutions,
+   gfx_check_resolutions,
+
+#ifdef HAVE_CG_MENU
+   gfx_menu_init,
+#else
+   NULL,
+#endif
+
+   gfx_set_fbo,
+   gfx_apply_fbo_state_changes,
+};
+

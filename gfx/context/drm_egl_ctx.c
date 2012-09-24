@@ -54,6 +54,7 @@ static EGLConfig g_config;
 static volatile sig_atomic_t g_quit;
 static bool g_inited;
 static unsigned g_interval;
+static enum gfx_ctx_api g_api;
 
 static struct gbm_device *g_gbm_dev;
 static struct gbm_surface *g_gbm_surface;
@@ -81,6 +82,7 @@ struct drm_fb
 };
 
 static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo);
+static void gfx_ctx_destroy(void);
 
 static void sighandler(int sig)
 {
@@ -88,12 +90,12 @@ static void sighandler(int sig)
    g_quit = 1;
 }
 
-void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
+static void gfx_ctx_swap_interval(unsigned interval)
 {
    g_interval = interval;
 }
 
-void gfx_ctx_check_window(bool *quit,
+static void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)frame_count;
@@ -204,7 +206,7 @@ static void queue_flip(void)
    waiting_for_flip = true;
 }
 
-void gfx_ctx_swap_buffers(void)
+static void gfx_ctx_swap_buffers(void)
 {
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 
@@ -226,64 +228,27 @@ void gfx_ctx_swap_buffers(void)
    }
 }
 
-void gfx_ctx_set_resize(unsigned width, unsigned height)
+static void gfx_ctx_set_resize(unsigned width, unsigned height)
 {
    (void)width;
    (void)height;
 }
 
-void gfx_ctx_update_window_title(bool reset)
+static void gfx_ctx_update_window_title(bool reset)
 {
    (void)reset;
 }
 
-void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
    *width  = g_fb_width;
    *height = g_fb_height;
 }
 
-#if 0
-static void reschedule_process(void)
-{
-   struct sched_param param = {0};
-
-   // All-out real-time. Why not? :D
-   param.sched_priority = sched_get_priority_max(SCHED_FIFO);
-   if (sched_setscheduler(0, SCHED_FIFO, &param) < 0)
-      RARCH_ERR("[KMS/EGL]: Failed to set SCHED_FIFO priority.\n");
-
-   int sched = sched_getscheduler(getpid());
-
-   const char *scheduler;
-   switch (sched)
-   {
-      case SCHED_OTHER:
-         scheduler = "SCHED_OTHER";
-         break;
-
-      case SCHED_FIFO:
-         scheduler = "SCHED_FIFO";
-         break;
-
-      default:
-         scheduler = "Unrelated";
-   }
-
-   RARCH_LOG("[KMS/EGL]: Current scheduler: %s\n", scheduler);
-   if (sched == SCHED_FIFO)
-      RARCH_LOG("[KMS/EGL]: SCHED_FIFO prio: %d\n", param.sched_priority);
-}
-#endif
-
-bool gfx_ctx_init(void)
+static bool gfx_ctx_init(void)
 {
    if (g_inited)
       return false;
-
-#if 0
-   reschedule_process();
-#endif
 
    static const char *modules[] = {
       "i915", "radeon", "nouveau", "vmwgfx", "omapdrm", "exynos", NULL
@@ -367,8 +332,8 @@ bool gfx_ctx_init(void)
       goto error;
    }
 
-	g_crtc_id      = g_encoder->crtc_id;
-	g_connector_id = g_connector->connector_id;
+   g_crtc_id      = g_encoder->crtc_id;
+   g_connector_id = g_connector->connector_id;
 
    g_fb_width  = g_drm_mode->hdisplay;
    g_fb_height = g_drm_mode->vdisplay;
@@ -384,6 +349,64 @@ bool gfx_ctx_init(void)
       RARCH_ERR("[KMS/EGL]: Couldn't create GBM surface.\n");
       goto error;
    }
+
+   return true;
+
+error:
+   gfx_ctx_destroy();
+   return false;
+}
+
+static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
+{
+   struct drm_fb *fb = (struct drm_fb*)data;
+
+   if (fb->fb_id)
+      drmModeRmFB(g_drm_fd, fb->fb_id);
+
+   free(fb);
+}
+
+static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
+{
+   struct drm_fb *fb = (struct drm_fb*)gbm_bo_get_user_data(bo);
+   if (fb)
+      return fb;
+
+   fb = (struct drm_fb*)calloc(1, sizeof(*fb));
+   fb->bo = bo;
+
+   unsigned width  = gbm_bo_get_width(bo);
+   unsigned height = gbm_bo_get_height(bo);
+   unsigned stride = gbm_bo_get_stride(bo);
+   unsigned handle = gbm_bo_get_handle(bo).u32;
+
+   int ret = drmModeAddFB(g_drm_fd, width, height, 24, 32, stride, handle, &fb->fb_id);
+   if (ret < 0)
+   {
+      RARCH_ERR("[KMS/EGL]: Failed to create FB: %s\n", strerror(errno));
+      free(fb);
+      return NULL;
+   }
+
+   gbm_bo_set_user_data(bo, fb, drm_fb_destroy_callback);
+   return fb;
+}
+
+static bool gfx_ctx_set_video_mode(
+      unsigned width, unsigned height,
+      unsigned bits, bool fullscreen)
+{
+   (void)bits;
+   if (g_inited)
+      return false;
+
+   struct sigaction sa = {{0}};
+   sa.sa_handler = sighandler;
+   sa.sa_flags   = SA_RESTART;
+   sigemptyset(&sa.sa_mask);
+   sigaction(SIGINT, &sa, NULL);
+   sigaction(SIGTERM, &sa, NULL);
 
    static const EGLint context_attribs[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2,
@@ -429,64 +452,6 @@ bool gfx_ctx_init(void)
 
    if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
       goto error;
-
-   return true;
-
-error:
-   gfx_ctx_destroy();
-   return false;
-}
-
-static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
-{
-   struct drm_fb *fb = (struct drm_fb*)data;
-
-   if (fb->fb_id)
-      drmModeRmFB(g_drm_fd, fb->fb_id);
-
-   free(fb);
-}
-
-static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
-{
-   struct drm_fb *fb = (struct drm_fb*)gbm_bo_get_user_data(bo);
-   if (fb)
-      return fb;
-
-   fb = (struct drm_fb*)calloc(1, sizeof(*fb));
-   fb->bo = bo;
-
-   unsigned width  = gbm_bo_get_width(bo);
-   unsigned height = gbm_bo_get_height(bo);
-   unsigned stride = gbm_bo_get_stride(bo);
-   unsigned handle = gbm_bo_get_handle(bo).u32;
-
-   int ret = drmModeAddFB(g_drm_fd, width, height, 24, 32, stride, handle, &fb->fb_id);
-   if (ret < 0)
-   {
-      RARCH_ERR("[KMS/EGL]: Failed to create FB: %s\n", strerror(errno));
-      free(fb);
-      return NULL;
-   }
-
-   gbm_bo_set_user_data(bo, fb, drm_fb_destroy_callback);
-   return fb;
-}
-
-bool gfx_ctx_set_video_mode(
-      unsigned width, unsigned height,
-      unsigned bits, bool fullscreen)
-{
-   (void)bits;
-   if (g_inited)
-      return false;
-
-   struct sigaction sa = {{0}};
-   sa.sa_handler = sighandler;
-   sa.sa_flags   = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
 
    glClearColor(0.0, 0.0, 0.0, 1.0);
    glClear(GL_COLOR_BUFFER_BIT);
@@ -596,20 +561,53 @@ void gfx_ctx_destroy(void)
    g_inited = false;
 }
 
-void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 {
    void *linuxinput = input_linuxraw.init();
    *input           = linuxinput ? &input_linuxraw : NULL;
    *input_data      = linuxinput;
 }
 
-bool gfx_ctx_window_has_focus(void)
+static bool gfx_ctx_has_focus(void)
 {
    return g_inited;
 }
 
-gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
+static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 {
    return eglGetProcAddress(symbol);
 }
+
+static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
+{
+   g_api = api;
+   switch (api)
+   {
+      case GFX_CTX_OPENGL_API:
+         return eglBindAPI(EGL_OPENGL_API);
+      case GFX_CTX_OPENGL_ES_API:
+         return eglBindAPI(EGL_OPENGL_ES_API);
+      case GFX_CTX_OPENVG_API:
+         return eglBindAPI(EGL_OPENVG_API);
+      default:
+         return false;
+   }
+}
+
+const gfx_ctx_driver_t gfx_ctx_drm_egl = {
+   gfx_ctx_init,
+   gfx_ctx_destroy,
+   gfx_ctx_bind_api,
+   gfx_ctx_swap_interval,
+   gfx_ctx_set_video_mode,
+   gfx_ctx_get_video_size,
+   gfx_ctx_update_window_title,
+   gfx_ctx_check_window,
+   gfx_ctx_set_resize,
+   gfx_ctx_has_focus,
+   gfx_ctx_swap_buffers,
+   gfx_ctx_input_driver,
+   gfx_ctx_get_proc_address,
+   "drm-egl",
+};
 

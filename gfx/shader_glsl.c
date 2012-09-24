@@ -154,6 +154,8 @@ static char *gl_script_program = NULL;
 static GLint gl_attribs[PREV_TEXTURES + 1 + 4 + MAX_PROGRAMS];
 static unsigned gl_attrib_index = 0;
 
+static gfx_ctx_proc_t (*glsl_get_proc_address)(const char*);
+
 struct shader_program
 {
    char *vertex;
@@ -928,13 +930,14 @@ static void gl_glsl_reset_attrib(void)
 // Platforms with broken get_proc_address.
 // Assume functions are available without proc_address.
 #define LOAD_GL_SYM(SYM) if (!pgl##SYM) { \
-   gfx_ctx_proc_t sym = gfx_ctx_get_proc_address("gl" #SYM); \
+   gfx_ctx_proc_t sym = glsl_get_proc_address("gl" #SYM); \
    memcpy(&(pgl##SYM), &sym, sizeof(sym)); \
 }
 
 bool gl_glsl_init(const char *path)
 {
 #if !defined(HAVE_OPENGLES2) && !defined(HAVE_OPENGL_MODERN)
+
    // Load shader functions.
    LOAD_GL_SYM(CreateProgram);
    LOAD_GL_SYM(UseProgram);
@@ -1427,3 +1430,9 @@ void gl_glsl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
    else
       scale->valid = false;
 }
+
+void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*))
+{
+   glsl_get_proc_address = proc;
+}
+
