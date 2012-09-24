@@ -16,9 +16,9 @@
 
 #include <math.h>
 #include <VG/openvg.h>
-#include <VG/vgu.h>
 #include <EGL/egl.h>
 #include "gfx_context.h"
+#include "math/matrix_3x3.h"
 #include "../libretro.h"
 #include "../general.h"
 #include "../driver.h"
@@ -42,7 +42,7 @@ typedef struct
    unsigned frame_count;
    VGImageFormat mTexType;
    VGImage mImage;
-   VGfloat mTransformMatrix[9];
+   math_matrix_3x3 mTransformMatrix;
    VGint scissor[4];
 
 #ifdef HAVE_FREETYPE
@@ -300,13 +300,13 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
       vg->mRenderWidth = width;
       vg->mRenderHeight = height;
       vg_calculate_quad(vg);
-      vguComputeWarpQuadToQuad(
+      matrix_3x3_quad_to_quad(
          vg->x1, vg->y1, vg->x2, vg->y1, vg->x2, vg->y2, vg->x1, vg->y2,
          // needs to be flipped, Khronos loves their bottom-left origin
          0, height, width, height, width, 0, 0, 0,
-         vg->mTransformMatrix);
+         &vg->mTransformMatrix);
       vgSeti(VG_MATRIX_MODE, VG_MATRIX_IMAGE_USER_TO_SURFACE);
-      vgLoadMatrix(vg->mTransformMatrix);
+      vgLoadMatrix(vg->mTransformMatrix.data);
    }
    vgSeti(VG_SCISSORING, VG_FALSE);
    vgClear(0, 0, vg->mScreenWidth, vg->mScreenHeight);

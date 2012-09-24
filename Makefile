@@ -180,7 +180,7 @@ ifeq ($(HAVE_SDL), 1)
    endif
 
    ifeq ($(HAVE_VG), 1)
-      OBJ += gfx/vg.o
+      OBJ += gfx/vg.o gfx/math/matrix_3x3.o
       DEFINES += $(VG_CFLAGS)
       LIBS += $(VG_LIBS)
    endif
