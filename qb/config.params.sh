@@ -8,6 +8,7 @@ HAVE_CONFIGFILE=yes     # Disable support for config file
 HAVE_OPENGL=yes         # Disable OpenGL support
 HAVE_GLES=no            # Use X/EGL instead of desktop GL (experimental)
 HAVE_KMS=no             # Use KMS framebuffer EGL instead of desktop GL (experimental)
+HAVE_VG=no              # Enable OpenVG support
 HAVE_CG=auto            # Enable Cg shader support
 HAVE_XML=auto           # Enable bSNES-style XML shader support
 HAVE_FBO=auto           # Enable render-to-texture (FBO) support
