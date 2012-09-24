@@ -155,7 +155,7 @@ bool gfx_ctx_set_video_mode(
    SDL_ShowCursor(SDL_DISABLE);
 
    // Suspend screensaver on X11.
-#ifdef HAVE_X11
+#if defined(HAVE_X11) && !defined(__APPLE__)
    RARCH_LOG("Suspending screensaver (X11).\n");
    SDL_SysWMinfo info;
 

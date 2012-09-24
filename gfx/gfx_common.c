@@ -120,7 +120,7 @@ bool gfx_window_title(char *buf, size_t size)
    return ret;
 }
 
-#ifdef HAVE_X11
+#if defined(HAVE_X11) && !defined(__APPLE__)
 void gfx_suspend_screensaver(Window wnd)
 {
    char cmd[64];
