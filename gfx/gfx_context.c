@@ -29,7 +29,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(HAVE_SDL) && defined(HAVE_OPENGL)
    &gfx_ctx_sdl_gl,
 #endif
-#if defined(HAVE_X11) && defined(HAVE_EGL)
+#if defined(HAVE_XVIDEO) && defined(HAVE_EGL)
    &gfx_ctx_x_egl,
 #endif
 #if defined(HAVE_KMS)
@@ -52,15 +52,12 @@ const gfx_ctx_driver_t *gfx_ctx_init_first(enum gfx_ctx_api api)
 {
    for (unsigned i = 0; i < sizeof(gfx_ctx_drivers) / sizeof(gfx_ctx_drivers[0]); i++)
    {
-      if (gfx_ctx_drivers[i]->init())
+      if (gfx_ctx_drivers[i]->bind_api(api))
       {
-         if (gfx_ctx_drivers[i]->bind_api(api))
+         if (gfx_ctx_drivers[i]->init())
             return gfx_ctx_drivers[i];
-         else
-            gfx_ctx_drivers[i]->destroy();
       }
    }
 
    return NULL;
 }
-

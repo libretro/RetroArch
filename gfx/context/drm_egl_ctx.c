@@ -442,7 +442,7 @@ static bool gfx_ctx_set_video_mode(
    if (!eglChooseConfig(g_egl_dpy, config_attribs, &g_config, 1, &n) || n != 1)
       goto error;
 
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (driver.video == &video_gl) ? context_attribs : NULL);
+   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (g_api == GFX_CTX_OPENGL_ES_API) ? context_attribs : NULL);
    if (!g_egl_ctx)
       goto error;
 

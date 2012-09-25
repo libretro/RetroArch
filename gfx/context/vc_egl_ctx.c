@@ -43,7 +43,7 @@ static EGLConfig g_config;
 
 static volatile sig_atomic_t g_quit;
 static bool g_inited;
-static gfx_ctx_api g_api;
+static enum gfx_ctx_api g_api;
 
 static unsigned g_fb_width; // Just use something for now.
 static unsigned g_fb_height;
@@ -60,7 +60,7 @@ static void sighandler(int sig)
    g_quit = 1;
 }
 
-static void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
+static void gfx_ctx_swap_interval(unsigned interval)
 {
    eglSwapInterval(g_egl_dpy, interval);
 }
@@ -100,6 +100,7 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 
 static bool gfx_ctx_init(void)
 {
+   RARCH_LOG("[VC/EGL]: Initializing...\n");
    if (g_inited)
    {
       RARCH_ERR("[VC/EGL]: Attempted to re-initialize driver.\n");
@@ -150,7 +151,7 @@ static bool gfx_ctx_init(void)
    rarch_assert(result != EGL_FALSE);
 
    // create an EGL rendering context
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (driver.video == &video_gl) ? context_attributes : NULL);
+   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (g_api == GFX_CTX_OPENGL_ES_API) ? context_attributes : NULL);
    rarch_assert(g_egl_ctx != EGL_NO_CONTEXT);
 
    // create an EGL window surface
@@ -238,7 +239,7 @@ static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data
    *input_data      = linuxinput;
 }
 
-static bool gfx_ctx_window_has_focus(void)
+static bool gfx_ctx_has_focus(void)
 {
    return g_inited;
 }

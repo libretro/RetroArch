@@ -164,7 +164,7 @@ ifeq ($(HAVE_SDL), 1)
             # videocore's libs set later
          endif
 
-         ifeq ($(HAVE_X11), 1)
+         ifeq ($(HAVE_XVIDEO), 1)
          ifeq ($(HAVE_EGL), 1)
             OBJ += gfx/context/xegl_ctx.o
             DEFINES += $(EGL_CFLAGS)

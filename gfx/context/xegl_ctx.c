@@ -307,7 +307,7 @@ static bool gfx_ctx_set_video_mode(
          CWBorderPixel | CWColormap | CWEventMask, &swa);
    XSetWindowBackground(g_dpy, g_win, 0);
 
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (driver.video == &video_gl) ? egl_ctx_attribs : NULL);
+   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (g_api == GFX_CTX_OPENGL_ES_API) ? egl_ctx_attribs : NULL);
    if (!g_egl_ctx)
       goto error;
 

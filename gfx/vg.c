@@ -30,6 +30,7 @@
 
 typedef struct
 {
+   const gfx_ctx_driver_t *driver;
    uint32_t mScreenWidth;
    uint32_t mScreenHeight;
    float mScreenAspect;
@@ -60,8 +61,8 @@ typedef struct
 
 static void vg_set_nonblock_state(void *data, bool state)
 {
-   (void)data;
-   gfx_ctx_set_swap_interval(state ? 0 : 1, true);
+   vg_t *vg = (vg_t*)data;
+   vg->driver->swap_interval(state ? 0 : 1);
 }
 
 static void *vg_init(const video_info_t *video, const input_driver_t **input, void **input_data)
@@ -70,22 +71,38 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    if (!vg)
       return NULL;
 
-   if (!eglBindAPI(EGL_OPENVG_API))
-      return NULL;
+   vg->driver = gfx_ctx_init_first(GFX_CTX_OPENVG_API);
 
-   if (!gfx_ctx_init())
+   if (!vg->driver)
    {
       free(vg);
       return NULL;
    }
 
-   gfx_ctx_get_video_size(&vg->mScreenWidth, &vg->mScreenHeight);
+   vg->driver->get_video_size(&vg->mScreenWidth, &vg->mScreenHeight);
    RARCH_LOG("Detecting screen resolution %ux%u.\n", vg->mScreenWidth, vg->mScreenHeight);
 
-   gfx_ctx_set_swap_interval(video->vsync ? 1 : 0, false);
+   vg->driver->swap_interval(video->vsync ? 1 : 0);
 
    vg->mTexType = video->rgb32 ? VG_sABGR_8888 : VG_sARGB_1555;
    vg->mKeepAspect = video->force_aspect;
+
+   unsigned win_width  = video->width;
+   unsigned win_height = video->height;
+   if (video->fullscreen && (win_width == 0) && (win_height == 0))
+   {
+      win_width  = vg->mScreenWidth;
+      win_height = vg->mScreenHeight;
+   }
+
+   if (!vg->driver->set_video_mode(vg->mScreenWidth, vg->mScreenHeight,
+            g_settings.video.force_16bit ? 15 : 0, video->fullscreen))
+   {
+      free(vg);
+      return NULL;
+   }
+
+   vg->driver->get_video_size(&vg->mScreenWidth, &vg->mScreenHeight);
 
    // check for SD televisions: they should always be 4:3
    if ((vg->mScreenWidth == 640 || vg->mScreenWidth == 720) && (vg->mScreenHeight == 480 || vg->mScreenHeight == 576))
@@ -106,7 +123,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
          video->smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
    vg_set_nonblock_state(vg, !video->vsync);
 
-   gfx_ctx_input_driver(input, input_data);
+   vg->driver->input_driver(input, input_data);
 
 #ifdef HAVE_FREETYPE
    if (g_settings.video.font_enable)
@@ -157,7 +174,7 @@ static void vg_free(void *data)
    }
 #endif
 
-   gfx_ctx_destroy();
+   vg->driver->destroy();
 
    free(vg);
 }
@@ -322,7 +339,7 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
    (void)msg;
 #endif
 
-   gfx_ctx_swap_buffers();
+   vg->driver->swap_buffers();
 
    return true;
 }
@@ -332,7 +349,7 @@ static bool vg_alive(void *data)
    vg_t *vg = (vg_t*)data;
    bool quit, resize;
 
-   gfx_ctx_check_window(&quit,
+   vg->driver->check_window(&quit,
          &resize, &vg->mScreenWidth, &vg->mScreenHeight,
          vg->frame_count);
    return !quit;
@@ -340,8 +357,8 @@ static bool vg_alive(void *data)
 
 static bool vg_focus(void *data)
 {
-   (void)data;
-   return gfx_ctx_window_has_focus();
+   vg_t *vg = (vg_t*)data;
+   return vg->driver->has_focus();
 }
 
 const video_driver_t video_vg = {
