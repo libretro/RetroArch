@@ -222,19 +222,47 @@ static bool gfx_ctx_init(void)
    if (g_inited)
       return false;
 
-   const EGLint egl_attribs[] = {
-      EGL_SURFACE_TYPE,    EGL_WINDOW_BIT,
-      EGL_RED_SIZE,        1,
-      EGL_GREEN_SIZE,      1,
-      EGL_BLUE_SIZE,       1,
-      EGL_DEPTH_SIZE,      1,
-#ifdef HAVE_OPENGLES2
-      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-#else
+#define EGL_ATTRIBS_BASE \
+   EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
+   EGL_RED_SIZE,        8, \
+   EGL_GREEN_SIZE,      8, \
+   EGL_BLUE_SIZE,       8, \
+   EGL_DEPTH_SIZE,      0, \
+   EGL_STENCIL_SIZE,    0
+
+   static const EGLint egl_attribs_gl[] = {
+      EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
-#endif
       EGL_NONE,
    };
+
+   static const EGLint egl_attribs_gles[] = {
+      EGL_ATTRIBS_BASE,
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+      EGL_NONE,
+   };
+
+   static const EGLint egl_attribs_vg[] = {
+      EGL_ATTRIBS_BASE,
+      EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
+      EGL_NONE,
+   };
+
+   const EGLint *attrib_ptr;
+   switch (g_api)
+   {
+      case GFX_CTX_OPENGL_API:
+         attrib_ptr = egl_attribs_gl;
+         break;
+      case GFX_CTX_OPENGL_ES_API:
+         attrib_ptr = egl_attribs_gles;
+         break;
+      case GFX_CTX_OPENVG_API:
+         attrib_ptr = egl_attribs_vg;
+         break;
+      default:
+         attrib_ptr = NULL;
+   }
 
    g_quit = 0;
 
@@ -253,7 +281,7 @@ static bool gfx_ctx_init(void)
    RARCH_LOG("[X/EGL]: EGL version: %d.%d\n", egl_major, egl_minor);
 
    EGLint num_configs;
-   if (!eglChooseConfig(g_egl_dpy, egl_attribs, &g_config, 1, &num_configs)
+   if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_config, 1, &num_configs)
          || num_configs == 0 || !g_config)
       goto error;
 
@@ -281,11 +309,6 @@ static bool gfx_ctx_set_video_mode(
    XSetWindowAttributes swa = {0};
    XVisualInfo *vi = NULL;
 
-   const EGLint egl_ctx_attribs[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2,
-      EGL_NONE,
-   };
-
    EGLint vid;
    if (!eglGetConfigAttrib(g_egl_dpy, g_config, EGL_NATIVE_VISUAL_ID, &vid))
       goto error;
@@ -307,7 +330,15 @@ static bool gfx_ctx_set_video_mode(
          CWBorderPixel | CWColormap | CWEventMask, &swa);
    XSetWindowBackground(g_dpy, g_win, 0);
 
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (g_api == GFX_CTX_OPENGL_ES_API) ? egl_ctx_attribs : NULL);
+   // GLES 2.0. Don't use for any other API.
+   static const EGLint egl_ctx_gles_attribs[] = {
+      EGL_CONTEXT_CLIENT_VERSION, 2,
+      EGL_NONE,
+   };
+
+   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT,
+         (g_api == GFX_CTX_OPENGL_ES_API) ? egl_ctx_gles_attribs : NULL);
+
    if (!g_egl_ctx)
       goto error;
 

@@ -408,24 +408,47 @@ static bool gfx_ctx_set_video_mode(
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
-   static const EGLint context_attribs[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2,
-      EGL_NONE
+#define EGL_ATTRIBS_BASE \
+   EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
+   EGL_RED_SIZE,        8, \
+   EGL_GREEN_SIZE,      8, \
+   EGL_BLUE_SIZE,       8, \
+   EGL_DEPTH_SIZE,      0, \
+   EGL_STENCIL_SIZE,    0
+
+   static const EGLint egl_attribs_gl[] = {
+      EGL_ATTRIBS_BASE,
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
+      EGL_NONE,
    };
 
-   static const EGLint config_attribs[] = {
-      EGL_SURFACE_TYPE,    EGL_WINDOW_BIT,
-      EGL_RED_SIZE,        1,
-      EGL_GREEN_SIZE,      1,
-      EGL_BLUE_SIZE,       1,
-      EGL_ALPHA_SIZE,      0,
-#if defined(HAVE_OPENGLES2)
+   static const EGLint egl_attribs_gles[] = {
+      EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-#elif defined(HAVE_OPENGL)
-      EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
-#endif
-      EGL_NONE
+      EGL_NONE,
    };
+
+   static const EGLint egl_attribs_vg[] = {
+      EGL_ATTRIBS_BASE,
+      EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
+      EGL_NONE,
+   };
+
+   const EGLint *attrib_ptr;
+   switch (g_api)
+   {
+      case GFX_CTX_OPENGL_API:
+         attrib_ptr = egl_attribs_gl;
+         break;
+      case GFX_CTX_OPENGL_ES_API:
+         attrib_ptr = egl_attribs_gles;
+         break;
+      case GFX_CTX_OPENVG_API:
+         attrib_ptr = egl_attribs_vg;
+         break;
+      default:
+         attrib_ptr = NULL;
+   }
 
    g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)g_gbm_dev);
    if (!g_egl_dpy)
@@ -439,10 +462,16 @@ static bool gfx_ctx_set_video_mode(
       goto error;
 
    EGLint n;
-   if (!eglChooseConfig(g_egl_dpy, config_attribs, &g_config, 1, &n) || n != 1)
+   if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_config, 1, &n) || n != 1)
       goto error;
 
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (g_api == GFX_CTX_OPENGL_ES_API) ? context_attribs : NULL);
+   // GLES 2.0. Don't use for any other API.
+   static const EGLint gles_context_attribs[] = {
+      EGL_CONTEXT_CLIENT_VERSION, 2,
+      EGL_NONE
+   };
+
+   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (g_api == GFX_CTX_OPENGL_ES_API) ? glsl_context_attribs : NULL);
    if (!g_egl_ctx)
       goto error;
 
