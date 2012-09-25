@@ -227,7 +227,7 @@ static size_t alsa_write_avail(void *data)
    snd_pcm_sframes_t avail = snd_pcm_avail_update(alsa->pcm);
    if (avail < 0)
    {
-      RARCH_WARN("[ALSA]: avail_update() failed: %s\n", snd_strerror(avail));
+      //RARCH_WARN("[ALSA]: avail_update() failed: %s\n", snd_strerror(avail));
       return alsa->buffer_size;
    }
 
