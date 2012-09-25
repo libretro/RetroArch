@@ -969,6 +969,16 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
    glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * gl->base_size));
 
 #ifdef HAVE_OPENGLES2 // Have to perform pixel format conversions as well. (ARGB1555 => RGBA5551), (ARGB8888 => RGBA8888) :(
+   /* TODO: implemnt using FBO and color conversion shaders. ARGB8888 => RBGA8888 is trivial, but ARGB1555 => RGBA5551
+      is a little trickier, but this fragment shader snippit seems to do it:
+
+      gl_FragColor.a = 1.0;
+      gl_FragColor.r = (mod(color.r * 31.97, 16.0) * 2.0 + (color.g * 1.97)) / 32.0;
+      gl_FragColor.g = (mod(color.g * 31.97, 16.0) * 2.0 + (color.b * 1.97)) / 32.0;
+      gl_FragColor.b = (mod(color.b * 31.97, 16.0) * 2.0 + color.a) / 32.0;
+
+      where color a vec4 you would normally assign gl_FragColor to
+   */
    if (gl->base_size == 4) // ARGB8888 => RGBA8888
    {
       const uint32_t *src  = (const uint32_t*)frame;
