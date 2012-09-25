@@ -55,6 +55,12 @@ typedef struct gfx_ctx_driver
    // If not initialized yet, it returns current screen size.
    void (*get_video_size)(unsigned*, unsigned*);
 
+   // Translates a window size to an aspect ratio.
+   // In most cases this will be just width / height, but
+   // some contexts will better know which actual aspect ratio is used.
+   // This can be NULL to assume the default behavior.
+   float (*translate_aspect)(unsigned, unsigned);
+
    // Asks driver to update window title (FPS, etc).
    void (*update_window_title)(bool);
 

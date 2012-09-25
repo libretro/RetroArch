@@ -270,6 +270,15 @@ static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
    }
 }
 
+static float gfx_ctx_translate_aspect(unsigned width, unsigned height)
+{
+   // check for SD televisions: they should always be 4:3.
+   if ((width == 640 || width == 720) && (height == 480 || height == 576))
+      return 4.0f / 3.0f;
+   else
+      return (float)width / height;
+}
+
 const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_init,
    gfx_ctx_destroy,
@@ -277,6 +286,7 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_swap_interval,
    gfx_ctx_set_video_mode,
    gfx_ctx_get_video_size,
+   gfx_ctx_translate_aspect,
    gfx_ctx_update_window_title,
    gfx_ctx_check_window,
    gfx_ctx_set_resize,

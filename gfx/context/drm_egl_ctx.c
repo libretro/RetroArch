@@ -630,6 +630,7 @@ const gfx_ctx_driver_t gfx_ctx_drm_egl = {
    gfx_ctx_swap_interval,
    gfx_ctx_set_video_mode,
    gfx_ctx_get_video_size,
+   NULL,
    gfx_ctx_update_window_title,
    gfx_ctx_check_window,
    gfx_ctx_set_resize,
