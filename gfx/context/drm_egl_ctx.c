@@ -471,7 +471,7 @@ static bool gfx_ctx_set_video_mode(
       EGL_NONE
    };
 
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (g_api == GFX_CTX_OPENGL_ES_API) ? glsl_context_attribs : NULL);
+   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (g_api == GFX_CTX_OPENGL_ES_API) ? gles_context_attribs : NULL);
    if (!g_egl_ctx)
       goto error;
 
