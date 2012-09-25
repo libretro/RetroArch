@@ -2,7 +2,6 @@ check_switch_c C99 -std=gnu99  "Cannot find C99 compatible compiler."
 
 check_switch_c NOUNUSED -Wno-unused-result
 add_define_make NOUNUSED "$HAVE_NOUNUSED"
-HAVE_EGL=no
 
 # There are still broken 64-bit Linux distros out there. :)
 [ -d /usr/lib64 ] && add_library_dirs /usr/lib64
@@ -127,27 +126,32 @@ fi
 
 check_lib DYNAMIC "$DYLIB" dlopen
 
-check_pkgconf GBM gbm 9.1.0
-check_pkgconf DRM libdrm
 if [ "$HAVE_KMS" != "no" ]; then
+   check_pkgconf GBM gbm 9.1.0
+   check_pkgconf DRM libdrm
    if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ]; then
       HAVE_KMS=yes
       HAVE_EGL=yes # Required
    elif [ "$HAVE_KMS" = "yes" ]; then
-      echo "Cannot find libgbm and/or libdrm libraries required."
+      echo "Cannot find libgbm and/or libdrm libraries required for KMS. Compile without --enable-kms."
       exit 1
    else
+      echo "Cannot find libgbm and/or libdrm libraries required for KMS."
       HAVE_KMS=no
    fi
 fi
 
-[ "$HAVE_GLES" = "yes" ] && HAVE_EGL=yes && HAVE_XML=yes
-[ "$HAVE_VG" = "yes" ] && HAVE_EGL=yes
-
+# On videocore, these libraries will exist without proper pkg-config.
 if [ "$HAVE_VIDEOCORE" != "yes" ]; then
-   check_pkgconf EGL egl
    check_pkgconf GLES glesv2
    check_pkgconf VG vg
+
+   # GLES or VG requires EGL to be present.
+   # GLES requires XML shaders.
+   [ "$HAVE_GLES" = "yes" ] && HAVE_EGL=yes && HAVE_XML=yes
+   [ "$HAVE_VG" = "yes" ] && HAVE_EGL=yes
+
+   check_pkgconf EGL egl
 fi
 
 check_pkgconf XML libxml-2.0

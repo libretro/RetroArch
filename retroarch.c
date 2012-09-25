@@ -530,6 +530,9 @@ static void print_features(void)
    _PSUPP(sdl, "SDL", "SDL drivers");
    _PSUPP(thread, "Threads", "Threading support");
    _PSUPP(opengl, "OpenGL", "OpenGL driver");
+   _PSUPP(kms, "KMS", "KMS/EGL context support");
+   _PSUPP(egl, "EGL", "EGL context support");
+   _PSUPP(vg, "OpenVG", "OpenVG output support");
    _PSUPP(xvideo, "XVideo", "XVideo output");
    _PSUPP(alsa, "ALSA", "audio driver");
    _PSUPP(oss, "OSS", "audio driver");

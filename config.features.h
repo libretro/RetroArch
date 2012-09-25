@@ -26,6 +26,24 @@ static const bool _opengl_supp = true;
 static const bool _opengl_supp = false;
 #endif
 
+#ifdef HAVE_KMS
+static const bool _kms_supp = true;
+#else
+static const bool _kms_supp = false;
+#endif
+
+#ifdef HAVE_VG
+static const bool _vg_supp = true;
+#else
+static const bool _vg_supp = false;
+#endif
+
+#ifdef HAVE_EGL
+static const bool _egl_supp = true;
+#else
+static const bool _egl_supp = false;
+#endif
+
 #ifdef HAVE_XVIDEO
 static const bool _xvideo_supp = true;
 #else
