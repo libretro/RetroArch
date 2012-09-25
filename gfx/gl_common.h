@@ -262,7 +262,7 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #define NO_GL_READ_VIEWPORT
 #endif
 
-#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2)
+#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
 #define NO_GL_FF_VERTEX
 #endif
 
