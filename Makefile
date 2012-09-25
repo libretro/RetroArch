@@ -164,7 +164,7 @@ ifeq ($(HAVE_SDL), 1)
             # videocore's libs set later
          endif
 
-         ifeq ($(HAVE_XVIDEO), 1)
+         ifeq ($(HAVE_X11), 1)
          ifeq ($(HAVE_EGL), 1)
             OBJ += gfx/context/xegl_ctx.o
             DEFINES += $(EGL_CFLAGS)
@@ -196,9 +196,15 @@ ifeq ($(HAVE_VIDEOCORE), 1)
 endif
 
 ifeq ($(HAVE_XVIDEO), 1)
-   OBJ += gfx/xvideo.o input/x11_input.o
-   LIBS += $(XVIDEO_LIBS) $(X11_LIBS) $(XEXT_LIBS)
-   DEFINES += $(XVIDEO_CFLAGS) $(X11_CFLAGS) $(XEXT_CFLAGS)
+   OBJ += gfx/xvideo.o
+   LIBS += $(XVIDEO_LIBS) 
+   DEFINES += $(XVIDEO_CFLAGS)
+endif
+
+ifeq ($(HAVE_X11), 1)
+   OBJ += input/x11_input.o
+   LIBS += $(X11_LIBS) $(XEXT_LIBS)
+   DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS)
 endif
 
 ifeq ($(HAVE_CG), 1)
