@@ -610,6 +610,11 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full,
    {
       float desired_aspect = g_settings.video.aspect_ratio;
       float device_aspect = (float)width / height;
+
+      // check for SD televisions: they should always be 4:3
+      if ((width == 640 || width == 720) && (height == 480 || height == 576))
+         device_aspect = 4.0f / 3.0f;
+
       float delta;
 
 #ifdef RARCH_CONSOLE

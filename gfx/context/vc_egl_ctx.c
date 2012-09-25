@@ -172,9 +172,14 @@ static bool gfx_ctx_init(void)
    vc_dispmanx_display_get_info(dispman_display, &dispman_modeinfo);
    dispman_update = vc_dispmanx_update_start(0);
 
+   VC_DISPMANX_ALPHA_T alpha;
+   alpha.flags = DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS;
+   alpha.opacity = 255;
+   alpha.mask = 0;
+
    dispman_element = vc_dispmanx_element_add(dispman_update, dispman_display,
       0 /*layer*/, &dst_rect, 0 /*src*/,
-      &src_rect, DISPMANX_PROTECTION_NONE, 0 /*alpha*/, 0 /*clamp*/, DISPMANX_NO_ROTATE);
+      &src_rect, DISPMANX_PROTECTION_NONE, &alpha, 0 /*clamp*/, DISPMANX_NO_ROTATE);
 
    nativewindow.element = dispman_element;
    nativewindow.width = g_fb_width;
