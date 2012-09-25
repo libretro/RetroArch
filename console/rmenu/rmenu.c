@@ -1156,12 +1156,12 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 		   {
 			   rarch_settings_change(S_THROTTLE);
-			   gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
+			   gfx_ctx_set_swap_interval(g_console.throttle_enable);
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
 		   {
 			   rarch_settings_default(S_DEF_THROTTLE);
-			   gfx_ctx_set_swap_interval(g_console.throttle_enable, true);
+			   gfx_ctx_set_swap_interval(g_console.throttle_enable);
 		   }
 		   break;
 	   case SETTING_TRIPLE_BUFFERING:

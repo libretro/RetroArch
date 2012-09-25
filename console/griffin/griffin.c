@@ -86,6 +86,7 @@ VIDEO CONTEXT
 ============================================================ */
 
 #ifdef HAVE_VID_CONTEXT
+#include "../../gfx/gfx_context.c"
 
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include "../../gfx/context/ps3_ctx.c"

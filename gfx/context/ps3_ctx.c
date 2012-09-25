@@ -428,21 +428,21 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_has_focus,
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
-   gfx_ctx_get_proc_address,
+   NULL,
    "ps3",
 
    // RARCH_CONSOLE stuff.
-   gfx_set_filtering,
-   gfx_get_available_resolutions,
-   gfx_check_resolutions,
+   gfx_ctx_set_filtering,
+   gfx_ctx_get_available_resolutions,
+   gfx_ctx_check_resolution,
 
 #ifdef HAVE_CG_MENU
-   gfx_menu_init,
+   gfx_ctx_menu_init,
 #else
    NULL,
 #endif
 
-   gfx_set_fbo,
-   gfx_apply_fbo_state_changes,
+   gfx_ctx_set_fbo,
+   gfx_ctx_apply_fbo_state_changes,
 };
 

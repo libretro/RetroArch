@@ -1560,8 +1560,9 @@ static void gl_start(void)
    }
    driver.video_data = gl_init(&video_info, NULL, NULL);
 
-   if (gl->driver->set_fbo)
-      gl->driver->set_fbo(g_console.fbo_enabled);
+   gl_t *gl = (gl_t*)driver.video_data;
+
+   gl->driver->set_fbo(g_console.fbo_enabled);
    gl->driver->get_available_resolutions();
    if (gl->driver->menu_init)
       gl->driver->menu_init();
