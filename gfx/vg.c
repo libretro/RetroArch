@@ -104,9 +104,8 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    vg->driver->get_video_size(&vg->mScreenWidth, &vg->mScreenHeight);
 
-   // check for SD televisions: they should always be 4:3
-   if ((vg->mScreenWidth == 640 || vg->mScreenWidth == 720) && (vg->mScreenHeight == 480 || vg->mScreenHeight == 576))
-      vg->mScreenAspect = 4.0f / 3.0f;
+   if (vg->driver->translate_aspect)
+      vg->mScreenAspect = vg->driver->translate_aspect(vg->mScreenWidth, vg->mScreenHeight);
    else
       vg->mScreenAspect = (float)vg->mScreenWidth / vg->mScreenHeight;
 
