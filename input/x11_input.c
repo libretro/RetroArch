@@ -206,6 +206,46 @@ static int16_t x_analog_state(x11_input_t *x11, const struct retro_keybind **bin
    return res_plus + res_minus;
 }
 
+static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_MOUSE_X:
+         return x11->mouse_x - x11->mouse_last_x;
+      case RETRO_DEVICE_ID_MOUSE_Y:
+         return x11->mouse_y - x11->mouse_last_y;
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         return x11->mouse_l;
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         return x11->mouse_r;
+      default:
+         return 0;
+   }
+}
+
+static int16_t x_lightgun_state(x11_input_t *x11, unsigned id)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_LIGHTGUN_X:
+         return x11->mouse_x - x11->mouse_last_x;
+      case RETRO_DEVICE_ID_LIGHTGUN_Y:
+         return x11->mouse_y - x11->mouse_last_y;
+      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+         return x11->mouse_l;
+      case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
+         return x11->mouse_m;
+      case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
+         return x11->mouse_r;
+      case RETRO_DEVICE_ID_LIGHTGUN_START:
+         return x11->mouse_m && x11->mouse_r; 
+      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+         return x11->mouse_m && x11->mouse_l; 
+      default:
+         return 0;
+   }
+}
+
 static int16_t x_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
    x11_input_t *x11 = (x11_input_t*)data;
@@ -227,6 +267,12 @@ static int16_t x_input_state(void *data, const struct retro_keybind **binds, uns
          return ret;
       }
 
+      case RETRO_DEVICE_MOUSE:
+         return x_mouse_state(x11, id);
+
+      case RETRO_DEVICE_LIGHTGUN:
+         return x_lightgun_state(x11, id);
+
       default:
          return 0;
    }
@@ -243,6 +289,32 @@ static void x_input_free(void *data)
    free(data);
 }
 
+static void x_input_poll_mouse(x11_input_t *x11)
+{
+   if (!x11->inherit_disp)
+      return;
+
+   Window root_win, child_win;
+   int root_x, root_y, win_x, win_y;
+   unsigned mask;
+
+   x11->mouse_last_x = x11->mouse_x;
+   x11->mouse_last_y = x11->mouse_y;
+
+   XQueryPointer(x11->display,
+            x11->win,
+            &root_win, &child_win,
+            &root_x, &root_y,
+            &win_x, &win_y,
+            &mask);
+
+   x11->mouse_x = root_x;
+   x11->mouse_y = root_y;
+   x11->mouse_l = mask & Button1Mask; 
+   x11->mouse_m = mask & Button2Mask; 
+   x11->mouse_r = mask & Button3Mask; 
+}
+
 static void x_input_poll(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
@@ -256,6 +328,7 @@ static void x_input_poll(void *data)
    else
       memset(x11->state, 0, sizeof(x11->state));
 
+   x_input_poll_mouse(x11);
    input_sdl.poll(x11->sdl);
 }
 

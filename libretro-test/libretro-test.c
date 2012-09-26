@@ -122,6 +122,19 @@ static void update_input(void)
    if (input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_x))
       fprintf(stderr, "x key is pressed!\n");
 
+   int16_t mouse_x = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
+   int16_t mouse_y = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
+   bool mouse_l    = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
+   bool mouse_r    = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
+   if (mouse_x)
+      fprintf(stderr, "Mouse X: %d\n", mouse_x);
+   if (mouse_y)
+      fprintf(stderr, "Mouse Y: %d\n", mouse_y);
+   if (mouse_l)
+      fprintf(stderr, "Mouse L pressed.\n");
+   if (mouse_r)
+      fprintf(stderr, "Mouse R pressed.\n");
+
    dir_x += input_state_cb(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X) / 2000;
    dir_y += input_state_cb(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y) / 2000;
    //dir_x += input_state_cb(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X) / 2000;

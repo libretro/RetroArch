@@ -38,6 +38,9 @@ typedef struct x11_input
    Window win;
 
    char state[32];
+   bool mouse_l, mouse_r, mouse_m;
+   int mouse_x, mouse_y;
+   int mouse_last_x, mouse_last_y;
 } x11_input_t;
 
 void x_input_set_disp_win(x11_input_t *x11, Display *dpy, Window win);
