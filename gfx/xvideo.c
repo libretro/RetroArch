@@ -643,8 +643,8 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
    font_renderer_msg(xv->font, msg, &out);
    struct font_output *head = out.head;
 
-   int _base_x = g_settings.video.msg_pos_x * width;
-   int _base_y = height - g_settings.video.msg_pos_y * height;
+   int msg_base_x = g_settings.video.msg_pos_x * width;
+   int msg_base_y = height * (1.0 - g_settings.video.msg_pos_y);
 
    unsigned luma_index[2] = { xv->luma_index[0], xv->luma_index[1] };
    unsigned chroma_u_index = xv->chroma_u_index;
@@ -652,51 +652,74 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
 
    unsigned pitch = width << 1; // YUV formats used are 16 bpp.
 
-   while (head)
+   for (; head; head = head->next)
    {
-      int base_x = (_base_x + head->off_x) << 1;
-      base_x &= ~3; // Make sure we always start on the correct boundary so the indices are correct.
+      int base_x = (msg_base_x + head->off_x) & ~1; // Make sure we always start on the correct boundary so the indices are correct.
+      int base_y = msg_base_y - head->off_y - head->height;
 
-      int base_y = _base_y - head->off_y;
-      if (base_y >= 0)
+      int glyph_width  = head->width;
+      int glyph_height = head->height;
+
+      const uint8_t *src = head->output;
+
+      if (base_x < 0)
       {
-         for (int y = 0; y < (int)head->height && (base_y + y) < (int)height; y++)
-         {
-            if (base_x < 0)
-               continue;
-
-            const uint8_t *a = head->output + head->pitch * y;
-            uint8_t *out = (uint8_t*)xv->image->data + (base_y - head->height + y) * pitch + base_x;
-
-            for (int x = 0; x < (int)(head->width << 1) && (base_x + x) < (int)pitch; x += 4)
-            {
-               unsigned alpha[2];
-               alpha[0] = a[(x >> 1) + 0];
-
-               if (((x >> 1) + 1) == (int)head->width) // We reached the end, uhoh. Branching like a BOSS. :D
-                  alpha[1] = 0;
-               else
-                  alpha[1] = a[(x >> 1) + 1];
-
-               unsigned alpha_sub = (alpha[0] + alpha[1]) >> 1; // Blended alpha for the sub-samples U/V channels.
-
-               for (unsigned i = 0; i < 2; i++)
-               {
-                  unsigned blended = (xv->font_y * alpha[i] + ((256 - alpha[i]) * out[x + luma_index[i]])) >> 8;
-                  out[x + luma_index[i]] = blended;
-               }
-
-               // Blend chroma channels
-               unsigned blended = (xv->font_u * alpha_sub + ((256 - alpha_sub) * out[x + chroma_u_index])) >> 8;
-               out[x + chroma_u_index] = blended;
-
-               blended = (xv->font_v * alpha_sub + ((256 - alpha_sub) * out[x + chroma_v_index])) >> 8;
-               out[x + chroma_v_index] = blended;
-            }
-         }
+         src -= base_x;
+         glyph_width += base_x;
+         base_x = 0;
       }
 
-      head = head->next;
+      if (base_y < 0)
+      {
+         src -= base_y * (int)head->pitch;
+         glyph_height += base_y;
+         base_y = 0;
+      }
+
+      int max_width  = width - base_x;
+      int max_height = height - base_y;
+
+      if (max_width <= 0 || max_height <= 0)
+         continue;
+
+      if (glyph_width > max_width)
+         glyph_width = max_width;
+      if (glyph_height > max_height)
+         glyph_height = max_height;
+
+      uint8_t *out = (uint8_t*)xv->image->data + base_y * pitch + (base_x << 1);
+
+      for (int y = 0; y < glyph_height; y++, src += head->pitch, out += pitch)
+      {
+         // 2 input pixels => 4 bytes (2Y, 1U, 1V).
+         for (int x = 0; x < glyph_width; x += 2)
+         {
+            int out_x = x << 1;
+
+            unsigned alpha[2];
+            alpha[0] = src[x + 0];
+
+            if (x + 1 < glyph_width)
+               alpha[1] = src[x + 1];
+            else
+               alpha[1] = 0;
+
+            unsigned alpha_sub = (alpha[0] + alpha[1]) >> 1; // Blended alpha for the sub-sampled U/V channels.
+
+            for (unsigned i = 0; i < 2; i++)
+            {
+               unsigned blended = (xv->font_y * alpha[i] + ((256 - alpha[i]) * out[out_x + luma_index[i]])) >> 8;
+               out[out_x + luma_index[i]] = blended;
+            }
+
+            // Blend chroma channels
+            unsigned blended = (xv->font_u * alpha_sub + ((256 - alpha_sub) * out[out_x + chroma_u_index])) >> 8;
+            out[out_x + chroma_u_index] = blended;
+
+            blended = (xv->font_v * alpha_sub + ((256 - alpha_sub) * out[out_x + chroma_v_index])) >> 8;
+            out[out_x + chroma_v_index] = blended;
+         }
+      }
    }
 
    font_renderer_free_output(&out);

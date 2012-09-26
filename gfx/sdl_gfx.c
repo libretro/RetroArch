@@ -143,44 +143,66 @@ static void sdl_render_msg_15(sdl_video_t *vid, SDL_Surface *buffer, const char 
    font_renderer_msg(vid->font, msg, &out);
    struct font_output *head = out.head;
 
-   int base_x = g_settings.video.msg_pos_x * width;
-   int base_y = (1.0 - g_settings.video.msg_pos_y) * height;
+   int msg_base_x = g_settings.video.msg_pos_x * width;
+   int msg_base_y = (1.0 - g_settings.video.msg_pos_y) * height;
 
    unsigned rshift = fmt->Rshift;
    unsigned gshift = fmt->Gshift;
    unsigned bshift = fmt->Bshift;
 
-   while (head)
+   for (; head; head = head->next)
    {
-      int rbase_x = base_x + head->off_x;
-      int rbase_y = base_y - head->off_y;
-      if (rbase_y >= 0)
+      int base_x = msg_base_x + head->off_x;
+      int base_y = msg_base_y - head->off_y - head->height;
+
+      int glyph_width  = head->width;
+      int glyph_height = head->height;
+
+      const uint8_t *src = head->output;
+
+      if (base_x < 0)
       {
-         for (int y = 0; y < (int)head->height && (y + rbase_y) < (int)height; y++)
-         {
-            if (rbase_x < 0)
-               continue;
-
-            const uint8_t *a = head->output + head->pitch * y;
-            uint16_t *out = (uint16_t*)buffer->pixels + (rbase_y - head->height + y) * (buffer->pitch >> 1) + rbase_x;
-
-            for (int x = 0; x < (int)head->width && (x + rbase_x) < (int)width; x++)
-            {
-               unsigned blend = a[x];
-               unsigned out_pix = out[x];
-               unsigned r = (out_pix >> rshift) & 0x1f;
-               unsigned g = (out_pix >> gshift) & 0x1f;
-               unsigned b = (out_pix >> bshift) & 0x1f;
-
-               unsigned out_r = (r * (256 - blend) + vid->font_r * blend) >> 8;
-               unsigned out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
-               unsigned out_b = (b * (256 - blend) + vid->font_b * blend) >> 8;
-               out[x] = (out_r << rshift) | (out_g << gshift) | (out_b << bshift);
-            }
-         }
+         src -= base_x;
+         glyph_width += base_x;
+         base_x = 0;
       }
 
-      head = head->next;
+      if (base_y < 0)
+      {
+         src -= base_y * (int)head->pitch;
+         glyph_height += base_y;
+         base_y = 0;
+      }
+
+      int max_width  = width - base_x;
+      int max_height = height - base_y;
+
+      if (max_width <= 0 || max_height <= 0)
+         continue;
+
+      if (glyph_width > max_width)
+         glyph_width = max_width;
+      if (glyph_height > max_height)
+         glyph_height = max_height;
+
+      uint16_t *out = (uint16_t*)buffer->pixels + base_y * (buffer->pitch >> 1) + base_x;
+
+      for (int y = 0; y < glyph_height; y++, src += head->pitch, out += buffer->pitch >> 1)
+      {
+         for (int x = 0; x < glyph_width; x++)
+         {
+            unsigned blend = src[x];
+            unsigned out_pix = out[x];
+            unsigned r = (out_pix >> rshift) & 0x1f;
+            unsigned g = (out_pix >> gshift) & 0x1f;
+            unsigned b = (out_pix >> bshift) & 0x1f;
+
+            unsigned out_r = (r * (256 - blend) + vid->font_r * blend) >> 8;
+            unsigned out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
+            unsigned out_b = (b * (256 - blend) + vid->font_b * blend) >> 8;
+            out[x] = (out_r << rshift) | (out_g << gshift) | (out_b << bshift);
+         }
+      }
    }
 
    font_renderer_free_output(&out);
@@ -204,44 +226,66 @@ static void sdl_render_msg_32(sdl_video_t *vid, SDL_Surface *buffer, const char 
    font_renderer_msg(vid->font, msg, &out);
    struct font_output *head = out.head;
 
-   int base_x = g_settings.video.msg_pos_x * width;
-   int base_y = (1.0 - g_settings.video.msg_pos_y) * height;
+   int msg_base_x = g_settings.video.msg_pos_x * width;
+   int msg_base_y = (1.0 - g_settings.video.msg_pos_y) * height;
 
    unsigned rshift = fmt->Rshift;
    unsigned gshift = fmt->Gshift;
    unsigned bshift = fmt->Bshift;
 
-   while (head)
+   for (; head; head = head->next)
    {
-      int rbase_x = base_x + head->off_x;
-      int rbase_y = base_y - head->off_y;
-      if (rbase_y >= 0)
+      int base_x = msg_base_x + head->off_x;
+      int base_y = msg_base_y - head->off_y - head->height;
+
+      int glyph_width  = head->width;
+      int glyph_height = head->height;
+
+      const uint8_t *src = head->output;
+
+      if (base_x < 0)
       {
-         for (int y = 0; y < (int)head->height && (y + rbase_y) < (int)height; y++)
-         {
-            if (rbase_x < 0)
-               continue;
-
-            const uint8_t *a = head->output + head->pitch * y;
-            uint32_t *out = (uint32_t*)buffer->pixels + (rbase_y - head->height + y) * (buffer->pitch >> 2) + rbase_x;
-
-            for (int x = 0; x < (int)head->width && (x + rbase_x) < (int)width; x++)
-            {
-               unsigned blend = a[x];
-               unsigned out_pix = out[x];
-               unsigned r = (out_pix >> rshift) & 0xff;
-               unsigned g = (out_pix >> gshift) & 0xff;
-               unsigned b = (out_pix >> bshift) & 0xff;
-
-               unsigned out_r = (r * (256 - blend) + vid->font_r * blend) >> 8;
-               unsigned out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
-               unsigned out_b = (b * (256 - blend) + vid->font_b * blend) >> 8;
-               out[x] = (out_r << rshift) | (out_g << gshift) | (out_b << bshift);
-            }
-         }
+         src -= base_x;
+         glyph_width += base_x;
+         base_x = 0;
       }
 
-      head = head->next;
+      if (base_y < 0)
+      {
+         src -= base_y * (int)head->pitch;
+         glyph_height += base_y;
+         base_y = 0;
+      }
+
+      int max_width  = width - base_x;
+      int max_height = height - base_y;
+
+      if (max_width <= 0 || max_height <= 0)
+         continue;
+
+      if (glyph_width > max_width)
+         glyph_width = max_width;
+      if (glyph_height > max_height)
+         glyph_height = max_height;
+
+      uint32_t *out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;
+
+      for (int y = 0; y < glyph_height; y++, src += head->pitch, out += buffer->pitch >> 2)
+      {
+         for (int x = 0; x < glyph_width; x++)
+         {
+            unsigned blend = src[x];
+            unsigned out_pix = out[x];
+            unsigned r = (out_pix >> rshift) & 0xff;
+            unsigned g = (out_pix >> gshift) & 0xff;
+            unsigned b = (out_pix >> bshift) & 0xff;
+
+            unsigned out_r = (r * (256 - blend) + vid->font_r * blend) >> 8;
+            unsigned out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
+            unsigned out_b = (b * (256 - blend) + vid->font_b * blend) >> 8;
+            out[x] = (out_r << rshift) | (out_g << gshift) | (out_b << bshift);
+         }
+      }
    }
 
    font_renderer_free_output(&out);
