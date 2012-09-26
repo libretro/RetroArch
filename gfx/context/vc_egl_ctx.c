@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2012 - Daniel De Matteis
+ *  Copyright (C) 2012 - Michael Lelli
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,8 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// KMS/DRM context, running without any window manager.
-// Based on kmscube example by Rob Clark.
+// VideoCore context, for Rasperry Pi.
 
 #include "../../driver.h"
 #include "../gfx_context.h"
@@ -43,6 +42,7 @@ static EGLConfig g_config;
 
 static volatile sig_atomic_t g_quit;
 static bool g_inited;
+static unsigned g_interval;
 static enum gfx_ctx_api g_api;
 
 static unsigned g_fb_width; // Just use something for now.
@@ -62,7 +62,11 @@ static void sighandler(int sig)
 
 static void gfx_ctx_swap_interval(unsigned interval)
 {
-   eglSwapInterval(g_egl_dpy, interval);
+   // Can be called before initialization.
+   // Some contexts require that swap interval is known at startup time.
+   g_interval = interval;
+   if (g_egl_dpy)
+      eglSwapInterval(g_egl_dpy, interval);
 }
 
 static void gfx_ctx_check_window(bool *quit,
@@ -210,6 +214,8 @@ static bool gfx_ctx_set_video_mode(
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
+
+   gfx_ctx_swap_interval(g_interval);
 
    g_inited = true;
    return true;
