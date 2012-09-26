@@ -19,11 +19,14 @@
 #include <string.h>
 #include <signal.h>
 #include <math.h>
+#include "gfx_common.h"
+#include "../input/x11_input.h"
+
 #ifdef HAVE_FREETYPE
 #include "fonts/fonts.h"
 #endif
-#include "gfx_common.h"
-#include "../input/x11_input.h"
+
+#include "context/x11_common.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -529,7 +532,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    xv->focus = true;
 
    RARCH_LOG("Suspending screensaver (X11).\n");
-   gfx_suspend_screensaver(xv->window);
+   x11_suspend_screensaver(xv->window);
 
    xinput = input_x.init();
    if (xinput)

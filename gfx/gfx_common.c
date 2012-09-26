@@ -120,19 +120,6 @@ bool gfx_window_title(char *buf, size_t size)
    return ret;
 }
 
-#if defined(HAVE_X11) && !defined(__APPLE__)
-void gfx_suspend_screensaver(Window wnd)
-{
-   char cmd[64];
-   snprintf(cmd, sizeof(cmd), "xdg-screensaver suspend %d", (int)wnd);
-
-   int ret = system(cmd);
-
-   if (ret != 0)
-      RARCH_WARN("Could not suspend screen saver.\n");
-}
-#endif
-
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
 #include "../dynamic.h"

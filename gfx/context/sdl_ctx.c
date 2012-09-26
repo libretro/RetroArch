@@ -13,12 +13,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Compatibility wrapper between SDL 1.2/1.3 for OpenGL.
-// Wraps functions which differ in 1.2 and 1.3.
-
 #include "../gfx_context.h"
 #include "../gfx_common.h"
 #include "../../general.h"
+
+#ifdef HAVE_X11
+#include "x11_common.h"
+#endif
 
 #ifdef __APPLE__
 #include <OpenGL/OpenGL.h>
@@ -161,13 +162,13 @@ static bool gfx_ctx_set_video_mode(
    SDL_ShowCursor(SDL_DISABLE);
 
    // Suspend screensaver on X11.
-#if defined(HAVE_X11) && !defined(__APPLE__)
+#if defined(HAVE_X11)
    RARCH_LOG("Suspending screensaver (X11).\n");
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
 
    if (SDL_GetWMInfo(&info) == 1)
-      gfx_suspend_screensaver(info.info.x11.window);
+      x11_suspend_screensaver(info.info.x11.window);
    else
       RARCH_ERR("Failed to get SDL WM info, cannot suspend screensaver.\n");
 #endif
@@ -192,7 +193,7 @@ static void gfx_ctx_swap_buffers(void)
 }
 
 // 1.2 specific workaround for tiling WMs.
-#if defined(HAVE_X11) && !defined(__APPLE__)
+#if defined(HAVE_X11)
 // This X11 is set on OSX for some reason.
 static bool gfx_ctx_get_window_size(unsigned *width, unsigned *height)
 {
@@ -238,7 +239,7 @@ static void gfx_ctx_check_window(bool *quit,
       }
    }
 
-#if defined(HAVE_X11) && !defined(__APPLE__)
+#if defined(HAVE_X11)
    if (!*resize && !g_fullscreen)
    {
       unsigned new_width, new_height;

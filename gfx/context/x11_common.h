@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
- *
+ *  Copyright (C) 2011-2012 - Daniel De Matteis
+ * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -13,21 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GFX_COMMON_H
-#define __GFX_COMMON_H
+#ifndef X11_COMMON_H__
+#define X11_COMMON_H__
 
-#include <stddef.h>
-#include "../boolean.h"
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
-
-bool gfx_window_title(char *buf, size_t size);
-void gfx_window_title_reset(void);
-
-#ifdef _WIN32
-void gfx_set_dwm(void);
-#endif
+void x11_hide_mouse(Display *dpy, Window win);
+void x11_windowed_fullscreen(Display *dpy, Window win);
+void x11_suspend_screensaver(Window win);
 
 #endif
+

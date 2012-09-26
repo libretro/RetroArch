@@ -9,6 +9,7 @@ add_define_make NOUNUSED "$HAVE_NOUNUSED"
 [ -d /opt/local/lib ] && add_library_dirs /opt/local/lib
 
 if [ "$OS" = 'BSD' ]; then DYLIB=-lc; else DYLIB=-ldl; fi
+[ "$OS" = 'OSX' ] && HAVE_X11=no # X11 breaks on recent OSXes even if present.
 
 [ -d /opt/vc/lib ] && add_library_dirs /opt/vc/lib
 check_lib VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm" 

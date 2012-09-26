@@ -23,6 +23,10 @@
 #include "gfx_common.h"
 #include "gfx_context.h"
 
+#ifdef HAVE_X11
+#include "context/x11_common.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -289,12 +293,12 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 
    SDL_ShowCursor(SDL_DISABLE);
 
-#if defined(HAVE_X11) && !defined(__APPLE__)
+#if defined(HAVE_X11)
    RARCH_LOG("Suspending screensaver (X11).\n");
    SDL_SysWMinfo wm_info;
    SDL_VERSION(&wm_info.version);
    if (SDL_GetWMInfo(&wm_info) == 1)
-      gfx_suspend_screensaver(wm_info.info.x11.window);
+      x11_suspend_screensaver(wm_info.info.x11.window);
    else
       RARCH_ERR("Failed to suspend screensaver.\n");
 #endif

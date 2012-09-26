@@ -21,6 +21,7 @@
 #include "../gfx_context.h"
 #include "../gl_common.h"
 #include "../gfx_common.h"
+#include "x11_common.h"
 #include "../../input/x11_input.h"
 
 #include <signal.h>
@@ -54,65 +55,6 @@ static void sighandler(int sig)
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 static void gfx_ctx_destroy(void);
-
-static void hide_mouse(void)
-{
-   Cursor no_ptr;
-   Pixmap bm_no;
-   XColor black, dummy;
-   Colormap colormap;
-
-   static char bm_no_data[] = {0, 0, 0, 0, 0, 0, 0, 0};
-
-   colormap = DefaultColormap(g_dpy, DefaultScreen(g_dpy));
-   if (!XAllocNamedColor(g_dpy, colormap, "black", &black, &dummy))
-      return;
-
-   bm_no  = XCreateBitmapFromData(g_dpy, g_win, bm_no_data, 8, 8);
-   no_ptr = XCreatePixmapCursor(g_dpy, bm_no, bm_no, &black, &black, 0, 0);
-
-   XDefineCursor(g_dpy, g_win, no_ptr);
-   XFreeCursor(g_dpy, no_ptr);
-
-   if (bm_no != None)
-      XFreePixmap(g_dpy, bm_no);
-
-   XFreeColors(g_dpy, colormap, &black.pixel, 1, 0);
-}
-
-static Atom XA_NET_WM_STATE;
-static Atom XA_NET_WM_STATE_FULLSCREEN;
-#define XA_INIT(x) XA##x = XInternAtom(g_dpy, #x, False)
-#define _NET_WM_STATE_ADD 1
-static void set_windowed_fullscreen(void)
-{
-   XA_INIT(_NET_WM_STATE);
-   XA_INIT(_NET_WM_STATE_FULLSCREEN);
-
-   if (!XA_NET_WM_STATE || !XA_NET_WM_STATE_FULLSCREEN)
-   {
-      RARCH_ERR("[X/EGL]: Cannot set windowed fullscreen.\n");
-      return;
-   }
-
-   XEvent xev;
-
-   xev.xclient.type = ClientMessage;
-   xev.xclient.serial = 0;
-   xev.xclient.send_event = True;
-   xev.xclient.message_type = XA_NET_WM_STATE;
-   xev.xclient.window = g_win;
-   xev.xclient.format = 32;
-   xev.xclient.data.l[0] = _NET_WM_STATE_ADD;
-   xev.xclient.data.l[1] = XA_NET_WM_STATE_FULLSCREEN;
-   xev.xclient.data.l[2] = 0;
-   xev.xclient.data.l[3] = 0;
-   xev.xclient.data.l[4] = 0;
-
-   XSendEvent(g_dpy, DefaultRootWindow(g_dpy), False,
-         SubstructureRedirectMask | SubstructureNotifyMask,
-         &xev);
-}
 
 static void gfx_ctx_swap_interval(unsigned interval)
 {
@@ -350,17 +292,17 @@ static bool gfx_ctx_set_video_mode(
       goto error;
 
    gfx_ctx_update_window_title(true);
-   hide_mouse();
+   x11_hide_mouse(g_dpy, g_win);
    XMapWindow(g_dpy, g_win);
 
    if (fullscreen)
-      set_windowed_fullscreen();
+      x11_windowed_fullscreen(g_dpy, g_win);
 
    g_quit_atom = XInternAtom(g_dpy, "WM_DELETE_WINDOW", False);
    if (g_quit_atom)
       XSetWMProtocols(g_dpy, g_win, &g_quit_atom, 1);
 
-   gfx_suspend_screensaver(g_win);
+   x11_suspend_screensaver(g_win);
    gfx_ctx_swap_interval(g_interval);
 
    XFree(vi);

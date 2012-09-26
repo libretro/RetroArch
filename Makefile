@@ -143,11 +143,6 @@ ifeq ($(HAVE_SDL), 1)
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
 
-   ifeq ($(HAVE_X11), 1)
-      LIBS += $(X11_LIBS)
-      DEFINES += $(X11_CFLAGS)
-   endif
-
    ifeq ($(HAVE_OPENGL), 1)
       OBJ += gfx/gl.o gfx/gfx_context.o gfx/fonts/freetype.o gfx/math/matrix.o
 
@@ -202,7 +197,7 @@ ifeq ($(HAVE_XVIDEO), 1)
 endif
 
 ifeq ($(HAVE_X11), 1)
-   OBJ += input/x11_input.o
+   OBJ += input/x11_input.o gfx/context/x11_common.o
    LIBS += $(X11_LIBS) $(XEXT_LIBS)
    DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS)
 endif
