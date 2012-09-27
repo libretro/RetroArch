@@ -236,8 +236,9 @@ int main(int argc, char *argv[])
 #ifdef HAVE_SYSMODULES
 
 #ifdef HAVE_FREETYPE
-   cellSysmoduleLoadModule(CELL_SYSMODULE_FREETYPE);
    cellSysmoduleLoadModule(CELL_SYSMODULE_FONT);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_FREETYPE);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_FONTFT);
 #endif
 
    cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
@@ -390,6 +391,7 @@ begin_shutdown:
 /* Freetype font PRX */
 
 #ifdef HAVE_FREETYPE
+   cellSysmoduleLoadModule(CELL_SYSMODULE_FONTFT);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_FREETYPE);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_FONT);
 #endif
