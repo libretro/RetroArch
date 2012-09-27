@@ -234,6 +234,12 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef HAVE_SYSMODULES
+
+#ifdef HAVE_FREETYPE
+   cellSysmoduleLoadModule(CELL_SYSMODULE_FREETYPE);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_FONT);
+#endif
+
    cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
 #ifndef __PSL1GHT__
@@ -380,16 +386,30 @@ begin_shutdown:
 #endif
 
 #if defined(HAVE_SYSMODULES)
+
+/* Freetype font PRX */
+
+#ifdef HAVE_FREETYPE
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_FREETYPE);
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_FONT);
+#endif
+
+/* screenshot PRX */
+
 #ifndef __PSL1GHT__
    if(g_console.screenshots_enable)
       cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
 #endif
+
    cellSysmoduleUnloadModule(CELL_SYSMODULE_JPGDEC);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_PNGDEC);
+
+/* system game utility PRX */
 #ifndef __PSL1GHT__
    cellSysmoduleUnloadModule(CELL_SYSMODULE_AVCONF_EXT);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
 #endif
+
 #endif
 
 #ifdef HAVE_HDD_CACHE_PARTITION

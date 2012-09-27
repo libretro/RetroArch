@@ -12,6 +12,7 @@ STRIPPING_ENABLE	= 0
 HAVE_RGL		= 1
 HAVE_RGL_NEW		= 1
 HAVE_LOGGER		= 0
+HAVE_FREETYPE		= 0
 
 CONTENT_ID_FULL		= UP0001-SSNE10000_00-0000000000000001
 CONTENT_ID		= SSNE10000
@@ -70,6 +71,14 @@ ifeq ($(HAVE_RGL_NEW), 1)
 GL_LIBS			+= -lcgc_ps3
 endif
 
+ifeq ($(HAVE_FREETYPE), 1)
+DEFINES			+= -DHAVE_FREETYPE
+FONT_LIBS		:= -lfontFT_stub -lfreetype_stub
+else
+DEFINES			+= -DHAVE_LIBDBGFONT
+FONT_LIBS		:= -ldbgfont
+endif
+
 ifeq ($(CELL_BUILD_TOOLS), SNC)
 	PPU_CXXLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe
 	PPU_CXX	= $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
@@ -83,7 +92,7 @@ ifneq($(system_platform), win)
 endif
 
 
-PPU_LDLIBS = -ldbgfont $(GL_LIBS) -lretroarch_ps3 -lretro_ps3 -lcgc -lgcm_cmd -lgcm_sys_stub -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_screenshot_stub -lsysutil_np_stub -lpngdec_stub -ljpgdec_stub -lsysmodule_stub -laudio_stub -lnet_stub -lnetctl_stub -lpthread
+PPU_LDLIBS =  $(FONT_LIBS) $(GL_LIBS) -lretroarch_ps3 -lretro_ps3 -lcgc -lgcm_cmd -lgcm_sys_stub -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_screenshot_stub -lsysutil_np_stub -lpngdec_stub -ljpgdec_stub -lsysmodule_stub -laudio_stub -lnet_stub -lnetctl_stub -lpthread
 
 DEFINES += -DHAVE_DEFAULT_RETROPAD_INPUT -DHAVE_THREAD -DRARCH_CONSOLE -DHAVE_OPENGL -DHAVE_PSGL -DHAVE_HEADSET -DHAVE_VID_CONTEXT -DHAVE_OPENGLES -DHAVE_OPENGLES1 -DHAVE_PSGL -DHAVE_CG -DHAVE_CG_RUNTIME_COMPILER -DHAVE_CG_MENU -DHAVE_FILEBROWSER -DHAVE_HDD_CACHE_PARTITION -DHAVE_FBO -DHAVE_RARCH_MAIN_WRAP -DHAVE_SYSMODULES -DHAVE_SYSUTILS -DHAVE_RARCH_EXEC -DHAVE_RGL -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_RSOUND -DHAVE_ZLIB -D__CELLOS_LV2__ -DHAVE_CONFIGFILE=1 -DHAVE_NETPLAY=1 -DHAVE_SOCKET_LEGACY=1 -DHAVE_OSKUTIL -DHAVE_MOUSE -DHAVE_GRIFFIN=1 -DHAVE_MULTIMAN=1 -DPACKAGE_VERSION=\"$(RARCH_VERSION)\" -Dmain=rarch_main -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
 

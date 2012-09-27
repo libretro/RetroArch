@@ -163,7 +163,11 @@ FONTS
 ============================================================ */
 
 #if defined(HAVE_OPENGL) || defined(HAVE_D3D8) || defined(HAVE_D3D9)
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+
+#if defined(HAVE_FREETYPE)
+#include "../../gfx/fonts/freetype.c"
+#include "../../gfx/fonts/fonts.c"
+#elif defined(HAVE_LIBDBGFONT)
 #include "../../gfx/fonts/ps3_libdbgfont.c"
 #elif defined(_XBOX1)
 #include "../../gfx/fonts/xdk1_xfonts.c"
@@ -172,6 +176,7 @@ FONTS
 #else
 #include "../../gfx/fonts/null_fonts.c"
 #endif
+
 #endif
 
 /*============================================================

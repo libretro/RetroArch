@@ -316,3 +316,11 @@ void gl_render_msg(void *data, const char *msg)
 #endif
 }
 
+void gl_render_msg_place(void *data, float x, float y, float scale, uint32_t color, const char *msg)
+{
+   /* TODO: Currently a no-op - needs to be implemented for RMenu - text needs to be able to be positioned 
+   arbitrarily
+   */
+
+   (void)data;
+}

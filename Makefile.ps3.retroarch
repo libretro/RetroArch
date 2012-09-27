@@ -9,6 +9,7 @@ CELL_PSGL_VERSION	= ultra-opt
 DEBUG			= 0
 HAVE_RGL		= 1
 HAVE_LOGGER		= 0
+HAVE_FREETYPE		= 0
 
 PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.7"
 PC_DEVELOPMENT_UDP_PORT		= 3490
@@ -36,9 +37,12 @@ PPU_SRCS		= console/griffin/griffin.c console/rzlib/rzlib.c
 
 ifeq ($(HAVE_RGL), 1)
 DEFINES			= -DHAVE_RGL
-GL_LIBS			:= -lrgl_ps3
+endif
+
+ifeq ($(HAVE_FREETYPE), 1)
+DEFINES			+= -DHAVE_FREETYPE
 else
-GL_LIBS			:= -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt -lPSGL -lPSGLcgc
+DEFINES			+= -DHAVE_LIBDBGFONT
 endif
 
 ifeq ($(CELL_BUILD_TOOLS), SNC)
