@@ -1152,7 +1152,7 @@ static void set_program_attributes(unsigned i)
 
 bool gl_cg_init(const char *path)
 {
-#ifdef __CELLOS_LV2__
+#ifdef HAVE_CG_RUNTIME_COMPILER
    cgRTCgcInit();
 #endif
 
