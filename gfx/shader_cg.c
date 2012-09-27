@@ -517,10 +517,10 @@ static void load_texture_data(GLuint *obj, const struct texture_image *img, bool
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
 
-#if defined(HAVE_PSGL) || defined(HAVE_RGL)
-   glTextureReferenceSCE(GL_TEXTURE_2D, 1,
-   img->width, img->height, GL_ARGB_SCE, 0,
-   img->width << 1, 0);
+#ifdef __CELLOS_LV2__
+   glTexImage2D(GL_TEXTURE_2D,
+         0, GL_ARGB_SCE, img->width, img->height,
+         0, GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8, img->pixels);
 #else
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
