@@ -17,7 +17,6 @@
 
 #include "../driver.h"
 
-#include "SDL.h"
 #include "../boolean.h"
 #include "../general.h"
 #include <stdint.h>

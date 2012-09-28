@@ -14,11 +14,12 @@ OBJ = retroarch.o \
 		gfx/gfx_common.o \
 		input/input_common.o \
 		patch.o \
+	   fifo_buffer.o \
 		compat/compat.o \
-		screenshot.o \
 		audio/null.o \
+		gfx/null.o \
 		input/null.o \
-		gfx/null.o
+		screenshot.o
 
 JOYCONFIG_OBJ := tools/retroarch-joyconfig.o \
 	conf/config_file.o \
@@ -50,7 +51,7 @@ endif
 
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
-   OBJ += input/linuxraw_input.o
+   OBJ += input/linuxraw_input.o input/linuxraw_joypad.o
 endif
 
 ifeq ($(HAVE_THREADS), 1)
@@ -139,52 +140,59 @@ ifeq ($(SCALER_PERF), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o fifo_buffer.o
    OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
+else ifeq ($(HAVE_FFMPEG), 1)
+   OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
+endif
+
+ifeq ($(HAVE_SDL), 1)
+   OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
 
    ifeq ($(HAVE_OPENGL), 1)
-      OBJ += gfx/gl.o gfx/gfx_context.o gfx/fonts/freetype.o gfx/math/matrix.o
-
-      ifeq ($(OSX), 1)
-         LIBS += -framework OpenGL
-      else
-         ifeq ($(HAVE_KMS), 1)
-            OBJ += gfx/context/drm_egl_ctx.o
-            DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
-            LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
-         endif
-         ifeq ($(HAVE_VIDEOCORE), 1)
-            OBJ += gfx/context/vc_egl_ctx.o
-            # videocore's libs set later
-         endif
-
-         ifeq ($(HAVE_X11), 1)
-         ifeq ($(HAVE_EGL), 1)
-            OBJ += gfx/context/xegl_ctx.o
-            DEFINES += $(EGL_CFLAGS)
-            LIBS += $(EGL_LIBS)
-         endif
-         endif
-   
-      endif
-
       OBJ += gfx/context/sdl_ctx.o
-		
-      ifeq ($(HAVE_GLES), 1)
-         LIBS += -lGLESv2
-         DEFINES += -DHAVE_OPENGLES -DHAVE_OPENGLES2
-      else
-         LIBS += -lGL
+   endif
+endif
+
+ifeq ($(HAVE_OPENGL), 1)
+   OBJ += gfx/gl.o gfx/gfx_context.o gfx/fonts/freetype.o gfx/math/matrix.o
+
+   ifeq ($(OSX), 1)
+      LIBS += -framework OpenGL
+   else
+      ifeq ($(HAVE_KMS), 1)
+         OBJ += gfx/context/drm_egl_ctx.o
+         DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
+         LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
+      endif
+      ifeq ($(HAVE_VIDEOCORE), 1)
+         OBJ += gfx/context/vc_egl_ctx.o
+			# videocore's libs set later
+      endif
+
+      ifeq ($(HAVE_X11), 1)
+      ifeq ($(HAVE_EGL), 1)
+         OBJ += gfx/context/xegl_ctx.o
+         DEFINES += $(EGL_CFLAGS)
+         LIBS += $(EGL_LIBS)
+      endif
       endif
    endif
 
-   ifeq ($(HAVE_VG), 1)
-      OBJ += gfx/vg.o gfx/math/matrix_3x3.o
-      DEFINES += $(VG_CFLAGS)
-      LIBS += $(VG_LIBS)
+	
+   ifeq ($(HAVE_GLES), 1)
+      LIBS += -lGLESv2
+      DEFINES += -DHAVE_OPENGLES -DHAVE_OPENGLES2
+   else
+      LIBS += -lGL
    endif
+endif
+
+ifeq ($(HAVE_VG), 1)
+   OBJ += gfx/vg.o gfx/math/matrix_3x3.o
+   DEFINES += $(VG_CFLAGS)
+   LIBS += $(VG_LIBS)
 endif
 
 ifeq ($(HAVE_VIDEOCORE), 1)

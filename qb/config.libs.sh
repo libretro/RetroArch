@@ -90,7 +90,7 @@ check_pkgconf PULSE libpulse
 
 check_lib COREAUDIO "-framework AudioUnit" AudioUnitInitialize
 
-check_pkgconf SDL sdl 1.2.10 "Cannot find SDL library."
+check_pkgconf SDL sdl 1.2.10
 
 # On some distros, -lCg doesn't link against -lstdc++ it seems ...
 if [ "$HAVE_OPENGL" != 'no' ]; then
@@ -100,7 +100,9 @@ else
    HAVE_CG='no'
 fi
 
+[ "$HAVE_SDL" = "no" ] && HAVE_SDL_IMAGE=no
 check_pkgconf SDL_IMAGE SDL_image
+
 check_pkgconf LIBPNG libpng 1.5
 
 if [ "$HAVE_THREADS" != 'no' ]; then
