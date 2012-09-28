@@ -22,7 +22,6 @@
 #include "../gl_common.h"
 #include "../gfx_common.h"
 #include "x11_common.h"
-#include "../../input/x11_input.h"
 
 #include <signal.h>
 #include <stdint.h>
@@ -302,12 +301,15 @@ static bool gfx_ctx_set_video_mode(
    if (g_quit_atom)
       XSetWMProtocols(g_dpy, g_win, &g_quit_atom, 1);
 
-   x11_suspend_screensaver(g_win);
    gfx_ctx_swap_interval(g_interval);
 
    XFree(vi);
    g_has_focus = true;
    g_inited    = true;
+
+   driver.display_type  = RARCH_DISPLAY_X11;
+   driver.video_display = (uintptr_t)g_dpy;
+   driver.video_window  = (Window)g_win;
 
    return true;
 
@@ -366,9 +368,6 @@ static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data
    void *xinput = input_x.init();
    *input       = xinput ? &input_x : NULL;
    *input_data  = xinput;
-
-   if (xinput)
-      x_input_set_disp_win((x11_input_t*)xinput, g_dpy, g_win);
 }
 
 static bool gfx_ctx_has_focus(void)

@@ -22,6 +22,10 @@
 #include <math.h>
 #include "compat/posix_string.h"
 
+#ifdef HAVE_X11
+#include "gfx/context/x11_common.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -594,6 +598,10 @@ void init_video_input(void)
 
    RARCH_LOG("Video @ %ux%u\n", width, height);
 
+   driver.display_type  = RARCH_DISPLAY_NONE;
+   driver.video_display = 0;
+   driver.video_window  = 0;
+
    video_info_t video = {0};
    video.width = width;
    video.height = height;
@@ -615,6 +623,14 @@ void init_video_input(void)
 
    if (driver.video->set_rotation && g_extern.system.rotation)
       video_set_rotation_func(g_extern.system.rotation);
+
+#ifdef HAVE_X11
+   if (driver.display_type == RARCH_DISPLAY_X11)
+   {
+      RARCH_LOG("Suspending screensaver (X11).\n");
+      x11_suspend_screensaver(driver.video_window);
+   }
+#endif
 
    // Video driver didn't provide an input driver so we use configured one.
    if (driver.input == NULL)

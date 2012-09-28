@@ -13,33 +13,45 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "rarch_dinput.h"
-#include "SDL.h"
-#include "SDL_syswm.h"
+#undef DIRECTINPUT_VERSION
+#define DIRECTINPUT_VERSION 0x0800
+#include <dinput.h>
+
+#include "../general.h"
 #include "../boolean.h"
+#include "input_common.h"
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
-#include "../gfx/gfx_context.h"
 
-void sdl_dinput_free(sdl_dinput_t *di)
+static LPDIRECTINPUT8 g_ctx;
+
+struct dinput_joypad
 {
-   if (di)
+   LPDIRECTINPUTDEVICE8 joypad;
+   DIJOYSTATE2 joy_state;
+};
+
+static unsigned g_joypad_cnt;
+static struct dinput_joypad g_pads[MAX_PLAYERS];
+
+static void dinput_destroy(void)
+{
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {
-      for (unsigned i = 0; i < MAX_PLAYERS; i++)
+      if (g_pads[i].joypad)
       {
-         if (di->joypad[i])
-         {
-            IDirectInputDevice8_Unacquire(di->joypad[i]);
-            IDirectInputDevice8_Release(di->joypad[i]);
-         }
+         IDirectInputDevice8_Unacquire(g_pads[i].joypad);
+         IDirectInputDevice8_Release(g_pads[i].joypad);
       }
-
-      if (di->ctx)
-         IDirectInput8_Release(di->ctx);
-
-      free(di);
    }
+
+   if (g_ctx)
+      IDirectInput8_Release(g_ctx);
+
+   g_ctx = NULL;
+   g_joypad_cnt = 0;
+   memset(g_pads, 0, sizeof(g_pads));
 }
 
 static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
@@ -61,68 +73,49 @@ static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
 
 static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
-   sdl_dinput_t *di = (sdl_dinput_t*)p;
+   (void)p;
+   if (g_joypad_cnt == MAX_PLAYERS)
+      return DIENUM_STOP;
 
-   unsigned active = 0;
-   unsigned n;
-   for (n = 0; n < MAX_PLAYERS; n++)
-   {
-      if (!di->joypad[n] && g_settings.input.joypad_map[n] == (int)di->joypad_cnt)
-         break;
-
-      if (di->joypad[n])
-         active++;
-   }
-
-   if (active == MAX_PLAYERS) return DIENUM_STOP;
-
-   di->joypad_cnt++;
-   if (n == MAX_PLAYERS)
-      return DIENUM_CONTINUE;
+   LPDIRECTINPUTDEVICE8 *pad = &g_pads[g_joypad_cnt].joypad;
 
 #ifdef __cplusplus
-   if (FAILED(IDirectInput8_CreateDevice(di->ctx, inst->guidInstance, &di->joypad[n], NULL)))
+   if (FAILED(IDirectInput8_CreateDevice(g_ctx, inst->guidInstance, pad, NULL)))
 #else
-   if (FAILED(IDirectInput8_CreateDevice(di->ctx, &inst->guidInstance, &di->joypad[n], NULL)))
+   if (FAILED(IDirectInput8_CreateDevice(g_ctx, &inst->guidInstance, pad, NULL)))
 #endif
       return DIENUM_CONTINUE;
 
-   IDirectInputDevice8_SetDataFormat(di->joypad[n], &c_dfDIJoystick2);
-   IDirectInputDevice8_SetCooperativeLevel(di->joypad[n], di->hWnd,
+   IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
+   IDirectInputDevice8_SetCooperativeLevel(*pad, (HWND)driver.video_window,
          DISCL_NONEXCLUSIVE | DISCL_BACKGROUND);
 
-   IDirectInputDevice8_EnumObjects(di->joypad[n], enum_axes_cb, 
-         di->joypad[n], DIDFT_ABSAXIS);
+   IDirectInputDevice8_EnumObjects(*pad, enum_axes_cb, 
+         *pad, DIDFT_ABSAXIS);
+
+   g_joypad_cnt++;
 
    return DIENUM_CONTINUE; 
 }
 
-sdl_dinput_t* sdl_dinput_init(void)
+static bool dinput_init(void)
 {
-   sdl_dinput_t *di = (sdl_dinput_t*)calloc(1, sizeof(*di));
-   if (!di)
-      return NULL;
-
-   CoInitialize(NULL);
-
-   SDL_SysWMinfo info;
-   SDL_VERSION(&info.version);
-   if (SDL_GetWMInfo(&info) != 1)
+   if (driver.display_type != RARCH_DISPLAY_WIN32)
    {
-      RARCH_ERR("Failed to get SysWM info.\n");
-      goto error;
+      RARCH_ERR("Cannot open DInput as no Win32 window is present.\n");
+      return false;
    }
 
-   di->hWnd = info.window;
+   CoInitialize(NULL);
 
 #ifdef __cplusplus
    if (FAILED(DirectInput8Create(
       GetModuleHandle(NULL), DIRECTINPUT_VERSION, IID_IDirectInput8,
-      (void**)&di->ctx, NULL)))
+      (void**)&g_ctx, NULL)))
 #else
    if (FAILED(DirectInput8Create(
       GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8,
-      (void**)&di->ctx, NULL)))
+      (void**)&g_ctx, NULL)))
 #endif
    {
       RARCH_ERR("Failed to init DirectInput.\n");
@@ -130,31 +123,33 @@ sdl_dinput_t* sdl_dinput_init(void)
    }
 
    RARCH_LOG("Enumerating DInput devices ...\n");
-   IDirectInput8_EnumDevices(di->ctx, DI8DEVCLASS_GAMECTRL, enum_joypad_cb, di, DIEDFL_ATTACHEDONLY);
+   IDirectInput8_EnumDevices(g_ctx, DI8DEVCLASS_GAMECTRL, enum_joypad_cb, NULL, DIEDFL_ATTACHEDONLY);
    RARCH_LOG("Done enumerating DInput devices ...\n");
 
-   return di;
+   return true;
 
 error:
-   sdl_dinput_free(di);
+   dinput_destroy();
    return NULL;
 }
 
-static bool dinput_joykey_pressed(sdl_dinput_t *di, unsigned port_num, uint16_t joykey)
+static bool dinput_button(unsigned port_num, uint16_t joykey)
 {
    if (joykey == NO_BTN)
       return false;
+
+   const struct dinput_joypad *pad = &g_pads[port_num];
 
    // Check hat.
    if (GET_HAT_DIR(joykey))
    {
       unsigned hat = GET_HAT(joykey);
       
-      unsigned elems = sizeof(di->joy_state[0].rgdwPOV) / sizeof(di->joy_state[0].rgdwPOV[0]);
+      unsigned elems = sizeof(pad->joy_state.rgdwPOV) / sizeof(pad->joy_state.rgdwPOV[0]);
       if (hat >= elems)
          return false;
 
-      unsigned pov = di->joy_state[port_num].rgdwPOV[hat];
+      unsigned pov = pad->joy_state.rgdwPOV[hat];
 
       // Magic numbers I'm not sure where originate from.
       if (pov < 36000)
@@ -176,21 +171,21 @@ static bool dinput_joykey_pressed(sdl_dinput_t *di, unsigned port_num, uint16_t 
    }
    else
    {
-      unsigned elems = sizeof(di->joy_state[0].rgbButtons) / sizeof(di->joy_state[0].rgbButtons[0]);
+      unsigned elems = sizeof(pad->joy_state.rgbButtons) / sizeof(pad->joy_state.rgbButtons[0]);
 
       if (joykey < elems)
-         return di->joy_state[port_num].rgbButtons[joykey];
+         return pad->joy_state.rgbButtons[joykey];
    }
 
    return false;
 }
 
-int16_t sdl_dinput_axis(sdl_dinput_t *di, unsigned port_num, const struct retro_keybind *key)
+static int16_t dinput_axis(unsigned port_num, uint32_t joyaxis)
 {
-   uint32_t joyaxis = key->joyaxis;
-
    if (joyaxis == AXIS_NONE)
       return 0;
+
+   const struct dinput_joypad *pad = &g_pads[port_num];
 
    int val = 0;
 
@@ -211,12 +206,12 @@ int16_t sdl_dinput_axis(sdl_dinput_t *di, unsigned port_num, const struct retro_
 
    switch (axis)
    {
-      case 0: val = di->joy_state[port_num].lX; break;
-      case 1: val = di->joy_state[port_num].lY; break;
-      case 2: val = di->joy_state[port_num].lZ; break;
-      case 3: val = di->joy_state[port_num].lRx; break;
-      case 4: val = di->joy_state[port_num].lRy; break;
-      case 5: val = di->joy_state[port_num].lRz; break;
+      case 0: val = pad->joy_state.lX; break;
+      case 1: val = pad->joy_state.lY; break;
+      case 2: val = pad->joy_state.lZ; break;
+      case 3: val = pad->joy_state.lRx; break;
+      case 4: val = pad->joy_state.lRy; break;
+      case 5: val = pad->joy_state.lRz; break;
    }
 
    if (val < -0x7fff) // So abs() of -0x8000 can't mess us up.
@@ -230,44 +225,33 @@ int16_t sdl_dinput_axis(sdl_dinput_t *di, unsigned port_num, const struct retro_
    return val;
 }
 
-static bool dinput_joyaxis_pressed(sdl_dinput_t *di, unsigned port_num, const struct retro_keybind *key)
+static void dinput_poll(void)
 {
-   if (key->joyaxis == AXIS_NONE)
-      return false;
-
-   int min = 0x7fff * g_settings.input.axis_threshold;
-
-   int16_t val = sdl_dinput_axis(di, port_num, key);
-   return abs(val) > min;
-}
-
-bool sdl_dinput_pressed(sdl_dinput_t *di, unsigned port_num, const struct retro_keybind *key)
-{
-   if (di->joypad[port_num] == NULL)
-      return false;
-   if (dinput_joykey_pressed(di, port_num, key->joykey))
-      return true;
-   if (dinput_joyaxis_pressed(di, port_num, key))
-      return true;
-
-   return false;
-}
-
-void sdl_dinput_poll(sdl_dinput_t *di)
-{
-   memset(di->joy_state, 0, sizeof(di->joy_state));
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {
-      if (di->joypad[i])
+      struct dinput_joypad *pad = &g_pads[i];
+
+      if (pad->joypad)
       {
-         if (FAILED(IDirectInputDevice8_Poll(di->joypad[i])))
+         memset(&pad->joy_state, 0, sizeof(pad->joy_state));
+
+         if (FAILED(IDirectInputDevice8_Poll(pad->joypad)))
          {
-            IDirectInputDevice8_Acquire(di->joypad[i]);
+            IDirectInputDevice8_Acquire(pad->joypad);
             continue;
          }
 
-         IDirectInputDevice8_GetDeviceState(di->joypad[i], sizeof(DIJOYSTATE2), &di->joy_state[i]);
+         IDirectInputDevice8_GetDeviceState(pad->joypad, sizeof(DIJOYSTATE2), &pad->joy_state);
       }
    }
 }
+
+const rarch_joypad_driver_t dinput_joypad = {
+   dinput_init,
+   dinput_destroy,
+   dinput_button,
+   dinput_axis,
+   dinput_poll,
+   "DInput",
+};
 

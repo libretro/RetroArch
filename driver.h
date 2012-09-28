@@ -204,6 +204,14 @@ typedef struct video_driver
    bool (*read_viewport)(void *data, uint8_t *buffer);
 } video_driver_t;
 
+enum rarch_display_type
+{
+   RARCH_DISPLAY_NONE = 0, // Non-bindable types like consoles, KMS, VideoCore, etc.
+   RARCH_DISPLAY_X11, // video_display => Display*, video_window => Window
+   RARCH_DISPLAY_WIN32, // video_display => N/A, video_window => HWND
+   RARCH_DISPLAY_OSX // ?!
+};
+
 typedef struct driver
 {
    const audio_driver_t *audio;
@@ -217,6 +225,14 @@ typedef struct driver
    rarch_cmd_t *command;
 #endif
    bool stdin_claimed;
+
+   // Opaque handles to currently running window.
+   // Used by e.g. input drivers which bind to a window.
+   // Drivers are responsible for setting these if an input driver
+   // could potentially make use of this.
+   uintptr_t video_display;
+   uintptr_t video_window;
+   enum rarch_display_type display_type;
 } driver_t;
 
 void init_drivers(void);

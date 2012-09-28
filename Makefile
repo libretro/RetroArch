@@ -12,6 +12,7 @@ OBJ = retroarch.o \
 		message.o \
 		rewind.o \
 		gfx/gfx_common.o \
+		input/input_common.o \
 		patch.o \
 		compat/compat.o \
 		screenshot.o \
@@ -138,7 +139,7 @@ ifeq ($(SCALER_PERF), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o input/sdl_input.o audio/sdl_audio.o fifo_buffer.o
+   OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o fifo_buffer.o
    OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)

@@ -17,6 +17,7 @@
 #define INPUT_COMMON_H__
 
 #include "../driver.h"
+#include <stdint.h>
 
 static inline void input_conv_analog_id_to_bind_id(unsigned index, unsigned id,
       unsigned *id_minus, unsigned *id_plus)
@@ -44,6 +45,32 @@ static inline void input_conv_analog_id_to_bind_id(unsigned index, unsigned id,
          break;
    }
 }
+
+typedef struct rarch_joypad_driver
+{
+   bool (*init)(void);
+   void (*destroy)(void);
+   bool (*button)(unsigned, uint16_t);
+   int16_t (*axis)(unsigned, uint32_t);
+   void (*poll)(void);
+
+   const char *ident;
+} rarch_joypad_driver_t;
+
+const rarch_joypad_driver_t *input_joypad_find_driver(const char *ident);
+const rarch_joypad_driver_t *input_joypad_init_first(void);
+
+bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
+      unsigned port, const struct retro_keybind *key);
+
+int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
+      unsigned port, unsigned index, unsigned id, const struct retro_keybind *binds);
+
+void input_joypad_poll(const rarch_joypad_driver_t *driver);
+
+extern const rarch_joypad_driver_t dinput_joypad;
+extern const rarch_joypad_driver_t linuxraw_joypad;
+extern const rarch_joypad_driver_t sdl_joypad;
 
 #endif
 

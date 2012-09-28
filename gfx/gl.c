@@ -32,10 +32,6 @@
 #include "gfx_context.h"
 #include "../compat/strl.h"
 
-#ifdef HAVE_SDL
-#include "../input/rarch_sdl_input.h"
-#endif
-
 #ifdef HAVE_CG
 #include "shader_cg.h"
 #endif

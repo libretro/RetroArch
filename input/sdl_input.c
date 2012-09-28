@@ -15,14 +15,22 @@
 
 #include "../driver.h"
 
+#include "SDL.h"
 #include "../gfx/gfx_context.h"
 #include "../boolean.h"
 #include "../general.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include "../libretro.h"
-#include "rarch_sdl_input.h"
 #include "input_common.h"
+
+typedef struct sdl_input
+{
+   const rarch_joypad_driver_t *joypad;
+
+   int16_t mouse_x, mouse_y;
+   int16_t mouse_l, mouse_r, mouse_m;
+} sdl_input_t;
 
 struct key_bind
 {
@@ -132,52 +140,12 @@ static void *sdl_input_init(void)
    if (!sdl)
       return NULL;
 
-#ifdef HAVE_DINPUT
-   sdl->di = sdl_dinput_init();
-   if (!sdl->di)
-   {
-      free(sdl);
-      RARCH_ERR("Failed to init SDL/DInput.\n");
-      return NULL;
-   }
-#else
-   if (SDL_Init(SDL_INIT_JOYSTICK) < 0)
-      return NULL;
+   sdl->joypad = input_joypad_init_first();
+   if (sdl->joypad)
+      RARCH_LOG("SDL: Found joypad driver: %s\n", sdl->joypad->ident);
+   else
+      RARCH_WARN("SDL: Didn't find suitable input driver.\n");
 
-   SDL_JoystickEventState(SDL_IGNORE);
-   sdl->num_joysticks = SDL_NumJoysticks();
-
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
-   {
-      if (g_settings.input.joypad_map[i] < 0)
-         continue;
-
-      unsigned port = g_settings.input.joypad_map[i];
-
-      if (sdl->num_joysticks <= port)
-         continue;
-
-      sdl->joysticks[i] = SDL_JoystickOpen(port);
-      if (!sdl->joysticks[i])
-      {
-         RARCH_ERR("Couldn't open SDL joystick #%u on SNES port %u\n", port, i + 1);
-         free(sdl);
-         SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
-         return NULL;
-      }
-
-      RARCH_LOG("Opened Joystick: %s (#%u) on port %u\n", 
-            SDL_JoystickName(port), port, i + 1);
-
-      sdl->num_axes[i] = SDL_JoystickNumAxes(sdl->joysticks[i]);
-      sdl->num_buttons[i] = SDL_JoystickNumButtons(sdl->joysticks[i]);
-      sdl->num_hats[i] = SDL_JoystickNumHats(sdl->joysticks[i]);
-      RARCH_LOG("Joypad has: %u axes, %u buttons, %u hats.\n",
-            sdl->num_axes[i], sdl->num_buttons[i], sdl->num_hats[i]);
-   }
-#endif
-
-   sdl->use_keyboard = true;
    return sdl;
 }
 
@@ -194,95 +162,12 @@ static bool sdl_key_pressed(int key)
    return keymap[key];
 }
 
-#ifndef HAVE_DINPUT
-static bool sdl_joykey_pressed(sdl_input_t *sdl, int port_num, uint16_t joykey)
-{
-   if (joykey == NO_BTN)
-      return false;
-
-   // Check hat.
-   if (GET_HAT_DIR(joykey))
-   {
-      uint16_t hat = GET_HAT(joykey);
-      if (hat >= sdl->num_hats[port_num])
-         return false;
-
-      Uint8 dir = SDL_JoystickGetHat(sdl->joysticks[port_num], hat);
-      switch (GET_HAT_DIR(joykey))
-      {
-         case HAT_UP_MASK:
-            return dir & SDL_HAT_UP;
-         case HAT_DOWN_MASK:
-            return dir & SDL_HAT_DOWN;
-         case HAT_LEFT_MASK:
-            return dir & SDL_HAT_LEFT;
-         case HAT_RIGHT_MASK:
-            return dir & SDL_HAT_RIGHT;
-         default:
-            return false;
-      }
-   }
-   else // Check the button
-   {
-      if (joykey < sdl->num_buttons[port_num] && SDL_JoystickGetButton(sdl->joysticks[port_num], joykey))
-         return true;
-
-      return false;
-   }
-}
-
-static int16_t sdl_axis_analog(sdl_input_t *sdl, unsigned port_num, uint32_t joyaxis)
-{
-   if (joyaxis == AXIS_NONE)
-      return 0;
-
-   Sint16 val = 0;
-   if (AXIS_NEG_GET(joyaxis) < sdl->num_axes[port_num])
-   {
-      val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_NEG_GET(joyaxis));
-
-      if (val > 0)
-         val = 0;
-      else if (val < -0x8000) // -0x8000 can cause trouble if we later abs() it.
-         val = -0x7fff;
-   }
-   else if (AXIS_POS_GET(joyaxis) < sdl->num_axes[port_num])
-   {
-      val = SDL_JoystickGetAxis(sdl->joysticks[port_num], AXIS_POS_GET(joyaxis));
-
-      if (val < 0)
-         val = 0;
-   }
-
-   return val;
-}
-
-static bool sdl_axis_pressed(sdl_input_t *sdl, unsigned port_num, uint32_t joyaxis)
-{
-   int16_t val = sdl_axis_analog(sdl, port_num, joyaxis);
-
-   float scaled = (float)abs(val) / 0x8000;
-   return scaled > g_settings.input.axis_threshold;
-}
-#endif
-
 static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num, const struct retro_keybind *key)
 {
-   if (sdl->use_keyboard && sdl_key_pressed(key->key))
+   if (sdl_key_pressed(key->key))
       return true;
 
-#ifdef HAVE_DINPUT
-   return sdl_dinput_pressed(sdl->di, port_num, key);
-#else
-   if (sdl->joysticks[port_num] == NULL)
-      return false;
-   if (sdl_joykey_pressed(sdl, port_num, key->joykey))
-      return true;
-   if (sdl_axis_pressed(sdl, port_num, key->joyaxis))
-      return true;
-#endif
-
-   return false;
+   return input_joypad_pressed(sdl->joypad, port_num, key);
 }
 
 static bool sdl_bind_button_pressed(void *data, int key)
@@ -304,51 +189,21 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keyb
    if (id < RARCH_BIND_LIST_END)
    {
       const struct retro_keybind *bind = &binds[id];
-      return bind->valid ? (sdl_is_pressed(sdl, port_num, bind) ? 1 : 0) : 0;
+      return bind->valid && sdl_is_pressed(sdl, port_num, bind);
    }
    else
       return 0;
 }
 
-static int16_t sdl_analog_device_state(sdl_input_t *sdl, const struct retro_keybind **binds_,
+static int16_t sdl_analog_device_state(sdl_input_t *sdl, const struct retro_keybind **binds,
       unsigned port_num, unsigned index, unsigned id)
 {
-   const struct retro_keybind *binds = binds_[port_num];
-   if (id >= RARCH_BIND_LIST_END)
-      return 0;
-
-   unsigned id_minus = 0;
-   unsigned id_plus  = 0;
-   input_conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
-
-   const struct retro_keybind *bind_minus = &binds[id_minus];
-   const struct retro_keybind *bind_plus  = &binds[id_plus];
-   if (!bind_minus->valid || !bind_plus->valid)
-      return 0;
-
-   // A user might have bound minus axis to positive axis in SDL.
-#ifdef HAVE_DINPUT
-   int16_t pressed_minus = abs(sdl_dinput_axis(sdl->di, port_num, bind_minus));
-   int16_t pressed_plus  = abs(sdl_dinput_axis(sdl->di, port_num, bind_plus));
-#else
-   int16_t pressed_minus = abs(sdl_axis_analog(sdl, port_num, bind_minus->joyaxis));
-   int16_t pressed_plus  = abs(sdl_axis_analog(sdl, port_num, bind_plus->joyaxis));
-#endif
-
-   int16_t res = pressed_plus - pressed_minus;
-
-   // TODO: Does it make sense to use axis thresholding here?
-   if (res != 0)
-      return res;
-
-   int16_t digital_left  = sdl_is_pressed(sdl, port_num, bind_minus) ? -0x7fff : 0;
-   int16_t digital_right = sdl_is_pressed(sdl, port_num, bind_plus)  ?  0x7fff : 0;
-   return digital_right + digital_left;
+   return input_joypad_analog(sdl->joypad, port_num, index, id, binds[port_num]);
 }
 
 static int16_t sdl_keyboard_device_state(sdl_input_t *sdl, unsigned id)
 {
-   return sdl->use_keyboard && sdl_key_pressed(id);
+   return sdl_key_pressed(id);
 }
 
 static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
@@ -414,27 +269,19 @@ static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds, 
 
 static void sdl_input_free(void *data)
 {
-   if (data)
-   {
-      // Flush out all pending events.
-      SDL_Event event;
-      while (SDL_PollEvent(&event));
+   if (!data)
+      return;
 
-      sdl_input_t *sdl = (sdl_input_t*)data;
+   // Flush out all pending events.
+   SDL_Event event;
+   while (SDL_PollEvent(&event));
 
-#ifdef HAVE_DINPUT
-      sdl_dinput_free(sdl->di);
-#else
-      for (int i = 0; i < MAX_PLAYERS; i++)
-      {
-         if (sdl->joysticks[i])
-            SDL_JoystickClose(sdl->joysticks[i]);
-      }
-      SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
-#endif
+   sdl_input_t *sdl = (sdl_input_t*)data;
 
-      free(data);
-   }
+   if (sdl->joypad)
+      sdl->joypad->destroy();
+
+   free(data);
 }
 
 static void sdl_poll_mouse(sdl_input_t *sdl)
@@ -453,12 +300,6 @@ static void sdl_input_poll(void *data)
    SDL_PumpEvents();
    sdl_input_t *sdl = (sdl_input_t*)data;
 
-#ifdef HAVE_DINPUT
-   sdl_dinput_poll(sdl->di);
-#else
-   SDL_JoystickUpdate();
-#endif
-
    sdl_poll_mouse(sdl);
 }
 
@@ -468,6 +309,6 @@ const input_driver_t input_sdl = {
    sdl_input_state,
    sdl_bind_button_pressed,
    sdl_input_free,
-   "sdl"
+   "sdl",
 };
 

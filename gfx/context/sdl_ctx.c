@@ -121,6 +121,31 @@ static void gfx_ctx_destroy(void)
    g_inited = false;
 }
 
+static void sdl_set_handles(void)
+{
+#if defined(_WIN32)
+   SDL_SysWMinfo info;
+   SDL_VERSION(&info.version);
+
+   if (SDL_GetWMInfo(&info) == 1)
+   {
+      driver.display_type  = RARCH_DISPLAY_WIN32;
+      driver.video_display = 0;
+      driver.video_window  = (uintptr_t)info.window;
+   }
+#elif defined(HAVE_X11)
+   SDL_SysWMinfo info;
+   SDL_VERSION(&info.version);
+
+   if (SDL_GetWMInfo(&info) == 1)
+   {
+      driver.display_type  = RARCH_DISPLAY_X11;
+      driver.video_display = (uintptr_t)info.info.x11.display;
+      driver.video_window  = (uintptr_t)info.info.x11.window;
+   }
+#endif
+}
+
 static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen)
@@ -161,17 +186,7 @@ static bool gfx_ctx_set_video_mode(
    // Remove that ugly mouse :D
    SDL_ShowCursor(SDL_DISABLE);
 
-   // Suspend screensaver on X11.
-#if defined(HAVE_X11)
-   RARCH_LOG("Suspending screensaver (X11).\n");
-   SDL_SysWMinfo info;
-   SDL_VERSION(&info.version);
-
-   if (SDL_GetWMInfo(&info) == 1)
-      x11_suspend_screensaver(info.info.x11.window);
-   else
-      RARCH_ERR("Failed to get SDL WM info, cannot suspend screensaver.\n");
-#endif
+   sdl_set_handles();
 
    return true;
 }

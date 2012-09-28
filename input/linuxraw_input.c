@@ -23,12 +23,17 @@
 #include <unistd.h>
 #include <signal.h>
 #include "../general.h"
-#include "linuxraw_input.h"
-#include "rarch_sdl_input.h"
 #include "input_common.h"
 
 static long oldKbmd = 0xffff;
 static struct termios oldTerm, newTerm;
+
+typedef struct linuxraw_input
+{
+   const rarch_joypad_driver_t *joypad;
+   bool state[0x80];
+} linuxraw_input_t;
+
 
 struct key_bind
 {
@@ -152,7 +157,7 @@ static void init_lut(void)
       keysym_lut[lut_binds[i].sk] = lut_binds[i].x;
 }
 
-static void linuxraw_resetKbmd()
+static void linuxraw_resetKbmd(void)
 {
    if (oldKbmd != 0xffff)
    {
@@ -221,17 +226,9 @@ static void *linuxraw_input_init(void)
 
    atexit(linuxraw_resetKbmd);
 
-   linuxraw->sdl = (sdl_input_t*)input_sdl.init();
-   if (!linuxraw->sdl)
-   {
-      linuxraw_resetKbmd();
-      free(linuxraw);
-      return NULL;
-   }
-
+   linuxraw->joypad = input_joypad_init_first();
    init_lut();
 
-   linuxraw->sdl->use_keyboard = false;
    driver.stdin_claimed = true; // We need to disable use of stdin command interface if stdin is supposed to be used for input.
    return linuxraw;
 }
@@ -256,30 +253,7 @@ static bool linuxraw_bind_button_pressed(void *data, int key)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
    return linuxraw_is_pressed(linuxraw, g_settings.input.binds[0], key) ||
-      input_sdl.key_pressed(linuxraw->sdl, key);
-}
-
-static int16_t raw_analog_state(linuxraw_input_t *linuxraw, const struct retro_keybind **binds_,
-      unsigned port, unsigned index, unsigned id)
-{
-   const struct retro_keybind *binds = binds_[port];
-   if (id >= RARCH_BIND_LIST_END)
-      return 0;
-
-   unsigned id_minus = 0;
-   unsigned id_plus  = 0;
-
-   input_conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
-
-   const struct retro_keybind *bind_minus = &binds[id_minus];
-   const struct retro_keybind *bind_plus  = &binds[id_plus];
-   if (!bind_minus->valid || !bind_plus->valid)
-      return 0;
-
-   int16_t res_minus = linuxraw_is_pressed(linuxraw, binds, id_minus) ? -0x7fff : 0;
-   int16_t res_plus  = linuxraw_is_pressed(linuxraw, binds, id_plus)  ?  0x7fff : 0;
-
-   return res_plus + res_minus;
+      input_joypad_pressed(linuxraw->joypad, 0, &g_settings.input.binds[0][key]);
 }
 
 static int16_t linuxraw_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
@@ -290,15 +264,10 @@ static int16_t linuxraw_input_state(void *data, const struct retro_keybind **bin
    {
       case RETRO_DEVICE_JOYPAD:
          return linuxraw_is_pressed(linuxraw, binds[port], id) ||
-            input_sdl.input_state(linuxraw->sdl, binds, port, device, index, id);
+            input_joypad_pressed(linuxraw->joypad, port, &binds[port][id]);
 
       case RETRO_DEVICE_ANALOG:
-      {
-         int16_t ret = input_sdl.input_state(linuxraw->sdl, binds, port, device, index, id);
-         if (!ret)
-            ret = raw_analog_state(linuxraw, binds, port, index, id);
-         return ret;
-      }
+         return input_joypad_analog(linuxraw->joypad, port, index, id, binds[port]);
 
       default:
          return 0;
@@ -308,7 +277,10 @@ static int16_t linuxraw_input_state(void *data, const struct retro_keybind **bin
 static void linuxraw_input_free(void *data)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
-   input_sdl.free(linuxraw->sdl);
+
+   if (linuxraw->joypad)
+      linuxraw->joypad->destroy();
+
    linuxraw_resetKbmd();
    free(data);
 }
@@ -334,7 +306,7 @@ static void linuxraw_input_poll(void *data)
          linuxraw->state[c] = pressed;
    }
 
-   input_sdl.poll(linuxraw->sdl);
+   input_joypad_poll(linuxraw->joypad);
 }
 
 const input_driver_t input_linuxraw = {

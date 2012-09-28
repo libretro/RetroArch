@@ -18,7 +18,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../general.h"
-#include "../input/rarch_sdl_input.h"
 #include "scaler/scaler.h"
 #include "gfx_common.h"
 #include "gfx_context.h"
@@ -299,6 +298,32 @@ static void sdl_render_msg_32(sdl_video_t *vid, SDL_Surface *buffer, const char 
 #endif
 }
 
+static void sdl_gfx_set_handles(void)
+{
+   // SysWMinfo headers are broken on OSX. :(
+#if defined(_WIN32)
+   SDL_SysWMinfo info;
+   SDL_VERSION(&info.version);
+
+   if (SDL_GetWMInfo(&info) == 1)
+   {
+      driver.display_type  = RARCH_DISPLAY_WIN32;
+      driver.video_display = 0;
+      driver.video_window  = (uintptr_t)info.window;
+   }
+#elif defined(HAVE_X11)
+   SDL_SysWMinfo info;
+   SDL_VERSION(&info.version);
+
+   if (SDL_GetWMInfo(&info) == 1)
+   {
+      driver.display_type  = RARCH_DISPLAY_X11;
+      driver.video_display = (uintptr_t)info.info.x11.display;
+      driver.video_window  = (uintptr_t)info.info.x11.window;
+   }
+#endif
+}
+
 static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
 #ifdef _WIN32
@@ -317,7 +342,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    unsigned full_y = video_info->current_h;
    RARCH_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
-   sdl_input_t *sdl_input = NULL;
+   void *sdl_input = NULL;
    const SDL_PixelFormat *fmt = NULL;
 
    if (!video->fullscreen)
@@ -336,16 +361,6 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
       vid->upsample = true;
 
    SDL_ShowCursor(SDL_DISABLE);
-
-#if defined(HAVE_X11)
-   RARCH_LOG("Suspending screensaver (X11).\n");
-   SDL_SysWMinfo wm_info;
-   SDL_VERSION(&wm_info.version);
-   if (SDL_GetWMInfo(&wm_info) == 1)
-      x11_suspend_screensaver(wm_info.info.x11.window);
-   else
-      RARCH_ERR("Failed to suspend screensaver.\n");
-#endif
 
    fmt = vid->screen->format;
    if (vid->render32)
@@ -371,7 +386,9 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
       goto error;
    }
 
-   sdl_input = (sdl_input_t*)input_sdl.init();
+   sdl_gfx_set_handles();
+
+   sdl_input = input_sdl.init();
    if (sdl_input)
    {
       *input = &input_sdl;
