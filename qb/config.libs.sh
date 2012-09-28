@@ -100,7 +100,10 @@ else
    HAVE_CG='no'
 fi
 
-[ "$HAVE_SDL" = "no" ] && HAVE_SDL_IMAGE=no
+if [ "$HAVE_SDL" = "no" ]; then
+   echo "SDL is disabled. Disabling SDL_image."
+   HAVE_SDL_IMAGE=no
+fi
 check_pkgconf SDL_IMAGE SDL_image
 
 check_pkgconf LIBPNG libpng 1.5
