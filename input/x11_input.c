@@ -188,7 +188,7 @@ static bool x_bind_button_pressed(void *data, int key)
 {
    x11_input_t *x11 = (x11_input_t*)data;
    return x_is_pressed(x11, g_settings.input.binds[0], key) ||
-      input_joypad_pressed(x11->joypad, 0, g_settings.input.binds[0]);
+      input_joypad_pressed(x11->joypad, 0, &g_settings.input.binds[0][key]);
 }
 
 static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
