@@ -401,6 +401,9 @@ static bool gfx_ctx_set_video_mode(
    if (g_inited)
       return false;
 
+   int ret = 0;
+   struct drm_fb *fb = NULL;
+
    struct sigaction sa = {{0}};
    sa.sa_handler = sighandler;
    sa.sa_flags   = SA_RESTART;
@@ -434,6 +437,12 @@ static bool gfx_ctx_set_video_mode(
       EGL_NONE,
    };
 
+   // GLES 2.0. Don't use for any other API.
+   static const EGLint gles_context_attribs[] = {
+      EGL_CONTEXT_CLIENT_VERSION, 2,
+      EGL_NONE
+   };
+
    const EGLint *attrib_ptr;
    switch (g_api)
    {
@@ -465,12 +474,6 @@ static bool gfx_ctx_set_video_mode(
    if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_config, 1, &n) || n != 1)
       goto error;
 
-   // GLES 2.0. Don't use for any other API.
-   static const EGLint gles_context_attribs[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2,
-      EGL_NONE
-   };
-
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (g_api == GFX_CTX_OPENGL_ES_API) ? gles_context_attribs : NULL);
    if (!g_egl_ctx)
       goto error;
@@ -487,9 +490,9 @@ static bool gfx_ctx_set_video_mode(
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 
    g_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
-   struct drm_fb *fb = drm_fb_get_from_bo(g_bo);
+   fb = drm_fb_get_from_bo(g_bo);
 
-   int ret = drmModeSetCrtc(g_drm_fd, g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
+   ret = drmModeSetCrtc(g_drm_fd, g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
    if (ret < 0)
       goto error;
 
