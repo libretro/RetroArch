@@ -141,11 +141,6 @@ static void *sdl_input_init(void)
       return NULL;
 
    sdl->joypad = input_joypad_init_first();
-   if (sdl->joypad)
-      RARCH_LOG("SDL: Found joypad driver: %s\n", sdl->joypad->ident);
-   else
-      RARCH_WARN("SDL: Didn't find suitable input driver.\n");
-
    return sdl;
 }
 
@@ -300,6 +295,7 @@ static void sdl_input_poll(void *data)
    SDL_PumpEvents();
    sdl_input_t *sdl = (sdl_input_t*)data;
 
+   input_joypad_poll(sdl->joypad);
    sdl_poll_mouse(sdl);
 }
 
