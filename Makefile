@@ -292,8 +292,10 @@ endif
 
 CFLAGS += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) -g -I. -pedantic
 ifeq ($(CXX_BUILD), 1)
+   LD = $(CXX)
    CFLAGS += -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS
 else
+   LD = $(CC)
    ifneq ($(findstring icc,$(CC)),)
       CFLAGS += -std=c99 -D_GNU_SOURCE
    else
@@ -312,7 +314,7 @@ config.mk: configure qb/*
 	@exit 1
 
 retroarch: $(OBJ)
-	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
+	$(Q)$(LD) -o $@ $(OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 	@$(if $(Q), $(shell echo echo LD $@),)
 
 tools/retroarch-joyconfig: $(JOYCONFIG_OBJ)

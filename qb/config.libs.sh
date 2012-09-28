@@ -160,6 +160,8 @@ fi
 check_pkgconf XML libxml-2.0
 check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
+[ "$HAVE_X11" = "no" ] && HAVE_XEXT=no
+
 check_pkgconf XEXT xext
 if [ "$HAVE_X11" = 'yes' ] && [ "$HAVE_XEXT" = 'yes' ]; then
    check_pkgconf XVIDEO xv
