@@ -201,15 +201,13 @@ static void blit_fonts(gl_t *gl, const struct font_output *head, const struct fo
 }
 
 static void calculate_font_coords(gl_t *gl,
-      GLfloat font_vertex[8], GLfloat font_vertex_dark[8], GLfloat font_tex_coords[8])
+      GLfloat font_vertex[8], GLfloat font_vertex_dark[8], GLfloat font_tex_coords[8], GLfloat scale, GLfloat pos_x, GLfloat pos_y)
 {
-   GLfloat scale_factor = g_settings.video.font_scale ?
-      (GLfloat)gl->full_x / (GLfloat)gl->vp_width :
-      1.0f;
+   GLfloat scale_factor = scale;
 
-   GLfloat lx = g_settings.video.msg_pos_x;
+   GLfloat lx = pos_x;
    GLfloat hx = (GLfloat)gl->font_last_width / (gl->vp_width * scale_factor) + lx;
-   GLfloat ly = g_settings.video.msg_pos_y;
+   GLfloat ly = pos_y;
    GLfloat hy = (GLfloat)gl->font_last_height / (gl->vp_height * scale_factor) + ly;
 
    font_vertex[0] = lx;
@@ -247,11 +245,8 @@ static void calculate_font_coords(gl_t *gl,
 extern const GLfloat vertexes_flipped[];
 extern const GLfloat white_color[];
 
-#endif
-
-void gl_render_msg(void *data, const char *msg)
+static void setup_font(void *data, const char *msg, GLfloat scale, GLfloat pos_x, GLfloat pos_y)
 {
-#ifdef HAVE_FREETYPE
    gl_t *gl = (gl_t*)data;
    if (!gl->font)
       return;
@@ -288,7 +283,8 @@ void gl_render_msg(void *data, const char *msg)
       gl->font_last_width = geom.width;
       gl->font_last_height = geom.height;
    }
-   calculate_font_coords(gl, font_vertex, font_vertex_dark, font_tex_coords);
+   calculate_font_coords(gl, font_vertex, font_vertex_dark, font_tex_coords, 
+   scale, pos_x, pos_y);
    
    gl->coords.vertex = font_vertex_dark;
    gl->coords.color  = gl->font_color_dark;
@@ -310,17 +306,25 @@ void gl_render_msg(void *data, const char *msg)
 
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
    gl_set_projection(gl, &ortho, true);
-#else
+}
+
+#endif
+
+void gl_render_msg(void *data, const char *msg)
+{
    (void)data;
    (void)msg;
+#ifdef HAVE_FREETYPE
+   gl_t *gl = (gl_t*)data;
+   setup_font(data, msg, g_settings.video.font_scale ? (GLfloat)gl->full_x / (GLfloat)gl->vp_width : 1.0f, g_settings.video.msg_pos_x, g_settings.video.msg_pos_y);
 #endif
 }
 
-void gl_render_msg_place(void *data, float x, float y, float scale, uint32_t color, const char *msg)
+void gl_render_msg_place(void *data, float pos_x, float pos_y, float scale, uint32_t color, const char *msg)
 {
-   /* TODO: Currently a no-op - needs to be implemented for RMenu - text needs to be able to be positioned 
-   arbitrarily
-   */
-
    (void)data;
+   (void)msg;
+#ifdef HAVE_FREETYPE
+   setup_font(data, msg, scale, pos_x, pos_y);
+#endif
 }
