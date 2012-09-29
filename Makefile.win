@@ -213,9 +213,9 @@ $(TARGET): $(OBJ)
 
 $(JTARGET): $(JOBJ)
 ifeq ($(CXX_BUILD), 1)
-	$(Q)$(CXX) -o $@ $(JOBJ) -lSDL $(LDFLAGS)
+	$(Q)$(CXX) -o $@ $(JOBJ) -lSDL -ldxguid -ldinput8 $(LDFLAGS)
 else
-	$(Q)$(CC) -o $@ $(JOBJ) -lSDL $(LDFLAGS)
+	$(Q)$(CC) -o $@ $(JOBJ) -lSDL -ldxguid -ldinput8 $(LDFLAGS)
 endif
 	@$(if $(Q), $(shell echo echo LD $@),)
 
