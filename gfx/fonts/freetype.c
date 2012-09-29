@@ -206,9 +206,9 @@ static void calculate_font_coords(gl_t *gl,
    GLfloat scale_factor = scale;
 
    GLfloat lx = pos_x;
-   GLfloat hx = (GLfloat)gl->font_last_width / (gl->vp_width * scale_factor) + lx;
+   GLfloat hx = (GLfloat)gl->font_last_width * scale_factor / gl->vp_width + lx;
    GLfloat ly = pos_y;
-   GLfloat hy = (GLfloat)gl->font_last_height / (gl->vp_height * scale_factor) + ly;
+   GLfloat hy = (GLfloat)gl->font_last_height * scale_factor / gl->vp_height + ly;
 
    font_vertex[0] = lx;
    font_vertex[2] = hx;
@@ -284,7 +284,7 @@ static void setup_font(void *data, const char *msg, GLfloat scale, GLfloat pos_x
       gl->font_last_height = geom.height;
    }
    calculate_font_coords(gl, font_vertex, font_vertex_dark, font_tex_coords, 
-   scale, pos_x, pos_y);
+         scale, pos_x, pos_y);
    
    gl->coords.vertex = font_vertex_dark;
    gl->coords.color  = gl->font_color_dark;
@@ -314,9 +314,12 @@ void gl_render_msg(void *data, const char *msg)
 {
    (void)data;
    (void)msg;
+
 #ifdef HAVE_FREETYPE
    gl_t *gl = (gl_t*)data;
-   setup_font(data, msg, g_settings.video.font_scale ? (GLfloat)gl->full_x / (GLfloat)gl->vp_width : 1.0f, g_settings.video.msg_pos_x, g_settings.video.msg_pos_y);
+   setup_font(data, msg,
+         g_settings.video.font_scale ? (GLfloat)gl->vp_width / (GLfloat)gl->full_x : 1.0f,
+         g_settings.video.msg_pos_x, g_settings.video.msg_pos_y);
 #endif
 }
 
@@ -324,6 +327,8 @@ void gl_render_msg_place(void *data, float pos_x, float pos_y, float scale, uint
 {
    (void)data;
    (void)msg;
+   (void)color;
+
 #ifdef HAVE_FREETYPE
    setup_font(data, msg, scale, pos_x, pos_y);
 #endif
