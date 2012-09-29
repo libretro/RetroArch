@@ -41,6 +41,7 @@
 #include <GL3/gl3ext.h>
 #elif defined(HAVE_OPENGLES2)
 #include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
 #elif defined(HAVE_OPENGLES1)
 #include <GLES/gl.h>
 #include <GLES/glext.h>
@@ -246,10 +247,11 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8
 #define RARCH_GL_FORMAT16 GL_RGB5_A1
 #elif defined(HAVE_OPENGLES)
-#define RARCH_GL_INTERNAL_FORMAT GL_RGBA
-#define RARCH_GL_TEXTURE_TYPE GL_RGBA
+#define RARCH_GL_INTERNAL_FORMAT GL_BGRA_EXT
+#define RARCH_GL_TEXTURE_TYPE GL_BGRA_EXT
 #define RARCH_GL_FORMAT32 GL_UNSIGNED_BYTE
-#define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT_5_5_5_1
+// 15-bit is converted to 32-bit directly as we have to convert anyways.
+#define RARCH_GL_FORMAT16 GL_UNSIGNED_BYTE
 #else
 #define RARCH_GL_INTERNAL_FORMAT GL_RGBA
 #define RARCH_GL_TEXTURE_TYPE GL_BGRA

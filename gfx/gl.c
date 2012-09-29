@@ -963,77 +963,65 @@ static void gl_init_textures(gl_t *gl)
 #else
 static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
-   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * gl->base_size));
 
-#ifdef HAVE_OPENGLES2 // Have to perform pixel format conversions as well. (ARGB1555 => RGBA5551), (ARGB8888 => RGBA8888) :(
-   /* TODO: implemnt using FBO and color conversion shaders. ARGB8888 => RBGA8888 is trivial, but ARGB1555 => RGBA5551
-      is a little trickier, but this fragment shader snippit seems to do it:
+#ifdef HAVE_OPENGLES2 // Have to perform pixel format conversions as well.
+   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t))); // Always use 32-bit textures.
 
-      gl_FragColor.a = 1.0;
-      gl_FragColor.r = (mod(color.r * 31.97, 16.0) * 2.0 + (color.g * 1.97)) / 32.0;
-      gl_FragColor.g = (mod(color.g * 31.97, 16.0) * 2.0 + (color.b * 1.97)) / 32.0;
-      gl_FragColor.b = (mod(color.b * 31.97, 16.0) * 2.0 + color.a) / 32.0;
-
-      where color a vec4 you would normally assign gl_FragColor to
-   */
-   if (gl->base_size == 4) // ARGB8888 => RGBA8888
+   if (gl->base_size == 2) // ARGB1555 => ARGB8888
    {
-      const uint32_t *src  = (const uint32_t*)frame;
+      const uint16_t *src  = (const uint16_t*)frame;
       uint32_t *dst        = (uint32_t*)gl->conv_buffer;
-      unsigned pitch_width = pitch >> 2;
+      unsigned pitch_width = pitch >> 1;
 
-      // GL_RGBA + GL_UNSIGNED_BYTE apparently means in byte order, so go with little endian for now (ABGR).
+      // GL_UNSIGNED_BYTE apparently means in byte order, so go with little endian for now (ARGB).
+      // We have to convert anyways, prefer something that is more likely to be a native format for the GPU.
       for (unsigned h = 0; h < height; h++, dst += width, src += pitch_width)
       {
          for (unsigned w = 0; w < width; w++)
          {
             uint32_t col = src[w];
-            dst[w] = ((col << 16) & 0x00ff0000) | ((col >> 16) & 0x000000ff) | (col & 0xff00ff00);
+            uint32_t r = (col >> 10) & 0x1f;
+            uint32_t g = (col >>  5) & 0x1f;
+            uint32_t b = (col >>  0) & 0x1f;
+            r = (r << 3) | (r >> 2);
+            g = (g << 3) | (g >> 2);
+            b = (b << 3) | (b >> 2);
+
+            dst[w] = (0xff << 24) | (r << 16) | (g << 8) | (b << 0);
+         }
+      }
+
+      glTexSubImage2D(GL_TEXTURE_2D,
+            0, 0, 0, width, height, gl->texture_type,
+            gl->texture_fmt, gl->conv_buffer);
+   }
+   else
+   {
+      unsigned pitch_width = pitch / gl->base_size;
+      if (width == pitch_width) // Fast path :D
+      {
+         glTexSubImage2D(GL_TEXTURE_2D,
+               0, 0, 0, width, height, gl->texture_type,
+               gl->texture_fmt, gl->conv_buffer);
+      }
+      else
+      {
+         const uint32_t *src = (const uint32_t*)frame;
+         for (unsigned h = 0; h < height; h++, src += pitch_width)
+         {
+            glTexSubImage2D(GL_TEXTURE_2D,
+                  0, 0, h, width, 1, gl->texture_type,
+                  gl->texture_fmt, src);
          }
       }
    }
-   else // ARGB1555 => RGBA1555
-   {
-      // Go 32-bit at once.
-      unsigned half_width  = width >> 1;
-      const uint32_t *src  = (const uint32_t*)frame;
-      uint32_t *dst        = (uint32_t*)gl->conv_buffer;
-      unsigned pitch_width = pitch >> 2;
-
-      for (unsigned h = 0; h < height; h++, dst += half_width, src += pitch_width)
-         for (unsigned w = 0; w < half_width; w++)
-            dst[w] = (src[w] << 1) & 0xfffefffe;
-   }
-
-   glTexSubImage2D(GL_TEXTURE_2D,
-         0, 0, 0, width, height, gl->texture_type,
-         gl->texture_fmt, gl->conv_buffer);
 #else
-#ifdef GL_UNPACK_ROW_LENGTH
+   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
    glTexSubImage2D(GL_TEXTURE_2D,
          0, 0, 0, width, height, gl->texture_type,
          gl->texture_fmt, frame);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-#else
-   unsigned pitch_width = pitch / gl->base_size;
-   if (width == pitch_width) // Take optimal path
-   {
-      glTexSubImage2D(GL_TEXTURE_2D,
-            0, 0, 0, width, height, gl->texture_type,
-            gl->texture_fmt, frame);
-   }
-   else // Copy texture line by line :(
-   {
-      const uint8_t *src = (const uint8_t*)frame;
-      for (unsigned i = 0; i < height; i++, src += pitch)
-      {
-         glTexSubImage2D(GL_TEXTURE_2D,
-               0, 0, i, width, 1,
-               gl->texture_type, gl->texture_fmt, src);
-      }
-   }
-#endif
 #endif
 }
 
@@ -1239,8 +1227,16 @@ static bool resolve_extensions(gl_t *gl)
    gl->border_type = GL_CLAMP_TO_BORDER;
 #endif
 
-   // Useful for debugging, but kinda obnoxious.
+#ifdef HAVE_OPENGLES
+   if (!gl_query_extension("BGRA8888"))
+   {
+      RARCH_ERR("[GL]: GLES implementation does not have BGRA8888 extension.\n");
+      return false;
+   }
+#endif
+
 #if 0
+   // Useful for debugging, but kinda obnoxious.
    const char *ext = (const char*)glGetString(GL_EXTENSIONS);
    if (ext)
       RARCH_LOG("[GL] Supported extensions: %s\n", ext);
@@ -1405,10 +1401,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #endif
 
    // Empty buffer that we use to clear out the texture with on res change.
-   gl->empty_buf = calloc(gl->tex_w * gl->tex_h, gl->base_size);
+   gl->empty_buf = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
 
 #ifdef HAVE_OPENGLES2
-   gl->conv_buffer = calloc(gl->tex_w * gl->tex_h, gl->base_size);
+   gl->conv_buffer = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
    if (!gl->conv_buffer)
    {
       gl->driver->destroy();

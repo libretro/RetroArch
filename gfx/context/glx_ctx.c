@@ -69,7 +69,7 @@ static void gfx_ctx_swap_interval(unsigned interval)
    if (g_pglSwapInterval)
    {
       RARCH_LOG("[GLX]: glXSwapInterval(%u)\n", g_interval);
-      if (!g_pglSwapInterval(g_interval))
+      if (g_pglSwapInterval(g_interval) != 0)
          RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
    }
 }

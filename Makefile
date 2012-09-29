@@ -172,12 +172,14 @@ ifeq ($(HAVE_OPENGL), 1)
       endif
 
       ifeq ($(HAVE_X11), 1)
-         OBJ += gfx/context/glx_ctx.o
-      ifeq ($(HAVE_EGL), 1)
-         OBJ += gfx/context/xegl_ctx.o
-         DEFINES += $(EGL_CFLAGS)
-         LIBS += $(EGL_LIBS)
-      endif
+         ifeq ($(HAVE_GLES), 0)
+            OBJ += gfx/context/glx_ctx.o
+         endif
+         ifeq ($(HAVE_EGL), 1)
+            OBJ += gfx/context/xegl_ctx.o
+            DEFINES += $(EGL_CFLAGS)
+            LIBS += $(EGL_LIBS)
+         endif
       endif
    endif
 
