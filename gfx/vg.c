@@ -33,6 +33,7 @@ typedef struct
    const gfx_ctx_driver_t *driver;
    uint32_t mScreenWidth;
    uint32_t mScreenHeight;
+   bool should_resize;
    float mScreenAspect;
    bool mKeepAspect;
    unsigned mTextureWidth;
@@ -84,7 +85,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    vg->driver->swap_interval(video->vsync ? 1 : 0);
 
-   vg->mTexType = video->rgb32 ? VG_sABGR_8888 : VG_sARGB_1555;
+   vg->mTexType = video->rgb32 ? VG_sXRGB_8888 : VG_sARGB_1555;
    vg->mKeepAspect = video->force_aspect;
 
    unsigned win_width  = video->width;
@@ -95,7 +96,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
       win_height = vg->mScreenHeight;
    }
 
-   if (!vg->driver->set_video_mode(vg->mScreenWidth, vg->mScreenHeight,
+   if (!vg->driver->set_video_mode(win_width, win_height,
             g_settings.video.force_16bit ? 15 : 0, video->fullscreen))
    {
       free(vg);
@@ -103,6 +104,8 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    vg->driver->get_video_size(&vg->mScreenWidth, &vg->mScreenHeight);
+   RARCH_LOG("Verified window resolution %ux%u.\n", vg->mScreenWidth, vg->mScreenHeight);
+   vg->should_resize = true;
 
    if (vg->driver->translate_aspect)
       vg->mScreenAspect = vg->driver->translate_aspect(vg->mScreenWidth, vg->mScreenHeight);
@@ -116,8 +119,8 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    // We can't use the native format because there's no sXRGB_1555 type and
    // emulation cores can send 0 in the top bit. We lose some speed on
    // conversion but I doubt it has any real affect, since we are only drawing
-   // one image at the end of the day. Still keep the alpha channel for ABGR.
-   vg->mImage = vgCreateImage(video->rgb32 ? VG_sABGR_8888 : VG_sXBGR_8888,
+   // one image at the end of the day. Don't keep the alpha channel for ARGB.
+   vg->mImage = vgCreateImage(VG_sXRGB_8888,
          vg->mTextureWidth, vg->mTextureHeight,
          video->smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
    vg_set_nonblock_state(vg, !video->vsync);
@@ -311,7 +314,7 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
    vg_t *vg = (vg_t*)data;
    vg->frame_count++;
 
-   if (width != vg->mRenderWidth || height != vg->mRenderHeight)
+   if (width != vg->mRenderWidth || height != vg->mRenderHeight || vg->should_resize)
    {
       vg->mRenderWidth = width;
       vg->mRenderHeight = height;
@@ -323,6 +326,8 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
          &vg->mTransformMatrix);
       vgSeti(VG_MATRIX_MODE, VG_MATRIX_IMAGE_USER_TO_SURFACE);
       vgLoadMatrix(vg->mTransformMatrix.data);
+
+      vg->should_resize = false;
    }
    vgSeti(VG_SCISSORING, VG_FALSE);
    vgClear(0, 0, vg->mScreenWidth, vg->mScreenHeight);
@@ -346,10 +351,10 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
 static bool vg_alive(void *data)
 {
    vg_t *vg = (vg_t*)data;
-   bool quit, resize;
+   bool quit;
 
    vg->driver->check_window(&quit,
-         &resize, &vg->mScreenWidth, &vg->mScreenHeight,
+         &vg->should_resize, &vg->mScreenWidth, &vg->mScreenHeight,
          vg->frame_count);
    return !quit;
 }
