@@ -19,10 +19,14 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/extensions/xf86vmode.h>
+#include "../../boolean.h"
 
 void x11_hide_mouse(Display *dpy, Window win);
 void x11_windowed_fullscreen(Display *dpy, Window win);
 void x11_suspend_screensaver(Window win);
+bool x11_enter_fullscreen(Display *dpy, unsigned width, unsigned height, XF86VidModeModeInfo *desktop_mode);
+void x11_exit_fullscreen(Display *dpy, XF86VidModeModeInfo *desktop_mode);
 
 #endif
 

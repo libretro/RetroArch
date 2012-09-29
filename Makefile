@@ -207,8 +207,8 @@ endif
 
 ifeq ($(HAVE_X11), 1)
    OBJ += input/x11_input.o gfx/context/x11_common.o
-   LIBS += $(X11_LIBS) $(XEXT_LIBS)
-   DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS)
+   LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS)
+   DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS)
 endif
 
 ifeq ($(HAVE_CG), 1)

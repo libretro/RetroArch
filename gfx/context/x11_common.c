@@ -89,3 +89,51 @@ void x11_suspend_screensaver(Window wnd)
       RARCH_WARN("Could not suspend screen saver.\n");
 }
 
+static bool get_video_mode(Display *dpy, unsigned width, unsigned height, XF86VidModeModeInfo *mode, XF86VidModeModeInfo *desktop_mode)
+{
+   XF86VidModeModeInfo **modes = NULL;
+   int num_modes = 0;
+   XF86VidModeGetAllModeLines(dpy, DefaultScreen(dpy), &num_modes, &modes);
+
+   if (!num_modes)
+   {
+      XFree(modes);
+      return false;
+   }
+
+   *desktop_mode = *modes[0];
+
+   bool ret = false;
+   for (int i = 0; i < num_modes; i++)
+   {
+      if (modes[i]->hdisplay == width && modes[i]->vdisplay == height)
+      {
+         *mode = *modes[i];
+         ret = true;
+         break;
+      }
+   }
+
+   XFree(modes);
+   return ret;
+}
+
+bool x11_enter_fullscreen(Display *dpy, unsigned width, unsigned height, XF86VidModeModeInfo *desktop_mode)
+{
+   XF86VidModeModeInfo mode;
+   if (get_video_mode(dpy, width, height, &mode, desktop_mode))
+   {
+      XF86VidModeSwitchToMode(dpy, DefaultScreen(dpy), &mode);
+      XF86VidModeSetViewPort(dpy, DefaultScreen(dpy), 0, 0);
+      return true;
+   }
+   else
+      return false;
+}
+
+void x11_exit_fullscreen(Display *dpy, XF86VidModeModeInfo *desktop_mode)
+{
+   XF86VidModeSwitchToMode(dpy, DefaultScreen(dpy), desktop_mode);
+   XF86VidModeSetViewPort(dpy, DefaultScreen(dpy), 0, 0);
+}
+

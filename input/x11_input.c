@@ -295,8 +295,8 @@ static void x_input_poll(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
 
-   Window win;
-   int rev;
+   Window win = None;
+   int rev = 0;
    XGetInputFocus(x11->display, &win, &rev);
 
    if (win == x11->win)

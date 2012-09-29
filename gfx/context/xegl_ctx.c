@@ -41,6 +41,9 @@ static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
 static EGLConfig g_config;
 
+static XF86VidModeModeInfo g_desktop_mode;
+static bool g_should_reset_mode;
+
 static volatile sig_atomic_t g_quit;
 static bool g_inited;
 static unsigned g_interval;
@@ -50,6 +53,13 @@ static void sighandler(int sig)
 {
    (void)sig;
    g_quit = 1;
+}
+
+static Bool egl_wait_notify(Display *d, XEvent *e, char *arg)
+{
+   (void)d;
+   (void)e;
+   return e->type == MapNotify && e->xmap.window == g_win;
 }
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
@@ -264,11 +274,18 @@ static bool gfx_ctx_set_video_mode(
    swa.colormap = g_cmap = XCreateColormap(g_dpy, RootWindow(g_dpy, vi->screen),
          vi->visual, AllocNone);
    swa.event_mask = StructureNotifyMask;
+   swa.override_redirect = fullscreen ? True : False;
+
+   if (fullscreen)
+   {
+      if (x11_enter_fullscreen(g_dpy, width, height, &g_desktop_mode))
+         g_should_reset_mode = true;
+   }
 
    g_win = XCreateWindow(g_dpy, RootWindow(g_dpy, vi->screen),
          0, 0, width ? width : 200, height ? height : 200, 0,
          vi->depth, InputOutput, vi->visual, 
-         CWBorderPixel | CWColormap | CWEventMask, &swa);
+         CWBorderPixel | CWColormap | CWEventMask | (fullscreen ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_dpy, g_win, 0);
 
    // GLES 2.0. Don't use for any other API.
@@ -294,8 +311,9 @@ static bool gfx_ctx_set_video_mode(
    x11_hide_mouse(g_dpy, g_win);
    XMapWindow(g_dpy, g_win);
 
-   if (fullscreen)
-      x11_windowed_fullscreen(g_dpy, g_win);
+   XEvent event;
+   XIfEvent(g_dpy, &event, egl_wait_notify, NULL);
+   XSetInputFocus(g_dpy, g_win, RevertToNone, CurrentTime);
 
    g_quit_atom = XInternAtom(g_dpy, "WM_DELETE_WINDOW", False);
    if (g_quit_atom)
@@ -352,6 +370,12 @@ static void gfx_ctx_destroy(void)
    {
       XFreeColormap(g_dpy, g_cmap);
       g_cmap = None;
+   }
+
+   if (g_should_reset_mode)
+   {
+      x11_exit_fullscreen(g_dpy, &g_desktop_mode);
+      g_should_reset_mode = false;
    }
 
    if (g_dpy)
