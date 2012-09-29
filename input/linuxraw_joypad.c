@@ -32,6 +32,40 @@ struct linuxraw_joypad
 
 static struct linuxraw_joypad g_pads[MAX_PLAYERS];
 
+static void poll_pad(struct linuxraw_joypad *pad)
+{
+   struct js_event event;
+   while (read(pad->fd, &event, sizeof(event)) == (ssize_t)sizeof(event))
+   {
+      unsigned type = event.type & ~JS_EVENT_INIT;
+
+      switch (type)
+      {
+         case JS_EVENT_BUTTON:
+            if (event.number < NUM_BUTTONS)
+               pad->buttons[event.number] = event.value;
+            break;
+
+         case JS_EVENT_AXIS:
+            if (event.number < NUM_AXES)
+               pad->axes[event.number] = event.value;
+            break;
+      }
+   }
+}
+
+static void linuxraw_joypad_poll(void)
+{
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   {
+      struct linuxraw_joypad *pad = &g_pads[i];
+      if (pad->fd < 0)
+         continue;
+
+      poll_pad(pad);
+   }
+}
+
 static bool linuxraw_joypad_init(void)
 {
    bool has_pad = false;
@@ -46,6 +80,10 @@ static bool linuxraw_joypad_init(void)
 
       has_pad |= pad->fd >= 0;
    }
+
+   // Get initial state.
+   if (has_pad)
+      linuxraw_joypad_poll();
 
    return has_pad;
 }
@@ -93,40 +131,6 @@ static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
    }
 
    return val;
-}
-
-static void poll_pad(struct linuxraw_joypad *pad)
-{
-   struct js_event event;
-   while (read(pad->fd, &event, sizeof(event)) == (ssize_t)sizeof(event))
-   {
-      unsigned type = event.type & ~JS_EVENT_INIT;
-
-      switch (type)
-      {
-         case JS_EVENT_BUTTON:
-            if (event.number < NUM_BUTTONS)
-               pad->buttons[event.number] = event.value;
-            break;
-
-         case JS_EVENT_AXIS:
-            if (event.number < NUM_AXES)
-               pad->axes[event.number] = event.value;
-            break;
-      }
-   }
-}
-
-static void linuxraw_joypad_poll(void)
-{
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
-   {
-      struct linuxraw_joypad *pad = &g_pads[i];
-      if (pad->fd < 0)
-         continue;
-
-      poll_pad(pad);
-   }
 }
 
 const rarch_joypad_driver_t linuxraw_joypad = {
