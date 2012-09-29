@@ -293,6 +293,8 @@ static bool gfx_ctx_set_video_mode(
    if (g_is_double)
    {
       if (!g_pglSwapInterval)
+         g_pglSwapInterval = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapInterval");
+      if (!g_pglSwapInterval)
          g_pglSwapInterval = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalMESA");
       if (!g_pglSwapInterval)
          g_pglSwapInterval = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalSGI");

@@ -65,6 +65,8 @@ static void gfx_ctx_swap_interval(unsigned interval)
 #else
       static int (*glx_swap_interval)(int) = NULL;
       if (!glx_swap_interval)
+         GL_SYM_WRAP(glx_swap_interval, "glXSwapInterval");
+      if (!glx_swap_interval)
          GL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalMESA");
       if (!glx_swap_interval) 
          GL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalSGI");
