@@ -61,11 +61,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
             uint32_t g = (src[x] & fmt->Gmask) >> fmt->Gshift;
             uint32_t b = (src[x] & fmt->Bmask) >> fmt->Bshift;
             uint32_t a = (src[x] & fmt->Amask) >> fmt->Ashift;
-#ifdef HAVE_OPENGLES2
-            dst[x] = (a << 24) | (b << 16) | (g << 8) | r;
-#else
             dst[x] = (a << 24) | (r << 16) | (g << 8) | b;
-#endif
          }
       }
    }
@@ -86,11 +82,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
             uint32_t r = (color & fmt->Rmask) >> fmt->Rshift;
             uint32_t g = (color & fmt->Gmask) >> fmt->Gshift;
             uint32_t b = (color & fmt->Bmask) >> fmt->Bshift;
-#ifdef HAVE_OPENGLES2
-            dst[x] = (0xff << 24) | (b << 16) | (g << 8) | r;
-#else
             dst[x] = (0xff << 24) | (r << 16) | (g << 8) | b;
-#endif
          }
       }
    }
@@ -159,11 +151,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
          uint32_t r = tmp[i * 4 + 2];
          uint32_t a = tmp[i * 4 + 3];
 
-#ifdef HAVE_OPENGLES2
-         out_img->pixels[i] = (a << 24) | (b << 16) | (g << 8) | r;
-#else
          out_img->pixels[i] = (a << 24) | (r << 16) | (g << 8) | b;
-#endif
       }
    }
    else if (bits == 24)
@@ -175,11 +163,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
          uint32_t r = tmp[i * 3 + 2];
          uint32_t a = 0xff;
 
-#ifdef HAVE_OPENGLES2
-         out_img->pixels[i] = (a << 24) | (b << 16) | (g << 8) | r;
-#else
          out_img->pixels[i] = (a << 24) | (r << 16) | (g << 8) | b;
-#endif
       }
    }
    else
