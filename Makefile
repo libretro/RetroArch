@@ -21,9 +21,10 @@ OBJ = retroarch.o \
 		input/null.o \
 		screenshot.o
 
-JOYCONFIG_OBJ := tools/retroarch-joyconfig.o \
+JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
 	conf/config_file.o \
-	compat/compat.o
+	compat/compat.o \
+	input/input_common.o
 
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
@@ -52,6 +53,7 @@ endif
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    OBJ += input/linuxraw_input.o input/linuxraw_joypad.o
+   JOYCONFIG_OBJ += input/linuxraw_joypad.o
 endif
 
 ifeq ($(HAVE_THREADS), 1)
@@ -147,6 +149,7 @@ endif
 
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
+   JOYCONFIG_OBJ += input/sdl_joypad.o
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
 

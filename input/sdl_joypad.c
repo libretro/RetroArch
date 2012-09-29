@@ -150,8 +150,14 @@ static void sdl_joypad_poll(void)
    SDL_JoystickUpdate();
 }
 
+static bool sdl_joypad_query_pad(unsigned pad)
+{
+   return pad < MAX_PLAYERS && g_pads[pad].joypad;
+}
+
 const rarch_joypad_driver_t sdl_joypad = {
    sdl_joypad_init,
+   sdl_joypad_query_pad,
    sdl_joypad_destroy,
    sdl_joypad_button,
    sdl_joypad_axis,

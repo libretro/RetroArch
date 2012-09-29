@@ -150,10 +150,14 @@ typedef struct audio_driver
 
 #define NO_BTN UINT16_C(0xFFFF) // I hope no joypad will ever have this many buttons ... ;)
 
-#define HAT_UP_MASK (1 << 15)
-#define HAT_DOWN_MASK (1 << 14)
-#define HAT_LEFT_MASK (1 << 13)
-#define HAT_RIGHT_MASK (1 << 12)
+#define HAT_UP_SHIFT 15
+#define HAT_DOWN_SHIFT 14
+#define HAT_LEFT_SHIFT 13
+#define HAT_RIGHT_SHIFT 12
+#define HAT_UP_MASK (1 << HAT_UP_SHIFT)
+#define HAT_DOWN_MASK (1 << HAT_DOWN_SHIFT)
+#define HAT_LEFT_MASK (1 << HAT_LEFT_SHIFT)
+#define HAT_RIGHT_MASK (1 << HAT_RIGHT_SHIFT)
 #define HAT_MAP(x, hat) ((x & ((1 << 12) - 1)) | hat)
 
 #define HAT_MASK (HAT_UP_MASK | HAT_DOWN_MASK | HAT_LEFT_MASK | HAT_RIGHT_MASK)

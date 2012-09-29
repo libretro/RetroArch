@@ -26,11 +26,11 @@ static const rarch_joypad_driver_t *joypad_drivers[] = {
 #ifdef HAVE_DINPUT
    &dinput_joypad,
 #endif
-#ifdef __linux
-   &linuxraw_joypad,
-#endif
 #ifdef HAVE_SDL
    &sdl_joypad,
+#endif
+#ifdef __linux
+   &linuxraw_joypad,
 #endif
 };
 
@@ -40,7 +40,7 @@ const rarch_joypad_driver_t *input_joypad_find_driver(const char *ident)
    {
       if (strcmp(ident, joypad_drivers[i]->ident) == 0)
       {
-         RARCH_LOG("Found joypad driver: %s\n", joypad_drivers[i]->ident);
+         RARCH_LOG("Found joypad driver: \"%s\".\n", joypad_drivers[i]->ident);
          return joypad_drivers[i];
       }
    }
@@ -54,7 +54,7 @@ const rarch_joypad_driver_t *input_joypad_init_first(void)
    {
       if (joypad_drivers[i]->init())
       {
-         RARCH_LOG("Found joypad driver: %s\n", joypad_drivers[i]->ident);
+         RARCH_LOG("Found joypad driver: \"%s\".\n", joypad_drivers[i]->ident);
          return joypad_drivers[i];
       }
    }
@@ -119,5 +119,32 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
    int16_t digital_left  = driver->button(joy_index, bind_minus->joykey) ? -0x7fff : 0;
    int16_t digital_right = driver->button(joy_index, bind_plus->joykey)  ?  0x7fff : 0;
    return digital_right + digital_left;
+}
+
+int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *driver,
+      unsigned joypad, unsigned axis)
+{
+   if (!driver)
+      return 0;
+
+   return driver->axis(joypad, AXIS_POS(axis)) + driver->axis(joypad, AXIS_NEG(axis));
+}
+
+bool input_joypad_button_raw(const rarch_joypad_driver_t *driver,
+      unsigned joypad, unsigned button)
+{
+   if (!driver)
+      return false;
+
+   return driver->button(joypad, button);
+}
+
+bool input_joypad_hat_raw(const rarch_joypad_driver_t *driver,
+      unsigned joypad, unsigned hat_dir, unsigned hat)
+{
+   if (!driver)
+      return false;
+
+   return driver->button(joypad, HAT_MAP(hat, hat_dir));
 }
 

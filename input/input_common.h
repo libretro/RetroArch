@@ -49,6 +49,7 @@ static inline void input_conv_analog_id_to_bind_id(unsigned index, unsigned id,
 typedef struct rarch_joypad_driver
 {
    bool (*init)(void);
+   bool (*query_pad)(unsigned);
    void (*destroy)(void);
    bool (*button)(unsigned, uint16_t);
    int16_t (*axis)(unsigned, uint32_t);
@@ -65,6 +66,13 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
 
 int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
       unsigned port, unsigned index, unsigned id, const struct retro_keybind *binds);
+
+int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *driver,
+      unsigned joypad, unsigned axis);
+bool input_joypad_button_raw(const rarch_joypad_driver_t *driver,
+      unsigned joypad, unsigned button);
+bool input_joypad_hat_raw(const rarch_joypad_driver_t *driver,
+      unsigned joypad, unsigned hat_dir, unsigned hat);
 
 void input_joypad_poll(const rarch_joypad_driver_t *driver);
 

@@ -17,18 +17,21 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_SDL
-#include "SDL.h"
-#endif
-
 #include "conf/config_file.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <getopt.h>
+#include "../compat/getopt_rarch.h"
 #include "../boolean.h"
-#include "general.h"
+#include "../input/input_common.h"
+#include "../general.h"
 #include <assert.h>
 #include "../compat/posix_string.h"
+
+// Need to be present for build to work, but it's not *really* used.
+// Better than having to build special versions of lots of objects with special #ifdefs.
+struct settings g_settings;
+struct global g_extern;
+driver_t driver;
 
 static int g_player = 1;
 static int g_joypad = 0;
@@ -118,41 +121,69 @@ static struct bind binds[] = {
    MISC_BIND("Slow motion", slowmotion),
 };
 
+#define MAX_BUTTONS 32
+#define MAX_AXES 32
+#define MAX_HATS 32
+struct poll_data
+{
+   bool buttons[MAX_BUTTONS];
+   int16_t axes[MAX_AXES];
+   uint16_t hats[MAX_HATS];
+};
+
+static void poll_joypad(const rarch_joypad_driver_t *driver,
+      unsigned pad,
+      struct poll_data *data)
+{
+   input_joypad_poll(driver);
+
+   for (unsigned i = 0; i < MAX_BUTTONS; i++)
+      data->buttons[i] = input_joypad_button_raw(driver, pad, i);
+
+   for (unsigned i = 0; i < MAX_AXES; i++)
+      data->axes[i] = input_joypad_axis_raw(driver, pad, i);
+
+   for (unsigned i = 0; i < MAX_HATS; i++)
+   {
+      uint16_t hat = 0;
+      hat |= input_joypad_hat_raw(driver, pad, HAT_UP_MASK, i)    << HAT_UP_SHIFT;
+      hat |= input_joypad_hat_raw(driver, pad, HAT_DOWN_MASK, i)  << HAT_DOWN_SHIFT;
+      hat |= input_joypad_hat_raw(driver, pad, HAT_LEFT_MASK, i)  << HAT_LEFT_SHIFT;
+      hat |= input_joypad_hat_raw(driver, pad, HAT_RIGHT_MASK, i) << HAT_RIGHT_SHIFT;
+
+      data->hats[i] = hat;
+   }
+}
+
 static void get_binds(config_file_t *conf, int player, int joypad)
 {
-   if (SDL_Init(SDL_INIT_JOYSTICK | SDL_INIT_VIDEO) < 0)
+   const rarch_joypad_driver_t *driver = input_joypad_init_first();
+   if (!driver)
    {
-      fprintf(stderr, "Failed to init joystick subsystem.\n");
+      fprintf(stderr, "Cannot find any valid input driver.\n");
       exit(1);
    }
 
-   SDL_Joystick *joystick;
-   int num = SDL_NumJoysticks();
-   if (joypad >= num)
+   if (!driver->query_pad(joypad))
    {
-      fprintf(stderr, "Cannot find joystick at index #%d, only have %d joystick(s) available ...\n", joypad, num);
+      fprintf(stderr, "Couldn't open joystick #%u.\n", joypad);
       exit(1);
    }
 
-   joystick = SDL_JoystickOpen(joypad);
-   if (!joystick)
-   {
-      fprintf(stderr, "Cannot open joystick.\n");
-      exit(1);
-   }
+   fprintf(stderr, "Found joypad driver: %s\n", driver->ident);
 
-   int last_axis = -1;
+   int16_t initial_axes[MAX_AXES] = {0};
+   struct poll_data old_poll = {{0}};
+   struct poll_data new_poll = {{0}};
+
+   int last_axis   = -1;
    bool block_axis = false;
 
-   int num_axes = SDL_JoystickNumAxes(joystick);
-   int *initial_axes = (int*)calloc(num_axes, sizeof(int));
-   assert(initial_axes);
+   poll_joypad(driver, joypad, &old_poll);
 
-   SDL_PumpEvents();
-   SDL_JoystickUpdate();
-   for (int i = 0; i < num_axes; i++)
+   for (int i = 0; i < MAX_AXES; i++)
    {
-      Sint16 initial = SDL_JoystickGetAxis(joystick, i);
+      int16_t initial = input_joypad_axis_raw(driver, joypad, i);
       if (abs(initial) < 20000)
          initial = 0;
 
@@ -161,116 +192,111 @@ static void get_binds(config_file_t *conf, int player, int joypad)
       // If default negative, we can't trigger on the negative axis, and similar with defaulted positive axes.
 
       if (initial)
-         fprintf(stderr, "Axis %d is defaulted to %s axis value of %d\n", i, initial > 0 ? "positive" : "negative", (int)initial);
+         fprintf(stderr, "Axis %d is defaulted to %s axis value of %d\n", i, initial > 0 ? "positive" : "negative", initial);
 
       initial_axes[i] = initial;
    }
 
-   fprintf(stderr, "Configuring binds for player #%d on joypad #%d (%s)\n",
-         player + 1, joypad, SDL_JoystickName(joypad));
-   fprintf(stderr, "Press Ctrl-C to exit early.\n");
-   fprintf(stderr, "\n");
+   fprintf(stderr, "Configuring binds for player #%d on joypad #%d.\n\n",
+         player + 1, joypad);
 
-   for (unsigned i = 0; i < sizeof(binds) / sizeof(struct bind) && (g_use_misc || !binds[i].is_misc) ; i++)
+   for (unsigned i = 0; i < sizeof(binds) / sizeof(binds[0]) && (g_use_misc || !binds[i].is_misc) ; i++)
    {
       fprintf(stderr, "%s\n", binds[i].keystr);
 
-      bool done = false;
-      SDL_Event event;
-      int value;
-      const char *quark;
       unsigned player_index = binds[i].is_misc ? 0 : player;
 
-      while (SDL_WaitEvent(&event) && !done)
+      for (;;)
       {
-         switch (event.type)
-         {
-            case SDL_JOYBUTTONDOWN:
-               fprintf(stderr, "\tJoybutton pressed: %d\n", (int)event.jbutton.button);
-               done = true;
-               config_set_int(conf, binds[i].confbtn[player_index], event.jbutton.button);
-               break;
+         old_poll = new_poll;
 
-            case SDL_JOYAXISMOTION:
+         // To avoid pegging CPU.
+         // Ideally use an event-based joypad scheme,
+         // but it adds far more complexity, so, meh.
+         rarch_sleep(10);
+
+         poll_joypad(driver, joypad, &new_poll);
+         for (unsigned j = 0; j < MAX_BUTTONS; j++)
+         {
+            if (new_poll.buttons[j] && !old_poll.buttons[j])
             {
-               bool same_axis        = last_axis == event.jaxis.axis;
-               bool require_negative = initial_axes[event.jaxis.axis] > 0;
-               bool require_positive = initial_axes[event.jaxis.axis] < 0;
+               fprintf(stderr, "\tJoybutton pressed: %u\n", j);
+               config_set_int(conf, binds[i].confbtn[player_index], j);
+               goto out;
+            }
+         }
+
+         for (unsigned j = 0; j < MAX_AXES; j++)
+         {
+            if (new_poll.axes[j] != old_poll.axes[j])
+            {
+               int16_t value         = new_poll.axes[j];
+               bool same_axis        = last_axis == j;
+               bool require_negative = initial_axes[j] > 0;
+               bool require_positive = initial_axes[j] < 0;
 
                // Block the axis config until we're sure axes have returned to their neutral state.
                if (same_axis)
                {
-                  if (abs(event.jaxis.value) < 10000 ||
-                        (require_positive && event.jaxis.value < 0) ||
-                        (require_negative && event.jaxis.value > 0))
+                  if (abs(value) < 10000 ||
+                        (require_positive && value < 0) ||
+                        (require_negative && value > 0))
                      block_axis = false;
                }
 
                // If axes are in their neutral state, we can't allow it.
-               if (require_negative && event.jaxis.value >= 0)
-                  break;
-               if (require_positive && event.jaxis.value <= 0)
-                  break;
+               if (require_negative && value >= 0)
+                  continue;
+               if (require_positive && value <= 0)
+                  continue;
 
                if (block_axis)
-                  break;
+                  continue;
 
-               if (abs(event.jaxis.value) > 20000)
+               if (abs(value) > 20000)
                {
-                  last_axis = event.jaxis.axis;
-                  fprintf(stderr, "\tJoyaxis moved: Axis %d, Value %d\n", (int)event.jaxis.axis, (int)event.jaxis.value);
-
-                  done       = true;
-                  block_axis = true;
+                  last_axis = j;
+                  fprintf(stderr, "\tJoyaxis moved: Axis %d, Value %d\n", j, value);
 
                   char buf[8];
-                  snprintf(buf, sizeof(buf), event.jaxis.value > 0 ? "+%d" : "-%d", event.jaxis.axis);
+                  snprintf(buf, sizeof(buf),
+                        value > 0 ? "+%d" : "-%d", j);
+
                   config_set_string(conf, binds[i].confaxis[player_index], buf);
+                  block_axis = true;
+                  goto out;
                }
-
-               break;
             }
+         }
 
-            case SDL_KEYDOWN:
-               fprintf(stderr, ":V\n");
-               break;
+         for (unsigned j = 0; j < MAX_HATS; j++)
+         {
+            const char *quark  = NULL;
+            uint16_t value     = new_poll.hats[j];
+            uint16_t old_value = old_poll.hats[j];
 
-            case SDL_JOYHATMOTION:
-               value = event.jhat.value;
-               if (value & SDL_HAT_UP)
-                  quark = "up";
-               else if (value & SDL_HAT_DOWN)
-                  quark = "down";
-               else if (value & SDL_HAT_LEFT)
-                  quark = "left";
-               else if (value & SDL_HAT_RIGHT)
-                  quark = "right";
-               else
-                  break;
+            if ((value & HAT_UP_MASK) && !(old_value & HAT_UP_MASK))
+               quark = "up";
+            else if ((value & HAT_LEFT_MASK) && !(old_value & HAT_LEFT_MASK))
+               quark = "left";
+            else if ((value & HAT_RIGHT_MASK) && !(old_value & HAT_RIGHT_MASK))
+               quark = "right";
+            else if ((value & HAT_DOWN_MASK) && !(old_value & HAT_DOWN_MASK))
+               quark = "down";
 
-               fprintf(stderr, "\tJoyhat moved: Hat %d, direction %s\n", (int)event.jhat.hat, quark);
-
-               done = true;
+            if (quark)
+            {
+               fprintf(stderr, "\tJoyhat moved: Hat %d, direction %s\n", j, quark);
                char buf[16];
-               snprintf(buf, sizeof(buf), "h%d%s", event.jhat.hat, quark);
+               snprintf(buf, sizeof(buf), "h%d%s", j, quark);
                config_set_string(conf, binds[i].confbtn[player_index], buf);
-               break;
-
-
-            case SDL_QUIT:
-               goto end;
-
-            default:
-               break;
+               goto out;
+            }
          }
       }
+out:
+      old_poll = new_poll;
    }
-
-   free(initial_axes);
-
-end:
-   SDL_JoystickClose(joystick);
-   SDL_Quit();
 }
 
 static void parse_input(int argc, char *argv[])

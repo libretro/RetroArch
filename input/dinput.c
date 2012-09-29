@@ -246,8 +246,14 @@ static void dinput_poll(void)
    }
 }
 
+static bool dinput_query_pad(unsigned pad)
+{
+   return pad < MAX_PLAYERS && g_pads[pad].joypad;
+}
+
 const rarch_joypad_driver_t dinput_joypad = {
    dinput_init,
+   dinput_query_pad,
    dinput_destroy,
    dinput_button,
    dinput_axis,

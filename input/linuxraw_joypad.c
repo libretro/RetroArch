@@ -133,8 +133,14 @@ static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
    return val;
 }
 
+static bool linuxraw_joypad_query_pad(unsigned pad)
+{
+   return pad < MAX_PLAYERS && g_pads[pad].fd >= 0;
+}
+
 const rarch_joypad_driver_t linuxraw_joypad = {
    linuxraw_joypad_init,
+   linuxraw_joypad_query_pad,
    linuxraw_joypad_destroy,
    linuxraw_joypad_button,
    linuxraw_joypad_axis,
