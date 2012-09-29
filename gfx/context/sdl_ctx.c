@@ -64,11 +64,10 @@ static void gfx_ctx_swap_interval(unsigned interval)
       success = CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, &val) == 0;
 #else
       static int (*glx_swap_interval)(int) = NULL;
-      if (!glx_swap_interval) 
-         GL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalSGI");
       if (!glx_swap_interval)
          GL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalMESA");
-
+      if (!glx_swap_interval) 
+         GL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalSGI");
       if (glx_swap_interval)
          success = glx_swap_interval(g_interval) == 0;
       else 

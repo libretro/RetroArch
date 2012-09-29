@@ -14,8 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// X/EGL context. Mostly used for testing GLES code paths.
-// Should be its own file as it has lots of X11 stuff baked into it as well.
+// GLX context.
 
 #include "../../driver.h"
 #include "../gfx_context.h"
@@ -25,10 +24,9 @@
 
 #include <signal.h>
 #include <stdint.h>
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <GL/glx.h>
 
 static Display *g_dpy;
 static Window   g_win;
@@ -36,10 +34,8 @@ static Colormap g_cmap;
 static Atom g_quit_atom;
 static bool g_has_focus;
 
-static EGLContext g_egl_ctx;
-static EGLSurface g_egl_surf;
-static EGLDisplay g_egl_dpy;
-static EGLConfig g_config;
+static GLXContext g_ctx;
+static GLXFBConfig g_fbc;
 
 static XF86VidModeModeInfo g_desktop_mode;
 static bool g_should_reset_mode;
@@ -47,7 +43,9 @@ static bool g_should_reset_mode;
 static volatile sig_atomic_t g_quit;
 static bool g_inited;
 static unsigned g_interval;
-static enum gfx_ctx_api g_api;
+static bool g_is_double;
+
+static int (*g_pglSwapInterval)(int);
 
 static void sighandler(int sig)
 {
@@ -55,7 +53,7 @@ static void sighandler(int sig)
    g_quit = 1;
 }
 
-static Bool egl_wait_notify(Display *d, XEvent *e, char *arg)
+static Bool glx_wait_notify(Display *d, XEvent *e, char *arg)
 {
    (void)d;
    (void)e;
@@ -68,11 +66,11 @@ static void gfx_ctx_destroy(void);
 static void gfx_ctx_swap_interval(unsigned interval)
 {
    g_interval = interval;
-   if (g_egl_dpy)
+   if (g_pglSwapInterval)
    {
-      RARCH_LOG("[X/EGL]: eglSwapInterval(%u)\n", g_interval);
-      if (!eglSwapInterval(g_egl_dpy, g_interval))
-         RARCH_ERR("[X/EGL]: eglSwapInterval() failed.\n");
+      RARCH_LOG("[GLX]: glXSwapInterval(%u)\n", g_interval);
+      if (!g_pglSwapInterval(g_interval))
+         RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
    }
 }
 
@@ -121,7 +119,8 @@ static void gfx_ctx_check_window(bool *quit,
 
 static void gfx_ctx_swap_buffers(void)
 {
-   eglSwapBuffers(g_egl_dpy, g_egl_surf);
+   if (g_is_double)
+      glXSwapBuffers(g_dpy, g_win);
 }
 
 static void gfx_ctx_set_resize(unsigned width, unsigned height)
@@ -173,68 +172,47 @@ static bool gfx_ctx_init(void)
    if (g_inited)
       return false;
 
-#define EGL_ATTRIBS_BASE \
-   EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
-   EGL_RED_SIZE,        8, \
-   EGL_GREEN_SIZE,      8, \
-   EGL_BLUE_SIZE,       8, \
-   EGL_DEPTH_SIZE,      0, \
-   EGL_STENCIL_SIZE,    0
-
-   static const EGLint egl_attribs_gl[] = {
-      EGL_ATTRIBS_BASE,
-      EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
-      EGL_NONE,
-   };
-
-   static const EGLint egl_attribs_gles[] = {
-      EGL_ATTRIBS_BASE,
-      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-      EGL_NONE,
-   };
-
-   static const EGLint egl_attribs_vg[] = {
-      EGL_ATTRIBS_BASE,
-      EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
-      EGL_NONE,
-   };
-
-   const EGLint *attrib_ptr;
-   switch (g_api)
-   {
-      case GFX_CTX_OPENGL_API:
-         attrib_ptr = egl_attribs_gl;
-         break;
-      case GFX_CTX_OPENGL_ES_API:
-         attrib_ptr = egl_attribs_gles;
-         break;
-      case GFX_CTX_OPENVG_API:
-         attrib_ptr = egl_attribs_vg;
-         break;
-      default:
-         attrib_ptr = NULL;
-   }
-
    g_quit = 0;
 
    g_dpy = XOpenDisplay(NULL);
    if (!g_dpy)
       goto error;
 
-   g_egl_dpy = eglGetDisplay(g_dpy);
-   if (!g_egl_dpy)
+   // GLX 1.3+ required.
+   int major, minor;
+   glXQueryVersion(g_dpy, &major, &minor);
+   if (major < 1 || (major == 1 && minor < 3))
       goto error;
 
-   EGLint egl_major, egl_minor;
-   if (!eglInitialize(g_egl_dpy, &egl_major, &egl_minor))
+   static const int visual_attribs[] = {
+      GLX_X_RENDERABLE     , True,
+      GLX_DRAWABLE_TYPE    , GLX_WINDOW_BIT,
+      GLX_RENDER_TYPE      , GLX_RGBA_BIT,
+      GLX_DOUBLEBUFFER     , True,
+      GLX_RED_SIZE         , 8,
+      GLX_GREEN_SIZE       , 8,
+      GLX_BLUE_SIZE        , 8,
+      GLX_ALPHA_SIZE       , 8,
+      GLX_DEPTH_SIZE       , 0,
+      GLX_STENCIL_SIZE     , 0,
+      None
+   };
+
+   int nelements;
+   GLXFBConfig *fbcs = glXChooseFBConfig(g_dpy, DefaultScreen(g_dpy),
+         visual_attribs, &nelements);
+
+   if (!fbcs)
       goto error;
 
-   RARCH_LOG("[X/EGL]: EGL version: %d.%d\n", egl_major, egl_minor);
-
-   EGLint num_configs;
-   if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_config, 1, &num_configs)
-         || num_configs == 0 || !g_config)
+   if (!nelements)
+   {
+      XFree(fbcs);
       goto error;
+   }
+
+   g_fbc = fbcs[0];
+   XFree(fbcs);
 
    return true;
 
@@ -256,18 +234,9 @@ static bool gfx_ctx_set_video_mode(
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
-   XVisualInfo temp = {0};
    XSetWindowAttributes swa = {0};
-   XVisualInfo *vi = NULL;
 
-   EGLint vid;
-   if (!eglGetConfigAttrib(g_egl_dpy, g_config, EGL_NATIVE_VISUAL_ID, &vid))
-      goto error;
-
-   temp.visualid = vid;
-
-   EGLint num_visuals;
-   vi = XGetVisualInfo(g_dpy, VisualIDMask, &temp, &num_visuals);
+   XVisualInfo *vi = glXGetVisualFromFBConfig(g_dpy, g_fbc);
    if (!vi)
       goto error;
 
@@ -288,25 +257,6 @@ static bool gfx_ctx_set_video_mode(
          CWBorderPixel | CWColormap | CWEventMask | (fullscreen ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_dpy, g_win, 0);
 
-   // GLES 2.0. Don't use for any other API.
-   static const EGLint egl_ctx_gles_attribs[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2,
-      EGL_NONE,
-   };
-
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT,
-         (g_api == GFX_CTX_OPENGL_ES_API) ? egl_ctx_gles_attribs : NULL);
-
-   if (!g_egl_ctx)
-      goto error;
-
-   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, g_win, NULL);
-   if (!g_egl_surf)
-      goto error;
-
-   if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
-      goto error;
-
    gfx_ctx_update_window_title(true);
    x11_hide_mouse(g_dpy, g_win);
 
@@ -319,12 +269,38 @@ static bool gfx_ctx_set_video_mode(
       XMapWindow(g_dpy, g_win);
 
    XEvent event;
-   XIfEvent(g_dpy, &event, egl_wait_notify, NULL);
+   XIfEvent(g_dpy, &event, glx_wait_notify, NULL);
+
    XSetInputFocus(g_dpy, g_win, RevertToNone, CurrentTime);
+
+   g_ctx = glXCreateNewContext(g_dpy, g_fbc, GLX_RGBA_TYPE, 0, True);
+   if (!g_ctx)
+   {
+      RARCH_ERR("[GLX]: Failed to create new context.\n");
+      goto error;
+   }
+
+   glXMakeCurrent(g_dpy, g_win, g_ctx);
+   XSync(g_dpy, False);
 
    g_quit_atom = XInternAtom(g_dpy, "WM_DELETE_WINDOW", False);
    if (g_quit_atom)
       XSetWMProtocols(g_dpy, g_win, &g_quit_atom, 1);
+
+   int val;
+   glXGetConfig(g_dpy, vi, GLX_DOUBLEBUFFER, &val);
+   g_is_double = val;
+   if (g_is_double)
+   {
+      if (!g_pglSwapInterval)
+         g_pglSwapInterval = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalMESA");
+      if (!g_pglSwapInterval)
+         g_pglSwapInterval = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalSGI");
+      if (!g_pglSwapInterval)
+         RARCH_WARN("[GLX]: Cannot find swap interval call.\n");
+   }
+   else
+      RARCH_WARN("[GLX]: Context is not double buffered!.\n");
 
    gfx_ctx_swap_interval(g_interval);
 
@@ -348,23 +324,12 @@ error:
 
 static void gfx_ctx_destroy(void)
 {
-   if (g_egl_dpy)
+   if (g_dpy && g_ctx)
    {
-      if (g_egl_ctx)
-      {
-         eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-         eglDestroyContext(g_egl_dpy, g_egl_ctx);
-      }
-
-      if (g_egl_surf)
-         eglDestroySurface(g_egl_dpy, g_egl_surf);
-      eglTerminate(g_egl_dpy);
+      glXMakeCurrent(g_dpy, None, NULL);
+      glXDestroyContext(g_dpy, g_ctx);
+      g_ctx = NULL;
    }
-
-   g_egl_ctx  = NULL;
-   g_egl_surf = NULL;
-   g_egl_dpy  = NULL;
-   g_config   = 0;
 
    if (g_win)
    {
@@ -415,26 +380,15 @@ static bool gfx_ctx_has_focus(void)
 
 static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 {
-   return eglGetProcAddress(symbol);
+   return glXGetProcAddress((const GLubyte*)symbol);
 }
 
 static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
 {
-   g_api = api;
-   switch (api)
-   {
-      case GFX_CTX_OPENGL_API:
-         return eglBindAPI(EGL_OPENGL_API);
-      case GFX_CTX_OPENGL_ES_API:
-         return eglBindAPI(EGL_OPENGL_ES_API);
-      case GFX_CTX_OPENVG_API:
-         return eglBindAPI(EGL_OPENVG_API);
-      default:
-         return false;
-   }
+   return api == GFX_CTX_OPENGL_API;
 }
 
-const gfx_ctx_driver_t gfx_ctx_x_egl = {
+const gfx_ctx_driver_t gfx_ctx_glx = {
    gfx_ctx_init,
    gfx_ctx_destroy,
    gfx_ctx_bind_api,
@@ -449,6 +403,6 @@ const gfx_ctx_driver_t gfx_ctx_x_egl = {
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
    gfx_ctx_get_proc_address,
-   "x-egl",
+   "glx",
 };
 

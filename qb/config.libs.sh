@@ -170,7 +170,7 @@ check_pkgconf XF86VM xxf86vm
 if [ "$HAVE_X11" = 'yes' ] && [ "$HAVE_XEXT" = 'yes' ] && [ "$HAVE_XF86VM" = 'yes' ]; then
    check_pkgconf XVIDEO xv
 else
-   echo "X11, Xext or xf86vm not present. Skipping X11."
+   echo "X11, Xext or xf86vm not present. Skipping X11 code paths."
    HAVE_X11='no'
    HAVE_XVIDEO='no'
 fi
