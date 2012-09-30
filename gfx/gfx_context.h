@@ -23,10 +23,6 @@
 #include "../config.h"
 #endif
 
-#if defined(HAVE_SDL) && !defined(__APPLE__)
-#include "SDL_syswm.h"
-#endif
-
 enum gfx_ctx_api
 {
    GFX_CTX_OPENGL_API,
@@ -102,6 +98,7 @@ extern const gfx_ctx_driver_t gfx_ctx_x_egl;
 extern const gfx_ctx_driver_t gfx_ctx_glx;
 extern const gfx_ctx_driver_t gfx_ctx_drm_egl;
 extern const gfx_ctx_driver_t gfx_ctx_ps3;
+extern const gfx_ctx_driver_t gfx_ctx_wgl;
 extern const gfx_ctx_driver_t gfx_ctx_videocore;
 
 const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.

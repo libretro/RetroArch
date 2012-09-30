@@ -24,6 +24,8 @@
 #ifdef __APPLE__
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
+#else
+#include "SDL/SDL_syswm.h"
 #endif
 
 #include "SDL.h"

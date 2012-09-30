@@ -34,6 +34,10 @@
 #include "fonts/fonts.h"
 #endif
 
+#ifndef __APPLE__ // Broken on OSX.
+#include "SDL/SDL_syswm.h"
+#endif
+
 static void convert_15bit_15bit_direct(uint16_t *out, unsigned outpitch, const uint16_t *input, unsigned width, unsigned height, unsigned pitch, const SDL_PixelFormat *fmt);
 static void convert_32bit_32bit_direct(uint32_t *out, unsigned outpitch, const uint32_t *input, unsigned width, unsigned height, unsigned pitch, const SDL_PixelFormat *fmt);
 static void convert_15bit_15bit_shift(uint16_t *out, unsigned outpitch, const uint16_t *input, unsigned width, unsigned height, unsigned pitch, const SDL_PixelFormat *fmt);

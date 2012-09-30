@@ -109,6 +109,8 @@ const char *config_get_default_input(void)
          return "ps3";
       case INPUT_SDL:
          return "sdl";
+      case INPUT_DINPUT:
+         return "dinput";
       case INPUT_X:
          return "x";
       case INPUT_XENON360:

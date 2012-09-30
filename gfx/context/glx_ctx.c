@@ -312,7 +312,7 @@ static bool gfx_ctx_set_video_mode(
 
    driver.display_type  = RARCH_DISPLAY_X11;
    driver.video_display = (uintptr_t)g_dpy;
-   driver.video_window  = (Window)g_win;
+   driver.video_window  = (uintptr_t)g_win;
 
    return true;
 

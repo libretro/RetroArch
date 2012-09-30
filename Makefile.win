@@ -20,14 +20,14 @@ OBJ = retroarch.o \
 		audio/utils.o \
 		audio/null.o \
 		input/null.o \
+		fifo_buffer.o \
 		gfx/null.o
 
 JOBJ := conf/config_file.o \
 	tools/retroarch-joyconfig.o \
 	compat/compat.o \
 	input/input_common.o \
-	input/dinput.o \
-	input/sdl_joypad.o
+	input/dinput.o
 
 CC = gcc
 CXX = g++
@@ -35,7 +35,6 @@ CXX = g++
 HAVE_DINPUT = 1
 HAVE_XAUDIO = 1
 HAVE_DSOUND = 1
-HAVE_SDL = 1
 HAVE_OPENGL = 1
 HAVE_DYLIB = 1
 HAVE_NETPLAY = 1
@@ -44,6 +43,7 @@ HAVE_THREADS = 1
 DYNAMIC = 1
 
 ifeq ($(SLIM),)
+   HAVE_SDL = 1
    HAVE_SDL_IMAGE = 1
    HAVE_XML = 1
    HAVE_FREETYPE = 1
@@ -57,21 +57,28 @@ endif
 libretro ?= -lretro
 
 LIBS = -lm
-DEFINES = -I. -DHAVE_CONFIGFILE -DHAVE_SDL -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DPACKAGE_VERSION=\"0.9.7\"
+DEFINES = -I. -DHAVE_CONFIGFILE -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DPACKAGE_VERSION=\"0.9.7\"
 LDFLAGS = -L. -static-libgcc
 
 ifeq ($(TDM_GCC),)
    LDCXXFLAGS += -static-libstdc++
 endif
 
-ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o gfx/gl.o gfx/math/matrix.o gfx/fonts/freetype.o gfx/context/sdl_ctx.o gfx/gfx_context.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o fifo_buffer.o
-   OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
-   LIBS += -lSDL
-   DEFINES += -ISDL -DHAVE_SDL
 ifeq ($(SCALER_NO_SIMD), 1)
    DEFINES += -DSCALER_NO_SIMD
 endif
+
+ifeq ($(HAVE_SDL), 1)
+   OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
+else ifeq ($(HAVE_FFMPEG), 1)
+   OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
+endif
+
+ifeq ($(HAVE_SDL), 1)
+   OBJ += gfx/sdl_gfx.o gfx/context/sdl_ctx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
+   JOBJ += input/sdl_joypad.o
+   LIBS += -lSDL
+   DEFINES += -ISDL -DHAVE_SDL
 endif
 
 ifeq ($(HAVE_THREADS), 1)
@@ -80,8 +87,9 @@ ifeq ($(HAVE_THREADS), 1)
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
+   OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/freetype.o gfx/gfx_context.o gfx/context/wgl_ctx.o
    DEFINES += -DHAVE_OPENGL
-   LIBS += -lopengl32
+   LIBS += -lopengl32 -lgdi32
 endif
 
 ifeq ($(HAVE_SDL_IMAGE), 1)
