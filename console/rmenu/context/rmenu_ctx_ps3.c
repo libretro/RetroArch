@@ -187,11 +187,23 @@ static void rmenu_ctx_ps3_set_aspect_ratio(unsigned aspectratio_index)
    driver.video->set_aspect_ratio(NULL, aspectratio_index);
 }
 
+static void rmenu_ctx_ps3_set_fbo_enable(bool enable)
+{
+   gfx_ctx_set_fbo(enable);
+}
+
+static void rmenu_ctx_ps3_apply_fbo_state_changes(unsigned i)
+{
+   gfx_ctx_apply_fbo_state_changes(i);
+}
+
 const rmenu_context_t rmenu_ctx_ps3 = {
    .clear = rmenu_ctx_ps3_clear,
    .set_filtering = rmenu_ctx_ps3_set_filtering,
    .set_aspect_ratio = rmenu_ctx_ps3_set_aspect_ratio,
    .blend = rmenu_ctx_ps3_blend, 
+   .set_fbo_enable = rmenu_ctx_ps3_set_fbo_enable,
+   .apply_fbo_state_changes = rmenu_ctx_ps3_apply_fbo_state_changes,
    .free_textures = rmenu_ctx_ps3_free_textures,
    .init_textures = rmenu_ctx_ps3_init_textures,
    .render_selection_panel = rmenu_ctx_ps3_render_selection_panel,

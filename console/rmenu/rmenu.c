@@ -691,11 +691,11 @@ static void select_file(menu *current_menu, uint64_t input)
                break;
             case PRESET_CHOICE:
                strlcpy(g_console.cgp_path, path, sizeof(g_console.cgp_path));
-               gfx_ctx_apply_fbo_state_changes(FBO_DEINIT);
+               context->apply_fbo_state_changes(FBO_DEINIT);
 #ifdef HAVE_OPENGL
                gl_cg_reinit(path);
 #endif
-               gfx_ctx_apply_fbo_state_changes(FBO_INIT);
+               context->apply_fbo_state_changes(FBO_INIT);
                break;
 #endif
             case INPUT_PRESET_CHOICE:
@@ -1052,25 +1052,25 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 		   {
 			   rarch_settings_change(S_HW_TEXTURE_FILTER_2);
-			   gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
+			   context->set_filtering(2, g_settings.video.second_pass_smooth);
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
 		   {
 			   rarch_settings_change(S_DEF_HW_TEXTURE_FILTER_2);
-			   gfx_ctx_set_filtering(2, g_settings.video.second_pass_smooth);
+			   context->set_filtering(2, g_settings.video.second_pass_smooth);
 		   }
 		   break;
 	   case SETTING_SCALE_ENABLED:
 		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 		   {
 			   rarch_settings_change(S_SCALE_ENABLED);
-			   gfx_ctx_set_fbo(g_console.fbo_enabled);
+			   context->set_fbo_enable(g_console.fbo_enabled);
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
 		   {
 			   rarch_settings_default(S_DEF_SCALE_ENABLED);
-			   gfx_ctx_apply_fbo_state_changes(FBO_DEINIT);
-			   gfx_ctx_apply_fbo_state_changes(FBO_INIT);
+			   context->apply_fbo_state_changes(FBO_DEINIT);
+			   context->apply_fbo_state_changes(FBO_INIT);
 		   }
 		   break;
 	   case SETTING_SCALE_FACTOR:
@@ -1083,7 +1083,7 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
                if(should_decrement)
                {
                   rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
-                  gfx_ctx_apply_fbo_state_changes(FBO_REINIT);
+                  context->apply_fbo_state_changes(FBO_REINIT);
                }
             }
 		   }
@@ -1095,15 +1095,15 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 				   if(should_increment)
 				   {
 					   rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
-					   gfx_ctx_apply_fbo_state_changes(FBO_REINIT);
+					   context->apply_fbo_state_changes(FBO_REINIT);
 				   }
 			   }
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
 		   {
 			   rarch_settings_default(S_DEF_SCALE_FACTOR);
-			   gfx_ctx_apply_fbo_state_changes(FBO_DEINIT);
-			   gfx_ctx_apply_fbo_state_changes(FBO_INIT);
+			   context->apply_fbo_state_changes(FBO_DEINIT);
+			   context->apply_fbo_state_changes(FBO_INIT);
 		   }
 		   break;
 #endif
