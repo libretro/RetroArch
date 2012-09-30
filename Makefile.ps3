@@ -10,7 +10,6 @@ DEBUG			= 0
 DOWNLOAD_SHADERS	= 1
 STRIPPING_ENABLE	= 0
 HAVE_RGL		= 1
-HAVE_RGL_NEW		= 1
 HAVE_LOGGER		= 0
 HAVE_FREETYPE		= 0
 
@@ -65,10 +64,6 @@ DEFINES			= -DHAVE_RGL
 GL_LIBS			:= -L. -lrgl_ps3
 else
 GL_LIBS			:= -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt -lPSGL -lPSGLcgc
-endif
-
-ifeq ($(HAVE_RGL_NEW), 1)
-GL_LIBS			+= -lcgc_ps3
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)
