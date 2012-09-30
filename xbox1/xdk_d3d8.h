@@ -46,6 +46,7 @@ typedef struct DrawVerticeFormats
 
 typedef struct xdk_d3d_video
 {
+   const gfx_ctx_driver_t *driver;
    bool block_swap;
    bool fbo_enabled;
    bool should_resize;

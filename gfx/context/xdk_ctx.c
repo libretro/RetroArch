@@ -143,6 +143,142 @@ static bool gfx_ctx_xdk_init(void)
 
    memset(&d3d->d3dpp, 0, sizeof(d3d->d3dpp));
 
+#if defined(_XBOX1)
+// Get the "video mode"
+   d3d->video_mode = XGetVideoFlags();
+
+   // Check if we are able to use progressive mode
+   if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+      d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
+   else
+      d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;
+
+    // Safe mode
+    d3d->d3dpp.BackBufferWidth = 640;
+    d3d->d3dpp.BackBufferHeight = 480;
+    g_console.menus_hd_enable = false;
+
+   // Only valid in PAL mode, not valid for HDTV modes!
+   if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
+   {
+      if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+         d3d->d3dpp.FullScreen_RefreshRateInHz = 60;
+      else
+         d3d->d3dpp.FullScreen_RefreshRateInHz = 50;
+
+      // Check for 16:9 mode (PAL REGION)
+      if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+      {
+         if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+	      {	//60 Hz, 720x480i
+            d3d->d3dpp.BackBufferWidth = 720;
+	         d3d->d3dpp.BackBufferHeight = 480;
+	      }
+	    else
+	      {	//50 Hz, 720x576i
+           d3d->d3dpp.BackBufferWidth = 720;
+           d3d->d3dpp.BackBufferHeight = 576;
+	      }
+      }
+   }
+   else
+   {
+      // Check for 16:9 mode (NTSC REGIONS)
+      if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+      {
+         d3d->d3dpp.BackBufferWidth = 720;
+	      d3d->d3dpp.BackBufferHeight = 480;
+      }
+   }
+
+   if(XGetAVPack() == XC_AV_PACK_HDTV)
+   {
+      if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+      {
+         g_console.menus_hd_enable = false;
+         d3d->d3dpp.BackBufferWidth	= 640;
+         d3d->d3dpp.BackBufferHeight = 480;
+         d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
+      }
+	   else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
+	   {
+         g_console.menus_hd_enable = true;
+         d3d->d3dpp.BackBufferWidth	= 1280;
+         d3d->d3dpp.BackBufferHeight = 720;
+         d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
+	   }
+	   else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+	   {
+         g_console.menus_hd_enable = true;
+         d3d->d3dpp.BackBufferWidth	= 1920;
+         d3d->d3dpp.BackBufferHeight = 1080;
+         d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;
+	   }
+   }
+
+   d3d->win_width = d3d->d3dpp.BackBufferWidth;
+   d3d->win_height = d3d->d3dpp.BackBufferHeight;
+
+   if(d3d->d3dpp.BackBufferWidth > 640 && ((float)d3d->d3dpp.BackBufferHeight / (float)d3d->d3dpp.BackBufferWidth != 0.75) ||
+      ((d3d->d3dpp.BackBufferWidth == 720) && (d3d->d3dpp.BackBufferHeight == 576))) // 16:9
+        d3d->d3dpp.Flags |= D3DPRESENTFLAG_WIDESCREEN;
+  // no letterboxing in 4:3 mode (if widescreen is unsupported
+   d3d->d3dpp.BackBufferFormat                     = D3DFMT_A8R8G8B8;
+   d3d->d3dpp.FullScreen_PresentationInterval		= d3d->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+   d3d->d3dpp.MultiSampleType                      = D3DMULTISAMPLE_NONE;
+   d3d->d3dpp.BackBufferCount                      = 2;
+   d3d->d3dpp.EnableAutoDepthStencil               = FALSE;
+   d3d->d3dpp.SwapEffect                           = D3DSWAPEFFECT_COPY;
+
+   d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &d3d->d3dpp, &d3d->d3d_render_device);
+
+   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+
+   // use an orthogonal matrix for the projection matrix
+   D3DXMATRIX mat;
+   D3DXMatrixOrthoOffCenterLH(&mat, 0,  d3d->d3dpp.BackBufferWidth ,  d3d->d3dpp.BackBufferHeight , 0, 0.0f, 1.0f);
+
+   d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &mat);
+
+   // use an identity matrix for the world and view matrices
+   D3DXMatrixIdentity(&mat);
+   d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &mat);
+   d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &mat);
+
+   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5, 0, &d3d->lpTexture);
+   D3DLOCKED_RECT d3dlr;
+   d3d->lpTexture->LockRect(0, &d3dlr, NULL, 0);
+   memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
+   d3d->lpTexture->UnlockRect(0);
+
+   d3d->last_width = 512;
+   d3d->last_height = 512;
+
+   d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
+	   D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf);
+
+   const DrawVerticeFormats init_verts[] = {
+      { -1.0f, -1.0f, 1.0f, 0.0f, 1.0f },
+      {  1.0f, -1.0f, 1.0f, 1.0f, 1.0f },
+      { -1.0f,  1.0f, 1.0f, 0.0f, 0.0f },
+      {  1.0f,  1.0f, 1.0f, 1.0f, 0.0f },
+   };
+
+   BYTE *verts_ptr;
+   d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
+   memcpy(verts_ptr, init_verts, sizeof(init_verts));
+   d3d->vertex_buf->Unlock();
+
+   d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
+
+   d3d->d3d_render_device->SetRenderState(D3DRS_LIGHTING, FALSE);
+   d3d->d3d_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+   d3d->d3d_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
+
+   D3DVIEWPORT vp = {0};
+   vp.Width  = d3d->d3dpp.BackBufferWidth;
+   vp.Height = d3d->d3dpp.BackBufferHeight;
+#elif defined(_XBOX360)
    // no letterboxing in 4:3 mode (if widescreen is
    // unsupported
    // Get video settings
@@ -224,6 +360,7 @@ static bool gfx_ctx_xdk_init(void)
    D3DVIEWPORT vp = {0};
    vp.Width  = d3d->video_mode.fIsHiDef ? 1280 : 640;
    vp.Height = d3d->video_mode.fIsHiDef ? 720 : 480;
+#endif
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
    d3d->d3d_render_device->SetViewport(&vp);
