@@ -1227,7 +1227,7 @@ static bool resolve_extensions(gl_t *gl)
    gl->border_type = GL_CLAMP_TO_BORDER;
 #endif
 
-#if defined(HAVE_OPENGLES) && (!defined(HAVE_PSGL) || !defined(HAVE_RGL))
+#ifdef HAVE_OPENGLES2
    if (!gl_query_extension("BGRA8888"))
    {
       RARCH_ERR("[GL]: GLES implementation does not have BGRA8888 extension.\n");
