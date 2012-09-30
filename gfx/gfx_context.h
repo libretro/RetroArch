@@ -23,10 +23,6 @@
 #include "../config.h"
 #endif
 
-#ifdef HAVE_OPENGL
-#include "gl_common.h"
-#endif
-
 enum gfx_ctx_api
 {
    GFX_CTX_OPENGL_API,
