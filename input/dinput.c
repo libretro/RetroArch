@@ -225,7 +225,8 @@ static void dinput_poll(void *data)
                sizeof(di->state), di->state)))
    {
       IDirectInputDevice8_Acquire(di->keyboard);
-      IDirectInputDevice8_GetDeviceState(di->keyboard, sizeof(di->state), di->state);
+      if (FAILED(IDirectInputDevice8_GetDeviceState(di->keyboard, sizeof(di->state), di->state)))
+         memset(di->state, 0, sizeof(di->state));
    }
 
    input_joypad_poll(di->joypad);
@@ -388,6 +389,8 @@ static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
       return false;
 
    const struct dinput_joypad *pad = &g_pads[port_num];
+   if (!pad->joypad)
+      return false;
 
    // Check hat.
    if (GET_HAT_DIR(joykey))
@@ -435,6 +438,8 @@ static int16_t dinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
       return 0;
 
    const struct dinput_joypad *pad = &g_pads[port_num];
+   if (!pad->joypad)
+      return false;
 
    int val = 0;
 
@@ -491,7 +496,10 @@ static void dinput_joypad_poll(void)
 
             // If this fails, something *really* bad must have happened.
             if (FAILED(IDirectInputDevice8_Poll(pad->joypad)))
+            {
+               memset(&pad->joy_state, 0, sizeof(DIJOYSTATE2));
                continue;
+            }
          }
 
          IDirectInputDevice8_GetDeviceState(pad->joypad,
