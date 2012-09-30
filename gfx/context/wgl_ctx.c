@@ -261,8 +261,11 @@ static bool gfx_ctx_set_video_mode(
    if (!g_hwnd)
       goto error;
 
+   gfx_ctx_update_window_title(true);
+
    if (!fullscreen)
    {
+      ShowCursor(FALSE);
       ShowWindow(g_hwnd, SW_RESTORE);
       UpdateWindow(g_hwnd);
       SetForegroundWindow(g_hwnd);
