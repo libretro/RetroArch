@@ -172,18 +172,6 @@ static bool gfx_ctx_init(void)
    if (g_inited)
       return false;
 
-   g_quit = 0;
-
-   g_dpy = XOpenDisplay(NULL);
-   if (!g_dpy)
-      goto error;
-
-   // GLX 1.3+ required.
-   int major, minor;
-   glXQueryVersion(g_dpy, &major, &minor);
-   if (major < 1 || (major == 1 && minor < 3))
-      goto error;
-
    static const int visual_attribs[] = {
       GLX_X_RENDERABLE     , True,
       GLX_DRAWABLE_TYPE    , GLX_WINDOW_BIT,
@@ -198,8 +186,22 @@ static bool gfx_ctx_init(void)
       None
    };
 
+   GLXFBConfig *fbcs = NULL;
+
+   g_quit = 0;
+
+   g_dpy = XOpenDisplay(NULL);
+   if (!g_dpy)
+      goto error;
+
+   // GLX 1.3+ required.
+   int major, minor;
+   glXQueryVersion(g_dpy, &major, &minor);
+   if (major < 1 || (major == 1 && minor < 3))
+      goto error;
+
    int nelements;
-   GLXFBConfig *fbcs = glXChooseFBConfig(g_dpy, DefaultScreen(g_dpy),
+   fbcs = glXChooseFBConfig(g_dpy, DefaultScreen(g_dpy),
          visual_attribs, &nelements);
 
    if (!fbcs)

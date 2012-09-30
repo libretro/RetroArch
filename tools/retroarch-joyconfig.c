@@ -216,7 +216,7 @@ static void get_binds(config_file_t *conf, int player, int joypad)
          rarch_sleep(10);
 
          poll_joypad(driver, joypad, &new_poll);
-         for (unsigned j = 0; j < MAX_BUTTONS; j++)
+         for (int j = 0; j < MAX_BUTTONS; j++)
          {
             if (new_poll.buttons[j] && !old_poll.buttons[j])
             {
@@ -226,7 +226,7 @@ static void get_binds(config_file_t *conf, int player, int joypad)
             }
          }
 
-         for (unsigned j = 0; j < MAX_AXES; j++)
+         for (int j = 0; j < MAX_AXES; j++)
          {
             if (new_poll.axes[j] != old_poll.axes[j])
             {
@@ -269,7 +269,7 @@ static void get_binds(config_file_t *conf, int player, int joypad)
             }
          }
 
-         for (unsigned j = 0; j < MAX_HATS; j++)
+         for (int j = 0; j < MAX_HATS; j++)
          {
             const char *quark  = NULL;
             uint16_t value     = new_poll.hats[j];
