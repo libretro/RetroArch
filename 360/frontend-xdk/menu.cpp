@@ -24,6 +24,9 @@
 #include "../../console/rarch_console_settings.h"
 #include "../../console/rarch_console_video.h"
 
+#include "../../console/rmenu/rmenu.h"
+#include "../../gfx/gfx_context.h"
+
 #include "../xdk_d3d9.h"
 #include "menu.h"
 #include "../../message.h"
@@ -35,6 +38,7 @@ HXUIOBJ hCur;
 filebrowser_t *browser;
 filebrowser_t *tmp_browser;
 uint32_t set_shader = 0;
+static const rmenu_context_t *context;
 
 wchar_t strw_buffer[PATH_MAX];
 char str_buffer[PATH_MAX];
@@ -470,7 +474,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	 case SETTING_SCALE_ENABLED:
 	    g_console.fbo_enabled = !g_console.fbo_enabled;
 	    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-	    gfx_ctx_set_fbo(g_console.fbo_enabled);
+	    context->set_fbo_enable(g_console.fbo_enabled);
 	    break;
          case SETTING_ZIP_EXTRACT:
 	    if(g_console.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
@@ -555,7 +559,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 	 case SETTING_SCALE_ENABLED:
 	    g_console.fbo_enabled = !g_console.fbo_enabled;
 	    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-	    gfx_ctx_set_fbo(g_console.fbo_enabled);
+	    context->set_fbo_enable(g_console.fbo_enabled);
 	    break;
             default:
                break;
@@ -620,7 +624,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 	 case SETTING_SCALE_ENABLED:
 	    g_console.fbo_enabled = !g_console.fbo_enabled;
 	    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_console.fbo_enabled ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-	    gfx_ctx_set_fbo(g_console.fbo_enabled);
+	    context->set_fbo_enable(g_console.fbo_enabled);
 	    break;
             default:
                 break;
@@ -735,7 +739,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
 
    if(aspectratio_changed)
    {
-      gfx_ctx_set_aspect_ratio(d3d, g_console.aspect_ratio_index);
+      context->set_aspect_ratio(g_console.aspect_ratio_index);
       rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
       m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
    }
@@ -784,7 +788,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    break;
 	 case MENU_ITEM_KEEP_ASPECT_RATIO:
             rarch_settings_default(S_DEF_ASPECT_RATIO);
-            gfx_ctx_set_aspect_ratio(d3d, g_console.aspect_ratio_index);
+			context->set_aspect_ratio(g_console.aspect_ratio_index);
             rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
             m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
 	    break;
@@ -1038,6 +1042,8 @@ void menu_init (void)
 {
    HRESULT hr;
 
+   context = (rmenu_context_t*)&rmenu_ctx_xdk;
+
    xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
 
    bool hdmenus_allowed = g_console.menus_hd_enable;
@@ -1195,7 +1201,7 @@ void menu_loop(void)
          xdk360_console_draw();
       }
 
-      gfx_ctx_swap_buffers();
+      context->swap_buffers();
    }while(g_console.menu_enable);
 
    d3d->block_swap = false;

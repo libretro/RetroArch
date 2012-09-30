@@ -66,12 +66,14 @@ const char drive_mappings[DRIVE_MAPPING_SIZE][32] = {
 unsigned char drive_mapping_idx = 2;
 
 int xpos, ypos;
+#ifdef _XBOX1
 texture_image m_menuMainRomSelectPanel;
 texture_image m_menuMainBG;
 
 // Rom list coords
 int m_menuMainRomListPos_x;
 int m_menuMainRomListPos_y;
+#endif
 
 static void rmenu_ctx_xdk_clear(void)
 {
@@ -85,12 +87,15 @@ static void rmenu_ctx_xdk_blend(bool enable)
 
 static void rmenu_ctx_xdk_free_textures(void)
 {
+#ifdef _XBOX1
    texture_image_free(&m_menuMainBG);
    texture_image_free(&m_menuMainRomSelectPanel);
+#endif
 }
 
 static void rmenu_ctx_xdk_init_textures(void)
 {
+#ifdef _XBOX1
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    int width  = d3d->d3dpp.BackBufferWidth;
@@ -116,22 +121,27 @@ static void rmenu_ctx_xdk_init_textures(void)
    //Center the text (hardcoded)
    xpos = width == 640 ? 65 : 400;
    ypos = width == 640 ? 430 : 670;
+#endif
 }
 
 static void rmenu_ctx_xdk_render_selection_panel(rmenu_position_t *position)
 {
+#ifdef _XBOX1
    m_menuMainRomSelectPanel.x = position->x;
    m_menuMainRomSelectPanel.y = position->y;
    m_menuMainRomSelectPanel.width = ROM_PANEL_WIDTH;
    m_menuMainRomSelectPanel.height = ROM_PANEL_HEIGHT;
    texture_image_render(&m_menuMainRomSelectPanel);
+#endif
 }
 
 static void rmenu_ctx_xdk_render_bg(rmenu_position_t *position)
 {
+#ifdef _XBOX1
    m_menuMainBG.x = 0;
    m_menuMainBG.y = 0;
    texture_image_render(&m_menuMainBG);
+#endif
 }
 
 static void rmenu_ctx_xdk_swap_buffers(void)
@@ -146,6 +156,7 @@ void rmenu_ctx_xdk_set_swap_interval(unsigned interval)
 
 static void rmenu_ctx_xdk_set_default_pos(rmenu_default_positions_t *position)
 {
+#ifdef _XBOX1
    position->x_position = POSITION_X;
    position->x_position_center = POSITION_X_CENTER;
    position->y_position = POSITION_Y_BEGIN;
@@ -165,12 +176,15 @@ static void rmenu_ctx_xdk_set_default_pos(rmenu_default_positions_t *position)
    position->core_msg_x_position = position->x_position;
    position->core_msg_y_position = position->msg_prev_next_y_position + 0.01f;
    position->core_msg_font_size = position->font_size;
+#endif
 }
 
 static void rmenu_ctx_xdk_render_msg(float xpos, float ypos, float scale, unsigned color, const char *msg, ...)
 {
+#ifdef _XBOX1
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    xfonts_render_msg_place(d3d, xpos, ypos, scale, msg);
+#endif
 }
 
 static void rmenu_ctx_xdk_render_menu_enable(bool enable)
@@ -210,11 +224,17 @@ static void rmenu_ctx_xdk_set_aspect_ratio(unsigned aspectratio_index)
    driver.video->set_aspect_ratio(NULL, aspectratio_index);
 }
 
+static void rmenu_ctx_xdk_set_fbo_enable(bool enable)
+{
+	gfx_ctx_xdk_set_fbo(enable);
+}
+
 const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_clear,
    rmenu_ctx_xdk_set_filtering,
    rmenu_ctx_xdk_set_aspect_ratio,
    rmenu_ctx_xdk_blend,
+   rmenu_ctx_xdk_set_fbo_enable,
    rmenu_ctx_xdk_free_textures,
    rmenu_ctx_xdk_init_textures,
    rmenu_ctx_xdk_render_selection_panel,

@@ -75,6 +75,7 @@ typedef struct rmenu_context
    void (*set_filtering)(unsigned index, bool set_smooth);
    void (*set_aspect_ratio)(unsigned aspectratio_index);
    void (*blend)(bool enable);
+   void (*set_fbo_enable)(bool enable);
    void (*free_textures)(void);
    void (*init_textures)(void);
    void (*render_selection_panel)(rmenu_position_t *position);
@@ -124,6 +125,7 @@ enum
    INGAME_MENU_SCREENSHOT
 };
 
+#ifndef _XBOX360
 enum
 {
 #ifdef __CELLOS_LV2__
@@ -207,6 +209,7 @@ enum
    SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS,
    SETTING_CONTROLS_DEFAULT_ALL
 };
+#endif
 
 #define FIRST_VIDEO_SETTING				0
 #define FIRST_AUDIO_SETTING				SETTING_DEFAULT_VIDEO_ALL+1

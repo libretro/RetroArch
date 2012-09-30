@@ -324,11 +324,13 @@ SCREENSHOTS
 /*============================================================
 MENU
 ============================================================ */
+#ifdef _XBOX
+#include "../rmenu/context/rmenu_ctx_xdk.c"
+#endif
+
 #ifdef HAVE_RMENU
 #if defined(__CELLOS_LV2__)
 #include "../rmenu/context/rmenu_ctx_ps3.c"
-#elif defined(_XBOX1)
-#include "../rmenu/context/rmenu_ctx_xdk.c"
 #endif
 #include "../rmenu/rmenu_stack.c"
 #include "../rmenu/rmenu.c"
