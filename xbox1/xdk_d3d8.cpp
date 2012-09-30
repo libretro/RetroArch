@@ -189,9 +189,12 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    RARCH_LOG("Found D3D context: %s\n", d3d->driver->ident);
 
-   xdk_d3d_set_rotation(d3d, g_console.screen_orientation);
+   d3d->driver->get_video_size(&d3d->full_x, &d3d->full_y);
+   RARCH_LOG("Detecting screen resolution: %ux%u.\n", d3d->full_x, d3d->full_y);
 
    gfx_ctx_xdk_set_swap_interval(d3d->vsync ? 1 : 0);
+
+   xdk_d3d_set_rotation(d3d, g_console.screen_orientation);
 
    // load debug font (toggle option in later revisions ?)
    XFONT_OpenDefaultFont(&d3d->debug_font);

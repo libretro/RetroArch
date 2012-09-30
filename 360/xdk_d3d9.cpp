@@ -497,6 +497,11 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    RARCH_LOG("Found D3D context: %s\n", d3d->driver->ident);
 
+   d3d->driver->get_video_size(&d3d->full_x, &d3d->full_y);
+   RARCH_LOG("Detecting screen resolution: %ux%u.\n", d3d->full_x, d3d->full_y);
+
+   gfx_ctx_xdk_set_swap_interval(d3d->vsync ? 1 : 0);
+
 #ifdef HAVE_HLSL
    hlsl_init(g_settings.video.cg_shader_path, d3d->d3d_render_device);
 #endif
@@ -506,8 +511,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 #endif
 
    xdk_d3d_set_rotation(d3d, g_console.screen_orientation);
-
-   gfx_ctx_xdk_set_swap_interval(d3d->vsync ? 1 : 0);
 
    HRESULT hr = d3d9_init_font("game:\\media\\Arial_12.xpr");
 

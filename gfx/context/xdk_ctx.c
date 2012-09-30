@@ -125,9 +125,70 @@ static void gfx_ctx_xdk_update_window_title(bool reset) { }
 
 static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+#if defined(_XBOX360)
+   XVIDEO_MODE video_mode;
+   XGetVideoMode(&video_mode);
+
+   *width  = video_mode.dwDisplayWidth;
+   *height = video_mode.dwDisplayHeight;
+#elif defined(_XBOX1)
+   DWORD video_mode = XGetVideoFlags();
+
+    *width  = 640;
+    *height = 480;
+
+   // Only valid in PAL mode, not valid for HDTV modes!
+   if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
+   {
+      // Check for 16:9 mode (PAL REGION)
+      if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+      {
+         if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+	      {	//60 Hz, 720x480i
+            *width = 720;
+	         *height = 480;
+	      }
+	    else
+	      {	//50 Hz, 720x576i
+           *width = 720;
+           *height = 576;
+	      }
+      }
+   }
+   else
+   {
+      // Check for 16:9 mode (NTSC REGIONS)
+      if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+      {
+         *width = 720;
+	      *height = 480;
+      }
+   }
+
+   if(XGetAVPack() == XC_AV_PACK_HDTV)
+   {
+      if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+      {
+         *width	= 640;
+         *height  = 480;
+      }
+	   else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
+	   {
+         *width	= 1280;
+         *height  = 720;
+	   }
+	   else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+	   {
+         *width	= 1920;
+         *height  = 1080;
+	   }
+   }
+#else
    /* TODO: implement */
    (void)width;
    (void)height;
+#endif
 }
 
 static bool gfx_ctx_xdk_init(void)
