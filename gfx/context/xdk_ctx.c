@@ -33,7 +33,6 @@
 #include <xgraphics.h>
 
 #include "../../screenshot.h"
-#include "xdk_ctx.h"
 
 #if defined(_XBOX1)
 // for Xbox 1

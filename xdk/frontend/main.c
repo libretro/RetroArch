@@ -175,8 +175,10 @@ int main(int argc, char *argv[])
 
 #if defined(HAVE_D3D9) || defined(HAVE_D3D8)
    video_xdk_d3d.start();
+   driver.video = &video_xdk_d3d;
 #else
    video_null.start();
+   driver.video = &video_null;
 #endif
 
    system_init();
@@ -190,7 +192,7 @@ begin_loop:
 
       input_xinput.poll(NULL);
 
-      video_set_aspect_ratio_func(g_console.aspect_ratio_index);
+      driver.video->set_aspect_ratio(driver.video_data, g_console.aspect_ratio_index);
 
       do{
          repeat = rarch_main_iterate();
