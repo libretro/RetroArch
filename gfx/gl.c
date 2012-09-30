@@ -1056,12 +1056,11 @@ static inline void gl_next_texture_index(gl_t *gl, const struct gl_tex_info *tex
 static void gl_render_menu(gl_t *gl)
 {
    gl_shader_use(RARCH_CG_MENU_SHADER_INDEX);
+   gl_set_shader_viewport(RARCH_CG_MENU_SHADER_INDEX);
 
    gl_shader_set_params(gl->win_width, gl->win_height, gl->win_width, 
          gl->win_height, gl->win_width, gl->win_height, gl->frame_count,
          NULL, NULL, NULL, 0);
-
-   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
 
    glActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture_id);
@@ -1254,6 +1253,12 @@ static bool resolve_extensions(gl_t *gl)
    return true;
 }
 
+static void gl_set_shader_viewport(gl_t *gl, unsigned shader)
+{
+   gl_shader_use(shader);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+}
+
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
 #ifdef _WIN32
@@ -1355,10 +1360,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->keep_aspect = video->force_aspect;
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
-   gl_shader_use(0);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-   gl_shader_use(1);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   gl_set_shader_viewport(gl, 0);
+   gl_set_shader_viewport(gl, 1);
 
    bool force_smooth = false;
    if (gl_shader_filter_type(1, &force_smooth))
@@ -1506,10 +1509,8 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
 #endif
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
-   gl_shader_use(0);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-   gl_shader_use(1);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   gl_set_shader_viewport(gl, 0);
+   gl_set_shader_viewport(gl, 1);
 
    return true;
 }
