@@ -132,7 +132,108 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
 
 static bool gfx_ctx_xdk_init(void)
 {
-   /* TODO: implement */
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
+   d3d->d3d_device = direct3d_create_ctx(D3D_SDK_VERSION);
+   if (!d3d->d3d_device)
+   {
+      free(d3d);
+      return NULL;
+   }
+
+   memset(&d3d->d3dpp, 0, sizeof(d3d->d3dpp));
+
+   // no letterboxing in 4:3 mode (if widescreen is
+   // unsupported
+   // Get video settings
+   memset(&d3d->video_mode, 0, sizeof(d3d->video_mode));
+   XGetVideoMode(&d3d->video_mode);
+
+   if(!d3d->video_mode.fIsWideScreen)
+      d3d->d3dpp.Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
+
+   g_console.menus_hd_enable = d3d->video_mode.fIsHiDef;
+   
+   d3d->d3dpp.BackBufferWidth         = d3d->video_mode.fIsHiDef ? 1280 : 640;
+   d3d->d3dpp.BackBufferHeight        = d3d->video_mode.fIsHiDef ? 720 : 480;
+
+   if(g_console.gamma_correction)
+   {
+      d3d->d3dpp.BackBufferFormat        = g_console.color_format ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : (D3DFORMAT)MAKESRGBFMT(D3DFMT_LIN_A1R5G5B5);
+      d3d->d3dpp.FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
+   }
+   else
+   {
+      d3d->d3dpp.BackBufferFormat        = g_console.color_format ? D3DFMT_A8R8G8B8 : D3DFMT_LIN_A1R5G5B5;
+      d3d->d3dpp.FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;
+   }
+   d3d->d3dpp.MultiSampleQuality      = 0;
+   d3d->d3dpp.PresentationInterval    = d3d->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+
+   d3d->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
+   d3d->d3dpp.BackBufferCount         = 2;
+   d3d->d3dpp.EnableAutoDepthStencil  = FALSE;
+   d3d->d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
+
+   d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
+	   &d3d->d3dpp, &d3d->d3d_render_device);
+
+   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
+      0, &d3d->lpTexture
+   , NULL
+   );
+
+   D3DLOCKED_RECT d3dlr;
+   d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
+   d3d->lpTexture->UnlockRect(0);
+
+   d3d->last_width = 512;
+   d3d->last_height = 512;
+
+   d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
+	   0, 0, 0, &d3d->vertex_buf, NULL);
+
+   static const DrawVerticeFormats init_verts[] = {
+      { -1.0f, -1.0f, 0.0f, 1.0f },
+      {  1.0f, -1.0f, 1.0f, 1.0f },
+      { -1.0f,  1.0f, 0.0f, 0.0f },
+      {  1.0f,  1.0f, 1.0f, 0.0f },
+   };
+   
+   void *verts_ptr;
+   d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
+   memcpy(verts_ptr, init_verts, sizeof(init_verts));
+   d3d->vertex_buf->Unlock();
+
+   static const D3DVERTEXELEMENT VertexElements[] =
+   {
+      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+      D3DDECL_END()
+   };
+
+   d3d->d3d_render_device->CreateVertexDeclaration(VertexElements, &d3d->v_decl);
+   
+   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
+	   0xff000000, 1.0f, 0);
+
+   d3d->d3d_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+   d3d->d3d_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
+
+   D3DVIEWPORT vp = {0};
+   vp.Width  = d3d->video_mode.fIsHiDef ? 1280 : 640;
+   vp.Height = d3d->video_mode.fIsHiDef ? 720 : 480;
+   vp.MinZ   = 0.0f;
+   vp.MaxZ   = 1.0f;
+   d3d->d3d_render_device->SetViewport(&vp);
+
+   if(g_console.viewports.custom_vp.width == 0)
+      g_console.viewports.custom_vp.width = vp.Width;
+
+   if(g_console.viewports.custom_vp.height == 0)
+      g_console.viewports.custom_vp.height = vp.Height;
+
    return true;
 }
 
@@ -146,7 +247,10 @@ static bool gfx_ctx_xdk_set_video_mode(
 
 static void gfx_ctx_xdk_destroy(void)
 {
-   /* TODO: implement */
+   xdk_d3d_video_t * d3d = (xdk_d3d_video_t*)driver.video_data;
+
+   d3d->d3d_render_device->Release();
+   d3d->d3d_device->Release();
 }
 
 static void gfx_ctx_xdk_input_driver(const input_driver_t **input, void **input_data) { }

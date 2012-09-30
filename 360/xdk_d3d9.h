@@ -18,6 +18,7 @@
 #define _XDK360_VIDEO_H
 
 #include <stdint.h>
+#include "../gfx/gfx_context.h"
 #include "../xdk/xdk_defines.h"
 
 #define DFONT_MAX	4096
@@ -44,6 +45,7 @@ typedef struct DrawVerticeFormats
 
 typedef struct xdk_d3d_video
 {
+   const gfx_ctx_driver_t *driver;
    bool block_swap;
    bool fbo_enabled;
    bool should_resize;

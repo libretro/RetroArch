@@ -139,8 +139,9 @@ static void xdk_d3d_free(void * data)
 #ifdef HAVE_HLSL
    hlsl_deinit();
 #endif
-   d3d->d3d_render_device->Release();
-   d3d->d3d_device->Release();
+   d3d9_deinit_font();
+
+   d3d->driver->destroy();
 
    free(d3d);
 }
@@ -477,122 +478,45 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    if (driver.video_data)
       return driver.video_data;
 
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)calloc(1, sizeof(xdk_d3d_video_t));
-   if (!d3d)
+   //we'll just use driver.video_data throughout here because it needs to
+   //exist when we delegate initing to the context file
+   driver.video_data = (xdk_d3d_video_t*)calloc(1, sizeof(xdk_d3d_video_t));
+   if (!driver.video_data)
       return NULL;
 
-   d3d->d3d_device = direct3d_create_ctx(D3D_SDK_VERSION);
-   if (!d3d->d3d_device)
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
+   d3d->vsync = video->vsync;
+
+   d3d->driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D9_API);
+   if (!d3d->driver)
    {
       free(d3d);
       return NULL;
    }
 
-   memset(&d3d->d3dpp, 0, sizeof(d3d->d3dpp));
-
-   // no letterboxing in 4:3 mode (if widescreen is
-   // unsupported
-   // Get video settings
-   memset(&d3d->video_mode, 0, sizeof(d3d->video_mode));
-   XGetVideoMode(&d3d->video_mode);
-
-   if(!d3d->video_mode.fIsWideScreen)
-      d3d->d3dpp.Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
-
-   g_console.menus_hd_enable = d3d->video_mode.fIsHiDef;
-   
-   d3d->d3dpp.BackBufferWidth         = d3d->video_mode.fIsHiDef ? 1280 : 640;
-   d3d->d3dpp.BackBufferHeight        = d3d->video_mode.fIsHiDef ? 720 : 480;
-
-   if(g_console.gamma_correction)
-   {
-      d3d->d3dpp.BackBufferFormat        = g_console.color_format ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : (D3DFORMAT)MAKESRGBFMT(D3DFMT_LIN_A1R5G5B5);
-      d3d->d3dpp.FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
-   }
-   else
-   {
-      d3d->d3dpp.BackBufferFormat        = g_console.color_format ? D3DFMT_A8R8G8B8 : D3DFMT_LIN_A1R5G5B5;
-      d3d->d3dpp.FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;
-   }
-   d3d->d3dpp.MultiSampleQuality      = 0;
-   d3d->d3dpp.PresentationInterval    = video->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
-
-   d3d->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
-   d3d->d3dpp.BackBufferCount         = 2;
-   d3d->d3dpp.EnableAutoDepthStencil  = FALSE;
-   d3d->d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
-
-   d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
-	   &d3d->d3dpp, &d3d->d3d_render_device);
+   RARCH_LOG("Found D3D context: %s\n", d3d->driver->ident);
 
 #ifdef HAVE_HLSL
    hlsl_init(g_settings.video.cg_shader_path, d3d->d3d_render_device);
 #endif
 
-   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
-      0, &d3d->lpTexture
-   , NULL
-   );
-
 #ifdef HAVE_FBO
    xdk_d3d_init_fbo(d3d);
 #endif
 
-   D3DLOCKED_RECT d3dlr;
-   d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-   memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
-   d3d->lpTexture->UnlockRect(0);
-
-   d3d->last_width = 512;
-   d3d->last_height = 512;
-
-   d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
-	   0, 0, 0, &d3d->vertex_buf, NULL);
-
-   static const DrawVerticeFormats init_verts[] = {
-      { -1.0f, -1.0f, 0.0f, 1.0f },
-      {  1.0f, -1.0f, 1.0f, 1.0f },
-      { -1.0f,  1.0f, 0.0f, 0.0f },
-      {  1.0f,  1.0f, 1.0f, 0.0f },
-   };
-   
-   void *verts_ptr;
-   d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
-   memcpy(verts_ptr, init_verts, sizeof(init_verts));
-   d3d->vertex_buf->Unlock();
-
-   static const D3DVERTEXELEMENT VertexElements[] =
-   {
-      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-      D3DDECL_END()
-   };
-
-   d3d->d3d_render_device->CreateVertexDeclaration(VertexElements, &d3d->v_decl);
-   
-   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
-	   0xff000000, 1.0f, 0);
-
-   d3d->d3d_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-   d3d->d3d_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
-
-   D3DVIEWPORT vp = {0};
-   vp.Width  = d3d->video_mode.fIsHiDef ? 1280 : 640;
-   vp.Height = d3d->video_mode.fIsHiDef ? 720 : 480;
-   vp.MinZ   = 0.0f;
-   vp.MaxZ   = 1.0f;
-   d3d->d3d_render_device->SetViewport(&vp);
-
-   if(g_console.viewports.custom_vp.width == 0)
-      g_console.viewports.custom_vp.width = vp.Width;
-
-   if(g_console.viewports.custom_vp.height == 0)
-      g_console.viewports.custom_vp.height = vp.Height;
-
    xdk_d3d_set_rotation(d3d, g_console.screen_orientation);
 
-   d3d->vsync = video->vsync;
+   gfx_ctx_xdk_set_swap_interval(d3d->vsync ? 1 : 0);
 
+   HRESULT hr = d3d9_init_font("game:\\media\\Arial_12.xpr");
+
+   if(hr < 0)
+   {
+      RARCH_ERR("Couldn't create debug console.\n");
+   }
+
+   //really returns driver.video_data to driver.video_data - see comment above
    return d3d;
 }
 
@@ -788,17 +712,6 @@ static void xdk_d3d_start(void)
    video_info.input_scale = 2;
 
    driver.video_data = xdk_d3d_init(&video_info, NULL, NULL);
-
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-
-   gfx_ctx_xdk_set_swap_interval(d3d->vsync ? 1 : 0);
-
-   HRESULT hr = d3d9_init_font("game:\\media\\Arial_12.xpr");
-
-   if(hr < 0)
-   {
-      RARCH_ERR("Couldn't create debug console.\n");
-   }
 }
 
 static void xdk_d3d_restart(void)
@@ -808,9 +721,10 @@ static void xdk_d3d_restart(void)
 static void xdk_d3d_stop(void)
 {
    void *data = driver.video_data;
-   driver.video_data = NULL;
-   d3d9_deinit_font();
+
    xdk_d3d_free(data);
+
+   driver.video_data = NULL;
 }
 
 static void xdk_d3d_apply_state_changes(void)
