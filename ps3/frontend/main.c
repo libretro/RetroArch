@@ -23,7 +23,6 @@
 
 #include <sys/process.h>
 
-#include "../../gfx/context/ps3_ctx.h"
 #include "../ps3_input.h"
 
 #include "../../gfx/gl_common.h"
@@ -349,7 +348,7 @@ begin_loop:
 
       input_ps3.poll(NULL);
 
-      video_set_aspect_ratio_func(g_console.aspect_ratio_index);
+      driver.video->set_aspect_ratio(driver.video_data, g_console.aspect_ratio_index);
 
       do{
          repeat = rarch_main_iterate();

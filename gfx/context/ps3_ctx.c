@@ -41,12 +41,12 @@ static PSGLdevice* gl_device;
 static PSGLcontext* gl_context;
 #endif
 
-int gfx_ctx_check_resolution(unsigned resolution_id)
+static int gfx_ctx_check_resolution(unsigned resolution_id)
 {
    return cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, resolution_id, CELL_VIDEO_OUT_ASPECT_AUTO, 0);
 }
 
-unsigned gfx_ctx_get_resolution_width(unsigned resolution_id)
+static unsigned gfx_ctx_get_resolution_width(unsigned resolution_id)
 {
    CellVideoOutResolution resolution;
    cellVideoOutGetResolution(resolution_id, &resolution);
@@ -54,7 +54,7 @@ unsigned gfx_ctx_get_resolution_width(unsigned resolution_id)
    return resolution.width;
 }
 
-unsigned gfx_ctx_get_resolution_height(unsigned resolution_id)
+static unsigned gfx_ctx_get_resolution_height(unsigned resolution_id)
 {
    CellVideoOutResolution resolution;
    cellVideoOutGetResolution(resolution_id, &resolution);
@@ -62,7 +62,7 @@ unsigned gfx_ctx_get_resolution_height(unsigned resolution_id)
    return resolution.height;
 }
 
-float gfx_ctx_get_aspect_ratio(void)
+static float gfx_ctx_get_aspect_ratio(void)
 {
    CellVideoOutState videoState;
    cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &videoState);
@@ -78,7 +78,7 @@ float gfx_ctx_get_aspect_ratio(void)
    return 16.0f/9.0f;
 }
 
-void gfx_ctx_get_available_resolutions (void)
+static void gfx_ctx_get_available_resolutions (void)
 {
    bool defaultresolution;
    uint32_t resolution_count;
@@ -135,7 +135,7 @@ void gfx_ctx_get_available_resolutions (void)
    g_console.check_available_resolutions = true;
 }
 
-void gfx_ctx_set_swap_interval(unsigned interval)
+static void gfx_ctx_set_swap_interval(unsigned interval)
 {
 #if defined(HAVE_PSGL)
    if (gl_context)
@@ -148,7 +148,7 @@ void gfx_ctx_set_swap_interval(unsigned interval)
 #endif
 }
 
-void gfx_ctx_check_window(bool *quit,
+static void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    gl_t *gl = driver.video_data;
@@ -166,24 +166,24 @@ void gfx_ctx_check_window(bool *quit,
       *resize = true;
 }
 
-bool gfx_ctx_has_focus(void)
+static bool gfx_ctx_has_focus(void)
 {
    return true;
 }
 
-void gfx_ctx_swap_buffers(void)
+static void gfx_ctx_swap_buffers(void)
 {
 #if defined(HAVE_PSGL)
    psglSwap();
 #endif
 }
 
-void gfx_ctx_clear(void)
+static void gfx_ctx_clear(void)
 {
    glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void gfx_ctx_set_blend(bool enable)
+static void gfx_ctx_set_blend(bool enable)
 {
    if(enable)
    {
@@ -194,10 +194,9 @@ void gfx_ctx_set_blend(bool enable)
       glDisable(GL_BLEND);
 }
 
-void gfx_ctx_set_resize(unsigned width, unsigned height) { }
+static void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 
-
-bool gfx_ctx_menu_init(void)
+static bool gfx_ctx_menu_init(void)
 {
    gl_t *gl = driver.video_data;
 
@@ -231,16 +230,16 @@ bool gfx_ctx_menu_init(void)
    return true;
 }
 
-void gfx_ctx_update_window_title(bool reset) { }
+static void gfx_ctx_update_window_title(bool reset) { }
 
-void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
 #if defined(HAVE_PSGL)
    psglGetDeviceDimensions(gl_device, width, height); 
 #endif
 }
 
-bool gfx_ctx_init(void)
+static bool gfx_ctx_init(void)
 {
 #if defined(HAVE_PSGL)
    PSGLinitOptions options = {
@@ -288,14 +287,14 @@ bool gfx_ctx_init(void)
    return true;
 }
 
-bool gfx_ctx_set_video_mode(
+static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen)
 {
    return true;
 }
 
-void gfx_ctx_destroy(void)
+static void gfx_ctx_destroy(void)
 {
 #if defined(HAVE_PSGL)
    psglDestroyContext(gl_context);
@@ -305,9 +304,9 @@ void gfx_ctx_destroy(void)
 #endif
 }
 
-void gfx_ctx_input_driver(const input_driver_t **input, void **input_data) { }
+static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data) { }
 
-void gfx_ctx_set_filtering(unsigned index, bool set_smooth)
+static void gfx_ctx_set_filtering(unsigned index, bool set_smooth)
 {
    gl_t *gl = driver.video_data;
 
@@ -334,7 +333,7 @@ void gfx_ctx_set_filtering(unsigned index, bool set_smooth)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
-void gfx_ctx_set_fbo(bool enable)
+static void gfx_ctx_set_fbo(bool enable)
 {
    gl_t *gl = driver.video_data;
    gl->fbo_inited = enable;
@@ -343,7 +342,7 @@ void gfx_ctx_set_fbo(bool enable)
 
 #define INPUT_SCALE 2
 
-void gfx_ctx_apply_fbo_state_changes(unsigned mode)
+static void gfx_ctx_apply_fbo_state_changes(unsigned mode)
 {
    gl_t *gl = driver.video_data;
 
@@ -364,40 +363,7 @@ void gfx_ctx_apply_fbo_state_changes(unsigned mode)
    }
 }
 
-void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)
-{
-   // Calculate projection.
-   math_matrix proj;
-   matrix_ortho(&proj, ortho->left, ortho->right,
-         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
-
-   if (allow_rotate)
-   {
-      math_matrix rot;
-      matrix_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
-      matrix_multiply(&proj, &rot, &proj);
-   }
-
-   gl->mvp = proj;
-}
-
-void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index)
-{
-   (void)data;
-   gl_t *gl = driver.video_data;
-
-   if (g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
-      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
-   else if(g_console.aspect_ratio_index == ASPECT_RATIO_CORE)
-      rarch_set_core_viewport();
-
-   g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
-   g_settings.video.force_aspect = false;
-   gl->keep_aspect = true;
-   gl->should_resize = true;
-}
-
-void gfx_ctx_set_overscan(void)
+static void gfx_ctx_set_overscan(void)
 {
    gl_t *gl = driver.video_data;
    if (!gl)

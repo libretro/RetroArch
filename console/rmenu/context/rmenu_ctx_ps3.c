@@ -24,7 +24,7 @@
 #endif
 
 #include "../rmenu.h"
-#include "../../../gfx/context/ps3_ctx.h"
+#include "../../../gfx/gfx_context.h"
 
 #define HARDCODE_FONT_SIZE 0.91f
 #define POSITION_X 0.09f
@@ -182,9 +182,15 @@ static void rmenu_ctx_ps3_set_filtering(unsigned index, bool set_smooth)
    gfx_ctx_set_filtering(index, set_smooth);
 }
 
+static void rmenu_ctx_ps3_set_aspect_ratio(unsigned aspectratio_index)
+{
+   driver.video->set_aspect_ratio(NULL, aspectratio_index);
+}
+
 const rmenu_context_t rmenu_ctx_ps3 = {
    .clear = rmenu_ctx_ps3_clear,
    .set_filtering = rmenu_ctx_ps3_set_filtering,
+   .set_aspect_ratio = rmenu_ctx_ps3_set_aspect_ratio,
    .blend = rmenu_ctx_ps3_blend, 
    .free_textures = rmenu_ctx_ps3_free_textures,
    .init_textures = rmenu_ctx_ps3_init_textures,

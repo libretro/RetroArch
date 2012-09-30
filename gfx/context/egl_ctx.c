@@ -132,13 +132,6 @@ void gfx_ctx_apply_fbo_state_changes(unsigned mode)
    (void)mode;
 }
 
-void gfx_ctx_set_projection(gl_t *gl, const struct gl_ortho *ortho, bool allow_rotate)
-{
-   (void)gl;
-   (void)ortho;
-   (void)allow_rotate;
-}
-
 void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
    (void)data;

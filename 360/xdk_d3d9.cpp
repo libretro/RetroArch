@@ -819,6 +819,21 @@ static void xdk_d3d_apply_state_changes(void)
    d3d->should_resize = true;
 }
 
+static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspectratio_index)
+{
+   (void)data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
+   if(g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
+      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+   else if(g_console.aspect_ratio_index == ASPECT_RATIO_CORE)
+      rarch_set_core_viewport();
+
+   g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
+   g_settings.video.force_aspect = false;
+   d3d->should_resize = true;
+}
+
 const video_driver_t video_xdk_d3d = {
    xdk_d3d_init,
    xdk_d3d_frame,
@@ -832,5 +847,6 @@ const video_driver_t video_xdk_d3d = {
    xdk_d3d_stop,
    xdk_d3d_restart,
    xdk_d3d_apply_state_changes,
+   xdk_d3d_set_aspect_ratio,
    xdk_d3d_set_rotation,
 };

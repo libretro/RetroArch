@@ -16,7 +16,16 @@
 
 #include "../rmenu.h"
 #include "../../screenshot.h"
-#include "../../gfx/context/xdk_ctx.h"
+
+#ifdef _XBOX
+#if defined(_XBOX1)
+#include "../../xbox1/xdk_d3d8.h"
+#elif defined(_XBOX360)
+#include "../../360/xdk_d3d9.h"
+#endif
+#endif
+
+#include "../../gfx/gfx_context.h"
 
 #define ROM_PANEL_WIDTH 510
 #define ROM_PANEL_HEIGHT 20
@@ -196,9 +205,15 @@ static void rmenu_ctx_xdk_set_filtering(unsigned index, bool set_smooth)
    gfx_ctx_xdk_set_filtering(index, set_smooth);
 }
 
+static void rmenu_ctx_xdk_set_aspect_ratio(unsigned aspectratio_index)
+{
+   driver.video->set_aspect_ratio(NULL, aspectratio_index);
+}
+
 const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_clear,
    rmenu_ctx_xdk_set_filtering,
+   rmenu_ctx_xdk_set_aspect_ratio,
    rmenu_ctx_xdk_blend,
    rmenu_ctx_xdk_free_textures,
    rmenu_ctx_xdk_init_textures,

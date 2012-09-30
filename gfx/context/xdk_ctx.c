@@ -16,6 +16,14 @@
 
 #include "../../driver.h"
 
+#ifdef _XBOX
+#if defined(_XBOX1)
+#include "../../xbox1/xdk_d3d8.h"
+#elif defined(_XBOX360)
+#include "../../360/xdk_d3d9.h"
+#endif
+#endif
+
 #include <stdint.h>
 
 #ifdef HAVE_CONFIG_H
@@ -188,27 +196,19 @@ void gfx_ctx_xdk_screenshot_dump(void *data)
    }
 }
 
+static bool gfx_ctx_xdk_bind_api(enum gfx_ctx_api api)
+{
+#if defined(_XBOX1)
+   return api == GFX_CTX_DIRECT3D8_API;
+#elif defined(_XBOX360)
+   return api == GFX_CTX_DIRECT3D9_API;
+#endif
+}
+
 /*============================================================
 	MISC
         TODO: Refactor
 ============================================================ */
-
-void gfx_ctx_set_projection(xdk_d3d_video_t *d3d, const struct gl_ortho *ortho, bool allow_rotate) { }
-
-void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index)
-{
-   (void)data;
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-
-   if(g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
-      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
-   else if(g_console.aspect_ratio_index == ASPECT_RATIO_CORE)
-      rarch_set_core_viewport();
-
-   g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
-   g_settings.video.force_aspect = false;
-   d3d->should_resize = true;
-}
 
 void gfx_ctx_set_overscan(void)
 {
@@ -226,14 +226,6 @@ int gfx_ctx_xdk_check_resolution(unsigned resolution_id)
    return 0;
 }
 
-static bool gfx_ctx_xdk_bind_api(enum gfx_ctx_api api)
-{
-#if defined(_XBOX1)
-   return api == GFX_CTX_DIRECT3D8_API;
-#elif defined(_XBOX360)
-   return api == GFX_CTX_DIRECT3D9_API;
-#endif
-}
 
 
 const gfx_ctx_driver_t gfx_ctx_xdk = {

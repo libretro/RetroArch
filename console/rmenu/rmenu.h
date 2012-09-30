@@ -73,6 +73,7 @@ typedef struct rmenu_context
 {
    void (*clear)(void); 
    void (*set_filtering)(unsigned index, bool set_smooth);
+   void (*set_aspect_ratio)(unsigned aspectratio_index);
    void (*blend)(bool enable);
    void (*free_textures)(void);
    void (*init_textures)(void);

@@ -199,6 +199,7 @@ typedef struct video_driver
    void (*stop)(void);
    void (*restart)(void);
    void (*apply_state_changes)(void);
+   void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
 #endif
 
    void (*set_rotation)(void *data, unsigned rotation);

@@ -1022,17 +1022,17 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 		   if(input & (1 << RMENU_DEVICE_NAV_LEFT))
 		   {
 			   rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
-			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+			   context->set_aspect_ratio(g_console.aspect_ratio_index);
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_RIGHT))
 		   {
 			   rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
-			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+			   context->set_aspect_ratio(g_console.aspect_ratio_index);
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
 		   {
 			   rarch_settings_default(S_DEF_ASPECT_RATIO);
-			   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+			   context->set_aspect_ratio(g_console.aspect_ratio_index);
 		   }
 		   break;
 	   case SETTING_HW_TEXTURE_FILTER:
@@ -1775,7 +1775,7 @@ static void ingame_menu_resize(menu *current_menu, uint64_t input)
    context->set_default_pos(&default_pos);
 
    g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
-   gfx_ctx_set_aspect_ratio(NULL, g_console.aspect_ratio_index);
+   context->set_aspect_ratio(g_console.aspect_ratio_index);
 
    if(input & (1 << RMENU_DEVICE_NAV_LEFT_ANALOG_L))
    {

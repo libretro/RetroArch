@@ -23,6 +23,10 @@
 #include "../config.h"
 #endif
 
+#ifdef HAVE_OPENGL
+#include "gl_common.h"
+#endif
+
 enum gfx_ctx_api
 {
    GFX_CTX_OPENGL_API,
@@ -90,7 +94,6 @@ typedef struct gfx_ctx_driver
    bool (*menu_init)(void);
    void (*set_fbo)(bool);
    void (*apply_fbo_state_changes)(unsigned);
-   void (*gfx_ctx_set_projection)(void*, const struct gl_ortho *, bool);
 #endif
 } gfx_ctx_driver_t;
 
