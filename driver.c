@@ -638,6 +638,7 @@ void init_video_input(void)
    // Video driver didn't provide an input driver so we use configured one.
    if (driver.input == NULL)
    {
+      RARCH_LOG("Graphics driver did not initialize an input driver. Attempting to pick a suitable driver.\n");
       driver.input = tmp;
       if (driver.input != NULL)
       {
