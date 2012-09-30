@@ -439,7 +439,7 @@ static int16_t dinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
    const struct dinput_joypad *pad = &g_pads[port_num];
    if (!pad->joypad)
-      return false;
+      return 0;
 
    int val = 0;
 
