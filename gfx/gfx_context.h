@@ -27,13 +27,13 @@ enum gfx_ctx_api
 {
    GFX_CTX_OPENGL_API,
    GFX_CTX_OPENGL_ES_API,
+   GFX_CTX_DIRECT3D8_API,
+   GFX_CTX_DIRECT3D9_API,
    GFX_CTX_OPENVG_API
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
 
-// Avoid breakage on XBox. TODO: Migrate to new context abstraction if it makes sense.
-#if !defined(HAVE_D3D9) && !defined(HAVE_D3D8)
 typedef struct gfx_ctx_driver
 {
    bool (*init)(void);
@@ -90,6 +90,7 @@ typedef struct gfx_ctx_driver
    bool (*menu_init)(void);
    void (*set_fbo)(bool);
    void (*apply_fbo_state_changes)(unsigned);
+   void (*gfx_ctx_set_projection)(void*, const struct gl_ortho *, bool);
 #endif
 } gfx_ctx_driver_t;
 
@@ -98,47 +99,12 @@ extern const gfx_ctx_driver_t gfx_ctx_x_egl;
 extern const gfx_ctx_driver_t gfx_ctx_glx;
 extern const gfx_ctx_driver_t gfx_ctx_drm_egl;
 extern const gfx_ctx_driver_t gfx_ctx_ps3;
+extern const gfx_ctx_driver_t gfx_ctx_xdk;
 extern const gfx_ctx_driver_t gfx_ctx_wgl;
 extern const gfx_ctx_driver_t gfx_ctx_videocore;
 
 const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
 const gfx_ctx_driver_t *gfx_ctx_init_first(enum gfx_ctx_api api); // Finds first suitable driver and initializes.
-
-#else
-void gfx_ctx_set_swap_interval(unsigned interval, bool inited);
-
-bool gfx_ctx_set_video_mode(
-      unsigned width, unsigned height,
-      unsigned bits, bool fullscreen);
-
-bool gfx_ctx_init(void);
-void gfx_ctx_destroy(void);
-
-void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
-void gfx_ctx_update_window_title(bool reset);
-
-void gfx_ctx_check_window(bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count);
-
-void gfx_ctx_set_resize(unsigned width, unsigned height);
-
-#ifndef HAVE_GRIFFIN
-bool gfx_ctx_window_has_focus(void);
-#endif
-void gfx_ctx_swap_buffers(void);
-
-void gfx_ctx_input_driver(const input_driver_t **input, void **input_data);
-
-#ifdef HAVE_CG_MENU
-bool gfx_ctx_menu_init(void);
-#endif
-
-void gfx_ctx_set_filtering(unsigned index, bool set_smooth);
-void gfx_ctx_get_available_resolutions(void);
-int gfx_ctx_check_resolution(unsigned resolution_id);
-
-void gfx_ctx_set_projection(xdk_d3d_video_t *vid, const struct gl_ortho *ortho, bool allow_rotate);
-#endif
 
 #endif
 

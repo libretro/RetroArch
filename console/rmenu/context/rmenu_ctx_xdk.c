@@ -66,12 +66,12 @@ int m_menuMainRomListPos_y;
 
 static void rmenu_ctx_xdk_clear(void)
 {
-   gfx_ctx_clear();
+   gfx_ctx_xdk_clear();
 }
 
 static void rmenu_ctx_xdk_blend(bool enable)
 {
-   gfx_ctx_set_blend(enable);
+   gfx_ctx_xdk_set_blend(enable);
 }
 
 static void rmenu_ctx_xdk_free_textures(void)
@@ -127,7 +127,12 @@ static void rmenu_ctx_xdk_render_bg(rmenu_position_t *position)
 
 static void rmenu_ctx_xdk_swap_buffers(void)
 {
-   gfx_ctx_swap_buffers();
+   gfx_ctx_xdk_swap_buffers();
+}
+
+void rmenu_ctx_xdk_set_swap_interval(unsigned interval)
+{
+   gfx_ctx_xdk_set_swap_interval(interval);
 }
 
 static void rmenu_ctx_xdk_set_default_pos(rmenu_default_positions_t *position)
@@ -186,8 +191,14 @@ static const char * rmenu_ctx_xdk_drive_mapping_next(void)
    return drive_mappings[drive_mapping_idx];
 }
 
+static void rmenu_ctx_xdk_set_filtering(unsigned index, bool set_smooth)
+{
+   gfx_ctx_xdk_set_filtering(index, set_smooth);
+}
+
 const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_clear,
+   rmenu_ctx_xdk_set_filtering,
    rmenu_ctx_xdk_blend,
    rmenu_ctx_xdk_free_textures,
    rmenu_ctx_xdk_init_textures,
@@ -198,6 +209,7 @@ const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_screenshot_enable,
    rmenu_ctx_xdk_screenshot_dump,
    rmenu_ctx_xdk_swap_buffers,
+   rmenu_ctx_xdk_set_swap_interval,
    rmenu_ctx_xdk_set_default_pos,
    rmenu_ctx_xdk_drive_mapping_previous,
    rmenu_ctx_xdk_drive_mapping_next,

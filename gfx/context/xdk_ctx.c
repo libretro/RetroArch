@@ -35,7 +35,7 @@
 #define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
 #endif
 
-void gfx_ctx_set_blend(bool enable)
+static void gfx_ctx_xdk_set_blend(bool enable)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
@@ -47,9 +47,8 @@ void gfx_ctx_set_blend(bool enable)
    d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, enable);
 }
 
-void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
+static void gfx_ctx_xdk_set_swap_interval(unsigned interval)
 {
-   (void)inited;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    if (interval)
@@ -58,7 +57,12 @@ void gfx_ctx_set_swap_interval(unsigned interval, bool inited)
       d3d->d3d_render_device->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_IMMEDIATE);
 }
 
-void gfx_ctx_check_window(bool *quit,
+static void gfx_ctx_xdk_get_available_resolutions (void)
+{
+}
+
+
+static void gfx_ctx_xdk_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
@@ -72,9 +76,9 @@ void gfx_ctx_check_window(bool *quit,
       *resize = true;
 }
 
-void gfx_ctx_set_resize(unsigned width, unsigned height) { }
+static void gfx_ctx_xdk_set_resize(unsigned width, unsigned height) { }
 
-void gfx_ctx_swap_buffers(void)
+static void gfx_ctx_xdk_swap_buffers(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 #ifdef _XBOX1
@@ -83,7 +87,7 @@ void gfx_ctx_swap_buffers(void)
    d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL);
 }
 
-void gfx_ctx_clear(void)
+static void gfx_ctx_xdk_clear(void)
 {
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 #ifdef _XBOX1
@@ -100,51 +104,61 @@ void gfx_ctx_clear(void)
 #endif
 }
 
-#ifndef HAVE_GRIFFIN
-bool gfx_ctx_window_has_focus(void)
-{
-   return true;
-}
-#endif
-
-bool gfx_ctx_menu_init(void)
+static bool gfx_ctx_xdk_window_has_focus(void)
 {
    return true;
 }
 
-void gfx_ctx_update_window_title(bool reset) { }
-
-void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+static bool gfx_ctx_xdk_menu_init(void)
 {
+   return true;
+}
+
+static void gfx_ctx_xdk_update_window_title(bool reset) { }
+
+static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
+{
+   /* TODO: implement */
    (void)width;
    (void)height;
 }
 
-bool gfx_ctx_init(void)
+static bool gfx_ctx_xdk_init(void)
 {
+   /* TODO: implement */
    return true;
 }
 
-bool gfx_ctx_set_video_mode(
+static bool gfx_ctx_xdk_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen)
 {
+   /* TODO: implement */
    return true;
 }
 
-void gfx_ctx_destroy(void)
+static void gfx_ctx_xdk_destroy(void)
 {
+   /* TODO: implement */
 }
 
-void gfx_ctx_input_driver(const input_driver_t **input, void **input_data) { }
+static void gfx_ctx_xdk_input_driver(const input_driver_t **input, void **input_data) { }
 
-void gfx_ctx_set_filtering(unsigned index, bool set_smooth) { }
-
-void gfx_ctx_set_fbo(bool enable)
+static void gfx_ctx_xdk_set_filtering(unsigned index, bool set_smooth)
 {
+   /* TODO: implement */
+}
+
+static void gfx_ctx_xdk_set_fbo(bool enable)
+{
+   /* TODO: implement properly */
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    d3d->fbo_enabled = enable;
+}
+
+void gfx_ctx_xdk_apply_fbo_state_changes(unsigned mode)
+{
 }
 
 void gfx_ctx_xdk_screenshot_dump(void *data)
@@ -198,6 +212,7 @@ void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index)
 
 void gfx_ctx_set_overscan(void)
 {
+   /* TODO: implement */
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    if (!d3d)
       return;
@@ -205,7 +220,46 @@ void gfx_ctx_set_overscan(void)
    d3d->should_resize = true;
 }
 
-int gfx_ctx_check_resolution(unsigned resolution_id)
+int gfx_ctx_xdk_check_resolution(unsigned resolution_id)
 {
+   /* TODO: implement */
    return 0;
 }
+
+static bool gfx_ctx_xdk_bind_api(enum gfx_ctx_api api)
+{
+#if defined(_XBOX1)
+   return api == GFX_CTX_DIRECT3D8_API;
+#elif defined(_XBOX360)
+   return api == GFX_CTX_DIRECT3D9_API;
+#endif
+}
+
+
+const gfx_ctx_driver_t gfx_ctx_xdk = {
+   gfx_ctx_xdk_init,
+   gfx_ctx_xdk_destroy,
+   gfx_ctx_xdk_bind_api,
+   gfx_ctx_xdk_set_swap_interval,
+   gfx_ctx_xdk_set_video_mode,
+   gfx_ctx_xdk_get_video_size,
+   NULL,
+   gfx_ctx_xdk_update_window_title,
+   gfx_ctx_xdk_check_window,
+   gfx_ctx_xdk_set_resize,
+   gfx_ctx_xdk_window_has_focus,
+   gfx_ctx_xdk_swap_buffers,
+   gfx_ctx_xdk_input_driver,
+   NULL,
+   "xdk",
+
+   // RARCH_CONSOLE stuff.
+   gfx_ctx_xdk_set_filtering,
+   gfx_ctx_xdk_get_available_resolutions,
+   gfx_ctx_xdk_check_resolution,
+
+   gfx_ctx_xdk_menu_init,
+
+   gfx_ctx_xdk_set_fbo,
+   gfx_ctx_xdk_apply_fbo_state_changes,
+};

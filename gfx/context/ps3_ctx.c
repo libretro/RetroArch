@@ -30,11 +30,7 @@
 #include "../gl_common.h"
 #include "../image.h"
 
-#include "ps3_ctx.h"
-
-#ifdef HAVE_OPENGLES11
-#define glOrtho glOrthof
-#endif
+#include "../gfx_context.h"
 
 #ifdef HAVE_CG_MENU
 static struct texture_image menu_texture;

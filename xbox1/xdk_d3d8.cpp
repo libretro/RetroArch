@@ -39,7 +39,7 @@ static void check_window(xdk_d3d_video_t *d3d)
 {
    bool quit, resize;
 
-   gfx_ctx_check_window(&quit,
+   gfx_ctx_xdk_check_window(&quit,
          &resize, NULL, NULL,
          d3d->frame_count);
 
@@ -471,7 +471,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       xfonts_render_msg_place(d3d, 60, 365, 0, msg); //TODO: dehardcode x/y here for HD (720p) mode
 
    if(!d3d->block_swap)
-      gfx_ctx_swap_buffers();
+      gfx_ctx_xdk_swap_buffers();
 
    return true;
 }
@@ -483,7 +483,7 @@ static void xdk_d3d_set_nonblock_state(void *data, bool state)
    if(d3d->vsync)
    {
       RARCH_LOG("D3D8: Vsync => %s\n", state ? "off" : "on");
-      gfx_ctx_set_swap_interval(state ? 0 : 1, TRUE);
+      gfx_ctx_xdk_set_swap_interval(state ? 0 : 1);
    }
 }
 
@@ -514,7 +514,7 @@ static void xdk_d3d_start(void)
 
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
-   gfx_ctx_set_swap_interval(d3d->vsync ? 1 : 0, false);
+   gfx_ctx_xdk_set_swap_interval(d3d->vsync ? 1 : 0);
 }
 
 static void xdk_d3d_restart(void)

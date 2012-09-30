@@ -96,6 +96,11 @@ static void rmenu_ctx_ps3_swap_buffers(void)
 #endif
 }
 
+void rmenu_ctx_ps3_set_swap_interval(unsigned interval)
+{
+   gfx_ctx_set_swap_interval(interval);
+}
+
 static void rmenu_ctx_ps3_set_default_pos(rmenu_default_positions_t *position)
 {
    position->x_position = POSITION_X;
@@ -172,8 +177,14 @@ static const char * rmenu_ctx_ps3_drive_mapping_next(void)
    return drive_mappings[drive_mapping_idx];
 }
 
+static void rmenu_ctx_ps3_set_filtering(unsigned index, bool set_smooth)
+{
+   gfx_ctx_set_filtering(index, set_smooth);
+}
+
 const rmenu_context_t rmenu_ctx_ps3 = {
    .clear = rmenu_ctx_ps3_clear,
+   .set_filtering = rmenu_ctx_ps3_set_filtering,
    .blend = rmenu_ctx_ps3_blend, 
    .free_textures = rmenu_ctx_ps3_free_textures,
    .init_textures = rmenu_ctx_ps3_init_textures,
@@ -184,6 +195,7 @@ const rmenu_context_t rmenu_ctx_ps3 = {
     .screenshot_enable = rmenu_ctx_ps3_screenshot_enable,
     .screenshot_dump = rmenu_ctx_ps3_screenshot_dump,
    .swap_buffers = rmenu_ctx_ps3_swap_buffers,
+   .set_swap_interval = rmenu_ctx_ps3_set_swap_interval,
    .set_default_pos = rmenu_ctx_ps3_set_default_pos,
    .drive_mapping_prev = rmenu_ctx_ps3_drive_mapping_previous,
    .drive_mapping_next = rmenu_ctx_ps3_drive_mapping_next,
