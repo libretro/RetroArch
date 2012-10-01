@@ -26,7 +26,7 @@
 #include "../config.h"
 #endif
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) // Because they like to be "oh, so, special".
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
 #elif defined(HAVE_PSGL)
@@ -59,7 +59,7 @@
 #include "gl_common.h"
 #include "image.h"
 
-#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGL_MODERN)
+#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGL_MODERN) || defined(__APPLE__)
 #define pglCreateProgram glCreateProgram
 #define pglUseProgram glUseProgram
 #define pglCreateShader glCreateShader
