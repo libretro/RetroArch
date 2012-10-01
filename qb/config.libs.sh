@@ -19,6 +19,9 @@ if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    [ -d /opt/vc/include/interface/vcos/pthreads ] && add_include_dirs /opt/vc/include/interface/vcos/pthreads
    HAVE_GLES='yes'
    HAVE_VG='yes'
+   HAVE_EGL='yes'
+else
+   check_pkgconf EGL egl
 fi
 
 if [ "$LIBRETRO" ]; then
@@ -135,32 +138,33 @@ check_lib DYNAMIC "$DYLIB" dlopen
 if [ "$HAVE_KMS" != "no" ]; then
    check_pkgconf GBM gbm 9.1.0
    check_pkgconf DRM libdrm
-   if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ]; then
+   if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ] && [ "$HAVE_EGL" = "yes" ]; then
       HAVE_KMS=yes
-      HAVE_EGL=yes # Required
    elif [ "$HAVE_KMS" = "yes" ]; then
-      echo "Cannot find libgbm and/or libdrm libraries required for KMS. Compile without --enable-kms."
+      echo "Cannot find libgbm, libdrm and EGL libraries required for KMS. Compile without --enable-kms."
       exit 1
    else
-      echo "Cannot find libgbm and/or libdrm libraries required for KMS."
       HAVE_KMS=no
    fi
 fi
 
+check_pkgconf XML libxml-2.0
+
 # On videocore, these libraries will exist without proper pkg-config.
-if [ "$HAVE_VIDEOCORE" != "yes" ]; then
-   check_pkgconf GLES glesv2
+if [ "$HAVE_VIDEOCORE" != "yes" ] && [ "$HAVE_EGL" = "yes" ]; then
+
+   if [ "$HAVE_XML" = "yes" ]; then
+      check_pkgconf GLES glesv2
+   else
+      echo "Cannot find XML. GLES will not work."
+      exit 1
+   fi
    check_pkgconf VG vg
-
-   # GLES or VG requires EGL to be present.
-   # GLES requires XML shaders.
-   [ "$HAVE_GLES" = "yes" ] && HAVE_EGL=yes && HAVE_XML=yes
-   [ "$HAVE_VG" = "yes" ] && HAVE_EGL=yes
-
-   check_pkgconf EGL egl
+elif [ "$HAVE_VIDEOCORE" != "yes" ]; then
+   HAVE_VG=no
+   HAVE_GLES=no
 fi
 
-check_pkgconf XML libxml-2.0
 check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
 [ "$HAVE_X11" = "no" ] && HAVE_XEXT=no && HAVE_XF86VM=no
