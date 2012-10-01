@@ -19,17 +19,18 @@ INCDIRS = -I. -Iconsole/rglv2/include
 
 RGL_DIR = console/rglv2/src
 
-PPU_SRCS		= $(RGL_DIR)/rgl.cpp \
+PPU_SRCS		=   $(RGL_DIR)/Utils/Log.cpp \
+			  $(RGL_DIR)/Utils/NameSpace.cpp \
+			  $(RGL_DIR)/Utils/TexNameSpace.cpp \
+			  $(RGL_DIR)/Utils/Report.cpp \
+			  $(RGL_DIR)/Utils/EnumMap.cpp \
+			  $(RGL_DIR)/Utils/rbtree.cpp \
+			  $(RGL_DIR)/libelf/readelf.cpp \
+			  $(RGL_DIR)/rgl.cpp \
 			  $(RGL_DIR)/rgl_cg.cpp \
 			  $(RGL_DIR)/ps3/rgl_ps3.cpp \
-			  $(RGL_DIR)/ps3/rgl_ps3_raster.cpp  \
-			  $(RGL_DIR)/libelf/readelf.cpp \
-			  $(RGL_DIR)/Utils/EnumMap.cpp \
-			  $(RGL_DIR)/Utils/Log.cpp \
-			  $(RGL_DIR)/Utils/NameSpace.cpp \
-			  $(RGL_DIR)/Utils/Report.cpp \
-			  $(RGL_DIR)/Utils/rbtree.cpp \
-			  $(RGL_DIR)/Utils/TexNameSpace.cpp
+			  $(RGL_DIR)/ps3/rgl_ps3_raster.cpp 
+
 
 ifeq ($(CELL_BUILD_TOOLS), SNC)
 	PPU_CXXLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe
