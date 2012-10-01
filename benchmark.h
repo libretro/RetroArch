@@ -39,7 +39,7 @@ rarch_perf_tick_t rarch_get_perf_counter(void);
 
 #define RARCH_PERFORMANCE_INIT(X)  static rarch_perf_counter_t X
 #define RARCH_PERFORMANCE_START(X) ((X).start  = rarch_get_perf_counter())
-#define RARCH_PERFORMANCE_STOP(X)  do { (X).total += rarch_get_perf_counter() - (X).start; (X).call_cnt++; } while(0)
+#define RARCH_PERFORMANCE_STOP(X)  do { (X).total += rarch_get_perf_counter() - (X).start; (X).call_cnt++; } while(0) /* TODO: we should increment at PERFORMANCE_START instead of PERFORMANCE_STOP since sometimes we cannot assume that we don't prematurely exit out of the function */
 
 #ifdef _WIN32
 #define RARCH_PERFORMANCE_LOG(functionname, X) RARCH_LOG("[PERF]: Avg (%s): %I64u ticks.\n", functionname, (X).total / (X).call_cnt)
