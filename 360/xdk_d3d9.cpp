@@ -132,14 +132,6 @@ static bool hlsl_shader_init(void)
 
    return hlsl_init(g_settings.video.cg_shader_path, d3d->d3d_render_device);
 }
-
-static unsigned d3d_hlsl_shader_num(void)
-{
-   unsigned num = d3d_hlsl_num();
-   if (num)
-      return num;
-   return 0;
-}
 #endif
 
 static void xdk_d3d_free(void * data)
@@ -529,7 +521,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 	  return NULL;
    }
 
-   RARCH_LOG("D3D: Loaded %u program(s).\n", d3d_hlsl_shader_num());
+   RARCH_LOG("D3D: Loaded %u program(s).\n", d3d_hlsl_num());
 #endif
 
 #ifdef HAVE_FBO
