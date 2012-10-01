@@ -156,6 +156,9 @@ struct settings
       unsigned device[MAX_PLAYERS];
 #endif
       bool netplay_client_swap_input;
+
+      unsigned turbo_period;
+      unsigned turbo_duty_cycle;
    } input;
 
    char libretro[PATH_MAX];
@@ -338,7 +341,7 @@ struct global
 
       bool force_nonblock;
 
-      const char *input_desc_btn[MAX_PLAYERS][RARCH_FIRST_ANALOG_BIND];
+      const char *input_desc_btn[MAX_PLAYERS][RARCH_FIRST_CUSTOM_BIND];
    } system;
 
    struct
@@ -421,6 +424,11 @@ struct global
    bool is_paused;
    bool is_oneshot;
    bool is_slowmotion;
+
+   // Turbo support
+   bool turbo_frame_enable[MAX_PLAYERS];
+   uint16_t turbo_enable[MAX_PLAYERS];
+   unsigned turbo_count;
 
    // Autosave support.
    autosave_t *autosave[2];

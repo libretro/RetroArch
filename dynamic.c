@@ -365,7 +365,7 @@ static bool environment_cb(unsigned cmd, void *data)
             if (desc->device != RETRO_DEVICE_JOYPAD) // Ignore all others for now.
                continue;
 
-            if (desc->id >= RARCH_FIRST_ANALOG_BIND)
+            if (desc->id >= RARCH_FIRST_CUSTOM_BIND)
                continue;
 
             g_extern.system.input_desc_btn[desc->port][desc->id] = desc->description;
@@ -381,7 +381,7 @@ static bool environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
          for (unsigned p = 0; p < MAX_PLAYERS; p++)
          {
-            for (unsigned id = 0; id < RARCH_FIRST_ANALOG_BIND; id++)
+            for (unsigned id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
             {
                const char *desc = g_extern.system.input_desc_btn[p][id];
                if (desc)

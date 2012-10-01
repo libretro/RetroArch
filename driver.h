@@ -40,12 +40,16 @@
 // Analog binds use RETRO_DEVICE_ANALOG, but we follow the same scheme internally
 // in RetroArch for simplicity,
 // so they are mapped into [16, 23].
-#define RARCH_FIRST_ANALOG_BIND 16
-#define RARCH_FIRST_META_KEY RARCH_ANALOG_BIND_LIST_END
+#define RARCH_FIRST_CUSTOM_BIND 16
+#define RARCH_FIRST_META_KEY RARCH_CUSTOM_BIND_LIST_END
 enum // RetroArch specific bind IDs.
 {
+   // Custom binds that extend the scope of RETRO_DEVICE_JOYPAD for RetroArch specifically.
+   // Turbo
+   RARCH_TURBO_ENABLE = RARCH_FIRST_CUSTOM_BIND, 
+
    // Analogs (RETRO_DEVICE_ANALOG)
-   RARCH_ANALOG_LEFT_X_PLUS = RARCH_FIRST_ANALOG_BIND,
+   RARCH_ANALOG_LEFT_X_PLUS,
    RARCH_ANALOG_LEFT_X_MINUS,
    RARCH_ANALOG_LEFT_Y_PLUS,
    RARCH_ANALOG_LEFT_Y_MINUS,
@@ -54,10 +58,10 @@ enum // RetroArch specific bind IDs.
    RARCH_ANALOG_RIGHT_Y_PLUS,
    RARCH_ANALOG_RIGHT_Y_MINUS,
 
-   RARCH_ANALOG_BIND_LIST_END,
+   RARCH_CUSTOM_BIND_LIST_END,
 
-   // Command binds.
-   RARCH_FAST_FORWARD_KEY = RARCH_ANALOG_BIND_LIST_END,
+   // Command binds. Not related to game input, only usable for port 0.
+   RARCH_FAST_FORWARD_KEY = RARCH_FIRST_META_KEY,
    RARCH_FAST_FORWARD_HOLD_KEY,
    RARCH_LOAD_STATE_KEY,
    RARCH_SAVE_STATE_KEY,

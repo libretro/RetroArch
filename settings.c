@@ -221,6 +221,8 @@ void config_set_defaults(void)
 
    g_settings.input.axis_threshold = axis_threshold;
    g_settings.input.netplay_client_swap_input = netplay_client_swap_input;
+   g_settings.input.turbo_period = turbo_period;
+   g_settings.input.turbo_duty_cycle = turbo_duty_cycle;
    for (int i = 0; i < MAX_PLAYERS; i++)
       g_settings.input.joypad_map[i] = i;
 
@@ -494,6 +496,9 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT(network_cmd_port, "network_cmd_port");
    CONFIG_GET_BOOL(stdin_cmd_enable, "stdin_cmd_enable");
 
+   CONFIG_GET_INT(input.turbo_period, "input_turbo_period");
+   CONFIG_GET_INT(input.turbo_duty_cycle, "input_duty_cycle");
+
    if (config_get_string(conf, "environment_variables",
             &g_extern.system.environment))
    {
@@ -567,6 +572,7 @@ struct bind_map
       DECLARE_BIND(player##P##_r2,        RETRO_DEVICE_ID_JOYPAD_R2), \
       DECLARE_BIND(player##P##_l3,        RETRO_DEVICE_ID_JOYPAD_L3), \
       DECLARE_BIND(player##P##_r3,        RETRO_DEVICE_ID_JOYPAD_R3), \
+      DECLARE_BIND(player##P##_turbo,     RARCH_TURBO_ENABLE), \
       DECLARE_BIND(player##P##_l_x_plus,  RARCH_ANALOG_LEFT_X_PLUS), \
       DECLARE_BIND(player##P##_l_x_minus, RARCH_ANALOG_LEFT_X_MINUS), \
       DECLARE_BIND(player##P##_l_y_plus,  RARCH_ANALOG_LEFT_Y_PLUS), \

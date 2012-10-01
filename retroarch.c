@@ -474,6 +474,22 @@ static void input_poll(void)
    input_poll_func();
 }
 
+// Turbo scheme: If turbo button is held, all buttons pressed except for D-pad will go into
+// a turbo mode. Until the button is released again, the input state will be modulated by a periodic pulse defined
+// by the configured duty cycle.
+static bool input_apply_turbo(unsigned port, unsigned id, bool res)
+{
+   if (res && g_extern.turbo_frame_enable[port])
+      g_extern.turbo_enable[port] |= (1 << id);
+   else if (!res)
+      g_extern.turbo_enable[port] &= ~(1 << id);
+
+   if (g_extern.turbo_enable[port] & (1 << id))
+      return res & ((g_extern.turbo_count % g_settings.input.turbo_period) < g_settings.input.turbo_duty_cycle);
+   else
+      return res;
+}
+
 static int16_t input_state(unsigned port, unsigned device, unsigned index, unsigned id)
 {
    device &= RETRO_DEVICE_MASK;
@@ -503,6 +519,10 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
    int16_t res = 0;
    if (id < RARCH_FIRST_META_KEY || device == RETRO_DEVICE_KEYBOARD)
       res = input_input_state_func(binds, port, device, index, id);
+
+   // Don't allow turbo for D-pad.
+   if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP || id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      res = input_apply_turbo(port, id, res);
 
 #ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie && !g_extern.bsv.movie_playback)
@@ -2261,6 +2281,26 @@ static void check_reset(void)
    old_state = new_state;
 }
 
+static void check_turbo(void)
+{
+   g_extern.turbo_count++;
+
+   static const struct retro_keybind *binds[MAX_PLAYERS] = {
+      g_settings.input.binds[0],
+      g_settings.input.binds[1],
+      g_settings.input.binds[2],
+      g_settings.input.binds[3],
+      g_settings.input.binds[4],
+      g_settings.input.binds[5],
+      g_settings.input.binds[6],
+      g_settings.input.binds[7],
+   };
+
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+      g_extern.turbo_frame_enable[i] =
+         input_input_state_func(binds, i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+}
+
 #ifdef HAVE_XML
 static void check_shader_dir(void)
 {
@@ -2415,6 +2455,8 @@ static void do_state_checks(void)
 #ifndef RARCH_CONSOLE
    check_mute();
 #endif
+
+   check_turbo();
 
 #ifdef HAVE_NETPLAY
    if (!g_extern.netplay)

@@ -324,8 +324,9 @@ static const bool stdin_cmd_enable = false;
 // How far an axis must be tilted to result in a button press
 static const float axis_threshold = 0.5;
 
-// To figure out which joypad buttons to use, check jstest or similar.
-// SDL sometimes reverses the axes for some odd reason, but hey. :D
+// Describes speed of which turbo-enabled buttons toggle.
+static const unsigned turbo_period = 6;
+static const unsigned turbo_duty_cycle = 3;
 
 // Player 1
 static const struct retro_keybind retro_keybinds_1[] = {
@@ -347,6 +348,7 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RETRO_DEVICE_ID_JOYPAD_L3,        RETROK_UNKNOWN, NO_BTN,      AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_R3,        RETROK_UNKNOWN, NO_BTN,      AXIS_NONE },
 
+   { true, RARCH_TURBO_ENABLE,               RETROK_UNKNOWN, NO_BTN,      AXIS_NONE },
    { true, RARCH_ANALOG_LEFT_X_PLUS,         RETROK_UNKNOWN, NO_BTN,      AXIS_NONE },
    { true, RARCH_ANALOG_LEFT_X_MINUS,        RETROK_UNKNOWN, NO_BTN,      AXIS_NONE },
    { true, RARCH_ANALOG_LEFT_Y_PLUS,         RETROK_UNKNOWN, NO_BTN,      AXIS_NONE },
@@ -402,6 +404,7 @@ static const struct retro_keybind retro_keybinds_rest[] = {
    { true, RETRO_DEVICE_ID_JOYPAD_L3,        RETROK_UNKNOWN, NO_BTN, AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_R3,        RETROK_UNKNOWN, NO_BTN, AXIS_NONE },
 
+   { true, RARCH_TURBO_ENABLE,               RETROK_UNKNOWN, NO_BTN, AXIS_NONE },
    { true, RARCH_ANALOG_LEFT_X_PLUS,         RETROK_UNKNOWN, NO_BTN, AXIS_NONE },
    { true, RARCH_ANALOG_LEFT_X_MINUS,        RETROK_UNKNOWN, NO_BTN, AXIS_NONE },
    { true, RARCH_ANALOG_LEFT_Y_PLUS,         RETROK_UNKNOWN, NO_BTN, AXIS_NONE },
