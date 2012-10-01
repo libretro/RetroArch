@@ -17,11 +17,7 @@
 #include "../../driver.h"
 
 #ifdef _XBOX
-#if defined(_XBOX1)
-#include "../../xbox1/xdk_d3d8.h"
-#elif defined(_XBOX360)
-#include "../../360/xdk_d3d9.h"
-#endif
+#include "../../xdk/xdk_d3d.h"
 #endif
 
 #include <stdint.h>
@@ -460,10 +456,12 @@ static void gfx_ctx_xdk_set_filtering(unsigned index, bool set_smooth)
 
 static void gfx_ctx_xdk_set_fbo(bool enable)
 {
+#ifdef HAVE_FBO
    /* TODO: implement properly */
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    d3d->fbo_enabled = enable;
+#endif
 }
 
 void gfx_ctx_xdk_apply_fbo_state_changes(unsigned mode)

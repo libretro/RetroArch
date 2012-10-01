@@ -27,7 +27,7 @@
 #include "../../console/rmenu/rmenu.h"
 #include "../../gfx/gfx_context.h"
 
-#include "../xdk_d3d9.h"
+#include "../../xdk/xdk_d3d.h"
 #include "menu.h"
 #include "../../message.h"
 

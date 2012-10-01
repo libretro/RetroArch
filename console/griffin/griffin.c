@@ -149,11 +149,7 @@ VIDEO DRIVER
 
 #ifdef _XBOX
 #include "../../xdk/xdk_resources.cpp"
-#if defined(HAVE_D3D9)
-#include "../../360/xdk_d3d9.cpp"
-#elif defined(HAVE_D3D8)
-#include "../../xbox1/xdk_d3d8.cpp"
-#endif
+#include "../../xdk/xdk_d3d.cpp"
 #endif
 
 #include "../../gfx/null.c"

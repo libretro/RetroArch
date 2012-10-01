@@ -16,13 +16,18 @@
 
 #ifdef _XBOX
 #include <xtl.h>
+#include <xgraphics.h>
 #endif
 
 #include "../driver.h"
-#include "xdk_d3d9.h"
+#include "xdk_d3d.h"
 
 #ifdef HAVE_HLSL
 #include "../gfx/shader_hlsl.h"
+#endif
+
+#ifdef _XBOX1
+#include "./../gfx/fonts/xdk1_xfonts.h"
 #endif
 
 #include "./../gfx/gfx_context.h"
@@ -39,6 +44,11 @@
 
 #include "../xdk/xdk_resources.h"
 
+#if defined(_XBOX1)
+wchar_t strw_buffer[128];
+unsigned font_x, font_y;
+FLOAT angle;
+#elif defined(_XBOX360)
 extern video_console_t video_console;
 extern xdk360_video_font_t m_Font;
 
@@ -109,12 +119,13 @@ const DWORD g_MapLinearToSrgbGpuFormat[] =
    GPUTEXTUREFORMAT_8_8_8_8_GAMMA_EDRAM,
    GPUTEXTUREFORMAT_2_10_10_10_FLOAT_EDRAM,
 };
+#endif
 
 static void check_window(xdk_d3d_video_t *d3d)
 {
    bool quit, resize;
 
-   gfx_ctx_xdk_check_window(&quit,
+   d3d->driver->check_window(&quit,
          &resize, NULL, NULL,
          d3d->frame_count);
 
@@ -149,13 +160,16 @@ static void xdk_d3d_free(void * data)
 #ifdef HAVE_HLSL
    hlsl_deinit();
 #endif
+#ifdef HAVE_D3D9
    d3d9_deinit_font();
+#endif
 
    d3d->driver->destroy();
 
    free(d3d);
 }
 
+#ifdef _XBOX360
 void xdk_video_font_draw_text(xdk360_video_font_t *font, 
    float fOriginX, float fOriginY, const wchar_t * strText, float fMaxPixelWidth )
 {
@@ -349,24 +363,30 @@ static void xdk_convert_texture_to_as16_srgb( D3DTexture *pTexture )
    //convert to AS_16_16_16_16 format
    pTexture->Format.DataFormat = g_MapLinearToSrgbGpuFormat[ (desc.Format & D3DFORMAT_TEXTUREFORMAT_MASK) >> D3DFORMAT_TEXTUREFORMAT_SHIFT ];
 }
+#endif
 
 static void xdk_d3d_set_viewport(bool force_full)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-
-   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
-      0xff000000, 1.0f, 0);
-
-   int width = d3d->video_mode.fIsHiDef ? 1280 : 640;
-   int height = d3d->video_mode.fIsHiDef ? 720 : 480;
+   int width, height;      // Set the viewport based on the current resolution
    int m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
    float m_zNear, m_zFar;
 
+   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+#if defined(_XBOX1)
+   // Get the "video mode"
+   d3d->video_mode = XGetVideoFlags();
+
+   width  = d3d->d3dpp.BackBufferWidth;
+   height = d3d->d3dpp.BackBufferHeight;
+#elif defined(_XBOX360)
+   width = d3d->video_mode.fIsHiDef ? 1280 : 640;
+   height = d3d->video_mode.fIsHiDef ? 720 : 480;
+#endif
    m_viewport_x_temp = 0;
    m_viewport_y_temp = 0;
    m_viewport_width_temp = width;
    m_viewport_height_temp = height;
-
    m_zNear = 0.0f;
    m_zFar = 1.0f;
 
@@ -409,6 +429,11 @@ static void xdk_d3d_set_viewport(bool force_full)
    vp.MinZ   = m_zNear;
    vp.MaxZ   = m_zFar;
    d3d->d3d_render_device->SetViewport(&vp);
+
+#ifdef _XBOX1
+   font_x = vp.X;
+   font_y = vp.Y;
+#endif
 
    //if(gl->overscan_enable && !force_full)
    //{
@@ -498,7 +523,11 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    d3d->vsync = video->vsync;
 
+#if defined(_XBOX1)
+   d3d->driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D8_API);
+#elif defined(_XBOX360)
    d3d->driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D9_API);
+#endif
    if (!d3d->driver)
    {
       free(d3d);
@@ -530,12 +559,24 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    xdk_d3d_set_rotation(d3d, g_console.screen_orientation);
 
+#if defined(_XBOX1)
+   /* load debug fonts */
+   XFONT_OpenDefaultFont(&d3d->debug_font);
+   d3d->debug_font->SetBkMode(XFONT_TRANSPARENT);
+   d3d->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
+   d3d->debug_font->SetTextHeight(14);
+   d3d->debug_font->SetTextAntialiasLevel(d3d->debug_font->GetTextAntialiasLevel());
+
+   font_x = 0;
+   font_y = 0;
+#elif defined(_XBOX360)
    HRESULT hr = d3d9_init_font("game:\\media\\Arial_12.xpr");
 
    if(hr < 0)
    {
       RARCH_ERR("Couldn't initialize HLSL shader fonts.\n");
    }
+#endif
 
    //really returns driver.video_data to driver.video_data - see comment above
    return d3d;
@@ -552,6 +593,11 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    D3DSurface* pRenderTarget0;
 #endif
    bool menu_enabled = g_console.menu_enable;
+#ifdef _XBOX1
+   bool fps_enable = g_console.fps_info_msg_enable;
+   unsigned flicker_filter = g_console.flicker_filter;
+   bool soft_filter_enable = g_console.soft_display_filter_enable;
+#endif
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
@@ -561,6 +607,17 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
       d3d->lpTexture->UnlockRect(0);
 
+#if defined(_XBOX1)
+      float tex_w = width;  // / 512.0f;
+      float tex_h = height; // / 512.0f;
+
+      DrawVerticeFormats verts[] = {
+         { -1.0f, -1.0f, 1.0f, 0.0f,  tex_h },
+         {  1.0f, -1.0f, 1.0f, tex_w, tex_h },
+         { -1.0f,  1.0f, 1.0f, 0.0f,  0.0f },
+         {  1.0f,  1.0f, 1.0f, tex_w, 0.0f },
+      };
+#elif defined(_XBOX360)
       float tex_w = width / 512.0f;
       float tex_h = height / 512.0f;
 
@@ -570,6 +627,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
          { -1.0f,  1.0f, 0.0f,  0.0f },
          {  1.0f,  1.0f, tex_w, 0.0f },
       };
+#endif
 
       // Align texels and vertices (D3D9 quirk).
       for (unsigned i = 0; i < 4; i++)
@@ -578,7 +636,11 @@ static bool xdk_d3d_frame(void *data, const void *frame,
          verts[i].y += 0.5f / 512.0f;
       }
 
+#if defined(_XBOX1)
+      BYTE *verts_ptr;
+#elif defined(_XBOX360)
       void *verts_ptr;
+#endif
       d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
       memcpy(verts_ptr, verts, sizeof(verts));
       d3d->vertex_buf->Unlock();
@@ -598,9 +660,11 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (d3d->should_resize)
       xdk_d3d_set_viewport(false);
 
+   d3d->frame_count++;
+#ifdef _XBOX360
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
          0xff000000, 1.0f, 0);
-   d3d->frame_count++;
+#endif
 
    d3d->d3d_render_device->SetTexture(0, d3d->lpTexture);
 
@@ -648,12 +712,34 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 
+#if defined(_XBOX1)
+   d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
+
+   D3DXMATRIX p_out, p_rotate;
+   D3DXMatrixIdentity(&p_out);
+   D3DXMatrixRotationZ(&p_rotate, angle);
+
+   d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &p_rotate);
+   d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &p_out);
+   d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &p_out);
+
+   d3d->d3d_render_device->SetStreamSource(0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
+   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+
+   d3d->d3d_render_device->BeginScene();
+   d3d->d3d_render_device->SetFlickerFilter(flicker_filter);
+   d3d->d3d_render_device->SetSoftDisplayFilter(soft_filter_enable);
+   d3d->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+   d3d->d3d_render_device->EndScene();
+#elif defined(_XBOX360)
+
    d3d->d3d_render_device->SetVertexDeclaration(d3d->v_decl);
    d3d->d3d_render_device->SetStreamSource(0, d3d->vertex_buf,
 	   0,
 	   sizeof(DrawVerticeFormats));
 
    d3d->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+#endif
 
 #ifdef HAVE_FBO
    if(d3d->fbo_enabled)
@@ -684,13 +770,41 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    }
 #endif
 
-   /* XBox 360 specific font code */
+#if defined(_XBOX1)
+   if(fps_enable)
+   {
+      MEMORYSTATUS stat;
+      GlobalMemoryStatus(&stat);
+
+      //Output memory usage
+
+      char buf[128], buf2[128], buf_fps_last[128];
+      bool ret = false;
+      snprintf(buf, sizeof(buf), "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
+      xfonts_render_msg_place(d3d, font_x + 30, font_y + 50, 0 /* scale */, buf);
+
+      if(ret = gfx_window_title(buf2, sizeof(buf2)) || sizeof(buf_fps_last))
+      {
+         if(ret)
+         {
+            snprintf(buf_fps_last, sizeof(buf_fps_last), buf2);
+            xfonts_render_msg_place(d3d, font_x + 30, font_y + 70, 0 /* scale */, buf_fps_last);
+            convert_char_to_wchar(strw_buffer, buf2, sizeof(strw_buffer));
+         }
+         else if(buf_fps_last)
+            xfonts_render_msg_place(d3d, font_x + 30, font_y + 70, 0 /* scale */, buf2);
+      }
+   }
+
+   if (msg)
+      xfonts_render_msg_place(d3d, 60, 365, 0, msg); //TODO: dehardcode x/y here for HD (720p) mode
+#elif defined(_XBOX360)
    if (msg && !menu_enabled)
    {
 	   xdk360_console_format(msg);
-
       xdk360_console_draw();
    }
+#endif
 
    if(!d3d->block_swap)
       gfx_ctx_xdk_swap_buffers();

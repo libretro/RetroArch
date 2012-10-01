@@ -32,11 +32,7 @@
 #include <xbdm.h>
 
 #ifdef _XBOX
-#if defined(_XBOX1)
-#include "../../xbox1/xdk_d3d8.h"
-#elif defined(_XBOX360)
-#include "../../360/xdk_d3d9.h"
-#endif
+#include "../../xdk/xdk_d3d.h"
 #endif
 
 #include "../../console/rarch_console.h"

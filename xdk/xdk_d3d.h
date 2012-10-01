@@ -14,15 +14,19 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _XDK360_VIDEO_H
-#define _XDK360_VIDEO_H
+#ifndef _XDK_D3D_VIDEO_H
+#define _XDK_D3D_VIDEO_H
 
 #include <stdint.h>
+#ifdef _XBOX1
+#include <xfont.h>
+#endif
+
 #include "../gfx/gfx_context.h"
 #include "../xdk/xdk_defines.h"
 
 #define DFONT_MAX	4096
-#define PRIM_FVF	(D3DFVF_XYZRHW | D3DFVF_TEX1)
+#define D3DFVF_CUSTOMVERTEX	(D3DFVF_XYZRHW | D3DFVF_TEX1)
 
 #define MIN_SCALING_FACTOR (1.0f)
 #define MAX_SCALING_FACTOR (2.0f)
@@ -39,7 +43,12 @@ typedef struct
 
 typedef struct DrawVerticeFormats
 {
+#if defined(_XBOX1)
+   float x, y, z;
+   float rhw;
+#elif defined(_XBOX360)
    float x, y;
+#endif
    float u, v;
 } DrawVerticeFormats;
 
@@ -47,7 +56,9 @@ typedef struct xdk_d3d_video
 {
    const gfx_ctx_driver_t *driver;
    bool block_swap;
+#ifdef HAVE_FBO
    bool fbo_enabled;
+#endif
    bool should_resize;
    bool quitting;
    bool vsync;
@@ -56,14 +67,24 @@ typedef struct xdk_d3d_video
    unsigned last_height;
    unsigned full_x;
    unsigned full_y;
+   unsigned win_width;
+   unsigned win_height;
    LPDIRECT3D d3d_device;
    LPDIRECT3DDEVICE d3d_render_device;
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    LPDIRECT3DTEXTURE lpTexture;
+#ifdef HAVE_D3D9
    D3DTexture lpTexture_ot_as16srgb;
    LPDIRECT3DTEXTURE lpTexture_ot;
    IDirect3DVertexDeclaration9* v_decl;
+#endif
+#if defined(_XBOX1)
+   DWORD video_mode;
+   XFONT *debug_font;
+   D3DSurface *pBackBuffer, *pFrontBuffer;
+#elif defined(_XBOX360)
    XVIDEO_MODE video_mode;
+#endif
    D3DPRESENT_PARAMETERS d3dpp;
    LPDIRECT3DSURFACE lpSurface;
 } xdk_d3d_video_t;
