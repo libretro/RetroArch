@@ -91,6 +91,14 @@ void hlsl_set_proj_matrix(XMMATRIX rotation_value)
       prg[active_index].mvp_val = rotation_value;
 }
 
+unsigned d3d_hlsl_num(void)
+{
+   if (hlsl_active)
+      return hlsl_shader_num;
+   else
+      return 0;
+}
+
 #define set_param_2f(param, xy, constanttable) \
    if (param) constanttable->SetFloatArray(d3d_device_ptr, param, xy, 2)
 #define set_param_1f(param, x, constanttable) \

@@ -124,6 +124,24 @@ static void check_window(xdk_d3d_video_t *d3d)
       d3d->should_resize = true;
 }
 
+#ifdef HAVE_HLSL
+static bool hlsl_shader_init(void)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   const char *shader_path = g_settings.video.cg_shader_path;
+
+   return hlsl_init(g_settings.video.cg_shader_path, d3d->d3d_render_device);
+}
+
+static unsigned d3d_hlsl_shader_num(void)
+{
+   unsigned num = d3d_hlsl_num();
+   if (num)
+      return num;
+   return 0;
+}
+#endif
+
 static void xdk_d3d_free(void * data)
 {
 #ifdef RARCH_CONSOLE
@@ -503,7 +521,15 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    gfx_ctx_xdk_set_swap_interval(d3d->vsync ? 1 : 0);
 
 #ifdef HAVE_HLSL
-   hlsl_init(g_settings.video.cg_shader_path, d3d->d3d_render_device);
+   if (!hlsl_shader_init())
+   {
+      RARCH_ERR("Shader init failed.\n");
+	  d3d->driver->destroy();
+	  free(d3d);
+	  return NULL;
+   }
+
+   RARCH_LOG("D3D: Loaded %u program(s).\n", d3d_hlsl_shader_num());
 #endif
 
 #ifdef HAVE_FBO
@@ -516,7 +542,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    if(hr < 0)
    {
-      RARCH_ERR("Couldn't create debug console.\n");
+      RARCH_ERR("Couldn't initialize HLSL shader fonts.\n");
    }
 
    //really returns driver.video_data to driver.video_data - see comment above
