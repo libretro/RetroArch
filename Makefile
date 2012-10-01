@@ -144,6 +144,8 @@ endif
 
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
+else ifeq ($(HAVE_OPENGL), 1)
+   OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
 else ifeq ($(HAVE_FFMPEG), 1)
    OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
 endif

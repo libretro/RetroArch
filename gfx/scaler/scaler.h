@@ -92,11 +92,6 @@ struct scaler_ctx
       uint32_t *frame;
       int stride;
    } output;
-
-#ifdef SCALER_PERF
-   double elapsed_time_ms;
-   unsigned elapsed_frames;
-#endif
 };
 
 bool scaler_ctx_gen_filter(struct scaler_ctx *ctx);

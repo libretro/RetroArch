@@ -15,6 +15,7 @@
 
 #include "../driver.h"
 #include "../benchmark.h"
+#include "scaler/scaler.h"
 
 #include <stdint.h>
 #include "../libretro.h"
@@ -835,20 +836,8 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
 		      gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
 		      gl->tex_w * gl->tex_h * gl->base_size,
 		      gl->empty_buf);
-#elif defined(HAVE_PBO)
-      pglBindBuffer(GL_PIXEL_UNPACK_BUFFER, gl->pbo);
-
-      glBufferSubData(GL_PIXEL_UNPACK_BUFFER,
-            0, gl->tex_w * gl->tex_h * gl->base_size, gl->empty_buf);
-
-      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(gl->tex_w * gl->base_size));
-      glTexSubImage2D(GL_TEXTURE_2D,
-            0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
-            gl->texture_fmt, NULL);
-
-      pglBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 #else
-      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * gl->base_size));
+      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t)));
 
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
@@ -869,6 +858,28 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
       set_texture_coords(gl->tex_coords, xamt, yamt);
    }
 }
+
+// It is *much* faster (order of mangnitude on my setup) to use a custom SIMD-optimized conversion routine than letting GL do it :(
+#if !defined(HAVE_PSGL)
+static inline void gl_convert_frame_rgb15_32(gl_t *gl, void *output, const void *input, unsigned width, unsigned height, unsigned in_pitch)
+{
+   if (width != gl->scaler.in_width || height != gl->scaler.in_height)
+   {
+      gl->scaler.in_width    = width;
+      gl->scaler.in_height   = height;
+      gl->scaler.out_width   = width;
+      gl->scaler.out_height  = height;
+      gl->scaler.in_fmt      = SCALER_FMT_0RGB1555;
+      gl->scaler.out_fmt     = SCALER_FMT_ARGB8888;
+      gl->scaler.scaler_type = SCALER_TYPE_POINT;
+      scaler_ctx_gen_filter(&gl->scaler);
+   }
+
+   gl->scaler.in_stride  = in_pitch;
+   gl->scaler.out_stride = width * sizeof(uint32_t);
+   scaler_ctx_scale(&gl->scaler, output, input);
+}
+#endif
 
 #if defined(HAVE_PSGL)
 static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
@@ -914,98 +925,29 @@ static void gl_init_textures(gl_t *gl)
    }
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
-#elif defined(HAVE_PBO)
-static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
-{
-   const uint8_t *frame_copy = (const uint8_t*)frame;
-   size_t frame_copy_size    = width * gl->base_size;
-
-   pglBindBuffer(GL_PIXEL_UNPACK_BUFFER, gl->pbo);
-   uint8_t *data = (uint8_t*)pglMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-   if (!data)
-      return;
-
-   for (unsigned h = 0; h < height; h++, data += frame_copy_size, frame_copy += pitch)
-      memcpy(data, frame_copy, frame_copy_size);
-   pglUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-
-   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * gl->base_size));
-   glTexSubImage2D(GL_TEXTURE_2D,
-         0, 0, 0, width, height, gl->texture_type,
-         gl->texture_fmt, NULL);
-   pglBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-}
-
-static void gl_init_textures(gl_t *gl)
-{
-   void *buf = pglMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-   if (buf)
-   {
-      memset(buf, 0, gl->tex_w * gl->tex_h * gl->base_size);
-      pglUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-   }
-
-   glGenTextures(TEXTURES, gl->texture);
-   for (unsigned i = 0; i < TEXTURES; i++)
-   {
-      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
-
-      glTexImage2D(GL_TEXTURE_2D,
-            0, RARCH_GL_INTERNAL_FORMAT, gl->tex_w, gl->tex_h, 0, gl->texture_type,
-            gl->texture_fmt, NULL);
-   }
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-}
 #else
 static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
-
-#ifdef HAVE_OPENGLES2 // Have to perform pixel format conversions as well.
-   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t))); // Always use 32-bit textures.
-
-   if (gl->base_size == 2) // ARGB1555 => ARGB8888
+   if (gl->base_size == 2) // ARGB1555 => ARGB8888, SIMD-style :D
    {
-      const uint16_t *src  = (const uint16_t*)frame;
-      uint32_t *dst        = (uint32_t*)gl->conv_buffer;
-      unsigned pitch_width = pitch >> 1;
-
-      // GL_UNSIGNED_BYTE apparently means in byte order, so go with little endian for now (ARGB).
-      // We have to convert anyways, prefer something that is more likely to be a native format for the GPU.
-      for (unsigned h = 0; h < height; h++, dst += width, src += pitch_width)
-      {
-         for (unsigned w = 0; w < width; w++)
-         {
-            uint32_t col = src[w];
-            uint32_t r = (col >> 10) & 0x1f;
-            uint32_t g = (col >>  5) & 0x1f;
-            uint32_t b = (col >>  0) & 0x1f;
-            r = (r << 3) | (r >> 2);
-            g = (g << 3) | (g >> 2);
-            b = (b << 3) | (b >> 2);
-
-            dst[w] = (0xff << 24) | (r << 16) | (g << 8) | (b << 0);
-         }
-      }
-
+      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t))); // Always use 32-bit textures.
+      gl_convert_frame_rgb15_32(gl, gl->conv_buffer, frame, width, height, pitch);
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, width, height, gl->texture_type,
             gl->texture_fmt, gl->conv_buffer);
    }
    else
    {
+#ifdef HAVE_OPENGLES2
+      // No GL_UNPACK_ROW_LENGTH ;(
       unsigned pitch_width = pitch / gl->base_size;
-      if (width == pitch_width) // Fast path :D
+      if (width == pitch_width) // Happy path :D
       {
          glTexSubImage2D(GL_TEXTURE_2D,
                0, 0, 0, width, height, gl->texture_type,
-               gl->texture_fmt, gl->conv_buffer);
+               gl->texture_fmt, frame);
       }
-      else
+      else // Probably slower path.
       {
          const uint32_t *src = (const uint32_t*)frame;
          for (unsigned h = 0; h < height; h++, src += pitch_width)
@@ -1015,15 +957,17 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
                   gl->texture_fmt, src);
          }
       }
-   }
 #else
-   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
-   glTexSubImage2D(GL_TEXTURE_2D,
-         0, 0, 0, width, height, gl->texture_type,
-         gl->texture_fmt, frame);
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
+
+      glTexSubImage2D(GL_TEXTURE_2D,
+            0, 0, 0, width, height, gl->texture_type,
+            gl->texture_fmt, frame);
+
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #endif
+   }
 }
 
 static void gl_init_textures(gl_t *gl)
@@ -1197,9 +1141,6 @@ static void gl_free(void *data)
 #if defined(HAVE_PSGL)
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
    glDeleteBuffers(1, &gl->pbo);
-#elif defined(HAVE_PBO)
-   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-   glDeleteBuffers(1, &gl->pbo);
 #endif
 
 #ifdef HAVE_FBO
@@ -1251,15 +1192,6 @@ static bool resolve_extensions(gl_t *gl)
    const char *ext = (const char*)glGetString(GL_EXTENSIONS);
    if (ext)
       RARCH_LOG("[GL] Supported extensions: %s\n", ext);
-#endif
-
-#if defined(HAVE_PBO)
-   RARCH_LOG("[GL]: Using PBOs.\n");
-   if (!gl_query_extension("GL_ARB_pixel_buffer_object"))
-   {
-      RARCH_ERR("[GL]: PBOs are enabled, but extension does not exist ...\n");
-      return false;
-   }
 #endif
 
    return true;
@@ -1403,17 +1335,12 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
    glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
          gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
-#elif defined(HAVE_PBO)
-   glGenBuffers(1, &gl->pbo);
-   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, gl->pbo);
-   glBufferData(GL_PIXEL_UNPACK_BUFFER,
-         gl->tex_w * gl->tex_h * gl->base_size, NULL, GL_STREAM_DRAW);
 #endif
 
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
 
-#ifdef HAVE_OPENGLES2
+#if !defined(HAVE_PSGL)
    gl->conv_buffer = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
    if (!gl->conv_buffer)
    {

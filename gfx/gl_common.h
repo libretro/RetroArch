@@ -20,6 +20,7 @@
 #include "fonts/fonts.h"
 #include "math/matrix.h"
 #include "gfx_context.h"
+#include "scaler/scaler.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -171,7 +172,9 @@ typedef struct gl
    GLuint tex_filter;
 
    void *empty_buf;
+
    void *conv_buffer;
+   struct scaler_ctx scaler;
 
    unsigned frame_count;
 
@@ -256,7 +259,7 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #define RARCH_GL_INTERNAL_FORMAT GL_RGBA
 #define RARCH_GL_TEXTURE_TYPE GL_BGRA
 #define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
-#define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT_1_5_5_5_REV
+#define RARCH_GL_FORMAT16 GL_UNSIGNED_INT_8_8_8_8_REV
 #endif
 
 // Platform specific workarounds/hacks.

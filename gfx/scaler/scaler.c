@@ -23,10 +23,6 @@
 #include <math.h>
 #include "../../benchmark.h"
 
-#ifdef SCALER_PERF
-#include <time.h>
-#endif
-
 // In case aligned allocs are needed later ...
 void *scaler_alloc(size_t elem_size, size_t size)
 {
