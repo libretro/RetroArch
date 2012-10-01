@@ -1052,11 +1052,17 @@ static inline void gl_next_texture_index(gl_t *gl, const struct gl_tex_info *tex
    gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
 }
 
+static void gl_set_shader_viewport(gl_t *gl, unsigned shader)
+{
+   gl_shader_use(shader);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+}
+
 #ifdef HAVE_CG_MENU
 static void gl_render_menu(gl_t *gl)
 {
    gl_shader_use(RARCH_CG_MENU_SHADER_INDEX);
-   gl_set_shader_viewport(RARCH_CG_MENU_SHADER_INDEX);
+   gl_set_shader_viewport(gl, RARCH_CG_MENU_SHADER_INDEX);
 
    gl_shader_set_params(gl->win_width, gl->win_height, gl->win_width, 
          gl->win_height, gl->win_width, gl->win_height, gl->frame_count,
@@ -1253,11 +1259,6 @@ static bool resolve_extensions(gl_t *gl)
    return true;
 }
 
-static void gl_set_shader_viewport(gl_t *gl, unsigned shader)
-{
-   gl_shader_use(shader);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-}
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {

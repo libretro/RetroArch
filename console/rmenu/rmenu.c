@@ -43,15 +43,7 @@
 #include "../../console/rarch_console_rzlib.h"
 #endif
 
-#if defined(HAVE_OPENGL)
-#include "../../gfx/gl_common.h"
-#include "../../gfx/gl_font.h"
-#endif
 #include "../../gfx/gfx_context.h"
-
-#if defined(HAVE_CG)
-#include "../../gfx/shader_cg.h"
-#endif
 
 #include "../../file.h"
 #include "../../general.h"
