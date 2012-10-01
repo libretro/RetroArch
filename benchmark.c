@@ -20,11 +20,13 @@
 #ifndef _PPU_INTRINSICS_H
 #include <ppu_intrinsics.h>
 #endif
+#elif defined(_XBOX360)
+#include <PPCIntrinsics.h>
 #endif
 
 unsigned long long rarch_get_performance_counter(void)
 {
-#if defined(__CELLOS_LV2__) || defined(GEKKO)
+#if defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360)
    unsigned long long time = __mftb();
 #endif
    return time;
