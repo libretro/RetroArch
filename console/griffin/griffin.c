@@ -22,6 +22,10 @@
 
 default_paths_t default_paths;
 
+#if defined(__CELLOS_LV2__)
+#include "../../benchmark.c"
+#endif
+
 /*============================================================
 CONSOLE EXTENSIONS
 ============================================================ */
