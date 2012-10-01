@@ -42,7 +42,7 @@ CONSOLE EXTENSIONS
 #include "../rarch_console_exec.c"
 #endif
 
-#if defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360)
+#if defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX)
 #include "../../benchmark.c"
 #endif
 

@@ -26,8 +26,21 @@
 
 unsigned long long rarch_get_performance_counter(void)
 {
-#if defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360)
-   unsigned long long time = __mftb();
+   unsigned long long time = 0;
+#ifdef _XBOX1
+#define rdtsc	__asm __emit 0fh __asm __emit 031h
+   LARGE_INTEGER time_tmp;
+   rdtsc;
+   __asm	mov	time_tmp.LowPart, eax;
+   __asm	mov	time_tmp.HighPart, edx;
+   time = time_tmp.QuadPart;
+#elif defined(__i386__) || defined(__i486__) || defined(__x86_64__)
+   uint64_t lo, hi;
+   __asm__ __volatile__("rdtsc" : "=a" (lo), "=d" (hi));
+   time =  ((((uint64 t)hi) << 32) | ((uint64 t)lo) );
+#elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360)
+   time = __mftb();
 #endif
+   (void)time;
    return time;
 }
