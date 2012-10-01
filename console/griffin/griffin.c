@@ -22,9 +22,6 @@
 
 default_paths_t default_paths;
 
-#if defined(__CELLOS_LV2__)
-#include "../../benchmark.c"
-#endif
 
 /*============================================================
 CONSOLE EXTENSIONS
@@ -43,6 +40,10 @@ CONSOLE EXTENSIONS
 
 #ifdef HAVE_RARCH_EXEC
 #include "../rarch_console_exec.c"
+#endif
+
+#if defined(__CELLOS_LV2__) || defined(GEKKO)
+#include "../../benchmark.c"
 #endif
 
 #ifdef HAVE_RSOUND

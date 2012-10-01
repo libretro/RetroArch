@@ -28,6 +28,11 @@ unsigned long long rarch_get_performance_counter(void);
 #define RARCH_PERFORMANCE_INIT(X)  performance_counter_t (X)
 #define RARCH_PERFORMANCE_START(X) ((X).start = rarch_get_performance_counter())
 #define RARCH_PERFORMANCE_STOP(X)  ((X).stop  = rarch_get_performance_counter() - (X).start)
+
+#ifdef _WIN32
+#define RARCH_PERFORMANCE_LOG(functionname, X)   RARCH_LOG("Time taken (%s): %I64u.\n", functionname, (X).stop)
+#else
 #define RARCH_PERFORMANCE_LOG(functionname, X)   RARCH_LOG("Time taken (%s): %llu.\n", functionname, (X).stop)
+#endif
 
 #endif

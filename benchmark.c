@@ -16,13 +16,15 @@
 
 #include <stdio.h>
 
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) || defined(GEKKO)
+#ifndef _PPU_INTRINSICS_H
 #include <ppu_intrinsics.h>
+#endif
 #endif
 
 unsigned long long rarch_get_performance_counter(void)
 {
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) || defined(GEKKO)
    unsigned long long time = __mftb();
 #endif
    return time;
