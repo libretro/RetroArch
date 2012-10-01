@@ -17,22 +17,44 @@
 #ifndef _RARCH_BENCHMARK_H
 #define _RARCH_BENCHMARK_H
 
-typedef struct performance_counter_t
+#include "general.h"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdint.h>
+typedef unsigned long long rarch_perf_tick_t;
+
+typedef struct rarch_perf_counter
 {
-   unsigned long long start;
-   unsigned long long stop;
-} performance_counter_t;
+   rarch_perf_tick_t start;
+   rarch_perf_tick_t total;
+   unsigned call_cnt;
+} rarch_perf_counter_t;
 
-unsigned long long rarch_get_performance_counter(void);
+rarch_perf_tick_t rarch_get_perf_counter(void);
 
-#define RARCH_PERFORMANCE_INIT(X)  performance_counter_t (X)
-#define RARCH_PERFORMANCE_START(X) ((X).start = rarch_get_performance_counter())
-#define RARCH_PERFORMANCE_STOP(X)  ((X).stop  = rarch_get_performance_counter() - (X).start)
+#ifdef PERF_TEST
+
+#define RARCH_PERFORMANCE_INIT(X)  static rarch_perf_counter_t X
+#define RARCH_PERFORMANCE_START(X) ((X).start  = rarch_get_perf_counter())
+#define RARCH_PERFORMANCE_STOP(X)  do { (X).total += rarch_get_perf_counter() - (X).start; (X).call_cnt++; } while(0)
 
 #ifdef _WIN32
-#define RARCH_PERFORMANCE_LOG(functionname, X)   RARCH_LOG("Time taken (%s): %I64u.\n", functionname, (X).stop)
+#define RARCH_PERFORMANCE_LOG(functionname, X) RARCH_LOG("[PERF]: Avg (%s): %I64u ticks.\n", functionname, (X).total / (X).call_cnt)
 #else
-#define RARCH_PERFORMANCE_LOG(functionname, X)   RARCH_LOG("Time taken (%s): %llu.\n", functionname, (X).stop)
+#define RARCH_PERFORMANCE_LOG(functionname, X) RARCH_LOG("[PERF]: Avg (%s): %llu ticks.\n", functionname, (X).total / (X).call_cnt)
+#endif
+
+#else
+
+#define RARCH_PERFORMANCE_INIT(X)
+#define RARCH_PERFORMANCE_START(X)
+#define RARCH_PERFORMANCE_STOP(X)
+#define RARCH_PERFORMANCE_LOG(functionname, X)
+
 #endif
 
 #endif
+

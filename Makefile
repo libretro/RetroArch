@@ -137,8 +137,9 @@ ifeq ($(SCALER_NO_SIMD), 1)
    DEFINES += -DSCALER_NO_SIMD
 endif
 
-ifeq ($(SCALER_PERF), 1)
-   DEFINES += -DSCALER_PERF
+ifeq ($(PERF_TEST), 1)
+   DEFINES += -DPERF_TEST
+   OBJ += benchmark.o
 endif
 
 ifeq ($(HAVE_SDL), 1)

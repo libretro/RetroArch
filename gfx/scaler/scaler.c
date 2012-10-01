@@ -21,6 +21,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+#include "../../benchmark.h"
 
 #ifdef SCALER_PERF
 #include <time.h>
@@ -189,10 +190,8 @@ void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
 void scaler_ctx_scale(struct scaler_ctx *ctx,
       void *output, const void *input)
 {
-#ifdef SCALER_PERF
-   struct timespec start_tv, end_tv;
-   clock_gettime(CLOCK_MONOTONIC, &start_tv);
-#endif
+   RARCH_PERFORMANCE_INIT(scaler_perf);
+   RARCH_PERFORMANCE_START(scaler_perf);
 
    if (ctx->unscaled) // Just perform straight pixel conversion.
    {
@@ -262,10 +261,7 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
          ctx->scaler_vert(ctx, output, ctx->out_stride);
    }
 
-#ifdef SCALER_PERF
-   clock_gettime(CLOCK_MONOTONIC, &end_tv);
-   ctx->elapsed_time_ms += (end_tv.tv_sec - start_tv.tv_sec) * 1000.0 + (end_tv.tv_nsec - start_tv.tv_nsec) / 1000000.0;
-   ctx->elapsed_frames++;
-#endif
+   RARCH_PERFORMANCE_STOP(scaler_perf);
+   RARCH_PERFORMANCE_LOG("Scaler", scaler_perf);
 }
 

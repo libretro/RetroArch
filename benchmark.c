@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
+#include "benchmark.h"
 
 #if defined(__CELLOS_LV2__) || defined(GEKKO)
 #ifndef _PPU_INTRINSICS_H
@@ -24,23 +24,31 @@
 #include <PPCIntrinsics.h>
 #endif
 
-unsigned long long rarch_get_performance_counter(void)
+rarch_perf_tick_t rarch_get_perf_counter(void)
 {
-   unsigned long long time = 0;
+   rarch_perf_tick_t time = 0;
 #ifdef _XBOX1
+
 #define rdtsc	__asm __emit 0fh __asm __emit 031h
    LARGE_INTEGER time_tmp;
    rdtsc;
    __asm	mov	time_tmp.LowPart, eax;
    __asm	mov	time_tmp.HighPart, edx;
    time = time_tmp.QuadPart;
-#elif defined(__i386__) || defined(__i486__) || defined(__x86_64__)
-   uint64_t lo, hi;
-   __asm__ __volatile__("rdtsc" : "=a" (lo), "=d" (hi));
-   time =  ((((uint64 t)hi) << 32) | ((uint64 t)lo) );
+
+#elif defined(__GNUC__)
+
+#if defined(__i386__) || defined(__i486__)
+   asm volatile ("rdtsc" : "=A" (time));
+#elif defined(__x86_64__)
+   unsigned a, d;
+   asm volatile ("rdtsc" : "=a" (a), "=d" (d));
+   time = (rarch_perf_tick_t)a | ((rarch_perf_tick_t)d << 32);
+#endif
+
 #elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360)
    time = __mftb();
 #endif
-   (void)time;
+
    return time;
 }
