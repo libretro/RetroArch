@@ -14,6 +14,7 @@
  */
 
 #include "../driver.h"
+#include "../benchmark.h"
 
 #include <stdint.h>
 #include "../libretro.h"
@@ -1112,7 +1113,12 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (frame) // Can be NULL for frame dupe / NULL render.
    {
       gl_update_input_size(gl, width, height, pitch);
+
+      RARCH_PERFORMANCE_INIT(copy_frame);
+      RARCH_PERFORMANCE_START(copy_frame);
       gl_copy_frame(gl, frame, width, height, pitch);
+      RARCH_PERFORMANCE_STOP(copy_frame);
+      RARCH_PERFORMANCE_LOG("gl_copy_frame", copy_frame);
    }
 
    struct gl_tex_info tex_info = {0};
