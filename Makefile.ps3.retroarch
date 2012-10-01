@@ -10,6 +10,7 @@ DEBUG			= 0
 HAVE_RGL		= 1
 HAVE_LOGGER		= 0
 HAVE_FREETYPE		= 0
+PERF_TEST		= 0
 
 PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.7"
 PC_DEVELOPMENT_UDP_PORT		= 3490
@@ -28,6 +29,10 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
+ifeq ($(PERF_TEST), 1)
+   DEFINES += -DPERF_TEST
+endif
+
 PPU_LIB_TARGET		= libretroarch_ps3.a
 
 LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
@@ -36,7 +41,7 @@ INCDIRS = -I. -Ips3 -Icommon
 PPU_SRCS		= console/griffin/griffin.c console/rzlib/rzlib.c
 
 ifeq ($(HAVE_RGL), 1)
-DEFINES			= -DHAVE_RGL
+DEFINES			+= -DHAVE_RGL
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)

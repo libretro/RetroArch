@@ -12,6 +12,7 @@ STRIPPING_ENABLE	= 0
 HAVE_RGL		= 1
 HAVE_LOGGER		= 0
 HAVE_FREETYPE		= 0
+PERF_TEST		= 0
 
 CONTENT_ID_FULL		= UP0001-SSNE10000_00-0000000000000001
 CONTENT_ID		= SSNE10000
@@ -59,8 +60,12 @@ endif
 
 PPU_SRCS		= ps3/frontend/main.c
 
+ifeq ($(PERF_TEST), 1)
+   DEFINES += -DPERF_TEST
+endif
+
 ifeq ($(HAVE_RGL), 1)
-DEFINES			= -DHAVE_RGL
+DEFINES			+= -DHAVE_RGL
 GL_LIBS			:= -L. -lrgl_ps3
 else
 GL_LIBS			:= -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt -lPSGL -lPSGLcgc

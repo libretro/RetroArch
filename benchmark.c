@@ -36,7 +36,7 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
    __asm	mov	time_tmp.HighPart, edx;
    time = time_tmp.QuadPart;
 
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) && !defined(RARCH_CONSOLE)
 
 #if defined(__i386__) || defined(__i486__)
    asm volatile ("rdtsc" : "=A" (time));
