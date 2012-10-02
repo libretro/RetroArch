@@ -892,16 +892,11 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
    const uint8_t *frame_copy = frame;
    size_t frame_copy_size    = width * gl->base_size;
 
-   for (unsigned h = 0; h < height; h++)
-   {
-      glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE, 
-            buffer_addr,
-            frame_copy_size,
-            frame_copy);
+   uint8_t *buffer = (uint8_t*)glMapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, GL_WRITE_ONLY) + buffer_addr;
+   for (unsigned h = 0; h < height; h++, buffer += buffer_stride, frame_copy += pitch)
+      memcpy(buffer, frame_copy, frame_copy_size);
 
-      frame_copy += pitch;
-      buffer_addr += buffer_stride;
-   }
+   glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
 }
 
 static void gl_init_textures(gl_t *gl)
