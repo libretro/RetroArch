@@ -929,6 +929,7 @@ static void gl_glsl_reset_attrib(void)
 
 // Platforms with broken get_proc_address.
 // Assume functions are available without proc_address.
+#undef LOAD_GL_SYM
 #define LOAD_GL_SYM(SYM) if (!pgl##SYM) { \
    gfx_ctx_proc_t sym = glsl_get_proc_address("gl" #SYM); \
    memcpy(&(pgl##SYM), &sym, sizeof(sym)); \

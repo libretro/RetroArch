@@ -87,6 +87,7 @@ const GLfloat white_color[] = {
 const GLfloat *vertex_ptr = vertexes_flipped;
 const GLfloat *default_vertex_ptr = vertexes_flipped;
 
+#undef LOAD_GL_SYM
 #define LOAD_GL_SYM(SYM) if (!pgl##SYM) { \
    gfx_ctx_proc_t sym = gl->driver->get_proc_address("gl" #SYM); \
    memcpy(&(pgl##SYM), &sym, sizeof(sym)); \
