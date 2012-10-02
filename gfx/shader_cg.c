@@ -517,7 +517,9 @@ static void load_texture_data(GLuint *obj, const struct texture_image *img, bool
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
 
+#ifndef HAVE_PSGL
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+#endif
    glTexImage2D(GL_TEXTURE_2D,
          0, RARCH_GL_INTERNAL_FORMAT, img->width, img->height,
          0, RARCH_GL_TEXTURE_TYPE, RARCH_GL_FORMAT32, img->pixels);
