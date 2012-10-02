@@ -517,16 +517,10 @@ static void load_texture_data(GLuint *obj, const struct texture_image *img, bool
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
 
-#ifdef __CELLOS_LV2__
-   glTexImage2D(GL_TEXTURE_2D,
-         0, GL_ARGB_SCE, img->width, img->height,
-         0, GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8, img->pixels);
-#else
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
    glTexImage2D(GL_TEXTURE_2D,
          0, RARCH_GL_INTERNAL_FORMAT, img->width, img->height,
          0, RARCH_GL_TEXTURE_TYPE, RARCH_GL_FORMAT32, img->pixels);
-#endif
 
    free(img->pixels);
 }
