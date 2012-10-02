@@ -16,6 +16,7 @@
 
 #include "filter.h"
 #include "scaler_int.h"
+#include "../../general.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -100,19 +101,6 @@ static inline double sinc(double phase)
       return 1.0;
    else
       return sin(phase) / phase;
-}
-
-static inline unsigned next_pow2(unsigned v)
-{
-   v--;
-   v |= v >> 1;
-   v |= v >> 2;
-   v |= v >> 4;
-   v |= v >> 8;
-   v |= v >> 16;
-   v++;
-
-   return v;
 }
 
 static void gen_filter_sinc_sub(struct scaler_filter *filter, int len, int pos, int step, double phase_mul)

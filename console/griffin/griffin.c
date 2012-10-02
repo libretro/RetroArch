@@ -99,8 +99,6 @@ VIDEO CONTEXT
 #include "../../gfx/context/xdk_ctx.c"
 #elif defined(HAVE_EGL)
 #include "../../gfx/context/egl_ctx.c"
-#else
-#include "../../gfx/context/null_ctx.c"
 #endif
 
 #endif
@@ -134,6 +132,13 @@ VIDEO IMAGE
 /*============================================================
 VIDEO DRIVER
 ============================================================ */
+
+#if defined(ANDROID)
+#include "../../gfx/scaler/scaler.c"
+#include "../../gfx/scaler/pixconv.c"
+#include "../../gfx/scaler/scaler_int.c"
+#include "../../gfx/scaler/filter.c"
+#endif
 
 #if defined(HAVE_OPENGL)
 #include "../../gfx/math/matrix.c"
