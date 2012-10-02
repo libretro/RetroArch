@@ -45,7 +45,7 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
    asm volatile ("rdtsc" : "=a" (a), "=d" (d));
    time = (rarch_perf_tick_t)a | ((rarch_perf_tick_t)d << 32);
 #endif
-#elif defined(__ARM_ARCH_6__)
+#elif defined(__ARM_ARCH_6__) || defined(ANDROID)
     asm volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time) );
 #elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360)
    time = __mftb();
