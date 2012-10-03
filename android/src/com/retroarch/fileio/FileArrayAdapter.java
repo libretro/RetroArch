@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Set;
 
 import com.retroarch.R;
-import com.retroarch.R.layout;
 
 import android.content.Context;
 import android.view.LayoutInflater;

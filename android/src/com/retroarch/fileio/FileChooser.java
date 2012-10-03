@@ -1,21 +1,17 @@
 package com.retroarch.fileio;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Stack;
 
 import com.retroarch.R;
-import com.retroarch.main;
-import com.retroarch.R.layout;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -30,8 +26,6 @@ import android.widget.Toast;
 
 public class FileChooser extends Activity
 {
-     private static final String LOG_TAG = "FileChooser";
-     
      public static final String EXTRA_START_DIR = "StartDir";
      public static final String EXTRA_EXTENSIONS = "Extensions";
      public static final String EXTRA_TEMP_DIR = "TempDir";

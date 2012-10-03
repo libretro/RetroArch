@@ -17,8 +17,6 @@
 package com.retroarch;
 
 import com.retroarch.R;
-import com.retroarch.R.id;
-import com.retroarch.R.menu;
 import com.retroarch.fileio.FileChooser;
 
 import android.app.Activity;
