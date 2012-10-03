@@ -98,6 +98,7 @@ static void load_symbols(void)
    if (!lib_handle)
    {
       RARCH_ERR("Failed to open dynamic library: \"%s\"\n", g_settings.libretro);
+      RARCH_ERR("%s\n", dlerror());
       rarch_fail(1, "load_dynamic()");
    }
 #endif
