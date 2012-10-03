@@ -8,6 +8,8 @@ import java.util.Stack;
 
 import com.retroarch.R;
 
+import com.retroarch.rruntime;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -227,6 +229,8 @@ public class FileChooser extends Activity
          Intent intent=new Intent();   
          intent.putExtra(FileChooser.PAYLOAD_FILENAME, o.getPath());
          setResult(RESULT_OK, intent);
+         
+         rruntime.load_game(o.getName(), 0);
          
          finish();         
      }

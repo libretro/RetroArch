@@ -29,6 +29,17 @@
 #include "../console/rarch_console_settings.h"
 #include "../general.h"
 
+JNIEXPORT jint JNICALL JNI_OnLoad( JavaVM *vm, void *pvt)
+{
+   fprintf(stdout, "* JNI_OnLoad called\n" );
+   return JNI_VERSION_1_2;
+}
+
+JNIEXPORT void JNICALL JNI_OnUnLoad( JavaVM *vm, void *pvt)
+{
+   fprintf(stdout, "* JNI_OnUnLoad called\n" );
+}
+
 JNIEXPORT void JNICALL Java_com_retroarch_rruntime_load_1game
    (JNIEnv *env, jclass class, jstring j_path, jint j_extract_zip_mode)
 {
