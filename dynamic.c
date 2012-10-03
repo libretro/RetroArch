@@ -98,7 +98,6 @@ static void load_symbols(void)
    if (!lib_handle)
    {
       RARCH_ERR("Failed to open dynamic library: \"%s\"\n", g_settings.libretro);
-      RARCH_ERR("%s\n", dlerror());
       rarch_fail(1, "load_dynamic()");
    }
 #endif
@@ -187,7 +186,10 @@ dylib_t dylib_load(const char *path)
       RARCH_ERR("Failed to load library, error code: 0x%x\n", (unsigned)GetLastError());
    return lib;
 #else
-   return dlopen(path, RTLD_LAZY);
+   dylib_t lib = dlopen(path, RTLD_LAZY);
+   if (!lib)
+      RARCH_ERR("dylib_load() failed: \"%s\".\n", dlerror());
+   return lib;
 #endif
 }
 
