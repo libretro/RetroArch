@@ -230,7 +230,9 @@ public class FileChooser extends Activity
          intent.putExtra(FileChooser.PAYLOAD_FILENAME, o.getPath());
          setResult(RESULT_OK, intent);
          
+         rruntime.settings_set_defaults();
          rruntime.load_game(o.getName(), 0);
+         rruntime.startup(null);
          
          finish();         
      }

@@ -31,18 +31,19 @@
 
 JNIEXPORT jint JNICALL JNI_OnLoad( JavaVM *vm, void *pvt)
 {
-   fprintf(stdout, "* JNI_OnLoad called\n" );
+   RARCH_LOG("* JNI_OnLoad.\n" );
    return JNI_VERSION_1_2;
 }
 
 JNIEXPORT void JNICALL JNI_OnUnLoad( JavaVM *vm, void *pvt)
 {
-   fprintf(stdout, "* JNI_OnUnLoad called\n" );
+   RARCH_LOG("* JNI_OnUnLoad.\n" );
 }
 
 JNIEXPORT void JNICALL Java_com_retroarch_rruntime_load_1game
    (JNIEnv *env, jclass class, jstring j_path, jint j_extract_zip_mode)
 {
+   RARCH_LOG("* rruntime_load_game.\n" );
    jboolean is_copy = false;
    const char * game_path = (*env)->GetStringUTFChars(env, j_path, &is_copy);
 
@@ -60,6 +61,7 @@ JNIEXPORT jboolean JNICALL Java_com_retroarch_rruntime_run_1frame
 JNIEXPORT void JNICALL Java_com_retroarch_rruntime_startup
    (JNIEnv *env, jclass class, jstring j_config_path)
 {
+   RARCH_LOG("* rruntime_startup.\n" );
    bool retval = false;
    jboolean is_copy = false;
    const char * config_path = (*env)->GetStringUTFChars(env, j_config_path, &is_copy);
@@ -97,5 +99,6 @@ JNIEXPORT void JNICALL Java_com_retroarch_rruntime_settings_1change
 JNIEXPORT void JNICALL Java_com_retroarch_rruntime_settings_1set_1defaults
    (JNIEnv *env, jclass class)
 {
+   RARCH_LOG("* rruntime_settings_set_defaults.\n" );
    rarch_settings_set_default();
 }
