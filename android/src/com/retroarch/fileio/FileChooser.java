@@ -7,11 +7,13 @@ import java.util.List;
 import java.util.Stack;
 
 import com.retroarch.R;
+import com.retroarch.R.layout;
 
 import com.retroarch.rruntime;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.KeyEvent;
@@ -20,6 +22,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.net.Uri;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
@@ -232,7 +235,11 @@ public class FileChooser extends Activity
          
          rruntime.settings_set_defaults();
          rruntime.load_game(o.getName(), 0);
-         rruntime.startup(null);
+         
+         Uri video = Uri.parse("android.resource://" + getPackageName() + "/" 
+        		 + R.raw.retroarch);
+         
+         rruntime.startup(video.toString());
          
          finish();         
      }
