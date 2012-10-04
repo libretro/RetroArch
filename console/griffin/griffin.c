@@ -97,8 +97,8 @@ VIDEO CONTEXT
 #include "../../gfx/context/ps3_ctx.c"
 #elif defined(_XBOX)
 #include "../../gfx/context/xdk_ctx.c"
-#elif defined(HAVE_EGL)
-#include "../../gfx/context/egl_ctx.c"
+#elif defined(ANDROID)
+#include "../../gfx/context/androidegl_ctx.c"
 #endif
 
 #endif
