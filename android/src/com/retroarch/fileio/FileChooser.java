@@ -236,7 +236,7 @@ public class FileChooser extends Activity
          setResult(RESULT_OK, intent);
          
          rruntime.settings_set_defaults();
-         rruntime.load_game(o.getName(), 0);
+         rruntime.load_game(o.getPath(), 0);
          
          Uri video = Uri.parse("android.resource://" + getPackageName() + "/" 
         		 + R.raw.retroarch);

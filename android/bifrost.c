@@ -74,11 +74,11 @@ JNIEXPORT jint JNICALL JNI_OnLoad( JavaVM *vm, void *pvt)
    input_null.post_init();
    RARCH_LOG("JNI_OnLoad #1.6.\n" );
 
-   video_gl.start();
+   //video_gl.start();
 
    RARCH_LOG("JNI_OnLoad #1.7.\n" );
 
-   driver.video = &video_gl;
+   //driver.video = &video_gl;
 
    RARCH_LOG("JNI_OnLoad #1.8.\n" );
 
