@@ -58,6 +58,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad( JavaVM *vm, void *pvt)
 
    snprintf(default_paths.config_file, sizeof(default_paths.config_file), "/mnt/extsd/retroarch.cfg");
 
+   rarch_init_msg_queue();
+
    rarch_settings_set_default();
    //rarch_input_set_controls_default(input);
    rarch_config_load(default_paths.config_file, path_prefix, extension, find_libretro_file);
@@ -67,6 +69,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad( JavaVM *vm, void *pvt)
 
    video_gl.start();
    driver.video = &video_gl;
+
+   RARCH_LOG("Reached end of JNI_OnLoad.\n" );
 
    return JNI_VERSION_1_2;
 }
