@@ -45,23 +45,42 @@ JNIEXPORT jint JNICALL JNI_OnLoad( JavaVM *vm, void *pvt)
    config_set_defaults();
    input_null.init();
 
+   RARCH_LOG("JNI_OnLoad #1.\n" );
+
    const input_driver_t *input = &input_null;
 
    bool find_libretro_file = false;
 
    snprintf(default_paths.config_file, sizeof(default_paths.config_file), "/mnt/extsd/retroarch.cfg");
 
+   RARCH_LOG("JNI_OnLoad #1.1.\n" );
+
    rarch_init_msg_queue();
 
+   RARCH_LOG("JNI_OnLoad #1.2.\n" );
+
    rarch_settings_set_default();
+
+   RARCH_LOG("JNI_OnLoad #1.3.\n" );
    //rarch_input_set_controls_default(input);
    rarch_config_load(default_paths.config_file, find_libretro_file);
+
+   RARCH_LOG("JNI_OnLoad #1.4.\n" );
    init_libretro_sym();
 
+   RARCH_LOG("JNI_OnLoad #1.5.\n" );
+
+
    input_null.post_init();
+   RARCH_LOG("JNI_OnLoad #1.6.\n" );
 
    video_gl.start();
+
+   RARCH_LOG("JNI_OnLoad #1.7.\n" );
+
    driver.video = &video_gl;
+
+   RARCH_LOG("JNI_OnLoad #1.8.\n" );
 
    RARCH_LOG("Reached end of JNI_OnLoad.\n" );
 
