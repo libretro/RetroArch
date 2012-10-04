@@ -21,7 +21,7 @@
 
 #include "rarch_console_config.h"
 
-void rarch_config_load(const char * conf_name, const char * libretro_dir_path, const char * exe_ext, bool upgrade_core_succeeded)
+void rarch_config_load(const char *conf_name, bool upgrade_core_succeeded)
 {
       char libretro_path_tmp[PATH_MAX];
 

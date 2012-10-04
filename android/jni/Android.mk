@@ -3,6 +3,7 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
+APP_OPTIM := debug
 
 LOCAL_MODULE    := retroarch
 LOCAL_SRC_FILES    = ../../console/griffin/griffin.c ../../console/rzlib/rzlib.c ../bifrost.c
