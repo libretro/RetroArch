@@ -862,7 +862,7 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
 
 // It is *much* faster (order of mangnitude on my setup) to use a custom SIMD-optimized conversion routine than letting GL do it :(
 #if !defined(HAVE_PSGL)
-static inline void gl_convert_frame_rgb15_32(gl_t *gl, void *output, const void *input, unsigned width, unsigned height, unsigned in_pitch)
+static inline void gl_convert_frame_rgb15_32(gl_t *gl, void *output, const void *input, int width, int height, int in_pitch)
 {
    if (width != gl->scaler.in_width || height != gl->scaler.in_height)
    {
