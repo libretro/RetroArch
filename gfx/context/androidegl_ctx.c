@@ -15,7 +15,6 @@
  */
 
 #include "../../driver.h"
-#include "../gfx_context.h"
 #include "../gl_common.h"
 
 #include <EGL/egl.h> /* Requires NDK r5 or newer */
@@ -33,12 +32,16 @@ enum RenderThreadMessage _msg;
    
 ANativeWindow* _window;   /* Requires NDK r5 or newer */
 
-EGLDisplay _display;
-EGLSurface _surface;
-EGLContext _context;
+static EGLContext g_egl_ctx;
+static EGLSurface g_egl_surf;
+static EGLDisplay g_egl_dpy;
+static EGLConfig g_config;
+
 int _width;
 int _height;
 GLfloat _angle;
+
+static enum gfx_ctx_api g_api;
 
 static int gfx_ctx_check_resolution(unsigned resolution_id)
 {
@@ -73,14 +76,16 @@ static void gfx_ctx_set_swap_interval(unsigned interval)
 
 static void gfx_ctx_destroy(void)
 {
-    eglMakeCurrent(_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglDestroyContext(_display, _context);
-    eglDestroySurface(_display, _surface);
-    eglTerminate(_display);
+    eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroyContext(g_egl_dpy, g_egl_ctx);
+    eglDestroySurface(g_egl_dpy, g_egl_surf);
+    eglTerminate(g_egl_dpy);
    
-    _display = EGL_NO_DISPLAY;
-    _surface = EGL_NO_SURFACE;
-    _context = EGL_NO_CONTEXT;
+    g_egl_dpy = EGL_NO_DISPLAY;
+    g_egl_surf = EGL_NO_SURFACE;
+    g_egl_ctx = EGL_NO_CONTEXT;
+    g_config   = 0;
+
     _width = 0;
     _height = 0;
 }
@@ -94,34 +99,36 @@ static bool gfx_ctx_init(void)
         EGL_RED_SIZE, 8,
         EGL_NONE
     };
-    EGLDisplay display;
     EGLConfig config;    
     EGLint numConfigs;
     EGLint format;
-    EGLSurface surface;
-    EGLContext context;
     EGLint width;
     EGLint height;
     GLfloat ratio;
    
     RARCH_LOG("Initializing context\n");
    
-    if ((display = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY) {
+    if ((g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY) {
         RARCH_ERR("eglGetDisplay() returned error %d.\n", eglGetError());
         return false;
     }
-    if (!eglInitialize(display, 0, 0)) {
+
+    EGLint egl_major, egl_minor;
+    if (!eglInitialize(g_egl_dpy, &egl_major, &egl_minor)) {
         RARCH_ERR("eglInitialize() returned error %d.\n", eglGetError());
         return false;
     }
 
-    if (!eglChooseConfig(display, attribs, &config, 1, &numConfigs)) {
+    RARCH_LOG("[ANDROID/EGL]: EGL version: %d.%d\n", egl_major, egl_minor);
+
+    EGLint num_configs;
+    if (!eglChooseConfig(g_egl_dpy, attribs, &g_config, 1, &numConfigs)) {
         RARCH_ERR("eglChooseConfig() returned error %d.\n", eglGetError());
         gfx_ctx_destroy();
         return false;
     }
 
-    if (!eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format)) {
+    if (!eglGetConfigAttrib(g_egl_dpy, config, EGL_NATIVE_VISUAL_ID, &format)) {
         RARCH_ERR("eglGetConfigAttrib() returned error %d.\n", eglGetError());
         gfx_ctx_destroy();
         return false;
@@ -129,34 +136,31 @@ static bool gfx_ctx_init(void)
 
     ANativeWindow_setBuffersGeometry(_window, 0, 0, format);
 
-    if (!(surface = eglCreateWindowSurface(display, config, _window, 0))) {
+    if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, config, _window, 0))) {
         RARCH_ERR("eglCreateWindowSurface() returned error %d.\n", eglGetError());
         gfx_ctx_destroy();
         return false;
     }
    
-    if (!(context = eglCreateContext(display, config, 0, 0))) {
+    if (!(g_egl_ctx = eglCreateContext(g_egl_dpy, config, 0, 0))) {
         RARCH_ERR("eglCreateContext() returned error %d.\n", eglGetError());
         gfx_ctx_destroy();
         return false;
     }
    
-    if (!eglMakeCurrent(display, surface, surface, context)) {
+    if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx)) {
         RARCH_ERR("eglMakeCurrent() returned error %d.\n", eglGetError());
         gfx_ctx_destroy();
         return false;
     }
 
-    if (!eglQuerySurface(display, surface, EGL_WIDTH, &width) ||
-        !eglQuerySurface(display, surface, EGL_HEIGHT, &height)) {
+    if (!eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &width) ||
+        !eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &height)) {
         RARCH_ERR("eglQuerySurface() returned error %d.\n", eglGetError());
         gfx_ctx_destroy();
         return false;
     }
 
-    _display = display;
-    _surface = surface;
-    _context = context;
     _width = width;
     _height = height;
 
@@ -206,7 +210,7 @@ void gfx_ctx_check_window(bool *quit,
 
 static void gfx_ctx_swap_buffers(void)
 {
-   eglSwapBuffers(_display, _surface);
+   eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
 static void gfx_ctx_clear(void)
@@ -296,6 +300,7 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 
 static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
 {
+   g_api = api;
    return api == GFX_CTX_OPENGL_ES_API;
 }
 
