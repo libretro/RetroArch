@@ -84,6 +84,7 @@ public class main extends Activity
            		 + R.raw.retroarch);
             
             rruntime.startup(video.toString());
+            while(rruntime.run_frame());
     	}
     }
     

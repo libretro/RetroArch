@@ -104,9 +104,13 @@ JNIEXPORT void JNICALL Java_com_retroarch_rruntime_load_1game
    (*env)->ReleaseStringUTFChars(env, j_path, game_path);
 }
 
+static int counter = 0;
+
 JNIEXPORT jboolean JNICALL Java_com_retroarch_rruntime_run_1frame
    (JNIEnv *env, jclass class)
 {
+   counter++;
+   RARCH_LOG("counter: %d.\n", counter);
    return rarch_main_iterate();
 }
 
@@ -120,6 +124,8 @@ JNIEXPORT void JNICALL Java_com_retroarch_rruntime_startup
    RARCH_LOG("rruntime_startup (config file: %s).\n", config_path);
    
    retval = rarch_startup(config_path);
+
+   rarch_init_msg_queue();
 
    (*env)->ReleaseStringUTFChars(env, j_config_path, config_path);
 }
