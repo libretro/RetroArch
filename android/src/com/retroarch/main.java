@@ -26,11 +26,14 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.Toast;
+import android.net.Uri;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 
 public class main extends Activity
 {
+	static private final int ACTIVITY_LOAD_ROM = 0;
+	
 	private GLSurfaceView ctx_gl;
 	
     @Override
@@ -60,7 +63,7 @@ public class main extends Activity
     	    case R.id.open:
     	    	Toast.makeText(this, "Select a ROM image from the Filebrowser.", Toast.LENGTH_SHORT).show();
     	    	Intent myIntent = new Intent(main.this, FileChooser.class);
-    	    	main.this.startActivity(myIntent);
+    	    	startActivityForResult(myIntent, ACTIVITY_LOAD_ROM);
     		    break;
     		default:
     	    	Toast.makeText(this, "MenuItem " + item.getTitle() + " selected.", Toast.LENGTH_SHORT).show();
@@ -68,6 +71,20 @@ public class main extends Activity
     	}
     	
     	return true;
+    }
+    
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+    	if(requestCode == ACTIVITY_LOAD_ROM)
+    	{
+            rruntime.settings_set_defaults();
+            rruntime.load_game(data.getStringExtra("PATH"), 0);
+            
+            Uri video = Uri.parse("android.resource://" + getPackageName() + "/" 
+           		 + R.raw.retroarch);
+            
+            rruntime.startup(video.toString());
+    	}
     }
     
     @Override

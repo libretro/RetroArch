@@ -232,18 +232,10 @@ public class FileChooser extends Activity
          Toast.makeText(this, "Loading: "+o.getName() + "...", Toast.LENGTH_SHORT).show();
          
          Intent intent=new Intent();   
-         intent.putExtra(FileChooser.PAYLOAD_FILENAME, o.getPath());
-         setResult(RESULT_OK, intent);
-         
-         rruntime.settings_set_defaults();
-         rruntime.load_game(o.getPath(), 0);
-         
-         Uri video = Uri.parse("android.resource://" + getPackageName() + "/" 
-        		 + R.raw.retroarch);
-         
-         rruntime.startup(video.toString());
-         
-         finish();         
+         intent.putExtra("PATH", o.getPath());
+         intent.putExtra("NAME", o.getName());
+         setResult(RESULT_OK, intent);  
+         finish();
      }
      
      @Override
