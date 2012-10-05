@@ -71,7 +71,7 @@ static void gfx_ctx_get_available_resolutions(void)
 
 static void gfx_ctx_set_swap_interval(unsigned interval)
 {
-   (void)interval;
+   eglSwapInterval(g_egl_dpy, interval);
 }
 
 static void gfx_ctx_destroy(void)
