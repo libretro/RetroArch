@@ -155,7 +155,8 @@ static const float xscale = 3.0; // Real x res = aspect * base_size * xscale
 static const float yscale = 3.0; // Real y res = base_size * yscale
 
 // Fullscreen
-static const bool fullscreen = false;  // To start in Fullscreen or not
+static const bool fullscreen = false;  // To start in Fullscreen or not.
+static const bool windowed_fullscreen = false;  // To use windowed mode or not when going fullscreen.
 static const unsigned fullscreen_x = 0; // Fullscreen resolution. A value of 0 uses the desktop resolution.
 static const unsigned fullscreen_y = 0;
 

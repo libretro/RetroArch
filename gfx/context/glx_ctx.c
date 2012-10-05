@@ -236,6 +236,9 @@ static bool gfx_ctx_set_video_mode(
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
+   bool windowed_full = g_settings.video.windowed_fullscreen;
+   bool true_full = false;
+
    XSetWindowAttributes swa = {0};
 
    XVisualInfo *vi = glXGetVisualFromFBConfig(g_dpy, g_fbc);
@@ -247,22 +250,25 @@ static bool gfx_ctx_set_video_mode(
    swa.event_mask = StructureNotifyMask;
    swa.override_redirect = fullscreen ? True : False;
 
-   if (fullscreen)
+   if (fullscreen && !windowed_full)
    {
       if (x11_enter_fullscreen(g_dpy, width, height, &g_desktop_mode))
+      {
          g_should_reset_mode = true;
+         true_full = true;
+      }
    }
 
    g_win = XCreateWindow(g_dpy, RootWindow(g_dpy, vi->screen),
          0, 0, width ? width : 200, height ? height : 200, 0,
          vi->depth, InputOutput, vi->visual, 
-         CWBorderPixel | CWColormap | CWEventMask | (fullscreen && g_should_reset_mode ? CWOverrideRedirect : 0), &swa);
+         CWBorderPixel | CWColormap | CWEventMask | (true_full ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_dpy, g_win, 0);
 
    gfx_ctx_update_window_title(true);
    x11_hide_mouse(g_dpy, g_win);
 
-   if (fullscreen && g_should_reset_mode)
+   if (true_full)
    {
       XMapRaised(g_dpy, g_win);
       XGrabKeyboard(g_dpy, g_win, True, GrabModeAsync, GrabModeAsync, CurrentTime);
@@ -270,7 +276,7 @@ static bool gfx_ctx_set_video_mode(
    else if (fullscreen) // We attempted true fullscreen, but failed. Attempt using windowed fullscreen.
    {
       XMapRaised(g_dpy, g_win);
-      RARCH_WARN("[GLX]: True fullscreen failed. Attempt using windowed fullscreen instead.\n");
+      RARCH_WARN("[GLX]: Using windowed fullscreen.\n");
       x11_windowed_fullscreen(g_dpy, g_win);
    }
    else

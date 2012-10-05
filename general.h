@@ -82,6 +82,7 @@ struct settings
       float xscale;
       float yscale;
       bool fullscreen;
+      bool windowed_fullscreen;
       unsigned fullscreen_x;
       unsigned fullscreen_y;
       bool vsync;
