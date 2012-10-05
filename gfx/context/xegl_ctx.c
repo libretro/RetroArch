@@ -285,7 +285,7 @@ static bool gfx_ctx_set_video_mode(
    g_win = XCreateWindow(g_dpy, RootWindow(g_dpy, vi->screen),
          0, 0, width ? width : 200, height ? height : 200, 0,
          vi->depth, InputOutput, vi->visual, 
-         CWBorderPixel | CWColormap | CWEventMask | (fullscreen ? CWOverrideRedirect : 0), &swa);
+         CWBorderPixel | CWColormap | CWEventMask | (fullscreen && g_should_reset_mode ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_dpy, g_win, 0);
 
    // GLES 2.0. Don't use for any other API.
@@ -310,10 +310,16 @@ static bool gfx_ctx_set_video_mode(
    gfx_ctx_update_window_title(true);
    x11_hide_mouse(g_dpy, g_win);
 
-   if (fullscreen)
+   if (fullscreen && g_should_reset_mode)
    {
       XMapRaised(g_dpy, g_win);
       XGrabKeyboard(g_dpy, g_win, True, GrabModeAsync, GrabModeAsync, CurrentTime);
+   }
+   else if (fullscreen) // We attempted true fullscreen, but failed. Attempt using windowed fullscreen.
+   {
+      XMapRaised(g_dpy, g_win);
+      RARCH_WARN("[X/EGL]: True fullscreen failed. Attempt using windowed fullscreen instead.\n");
+      x11_windowed_fullscreen(g_dpy, g_win);
    }
    else
       XMapWindow(g_dpy, g_win);

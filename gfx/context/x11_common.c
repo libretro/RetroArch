@@ -123,9 +123,13 @@ bool x11_enter_fullscreen(Display *dpy, unsigned width, unsigned height, XF86Vid
    XF86VidModeModeInfo mode;
    if (get_video_mode(dpy, width, height, &mode, desktop_mode))
    {
-      XF86VidModeSwitchToMode(dpy, DefaultScreen(dpy), &mode);
-      XF86VidModeSetViewPort(dpy, DefaultScreen(dpy), 0, 0);
-      return true;
+      if (XF86VidModeSwitchToMode(dpy, DefaultScreen(dpy), &mode))
+      {
+         XF86VidModeSetViewPort(dpy, DefaultScreen(dpy), 0, 0);
+         return true;
+      }
+      else
+         return false;
    }
    else
       return false;
