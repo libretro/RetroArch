@@ -71,7 +71,7 @@ enum
 
 #if defined(HAVE_VIDEOCORE)
 #define VIDEO_DEFAULT_DRIVER VIDEO_VG
-#elif defined(HAVE_OPENGL) || defined(__CELLOS_LV2__)
+#elif defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL
 #elif defined(GEKKO)
 #define VIDEO_DEFAULT_DRIVER VIDEO_WII
@@ -85,7 +85,7 @@ enum
 #define VIDEO_DEFAULT_DRIVER VIDEO_XVIDEO
 #elif defined(HAVE_SDL)
 #define VIDEO_DEFAULT_DRIVER VIDEO_SDL
-#elif defined(HAVE_DYLIB)
+#elif defined(HAVE_DYLIB) && !defined(ANDROID)
 #define VIDEO_DEFAULT_DRIVER VIDEO_EXT
 #else
 #define VIDEO_DEFAULT_DRIVER VIDEO_NULL
@@ -121,7 +121,7 @@ enum
 #define AUDIO_DEFAULT_DRIVER AUDIO_RSOUND
 #elif defined(HAVE_ROAR)
 #define AUDIO_DEFAULT_DRIVER AUDIO_ROAR
-#elif defined(HAVE_DYLIB)
+#elif defined(HAVE_DYLIB) && !defined(ANDROID)
 #define AUDIO_DEFAULT_DRIVER AUDIO_EXT
 #else
 #define AUDIO_DEFAULT_DRIVER AUDIO_NULL
