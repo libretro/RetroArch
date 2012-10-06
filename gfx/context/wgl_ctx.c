@@ -230,18 +230,24 @@ static bool gfx_ctx_set_video_mode(
    g_resize_width  = width;
    g_resize_height = height;
 
+   bool windowed_full = g_settings.video.windowed_fullscreen;
    if (fullscreen)
    {
-      style = WS_POPUP | WS_VISIBLE;
+      if (windowed_full)
+         style = WS_EX_TOPMOST | WS_POPUP;
+      else
+      {
+         style = WS_POPUP | WS_VISIBLE;
 
-      AdjustWindowRect(&screen_rect, style, FALSE);
-      width  = screen_rect.right - screen_rect.left;
-      height = screen_rect.bottom - screen_rect.top;
+         AdjustWindowRect(&screen_rect, style, FALSE);
+         width  = screen_rect.right - screen_rect.left;
+         height = screen_rect.bottom - screen_rect.top;
 
-      if (!set_fullscreen(width, height))
-         goto error;
+         if (!set_fullscreen(width, height))
+            goto error;
 
-      g_restore_desktop = true;
+         g_restore_desktop = true;
+      }
    }
    else
    {
@@ -255,7 +261,8 @@ static bool gfx_ctx_set_video_mode(
    }
 
    g_hwnd = CreateWindowEx(0, "RetroArch", "RetroArch", style,
-         CW_USEDEFAULT, CW_USEDEFAULT, width, height,
+         windowed_full ? 0 : CW_USEDEFAULT, windowed_full ? 0 : CW_USEDEFAULT,
+         width, height,
          NULL, NULL, NULL, NULL);
 
    if (!g_hwnd)
@@ -263,7 +270,7 @@ static bool gfx_ctx_set_video_mode(
 
    gfx_ctx_update_window_title(true);
 
-   if (!fullscreen)
+   if (!fullscreen || windowed_full)
    {
       ShowCursor(FALSE);
       ShowWindow(g_hwnd, SW_RESTORE);
