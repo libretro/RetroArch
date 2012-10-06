@@ -70,8 +70,8 @@ typedef struct gfx_ctx_driver
    // Also processes events.
    void (*check_window)(bool*, bool*, unsigned*, unsigned*, unsigned);
 #ifdef ANDROID
-   void (*gfx_ctx_set_window)(JNIEnv *jenv,jobject obj, jobject surface);
-   void (*gfx_ctx_free_window)(JNIEnv *jenv,jobject obj, jobject surface);
+   void (*gfx_ctx_set_window)(JNIEnv *jenv, jobject obj, jobject surface);
+   void (*gfx_ctx_free_window)(JNIEnv *jenv, jobject obj, jobject surface);
 #endif
 
    // Acknowledge a resize event. This is needed for some APIs. Most backends will ignore this.

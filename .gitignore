@@ -7,6 +7,7 @@
 *.elf
 *.dol
 *.map
+config.log
 /retroarch
 /retroarch.*
 /config.h

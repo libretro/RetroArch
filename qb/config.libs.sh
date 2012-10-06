@@ -121,9 +121,9 @@ if [ "$HAVE_THREADS" != 'no' ]; then
       check_lib FFMPEG_ALLOC_CONTEXT3 "$AVCODEC_LIBS" avcodec_alloc_context3
       check_lib FFMPEG_AVCODEC_OPEN2 "$AVCODEC_LIBS" avcodec_open2
       check_lib FFMPEG_AVCODEC_ENCODE_AUDIO2 "$AVCODEC_LIBS" avcodec_encode_audio2
-      check_lib FFMPEG_AVIO_OPEN "$AVFORMAT_LIBS" avio_open
-      check_lib FFMPEG_AVFORMAT_WRITE_HEADER "$AVFORMAT_LIBS" avformat_write_header
-      check_lib FFMPEG_AVFORMAT_NEW_STREAM "$AVFORMAT_LIBS" avformat_new_stream
+      check_lib FFMPEG_AVIO_OPEN "$AVFORMAT_LIBS $AVCODEC_LIBS $AVUTIL_LIBS" avio_open
+      check_lib FFMPEG_AVFORMAT_WRITE_HEADER "$AVFORMAT_LIBS $AVCODEC_LIBS $AVUTIL_LIBS" avformat_write_header
+      check_lib FFMPEG_AVFORMAT_NEW_STREAM "$AVFORMAT_LIBS $AVCODEC_LIBS $AVUTIL_LIBS" avformat_new_stream
       check_lib FFMPEG_AVCODEC_ENCODE_VIDEO2 "$AVCODEC_LIBS" avcodec_encode_video2
    fi
 else

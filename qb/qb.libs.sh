@@ -32,7 +32,7 @@ check_lib()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs
 	fi
 	answer='no'
 #	echo -n "$ECHOBUF"
-	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS $LIBRARY_DIRS $4 $CFLAGS $LDFLAGS $2 >/dev/null 2>&1 && answer='yes'
+	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS $LIBRARY_DIRS $4 $CFLAGS $LDFLAGS $2 >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
 	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
 	
@@ -55,7 +55,7 @@ check_lib_cxx()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs	$5 = 
 	fi
 	answer='no'
 #	echo -n "$ECHOBUF"
-	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" $INCLUDE_DIRS $LIBRARY_DIRS $4 $CFLAGS $LDFLAGS $2 >/dev/null 2>&1 && answer='yes'
+	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" $INCLUDE_DIRS $LIBRARY_DIRS $4 $CFLAGS $LDFLAGS $2 >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
 	rm "$TEMP_CXX" "$TEMP_EXE" >/dev/null 2>&1
 	[ "$answer" = 'no' ] && {
@@ -75,7 +75,7 @@ check_code_c()
 	ECHOBUF="Checking C code snippet \"$3\""
 #	echo -n "Checking C code snippet \"$3\""
 	answer='no'
-	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS $LIBRARY_DIRS $2 $CFLAGS $LDFLAGS >/dev/null 2>&1 && answer='yes'
+	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS $LIBRARY_DIRS $2 $CFLAGS $LDFLAGS >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
 	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
 }
@@ -87,7 +87,7 @@ check_code_cxx()
 	ECHOBUF="Checking C++ code snippet \"$3\""
 #	echo -n "Checking C++ code snippet \"$3\""
 	answer='no'
-	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" $INCLUDE_DIRS $LIBRARY_DIRS $2 $CXXFLAGS $LDFLAGS >/dev/null 2>&1 && answer='yes'
+	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" $INCLUDE_DIRS $LIBRARY_DIRS $2 $CXXFLAGS $LDFLAGS >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
 	rm "$TEMP_CXX" "$TEMP_EXE" >/dev/null 2>&1
 }
@@ -135,7 +135,7 @@ check_header()	#$1 = HAVE_$1	$2 = header file
 int main(void) { return 0; }
 EOF
 	answer='no'
-	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS >/dev/null 2>&1 && answer='yes'
+	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
 	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
 	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && {
@@ -149,7 +149,7 @@ check_switch_c()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checked 
 #	echo -n "Checking for availability of switch $2 in $CC "
 	echo "int main(void) { return 0; }" > $TEMP_C
 	answer='no'
-	"$CC" -o "$TEMP_EXE" "$TEMP_C" $2 >/dev/null 2>&1 && answer='yes'
+	"$CC" -o "$TEMP_EXE" "$TEMP_C" $2 >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
 	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
 	[ "$answer" = 'no' ] && {
@@ -162,7 +162,7 @@ check_switch_cxx()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checke
 #	echo -n "Checking for availability of switch $2 in $CXX"
 	echo "int main() { return 0; }" > $TEMP_CXX
 	answer='no'
-	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" "$2" >/dev/null 2>&1 && answer='yes'
+	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" "$2" >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
 	rm "$TEMP_CXX" "$TEMP_EXE" >/dev/null 2>&1
 	[ "$answer" = 'no' ] && {

@@ -3,6 +3,8 @@
 PACKAGE_NAME=retroarch
 PACKAGE_VERSION=0.9.7
 
+cat /dev/null > config.log
+
 . qb/qb.params.sh
 
 . qb/qb.comp.sh
