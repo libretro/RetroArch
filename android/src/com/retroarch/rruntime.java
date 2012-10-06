@@ -16,6 +16,10 @@
 
 package com.retroarch;
 
+import android.view.Surface;
+import android.view.SurfaceView;
+import android.view.SurfaceHolder;
+
 public class rruntime
 {	
 	static
@@ -43,4 +47,8 @@ public class rruntime
 	public static native void settings_change(final int j_setting);
 
 	public static native void settings_set_defaults();
+	
+	public static native void set_window(SurfaceHolder surface);
+	
+	public static native void free_window(SurfaceHolder surface);
 }

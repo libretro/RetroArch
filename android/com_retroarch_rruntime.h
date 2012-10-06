@@ -71,6 +71,22 @@ JNIEXPORT void JNICALL Java_com_retroarch_rruntime_settings_1change
 JNIEXPORT void JNICALL Java_com_retroarch_rruntime_settings_1set_1defaults
   (JNIEnv *, jclass);
 
+/*
+ * Class:     com_retroarch_rruntime
+ * Method:    set_window
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_retroarch_rruntime_set_window
+  (JNIEnv *, jclass, jobject, jobject);
+
+/*
+ * Class:     com_retroarch_rruntime
+ * Method:    free_window
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_retroarch_rruntime_free_window
+  (JNIEnv *, jclass, jobject, jobject);
+
 #ifdef __cplusplus
 }
 #endif

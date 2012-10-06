@@ -4,6 +4,11 @@
     android:layout_height="fill_parent"
     android:orientation="vertical" >
 
+<SurfaceView
+    android:id="@+id/surfaceview"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    />
     <TextView
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"

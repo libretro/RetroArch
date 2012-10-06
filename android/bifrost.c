@@ -161,3 +161,18 @@ JNIEXPORT void JNICALL Java_com_retroarch_rruntime_settings_1set_1defaults
    RARCH_LOG("* rruntime_settings_set_defaults.\n" );
    rarch_settings_set_default();
 }
+
+void gfx_ctx_set_window(JNIEnv *jenv,jobject obj, jobject surface);
+void gfx_ctx_free_window(JNIEnv *jenv,jobject obj, jobject surface);
+
+JNIEXPORT void JNICALL Java_com_retroarch_rruntime_set_window
+   (JNIEnv *env, jclass class, jobject obj, jobject surface)
+{
+   gfx_ctx_set_window(env, obj, surface);
+}
+
+JNIEXPORT void JNICALL Java_com_retroarch_rruntime_free_window
+   (JNIEnv *env, jclass class, jobject obj, jobject surface)
+{
+   gfx_ctx_free_window(env, obj, surface);
+}
