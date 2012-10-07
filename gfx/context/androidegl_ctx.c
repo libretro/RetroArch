@@ -39,7 +39,6 @@ static EGLConfig g_config;
 
 int _width;
 int _height;
-GLfloat _angle;
 
 static enum gfx_ctx_api g_api;
 
@@ -108,79 +107,46 @@ static bool gfx_ctx_init(void)
    
     RARCH_LOG("Initializing context\n");
    
-    if ((g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY) {
-        RARCH_ERR("eglGetDisplay() returned error %d.\n", eglGetError());
-        return false;
-    }
+    if ((g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY)
+        goto error;
 
     EGLint egl_major, egl_minor;
-    if (!eglInitialize(g_egl_dpy, &egl_major, &egl_minor)) {
-        RARCH_ERR("eglInitialize() returned error %d.\n", eglGetError());
-        return false;
-    }
+    if (!eglInitialize(g_egl_dpy, &egl_major, &egl_minor))
+        goto error;
 
     RARCH_LOG("[ANDROID/EGL]: EGL version: %d.%d\n", egl_major, egl_minor);
 
     EGLint num_configs;
-    if (!eglChooseConfig(g_egl_dpy, attribs, &g_config, 1, &numConfigs)) {
-        RARCH_ERR("eglChooseConfig() returned error %d.\n", eglGetError());
-        gfx_ctx_destroy();
-        return false;
-    }
+    if (!eglChooseConfig(g_egl_dpy, attribs, &g_config, 1, &numConfigs))
+        goto error;
 
-    if (!eglGetConfigAttrib(g_egl_dpy, config, EGL_NATIVE_VISUAL_ID, &format)) {
-        RARCH_ERR("eglGetConfigAttrib() returned error %d.\n", eglGetError());
-        gfx_ctx_destroy();
-        return false;
-    }
+    if (!eglGetConfigAttrib(g_egl_dpy, config, EGL_NATIVE_VISUAL_ID, &format))
+        goto error;
 
     ANativeWindow_setBuffersGeometry(window, 0, 0, format);
 
-    if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, config, window, 0))) {
-        RARCH_ERR("eglCreateWindowSurface() returned error %d.\n", eglGetError());
-        gfx_ctx_destroy();
-        return false;
-    }
+    if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, config, window, 0)))
+        goto error;
    
-    if (!(g_egl_ctx = eglCreateContext(g_egl_dpy, config, 0, 0))) {
-        RARCH_ERR("eglCreateContext() returned error %d.\n", eglGetError());
-        gfx_ctx_destroy();
-        return false;
-    }
+    if (!(g_egl_ctx = eglCreateContext(g_egl_dpy, config, 0, 0)))
+        goto error;
    
-    if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx)) {
-        RARCH_ERR("eglMakeCurrent() returned error %d.\n", eglGetError());
-        gfx_ctx_destroy();
-        return false;
-    }
+    if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
+        goto error;
 
     if (!eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &width) ||
-        !eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &height)) {
-        RARCH_ERR("eglQuerySurface() returned error %d.\n", eglGetError());
-        gfx_ctx_destroy();
-        return false;
-    }
+        !eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &height))
+        goto error;
 
     _width = width;
     _height = height;
 
-/*
-    glDisable(GL_DITHER);
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
-    glClearColor(0, 0, 0, 0);
-    glEnable(GL_CULL_FACE);
-    glShadeModel(GL_SMOOTH);
-    glEnable(GL_DEPTH_TEST);
-   
-    glViewport(0, 0, width, height);
-
-    ratio = (GLfloat) width / height;
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glFrustumf(-ratio, ratio, -1, 1, 1, 10);
-*/
-
     return true;
+
+error:
+    RARCH_ERR("Returned error %d.\n", eglGetError());
+    gfx_ctx_destroy();
+    return false;
 }
 
 void gfx_ctx_check_window(bool *quit,

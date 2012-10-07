@@ -7,15 +7,9 @@ import java.util.List;
 import java.util.Stack;
 
 import com.retroarch.R;
-import com.retroarch.R.layout;
-
-import com.retroarch.rruntime;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.KeyEvent;
@@ -24,7 +18,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.net.Uri;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
@@ -67,13 +60,9 @@ public class FileChooser extends Activity
          
          // clamp start dir and remove the /
          if (_startDir == null)
-         {
               _startDir = Environment.getExternalStorageDirectory().getAbsolutePath();
-         }
          else if (_startDir.endsWith("/"))
-         {
               _startDir = _startDir.substring(0, _startDir.length() - 1);
-         }
          
          // push the start dir onto the stack
          _dirStack = new Stack<String>();
@@ -81,15 +70,11 @@ public class FileChooser extends Activity
          
          // clamp extentions to all or extra specified
          if (_extensions == null)
-         {
               _extensions = ".*";
-         }
          
          // clamp temp dir
          if (_tempDir == null)
-         {
               _tempDir = Environment.getExternalStorageDirectory().getAbsolutePath();
-         }
          
          // regular filesystem dir
          currentDir = new File(_startDir);
@@ -161,9 +146,7 @@ public class FileChooser extends Activity
               for(File ff: dirs)
               {
                  if(ff.isDirectory())
-                 {
                      dir.add(new Option(ff.getName() + "/","Folder",ff.getAbsolutePath()));
-                 }
                  else
                  {
                       int dotIndex = ff.getName().lastIndexOf('.');
@@ -171,9 +154,7 @@ public class FileChooser extends Activity
                       {
                            String extension = ff.getName().substring(dotIndex+1).toLowerCase();
                            if (extension.matches(_extensions))
-                           {
                                 fls.add(new Option(ff.getName(),"File Size: "+ff.length(),ff.getAbsolutePath()));
-                           }
                       }
                  }
               }
@@ -211,6 +192,7 @@ public class FileChooser extends Activity
                     }
                     else
                     {
+                        /*
                          String path = o.getPath();
                          int dotIndex = path.lastIndexOf('.');
                          String ext = null;
@@ -218,8 +200,8 @@ public class FileChooser extends Activity
                          {
                               ext = path.substring(dotIndex+1).toLowerCase();
                          }
-                         
-			 onFileClick(o);
+                         */
+                         onFileClick(o);
                     }
                }
                
@@ -239,7 +221,8 @@ public class FileChooser extends Activity
      }
      
      @Override
-     public boolean onKeyDown(int keyCode, KeyEvent event) {
+     public boolean onKeyDown(int keyCode, KeyEvent event)
+     {
          if (keyCode == KeyEvent.KEYCODE_BACK)
          {
               if (_dirStack.size() > 1)
