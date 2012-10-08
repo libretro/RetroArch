@@ -27,7 +27,7 @@
 	VIDEO
 ============================================================ */
 
-#if defined(HAVE_OPENGL) /* PS3, GL */
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) /* PS3, GL */
 #define video_init_func(video_info, input, input_data) \
                                                 gl_init(video_info, input, input_data)
 #define video_frame_func(data, width, height, pitch, msg) \

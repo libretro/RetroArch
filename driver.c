@@ -226,7 +226,7 @@ static void adjust_system_rates(void)
 
    RARCH_LOG("Set audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
 
-#ifdef RARCH_CONSOLE
+#if defined(RARCH_CONSOLE) && !defined(ANDROID)
    video_set_nonblock_state_func(!g_settings.video.vsync || g_extern.system.force_nonblock);
 #endif
 }
