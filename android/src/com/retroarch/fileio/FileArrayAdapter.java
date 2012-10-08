@@ -25,18 +25,22 @@ public class FileArrayAdapter extends ArrayAdapter<Option> implements SectionInd
      private int id;
      private List<Option>items;
      
-     public FileArrayAdapter(Context context, int textViewResourceId, List<Option> objects)
-     {
+     public FileArrayAdapter(Context context, int textViewResourceId,
+               List<Option> objects) {
           super(context, textViewResourceId, objects);
           c = context;
           id = textViewResourceId;
           items = objects;    
           
+          initAlphaIndexer();
+     }
+     
+     private void initAlphaIndexer()
+     {
           alphaIndexer = new HashMap<String, Integer>();
           int size = items.size();
 
-          for (int x = 0; x < size; x++)
-          {
+          for (int x = 0; x < size; x++) {
                Option o = items.get(x);
 
               String ch =  o.getName().substring(0, 1);
@@ -44,7 +48,9 @@ public class FileArrayAdapter extends ArrayAdapter<Option> implements SectionInd
               ch = ch.toUpperCase();
 
               if (!alphaIndexer.containsKey(ch))
+              {
                    alphaIndexer.put(ch, x);
+              }
           }
 
           Set<String> sectionLetters = alphaIndexer.keySet();
@@ -55,34 +61,34 @@ public class FileArrayAdapter extends ArrayAdapter<Option> implements SectionInd
 
           sections = new String[sectionList.size()];
 
-          sectionList.toArray(sections);    
+          sectionList.toArray(sections);          
      }
 
      public Option getItem(int i)
      {
           return items.get(i);
      }
-     
      @Override
-     public View getView(int position, View convertView, ViewGroup parent)
-     {
+      public View getView(int position, View convertView, ViewGroup parent) {
               View v = convertView;
-              if (v == null)
-              {
+              if (v == null) {
                   LayoutInflater vi = (LayoutInflater)c.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                   v = vi.inflate(id, null);
               }
               final Option o = items.get(position);
-              if (o != null)
-              {                   
+              if (o != null) {                   
                       TextView t1 = (TextView) v.findViewById(R.id.TextView01);
                       TextView t2 = (TextView) v.findViewById(R.id.TextView02);
 
-                      if(t1 != null)
+                      if(t1!=null)
+                      {
                         t1.setText(o.getName());
+                      }
+                      if(t2!=null)
+                      {
+                        t2.setText(o.getData());
+                      }
                       
-                      if(t2 != null)
-                        t2.setText(o.getData());   
               }
               return v;
       }
@@ -91,7 +97,9 @@ public class FileArrayAdapter extends ArrayAdapter<Option> implements SectionInd
      {
     	 // FIXME
     	 if (section >= sections.length)
+    	 {
     		 return 0;
+    	 }
          return alphaIndexer.get(sections[section]);
      }
 
