@@ -24,10 +24,10 @@
 #define audio_buffer_size_func()                driver.audio->buffer_size(driver.audio_data)
 
 /*============================================================
-	PLAYSTATION3
+	VIDEO
 ============================================================ */
 
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+#if defined(HAVE_OPENGL) /* PS3, GL */
 #define video_init_func(video_info, input, input_data) \
                                                 gl_init(video_info, input, input_data)
 #define video_frame_func(data, width, height, pitch, msg) \
@@ -44,18 +44,7 @@
 
 #define gfx_ctx_window_has_focus()		(true)
 
-#define input_init_func()                       ps3_input_initialize()
-#define input_poll_func()                       ps3_input_poll(driver.input_data)
-#define input_input_state_func(retro_keybinds, port, device, index, id) \
-                                                ps3_input_state(driver.input_data, retro_keybinds, port, device, index, id)
-#define input_key_pressed_func(key)             ps3_key_pressed(driver.input_data, key)
-#define input_free_func()                       ps3_free_input(driver.input_data)
-
-/*============================================================
-	XBOX 1 / XBOX 360
-============================================================ */
-
-#elif defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9))
+#elif defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9)) /* D3D */
 
 #define video_init_func(video_info, input, input_data) \
                                                 xdk_d3d_init(video_info, input, input_data)
@@ -73,18 +62,7 @@
 
 #define gfx_ctx_window_has_focus()		(true)
 
-#define input_init_func()                       xinput_input_init()
-#define input_poll_func()                       xinput_input_poll(driver.input_data)
-#define input_input_state_func(retro_keybinds, port, device, index, id) \
-                                                xinput_input_state(driver.input_data, retro_keybinds, port, device, index, id)
-#define input_key_pressed_func(key)             xinput_input_key_pressed(driver.input_data, key)
-#define input_free_func()                       xinput_input_free_input(driver.input_data)
-
-/*============================================================
-	GAMECUBE / WII
-============================================================ */
-
-#elif defined(GEKKO)
+#elif defined(GEKKO) /* Gamecube, Wii */
 
 #define video_init_func(video_info, input, input_data) gx_init(video_info, input, input_data)
 #define video_frame_func(data, width, height, pitch, msg) \
@@ -101,20 +79,7 @@
 #define video_viewport_size_func(width, height) ((void)0)
 #define video_read_viewport_func(buffer)        (false)
 
-#define input_init_func()                       gx_input_initialize()
-#define input_poll_func()                       gx_input_poll(driver.input_data)
-#define input_input_state_func(retro_keybinds, port, device, index, id) \
-                                                gx_input_state(driver.input_data, retro_keybinds, port, device, index, id)
-#define input_key_pressed_func(key)             gx_key_pressed(driver.input_data, key)
-#define input_free_func()                       gx_free_input(driver.input_data)
-#define gfx_ctx_window_has_focus()		(true)
-
-#else
-
-/*============================================================
-	NULL
-============================================================ */
-
+#else /* NULL */
 #define video_init_func(video_info, input, input_data) null_gfx_init(video_info, input, input_data)
 #define video_frame_func(data, width, height, pitch, msg) \
                                                 null_gfx_frame(driver.video_data, data, width, height, pitch, msg)
@@ -127,6 +92,41 @@
 #define video_set_aspect_ratio_func(aspectratio_idx) (true)
 #define video_stop_func()			null_gfx_stop()
 #define video_start_func()			null_gfx_start()
+
+#endif
+
+/*============================================================
+	INPUT
+============================================================ */
+
+#if defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9)) /* D3D */
+
+#define input_init_func()                       xinput_input_init()
+#define input_poll_func()                       xinput_input_poll(driver.input_data)
+#define input_input_state_func(retro_keybinds, port, device, index, id) \
+                                                xinput_input_state(driver.input_data, retro_keybinds, port, device, index, id)
+#define input_key_pressed_func(key)             xinput_input_key_pressed(driver.input_data, key)
+#define input_free_func()                       xinput_input_free_input(driver.input_data)
+
+#elif defined(GEKKO) /* Gamecube, Wii */
+
+#define input_init_func()                       gx_input_initialize()
+#define input_poll_func()                       gx_input_poll(driver.input_data)
+#define input_input_state_func(retro_keybinds, port, device, index, id) \
+                                                gx_input_state(driver.input_data, retro_keybinds, port, device, index, id)
+#define input_key_pressed_func(key)             gx_key_pressed(driver.input_data, key)
+#define input_free_func()                       gx_free_input(driver.input_data)
+#define gfx_ctx_window_has_focus()		(true)
+
+#elif defined(__CELLOS_LV2__) /* PS3 */
+#define input_init_func()                       ps3_input_initialize()
+#define input_poll_func()                       ps3_input_poll(driver.input_data)
+#define input_input_state_func(retro_keybinds, port, device, index, id) \
+                                                ps3_input_state(driver.input_data, retro_keybinds, port, device, index, id)
+#define input_key_pressed_func(key)             ps3_key_pressed(driver.input_data, key)
+#define input_free_func()                       ps3_free_input(driver.input_data)
+
+#else
 
 #define input_init_func()                       null_input_init()
 #define input_poll_func()                       null_input_poll(driver.input_data)
