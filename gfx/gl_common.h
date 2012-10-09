@@ -164,7 +164,7 @@ struct gl_coords
 
 typedef struct gl
 {
-   const gfx_ctx_driver_t *driver;
+   const gfx_ctx_driver_t *ctx_driver;
    bool vsync;
    GLuint texture[TEXTURES];
    unsigned tex_index; // For use with PREV.
