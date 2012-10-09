@@ -235,14 +235,18 @@ void init_drivers(void)
 {
    adjust_system_rates();
 
+#ifndef ANDROID
    init_video_input();
+#endif
    init_audio();
 }
 
 void uninit_drivers(void)
 {
    uninit_audio();
+#ifndef ANDROID
    uninit_video_input();
+#endif
 }
 
 #ifdef HAVE_DYLIB
