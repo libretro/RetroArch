@@ -25,6 +25,7 @@
 static HWND g_hwnd;
 static HGLRC g_hrc;
 static HDC g_hdc;
+static HMONITOR g_last_hm = 0;
 
 static bool g_quit;
 static bool g_inited;
@@ -232,8 +233,11 @@ static bool gfx_ctx_set_video_mode(
    (void)bits;
 
    DWORD style;
-   RECT screen_rect;
-   GetClientRect(GetDesktopWindow(), &screen_rect);
+   MONITORINFO current_mon;
+   current_mon.cbSize = sizeof(MONITORINFO);
+   if(!g_last_hm)
+       g_last_hm = MonitorFromWindow(GetDesktopWindow(),MONITOR_DEFAULTTONEAREST);
+   GetMonitorInfo(g_last_hm,&current_mon);
 
    g_resize_width  = width;
    g_resize_height = height;
@@ -242,14 +246,14 @@ static bool gfx_ctx_set_video_mode(
    if (fullscreen)
    {
       if (windowed_full)
+      {
          style = WS_EX_TOPMOST | WS_POPUP;
+         g_resize_width = width  = current_mon.rcMonitor.right - current_mon.rcMonitor.left;
+         g_resize_height = height = current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
+      }
       else
       {
          style = WS_POPUP | WS_VISIBLE;
-
-         AdjustWindowRect(&screen_rect, style, FALSE);
-         width  = screen_rect.right - screen_rect.left;
-         height = screen_rect.bottom - screen_rect.top;
 
          if (!set_fullscreen(width, height))
             goto error;
@@ -269,7 +273,7 @@ static bool gfx_ctx_set_video_mode(
    }
 
    g_hwnd = CreateWindowEx(0, "RetroArch", "RetroArch", style,
-         windowed_full ? 0 : CW_USEDEFAULT, windowed_full ? 0 : CW_USEDEFAULT,
+         fullscreen && windowed_full ? current_mon.rcMonitor.left : CW_USEDEFAULT, fullscreen && windowed_full ? current_mon.rcMonitor.top : CW_USEDEFAULT,
          width, height,
          NULL, NULL, NULL, NULL);
 
@@ -331,6 +335,7 @@ static void gfx_ctx_destroy(void)
 
    if (g_hwnd)
    {
+      g_last_hm = MonitorFromWindow(g_hwnd,MONITOR_DEFAULTTONEAREST);
       DestroyWindow(g_hwnd);
       UnregisterClass("RetroArch", GetModuleHandle(NULL));
       g_hwnd = NULL;
