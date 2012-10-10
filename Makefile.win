@@ -22,7 +22,7 @@ OBJ = retroarch.o \
 		input/null.o \
 		fifo_buffer.o \
 		gfx/null.o \
-      media/rarch.o
+		media/rarch.o
 
 JOBJ := conf/config_file.o \
 	tools/retroarch-joyconfig.o \
