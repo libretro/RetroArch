@@ -214,6 +214,7 @@ static bool set_fullscreen(unsigned width, unsigned height)
    devmode.dmPelsHeight = height;
    devmode.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT;
 
+   RARCH_LOG("[WGL]: Setting fullscreen to %ux%u.\n", width, height);
    return ChangeDisplaySettings(&devmode, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL;
 }
 
@@ -233,16 +234,14 @@ static bool gfx_ctx_set_video_mode(
    bool windowed_full = g_settings.video.windowed_fullscreen;
    if (fullscreen)
    {
-      if (windowed_full)
-         style = WS_EX_TOPMOST | WS_POPUP;
-      else
+      style = WS_EX_TOPMOST | WS_POPUP | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
+
+      AdjustWindowRect(&screen_rect, style, FALSE);
+      width  = screen_rect.right - screen_rect.left;
+      height = screen_rect.bottom - screen_rect.top;
+
+      if (!windowed_full)
       {
-         style = WS_POPUP | WS_VISIBLE;
-
-         AdjustWindowRect(&screen_rect, style, FALSE);
-         width  = screen_rect.right - screen_rect.left;
-         height = screen_rect.bottom - screen_rect.top;
-
          if (!set_fullscreen(width, height))
             goto error;
 
@@ -251,7 +250,7 @@ static bool gfx_ctx_set_video_mode(
    }
    else
    {
-      style = WS_OVERLAPPEDWINDOW;
+      style = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
       RECT rect   = {0};
       rect.right  = width;
       rect.bottom = height;
@@ -260,8 +259,10 @@ static bool gfx_ctx_set_video_mode(
       height = rect.bottom - rect.top;
    }
 
+   int coord = windowed_full ? 0 : CW_USEDEFAULT;
+
    g_hwnd = CreateWindowEx(0, "RetroArch", "RetroArch", style,
-         windowed_full ? 0 : CW_USEDEFAULT, windowed_full ? 0 : CW_USEDEFAULT,
+         coord, coord,
          width, height,
          NULL, NULL, NULL, NULL);
 
@@ -270,9 +271,11 @@ static bool gfx_ctx_set_video_mode(
 
    gfx_ctx_update_window_title(true);
 
+   if (fullscreen)
+      ShowCursor(FALSE);
+
    if (!fullscreen || windowed_full)
    {
-      ShowCursor(FALSE);
       ShowWindow(g_hwnd, SW_RESTORE);
       UpdateWindow(g_hwnd);
       SetForegroundWindow(g_hwnd);
