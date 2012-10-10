@@ -217,6 +217,14 @@ static bool set_fullscreen(unsigned width, unsigned height)
    return ChangeDisplaySettings(&devmode, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL;
 }
 
+static void show_cursor(bool show)
+{
+   if(show)
+      while(ShowCursor(TRUE)<0);
+   else
+      while(ShowCursor(FALSE)>=0);
+}
+
 static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen)
@@ -272,12 +280,13 @@ static bool gfx_ctx_set_video_mode(
 
    if (!fullscreen || windowed_full)
    {
-      ShowCursor(FALSE);
       ShowWindow(g_hwnd, SW_RESTORE);
       UpdateWindow(g_hwnd);
       SetForegroundWindow(g_hwnd);
       SetFocus(g_hwnd);
    }
+
+   show_cursor(!fullscreen);
 
    // Wait until GL context is created (or failed to do so ...)
    MSG msg;
