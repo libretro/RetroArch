@@ -22,6 +22,8 @@
 #include "../gfx_common.h"
 #include <windows.h>
 
+#define IDI_ICON 1
+
 static HWND g_hwnd;
 static HGLRC g_hrc;
 static HDC g_hdc;
@@ -198,6 +200,8 @@ static bool gfx_ctx_init(void)
    wndclass.hInstance = GetModuleHandle(NULL);
    wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
    wndclass.lpszClassName = "RetroArch";
+   wndclass.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
+   wndclass.hIconSm = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
 
    if (!RegisterClassEx(&wndclass))
       return false;

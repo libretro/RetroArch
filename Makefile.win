@@ -21,7 +21,8 @@ OBJ = retroarch.o \
 		audio/null.o \
 		input/null.o \
 		fifo_buffer.o \
-		gfx/null.o
+		gfx/null.o \
+      media/rarch.o
 
 JOBJ := conf/config_file.o \
 	tools/retroarch-joyconfig.o \
@@ -31,6 +32,7 @@ JOBJ := conf/config_file.o \
 
 CC = gcc
 CXX = g++
+WINDRES = windres
 
 HAVE_DINPUT = 1
 HAVE_XAUDIO = 1
@@ -225,6 +227,10 @@ $(TARGET): $(OBJ)
 %.o: %.c
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 	@$(if $(Q), $(shell echo echo CC $<),)
+
+%.o: %.rc
+	$(Q)$(WINDRES) -o $@ $<
+	@$(if $(Q), $(shell echo echo WINDRES $<),)
 
 $(JTARGET): $(JOBJ)
 ifeq ($(CXX_BUILD), 1)

@@ -96,8 +96,8 @@ do_build()
    fi
 
    make -f Makefile.win clean || die "Failed to clean ..."
-   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" -j4 all SLIM=1 || die "Failed to build ..."
-   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" dist_${BUILDTYPE} SLIM=1 || die "Failed to dist ..."
+   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" -j4 all SLIM=1 || die "Failed to build ..."
+   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" dist_${BUILDTYPE} SLIM=1 || die "Failed to dist ..."
    if [ -z "`find . | grep "retroarch-win"`" ]; then
       die "Did not find build ..."
    fi
@@ -116,8 +116,8 @@ do_build()
    mv -v "$ZIP_BASE" "../$ZIP_SLIM" || die "Failed to move final build ..."
 
    make -f Makefile.win clean || die "Failed to clean ..."
-   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" -j4 all || die "Failed to build ..."
-   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" dist_${BUILDTYPE} || die "Failed to dist ..."
+   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" -j4 all || die "Failed to build ..."
+   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" dist_${BUILDTYPE} || die "Failed to dist ..."
 
    if [ "$BUILD_PHOENIX_GUI" = "yes" ]; then
       zip "$ZIP_BASE" retroarch-phoenix.exe retroarch-phoenix.cfg
