@@ -27,7 +27,7 @@
 static HWND g_hwnd;
 static HGLRC g_hrc;
 static HDC g_hdc;
-static HMONITOR g_last_hm = 0;
+static HMONITOR g_last_hm;
 
 static bool g_quit;
 static bool g_inited;
