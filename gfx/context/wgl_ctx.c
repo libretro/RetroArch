@@ -210,7 +210,7 @@ static bool gfx_ctx_init(void)
    return true;
 }
 
-static bool set_fullscreen(unsigned width, unsigned height, TCHAR *dev_name)
+static bool set_fullscreen(unsigned width, unsigned height, char *dev_name)
 {
    DEVMODE devmode;
    memset(&devmode, 0, sizeof(devmode));
@@ -351,7 +351,10 @@ static void gfx_ctx_destroy(void)
 
    if (g_restore_desktop)
    {
-      ChangeDisplaySettings(NULL, 0);
+      MONITORINFOEX current_mon = {0};
+      current_mon.cbSize = sizeof(MONITORINFOEX);
+      GetMonitorInfo(g_last_hm, (MONITORINFO *)&current_mon);
+      ChangeDisplaySettingsEx(current_mon.szDevice, NULL, NULL, 0, NULL);
       g_restore_desktop = false;
    }
 
