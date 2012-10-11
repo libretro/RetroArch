@@ -21,7 +21,7 @@ libretro provides emulation of a game system, and can be implemented by any fron
 .TP
 \fB[rom file]\fR
 If no rom file path is defined on the command line, \fBretroarch\fR will try to load a rom from \fBstdin\fR.
-\fBretroarch\fR only supports loading of \fBuncompressed\fR roms, such as *.sfc or *.smc.
+\fBretroarch\fR does not uncompress roms. ROM types supported depends on the libretro implementation used.
 
 .TP
 \fB--help, -h\fR
@@ -36,6 +36,10 @@ Prints available features compiled into RetroArch, then exits.
 Path to a libretro implementation which is to be used.
 This option will override any setting in a config file.
 This option is only available if RetroArch is compiled with dynamic libretro loading.
+
+If PATH is a directory, RetroArch will try to find the first implementation that claims to support
+the extension of the ROM used, and use that libretro implementation.
+If two or more different implementations claim to support a certain ROM extension, there might be collisions.
 
 .TP
 \fB--save PATH, -s PATH\fR

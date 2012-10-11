@@ -17,6 +17,7 @@
 #include "general.h"
 #include "compat/strl.h"
 #include "compat/posix_string.h"
+#include "file.h"
 #include <string.h>
 
 #ifdef RARCH_CONSOLE
@@ -90,14 +91,98 @@ size_t (*pretro_get_memory_size)(unsigned);
 static void set_environment(void);
 static void set_environment_defaults(void);
 
+#if defined(__APPLE__)
+#define DYNAMIC_EXT "dylib"
+#elif defined(_WIN32)
+#define DYNAMIC_EXT "dll"
+#else
+#define DYNAMIC_EXT "so"
+#endif
+
+static bool find_first_libretro(char *path, size_t size,
+      const char *dir, const char *rom_path)
+{
+   bool ret = false;
+   const char *ext = path_get_extension(rom_path);
+   if (!ext || !*ext)
+   {
+      RARCH_ERR("Path has no extension. Cannot infer libretro implementation.\n");
+      return false;
+   }
+
+   RARCH_LOG("Searching for valid libretro implementation in: \"%s\".\n", dir);
+
+   struct string_list *list = dir_list_new(dir, DYNAMIC_EXT, false);
+   if (!list)
+   {
+      RARCH_ERR("Couldn't open directory: \"%s\".\n", dir);
+      return false;
+   }
+
+   for (size_t i = 0; i < list->size && !ret; i++)
+   {
+      RARCH_LOG("Checking library: \"%s\".\n", list->elems[i].data);
+      dylib_t lib = dylib_load(list->elems[i].data);
+      if (!lib)
+         continue;
+
+      void (*proc)(struct retro_system_info*) = 
+         (void (*)(struct retro_system_info*))dylib_proc(lib, "retro_get_system_info");
+
+      if (!proc)
+      {
+         dylib_close(lib);
+         continue;
+      }
+
+      struct retro_system_info info = {0};
+      proc(&info);
+
+      if (!info.valid_extensions)
+      {
+         dylib_close(lib);
+         continue;
+      }
+
+      struct string_list *supported_ext = string_split(info.valid_extensions, "|"); 
+
+      if (string_list_find_elem(supported_ext, ext))
+      {
+         strlcpy(path, list->elems[i].data, size);
+         ret = true;
+      }
+
+      string_list_free(supported_ext);
+      dylib_close(lib);
+   }
+
+   dir_list_free(list);
+   return ret;
+}
+
 static void load_symbols(void)
 {
+   const char *libretro_path = g_settings.libretro;
+   char libretro_core_buffer[PATH_MAX];
+
+   if (path_is_directory(g_settings.libretro))
+   {
+      if (!find_first_libretro(libretro_core_buffer, sizeof(libretro_core_buffer),
+               g_settings.libretro, g_extern.fullpath))
+      {
+         RARCH_ERR("libretro_path is a directory, but no valid libretro implementation was found.\n");
+         rarch_fail(1, "load_dynamic()");
+      }
+
+      libretro_path = libretro_core_buffer;
+   }
+
 #ifdef HAVE_DYNAMIC
-   RARCH_LOG("Loading dynamic libretro from: \"%s\"\n", g_settings.libretro);
-   lib_handle = dylib_load(g_settings.libretro);
+   RARCH_LOG("Loading dynamic libretro from: \"%s\"\n", libretro_path);
+   lib_handle = dylib_load(libretro_path);
    if (!lib_handle)
    {
-      RARCH_ERR("Failed to open dynamic library: \"%s\"\n", g_settings.libretro);
+      RARCH_ERR("Failed to open dynamic library: \"%s\"\n", libretro_path);
       rarch_fail(1, "load_dynamic()");
    }
 #endif

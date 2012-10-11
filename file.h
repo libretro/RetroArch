@@ -63,6 +63,7 @@ void dir_list_free(struct string_list *list);
 bool string_list_find_elem(const struct string_list *list, const char *elem);
 bool string_list_find_elem_prefix(const struct string_list *list, const char *prefix, const char *elem);
 struct string_list *string_split(const char *str, const char *delim);
+void string_list_free(struct string_list *list);
 
 bool path_is_directory(const char *path);
 bool path_file_exists(const char *path);

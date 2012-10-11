@@ -47,7 +47,7 @@
 #include <dirent.h>
 #endif
 
-static void string_list_free(struct string_list *list)
+void string_list_free(struct string_list *list)
 {
    if (!list)
       return;
