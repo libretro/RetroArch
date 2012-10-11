@@ -1,6 +1,6 @@
 Hans-Kristian Arntzen - <maister@archlinux.us>
    - Main code, maintainer
-   - Gamecube/Wii libogc port
+   - Initial Gamecube/Wii libogc port
 
 Devin J. Pohly - <djpohly@djpohly.com>
    - Joypad axis support
@@ -28,3 +28,7 @@ Michael Lelli - <toadking@toadking.com>
 
 Darren Alton -
    - OpenPandora port
+
+Fabian Knopf -
+   - WGL multi-monitor support
+
