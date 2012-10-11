@@ -1671,33 +1671,26 @@ static void set_savestate_auto_index(void)
    // Find the file in the same directory as g_extern.savestate_name with the largest numeral suffix.
    // E.g. /foo/path/game.state, will try to find /foo/path/game.state%d, where %d is the largest number available.
 
-   char state_path[PATH_MAX];
-   strlcpy(state_path, g_extern.savestate_name, sizeof(state_path));
+   char state_dir[PATH_MAX];
+   char state_base[PATH_MAX];
 
-   char *split = strrchr(state_path, '/');
-   if (!split)
-      split = strrchr(state_path, '\\');
-
-   const char *base = state_path;
-   const char *dir = state_path;
-   if (split)
-   {
-      *split = '\0';
-      base = split + 1;
-   }
-   else
-      dir = ".";
+   fill_pathname_basedir(state_dir, g_extern.savestate_name, sizeof(state_dir));
+   fill_pathname_base(state_base, g_extern.savestate_name, sizeof(state_base));
 
    unsigned max_index = 0;
 
-   struct string_list *dir_list = dir_list_new(dir, NULL, false);
+   struct string_list *dir_list = dir_list_new(state_dir, NULL, false);
    if (!dir_list)
       return;
 
    for (size_t i = 0; i < dir_list->size; i++)
    {
       const char *dir_elem = dir_list->elems[i].data;
-      if (strstr(dir_elem, base) != dir_elem)
+
+      char elem_base[PATH_MAX];
+      fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
+
+      if (strstr(elem_base, state_base) != elem_base)
          continue;
 
       const char *end = dir_elem + strlen(dir_elem);
