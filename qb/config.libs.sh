@@ -9,7 +9,7 @@ add_define_make NOUNUSED "$HAVE_NOUNUSED"
 [ -d /opt/local/lib ] && add_library_dirs /opt/local/lib
 
 if [ "$OS" = 'BSD' ]; then DYLIB=-lc; else DYLIB=-ldl; fi
-[ "$OS" = 'OSX' ] && HAVE_X11=no # X11 breaks on recent OSXes even if present.
+[ "$OS" = 'Darwin' ] && HAVE_X11=no # X11 breaks on recent OSXes even if present.
 
 [ -d /opt/vc/lib ] && add_library_dirs /opt/vc/lib
 check_lib VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm" 
@@ -72,13 +72,13 @@ check_header OSS sys/soundcard.h
 check_header OSS_BSD soundcard.h
 check_lib OSS_LIB -lossaudio
 
-if [ "$OS" = Darwin ]; then
+if [ "$OS" = 'Darwin' ]; then
    check_lib AL "-framework OpenAL" alcOpenDevice
 else
    check_lib AL -lopenal alcOpenDevice
 fi
 
-if [ "$OS" = Darwin ]; then
+if [ "$OS" = 'Darwin' ]; then
    check_lib FBO "-framework OpenGL" glFramebufferTexture2D
 else
    check_lib FBO -lGL glFramebufferTexture2D
