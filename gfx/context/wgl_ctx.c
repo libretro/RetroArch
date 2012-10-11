@@ -210,7 +210,7 @@ static bool gfx_ctx_init(void)
    return true;
 }
 
-static bool set_fullscreen(unsigned width, unsigned height)
+static bool set_fullscreen(unsigned width, unsigned height, char *dev_name)
 {
    DEVMODE devmode;
    memset(&devmode, 0, sizeof(devmode));
@@ -219,8 +219,8 @@ static bool set_fullscreen(unsigned width, unsigned height)
    devmode.dmPelsHeight = height;
    devmode.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT;
 
-   RARCH_LOG("[WGL]: Setting fullscreen to %ux%u.\n", width, height);
-   return ChangeDisplaySettings(&devmode, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL;
+   RARCH_LOG("[WGL]: Setting fullscreen to %ux%u on device %s.\n", width, height, dev_name);
+   return ChangeDisplaySettingsEx(dev_name, &devmode, NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
 }
 
 static void show_cursor(bool show)
@@ -238,11 +238,11 @@ static bool gfx_ctx_set_video_mode(
    (void)bits;
 
    DWORD style;
-   MONITORINFO current_mon = {0};
-   current_mon.cbSize = sizeof(MONITORINFO);
+   MONITORINFOEX current_mon = {0};
+   current_mon.cbSize = sizeof(MONITORINFOEX);
    if (!g_last_hm)
       g_last_hm = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
-   GetMonitorInfo(g_last_hm, &current_mon);
+   GetMonitorInfo(g_last_hm, (MONITORINFO *)&current_mon);
 
    g_resize_width  = width;
    g_resize_height = height;
@@ -260,9 +260,11 @@ static bool gfx_ctx_set_video_mode(
       {
          style = WS_POPUP | WS_VISIBLE;
 
-         if (!set_fullscreen(width, height))
+         if (!set_fullscreen(width, height, current_mon.szDevice))
             goto error;
 
+         // display settings might have changed, get new coordinates
+         GetMonitorInfo(g_last_hm, (MONITORINFO *)&current_mon);
          g_restore_desktop = true;
       }
    }
@@ -278,8 +280,8 @@ static bool gfx_ctx_set_video_mode(
    }
 
    g_hwnd = CreateWindowEx(0, "RetroArch", "RetroArch", style,
-         fullscreen && windowed_full ? current_mon.rcMonitor.left : CW_USEDEFAULT,
-         fullscreen && windowed_full ? current_mon.rcMonitor.top : CW_USEDEFAULT,
+         fullscreen ? current_mon.rcMonitor.left : CW_USEDEFAULT,
+         fullscreen ? current_mon.rcMonitor.top : CW_USEDEFAULT,
          width, height,
          NULL, NULL, NULL, NULL);
 
@@ -349,7 +351,10 @@ static void gfx_ctx_destroy(void)
 
    if (g_restore_desktop)
    {
-      ChangeDisplaySettings(NULL, 0);
+      MONITORINFOEX current_mon = {0};
+      current_mon.cbSize = sizeof(MONITORINFOEX);
+      GetMonitorInfo(g_last_hm, (MONITORINFO *)&current_mon);
+      ChangeDisplaySettingsEx(current_mon.szDevice, NULL, NULL, 0, NULL);
       g_restore_desktop = false;
    }
 
