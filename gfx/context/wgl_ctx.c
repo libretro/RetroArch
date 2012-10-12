@@ -28,6 +28,8 @@ static HWND g_hwnd;
 static HGLRC g_hrc;
 static HDC g_hdc;
 static HMONITOR g_last_hm;
+static HMONITOR g_all_hms[20];
+static unsigned g_num_mons;
 
 static bool g_quit;
 static bool g_inited;
@@ -186,6 +188,12 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
    }
 }
 
+BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+{
+   g_all_hms[g_num_mons++] = hMonitor;
+   return TRUE;
+}
+
 static bool gfx_ctx_init(void)
 {
    if (g_inited)
@@ -193,6 +201,9 @@ static bool gfx_ctx_init(void)
 
    g_quit = false;
    g_restore_desktop = false;
+
+   g_num_mons = 0;
+   EnumDisplayMonitors(NULL,NULL,monitor_enum_proc,0);
 
    WNDCLASSEX wndclass = {0};
    wndclass.cbSize = sizeof(wndclass);
@@ -236,13 +247,19 @@ static bool gfx_ctx_set_video_mode(
       unsigned bits, bool fullscreen)
 {
    (void)bits;
+   int fs_monitor = 0;
 
    DWORD style;
    MONITORINFOEX current_mon = {{0}};
    current_mon.cbSize = sizeof(MONITORINFOEX);
    if (!g_last_hm)
       g_last_hm = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
-   GetMonitorInfo(g_last_hm, (MONITORINFO*)&current_mon);
+   HMONITOR hm_to_use = g_last_hm;
+
+   if(fs_monitor > 0 && fs_monitor <= g_num_mons && g_all_hms[fs_monitor - 1])
+       hm_to_use = g_all_hms[fs_monitor - 1];
+
+   GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
 
    g_resize_width  = width;
    g_resize_height = height;
@@ -264,7 +281,7 @@ static bool gfx_ctx_set_video_mode(
             goto error;
 
          // display settings might have changed, get new coordinates
-         GetMonitorInfo(g_last_hm, (MONITORINFO*)&current_mon);
+         GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
          g_restore_desktop = true;
       }
    }
