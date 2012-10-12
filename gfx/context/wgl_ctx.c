@@ -23,12 +23,13 @@
 #include <windows.h>
 
 #define IDI_ICON 1
+#define MAX_MONITORS 9
 
 static HWND g_hwnd;
 static HGLRC g_hrc;
 static HDC g_hdc;
 static HMONITOR g_last_hm;
-static HMONITOR g_all_hms[20];
+static HMONITOR g_all_hms[MAX_MONITORS];
 static unsigned g_num_mons;
 
 static bool g_quit;
@@ -203,7 +204,7 @@ static bool gfx_ctx_init(void)
    g_restore_desktop = false;
 
    g_num_mons = 0;
-   EnumDisplayMonitors(NULL,NULL,monitor_enum_proc,0);
+   EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, 0);
 
    WNDCLASSEX wndclass = {0};
    wndclass.cbSize = sizeof(wndclass);
@@ -247,7 +248,6 @@ static bool gfx_ctx_set_video_mode(
       unsigned bits, bool fullscreen)
 {
    (void)bits;
-   int fs_monitor = 0;
 
    DWORD style;
    MONITORINFOEX current_mon = {{0}};
@@ -256,8 +256,9 @@ static bool gfx_ctx_set_video_mode(
       g_last_hm = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
    HMONITOR hm_to_use = g_last_hm;
 
-   if(fs_monitor > 0 && fs_monitor <= g_num_mons && g_all_hms[fs_monitor - 1])
-       hm_to_use = g_all_hms[fs_monitor - 1];
+   unsigned fs_monitor = g_settings.video.monitor_index;
+   if (fs_monitor && fs_monitor <= g_num_mons && g_all_hms[fs_monitor - 1])
+      hm_to_use = g_all_hms[fs_monitor - 1];
 
    GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
 
