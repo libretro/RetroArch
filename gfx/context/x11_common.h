@@ -17,9 +17,18 @@
 #ifndef X11_COMMON_H__
 #define X11_COMMON_H__
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/xf86vmode.h>
+
+#ifdef HAVE_XINERAMA
+#include <X11/extensions/Xinerama.h>
+#endif
+
 #include "../../boolean.h"
 
 void x11_hide_mouse(Display *dpy, Window win);
@@ -27,6 +36,15 @@ void x11_windowed_fullscreen(Display *dpy, Window win);
 void x11_suspend_screensaver(Window win);
 bool x11_enter_fullscreen(Display *dpy, unsigned width, unsigned height, XF86VidModeModeInfo *desktop_mode);
 void x11_exit_fullscreen(Display *dpy, XF86VidModeModeInfo *desktop_mode);
+void x11_move_window(Display *dpy, Window win, int x, int y, unsigned width, unsigned height);
+
+#ifdef HAVE_XINERAMA
+bool x11_get_xinerama_coord(Display *dpy, int screen,
+      int *x, int *y, unsigned *w, unsigned *h);
+
+unsigned x11_get_xinerama_monitor(Display *dpy,
+      int x, int y, int w, int h);
+#endif
 
 #endif
 

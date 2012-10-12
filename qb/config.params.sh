@@ -9,6 +9,7 @@ HAVE_CONFIGFILE=yes     # Disable support for config file
 HAVE_OPENGL=yes         # Disable OpenGL support
 HAVE_GLES=no            # Use GLESv2 instead of desktop GL
 HAVE_X11=auto           # Disable everything X11.
+HAVE_XINERAMA=auto      # Disable Xinerama support.
 HAVE_KMS=auto           # Enable KMS context support
 HAVE_EGL=auto           # Enable EGL context support
 HAVE_VG=auto            # Enable OpenVG support

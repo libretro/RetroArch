@@ -46,8 +46,12 @@ void x11_hide_mouse(Display *dpy, Window win)
 
 static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
+static Atom XA_NET_MOVERESIZE_WINDOW;
 #define XA_INIT(x) XA##x = XInternAtom(dpy, #x, False)
 #define _NET_WM_STATE_ADD 1
+#define MOVERESIZE_GRAVITY_CENTER 5
+#define MOVERESIZE_X_SHIFT 8
+#define MOVERESIZE_Y_SHIFT 9
 void x11_windowed_fullscreen(Display *dpy, Window win)
 {
    XA_INIT(_NET_WM_STATE);
@@ -55,23 +59,46 @@ void x11_windowed_fullscreen(Display *dpy, Window win)
 
    if (!XA_NET_WM_STATE || !XA_NET_WM_STATE_FULLSCREEN)
    {
-      RARCH_ERR("[X/EGL]: Cannot set windowed fullscreen.\n");
+      RARCH_ERR("[X11]: Cannot set windowed fullscreen.\n");
       return;
    }
 
-   XEvent xev;
+   XEvent xev = {0};
 
    xev.xclient.type = ClientMessage;
-   xev.xclient.serial = 0;
    xev.xclient.send_event = True;
    xev.xclient.message_type = XA_NET_WM_STATE;
    xev.xclient.window = win;
    xev.xclient.format = 32;
    xev.xclient.data.l[0] = _NET_WM_STATE_ADD;
    xev.xclient.data.l[1] = XA_NET_WM_STATE_FULLSCREEN;
-   xev.xclient.data.l[2] = 0;
-   xev.xclient.data.l[3] = 0;
-   xev.xclient.data.l[4] = 0;
+
+   XSendEvent(dpy, DefaultRootWindow(dpy), False,
+         SubstructureRedirectMask | SubstructureNotifyMask,
+         &xev);
+}
+
+// Try to be nice to tiling WMs if possible.
+void x11_move_window(Display *dpy, Window win, int x, int y,
+      unsigned width, unsigned height)
+{
+   XA_INIT(_NET_MOVERESIZE_WINDOW);
+   if (!XA_NET_MOVERESIZE_WINDOW)
+   {
+      RARCH_ERR("[X11]: Cannot move window.\n");
+      return;
+   }
+
+   XEvent xev = {0};
+
+   xev.xclient.type = ClientMessage;
+   xev.xclient.send_event = True;
+   xev.xclient.message_type = XA_NET_MOVERESIZE_WINDOW;
+   xev.xclient.window = win;
+   xev.xclient.format = 32;
+   xev.xclient.data.l[0] = (1 << MOVERESIZE_X_SHIFT) | (1 << MOVERESIZE_Y_SHIFT);
+   xev.xclient.data.l[1] = x;
+   xev.xclient.data.l[2] = y;
 
    XSendEvent(dpy, DefaultRootWindow(dpy), False,
          SubstructureRedirectMask | SubstructureNotifyMask,
@@ -140,4 +167,81 @@ void x11_exit_fullscreen(Display *dpy, XF86VidModeModeInfo *desktop_mode)
    XF86VidModeSwitchToMode(dpy, DefaultScreen(dpy), desktop_mode);
    XF86VidModeSetViewPort(dpy, DefaultScreen(dpy), 0, 0);
 }
+
+#ifdef HAVE_XINERAMA
+static XineramaScreenInfo *x11_query_screens(Display *dpy, int *num_screens)
+{
+   int major, minor;
+   if (!XineramaQueryExtension(dpy, &major, &minor))
+      return false;
+
+   XineramaQueryVersion(dpy, &major, &minor);
+   RARCH_LOG("[X11]: Xinerama version: %d.%d.\n", major, minor);
+
+   if (!XineramaIsActive(dpy))
+      return false;
+
+   return XineramaQueryScreens(dpy, num_screens);
+}
+
+bool x11_get_xinerama_coord(Display *dpy, int screen,
+      int *x, int *y, unsigned *w, unsigned *h)
+{
+   bool ret = false;
+
+   int num_screens = 0;
+   XineramaScreenInfo *info = x11_query_screens(dpy, &num_screens);
+   RARCH_LOG("[X11]: Xinerama screens: %d.\n", num_screens);
+
+   for (int i = 0; i < num_screens; i++)
+   {
+      if (info[i].screen_number == screen)
+      {
+         *x = info[i].x_org;
+         *y = info[i].y_org;
+         *w = info[i].width;
+         *h = info[i].height;
+         ret = true;
+         break;
+      }
+   }
+
+   XFree(info);
+   return ret;
+}
+
+unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
+      int w, int h)
+{
+   unsigned monitor = 0;
+   int largest_area = 0;
+
+   int num_screens = 0;
+   XineramaScreenInfo *info = x11_query_screens(dpy, &num_screens);
+   RARCH_LOG("[X11]: Xinerama screens: %d.\n", num_screens);
+
+   for (int i = 0; i < num_screens; i++)
+   {
+      int max_lx = max(x, info[i].x_org);
+      int min_rx = min(x + w, info[i].x_org + info[i].width);
+      int max_ty = max(y, info[i].y_org);
+      int min_by = min(y + h, info[i].y_org + info[i].height);
+
+      int len_x = min_rx - max_lx;
+      int len_y = min_by - max_ty;
+      if (len_x < 0 || len_y < 0) // The whole window is outside the screen.
+         continue;
+
+      int area = len_x * len_y;
+      if (area > largest_area)
+      {
+         monitor = i;
+         largest_area = area;
+      }
+   }
+
+   XFree(info);
+   return monitor;
+}
+#endif
 

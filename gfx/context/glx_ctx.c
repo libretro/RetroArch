@@ -33,6 +33,7 @@ static Window   g_win;
 static Colormap g_cmap;
 static Atom g_quit_atom;
 static bool g_has_focus;
+static unsigned g_screen;
 
 static GLXContext g_ctx;
 static GLXFBConfig g_fbc;
@@ -259,28 +260,63 @@ static bool gfx_ctx_set_video_mode(
       }
    }
 
+   int x_off = 0;
+   int y_off = 0;
+#ifdef HAVE_XINERAMA
+   if (fullscreen || g_screen != 0)
+   {
+      unsigned new_width  = width;
+      unsigned new_height = height;
+      if (x11_get_xinerama_coord(g_dpy, g_screen, &x_off, &y_off, &new_width, &new_height))
+         RARCH_LOG("[GLX]: Using Xinerama on screen #%u.\n", g_screen);
+      else
+         RARCH_LOG("[GLX]: Xinerama is not active on screen.\n");
+
+      if (fullscreen)
+      {
+         width  = new_width;
+         height = new_height;
+      }
+   }
+#endif
+
+   RARCH_LOG("[GLX]: X = %d, Y = %d, W = %u, H = %u.\n",
+         x_off, y_off, width, height);
+
    g_win = XCreateWindow(g_dpy, RootWindow(g_dpy, vi->screen),
-         0, 0, width ? width : 200, height ? height : 200, 0,
+         x_off, y_off, width, height, 0,
          vi->depth, InputOutput, vi->visual, 
          CWBorderPixel | CWColormap | CWEventMask | (true_full ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_dpy, g_win, 0);
 
    gfx_ctx_update_window_title(true);
-   x11_hide_mouse(g_dpy, g_win);
+
+   if (fullscreen)
+      x11_hide_mouse(g_dpy, g_win);
 
    if (true_full)
    {
+      RARCH_LOG("[GLX]: Using true fullscreen.\n");
       XMapRaised(g_dpy, g_win);
-      XGrabKeyboard(g_dpy, g_win, True, GrabModeAsync, GrabModeAsync, CurrentTime);
    }
    else if (fullscreen) // We attempted true fullscreen, but failed. Attempt using windowed fullscreen.
    {
       XMapRaised(g_dpy, g_win);
-      RARCH_WARN("[GLX]: Using windowed fullscreen.\n");
+      RARCH_LOG("[GLX]: Using windowed fullscreen.\n");
+      // We have to move the window to the screen we want to go fullscreen on first.
+      // x_off and y_off usually get ignored in XCreateWindow().
+      x11_move_window(g_dpy, g_win, x_off, y_off, width, height);
       x11_windowed_fullscreen(g_dpy, g_win);
    }
    else
+   {
       XMapWindow(g_dpy, g_win);
+      // If we want to map the window on a different screen, we'll have to do it by force.
+      // Otherwise, we should try to let the window manager sort it out.
+      // x_off and y_off usually get ignored in XCreateWindow().
+      if (g_screen)
+         x11_move_window(g_dpy, g_win, x_off, y_off, width, height);
+   }
 
    XEvent event;
    XIfEvent(g_dpy, &event, glx_wait_notify, NULL);
@@ -326,7 +362,9 @@ static bool gfx_ctx_set_video_mode(
 
    driver.display_type  = RARCH_DISPLAY_X11;
    driver.video_display = (uintptr_t)g_dpy;
-   driver.video_window  = (uintptr_t)g_win;
+
+   // Always assume that we have focus in true fullscreen.
+   driver.video_window  = true_full ? (uintptr_t)None : (uintptr_t)g_win;
 
    return true;
 
@@ -349,6 +387,22 @@ static void gfx_ctx_destroy(void)
 
    if (g_win)
    {
+      // Save last used monitor for later.
+#ifdef HAVE_XINERAMA
+      XWindowAttributes target;
+      Window child;
+
+      int x = 0, y = 0;
+      XGetWindowAttributes(g_dpy, g_win, &target);
+      XTranslateCoordinates(g_dpy, g_win, DefaultRootWindow(g_dpy),
+            target.x, target.y, &x, &y, &child);
+
+      g_screen = x11_get_xinerama_monitor(g_dpy, x, y,
+            target.width, target.height);
+
+      RARCH_LOG("[GLX]: Saved monitor #%u.\n", g_screen);
+#endif
+
       XUnmapWindow(g_dpy, g_win);
       XDestroyWindow(g_dpy, g_win);
       g_win = None;
@@ -391,7 +445,7 @@ static bool gfx_ctx_has_focus(void)
    int rev;
    XGetInputFocus(g_dpy, &win, &rev);
 
-   return win == g_win && g_has_focus;
+   return (win == g_win && g_has_focus) || (g_win == None);
 }
 
 static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
