@@ -288,6 +288,9 @@ static bool gfx_ctx_set_video_mode(
       }
    }
 
+   if (g_settings.video.monitor_index)
+      g_screen = g_settings.video.monitor_index - 1;
+
    int x_off = 0;
    int y_off = 0;
 #ifdef HAVE_XINERAMA

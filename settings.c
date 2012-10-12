@@ -145,6 +145,7 @@ void config_set_defaults(void)
    g_settings.video.yscale = yscale;
    g_settings.video.fullscreen = g_extern.force_fullscreen ? true : fullscreen;
    g_settings.video.windowed_fullscreen = windowed_fullscreen;
+   g_settings.video.monitor_index = monitor_index;
    g_settings.video.fullscreen_x = fullscreen_x;
    g_settings.video.fullscreen_y = fullscreen_y;
    g_settings.video.force_16bit = force_16bit;
@@ -372,6 +373,7 @@ bool config_load_file(const char *path)
       CONFIG_GET_BOOL(video.fullscreen, "video_fullscreen");
 
    CONFIG_GET_BOOL(video.windowed_fullscreen, "video_windowed_fullscreen");
+   CONFIG_GET_BOOL(video.monitor_index, "video_monitor_index");
    CONFIG_GET_BOOL(video.force_16bit, "video_force_16bit");
    CONFIG_GET_BOOL(video.disable_composition, "video_disable_composition");
    CONFIG_GET_BOOL(video.vsync, "video_vsync");
