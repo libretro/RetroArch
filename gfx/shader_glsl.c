@@ -937,8 +937,7 @@ static void gl_glsl_reset_attrib(void)
 
 bool gl_glsl_init(const char *path)
 {
-#if !defined(HAVE_OPENGLES2) && !defined(HAVE_OPENGL_MODERN)
-
+#if !defined(HAVE_OPENGLES2) && !defined(HAVE_OPENGL_MODERN) && !defined(__APPLE__)
    // Load shader functions.
    LOAD_GL_SYM(CreateProgram);
    LOAD_GL_SYM(UseProgram);
