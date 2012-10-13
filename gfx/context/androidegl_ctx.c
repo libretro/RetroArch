@@ -17,6 +17,8 @@
 #include "../../driver.h"
 #include "../gl_common.h"
 
+#include <android/native_window.h>
+
 #include <EGL/egl.h> /* Requires NDK r5 or newer */
 #include <GLES/gl.h>
 
@@ -30,7 +32,7 @@ enum RenderThreadMessage {
 
 enum RenderThreadMessage _msg;
    
-ANativeWindow *window;   /* Requires NDK r5 or newer */
+EGLNativeWindowType window;   /* Requires NDK r5 or newer */
 
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
@@ -90,6 +92,8 @@ static void gfx_ctx_destroy(void)
     _height = 0;
 }
 
+EGLNativeWindowType android_createDisplaySurface(void);
+
 static bool gfx_ctx_init(void)
 {
    const EGLint attribs[] = {
@@ -113,6 +117,8 @@ static bool gfx_ctx_init(void)
         return false;
     }
 
+    window = NULL;
+
     EGLint egl_major, egl_minor;
     if (!eglInitialize(g_egl_dpy, &egl_major, &egl_minor)) {
         RARCH_ERR("eglInitialize() returned error %d.\n", eglGetError());
@@ -134,7 +140,11 @@ static bool gfx_ctx_init(void)
         return false;
     }
 
-    ANativeWindow_setBuffersGeometry(window, 0, 0, format);
+    if (!(g_egl_ctx = eglCreateContext(g_egl_dpy, config, 0, 0))) {
+        RARCH_ERR("eglCreateContext() returned error %d.\n", eglGetError());
+        gfx_ctx_destroy();
+        return false;
+    }
 
     if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, config, window, 0))) {
         RARCH_ERR("eglCreateWindowSurface() returned error %d.\n", eglGetError());
@@ -142,11 +152,6 @@ static bool gfx_ctx_init(void)
         return false;
     }
    
-    if (!(g_egl_ctx = eglCreateContext(g_egl_dpy, config, 0, 0))) {
-        RARCH_ERR("eglCreateContext() returned error %d.\n", eglGetError());
-        gfx_ctx_destroy();
-        return false;
-    }
    
     if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx)) {
         RARCH_ERR("eglMakeCurrent() returned error %d.\n", eglGetError());
@@ -163,6 +168,8 @@ static bool gfx_ctx_init(void)
 
     _width = width;
     _height = height;
+
+    RARCH_LOG("Window specs: %d*%d.\n", _width, _height);
 
 /*
     glDisable(GL_DITHER);
