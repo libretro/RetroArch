@@ -134,7 +134,7 @@ fi
 check_lib DYNAMIC "$DYLIB" dlopen
 
 if [ "$HAVE_KMS" != "no" ]; then
-   check_pkgconf GBM gbm 9.1.0
+   check_pkgconf GBM gbm 9.0
    check_pkgconf DRM libdrm
    if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ] && [ "$HAVE_EGL" = "yes" ]; then
       HAVE_KMS=yes
