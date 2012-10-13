@@ -277,12 +277,8 @@ static void x_input_poll_mouse(x11_input_t *x11)
    x11->mouse_last_x = x11->mouse_x;
    x11->mouse_last_y = x11->mouse_y;
 
-   Window win = x11->win;
-   if (win == None)
-      win = RootWindow(x11->display, DefaultScreen(x11->display));
-
    XQueryPointer(x11->display,
-            win,
+            x11->win,
             &root_win, &child_win,
             &root_x, &root_y,
             &win_x, &win_y,
@@ -299,11 +295,7 @@ static void x_input_poll(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
 
-   Window win = None;
-   int rev = 0;
-   XGetInputFocus(x11->display, &win, &rev);
-
-   if (win == x11->win || x11->win == None)
+   if (video_focus_func())
       XQueryKeymap(x11->display, x11->state);
    else
       memset(x11->state, 0, sizeof(x11->state));

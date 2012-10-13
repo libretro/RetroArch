@@ -35,6 +35,7 @@ static Window   g_win;
 static Colormap g_cmap;
 static Atom g_quit_atom;
 static bool g_has_focus;
+static bool g_true_full;
 static unsigned g_screen;
 
 static EGLContext g_egl_ctx;
@@ -385,9 +386,8 @@ static bool gfx_ctx_set_video_mode(
 
    driver.display_type  = RARCH_DISPLAY_X11;
    driver.video_display = (uintptr_t)g_dpy;
-
-   // Always assume that we have focus in true fullscreen.
-   driver.video_window  = true_full ? (uintptr_t)None : (uintptr_t)g_win;
+   driver.video_window  = (uintptr_t)g_win;
+   g_true_full = true_full;
 
    return true;
 
@@ -479,7 +479,7 @@ static bool gfx_ctx_has_focus(void)
    int rev;
    XGetInputFocus(g_dpy, &win, &rev);
 
-   return (win == g_win && g_has_focus) || (g_win == None);
+   return (win == g_win && g_has_focus) || g_true_full;
 }
 
 static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
