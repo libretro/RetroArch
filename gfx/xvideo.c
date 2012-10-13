@@ -484,6 +484,8 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    if (gfx_window_title(buf, sizeof(buf)))
       XStoreName(xv->display, xv->window, buf);
 
+   x11_set_window_icon(xv->display, xv->window);
+
    if (video->fullscreen)
       set_fullscreen(xv);
    hide_mouse(xv);

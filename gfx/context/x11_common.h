@@ -38,6 +38,8 @@ bool x11_enter_fullscreen(Display *dpy, unsigned width, unsigned height, XF86Vid
 void x11_exit_fullscreen(Display *dpy, XF86VidModeModeInfo *desktop_mode);
 void x11_move_window(Display *dpy, Window win, int x, int y, unsigned width, unsigned height);
 
+void x11_set_window_icon(Display *dpy, Window win);
+
 #ifdef HAVE_XINERAMA
 bool x11_get_xinerama_coord(Display *dpy, int screen,
       int *x, int *y, unsigned *w, unsigned *h);

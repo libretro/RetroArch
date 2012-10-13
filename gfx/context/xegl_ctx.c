@@ -340,6 +340,7 @@ static bool gfx_ctx_set_video_mode(
       goto error;
 
    gfx_ctx_update_window_title(true);
+   x11_set_window_icon(g_dpy, g_win);
 
    if (fullscreen)
       x11_hide_mouse(g_dpy, g_win);
