@@ -34,6 +34,7 @@ public class main extends Activity
 {
 	static private final int ACTIVITY_LOAD_ROM = 0;
 	
+	private GLSurfaceView ctx_gl;
 	
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -41,6 +42,8 @@ public class main extends Activity
         super.onCreate(savedInstanceState);
         
         this.setTitle("RetroArch | Main");
+        ctx_gl = new rgl_context(this);
+        setContentView(ctx_gl);
     }
     
     public boolean onCreateOptionsMenu(Menu menu)
@@ -89,11 +92,23 @@ public class main extends Activity
     protected void onPause()
     {
     	super.onPause();
+    	ctx_gl.onPause();
     }
     
     @Override
     protected void onResume()
     {
     	super.onResume();
+    	ctx_gl.onResume();
     }
+}
+
+class rgl_context extends GLSurfaceView
+{
+	public rgl_context(Context context)
+	{
+		super(context);
+		setEGLContextClientVersion(2);
+		setRenderer(new rgl());
+	}
 }
