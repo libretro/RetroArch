@@ -350,8 +350,6 @@ static void *video_ext_init(const video_info_t *video, const input_driver_t **in
    }
 
    video_init = (const rarch_video_driver_t *(*)(void))dylib_proc(g_lib, "rarch_video_init");
-   if (!video_init)
-      video_init = (const rarch_video_driver_t *(*)(void))dylib_proc(g_lib, "ssnes_video_init"); // Compat. Will be dropped on ABI break.
 
    if (!video_init)
    {

@@ -30,7 +30,7 @@ extern "C" {
 #define RARCH_TRUE 1
 #endif
 
-#define RARCH_DSP_API_VERSION 3
+#define RARCH_DSP_API_VERSION 4
 
 typedef struct rarch_dsp_info
 {
@@ -61,14 +61,6 @@ typedef struct rarch_dsp_output
    // (I.e. 44.1kHz, 16bit stereo will have 
    // 88.2k samples/sec and 44.1k frames/sec.)
    unsigned frames;
-
-   // If true, the DSP plugin did not resample the input audio, 
-   // and requests resampling to the proper frequency to be 
-   // performed outside the plugin.
-   // If false, 
-   // it is assumed that the output has the same sample rate as given
-   // in output_rate.
-   int should_resample;
 } rarch_dsp_output_t;
 
 typedef struct rarch_dsp_input

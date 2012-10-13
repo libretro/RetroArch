@@ -285,10 +285,7 @@ ifeq ($(HAVE_SINC), 1)
 else
    OBJ += audio/hermite.o
 endif
-
-ifneq ($(HAVE_FIXED_POINT), 1)
-   OBJ += audio/utils.o
-endif
+OBJ += audio/utils.o
 
 ifneq ($(V),1)
    Q := @

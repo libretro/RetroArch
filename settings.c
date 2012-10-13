@@ -599,8 +599,6 @@ static const struct bind_map bind_maps[MAX_PLAYERS][RARCH_BIND_LIST_END_NULL] = 
       DECLARE_BIND(exit_emulator,         RARCH_QUIT_KEY),
       DECLARE_BIND(state_slot_increase,   RARCH_STATE_SLOT_PLUS),
       DECLARE_BIND(state_slot_decrease,   RARCH_STATE_SLOT_MINUS),
-      DECLARE_BIND(rate_step_up,          RARCH_AUDIO_INPUT_RATE_PLUS),
-      DECLARE_BIND(rate_step_down,        RARCH_AUDIO_INPUT_RATE_MINUS),
       DECLARE_BIND(rewind,                RARCH_REWIND),
       DECLARE_BIND(movie_record_toggle,   RARCH_MOVIE_RECORD_TOGGLE),
       DECLARE_BIND(pause_toggle,          RARCH_PAUSE_TOGGLE),

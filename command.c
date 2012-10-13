@@ -185,8 +185,6 @@ static const struct cmd_map map[] = {
    { "QUIT",                   RARCH_QUIT_KEY },
    { "STATE_SLOT_PLUS",        RARCH_STATE_SLOT_PLUS },
    { "STATE_SLOT_MINUS",       RARCH_STATE_SLOT_MINUS },
-   { "AUDIO_INPUT_RATE_PLUS",  RARCH_AUDIO_INPUT_RATE_PLUS },
-   { "AUDIO_INPUT_RATE_MINUS", RARCH_AUDIO_INPUT_RATE_MINUS },
    { "REWIND",                 RARCH_REWIND },
    { "MOVIE_RECORD_TOGGLE",    RARCH_MOVIE_RECORD_TOGGLE },
    { "PAUSE_TOGGLE",           RARCH_PAUSE_TOGGLE },

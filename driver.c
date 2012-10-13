@@ -269,8 +269,6 @@ static void init_dsp_plugin(void)
 
    const rarch_dsp_plugin_t* (RARCH_API_CALLTYPE *plugin_init)(void) = 
       (const rarch_dsp_plugin_t *(RARCH_API_CALLTYPE*)(void))dylib_proc(g_extern.audio_data.dsp_lib, "rarch_dsp_plugin_init");
-   if (!plugin_init)
-      plugin_init =  (const rarch_dsp_plugin_t *(RARCH_API_CALLTYPE*)(void))dylib_proc(g_extern.audio_data.dsp_lib, "ssnes_dsp_plugin_init"); // Compat. Will be dropped on ABI break.
 
    if (!plugin_init)
    {
