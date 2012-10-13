@@ -124,63 +124,6 @@ static void init_yuv_tables(xv_t *xv)
    }
 }
 
-// Source: MPlayer
-static void hide_mouse(xv_t *xv)
-{
-   Cursor no_ptr;
-   Pixmap bm_no;
-   XColor black, dummy;
-   Colormap colormap;
-   static char bm_no_data[] = {0, 0, 0, 0, 0, 0, 0, 0};
-   colormap = DefaultColormap(xv->display, DefaultScreen(xv->display));
-   if (!XAllocNamedColor(xv->display, colormap, "black", &black, &dummy))
-      return;
-
-   bm_no = XCreateBitmapFromData(xv->display, xv->window, bm_no_data, 8, 8);
-   no_ptr = XCreatePixmapCursor(xv->display, bm_no, bm_no, &black, &black, 0, 0);
-   XDefineCursor(xv->display, xv->window, no_ptr);
-   XFreeCursor(xv->display, no_ptr);
-   if (bm_no != None)
-      XFreePixmap(xv->display, bm_no);
-   XFreeColors(xv->display, colormap, &black.pixel, 1, 0);
-}
-
-static Atom XA_NET_WM_STATE;
-static Atom XA_NET_WM_STATE_FULLSCREEN;
-#define XA_INIT(x) XA##x = XInternAtom(xv->display, #x, False)
-#define _NET_WM_STATE_ADD 1
-
-// Source: MPlayer
-static void set_fullscreen(xv_t *xv)
-{
-   XA_INIT(_NET_WM_STATE);
-   XA_INIT(_NET_WM_STATE_FULLSCREEN);
-
-   if (!XA_NET_WM_STATE || !XA_NET_WM_STATE_FULLSCREEN)
-   {
-      RARCH_WARN("X11: Cannot set fullscreen.\n");
-      return;
-   }
-
-   XEvent xev;
-
-   xev.xclient.type = ClientMessage;
-   xev.xclient.serial = 0;
-   xev.xclient.send_event = True;
-   xev.xclient.message_type = XA_NET_WM_STATE;
-   xev.xclient.window = xv->window;
-   xev.xclient.format = 32;
-   xev.xclient.data.l[0] = _NET_WM_STATE_ADD;
-   xev.xclient.data.l[1] = XA_NET_WM_STATE_FULLSCREEN;
-   xev.xclient.data.l[2] = 0;
-   xev.xclient.data.l[3] = 0;
-   xev.xclient.data.l[4] = 0;
-
-   XSendEvent(xv->display, DefaultRootWindow(xv->display), False,
-            SubstructureRedirectMask | SubstructureNotifyMask,
-            &xev);
-}
-
 static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
 {
 #ifdef HAVE_FREETYPE
@@ -487,8 +430,10 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    x11_set_window_icon(xv->display, xv->window);
 
    if (video->fullscreen)
-      set_fullscreen(xv);
-   hide_mouse(xv);
+   {
+      x11_windowed_fullscreen(xv->display, xv->window);
+      x11_hide_mouse(xv->display, xv->window);
+   }
 
    xv->gc = XCreateGC(xv->display, xv->window, 0, 0);
 
