@@ -7,15 +7,9 @@ import java.util.List;
 import java.util.Stack;
 
 import com.retroarch.R;
-import com.retroarch.R.layout;
-
-import com.retroarch.rruntime;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.KeyEvent;
@@ -24,7 +18,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.net.Uri;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
@@ -211,13 +204,17 @@ public class FileChooser extends Activity
                     }
                     else
                     {
+                    	/*
                          String path = o.getPath();
+                        
                          int dotIndex = path.lastIndexOf('.');
+                         
                          String ext = null;
                          if (dotIndex >= 0)
                          {
                               ext = path.substring(dotIndex+1).toLowerCase();
                          }
+                         */
                          
 			 onFileClick(o);
                     }
