@@ -138,17 +138,17 @@ void filebrowser_set_current_at (filebrowser_t *filebrowser, size_t pos)
    filebrowser->current_dir.ptr = pos;
 }
 
-static void filebrowser_set_current_increment (filebrowser_t *filebrowser, bool allow_wraparound)
+static void filebrowser_set_current_increment (filebrowser_t *filebrowser)
 {
    filebrowser->current_dir.ptr++;
-   if (filebrowser->current_dir.ptr >= filebrowser->current_dir.list->size && allow_wraparound)
+   if (filebrowser->current_dir.ptr >= filebrowser->current_dir.list->size)
       filebrowser->current_dir.ptr = 0;
 }
 
-static void filebrowser_set_current_decrement (filebrowser_t *filebrowser, bool allow_wraparound)
+static void filebrowser_set_current_decrement (filebrowser_t *filebrowser)
 {
    filebrowser->current_dir.ptr--;
-   if (filebrowser->current_dir.ptr >= filebrowser->current_dir.list->size && allow_wraparound)
+   if (filebrowser->current_dir.ptr >= filebrowser->current_dir.list->size)
       filebrowser->current_dir.ptr = filebrowser->current_dir.list->size - 1;
 }
 
@@ -160,10 +160,10 @@ bool filebrowser_iterate(filebrowser_t *filebrowser, filebrowser_action_t action
    switch(action)
    {
       case FILEBROWSER_ACTION_UP:
-         filebrowser_set_current_decrement(filebrowser, true);
+         filebrowser_set_current_decrement(filebrowser);
          break;
       case FILEBROWSER_ACTION_DOWN:
-         filebrowser_set_current_increment(filebrowser, true);
+         filebrowser_set_current_increment(filebrowser);
          break;
       case FILEBROWSER_ACTION_LEFT:
          if (filebrowser->current_dir.ptr <= 5)
