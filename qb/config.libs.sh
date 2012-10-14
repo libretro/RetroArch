@@ -93,9 +93,13 @@ check_lib COREAUDIO "-framework AudioUnit" AudioUnitInitialize
 
 check_pkgconf SDL sdl 1.2.10
 
-# On some distros, -lCg doesn't link against -lstdc++ it seems ...
 if [ "$HAVE_OPENGL" != 'no' ]; then
-   check_lib_cxx CG -lCg cgCreateContext
+   if [ "$OS" = 'Darwin' ]; then
+      check_lib_c CG "-framework Cg" cgCreateContext
+   else
+      # On some distros, -lCg doesn't link against -lstdc++ it seems ...
+      check_lib_cxx CG -lCg cgCreateContext
+   fi
 else
    echo "Ignoring Cg. OpenGL is not enabled."
    HAVE_CG='no'
