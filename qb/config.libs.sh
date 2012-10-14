@@ -95,7 +95,7 @@ check_pkgconf SDL sdl 1.2.10
 
 if [ "$HAVE_OPENGL" != 'no' ]; then
    if [ "$OS" = 'Darwin' ]; then
-      check_lib_c CG "-framework Cg" cgCreateContext
+      check_lib CG "-framework Cg" cgCreateContext
    else
       # On some distros, -lCg doesn't link against -lstdc++ it seems ...
       check_lib_cxx CG -lCg cgCreateContext
