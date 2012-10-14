@@ -25,7 +25,7 @@
 #include <android/log.h>
 #include <android_native_app_glue.h>
 
-#include "../../general.h"
+#include "../../../general.h"
 
 JNIEXPORT jint JNICALL JNI_OnLoad( JavaVM *vm, void *pvt)
 {

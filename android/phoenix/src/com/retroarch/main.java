@@ -71,6 +71,10 @@ public class main extends Activity
     	if(requestCode == ACTIVITY_LOAD_ROM)
     	{
     		/*
+	    	Intent myIntent = new Intent(this, NativeActivity.class);
+	    	startActivity(myIntent);
+	    	*/
+    		/*
             rruntime.settings_set_defaults();
             rruntime.load_game(data.getStringExtra("PATH"), 0);
             
