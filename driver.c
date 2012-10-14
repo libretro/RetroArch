@@ -255,9 +255,6 @@ static void init_dsp_plugin(void)
    if (!(*g_settings.audio.dsp_plugin))
       return;
 
-#ifdef HAVE_FIXED_POINT
-   RARCH_WARN("DSP plugins are not available in fixed point mode.\n");
-#else
    rarch_dsp_info_t info = {0};
 
    g_extern.audio_data.dsp_lib = dylib_load(g_settings.audio.dsp_plugin);
@@ -308,7 +305,6 @@ error:
       dylib_close(g_extern.audio_data.dsp_lib);
    g_extern.audio_data.dsp_plugin = NULL;
    g_extern.audio_data.dsp_lib = NULL;
-#endif
 }
 
 static void deinit_dsp_plugin(void)
@@ -356,15 +352,6 @@ void init_audio(void)
    if (g_extern.audio_active && driver.audio->use_float && audio_use_float_func())
       g_extern.audio_data.use_float = true;
 
-#ifdef HAVE_FIXED_POINT
-   if (g_extern.audio_data.use_float)
-   {
-      uninit_audio();
-      RARCH_ERR("RetroArch is configured for fixed point, but audio driver demands floating point. Will disable audio.\n");
-      g_extern.audio_active = false;
-   }
-#endif
-
    if (!g_settings.audio.sync && g_extern.audio_active)
    {
       audio_set_nonblock_state_func(true);
@@ -375,9 +362,7 @@ void init_audio(void)
    if (!g_extern.audio_data.source)
       g_extern.audio_active = false;
 
-#ifndef HAVE_FIXED_POINT
    rarch_assert(g_extern.audio_data.data = (float*)malloc(max_bufsamples * sizeof(float)));
-#endif
 
    g_extern.audio_data.data_ptr = 0;
 
@@ -425,10 +410,8 @@ void uninit_audio(void)
    if (g_extern.audio_data.source)
       resampler_free(g_extern.audio_data.source);
 
-#ifndef HAVE_FIXED_POINT
    free(g_extern.audio_data.data);
    g_extern.audio_data.data = NULL;
-#endif
 
    free(g_extern.audio_data.outsamples);
    g_extern.audio_data.outsamples = NULL;
