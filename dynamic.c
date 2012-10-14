@@ -164,6 +164,7 @@ static bool find_first_libretro(char *path, size_t size,
 
 static void load_symbols(void)
 {
+#ifdef HAVE_DYNAMIC
    const char *libretro_path = g_settings.libretro;
    char libretro_core_buffer[PATH_MAX];
 
@@ -179,7 +180,6 @@ static void load_symbols(void)
       libretro_path = libretro_core_buffer;
    }
 
-#ifdef HAVE_DYNAMIC
    RARCH_LOG("Loading dynamic libretro from: \"%s\"\n", libretro_path);
    lib_handle = dylib_load(libretro_path);
    if (!lib_handle)
