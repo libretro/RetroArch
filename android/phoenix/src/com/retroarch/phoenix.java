@@ -20,6 +20,7 @@ import com.retroarch.R;
 import com.retroarch.fileio.FileChooser;
 
 import android.app.Activity;
+import android.app.NativeActivity;
 import android.content.Intent;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -27,7 +28,7 @@ import android.view.MenuItem;
 import android.widget.Toast;
 import android.os.Bundle;
 
-public class main extends Activity
+public class phoenix extends Activity
 {
 	static private final int ACTIVITY_LOAD_ROM = 0;
 	
@@ -55,7 +56,7 @@ public class main extends Activity
     		    break;
     	    case R.id.open:
     	    	Toast.makeText(this, "Select a ROM image from the Filebrowser.", Toast.LENGTH_SHORT).show();
-    	    	Intent myIntent = new Intent(main.this, FileChooser.class);
+    	    	Intent myIntent = new Intent(this, FileChooser.class);
     	    	startActivityForResult(myIntent, ACTIVITY_LOAD_ROM);
     		    break;
     		default:
@@ -70,11 +71,9 @@ public class main extends Activity
     {
     	if(requestCode == ACTIVITY_LOAD_ROM)
     	{
-    		/*
-	    	Intent myIntent = new Intent(this, NativeActivity.class);
-	    	startActivity(myIntent);
-	    	*/
-    		/*
+           Intent myIntent = new Intent(this, NativeActivity.class);
+	   startActivity(myIntent);
+	   /*
             rruntime.settings_set_defaults();
             rruntime.load_game(data.getStringExtra("PATH"), 0);
             

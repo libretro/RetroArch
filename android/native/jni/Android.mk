@@ -5,7 +5,7 @@ include $(CLEAR_VARS)
 
 APP_OPTIM := debug
 
-LOCAL_MODULE    := retroarch
+LOCAL_MODULE    := retroarch-activity
 
 RARCH_PATH  := ../../..
 LOCAL_SRC_FILES    =	$(RARCH_PATH)/retroarch.c \
