@@ -91,6 +91,7 @@ size_t (*pretro_get_memory_size)(unsigned);
 static void set_environment(void);
 static void set_environment_defaults(void);
 
+#ifdef HAVE_DYNAMIC
 #if defined(__APPLE__)
 #define DYNAMIC_EXT "dylib"
 #elif defined(_WIN32)
@@ -159,6 +160,7 @@ static bool find_first_libretro(char *path, size_t size,
    dir_list_free(list);
    return ret;
 }
+#endif
 
 static void load_symbols(void)
 {
