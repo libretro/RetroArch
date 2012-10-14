@@ -182,7 +182,7 @@ static void populate_setting_item(unsigned i, item *current_item)
 #endif
       case SETTING_FONT_SIZE:
          snprintf(current_item->text, sizeof(current_item->text), "Font Size");
-	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_console.menu_font_size);
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_extern.console.font_size);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Increase or decrease the [Font Size].");
 	 break;
       case SETTING_KEEP_ASPECT_RATIO:
@@ -999,16 +999,16 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 	   case SETTING_FONT_SIZE:
 		   if(input & (1 << RMENU_DEVICE_NAV_LEFT))
 		   {
-			   if(g_console.menu_font_size > 0) 
-				   g_console.menu_font_size -= 0.01f;
+			   if(g_extern.console.font_size > 0) 
+				   g_extern.console.font_size -= 0.01f;
 		   }
 		   if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 		   {
-			   if((g_console.menu_font_size < 2.0f))
-				   g_console.menu_font_size += 0.01f;
+			   if((g_extern.console.font_size < 2.0f))
+				   g_extern.console.font_size += 0.01f;
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
-			   g_console.menu_font_size = 1.0f;
+			   g_extern.console.font_size = 1.0f;
 		   break;
 	   case SETTING_KEEP_ASPECT_RATIO:
 		   if(input & (1 << RMENU_DEVICE_NAV_LEFT))
@@ -1920,7 +1920,7 @@ static void ingame_menu_screenshot(menu *current_menu, uint64_t input)
 {
    (void)current_menu;
 
-   if(g_console.ingame_menu_enable)
+   if(g_extern.console.ingame_menu_enable)
    {
       if(input & (1 << RMENU_DEVICE_NAV_A))
       {
@@ -1946,12 +1946,12 @@ static void ingame_menu(menu *current_menu, uint64_t input)
    for(int i = 0; i < MENU_ITEM_LAST; i++)
       menuitem_colors[i] = WHITE;
 
-   menuitem_colors[g_console.ingame_menu_item] = RED;
+   menuitem_colors[g_extern.console.ingame_menu_item] = RED;
 
    if(input & (1 << RMENU_DEVICE_NAV_A))
       rarch_settings_change(S_RETURN_TO_GAME);
 
-      switch(g_console.ingame_menu_item)
+      switch(g_extern.console.ingame_menu_item)
       {
          case MENU_ITEM_LOAD_STATE:
             if(input & (1 << RMENU_DEVICE_NAV_B))
@@ -2018,7 +2018,7 @@ static void ingame_menu(menu *current_menu, uint64_t input)
        if((input & (1 << RMENU_DEVICE_NAV_B)) || (input & (1 << RMENU_DEVICE_NAV_R2)) || (input & (1 << RMENU_DEVICE_NAV_L2)))
 	    {
           rarch_settings_change(S_FRAME_ADVANCE);
-	       g_console.ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
+	       g_extern.console.ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
 	    }
 	    snprintf(comment, sizeof(comment), "Press [%s] to step one frame.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
@@ -2084,18 +2084,18 @@ static void ingame_menu(menu *current_menu, uint64_t input)
 
    if(input & (1 << RMENU_DEVICE_NAV_UP))
    {
-      if(g_console.ingame_menu_item > 0)
-         g_console.ingame_menu_item--;
+      if(g_extern.console.ingame_menu_item > 0)
+         g_extern.console.ingame_menu_item--;
       else
-         g_console.ingame_menu_item = MENU_ITEM_LAST - 1;
+         g_extern.console.ingame_menu_item = MENU_ITEM_LAST - 1;
    }
 
    if(input & (1 << RMENU_DEVICE_NAV_DOWN))
    {
-      if(g_console.ingame_menu_item < (MENU_ITEM_LAST-1))
-         g_console.ingame_menu_item++;
+      if(g_extern.console.ingame_menu_item < (MENU_ITEM_LAST-1))
+         g_extern.console.ingame_menu_item++;
       else
-         g_console.ingame_menu_item = 0;
+         g_extern.console.ingame_menu_item = 0;
    }
 
    if((input & (1 << RMENU_DEVICE_NAV_L3)) && (input & (1 << RMENU_DEVICE_NAV_R3)))
@@ -2147,7 +2147,7 @@ static void ingame_menu(menu *current_menu, uint64_t input)
 
    rmenu_position_t position = {0};
    position.x = default_pos.x_position;
-   position.y = (default_pos.y_position+(default_pos.y_position_increment*g_console.ingame_menu_item));
+   position.y = (default_pos.y_position+(default_pos.y_position_increment * g_extern.console.ingame_menu_item));
    context->render_selection_panel(&position);
 }
 
@@ -2190,10 +2190,10 @@ void menu_loop(void)
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   g_console.menu_enable = true;
+   g_extern.console.enable = true;
    device_ptr->block_swap = true;
 
-   if(g_console.ingame_menu_enable)
+   if(g_extern.console.ingame_menu_enable)
       menu_stack_push(INGAME_MENU);
 
    context->init_textures();
@@ -2303,7 +2303,7 @@ void menu_loop(void)
 		      fb = &tmpBrowser;
 		      break;
 	      case INGAME_MENU:
-		      if(g_console.ingame_menu_enable)
+		      if(g_extern.console.ingame_menu_enable)
                          ingame_menu(&current_menu, trig_state);
 		      break;
 	      case INGAME_MENU_RESIZE:
@@ -2330,30 +2330,30 @@ void menu_loop(void)
       if(IS_TIMER_EXPIRED(device_ptr))
       {
          // if we want to force goto the emulation loop, skip this
-         if(g_console.mode_switch != MODE_EMULATION)
+         if(g_extern.console.mode != MODE_EMULATION)
          {
-            if(g_console.mode_switch == MODE_EXIT)
+            if(g_extern.console.mode == MODE_EXIT)
             {
             }
             // for ingame menu, we need a different precondition because menu_enable
             // can be set to false when going back from ingame menu to menu
-            else if(g_console.ingame_menu_enable == true)
+            else if(g_extern.console.ingame_menu_enable == true)
             {
-               //we want to force exit when mode_switch is set to MODE_EXIT
-               if(g_console.mode_switch != MODE_EXIT)
-                  g_console.mode_switch = (((old_state & (1 << RMENU_DEVICE_NAV_L3)) && (old_state & (1 << RMENU_DEVICE_NAV_R3)) && g_console.emulator_initialized)) ? MODE_EMULATION : MODE_MENU;
+               //we want to force exit when g_extern.console.mode is set to MODE_EXIT
+               if(g_extern.console.mode != MODE_EXIT)
+                  g_extern.console.mode = (((old_state & (1 << RMENU_DEVICE_NAV_L3)) && (old_state & (1 << RMENU_DEVICE_NAV_R3)) && g_console.emulator_initialized)) ? MODE_EMULATION : MODE_MENU;
             }
 	    else
             {
-               g_console.menu_enable = !(((old_state & (1 << RMENU_DEVICE_NAV_L3)) && (old_state & (1 << RMENU_DEVICE_NAV_R3)) && g_console.emulator_initialized));
-               g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
+               g_extern.console.enable = !(((old_state & (1 << RMENU_DEVICE_NAV_L3)) && (old_state & (1 << RMENU_DEVICE_NAV_R3)) && g_console.emulator_initialized));
+               g_extern.console.mode = g_extern.console.enable ? MODE_MENU : MODE_EMULATION;
             }
          }
       }
 
       // set a timer delay so that we don't instantly switch back to the menu when
       // press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
-      if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
+      if(g_extern.console.mode == MODE_EMULATION && !g_extern.console.frame_advance_enable)
       {
          SET_TIMER_EXPIRATION(device_ptr, 30);
       }
@@ -2371,14 +2371,14 @@ void menu_loop(void)
       { }
       else
          context->blend(false);
-   }while(g_console.menu_enable);
+   }while(g_extern.console.enable);
 
    context->free_textures();
 
-   if(g_console.ingame_menu_enable)
+   if(g_extern.console.ingame_menu_enable)
       menu_stack_pop();
 
    device_ptr->block_swap = false;
 
-   g_console.ingame_menu_enable = false;
+   g_extern.console.ingame_menu_enable = false;
 }

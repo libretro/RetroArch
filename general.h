@@ -207,10 +207,6 @@ struct console_settings
    bool default_savestate_dir_enable;
    bool fbo_enabled;
    bool fps_info_msg_enable;
-   bool frame_advance_enable;
-#ifdef _XBOX
-   bool menus_hd_enable;
-#endif
 #ifdef _XBOX1
    unsigned flicker_filter;
    unsigned sound_volume_level;
@@ -218,8 +214,6 @@ struct console_settings
    bool soft_display_filter_enable;
    bool initialize_rarch_enable;
    bool info_msg_enable;
-   bool ingame_menu_enable;
-   bool menu_enable;
    bool overscan_enable;
    bool return_to_launcher;
    bool screenshots_enable;
@@ -237,10 +231,8 @@ struct console_settings
    unsigned screen_orientation;
    unsigned current_resolution_index;
    unsigned current_resolution_id;
-   unsigned ingame_menu_item;
    unsigned initial_resolution_id;
    unsigned map_dpad_to_stick;
-   unsigned mode_switch;
    unsigned sound_mode;
    uint32_t *supported_resolutions;
    unsigned supported_resolutions_count;
@@ -256,12 +248,10 @@ struct console_settings
 #endif
    char cgp_path[PATH_MAX];
    char input_cfg_path[PATH_MAX];
-   char rom_path[PATH_MAX];
    char default_rom_startup_dir[PATH_MAX];
    char default_savestate_dir[PATH_MAX];
    char default_sram_dir[PATH_MAX];
    char launch_app_on_exit[PATH_MAX];
-   float menu_font_size;
 #ifdef HAVE_OSKUTIL
    oskutil_params oskutil_handle;
 #endif
@@ -477,6 +467,24 @@ struct global
    } shader_dir;
 
    char sha256[64 + 1];
+
+   /* FIXME: too much hassle ifndeffing this now for HAVE_RMENU */
+
+   struct
+   {
+      bool menus_hd_enable;
+      bool frame_advance_enable;
+      bool ingame_menu_enable;
+      bool enable;
+      unsigned ingame_menu_item;
+      unsigned mode;
+      float font_size;
+   } console;
+
+   struct
+   {
+      char rom_path[PATH_MAX];
+   } filebrowser_state;
 
 #ifdef HAVE_XML
    cheat_manager_t *cheat;

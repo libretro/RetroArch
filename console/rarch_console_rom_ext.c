@@ -34,7 +34,7 @@
 
 static void rarch_console_load_game(const char *path)
 {
-   snprintf(g_console.rom_path, sizeof(g_console.rom_path), path);
+   snprintf(g_extern.filebrowser_state.rom_path, sizeof(g_extern.filebrowser_state.rom_path), path);
    rarch_settings_change(S_START_RARCH);
 }
 

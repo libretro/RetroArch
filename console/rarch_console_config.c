@@ -109,7 +109,7 @@ void rarch_config_load(const char *conf_name, bool upgrade_core_succeeded)
 #endif
       CONFIG_GET_BOOL_CONSOLE(soft_display_filter_enable, "soft_display_filter_enable");
       CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
-      CONFIG_GET_FLOAT_CONSOLE(menu_font_size, "menu_font_size");
+      CONFIG_GET_FLOAT_EXTERN(console.font_size, "menu_font_size");
       CONFIG_GET_FLOAT_CONSOLE(overscan_amount, "overscan_amount");
 
       // g_extern
@@ -192,7 +192,7 @@ void rarch_config_save(const char * conf_name)
       config_set_int(conf, "custom_viewport_y", g_console.viewports.custom_vp.y);
       config_set_int(conf, "screen_orientation", g_console.screen_orientation);
       config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
-      config_set_float(conf, "menu_font_size", g_console.menu_font_size);
+      config_set_float(conf, "menu_font_size", g_extern.console.font_size);
       config_set_float(conf, "overscan_amount", g_console.overscan_amount);
 #ifdef HAVE_ZLIB
       config_set_int(conf, "zip_extract_mode", g_console.zip_extract_mode);

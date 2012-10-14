@@ -2617,8 +2617,8 @@ bool rarch_main_iterate(void)
    // SHUTDOWN on consoles should exit RetroArch completely.
    if (g_extern.system.shutdown)
    {
-#ifdef RARCH_CONSOLE
-      g_console.mode_switch = MODE_EXIT;
+#ifdef HAVE_RMENU
+      g_extern.console.mode = MODE_EXIT;
 #endif
       return false;
    }

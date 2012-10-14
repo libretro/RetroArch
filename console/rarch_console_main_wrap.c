@@ -94,7 +94,7 @@ bool rarch_startup (const char * config_path)
       args.config_path = config_path;
       args.sram_path = g_console.default_sram_dir_enable ? g_console.default_sram_dir : NULL,
       args.state_path = g_console.default_savestate_dir_enable ? g_console.default_savestate_dir : NULL,
-      args.rom_path = g_console.rom_path;
+      args.rom_path = g_extern.filebrowser_state.rom_path;
 #ifdef HAVE_DYLIB
       args.libretro_path = g_settings.libretro;
 #endif
@@ -112,7 +112,7 @@ bool rarch_startup (const char * config_path)
       {
          //failed to load the ROM for whatever reason
          g_console.emulator_initialized = 0;
-         g_console.mode_switch = MODE_MENU;
+         g_extern.console.mode = MODE_MENU;
          rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
       }
    }

@@ -43,7 +43,7 @@
 #define CURRENT_PATH_Y_POSITION 0.15f
 #define CURRENT_PATH_FONT_SIZE FONT_SIZE
 
-#define FONT_SIZE (g_console.menu_font_size)
+#define FONT_SIZE (g_extern.console.font_size)
 
 #define NUM_ENTRY_PER_PAGE 15
 

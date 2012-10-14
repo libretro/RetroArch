@@ -51,9 +51,9 @@ void rarch_settings_change(unsigned setting)
          g_settings.audio.rate_control = true;
          break;
       case S_FRAME_ADVANCE:
-         g_console.frame_advance_enable = true;
-         g_console.menu_enable = false;
-         g_console.mode_switch = MODE_EMULATION;
+         g_extern.console.frame_advance_enable = true;
+         g_extern.console.enable = false;
+         g_extern.console.mode = MODE_EMULATION;
          break;
       case S_HW_TEXTURE_FILTER:
          g_settings.video.smooth = !g_settings.video.smooth;
@@ -88,31 +88,30 @@ void rarch_settings_change(unsigned setting)
          }
          break;
       case S_QUIT:
-         g_console.menu_enable = false;
-         g_console.ingame_menu_enable = false;
-         g_console.mode_switch = MODE_EXIT;
+         g_extern.console.enable = false;
+         g_extern.console.ingame_menu_enable = false;
+         g_extern.console.mode = MODE_EXIT;
          break;
       case S_QUIT_RARCH:
-         g_console.menu_enable = false;
+         g_extern.console.enable = false;
          g_console.initialize_rarch_enable = false;
-         g_console.mode_switch = MODE_EXIT;
+         g_extern.console.mode = MODE_EXIT;
          break;
       case S_RETURN_TO_GAME:
-         g_console.frame_advance_enable = false;
-         //g_console.ingame_menu_item = 0;
-         g_console.menu_enable = false;
-         g_console.mode_switch = MODE_EMULATION;
+         g_extern.console.frame_advance_enable = false;
+         g_extern.console.enable = false;
+         g_extern.console.mode = MODE_EMULATION;
          break;
       case S_RETURN_TO_LAUNCHER:
          g_console.return_to_launcher = true;
-         g_console.menu_enable = false;
+         g_extern.console.enable = false;
          g_console.initialize_rarch_enable = false;
-         g_console.mode_switch = MODE_EXIT;
+         g_extern.console.mode = MODE_EXIT;
          break;
       case S_RETURN_TO_MENU:
-         g_console.menu_enable = false;
-         g_console.ingame_menu_item = 0;
-         g_console.mode_switch = MODE_MENU;
+         g_extern.console.enable = false;
+         g_extern.console.ingame_menu_item = 0;
+         g_extern.console.mode = MODE_MENU;
          break;
       case S_ROTATION_DECREMENT:
          if(g_console.screen_orientation > 0)
@@ -123,9 +122,9 @@ void rarch_settings_change(unsigned setting)
             g_console.screen_orientation++;
          break;
       case S_START_RARCH:
-         g_console.menu_enable = false;
+         g_extern.console.enable = false;
          g_console.initialize_rarch_enable = 1;
-         g_console.mode_switch = MODE_EMULATION;
+         g_extern.console.mode = MODE_EMULATION;
          break;
       case S_REWIND:
          g_settings.rewind_enable = !g_settings.rewind_enable;
@@ -244,7 +243,7 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
          }
          break;
       case S_MSG_LOADING_ROM:
-         fill_pathname_base(tmp, g_console.rom_path, sizeof(tmp));
+         fill_pathname_base(tmp, g_extern.filebrowser_state.rom_path, sizeof(tmp));
          snprintf(str, sizeof(str), "INFO - Loading %s...", tmp);
          break;
       case S_MSG_DIR_LOADING_ERROR:
@@ -376,7 +375,7 @@ void rarch_settings_set_default(void)
 
    // g_console
    g_console.block_config_read = true;
-   g_console.frame_advance_enable = false;
+   g_extern.console.frame_advance_enable = false;
    g_console.emulator_initialized = 0;
    g_console.screenshots_enable = true;
    g_console.throttle_enable = true;
@@ -391,14 +390,14 @@ void rarch_settings_set_default(void)
    g_console.fbo_enabled = false;
 #endif
 
-   g_console.mode_switch = MODE_MENU;
+   g_extern.console.mode = MODE_MENU;
    g_console.screen_orientation = ORIENTATION_NORMAL;
    g_console.current_resolution_id = 0;
    strlcpy(g_console.default_rom_startup_dir, default_paths.filebrowser_startup_dir, sizeof(g_console.default_rom_startup_dir));
    strlcpy(g_console.default_savestate_dir, default_paths.savestate_dir, sizeof(g_console.default_savestate_dir));
    strlcpy(g_console.default_sram_dir, default_paths.sram_dir, sizeof(g_console.default_sram_dir));
    g_console.aspect_ratio_index = 0;
-   g_console.menu_font_size = 1.0f;
+   g_extern.console.font_size = 1.0f;
    g_console.overscan_enable = false;
    g_console.overscan_amount = 0.0f;
    g_console.sound_mode = SOUND_MODE_NORMAL;
