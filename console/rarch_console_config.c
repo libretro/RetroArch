@@ -97,7 +97,7 @@ void rarch_config_load(const char *conf_name, bool upgrade_core_succeeded)
       CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
       CONFIG_GET_INT_CONSOLE(sound_mode, "sound_mode");
 #ifdef HAVE_ZLIB
-      CONFIG_GET_INT_CONSOLE(zip_extract_mode, "zip_extract_mode");
+      CONFIG_GET_INT_EXTERN(filebrowser_state.zip_extract_mode, "zip_extract_mode");
 #endif
 #ifdef _XBOX360
       CONFIG_GET_INT_CONSOLE(color_format, "color_format");
@@ -195,7 +195,7 @@ void rarch_config_save(const char * conf_name)
       config_set_float(conf, "menu_font_size", g_extern.console.font_size);
       config_set_float(conf, "overscan_amount", g_console.overscan_amount);
 #ifdef HAVE_ZLIB
-      config_set_int(conf, "zip_extract_mode", g_console.zip_extract_mode);
+      config_set_int(conf, "zip_extract_mode", g_extern.filebrowser_state.zip_extract_mode);
 #endif
 #endif
 

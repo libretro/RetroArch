@@ -227,7 +227,7 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
          snprintf(str, sizeof(str), "INFO - Press LEFT/RIGHT to change the controls, and press\n[RetroPad Start] to reset a button to default values.");
          break;
       case S_MSG_EXTRACTED_ZIPFILE:
-         switch(g_console.zip_extract_mode)
+         switch(g_extern.filebrowser_state.zip_extract_mode)
          {
             case ZIP_EXTRACT_TO_CURRENT_DIR:
                snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to current directory.");
@@ -314,7 +314,7 @@ void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t 
       case S_LBL_ZIP_EXTRACT:
 	 {
             char msg[128];
-	    switch(g_console.zip_extract_mode)
+	    switch(g_extern.filebrowser_state.zip_extract_mode)
             {
                case ZIP_EXTRACT_TO_CURRENT_DIR:
                   snprintf(msg, sizeof(msg), "Current dir");
@@ -417,7 +417,7 @@ void rarch_settings_set_default(void)
 #endif
    g_console.soft_display_filter_enable = true;
 #ifdef HAVE_ZLIB
-   g_console.zip_extract_mode = 0;
+   g_extern.filebrowser_state.zip_extract_mode = 0;
 #endif
 
    // g_extern

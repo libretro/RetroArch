@@ -550,8 +550,8 @@ int main(int argc, char *argv[])
       char rom[PATH_MAX];
       g_console.external_launcher_support = EXTERN_LAUNCHER_CHANNEL;
       snprintf(rom, sizeof(rom), "%s%s", argv[1], argv[2]);
-      g_console.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE;
-      rarch_console_load_game_wrap(rom, g_console.zip_extract_mode, S_DELAY_1);
+      g_extern.filebrowser_state.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE;
+      rarch_console_load_game_wrap(rom, g_extern.filebrowser_state.zip_extract_mode, S_DELAY_1);
 
       rgui_iterate(rgui, RGUI_ACTION_MESSAGE);
       gx->menu_render = true;

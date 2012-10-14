@@ -179,7 +179,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       if(path_file_exists(browser->current_dir.list->elems[index].data))
       {
          snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), str_buffer);
-         rarch_console_load_game_wrap(path, g_console.zip_extract_mode, S_DELAY_45);
+         rarch_console_load_game_wrap(path, g_extern.filebrowser_state.zip_extract_mode, S_DELAY_45);
       }
       else if(browser->current_dir.list->elems[index].attr.b)
       {
@@ -477,10 +477,10 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    context->set_fbo_enable(g_console.fbo_enabled);
 	    break;
          case SETTING_ZIP_EXTRACT:
-	    if(g_console.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
-               g_console.zip_extract_mode++;
+	    if(g_extern.filebrowser_state.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
+               g_extern.filebrowser_state.zip_extract_mode++;
 	    else
-               g_console.zip_extract_mode = 0;
+               g_extern.filebrowser_state.zip_extract_mode = 0;
 	    rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
 	    m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
 	    break;
@@ -543,8 +543,8 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                }
 			   break;
 			case SETTING_ZIP_EXTRACT:
-				if(g_console.zip_extract_mode)
-					g_console.zip_extract_mode--;
+				if(g_extern.filebrowser_state.zip_extract_mode)
+					g_extern.filebrowser_state.zip_extract_mode--;
 				rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
 				m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
                break;
@@ -608,8 +608,8 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                 }
 				break;
 			case SETTING_ZIP_EXTRACT:
-				if(g_console.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
-					g_console.zip_extract_mode++;
+				if(g_extern.filebrowser_state.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
+					g_extern.filebrowser_state.zip_extract_mode++;
 				rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
 				m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
 				break;
@@ -1160,7 +1160,7 @@ void menu_loop(void)
       && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_console.emulator_initialized)
       && IS_TIMER_EXPIRED(d3d));
 
-      g_console.mode_switch = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
+      g_extern.console.mode = g_console.menu_enable ? MODE_MENU : MODE_EMULATION;
 
       switch(g_console.input_loop)
       {
@@ -1188,7 +1188,7 @@ void menu_loop(void)
       hr = app.Render();   /* Render XUI */
       hr = XuiTimersRun(); /* Update XUI timers */
 
-      if(g_console.mode_switch == MODE_EMULATION && !g_console.frame_advance_enable)
+      if(g_extern.console.mode == MODE_EMULATION && !g_console.frame_advance_enable)
       {
          SET_TIMER_EXPIRATION(d3d, 30);
       }

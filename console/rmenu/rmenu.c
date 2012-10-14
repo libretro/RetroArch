@@ -322,9 +322,10 @@ static void populate_setting_item(unsigned i, item *current_item)
 	 else
 	    snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Rewind] feature is set to 'OFF'.");
 	 break;
+#ifdef HAVE_ZLIB
       case SETTING_ZIP_EXTRACT:
          snprintf(current_item->text, sizeof(current_item->text), "ZIP Extract Option");
-	 switch(g_console.zip_extract_mode)
+	 switch(g_extern.filebrowser_state.zip_extract_mode)
 	 {
 		 case ZIP_EXTRACT_TO_CURRENT_DIR:
 			 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir");
@@ -340,6 +341,7 @@ static void populate_setting_item(unsigned i, item *current_item)
 			 break;
 	 }
 	 break;
+#endif
       case SETTING_RARCH_DEFAULT_EMU:
          snprintf(current_item->text, sizeof(current_item->text), "Default libretro core");
 	 fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
@@ -1275,22 +1277,22 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
 			   g_settings.rewind_enable = false;
 		   break;
+#ifdef HAVE_ZLIB
 	   case SETTING_ZIP_EXTRACT:
 		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)))
 		   {
-			   if(g_console.zip_extract_mode > 0)
-				   g_console.zip_extract_mode--;
+			   if(g_extern.filebrowser_state.zip_extract_mode > 0)
+				   g_extern.filebrowser_state.zip_extract_mode--;
 		   }
 		   if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 		   {
-			   if(g_console.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
-				   g_console.zip_extract_mode++;
+			   if(g_extern.filebrowser_state.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
+				   g_extern.filebrowser_state.zip_extract_mode++;
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
-		   {
-			   g_console.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR;
-		   }
+                      g_extern.filebrowser_state.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR;
 		   break;
+#endif
 	   case SETTING_RARCH_DEFAULT_EMU:
 		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 		   {
@@ -1698,7 +1700,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
          if(filebrowser_get_current_path_isdir(filebrowser))
             ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
 	 else
-            rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_console.zip_extract_mode, S_DELAY_45);
+            rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_extern.filebrowser_state.zip_extract_mode, S_DELAY_45);
          break;
       case MENU_ROMSELECT_ACTION_GOTO_SETTINGS:
          menu_stack_push(GENERAL_VIDEO_MENU);

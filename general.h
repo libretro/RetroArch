@@ -239,9 +239,6 @@ struct console_settings
    unsigned control_timer_expiration_frame_count;
    unsigned timer_expiration_frame_count;
    unsigned input_loop;
-#ifdef HAVE_ZLIB
-   unsigned zip_extract_mode;
-#endif
 #ifdef _XBOX
    unsigned color_format;
    DWORD volume_device_type;
@@ -484,6 +481,9 @@ struct global
    struct
    {
       char rom_path[PATH_MAX];
+#ifdef HAVE_ZLIB
+      unsigned zip_extract_mode;
+#endif
    } filebrowser_state;
 
 #ifdef HAVE_XML
