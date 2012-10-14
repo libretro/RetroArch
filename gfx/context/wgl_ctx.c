@@ -94,6 +94,16 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
          }
          break;
 
+      case WM_SYSKEYDOWN:
+         switch (wparam)
+         {
+            case VK_F10:
+            case VK_MENU:
+            case VK_RSHIFT:
+               return 0;
+         }
+         break;
+
       case WM_CREATE:
          create_gl_context(hwnd);
          return 0;
