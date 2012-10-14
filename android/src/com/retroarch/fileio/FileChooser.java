@@ -193,13 +193,13 @@ public class FileChooser extends Activity
                {
                     int pos = arg0.getPositionForView(arg1);
                     Option o = adapter.getItem(pos);
-                    if(o.getData().equalsIgnoreCase("folder")||o.getData().equalsIgnoreCase("parent directory"))
+                    if(o.data.equalsIgnoreCase("folder")|| o.data.equalsIgnoreCase("parent directory"))
                     {
-                         if (o.getPath() != null)
+                         if (o.path != null)
                          {
-                            currentDir = new File(o.getPath());
+                            currentDir = new File(o.path);
                             fill(currentDir);
-                            _dirStack.push(o.getPath());
+                            _dirStack.push(o.path);
                          }
                     }
                     else
@@ -226,11 +226,11 @@ public class FileChooser extends Activity
      
      private void onFileClick(Option o)
      {
-         Toast.makeText(this, "Loading: "+o.getName() + "...", Toast.LENGTH_SHORT).show();
+         Toast.makeText(this, "Loading: "+ o.name + "...", Toast.LENGTH_SHORT).show();
          
          Intent intent=new Intent();   
-         intent.putExtra("PATH", o.getPath());
-         intent.putExtra("NAME", o.getName());
+         intent.putExtra("PATH", o.path);
+         intent.putExtra("NAME", o.name);
          setResult(RESULT_OK, intent);  
          finish();
      }

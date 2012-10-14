@@ -43,7 +43,7 @@ public class FileArrayAdapter extends ArrayAdapter<Option> implements SectionInd
           for (int x = 0; x < size; x++) {
                Option o = items.get(x);
 
-              String ch =  o.getName().substring(0, 1);
+              String ch =  o.name.substring(0, 1);
               
               ch = ch.toUpperCase();
 
@@ -82,11 +82,11 @@ public class FileArrayAdapter extends ArrayAdapter<Option> implements SectionInd
 
                       if(t1!=null)
                       {
-                        t1.setText(o.getName());
+                        t1.setText(o.name);
                       }
                       if(t2!=null)
                       {
-                        t2.setText(o.getData());
+                        t2.setText(o.data);
                       }
                       
               }

@@ -2,9 +2,9 @@ package com.retroarch.fileio;
 
 public class Option implements Comparable<Option>
 {
-     private String name;
-     private String data;
-     private String path;
+     public String name;
+     public String data;
+     public String path;
      
      public Option(String n,String d,String p)
      {
@@ -12,22 +12,11 @@ public class Option implements Comparable<Option>
          data = d;
          path = p;
      }
-     public String getName()
-     {
-         return name;
-     }
-     public String getData()
-     {
-         return data;
-     }
-     public String getPath()
-     {
-         return path;
-     }
      
-     public int compareTo(Option o) {
+     public int compareTo(Option o)
+     {
          if(this.name != null)
-             return this.name.toLowerCase().compareTo(o.getName().toLowerCase()); 
+             return this.name.toLowerCase().compareTo(o.name.toLowerCase()); 
          else 
              throw new IllegalArgumentException();
      }
