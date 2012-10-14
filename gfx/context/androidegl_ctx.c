@@ -340,6 +340,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL,
    "android",
 
+#ifdef RARCH_CONSOLE
    // RARCH_CONSOLE stuff.
    gfx_ctx_set_filtering,
    gfx_ctx_get_available_resolutions,
@@ -353,4 +354,5 @@ const gfx_ctx_driver_t gfx_ctx_android = {
 
    gfx_ctx_set_fbo,
    gfx_ctx_apply_fbo_state_changes,
+#endif
 };

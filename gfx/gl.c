@@ -38,7 +38,7 @@
 #include "shader_cg.h"
 #endif
 
-#ifdef HAVE_XML
+#if defined(HAVE_XML) || defined(HAVE_GLSL)
 #include "shader_glsl.h"
 #endif
 
