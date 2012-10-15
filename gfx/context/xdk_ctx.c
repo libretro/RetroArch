@@ -345,7 +345,7 @@ static bool gfx_ctx_xdk_init(void)
    if(!d3d->video_mode.fIsWideScreen)
       d3d->d3dpp.Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
 
-   g_extern.console.rmenu.state.menus_hd.enable = d3d->video_mode.fIsHiDef;
+   g_extern.console.rmenu.state.rmenu_hd.enable = d3d->video_mode.fIsHiDef;
    
    d3d->d3dpp.BackBufferWidth         = d3d->video_mode.fIsHiDef ? 1280 : 640;
    d3d->d3dpp.BackBufferHeight        = d3d->video_mode.fIsHiDef ? 720 : 480;

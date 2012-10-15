@@ -491,13 +491,13 @@ static void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
       d3d->lpSurface = NULL;
    }
 
-   d3d->d3d_render_device->CreateTexture(512 * g_settings.video.fbo_scale_x, 512 * g_settings.video.fbo_scale_y,
+   d3d->d3d_render_device->CreateTexture(512 * g_settings.video.fbo.scale_x, 512 * g_settings.video.fbo.scale_y,
          1, 0, g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8,
          0, &d3d->lpTexture_ot
 		 , NULL
 		 );
 
-   d3d->d3d_render_device->CreateRenderTarget(512 * g_settings.video.fbo_scale_x, 512 * g_settings.video.fbo_scale_y,
+   d3d->d3d_render_device->CreateRenderTarget(512 * g_settings.video.fbo.scale_x, 512 * g_settings.video.fbo.scale_y,
          g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 
 	      0, 0, &d3d->lpSurface, NULL);
 
@@ -676,12 +676,12 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if(d3d->fbo_enabled)
    {
 #ifdef HAVE_HLSL
-      hlsl_set_params(width, height, 512, 512, g_settings.video.fbo_scale_x * width,
-            g_settings.video.fbo_scale_y * height, d3d->frame_count);
+      hlsl_set_params(width, height, 512, 512, g_settings.video.fbo.scale_x * width,
+            g_settings.video.fbo.scale_y * height, d3d->frame_count);
 #endif
       D3DVIEWPORT vp = {0};
-      vp.Width  = g_settings.video.fbo_scale_x * width;
-      vp.Height = g_settings.video.fbo_scale_y * height;
+      vp.Width  = g_settings.video.fbo.scale_x * width;
+      vp.Height = g_settings.video.fbo.scale_y * height;
       vp.X      = 0;
       vp.Y      = 0;
       vp.MinZ   = 0.0f;
@@ -753,7 +753,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
 #ifdef HAVE_HLSL
       hlsl_use(2);
-      hlsl_set_params(g_settings.video.fbo_scale_x * width, g_settings.video.fbo_scale_y * height, g_settings.video.fbo_scale_x * 512, g_settings.video.fbo_scale_y * 512, d3d->d3dpp.BackBufferWidth,
+      hlsl_set_params(g_settings.video.fbo.scale_x * width, g_settings.video.fbo.scale_y * height, g_settings.video.fbo.scale_x * 512, g_settings.video.fbo.scale_y * 512, d3d->d3dpp.BackBufferWidth,
             d3d->d3dpp.BackBufferHeight, d3d->frame_count);
 #endif
       xdk_d3d_set_viewport(false);

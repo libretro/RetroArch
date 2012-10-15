@@ -179,7 +179,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       if(path_file_exists(browser->current_dir.list->elems[index].data))
       {
          snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), str_buffer);
-         rarch_console_load_game_wrap(path, g_extern.filebrowser_state.zip_extract_mode, S_DELAY_45);
+         rarch_console_load_game_wrap(path, g_extern.file_state.zip_extract_mode, S_DELAY_45);
       }
       else if(browser->current_dir.list->elems[index].attr.b)
       {
@@ -380,7 +380,7 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_extern.console.rmenu.state.msg_info.enable ? L"Info messages: ON" : L"Info messages: OFF");
-   m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.menus_hd.enable ? L"Menus: HD" : L"Menus: SD");
+   m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.rmenu_hd.enable ? L"Menus: HD" : L"Menus: SD");
    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
@@ -417,12 +417,12 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	           rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
             break;
 	 case SETTING_EMU_SHOW_INFO_MSG:
-	    g_extern.console.rmenu.state.msg_info.enable = !g_settings.console.rmenu.state.msg_info.enable;
+	    g_extern.console.rmenu.state.msg_info.enable = !g_extern.console.rmenu.state.msg_info.enable;
 	    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_extern.console.rmenu.state.msg_info.enable ? L"Info messages: ON" : L"Info messages: OFF");
 	    break;
 	 case SETTING_EMU_MENUS:
-	    g_extern.console.rmenu.state.menus_hd.enable = !g_extern.console.rmenu.state.menus_hd.enable;
-	    m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.menus_hd.enable ? L"Menus: HD" : L"Menus: SD");
+	    g_extern.console.rmenu.state.rmenu_hd.enable = !g_extern.console.rmenu.state.rmenu_hd.enable;
+	    m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.rmenu_hd.enable ? L"Menus: HD" : L"Menus: SD");
 	    break;
 	 case SETTING_GAMMA_CORRECTION_ENABLED:
 	    g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
@@ -438,7 +438,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    break;
 	 case SETTING_SHADER:
 	    set_shader = 1;
-	    hr = XuiSceneCreate(g_extern.console.rmenu.state.menus_hd.enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
+	    hr = XuiSceneCreate(g_extern.console.rmenu.state.rmenu_hd.enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
 
 	    if (hr < 0)
                RARCH_ERR("Failed to load scene.\n");
@@ -452,7 +452,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    break;
 	 case SETTING_SHADER_2:
         set_shader = 2;
-	    hr = XuiSceneCreate(g_extern.console.rmenu.state.menus_hd.enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
+	    hr = XuiSceneCreate(g_extern.console.rmenu.state.rmenu_hd.enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
 	    if (hr < 0)
                RARCH_ERR("Failed to load scene.\n");
 
@@ -477,10 +477,10 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    context->set_fbo_enable(g_settings.video.fbo.enable);
 	    break;
          case SETTING_ZIP_EXTRACT:
-	    if(g_extern.filebrowser_state.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
-               g_extern.filebrowser_state.zip_extract_mode++;
+	    if(g_extern.file_state.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
+               g_extern.file_state.zip_extract_mode++;
 	    else
-               g_extern.filebrowser_state.zip_extract_mode = 0;
+               g_extern.file_state.zip_extract_mode = 0;
 	    rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
 	    m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
 	    break;
@@ -515,8 +515,8 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 	    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_extern.console.rmenu.state.msg_info.enable ? L"Info messages: ON" : L"Info messages: OFF");
 	    break;
 	 case SETTING_EMU_MENUS:
-	    g_extern.console.rmenu.state.menus_hd_enable = !g_extern.console.rmenu.state.menus_hd_enable;
-	    m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.menus_hd.enable ? L"Menus: HD" : L"Menus: SD");
+	    g_extern.console.rmenu.state.rmenu_hd.enable = !g_extern.console.rmenu.state.rmenu_hd.enable;
+	    m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.rmenu_hd.enable ? L"Menus: HD" : L"Menus: SD");
 	    break;
 	 case SETTING_GAMMA_CORRECTION_ENABLED:
 	    g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
@@ -533,7 +533,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
             case SETTING_SCALE_FACTOR:
                if(vid->fbo_enabled)
                {
-                  if((g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR))
+                  if((g_settings.video.fbo.scale_x > MIN_SCALING_FACTOR))
                   {
                      rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
                      //xdk360_gfx_init_fbo(vid);
@@ -543,8 +543,8 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                }
 	       break;
 	    case SETTING_ZIP_EXTRACT:
-	       if(g_extern.filebrowser_state.zip_extract_mode)
-		       g_extern.filebrowser_state.zip_extract_mode--;
+	       if(g_extern.file_state.zip_extract_mode)
+		       g_extern.file_state.zip_extract_mode--;
 	       rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
 	       m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
                break;
@@ -573,8 +573,8 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 	    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_extern.console.rmenu.state.msg_info.enable ? L"Info messages: ON" : L"Info messages: OFF");
 	    break;
 	 case SETTING_EMU_MENUS:
-	    g_extern.console.rmenu.state.menus_hd.enable = !g_extern.console.rmenu.state.menus_hd.enable;
-	    m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.menus_hd.enable ? L"Menus: HD" : L"Menus: SD");
+	    g_extern.console.rmenu.state.rmenu_hd.enable = !g_extern.console.rmenu.state.rmenu_hd.enable;
+	    m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.rmenu_hd.enable ? L"Menus: HD" : L"Menus: SD");
 	    break;
 	 case SETTING_GAMMA_CORRECTION_ENABLED:
 	    g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
@@ -598,7 +598,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 	 case SETTING_SCALE_FACTOR:
 	    if(vid->fbo_enabled)
 	    {
-		    if((g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR))
+		    if((g_settings.video.fbo.scale_x < MAX_SCALING_FACTOR))
 		    {
                        rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
 		       //xdk360_gfx_init_fbo(vid);
@@ -608,8 +608,8 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 	    }
 	    break;
 	 case SETTING_ZIP_EXTRACT:
-	    if(g_extern.filebrowser_state.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
-		    g_extern.filebrowser_state.zip_extract_mode++;
+	    if(g_extern.file_state.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
+		    g_extern.file_state.zip_extract_mode++;
 	    rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
 	    m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
 	    break;
@@ -803,7 +803,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
 	    video_xdk_d3d.set_rotation(driver.video_data, g_extern.console.screen.orientation);
 	    break;
 	 case MENU_ITEM_RESIZE_MODE:
-	    g_extern.console.input_loop = INPUT_LOOP_RESIZE_MODE;
+	    g_extern.console.rmenu.input_loop = INPUT_LOOP_RESIZE_MODE;
 
             if (g_extern.console.rmenu.state.msg_info.enable)
                rarch_settings_msg(S_MSG_RESIZE_SCREEN, S_DELAY_270);
@@ -954,7 +954,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
    m_title.SetText(strw_buffer);
 
-   g_extern.console.input_loop = INPUT_LOOP_NONE;
+   g_extern.console.rmenu.input_loop = INPUT_LOOP_NONE;
 
    return 0;
 }
@@ -963,7 +963,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
    xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
 
-   bool hdmenus_allowed = g_extern.console.rmenu.state.menus_hd.enable;
+   bool hdmenus_allowed = g_extern.console.rmenu.state.rmenu_hd.enable;
 
    HRESULT hr;
 
@@ -1046,7 +1046,7 @@ void menu_init (void)
 
    xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
 
-   bool hdmenus_allowed = g_extern.console.rmenu.state.menus_hd.enable;
+   bool hdmenus_allowed = g_extern.console.rmenu.state.rmenu_hd.enable;
 
    hr = app.InitShared(vid->d3d_render_device, &vid->d3dpp, XuiPNGTextureLoader);
 
@@ -1160,9 +1160,9 @@ void menu_loop(void)
       && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.console.emulator_initialized)
       && IS_TIMER_EXPIRED(d3d));
 
-      g_extern.console.mode = g_extern.console.rmenu.state.rmenu.enable ? MODE_MENU : MODE_EMULATION;
+      g_extern.console.rmenu.mode = g_extern.console.rmenu.state.rmenu.enable ? MODE_MENU : MODE_EMULATION;
 
-      switch(g_extern.console.input_loop)
+      switch(g_extern.console.rmenu.input_loop)
       {
      	  case INPUT_LOOP_FILEBROWSER:
 			  /*
@@ -1188,7 +1188,7 @@ void menu_loop(void)
       hr = app.Render();   /* Render XUI */
       hr = XuiTimersRun(); /* Update XUI timers */
 
-      if(g_extern.console.mode == MODE_EMULATION && !g_extern.console.screen.state.frame_advance.enable)
+      if(g_extern.console.rmenu.mode == MODE_EMULATION && !g_extern.console.screen.state.frame_advance.enable)
       {
          SET_TIMER_EXPIRATION(d3d, 30);
       }
