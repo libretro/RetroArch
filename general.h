@@ -587,6 +587,7 @@ bool config_save_keybinds(const char *path);
 
 void rarch_game_reset(void);
 void rarch_main_clear_state(void);
+int rarch_main(int argc, char *argv[]);
 int rarch_main_init(int argc, char *argv[]);
 bool rarch_main_iterate(void);
 void rarch_main_deinit(void);

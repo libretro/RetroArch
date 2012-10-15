@@ -2725,8 +2725,7 @@ void rarch_main_deinit(void)
 }
 
 #ifndef HAVE_RARCH_MAIN_WRAP
-// Consoles use the higher level API.
-int main(int argc, char *argv[])
+int rarch_main(int argc, char *argv[])
 {
    int init_ret;
    if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
@@ -2736,5 +2735,11 @@ int main(int argc, char *argv[])
    rarch_deinit_msg_queue();
    rarch_main_clear_state();
    return 0;
+}
+
+// Consoles use the higher level API.
+int main(int argc, char *argv[])
+{
+   return rarch_main(argc, argv);
 }
 #endif
