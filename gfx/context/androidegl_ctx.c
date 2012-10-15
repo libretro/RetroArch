@@ -24,12 +24,6 @@
 
 #include <stdint.h>
 
-enum RenderThreadMessage {
-   MSG_NONE = 0,
-   MSG_WINDOW_SET,
-   MSG_RENDER_LOOP_EXIT
-};
-
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
@@ -161,11 +155,6 @@ bool gfx_ctx_init(void)
     g_android.width = width;
     g_android.height = height;
     g_android.state.angle = 0;
-
-   // Initialize GL state.
-   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
-   glEnable(GL_CULL_FACE);
-   glDisable(GL_DEPTH_TEST);
 
     return true;
 }
