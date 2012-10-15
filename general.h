@@ -228,7 +228,6 @@ typedef struct
    unsigned id;
 } rarch_resolution_t;
 
-
 typedef struct
 {
    int x;
@@ -438,9 +437,11 @@ struct global
 
    char sha256[64 + 1];
 
+#ifdef HAVE_XML
+   cheat_manager_t *cheat;
+#endif
+
    // Settings and/or global state that is specific to a console-style implementation.
-
-
    struct
    {
       bool block_config_read;
@@ -450,14 +451,14 @@ struct global
       struct
       {
          struct
-	 {
+         {
             unsigned idx;
-	 } ingame_menu;
+         } ingame_menu;
 
 
-	 unsigned mode;
+         unsigned mode;
          unsigned input_loop;
-	 float font_size;
+         float font_size;
 
          struct
          {
@@ -474,7 +475,7 @@ struct global
          rarch_frame_count_t control_timer;
          rarch_frame_count_t general_timer;
       } timers;
-      
+
       struct
       {
          bool enable;
@@ -485,13 +486,13 @@ struct global
       struct
       {
          struct
-	 {
+         {
             rarch_resolution_t current;
             rarch_resolution_t initial;
-	    uint32_t *list;
-	    unsigned count;
-	    bool check;
-	 } resolutions;
+            uint32_t *list;
+            unsigned count;
+            bool check;
+         } resolutions;
 
 
          struct
@@ -517,10 +518,10 @@ struct global
 
       struct
       {
-        rarch_boolean_state_t custom_bgm;
-        unsigned mode;
+         rarch_boolean_state_t custom_bgm;
+         unsigned mode;
 #ifdef _XBOX1
-        unsigned volume_level;
+         unsigned volume_level;
 #endif
       } sound;
 
@@ -529,8 +530,8 @@ struct global
          struct
          {
             char default_rom_startup_dir[PATH_MAX];
-	    char default_savestate_dir[PATH_MAX];
-	    char default_sram_dir[PATH_MAX];
+            char default_savestate_dir[PATH_MAX];
+            char default_sram_dir[PATH_MAX];
          } paths;
 
          struct
@@ -560,10 +561,6 @@ struct global
       DWORD volume_device_type;
 #endif
    } file_state;
-
-#ifdef HAVE_XML
-   cheat_manager_t *cheat;
-#endif
 
    bool error_in_init;
    char error_string[1024];
