@@ -570,6 +570,41 @@ struct global
    jmp_buf error_sjlj_context;
 };
 
+#ifdef ANDROID
+#include <EGL/egl.h>
+#include <GLES/gl.h>
+
+#include <android/sensor.h>
+#include <android_native_app_glue.h>
+
+/**
+ * Our saved state data.
+ */
+struct saved_state
+{
+   float angle;
+   int32_t x;
+   int32_t y;
+};
+
+struct droid
+{
+   struct android_app* app;
+
+   ASensorManager* sensorManager;
+   const ASensor* accelerometerSensor;
+   ASensorEventQueue* sensorEventQueue;
+
+   int animating;
+   EGLDisplay display;
+   EGLSurface surface;
+   EGLContext context;
+   int32_t width;
+   int32_t height;
+   struct saved_state state;
+};
+#endif
+
 // Public functions
 void config_load(void);
 void config_set_defaults(void);
@@ -602,6 +637,9 @@ void rarch_state_slot_decrease(void);
 // Public data structures
 extern struct settings g_settings;
 extern struct global g_extern;
+#ifdef ANDROID
+extern struct droid g_android;
+#endif
 /////////
 
 #include "retroarch_logger.h"

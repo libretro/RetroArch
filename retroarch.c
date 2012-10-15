@@ -2458,6 +2458,10 @@ void rarch_main_clear_state(void)
    free(g_extern.system.environment_split);
    memset(&g_extern, 0, sizeof(g_extern));
 
+#ifdef ANDROID
+   memset(&g_android, 0, sizeof(g_android));
+#endif
+
    init_state();
 }
 

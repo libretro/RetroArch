@@ -22,7 +22,6 @@
 #include <GLES/gl.h>
 
 #include <android/sensor.h>
-#include <android/log.h>
 #include <android_native_app_glue.h>
 
 #include "../../../general.h"
@@ -40,39 +39,9 @@ JNIEXPORT void JNICALL JNI_OnUnLoad( JavaVM *vm, void *pvt)
 }
 
 /**
- * Our saved state data.
- */
-struct saved_state
-{
-   float angle;
-   int32_t x;
-   int32_t y;
-};
-
-/**
- * Shared state for our app.
- */
-struct engine
-{
-   struct android_app* app;
-
-   ASensorManager* sensorManager;
-   const ASensor* accelerometerSensor;
-   ASensorEventQueue* sensorEventQueue;
-
-   int animating;
-   EGLDisplay display;
-   EGLSurface surface;
-   EGLContext context;
-   int32_t width;
-   int32_t height;
-   struct saved_state state;
-};
-
-/**
  * Initialize an EGL context for the current display.
  */
-static int engine_init_display(struct engine* engine)
+static int engine_init_display(void)
 {
    // initialize OpenGL ES and EGL
 
@@ -105,9 +74,9 @@ static int engine_init_display(struct engine* engine)
     * ANativeWindow buffers to match, using EGL_NATIVE_VISUAL_ID. */
    eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format);
 
-   ANativeWindow_setBuffersGeometry(engine->app->window, 0, 0, format);
+   ANativeWindow_setBuffersGeometry(g_android.app->window, 0, 0, format);
 
-   surface = eglCreateWindowSurface(display, config, engine->app->window, NULL);
+   surface = eglCreateWindowSurface(display, config, g_android.app->window, NULL);
    context = eglCreateContext(display, config, NULL, NULL);
 
    if (eglMakeCurrent(display, surface, surface, context) == EGL_FALSE)
@@ -119,12 +88,12 @@ static int engine_init_display(struct engine* engine)
    eglQuerySurface(display, surface, EGL_WIDTH, &w);
    eglQuerySurface(display, surface, EGL_HEIGHT, &h);
 
-   engine->display = display;
-   engine->context = context;
-   engine->surface = surface;
-   engine->width = w;
-   engine->height = h;
-   engine->state.angle = 0;
+   g_android.display = display;
+   g_android.context = context;
+   g_android.surface = surface;
+   g_android.width = w;
+   g_android.height = h;
+   g_android.state.angle = 0;
 
    // Initialize GL state.
    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
@@ -137,40 +106,40 @@ static int engine_init_display(struct engine* engine)
 /**
  * Just the current frame in the display.
  */
-static void engine_draw_frame(struct engine* engine)
+static void engine_draw_frame(void)
 {
-   if (engine->display == NULL)
+   if (g_android.display == NULL)
       return;
 
    // Just fill the screen with a color.
-   glClearColor(((float)engine->state.x)/engine->width, engine->state.angle,
-      ((float)engine->state.y)/engine->height, 1);
+   glClearColor(((float)g_android.state.x)/g_android.width, g_android.state.angle,
+      ((float)g_android.state.y)/g_android.height, 1);
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   eglSwapBuffers(engine->display, engine->surface);
+   eglSwapBuffers(g_android.display, g_android.surface);
 }
 
 /**
  * Tear down the EGL context currently associated with the display.
  */
-static void engine_term_display(struct engine* engine)
+static void engine_term_display(void)
 {
-   if (engine->display != EGL_NO_DISPLAY)
+   if (g_android.display != EGL_NO_DISPLAY)
    {
-      eglMakeCurrent(engine->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+      eglMakeCurrent(g_android.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
-      if (engine->context != EGL_NO_CONTEXT)
-         eglDestroyContext(engine->display, engine->context);
-      if (engine->surface != EGL_NO_SURFACE)
-         eglDestroySurface(engine->display, engine->surface);
+      if (g_android.context != EGL_NO_CONTEXT)
+         eglDestroyContext(g_android.display, g_android.context);
+      if (g_android.surface != EGL_NO_SURFACE)
+         eglDestroySurface(g_android.display, g_android.surface);
 
-      eglTerminate(engine->display);
+      eglTerminate(g_android.display);
    }
-   engine->animating = 0;
-   engine->display = EGL_NO_DISPLAY;
-   engine->context = EGL_NO_CONTEXT;
-   engine->surface = EGL_NO_SURFACE;
+   g_android.animating = 0;
+   g_android.display = EGL_NO_DISPLAY;
+   g_android.context = EGL_NO_CONTEXT;
+   g_android.surface = EGL_NO_SURFACE;
 }
 
 /**
@@ -178,13 +147,11 @@ static void engine_term_display(struct engine* engine)
  */
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 {
-   struct engine* engine = (struct engine*)app->userData;
-
    if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION)
    {
-      engine->animating = 1;
-      engine->state.x = AMotionEvent_getX(event, 0);
-      engine->state.y = AMotionEvent_getY(event, 0);
+      g_android.animating = 1;
+      g_android.state.x = AMotionEvent_getX(event, 0);
+      g_android.state.y = AMotionEvent_getY(event, 0);
       return 1;
    }
    return 0;
@@ -195,49 +162,47 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
  */
 static void engine_handle_cmd(struct android_app* app, int32_t cmd)
 {
-   struct engine* engine = (struct engine*)app->userData;
-
    switch (cmd)
    {
       case APP_CMD_SAVE_STATE:
          // The system has asked us to save our current state.  Do so.
-         engine->app->savedState = malloc(sizeof(struct saved_state));
-	 *((struct saved_state*)engine->app->savedState) = engine->state;
-	 engine->app->savedStateSize = sizeof(struct saved_state);
+         g_android.app->savedState = malloc(sizeof(struct saved_state));
+	 *((struct saved_state*)g_android.app->savedState) = g_android.state;
+	 g_android.app->savedStateSize = sizeof(struct saved_state);
 	 break;
       case APP_CMD_INIT_WINDOW:
 	 // The window is being shown, get it ready.
-	 if (engine->app->window != NULL)
+	 if (g_android.app->window != NULL)
          {
-            engine_init_display(engine);
-	    engine_draw_frame(engine);
+            engine_init_display();
+	    engine_draw_frame();
 	 }
 	 break;
       case APP_CMD_TERM_WINDOW:
 	 // The window is being hidden or closed, clean it up.
-	 engine_term_display(engine);
+	 engine_term_display();
 	 break;
       case APP_CMD_GAINED_FOCUS:
 	 // When our app gains focus, we start monitoring the accelerometer.
-	 if (engine->accelerometerSensor != NULL)
+	 if (g_android.accelerometerSensor != NULL)
          {
-            ASensorEventQueue_enableSensor(engine->sensorEventQueue,
-               engine->accelerometerSensor);
+            ASensorEventQueue_enableSensor(g_android.sensorEventQueue,
+               g_android.accelerometerSensor);
 
 	    // We'd like to get 60 events per second (in us).
-	    ASensorEventQueue_setEventRate(engine->sensorEventQueue,
-               engine->accelerometerSensor, (1000L/60)*1000);
+	    ASensorEventQueue_setEventRate(g_android.sensorEventQueue,
+               g_android.accelerometerSensor, (1000L/60)*1000);
 	 }
 	 break;
       case APP_CMD_LOST_FOCUS:
 	 // When our app loses focus, we stop monitoring the accelerometer.
 	 // This is to avoid consuming battery while not being used.
-	 if (engine->accelerometerSensor != NULL)
-            ASensorEventQueue_disableSensor(engine->sensorEventQueue,
-				 engine->accelerometerSensor);
+	 if (g_android.accelerometerSensor != NULL)
+            ASensorEventQueue_disableSensor(g_android.sensorEventQueue,
+	       g_android.accelerometerSensor);
 	 // Also stop animating.
-	 engine->animating = 0;
-	 engine_draw_frame(engine);
+	 g_android.animating = 0;
+	 engine_draw_frame();
 	 break;
    }
 }
@@ -249,28 +214,27 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
  */
 void android_main(struct android_app* state)
 {
-   struct engine engine;
-
    // Make sure glue isn't stripped.
    app_dummy();
 
-   memset(&engine, 0, sizeof(engine));
-   state->userData = &engine;
+   rarch_main_clear_state();
+
    state->onAppCmd = engine_handle_cmd;
    state->onInputEvent = engine_handle_input;
-   engine.app = state;
+   g_android.app = state;
 
    // Prepare to monitor accelerometer
-   engine.sensorManager = ASensorManager_getInstance();
-   engine.accelerometerSensor = ASensorManager_getDefaultSensor(engine.sensorManager,
+   g_android.sensorManager = ASensorManager_getInstance();
+   g_android.accelerometerSensor = ASensorManager_getDefaultSensor(g_android.sensorManager,
       ASENSOR_TYPE_ACCELEROMETER);
-   engine.sensorEventQueue = ASensorManager_createEventQueue(engine.sensorManager,
+   g_android.sensorEventQueue = ASensorManager_createEventQueue(g_android.sensorManager,
       state->looper, LOOPER_ID_USER, NULL, NULL);
 
    if (state->savedState != NULL) // We are starting with a previous saved state; restore from it.
-      engine.state = *(struct saved_state*)state->savedState;
+      g_android.state = *(struct saved_state*)state->savedState;
 
    // loop waiting for stuff to do.
+   RARCH_LOG("Enter Android main loop.\n");
 
    while (1)
    {
@@ -282,7 +246,7 @@ void android_main(struct android_app* state)
       // If not animating, we will block forever waiting for events.
       // If animating, we loop until all events are read, then continue
       // to draw the next frame of animation.
-      while ((ident=ALooper_pollAll(engine.animating ? 0 : -1, NULL, &events,
+      while ((ident=ALooper_pollAll(g_android.animating ? 0 : -1, NULL, &events,
          (void**)&source)) >= 0)
       {
          // Process this event.
@@ -290,10 +254,10 @@ void android_main(struct android_app* state)
             source->process(state, source);
 
 	 // If a sensor has data, process it now.
-	 if (ident == LOOPER_ID_USER && engine.accelerometerSensor != NULL)
+	 if (ident == LOOPER_ID_USER && g_android.accelerometerSensor != NULL)
 	 {
             ASensorEvent event;
-	    while (ASensorEventQueue_getEvents(engine.sensorEventQueue, &event, 1) > 0)
+	    while (ASensorEventQueue_getEvents(g_android.sensorEventQueue, &event, 1) > 0)
                RARCH_WARN("accelerometer: x=%f y=%f z=%f.\n", event.acceleration.x,
                event.acceleration.y, event.acceleration.z);
 	 }
@@ -301,22 +265,22 @@ void android_main(struct android_app* state)
 	 // Check if we are exiting.
 	 if (state->destroyRequested != 0)
          {
-            engine_term_display(&engine);
+            engine_term_display();
 	    return;
 	 }
       }
 
-      if (engine.animating)
+      if (g_android.animating)
       {
          // Done with events; draw next animation frame.
-         engine.state.angle += .01f;
+         g_android.state.angle += .01f;
 
-	 if (engine.state.angle > 1)
-            engine.state.angle = 0;
+	 if (g_android.state.angle > 1)
+            g_android.state.angle = 0;
 
 	 // Drawing is throttled to the screen update rate, so there
 	 // is no need to do timing here.
-	 engine_draw_frame(&engine);
+	 engine_draw_frame();
       }
    }
 }
