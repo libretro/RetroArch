@@ -443,11 +443,11 @@ static bool ps3_key_pressed(void *data, int key)
       case RARCH_STATE_SLOT_MINUS:
          return ((state[0] & PS3_GAMEPAD_RSTICK_LEFT_MASK) && (state[0] & PS3_GAMEPAD_R2));
       case RARCH_FRAMEADVANCE:
-      	if(g_extern.console.frame_advance_enable)
+      	if(g_extern.console.screen.state.frame_advance.enable)
 	{
-		g_extern.console.enable = true;
-		g_extern.console.ingame_menu_enable = true;
-		g_extern.console.mode = MODE_MENU;
+		g_extern.console.rmenu.state.rmenu.enable = true;
+		g_extern.console.rmenu.state.ingame_menu.enable = true;
+		g_extern.console.rmenu.mode = MODE_MENU;
 	}
 	 return false;
       case RARCH_REWIND:
@@ -459,17 +459,17 @@ static bool ps3_key_pressed(void *data, int key)
             uint32_t r3_pressed = state[0] & PS3_GAMEPAD_R3;
 	    uint32_t l3_pressed = state[0] & PS3_GAMEPAD_L3;
 	    bool retval = false;
-	    g_extern.console.enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED(gl));
-	    g_extern.console.ingame_menu_enable = r3_pressed && !l3_pressed;
+	    g_extern.console.rmenu.state.rmenu.enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED(gl));
+	    g_extern.console.rmenu.state.ingame_menu.enable = r3_pressed && !l3_pressed;
 
-	    if(g_extern.console.enable || (g_extern.console.ingame_menu_enable && !g_extern.console.enable))
+	    if(g_extern.console.rmenu.state.rmenu.enable || (g_extern.console.rmenu.state.ingame_menu.enable && !g_extern.console.rmenu.state.rmenu.enable))
 	    {
-               g_extern.console.mode = MODE_MENU;
+               g_extern.console.rmenu.mode = MODE_MENU;
 	       SET_TIMER_EXPIRATION(gl, 30);
-	       retval = g_extern.console.enable;
+	       retval = g_extern.console.rmenu.state.rmenu.enable;
 	    }
 
-	    retval = g_extern.console.ingame_menu_enable ? g_extern.console.ingame_menu_enable : g_extern.console.enable;
+	    retval = g_extern.console.rmenu.state.ingame_menu.enable ? g_extern.console.rmenu.state.ingame_menu.enable : g_extern.console.rmenu.state.rmenu.enable;
 	    return retval;
 	 }
 #endif

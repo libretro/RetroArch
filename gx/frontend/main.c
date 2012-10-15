@@ -284,7 +284,7 @@ static void menu_loop(void)
    bool first_held = false;
    bool initial_held = true;
 
-   g_extern.console.enable = true;
+   g_extern.console.rmenu.state.rmenu.enable = true;
    gx->menu_render = true;
 
    do
@@ -363,34 +363,34 @@ static void menu_loop(void)
       if(IS_TIMER_EXPIRED(gx))
       {
          // if we want to force goto the emulation loop, skip this
-         if(g_extern.console.mode != MODE_EMULATION)
+         if(g_extern.console.rmenu.mode != MODE_EMULATION)
          {
             if(goto_menu_key_pressed)
             {
-               g_extern.console.enable = (goto_menu_key_pressed && g_console.emulator_initialized) ? false : true;
-               g_extern.console.mode = g_extern.console.enable ? MODE_MENU : MODE_EMULATION;
+               g_extern.console.rmenu.state.rmenu.enable = (goto_menu_key_pressed && g_extern.console.emulator_initialized) ? false : true;
+               g_extern.console.rmenu.mode = g_extern.console.rmenu.state.rmenu.enable ? MODE_MENU : MODE_EMULATION;
             }
          }
       }
 
       if(quit_key_pressed)
       {
-         g_extern.console.enable = false;
-         g_extern.console.mode = MODE_EXIT;
+         g_extern.console.rmenu.state.rmenu.enable = false;
+         g_extern.console.rmenu.mode = MODE_EXIT;
       }
 
       // set a timer delay so that we don't instantly switch back to the menu when
       // press and holding QUIT in the emulation loop (lasts for 30 frame ticks)
-      if(g_extern.console.mode == MODE_EMULATION)
+      if(g_extern.console.rmenu.mode == MODE_EMULATION)
       {
          SET_TIMER_EXPIRATION(gx, 30);
       }
 
-   }while(g_extern.console.enable);
+   }while(g_extern.console.rmenu.state.rmenu.enable);
 
    gx->menu_render = false;
 
-   g_extern.console.ingame_menu_enable = false;
+   g_extern.console.rmenu.state.ingame_menu.enable = false;
 }
 
 static void menu_init(void)
@@ -399,7 +399,7 @@ static void menu_init(void)
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
          NULL /* _binary_console_font_bmp_start */, _binary_console_font_bin_start, folder_cb, NULL);
 
-   g_extern.console.mode = MODE_MENU;
+   g_extern.console.rmenu.mode = MODE_MENU;
    rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 }
 
@@ -548,10 +548,10 @@ int main(int argc, char *argv[])
    if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
       char rom[PATH_MAX];
-      g_console.external_launcher_support = EXTERN_LAUNCHER_CHANNEL;
+      g_extern.console.external_launch.support = EXTERN_LAUNCHER_CHANNEL;
       snprintf(rom, sizeof(rom), "%s%s", argv[1], argv[2]);
-      g_extern.filebrowser_state.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE;
-      rarch_console_load_game_wrap(rom, g_extern.filebrowser_state.zip_extract_mode, S_DELAY_1);
+      g_extern.file_state.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE;
+      rarch_console_load_game_wrap(rom, g_extern.file_state.zip_extract_mode, S_DELAY_1);
 
       rgui_iterate(rgui, RGUI_ACTION_MESSAGE);
       gx->menu_render = true;
@@ -561,30 +561,30 @@ int main(int argc, char *argv[])
       rarch_startup(default_paths.config_file);
    }
    else
-      g_console.external_launcher_support = EXTERN_LAUNCHER_SALAMANDER;
+      g_extern.console.external_launch.support = EXTERN_LAUNCHER_SALAMANDER;
 
 begin_loop:
-   if(g_extern.console.mode == MODE_EMULATION)
+   if(g_extern.console.rmenu.mode == MODE_EMULATION)
    {
       bool repeat = false;
 
       input_gx.poll(NULL);
 
-      video_set_aspect_ratio_func(g_console.aspect_ratio_index);
+      video_set_aspect_ratio_func(g_settings.video.aspect_ratio_idx);
 
       audio_start_func();
 
       do{
          repeat = rarch_main_iterate();
-      }while(repeat && !g_extern.console.frame_advance_enable);
+      }while(repeat && !g_extern.console.screen.state.frame_advance.enable);
 
       audio_stop_func();
    }
-   else if(g_extern.console.mode == MODE_MENU)
+   else if(g_extern.console.rmenu.mode == MODE_MENU)
    {
       menu_loop();
 
-      if (g_extern.console.mode != MODE_EXIT)
+      if (g_extern.console.rmenu.mode != MODE_EXIT)
          rarch_startup(default_paths.config_file);
    }
    else
@@ -595,7 +595,7 @@ begin_shutdown:
    rarch_config_save(default_paths.config_file);
    config_save_keybinds(input_path);
 
-   if(g_console.emulator_initialized)
+   if(g_extern.console.emulator_initialized)
       rarch_main_deinit();
 
    input_gx.free(NULL);
@@ -609,8 +609,8 @@ begin_shutdown:
    fclose(log_fp);
 #endif
 
-   if(g_console.return_to_launcher)
-      rarch_console_exec(g_console.launch_app_on_exit);
+   if(g_extern.console.external_launch.enable)
+      rarch_console_exec(g_extern.console.external_launch.launch_app);
 
    exit(0);
 }

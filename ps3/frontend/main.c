@@ -70,7 +70,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
    (void) param;
    (void) userdata;
 #ifdef HAVE_OSKUTIL
-   oskutil_params *osk = &g_console.oskutil_handle;
+   oskutil_params *osk = &g_extern.console.misc.oskutil_handle;
 #endif
    gl_t *gl = driver.video_data;
 
@@ -138,13 +138,13 @@ static void get_environment_settings(int argc, char *argv[])
 
    if(path_file_exists(default_paths.multiman_self_file) && argc > 1 &&  path_file_exists(argv[1]))
    {
-      g_console.external_launcher_support = EXTERN_LAUNCHER_MULTIMAN;
+      g_extern.console.external_launch.support = EXTERN_LAUNCHER_MULTIMAN;
       RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
    }
    else
 #endif
    {
-      g_console.external_launcher_support = EXTERN_LAUNCHER_SALAMANDER;
+      g_extern.console.external_launch.support = EXTERN_LAUNCHER_SALAMANDER;
       RARCH_WARN("Not started from multiMAN, auto-game start disabled.\n");
    }
 
@@ -177,7 +177,7 @@ static void get_environment_settings(int argc, char *argv[])
       ret = cellGameContentPermit(contentInfoPath, default_paths.port_dir);
 
 #ifdef HAVE_MULTIMAN
-      if(g_console.external_launcher_support == EXTERN_LAUNCHER_MULTIMAN)
+      if(g_extern.console.external_launch.support == EXTERN_LAUNCHER_MULTIMAN)
       {
          snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
 	 snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
@@ -294,7 +294,7 @@ int main(int argc, char *argv[])
    input_ps3.post_init();
 
 #if (CELL_SDK_VERSION > 0x340000) && !defined(__PSL1GHT__)
-   if (g_console.screenshots_enable)
+   if (g_extern.console.screen.state.screenshots.enable)
    {
 #ifdef HAVE_SYSMODULES
       cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
@@ -309,7 +309,7 @@ int main(int argc, char *argv[])
 #endif
    }
 #ifdef HAVE_SYSUTILS
-   if (g_console.custom_bgm_enable)
+   if (g_extern.console.sound.custom_bgm.enable)
       cellSysutilEnableBgmPlayback();
 #endif
 #endif
@@ -318,21 +318,21 @@ int main(int argc, char *argv[])
    driver.video = &video_gl;
 
 #ifdef HAVE_OSKUTIL
-   oskutil_params *osk = &g_console.oskutil_handle;
+   oskutil_params *osk = &g_extern.console.misc.oskutil_handle;
    oskutil_init(osk, 0);
 #endif
 
    menu_init();
 
-   switch(g_console.external_launcher_support)
+   switch(g_extern.console.external_launch.support)
    {
       case EXTERN_LAUNCHER_SALAMANDER:
-         g_extern.console.mode = MODE_MENU;
+         g_extern.console.rmenu.mode = MODE_MENU;
 	 break;
 #ifdef HAVE_MULTIMAN
       case EXTERN_LAUNCHER_MULTIMAN:
 	 RARCH_LOG("Started from multiMAN, will auto-start game.\n");
-	 strlcpy(g_extern.filebrowser_state.rom_path, argv[1], sizeof(g_extern.filebrowser_state.rom_path));
+	 strlcpy(g_extern.file_state.rom_path, argv[1], sizeof(g_extern.file_state.rom_path));
          rarch_settings_change(S_START_RARCH);
 	 rarch_startup(default_paths.config_file);
 	 break;
@@ -342,23 +342,23 @@ int main(int argc, char *argv[])
    }
 
 begin_loop:
-   if(g_extern.console.mode == MODE_EMULATION)
+   if(g_extern.console.rmenu.mode == MODE_EMULATION)
    {
       bool repeat = false;
 
       input_ps3.poll(NULL);
 
-      driver.video->set_aspect_ratio(driver.video_data, g_console.aspect_ratio_index);
+      driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
       do{
          repeat = rarch_main_iterate();
-      }while(repeat && !g_extern.console.frame_advance_enable);
+      }while(repeat && !g_extern.console.screen.state.frame_advance.enable);
    }
-   else if(g_extern.console.mode == MODE_MENU)
+   else if(g_extern.console.rmenu.mode == MODE_MENU)
    {
       menu_loop();
 
-      if (g_extern.console.mode != MODE_EXIT)
+      if (g_extern.console.rmenu.mode != MODE_EXIT)
          rarch_startup(default_paths.config_file);
    }
    else
@@ -369,7 +369,7 @@ begin_loop:
 begin_shutdown:
    rarch_config_save(default_paths.config_file);
 
-   if(g_console.emulator_initialized)
+   if(g_extern.console.emulator_initialized)
       rarch_main_deinit();
 
    input_ps3.free(NULL);
@@ -398,7 +398,7 @@ begin_shutdown:
 /* screenshot PRX */
 
 #ifndef __PSL1GHT__
-   if(g_console.screenshots_enable)
+   if(g_extern.console.screen.state.screenshots.enable)
       cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
 #endif
 
@@ -423,8 +423,8 @@ begin_shutdown:
 #endif
 
 #ifdef HAVE_RARCH_EXEC
-   if(g_console.return_to_launcher)
-      rarch_console_exec(g_console.launch_app_on_exit);
+   if(g_extern.console.external_launch.enable)
+      rarch_console_exec(g_extern.console.external_launch.launch_app);
 #endif
 
    return 1;

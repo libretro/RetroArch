@@ -84,7 +84,7 @@ static void gfx_ctx_get_available_resolutions (void)
    uint32_t resolution_count;
    uint16_t num_videomodes;
 
-   if (g_console.check_available_resolutions)
+   if (g_extern.console.screen.resolutions.check)
       return;
 
    defaultresolution = true;
@@ -109,30 +109,30 @@ static void gfx_ctx_get_available_resolutions (void)
          resolution_count++;
    }
 
-   g_console.supported_resolutions = malloc(resolution_count * sizeof(uint32_t));
-   g_console.supported_resolutions_count = 0;
+   g_extern.console.screen.resolutions.list = malloc(resolution_count * sizeof(uint32_t));
+   g_extern.console.screen.resolutions.count = 0;
 
    for (unsigned i = 0; i < num_videomodes; i++)
    {
       if(gfx_ctx_check_resolution(videomode[i]))
       {
-         g_console.supported_resolutions[g_console.supported_resolutions_count++] = videomode[i];
-         g_console.initial_resolution_id = videomode[i];
+         g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.count++] = videomode[i];
+         g_extern.console.screen.resolutions.initial.id = videomode[i];
 
-         if (g_console.current_resolution_id == videomode[i])
+         if (g_extern.console.screen.resolutions.current.id == videomode[i])
          {
             defaultresolution = false;
-            g_console.current_resolution_index = g_console.supported_resolutions_count-1;
+            g_extern.console.screen.resolutions.current.idx = g_extern.console.screen.resolutions.count-1;
          }
       }
    }
 
    /* In case we didn't specify a resolution - make the last resolution
       that was added to the list (the highest resolution) the default resolution */
-   if (g_console.current_resolution_id > num_videomodes || defaultresolution)
-      g_console.current_resolution_index = g_console.supported_resolutions_count - 1;
+   if (g_extern.console.screen.resolutions.current.id > num_videomodes || defaultresolution)
+      g_extern.console.screen.resolutions.current.idx = g_extern.console.screen.resolutions.count - 1;
 
-   g_console.check_available_resolutions = true;
+   g_extern.console.screen.resolutions.check = true;
 }
 
 static void gfx_ctx_set_swap_interval(unsigned interval)
@@ -265,17 +265,17 @@ static bool gfx_ctx_init(void)
    params.depthFormat = GL_NONE;
    params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
 
-   if (g_console.triple_buffering_enable)
+   if (g_extern.console.screen.state.triple_buffering.enable)
    {
       params.enable |= PSGL_DEVICE_PARAMETERS_BUFFERING_MODE;
       params.bufferingMode = PSGL_BUFFERING_MODE_TRIPLE;
    }
 
-   if (g_console.current_resolution_id)
+   if (g_extern.console.screen.resolutions.current.id)
    {
       params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
-      params.width = gfx_ctx_get_resolution_width(g_console.current_resolution_id);
-      params.height = gfx_ctx_get_resolution_height(g_console.current_resolution_id);
+      params.width = gfx_ctx_get_resolution_width(g_extern.console.screen.resolutions.current.id);
+      params.height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.current.id);
    }
 
    gl_device = psglCreateDeviceExtended(&params);

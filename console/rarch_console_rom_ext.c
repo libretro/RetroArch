@@ -34,7 +34,7 @@
 
 static void rarch_console_load_game(const char *path)
 {
-   snprintf(g_extern.filebrowser_state.rom_path, sizeof(g_extern.filebrowser_state.rom_path), path);
+   snprintf(g_extern.file_state.rom_path, sizeof(g_extern.file_state.rom_path), path);
    rarch_settings_change(S_START_RARCH);
 }
 
@@ -68,12 +68,12 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, u
       fill_pathname_basedir(dir_path_temp, rom_path_temp, sizeof(dir_path_temp));
       rarch_extract_zipfile(rom_path_temp, dir_path_temp, first_file_inzip, sizeof(first_file_inzip), extract_zip_mode);
 
-      if(g_console.info_msg_enable)
+      if(g_extern.console.rmenu.state.msg_info.enable)
          rarch_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
    }
 
    extract_zip_and_load_game_cond = (extract_zip_cond && 
-   g_extern.filebrowser_state.zip_extract_mode == ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE);
+   g_extern.file_state.zip_extract_mode == ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE);
    load_game = (extract_zip_and_load_game_cond) || (!extract_zip_cond);
 
    if(extract_zip_and_load_game_cond)
@@ -86,7 +86,7 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, u
    {
       rarch_console_load_game(game_to_load);
 
-      if(g_console.info_msg_enable)
+      if(g_extern.console.rmenu.state.msg_info.enable)
          rarch_settings_msg(S_MSG_LOADING_ROM, delay);
    }
 }

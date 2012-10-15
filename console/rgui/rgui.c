@@ -310,7 +310,7 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
 
 static void render_text(rgui_handle_t *rgui)
 {
-   if (rgui->need_refresh && g_console.mode_switch == MODE_MENU && !rgui->msg_force)
+   if (rgui->need_refresh && g_extern.console.rmenu.mode == MODE_MENU && !rgui->msg_force)
       return;
 
    size_t begin = rgui->directory_ptr >= TERM_HEIGHT / 2 ?
@@ -377,7 +377,7 @@ static void render_text(rgui_handle_t *rgui)
             break;
 #ifdef HW_RVL
          case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
-            snprintf(type_str, sizeof(type_str), g_console.soft_display_filter_enable ? "ON" : "OFF");
+            snprintf(type_str, sizeof(type_str), g_extern.console.screen.state.soft_filter.enable ? "ON" : "OFF");
             break;
 #endif
 #ifdef GEKKO
@@ -386,13 +386,13 @@ static void render_text(rgui_handle_t *rgui)
             break;
 #endif
          case RGUI_SETTINGS_VIDEO_GAMMA:
-            snprintf(type_str, sizeof(type_str), "%d", g_console.gamma_correction);
+            snprintf(type_str, sizeof(type_str), "%d", g_extern.console.screen.gamma_correction);
             break;
          case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
-            snprintf(type_str, sizeof(type_str), "%s", aspectratio_lut[g_console.aspect_ratio_index].name);
+            snprintf(type_str, sizeof(type_str), "%s", aspectratio_lut[g_settings.video.aspect_ratio_idx].name);
             break;
          case RGUI_SETTINGS_VIDEO_OVERSCAN:
-            snprintf(type_str, sizeof(type_str), "%.2f", g_console.overscan_amount);
+            snprintf(type_str, sizeof(type_str), "%.2f", g_extern.console.screen.overscan_amount);
             break;
          case RGUI_SETTINGS_VIDEO_ROTATION:
             {
@@ -408,7 +408,7 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
             break;
          case RGUI_SETTINGS_ZIP_EXTRACT:
-            switch(g_console.zip_extract_mode)
+            switch(g_extern.file_state.zip_extract_mode)
             {
                case ZIP_EXTRACT_TO_CURRENT_DIR:
                   snprintf(type_str, sizeof(type_str), "Current");
@@ -422,7 +422,7 @@ static void render_text(rgui_handle_t *rgui)
             }
             break;
          case RGUI_SETTINGS_DEBUG_TEXT:
-            snprintf(type_str, sizeof(type_str), g_console.fps_info_msg_enable ? "ON" : "OFF");
+            snprintf(type_str, sizeof(type_str), g_extern.console.rmenu.state.msg_fps.enable ? "ON" : "OFF");
             break;
          case RGUI_SETTINGS_CUSTOM_VIEWPORT:
          case RGUI_SETTINGS_CORE:
@@ -566,7 +566,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
 #ifdef HW_RVL
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
          {
-            g_console.soft_display_filter_enable = !g_console.soft_display_filter_enable;
+            g_extern.console.screen.state.soft_filter.enable = !g_extern.console.screen.state.soft_filter.enable;
             driver.video->apply_state_changes();
          }
          break;
@@ -594,22 +594,22 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
       case RGUI_SETTINGS_VIDEO_GAMMA:
          if (action == RGUI_ACTION_START)
          {
-            g_console.gamma_correction = 0;
+            g_extern.console.screen.gamma_correction = 0;
             driver.video->apply_state_changes();
          }
          else if (action == RGUI_ACTION_LEFT)
          {
-            if(g_console.gamma_correction > 0)
+            if(g_extern.console.screen.gamma_correction > 0)
             {
-               g_console.gamma_correction--;
+               g_extern.console.screen.gamma_correction--;
                driver.video->apply_state_changes();
             }
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
-            if(g_console.gamma_correction < MAX_GAMMA_SETTING)
+            if(g_extern.console.screen.gamma_correction < MAX_GAMMA_SETTING)
             {
-               g_console.gamma_correction++;
+               g_extern.console.screen.gamma_correction++;
                driver.video->apply_state_changes();
             }
          }
@@ -621,23 +621,23 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
          else if (action == RGUI_ACTION_RIGHT)
             rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
-         video_set_aspect_ratio_func(g_console.aspect_ratio_index);
+         video_set_aspect_ratio_func(g_settings.video.aspect_ratio_idx);
          break;
       case RGUI_SETTINGS_VIDEO_ROTATION:
          if (action == RGUI_ACTION_START)
          {
             rarch_settings_default(S_DEF_AUDIO_CONTROL_RATE);
-            video_set_rotation_func(g_console.screen_orientation);
+            video_set_rotation_func(g_extern.console.screen.orientation);
          }
          else if (action == RGUI_ACTION_LEFT)
          {
             rarch_settings_change(S_ROTATION_DECREMENT);
-            video_set_rotation_func(g_console.screen_orientation);
+            video_set_rotation_func(g_extern.console.screen.orientation);
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
             rarch_settings_change(S_ROTATION_INCREMENT);
-            video_set_rotation_func(g_console.screen_orientation);
+            video_set_rotation_func(g_extern.console.screen.orientation);
          }
          break;
       case RGUI_SETTINGS_VIDEO_OVERSCAN:
@@ -673,23 +673,23 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          break;
       case RGUI_SETTINGS_ZIP_EXTRACT:
          if (action == RGUI_ACTION_START)
-            g_console.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR;
-         else if (action == RGUI_ACTION_LEFT && g_console.zip_extract_mode > 0)
-            g_console.zip_extract_mode--;
-         else if (action == RGUI_ACTION_RIGHT && g_console.zip_extract_mode < LAST_ZIP_EXTRACT)
-            g_console.zip_extract_mode++;
+            g_extern.file_state.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR;
+         else if (action == RGUI_ACTION_LEFT && g_extern.file_state.zip_extract_mode > 0)
+            g_extern.file_state.zip_extract_mode--;
+         else if (action == RGUI_ACTION_RIGHT && g_extern.file_state.zip_extract_mode < LAST_ZIP_EXTRACT)
+            g_extern.file_state.zip_extract_mode++;
          break;
       case RGUI_SETTINGS_DEBUG_TEXT:
          if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
-            g_console.fps_info_msg_enable = false;
+            g_extern.console.rmenu.state.msg_fps.enable = false;
          else if (action == RGUI_ACTION_RIGHT)
-            g_console.fps_info_msg_enable = true;
+            g_extern.console.rmenu.state.msg_fps.enable = true;
          break;
       case RGUI_SETTINGS_RESTART_EMULATOR:
          if (action == RGUI_ACTION_OK)
          {
 #ifdef GEKKO
-            snprintf(g_console.launch_app_on_exit, sizeof(g_console.launch_app_on_exit), "%s/boot.dol", default_paths.core_dir);
+            snprintf(g_extern.console.external_launch.launch_app, sizeof(g_extern.console.external_launch.launch_app), "%s/boot.dol", default_paths.core_dir);
 #endif
             rarch_settings_change(S_RETURN_TO_LAUNCHER);
          }
@@ -764,7 +764,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->folder_buf);
 
-   if (g_console.ingame_menu_enable)
+   if (g_extern.console.rmenu.state.ingame_menu.enable)
    {
       RGUI_MENU_ITEM("Save State", RGUI_SETTINGS_SAVESTATE_SAVE);
       RGUI_MENU_ITEM("Load State", RGUI_SETTINGS_SAVESTATE_LOAD);
@@ -834,52 +834,44 @@ void rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_UP:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
-            g_console.viewports.custom_vp.y -= 1;
-            g_console.viewports.custom_vp.height += 1;
+            g_extern.console.screen.viewports.custom_vp.y -= 1;
+            g_extern.console.screen.viewports.custom_vp.height += 1;
          }
          else
-         {
-            g_console.viewports.custom_vp.height -= 1;
-         }
+            g_extern.console.screen.viewports.custom_vp.height -= 1;
          driver.video->apply_state_changes();
          break;
 
       case RGUI_ACTION_DOWN:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
-            g_console.viewports.custom_vp.y += 1;
-            g_console.viewports.custom_vp.height -= 1;
+            g_extern.console.screen.viewports.custom_vp.y += 1;
+            g_extern.console.screen.viewports.custom_vp.height -= 1;
          }
          else
-         {
-            g_console.viewports.custom_vp.height += 1;
-         }
+            g_extern.console.screen.viewports.custom_vp.height += 1;
          driver.video->apply_state_changes();
          break;
 
       case RGUI_ACTION_LEFT:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
-            g_console.viewports.custom_vp.x -= 1;
-            g_console.viewports.custom_vp.width += 1;
+            g_extern.console.screen.viewports.custom_vp.x -= 1;
+            g_extern.console.screen.viewports.custom_vp.width += 1;
          }
          else
-         {
-            g_console.viewports.custom_vp.width -= 1;
-         }
+            g_extern.console.screen.viewports.custom_vp.width -= 1;
          driver.video->apply_state_changes();
          break;
 
       case RGUI_ACTION_RIGHT:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
-            g_console.viewports.custom_vp.x += 1;
-            g_console.viewports.custom_vp.width -= 1;
+            g_extern.console.screen.viewports.custom_vp.x += 1;
+            g_extern.console.screen.viewports.custom_vp.width -= 1;
          }
          else
-         {
-            g_console.viewports.custom_vp.width += 1;
-         }
+            g_extern.console.screen.viewports.custom_vp.width += 1;
          driver.video->apply_state_changes();
          break;
 
@@ -911,15 +903,15 @@ void rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
 #ifdef GEKKO
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
-            g_console.viewports.custom_vp.width += g_console.viewports.custom_vp.x;
-            g_console.viewports.custom_vp.height += g_console.viewports.custom_vp.y;
-            g_console.viewports.custom_vp.x = 0;
-            g_console.viewports.custom_vp.y = 0;
+            g_extern.console.screen.viewports.custom_vp.width += g_extern.console.screen.viewports.custom_vp.x;
+            g_extern.console.screen.viewports.custom_vp.height += g_extern.console.screen.viewports.custom_vp.y;
+            g_extern.console.screen.viewports.custom_vp.x = 0;
+            g_extern.console.screen.viewports.custom_vp.y = 0;
          }
          else
          {
-            g_console.viewports.custom_vp.width = gx->win_width - g_console.viewports.custom_vp.x;
-            g_console.viewports.custom_vp.height = gx->win_height - g_console.viewports.custom_vp.y;
+            g_extern.console.screen.viewports.custom_vp.width = gx->win_width - g_extern.console.screen.viewports.custom_vp.x;
+            g_extern.console.screen.viewports.custom_vp.height = gx->win_height - g_extern.console.screen.viewports.custom_vp.y;
          }
 #endif
          driver.video->apply_state_changes();
@@ -999,13 +991,11 @@ void rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          else if (type == RGUI_SETTINGS_CUSTOM_VIEWPORT && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->path_stack, "", type, rgui->directory_ptr);
-            g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
-            video_set_aspect_ratio_func(g_console.aspect_ratio_index);
+            g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
+            video_set_aspect_ratio_func(g_settings.video.aspect_ratio_idx);
          }
          else
-         {
             rgui_settings_toggle_setting(type, action, menu_type);
-         }
          break;
 
       case RGUI_ACTION_REFRESH:
@@ -1135,7 +1125,7 @@ void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             else
             {
                snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s", dir, path);
-               rarch_console_load_game_wrap(rgui->path_buf, g_console.zip_extract_mode, S_DELAY_1);
+               rarch_console_load_game_wrap(rgui->path_buf, g_extern.file_state.zip_extract_mode, S_DELAY_1);
                rgui->need_refresh = true; // in case of zip extract
                rgui->msg_force = true;
             }
@@ -1173,7 +1163,7 @@ void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    // refresh values in case the stack changed
    rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
-   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE) && g_console.mode_switch == MODE_MENU)
+   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE) && g_extern.console.rmenu.mode == MODE_MENU)
    {
       rgui->need_refresh = false;
       rgui_list_clear(rgui->folder_buf);

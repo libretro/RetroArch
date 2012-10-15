@@ -397,13 +397,13 @@ static void xdk_d3d_set_viewport(bool force_full)
       float delta;
 
       // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
-      if(g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
+      if(g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-      	 m_viewport_x_temp = g_console.viewports.custom_vp.x;
-      	 m_viewport_y_temp = g_console.viewports.custom_vp.y;
-      	 m_viewport_width_temp = g_console.viewports.custom_vp.width;
-      	 m_viewport_height_temp = g_console.viewports.custom_vp.height;
+      	 m_viewport_x_temp = g_extern.console.screen.viewports.custom_vp.x;
+      	 m_viewport_y_temp = g_extern.console.screen.viewports.custom_vp.y;
+      	 m_viewport_width_temp = g_extern.console.screen.viewports.custom_vp.width;
+      	 m_viewport_height_temp = g_extern.console.screen.viewports.custom_vp.height;
       }
       else if (device_aspect > desired_aspect)
       {
@@ -492,13 +492,13 @@ static void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
    }
 
    d3d->d3d_render_device->CreateTexture(512 * g_settings.video.fbo_scale_x, 512 * g_settings.video.fbo_scale_y,
-         1, 0, g_console.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8,
+         1, 0, g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8,
          0, &d3d->lpTexture_ot
 		 , NULL
 		 );
 
    d3d->d3d_render_device->CreateRenderTarget(512 * g_settings.video.fbo_scale_x, 512 * g_settings.video.fbo_scale_y,
-         g_console.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 
+         g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 
 	      0, 0, &d3d->lpSurface, NULL);
 
    d3d->lpTexture_ot_as16srgb = *d3d->lpTexture_ot;
@@ -557,7 +557,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    xdk_d3d_init_fbo(d3d);
 #endif
 
-   xdk_d3d_set_rotation(d3d, g_console.screen_orientation);
+   xdk_d3d_set_rotation(d3d, g_extern.console.screen.orientation);
 
 #if defined(_XBOX1)
    /* load debug fonts */
@@ -592,11 +592,11 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #ifdef HAVE_FBO
    D3DSurface* pRenderTarget0;
 #endif
-   bool menu_enabled = g_console.menu_enable;
+   bool menu_enabled = g_extern.console.rmenu.state.rmenu.enable;
 #ifdef _XBOX1
-   bool fps_enable = g_console.fps_info_msg_enable;
-   unsigned flicker_filter = g_console.flicker_filter;
-   bool soft_filter_enable = g_console.soft_display_filter_enable;
+   bool fps_enable = g_extern.console.rmenu.state.msg_fps.enable;
+   unsigned flicker_filter = g_extern.console.screen.state.flicker_filter.value;
+   bool soft_filter_enable = g_extern.console.screen.soft_filter.enable;
 #endif
 
    if (d3d->last_width != width || d3d->last_height != height)
@@ -873,12 +873,12 @@ static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspectratio_index)
    (void)data;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
-   if(g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
+   if(g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
       rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
-   else if(g_console.aspect_ratio_index == ASPECT_RATIO_CORE)
+   else if(g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
       rarch_set_core_viewport();
 
-   g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
+   g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
    g_settings.video.force_aspect = false;
    d3d->should_resize = true;
 }

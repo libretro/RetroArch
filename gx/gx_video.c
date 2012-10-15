@@ -251,12 +251,12 @@ void gx_set_aspect_ratio(void *data, unsigned aspectratio_idx)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
 
-   if (g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
+   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
       rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
-   else if(g_console.aspect_ratio_index == ASPECT_RATIO_CORE)
+   else if(g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
       rarch_set_core_viewport();
 
-   g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
+   g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
    g_settings.video.force_aspect = false;
    gx->keep_aspect = true;
    gx->should_resize = true;
@@ -603,9 +603,9 @@ static void gx_resize(gx_video_t *gx)
    unsigned width = gx->win_width, height = gx->win_height;
 
 #ifdef HW_RVL
-   VIDEO_SetTrapFilter(g_console.soft_display_filter_enable);
+   VIDEO_SetTrapFilter(g_extern.console.screen.state.soft_filter.enable);
 #endif
-   GX_SetDispCopyGamma(g_console.gamma_correction);
+   GX_SetDispCopyGamma(g_extern.console.screen.gamma_correction);
 
    if (gx->keep_aspect && gx_mode.efbHeight >= 480) // ingore this for custom resolutions
    {
@@ -622,20 +622,20 @@ static void gx_resize(gx_video_t *gx)
       float delta;
 
 #ifdef RARCH_CONSOLE
-      if (g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
+      if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         if (!g_console.viewports.custom_vp.width || !g_console.viewports.custom_vp.height)
+         if (!g_extern.console.screen.viewports.custom_vp.width || !g_extern.console.screen.viewports.custom_vp.height)
          {
-            g_console.viewports.custom_vp.x = 0;
-            g_console.viewports.custom_vp.y = 0;
-            g_console.viewports.custom_vp.width = gx->win_width;
-            g_console.viewports.custom_vp.height = gx->win_height;
+            g_extern.console.screen.viewports.custom_vp.x = 0;
+            g_extern.console.screen.viewports.custom_vp.y = 0;
+            g_extern.console.screen.viewports.custom_vp.width = gx->win_width;
+            g_extern.console.screen.viewports.custom_vp.height = gx->win_height;
          }
 
-         x      = g_console.viewports.custom_vp.x;
-         y      = g_console.viewports.custom_vp.y;
-         width  = g_console.viewports.custom_vp.width;
-         height = g_console.viewports.custom_vp.height;
+         x      = g_extern.console.screen.viewports.custom_vp.x;
+         y      = g_extern.console.screen.viewports.custom_vp.y;
+         width  = g_extern.console.screen.viewports.custom_vp.width;
+         height = g_extern.console.screen.viewports.custom_vp.height;
       }
       else
 #endif
@@ -664,12 +664,12 @@ static void gx_resize(gx_video_t *gx)
 
    Mtx44 m1, m2;
    float top = 1, bottom = -1, left = -1, right = 1;
-   if (g_console.overscan_enable)
+   if (g_extern.console.screen.state.overscan.enable)
    {
-      top -= g_console.overscan_amount / 2;
-      left += g_console.overscan_amount / 2;
-      right -= g_console.overscan_amount / 2;
-      bottom += g_console.overscan_amount / 2;
+      top    -= g_extern.console.screen.overscan_amount / 2;
+      left   += g_extern.console.screen.overscan_amount / 2;
+      right  -= g_extern.console.screen.overscan_amount / 2;
+      bottom += g_extern.console.screen.overscan_amount / 2;
    }
    guOrtho(m1, top, bottom, left, right, 0, 1);
    unsigned degrees;
@@ -839,7 +839,7 @@ static bool gx_frame(void *data, const void *frame,
       GX_DrawDone();
    }
 
-   if (g_console.fps_info_msg_enable)
+   if (g_extern.console.rmenu.state.msg_fps.enable)
    {
       static char fps_txt[128];
       char mem1_txt[128];

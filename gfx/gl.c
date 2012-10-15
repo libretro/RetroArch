@@ -531,8 +531,8 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
    if (!scale.valid)
    {
-      scale.scale_x = g_settings.video.fbo_scale_x;
-      scale.scale_y = g_settings.video.fbo_scale_y;
+      scale.scale_x = g_settings.video.fbo.scale_x;
+      scale.scale_y = g_settings.video.fbo.scale_y;
       scale.type_x  = scale.type_y = RARCH_SCALE_INPUT;
       scale.valid   = true;
    }
@@ -576,11 +576,11 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
 {
 #ifdef RARCH_CONSOLE
-   if (g_console.overscan_enable)
+   if (g_extern.console.screen.state.overscan.enable)
    {
-      ortho->left = -g_console.overscan_amount / 2;
-      ortho->right = 1 + g_console.overscan_amount / 2;
-      ortho->bottom = -g_console.overscan_amount / 2;
+      ortho->left = -g_extern.console.screen.overscan_amount / 2;
+      ortho->right = 1 + g_extern.console.screen.overscan_amount / 2;
+      ortho->bottom = -g_extern.console.screen.overscan_amount / 2;
    }
 #endif
 
@@ -618,12 +618,12 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full,
       float delta;
 
 #ifdef RARCH_CONSOLE
-      if (g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
+      if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         x      = g_console.viewports.custom_vp.x;
-         y      = g_console.viewports.custom_vp.y;
-         width  = g_console.viewports.custom_vp.width;
-         height = g_console.viewports.custom_vp.height;
+         x      = g_extern.console.screen.viewports.custom_vp.x;
+         y      = g_extern.console.screen.viewports.custom_vp.y;
+         width  = g_extern.console.screen.viewports.custom_vp.width;
+         height = g_extern.console.screen.viewports.custom_vp.height;
       }
       else
 #endif
@@ -1487,16 +1487,16 @@ static void gl_start(void)
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
    video_info.fullscreen = true;
-   if (g_console.aspect_ratio_index == ASPECT_RATIO_CUSTOM)
+   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      video_info.width  = g_console.viewports.custom_vp.width;
-      video_info.height = g_console.viewports.custom_vp.height;
+      video_info.width  = g_extern.console.screen.viewports.custom_vp.width;
+      video_info.height = g_extern.console.screen.viewports.custom_vp.height;
    }
    driver.video_data = gl_init(&video_info, NULL, NULL);
 
    gl_t *gl = (gl_t*)driver.video_data;
 
-   gl->ctx_driver->set_fbo(g_console.fbo_enabled);
+   gl->ctx_driver->set_fbo(g_settings.video.fbo.enable);
    gl->ctx_driver->get_available_resolutions();
    if (gl->ctx_driver->menu_init)
       gl->ctx_driver->menu_init();
@@ -1504,7 +1504,7 @@ static void gl_start(void)
 #ifdef HAVE_FBO
 // FBO mode has to be enabled once even if FBO mode has to be 
 // turned off
-   if (!g_console.fbo_enabled)
+   if (!g_settings.video.fbo.enable)
    {
       gl->ctx_driver->apply_fbo_state_changes(FBO_DEINIT);
       gl->ctx_driver->apply_fbo_state_changes(FBO_INIT);
@@ -1563,12 +1563,12 @@ static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
    (void)data;
    gl_t *gl = driver.video_data;
 
-   if (g_console.aspect_ratio_index == ASPECT_RATIO_AUTO)
+   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
       rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
-   else if(g_console.aspect_ratio_index == ASPECT_RATIO_CORE)
+   else if(g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
       rarch_set_core_viewport();
 
-   g_settings.video.aspect_ratio = aspectratio_lut[g_console.aspect_ratio_index].value;
+   g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
    g_settings.video.force_aspect = false;
    gl->keep_aspect = true;
    gl->should_resize = true;

@@ -81,9 +81,9 @@ static void get_environment_settings (void)
    }
    else
    {
-      XContentQueryVolumeDeviceType("GAME",&g_console.volume_device_type, NULL);
+      XContentQueryVolumeDeviceType("GAME",&g_extern.file_state.volume_device_type, NULL);
 
-      switch(g_console.volume_device_type)
+      switch(g_extern.file_state.volume_device_type)
       {
          case XCONTENTDEVICETYPE_HDD:
             RARCH_LOG("RetroArch was launched from a content package on HDD.\n");
@@ -188,7 +188,7 @@ begin_loop:
 
       input_xinput.poll(NULL);
 
-      driver.video->set_aspect_ratio(driver.video_data, g_console.aspect_ratio_index);
+      driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
       do{
          repeat = rarch_main_iterate();
@@ -217,8 +217,8 @@ begin_shutdown:
 #endif
    input_xinput.free(NULL);
 
-   if(g_console.return_to_launcher)
-      rarch_console_exec(g_console.launch_app_on_exit);
+   if(g_extern.console.external_launch.enable)
+      rarch_console_exec(g_extern.console.external_launch.launch_app);
 
    return 0;
 }

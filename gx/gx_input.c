@@ -472,19 +472,19 @@ static bool gx_key_pressed(void *data, int key)
  );
          uint64_t quit_rarch = pad_state[0] & GX_QUIT_KEY;
          bool retval = false;
-         g_console.menu_enable = ((quit_rarch || goto_menu_pressed) && IS_TIMER_EXPIRED(gx));
+         g_extern.console.rmenu.state.rmenu.enable = ((quit_rarch || goto_menu_pressed) && IS_TIMER_EXPIRED(gx));
 
-         if(g_console.menu_enable)
+         if(g_extern.console.rmenu.state.rmenu.enable)
          {
-            g_console.mode_switch = MODE_MENU;
-            g_console.ingame_menu_enable = true;
+            g_extern.console.rmenu.mode = MODE_MENU;
+            g_extern.console.rmenu.state.ingame_menu.enable = true;
             SET_TIMER_EXPIRATION(gx, 30);
          }
 
          if(quit_rarch)
-            g_console.mode_switch = MODE_EXIT;
+            g_extern.console.rmenu.mode = MODE_EXIT;
 
-         retval = g_console.menu_enable;
+         retval = g_extern.console.rmenu.state.rmenu.enable;
          return retval;
       }
       default:

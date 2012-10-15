@@ -92,15 +92,26 @@ struct settings
       bool crop_overscan;
       float aspect_ratio;
       bool aspect_ratio_auto;
+      unsigned aspect_ratio_idx;
       char cg_shader_path[PATH_MAX];
       char bsnes_shader_path[PATH_MAX];
       char filter_path[PATH_MAX];
       enum rarch_shader_type shader_type;
       float refresh_rate;
 
+#ifdef RARCH_CONSOLE
+      unsigned color_format;
+#endif
+
       bool render_to_texture;
-      float fbo_scale_x;
-      float fbo_scale_y;
+
+      struct
+      {
+         float scale_x;
+         float scale_y;
+         bool enable;
+      } fbo;
+
       char second_pass_shader[PATH_MAX];
       bool second_pass_smooth;
       char shader_dir[PATH_MAX];
@@ -155,6 +166,7 @@ struct settings
 #ifdef RARCH_CONSOLE
       unsigned currently_selected_controller_no;
       unsigned dpad_emulation[MAX_PLAYERS];
+      unsigned map_dpad_to_stick;
       unsigned device[MAX_PLAYERS];
 #endif
       bool netplay_client_swap_input;
@@ -188,73 +200,6 @@ struct settings
    bool stdin_cmd_enable;
 };
 
-// Settings and/or global state that is specific to a console-style implementation.
-#ifdef RARCH_CONSOLE
-typedef struct
-{
-   int x;
-   int y;
-   unsigned width;
-   unsigned height;
-} rarch_viewport_t;
-
-struct console_settings
-{
-   bool custom_bgm_enable;
-   bool check_available_resolutions;
-   bool block_config_read;
-   bool default_sram_dir_enable;
-   bool default_savestate_dir_enable;
-   bool fbo_enabled;
-   bool fps_info_msg_enable;
-#ifdef _XBOX1
-   unsigned flicker_filter;
-   unsigned sound_volume_level;
-#endif
-   bool soft_display_filter_enable;
-   bool initialize_rarch_enable;
-   bool info_msg_enable;
-   bool overscan_enable;
-   bool return_to_launcher;
-   bool screenshots_enable;
-   bool throttle_enable;
-   bool triple_buffering_enable;
-   float overscan_amount;
-   unsigned aspect_ratio_index;
-   struct
-   {
-      rarch_viewport_t custom_vp;
-   } viewports;
-   unsigned gamma_correction;
-   unsigned emulator_initialized;
-   unsigned external_launcher_support;
-   unsigned screen_orientation;
-   unsigned current_resolution_index;
-   unsigned current_resolution_id;
-   unsigned initial_resolution_id;
-   unsigned map_dpad_to_stick;
-   unsigned sound_mode;
-   uint32_t *supported_resolutions;
-   unsigned supported_resolutions_count;
-   unsigned control_timer_expiration_frame_count;
-   unsigned timer_expiration_frame_count;
-   unsigned input_loop;
-#ifdef _XBOX
-   unsigned color_format;
-   DWORD volume_device_type;
-#endif
-   char cgp_path[PATH_MAX];
-   char input_cfg_path[PATH_MAX];
-   char default_rom_startup_dir[PATH_MAX];
-   char default_savestate_dir[PATH_MAX];
-   char default_sram_dir[PATH_MAX];
-   char launch_app_on_exit[PATH_MAX];
-#ifdef HAVE_OSKUTIL
-   oskutil_params oskutil_handle;
-#endif
-};
-#endif
-
 enum rarch_game_type
 {
    RARCH_CART_NORMAL = 0,
@@ -263,6 +208,34 @@ enum rarch_game_type
    RARCH_CART_BSX_SLOTTED,
    RARCH_CART_SUFAMI
 };
+
+typedef struct
+{
+   bool enable;
+   unsigned value;
+} rarch_boolean_state_t;
+
+typedef struct
+{
+   bool is_expired;
+   unsigned expire_frame;
+   unsigned current;
+} rarch_frame_count_t;
+
+typedef struct
+{
+   unsigned idx;
+   unsigned id;
+} rarch_resolution_t;
+
+
+typedef struct
+{
+   int x;
+   int y;
+   unsigned width;
+   unsigned height;
+} rarch_viewport_t;
 
 // All run-time- / command line flag-related globals go here.
 struct global
@@ -465,26 +438,128 @@ struct global
 
    char sha256[64 + 1];
 
-   /* FIXME: too much hassle ifndeffing this now for HAVE_RMENU */
+   // Settings and/or global state that is specific to a console-style implementation.
+
 
    struct
    {
-      bool menus_hd_enable;
-      bool frame_advance_enable;
-      bool ingame_menu_enable;
-      bool enable;
-      unsigned ingame_menu_item;
-      unsigned mode;
-      float font_size;
+      bool block_config_read;
+      bool initialize_rarch_enable;
+      unsigned emulator_initialized;
+
+      struct
+      {
+         struct
+	 {
+            unsigned idx;
+	 } ingame_menu;
+
+
+	 unsigned mode;
+         unsigned input_loop;
+	 float font_size;
+
+         struct
+         {
+            rarch_boolean_state_t msg_fps;
+            rarch_boolean_state_t msg_info;
+            rarch_boolean_state_t ingame_menu;
+            rarch_boolean_state_t rmenu;
+            rarch_boolean_state_t rmenu_hd;
+         } state;
+      } rmenu;
+
+      struct
+      {
+         rarch_frame_count_t control_timer;
+         rarch_frame_count_t general_timer;
+      } timers;
+      
+      struct
+      {
+         bool enable;
+         char launch_app[PATH_MAX];
+         unsigned support;
+      } external_launch;
+
+      struct
+      {
+         struct
+	 {
+            rarch_resolution_t current;
+            rarch_resolution_t initial;
+	    uint32_t *list;
+	    unsigned count;
+	    bool check;
+	 } resolutions;
+
+
+         struct
+         {
+            rarch_viewport_t custom_vp;
+         } viewports;
+
+         unsigned orientation;
+         float overscan_amount;
+         unsigned gamma_correction;
+
+         struct
+         {
+            rarch_boolean_state_t frame_advance;
+            rarch_boolean_state_t triple_buffering;
+            rarch_boolean_state_t overscan;
+            rarch_boolean_state_t flicker_filter;
+            rarch_boolean_state_t soft_filter;
+            rarch_boolean_state_t screenshots;
+            rarch_boolean_state_t throttle;
+         } state;
+      } screen;
+
+      struct
+      {
+        rarch_boolean_state_t custom_bgm;
+        unsigned mode;
+#ifdef _XBOX1
+        unsigned volume_level;
+#endif
+      } sound;
+
+      struct
+      {
+         struct
+         {
+            char default_rom_startup_dir[PATH_MAX];
+	    char default_savestate_dir[PATH_MAX];
+	    char default_sram_dir[PATH_MAX];
+         } paths;
+
+         struct
+         {
+            rarch_boolean_state_t default_sram_dir;
+            rarch_boolean_state_t default_savestate_dir;
+         } state;
+      } main_wrap;
+
+#ifdef HAVE_OSKUTIL
+      struct
+      {
+         oskutil_params oskutil_handle;
+      } misc;
+#endif
    } console;
 
    struct
    {
       char rom_path[PATH_MAX];
+      char cgp_path[PATH_MAX];
+      char input_cfg_path[PATH_MAX];
 #ifdef HAVE_ZLIB
       unsigned zip_extract_mode;
 #endif
-   } filebrowser_state;
+#ifdef _XBOX
+      DWORD volume_device_type;
+#endif
+   } file_state;
 
 #ifdef HAVE_XML
    cheat_manager_t *cheat;
@@ -527,9 +602,6 @@ void rarch_state_slot_decrease(void);
 // Public data structures
 extern struct settings g_settings;
 extern struct global g_extern;
-#ifdef RARCH_CONSOLE
-extern struct console_settings g_console;
-#endif
 /////////
 
 #include "retroarch_logger.h"

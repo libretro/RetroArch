@@ -83,18 +83,18 @@ bool rarch_startup (const char * config_path)
 {
    bool retval = false;
 
-   if(g_console.initialize_rarch_enable)
+   if(g_extern.console.initialize_rarch_enable)
    {
-      if(g_console.emulator_initialized)
+      if(g_extern.console.emulator_initialized)
          rarch_main_deinit();
 
       struct rarch_main_wrap args = {0};
 
       args.verbose = g_extern.verbose;
       args.config_path = config_path;
-      args.sram_path = g_console.default_sram_dir_enable ? g_console.default_sram_dir : NULL,
-      args.state_path = g_console.default_savestate_dir_enable ? g_console.default_savestate_dir : NULL,
-      args.rom_path = g_extern.filebrowser_state.rom_path;
+      args.sram_path = g_extern.console.main_wrap.state.default_sram_dir.enable ? g_extern.console.main_wrap.paths.default_sram_dir : NULL,
+      args.state_path = g_extern.console.main_wrap.state.default_savestate_dir.enable ? g_extern.console.main_wrap.paths.default_savestate_dir : NULL,
+      args.rom_path = g_extern.file_state.rom_path;
 #ifdef HAVE_DYLIB
       args.libretro_path = g_settings.libretro;
 #endif
@@ -104,15 +104,15 @@ bool rarch_startup (const char * config_path)
 
       if(init_ret == 0)
       {
-         g_console.emulator_initialized = 1;
-         g_console.initialize_rarch_enable = 0;
+         g_extern.console.emulator_initialized = 1;
+         g_extern.console.initialize_rarch_enable = 0;
          retval = true;
       }
       else
       {
          //failed to load the ROM for whatever reason
-         g_console.emulator_initialized = 0;
-         g_extern.console.mode = MODE_MENU;
+         g_extern.console.emulator_initialized = 0;
+         g_extern.console.rmenu.mode = MODE_MENU;
          rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
       }
    }

@@ -354,7 +354,7 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
    IDirectSoundBuffer_SetVolume(ds->dsb, DSBVOLUME_MAX);
 
 #ifdef _XBOX
-   if(g_console.sound_volume_level == 1)
+   if(g_extern.console.sound.volume_level == 1)
    {
       dsmb.dwMixBinCount = 8;
       dsmb.lpMixBinVolumePairs = dsmbvp;

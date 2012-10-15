@@ -54,13 +54,17 @@ void rarch_config_load(const char *conf_name, bool upgrade_core_succeeded)
       CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
 #ifdef HAVE_FBO
       CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
-      CONFIG_GET_FLOAT(video.fbo_scale_x, "video_fbo_scale_x");
-      CONFIG_GET_FLOAT(video.fbo_scale_y, "video_fbo_scale_y");
+      CONFIG_GET_FLOAT(video.fbo.scale_x, "video_fbo_scale_x");
+      CONFIG_GET_FLOAT(video.fbo.scale_y, "video_fbo_scale_y");
       CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
       CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
 #endif
       CONFIG_GET_BOOL(video.smooth, "video_smooth");
+#ifdef HAVE_FBO
+      CONFIG_GET_BOOL(video.fbo.enable, "fbo_enabled");
+#endif
       CONFIG_GET_BOOL(video.vsync, "video_vsync");
+      CONFIG_GET_INT(video.aspect_ratio_idx, "aspect_ratio_index");
       CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
       CONFIG_GET_STRING(audio.device, "audio_device");
       CONFIG_GET_BOOL(audio.rate_control, "audio_rate_control");
@@ -75,46 +79,37 @@ void rarch_config_load(const char *conf_name, bool upgrade_core_succeeded)
          CONFIG_GET_INT(input.device[i], cfg);
       }
 
-      // g_console
-
-#ifdef HAVE_FBO
-      CONFIG_GET_BOOL_CONSOLE(fbo_enabled, "fbo_enabled");
+      // g_extern
+      CONFIG_GET_STRING_EXTERN(console.main_wrap.paths.default_rom_startup_dir, "default_rom_startup_dir");
+      CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
+      CONFIG_GET_BOOL_EXTERN(console.rmenu.state.msg_info.enable, "info_msg_enable");
+      CONFIG_GET_BOOL_EXTERN(console.screen.state.screenshots.enable, "screenshots_enable");
+      CONFIG_GET_BOOL_EXTERN(console.screen.state.throttle.enable, "throttle_enable");
+      CONFIG_GET_BOOL_EXTERN(console.screen.state.triple_buffering.enable, "triple_buffering_enable");
+      CONFIG_GET_BOOL_EXTERN(console.screen.state.overscan.enable, "overscan_enable");
+      CONFIG_GET_BOOL_EXTERN(console.sound.custom_bgm.enable, "custom_bgm_enable");
+      CONFIG_GET_FLOAT_EXTERN(console.screen.overscan_amount, "overscan_amount");
+#ifdef _XBOX1
+      CONFIG_GET_INT_EXTERN(console.screen.state.flicker_filter.enable, "flicker_filter");
+      CONFIG_GET_INT_EXTERN(console.sound.volume_level, "sound_volume_level");
 #endif
-#ifdef __CELLOS_LV2__
-      CONFIG_GET_BOOL_CONSOLE(custom_bgm_enable, "custom_bgm_enable");
-#endif
-      CONFIG_GET_BOOL_CONSOLE(overscan_enable, "overscan_enable");
-      CONFIG_GET_BOOL_CONSOLE(screenshots_enable, "screenshots_enable");
-      CONFIG_GET_BOOL_CONSOLE(throttle_enable, "throttle_enable");
-      CONFIG_GET_BOOL_CONSOLE(triple_buffering_enable, "triple_buffering_enable");
-      CONFIG_GET_BOOL_CONSOLE(info_msg_enable, "info_msg_enable");
-      CONFIG_GET_INT_CONSOLE(aspect_ratio_index, "aspect_ratio_index");
-      CONFIG_GET_INT_CONSOLE(current_resolution_id, "current_resolution_id");
-      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.x, "custom_viewport_x");
-      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.y, "custom_viewport_y");
-      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.width, "custom_viewport_width");
-      CONFIG_GET_INT_CONSOLE(viewports.custom_vp.height, "custom_viewport_height");
-      CONFIG_GET_INT_CONSOLE(screen_orientation, "screen_orientation");
-      CONFIG_GET_INT_CONSOLE(sound_mode, "sound_mode");
 #ifdef HAVE_ZLIB
-      CONFIG_GET_INT_EXTERN(filebrowser_state.zip_extract_mode, "zip_extract_mode");
+      CONFIG_GET_INT_EXTERN(file_state.zip_extract_mode, "zip_extract_mode");
 #endif
 #ifdef _XBOX360
-      CONFIG_GET_INT_CONSOLE(color_format, "color_format");
+      CONFIG_GET_INT(video.color_format, "color_format");
 #endif
-      CONFIG_GET_BOOL_CONSOLE(gamma_correction, "gamma_correction");
-#ifdef _XBOX1
-      CONFIG_GET_INT_CONSOLE(flicker_filter, "flicker_filter");
-      CONFIG_GET_INT_CONSOLE(sound_volume_level, "sound_volume_level");
-#endif
-      CONFIG_GET_BOOL_CONSOLE(soft_display_filter_enable, "soft_display_filter_enable");
-      CONFIG_GET_STRING_CONSOLE(default_rom_startup_dir, "default_rom_startup_dir");
-      CONFIG_GET_FLOAT_EXTERN(console.font_size, "menu_font_size");
-      CONFIG_GET_FLOAT_CONSOLE(overscan_amount, "overscan_amount");
-
-      // g_extern
+      CONFIG_GET_INT_EXTERN(console.screen.resolutions.current.id, "current_resolution_id");
       CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
       CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
+      CONFIG_GET_BOOL_EXTERN(console.screen.state.soft_filter.enable, "soft_display_filter_enable");
+      CONFIG_GET_INT_EXTERN(console.screen.orientation, "screen_orientation");
+      CONFIG_GET_INT_EXTERN(console.sound.mode, "sound_mode");
+      CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.x, "custom_viewport_x");
+      CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.y, "custom_viewport_y");
+      CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.width, "custom_viewport_width");
+      CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.height, "custom_viewport_height");
+      CONFIG_GET_FLOAT_EXTERN(console.rmenu.font_size, "menu_font_size");
 
       if(upgrade_core_succeeded)
       {
@@ -143,14 +138,17 @@ void rarch_config_save(const char * conf_name)
       config_set_string(conf, "video_cg_shader", g_settings.video.cg_shader_path);
       config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
 #ifdef HAVE_FBO
-      config_set_float(conf, "video_fbo_scale_x", g_settings.video.fbo_scale_x);
-      config_set_float(conf, "video_fbo_scale_y", g_settings.video.fbo_scale_y);
+      config_set_float(conf, "video_fbo_scale_x", g_settings.video.fbo.scale_x);
+      config_set_float(conf, "video_fbo_scale_y", g_settings.video.fbo.scale_y);
       config_set_string(conf, "video_second_pass_shader", g_settings.video.second_pass_shader);
       config_set_bool(conf, "video_render_to_texture", g_settings.video.render_to_texture);
       config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
+      config_set_bool(conf, "fbo_enabled", g_settings.video.fbo.enable);
 #endif
       config_set_bool(conf, "video_smooth", g_settings.video.smooth);
       config_set_bool(conf, "video_vsync", g_settings.video.vsync);
+      config_set_int(conf, "aspect_ratio_index", g_settings.video.aspect_ratio_idx);
+      config_set_int(conf, "color_format", g_settings.video.color_format);
       config_set_string(conf, "audio_device", g_settings.audio.device);
       config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
       config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
@@ -164,44 +162,35 @@ void rarch_config_save(const char * conf_name)
          config_set_int(conf, cfg, g_settings.input.device[i]);
       }
 
-#ifdef RARCH_CONSOLE
-      config_set_bool(conf, "fbo_enabled", g_console.fbo_enabled);
-#ifdef __CELLOS_LV2__
-      config_set_bool(conf, "custom_bgm_enable", g_console.custom_bgm_enable);
-#endif
-      config_set_bool(conf, "overscan_enable", g_console.overscan_enable);
-      config_set_bool(conf, "screenshots_enable", g_console.screenshots_enable);
-      config_set_bool(conf, "gamma_correction", g_console.gamma_correction);
-#ifdef _XBOX360
-      config_set_int(conf, "color_format", g_console.color_format);
-#endif
-      config_set_bool(conf, "soft_display_filter_enable", g_console.soft_display_filter_enable);
+      config_set_bool(conf, "overscan_enable", g_extern.console.screen.state.overscan.enable);
+      config_set_bool(conf, "screenshots_enable", g_extern.console.screen.state.screenshots.enable);
+      config_set_bool(conf, "gamma_correction", g_extern.console.screen.gamma_correction);
 #ifdef _XBOX1
-      config_set_int(conf, "flicker_filter", g_console.flicker_filter);
-      config_set_int(conf, "sound_volume_level", g_console.sound_volume_level);
+      config_set_int(conf, "flicker_filter", g_extern.console.screen.state.flicker_filter.value);
+      config_set_int(conf, "sound_volume_level", g_extern.console.sound.volume_level);
 #endif
-      config_set_bool(conf, "throttle_enable", g_console.throttle_enable);
-      config_set_bool(conf, "triple_buffering_enable", g_console.triple_buffering_enable);
-      config_set_bool(conf, "info_msg_enable", g_console.info_msg_enable);
-      config_set_int(conf, "sound_mode", g_console.sound_mode);
-      config_set_int(conf, "aspect_ratio_index", g_console.aspect_ratio_index);
-      config_set_int(conf, "current_resolution_id", g_console.current_resolution_id);
-      config_set_int(conf, "custom_viewport_width", g_console.viewports.custom_vp.width);
-      config_set_int(conf, "custom_viewport_height", g_console.viewports.custom_vp.height);
-      config_set_int(conf, "custom_viewport_x", g_console.viewports.custom_vp.x);
-      config_set_int(conf, "custom_viewport_y", g_console.viewports.custom_vp.y);
-      config_set_int(conf, "screen_orientation", g_console.screen_orientation);
-      config_set_string(conf, "default_rom_startup_dir", g_console.default_rom_startup_dir);
-      config_set_float(conf, "menu_font_size", g_extern.console.font_size);
-      config_set_float(conf, "overscan_amount", g_console.overscan_amount);
+      config_set_bool(conf, "throttle_enable", g_extern.console.screen.state.throttle.enable);
+      config_set_bool(conf, "triple_buffering_enable", g_extern.console.screen.state.triple_buffering.enable);
+      config_set_bool(conf, "info_msg_enable", g_extern.console.rmenu.state.msg_info.enable);
+      config_set_int(conf, "current_resolution_id", g_extern.console.screen.resolutions.current.id);
+      config_set_int(conf, "custom_viewport_width", g_extern.console.screen.viewports.custom_vp.width);
+      config_set_int(conf, "custom_viewport_height", g_extern.console.screen.viewports.custom_vp.height);
+      config_set_int(conf, "custom_viewport_x", g_extern.console.screen.viewports.custom_vp.x);
+      config_set_int(conf, "custom_viewport_y", g_extern.console.screen.viewports.custom_vp.y);
+      config_set_string(conf, "default_rom_startup_dir", g_extern.console.main_wrap.paths.default_rom_startup_dir);
+      config_set_float(conf, "menu_font_size", g_extern.console.rmenu.font_size);
+      config_set_float(conf, "overscan_amount", g_extern.console.screen.overscan_amount);
 #ifdef HAVE_ZLIB
-      config_set_int(conf, "zip_extract_mode", g_extern.filebrowser_state.zip_extract_mode);
-#endif
+      config_set_int(conf, "zip_extract_mode", g_extern.file_state.zip_extract_mode);
 #endif
 
       // g_extern
+      config_set_int(conf, "sound_mode", g_extern.console.sound.mode);
       config_set_int(conf, "state_slot", g_extern.state_slot);
       config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
+      config_set_bool(conf, "soft_display_filter_enable", g_extern.console.screen.state.soft_filter.enable);
+      config_set_int(conf, "screen_orientation", g_extern.console.screen.orientation);
+      config_set_bool(conf, "custom_bgm_enable", g_extern.console.sound.custom_bgm.enable);
 
       if (!config_file_write(conf, conf_name))
          RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", conf_name);

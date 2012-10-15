@@ -328,11 +328,11 @@ static bool xinput_input_key_pressed(void *data, int key)
       case RARCH_STATE_SLOT_MINUS:
          return ((state[0] & XINPUT1_GAMEPAD_RSTICK_LEFT_MASK) && (state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
       case RARCH_FRAMEADVANCE:
-         if(g_console.frame_advance_enable)
+         if(g_extern.console.screen.state.frame_advance.enable)
          {
-            g_console.menu_enable = true;
-            g_console.ingame_menu_enable = true;
-            g_console.mode_switch = MODE_MENU;
+            g_extern.console.rmenu.state.rmenu.enable = true;
+            g_extern.console.rmenu.mode = MODE_MENU;
+            g_extern.console.screen.state.ingame_menu.enable = true;
          }
          return false;
       case RARCH_REWIND:
@@ -343,16 +343,16 @@ static bool xinput_input_key_pressed(void *data, int key)
             uint32_t left_thumb_pressed = (state[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L3));
             uint32_t right_thumb_pressed = (state[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R3));
 
-            g_console.menu_enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED(d3d);
-            g_console.ingame_menu_enable = right_thumb_pressed && !left_thumb_pressed;
+            g_extern.console.rmenu.state.rmenu.enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED(d3d);
+            g_extern.console.screen.state.ingame_menu.enable = right_thumb_pressed && !left_thumb_pressed;
             
-            if(g_console.menu_enable || (g_console.ingame_menu_enable && !g_console.menu_enable))
+            if(g_extern.console.rmenu.state.rmenu.enable || (g_extern.console.screen.ingame_menu.enable && !g_extern.console.rmenu.state.rmenu.enable))
             {
-               g_console.mode_switch = MODE_MENU;
+               g_extern.console.rmenu.mode = MODE_MENU;
                SET_TIMER_EXPIRATION(d3d, 30);
-               retval = g_console.menu_enable;
+               retval = g_extern.console.rmenu.state.rmenu.enable;
             }
-            retval = g_console.ingame_menu_enable ? g_console.ingame_menu_enable : g_console.menu_enable;
+            retval = g_extern.console.screen.state.ingame_menu.enable ? g_extern.console.screen.state.ingame_menu.enable : g_extern.console.rmenu.state.rmenu.enable;
          }
    }
 

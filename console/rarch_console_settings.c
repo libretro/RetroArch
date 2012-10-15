@@ -27,12 +27,12 @@ void rarch_settings_change(unsigned setting)
    switch(setting)
    {
       case S_ASPECT_RATIO_DECREMENT:
-         if(g_console.aspect_ratio_index > 0)
-            g_console.aspect_ratio_index--;
+         if(g_settings.video.aspect_ratio_idx > 0)
+            g_settings.video.aspect_ratio_idx--;
          break;
       case S_ASPECT_RATIO_INCREMENT:
-         if(g_console.aspect_ratio_index < LAST_ASPECT_RATIO)
-            g_console.aspect_ratio_index++;
+         if(g_settings.video.aspect_ratio_idx < LAST_ASPECT_RATIO)
+            g_settings.video.aspect_ratio_idx++;
          break;
       case S_AUDIO_MUTE:
          g_extern.audio_data.mute = !g_extern.audio_data.mute;
@@ -51,9 +51,9 @@ void rarch_settings_change(unsigned setting)
          g_settings.audio.rate_control = true;
          break;
       case S_FRAME_ADVANCE:
-         g_extern.console.frame_advance_enable = true;
-         g_extern.console.enable = false;
-         g_extern.console.mode = MODE_EMULATION;
+         g_extern.console.screen.state.frame_advance.enable = true;
+         g_extern.console.rmenu.state.rmenu.enable = false;
+         g_extern.console.rmenu.mode = MODE_EMULATION;
          break;
       case S_HW_TEXTURE_FILTER:
          g_settings.video.smooth = !g_settings.video.smooth;
@@ -62,69 +62,69 @@ void rarch_settings_change(unsigned setting)
          g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
          break;
       case S_OVERSCAN_DECREMENT:
-         g_console.overscan_amount -= 0.01f;
-         g_console.overscan_enable = true;
-         if(g_console.overscan_amount == 0.0f)
-            g_console.overscan_enable = false;
+         g_extern.console.screen.overscan_amount -= 0.01f;
+         g_extern.console.screen.state.overscan.enable = true;
+         if(g_extern.console.screen.overscan_amount == 0.0f)
+            g_extern.console.screen.state.overscan.enable = false;
          break;
       case S_OVERSCAN_INCREMENT:
-         g_console.overscan_amount += 0.01f;
-         g_console.overscan_enable = true;
-         if(g_console.overscan_amount == 0.0f)
-            g_console.overscan_enable = 0;
+         g_extern.console.screen.overscan_amount += 0.01f;
+         g_extern.console.screen.state.overscan.enable = true;
+         if(g_extern.console.screen.overscan_amount == 0.0f)
+            g_extern.console.screen.state.overscan.enable = 0;
          break;
       case S_RESOLUTION_PREVIOUS:
-         if (g_console.current_resolution_index)
+         if (g_extern.console.screen.resolutions.current.idx)
          {
-            g_console.current_resolution_index--;
-            g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
+            g_extern.console.screen.resolutions.current.idx--;
+            g_extern.console.screen.resolutions.current.id = g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
          }
          break;
       case S_RESOLUTION_NEXT:
-         if (g_console.current_resolution_index + 1 < g_console.supported_resolutions_count)
+         if (g_extern.console.screen.resolutions.current.idx + 1 < g_extern.console.screen.resolutions.count)
          {
-            g_console.current_resolution_index++;
-            g_console.current_resolution_id = g_console.supported_resolutions[g_console.current_resolution_index];
+            g_extern.console.screen.resolutions.current.idx++;
+            g_extern.console.screen.resolutions.current.id = g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
          }
          break;
       case S_QUIT:
-         g_extern.console.enable = false;
-         g_extern.console.ingame_menu_enable = false;
-         g_extern.console.mode = MODE_EXIT;
+         g_extern.console.rmenu.state.rmenu.enable = false;
+         g_extern.console.rmenu.state.ingame_menu.enable = false;
+         g_extern.console.rmenu.mode = MODE_EXIT;
          break;
       case S_QUIT_RARCH:
-         g_extern.console.enable = false;
-         g_console.initialize_rarch_enable = false;
-         g_extern.console.mode = MODE_EXIT;
+         g_extern.console.rmenu.state.rmenu.enable = false;
+         g_extern.console.initialize_rarch_enable = false;
+         g_extern.console.rmenu.mode = MODE_EXIT;
          break;
       case S_RETURN_TO_GAME:
-         g_extern.console.frame_advance_enable = false;
-         g_extern.console.enable = false;
-         g_extern.console.mode = MODE_EMULATION;
+         g_extern.console.screen.state.frame_advance.enable = false;
+         g_extern.console.rmenu.state.rmenu.enable = false;
+         g_extern.console.rmenu.mode = MODE_EMULATION;
          break;
       case S_RETURN_TO_LAUNCHER:
-         g_console.return_to_launcher = true;
-         g_extern.console.enable = false;
-         g_console.initialize_rarch_enable = false;
-         g_extern.console.mode = MODE_EXIT;
+         g_extern.console.external_launch.enable = true;
+         g_extern.console.rmenu.state.rmenu.enable = false;
+         g_extern.console.initialize_rarch_enable = false;
+         g_extern.console.rmenu.mode = MODE_EXIT;
          break;
       case S_RETURN_TO_MENU:
-         g_extern.console.enable = false;
-         g_extern.console.ingame_menu_item = 0;
-         g_extern.console.mode = MODE_MENU;
+         g_extern.console.rmenu.state.rmenu.enable = false;
+         g_extern.console.rmenu.ingame_menu.idx = 0;
+         g_extern.console.rmenu.mode = MODE_MENU;
          break;
       case S_ROTATION_DECREMENT:
-         if(g_console.screen_orientation > 0)
-            g_console.screen_orientation--;
+         if(g_extern.console.screen.orientation > 0)
+            g_extern.console.screen.orientation--;
          break;
       case S_ROTATION_INCREMENT:
-         if(g_console.screen_orientation < LAST_ORIENTATION)
-            g_console.screen_orientation++;
+         if(g_extern.console.screen.orientation < LAST_ORIENTATION)
+            g_extern.console.screen.orientation++;
          break;
       case S_START_RARCH:
-         g_extern.console.enable = false;
-         g_console.initialize_rarch_enable = 1;
-         g_extern.console.mode = MODE_EMULATION;
+         g_extern.console.rmenu.state.rmenu.enable = false;
+         g_extern.console.initialize_rarch_enable = 1;
+         g_extern.console.rmenu.mode = MODE_EMULATION;
          break;
       case S_REWIND:
          g_settings.rewind_enable = !g_settings.rewind_enable;
@@ -137,22 +137,24 @@ void rarch_settings_change(unsigned setting)
          g_extern.state_slot++;
          break;
       case S_SCALE_ENABLED:
-         g_console.fbo_enabled = !g_console.fbo_enabled;
+         g_settings.video.fbo.enable = !g_settings.video.fbo.enable;
          break;
       case S_SCALE_FACTOR_DECREMENT:
-         g_settings.video.fbo_scale_x -= 1.0f;
-         g_settings.video.fbo_scale_y -= 1.0f;
+         g_settings.video.fbo.scale_x -= 1.0f;
+         g_settings.video.fbo.scale_y -= 1.0f;
          break;
       case S_SCALE_FACTOR_INCREMENT:
-         g_settings.video.fbo_scale_x += 1.0f;
-         g_settings.video.fbo_scale_y += 1.0f;
+         g_settings.video.fbo.scale_x += 1.0f;
+         g_settings.video.fbo.scale_y += 1.0f;
          break;
       case S_THROTTLE:
          if(!g_extern.system.force_nonblock)
-            g_console.throttle_enable = !g_console.throttle_enable;
+            g_extern.console.screen.state.throttle.enable = 
+               !g_extern.console.screen.state.throttle.enable;
          break;
       case S_TRIPLE_BUFFERING:
-         g_console.triple_buffering_enable = !g_console.triple_buffering_enable;
+         g_extern.console.screen.state.triple_buffering.enable = 
+            !g_extern.console.screen.state.triple_buffering.enable;
          break;
    }
 }
@@ -162,7 +164,7 @@ void rarch_settings_default(unsigned setting)
    switch(setting)
    {
       case S_DEF_ASPECT_RATIO:
-         g_console.aspect_ratio_index = ASPECT_RATIO_4_3;
+         g_settings.video.aspect_ratio_idx = ASPECT_RATIO_4_3;
          break;
       case S_DEF_AUDIO_MUTE:
          g_extern.audio_data.mute = false;
@@ -183,30 +185,30 @@ void rarch_settings_default(unsigned setting)
          g_settings.video.second_pass_smooth = 1;
          break;
       case S_DEF_OVERSCAN:
-         g_console.overscan_amount = 0.0f;
-         g_console.overscan_enable = false;
+         g_extern.console.screen.overscan_amount = 0.0f;
+         g_extern.console.screen.state.overscan.enable = false;
          break;
       case S_DEF_ROTATION:
-         g_console.screen_orientation = ORIENTATION_NORMAL;
+         g_extern.console.screen.orientation = ORIENTATION_NORMAL;
          break;
       case S_DEF_THROTTLE:
          if(!g_extern.system.force_nonblock)
-            g_console.throttle_enable = true;
+            g_extern.console.screen.state.throttle.enable = true;
          break;
       case S_DEF_TRIPLE_BUFFERING:
-         g_console.triple_buffering_enable = true;
+         g_extern.console.screen.state.triple_buffering.enable = true;
          break;
       case S_DEF_SAVE_STATE:
          g_extern.state_slot = 0;
          break;
       case S_DEF_SCALE_ENABLED:
-         g_console.fbo_enabled = true;
-         g_settings.video.fbo_scale_x = 2.0f;
-         g_settings.video.fbo_scale_y = 2.0f;
+         g_settings.video.fbo.enable = true;
+         g_settings.video.fbo.scale_x = 2.0f;
+         g_settings.video.fbo.scale_y = 2.0f;
          break;
       case S_DEF_SCALE_FACTOR:
-         g_settings.video.fbo_scale_x = 2.0f;
-         g_settings.video.fbo_scale_y = 2.0f;
+         g_settings.video.fbo.scale_x = 2.0f;
+         g_settings.video.fbo.scale_y = 2.0f;
          break;
    }
 }
@@ -227,7 +229,7 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
          snprintf(str, sizeof(str), "INFO - Press LEFT/RIGHT to change the controls, and press\n[RetroPad Start] to reset a button to default values.");
          break;
       case S_MSG_EXTRACTED_ZIPFILE:
-         switch(g_extern.filebrowser_state.zip_extract_mode)
+         switch(g_extern.file_state.zip_extract_mode)
          {
             case ZIP_EXTRACT_TO_CURRENT_DIR:
                snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to current directory.");
@@ -243,7 +245,7 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
          }
          break;
       case S_MSG_LOADING_ROM:
-         fill_pathname_base(tmp, g_extern.filebrowser_state.rom_path, sizeof(tmp));
+         fill_pathname_base(tmp, g_extern.file_state.rom_path, sizeof(tmp));
          snprintf(str, sizeof(str), "INFO - Loading %s...", tmp);
          break;
       case S_MSG_DIR_LOADING_ERROR:
@@ -288,7 +290,7 @@ void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t 
    switch (setting)
    {
       case S_LBL_ASPECT_RATIO:
-         snprintf(str, size, "Aspect Ratio: %s", aspectratio_lut[g_console.aspect_ratio_index].name);
+         snprintf(str, size, "Aspect Ratio: %s", aspectratio_lut[g_settings.video.aspect_ratio_idx].name);
          break;
       case S_LBL_SHADER:
          snprintf(str, size, "Shader #1: %s", g_settings.video.cg_shader_path);
@@ -300,10 +302,10 @@ void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t 
          snprintf(str, size, "RetroArch %s", PACKAGE_VERSION);
          break;
       case S_LBL_SCALE_FACTOR:
-         snprintf(str, size, "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
+         snprintf(str, size, "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
          break;
       case S_LBL_ROTATION:
-         snprintf(str, size, "Rotation: %s", rotation_lut[g_console.screen_orientation]);
+         snprintf(str, size, "Rotation: %s", rotation_lut[g_extern.console.screen.orientation]);
          break;
       case S_LBL_LOAD_STATE_SLOT:
          snprintf(str, size, "Load State #%d", g_extern.state_slot);
@@ -314,7 +316,7 @@ void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t 
       case S_LBL_ZIP_EXTRACT:
 	 {
             char msg[128];
-	    switch(g_extern.filebrowser_state.zip_extract_mode)
+	    switch(g_extern.file_state.zip_extract_mode)
             {
                case ZIP_EXTRACT_TO_CURRENT_DIR:
                   snprintf(msg, sizeof(msg), "Current dir");
@@ -353,8 +355,8 @@ void rarch_settings_set_default(void)
 #endif
 
 #ifdef HAVE_FBO
-   g_settings.video.fbo_scale_x = 2.0f;
-   g_settings.video.fbo_scale_y = 2.0f;
+   g_settings.video.fbo.scale_x = 2.0f;
+   g_settings.video.fbo.scale_y = 2.0f;
 #endif
 
 #ifdef GEKKO
@@ -372,56 +374,53 @@ void rarch_settings_set_default(void)
    g_settings.video.msg_pos_x = 0.05f;
    g_settings.video.msg_pos_y = 0.90f;
    g_settings.video.aspect_ratio = -1.0f;
-
-   // g_console
-   g_console.block_config_read = true;
-   g_extern.console.frame_advance_enable = false;
-   g_console.emulator_initialized = 0;
-   g_console.screenshots_enable = true;
-   g_console.throttle_enable = true;
-   g_console.initialize_rarch_enable = false;
-   g_console.triple_buffering_enable = true;
-   g_console.default_savestate_dir_enable = false;
-   g_console.default_sram_dir_enable = false;
-
-#ifdef HAVE_FBO
-   g_console.fbo_enabled = true;
-#else
-   g_console.fbo_enabled = false;
-#endif
-
-   g_extern.console.mode = MODE_MENU;
-   g_console.screen_orientation = ORIENTATION_NORMAL;
-   g_console.current_resolution_id = 0;
-   strlcpy(g_console.default_rom_startup_dir, default_paths.filebrowser_startup_dir, sizeof(g_console.default_rom_startup_dir));
-   strlcpy(g_console.default_savestate_dir, default_paths.savestate_dir, sizeof(g_console.default_savestate_dir));
-   strlcpy(g_console.default_sram_dir, default_paths.sram_dir, sizeof(g_console.default_sram_dir));
-   g_console.aspect_ratio_index = 0;
-   g_extern.console.font_size = 1.0f;
-   g_console.overscan_enable = false;
-   g_console.overscan_amount = 0.0f;
-   g_console.sound_mode = SOUND_MODE_NORMAL;
-   g_console.viewports.custom_vp.width = 0;
-   g_console.viewports.custom_vp.height = 0;
-   g_console.viewports.custom_vp.x = 0;
-   g_console.viewports.custom_vp.y = 0;
-   g_console.custom_bgm_enable = true;
-   g_console.info_msg_enable = true;
 #ifdef _XBOX360
-   g_console.color_format = 0;
-#endif
-   g_console.gamma_correction = DEFAULT_GAMMA;
-#ifdef _XBOX1
-   g_console.flicker_filter = 1;
-   g_console.sound_volume_level = 0;
-#endif
-   g_console.soft_display_filter_enable = true;
-#ifdef HAVE_ZLIB
-   g_extern.filebrowser_state.zip_extract_mode = 0;
+   g_settings.video.color_format = 0;
 #endif
 
    // g_extern
+   strlcpy(g_extern.console.main_wrap.paths.default_sram_dir, default_paths.sram_dir, sizeof(g_extern.console.main_wrap.paths.default_sram_dir));
+   g_extern.console.screen.state.overscan.enable = false;
+   g_extern.console.screen.overscan_amount = 0.0f;
+   g_extern.console.sound.custom_bgm.enable = true;
+   g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
+   g_extern.console.initialize_rarch_enable = false;
+   g_extern.console.screen.state.screenshots.enable = true;
+   g_extern.console.screen.state.throttle.enable = true;
+   g_extern.console.rmenu.state.msg_info.enable = true;
+   g_extern.console.screen.state.triple_buffering.enable = true;
+   g_extern.console.main_wrap.state.default_savestate_dir.enable = false;
+   g_extern.console.main_wrap.state.default_sram_dir.enable = false;
+   g_extern.console.screen.orientation = ORIENTATION_NORMAL;
+   g_extern.console.screen.resolutions.current.id = 0;
+   strlcpy(g_extern.console.main_wrap.paths.default_rom_startup_dir, default_paths.filebrowser_startup_dir, sizeof(g_extern.console.main_wrap.paths.default_rom_startup_dir));
+   strlcpy(g_extern.console.main_wrap.paths.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.paths.default_savestate_dir));
+#ifdef HAVE_FBO
+   g_settings.video.fbo.enable = true;
+#else
+   g_settings.video.fbo.enable = false;
+#endif
+   g_settings.video.aspect_ratio_idx = 0;
+   g_extern.console.block_config_read = true;
+   g_extern.console.screen.state.frame_advance.enable = false;
    g_extern.state_slot = 0;
    g_extern.audio_data.mute = 0;
    g_extern.verbose = true;
+
+   g_extern.console.emulator_initialized = 0;
+   g_extern.console.rmenu.mode = MODE_MENU;
+   g_extern.console.rmenu.font_size = 1.0f;
+   g_extern.console.sound.mode = SOUND_MODE_NORMAL;
+   g_extern.console.screen.viewports.custom_vp.width = 0;
+   g_extern.console.screen.viewports.custom_vp.height = 0;
+   g_extern.console.screen.viewports.custom_vp.x = 0;
+   g_extern.console.screen.viewports.custom_vp.y = 0;
+#ifdef _XBOX1
+   g_extern.console.screen.state.flicker_filter.enable = 1;
+   g_extern.console.sound.volume_level = 0;
+#endif
+   g_extern.console.screen.state.soft_filter.enable = true;
+#ifdef HAVE_ZLIB
+   g_extern.file_state.zip_extract_mode = 0;
+#endif
 }

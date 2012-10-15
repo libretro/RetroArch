@@ -82,7 +82,7 @@ void rarch_set_auto_viewport(unsigned width, unsigned height)
 
 void rarch_set_core_viewport()
 {
-   if (!g_console.emulator_initialized)
+   if (!g_extern.console.emulator_initialized)
       return;
 
    // fallback to 1:1 pixel ratio if none provided
@@ -103,7 +103,7 @@ void rarch_load_shader(unsigned slot, const char *path)
 RARCH_WARN("Shader support is not implemented for this build.\n");
 #endif
 
-   if (g_console.info_msg_enable)
+   if (g_extern.console.rmenu.state.msg_info.enable)
       rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
 }
 #endif

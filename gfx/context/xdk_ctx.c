@@ -94,8 +94,8 @@ static void gfx_ctx_xdk_clear(void)
 {
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 #ifdef _XBOX1
-   unsigned flicker_filter = g_console.flicker_filter;
-   bool soft_filter_enable = g_console.soft_display_filter_enable;
+   unsigned flicker_filter = g_extern.console.screen.state.flicker_filter.value;
+   bool soft_filter_enable = g_extern.console.screen.state.soft_filter.enable;
 #endif
 
    device_ptr->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
@@ -213,7 +213,7 @@ static bool gfx_ctx_xdk_init(void)
     // Safe mode
     d3d->d3dpp.BackBufferWidth = 640;
     d3d->d3dpp.BackBufferHeight = 480;
-    g_console.menus_hd_enable = false;
+    g_extern.console.rmenu.state.menus_hd.enable = false;
 
    // Only valid in PAL mode, not valid for HDTV modes!
    if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
@@ -252,25 +252,25 @@ static bool gfx_ctx_xdk_init(void)
    {
       if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
       {
-         g_console.menus_hd_enable = false;
+         g_extern.console.rmenu.state.menus_hd.enable = false;
          d3d->d3dpp.BackBufferWidth	= 640;
          d3d->d3dpp.BackBufferHeight = 480;
          d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
       }
-	   else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
-	   {
-         g_console.menus_hd_enable = true;
-         d3d->d3dpp.BackBufferWidth	= 1280;
-         d3d->d3dpp.BackBufferHeight = 720;
-         d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
-	   }
-	   else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
-	   {
-         g_console.menus_hd_enable = true;
-         d3d->d3dpp.BackBufferWidth	= 1920;
-         d3d->d3dpp.BackBufferHeight = 1080;
-         d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;
-	   }
+      else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
+      {
+         g_extern.console.rmenu.state.menus_hd.enable = true;
+	 d3d->d3dpp.BackBufferWidth	= 1280;
+	 d3d->d3dpp.BackBufferHeight = 720;
+	 d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
+      }
+      else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+      {
+         g_extern.console.rmenu.state.menus_hd.enable = true;
+	 d3d->d3dpp.BackBufferWidth	= 1920;
+	 d3d->d3dpp.BackBufferHeight = 1080;
+	 d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;
+      }
    }
 
    d3d->win_width = d3d->d3dpp.BackBufferWidth;
@@ -345,19 +345,19 @@ static bool gfx_ctx_xdk_init(void)
    if(!d3d->video_mode.fIsWideScreen)
       d3d->d3dpp.Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
 
-   g_console.menus_hd_enable = d3d->video_mode.fIsHiDef;
+   g_extern.console.rmenu.state.menus_hd.enable = d3d->video_mode.fIsHiDef;
    
    d3d->d3dpp.BackBufferWidth         = d3d->video_mode.fIsHiDef ? 1280 : 640;
    d3d->d3dpp.BackBufferHeight        = d3d->video_mode.fIsHiDef ? 720 : 480;
 
-   if(g_console.gamma_correction)
+   if(g_extern.console.screen.gamma_correction)
    {
-      d3d->d3dpp.BackBufferFormat        = g_console.color_format ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : (D3DFORMAT)MAKESRGBFMT(D3DFMT_LIN_A1R5G5B5);
+      d3d->d3dpp.BackBufferFormat        = g_settings.video.color_format ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : (D3DFORMAT)MAKESRGBFMT(D3DFMT_LIN_A1R5G5B5);
       d3d->d3dpp.FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
    }
    else
    {
-      d3d->d3dpp.BackBufferFormat        = g_console.color_format ? D3DFMT_A8R8G8B8 : D3DFMT_LIN_A1R5G5B5;
+      d3d->d3dpp.BackBufferFormat        = g_settings.video.color_format ? D3DFMT_A8R8G8B8 : D3DFMT_LIN_A1R5G5B5;
       d3d->d3dpp.FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;
    }
    d3d->d3dpp.MultiSampleQuality      = 0;
@@ -422,11 +422,11 @@ static bool gfx_ctx_xdk_init(void)
    vp.MaxZ   = 1.0f;
    d3d->d3d_render_device->SetViewport(&vp);
 
-   if(g_console.viewports.custom_vp.width == 0)
-      g_console.viewports.custom_vp.width = vp.Width;
+   if(g_extern.console.screen.viewports.custom_vp.width == 0)
+      g_extern.console.screen.viewports.custom_vp.width = vp.Width;
 
-   if(g_console.viewports.custom_vp.height == 0)
-      g_console.viewports.custom_vp.height = vp.Height;
+   if(g_extern.console.screen.viewports.custom_vp.height == 0)
+      g_extern.console.screen.viewports.custom_vp.height = vp.Height;
 
    return true;
 }

@@ -152,8 +152,8 @@ static void populate_setting_item(unsigned i, item *current_item)
 #ifdef __CELLOS_LV2__
       case SETTING_CHANGE_RESOLUTION:
       {
-         unsigned width = gfx_ctx_get_resolution_width(g_console.supported_resolutions[g_console.current_resolution_index]);
-	 unsigned height = gfx_ctx_get_resolution_height(g_console.supported_resolutions[g_console.current_resolution_index]);
+         unsigned width = gfx_ctx_get_resolution_width(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
+	 unsigned height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
          snprintf(current_item->text, sizeof(current_item->text), "Resolution");
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%dx%d", width, height);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Change the display resolution.");
@@ -163,7 +163,7 @@ static void populate_setting_item(unsigned i, item *current_item)
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_SHADER_PRESETS:
          snprintf(current_item->text, sizeof(current_item->text), "Shader Presets (CGP)");
-	 fill_pathname_base(fname, g_console.cgp_path, sizeof(fname));
+	 fill_pathname_base(fname, g_extern.file_state.cgp_path, sizeof(fname));
 	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), fname);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a [CG Preset] script.");
 	 break;
@@ -182,12 +182,12 @@ static void populate_setting_item(unsigned i, item *current_item)
 #endif
       case SETTING_FONT_SIZE:
          snprintf(current_item->text, sizeof(current_item->text), "Font Size");
-	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_extern.console.font_size);
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_extern.console.rmenu.font_size);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Increase or decrease the [Font Size].");
 	 break;
       case SETTING_KEEP_ASPECT_RATIO:
          snprintf(current_item->text, sizeof(current_item->text), "Aspect Ratio");
-	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), aspectratio_lut[g_console.aspect_ratio_index].name);
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), aspectratio_lut[g_settings.video.aspect_ratio_idx].name);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select an [Aspect Ratio].");
 	 break;
       case SETTING_HW_TEXTURE_FILTER:
@@ -209,46 +209,46 @@ static void populate_setting_item(unsigned i, item *current_item)
 	 break;
       case SETTING_SCALE_ENABLED:
          snprintf(current_item->text, sizeof(current_item->text), "Custom Scaling/Dual Shaders");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.fbo_enabled ? "ON" : "OFF");
-	 snprintf(current_item->comment, sizeof(current_item->comment), g_console.fbo_enabled ? "INFO - [Custom Scaling] is set to 'ON' - 2x shaders will look much\nbetter, and you can select a shader for [Shader #2]." : "INFO - [Custom Scaling] is set to 'OFF'.");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_settings.video.fbo.enable ? "ON" : "OFF");
+	 snprintf(current_item->comment, sizeof(current_item->comment), g_settings.video.fbo.enable ? "INFO - [Custom Scaling] is set to 'ON' - 2x shaders will look much\nbetter, and you can select a shader for [Shader #2]." : "INFO - [Custom Scaling] is set to 'OFF'.");
 	 break;
       case SETTING_SCALE_FACTOR:
          snprintf(current_item->text, sizeof(current_item->text), "Custom Scaling Factor");
-	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
-	 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom Scaling Factor] is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo_scale_x, g_settings.video.fbo_scale_y);
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
+	 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom Scaling Factor] is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
 	 break;
 #endif
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
          snprintf(current_item->text, sizeof(current_item->text), "Flicker Filter");
-	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_console.flicker_filter);
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.console.screen.state.flicker_filter.enable);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Flicker Filter].");
 	 break;
       case SETTING_SOFT_DISPLAY_FILTER:
          snprintf(current_item->text, sizeof(current_item->text), "Soft Display Filter");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.soft_display_filter_enable ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.screen.state.soft_filter.enable ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Soft Display Filter].");
 	 break;
 #endif
       case SETTING_HW_OVERSCAN_AMOUNT:
          snprintf(current_item->text, sizeof(current_item->text), "Overscan");
-	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_console.overscan_amount);
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_extern.console.screen.overscan_amount);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Adjust or decrease [Overscan]. Set this to higher than 0.000\nif the screen doesn't fit on your TV/monitor.");
 	 break;
       case SETTING_THROTTLE_MODE:
          snprintf(current_item->text, sizeof(current_item->text), "Throttle Mode");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.throttle_enable ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), g_console.throttle_enable ? "INFO - [Throttle Mode] is 'ON' - Vsync is enabled." : "INFO - [Throttle Mode] is 'OFF' - Vsync is disabled.");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.screen.state.throttle.enable ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), g_extern.console.screen.state.throttle.enable ? "INFO - [Throttle Mode] is 'ON' - Vsync is enabled." : "INFO - [Throttle Mode] is 'OFF' - Vsync is disabled.");
 	 break;
       case SETTING_TRIPLE_BUFFERING:
          snprintf(current_item->text, sizeof(current_item->text), "Triple Buffering");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.triple_buffering_enable ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), g_console.triple_buffering_enable ? "INFO - [Triple Buffering] is set to 'ON'." : "INFO - [Triple Buffering] is set to 'OFF'.");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.screen.state.triple_buffering.enable ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), g_extern.console.screen.state.triple_buffering.enable ? "INFO - [Triple Buffering] is set to 'ON'." : "INFO - [Triple Buffering] is set to 'OFF'.");
 	 break;
       case SETTING_ENABLE_SCREENSHOTS:
          snprintf(current_item->text, sizeof(current_item->text), "Screenshot Option");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.screenshots_enable ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Screenshots feature is set to '%s'.", g_console.screenshots_enable ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.screen.state.screenshots.enable ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Screenshots feature is set to '%s'.", g_extern.console.screen.state.screenshots.enable ? "ON" : "OFF");
 	 break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
@@ -264,7 +264,7 @@ static void populate_setting_item(unsigned i, item *current_item)
 	 break;
       case SETTING_SOUND_MODE:
          snprintf(current_item->text, sizeof(current_item->text), "Sound Output");
-	 switch(g_console.sound_mode)
+	 switch(g_extern.console.sound.mode)
 	 {
 		 case SOUND_MODE_NORMAL:
 			 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Sound Output] is set to 'Normal'.");
@@ -306,12 +306,12 @@ static void populate_setting_item(unsigned i, item *current_item)
 	 /* emu-specific */
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
          snprintf(current_item->text, sizeof(current_item->text), "Debug info messages");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.fps_info_msg_enable ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.rmenu.state.msg_fps.enable ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen debug messages.");
 	 break;
       case SETTING_EMU_SHOW_INFO_MSG:
          snprintf(current_item->text, sizeof(current_item->text), "Info messages");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.info_msg_enable ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.rmenu.state.msg_info.enable ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen info messages in the menu.");
 	 break;
       case SETTING_EMU_REWIND_ENABLED:
@@ -325,7 +325,7 @@ static void populate_setting_item(unsigned i, item *current_item)
 #ifdef HAVE_ZLIB
       case SETTING_ZIP_EXTRACT:
          snprintf(current_item->text, sizeof(current_item->text), "ZIP Extract Option");
-	 switch(g_extern.filebrowser_state.zip_extract_mode)
+	 switch(g_extern.file_state.zip_extract_mode)
 	 {
 		 case ZIP_EXTRACT_TO_CURRENT_DIR:
 			 snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir");
@@ -364,7 +364,7 @@ static void populate_setting_item(unsigned i, item *current_item)
 #ifdef _XBOX1
       case SETTING_EMU_AUDIO_SOUND_VOLUME_LEVEL:
          snprintf(current_item->text, sizeof(current_item->text), "Volume Level");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.sound_volume_level ? "Loud" : "Normal");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.sound.volume_level ? "Loud" : "Normal");
 	 if(g_extern.audio_data.mute)
        snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Volume Level] is set to 'Loud'");
 	 else
@@ -373,22 +373,22 @@ static void populate_setting_item(unsigned i, item *current_item)
 #endif
       case SETTING_ENABLE_CUSTOM_BGM:
          snprintf(current_item->text, sizeof(current_item->text), "Custom BGM Option");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.custom_bgm_enable ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom BGM] is set to '%s'.", g_console.custom_bgm_enable ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.sound.custom_bgm.enable ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom BGM] is set to '%s'.", g_extern.console.sound.custom_bgm.enable ? "ON" : "OFF");
 	 break;
       case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
          snprintf(current_item->text, sizeof(current_item->text), "Startup ROM Directory");
-	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.default_rom_startup_dir);
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.paths.default_rom_startup_dir);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default [Startup ROM directory]. NOTE: You will have to\nrestart the emulator for this change to have any effect.");
 	 break;
       case SETTING_PATH_SAVESTATES_DIRECTORY:
          snprintf(current_item->text, sizeof(current_item->text), "Savestate Directory");
-	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.default_savestate_dir);
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.paths.default_savestate_dir);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default path where all the savestate files will be saved to.");
 	 break;
       case SETTING_PATH_SRAM_DIRECTORY:
          snprintf(current_item->text, sizeof(current_item->text), "SRAM Directory");
-	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.default_sram_dir);
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.paths.default_sram_dir);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default SRAM (SaveRAM) directory path. All the\nbattery backup saves will be stored in this directory.");
 	 break;
 #ifdef HAVE_XML
@@ -405,18 +405,18 @@ static void populate_setting_item(unsigned i, item *current_item)
 	 break;
       case SETTING_ENABLE_SRAM_PATH:
          snprintf(current_item->text, sizeof(current_item->text), "Custom SRAM Dir Enable");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.default_sram_dir_enable ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom SRAM Dir Path] is set to '%s'.", g_console.default_sram_dir_enable ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.state.default_sram_dir.enable ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom SRAM Dir Path] is set to '%s'.", g_extern.console.main_wrap.state.default_sram_dir.enable ? "ON" : "OFF");
 	 break;
       case SETTING_ENABLE_STATE_PATH:
          snprintf(current_item->text, sizeof(current_item->text), "Custom Savestate Dir Enable");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.default_savestate_dir_enable ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom Savestate Dir Path] is set to '%s'.", g_console.default_savestate_dir_enable ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.state.default_savestate_dir.enable ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom Savestate Dir Path] is set to '%s'.", g_extern.console.main_wrap.state.default_savestate_dir.enable ? "ON" : "OFF");
 	 break;
       case SETTING_CONTROLS_SCHEME:
          snprintf(current_item->text, sizeof(current_item->text), "Control Scheme Preset");
-	 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Input scheme preset [%s] is selected.", g_console.input_cfg_path);
-	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_console.input_cfg_path);
+	 snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Input scheme preset [%s] is selected.", g_extern.file_state.input_cfg_path);
+	 snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.file_state.input_cfg_path);
 	 break;
       case SETTING_CONTROLS_NUMBER:
          snprintf(current_item->text, sizeof(current_item->text), "Controller No");
@@ -684,7 +684,7 @@ static void select_file(menu *current_menu, uint64_t input)
                }
                break;
             case PRESET_CHOICE:
-               strlcpy(g_console.cgp_path, path, sizeof(g_console.cgp_path));
+               strlcpy(g_extern.file_state.cgp_path, path, sizeof(g_extern.file_state.cgp_path));
                context->apply_fbo_state_changes(FBO_DEINIT);
 #ifdef HAVE_OPENGL
                gl_cg_reinit(path);
@@ -693,7 +693,7 @@ static void select_file(menu *current_menu, uint64_t input)
                break;
 #endif
             case INPUT_PRESET_CHOICE:
-               strlcpy(g_console.input_cfg_path, path, sizeof(g_console.input_cfg_path));
+               strlcpy(g_extern.file_state.input_cfg_path, path, sizeof(g_extern.file_state.input_cfg_path));
                config_read_keybinds(path);
                break;
             case BORDER_CHOICE:
@@ -703,13 +703,13 @@ static void select_file(menu *current_menu, uint64_t input)
                
                if(set_libretro_core_as_launch)
                {
-                  strlcpy(g_console.launch_app_on_exit, path, sizeof(g_console.launch_app_on_exit));
+                  strlcpy(g_extern.console.external_launch.launch_app, path, sizeof(g_extern.console.external_launch.launch_app));
                   set_libretro_core_as_launch = false;
                   rarch_settings_change(S_RETURN_TO_LAUNCHER);
                }
                else
                {
-                  if(g_console.info_msg_enable)
+                  if(g_extern.console.rmenu.state.msg_info.enable)
                      rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                }
                break;
@@ -752,13 +752,13 @@ static void select_directory(menu *current_menu, uint64_t input)
          switch(current_menu->enum_id)
          {
             case PATH_SAVESTATES_DIR_CHOICE:
-               strlcpy(g_console.default_savestate_dir, path, sizeof(g_console.default_savestate_dir));
+               strlcpy(g_extern.console.main_wrap.paths.default_savestate_dir, path, sizeof(g_extern.console.main_wrap.paths.default_savestate_dir));
                break;
             case PATH_SRAM_DIR_CHOICE:
-               strlcpy(g_console.default_sram_dir, path, sizeof(g_console.default_sram_dir));
+               strlcpy(g_extern.console.main_wrap.paths.default_sram_dir, path, sizeof(g_extern.console.main_wrap.paths.default_sram_dir));
                break;
             case PATH_DEFAULT_ROM_DIR_CHOICE:
-               strlcpy(g_console.default_rom_startup_dir, path, sizeof(g_console.default_rom_startup_dir));
+               strlcpy(g_extern.console.main_wrap.paths.default_rom_startup_dir, path, sizeof(g_extern.console.main_wrap.paths.default_rom_startup_dir));
                break;
 #ifdef HAVE_XML
             case PATH_CHEATS_DIR_CHOICE:
@@ -778,13 +778,13 @@ static void select_directory(menu *current_menu, uint64_t input)
       switch(current_menu->enum_id)
       {
          case PATH_SAVESTATES_DIR_CHOICE:
-            strlcpy(g_console.default_savestate_dir, path, sizeof(g_console.default_savestate_dir));
+            strlcpy(g_extern.console.main_wrap.paths.default_savestate_dir, path, sizeof(g_extern.console.main_wrap.paths.default_savestate_dir));
             break;
          case PATH_SRAM_DIR_CHOICE:
-            strlcpy(g_console.default_sram_dir, path, sizeof(g_console.default_sram_dir));
+            strlcpy(g_extern.console.main_wrap.paths.default_sram_dir, path, sizeof(g_extern.console.main_wrap.paths.default_sram_dir));
             break;
          case PATH_DEFAULT_ROM_DIR_CHOICE:
-            strlcpy(g_console.default_rom_startup_dir, path, sizeof(g_console.default_rom_startup_dir));
+            strlcpy(g_extern.console.main_wrap.paths.default_rom_startup_dir, path, sizeof(g_extern.console.main_wrap.paths.default_rom_startup_dir));
             break;
 #ifdef HAVE_XML
          case PATH_CHEATS_DIR_CHOICE:
@@ -840,20 +840,20 @@ static void rarch_filename_input_and_save (unsigned filename_type)
 {
    bool filename_entered = false;
    char filename_tmp[256], filepath[PATH_MAX];
-   oskutil_write_initial_message(&g_console.oskutil_handle, L"example");
-   oskutil_write_message(&g_console.oskutil_handle, L"Enter filename for preset (with no file extension)");
+   oskutil_write_initial_message(&g_extern.console.misc.oskutil_handle, L"example");
+   oskutil_write_message(&g_extern.console.misc.oskutil_handle, L"Enter filename for preset (with no file extension)");
 
-   oskutil_start(&g_console.oskutil_handle);
+   oskutil_start(&g_extern.console.misc.oskutil_handle);
 
-   while(OSK_IS_RUNNING(g_console.oskutil_handle))
+   while(OSK_IS_RUNNING(g_extern.console.misc.oskutil_handle))
    {
       context->clear();
       context->swap_buffers();
    }
 
-   if(g_console.oskutil_handle.text_can_be_fetched)
+   if(g_extern.console.misc.oskutil_handle.text_can_be_fetched)
    {
-      strlcpy(filename_tmp, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(filename_tmp));
+      strlcpy(filename_tmp, OUTPUT_TEXT_STRING(g_extern.console.misc.oskutil_handle), sizeof(filename_tmp));
 
       switch(filename_type)
       {
@@ -873,19 +873,19 @@ static void rarch_filename_input_and_save (unsigned filename_type)
    if(filename_entered)
    {
       char filetitle_tmp[256];
-      oskutil_write_initial_message(&g_console.oskutil_handle, L"Example file title");
-      oskutil_write_message(&g_console.oskutil_handle, L"Enter title for preset");
-      oskutil_start(&g_console.oskutil_handle);
+      oskutil_write_initial_message(&g_extern.console.misc.oskutil_handle, L"Example file title");
+      oskutil_write_message(&g_extern.console.misc.oskutil_handle, L"Enter title for preset");
+      oskutil_start(&g_extern.console.misc.oskutil_handle);
 
-      while(OSK_IS_RUNNING(g_console.oskutil_handle))
+      while(OSK_IS_RUNNING(g_extern.console.misc.oskutil_handle))
       {
          /* OSK Util gets updated */
          context->clear();
 	 context->swap_buffers();
       }
 
-      if(g_console.oskutil_handle.text_can_be_fetched)
-         snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", OUTPUT_TEXT_STRING(g_console.oskutil_handle));
+      if(g_extern.console.misc.oskutil_handle.text_can_be_fetched)
+         snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", OUTPUT_TEXT_STRING(g_extern.console.misc.oskutil_handle));
       else
          snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", "Custom");
 
@@ -901,7 +901,7 @@ static void rarch_filename_input_and_save (unsigned filename_type)
 	       current_settings.filter_linear[0] = g_settings.video.smooth;
 	       current_settings.filter_linear[1] = g_settings.video.second_pass_smooth;
 	       current_settings.render_to_texture = true;
-	       current_settings.fbo_scale = g_settings.video.fbo_scale_x; //fbo_scale_x and y are the same anyway
+	       current_settings.fbo_scale = g_settings.video.fbo.scale_x; //fbo.scale_x and y are the same anyway
 	       gl_cg_save_cgp(filepath, &current_settings);
 	    }
 	    break;
@@ -925,7 +925,7 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 			   rarch_settings_change(S_RESOLUTION_PREVIOUS);
 		   if(input & (1 << RMENU_DEVICE_NAV_B))
 		   {
-			   if (g_console.supported_resolutions[g_console.current_resolution_index] == CELL_VIDEO_OUT_RESOLUTION_576)
+			   if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
 			   {
 				   if(gfx_ctx_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
 				   {
@@ -962,14 +962,14 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 	   case SETTING_SHADER_PRESETS:
 		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 		   {
-			   if(g_console.emulator_initialized)
+			   if(g_extern.console.emulator_initialized)
 			   {
 				   menu_stack_push(PRESET_CHOICE);
                filebrowser_set_root_and_ext(&tmpBrowser, EXT_CGP_PRESETS, default_paths.cgp_dir);
 			   }
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
-			   strlcpy(g_console.cgp_path, "", sizeof(g_console.cgp_path));
+			   strlcpy(g_extern.file_state.cgp_path, "", sizeof(g_extern.file_state.cgp_path));
 		   break;
 	   case SETTING_SHADER:
 		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
@@ -1001,32 +1001,32 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 	   case SETTING_FONT_SIZE:
 		   if(input & (1 << RMENU_DEVICE_NAV_LEFT))
 		   {
-			   if(g_extern.console.font_size > 0) 
-				   g_extern.console.font_size -= 0.01f;
+			   if(g_extern.console.rmenu.font_size > 0) 
+				   g_extern.console.rmenu.font_size -= 0.01f;
 		   }
 		   if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 		   {
-			   if((g_extern.console.font_size < 2.0f))
-				   g_extern.console.font_size += 0.01f;
+			   if((g_extern.console.rmenu.font_size < 2.0f))
+				   g_extern.console.rmenu.font_size += 0.01f;
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
-			   g_extern.console.font_size = 1.0f;
+			   g_extern.console.rmenu.font_size = 1.0f;
 		   break;
 	   case SETTING_KEEP_ASPECT_RATIO:
 		   if(input & (1 << RMENU_DEVICE_NAV_LEFT))
 		   {
 			   rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
-			   context->set_aspect_ratio(g_console.aspect_ratio_index);
+			   context->set_aspect_ratio(g_settings.video.aspect_ratio_idx);
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_RIGHT))
 		   {
 			   rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
-			   context->set_aspect_ratio(g_console.aspect_ratio_index);
+			   context->set_aspect_ratio(g_settings.video.aspect_ratio_idx);
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
 		   {
 			   rarch_settings_default(S_DEF_ASPECT_RATIO);
-			   context->set_aspect_ratio(g_console.aspect_ratio_index);
+			   context->set_aspect_ratio(g_settings.video.aspect_ratio_idx);
 		   }
 		   break;
 	   case SETTING_HW_TEXTURE_FILTER:
@@ -1058,7 +1058,7 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 		   {
 			   rarch_settings_change(S_SCALE_ENABLED);
-			   context->set_fbo_enable(g_console.fbo_enabled);
+			   context->set_fbo_enable(g_settings.video.fbo.enable);
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
 		   {
@@ -1070,9 +1070,9 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 	   case SETTING_SCALE_FACTOR:
 		   if(input & (1 << RMENU_DEVICE_NAV_LEFT))
 		   {
-            if(g_console.fbo_enabled)
+            if(g_settings.video.fbo.enable)
 		      {
-               bool should_decrement = g_settings.video.fbo_scale_x > MIN_SCALING_FACTOR;
+               bool should_decrement = g_settings.video.fbo.scale_x > MIN_SCALING_FACTOR;
                
                if(should_decrement)
                {
@@ -1083,9 +1083,9 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 		   }
 		   if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 		   {
-			   if(g_console.fbo_enabled)
+			   if(g_settings.video.fbo.enable)
 			   {
-				   bool should_increment = g_settings.video.fbo_scale_x < MAX_SCALING_FACTOR;
+				   bool should_increment = g_settings.video.fbo.scale_x < MAX_SCALING_FACTOR;
 				   if(should_increment)
 				   {
 					   rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
@@ -1104,450 +1104,443 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
          if(input & (1 << RMENU_DEVICE_NAV_LEFT))
-		   {
-            if(g_console.flicker_filter > 0)
-               g_console.flicker_filter--;
-		   }
-		   if(input & (1 << RMENU_DEVICE_NAV_RIGHT))
-		   {
-            if(g_console.flicker_filter < 5)
-               g_console.flicker_filter++;
-		   }
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-		   {
-			   g_console.flicker_filter = 0;
-		   }
+	 {
+		 if(g_extern.console.screen.state.flicker_filter.value > 0)
+			 g_extern.console.screen.state.flicker_filter.value--;
+	 }
+	 if(input & (1 << RMENU_DEVICE_NAV_RIGHT))
+	 {
+		 if(g_extern.console.screen.state.flicker_filter.value < 5)
+			 g_extern.console.screen.state.flicker_filter.value++;
+	 }
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+            g_extern.console.screen.state.flicker_filter.value = 0;
          break;
       case SETTING_SOFT_DISPLAY_FILTER:
-         if(input & (1 << RMENU_DEVICE_NAV_LEFT) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-			   g_console.soft_display_filter_enable = !g_console.soft_display_filter_enable;
-		   }
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-		   {
-            g_console.soft_display_filter_enable = true;
-		   }
+	 if(input & (1 << RMENU_DEVICE_NAV_LEFT) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+            g_extern.console.screen.state.soft_filter.enable = !g_extern.console.screen.soft_filter.enable;
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+            g_extern.console.screen.state.soft_filter.enable = true;
          break;
 #endif
-	   case SETTING_HW_OVERSCAN_AMOUNT:
-		   if(input & (1 << RMENU_DEVICE_NAV_LEFT))
-		   {
-			   rarch_settings_change(S_OVERSCAN_DECREMENT);
-			   gfx_ctx_set_overscan();
-		   }
-		   if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-			   rarch_settings_change(S_OVERSCAN_INCREMENT);
-			   gfx_ctx_set_overscan();
-		   }
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-		   {
-			   rarch_settings_default(S_DEF_OVERSCAN);
-			   gfx_ctx_set_overscan();
-		   }
-		   break;
-	   case SETTING_THROTTLE_MODE:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-			   rarch_settings_change(S_THROTTLE);
-            context->set_swap_interval(g_console.throttle_enable);
-		   }
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-		   {
-			   rarch_settings_default(S_DEF_THROTTLE);
-            context->set_swap_interval(g_console.throttle_enable);
-		   }
-		   break;
-	   case SETTING_TRIPLE_BUFFERING:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-			   rarch_settings_change(S_TRIPLE_BUFFERING);
-			   video_ptr.restart();
-		   }
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-		   {
-			   bool old_buffer_input = g_console.triple_buffering_enable;
-			   rarch_settings_default(S_DEF_TRIPLE_BUFFERING);
+      case SETTING_HW_OVERSCAN_AMOUNT:
+	 if(input & (1 << RMENU_DEVICE_NAV_LEFT))
+	 {
+		 rarch_settings_change(S_OVERSCAN_DECREMENT);
+		 gfx_ctx_set_overscan();
+	 }
+	 if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 rarch_settings_change(S_OVERSCAN_INCREMENT);
+		 gfx_ctx_set_overscan();
+	 }
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+	 {
+		 rarch_settings_default(S_DEF_OVERSCAN);
+		 gfx_ctx_set_overscan();
+	 }
+	 break;
+      case SETTING_THROTTLE_MODE:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 rarch_settings_change(S_THROTTLE);
+		 context->set_swap_interval(g_extern.console.screen.state.throttle.enable);
+	 }
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+	 {
+		 rarch_settings_default(S_DEF_THROTTLE);
+		 context->set_swap_interval(g_extern.console.screen.state.throttle.enable);
+	 }
+	 break;
+      case SETTING_TRIPLE_BUFFERING:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 rarch_settings_change(S_TRIPLE_BUFFERING);
+		 video_ptr.restart();
+	 }
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+	 {
+		 bool old_buffer_input = g_extern.console.screen.state.triple_buffering.enable;
+		 rarch_settings_default(S_DEF_TRIPLE_BUFFERING);
 
-			   if(!old_buffer_input)
-				   video_ptr.restart();
-		   }
-		   break;
-	   case SETTING_ENABLE_SCREENSHOTS:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-                      g_console.screenshots_enable = !g_console.screenshots_enable;
-                      context->screenshot_enable(g_console.screenshots_enable);
-		   }
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-		   {
-                      g_console.screenshots_enable = true;
-                      context->screenshot_enable(g_console.screenshots_enable);
-		   }
-		   break;
+		 if(!old_buffer_input)
+			 video_ptr.restart();
+	 }
+	 break;
+      case SETTING_ENABLE_SCREENSHOTS:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 g_extern.console.screen.state.screenshots.enable = !g_extern.console.screen.state.screenshots.enable;
+		 context->screenshot_enable(g_extern.console.screen.state.screenshots.enable);
+	 }
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+	 {
+		 g_extern.console.screen.state.screenshots.enable = true;
+		 context->screenshot_enable(g_extern.console.screen.state.screenshots.enable);
+	 }
+	 break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-	   case SETTING_SAVE_SHADER_PRESET:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-			   rarch_filename_input_and_save(SHADER_PRESET_FILE);
-		   break;
-	   case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
-		   break;
+      case SETTING_SAVE_SHADER_PRESET:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+		 rarch_filename_input_and_save(SHADER_PRESET_FILE);
+	 break;
+      case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
+	 break;
 #endif
-	   case SETTING_DEFAULT_VIDEO_ALL:
-		   break;
-	   case SETTING_SOUND_MODE:
-		   if(input & (1 << RMENU_DEVICE_NAV_LEFT))
-		   {
-			   if(g_console.sound_mode != SOUND_MODE_NORMAL)
-				   g_console.sound_mode--;
-		   }
-		   if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-			   if(g_console.sound_mode < (SOUND_MODE_LAST-1))
-				   g_console.sound_mode++;
-		   }
-		   if((input & (1 << RMENU_DEVICE_NAV_UP)) || (input & (1 << RMENU_DEVICE_NAV_DOWN)))
-		   {
+      case SETTING_DEFAULT_VIDEO_ALL:
+	 break;
+      case SETTING_SOUND_MODE:
+	 if(input & (1 << RMENU_DEVICE_NAV_LEFT))
+	 {
+		 if(g_extern.console.sound.mode != SOUND_MODE_NORMAL)
+			 g_extern.console.sound.mode--;
+	 }
+	 if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 if(g_extern.console.sound.mode < (SOUND_MODE_LAST-1))
+			 g_extern.console.sound.mode++;
+	 }
+	 if((input & (1 << RMENU_DEVICE_NAV_UP)) || (input & (1 << RMENU_DEVICE_NAV_DOWN)))
+	 {
 #ifdef HAVE_RSOUND
-			   if(g_console.sound_mode != SOUND_MODE_RSOUND)
-				   rarch_console_rsound_stop();
-			   else
-				   rarch_console_rsound_start(g_settings.audio.device);
+		 if(g_extern.console.sound.mode != SOUND_MODE_RSOUND)
+			 rarch_console_rsound_stop();
+		 else
+			 rarch_console_rsound_start(g_settings.audio.device);
 #endif
-		   }
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-		   {
-			   g_console.sound_mode = SOUND_MODE_NORMAL;
+	 }
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+	 {
+		 g_extern.console.sound.mode = SOUND_MODE_NORMAL;
 #ifdef HAVE_RSOUND
-			   rarch_console_rsound_stop();
+		 rarch_console_rsound_stop();
 #endif
-		   }
-		   break;
+	 }
+	 break;
 #ifdef HAVE_RSOUND
-	   case SETTING_RSOUND_SERVER_IP_ADDRESS:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-			   oskutil_write_initial_message(&g_console.oskutil_handle, L"192.168.1.1");
-			   oskutil_write_message(&g_console.oskutil_handle, L"Enter IP address for the RSound Server.");
-			   oskutil_start(&g_console.oskutil_handle);
-			   while(OSK_IS_RUNNING(g_console.oskutil_handle))
-			   {
-				   context->clear();
-				   context->swap_buffers();
-			   }
+      case SETTING_RSOUND_SERVER_IP_ADDRESS:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 oskutil_write_initial_message(&g_extern.console.misc.oskutil_handle, L"192.168.1.1");
+		 oskutil_write_message(&g_extern.console.misc.oskutil_handle, L"Enter IP address for the RSound Server.");
+		 oskutil_start(&g_extern.console.misc.oskutil_handle);
+		 while(OSK_IS_RUNNING(g_extern.console.misc.oskutil_handle))
+		 {
+			 context->clear();
+			 context->swap_buffers();
+		 }
 
-			   if(g_console.oskutil_handle.text_can_be_fetched)
-				   strlcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_console.oskutil_handle), sizeof(g_settings.audio.device));
-		   }
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-			   strlcpy(g_settings.audio.device, "0.0.0.0", sizeof(g_settings.audio.device));
-		   break;
+		 if(g_extern.console.misc.oskutil_handle.text_can_be_fetched)
+			 strlcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_extern.console.misc.oskutil_handle), sizeof(g_settings.audio.device));
+	 }
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 strlcpy(g_settings.audio.device, "0.0.0.0", sizeof(g_settings.audio.device));
+	 break;
 #endif
-	   case SETTING_DEFAULT_AUDIO_ALL:
-		   break;
-	   case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-		   if(input & (1 << RMENU_DEVICE_NAV_LEFT))
-			   rarch_settings_change(S_SAVESTATE_DECREMENT);
-		   if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-			   rarch_settings_change(S_SAVESTATE_INCREMENT);
+      case SETTING_DEFAULT_AUDIO_ALL:
+	 break;
+      case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
+	 if(input & (1 << RMENU_DEVICE_NAV_LEFT))
+		 rarch_settings_change(S_SAVESTATE_DECREMENT);
+	 if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+		 rarch_settings_change(S_SAVESTATE_INCREMENT);
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 rarch_settings_default(S_DEF_SAVE_STATE);
+	 break;
+      case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+		 g_extern.console.rmenu.state.msg_fps.enable = !g_extern.console.rmenu.state.msg_fps.enable;
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 g_extern.console.rmenu.state.msg_fps.enable = false;
+	 break;
+      case SETTING_EMU_SHOW_INFO_MSG:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+		 g_extern.console.rmenu.state.msg_info.enable = !g_extern.console.rmenu.state.msg_info.enable;
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 g_extern.console.rmenu.state.msg_info.enable = true;
+	 break;
+      case SETTING_EMU_REWIND_ENABLED:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 rarch_settings_change(S_REWIND);
 
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-			   rarch_settings_default(S_DEF_SAVE_STATE);
-		   break;
-	   case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-			   g_console.fps_info_msg_enable = !g_console.fps_info_msg_enable;
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-			   g_console.fps_info_msg_enable = false;
-		   break;
-	   case SETTING_EMU_SHOW_INFO_MSG:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-			   g_console.info_msg_enable = !g_console.info_msg_enable;
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-			   g_console.info_msg_enable = true;
-		   break;
-	   case SETTING_EMU_REWIND_ENABLED:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-			   rarch_settings_change(S_REWIND);
-
-			   if(g_console.info_msg_enable)
-				   rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
-		   }
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-			   g_settings.rewind_enable = false;
-		   break;
+		 if(g_extern.console.rmenu.state.msg_info.enable)
+			 rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+	 }
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 g_settings.rewind_enable = false;
+	 break;
 #ifdef HAVE_ZLIB
-	   case SETTING_ZIP_EXTRACT:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)))
-		   {
-			   if(g_extern.filebrowser_state.zip_extract_mode > 0)
-				   g_extern.filebrowser_state.zip_extract_mode--;
-		   }
-		   if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-			   if(g_extern.filebrowser_state.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
-				   g_extern.filebrowser_state.zip_extract_mode++;
-		   }
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-                      g_extern.filebrowser_state.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR;
-		   break;
+      case SETTING_ZIP_EXTRACT:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)))
+	 {
+		 if(g_extern.file_state.zip_extract_mode > 0)
+			 g_extern.file_state.zip_extract_mode--;
+	 }
+	 if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 if(g_extern.file_state.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
+			 g_extern.file_state.zip_extract_mode++;
+	 }
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 g_extern.file_state.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR;
+	 break;
 #endif
-	   case SETTING_RARCH_DEFAULT_EMU:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-            menu_stack_push(LIBRETRO_CHOICE);
-		      filebrowser_set_root_and_ext(&tmpBrowser, EXT_EXECUTABLES, default_paths.core_dir);
-		      set_libretro_core_as_launch = false;
-		   }
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-		   {
-		   }
-		   break;
-	   case SETTING_QUIT_RARCH:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-                      rarch_settings_change(S_QUIT_RARCH);
-                   }
-                   break;
-	   case SETTING_EMU_AUDIO_MUTE:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-            rarch_settings_change(S_AUDIO_MUTE);
+      case SETTING_RARCH_DEFAULT_EMU:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 menu_stack_push(LIBRETRO_CHOICE);
+		 filebrowser_set_root_and_ext(&tmpBrowser, EXT_EXECUTABLES, default_paths.core_dir);
+		 set_libretro_core_as_launch = false;
+	 }
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+	 {
+	 }
+	 break;
+      case SETTING_QUIT_RARCH:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 rarch_settings_change(S_QUIT_RARCH);
+	 }
+	 break;
+      case SETTING_EMU_AUDIO_MUTE:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+		 rarch_settings_change(S_AUDIO_MUTE);
 
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-            rarch_settings_default(S_DEF_AUDIO_MUTE);
-		   break;
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 rarch_settings_default(S_DEF_AUDIO_MUTE);
+	 break;
 #ifdef _XBOX1
       case SETTING_EMU_AUDIO_SOUND_VOLUME_LEVEL:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-         {
-            g_console.sound_volume_level = !g_console.sound_volume_level;
-            if(g_console.info_msg_enable)
-               rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
-         }
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 g_extern.console.sound.volume_level = !g_extern.console.sound.volume_level;
+		 if(g_extern.console.screen.state.msg_info.enable)
+			 rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+	 }
 
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-         {
-            g_console.sound_volume_level = 0;
-            if(g_console.info_msg_enable)
-               rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
-         }
-         break;
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+	 {
+		 g_extern.console.sound.volume_level = 0;
+		 if(g_extern.console.screen.state.msg_info.enable)
+			 rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+	 }
+	 break;
 #endif
-	   case SETTING_ENABLE_CUSTOM_BGM:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
+      case SETTING_ENABLE_CUSTOM_BGM:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
 #if(CELL_SDK_VERSION > 0x340000)
-			   g_console.custom_bgm_enable = !g_console.custom_bgm_enable;
-			   if(g_console.custom_bgm_enable)
-				   cellSysutilEnableBgmPlayback();
-			   else
-				   cellSysutilDisableBgmPlayback();
+		 g_extern.console.sound.custom_bgm.enable = !g_extern.console.sound.custom_bgm.enable;
+		 if(g_extern.console.sound.custom_bgm.enable)
+			 cellSysutilEnableBgmPlayback();
+		 else
+			 cellSysutilDisableBgmPlayback();
 
 #endif
-		   }
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-		   {
+	 }
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+	 {
 #if(CELL_SDK_VERSION > 0x340000)
-			   g_console.custom_bgm_enable = true;
+		 g_extern.console.sound.custom_bgm.enable = true;
 #endif
-		   }
-		   break;
-	   case SETTING_EMU_VIDEO_DEFAULT_ALL:
-		   break;
-	   case SETTING_EMU_AUDIO_DEFAULT_ALL:
-		   break;
-	   case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-			   menu_stack_push(PATH_DEFAULT_ROM_DIR_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
-		   }
+	 }
+	 break;
+      case SETTING_EMU_VIDEO_DEFAULT_ALL:
+	 break;
+      case SETTING_EMU_AUDIO_DEFAULT_ALL:
+	 break;
+      case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 menu_stack_push(PATH_DEFAULT_ROM_DIR_CHOICE);
+		 filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
+	 }
 
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-            strlcpy(g_console.default_rom_startup_dir, default_paths.filesystem_root_dir, sizeof(g_console.default_rom_startup_dir));
-		   break;
-	   case SETTING_PATH_SAVESTATES_DIRECTORY:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-			   menu_stack_push(PATH_SAVESTATES_DIR_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
-		   }
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 strlcpy(g_extern.console.main_wrap.paths.default_rom_startup_dir, default_paths.filesystem_root_dir, sizeof(g_extern.console.main_wrap.paths.default_rom_startup_dir));
+	 break;
+      case SETTING_PATH_SAVESTATES_DIRECTORY:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 menu_stack_push(PATH_SAVESTATES_DIR_CHOICE);
+		 filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
+	 }
 
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-			   strlcpy(g_console.default_savestate_dir, default_paths.savestate_dir, sizeof(g_console.default_savestate_dir));
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 strlcpy(g_extern.console.main_wrap.paths.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.paths.default_savestate_dir));
 
-		   break;
-	   case SETTING_PATH_SRAM_DIRECTORY:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-			   menu_stack_push(PATH_SRAM_DIR_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
-		   }
+	 break;
+      case SETTING_PATH_SRAM_DIRECTORY:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 menu_stack_push(PATH_SRAM_DIR_CHOICE);
+		 filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
+	 }
 
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-			   strlcpy(g_console.default_sram_dir, default_paths.sram_dir, sizeof(g_console.default_sram_dir));
-		   break;
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 strlcpy(g_extern.console.main_wrap.paths.default_sram_dir, default_paths.sram_dir, sizeof(g_extern.console.main_wrap.paths.default_sram_dir));
+	 break;
 #ifdef HAVE_XML
-	   case SETTING_PATH_CHEATS:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-            menu_stack_push(PATH_CHEATS_DIR_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
-		   }
+      case SETTING_PATH_CHEATS:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 menu_stack_push(PATH_CHEATS_DIR_CHOICE);
+		 filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
+	 }
 
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-            strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
-		   break;
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
+	 break;
 #endif
-	   case SETTING_PATH_SYSTEM:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-            menu_stack_push(PATH_SYSTEM_DIR_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.system_dir);
-		   }
+      case SETTING_PATH_SYSTEM:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 menu_stack_push(PATH_SYSTEM_DIR_CHOICE);
+		 filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.system_dir);
+	 }
 
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-            strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
-		   break;
-	   case SETTING_ENABLE_SRAM_PATH:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)))
-                      g_console.default_sram_dir_enable = !g_console.default_sram_dir_enable;
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-                      g_console.default_sram_dir_enable = true;
-		   break;
-	   case SETTING_ENABLE_STATE_PATH:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)))
-                      g_console.default_savestate_dir_enable = !g_console.default_savestate_dir_enable;
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-                      g_console.default_savestate_dir_enable = true;
-		   break;
-	   case SETTING_PATH_DEFAULT_ALL:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)) || (input & (1 << RMENU_DEVICE_NAV_START)))
-		   {
-            strlcpy(g_console.default_rom_startup_dir, "/", sizeof(g_console.default_rom_startup_dir));
-		      strlcpy(g_console.default_savestate_dir, default_paths.port_dir, sizeof(g_console.default_savestate_dir));
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
+	 break;
+      case SETTING_ENABLE_SRAM_PATH:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)))
+		 g_extern.console.main_wrap.state.default_sram_dir.enable = !g_extern.console.main_wrap.state.default_sram_dir.enable;
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 g_extern.console.main_wrap.state.default_sram_dir.enable = true;
+	 break;
+      case SETTING_ENABLE_STATE_PATH:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)))
+		 g_extern.console.main_wrap.state.default_savestate_dir.enable = !g_extern.console.main_wrap.state.default_savestate_dir.enable;
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 g_extern.console.main_wrap.state.default_savestate_dir.enable = true;
+	 break;
+      case SETTING_PATH_DEFAULT_ALL:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)) || (input & (1 << RMENU_DEVICE_NAV_START)))
+	 {
+		 strlcpy(g_extern.console.main_wrap.paths.default_rom_startup_dir, "/", sizeof(g_extern.console.main_wrap.paths.default_rom_startup_dir));
+		 strlcpy(g_extern.console.main_wrap.paths.default_savestate_dir, default_paths.port_dir, sizeof(g_extern.console.main_wrap.paths.default_savestate_dir));
 #ifdef HAVE_XML
-		      strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
+		 strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
 #endif
-		      strlcpy(g_console.default_sram_dir, "", sizeof(g_console.default_sram_dir));
-		   }
-		   break;
-	   case SETTING_CONTROLS_SCHEME:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)) || (input & (1 << RMENU_DEVICE_NAV_START)))
-		   {
-            menu_stack_push(INPUT_PRESET_CHOICE);
-		      filebrowser_set_root_and_ext(&tmpBrowser, EXT_INPUT_PRESETS, default_paths.input_presets_dir);
-		   }
-		   break;
-	   case SETTING_CONTROLS_NUMBER:
-		   if(input & (1 << RMENU_DEVICE_NAV_LEFT))
-		   {
-                      if(currently_selected_controller_menu != 0)
-                         currently_selected_controller_menu--;
-		   }
+		 strlcpy(g_extern.console.main_wrap.paths.default_sram_dir, "", sizeof(g_extern.console.main_wrap.paths.default_sram_dir));
+	 }
+	 break;
+      case SETTING_CONTROLS_SCHEME:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)) || (input & (1 << RMENU_DEVICE_NAV_START)))
+	 {
+		 menu_stack_push(INPUT_PRESET_CHOICE);
+		 filebrowser_set_root_and_ext(&tmpBrowser, EXT_INPUT_PRESETS, default_paths.input_presets_dir);
+	 }
+	 break;
+      case SETTING_CONTROLS_NUMBER:
+	 if(input & (1 << RMENU_DEVICE_NAV_LEFT))
+	 {
+		 if(currently_selected_controller_menu != 0)
+			 currently_selected_controller_menu--;
+	 }
 
-		   if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-                      if (currently_selected_controller_menu < 6)
-                         currently_selected_controller_menu++;
-		   }
+	 if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 if (currently_selected_controller_menu < 6)
+			 currently_selected_controller_menu++;
+	 }
 
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-			   currently_selected_controller_menu = 0;
-		   break; 
-	   case SETTING_DPAD_EMULATION:
-		   if(input & (1 << RMENU_DEVICE_NAV_LEFT))
-		   {
-                      switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
-		      {
-                         case DPAD_EMULATION_NONE:
-			    break;
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 currently_selected_controller_menu = 0;
+	 break; 
+      case SETTING_DPAD_EMULATION:
+	 if(input & (1 << RMENU_DEVICE_NAV_LEFT))
+	 {
+		 switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
+		 {
+			 case DPAD_EMULATION_NONE:
+				 break;
 			 case DPAD_EMULATION_LSTICK:
-			    input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_NONE, currently_selected_controller_menu);
-			    break;
+				 input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_NONE, currently_selected_controller_menu);
+				 break;
 			 case DPAD_EMULATION_RSTICK:
-			    input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
-			    break;
-		      }
-		   }
+				 input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
+				 break;
+		 }
+	 }
 
-		   if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-		   {
-                      switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
-		      {
-                         case DPAD_EMULATION_NONE:
-                            input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
-			    break;
+	 if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
+	 {
+		 switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
+		 {
+			 case DPAD_EMULATION_NONE:
+				 input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
+				 break;
 			 case DPAD_EMULATION_LSTICK:
-			    input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_RSTICK, currently_selected_controller_menu);
-			    break;
+				 input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_RSTICK, currently_selected_controller_menu);
+				 break;
 			 case DPAD_EMULATION_RSTICK:
-			    break;
-		      }
-		   }
+				 break;
+		 }
+	 }
 
-		   if(input & (1 << RMENU_DEVICE_NAV_START))
-                      input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
-                   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_UP, input);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_DOWN, input);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_LEFT, input);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_RIGHT, input);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_A, input);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_B, input);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_X, input);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_Y, input);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_SELECT, input);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_START, input);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_L, input);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R, input);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_L2, input);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R2, input);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_L3, input);
-		   break;
-	   case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
-		   set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R3, input);
-		   break;
+	 if(input & (1 << RMENU_DEVICE_NAV_START))
+		 input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_UP, input);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_DOWN, input);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_LEFT, input);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_RIGHT, input);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_A, input);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_B, input);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_X, input);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_Y, input);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_SELECT, input);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_START, input);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_L, input);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R, input);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_L2, input);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R2, input);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_L3, input);
+	 break;
+      case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
+	 set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R3, input);
+	 break;
 #ifdef __CELLOS_LV2__
-	   case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)) || (input & (1 << RMENU_DEVICE_NAV_START)))
-            rarch_filename_input_and_save(INPUT_PRESET_FILE);
-		   break;
+      case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)) || (input & (1 << RMENU_DEVICE_NAV_START)))
+		 rarch_filename_input_and_save(INPUT_PRESET_FILE);
+	 break;
 #endif
-	   case SETTING_CONTROLS_DEFAULT_ALL:
-		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)) || (input & (1 << RMENU_DEVICE_NAV_START)))
-                      rarch_input_set_default_keybinds(currently_selected_controller_menu);
-		   break;
+      case SETTING_CONTROLS_DEFAULT_ALL:
+	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)) || (input & (1 << RMENU_DEVICE_NAV_START)))
+		 rarch_input_set_default_keybinds(currently_selected_controller_menu);
+	 break;
    }
 }
 
@@ -1700,7 +1693,7 @@ static void menu_romselect_iterate(filebrowser_t *filebrowser, menu_romselect_ac
          if(filebrowser_get_current_path_isdir(filebrowser))
             ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
 	 else
-            rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_extern.filebrowser_state.zip_extract_mode, S_DELAY_45);
+            rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_extern.file_state.zip_extract_mode, S_DELAY_45);
          break;
       case MENU_ROMSELECT_ACTION_GOTO_SETTINGS:
          menu_stack_push(GENERAL_VIDEO_MENU);
@@ -1768,75 +1761,75 @@ static void ingame_menu_resize(menu *current_menu, uint64_t input)
    rmenu_default_positions_t default_pos;
    context->set_default_pos(&default_pos);
 
-   g_console.aspect_ratio_index = ASPECT_RATIO_CUSTOM;
-   context->set_aspect_ratio(g_console.aspect_ratio_index);
+   g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
+   context->set_aspect_ratio(g_settings.video.aspect_ratio_idx);
 
    if(input & (1 << RMENU_DEVICE_NAV_LEFT_ANALOG_L))
    {
 #ifdef _XBOX
-      if(g_console.viewports.custom_vp.x >= 4)
+      if(g_extern.console.screen.viewports.custom_vp.x >= 4)
 #endif
-         g_console.viewports.custom_vp.x -= 4;
+         g_extern.console.screen.viewports.custom_vp.x -= 4;
    }
    else if(input & (1 << RMENU_DEVICE_NAV_LEFT) && (input & ~(1 << RMENU_DEVICE_NAV_LEFT_ANALOG_L)))
    {
 #ifdef _XBOX
-      if(g_console.viewports.custom_vp.x > 0)
+      if(g_extern.console.screen.viewports.custom_vp.x > 0)
 #endif
-         g_console.viewports.custom_vp.x -= 1;
+         g_extern.console.screen.viewports.custom_vp.x -= 1;
    }
 
    if(input & (1 << RMENU_DEVICE_NAV_RIGHT_ANALOG_L))
-      g_console.viewports.custom_vp.x += 4;
+      g_extern.console.screen.viewports.custom_vp.x += 4;
    else if(input & (1 << RMENU_DEVICE_NAV_RIGHT) && (input & ~(1 << RMENU_DEVICE_NAV_RIGHT_ANALOG_L)))
-      g_console.viewports.custom_vp.x += 1;
+      g_extern.console.screen.viewports.custom_vp.x += 1;
 
    if(input & (1 << RMENU_DEVICE_NAV_UP_ANALOG_L))
-      g_console.viewports.custom_vp.y += 4;
+      g_extern.console.screen.viewports.custom_vp.y += 4;
    else if(input & (1 << RMENU_DEVICE_NAV_UP) && (input & ~(1 << RMENU_DEVICE_NAV_UP_ANALOG_L)))
-      g_console.viewports.custom_vp.y += 1;
+      g_extern.console.screen.viewports.custom_vp.y += 1;
 
    if(input & (1 << RMENU_DEVICE_NAV_DOWN_ANALOG_L))
    {
 #ifdef _XBOX
-      if(g_console.viewports.custom_vp.y >= 4)
+      if(g_extern.console.screen.viewports.custom_vp.y >= 4)
 #endif
-         g_console.viewports.custom_vp.y -= 4;
+         g_extern.console.screen.viewports.custom_vp.y -= 4;
    }
    else if(input & (1 << RMENU_DEVICE_NAV_DOWN) && (input & ~(1 << RMENU_DEVICE_NAV_DOWN_ANALOG_L)))
    {
 #ifdef _XBOX
-      if(g_console.viewports.custom_vp.y > 0)
+      if(g_extern.console.screen.viewports.custom_vp.y > 0)
 #endif
-         g_console.viewports.custom_vp.y -= 1;
+         g_extern.console.screen.viewports.custom_vp.y -= 1;
    }
 
    if(input & (1 << RMENU_DEVICE_NAV_LEFT_ANALOG_R))
-      g_console.viewports.custom_vp.width -= 4;
+      g_extern.console.screen.viewports.custom_vp.width -= 4;
    else if(input & (1 << RMENU_DEVICE_NAV_L1) && (input && ~(1 << RMENU_DEVICE_NAV_LEFT_ANALOG_R)))
-      g_console.viewports.custom_vp.width -= 1;
+      g_extern.console.screen.viewports.custom_vp.width -= 1;
 
    if (input & (1 << RMENU_DEVICE_NAV_RIGHT_ANALOG_R))
-      g_console.viewports.custom_vp.width += 4;
+      g_extern.console.screen.viewports.custom_vp.width += 4;
    else if(input & (1 << RMENU_DEVICE_NAV_R1) && (input & ~(1 << RMENU_DEVICE_NAV_RIGHT_ANALOG_R)))
-      g_console.viewports.custom_vp.width += 1;
+      g_extern.console.screen.viewports.custom_vp.width += 1;
 
    if(input & (1 << RMENU_DEVICE_NAV_UP_ANALOG_R))
-      g_console.viewports.custom_vp.height += 4;
+      g_extern.console.screen.viewports.custom_vp.height += 4;
    else if(input & (1 << RMENU_DEVICE_NAV_L2) && (input & ~(1 << RMENU_DEVICE_NAV_UP_ANALOG_R)))
-      g_console.viewports.custom_vp.height += 1;
+      g_extern.console.screen.viewports.custom_vp.height += 1;
 
    if(input & (1 << RMENU_DEVICE_NAV_DOWN_ANALOG_R))
-      g_console.viewports.custom_vp.height -= 4;
+      g_extern.console.screen.viewports.custom_vp.height -= 4;
    else if (input & (1 << RMENU_DEVICE_NAV_R2) && (input & ~(1 << RMENU_DEVICE_NAV_DOWN_ANALOG_R)))
-      g_console.viewports.custom_vp.height -= 1;
+      g_extern.console.screen.viewports.custom_vp.height -= 1;
 
    if (input & (1 << RMENU_DEVICE_NAV_X))
    {
-      g_console.viewports.custom_vp.x = 0;
-      g_console.viewports.custom_vp.y = 0;
-      g_console.viewports.custom_vp.width = device_ptr->win_width;
-      g_console.viewports.custom_vp.height = device_ptr->win_height;
+      g_extern.console.screen.viewports.custom_vp.x = 0;
+      g_extern.console.screen.viewports.custom_vp.y = 0;
+      g_extern.console.screen.viewports.custom_vp.width = device_ptr->win_width;
+      g_extern.console.screen.viewports.custom_vp.height = device_ptr->win_height;
    }
 
    if (input & (1 << RMENU_DEVICE_NAV_A))
@@ -1856,10 +1849,10 @@ static void ingame_menu_resize(menu *current_menu, uint64_t input)
       char msg[256];
       display_menubar(current_menu);
 
-      snprintf(viewport_x, sizeof(viewport_x), "Viewport X: #%d", g_console.viewports.custom_vp.x);
-      snprintf(viewport_y, sizeof(viewport_y), "Viewport Y: #%d", g_console.viewports.custom_vp.y);
-      snprintf(viewport_w, sizeof(viewport_w), "Viewport W: #%d", g_console.viewports.custom_vp.width);
-      snprintf(viewport_h, sizeof(viewport_h), "Viewport H: #%d", g_console.viewports.custom_vp.height);
+      snprintf(viewport_x, sizeof(viewport_x), "Viewport X: #%d", g_extern.console.screen.viewports.custom_vp.x);
+      snprintf(viewport_y, sizeof(viewport_y), "Viewport Y: #%d", g_extern.console.screen.viewports.custom_vp.y);
+      snprintf(viewport_w, sizeof(viewport_w), "Viewport W: #%d", g_extern.console.screen.viewports.custom_vp.width);
+      snprintf(viewport_h, sizeof(viewport_h), "Viewport H: #%d", g_extern.console.screen.viewports.custom_vp.height);
 
       context->render_msg(default_pos.x_position, default_pos.y_position, default_pos.font_size, GREEN, viewport_x);
       context->render_msg(default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*1), default_pos.font_size, GREEN, viewport_y);
@@ -1922,7 +1915,7 @@ static void ingame_menu_screenshot(menu *current_menu, uint64_t input)
 {
    (void)current_menu;
 
-   if(g_extern.console.ingame_menu_enable)
+   if(g_extern.console.rmenu.state.ingame_menu.enable)
    {
       if(input & (1 << RMENU_DEVICE_NAV_A))
       {
@@ -1948,12 +1941,12 @@ static void ingame_menu(menu *current_menu, uint64_t input)
    for(int i = 0; i < MENU_ITEM_LAST; i++)
       menuitem_colors[i] = WHITE;
 
-   menuitem_colors[g_extern.console.ingame_menu_item] = RED;
+   menuitem_colors[g_extern.console.rmenu.ingame_menu.idx] = RED;
 
    if(input & (1 << RMENU_DEVICE_NAV_A))
       rarch_settings_change(S_RETURN_TO_GAME);
 
-      switch(g_extern.console.ingame_menu_item)
+      switch(g_extern.console.rmenu.ingame_menu.idx)
       {
          case MENU_ITEM_LOAD_STATE:
             if(input & (1 << RMENU_DEVICE_NAV_B))
@@ -1994,19 +1987,19 @@ static void ingame_menu(menu *current_menu, uint64_t input)
             if(input & (1 << RMENU_DEVICE_NAV_LEFT))
             {
                rarch_settings_change(S_ROTATION_DECREMENT);
-               video_ptr.set_rotation(NULL, g_console.screen_orientation);
+               video_ptr.set_rotation(NULL, g_extern.console.screen.orientation);
             }
             
             if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
             {
                rarch_settings_change(S_ROTATION_INCREMENT);
-               video_ptr.set_rotation(NULL, g_console.screen_orientation);
+               video_ptr.set_rotation(NULL, g_extern.console.screen.orientation);
             }
             
             if(input & (1 << RMENU_DEVICE_NAV_START))
             {
                rarch_settings_default(S_DEF_ROTATION);
-               video_ptr.set_rotation(NULL, g_console.screen_orientation);
+               video_ptr.set_rotation(NULL, g_extern.console.screen.orientation);
             }
             snprintf(comment, sizeof(comment), "Press [%s] to reset back to default values.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_START));
             break;
@@ -2019,8 +2012,8 @@ static void ingame_menu(menu *current_menu, uint64_t input)
 	 case MENU_ITEM_FRAME_ADVANCE:
        if((input & (1 << RMENU_DEVICE_NAV_B)) || (input & (1 << RMENU_DEVICE_NAV_R2)) || (input & (1 << RMENU_DEVICE_NAV_L2)))
 	    {
-          rarch_settings_change(S_FRAME_ADVANCE);
-	       g_extern.console.ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
+               rarch_settings_change(S_FRAME_ADVANCE);
+	       g_extern.console.rmenu.ingame_menu.idx = MENU_ITEM_FRAME_ADVANCE;
 	    }
 	    snprintf(comment, sizeof(comment), "Press [%s] to step one frame.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
 	    break;
@@ -2069,8 +2062,8 @@ static void ingame_menu(menu *current_menu, uint64_t input)
 	    if(input & (1 << RMENU_DEVICE_NAV_B))
 	    {
                RARCH_LOG("Boot Multiman: %s.\n", default_paths.multiman_self_file);
-	       strlcpy(g_console.launch_app_on_exit, default_paths.multiman_self_file,
-                 sizeof(g_console.launch_app_on_exit));
+	       strlcpy(g_extern.console.external_launch.launch_app, default_paths.multiman_self_file,
+                 sizeof(g_extern.console.external_launch.launch_app));
 	       rarch_settings_change(S_RETURN_TO_LAUNCHER);
 	    }
 	    snprintf(comment, sizeof(comment), "Press [%s] to quit RetroArch and return to multiMAN.", rarch_input_find_platform_key_label(1 << RETRO_DEVICE_ID_JOYPAD_B));
@@ -2086,18 +2079,18 @@ static void ingame_menu(menu *current_menu, uint64_t input)
 
    if(input & (1 << RMENU_DEVICE_NAV_UP))
    {
-      if(g_extern.console.ingame_menu_item > 0)
-         g_extern.console.ingame_menu_item--;
+      if(g_extern.console.rmenu.ingame_menu.idx > 0)
+         g_extern.console.rmenu.ingame_menu.idx--;
       else
-         g_extern.console.ingame_menu_item = MENU_ITEM_LAST - 1;
+         g_extern.console.rmenu.ingame_menu.idx = MENU_ITEM_LAST - 1;
    }
 
    if(input & (1 << RMENU_DEVICE_NAV_DOWN))
    {
-      if(g_extern.console.ingame_menu_item < (MENU_ITEM_LAST-1))
-         g_extern.console.ingame_menu_item++;
+      if(g_extern.console.rmenu.ingame_menu.idx < (MENU_ITEM_LAST-1))
+         g_extern.console.rmenu.ingame_menu.idx++;
       else
-         g_extern.console.ingame_menu_item = 0;
+         g_extern.console.rmenu.ingame_menu.idx = 0;
    }
 
    if((input & (1 << RMENU_DEVICE_NAV_L3)) && (input & (1 << RMENU_DEVICE_NAV_R3)))
@@ -2114,7 +2107,7 @@ static void ingame_menu(menu *current_menu, uint64_t input)
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
    context->render_msg(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), strw_buffer);
 
-   snprintf(strw_buffer, sizeof(strw_buffer), "Overscan: %f", g_console.overscan_amount);
+   snprintf(strw_buffer, sizeof(strw_buffer), "Overscan: %f", g_extern.console.screen.overscan_amount);
    context->render_msg(default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_OVERSCAN_AMOUNT)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), strw_buffer);
 
    rarch_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
@@ -2149,7 +2142,7 @@ static void ingame_menu(menu *current_menu, uint64_t input)
 
    rmenu_position_t position = {0};
    position.x = default_pos.x_position;
-   position.y = (default_pos.y_position+(default_pos.y_position_increment * g_extern.console.ingame_menu_item));
+   position.y = (default_pos.y_position+(default_pos.y_position_increment * g_extern.console.rmenu.ingame_menu.idx));
    context->render_selection_panel(&position);
 }
 
@@ -2192,10 +2185,10 @@ void menu_loop(void)
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   g_extern.console.enable = true;
+   g_extern.console.rmenu.state.rmenu.enable = true;
    device_ptr->block_swap = true;
 
-   if(g_extern.console.ingame_menu_enable)
+   if(g_extern.console.rmenu.state.ingame_menu.enable)
       menu_stack_push(INGAME_MENU);
 
    context->init_textures();
@@ -2305,7 +2298,7 @@ void menu_loop(void)
 		      fb = &tmpBrowser;
 		      break;
 	      case INGAME_MENU:
-		      if(g_extern.console.ingame_menu_enable)
+		      if(g_extern.console.rmenu.state.ingame_menu.enable)
                          ingame_menu(&current_menu, trig_state);
 		      break;
 	      case INGAME_MENU_RESIZE:
@@ -2332,37 +2325,37 @@ void menu_loop(void)
       if(IS_TIMER_EXPIRED(device_ptr))
       {
          // if we want to force goto the emulation loop, skip this
-         if(g_extern.console.mode != MODE_EMULATION)
+         if(g_extern.console.rmenu.mode != MODE_EMULATION)
          {
-            if(g_extern.console.mode == MODE_EXIT)
+            if(g_extern.console.rmenu.mode == MODE_EXIT)
             {
             }
             // for ingame menu, we need a different precondition because menu_enable
             // can be set to false when going back from ingame menu to menu
-            else if(g_extern.console.ingame_menu_enable == true)
+            else if(g_extern.console.rmenu.state.ingame_menu.enable == true)
             {
                //we want to force exit when g_extern.console.mode is set to MODE_EXIT
-               if(g_extern.console.mode != MODE_EXIT)
-                  g_extern.console.mode = (((old_state & (1 << RMENU_DEVICE_NAV_L3)) && (old_state & (1 << RMENU_DEVICE_NAV_R3)) && g_console.emulator_initialized)) ? MODE_EMULATION : MODE_MENU;
+               if(g_extern.console.rmenu.mode != MODE_EXIT)
+                  g_extern.console.rmenu.mode = (((old_state & (1 << RMENU_DEVICE_NAV_L3)) && (old_state & (1 << RMENU_DEVICE_NAV_R3)) && g_extern.console.emulator_initialized)) ? MODE_EMULATION : MODE_MENU;
             }
 	    else
             {
-               g_extern.console.enable = !(((old_state & (1 << RMENU_DEVICE_NAV_L3)) && (old_state & (1 << RMENU_DEVICE_NAV_R3)) && g_console.emulator_initialized));
-               g_extern.console.mode = g_extern.console.enable ? MODE_MENU : MODE_EMULATION;
+               g_extern.console.rmenu.state.rmenu.enable = !(((old_state & (1 << RMENU_DEVICE_NAV_L3)) && (old_state & (1 << RMENU_DEVICE_NAV_R3)) && g_extern.console.emulator_initialized));
+               g_extern.console.rmenu.mode = g_extern.console.rmenu.state.rmenu.enable ? MODE_MENU : MODE_EMULATION;
             }
          }
       }
 
       // set a timer delay so that we don't instantly switch back to the menu when
       // press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
-      if(g_extern.console.mode == MODE_EMULATION && !g_extern.console.frame_advance_enable)
+      if(g_extern.console.rmenu.mode == MODE_EMULATION && !g_extern.console.screen.state.frame_advance.enable)
       {
          SET_TIMER_EXPIRATION(device_ptr, 30);
       }
 
       const char * message = msg_queue_pull(g_extern.msg_queue);
 
-      if (message && g_console.info_msg_enable)
+      if (message && g_extern.console.rmenu.state.msg_info.enable)
       {
          context->render_msg(default_pos.msg_queue_x_position, default_pos.msg_queue_y_position, default_pos.msg_queue_font_size, WHITE, message);
       }
@@ -2373,14 +2366,14 @@ void menu_loop(void)
       { }
       else
          context->blend(false);
-   }while(g_extern.console.enable);
+   }while(g_extern.console.rmenu.state.rmenu.enable);
 
    context->free_textures();
 
-   if(g_extern.console.ingame_menu_enable)
+   if(g_extern.console.rmenu.state.ingame_menu.enable)
       menu_stack_pop();
 
    device_ptr->block_swap = false;
 
-   g_extern.console.ingame_menu_enable = false;
+   g_extern.console.rmenu.state.ingame_menu.enable = false;
 }

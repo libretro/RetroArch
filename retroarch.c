@@ -2458,10 +2458,6 @@ void rarch_main_clear_state(void)
    free(g_extern.system.environment_split);
    memset(&g_extern, 0, sizeof(g_extern));
 
-#ifdef RARCH_CONSOLE
-   memset(&g_console, 0, sizeof(g_console));
-#endif
-
    init_state();
 }
 
@@ -2618,7 +2614,7 @@ bool rarch_main_iterate(void)
    if (g_extern.system.shutdown)
    {
 #ifdef HAVE_RMENU
-      g_extern.console.mode = MODE_EXIT;
+      g_extern.console.rmenu.mode = MODE_EXIT;
 #endif
       return false;
    }

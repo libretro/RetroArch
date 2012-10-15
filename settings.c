@@ -29,9 +29,6 @@
 
 struct settings g_settings;
 struct global g_extern;
-#ifdef RARCH_CONSOLE
-struct console_settings g_console;
-#endif
 
 const char *config_get_default_audio(void)
 {
@@ -173,8 +170,8 @@ void config_set_defaults(void)
 
 #if defined(HAVE_CG) || defined(HAVE_XML)
    g_settings.video.render_to_texture = render_to_texture;
-   g_settings.video.fbo_scale_x = fbo_scale_x;
-   g_settings.video.fbo_scale_y = fbo_scale_y;
+   g_settings.video.fbo.scale_x = fbo_scale_x;
+   g_settings.video.fbo.scale_y = fbo_scale_y;
    g_settings.video.second_pass_smooth = second_pass_smooth;
 #endif
 
@@ -238,7 +235,7 @@ static void parse_config_file(void);
 void config_load(void)
 {
 #ifdef RARCH_CONSOLE
-   if (!g_console.block_config_read)
+   if (!g_extern.console.block_config_read)
 #endif
    {
       config_set_defaults();
@@ -388,8 +385,8 @@ bool config_load_file(const char *path)
    CONFIG_GET_PATH(video.bsnes_shader_path, "video_bsnes_shader");
    CONFIG_GET_PATH(video.second_pass_shader, "video_second_pass_shader");
    CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
-   CONFIG_GET_FLOAT(video.fbo_scale_x, "video_fbo_scale_x");
-   CONFIG_GET_FLOAT(video.fbo_scale_y, "video_fbo_scale_y");
+   CONFIG_GET_FLOAT(video.fbo.scale_x, "video_fbo_scale_x");
+   CONFIG_GET_FLOAT(video.fbo.scale_y, "video_fbo_scale_y");
    CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
    CONFIG_GET_BOOL(video.allow_rotate, "video_allow_rotate");
 
