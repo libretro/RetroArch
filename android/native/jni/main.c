@@ -86,10 +86,7 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
       case APP_CMD_INIT_WINDOW:
 	 // The window is being shown, get it ready.
 	 if (g_android.app->window != NULL)
-         {
             gfx_ctx_init();
-	    engine_draw_frame();
-	 }
 	 break;
       case APP_CMD_TERM_WINDOW:
 	 // The window is being hidden or closed, clean it up.
@@ -115,7 +112,6 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
 	       g_android.accelerometerSensor);
 	 // Also stop animating.
 	 g_android.animating = 0;
-	 engine_draw_frame();
 	 break;
    }
 }
