@@ -18,12 +18,7 @@
 #include <jni.h>
 #include <errno.h>
 
-#include <EGL/egl.h>
-#include <GLES/gl.h>
-
-#include <android/sensor.h>
-#include <android_native_app_glue.h>
-
+#include "android-general.h"
 #include "../../../general.h"
 
 JNIEXPORT jint JNICALL JNI_OnLoad( JavaVM *vm, void *pvt)
