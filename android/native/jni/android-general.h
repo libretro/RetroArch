@@ -1,9 +1,6 @@
 #ifndef _ANDROID_GENERAL_H
 #define _ANDROID_GENERAL_H
 
-#include <EGL/egl.h>
-#include <GLES/gl.h>
-
 #include <android/sensor.h>
 #include <android_native_app_glue.h>
 
@@ -22,12 +19,9 @@ struct droid
    const ASensor* accelerometerSensor;
    ASensorEventQueue* sensorEventQueue;
 
-   int animating;
-   EGLDisplay display;
-   EGLSurface surface;
-   EGLContext context;
-   int32_t width;
-   int32_t height;
+   unsigned animating;
+   unsigned width;
+   unsigned height;
    struct saved_state state;
 };
 

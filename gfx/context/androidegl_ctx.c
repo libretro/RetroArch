@@ -20,6 +20,8 @@
 #include <EGL/egl.h> /* Requires NDK r5 or newer */
 #include <GLES/gl.h>
 
+#include "../../android/native/jni/android-general.h"
+
 #include <stdint.h>
 
 enum RenderThreadMessage {
@@ -28,17 +30,11 @@ enum RenderThreadMessage {
    MSG_RENDER_LOOP_EXIT
 };
 
-enum RenderThreadMessage _msg;
-   
-ANativeWindow *window;   /* Requires NDK r5 or newer */
-
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
 static EGLConfig g_config;
 
-int _width;
-int _height;
 GLfloat _angle;
 
 static enum gfx_ctx_api g_api;
@@ -74,7 +70,7 @@ static void gfx_ctx_set_swap_interval(unsigned interval)
    eglSwapInterval(g_egl_dpy, interval);
 }
 
-static void gfx_ctx_destroy(void)
+void gfx_ctx_destroy(void)
 {
     eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglDestroyContext(g_egl_dpy, g_egl_ctx);
@@ -86,11 +82,12 @@ static void gfx_ctx_destroy(void)
     g_egl_ctx = EGL_NO_CONTEXT;
     g_config   = 0;
 
-    _width = 0;
-    _height = 0;
+    g_android.width = 0;
+    g_android.height = 0;
+    g_android.animating = 0;
 }
 
-static bool gfx_ctx_init(void)
+bool gfx_ctx_init(void)
 {
    const EGLint attribs[] = {
         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -134,9 +131,9 @@ static bool gfx_ctx_init(void)
         return false;
     }
 
-    ANativeWindow_setBuffersGeometry(window, 0, 0, format);
+    ANativeWindow_setBuffersGeometry(g_android.app->window, 0, 0, format);
 
-    if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, config, window, 0))) {
+    if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, config, g_android.app->window, 0))) {
         RARCH_ERR("eglCreateWindowSurface() returned error %d.\n", eglGetError());
         gfx_ctx_destroy();
         return false;
@@ -161,24 +158,14 @@ static bool gfx_ctx_init(void)
         return false;
     }
 
-    _width = width;
-    _height = height;
+    g_android.width = width;
+    g_android.height = height;
+    g_android.state.angle = 0;
 
-/*
-    glDisable(GL_DITHER);
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
-    glClearColor(0, 0, 0, 0);
-    glEnable(GL_CULL_FACE);
-    glShadeModel(GL_SMOOTH);
-    glEnable(GL_DEPTH_TEST);
-   
-    glViewport(0, 0, width, height);
-
-    ratio = (GLfloat) width / height;
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glFrustumf(-ratio, ratio, -1, 1, 1, 10);
-*/
+   // Initialize GL state.
+   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
+   glEnable(GL_CULL_FACE);
+   glDisable(GL_DEPTH_TEST);
 
     return true;
 }
@@ -191,33 +178,28 @@ void gfx_ctx_check_window(bool *quit,
    (void)width;
    (void)height;
    (void)frame_count;
-
-   // process incoming messages
-   switch (_msg)
-   {
-      case MSG_WINDOW_SET:
-         gfx_ctx_init();
-	 break;
-      case MSG_RENDER_LOOP_EXIT:
-	 *quit = false;
-	 gfx_ctx_destroy();
-	 break;
-      default:
-	 break;
-   }
-   _msg = MSG_NONE;
 }
 
-static void gfx_ctx_swap_buffers(void)
+void gfx_ctx_swap_buffers(void)
 {
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
-static void gfx_ctx_clear(void)
-{}
+void gfx_ctx_clear(void)
+{
+   glClear(GL_COLOR_BUFFER_BIT);
+}
 
 static void gfx_ctx_set_blend(bool enable)
-{}
+{
+   if(enable)
+   {
+      glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+      glEnable(GL_BLEND);
+   }
+   else
+      glDisable(GL_BLEND);
+}
 
 static void gfx_ctx_set_resize(unsigned width, unsigned height)
 {
@@ -283,9 +265,6 @@ static void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index)
 static void gfx_ctx_set_overscan(void)
 {}
 
-// Enforce void (*)(void) as it's not really legal to cast void* to fn-pointer.
-// POSIX allows this, but strict C99 doesn't.
-#ifndef __PSL1GHT__
 static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 {
    rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
@@ -296,7 +275,6 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 
    return ret;
 }
-#endif
 
 static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
 {
