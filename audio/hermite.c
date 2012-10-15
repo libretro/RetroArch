@@ -78,13 +78,16 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
          processed_out++;
       }
 
-      re->r_frac -= 1.0;
-      for (unsigned i = 0; i < CHANNELS; i++)
+      while (re->r_frac >= 1.0)
       {
-         re->chan_data[i][0] = re->chan_data[i][1];
-         re->chan_data[i][1] = re->chan_data[i][2];
-         re->chan_data[i][2] = re->chan_data[i][3];
-         re->chan_data[i][3] = *in_data++;
+         re->r_frac -= 1.0;
+         for (unsigned i = 0; i < CHANNELS; i++)
+         {
+            re->chan_data[i][0] = re->chan_data[i][1];
+            re->chan_data[i][1] = re->chan_data[i][2];
+            re->chan_data[i][2] = re->chan_data[i][3];
+            re->chan_data[i][3] = *in_data++;
+         }
       }
    }
 
