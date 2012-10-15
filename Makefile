@@ -222,7 +222,11 @@ endif
 
 ifeq ($(HAVE_CG), 1)
    OBJ += gfx/shader_cg.o
-   LIBS += -lCg -lCgGL
+   ifeq ($(OSX), 1)
+      LIBS += -framework Cg
+   else
+      LIBS += -lCg -lCgGL
+   endif
 endif
 
 ifeq ($(HAVE_XML), 1)
