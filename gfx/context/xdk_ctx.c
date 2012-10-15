@@ -213,7 +213,7 @@ static bool gfx_ctx_xdk_init(void)
     // Safe mode
     d3d->d3dpp.BackBufferWidth = 640;
     d3d->d3dpp.BackBufferHeight = 480;
-    g_extern.console.rmenu.state.menus_hd.enable = false;
+    g_extern.console.rmenu.state.rmenu_hd.enable = false;
 
    // Only valid in PAL mode, not valid for HDTV modes!
    if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
@@ -252,21 +252,21 @@ static bool gfx_ctx_xdk_init(void)
    {
       if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
       {
-         g_extern.console.rmenu.state.menus_hd.enable = false;
+         g_extern.console.rmenu.state.rmenu_hd.enable = false;
          d3d->d3dpp.BackBufferWidth	= 640;
          d3d->d3dpp.BackBufferHeight = 480;
          d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
       }
       else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
       {
-         g_extern.console.rmenu.state.menus_hd.enable = true;
+         g_extern.console.rmenu.state.rmenu_hd.enable = true;
 	 d3d->d3dpp.BackBufferWidth	= 1280;
 	 d3d->d3dpp.BackBufferHeight = 720;
 	 d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
       }
       else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
       {
-         g_extern.console.rmenu.state.menus_hd.enable = true;
+         g_extern.console.rmenu.state.rmenu_hd.enable = true;
 	 d3d->d3dpp.BackBufferWidth	= 1920;
 	 d3d->d3dpp.BackBufferHeight = 1080;
 	 d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;

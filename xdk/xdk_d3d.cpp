@@ -596,7 +596,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #ifdef _XBOX1
    bool fps_enable = g_extern.console.rmenu.state.msg_fps.enable;
    unsigned flicker_filter = g_extern.console.screen.state.flicker_filter.value;
-   bool soft_filter_enable = g_extern.console.screen.soft_filter.enable;
+   bool soft_filter_enable = g_extern.console.screen.state.soft_filter.enable;
 #endif
 
    if (d3d->last_width != width || d3d->last_height != height)

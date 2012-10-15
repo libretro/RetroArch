@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
    menu_init();
 
 begin_loop:
-   if(g_extern.console.mode == MODE_EMULATION)
+   if(g_extern.console.rmenu.mode == MODE_EMULATION)
    {
       bool repeat = false;
 
@@ -192,13 +192,13 @@ begin_loop:
 
       do{
          repeat = rarch_main_iterate();
-      }while(repeat && !g_extern.console.frame_advance_enable);
+      }while(repeat && !g_extern.console.screen.state.frame_advance.enable);
    }
-   else if(g_extern.console.mode == MODE_MENU)
+   else if(g_extern.console.rmenu.mode == MODE_MENU)
    {
       menu_loop();
 
-      if (g_extern.console.mode != MODE_EXIT)
+      if (g_extern.console.rmenu.mode != MODE_EXIT)
          rarch_startup(default_paths.config_file);
    }
    else

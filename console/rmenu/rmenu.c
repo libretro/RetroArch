@@ -1118,7 +1118,7 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
          break;
       case SETTING_SOFT_DISPLAY_FILTER:
 	 if(input & (1 << RMENU_DEVICE_NAV_LEFT) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
-            g_extern.console.screen.state.soft_filter.enable = !g_extern.console.screen.soft_filter.enable;
+            g_extern.console.screen.state.soft_filter.enable = !g_extern.console.screen.state.soft_filter.enable;
 	 if(input & (1 << RMENU_DEVICE_NAV_START))
             g_extern.console.screen.state.soft_filter.enable = true;
          break;
@@ -1315,14 +1315,14 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 	 if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 	 {
 		 g_extern.console.sound.volume_level = !g_extern.console.sound.volume_level;
-		 if(g_extern.console.screen.state.msg_info.enable)
+		 if(g_extern.console.rmenu.state.msg_info.enable)
 			 rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
 	 }
 
 	 if(input & (1 << RMENU_DEVICE_NAV_START))
 	 {
 		 g_extern.console.sound.volume_level = 0;
-		 if(g_extern.console.screen.state.msg_info.enable)
+		 if(g_extern.console.rmenu.state.msg_info.enable)
 			 rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
 	 }
 	 break;
