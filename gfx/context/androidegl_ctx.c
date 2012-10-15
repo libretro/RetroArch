@@ -233,16 +233,6 @@ static void gfx_ctx_update_window_title(bool reset)
    (void)reset;
 }
 
-void gfx_ctx_set_window(JNIEnv *jenv,jobject obj, jobject surface)
-{
-   window = ANativeWindow_fromSurface(jenv, surface);
-}
-
-void gfx_ctx_free_window(JNIEnv *jenv,jobject obj, jobject surface)
-{
-   ANativeWindow_release(window);
-}
-
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
    (void)width;
@@ -329,10 +319,6 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL,
    gfx_ctx_update_window_title,
    gfx_ctx_check_window,
-#ifdef ANDROID
-   gfx_ctx_set_window,
-   gfx_ctx_free_window,
-#endif
    gfx_ctx_set_resize,
    gfx_ctx_has_focus,
    gfx_ctx_swap_buffers,

@@ -23,12 +23,6 @@
 #include "../config.h"
 #endif
 
-#ifdef ANDROID
-#include <jni.h>
-#include <android/native_window.h> /* Requires NDK r5 or newer */
-#include <android/native_window_jni.h> /* Requires NDK r5 or newer */
-#endif
-
 enum gfx_ctx_api
 {
    GFX_CTX_OPENGL_API,
@@ -69,10 +63,6 @@ typedef struct gfx_ctx_driver
    // Queries for resize and quit events.
    // Also processes events.
    void (*check_window)(bool*, bool*, unsigned*, unsigned*, unsigned);
-#ifdef ANDROID
-   void (*gfx_ctx_set_window)(JNIEnv *jenv, jobject obj, jobject surface);
-   void (*gfx_ctx_free_window)(JNIEnv *jenv, jobject obj, jobject surface);
-#endif
 
    // Acknowledge a resize event. This is needed for some APIs. Most backends will ignore this.
    void (*set_resize)(unsigned, unsigned);
