@@ -239,12 +239,7 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
 
    while (frames)
    {
-      process_sinc(re, output);
-      output += 2;
-      out_frames++;
-
-      re->time += ratio;
-      while (re->time >= PHASES_WRAP)
+      while (frames && re->time >= PHASES_WRAP)
       {
          re->buffer_l[re->ptr + TAPS] = re->buffer_l[re->ptr] = *input++;
          re->buffer_r[re->ptr + TAPS] = re->buffer_r[re->ptr] = *input++;
@@ -253,6 +248,15 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
          re->time -= PHASES_WRAP;
          frames--;
       }
+
+      if (re->time >= PHASES_WRAP)
+         break;
+
+      process_sinc(re, output);
+      output += 2;
+      out_frames++;
+
+      re->time += ratio;
    }
 
    data->output_frames = out_frames;
