@@ -161,6 +161,9 @@ void android_main(struct android_app* state)
    RARCH_LOG("ROM Filename: [%s].\n", rom_path);
    RARCH_LOG("Libretro path: [%s].\n", libretro_path);
 
+   /* ugly hack for now - hardcode libretro path to 'allowed' dir */
+   snprintf(libretro_path, sizeof(libretro_path), "/data/data/com.retroarch/lib/libretro.so");
+
    // Prepare to monitor accelerometer
    g_android.sensorManager = ASensorManager_getInstance();
    g_android.accelerometerSensor = ASensorManager_getDefaultSensor(g_android.sensorManager,
