@@ -97,8 +97,6 @@ VIDEO CONTEXT
 #include "../../gfx/context/ps3_ctx.c"
 #elif defined(_XBOX)
 #include "../../gfx/context/xdk_ctx.c"
-#elif defined(ANDROID)
-#include "../../gfx/context/androidegl_ctx.c"
 #endif
 
 #endif
@@ -132,13 +130,6 @@ VIDEO IMAGE
 /*============================================================
 VIDEO DRIVER
 ============================================================ */
-
-#if defined(ANDROID)
-#include "../../gfx/scaler/scaler.c"
-#include "../../gfx/scaler/pixconv.c"
-#include "../../gfx/scaler/scaler_int.c"
-#include "../../gfx/scaler/filter.c"
-#endif
 
 #if defined(HAVE_OPENGL)
 #include "../../gfx/math/matrix.c"

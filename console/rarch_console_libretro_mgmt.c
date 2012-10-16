@@ -29,11 +29,7 @@ void rarch_console_name_from_id(char *name, size_t size)
       return;
 
    struct retro_system_info info;
-#ifdef ANDROID
-   pretro_get_system_info(&info);
-#else
    retro_get_system_info(&info);
-#endif
    const char *id = info.library_name ? info.library_name : "Unknown";
 
    if (!id || strlen(id) >= size)
