@@ -78,28 +78,36 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
 	 break;
       case APP_CMD_TERM_WINDOW:
 	 // The window is being hidden or closed, clean it up.
-	 //gfx_ctx_destroy();
+	 rarch_main_deinit();
+         rarch_deinit_msg_queue();
+         rarch_main_clear_state();
 	 break;
       case APP_CMD_GAINED_FOCUS:
 	 // When our app gains focus, we start monitoring the accelerometer.
+	 /*
 	 if (g_android.accelerometerSensor != NULL)
          {
+         */
             ASensorEventQueue_enableSensor(g_android.sensorEventQueue,
                g_android.accelerometerSensor);
 
 	    // We'd like to get 60 events per second (in us).
 	    ASensorEventQueue_setEventRate(g_android.sensorEventQueue,
                g_android.accelerometerSensor, (1000L/60)*1000);
-	 }
+	 //}
 	 break;
       case APP_CMD_LOST_FOCUS:
 	 // When our app loses focus, we stop monitoring the accelerometer.
 	 // This is to avoid consuming battery while not being used.
-	 if (g_android.accelerometerSensor != NULL)
-            ASensorEventQueue_disableSensor(g_android.sensorEventQueue,
-	       g_android.accelerometerSensor);
-	 // Also stop animating.
-	 g_android.animating = 0;
+	 if (!g_android.window_inited)
+         {
+            if (g_android.accelerometerSensor != NULL)
+               ASensorEventQueue_disableSensor(g_android.sensorEventQueue,
+            g_android.accelerometerSensor);
+            
+            // Also stop animating.
+            g_android.animating = 0;
+         }
 	 break;
    }
 }
