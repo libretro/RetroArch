@@ -24,10 +24,9 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 {
    if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION)
    {
-      g_android.animating = 1;
       g_android.state.x = AMotionEvent_getX(event, 0);
       g_android.state.y = AMotionEvent_getY(event, 0);
-      //RARCH_LOG("AINPUT_EVENT_TYPE_MOTION - x: %d, y: %d.\n");
+      RARCH_LOG("AINPUT_EVENT_TYPE_MOTION - x: %d, y: %d.\n");
       return 1;
    }
    return 0;
