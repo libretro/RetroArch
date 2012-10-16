@@ -112,14 +112,14 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
    }
 }
 
-static void android_get_char_argv(char *argv, size_t sizeof_argv, const char * arg_name, struct android_app* state)
+static void android_get_char_argv(char *argv, size_t sizeof_argv, const char *arg_name)
 {
    JNIEnv *env;
-   JavaVM *rarch_vm = state->activity->vm;
+   JavaVM *rarch_vm = g_android.app->activity->vm;
 
    (*rarch_vm)->AttachCurrentThread(rarch_vm, &env, 0);
 
-   jobject me = state->activity->clazz;
+   jobject me = g_android.app->activity->clazz;
 
    jclass acl = (*env)->GetObjectClass(env, me); //class pointer of NativeActivity
    jmethodID giid = (*env)->GetMethodID(env, acl, "getIntent", "()Landroid/content/Intent;");
@@ -133,7 +133,6 @@ static void android_get_char_argv(char *argv, size_t sizeof_argv, const char * a
 
    strncpy(argv, test_argv, sizeof_argv);
 
-   //When done with it, or when you've made a copy
    (*env)->ReleaseStringUTFChars(env, jsParam1, test_argv);
 }
 
@@ -153,16 +152,14 @@ void android_main(struct android_app* state)
 
    RARCH_LOG("Native Activity started.\n");
 
-   state->onAppCmd = engine_handle_cmd;
-   state->onInputEvent = engine_handle_input;
    g_android.app = state;
 
    char rom_path[512];
    char libretro_path[512];
 
    // Get arguments */
-   android_get_char_argv(rom_path, sizeof(rom_path), "ROM", state);
-   android_get_char_argv(libretro_path, sizeof(libretro_path), "LIBRETRO", state);
+   android_get_char_argv(rom_path, sizeof(rom_path), "ROM");
+   android_get_char_argv(libretro_path, sizeof(libretro_path), "LIBRETRO");
 
    RARCH_LOG("Checking arguments passed...\n");
    RARCH_LOG("ROM Filename: [%s].\n", rom_path);
@@ -171,15 +168,18 @@ void android_main(struct android_app* state)
    /* ugly hack for now - hardcode libretro path to 'allowed' dir */
    snprintf(libretro_path, sizeof(libretro_path), "/data/data/com.retroarch/lib/libretro.so");
 
+   g_android.app->onAppCmd = engine_handle_cmd;
+   g_android.app->onInputEvent = engine_handle_input;
+
    // Prepare to monitor accelerometer
    g_android.sensorManager = ASensorManager_getInstance();
    g_android.accelerometerSensor = ASensorManager_getDefaultSensor(g_android.sensorManager,
       ASENSOR_TYPE_ACCELEROMETER);
    g_android.sensorEventQueue = ASensorManager_createEventQueue(g_android.sensorManager,
-      state->looper, LOOPER_ID_USER, NULL, NULL);
+      g_android.app->looper, LOOPER_ID_USER, NULL, NULL);
 
-   if (state->savedState != NULL) // We are starting with a previous saved state; restore from it.
-      g_android.state = *(struct saved_state*)state->savedState;
+   if (g_android.app->savedState != NULL) // We are starting with a previous saved state; restore from it.
+      g_android.state = *(struct saved_state*)g_android.app->savedState;
 
    int argc = 0;
    char *argv[MAX_ARGS] = {NULL};
@@ -200,7 +200,6 @@ void android_main(struct android_app* state)
       int ident;
       int events;
       struct android_poll_source* source;
-      struct android_app* state = g_android.app;
 
       // If not animating, we will block forever waiting for events.
       // If animating, we loop until all events are read, then continue
@@ -210,7 +209,7 @@ void android_main(struct android_app* state)
       {
          // Process this event.
          if (source != NULL)
-            source->process(state, source);
+            source->process(g_android.app, source);
 
 	 // If a sensor has data, process it now.
 	 if (ident == LOOPER_ID_USER && g_android.accelerometerSensor != NULL)
@@ -224,7 +223,7 @@ void android_main(struct android_app* state)
 	 }
 
 	 // Check if we are exiting.
-	 if (state->destroyRequested != 0)
+	 if (g_android.app->destroyRequested != 0)
 	    return;
       }
    }
