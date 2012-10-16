@@ -236,6 +236,7 @@ ifeq ($(HAVE_XML), 1)
 
    ifeq ($(HAVE_OPENGL), 1)
       OBJ += gfx/shader_glsl.o 
+      DEFINES += -DHAVE_GLSL
    endif
 endif
 

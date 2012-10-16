@@ -135,7 +135,7 @@ endif
 
 ifeq ($(HAVE_XML), 1)
    OBJ += gfx/shader_glsl.o gfx/image.o gfx/state_tracker.o cheats.o
-   DEFINES += -Ilibxml2 -DHAVE_XML
+   DEFINES += -Ilibxml2 -DHAVE_XML -DHAVE_GLSL
    LIBS += -lxml2 -liconv
 endif
 
