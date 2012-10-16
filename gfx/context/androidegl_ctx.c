@@ -271,6 +271,16 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
    (void)width;
    (void)height;
+
+   if (g_egl_dpy)
+   {
+      EGLint gl_width;
+      EGLint gl_height;
+      eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &gl_width);
+      eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &gl_height);
+      *width = gl_width;
+      *height = gl_height;
+   }
 }
 
 
