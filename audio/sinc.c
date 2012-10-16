@@ -230,6 +230,9 @@ static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
 
 void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
 {
+   // If data->ratio is < 1, we are downsampling.
+   // The sinc table is not set up for this, as it always assumes upsampling.
+   // Downsampling will work, but with some added noise due to aliasing might be present.
    uint32_t ratio = PHASES_WRAP / data->ratio;
 
    const sample_t *input = data->data_in;
