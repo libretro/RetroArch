@@ -40,7 +40,7 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
 
 #elif defined(__linux__)
    struct timespec tv;
-   if (clock_gettime(CLOCK_MONOTONIC_RAW, &tv) == 0)
+   if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
       time = (rarch_perf_tick_t)tv.tv_sec * 1000000000 + (rarch_perf_tick_t)tv.tv_nsec;
    else
       time = 0;
