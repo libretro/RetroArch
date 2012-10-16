@@ -18,45 +18,15 @@
 #include <jni.h>
 #include <errno.h>
 
-#include <EGL/egl.h> /* Requires NDK r5 or newer */
-#include <GLES/gl.h>
-
 #include "android-general.h"
 #include "../../../general.h"
 
-//forward declarations 
-void gfx_ctx_swap_buffers(void);
-void gfx_ctx_clear(void);
-void gfx_ctx_destroy(void);
-bool gfx_ctx_init(void);
-
-
 JNIEXPORT jint JNICALL JNI_OnLoad( JavaVM *vm, void *pvt)
 {
-   RARCH_LOG("JNI_OnLoad.\n" );
-
    return JNI_VERSION_1_2;
 }
 
-JNIEXPORT void JNICALL JNI_OnUnLoad( JavaVM *vm, void *pvt)
-{
-   RARCH_LOG("JNI_OnUnLoad.\n" );
-}
-
-/**
- * Process the next input event.
- */
-static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
-{
-   if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION)
-   {
-      g_android.animating = 1;
-      g_android.state.x = AMotionEvent_getX(event, 0);
-      g_android.state.y = AMotionEvent_getY(event, 0);
-      return 1;
-   }
-   return 0;
-}
+JNIEXPORT void JNICALL JNI_OnUnLoad( JavaVM *vm, void *pvt) { }
 
 /**
  * Process the next main command.
@@ -84,17 +54,15 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
 	 break;
       case APP_CMD_GAINED_FOCUS:
 	 // When our app gains focus, we start monitoring the accelerometer.
-	 /*
 	 if (g_android.accelerometerSensor != NULL)
          {
-         */
             ASensorEventQueue_enableSensor(g_android.sensorEventQueue,
                g_android.accelerometerSensor);
 
 	    // We'd like to get 60 events per second (in us).
 	    ASensorEventQueue_setEventRate(g_android.sensorEventQueue,
                g_android.accelerometerSensor, (1000L/60)*1000);
-	 //}
+	 }
 	 break;
       case APP_CMD_LOST_FOCUS:
 	 // When our app loses focus, we stop monitoring the accelerometer.
@@ -169,7 +137,6 @@ void android_main(struct android_app* state)
    snprintf(libretro_path, sizeof(libretro_path), "/data/data/com.retroarch/lib/libretro.so");
 
    g_android.app->onAppCmd = engine_handle_cmd;
-   g_android.app->onInputEvent = engine_handle_input;
 
    // Prepare to monitor accelerometer
    g_android.sensorManager = ASensorManager_getInstance();

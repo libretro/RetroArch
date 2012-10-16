@@ -38,6 +38,7 @@ LOCAL_SRC_FILES    =	$(RARCH_PATH)/retroarch.c \
 			$(RARCH_PATH)/gfx/fonts/null_fonts.c \
 			$(RARCH_PATH)/gfx/state_tracker.c \
 			$(RARCH_PATH)/input/null.c \
+			input_android.c \
 			$(RARCH_PATH)/screenshot.c \
 			$(RARCH_PATH)/conf/config_file.c \
 			$(RARCH_PATH)/autosave.c \

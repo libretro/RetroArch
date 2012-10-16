@@ -58,6 +58,7 @@ enum
    AUDIO_XDK360,
    AUDIO_NULL,
 
+   INPUT_ANDROID,
    INPUT_SDL,
    INPUT_X,
    INPUT_DINPUT,
@@ -131,6 +132,8 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_XENON360
 #elif defined(_XBOX360) || defined(_XBOX) || defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1)
 #define INPUT_DEFAULT_DRIVER INPUT_XINPUT
+#elif defined(ANDROID)
+#define INPUT_DEFAULT_DRIVER INPUT_ANDROID
 #elif defined(_WIN32)
 #define INPUT_DEFAULT_DRIVER INPUT_DINPUT
 #elif defined(HAVE_SDL)
