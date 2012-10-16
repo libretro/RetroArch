@@ -44,19 +44,6 @@ JNIEXPORT void JNICALL JNI_OnUnLoad( JavaVM *vm, void *pvt)
 }
 
 /**
- * Just the current frame in the display.
- */
-static void engine_draw_frame(void)
-{
-   // Just fill the screen with a color.
-   glClearColor(((float)g_android.state.x)/g_android.width, g_android.state.angle,
-      ((float)g_android.state.y)/g_android.height, 1);
-
-   gfx_ctx_clear();
-   gfx_ctx_swap_buffers();
-}
-
-/**
  * Process the next input event.
  */
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
@@ -86,12 +73,13 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
 	 break;
       case APP_CMD_INIT_WINDOW:
 	 // The window is being shown, get it ready.
-	 if (g_android.app->window != NULL)
+	 /*if (g_android.app->window != NULL)
             gfx_ctx_init();
+	 */
 	 break;
       case APP_CMD_TERM_WINDOW:
 	 // The window is being hidden or closed, clean it up.
-	 gfx_ctx_destroy();
+	 //gfx_ctx_destroy();
 	 break;
       case APP_CMD_GAINED_FOCUS:
 	 // When our app gains focus, we start monitoring the accelerometer.
@@ -142,6 +130,8 @@ static void android_get_char_argv(char *argv, size_t sizeof_argv, const char * a
    (*env)->ReleaseStringUTFChars(env, jsParam1, test_argv);
 }
 
+#define MAX_ARGS 32
+
 /**
  * This is the main entry point of a native application that is using
  * android_native_app_glue.  It runs in its own thread, with its own
@@ -160,15 +150,15 @@ void android_main(struct android_app* state)
    state->onInputEvent = engine_handle_input;
    g_android.app = state;
 
-   char rom[512];
+   char rom_path[512];
    char libretro_path[512];
 
    // Get arguments */
-   android_get_char_argv(rom, sizeof(rom), "ROM", state);
+   android_get_char_argv(rom_path, sizeof(rom_path), "ROM", state);
    android_get_char_argv(libretro_path, sizeof(libretro_path), "LIBRETRO", state);
 
    RARCH_LOG("Checking arguments passed...\n");
-   RARCH_LOG("ROM Filename: [%s].\n", rom);
+   RARCH_LOG("ROM Filename: [%s].\n", rom_path);
    RARCH_LOG("Libretro path: [%s].\n", libretro_path);
 
    // Prepare to monitor accelerometer
@@ -181,53 +171,15 @@ void android_main(struct android_app* state)
    if (state->savedState != NULL) // We are starting with a previous saved state; restore from it.
       g_android.state = *(struct saved_state*)state->savedState;
 
-   // loop waiting for stuff to do.
+   int argc = 0;
+   char *argv[MAX_ARGS] = {NULL};
 
-   while (1)
-   {
-      // Read all pending events.
-      int ident;
-      int events;
-      struct android_poll_source* source;
+   argv[argc++] = strdup("retroarch");
+   argv[argc++] = strdup(rom_path);
+   argv[argc++] = strdup("-L");
+   argv[argc++] = strdup(libretro_path);
+   argv[argc++] = strdup("-v");
 
-      // If not animating, we will block forever waiting for events.
-      // If animating, we loop until all events are read, then continue
-      // to draw the next frame of animation.
-      while ((ident=ALooper_pollAll(g_android.animating ? 0 : -1, NULL, &events,
-         (void**)&source)) >= 0)
-      {
-         // Process this event.
-         if (source != NULL)
-            source->process(state, source);
-
-	 // If a sensor has data, process it now.
-	 if (ident == LOOPER_ID_USER && g_android.accelerometerSensor != NULL)
-	 {
-            ASensorEvent event;
-	    while (ASensorEventQueue_getEvents(g_android.sensorEventQueue, &event, 1) > 0)
-               RARCH_WARN("accelerometer: x=%f y=%f z=%f.\n", event.acceleration.x,
-               event.acceleration.y, event.acceleration.z);
-	 }
-
-	 // Check if we are exiting.
-	 if (state->destroyRequested != 0)
-         {
-            gfx_ctx_destroy();
-	    return;
-	 }
-      }
-
-      if (g_android.animating)
-      {
-         // Done with events; draw next animation frame.
-         g_android.state.angle += .01f;
-
-	 if (g_android.state.angle > 1)
-            g_android.state.angle = 0;
-
-	 // Drawing is throttled to the screen update rate, so there
-	 // is no need to do timing here.
-	 engine_draw_frame();
-      }
-   }
+   RARCH_LOG("Start RetroArch...\n");
+   rarch_main(argc, argv);
 }
