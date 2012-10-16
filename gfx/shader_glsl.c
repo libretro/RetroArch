@@ -1056,8 +1056,10 @@ bool gl_glsl_init(const char *path)
    }
 #endif
 
-   //if (!gl_check_error())
-   //   RARCH_WARN("Detected GL error.\n");
+#ifdef GLSL_DEBUG
+   if (!gl_check_error())
+      RARCH_WARN("Detected GL error.\n");
+#endif
 
 #ifdef HAVE_XML
    if (gl_tracker_info_cnt > 0)

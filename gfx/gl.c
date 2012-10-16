@@ -225,7 +225,7 @@ void gl_shader_use(unsigned index)
    gl_cg_use(index);
 #endif
 
-#ifdef HAVE_XML
+#if defined(HAVE_XML) || defined(HAVE_GLSL)
    gl_glsl_use(index);
 #endif
 }
@@ -236,7 +236,7 @@ static inline void gl_shader_deinit(void)
    gl_cg_deinit();
 #endif
 
-#ifdef HAVE_XML
+#if defined(HAVE_XML) || defined(HAVE_GLSL)
    gl_glsl_deinit();
 #endif
 }
@@ -280,7 +280,7 @@ void gl_shader_set_coords(const struct gl_coords *coords, const math_matrix *mat
    (void)ret_coords;
    (void)ret_mvp;
 
-#ifdef HAVE_XML
+#if defined(HAVE_XML) || defined(HAVE_GLSL)
    if (!ret_coords)
       ret_coords |= gl_glsl_set_coords(coords);
    if (!ret_mvp)
@@ -321,7 +321,7 @@ static inline void gl_shader_set_params(unsigned width, unsigned height,
          frame_count, info, prev_info, fbo_info, fbo_info_cnt);
 #endif
 
-#ifdef HAVE_XML
+#if defined(HAVE_XML) || defined(HAVE_GLSL)
    gl_glsl_set_params(width, height, 
          tex_width, tex_height, 
          out_width, out_height, 
@@ -337,7 +337,7 @@ static unsigned gl_shader_num(void)
       return cg_num;
 #endif
 
-#ifdef HAVE_XML
+#if defined(HAVE_XML) || defined(HAVE_GLSL)
    unsigned glsl_num = gl_glsl_num();
    if (glsl_num)
       return glsl_num;
@@ -355,7 +355,7 @@ static bool gl_shader_filter_type(unsigned index, bool *smooth)
       valid = gl_cg_filter_type(index, smooth);
 #endif
 
-#ifdef HAVE_XML
+#if defined(HAVE_XML) || defined(HAVE_GLSL)
    if (!valid)
       valid = gl_glsl_filter_type(index, smooth);
 #endif
@@ -373,7 +373,7 @@ static void gl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
       gl_cg_shader_scale(index, scale);
 #endif
 
-#ifdef HAVE_XML
+#if defined(HAVE_XML) || defined(HAVE_GLSL)
    if (!scale->valid)
       gl_glsl_shader_scale(index, scale);
 #endif
@@ -1272,7 +1272,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_cg_set_menu_shader(default_paths.menu_shader_file);
 #endif
 
-#ifdef HAVE_XML
+#if defined(HAVE_XML) || defined(HAVE_GLSL)
    gl_glsl_set_get_proc_address(gl->ctx_driver->get_proc_address);
 #endif
 
