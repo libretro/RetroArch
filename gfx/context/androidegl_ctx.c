@@ -198,8 +198,9 @@ void gfx_ctx_check_window(bool *quit,
       {
          ASensorEvent event;
 	 while (ASensorEventQueue_getEvents(g_android.sensorEventQueue, &event, 1) > 0)
-		 RARCH_LOG("accelerometer: x=%f y=%f z=%f.\n", event.acceleration.x,
-				 event.acceleration.y, event.acceleration.z);
+         {
+            //RARCH_LOG("accelerometer: x=%f y=%f z=%f.\n", event.acceleration.x, event.acceleration.y, event.acceleration.z);
+         }
       }
 
       // Check if we are exiting.

@@ -182,6 +182,8 @@ void android_main(struct android_app* state)
    argv[argc++] = strdup(libretro_path);
    argv[argc++] = strdup("-v");
 
+   g_extern.verbose = true;
+
    while(!g_android.window_inited)
    {
       // Read all pending events.
@@ -205,8 +207,10 @@ void android_main(struct android_app* state)
 	 {
 		 ASensorEvent event;
 		 while (ASensorEventQueue_getEvents(g_android.sensorEventQueue, &event, 1) > 0)
-			 RARCH_LOG("accelerometer: x=%f y=%f z=%f.\n", event.acceleration.x,
-					 event.acceleration.y, event.acceleration.z);
+                 {
+                    //RARCH_LOG("accelerometer: x=%f y=%f z=%f.\n", event.acceleration.x,
+                    //event.acceleration.y, event.acceleration.z);
+                 }
 	 }
 
 	 // Check if we are exiting.
