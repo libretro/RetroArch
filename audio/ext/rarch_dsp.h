@@ -30,20 +30,12 @@ extern "C" {
 #define RARCH_TRUE 1
 #endif
 
-#define RARCH_DSP_API_VERSION 4
+#define RARCH_DSP_API_VERSION 5
 
 typedef struct rarch_dsp_info
 {
-   // Input sample rate that the DSP plugin receives. This is generally ~32kHz.
-   // Some small variance is allowed due to syncing behavior.
+   // Input sample rate that the DSP plugin receives.
    float input_rate;
-
-   // RetroArch requests that the DSP plugin resamples the 
-   // input to a certain frequency.
-   //
-   // However, the plugin might ignore this
-   // using the resample field in rarch_dsp_output_t (see below).
-   float output_rate;
 } rarch_dsp_info_t;
 
 typedef struct rarch_dsp_output

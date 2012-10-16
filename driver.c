@@ -285,7 +285,6 @@ static void init_dsp_plugin(void)
    RARCH_LOG("Loaded DSP plugin: \"%s\"\n", g_extern.audio_data.dsp_plugin->ident ? g_extern.audio_data.dsp_plugin->ident : "Unknown");
 
    info.input_rate = g_settings.audio.in_rate;
-   info.output_rate = g_settings.audio.out_rate;
 
    g_extern.audio_data.dsp_handle = g_extern.audio_data.dsp_plugin->init(&info);
    if (!g_extern.audio_data.dsp_handle)
