@@ -225,19 +225,6 @@ void android_main(struct android_app* state)
 	 if (state->destroyRequested != 0)
 	    return;
       }
-
-      if (g_android.animating)
-      {
-         // Done with events; draw next animation frame.
-         g_android.state.angle += .01f;
-
-	 if (g_android.state.angle > 1)
-            g_android.state.angle = 0;
-
-	 // Drawing is throttled to the screen update rate, so there
-	 // is no need to do timing here.
-	 //engine_draw_frame();
-      }
    }
 
    RARCH_LOG("Start RetroArch...\n");

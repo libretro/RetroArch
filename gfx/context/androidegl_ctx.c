@@ -33,38 +33,17 @@ GLfloat _angle;
 
 static enum gfx_ctx_api g_api;
 
-static int gfx_ctx_check_resolution(unsigned resolution_id)
-{
-   (void)resolution_id;
-   return 0;
-}
-
-static unsigned gfx_ctx_get_resolution_width(unsigned resolution_id)
-{
-   (void)resolution_id;
-   return 0;
-}
-
-static unsigned gfx_ctx_get_resolution_height(unsigned resolution_id)
-{
-   (void)resolution_id;
-   return 0;
-}
-
 static float gfx_ctx_get_aspect_ratio(void)
 {
    return 4.0f / 3.0f;
 }
-
-static void gfx_ctx_get_available_resolutions(void)
-{}
 
 static void gfx_ctx_set_swap_interval(unsigned interval)
 {
    eglSwapInterval(g_egl_dpy, interval);
 }
 
-void gfx_ctx_destroy(void)
+static void gfx_ctx_destroy(void)
 {
     eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglDestroyContext(g_egl_dpy, g_egl_ctx);
@@ -81,7 +60,7 @@ void gfx_ctx_destroy(void)
     g_android.animating = 0;
 }
 
-bool gfx_ctx_init(void)
+static bool gfx_ctx_init(void)
 {
    const EGLint attribs[] = {
 	EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
@@ -166,7 +145,12 @@ bool gfx_ctx_init(void)
     return true;
 }
 
-void gfx_ctx_check_window(bool *quit,
+static void gfx_ctx_swap_buffers(void)
+{
+   eglSwapBuffers(g_egl_dpy, g_egl_surf);
+}
+
+static void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)width;
@@ -208,21 +192,20 @@ void gfx_ctx_check_window(bool *quit,
       {
          gl->quitting = true;
 	 *quit = true;
+         gfx_ctx_destroy();
 	 return;
       }
    }
 
    if (g_android.animating)
    {
-         // Done with events; draw next animation frame.
-         g_android.state.angle += .01f;
+      // Done with events; draw next animation frame.
+      g_android.state.angle += .01f;
 
-	 if (g_android.state.angle > 1)
-            g_android.state.angle = 0;
+      if (g_android.state.angle > 1)
+         g_android.state.angle = 0;
 
-	 // Drawing is throttled to the screen update rate, so there
-	 // is no need to do timing here.
-	 //engine_draw_frame();
+      gfx_ctx_swap_buffers();
    }
 
    if (gl->quitting)
@@ -232,12 +215,7 @@ void gfx_ctx_check_window(bool *quit,
       *resize = true;
 }
 
-void gfx_ctx_swap_buffers(void)
-{
-   eglSwapBuffers(g_egl_dpy, g_egl_surf);
-}
-
-void gfx_ctx_clear(void)
+static void gfx_ctx_clear(void)
 {
    glClear(GL_COLOR_BUFFER_BIT);
 }
@@ -258,9 +236,6 @@ static void gfx_ctx_set_resize(unsigned width, unsigned height)
    (void)width;
    (void)height;
 }
-
-static bool gfx_ctx_menu_init(void)
-{}
 
 static void gfx_ctx_update_window_title(bool reset)
 {
@@ -284,7 +259,7 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 }
 
 
-bool gfx_ctx_set_video_mode(
+static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen)
 {
@@ -296,36 +271,11 @@ bool gfx_ctx_set_video_mode(
 }
 
 
-void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
 {
    *input = NULL;
    *input_data = NULL;
 }
-
-void gfx_ctx_set_filtering(unsigned index, bool set_smooth)
-{
-   (void)index;
-   (void)set_smooth;
-}
-
-static void gfx_ctx_set_fbo(bool enable)
-{
-   (void)enable;
-}
-
-static void gfx_ctx_apply_fbo_state_changes(unsigned mode)
-{
-   (void)mode;
-}
-
-static void gfx_ctx_set_aspect_ratio(void *data, unsigned aspectratio_index)
-{
-   (void)data;
-   (void)aspectratio_index;
-}
-
-static void gfx_ctx_set_overscan(void)
-{}
 
 static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 {
@@ -365,20 +315,4 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    gfx_ctx_input_driver,
    NULL,
    "android",
-
-#ifdef RARCH_CONSOLE
-   // RARCH_CONSOLE stuff.
-   gfx_ctx_set_filtering,
-   gfx_ctx_get_available_resolutions,
-   gfx_ctx_check_resolution,
-
-#ifdef HAVE_CG_MENU
-   gfx_ctx_menu_init,
-#else
-   NULL,
-#endif
-
-   gfx_ctx_set_fbo,
-   gfx_ctx_apply_fbo_state_changes,
-#endif
 };
