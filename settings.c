@@ -357,9 +357,9 @@ bool config_load_file(const char *path)
 
    if (g_extern.verbose)
    {
-      fprintf(stderr, "=== Config ===\n");
+      RARCH_LOG_OUTPUT("=== Config ===\n");
       config_file_dump_all(conf, stderr);
-      fprintf(stderr, "=== Config end ===\n");
+      RARCH_LOG_OUTPUT("=== Config end ===\n");
    }
 
    char tmp_str[PATH_MAX];

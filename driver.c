@@ -149,9 +149,9 @@ static void find_audio_driver(void)
       }
    }
    RARCH_ERR("Couldn't find any audio driver named \"%s\"\n", g_settings.audio.driver);
-   fprintf(stderr, "Available audio drivers are:\n");
+   RARCH_LOG_OUTPUT("Available audio drivers are:\n");
    for (size_t i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
-      fprintf(stderr, "\t%s\n", audio_drivers[i]->ident);
+      RARCH_LOG_OUTPUT("\t%s\n", audio_drivers[i]->ident);
 
    rarch_fail(1, "find_audio_driver()");
 }
@@ -167,9 +167,9 @@ static void find_video_driver(void)
       }
    }
    RARCH_ERR("Couldn't find any video driver named \"%s\"\n", g_settings.video.driver);
-   fprintf(stderr, "Available video drivers are:\n");
+   RARCH_LOG_OUTPUT("Available video drivers are:\n");
    for (size_t i = 0; i < sizeof(video_drivers) / sizeof(video_driver_t*); i++)
-      fprintf(stderr, "\t%s\n", video_drivers[i]->ident);
+      RARCH_LOG_OUTPUT("\t%s\n", video_drivers[i]->ident);
 
    rarch_fail(1, "find_video_driver()");
 }
@@ -185,9 +185,9 @@ static void find_input_driver(void)
       }
    }
    RARCH_ERR("Couldn't find any input driver named \"%s\"\n", g_settings.input.driver);
-   fprintf(stderr, "Available input drivers are:\n");
+   RARCH_LOG_OUTPUT("Available input drivers are:\n");
    for (size_t i = 0; i < sizeof(input_drivers) / sizeof(input_driver_t*); i++)
-      fprintf(stderr, "\t%s\n", input_drivers[i]->ident);
+      RARCH_LOG_OUTPUT("\t%s\n", input_drivers[i]->ident);
 
    rarch_fail(1, "find_input_driver()");
 }

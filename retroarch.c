@@ -172,7 +172,7 @@ static void take_screenshot(void)
 static void readjust_audio_input_rate(void)
 {
    int avail = audio_write_avail_func();
-   //fprintf(stderr, "Audio buffer is %u%% full\n",
+   //RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",
    //      (unsigned)(100 - (avail * 100) / g_extern.audio_data.driver_buffer_size));
 
    int half_size = g_extern.audio_data.driver_buffer_size / 2;
@@ -183,7 +183,7 @@ static void readjust_audio_input_rate(void)
 
    g_extern.audio_data.src_ratio = g_extern.audio_data.orig_src_ratio * adjust;
 
-   //fprintf(stderr, "New rate: %lf, Orig rate: %lf\n",
+   //RARCH_LOG_OUTPUT("New rate: %lf, Orig rate: %lf\n",
    //      g_extern.audio_data.src_ratio, g_extern.audio_data.orig_src_ratio);
 }
 
@@ -2508,9 +2508,9 @@ int rarch_main_init(int argc, char *argv[])
 
    if (g_extern.verbose)
    {
-      fprintf(stderr, "=== Build =======================================");
+      RARCH_LOG_OUTPUT("=== Build =======================================");
       print_compiler(stderr);
-      fprintf(stderr, "=================================================\n");
+      RARCH_LOG_OUTPUT("=================================================\n");
    }
 
    config_load();

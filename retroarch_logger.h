@@ -44,6 +44,25 @@
 #endif
 #endif
 
+#ifndef RARCH_LOG_OUTPUT
+#if defined(ANDROID)
+#define  RARCH_LOG_OUTPUT(...)  __android_log_print(ANDROID_LOG_INFO,"stderr: ",__VA_ARGS__)
+#elif defined(IS_SALAMANDER)
+#define RARCH_LOG_OUTPUT(...) do { \
+      fprintf(stderr, "stderr: " __VA_ARGS__); \
+      fflush(stderr); \
+   } while (0)
+#else
+#define RARCH_LOG_OUTPUT(...) do { \
+      if (g_extern.verbose) \
+      { \
+         fprintf(stderr, "stderr: " __VA_ARGS__); \
+         fflush(stderr); \
+      } \
+   } while (0)
+#endif
+#endif
+
 #ifndef RARCH_ERR
 #if defined(ANDROID)
 #define  RARCH_ERR(...)  __android_log_print(ANDROID_LOG_INFO, "RetroArch [ERROR] :: ",__VA_ARGS__)
@@ -60,6 +79,22 @@
 #endif
 #endif
 
+#ifndef RARCH_ERR_OUTPUT
+#if defined(ANDROID)
+#define  RARCH_ERR_OUTPUT(...)  __android_log_print(ANDROID_LOG_INFO, "stderr [ERROR] :: ",__VA_ARGS__)
+#elif defined(IS_SALAMANDER)
+#define RARCH_ERR_OUTPUT(...) do { \
+      fprintf(stderr, "stderr [ERROR] :: " __VA_ARGS__); \
+      fflush(stderr); \
+   } while (0)
+#else
+#define RARCH_ERR_OUTPUT(...) do { \
+      fprintf(stderr, "stderr [ERROR] :: " __VA_ARGS__); \
+      fflush(stderr); \
+   } while (0)
+#endif
+#endif
+
 #ifndef RARCH_WARN
 #if defined(ANDROID)
 #define  RARCH_WARN(...)  __android_log_print(ANDROID_LOG_INFO, "RetroArch [WARN] :: ",__VA_ARGS__)
@@ -71,6 +106,22 @@
 #else
 #define RARCH_WARN(...) do { \
       fprintf(stderr, "RetroArch [WARN] :: " __VA_ARGS__); \
+      fflush(stderr); \
+   } while (0)
+#endif
+#endif
+
+#ifndef RARCH_WARN
+#if defined(ANDROID)
+#define  RARCH_WARN_OUTPUT(...)  __android_log_print(ANDROID_LOG_INFO, "stderr [WARN] :: ",__VA_ARGS__)
+#elif defined(IS_SALAMANDER)
+#define RARCH_WARN_OUTPUT(...) do { \
+      fprintf(stderr, "stderr [WARN] :: " __VA_ARGS__); \
+      fflush(stderr); \
+   } while (0)
+#else
+#define RARCH_WARN_OUTPUT(...) do { \
+      fprintf(stderr, "stderr [WARN] :: " __VA_ARGS__); \
       fflush(stderr); \
    } while (0)
 #endif
