@@ -190,6 +190,8 @@ void android_main(struct android_app* state)
    argv[argc++] = strdup(libretro_path);
    argv[argc++] = strdup("-v");
 
+   g_android.animating = 1;
+
    g_extern.verbose = true;
 
    while(!g_android.window_inited)
