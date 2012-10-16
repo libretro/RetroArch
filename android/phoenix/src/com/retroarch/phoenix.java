@@ -31,6 +31,9 @@ import android.os.Bundle;
 public class phoenix extends Activity
 {
 	static private final int ACTIVITY_LOAD_ROM = 0;
+	static private final int ACTIVITY_LOAD_LIBRETRO_CORE = 1;
+	
+	static private String libretro_path;
 	
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -49,6 +52,7 @@ public class phoenix extends Activity
     
     public boolean onOptionsItemSelected(MenuItem item)
     {
+    	Intent myIntent;
     	switch (item.getItemId())
     	{
     	    case R.id.main:
@@ -56,9 +60,14 @@ public class phoenix extends Activity
     		    break;
     	    case R.id.open:
     	    	Toast.makeText(this, "Select a ROM image from the Filebrowser.", Toast.LENGTH_SHORT).show();
-    	    	Intent myIntent = new Intent(this, FileChooser.class);
+    	    	myIntent = new Intent(this, FileChooser.class);
     	    	startActivityForResult(myIntent, ACTIVITY_LOAD_ROM);
     		    break;
+    	    case R.id.libretro:
+    	    	Toast.makeText(this, "Select a libretro core from the Filebrowser.", Toast.LENGTH_SHORT).show();
+    	    	myIntent = new Intent(this, FileChooser.class);
+    	    	startActivityForResult(myIntent, ACTIVITY_LOAD_LIBRETRO_CORE);
+    		    break;   	    	
     		default:
     	    	Toast.makeText(this, "MenuItem " + item.getTitle() + " selected.", Toast.LENGTH_SHORT).show();
     	    	break;
@@ -69,11 +78,32 @@ public class phoenix extends Activity
     
     protected void onActivityResult(int requestCode, int resultCode, Intent data)
     {
-    	if(requestCode == ACTIVITY_LOAD_ROM)
+    	Intent myIntent;
+    	
+    	switch(requestCode)
     	{
-           Intent myIntent = new Intent(this, NativeActivity.class);
-           myIntent.putExtra("ROM", data.getStringExtra("PATH"));
-           startActivity(myIntent);
+    	   case ACTIVITY_LOAD_ROM:
+    		   if(data.getStringExtra("PATH") != null)
+    		   {
+    			   if(libretro_path != null)
+    			   {
+    			       Toast.makeText(this, "Loading: ["+ data.getStringExtra("PATH") + "]...", Toast.LENGTH_SHORT).show();
+    				   myIntent = new Intent(this, NativeActivity.class);
+    				   myIntent.putExtra("ROM", data.getStringExtra("PATH"));
+    				   myIntent.putExtra("LIBRETRO", libretro_path);
+    				   startActivity(myIntent);
+    			   }
+    			   else
+    	    	    	Toast.makeText(this, "ERROR - No libretro core has been selected, cannot start RetroArch.", Toast.LENGTH_SHORT).show();
+    		   }
+    		   break;
+    	   case ACTIVITY_LOAD_LIBRETRO_CORE:
+    		   if(data.getStringExtra("PATH") != null)
+    		   {
+			       Toast.makeText(this, "Libretro core path set to: ["+ data.getStringExtra("PATH") + "].", Toast.LENGTH_SHORT).show();
+    			   libretro_path = data.getStringExtra("PATH");
+    		   }
+    		   break;
     	}
     }
     

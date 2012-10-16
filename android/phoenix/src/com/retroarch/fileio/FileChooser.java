@@ -189,7 +189,7 @@ public class FileChooser extends Activity
           {
 
                public void onItemClick(AdapterView<?> arg0, View arg1,
-                         int arg2, long arg3)
+            		   int arg2, long arg3)
                {
                     int pos = arg0.getPositionForView(arg1);
                     Option o = adapter.getItem(pos);
@@ -204,19 +204,7 @@ public class FileChooser extends Activity
                     }
                     else
                     {
-                    	/*
-                         String path = o.getPath();
-                        
-                         int dotIndex = path.lastIndexOf('.');
-                         
-                         String ext = null;
-                         if (dotIndex >= 0)
-                         {
-                              ext = path.substring(dotIndex+1).toLowerCase();
-                         }
-                         */
-                         
-			 onFileClick(o);
+                    	onFileClick(o);
                     }
                }
                
@@ -226,8 +214,6 @@ public class FileChooser extends Activity
      
      private void onFileClick(Option o)
      {
-         Toast.makeText(this, "Loading: "+ o.name + "...", Toast.LENGTH_SHORT).show();
-         
          Intent intent=new Intent();   
          intent.putExtra("PATH", o.path);
          intent.putExtra("NAME", o.name);
@@ -236,7 +222,8 @@ public class FileChooser extends Activity
      }
      
      @Override
-     public boolean onKeyDown(int keyCode, KeyEvent event) {
+     public boolean onKeyDown(int keyCode, KeyEvent event)
+     {
          if (keyCode == KeyEvent.KEYCODE_BACK)
          {
               if (_dirStack.size() > 1)

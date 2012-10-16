@@ -117,6 +117,31 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
    }
 }
 
+static void android_get_char_argv(char *argv, size_t sizeof_argv, const char * arg_name, struct android_app* state)
+{
+   JNIEnv *env;
+   JavaVM *rarch_vm = state->activity->vm;
+
+   (*rarch_vm)->AttachCurrentThread(rarch_vm, &env, 0);
+
+   jobject me = state->activity->clazz;
+
+   jclass acl = (*env)->GetObjectClass(env, me); //class pointer of NativeActivity
+   jmethodID giid = (*env)->GetMethodID(env, acl, "getIntent", "()Landroid/content/Intent;");
+   jobject intent = (*env)->CallObjectMethod(env, me, giid); //Got our intent
+
+   jclass icl = (*env)->GetObjectClass(env, intent); //class pointer of Intent
+   jmethodID gseid = (*env)->GetMethodID(env, icl, "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
+
+   jstring jsParam1 = (*env)->CallObjectMethod(env, intent, gseid, (*env)->NewStringUTF(env, arg_name));
+   const char *test_argv = (*env)->GetStringUTFChars(env, jsParam1, 0);
+
+   strncpy(argv, test_argv, sizeof_argv);
+
+   //When done with it, or when you've made a copy
+   (*env)->ReleaseStringUTFChars(env, jsParam1, test_argv);
+}
+
 /**
  * This is the main entry point of a native application that is using
  * android_native_app_glue.  It runs in its own thread, with its own
@@ -135,30 +160,16 @@ void android_main(struct android_app* state)
    state->onInputEvent = engine_handle_input;
    g_android.app = state;
 
+   char rom[512];
+   char libretro_path[512];
+
    // Get arguments */
-   JNIEnv *env;
-   JavaVM *rarch_vm = state->activity->vm;
-
-   (*rarch_vm)->AttachCurrentThread(rarch_vm, &env, 0);
-
-   jobject me = state->activity->clazz;
-
-   jclass acl = (*env)->GetObjectClass(env, me); //class pointer of NativeActivity
-   jmethodID giid = (*env)->GetMethodID(env, acl, "getIntent", "()Landroid/content/Intent;");
-   jobject intent = (*env)->CallObjectMethod(env, me, giid); //Got our intent
-
-   jclass icl = (*env)->GetObjectClass(env, intent); //class pointer of Intent
-   jmethodID gseid = (*env)->GetMethodID(env, icl, "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
-
-   /* ROM argument */
-   jstring jsParam1 = (*env)->CallObjectMethod(env, intent, gseid, (*env)->NewStringUTF(env, "ROM"));
-   const char *rom = (*env)->GetStringUTFChars(env, jsParam1, 0);
-
-   //When done with it, or when you've made a copy
-   (*env)->ReleaseStringUTFChars(env, jsParam1, rom);
+   android_get_char_argv(rom, sizeof(rom), "ROM", state);
+   android_get_char_argv(libretro_path, sizeof(libretro_path), "LIBRETRO", state);
 
    RARCH_LOG("Checking arguments passed...\n");
    RARCH_LOG("ROM Filename: [%s].\n", rom);
+   RARCH_LOG("Libretro path: [%s].\n", libretro_path);
 
    // Prepare to monitor accelerometer
    g_android.sensorManager = ASensorManager_getInstance();
