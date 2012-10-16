@@ -22,6 +22,8 @@
 #endif
 #elif defined(_XBOX360)
 #include <PPCIntrinsics.h>
+#elif defined(__linux__)
+#include <sys/time.h>
 #endif
 
 rarch_perf_tick_t rarch_get_perf_counter(void)
@@ -36,6 +38,13 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
    __asm	mov	time_tmp.HighPart, edx;
    time = time_tmp.QuadPart;
 
+#elif defined(__linux__)
+   struct timespec tv;
+   if (clock_gettime(CLOCK_MONOTONIC_RAW, &tv) == 0)
+      time = (rarch_perf_tick_t)tv.tv_sec * 1000000000 + (rarch_perf_tick_t)tv.tv_nsec;
+   else
+      time = 0;
+
 #elif defined(__GNUC__) && !defined(RARCH_CONSOLE)
 
 #if defined(__i386__) || defined(__i486__)
@@ -45,6 +54,7 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
    asm volatile ("rdtsc" : "=a" (a), "=d" (d));
    time = (rarch_perf_tick_t)a | ((rarch_perf_tick_t)d << 32);
 #endif
+
 #elif defined(__ARM_ARCH_6__) || defined(ANDROID)
     asm volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time) );
 #elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360)
