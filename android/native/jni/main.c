@@ -30,6 +30,7 @@ void gfx_ctx_clear(void);
 void gfx_ctx_destroy(void);
 bool gfx_ctx_init(void);
 
+
 JNIEXPORT jint JNICALL JNI_OnLoad( JavaVM *vm, void *pvt)
 {
    RARCH_LOG("JNI_OnLoad.\n" );
@@ -128,9 +129,36 @@ void android_main(struct android_app* state)
 
    rarch_main_clear_state();
 
+   RARCH_LOG("Native Activity started.\n");
+
    state->onAppCmd = engine_handle_cmd;
    state->onInputEvent = engine_handle_input;
    g_android.app = state;
+
+   // Get arguments */
+   JNIEnv *env;
+   JavaVM *rarch_vm = state->activity->vm;
+
+   (*rarch_vm)->AttachCurrentThread(rarch_vm, &env, 0);
+
+   jobject me = state->activity->clazz;
+
+   jclass acl = (*env)->GetObjectClass(env, me); //class pointer of NativeActivity
+   jmethodID giid = (*env)->GetMethodID(env, acl, "getIntent", "()Landroid/content/Intent;");
+   jobject intent = (*env)->CallObjectMethod(env, me, giid); //Got our intent
+
+   jclass icl = (*env)->GetObjectClass(env, intent); //class pointer of Intent
+   jmethodID gseid = (*env)->GetMethodID(env, icl, "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
+
+   /* ROM argument */
+   jstring jsParam1 = (*env)->CallObjectMethod(env, intent, gseid, (*env)->NewStringUTF(env, "ROM"));
+   const char *rom = (*env)->GetStringUTFChars(env, jsParam1, 0);
+
+   //When done with it, or when you've made a copy
+   (*env)->ReleaseStringUTFChars(env, jsParam1, rom);
+
+   RARCH_LOG("Checking arguments passed...\n");
+   RARCH_LOG("ROM Filename: [%s].\n", rom);
 
    // Prepare to monitor accelerometer
    g_android.sensorManager = ASensorManager_getInstance();
@@ -143,7 +171,6 @@ void android_main(struct android_app* state)
       g_android.state = *(struct saved_state*)state->savedState;
 
    // loop waiting for stuff to do.
-   RARCH_LOG("Enter Android main loop.\n");
 
    while (1)
    {
