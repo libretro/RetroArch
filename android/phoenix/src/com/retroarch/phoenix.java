@@ -74,16 +74,6 @@ public class phoenix extends Activity
            Intent myIntent = new Intent(this, NativeActivity.class);
            myIntent.putExtra("ROM", data.getStringExtra("PATH"));
            startActivity(myIntent);
-	   /*
-            rruntime.settings_set_defaults();
-            rruntime.load_game(data.getStringExtra("PATH"), 0);
-            
-            Uri video = Uri.parse("android.resource://" + getPackageName() + "/" 
-           		 + R.raw.retroarch);
-            
-            rruntime.startup(video.toString());
-            while(rruntime.run_frame());
-            */
     	}
     }
     
