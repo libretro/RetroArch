@@ -84,6 +84,7 @@ void gfx_ctx_destroy(void)
 bool gfx_ctx_init(void)
 {
    const EGLint attribs[] = {
+	EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
         EGL_BLUE_SIZE, 8,
         EGL_GREEN_SIZE, 8,
@@ -132,8 +133,14 @@ bool gfx_ctx_init(void)
         gfx_ctx_destroy();
         return false;
     }
+
+    EGLint ctx_attribs[] =
+    {
+       EGL_CONTEXT_CLIENT_VERSION, 2,
+       EGL_NONE
+    };
    
-    if (!(g_egl_ctx = eglCreateContext(g_egl_dpy, config, 0, 0))) {
+    if (!(g_egl_ctx = eglCreateContext(g_egl_dpy, config, 0, ctx_attribs))) {
         RARCH_ERR("eglCreateContext() returned error %d.\n", eglGetError());
         gfx_ctx_destroy();
         return false;
