@@ -3,6 +3,7 @@
 
 #include <android/sensor.h>
 #include <android_native_app_glue.h>
+#include "../../../boolean.h"
 
 struct saved_state
 {
@@ -19,6 +20,7 @@ struct droid
    const ASensor* accelerometerSensor;
    ASensorEventQueue* sensorEventQueue;
 
+   bool window_inited;
    unsigned animating;
    unsigned width;
    unsigned height;

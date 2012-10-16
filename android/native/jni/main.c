@@ -73,9 +73,8 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
 	 break;
       case APP_CMD_INIT_WINDOW:
 	 // The window is being shown, get it ready.
-	 /*if (g_android.app->window != NULL)
-            gfx_ctx_init();
-	 */
+	 if (g_android.app->window != NULL)
+            g_android.window_inited = true;
 	 break;
       case APP_CMD_TERM_WINDOW:
 	 // The window is being hidden or closed, clean it up.
@@ -183,6 +182,53 @@ void android_main(struct android_app* state)
    argv[argc++] = strdup(libretro_path);
    argv[argc++] = strdup("-v");
 
+   while(!g_android.window_inited)
+   {
+      // Read all pending events.
+      int ident;
+      int events;
+      struct android_poll_source* source;
+      struct android_app* state = g_android.app;
+
+      // If not animating, we will block forever waiting for events.
+      // If animating, we loop until all events are read, then continue
+      // to draw the next frame of animation.
+      while ((ident=ALooper_pollAll(g_android.animating ? 0 : -1, NULL, &events,
+				      (void**)&source)) >= 0)
+      {
+         // Process this event.
+         if (source != NULL)
+            source->process(state, source);
+
+	 // If a sensor has data, process it now.
+	 if (ident == LOOPER_ID_USER && g_android.accelerometerSensor != NULL)
+	 {
+		 ASensorEvent event;
+		 while (ASensorEventQueue_getEvents(g_android.sensorEventQueue, &event, 1) > 0)
+			 RARCH_LOG("accelerometer: x=%f y=%f z=%f.\n", event.acceleration.x,
+					 event.acceleration.y, event.acceleration.z);
+	 }
+
+	 // Check if we are exiting.
+	 if (state->destroyRequested != 0)
+	    return;
+      }
+
+      if (g_android.animating)
+      {
+         // Done with events; draw next animation frame.
+         g_android.state.angle += .01f;
+
+	 if (g_android.state.angle > 1)
+            g_android.state.angle = 0;
+
+	 // Drawing is throttled to the screen update rate, so there
+	 // is no need to do timing here.
+	 //engine_draw_frame();
+      }
+   }
+
    RARCH_LOG("Start RetroArch...\n");
+
    rarch_main(argc, argv);
 }
