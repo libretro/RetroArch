@@ -204,8 +204,6 @@ static void gfx_ctx_check_window(bool *quit,
 
       if (g_android.state.angle > 1)
          g_android.state.angle = 0;
-
-      gfx_ctx_swap_buffers();
    }
 
    if (gl->quitting)
