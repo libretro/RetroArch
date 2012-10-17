@@ -1314,7 +1314,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    glDisable(GL_DEPTH_TEST);
    glDisable(GL_DITHER);
+#ifndef __CELLOS_LV2__ /* is this really necessary? isn't default clear color always black? */
    glClearColor(0, 0, 0, 1);
+#endif
 
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
    gl->coords.vertex         = vertex_ptr;
