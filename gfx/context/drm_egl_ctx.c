@@ -485,7 +485,6 @@ static bool gfx_ctx_set_video_mode(
    if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
       goto error;
 
-   glClearColor(0.0, 0.0, 0.0, 1.0);
    glClear(GL_COLOR_BUFFER_BIT);
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 
