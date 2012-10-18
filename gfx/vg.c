@@ -16,12 +16,15 @@
 
 #include <math.h>
 #include <VG/openvg.h>
+#include <VG/vgext.h>
 #include <EGL/egl.h>
+#include <EGL/eglext.h>
 #include "gfx_context.h"
 #include "math/matrix_3x3.h"
 #include "../libretro.h"
 #include "../general.h"
 #include "../driver.h"
+#include "../benchmark.h"
 
 #ifdef HAVE_FREETYPE
 #include "fonts/fonts.h"
@@ -36,6 +39,7 @@ typedef struct
    bool should_resize;
    float mScreenAspect;
    bool mKeepAspect;
+   bool mEglImageBuf;
    unsigned mTextureWidth;
    unsigned mTextureHeight;
    unsigned mRenderWidth;
@@ -46,6 +50,7 @@ typedef struct
    VGImage mImage;
    math_matrix_3x3 mTransformMatrix;
    VGint scissor[4];
+   EGLImageKHR last_egl_image;
 
 #ifdef HAVE_FREETYPE
    char *mLastMsg;
@@ -60,10 +65,22 @@ typedef struct
 #endif
 } vg_t;
 
+static PFNVGCREATEEGLIMAGETARGETKHRPROC pvgCreateEGLImageTargetKHR;
+
 static void vg_set_nonblock_state(void *data, bool state)
 {
    vg_t *vg = (vg_t*)data;
    vg->driver->swap_interval(state ? 0 : 1);
+}
+
+static inline bool vg_query_extension(const char *ext)
+{
+   const char *str = (const char*)vgGetString(VG_EXTENSIONS);
+   bool ret = str && strstr(str, ext);
+   RARCH_LOG("Querying VG extension: %s => %s\n",
+         ext, ret ? "exists" : "doesn't exist");
+
+   return ret;
 }
 
 static void *vg_init(const video_info_t *video, const input_driver_t **input, void **input_data)
@@ -155,6 +172,23 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
          vgSetParameterfv(vg->mPaintBg, VG_PAINT_COLOR, 4, paintBg);
       }
    }
+#endif
+
+   if (vg_query_extension("KHR_EGL_image") && vg->driver->can_egl_image_buffer())
+   {
+      pvgCreateEGLImageTargetKHR = (PFNVGCREATEEGLIMAGETARGETKHRPROC)vg->driver->get_proc_address("vgCreateEGLImageTargetKHR");
+
+      if (pvgCreateEGLImageTargetKHR)
+      {
+         RARCH_LOG("[VG] Using EGLImage buffer\n");
+         vg->mEglImageBuf = true;
+      }
+   }
+
+#if 0
+   const char *ext = (const char*)vgGetString(VG_EXTENSIONS);
+   if (ext)
+      RARCH_LOG("[VG] Supported extensions: %s\n", ext);
 #endif
 
    return vg;
@@ -309,8 +343,40 @@ static void vg_calculate_quad(vg_t *vg)
    vgSetiv(VG_SCISSOR_RECTS, 4, vg->scissor);
 }
 
+static void vg_copy_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch)
+{
+   vg_t *vg = (vg_t*)data;
+
+   if (vg->mEglImageBuf)
+   {
+      EGLImageKHR img = 0;
+      bool new_egl = vg->driver->write_egl_image(frame, width, height, pitch, (vg->mTexType == VG_sXRGB_8888), &img);
+      rarch_assert(img != EGL_NO_IMAGE_KHR);
+
+      if (new_egl)
+      {
+         vgDestroyImage(vg->mImage);
+         RARCH_LOG("[VG] %08x\n", img);
+         vg->mImage = pvgCreateEGLImageTargetKHR((VGeglImageKHR) img);
+         if (!vg->mImage)
+         {
+            RARCH_ERR("[VG] Error creating image: %08x\n", vgGetError());
+            exit(2);
+         }
+         vg->last_egl_image = img;
+      }
+   }
+   else
+   {
+      vgImageSubData(vg->mImage, frame, pitch, vg->mTexType, 0, 0, width, height);
+   }
+}
+
 static bool vg_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
+
+   RARCH_PERFORMANCE_INIT(vg_fr);
+   RARCH_PERFORMANCE_START(vg_fr);
    vg_t *vg = (vg_t*)data;
    vg->frame_count++;
 
@@ -333,7 +399,12 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
    vgClear(0, 0, vg->mScreenWidth, vg->mScreenHeight);
    vgSeti(VG_SCISSORING, VG_TRUE);
 
-   vgImageSubData(vg->mImage, frame, pitch, vg->mTexType, 0, 0, width, height);
+   RARCH_PERFORMANCE_INIT(vg_image);
+   RARCH_PERFORMANCE_START(vg_image);
+   vg_copy_frame(vg, frame, width, height, pitch);
+   RARCH_PERFORMANCE_STOP(vg_image);
+   RARCH_PERFORMANCE_LOG("vg_copy_frame", vg_image);
+
    vgDrawImage(vg->mImage);
 
 #ifdef HAVE_FREETYPE
@@ -342,6 +413,9 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
 #else
    (void)msg;
 #endif
+
+   RARCH_PERFORMANCE_STOP(vg_fr);
+   RARCH_PERFORMANCE_LOG("vg_frame", vg_fr);
 
    vg->driver->swap_buffers();
 

@@ -525,7 +525,15 @@ int gfx_ctx_xdk_check_resolution(unsigned resolution_id)
    return 0;
 }
 
+bool gfx_ctx_can_egl_image_buffer(void)
+{
+   return false;
+}
 
+bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, void **image_handle)
+{
+   return false;
+}
 
 const gfx_ctx_driver_t gfx_ctx_xdk = {
    gfx_ctx_xdk_init,
@@ -542,6 +550,8 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    gfx_ctx_xdk_swap_buffers,
    gfx_ctx_xdk_input_driver,
    NULL,
+   gfx_ctx_can_egl_image_buffer,
+   gfx_ctx_write_egl_image,
    "xdk",
 
    // RARCH_CONSOLE stuff.

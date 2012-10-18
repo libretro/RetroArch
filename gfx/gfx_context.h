@@ -80,6 +80,13 @@ typedef struct gfx_ctx_driver
    // Wraps whatever gl_proc_address() there is.
    gfx_ctx_proc_t (*get_proc_address)(const char*);
 
+   // Returns true if this context supports EGL Image buffers for screen drawing.
+   bool (*can_egl_image_buffer)(void);
+
+   // Writes the frame to the EGL Image and sets image_handle to it. Returns true if a new image handle is created.
+   // Always returns true the first time it's called. The graphics core must handle a change in the handle correctly.
+   bool (*write_egl_image)(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, void **image_handle);
+
    // Human readable string.
    const char *ident;
 

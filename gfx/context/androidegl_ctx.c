@@ -307,6 +307,16 @@ static bool gfx_ctx_has_focus(void)
    return true;
 }
 
+bool gfx_ctx_can_egl_image_buffer(void)
+{
+   return false;
+}
+
+bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, void **image_handle)
+{
+   return false;
+}
+
 const gfx_ctx_driver_t gfx_ctx_android = {
    gfx_ctx_init,
    gfx_ctx_destroy,
@@ -322,5 +332,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
    NULL,
+   gfx_ctx_can_egl_image_buffer,
+   gfx_ctx_write_egl_image,
    "android",
 };
