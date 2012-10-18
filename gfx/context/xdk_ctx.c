@@ -525,12 +525,12 @@ int gfx_ctx_xdk_check_resolution(unsigned resolution_id)
    return 0;
 }
 
-bool gfx_ctx_can_egl_image_buffer(void)
+static bool gfx_ctx_can_egl_image_buffer(void)
 {
    return false;
 }
 
-bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, void **image_handle)
+static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, void **image_handle)
 {
    return false;
 }

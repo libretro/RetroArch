@@ -300,7 +300,7 @@ static float gfx_ctx_translate_aspect(unsigned width, unsigned height)
       return (float)width / height;
 }
 
-bool gfx_ctx_can_egl_image_buffer(void)
+static bool gfx_ctx_can_egl_image_buffer(void)
 {
    /*peglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC)gfx_ctx_get_proc_address("eglCreateImageKHR");
    peglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC)gfx_ctx_get_proc_address("eglDestroyImageKHR");
@@ -308,7 +308,7 @@ bool gfx_ctx_can_egl_image_buffer(void)
    return false;
 }
 
-bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, void **image_handle)
+static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, void **image_handle)
 {
    /*bool ret = false;
    if (!eglBuffer || !vcBuffer || (width != bufferLastWidth && height != bufferLastHeight && rgb32 != bufferLastRgb32))

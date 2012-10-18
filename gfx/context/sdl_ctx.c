@@ -316,12 +316,12 @@ static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
    return api == GFX_CTX_OPENGL_API;
 }
 
-bool gfx_ctx_can_egl_image_buffer(void)
+static bool gfx_ctx_can_egl_image_buffer(void)
 {
    return false;
 }
 
-bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, void **image_handle)
+static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, void **image_handle)
 {
    return false;
 }
