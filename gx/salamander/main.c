@@ -1,4 +1,5 @@
 /* RetroArch - A frontend for libretro.
+ * RetroArch Salamander - A frontend for managing some pre-launch tasks.
  * Copyright (C) 2010-2012 - Hans-Kristian Arntzen
  * Copyright (C) 2011-2012 - Daniel De Matteis
  *

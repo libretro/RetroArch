@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2012 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -17,9 +18,8 @@
 #include "../../../general.h"
 #include "../../../driver.h"
 
-/**
- * Process the next input event.
- */
+/* Process the next input event */
+
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 {
    if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION)

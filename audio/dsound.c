@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2012 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,13 +15,10 @@
  */
 
 #ifdef _XBOX
-// The buffer memory has been lost, and must be restored
 #define DSERR_BUFFERLOST                MAKE_DSHRESULT(150)
-// An invalid parameter was passed to the returning function
 #define DSERR_INVALIDPARAM              E_INVALIDARG
-// The caller does not have the priority level required for the function to
-// succeed
 #define DSERR_PRIOLEVELNEEDED           MAKE_DSHRESULT(70)
+
 // Send the audio signal (stereo, without attenuation) to all existing speakers
 static DSMIXBINVOLUMEPAIR dsmbvp[8] = {
    { DSMIXBIN_FRONT_LEFT,    DSBVOLUME_MAX },

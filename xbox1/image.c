@@ -26,20 +26,10 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    out_img->pixels      = NULL;
    out_img->vertex_buf  = NULL;
 
-   HRESULT ret = D3DXCreateTextureFromFileExA(d3d->d3d_render_device,                // d3d device
-	                                         path,                                    // filename
-	                                         D3DX_DEFAULT,                            // width
-                                            D3DX_DEFAULT,                            // height
-	                                         D3DX_DEFAULT,                            // mipmaps
-	                                         0,                                       // usage
-	                                         D3DFMT_A8R8G8B8,                         // format
-	                                         D3DPOOL_MANAGED,                         // memory class
-	                                         D3DX_DEFAULT,                            // texture filter
-	                                         D3DX_DEFAULT,                            // mipmapping
-	                                         0,                                       // colorkey
-	                                         &m_imageInfo,                            // image info
-	                                         NULL,                                    // palette
-	                                         &out_img->pixels);                       // texture
+   HRESULT ret = D3DXCreateTextureFromFileExA(d3d->d3d_render_device,
+      path, D3DX_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT, 0, D3DFMT_A8R8G8B8,
+      D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT, 0, &m_imageInfo, NULL,
+      &out_img->pixels);
 
    if(FAILED(ret))
    {
@@ -96,14 +86,14 @@ bool texture_image_render(struct texture_image *out_img)
    float fX = static_cast<float>(x);
    float fY = static_cast<float>(y);
 
-	// create the new vertices
+   // create the new vertices
    DrawVerticeFormats newVerts[] =
    {
-		// x,           y,              z,     color, u ,v
-		{fX,            fY,             0.0f,  0,     0, 0},
-		{fX + w,        fY,             0.0f,  0,     1, 0},
-		{fX + w,        fY + h,         0.0f,  0,     1, 1},
-		{fX,            fY + h,         0.0f,  0,     0, 1}
+      // x,           y,              z,     color, u ,v
+      {fX,            fY,             0.0f,  0,     0, 0},
+      {fX + w,        fY,             0.0f,  0,     1, 0},
+      {fX + w,        fY + h,         0.0f,  0,     1, 1},
+      {fX,            fY + h,         0.0f,  0,     0, 1}
    };
 
    // load the existing vertices

@@ -13,6 +13,8 @@ Daniel De Matteis - <autechre1024@hotmail.com>
    - XBox 360 XDK port
    - Libxenon port
    - XBox 1 port
+   - Android port (WIP)
+   - OpenSL ES audio driver (preliminary)
    - Gamecube/Wii libogc port
 
 David Reichelt - <freakdave@hotmail.com>
