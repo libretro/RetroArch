@@ -49,6 +49,8 @@ const char *config_get_default_audio(void)
          return "coreaudio";
       case AUDIO_AL:
          return "openal";
+      case AUDIO_SL:
+         return "opensl";
       case AUDIO_SDL:
          return "sdl";
       case AUDIO_DSOUND:

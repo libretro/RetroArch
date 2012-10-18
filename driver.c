@@ -46,6 +46,9 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_AL
    &audio_openal,
 #endif
+#ifdef HAVE_SL
+   &audio_opensl,
+#endif
 #ifdef HAVE_ROAR
    &audio_roar,
 #endif

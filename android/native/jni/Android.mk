@@ -4,6 +4,7 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE    := retroarch-activity
+HAVE_OPENSL     := 0
 
 RARCH_PATH  := ../../..
 LOCAL_SRC_FILES    =	$(RARCH_PATH)/retroarch.c \
@@ -43,10 +44,18 @@ LOCAL_SRC_FILES    =	$(RARCH_PATH)/retroarch.c \
 			$(RARCH_PATH)/thread.c \
 			main.c
 
+
 LOCAL_CFLAGS = -marm -DANDROID -DHAVE_DYNAMIC -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DGLSL_DEBUG -DHAVE_GLSL -DHAVE_ZLIB -DINLINE=inline -DLSB_FIRST -D__LIBRETRO__ -DHAVE_CONFIGFILE=1 -DPACKAGE_VERSION=\"$(RARCH_VERSION)\" -std=gnu99
+
 
 LOCAL_LDLIBS	:= -L$(SYSROOT)/usr/lib -landroid -lEGL -lGLESv2 -llog -ldl -lz
 LOCAL_STATIC_LIBRARIES := android_native_app_glue
+
+ifeq ($(HAVE_OPENSL), 1)
+LOCAL_SRC_FILES += $(RARCH_PATH)/audio/opensl.c
+LOCAL_CFLAGS += -DHAVE_SL
+LOCAL_LDLIBS += -lOpenSLES
+endif
 
 include $(BUILD_SHARED_LIBRARY)
 

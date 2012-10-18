@@ -259,6 +259,7 @@ extern const audio_driver_t audio_oss;
 extern const audio_driver_t audio_alsa;
 extern const audio_driver_t audio_roar;
 extern const audio_driver_t audio_openal;
+extern const audio_driver_t audio_opensl;
 extern const audio_driver_t audio_jack;
 extern const audio_driver_t audio_sdl;
 extern const audio_driver_t audio_xa;
