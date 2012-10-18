@@ -129,7 +129,6 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    *  libOpenSLES(19315): class OutputMix interface 0 requested but unavailable MPH=43
    */
 
-#if 1
    const SLInterfaceID ids[] = {SL_IID_VOLUME};
    const SLboolean     req[] = {SL_BOOLEAN_FALSE};
 
@@ -142,6 +141,13 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
 
    /* Realizing the Output Mix object in synchonous mode */
    sl->res_ptr = (*sl->OutputMix)->Realize(sl->OutputMix, SL_BOOLEAN_FALSE);
+
+   if(sl->res_ptr != SL_RESULT_SUCCESS)
+      goto error;
+#if 0
+   /* Get interface for IID_VOLUME */
+   sl->res_ptr = (*sl->OutputMix)->GetInterface(sl->OutputMix, SL_IID_VOLUME,
+      (void*)&sl->volumeItf);
 
    if(sl->res_ptr != SL_RESULT_SUCCESS)
       goto error;
@@ -177,6 +183,9 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    sl->cntxt.pDataBase = (void*)&pcmData;
    sl->cntxt.pData     = sl->cntxt.pDataBase;
    sl->cntxt.size      = sizeof(pcmData);
+
+   /* Initialize audio data to silence */
+   memset(pcmData, 0, sizeof(pcmData));
 
    const SLInterfaceID ids1[] = {ISL_IID_BUFFERQUEUE};
    const SLboolean req1[] = {SL_BOOLEAN_TRUE};
