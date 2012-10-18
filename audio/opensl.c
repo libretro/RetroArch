@@ -68,10 +68,6 @@ typedef struct sl
 /* Local storage for Audio data */
 SLint16 pcmData[AUDIO_DATA_STORAGE_SIZE];
 
-static inline void sl_generate_error_msg(const char * funcname, SLresult res)
-{
-}
-
 void BufferQueueCallback(SLBufferQueueItf queueItf, void *pContext)
 {
    SLresult res;
@@ -83,10 +79,7 @@ void BufferQueueCallback(SLBufferQueueItf queueItf, void *pContext)
          2 * AUDIO_DATA_BUFFER_SIZE); /* Size given in bytes */
 
       if(res != SL_RESULT_SUCCESS)
-      {
-	      sl_generate_error_msg("queueItf->Enqueue()", res);
-	      return;
-      }
+         RARCH_WARN("queueItf->Enqueue() encountered a problem.\n");
 
       pCntxt->pData += AUDIO_DATA_BUFFER_SIZE;
    }
