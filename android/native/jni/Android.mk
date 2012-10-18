@@ -4,7 +4,7 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE    := retroarch-activity
-HAVE_OPENSL     := 0
+HAVE_OPENSL     := 1
 
 RARCH_PATH  := ../../..
 LOCAL_SRC_FILES    =	$(RARCH_PATH)/retroarch.c \
