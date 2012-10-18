@@ -235,6 +235,12 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
 
    /* Setup for audio playback */
 
+   /* As suggested by Google above as a replacement for OutputMix IID_VOLUME  - see note */
+   sl->res_ptr = (*sl->player)->GetInterface(sl->player, SL_IID_VOLUME, &sl->volumeItf);
+
+   if(sl->res_ptr != SL_RESULT_SUCCESS)
+      goto error;
+
    sl->res_ptr = (*sl->playItf)->SetPlayState(sl->playItf, SL_PLAYSTATE_PLAYING);
 
    if(sl->res_ptr != SL_RESULT_SUCCESS)
