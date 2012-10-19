@@ -25,7 +25,7 @@ extern "C" {
 
 enum ffemu_pix_format
 {
-   FFEMU_PIX_XRGB1555 = 0,
+   FFEMU_PIX_RGB565 = 0,
    FFEMU_PIX_BGR24,
    FFEMU_PIX_ARGB8888
 };

@@ -24,6 +24,7 @@
 #include "file.h"
 #include "general.h"
 #include "dynamic.h"
+#include "benchmark.h"
 #include "audio/utils.h"
 #include "record/ffemu.h"
 #include "rewind.h"
@@ -251,6 +252,24 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
    if (!g_extern.video_active)
       return;
 #endif
+
+   if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
+   {
+      RARCH_PERFORMANCE_INIT(video_frame_conv);
+      RARCH_PERFORMANCE_START(video_frame_conv);
+      driver.scaler.in_width = width;
+      driver.scaler.in_height = height;
+      driver.scaler.out_width = width;
+      driver.scaler.out_height = height;
+      driver.scaler.in_stride = pitch;
+      driver.scaler.out_stride = width * sizeof(uint16_t);
+
+      scaler_ctx_scale(&driver.scaler, driver.scaler_out, data);
+      data = driver.scaler_out;
+      pitch = driver.scaler.out_stride;
+      RARCH_PERFORMANCE_STOP(video_frame_conv);
+      RARCH_PERFORMANCE_LOG("video_frame_conv()", video_frame_conv);
+   }
 
    // Slightly messy code,
    // but we really need to do processing before blocking on VSync for best possible scheduling.
@@ -1228,7 +1247,7 @@ static void init_recording(void)
    params.filename   = g_extern.record_path;
    params.fps        = fps;
    params.samplerate = samplerate;
-   params.pix_fmt    = g_extern.system.rgb32 ? FFEMU_PIX_ARGB8888 : FFEMU_PIX_XRGB1555;
+   params.pix_fmt    = g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888 ? FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
 
    if (g_settings.video.gpu_record && driver.video->read_viewport)
    {

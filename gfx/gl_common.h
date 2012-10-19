@@ -210,7 +210,8 @@ typedef struct gl
    struct gl_coords coords;
 
    GLuint pbo;
-   GLenum texture_type; // XBGR1555 or ARGB
+   GLenum internal_fmt;
+   GLenum texture_type; // RGB565 or ARGB
    GLenum texture_fmt;
    GLenum border_type;
    unsigned base_size; // 2 or 4
@@ -245,19 +246,25 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #endif
 
 #if defined(HAVE_PSGL)
-#define RARCH_GL_INTERNAL_FORMAT GL_ARGB_SCE
-#define RARCH_GL_TEXTURE_TYPE GL_BGRA
+#define RARCH_GL_INTERNAL_FORMAT32 GL_ARGB_SCE
+#define RARCH_GL_INTERNAL_FORMAT16 GL_ARGB_SCE
+#define RARCH_GL_TEXTURE_TYPE32 GL_BGRA
+#define RARCH_GL_TEXTURE_TYPE16 GL_BGRA
 #define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
 #define RARCH_GL_FORMAT16 GL_RGB5_A1
 #elif defined(HAVE_OPENGLES)
-#define RARCH_GL_INTERNAL_FORMAT GL_BGRA_EXT
-#define RARCH_GL_TEXTURE_TYPE GL_BGRA_EXT
+#define RARCH_GL_INTERNAL_FORMAT32 GL_BGRA_EXT
+#define RARCH_GL_INTERNAL_FORMAT16 GL_RGB
+#define RARCH_GL_TEXTURE_TYPE32 GL_BGRA_EXT
+#define RARCH_GL_TEXTURE_TYPE16 GL_RGB
 #define RARCH_GL_FORMAT32 GL_UNSIGNED_BYTE
-// 15-bit is converted to 32-bit directly as we have to convert anyways.
-#define RARCH_GL_FORMAT16 GL_UNSIGNED_BYTE
+#define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT_5_6_5
 #else
-#define RARCH_GL_INTERNAL_FORMAT GL_RGBA
-#define RARCH_GL_TEXTURE_TYPE GL_BGRA
+// On desktop, we always use 32-bit.
+#define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA
+#define RARCH_GL_INTERNAL_FORMAT16 GL_RGBA
+#define RARCH_GL_TEXTURE_TYPE32 GL_BGRA
+#define RARCH_GL_TEXTURE_TYPE16 GL_BGRA
 #define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
 #define RARCH_GL_FORMAT16 GL_UNSIGNED_INT_8_8_8_8_REV
 #endif

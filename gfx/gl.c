@@ -460,8 +460,8 @@ static void gl_create_fbo_textures(gl_t *gl)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_type);
 
       glTexImage2D(GL_TEXTURE_2D,
-            0, RARCH_GL_INTERNAL_FORMAT, gl->fbo_rect[i].width, gl->fbo_rect[i].height,
-            0, RARCH_GL_TEXTURE_TYPE,
+            0, RARCH_GL_INTERNAL_FORMAT32, gl->fbo_rect[i].width, gl->fbo_rect[i].height,
+            0, RARCH_GL_TEXTURE_TYPE32,
             RARCH_GL_FORMAT32, NULL);
    }
 
@@ -710,8 +710,8 @@ static void gl_check_fbo_dimensions(gl_t *gl)
          glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
 
          glTexImage2D(GL_TEXTURE_2D,
-               0, RARCH_GL_INTERNAL_FORMAT, gl->fbo_rect[i].width, gl->fbo_rect[i].height,
-               0, RARCH_GL_TEXTURE_TYPE,
+               0, RARCH_GL_INTERNAL_FORMAT32, gl->fbo_rect[i].width, gl->fbo_rect[i].height,
+               0, RARCH_GL_TEXTURE_TYPE32,
                RARCH_GL_FORMAT32, NULL);
 
          pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
@@ -862,8 +862,8 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
 }
 
 // It is *much* faster (order of mangnitude on my setup) to use a custom SIMD-optimized conversion routine than letting GL do it :(
-#if !defined(HAVE_PSGL)
-static inline void gl_convert_frame_rgb15_32(gl_t *gl, void *output, const void *input, int width, int height, int in_pitch)
+#if !defined(HAVE_PSGL) && !defined(HAVE_OPENGLES2)
+static inline void gl_convert_frame_rgb16_32(gl_t *gl, void *output, const void *input, int width, int height, int in_pitch)
 {
    if (width != gl->scaler.in_width || height != gl->scaler.in_height)
    {
@@ -871,7 +871,7 @@ static inline void gl_convert_frame_rgb15_32(gl_t *gl, void *output, const void 
       gl->scaler.in_height   = height;
       gl->scaler.out_width   = width;
       gl->scaler.out_height  = height;
-      gl->scaler.in_fmt      = SCALER_FMT_0RGB1555;
+      gl->scaler.in_fmt      = SCALER_FMT_RGB565;
       gl->scaler.out_fmt     = SCALER_FMT_ARGB8888;
       gl->scaler.scaler_type = SCALER_TYPE_POINT;
       scaler_ctx_gen_filter(&gl->scaler);
@@ -925,37 +925,37 @@ static void gl_init_textures(gl_t *gl)
 #else
 static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
-   if (gl->base_size == 2) // ARGB1555 => ARGB8888, SIMD-style :D
+#ifdef HAVE_OPENGLES2
+   // No GL_UNPACK_ROW_LENGTH ;(
+   unsigned pitch_width = pitch / gl->base_size;
+   if (width == pitch_width) // Happy path :D
    {
-      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t))); // Always use 32-bit textures.
-      gl_convert_frame_rgb15_32(gl, gl->conv_buffer, frame, width, height, pitch);
+      glTexSubImage2D(GL_TEXTURE_2D,
+            0, 0, 0, width, height, gl->texture_type,
+            gl->texture_fmt, frame);
+   }
+   else // Slower path.
+   {
+      const uint8_t *src = (const uint8_t*)frame;
+      for (unsigned h = 0; h < height; h++, src += pitch)
+      {
+         glTexSubImage2D(GL_TEXTURE_2D,
+               0, 0, h, width, 1, gl->texture_type,
+               gl->texture_fmt, src);
+      }
+   }
+#else
+   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
+   if (gl->base_size == 2)
+   {
+      // Always use 32-bit textures on desktop GL.
+      gl_convert_frame_rgb16_32(gl, gl->conv_buffer, frame, width, height, pitch);
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, width, height, gl->texture_type,
             gl->texture_fmt, gl->conv_buffer);
    }
    else
    {
-#ifdef HAVE_OPENGLES2
-      // No GL_UNPACK_ROW_LENGTH ;(
-      unsigned pitch_width = pitch / gl->base_size;
-      if (width == pitch_width) // Happy path :D
-      {
-         glTexSubImage2D(GL_TEXTURE_2D,
-               0, 0, 0, width, height, gl->texture_type,
-               gl->texture_fmt, frame);
-      }
-      else // Probably slower path.
-      {
-         const uint32_t *src = (const uint32_t*)frame;
-         for (unsigned h = 0; h < height; h++, src += pitch_width)
-         {
-            glTexSubImage2D(GL_TEXTURE_2D,
-                  0, 0, h, width, 1, gl->texture_type,
-                  gl->texture_fmt, src);
-         }
-      }
-#else
-      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
       glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
 
       glTexSubImage2D(GL_TEXTURE_2D,
@@ -963,8 +963,8 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
             gl->texture_fmt, frame);
 
       glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-#endif
    }
+#endif
 }
 
 static void gl_init_textures(gl_t *gl)
@@ -980,7 +980,7 @@ static void gl_init_textures(gl_t *gl)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
 
       glTexImage2D(GL_TEXTURE_2D,
-            0, RARCH_GL_INTERNAL_FORMAT, gl->tex_w, gl->tex_h, 0, gl->texture_type,
+            0, gl->internal_fmt, gl->tex_w, gl->tex_h, 0, gl->texture_type,
             gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
    }
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -1305,7 +1305,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    else
       gl->tex_filter = video->smooth ? GL_LINEAR : GL_NEAREST;
 
-   gl->texture_type = RARCH_GL_TEXTURE_TYPE;
+   gl->internal_fmt = video->rgb32 ? RARCH_GL_INTERNAL_FORMAT32 : RARCH_GL_INTERNAL_FORMAT16;
+   gl->texture_type = video->rgb32 ? RARCH_GL_TEXTURE_TYPE32 : RARCH_GL_TEXTURE_TYPE16;
    gl->texture_fmt  = video->rgb32 ? RARCH_GL_FORMAT32 : RARCH_GL_FORMAT16;
    gl->base_size    = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 

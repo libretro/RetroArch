@@ -302,7 +302,7 @@ struct global
       unsigned rotation;
       bool shutdown;
       unsigned performance_level;
-      bool rgb32;
+      enum retro_pixel_format pix_fmt;
 
       bool force_nonblock;
 
