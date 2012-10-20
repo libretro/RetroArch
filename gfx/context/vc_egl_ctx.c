@@ -160,23 +160,25 @@ static bool gfx_ctx_init(void)
 
    // get an EGL display connection
    g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-   rarch_assert(g_egl_dpy != EGL_NO_DISPLAY);
+   if (!g_egl_dpy)
+      goto error;
 
    // initialize the EGL display connection
-   result = eglInitialize(g_egl_dpy, NULL, NULL);
-   rarch_assert(result != EGL_FALSE);
+   if (!eglInitialize(g_egl_dpy, NULL, NULL))
+      goto error;
 
    // get an appropriate EGL frame buffer configuration
-   result = eglChooseConfig(g_egl_dpy, attribute_list, &g_config, 1, &num_config);
-   rarch_assert(result != EGL_FALSE);
+   if (!eglChooseConfig(g_egl_dpy, attribute_list, &g_config, 1, &num_config))
+      goto error;
 
    // create an EGL rendering context
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (g_api == GFX_CTX_OPENGL_ES_API) ? context_attributes : NULL);
-   rarch_assert(g_egl_ctx != EGL_NO_CONTEXT);
+   if (!g_egl_ctx)
+      goto error;
 
    // create an EGL window surface
-   success = graphics_get_display_size(0 /* LCD */, &g_fb_width, &g_fb_height);
-   rarch_assert(success >= 0);
+   if (graphics_get_display_size(0 /* LCD */, &g_fb_width, &g_fb_height) < 0)
+      goto error;
 
    dst_rect.x = 0;
    dst_rect.y = 0;
@@ -207,13 +209,18 @@ static bool gfx_ctx_init(void)
    vc_dispmanx_update_submit_sync(dispman_update);
 
    g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, &nativewindow, NULL);
-   rarch_assert(g_egl_surf != EGL_NO_SURFACE);
+   if (!g_egl_surf)
+      goto error;
 
    // connect the context to the surface
-   result = eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
-   rarch_assert(result != EGL_FALSE);
+   if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
+      goto error;
 
    return true;
+
+error:
+   gfx_ctx_destroy();
+   return false;
 }
 
 static bool gfx_ctx_set_video_mode(
