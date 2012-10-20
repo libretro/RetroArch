@@ -350,17 +350,16 @@ static void vg_copy_frame(void *data, const void *frame, unsigned width, unsigne
    if (vg->mEglImageBuf)
    {
       EGLImageKHR img = 0;
-      bool new_egl = vg->driver->write_egl_image(frame, width, height, pitch, (vg->mTexType == VG_sXRGB_8888), &img);
+      bool new_egl = vg->driver->write_egl_image(frame, width, height, pitch, (vg->mTexType == VG_sXRGB_8888), 0, &img);
       rarch_assert(img != EGL_NO_IMAGE_KHR);
 
       if (new_egl)
       {
          vgDestroyImage(vg->mImage);
-         RARCH_LOG("[VG] %08x\n", (unsigned) img);
          vg->mImage = pvgCreateEGLImageTargetKHR((VGeglImageKHR) img);
          if (!vg->mImage)
          {
-            RARCH_ERR("[VG] Error creating image: %08x\n", vgGetError());
+            RARCH_ERR("[VG:EGLImage] Error creating image: %08x\n", vgGetError());
             exit(2);
          }
          vg->last_egl_image = img;

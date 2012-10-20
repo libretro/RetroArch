@@ -50,10 +50,12 @@ static enum gfx_ctx_api g_api;
 static unsigned g_fb_width;
 static unsigned g_fb_height;
 
-static EGLImageKHR eglBuffer;
+static EGLImageKHR eglBuffer[MAX_EGLIMAGE_TEXTURES];
 static EGLContext g_eglimage_ctx;
 static EGLSurface g_pbuff_surf;
-static VGImage g_egl_vgimage;
+static VGImage g_egl_vgimage[MAX_EGLIMAGE_TEXTURES];
+static bool g_smooth;
+static unsigned g_egl_res;
 
 PFNEGLCREATEIMAGEKHRPROC peglCreateImageKHR;
 PFNEGLDESTROYIMAGEKHRPROC peglDestroyImageKHR;
@@ -235,23 +237,42 @@ static bool gfx_ctx_set_video_mode(
    return true;
 }
 
+static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
+{
+   g_api = api;
+   switch (api)
+   {
+      case GFX_CTX_OPENGL_API:
+         return eglBindAPI(EGL_OPENGL_API);
+      case GFX_CTX_OPENGL_ES_API:
+         return eglBindAPI(EGL_OPENGL_ES_API);
+      case GFX_CTX_OPENVG_API:
+         return eglBindAPI(EGL_OPENVG_API);
+      default:
+         return false;
+   }
+}
+
 static void gfx_ctx_destroy(void)
 {
 
    if (g_egl_dpy)
    {
-      if (eglBuffer && peglDestroyImageKHR)
+      for (unsigned i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
       {
-         eglBindAPI(EGL_OPENGL_VG_API);
-         eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
-         peglDestroyImageKHR(e_egl_dpy, eglBuffer);
-      }
+         if (eglBuffer[i] && peglDestroyImageKHR)
+         {
+            eglBindAPI(EGL_OPENVG_API);
+            eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
+            peglDestroyImageKHR(g_egl_dpy, eglBuffer[i]);
+         }
 
-      if (g_egl_vgimage)
-      {
-         eglBindAPI(EGL_OPENGL_VG_API);
-         eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
-         vgDestroyImage(g_egl_vgimage);
+         if (g_egl_vgimage[i])
+         {
+            eglBindAPI(EGL_OPENVG_API);
+            eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
+            vgDestroyImage(g_egl_vgimage[i]);
+         }
       }
 
       if (g_egl_ctx)
@@ -263,7 +284,7 @@ static void gfx_ctx_destroy(void)
 
       if (g_eglimage_ctx)
       {
-         eglBindAPI(EGL_OPENGL_VG_API);
+         eglBindAPI(EGL_OPENVG_API);
          eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
          eglDestroyContext(g_egl_dpy, g_eglimage_ctx);
       }
@@ -276,11 +297,11 @@ static void gfx_ctx_destroy(void)
 
       if (g_pbuff_surf)
       {
-         eglBindAPI(EGL_OPENGL_VG_API);
+         eglBindAPI(EGL_OPENVG_API);
          eglDestroySurface(g_egl_dpy, g_pbuff_surf);
       }
 
-      eglBindAPI(EGL_OPENGL_VG_API);
+      eglBindAPI(EGL_OPENVG_API);
       eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
       gfx_ctx_bind_api(g_api);
       eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -288,14 +309,18 @@ static void gfx_ctx_destroy(void)
    }
 
    g_egl_ctx      = NULL;
-   g_eglimage_ctx = NULL
+   g_eglimage_ctx = NULL;
    g_egl_surf     = NULL;
    g_pbuff_surf   = NULL;
    g_egl_dpy      = NULL;
-   eglBuffer      = NULL;
-   g_egl_vgimage  = NULL;
    g_config       = 0;
    g_inited       = false;
+
+   for (unsigned i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
+   {
+      eglBuffer[i]     = NULL;
+      g_egl_vgimage[i] = 0;
+   }
 }
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
@@ -313,22 +338,6 @@ static bool gfx_ctx_has_focus(void)
 static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 {
    return eglGetProcAddress(symbol);
-}
-
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
-{
-   g_api = api;
-   switch (api)
-   {
-      case GFX_CTX_OPENGL_API:
-         return eglBindAPI(EGL_OPENGL_API);
-      case GFX_CTX_OPENGL_ES_API:
-         return eglBindAPI(EGL_OPENGL_ES_API);
-      case GFX_CTX_OPENVG_API:
-         return eglBindAPI(EGL_OPENVG_API);
-      default:
-         return false;
-   }
 }
 
 static float gfx_ctx_translate_aspect(unsigned width, unsigned height)
@@ -355,12 +364,12 @@ static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
       return false;
    }
 
-   unsigned res = video->input_scale * RARCH_SCALE_BASE;
+   g_egl_res = video->input_scale * RARCH_SCALE_BASE;
 
    EGLint pbufsurface_list[] =
    {
-      EGL_WIDTH, res,
-      EGL_HEIGHT, res,
+      EGL_WIDTH, g_egl_res,
+      EGL_HEIGHT, g_egl_res,
       EGL_NONE
    };
 
@@ -381,6 +390,7 @@ static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
       goto fail;
    }
 
+   // test to make sure we can switch context
    result = eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
    if (result == EGL_FALSE)
    {
@@ -388,14 +398,12 @@ static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
       goto fail;
    }
 
-   g_egl_vgimage = vgCreateImage(VG_sXRGB_8888, res, res, video->smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
-   eglBuffer = peglCreateImageKHR(g_egl_dpy, g_eglimage_ctx, EGL_VG_PARENT_IMAGE_KHR, (EGLClientBuffer)g_egl_vgimage, NULL);
-
    gfx_ctx_bind_api(g_api);
    eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
 
+   g_smooth = video->smooth;
    return true;
-   
+
 fail:
    if (g_pbuff_surf != EGL_NO_SURFACE)
    {
@@ -415,27 +423,33 @@ fail:
    return false;
 }
 
-static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, void **image_handle)
+static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
 {
-   static bool first = true;
+   bool ret = false;
+
+   if (index >= MAX_EGLIMAGE_TEXTURES)
+   {
+      *image_handle = NULL;
+      return false;
+   }
+
    eglBindAPI(EGL_OPENVG_API);
    eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
 
-   vgImageSubData(g_egl_vgimage, frame, pitch, (rgb32 ? VG_sXRGB_8888 : VG_sARGB_1555), 0, 0, width, height);
-   *image_handle = eglBuffer;
+   if (!eglBuffer[index] || !g_egl_vgimage[index])
+   {
+      g_egl_vgimage[index] = vgCreateImage(VG_sXRGB_8888, g_egl_res, g_egl_res, g_smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
+      eglBuffer[index] = peglCreateImageKHR(g_egl_dpy, g_eglimage_ctx, EGL_VG_PARENT_IMAGE_KHR, (EGLClientBuffer)g_egl_vgimage[index], NULL);
+      ret = true;
+   }
+
+   vgImageSubData(g_egl_vgimage[index], frame, pitch, (rgb32 ? VG_sXRGB_8888 : VG_sARGB_1555), 0, 0, width, height);
+   *image_handle = eglBuffer[index];
 
    gfx_ctx_bind_api(g_api);
    eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
 
-   if (first)
-   {
-      first = false;
-      return true;
-   }
-   else
-   {
-      return false;
-   }
+   return ret;
 }
 
 const gfx_ctx_driver_t gfx_ctx_videocore = {

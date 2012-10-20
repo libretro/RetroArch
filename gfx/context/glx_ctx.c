@@ -467,7 +467,7 @@ static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
    return false;
 }
 
-static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, void **image_handle)
+static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
 {
    return false;
 }

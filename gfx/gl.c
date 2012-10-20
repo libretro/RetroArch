@@ -94,6 +94,17 @@ const GLfloat *default_vertex_ptr = vertexes_flipped;
    memcpy(&(pgl##SYM), &sym, sizeof(sym)); \
 }
 
+#ifdef HAVE_EGL
+static PFNGLEGLIMAGETARGETTEXTURE2DOESPROC pglEGLImageTargetTexture2DOES = NULL;
+
+static bool load_eglimage_proc(gl_t *gl)
+{
+   LOAD_GL_SYM(EGLImageTargetTexture2DOES);
+
+   return pglEGLImageTargetTexture2DOES;
+}
+#endif
+
 #ifdef HAVE_FBO
 #if defined(_WIN32) && !defined(RARCH_CONSOLE)
 static PFNGLGENFRAMEBUFFERSPROC pglGenFramebuffers = NULL;
@@ -925,7 +936,21 @@ static void gl_init_textures(gl_t *gl)
 #else
 static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
-   if (gl->base_size == 2) // ARGB1555 => ARGB8888, SIMD-style :D
+#ifdef HAVE_EGL
+   if (gl->egl_images)
+   {
+      EGLImageKHR img = 0;
+      bool new_egl = gl->ctx_driver->write_egl_image(frame, width, height, pitch, (gl->base_size == 4), gl->tex_index, &img);
+      rarch_assert(img != EGL_NO_IMAGE_KHR);
+
+      if (new_egl)
+      {
+         pglEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
+      }
+   }
+   else
+#endif
+if (gl->base_size == 2) // ARGB1555 => ARGB8888, SIMD-style :D
    {
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t))); // Always use 32-bit textures.
       gl_convert_frame_rgb15_32(gl, gl->conv_buffer, frame, width, height, pitch);
@@ -1024,6 +1049,9 @@ static void gl_render_menu(gl_t *gl)
 
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
+   RARCH_PERFORMANCE_INIT(frame_run);
+   RARCH_PERFORMANCE_START(frame_run);
+
    gl_t *gl = (gl_t*)data;
 
    gl_shader_use(1);
@@ -1094,6 +1122,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #ifndef RARCH_CONSOLE
    gl->ctx_driver->update_window_title(false);
 #endif
+
+   RARCH_PERFORMANCE_STOP(frame_run);
+   RARCH_PERFORMANCE_LOG("gl_frame", frame_run);
 
 #ifdef RARCH_CONSOLE
    if (!gl->block_swap)
@@ -1373,6 +1404,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       free(gl);
       return NULL;
    }
+
+#ifdef HAVE_EGL
+   gl->egl_images = load_eglimage_proc(gl) && gl->ctx_driver->init_egl_image_buffer(video);
+#endif
 
    return gl;
 }
