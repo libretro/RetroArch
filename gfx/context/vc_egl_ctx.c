@@ -34,6 +34,7 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <EGL/eglext_brcm.h>
+#include <VG/openvg.h>
 #include <bcm_host.h>
 
 static EGLContext g_egl_ctx;
@@ -46,15 +47,13 @@ static bool g_inited;
 static unsigned g_interval;
 static enum gfx_ctx_api g_api;
 
-static unsigned g_fb_width; // Just use something for now.
+static unsigned g_fb_width;
 static unsigned g_fb_height;
 
-/*static EGLImageKHR eglBuffer;
-static DISPMANX_RESOURCE_HANDLE_T vcBuffer;
-static VC_RECT_T bufferRect;
-static unsigned bufferLastWidth;
-static unsigned bufferLastHeight;
-static bool bufferLastRgb32;
+static EGLImageKHR eglBuffer;
+static EGLContext g_eglimage_ctx;
+static EGLSurface g_pbuff_surf;
+static VGImage g_egl_vgimage;
 
 PFNEGLCREATEIMAGEKHRPROC peglCreateImageKHR;
 PFNEGLDESTROYIMAGEKHRPROC peglDestroyImageKHR;
@@ -67,7 +66,7 @@ static inline bool gfx_ctx_egl_query_extension(const char *ext)
          ext, ret ? "exists" : "doesn't exist");
 
    return ret;
-}*/
+}
 
 static void sighandler(int sig)
 {
@@ -238,24 +237,65 @@ static bool gfx_ctx_set_video_mode(
 
 static void gfx_ctx_destroy(void)
 {
+
    if (g_egl_dpy)
    {
+      if (eglBuffer && peglDestroyImageKHR)
+      {
+         eglBindAPI(EGL_OPENGL_VG_API);
+         eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
+         peglDestroyImageKHR(e_egl_dpy, eglBuffer);
+      }
+
+      if (g_egl_vgimage)
+      {
+         eglBindAPI(EGL_OPENGL_VG_API);
+         eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
+         vgDestroyImage(g_egl_vgimage);
+      }
+
       if (g_egl_ctx)
       {
+         gfx_ctx_bind_api(g_api);
          eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
          eglDestroyContext(g_egl_dpy, g_egl_ctx);
       }
 
+      if (g_eglimage_ctx)
+      {
+         eglBindAPI(EGL_OPENGL_VG_API);
+         eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+         eglDestroyContext(g_egl_dpy, g_eglimage_ctx);
+      }
+
       if (g_egl_surf)
+      {
+         gfx_ctx_bind_api(g_api);
          eglDestroySurface(g_egl_dpy, g_egl_surf);
+      }
+
+      if (g_pbuff_surf)
+      {
+         eglBindAPI(EGL_OPENGL_VG_API);
+         eglDestroySurface(g_egl_dpy, g_pbuff_surf);
+      }
+
+      eglBindAPI(EGL_OPENGL_VG_API);
+      eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+      gfx_ctx_bind_api(g_api);
+      eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
       eglTerminate(g_egl_dpy);
    }
 
-   g_egl_ctx  = NULL;
-   g_egl_surf = NULL;
-   g_egl_dpy  = NULL;
-   g_config   = 0;
-   g_inited   = false;
+   g_egl_ctx      = NULL;
+   g_eglimage_ctx = NULL
+   g_egl_surf     = NULL;
+   g_pbuff_surf   = NULL;
+   g_egl_dpy      = NULL;
+   eglBuffer      = NULL;
+   g_egl_vgimage  = NULL;
+   g_config       = 0;
+   g_inited       = false;
 }
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
@@ -300,48 +340,102 @@ static float gfx_ctx_translate_aspect(unsigned width, unsigned height)
       return (float)width / height;
 }
 
-static bool gfx_ctx_can_egl_image_buffer(void)
+static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
 {
-   /*peglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC)gfx_ctx_get_proc_address("eglCreateImageKHR");
+   if (g_api == GFX_CTX_OPENVG_API) // don't bother, we just use VGImages for our EGLImage anyway
+   {
+      return false;
+   }
+
+   peglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC)gfx_ctx_get_proc_address("eglCreateImageKHR");
    peglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC)gfx_ctx_get_proc_address("eglDestroyImageKHR");
-   return peglCreateImageKHR && peglDestroyImageKHR && gfx_ctx_egl_query_extension("KHR_image");*/
+
+   if (!peglCreateImageKHR || !peglDestroyImageKHR || !gfx_ctx_egl_query_extension("KHR_image"))
+   {
+      return false;
+   }
+
+   unsigned res = video->input_scale * RARCH_SCALE_BASE;
+
+   EGLint pbufsurface_list[] =
+   {
+      EGL_WIDTH, res,
+      EGL_HEIGHT, res,
+      EGL_NONE
+   };
+
+   EGLBoolean result;
+
+   eglBindAPI(EGL_OPENVG_API);
+   g_pbuff_surf = eglCreatePbufferSurface(g_egl_dpy, g_config, pbufsurface_list);
+   if (g_pbuff_surf == EGL_NO_SURFACE)
+   {
+      RARCH_ERR("[VideoCore:EGLImage] failed to create PbufferSurface\n");
+      goto fail;
+   }
+
+   g_eglimage_ctx = eglCreateContext(g_egl_dpy, g_config, NULL, NULL);
+   if (g_eglimage_ctx == EGL_NO_CONTEXT)
+   {
+      RARCH_ERR("[VideoCore:EGLImage] failed to create context\n");
+      goto fail;
+   }
+
+   result = eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
+   if (result == EGL_FALSE)
+   {
+      RARCH_ERR("[VideoCore:EGLImage] failed to make context current\n");
+      goto fail;
+   }
+
+   g_egl_vgimage = vgCreateImage(VG_sXRGB_8888, res, res, video->smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
+   eglBuffer = peglCreateImageKHR(g_egl_dpy, g_eglimage_ctx, EGL_VG_PARENT_IMAGE_KHR, (EGLClientBuffer)g_egl_vgimage, NULL);
+
+   gfx_ctx_bind_api(g_api);
+   eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
+
+   return true;
+   
+fail:
+   if (g_pbuff_surf != EGL_NO_SURFACE)
+   {
+      eglDestroySurface(g_egl_dpy, g_pbuff_surf);
+      g_pbuff_surf = EGL_NO_SURFACE;
+   }
+
+   if (g_eglimage_ctx != EGL_NO_CONTEXT)
+   {
+      eglDestroyContext(g_egl_dpy, g_eglimage_ctx);
+      g_pbuff_surf = EGL_NO_CONTEXT;
+   }
+
+   gfx_ctx_bind_api(g_api);
+   eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
+
    return false;
 }
 
 static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, void **image_handle)
 {
-   /*bool ret = false;
-   if (!eglBuffer || !vcBuffer || (width != bufferLastWidth && height != bufferLastHeight && rgb32 != bufferLastRgb32))
-   {
-      ret = true;
+   static bool first = true;
+   eglBindAPI(EGL_OPENVG_API);
+   eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
 
-      if (vcBuffer)
-      {
-         vc_dispmanx_resource_delete(vcBuffer);
-      }
-
-      if (eglBuffer)
-      {
-         peglDestroyImageKHR(g_egl_dpy, eglBuffer);
-      }
-
-      uint32_t temp = 0xff;
-      vcBuffer = vc_dispmanx_resource_create((rgb32 ? VC_IMAGE_XRGB8888 : VC_IMAGE_RGB565), width, height, &temp);
-      rarch_assert(vcBuffer);
-      RARCH_LOG("temp: %08x\n", temp);
-
-      eglBuffer = peglCreateImageKHR(g_egl_dpy, EGL_NO_CONTEXT, EGL_NATIVE_PIXMAP_CLIENT_SIDE_BRCM, (EGLClientBuffer) &vcBuffer, NULL);
-      RARCH_ERR("ERROR: %08x\n", eglGetError());
-      rarch_assert(eglBuffer);
-
-      vc_dispmanx_rect_set(&bufferRect, 0, 0, width, height);
-   }
-
-   vc_dispmanx_resource_write_data(vcBuffer, (rgb32 ? VC_IMAGE_XRGB8888 : VC_IMAGE_RGB565), pitch, (void *)frame, &bufferRect);
+   vgImageSubData(g_egl_vgimage, frame, pitch, (rgb32 ? VG_sXRGB_8888 : VG_sARGB_1555), 0, 0, width, height);
    *image_handle = eglBuffer;
 
-   return ret;*/
-   return false;
+   gfx_ctx_bind_api(g_api);
+   eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
+
+   if (first)
+   {
+      first = false;
+      return true;
+   }
+   else
+   {
+      return false;
+   }
 }
 
 const gfx_ctx_driver_t gfx_ctx_videocore = {
@@ -359,7 +453,7 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
    gfx_ctx_get_proc_address,
-   gfx_ctx_can_egl_image_buffer,
+   gfx_ctx_init_egl_image_buffer,
    gfx_ctx_write_egl_image,
    "videocore",
 };

@@ -462,7 +462,7 @@ static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
    return api == GFX_CTX_OPENGL_API;
 }
 
-static bool gfx_ctx_can_egl_image_buffer(void)
+static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
 {
    return false;
 }
@@ -487,7 +487,7 @@ const gfx_ctx_driver_t gfx_ctx_glx = {
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
    gfx_ctx_get_proc_address,
-   gfx_ctx_can_egl_image_buffer,
+   gfx_ctx_init_egl_image_buffer,
    gfx_ctx_write_egl_image,
    "glx",
 };

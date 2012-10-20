@@ -174,7 +174,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    }
 #endif
 
-   if (vg_query_extension("KHR_EGL_image") && vg->driver->can_egl_image_buffer())
+   if (vg_query_extension("KHR_EGL_image") && vg->driver->init_egl_image_buffer(video))
    {
       pvgCreateEGLImageTargetKHR = (PFNVGCREATEEGLIMAGETARGETKHRPROC)vg->driver->get_proc_address("vgCreateEGLImageTargetKHR");
 
@@ -356,7 +356,7 @@ static void vg_copy_frame(void *data, const void *frame, unsigned width, unsigne
       if (new_egl)
       {
          vgDestroyImage(vg->mImage);
-         RARCH_LOG("[VG] %08x\n", img);
+         RARCH_LOG("[VG] %08x\n", (unsigned) img);
          vg->mImage = pvgCreateEGLImageTargetKHR((VGeglImageKHR) img);
          if (!vg->mImage)
          {
