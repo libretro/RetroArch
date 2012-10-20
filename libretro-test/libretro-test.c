@@ -146,8 +146,8 @@ static void update_input(void)
 
 static void render_checkered(void)
 {
-   uint16_t color_r = 31 << 10;
-   uint16_t color_g = 31 <<  5;
+   uint16_t color_r = 31 << 11;
+   uint16_t color_g = 63 <<  5;
 
    uint16_t *line = frame_buf;
    for (unsigned y = 0; y < 240; y++, line += 320)
@@ -192,6 +192,13 @@ bool retro_load_game(const struct retro_game_info *info)
    };
 
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
+
+   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
+   if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
+   {
+      fprintf(stderr, "RGB565 is not supported.\n");
+      return false;
+   }
 
    (void)info;
    return true;
