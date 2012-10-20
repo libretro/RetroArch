@@ -316,12 +316,12 @@ static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
    return api == GFX_CTX_OPENGL_API;
 }
 
-static bool gfx_ctx_can_egl_image_buffer(void)
+static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
 {
    return false;
 }
 
-static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, void **image_handle)
+static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
 {
    return false;
 }
@@ -341,7 +341,7 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl = {
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
    gfx_ctx_get_proc_address,
-   gfx_ctx_can_egl_image_buffer,
+   gfx_ctx_init_egl_image_buffer,
    gfx_ctx_write_egl_image,
    "sdl-gl",
 };

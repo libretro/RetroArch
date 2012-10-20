@@ -28,6 +28,11 @@
 
 #include <string.h>
 
+#ifdef HAVE_EGL
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#endif
+
 #if defined(__APPLE__)
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
@@ -36,8 +41,6 @@
 #include <PSGL/psglu.h>
 #include <GLES/glext.h>
 #elif defined(HAVE_OPENGL_MODERN)
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
 #include <GL3/gl3.h>
 #include <GL3/gl3ext.h>
 #elif defined(HAVE_OPENGLES2)
@@ -233,6 +236,10 @@ typedef struct gl
 #ifdef HAVE_CG_MENU
    bool menu_render;
    GLuint menu_texture_id;
+#endif
+
+#ifdef HAVE_EGL
+   bool egl_images;
 #endif
 } gl_t;
 

@@ -94,13 +94,23 @@ const GLfloat *default_vertex_ptr = vertexes_flipped;
    memcpy(&(pgl##SYM), &sym, sizeof(sym)); \
 }
 
+#ifdef HAVE_EGL
+static PFNGLEGLIMAGETARGETTEXTURE2DOESPROC pglEGLImageTargetTexture2DOES;
+
+static bool load_eglimage_proc(gl_t *gl)
+{
+   LOAD_GL_SYM(EGLImageTargetTexture2DOES);
+   return pglEGLImageTargetTexture2DOES;
+}
+#endif
+
 #ifdef HAVE_FBO
 #if defined(_WIN32) && !defined(RARCH_CONSOLE)
-static PFNGLGENFRAMEBUFFERSPROC pglGenFramebuffers = NULL;
-static PFNGLBINDFRAMEBUFFERPROC pglBindFramebuffer = NULL;
-static PFNGLFRAMEBUFFERTEXTURE2DPROC pglFramebufferTexture2D = NULL;
-static PFNGLCHECKFRAMEBUFFERSTATUSPROC pglCheckFramebufferStatus = NULL;
-static PFNGLDELETEFRAMEBUFFERSPROC pglDeleteFramebuffers = NULL;
+static PFNGLGENFRAMEBUFFERSPROC pglGenFramebuffers;
+static PFNGLBINDFRAMEBUFFERPROC pglBindFramebuffer;
+static PFNGLFRAMEBUFFERTEXTURE2DPROC pglFramebufferTexture2D;
+static PFNGLCHECKFRAMEBUFFERSTATUSPROC pglCheckFramebufferStatus;
+static PFNGLDELETEFRAMEBUFFERSPROC pglDeleteFramebuffers;
 
 static bool load_fbo_proc(gl_t *gl)
 {
@@ -926,22 +936,41 @@ static void gl_init_textures(gl_t *gl)
 static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
 #ifdef HAVE_OPENGLES2
-   // No GL_UNPACK_ROW_LENGTH ;(
-   unsigned pitch_width = pitch / gl->base_size;
-   if (width == pitch_width) // Happy path :D
+#ifdef HAVE_EGL
+   if (gl->egl_images)
    {
-      glTexSubImage2D(GL_TEXTURE_2D,
-            0, 0, 0, width, height, gl->texture_type,
-            gl->texture_fmt, frame);
+      EGLImageKHR img = 0;
+      bool new_egl = gl->ctx_driver->write_egl_image(frame, width, height, pitch, (gl->base_size == 4), gl->tex_index, &img);
+
+      if (img == EGL_NO_IMAGE_KHR)
+      {
+         RARCH_ERR("[GL]: Failed to create EGL image.\n");
+         return;
+      }
+
+      if (new_egl)
+         pglEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
    }
-   else // Slower path.
+   else
+#endif
    {
-      const uint8_t *src = (const uint8_t*)frame;
-      for (unsigned h = 0; h < height; h++, src += pitch)
+      // No GL_UNPACK_ROW_LENGTH ;(
+      unsigned pitch_width = pitch / gl->base_size;
+      if (width == pitch_width) // Happy path :D
       {
          glTexSubImage2D(GL_TEXTURE_2D,
-               0, 0, h, width, 1, gl->texture_type,
-               gl->texture_fmt, src);
+               0, 0, 0, width, height, gl->texture_type,
+               gl->texture_fmt, frame);
+      }
+      else // Slower path.
+      {
+         const uint8_t *src = (const uint8_t*)frame;
+         for (unsigned h = 0; h < height; h++, src += pitch)
+         {
+            glTexSubImage2D(GL_TEXTURE_2D,
+                  0, 0, h, width, 1, gl->texture_type,
+                  gl->texture_fmt, src);
+         }
       }
    }
 #else
@@ -957,7 +986,6 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
    else
    {
       glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
-
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, width, height, gl->texture_type,
             gl->texture_fmt, frame);
@@ -1024,6 +1052,9 @@ static void gl_render_menu(gl_t *gl)
 
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
+   RARCH_PERFORMANCE_INIT(frame_run);
+   RARCH_PERFORMANCE_START(frame_run);
+
    gl_t *gl = (gl_t*)data;
 
    gl_shader_use(1);
@@ -1094,6 +1125,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #ifndef RARCH_CONSOLE
    gl->ctx_driver->update_window_title(false);
 #endif
+
+   RARCH_PERFORMANCE_STOP(frame_run);
+   RARCH_PERFORMANCE_LOG("gl_frame", frame_run);
 
 #ifdef RARCH_CONSOLE
    if (!gl->block_swap)
@@ -1374,6 +1408,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       free(gl);
       return NULL;
    }
+
+#ifdef HAVE_EGL
+   gl->egl_images = load_eglimage_proc(gl) && gl->ctx_driver->init_egl_image_buffer(video);
+#endif
 
    return gl;
 }
