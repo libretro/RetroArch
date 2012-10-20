@@ -95,23 +95,22 @@ const GLfloat *default_vertex_ptr = vertexes_flipped;
 }
 
 #ifdef HAVE_EGL
-static PFNGLEGLIMAGETARGETTEXTURE2DOESPROC pglEGLImageTargetTexture2DOES = NULL;
+static PFNGLEGLIMAGETARGETTEXTURE2DOESPROC pglEGLImageTargetTexture2DOES;
 
 static bool load_eglimage_proc(gl_t *gl)
 {
    LOAD_GL_SYM(EGLImageTargetTexture2DOES);
-
    return pglEGLImageTargetTexture2DOES;
 }
 #endif
 
 #ifdef HAVE_FBO
 #if defined(_WIN32) && !defined(RARCH_CONSOLE)
-static PFNGLGENFRAMEBUFFERSPROC pglGenFramebuffers = NULL;
-static PFNGLBINDFRAMEBUFFERPROC pglBindFramebuffer = NULL;
-static PFNGLFRAMEBUFFERTEXTURE2DPROC pglFramebufferTexture2D = NULL;
-static PFNGLCHECKFRAMEBUFFERSTATUSPROC pglCheckFramebufferStatus = NULL;
-static PFNGLDELETEFRAMEBUFFERSPROC pglDeleteFramebuffers = NULL;
+static PFNGLGENFRAMEBUFFERSPROC pglGenFramebuffers;
+static PFNGLBINDFRAMEBUFFERPROC pglBindFramebuffer;
+static PFNGLFRAMEBUFFERTEXTURE2DPROC pglFramebufferTexture2D;
+static PFNGLCHECKFRAMEBUFFERSTATUSPROC pglCheckFramebufferStatus;
+static PFNGLDELETEFRAMEBUFFERSPROC pglDeleteFramebuffers;
 
 static bool load_fbo_proc(gl_t *gl)
 {
@@ -941,16 +940,19 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
    {
       EGLImageKHR img = 0;
       bool new_egl = gl->ctx_driver->write_egl_image(frame, width, height, pitch, (gl->base_size == 4), gl->tex_index, &img);
-      rarch_assert(img != EGL_NO_IMAGE_KHR);
+
+      if (img == EGL_NO_IMAGE_KHR)
+      {
+         RARCH_ERR("[GL]: Failed to create EGL image.\n");
+         return;
+      }
 
       if (new_egl)
-      {
          pglEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
-      }
    }
    else
 #endif
-if (gl->base_size == 2) // ARGB1555 => ARGB8888, SIMD-style :D
+   if (gl->base_size == 2) // ARGB1555 => ARGB8888, SIMD-style :D
    {
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t))); // Always use 32-bit textures.
       gl_convert_frame_rgb15_32(gl, gl->conv_buffer, frame, width, height, pitch);
