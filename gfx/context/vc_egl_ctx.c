@@ -118,6 +118,8 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
    *height = g_fb_height;
 }
 
+static void gfx_ctx_destroy(void);
+
 static bool gfx_ctx_init(void)
 {
    RARCH_LOG("[VC/EGL]: Initializing...\n");
@@ -127,10 +129,7 @@ static bool gfx_ctx_init(void)
       return false;
    }
 
-   int32_t success;
-   EGLBoolean result;
    EGLint num_config;
-
    static EGL_DISPMANX_WINDOW_T nativewindow;
 
    DISPMANX_ELEMENT_HANDLE_T dispman_element;
@@ -262,7 +261,6 @@ static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
 
 static void gfx_ctx_destroy(void)
 {
-
    if (g_egl_dpy)
    {
       for (unsigned i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
