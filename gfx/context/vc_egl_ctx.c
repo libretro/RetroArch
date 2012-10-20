@@ -57,8 +57,8 @@ static VGImage g_egl_vgimage[MAX_EGLIMAGE_TEXTURES];
 static bool g_smooth;
 static unsigned g_egl_res;
 
-PFNEGLCREATEIMAGEKHRPROC peglCreateImageKHR;
-PFNEGLDESTROYIMAGEKHRPROC peglDestroyImageKHR;
+static PFNEGLCREATEIMAGEKHRPROC peglCreateImageKHR;
+static PFNEGLDESTROYIMAGEKHRPROC peglDestroyImageKHR;
 
 static inline bool gfx_ctx_egl_query_extension(const char *ext)
 {
