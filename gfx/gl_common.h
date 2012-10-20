@@ -158,7 +158,7 @@ struct gl_coords
 
 #define MAX_SHADERS 16
 
-#if defined(HAVE_GLSL) || defined(HAVE_CG)
+#if (defined(HAVE_GLSL) || defined(HAVE_CG))
 #define TEXTURES 8
 #else
 #define TEXTURES 1
@@ -238,9 +238,7 @@ typedef struct gl
    GLuint menu_texture_id;
 #endif
 
-#ifdef HAVE_EGL
    bool egl_images;
-#endif
 } gl_t;
 
 // Windows ... <_<

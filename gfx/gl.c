@@ -995,8 +995,14 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
 #endif
 }
 
-static void gl_init_textures(gl_t *gl)
+static void gl_init_textures(gl_t *gl, const video_info_t *video)
 {
+#if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
+   gl->egl_images = load_eglimage_proc(gl) && gl->ctx_driver->init_egl_image_buffer(video);
+#else
+   (void)video;
+#endif
+
    glGenTextures(TEXTURES, gl->texture);
    for (unsigned i = 0; i < TEXTURES; i++)
    {
@@ -1007,9 +1013,12 @@ static void gl_init_textures(gl_t *gl)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
 
-      glTexImage2D(GL_TEXTURE_2D,
-            0, gl->internal_fmt, gl->tex_w, gl->tex_h, 0, gl->texture_type,
-            gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
+      if (!gl->egl_images)
+      {
+         glTexImage2D(GL_TEXTURE_2D,
+               0, gl->internal_fmt, gl->tex_w, gl->tex_h, 0, gl->texture_type,
+               gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
+      }
    }
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
@@ -1381,7 +1390,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 #endif
 
-   gl_init_textures(gl);
+   gl_init_textures(gl, video);
 
    for (unsigned i = 0; i < TEXTURES; i++)
    {
@@ -1408,10 +1417,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       free(gl);
       return NULL;
    }
-
-#ifdef HAVE_EGL
-   gl->egl_images = load_eglimage_proc(gl) && gl->ctx_driver->init_egl_image_buffer(video);
-#endif
 
    return gl;
 }
