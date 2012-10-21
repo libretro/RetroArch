@@ -358,7 +358,7 @@ struct global
 
       // CPU filters only work on *XRGB1555*. We have to convert to XRGB1555 first.
       struct scaler_ctx scaler;
-      void *scaler_out;
+      uint16_t *scaler_out;
    } filter;
 
    msg_queue_t *msg_queue;

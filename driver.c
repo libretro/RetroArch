@@ -457,6 +457,13 @@ static void init_filter(bool rgb32)
       return;
    }
 
+   struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+   unsigned width   = geom->max_width;
+   unsigned height  = geom->max_height;
+   unsigned pow2_x  = 0;
+   unsigned pow2_y  = 0;
+   unsigned maxsize = 0;
+
    g_extern.filter.psize = 
       (void (*)(unsigned*, unsigned*))dylib_proc(g_extern.filter.lib, "filter_size");
    g_extern.filter.prender = 
@@ -471,15 +478,11 @@ static void init_filter(bool rgb32)
    }
 
    g_extern.filter.active = true;
-
-   struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
-   unsigned width  = geom->max_width;
-   unsigned height = geom->max_height;
    g_extern.filter.psize(&width, &height);
 
-   unsigned pow2_x  = next_pow2(width);
-   unsigned pow2_y  = next_pow2(height);
-   unsigned maxsize = pow2_x > pow2_y ? pow2_x : pow2_y; 
+   pow2_x  = next_pow2(width);
+   pow2_y  = next_pow2(height);
+   maxsize = pow2_x > pow2_y ? pow2_x : pow2_y; 
    g_extern.filter.scale = maxsize / RARCH_SCALE_BASE;
 
    g_extern.filter.buffer = (uint32_t*)malloc(RARCH_SCALE_BASE * RARCH_SCALE_BASE *

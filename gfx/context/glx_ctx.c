@@ -237,6 +237,8 @@ static bool gfx_ctx_set_video_mode(
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
+   int x_off = 0;
+   int y_off = 0;
 
    bool windowed_full = g_settings.video.windowed_fullscreen;
    bool true_full = false;
@@ -264,8 +266,6 @@ static bool gfx_ctx_set_video_mode(
    if (g_settings.video.monitor_index)
       g_screen = g_settings.video.monitor_index - 1;
 
-   int x_off = 0;
-   int y_off = 0;
 #ifdef HAVE_XINERAMA
    if (fullscreen || g_screen != 0)
    {
