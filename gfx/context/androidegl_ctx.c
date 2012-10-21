@@ -171,31 +171,33 @@ static void gfx_ctx_check_window(bool *quit,
    // If not animating, we will block forever waiting for events.
    // If animating, we loop until all events are read, then continue
    // to draw the next frame of animation.
-   while ((ident=ALooper_pollAll(g_android.animating ? 0 : -1, NULL, &events,
-				   (void**)&source)) >= 0)
+   ident=ALooper_pollAll(g_android.animating ? 0 : -1, NULL, &events,
+				   (void**)&source);
+
+   // Process this event.
+   if (source != NULL)
+      source->process(state, source);
+
+   // If a sensor has data, process it now.
+   /*
+   if (ident == LOOPER_ID_USER && g_android.accelerometerSensor != NULL)
    {
-      // Process this event.
-      if (source != NULL)
-         source->process(state, source);
-
-      // If a sensor has data, process it now.
-      if (ident == LOOPER_ID_USER && g_android.accelerometerSensor != NULL)
+      ASensorEvent event;
+      while (ASensorEventQueue_getEvents(g_android.sensorEventQueue, &event, 1) > 0)
       {
-         ASensorEvent event;
-	 while (ASensorEventQueue_getEvents(g_android.sensorEventQueue, &event, 1) > 0)
-         {
-            //RARCH_LOG("accelerometer: x=%f y=%f z=%f.\n", event.acceleration.x, event.acceleration.y, event.acceleration.z);
-         }
+         RARCH_LOG("accelerometer: x=%f y=%f z=%f.\n", event.acceleration.x, 
+         event.acceleration.y, event.acceleration.z);
       }
+   }
+   */
 
-      // Check if we are exiting.
-      if (state->destroyRequested != 0)
-      {
-         gl->quitting = true;
-	 *quit = true;
-         gfx_ctx_destroy();
-	 return;
-      }
+   // Check if we are exiting.
+   if (state->destroyRequested != 0)
+   {
+      gl->quitting = true;
+      *quit = true;
+      gfx_ctx_destroy();
+      return;
    }
 
    if (g_android.animating)
