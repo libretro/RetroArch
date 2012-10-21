@@ -263,6 +263,8 @@ static bool gfx_ctx_set_video_mode(
    XVisualInfo *vi = NULL;
    bool windowed_full = g_settings.video.windowed_fullscreen;
    bool true_full = false;
+   int x_off = 0;
+   int y_off = 0;
 
    EGLint vid;
    if (!eglGetConfigAttrib(g_egl_dpy, g_config, EGL_NATIVE_VISUAL_ID, &vid))
@@ -292,8 +294,6 @@ static bool gfx_ctx_set_video_mode(
    if (g_settings.video.monitor_index)
       g_screen = g_settings.video.monitor_index - 1;
 
-   int x_off = 0;
-   int y_off = 0;
 #ifdef HAVE_XINERAMA
    if (fullscreen || g_screen != 0)
    {

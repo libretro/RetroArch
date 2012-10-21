@@ -74,6 +74,8 @@ static bool set_direct_pix_conv(struct scaler_ctx *ctx)
       ctx->direct_pixconv = conv_rgb565_bgr24;
    else if (ctx->in_fmt == SCALER_FMT_0RGB1555 && ctx->out_fmt == SCALER_FMT_RGB565)
       ctx->direct_pixconv = conv_0rgb1555_rgb565;
+   else if (ctx->in_fmt == SCALER_FMT_RGB565 && ctx->out_fmt == SCALER_FMT_0RGB1555)
+      ctx->direct_pixconv = conv_rgb565_0rgb1555;
    else if (ctx->in_fmt == SCALER_FMT_BGR24 && ctx->out_fmt == SCALER_FMT_ARGB8888)
       ctx->direct_pixconv = conv_bgr24_argb8888;
    else if (ctx->in_fmt == SCALER_FMT_ARGB8888 && ctx->out_fmt == SCALER_FMT_0RGB1555)

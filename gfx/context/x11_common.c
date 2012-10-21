@@ -199,13 +199,13 @@ static XineramaScreenInfo *x11_query_screens(Display *dpy, int *num_screens)
 {
    int major, minor;
    if (!XineramaQueryExtension(dpy, &major, &minor))
-      return false;
+      return NULL;
 
    XineramaQueryVersion(dpy, &major, &minor);
    RARCH_LOG("[X11]: Xinerama version: %d.%d.\n", major, minor);
 
    if (!XineramaIsActive(dpy))
-      return false;
+      return NULL;
 
    return XineramaQueryScreens(dpy, num_screens);
 }
