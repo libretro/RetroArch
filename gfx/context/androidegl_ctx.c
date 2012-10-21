@@ -193,11 +193,7 @@ static void gfx_ctx_check_window(bool *quit,
 
    // Check if we are exiting.
    if (state->destroyRequested != 0 || g_android.init_quit)
-   {
-      gl->quitting = true;
       *quit = true;
-      return;
-   }
 
    if (g_android.animating)
    {
@@ -207,12 +203,6 @@ static void gfx_ctx_check_window(bool *quit,
       if (g_android.state.angle > 1)
          g_android.state.angle = 0;
    }
-
-   if (gl->quitting)
-      *quit = true;
-
-   if (gl->should_resize)
-      *resize = true;
 }
 
 static void gfx_ctx_clear(void)
