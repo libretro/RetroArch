@@ -355,6 +355,10 @@ struct global
       void (*psize)(unsigned *width, unsigned *height);
       void (*prender)(uint32_t *colormap, uint32_t *output, unsigned outpitch,
             const uint16_t *input, unsigned pitch, unsigned width, unsigned height);
+
+      // CPU filters only work on *XRGB1555*. We have to convert to XRGB1555 first.
+      struct scaler_ctx scaler;
+      void *scaler_out;
    } filter;
 
    msg_queue_t *msg_queue;

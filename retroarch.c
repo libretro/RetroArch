@@ -283,11 +283,19 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 #ifdef HAVE_DYLIB
    if (g_extern.filter.active && data)
    {
+      struct scaler_ctx *scaler = &g_extern.filter.scaler;
+      scaler->in_width   = scaler->out_width = width;
+      scaler->in_height  = scaler->out_height = height;
+      scaler->in_stride  = pitch;
+      scaler->out_stride = width * sizeof(uint16_t);
+
+      scaler_ctx_scale(scaler, g_extern.filter.scaler_out, data);
+
       unsigned owidth = width;
       unsigned oheight = height;
       g_extern.filter.psize(&owidth, &oheight);
       g_extern.filter.prender(g_extern.filter.colormap, g_extern.filter.buffer, 
-            g_extern.filter.pitch, (const uint16_t*)data, pitch, width, height);
+            g_extern.filter.pitch, g_extern.filter.scaler_out, scaler->out_stride, width, height);
 
 #ifdef HAVE_FFMPEG
       if (g_extern.recording && g_settings.video.post_filter_record)
