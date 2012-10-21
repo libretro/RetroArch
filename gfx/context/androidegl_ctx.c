@@ -192,11 +192,10 @@ static void gfx_ctx_check_window(bool *quit,
    */
 
    // Check if we are exiting.
-   if (state->destroyRequested != 0)
+   if (state->destroyRequested != 0 || g_android.init_quit)
    {
       gl->quitting = true;
       *quit = true;
-      gfx_ctx_destroy();
       return;
    }
 

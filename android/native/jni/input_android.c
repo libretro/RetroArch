@@ -52,6 +52,7 @@ static int16_t android_input_state(void *data, const struct retro_keybind **retr
    (void)index;
    (void)id;
 
+
    return 0;
 }
 
@@ -59,6 +60,18 @@ static bool android_input_key_pressed(void *data, int key)
 {
    (void)data;
    (void)key;
+
+   switch (key)
+   {
+      case RARCH_QUIT_KEY:
+	if(g_android.init_quit)
+           return true;
+        else
+           return false;
+        break;
+      default:
+         (void)0;
+   }
 
    return false;
 }

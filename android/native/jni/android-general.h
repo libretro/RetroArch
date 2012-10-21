@@ -20,6 +20,7 @@ struct droid
    const ASensor* accelerometerSensor;
    ASensorEventQueue* sensorEventQueue;
 
+   bool init_quit;
    bool window_inited;
    unsigned animating;
    unsigned width;

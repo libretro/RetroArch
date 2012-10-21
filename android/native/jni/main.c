@@ -48,9 +48,7 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
 	 break;
       case APP_CMD_TERM_WINDOW:
 	 // The window is being hidden or closed, clean it up.
-	 rarch_main_deinit();
-         rarch_deinit_msg_queue();
-         rarch_main_clear_state();
+	 g_android.init_quit = true;
 	 break;
       case APP_CMD_GAINED_FOCUS:
 	 // When our app gains focus, we start monitoring the accelerometer.
@@ -106,6 +104,8 @@ static void android_get_char_argv(char *argv, size_t sizeof_argv, const char *ar
    strncpy(argv, test_argv, sizeof_argv);
 
    (*env)->ReleaseStringUTFChars(env, jsParam1, test_argv);
+
+   (*rarch_vm)->DetachCurrentThread(rarch_vm);
 }
 
 #define MAX_ARGS 32
