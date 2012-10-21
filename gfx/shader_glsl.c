@@ -86,31 +86,31 @@
 #define pglDisableVertexAttribArray glDisableVertexAttribArray
 #define pglVertexAttribPointer glVertexAttribPointer
 #else
-static PFNGLCREATEPROGRAMPROC pglCreateProgram = NULL;
-static PFNGLUSEPROGRAMPROC pglUseProgram = NULL;
-static PFNGLCREATESHADERPROC pglCreateShader = NULL;
-static PFNGLDELETESHADERPROC pglDeleteShader = NULL;
-static PFNGLSHADERSOURCEPROC pglShaderSource = NULL;
-static PFNGLCOMPILESHADERPROC pglCompileShader = NULL;
-static PFNGLATTACHSHADERPROC pglAttachShader = NULL;
-static PFNGLDETACHSHADERPROC pglDetachShader = NULL;
-static PFNGLLINKPROGRAMPROC pglLinkProgram = NULL;
-static PFNGLGETUNIFORMLOCATIONPROC pglGetUniformLocation = NULL;
-static PFNGLUNIFORM1IPROC pglUniform1i = NULL;
-static PFNGLUNIFORM1FPROC pglUniform1f = NULL;
-static PFNGLUNIFORM2FVPROC pglUniform2fv = NULL;
-static PFNGLUNIFORM4FVPROC pglUniform4fv = NULL;
-static PFNGLUNIFORMMATRIX4FVPROC pglUniformMatrix4fv = NULL;
-static PFNGLGETSHADERIVPROC pglGetShaderiv = NULL;
-static PFNGLGETSHADERINFOLOGPROC pglGetShaderInfoLog = NULL;
-static PFNGLGETPROGRAMIVPROC pglGetProgramiv = NULL;
-static PFNGLGETPROGRAMINFOLOGPROC pglGetProgramInfoLog = NULL;
-static PFNGLDELETEPROGRAMPROC pglDeleteProgram = NULL;
-static PFNGLGETATTACHEDSHADERSPROC pglGetAttachedShaders = NULL;
-static PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation = NULL;
-static PFNGLENABLEVERTEXATTRIBARRAYPROC pglEnableVertexAttribArray = NULL;
-static PFNGLDISABLEVERTEXATTRIBARRAYPROC pglDisableVertexAttribArray = NULL;
-static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer = NULL;
+static PFNGLCREATEPROGRAMPROC pglCreateProgram;
+static PFNGLUSEPROGRAMPROC pglUseProgram;
+static PFNGLCREATESHADERPROC pglCreateShader;
+static PFNGLDELETESHADERPROC pglDeleteShader;
+static PFNGLSHADERSOURCEPROC pglShaderSource;
+static PFNGLCOMPILESHADERPROC pglCompileShader;
+static PFNGLATTACHSHADERPROC pglAttachShader;
+static PFNGLDETACHSHADERPROC pglDetachShader;
+static PFNGLLINKPROGRAMPROC pglLinkProgram;
+static PFNGLGETUNIFORMLOCATIONPROC pglGetUniformLocation;
+static PFNGLUNIFORM1IPROC pglUniform1i;
+static PFNGLUNIFORM1FPROC pglUniform1f;
+static PFNGLUNIFORM2FVPROC pglUniform2fv;
+static PFNGLUNIFORM4FVPROC pglUniform4fv;
+static PFNGLUNIFORMMATRIX4FVPROC pglUniformMatrix4fv;
+static PFNGLGETSHADERIVPROC pglGetShaderiv;
+static PFNGLGETSHADERINFOLOGPROC pglGetShaderInfoLog;
+static PFNGLGETPROGRAMIVPROC pglGetProgramiv;
+static PFNGLGETPROGRAMINFOLOGPROC pglGetProgramInfoLog;
+static PFNGLDELETEPROGRAMPROC pglDeleteProgram;
+static PFNGLGETATTACHEDSHADERSPROC pglGetAttachedShaders;
+static PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation;
+static PFNGLENABLEVERTEXATTRIBARRAYPROC pglEnableVertexAttribArray;
+static PFNGLDISABLEVERTEXATTRIBARRAYPROC pglDisableVertexAttribArray;
+static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer;
 #endif
 
 #ifdef HAVE_OPENGLES2
@@ -131,28 +131,28 @@ enum filter_type
    RARCH_GL_NEAREST
 };
 
-static bool glsl_enable = false;
-static bool glsl_modern = false;
-static GLuint gl_program[MAX_PROGRAMS] = {0};
-static enum filter_type gl_filter_type[MAX_PROGRAMS] = {RARCH_GL_NOFORCE};
+static bool glsl_enable;
+static bool glsl_modern;
+static GLuint gl_program[MAX_PROGRAMS];
+static enum filter_type gl_filter_type[MAX_PROGRAMS];
 static struct gl_fbo_scale gl_scale[MAX_PROGRAMS];
-static unsigned gl_num_programs = 0;
-static unsigned active_index = 0;
+static unsigned gl_num_programs;
+static unsigned active_index;
 
 static GLuint gl_teximage[MAX_TEXTURES];
-static unsigned gl_teximage_cnt = 0;
+static unsigned gl_teximage_cnt;
 static char gl_teximage_uniforms[MAX_TEXTURES][64];
 
-static state_tracker_t *gl_state_tracker = NULL;
+static state_tracker_t *gl_state_tracker;
 static struct state_tracker_uniform_info gl_tracker_info[MAX_VARIABLES];
-static unsigned gl_tracker_info_cnt = 0;
+static unsigned gl_tracker_info_cnt;
 static char gl_tracker_script[PATH_MAX];
 static char gl_tracker_script_class[64];
 
-static char *gl_script_program = NULL;
+static char *gl_script_program;
 
 static GLint gl_attribs[PREV_TEXTURES + 1 + 4 + MAX_PROGRAMS];
-static unsigned gl_attrib_index = 0;
+static unsigned gl_attrib_index;
 
 static gfx_ctx_proc_t (*glsl_get_proc_address)(const char*);
 
@@ -171,6 +171,38 @@ struct shader_program
 
    bool valid_scale;
 };
+
+struct shader_uniforms_frame
+{
+   int texture;
+   int input_size;
+   int texture_size;
+   int tex_coord;
+};
+
+struct shader_uniforms
+{
+   int mvp;
+   int tex_coord;
+   int vertex_coord;
+   int color;
+   int lut_tex_coord;
+
+   int input_size;
+   int output_size;
+   int texture_size;
+
+   int frame_count;
+   int frame_direction;
+
+   int lut_texture[MAX_TEXTURES];
+   
+   struct shader_uniforms_frame orig;
+   struct shader_uniforms_frame pass[MAX_PROGRAMS];
+   struct shader_uniforms_frame prev[PREV_TEXTURES];
+};
+
+static struct shader_uniforms gl_uniforms[MAX_PROGRAMS];
 
 static const char *stock_vertex_legacy =
    "varying vec4 color;\n"
@@ -927,6 +959,63 @@ static void gl_glsl_reset_attrib(void)
    gl_attrib_index = 0;
 }
 
+static void find_uniforms_frame(GLuint prog, struct shader_uniforms_frame *frame, const char *base)
+{
+   char texture[64];
+   char texture_size[64];
+   char input_size[64];
+   char tex_coord[64];
+
+   snprintf(texture, sizeof(texture), "%s%s", base, "Texture");
+   snprintf(texture_size, sizeof(texture_size), "%s%s", base, "TextureSize");
+   snprintf(input_size, sizeof(input_size), "%s%s", base, "InputSize");
+   snprintf(tex_coord, sizeof(tex_coord), "%s%s", base, "TexCoord");
+
+   frame->texture      = pglGetUniformLocation(prog, texture);
+   frame->texture_size = pglGetUniformLocation(prog, texture_size);
+   frame->input_size   = pglGetUniformLocation(prog, input_size);
+   frame->tex_coord    = pglGetAttribLocation(prog, tex_coord);
+}
+
+static void find_uniforms(GLuint prog, struct shader_uniforms *uni)
+{
+   pglUseProgram(prog);
+
+   uni->mvp           = pglGetUniformLocation(prog, "rubyMVPMatrix");
+   uni->tex_coord     = pglGetAttribLocation(prog, "rubyTexCoord");
+   uni->vertex_coord  = pglGetAttribLocation(prog, "rubyVertexCoord");
+   uni->color         = pglGetAttribLocation(prog, "rubyColor");
+   uni->lut_tex_coord = pglGetAttribLocation(prog, "rubyLUTTexCoord");
+
+   uni->input_size    = pglGetUniformLocation(prog, "rubyInputSize");
+   uni->output_size   = pglGetUniformLocation(prog, "rubyOutputSize");
+   uni->texture_size  = pglGetUniformLocation(prog, "rubyTextureSize");
+
+   uni->frame_count     = pglGetUniformLocation(prog, "rubyFrameCount");
+   uni->frame_direction = pglGetUniformLocation(prog, "rubyFrameDirection");
+
+   for (unsigned i = 0; i < gl_teximage_cnt; i++)
+      uni->lut_texture[i] = pglGetUniformLocation(prog, gl_teximage_uniforms[i]);
+
+   find_uniforms_frame(prog, &uni->orig, "rubyOrig");
+
+   char frame_base[64];
+   for (unsigned i = 0; i < MAX_PROGRAMS; i++)
+   {
+      snprintf(frame_base, sizeof(frame_base), "rubyPass%u", i + 1);
+      find_uniforms_frame(prog, &uni->pass[i], frame_base);
+   }
+
+   find_uniforms_frame(prog, &uni->prev[0], "rubyPrev");
+   for (unsigned i = 1; i < PREV_TEXTURES; i++)
+   {
+      snprintf(frame_base, sizeof(frame_base), "rubyPrev%u", i);
+      find_uniforms_frame(prog, &uni->prev[i], frame_base);
+   }
+
+   pglUseProgram(0);
+}
+
 // Platforms with broken get_proc_address.
 // Assume functions are available without proc_address.
 #undef LOAD_GL_SYM
@@ -1056,9 +1145,12 @@ bool gl_glsl_init(const char *path)
    }
 #endif
 
+   for (unsigned i = 0; i <= num_progs; i++)
+      find_uniforms(gl_program[i], &gl_uniforms[i]);
+
 #ifdef GLSL_DEBUG
    if (!gl_check_error())
-      RARCH_WARN("Detected GL error.\n");
+      RARCH_WARN("Detected GL error in GLSL.\n");
 #endif
 
 #ifdef HAVE_XML
@@ -1087,9 +1179,10 @@ bool gl_glsl_init(const char *path)
    }
 #endif
    
-   glsl_enable                     = true;
-   gl_num_programs                 = num_progs;
-   gl_program[gl_num_programs + 1] = gl_program[0];
+   glsl_enable                      = true;
+   gl_num_programs                  = num_progs;
+   gl_program[gl_num_programs + 1]  = gl_program[0];
+   gl_uniforms[gl_num_programs + 1] = gl_uniforms[0];
 
    gl_glsl_reset_attrib();
 
@@ -1166,30 +1259,31 @@ void gl_glsl_set_params(unsigned width, unsigned height,
    if (!glsl_enable || (gl_program[active_index] == 0))
       return;
 
-   GLint location;
+   const struct shader_uniforms *uni = &gl_uniforms[active_index];
 
-   float inputSize[2] = {(float)width, (float)height};
-   location = pglGetUniformLocation(gl_program[active_index], "rubyInputSize");
-   pglUniform2fv(location, 1, inputSize);
+   float input_size[2] = {(float)width, (float)height};
+   float output_size[2] = {(float)out_width, (float)out_height};
+   float texture_size[2] = {(float)tex_width, (float)tex_height};
 
-   float outputSize[2] = {(float)out_width, (float)out_height};
-   location = pglGetUniformLocation(gl_program[active_index], "rubyOutputSize");
-   pglUniform2fv(location, 1, outputSize);
+   if (uni->input_size >= 0)
+      pglUniform2fv(uni->input_size, 1, input_size);
 
-   float textureSize[2] = {(float)tex_width, (float)tex_height};
-   location = pglGetUniformLocation(gl_program[active_index], "rubyTextureSize");
-   pglUniform2fv(location, 1, textureSize);
+   if (uni->output_size >= 0)
+      pglUniform2fv(uni->output_size, 1, output_size);
 
-   location = pglGetUniformLocation(gl_program[active_index], "rubyFrameCount");
-   pglUniform1i(location, frame_count);
+   if (uni->texture_size >= 0)
+      pglUniform2fv(uni->texture_size, 1, texture_size);
 
-   location = pglGetUniformLocation(gl_program[active_index], "rubyFrameDirection");
-   pglUniform1i(location, g_extern.frame_is_reverse ? -1 : 1);
+   if (uni->frame_count >= 0)
+      pglUniform1i(uni->frame_count, frame_count);
+
+   if (uni->frame_direction >= 0)
+      pglUniform1i(uni->frame_direction, g_extern.frame_is_reverse ? -1 : 1);
 
    for (unsigned i = 0; i < gl_teximage_cnt; i++)
    {
-      location = pglGetUniformLocation(gl_program[active_index], gl_teximage_uniforms[i]);
-      pglUniform1i(location, i + 1);
+      if (uni->lut_texture[i] >= 0)
+         pglUniform1i(uni->lut_texture[i], i + 1);
    }
 
    unsigned texunit = gl_teximage_cnt + 1;
@@ -1197,25 +1291,29 @@ void gl_glsl_set_params(unsigned width, unsigned height,
    // Set original texture unless we're in first pass (pointless).
    if (active_index > 1)
    {
-      // Bind original texture.
-      pglActiveTexture(GL_TEXTURE0 + texunit);
+      if (uni->orig.texture >= 0)
+      {
+         // Bind original texture.
+         pglActiveTexture(GL_TEXTURE0 + texunit);
+         pglUniform1i(uni->orig.texture, texunit);
+         glBindTexture(GL_TEXTURE_2D, info->tex);
+      }
 
-      location = pglGetUniformLocation(gl_program[active_index], "rubyOrigTexture");
-      pglUniform1i(location, texunit++);
-      glBindTexture(GL_TEXTURE_2D, info->tex);
+      texunit++;
 
-      location = pglGetUniformLocation(gl_program[active_index], "rubyOrigTextureSize");
-      pglUniform2fv(location, 1, info->tex_size);
-      location = pglGetUniformLocation(gl_program[active_index], "rubyOrigInputSize");
-      pglUniform2fv(location, 1, info->input_size);
+      if (uni->orig.texture_size >= 0)
+         pglUniform2fv(uni->orig.texture_size, 1, info->tex_size);
+
+      if (uni->orig.input_size >= 0)
+         pglUniform2fv(uni->orig.input_size, 1, info->input_size);
 
       // Pass texture coordinates.
-      location = pglGetAttribLocation(gl_program[active_index], "rubyOrigTexCoord");
-      if (location >= 0)
+      if (uni->orig.tex_coord >= 0)
       {
-         pglEnableVertexAttribArray(location);
-         pglVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, info->coord);
-         gl_attribs[gl_attrib_index++] = location;
+         int loc = uni->orig.tex_coord;
+         pglEnableVertexAttribArray(loc);
+         pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, info->coord);
+         gl_attribs[gl_attrib_index++] = loc;
       }
 
       // Bind new texture in the chain.
@@ -1228,27 +1326,23 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       // Bind FBO textures.
       for (unsigned i = 0; i < fbo_info_cnt; i++)
       {
-         char attrib_buf[64];
+         if (uni->pass[i].texture)
+            pglUniform1i(uni->pass[i].texture, texunit);
 
-         snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTexture", i + 1);
-         location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
-         pglUniform1i(location, texunit++);
+         texunit++;
 
-         snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTextureSize", i + 1);
-         location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
-         pglUniform2fv(location, 1, fbo_info[i].tex_size);
+         if (uni->pass[i].texture_size >= 0)
+            pglUniform2fv(uni->pass[i].texture_size, 1, fbo_info[i].tex_size);
 
-         snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uInputSize", i + 1);
-         location = pglGetUniformLocation(gl_program[active_index], attrib_buf);
-         pglUniform2fv(location, 1, fbo_info[i].input_size);
+         if (uni->pass[i].input_size >= 0)
+            pglUniform2fv(uni->pass[i].input_size, 1, fbo_info[i].input_size);
 
-         snprintf(attrib_buf, sizeof(attrib_buf), "rubyPass%uTexCoord", i + 1);
-         location = pglGetAttribLocation(gl_program[active_index], attrib_buf);
-         if (location >= 0)
+         if (uni->pass[i].tex_coord >= 0)
          {
-            pglEnableVertexAttribArray(location);
-            pglVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, fbo_info[i].coord);
-            gl_attribs[gl_attrib_index++] = location;
+            int loc = uni->pass[i].tex_coord;
+            pglEnableVertexAttribArray(loc);
+            pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, fbo_info[i].coord);
+            gl_attribs[gl_attrib_index++] = loc;
          }
       }
    }
@@ -1273,45 +1367,28 @@ void gl_glsl_set_params(unsigned width, unsigned height,
    // Set previous textures. Only bind if they're actually used.
    for (unsigned i = 0; i < PREV_TEXTURES; i++)
    {
-      char attr_buf_tex[64];
-      char attr_buf_tex_size[64];
-      char attr_buf_input_size[64];
-      char attr_buf_coord[64];
-      static const char *prev_names[PREV_TEXTURES] = {
-         "Prev",
-         "Prev1",
-         "Prev2",
-         "Prev3",
-         "Prev4",
-         "Prev5",
-         "Prev6",
-      };
-
-      snprintf(attr_buf_tex,        sizeof(attr_buf_tex),        "ruby%sTexture",     prev_names[i]);
-      snprintf(attr_buf_tex_size,   sizeof(attr_buf_tex_size),   "ruby%sTextureSize", prev_names[i]);
-      snprintf(attr_buf_input_size, sizeof(attr_buf_input_size), "ruby%sInputSize",   prev_names[i]);
-      snprintf(attr_buf_coord,      sizeof(attr_buf_coord),      "ruby%sTexCoord",    prev_names[i]);
-
-      location = pglGetUniformLocation(gl_program[active_index], attr_buf_tex);
-      if (location >= 0)
+      if (uni->prev[i].texture >= 0)
       {
          pglActiveTexture(GL_TEXTURE0 + texunit);
          glBindTexture(GL_TEXTURE_2D, prev_info[i].tex);
-         pglUniform1i(location, texunit++);
+         pglUniform1i(uni->prev[i].texture, texunit++);
       }
 
-      location = pglGetUniformLocation(gl_program[active_index], attr_buf_tex_size);
-      pglUniform2fv(location, 1, prev_info[i].tex_size);
-      location = pglGetUniformLocation(gl_program[active_index], attr_buf_input_size);
-      pglUniform2fv(location, 1, prev_info[i].input_size);
+      texunit++;
+
+      if (uni->prev[i].texture_size >= 0)
+         pglUniform2fv(uni->prev[i].texture_size, 1, prev_info[i].tex_size);
+
+      if (uni->prev[i].input_size >= 0)
+         pglUniform2fv(uni->prev[i].input_size, 1, prev_info[i].input_size);
 
       // Pass texture coordinates.
-      location = pglGetAttribLocation(gl_program[active_index], attr_buf_coord);
-      if (location >= 0)
+      if (uni->prev[i].tex_coord >= 0)
       {
-         pglEnableVertexAttribArray(location);
-         pglVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, prev_info[i].coord);
-         gl_attribs[gl_attrib_index++] = location;
+         int loc = uni->prev[i].tex_coord;
+         pglEnableVertexAttribArray(loc);
+         pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, prev_info[i].coord);
+         gl_attribs[gl_attrib_index++] = loc; 
       }
    }
 
@@ -1327,7 +1404,7 @@ void gl_glsl_set_params(unsigned width, unsigned height,
 
       for (unsigned i = 0; i < cnt; i++)
       {
-         location = pglGetUniformLocation(gl_program[active_index], info[i].id);
+         int location = pglGetUniformLocation(gl_program[active_index], info[i].id);
          pglUniform1f(location, info[i].value);
       }
    }
@@ -1338,9 +1415,10 @@ bool gl_glsl_set_mvp(const math_matrix *mat)
    if (!glsl_enable || !glsl_modern)
       return false;
 
-   int loc = pglGetUniformLocation(gl_program[active_index], "rubyMVPMatrix");
+   int loc = gl_uniforms[active_index].mvp;
    if (loc >= 0)
       pglUniformMatrix4fv(loc, 1, GL_FALSE, mat->data);
+
    return true;
 }
 
@@ -1349,35 +1427,34 @@ bool gl_glsl_set_coords(const struct gl_coords *coords)
    if (!glsl_enable || !glsl_modern)
       return false;
 
-   int loc;
-
-   loc = pglGetAttribLocation(gl_program[active_index], "rubyTexCoord");
-   if (loc >= 0)
+   const struct shader_uniforms *uni = &gl_uniforms[active_index];
+   if (uni->tex_coord >= 0)
    {
+      int loc = uni->tex_coord;
       pglEnableVertexAttribArray(loc);
       pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, coords->tex_coord);
       gl_attribs[gl_attrib_index++] = loc;
    }
 
-   loc = pglGetAttribLocation(gl_program[active_index], "rubyVertexCoord");
-   if (loc >= 0)
+   if (uni->vertex_coord >= 0)
    {
+      int loc = uni->vertex_coord;
       pglEnableVertexAttribArray(loc);
       pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, coords->vertex);
       gl_attribs[gl_attrib_index++] = loc;
    }
 
-   loc = pglGetAttribLocation(gl_program[active_index], "rubyColor");
-   if (loc >= 0)
+   if (uni->color >= 0)
    {
+      int loc = uni->color;
       pglEnableVertexAttribArray(loc);
       pglVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, 0, coords->color);
       gl_attribs[gl_attrib_index++] = loc;
    }
 
-   loc = pglGetAttribLocation(gl_program[active_index], "rubyLUTTexCoord");
-   if (loc >= 0)
+   if (uni->lut_tex_coord >= 0)
    {
+      int loc = uni->lut_tex_coord;
       pglEnableVertexAttribArray(loc);
       pglVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, coords->lut_tex_coord);
       gl_attribs[gl_attrib_index++] = loc;
