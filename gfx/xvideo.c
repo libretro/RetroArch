@@ -108,16 +108,16 @@ static inline void calculate_yuv(uint8_t *y, uint8_t *u, uint8_t *v, unsigned r,
 
 static void init_yuv_tables(xv_t *xv)
 {
-   xv->ytable = (uint8_t*)malloc(0x8000);
-   xv->utable = (uint8_t*)malloc(0x8000);
-   xv->vtable = (uint8_t*)malloc(0x8000);
+   xv->ytable = (uint8_t*)malloc(0x10000);
+   xv->utable = (uint8_t*)malloc(0x10000);
+   xv->vtable = (uint8_t*)malloc(0x10000);
 
-   for (unsigned i = 0; i < 0x8000; i++)
+   for (unsigned i = 0; i < 0x10000; i++)
    {
-      // Extract RGB555 color data from i
-      unsigned r = (i >> 10) & 0x1F, g = (i >> 5) & 0x1F, b = (i) & 0x1F;
+      // Extract RGB565 color data from i
+      unsigned r = (i >> 11) & 0x1f, g = (i >> 5) & 0x3f, b = (i >> 0) & 0x1f;
       r = (r << 3) | (r >> 2);  // R5->R8
-      g = (g << 3) | (g >> 2);  // G5->G8
+      g = (g << 2) | (g >> 4);  // G6->G8
       b = (b << 3) | (b >> 2);  // B5->B8
 
       calculate_yuv(&xv->ytable[i], &xv->utable[i], &xv->vtable[i], r, g, b);
@@ -224,7 +224,7 @@ static void render32_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned
       for (unsigned x = 0; x < width; x++)
       {
          uint32_t p = *input++;
-         p = ((p >> 9) & 0x7c00) | ((p >> 6) & 0x03e0) | ((p >> 3) & 0x1f); // ARGB -> RGB15
+         p = ((p >> 8) & 0xf800) | ((p >> 5) & 0x07e0) | ((p >> 3) & 0x1f); // ARGB -> RGB16
 
          uint8_t y0 = xv->ytable[p];
          uint8_t u = xv->utable[p];
@@ -253,7 +253,7 @@ static void render32_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned
       for (unsigned x = 0; x < width; x++)
       {
          uint32_t p = *input++;
-         p = ((p >> 9) & 0x7c00) | ((p >> 6) & 0x03e0) | ((p >> 3) & 0x1f); // ARGB -> RGB15
+         p = ((p >> 8) & 0xf800) | ((p >> 5) & 0x07e0) | ((p >> 3) & 0x1f); // ARGB -> RGB16
 
          uint8_t y0 = xv->ytable[p];
          uint8_t u = xv->utable[p];

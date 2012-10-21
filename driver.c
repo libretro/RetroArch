@@ -430,9 +430,9 @@ static void init_filter(void)
    if (*g_settings.video.filter_path == '\0')
       return;
 
-   if (g_extern.system.rgb32)
+   if (g_extern.system.pix_fmt != RETRO_PIXEL_FORMAT_0RGB1555)
    {
-      RARCH_WARN("libretro implementation uses XRGB8888 format. CPU filters only support 0RGB1555.\n");
+      RARCH_WARN("CPU filters only support 0RGB1555.\n");
       return;
    }
 
@@ -536,6 +536,34 @@ static void init_shader_dir(void)
 }
 #endif
 
+static bool init_video_pixel_converter(unsigned size)
+{
+   if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
+   {
+      RARCH_WARN("0RGB1555 pixel format is deprecated, and will be slower. For 15/16-bit, RGB565 format is preferred.\n");
+
+      // We'll tweak these values later,
+      // just set most of them to something sane to begin with.
+      driver.scaler.in_width = 
+         driver.scaler.in_height = 
+         driver.scaler.out_width = 
+         driver.scaler.out_height = size;
+
+      driver.scaler.scaler_type = SCALER_TYPE_POINT;
+      driver.scaler.in_fmt      = SCALER_FMT_0RGB1555;
+
+      // TODO: Pick either ARGB8888 or RGB565 depending on driver ...
+      driver.scaler.out_fmt     = SCALER_FMT_RGB565;
+
+      if (!scaler_ctx_gen_filter(&driver.scaler))
+         return false;
+
+      driver.scaler_out = calloc(sizeof(uint16_t), size * size);
+   }
+
+   return true;
+}
+
 void init_video_input(void)
 {
 #ifdef HAVE_DYLIB
@@ -585,11 +613,20 @@ void init_video_input(void)
       }
    }
 
-   RARCH_LOG("Video @ %ux%u\n", width, height);
+   if (width && height)
+      RARCH_LOG("Video @ %ux%u\n", width, height);
+   else
+      RARCH_LOG("Video @ fullscreen\n");
 
    driver.display_type  = RARCH_DISPLAY_NONE;
    driver.video_display = 0;
    driver.video_window  = 0;
+
+   if (!init_video_pixel_converter(RARCH_SCALE_BASE * scale))
+   {
+      RARCH_ERR("Failed to init pixel converter.\n");
+      rarch_fail(1, "init_video_input()");
+   }
 
    video_info_t video = {0};
    video.width = width;
@@ -599,7 +636,7 @@ void init_video_input(void)
    video.force_aspect = g_settings.video.force_aspect;
    video.smooth = g_settings.video.smooth;
    video.input_scale = scale;
-   video.rgb32 = g_extern.filter.active || g_extern.system.rgb32;
+   video.rgb32 = g_extern.filter.active || (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
    const input_driver_t *tmp = driver.input;
    driver.video_data = video_init_func(&video, &driver.input, &driver.input_data);
@@ -643,6 +680,14 @@ void init_video_input(void)
    }
 }
 
+static void deinit_pixel_converter(void)
+{
+   scaler_ctx_gen_reset(&driver.scaler);
+   memset(&driver.scaler, 0, sizeof(driver.scaler));
+   free(driver.scaler_out);
+   driver.scaler_out = NULL;
+}
+
 void uninit_video_input(void)
 {
    if (driver.input_data != driver.video_data && driver.input)
@@ -650,6 +695,8 @@ void uninit_video_input(void)
 
    if (driver.video_data && driver.video)
       video_free_func();
+
+   deinit_pixel_converter();
 
 #ifdef HAVE_DYLIB
    deinit_filter();

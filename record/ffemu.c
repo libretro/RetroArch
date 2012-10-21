@@ -175,8 +175,8 @@ static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_par
 
    switch (param->pix_fmt)
    {
-      case FFEMU_PIX_XRGB1555:
-         video->scaler.in_fmt = SCALER_FMT_0RGB1555;
+      case FFEMU_PIX_RGB565:
+         video->scaler.in_fmt = SCALER_FMT_RGB565;
          video->pix_size = 2;
          break;
 

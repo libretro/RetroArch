@@ -142,22 +142,35 @@ static void dump_line_16(uint8_t *line, const uint16_t *src, unsigned width)
    {
       uint16_t pixel = *src++;
       uint8_t b = (pixel >>  0) & 0x1f;
-      uint8_t g = (pixel >>  5) & 0x1f;
-      uint8_t r = (pixel >> 10) & 0x1f;
+      uint8_t g = (pixel >>  5) & 0x3f;
+      uint8_t r = (pixel >> 11) & 0x1f;
       *line++   = (b << 3) | (b >> 2);
-      *line++   = (g << 3) | (g >> 2);
+      *line++   = (g << 2) | (g >> 4);
       *line++   = (r << 3) | (r >> 2);
+   }
+}
+
+static void dump_line_32(uint8_t *line, const uint32_t *src, unsigned width)
+{
+   for (unsigned i = 0; i < width; i++)
+   {
+      uint32_t pixel = *src++;
+      *line++ = (pixel >>  0) & 0xff;
+      *line++ = (pixel >>  8) & 0xff;
+      *line++ = (pixel >> 16) & 0xff;
    }
 }
 
 static void dump_content(FILE *file, const void *frame,
       int width, int height, int pitch, bool bgr24)
 {
-   const uint8_t  *frame_bgr = (const uint8_t*)frame;
-   const uint16_t *frame16   = (const uint16_t*)frame;
-
-   if (!bgr24)
-      pitch /= sizeof(uint16_t);
+   union
+   {
+      const uint8_t *u8;
+      const uint16_t *u16;
+      const uint32_t *u32;
+   } u;
+   u.u8 = (const uint8_t*)frame;
 
    uint8_t **lines = (uint8_t**)calloc(height, sizeof(uint8_t*));
    if (!lines)
@@ -174,13 +187,18 @@ static void dump_content(FILE *file, const void *frame,
 
    if (bgr24) // BGR24 byte order. Can directly copy.
    {
-      for (int j = 0; j < height; j++, frame_bgr += pitch)
-         dump_line_bgr(lines[j], frame_bgr, width);
+      for (int j = 0; j < height; j++, u.u8 += pitch)
+         dump_line_bgr(lines[j], u.u8, width);
    }
-   else // ARGB1555
+   else if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
    {
-      for (int j = 0; j < height; j++, frame16 += pitch)
-         dump_line_16(lines[j], frame16, width);
+      for (int j = 0; j < height; j++, u.u8 += pitch)
+         dump_line_32(lines[j], u.u32, width);
+   }
+   else // RGB565
+   {
+      for (int j = 0; j < height; j++, u.u8 += pitch)
+         dump_line_16(lines[j], u.u16, width);
    }
 
 #ifdef HAVE_LIBPNG

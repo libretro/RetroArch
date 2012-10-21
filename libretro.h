@@ -355,6 +355,7 @@ enum retro_key
                                            // const enum retro_pixel_format * --
                                            // Sets the internal pixel format used by the implementation.
                                            // The default pixel format is RETRO_PIXEL_FORMAT_0RGB1555.
+                                           // This pixel format however, is deprecated (see enum retro_pixel_format).
                                            // If the call returns false, the frontend does not support this pixel format.
                                            // This function should be called inside retro_load_game() or retro_get_system_av_info().
                                            //
@@ -368,8 +369,18 @@ enum retro_key
 
 enum retro_pixel_format
 {
-   RETRO_PIXEL_FORMAT_0RGB1555 = 0, // 0RGB1555, native endian. 0 bit must be set to 0.
-   RETRO_PIXEL_FORMAT_XRGB8888      // XRGB8888, native endian. X bits are ignored.
+   // 0RGB1555, native endian. 0 bit must be set to 0.
+   // This pixel format is default for compatibility concerns only.
+   // If a 15/16-bit pixel format is desired, consider using RGB565.
+   RETRO_PIXEL_FORMAT_0RGB1555 = 0,
+
+   // XRGB8888, native endian. X bits are ignored.
+   RETRO_PIXEL_FORMAT_XRGB8888 = 1,
+
+   // RGB565, native endian. This pixel format is the recommended format to use if a 15/16-bit format is desired
+   // as it is the pixel format that is typically available on a wide range of low-power devices.
+   // It is also natively supported in APIs like OpenGL ES.
+   RETRO_PIXEL_FORMAT_RGB565   = 2
 };
 
 struct retro_message
@@ -465,6 +476,8 @@ typedef bool (*retro_environment_t)(unsigned cmd, void *data);
 // Render a frame. Pixel format is 15-bit 0RGB1555 native endian unless changed (see RETRO_ENVIRONMENT_SET_PIXEL_FORMAT).
 // Width and height specify dimensions of buffer.
 // Pitch specifices length in bytes between two lines in buffer.
+// For performance reasons, it is highly recommended to have a frame that is packed in memory, i.e. pitch == width * byte_per_pixel.
+// Certain graphic APIs, such as OpenGL ES, do not like textures that are not packed in memory.
 typedef void (*retro_video_refresh_t)(const void *data, unsigned width, unsigned height, size_t pitch);
 
 // Renders a single audio frame. Should only be used if implementation generates a single sample at a time.

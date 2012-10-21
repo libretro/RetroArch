@@ -68,6 +68,12 @@ static bool set_direct_pix_conv(struct scaler_ctx *ctx)
       ctx->direct_pixconv = conv_copy;
    else if (ctx->in_fmt == SCALER_FMT_0RGB1555 && ctx->out_fmt == SCALER_FMT_ARGB8888)
       ctx->direct_pixconv = conv_0rgb1555_argb8888;
+   else if (ctx->in_fmt == SCALER_FMT_RGB565 && ctx->out_fmt == SCALER_FMT_ARGB8888)
+      ctx->direct_pixconv = conv_rgb565_argb8888;
+   else if (ctx->in_fmt == SCALER_FMT_RGB565 && ctx->out_fmt == SCALER_FMT_BGR24)
+      ctx->direct_pixconv = conv_rgb565_bgr24;
+   else if (ctx->in_fmt == SCALER_FMT_0RGB1555 && ctx->out_fmt == SCALER_FMT_RGB565)
+      ctx->direct_pixconv = conv_0rgb1555_rgb565;
    else if (ctx->in_fmt == SCALER_FMT_BGR24 && ctx->out_fmt == SCALER_FMT_ARGB8888)
       ctx->direct_pixconv = conv_bgr24_argb8888;
    else if (ctx->in_fmt == SCALER_FMT_ARGB8888 && ctx->out_fmt == SCALER_FMT_0RGB1555)
@@ -76,6 +82,8 @@ static bool set_direct_pix_conv(struct scaler_ctx *ctx)
       ctx->direct_pixconv = conv_argb8888_bgr24;
    else if (ctx->in_fmt == SCALER_FMT_0RGB1555 && ctx->out_fmt == SCALER_FMT_BGR24)
       ctx->direct_pixconv = conv_0rgb1555_bgr24;
+   else if (ctx->in_fmt == SCALER_FMT_RGB565 && ctx->out_fmt == SCALER_FMT_BGR24)
+      ctx->direct_pixconv = conv_rgb565_bgr24;
    else
       return false;
 
@@ -92,6 +100,10 @@ static bool set_pix_conv(struct scaler_ctx *ctx)
 
       case SCALER_FMT_0RGB1555:
          ctx->in_pixconv = conv_0rgb1555_argb8888;
+         break;
+
+      case SCALER_FMT_RGB565:
+         ctx->in_pixconv = conv_rgb565_argb8888;
          break;
 
       case SCALER_FMT_BGR24:
@@ -160,14 +172,6 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
 
 void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
 {
-#ifdef SCALER_PERF
-   if (ctx->elapsed_frames)
-      fprintf(stderr, "[Scaler]: ms / frame: %.3f\n", ctx->elapsed_time_ms / ctx->elapsed_frames);
-
-   ctx->elapsed_time_ms = 0.0;
-   ctx->elapsed_frames  = 0;
-#endif
-
    scaler_free(ctx->horiz.filter);
    scaler_free(ctx->horiz.filter_pos);
    scaler_free(ctx->vert.filter);

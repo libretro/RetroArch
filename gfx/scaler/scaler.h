@@ -26,6 +26,7 @@ enum scaler_pix_fmt
 {
    SCALER_FMT_ARGB8888 = 0,
    SCALER_FMT_0RGB1555,
+   SCALER_FMT_RGB565,
    SCALER_FMT_BGR24
 };
 

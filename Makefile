@@ -19,7 +19,11 @@ OBJ = retroarch.o \
 		audio/null.o \
 		gfx/null.o \
 		input/null.o \
-		screenshot.o
+		screenshot.o \
+		gfx/scaler/scaler.o \
+		gfx/scaler/pixconv.o \
+		gfx/scaler/scaler_int.o \
+		gfx/scaler/filter.o
 
 JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
 	conf/config_file.o \
@@ -140,14 +144,6 @@ endif
 ifeq ($(PERF_TEST), 1)
    DEFINES += -DPERF_TEST
    OBJ += benchmark.o
-endif
-
-ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
-else ifeq ($(HAVE_OPENGL), 1)
-   OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
-else ifeq ($(HAVE_FFMPEG), 1)
-   OBJ += gfx/scaler/scaler.o gfx/scaler/pixconv.o gfx/scaler/scaler_int.o gfx/scaler/filter.o
 endif
 
 ifeq ($(HAVE_SDL), 1)

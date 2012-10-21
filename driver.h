@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "msvc/msvc_compat.h"
+#include "gfx/scaler/scaler.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -240,6 +241,9 @@ typedef struct driver
    uintptr_t video_display;
    uintptr_t video_window;
    enum rarch_display_type display_type;
+
+   struct scaler_ctx scaler;
+   void *scaler_out;
 } driver_t;
 
 void init_drivers(void);

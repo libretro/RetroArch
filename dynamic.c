@@ -420,17 +420,18 @@ static bool environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT:
       {
          enum retro_pixel_format pix_fmt = *(const enum retro_pixel_format*)data;
-         bool rgb32 = false;
          switch (pix_fmt)
          {
             case RETRO_PIXEL_FORMAT_0RGB1555:
-               rgb32 = false;
                RARCH_LOG("Environ SET_PIXEL_FORMAT: 0RGB1555.\n");
+               break;
+
+            case RETRO_PIXEL_FORMAT_RGB565:
+               RARCH_LOG("Environ SET_PIXEL_FORMAT: RGB565.\n");
                break;
 
 #ifndef RARCH_CONSOLE
             case RETRO_PIXEL_FORMAT_XRGB8888:
-               rgb32 = true;
                RARCH_LOG("Environ SET_PIXEL_FORMAT: XRGB8888.\n");
                break;
 #endif
@@ -438,7 +439,7 @@ static bool environment_cb(unsigned cmd, void *data)
                return false;
          }
          
-         g_extern.system.rgb32 = rgb32;
+         g_extern.system.pix_fmt = pix_fmt;
          break;
       }
 

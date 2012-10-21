@@ -443,12 +443,12 @@ static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned 
 
    if (!eglBuffer[index] || !g_egl_vgimage[index])
    {
-      g_egl_vgimage[index] = vgCreateImage(VG_sXRGB_8888, g_egl_res, g_egl_res, g_smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
+      g_egl_vgimage[index] = vgCreateImage(rgb32 ? VG_sXRGB_8888 : VG_sRGB_565, g_egl_res, g_egl_res, VG_IMAGE_QUALITY_NONANTIALIASED);
       eglBuffer[index] = peglCreateImageKHR(g_egl_dpy, g_eglimage_ctx, EGL_VG_PARENT_IMAGE_KHR, (EGLClientBuffer)g_egl_vgimage[index], NULL);
       ret = true;
    }
 
-   vgImageSubData(g_egl_vgimage[index], frame, pitch, (rgb32 ? VG_sXRGB_8888 : VG_sARGB_1555), 0, 0, width, height);
+   vgImageSubData(g_egl_vgimage[index], frame, pitch, (rgb32 ? VG_sXRGB_8888 : VG_sRGB_565), 0, 0, width, height);
    *image_handle = eglBuffer[index];
 
    gfx_ctx_bind_api(g_api);
