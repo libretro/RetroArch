@@ -300,7 +300,7 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
    info.aspect_ratio       = g_settings.video.aspect_ratio;
    info.smooth             = video->smooth;
    info.input_scale        = video->input_scale;
-   info.color_format       = video->rgb32 ? RARCH_COLOR_FORMAT_ARGB8888 : RARCH_COLOR_FORMAT_XRGB1555;
+   info.color_format       = video->rgb32 ? RARCH_COLOR_FORMAT_XRGB8888 : RARCH_COLOR_FORMAT_RGB565;
    info.xml_shader         = xml_shader;
    info.cg_shader          = cg_shader;
    info.ttf_font           = font;

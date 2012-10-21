@@ -24,7 +24,7 @@ extern "C" {
 #define RARCH_API_CALLTYPE
 #endif
 
-#define RARCH_GRAPHICS_API_VERSION 4
+#define RARCH_GRAPHICS_API_VERSION 5
 
 // Since we don't want to rely on C++ or C99 for a proper boolean type,
 // make sure return semantics are perfectly clear ... ;)
@@ -45,8 +45,8 @@ extern "C" {
 #define RARCH_FALSE 0
 #endif
 
-#define RARCH_COLOR_FORMAT_XRGB1555 0
-#define RARCH_COLOR_FORMAT_ARGB8888 1
+#define RARCH_COLOR_FORMAT_RGB565 0
+#define RARCH_COLOR_FORMAT_XRGB8888 1
 
 #define RARCH_INPUT_SCALE_BASE 256
 
