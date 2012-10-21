@@ -253,7 +253,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
       return;
 #endif
 
-   if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
+   if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555 && data)
    {
       RARCH_PERFORMANCE_INIT(video_frame_conv);
       RARCH_PERFORMANCE_START(video_frame_conv);
