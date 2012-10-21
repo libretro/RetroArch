@@ -135,12 +135,6 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
          break;
    }
 
-   if (lines == 0 || fbWidth == 0)
-   {
-      VIDEO_GetPreferredMode(&gx_mode);
-      goto config;
-   }
-
    if (lines <= max_height / 2)
    {
       modetype = VI_NON_INTERLACE;
@@ -149,6 +143,12 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    else
    {
       modetype = (progressive) ? VI_PROGRESSIVE : VI_INTERLACE;
+   }
+
+   if (lines == 0 || fbWidth == 0)
+   {
+      VIDEO_GetPreferredMode(&gx_mode);
+      goto config;
    }
 
    if (lines > max_height)
@@ -236,6 +236,7 @@ config:
    GX_SetFieldMode(gx_mode.field_rendering, (gx_mode.viHeight == 2 * gx_mode.xfbHeight) ? GX_ENABLE : GX_DISABLE);
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
    GX_InvalidateTexAll();
+   GX_Flush();
 
    g_current_framebuf = 0;
 }
@@ -280,7 +281,7 @@ static void init_texture(unsigned width, unsigned height)
 {
    unsigned g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
 
-   GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjLOD(&g_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_InitTexObj(&menu_tex.obj, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjLOD(&menu_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
@@ -439,7 +440,7 @@ static void gx_start(void)
 #ifdef ASM_BLITTER
 
 static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src, const uint32_t *dst,
-      unsigned width, unsigned height, unsigned pitch, unsigned ormask)
+      unsigned width, unsigned height, unsigned pitch)
 {
    register uint32_t tmp0, tmp1, tmp2, tmp3, line2, line2b, line3, line3b, line4, line4b, line5;
 
@@ -461,31 +462,23 @@ static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src, c
       "     mr       %[tmp0],    %[src]                  \n"
 
       "1:   lwz      %[tmp1],    0(%[src])               \n"
-      "     or       %[tmp1],    %[tmp1],    %[ormask]   \n"
       "     stwu     %[tmp1],    8(%[dst])               \n"
       "     lwz      %[tmp2],    4(%[src])               \n"
-      "     or       %[tmp2],    %[tmp2],    %[ormask]   \n"
       "     stwu     %[tmp2],    8(%[tmp3])              \n"
 
       "     lwzx     %[tmp1],    %[line2],   %[src]      \n"
-      "     or       %[tmp1],    %[tmp1],    %[ormask]   \n"
       "     stwu     %[tmp1],    8(%[dst])               \n"
       "     lwzx     %[tmp2],    %[line2b],  %[src]      \n"
-      "     or       %[tmp2],    %[tmp2],    %[ormask]   \n"
       "     stwu     %[tmp2],    8(%[tmp3])              \n"
 
       "     lwzx     %[tmp1],    %[line3],   %[src]      \n"
-      "     or       %[tmp1],    %[tmp1],    %[ormask]   \n"
       "     stwu     %[tmp1],    8(%[dst])               \n"
       "     lwzx     %[tmp2],    %[line3b],  %[src]      \n"
-      "     or       %[tmp2],    %[tmp2],    %[ormask]   \n"
       "     stwu     %[tmp2],    8(%[tmp3])              \n"
 
       "     lwzx     %[tmp1],    %[line4],   %[src]      \n"
-      "     or       %[tmp1],    %[tmp1],    %[ormask]   \n"
       "     stwu     %[tmp1],    8(%[dst])               \n"
       "     lwzx     %[tmp2],    %[line4b],  %[src]      \n"
-      "     or       %[tmp2],    %[tmp2],    %[ormask]   \n"
       "     stwu     %[tmp2],    8(%[tmp3])              \n"
 
       "     addi     %[src],     %[src],     8           \n"
@@ -509,8 +502,7 @@ static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src, c
       :  [src]    "b"   (src),
          [width]  "b"   (width),
          [height] "b"   (height),
-         [pitch]  "b"   (pitch),
-         [ormask] "b"   (ormask)
+         [pitch]  "b"   (pitch)
    );
 }
 
@@ -522,14 +514,14 @@ static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src, c
    uint32_t *tmp_dst = dst; \
    for (unsigned x = 0; x < width2; x += 8, tmp_src += 8, tmp_dst += 32) \
    { \
-      tmp_dst[ 0 + off] = RGB15toRGB5A3(tmp_src[0]); \
-      tmp_dst[ 1 + off] = RGB15toRGB5A3(tmp_src[1]); \
-      tmp_dst[ 8 + off] = RGB15toRGB5A3(tmp_src[2]); \
-      tmp_dst[ 9 + off] = RGB15toRGB5A3(tmp_src[3]); \
-      tmp_dst[16 + off] = RGB15toRGB5A3(tmp_src[4]); \
-      tmp_dst[17 + off] = RGB15toRGB5A3(tmp_src[5]); \
-      tmp_dst[24 + off] = RGB15toRGB5A3(tmp_src[6]); \
-      tmp_dst[25 + off] = RGB15toRGB5A3(tmp_src[7]); \
+      tmp_dst[ 0 + off] = tmp_src[0]; \
+      tmp_dst[ 1 + off] = tmp_src[1]; \
+      tmp_dst[ 8 + off] = tmp_src[2]; \
+      tmp_dst[ 9 + off] = tmp_src[3]; \
+      tmp_dst[16 + off] = tmp_src[4]; \
+      tmp_dst[17 + off] = tmp_src[5]; \
+      tmp_dst[24 + off] = tmp_src[6]; \
+      tmp_dst[25 + off] = tmp_src[7]; \
    } \
    src2 += tmp_pitch; \
 }
@@ -543,7 +535,7 @@ static void update_texture(const uint32_t *src,
 #ifdef ASM_BLITTER
       if (width && height && !(width & 3) && !(height & 3))
       {
-         update_texture_asm(src, g_tex.data, width, height, pitch, 0x80008000U);
+         update_texture_asm(src, g_tex.data, width, height, pitch);
       }
       else
 #endif
@@ -559,13 +551,10 @@ static void update_texture(const uint32_t *src,
          uint32_t *dst = g_tex.data;
          for (unsigned i = 0; i < height; i += 4, dst += 4 * width2)
          {
-            // Set MSB to get full RGB555.
-#define RGB15toRGB5A3(col) ((col) | 0x80008000u)
             BLIT_LINE(0)
             BLIT_LINE(2)
             BLIT_LINE(4)
             BLIT_LINE(6)
-#undef RGB15toRGB5A3
          }
       }
    }
@@ -573,7 +562,7 @@ static void update_texture(const uint32_t *src,
    if(gx->menu_render)
    {
 #ifdef ASM_BLITTER
-      update_texture_asm(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2, 0x00000000U);
+      update_texture_asm(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2);
 #else
       unsigned tmp_pitch = (RGUI_WIDTH * 2) >> 2;
       unsigned width2 = RGUI_WIDTH >> 1;
@@ -582,12 +571,10 @@ static void update_texture(const uint32_t *src,
       uint32_t *dst = menu_tex.data;
       for (unsigned i = 0; i < RGUI_HEIGHT; i += 4, dst += 4 * width2)
       {
-#define RGB15toRGB5A3(col) (col)
          BLIT_LINE(0)
          BLIT_LINE(2)
          BLIT_LINE(4)
          BLIT_LINE(6)
-#undef RGB15toRGB5A3
       }
 #endif
    }

@@ -200,6 +200,14 @@ DRIVERS
 #include "../../driver.c"
 
 /*============================================================
+SCALERS
+============================================================ */
+#include "../../gfx/scaler/filter.c"
+#include "../../gfx/scaler/pixconv.c"
+#include "../../gfx/scaler/scaler.c"
+#include "../../gfx/scaler/scaler_int.c"
+
+/*============================================================
 FIFO BUFFER
 ============================================================ */
 #include "../../fifo_buffer.c"

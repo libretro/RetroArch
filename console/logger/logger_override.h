@@ -26,6 +26,10 @@
    logger_send("RetroArch Salamander: " __VA_ARGS__); \
 } while(0)
 
+#define RARCH_LOG_OUTPUT(...) do { \
+   logger_send("RetroArch Salamander [OUTPUT] :: " __VA_ARGS__); \
+} while(0)
+
 #define RARCH_ERR(...) do { \
    logger_send("RetroArch Salamander [ERROR] :: " __VA_ARGS__); \
 } while(0)
@@ -46,6 +50,10 @@
 
 #define RARCH_WARN(...) do { \
    logger_send("RetroArch [WARN] :: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_LOG_OUTPUT(...) do { \
+   logger_send("RetroArch [OUTPUT] :: " __VA_ARGS__); \
 } while(0)
 
 #endif
@@ -76,6 +84,13 @@ extern FILE * log_fp;
    } while (0)
 #endif
 
+#ifndef RARCH_LOG_OUTPUT
+#define RARCH_LOG_OUTPUT(...) do { \
+      fprintf(log_fp, "RetroArch Salamander [OUTPUT] :: " __VA_ARGS__); \
+      fflush(log_fp); \
+   } while (0)
+#endif
+
 #else
 
 #ifndef RARCH_LOG
@@ -95,6 +110,13 @@ extern FILE * log_fp;
 #ifndef RARCH_WARN
 #define RARCH_WARN(...) do { \
       fprintf(log_fp, "RetroArch [WARN] :: " __VA_ARGS__); \
+      fflush(log_fp); \
+   } while (0)
+#endif
+
+#ifndef RARCH_LOG_OUTPUT
+#define RARCH_LOG_OUTPUT(...) do { \
+      fprintf(log_fp, "RetroArch [OUTPUT] :: " __VA_ARGS__); \
       fflush(log_fp); \
    } while (0)
 #endif
