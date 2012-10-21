@@ -41,28 +41,31 @@ static float gfx_ctx_get_aspect_ratio(void)
 
 static void gfx_ctx_set_swap_interval(unsigned interval)
 {
+   RARCH_LOG("gfx_ctx_set_swap_interval(%d).\n", interval);
    eglSwapInterval(g_egl_dpy, interval);
 }
 
 static void gfx_ctx_destroy(void)
 {
-    eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglDestroyContext(g_egl_dpy, g_egl_ctx);
-    eglDestroySurface(g_egl_dpy, g_egl_surf);
-    eglTerminate(g_egl_dpy);
-   
-    g_egl_dpy = EGL_NO_DISPLAY;
-    g_egl_surf = EGL_NO_SURFACE;
-    g_egl_ctx = EGL_NO_CONTEXT;
-    g_config   = 0;
+   RARCH_LOG("gfx_ctx_destroy().\n");
+   eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+   eglDestroyContext(g_egl_dpy, g_egl_ctx);
+   eglDestroySurface(g_egl_dpy, g_egl_surf);
+   eglTerminate(g_egl_dpy);
 
-    g_android.width = 0;
-    g_android.height = 0;
-    g_android.animating = 0;
+   g_egl_dpy = EGL_NO_DISPLAY;
+   g_egl_surf = EGL_NO_SURFACE;
+   g_egl_ctx = EGL_NO_CONTEXT;
+   g_config   = 0;
+
+   g_android.width = 0;
+   g_android.height = 0;
+   g_android.animating = 0;
 }
 
 static bool gfx_ctx_init(void)
 {
+   RARCH_LOG("gfx_ctx_init().\n");
    const EGLint attribs[] = {
 	EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -70,80 +73,60 @@ static bool gfx_ctx_init(void)
         EGL_GREEN_SIZE, 8,
         EGL_RED_SIZE, 8,
         EGL_NONE
-    };
-    EGLConfig config;    
-    EGLint numConfigs;
-    EGLint format;
-    EGLint width;
-    EGLint height;
-    GLfloat ratio;
+   };
+   EGLConfig config;    
+   EGLint num_config;
+   EGLint egl_version_major, egl_version_minor;
+   EGLint format;
+   EGLint width;
+   EGLint height;
+   GLfloat ratio;
+
+   EGLint context_attributes[] = {
+      EGL_CONTEXT_CLIENT_VERSION, 2,
+      EGL_NONE
+   };
+
+   RARCH_LOG("Initializing context\n");
    
-    RARCH_LOG("Initializing context\n");
-   
-    if ((g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY) {
-        RARCH_ERR("eglGetDisplay() returned error %d.\n", eglGetError());
-        return false;
-    }
+   if ((g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY)
+      goto error;
 
-    EGLint egl_major, egl_minor;
-    if (!eglInitialize(g_egl_dpy, &egl_major, &egl_minor)) {
-        RARCH_ERR("eglInitialize() returned error %d.\n", eglGetError());
-        return false;
-    }
+   if (!eglInitialize(g_egl_dpy, &egl_version_major, &egl_version_minor))
+      goto error;
 
-    RARCH_LOG("[ANDROID/EGL]: EGL version: %d.%d\n", egl_major, egl_minor);
+   RARCH_LOG("[ANDROID/EGL]: EGL version: %d.%d\n", egl_version_major, egl_version_minor);
 
-    EGLint num_configs;
-    if (!eglChooseConfig(g_egl_dpy, attribs, &g_config, 1, &numConfigs)) {
-        RARCH_ERR("eglChooseConfig() returned error %d.\n", eglGetError());
-        gfx_ctx_destroy();
-        return false;
-    }
+   if (!eglChooseConfig(g_egl_dpy, attribs, &g_config, 1, &num_config))
+      goto error;
 
-    if (!eglGetConfigAttrib(g_egl_dpy, config, EGL_NATIVE_VISUAL_ID, &format)) {
-        RARCH_ERR("eglGetConfigAttrib() returned error %d.\n", eglGetError());
-        gfx_ctx_destroy();
-        return false;
-    }
+   if (!eglGetConfigAttrib(g_egl_dpy, config, EGL_NATIVE_VISUAL_ID, &format))
+      goto error;
 
-    ANativeWindow_setBuffersGeometry(g_android.app->window, 0, 0, format);
+   ANativeWindow_setBuffersGeometry(g_android.app->window, 0, 0, format);
 
-    if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, config, g_android.app->window, 0))) {
-        RARCH_ERR("eglCreateWindowSurface() returned error %d.\n", eglGetError());
-        gfx_ctx_destroy();
-        return false;
-    }
+   if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, config, g_android.app->window, 0)))
+      goto error;
 
-    EGLint ctx_attribs[] =
-    {
-       EGL_CONTEXT_CLIENT_VERSION, 2,
-       EGL_NONE
-    };
-   
-    if (!(g_egl_ctx = eglCreateContext(g_egl_dpy, config, 0, ctx_attribs))) {
-        RARCH_ERR("eglCreateContext() returned error %d.\n", eglGetError());
-        gfx_ctx_destroy();
-        return false;
-    }
-   
-    if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx)) {
-        RARCH_ERR("eglMakeCurrent() returned error %d.\n", eglGetError());
-        gfx_ctx_destroy();
-        return false;
-    }
+   if (!(g_egl_ctx = eglCreateContext(g_egl_dpy, config, 0, context_attributes)))
+      goto error;
 
-    if (!eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &width) ||
-        !eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &height)) {
-        RARCH_ERR("eglQuerySurface() returned error %d.\n", eglGetError());
-        gfx_ctx_destroy();
-        return false;
-    }
+   if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
+      goto error;
 
-    g_android.width = width;
-    g_android.height = height;
-    g_android.state.angle = 0;
+   if (!eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &width) ||
+      !eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &height))
+      goto error;
 
-    return true;
+   g_android.width = width;
+   g_android.height = height;
+   g_android.state.angle = 0;
+
+   return true;
+
+error:
+   gfx_ctx_destroy();
+   return false;
 }
 
 static void gfx_ctx_swap_buffers(void)
@@ -248,8 +231,7 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 
    if (g_egl_dpy)
    {
-      EGLint gl_width;
-      EGLint gl_height;
+      EGLint gl_width, gl_height;
       eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &gl_width);
       eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &gl_height);
       *width = gl_width;

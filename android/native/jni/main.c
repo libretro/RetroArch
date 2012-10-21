@@ -36,21 +36,37 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
    switch (cmd)
    {
       case APP_CMD_SAVE_STATE:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_SAVE_STATE.\n");
          // The system has asked us to save our current state.  Do so.
          g_android.app->savedState = malloc(sizeof(struct saved_state));
 	 *((struct saved_state*)g_android.app->savedState) = g_android.state;
 	 g_android.app->savedStateSize = sizeof(struct saved_state);
 	 break;
       case APP_CMD_INIT_WINDOW:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_INIT_WINDOW.\n");
 	 // The window is being shown, get it ready.
 	 if (g_android.app->window != NULL)
             g_android.window_inited = true;
 	 break;
-      case APP_CMD_TERM_WINDOW:
-	 // The window is being hidden or closed, clean it up.
+      case APP_CMD_START:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_START.\n");
+         break;
+      case APP_CMD_RESUME:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_RESUME.\n");
+         break;
+      case APP_CMD_STOP:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_STOP.\n");
+         break;
+      case APP_CMD_PAUSE:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_PAUSE.\n");
 	 g_android.init_quit = true;
+         break;
+      case APP_CMD_TERM_WINDOW:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_TERM_WINDOW.\n");
+	 // The window is being hidden or closed, clean it up.
 	 break;
       case APP_CMD_GAINED_FOCUS:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_GAINED_FOCUS.\n");
 	 // When our app gains focus, we start monitoring the accelerometer.
 #if 0
 	 if (g_android.accelerometerSensor != NULL)
@@ -65,6 +81,7 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
 #endif
 	 break;
       case APP_CMD_LOST_FOCUS:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_LOST_FOCUS.\n");
 	 // When our app loses focus, we stop monitoring the accelerometer.
 	 // This is to avoid consuming battery while not being used.
 	 if (!g_android.window_inited)
@@ -202,4 +219,5 @@ void android_main(struct android_app* state)
    RARCH_LOG("Start RetroArch...\n");
 
    rarch_main(argc, argv);
+   exit(0);
 }
