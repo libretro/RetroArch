@@ -94,7 +94,7 @@ const GLfloat *default_vertex_ptr = vertexes_flipped;
    memcpy(&(pgl##SYM), &sym, sizeof(sym)); \
 }
 
-#ifdef HAVE_EGL
+#if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
 static PFNGLEGLIMAGETARGETTEXTURE2DOESPROC pglEGLImageTargetTexture2DOES;
 
 static bool load_eglimage_proc(gl_t *gl)
