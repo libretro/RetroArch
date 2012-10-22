@@ -219,9 +219,9 @@ static bool gfx_ctx_menu_init(void)
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-   glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT,
+   glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
          menu_texture.width, menu_texture.height, 0,
-		   RARCH_GL_TEXTURE_TYPE, RARCH_GL_FORMAT32, menu_texture.pixels);
+		   RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, menu_texture.pixels);
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 

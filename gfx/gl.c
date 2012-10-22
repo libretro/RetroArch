@@ -911,7 +911,7 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
    glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
 }
 
-static void gl_init_textures(gl_t *gl)
+static void gl_init_textures(gl_t *gl, const video_info_t *video)
 {
    glGenTextures(TEXTURES, gl->texture);
 
