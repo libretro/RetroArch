@@ -102,7 +102,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    vg->driver->swap_interval(video->vsync ? 1 : 0);
 
-   vg->mTexType = video->rgb32 ? VG_sXRGB_8888 : VG_sARGB_1555;
+   vg->mTexType = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
    vg->mKeepAspect = video->force_aspect;
 
    unsigned win_width  = video->width;
@@ -133,12 +133,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
 
    vg->mTextureWidth = vg->mTextureHeight = video->input_scale * RARCH_SCALE_BASE;
-   // We can't use the native format because there's no sXRGB_1555 type and
-   // emulation cores can send 0 in the top bit. We lose some speed on
-   // conversion but I doubt it has any real affect, since we are only drawing
-   // one image at the end of the day. Don't keep the alpha channel for ARGB.
-   vg->mImage = vgCreateImage(VG_sXRGB_8888,
-         vg->mTextureWidth, vg->mTextureHeight,
+   vg->mImage = vgCreateImage(vg->mTexType, vg->mTextureWidth, vg->mTextureHeight,
          video->smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
    vg_set_nonblock_state(vg, !video->vsync);
 
