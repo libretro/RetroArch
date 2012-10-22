@@ -128,10 +128,8 @@ rarch_cmd_t *rarch_cmd_new(bool stdin_enable, bool network_enable, uint16_t port
    if (!handle)
       return NULL;
 
-   handle->net_fd       = -1;
-   handle->stdin_enable = stdin_enable;
-
 #ifdef HAVE_NETWORK_CMD
+   handle->net_fd = -1;
    if (network_enable && !cmd_init_network(handle, port))
       goto error;
 #else
@@ -140,6 +138,7 @@ rarch_cmd_t *rarch_cmd_new(bool stdin_enable, bool network_enable, uint16_t port
 #endif
 
 #ifdef HAVE_STDIN_CMD
+   handle->stdin_enable = stdin_enable;
    if (stdin_enable && !cmd_init_stdin(handle))
       goto error;
 #else
