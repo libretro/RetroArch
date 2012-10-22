@@ -274,7 +274,7 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #endif
 
 // Platform specific workarounds/hacks.
-#if defined(__CELLOS_LV2__) || defined(HAVE_OPENGLES)
+#if defined(__CELLOS_LV2__)
 #define NO_GL_READ_VIEWPORT
 #endif
 
