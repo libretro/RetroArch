@@ -233,9 +233,8 @@ typedef struct gl
 #ifdef RARCH_CONSOLE
    bool block_swap;
 #endif
-#ifdef HAVE_CG_MENU
-   bool menu_render;
-   GLuint menu_texture_id;
+#ifdef HAVE_RMENU
+   bool draw_rmenu;
 #endif
 
    bool egl_images;

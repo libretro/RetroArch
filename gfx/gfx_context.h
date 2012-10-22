@@ -96,9 +96,12 @@ typedef struct gfx_ctx_driver
    void (*set_filtering)(unsigned index, bool set_smooth);
    void (*get_available_resolutions)(void);
    int  (*check_resolution)(unsigned resolution_id);
-   bool (*menu_init)(void);
+   bool (*rmenu_init)(void);
    void (*set_fbo)(bool);
    void (*apply_fbo_state_changes)(unsigned);
+#endif
+#ifdef HAVE_RMENU
+   void (*rmenu_frame)(void *data);
 #endif
 } gfx_ctx_driver_t;
 

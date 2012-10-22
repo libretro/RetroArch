@@ -75,7 +75,7 @@ static void rmenu_ctx_ps3_init_textures(void)
 static void rmenu_ctx_ps3_free_textures(void)
 {
    gl_t *gl = driver.video_data;
-   gl->menu_render = false;
+   gl->draw_rmenu = false;
 }
 
 static void rmenu_ctx_ps3_render_selection_panel(rmenu_position_t *position)
@@ -134,7 +134,7 @@ static void rmenu_ctx_ps3_render_msg(float xpos, float ypos, float scale, unsign
 static void rmenu_ctx_ps3_render_menu_enable(bool enable)
 {
    gl_t *gl = driver.video_data;
-   gl->menu_render = enable;
+   gl->draw_rmenu = enable;
 }
 
 static void rmenu_ctx_ps3_screenshot_enable(bool enable)

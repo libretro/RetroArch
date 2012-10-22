@@ -43,9 +43,6 @@
 #include "shader_glsl.h"
 #endif
 
-extern const GLfloat vertexes_flipped[];
-extern const GLfloat white_color[];
-
 // Used for the last pass when rendering to the back buffer.
 const GLfloat vertexes_flipped[] = {
    0, 1,
@@ -1031,33 +1028,11 @@ static inline void gl_next_texture_index(gl_t *gl, const struct gl_tex_info *tex
    gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
 }
 
-static void gl_set_shader_viewport(gl_t *gl, unsigned shader)
+static inline void gl_set_shader_viewport(gl_t *gl, unsigned shader)
 {
    gl_shader_use(shader);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
-
-#ifdef HAVE_CG_MENU
-static void gl_render_menu(gl_t *gl)
-{
-   gl_shader_use(RARCH_CG_MENU_SHADER_INDEX);
-   gl_set_shader_viewport(gl, RARCH_CG_MENU_SHADER_INDEX);
-
-   gl_shader_set_params(gl->win_width, gl->win_height, gl->win_width, 
-         gl->win_height, gl->win_width, gl->win_height, gl->frame_count,
-         NULL, NULL, NULL, 0);
-
-   glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, gl->menu_texture_id);
-
-   gl->coords.vertex = default_vertex_ptr;
-
-   gl_shader_set_coords(&gl->coords, &gl->mvp);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-}
-#endif
 
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
@@ -1143,9 +1118,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
       gl->ctx_driver->swap_buffers();
 
-#ifdef HAVE_CG_MENU
-   if (gl->menu_render)
-      gl_render_menu(gl);
+#ifdef HAVE_RMENU
+   if (gl->draw_rmenu)
+      gl->ctx_driver->rmenu_frame(gl);
 #endif
 
    return true;
@@ -1311,7 +1286,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->full_y = gl->win_height;
    }
 
-#if defined(HAVE_CG_MENU)
+#if defined(HAVE_RMENU) && defined(HAVE_CG)
    RARCH_LOG("Initializing menu shader ...\n");
    gl_cg_set_menu_shader(default_paths.menu_shader_file);
 #endif
@@ -1520,6 +1495,19 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 }
 #endif
 
+static void gl_init_menu(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+
+#ifdef HAVE_RMENU
+   RARCH_LOG("Initializing menu shader...\n");
+   if (gl->ctx_driver->rmenu_init)
+      gl->ctx_driver->rmenu_init();
+#else
+   (void)gl;
+#endif
+}
+
 #ifdef RARCH_CONSOLE
 static void gl_start(void)
 {
@@ -1542,8 +1530,8 @@ static void gl_start(void)
 
    gl->ctx_driver->set_fbo(g_settings.video.fbo.enable);
    gl->ctx_driver->get_available_resolutions();
-   if (gl->ctx_driver->menu_init)
-      gl->ctx_driver->menu_init();
+
+   gl_init_menu(gl);
 
 #ifdef HAVE_FBO
 // FBO mode has to be enabled once even if FBO mode has to be 
@@ -1574,8 +1562,8 @@ static void gl_restart(void)
 #ifdef RARCH_CONSOLE
    bool should_block_swap = gl->block_swap;
 #endif
-#ifdef HAVE_CG_MENU
-   bool should_menu_render = gl->menu_render;
+#ifdef HAVE_RMENU
+   bool should_draw_rmenu = gl->draw_rmenu;
 #endif
 
    gl_stop();
@@ -1584,8 +1572,8 @@ static void gl_restart(void)
 #endif
    gl_start();
 
-#ifdef HAVE_CG_MENU
-   gl->menu_render = should_menu_render;
+#ifdef HAVE_RMENU
+   gl->draw_rmenu = should_draw_rmenu;
 #endif
 
    gl->frame_count = 0;

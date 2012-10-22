@@ -32,7 +32,8 @@
 
 #include "../gfx_context.h"
 
-#ifdef HAVE_CG_MENU
+#if defined(HAVE_RMENU)
+GLuint menu_texture_id;
 static struct texture_image menu_texture;
 #endif
 
@@ -196,15 +197,15 @@ static void gfx_ctx_set_blend(bool enable)
 
 static void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 
-static bool gfx_ctx_menu_init(void)
+static bool gfx_ctx_rmenu_init(void)
 {
    gl_t *gl = driver.video_data;
 
    if (!gl)
       return false;
 
-#ifdef HAVE_CG_MENU
-   glGenTextures(1, &gl->menu_texture_id);
+#ifdef HAVE_RMENU
+   glGenTextures(1, &menu_texture_id);
 
    RARCH_LOG("Loading texture image for menu...\n");
    if (!texture_image_load(default_paths.menu_border_file, &menu_texture))
@@ -213,7 +214,7 @@ static bool gfx_ctx_menu_init(void)
       return false;
    }
 
-   glBindTexture(GL_TEXTURE_2D, gl->menu_texture_id);
+   glBindTexture(GL_TEXTURE_2D, menu_texture_id);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -230,6 +231,68 @@ static bool gfx_ctx_menu_init(void)
 	
    return true;
 }
+
+#if defined(HAVE_CG) && defined(HAVE_RMENU)
+static void gfx_ctx_rmenu_frame(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+
+   const GLfloat vertexes_flipped[] = {
+	   0, 1,
+	   1, 1,
+	   0, 0,
+	   1, 0
+   };
+
+   gl_cg_use(RARCH_CG_MENU_SHADER_INDEX);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+
+   gl_cg_set_params(gl->win_width, gl->win_height, 
+         gl->win_width, gl->win_height, 
+         gl->win_width, gl->win_height, 
+         gl->frame_count, NULL, NULL, NULL, 0);
+
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, menu_texture_id);
+
+   gl->coords.vertex = vertexes_flipped;
+
+   gl_shader_set_coords(&gl->coords, &gl->mvp);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
+
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+}
+#elif defined(HAVE_GLSL) && defined(HAVE_RMENU)
+static void gfx_ctx_rmenu_frame(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+
+   const GLfloat vertexes_flipped[] = {
+	   0, 1,
+	   1, 1,
+	   0, 0,
+	   1, 0
+   };
+
+   gl_glsl_use(RARCH_CG_MENU_SHADER_INDEX);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+
+   gl_glsl_set_params(gl->win_width, gl->win_height, 
+         gl->win_width, gl->win_height, 
+         gl->win_width, gl->win_height, 
+         gl->frame_count, NULL, NULL, NULL, 0);
+
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, menu_texture_id);
+
+   gl->coords.vertex = vertexes_flipped;
+
+   gl_shader_set_coords(&gl->coords, &gl->mvp);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
+
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+}
+#endif
 
 static void gfx_ctx_update_window_title(bool reset) { }
 
@@ -412,13 +475,16 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_get_available_resolutions,
    gfx_ctx_check_resolution,
 
-#ifdef HAVE_CG_MENU
-   gfx_ctx_menu_init,
+#ifdef HAVE_RMENU
+   gfx_ctx_rmenu_init,
 #else
    NULL,
 #endif
 
    gfx_ctx_set_fbo,
    gfx_ctx_apply_fbo_state_changes,
+#ifdef HAVE_RMENU
+   gfx_ctx_rmenu_frame
+#endif
 };
 
