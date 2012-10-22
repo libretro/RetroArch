@@ -695,7 +695,10 @@ static void set_paths(const char *path)
       RARCH_LOG("Redirecting save state to \"%s\".\n", g_extern.savestate_name);
    }
 
+#if !defined(RARCH_CONSOLE) || !defined(HAVE_RMENU)
+   /* we DON'T want the system directory overwritten for the consoles */
    fill_pathname_basedir(g_settings.system_directory, path, sizeof(g_settings.system_directory));
+#endif
 
 #ifdef HAVE_CONFIGFILE
    if (*g_extern.config_path && path_is_directory(g_extern.config_path))
