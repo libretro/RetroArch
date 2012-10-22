@@ -1495,18 +1495,16 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 }
 #endif
 
+#ifdef HAVE_RMENU
 static void gl_init_menu(void *data)
 {
    gl_t *gl = (gl_t*)data;
 
-#ifdef HAVE_RMENU
    RARCH_LOG("Initializing menu shader...\n");
    if (gl->ctx_driver->rmenu_init)
       gl->ctx_driver->rmenu_init();
-#else
-   (void)gl;
-#endif
 }
+#endif
 
 #ifdef RARCH_CONSOLE
 static void gl_start(void)
