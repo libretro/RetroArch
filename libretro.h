@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <limits.h>
 
 // Hack applied for MSVC when compiling in C89 mode as it isn't C99 compliant.
 #ifdef __cplusplus
@@ -380,7 +381,10 @@ enum retro_pixel_format
    // RGB565, native endian. This pixel format is the recommended format to use if a 15/16-bit format is desired
    // as it is the pixel format that is typically available on a wide range of low-power devices.
    // It is also natively supported in APIs like OpenGL ES.
-   RETRO_PIXEL_FORMAT_RGB565   = 2
+   RETRO_PIXEL_FORMAT_RGB565   = 2,
+
+   // Ensure sizeof() == sizeof(int).
+   RETRO_PIXEL_FORMAT_UNKNOWN  = INT_MAX
 };
 
 struct retro_message
