@@ -1515,47 +1515,21 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 
    GLint vp[4];
    glGetIntegerv(GL_VIEWPORT, vp);
-
-   glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(vp[2]));
+   glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(vp[2] * 3));
 
 #ifdef HAVE_OPENGLES
    glReadPixels(vp[0], vp[1],
          vp[2], vp[3],
          GL_RGB, GL_UNSIGNED_BYTE, buffer);
 
-   unsigned numbytes = vp[2] * vp[3];
-   unsigned count = numbytes / 4;
-   unsigned remainder = numbytes % 4;
-   uint32_t *pixels = (uint32_t *)buffer;
-   // convert RGB to BGR
-   for (unsigned i = 0; i <= count; pixels += 3, i++)
+   uint8_t *pixels = (uint8_t*)buffer;
+   unsigned num_pixels = vp[2] * vp[3];
+   // Convert RGB to BGR. Formats are byte ordered, so just swap 1st and 3rd byte.
+   for (unsigned i = 0; i <= num_pixels; pixels += 3, i++)
    {
-      uint8_t p[12];
-      memcpy(p, pixels, 12);
-      pixels[0] = p[2] | p[1] << 8 | p[0] << 16 | p[5] << 24;
-      pixels[1] = p[4] | p[3] << 8 | p[8] << 16 | p[7] << 24;
-      pixels[2] = p[6] | p[11] << 8 | p[10] << 16 | p[9] << 24;
-   }
-
-   uint8_t *rem = (uint8_t *)pixels;
-   uint8_t tmp;
-   switch (remainder)
-   {
-   case 3:
-      tmp = rem[8];
-      rem[6] = rem[8];
-      rem[8] = tmp;
-   case 2:
-      tmp = rem[5];
-      rem[3] = rem[5];
-      rem[5] = tmp;
-   case 1:
-      tmp = rem[2];
-      rem[2] = rem[0];
-      rem[0] = tmp;
-      break;
-   default:
-      break;
+      uint8_t tmp = pixels[2];
+      pixels[2] = pixels[0];
+      pixels[0] = tmp;
    }
 #else
    glPixelStorei(GL_PACK_ROW_LENGTH, vp[2]);
