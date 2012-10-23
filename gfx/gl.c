@@ -398,6 +398,8 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
    unsigned last_height = height;
    unsigned last_max_width = gl->tex_w;
    unsigned last_max_height = gl->tex_h;
+   GLint max_size;
+   glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
    // Calculate viewports for FBOs.
    for (int i = 0; i < gl->fbo_pass; i++)
    {
@@ -437,6 +439,26 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
 
          default:
             break;
+      }
+
+      if (gl->fbo_rect[i].img_width > max_size)
+      {
+         gl->fbo_rect[i].img_width = max_size;
+      }
+
+      if (gl->fbo_rect[i].img_height > max_size)
+      {
+         gl->fbo_rect[i].img_height = max_size;
+      }
+
+      if (gl->fbo_rect[i].max_img_width > max_size)
+      {
+         gl->fbo_rect[i].max_img_width = max_size;
+      }
+
+      if (gl->fbo_rect[i].max_img_height > max_size)
+      {
+         gl->fbo_rect[i].max_img_height = max_size;
       }
 
       last_width = gl->fbo_rect[i].img_width;
