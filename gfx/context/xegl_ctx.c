@@ -289,6 +289,8 @@ static bool gfx_ctx_set_video_mode(
          g_should_reset_mode = true;
          true_full = true;
       }
+      else
+         RARCH_ERR("[X/EGL]: Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
 
    if (g_settings.video.monitor_index)
