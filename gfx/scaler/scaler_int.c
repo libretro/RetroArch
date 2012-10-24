@@ -103,7 +103,7 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
 void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int stride)
 {
    const uint64_t *input = ctx->scaled.frame;
-   uint32_t *output = output_;
+   uint32_t *output = (uint32_t*)output_;
 
    const int16_t *filter_vert = ctx->vert.filter;
 
@@ -204,7 +204,7 @@ void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input_, int
 #else
 void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input_, int stride)
 {
-   const uint32_t *input = input_;
+   const uint32_t *input = (uint32_t*)input_;
    uint64_t *output      = ctx->scaled.frame;
 
    for (int h = 0; h < ctx->scaled.height; h++, input += stride >> 2, output += ctx->scaled.stride >> 3)
