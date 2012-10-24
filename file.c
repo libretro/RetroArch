@@ -213,10 +213,7 @@ static ssize_t read_rom_file(FILE *file, void **buf)
    if (file == NULL) // stdin
    {
 #if defined(_WIN32) && !defined(_XBOX)
-//TODO: Warning on MSVC 2012 - warning C4996: 'setmode':
-//The POSIX name for this item is deprecated. Instead, 
-//use the ISO C++ conformant name: _setmode
-      setmode(0, O_BINARY);
+      _setmode(0, O_BINARY);
 #endif
 
       RARCH_LOG("Reading ROM from stdin ...\n");

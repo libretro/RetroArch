@@ -16,13 +16,12 @@
 
 // Win32/WGL context.
 
-// TODO: Rewrite initializer lists - not supported on MSVC 2010/2012
-
 #include "../../driver.h"
 #include "../gfx_context.h"
 #include "../gl_common.h"
 #include "../gfx_common.h"
 #include <windows.h>
+#include <string.h>
 
 #define IDI_ICON 1
 #define MAX_MONITORS 9
@@ -262,11 +261,8 @@ static bool gfx_ctx_set_video_mode(
    (void)bits;
 
    DWORD style;
-#if defined(_WIN32)
    MONITORINFOEX current_mon;
-#else
-   MONITORINFOEX current_mon = {{0}};
-#endif
+   memset(&current_mon, 0, sizeof(current_mon));
    current_mon.cbSize = sizeof(MONITORINFOEX);
    if (!g_last_hm)
       g_last_hm = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
@@ -385,11 +381,8 @@ static void gfx_ctx_destroy(void)
 
    if (g_restore_desktop)
    {
-#if defined(_WIN32)
       MONITORINFOEX current_mon;
-#else
-      MONITORINFOEX current_mon = {{0}};
-#endif
+      memset(&current_mon, 0, sizeof(current_mon));
       current_mon.cbSize = sizeof(MONITORINFOEX);
       GetMonitorInfo(g_last_hm, (MONITORINFO*)&current_mon);
       ChangeDisplaySettingsEx(current_mon.szDevice, NULL, NULL, 0, NULL);
