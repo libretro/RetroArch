@@ -213,7 +213,6 @@ static void gfx_ctx_set_resize(unsigned width, unsigned height)
 static void gfx_ctx_update_window_title(bool reset)
 {
    (void)reset;
-#if 0
    if (reset)
       gfx_window_title_reset();
 
@@ -221,7 +220,6 @@ static void gfx_ctx_update_window_title(bool reset)
 
    if (gfx_window_title(buf, sizeof(buf)))
       RARCH_LOG("%s.\n", buf);
-#endif
 }
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)

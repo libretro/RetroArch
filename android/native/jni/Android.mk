@@ -1,11 +1,12 @@
 RARCH_VERSION		= "0.9.7"
 LOCAL_PATH := $(call my-dir)
-PERF_TEST := 1
+PERF_TEST := 0
 
 include $(CLEAR_VARS)
 
 ifeq ($(TARGET_ARCH),arm)
 LOCAL_CFLAGS += -DANDROID_ARM -marm
+LOCAL_ARM_MODE := arm
 endif
 
 ifeq ($(TARGET_ARCH),x86)
