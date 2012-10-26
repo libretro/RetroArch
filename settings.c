@@ -766,7 +766,7 @@ static struct retro_keybind *find_retro_bind(unsigned port, int id)
 
 static int find_sk_bind(const char *str)
 {
-   for (size_t i = 0; i < sizeof(sk_map) / sizeof(struct key_map); i++)
+   for (size_t i = 0; i < ARRAY_SIZE(sk_map); i++)
    {
       if (strcasecmp(sk_map[i].str, str) == 0)
          return sk_map[i].key;
@@ -903,7 +903,7 @@ static void save_keybind_key(config_file_t *conf,
       ascii[0] = 'a' + (bind->key - RETROK_a);
    else
    {
-      for (unsigned i = 0; i < sizeof(sk_map) / sizeof(sk_map[0]); i++)
+      for (unsigned i = 0; i < ARRAY_SIZE(sk_map); i++)
       {
          if (sk_map[i].key == bind->key)
          {

@@ -149,7 +149,7 @@ static const input_driver_t *input_drivers[] = {
 
 static void find_audio_driver(void)
 {
-   for (unsigned i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
+   for (unsigned i = 0; i < ARRAY_SIZE(audio_drivers); i++)
    {
       if (strcasecmp(g_settings.audio.driver, audio_drivers[i]->ident) == 0)
       {
@@ -159,7 +159,7 @@ static void find_audio_driver(void)
    }
    RARCH_ERR("Couldn't find any audio driver named \"%s\"\n", g_settings.audio.driver);
    RARCH_LOG_OUTPUT("Available audio drivers are:\n");
-   for (size_t i = 0; i < sizeof(audio_drivers) / sizeof(audio_driver_t*); i++)
+   for (size_t i = 0; i < ARRAY_SIZE(audio_drivers); i++)
       RARCH_LOG_OUTPUT("\t%s\n", audio_drivers[i]->ident);
 
    rarch_fail(1, "find_audio_driver()");
@@ -167,7 +167,7 @@ static void find_audio_driver(void)
 
 static void find_video_driver(void)
 {
-   for (unsigned i = 0; i < sizeof(video_drivers) / sizeof(video_driver_t*); i++)
+   for (unsigned i = 0; i < ARRAY_SIZE(video_drivers); i++)
    {
       if (strcasecmp(g_settings.video.driver, video_drivers[i]->ident) == 0)
       {
@@ -177,7 +177,7 @@ static void find_video_driver(void)
    }
    RARCH_ERR("Couldn't find any video driver named \"%s\"\n", g_settings.video.driver);
    RARCH_LOG_OUTPUT("Available video drivers are:\n");
-   for (size_t i = 0; i < sizeof(video_drivers) / sizeof(video_driver_t*); i++)
+   for (size_t i = 0; i < ARRAY_SIZE(video_drivers); i++)
       RARCH_LOG_OUTPUT("\t%s\n", video_drivers[i]->ident);
 
    rarch_fail(1, "find_video_driver()");
@@ -185,7 +185,7 @@ static void find_video_driver(void)
 
 static void find_input_driver(void)
 {
-   for (unsigned i = 0; i < sizeof(input_drivers) / sizeof(input_driver_t*); i++)
+   for (unsigned i = 0; i < ARRAY_SIZE(input_drivers); i++)
    {
       if (strcasecmp(g_settings.input.driver, input_drivers[i]->ident) == 0)
       {
@@ -195,7 +195,7 @@ static void find_input_driver(void)
    }
    RARCH_ERR("Couldn't find any input driver named \"%s\"\n", g_settings.input.driver);
    RARCH_LOG_OUTPUT("Available input drivers are:\n");
-   for (size_t i = 0; i < sizeof(input_drivers) / sizeof(input_driver_t*); i++)
+   for (size_t i = 0; i < ARRAY_SIZE(input_drivers); i++)
       RARCH_LOG_OUTPUT("\t%s\n", input_drivers[i]->ident);
 
    rarch_fail(1, "find_input_driver()");

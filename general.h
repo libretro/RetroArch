@@ -620,6 +620,7 @@ extern struct global g_extern;
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define RARCH_SCALE_BASE 256
 
 static inline uint32_t next_pow2(uint32_t v)
