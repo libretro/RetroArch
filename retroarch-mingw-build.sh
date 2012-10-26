@@ -116,8 +116,8 @@ do_build()
    mv -v "$ZIP_BASE" "../$ZIP_SLIM" || die "Failed to move final build ..."
 
    make -f Makefile.win clean || die "Failed to clean ..."
-   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" -j4 all || die "Failed to build ..."
-   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" dist_${BUILDTYPE} || die "Failed to dist ..."
+   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" HAVE_D3D9=1 -j4 all || die "Failed to build ..."
+   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" HAVE_D3D9=1 dist_${BUILDTYPE} || die "Failed to dist ..."
 
    if [ "$BUILD_PHOENIX_GUI" = "yes" ]; then
       zip "$ZIP_BASE" retroarch-phoenix.exe retroarch-phoenix.cfg
