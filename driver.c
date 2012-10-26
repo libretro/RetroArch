@@ -95,6 +95,9 @@ static const video_driver_t *video_drivers[] = {
 #if defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9))
    &video_xdk_d3d,
 #endif
+#if defined(HAVE_WIN32_D3D9)
+   &video_d3d9,
+#endif
 #ifdef HAVE_SDL
    &video_sdl,
 #endif

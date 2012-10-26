@@ -444,25 +444,25 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
             break;
       }
 
-      if (gl->fbo_rect[i].img_width > max_size)
+      if (gl->fbo_rect[i].img_width > (unsigned)max_size)
       {
          size_modified = true;
          gl->fbo_rect[i].img_width = max_size;
       }
 
-      if (gl->fbo_rect[i].img_height > max_size)
+      if (gl->fbo_rect[i].img_height > (unsigned)max_size)
       {
          size_modified = true;
          gl->fbo_rect[i].img_height = max_size;
       }
 
-      if (gl->fbo_rect[i].max_img_width > max_size)
+      if (gl->fbo_rect[i].max_img_width > (unsigned)max_size)
       {
          size_modified = true;
          gl->fbo_rect[i].max_img_width = max_size;
       }
 
-      if (gl->fbo_rect[i].max_img_height > max_size)
+      if (gl->fbo_rect[i].max_img_height > (unsigned)max_size)
       {
          size_modified = true;
          gl->fbo_rect[i].max_img_height = max_size;

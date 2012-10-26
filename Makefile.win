@@ -109,6 +109,15 @@ ifeq ($(HAVE_CG), 1)
    OBJ += gfx/shader_cg.o
    LIBS += -lcg -lcgGL
    DEFINES += -DHAVE_CG
+else
+   HAVE_D3D9 = 0
+endif
+
+ifeq ($(HAVE_D3D9), 1)
+   CXX_BUILD = 1
+   OBJ += gfx/d3d9/d3d9.o gfx/d3d9/render_chain.o
+   DEFINES += -DHAVE_WIN32_D3D9
+   LIBS += -ld3d9 -lcg -lcgD3D9 -ld3dx9 -ldxguid
 endif
 
 ifeq ($(HAVE_XAUDIO), 1)
@@ -227,6 +236,10 @@ $(TARGET): $(OBJ)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 	@$(if $(Q), $(shell echo echo CC $<),)
 
+%.o: %.cpp
+	$(Q)$(CXX) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	@$(if $(Q), $(shell echo echo CXX $<),)
+
 %.o: %.rc
 	$(Q)$(WINDRES) -o $@ $<
 	@$(if $(Q), $(shell echo echo WINDRES $<),)
@@ -247,6 +260,7 @@ clean:
 	rm -f conf/*.o
 	rm -f gfx/scaler/*.o
 	rm -f gfx/*.o
+	rm -f gfx/d3d9/*.o
 	rm -f gfx/context/*.o
 	rm -f gfx/math/*.o
 	rm -f gfx/fonts/*.o

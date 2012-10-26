@@ -294,6 +294,9 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #undef GL_UNPACK_ROW_LENGTH
 #endif
 
+extern const GLfloat vertexes_flipped[];
+extern const GLfloat white_color[];
+
 void gl_shader_use(unsigned index);
 void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate);
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate);
