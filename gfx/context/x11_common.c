@@ -97,7 +97,15 @@ void x11_move_window(Display *dpy, Window win, int x, int y,
          &xev);
 }
 
-void x11_set_window_icon(Display *dpy, Window win)
+static void x11_set_window_class(Display *dpy, Window win)
+{
+   XClassHint hint = {0};
+   hint.res_name = "retroarch";
+   hint.res_class = "retroarch";
+   XSetClassHint(dpy, win, &hint);
+}
+
+static void x11_set_window_icon(Display *dpy, Window win)
 {
    XA_INIT(_NET_WM_ICON);
 
@@ -129,6 +137,12 @@ void x11_set_window_icon(Display *dpy, Window win)
    }
    else
       RARCH_ERR("[X11]: Failed to load icon from: %s\n", path);
+}
+
+void x11_set_window_attr(Display *dpy, Window win)
+{
+   x11_set_window_icon(dpy, win);
+   x11_set_window_class(dpy, win);
 }
 
 void x11_suspend_screensaver(Window wnd)
