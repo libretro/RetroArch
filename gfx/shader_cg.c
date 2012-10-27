@@ -304,6 +304,7 @@ void gl_cg_set_params(unsigned width, unsigned height,
    // Set state parameters
    if (state_tracker)
    {
+      // Only query uniforms in first pass.
       static struct state_tracker_uniform info[MAX_VARIABLES];
       static unsigned cnt = 0;
 
