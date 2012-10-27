@@ -14,11 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <dlfcn.h>
 #include "android-general.h"
 #include "../../../general.h"
 #include "../../../driver.h"
 
 /* Process the next input event */
+static float (*AMotionEvent_getAxisValue)(const AInputEvent* motion_event, int32_t axis, size_t pointer_index) = 0;
 
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 {
@@ -34,7 +36,22 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 
 static void *android_input_init(void)
 {
+   void *libandroid = 0;
+
    g_android.app->onInputEvent = engine_handle_input;
+
+   /* check if libandroid can be opened */
+   if((libandroid = dlopen("/system/lib/libandroid.so", RTLD_LOCAL | RTLD_LAZY)) == 0)
+   {
+      RARCH_ERR("Unable to open library /system/lib/libandroid.so.\n");
+      return 0;
+   }
+
+   if((AMotionEvent_getAxisValue = (float (*)(const AInputEvent*, int32_t, size_t))dlsym(libandroid, "AMotionEvent_getAxisValue")) == 0)
+   {
+      RARCH_ERR("AMotionEvent_getAxisValue not available on your particular Android version.\n Joystick support will be disabled.\n");
+      return 0;
+   }
    return (void*)-1;
 }
 
