@@ -165,12 +165,9 @@ void RenderChain::add_lut(const std::string &id,
    luts.push_back(info);
 }
 
-void RenderChain::add_state_tracker(const std::string &program,
-      const std::string &py_class,
-      const std::vector<std::string> &uniforms)
+void RenderChain::add_state_tracker(std::shared_ptr<state_tracker_t> tracker)
 {
-   //tracker = std::unique_ptr<StateTracker>(new StateTracker(
-   //         program, py_class, uniforms, video_info));
+   this->tracker = tracker;
 }
 
 void RenderChain::start_render()
@@ -578,7 +575,7 @@ void RenderChain::render_pass(Pass &pass, unsigned pass_index)
    bind_prev(pass);
    bind_pass(pass, pass_index);
    bind_luts(pass);
-   bind_tracker(pass);
+   bind_tracker(pass, pass_index);
 
    dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
    if (SUCCEEDED(dev->BeginScene()))
@@ -1022,18 +1019,18 @@ void RenderChain::init_fvf(Pass &pass)
       throw std::runtime_error("Failed to set up FVF!");
 }
 
-void RenderChain::bind_tracker(Pass &pass)
+void RenderChain::bind_tracker(Pass &pass, unsigned pass_index)
 {
-#if 0
    if (!tracker)
       return;
 
-   auto res = tracker->get_uniforms(frame_count);
-   for (unsigned i = 0; i < res.size(); i++)
+   if (pass_index == 1)
+      uniform_cnt = state_get_uniform(tracker.get(), uniform_info, MAX_VARIABLES, frame_count);
+
+   for (unsigned i = 0; i < uniform_cnt; i++)
    {
-      set_cg_param(pass.fPrg, res[i].first.c_str(), res[i].second);
-      set_cg_param(pass.vPrg, res[i].first.c_str(), res[i].second);
+      set_cg_param(pass.fPrg, uniform_info[i].id, uniform_info[i].value);
+      set_cg_param(pass.vPrg, uniform_info[i].id, uniform_info[i].value);
    }
-#endif
 }
 

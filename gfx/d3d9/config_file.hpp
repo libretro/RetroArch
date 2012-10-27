@@ -61,6 +61,30 @@ class ConfigFile
          return false;
       }
 
+      bool get(const std::string& key, unsigned& out)
+      {
+         if (!conf) return false;
+         unsigned val;
+         if (config_get_uint(conf, key.c_str(), &val))
+         {
+            out = val;
+            return true;
+         }
+         return false;
+      }
+
+      bool get_hex(const std::string& key, unsigned& out)
+      {
+         if (!conf) return false;
+         unsigned val;
+         if (config_get_hex(conf, key.c_str(), &val))
+         {
+            out = val;
+            return true;
+         }
+         return false;
+      }
+
       bool get(const std::string& key, char& out)
       {
          if (!conf) return false;

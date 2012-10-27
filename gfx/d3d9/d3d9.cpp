@@ -17,9 +17,7 @@
 // It is written in C++11 (should be compat with MSVC 2010).
 // Might get rewritten in C99 if I have lots of time to burn.
 //
-// TODO: Integrate state tracker again.
 // TODO: Multi-monitor.
-// TODO: Window resize?
 
 #include "d3d9.hpp"
 #include "render_chain.hpp"
@@ -509,15 +507,113 @@ void D3DVideo::init_imports(ConfigFile &conf, const std::string &basedir)
 
    std::vector<std::string> list = tokenize(imports);
 
-   std::string path;
-   if (!conf.get("import_script", path))
-      throw std::runtime_error("Didn't find import_script!");
+   state_tracker_info tracker_info = {0};
+   std::vector<state_tracker_uniform_info> uniforms;
 
+   for (auto &elem : list)
+   {
+      state_tracker_uniform_info info;
+      std::memset(&info, 0, sizeof(info));
+      std::string semantic, wram, input_slot, mask, equal;
+
+      state_tracker_type tracker_type;
+      state_ram_type ram_type = RARCH_STATE_NONE;
+
+      conf.get(elem + "_semantic", semantic);
+      if (semantic == "capture")
+         tracker_type = RARCH_STATE_CAPTURE;
+      else if (semantic == "transition")
+         tracker_type = RARCH_STATE_TRANSITION;
+      else if (semantic == "transition_count")
+         tracker_type = RARCH_STATE_TRANSITION_COUNT;
+      else if (semantic == "capture_previous")
+         tracker_type = RARCH_STATE_CAPTURE_PREV;
+      else if (semantic == "transition_previous")
+         tracker_type = RARCH_STATE_TRANSITION_PREV;
+#ifdef HAVE_PYTHON
+      else if (semantic == "python")
+         tracker_type = RARCH_STATE_PYTHON;
+#endif
+      else
+         throw std::logic_error("Invalid semantic.");
+
+      unsigned addr = 0;
+#ifdef HAVE_PYTHON
+      if (tracker_type != RARCH_STATE_PYTHON)
+#endif
+      {
+         unsigned input_slot = 0;
+         if (conf.get_hex(elem + "_input_slot", input_slot))
+         {
+            switch (input_slot)
+            {
+               case 1:
+                  ram_type = RARCH_STATE_INPUT_SLOT1;
+                  break;
+
+               case 2:
+                  ram_type = RARCH_STATE_INPUT_SLOT2;
+                  break;
+
+               default:
+                  throw std::logic_error("Invalid input slot for import.");
+            }
+         }
+         else if (conf.get_hex(elem + "_wram", addr))
+            ram_type = RARCH_STATE_WRAM;
+         else
+            throw std::logic_error("No address assigned to semantic.");
+      }
+
+      unsigned memtype;
+      switch (ram_type)
+      {
+         case RARCH_STATE_WRAM:
+            memtype = RETRO_MEMORY_SYSTEM_RAM;
+            break;
+
+         default:
+            memtype = -1u;
+      }
+
+      if ((memtype != -1u) && (addr >= pretro_get_memory_size(memtype)))
+         throw std::logic_error("Semantic address out of bounds.");
+
+      unsigned bitmask = 0, bitequal = 0;
+      conf.get_hex(elem + "_mask", bitmask);
+      conf.get_hex(elem + "_equal", bitequal);
+
+      strlcpy(info.id, elem.c_str(), sizeof(info.id));
+      info.addr     = addr;
+      info.type     = tracker_type;
+      info.ram_type = ram_type;
+      info.mask     = bitmask;
+      info.equal    = bitequal;
+
+      uniforms.push_back(info);
+   }
+
+   tracker_info.wram = (uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+   tracker_info.info = uniforms.data();
+   tracker_info.info_elem = uniforms.size();
+
+   std::string py_path;
    std::string py_class;
-   if (!conf.get("import_script_class", py_class))
-      throw std::runtime_error("Didn't find import_script_class!");
+#ifdef HAVE_PYTHON
+   conf.get("import_script", py_path);
+   conf.get("import_script_class", py_class);
+   tracker_info.script_is_file = true;
+#endif
 
-   chain->add_state_tracker(basedir + path, py_class, list);
+   state_tracker_t *state_tracker = state_tracker_init(&tracker_info);
+   if (!state_tracker)
+      throw std::runtime_error("Failed to initialize state tracker.");
+
+   std::shared_ptr<state_tracker_t> tracker(state_tracker, [](state_tracker_t *tracker) {
+            state_tracker_free(tracker);
+         });
+
+   chain->add_state_tracker(tracker);
 }
 
 void D3DVideo::init_luts(ConfigFile &conf, const std::string &basedir)
@@ -560,8 +656,11 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
    size_t pos = basedir.rfind('/');
    if (pos == std::string::npos)
       pos = basedir.rfind('\\');
+
    if (pos != std::string::npos)
       basedir.replace(basedir.begin() + pos + 1, basedir.end(), "");
+   else
+      basedir = "./";
 
    bool use_extra_pass = false;
    bool use_first_pass_only = false;

@@ -17,6 +17,7 @@
 #define RENDER_CHAIN_HPP__
 
 #include "d3d9.hpp"
+#include "../state_tracker.h"
 #include <map>
 #include <utility>
 #include <memory>
@@ -56,9 +57,7 @@ class RenderChain
 
       void add_pass(const LinkInfo &info);
       void add_lut(const std::string &id, const std::string &path, bool smooth);
-      void add_state_tracker(const std::string &program,
-            const std::string &py_class,
-            const std::vector<std::string> &uniforms);
+      void add_state_tracker(std::shared_ptr<state_tracker_t> tracker);
 
       bool render(const void *data,
             unsigned width, unsigned height, unsigned pitch, unsigned rotation);
@@ -79,7 +78,10 @@ class RenderChain
 
       const video_info_t &video_info;
 
-      //std::unique_ptr<StateTracker> tracker;
+#define MAX_VARIABLES 64
+      std::shared_ptr<state_tracker_t> tracker;
+      struct state_tracker_uniform uniform_info[MAX_VARIABLES];
+      unsigned uniform_cnt;
 
       enum { Textures = 8, TexturesMask = Textures - 1 };
       struct
@@ -150,7 +152,7 @@ class RenderChain
       void bind_orig(Pass &pass);
       void bind_prev(Pass &pass);
       void bind_pass(Pass &pass, unsigned pass_index);
-      void bind_tracker(Pass &pass);
+      void bind_tracker(Pass &pass, unsigned pass_index);
       void unbind_all();
 
       void init_fvf(Pass &pass);
