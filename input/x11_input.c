@@ -208,6 +208,34 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
    }
 }
 
+static int16_t x_pointer_state(x11_input_t *x11, unsigned id)
+{
+   int16_t res_x = 0, res_y = 0;
+
+   bool valid = input_translate_coord_viewport(x11->mouse_x, x11->mouse_y, &res_x, &res_y);
+
+   if (!valid)
+      return 0;
+
+   bool inside = (res_x >= -0x7fff) && (res_x <= 0x7fff) &&
+      (res_y >= -0x7fff) && (res_y <= 0x7fff);
+
+   if (!inside)
+      return 0;
+
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_POINTER_X:
+         return res_x;
+      case RETRO_DEVICE_ID_POINTER_Y:
+         return res_y;
+      case RETRO_DEVICE_ID_POINTER_PRESSED:
+         return x11->mouse_l;
+      default:
+         return 0;
+   }
+}
+
 static int16_t x_lightgun_state(x11_input_t *x11, unsigned id)
 {
    switch (id)
@@ -250,6 +278,9 @@ static int16_t x_input_state(void *data, const struct retro_keybind **binds, uns
       case RETRO_DEVICE_MOUSE:
          return x_mouse_state(x11, id);
 
+      case RETRO_DEVICE_POINTER:
+         return x_pointer_state(x11, id);
+
       case RETRO_DEVICE_LIGHTGUN:
          return x_lightgun_state(x11, id);
 
@@ -284,8 +315,8 @@ static void x_input_poll_mouse(x11_input_t *x11)
             &win_x, &win_y,
             &mask);
 
-   x11->mouse_x = root_x;
-   x11->mouse_y = root_y;
+   x11->mouse_x = win_x;
+   x11->mouse_y = win_y;
    x11->mouse_l = mask & Button1Mask; 
    x11->mouse_m = mask & Button2Mask; 
    x11->mouse_r = mask & Button3Mask; 

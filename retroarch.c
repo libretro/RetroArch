@@ -91,10 +91,11 @@ static void set_fast_forward_button(bool new_button_state, bool new_hold_button_
 #if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
 static bool take_screenshot_viewport(void)
 {
+   struct rarch_viewport vp = {0};
    unsigned width = 0, height = 0;
-   video_viewport_size_func(&width, &height);
+   video_viewport_info_func(&vp);
 
-   if (!width || !height)
+   if (!vp.width || !vp.height)
       return false;
 
    uint8_t *buffer = (uint8_t*)malloc(width * height * 3);
@@ -110,7 +111,7 @@ static bool take_screenshot_viewport(void)
    // Data read from viewport is in bottom-up order, suitable for BMP.
    if (!screenshot_dump(g_settings.screenshot_directory,
          buffer,
-         width, height, width * 3, true))
+         vp.width, vp.height, vp.width * 3, true))
    {
       free(buffer);
       return false;
@@ -141,7 +142,7 @@ static void take_screenshot(void)
 
    bool ret = false;
 
-   if (g_settings.video.gpu_screenshot && driver.video->read_viewport && driver.video->viewport_size)
+   if (g_settings.video.gpu_screenshot && driver.video->read_viewport && driver.video->viewport_info)
       ret = take_screenshot_viewport();
    else if (g_extern.frame_cache.data)
       ret = take_screenshot_raw();
@@ -197,9 +198,9 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
 
    if (g_extern.record_gpu_buffer)
    {
-      unsigned gpu_w = 0, gpu_h = 0;
-      video_viewport_size_func(&gpu_w, &gpu_h);
-      if (!gpu_w || !gpu_h)
+      struct rarch_viewport vp = {0};
+      video_viewport_info_func(&vp);
+      if (!vp.width || !vp.height)
       {
          RARCH_WARN("Viewport size calculation failed! Will continue using raw data. This will probably not work right ...\n");
          free(g_extern.record_gpu_buffer);
@@ -210,7 +211,7 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
       }
 
       // User has resized. We're kinda fucked now.
-      if (gpu_w != g_extern.record_gpu_width || gpu_h != g_extern.record_gpu_height)
+      if (vp.width != g_extern.record_gpu_width || vp.height != g_extern.record_gpu_height)
       {
          static const char msg[] = "Recording terminated due to resize.";
          RARCH_WARN("%s\n", msg);
@@ -1262,10 +1263,10 @@ static void init_recording(void)
 
    if (g_settings.video.gpu_record && driver.video->read_viewport)
    {
-      unsigned width = 0, height = 0;
-      video_viewport_size_func(&width, &height);
+      struct rarch_viewport vp = {0};
+      video_viewport_info_func(&vp);
 
-      if (!width || !height)
+      if (!vp.width || !vp.height)
       {
          RARCH_ERR("Failed to get viewport information from video driver. "
                "Cannot start recording ...\n");
@@ -1273,19 +1274,24 @@ static void init_recording(void)
          return;
       }
 
-      params.out_width           = width;
-      params.out_height          = height;
-      params.fb_width            = next_pow2(width);
-      params.fb_height           = next_pow2(height);
-      params.aspect_ratio        = (float)width / height;
+      params.out_width           = vp.width;
+      params.out_height          = vp.height;
+      params.fb_width            = next_pow2(vp.width);
+      params.fb_height           = next_pow2(vp.height);
+
+      if (g_settings.video.force_aspect && (g_settings.video.aspect_ratio > 0.0f))
+         params.aspect_ratio  = g_settings.video.aspect_ratio;
+      else
+         params.aspect_ratio  = (float)vp.width / vp.height;
+
       params.pix_fmt             = FFEMU_PIX_BGR24;
-      g_extern.record_gpu_width  = width;
-      g_extern.record_gpu_height = height;
+      g_extern.record_gpu_width  = vp.width;
+      g_extern.record_gpu_height = vp.height;
 
       RARCH_LOG("Detected viewport of %u x %u\n",
-            width, height);
+            vp.width, vp.height);
 
-      g_extern.record_gpu_buffer = (uint8_t*)malloc(width * height * 3);
+      g_extern.record_gpu_buffer = (uint8_t*)malloc(vp.width * vp.height * 3);
       if (!g_extern.record_gpu_buffer)
       {
          RARCH_ERR("Failed to allocate GPU record buffer.\n");

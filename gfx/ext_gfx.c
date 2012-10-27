@@ -384,10 +384,15 @@ static void video_set_rotation(void *data, unsigned rot)
    ext->driver->set_rotation(ext->handle, rot);
 }
 
-static void video_viewport_size(void *data, unsigned *width, unsigned *height)
+static void video_viewport_info(void *data, struct rarch_viewport *vp)
 {
    ext_t *ext = (ext_t*)data;
-   ext->driver->viewport_size(ext->handle, width, height);
+
+   unsigned width = 0, height = 0;
+   ext->driver->viewport_size(ext->handle, &width, &height);
+   vp->x = vp->y = 0;
+   vp->width     = width;
+   vp->height    = height;
 }
 
 static bool video_read_viewport(void *data, uint8_t *buffer)
@@ -420,7 +425,7 @@ const video_driver_t video_ext = {
 #endif
 
    video_set_rotation,
-   video_viewport_size,
+   video_viewport_info,
    video_read_viewport,
 };
 

@@ -213,26 +213,26 @@ enum rarch_game_type
    RARCH_CART_SUFAMI
 };
 
-typedef struct
+typedef struct rarch_boolean_state
 {
    bool enable;
    unsigned value;
 } rarch_boolean_state_t;
 
-typedef struct
+typedef struct rarch_frame_count
 {
    bool is_expired;
    unsigned expire_frame;
    unsigned current;
 } rarch_frame_count_t;
 
-typedef struct
+typedef struct rarch_resolution
 {
    unsigned idx;
    unsigned id;
 } rarch_resolution_t;
 
-typedef struct
+typedef struct rarch_viewport
 {
    int x;
    int y;

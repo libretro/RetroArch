@@ -44,7 +44,7 @@ class D3DVideo
       bool focus() const;
       void set_nonblock_state(bool state);
       void set_rotation(unsigned rot);
-      void viewport_size(unsigned &width, unsigned &height);
+      void viewport_info(rarch_viewport &vp);
       bool read_viewport(uint8_t *buffer);
 
    private:

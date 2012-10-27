@@ -156,10 +156,12 @@ void D3DVideo::set_rotation(unsigned rot)
    rotation = rot;
 }
 
-void D3DVideo::viewport_size(unsigned &width, unsigned &height)
+void D3DVideo::viewport_size(rarch_viewport &vp)
 {
-   width  = final_viewport.Width;
-   height = final_viewport.Height;
+   vp.x      = final_viewport.X;
+   vp.y      = final_viewport.Y;
+   vp.width  = final_viewport.Width;
+   vp.height = final_viewport.Height;
 }
 
 bool D3DVideo::read_viewport(uint8_t *buffer)
@@ -981,9 +983,9 @@ static void d3d9_free(void *data)
    delete reinterpret_cast<D3DVideo*>(data);
 }
 
-static void d3d9_viewport_size(void *data, unsigned *width, unsigned *height)
+static void d3d9_viewport_info(void *data, struct rarch_viewport *vp)
 {
-   reinterpret_cast<D3DVideo*>(data)->viewport_size(*width, *height);
+   reinterpret_cast<D3DVideo*>(data)->viewport_info(*vp);
 }
 
 static bool d3d9_read_viewport(void *data, uint8_t *buffer)
@@ -1008,7 +1010,7 @@ const video_driver_t video_d3d9 = {
    "d3d9",
 
    d3d9_set_rotation,
-   d3d9_viewport_size,
+   d3d9_viewport_info,
    d3d9_read_viewport,
 };
 

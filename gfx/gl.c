@@ -689,11 +689,12 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full,
    }
 
    glViewport(x, y, width, height);
+   gl->vp.x      = x;
+   gl->vp.y      = y;
+   gl->vp.width  = width;
+   gl->vp.height = height;
 
    gl_set_projection(gl, &ortho, allow_rotate);
-
-   gl->vp_width  = width;
-   gl->vp_height = height;
 
    // Set last backbuffer viewport.
    if (!force_full)
@@ -808,7 +809,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
       gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
       gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
-            gl->vp_width, gl->vp_height, gl->frame_count, 
+            gl->vp.width, gl->vp.height, gl->frame_count, 
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
       gl_shader_set_coords(&gl->coords, &gl->mvp);
@@ -835,7 +836,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
    gl_shader_set_params(prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
-         gl->vp_width, gl->vp_height, gl->frame_count, 
+         gl->vp.width, gl->vp.height, gl->frame_count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
    gl->coords.vertex = vertex_ptr;
@@ -1121,7 +1122,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    glClear(GL_COLOR_BUFFER_BIT);
    gl_shader_set_params(width, height,
          gl->tex_w, gl->tex_h,
-         gl->vp_width, gl->vp_height,
+         gl->vp.width, gl->vp.height,
          gl->frame_count, 
          &tex_info, gl->prev_info, NULL, 0);
 
@@ -1498,24 +1499,17 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
 #endif
 
 #ifndef NO_GL_READ_VIEWPORT
-static void gl_viewport_size(void *data, unsigned *width, unsigned *height)
+static void gl_viewport_info(void *data, struct rarch_viewport *vp)
 {
-   (void)data;
-
-   GLint vp[4];
-   glGetIntegerv(GL_VIEWPORT, vp);
-
-   *width  = vp[2];
-   *height = vp[3];
+   gl_t *gl = (gl_t*)data;
+   *vp = gl->vp;
 }
 
 static bool gl_read_viewport(void *data, uint8_t *buffer)
 {
-   (void)data;
+   gl_t *gl = (gl_t*)data;
 
-   GLint vp[4];
-   glGetIntegerv(GL_VIEWPORT, vp);
-   glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(vp[2] * 3));
+   glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
 #ifdef HAVE_OPENGLES
    glReadPixels(vp[0], vp[1],
@@ -1523,7 +1517,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
          GL_RGB, GL_UNSIGNED_BYTE, buffer);
 
    uint8_t *pixels = (uint8_t*)buffer;
-   unsigned num_pixels = vp[2] * vp[3];
+   unsigned num_pixels = gl->vp.width * gl->vp.height;
    // Convert RGB to BGR. Formats are byte ordered, so just swap 1st and 3rd byte.
    for (unsigned i = 0; i <= num_pixels; pixels += 3, i++)
    {
@@ -1532,10 +1526,10 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       pixels[0] = tmp;
    }
 #else
-   glPixelStorei(GL_PACK_ROW_LENGTH, vp[2]);
+   glPixelStorei(GL_PACK_ROW_LENGTH, gl->vp.width);
 
-   glReadPixels(vp[0], vp[1],
-         vp[2], vp[3],
+   glReadPixels(gl->vp.x, gl->vp.y,
+         gl->vp.width, gl->vp.height,
          GL_BGR, GL_UNSIGNED_BYTE, buffer);
 #endif
 
@@ -1681,7 +1675,7 @@ const video_driver_t video_gl = {
    gl_set_rotation,
 
 #ifndef NO_GL_READ_VIEWPORT
-   gl_viewport_size,
+   gl_viewport_info,
    gl_read_viewport,
 #else
    NULL,

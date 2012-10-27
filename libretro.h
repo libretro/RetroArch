@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 // Used for checking API/ABI mismatches that can break libretro implementations.
-// It is not incremented for compatible changes.
+// It is not incremented for compatible changes to the API.
 #define RETRO_API_VERSION         1
 
 // Libretro's fundamental device abstractions.
@@ -49,6 +49,23 @@ extern "C" {
 // of [-0x8000, 0x7fff]. Positive X axis is right. Positive Y axis is down.
 // Only use ANALOG type when polling for analog values of the axes.
 #define RETRO_DEVICE_ANALOG       5
+
+// Abstracts the concept of a pointing mechanism, e.g. touch.
+// This allows libretro to query in absolute coordinates where on the screen a mouse (or something similar) is being placed.
+// For a touch centric device, coordinates reported are the coordinates of the press.
+//
+// Coordinates in X and Y are reported as:
+// [-0x7fff, 0x7fff]: -0x7fff corresponds to the far left/top of the screen,
+// and 0x7fff corresponds to the far right/bottom of the screen.
+// The "screen" is here defined as area that is passed to the frontend and later displayed on the monitor.
+// The frontend is free to scale/resize this screen as it sees fit, however,
+// (X, Y) = (-0x7fff, -0x7fff) will correspond to the top-left pixel of the game image, etc.
+//
+// To check if the pointer coordinates are valid (e.g. a touch display actually being touched),
+// PRESSED returns 1 or 0.
+// If using a mouse, PRESSED will usually correspond to the left mouse button.
+// PRESSED will only return 1 if the pointer is inside the game screen.
+#define RETRO_DEVICE_POINTER      6
 
 // These device types are specializations of the base types above.
 // They should only be used in retro_set_controller_type() to inform libretro implementations
@@ -100,6 +117,11 @@ extern "C" {
 #define RETRO_DEVICE_ID_LIGHTGUN_TURBO    4
 #define RETRO_DEVICE_ID_LIGHTGUN_PAUSE    5
 #define RETRO_DEVICE_ID_LIGHTGUN_START    6
+
+// Id values for POINTER.
+#define RETRO_DEVICE_ID_POINTER_X         0
+#define RETRO_DEVICE_ID_POINTER_Y         1
+#define RETRO_DEVICE_ID_POINTER_PRESSED   2
 
 // Returned from retro_get_region().
 #define RETRO_REGION_NTSC  0

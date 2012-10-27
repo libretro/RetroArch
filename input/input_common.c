@@ -148,3 +148,27 @@ bool input_joypad_hat_raw(const rarch_joypad_driver_t *driver,
    return driver->button(joypad, HAT_MAP(hat, hat_dir));
 }
 
+bool input_translate_coord_viewport(int mouse_x, int mouse_y,
+      int16_t *res_x, int16_t *res_y)
+{
+   struct rarch_viewport vp = {0};
+   if (driver.video->viewport_info)
+      video_viewport_info_func(&vp);
+   else
+      return false;
+
+   mouse_x -= vp.x;
+   mouse_y -= vp.y;
+
+   int scaled_x = (2 * mouse_x * 0x7fff) / (int)vp.width - 0x7fff;
+   int scaled_y = (2 * mouse_y * 0x7fff) / (int)vp.height - 0x7fff;
+   if (scaled_x < -0x7fff || scaled_x > 0x7fff)
+      scaled_x = -0x8000; // OOB
+   if (scaled_y < -0x7fff || scaled_y > 0x7fff)
+      scaled_y = -0x8000; // OOB
+
+   *res_x = scaled_x;
+   *res_y = scaled_y;
+   return true;
+}
+

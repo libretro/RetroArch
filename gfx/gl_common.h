@@ -202,8 +202,9 @@ typedef struct gl
 
    unsigned win_width;
    unsigned win_height;
-   unsigned vp_width, vp_out_width;
-   unsigned vp_height, vp_out_height;
+   struct rarch_viewport vp;
+   unsigned vp_out_width;
+   unsigned vp_out_height;
    unsigned last_width[TEXTURES];
    unsigned last_height[TEXTURES];
    unsigned tex_w, tex_h;
