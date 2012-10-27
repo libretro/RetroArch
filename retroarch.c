@@ -92,13 +92,12 @@ static void set_fast_forward_button(bool new_button_state, bool new_hold_button_
 static bool take_screenshot_viewport(void)
 {
    struct rarch_viewport vp = {0};
-   unsigned width = 0, height = 0;
    video_viewport_info_func(&vp);
 
    if (!vp.width || !vp.height)
       return false;
 
-   uint8_t *buffer = (uint8_t*)malloc(width * height * 3);
+   uint8_t *buffer = (uint8_t*)malloc(vp.width * vp.height * 3);
    if (!buffer)
       return false;
 
