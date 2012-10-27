@@ -156,7 +156,7 @@ void D3DVideo::set_rotation(unsigned rot)
    rotation = rot;
 }
 
-void D3DVideo::viewport_size(rarch_viewport &vp)
+void D3DVideo::viewport_info(rarch_viewport &vp)
 {
    vp.x      = final_viewport.X;
    vp.y      = final_viewport.Y;
