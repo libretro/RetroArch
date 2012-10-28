@@ -30,10 +30,16 @@ static LPDIRECTINPUT8 g_ctx;
 struct dinput_input
 {
    LPDIRECTINPUTDEVICE8 keyboard;
-   LPDIRECTINPUTDEVICE8 mouse; // TODO.
+   LPDIRECTINPUTDEVICE8 mouse;
    const rarch_joypad_driver_t *joypad;
    uint8_t state[256];
    int rk_to_di_lut[RETROK_LAST];
+
+   int mouse_rel_x;
+   int mouse_rel_y;
+   int mouse_x;
+   int mouse_y;
+   bool mouse_l, mouse_r, mouse_m;
 };
 
 struct dinput_joypad
@@ -195,15 +201,25 @@ static void *dinput_init(void)
 
 #ifdef __cplusplus
    if (FAILED(IDirectInput8_CreateDevice(g_ctx, GUID_SysKeyboard, &di->keyboard, NULL)))
+      goto error;
+   if (FAILED(IDirectInput8_CreateDevice(g_ctx, GUID_SysMouse, &di->mouse, NULL)))
+      goto error;
 #else
    if (FAILED(IDirectInput8_CreateDevice(g_ctx, &GUID_SysKeyboard, &di->keyboard, NULL)))
-#endif
       goto error;
+   if (FAILED(IDirectInput8_CreateDevice(g_ctx, &GUID_SysMouse, &di->mouse, NULL)))
+      goto error;
+#endif
 
    IDirectInputDevice8_SetDataFormat(di->keyboard, &c_dfDIKeyboard);
    IDirectInputDevice8_SetCooperativeLevel(di->keyboard,
          (HWND)driver.video_window, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
    IDirectInputDevice8_Acquire(di->keyboard);
+
+   IDirectInputDevice8_SetDataFormat(di->mouse, &c_dfDIMouse2);
+   IDirectInputDevice8_SetCooperativeLevel(di->mouse, (HWND)driver.video_window,
+         DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
+   IDirectInputDevice8_Acquire(di->mouse);
 
    init_lut(di->rk_to_di_lut);
    di->joypad = input_joypad_init_first();
@@ -221,13 +237,34 @@ static void dinput_poll(void *data)
    struct dinput_input *di = (struct dinput_input*)data;
 
    memset(di->state, 0, sizeof(di->state));
-   if (FAILED(IDirectInputDevice8_GetDeviceState(di->keyboard,
-               sizeof(di->state), di->state)))
+   if (FAILED(IDirectInputDevice8_GetDeviceState(di->keyboard, sizeof(di->state), di->state)))
    {
       IDirectInputDevice8_Acquire(di->keyboard);
       if (FAILED(IDirectInputDevice8_GetDeviceState(di->keyboard, sizeof(di->state), di->state)))
          memset(di->state, 0, sizeof(di->state));
    }
+
+   DIMOUSESTATE2 mouse_state;
+   memset(&mouse_state, 0, sizeof(mouse_state));
+   if (FAILED(IDirectInputDevice8_GetDeviceState(di->mouse, sizeof(mouse_state), &mouse_state)))
+   {
+      IDirectInputDevice8_Acquire(di->mouse);
+      if (FAILED(IDirectInputDevice8_GetDeviceState(di->mouse, sizeof(mouse_state), &mouse_state)))
+         memset(&mouse_state, 0, sizeof(mouse_state));
+   }
+
+   di->mouse_rel_x = mouse_state.lX;
+   di->mouse_rel_y = mouse_state.lY;
+   di->mouse_l = mouse_state.rgbButtons[0];
+   di->mouse_r = mouse_state.rgbButtons[1];
+   di->mouse_m = mouse_state.rgbButtons[2];
+
+   // No simple way to get absolute coordinates for RETRO_DEVICE_POINTER. Just use Win32 APIs.
+   POINT point = {0};
+   GetCursorPos(&point);
+   ScreenToClient((HWND)driver.video_window, &point);
+   di->mouse_x = point.x;
+   di->mouse_y = point.y;
 
    input_joypad_poll(di->joypad);
 }
@@ -255,6 +292,73 @@ static bool dinput_key_pressed(void *data, int key)
    return dinput_is_pressed((struct dinput_input*)data, g_settings.input.binds[0], 0, key);
 }
 
+static int16_t dinput_lightgun_state(struct dinput_input *di, unsigned id)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_LIGHTGUN_X:
+         return di->mouse_rel_x;
+      case RETRO_DEVICE_ID_LIGHTGUN_Y:
+         return di->mouse_rel_y;
+      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+         return di->mouse_l;
+      case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
+         return di->mouse_m;
+      case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
+         return di->mouse_r;
+      case RETRO_DEVICE_ID_LIGHTGUN_START:
+         return di->mouse_m && di->mouse_r; 
+      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+         return di->mouse_m && di->mouse_l; 
+      default:
+         return 0;
+   }
+}
+
+static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_MOUSE_X:
+         return di->mouse_rel_x;
+      case RETRO_DEVICE_ID_MOUSE_Y:
+         return di->mouse_rel_y;
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         return di->mouse_l;
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         return di->mouse_r;
+      default:
+         return 0;
+   }
+}
+
+static int16_t dinput_pointer_state(struct dinput_input *di, unsigned id)
+{
+   int16_t res_x = 0, res_y = 0;
+   bool valid = input_translate_coord_viewport(di->mouse_x, di->mouse_y, &res_x, &res_y);
+
+   if (!valid)
+      return 0;
+
+   bool inside = (res_x >= -0x7fff) && (res_x <= 0x7fff) &&
+      (res_y >= -0x7fff) && (res_y <= 0x7fff);
+
+   if (!inside)
+      return 0;
+
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_POINTER_X:
+         return res_x;
+      case RETRO_DEVICE_ID_POINTER_Y:
+         return res_y;
+      case RETRO_DEVICE_ID_POINTER_PRESSED:
+         return di->mouse_l;
+      default:
+         return 0;
+   }
+}
+
 static int16_t dinput_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned index, unsigned id)
@@ -271,9 +375,14 @@ static int16_t dinput_input_state(void *data,
       case RETRO_DEVICE_ANALOG:
          return input_joypad_analog(di->joypad, port, index, id, g_settings.input.binds[port]);
 
-      case RETRO_DEVICE_MOUSE: // TODO.
+      case RETRO_DEVICE_MOUSE:
+         return dinput_mouse_state(di, id);
+
+      case RETRO_DEVICE_POINTER:
+         return dinput_pointer_state(di, id);
+
       case RETRO_DEVICE_LIGHTGUN:
-         return 0;
+         return dinput_lightgun_state(di, id);
 
       default:
          return 0;
@@ -293,6 +402,9 @@ static void dinput_free(void *data)
 
       if (di->keyboard)
          IDirectInputDevice8_Release(di->keyboard);
+
+      if (di->mouse)
+         IDirectInputDevice8_Release(di->mouse);
 
       free(di);
    }
