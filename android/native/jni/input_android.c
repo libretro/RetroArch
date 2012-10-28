@@ -27,23 +27,24 @@ static float AMotionEvent_getAxisValue(const AInputEvent* motion_event, int32_t 
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 {
    float x,y;
-   int action, keycode, source, type;
+   int action, keycode, source, type, id;
 
    action = AKEY_EVENT_NO_ACTION;
    type   = AInputEvent_getType(event);
    source = AInputEvent_getSource(event);
+   id     = AInputEvent_getDeviceId(event);
 
    switch(type)
    {
       case AINPUT_EVENT_TYPE_KEY:
          action = AKeyEvent_getAction(event);
          keycode = AKeyEvent_getKeyCode(event);
-         RARCH_LOG("AINPUT_EVENT_TYPE_KEY.\n");
+         RARCH_LOG("AINPUT_EVENT_TYPE_KEY, id: %d.\n", id);
          break;
       case AINPUT_EVENT_TYPE_MOTION:
          x = AMotionEvent_getX(event, 0);
          y = AMotionEvent_getY(event, 0);
-         RARCH_LOG("AINPUT_EVENT_TYPE_MOTION - x: %f, y: %f.\n", x, y);
+         RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, id: %d, x: %f, y: %f.\n", id, x, y);
          break;
    }
 
@@ -56,16 +57,16 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
       switch(action)
       {
          case AKEY_EVENT_ACTION_DOWN:
-            RARCH_LOG("AKEY_EVENT_ACTION_DOWN, keycode: %d.\n", keycode);
+            RARCH_LOG("AKEY_EVENT_ACTION_DOWN, id: %d, keycode: %d.\n", id, keycode);
             break;
          case AKEY_EVENT_ACTION_UP:
-            RARCH_LOG("AKEY_EVENT_ACTION_UP, keycode: %d.\n", keycode);
+            RARCH_LOG("AKEY_EVENT_ACTION_UP, id: %d, keycode: %d.\n", id, keycode);
             break;
          case AKEY_EVENT_ACTION_MULTIPLE:
-            RARCH_LOG("AKEY_EVENT_ACTION_MULTIPLE, keycode: %d.\n", keycode);
+            RARCH_LOG("AKEY_EVENT_ACTION_MULTIPLE, id: %d, keycode: %d.\n", id, keycode);
             break;
          default:
-            RARCH_LOG("AKEY_EVENT_NO_ACTION.\n");
+            RARCH_LOG("AKEY_EVENT_NO_ACTION, id: %d, keycode: %d.\n", id, keycode);
             break;
       }
    }
@@ -73,19 +74,19 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
    switch(source)
    {
       case AINPUT_SOURCE_DPAD:
-         RARCH_LOG("AINPUT_SOURCE_DPAD.\n");
+         RARCH_LOG("AINPUT_SOURCE_DPAD, id: %d, keycode: %d.\n", id, keycode);
          break;
       case AINPUT_SOURCE_TOUCHSCREEN:
-         RARCH_LOG("AINPUT_SOURCE_TOUCHSCREEN.\n");
+         RARCH_LOG("AINPUT_SOURCE_TOUCHSCREEN, id: %d, keycode: %d.\n", id, keycode);
          break; 
       case AINPUT_SOURCE_TOUCHPAD:
-         RARCH_LOG("AINPUT_SOURCE_TOUCHPAD.\n");
+         RARCH_LOG("AINPUT_SOURCE_TOUCHPAD, id: %d, keycode: %d.\n", id, keycode);
          break;
       case AINPUT_SOURCE_ANY:
-         RARCH_LOG("AINPUT_SOURCE_ANY.\n");
+         RARCH_LOG("AINPUT_SOURCE_ANY, id: %d, keycode: %d.\n", id, keycode);
          break;
       default:
-         RARCH_LOG("AINPUT_SOURCE_DEFAULT.\n");
+         RARCH_LOG("AINPUT_SOURCE_DEFAULT, id: %d, keycode: %d.\n", id, keycode);
          break;
    }
 

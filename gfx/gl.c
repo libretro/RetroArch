@@ -1512,8 +1512,8 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
 #ifdef HAVE_OPENGLES
-   glReadPixels(vp[0], vp[1],
-         vp[2], vp[3],
+   glReadPixels(gl->vp.x, gl->vp.y,
+         gl->vp.width, gl->vp.height,
          GL_RGB, GL_UNSIGNED_BYTE, buffer);
 
    uint8_t *pixels = (uint8_t*)buffer;
