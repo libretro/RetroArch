@@ -33,7 +33,7 @@
 #include "command.h"
 #endif
 
-#define AUDIO_CHUNK_SIZE_BLOCKING 64
+#define AUDIO_CHUNK_SIZE_BLOCKING 512
 #define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
 #define AUDIO_MAX_RATIO 16
 
