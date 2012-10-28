@@ -28,8 +28,9 @@ typedef struct sdl_input
 {
    const rarch_joypad_driver_t *joypad;
 
-   int16_t mouse_x, mouse_y;
-   int16_t mouse_l, mouse_r, mouse_m;
+   int mouse_x, mouse_y;
+   int mouse_abs_x, mouse_abs_y;
+   int mouse_l, mouse_r, mouse_m;
 } sdl_input_t;
 
 struct key_bind
@@ -218,6 +219,33 @@ static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
    }
 }
 
+static int16_t sdl_pointer_device_state(sdl_input_t *sdl, unsigned id)
+{
+   int16_t res_x = 0, res_y = 0;
+   bool valid = input_translate_coord_viewport(sdl->mouse_abs_x, sdl->mouse_abs_y, &res_x, &res_y);
+
+   if (!valid)
+      return 0;
+
+   bool inside = (res_x >= -0x7fff) && (res_x <= 0x7fff) &&
+      (res_y >= -0x7fff) && (res_y <= 0x7fff);
+
+   if (!inside)
+      return 0;
+
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_POINTER_X:
+         return res_x;
+      case RETRO_DEVICE_ID_POINTER_Y:
+         return res_y;
+      case RETRO_DEVICE_ID_POINTER_PRESSED:
+         return sdl->mouse_l;
+      default:
+         return 0;
+   }
+}
+
 static int16_t sdl_lightgun_device_state(sdl_input_t *sdl, unsigned id)
 {
    switch (id)
@@ -252,6 +280,8 @@ static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds, 
          return sdl_analog_device_state(data, binds, port, index, id);
       case RETRO_DEVICE_MOUSE:
          return sdl_mouse_device_state(data, id);
+      case RETRO_DEVICE_POINTER:
+         return sdl_pointer_device_state(data, id);
       case RETRO_DEVICE_KEYBOARD:
          return sdl_keyboard_device_state(data, id);
       case RETRO_DEVICE_LIGHTGUN:
@@ -281,10 +311,8 @@ static void sdl_input_free(void *data)
 
 static void sdl_poll_mouse(sdl_input_t *sdl)
 {
-   int _x, _y;
-   Uint8 btn = SDL_GetRelativeMouseState(&_x, &_y);
-   sdl->mouse_x = _x;
-   sdl->mouse_y = _y;
+   Uint8 btn = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
+   SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
    sdl->mouse_l = SDL_BUTTON(SDL_BUTTON_LEFT) & btn ? 1 : 0;
    sdl->mouse_r = SDL_BUTTON(SDL_BUTTON_RIGHT) & btn ? 1 : 0;
    sdl->mouse_m = SDL_BUTTON(SDL_BUTTON_MIDDLE) & btn ? 1 : 0;

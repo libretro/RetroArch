@@ -59,6 +59,7 @@ typedef struct xv
    unsigned width;
    unsigned height;
    bool keep_aspect;
+   struct rarch_viewport vp;
 
    uint8_t *ytable;
    uint8_t *utable;
@@ -545,11 +546,13 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
    return true;
 }
 
-static void calc_out_rect(bool keep_aspect, unsigned *x, unsigned *y, unsigned *width, unsigned *height, unsigned vp_width, unsigned vp_height)
+static void calc_out_rect(bool keep_aspect, struct rarch_viewport *vp, unsigned vp_width, unsigned vp_height)
 {
    if (!keep_aspect)
    {
-      *x = 0; *y = 0; *width = vp_width; *height = vp_height;
+      vp->x = 0; vp->y = 0;
+      vp->width = vp_width;
+      vp->height = vp_height;
    }
    else
    {
@@ -560,17 +563,25 @@ static void calc_out_rect(bool keep_aspect, unsigned *x, unsigned *y, unsigned *
       // assume they are actually equal.
       if (fabs(device_aspect - desired_aspect) < 0.0001)
       {
-         *x = 0; *y = 0; *width = vp_width; *height = vp_height;
+         vp->x = 0; vp->y = 0;
+         vp->width = vp_width;
+         vp->height = vp_height;
       }
       else if (device_aspect > desired_aspect)
       {
          float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-         *x = vp_width * (0.5 - delta); *y = 0; *width = 2.0 * vp_width * delta; *height = vp_height;
+         vp->x = vp_width * (0.5 - delta);
+         vp->y = 0;
+         vp->width = 2.0 * vp_width * delta;
+         vp->height = vp_height;
       }
       else
       {
          float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         *x = 0; *y = vp_height * (0.5 - delta); *width = vp_width; *height = 2.0 * vp_height * delta;
+         vp->x = 0;
+         vp->y = vp_height * (0.5 - delta);
+         vp->width = vp_width;
+         vp->height = 2.0 * vp_height * delta;
       }
    }
 }
@@ -689,15 +700,14 @@ static bool xv_frame(void *data, const void *frame, unsigned width, unsigned hei
    XGetWindowAttributes(xv->display, xv->window, &target);
    xv->render_func(xv, frame, width, height, pitch);
 
-   unsigned x, y, owidth, oheight;
-   calc_out_rect(xv->keep_aspect, &x, &y, &owidth, &oheight, target.width, target.height);
+   calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
 
    if (msg)
       xv_render_msg(xv, msg, width << 1, height << 1);
 
    XvShmPutImage(xv->display, xv->port, xv->window, xv->gc, xv->image,
          0, 0, width << 1, height << 1,
-         x, y, owidth, oheight,
+         xv->vp.x, xv->vp.y, xv->vp.width, xv->vp.height,
          true);
    XSync(xv->display, False);
 
@@ -772,6 +782,12 @@ static void xv_free(void *data)
    free(xv);
 }
 
+static void xv_viewport_info(void *data, struct rarch_viewport *vp)
+{
+   xv_t *xv = (xv_t*)data;
+   *vp = xv->vp;
+}
+
 const video_driver_t video_xvideo = {
    xv_init,
    xv_frame,
@@ -780,6 +796,9 @@ const video_driver_t video_xvideo = {
    xv_focus,
    NULL,
    xv_free,
-   "xvideo"
+   "xvideo",
+
+   NULL,
+   xv_viewport_info,
 };
 

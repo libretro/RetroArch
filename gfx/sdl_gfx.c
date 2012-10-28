@@ -364,7 +364,8 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    if (!video->rgb32 && vid->render32)
       vid->upsample = true;
 
-   SDL_ShowCursor(SDL_DISABLE);
+   if (video->fullscreen)
+      SDL_ShowCursor(SDL_DISABLE);
 
    fmt = vid->screen->format;
    if (vid->render32)
@@ -658,6 +659,14 @@ static bool sdl_gfx_focus(void *data)
    return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
 }
 
+static void sdl_gfx_viewport_info(void *data, struct rarch_viewport *vp)
+{
+   sdl_video_t *vid = (sdl_video_t*)data;
+   vp->x = vp->y = 0;
+   vp->width     = vid->screen->w;
+   vp->height    = vid->screen->h;
+}
+
 const video_driver_t video_sdl = {
    sdl_gfx_init,
    sdl_gfx_frame,
@@ -666,6 +675,9 @@ const video_driver_t video_sdl = {
    sdl_gfx_focus,
    NULL,
    sdl_gfx_free,
-   "sdl"
+   "sdl",
+
+   NULL,
+   sdl_gfx_viewport_info,
 };
 
