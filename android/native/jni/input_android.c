@@ -20,18 +20,76 @@
 #include "../../../driver.h"
 
 /* Process the next input event */
-static float (*AMotionEvent_getAxisValue)(const AInputEvent* motion_event, int32_t axis, size_t pointer_index) = 0;
+static float AMotionEvent_getAxisValue(const AInputEvent* motion_event, int32_t axis, size_t pointer_index);
+
+#define AKEY_EVENT_NO_ACTION 255
 
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 {
-   if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION)
+   float x,y;
+   int action, keycode, source, type;
+
+   action = AKEY_EVENT_NO_ACTION;
+   type   = AInputEvent_getType(event);
+   source = AInputEvent_getSource(event);
+
+   switch(type)
    {
-      g_android.state.x = AMotionEvent_getX(event, 0);
-      g_android.state.y = AMotionEvent_getY(event, 0);
-      RARCH_LOG("AINPUT_EVENT_TYPE_MOTION - x: %d, y: %d.\n");
-      return 1;
+      case AINPUT_EVENT_TYPE_KEY:
+         action = AKeyEvent_getAction(event);
+         keycode = AKeyEvent_getKeyCode(event);
+         RARCH_LOG("AINPUT_EVENT_TYPE_KEY.\n");
+         break;
+      case AINPUT_EVENT_TYPE_MOTION:
+         x = AMotionEvent_getX(event, 0);
+         y = AMotionEvent_getY(event, 0);
+         RARCH_LOG("AINPUT_EVENT_TYPE_MOTION - x: %f, y: %f.\n", x, y);
+         break;
    }
-   return 0;
+
+#if 0
+   x = AMotionEvent_getAxisValue(event, 0, 0);
+   y = AMotionEvent_getAxisValue(event, 0, 0);
+#endif
+   if(action != AKEY_EVENT_NO_ACTION)
+   {
+      switch(action)
+      {
+         case AKEY_EVENT_ACTION_DOWN:
+            RARCH_LOG("AKEY_EVENT_ACTION_DOWN, keycode: %d.\n", keycode);
+            break;
+         case AKEY_EVENT_ACTION_UP:
+            RARCH_LOG("AKEY_EVENT_ACTION_UP, keycode: %d.\n", keycode);
+            break;
+         case AKEY_EVENT_ACTION_MULTIPLE:
+            RARCH_LOG("AKEY_EVENT_ACTION_MULTIPLE, keycode: %d.\n", keycode);
+            break;
+         default:
+            RARCH_LOG("AKEY_EVENT_NO_ACTION.\n");
+            break;
+      }
+   }
+
+   switch(source)
+   {
+      case AINPUT_SOURCE_DPAD:
+         RARCH_LOG("AINPUT_SOURCE_DPAD.\n");
+         break;
+      case AINPUT_SOURCE_TOUCHSCREEN:
+         RARCH_LOG("AINPUT_SOURCE_TOUCHSCREEN.\n");
+         break; 
+      case AINPUT_SOURCE_TOUCHPAD:
+         RARCH_LOG("AINPUT_SOURCE_TOUCHPAD.\n");
+         break;
+      case AINPUT_SOURCE_ANY:
+         RARCH_LOG("AINPUT_SOURCE_ANY.\n");
+         break;
+      default:
+         RARCH_LOG("AINPUT_SOURCE_DEFAULT.\n");
+         break;
+   }
+
+   return 1;
 }
 
 static void *android_input_init(void)
@@ -40,18 +98,6 @@ static void *android_input_init(void)
 
    g_android.app->onInputEvent = engine_handle_input;
 
-   /* check if libandroid can be opened */
-   if((libandroid = dlopen("/system/lib/libandroid.so", RTLD_LOCAL | RTLD_LAZY)) == 0)
-   {
-      RARCH_ERR("Unable to open library /system/lib/libandroid.so.\n");
-      return 0;
-   }
-
-   if((AMotionEvent_getAxisValue = (float (*)(const AInputEvent*, int32_t, size_t))dlsym(libandroid, "AMotionEvent_getAxisValue")) == 0)
-   {
-      RARCH_ERR("AMotionEvent_getAxisValue not available on your particular Android version.\n Joystick support will be disabled.\n");
-      return 0;
-   }
    return (void*)-1;
 }
 
