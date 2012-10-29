@@ -17,6 +17,7 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../fifo_buffer.h"
+#include "../thread.h"
 
 #include <SLES/OpenSLES.h>
 #ifdef ANDROID
@@ -75,6 +76,34 @@ static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
    if ((res = (x)) != SL_RESULT_SUCCESS) \
       goto error; \
 } while(0)
+
+static void sl_free(void *data)
+{
+   sl_t *sl = (sl_t*)data;
+   if (!sl)
+      return;
+
+   if (sl->player)
+      SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_STOPPED);
+
+   if (sl->buffer_queue_object)
+      SLObjectItf_Destroy(sl->buffer_queue_object);
+
+   if (sl->output_mix)
+      SLObjectItf_Destroy(sl->output_mix);
+
+   if (sl->engine_object)
+      SLObjectItf_Destroy(sl->engine_object);
+
+   if (sl->fifo)
+      fifo_free(sl->fifo);
+   if (sl->lock)
+      slock_free(sl->lock);
+   if (sl->cond)
+      scond_free(sl->cond);
+
+   free(sl);
+}
 
 static void *sl_init(const char *device, unsigned rate, unsigned latency)
 {
@@ -164,33 +193,6 @@ static bool sl_start(void *data)
    return SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_PLAYING) == SL_RESULT_SUCCESS;
 }
 
-static void sl_free(void *data)
-{
-   sl_t *sl = (sl_t*)data;
-   if (!sl)
-      return;
-
-   if (sl->player)
-      SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_STOPPED);
-
-   if (sl->buffer_queue_object)
-      SLObjectItf_Destroy(sl->buffer_queue_object);
-
-   if (sl->output_mix)
-      SLObjectItf_Destroy(sl->output_mix);
-
-   if (sl->engineObject)
-      SLObjectItf_Destroy(sl->engineObject);
-
-   if (sl->fifo)
-      fifo_free(sl->fifo);
-   if (sl->lock)
-      slock_free(sl->lock);
-   if (sl->cond)
-      scond_free(sl->cond);
-
-   free(sl);
-}
 
 static ssize_t sl_write(void *data, const void *buf_, size_t size)
 {
