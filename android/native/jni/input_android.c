@@ -50,23 +50,181 @@ typedef struct {
    uint16_t r_keycode;
 } rarch_android_bind_t;
 
+/* Control scheme 1
+ * fd=196
+ * path='/dev/input/event4'
+ * name='Logitech Logitech RumblePad 2 USB'
+ * classes=0x80000141
+ * configuration=''
+ * keyLayout='/system/usr/keylayout/Generic.kl'
+ * keyCharacterMap='/system/usr/keychars/Generic.kcm'
+ * builtinKeyboard=false
+* 
+ */
+
 rarch_android_bind_t android_binds[] = {
-   {AKEYCODE_BUTTON_2, ANDROID_GAMEPAD_CROSS},
-   {AKEYCODE_BUTTON_1, ANDROID_GAMEPAD_SQUARE},
-   {AKEYCODE_BUTTON_9, ANDROID_GAMEPAD_SELECT},
-   {AKEYCODE_BUTTON_10, ANDROID_GAMEPAD_START},
+   {AKEYCODE_BUTTON_2, ANDROID_GAMEPAD_CROSS},     /* 2     */ 
+   {AKEYCODE_BUTTON_1, ANDROID_GAMEPAD_SQUARE},    /* 1     */
+   {AKEYCODE_BUTTON_9, ANDROID_GAMEPAD_SELECT},    /* 9     */
+   {AKEYCODE_BUTTON_10, ANDROID_GAMEPAD_START},    /* 10    */
    {0, ANDROID_GAMEPAD_DPAD_UP},
    {0, ANDROID_GAMEPAD_DPAD_DOWN},
    {0, ANDROID_GAMEPAD_DPAD_LEFT},
    {0, ANDROID_GAMEPAD_DPAD_RIGHT},
-   {AKEYCODE_BUTTON_3, ANDROID_GAMEPAD_CIRCLE},
-   {AKEYCODE_BUTTON_4, ANDROID_GAMEPAD_TRIANGLE},
-   {AKEYCODE_BUTTON_5, ANDROID_GAMEPAD_L1},
-   {AKEYCODE_BUTTON_6, ANDROID_GAMEPAD_R1},
-   {AKEYCODE_BUTTON_7, ANDROID_GAMEPAD_L2},
-   {AKEYCODE_BUTTON_8, ANDROID_GAMEPAD_R2},
-   {AKEYCODE_BUTTON_11, ANDROID_GAMEPAD_L3},
-   {AKEYCODE_BUTTON_12, ANDROID_GAMEPAD_R3},
+   {AKEYCODE_BUTTON_3, ANDROID_GAMEPAD_CIRCLE},    /* 3     */
+   {AKEYCODE_BUTTON_4, ANDROID_GAMEPAD_TRIANGLE},  /* 4     */
+   {AKEYCODE_BUTTON_5, ANDROID_GAMEPAD_L1},        /* 5     */
+   {AKEYCODE_BUTTON_6, ANDROID_GAMEPAD_R1},        /* 6     */
+   {AKEYCODE_BUTTON_7, ANDROID_GAMEPAD_L2},        /* 7     */
+   {AKEYCODE_BUTTON_8, ANDROID_GAMEPAD_R2},        /* 8     */
+   {AKEYCODE_BUTTON_11, ANDROID_GAMEPAD_L3},       /* ThumbL*/
+   {AKEYCODE_BUTTON_12, ANDROID_GAMEPAD_R3},       /* ThumbR*/
+};
+
+/* Control scheme 2
+ * Tested with: SNES Pad USB converter
+ * fd=196
+ * path='/dev/input/event4'
+ * name='HuiJia  USB GamePad'
+ * classes=0x80000141
+ * configuration=''
+ * keyLayout='/system/usr/keylayout/Generic.kl'
+ * keyCharacterMap='/system/usr/keychars/Generic.kcm'
+ * builtinKeyboard=false
+ */
+
+rarch_android_bind_t android_binds_snes[] = {
+   {AKEYCODE_BUTTON_C, ANDROID_GAMEPAD_CROSS},     /* B     */
+   {AKEYCODE_BUTTON_X, ANDROID_GAMEPAD_SQUARE},    /* Y     */
+   {AKEYCODE_BUTTON_L2, ANDROID_GAMEPAD_SELECT},   /* SEL   */
+   {AKEYCODE_BUTTON_R2, ANDROID_GAMEPAD_START},    /* START */
+   {0, ANDROID_GAMEPAD_DPAD_UP},
+   {0, ANDROID_GAMEPAD_DPAD_DOWN},
+   {0, ANDROID_GAMEPAD_DPAD_LEFT},
+   {0, ANDROID_GAMEPAD_DPAD_RIGHT},
+   {AKEYCODE_BUTTON_B, ANDROID_GAMEPAD_CIRCLE},    /* A     */
+   {AKEYCODE_BUTTON_A, ANDROID_GAMEPAD_TRIANGLE},  /* X     */
+   {AKEYCODE_BUTTON_L1, ANDROID_GAMEPAD_L1},       /* L     */
+   {AKEYCODE_BUTTON_R1, ANDROID_GAMEPAD_R1},       /* R     */
+   {AKEYCODE_BUTTON_7, ANDROID_GAMEPAD_L2},        /* NA    */
+   {AKEYCODE_BUTTON_8, ANDROID_GAMEPAD_R2},        /* NA    */
+   {AKEYCODE_BUTTON_11, ANDROID_GAMEPAD_L3},       /* NA    */
+   {AKEYCODE_BUTTON_12, ANDROID_GAMEPAD_R3},       /* NA    */
+};
+
+/* Control scheme 3
+ * fd=196
+ * path='/dev/input/event4'
+ * name='Microsoft® Microsoft® SideWinder® Game Pad USB'
+ * classes=0x80000141
+ * configuration=''
+ * keyLayout='/system/usr/keylayout/Generic.kl'
+ * keyCharacterMap='/system/usr/keychars/Generic.kcm'
+ * builtinKeyboard=false
+ */
+
+rarch_android_bind_t android_binds_sidewinder[] = {
+   {AKEYCODE_BUTTON_A, ANDROID_GAMEPAD_CROSS},    /* A      */
+   {AKEYCODE_BUTTON_X, ANDROID_GAMEPAD_SQUARE},   /* X      */
+   {AKEYCODE_BUTTON_R2, ANDROID_GAMEPAD_SELECT},  /* .      */
+   {AKEYCODE_BUTTON_L2, ANDROID_GAMEPAD_START},   /* ..     */
+   {0, ANDROID_GAMEPAD_DPAD_UP},
+   {0, ANDROID_GAMEPAD_DPAD_DOWN},
+   {0, ANDROID_GAMEPAD_DPAD_LEFT},
+   {0, ANDROID_GAMEPAD_DPAD_RIGHT},
+   {AKEYCODE_BUTTON_B, ANDROID_GAMEPAD_CIRCLE},   /* B      */
+   {AKEYCODE_BUTTON_Y, ANDROID_GAMEPAD_TRIANGLE}, /* Y      */
+   {AKEYCODE_BUTTON_L1, ANDROID_GAMEPAD_L1},      /* L      */
+   {AKEYCODE_BUTTON_R1, ANDROID_GAMEPAD_R1},      /* R      */
+   {AKEYCODE_BUTTON_Z, ANDROID_GAMEPAD_L2},       /* Z      */
+   {AKEYCODE_BUTTON_C, ANDROID_GAMEPAD_R2},       /* C      */
+   {AKEYCODE_BUTTON_11, ANDROID_GAMEPAD_L3},      /* NA     */
+   {AKEYCODE_BUTTON_12, ANDROID_GAMEPAD_R3},      /* NA     */
+};
+
+/* Control scheme 4
+ * Tested with: Sidewinder Dual Strike
+ * fd=196
+ * path='/dev/input/event4'
+ * name='Microsoft SideWinder Dual Strike USB version 1.0'
+ * classes=0x80000141
+ * configuration=''
+ * keyLayout='/system/usr/keylayout/Generic.kl'
+ * keyCharacterMap='/system/usr/keychars/Generic.kcm'
+ * builtinKeyboard=false
+ */
+
+rarch_android_bind_t android_binds_sidewinder_ds[] = {
+   {AKEYCODE_BUTTON_4, ANDROID_GAMEPAD_CROSS},    /* D      */
+   {AKEYCODE_BUTTON_2, ANDROID_GAMEPAD_SQUARE},   /* B      */
+   {AKEYCODE_BUTTON_6, ANDROID_GAMEPAD_SELECT},   /* Y      */
+   {AKEYCODE_BUTTON_5, ANDROID_GAMEPAD_START},    /* X      */
+   {0, ANDROID_GAMEPAD_DPAD_UP},
+   {0, ANDROID_GAMEPAD_DPAD_DOWN},
+   {0, ANDROID_GAMEPAD_DPAD_LEFT},
+   {0, ANDROID_GAMEPAD_DPAD_RIGHT},
+   {AKEYCODE_BUTTON_3, ANDROID_GAMEPAD_CIRCLE},   /* C      */
+   {AKEYCODE_BUTTON_1, ANDROID_GAMEPAD_TRIANGLE}, /* A      */
+   {AKEYCODE_BUTTON_7, ANDROID_GAMEPAD_L1},       /* L      */
+   {AKEYCODE_BUTTON_8, ANDROID_GAMEPAD_R1},       /* R      */
+   {AKEYCODE_BUTTON_9, ANDROID_GAMEPAD_L2},       /* ARROW  */
+   {AKEYCODE_BUTTON_C, ANDROID_GAMEPAD_R2},       /* NA     */
+   {AKEYCODE_BUTTON_11, ANDROID_GAMEPAD_L3},      /* NA     */
+   {AKEYCODE_BUTTON_12, ANDROID_GAMEPAD_R3},      /* NA     */
+};
+
+/* Control scheme 5
+ * fd=196
+ * path='/dev/input/event4'
+ * name='WiseGroup.,Ltd MP-8866 Dual USB Joypad'
+ * classes=0x80000141
+ * configuration=''
+ * keyLayout='/system/usr/keylayout/Generic.kl'
+ * keyCharacterMap='/system/usr/keychars/Generic.kcm'
+ * builtinKeyboard=false
+ */
+
+rarch_android_bind_t android_binds_psx[] = {
+   {AKEYCODE_BUTTON_3, ANDROID_GAMEPAD_CROSS},    /* CROSS  */
+   {AKEYCODE_BUTTON_4, ANDROID_GAMEPAD_SQUARE},   /* SQUARE */
+   {AKEYCODE_BUTTON_10, ANDROID_GAMEPAD_SELECT},  /* SELECT */
+   {AKEYCODE_BUTTON_9, ANDROID_GAMEPAD_START},    /* START  */
+   {0, ANDROID_GAMEPAD_DPAD_UP},
+   {0, ANDROID_GAMEPAD_DPAD_DOWN},
+   {0, ANDROID_GAMEPAD_DPAD_LEFT},
+   {0, ANDROID_GAMEPAD_DPAD_RIGHT},
+   {AKEYCODE_BUTTON_2, ANDROID_GAMEPAD_CIRCLE},   /* CIRCLE */
+   {AKEYCODE_BUTTON_1, ANDROID_GAMEPAD_TRIANGLE}, /* TRIANGLE*/
+   {AKEYCODE_BUTTON_7, ANDROID_GAMEPAD_L1},       /* L1     */
+   {AKEYCODE_BUTTON_8, ANDROID_GAMEPAD_R1},       /* R1     */
+   {AKEYCODE_BUTTON_5, ANDROID_GAMEPAD_L2},       /* L2     */
+   {AKEYCODE_BUTTON_6, ANDROID_GAMEPAD_R2},       /* R2     */
+   {AKEYCODE_BUTTON_11, ANDROID_GAMEPAD_L3},      /* L3     */
+   {AKEYCODE_BUTTON_12, ANDROID_GAMEPAD_R3},      /* R3     */
+};
+
+/* Control scheme 6
+ * Keyboard
+ * TODO: Map L2/R2/L3/R3
+ */
+
+rarch_android_bind_t android_binds_keyboard[] = {
+   {AKEYCODE_Z, ANDROID_GAMEPAD_CROSS},           /* Z      */
+   {AKEYCODE_A, ANDROID_GAMEPAD_SQUARE},          /* A      */
+   {AKEYCODE_SHIFT_RIGHT, ANDROID_GAMEPAD_SELECT},/* RShift */
+   {AKEYCODE_ENTER, ANDROID_GAMEPAD_START},       /* Enter  */
+   {AKEYCODE_DPAD_UP, ANDROID_GAMEPAD_DPAD_UP},
+   {AKEYCODE_DPAD_DOWN, ANDROID_GAMEPAD_DPAD_DOWN},
+   {AKEYCODE_DPAD_LEFT, ANDROID_GAMEPAD_DPAD_LEFT},
+   {AKEYCODE_DPAD_RIGHT, ANDROID_GAMEPAD_DPAD_RIGHT},
+   {AKEYCODE_X, ANDROID_GAMEPAD_CIRCLE},          /* X      */
+   {AKEYCODE_S, ANDROID_GAMEPAD_TRIANGLE},        /* S      */
+   {AKEYCODE_Q, ANDROID_GAMEPAD_L1},              /* Q      */
+   {AKEYCODE_W, ANDROID_GAMEPAD_R1},              /* W      */
+   {0, ANDROID_GAMEPAD_L2},                       /* NA     */
+   {0, ANDROID_GAMEPAD_R2},                       /* NA     */
+   {0, ANDROID_GAMEPAD_L3},                       /* NA     */
+   {0, ANDROID_GAMEPAD_R3},                       /* NA     */
 };
 
 //#define RARCH_INPUT_DEBUG
