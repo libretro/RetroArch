@@ -52,6 +52,7 @@ LOCAL_SRC_FILES    =	$(RARCH_PATH)/retroarch.c \
 			$(RARCH_PATH)/gfx/state_tracker.c \
 			$(RARCH_PATH)/input/null.c \
 			input_android.c \
+			android_native_app_glue.c \
 			$(RARCH_PATH)/screenshot.c \
 			$(RARCH_PATH)/conf/config_file.c \
 			$(RARCH_PATH)/autosave.c \
@@ -67,7 +68,6 @@ LOCAL_CFLAGS += -DANDROID -DHAVE_DYNAMIC -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OP
 
 
 LOCAL_LDLIBS	:= -L$(SYSROOT)/usr/lib -landroid -lEGL -lGLESv2 -llog -ldl -lz
-LOCAL_STATIC_LIBRARIES := android_native_app_glue
 
 ifeq ($(HAVE_OPENSL), 1)
 LOCAL_SRC_FILES += $(RARCH_PATH)/audio/opensl.c
@@ -76,5 +76,3 @@ LOCAL_LDLIBS += -lOpenSLES
 endif
 
 include $(BUILD_SHARED_LIBRARY)
-
-$(call import-module,android/native_app_glue)
