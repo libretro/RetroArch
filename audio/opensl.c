@@ -59,28 +59,17 @@ static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
 {
    sl_t *sl = (sl_t*)ctx;
 
-   for (;;)
-   {
-      slock_lock(sl->lock);
-      size_t read_avail = fifo_read_avail(sl->fifo);
-      if (read_avail > BUFFER_SIZE)
-         read_avail = BUFFER_SIZE;
+   slock_lock(sl->lock);
+   size_t read_avail = fifo_read_avail(sl->fifo);
+   if (read_avail > BUFFER_SIZE)
+      read_avail = BUFFER_SIZE;
+   fifo_read(sl->fifo, sl->buffer, read_avail);
+   slock_unlock(sl->lock);
 
-      if (read_avail)
-      {
-         fifo_read(sl->fifo, sl->buffer, read_avail);
-         slock_unlock(sl->lock);
-         scond_signal(sl->cond);
-      }
-      else
-      {
-         slock_unlock(sl->lock);
-         break;
-      }
+   memset(sl->buffer + read_avail, 0, BUFFER_SIZE - read_avail);
+   (*bq)->Enqueue(bq, sl->buffer, BUFFER_SIZE);
 
-      memset(sl->buffer + read_avail, 0, BUFFER_SIZE - read_avail);
-      (*bq)->Enqueue(bq, sl->buffer, BUFFER_SIZE);
-   }
+   scond_signal(sl->cond);
 }
 
 #define GOTO_IF_FAIL(x) do { \
