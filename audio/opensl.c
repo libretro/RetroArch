@@ -35,8 +35,8 @@
 #define SLPlayItf_SetPlayState(a, ...) ((*(a))->SetPlayState(a, __VA_ARGS__))
 
 // TODO: Are these sane?
-#define BUFFER_SIZE 1024
-#define NUM_BUFFERS 8
+#define BUFFER_SIZE 2048
+#define NUM_BUFFERS 16
 
 typedef struct sl
 {
@@ -234,6 +234,20 @@ static ssize_t sl_write(void *data, const void *buf_, size_t size)
    return written;
 }
 
+static size_t sl_write_avail(void *data)
+{
+   sl_t *sl = (sl_t*)data;
+   slock_lock(sl->lock);
+   size_t avail = fifo_write_avail(sl->lock);
+   slock_unlock(sl->lock);
+   return avail;
+}
+
+static size_t sl_buffer_size(void *data)
+{
+   return BUFFER_SIZE * NUM_BUFFERS;
+}
+
 const audio_driver_t audio_opensl = {
    sl_init,
    sl_write,
@@ -242,6 +256,8 @@ const audio_driver_t audio_opensl = {
    sl_set_nonblock_state,
    sl_free,
    NULL,
-   "opensl"
+   "opensl",
+   sl_write_avail,
+   sl_buffer_size,
 };
 
