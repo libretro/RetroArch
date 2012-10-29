@@ -238,7 +238,7 @@ static size_t sl_write_avail(void *data)
 {
    sl_t *sl = (sl_t*)data;
    slock_lock(sl->lock);
-   size_t avail = fifo_write_avail(sl->lock);
+   size_t avail = fifo_write_avail(sl->fifo);
    slock_unlock(sl->lock);
    return avail;
 }
