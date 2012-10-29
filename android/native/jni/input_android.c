@@ -122,6 +122,10 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 #ifdef RARCH_INPUT_DEBUG
             RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, pad: %d, x: %f, y: %f.\n", i, x, y);
 #endif
+	    state[i].state &= ~(ANDROID_GAMEPAD_DPAD_LEFT);
+	    state[i].state &= ~(ANDROID_GAMEPAD_DPAD_RIGHT);
+	    state[i].state &= ~(ANDROID_GAMEPAD_DPAD_UP);
+	    state[i].state &= ~(ANDROID_GAMEPAD_DPAD_DOWN);
             break;
       }
 
@@ -147,7 +151,7 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
          }
       }
 
-      state[i].state = 0;
+      //state[i].state = 0;
 
       if(do_keydown)
       {
@@ -172,22 +176,22 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 
       if(do_keyrelease)
       {
-         state[i].state &= (keycode == AKEYCODE_BUTTON_10) ? ~(ANDROID_GAMEPAD_START) : 0;
-	 state[i].state &= (keycode == AKEYCODE_BUTTON_12) ? ~(ANDROID_GAMEPAD_R3) : 0;
-	 state[i].state &= pressed_left                    ? ~(ANDROID_GAMEPAD_DPAD_LEFT) : 0;
-	 state[i].state &= pressed_right                   ? ~(ANDROID_GAMEPAD_DPAD_RIGHT) : 0;
-	 state[i].state &= pressed_up                      ? ~(ANDROID_GAMEPAD_DPAD_UP) : 0;
-	 state[i].state &= pressed_down                    ? ~(ANDROID_GAMEPAD_DPAD_DOWN) : 0;
-	 state[i].state &= (keycode == AKEYCODE_BUTTON_11) ? ~(ANDROID_GAMEPAD_L3) : 0;
-	 state[i].state &= (keycode == AKEYCODE_BUTTON_9 ) ? ~(ANDROID_GAMEPAD_SELECT) : 0;
-	 state[i].state &= (keycode == AKEYCODE_BUTTON_4 ) ? ~(ANDROID_GAMEPAD_TRIANGLE) : 0;
-	 state[i].state &= (keycode == AKEYCODE_BUTTON_1 ) ? ~(ANDROID_GAMEPAD_SQUARE) : 0;
-	 state[i].state &= (keycode == AKEYCODE_BUTTON_2 ) ? ~(ANDROID_GAMEPAD_CROSS) : 0;
-	 state[i].state &= (keycode == AKEYCODE_BUTTON_3 ) ? ~(ANDROID_GAMEPAD_CIRCLE) : 0;
-	 state[i].state &= (keycode == AKEYCODE_BUTTON_6 ) ? ~(ANDROID_GAMEPAD_R1) : 0;
-	 state[i].state &= (keycode == AKEYCODE_BUTTON_5 ) ? ~(ANDROID_GAMEPAD_L1) : 0;
-	 state[i].state &= (keycode == AKEYCODE_BUTTON_8 ) ? ~(ANDROID_GAMEPAD_R2) : 0;
-	 state[i].state &= (keycode == AKEYCODE_BUTTON_7 ) ? ~(ANDROID_GAMEPAD_L2) : 0;
+         state[i].state &= (keycode == AKEYCODE_BUTTON_10) ? ~(ANDROID_GAMEPAD_START) : ~0;
+	 state[i].state &= (keycode == AKEYCODE_BUTTON_12) ? ~(ANDROID_GAMEPAD_R3) : ~0;
+	 state[i].state &= pressed_left                    ? ~(ANDROID_GAMEPAD_DPAD_LEFT) : ~0;
+	 state[i].state &= pressed_right                   ? ~(ANDROID_GAMEPAD_DPAD_RIGHT) : ~0;
+	 state[i].state &= pressed_up                      ? ~(ANDROID_GAMEPAD_DPAD_UP) : ~0;
+	 state[i].state &= pressed_down                    ? ~(ANDROID_GAMEPAD_DPAD_DOWN) : ~0;
+	 state[i].state &= (keycode == AKEYCODE_BUTTON_11) ? ~(ANDROID_GAMEPAD_L3) : ~0;
+	 state[i].state &= (keycode == AKEYCODE_BUTTON_9 ) ? ~(ANDROID_GAMEPAD_SELECT) : ~0;
+	 state[i].state &= (keycode == AKEYCODE_BUTTON_4 ) ? ~(ANDROID_GAMEPAD_TRIANGLE) : ~0;
+	 state[i].state &= (keycode == AKEYCODE_BUTTON_1 ) ? ~(ANDROID_GAMEPAD_SQUARE) : ~0;
+	 state[i].state &= (keycode == AKEYCODE_BUTTON_2 ) ? ~(ANDROID_GAMEPAD_CROSS) : ~0;
+	 state[i].state &= (keycode == AKEYCODE_BUTTON_3 ) ? ~(ANDROID_GAMEPAD_CIRCLE) : ~0;
+	 state[i].state &= (keycode == AKEYCODE_BUTTON_6 ) ? ~(ANDROID_GAMEPAD_R1) : ~0;
+	 state[i].state &= (keycode == AKEYCODE_BUTTON_5 ) ? ~(ANDROID_GAMEPAD_L1) : ~0;
+	 state[i].state &= (keycode == AKEYCODE_BUTTON_8 ) ? ~(ANDROID_GAMEPAD_R2) : ~0;
+	 state[i].state &= (keycode == AKEYCODE_BUTTON_7 ) ? ~(ANDROID_GAMEPAD_L2) : ~0;
 	 do_pollblock = true;
       }
 
