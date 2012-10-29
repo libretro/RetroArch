@@ -49,7 +49,6 @@ enum {
 
 static unsigned pads_connected;
 static android_input_state_t state[MAX_PADS];
-static bool do_pollblock;
 
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 {
@@ -73,7 +72,6 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
       i = pads_connected;
    }
 
-   if(!do_pollblock)
    {
       bool do_keydown = false;
       bool do_keyrelease = false;
@@ -171,7 +169,6 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 	 state[i].state |= (keycode == AKEYCODE_BUTTON_5 ) ? ANDROID_GAMEPAD_L1 : 0;
 	 state[i].state |= (keycode == AKEYCODE_BUTTON_8 ) ? ANDROID_GAMEPAD_R2 : 0;
 	 state[i].state |= (keycode == AKEYCODE_BUTTON_7 ) ? ANDROID_GAMEPAD_L2 : 0;
-	 do_pollblock = true;
       }
 
       if(do_keyrelease)
@@ -188,7 +185,6 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 	 state[i].state &= (keycode == AKEYCODE_BUTTON_5 ) ? ~(ANDROID_GAMEPAD_L1) : ~0;
 	 state[i].state &= (keycode == AKEYCODE_BUTTON_8 ) ? ~(ANDROID_GAMEPAD_R2) : ~0;
 	 state[i].state &= (keycode == AKEYCODE_BUTTON_7 ) ? ~(ANDROID_GAMEPAD_L2) : ~0;
-	 do_pollblock = true;
       }
 
    }
@@ -286,8 +282,6 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
             break;
       }
     }
-
-   do_pollblock = false;
 
    return retval;
 }
