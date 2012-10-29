@@ -16,260 +16,140 @@
 
 #include "../driver.h"
 #include "../general.h"
+#include "../fifo_buffer.h"
 
 #include <SLES/OpenSLES.h>
 #ifdef ANDROID
 #include <SLES/OpenSLES_Android.h>
-#define ISLDataLocator_BufferQueue SLDataLocator_AndroidSimpleBufferQueue
-#define ISL_DATALOCATOR_BUFFERQUEUE SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE
-#define ISL_IID_BUFFERQUEUE SL_IID_ANDROIDSIMPLEBUFFERQUEUE
-#else
-#define ISLDataLocator_BufferQueue SLDataLocator_BufferQueue
-#define ISL_DATALOCATOR_BUFFERQUEUE SL_DATALOCATOR_BUFFERQUEUE
-#define ISL_IID_BUFFERQUEUE SL_IID_BUFFERQUEUE
 #endif
 
-#include <time.h>
-#include <string.h>
+// Helper macros, COM-style!
+#define SLObjectItf_Realize(a, ...) ((*(a))->Realize(a, __VA_ARGS__))
+#define SLObjectItf_GetInterface(a, ...) ((*(a))->GetInterface(a, __VA_ARGS__))
+#define SLObjectItf_Destroy(a) ((*(a))->Destroy((a)))
 
-typedef struct CallbackCntxt_
-{
-   SLPlayItf  playItf;
-   SLint16*   pDataBase;   /* Base address of local audio data storage */
-   SLint16*   pData;       /* Current address of local audio data storage */
-   SLuint32   size;
-} CallbackCntxt;
+#define SLEngineItf_CreateOutputMix(a, ...) ((*(a))->CreateOutputMix(a, __VA_ARGS__))
+#define SLEngineItf_CreateAudioPlayer(a, ...) ((*(a))->CreateAudioPlayer(a, __VA_ARGS__))
+
+#define SLPlayItf_SetPlayState(a, ...) ((*(a))->SetPlayState(a, __VA_ARGS__))
+
+// TODO: Are these sane?
+#define BUFFER_SIZE 1024
+#define NUM_BUFFERS 8
 
 typedef struct sl
 {
-   SLObjectItf                 sl;
-   SLresult                    res_ptr;
-   SLEngineItf                 EngineItf;
-   CallbackCntxt               cntxt;
-   SLDataSource                audioSource;
-   ISLDataLocator_BufferQueue  bufferQueue;
-   SLDataFormat_PCM            pcm;
-   SLDataSink                  audioSink;
-   SLDataLocator_OutputMix     locator_outputmix;
-   SLObjectItf                 player;
-   SLPlayItf                   playItf;
-   SLBufferQueueItf            bufferQueueItf;
-   SLBufferQueueState          state;
-   SLObjectItf                 OutputMix;
-   SLVolumeItf                 volumeItf;
-   bool                        nonblock;
+   uint8_t buffer[BUFFER_SIZE];
+
+   SLObjectItf engine_object;
+   SLEngineItf engine;
+
+   SLObjectItf output_mix;
+   SLObjectItf buffer_queue_object;
+   SLPlayItf player;
+
+   fifo_buffer_t *fifo;
+   slock_t *lock;
+   scond_t *cond;
+   bool nonblock;
 } sl_t;
 
-/* Local stoarge for audio data in 16 bit words */
-#define AUDIO_DATA_STORAGE_SIZE 4096
-/* Audio data buffer size in 16 bit words, 8 data segments are used in this example */
-#define AUDIO_DATA_BUFFER_SIZE 4096/8
-
-/* Local storage for Audio data */
-SLint16 pcmData[AUDIO_DATA_STORAGE_SIZE];
-
-void BufferQueueCallback(SLBufferQueueItf queueItf, void *pContext)
+static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
 {
-   SLresult res;
-   CallbackCntxt *pCntxt = (CallbackCntxt*)pContext;
+   sl_t *sl = (sl_t*)ctx;
 
-   if(pCntxt->pData < (pCntxt->pDataBase + pCntxt->size))
-   {
-      res = (*queueItf)->Enqueue(queueItf, (void*)pCntxt->pData,
-         2 * AUDIO_DATA_BUFFER_SIZE); /* Size given in bytes */
+   slock_lock(sl->lock);
+   size_t read_avail = fifo_read_avail(sl->fifo);
+   if (read_avail > BUFFER_SIZE)
+      read_avail = BUFFER_SIZE;
+   fifo_read(sl->fifo, sl->buffer, read_avail);
+   slock_unlock(sl->lock);
 
-      if(res != SL_RESULT_SUCCESS)
-         RARCH_WARN("queueItf->Enqueue() encountered a problem.\n");
+   memset(sl->buffer + read_avail, 0, BUFFER_SIZE - read_avail);
+   (*bq)->Enqueue(bq, sl->buffer, BUFFER_SIZE);
 
-      pCntxt->pData += AUDIO_DATA_BUFFER_SIZE;
-   }
+   scond_signal(sl->cond);
 }
+
+#define GOTO_IF_FAIL(x) do { \
+   if ((res = (x)) != SL_RESULT_SUCCESS) \
+      goto error; \
+} while(0)
 
 static void *sl_init(const char *device, unsigned rate, unsigned latency)
 {
    (void)device;
+
+   SLDataFormat_PCM fmt_pcm = {0};
+   SLDataSource audio_src   = {0};
+   SLDataSink audio_sink    = {0};
+
+   SLDataLocator_AndroidSimpleBufferQueue loc_bufq = {0};
+   SLDataLocator_OutputMix loc_outmix              = {0};
+
+   SLInterfaceID id = SL_IID_ANDROIDSIMPLEBUFFERQUEUE;
+   SLboolean req    = SL_BOOLEAN_TRUE;
+
+   SLAndroidSimpleBufferQueueItf buffer_queue = NULL;
+
+   SLresult res = 0;
    sl_t *sl = (sl_t*)calloc(1, sizeof(sl_t));
    if (!sl)
       goto error;
 
-   SLEngineOption EngineOption[] = 
-   {
-      (SLuint32) SL_ENGINEOPTION_THREADSAFE,
-      (SLuint32) SL_BOOLEAN_TRUE
-   };
+   GOTO_IF_FAIL(slCreateEngine(&sl->engine_object, 0, NULL, 0, NULL, NULL));
+   GOTO_IF_FAIL(SLObjectItf_Realize(sl->engine_object, SL_BOOLEAN_FALSE));
+   GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->engine_object, SL_IID_ENGINE, &sl->engine));
+   GOTO_IF_FAIL(SLEngineItf_CreateOutputMix(sl->engine, &sl->output_mix, 0, NULL, NULL));
+   GOTO_IF_FAIL(SLObjectItf_Realize(sl->output_mix, SL_BOOLEAN_FALSE));
 
-   sl->res_ptr = slCreateEngine(&sl->sl, 1, EngineOption, 0, NULL, NULL);
+   fmt_pcm.formatType    = SL_DATAFORMAT_PCM;
+   fmt_pcm.numChannels   = 2;
+   fmt_pcm.samplesPerSec = rate * 1000; // Samplerate is in milli-Hz.
+   fmt_pcm.bitsPerSample = sizeof(int16_t) * 8;
+   fmt_pcm.containerSize = sizeof(int16_t) * 8;
+   fmt_pcm.channelMask   = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
+   fmt_pcm.endianness    = SL_BYTEORDER_LITTLEENDIAN; // Android only.
 
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      goto error;
+   audio_src.pLocator = &loc_bufq;
+   audio_src.pFormat  = &fmt_pcm;
 
-   /* Realizing the SL Engine in synchronous mode */
-   sl->res_ptr = (*sl->sl)->Realize(sl->sl, SL_BOOLEAN_FALSE);
+   loc_bufq.locatorType = SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE;
+   loc_bufq.numBuffers  = NUM_BUFFERS;
 
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      goto error;
+   loc_outmix.locatorType = SL_DATALOCATOR_OUTPUTMIX;
+   loc_outmix.outputMix   = sl->output_mix;
 
-   /* Get interface for IID_ENGINE */
+   audio_sink.pLocator = &loc_outmix;
 
-   sl->res_ptr = (*sl->sl)->GetInterface(sl->sl, SL_IID_ENGINE, (void*)&sl->EngineItf);
+   GOTO_IF_FAIL(SLEngineItf_CreateAudioPlayer(sl->engine, &sl->buffer_queue_object,
+            &audio_src, &audio_sink,
+            1, &id, &req));
+   GOTO_IF_FAIL(SLObjectItf_Realize(sl->buffer_queue_object, SL_BOOLEAN_FALSE));
 
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      goto error;
+   GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->buffer_queue_object, SL_IID_BUFFERQUEUE,
+            &buffer_queue));
 
-   /* VOLUME interface */
+   sl->cond = scond_new();
+   sl->lock = slock_new();
+   sl->fifo = fifo_new(BUFFER_SIZE * NUM_BUFFERS);
 
-   /* NOTES by Google: 
-   * Please see section "Supported features from OpenSL ES 1.0.1",
-   * subsection "Objects and interfaces" in <NDKroot>/docs/opensles/index.html
-   * You'll see that the cell for object Output mix interface Volume is white.
-   * This means it is not a supported combination.
-   * As a workaround, use the Volume interface on the Audio player object. */
+   (*buffer_queue)->RegisterCallback(buffer_queue, opensl_callback, sl);
+   (*buffer_queue)->Enqueue(buffer_queue, sl->buffer, BUFFER_SIZE);
 
-   /* This seems to fail right now:
-   *  libOpenSLES(19315): class OutputMix interface 0 requested but unavailable MPH=43
-   */
-
-   const SLInterfaceID ids[] = {SL_IID_VOLUME};
-   const SLboolean     req[] = {SL_BOOLEAN_FALSE};
-
-   /* Create Output Mix object to be used by player */
-   sl->res_ptr = (*sl->EngineItf)->CreateOutputMix(sl->EngineItf, &sl->OutputMix, 1,
-      ids, req);
-
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      goto error;
-
-   /* Realizing the Output Mix object in synchonous mode */
-   sl->res_ptr = (*sl->OutputMix)->Realize(sl->OutputMix, SL_BOOLEAN_FALSE);
-
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      goto error;
-#if 0
-   /* Get interface for IID_VOLUME */
-   sl->res_ptr = (*sl->OutputMix)->GetInterface(sl->OutputMix, SL_IID_VOLUME,
-      (void*)&sl->volumeItf);
-
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      goto error;
-#endif
-
-   /* TODO: hardcode for now, make this use the parameters in some way later */
-   SLuint32 rate_sl = SL_SAMPLINGRATE_48;
-   SLuint8  bits_sl = 16;
-
-   /* Setup the data source structure for the buffer queue */
-   sl->bufferQueue.locatorType = ISL_DATALOCATOR_BUFFERQUEUE;
-   sl->bufferQueue.numBuffers  = 2;
-
-   /* Setup the format of the content in the buffer queue */
-   sl->pcm.formatType    = SL_DATAFORMAT_PCM;
-   sl->pcm.numChannels   = 2;
-   sl->pcm.samplesPerSec = rate_sl;
-   sl->pcm.bitsPerSample = bits_sl;
-   sl->pcm.containerSize = bits_sl;
-   sl->pcm.channelMask   = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
-   sl->pcm.endianness    = SL_BYTEORDER_LITTLEENDIAN;
-
-   sl->audioSource.pFormat  = (void*)&sl->pcm;
-   sl->audioSource.pLocator = (void*)&sl->bufferQueue;
-
-   /* Setup the data sink structure */
-   sl->locator_outputmix.locatorType  = SL_DATALOCATOR_OUTPUTMIX;
-   sl->locator_outputmix.outputMix    = sl->OutputMix;
-   sl->audioSink.pLocator             = (void*)&sl->locator_outputmix;
-   sl->audioSink.pFormat              = NULL;
-
-   /* Initialize the context for buffer queue callbacks */
-   sl->cntxt.pDataBase = (void*)&pcmData;
-   sl->cntxt.pData     = sl->cntxt.pDataBase;
-   sl->cntxt.size      = sizeof(pcmData);
-
-   /* Initialize audio data to silence */
-   memset(pcmData, 0, sizeof(pcmData));
-
-   const SLInterfaceID ids1[] = {ISL_IID_BUFFERQUEUE};
-   const SLboolean req1[] = {SL_BOOLEAN_TRUE};
-
-   /* Create the music player */
-   sl->res_ptr = (*sl->EngineItf)->CreateAudioPlayer(sl->EngineItf, &sl->player,
-      &sl->audioSource, &sl->audioSink, 1, ids1, req1);
-
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      goto error;
-
-   /* Realizing the player in synchronous mode. */
-   sl->res_ptr = (*sl->player)->Realize(sl->player, SL_BOOLEAN_FALSE);
-
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      goto error;
-
-   /* Get interface for IID_PLAY */
-   sl->res_ptr = (*sl->player)->GetInterface(sl->player, SL_IID_PLAY, (void*)&sl->playItf);
-
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      goto error;
-
-   /* Get interface for IID_BUFFERQUEUE */
-   sl->res_ptr = (*sl->player)->GetInterface(sl->player, ISL_IID_BUFFERQUEUE,
-      (void*)&sl->bufferQueueItf);
-
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      goto error;
-
-   /* Setup to receive buffer queue event callbacks */
-   sl->res_ptr = (*sl->bufferQueueItf)->RegisterCallback(sl->bufferQueueItf,
-      BufferQueueCallback, NULL);
-
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      goto error;
-
-#if 0
-   /* Before we start set volume to -3dB (-300mB) */
-   /* TODO: Necessary or not? Let's not do this for now */
-
-   sl->res_ptr = (*sl->volumeItf)->SetVolumeLevel(sl->volumeItf, -300);
-
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      goto error;
-#endif
-
-   /* Setup for audio playback */
-
-   /* As suggested by Google above as a replacement for OutputMix IID_VOLUME  - see note */
-   sl->res_ptr = (*sl->player)->GetInterface(sl->player, SL_IID_VOLUME, &sl->volumeItf);
-
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      goto error;
-
-   sl->res_ptr = (*sl->playItf)->SetPlayState(sl->playItf, SL_PLAYSTATE_PLAYING);
-
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      goto error;
-
-   return sl;
+   GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->buffer_queue_object, SL_IID_PLAY, &sl->player));
+   GOTO_IF_FAIL(SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_PLAYING));
 
 error:
-   RARCH_ERR("Couldn't initialize OpenSL ES driver, error code: [%d].\n", sl->res_ptr);
-   if (sl)
-   {
-      (*sl->sl)->Destroy(sl->sl);
-      free(sl);
-   }
+   RARCH_ERR("Couldn't initialize OpenSL ES driver, error code: [%d].\n", (int)res);
+   sl_free(sl);
    return NULL;
 }
 
 static bool sl_stop(void *data)
 {
    sl_t *sl = (sl_t*)data;
-
-   /* Stop player */
-   sl->res_ptr = (*sl->playItf)->SetPlayState(sl->playItf, SL_PLAYSTATE_STOPPED);
-
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      RARCH_ERR("SetPlayState (SL_PLAYSTATE_STOPPED) failed.\n");
-
-   (void)data;
-   return true;
+   return SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_STOPPED) == SL_RESULT_SUCCESS;
 }
 
 static void sl_set_nonblock_state(void *data, bool state)
@@ -281,40 +161,73 @@ static void sl_set_nonblock_state(void *data, bool state)
 static bool sl_start(void *data)
 {
    sl_t *sl = (sl_t*)data;
-
-   sl->res_ptr = (*sl->playItf)->SetPlayState(sl->playItf, SL_PLAYSTATE_PLAYING);
-
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      RARCH_ERR("SetPlayState (SL_PLAYSTATE_PLAYING) failed.\n");
-
-   return true;
+   return SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_PLAYING) == SL_RESULT_SUCCESS;
 }
 
 static void sl_free(void *data)
 {
    sl_t *sl = (sl_t*)data;
-   if (sl)
-   {
-      sl->res_ptr = (*sl->playItf)->SetPlayState(sl->playItf, SL_PLAYSTATE_STOPPED);
-      (*sl->sl)->Destroy(sl->sl);
-   }
+   if (!sl)
+      return;
+
+   if (sl->player)
+      SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_STOPPED);
+
+   if (sl->buffer_queue_object)
+      SLObjectItf_Destroy(sl->buffer_queue_object);
+
+   if (sl->output_mix)
+      SLObjectItf_Destroy(sl->output_mix);
+
+   if (sl->engineObject)
+      SLObjectItf_Destroy(sl->engineObject);
+
+   if (sl->fifo)
+      fifo_free(sl->fifo);
+   if (sl->lock)
+      slock_free(sl->lock);
+   if (sl->cond)
+      scond_free(sl->cond);
+
    free(sl);
 }
 
-static ssize_t sl_write(void *data, const void *buf, size_t size)
+static ssize_t sl_write(void *data, const void *buf_, size_t size)
 {
-   /* not sure about where to use buf, what to return */
    sl_t *sl = (sl_t*)data;
 
-   sl->res_ptr = (*sl->bufferQueueItf)->GetState(sl->bufferQueueItf, &sl->state);
+   size_t written = 0;
+   const uint8_t *buf = (const uint8_t*)buf_;
 
-   if(sl->res_ptr != SL_RESULT_SUCCESS)
-      RARCH_ERR("GetState() failed.\n");
+   while (size)
+   {
+      slock_lock(sl->lock);
 
-   while(sl->state.count)
-      (*sl->bufferQueueItf)->GetState(sl->bufferQueueItf, &sl->state);
+      size_t write_avail = fifo_write_avail(sl->fifo);
+      if (write_avail > size)
+         write_avail = size;
 
-   return size;
+      if (write_avail)
+      {
+         fifo_write(sl->fifo, buf, write_avail);
+         slock_unlock(sl->lock);
+         written += write_avail;
+         size -= write_avail;
+         buf  += write_avail;
+      }
+      else if (!sl->nonblock)
+      {
+         scond_wait(sl->cond, sl->lock);
+         slock_unlock(sl->lock);
+      }
+      else
+      {
+         slock_unlock(sl->lock);
+         break;
+      }
+   }
+
+   return written;
 }
 
 const audio_driver_t audio_opensl = {
@@ -327,3 +240,4 @@ const audio_driver_t audio_opensl = {
    NULL,
    "opensl"
 };
+
