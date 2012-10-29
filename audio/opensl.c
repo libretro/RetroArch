@@ -169,6 +169,8 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->buffer_queue_object, SL_IID_PLAY, &sl->player));
    GOTO_IF_FAIL(SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_PLAYING));
 
+   return sl;
+
 error:
    RARCH_ERR("Couldn't initialize OpenSL ES driver, error code: [%d].\n", (int)res);
    sl_free(sl);
