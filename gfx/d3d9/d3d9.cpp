@@ -17,7 +17,7 @@
 // It is written in C++11 (should be compat with MSVC 2010).
 // Might get rewritten in C99 if I have lots of time to burn.
 //
-// TODO: Multi-monitor.
+// TODO: Change shader on the fly.
 
 #include "d3d9.hpp"
 #include "render_chain.hpp"
@@ -35,6 +35,14 @@
 #include <cmath>
 
 #define IDI_ICON 1
+#define MAX_MONITORS 9
+
+namespace Monitor
+{
+   static HMONITOR last_hm;
+   static HMONITOR all_hms[MAX_MONITORS];
+   static unsigned num_mons;
+}
 
 namespace Callback
 {
@@ -256,6 +264,34 @@ static void show_cursor(bool show)
       while (ShowCursor(FALSE) >= 0);
 }
 
+static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+{
+   Monitor::all_hms[Monitor::num_mons++] = hMonitor;
+   return TRUE;
+}
+
+// Multi-monitor support.
+RECT D3DVideo::monitor_rect()
+{
+   Monitor::num_mons = 0;
+   EnumDisplayMonitors(nullptr, nullptr, monitor_enum_proc, 0);
+
+   if (!Monitor::last_hm)
+      Monitor::last_hm = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
+   HMONITOR hm_to_use = Monitor::last_hm;
+
+   unsigned fs_monitor = g_settings.video.monitor_index;
+   if (fs_monitor && fs_monitor <= Monitor::num_mons && Monitor::all_hms[fs_monitor - 1])
+      hm_to_use = Monitor::all_hms[fs_monitor - 1];
+
+   MONITORINFOEX current_mon;
+   std::memset(&current_mon, 0, sizeof(current_mon));
+   current_mon.cbSize = sizeof(MONITORINFOEX);
+   GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
+
+   return current_mon.rcMonitor;
+}
+
 D3DVideo::D3DVideo(const video_info_t *info) :
    g_pD3D(nullptr), dev(nullptr), rotation(0), needs_restore(false)
 {
@@ -274,13 +310,11 @@ D3DVideo::D3DVideo(const video_info_t *info) :
       windowClass.hbrBackground = (HBRUSH)COLOR_WINDOW;
 
    RegisterClassEx(&windowClass);
+   RECT mon_rect = monitor_rect();
 
-   // TODO: Multi-monitor stuff.
-   RECT rect;
-   GetClientRect(GetDesktopWindow(), &rect);
-   unsigned full_x = info->width == 0 ? (rect.right - rect.left) : info->width;
-   unsigned full_y = info->height == 0 ? (rect.bottom - rect.top) : info->height;
-   RARCH_LOG("[D3D9]: Desktop size: %dx%d.\n", (int)rect.right, (int)rect.bottom);
+   unsigned full_x = info->width  == 0 ? (mon_rect.right  - mon_rect.left) : info->width;
+   unsigned full_y = info->height == 0 ? (mon_rect.bottom - mon_rect.top)  : info->height;
+   RARCH_LOG("[D3D9]: Monitor size: %dx%d.\n", (int)mon_rect.right, (int)mon_rect.bottom);
 
    screen_width  = info->fullscreen ? full_x : info->width;
    screen_height = info->fullscreen ? full_y : info->height;
@@ -290,11 +324,11 @@ D3DVideo::D3DVideo(const video_info_t *info) :
 
    if (!info->fullscreen)
    {
-      RECT rect = {0};
-      rect.right = screen_width;
+      RECT rect   = {0};
+      rect.right  = screen_width;
       rect.bottom = screen_height;
       AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW & ~(WS_MAXIMIZEBOX | WS_THICKFRAME), FALSE);
-      win_width = rect.right - rect.left;
+      win_width  = rect.right - rect.left;
       win_height = rect.bottom - rect.top;
    }
 
@@ -307,8 +341,9 @@ D3DVideo::D3DVideo(const video_info_t *info) :
    hWnd = CreateWindowEx(0, "RetroArch", title.c_str(),
          info->fullscreen ?
          (WS_EX_TOPMOST | WS_POPUP) : WS_OVERLAPPEDWINDOW & ~(WS_MAXIMIZEBOX | WS_THICKFRAME), 
-         info->fullscreen ? 0 : CW_USEDEFAULT,
-         info->fullscreen ? 0 : CW_USEDEFAULT, win_width, win_height,
+         info->fullscreen ? mon_rect.left : CW_USEDEFAULT,
+         info->fullscreen ? mon_rect.top  : CW_USEDEFAULT,
+         win_width, win_height,
          nullptr, nullptr, nullptr, nullptr);
 
    driver.display_type  = RARCH_DISPLAY_WIN32;
@@ -346,7 +381,9 @@ D3DVideo::~D3DVideo()
    if (g_pD3D)
       g_pD3D->Release();
 
+   Monitor::last_hm = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
    DestroyWindow(hWnd);
+
    UnregisterClass("RetroArch", GetModuleHandle(nullptr));
 }
 

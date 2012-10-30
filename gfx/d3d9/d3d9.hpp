@@ -70,6 +70,7 @@ class D3DVideo
       void init_base(const video_info_t &info);
       void make_d3dpp(const video_info_t &info, D3DPRESENT_PARAMETERS &d3dpp);
       void deinit();
+      RECT monitor_rect();
       video_info_t video_info;
 
       bool needs_restore;

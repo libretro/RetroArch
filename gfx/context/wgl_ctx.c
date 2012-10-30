@@ -200,7 +200,7 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
    }
 }
 
-BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
    g_all_hms[g_num_mons++] = hMonitor;
    return TRUE;
@@ -254,6 +254,21 @@ static void show_cursor(bool show)
       while (ShowCursor(FALSE) >= 0);
 }
 
+static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use)
+{
+   if (!g_last_hm)
+      g_last_hm = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
+   *hm_to_use = g_last_hm;
+
+   unsigned fs_monitor = g_settings.video.monitor_index;
+   if (fs_monitor && fs_monitor <= g_num_mons && g_all_hms[fs_monitor - 1])
+      *hm_to_use = g_all_hms[fs_monitor - 1];
+
+   memset(mon, 0, sizeof(*mon));
+   mon->cbSize = sizeof(MONITORINFOEX);
+   GetMonitorInfo(*hm_to_use, (MONITORINFO*)mon);
+}
+
 static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       unsigned bits, bool fullscreen)
@@ -261,18 +276,12 @@ static bool gfx_ctx_set_video_mode(
    (void)bits;
 
    DWORD style;
+
+   HMONITOR hm_to_use = nullptr;
    MONITORINFOEX current_mon;
-   memset(&current_mon, 0, sizeof(current_mon));
-   current_mon.cbSize = sizeof(MONITORINFOEX);
-   if (!g_last_hm)
-      g_last_hm = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
-   HMONITOR hm_to_use = g_last_hm;
 
-   unsigned fs_monitor = g_settings.video.monitor_index;
-   if (fs_monitor && fs_monitor <= g_num_mons && g_all_hms[fs_monitor - 1])
-      hm_to_use = g_all_hms[fs_monitor - 1];
-
-   GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
+   monitor_info(&current_mon, &hm_to_use);
+   RECT mon_rect = current_mon.rcMonitor;
 
    g_resize_width  = width;
    g_resize_height = height;
@@ -283,8 +292,8 @@ static bool gfx_ctx_set_video_mode(
       if (windowed_full)
       {
          style = WS_EX_TOPMOST | WS_POPUP;
-         g_resize_width = width = current_mon.rcMonitor.right - current_mon.rcMonitor.left;
-         g_resize_height = height = current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
+         g_resize_width  = width  = mon_rect.right - mon_rect.left;
+         g_resize_height = height = mon_rect.bottom - mon_rect.top;
       }
       else
       {
@@ -295,6 +304,7 @@ static bool gfx_ctx_set_video_mode(
 
          // display settings might have changed, get new coordinates
          GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
+         mon_rect = current_mon.rcMonitor;
          g_restore_desktop = true;
       }
    }
@@ -310,8 +320,8 @@ static bool gfx_ctx_set_video_mode(
    }
 
    g_hwnd = CreateWindowEx(0, "RetroArch", "RetroArch", style,
-         fullscreen ? current_mon.rcMonitor.left : CW_USEDEFAULT,
-         fullscreen ? current_mon.rcMonitor.top : CW_USEDEFAULT,
+         fullscreen ? mon_rect.left : CW_USEDEFAULT,
+         fullscreen ? mon_rect.top  : CW_USEDEFAULT,
          width, height,
          NULL, NULL, NULL, NULL);
 
