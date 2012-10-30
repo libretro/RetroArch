@@ -52,6 +52,10 @@
 // We want to use -mconsole in Win32, so we need main().
 #endif
 
+#if defined(RARCH_CONSOLE) || defined(ANDROID)
+#define RARCH_PERFORMANCE_MODE
+#endif
+
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
 static void set_fast_forward_button(bool new_button_state, bool new_hold_button_state)
 {
@@ -248,7 +252,7 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
 
 static void video_frame(const void *data, unsigned width, unsigned height, size_t pitch)
 {
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_PERFORMANCE_MODE)
    if (!g_extern.video_active)
       return;
 #endif
@@ -1897,7 +1901,7 @@ static void check_savestates(bool immutable)
    }
 }
 
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_PERFORMANCE_MODE)
 static bool check_fullscreen(void)
 {
    // If we go fullscreen we drop all drivers and reinit to be safe.
@@ -2145,7 +2149,7 @@ static void check_movie(void)
 }
 #endif
 
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_PERFORMANCE_MODE)
 static void check_pause(void)
 {
    static bool old_state = false;
@@ -2370,7 +2374,7 @@ static void check_dsp_config(void)
 }
 #endif
 
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_PERFORMANCE_MODE)
 static void check_mute(void)
 {
    if (!g_extern.audio_active)
@@ -2410,7 +2414,7 @@ static void do_state_checks(void)
 #if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
    check_screenshot();
 #endif
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_PERFORMANCE_MODE)
    check_mute();
 #endif
 
@@ -2420,12 +2424,12 @@ static void do_state_checks(void)
    if (!g_extern.netplay)
    {
 #endif
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_PERFORMANCE_MODE)
       check_pause();
 #endif
       check_oneshot();
 
-#ifdef RARCH_CONSOLE
+#if defined(RARCH_PERFORMANCE_MODE)
       if (g_extern.is_paused)
 #else
       if (check_fullscreen() && g_extern.is_paused)
@@ -2434,7 +2438,7 @@ static void do_state_checks(void)
          rarch_render_cached_frame();
       }
 
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_PERFORMANCE_MODE)
       if (g_extern.is_paused && !g_extern.is_oneshot)
          return;
 #endif
@@ -2471,7 +2475,7 @@ static void do_state_checks(void)
    else
    {
       check_netplay_flip();
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_PERFORMANCE_MODE)
       check_fullscreen();
 #endif
    }
@@ -2672,7 +2676,7 @@ bool rarch_main_iterate(void)
    do_state_checks();
 
    // Run libretro for one frame.
-#ifndef RARCH_CONSOLE // On consoles pausing is handled better elsewhere.
+#if !defined(RARCH_PERFORMANCE_MODE) // On consoles pausing is handled better elsewhere.
    if (!g_extern.is_paused || g_extern.is_oneshot)
 #endif
    {
@@ -2706,7 +2710,7 @@ bool rarch_main_iterate(void)
       unlock_autosave();
 #endif
    }
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_PERFORMANCE_MODE)
    else
    {
       input_poll();
