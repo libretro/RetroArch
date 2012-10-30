@@ -370,8 +370,6 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 
 static void *android_input_init(void)
 {
-   void *libandroid = 0;
-
    g_android.app->onInputEvent = engine_handle_input;
    pads_connected = 0;
 

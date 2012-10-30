@@ -141,22 +141,12 @@ static void gfx_ctx_check_window(bool *quit,
    (void)height;
    (void)frame_count;
 
-   gl_t *gl = driver.video_data;
    *quit = false;
    *resize = false;
 
    // Check if we are exiting.
    if (g_android.app->destroyRequested != 0 || g_android.init_quit)
       *quit = true;
-
-   if (g_android.animating)
-   {
-      // Done with events; draw next animation frame.
-      g_android.state.angle += .01f;
-
-      if (g_android.state.angle > 1)
-         g_android.state.angle = 0;
-   }
 }
 
 static void gfx_ctx_clear(void)
