@@ -259,14 +259,15 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
       bool do_keyrelease = false;
       bool pressed_left, pressed_right, pressed_up, pressed_down;
       float x, y;
-      int action, keycode, source, type;
+      int action, keycode, type;
       action = AKEY_EVENT_NO_ACTION;
 
       type    = AInputEvent_getType(event);
-      source  = AInputEvent_getSource(event);
       keycode = AKeyEvent_getKeyCode(event);
 
 #ifdef RARCH_INPUT_DEBUG
+      int source  = AInputEvent_getSource(event);
+
       switch(source)
       {
          case AINPUT_SOURCE_DPAD:
