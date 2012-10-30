@@ -397,7 +397,6 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
    RARCH_PERFORMANCE_START(vg_image);
    vg_copy_frame(vg, frame, width, height, pitch);
    RARCH_PERFORMANCE_STOP(vg_image);
-   RARCH_PERFORMANCE_LOG("vg_copy_frame", vg_image);
 
    vgDrawImage(vg->mImage);
 
@@ -409,8 +408,6 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
 
    RARCH_PERFORMANCE_STOP(vg_fr);
-   RARCH_PERFORMANCE_LOG("vg_frame", vg_fr);
-
    vg->driver->swap_buffers();
 
    return true;

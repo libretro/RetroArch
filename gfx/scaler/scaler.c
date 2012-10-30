@@ -192,9 +192,6 @@ void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
 void scaler_ctx_scale(struct scaler_ctx *ctx,
       void *output, const void *input)
 {
-   RARCH_PERFORMANCE_INIT(scaler_perf);
-   RARCH_PERFORMANCE_START(scaler_perf);
-
    if (ctx->unscaled) // Just perform straight pixel conversion.
    {
       ctx->direct_pixconv(output, input,
@@ -262,8 +259,5 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
       else
          ctx->scaler_vert(ctx, output, ctx->out_stride);
    }
-
-   RARCH_PERFORMANCE_STOP(scaler_perf);
-   RARCH_PERFORMANCE_LOG("Scaler", scaler_perf);
 }
 

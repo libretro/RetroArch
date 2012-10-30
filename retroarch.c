@@ -272,7 +272,6 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
       data = driver.scaler_out;
       pitch = driver.scaler.out_stride;
       RARCH_PERFORMANCE_STOP(video_frame_conv);
-      RARCH_PERFORMANCE_LOG("video_frame_conv()", video_frame_conv);
    }
 
    // Slightly messy code,
@@ -2772,6 +2771,11 @@ int rarch_main(int argc, char *argv[])
    while (rarch_main_iterate());
    rarch_main_deinit();
    rarch_deinit_msg_queue();
+
+#ifdef PERF_TEST
+   rarch_perf_log();
+#endif
+
    rarch_main_clear_state();
    return 0;
 }

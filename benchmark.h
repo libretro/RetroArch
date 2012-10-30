@@ -28,23 +28,45 @@ typedef unsigned long long rarch_perf_tick_t;
 
 typedef struct rarch_perf_counter
 {
+   const char *ident;
    rarch_perf_tick_t start;
    rarch_perf_tick_t total;
-   unsigned call_cnt;
+   uint64_t call_cnt;
+
+   bool registered;
 } rarch_perf_counter_t;
 
 rarch_perf_tick_t rarch_get_perf_counter(void);
+void rarch_perf_register(struct rarch_perf_counter *perf);
+void rarch_perf_log(void);
 
 #ifdef PERF_TEST
 
-#define RARCH_PERFORMANCE_INIT(X)  static rarch_perf_counter_t X
-#define RARCH_PERFORMANCE_START(X) ((X).start  = rarch_get_perf_counter())
-#define RARCH_PERFORMANCE_STOP(X)  do { (X).total += rarch_get_perf_counter() - (X).start; (X).call_cnt++; } while(0) /* TODO: we should increment at PERFORMANCE_START instead of PERFORMANCE_STOP since sometimes we cannot assume that we don't prematurely exit out of the function */
+#define RARCH_PERFORMANCE_INIT(X)  static rarch_perf_counter_t X = {#X}; \
+   do { \
+      if (!(X).registered) \
+         rarch_perf_register(&(X)); \
+   } while(0)
+
+#define RARCH_PERFORMANCE_START(X) do { \
+   (X).call_cnt++; \
+   (X).start  = rarch_get_perf_counter(); \
+} while(0)
+
+#define RARCH_PERFORMANCE_STOP(X) do { \
+   (X).total += rarch_get_perf_counter() - (X).start; \
+} while(0)
 
 #ifdef _WIN32
-#define RARCH_PERFORMANCE_LOG(functionname, X) RARCH_LOG("[PERF]: Avg (%s): %I64u ticks.\n", functionname, (X).total / (X).call_cnt)
+#define RARCH_PERFORMANCE_LOG(functionname, X) RARCH_LOG("[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n", \
+      functionname, \
+      (X).total / (X).call_cnt, \
+      (X).call_cnt)
 #else
-#define RARCH_PERFORMANCE_LOG(functionname, X) RARCH_LOG("[PERF]: Avg (%s): %llu ticks.\n", functionname, (X).total / (X).call_cnt)
+#define RARCH_PERFORMANCE_LOG(functionname, X) RARCH_LOG("[PERF]: Avg (%s): %llu ticks, %llu runs.\n", \
+      functionname, \
+      (long long unsigned)((X).total / (X).call_cnt), \
+      (long long unsigned)((X).call_cnt))
 #endif
 
 #else

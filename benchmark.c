@@ -26,6 +26,26 @@
 #include <sys/time.h>
 #endif
 
+#define MAX_COUNTERS 64
+static struct rarch_perf_counter *perf_counters[MAX_COUNTERS];
+static unsigned perf_ptr;
+
+void rarch_perf_register(struct rarch_perf_counter *perf)
+{
+   if (perf_ptr >= MAX_COUNTERS)
+      return;
+
+   perf_counters[perf_ptr++] = perf;
+   perf->registered = true;
+}
+
+void rarch_perf_log(void)
+{
+   RARCH_LOG("[PERF]: Performance counters:\n");
+   for (unsigned i = 0; i < perf_ptr; i++)
+      RARCH_PERFORMANCE_LOG(perf_counters[i]->ident, *perf_counters[i]);
+}
+
 rarch_perf_tick_t rarch_get_perf_counter(void)
 {
    rarch_perf_tick_t time = 0;

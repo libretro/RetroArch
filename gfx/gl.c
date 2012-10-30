@@ -1107,7 +1107,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       RARCH_PERFORMANCE_START(copy_frame);
       gl_copy_frame(gl, frame, width, height, pitch);
       RARCH_PERFORMANCE_STOP(copy_frame);
-      RARCH_PERFORMANCE_LOG("gl_copy_frame", copy_frame);
    }
 
    struct gl_tex_info tex_info = {0};
@@ -1144,7 +1143,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
 
    RARCH_PERFORMANCE_STOP(frame_run);
-   RARCH_PERFORMANCE_LOG("gl_frame", frame_run);
 
 #ifdef RARCH_CONSOLE
    if (!gl->block_swap)
