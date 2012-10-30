@@ -277,7 +277,7 @@ static bool gfx_ctx_set_video_mode(
 
    DWORD style;
 
-   HMONITOR hm_to_use = nullptr;
+   HMONITOR hm_to_use = NULL;
    MONITORINFOEX current_mon;
 
    monitor_info(&current_mon, &hm_to_use);
