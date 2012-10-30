@@ -51,8 +51,6 @@ typedef struct
 {
    int32_t  id;
    uint64_t state;
-   float    x;
-   float    y;
 } android_input_state_t;
 
 #endif
