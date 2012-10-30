@@ -381,6 +381,21 @@ static void *android_input_init(void)
 static void android_input_poll(void *data)
 {
    (void)data;
+
+    // Read all pending events.
+   int ident;
+   int events;
+   struct android_poll_source* source;
+   struct android_app* state = g_android.app;
+
+   // If not animating, we will block forever waiting for events.
+   // If animating, we loop until all events are read, then continue
+   // to draw the next frame of animation.
+   ident= ALooper_pollAll(0, NULL, &events, (void**)&source);
+
+   // Process this event.
+   if (ident && source != NULL)
+      source->process(state, source);
 }
 
 static int16_t android_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
