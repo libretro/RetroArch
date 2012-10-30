@@ -42,6 +42,7 @@ namespace Monitor
    static HMONITOR last_hm;
    static HMONITOR all_hms[MAX_MONITORS];
    static unsigned num_mons;
+   static unsigned cur_mon_id;
 }
 
 namespace Callback
@@ -97,7 +98,7 @@ void D3DVideo::init_base(const video_info_t &info)
       throw std::runtime_error("Failed to create D3D9 interface!");
 
    if (FAILED(g_pD3D->CreateDevice(
-               g_settings.video.monitor_index ? g_settings.video.monitor_index - 1 : D3DADAPTER_DEFAULT,
+               Monitor::cur_mon_id,
                D3DDEVTYPE_HAL,
                hWnd,
                D3DCREATE_HARDWARE_VERTEXPROCESSING,
@@ -296,7 +297,21 @@ RECT D3DVideo::monitor_rect()
 
    unsigned fs_monitor = g_settings.video.monitor_index;
    if (fs_monitor && fs_monitor <= Monitor::num_mons && Monitor::all_hms[fs_monitor - 1])
+   {
       hm_to_use = Monitor::all_hms[fs_monitor - 1];
+      Monitor::cur_mon_id = fs_monitor - 1;
+   }
+   else
+   {
+      for(unsigned i=0;i<Monitor::num_mons;i++)
+      {
+         if(Monitor::all_hms[i]==hm_to_use)
+         {
+            Monitor::cur_mon_id = i;
+            break;
+         }
+      }
+   }
 
    MONITORINFOEX current_mon;
    std::memset(&current_mon, 0, sizeof(current_mon));
