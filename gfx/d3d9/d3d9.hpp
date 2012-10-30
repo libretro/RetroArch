@@ -46,6 +46,7 @@ class D3DVideo
       void set_rotation(unsigned rot);
       void viewport_info(rarch_viewport &vp);
       bool read_viewport(uint8_t *buffer);
+      void resize(unsigned new_width, unsigned new_height);
 
    private:
 

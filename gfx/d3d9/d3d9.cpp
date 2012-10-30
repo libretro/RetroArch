@@ -47,12 +47,19 @@ namespace Monitor
 namespace Callback
 {
    static bool quit = false;
+   static D3DVideo *curD3D = nullptr;
 
    LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
          WPARAM wParam, LPARAM lParam)
    {
       switch (message)
       {
+         case WM_CREATE:
+            LPCREATESTRUCT p_cs;
+            p_cs = (LPCREATESTRUCT)lParam;
+            curD3D = (D3DVideo *)p_cs->lpCreateParams;
+            break;
+
          case WM_SYSKEYDOWN:
             switch (wParam)
             {
@@ -65,6 +72,13 @@ namespace Callback
          case WM_DESTROY:
             quit = true;
             return 0;
+
+         case WM_SIZE:
+            unsigned new_width, new_height;
+            new_width = LOWORD(lParam);
+            new_height = HIWORD(lParam);
+            curD3D->resize(new_width, new_height);
+            break;
 
          default:
             return DefWindowProc(hWnd, message, wParam, lParam);
@@ -83,7 +97,7 @@ void D3DVideo::init_base(const video_info_t &info)
       throw std::runtime_error("Failed to create D3D9 interface!");
 
    if (FAILED(g_pD3D->CreateDevice(
-               D3DADAPTER_DEFAULT,
+               g_settings.video.monitor_index ? g_settings.video.monitor_index - 1 : D3DADAPTER_DEFAULT,
                D3DDEVTYPE_HAL,
                hWnd,
                D3DCREATE_HARDWARE_VERTEXPROCESSING,
@@ -98,7 +112,7 @@ void D3DVideo::make_d3dpp(const video_info_t &info, D3DPRESENT_PARAMETERS &d3dpp
 {
    std::memset(&d3dpp, 0, sizeof(d3dpp));
 
-   d3dpp.Windowed = true;
+   d3dpp.Windowed = g_settings.video.windowed_fullscreen || !info.fullscreen;
 
    d3dpp.PresentationInterval = info.vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
    d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
@@ -293,7 +307,7 @@ RECT D3DVideo::monitor_rect()
 }
 
 D3DVideo::D3DVideo(const video_info_t *info) :
-   g_pD3D(nullptr), dev(nullptr), rotation(0), needs_restore(false)
+   g_pD3D(nullptr), dev(nullptr), font(nullptr), rotation(0), needs_restore(false), cgCtx(nullptr)
 {
    gfx_set_dwm();
 
@@ -312,9 +326,11 @@ D3DVideo::D3DVideo(const video_info_t *info) :
    RegisterClassEx(&windowClass);
    RECT mon_rect = monitor_rect();
 
-   unsigned full_x = info->width  == 0 ? (mon_rect.right  - mon_rect.left) : info->width;
-   unsigned full_y = info->height == 0 ? (mon_rect.bottom - mon_rect.top)  : info->height;
-   RARCH_LOG("[D3D9]: Monitor size: %dx%d.\n", (int)mon_rect.right, (int)mon_rect.bottom);
+   bool windowed_full = g_settings.video.windowed_fullscreen;
+
+   unsigned full_x = (windowed_full || info->width  == 0) ? (mon_rect.right  - mon_rect.left) : info->width;
+   unsigned full_y = (windowed_full || info->height == 0) ? (mon_rect.bottom - mon_rect.top)  : info->height;
+   RARCH_LOG("[D3D9]: Monitor size: %dx%d.\n", (int)(mon_rect.right  - mon_rect.left), (int)(mon_rect.bottom - mon_rect.top));
 
    screen_width  = info->fullscreen ? full_x : info->width;
    screen_height = info->fullscreen ? full_y : info->height;
@@ -327,7 +343,7 @@ D3DVideo::D3DVideo(const video_info_t *info) :
       RECT rect   = {0};
       rect.right  = screen_width;
       rect.bottom = screen_height;
-      AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW & ~(WS_MAXIMIZEBOX | WS_THICKFRAME), FALSE);
+      AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
       win_width  = rect.right - rect.left;
       win_height = rect.bottom - rect.top;
    }
@@ -340,11 +356,11 @@ D3DVideo::D3DVideo(const video_info_t *info) :
 
    hWnd = CreateWindowEx(0, "RetroArch", title.c_str(),
          info->fullscreen ?
-         (WS_EX_TOPMOST | WS_POPUP) : WS_OVERLAPPEDWINDOW & ~(WS_MAXIMIZEBOX | WS_THICKFRAME), 
+         (WS_EX_TOPMOST | WS_POPUP) : WS_OVERLAPPEDWINDOW,
          info->fullscreen ? mon_rect.left : CW_USEDEFAULT,
          info->fullscreen ? mon_rect.top  : CW_USEDEFAULT,
          win_width, win_height,
-         nullptr, nullptr, nullptr, nullptr);
+         nullptr, nullptr, nullptr, this);
 
    driver.display_type  = RARCH_DISPLAY_WIN32;
    driver.video_display = 0;
@@ -962,6 +978,19 @@ void D3DVideo::update_title()
       std::string title = buffer;
       title += " || Direct3D9";
       SetWindowText(hWnd, title.c_str());
+   }
+}
+
+void D3DVideo::resize(unsigned new_width, unsigned new_height)
+{
+   if(!dev)
+      return;
+
+   if(new_width != video_info.width || new_height != video_info.height)
+   {
+      video_info.width = screen_width = new_width;
+      video_info.height = screen_height = new_height;
+      restore();
    }
 }
 
