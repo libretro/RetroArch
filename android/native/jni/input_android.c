@@ -232,6 +232,11 @@ rarch_android_bind_t android_binds_keyboard[] = {
 static unsigned pads_connected;
 static android_input_state_t state[MAX_PADS];
 
+#define PRESSED_UP(x, y)   ((-0.80f > y) && (x >= -1.00f))
+#define PRESSED_DOWN(x, y) ((0.80f  < y) && (y <= 1.00f))
+#define PRESSED_LEFT(x, y) ((-0.80f > x) && (x >= -1.00f))
+#define PRESSED_RIGHT(x, y) ((0.80f  < x) && (x <= 1.00f))
+
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 {
    int id, i;
@@ -241,7 +246,7 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 
    for (i = 0; i < pads_connected; i++)
    {
-      if (id == state[i].id)
+      if (state[i].id == id)
       {
          found_existing_id = true;
          break;
@@ -257,13 +262,9 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
    {
       bool do_keydown = false;
       bool do_keyrelease = false;
-      bool pressed_left, pressed_right, pressed_up, pressed_down;
-      float x, y;
-      int action, keycode, type;
-      action = AKEY_EVENT_NO_ACTION;
-
-      type    = AInputEvent_getType(event);
-      keycode = AKeyEvent_getKeyCode(event);
+      int action = AKEY_EVENT_NO_ACTION;
+      int type    = AInputEvent_getType(event);
+      int keycode = AKeyEvent_getKeyCode(event);
 
 #ifdef RARCH_INPUT_DEBUG
       int source  = AInputEvent_getSource(event);
@@ -291,27 +292,21 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 
       action  = AKeyEvent_getAction(event);
 
-      switch(type)
+      if(type == AINPUT_EVENT_TYPE_MOTION)
       {
-         case AINPUT_EVENT_TYPE_MOTION:
-            x = AMotionEvent_getX(event, 0);
-            y = AMotionEvent_getY(event, 0);
-            pressed_up    = ((-0.80f > y) && (x >= -1.00f));
-            pressed_down  = ((0.80f  < y) && (y <= 1.00f));
-            pressed_left  = ((-0.80f > x) && (x >= -1.00f));
-            pressed_right = ((0.80f  < x) && (x <= 1.00f));
+         float x = AMotionEvent_getX(event, 0);
+	 float y = AMotionEvent_getY(event, 0);
 #ifdef RARCH_INPUT_DEBUG
-            RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, pad: %d, x: %f, y: %f.\n", i, x, y);
+         RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, pad: %d, x: %f, y: %f.\n", i, x, y);
 #endif
-	    state[i].state &= ~(android_binds[RETRO_DEVICE_ID_JOYPAD_LEFT].r_keycode);
-	    state[i].state &= ~(android_binds[RETRO_DEVICE_ID_JOYPAD_RIGHT].r_keycode);
-	    state[i].state &= ~(android_binds[RETRO_DEVICE_ID_JOYPAD_UP].r_keycode);
-	    state[i].state &= ~(android_binds[RETRO_DEVICE_ID_JOYPAD_DOWN].r_keycode);
-	    state[i].state |= pressed_left                    ? ANDROID_GAMEPAD_DPAD_LEFT : 0;
-	    state[i].state |= pressed_right                   ? ANDROID_GAMEPAD_DPAD_RIGHT : 0;
-	    state[i].state |= pressed_up                      ? ANDROID_GAMEPAD_DPAD_UP : 0;
-	    state[i].state |= pressed_down                    ? ANDROID_GAMEPAD_DPAD_DOWN : 0;
-            break;
+         state[i].state &= ~(android_binds[RETRO_DEVICE_ID_JOYPAD_LEFT].r_keycode);
+	 state[i].state &= ~(android_binds[RETRO_DEVICE_ID_JOYPAD_RIGHT].r_keycode);
+	 state[i].state &= ~(android_binds[RETRO_DEVICE_ID_JOYPAD_UP].r_keycode);
+	 state[i].state &= ~(android_binds[RETRO_DEVICE_ID_JOYPAD_DOWN].r_keycode);
+	 state[i].state |= PRESSED_LEFT(x, y)  ? ANDROID_GAMEPAD_DPAD_LEFT  : 0;
+	 state[i].state |= PRESSED_RIGHT(x, y) ? ANDROID_GAMEPAD_DPAD_RIGHT : 0;
+	 state[i].state |= PRESSED_UP(x, y)    ? ANDROID_GAMEPAD_DPAD_UP    : 0;
+	 state[i].state |= PRESSED_DOWN(x, y)  ? ANDROID_GAMEPAD_DPAD_DOWN  : 0;
       }
 
       if(action != AKEY_EVENT_NO_ACTION)
