@@ -36,7 +36,7 @@
 
 // TODO: Are these sane?
 #define BUFFER_SIZE 4096
-#define NUM_BUFFERS 32
+#define NUM_BUFFERS 8
 
 typedef struct sl
 {
