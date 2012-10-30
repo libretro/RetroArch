@@ -58,7 +58,7 @@ namespace Callback
          case WM_CREATE:
             LPCREATESTRUCT p_cs;
             p_cs = (LPCREATESTRUCT)lParam;
-            curD3D = (D3DVideo *)p_cs->lpCreateParams;
+            curD3D = (D3DVideo*)p_cs->lpCreateParams;
             break;
 
          case WM_SYSKEYDOWN:
@@ -303,9 +303,9 @@ RECT D3DVideo::monitor_rect()
    }
    else
    {
-      for(unsigned i=0;i<Monitor::num_mons;i++)
+      for (unsigned i = 0; i < Monitor::num_mons; i++)
       {
-         if(Monitor::all_hms[i]==hm_to_use)
+         if (Monitor::all_hms[i] == hm_to_use)
          {
             Monitor::cur_mon_id = i;
             break;
@@ -998,10 +998,10 @@ void D3DVideo::update_title()
 
 void D3DVideo::resize(unsigned new_width, unsigned new_height)
 {
-   if(!dev)
+   if (!dev)
       return;
 
-   if(new_width != video_info.width || new_height != video_info.height)
+   if (new_width != video_info.width || new_height != video_info.height)
    {
       video_info.width = screen_width = new_width;
       video_info.height = screen_height = new_height;
