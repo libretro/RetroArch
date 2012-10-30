@@ -31,7 +31,7 @@ typedef struct rarch_perf_counter
    const char *ident;
    rarch_perf_tick_t start;
    rarch_perf_tick_t total;
-   uint64_t call_cnt;
+   rarch_perf_tick_t call_cnt;
 
    bool registered;
 } rarch_perf_counter_t;
@@ -65,8 +65,8 @@ void rarch_perf_log(void);
 #else
 #define RARCH_PERFORMANCE_LOG(functionname, X) RARCH_LOG("[PERF]: Avg (%s): %llu ticks, %llu runs.\n", \
       functionname, \
-      (long long unsigned)((X).total / (X).call_cnt), \
-      (long long unsigned)((X).call_cnt))
+      (X).total / (X).call_cnt, \
+      (X).call_cnt)
 #endif
 
 #else
