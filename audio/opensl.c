@@ -169,6 +169,9 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->buffer_queue_object, SL_IID_PLAY, &sl->player));
    GOTO_IF_FAIL(SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_PLAYING));
 
+   g_settings.audio.rate_control_delta = 0.006;
+   g_settings.audio.rate_control = true;
+
    return sl;
 
 error:
