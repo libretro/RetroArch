@@ -1139,7 +1139,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (msg)
       gl_render_msg(gl, msg);
 
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_CONSOLE) && !defined(ANDROID)
    gl->ctx_driver->update_window_title(false);
 #endif
 
