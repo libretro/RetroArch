@@ -1,6 +1,6 @@
 RARCH_VERSION		= "0.9.7"
 LOCAL_PATH := $(call my-dir)
-PERF_TEST := 0
+PERF_TEST := 1
 
 include $(CLEAR_VARS)
 
