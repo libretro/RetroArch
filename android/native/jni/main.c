@@ -156,13 +156,6 @@ void android_main(struct android_app* state)
 
    g_android.app->onAppCmd = engine_handle_cmd;
 
-   // Prepare to monitor accelerometer
-   g_android.sensorManager = ASensorManager_getInstance();
-   g_android.accelerometerSensor = ASensorManager_getDefaultSensor(g_android.sensorManager,
-      ASENSOR_TYPE_ACCELEROMETER);
-   g_android.sensorEventQueue = ASensorManager_createEventQueue(g_android.sensorManager,
-      g_android.app->looper, LOOPER_ID_USER, NULL, NULL);
-
    if (g_android.app->savedState != NULL) // We are starting with a previous saved state; restore from it.
       g_android.state = *(struct saved_state*)g_android.app->savedState;
 

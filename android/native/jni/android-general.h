@@ -15,11 +15,6 @@ struct saved_state
 struct droid
 {
    struct android_app* app;
-
-   ASensorManager* sensorManager;
-   const ASensor* accelerometerSensor;
-   ASensorEventQueue* sensorEventQueue;
-
    bool init_quit;
    bool window_inited;
    struct saved_state state;
