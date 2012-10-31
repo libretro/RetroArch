@@ -122,6 +122,9 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
    if(action == AKEY_EVENT_ACTION_UP)
       state[i].state &= ~(keycode_lut[keycode]);
 
+   if(keycode == AKEYCODE_BACK || keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN)
+      return 0;
+
    return 1;
 }
 
