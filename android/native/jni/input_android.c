@@ -51,7 +51,7 @@ enum {
 //#define RARCH_INPUT_DEBUG
 
 static unsigned pads_connected;
-static android_input_state_t state[MAX_PADS];
+static uint64_t state[MAX_PADS];
 static int16_t state_device_ids[50];
 static int32_t keycode_lut[LAST_KEYCODE];
 
@@ -64,10 +64,7 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
    int i = state_device_ids[id];
 
    if(i == -1)
-   {
       i = state_device_ids[id] = pads_connected++;
-      state[i].id = id;
-   }
 
    int type    = AInputEvent_getType(event);
    int keycode = AKeyEvent_getKeyCode(event);
@@ -105,19 +102,19 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 #ifdef RARCH_INPUT_DEBUG
       RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, pad: %d, x: %f, y: %f.\n", i, x, y);
 #endif
-      state[i].state &= ~(ANDROID_GAMEPAD_DPAD_LEFT | ANDROID_GAMEPAD_DPAD_RIGHT |
+      state[i] &= ~(ANDROID_GAMEPAD_DPAD_LEFT | ANDROID_GAMEPAD_DPAD_RIGHT |
             ANDROID_GAMEPAD_DPAD_UP | ANDROID_GAMEPAD_DPAD_DOWN);
-      state[i].state |= PRESSED_LEFT(x, y)  ? ANDROID_GAMEPAD_DPAD_LEFT  : 0;
-      state[i].state |= PRESSED_RIGHT(x, y) ? ANDROID_GAMEPAD_DPAD_RIGHT : 0;
-      state[i].state |= PRESSED_UP(x, y)    ? ANDROID_GAMEPAD_DPAD_UP    : 0;
-      state[i].state |= PRESSED_DOWN(x, y)  ? ANDROID_GAMEPAD_DPAD_DOWN  : 0;
+      state[i] |= PRESSED_LEFT(x, y)  ? ANDROID_GAMEPAD_DPAD_LEFT  : 0;
+      state[i] |= PRESSED_RIGHT(x, y) ? ANDROID_GAMEPAD_DPAD_RIGHT : 0;
+      state[i] |= PRESSED_UP(x, y)    ? ANDROID_GAMEPAD_DPAD_UP    : 0;
+      state[i] |= PRESSED_DOWN(x, y)  ? ANDROID_GAMEPAD_DPAD_DOWN  : 0;
    }
 
    if(action == AKEY_EVENT_ACTION_DOWN || action == AKEY_EVENT_ACTION_MULTIPLE)
-      state[i].state |= keycode_lut[keycode];
+      state[i] |= keycode_lut[keycode];
 
    if(action == AKEY_EVENT_ACTION_UP)
-      state[i].state &= ~(keycode_lut[keycode]);
+      state[i] &= ~(keycode_lut[keycode]);
 
    if(keycode == AKEYCODE_BACK || keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN)
       return 0;
@@ -345,7 +342,7 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
       switch (device)
       {
          case RETRO_DEVICE_JOYPAD:
-            retval = (state[player].state & button) ? 1 : 0;
+            retval = (state[player] & button) ? 1 : 0;
 #ifdef RARCH_INPUT_DEBUG
             if(retval != 0)
             {

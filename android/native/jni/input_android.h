@@ -47,10 +47,4 @@ enum {
    ANDROID_GAMEPAD_RSTICK_DOWN_MASK =	1 << 23,
 };
 
-typedef struct
-{
-   int32_t  id;
-   uint64_t state;
-} android_input_state_t;
-
 #endif
