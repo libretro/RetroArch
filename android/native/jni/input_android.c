@@ -83,9 +83,6 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
    }
 
    {
-      bool do_keydown = false;
-      bool do_keyrelease = false;
-      int action = AKEY_EVENT_NO_ACTION;
       int type    = AInputEvent_getType(event);
       int keycode = AKeyEvent_getKeyCode(event);
 
@@ -113,12 +110,12 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
       }
 #endif
 
-      action  = AKeyEvent_getAction(event);
+      int action  = AKeyEvent_getAction(event);
 
       if(type == AINPUT_EVENT_TYPE_MOTION)
       {
          float x = AMotionEvent_getX(event, 0);
-	 float y = AMotionEvent_getY(event, 0);
+         float y = AMotionEvent_getY(event, 0);
 #ifdef RARCH_INPUT_DEBUG
          RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, pad: %d, x: %f, y: %f.\n", i, x, y);
 #endif
@@ -132,32 +129,10 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
          state[i].state |= PRESSED_DOWN(x, y)  ? ANDROID_GAMEPAD_DPAD_DOWN  : 0;
       }
 
-      if(action != AKEY_EVENT_NO_ACTION)
-      {
-         switch(action)
-         {
-            case AKEY_EVENT_ACTION_DOWN:
-            case AKEY_EVENT_ACTION_MULTIPLE:
-#ifdef RARCH_INPUT_DEBUG
-               RARCH_LOG("AKEY_EVENT_ACTION_DOWN, pad: %d, keycode: %d.\n", i, keycode);
-#endif
-	       do_keydown = true;
-	       do_keyrelease = false;
-               break;
-            case AKEY_EVENT_ACTION_UP:
-#ifdef RARCH_INPUT_DEBUG
-               RARCH_LOG("AKEY_EVENT_ACTION_UP, pad: %d, keycode: %d.\n", i, keycode);
-#endif
-	       do_keydown = false;
-	       do_keyrelease = true;
-               break;
-         }
-      }
-
-      if(do_keydown)
+      if(action == AKEY_EVENT_ACTION_DOWN || action == AKEY_EVENT_ACTION_MULTIPLE)
          state[i].state |= keycode_lut[keycode];
 
-      if(do_keyrelease)
+      if(action == AKEY_EVENT_ACTION_UP)
          state[i].state &= ~(keycode_lut[keycode]);
 
    }
