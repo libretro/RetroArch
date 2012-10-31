@@ -16,6 +16,7 @@
 
 #include <android/keycodes.h>
 #include "android-general.h"
+#include "../../../benchmark.h"
 #include "../../../general.h"
 #include "../../../driver.h"
 #include "input_android.h"
@@ -62,6 +63,9 @@ static int32_t keycode_lut[LAST_KEYCODE];
 
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 {
+   RARCH_PERFORMANCE_INIT(handle_input);
+   RARCH_PERFORMANCE_START(handle_input);
+
    int id = AInputEvent_getDeviceId(event);
    int i = state_device_ids[id];
 
@@ -123,6 +127,8 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 
    if(keycode == AKEYCODE_BACK || keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN)
       return 0;
+
+   RARCH_PERFORMANCE_STOP(handle_input);
 
    return 1;
 }
