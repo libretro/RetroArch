@@ -1,6 +1,7 @@
 RARCH_VERSION		= "0.9.7"
 LOCAL_PATH := $(call my-dir)
-PERF_TEST := 1
+PERF_TEST := 0
+HAVE_OPENSL     := 1
 
 include $(CLEAR_VARS)
 
@@ -18,7 +19,6 @@ LOCAL_CFLAGS += -DANDROID_MIPS -D__mips__ -D__MIPSEL__
 endif
 
 LOCAL_MODULE    := retroarch-activity
-HAVE_OPENSL     := 1
 
 RARCH_PATH  := ../../..
 LOCAL_SRC_FILES    =	$(RARCH_PATH)/retroarch.c \

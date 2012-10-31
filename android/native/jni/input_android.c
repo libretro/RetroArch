@@ -43,12 +43,6 @@ enum {
 
 #define LAST_KEYCODE AKEYCODE_ASSIST
 
-enum {
-    AKEYSTATE_DONT_PROCESS   = 0,
-    AKEYSTATE_PROCESS        = 1,
-};
-
-
 #define PRESSED_UP(x, y)   ((-0.80f > y) && (x >= -1.00f))
 #define PRESSED_DOWN(x, y) ((0.80f  < y) && (y <= 1.00f))
 #define PRESSED_LEFT(x, y) ((-0.80f > x) && (x >= -1.00f))
@@ -329,15 +323,14 @@ static void android_input_poll(void *data)
    (void)data;
 
     // Read all pending events.
-   int ident;
+   int event;
    struct android_poll_source* source;
    struct android_app* state = g_android.app;
 
-   // We loop until all events are read
-   ident= ALooper_pollOnce(0, NULL, 0, (void**)&source);
+   ALooper_pollOnce(0, NULL, &event, (void**)&source);
 
    // Process this event.
-   if (ident && source != NULL)
+   if(event)
       source->process(state, source);
 }
 
