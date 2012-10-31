@@ -57,85 +57,70 @@ enum {
 
 static unsigned pads_connected;
 static android_input_state_t state[MAX_PADS];
+static int state_device_ids[50];
 
 int32_t keycode_lut[LAST_KEYCODE];
 
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 {
-   int id, i;
-   bool found_existing_id = false;
+   int id = AInputEvent_getDeviceId(event);
+   int i = state_device_ids[id];
 
-   id = AInputEvent_getDeviceId(event);
-
-   for (i = 0; i < pads_connected; i++)
+   if(i == -1)
    {
-      if (state[i].id == id)
-      {
-         found_existing_id = true;
+      i = state_device_ids[id] = pads_connected++;
+      state[i].id = id;
+   }
+
+   int type    = AInputEvent_getType(event);
+   int keycode = AKeyEvent_getKeyCode(event);
+
+#ifdef RARCH_INPUT_DEBUG
+   int source  = AInputEvent_getSource(event);
+
+   switch(source)
+   {
+      case AINPUT_SOURCE_DPAD:
+         RARCH_LOG("AINPUT_SOURCE_DPAD, pad: %d, keycode: %d.\n", i, keycode);
          break;
-      }
+      case AINPUT_SOURCE_TOUCHSCREEN:
+         RARCH_LOG("AINPUT_SOURCE_TOUCHSCREEN, pad: %d, keycode: %d.\n", i, keycode);
+         break; 
+      case AINPUT_SOURCE_TOUCHPAD:
+         RARCH_LOG("AINPUT_SOURCE_TOUCHPAD, pad: %d, keycode: %d.\n", i, keycode);
+         break;
+      case AINPUT_SOURCE_ANY:
+         RARCH_LOG("AINPUT_SOURCE_ANY, pad: %d, keycode: %d.\n", i, keycode);
+         break;
+      case 0:
+      default:
+         RARCH_LOG("AINPUT_SOURCE_DEFAULT, pad: %d, keycode: %d.\n", i, keycode);
+         break;
    }
-
-   if(!found_existing_id)
-   {
-      state[pads_connected++].id = id;
-      i = pads_connected;
-   }
-
-   {
-      int type    = AInputEvent_getType(event);
-      int keycode = AKeyEvent_getKeyCode(event);
-
-#ifdef RARCH_INPUT_DEBUG
-      int source  = AInputEvent_getSource(event);
-
-      switch(source)
-      {
-         case AINPUT_SOURCE_DPAD:
-            RARCH_LOG("AINPUT_SOURCE_DPAD, pad: %d, keycode: %d.\n", i, keycode);
-            break;
-         case AINPUT_SOURCE_TOUCHSCREEN:
-            RARCH_LOG("AINPUT_SOURCE_TOUCHSCREEN, pad: %d, keycode: %d.\n", i, keycode);
-            break; 
-         case AINPUT_SOURCE_TOUCHPAD:
-            RARCH_LOG("AINPUT_SOURCE_TOUCHPAD, pad: %d, keycode: %d.\n", i, keycode);
-            break;
-         case AINPUT_SOURCE_ANY:
-            RARCH_LOG("AINPUT_SOURCE_ANY, pad: %d, keycode: %d.\n", i, keycode);
-            break;
-         case 0:
-            default:
-            RARCH_LOG("AINPUT_SOURCE_DEFAULT, pad: %d, keycode: %d.\n", i, keycode);
-            break;
-      }
 #endif
 
-      int action  = AKeyEvent_getAction(event);
+   int action  = AKeyEvent_getAction(event);
 
-      if(type == AINPUT_EVENT_TYPE_MOTION)
-      {
-         float x = AMotionEvent_getX(event, 0);
-         float y = AMotionEvent_getY(event, 0);
+   if(type == AINPUT_EVENT_TYPE_MOTION)
+   {
+      float x = AMotionEvent_getX(event, 0);
+      float y = AMotionEvent_getY(event, 0);
 #ifdef RARCH_INPUT_DEBUG
-         RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, pad: %d, x: %f, y: %f.\n", i, x, y);
+      RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, pad: %d, x: %f, y: %f.\n", i, x, y);
 #endif
-         state[i].state &= ~(ANDROID_GAMEPAD_DPAD_LEFT);
-         state[i].state &= ~(ANDROID_GAMEPAD_DPAD_RIGHT);
-         state[i].state &= ~(ANDROID_GAMEPAD_DPAD_UP);
-         state[i].state &= ~(ANDROID_GAMEPAD_DPAD_DOWN);
-         state[i].state |= PRESSED_LEFT(x, y)  ? ANDROID_GAMEPAD_DPAD_LEFT  : 0;
-         state[i].state |= PRESSED_RIGHT(x, y) ? ANDROID_GAMEPAD_DPAD_RIGHT : 0;
-         state[i].state |= PRESSED_UP(x, y)    ? ANDROID_GAMEPAD_DPAD_UP    : 0;
-         state[i].state |= PRESSED_DOWN(x, y)  ? ANDROID_GAMEPAD_DPAD_DOWN  : 0;
-      }
-
-      if(action == AKEY_EVENT_ACTION_DOWN || action == AKEY_EVENT_ACTION_MULTIPLE)
-         state[i].state |= keycode_lut[keycode];
-
-      if(action == AKEY_EVENT_ACTION_UP)
-         state[i].state &= ~(keycode_lut[keycode]);
-
+      state[i].state &= ~(ANDROID_GAMEPAD_DPAD_LEFT | ANDROID_GAMEPAD_DPAD_RIGHT |
+         ANDROID_GAMEPAD_DPAD_UP | ANDROID_GAMEPAD_DPAD_DOWN);
+      state[i].state |= PRESSED_LEFT(x, y)  ? ANDROID_GAMEPAD_DPAD_LEFT  : 0;
+      state[i].state |= PRESSED_RIGHT(x, y) ? ANDROID_GAMEPAD_DPAD_RIGHT : 0;
+      state[i].state |= PRESSED_UP(x, y)    ? ANDROID_GAMEPAD_DPAD_UP    : 0;
+      state[i].state |= PRESSED_DOWN(x, y)  ? ANDROID_GAMEPAD_DPAD_DOWN  : 0;
    }
+
+   if(action == AKEY_EVENT_ACTION_DOWN || action == AKEY_EVENT_ACTION_MULTIPLE)
+      state[i].state |= keycode_lut[keycode];
+
+   if(action == AKEY_EVENT_ACTION_UP)
+      state[i].state &= ~(keycode_lut[keycode]);
 
    return 1;
 }
@@ -165,6 +150,9 @@ static void *android_input_init(void)
     * keyCharacterMap='/system/usr/keychars/Generic.kcm'
     * builtinKeyboard=false
     */
+
+   for(int i = 0; i < 50; i++)
+      state_device_ids[i] = -1;
 
    keycode_lut[AKEYCODE_BUTTON_2] = ANDROID_GAMEPAD_CROSS;
    keycode_lut[AKEYCODE_BUTTON_1] = ANDROID_GAMEPAD_SQUARE;
