@@ -43,6 +43,7 @@ static bool g_resized;
 
 static bool g_restore_desktop;
 
+static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use);
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 static void gfx_ctx_destroy(void);
 
@@ -188,10 +189,13 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
    if (!g_hwnd)
    {
-      RECT screen_rect;
-      GetClientRect(GetDesktopWindow(), &screen_rect);
-      *width  = screen_rect.right - screen_rect.left;
-      *height = screen_rect.bottom - screen_rect.top;
+      HMONITOR hm_to_use = NULL;
+      MONITORINFOEX current_mon;
+
+      monitor_info(&current_mon, &hm_to_use);
+      RECT mon_rect = current_mon.rcMonitor;
+      *width  = mon_rect.right - mon_rect.left;
+      *height = mon_rect.bottom - mon_rect.top;
    }
    else
    {
