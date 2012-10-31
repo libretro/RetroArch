@@ -68,29 +68,11 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
       case APP_CMD_GAINED_FOCUS:
          RARCH_LOG("engine_handle_cmd: APP_CMD_GAINED_FOCUS.\n");
          // When our app gains focus, we start monitoring the accelerometer.
-#if 0
-         if (g_android.accelerometerSensor != NULL)
-         {
-            ASensorEventQueue_enableSensor(g_android.sensorEventQueue,
-                  g_android.accelerometerSensor);
-
-            // We'd like to get 60 events per second (in us).
-            ASensorEventQueue_setEventRate(g_android.sensorEventQueue,
-                  g_android.accelerometerSensor, (1000L/60)*1000);
-         }
-#endif
          break;
       case APP_CMD_LOST_FOCUS:
          RARCH_LOG("engine_handle_cmd: APP_CMD_LOST_FOCUS.\n");
-         // When our app loses focus, we stop monitoring the accelerometer.
-         // This is to avoid consuming battery while not being used.
          if (!g_android.window_inited)
          {
-#if 0
-            if (g_android.accelerometerSensor != NULL)
-               ASensorEventQueue_disableSensor(g_android.sensorEventQueue,
-                     g_android.accelerometerSensor);
-#endif
          }
          break;
    }
