@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <dlfcn.h>
 #include <android/keycodes.h>
 #include "android-general.h"
 #include "../../../general.h"
@@ -41,31 +40,25 @@ enum {
    AKEYCODE_ASSIST          = 219,
 };
 
+#define LAST_KEYCODE AKEYCODE_ASSIST
+
 enum {
     AKEYSTATE_DONT_PROCESS   = 0,
     AKEYSTATE_PROCESS        = 1,
 };
 
-typedef struct {
-   int32_t  a_keycode;
-   uint16_t r_keycode;
-} rarch_android_bind_t;
 
-
+#define PRESSED_UP(x, y)   ((-0.80f > y) && (x >= -1.00f))
+#define PRESSED_DOWN(x, y) ((0.80f  < y) && (y <= 1.00f))
+#define PRESSED_LEFT(x, y) ((-0.80f > x) && (x >= -1.00f))
+#define PRESSED_RIGHT(x, y) ((0.80f  < x) && (x <= 1.00f))
 
 //#define RARCH_INPUT_DEBUG
 
 static unsigned pads_connected;
 static android_input_state_t state[MAX_PADS];
 
-#define LAST_KEYCODE AKEYCODE_ASSIST
-
 int32_t keycode_lut[LAST_KEYCODE];
-
-#define PRESSED_UP(x, y)   ((-0.80f > y) && (x >= -1.00f))
-#define PRESSED_DOWN(x, y) ((0.80f  < y) && (y <= 1.00f))
-#define PRESSED_LEFT(x, y) ((-0.80f > x) && (x >= -1.00f))
-#define PRESSED_RIGHT(x, y) ((0.80f  < x) && (x <= 1.00f))
 
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
 {
