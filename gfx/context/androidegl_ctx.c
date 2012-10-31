@@ -114,8 +114,6 @@ static bool gfx_ctx_init(void)
          !eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &height))
       goto error;
 
-   g_android.state.angle = 0;
-
    return true;
 
 error:

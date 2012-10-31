@@ -38,9 +38,6 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
       case APP_CMD_SAVE_STATE:
          RARCH_LOG("engine_handle_cmd: APP_CMD_SAVE_STATE.\n");
          // The system has asked us to save our current state.  Do so.
-         g_android.app->savedState = malloc(sizeof(struct saved_state));
-         *((struct saved_state*)g_android.app->savedState) = g_android.state;
-         g_android.app->savedStateSize = sizeof(struct saved_state);
          break;
       case APP_CMD_INIT_WINDOW:
          RARCH_LOG("engine_handle_cmd: APP_CMD_INIT_WINDOW.\n");
@@ -137,9 +134,6 @@ void android_main(struct android_app* state)
    snprintf(libretro_path, sizeof(libretro_path), "/data/data/com.retroarch/lib/libretro.so");
 
    g_android.app->onAppCmd = engine_handle_cmd;
-
-   if (g_android.app->savedState != NULL) // We are starting with a previous saved state; restore from it.
-      g_android.state = *(struct saved_state*)g_android.app->savedState;
 
    int argc = 0;
    char *argv[MAX_ARGS] = {NULL};
