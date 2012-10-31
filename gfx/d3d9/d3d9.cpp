@@ -76,8 +76,10 @@ namespace Callback
             unsigned new_width, new_height;
             new_width = LOWORD(lParam);
             new_height = HIWORD(lParam);
-            curD3D->resize(new_width, new_height);
-            break;
+
+            if (new_width && new_height)
+               curD3D->resize(new_width, new_height);
+            return 0;
 
          default:
             return DefWindowProc(hWnd, message, wParam, lParam);
@@ -117,9 +119,9 @@ void D3DVideo::make_d3dpp(const video_info_t &info, D3DPRESENT_PARAMETERS &d3dpp
    d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
    d3dpp.hDeviceWindow = hWnd;
    d3dpp.BackBufferCount = 2;
-   d3dpp.BackBufferFormat = info.fullscreen ? D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
+   d3dpp.BackBufferFormat = !d3dpp.Windowed ? D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
 
-   if (info.fullscreen)
+   if (!d3dpp.Windowed)
    {
       d3dpp.BackBufferWidth = screen_width;
       d3dpp.BackBufferHeight = screen_height;
@@ -135,7 +137,34 @@ void D3DVideo::init(const video_info_t &info)
       D3DPRESENT_PARAMETERS d3dpp;
       make_d3dpp(info, d3dpp);
       if (dev->Reset(&d3dpp) != D3D_OK)
-         throw std::runtime_error("Failed to reset device ...");
+      {
+         HRESULT res = dev->TestCooperativeLevel();
+         const char *err;
+         switch (res)
+         {
+            case D3DERR_DEVICELOST:
+               err = "DEVICELOST";
+               break;
+
+            case D3DERR_DEVICENOTRESET:
+               err = "DEVICENOTRESET";
+               break;
+
+            case D3DERR_DRIVERINTERNALERROR:
+               err = "DRIVERINTERNALERROR";
+               break;
+
+            default:
+               err = "Unknown";
+         }
+         // Try to recreate the device completely ...
+         RARCH_WARN("[D3D9]: Attempting to recover from dead state (%s).\n", err);
+         deinit(); 
+         g_pD3D->Release();
+         g_pD3D = nullptr;
+         init_base(info);
+         RARCH_LOG("[D3D9]: Recovered from dead state.\n");
+      }
    }
 
    calculate_rect(screen_width, screen_height, info.force_aspect, g_settings.video.aspect_ratio);
@@ -438,14 +467,21 @@ bool D3DVideo::frame(const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
+   // We cannot recover in fullscreen.
+   if (needs_restore && IsIconic(hWnd))
+      return true;
+
    if (needs_restore && !restore())
    {
-      RARCH_ERR("[D3D9]: Restore failed.\n");
+      RARCH_ERR("[D3D9]: Failed to restore.\n");
       return false;
    }
 
    if (!chain->render(frame, width, height, pitch, rotation))
-      return RARCH_FALSE;
+   {
+      RARCH_ERR("[D3D9]: Failed to render scene.\n");
+      return false;
+   }
 
    if (msg && SUCCEEDED(dev->BeginScene()))
    {
@@ -1034,6 +1070,7 @@ void D3DVideo::deinit_font()
 {
    if (font)
       font->Release();
+   font = nullptr;
 }
 
 void D3DVideo::update_title()
@@ -1051,6 +1088,8 @@ void D3DVideo::resize(unsigned new_width, unsigned new_height)
 {
    if (!dev)
       return;
+
+   RARCH_LOG("[D3D9]: Resize %ux%u.\n", new_width, new_height);
 
    if (new_width != video_info.width || new_height != video_info.height)
    {
