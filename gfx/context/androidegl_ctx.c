@@ -57,22 +57,18 @@ static void gfx_ctx_destroy(void)
    g_egl_surf = EGL_NO_SURFACE;
    g_egl_ctx = EGL_NO_CONTEXT;
    g_config   = 0;
-
-   g_android.width = 0;
-   g_android.height = 0;
-   g_android.animating = 0;
 }
 
 static bool gfx_ctx_init(void)
 {
    RARCH_LOG("gfx_ctx_init().\n");
    const EGLint attribs[] = {
-	EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-        EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-        EGL_BLUE_SIZE, 8,
-        EGL_GREEN_SIZE, 8,
-        EGL_RED_SIZE, 8,
-        EGL_NONE
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+      EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+      EGL_BLUE_SIZE, 8,
+      EGL_GREEN_SIZE, 8,
+      EGL_RED_SIZE, 8,
+      EGL_NONE
    };
    EGLConfig config;    
    EGLint num_config;
@@ -88,7 +84,7 @@ static bool gfx_ctx_init(void)
    };
 
    RARCH_LOG("Initializing context\n");
-   
+
    if ((g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY)
       goto error;
 
@@ -115,11 +111,9 @@ static bool gfx_ctx_init(void)
       goto error;
 
    if (!eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &width) ||
-      !eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &height))
+         !eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &height))
       goto error;
 
-   g_android.width = width;
-   g_android.height = height;
    g_android.state.angle = 0;
 
    return true;

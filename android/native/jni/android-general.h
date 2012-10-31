@@ -22,9 +22,6 @@ struct droid
 
    bool init_quit;
    bool window_inited;
-   unsigned animating;
-   unsigned width;
-   unsigned height;
    struct saved_state state;
 };
 

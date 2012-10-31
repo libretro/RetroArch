@@ -39,15 +39,15 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
          RARCH_LOG("engine_handle_cmd: APP_CMD_SAVE_STATE.\n");
          // The system has asked us to save our current state.  Do so.
          g_android.app->savedState = malloc(sizeof(struct saved_state));
-	 *((struct saved_state*)g_android.app->savedState) = g_android.state;
-	 g_android.app->savedStateSize = sizeof(struct saved_state);
-	 break;
+         *((struct saved_state*)g_android.app->savedState) = g_android.state;
+         g_android.app->savedStateSize = sizeof(struct saved_state);
+         break;
       case APP_CMD_INIT_WINDOW:
          RARCH_LOG("engine_handle_cmd: APP_CMD_INIT_WINDOW.\n");
-	 // The window is being shown, get it ready.
-	 if (g_android.app->window != NULL)
+         // The window is being shown, get it ready.
+         if (g_android.app->window != NULL)
             g_android.window_inited = true;
-	 break;
+         break;
       case APP_CMD_START:
          RARCH_LOG("engine_handle_cmd: APP_CMD_START.\n");
          break;
@@ -59,43 +59,40 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd)
          break;
       case APP_CMD_PAUSE:
          RARCH_LOG("engine_handle_cmd: APP_CMD_PAUSE.\n");
-	 g_android.init_quit = true;
+         g_android.init_quit = true;
          break;
       case APP_CMD_TERM_WINDOW:
          RARCH_LOG("engine_handle_cmd: APP_CMD_TERM_WINDOW.\n");
-	 // The window is being hidden or closed, clean it up.
-	 break;
+         // The window is being hidden or closed, clean it up.
+         break;
       case APP_CMD_GAINED_FOCUS:
          RARCH_LOG("engine_handle_cmd: APP_CMD_GAINED_FOCUS.\n");
-	 // When our app gains focus, we start monitoring the accelerometer.
+         // When our app gains focus, we start monitoring the accelerometer.
 #if 0
-	 if (g_android.accelerometerSensor != NULL)
+         if (g_android.accelerometerSensor != NULL)
          {
             ASensorEventQueue_enableSensor(g_android.sensorEventQueue,
-               g_android.accelerometerSensor);
+                  g_android.accelerometerSensor);
 
-	    // We'd like to get 60 events per second (in us).
-	    ASensorEventQueue_setEventRate(g_android.sensorEventQueue,
-               g_android.accelerometerSensor, (1000L/60)*1000);
-	 }
+            // We'd like to get 60 events per second (in us).
+            ASensorEventQueue_setEventRate(g_android.sensorEventQueue,
+                  g_android.accelerometerSensor, (1000L/60)*1000);
+         }
 #endif
-	 break;
+         break;
       case APP_CMD_LOST_FOCUS:
          RARCH_LOG("engine_handle_cmd: APP_CMD_LOST_FOCUS.\n");
-	 // When our app loses focus, we stop monitoring the accelerometer.
-	 // This is to avoid consuming battery while not being used.
-	 if (!g_android.window_inited)
+         // When our app loses focus, we stop monitoring the accelerometer.
+         // This is to avoid consuming battery while not being used.
+         if (!g_android.window_inited)
          {
 #if 0
             if (g_android.accelerometerSensor != NULL)
                ASensorEventQueue_disableSensor(g_android.sensorEventQueue,
-            g_android.accelerometerSensor);
+                     g_android.accelerometerSensor);
 #endif
-            
-            // Also stop animating.
-            g_android.animating = 0;
          }
-	 break;
+         break;
    }
 }
 
@@ -178,45 +175,28 @@ void android_main(struct android_app* state)
    argv[argc++] = strdup(libretro_path);
    argv[argc++] = strdup("-v");
 
-   g_android.animating = 1;
-
    g_extern.verbose = true;
 
    while(!g_android.window_inited)
    {
       // Read all pending events.
       int ident;
-      int events;
       struct android_poll_source* source;
 
-      // If not animating, we will block forever waiting for events.
-      // If animating, we loop until all events are read, then continue
-      // to draw the next frame of animation.
-      while ((ident=ALooper_pollAll(g_android.animating ? 0 : -1, NULL, &events,
-				      (void**)&source)) >= 0)
+      // Block forever waiting for events.
+      while ((ident=ALooper_pollAll(0, NULL, 0, (void**)&source)) >= 0)
       {
          // Process this event.
          if (source != NULL)
             source->process(g_android.app, source);
 
-	 // If a sensor has data, process it now.
-	 if (ident == LOOPER_ID_USER && g_android.accelerometerSensor != NULL)
-	 {
-		 ASensorEvent event;
-		 while (ASensorEventQueue_getEvents(g_android.sensorEventQueue, &event, 1) > 0)
-                 {
-                    //RARCH_LOG("accelerometer: x=%f y=%f z=%f.\n", event.acceleration.x,
-                    //event.acceleration.y, event.acceleration.z);
-                 }
-	 }
-
-	 // Check if we are exiting.
-	 if (g_android.app->destroyRequested != 0)
-	    return;
+         // Check if we are exiting.
+         if (g_android.app->destroyRequested != 0)
+            return;
       }
    }
 
-   RARCH_LOG("Start RetroArch...\n");
+   RARCH_LOG("Starting RetroArch...\n");
 
    rarch_main(argc, argv);
    exit(0);
