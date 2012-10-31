@@ -47,6 +47,7 @@ class D3DVideo
       void viewport_info(rarch_viewport &vp);
       bool read_viewport(uint8_t *buffer);
       void resize(unsigned new_width, unsigned new_height);
+      bool set_shader(const std::string &path);
 
    private:
 

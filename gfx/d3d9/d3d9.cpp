@@ -16,8 +16,6 @@
 // This driver is merged from the external RetroArch-D3D9 driver.
 // It is written in C++11 (should be compat with MSVC 2010).
 // Might get rewritten in C99 if I have lots of time to burn.
-//
-// TODO: Change shader on the fly.
 
 #include "d3d9.hpp"
 #include "render_chain.hpp"
@@ -536,10 +534,14 @@ void D3DVideo::init_chain_singlepass(const video_info_t &video_info)
    LinkInfo info = {0};
    LinkInfo info_second = {0};
 
-   auto shader_type = g_settings.video.shader_type;
-   if ((shader_type == RARCH_SHADER_CG || shader_type == RARCH_SHADER_AUTO) && *g_settings.video.cg_shader_path)
-      cg_shader = info.shader_path = g_settings.video.cg_shader_path;
+   if (cg_shader.empty())
+   {
+      auto shader_type = g_settings.video.shader_type;
+      if ((shader_type == RARCH_SHADER_CG || shader_type == RARCH_SHADER_AUTO) && *g_settings.video.cg_shader_path)
+         cg_shader = g_settings.video.cg_shader_path;
+   }
 
+   info.shader_path = cg_shader;
    bool second_pass = g_settings.video.render_to_texture;
 
    if (second_pass)
@@ -962,6 +964,30 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
    init_imports(conf, basedir);
 }
 
+bool D3DVideo::set_shader(const std::string &path)
+{
+   auto old_shader = cg_shader;
+   bool restore_old = false;
+   try
+   {
+      cg_shader = path;
+      restore();
+   }
+   catch (const std::exception &e)
+   {
+      RARCH_ERR("[D3D9]: Setting shader failed: (%s).\n", e.what());
+      restore_old = true;
+   }
+
+   if (restore_old)
+   {
+      cg_shader = old_shader;
+      restore();
+   }
+
+   return !restore_old;
+}
+
 bool D3DVideo::init_chain(const video_info_t &video_info)
 {
    try
@@ -973,7 +999,7 @@ bool D3DVideo::init_chain(const video_info_t &video_info)
    }
    catch (const std::exception &e)
    {
-      RARCH_ERR("[D3D9]: Render chain error: (%s)\n", e.what());
+      RARCH_ERR("[D3D9]: Render chain error: (%s).\n", e.what());
       return false;
    }
 
@@ -1099,22 +1125,26 @@ static bool d3d9_read_viewport(void *data, uint8_t *buffer)
    return reinterpret_cast<D3DVideo*>(data)->read_viewport(buffer);
 }
 
+static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char *path)
+{
+   if (type != RARCH_SHADER_CG)
+   {
+      RARCH_ERR("[D3D9]: Only Cg shaders supported.\n");
+      return false;
+   }
+
+   return reinterpret_cast<D3DVideo*>(data)->set_shader(path);
+}
+
 const video_driver_t video_d3d9 = {
    d3d9_init,
    d3d9_frame,
    d3d9_set_nonblock_state,
    d3d9_alive,
    d3d9_focus,
-
-#if 0
    d3d9_set_shader,
-#else
-   NULL,
-#endif
-
    d3d9_free,
    "d3d9",
-
    d3d9_set_rotation,
    d3d9_viewport_info,
    d3d9_read_viewport,
