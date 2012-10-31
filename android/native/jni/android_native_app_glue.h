@@ -326,6 +326,9 @@ extern "C" {
     */
    extern void android_main(struct android_app* app);
 
+   extern void process_input(struct android_app* app, struct android_poll_source* source);
+   extern void process_cmd(struct android_app* app, struct android_poll_source* source);
+
 #ifdef __cplusplus
 }
 #endif

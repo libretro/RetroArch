@@ -168,7 +168,7 @@ void process_input(struct android_app* app, struct android_poll_source* source)
    }
 }
 
-static void process_cmd(struct android_app* app, struct android_poll_source* source)
+void process_cmd(struct android_app* app, struct android_poll_source* source)
 {
    int8_t cmd = android_app_read_cmd(app);
 
