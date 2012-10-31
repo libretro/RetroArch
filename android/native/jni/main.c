@@ -149,14 +149,14 @@ void android_main(struct android_app* state)
    while(!g_android.window_inited)
    {
       // Read all pending events.
-      struct android_poll_source* source;
+      int id;
 
       // Block forever waiting for events.
-      while ((ALooper_pollOnce(0, NULL, 0, (void**)&source)) >= 0)
+      while ((id = ALooper_pollOnce(0, NULL, 0, NULL)) >= 0)
       {
          // Process this event.
-         if (source != NULL)
-            process_cmd(g_android.app, source);
+         if (id)
+            process_cmd();
 
          // Check if we are exiting.
          if (g_android.app->destroyRequested != 0)

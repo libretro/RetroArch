@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <sys/resource.h>
 
+#include "android-general.h"
 #include "android_native_app_glue.h"
 
 int8_t android_app_read_cmd(struct android_app* android_app)
@@ -150,8 +151,10 @@ static void android_app_destroy(struct android_app* android_app)
    // Can't touch android_app object after this.
 }
 
-void process_input(struct android_app* app, struct android_poll_source* source)
+void process_input(void)
 {
+   struct android_app* app = g_android.app;
+
    AInputEvent* event = NULL;
 
    if (AInputQueue_getEvent(app->inputQueue, &event) >= 0)
@@ -168,8 +171,9 @@ void process_input(struct android_app* app, struct android_poll_source* source)
    }
 }
 
-void process_cmd(struct android_app* app, struct android_poll_source* source)
+void process_cmd(void)
 {
+   struct android_app* app = g_android.app;
    int8_t cmd = android_app_read_cmd(app);
 
    android_app_pre_exec_cmd(app, cmd);
@@ -189,12 +193,8 @@ static void* android_app_entry(void* param)
 
    print_cur_config(android_app);
 
-   android_app->cmdPollSource.id = LOOPER_ID_MAIN;
-   android_app->cmdPollSource.app = android_app;
-   android_app->cmdPollSource.process = process_cmd;
-   android_app->inputPollSource.id = LOOPER_ID_INPUT;
-   android_app->inputPollSource.app = android_app;
-   android_app->inputPollSource.process = process_input;
+   android_app->cmdPollSource = LOOPER_ID_MAIN;
+   android_app->inputPollSource = LOOPER_ID_INPUT;
 
    ALooper* looper = ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
    ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN, ALOOPER_EVENT_INPUT, NULL,

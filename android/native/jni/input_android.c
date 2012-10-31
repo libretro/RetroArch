@@ -320,19 +320,16 @@ static void android_input_poll(void *data)
    (void)data;
 
     // Read all pending events.
-   int event, id;
-   struct android_poll_source* source;
-   struct android_app* state = g_android.app;
-
-   id = ALooper_pollOnce(0, NULL, &event, (void**)&source);
+   int event;
+   int id = ALooper_pollOnce(0, NULL, &event, NULL);
 
    // Process this event.
    if(event)
    {
       if(id == LOOPER_ID_INPUT)
-         process_input(state, source);
+         process_input();
       else
-         process_cmd(state, source);
+         process_cmd();
    }
 }
 

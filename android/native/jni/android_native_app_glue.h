@@ -87,18 +87,6 @@ extern "C" {
     * Data associated with an ALooper fd that will be returned as the "outData"
     * when that source has data ready.
     */
-   struct android_poll_source {
-      // The identifier of this source.  May be LOOPER_ID_MAIN or
-      // LOOPER_ID_INPUT.
-      int32_t id;
-
-      // The android_app this ident is associated with.
-      struct android_app* app;
-
-      // Function to call to perform the standard processing of data from
-      // this source.
-      void (*process)(struct android_app* app, struct android_poll_source* source);
-   };
 
    /**
     * This is the interface for the standard glue code of a threaded
@@ -157,8 +145,8 @@ extern "C" {
 
       pthread_t thread;
 
-      struct android_poll_source cmdPollSource;
-      struct android_poll_source inputPollSource;
+      int32_t cmdPollSource;
+      int32_t inputPollSource;
 
       int running;
       int destroyed;
@@ -326,8 +314,8 @@ extern "C" {
     */
    extern void android_main(struct android_app* app);
 
-   extern void process_input(struct android_app* app, struct android_poll_source* source);
-   extern void process_cmd(struct android_app* app, struct android_poll_source* source);
+   extern void process_input(void);
+   extern void process_cmd(void);
 
 #ifdef __cplusplus
 }
