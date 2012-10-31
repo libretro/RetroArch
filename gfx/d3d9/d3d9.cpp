@@ -534,15 +534,39 @@ void D3DVideo::deinit_cg()
 void D3DVideo::init_chain_singlepass(const video_info_t &video_info)
 {
    LinkInfo info = {0};
+   LinkInfo info_second = {0};
 
    auto shader_type = g_settings.video.shader_type;
    if ((shader_type == RARCH_SHADER_CG || shader_type == RARCH_SHADER_AUTO) && *g_settings.video.cg_shader_path)
       cg_shader = info.shader_path = g_settings.video.cg_shader_path;
 
-   info.scale_x            = info.scale_y = 1.0f;
-   info.filter_linear      = video_info.smooth;
-   info.tex_w = info.tex_h = RARCH_SCALE_BASE * video_info.input_scale;
-   info.scale_type_x       = info.scale_type_y = LinkInfo::Viewport;
+   bool second_pass = !cg_shader.empty() && *g_settings.video.second_pass_shader;
+
+   if (g_settings.video.render_to_texture)
+   {
+      info.scale_x            = g_settings.video.fbo.scale_x;
+      info.scale_y            = g_settings.video.fbo.scale_y;
+      info.filter_linear      = video_info.smooth;
+      info.tex_w = info.tex_h = RARCH_SCALE_BASE * video_info.input_scale;
+      info.scale_type_x       = info.scale_type_y = LinkInfo::Relative;
+
+      if (second_pass)
+      {
+         info_second.scale_x       = info_second.scale_y = 1.0f;
+         info_second.scale_type_x  = info_second.scale_type_y = LinkInfo::Viewport;
+         info_second.filter_linear = g_settings.video.second_pass_smooth;
+         info_second.tex_w         = next_pow2(screen_width);
+         info_second.tex_h         = next_pow2(screen_height);
+         info_second.shader_path   = g_settings.video.second_pass_shader;
+      }
+   }
+   else
+   {
+      info.scale_x            = info.scale_y = 1.0f;
+      info.filter_linear      = video_info.smooth;
+      info.tex_w = info.tex_h = RARCH_SCALE_BASE * video_info.input_scale;
+      info.scale_type_x       = info.scale_type_y = LinkInfo::Viewport;
+   }
 
    chain = std::unique_ptr<RenderChain>(new RenderChain(
                video_info,
@@ -550,6 +574,9 @@ void D3DVideo::init_chain_singlepass(const video_info_t &video_info)
                info,
                video_info.rgb32 ? RenderChain::ARGB : RenderChain::RGB565,
                final_viewport));
+
+   if (second_pass)
+      chain->add_pass(info_second);
 }
 
 static std::vector<std::string> tokenize(const std::string &str)
