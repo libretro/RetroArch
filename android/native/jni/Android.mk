@@ -55,7 +55,7 @@ LOCAL_SRC_FILES    =	$(RARCH_PATH)/retroarch.c \
 			$(RARCH_PATH)/conf/config_file.c \
 			$(RARCH_PATH)/autosave.c \
 			$(RARCH_PATH)/thread.c \
-			$(RARCH_PATH)/performance/performance_android.c \
+			$(RARCH_PATH)/performance/performance_linux.c \
 			main.c
 
 ifeq ($(PERF_TEST), 1)

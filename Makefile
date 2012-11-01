@@ -56,7 +56,7 @@ endif
 
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
-   OBJ += input/linuxraw_input.o input/linuxraw_joypad.o
+   OBJ += input/linuxraw_input.o input/linuxraw_joypad.o performance/performance_linux.o
    JOYCONFIG_OBJ += input/linuxraw_joypad.o
 endif
 

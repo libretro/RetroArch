@@ -42,15 +42,20 @@
  * SUCH DAMAGE.
  */
 
+#ifdef ANDROID
 #include <sys/system_properties.h>
+#endif
 #ifdef __arm__
 #include <machine/cpu-features.h>
 #endif
-#include "performance_android.h"
+#include "performance_linux.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <string.h>
+#include <unistd.h>
+#include "../general.h"
 #include "../retroarch_logger.h"
 
 static  unsigned g_cpuFamily;
@@ -58,11 +63,11 @@ static  uint64_t g_cpuFeatures;
 static  unsigned g_cpuCount;
 
 #ifdef __arm__
-#  define DEFAULT_CPU_FAMILY  ANDROID_CPU_FAMILY_ARM
+#  define DEFAULT_CPU_FAMILY  CPU_FAMILY_ARM
 #elif defined __i386__
-#  define DEFAULT_CPU_FAMILY  ANDROID_CPU_FAMILY_X86
+#  define DEFAULT_CPU_FAMILY  CPU_FAMILY_X86
 #else
-#  define DEFAULT_CPU_FAMILY  ANDROID_CPU_FAMILY_UNKNOWN
+#  define DEFAULT_CPU_FAMILY  CPU_FAMILY_UNKNOWN
 #endif
 
 #ifdef __i386__
@@ -236,6 +241,7 @@ static int get_cpu_count(void)
    return __builtin_popcount(*cpus_present);
 }
 
+#ifdef __ARM_ARCH__
 /* Extract the content of a the first occurence of a given field in
  * the content of /proc/cpuinfo and return it as a heap-allocated
  * string that must be freed by the caller.
@@ -247,7 +253,7 @@ static char* extract_cpuinfo_field(char* buffer, int buflen, const char* field)
    int  fieldlen = strlen(field);
    char* bufend = buffer + buflen;
    char* result = NULL;
-   int len, ignore;
+   int len;
    const char *p, *q;
 
    /* Look for first field occurence, and ensures it starts the line.
@@ -324,6 +330,7 @@ static int has_list_item(const char* list, const char* item)
 
    return 0;
 }
+#endif
 
 static void rarch_perf_init_cpu(void)
 {
@@ -407,11 +414,11 @@ static void rarch_perf_init_cpu(void)
       }
 
       if (hasARMv7)
-         g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_ARMv7;
+         g_cpuFeatures |= CPU_ARM_FEATURE_ARMv7;
 
       /* The LDREX / STREX instructions are available from ARMv6 */
       if (archNumber >= 6)
-         g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_LDREX_STREX;
+         g_cpuFeatures |= CPU_ARM_FEATURE_LDREX_STREX;
 
       free(cpuArch);
    }
@@ -424,10 +431,10 @@ static void rarch_perf_init_cpu(void)
       RARCH_LOG("found cpuFeatures = '%s'\n", cpuFeatures);
 
       if (has_list_item(cpuFeatures, "vfpv3"))
-         g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_VFPv3;
+         g_cpuFeatures |= CPU_ARM_FEATURE_VFPv3;
 
       else if (has_list_item(cpuFeatures, "vfpv3d16"))
-         g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_VFPv3;
+         g_cpuFeatures |= CPU_ARM_FEATURE_VFPv3;
 
       if (has_list_item(cpuFeatures, "neon"))
       {
@@ -436,15 +443,14 @@ static void rarch_perf_init_cpu(void)
           *       that if Neon is implemented, so must be VFPv3
           *       so always set the flag.
           */
-         g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_NEON |
-            ANDROID_CPU_ARM_FEATURE_VFPv3;
+         g_cpuFeatures |= CPU_ARM_FEATURE_NEON | CPU_ARM_FEATURE_VFPv3;
       }
       free(cpuFeatures);
    }
 #endif /* __ARM_ARCH__ */
 
 #ifdef __i386__
-   g_cpuFamily = ANDROID_CPU_FAMILY_X86;
+   g_cpuFamily = CPU_FAMILY_X86;
 
    int regs[4];
 
@@ -460,17 +466,17 @@ static void rarch_perf_init_cpu(void)
 
    x86_cpuid(1, regs);
    if ((regs[2] & (1 << 9)) != 0)
-      g_cpuFeatures |= ANDROID_CPU_X86_FEATURE_SSE3;
+      g_cpuFeatures |= CPU_X86_FEATURE_SSE3;
 
    if ((regs[2] & (1 << 23)) != 0)
-      g_cpuFeatures |= ANDROID_CPU_X86_FEATURE_POPCNT;
+      g_cpuFeatures |= CPU_X86_FEATURE_POPCNT;
 
    if (vendorIsIntel && (regs[2] & (1 << 22)) != 0)
-      g_cpuFeatures |= ANDROID_CPU_X86_FEATURE_MOVBE;
+      g_cpuFeatures |= CPU_X86_FEATURE_MOVBE;
 #endif
 
 #ifdef _MIPS_ARCH
-   g_cpuFamily = ANDROID_CPU_FAMILY_MIPS;
+   g_cpuFamily = CPU_FAMILY_MIPS;
 #endif /* _MIPS_ARCH */
 }
 
@@ -482,7 +488,13 @@ unsigned rarch_perf_get_cpu_family(void)
 
 uint64_t rarch_perf_get_cpu_features(void)
 {
+   g_extern.verbose = true;
+
+   RARCH_LOG("Checking CPU features...\n");
+
    rarch_perf_init_cpu();
+
+   g_extern.verbose = false;
    return g_cpuFeatures;
 }
 

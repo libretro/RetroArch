@@ -23,8 +23,8 @@
 #include "config.h"
 #endif
 
-#ifdef ANDROID
-#include "performance/performance_android.h"
+#ifdef __linux
+#include "performance/performance_linux.h"
 #endif
 
 #include <stdint.h>

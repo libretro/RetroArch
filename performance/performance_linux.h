@@ -42,29 +42,29 @@
  * SUCH DAMAGE.
  */
 
-#ifndef RARCH_PERF_CPU_FEATURES_H
-#define RARCH_PERF_CPU_FEATURES_H
+#ifndef RARCH_PERF_CPU_FEATURES_LINUX_H
+#define RARCH_PERF_CPU_FEATURES_LINUX_H
 
 #include <sys/cdefs.h>
 #include <stdint.h>
 
-#define ANDROID_CPU_FAMILY_UNKNOWN  0
-#define ANDROID_CPU_FAMILY_ARM      1
-#define ANDROID_CPU_FAMILY_X86      2
-#define ANDROID_CPU_FAMILY_MIPS     3
-#define ANDROID_CPU_FAMILY_MAX      4
+#define CPU_FAMILY_UNKNOWN  0
+#define CPU_FAMILY_ARM      1
+#define CPU_FAMILY_X86      2
+#define CPU_FAMILY_MIPS     3
+#define CPU_FAMILY_MAX      4
 
-#define ANDROID_CPU_ARM_FEATURE_ARMv7       (1)
-#define ANDROID_CPU_ARM_FEATURE_VFPv3       (2)
-#define ANDROID_CPU_ARM_FEATURE_NEON        (4)
-#define ANDROID_CPU_ARM_FEATURE_LDREX_STREX (8)
+#define CPU_ARM_FEATURE_ARMv7       (1)
+#define CPU_ARM_FEATURE_VFPv3       (2)
+#define CPU_ARM_FEATURE_NEON        (4)
+#define CPU_ARM_FEATURE_LDREX_STREX (8)
 
-#define ANDROID_CPU_X86_FEATURE_SSE3        (1)
-#define ANDROID_CPU_X86_FEATURE_POPCNT      (2)
-#define ANDROID_CPU_X86_FEATURE_MOVBE       (4)
+#define CPU_X86_FEATURE_SSE3        (1)
+#define CPU_X86_FEATURE_POPCNT      (2)
+#define CPU_X86_FEATURE_MOVBE       (4)
 
 extern unsigned rarch_perf_get_cpu_family(void);
 extern uint64_t rarch_perf_get_cpu_features(void);
 extern unsigned rarch_perf_get_cpu_count(void);
 
-#endif /* RARCH_PERF_CPU_FEATURES_H */
+#endif /* RARCH_PERF_CPU_FEATURES_LINUX_H */

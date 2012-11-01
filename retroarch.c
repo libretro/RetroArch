@@ -2792,6 +2792,9 @@ int rarch_main(int argc, char *argv[])
 // Consoles use the higher level API.
 int main(int argc, char *argv[])
 {
+#if 0
+   rarch_perf_get_cpu_features();
+#endif
    return rarch_main(argc, argv);
 }
 #endif
