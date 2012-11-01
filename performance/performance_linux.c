@@ -466,13 +466,23 @@ static void rarch_perf_init_cpu(void)
 
    x86_cpuid(1, regs);
    if ((regs[2] & (1 << 9)) != 0)
+   {
+      RARCH_LOG("CPU Feature supported: sse3.\n");
       g_cpuFeatures |= CPU_X86_FEATURE_SSE3;
+   }
+
 
    if ((regs[2] & (1 << 23)) != 0)
+   {
+      RARCH_LOG("CPU Feature supported: popcnt.\n");
       g_cpuFeatures |= CPU_X86_FEATURE_POPCNT;
+   }
 
    if (vendorIsIntel && (regs[2] & (1 << 22)) != 0)
+   {
+      RARCH_LOG("CPU Feature supported: movbe.\n");
       g_cpuFeatures |= CPU_X86_FEATURE_MOVBE;
+   }
 #endif
 
 #ifdef _MIPS_ARCH
