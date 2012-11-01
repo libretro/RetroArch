@@ -46,6 +46,8 @@ void rarch_perf_log(void)
       RARCH_PERFORMANCE_LOG(perf_counters[i]->ident, *perf_counters[i]);
 }
 
+
+
 rarch_perf_tick_t rarch_get_perf_counter(void)
 {
    rarch_perf_tick_t time = 0;

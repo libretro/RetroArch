@@ -23,6 +23,7 @@
 
 #include "android_general.h"
 #include "../../../general.h"
+#include "../../../performance.h"
 
 static inline void android_app_write_cmd(struct android_app* android_app, int8_t cmd)
 {
@@ -259,6 +260,9 @@ void android_main(struct android_app* state)
             return;
       }
    }
+
+   RARCH_LOG("Checking CPU features...\n");
+   rarch_perf_get_cpu_features();
 
    RARCH_LOG("Starting RetroArch...\n");
 

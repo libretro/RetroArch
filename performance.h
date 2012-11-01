@@ -23,6 +23,10 @@
 #include "config.h"
 #endif
 
+#ifdef ANDROID
+#include "performance/performance_android.h"
+#endif
+
 #include <stdint.h>
 typedef unsigned long long rarch_perf_tick_t;
 
