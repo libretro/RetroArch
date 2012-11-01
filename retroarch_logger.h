@@ -56,7 +56,7 @@
 #define RARCH_LOG_OUTPUT(...) do { \
       if (g_extern.verbose) \
       { \
-         fprintf(stderr, "stderr: " __VA_ARGS__); \
+         fprintf(stderr, __VA_ARGS__); \
          fflush(stderr); \
       } \
    } while (0)

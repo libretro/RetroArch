@@ -23,10 +23,6 @@
 #include "config.h"
 #endif
 
-#ifdef __linux
-#include "performance/performance_linux.h"
-#endif
-
 #include <stdint.h>
 typedef unsigned long long rarch_perf_tick_t;
 
@@ -43,6 +39,17 @@ typedef struct rarch_perf_counter
 rarch_perf_tick_t rarch_get_perf_counter(void);
 void rarch_perf_register(struct rarch_perf_counter *perf);
 void rarch_perf_log(void);
+
+struct rarch_cpu_features
+{
+   bool sse;
+   bool sse2;
+   bool vmx;
+   bool avx;
+   bool neon;
+};
+
+void rarch_get_cpu_features(struct rarch_cpu_features *cpu);
 
 #ifdef PERF_TEST
 

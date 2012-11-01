@@ -23,7 +23,8 @@ OBJ = retroarch.o \
 		gfx/scaler/scaler.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \
-		gfx/scaler/filter.o
+		gfx/scaler/filter.o \
+		performance.o
 
 JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
 	conf/config_file.o \
@@ -56,7 +57,7 @@ endif
 
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
-   OBJ += input/linuxraw_input.o input/linuxraw_joypad.o performance/performance_linux.o
+   OBJ += input/linuxraw_input.o input/linuxraw_joypad.o
    JOYCONFIG_OBJ += input/linuxraw_joypad.o
 endif
 
@@ -143,7 +144,6 @@ endif
 
 ifeq ($(PERF_TEST), 1)
    DEFINES += -DPERF_TEST
-   OBJ += performance.o
 endif
 
 ifeq ($(HAVE_SDL), 1)

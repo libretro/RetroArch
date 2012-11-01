@@ -16,6 +16,8 @@
 
 #include "performance.h"
 
+#ifdef PERF_TEST
+
 #if defined(__CELLOS_LV2__) || defined(GEKKO)
 #ifndef _PPU_INTRINSICS_H
 #include <ppu_intrinsics.h>
@@ -46,8 +48,6 @@ void rarch_perf_log(void)
       RARCH_PERFORMANCE_LOG(perf_counters[i]->ident, *perf_counters[i]);
 }
 
-
-
 rarch_perf_tick_t rarch_get_perf_counter(void)
 {
    rarch_perf_tick_t time = 0;
@@ -69,7 +69,7 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
 
 #elif defined(__GNUC__) && !defined(RARCH_CONSOLE)
 
-#if defined(__i386__) || defined(__i486__)
+#if defined(__i386__) || defined(__i486__) || defined(__i686__)
    asm volatile ("rdtsc" : "=A" (time));
 #elif defined(__x86_64__)
    unsigned a, d;
@@ -85,3 +85,57 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
 
    return time;
 }
+#endif
+
+#if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__)
+#define CPU_X86
+#endif
+
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
+
+#ifdef CPU_X86
+static void x86_cpuid(int func, int flags[4])
+{
+#ifdef __GNUC__
+   asm volatile("cpuid\n" :
+         "=a"(flags[0]),
+         "=b"(flags[1]),
+         "=c"(flags[2]),
+         "=d"(flags[3]) : "a"(func));
+#elif defined(_MSC_VER)
+   __cpuid(flags, func);
+#endif
+}
+#endif
+
+void rarch_get_cpu_features(struct rarch_cpu_features *cpu)
+{
+   memset(cpu, 0, sizeof(*cpu));
+
+#ifdef CPU_X86
+   int flags[4];
+   x86_cpuid(0, flags);
+
+   char vendor[13] = {0};
+   const int vendor_shuffle[3] = { flags[1], flags[3], flags[2] };
+   memcpy(vendor, vendor_shuffle, sizeof(vendor_shuffle));
+   RARCH_LOG("[CPUID]: Vendor: %s\n", vendor);
+
+   if (flags[0] < 1) // Does CPUID not support func = 1? (unlikely ...)
+      return;
+
+   x86_cpuid(1, flags);
+   cpu->sse  = flags[3] & (1 << 25);
+   cpu->sse2 = flags[3] & (1 << 26);
+
+   int avx_flags = (1 << 27) | (1 << 28);
+   cpu->avx = (flags[2] & avx_flags) == avx_flags; // Is this enough?
+
+   RARCH_LOG("[CPUID]: SSE:  %d\n", cpu->sse);
+   RARCH_LOG("[CPUID]: SSE2: %d\n", cpu->sse2);
+   RARCH_LOG("[CPUID]: AVX:  %d\n", cpu->avx);
+#endif
+}
+

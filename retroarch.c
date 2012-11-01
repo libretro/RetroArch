@@ -2539,6 +2539,30 @@ static void verify_api_version(void)
       RARCH_WARN("RetroArch is compiled against a different version of libretro than this libretro implementation.\n");
 }
 
+// Make sure we haven't compiled for something we cannot run.
+// Ideally, code would get swapped out depending on CPU support, but this will do for now.
+static void validate_cpu_features(void)
+{
+   struct rarch_cpu_features cpu;
+   rarch_get_cpu_features(&cpu);
+
+#ifdef __SSE2__
+   if (!cpu.sse2)
+   {
+      RARCH_ERR("SSE2 code is compiled in, but CPU does not support this feature. Cannot continue.\n");
+      rarch_fail(1, "validate_cpu_features()");
+   }
+#endif
+
+#ifdef __AVX__
+   if (!cpu.avx)
+   {
+      RARCH_ERR("AVX code is compiled in, but CPU does not support this feature. Cannot continue.\n");
+      rarch_fail(1, "validate_cpu_features()");
+   }
+#endif
+}
+
 int rarch_main_init(int argc, char *argv[])
 {
    init_state();
@@ -2550,7 +2574,6 @@ int rarch_main_init(int argc, char *argv[])
       return sjlj_ret;
    }
    g_extern.error_in_init = true;
-
    parse_input(argc, argv);
 
    if (g_extern.verbose)
@@ -2560,6 +2583,7 @@ int rarch_main_init(int argc, char *argv[])
       RARCH_LOG_OUTPUT("=================================================\n");
    }
 
+   validate_cpu_features();
    config_load();
 
    init_libretro_sym();
@@ -2792,9 +2816,6 @@ int rarch_main(int argc, char *argv[])
 // Consoles use the higher level API.
 int main(int argc, char *argv[])
 {
-#if 0
-   rarch_perf_get_cpu_features();
-#endif
    return rarch_main(argc, argv);
 }
 #endif
