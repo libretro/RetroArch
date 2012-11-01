@@ -28,7 +28,8 @@ OBJ = retroarch.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/filter.o \
 		gfx/state_tracker.o \
-		gfx/image.o
+		gfx/image.o \
+		performance.o
 
 JOBJ := conf/config_file.o \
 	tools/retroarch-joyconfig.o \
@@ -78,7 +79,6 @@ endif
 
 ifeq ($(PERF_TEST), 1)
    DEFINES += -DPERF_TEST
-   OBJ += performance.o
 endif
 
 JLIBS =
