@@ -17,7 +17,7 @@
 #include <android/keycodes.h>
 #include <unistd.h>
 #include "android_general.h"
-#include "../../../benchmark.h"
+#include "../../../performance.h"
 #include "../../../general.h"
 #include "../../../driver.h"
 #include "input_android.h"

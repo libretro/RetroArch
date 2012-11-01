@@ -42,7 +42,7 @@
     <ClCompile Include="..\..\autosave.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\benchmark.c">
+    <ClCompile Include="..\..\performance.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\cheats.c">

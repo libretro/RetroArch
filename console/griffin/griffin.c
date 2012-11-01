@@ -43,7 +43,7 @@ CONSOLE EXTENSIONS
 #endif
 
 #ifdef PERF_TEST
-#include "../../benchmark.c"
+#include "../../performance.c"
 #endif
 
 #ifdef HAVE_RSOUND

@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _RARCH_BENCHMARK_H
-#define _RARCH_BENCHMARK_H
+#ifndef _RARCH_PERF_H
+#define _RARCH_PERF_H
 
 #include "general.h"
 

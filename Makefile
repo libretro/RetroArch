@@ -143,7 +143,7 @@ endif
 
 ifeq ($(PERF_TEST), 1)
    DEFINES += -DPERF_TEST
-   OBJ += benchmark.o
+   OBJ += performance.o
 endif
 
 ifeq ($(HAVE_SDL), 1)

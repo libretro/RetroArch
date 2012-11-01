@@ -15,7 +15,7 @@
  */
 
 #include "../driver.h"
-#include "../benchmark.h"
+#include "../performance.h"
 #include "scaler/scaler.h"
 
 #include <stdint.h>

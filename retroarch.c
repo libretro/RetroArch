@@ -24,7 +24,7 @@
 #include "file.h"
 #include "general.h"
 #include "dynamic.h"
-#include "benchmark.h"
+#include "performance.h"
 #include "audio/utils.h"
 #include "record/ffemu.h"
 #include "rewind.h"

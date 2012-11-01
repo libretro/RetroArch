@@ -58,7 +58,7 @@ LOCAL_SRC_FILES    =	$(RARCH_PATH)/retroarch.c \
 			main.c
 
 ifeq ($(PERF_TEST), 1)
-LOCAL_SRC_FILES += $(RARCH_PATH)/benchmark.c
+LOCAL_SRC_FILES += $(RARCH_PATH)/performance.c
 LOCAL_CFLAGS += -DPERF_TEST
 endif
 
