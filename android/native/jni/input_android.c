@@ -15,7 +15,8 @@
  */
 
 #include <android/keycodes.h>
-#include "android-general.h"
+#include <unistd.h>
+#include "android_general.h"
 #include "../../../benchmark.h"
 #include "../../../general.h"
 #include "../../../driver.h"
@@ -278,7 +279,6 @@ static void setup_state_ids(void)
 
 static void *android_input_init(void)
 {
-   g_android.app->onInputEvent = engine_handle_input;
    pads_connected = 0;
 
 
@@ -321,15 +321,35 @@ static void android_input_poll(void *data)
 
     // Read all pending events.
    int event;
+   struct android_app* android_app = g_android.app;
    int id = ALooper_pollOnce(0, NULL, &event, NULL);
 
    // Process this event.
    if(event)
    {
       if(id == LOOPER_ID_INPUT)
-         process_input();
+      {
+         AInputEvent* event = NULL;
+
+         if (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
+         {
+            if (AInputQueue_preDispatchEvent(android_app->inputQueue, event))
+               return;
+
+            int32_t handled = engine_handle_input(android_app, event);
+
+            AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+         }
+      }
       else
-         process_cmd();
+      {
+         int8_t cmd;
+
+         if (!read(android_app->msgread, &cmd, sizeof(cmd)) == sizeof(cmd))
+            cmd = -1;
+
+         engine_handle_cmd(android_app, cmd);
+      }
    }
 }
 

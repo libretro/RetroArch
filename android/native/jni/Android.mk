@@ -52,8 +52,6 @@ LOCAL_SRC_FILES    =	$(RARCH_PATH)/retroarch.c \
 			$(RARCH_PATH)/gfx/state_tracker.c \
 			$(RARCH_PATH)/input/null.c \
 			input_android.c \
-			android_native_app_glue.c \
-			$(RARCH_PATH)/screenshot.c \
 			$(RARCH_PATH)/conf/config_file.c \
 			$(RARCH_PATH)/autosave.c \
 			$(RARCH_PATH)/thread.c \

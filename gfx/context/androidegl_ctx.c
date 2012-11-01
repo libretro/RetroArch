@@ -21,7 +21,7 @@
 #include <EGL/egl.h> /* Requires NDK r5 or newer */
 #include <GLES/gl.h>
 
-#include "../../android/native/jni/android-general.h"
+#include "../../android/native/jni/android_general.h"
 
 #include <stdint.h>
 

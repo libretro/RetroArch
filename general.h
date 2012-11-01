@@ -42,7 +42,7 @@
 #endif
 
 #ifdef ANDROID
-#include "android/native/jni/android-general.h"
+#include "android/native/jni/android_general.h"
 #endif
 
 #if defined(XENON) || defined(__CELLOS_LV2__)
