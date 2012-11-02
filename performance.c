@@ -154,8 +154,8 @@ void rarch_get_cpu_features(struct rarch_cpu_features *cpu)
 #if defined(ANDROID_ARM)
    cpu->neon = (cpu_flags & ANDROID_CPU_ARM_FEATURE_NEON);
    RARCH_LOG("[CPUID]: NEON: %d\n", cpu->neon);
-#elif defined(ANDROID_X86) && defined(HAVE_SSE3)
-   cpu->sse3 = (cpu_flags & ANDROID_CPU_X86_FEATURE_SSSE3);
-   RARCH_LOG("[CPUID]: SSE3: %d\n", cpu->sse3);
+#elif defined(ANDROID_X86) && defined(HAVE_SSSE3)
+   cpu->ssse3 = (cpu_flags & ANDROID_CPU_X86_FEATURE_SSSE3);
+   RARCH_LOG("[CPUID]: SSSE3: %d\n", cpu->ssse3);
 #endif
 }
