@@ -119,6 +119,7 @@ static struct bind binds[] = {
    MISC_BIND("Audio mute/unmute", audio_mute),
    MISC_BIND("Netplay player flip", netplay_flip_players),
    MISC_BIND("Slow motion", slowmotion),
+   MISC_BIND("Hotkey enable", enable_hotkey),
 };
 
 #define MAX_BUTTONS 32
