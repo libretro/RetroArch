@@ -2546,20 +2546,22 @@ static void validate_cpu_features(void)
    struct rarch_cpu_features cpu;
    rarch_get_cpu_features(&cpu);
 
+#define FAIL_CPU(simd_type) do { \
+   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
+   rarch_fail(1, "validate_cpu_features()"); \
+} while(0)
+
+#ifdef __SSE__
+   if (!cpu.sse)
+      FAIL_CPU("SSE");
+#endif
 #ifdef __SSE2__
    if (!cpu.sse2)
-   {
-      RARCH_ERR("SSE2 code is compiled in, but CPU does not support this feature. Cannot continue.\n");
-      rarch_fail(1, "validate_cpu_features()");
-   }
+      FAIL_CPU("SSE2");
 #endif
-
 #ifdef __AVX__
    if (!cpu.avx)
-   {
-      RARCH_ERR("AVX code is compiled in, but CPU does not support this feature. Cannot continue.\n");
-      rarch_fail(1, "validate_cpu_features()");
-   }
+      FAIL_CPU("AVX");
 #endif
 }
 

@@ -105,14 +105,24 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
 #ifdef CPU_X86
 static void x86_cpuid(int func, int flags[4])
 {
-#if defined(__GNUC__)  && !defined(ANDROID)
-   /* doesn't compile on x86 Android -
-    * error - inconsistent operand constraints in an 'asm' */
-   asm volatile("cpuid\n" :
-         "=a"(flags[0]),
-         "=b"(flags[1]),
-         "=c"(flags[2]),
-         "=d"(flags[3]) : "a"(func));
+   // On Android, we compile RetroArch with PIC, and we are not allowed to clobber the ebx
+   // register.
+#ifdef __x86_64__
+#define REG_b "rbx"
+#define REG_S "rsi"
+#else
+#define REG_b "ebx"
+#define REG_S "esi"
+#endif
+
+#if defined(__GNUC__)
+   asm volatile (
+         "mov %%"REG_b", %%"REG_S"\n"
+         "cpuid\n"
+         "xchg %%"REG_b", %%"REG_S"\n"
+         : "=a"(flags[0]), "=S"(flags[1]), "=c"(flags[2]), "=d"(flags[3])
+         : "a"(func));
+
 #elif defined(_MSC_VER)
    __cpuid(flags, func);
 #endif
@@ -123,11 +133,7 @@ void rarch_get_cpu_features(struct rarch_cpu_features *cpu)
 {
    memset(cpu, 0, sizeof(*cpu));
 
-#if defined(ANDROID)
-   uint64_t cpu_flags = android_getCpuFeatures();
-#endif
-
-#if defined(CPU_X86) && !defined(ANDROID)
+#if defined(CPU_X86)
    int flags[4];
    x86_cpuid(0, flags);
 
@@ -149,13 +155,9 @@ void rarch_get_cpu_features(struct rarch_cpu_features *cpu)
    RARCH_LOG("[CPUID]: SSE:  %d\n", cpu->sse);
    RARCH_LOG("[CPUID]: SSE2: %d\n", cpu->sse2);
    RARCH_LOG("[CPUID]: AVX:  %d\n", cpu->avx);
-#endif
-
-#if defined(ANDROID_ARM)
+#elif defined(ANDROID) && defined(ANDROID_ARM)
+   uint64_t cpu_flags = android_getCpuFeatures();
    cpu->neon = (cpu_flags & ANDROID_CPU_ARM_FEATURE_NEON);
    RARCH_LOG("[CPUID]: NEON: %d\n", cpu->neon);
-#elif defined(ANDROID_X86) && defined(HAVE_SSSE3)
-   cpu->ssse3 = (cpu_flags & ANDROID_CPU_X86_FEATURE_SSSE3);
-   RARCH_LOG("[CPUID]: SSSE3: %d\n", cpu->ssse3);
 #endif
 }
