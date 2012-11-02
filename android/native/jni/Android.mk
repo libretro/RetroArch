@@ -11,7 +11,7 @@ LOCAL_ARM_MODE := arm
 endif
 
 ifeq ($(TARGET_ARCH),x86)
-LOCAL_CFLAGS +=  -DANDROID_X86
+LOCAL_CFLAGS += -DANDROID_X86 -DHAVE_SSE3
 endif
 
 ifeq ($(TARGET_ARCH),mips)
@@ -55,6 +55,7 @@ LOCAL_SRC_FILES    =	$(RARCH_PATH)/retroarch.c \
 			$(RARCH_PATH)/conf/config_file.c \
 			$(RARCH_PATH)/autosave.c \
 			$(RARCH_PATH)/thread.c \
+			cpufeatures.c \
 			$(RARCH_PATH)/performance.c \
 			main.c
 
@@ -63,7 +64,6 @@ LOCAL_CFLAGS += -DPERF_TEST
 endif
 
 LOCAL_CFLAGS += -O3 -funroll-loops -DNDEBUG -DANDROID -DHAVE_DYNAMIC -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DGLSL_DEBUG -DHAVE_GLSL -DHAVE_ZLIB -DINLINE=inline -DLSB_FIRST -D__LIBRETRO__ -DHAVE_CONFIGFILE=1 -DPACKAGE_VERSION=\"$(RARCH_VERSION)\" -std=gnu99
-
 
 LOCAL_LDLIBS	:= -L$(SYSROOT)/usr/lib -landroid -lEGL -lGLESv2 -llog -ldl -lz
 

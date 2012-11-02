@@ -44,6 +44,7 @@ struct rarch_cpu_features
 {
    bool sse;
    bool sse2;
+   bool sse3;
    bool vmx;
    bool avx;
    bool neon;

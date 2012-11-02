@@ -16,6 +16,10 @@
 
 #include "performance.h"
 
+#ifdef ANDROID
+#include "android/native/jni/cpufeatures.h"
+#endif
+
 #ifdef PERF_TEST
 
 #if defined(__CELLOS_LV2__) || defined(GEKKO)
@@ -27,6 +31,7 @@
 #elif defined(__linux__)
 #include <sys/time.h>
 #endif
+
 
 #define MAX_COUNTERS 64
 static struct rarch_perf_counter *perf_counters[MAX_COUNTERS];
@@ -118,7 +123,11 @@ void rarch_get_cpu_features(struct rarch_cpu_features *cpu)
 {
    memset(cpu, 0, sizeof(*cpu));
 
-#ifdef CPU_X86
+#if defined(ANDROID)
+   uint64_t cpu_flags = android_getCpuFeatures();
+#endif
+
+#if defined(CPU_X86) && !defined(ANDROID)
    int flags[4];
    x86_cpuid(0, flags);
 
@@ -141,5 +150,12 @@ void rarch_get_cpu_features(struct rarch_cpu_features *cpu)
    RARCH_LOG("[CPUID]: SSE2: %d\n", cpu->sse2);
    RARCH_LOG("[CPUID]: AVX:  %d\n", cpu->avx);
 #endif
-}
 
+#if defined(ANDROID_ARM)
+   cpu->neon = (cpu_flags & ANDROID_CPU_ARM_FEATURE_NEON);
+   RARCH_LOG("[CPUID]: NEON: %d\n", cpu->neon);
+#elif defined(ANDROID_X86) && defined(HAVE_SSE3)
+   cpu->sse3 = (cpu_flags & ANDROID_CPU_X86_FEATURE_SSSE3);
+   RARCH_LOG("[CPUID]: SSE3: %d\n", cpu->sse3);
+#endif
+}
