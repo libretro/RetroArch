@@ -100,7 +100,7 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          pthread_mutex_unlock(&android_app->mutex);
 
          if (android_app->window != NULL)
-            g_android.input_state = ANDROID_WINDOW_READY;
+            g_android.input_state |= (1ULL << RARCH_WINDOW_READY);
          break;
       case APP_CMD_START:
          RARCH_LOG("engine_handle_cmd: APP_CMD_START.\n");
@@ -129,8 +129,8 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          android_app->activityState = cmd;
          pthread_cond_broadcast(&android_app->cond);
          pthread_mutex_unlock(&android_app->mutex);
-         if(g_android.input_state & ANDROID_STATE_QUIT)
-            g_android.input_state = ANDROID_STATE_KILL;
+         if(g_android.input_state & (1ULL << RARCH_QUIT_KEY))
+            g_android.input_state |= (1ULL << RARCH_KILL);
          break;
       case APP_CMD_TERM_WINDOW:
          RARCH_LOG("engine_handle_cmd: APP_CMD_TERM_WINDOW.\n");
@@ -149,7 +149,7 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
       case APP_CMD_LOST_FOCUS:
          RARCH_LOG("engine_handle_cmd: APP_CMD_LOST_FOCUS.\n");
          /*
-            if (!g_android.input_state & ANDROID_WINDOW_READY)
+            if (!g_android.input_state & (1ULL << RARCH_WINDOW_READY))
             {
             }
             */
@@ -238,7 +238,7 @@ void android_main(struct android_app* state)
 
    g_extern.verbose = true;
 
-   while(!(g_android.input_state & ANDROID_WINDOW_READY))
+   while(!(g_android.input_state & (1ULL << RARCH_WINDOW_READY)))
    {
       // Read all pending events.
       int id;

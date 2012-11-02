@@ -23,6 +23,16 @@
 #include "input_android.h"
 
 enum {
+   AKEYCODE_ESCAPE          = 111,
+   AKEYCODE_BREAK           = 121,
+   AKEYCODE_F2              = 132,
+   AKEYCODE_F3              = 133,
+   AKEYCODE_F4              = 134,
+   AKEYCODE_F5              = 135,
+   AKEYCODE_F6              = 136,
+   AKEYCODE_F7              = 137,
+   AKEYCODE_F8              = 138,
+   AKEYCODE_F9              = 139,
    AKEYCODE_BUTTON_1        = 188,
    AKEYCODE_BUTTON_2        = 189,
    AKEYCODE_BUTTON_3        = 190,
@@ -56,9 +66,9 @@ enum {
 static unsigned pads_connected;
 static uint64_t state[MAX_PADS];
 static int8_t state_device_ids[MAX_DEVICE_IDS];
-static int32_t keycode_lut[LAST_KEYCODE];
+static int64_t keycode_lut[LAST_KEYCODE];
 
-static int32_t handle_touch(AInputEvent* event, int i, int keycode)
+static int32_t handle_touch(AInputEvent* event, int i)
 {
    RARCH_PERFORMANCE_INIT(handle_touch);
    RARCH_PERFORMANCE_START(handle_touch);
@@ -68,20 +78,20 @@ static int32_t handle_touch(AInputEvent* event, int i, int keycode)
    switch(source)
    {
       case AINPUT_SOURCE_DPAD:
-         RARCH_LOG("AINPUT_SOURCE_DPAD, pad: %d, keycode: %d.\n", i, keycode);
+         RARCH_LOG("AINPUT_SOURCE_DPAD, pad: %d.\n", i);
          break;
       case AINPUT_SOURCE_TOUCHSCREEN:
-         RARCH_LOG("AINPUT_SOURCE_TOUCHSCREEN, pad: %d, keycode: %d.\n", i, keycode);
+         RARCH_LOG("AINPUT_SOURCE_TOUCHSCREEN, pad: %d.\n", i);
          break; 
       case AINPUT_SOURCE_TOUCHPAD:
-         RARCH_LOG("AINPUT_SOURCE_TOUCHPAD, pad: %d, keycode: %d.\n", i, keycode);
+         RARCH_LOG("AINPUT_SOURCE_TOUCHPAD, pad: %d.\n", i);
          break;
       case AINPUT_SOURCE_ANY:
-         RARCH_LOG("AINPUT_SOURCE_ANY, pad: %d, keycode: %d.\n", i, keycode);
+         RARCH_LOG("AINPUT_SOURCE_ANY, pad: %d.\n", i);
          break;
       case 0:
       default:
-         RARCH_LOG("AINPUT_SOURCE_DEFAULT, pad: %d, keycode: %d.\n", i, keycode);
+         RARCH_LOG("AINPUT_SOURCE_DEFAULT, pad: %d.\n", i);
          break;
    }
 #endif
@@ -91,37 +101,21 @@ static int32_t handle_touch(AInputEvent* event, int i, int keycode)
 #ifdef RARCH_INPUT_DEBUG
    RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, pad: %d, x: %f, y: %f.\n", i, x, y);
 #endif
-   state[i] &= ~(ANDROID_GAMEPAD_DPAD_LEFT | ANDROID_GAMEPAD_DPAD_RIGHT |
-         ANDROID_GAMEPAD_DPAD_UP | ANDROID_GAMEPAD_DPAD_DOWN);
-   state[i] |= PRESSED_LEFT(x, y)  ? ANDROID_GAMEPAD_DPAD_LEFT  : 0;
-   state[i] |= PRESSED_RIGHT(x, y) ? ANDROID_GAMEPAD_DPAD_RIGHT : 0;
-   state[i] |= PRESSED_UP(x, y)    ? ANDROID_GAMEPAD_DPAD_UP    : 0;
-   state[i] |= PRESSED_DOWN(x, y)  ? ANDROID_GAMEPAD_DPAD_DOWN  : 0;
+   state[i] &= ~((1 << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
+         (1 << RETRO_DEVICE_ID_JOYPAD_UP) | (1 << RETRO_DEVICE_ID_JOYPAD_DOWN));
+   state[i] |= PRESSED_LEFT(x, y)  ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
+   state[i] |= PRESSED_RIGHT(x, y) ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+   state[i] |= PRESSED_UP(x, y)    ? (1 << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
+   state[i] |= PRESSED_DOWN(x, y)  ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
 
    RARCH_PERFORMANCE_STOP(handle_touch);
-   return 1;
-}
-
-static int32_t handle_button(AInputEvent* event, int i, int keycode)
-{
-   RARCH_PERFORMANCE_INIT(handle_button);
-   RARCH_PERFORMANCE_START(handle_button);
-
-   int action  = AKeyEvent_getAction(event);
-
-   if(action == AKEY_EVENT_ACTION_DOWN || action == AKEY_EVENT_ACTION_MULTIPLE)
-      state[i] |= keycode_lut[keycode];
-   else if(action == AKEY_EVENT_ACTION_UP)
-      state[i] &= ~(keycode_lut[keycode]);
-
-   RARCH_PERFORMANCE_STOP(handle_button);
    return 1;
 }
 
 static void setup_keycode_lut(void)
 {
    for(int i = 0; i < LAST_KEYCODE; i++)
-      keycode_lut[i] = 0;
+      keycode_lut[i] = -1;
 
 
    /* Control scheme 1
@@ -135,18 +129,18 @@ static void setup_keycode_lut(void)
     * builtinKeyboard=false
     */
 
-   keycode_lut[AKEYCODE_BUTTON_2] = ANDROID_GAMEPAD_CROSS;
-   keycode_lut[AKEYCODE_BUTTON_1] = ANDROID_GAMEPAD_SQUARE;
-   keycode_lut[AKEYCODE_BUTTON_9] = ANDROID_GAMEPAD_SELECT;
-   keycode_lut[AKEYCODE_BUTTON_10] = ANDROID_GAMEPAD_START;
-   keycode_lut[AKEYCODE_BUTTON_3] = ANDROID_GAMEPAD_CIRCLE;
-   keycode_lut[AKEYCODE_BUTTON_4] = ANDROID_GAMEPAD_TRIANGLE;
-   keycode_lut[AKEYCODE_BUTTON_5] = ANDROID_GAMEPAD_L1;
-   keycode_lut[AKEYCODE_BUTTON_6] = ANDROID_GAMEPAD_R1;
-   keycode_lut[AKEYCODE_BUTTON_7] = ANDROID_GAMEPAD_L2;
-   keycode_lut[AKEYCODE_BUTTON_8] = ANDROID_GAMEPAD_R2;
-   keycode_lut[AKEYCODE_BUTTON_11] = ANDROID_GAMEPAD_L3;
-   keycode_lut[AKEYCODE_BUTTON_12] = ANDROID_GAMEPAD_R3;
+   keycode_lut[AKEYCODE_BUTTON_2] = (1 << RETRO_DEVICE_ID_JOYPAD_B);
+   keycode_lut[AKEYCODE_BUTTON_1] = (1 << RETRO_DEVICE_ID_JOYPAD_Y);
+   keycode_lut[AKEYCODE_BUTTON_9] = (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+   keycode_lut[AKEYCODE_BUTTON_10] = (1 << RETRO_DEVICE_ID_JOYPAD_START);
+   keycode_lut[AKEYCODE_BUTTON_3] = (1 << RETRO_DEVICE_ID_JOYPAD_A);
+   keycode_lut[AKEYCODE_BUTTON_4] = (1 << RETRO_DEVICE_ID_JOYPAD_X);
+   keycode_lut[AKEYCODE_BUTTON_5] = (1 << RETRO_DEVICE_ID_JOYPAD_L);
+   keycode_lut[AKEYCODE_BUTTON_6] = (1 << RETRO_DEVICE_ID_JOYPAD_R);
+   keycode_lut[AKEYCODE_BUTTON_7] = (1 << RETRO_DEVICE_ID_JOYPAD_L2);
+   keycode_lut[AKEYCODE_BUTTON_8] = (1 << RETRO_DEVICE_ID_JOYPAD_R2);
+   keycode_lut[AKEYCODE_BUTTON_11] = (1 << RETRO_DEVICE_ID_JOYPAD_L3);
+   keycode_lut[AKEYCODE_BUTTON_12] = (1 << RETRO_DEVICE_ID_JOYPAD_R3);
 
    /* Control scheme 2
     * Tested with: SNES Pad USB converter
@@ -160,14 +154,14 @@ static void setup_keycode_lut(void)
     * builtinKeyboard=false
     */
 
-   keycode_lut[AKEYCODE_BUTTON_C] = ANDROID_GAMEPAD_CROSS;
-   keycode_lut[AKEYCODE_BUTTON_X] = ANDROID_GAMEPAD_SQUARE;
-   keycode_lut[AKEYCODE_BUTTON_L2] = ANDROID_GAMEPAD_SELECT;
-   keycode_lut[AKEYCODE_BUTTON_R2] = ANDROID_GAMEPAD_START;
-   keycode_lut[AKEYCODE_BUTTON_B] = ANDROID_GAMEPAD_CIRCLE;
-   keycode_lut[AKEYCODE_BUTTON_A] = ANDROID_GAMEPAD_TRIANGLE;
-   keycode_lut[AKEYCODE_BUTTON_L1] = ANDROID_GAMEPAD_L1;
-   keycode_lut[AKEYCODE_BUTTON_R1] = ANDROID_GAMEPAD_R1;
+   keycode_lut[AKEYCODE_BUTTON_C] = (1 << RETRO_DEVICE_ID_JOYPAD_B);
+   keycode_lut[AKEYCODE_BUTTON_X] = (1 << RETRO_DEVICE_ID_JOYPAD_Y);
+   keycode_lut[AKEYCODE_BUTTON_L2] = (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+   keycode_lut[AKEYCODE_BUTTON_R2] = (1 << RETRO_DEVICE_ID_JOYPAD_START);
+   keycode_lut[AKEYCODE_BUTTON_B] = (1 << RETRO_DEVICE_ID_JOYPAD_A);
+   keycode_lut[AKEYCODE_BUTTON_A] = (1 << RETRO_DEVICE_ID_JOYPAD_X);
+   keycode_lut[AKEYCODE_BUTTON_L1] = (1 << RETRO_DEVICE_ID_JOYPAD_L);
+   keycode_lut[AKEYCODE_BUTTON_R1] = (1 << RETRO_DEVICE_ID_JOYPAD_R);
 
    /* Control scheme 3
     * fd=196
@@ -250,29 +244,33 @@ static void setup_keycode_lut(void)
     * TODO: Map L2/R2/L3/R3
     * */
 
-   keycode_lut[AKEYCODE_Z] = ANDROID_GAMEPAD_CROSS;
-   keycode_lut[AKEYCODE_A] = ANDROID_GAMEPAD_SQUARE;
-   keycode_lut[AKEYCODE_SHIFT_RIGHT] = ANDROID_GAMEPAD_SELECT;
-   keycode_lut[AKEYCODE_ENTER] = ANDROID_GAMEPAD_START;
-   keycode_lut[AKEYCODE_DPAD_UP] = ANDROID_GAMEPAD_DPAD_UP;
-   keycode_lut[AKEYCODE_DPAD_DOWN] = ANDROID_GAMEPAD_DPAD_DOWN;
-   keycode_lut[AKEYCODE_DPAD_LEFT] = ANDROID_GAMEPAD_DPAD_LEFT;
-   keycode_lut[AKEYCODE_DPAD_RIGHT] = ANDROID_GAMEPAD_DPAD_RIGHT;
-   keycode_lut[AKEYCODE_X] = ANDROID_GAMEPAD_CIRCLE;
-   keycode_lut[AKEYCODE_S] = ANDROID_GAMEPAD_TRIANGLE;
-   keycode_lut[AKEYCODE_Q] = ANDROID_GAMEPAD_L1;
-   keycode_lut[AKEYCODE_W] = ANDROID_GAMEPAD_R1;
+   keycode_lut[AKEYCODE_Z] = (1 << RETRO_DEVICE_ID_JOYPAD_B);
+   keycode_lut[AKEYCODE_A] = (1 << RETRO_DEVICE_ID_JOYPAD_Y);
+   keycode_lut[AKEYCODE_SHIFT_RIGHT] = (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+   keycode_lut[AKEYCODE_ENTER] = (1 << RETRO_DEVICE_ID_JOYPAD_START);
+   keycode_lut[AKEYCODE_DPAD_UP] = (1 << RETRO_DEVICE_ID_JOYPAD_UP);
+   keycode_lut[AKEYCODE_DPAD_DOWN] = (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
+   keycode_lut[AKEYCODE_DPAD_LEFT] = (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
+   keycode_lut[AKEYCODE_DPAD_RIGHT] = (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+   keycode_lut[AKEYCODE_X] = (1 << RETRO_DEVICE_ID_JOYPAD_A);
+   keycode_lut[AKEYCODE_S] = (1 << RETRO_DEVICE_ID_JOYPAD_X);
+   keycode_lut[AKEYCODE_Q] = (1 << RETRO_DEVICE_ID_JOYPAD_L);
+   keycode_lut[AKEYCODE_W] = (1 << RETRO_DEVICE_ID_JOYPAD_R);
 
    /* Misc control scheme */
-   keycode_lut[AKEYCODE_BACK] = ANDROID_STATE_QUIT;
-   keycode_lut[AKEYCODE_VOLUME_UP] = ANDROID_STATE_VOLUME_UP;
-   keycode_lut[AKEYCODE_VOLUME_DOWN] = ANDROID_STATE_VOLUME_DOWN;
-}
-
-static void setup_state_ids(void)
-{
-   for(int i = 0; i < MAX_DEVICE_IDS; i++)
-      state_device_ids[i] = -1;
+   keycode_lut[AKEYCODE_BACK] = (1ULL << RARCH_QUIT_KEY);
+   keycode_lut[AKEYCODE_F2] = (1ULL << RARCH_SAVE_STATE_KEY);
+   keycode_lut[AKEYCODE_F4] = (1ULL << RARCH_LOAD_STATE_KEY);
+   keycode_lut[AKEYCODE_F7] = (1ULL << RARCH_STATE_SLOT_PLUS);
+   keycode_lut[AKEYCODE_F6] = (1ULL << RARCH_STATE_SLOT_MINUS);
+   keycode_lut[AKEYCODE_SPACE] = (1ULL << RARCH_FAST_FORWARD_KEY);
+   keycode_lut[AKEYCODE_L] = (1ULL << RARCH_FAST_FORWARD_HOLD_KEY);
+   keycode_lut[AKEYCODE_ESCAPE] = (1ULL << RARCH_QUIT_KEY);
+   keycode_lut[AKEYCODE_BREAK] = (1ULL << RARCH_PAUSE_TOGGLE);
+   keycode_lut[AKEYCODE_K] = (1ULL << RARCH_FRAMEADVANCE);
+   keycode_lut[AKEYCODE_H] = (1ULL << RARCH_RESET);
+   keycode_lut[AKEYCODE_R] = (1ULL << RARCH_REWIND);
+   keycode_lut[AKEYCODE_F9] = (1ULL << RARCH_MUTE);
 }
 
 static void *android_input_init(void)
@@ -288,25 +286,27 @@ static void *android_input_init(void)
 
    for(int player = 0; player < 4; player++)
    {
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_B].joykey = ANDROID_GAMEPAD_CROSS;
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_Y].joykey = ANDROID_GAMEPAD_SQUARE;
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = ANDROID_GAMEPAD_SELECT;
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_START].joykey = ANDROID_GAMEPAD_START;
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_UP].joykey = ANDROID_GAMEPAD_DPAD_UP;
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey = ANDROID_GAMEPAD_DPAD_DOWN;
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey = ANDROID_GAMEPAD_DPAD_LEFT;
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = ANDROID_GAMEPAD_DPAD_RIGHT;
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_A].joykey = ANDROID_GAMEPAD_CIRCLE;
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_X].joykey = ANDROID_GAMEPAD_TRIANGLE;
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L].joykey = ANDROID_GAMEPAD_L1;
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R].joykey = ANDROID_GAMEPAD_R1;
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L2].joykey = ANDROID_GAMEPAD_L2;
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R2].joykey = ANDROID_GAMEPAD_R2;
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L3].joykey = ANDROID_GAMEPAD_L3;
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R3].joykey = ANDROID_GAMEPAD_R3;
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_B].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_B);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_Y].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_Y);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_START].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_START);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_UP].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_UP);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_A].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_A);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_X].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_X);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_L);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_R);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L2].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_L2);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R2].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_R2);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L3].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_L3);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_R3);
    }
 
-   setup_state_ids();
+   for(int i = 0; i < MAX_DEVICE_IDS; i++)
+      state_device_ids[i] = -1;
+
    setup_keycode_lut();
 
    return (void*)-1;
@@ -317,12 +317,12 @@ static void android_input_poll(void *data)
    (void)data;
 
     // Read all pending events.
-   int event;
+   int do_event;
    struct android_app* android_app = g_android.app;
-   int id = ALooper_pollOnce(0, NULL, &event, NULL);
+   int id = ALooper_pollOnce(0, NULL, &do_event, NULL);
 
    // Process this event.
-   if(event)
+   if(do_event)
    {
       if(id == LOOPER_ID_INPUT)
       {
@@ -335,6 +335,7 @@ static void android_input_poll(void *data)
 
             int keycode = AKeyEvent_getKeyCode(event);
             int32_t handled = 0;
+            uint64_t input_state = keycode_lut[keycode];
 
             int id = AInputEvent_getDeviceId(event);
             int type = AInputEvent_getType(event);
@@ -344,11 +345,20 @@ static void android_input_poll(void *data)
                i = state_device_ids[id] = pads_connected++;
 
             if(type == AINPUT_EVENT_TYPE_MOTION)
-               handled = handle_touch(event, i, keycode);
-            else if(keycode == AKEYCODE_BACK || keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN)
-               g_android.input_state = keycode_lut[keycode];
-            else
-               handled = handle_button(event, i, keycode);
+               handled = handle_touch(event, i);
+            else if(input_state < (1 << RARCH_FIRST_META_KEY))
+            {
+               int action  = AKeyEvent_getAction(event);
+
+               if(action == AKEY_EVENT_ACTION_DOWN || action == AKEY_EVENT_ACTION_MULTIPLE)
+                  state[i] |= input_state;
+               else if(action == AKEY_EVENT_ACTION_UP)
+                  state[i] &= ~(input_state);
+
+               handled = 1;
+            }
+            else if(input_state != -1)
+               g_android.input_state = input_state;
 
             AInputQueue_finishEvent(android_app->inputQueue, event, handled);
          }
@@ -393,19 +403,11 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
 static bool android_input_key_pressed(void *data, int key)
 {
    (void)data;
-   (void)key;
 
-   switch (key)
-   {
-      case RARCH_QUIT_KEY:
-         if(g_android.input_state & ANDROID_STATE_KILL)
-            return true;
-         else
-            return false;
-         break;
-      default:
-         (void)0;
-   }
+   if(key == RARCH_QUIT_KEY && (g_android.input_state & (1ULL << RARCH_KILL)))
+      return true;
+   else if(g_android.input_state & key)
+      return true;
 
    return false;
 }

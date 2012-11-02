@@ -91,6 +91,10 @@ enum // RetroArch specific bind IDs.
    RARCH_CHEAT_INPUT,
    RARCH_SRAM_WRITE_PROTECT,
 #endif
+#ifdef ANDROID
+   RARCH_KILL,
+   RARCH_WINDOW_READY,
+#endif
 
    RARCH_BIND_LIST_END,
    RARCH_BIND_LIST_END_NULL

@@ -31,8 +31,8 @@
 #include "../general.h"
 
 /*============================================================
-	PS3 MOUSE
-============================================================ */
+  PS3 MOUSE
+  ============================================================ */
 
 #ifdef HAVE_MOUSE
 
@@ -65,8 +65,8 @@ CellMouseData ps3_mouse_input_poll_device(uint32_t id)
 #endif
 
 /*============================================================
-	PS3 PAD
-============================================================ */
+  PS3 PAD
+  ============================================================ */
 
 const struct platform_bind platform_keys[] = {
    { PS3_GAMEPAD_CIRCLE, "Circle button" },
@@ -227,18 +227,18 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
             break;
 #ifdef HAVE_MOUSE
          case RETRO_DEVICE_MOUSE:
-	    retval = ps3_mouse_device_state(data, player, id);
+            retval = ps3_mouse_device_state(data, player, id);
             break;
 #endif
       }
-    }
+   }
 
    return retval;
 }
 
 /*============================================================
-	ON-SCREEN KEYBOARD UTILITY
-============================================================ */
+  ON-SCREEN KEYBOARD UTILITY
+  ============================================================ */
 
 #ifdef HAVE_OSKUTIL
 
@@ -257,7 +257,7 @@ void oskutil_init(oskutil_params *params, unsigned containersize)
 static bool oskutil_enable_key_layout (void)
 {
    int ret = pOskSetKeyLayoutOption(CELL_OSKDIALOG_10KEY_PANEL | \
-      CELL_OSKDIALOG_FULLKEY_PANEL);
+         CELL_OSKDIALOG_FULLKEY_PANEL);
    if (ret < 0)
       return (false);
    else
@@ -273,10 +273,10 @@ static void oskutil_create_activation_parameters(oskutil_params *params)
    pOskSetLayoutMode(LayoutMode);
 
    params->dialogParam.osk_allowed_panels = 
-   CELL_OSKDIALOG_PANELMODE_ALPHABET |
-   CELL_OSKDIALOG_PANELMODE_NUMERAL | 
-   CELL_OSKDIALOG_PANELMODE_NUMERAL_FULL_WIDTH |
-   CELL_OSKDIALOG_PANELMODE_ENGLISH;
+      CELL_OSKDIALOG_PANELMODE_ALPHABET |
+      CELL_OSKDIALOG_PANELMODE_NUMERAL | 
+      CELL_OSKDIALOG_PANELMODE_NUMERAL_FULL_WIDTH |
+      CELL_OSKDIALOG_PANELMODE_ENGLISH;
 
    params->dialogParam.firstViewPanel = CELL_OSKDIALOG_PANELMODE_ENGLISH;
    params->dialogParam.osk_prohibit_flags = 0;
@@ -367,8 +367,8 @@ void oskutil_unload(oskutil_params *params)
 #endif
 
 /*============================================================
-	RetroArch PS3 INPUT DRIVER 
-============================================================ */
+  RetroArch PS3 INPUT DRIVER 
+  ============================================================ */
 
 static void ps3_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
 {
@@ -379,24 +379,24 @@ static void ps3_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad
       case DPAD_EMULATION_NONE:
          g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_NONE;
          g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[PS3_DEVICE_ID_JOYPAD_UP].joykey;
-	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[PS3_DEVICE_ID_JOYPAD_DOWN].joykey;
-	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[PS3_DEVICE_ID_JOYPAD_LEFT].joykey;
-	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[PS3_DEVICE_ID_JOYPAD_RIGHT].joykey;
-	 break;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[PS3_DEVICE_ID_JOYPAD_DOWN].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[PS3_DEVICE_ID_JOYPAD_LEFT].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[PS3_DEVICE_ID_JOYPAD_RIGHT].joykey;
+         break;
       case DPAD_EMULATION_LSTICK:
          g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_LSTICK;
-	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[PS3_DEVICE_ID_LSTICK_UP_DPAD].joykey;
-	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[PS3_DEVICE_ID_LSTICK_DOWN_DPAD].joykey;
-	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[PS3_DEVICE_ID_LSTICK_LEFT_DPAD].joykey;
-	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[PS3_DEVICE_ID_LSTICK_RIGHT_DPAD].joykey;
-	 break;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[PS3_DEVICE_ID_LSTICK_UP_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[PS3_DEVICE_ID_LSTICK_DOWN_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[PS3_DEVICE_ID_LSTICK_LEFT_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[PS3_DEVICE_ID_LSTICK_RIGHT_DPAD].joykey;
+         break;
       case DPAD_EMULATION_RSTICK:
          g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_RSTICK;
-	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[PS3_DEVICE_ID_RSTICK_UP_DPAD].joykey;
-	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[PS3_DEVICE_ID_RSTICK_DOWN_DPAD].joykey;
-	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[PS3_DEVICE_ID_RSTICK_LEFT_DPAD].joykey;
-	 g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[PS3_DEVICE_ID_RSTICK_RIGHT_DPAD].joykey;
-	 break;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[PS3_DEVICE_ID_RSTICK_UP_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[PS3_DEVICE_ID_RSTICK_DOWN_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[PS3_DEVICE_ID_RSTICK_LEFT_DPAD].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[PS3_DEVICE_ID_RSTICK_RIGHT_DPAD].joykey;
+         break;
    }
 }
 
@@ -443,35 +443,35 @@ static bool ps3_key_pressed(void *data, int key)
       case RARCH_STATE_SLOT_MINUS:
          return ((state[0] & PS3_GAMEPAD_RSTICK_LEFT_MASK) && (state[0] & PS3_GAMEPAD_R2));
       case RARCH_FRAMEADVANCE:
-      	if(g_extern.console.screen.state.frame_advance.enable)
-	{
-		g_extern.console.rmenu.state.rmenu.enable = true;
-		g_extern.console.rmenu.state.ingame_menu.enable = true;
-		g_extern.console.rmenu.mode = MODE_MENU;
-	}
-	 return false;
+         if(g_extern.console.screen.state.frame_advance.enable)
+         {
+            g_extern.console.rmenu.state.rmenu.enable = true;
+            g_extern.console.rmenu.state.ingame_menu.enable = true;
+            g_extern.console.rmenu.mode = MODE_MENU;
+         }
+         return false;
       case RARCH_REWIND:
          return (state[0] & PS3_GAMEPAD_RSTICK_UP_MASK) && !(state[0] & PS3_GAMEPAD_R2);
       case RARCH_QUIT_KEY:
 #ifdef HAVE_OPENGL
-	 if(IS_TIMER_EXPIRED(gl))
-	 {
+         if(IS_TIMER_EXPIRED(gl))
+         {
             uint32_t r3_pressed = state[0] & PS3_GAMEPAD_R3;
-	    uint32_t l3_pressed = state[0] & PS3_GAMEPAD_L3;
-	    bool retval = false;
-	    g_extern.console.rmenu.state.rmenu.enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED(gl));
-	    g_extern.console.rmenu.state.ingame_menu.enable = r3_pressed && !l3_pressed;
+            uint32_t l3_pressed = state[0] & PS3_GAMEPAD_L3;
+            bool retval = false;
+            g_extern.console.rmenu.state.rmenu.enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED(gl));
+            g_extern.console.rmenu.state.ingame_menu.enable = r3_pressed && !l3_pressed;
 
-	    if(g_extern.console.rmenu.state.rmenu.enable || (g_extern.console.rmenu.state.ingame_menu.enable && !g_extern.console.rmenu.state.rmenu.enable))
-	    {
+            if(g_extern.console.rmenu.state.rmenu.enable || (g_extern.console.rmenu.state.ingame_menu.enable && !g_extern.console.rmenu.state.rmenu.enable))
+            {
                g_extern.console.rmenu.mode = MODE_MENU;
-	       SET_TIMER_EXPIRATION(gl, 30);
-	       retval = g_extern.console.rmenu.state.rmenu.enable;
-	    }
+               SET_TIMER_EXPIRATION(gl, 30);
+               retval = g_extern.console.rmenu.state.rmenu.enable;
+            }
 
-	    retval = g_extern.console.rmenu.state.ingame_menu.enable ? g_extern.console.rmenu.state.ingame_menu.enable : g_extern.console.rmenu.state.rmenu.enable;
-	    return retval;
-	 }
+            retval = g_extern.console.rmenu.state.ingame_menu.enable ? g_extern.console.rmenu.state.ingame_menu.enable : g_extern.console.rmenu.state.rmenu.enable;
+            return retval;
+         }
 #endif
       default:
          return false;
