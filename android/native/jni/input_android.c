@@ -406,7 +406,7 @@ static bool android_input_key_pressed(void *data, int key)
 
    if(key == RARCH_QUIT_KEY && (g_android.input_state & (1ULL << RARCH_KILL)))
       return true;
-   else if(g_android.input_state & key)
+   else if(g_android.input_state & (1ULL << key))
       return true;
 
    return false;
