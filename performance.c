@@ -88,7 +88,9 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
 #endif
 
 #if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__)
+#if !defined(ANDROID_ARM) || !defined(ANDROID_MIPS)
 #define CPU_X86
+#endif
 #endif
 
 #ifdef _MSC_VER
@@ -98,7 +100,9 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
 #ifdef CPU_X86
 static void x86_cpuid(int func, int flags[4])
 {
-#ifdef __GNUC__
+#if defined(__GNUC__)  && !defined(ANDROID)
+   /* doesn't compile on x86 Android -
+    * error - inconsistent operand constraints in an 'asm' */
    asm volatile("cpuid\n" :
          "=a"(flags[0]),
          "=b"(flags[1]),

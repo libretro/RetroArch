@@ -261,8 +261,6 @@ void android_main(struct android_app* state)
       }
    }
 
-   rarch_perf_get_cpu_features();
-
    RARCH_LOG("Starting RetroArch...\n");
 
    rarch_main(argc, argv);
