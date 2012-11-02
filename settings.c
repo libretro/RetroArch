@@ -669,6 +669,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][RARCH_BIND_LIST_END_NULL] = 
       DECLARE_BIND(audio_mute,            RARCH_MUTE),
       DECLARE_BIND(netplay_flip_players,  RARCH_NETPLAY_FLIP),
       DECLARE_BIND(slowmotion,            RARCH_SLOWMOTION),
+      DECLARE_BIND(enable_hotkey,         RARCH_ENABLE_HOTKEY),
    },
 
    { DECL_PLAYER(2) },
@@ -686,8 +687,6 @@ struct key_map
    int key;
 };
 
-// Edit: Not portable to different input systems atm. Might move this map into the driver itself or something.
-// However, this should map nicely over to other systems aswell since the definition are mostly the same anyways.
 static const struct key_map sk_map[] = {
    { "left", RETROK_LEFT },
    { "right", RETROK_RIGHT },

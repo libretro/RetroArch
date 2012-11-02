@@ -85,6 +85,7 @@ enum // RetroArch specific bind IDs.
    RARCH_MUTE,
    RARCH_NETPLAY_FLIP,
    RARCH_SLOWMOTION,
+   RARCH_ENABLE_HOTKEY,
 
 #ifdef RARCH_CONSOLE
    RARCH_CHEAT_INPUT,
@@ -235,6 +236,7 @@ typedef struct driver
    rarch_cmd_t *command;
 #endif
    bool stdin_claimed;
+   bool block_hotkey;
 
    // Opaque handles to currently running window.
    // Used by e.g. input drivers which bind to a window.
@@ -337,6 +339,9 @@ extern const input_driver_t input_null;
 
 static inline bool input_key_pressed_func(int key)
 {
+   if (driver.block_hotkey)
+      return false;
+
    bool ret = driver.input->key_pressed(driver.input_data, key);
 #ifdef HAVE_COMMAND
    if (!ret && driver.command)

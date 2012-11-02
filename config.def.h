@@ -390,6 +390,7 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_MUTE,                       RETROK_F9,     NO_BTN,      AXIS_NONE },
    { true, RARCH_NETPLAY_FLIP,               RETROK_i,      NO_BTN,      AXIS_NONE },
    { true, RARCH_SLOWMOTION,                 RETROK_e,      NO_BTN,      AXIS_NONE },
+   { true, RARCH_ENABLE_HOTKEY,              RETROK_UNKNOWN, NO_BTN,     AXIS_NONE },
 };
 
 // Player 2-5
