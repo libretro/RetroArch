@@ -23,8 +23,15 @@
 struct droid
 {
    struct android_app* app;
-   bool init_quit;
-   bool window_inited;
+   uint64_t input_state;
+};
+
+enum {
+   ANDROID_STATE_QUIT =             1 << 0,
+   ANDROID_STATE_KILL =             1 << 1,
+   ANDROID_STATE_VOLUME_UP =        1 << 2,
+   ANDROID_STATE_VOLUME_DOWN =      1 << 3,
+   ANDROID_WINDOW_READY =           1 << 4,
 };
 
 extern struct droid g_android;

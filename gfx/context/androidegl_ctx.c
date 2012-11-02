@@ -137,7 +137,7 @@ static void gfx_ctx_check_window(bool *quit,
    *resize = false;
 
    // Check if we are exiting.
-   if (g_android.app->destroyRequested != 0 || g_android.init_quit)
+   if (g_android.app->destroyRequested != 0 || (g_android.input_state & ANDROID_STATE_KILL))
       *quit = true;
 }
 

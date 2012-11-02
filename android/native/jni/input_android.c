@@ -49,27 +49,19 @@ enum {
 #define PRESSED_LEFT(x, y) ((-0.80f > x) && (x >= -1.00f))
 #define PRESSED_RIGHT(x, y) ((0.80f  < x) && (x <= 1.00f))
 
+#define MAX_DEVICE_IDS 50
+
 //#define RARCH_INPUT_DEBUG
 
 static unsigned pads_connected;
 static uint64_t state[MAX_PADS];
-static int16_t state_device_ids[50];
+static int8_t state_device_ids[MAX_DEVICE_IDS];
 static int32_t keycode_lut[LAST_KEYCODE];
 
-static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
+static int32_t handle_touch(AInputEvent* event, int i, int keycode)
 {
-   RARCH_PERFORMANCE_INIT(handle_input);
-   RARCH_PERFORMANCE_START(handle_input);
-
-   int id = AInputEvent_getDeviceId(event);
-   int i = state_device_ids[id];
-
-   if(i == -1)
-      i = state_device_ids[id] = pads_connected++;
-
-   int type    = AInputEvent_getType(event);
-   int keycode = AKeyEvent_getKeyCode(event);
-
+   RARCH_PERFORMANCE_INIT(handle_touch);
+   RARCH_PERFORMANCE_START(handle_touch);
 #ifdef RARCH_INPUT_DEBUG
    int source  = AInputEvent_getSource(event);
 
@@ -94,34 +86,35 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event)
    }
 #endif
 
-   int action  = AKeyEvent_getAction(event);
-
-   if(type == AINPUT_EVENT_TYPE_MOTION)
-   {
-      float x = AMotionEvent_getX(event, 0);
-      float y = AMotionEvent_getY(event, 0);
+   float x = AMotionEvent_getX(event, 0);
+   float y = AMotionEvent_getY(event, 0);
 #ifdef RARCH_INPUT_DEBUG
-      RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, pad: %d, x: %f, y: %f.\n", i, x, y);
+   RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, pad: %d, x: %f, y: %f.\n", i, x, y);
 #endif
-      state[i] &= ~(ANDROID_GAMEPAD_DPAD_LEFT | ANDROID_GAMEPAD_DPAD_RIGHT |
-            ANDROID_GAMEPAD_DPAD_UP | ANDROID_GAMEPAD_DPAD_DOWN);
-      state[i] |= PRESSED_LEFT(x, y)  ? ANDROID_GAMEPAD_DPAD_LEFT  : 0;
-      state[i] |= PRESSED_RIGHT(x, y) ? ANDROID_GAMEPAD_DPAD_RIGHT : 0;
-      state[i] |= PRESSED_UP(x, y)    ? ANDROID_GAMEPAD_DPAD_UP    : 0;
-      state[i] |= PRESSED_DOWN(x, y)  ? ANDROID_GAMEPAD_DPAD_DOWN  : 0;
-   }
+   state[i] &= ~(ANDROID_GAMEPAD_DPAD_LEFT | ANDROID_GAMEPAD_DPAD_RIGHT |
+         ANDROID_GAMEPAD_DPAD_UP | ANDROID_GAMEPAD_DPAD_DOWN);
+   state[i] |= PRESSED_LEFT(x, y)  ? ANDROID_GAMEPAD_DPAD_LEFT  : 0;
+   state[i] |= PRESSED_RIGHT(x, y) ? ANDROID_GAMEPAD_DPAD_RIGHT : 0;
+   state[i] |= PRESSED_UP(x, y)    ? ANDROID_GAMEPAD_DPAD_UP    : 0;
+   state[i] |= PRESSED_DOWN(x, y)  ? ANDROID_GAMEPAD_DPAD_DOWN  : 0;
+
+   RARCH_PERFORMANCE_STOP(handle_touch);
+   return 1;
+}
+
+static int32_t handle_button(AInputEvent* event, int i, int keycode)
+{
+   RARCH_PERFORMANCE_INIT(handle_button);
+   RARCH_PERFORMANCE_START(handle_button);
+
+   int action  = AKeyEvent_getAction(event);
 
    if(action == AKEY_EVENT_ACTION_DOWN || action == AKEY_EVENT_ACTION_MULTIPLE)
       state[i] |= keycode_lut[keycode];
-
-   if(action == AKEY_EVENT_ACTION_UP)
+   else if(action == AKEY_EVENT_ACTION_UP)
       state[i] &= ~(keycode_lut[keycode]);
 
-   if(keycode == AKEYCODE_BACK || keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN)
-      return 0;
-
-   RARCH_PERFORMANCE_STOP(handle_input);
-
+   RARCH_PERFORMANCE_STOP(handle_button);
    return 1;
 }
 
@@ -269,18 +262,22 @@ static void setup_keycode_lut(void)
    keycode_lut[AKEYCODE_S] = ANDROID_GAMEPAD_TRIANGLE;
    keycode_lut[AKEYCODE_Q] = ANDROID_GAMEPAD_L1;
    keycode_lut[AKEYCODE_W] = ANDROID_GAMEPAD_R1;
+
+   /* Misc control scheme */
+   keycode_lut[AKEYCODE_BACK] = ANDROID_STATE_QUIT;
+   keycode_lut[AKEYCODE_VOLUME_UP] = ANDROID_STATE_VOLUME_UP;
+   keycode_lut[AKEYCODE_VOLUME_DOWN] = ANDROID_STATE_VOLUME_DOWN;
 }
 
 static void setup_state_ids(void)
 {
-   for(int i = 0; i < 50; i++)
+   for(int i = 0; i < MAX_DEVICE_IDS; i++)
       state_device_ids[i] = -1;
 }
 
 static void *android_input_init(void)
 {
    pads_connected = 0;
-
 
    for(unsigned player = 0; player < 4; player++)
       for(unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
@@ -336,7 +333,22 @@ static void android_input_poll(void *data)
             if (AInputQueue_preDispatchEvent(android_app->inputQueue, event))
                return;
 
-            int32_t handled = engine_handle_input(android_app, event);
+            int keycode = AKeyEvent_getKeyCode(event);
+            int32_t handled = 0;
+
+            int id = AInputEvent_getDeviceId(event);
+            int type = AInputEvent_getType(event);
+            int i = state_device_ids[id];
+
+            if(i == -1)
+               i = state_device_ids[id] = pads_connected++;
+
+            if(type == AINPUT_EVENT_TYPE_MOTION)
+               handled = handle_touch(event, i, keycode);
+            else if(keycode == AKEYCODE_BACK || keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN)
+               g_android.input_state = keycode_lut[keycode];
+            else
+               handled = handle_button(event, i, keycode);
 
             AInputQueue_finishEvent(android_app->inputQueue, event, handled);
          }
@@ -386,7 +398,7 @@ static bool android_input_key_pressed(void *data, int key)
    switch (key)
    {
       case RARCH_QUIT_KEY:
-         if(g_android.init_quit)
+         if(g_android.input_state & ANDROID_STATE_KILL)
             return true;
          else
             return false;
