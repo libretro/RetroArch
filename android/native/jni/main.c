@@ -296,6 +296,8 @@ static void onNativeWindowCreated(ANativeActivity* activity, ANativeWindow* wind
 static void onNativeWindowDestroyed(ANativeActivity* activity, ANativeWindow* window)
 {
    RARCH_LOG("NativeWindowDestroyed: %p -- %p\n", activity, window);
+
+
    android_app_set_window((struct android_app*)activity->instance, NULL);
 }
 
@@ -386,6 +388,13 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          /* The window is being shown, get it ready. */
          android_app->window = android_app->pendingWindow;
 
+         if (g_android.input_state & (1ULL << RARCH_REENTRANT))
+         {
+            gfx_ctx_init();
+            g_extern.audio_active = true;
+            g_extern.video_active = true;
+         }
+
          pthread_cond_broadcast(&android_app->cond);
          pthread_mutex_unlock(&android_app->mutex);
 
@@ -422,6 +431,17 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          android_app->activityState = cmd;
          pthread_cond_broadcast(&android_app->cond);
          pthread_mutex_unlock(&android_app->mutex);
+
+         /* EXEC */
+         if(g_android.input_state & (1ULL << RARCH_QUIT_KEY)) { }
+         else
+         {
+            /* Setting reentrancy */
+            RARCH_LOG("Setting up RetroArch re-entrancy...\n");
+            g_android.input_state |= (1ULL << RARCH_REENTRANT);
+            g_extern.audio_active = false;
+            g_extern.video_active = false;
+         }
          break;
       case APP_CMD_STOP:
          RARCH_LOG("engine_handle_cmd: APP_CMD_STOP.\n");
@@ -449,6 +469,8 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          /* EXEC */
          /* The window is being hidden or closed, clean it up. */
          /* terminate display/EGL context here */
+         if(g_android.input_state & (1ULL << RARCH_REENTRANT))
+            gfx_ctx_destroy();
 
          /* POSTEXEC */
          android_app->window = NULL;
@@ -459,7 +481,6 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          RARCH_LOG("engine_handle_cmd: APP_CMD_GAINED_FOCUS.\n");
 
          /* EXEC */
-         // When our app gains focus, we start monitoring the accelerometer.
          break;
       case APP_CMD_LOST_FOCUS:
          RARCH_LOG("engine_handle_cmd: APP_CMD_LOST_FOCUS.\n");
@@ -510,10 +531,7 @@ static void android_get_char_argv(char *argv, size_t sizeof_argv, const char *ar
  */
 void android_main(struct android_app* state)
 {
-   rarch_main_clear_state();
-
-   RARCH_LOG("Native Activity started.\n");
-
+   memset(&g_android, 0, sizeof(g_android));
    g_android.app = state;
 
    struct android_app* android_app = g_android.app;
@@ -541,13 +559,29 @@ void android_main(struct android_app* state)
    argv[argc++] = strdup(libretro_path);
    argv[argc++] = strdup("-v");
 
-   g_extern.verbose = true;
 
    if (state->savedState != NULL)
    {
       // We are starting with a previous saved state; restore from it.
+      RARCH_LOG("Restoring reentrant savestate.\n");
       g_android.state = *(struct saved_state*)state->savedState;
+      g_android.input_state = g_android.state.input_state;
    }
+
+   bool rarch_reentrant = (g_android.input_state & (1ULL << RARCH_REENTRANT));
+
+   if(rarch_reentrant)
+   {
+      RARCH_LOG("Native Activity started (reentrant).\n");
+   }
+   else
+   {
+      RARCH_LOG("Native Activity started.\n");
+      rarch_main_clear_state();
+   }
+
+
+   g_extern.verbose = true;
 
    while(!(g_android.input_state & (1ULL << RARCH_WINDOW_READY)))
    {
@@ -579,21 +613,30 @@ void android_main(struct android_app* state)
       }
    }
 
-
    int init_ret;
 
-   RARCH_LOG("Initializing RetroArch...\n");
-   if ((init_ret = rarch_main_init(argc, argv)) == 0)
+   if (rarch_reentrant)
    {
-      RARCH_LOG("Starting RetroArch...\n");
-      rarch_init_msg_queue();
-      while (rarch_main_iterate());
+      init_ret = 0;
+
+      /* We've done everything state-wise needed for RARCH_REENTRANT,
+       * get rid of it now */
+      g_android.input_state |= ~(1ULL << RARCH_REENTRANT);
    }
-   else
+   else if ((init_ret = rarch_main_init(argc, argv)) != 0)
    {
       RARCH_LOG("Initialization failed.\n");
       g_android.input_state |= (1ULL << RARCH_QUIT_KEY);
       g_android.input_state |= (1ULL << RARCH_KILL);
+   }
+
+   if (init_ret == 0)
+   {
+      RARCH_LOG("Initializing succeeded.\n");
+      RARCH_LOG("RetroArch started.\n");
+      rarch_init_msg_queue();
+      while (rarch_main_iterate());
+      RARCH_LOG("RetroArch stopped.\n");
    }
 
    if(g_android.input_state & (1ULL << RARCH_QUIT_KEY))

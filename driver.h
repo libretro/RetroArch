@@ -97,6 +97,9 @@ enum // RetroArch specific bind IDs.
    RARCH_KILL,
    RARCH_WINDOW_READY,
 #endif
+#if defined(ANDROID) || defined(RARCH_CONSOLE)
+   RARCH_REENTRANT,
+#endif
 
    RARCH_BIND_LIST_END,
    RARCH_BIND_LIST_END_NULL

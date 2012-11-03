@@ -254,10 +254,8 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
 
 static void video_frame(const void *data, unsigned width, unsigned height, size_t pitch)
 {
-#if !defined(RARCH_PERFORMANCE_MODE)
    if (!g_extern.video_active)
       return;
-#endif
 
    if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555 && data)
    {
@@ -2554,10 +2552,6 @@ void rarch_main_clear_state(void)
    free(g_extern.system.environment);
    free(g_extern.system.environment_split);
    memset(&g_extern, 0, sizeof(g_extern));
-
-#ifdef ANDROID
-   memset(&g_android, 0, sizeof(g_android));
-#endif
 
    init_state();
 }

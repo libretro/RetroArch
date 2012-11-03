@@ -24,6 +24,7 @@ struct saved_state
 {
     int32_t x;
     int32_t y;
+    uint64_t input_state;
 };
 
 struct droid
