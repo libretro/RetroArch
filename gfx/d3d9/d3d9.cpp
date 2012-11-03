@@ -22,6 +22,7 @@
 #include "config_file.hpp"
 #include "../gfx_common.h"
 #include "../../compat/posix_string.h"
+#include "../../performance.h"
 
 #include <iostream>
 #include <exception>
@@ -467,6 +468,8 @@ bool D3DVideo::frame(const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
+   RARCH_PERFORMANCE_INIT(d3d_frame);
+   RARCH_PERFORMANCE_START(d3d_frame);
    // We cannot recover in fullscreen.
    if (needs_restore && IsIconic(hWnd))
       return true;
@@ -501,6 +504,8 @@ bool D3DVideo::frame(const void *frame,
 
       dev->EndScene();
    }
+
+   RARCH_PERFORMANCE_STOP(d3d_frame);
 
    if (dev->Present(nullptr, nullptr, nullptr, nullptr) != D3D_OK)
    {
