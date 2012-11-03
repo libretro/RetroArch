@@ -52,10 +52,8 @@
 // We want to use -mconsole in Win32, so we need main().
 #endif
 
-#if defined(RARCH_CONSOLE)
-#ifndef RARCH_PERFORMANCE_MODE
+#if defined(RARCH_CONSOLE) && !defined(RARCH_PERFORMANCE_MODE)
 #define RARCH_PERFORMANCE_MODE
-#endif
 #endif
 
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
