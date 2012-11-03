@@ -119,10 +119,17 @@ static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer;
 #define BORDER_FUNC GL_CLAMP_TO_BORDER
 #endif
 
+#define MAX_VARIABLES 256
+
+#ifdef RARCH_GPU_PERFORMANCE_MODE
+#define MAX_PROGRAMS 8
+#define MAX_TEXTURES 4
+#define PREV_TEXTURES 3
+#else
 #define MAX_PROGRAMS 16
 #define MAX_TEXTURES 8
-#define MAX_VARIABLES 256
 #define PREV_TEXTURES 7
+#endif
 
 enum filter_type
 {
