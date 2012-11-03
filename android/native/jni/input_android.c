@@ -68,50 +68,6 @@ static uint64_t state[MAX_PADS];
 static int8_t state_device_ids[MAX_DEVICE_IDS];
 static int64_t keycode_lut[LAST_KEYCODE];
 
-static int32_t handle_touch(AInputEvent* event, int i)
-{
-   RARCH_PERFORMANCE_INIT(handle_touch);
-   RARCH_PERFORMANCE_START(handle_touch);
-#ifdef RARCH_INPUT_DEBUG
-   int source  = AInputEvent_getSource(event);
-
-   switch(source)
-   {
-      case AINPUT_SOURCE_DPAD:
-         RARCH_LOG("AINPUT_SOURCE_DPAD, pad: %d.\n", i);
-         break;
-      case AINPUT_SOURCE_TOUCHSCREEN:
-         RARCH_LOG("AINPUT_SOURCE_TOUCHSCREEN, pad: %d.\n", i);
-         break; 
-      case AINPUT_SOURCE_TOUCHPAD:
-         RARCH_LOG("AINPUT_SOURCE_TOUCHPAD, pad: %d.\n", i);
-         break;
-      case AINPUT_SOURCE_ANY:
-         RARCH_LOG("AINPUT_SOURCE_ANY, pad: %d.\n", i);
-         break;
-      case 0:
-      default:
-         RARCH_LOG("AINPUT_SOURCE_DEFAULT, pad: %d.\n", i);
-         break;
-   }
-#endif
-
-   float x = AMotionEvent_getX(event, 0);
-   float y = AMotionEvent_getY(event, 0);
-#ifdef RARCH_INPUT_DEBUG
-   RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, pad: %d, x: %f, y: %f.\n", i, x, y);
-#endif
-   state[i] &= ~((1 << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
-         (1 << RETRO_DEVICE_ID_JOYPAD_UP) | (1 << RETRO_DEVICE_ID_JOYPAD_DOWN));
-   state[i] |= PRESSED_LEFT(x, y)  ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
-   state[i] |= PRESSED_RIGHT(x, y) ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-   state[i] |= PRESSED_UP(x, y)    ? (1 << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
-   state[i] |= PRESSED_DOWN(x, y)  ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
-
-   RARCH_PERFORMANCE_STOP(handle_touch);
-   return 1;
-}
-
 static void setup_keycode_lut(void)
 {
    for(int i = 0; i < LAST_KEYCODE; i++)
@@ -316,7 +272,7 @@ static void android_input_poll(void *data)
 {
    (void)data;
 
-    // Read all pending events.
+   // Read all pending events.
    int do_event;
    struct android_app* android_app = g_android.app;
    int id = ALooper_pollOnce(0, NULL, &do_event, NULL);
@@ -350,7 +306,21 @@ static void android_input_poll(void *data)
 #endif
 
             if(type == AINPUT_EVENT_TYPE_MOTION)
-               handled = handle_touch(event, i);
+            {
+               float x = AMotionEvent_getX(event, 0);
+               float y = AMotionEvent_getY(event, 0);
+#ifdef RARCH_INPUT_DEBUG
+               RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, pad: %d, x: %f, y: %f.\n", i, x, y);
+#endif
+               state[i] &= ~((1 << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
+                     (1 << RETRO_DEVICE_ID_JOYPAD_UP) | (1 << RETRO_DEVICE_ID_JOYPAD_DOWN));
+               state[i] |= PRESSED_LEFT(x, y)  ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
+               state[i] |= PRESSED_RIGHT(x, y) ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+               state[i] |= PRESSED_UP(x, y)    ? (1 << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
+               state[i] |= PRESSED_DOWN(x, y)  ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+
+               handled = 1;
+            }
             else if(input_state < (1 << RARCH_FIRST_META_KEY))
             {
                int action  = AKeyEvent_getAction(event);
