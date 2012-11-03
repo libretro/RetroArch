@@ -117,9 +117,9 @@ static void x86_cpuid(int func, int flags[4])
 
 #if defined(__GNUC__)
    asm volatile (
-         "mov %%"REG_b", %%"REG_S"\n"
+         "mov %%" REG_b ", %%" REG_S "\n"
          "cpuid\n"
-         "xchg %%"REG_b", %%"REG_S"\n"
+         "xchg %%" REG_b ", %%" REG_S "\n"
          : "=a"(flags[0]), "=S"(flags[1]), "=c"(flags[2]), "=d"(flags[3])
          : "a"(func));
 
