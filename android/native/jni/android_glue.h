@@ -174,6 +174,5 @@ int8_t android_app_read_cmd(struct android_app* android_app);
 extern void engine_app_read_cmd(struct android_app *app);
 extern void engine_handle_cmd(struct android_app* android_app, int32_t cmd);
 extern void free_saved_state(struct android_app* android_app);
-extern void android_main(struct android_app *app);
 
 #endif /* _ANDROID_NATIVE_APP_GLUE_H */

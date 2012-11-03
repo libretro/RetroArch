@@ -82,6 +82,40 @@ static void android_app_destroy(struct android_app* android_app)
    // Can't touch android_app object after this.
 }
 
+static void android_get_char_argv(char *argv, size_t sizeof_argv, const char *arg_name)
+{
+   JNIEnv *env;
+   JavaVM *rarch_vm = g_android.app->activity->vm;
+
+   (*rarch_vm)->AttachCurrentThread(rarch_vm, &env, 0);
+
+   jobject me = g_android.app->activity->clazz;
+
+   jclass acl = (*env)->GetObjectClass(env, me); //class pointer of NativeActivity
+   jmethodID giid = (*env)->GetMethodID(env, acl, "getIntent", "()Landroid/content/Intent;");
+   jobject intent = (*env)->CallObjectMethod(env, me, giid); //Got our intent
+
+   jclass icl = (*env)->GetObjectClass(env, intent); //class pointer of Intent
+   jmethodID gseid = (*env)->GetMethodID(env, icl, "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
+
+   jstring jsParam1 = (*env)->CallObjectMethod(env, intent, gseid, (*env)->NewStringUTF(env, arg_name));
+   const char *test_argv = (*env)->GetStringUTFChars(env, jsParam1, 0);
+
+   strncpy(argv, test_argv, sizeof_argv);
+
+   (*env)->ReleaseStringUTFChars(env, jsParam1, test_argv);
+
+   (*rarch_vm)->DetachCurrentThread(rarch_vm);
+}
+
+#define MAX_ARGS 32
+
+/**
+ * This is the main entry point of a native application that is using
+ * android_native_app_glue.  It runs in its own thread, with its own
+ * event loop for receiving input events and doing other things.
+ */
+
 static void* android_app_entry(void* param)
 {
    struct android_app* android_app = (struct android_app*)param;
@@ -100,7 +134,126 @@ static void* android_app_entry(void* param)
    pthread_cond_broadcast(&android_app->cond);
    pthread_mutex_unlock(&android_app->mutex);
 
-   android_main(android_app);
+   memset(&g_android, 0, sizeof(g_android));
+   g_android.app = android_app;
+
+   char rom_path[512];
+   char libretro_path[512];
+
+   // Get arguments */
+   android_get_char_argv(rom_path, sizeof(rom_path), "ROM");
+   android_get_char_argv(libretro_path, sizeof(libretro_path), "LIBRETRO");
+
+   RARCH_LOG("Checking arguments passed...\n");
+   RARCH_LOG("ROM Filename: [%s].\n", rom_path);
+   RARCH_LOG("Libretro path: [%s].\n", libretro_path);
+
+   /* ugly hack for now - hardcode libretro path to 'allowed' dir */
+   snprintf(libretro_path, sizeof(libretro_path), "/data/data/com.retroarch/lib/libretro.so");
+
+   int argc = 0;
+   char *argv[MAX_ARGS] = {NULL};
+
+   argv[argc++] = strdup("retroarch");
+   argv[argc++] = strdup(rom_path);
+   argv[argc++] = strdup("-L");
+   argv[argc++] = strdup(libretro_path);
+   argv[argc++] = strdup("-v");
+
+
+   if (android_app->savedState != NULL)
+   {
+      // We are starting with a previous saved state; restore from it.
+      RARCH_LOG("Restoring reentrant savestate.\n");
+      g_android.state = *(struct saved_state*)android_app->savedState;
+      g_android.input_state = g_android.state.input_state;
+   }
+
+   bool rarch_reentrant = (g_android.input_state & (1ULL << RARCH_REENTRANT));
+
+   if(rarch_reentrant)
+   {
+      RARCH_LOG("Native Activity started (reentrant).\n");
+   }
+   else
+   {
+      RARCH_LOG("Native Activity started.\n");
+      rarch_main_clear_state();
+   }
+
+
+   g_extern.verbose = true;
+
+   while(!(g_android.input_state & (1ULL << RARCH_WINDOW_READY)))
+   {
+      // Read all pending events.
+      int id;
+
+      // Block forever waiting for events.
+      while ((id = ALooper_pollOnce(0, NULL, 0, NULL)) >= 0)
+      {
+         // Process this event.
+         if (id)
+         {
+            int8_t cmd;
+
+            if (read(android_app->msgread, &cmd, sizeof(cmd)) == sizeof(cmd))
+            {
+               if(cmd == APP_CMD_SAVE_STATE)
+                  free_saved_state(android_app);
+            }
+            else
+               cmd = -1;
+
+            engine_handle_cmd(android_app, cmd);
+         }
+
+         // Check if we are exiting.
+         if (android_app->destroyRequested != 0)
+            goto exit;
+      }
+   }
+
+   int init_ret;
+
+   if (rarch_reentrant)
+   {
+      init_ret = 0;
+
+      /* We've done everything state-wise needed for RARCH_REENTRANT,
+       * get rid of it now */
+      g_android.input_state |= ~(1ULL << RARCH_REENTRANT);
+   }
+   else if ((init_ret = rarch_main_init(argc, argv)) != 0)
+   {
+      RARCH_LOG("Initialization failed.\n");
+      g_android.input_state |= (1ULL << RARCH_QUIT_KEY);
+      g_android.input_state |= (1ULL << RARCH_KILL);
+   }
+
+   if (init_ret == 0)
+   {
+      RARCH_LOG("Initializing succeeded.\n");
+      RARCH_LOG("RetroArch started.\n");
+      rarch_init_msg_queue();
+      while (rarch_main_iterate());
+      RARCH_LOG("RetroArch stopped.\n");
+   }
+
+exit:
+   if(g_android.input_state & (1ULL << RARCH_QUIT_KEY))
+   {
+      RARCH_LOG("Deinitializing RetroArch...\n");
+      rarch_main_deinit();
+      rarch_deinit_msg_queue();
+#ifdef PERF_TEST
+      rarch_perf_log();
+#endif
+      rarch_main_clear_state();
+
+      /* Make sure to quit RetroArch later on too */
+      g_android.input_state |= (1ULL << RARCH_KILL);
+   }
 
    if(g_android.input_state & (1ULL << RARCH_KILL))
    {
@@ -110,49 +263,6 @@ static void* android_app_entry(void* param)
    return NULL;
 }
 
-// --------------------------------------------------------------------
-// Native activity interaction (called from main thread)
-// --------------------------------------------------------------------
-
-static struct android_app* android_app_create(ANativeActivity* activity,
-      void* savedState, size_t savedStateSize)
-{
-   struct android_app* android_app = (struct android_app*)malloc(sizeof(struct android_app));
-   memset(android_app, 0, sizeof(struct android_app));
-   android_app->activity = activity;
-
-   pthread_mutex_init(&android_app->mutex, NULL);
-   pthread_cond_init(&android_app->cond, NULL);
-
-   if (savedState != NULL)
-   {
-      android_app->savedState = malloc(savedStateSize);
-      android_app->savedStateSize = savedStateSize;
-      memcpy(android_app->savedState, savedState, savedStateSize);
-   }
-
-   int msgpipe[2];
-   if (pipe(msgpipe))
-   {
-      RARCH_ERR("could not create pipe: %s.\n", strerror(errno));
-      return NULL;
-   }
-   android_app->msgread = msgpipe[0];
-   android_app->msgwrite = msgpipe[1];
-
-   pthread_attr_t attr; 
-   pthread_attr_init(&attr);
-   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-   pthread_create(&android_app->thread, &attr, android_app_entry, android_app);
-
-   // Wait for thread to start.
-   pthread_mutex_lock(&android_app->mutex);
-   while (!android_app->running)
-      pthread_cond_wait(&android_app->cond, &android_app->mutex);
-   pthread_mutex_unlock(&android_app->mutex);
-
-   return android_app;
-}
 
 static void android_app_write_cmd(struct android_app* android_app, int8_t cmd)
 {
@@ -313,6 +423,10 @@ static void onInputQueueDestroyed(ANativeActivity* activity, AInputQueue* queue)
    android_app_set_input((struct android_app*)activity->instance, NULL);
 }
 
+// --------------------------------------------------------------------
+// Native activity interaction (called from main thread)
+// --------------------------------------------------------------------
+
 void ANativeActivity_onCreate(ANativeActivity* activity,
       void* savedState, size_t savedStateSize)
 {
@@ -331,7 +445,44 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    activity->callbacks->onInputQueueCreated = onInputQueueCreated;
    activity->callbacks->onInputQueueDestroyed = onInputQueueDestroyed;
 
-   activity->instance = android_app_create(activity, savedState, savedStateSize);
+   struct android_app* android_app = (struct android_app*)malloc(sizeof(struct android_app));
+   memset(android_app, 0, sizeof(struct android_app));
+   android_app->activity = activity;
+
+   pthread_mutex_init(&android_app->mutex, NULL);
+   pthread_cond_init(&android_app->cond, NULL);
+
+   if (savedState != NULL)
+   {
+      android_app->savedState = malloc(savedStateSize);
+      android_app->savedStateSize = savedStateSize;
+      memcpy(android_app->savedState, savedState, savedStateSize);
+   }
+
+   int msgpipe[2];
+   if (pipe(msgpipe))
+   {
+      RARCH_ERR("could not create pipe: %s.\n", strerror(errno));
+      activity->instance = NULL;
+   }
+   else
+   {
+      android_app->msgread = msgpipe[0];
+      android_app->msgwrite = msgpipe[1];
+
+      pthread_attr_t attr; 
+      pthread_attr_init(&attr);
+      pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+      pthread_create(&android_app->thread, &attr, android_app_entry, android_app);
+
+      // Wait for thread to start.
+      pthread_mutex_lock(&android_app->mutex);
+      while (!android_app->running)
+         pthread_cond_wait(&android_app->cond, &android_app->mutex);
+      pthread_mutex_unlock(&android_app->mutex);
+
+      activity->instance = android_app;
+   }
 }
 
 
@@ -496,160 +647,4 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
    }
 }
 
-static void android_get_char_argv(char *argv, size_t sizeof_argv, const char *arg_name)
-{
-   JNIEnv *env;
-   JavaVM *rarch_vm = g_android.app->activity->vm;
 
-   (*rarch_vm)->AttachCurrentThread(rarch_vm, &env, 0);
-
-   jobject me = g_android.app->activity->clazz;
-
-   jclass acl = (*env)->GetObjectClass(env, me); //class pointer of NativeActivity
-   jmethodID giid = (*env)->GetMethodID(env, acl, "getIntent", "()Landroid/content/Intent;");
-   jobject intent = (*env)->CallObjectMethod(env, me, giid); //Got our intent
-
-   jclass icl = (*env)->GetObjectClass(env, intent); //class pointer of Intent
-   jmethodID gseid = (*env)->GetMethodID(env, icl, "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
-
-   jstring jsParam1 = (*env)->CallObjectMethod(env, intent, gseid, (*env)->NewStringUTF(env, arg_name));
-   const char *test_argv = (*env)->GetStringUTFChars(env, jsParam1, 0);
-
-   strncpy(argv, test_argv, sizeof_argv);
-
-   (*env)->ReleaseStringUTFChars(env, jsParam1, test_argv);
-
-   (*rarch_vm)->DetachCurrentThread(rarch_vm);
-}
-
-#define MAX_ARGS 32
-
-/**
- * This is the main entry point of a native application that is using
- * android_native_app_glue.  It runs in its own thread, with its own
- * event loop for receiving input events and doing other things.
- */
-void android_main(struct android_app* state)
-{
-   memset(&g_android, 0, sizeof(g_android));
-   g_android.app = state;
-
-   struct android_app* android_app = g_android.app;
-
-   char rom_path[512];
-   char libretro_path[512];
-
-   // Get arguments */
-   android_get_char_argv(rom_path, sizeof(rom_path), "ROM");
-   android_get_char_argv(libretro_path, sizeof(libretro_path), "LIBRETRO");
-
-   RARCH_LOG("Checking arguments passed...\n");
-   RARCH_LOG("ROM Filename: [%s].\n", rom_path);
-   RARCH_LOG("Libretro path: [%s].\n", libretro_path);
-
-   /* ugly hack for now - hardcode libretro path to 'allowed' dir */
-   snprintf(libretro_path, sizeof(libretro_path), "/data/data/com.retroarch/lib/libretro.so");
-
-   int argc = 0;
-   char *argv[MAX_ARGS] = {NULL};
-
-   argv[argc++] = strdup("retroarch");
-   argv[argc++] = strdup(rom_path);
-   argv[argc++] = strdup("-L");
-   argv[argc++] = strdup(libretro_path);
-   argv[argc++] = strdup("-v");
-
-
-   if (state->savedState != NULL)
-   {
-      // We are starting with a previous saved state; restore from it.
-      RARCH_LOG("Restoring reentrant savestate.\n");
-      g_android.state = *(struct saved_state*)state->savedState;
-      g_android.input_state = g_android.state.input_state;
-   }
-
-   bool rarch_reentrant = (g_android.input_state & (1ULL << RARCH_REENTRANT));
-
-   if(rarch_reentrant)
-   {
-      RARCH_LOG("Native Activity started (reentrant).\n");
-   }
-   else
-   {
-      RARCH_LOG("Native Activity started.\n");
-      rarch_main_clear_state();
-   }
-
-
-   g_extern.verbose = true;
-
-   while(!(g_android.input_state & (1ULL << RARCH_WINDOW_READY)))
-   {
-      // Read all pending events.
-      int id;
-
-      // Block forever waiting for events.
-      while ((id = ALooper_pollOnce(0, NULL, 0, NULL)) >= 0)
-      {
-         // Process this event.
-         if (id)
-         {
-            int8_t cmd;
-
-            if (read(android_app->msgread, &cmd, sizeof(cmd)) == sizeof(cmd))
-            {
-               if(cmd == APP_CMD_SAVE_STATE)
-                  free_saved_state(android_app);
-            }
-            else
-               cmd = -1;
-
-            engine_handle_cmd(android_app, cmd);
-         }
-
-         // Check if we are exiting.
-         if (android_app->destroyRequested != 0)
-            return;
-      }
-   }
-
-   int init_ret;
-
-   if (rarch_reentrant)
-   {
-      init_ret = 0;
-
-      /* We've done everything state-wise needed for RARCH_REENTRANT,
-       * get rid of it now */
-      g_android.input_state |= ~(1ULL << RARCH_REENTRANT);
-   }
-   else if ((init_ret = rarch_main_init(argc, argv)) != 0)
-   {
-      RARCH_LOG("Initialization failed.\n");
-      g_android.input_state |= (1ULL << RARCH_QUIT_KEY);
-      g_android.input_state |= (1ULL << RARCH_KILL);
-   }
-
-   if (init_ret == 0)
-   {
-      RARCH_LOG("Initializing succeeded.\n");
-      RARCH_LOG("RetroArch started.\n");
-      rarch_init_msg_queue();
-      while (rarch_main_iterate());
-      RARCH_LOG("RetroArch stopped.\n");
-   }
-
-   if(g_android.input_state & (1ULL << RARCH_QUIT_KEY))
-   {
-      RARCH_LOG("Deinitializing RetroArch...\n");
-      rarch_main_deinit();
-      rarch_deinit_msg_queue();
-#ifdef PERF_TEST
-      rarch_perf_log();
-#endif
-      rarch_main_clear_state();
-
-      /* Make sure to quit RetroArch later on too */
-      g_android.input_state |= (1ULL << RARCH_KILL);
-   }
-}
