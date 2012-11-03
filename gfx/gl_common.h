@@ -55,6 +55,33 @@
 #include <GL/glext.h>
 #endif
 
+#define context_get_video_size_func(win, height)     gl->ctx_driver->get_video_size(win, height)
+#define context_update_window_title_func(var)        gl->ctx_driver->update_window_title(var)
+#define context_destroy_func()                       gl->ctx_driver->destroy()
+#define context_set_fbo_func(enable)                 gl->ctx_driver->set_fbo(enable)
+#define context_apply_fbo_state_changes_func(var)    gl->ctx_driver->apply_fbo_state_changes(var)
+#define context_get_available_resolutions_func()     gl->ctx_driver->get_available_resolutions()
+#define context_translate_aspect_func(width, height) gl->ctx_driver->translate_aspect(width, height)
+#define context_set_resize_func(width, height)       gl->ctx_driver->set_resize(width, height)
+#define context_swap_buffers_func()                  gl->ctx_driver->swap_buffers()
+#define context_swap_interval_func(var)              gl->ctx_driver->swap_interval(var)
+#define context_has_focus_func()                     gl->ctx_driver->has_focus()
+#define context_check_window_func(quit, resize, width, height, frame_count) gl->ctx_driver->check_window(quit, resize, width, height, frame_count)
+#define context_update_window_title_func(var)        gl->ctx_driver->update_window_title(var)
+#define context_set_video_mode_func(width, height, force_16bit, fullscreen) gl->ctx_driver->set_video_mode(width, height, force_16bit, fullscreen)
+#define context_input_driver_func(input, input_data) gl->ctx_driver->input_driver(input, input_data)
+
+#ifdef HAVE_RMENU
+#define context_rmenu_init_func()                    gl->ctx_driver->rmenu_init()
+#define context_rmenu_frame_func(ctx)                gl->ctx_driver->rmenu_frame(ctx)
+#endif
+
+#ifdef HAVE_EGL
+#define context_init_egl_image_buffer_func(video)    gl->ctx_driver->init_egl_image_buffer(video)
+
+#define context_write_egl_image_func(frame, width, height, pitch, base_size, tex_index, img) gl->ctx_driver->write_egl_image(frame, width, height, pitch, base_size, tex_index,img)
+#endif
+
 static inline bool gl_query_extension(const char *ext)
 {
    const char *str = (const char*)glGetString(GL_EXTENSIONS);
