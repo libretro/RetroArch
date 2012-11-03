@@ -26,10 +26,8 @@ int main(int argc, char *argv[])
    int16_t input_i[1024];
    int16_t output_i[1024 * 8];
 
-#ifndef HAVE_FIXED_POINT
    float input_f[1024];
    float output_f[1024 * 8];
-#endif
 
    if (argc != 3)
    {
@@ -59,20 +57,12 @@ int main(int argc, char *argv[])
       if (fread(input_i, sizeof(int16_t), 1024, stdin) != 1024)
          break;
 
-#ifndef HAVE_FIXED_POINT
       audio_convert_s16_to_float(input_f, input_i, 1024);
-#endif
 
       struct resampler_data data = {
-#ifdef HAVE_FIXED_POINT
-         .data_in = input_i,
-         .data_out = output_i,
-         .input_frames = sizeof(input_i) / (2 * sizeof(int16_t)),
-#else
          .data_in = input_f,
          .data_out = output_f,
          .input_frames = sizeof(input_f) / (2 * sizeof(float)),
-#endif
          .ratio = ratio,
       };
 
@@ -80,9 +70,7 @@ int main(int argc, char *argv[])
 
       size_t output_samples = data.output_frames * 2;
 
-#ifndef HAVE_FIXED_POINT
       audio_convert_float_to_s16(output_i, output_f, output_samples);
-#endif
 
       if (fwrite(output_i, sizeof(int16_t), output_samples, stdout) != output_samples)
          break;
