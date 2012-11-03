@@ -18,14 +18,16 @@
 #include "../../msvc/msvc_compat.h"
 #endif
 
-#include "../rarch_console.h"
-
-default_paths_t default_paths;
-
+#ifdef RARCH_CONSOLE
 
 /*============================================================
 CONSOLE EXTENSIONS
 ============================================================ */
+
+#include "../rarch_console.h"
+
+default_paths_t default_paths;
+
 #include "../rarch_console_rom_ext.c"
 #include "../rarch_console_video.c"
 
@@ -40,10 +42,6 @@ CONSOLE EXTENSIONS
 
 #ifdef HAVE_RARCH_EXEC
 #include "../rarch_console_exec.c"
-#endif
-
-#ifdef PERF_TEST
-#include "../../performance.c"
 #endif
 
 #ifdef HAVE_RSOUND
@@ -67,6 +65,18 @@ CONSOLE EXTENSIONS
 #ifdef HAVE_LIBRETRO_MANAGEMENT
 #include "../rarch_console_libretro_mgmt.c"
 #endif
+
+#endif
+
+/*============================================================
+PERFORMANCE
+============================================================ */
+
+#ifdef ANDROID
+#include "../../android/native/jni/cpufeatures.c"
+#endif
+
+#include "../../performance.c"
 
 /*============================================================
 COMPATIBILITY
@@ -97,6 +107,8 @@ VIDEO CONTEXT
 #include "../../gfx/context/ps3_ctx.c"
 #elif defined(_XBOX)
 #include "../../gfx/context/xdk_ctx.c"
+#elif defined(ANDROID)
+#include "../../gfx/context/androidegl_ctx.c"
 #endif
 
 #endif
@@ -185,6 +197,8 @@ INPUT
 #include "../../gx/gx_input.c"
 #elif defined(_XBOX)
 #include "../../xdk/xdk_xinput_input.c"
+#elif defined(ANDROID)
+#include "../../android/native/jni/input_android.c"
 #endif
 
 #include "../../input/null.c"
@@ -253,6 +267,10 @@ AUDIO
 #include "../../audio/ext_audio.c"
 #endif
 
+#ifdef HAVE_SL
+#include "../../audio/opensl.c"
+#endif
+
 #include "../../audio/null.c"
 
 /*============================================================
@@ -298,6 +316,8 @@ MAIN
 #include "../../gx/frontend/main.c"
 #elif defined(__PSL1GHT__)
 #include "../../ps3/frontend/main.c"
+#elif defined(ANDROID)
+#include "../../android/native/jni/main.c"
 #endif
 
 /*============================================================
@@ -310,6 +330,7 @@ THREAD
 ============================================================ */
 #ifdef HAVE_THREAD
 #include "../../thread.c"
+#include "../../autosave.c"
 #endif
 
 /*============================================================

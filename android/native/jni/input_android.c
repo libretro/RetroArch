@@ -273,7 +273,7 @@ static void setup_keycode_lut(void)
    keycode_lut[AKEYCODE_F9] = (1ULL << RARCH_MUTE);
 }
 
-static void *android_input_init(void)
+static void *android_input_initialize(void)
 {
    pads_connected = 0;
 
@@ -422,7 +422,7 @@ static void android_input_free(void *data)
 }
 
 const input_driver_t input_android = {
-   android_input_init,
+   android_input_initialize,
    android_input_poll,
    android_input_state,
    android_input_key_pressed,

@@ -74,7 +74,7 @@ static  int                g_cpuCount;
     } while (0)
 
 #ifdef __i386__
-static __inline__ void x86_cpuid(int func, int values[4])
+static __inline__ void cpu_x86_cpuid(int func, int values[4])
 {
     int a, b, c, d;
     /* We need to preserve ebx since we're compiling PIC code */
@@ -100,7 +100,7 @@ static __inline__ void x86_cpuid(int func, int values[4])
  * than 'buffsize' bytes.
  */
 static int
-read_file(const char*  pathname, char*  buffer, size_t  buffsize)
+cpu_read_file(const char*  pathname, char*  buffer, size_t  buffsize)
 {
     int  fd, len;
 
@@ -340,7 +340,7 @@ cpulist_read_from(CpuList* list, const char* filename)
 
     cpulist_init(list);
 
-    filelen = read_file(filename, file, sizeof file);
+    filelen = cpu_read_file(filename, file, sizeof file);
     if (filelen < 0) {
         D("Could not read %s: %s\n", filename, strerror(errno));
         return;
@@ -382,7 +382,7 @@ android_cpuInit(void)
     g_cpuFeatures = 0;
     g_cpuCount    = 1;
 
-    cpuinfo_len = read_file("/proc/cpuinfo", cpuinfo, sizeof cpuinfo);
+    cpuinfo_len = cpu_read_file("/proc/cpuinfo", cpuinfo, sizeof cpuinfo);
     D("cpuinfo_len is (%d):\n%.*s\n", cpuinfo_len,
       cpuinfo_len >= 0 ? cpuinfo_len : 0, cpuinfo);
 
@@ -503,12 +503,12 @@ android_cpuInit(void)
 #define VENDOR_INTEL_c  0x6c65746e
 #define VENDOR_INTEL_d  0x49656e69
 
-    x86_cpuid(0, regs);
+    cpu_x86_cpuid(0, regs);
     int vendorIsIntel = (regs[1] == VENDOR_INTEL_b &&
                          regs[2] == VENDOR_INTEL_c &&
                          regs[3] == VENDOR_INTEL_d);
 
-    x86_cpuid(1, regs);
+    cpu_x86_cpuid(1, regs);
     if ((regs[2] & (1 << 9)) != 0) {
         g_cpuFeatures |= ANDROID_CPU_X86_FEATURE_SSSE3;
     }

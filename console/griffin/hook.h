@@ -27,7 +27,7 @@
 	VIDEO
 ============================================================ */
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) /* PS3, GL */
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) /* GL */
 #define video_init_func(video_info, input, input_data) \
                                                 gl_init(video_info, input, input_data)
 #define video_frame_func(data, width, height, pitch, msg) \
@@ -126,6 +126,13 @@
 #define input_key_pressed_func(key)             ps3_key_pressed(driver.input_data, key)
 #define input_free_func()                       ps3_free_input(driver.input_data)
 
+#elif defined(ANDROID) /* ANDROID */
+#define input_init_func()                       android_input_initialize()
+#define input_poll_func()                       android_input_poll(driver.input_data)
+#define input_input_state_func(retro_keybinds, port, device, index, id) \
+                                                android_input_state(driver.input_data, retro_keybinds, port, device, index, id)
+#define input_key_pressed_func(key)             android_input_key_pressed(driver.input_data, key)
+#define input_free_func()                       android_input_free(driver.input_data)
 #else
 
 #define input_init_func()                       null_input_init()
