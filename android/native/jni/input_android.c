@@ -337,12 +337,17 @@ static void android_input_poll(void *data)
             int32_t handled = 0;
             uint64_t input_state = keycode_lut[keycode];
 
+
             int id = AInputEvent_getDeviceId(event);
             int type = AInputEvent_getType(event);
             int i = state_device_ids[id];
 
             if(i == -1)
                i = state_device_ids[id] = pads_connected++;
+
+#ifdef RARCH_INPUT_DEBUG
+            RARCH_LOG("Keycode RetroPad %d : %d.\n", i, keycode);
+#endif
 
             if(type == AINPUT_EVENT_TYPE_MOTION)
                handled = handle_touch(event, i);
@@ -387,12 +392,6 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
       {
          case RETRO_DEVICE_JOYPAD:
             retval = (state[player] & button) ? 1 : 0;
-#ifdef RARCH_INPUT_DEBUG
-            if(retval != 0)
-            {
-               RARCH_LOG("state: %d, player: %d.\n", retval, player);
-            }
-#endif
             break;
       }
     }
