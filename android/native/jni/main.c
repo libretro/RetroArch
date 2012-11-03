@@ -102,7 +102,11 @@ static void* android_app_entry(void* param)
 
    android_main(android_app);
 
-   android_app_destroy(android_app);
+   if(g_android.input_state & (1ULL << RARCH_KILL))
+   {
+      android_app_destroy(android_app);
+      exit(0);
+   }
    return NULL;
 }
 
@@ -418,11 +422,6 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          android_app->activityState = cmd;
          pthread_cond_broadcast(&android_app->cond);
          pthread_mutex_unlock(&android_app->mutex);
-
-         /* EXEC */
-         if(g_android.input_state & (1ULL << RARCH_QUIT_KEY))
-            g_android.input_state |= (1ULL << RARCH_KILL);
-
          break;
       case APP_CMD_STOP:
          RARCH_LOG("engine_handle_cmd: APP_CMD_STOP.\n");
@@ -580,7 +579,34 @@ void android_main(struct android_app* state)
       }
    }
 
-   RARCH_LOG("Starting RetroArch...\n");
 
-   rarch_main(argc, argv);
+   int init_ret;
+
+   RARCH_LOG("Initializing RetroArch...\n");
+   if ((init_ret = rarch_main_init(argc, argv)) == 0)
+   {
+      RARCH_LOG("Starting RetroArch...\n");
+      rarch_init_msg_queue();
+      while (rarch_main_iterate());
+   }
+   else
+   {
+      RARCH_LOG("Initialization failed.\n");
+      g_android.input_state |= (1ULL << RARCH_QUIT_KEY);
+      g_android.input_state |= (1ULL << RARCH_KILL);
+   }
+
+   if(g_android.input_state & (1ULL << RARCH_QUIT_KEY))
+   {
+      RARCH_LOG("Deinitializing RetroArch...\n");
+      rarch_main_deinit();
+      rarch_deinit_msg_queue();
+#ifdef PERF_TEST
+      rarch_perf_log();
+#endif
+      rarch_main_clear_state();
+
+      /* Make sure to quit RetroArch later on too */
+      g_android.input_state |= (1ULL << RARCH_KILL);
+   }
 }
