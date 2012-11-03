@@ -31,12 +31,7 @@
 #endif
 
 typedef struct rarch_resampler rarch_resampler_t;
-
-#ifdef HAVE_FIXED_POINT
-typedef int16_t sample_t;
-#else
 typedef float sample_t;
-#endif
 
 struct resampler_data
 {
