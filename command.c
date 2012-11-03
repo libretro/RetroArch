@@ -199,6 +199,8 @@ static const struct cmd_map map[] = {
    { "MUTE",                   RARCH_MUTE },
    { "NETPLAY_FLIP",           RARCH_NETPLAY_FLIP },
    { "SLOWMOTION",             RARCH_SLOWMOTION },
+   { "VOLUME_UP",              RARCH_VOLUME_UP },
+   { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
 };
 
 static bool cmd_set_shader(const char *arg)
