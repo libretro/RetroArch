@@ -14,6 +14,11 @@ ifeq ($(TARGET_ARCH),x86)
 LOCAL_CFLAGS += -DANDROID_X86 -DHAVE_SSSE3
 endif
 
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+#LOCAL_CFLAGS += -mfpu=neon
+LOCAL_CFLAGS += -DANDROID_ARM_V7
+endif
+
 ifeq ($(TARGET_ARCH),mips)
 LOCAL_CFLAGS += -DANDROID_MIPS -D__mips__ -D__MIPSEL__
 endif
