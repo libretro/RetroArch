@@ -314,9 +314,7 @@ struct global
    {
       rarch_resampler_t *source;
 
-#ifndef HAVE_FIXED_POINT
       float *data;
-#endif
 
       size_t data_ptr;
       size_t chunk_size;
