@@ -20,11 +20,19 @@
 #include "android_glue.h"
 #include "../../../boolean.h"
 
+struct saved_state
+{
+    int32_t x;
+    int32_t y;
+};
+
 struct droid
 {
    struct android_app* app;
    uint64_t input_state;
-   uint64_t game_state;
+   unsigned width;
+   unsigned height;
+   struct saved_state state;
 };
 
 extern struct droid g_android;
