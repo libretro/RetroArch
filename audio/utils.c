@@ -22,10 +22,11 @@
 #endif
 
 void audio_convert_s16_to_float_C(float *out,
-      const int16_t *in, size_t samples)
+      const int16_t *in, size_t samples, float gain)
 {
+   gain = gain / 0x8000;
    for (size_t i = 0; i < samples; i++)
-      out[i] = (float)in[i] / 0x8000; 
+      out[i] = (float)in[i] * gain; 
 }
 
 void audio_convert_float_to_s16_C(int16_t *out,
@@ -40,9 +41,10 @@ void audio_convert_float_to_s16_C(int16_t *out,
 
 #if __SSE2__
 void audio_convert_s16_to_float_SSE2(float *out,
-      const int16_t *in, size_t samples)
+      const int16_t *in, size_t samples, float gain)
 {
-   __m128 factor = _mm_set1_ps(1.0f / (0x7fff * 0x10000));
+   float fgain = gain / (0x7fff * 0x10000);
+   __m128 factor = _mm_set1_ps(fgain);
    size_t i;
    for (i = 0; i + 8 <= samples; i += 8, in += 8, out += 8)
    {
@@ -61,7 +63,7 @@ void audio_convert_s16_to_float_SSE2(float *out,
       _mm_storeu_ps(out + 4, output[1]);
    }
 
-   audio_convert_s16_to_float_C(out, in, samples - i);
+   audio_convert_s16_to_float_C(out, in, samples - i, gain);
 }
 
 void audio_convert_float_to_s16_SSE2(int16_t *out,
@@ -84,8 +86,9 @@ void audio_convert_float_to_s16_SSE2(int16_t *out,
 }
 #elif __ALTIVEC__
 void audio_convert_s16_to_float_altivec(float *out,
-      const int16_t *in, size_t samples)
+      const int16_t *in, size_t samples, float gain)
 {
+   const vector float gain_vec = vec_splats(gain);
    // Unaligned loads/store is a bit expensive, so we optimize for the good path (very likely).
    if (((uintptr_t)out & 15) + ((uintptr_t)in & 15) == 0)
    {
@@ -95,17 +98,17 @@ void audio_convert_s16_to_float_altivec(float *out,
          vector signed short input = vec_ld(0, in);
          vector signed int hi = vec_unpackh(input);
          vector signed int lo = vec_unpackl(input);
-         vector float out_hi = vec_ctf(hi, 15);
-         vector float out_lo = vec_ctf(lo, 15);
+         vector float out_hi = vec_mul(vec_ctf(hi, 15), gain_vec);
+         vector float out_lo = vec_mul(vec_ctf(lo, 15), gain_vec);
 
          vec_st(out_hi,  0, out);
          vec_st(out_lo, 16, out);
       }
 
-      audio_convert_s16_to_float_C(out, in, samples - i);
+      audio_convert_s16_to_float_C(out, in, samples - i, gain);
    }
    else
-      audio_convert_s16_to_float_C(out, in, samples);
+      audio_convert_s16_to_float_C(out, in, samples, gain);
 }
 
 void audio_convert_float_to_s16_altivec(int16_t *out,

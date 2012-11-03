@@ -159,6 +159,7 @@ struct settings
 
       bool rate_control;
       float rate_control_delta;
+      float volume; // dB scale
    } audio;
 
    struct
@@ -341,6 +342,9 @@ struct global
       bool rate_control; 
       double orig_src_ratio;
       size_t driver_buffer_size;
+
+      float volume_db;
+      float volume_gain;
    } audio_data;
 
    struct
@@ -677,6 +681,11 @@ static inline uint16_t swap_if_little16(uint16_t val)
       return (val >> 8) | (val << 8);
    else
       return val;
+}
+
+static inline float db_to_gain(float db)
+{
+   return powf(10.0f, db / 20.0f);
 }
 
 #ifdef GEKKO

@@ -368,7 +368,8 @@ static bool audio_flush(const int16_t *data, size_t samples)
    struct resampler_data src_data = {0};
    RARCH_PERFORMANCE_INIT(audio_convert_s16);
    RARCH_PERFORMANCE_START(audio_convert_s16);
-   audio_convert_s16_to_float(g_extern.audio_data.data, data, samples);
+   audio_convert_s16_to_float(g_extern.audio_data.data, data, samples,
+         g_extern.audio_data.volume_gain);
    RARCH_PERFORMANCE_STOP(audio_convert_s16);
 
 #if defined(HAVE_DYLIB)
@@ -2405,6 +2406,37 @@ static void check_mute(void)
 
    old_pressed = pressed;
 }
+
+static void check_volume(void)
+{
+   if (!g_extern.audio_active)
+      return;
+
+   float db_change   = 0.0f;
+   bool pressed_up   = input_key_pressed_func(RARCH_VOLUME_UP);
+   bool pressed_down = input_key_pressed_func(RARCH_VOLUME_DOWN);
+   if (!pressed_up && !pressed_down)
+      return;
+
+   if (pressed_up)
+      db_change += 0.5f;
+   if (pressed_down)
+      db_change -= 0.5f;
+
+   g_extern.audio_data.volume_db += db_change;
+   if (g_extern.audio_data.volume_db > 12.0f)
+      g_extern.audio_data.volume_db = 12.0f;
+   else if (g_extern.audio_data.volume_db < -80.0f)
+      g_extern.audio_data.volume_db = -80.0f;
+
+   char msg[256];
+   snprintf(msg, sizeof(msg), "Volume: %.1f dB", g_extern.audio_data.volume_db);
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   RARCH_LOG("%s\n", msg);
+
+   g_extern.audio_data.volume_gain = db_to_gain(g_extern.audio_data.volume_db);
+}
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -2441,6 +2473,7 @@ static void do_state_checks(void)
 #endif
 #if !defined(RARCH_PERFORMANCE_MODE)
    check_mute();
+   check_volume();
 #endif
 
    check_turbo();

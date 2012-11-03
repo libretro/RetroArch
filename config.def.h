@@ -280,6 +280,9 @@ static const float rate_control_delta = 0.006;
 static const float rate_control_delta = 0.005;
 #endif
 
+// Default audio volume in dB. (0.0 dB == unity gain).
+static const float audio_volume = 0.0;
+
 //////////////
 // Misc
 //////////////
@@ -391,6 +394,8 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_NETPLAY_FLIP,               RETROK_i,      NO_BTN,      AXIS_NONE },
    { true, RARCH_SLOWMOTION,                 RETROK_e,      NO_BTN,      AXIS_NONE },
    { true, RARCH_ENABLE_HOTKEY,              RETROK_UNKNOWN, NO_BTN,     AXIS_NONE },
+   { true, RARCH_VOLUME_UP,                  RETROK_KP_PLUS, NO_BTN,     AXIS_NONE },
+   { true, RARCH_VOLUME_DOWN,                RETROK_KP_MINUS, NO_BTN,    AXIS_NONE },
 };
 
 // Player 2-5
