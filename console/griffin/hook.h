@@ -14,9 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if !defined(HAVE_RSOUND)
+#if !defined(HAVE_RSOUND) && defined(HAVE_SL)
 
-#if defined(HAVE_SL)
 #define audio_init_func(device, rate, latency)  sl_init(device, rate, latency)
 #define audio_write_func(buf, size)             sl_write(driver.audio_data, buf, size)
 #define audio_stop_func()                       sl_stop(driver.audio_data)
@@ -26,7 +25,6 @@
 #define audio_use_float_func()                  driver.audio->use_float(driver.audio_data)
 #define audio_write_avail_func()                sl_write_avail(driver.audio_data)
 #define audio_buffer_size_func()                (BUFFER_SIZE * NUM_BUFFERS)
-#endif
 
 #else
 
