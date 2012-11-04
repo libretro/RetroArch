@@ -16,6 +16,10 @@
 #ifndef __RARCH_SNES_TRACKER_H
 #define __RARCH_SNES_TRACKER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "../boolean.h"
 
@@ -79,5 +83,9 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info);
 void state_tracker_free(state_tracker_t *tracker);
 
 unsigned state_get_uniform(state_tracker_t *tracker, struct state_tracker_uniform *uniforms, unsigned elem, unsigned frame_count);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

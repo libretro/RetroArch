@@ -16,6 +16,10 @@
 #ifndef __GFX_COMMON_H
 #define __GFX_COMMON_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include "../boolean.h"
 
@@ -28,6 +32,10 @@ void gfx_window_title_reset(void);
 
 #ifdef _WIN32
 void gfx_set_dwm(void);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

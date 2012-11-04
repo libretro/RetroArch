@@ -117,7 +117,6 @@ else
 endif
 
 ifeq ($(HAVE_D3D9), 1)
-   CXX_BUILD = 1
    OBJ += gfx/d3d9/d3d9.o gfx/d3d9/render_chain.o
    DEFINES += -DHAVE_WIN32_D3D9
    LIBS += -ld3d9 -lcg -lcgD3D9 -ld3dx9 -ldxguid
@@ -217,12 +216,15 @@ endif
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
+   CXXFLAGS += -O0 -g
 else
    CFLAGS += -O3
+   CXXFLAGS += -O3
    LDCXXFLAGS += -s
 endif
 
 CFLAGS += -Wall -Wno-unused-result -I.
+CXXFLAGS += -Wall -Wno-unused-result -I. -std=c++0x -D__STDC_CONSTANT_MACROS
 ifeq ($(CXX_BUILD), 1)
    CFLAGS += -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS
 else
@@ -240,7 +242,7 @@ $(TARGET): $(OBJ)
 	@$(if $(Q), $(shell echo echo CC $<),)
 
 %.o: %.cpp
-	$(Q)$(CXX) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -c -o $@ $<
 	@$(if $(Q), $(shell echo echo CXX $<),)
 
 %.o: %.rc
