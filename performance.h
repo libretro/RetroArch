@@ -42,7 +42,7 @@ void rarch_perf_log(void);
 
 struct rarch_cpu_features
 {
-   uint32_t simd;
+   unsigned simd;
 };
 
 // Id values for SIMD CPU features

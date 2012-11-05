@@ -147,34 +147,31 @@ void rarch_get_cpu_features(struct rarch_cpu_features *cpu)
 
    x86_cpuid(1, flags);
 
-   if(flags[3] & (1 << 25))
+   if (flags[3] & (1 << 25))
       cpu->simd |= RARCH_SIMD_SSE;
 
-   if(flags[3] & (1 << 26))
+   if (flags[3] & (1 << 26))
       cpu->simd |= RARCH_SIMD_SSE2;
 
-   int avx_flags = (1 << 27) | (1 << 28);
-
-   if((flags[2] & avx_flags) == avx_flags)
+   const int avx_flags = (1 << 27) | (1 << 28);
+   if ((flags[2] & avx_flags) == avx_flags)
       cpu->simd |= RARCH_SIMD_AVX;
 
-   RARCH_LOG("[CPUID]: SSE:  %d\n", (cpu->simd & RARCH_SIMD_SSE) == RARCH_SIMD_SSE);
-   RARCH_LOG("[CPUID]: SSE2: %d\n", (cpu->simd & RARCH_SIMD_SSE2) == RARCH_SIMD_SSE2);
-   RARCH_LOG("[CPUID]: AVX:  %d\n", (cpu->simd & RARCH_SIMD_AVX) == RARCH_SIMD_AVX);
+   RARCH_LOG("[CPUID]: SSE:  %u\n", cpu->simd & RARCH_SIMD_SSE);
+   RARCH_LOG("[CPUID]: SSE2: %u\n", cpu->simd & RARCH_SIMD_SSE2);
+   RARCH_LOG("[CPUID]: AVX:  %u\n", cpu->simd & RARCH_SIMD_AVX);
 #elif defined(ANDROID) && defined(ANDROID_ARM)
    uint64_t cpu_flags = android_getCpuFeatures();
 
-   if(cpu_flags & ANDROID_CPU_ARM_FEATURE_NEON)
+   if (cpu_flags & ANDROID_CPU_ARM_FEATURE_NEON)
       cpu->simd |= RARCH_SIMD_NEON;
 
-   RARCH_LOG("[CPUID]: NEON: %d\n", (cpu->simd & RARCH_SIMD_NEON) == RARCH_SIMD_NEON);
+   RARCH_LOG("[CPUID]: NEON: %u\n", cpu->simd & RARCH_SIMD_NEON);
 #elif defined(__CELLOS_LV2__)
    cpu->simd |= RARCH_SIMD_VMX;
-
-   RARCH_LOG("[CPUID]: VMX: %d\n", (cpu->simd & RARCH_SIMD_VMX) == RARCH_SIMD_VMX);
+   RARCH_LOG("[CPUID]: VMX: %u\n", cpu->simd & RARCH_SIMD_VMX);
 #elif defined(XBOX360)
    cpu->simd |= RARCH_SIMD_VMX128;
-
-   RARCH_LOG("[CPUID]: VMX128: %d\n", (cpu->simd & RARCH_SIMD_VMX128) == RARCH_SIMD_VMX128);
+   RARCH_LOG("[CPUID]: VMX128: %u\n", cpu->simd & RARCH_SIMD_VMX128);
 #endif
 }

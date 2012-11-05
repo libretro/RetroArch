@@ -2594,15 +2594,15 @@ static void validate_cpu_features(void)
 } while(0)
 
 #ifdef __SSE__
-   if ((cpu.simd & RARCH_SIMD_SSE) != RARCH_SIMD_SSE)
+   if (!(cpu.simd & RARCH_SIMD_SSE))
       FAIL_CPU("SSE");
 #endif
 #ifdef __SSE2__
-   if ((cpu.simd & RARCH_SIMD_SSE2) != RARCH_SIMD_SSE2)
+   if (!(cpu.simd & RARCH_SIMD_SSE2))
       FAIL_CPU("SSE2");
 #endif
 #ifdef __AVX__
-   if ((cpu.simd & RARCH_SIMD_AVX) != RARCH_SIMD_AVX)
+   if (!(cpu.simd & RARCH_SIMD_AVX))
       FAIL_CPU("AVX");
 #endif
 }
