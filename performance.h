@@ -42,12 +42,16 @@ void rarch_perf_log(void);
 
 struct rarch_cpu_features
 {
-   bool sse;
-   bool sse2;
-   bool vmx;
-   bool avx;
-   bool neon;
+   uint32_t simd;
 };
+
+// Id values for SIMD CPU features
+#define RARCH_SIMD_SSE      (1 << 0)
+#define RARCH_SIMD_SSE2     (1 << 1)
+#define RARCH_SIMD_VMX      (1 << 2)
+#define RARCH_SIMD_VMX128   (1 << 3)
+#define RARCH_SIMD_AVX      (1 << 4)
+#define RARCH_SIMD_NEON     (1 << 5)
 
 void rarch_get_cpu_features(struct rarch_cpu_features *cpu);
 
