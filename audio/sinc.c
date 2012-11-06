@@ -28,12 +28,22 @@
 #define RARCH_LOG(...)
 #endif
 
-#if __SSE__
+#ifdef __SSE__
 #include <xmmintrin.h>
 #endif
 
+// For the little amount of taps we're using,
+// SSE1 is faster than AVX for some reason.
+// AVX code is kept here though as by increasing number
+// of sinc taps, the AVX code is clearly faster than SSE1.
+#define ENABLE_AVX 0
+
+#if defined(__AVX__) && ENABLE_AVX
+#include <immintrin.h>
+#endif
+
 #define PHASE_BITS 8
-#define SUBPHASE_BITS 15
+#define SUBPHASE_BITS 16
 
 #define PHASES (1 << PHASE_BITS)
 #define PHASES_SHIFT (SUBPHASE_BITS)
@@ -133,7 +143,7 @@ static void aligned_free__(void *ptr)
 
 rarch_resampler_t *resampler_new(void)
 {
-   rarch_resampler_t *re = (rarch_resampler_t*)aligned_alloc__(16, sizeof(*re));
+   rarch_resampler_t *re = (rarch_resampler_t*)aligned_alloc__(1024, sizeof(*re));
    if (!re)
       return NULL;
 
@@ -141,7 +151,9 @@ rarch_resampler_t *resampler_new(void)
 
    init_sinc_table(re);
 
-#ifdef __SSE__
+#if defined(__AVX__) && ENABLE_AVX
+   RARCH_LOG("Sinc resampler [AVX]\n");
+#elif defined(__SSE__)
    RARCH_LOG("Sinc resampler [SSE]\n");
 #else
    RARCH_LOG("Sinc resampler [C]\n");
@@ -150,7 +162,50 @@ rarch_resampler_t *resampler_new(void)
    return re;
 }
 
-#ifdef __SSE__
+#if defined(__AVX__) && ENABLE_AVX
+static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
+{
+   __m256 sum_l = _mm256_setzero_ps();
+   __m256 sum_r = _mm256_setzero_ps();
+
+   const float *buffer_l = resamp->buffer_l + resamp->ptr;
+   const float *buffer_r = resamp->buffer_r + resamp->ptr;
+
+   unsigned phase = resamp->time >> PHASES_SHIFT;
+   unsigned delta = (resamp->time >> SUBPHASES_SHIFT) & SUBPHASES_MASK;
+   __m256 delta_f = _mm256_set1_ps(delta);
+
+   const float *phase_table = resamp->phase_table[phase][PHASE_INDEX];
+   const float *delta_table = resamp->phase_table[phase][DELTA_INDEX];
+
+   for (unsigned i = 0; i < TAPS; i += 8)
+   {
+      __m256 buf_l  = _mm256_loadu_ps(buffer_l + i);
+      __m256 buf_r  = _mm256_loadu_ps(buffer_r + i);
+
+      __m256 phases = _mm256_load_ps(phase_table + i);
+      __m256 deltas = _mm256_load_ps(delta_table + i);
+
+      __m256 sinc   = _mm256_add_ps(phases, _mm256_mul_ps(deltas, delta_f));
+
+      sum_l         = _mm256_add_ps(sum_l, _mm256_mul_ps(buf_l, sinc));
+      sum_r         = _mm256_add_ps(sum_r, _mm256_mul_ps(buf_r, sinc));
+   }
+
+   // hadd on AVX is weird, and acts on low-lanes and high-lanes separately.
+   __m256 res_l = _mm256_hadd_ps(sum_l, sum_l);
+   __m256 res_r = _mm256_hadd_ps(sum_r, sum_r);
+   res_l = _mm256_hadd_ps(res_l, res_l);
+   res_r = _mm256_hadd_ps(res_r, res_r);
+   res_l = _mm256_add_ps(_mm256_permute2f128_ps(res_l, res_l, 1), res_l);
+   res_r = _mm256_add_ps(_mm256_permute2f128_ps(res_r, res_r, 1), res_r);
+
+   // This is optimized to mov %xmmN, [mem].
+   // There doesn't seem to be any _mm256_store_ss intrinsic.
+   _mm_store_ss(out_buffer + 0, _mm256_extractf128_ps(res_l, 0));
+   _mm_store_ss(out_buffer + 1, _mm256_extractf128_ps(res_r, 0));
+}
+#elif defined(__SSE__)
 static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
 {
    __m128 sum_l = _mm_setzero_ps();
