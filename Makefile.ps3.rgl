@@ -1,10 +1,10 @@
 #which compiler to build  with - GCC or SNC
 #set to GCC for debug builds for use with debugger
-CELL_BUILD_TOOLS	= SNC
+CELL_BUILD_TOOLS	= GCC
 CELL_GPU_TYPE	   	= RSX
 
 DEBUG			= 0
-STRIPPING_ENABLE	= 0
+STRIPPING_ENABLE	=  1
 
 PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.7"
 PC_DEVELOPMENT_UDP_PORT		= 3490
@@ -15,12 +15,19 @@ include $(CELL_MK_DIR)/sdk.makedef.mk
 PPU_LIB_TARGET		= librgl_ps3.a
 
 LDDIRS = -L.
-INCDIRS = -I.
+INCDIRS = -I. -Iconsole/rgl/include
 
-PPU_SRCS		= console/rgl/ps3/device_ctx.cpp \
-			  console/rgl/ps3/rgl.cpp \
-			  console/rgl/ps3/cgbio.cpp \
-			  console/rgl/ps3/cgnv2rt.cpp 
+RGL_DIR = console/rgl/src
+
+PPU_SRCS		=  $(RGL_DIR)/Utils/NameSpace.cpp \
+			  $(RGL_DIR)/Utils/TexNameSpace.cpp \
+			  $(RGL_DIR)/Utils/EnumMap.cpp \
+			  $(RGL_DIR)/libelf/readelf.cpp \
+			  $(RGL_DIR)/rgl.cpp \
+			  $(RGL_DIR)/rgl_cg.cpp \
+			  $(RGL_DIR)/ps3/rgl_ps3.cpp \
+			  $(RGL_DIR)/ps3/rgl_ps3_raster.cpp 
+
 
 ifeq ($(CELL_BUILD_TOOLS), SNC)
 	PPU_CXXLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe
@@ -37,9 +44,9 @@ endif
 PPU_RANLIB = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ranlib.exe
 
 
-PPU_LDLIBS = -lio_stub
+PPU_LDLIBS = -lio_stub 
 
-DEFINES += -D__CELLOS_LV2__
+DEFINES += -D__CELLOS_LV2__ -DJS_PLATFORM_CELL
 
 ifeq ($(DEBUG), 1)
    PPU_OPTIMIZE_LV	:= -O0 -g
