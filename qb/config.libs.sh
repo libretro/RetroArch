@@ -1,7 +1,9 @@
 check_switch_c C99 -std=gnu99  "Cannot find C99 compatible compiler."
 
 check_switch_c NOUNUSED -Wno-unused-result
+check_switch_c NOEXTTOKEN -Wno-language-extension-token
 add_define_make NOUNUSED "$HAVE_NOUNUSED"
+add_define_make NOEXTTOKEN "$HAVE_NOEXTTOKEN"
 
 # There are still broken 64-bit Linux distros out there. :)
 [ -d /usr/lib64 ] && add_library_dirs /usr/lib64

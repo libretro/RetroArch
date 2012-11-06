@@ -313,6 +313,9 @@ endif
 ifeq ($(NOUNUSED), yes)
    CFLAGS += -Wno-unused-result
 endif
+ifeq ($(NOEXTTOKEN), yes)
+   CFLAGS += -Wno-language-extension-token
+endif
 
 all: $(TARGET) config.mk
 
