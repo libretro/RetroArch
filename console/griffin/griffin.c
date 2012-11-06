@@ -229,7 +229,11 @@ RSOUND
 /*============================================================
 AUDIO UTILS
 ============================================================ */
+#ifndef __CELLOS_LV2__
+/* PS3 right now doesn't compile with the Altivec intrinsics
+ * used here */
 #include "../../audio/utils.c"
+#endif
 
 /*============================================================
 AUDIO
