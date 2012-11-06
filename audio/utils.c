@@ -26,11 +26,7 @@ void audio_convert_s16_to_float_C(float *out,
 {
    gain = gain / 0x8000;
    for (size_t i = 0; i < samples; i++)
-#ifdef __CELLOS_LV2__
-      out[i] = (float)in[i] / 0x8000; 
-#else
       out[i] = (float)in[i] * gain; 
-#endif
 }
 
 void audio_convert_float_to_s16_C(int16_t *out,
@@ -93,6 +89,7 @@ void audio_convert_s16_to_float_altivec(float *out,
       const int16_t *in, size_t samples, float gain)
 {
    const vector float gain_vec = vec_splats(gain);
+   const vector float zero_vec = vec_splats(0.0f);
    // Unaligned loads/store is a bit expensive, so we optimize for the good path (very likely).
    if (((uintptr_t)out & 15) + ((uintptr_t)in & 15) == 0)
    {
@@ -102,14 +99,8 @@ void audio_convert_s16_to_float_altivec(float *out,
          vector signed short input = vec_ld(0, in);
          vector signed int hi = vec_unpackh(input);
          vector signed int lo = vec_unpackl(input);
-#ifdef __CELLOS_LV2__
-         /* vec_mul not supported */
-         vector float out_hi = vec_ctf(hi, 15);
-         vector float out_lo = vec_ctf(lo, 15);
-#else
-         vector float out_hi = vec_mul(vec_ctf(hi, 15), gain_vec);
-         vector float out_lo = vec_mul(vec_ctf(lo, 15), gain_vec);
-#endif
+         vector float out_hi = vec_madd(vec_ctf(hi, 15), gain_vec, zero_vec);
+         vector float out_lo = vec_madd(vec_ctf(lo, 15), gain_vec, zero_vec);
 
          vec_st(out_hi,  0, out);
          vec_st(out_lo, 16, out);
