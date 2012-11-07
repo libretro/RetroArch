@@ -67,7 +67,7 @@ endif
 libretro ?= -lretro
 
 LIBS = -lm
-DEFINES = -I. -DHAVE_CONFIGFILE -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DPACKAGE_VERSION=\"0.9.7\"
+DEFINES = -I. -DHAVE_CONFIGFILE -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DPACKAGE_VERSION=\"0.9.8-beta1\"
 LDFLAGS = -L. -static-libgcc
 
 ifeq ($(TDM_GCC),)
@@ -277,10 +277,10 @@ clean:
 	rm -f tools/*.o
 
 dist_x86: all
-	zip -r retroarch-win32-0.9.7.zip $(TARGET) $(JTARGET) retroarch.cfg
+	zip -r retroarch-win32-0.9.8-beta1.zip $(TARGET) $(JTARGET) retroarch.cfg
 
 dist_x86_64: all
-	zip -r retroarch-win64-0.9.7.zip $(TARGET) $(JTARGET) retroarch.cfg
+	zip -r retroarch-win64-0.9.8-beta1.zip $(TARGET) $(JTARGET) retroarch.cfg
 
 libs_x86:
 	wget https://github.com/downloads/Themaister/RetroArch/RetroArch-win32-libs.zip --no-check-certificate
