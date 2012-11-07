@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
       if (fread(input_i, sizeof(int16_t), 1024, stdin) != 1024)
          break;
 
-      audio_convert_s16_to_float(input_f, input_i, 1024);
+      audio_convert_s16_to_float(input_f, input_i, 1024, 1.0f);
 
       struct resampler_data data = {
          .data_in = input_f,
