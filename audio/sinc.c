@@ -42,27 +42,16 @@
 #include <immintrin.h>
 #endif
 
-#define PHASE_BITS 8
-#define SUBPHASE_BITS 16
-
+#define PHASE_BITS 16
 #define PHASES (1 << PHASE_BITS)
-#define PHASES_SHIFT (SUBPHASE_BITS)
-#define SUBPHASES (1 << SUBPHASE_BITS)
-#define SUBPHASES_SHIFT 0
-#define SUBPHASES_MASK ((1 << SUBPHASE_BITS) - 1)
-#define PHASES_WRAP (1 << (PHASE_BITS + SUBPHASE_BITS))
-#define FRAMES_SHIFT (PHASE_BITS + SUBPHASE_BITS)
 
 #define SIDELOBES 8
 #define TAPS (SIDELOBES * 2)
 #define CUTOFF 1.0
 
-#define PHASE_INDEX 0
-#define DELTA_INDEX 1
-
 struct rarch_resampler
 {
-   sample_t phase_table[PHASES][2][TAPS];
+   sample_t phase_table[PHASES][TAPS];
    sample_t buffer_l[2 * TAPS];
    sample_t buffer_r[2 * TAPS];
 
@@ -94,30 +83,8 @@ static void init_sinc_table(rarch_resampler_t *resamp)
          double sinc_phase = M_PI * (p + (SIDELOBES - 1 - j));
 
          float val = CUTOFF * sinc(CUTOFF * sinc_phase) * lanzcos(sinc_phase / SIDELOBES);
-         resamp->phase_table[i][PHASE_INDEX][j] = val;
+         resamp->phase_table[i][j] = val;
       }
-   }
-
-   // Optimize linear interpolation.
-   for (int i = 0; i < PHASES - 1; i++)
-   {
-      for (int j = 0; j < TAPS; j++)
-      {
-         resamp->phase_table[i][DELTA_INDEX][j] =
-            (resamp->phase_table[i + 1][PHASE_INDEX][j] - resamp->phase_table[i][PHASE_INDEX][j]) / SUBPHASES;
-      }
-   }
-
-   // Interpolation between [PHASES - 1] => [PHASES] 
-   for (int j = 0; j < TAPS; j++)
-   {
-      double p = 1.0;
-      double sinc_phase = M_PI * (p + (SIDELOBES - 1 - j));
-      double phase = CUTOFF * sinc(CUTOFF * sinc_phase) * lanzcos(sinc_phase / SIDELOBES);
-
-      float result = (phase - resamp->phase_table[PHASES - 1][PHASE_INDEX][j]) / SUBPHASES;
-
-      resamp->phase_table[PHASES - 1][DELTA_INDEX][j] = result;
    }
 }
 
@@ -171,25 +138,17 @@ static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
    const float *buffer_l = resamp->buffer_l + resamp->ptr;
    const float *buffer_r = resamp->buffer_r + resamp->ptr;
 
-   unsigned phase = resamp->time >> PHASES_SHIFT;
-   unsigned delta = (resamp->time >> SUBPHASES_SHIFT) & SUBPHASES_MASK;
-   __m256 delta_f = _mm256_set1_ps(delta);
-
-   const float *phase_table = resamp->phase_table[phase][PHASE_INDEX];
-   const float *delta_table = resamp->phase_table[phase][DELTA_INDEX];
+   unsigned phase = resamp->time;
+   const float *phase_table = resamp->phase_table[phase];
 
    for (unsigned i = 0; i < TAPS; i += 8)
    {
-      __m256 buf_l  = _mm256_loadu_ps(buffer_l + i);
-      __m256 buf_r  = _mm256_loadu_ps(buffer_r + i);
+      __m256 buf_l = _mm256_loadu_ps(buffer_l + i);
+      __m256 buf_r = _mm256_loadu_ps(buffer_r + i);
 
-      __m256 phases = _mm256_load_ps(phase_table + i);
-      __m256 deltas = _mm256_load_ps(delta_table + i);
-
-      __m256 sinc   = _mm256_add_ps(phases, _mm256_mul_ps(deltas, delta_f));
-
-      sum_l         = _mm256_add_ps(sum_l, _mm256_mul_ps(buf_l, sinc));
-      sum_r         = _mm256_add_ps(sum_r, _mm256_mul_ps(buf_r, sinc));
+      __m256 sinc = _mm256_load_ps(phase_table + i);
+      sum_l       = _mm256_add_ps(sum_l, _mm256_mul_ps(buf_l, sinc));
+      sum_r       = _mm256_add_ps(sum_r, _mm256_mul_ps(buf_r, sinc));
    }
 
    // hadd on AVX is weird, and acts on low-lanes and high-lanes separately.
@@ -214,25 +173,17 @@ static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
    const float *buffer_l = resamp->buffer_l + resamp->ptr;
    const float *buffer_r = resamp->buffer_r + resamp->ptr;
 
-   unsigned phase = resamp->time >> PHASES_SHIFT;
-   unsigned delta = (resamp->time >> SUBPHASES_SHIFT) & SUBPHASES_MASK;
-   __m128 delta_f = _mm_set1_ps(delta);
-
-   const float *phase_table = resamp->phase_table[phase][PHASE_INDEX];
-   const float *delta_table = resamp->phase_table[phase][DELTA_INDEX];
+   unsigned phase = resamp->time;
+   const float *phase_table = resamp->phase_table[phase];
 
    for (unsigned i = 0; i < TAPS; i += 4)
    {
-      __m128 buf_l  = _mm_loadu_ps(buffer_l + i);
-      __m128 buf_r  = _mm_loadu_ps(buffer_r + i);
+      __m128 buf_l = _mm_loadu_ps(buffer_l + i);
+      __m128 buf_r = _mm_loadu_ps(buffer_r + i);
 
-      __m128 phases = _mm_load_ps(phase_table + i);
-      __m128 deltas = _mm_load_ps(delta_table + i);
-
-      __m128 sinc   = _mm_add_ps(phases, _mm_mul_ps(deltas, delta_f));
-
-      sum_l         = _mm_add_ps(sum_l, _mm_mul_ps(buf_l, sinc));
-      sum_r         = _mm_add_ps(sum_r, _mm_mul_ps(buf_r, sinc));
+      __m128 sinc = _mm_load_ps(phase_table + i);
+      sum_l       = _mm_add_ps(sum_l, _mm_mul_ps(buf_l, sinc));
+      sum_r       = _mm_add_ps(sum_r, _mm_mul_ps(buf_r, sinc));
    }
 
    // Them annoying shuffles :V
@@ -264,16 +215,12 @@ static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
    const float *buffer_l = resamp->buffer_l + resamp->ptr;
    const float *buffer_r = resamp->buffer_r + resamp->ptr;
 
-   unsigned phase = resamp->time >> PHASES_SHIFT;
-   unsigned delta = (resamp->time >> SUBPHASES_SHIFT) & SUBPHASES_MASK;
-   float delta_f = (float)delta;
-
-   const float *phase_table = resamp->phase_table[phase][PHASE_INDEX];
-   const float *delta_table = resamp->phase_table[phase][DELTA_INDEX];
+   unsigned phase = resamp->time;
+   const float *phase_table = resamp->phase_table[phase];
 
    for (unsigned i = 0; i < TAPS; i++)
    {
-      float sinc_val = phase_table[i] + delta_f * delta_table[i];
+      float sinc_val = phase_table[i];
       sum_l         += buffer_l[i] * sinc_val;
       sum_r         += buffer_r[i] * sinc_val;
    }
@@ -288,7 +235,7 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
    // If data->ratio is < 1, we are downsampling.
    // The sinc table is not set up for this, as it always assumes upsampling.
    // Downsampling will work, but with some added noise due to aliasing might be present.
-   uint32_t ratio = PHASES_WRAP / data->ratio;
+   uint32_t ratio = PHASES / data->ratio;
 
    const sample_t *input = data->data_in;
    sample_t *output      = data->data_out;
@@ -297,17 +244,17 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
 
    while (frames)
    {
-      while (frames && re->time >= PHASES_WRAP)
+      while (frames && re->time >= PHASES)
       {
          re->buffer_l[re->ptr + TAPS] = re->buffer_l[re->ptr] = *input++;
          re->buffer_r[re->ptr + TAPS] = re->buffer_r[re->ptr] = *input++;
          re->ptr = (re->ptr + 1) & (TAPS - 1);
 
-         re->time -= PHASES_WRAP;
+         re->time -= PHASES;
          frames--;
       }
 
-      if (re->time >= PHASES_WRAP)
+      if (re->time >= PHASES)
          break;
 
       process_sinc(re, output);
