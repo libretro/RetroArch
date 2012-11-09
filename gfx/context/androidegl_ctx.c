@@ -188,6 +188,7 @@ static bool gfx_ctx_init(void)
    return true;
 
 error:
+   RARCH_ERR("EGL error: %d.\n", eglGetError());
    gfx_ctx_destroy();
    return false;
 }
