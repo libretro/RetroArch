@@ -1408,6 +1408,11 @@ static void init_rewind(void)
       return;
 
    g_extern.state_size = pretro_serialize_size();
+   if (!g_extern.state_size)
+   {
+      RARCH_ERR("Implementation does not support save states. Cannot use rewind.\n");
+      return;
+   }
 
    // Make sure we allocate at least 4-byte multiple.
    size_t aligned_state_size = (g_extern.state_size + 3) & ~3;
