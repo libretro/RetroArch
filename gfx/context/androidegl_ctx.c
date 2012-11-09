@@ -89,7 +89,6 @@ static bool gfx_ctx_init(void)
       EGL_RED_SIZE, 8,
       EGL_NONE
    };
-   EGLConfig config;    
    EGLint num_config;
    EGLint egl_version_major, egl_version_minor;
    EGLint format;
@@ -124,7 +123,7 @@ static bool gfx_ctx_init(void)
       goto error;
    }
 
-   int var = eglGetConfigAttrib(g_egl_dpy, config, EGL_NATIVE_VISUAL_ID, &format);
+   int var = eglGetConfigAttrib(g_egl_dpy, g_config, EGL_NATIVE_VISUAL_ID, &format);
 
    if (!var)
    {
@@ -134,13 +133,13 @@ static bool gfx_ctx_init(void)
 
    ANativeWindow_setBuffersGeometry(g_android.app->window, 0, 0, format);
 
-   if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, config, g_android.app->window, 0)))
+   if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, g_android.app->window, 0)))
    {
       RARCH_ERR("eglCreateWindowSurface failed.\n");
       goto error;
    }
 
-   if (!(g_egl_ctx = eglCreateContext(g_egl_dpy, config, 0, context_attributes)))
+   if (!(g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, 0, context_attributes)))
    {
       RARCH_ERR("eglCreateContext failed.\n");
       goto error;
