@@ -106,13 +106,13 @@ static bool gfx_ctx_init(void)
 
    if ((g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY)
    {
-      RARCH_ERR("eglGetDisplay failed.\n"):
+      RARCH_ERR("eglGetDisplay failed.\n");
       goto error;
    }
 
    if (!eglInitialize(g_egl_dpy, &egl_version_major, &egl_version_minor))
    {
-      RARCH_ERR("eglInitialize failed.\n"):
+      RARCH_ERR("eglInitialize failed.\n");
       goto error;
    }
 
@@ -120,13 +120,13 @@ static bool gfx_ctx_init(void)
 
    if (!eglChooseConfig(g_egl_dpy, attribs, &g_config, 1, &num_config))
    {
-      RARCH_ERR("eglChooseConfig failed.\n"):
+      RARCH_ERR("eglChooseConfig failed.\n");
       goto error;
    }
 
    if (!eglGetConfigAttrib(g_egl_dpy, config, EGL_NATIVE_VISUAL_ID, &format))
    {
-      RARCH_ERR("eglGetConfigAttrib failed.\n"):
+      RARCH_ERR("eglGetConfigAttrib failed.\n");
       goto error;
    }
 
@@ -134,26 +134,26 @@ static bool gfx_ctx_init(void)
 
    if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, config, g_android.app->window, 0)))
    {
-      RARCH_ERR("eglCreateWindowSurface failed.\n"):
+      RARCH_ERR("eglCreateWindowSurface failed.\n");
       goto error;
    }
 
    if (!(g_egl_ctx = eglCreateContext(g_egl_dpy, config, 0, context_attributes)))
    {
-      RARCH_ERR("eglCreateContext failed.\n"):
+      RARCH_ERR("eglCreateContext failed.\n");
       goto error;
    }
 
    if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
    {
-      RARCH_ERR("eglMakeCurrent failed.\n"):
+      RARCH_ERR("eglMakeCurrent failed.\n");
       goto error;
    }
 
    if (!eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &width) ||
          !eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &height))
    {
-      RARCH_ERR("eglQuerySurface failed.\n"):
+      RARCH_ERR("eglQuerySurface failed.\n");
       goto error;
    }
 
