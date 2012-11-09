@@ -66,8 +66,10 @@ fi
 mv "${TMPDIR}/${FILENAME}" "${TMPROM}"
 
 SAVENAME="`basename \"${COMP_FILE}\" ${EXTENSION}`"
+SAVESTATE="`basename \"${COMP_FILE}\" ${EXTENSION}`"
 DIRNAME="`dirname \"${COMP_FILE}\"`"
 SAVENAME="${SAVENAME}.srm"
+SAVESTATE="${SAVESTATE}.state"
 
 EXE="`which retroarch`"
 if [ -z "${EXE}" ]; then
@@ -76,7 +78,8 @@ fi
 
 echo "Temp ROM: ${TMPROM}"
 echo "Savename: ${DIRNAME}/${SAVENAME}"
-"${EXE}" "${TMPROM}" -s "${DIRNAME}/${SAVENAME}" "$@"
+echo "Savestate: ${DIRNAME}/${SAVESTATE}"
+"${EXE}" "${TMPROM}" -s "${DIRNAME}/${SAVENAME}" -S "${DIRNAME}/${SAVESTATE}" "$@"
 rm "${TMPROM}"
 rm -r "${TMPDIR}"
 
