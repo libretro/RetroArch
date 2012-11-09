@@ -8,7 +8,6 @@
 die()
 {
    echo "Error: $1"
-   rm "${TMPROM}"
    rm -r "${TMPDIR}"
    exit 1
 }
@@ -18,7 +17,6 @@ if [ -z "$1" ]; then
 fi
 
 COMP_FILE="$1"
-TMPROM="`mktemp`"
 TMPDIR="`mktemp -d`"
 shift
 
@@ -63,7 +61,6 @@ FILENAME="`ls -Sp \"${TMPDIR}\" | grep -v /$ | head -n1`"
 if [ -z "${FILENAME}" ]; then
 	die "Cannot find any files in root of archive"
 fi
-mv "${TMPDIR}/${FILENAME}" "${TMPROM}"
 
 SAVENAME="`basename \"${COMP_FILE}\" ${EXTENSION}`"
 SAVESTATE="`basename \"${COMP_FILE}\" ${EXTENSION}`"
@@ -76,10 +73,9 @@ if [ -z "${EXE}" ]; then
    die "Cannot find RetroArch in path."
 fi
 
-echo "Temp ROM: ${TMPROM}"
+echo "Temp ROM: ${TMPDIR}/${FILENAME}"
 echo "Savename: ${DIRNAME}/${SAVENAME}"
 echo "Savestate: ${DIRNAME}/${SAVESTATE}"
-"${EXE}" "${TMPROM}" -s "${DIRNAME}/${SAVENAME}" -S "${DIRNAME}/${SAVESTATE}" "$@"
-rm "${TMPROM}"
+"${EXE}" "${TMPDIR}/${FILENAME}" -s "${DIRNAME}/${SAVENAME}" -S "${DIRNAME}/${SAVESTATE}" "$@"
 rm -r "${TMPDIR}"
 
