@@ -124,9 +124,11 @@ static bool gfx_ctx_init(void)
       goto error;
    }
 
-   if (!eglGetConfigAttrib(g_egl_dpy, config, EGL_NATIVE_VISUAL_ID, &format))
+   int var;
+
+   if (!var = eglGetConfigAttrib(g_egl_dpy, config, EGL_NATIVE_VISUAL_ID, &format))
    {
-      RARCH_ERR("eglGetConfigAttrib failed.\n");
+      RARCH_ERR("eglGetConfigAttrib failed: %d.\n", var);
       goto error;
    }
 
