@@ -302,7 +302,7 @@ static bool gfx_ctx_xdk_init(void)
    d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &mat);
    d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &mat);
 
-   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_R5G6B5, 0, &d3d->lpTexture);
+   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, g_settings.video.color_format ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5, 0, &d3d->lpTexture);
    D3DLOCKED_RECT d3dlr;
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, 0);
    memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
