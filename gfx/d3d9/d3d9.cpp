@@ -468,6 +468,9 @@ bool D3DVideo::frame(const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
+   if (!frame)
+      return true;
+
    RARCH_PERFORMANCE_INIT(d3d_frame);
    RARCH_PERFORMANCE_START(d3d_frame);
    // We cannot recover in fullscreen.
