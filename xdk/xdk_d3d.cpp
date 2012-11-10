@@ -699,11 +699,11 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
    D3DLOCKED_RECT d3dlr;
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   size_t size_screen = g_settings.video.color_format ? sizeof(uint32_t) : sizeof(uint16_t);
    for (unsigned y = 0; y < height; y++)
    {
       const uint8_t *in = (const uint8_t*)frame + y * pitch;
       uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
-	  size_t size_screen = g_settings.video.color_format ? sizeof(uint32_t) : sizeof(uint16_t);
       memcpy(out, in, width * size_screen);
    }
    d3d->lpTexture->UnlockRect(0);
