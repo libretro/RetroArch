@@ -703,7 +703,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    {
       const uint8_t *in = (const uint8_t*)frame + y * pitch;
       uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
-      memcpy(out, in, width * sizeof(uint16_t));
+	  size_t size_screen = g_settings.video.color_format ? sizeof(uint32_t) : sizeof(uint16_t);
+      memcpy(out, in, width * size_screen);
    }
    d3d->lpTexture->UnlockRect(0);
 
