@@ -429,12 +429,9 @@ static bool environment_cb(unsigned cmd, void *data)
             case RETRO_PIXEL_FORMAT_RGB565:
                RARCH_LOG("Environ SET_PIXEL_FORMAT: RGB565.\n");
                break;
-
-#ifndef RARCH_CONSOLE
             case RETRO_PIXEL_FORMAT_XRGB8888:
                RARCH_LOG("Environ SET_PIXEL_FORMAT: XRGB8888.\n");
                break;
-#endif
             default:
                return false;
          }
