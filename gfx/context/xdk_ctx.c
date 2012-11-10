@@ -371,7 +371,7 @@ static bool gfx_ctx_xdk_init(void)
    d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
 	   &d3d->d3dpp, &d3d->d3d_render_device);
 
-   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_R5G6B5,
+   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, g_settings.video.color_format ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5,
       0, &d3d->lpTexture
    , NULL
    );
