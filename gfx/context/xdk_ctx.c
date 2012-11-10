@@ -302,7 +302,7 @@ static bool gfx_ctx_xdk_init(void)
    d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &mat);
    d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &mat);
 
-   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5, 0, &d3d->lpTexture);
+   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_R5G6B5, 0, &d3d->lpTexture);
    D3DLOCKED_RECT d3dlr;
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, 0);
    memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
@@ -352,12 +352,12 @@ static bool gfx_ctx_xdk_init(void)
 
    if(g_extern.console.screen.gamma_correction)
    {
-      d3d->d3dpp.BackBufferFormat        = g_settings.video.color_format ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : (D3DFORMAT)MAKESRGBFMT(D3DFMT_LIN_A1R5G5B5);
+      d3d->d3dpp.BackBufferFormat        = g_settings.video.color_format ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : (D3DFORMAT)MAKESRGBFMT(D3DFMT_R5G6B5);
       d3d->d3dpp.FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
    }
    else
    {
-      d3d->d3dpp.BackBufferFormat        = g_settings.video.color_format ? D3DFMT_A8R8G8B8 : D3DFMT_LIN_A1R5G5B5;
+      d3d->d3dpp.BackBufferFormat        = g_settings.video.color_format ? D3DFMT_A8R8G8B8 : D3DFMT_R5G6B5;
       d3d->d3dpp.FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;
    }
    d3d->d3dpp.MultiSampleQuality      = 0;
@@ -371,7 +371,7 @@ static bool gfx_ctx_xdk_init(void)
    d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
 	   &d3d->d3dpp, &d3d->d3d_render_device);
 
-   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_LIN_X1R5G5B5,
+   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, D3DFMT_R5G6B5,
       0, &d3d->lpTexture
    , NULL
    );

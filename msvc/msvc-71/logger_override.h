@@ -36,6 +36,21 @@ static inline void RARCH_LOG(const char *msg, ...)
    va_end(ap);
 }
 
+static inline void RARCH_LOG_OUTPUT(const char *msg, ...)
+{
+   char msg_new[1024], buffer[1024];
+#ifdef IS_SALAMANDER
+   snprintf(msg_new, sizeof(msg_new), "RetroArch Salamander: %s", msg);
+#else
+   snprintf(msg_new, sizeof(msg_new), "RetroArch: %s", msg);
+#endif
+   va_list ap;
+   va_start(ap, msg);
+   wvsprintf(buffer, msg_new, ap);
+   OutputDebugStringA(buffer);
+   va_end(ap);
+}
+
 static inline void RARCH_WARN(const char *msg, ...)
 {
    char msg_new[1024], buffer[1024];

@@ -98,7 +98,7 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
 #endif
 #endif
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(_XBOX)
 #include <intrin.h>
 #endif
 
