@@ -943,6 +943,13 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
 
 static void gl_init_textures(gl_t *gl, const video_info_t *video)
 {
+   if (!gl->pbo)
+      glGenBuffers(1, &gl->pbo);
+
+   glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
+   glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
+         gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
+
    glGenTextures(TEXTURES, gl->texture);
 
    for (unsigned i = 0; i < TEXTURES; i++)
@@ -1243,6 +1250,24 @@ static bool resolve_extensions(gl_t *gl)
    return true;
 }
 
+#ifdef RARCH_CONSOLE
+static void gl_reinit_textures(gl_t *gl, const video_info_t *video)
+{
+   unsigned old_base_size = gl->base_size;
+   gl->internal_fmt = video->rgb32 ? RARCH_GL_INTERNAL_FORMAT32 : RARCH_GL_INTERNAL_FORMAT16;
+   gl->texture_type = video->rgb32 ? RARCH_GL_TEXTURE_TYPE32 : RARCH_GL_TEXTURE_TYPE16;
+   gl->texture_fmt  = video->rgb32 ? RARCH_GL_FORMAT32 : RARCH_GL_FORMAT16;
+   gl->base_size    = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+
+   // FIXME: Doesn't handle case if input_scale is larger than what we have from before yet.
+   // In this case, we will have to reinit FBO chain as well.
+   if (old_base_size != gl->base_size)
+   {
+      glDeleteTextures(TEXTURES, gl->texture);
+      gl_init_textures(gl, video);
+   }
+}
+#endif
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
@@ -1252,7 +1277,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
 #ifdef RARCH_CONSOLE
    if (driver.video_data)
+   {
+      // Reinitialize textures as we might have changed pixel formats.
+      gl_reinit_textures(gl, video); 
       return driver.video_data;
+   }
 #endif
 
    gl_t *gl = (gl_t*)calloc(1, sizeof(gl_t));
@@ -1375,13 +1404,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
    gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
-
-#if defined(HAVE_PSGL)
-   glGenBuffers(1, &gl->pbo);
-   glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
-   glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
-         gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
-#endif
 
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
