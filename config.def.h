@@ -267,7 +267,7 @@ static const int out_latency = 64;
 static const bool audio_sync = true;
 
 // Experimental rate control
-#ifdef GEKKO
+#if defined(GEKKO) || !defined(RARCH_CONSOLE)
 static const bool rate_control = true;
 #else
 static const bool rate_control = false;
