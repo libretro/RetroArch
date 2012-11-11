@@ -163,7 +163,7 @@ static const float yscale = 3.0; // Real y res = base_size * yscale
 
 // Fullscreen
 static const bool fullscreen = false;  // To start in Fullscreen or not.
-static const bool windowed_fullscreen = false;  // To use windowed mode or not when going fullscreen.
+static const bool windowed_fullscreen = true;  // To use windowed mode or not when going fullscreen.
 static const unsigned monitor_index = 0; // Which monitor to prefer. 0 is any monitor, 1 and up selects specific monitors, 1 being the first monitor.
 static const unsigned fullscreen_x = 0; // Fullscreen resolution. A value of 0 uses the desktop resolution.
 static const unsigned fullscreen_y = 0;
