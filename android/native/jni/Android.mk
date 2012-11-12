@@ -1,4 +1,4 @@
-RARCH_VERSION		= "0.9.8-beta1"
+RARCH_VERSION		= "0.9.8-beta2"
 LOCAL_PATH := $(call my-dir)
 PERF_TEST := 0
 HAVE_OPENSL     := 1
