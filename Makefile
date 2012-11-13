@@ -160,37 +160,37 @@ endif
 ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o gfx/gfx_context.o gfx/fonts/freetype.o gfx/math/matrix.o
 
-   ifeq ($(OSX), 1)
-      LIBS += -framework OpenGL
-   else
-      ifeq ($(HAVE_KMS), 1)
-         OBJ += gfx/context/drm_egl_ctx.o
-         DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
-         LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
-      endif
-      ifeq ($(HAVE_VIDEOCORE), 1)
-         OBJ += gfx/context/vc_egl_ctx.o
-			# videocore's libs set later
-      endif
-
-      ifeq ($(HAVE_X11), 1)
-         ifeq ($(HAVE_GLES), 0)
-            OBJ += gfx/context/glx_ctx.o
-         endif
-         ifeq ($(HAVE_EGL), 1)
-            OBJ += gfx/context/xegl_ctx.o
-            DEFINES += $(EGL_CFLAGS)
-            LIBS += $(EGL_LIBS)
-         endif
-      endif
+   ifeq ($(HAVE_KMS), 1)
+      OBJ += gfx/context/drm_egl_ctx.o
+      DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
+      LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
    endif
 
+   ifeq ($(HAVE_VIDEOCORE), 1)
+      OBJ += gfx/context/vc_egl_ctx.o
+		# videocore's libs set later
+   endif
+
+   ifeq ($(HAVE_X11), 1)
+      ifeq ($(HAVE_GLES), 0)
+         OBJ += gfx/context/glx_ctx.o
+      endif
+      ifeq ($(HAVE_EGL), 1)
+         OBJ += gfx/context/xegl_ctx.o
+         DEFINES += $(EGL_CFLAGS)
+         LIBS += $(EGL_LIBS)
+      endif
+   endif
 	
    ifeq ($(HAVE_GLES), 1)
       LIBS += -lGLESv2
       DEFINES += -DHAVE_OPENGLES -DHAVE_OPENGLES2
    else
-      LIBS += -lGL
+      ifeq ($(OSX), 1)
+         LIBS += -framework OpenGL
+      else
+         LIBS += -lGL
+      endif
    endif
 endif
 
