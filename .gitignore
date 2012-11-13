@@ -23,3 +23,6 @@ Release
 ipch
 *.user
 /wii/app_booter/app_booter.bin
+*.zip
+RetroArch-w32/
+RetroArch-w64/
