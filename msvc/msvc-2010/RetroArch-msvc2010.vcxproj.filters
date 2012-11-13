@@ -37,15 +37,15 @@
     <Filter Include="Source Files\gfx\scaler">
       <UniqueIdentifier>{9c758b58-d6ce-4b66-8b17-8cc7ceb78c82}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\gfx\fonts">
+      <UniqueIdentifier>{eaaf6f28-b845-41f3-8211-e069a1ac1063}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\autosave.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\performance.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\cheats.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\command.c">
@@ -106,9 +106,6 @@
       <Filter>Source Files\audio</Filter>
     </ClCompile>
     <ClCompile Include="..\..\audio\null.c">
-      <Filter>Source Files\audio</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\audio\sinc.c">
       <Filter>Source Files\audio</Filter>
     </ClCompile>
     <ClCompile Include="..\..\audio\utils.c">
@@ -174,5 +171,21 @@
     <ClCompile Include="..\..\gfx\math\matrix_3x3.c">
       <Filter>Source Files\gfx\math</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\audio\xaudio-c\xaudio-c.c">
+      <Filter>Source Files\audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\fonts\freetype.c">
+      <Filter>Source Files\gfx\fonts</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\media\rarch.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>
