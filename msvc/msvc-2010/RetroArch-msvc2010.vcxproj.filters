@@ -40,6 +40,9 @@
     <Filter Include="Source Files\gfx\fonts">
       <UniqueIdentifier>{eaaf6f28-b845-41f3-8211-e069a1ac1063}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\gfx\d3d9">
+      <UniqueIdentifier>{ae4f70af-fc87-4c8d-84a5-b2c4cd57e722}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\autosave.c">
@@ -176,6 +179,12 @@
     </ClCompile>
     <ClCompile Include="..\..\gfx\fonts\freetype.c">
       <Filter>Source Files\gfx\fonts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\d3d9\d3d9.cpp">
+      <Filter>Source Files\gfx\d3d9</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp">
+      <Filter>Source Files\gfx\d3d9</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
