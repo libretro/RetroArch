@@ -672,8 +672,10 @@ void D3DVideo::init_imports(ConfigFile &conf, const std::string &basedir)
    state_tracker_info tracker_info = {0};
    std::vector<state_tracker_uniform_info> uniforms;
 
-   for (auto &elem : list)
+   for (auto itr = list.begin(); itr != list.end(); ++itr)
    {
+      auto &elem = *itr;
+
       state_tracker_uniform_info info;
       std::memset(&info, 0, sizeof(info));
       std::string semantic, wram, input_slot, mask, equal;
