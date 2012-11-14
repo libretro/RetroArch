@@ -47,6 +47,8 @@
 #include "shader_glsl.h"
 #endif
 
+#include "shader_common.h"
+
 #ifdef __CELLOS_LV2__
 #define FPS_COUNTER
 #endif
