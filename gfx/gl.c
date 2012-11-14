@@ -1090,10 +1090,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
-#ifdef FPS_COUNTER
-   bool fps_enable = g_extern.console.rmenu.state.msg_fps.enable;
-#endif
-
 #ifdef HAVE_FBO
    // Render to texture in first pass.
    if (gl->fbo_inited)
@@ -1151,9 +1147,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_next_texture_index(gl, &tex_info);
    
 #ifdef FPS_COUNTER
-   if(fps_enable)
+   bool fps_enable = g_extern.console.rmenu.state.msg_fps.enable;
+   if (fps_enable)
    {
-      static char fps_txt[128];
+      char fps_txt[128];
       gfx_window_title(fps_txt, sizeof(fps_txt));
       gl_render_msg_place(gl, g_settings.video.msg_pos_x, 0.56f, 1.04f, WHITE, fps_txt);
    }
