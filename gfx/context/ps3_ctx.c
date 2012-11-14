@@ -257,7 +257,7 @@ static void gfx_ctx_rmenu_frame(void *data)
 
    gl->coords.vertex = vertexes_flipped;
 
-   gl_shader_set_coords(&gl->coords, &gl->mvp);
+   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -287,7 +287,7 @@ static void gfx_ctx_rmenu_frame(void *data)
 
    gl->coords.vertex = vertexes_flipped;
 
-   gl_shader_set_coords(&gl->coords, &gl->mvp);
+   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
