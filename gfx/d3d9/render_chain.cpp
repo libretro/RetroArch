@@ -696,10 +696,10 @@ void RenderChain::bind_prev(Pass &pass)
 
    for (unsigned i = 0; i < Textures - 1; i++)
    {
-      std::snprintf(attr_texture,    sizeof(attr_texture),    "%s.texture",      prev_names[i]);
-      std::snprintf(attr_input_size, sizeof(attr_input_size), "%s.video_size",   prev_names[i]);
-      std::snprintf(attr_tex_size,   sizeof(attr_tex_size),   "%s.texture_size", prev_names[i]);
-      std::snprintf(attr_coord,      sizeof(attr_coord),      "%s.tex_coord",    prev_names[i]);
+      snprintf(attr_texture,    sizeof(attr_texture),    "%s.texture",      prev_names[i]);
+      snprintf(attr_input_size, sizeof(attr_input_size), "%s.video_size",   prev_names[i]);
+      snprintf(attr_tex_size,   sizeof(attr_tex_size),   "%s.texture_size", prev_names[i]);
+      snprintf(attr_coord,      sizeof(attr_coord),      "%s.tex_coord",    prev_names[i]);
 
       D3DXVECTOR2 video_size;
       video_size.x = prev.last_width[(prev.ptr - (i + 1)) & TexturesMask];
@@ -1002,7 +1002,8 @@ void RenderChain::init_fvf(Pass &pass)
       else
       {
          pass.attrib_map.push_back(index);
-         decl[i] = DECL_FVF_TEXCOORD(index, 3, tex_index);
+         D3DVERTEXELEMENT9 elem = DECL_FVF_TEXCOORD(index, 3, tex_index);
+         decl[i] = elem;
 
          // Find next vacant stream.
          index++;

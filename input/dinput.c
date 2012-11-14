@@ -13,6 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _MSC_VER
+#pragma comment( lib, "Dinput8" )
+#endif
+
 #undef DIRECTINPUT_VERSION
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
