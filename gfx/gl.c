@@ -43,6 +43,10 @@
 #include "shader_glsl.h"
 #endif
 
+#ifdef __CELLOS_LV2__
+#define FPS_COUNTER
+#endif
+
 // Used for the last pass when rendering to the back buffer.
 const GLfloat vertexes_flipped[] = {
    0, 1,
@@ -1086,6 +1090,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
+#ifdef FPS_COUNTER
+   bool fps_enable = g_extern.console.rmenu.state.msg_fps.enable;
+#endif
+
 #ifdef HAVE_FBO
    // Render to texture in first pass.
    if (gl->fbo_inited)
@@ -1141,6 +1149,15 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
 
    gl_next_texture_index(gl, &tex_info);
+   
+#ifdef FPS_COUNTER
+   if(fps_enable)
+   {
+      static char fps_txt[128];
+      gfx_window_title(fps_txt, sizeof(fps_txt));
+      gl_render_msg_place(gl, g_settings.video.msg_pos_x, 0.56f, 1.04f, WHITE, fps_txt);
+   }
+#endif
 
    if (msg)
       gl_render_msg(gl, msg);
@@ -1278,6 +1295,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #ifdef RARCH_CONSOLE
    if (driver.video_data)
    {
+      gl_t *gl = (gl_t*)driver.video_data;
       // Reinitialize textures as we might have changed pixel formats.
       gl_reinit_textures(gl, video); 
       return driver.video_data;
