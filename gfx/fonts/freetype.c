@@ -251,7 +251,7 @@ static void setup_font(void *data, const char *msg, GLfloat scale, GLfloat pos_x
    if (!gl->font)
       return;
 
-   gl_shader_use(0);
+   gl_shader_use(gl, 0);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 
    glEnable(GL_BLEND);
@@ -288,12 +288,12 @@ static void setup_font(void *data, const char *msg, GLfloat scale, GLfloat pos_x
    
    gl->coords.vertex = font_vertex_dark;
    gl->coords.color  = gl->font_color_dark;
-   gl_shader_set_coords(&gl->coords, &gl->mvp);
+   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->coords.vertex = font_vertex;
    gl->coords.color  = gl->font_color;
-   gl_shader_set_coords(&gl->coords, &gl->mvp);
+   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    // Post - Go back to old rendering path.

@@ -1374,3 +1374,15 @@ unsigned gl_cg_get_lut_info(struct gl_cg_lut_info *info, unsigned elems)
    return elems;
 }
 
+const gl_shader_backend_t gl_cg_backend = {
+   gl_cg_init,
+   gl_cg_deinit,
+   gl_cg_set_params,
+   gl_cg_use,
+   gl_cg_num,
+   gl_cg_filter_type,
+   gl_cg_shader_scale,
+   gl_cg_set_coords,
+   gl_cg_set_mvp,
+};
+

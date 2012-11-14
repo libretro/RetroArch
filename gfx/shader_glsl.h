@@ -18,12 +18,9 @@
 #define __RARCH_GLSL_H
 
 #include "../boolean.h"
-#include "gl_common.h"
-#include "gfx_context.h"
-#include "math/matrix.h"
+#include "shader_common.h"
 
 bool gl_glsl_init(const char *path);
-
 void gl_glsl_deinit(void);
 
 void gl_glsl_set_params(unsigned width, unsigned height, 
@@ -45,5 +42,7 @@ bool gl_glsl_set_coords(const struct gl_coords *coords);
 bool gl_glsl_set_mvp(const math_matrix *mat);
 
 void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*));
+
+extern const gl_shader_backend_t gl_glsl_backend;
 
 #endif

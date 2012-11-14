@@ -17,14 +17,11 @@
 #ifndef __RARCH_CG_H
 #define __RARCH_CG_H
 
-#include "../boolean.h"
-#include "gl_common.h"
-#include "math/matrix.h"
+#include "shader_common.h"
 #include <stdint.h>
 
 bool gl_cg_init(const char *path);
 bool gl_cg_reinit(const char *path);
-
 void gl_cg_deinit(void);
 
 void gl_cg_set_params(unsigned width, unsigned height, 
@@ -78,5 +75,7 @@ struct gl_cg_lut_info
 };
 
 unsigned gl_cg_get_lut_info(struct gl_cg_lut_info *info, unsigned elems);
+
+extern const gl_shader_backend_t gl_cg_backend;
 
 #endif

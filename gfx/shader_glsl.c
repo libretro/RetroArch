@@ -1522,3 +1522,15 @@ void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*))
    glsl_get_proc_address = proc;
 }
 
+const gl_shader_backend_t gl_glsl_backend = {
+   gl_glsl_init,
+   gl_glsl_deinit,
+   gl_glsl_set_params,
+   gl_glsl_use,
+   gl_glsl_num,
+   gl_glsl_filter_type,
+   gl_glsl_shader_scale,
+   gl_glsl_set_coords,
+   gl_glsl_set_mvp,
+};
+

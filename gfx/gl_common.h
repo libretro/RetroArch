@@ -187,6 +187,8 @@ struct gl_coords
    const GLfloat *lut_tex_coord;
 };
 
+typedef struct gl_shader_backend gl_shader_backend_t;
+
 #define MAX_SHADERS 16
 
 #if (defined(HAVE_GLSL) || defined(HAVE_CG))
@@ -199,6 +201,8 @@ struct gl_coords
 typedef struct gl
 {
    const gfx_ctx_driver_t *ctx_driver;
+   const gl_shader_backend_t *shader;
+
    bool vsync;
    GLuint texture[TEXTURES];
    unsigned tex_index; // For use with PREV.
@@ -329,10 +333,10 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 extern const GLfloat vertexes_flipped[];
 extern const GLfloat white_color[];
 
-void gl_shader_use(unsigned index);
+void gl_shader_use(gl_t *gl, unsigned index);
 void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate);
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate);
-void gl_shader_set_coords(const struct gl_coords *coords, const math_matrix *mat);
+void gl_shader_set_coords(gl_t *gl, const struct gl_coords *coords, const math_matrix *mat);
 
 void gl_init_fbo(gl_t *gl, unsigned width, unsigned height);
 void gl_deinit_fbo(gl_t *gl);
