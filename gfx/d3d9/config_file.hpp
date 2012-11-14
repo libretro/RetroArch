@@ -166,8 +166,8 @@ class ConfigFile
       config_file_t *conf;
       std::string path;
 
-      ConfigFile(const ConfigFile&) {};
-      void operator=(const ConfigFile&) {};
+      ConfigFile(const ConfigFile&); // Workaround lack of = delete.
+      void operator=(const ConfigFile&);
 };
 
 #endif
