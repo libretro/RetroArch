@@ -216,7 +216,7 @@ void conv_0rgb1555_argb8888(void *output_, const void *input_,
          g = (g << 3) | (g >> 2);
          b = (b << 3) | (b >> 2);
 
-         output[w] = (0xff << 24) | (r << 16) | (g << 8) | (b << 0);
+         output[w] = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
       }
    }
 }
@@ -300,7 +300,7 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
          g = (g << 2) | (g >> 4);
          b = (b << 3) | (b >> 2);
 
-         output[w] = (0xff << 24) | (r << 16) | (g << 8) | (b << 0);
+         output[w] = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
       }
    }
 }
@@ -565,7 +565,7 @@ void conv_bgr24_argb8888(void *output_, const void *input_,
          uint32_t b = *inp++;
          uint32_t g = *inp++;
          uint32_t r = *inp++;
-         output[w] = (0xff << 24) | (r << 16) | (g << 8) | (b << 0);
+         output[w] = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
       }
    }
 }
