@@ -14,6 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _MSC_VER
+#pragma comment( lib, "winmm" )
+#endif
+
 #include "gfx_common.h"
 #include "../general.h"
 

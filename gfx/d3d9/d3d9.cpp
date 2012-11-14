@@ -19,6 +19,13 @@
 // It is written in C++11 (should be compat with MSVC 2010).
 // Might get rewritten in C99 if I have lots of time to burn.
 
+#ifdef _MSC_VER
+#pragma comment( lib, "d3d9" )
+#pragma comment( lib, "d3dx9" )
+#pragma comment( lib, "cgd3d9" )
+#pragma comment( lib, "dxguid" )
+#endif
+
 #include "d3d9.hpp"
 #include "render_chain.hpp"
 #include "config_file.hpp"

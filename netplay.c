@@ -13,6 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _MSC_VER
+#pragma comment( lib, "ws2_32" )
+#endif
+
 #include "netplay_compat.h"
 #include "netplay.h"
 #include "general.h"

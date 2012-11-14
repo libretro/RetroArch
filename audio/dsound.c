@@ -14,6 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _MSC_VER
+#pragma comment( lib, "dsound" )
+#pragma comment( lib, "dxguid" )
+#endif
+
 #ifdef _XBOX
 #define DSERR_BUFFERLOST                MAKE_DSHRESULT(150)
 #define DSERR_INVALIDPARAM              E_INVALIDARG

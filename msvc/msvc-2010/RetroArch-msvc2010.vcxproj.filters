@@ -186,6 +186,9 @@
     <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp">
       <Filter>Source Files\gfx\d3d9</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\gfx\shader_cg.c">
+      <Filter>Source Files\gfx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">

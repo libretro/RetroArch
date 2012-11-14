@@ -30,9 +30,6 @@ class ConfigFile
             conf = config_file_new(nullptr);
       }
 
-      ConfigFile(const ConfigFile&) = delete;
-      void operator=(const ConfigFile&) = delete;
-
       operator bool() { return conf; }
 
       ConfigFile& operator=(ConfigFile&& _in)
@@ -168,6 +165,9 @@ class ConfigFile
    private:
       config_file_t *conf;
       std::string path;
+
+      ConfigFile(const ConfigFile&) {};
+      void operator=(const ConfigFile&) {};
 };
 
 #endif

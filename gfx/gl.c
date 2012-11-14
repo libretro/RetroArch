@@ -14,6 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _MSC_VER
+#pragma comment( lib, "opengl32" )
+#endif
+
 #include "../driver.h"
 #include "../performance.h"
 #include "scaler/scaler.h"
