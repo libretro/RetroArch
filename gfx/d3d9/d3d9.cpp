@@ -1,5 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2012 - Daniel De Matteis
+ *  Copyright (C) 2012      - OV2
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -35,6 +37,9 @@
 
 #define IDI_ICON 1
 #define MAX_MONITORS 9
+
+/* TODO: Make Cg optional - same as in the GL driver where we can either bake in
+ * GLSL, Cg or HLSL shader support */
 
 namespace Monitor
 {
@@ -170,8 +175,10 @@ void D3DVideo::init(const video_info_t &info)
 
    calculate_rect(screen_width, screen_height, info.force_aspect, g_settings.video.aspect_ratio);
 
+#ifdef HAVE_CG
    if (!init_cg())
       throw std::runtime_error("Failed to init Cg");
+#endif
    if (!init_chain(info))
       throw std::runtime_error("Failed to init render chain");
    if (!init_font())
@@ -547,6 +554,7 @@ void D3DVideo::process()
    }
 }
 
+#ifdef HAVE_CG
 bool D3DVideo::init_cg()
 {
    cgCtx = cgCreateContext();
@@ -572,20 +580,26 @@ void D3DVideo::deinit_cg()
       cgCtx = nullptr;
    }
 }
+#endif
 
 void D3DVideo::init_chain_singlepass(const video_info_t &video_info)
 {
    LinkInfo info = {0};
    LinkInfo info_second = {0};
 
+#ifdef HAVE_CG
    if (cg_shader.empty())
    {
       auto shader_type = g_settings.video.shader_type;
-      if ((shader_type == RARCH_SHADER_CG || shader_type == RARCH_SHADER_AUTO) && *g_settings.video.cg_shader_path)
+      if ((
+			      shader_type == RARCH_SHADER_CG ||
+			      shader_type == RARCH_SHADER_AUTO) && *g_settings.video.cg_shader_path)
          cg_shader = g_settings.video.cg_shader_path;
    }
 
    info.shader_path = cg_shader;
+#endif
+
    bool second_pass = g_settings.video.render_to_texture;
 
    if (second_pass)
@@ -1174,11 +1188,13 @@ static bool d3d9_read_viewport(void *data, uint8_t *buffer)
 
 static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char *path)
 {
+#ifdef HAVE_CG
    if (type != RARCH_SHADER_CG)
    {
       RARCH_ERR("[D3D9]: Only Cg shaders supported.\n");
       return false;
    }
+#endif
 
    return reinterpret_cast<D3DVideo*>(data)->set_shader(path);
 }

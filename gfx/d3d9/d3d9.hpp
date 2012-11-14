@@ -22,8 +22,11 @@
 #include <d3d9.h>
 #include <d3dx9.h>
 #include <d3dx9core.h>
+
+#ifdef HAVE_CG
 #include <Cg/cg.h>
 #include <Cg/cgD3D9.h>
+#endif
 #include <string>
 #include <vector>
 #include <memory>
@@ -78,9 +81,11 @@ class D3DVideo
       bool needs_restore;
       bool restore();
 
+#ifdef HAVE_CG
       CGcontext cgCtx;
       bool init_cg();
       void deinit_cg();
+#endif
 
       void init_imports(ConfigFile &conf, const std::string &basedir);
       void init_luts(ConfigFile &conf, const std::string &basedir);

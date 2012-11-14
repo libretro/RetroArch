@@ -50,7 +50,9 @@ class RenderChain
 
       RenderChain(const video_info_t &video_info,
             IDirect3DDevice9 *dev,
+#ifdef HAVE_CG
             CGcontext cgCtx,
+#endif
             const LinkInfo &info,
             PixelFormat fmt,
             const D3DVIEWPORT9 &final_viewport);
@@ -73,7 +75,9 @@ class RenderChain
    private:
 
       IDirect3DDevice9 *dev;
+#ifdef HAVE_CG
       CGcontext cgCtx;
+#endif
       unsigned pixel_size;
 
       const video_info_t &video_info;
@@ -98,7 +102,9 @@ class RenderChain
          LinkInfo info;
          IDirect3DTexture9 *tex;
          IDirect3DVertexBuffer9 *vertex_buf;
+#ifdef HAVE_CG
          CGprogram vPrg, fPrg;
+#endif
          unsigned last_width, last_height;
 
          IDirect3DVertexDeclaration9 *vertex_decl;
