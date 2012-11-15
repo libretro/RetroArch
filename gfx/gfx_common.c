@@ -15,7 +15,7 @@
  */
 
 #ifdef _MSC_VER
-#pragma comment( lib, "winmm" )
+#pragma comment(lib, "winmm")
 #endif
 
 #include "gfx_common.h"

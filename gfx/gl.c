@@ -15,7 +15,7 @@
  */
 
 #ifdef _MSC_VER
-#pragma comment( lib, "opengl32" )
+#pragma comment(lib, "opengl32")
 #endif
 
 #include "../driver.h"

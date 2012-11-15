@@ -15,8 +15,8 @@
  */
 
 #ifdef _MSC_VER
-#pragma comment( lib, "dsound" )
-#pragma comment( lib, "dxguid" )
+#pragma comment(lib, "dsound")
+#pragma comment(lib, "dxguid")
 #endif
 
 #ifdef _XBOX

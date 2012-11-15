@@ -14,7 +14,7 @@
  */
 
 #ifdef _MSC_VER
-#pragma comment( lib, "ws2_32" )
+#pragma comment(lib, "ws2_32")
 #endif
 
 #include "netplay_compat.h"

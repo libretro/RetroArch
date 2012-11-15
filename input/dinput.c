@@ -14,7 +14,7 @@
  */
 
 #ifdef _MSC_VER
-#pragma comment( lib, "Dinput8" )
+#pragma comment(lib, "dinput8")
 #endif
 
 #undef DIRECTINPUT_VERSION

@@ -14,8 +14,8 @@
  */
 
 #ifdef _MSC_VER
-#pragma comment( lib, "cg" )
-#pragma comment( lib, "cggl" )
+#pragma comment(lib, "cg")
+#pragma comment(lib, "cggl")
 #endif
 
 #include "shader_cg.h"
