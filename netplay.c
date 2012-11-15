@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(_XBOX)
 #pragma comment(lib, "ws2_32")
 #endif
 
