@@ -304,13 +304,10 @@ void gl_shader_set_coords(gl_t *gl, const struct gl_coords *coords, const math_m
    bool ret_coords = false;
    bool ret_mvp    = false;
 
-   (void)ret_coords;
-   (void)ret_mvp;
-
-   if (!ret_coords && gl->shader)
-      ret_coords |= gl->shader->set_coords(coords);
-   if (!ret_mvp && gl->shader)
-      ret_mvp |= gl->shader->set_mvp(mat);
+   if (gl->shader)
+      ret_coords = gl->shader->set_coords(coords);
+   if (gl->shader)
+      ret_mvp = gl->shader->set_mvp(mat);
 
    // Fall back to FF-style if needed and possible.
 #ifndef NO_GL_FF_VERTEX
