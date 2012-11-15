@@ -311,7 +311,7 @@ MAIN
 #include "../../xdk/frontend/main.c"
 #elif defined(GEKKO)
 #include "../../gx/frontend/main.c"
-#elif defined(__PSL1GHT__)
+#elif defined(__CELLOS_LV2__)
 #include "../../ps3/frontend/main.c"
 #elif defined(ANDROID)
 #include "../../android/native/jni/main.c"
