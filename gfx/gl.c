@@ -1121,8 +1121,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    bool fps_enable = g_extern.console.rmenu.state.msg_fps.enable;
    if (fps_enable)
    {
-      static char fps_txt[128];
-      gfx_window_title(fps_txt, sizeof(fps_txt));
+      char fps_txt[128];
+      gfx_fps_title(fps_txt, sizeof(fps_txt));
       gl_render_msg_place(gl, g_settings.video.msg_pos_x, 0.56f, 1.04f, WHITE, fps_txt);
    }
 #endif

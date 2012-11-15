@@ -27,8 +27,12 @@ extern "C" {
 #include "../config.h"
 #endif
 
+// Returns true if FPS value was updated.
 bool gfx_window_title(char *buf, size_t size);
 void gfx_window_title_reset(void);
+
+// Like gfx_window_title, but always updates FPS value.
+void gfx_fps_title(char *buf, size_t size);
 
 #ifdef _WIN32
 void gfx_set_dwm(void);

@@ -79,11 +79,12 @@ static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, i
    return frames/time;
 }
 
-static unsigned gl_frames = 0;
+static unsigned gl_frames;
 
-static bool gfx_get_fps(char *buf, size_t size)
+static bool gfx_get_fps(char *buf, size_t size, bool always_write)
 {
    static struct timeval tv;
+   static float last_fps;
    struct timeval new_tv;
    bool ret = false;
 
@@ -99,14 +100,22 @@ static bool gfx_get_fps(char *buf, size_t size)
       struct timeval tmp_tv = tv;
       tv = new_tv;
 
-      float fps = tv_to_fps(&tmp_tv, &new_tv, 180);
+      last_fps = tv_to_fps(&tmp_tv, &new_tv, 180);
 
 #ifdef RARCH_CONSOLE
-      snprintf(buf, size, "FPS: %6.1f || Frames: %d", fps, gl_frames);
+      snprintf(buf, size, "FPS: %6.1f || Frames: %d", last_fps, gl_frames);
 #else
-      snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, fps, gl_frames);
+      snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, last_fps, gl_frames);
 #endif
       ret = true;
+   }
+   else if (always_write)
+   {
+#ifdef RARCH_CONSOLE
+      snprintf(buf, size, "FPS: %6.1f || Frames: %d", last_fps, gl_frames);
+#else
+      snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, last_fps, gl_frames);
+#endif
    }
 
    return ret;
@@ -119,10 +128,16 @@ void gfx_window_title_reset(void)
 
 bool gfx_window_title(char *buf, size_t size)
 {
-   bool ret = gfx_get_fps(buf, size);
+   bool ret = gfx_get_fps(buf, size, false);
 
    gl_frames++;
    return ret;
+}
+
+void gfx_fps_title(char *buf, size_t size)
+{
+   gfx_get_fps(buf, size, true);
+   gl_frames++;
 }
 
 #if defined(_WIN32) && !defined(_XBOX)
