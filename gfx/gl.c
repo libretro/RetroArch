@@ -1242,17 +1242,24 @@ static bool resolve_extensions(gl_t *gl)
 static void gl_reinit_textures(gl_t *gl, const video_info_t *video)
 {
    unsigned old_base_size = gl->base_size;
+   unsigned old_width     = gl->tex_w;
+   unsigned old_height    = gl->tex_h;
    gl->internal_fmt = video->rgb32 ? RARCH_GL_INTERNAL_FORMAT32 : RARCH_GL_INTERNAL_FORMAT16;
    gl->texture_type = video->rgb32 ? RARCH_GL_TEXTURE_TYPE32 : RARCH_GL_TEXTURE_TYPE16;
    gl->texture_fmt  = video->rgb32 ? RARCH_GL_FORMAT32 : RARCH_GL_FORMAT16;
    gl->base_size    = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
-   // FIXME: Doesn't handle case if input_scale is larger than what we have from before yet.
-   // In this case, we will have to reinit FBO chain as well.
-   if (old_base_size != gl->base_size)
+   gl->tex_w = gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
+
+   if (old_base_size != gl->base_size || old_width != gl->tex_w || old_height != gl->tex_h)
    {
       glDeleteTextures(TEXTURES, gl->texture);
       gl_init_textures(gl, video);
+
+#ifdef HAVE_FBO
+      gl_deinit_fbo(gl);
+      gl_init_fbo(gl, gl->tex_w, gl->tex_h);
+#endif
    }
 }
 #endif
