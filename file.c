@@ -204,7 +204,6 @@ error:
       free(patch_data);
 }
 
-// Load SNES rom only. Applies a hack for headered ROMs.
 static ssize_t read_rom_file(FILE *file, void **buf)
 {
    ssize_t ret = 0;
@@ -217,7 +216,7 @@ static ssize_t read_rom_file(FILE *file, void **buf)
 #endif
 
       RARCH_LOG("Reading ROM from stdin ...\n");
-      size_t buf_size = 0xFFFFF; // Some initial guesstimate.
+      size_t buf_size = 0xfffff; // Some initial guesstimate.
       size_t buf_ptr = 0;
       uint8_t *rom_buf = (uint8_t*)malloc(buf_size);
       if (rom_buf == NULL)
@@ -277,13 +276,6 @@ static ssize_t read_rom_file(FILE *file, void **buf)
       patch_rom(&ret_buf, &ret);
    }
    
-   // Remove copier header if present (512 first bytes).
-   if ((ret & 0x7fff) == 512)
-   {
-      memmove(ret_buf, ret_buf + 512, ret - 512);
-      ret -= 512;
-   }
-
    g_extern.cart_crc = crc32_calculate(ret_buf, ret);
 #ifdef HAVE_XML
    sha256_hash(g_extern.sha256, ret_buf, ret);
