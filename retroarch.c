@@ -1245,7 +1245,7 @@ static inline void save_files(void)
 
       case RARCH_CART_SUFAMI:
          RARCH_LOG("Saving Sufami turbo A/B RAM.\n");
-         RARCH_LOG("ASRM:  %s\n", g_extern.savefile_name_asrm);
+         RARCH_LOG("ASRM: %s\n", g_extern.savefile_name_asrm);
          RARCH_LOG("BSRM: %s\n", g_extern.savefile_name_bsrm);
          save_ram_file(g_extern.savefile_name_asrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM);
          save_ram_file(g_extern.savefile_name_bsrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM);
