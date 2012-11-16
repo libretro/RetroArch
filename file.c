@@ -511,6 +511,8 @@ void save_ram_file(const char *path, int type)
          RARCH_WARN("Attempting to recover ...\n");
          dump_to_file_desperate(data, size, type);
       }
+      else
+         RARCH_LOG("Saved successfully to \"%s\".\n", path);
    }
 }
 

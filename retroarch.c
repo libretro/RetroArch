@@ -1220,12 +1220,16 @@ static inline void save_files(void)
    {
       case RARCH_CART_NORMAL:
          RARCH_LOG("Saving regular SRAM.\n");
+         RARCH_LOG("SRM: %s\n", g_extern.savefile_name_srm);
+         RARCH_LOG("RTC: %s\n", g_extern.savefile_name_rtc);
          save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SAVE_RAM);
          save_ram_file(g_extern.savefile_name_rtc, RETRO_MEMORY_RTC);
          break;
 
       case RARCH_CART_SGB:
          RARCH_LOG("Saving Gameboy SRAM.\n");
+         RARCH_LOG("SRM: %s\n", g_extern.savefile_name_srm);
+         RARCH_LOG("RTC: %s\n", g_extern.savefile_name_rtc);
          save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_GAME_BOY_RAM);
          save_ram_file(g_extern.savefile_name_rtc, RETRO_MEMORY_SNES_GAME_BOY_RTC);
          break;
@@ -1233,12 +1237,16 @@ static inline void save_files(void)
       case RARCH_CART_BSX:
       case RARCH_CART_BSX_SLOTTED:
          RARCH_LOG("Saving BSX (P)RAM.\n");
+         RARCH_LOG("SRM:  %s\n", g_extern.savefile_name_srm);
+         RARCH_LOG("PSRM: %s\n", g_extern.savefile_name_psrm);
          save_ram_file(g_extern.savefile_name_srm, RETRO_MEMORY_SNES_BSX_RAM);
          save_ram_file(g_extern.savefile_name_psrm, RETRO_MEMORY_SNES_BSX_PRAM);
          break;
 
       case RARCH_CART_SUFAMI:
          RARCH_LOG("Saving Sufami turbo A/B RAM.\n");
+         RARCH_LOG("ASRM:  %s\n", g_extern.savefile_name_asrm);
+         RARCH_LOG("BSRM: %s\n", g_extern.savefile_name_bsrm);
          save_ram_file(g_extern.savefile_name_asrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM);
          save_ram_file(g_extern.savefile_name_bsrm, RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM);
          break;
