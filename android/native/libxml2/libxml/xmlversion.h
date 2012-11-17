@@ -260,15 +260,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_SCHEMAS_ENABLED:
- *
- * Whether the Schemas validation interfaces are compiled in
- */
-#if 0
-#define LIBXML_SCHEMAS_ENABLED
-#endif
-
-/**
  * LIBXML_MODULES_ENABLED:
  *
  * Whether the module interfaces are compiled in

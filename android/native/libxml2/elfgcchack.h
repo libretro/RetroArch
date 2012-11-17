@@ -244,7 +244,7 @@ extern __typeof (xmlAddNotationDecl) xmlAddNotationDecl__internal_alias __attrib
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlAddPrevSibling
 extern __typeof (xmlAddPrevSibling) xmlAddPrevSibling __attribute((alias("xmlAddPrevSibling__internal_alias")));
@@ -1081,7 +1081,7 @@ extern __typeof (xmlCopyCharMultiByte) xmlCopyCharMultiByte__internal_alias __at
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlCopyDoc
 extern __typeof (xmlCopyDoc) xmlCopyDoc __attribute((alias("xmlCopyDoc__internal_alias")));
@@ -2775,7 +2775,7 @@ extern __typeof (xmlGetNodePath) xmlGetNodePath__internal_alias __attribute((vis
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlGetNsList
 extern __typeof (xmlGetNsList) xmlGetNsList __attribute((alias("xmlGetNsList__internal_alias")));
@@ -4001,7 +4001,7 @@ extern __typeof (xmlNewCharRef) xmlNewCharRef__internal_alias __attribute((visib
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlNewChild
 extern __typeof (xmlNewChild) xmlNewChild __attribute((alias("xmlNewChild__internal_alias")));
@@ -4299,7 +4299,7 @@ extern __typeof (xmlNewParserCtxt) xmlNewParserCtxt__internal_alias __attribute(
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlNewProp
 extern __typeof (xmlNewProp) xmlNewProp __attribute((alias("xmlNewProp__internal_alias")));
@@ -6309,294 +6309,6 @@ extern __typeof (xmlRegisterOutputCallbacks) xmlRegisterOutputCallbacks__interna
 #endif
 #endif
 
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGCleanupTypes
-extern __typeof (xmlRelaxNGCleanupTypes) xmlRelaxNGCleanupTypes __attribute((alias("xmlRelaxNGCleanupTypes__internal_alias")));
-#else
-#ifndef xmlRelaxNGCleanupTypes
-extern __typeof (xmlRelaxNGCleanupTypes) xmlRelaxNGCleanupTypes__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGCleanupTypes xmlRelaxNGCleanupTypes__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGDump
-extern __typeof (xmlRelaxNGDump) xmlRelaxNGDump __attribute((alias("xmlRelaxNGDump__internal_alias")));
-#else
-#ifndef xmlRelaxNGDump
-extern __typeof (xmlRelaxNGDump) xmlRelaxNGDump__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGDump xmlRelaxNGDump__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGDumpTree
-extern __typeof (xmlRelaxNGDumpTree) xmlRelaxNGDumpTree __attribute((alias("xmlRelaxNGDumpTree__internal_alias")));
-#else
-#ifndef xmlRelaxNGDumpTree
-extern __typeof (xmlRelaxNGDumpTree) xmlRelaxNGDumpTree__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGDumpTree xmlRelaxNGDumpTree__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGFree
-extern __typeof (xmlRelaxNGFree) xmlRelaxNGFree __attribute((alias("xmlRelaxNGFree__internal_alias")));
-#else
-#ifndef xmlRelaxNGFree
-extern __typeof (xmlRelaxNGFree) xmlRelaxNGFree__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGFree xmlRelaxNGFree__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGFreeParserCtxt
-extern __typeof (xmlRelaxNGFreeParserCtxt) xmlRelaxNGFreeParserCtxt __attribute((alias("xmlRelaxNGFreeParserCtxt__internal_alias")));
-#else
-#ifndef xmlRelaxNGFreeParserCtxt
-extern __typeof (xmlRelaxNGFreeParserCtxt) xmlRelaxNGFreeParserCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGFreeParserCtxt xmlRelaxNGFreeParserCtxt__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGFreeValidCtxt
-extern __typeof (xmlRelaxNGFreeValidCtxt) xmlRelaxNGFreeValidCtxt __attribute((alias("xmlRelaxNGFreeValidCtxt__internal_alias")));
-#else
-#ifndef xmlRelaxNGFreeValidCtxt
-extern __typeof (xmlRelaxNGFreeValidCtxt) xmlRelaxNGFreeValidCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGFreeValidCtxt xmlRelaxNGFreeValidCtxt__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGGetParserErrors
-extern __typeof (xmlRelaxNGGetParserErrors) xmlRelaxNGGetParserErrors __attribute((alias("xmlRelaxNGGetParserErrors__internal_alias")));
-#else
-#ifndef xmlRelaxNGGetParserErrors
-extern __typeof (xmlRelaxNGGetParserErrors) xmlRelaxNGGetParserErrors__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGGetParserErrors xmlRelaxNGGetParserErrors__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGGetValidErrors
-extern __typeof (xmlRelaxNGGetValidErrors) xmlRelaxNGGetValidErrors __attribute((alias("xmlRelaxNGGetValidErrors__internal_alias")));
-#else
-#ifndef xmlRelaxNGGetValidErrors
-extern __typeof (xmlRelaxNGGetValidErrors) xmlRelaxNGGetValidErrors__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGGetValidErrors xmlRelaxNGGetValidErrors__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGInitTypes
-extern __typeof (xmlRelaxNGInitTypes) xmlRelaxNGInitTypes __attribute((alias("xmlRelaxNGInitTypes__internal_alias")));
-#else
-#ifndef xmlRelaxNGInitTypes
-extern __typeof (xmlRelaxNGInitTypes) xmlRelaxNGInitTypes__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGInitTypes xmlRelaxNGInitTypes__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGNewDocParserCtxt
-extern __typeof (xmlRelaxNGNewDocParserCtxt) xmlRelaxNGNewDocParserCtxt __attribute((alias("xmlRelaxNGNewDocParserCtxt__internal_alias")));
-#else
-#ifndef xmlRelaxNGNewDocParserCtxt
-extern __typeof (xmlRelaxNGNewDocParserCtxt) xmlRelaxNGNewDocParserCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGNewDocParserCtxt xmlRelaxNGNewDocParserCtxt__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGNewMemParserCtxt
-extern __typeof (xmlRelaxNGNewMemParserCtxt) xmlRelaxNGNewMemParserCtxt __attribute((alias("xmlRelaxNGNewMemParserCtxt__internal_alias")));
-#else
-#ifndef xmlRelaxNGNewMemParserCtxt
-extern __typeof (xmlRelaxNGNewMemParserCtxt) xmlRelaxNGNewMemParserCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGNewMemParserCtxt xmlRelaxNGNewMemParserCtxt__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGNewParserCtxt
-extern __typeof (xmlRelaxNGNewParserCtxt) xmlRelaxNGNewParserCtxt __attribute((alias("xmlRelaxNGNewParserCtxt__internal_alias")));
-#else
-#ifndef xmlRelaxNGNewParserCtxt
-extern __typeof (xmlRelaxNGNewParserCtxt) xmlRelaxNGNewParserCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGNewParserCtxt xmlRelaxNGNewParserCtxt__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGNewValidCtxt
-extern __typeof (xmlRelaxNGNewValidCtxt) xmlRelaxNGNewValidCtxt __attribute((alias("xmlRelaxNGNewValidCtxt__internal_alias")));
-#else
-#ifndef xmlRelaxNGNewValidCtxt
-extern __typeof (xmlRelaxNGNewValidCtxt) xmlRelaxNGNewValidCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGNewValidCtxt xmlRelaxNGNewValidCtxt__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGParse
-extern __typeof (xmlRelaxNGParse) xmlRelaxNGParse __attribute((alias("xmlRelaxNGParse__internal_alias")));
-#else
-#ifndef xmlRelaxNGParse
-extern __typeof (xmlRelaxNGParse) xmlRelaxNGParse__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGParse xmlRelaxNGParse__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGSetParserErrors
-extern __typeof (xmlRelaxNGSetParserErrors) xmlRelaxNGSetParserErrors __attribute((alias("xmlRelaxNGSetParserErrors__internal_alias")));
-#else
-#ifndef xmlRelaxNGSetParserErrors
-extern __typeof (xmlRelaxNGSetParserErrors) xmlRelaxNGSetParserErrors__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGSetParserErrors xmlRelaxNGSetParserErrors__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGSetParserStructuredErrors
-extern __typeof (xmlRelaxNGSetParserStructuredErrors) xmlRelaxNGSetParserStructuredErrors __attribute((alias("xmlRelaxNGSetParserStructuredErrors__internal_alias")));
-#else
-#ifndef xmlRelaxNGSetParserStructuredErrors
-extern __typeof (xmlRelaxNGSetParserStructuredErrors) xmlRelaxNGSetParserStructuredErrors__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGSetParserStructuredErrors xmlRelaxNGSetParserStructuredErrors__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGSetValidErrors
-extern __typeof (xmlRelaxNGSetValidErrors) xmlRelaxNGSetValidErrors __attribute((alias("xmlRelaxNGSetValidErrors__internal_alias")));
-#else
-#ifndef xmlRelaxNGSetValidErrors
-extern __typeof (xmlRelaxNGSetValidErrors) xmlRelaxNGSetValidErrors__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGSetValidErrors xmlRelaxNGSetValidErrors__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGSetValidStructuredErrors
-extern __typeof (xmlRelaxNGSetValidStructuredErrors) xmlRelaxNGSetValidStructuredErrors __attribute((alias("xmlRelaxNGSetValidStructuredErrors__internal_alias")));
-#else
-#ifndef xmlRelaxNGSetValidStructuredErrors
-extern __typeof (xmlRelaxNGSetValidStructuredErrors) xmlRelaxNGSetValidStructuredErrors__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGSetValidStructuredErrors xmlRelaxNGSetValidStructuredErrors__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGValidateDoc
-extern __typeof (xmlRelaxNGValidateDoc) xmlRelaxNGValidateDoc __attribute((alias("xmlRelaxNGValidateDoc__internal_alias")));
-#else
-#ifndef xmlRelaxNGValidateDoc
-extern __typeof (xmlRelaxNGValidateDoc) xmlRelaxNGValidateDoc__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGValidateDoc xmlRelaxNGValidateDoc__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGValidateFullElement
-extern __typeof (xmlRelaxNGValidateFullElement) xmlRelaxNGValidateFullElement __attribute((alias("xmlRelaxNGValidateFullElement__internal_alias")));
-#else
-#ifndef xmlRelaxNGValidateFullElement
-extern __typeof (xmlRelaxNGValidateFullElement) xmlRelaxNGValidateFullElement__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGValidateFullElement xmlRelaxNGValidateFullElement__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGValidatePopElement
-extern __typeof (xmlRelaxNGValidatePopElement) xmlRelaxNGValidatePopElement __attribute((alias("xmlRelaxNGValidatePopElement__internal_alias")));
-#else
-#ifndef xmlRelaxNGValidatePopElement
-extern __typeof (xmlRelaxNGValidatePopElement) xmlRelaxNGValidatePopElement__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGValidatePopElement xmlRelaxNGValidatePopElement__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGValidatePushCData
-extern __typeof (xmlRelaxNGValidatePushCData) xmlRelaxNGValidatePushCData __attribute((alias("xmlRelaxNGValidatePushCData__internal_alias")));
-#else
-#ifndef xmlRelaxNGValidatePushCData
-extern __typeof (xmlRelaxNGValidatePushCData) xmlRelaxNGValidatePushCData__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGValidatePushCData xmlRelaxNGValidatePushCData__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxNGValidatePushElement
-extern __typeof (xmlRelaxNGValidatePushElement) xmlRelaxNGValidatePushElement __attribute((alias("xmlRelaxNGValidatePushElement__internal_alias")));
-#else
-#ifndef xmlRelaxNGValidatePushElement
-extern __typeof (xmlRelaxNGValidatePushElement) xmlRelaxNGValidatePushElement__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxNGValidatePushElement xmlRelaxNGValidatePushElement__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_relaxng
-#undef xmlRelaxParserSetFlag
-extern __typeof (xmlRelaxParserSetFlag) xmlRelaxParserSetFlag __attribute((alias("xmlRelaxParserSetFlag__internal_alias")));
-#else
-#ifndef xmlRelaxParserSetFlag
-extern __typeof (xmlRelaxParserSetFlag) xmlRelaxParserSetFlag__internal_alias __attribute((visibility("hidden")));
-#define xmlRelaxParserSetFlag xmlRelaxParserSetFlag__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_valid
 #undef xmlRemoveID
 extern __typeof (xmlRemoveID) xmlRemoveID __attribute((alias("xmlRemoveID__internal_alias")));
@@ -7317,738 +7029,6 @@ extern __typeof (xmlScanName) xmlScanName__internal_alias __attribute((visibilit
 #endif
 #endif
 
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaCheckFacet
-extern __typeof (xmlSchemaCheckFacet) xmlSchemaCheckFacet __attribute((alias("xmlSchemaCheckFacet__internal_alias")));
-#else
-#ifndef xmlSchemaCheckFacet
-extern __typeof (xmlSchemaCheckFacet) xmlSchemaCheckFacet__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaCheckFacet xmlSchemaCheckFacet__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaCleanupTypes
-extern __typeof (xmlSchemaCleanupTypes) xmlSchemaCleanupTypes __attribute((alias("xmlSchemaCleanupTypes__internal_alias")));
-#else
-#ifndef xmlSchemaCleanupTypes
-extern __typeof (xmlSchemaCleanupTypes) xmlSchemaCleanupTypes__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaCleanupTypes xmlSchemaCleanupTypes__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaCollapseString
-extern __typeof (xmlSchemaCollapseString) xmlSchemaCollapseString __attribute((alias("xmlSchemaCollapseString__internal_alias")));
-#else
-#ifndef xmlSchemaCollapseString
-extern __typeof (xmlSchemaCollapseString) xmlSchemaCollapseString__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaCollapseString xmlSchemaCollapseString__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaCompareValues
-extern __typeof (xmlSchemaCompareValues) xmlSchemaCompareValues __attribute((alias("xmlSchemaCompareValues__internal_alias")));
-#else
-#ifndef xmlSchemaCompareValues
-extern __typeof (xmlSchemaCompareValues) xmlSchemaCompareValues__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaCompareValues xmlSchemaCompareValues__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaCompareValuesWhtsp
-extern __typeof (xmlSchemaCompareValuesWhtsp) xmlSchemaCompareValuesWhtsp __attribute((alias("xmlSchemaCompareValuesWhtsp__internal_alias")));
-#else
-#ifndef xmlSchemaCompareValuesWhtsp
-extern __typeof (xmlSchemaCompareValuesWhtsp) xmlSchemaCompareValuesWhtsp__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaCompareValuesWhtsp xmlSchemaCompareValuesWhtsp__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaCopyValue
-extern __typeof (xmlSchemaCopyValue) xmlSchemaCopyValue __attribute((alias("xmlSchemaCopyValue__internal_alias")));
-#else
-#ifndef xmlSchemaCopyValue
-extern __typeof (xmlSchemaCopyValue) xmlSchemaCopyValue__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaCopyValue xmlSchemaCopyValue__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaDump
-extern __typeof (xmlSchemaDump) xmlSchemaDump __attribute((alias("xmlSchemaDump__internal_alias")));
-#else
-#ifndef xmlSchemaDump
-extern __typeof (xmlSchemaDump) xmlSchemaDump__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaDump xmlSchemaDump__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaFree
-extern __typeof (xmlSchemaFree) xmlSchemaFree __attribute((alias("xmlSchemaFree__internal_alias")));
-#else
-#ifndef xmlSchemaFree
-extern __typeof (xmlSchemaFree) xmlSchemaFree__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaFree xmlSchemaFree__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaFreeFacet
-extern __typeof (xmlSchemaFreeFacet) xmlSchemaFreeFacet __attribute((alias("xmlSchemaFreeFacet__internal_alias")));
-#else
-#ifndef xmlSchemaFreeFacet
-extern __typeof (xmlSchemaFreeFacet) xmlSchemaFreeFacet__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaFreeFacet xmlSchemaFreeFacet__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaFreeParserCtxt
-extern __typeof (xmlSchemaFreeParserCtxt) xmlSchemaFreeParserCtxt __attribute((alias("xmlSchemaFreeParserCtxt__internal_alias")));
-#else
-#ifndef xmlSchemaFreeParserCtxt
-extern __typeof (xmlSchemaFreeParserCtxt) xmlSchemaFreeParserCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaFreeParserCtxt xmlSchemaFreeParserCtxt__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaFreeType
-extern __typeof (xmlSchemaFreeType) xmlSchemaFreeType __attribute((alias("xmlSchemaFreeType__internal_alias")));
-#else
-#ifndef xmlSchemaFreeType
-extern __typeof (xmlSchemaFreeType) xmlSchemaFreeType__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaFreeType xmlSchemaFreeType__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaFreeValidCtxt
-extern __typeof (xmlSchemaFreeValidCtxt) xmlSchemaFreeValidCtxt __attribute((alias("xmlSchemaFreeValidCtxt__internal_alias")));
-#else
-#ifndef xmlSchemaFreeValidCtxt
-extern __typeof (xmlSchemaFreeValidCtxt) xmlSchemaFreeValidCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaFreeValidCtxt xmlSchemaFreeValidCtxt__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaFreeValue
-extern __typeof (xmlSchemaFreeValue) xmlSchemaFreeValue __attribute((alias("xmlSchemaFreeValue__internal_alias")));
-#else
-#ifndef xmlSchemaFreeValue
-extern __typeof (xmlSchemaFreeValue) xmlSchemaFreeValue__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaFreeValue xmlSchemaFreeValue__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaFreeWildcard
-extern __typeof (xmlSchemaFreeWildcard) xmlSchemaFreeWildcard __attribute((alias("xmlSchemaFreeWildcard__internal_alias")));
-#else
-#ifndef xmlSchemaFreeWildcard
-extern __typeof (xmlSchemaFreeWildcard) xmlSchemaFreeWildcard__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaFreeWildcard xmlSchemaFreeWildcard__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaGetBuiltInListSimpleTypeItemType
-extern __typeof (xmlSchemaGetBuiltInListSimpleTypeItemType) xmlSchemaGetBuiltInListSimpleTypeItemType __attribute((alias("xmlSchemaGetBuiltInListSimpleTypeItemType__internal_alias")));
-#else
-#ifndef xmlSchemaGetBuiltInListSimpleTypeItemType
-extern __typeof (xmlSchemaGetBuiltInListSimpleTypeItemType) xmlSchemaGetBuiltInListSimpleTypeItemType__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaGetBuiltInListSimpleTypeItemType xmlSchemaGetBuiltInListSimpleTypeItemType__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaGetBuiltInType
-extern __typeof (xmlSchemaGetBuiltInType) xmlSchemaGetBuiltInType __attribute((alias("xmlSchemaGetBuiltInType__internal_alias")));
-#else
-#ifndef xmlSchemaGetBuiltInType
-extern __typeof (xmlSchemaGetBuiltInType) xmlSchemaGetBuiltInType__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaGetBuiltInType xmlSchemaGetBuiltInType__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaGetCanonValue
-extern __typeof (xmlSchemaGetCanonValue) xmlSchemaGetCanonValue __attribute((alias("xmlSchemaGetCanonValue__internal_alias")));
-#else
-#ifndef xmlSchemaGetCanonValue
-extern __typeof (xmlSchemaGetCanonValue) xmlSchemaGetCanonValue__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaGetCanonValue xmlSchemaGetCanonValue__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaGetCanonValueWhtsp
-extern __typeof (xmlSchemaGetCanonValueWhtsp) xmlSchemaGetCanonValueWhtsp __attribute((alias("xmlSchemaGetCanonValueWhtsp__internal_alias")));
-#else
-#ifndef xmlSchemaGetCanonValueWhtsp
-extern __typeof (xmlSchemaGetCanonValueWhtsp) xmlSchemaGetCanonValueWhtsp__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaGetCanonValueWhtsp xmlSchemaGetCanonValueWhtsp__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaGetFacetValueAsULong
-extern __typeof (xmlSchemaGetFacetValueAsULong) xmlSchemaGetFacetValueAsULong __attribute((alias("xmlSchemaGetFacetValueAsULong__internal_alias")));
-#else
-#ifndef xmlSchemaGetFacetValueAsULong
-extern __typeof (xmlSchemaGetFacetValueAsULong) xmlSchemaGetFacetValueAsULong__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaGetFacetValueAsULong xmlSchemaGetFacetValueAsULong__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaGetParserErrors
-extern __typeof (xmlSchemaGetParserErrors) xmlSchemaGetParserErrors __attribute((alias("xmlSchemaGetParserErrors__internal_alias")));
-#else
-#ifndef xmlSchemaGetParserErrors
-extern __typeof (xmlSchemaGetParserErrors) xmlSchemaGetParserErrors__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaGetParserErrors xmlSchemaGetParserErrors__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaGetPredefinedType
-extern __typeof (xmlSchemaGetPredefinedType) xmlSchemaGetPredefinedType __attribute((alias("xmlSchemaGetPredefinedType__internal_alias")));
-#else
-#ifndef xmlSchemaGetPredefinedType
-extern __typeof (xmlSchemaGetPredefinedType) xmlSchemaGetPredefinedType__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaGetPredefinedType xmlSchemaGetPredefinedType__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaGetValType
-extern __typeof (xmlSchemaGetValType) xmlSchemaGetValType __attribute((alias("xmlSchemaGetValType__internal_alias")));
-#else
-#ifndef xmlSchemaGetValType
-extern __typeof (xmlSchemaGetValType) xmlSchemaGetValType__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaGetValType xmlSchemaGetValType__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaGetValidErrors
-extern __typeof (xmlSchemaGetValidErrors) xmlSchemaGetValidErrors __attribute((alias("xmlSchemaGetValidErrors__internal_alias")));
-#else
-#ifndef xmlSchemaGetValidErrors
-extern __typeof (xmlSchemaGetValidErrors) xmlSchemaGetValidErrors__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaGetValidErrors xmlSchemaGetValidErrors__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaInitTypes
-extern __typeof (xmlSchemaInitTypes) xmlSchemaInitTypes __attribute((alias("xmlSchemaInitTypes__internal_alias")));
-#else
-#ifndef xmlSchemaInitTypes
-extern __typeof (xmlSchemaInitTypes) xmlSchemaInitTypes__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaInitTypes xmlSchemaInitTypes__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaIsBuiltInTypeFacet
-extern __typeof (xmlSchemaIsBuiltInTypeFacet) xmlSchemaIsBuiltInTypeFacet __attribute((alias("xmlSchemaIsBuiltInTypeFacet__internal_alias")));
-#else
-#ifndef xmlSchemaIsBuiltInTypeFacet
-extern __typeof (xmlSchemaIsBuiltInTypeFacet) xmlSchemaIsBuiltInTypeFacet__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaIsBuiltInTypeFacet xmlSchemaIsBuiltInTypeFacet__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaIsValid
-extern __typeof (xmlSchemaIsValid) xmlSchemaIsValid __attribute((alias("xmlSchemaIsValid__internal_alias")));
-#else
-#ifndef xmlSchemaIsValid
-extern __typeof (xmlSchemaIsValid) xmlSchemaIsValid__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaIsValid xmlSchemaIsValid__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaNewDocParserCtxt
-extern __typeof (xmlSchemaNewDocParserCtxt) xmlSchemaNewDocParserCtxt __attribute((alias("xmlSchemaNewDocParserCtxt__internal_alias")));
-#else
-#ifndef xmlSchemaNewDocParserCtxt
-extern __typeof (xmlSchemaNewDocParserCtxt) xmlSchemaNewDocParserCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaNewDocParserCtxt xmlSchemaNewDocParserCtxt__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaNewFacet
-extern __typeof (xmlSchemaNewFacet) xmlSchemaNewFacet __attribute((alias("xmlSchemaNewFacet__internal_alias")));
-#else
-#ifndef xmlSchemaNewFacet
-extern __typeof (xmlSchemaNewFacet) xmlSchemaNewFacet__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaNewFacet xmlSchemaNewFacet__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaNewMemParserCtxt
-extern __typeof (xmlSchemaNewMemParserCtxt) xmlSchemaNewMemParserCtxt __attribute((alias("xmlSchemaNewMemParserCtxt__internal_alias")));
-#else
-#ifndef xmlSchemaNewMemParserCtxt
-extern __typeof (xmlSchemaNewMemParserCtxt) xmlSchemaNewMemParserCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaNewMemParserCtxt xmlSchemaNewMemParserCtxt__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaNewNOTATIONValue
-extern __typeof (xmlSchemaNewNOTATIONValue) xmlSchemaNewNOTATIONValue __attribute((alias("xmlSchemaNewNOTATIONValue__internal_alias")));
-#else
-#ifndef xmlSchemaNewNOTATIONValue
-extern __typeof (xmlSchemaNewNOTATIONValue) xmlSchemaNewNOTATIONValue__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaNewNOTATIONValue xmlSchemaNewNOTATIONValue__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaNewParserCtxt
-extern __typeof (xmlSchemaNewParserCtxt) xmlSchemaNewParserCtxt __attribute((alias("xmlSchemaNewParserCtxt__internal_alias")));
-#else
-#ifndef xmlSchemaNewParserCtxt
-extern __typeof (xmlSchemaNewParserCtxt) xmlSchemaNewParserCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaNewParserCtxt xmlSchemaNewParserCtxt__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaNewQNameValue
-extern __typeof (xmlSchemaNewQNameValue) xmlSchemaNewQNameValue __attribute((alias("xmlSchemaNewQNameValue__internal_alias")));
-#else
-#ifndef xmlSchemaNewQNameValue
-extern __typeof (xmlSchemaNewQNameValue) xmlSchemaNewQNameValue__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaNewQNameValue xmlSchemaNewQNameValue__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaNewStringValue
-extern __typeof (xmlSchemaNewStringValue) xmlSchemaNewStringValue __attribute((alias("xmlSchemaNewStringValue__internal_alias")));
-#else
-#ifndef xmlSchemaNewStringValue
-extern __typeof (xmlSchemaNewStringValue) xmlSchemaNewStringValue__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaNewStringValue xmlSchemaNewStringValue__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaNewValidCtxt
-extern __typeof (xmlSchemaNewValidCtxt) xmlSchemaNewValidCtxt __attribute((alias("xmlSchemaNewValidCtxt__internal_alias")));
-#else
-#ifndef xmlSchemaNewValidCtxt
-extern __typeof (xmlSchemaNewValidCtxt) xmlSchemaNewValidCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaNewValidCtxt xmlSchemaNewValidCtxt__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaParse
-extern __typeof (xmlSchemaParse) xmlSchemaParse __attribute((alias("xmlSchemaParse__internal_alias")));
-#else
-#ifndef xmlSchemaParse
-extern __typeof (xmlSchemaParse) xmlSchemaParse__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaParse xmlSchemaParse__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaSAXPlug
-extern __typeof (xmlSchemaSAXPlug) xmlSchemaSAXPlug __attribute((alias("xmlSchemaSAXPlug__internal_alias")));
-#else
-#ifndef xmlSchemaSAXPlug
-extern __typeof (xmlSchemaSAXPlug) xmlSchemaSAXPlug__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaSAXPlug xmlSchemaSAXPlug__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaSAXUnplug
-extern __typeof (xmlSchemaSAXUnplug) xmlSchemaSAXUnplug __attribute((alias("xmlSchemaSAXUnplug__internal_alias")));
-#else
-#ifndef xmlSchemaSAXUnplug
-extern __typeof (xmlSchemaSAXUnplug) xmlSchemaSAXUnplug__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaSAXUnplug xmlSchemaSAXUnplug__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaSetParserErrors
-extern __typeof (xmlSchemaSetParserErrors) xmlSchemaSetParserErrors __attribute((alias("xmlSchemaSetParserErrors__internal_alias")));
-#else
-#ifndef xmlSchemaSetParserErrors
-extern __typeof (xmlSchemaSetParserErrors) xmlSchemaSetParserErrors__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaSetParserErrors xmlSchemaSetParserErrors__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaSetParserStructuredErrors
-extern __typeof (xmlSchemaSetParserStructuredErrors) xmlSchemaSetParserStructuredErrors __attribute((alias("xmlSchemaSetParserStructuredErrors__internal_alias")));
-#else
-#ifndef xmlSchemaSetParserStructuredErrors
-extern __typeof (xmlSchemaSetParserStructuredErrors) xmlSchemaSetParserStructuredErrors__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaSetParserStructuredErrors xmlSchemaSetParserStructuredErrors__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaSetValidErrors
-extern __typeof (xmlSchemaSetValidErrors) xmlSchemaSetValidErrors __attribute((alias("xmlSchemaSetValidErrors__internal_alias")));
-#else
-#ifndef xmlSchemaSetValidErrors
-extern __typeof (xmlSchemaSetValidErrors) xmlSchemaSetValidErrors__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaSetValidErrors xmlSchemaSetValidErrors__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaSetValidOptions
-extern __typeof (xmlSchemaSetValidOptions) xmlSchemaSetValidOptions __attribute((alias("xmlSchemaSetValidOptions__internal_alias")));
-#else
-#ifndef xmlSchemaSetValidOptions
-extern __typeof (xmlSchemaSetValidOptions) xmlSchemaSetValidOptions__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaSetValidOptions xmlSchemaSetValidOptions__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaSetValidStructuredErrors
-extern __typeof (xmlSchemaSetValidStructuredErrors) xmlSchemaSetValidStructuredErrors __attribute((alias("xmlSchemaSetValidStructuredErrors__internal_alias")));
-#else
-#ifndef xmlSchemaSetValidStructuredErrors
-extern __typeof (xmlSchemaSetValidStructuredErrors) xmlSchemaSetValidStructuredErrors__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaSetValidStructuredErrors xmlSchemaSetValidStructuredErrors__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaValPredefTypeNode
-extern __typeof (xmlSchemaValPredefTypeNode) xmlSchemaValPredefTypeNode __attribute((alias("xmlSchemaValPredefTypeNode__internal_alias")));
-#else
-#ifndef xmlSchemaValPredefTypeNode
-extern __typeof (xmlSchemaValPredefTypeNode) xmlSchemaValPredefTypeNode__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValPredefTypeNode xmlSchemaValPredefTypeNode__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaValPredefTypeNodeNoNorm
-extern __typeof (xmlSchemaValPredefTypeNodeNoNorm) xmlSchemaValPredefTypeNodeNoNorm __attribute((alias("xmlSchemaValPredefTypeNodeNoNorm__internal_alias")));
-#else
-#ifndef xmlSchemaValPredefTypeNodeNoNorm
-extern __typeof (xmlSchemaValPredefTypeNodeNoNorm) xmlSchemaValPredefTypeNodeNoNorm__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValPredefTypeNodeNoNorm xmlSchemaValPredefTypeNodeNoNorm__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaValidCtxtGetOptions
-extern __typeof (xmlSchemaValidCtxtGetOptions) xmlSchemaValidCtxtGetOptions __attribute((alias("xmlSchemaValidCtxtGetOptions__internal_alias")));
-#else
-#ifndef xmlSchemaValidCtxtGetOptions
-extern __typeof (xmlSchemaValidCtxtGetOptions) xmlSchemaValidCtxtGetOptions__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValidCtxtGetOptions xmlSchemaValidCtxtGetOptions__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaValidCtxtGetParserCtxt
-extern __typeof (xmlSchemaValidCtxtGetParserCtxt) xmlSchemaValidCtxtGetParserCtxt __attribute((alias("xmlSchemaValidCtxtGetParserCtxt__internal_alias")));
-#else
-#ifndef xmlSchemaValidCtxtGetParserCtxt
-extern __typeof (xmlSchemaValidCtxtGetParserCtxt) xmlSchemaValidCtxtGetParserCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValidCtxtGetParserCtxt xmlSchemaValidCtxtGetParserCtxt__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaValidateDoc
-extern __typeof (xmlSchemaValidateDoc) xmlSchemaValidateDoc __attribute((alias("xmlSchemaValidateDoc__internal_alias")));
-#else
-#ifndef xmlSchemaValidateDoc
-extern __typeof (xmlSchemaValidateDoc) xmlSchemaValidateDoc__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValidateDoc xmlSchemaValidateDoc__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaValidateFacet
-extern __typeof (xmlSchemaValidateFacet) xmlSchemaValidateFacet __attribute((alias("xmlSchemaValidateFacet__internal_alias")));
-#else
-#ifndef xmlSchemaValidateFacet
-extern __typeof (xmlSchemaValidateFacet) xmlSchemaValidateFacet__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValidateFacet xmlSchemaValidateFacet__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaValidateFacetWhtsp
-extern __typeof (xmlSchemaValidateFacetWhtsp) xmlSchemaValidateFacetWhtsp __attribute((alias("xmlSchemaValidateFacetWhtsp__internal_alias")));
-#else
-#ifndef xmlSchemaValidateFacetWhtsp
-extern __typeof (xmlSchemaValidateFacetWhtsp) xmlSchemaValidateFacetWhtsp__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValidateFacetWhtsp xmlSchemaValidateFacetWhtsp__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaValidateFile
-extern __typeof (xmlSchemaValidateFile) xmlSchemaValidateFile __attribute((alias("xmlSchemaValidateFile__internal_alias")));
-#else
-#ifndef xmlSchemaValidateFile
-extern __typeof (xmlSchemaValidateFile) xmlSchemaValidateFile__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValidateFile xmlSchemaValidateFile__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaValidateLengthFacet
-extern __typeof (xmlSchemaValidateLengthFacet) xmlSchemaValidateLengthFacet __attribute((alias("xmlSchemaValidateLengthFacet__internal_alias")));
-#else
-#ifndef xmlSchemaValidateLengthFacet
-extern __typeof (xmlSchemaValidateLengthFacet) xmlSchemaValidateLengthFacet__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValidateLengthFacet xmlSchemaValidateLengthFacet__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaValidateLengthFacetWhtsp
-extern __typeof (xmlSchemaValidateLengthFacetWhtsp) xmlSchemaValidateLengthFacetWhtsp __attribute((alias("xmlSchemaValidateLengthFacetWhtsp__internal_alias")));
-#else
-#ifndef xmlSchemaValidateLengthFacetWhtsp
-extern __typeof (xmlSchemaValidateLengthFacetWhtsp) xmlSchemaValidateLengthFacetWhtsp__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValidateLengthFacetWhtsp xmlSchemaValidateLengthFacetWhtsp__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaValidateListSimpleTypeFacet
-extern __typeof (xmlSchemaValidateListSimpleTypeFacet) xmlSchemaValidateListSimpleTypeFacet __attribute((alias("xmlSchemaValidateListSimpleTypeFacet__internal_alias")));
-#else
-#ifndef xmlSchemaValidateListSimpleTypeFacet
-extern __typeof (xmlSchemaValidateListSimpleTypeFacet) xmlSchemaValidateListSimpleTypeFacet__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValidateListSimpleTypeFacet xmlSchemaValidateListSimpleTypeFacet__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaValidateOneElement
-extern __typeof (xmlSchemaValidateOneElement) xmlSchemaValidateOneElement __attribute((alias("xmlSchemaValidateOneElement__internal_alias")));
-#else
-#ifndef xmlSchemaValidateOneElement
-extern __typeof (xmlSchemaValidateOneElement) xmlSchemaValidateOneElement__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValidateOneElement xmlSchemaValidateOneElement__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaValidatePredefinedType
-extern __typeof (xmlSchemaValidatePredefinedType) xmlSchemaValidatePredefinedType __attribute((alias("xmlSchemaValidatePredefinedType__internal_alias")));
-#else
-#ifndef xmlSchemaValidatePredefinedType
-extern __typeof (xmlSchemaValidatePredefinedType) xmlSchemaValidatePredefinedType__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValidatePredefinedType xmlSchemaValidatePredefinedType__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemas
-#undef xmlSchemaValidateStream
-extern __typeof (xmlSchemaValidateStream) xmlSchemaValidateStream __attribute((alias("xmlSchemaValidateStream__internal_alias")));
-#else
-#ifndef xmlSchemaValidateStream
-extern __typeof (xmlSchemaValidateStream) xmlSchemaValidateStream__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValidateStream xmlSchemaValidateStream__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaValueAppend
-extern __typeof (xmlSchemaValueAppend) xmlSchemaValueAppend __attribute((alias("xmlSchemaValueAppend__internal_alias")));
-#else
-#ifndef xmlSchemaValueAppend
-extern __typeof (xmlSchemaValueAppend) xmlSchemaValueAppend__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValueAppend xmlSchemaValueAppend__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaValueGetAsBoolean
-extern __typeof (xmlSchemaValueGetAsBoolean) xmlSchemaValueGetAsBoolean __attribute((alias("xmlSchemaValueGetAsBoolean__internal_alias")));
-#else
-#ifndef xmlSchemaValueGetAsBoolean
-extern __typeof (xmlSchemaValueGetAsBoolean) xmlSchemaValueGetAsBoolean__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValueGetAsBoolean xmlSchemaValueGetAsBoolean__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaValueGetAsString
-extern __typeof (xmlSchemaValueGetAsString) xmlSchemaValueGetAsString __attribute((alias("xmlSchemaValueGetAsString__internal_alias")));
-#else
-#ifndef xmlSchemaValueGetAsString
-extern __typeof (xmlSchemaValueGetAsString) xmlSchemaValueGetAsString__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValueGetAsString xmlSchemaValueGetAsString__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaValueGetNext
-extern __typeof (xmlSchemaValueGetNext) xmlSchemaValueGetNext __attribute((alias("xmlSchemaValueGetNext__internal_alias")));
-#else
-#ifndef xmlSchemaValueGetNext
-extern __typeof (xmlSchemaValueGetNext) xmlSchemaValueGetNext__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaValueGetNext xmlSchemaValueGetNext__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlschemastypes
-#undef xmlSchemaWhiteSpaceReplace
-extern __typeof (xmlSchemaWhiteSpaceReplace) xmlSchemaWhiteSpaceReplace __attribute((alias("xmlSchemaWhiteSpaceReplace__internal_alias")));
-#else
-#ifndef xmlSchemaWhiteSpaceReplace
-extern __typeof (xmlSchemaWhiteSpaceReplace) xmlSchemaWhiteSpaceReplace__internal_alias __attribute((visibility("hidden")));
-#define xmlSchemaWhiteSpaceReplace xmlSchemaWhiteSpaceReplace__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_tree
 #undef xmlSearchNs
 extern __typeof (xmlSearchNs) xmlSearchNs __attribute((alias("xmlSearchNs__internal_alias")));
@@ -8163,7 +7143,7 @@ extern __typeof (xmlSetNs) xmlSetNs__internal_alias __attribute((visibility("hid
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlSetNsProp
 extern __typeof (xmlSetNsProp) xmlSetNsProp __attribute((alias("xmlSetNsProp__internal_alias")));
@@ -8175,7 +7155,7 @@ extern __typeof (xmlSetNsProp) xmlSetNsProp__internal_alias __attribute((visibil
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlSetProp
 extern __typeof (xmlSetProp) xmlSetProp __attribute((alias("xmlSetProp__internal_alias")));
@@ -9265,54 +8245,6 @@ extern __typeof (xmlTextReaderReadString) xmlTextReaderReadString__internal_alia
 #endif
 #endif
 
-#if defined(LIBXML_READER_ENABLED) && defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlreader
-#undef xmlTextReaderRelaxNGSetSchema
-extern __typeof (xmlTextReaderRelaxNGSetSchema) xmlTextReaderRelaxNGSetSchema __attribute((alias("xmlTextReaderRelaxNGSetSchema__internal_alias")));
-#else
-#ifndef xmlTextReaderRelaxNGSetSchema
-extern __typeof (xmlTextReaderRelaxNGSetSchema) xmlTextReaderRelaxNGSetSchema__internal_alias __attribute((visibility("hidden")));
-#define xmlTextReaderRelaxNGSetSchema xmlTextReaderRelaxNGSetSchema__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_READER_ENABLED) && defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlreader
-#undef xmlTextReaderRelaxNGValidate
-extern __typeof (xmlTextReaderRelaxNGValidate) xmlTextReaderRelaxNGValidate __attribute((alias("xmlTextReaderRelaxNGValidate__internal_alias")));
-#else
-#ifndef xmlTextReaderRelaxNGValidate
-extern __typeof (xmlTextReaderRelaxNGValidate) xmlTextReaderRelaxNGValidate__internal_alias __attribute((visibility("hidden")));
-#define xmlTextReaderRelaxNGValidate xmlTextReaderRelaxNGValidate__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_READER_ENABLED) && defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlreader
-#undef xmlTextReaderSchemaValidate
-extern __typeof (xmlTextReaderSchemaValidate) xmlTextReaderSchemaValidate __attribute((alias("xmlTextReaderSchemaValidate__internal_alias")));
-#else
-#ifndef xmlTextReaderSchemaValidate
-extern __typeof (xmlTextReaderSchemaValidate) xmlTextReaderSchemaValidate__internal_alias __attribute((visibility("hidden")));
-#define xmlTextReaderSchemaValidate xmlTextReaderSchemaValidate__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_READER_ENABLED) && defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlreader
-#undef xmlTextReaderSchemaValidateCtxt
-extern __typeof (xmlTextReaderSchemaValidateCtxt) xmlTextReaderSchemaValidateCtxt __attribute((alias("xmlTextReaderSchemaValidateCtxt__internal_alias")));
-#else
-#ifndef xmlTextReaderSchemaValidateCtxt
-extern __typeof (xmlTextReaderSchemaValidateCtxt) xmlTextReaderSchemaValidateCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlTextReaderSchemaValidateCtxt xmlTextReaderSchemaValidateCtxt__internal_alias
-#endif
-#endif
-#endif
-
 #if defined(LIBXML_READER_ENABLED)
 #ifdef bottom_xmlreader
 #undef xmlTextReaderSetErrorHandler
@@ -9333,18 +8265,6 @@ extern __typeof (xmlTextReaderSetParserProp) xmlTextReaderSetParserProp __attrib
 #ifndef xmlTextReaderSetParserProp
 extern __typeof (xmlTextReaderSetParserProp) xmlTextReaderSetParserProp__internal_alias __attribute((visibility("hidden")));
 #define xmlTextReaderSetParserProp xmlTextReaderSetParserProp__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_READER_ENABLED) && defined(LIBXML_SCHEMAS_ENABLED)
-#ifdef bottom_xmlreader
-#undef xmlTextReaderSetSchema
-extern __typeof (xmlTextReaderSetSchema) xmlTextReaderSetSchema __attribute((alias("xmlTextReaderSetSchema__internal_alias")));
-#else
-#ifndef xmlTextReaderSetSchema
-extern __typeof (xmlTextReaderSetSchema) xmlTextReaderSetSchema__internal_alias __attribute((visibility("hidden")));
-#define xmlTextReaderSetSchema xmlTextReaderSetSchema__internal_alias
 #endif
 #endif
 #endif
@@ -12585,7 +11505,7 @@ extern __typeof (xmlUnlockLibrary) xmlUnlockLibrary__internal_alias __attribute(
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlUnsetNsProp
 extern __typeof (xmlUnsetNsProp) xmlUnsetNsProp __attribute((alias("xmlUnsetNsProp__internal_alias")));
@@ -12597,7 +11517,7 @@ extern __typeof (xmlUnsetNsProp) xmlUnsetNsProp__internal_alias __attribute((vis
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlUnsetProp
 extern __typeof (xmlUnsetProp) xmlUnsetProp __attribute((alias("xmlUnsetProp__internal_alias")));
@@ -12765,7 +11685,7 @@ extern __typeof (xmlValidateElementDecl) xmlValidateElementDecl__internal_alias 
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
 #ifdef bottom_tree
 #undef xmlValidateNCName
 extern __typeof (xmlValidateNCName) xmlValidateNCName __attribute((alias("xmlValidateNCName__internal_alias")));
@@ -12777,7 +11697,7 @@ extern __typeof (xmlValidateNCName) xmlValidateNCName__internal_alias __attribut
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlValidateNMToken
 extern __typeof (xmlValidateNMToken) xmlValidateNMToken __attribute((alias("xmlValidateNMToken__internal_alias")));
@@ -12789,7 +11709,7 @@ extern __typeof (xmlValidateNMToken) xmlValidateNMToken__internal_alias __attrib
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlValidateName
 extern __typeof (xmlValidateName) xmlValidateName __attribute((alias("xmlValidateName__internal_alias")));
@@ -12861,7 +11781,7 @@ extern __typeof (xmlValidateNotationDecl) xmlValidateNotationDecl__internal_alia
 #endif
 #endif
 
-#if defined(LIBXML_VALID_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_VALID_ENABLED)
 #ifdef bottom_valid
 #undef xmlValidateNotationUse
 extern __typeof (xmlValidateNotationUse) xmlValidateNotationUse __attribute((alias("xmlValidateNotationUse__internal_alias")));
@@ -12945,7 +11865,7 @@ extern __typeof (xmlValidatePushElement) xmlValidatePushElement__internal_alias 
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlValidateQName
 extern __typeof (xmlValidateQName) xmlValidateQName __attribute((alias("xmlValidateQName__internal_alias")));

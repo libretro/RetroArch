@@ -343,7 +343,7 @@ xmlSplitQName3(const xmlChar *name, int *len) {
 
 #define CUR_SCHAR(s, l) xmlStringCurrentChar(NULL, s, &l)
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
 /**
  * xmlValidateNCName:
  * @value: the value to check
@@ -417,7 +417,7 @@ try_complex:
 }
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 /**
  * xmlValidateQName:
  * @value: the value to check
@@ -1868,8 +1868,7 @@ xmlNewPropInternal(xmlNodePtr node, xmlNsPtr ns,
     return (cur);
 }
 
-#if defined(LIBXML_TREE_ENABLED) || \
-    defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 /**
  * xmlNewProp:
  * @node:  the holding node
@@ -2786,7 +2785,7 @@ xmlSetListDoc(xmlNodePtr list, xmlDocPtr doc) {
     }
 }
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 /**
  * xmlNewChild:
  * @parent:  the parent node
@@ -2991,8 +2990,7 @@ xmlAddNextSibling(xmlNodePtr cur, xmlNodePtr elem) {
     return(elem);
 }
 
-#if defined(LIBXML_TREE_ENABLED) || \
-    defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 /**
  * xmlAddPrevSibling:
  * @cur:  the child node
@@ -4416,7 +4414,7 @@ xmlCopyDtd(xmlDtdPtr dtd) {
 }
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 /**
  * xmlCopyDoc:
  * @doc:  the document
@@ -5693,7 +5691,7 @@ xmlTextMerge(xmlNodePtr first, xmlNodePtr second) {
     return(first);
 }
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 /**
  * xmlGetNsList:
  * @doc:  the document
@@ -6574,7 +6572,7 @@ xmlGetNsProp(xmlNodePtr node, const xmlChar *name, const xmlChar *nameSpace) {
     return(xmlGetPropNodeValueInternal(prop));
 }
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 /**
  * xmlUnsetProp:
  * @node:  the node
@@ -6618,7 +6616,7 @@ xmlUnsetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name) {
 }
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 /**
  * xmlSetProp:
  * @node:  the node

@@ -376,12 +376,12 @@ XMLPUBFUN int XMLCALL
 					 xmlDocPtr doc);
 #endif /* LIBXML_VALID_ENABLED */
 
-#if defined(LIBXML_VALID_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_VALID_ENABLED)
 XMLPUBFUN int XMLCALL		
 		xmlValidateNotationUse	(xmlValidCtxtPtr ctxt,
 					 xmlDocPtr doc,
 					 const xmlChar *notationName);
-#endif /* LIBXML_VALID_ENABLED or LIBXML_SCHEMAS_ENABLED */
+#endif /* LIBXML_VALID_ENABLED */
 
 XMLPUBFUN int XMLCALL		
 		xmlIsMixedElement	(xmlDocPtr doc,

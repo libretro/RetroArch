@@ -613,13 +613,13 @@ struct _xmlDOMWrapCtxt {
 /*
  * Some helper functions
  */
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
 XMLPUBFUN int XMLCALL
 		xmlValidateNCName	(const xmlChar *value,
 					 int space);
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 XMLPUBFUN int XMLCALL		
 		xmlValidateQName	(const xmlChar *value,
 					 int space);
@@ -736,8 +736,7 @@ XMLPUBFUN xmlAttrPtr XMLCALL
 		xmlNewDocProp		(xmlDocPtr doc,
 					 const xmlChar *name,
 					 const xmlChar *value);
-#if defined(LIBXML_TREE_ENABLED) ||  \
-    defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 XMLPUBFUN xmlAttrPtr XMLCALL	
 		xmlNewProp		(xmlNodePtr node,
 					 const xmlChar *name,
@@ -767,11 +766,11 @@ XMLPUBFUN xmlAttrPtr XMLCALL
 XMLPUBFUN xmlDtdPtr XMLCALL	
 		xmlCopyDtd		(xmlDtdPtr dtd);
 #endif /* LIBXML_TREE_ENABLED */
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 XMLPUBFUN xmlDocPtr XMLCALL	
 		xmlCopyDoc		(xmlDocPtr doc,
 					 int recursive);
-#endif /* defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) */
+#endif /* defined(LIBXML_TREE_ENABLED) */
 /*
  * Creating new nodes.
  */
@@ -791,7 +790,7 @@ XMLPUBFUN xmlNodePtr XMLCALL
 XMLPUBFUN xmlNodePtr XMLCALL	
 		xmlNewNodeEatName	(xmlNsPtr ns,
 					 xmlChar *name);
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 XMLPUBFUN xmlNodePtr XMLCALL	
 		xmlNewChild		(xmlNodePtr parent,
 					 xmlNsPtr ns,
@@ -901,12 +900,11 @@ XMLPUBFUN xmlNodePtr XMLCALL
 		xmlReplaceNode		(xmlNodePtr old,
 					 xmlNodePtr cur);
 #endif /* defined(LIBXML_TREE_ENABLED) || defined(LIBXML_WRITER_ENABLED) */
-#if defined(LIBXML_TREE_ENABLED) || \
-    defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 XMLPUBFUN xmlNodePtr XMLCALL	
 		xmlAddPrevSibling	(xmlNodePtr cur,
 					 xmlNodePtr elem);
-#endif /* LIBXML_TREE_ENABLED || LIBXML_SCHEMAS_ENABLED */
+#endif /* LIBXML_TREE_ENABLED */
 XMLPUBFUN xmlNodePtr XMLCALL	
 		xmlAddSibling		(xmlNodePtr cur,
 					 xmlNodePtr elem);
@@ -943,7 +941,7 @@ XMLPUBFUN xmlNsPtr XMLCALL
 		xmlSearchNsByHref	(xmlDocPtr doc,
 					 xmlNodePtr node,
 					 const xmlChar *href);
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 XMLPUBFUN xmlNsPtr * XMLCALL	
 		xmlGetNsList		(xmlDocPtr doc,
 					 xmlNodePtr node);
@@ -960,7 +958,7 @@ XMLPUBFUN xmlNsPtr XMLCALL
 /*
  * Changing the content.
  */
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 XMLPUBFUN xmlAttrPtr XMLCALL	
 		xmlSetProp		(xmlNodePtr node,
 					 const xmlChar *name,
@@ -970,7 +968,7 @@ XMLPUBFUN xmlAttrPtr XMLCALL
 					 xmlNsPtr ns,
 					 const xmlChar *name,
 					 const xmlChar *value);
-#endif /* defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) */
+#endif /* defined(LIBXML_TREE_ENABLED) */
 XMLPUBFUN xmlChar * XMLCALL	
 		xmlGetNoNsProp		(xmlNodePtr node,
 					 const xmlChar *name);
@@ -1052,7 +1050,7 @@ XMLPUBFUN void XMLCALL
  */
 XMLPUBFUN int XMLCALL		
 		xmlRemoveProp		(xmlAttrPtr cur);
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 XMLPUBFUN int XMLCALL		
 		xmlUnsetNsProp		(xmlNodePtr node,
 					 xmlNsPtr ns,
@@ -1060,7 +1058,7 @@ XMLPUBFUN int XMLCALL
 XMLPUBFUN int XMLCALL		
 		xmlUnsetProp		(xmlNodePtr node,
 					 const xmlChar *name);
-#endif /* defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) */
+#endif /* defined(LIBXML_TREE_ENABLED) */
 
 /*
  * Internal, don't use.

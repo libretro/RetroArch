@@ -13,10 +13,6 @@
 #include <libxml/xmlversion.h>
 #include <libxml/tree.h>
 #include <libxml/xmlIO.h>
-#ifdef LIBXML_SCHEMAS_ENABLED
-#include <libxml/relaxng.h>
-#include <libxml/xmlschemas.h>
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -274,24 +270,6 @@ XMLPUBFUN int XMLCALL
 		    xmlTextReaderNextSibling	(xmlTextReaderPtr reader);
 XMLPUBFUN int XMLCALL
 		    xmlTextReaderIsValid	(xmlTextReaderPtr reader);
-#ifdef LIBXML_SCHEMAS_ENABLED
-XMLPUBFUN int XMLCALL
-		    xmlTextReaderRelaxNGValidate(xmlTextReaderPtr reader,
-						 const char *rng);
-XMLPUBFUN int XMLCALL
-		    xmlTextReaderRelaxNGSetSchema(xmlTextReaderPtr reader,
-						 xmlRelaxNGPtr schema);
-XMLPUBFUN int XMLCALL
-		    xmlTextReaderSchemaValidate	(xmlTextReaderPtr reader,
-						 const char *xsd);
-XMLPUBFUN int XMLCALL
-		    xmlTextReaderSchemaValidateCtxt(xmlTextReaderPtr reader,
-						 xmlSchemaValidCtxtPtr ctxt,
-						 int options);
-XMLPUBFUN int XMLCALL
-		    xmlTextReaderSetSchema	(xmlTextReaderPtr reader,
-						 xmlSchemaPtr schema);
-#endif
 XMLPUBFUN const xmlChar * XMLCALL
 		    xmlTextReaderConstXmlVersion(xmlTextReaderPtr reader);
 XMLPUBFUN int XMLCALL

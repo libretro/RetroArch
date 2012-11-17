@@ -39,7 +39,6 @@ LOCAL_LIBXML_SRC_FILES = $(LIBXML_PATH)/c14n.c \
 							$(LIBXML_PATH)/list.c \
 							$(LIBXML_PATH)/parser.c \
 							$(LIBXML_PATH)/parserInternals.c \
-							$(LIBXML_PATH)/relaxng.c \
 							$(LIBXML_PATH)/SAX.c \
 							$(LIBXML_PATH)/SAX2.c \
 							$(LIBXML_PATH)/threads.c \
@@ -52,8 +51,6 @@ LOCAL_LIBXML_SRC_FILES = $(LIBXML_PATH)/c14n.c \
 							$(LIBXML_PATH)/xmlreader.c \
 							$(LIBXML_PATH)/xmlregexp.c \
 							$(LIBXML_PATH)/xmlsave.c \
-							$(LIBXML_PATH)/xmlschemas.c \
-							$(LIBXML_PATH)/xmlschemastypes.c \
 							$(LIBXML_PATH)/xmlstring.c \
 							$(LIBXML_PATH)/xmlunicode.c \
 							$(LIBXML_PATH)/xmlwriter.c

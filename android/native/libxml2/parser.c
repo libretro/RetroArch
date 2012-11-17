@@ -54,10 +54,6 @@
 #include <libxml/encoding.h>
 #include <libxml/xmlIO.h>
 #include <libxml/uri.h>
-#ifdef LIBXML_SCHEMAS_ENABLED
-#include <libxml/xmlschemastypes.h>
-#include <libxml/relaxng.h>
-#endif
 #ifdef HAVE_CTYPE_H
 #include <ctype.h>
 #endif
@@ -882,11 +878,7 @@ xmlHasFeature(xmlFeature feature)
             return(0);
 #endif
         case XML_WITH_SCHEMAS:
-#ifdef LIBXML_SCHEMAS_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_SCHEMATRON:
             return(0);
         case XML_WITH_MODULES:
@@ -14073,10 +14065,6 @@ xmlCleanupParser(void) {
     xmlCleanupInputCallbacks();
 #ifdef LIBXML_OUTPUT_ENABLED
     xmlCleanupOutputCallbacks();
-#endif
-#ifdef LIBXML_SCHEMAS_ENABLED
-    xmlSchemaCleanupTypes();
-    xmlRelaxNGCleanupTypes();
 #endif
     xmlCleanupGlobals();
     xmlResetLastError();
