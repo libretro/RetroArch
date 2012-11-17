@@ -343,7 +343,7 @@ xmlSplitQName3(const xmlChar *name, int *len) {
 
 #define CUR_SCHAR(s, l) xmlStringCurrentChar(NULL, s, &l)
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 /**
  * xmlValidateNCName:
  * @value: the value to check
@@ -3781,7 +3781,7 @@ xmlUnlinkNode(xmlNodePtr cur) {
     cur->next = cur->prev = NULL;
 }
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 /**
  * xmlReplaceNode:
  * @old:  the old node
@@ -4781,7 +4781,7 @@ xmlDocGetRootElement(xmlDocPtr doc) {
     return(ret);
 }
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 /**
  * xmlDocSetRootElement:
  * @doc:  the document

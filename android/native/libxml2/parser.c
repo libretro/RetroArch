@@ -793,11 +793,7 @@ xmlHasFeature(xmlFeature feature)
         case XML_WITH_PATTERN:
             return(0);
         case XML_WITH_WRITER:
-#ifdef LIBXML_WRITER_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_SAX1:
             return(0);
         case XML_WITH_FTP:
@@ -889,11 +885,7 @@ xmlHasFeature(xmlFeature feature)
             return(0);
 #endif
         case XML_WITH_ZLIB:
-#ifdef LIBXML_ZLIB_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_LZMA:
 #ifdef LIBXML_LZMA_ENABLED
             return(1);

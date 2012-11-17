@@ -50,8 +50,7 @@ LOCAL_LIBXML_SRC_FILES = $(LIBXML_PATH)/c14n.c \
 							$(LIBXML_PATH)/xmlregexp.c \
 							$(LIBXML_PATH)/xmlsave.c \
 							$(LIBXML_PATH)/xmlstring.c \
-							$(LIBXML_PATH)/xmlunicode.c \
-							$(LIBXML_PATH)/xmlwriter.c
+							$(LIBXML_PATH)/xmlunicode.c
 LOCAL_SRC_FILES    =	$(RARCH_PATH)/console/griffin/griffin.c $(LOCAL_LIBXML_SRC_FILES)
 
 

@@ -613,7 +613,7 @@ struct _xmlDOMWrapCtxt {
 /*
  * Some helper functions
  */
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 XMLPUBFUN int XMLCALL
 		xmlValidateNCName	(const xmlChar *value,
 					 int space);
@@ -873,11 +873,11 @@ XMLPUBFUN int XMLCALL
 /*
  * Changing the structure.
  */
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 XMLPUBFUN xmlNodePtr XMLCALL	
 		xmlDocSetRootElement	(xmlDocPtr doc,
 					 xmlNodePtr root);
-#endif /* defined(LIBXML_TREE_ENABLED) || defined(LIBXML_WRITER_ENABLED) */
+#endif /* defined(LIBXML_TREE_ENABLED) */
 #ifdef LIBXML_TREE_ENABLED
 XMLPUBFUN void XMLCALL		
 		xmlNodeSetName		(xmlNodePtr cur,
@@ -889,11 +889,11 @@ XMLPUBFUN xmlNodePtr XMLCALL
 XMLPUBFUN xmlNodePtr XMLCALL	
 		xmlAddChildList		(xmlNodePtr parent,
 					 xmlNodePtr cur);
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 XMLPUBFUN xmlNodePtr XMLCALL	
 		xmlReplaceNode		(xmlNodePtr old,
 					 xmlNodePtr cur);
-#endif /* defined(LIBXML_TREE_ENABLED) || defined(LIBXML_WRITER_ENABLED) */
+#endif /* defined(LIBXML_TREE_ENABLED) */
 #if defined(LIBXML_TREE_ENABLED)
 XMLPUBFUN xmlNodePtr XMLCALL	
 		xmlAddPrevSibling	(xmlNodePtr cur,

@@ -134,15 +134,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_WRITER_ENABLED:
- *
- * Whether the xmlWriter saving interface is configured in
- */
-#if 1
-#define LIBXML_WRITER_ENABLED
-#endif
-
-/**
  * LIBXML_VALID_ENABLED:
  *
  * Whether the DTD validation support is configured in
@@ -254,15 +245,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
  * the string suffix used by dynamic modules (usually shared libraries)
  */
 #define LIBXML_MODULE_EXTENSION "" 
-#endif
-
-/**
- * LIBXML_ZLIB_ENABLED:
- *
- * Whether the Zlib support is compiled in
- */
-#if 0
-#define LIBXML_ZLIB_ENABLED
 #endif
 
 /**
