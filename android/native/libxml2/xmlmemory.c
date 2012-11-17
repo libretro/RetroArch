@@ -62,7 +62,6 @@ void xmlMallocBreakpoint(void);
  *									*
  ************************************************************************/
 
-#if !defined(LIBXML_THREAD_ENABLED) && !defined(LIBXML_THREAD_ALLOC_ENABLED)
 #ifdef xmlMalloc
 #undef xmlMalloc
 #endif
@@ -71,7 +70,6 @@ void xmlMallocBreakpoint(void);
 #endif
 #ifdef xmlMemStrdup
 #undef xmlMemStrdup
-#endif
 #endif
 
 /*

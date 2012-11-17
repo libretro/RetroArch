@@ -761,11 +761,7 @@ xmlHasFeature(xmlFeature feature)
 {
     switch (feature) {
 	case XML_WITH_THREAD:
-#ifdef LIBXML_THREAD_ENABLED
-	    return(1);
-#else
 	    return(0);
-#endif
         case XML_WITH_TREE:
 #ifdef LIBXML_TREE_ENABLED
             return(1);
@@ -12818,10 +12814,6 @@ xmlInitParser(void) {
     if (xmlParserInitialized != 0)
 	return;
 
-#ifdef LIBXML_THREAD_ENABLED
-    __xmlGlobalInitMutexLock();
-    if (xmlParserInitialized == 0) {
-#endif
 	xmlInitThreads();
 	xmlInitGlobals();
 	if ((xmlGenericError == xmlGenericErrorDefaultFunc) ||
@@ -12835,10 +12827,6 @@ xmlInitParser(void) {
 	xmlRegisterDefaultOutputCallbacks();
 #endif /* LIBXML_OUTPUT_ENABLED */
 	xmlParserInitialized = 1;
-#ifdef LIBXML_THREAD_ENABLED
-    }
-    __xmlGlobalInitMutexUnlock();
-#endif
 }
 
 /**

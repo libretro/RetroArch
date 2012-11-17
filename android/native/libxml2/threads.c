@@ -42,8 +42,6 @@
 #include <note.h>
 #endif
 
-/* #define DEBUG_THREADS */
-
 #ifdef HAVE_PTHREAD_H
 
 static int libxml_is_threaded = -1;
@@ -172,9 +170,6 @@ static vint32 global_init_count = 0;
 
 static xmlRMutexPtr xmlLibraryLock = NULL;
 
-#ifdef LIBXML_THREAD_ENABLED
-static void xmlOnceInit(void);
-#endif
 
 /**
  * xmlNewMutex:
@@ -248,11 +243,6 @@ xmlMutexLock(xmlMutexPtr tok)
     WaitForSingleObject(tok->mutex, INFINITE);
 #elif defined HAVE_BEOS_THREADS
     if (acquire_sem(tok->sem) != B_NO_ERROR) {
-#ifdef DEBUG_THREADS
-        xmlGenericError(xmlGenericErrorContext,
-                        "xmlMutexLock():BeOS:Couldn't aquire semaphore\n");
-        exit();
-#endif
     }
     tok->tid = find_thread(NULL);
 #endif
@@ -496,11 +486,6 @@ __xmlGlobalInitMutexLock(void)
 
     /* Acquire the chosen semaphore */
     if (acquire_sem(global_init_lock) != B_NO_ERROR) {
-#ifdef DEBUG_THREADS
-        xmlGenericError(xmlGenericErrorContext,
-                        "xmlGlobalInitMutexLock():BeOS:Couldn't acquire semaphore\n");
-        exit();
-#endif
     }
 #endif
 }
@@ -544,55 +529,6 @@ __xmlGlobalInitMutexDestroy(void)
  *			Per thread global state handling		*
  *									*
  ************************************************************************/
-
-#ifdef LIBXML_THREAD_ENABLED
-#ifdef xmlLastError
-#undef xmlLastError
-#endif
-
-/**
- * xmlFreeGlobalState:
- * @state:  a thread global state
- *
- * xmlFreeGlobalState() is called when a thread terminates with a non-NULL
- * global state. It is is used here to reclaim memory resources.
- */
-static void
-xmlFreeGlobalState(void *state)
-{
-    xmlGlobalState *gs = (xmlGlobalState *) state;
-
-    /* free any memory allocated in the thread's xmlLastError */
-    xmlResetError(&(gs->xmlLastError));
-    free(state);
-}
-
-/**
- * xmlNewGlobalState:
- *
- * xmlNewGlobalState() allocates a global state. This structure is used to
- * hold all data for use by a thread when supporting backwards compatibility
- * of libxml2 to pre-thread-safe behaviour.
- *
- * Returns the newly allocated xmlGlobalStatePtr or NULL in case of error
- */
-static xmlGlobalStatePtr
-xmlNewGlobalState(void)
-{
-    xmlGlobalState *gs;
-
-    gs = malloc(sizeof(xmlGlobalState));
-    if (gs == NULL) {
-	xmlGenericError(xmlGenericErrorContext,
-			"xmlGetGlobalState: out of memory\n");
-        return (NULL);
-    }
-
-    memset(gs, 0, sizeof(xmlGlobalState));
-    xmlInitializeGlobalState(gs);
-    return (gs);
-}
-#endif /* LIBXML_THREAD_ENABLED */
 
 #ifdef HAVE_PTHREAD_H
 #elif defined HAVE_WIN32_THREADS
@@ -808,9 +744,6 @@ xmlIsMainThread(void)
     xmlOnceInit();
 #endif
 
-#ifdef DEBUG_THREADS
-    xmlGenericError(xmlGenericErrorContext, "xmlIsMainThread()\n");
-#endif
 #ifdef HAVE_PTHREAD_H
     return (pthread_equal(mainthread,pthread_self()));
 #elif defined HAVE_WIN32_THREADS
@@ -831,9 +764,6 @@ xmlIsMainThread(void)
 void
 xmlLockLibrary(void)
 {
-#ifdef DEBUG_THREADS
-    xmlGenericError(xmlGenericErrorContext, "xmlLockLibrary()\n");
-#endif
     xmlRMutexLock(xmlLibraryLock);
 }
 
@@ -846,9 +776,6 @@ xmlLockLibrary(void)
 void
 xmlUnlockLibrary(void)
 {
-#ifdef DEBUG_THREADS
-    xmlGenericError(xmlGenericErrorContext, "xmlUnlockLibrary()\n");
-#endif
     xmlRMutexUnlock(xmlLibraryLock);
 }
 
@@ -909,9 +836,6 @@ xmlInitThreads(void)
 void
 xmlCleanupThreads(void)
 {
-#ifdef DEBUG_THREADS
-    xmlGenericError(xmlGenericErrorContext, "xmlCleanupThreads()\n");
-#endif
 #ifdef HAVE_PTHREAD_H
     if ((libxml_is_threaded)  && (pthread_key_delete != NULL))
         pthread_key_delete(globalkey);
@@ -936,49 +860,6 @@ xmlCleanupThreads(void)
     DeleteCriticalSection(&cleanup_helpers_cs);
 #endif
 }
-
-#ifdef LIBXML_THREAD_ENABLED
-
-/**
- * xmlOnceInit
- *
- * xmlOnceInit() is used to initialize the value of mainthread for use
- * in other routines. This function should only be called using
- * pthread_once() in association with the once_control variable to ensure
- * that the function is only called once. See man pthread_once for more
- * details.
- */
-static void
-xmlOnceInit(void)
-{
-#ifdef HAVE_PTHREAD_H
-    (void) pthread_key_create(&globalkey, xmlFreeGlobalState);
-    mainthread = pthread_self();
-#elif defined(HAVE_WIN32_THREADS)
-    if (!run_once.done) {
-        if (InterlockedIncrement(&run_once.control) == 1) {
-#if !defined(HAVE_COMPILER_TLS)
-            globalkey = TlsAlloc();
-#endif
-            mainthread = GetCurrentThreadId();
-            run_once.done = 1;
-        } else {
-            /* Another thread is working; give up our slice and
-             * wait until they're done. */
-            while (!run_once.done)
-                Sleep(0);
-        }
-    }
-#elif defined HAVE_BEOS_THREADS
-    if (atomic_add(&run_once_init, 1) == 0) {
-        globalkey = tls_allocate();
-        tls_set(globalkey, NULL);
-        mainthread = find_thread(NULL);
-    } else
-        atomic_add(&run_once_init, -1);
-#endif
-}
-#endif
 
 /**
  * DllMain:

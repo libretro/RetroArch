@@ -86,18 +86,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif /* VMS */
 
 /**
- * LIBXML_THREAD_ENABLED:
- *
- * Whether the thread support is configured in
- */
-#if 0
-#if defined(_REENTRANT) || defined(__MT__) || \
-    (defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE - 0 >= 199506L))
-#define LIBXML_THREAD_ENABLED
-#endif
-#endif
-
-/**
  * LIBXML_TREE_ENABLED:
  *
  * Whether the DOM like tree manipulation API support is configured in

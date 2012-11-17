@@ -28,11 +28,7 @@
 /*
  * Helpful Macro
  */
-#ifdef LIBXML_THREAD_ENABLED
-#define IS_MAIN_THREAD (xmlIsMainThread())
-#else
 #define IS_MAIN_THREAD 1
-#endif
 
 /*
  * Mutex to protect "ForNewThreads" variables
@@ -573,58 +569,6 @@ __xmlLastError(void) {
     else
 	return (&xmlGetGlobalState()->xmlLastError);
 }
-
-/*
- * The following memory routines were apparently lost at some point,
- * and were re-inserted at this point on June 10, 2004.  Hope it's
- * the right place for them :-)
- */
-#if defined(LIBXML_THREAD_ALLOC_ENABLED) && defined(LIBXML_THREAD_ENABLED)
-#undef xmlMalloc
-xmlMallocFunc *
-__xmlMalloc(void){
-    if (IS_MAIN_THREAD)
-        return (&xmlMalloc);
-    else
-    	return (&xmlGetGlobalState()->xmlMalloc);
-}
-
-#undef xmlMallocAtomic
-xmlMallocFunc *
-__xmlMallocAtomic(void){
-    if (IS_MAIN_THREAD)
-        return (&xmlMallocAtomic);
-    else
-        return (&xmlGetGlobalState()->xmlMallocAtomic);
-}
-
-#undef xmlRealloc
-xmlReallocFunc *
-__xmlRealloc(void){
-    if (IS_MAIN_THREAD)
-        return (&xmlRealloc);
-    else
-        return (&xmlGetGlobalState()->xmlRealloc);
-}
-
-#undef xmlFree
-xmlFreeFunc *
-__xmlFree(void){
-    if (IS_MAIN_THREAD)
-        return (&xmlFree);
-    else
-        return (&xmlGetGlobalState()->xmlFree);
-}
-
-xmlStrdupFunc *
-__xmlMemStrdup(void){
-    if (IS_MAIN_THREAD)
-        return (&xmlMemStrdup);
-    else
-        return (&xmlGetGlobalState()->xmlMemStrdup);
-}
-
-#endif
 
 /*
  * Everything starting from the line below is
