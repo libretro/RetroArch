@@ -22,7 +22,6 @@
 #include <sys/resource.h>
 
 #include "android_general.h"
-#include "input_android.h"
 #include "../../../general.h"
 #include "../../../performance.h"
 

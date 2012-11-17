@@ -20,7 +20,9 @@
 #include "../../../performance.h"
 #include "../../../general.h"
 #include "../../../driver.h"
-#include "input_android.h"
+
+#define AKEY_EVENT_NO_ACTION 255
+#define MAX_PADS 8
 
 enum {
    AKEYCODE_ESCAPE          = 111,
