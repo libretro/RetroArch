@@ -16,7 +16,5 @@
  */
 #ifndef __XML_C14N_H__
 #define __XML_C14N_H__
-#ifdef LIBXML_C14N_ENABLED
-#endif /* LIBXML_C14N_ENABLED */
 #endif /* __XML_C14N_H__ */
 

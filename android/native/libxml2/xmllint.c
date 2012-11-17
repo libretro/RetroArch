@@ -79,9 +79,6 @@
 #include <libxml/xmlerror.h>
 #include <libxml/globals.h>
 #include <libxml/xmlreader.h>
-#ifdef LIBXML_C14N_ENABLED
-#include <libxml/c14n.h>
-#endif
 
 #ifndef XML_XML_DEFAULT_CATALOG
 #define XML_XML_DEFAULT_CATALOG "file:///etc/xml/catalog"
@@ -134,11 +131,6 @@ static xmllintReturnCode progresult = XMLLINT_RETURN_OK;
 static int timing = 0;
 static int generate = 0;
 static int dropdtd = 0;
-#ifdef LIBXML_C14N_ENABLED
-static int canonical = 0;
-static int canonical_11 = 0;
-static int exc_canonical = 0;
-#endif
 #ifdef LIBXML_READER_ENABLED
 static int stream = 0;
 static int walker = 0;
@@ -2168,8 +2160,6 @@ static void usage(const char *name) {
     printf("\t--c14n : save in W3C canonical format v1.0 (with comments)\n");
     printf("\t--c14n11 : save in W3C canonical format v1.1 (with comments)\n");
     printf("\t--exc-c14n : save in W3C exclusive canonical format (with comments)\n");
-#ifdef LIBXML_C14N_ENABLED
-#endif /* LIBXML_C14N_ENABLED */
     printf("\t--nsclean : remove redundant namespace declarations\n");
     printf("\t--testIO : test user I/O support\n");
     printf("\t--auto : generate a small doc on the fly\n");
@@ -2343,23 +2333,6 @@ main(int argc, char **argv) {
 	    xmlPedanticParserDefault(1);
 	    options |= XML_PARSE_PEDANTIC;
         }
-#ifdef LIBXML_C14N_ENABLED
-	else if ((!strcmp(argv[i], "-c14n")) ||
-		 (!strcmp(argv[i], "--c14n"))) {
-	    canonical++;
-	    options |= XML_PARSE_NOENT | XML_PARSE_DTDATTR | XML_PARSE_DTDLOAD;
-	}
-	else if ((!strcmp(argv[i], "-c14n11")) ||
-		 (!strcmp(argv[i], "--c14n11"))) {
-	    canonical_11++;
-	    options |= XML_PARSE_NOENT | XML_PARSE_DTDATTR | XML_PARSE_DTDLOAD;
-	}
-	else if ((!strcmp(argv[i], "-exc-c14n")) ||
-		 (!strcmp(argv[i], "--exc-c14n"))) {
-	    exc_canonical++;
-	    options |= XML_PARSE_NOENT | XML_PARSE_DTDATTR | XML_PARSE_DTDLOAD;
-	}
-#endif
 	else if ((!strcmp(argv[i], "-encode")) ||
 	         (!strcmp(argv[i], "--encode"))) {
 	    i++;

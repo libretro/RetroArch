@@ -803,11 +803,7 @@ xmlHasFeature(xmlFeature feature)
         case XML_WITH_LEGACY:
             return(0);
         case XML_WITH_C14N:
-#ifdef LIBXML_C14N_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_CATALOG:
             return(0);
         case XML_WITH_XPATH:
