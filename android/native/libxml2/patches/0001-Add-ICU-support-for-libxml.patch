@@ -1,0 +1,559 @@
+From f1121648d0762cf9bf4e5117bfc1008447fb4080 Mon Sep 17 00:00:00 2001
+From: android
+Date: Thu, 1 Apr 2010 11:46:35 -0700
+Subject: [PATCH] Add ICU support for libxml.
+
+This is derived from Jungshik's patch.  The encoding.c is a copy from Chrome's source,
+which has one extra modification than Jungshik's patch.
+
+Issue:2557315
+Change-Id: I8e4c9e544660f3f943a15042756f7248d5afff8e
+---
+ Android.mk                  |    4 +-
+ encoding.c                  |  248 +++++++++++++++++++++++++++++++++++++++++-
+ include/libxml/encoding.h   |   29 +++++
+ include/libxml/parser.h     |    3 +-
+ include/libxml/xmlversion.h |   11 ++-
+ parser.c                    |    9 ++
+ xmlregexp.c                 |    2 +-
+ 7 files changed, 294 insertions(+), 12 deletions(-)
+
+diff --git a/Android.mk b/Android.mk
+index 3d0ede8..08bf11f 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -57,7 +57,7 @@ common_C_INCLUDES += \
+ include $(CLEAR_VARS)
+ 
+ LOCAL_SRC_FILES := $(common_SRC_FILES)
+-LOCAL_C_INCLUDES += $(common_C_INCLUDES)
++LOCAL_C_INCLUDES += $(common_C_INCLUDES) external/icu4c/common
+ LOCAL_SHARED_LIBRARIES += $(common_SHARED_LIBRARIES)
+ LOCAL_CFLAGS += -fvisibility=hidden
+ 
+@@ -71,7 +71,7 @@ include $(BUILD_STATIC_LIBRARY)
+ 
+ include $(CLEAR_VARS)
+ LOCAL_SRC_FILES := $(common_SRC_FILES)
+-LOCAL_C_INCLUDES += $(common_C_INCLUDES)
++LOCAL_C_INCLUDES += $(common_C_INCLUDES) external/icu4c/common
+ LOCAL_SHARED_LIBRARIES += $(common_SHARED_LIBRARIES)
+ LOCAL_MODULE:= libxml2
+ include $(BUILD_HOST_STATIC_LIBRARY)
+diff --git a/encoding.c b/encoding.c
+index e2df797..2abc32e 100644
+--- a/encoding.c
++++ b/encoding.c
+@@ -58,7 +58,7 @@ static xmlCharEncodingAliasPtr xmlCharEncodingAliases = NULL;
+ static int xmlCharEncodingAliasesNb = 0;
+ static int xmlCharEncodingAliasesMax = 0;
+ 
+-#ifdef LIBXML_ICONV_ENABLED
++#if defined(LIBXML_ICONV_ENABLED) || defined(LIBXML_ICU_ENABLED)
+ #if 0
+ #define DEBUG_ENCODING  /* Define this to get encoding traces */
+ #endif
+@@ -97,6 +97,54 @@ xmlEncodingErr(xmlParserErrors error, const char *msg, const char *val)
+                     NULL, 0, val, NULL, NULL, 0, 0, msg, val);
+ }
+ 
++#ifdef LIBXML_ICU_ENABLED
++static uconv_t* 
++openIcuConverter(const char* name, int toUnicode)
++{
++  UErrorCode status = U_ZERO_ERROR;
++  uconv_t *conv = (uconv_t *) xmlMalloc(sizeof(uconv_t));
++  if (conv == NULL)
++    return NULL;
++
++  conv->uconv = ucnv_open(name, &status);
++  if (U_FAILURE(status))
++    goto error;
++
++  status = U_ZERO_ERROR;
++  if (toUnicode) {
++    ucnv_setToUCallBack(conv->uconv, UCNV_TO_U_CALLBACK_STOP, 
++                        NULL, NULL, NULL, &status);
++  }
++  else {
++    ucnv_setFromUCallBack(conv->uconv, UCNV_FROM_U_CALLBACK_STOP, 
++                        NULL, NULL, NULL, &status);
++  }
++  if (U_FAILURE(status))
++    goto error;
++
++  status = U_ZERO_ERROR;
++  conv->utf8 = ucnv_open("UTF-8", &status);
++  if (U_SUCCESS(status))
++    return conv;
++
++error:
++  if (conv->uconv) 
++    ucnv_close(conv->uconv);
++  xmlFree(conv);
++  return NULL;
++}
++
++static void
++closeIcuConverter(uconv_t *conv)
++{
++  if (conv != NULL) {
++    ucnv_close(conv->uconv);
++    ucnv_close(conv->utf8);
++    xmlFree(conv);
++  }
++}
++#endif /* LIBXML_ICU_ENABLED */
++
+ /************************************************************************
+  *									*
+  *		Conversions To/From UTF8 encoding			*
+@@ -1306,7 +1354,11 @@ xmlNewCharEncodingHandler(const char *name,
+ #ifdef LIBXML_ICONV_ENABLED
+     handler->iconv_in = NULL;
+     handler->iconv_out = NULL;
+-#endif /* LIBXML_ICONV_ENABLED */
++#endif
++#ifdef LIBXML_ICU_ENABLED
++    handler->uconv_in = NULL;
++    handler->uconv_out = NULL;
++#endif
+ 
+     /*
+      * registers and returns the handler.
+@@ -1371,7 +1423,7 @@ xmlInitCharEncodingHandlers(void) {
+     xmlNewCharEncodingHandler("ASCII", asciiToUTF8, NULL);
+     xmlNewCharEncodingHandler("US-ASCII", asciiToUTF8, NULL);
+ #endif /* LIBXML_OUTPUT_ENABLED */
+-#ifndef LIBXML_ICONV_ENABLED
++#if !defined(LIBXML_ICONV_ENABLED) && !defined(LIBXML_ICU_ENABLED)
+ #ifdef LIBXML_ISO8859X_ENABLED
+     xmlRegisterCharEncodingHandlersISO8859x ();
+ #endif
+@@ -1576,6 +1628,10 @@ xmlFindCharEncodingHandler(const char *name) {
+     xmlCharEncodingHandlerPtr enc;
+     iconv_t icv_in, icv_out;
+ #endif /* LIBXML_ICONV_ENABLED */
++#ifdef LIBXML_ICU_ENABLED
++    xmlCharEncodingHandlerPtr enc;
++    uconv_t *ucv_in, *ucv_out;
++#endif /* LIBXML_ICU_ENABLED */
+     char upper[100];
+     int i;
+ 
+@@ -1642,6 +1698,35 @@ xmlFindCharEncodingHandler(const char *name) {
+ 		    "iconv : problems with filters for '%s'\n", name);
+     }
+ #endif /* LIBXML_ICONV_ENABLED */
++#ifdef LIBXML_ICU_ENABLED
++    /* check whether icu can handle this */
++    ucv_in = openIcuConverter(name, 1);
++    ucv_out = openIcuConverter(name, 0);
++    if (ucv_in != NULL && ucv_out != NULL) {
++	    enc = (xmlCharEncodingHandlerPtr)
++	          xmlMalloc(sizeof(xmlCharEncodingHandler));
++	    if (enc == NULL) {
++                closeIcuConverter(ucv_in);
++                closeIcuConverter(ucv_out);
++		return(NULL);
++	    }
++	    enc->name = xmlMemStrdup(name);
++	    enc->input = NULL;
++	    enc->output = NULL;
++	    enc->uconv_in = ucv_in;
++	    enc->uconv_out = ucv_out;
++#ifdef DEBUG_ENCODING
++            xmlGenericError(xmlGenericErrorContext,
++		    "Found ICU converter handler for encoding %s\n", name);
++#endif
++	    return enc;
++    } else if (ucv_in != NULL || ucv_out != NULL) {
++            closeIcuConverter(ucv_in);
++            closeIcuConverter(ucv_out);
++	    xmlEncodingErr(XML_ERR_INTERNAL_ERROR,
++		    "ICU converter : problems with filters for '%s'\n", name);
++    }
++#endif /* LIBXML_ICU_ENABLED */
+ 
+ #ifdef DEBUG_ENCODING
+     xmlGenericError(xmlGenericErrorContext,
+@@ -1732,6 +1817,75 @@ xmlIconvWrapper(iconv_t cd, unsigned char *out, int *outlen,
+ 
+ /************************************************************************
+  *									*
++ *		ICU based generic conversion functions	         	*
++ *									*
++ ************************************************************************/
++
++#ifdef LIBXML_ICU_ENABLED
++/**
++ * xmlUconvWrapper:
++ * @cd: ICU uconverter data structure
++ * @toUnicode : non-zero if toUnicode. 0 otherwise.
++ * @out:  a pointer to an array of bytes to store the result
++ * @outlen:  the length of @out
++ * @in:  a pointer to an array of ISO Latin 1 chars
++ * @inlen:  the length of @in
++ *
++ * Returns 0 if success, or 
++ *     -1 by lack of space, or
++ *     -2 if the transcoding fails (for *in is not valid utf8 string or
++ *        the result of transformation can't fit into the encoding we want), or
++ *     -3 if there the last byte can't form a single output char.
++ *     
++ * The value of @inlen after return is the number of octets consumed
++ *     as the return value is positive, else unpredictable.
++ * The value of @outlen after return is the number of ocetes consumed.
++ */
++static int
++xmlUconvWrapper(uconv_t *cd, int toUnicode, unsigned char *out, int *outlen,
++                const unsigned char *in, int *inlen) {
++    const char *ucv_in = (const char *) in;
++    char *ucv_out = (char *) out;
++    UErrorCode err = U_ZERO_ERROR;
++
++    if ((out == NULL) || (outlen == NULL) || (inlen == NULL) || (in == NULL)) {
++        if (outlen != NULL) *outlen = 0;
++        return(-1);
++    }
++
++    /* 
++     * TODO(jungshik)
++     * 1. is ucnv_convert(To|From)Algorithmic better?
++     * 2. had we better use an explicit pivot buffer?
++     * 3. error returned comes from 'fromUnicode' only even
++     *    when toUnicode is true !
++     */
++    if (toUnicode) {
++        /* encoding => UTF-16 => UTF-8 */
++        ucnv_convertEx(cd->utf8, cd->uconv, &ucv_out, ucv_out + *outlen,
++                       &ucv_in, ucv_in + *inlen, NULL, NULL, NULL, NULL,
++                       0, TRUE, &err);
++    } else {
++        /* UTF-8 => UTF-16 => encoding */
++        ucnv_convertEx(cd->uconv, cd->utf8, &ucv_out, ucv_out + *outlen,
++                       &ucv_in, ucv_in + *inlen, NULL, NULL, NULL, NULL,
++                       0, TRUE, &err);
++    }
++    *inlen = ucv_in - (const char*) in; 
++    *outlen = ucv_out - (char *) out;
++    if (U_SUCCESS(err))
++        return 0;
++    if (err == U_BUFFER_OVERFLOW_ERROR)
++        return -1;
++    if (err == U_INVALID_CHAR_FOUND || err == U_ILLEGAL_CHAR_FOUND)
++        return -2;
++    /* if (err == U_TRUNCATED_CHAR_FOUND) */
++    return -3;
++}
++#endif /* LIBXML_ICU_ENABLED */
++
++/************************************************************************
++ *									*
+  *		The real API used by libxml for on-the-fly conversion	*
+  *									*
+  ************************************************************************/
+@@ -1794,6 +1948,16 @@ xmlCharEncFirstLine(xmlCharEncodingHandler *handler, xmlBufferPtr out,
+ 	if (ret == -1) ret = -3;
+     }
+ #endif /* LIBXML_ICONV_ENABLED */
++#ifdef LIBXML_ICU_ENABLED
++    else if (handler->uconv_in != NULL) {
++	ret = xmlUconvWrapper(handler->uconv_in, 1, &out->content[out->use],
++	                      &written, in->content, &toconv);
++	xmlBufferShrink(in, toconv);
++	out->use += written;
++	out->content[out->use] = 0;
++	if (ret == -1) ret = -3;
++    }
++#endif /* LIBXML_ICU_ENABLED */
+ #ifdef DEBUG_ENCODING
+     switch (ret) {
+         case 0:
+@@ -1879,6 +2043,17 @@ xmlCharEncInFunc(xmlCharEncodingHandler * handler, xmlBufferPtr out,
+             ret = -3;
+     }
+ #endif /* LIBXML_ICONV_ENABLED */
++#ifdef LIBXML_ICU_ENABLED
++    else if (handler->uconv_in != NULL) {
++        ret = xmlUconvWrapper(handler->uconv_in, 1, &out->content[out->use],
++                              &written, in->content, &toconv);
++        xmlBufferShrink(in, toconv);
++        out->use += written;
++        out->content[out->use] = 0;
++        if (ret == -1)
++            ret = -3;
++    }
++#endif /* LIBXML_ICU_ENABLED */
+     switch (ret) {
+         case 0:
+ #ifdef DEBUG_ENCODING
+@@ -1979,6 +2154,15 @@ retry:
+ 	    out->content[out->use] = 0;
+ 	}
+ #endif /* LIBXML_ICONV_ENABLED */
++#ifdef LIBXML_ICU_ENABLED
++	else if (handler->uconv_out != NULL) {
++	    ret = xmlUconvWrapper(handler->uconv_out, 0,
++                              &out->content[out->use],
++ 				              &written, NULL, &toconv);
++	    out->use += written;
++	    out->content[out->use] = 0;
++	}
++#endif /* LIBXML_ICU_ENABLED */
+ #ifdef DEBUG_ENCODING
+ 	xmlGenericError(xmlGenericErrorContext,
+ 		"initialized encoder\n");
+@@ -2003,7 +2187,7 @@ retry:
+ 	    xmlBufferShrink(in, toconv);
+ 	    out->use += written;
+ 	    writtentot += written;
+-	} 
++	}
+ 	out->content[out->use] = 0;
+     }
+ #ifdef LIBXML_ICONV_ENABLED
+@@ -2025,6 +2209,26 @@ retry:
+ 	}
+     }
+ #endif /* LIBXML_ICONV_ENABLED */
++#ifdef LIBXML_ICU_ENABLED
++    else if (handler->uconv_out != NULL) {
++	ret = xmlUconvWrapper(handler->uconv_out, 0,
++                              &out->content[out->use],
++	                      &written, in->content, &toconv);
++	xmlBufferShrink(in, toconv);
++	out->use += written;
++	writtentot += written;
++	out->content[out->use] = 0;
++	if (ret == -1) {
++	    if (written > 0) {
++		/*
++		 * Can be a limitation of iconv
++		 */
++		goto retry;
++	    }
++	    ret = -3;
++	}
++    }
++#endif /* LIBXML_ICU_ENABLED */
+     else {
+ 	xmlEncodingErr(XML_I18N_NO_OUTPUT,
+ 		       "xmlCharEncOutFunc: no output function !\n", NULL);
+@@ -2137,6 +2341,22 @@ xmlCharEncCloseFunc(xmlCharEncodingHandler *handler) {
+ 	xmlFree(handler);
+     }
+ #endif /* LIBXML_ICONV_ENABLED */
++#ifdef LIBXML_ICU_ENABLED
++    if ((handler->uconv_out != NULL) || (handler->uconv_in != NULL)) {
++	if (handler->name != NULL)
++	    xmlFree(handler->name);
++	handler->name = NULL;
++	if (handler->uconv_out != NULL) {
++	    closeIcuConverter(handler->uconv_out);
++	    handler->uconv_out = NULL;
++	}
++	if (handler->uconv_in != NULL) {
++	    closeIcuConverter(handler->uconv_in);
++	    handler->uconv_in = NULL;
++	}
++	xmlFree(handler);
++    }
++#endif
+ #ifdef DEBUG_ENCODING
+     if (ret)
+         xmlGenericError(xmlGenericErrorContext,
+@@ -2212,6 +2432,22 @@ xmlByteConsumed(xmlParserCtxtPtr ctxt) {
+ 		    cur += toconv;
+ 		} while (ret == -2);
+ #endif
++#ifdef LIBXML_ICU_ENABLED
++	    } else if (handler->uconv_out != NULL) {
++	        do {
++		    toconv = in->end - cur;
++		    written = 32000;
++		    ret = xmlUconvWrapper(handler->uconv_out, 0, &convbuf[0],
++	                      &written, cur, &toconv);
++		    if (ret < 0) {
++		        if (written > 0)
++			    ret = -2;
++			else
++			    return(-1);
++		    }
++		    unused += written;
++		    cur += toconv;
++		} while (ret == -2);
+             } else {
+ 	        /* could not find a converter */
+ 	        return(-1);
+@@ -2223,8 +2459,9 @@ xmlByteConsumed(xmlParserCtxtPtr ctxt) {
+     }
+     return(in->consumed + (in->cur - in->base));
+ }
++#endif
+ 
+-#ifndef LIBXML_ICONV_ENABLED
++#if !defined(LIBXML_ICONV_ENABLED) && !defined(LIBXML_ICU_ENABLED)
+ #ifdef LIBXML_ISO8859X_ENABLED
+ 
+ /**
+@@ -3296,4 +3533,3 @@ xmlRegisterCharEncodingHandlersISO8859x (void) {
+ 
+ #define bottom_encoding
+ #include "elfgcchack.h"
+-
+diff --git a/include/libxml/encoding.h b/include/libxml/encoding.h
+index c74b25f..c68ec10 100644
+--- a/include/libxml/encoding.h
++++ b/include/libxml/encoding.h
+@@ -26,6 +26,24 @@
+ 
+ #ifdef LIBXML_ICONV_ENABLED
+ #include <iconv.h>
++#else
++#ifdef LIBXML_ICU_ENABLED
++#include <unicode/ucnv.h>
++#if 0
++/* Forward-declare UConverter here rather than pulling in <unicode/ucnv.h>
++ * to prevent unwanted ICU symbols being exposed to users of libxml2.
++ * One particular case is Qt4 conflicting on UChar32.
++ */
++#include <stdint.h>
++struct UConverter;
++typedef struct UConverter UConverter;
++#ifdef _MSC_VER
++typedef wchar_t UChar;
++#else
++typedef uint16_t UChar;
++#endif
++#endif
++#endif
+ #endif
+ #ifdef __cplusplus
+ extern "C" {
+@@ -125,6 +143,13 @@ typedef int (* xmlCharEncodingOutputFunc)(unsigned char *out, int *outlen,
+  * Block defining the handlers for non UTF-8 encodings.
+  * If iconv is supported, there are two extra fields.
+  */
++#ifdef LIBXML_ICU_ENABLED
++struct _uconv_t {
++  UConverter *uconv; /* for conversion between an encoding and UTF-16 */
++  UConverter *utf8; /* for conversion between UTF-8 and UTF-16 */
++};
++typedef struct _uconv_t uconv_t;
++#endif
+ 
+ typedef struct _xmlCharEncodingHandler xmlCharEncodingHandler;
+ typedef xmlCharEncodingHandler *xmlCharEncodingHandlerPtr;
+@@ -136,6 +161,10 @@ struct _xmlCharEncodingHandler {
+     iconv_t                    iconv_in;
+     iconv_t                    iconv_out;
+ #endif /* LIBXML_ICONV_ENABLED */
++#ifdef LIBXML_ICU_ENABLED
++    uconv_t                    *uconv_in;
++    uconv_t                    *uconv_out;
++#endif /* LIBXML_ICU_ENABLED */
+ };
+ 
+ #ifdef __cplusplus
+diff --git a/include/libxml/parser.h b/include/libxml/parser.h
+index 567addb..bd9de24 100644
+--- a/include/libxml/parser.h
++++ b/include/libxml/parser.h
+@@ -276,6 +276,7 @@ struct _xmlParserCtxt {
+     int                nsNr;          /* the number of inherited namespaces */
+     int                nsMax;         /* the size of the arrays */
+     const xmlChar *   *nsTab;         /* the array of prefix/namespace name */
++    struct _xmlParserCtxt *nsParent;  /* parent context to inherit namespaces from * */
+     int               *attallocs;     /* which attribute were allocated */
+     void *            *pushTab;       /* array of data for push */
+     xmlHashTablePtr    attsDefault;   /* defaulted attributes if any */
+@@ -1213,6 +1214,7 @@ typedef enum {
+     XML_WITH_DEBUG_MEM = 29,
+     XML_WITH_DEBUG_RUN = 30,
+     XML_WITH_ZLIB = 31,
++    XML_WITH_ICU = 32,
+     XML_WITH_NONE = 99999 /* just to be sure of allocation size */
+ } xmlFeature;
+ 
+@@ -1223,4 +1225,3 @@ XMLPUBFUN int XMLCALL
+ }
+ #endif
+ #endif /* __XML_PARSER_H__ */
+-
+diff --git a/include/libxml/xmlversion.h b/include/libxml/xmlversion.h
+index a98e00c..fb2b8ca 100644
+--- a/include/libxml/xmlversion.h
++++ b/include/libxml/xmlversion.h
+@@ -269,6 +269,15 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
+ #endif
+ 
+ /**
++ * LIBXML_ICU_ENABLED:
++ *
++ * Whether icu support is available
++ */
++#if 1
++#define LIBXML_ICU_ENABLED
++#endif
++
++/**
+  * LIBXML_ISO8859X_ENABLED:
+  *
+  * Whether ISO-8859-* support is made available in case iconv is not
+@@ -454,5 +463,3 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
+ }
+ #endif /* __cplusplus */
+ #endif
+-
+-
+diff --git a/parser.c b/parser.c
+index 9db664f..306b84d 100644
+--- a/parser.c
++++ b/parser.c
+@@ -937,6 +937,12 @@ xmlHasFeature(xmlFeature feature)
+ #else
+             return(0);
+ #endif
++        case XML_WITH_ICU:
++#ifdef LIBXML_ICU_ENABLED
++            return(1);
++#else
++            return(0);
++#endif
+         default:
+ 	    break;
+      }
+@@ -8189,6 +8195,7 @@ xmlGetNamespace(xmlParserCtxtPtr ctxt, const xmlChar *prefix) {
+ 	        return(NULL);
+ 	    return(ctxt->nsTab[i + 1]);
+ 	}
++    if (ctxt->nsParent) return xmlGetNamespace(ctxt->nsParent, prefix);
+     return(NULL);
+ }
+ 
+@@ -12538,6 +12545,8 @@ xmlParseBalancedChunkMemoryInternal(xmlParserCtxtPtr oldctxt,
+     ctxt->str_xmlns = xmlDictLookup(ctxt->dict, BAD_CAST "xmlns", 5);
+     ctxt->str_xml_ns = xmlDictLookup(ctxt->dict, XML_XML_NAMESPACE, 36);
+ 
++    ctxt->nsParent = oldctxt;
++
+     oldsax = ctxt->sax;
+     ctxt->sax = oldctxt->sax;
+     xmlDetectSAX2(ctxt);
+diff --git a/xmlregexp.c b/xmlregexp.c
+index 73598a5..4258a08 100644
+--- a/xmlregexp.c
++++ b/xmlregexp.c
+@@ -6401,7 +6401,7 @@ xmlExpHashNameComputeKey(const xmlChar *name) {
+     if (name != NULL) {
+ 	value += 30 * (*name);
+ 	while ((ch = *name++) != 0) {
+-	    value = value ^ ((value << 5) + (value >> 3) + (unsigned long)ch);
++	    value = value ^ ((value << 5) + (value >> 3) + (unsigned short)ch);
+ 	}
+     }
+     return (value);
+-- 
+1.7.0.1
+

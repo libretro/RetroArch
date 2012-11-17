@@ -58,6 +58,7 @@
 #define video_set_aspect_ratio_func(aspectratio_idx) gfx_ctx_set_aspect_ratio(driver.video_data, aspectratio_idx)
 #define video_stop_func()			gl_stop()
 #define video_start_func()			gl_start()
+#define video_set_shader_func(type, path)  gl_set_shader(driver.video_data, type, path)
 
 #define gfx_ctx_window_has_focus()		(true)
 

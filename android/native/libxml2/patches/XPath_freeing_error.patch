@@ -1,0 +1,30 @@
+This patch fixes security problems described in issue 5533654. Since the original fixes in libxml2 includes multiple amendments and are somewhat larger in scope, we limit the fix to just this particular issue to play it safe.
+The patch does what Chrome does to fix it.
+
+Eventually, when we upgrade libxml2 library, the patch will be unnecessary.
+
+
+--- a/xpath.c	2011-10-31 14:31:20.201049035 -0700
++++ b/xpath.c	2011-11-01 13:50:00.751736494 -0700
+@@ -11736,11 +11736,16 @@
+ 
+ 	    if ((ctxt->error != XPATH_EXPRESSION_OK) || (res == -1)) {
+ 	        xmlXPathObjectPtr tmp;
+-		/* pop the result */
+-		tmp = valuePop(ctxt);
+-		xmlXPathReleaseObject(xpctxt, tmp);
+-		/* then pop off contextObj, which will be freed later */
+-		valuePop(ctxt);
++	        /* pop the result if any */
++	        tmp = valuePop(ctxt);
++	        while (tmp != contextObj) {
++	            /*
++	             * Free up the result
++	             * then pop off contextObj, which will be freed later
++	             */
++	             xmlXPathReleaseObject(xpctxt, tmp);
++	             tmp = valuePop(ctxt);
++	        }
+ 		goto evaluation_error;
+ 	    }
+ 
