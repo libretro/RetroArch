@@ -296,15 +296,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_SCHEMATRON_ENABLED:
- *
- * Whether the Schematron validation interfaces are compiled in
- */
-#if 0
-#define LIBXML_SCHEMATRON_ENABLED
-#endif
-
-/**
  * LIBXML_MODULES_ENABLED:
  *
  * Whether the module interfaces are compiled in

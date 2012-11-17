@@ -900,11 +900,7 @@ xmlHasFeature(xmlFeature feature)
             return(0);
 #endif
         case XML_WITH_SCHEMATRON:
-#ifdef LIBXML_SCHEMATRON_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_MODULES:
 #ifdef LIBXML_MODULES_ENABLED
             return(1);

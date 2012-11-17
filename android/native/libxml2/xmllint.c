@@ -82,9 +82,6 @@
 #endif
 #include <libxml/globals.h>
 #include <libxml/xmlreader.h>
-#ifdef LIBXML_SCHEMATRON_ENABLED
-#include <libxml/schematron.h>
-#endif
 #ifdef LIBXML_SCHEMAS_ENABLED
 #include <libxml/relaxng.h>
 #include <libxml/xmlschemas.h>
@@ -141,10 +138,6 @@ static char * relaxng = NULL;
 static xmlRelaxNGPtr relaxngschemas = NULL;
 static char * schema = NULL;
 static xmlSchemaPtr wxschemas = NULL;
-#endif
-#ifdef LIBXML_SCHEMATRON_ENABLED
-static char * schematron = NULL;
-static xmlSchematronPtr wxschematron = NULL;
 #endif
 static int repeat = 0;
 static int insert = 0;
@@ -2462,46 +2455,6 @@ static void parseAndPrintFile(char *filename, xmlParserCtxtPtr rectxt) {
 	xmlFreeValidCtxt(cvp);
     }
 #endif /* LIBXML_VALID_ENABLED */
-#ifdef LIBXML_SCHEMATRON_ENABLED
-    if (wxschematron != NULL) {
-	xmlSchematronValidCtxtPtr ctxt;
-	int ret;
-	int flag;
-
-	if ((timing) && (!repeat)) {
-	    startTimer();
-	}
-
-	if (debug)
-	    flag = XML_SCHEMATRON_OUT_XML;
-	else
-	    flag = XML_SCHEMATRON_OUT_TEXT;
-	if (noout)
-	    flag |= XML_SCHEMATRON_OUT_QUIET;
-	ctxt = xmlSchematronNewValidCtxt(wxschematron, flag);
-#if 0
-	xmlSchematronSetValidErrors(ctxt,
-		(xmlSchematronValidityErrorFunc) fprintf,
-		(xmlSchematronValidityWarningFunc) fprintf,
-		stderr);
-#endif
-	ret = xmlSchematronValidateDoc(ctxt, doc);
-	if (ret == 0) {
-	    fprintf(stderr, "%s validates\n", filename);
-	} else if (ret > 0) {
-	    fprintf(stderr, "%s fails to validate\n", filename);
-	    progresult = XMLLINT_ERR_VALID;
-	} else {
-	    fprintf(stderr, "%s validation generated an internal error\n",
-		   filename);
-	    progresult = XMLLINT_ERR_VALID;
-	}
-	xmlSchematronFreeValidCtxt(ctxt);
-	if ((timing) && (!repeat)) {
-	    endTimer("Validating");
-	}
-    }
-#endif
 #ifdef LIBXML_SCHEMAS_ENABLED
     if (relaxngschemas != NULL) {
 	xmlRelaxNGValidCtxtPtr ctxt;
@@ -2701,9 +2654,6 @@ static void usage(const char *name) {
 #ifdef LIBXML_SCHEMAS_ENABLED
     printf("\t--relaxng schema : do RelaxNG validation against the schema\n");
     printf("\t--schema schema : do validation against the WXS schema\n");
-#endif
-#ifdef LIBXML_SCHEMATRON_ENABLED
-    printf("\t--schematron schema : do validation against a schematron\n");
 #endif
 #ifdef LIBXML_SAX1_ENABLED
     printf("\t--sax1: use the old SAX1 interfaces for processing\n");
@@ -3008,13 +2958,6 @@ main(int argc, char **argv) {
 	    schema = argv[i];
 	    noent++;
 #endif
-#ifdef LIBXML_SCHEMATRON_ENABLED
-	} else if ((!strcmp(argv[i], "-schematron")) ||
-	         (!strcmp(argv[i], "--schematron"))) {
-	    i++;
-	    schematron = argv[i];
-	    noent++;
-#endif
         } else if ((!strcmp(argv[i], "-nonet")) ||
                    (!strcmp(argv[i], "--nonet"))) {
 	    options |= XML_PARSE_NONET;
@@ -3091,40 +3034,6 @@ main(int argc, char **argv) {
 		argv[0]);
     }
 
-#ifdef LIBXML_SCHEMATRON_ENABLED
-    if ((schematron != NULL) && (sax == 0)
-#ifdef LIBXML_READER_ENABLED
-        && (stream == 0)
-#endif /* LIBXML_READER_ENABLED */
-	) {
-	xmlSchematronParserCtxtPtr ctxt;
-
-        /* forces loading the DTDs */
-        xmlLoadExtDtdDefaultValue |= 1;
-	options |= XML_PARSE_DTDLOAD;
-	if (timing) {
-	    startTimer();
-	}
-	ctxt = xmlSchematronNewParserCtxt(schematron);
-#if 0
-	xmlSchematronSetParserErrors(ctxt,
-		(xmlSchematronValidityErrorFunc) fprintf,
-		(xmlSchematronValidityWarningFunc) fprintf,
-		stderr);
-#endif
-	wxschematron = xmlSchematronParse(ctxt);
-	if (wxschematron == NULL) {
-	    xmlGenericError(xmlGenericErrorContext,
-		    "Schematron schema %s failed to compile\n", schematron);
-            progresult = XMLLINT_ERR_SCHEMACOMP;
-	    schematron = NULL;
-	}
-	xmlSchematronFreeParserCtxt(ctxt);
-	if (timing) {
-	    endTimer("Compiling the schemas");
-	}
-    }
-#endif
 #ifdef LIBXML_SCHEMAS_ENABLED
     if ((relaxng != NULL) && (sax == 0)
 #ifdef LIBXML_READER_ENABLED
@@ -3302,10 +3211,6 @@ main(int argc, char **argv) {
     if ((files == 0) && (!generate) && (version == 0)) {
 	usage(argv[0]);
     }
-#ifdef LIBXML_SCHEMATRON_ENABLED
-    if (wxschematron != NULL)
-	xmlSchematronFree(wxschematron);
-#endif
 #ifdef LIBXML_SCHEMAS_ENABLED
     if (relaxngschemas != NULL)
 	xmlRelaxNGFree(relaxngschemas);
