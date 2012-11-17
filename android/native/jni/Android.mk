@@ -44,7 +44,6 @@ LOCAL_LIBXML_SRC_FILES = $(LIBXML_PATH)/chvalid.c \
 							$(LIBXML_PATH)/valid.c \
 							$(LIBXML_PATH)/xmlIO.c \
 							$(LIBXML_PATH)/xmlmemory.c \
-							$(LIBXML_PATH)/xmlmodule.c \
 							$(LIBXML_PATH)/xmlreader.c \
 							$(LIBXML_PATH)/xmlregexp.c \
 							$(LIBXML_PATH)/xmlsave.c \

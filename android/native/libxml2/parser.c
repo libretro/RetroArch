@@ -853,11 +853,7 @@ xmlHasFeature(xmlFeature feature)
         case XML_WITH_SCHEMATRON:
             return(0);
         case XML_WITH_MODULES:
-#ifdef LIBXML_MODULES_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_DEBUG:
             return(0);
         case XML_WITH_DEBUG_MEM:

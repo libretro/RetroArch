@@ -3498,54 +3498,6 @@ extern __typeof (xmlMemoryStrdup) xmlMemoryStrdup__internal_alias __attribute((v
 #endif
 #endif
 
-#if defined(LIBXML_MODULES_ENABLED)
-#ifdef bottom_xmlmodule
-#undef xmlModuleClose
-extern __typeof (xmlModuleClose) xmlModuleClose __attribute((alias("xmlModuleClose__internal_alias")));
-#else
-#ifndef xmlModuleClose
-extern __typeof (xmlModuleClose) xmlModuleClose__internal_alias __attribute((visibility("hidden")));
-#define xmlModuleClose xmlModuleClose__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_MODULES_ENABLED)
-#ifdef bottom_xmlmodule
-#undef xmlModuleFree
-extern __typeof (xmlModuleFree) xmlModuleFree __attribute((alias("xmlModuleFree__internal_alias")));
-#else
-#ifndef xmlModuleFree
-extern __typeof (xmlModuleFree) xmlModuleFree__internal_alias __attribute((visibility("hidden")));
-#define xmlModuleFree xmlModuleFree__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_MODULES_ENABLED)
-#ifdef bottom_xmlmodule
-#undef xmlModuleOpen
-extern __typeof (xmlModuleOpen) xmlModuleOpen __attribute((alias("xmlModuleOpen__internal_alias")));
-#else
-#ifndef xmlModuleOpen
-extern __typeof (xmlModuleOpen) xmlModuleOpen__internal_alias __attribute((visibility("hidden")));
-#define xmlModuleOpen xmlModuleOpen__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_MODULES_ENABLED)
-#ifdef bottom_xmlmodule
-#undef xmlModuleSymbol
-extern __typeof (xmlModuleSymbol) xmlModuleSymbol __attribute((alias("xmlModuleSymbol__internal_alias")));
-#else
-#ifndef xmlModuleSymbol
-extern __typeof (xmlModuleSymbol) xmlModuleSymbol__internal_alias __attribute((visibility("hidden")));
-#define xmlModuleSymbol xmlModuleSymbol__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_threads
 #undef xmlMutexLock
 extern __typeof (xmlMutexLock) xmlMutexLock __attribute((alias("xmlMutexLock__internal_alias")));
