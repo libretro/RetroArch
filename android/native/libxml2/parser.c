@@ -54,9 +54,6 @@
 #include <libxml/encoding.h>
 #include <libxml/xmlIO.h>
 #include <libxml/uri.h>
-#ifdef LIBXML_CATALOG_ENABLED
-#include <libxml/catalog.h>
-#endif
 #ifdef LIBXML_SCHEMAS_ENABLED
 #include <libxml/xmlschemastypes.h>
 #include <libxml/relaxng.h>
@@ -845,11 +842,7 @@ xmlHasFeature(xmlFeature feature)
             return(0);
 #endif
         case XML_WITH_CATALOG:
-#ifdef LIBXML_CATALOG_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_XPATH:
 #ifdef LIBXML_XPATH_ENABLED
             return(1);
@@ -4829,68 +4822,6 @@ xmlParsePITarget(xmlParserCtxtPtr ctxt) {
     return(name);
 }
 
-#ifdef LIBXML_CATALOG_ENABLED
-/**
- * xmlParseCatalogPI:
- * @ctxt:  an XML parser context
- * @catalog:  the PI value string
- * 
- * parse an XML Catalog Processing Instruction.
- *
- * <?oasis-xml-catalog catalog="http://example.com/catalog.xml"?>
- *
- * Occurs only if allowed by the user and if happening in the Misc
- * part of the document before any doctype informations
- * This will add the given catalog to the parsing context in order
- * to be used if there is a resolution need further down in the document
- */
-
-static void
-xmlParseCatalogPI(xmlParserCtxtPtr ctxt, const xmlChar *catalog) {
-    xmlChar *URL = NULL;
-    const xmlChar *tmp, *base;
-    xmlChar marker;
-
-    tmp = catalog;
-    while (IS_BLANK_CH(*tmp)) tmp++;
-    if (xmlStrncmp(tmp, BAD_CAST"catalog", 7))
-	goto error;
-    tmp += 7;
-    while (IS_BLANK_CH(*tmp)) tmp++;
-    if (*tmp != '=') {
-	return;
-    }
-    tmp++;
-    while (IS_BLANK_CH(*tmp)) tmp++;
-    marker = *tmp;
-    if ((marker != '\'') && (marker != '"'))
-	goto error;
-    tmp++;
-    base = tmp;
-    while ((*tmp != 0) && (*tmp != marker)) tmp++;
-    if (*tmp == 0)
-	goto error;
-    URL = xmlStrndup(base, tmp - base);
-    tmp++;
-    while (IS_BLANK_CH(*tmp)) tmp++;
-    if (*tmp != 0)
-	goto error;
-
-    if (URL != NULL) {
-	ctxt->catalogs = xmlCatalogAddLocal(ctxt->catalogs, URL);
-	xmlFree(URL);
-    }
-    return;
-
-error:
-    xmlWarningMsg(ctxt, XML_WAR_CATALOG_PI,
-	          "Catalog PI syntax error: %s\n",
-		  catalog, NULL);
-    if (URL != NULL)
-	xmlFree(URL);
-}
-#endif
-
 /**
  * xmlParsePI:
  * @ctxt:  an XML parser context
@@ -4998,17 +4929,6 @@ xmlParsePI(xmlParserCtxtPtr ctxt) {
 	    "PI declaration doesn't start and stop in the same entity\n");
 		}
 		SKIP(2);
-
-#ifdef LIBXML_CATALOG_ENABLED
-		if (((state == XML_PARSER_MISC) ||
-	             (state == XML_PARSER_START)) &&
-		    (xmlStrEqual(target, XML_CATALOG_PI))) {
-		    xmlCatalogAllow allow = xmlCatalogGetDefaults();
-		    if ((allow == XML_CATA_ALLOW_DOCUMENT) ||
-			(allow == XML_CATA_ALLOW_ALL))
-			xmlParseCatalogPI(ctxt, buf);
-		}
-#endif
 
 
 		/*
@@ -14176,9 +14096,6 @@ xmlCleanupParser(void) {
 	return;
 
     xmlCleanupCharEncodingHandlers();
-#ifdef LIBXML_CATALOG_ENABLED
-    xmlCatalogCleanup();
-#endif
     xmlDictCleanup();
     xmlCleanupInputCallbacks();
 #ifdef LIBXML_OUTPUT_ENABLED
@@ -14303,10 +14220,6 @@ xmlCtxtReset(xmlParserCtxtPtr ctxt)
         ctxt->attsSpecial = NULL;
     }
 
-#ifdef LIBXML_CATALOG_ENABLED
-    if (ctxt->catalogs != NULL)
-	xmlCatalogFreeLocal(ctxt->catalogs);
-#endif
     if (ctxt->lastError.code != XML_ERR_OK)
         xmlResetError(&ctxt->lastError);
 }

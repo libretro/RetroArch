@@ -188,15 +188,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_CATALOG_ENABLED:
- *
- * Whether the Catalog support is configured in
- */
-#if 0
-#define LIBXML_CATALOG_ENABLED
-#endif
-
-/**
  * LIBXML_DOCB_ENABLED:
  *
  * Whether the SGML Docbook support is configured in

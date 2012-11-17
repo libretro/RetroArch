@@ -90,9 +90,6 @@
 #include <libxml/uri.h>
 #include <libxml/nanohttp.h>
 #include <libxml/xmlerror.h>
-#ifdef LIBXML_CATALOG_ENABLED
-#include <libxml/catalog.h>
-#endif
 #include <libxml/globals.h>
 
 /* #define VERBOSE_FAILURE */
@@ -2977,84 +2974,6 @@ static int xmlNoNetExists(const char *URL) {
     return xmlCheckFilename(path);
 }
 
-#ifdef LIBXML_CATALOG_ENABLED
-
-/**
- * xmlResolveResourceFromCatalog:
- * @URL:  the URL for the entity to load
- * @ID:  the System ID for the entity to load
- * @ctxt:  the context in which the entity is called or NULL
- *
- * Resolves the URL and ID against the appropriate catalog.
- * This function is used by xmlDefaultExternalEntityLoader and
- * xmlNoNetExternalEntityLoader.
- *
- * Returns a new allocated URL, or NULL.
- */
-static xmlChar *
-xmlResolveResourceFromCatalog(const char *URL, const char *ID,
-                              xmlParserCtxtPtr ctxt) {
-    xmlChar *resource = NULL;
-    xmlCatalogAllow pref;
-
-    /*
-     * If the resource doesn't exists as a file,
-     * try to load it from the resource pointed in the catalogs
-     */
-    pref = xmlCatalogGetDefaults();
-
-    if ((pref != XML_CATA_ALLOW_NONE) && (!xmlNoNetExists(URL))) {
-	/*
-	 * Do a local lookup
-	 */
-	if ((ctxt != NULL) && (ctxt->catalogs != NULL) &&
-	    ((pref == XML_CATA_ALLOW_ALL) ||
-	     (pref == XML_CATA_ALLOW_DOCUMENT))) {
-	    resource = xmlCatalogLocalResolve(ctxt->catalogs,
-					      (const xmlChar *)ID,
-					      (const xmlChar *)URL);
-        }
-	/*
-	 * Try a global lookup
-	 */
-	if ((resource == NULL) &&
-	    ((pref == XML_CATA_ALLOW_ALL) ||
-	     (pref == XML_CATA_ALLOW_GLOBAL))) {
-	    resource = xmlCatalogResolve((const xmlChar *)ID,
-					 (const xmlChar *)URL);
-	}
-	if ((resource == NULL) && (URL != NULL))
-	    resource = xmlStrdup((const xmlChar *) URL);
-
-	/*
-	 * TODO: do an URI lookup on the reference
-	 */
-	if ((resource != NULL) && (!xmlNoNetExists((const char *)resource))) {
-	    xmlChar *tmp = NULL;
-
-	    if ((ctxt != NULL) && (ctxt->catalogs != NULL) &&
-		((pref == XML_CATA_ALLOW_ALL) ||
-		 (pref == XML_CATA_ALLOW_DOCUMENT))) {
-		tmp = xmlCatalogLocalResolveURI(ctxt->catalogs, resource);
-	    }
-	    if ((tmp == NULL) &&
-		((pref == XML_CATA_ALLOW_ALL) ||
-	         (pref == XML_CATA_ALLOW_GLOBAL))) {
-		tmp = xmlCatalogResolveURI(resource);
-	    }
-
-	    if (tmp != NULL) {
-		xmlFree(resource);
-		resource = tmp;
-	    }
-	}
-    }
-
-    return resource;
-}
-
-#endif
-
 /**
  * xmlDefaultExternalEntityLoader:
  * @URL:  the URL for the entity to load
@@ -3084,9 +3003,6 @@ xmlDefaultExternalEntityLoader(const char *URL, const char *ID,
 	ctxt->options = options;
 	return(ret);
     }
-#ifdef LIBXML_CATALOG_ENABLED
-    resource = xmlResolveResourceFromCatalog(URL, ID, ctxt);
-#endif
 
     if (resource == NULL)
         resource = (xmlChar *) URL;
@@ -3182,10 +3098,6 @@ xmlNoNetExternalEntityLoader(const char *URL, const char *ID,
                              xmlParserCtxtPtr ctxt) {
     xmlParserInputPtr input = NULL;
     xmlChar *resource = NULL;
-
-#ifdef LIBXML_CATALOG_ENABLED
-    resource = xmlResolveResourceFromCatalog(URL, ID, ctxt);
-#endif
 
     if (resource == NULL)
 	resource = (xmlChar *) URL;

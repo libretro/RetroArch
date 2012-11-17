@@ -49,9 +49,6 @@
 #include <libxml/uri.h>
 #include <libxml/dict.h>
 #include <libxml/SAX.h>
-#ifdef LIBXML_CATALOG_ENABLED
-#include <libxml/catalog.h>
-#endif
 #include <libxml/globals.h>
 #include <libxml/chvalid.h>
 
@@ -1840,10 +1837,6 @@ xmlFreeParserCtxt(xmlParserCtxtPtr ctxt)
     if (ctxt->lastError.str3 != NULL)
         xmlFree(ctxt->lastError.str3);
 
-#ifdef LIBXML_CATALOG_ENABLED
-    if (ctxt->catalogs != NULL)
-	xmlCatalogFreeLocal(ctxt->catalogs);
-#endif
     xmlFree(ctxt);
 }
 

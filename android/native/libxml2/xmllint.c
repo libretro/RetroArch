@@ -80,9 +80,6 @@
 #ifdef LIBXML_XINCLUDE_ENABLED
 #include <libxml/xinclude.h>
 #endif
-#ifdef LIBXML_CATALOG_ENABLED
-#include <libxml/catalog.h>
-#endif
 #include <libxml/globals.h>
 #include <libxml/xmlreader.h>
 #ifdef LIBXML_SCHEMATRON_ENABLED
@@ -172,10 +169,6 @@ static xmllintReturnCode progresult = XMLLINT_RETURN_OK;
 static int timing = 0;
 static int generate = 0;
 static int dropdtd = 0;
-#ifdef LIBXML_CATALOG_ENABLED
-static int catalogs = 0;
-static int nocatalogs = 0;
-#endif
 #ifdef LIBXML_C14N_ENABLED
 static int canonical = 0;
 static int canonical_11 = 0;
@@ -2838,12 +2831,6 @@ static void usage(const char *name) {
 #endif /* LIBXML_C14N_ENABLED */
     printf("\t--nsclean : remove redundant namespace declarations\n");
     printf("\t--testIO : test user I/O support\n");
-#ifdef LIBXML_CATALOG_ENABLED
-    printf("\t--catalogs : use SGML catalogs from $SGML_CATALOG_FILES\n");
-    printf("\t             otherwise XML Catalogs starting from \n");
-    printf("\t         %s are activated by default\n", XML_XML_DEFAULT_CATALOG);
-    printf("\t--nocatalogs: deactivate all catalogs\n");
-#endif
     printf("\t--auto : generate a small doc on the fly\n");
 #ifdef LIBXML_XINCLUDE_ENABLED
     printf("\t--xinclude : do XInclude processing\n");
@@ -3089,15 +3076,6 @@ main(int argc, char **argv) {
 	    options |= XML_PARSE_NOENT | XML_PARSE_DTDATTR | XML_PARSE_DTDLOAD;
 	}
 #endif
-#ifdef LIBXML_CATALOG_ENABLED
-	else if ((!strcmp(argv[i], "-catalogs")) ||
-		 (!strcmp(argv[i], "--catalogs"))) {
-	    catalogs++;
-	} else if ((!strcmp(argv[i], "-nocatalogs")) ||
-		 (!strcmp(argv[i], "--nocatalogs"))) {
-	    nocatalogs++;
-	}
-#endif
 	else if ((!strcmp(argv[i], "-encode")) ||
 	         (!strcmp(argv[i], "--encode"))) {
 	    i++;
@@ -3224,20 +3202,6 @@ main(int argc, char **argv) {
 	}
     }
 
-#ifdef LIBXML_CATALOG_ENABLED
-    if (nocatalogs == 0) {
-	if (catalogs) {
-	    const char *catal;
-
-	    catal = getenv("SGML_CATALOG_FILES");
-	    if (catal != NULL) {
-		xmlLoadCatalogs(catal);
-	    } else {
-		fprintf(stderr, "Variable $SGML_CATALOG_FILES not set\n");
-	    }
-	}
-    }
-#endif
 
 #ifdef LIBXML_SAX1_ENABLED
     if (sax1)
