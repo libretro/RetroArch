@@ -1217,10 +1217,6 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
 	    }
 	    break;
 	}
-#ifdef LIBXML_XPTR_ENABLED
-	case XPATH_RANGE:
-	    return(xmlXIncludeCopyRange(ctxt, target, source, obj));
-#endif
 	case XPATH_POINT:
 	    /* points are ignored in XInclude */
 	    break;
@@ -1395,9 +1391,6 @@ xmlXIncludeLoadDoc(xmlXIncludeCtxtPtr ctxt, const xmlChar *url, int nr) {
     xmlChar *URL;
     xmlChar *fragment = NULL;
     int i = 0;
-#ifdef LIBXML_XPTR_ENABLED
-    int saveFlags;
-#endif
 
 #ifdef DEBUG_XINCLUDE
     xmlGenericError(xmlGenericErrorContext, "Loading doc %s:%d\n", url, nr);
@@ -1467,22 +1460,8 @@ xmlXIncludeLoadDoc(xmlXIncludeCtxtPtr ctxt, const xmlChar *url, int nr) {
 #ifdef DEBUG_XINCLUDE
     printf("loading %s\n", URL);
 #endif
-#ifdef LIBXML_XPTR_ENABLED
-    /*
-     * If this is an XPointer evaluation, we want to assure that
-     * all entities have been resolved prior to processing the
-     * referenced document
-     */
-    saveFlags = ctxt->parseFlags;
-    if (fragment != NULL) {	/* if this is an XPointer eval */
-	ctxt->parseFlags |= XML_PARSE_NOENT;
-    }
-#endif
 
     doc = xmlXIncludeParseFile(ctxt, (const char *)URL);
-#ifdef LIBXML_XPTR_ENABLED
-    ctxt->parseFlags = saveFlags;
-#endif
     if (doc == NULL) {
 	xmlFree(URL);
 	if (fragment != NULL)
@@ -1545,132 +1524,6 @@ loaded:
 		                                       doc, doc->children);
 	}
     } 
-#ifdef LIBXML_XPTR_ENABLED
-    else {
-	/*
-	 * Computes the XPointer expression and make a copy used
-	 * as the replacement copy.
-	 */
-	xmlXPathObjectPtr xptr;
-	xmlXPathContextPtr xptrctxt;
-	xmlNodeSetPtr set;
-
-	if (doc == NULL) {
-	    xptrctxt = xmlXPtrNewContext(ctxt->doc, ctxt->incTab[nr]->ref,
-		                         NULL);
-	} else {
-	    xptrctxt = xmlXPtrNewContext(doc, NULL, NULL);
-	}
-	if (xptrctxt == NULL) {
-	    xmlXIncludeErr(ctxt, ctxt->incTab[nr]->ref, 
-	                   XML_XINCLUDE_XPTR_FAILED,
-			   "could not create XPointer context\n", NULL);
-	    xmlFree(URL);
-	    xmlFree(fragment);
-	    return(-1);
-	}
-	xptr = xmlXPtrEval(fragment, xptrctxt);
-	if (xptr == NULL) {
-	    xmlXIncludeErr(ctxt, ctxt->incTab[nr]->ref,
-	                   XML_XINCLUDE_XPTR_FAILED,
-			   "XPointer evaluation failed: #%s\n",
-			   fragment);
-	    xmlXPathFreeContext(xptrctxt);
-	    xmlFree(URL);
-	    xmlFree(fragment);
-	    return(-1);
-	}
-	switch (xptr->type) {
-	    case XPATH_UNDEFINED:
-	    case XPATH_BOOLEAN:
-	    case XPATH_NUMBER:
-	    case XPATH_STRING:
-	    case XPATH_POINT:
-	    case XPATH_USERS:
-	    case XPATH_XSLT_TREE:
-		xmlXIncludeErr(ctxt, ctxt->incTab[nr]->ref, 
-		               XML_XINCLUDE_XPTR_RESULT,
-			       "XPointer is not a range: #%s\n",
-			       fragment);
-		xmlXPathFreeContext(xptrctxt);
-		xmlFree(URL);
-		xmlFree(fragment);
-		return(-1);
-	    case XPATH_NODESET:
-	        if ((xptr->nodesetval == NULL) ||
-		    (xptr->nodesetval->nodeNr <= 0)) {
-		    xmlXPathFreeContext(xptrctxt);
-		    xmlFree(URL);
-		    xmlFree(fragment);
-		    return(-1);
-		}
-
-	    case XPATH_RANGE:
-	    case XPATH_LOCATIONSET:
-		break;
-	}
-	set = xptr->nodesetval;
-	if (set != NULL) {
-	    for (i = 0;i < set->nodeNr;i++) {
-		if (set->nodeTab[i] == NULL)
-		    continue;
-		switch (set->nodeTab[i]->type) {
-		    case XML_ELEMENT_NODE:
-		    case XML_TEXT_NODE:
-		    case XML_CDATA_SECTION_NODE:
-		    case XML_ENTITY_REF_NODE:
-		    case XML_ENTITY_NODE:
-		    case XML_PI_NODE:
-		    case XML_COMMENT_NODE:
-		    case XML_DOCUMENT_NODE:
-		    case XML_HTML_DOCUMENT_NODE:
-			continue;
-
-		    case XML_ATTRIBUTE_NODE:
-			xmlXIncludeErr(ctxt, ctxt->incTab[nr]->ref, 
-			               XML_XINCLUDE_XPTR_RESULT,
-				       "XPointer selects an attribute: #%s\n",
-				       fragment);
-			set->nodeTab[i] = NULL;
-			continue;
-		    case XML_NAMESPACE_DECL:
-			xmlXIncludeErr(ctxt, ctxt->incTab[nr]->ref, 
-			               XML_XINCLUDE_XPTR_RESULT,
-				       "XPointer selects a namespace: #%s\n",
-				       fragment);
-			set->nodeTab[i] = NULL;
-			continue;
-		    case XML_DOCUMENT_TYPE_NODE:
-		    case XML_DOCUMENT_FRAG_NODE:
-		    case XML_NOTATION_NODE:
-		    case XML_DTD_NODE:
-		    case XML_ELEMENT_DECL:
-		    case XML_ATTRIBUTE_DECL:
-		    case XML_ENTITY_DECL:
-		    case XML_XINCLUDE_START:
-		    case XML_XINCLUDE_END:
-			xmlXIncludeErr(ctxt, ctxt->incTab[nr]->ref, 
-			               XML_XINCLUDE_XPTR_RESULT,
-				   "XPointer selects unexpected nodes: #%s\n",
-				       fragment);
-			set->nodeTab[i] = NULL;
-			set->nodeTab[i] = NULL;
-			continue; /* for */
-		}
-	    }
-	}
-	if (doc == NULL) {
-	    ctxt->incTab[nr]->xptr = xptr;
-	    ctxt->incTab[nr]->inc = NULL;
-	} else {
-	    ctxt->incTab[nr]->inc =
-		xmlXIncludeCopyXPointer(ctxt, ctxt->doc, doc, xptr);
-	    xmlXPathFreeObject(xptr);
-	}
-	xmlXPathFreeContext(xptrctxt);
-	xmlFree(fragment);
-    }
-#endif
 
     /*
      * Do the xml:base fixup if needed

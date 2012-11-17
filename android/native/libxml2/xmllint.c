@@ -173,9 +173,6 @@ static int nbregister = 0;
 #ifdef LIBXML_SAX1_ENABLED
 static int sax1 = 0;
 #endif /* LIBXML_SAX1_ENABLED */
-#ifdef LIBXML_XPATH_ENABLED
-static const char *xpathquery = NULL;
-#endif
 static int options = XML_PARSE_COMPACT;
 static int sax = 0;
 static int oldxml10 = 0;
@@ -1843,100 +1840,6 @@ static void walkDoc(xmlDocPtr doc) {
 }
 #endif /* LIBXML_READER_ENABLED */
 
-#ifdef LIBXML_XPATH_ENABLED
-/************************************************************************
- *									*
- *			XPath Query                                     *
- *									*
- ************************************************************************/
-
-static void doXPathDump(xmlXPathObjectPtr cur) {
-    switch(cur->type) {
-        case XPATH_NODESET: {
-            int i;
-            xmlNodePtr node;
-#ifdef LIBXML_OUTPUT_ENABLED
-            xmlSaveCtxtPtr ctxt;
-
-            if (cur->nodesetval->nodeNr <= 0) {
-                fprintf(stderr, "XPath set is empty\n");
-                progresult = XMLLINT_ERR_XPATH;
-                break;
-            }
-            ctxt = xmlSaveToFd(1, NULL, 0);
-            if (ctxt == NULL) {
-                fprintf(stderr, "Out of memory for XPath\n");
-                progresult = XMLLINT_ERR_MEM;
-                return;
-            }
-            for (i = 0;i < cur->nodesetval->nodeNr;i++) {
-                node = cur->nodesetval->nodeTab[i];
-                xmlSaveTree(ctxt, node);
-            }
-            xmlSaveClose(ctxt);
-#else
-            printf("xpath returned %d nodes\n", cur->nodesetval->nodeNr);
-#endif
-	    break;
-        }
-        case XPATH_BOOLEAN:
-	    if (cur->boolval) printf("true");
-	    else printf("false");
-	    break;
-        case XPATH_NUMBER:
-	    switch (xmlXPathIsInf(cur->floatval)) {
-	    case 1:
-		printf("Infinity");
-		break;
-	    case -1:
-		printf("-Infinity");
-		break;
-	    default:
-		if (xmlXPathIsNaN(cur->floatval)) {
-		    printf("NaN");
-		} else {
-		    printf("%0g", cur->floatval);
-		}
-	    }
-	    break;
-        case XPATH_STRING:
-	    printf("%s", (const char *) cur->stringval);
-	    break;
-        case XPATH_UNDEFINED:
-	    fprintf(stderr, "XPath Object is uninitialized\n");
-            progresult = XMLLINT_ERR_XPATH;
-	    break;
-	default:
-	    fprintf(stderr, "XPath object of unexpected type\n");
-            progresult = XMLLINT_ERR_XPATH;
-	    break;
-    }
-}
-
-static void doXPathQuery(xmlDocPtr doc, const char *query) {
-    xmlXPathContextPtr ctxt;
-    xmlXPathObjectPtr res;
-
-    ctxt = xmlXPathNewContext(doc);
-    if (ctxt == NULL) {
-        fprintf(stderr, "Out of memory for XPath\n");
-        progresult = XMLLINT_ERR_MEM;
-        return;
-    }
-    ctxt->node = xmlDocGetRootElement(doc);
-    res = xmlXPathEval(BAD_CAST query, ctxt);
-    xmlXPathFreeContext(ctxt);
-
-    if (res == NULL) {
-        fprintf(stderr, "XPath evaluation failure\n");
-        progresult = XMLLINT_ERR_XPATH;
-        return;
-    }
-    doXPathDump(res);
-    xmlXPathFreeObject(res);
-}
-#endif /* LIBXML_XPATH_ENABLED */
-
 /************************************************************************
  *									*
  *			Tree Test processing				*
@@ -2146,12 +2049,6 @@ static void parseAndPrintFile(char *filename, xmlParserCtxtPtr rectxt) {
 	if ((timing) && (!repeat)) {
 	    endTimer("Xinclude processing");
 	}
-    }
-#endif
-
-#ifdef LIBXML_XPATH_ENABLED
-    if (xpathquery != NULL) {
-        doXPathQuery(doc, xpathquery);
     }
 #endif
 
@@ -2660,9 +2557,6 @@ static void usage(const char *name) {
 #endif
     printf("\t--sax: do not build a tree but work just at the SAX level\n");
     printf("\t--oldxml10: use XML-1.0 parsing rules before the 5th edition\n");
-#ifdef LIBXML_XPATH_ENABLED
-    printf("\t--xpath expr: evaluate the XPath expression, inply --noout\n");
-#endif
 
     printf("\nLibxml project home page: http://xmlsoft.org/\n");
     printf("To report bugs or get some help check: http://xmlsoft.org/bugs.html\n");
@@ -2972,13 +2866,6 @@ main(int argc, char **argv) {
                    (!strcmp(argv[i], "--path"))) {
 	    i++;
 	    parsePath(BAD_CAST argv[i]);
-#ifdef LIBXML_XPATH_ENABLED
-        } else if ((!strcmp(argv[i], "-xpath")) ||
-                   (!strcmp(argv[i], "--xpath"))) {
-	    i++;
-	    noout++;
-	    xpathquery = argv[i];
-#endif
 	} else if ((!strcmp(argv[i], "-oldxml10")) ||
 	           (!strcmp(argv[i], "--oldxml10"))) {
 	    oldxml10++;
@@ -3145,13 +3032,6 @@ main(int argc, char **argv) {
 	    i++;
 	    continue;
         }
-#ifdef LIBXML_XPATH_ENABLED
-        if ((!strcmp(argv[i], "-xpath")) ||
-	    (!strcmp(argv[i], "--xpath"))) {
-	    i++;
-	    continue;
-	}
-#endif
 	if ((timing) && (repeat))
 	    startTimer();
 	/* Remember file names.  "-" means stdin.  <sven@zen.org> */

@@ -840,17 +840,9 @@ xmlHasFeature(xmlFeature feature)
         case XML_WITH_CATALOG:
             return(0);
         case XML_WITH_XPATH:
-#ifdef LIBXML_XPATH_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_XPTR:
-#ifdef LIBXML_XPTR_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_XINCLUDE:
 #ifdef LIBXML_XINCLUDE_ENABLED
             return(1);
@@ -14014,10 +14006,6 @@ xmlSetEntityReferenceFunc(xmlEntityReferenceFunc func)
  *									*
  ************************************************************************/
 
-#ifdef LIBXML_XPATH_ENABLED
-#include <libxml/xpath.h>
-#endif
-
 extern void XMLCDECL xmlGenericErrorDefaultFunc(void *ctx, const char *msg, ...);
 static int xmlParserInitialized = 0;
 
@@ -14050,9 +14038,6 @@ xmlInitParser(void) {
 #ifdef LIBXML_OUTPUT_ENABLED
 	xmlRegisterDefaultOutputCallbacks();
 #endif /* LIBXML_OUTPUT_ENABLED */
-#ifdef LIBXML_XPATH_ENABLED
-	xmlXPathInit();
-#endif
 	xmlParserInitialized = 1;
 #ifdef LIBXML_THREAD_ENABLED
     }

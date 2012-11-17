@@ -179,24 +179,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_XPATH_ENABLED:
- *
- * Whether XPath is configured in
- */
-#if 1
-#define LIBXML_XPATH_ENABLED
-#endif
-
-/**
- * LIBXML_XPTR_ENABLED:
- *
- * Whether XPointer is configured in
- */
-#if 1
-#define LIBXML_XPTR_ENABLED
-#endif
-
-/**
  * LIBXML_XINCLUDE_ENABLED:
  *
  * Whether XInclude is configured in

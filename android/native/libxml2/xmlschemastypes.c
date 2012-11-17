@@ -34,11 +34,9 @@
 
 #define DEBUG
 
-#ifndef LIBXML_XPATH_ENABLED
 extern double xmlXPathNAN;
 extern double xmlXPathPINF;
 extern double xmlXPathNINF;
-#endif
 
 #define TODO 								\
     xmlGenericError(xmlGenericErrorContext,				\

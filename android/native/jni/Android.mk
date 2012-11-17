@@ -47,7 +47,6 @@ LOCAL_LIBXML_SRC_FILES = $(LIBXML_PATH)/c14n.c \
 							$(LIBXML_PATH)/uri.c \
 							$(LIBXML_PATH)/valid.c \
 							$(LIBXML_PATH)/xinclude.c \
-							$(LIBXML_PATH)/xlink.c \
 							$(LIBXML_PATH)/xmlIO.c \
 							$(LIBXML_PATH)/xmlmemory.c \
 							$(LIBXML_PATH)/xmlmodule.c \
@@ -58,9 +57,7 @@ LOCAL_LIBXML_SRC_FILES = $(LIBXML_PATH)/c14n.c \
 							$(LIBXML_PATH)/xmlschemastypes.c \
 							$(LIBXML_PATH)/xmlstring.c \
 							$(LIBXML_PATH)/xmlunicode.c \
-							$(LIBXML_PATH)/xmlwriter.c \
-							$(LIBXML_PATH)/xpath.c \
-							$(LIBXML_PATH)/xpointer.c
+							$(LIBXML_PATH)/xmlwriter.c
 LOCAL_SRC_FILES    =	$(RARCH_PATH)/console/griffin/griffin.c $(LOCAL_LIBXML_SRC_FILES)
 
 
