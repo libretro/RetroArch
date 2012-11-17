@@ -143,30 +143,12 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_SAX1_ENABLED:
- *
- * Whether the older SAX1 interface is configured in
- */
-#if 1
-#define LIBXML_SAX1_ENABLED
-#endif
-
-/**
  * LIBXML_VALID_ENABLED:
  *
  * Whether the DTD validation support is configured in
  */
 #if 0
 #define LIBXML_VALID_ENABLED
-#endif
-
-/**
- * LIBXML_LEGACY_ENABLED:
- *
- * Whether the deprecated APIs are compiled in for compatibility
- */
-#if 0
-#define LIBXML_LEGACY_ENABLED
 #endif
 
 /**

@@ -613,7 +613,7 @@ struct _xmlDOMWrapCtxt {
 /*
  * Some helper functions
  */
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_WRITER_ENABLED)
 XMLPUBFUN int XMLCALL
 		xmlValidateNCName	(const xmlChar *value,
 					 int space);
@@ -714,12 +714,6 @@ XMLPUBFUN xmlDtdPtr XMLCALL
 		xmlGetIntSubset		(xmlDocPtr doc);
 XMLPUBFUN void XMLCALL		
 		xmlFreeDtd		(xmlDtdPtr cur);
-#ifdef LIBXML_LEGACY_ENABLED
-XMLPUBFUN xmlNsPtr XMLCALL	
-		xmlNewGlobalNs		(xmlDocPtr doc,
-					 const xmlChar *href,
-					 const xmlChar *prefix);
-#endif /* LIBXML_LEGACY_ENABLED */
 XMLPUBFUN xmlNsPtr XMLCALL	
 		xmlNewNs		(xmlNodePtr node,
 					 const xmlChar *href,

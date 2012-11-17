@@ -356,44 +356,6 @@ static const char *xmlTreeIndentStringThrDef = "  ";
 int xmlSaveNoEmptyTags = 0;
 static int xmlSaveNoEmptyTagsThrDef = 0;
 
-#ifdef LIBXML_SAX1_ENABLED
-/**
- * xmlDefaultSAXHandler:
- *
- * Default SAX version1 handler for XML, builds the DOM tree
- */
-xmlSAXHandlerV1 xmlDefaultSAXHandler = {
-    xmlSAX2InternalSubset,
-    xmlSAX2IsStandalone,
-    xmlSAX2HasInternalSubset,
-    xmlSAX2HasExternalSubset,
-    xmlSAX2ResolveEntity,
-    xmlSAX2GetEntity,
-    xmlSAX2EntityDecl,
-    xmlSAX2NotationDecl,
-    xmlSAX2AttributeDecl,
-    xmlSAX2ElementDecl,
-    xmlSAX2UnparsedEntityDecl,
-    xmlSAX2SetDocumentLocator,
-    xmlSAX2StartDocument,
-    xmlSAX2EndDocument,
-    xmlSAX2StartElement,
-    xmlSAX2EndElement,
-    xmlSAX2Reference,
-    xmlSAX2Characters,
-    xmlSAX2Characters,
-    xmlSAX2ProcessingInstruction,
-    xmlSAX2Comment,
-    xmlParserWarning,
-    xmlParserError,
-    xmlParserError,
-    xmlSAX2GetParameterEntity,
-    xmlSAX2CDataBlock,
-    xmlSAX2ExternalSubset,
-    0,
-};
-#endif /* LIBXML_SAX1_ENABLED */
-
 /**
  * xmlDefaultSAXLocator:
  *
@@ -433,9 +395,6 @@ xmlInitializeGlobalState(xmlGlobalStatePtr gs)
     gs->oldXMLWDcompatibility = 0;
     gs->xmlBufferAllocScheme = xmlBufferAllocSchemeThrDef;
     gs->xmlDefaultBufferSize = xmlDefaultBufferSizeThrDef;
-#if defined(LIBXML_SAX1_ENABLED) && defined(LIBXML_LEGACY_ENABLED)
-    initxmlDefaultSAXHandler(&gs->xmlDefaultSAXHandler, 1);
-#endif /* LIBXML_SAX1_ENABLED */
     gs->xmlDefaultSAXLocator.getPublicId = xmlSAX2GetPublicId;
     gs->xmlDefaultSAXLocator.getSystemId = xmlSAX2GetSystemId;
     gs->xmlDefaultSAXLocator.getLineNumber = xmlSAX2GetLineNumber;
@@ -716,17 +675,6 @@ int xmlThrDefDefaultBufferSize(int v) {
     xmlMutexUnlock(xmlThrDefMutex);
     return ret;
 }
-
-#ifdef LIBXML_SAX1_ENABLED
-#undef	xmlDefaultSAXHandler
-xmlSAXHandlerV1 *
-__xmlDefaultSAXHandler(void) {
-    if (IS_MAIN_THREAD)
-	return (&xmlDefaultSAXHandler);
-    else
-	return (&xmlGetGlobalState()->xmlDefaultSAXHandler);
-}
-#endif /* LIBXML_SAX1_ENABLED */
 
 #undef	xmlDefaultSAXLocator
 xmlSAXLocator *

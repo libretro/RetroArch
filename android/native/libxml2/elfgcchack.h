@@ -1007,17 +1007,6 @@ extern __typeof (xmlCleanupParser) xmlCleanupParser__internal_alias __attribute(
 #endif
 #endif
 
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlCleanupPredefinedEntities
-extern __typeof (xmlCleanupPredefinedEntities) xmlCleanupPredefinedEntities __attribute((alias("xmlCleanupPredefinedEntities__internal_alias")));
-#else
-#ifndef xmlCleanupPredefinedEntities
-extern __typeof (xmlCleanupPredefinedEntities) xmlCleanupPredefinedEntities__internal_alias __attribute((visibility("hidden")));
-#define xmlCleanupPredefinedEntities xmlCleanupPredefinedEntities__internal_alias
-#endif
-#endif
-#endif
 
 #ifdef bottom_threads
 #undef xmlCleanupThreads
@@ -1525,17 +1514,6 @@ extern __typeof (xmlDOMWrapRemoveNode) xmlDOMWrapRemoveNode__internal_alias __at
 #endif
 #endif
 
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlDecodeEntities
-extern __typeof (xmlDecodeEntities) xmlDecodeEntities __attribute((alias("xmlDecodeEntities__internal_alias")));
-#else
-#ifndef xmlDecodeEntities
-extern __typeof (xmlDecodeEntities) xmlDecodeEntities__internal_alias __attribute((visibility("hidden")));
-#define xmlDecodeEntities xmlDecodeEntities__internal_alias
-#endif
-#endif
-#endif
 
 #ifdef bottom_SAX2
 #undef xmlDefaultSAXHandlerInit
@@ -1895,18 +1873,6 @@ extern __typeof (xmlElemDump) xmlElemDump __attribute((alias("xmlElemDump__inter
 #ifndef xmlElemDump
 extern __typeof (xmlElemDump) xmlElemDump__internal_alias __attribute((visibility("hidden")));
 #define xmlElemDump xmlElemDump__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlEncodeEntities
-extern __typeof (xmlEncodeEntities) xmlEncodeEntities __attribute((alias("xmlEncodeEntities__internal_alias")));
-#else
-#ifndef xmlEncodeEntities
-extern __typeof (xmlEncodeEntities) xmlEncodeEntities__internal_alias __attribute((visibility("hidden")));
-#define xmlEncodeEntities xmlEncodeEntities__internal_alias
 #endif
 #endif
 #endif
@@ -2669,30 +2635,6 @@ extern __typeof (xmlGetExternalEntityLoader) xmlGetExternalEntityLoader__interna
 #endif
 #endif
 
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlGetFeature
-extern __typeof (xmlGetFeature) xmlGetFeature __attribute((alias("xmlGetFeature__internal_alias")));
-#else
-#ifndef xmlGetFeature
-extern __typeof (xmlGetFeature) xmlGetFeature__internal_alias __attribute((visibility("hidden")));
-#define xmlGetFeature xmlGetFeature__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlGetFeaturesList
-extern __typeof (xmlGetFeaturesList) xmlGetFeaturesList __attribute((alias("xmlGetFeaturesList__internal_alias")));
-#else
-#ifndef xmlGetFeaturesList
-extern __typeof (xmlGetFeaturesList) xmlGetFeaturesList__internal_alias __attribute((visibility("hidden")));
-#define xmlGetFeaturesList xmlGetFeaturesList__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_threads
 #undef xmlGetGlobalState
 extern __typeof (xmlGetGlobalState) xmlGetGlobalState __attribute((alias("xmlGetGlobalState__internal_alias")));
@@ -2854,18 +2796,6 @@ extern __typeof (xmlGetUTF8Char) xmlGetUTF8Char __attribute((alias("xmlGetUTF8Ch
 #ifndef xmlGetUTF8Char
 extern __typeof (xmlGetUTF8Char) xmlGetUTF8Char__internal_alias __attribute((visibility("hidden")));
 #define xmlGetUTF8Char xmlGetUTF8Char__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlHandleEntity
-extern __typeof (xmlHandleEntity) xmlHandleEntity __attribute((alias("xmlHandleEntity__internal_alias")));
-#else
-#ifndef xmlHandleEntity
-extern __typeof (xmlHandleEntity) xmlHandleEntity__internal_alias __attribute((visibility("hidden")));
-#define xmlHandleEntity xmlHandleEntity__internal_alias
-#endif
 #endif
 #endif
 
@@ -3231,17 +3161,6 @@ extern __typeof (xmlInitializeGlobalState) xmlInitializeGlobalState__internal_al
 #endif
 #endif
 
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlInitializePredefinedEntities
-extern __typeof (xmlInitializePredefinedEntities) xmlInitializePredefinedEntities __attribute((alias("xmlInitializePredefinedEntities__internal_alias")));
-#else
-#ifndef xmlInitializePredefinedEntities
-extern __typeof (xmlInitializePredefinedEntities) xmlInitializePredefinedEntities__internal_alias __attribute((visibility("hidden")));
-#define xmlInitializePredefinedEntities xmlInitializePredefinedEntities__internal_alias
-#endif
-#endif
-#endif
 
 #ifdef bottom_chvalid
 #undef xmlIsBaseChar
@@ -3923,42 +3842,6 @@ extern __typeof (xmlMutexUnlock) xmlMutexUnlock__internal_alias __attribute((vis
 #endif
 #endif
 
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlNamespaceParseNCName
-extern __typeof (xmlNamespaceParseNCName) xmlNamespaceParseNCName __attribute((alias("xmlNamespaceParseNCName__internal_alias")));
-#else
-#ifndef xmlNamespaceParseNCName
-extern __typeof (xmlNamespaceParseNCName) xmlNamespaceParseNCName__internal_alias __attribute((visibility("hidden")));
-#define xmlNamespaceParseNCName xmlNamespaceParseNCName__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlNamespaceParseNSDef
-extern __typeof (xmlNamespaceParseNSDef) xmlNamespaceParseNSDef __attribute((alias("xmlNamespaceParseNSDef__internal_alias")));
-#else
-#ifndef xmlNamespaceParseNSDef
-extern __typeof (xmlNamespaceParseNSDef) xmlNamespaceParseNSDef__internal_alias __attribute((visibility("hidden")));
-#define xmlNamespaceParseNSDef xmlNamespaceParseNSDef__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlNamespaceParseQName
-extern __typeof (xmlNamespaceParseQName) xmlNamespaceParseQName __attribute((alias("xmlNamespaceParseQName__internal_alias")));
-#else
-#ifndef xmlNamespaceParseQName
-extern __typeof (xmlNamespaceParseQName) xmlNamespaceParseQName__internal_alias __attribute((visibility("hidden")));
-#define xmlNamespaceParseQName xmlNamespaceParseQName__internal_alias
-#endif
-#endif
-#endif
-
 #if defined(LIBXML_REGEXP_ENABLED) && defined(LIBXML_AUTOMATA_ENABLED)
 #ifdef bottom_xmlregexp
 #undef xmlNewAutomata
@@ -4174,18 +4057,6 @@ extern __typeof (xmlNewEntityInputStream) xmlNewEntityInputStream __attribute((a
 #ifndef xmlNewEntityInputStream
 extern __typeof (xmlNewEntityInputStream) xmlNewEntityInputStream__internal_alias __attribute((visibility("hidden")));
 #define xmlNewEntityInputStream xmlNewEntityInputStream__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlNewGlobalNs
-extern __typeof (xmlNewGlobalNs) xmlNewGlobalNs __attribute((alias("xmlNewGlobalNs__internal_alias")));
-#else
-#ifndef xmlNewGlobalNs
-extern __typeof (xmlNewGlobalNs) xmlNewGlobalNs__internal_alias __attribute((visibility("hidden")));
-#define xmlNewGlobalNs xmlNewGlobalNs__internal_alias
-#endif
 #endif
 #endif
 
@@ -4869,17 +4740,6 @@ extern __typeof (xmlParseAttValue) xmlParseAttValue__internal_alias __attribute(
 #endif
 #endif
 
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlParseAttribute
-extern __typeof (xmlParseAttribute) xmlParseAttribute __attribute((alias("xmlParseAttribute__internal_alias")));
-#else
-#ifndef xmlParseAttribute
-extern __typeof (xmlParseAttribute) xmlParseAttribute__internal_alias __attribute((visibility("hidden")));
-#define xmlParseAttribute xmlParseAttribute__internal_alias
-#endif
-#endif
-#endif
 
 #ifdef bottom_parser
 #undef xmlParseAttributeListDecl
@@ -4898,30 +4758,6 @@ extern __typeof (xmlParseAttributeType) xmlParseAttributeType __attribute((alias
 #ifndef xmlParseAttributeType
 extern __typeof (xmlParseAttributeType) xmlParseAttributeType__internal_alias __attribute((visibility("hidden")));
 #define xmlParseAttributeType xmlParseAttributeType__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlParseBalancedChunkMemory
-extern __typeof (xmlParseBalancedChunkMemory) xmlParseBalancedChunkMemory __attribute((alias("xmlParseBalancedChunkMemory__internal_alias")));
-#else
-#ifndef xmlParseBalancedChunkMemory
-extern __typeof (xmlParseBalancedChunkMemory) xmlParseBalancedChunkMemory__internal_alias __attribute((visibility("hidden")));
-#define xmlParseBalancedChunkMemory xmlParseBalancedChunkMemory__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlParseBalancedChunkMemoryRecover
-extern __typeof (xmlParseBalancedChunkMemoryRecover) xmlParseBalancedChunkMemoryRecover __attribute((alias("xmlParseBalancedChunkMemoryRecover__internal_alias")));
-#else
-#ifndef xmlParseBalancedChunkMemoryRecover
-extern __typeof (xmlParseBalancedChunkMemoryRecover) xmlParseBalancedChunkMemoryRecover__internal_alias __attribute((visibility("hidden")));
-#define xmlParseBalancedChunkMemoryRecover xmlParseBalancedChunkMemoryRecover__internal_alias
-#endif
 #endif
 #endif
 
@@ -5029,18 +4865,6 @@ extern __typeof (xmlParseDefaultDecl) xmlParseDefaultDecl__internal_alias __attr
 #endif
 #endif
 
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlParseDoc
-extern __typeof (xmlParseDoc) xmlParseDoc __attribute((alias("xmlParseDoc__internal_alias")));
-#else
-#ifndef xmlParseDoc
-extern __typeof (xmlParseDoc) xmlParseDoc__internal_alias __attribute((visibility("hidden")));
-#define xmlParseDoc xmlParseDoc__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_parser
 #undef xmlParseDocTypeDecl
 extern __typeof (xmlParseDocTypeDecl) xmlParseDocTypeDecl __attribute((alias("xmlParseDocTypeDecl__internal_alias")));
@@ -5131,30 +4955,6 @@ extern __typeof (xmlParseEncodingDecl) xmlParseEncodingDecl__internal_alias __at
 #endif
 #endif
 
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlParseEndTag
-extern __typeof (xmlParseEndTag) xmlParseEndTag __attribute((alias("xmlParseEndTag__internal_alias")));
-#else
-#ifndef xmlParseEndTag
-extern __typeof (xmlParseEndTag) xmlParseEndTag__internal_alias __attribute((visibility("hidden")));
-#define xmlParseEndTag xmlParseEndTag__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlParseEntity
-extern __typeof (xmlParseEntity) xmlParseEntity __attribute((alias("xmlParseEntity__internal_alias")));
-#else
-#ifndef xmlParseEntity
-extern __typeof (xmlParseEntity) xmlParseEntity__internal_alias __attribute((visibility("hidden")));
-#define xmlParseEntity xmlParseEntity__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_parser
 #undef xmlParseEntityDecl
 extern __typeof (xmlParseEntityDecl) xmlParseEntityDecl __attribute((alias("xmlParseEntityDecl__internal_alias")));
@@ -5215,18 +5015,6 @@ extern __typeof (xmlParseExtParsedEnt) xmlParseExtParsedEnt__internal_alias __at
 #endif
 #endif
 
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlParseExternalEntity
-extern __typeof (xmlParseExternalEntity) xmlParseExternalEntity __attribute((alias("xmlParseExternalEntity__internal_alias")));
-#else
-#ifndef xmlParseExternalEntity
-extern __typeof (xmlParseExternalEntity) xmlParseExternalEntity__internal_alias __attribute((visibility("hidden")));
-#define xmlParseExternalEntity xmlParseExternalEntity__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_parser
 #undef xmlParseExternalID
 extern __typeof (xmlParseExternalID) xmlParseExternalID __attribute((alias("xmlParseExternalID__internal_alias")));
@@ -5244,18 +5032,6 @@ extern __typeof (xmlParseExternalSubset) xmlParseExternalSubset __attribute((ali
 #ifndef xmlParseExternalSubset
 extern __typeof (xmlParseExternalSubset) xmlParseExternalSubset__internal_alias __attribute((visibility("hidden")));
 #define xmlParseExternalSubset xmlParseExternalSubset__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlParseFile
-extern __typeof (xmlParseFile) xmlParseFile __attribute((alias("xmlParseFile__internal_alias")));
-#else
-#ifndef xmlParseFile
-extern __typeof (xmlParseFile) xmlParseFile__internal_alias __attribute((visibility("hidden")));
-#define xmlParseFile xmlParseFile__internal_alias
-#endif
 #endif
 #endif
 
@@ -5279,18 +5055,6 @@ extern __typeof (xmlParseMarkupDecl) xmlParseMarkupDecl__internal_alias __attrib
 #endif
 #endif
 
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlParseMemory
-extern __typeof (xmlParseMemory) xmlParseMemory __attribute((alias("xmlParseMemory__internal_alias")));
-#else
-#ifndef xmlParseMemory
-extern __typeof (xmlParseMemory) xmlParseMemory__internal_alias __attribute((visibility("hidden")));
-#define xmlParseMemory xmlParseMemory__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_parser
 #undef xmlParseMisc
 extern __typeof (xmlParseMisc) xmlParseMisc __attribute((alias("xmlParseMisc__internal_alias")));
@@ -5308,18 +5072,6 @@ extern __typeof (xmlParseName) xmlParseName __attribute((alias("xmlParseName__in
 #ifndef xmlParseName
 extern __typeof (xmlParseName) xmlParseName__internal_alias __attribute((visibility("hidden")));
 #define xmlParseName xmlParseName__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlParseNamespace
-extern __typeof (xmlParseNamespace) xmlParseNamespace __attribute((alias("xmlParseNamespace__internal_alias")));
-#else
-#ifndef xmlParseNamespace
-extern __typeof (xmlParseNamespace) xmlParseNamespace__internal_alias __attribute((visibility("hidden")));
-#define xmlParseNamespace xmlParseNamespace__internal_alias
-#endif
 #endif
 #endif
 
@@ -5393,18 +5145,6 @@ extern __typeof (xmlParsePubidLiteral) xmlParsePubidLiteral__internal_alias __at
 #endif
 #endif
 
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlParseQuotedString
-extern __typeof (xmlParseQuotedString) xmlParseQuotedString __attribute((alias("xmlParseQuotedString__internal_alias")));
-#else
-#ifndef xmlParseQuotedString
-extern __typeof (xmlParseQuotedString) xmlParseQuotedString__internal_alias __attribute((visibility("hidden")));
-#define xmlParseQuotedString xmlParseQuotedString__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_parser
 #undef xmlParseReference
 extern __typeof (xmlParseReference) xmlParseReference __attribute((alias("xmlParseReference__internal_alias")));
@@ -5422,18 +5162,6 @@ extern __typeof (xmlParseSDDecl) xmlParseSDDecl __attribute((alias("xmlParseSDDe
 #ifndef xmlParseSDDecl
 extern __typeof (xmlParseSDDecl) xmlParseSDDecl__internal_alias __attribute((visibility("hidden")));
 #define xmlParseSDDecl xmlParseSDDecl__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlParseStartTag
-extern __typeof (xmlParseStartTag) xmlParseStartTag __attribute((alias("xmlParseStartTag__internal_alias")));
-#else
-#ifndef xmlParseStartTag
-extern __typeof (xmlParseStartTag) xmlParseStartTag__internal_alias __attribute((visibility("hidden")));
-#define xmlParseStartTag xmlParseStartTag__internal_alias
-#endif
 #endif
 #endif
 
@@ -5574,18 +5302,6 @@ extern __typeof (xmlParserHandlePEReference) xmlParserHandlePEReference __attrib
 #ifndef xmlParserHandlePEReference
 extern __typeof (xmlParserHandlePEReference) xmlParserHandlePEReference__internal_alias __attribute((visibility("hidden")));
 #define xmlParserHandlePEReference xmlParserHandlePEReference__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlParserHandleReference
-extern __typeof (xmlParserHandleReference) xmlParserHandleReference __attribute((alias("xmlParserHandleReference__internal_alias")));
-#else
-#ifndef xmlParserHandleReference
-extern __typeof (xmlParserHandleReference) xmlParserHandleReference__internal_alias __attribute((visibility("hidden")));
-#define xmlParserHandleReference xmlParserHandleReference__internal_alias
-#endif
 #endif
 #endif
 
@@ -6077,42 +5793,6 @@ extern __typeof (xmlReconciliateNs) xmlReconciliateNs__internal_alias __attribut
 #endif
 #endif
 
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlRecoverDoc
-extern __typeof (xmlRecoverDoc) xmlRecoverDoc __attribute((alias("xmlRecoverDoc__internal_alias")));
-#else
-#ifndef xmlRecoverDoc
-extern __typeof (xmlRecoverDoc) xmlRecoverDoc__internal_alias __attribute((visibility("hidden")));
-#define xmlRecoverDoc xmlRecoverDoc__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlRecoverFile
-extern __typeof (xmlRecoverFile) xmlRecoverFile __attribute((alias("xmlRecoverFile__internal_alias")));
-#else
-#ifndef xmlRecoverFile
-extern __typeof (xmlRecoverFile) xmlRecoverFile__internal_alias __attribute((visibility("hidden")));
-#define xmlRecoverFile xmlRecoverFile__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlRecoverMemory
-extern __typeof (xmlRecoverMemory) xmlRecoverMemory __attribute((alias("xmlRecoverMemory__internal_alias")));
-#else
-#ifndef xmlRecoverMemory
-extern __typeof (xmlRecoverMemory) xmlRecoverMemory__internal_alias __attribute((visibility("hidden")));
-#define xmlRecoverMemory xmlRecoverMemory__internal_alias
-#endif
-#endif
-#endif
-
 #if defined(LIBXML_REGEXP_ENABLED)
 #ifdef bottom_xmlregexp
 #undef xmlRegExecErrInfo
@@ -6431,7 +6111,7 @@ extern __typeof (xmlSAX2EndDocument) xmlSAX2EndDocument__internal_alias __attrib
 #endif
 #endif
 
-#if defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_WRITER_ENABLED)
 #ifdef bottom_SAX2
 #undef xmlSAX2EndElement
 extern __typeof (xmlSAX2EndElement) xmlSAX2EndElement __attribute((alias("xmlSAX2EndElement__internal_alias")));
@@ -6653,7 +6333,7 @@ extern __typeof (xmlSAX2StartDocument) xmlSAX2StartDocument__internal_alias __at
 #endif
 #endif
 
-#if defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_WRITER_ENABLED)
 #ifdef bottom_SAX2
 #undef xmlSAX2StartElement
 extern __typeof (xmlSAX2StartElement) xmlSAX2StartElement __attribute((alias("xmlSAX2StartElement__internal_alias")));
@@ -6685,18 +6365,6 @@ extern __typeof (xmlSAX2UnparsedEntityDecl) xmlSAX2UnparsedEntityDecl__internal_
 #endif
 #endif
 
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_SAX2
-#undef xmlSAXDefaultVersion
-extern __typeof (xmlSAXDefaultVersion) xmlSAXDefaultVersion __attribute((alias("xmlSAXDefaultVersion__internal_alias")));
-#else
-#ifndef xmlSAXDefaultVersion
-extern __typeof (xmlSAXDefaultVersion) xmlSAXDefaultVersion__internal_alias __attribute((visibility("hidden")));
-#define xmlSAXDefaultVersion xmlSAXDefaultVersion__internal_alias
-#endif
-#endif
-#endif
-
 #if defined(LIBXML_VALID_ENABLED)
 #ifdef bottom_parser
 #undef xmlSAXParseDTD
@@ -6705,102 +6373,6 @@ extern __typeof (xmlSAXParseDTD) xmlSAXParseDTD __attribute((alias("xmlSAXParseD
 #ifndef xmlSAXParseDTD
 extern __typeof (xmlSAXParseDTD) xmlSAXParseDTD__internal_alias __attribute((visibility("hidden")));
 #define xmlSAXParseDTD xmlSAXParseDTD__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlSAXParseDoc
-extern __typeof (xmlSAXParseDoc) xmlSAXParseDoc __attribute((alias("xmlSAXParseDoc__internal_alias")));
-#else
-#ifndef xmlSAXParseDoc
-extern __typeof (xmlSAXParseDoc) xmlSAXParseDoc__internal_alias __attribute((visibility("hidden")));
-#define xmlSAXParseDoc xmlSAXParseDoc__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlSAXParseEntity
-extern __typeof (xmlSAXParseEntity) xmlSAXParseEntity __attribute((alias("xmlSAXParseEntity__internal_alias")));
-#else
-#ifndef xmlSAXParseEntity
-extern __typeof (xmlSAXParseEntity) xmlSAXParseEntity__internal_alias __attribute((visibility("hidden")));
-#define xmlSAXParseEntity xmlSAXParseEntity__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlSAXParseFile
-extern __typeof (xmlSAXParseFile) xmlSAXParseFile __attribute((alias("xmlSAXParseFile__internal_alias")));
-#else
-#ifndef xmlSAXParseFile
-extern __typeof (xmlSAXParseFile) xmlSAXParseFile__internal_alias __attribute((visibility("hidden")));
-#define xmlSAXParseFile xmlSAXParseFile__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlSAXParseFileWithData
-extern __typeof (xmlSAXParseFileWithData) xmlSAXParseFileWithData __attribute((alias("xmlSAXParseFileWithData__internal_alias")));
-#else
-#ifndef xmlSAXParseFileWithData
-extern __typeof (xmlSAXParseFileWithData) xmlSAXParseFileWithData__internal_alias __attribute((visibility("hidden")));
-#define xmlSAXParseFileWithData xmlSAXParseFileWithData__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlSAXParseMemory
-extern __typeof (xmlSAXParseMemory) xmlSAXParseMemory __attribute((alias("xmlSAXParseMemory__internal_alias")));
-#else
-#ifndef xmlSAXParseMemory
-extern __typeof (xmlSAXParseMemory) xmlSAXParseMemory__internal_alias __attribute((visibility("hidden")));
-#define xmlSAXParseMemory xmlSAXParseMemory__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlSAXParseMemoryWithData
-extern __typeof (xmlSAXParseMemoryWithData) xmlSAXParseMemoryWithData __attribute((alias("xmlSAXParseMemoryWithData__internal_alias")));
-#else
-#ifndef xmlSAXParseMemoryWithData
-extern __typeof (xmlSAXParseMemoryWithData) xmlSAXParseMemoryWithData__internal_alias __attribute((visibility("hidden")));
-#define xmlSAXParseMemoryWithData xmlSAXParseMemoryWithData__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlSAXUserParseFile
-extern __typeof (xmlSAXUserParseFile) xmlSAXUserParseFile __attribute((alias("xmlSAXUserParseFile__internal_alias")));
-#else
-#ifndef xmlSAXUserParseFile
-extern __typeof (xmlSAXUserParseFile) xmlSAXUserParseFile__internal_alias __attribute((visibility("hidden")));
-#define xmlSAXUserParseFile xmlSAXUserParseFile__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlSAXUserParseMemory
-extern __typeof (xmlSAXUserParseMemory) xmlSAXUserParseMemory __attribute((alias("xmlSAXUserParseMemory__internal_alias")));
-#else
-#ifndef xmlSAXUserParseMemory
-extern __typeof (xmlSAXUserParseMemory) xmlSAXUserParseMemory__internal_alias __attribute((visibility("hidden")));
-#define xmlSAXUserParseMemory xmlSAXUserParseMemory__internal_alias
 #endif
 #endif
 #endif
@@ -7017,18 +6589,6 @@ extern __typeof (xmlSaveUri) xmlSaveUri__internal_alias __attribute((visibility(
 #endif
 #endif
 
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlScanName
-extern __typeof (xmlScanName) xmlScanName __attribute((alias("xmlScanName__internal_alias")));
-#else
-#ifndef xmlScanName
-extern __typeof (xmlScanName) xmlScanName__internal_alias __attribute((visibility("hidden")));
-#define xmlScanName xmlScanName__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_tree
 #undef xmlSearchNs
 extern __typeof (xmlSearchNs) xmlSearchNs __attribute((alias("xmlSearchNs__internal_alias")));
@@ -7079,18 +6639,6 @@ extern __typeof (xmlSetDocCompressMode) xmlSetDocCompressMode__internal_alias __
 #endif
 #endif
 
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_parser
-#undef xmlSetEntityReferenceFunc
-extern __typeof (xmlSetEntityReferenceFunc) xmlSetEntityReferenceFunc __attribute((alias("xmlSetEntityReferenceFunc__internal_alias")));
-#else
-#ifndef xmlSetEntityReferenceFunc
-extern __typeof (xmlSetEntityReferenceFunc) xmlSetEntityReferenceFunc__internal_alias __attribute((visibility("hidden")));
-#define xmlSetEntityReferenceFunc xmlSetEntityReferenceFunc__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_xmlIO
 #undef xmlSetExternalEntityLoader
 extern __typeof (xmlSetExternalEntityLoader) xmlSetExternalEntityLoader __attribute((alias("xmlSetExternalEntityLoader__internal_alias")));
@@ -7101,17 +6649,6 @@ extern __typeof (xmlSetExternalEntityLoader) xmlSetExternalEntityLoader__interna
 #endif
 #endif
 
-#if defined(LIBXML_LEGACY_ENABLED)
-#ifdef bottom_legacy
-#undef xmlSetFeature
-extern __typeof (xmlSetFeature) xmlSetFeature __attribute((alias("xmlSetFeature__internal_alias")));
-#else
-#ifndef xmlSetFeature
-extern __typeof (xmlSetFeature) xmlSetFeature__internal_alias __attribute((visibility("hidden")));
-#define xmlSetFeature xmlSetFeature__internal_alias
-#endif
-#endif
-#endif
 
 #ifdef bottom_error
 #undef xmlSetGenericErrorFunc
@@ -7184,18 +6721,6 @@ extern __typeof (xmlSetTreeDoc) xmlSetTreeDoc __attribute((alias("xmlSetTreeDoc_
 #ifndef xmlSetTreeDoc
 extern __typeof (xmlSetTreeDoc) xmlSetTreeDoc__internal_alias __attribute((visibility("hidden")));
 #define xmlSetTreeDoc xmlSetTreeDoc__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_SAX1_ENABLED)
-#ifdef bottom_parser
-#undef xmlSetupParserForBuffer
-extern __typeof (xmlSetupParserForBuffer) xmlSetupParserForBuffer __attribute((alias("xmlSetupParserForBuffer__internal_alias")));
-#else
-#ifndef xmlSetupParserForBuffer
-extern __typeof (xmlSetupParserForBuffer) xmlSetupParserForBuffer__internal_alias __attribute((visibility("hidden")));
-#define xmlSetupParserForBuffer xmlSetupParserForBuffer__internal_alias
-#endif
 #endif
 #endif
 
@@ -11685,7 +11210,7 @@ extern __typeof (xmlValidateElementDecl) xmlValidateElementDecl__internal_alias 
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_WRITER_ENABLED)
 #ifdef bottom_tree
 #undef xmlValidateNCName
 extern __typeof (xmlValidateNCName) xmlValidateNCName __attribute((alias("xmlValidateNCName__internal_alias")));

@@ -1037,7 +1037,7 @@ xmlSAX2EndDocument(void *ctx)
     }
 }
 
-#if defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_WRITER_ENABLED)
 /**
  * xmlSAX2AttributeInternal:
  * @ctx: the user data (XML parser context)
@@ -1775,7 +1775,7 @@ xmlSAX2EndElement(void *ctx, const xmlChar *name ATTRIBUTE_UNUSED)
 #endif
     nodePop(ctxt);
 }
-#endif /* LIBXML_SAX1_ENABLED || LIBXML_HTML_ENABLE */
+#endif /* LIBXML_HTML_ENABLE */
 
 /*
  * xmlSAX2TextNode:
@@ -2743,31 +2743,6 @@ xmlSAX2CDataBlock(void *ctx, const xmlChar *value, int len)
 
 static int xmlSAX2DefaultVersionValue = 2;
 
-#ifdef LIBXML_SAX1_ENABLED
-/**
- * xmlSAXDefaultVersion:
- * @version:  the version, 1 or 2
- *
- * Set the default version of SAX used globally by the library.
- * By default, during initialization the default is set to 2.
- * Note that it is generally a better coding style to use
- * xmlSAXVersion() to set up the version explicitly for a given
- * parsing context.
- *
- * Returns the previous value in case of success and -1 in case of error.
- */
-int
-xmlSAXDefaultVersion(int version)
-{
-    int ret = xmlSAX2DefaultVersionValue;
-
-    if ((version != 1) && (version != 2))
-        return(-1);
-    xmlSAX2DefaultVersionValue = version;
-    return(ret);
-}
-#endif /* LIBXML_SAX1_ENABLED */
-
 /**
  * xmlSAXVersion:
  * @hdlr:  the SAX handler
@@ -2788,12 +2763,6 @@ xmlSAXVersion(xmlSAXHandler *hdlr, int version)
 	hdlr->endElementNs = xmlSAX2EndElementNs;
 	hdlr->serror = NULL;
 	hdlr->initialized = XML_SAX2_MAGIC;
-#ifdef LIBXML_SAX1_ENABLED
-    } else if (version == 1) {
-	hdlr->startElement = xmlSAX2StartElement;
-	hdlr->endElement = xmlSAX2EndElement;
-	hdlr->initialized = 1;
-#endif /* LIBXML_SAX1_ENABLED */
     } else
         return(-1);
     hdlr->internalSubset = xmlSAX2InternalSubset;
@@ -2853,9 +2822,6 @@ xmlSAX2InitDefaultSAXHandler(xmlSAXHandler *hdlr, int warning)
 void
 xmlDefaultSAXHandlerInit(void)
 {
-#ifdef LIBXML_SAX1_ENABLED
-    xmlSAXVersion((xmlSAXHandlerPtr) &xmlDefaultSAXHandler, 1);
-#endif /* LIBXML_SAX1_ENABLED */
 }
 
 #define bottom_SAX2

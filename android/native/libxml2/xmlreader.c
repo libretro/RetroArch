@@ -1916,19 +1916,10 @@ xmlNewTextReader(xmlParserInputBufferPtr input, const char *URI) {
     ret->sax->startElement = xmlTextReaderStartElement;
     ret->endElement = ret->sax->endElement;
     ret->sax->endElement = xmlTextReaderEndElement;
-#ifdef LIBXML_SAX1_ENABLED
-    if (ret->sax->initialized == XML_SAX2_MAGIC) {
-#endif /* LIBXML_SAX1_ENABLED */
 	ret->startElementNs = ret->sax->startElementNs;
 	ret->sax->startElementNs = xmlTextReaderStartElementNs;
 	ret->endElementNs = ret->sax->endElementNs;
 	ret->sax->endElementNs = xmlTextReaderEndElementNs;
-#ifdef LIBXML_SAX1_ENABLED
-    } else {
-	ret->startElementNs = NULL;
-	ret->endElementNs = NULL;
-    }
-#endif /* LIBXML_SAX1_ENABLED */
     ret->characters = ret->sax->characters;
     ret->sax->characters = xmlTextReaderCharacters;
     ret->sax->ignorableWhitespace = xmlTextReaderCharacters;
@@ -4198,19 +4189,10 @@ xmlTextReaderSetup(xmlTextReaderPtr reader,
     reader->sax->startElement = xmlTextReaderStartElement;
     reader->endElement = reader->sax->endElement;
     reader->sax->endElement = xmlTextReaderEndElement;
-#ifdef LIBXML_SAX1_ENABLED
-    if (reader->sax->initialized == XML_SAX2_MAGIC) {
-#endif /* LIBXML_SAX1_ENABLED */
-        reader->startElementNs = reader->sax->startElementNs;
-        reader->sax->startElementNs = xmlTextReaderStartElementNs;
-        reader->endElementNs = reader->sax->endElementNs;
-        reader->sax->endElementNs = xmlTextReaderEndElementNs;
-#ifdef LIBXML_SAX1_ENABLED
-    } else {
-        reader->startElementNs = NULL;
-        reader->endElementNs = NULL;
-    }
-#endif /* LIBXML_SAX1_ENABLED */
+    reader->startElementNs = reader->sax->startElementNs;
+    reader->sax->startElementNs = xmlTextReaderStartElementNs;
+    reader->endElementNs = reader->sax->endElementNs;
+    reader->sax->endElementNs = xmlTextReaderEndElementNs;
     reader->characters = reader->sax->characters;
     reader->sax->characters = xmlTextReaderCharacters;
     reader->sax->ignorableWhitespace = xmlTextReaderCharacters;

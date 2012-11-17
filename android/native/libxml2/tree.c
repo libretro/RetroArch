@@ -343,7 +343,7 @@ xmlSplitQName3(const xmlChar *name, int *len) {
 
 #define CUR_SCHAR(s, l) xmlStringCurrentChar(NULL, s, &l)
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_WRITER_ENABLED)
 /**
  * xmlValidateNCName:
  * @value: the value to check

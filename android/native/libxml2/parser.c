@@ -211,11 +211,6 @@ xmlParseExternalEntityPrivate(xmlDocPtr doc, xmlParserCtxtPtr oldctxt,
 static int
 xmlCtxtUseOptionsInternal(xmlParserCtxtPtr ctxt, int options,
                           const char *encoding);
-#ifdef LIBXML_LEGACY_ENABLED
-static void
-xmlAddEntityReference(xmlEntityPtr ent, xmlNodePtr firstNode,
-                      xmlNodePtr lastNode);
-#endif /* LIBXML_LEGACY_ENABLED */
 
 static xmlParserErrors
 xmlParseBalancedChunkMemoryInternal(xmlParserCtxtPtr oldctxt,
@@ -804,11 +799,7 @@ xmlHasFeature(xmlFeature feature)
             return(0);
 #endif
         case XML_WITH_SAX1:
-#ifdef LIBXML_SAX1_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_FTP:
             return(0);
         case XML_WITH_HTTP:
@@ -822,11 +813,7 @@ xmlHasFeature(xmlFeature feature)
         case XML_WITH_HTML:
             return(0);
         case XML_WITH_LEGACY:
-#ifdef LIBXML_LEGACY_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_C14N:
 #ifdef LIBXML_C14N_ENABLED
             return(1);
@@ -940,13 +927,7 @@ xmlHasFeature(xmlFeature feature)
 static void
 xmlDetectSAX2(xmlParserCtxtPtr ctxt) {
     if (ctxt == NULL) return;
-#ifdef LIBXML_SAX1_ENABLED
-    if ((ctxt->sax) &&  (ctxt->sax->initialized == XML_SAX2_MAGIC) &&
-        ((ctxt->sax->startElementNs != NULL) ||
-         (ctxt->sax->endElementNs != NULL))) ctxt->sax2 = 1;
-#else
     ctxt->sax2 = 1;
-#endif /* LIBXML_SAX1_ENABLED */
 
     ctxt->str_xml = xmlDictLookup(ctxt->dict, BAD_CAST "xml", 3);
     ctxt->str_xmlns = xmlDictLookup(ctxt->dict, BAD_CAST "xmlns", 5);
@@ -6870,10 +6851,6 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
 			    list = list->next;
 			}
 			list = ent->children;
-#ifdef LIBXML_LEGACY_ENABLED
-			if (ent->etype == XML_EXTERNAL_GENERAL_PARSED_ENTITY)
-			  xmlAddEntityReference(ent, list, NULL);
-#endif /* LIBXML_LEGACY_ENABLED */
 		    }
 		} else {
 		    ent->owner = 1;
@@ -7031,10 +7008,6 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
 		    }
 		    cur = cur->next;
 		}
-#ifdef LIBXML_LEGACY_ENABLED
-		if (ent->etype == XML_EXTERNAL_GENERAL_PARSED_ENTITY)
-		  xmlAddEntityReference(ent, firstChild, nw);
-#endif /* LIBXML_LEGACY_ENABLED */
 	    } else if (list == NULL) {
 		xmlNodePtr nw = NULL, cur, next, last,
 			   firstChild = NULL;
@@ -7068,10 +7041,6 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
 		}
 		if (ent->owner == 0)
 		    ent->owner = 1;
-#ifdef LIBXML_LEGACY_ENABLED
-		if (ent->etype == XML_EXTERNAL_GENERAL_PARSED_ENTITY)
-		  xmlAddEntityReference(ent, firstChild, nw);
-#endif /* LIBXML_LEGACY_ENABLED */
 	    } else {
 		const xmlChar *nbktext;
 
@@ -7932,340 +7901,6 @@ xmlParseInternalSubset(xmlParserCtxtPtr ctxt) {
     }
     NEXT;
 }
-
-#ifdef LIBXML_SAX1_ENABLED
-/**
- * xmlParseAttribute:
- * @ctxt:  an XML parser context
- * @value:  a xmlChar ** used to store the value of the attribute
- *
- * parse an attribute
- *
- * [41] Attribute ::= Name Eq AttValue
- *
- * [ WFC: No External Entity References ]
- * Attribute values cannot contain direct or indirect entity references
- * to external entities.
- *
- * [ WFC: No < in Attribute Values ]
- * The replacement text of any entity referred to directly or indirectly in
- * an attribute value (other than "&lt;") must not contain a <. 
- * 
- * [ VC: Attribute Value Type ]
- * The attribute must have been declared; the value must be of the type
- * declared for it.
- *
- * [25] Eq ::= S? '=' S?
- *
- * With namespace:
- *
- * [NS 11] Attribute ::= QName Eq AttValue
- *
- * Also the case QName == xmlns:??? is handled independently as a namespace
- * definition.
- *
- * Returns the attribute name, and the value in *value.
- */
-
-const xmlChar *
-xmlParseAttribute(xmlParserCtxtPtr ctxt, xmlChar **value) {
-    const xmlChar *name;
-    xmlChar *val;
-
-    *value = NULL;
-    GROW;
-    name = xmlParseName(ctxt);
-    if (name == NULL) {
-	xmlFatalErrMsg(ctxt, XML_ERR_NAME_REQUIRED,
-	               "error parsing attribute name\n");
-        return(NULL);
-    }
-
-    /*
-     * read the value
-     */
-    SKIP_BLANKS;
-    if (RAW == '=') {
-        NEXT;
-	SKIP_BLANKS;
-	val = xmlParseAttValue(ctxt);
-	ctxt->instate = XML_PARSER_CONTENT;
-    } else {
-	xmlFatalErrMsgStr(ctxt, XML_ERR_ATTRIBUTE_WITHOUT_VALUE,
-	       "Specification mandate value for attribute %s\n", name);
-	return(NULL);
-    }
-
-    /*
-     * Check that xml:lang conforms to the specification
-     * No more registered as an error, just generate a warning now
-     * since this was deprecated in XML second edition
-     */
-    if ((ctxt->pedantic) && (xmlStrEqual(name, BAD_CAST "xml:lang"))) {
-	if (!xmlCheckLanguageID(val)) {
-	    xmlWarningMsg(ctxt, XML_WAR_LANG_VALUE,
-		          "Malformed value for xml:lang : %s\n",
-			  val, NULL);
-	}
-    }
-
-    /*
-     * Check that xml:space conforms to the specification
-     */
-    if (xmlStrEqual(name, BAD_CAST "xml:space")) {
-	if (xmlStrEqual(val, BAD_CAST "default"))
-	    *(ctxt->space) = 0;
-	else if (xmlStrEqual(val, BAD_CAST "preserve"))
-	    *(ctxt->space) = 1;
-	else {
-		xmlWarningMsg(ctxt, XML_WAR_SPACE_VALUE,
-"Invalid value \"%s\" for xml:space : \"default\" or \"preserve\" expected\n",
-                                 val, NULL);
-	}
-    }
-
-    *value = val;
-    return(name);
-}
-
-/**
- * xmlParseStartTag:
- * @ctxt:  an XML parser context
- * 
- * parse a start of tag either for rule element or
- * EmptyElement. In both case we don't parse the tag closing chars.
- *
- * [40] STag ::= '<' Name (S Attribute)* S? '>'
- *
- * [ WFC: Unique Att Spec ]
- * No attribute name may appear more than once in the same start-tag or
- * empty-element tag. 
- *
- * [44] EmptyElemTag ::= '<' Name (S Attribute)* S? '/>'
- *
- * [ WFC: Unique Att Spec ]
- * No attribute name may appear more than once in the same start-tag or
- * empty-element tag. 
- *
- * With namespace:
- *
- * [NS 8] STag ::= '<' QName (S Attribute)* S? '>'
- *
- * [NS 10] EmptyElement ::= '<' QName (S Attribute)* S? '/>'
- *
- * Returns the element name parsed
- */
-
-const xmlChar *
-xmlParseStartTag(xmlParserCtxtPtr ctxt) {
-    const xmlChar *name;
-    const xmlChar *attname;
-    xmlChar *attvalue;
-    const xmlChar **atts = ctxt->atts;
-    int nbatts = 0;
-    int maxatts = ctxt->maxatts;
-    int i;
-
-    if (RAW != '<') return(NULL);
-    NEXT1;
-
-    name = xmlParseName(ctxt);
-    if (name == NULL) {
-	xmlFatalErrMsg(ctxt, XML_ERR_NAME_REQUIRED,
-	     "xmlParseStartTag: invalid element name\n");
-        return(NULL);
-    }
-
-    /*
-     * Now parse the attributes, it ends up with the ending
-     *
-     * (S Attribute)* S?
-     */
-    SKIP_BLANKS;
-    GROW;
-
-    while ((RAW != '>') && 
-	   ((RAW != '/') || (NXT(1) != '>')) &&
-	   (IS_BYTE_CHAR(RAW))) {
-	const xmlChar *q = CUR_PTR;
-	unsigned int cons = ctxt->input->consumed;
-
-	attname = xmlParseAttribute(ctxt, &attvalue);
-        if ((attname != NULL) && (attvalue != NULL)) {
-	    /*
-	     * [ WFC: Unique Att Spec ]
-	     * No attribute name may appear more than once in the same
-	     * start-tag or empty-element tag. 
-	     */
-	    for (i = 0; i < nbatts;i += 2) {
-	        if (xmlStrEqual(atts[i], attname)) {
-		    xmlErrAttributeDup(ctxt, NULL, attname);
-		    xmlFree(attvalue);
-		    goto failed;
-		}
-	    }
-	    /*
-	     * Add the pair to atts
-	     */
-	    if (atts == NULL) {
-	        maxatts = 22; /* allow for 10 attrs by default */
-	        atts = (const xmlChar **)
-		       xmlMalloc(maxatts * sizeof(xmlChar *));
-		if (atts == NULL) {
-		    xmlErrMemory(ctxt, NULL);
-		    if (attvalue != NULL)
-			xmlFree(attvalue);
-		    goto failed;
-		}
-		ctxt->atts = atts;
-		ctxt->maxatts = maxatts;
-	    } else if (nbatts + 4 > maxatts) {
-	        const xmlChar **n;
-
-	        maxatts *= 2;
-	        n = (const xmlChar **) xmlRealloc((void *) atts,
-					     maxatts * sizeof(const xmlChar *));
-		if (n == NULL) {
-		    xmlErrMemory(ctxt, NULL);
-		    if (attvalue != NULL)
-			xmlFree(attvalue);
-		    goto failed;
-		}
-		atts = n;
-		ctxt->atts = atts;
-		ctxt->maxatts = maxatts;
-	    }
-	    atts[nbatts++] = attname;
-	    atts[nbatts++] = attvalue;
-	    atts[nbatts] = NULL;
-	    atts[nbatts + 1] = NULL;
-	} else {
-	    if (attvalue != NULL)
-		xmlFree(attvalue);
-	}
-
-failed:     
-
-	GROW
-	if ((RAW == '>') || (((RAW == '/') && (NXT(1) == '>'))))
-	    break;
-	if (!IS_BLANK_CH(RAW)) {
-	    xmlFatalErrMsg(ctxt, XML_ERR_SPACE_REQUIRED,
-			   "attributes construct error\n");
-	}
-	SKIP_BLANKS;
-        if ((cons == ctxt->input->consumed) && (q == CUR_PTR) &&
-            (attname == NULL) && (attvalue == NULL)) {
-	    xmlFatalErrMsg(ctxt, XML_ERR_INTERNAL_ERROR,
-			   "xmlParseStartTag: problem parsing attributes\n");
-	    break;
-	}
-	SHRINK;
-        GROW;
-    }
-
-    /*
-     * SAX: Start of Element !
-     */
-    if ((ctxt->sax != NULL) && (ctxt->sax->startElement != NULL) &&
-	(!ctxt->disableSAX)) {
-	if (nbatts > 0)
-	    ctxt->sax->startElement(ctxt->userData, name, atts);
-	else
-	    ctxt->sax->startElement(ctxt->userData, name, NULL);
-    }
-
-    if (atts != NULL) {
-        /* Free only the content strings */
-        for (i = 1;i < nbatts;i+=2)
-	    if (atts[i] != NULL)
-	       xmlFree((xmlChar *) atts[i]);
-    }
-    return(name);
-}
-
-/**
- * xmlParseEndTag1:
- * @ctxt:  an XML parser context
- * @line:  line of the start tag
- * @nsNr:  number of namespaces on the start tag
- *
- * parse an end of tag
- *
- * [42] ETag ::= '</' Name S? '>'
- *
- * With namespace
- *
- * [NS 9] ETag ::= '</' QName S? '>'
- */
-
-static void
-xmlParseEndTag1(xmlParserCtxtPtr ctxt, int line) {
-    const xmlChar *name;
-
-    GROW;
-    if ((RAW != '<') || (NXT(1) != '/')) {
-	xmlFatalErrMsg(ctxt, XML_ERR_LTSLASH_REQUIRED,
-		       "xmlParseEndTag: '</' not found\n");
-	return;
-    }
-    SKIP(2);
-
-    name = xmlParseNameAndCompare(ctxt,ctxt->name);
-
-    /*
-     * We should definitely be at the ending "S? '>'" part
-     */
-    GROW;
-    SKIP_BLANKS;
-    if ((!IS_BYTE_CHAR(RAW)) || (RAW != '>')) {
-	xmlFatalErr(ctxt, XML_ERR_GT_REQUIRED, NULL);
-    } else
-	NEXT1;
-
-    /*
-     * [ WFC: Element Type Match ]
-     * The Name in an element's end-tag must match the element type in the
-     * start-tag. 
-     *
-     */
-    if (name != (xmlChar*)1) {
-        if (name == NULL) name = BAD_CAST "unparseable";
-        xmlFatalErrMsgStrIntStr(ctxt, XML_ERR_TAG_NAME_MISMATCH,
-		     "Opening and ending tag mismatch: %s line %d and %s\n",
-		                ctxt->name, line, name);
-    }
-
-    /*
-     * SAX: End of Tag
-     */
-    if ((ctxt->sax != NULL) && (ctxt->sax->endElement != NULL) &&
-	(!ctxt->disableSAX))
-        ctxt->sax->endElement(ctxt->userData, ctxt->name);
-
-    namePop(ctxt);
-    spacePop(ctxt);
-    return;
-}
-
-/**
- * xmlParseEndTag:
- * @ctxt:  an XML parser context
- *
- * parse an end of tag
- *
- * [42] ETag ::= '</' Name S? '>'
- *
- * With namespace
- *
- * [NS 9] ETag ::= '</' QName S? '>'
- */
-
-void
-xmlParseEndTag(xmlParserCtxtPtr ctxt) {
-    xmlParseEndTag1(ctxt, 0);
-}
-#endif /* LIBXML_SAX1_ENABLED */
 
 /************************************************************************
  *									*
@@ -9468,14 +9103,7 @@ xmlParseElement(xmlParserCtxtPtr ctxt) {
 	spacePush(ctxt, *ctxt->space);
 
     line = ctxt->input->line;
-#ifdef LIBXML_SAX1_ENABLED
-    if (ctxt->sax2)
-#endif /* LIBXML_SAX1_ENABLED */
         name = xmlParseStartTag2(ctxt, &prefix, &URI, &tlen);
-#ifdef LIBXML_SAX1_ENABLED
-    else
-	name = xmlParseStartTag(ctxt);
-#endif /* LIBXML_SAX1_ENABLED */
     if (ctxt->instate == XML_PARSER_EOF)
 	return;
     if (name == NULL) {
@@ -9505,12 +9133,6 @@ xmlParseElement(xmlParserCtxtPtr ctxt) {
 	    if ((ctxt->sax != NULL) && (ctxt->sax->endElementNs != NULL) &&
 		(!ctxt->disableSAX))
 		ctxt->sax->endElementNs(ctxt->userData, name, prefix, URI);
-#ifdef LIBXML_SAX1_ENABLED
-	} else {
-	    if ((ctxt->sax != NULL) && (ctxt->sax->endElement != NULL) &&
-		(!ctxt->disableSAX))
-		ctxt->sax->endElement(ctxt->userData, name);
-#endif /* LIBXML_SAX1_ENABLED */
 	}
 	namePop(ctxt);
 	spacePop(ctxt);
@@ -9581,10 +9203,6 @@ xmlParseElement(xmlParserCtxtPtr ctxt) {
 	xmlParseEndTag2(ctxt, prefix, URI, line, ctxt->nsNr - nsNr, tlen);
 	namePop(ctxt);
     }
-#ifdef LIBXML_SAX1_ENABLED
-      else
-	xmlParseEndTag1(ctxt, line);
-#endif /* LIBXML_SAX1_ENABLED */
 
     /*
      * Capture end position and add node
@@ -10856,14 +10474,7 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 		    spacePush(ctxt, -1);
 		else
 		    spacePush(ctxt, *ctxt->space);
-#ifdef LIBXML_SAX1_ENABLED
-		if (ctxt->sax2)
-#endif /* LIBXML_SAX1_ENABLED */
 		    name = xmlParseStartTag2(ctxt, &prefix, &URI, &tlen);
-#ifdef LIBXML_SAX1_ENABLED
-		else
-		    name = xmlParseStartTag(ctxt);
-#endif /* LIBXML_SAX1_ENABLED */
 		if (ctxt->instate == XML_PARSER_EOF)
 		    goto done;
 		if (name == NULL) {
@@ -10898,13 +10509,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 			                            prefix, URI);
 			if (ctxt->nsNr - nsNr > 0)
 			    nsPop(ctxt, ctxt->nsNr - nsNr);
-#ifdef LIBXML_SAX1_ENABLED
-		    } else {
-			if ((ctxt->sax != NULL) &&
-			    (ctxt->sax->endElement != NULL) &&
-			    (!ctxt->disableSAX))
-			    ctxt->sax->endElement(ctxt->userData, name);
-#endif /* LIBXML_SAX1_ENABLED */
 		    }
 		    spacePop(ctxt);
 		    if (ctxt->nameNr == 0) {
@@ -10925,10 +10529,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 		}
 		if (ctxt->sax2)
 		    nameNsPush(ctxt, name, prefix, URI, ctxt->nsNr - nsNr);
-#ifdef LIBXML_SAX1_ENABLED
-		else
-		    namePush(ctxt, name);
-#endif /* LIBXML_SAX1_ENABLED */
 
 		ctxt->instate = XML_PARSER_CONTENT;
                 break;
@@ -11048,10 +10648,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 		       (int) (long) ctxt->pushTab[ctxt->nameNr * 3 - 1], 0);
 		    nameNsPop(ctxt);
 		}
-#ifdef LIBXML_SAX1_ENABLED
-		  else
-		    xmlParseEndTag1(ctxt, 0);
-#endif /* LIBXML_SAX1_ENABLED */
 		if (ctxt->instate == XML_PARSER_EOF) {
 		    /* Nothing */
 		} else if (ctxt->nameNr == 0) {
@@ -11739,9 +11335,6 @@ xmlCreatePushParserCtxt(xmlSAXHandlerPtr sax, void *user_data,
 	return(NULL);
     }
     if (sax != NULL) {
-#ifdef LIBXML_SAX1_ENABLED
-	if (ctxt->sax != (xmlSAXHandlerPtr) &xmlDefaultSAXHandler)
-#endif /* LIBXML_SAX1_ENABLED */
 	    xmlFree(ctxt->sax);
 	ctxt->sax = (xmlSAXHandlerPtr) xmlMalloc(sizeof(xmlSAXHandler));
 	if (ctxt->sax == NULL) {
@@ -11871,9 +11464,6 @@ xmlCreateIOParserCtxt(xmlSAXHandlerPtr sax, void *user_data,
 	return(NULL);
     }
     if (sax != NULL) {
-#ifdef LIBXML_SAX1_ENABLED
-	if (ctxt->sax != (xmlSAXHandlerPtr) &xmlDefaultSAXHandler)
-#endif /* LIBXML_SAX1_ENABLED */
 	    xmlFree(ctxt->sax);
 	ctxt->sax = (xmlSAXHandlerPtr) xmlMalloc(sizeof(xmlSAXHandler));
 	if (ctxt->sax == NULL) {
@@ -12588,62 +12178,6 @@ xmlParseExternalEntityPrivate(xmlDocPtr doc, xmlParserCtxtPtr oldctxt,
     return(ret);
 }
 
-#ifdef LIBXML_SAX1_ENABLED
-/**
- * xmlParseExternalEntity:
- * @doc:  the document the chunk pertains to
- * @sax:  the SAX handler bloc (possibly NULL)
- * @user_data:  The user data returned on SAX callbacks (possibly NULL)
- * @depth:  Used for loop detection, use 0
- * @URL:  the URL for the entity to load
- * @ID:  the System ID for the entity to load
- * @lst:  the return value for the set of parsed nodes
- *
- * Parse an external general entity
- * An external general parsed entity is well-formed if it matches the
- * production labeled extParsedEnt.
- *
- * [78] extParsedEnt ::= TextDecl? content
- *
- * Returns 0 if the entity is well formed, -1 in case of args problem and
- *    the parser error code otherwise
- */
-
-int
-xmlParseExternalEntity(xmlDocPtr doc, xmlSAXHandlerPtr sax, void *user_data,
-	  int depth, const xmlChar *URL, const xmlChar *ID, xmlNodePtr *lst) {
-    return(xmlParseExternalEntityPrivate(doc, NULL, sax, user_data, depth, URL,
-		                       ID, lst));
-}
-
-/**
- * xmlParseBalancedChunkMemory:
- * @doc:  the document the chunk pertains to
- * @sax:  the SAX handler bloc (possibly NULL)
- * @user_data:  The user data returned on SAX callbacks (possibly NULL)
- * @depth:  Used for loop detection, use 0
- * @string:  the input string in UTF8 or ISO-Latin (zero terminated)
- * @lst:  the return value for the set of parsed nodes
- *
- * Parse a well-balanced chunk of an XML document
- * called by the parser
- * The allowed sequence for the Well Balanced Chunk is the one defined by
- * the content production in the XML grammar:
- *
- * [43] content ::= (element | CharData | Reference | CDSect | PI | Comment)*
- *
- * Returns 0 if the chunk is well balanced, -1 in case of args problem and
- *    the parser error code otherwise
- */
-
-int
-xmlParseBalancedChunkMemory(xmlDocPtr doc, xmlSAXHandlerPtr sax,
-     void *user_data, int depth, const xmlChar *string, xmlNodePtr *lst) {
-    return xmlParseBalancedChunkMemoryRecover( doc, sax, user_data,
-                                                depth, string, lst, 0 );
-}
-#endif /* LIBXML_SAX1_ENABLED */
-
 /**
  * xmlParseBalancedChunkMemoryInternal:
  * @oldctxt:  the existing parsing context
@@ -13049,238 +12583,6 @@ xmlParseInNodeContext(xmlNodePtr node, const char *data, int datalen,
 #endif
 }
 
-#ifdef LIBXML_SAX1_ENABLED
-/**
- * xmlParseBalancedChunkMemoryRecover:
- * @doc:  the document the chunk pertains to
- * @sax:  the SAX handler bloc (possibly NULL)
- * @user_data:  The user data returned on SAX callbacks (possibly NULL)
- * @depth:  Used for loop detection, use 0
- * @string:  the input string in UTF8 or ISO-Latin (zero terminated)
- * @lst:  the return value for the set of parsed nodes
- * @recover: return nodes even if the data is broken (use 0)
- *
- *
- * Parse a well-balanced chunk of an XML document
- * called by the parser
- * The allowed sequence for the Well Balanced Chunk is the one defined by
- * the content production in the XML grammar:
- *
- * [43] content ::= (element | CharData | Reference | CDSect | PI | Comment)*
- *
- * Returns 0 if the chunk is well balanced, -1 in case of args problem and
- *    the parser error code otherwise
- *
- * In case recover is set to 1, the nodelist will not be empty even if
- * the parsed chunk is not well balanced, assuming the parsing succeeded to
- * some extent.
- */
-int
-xmlParseBalancedChunkMemoryRecover(xmlDocPtr doc, xmlSAXHandlerPtr sax,
-     void *user_data, int depth, const xmlChar *string, xmlNodePtr *lst,
-     int recover) {
-    xmlParserCtxtPtr ctxt;
-    xmlDocPtr newDoc;
-    xmlSAXHandlerPtr oldsax = NULL;
-    xmlNodePtr content, newRoot;
-    int size;
-    int ret = 0;
-
-    if (depth > 40) {
-	return(XML_ERR_ENTITY_LOOP);
-    }
-
-
-    if (lst != NULL)
-        *lst = NULL;
-    if (string == NULL)
-        return(-1);
-
-    size = xmlStrlen(string);
-
-    ctxt = xmlCreateMemoryParserCtxt((char *) string, size);
-    if (ctxt == NULL) return(-1);
-    ctxt->userData = ctxt;
-    if (sax != NULL) {
-	oldsax = ctxt->sax;
-        ctxt->sax = sax;
-	if (user_data != NULL)
-	    ctxt->userData = user_data;
-    }
-    newDoc = xmlNewDoc(BAD_CAST "1.0");
-    if (newDoc == NULL) {
-	xmlFreeParserCtxt(ctxt);
-	return(-1);
-    }
-    newDoc->properties = XML_DOC_INTERNAL;
-    if ((doc != NULL) && (doc->dict != NULL)) {
-        xmlDictFree(ctxt->dict);
-	ctxt->dict = doc->dict;
-	xmlDictReference(ctxt->dict);
-	ctxt->str_xml = xmlDictLookup(ctxt->dict, BAD_CAST "xml", 3);
-	ctxt->str_xmlns = xmlDictLookup(ctxt->dict, BAD_CAST "xmlns", 5);
-	ctxt->str_xml_ns = xmlDictLookup(ctxt->dict, XML_XML_NAMESPACE, 36);
-	ctxt->dictNames = 1;
-    } else {
-	xmlCtxtUseOptionsInternal(ctxt, XML_PARSE_NODICT, NULL);
-    }
-    if (doc != NULL) {
-	newDoc->intSubset = doc->intSubset;
-	newDoc->extSubset = doc->extSubset;
-    }
-    newRoot = xmlNewDocNode(newDoc, NULL, BAD_CAST "pseudoroot", NULL);
-    if (newRoot == NULL) {
-	if (sax != NULL)
-	    ctxt->sax = oldsax;
-	xmlFreeParserCtxt(ctxt);
-	newDoc->intSubset = NULL;
-	newDoc->extSubset = NULL;
-        xmlFreeDoc(newDoc);
-	return(-1);
-    }
-    xmlAddChild((xmlNodePtr) newDoc, newRoot);
-    nodePush(ctxt, newRoot);
-    if (doc == NULL) {
-	ctxt->myDoc = newDoc;
-    } else {
-	ctxt->myDoc = newDoc;
-	newDoc->children->doc = doc;
-	/* Ensure that doc has XML spec namespace */
-	xmlSearchNsByHref(doc, (xmlNodePtr)doc, XML_XML_NAMESPACE);
-	newDoc->oldNs = doc->oldNs;
-    }
-    ctxt->instate = XML_PARSER_CONTENT;
-    ctxt->depth = depth;
-
-    /*
-     * Doing validity checking on chunk doesn't make sense
-     */
-    ctxt->validate = 0;
-    ctxt->loadsubset = 0;
-    xmlDetectSAX2(ctxt);
-
-    if ( doc != NULL ){
-        content = doc->children;
-        doc->children = NULL;
-        xmlParseContent(ctxt);
-        doc->children = content;
-    }
-    else {
-        xmlParseContent(ctxt);
-    }
-    if ((RAW == '<') && (NXT(1) == '/')) {
-	xmlFatalErr(ctxt, XML_ERR_NOT_WELL_BALANCED, NULL);
-    } else if (RAW != 0) {
-	xmlFatalErr(ctxt, XML_ERR_EXTRA_CONTENT, NULL);
-    }
-    if (ctxt->node != newDoc->children) {
-	xmlFatalErr(ctxt, XML_ERR_NOT_WELL_BALANCED, NULL);
-    }
-
-    if (!ctxt->wellFormed) {
-        if (ctxt->errNo == 0)
-	    ret = 1;
-	else
-	    ret = ctxt->errNo;
-    } else {
-      ret = 0;
-    }
-
-    if ((lst != NULL) && ((ret == 0) || (recover == 1))) {
-	xmlNodePtr cur;
-
-	/*
-	 * Return the newly created nodeset after unlinking it from
-	 * they pseudo parent.
-	 */
-	cur = newDoc->children->children;
-	*lst = cur;
-	while (cur != NULL) {
-	    xmlSetTreeDoc(cur, doc);
-	    cur->parent = NULL;
-	    cur = cur->next;
-	}
-	newDoc->children->children = NULL;
-    }
-
-    if (sax != NULL)
-	ctxt->sax = oldsax;
-    xmlFreeParserCtxt(ctxt);
-    newDoc->intSubset = NULL;
-    newDoc->extSubset = NULL;
-    newDoc->oldNs = NULL;
-    xmlFreeDoc(newDoc);
-
-    return(ret);
-}
-
-/**
- * xmlSAXParseEntity:
- * @sax:  the SAX handler block
- * @filename:  the filename
- *
- * parse an XML external entity out of context and build a tree.
- * It use the given SAX function block to handle the parsing callback.
- * If sax is NULL, fallback to the default DOM tree building routines.
- *
- * [78] extParsedEnt ::= TextDecl? content
- *
- * This correspond to a "Well Balanced" chunk
- *
- * Returns the resulting document tree
- */
-
-xmlDocPtr
-xmlSAXParseEntity(xmlSAXHandlerPtr sax, const char *filename) {
-    xmlDocPtr ret;
-    xmlParserCtxtPtr ctxt;
-
-    ctxt = xmlCreateFileParserCtxt(filename);
-    if (ctxt == NULL) {
-	return(NULL);
-    }
-    if (sax != NULL) {
-	if (ctxt->sax != NULL)
-	    xmlFree(ctxt->sax);
-        ctxt->sax = sax;
-        ctxt->userData = NULL;
-    }
-
-    xmlParseExtParsedEnt(ctxt);
-
-    if (ctxt->wellFormed)
-	ret = ctxt->myDoc;
-    else {
-        ret = NULL;
-        xmlFreeDoc(ctxt->myDoc);
-        ctxt->myDoc = NULL;
-    }
-    if (sax != NULL)
-        ctxt->sax = NULL;
-    xmlFreeParserCtxt(ctxt);
-
-    return(ret);
-}
-
-/**
- * xmlParseEntity:
- * @filename:  the filename
- *
- * parse an XML external entity out of context and build a tree.
- *
- * [78] extParsedEnt ::= TextDecl? content
- *
- * This correspond to a "Well Balanced" chunk
- *
- * Returns the resulting document tree
- */
-
-xmlDocPtr
-xmlParseEntity(const char *filename) {
-    return(xmlSAXParseEntity(NULL, filename));
-}
-#endif /* LIBXML_SAX1_ENABLED */
-
 /**
  * xmlCreateEntityParserCtxtInternal:
  * @URL:  the entity URL
@@ -13430,231 +12732,6 @@ xmlCreateFileParserCtxt(const char *filename)
     return(xmlCreateURLParserCtxt(filename, 0));
 }
 
-#ifdef LIBXML_SAX1_ENABLED
-/**
- * xmlSAXParseFileWithData:
- * @sax:  the SAX handler block
- * @filename:  the filename
- * @recovery:  work in recovery mode, i.e. tries to read no Well Formed
- *             documents
- * @data:  the userdata
- *
- * parse an XML file and build a tree. Automatic support for ZLIB/Compress
- * compressed document is provided by default if found at compile-time.
- * It use the given SAX function block to handle the parsing callback.
- * If sax is NULL, fallback to the default DOM tree building routines.
- *
- * User data (void *) is stored within the parser context in the
- * context's _private member, so it is available nearly everywhere in libxml
- *
- * Returns the resulting document tree
- */
-
-xmlDocPtr
-xmlSAXParseFileWithData(xmlSAXHandlerPtr sax, const char *filename,
-                        int recovery, void *data) {
-    xmlDocPtr ret;
-    xmlParserCtxtPtr ctxt;
-
-    xmlInitParser();
-
-    ctxt = xmlCreateFileParserCtxt(filename);
-    if (ctxt == NULL) {
-	return(NULL);
-    }
-    if (sax != NULL) {
-	if (ctxt->sax != NULL)
-	    xmlFree(ctxt->sax);
-        ctxt->sax = sax;
-    }
-    xmlDetectSAX2(ctxt);
-    if (data!=NULL) {
-	ctxt->_private = data;
-    }
-
-    if (ctxt->directory == NULL)
-        ctxt->directory = xmlParserGetDirectory(filename);
-
-    ctxt->recovery = recovery;
-
-    xmlParseDocument(ctxt);
-
-    if ((ctxt->wellFormed) || recovery) {
-        ret = ctxt->myDoc;
-	if (ret != NULL) {
-	    if (ctxt->input->buf->compressed > 0)
-		ret->compression = 9;
-	    else
-		ret->compression = ctxt->input->buf->compressed;
-	}
-    }
-    else {
-       ret = NULL;
-       xmlFreeDoc(ctxt->myDoc);
-       ctxt->myDoc = NULL;
-    }
-    if (sax != NULL)
-        ctxt->sax = NULL;
-    xmlFreeParserCtxt(ctxt);
-    
-    return(ret);
-}
-
-/**
- * xmlSAXParseFile:
- * @sax:  the SAX handler block
- * @filename:  the filename
- * @recovery:  work in recovery mode, i.e. tries to read no Well Formed
- *             documents
- *
- * parse an XML file and build a tree. Automatic support for ZLIB/Compress
- * compressed document is provided by default if found at compile-time.
- * It use the given SAX function block to handle the parsing callback.
- * If sax is NULL, fallback to the default DOM tree building routines.
- *
- * Returns the resulting document tree
- */
-
-xmlDocPtr
-xmlSAXParseFile(xmlSAXHandlerPtr sax, const char *filename,
-                          int recovery) {
-    return(xmlSAXParseFileWithData(sax,filename,recovery,NULL));
-}
-
-/**
- * xmlRecoverDoc:
- * @cur:  a pointer to an array of xmlChar
- *
- * parse an XML in-memory document and build a tree.
- * In the case the document is not Well Formed, a attempt to build a
- * tree is tried anyway
- *
- * Returns the resulting document tree or NULL in case of failure
- */
-
-xmlDocPtr
-xmlRecoverDoc(const xmlChar *cur) {
-    return(xmlSAXParseDoc(NULL, cur, 1));
-}
-
-/**
- * xmlParseFile:
- * @filename:  the filename
- *
- * parse an XML file and build a tree. Automatic support for ZLIB/Compress
- * compressed document is provided by default if found at compile-time.
- *
- * Returns the resulting document tree if the file was wellformed,
- * NULL otherwise.
- */
-
-xmlDocPtr
-xmlParseFile(const char *filename) {
-    return(xmlSAXParseFile(NULL, filename, 0));
-}
-
-/**
- * xmlRecoverFile:
- * @filename:  the filename
- *
- * parse an XML file and build a tree. Automatic support for ZLIB/Compress
- * compressed document is provided by default if found at compile-time.
- * In the case the document is not Well Formed, it attempts to build
- * a tree anyway
- *
- * Returns the resulting document tree or NULL in case of failure
- */
-
-xmlDocPtr
-xmlRecoverFile(const char *filename) {
-    return(xmlSAXParseFile(NULL, filename, 1));
-}
-
-
-/**
- * xmlSetupParserForBuffer:
- * @ctxt:  an XML parser context
- * @buffer:  a xmlChar * buffer
- * @filename:  a file name
- *
- * Setup the parser context to parse a new buffer; Clears any prior
- * contents from the parser context. The buffer parameter must not be
- * NULL, but the filename parameter can be
- */
-void
-xmlSetupParserForBuffer(xmlParserCtxtPtr ctxt, const xmlChar* buffer,
-                             const char* filename)
-{
-    xmlParserInputPtr input;
-
-    if ((ctxt == NULL) || (buffer == NULL))
-        return;
-
-    input = xmlNewInputStream(ctxt);
-    if (input == NULL) {
-        xmlErrMemory(NULL, "parsing new buffer: out of memory\n");
-        xmlClearParserCtxt(ctxt);
-        return;
-    }
-  
-    xmlClearParserCtxt(ctxt);
-    if (filename != NULL)
-        input->filename = (char *) xmlCanonicPath((const xmlChar *)filename);
-    input->base = buffer;
-    input->cur = buffer;
-    input->end = &buffer[xmlStrlen(buffer)];
-    inputPush(ctxt, input);
-}
-
-/**
- * xmlSAXUserParseFile:
- * @sax:  a SAX handler
- * @user_data:  The user data returned on SAX callbacks
- * @filename:  a file name
- *
- * parse an XML file and call the given SAX handler routines.
- * Automatic support for ZLIB/Compress compressed document is provided
- * 
- * Returns 0 in case of success or a error number otherwise
- */
-int
-xmlSAXUserParseFile(xmlSAXHandlerPtr sax, void *user_data,
-                    const char *filename) {
-    int ret = 0;
-    xmlParserCtxtPtr ctxt;
-    
-    ctxt = xmlCreateFileParserCtxt(filename);
-    if (ctxt == NULL) return -1;
-    if (ctxt->sax != (xmlSAXHandlerPtr) &xmlDefaultSAXHandler)
-	xmlFree(ctxt->sax);
-    ctxt->sax = sax;
-    xmlDetectSAX2(ctxt);
-
-    if (user_data != NULL)
-	ctxt->userData = user_data;
-    
-    xmlParseDocument(ctxt);
-    
-    if (ctxt->wellFormed)
-	ret = 0;
-    else {
-        if (ctxt->errNo != 0)
-	    ret = ctxt->errNo;
-	else
-	    ret = -1;
-    }
-    if (sax != NULL)
-	ctxt->sax = NULL;
-    if (ctxt->myDoc != NULL) {
-        xmlFreeDoc(ctxt->myDoc);
-	ctxt->myDoc = NULL;
-    }
-    xmlFreeParserCtxt(ctxt);
-    
-    return ret;
-}
-#endif /* LIBXML_SAX1_ENABLED */
-
 /************************************************************************
  *									*
  * 		Front ends when parsing from memory			*
@@ -13709,164 +12786,6 @@ xmlCreateMemoryParserCtxt(const char *buffer, int size) {
     return(ctxt);
 }
 
-#ifdef LIBXML_SAX1_ENABLED
-/**
- * xmlSAXParseMemoryWithData:
- * @sax:  the SAX handler block
- * @buffer:  an pointer to a char array
- * @size:  the size of the array
- * @recovery:  work in recovery mode, i.e. tries to read no Well Formed
- *             documents
- * @data:  the userdata
- *
- * parse an XML in-memory block and use the given SAX function block
- * to handle the parsing callback. If sax is NULL, fallback to the default
- * DOM tree building routines.
- *
- * User data (void *) is stored within the parser context in the
- * context's _private member, so it is available nearly everywhere in libxml
- *
- * Returns the resulting document tree
- */
-
-xmlDocPtr
-xmlSAXParseMemoryWithData(xmlSAXHandlerPtr sax, const char *buffer,
-	          int size, int recovery, void *data) {
-    xmlDocPtr ret;
-    xmlParserCtxtPtr ctxt;
-
-    xmlInitParser();
-
-    ctxt = xmlCreateMemoryParserCtxt(buffer, size);
-    if (ctxt == NULL) return(NULL);
-    if (sax != NULL) {
-	if (ctxt->sax != NULL)
-	    xmlFree(ctxt->sax);
-        ctxt->sax = sax;
-    }
-    xmlDetectSAX2(ctxt);
-    if (data!=NULL) {
-	ctxt->_private=data;
-    }
-
-    ctxt->recovery = recovery;
-
-    xmlParseDocument(ctxt);
-
-    if ((ctxt->wellFormed) || recovery) ret = ctxt->myDoc;
-    else {
-       ret = NULL;
-       xmlFreeDoc(ctxt->myDoc);
-       ctxt->myDoc = NULL;
-    }
-    if (sax != NULL) 
-	ctxt->sax = NULL;
-    xmlFreeParserCtxt(ctxt);
-
-    return(ret);
-}
-
-/**
- * xmlSAXParseMemory:
- * @sax:  the SAX handler block
- * @buffer:  an pointer to a char array
- * @size:  the size of the array
- * @recovery:  work in recovery mode, i.e. tries to read not Well Formed
- *             documents
- *
- * parse an XML in-memory block and use the given SAX function block
- * to handle the parsing callback. If sax is NULL, fallback to the default
- * DOM tree building routines.
- * 
- * Returns the resulting document tree
- */
-xmlDocPtr
-xmlSAXParseMemory(xmlSAXHandlerPtr sax, const char *buffer,
-	          int size, int recovery) {
-    return xmlSAXParseMemoryWithData(sax, buffer, size, recovery, NULL);
-}
-
-/**
- * xmlParseMemory:
- * @buffer:  an pointer to a char array
- * @size:  the size of the array
- *
- * parse an XML in-memory block and build a tree.
- * 
- * Returns the resulting document tree
- */
-
-xmlDocPtr xmlParseMemory(const char *buffer, int size) {
-   return(xmlSAXParseMemory(NULL, buffer, size, 0));
-}
-
-/**
- * xmlRecoverMemory:
- * @buffer:  an pointer to a char array
- * @size:  the size of the array
- *
- * parse an XML in-memory block and build a tree.
- * In the case the document is not Well Formed, an attempt to
- * build a tree is tried anyway
- *
- * Returns the resulting document tree or NULL in case of error
- */
-
-xmlDocPtr xmlRecoverMemory(const char *buffer, int size) {
-   return(xmlSAXParseMemory(NULL, buffer, size, 1));
-}
-
-/**
- * xmlSAXUserParseMemory:
- * @sax:  a SAX handler
- * @user_data:  The user data returned on SAX callbacks
- * @buffer:  an in-memory XML document input
- * @size:  the length of the XML document in bytes
- *
- * A better SAX parsing routine.
- * parse an XML in-memory buffer and call the given SAX handler routines.
- *
- * Returns 0 in case of success or a error number otherwise
- */
-int xmlSAXUserParseMemory(xmlSAXHandlerPtr sax, void *user_data,
-			  const char *buffer, int size) {
-    int ret = 0;
-    xmlParserCtxtPtr ctxt;
-
-    xmlInitParser();
-
-    ctxt = xmlCreateMemoryParserCtxt(buffer, size);
-    if (ctxt == NULL) return -1;
-    if (ctxt->sax != (xmlSAXHandlerPtr) &xmlDefaultSAXHandler)
-        xmlFree(ctxt->sax);
-    ctxt->sax = sax;
-    xmlDetectSAX2(ctxt);
-
-    if (user_data != NULL)
-	ctxt->userData = user_data;
-
-    xmlParseDocument(ctxt);
-    
-    if (ctxt->wellFormed)
-	ret = 0;
-    else {
-        if (ctxt->errNo != 0)
-	    ret = ctxt->errNo;
-	else
-	    ret = -1;
-    }
-    if (sax != NULL)
-        ctxt->sax = NULL;
-    if (ctxt->myDoc != NULL) {
-        xmlFreeDoc(ctxt->myDoc);
-	ctxt->myDoc = NULL;
-    }
-    xmlFreeParserCtxt(ctxt);
-    
-    return ret;
-}
-#endif /* LIBXML_SAX1_ENABLED */
-
 /**
  * xmlCreateDocParserCtxt:
  * @cur:  a pointer to an array of xmlChar
@@ -13884,109 +12803,6 @@ xmlCreateDocParserCtxt(const xmlChar *cur) {
     len = xmlStrlen(cur);
     return(xmlCreateMemoryParserCtxt((const char *)cur, len));
 }
-
-#ifdef LIBXML_SAX1_ENABLED
-/**
- * xmlSAXParseDoc:
- * @sax:  the SAX handler block
- * @cur:  a pointer to an array of xmlChar
- * @recovery:  work in recovery mode, i.e. tries to read no Well Formed
- *             documents
- *
- * parse an XML in-memory document and build a tree.
- * It use the given SAX function block to handle the parsing callback.
- * If sax is NULL, fallback to the default DOM tree building routines.
- * 
- * Returns the resulting document tree
- */
-
-xmlDocPtr
-xmlSAXParseDoc(xmlSAXHandlerPtr sax, const xmlChar *cur, int recovery) {
-    xmlDocPtr ret;
-    xmlParserCtxtPtr ctxt;
-    xmlSAXHandlerPtr oldsax = NULL;
-
-    if (cur == NULL) return(NULL);
-
-
-    ctxt = xmlCreateDocParserCtxt(cur);
-    if (ctxt == NULL) return(NULL);
-    if (sax != NULL) { 
-        oldsax = ctxt->sax;
-        ctxt->sax = sax;
-        ctxt->userData = NULL;
-    }
-    xmlDetectSAX2(ctxt);
-
-    xmlParseDocument(ctxt);
-    if ((ctxt->wellFormed) || recovery) ret = ctxt->myDoc;
-    else {
-       ret = NULL;
-       xmlFreeDoc(ctxt->myDoc);
-       ctxt->myDoc = NULL;
-    }
-    if (sax != NULL)
-	ctxt->sax = oldsax;
-    xmlFreeParserCtxt(ctxt);
-    
-    return(ret);
-}
-
-/**
- * xmlParseDoc:
- * @cur:  a pointer to an array of xmlChar
- *
- * parse an XML in-memory document and build a tree.
- * 
- * Returns the resulting document tree
- */
-
-xmlDocPtr
-xmlParseDoc(const xmlChar *cur) {
-    return(xmlSAXParseDoc(NULL, cur, 0));
-}
-#endif /* LIBXML_SAX1_ENABLED */
-
-#ifdef LIBXML_LEGACY_ENABLED
-/************************************************************************
- *									*
- * 	Specific function to keep track of entities references		*
- * 	and used by the XSLT debugger					*
- *									*
- ************************************************************************/
-
-static xmlEntityReferenceFunc xmlEntityRefFunc = NULL;
-
-/**
- * xmlAddEntityReference:
- * @ent : A valid entity
- * @firstNode : A valid first node for children of entity
- * @lastNode : A valid last node of children entity 
- *
- * Notify of a reference to an entity of type XML_EXTERNAL_GENERAL_PARSED_ENTITY
- */
-static void
-xmlAddEntityReference(xmlEntityPtr ent, xmlNodePtr firstNode,
-                      xmlNodePtr lastNode)
-{
-    if (xmlEntityRefFunc != NULL) {
-        (*xmlEntityRefFunc) (ent, firstNode, lastNode);
-    }
-}
-
-
-/**
- * xmlSetEntityReferenceFunc:
- * @func: A valid function
- *
- * Set the function to call call back when a xml reference has been made
- */
-void
-xmlSetEntityReferenceFunc(xmlEntityReferenceFunc func)
-{
-    xmlEntityRefFunc = func;
-}
-#endif /* LIBXML_LEGACY_ENABLED */
 
 /************************************************************************
  *									*
@@ -14373,17 +13189,6 @@ xmlCtxtUseOptionsInternal(xmlParserCtxtPtr ctxt, int options, const char *encodi
         ctxt->sax->fatalError = NULL;
         options -= XML_PARSE_NOERROR;
     }
-#ifdef LIBXML_SAX1_ENABLED
-    if (options & XML_PARSE_SAX1) {
-        ctxt->sax->startElement = xmlSAX2StartElement;
-        ctxt->sax->endElement = xmlSAX2EndElement;
-        ctxt->sax->startElementNs = NULL;
-        ctxt->sax->endElementNs = NULL;
-        ctxt->sax->initialized = 1;
-        options -= XML_PARSE_SAX1;
-	ctxt->options |= XML_PARSE_SAX1;
-    }
-#endif /* LIBXML_SAX1_ENABLED */
     if (options & XML_PARSE_NODICT) {
         ctxt->dictNames = 0;
         options -= XML_PARSE_NODICT;

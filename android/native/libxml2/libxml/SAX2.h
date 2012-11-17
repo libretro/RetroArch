@@ -98,7 +98,7 @@ XMLPUBFUN void XMLCALL
 		xmlSAX2StartDocument		(void *ctx);
 XMLPUBFUN void XMLCALL		
 		xmlSAX2EndDocument		(void *ctx);
-#if defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
+#if defined(LIBXML_WRITER_ENABLED)
 XMLPUBFUN void XMLCALL		
 		xmlSAX2StartElement		(void *ctx,
 						 const xmlChar *fullname,
@@ -106,7 +106,7 @@ XMLPUBFUN void XMLCALL
 XMLPUBFUN void XMLCALL		
 		xmlSAX2EndElement		(void *ctx,
 						 const xmlChar *name);
-#endif /* LIBXML_SAX1_ENABLED */
+#endif /* */
 XMLPUBFUN void XMLCALL
 		xmlSAX2StartElementNs		(void *ctx,
 						 const xmlChar *localname,
@@ -145,10 +145,6 @@ XMLPUBFUN void XMLCALL
 						 const xmlChar *value,
 						 int len);
 
-#ifdef LIBXML_SAX1_ENABLED
-XMLPUBFUN int XMLCALL
-		xmlSAXDefaultVersion		(int version);
-#endif /* LIBXML_SAX1_ENABLED */
 
 XMLPUBFUN int XMLCALL
 		xmlSAXVersion			(xmlSAXHandler *hdlr,

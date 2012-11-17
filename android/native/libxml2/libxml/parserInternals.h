@@ -425,15 +425,6 @@ XMLPUBFUN void XMLCALL
 			xmlParsePEReference	(xmlParserCtxtPtr ctxt);
 XMLPUBFUN void XMLCALL			
 			xmlParseDocTypeDecl	(xmlParserCtxtPtr ctxt);
-#ifdef LIBXML_SAX1_ENABLED
-XMLPUBFUN const xmlChar * XMLCALL		
-			xmlParseAttribute	(xmlParserCtxtPtr ctxt,
-						 xmlChar **value);
-XMLPUBFUN const xmlChar * XMLCALL		
-			xmlParseStartTag	(xmlParserCtxtPtr ctxt);
-XMLPUBFUN void XMLCALL			
-			xmlParseEndTag		(xmlParserCtxtPtr ctxt);
-#endif /* LIBXML_SAX1_ENABLED */
 XMLPUBFUN void XMLCALL			
 			xmlParseCDSect		(xmlParserCtxtPtr ctxt);
 XMLPUBFUN void XMLCALL			
@@ -541,51 +532,6 @@ XMLPUBFUN void XMLCALL			xmlParserInputShrink	(xmlParserInputPtr in);
  * Specific function to keep track of entities references
  * and used by the XSLT debugger.
  */
-#ifdef LIBXML_LEGACY_ENABLED
-/**
- * xmlEntityReferenceFunc:
- * @ent: the entity
- * @firstNode:  the fist node in the chunk
- * @lastNode:  the last nod in the chunk
- *
- * Callback function used when one needs to be able to track back the
- * provenance of a chunk of nodes inherited from an entity replacement.
- */
-typedef	void	(*xmlEntityReferenceFunc)	(xmlEntityPtr ent,
-						 xmlNodePtr firstNode,
-						 xmlNodePtr lastNode);
-  
-XMLPUBFUN void XMLCALL		xmlSetEntityReferenceFunc	(xmlEntityReferenceFunc func);
-
-XMLPUBFUN xmlChar * XMLCALL		
-			xmlParseQuotedString	(xmlParserCtxtPtr ctxt);
-XMLPUBFUN void XMLCALL
-                        xmlParseNamespace       (xmlParserCtxtPtr ctxt);
-XMLPUBFUN xmlChar * XMLCALL		
-			xmlNamespaceParseNSDef	(xmlParserCtxtPtr ctxt);
-XMLPUBFUN xmlChar * XMLCALL		
-			xmlScanName		(xmlParserCtxtPtr ctxt);
-XMLPUBFUN xmlChar * XMLCALL		
-			xmlNamespaceParseNCName	(xmlParserCtxtPtr ctxt);
-XMLPUBFUN void XMLCALL	xmlParserHandleReference(xmlParserCtxtPtr ctxt);
-XMLPUBFUN xmlChar * XMLCALL		
-			xmlNamespaceParseQName	(xmlParserCtxtPtr ctxt,
-						 xmlChar **prefix);
-/**
- * Entities
- */
-XMLPUBFUN xmlChar * XMLCALL
-		xmlDecodeEntities		(xmlParserCtxtPtr ctxt,
-						 int len,
-						 int what,
-						 xmlChar end,
-						 xmlChar  end2,
-						 xmlChar end3);
-XMLPUBFUN void XMLCALL			
-			xmlHandleEntity		(xmlParserCtxtPtr ctxt,
-						 xmlEntityPtr entity);
-
-#endif /* LIBXML_LEGACY_ENABLED */
 
 #ifdef IN_LIBXML
 /*

@@ -35,11 +35,9 @@ LOCAL_LIBXML_SRC_FILES = $(LIBXML_PATH)/c14n.c \
 							$(LIBXML_PATH)/error.c \
 							$(LIBXML_PATH)/globals.c \
 							$(LIBXML_PATH)/hash.c \
-							$(LIBXML_PATH)/legacy.c \
 							$(LIBXML_PATH)/list.c \
 							$(LIBXML_PATH)/parser.c \
 							$(LIBXML_PATH)/parserInternals.c \
-							$(LIBXML_PATH)/SAX.c \
 							$(LIBXML_PATH)/SAX2.c \
 							$(LIBXML_PATH)/threads.c \
 							$(LIBXML_PATH)/tree.c \

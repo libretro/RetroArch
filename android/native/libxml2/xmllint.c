@@ -154,9 +154,6 @@ static int walker = 0;
 #endif /* LIBXML_READER_ENABLED */
 static int chkregister = 0;
 static int nbregister = 0;
-#ifdef LIBXML_SAX1_ENABLED
-static int sax1 = 0;
-#endif /* LIBXML_SAX1_ENABLED */
 static int options = XML_PARSE_COMPACT;
 static int sax = 0;
 static int oldxml10 = 0;
@@ -1546,10 +1543,6 @@ testSAX(const char *filename) {
 
     if (noout) {
         handler = emptySAXHandler;
-#ifdef LIBXML_SAX1_ENABLED
-    } else if (sax1) {
-        handler = debugSAXHandler;
-#endif
     } else {
         handler = debugSAX2Handler;
     }
@@ -1913,11 +1906,6 @@ static void parseAndPrintFile(char *filename, xmlParserCtxtPtr rectxt) {
 	    if (rectxt != NULL)
 	        doc = xmlCtxtReadFile(rectxt, filename, NULL, options);
 	    else {
-#ifdef LIBXML_SAX1_ENABLED
-                if (sax1)
-		    doc = xmlParseFile(filename);
-		else
-#endif /* LIBXML_SAX1_ENABLED */
 		doc = xmlReadFile(filename, NULL, options);
 	    }
 	}
@@ -2381,9 +2369,6 @@ static void usage(const char *name) {
     printf("\t--walker : create a reader and walk though the resulting doc\n");
 #endif /* LIBXML_READER_ENABLED */
     printf("\t--chkregister : verify the node registration code\n");
-#ifdef LIBXML_SAX1_ENABLED
-    printf("\t--sax1: use the old SAX1 interfaces for processing\n");
-#endif
     printf("\t--sax: do not build a tree but work just at the SAX level\n");
     printf("\t--oldxml10: use XML-1.0 parsing rules before the 5th edition\n");
 
@@ -2635,13 +2620,6 @@ main(int argc, char **argv) {
              noout++;
 	}
 #endif /* LIBXML_READER_ENABLED */
-#ifdef LIBXML_SAX1_ENABLED
-	else if ((!strcmp(argv[i], "-sax1")) ||
-	         (!strcmp(argv[i], "--sax1"))) {
-	    sax1++;
-	    options |= XML_PARSE_SAX1;
-	}
-#endif /* LIBXML_SAX1_ENABLED */
 	else if ((!strcmp(argv[i], "-sax")) ||
 	         (!strcmp(argv[i], "--sax"))) {
 	    sax++;
@@ -2675,12 +2653,6 @@ main(int argc, char **argv) {
     }
 
 
-#ifdef LIBXML_SAX1_ENABLED
-    if (sax1)
-        xmlSAXDefaultVersion(1);
-    else
-        xmlSAXDefaultVersion(2);
-#endif /* LIBXML_SAX1_ENABLED */
 
     if (chkregister) {
 	xmlRegisterNodeDefault(registerNode);
