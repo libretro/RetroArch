@@ -247,16 +247,6 @@ XMLPUBVAR xmlFreeFunc xmlFree;
 XMLPUBVAR xmlStrdupFunc xmlMemStrdup;
 #endif /* LIBXML_THREAD_ALLOC_ENABLED */
 
-#ifdef LIBXML_DOCB_ENABLED
-XMLPUBFUN  xmlSAXHandlerV1 * XMLCALL __docbDefaultSAXHandler(void);
-#ifdef LIBXML_THREAD_ENABLED
-#define docbDefaultSAXHandler \
-(*(__docbDefaultSAXHandler()))
-#else
-XMLPUBVAR xmlSAXHandlerV1 docbDefaultSAXHandler;
-#endif
-#endif
-
 XMLPUBFUN xmlError * XMLCALL __xmlLastError(void);
 #ifdef LIBXML_THREAD_ENABLED
 #define xmlLastError \

@@ -154,10 +154,6 @@ XMLPUBFUN void XMLCALL
 XMLPUBFUN void XMLCALL		
 		initxmlDefaultSAXHandler	(xmlSAXHandlerV1 *hdlr,
 						 int warning);
-#ifdef LIBXML_DOCB_ENABLED
-XMLPUBFUN void XMLCALL		
-		initdocbDefaultSAXHandler	(xmlSAXHandlerV1 *hdlr);
-#endif
 #endif /* LIBXML_SAX1_ENABLED */
 
 #ifdef __cplusplus

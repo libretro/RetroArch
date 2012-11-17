@@ -1416,9 +1416,6 @@ get_next_node:
     reader->node = reader->node->parent;
     if ((reader->node == NULL) ||
 	(reader->node->type == XML_DOCUMENT_NODE) ||
-#ifdef LIBXML_DOCB_ENABLED
-	(reader->node->type == XML_DOCB_DOCUMENT_NODE) ||
-#endif
 	(reader->node->type == XML_HTML_DOCUMENT_NODE)) {
 	if (reader->mode != XML_TEXTREADER_MODE_EOF) {
 	    val = xmlParseChunk(reader->ctxt, "", 0, 1);
@@ -3007,9 +3004,6 @@ xmlTextReaderNodeType(xmlTextReaderPtr reader) {
 	    return(XML_READER_TYPE_COMMENT);
         case XML_DOCUMENT_NODE:
         case XML_HTML_DOCUMENT_NODE:
-#ifdef LIBXML_DOCB_ENABLED
-        case XML_DOCB_DOCUMENT_NODE:
-#endif
 	    return(XML_READER_TYPE_DOCUMENT);
         case XML_DOCUMENT_FRAG_NODE:
 	    return(XML_READER_TYPE_DOCUMENT_FRAGMENT);
@@ -3164,9 +3158,6 @@ xmlTextReaderName(xmlTextReaderPtr reader) {
 	    return(xmlStrdup(BAD_CAST "#comment"));
         case XML_DOCUMENT_NODE:
         case XML_HTML_DOCUMENT_NODE:
-#ifdef LIBXML_DOCB_ENABLED
-        case XML_DOCB_DOCUMENT_NODE:
-#endif
 	    return(xmlStrdup(BAD_CAST "#document"));
         case XML_DOCUMENT_FRAG_NODE:
 	    return(xmlStrdup(BAD_CAST "#document-fragment"));
@@ -3235,9 +3226,6 @@ xmlTextReaderConstName(xmlTextReaderPtr reader) {
 	    return(CONSTSTR(BAD_CAST "#comment"));
         case XML_DOCUMENT_NODE:
         case XML_HTML_DOCUMENT_NODE:
-#ifdef LIBXML_DOCB_ENABLED
-        case XML_DOCB_DOCUMENT_NODE:
-#endif
 	    return(CONSTSTR(BAD_CAST "#document"));
         case XML_DOCUMENT_FRAG_NODE:
 	    return(CONSTSTR(BAD_CAST "#document-fragment"));

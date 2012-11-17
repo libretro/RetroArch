@@ -84,19 +84,6 @@ extern __typeof (__xmlGenericErrorContext) __xmlGenericErrorContext__internal_al
 #endif
 #endif
 
-/* list generated from libxml2-api.xml */
-#if defined(LIBXML_DOCB_ENABLED)
-#ifdef bottom_DOCBparser
-#undef docbCreatePushParserCtxt
-extern __typeof (docbCreatePushParserCtxt) docbCreatePushParserCtxt __attribute((alias("docbCreatePushParserCtxt__internal_alias")));
-#else
-#ifndef docbCreatePushParserCtxt
-extern __typeof (docbCreatePushParserCtxt) docbCreatePushParserCtxt__internal_alias __attribute((visibility("hidden")));
-#define docbCreatePushParserCtxt docbCreatePushParserCtxt__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_parser
 #undef inputPop
 extern __typeof (inputPop) inputPop __attribute((alias("inputPop__internal_alias")));
@@ -6876,7 +6863,7 @@ extern __typeof (xmlSAX2EndDocument) xmlSAX2EndDocument__internal_alias __attrib
 #endif
 #endif
 
-#if defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED) || defined(LIBXML_DOCB_ENABLED)
+#if defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
 #ifdef bottom_SAX2
 #undef xmlSAX2EndElement
 extern __typeof (xmlSAX2EndElement) xmlSAX2EndElement __attribute((alias("xmlSAX2EndElement__internal_alias")));
@@ -7018,18 +7005,6 @@ extern __typeof (xmlSAX2InitDefaultSAXHandler) xmlSAX2InitDefaultSAXHandler__int
 #endif
 #endif
 
-#if defined(LIBXML_DOCB_ENABLED)
-#ifdef bottom_SAX2
-#undef xmlSAX2InitDocbDefaultSAXHandler
-extern __typeof (xmlSAX2InitDocbDefaultSAXHandler) xmlSAX2InitDocbDefaultSAXHandler __attribute((alias("xmlSAX2InitDocbDefaultSAXHandler__internal_alias")));
-#else
-#ifndef xmlSAX2InitDocbDefaultSAXHandler
-extern __typeof (xmlSAX2InitDocbDefaultSAXHandler) xmlSAX2InitDocbDefaultSAXHandler__internal_alias __attribute((visibility("hidden")));
-#define xmlSAX2InitDocbDefaultSAXHandler xmlSAX2InitDocbDefaultSAXHandler__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_SAX2
 #undef xmlSAX2InternalSubset
 extern __typeof (xmlSAX2InternalSubset) xmlSAX2InternalSubset __attribute((alias("xmlSAX2InternalSubset__internal_alias")));
@@ -7110,7 +7085,7 @@ extern __typeof (xmlSAX2StartDocument) xmlSAX2StartDocument__internal_alias __at
 #endif
 #endif
 
-#if defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED) || defined(LIBXML_DOCB_ENABLED)
+#if defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
 #ifdef bottom_SAX2
 #undef xmlSAX2StartElement
 extern __typeof (xmlSAX2StartElement) xmlSAX2StartElement __attribute((alias("xmlSAX2StartElement__internal_alias")));
@@ -13126,7 +13101,7 @@ extern __typeof (xmlValidateElementDecl) xmlValidateElementDecl__internal_alias 
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XPATH_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED) || defined(LIBXML_DOCB_ENABLED)
+#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XPATH_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
 #ifdef bottom_tree
 #undef xmlValidateNCName
 extern __typeof (xmlValidateNCName) xmlValidateNCName __attribute((alias("xmlValidateNCName__internal_alias")));

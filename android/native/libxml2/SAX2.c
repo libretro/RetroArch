@@ -1037,7 +1037,7 @@ xmlSAX2EndDocument(void *ctx)
     }
 }
 
-#if defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED) || defined(LIBXML_DOCB_ENABLED)
+#if defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED)
 /**
  * xmlSAX2AttributeInternal:
  * @ctx: the user data (XML parser context)
@@ -2858,62 +2858,5 @@ xmlDefaultSAXHandlerInit(void)
 #endif /* LIBXML_SAX1_ENABLED */
 }
 
-#ifdef LIBXML_DOCB_ENABLED
-
-/**
- * xmlSAX2InitDocbDefaultSAXHandler:
- * @hdlr:  the SAX handler
- *
- * Initialize the default DocBook SAX2 handler
- */
-void
-xmlSAX2InitDocbDefaultSAXHandler(xmlSAXHandler *hdlr)
-{
-    if ((hdlr == NULL) || (hdlr->initialized != 0))
-	return;
-
-    hdlr->internalSubset = xmlSAX2InternalSubset;
-    hdlr->externalSubset = NULL;
-    hdlr->isStandalone = xmlSAX2IsStandalone;
-    hdlr->hasInternalSubset = xmlSAX2HasInternalSubset;
-    hdlr->hasExternalSubset = xmlSAX2HasExternalSubset;
-    hdlr->resolveEntity = xmlSAX2ResolveEntity;
-    hdlr->getEntity = xmlSAX2GetEntity;
-    hdlr->getParameterEntity = NULL;
-    hdlr->entityDecl = xmlSAX2EntityDecl;
-    hdlr->attributeDecl = NULL;
-    hdlr->elementDecl = NULL;
-    hdlr->notationDecl = NULL;
-    hdlr->unparsedEntityDecl = NULL;
-    hdlr->setDocumentLocator = xmlSAX2SetDocumentLocator;
-    hdlr->startDocument = xmlSAX2StartDocument;
-    hdlr->endDocument = xmlSAX2EndDocument;
-    hdlr->startElement = xmlSAX2StartElement;
-    hdlr->endElement = xmlSAX2EndElement;
-    hdlr->reference = xmlSAX2Reference;
-    hdlr->characters = xmlSAX2Characters;
-    hdlr->cdataBlock = NULL;
-    hdlr->ignorableWhitespace = xmlSAX2IgnorableWhitespace;
-    hdlr->processingInstruction = NULL;
-    hdlr->comment = xmlSAX2Comment;
-    hdlr->warning = xmlParserWarning;
-    hdlr->error = xmlParserError;
-    hdlr->fatalError = xmlParserError;
-
-    hdlr->initialized = 1;
-}
-
-/**
- * docbDefaultSAXHandlerInit:
- *
- * Initialize the default SAX handler
- */
-void
-docbDefaultSAXHandlerInit(void)
-{
-    xmlSAX2InitDocbDefaultSAXHandler((xmlSAXHandlerPtr) &docbDefaultSAXHandler);
-}
-
-#endif /* LIBXML_DOCB_ENABLED */
 #define bottom_SAX2
 #include "elfgcchack.h"
