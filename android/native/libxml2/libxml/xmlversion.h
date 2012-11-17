@@ -113,15 +113,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_VALID_ENABLED:
- *
- * Whether the DTD validation support is configured in
- */
-#if 0
-#define LIBXML_VALID_ENABLED
-#endif
-
-/**
  * LIBXML_ICONV_ENABLED:
  *
  * Whether iconv support is available

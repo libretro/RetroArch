@@ -793,11 +793,7 @@ xmlHasFeature(xmlFeature feature)
         case XML_WITH_HTTP:
             return(0);
         case XML_WITH_VALID:
-#ifdef LIBXML_VALID_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_HTML:
             return(0);
         case XML_WITH_LEGACY:
@@ -9073,17 +9069,6 @@ xmlParseElement(xmlParserCtxtPtr ctxt) {
     namePush(ctxt, name);
     ret = ctxt->node;
 
-#ifdef LIBXML_VALID_ENABLED
-    /*
-     * [ VC: Root Element Type ]
-     * The Name in the document type declaration must match the element
-     * type of the root element. 
-     */
-    if (ctxt->validate && ctxt->wellFormed && ctxt->myDoc &&
-        ctxt->node && (ctxt->node == ctxt->myDoc->children))
-        ctxt->valid &= xmlValidateRoot(&ctxt->vctxt, ctxt->myDoc);
-#endif /* LIBXML_VALID_ENABLED */
-
     /*
      * Check for an Empty Element.
      */
@@ -10444,16 +10429,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 			ctxt->sax->endDocument(ctxt->userData);
 		    goto done;
 		}
-#ifdef LIBXML_VALID_ENABLED
-		/*
-		 * [ VC: Root Element Type ]
-		 * The Name in the document type declaration must match
-		 * the element type of the root element. 
-		 */
-		if (ctxt->validate && ctxt->wellFormed && ctxt->myDoc &&
-		    ctxt->node && (ctxt->node == ctxt->myDoc->children))
-		    ctxt->valid &= xmlValidateRoot(&ctxt->vctxt, ctxt->myDoc);
-#endif /* LIBXML_VALID_ENABLED */
 
 		/*
 		 * Check for an Empty Element.
@@ -11450,287 +11425,6 @@ xmlCreateIOParserCtxt(xmlSAXHandlerPtr sax, void *user_data,
     return(ctxt);
 }
 
-#ifdef LIBXML_VALID_ENABLED
-/************************************************************************
- *									*
- * 		Front ends when parsing a DTD				*
- *									*
- ************************************************************************/
-
-/**
- * xmlIOParseDTD:
- * @sax:  the SAX handler block or NULL
- * @input:  an Input Buffer
- * @enc:  the charset encoding if known
- *
- * Load and parse a DTD
- * 
- * Returns the resulting xmlDtdPtr or NULL in case of error.
- * @input will be freed by the function in any case.
- */
-
-xmlDtdPtr
-xmlIOParseDTD(xmlSAXHandlerPtr sax, xmlParserInputBufferPtr input,
-	      xmlCharEncoding enc) {
-    xmlDtdPtr ret = NULL;
-    xmlParserCtxtPtr ctxt;
-    xmlParserInputPtr pinput = NULL;
-    xmlChar start[4];
-
-    if (input == NULL)
-	return(NULL);
-
-    ctxt = xmlNewParserCtxt();
-    if (ctxt == NULL) {
-        xmlFreeParserInputBuffer(input);
-	return(NULL);
-    }
-
-    /*
-     * Set-up the SAX context
-     */
-    if (sax != NULL) { 
-	if (ctxt->sax != NULL)
-	    xmlFree(ctxt->sax);
-        ctxt->sax = sax;
-        ctxt->userData = ctxt;
-    }
-    xmlDetectSAX2(ctxt);
-
-    /*
-     * generate a parser input from the I/O handler
-     */
-
-    pinput = xmlNewIOInputStream(ctxt, input, XML_CHAR_ENCODING_NONE);
-    if (pinput == NULL) {
-        if (sax != NULL) ctxt->sax = NULL;
-        xmlFreeParserInputBuffer(input);
-	xmlFreeParserCtxt(ctxt);
-	return(NULL);
-    }
-
-    /*
-     * plug some encoding conversion routines here.
-     */
-    if (xmlPushInput(ctxt, pinput) < 0) {
-        if (sax != NULL) ctxt->sax = NULL;
-	xmlFreeParserCtxt(ctxt);
-	return(NULL);
-    }
-    if (enc != XML_CHAR_ENCODING_NONE) {
-        xmlSwitchEncoding(ctxt, enc);
-    }
-
-    pinput->filename = NULL;
-    pinput->line = 1;
-    pinput->col = 1;
-    pinput->base = ctxt->input->cur;
-    pinput->cur = ctxt->input->cur;
-    pinput->free = NULL;
-
-    /*
-     * let's parse that entity knowing it's an external subset.
-     */
-    ctxt->inSubset = 2;
-    ctxt->myDoc = xmlNewDoc(BAD_CAST "1.0");
-    if (ctxt->myDoc == NULL) {
-	xmlErrMemory(ctxt, "New Doc failed");
-	return(NULL);
-    }
-    ctxt->myDoc->properties = XML_DOC_INTERNAL;
-    ctxt->myDoc->extSubset = xmlNewDtd(ctxt->myDoc, BAD_CAST "none",
-	                               BAD_CAST "none", BAD_CAST "none");
-
-    if ((enc == XML_CHAR_ENCODING_NONE) &&
-        ((ctxt->input->end - ctxt->input->cur) >= 4)) {
-	/* 
-	 * Get the 4 first bytes and decode the charset
-	 * if enc != XML_CHAR_ENCODING_NONE
-	 * plug some encoding conversion routines.
-	 */
-	start[0] = RAW;
-	start[1] = NXT(1);
-	start[2] = NXT(2);
-	start[3] = NXT(3);
-	enc = xmlDetectCharEncoding(start, 4);
-	if (enc != XML_CHAR_ENCODING_NONE) {
-	    xmlSwitchEncoding(ctxt, enc);
-	}
-    }
-
-    xmlParseExternalSubset(ctxt, BAD_CAST "none", BAD_CAST "none");
-
-    if (ctxt->myDoc != NULL) {
-	if (ctxt->wellFormed) {
-	    ret = ctxt->myDoc->extSubset;
-	    ctxt->myDoc->extSubset = NULL;
-	    if (ret != NULL) {
-		xmlNodePtr tmp;
-
-		ret->doc = NULL;
-		tmp = ret->children;
-		while (tmp != NULL) {
-		    tmp->doc = NULL;
-		    tmp = tmp->next;
-		}
-	    }
-	} else {
-	    ret = NULL;
-	}
-        xmlFreeDoc(ctxt->myDoc);
-        ctxt->myDoc = NULL;
-    }
-    if (sax != NULL) ctxt->sax = NULL;
-    xmlFreeParserCtxt(ctxt);
-    
-    return(ret);
-}
-
-/**
- * xmlSAXParseDTD:
- * @sax:  the SAX handler block
- * @ExternalID:  a NAME* containing the External ID of the DTD
- * @SystemID:  a NAME* containing the URL to the DTD
- *
- * Load and parse an external subset.
- * 
- * Returns the resulting xmlDtdPtr or NULL in case of error.
- */
-
-xmlDtdPtr
-xmlSAXParseDTD(xmlSAXHandlerPtr sax, const xmlChar *ExternalID,
-                          const xmlChar *SystemID) {
-    xmlDtdPtr ret = NULL;
-    xmlParserCtxtPtr ctxt;
-    xmlParserInputPtr input = NULL;
-    xmlCharEncoding enc;
-    xmlChar* systemIdCanonic;
-
-    if ((ExternalID == NULL) && (SystemID == NULL)) return(NULL);
-
-    ctxt = xmlNewParserCtxt();
-    if (ctxt == NULL) {
-	return(NULL);
-    }
-
-    /*
-     * Set-up the SAX context
-     */
-    if (sax != NULL) { 
-	if (ctxt->sax != NULL)
-	    xmlFree(ctxt->sax);
-        ctxt->sax = sax;
-        ctxt->userData = ctxt;
-    }
-    
-    /*
-     * Canonicalise the system ID
-     */
-    systemIdCanonic = xmlCanonicPath(SystemID);
-    if ((SystemID != NULL) && (systemIdCanonic == NULL)) {
-	xmlFreeParserCtxt(ctxt);
-	return(NULL);
-    }
-
-    /*
-     * Ask the Entity resolver to load the damn thing
-     */
-
-    if ((ctxt->sax != NULL) && (ctxt->sax->resolveEntity != NULL))
-	input = ctxt->sax->resolveEntity(ctxt->userData, ExternalID,
-	                                 systemIdCanonic);
-    if (input == NULL) {
-        if (sax != NULL) ctxt->sax = NULL;
-	xmlFreeParserCtxt(ctxt);
-	if (systemIdCanonic != NULL)
-	    xmlFree(systemIdCanonic);
-	return(NULL);
-    }
-
-    /*
-     * plug some encoding conversion routines here.
-     */
-    if (xmlPushInput(ctxt, input) < 0) {
-        if (sax != NULL) ctxt->sax = NULL;
-	xmlFreeParserCtxt(ctxt);
-	if (systemIdCanonic != NULL)
-	    xmlFree(systemIdCanonic);
-	return(NULL);
-    }
-    if ((ctxt->input->end - ctxt->input->cur) >= 4) {
-	enc = xmlDetectCharEncoding(ctxt->input->cur, 4);
-	xmlSwitchEncoding(ctxt, enc);
-    }
-
-    if (input->filename == NULL)
-	input->filename = (char *) systemIdCanonic;
-    else
-	xmlFree(systemIdCanonic);
-    input->line = 1;
-    input->col = 1;
-    input->base = ctxt->input->cur;
-    input->cur = ctxt->input->cur;
-    input->free = NULL;
-
-    /*
-     * let's parse that entity knowing it's an external subset.
-     */
-    ctxt->inSubset = 2;
-    ctxt->myDoc = xmlNewDoc(BAD_CAST "1.0");
-    if (ctxt->myDoc == NULL) {
-	xmlErrMemory(ctxt, "New Doc failed");
-        if (sax != NULL) ctxt->sax = NULL;
-	xmlFreeParserCtxt(ctxt);
-	return(NULL);
-    }
-    ctxt->myDoc->properties = XML_DOC_INTERNAL;
-    ctxt->myDoc->extSubset = xmlNewDtd(ctxt->myDoc, BAD_CAST "none",
-	                               ExternalID, SystemID);
-    xmlParseExternalSubset(ctxt, ExternalID, SystemID);
-
-    if (ctxt->myDoc != NULL) {
-	if (ctxt->wellFormed) {
-	    ret = ctxt->myDoc->extSubset;
-	    ctxt->myDoc->extSubset = NULL;
-	    if (ret != NULL) {
-		xmlNodePtr tmp;
-
-		ret->doc = NULL;
-		tmp = ret->children;
-		while (tmp != NULL) {
-		    tmp->doc = NULL;
-		    tmp = tmp->next;
-		}
-	    }
-	} else {
-	    ret = NULL;
-	}
-        xmlFreeDoc(ctxt->myDoc);
-        ctxt->myDoc = NULL;
-    }
-    if (sax != NULL) ctxt->sax = NULL;
-    xmlFreeParserCtxt(ctxt);
-
-    return(ret);
-}
-
-
-/**
- * xmlParseDTD:
- * @ExternalID:  a NAME* containing the External ID of the DTD
- * @SystemID:  a NAME* containing the URL to the DTD
- *
- * Load and parse an external subset.
- *
- * Returns the resulting xmlDtdPtr or NULL in case of error.
- */
-
-xmlDtdPtr
-xmlParseDTD(const xmlChar *ExternalID, const xmlChar *SystemID) {
-    return(xmlSAXParseDTD(NULL, ExternalID, SystemID));
-}
-#endif /* LIBXML_VALID_ENABLED */
-
 /************************************************************************
  *									*
  * 		Front ends when parsing an Entity			*
@@ -12288,14 +11982,6 @@ xmlParseBalancedChunkMemoryInternal(xmlParserCtxtPtr oldctxt,
 	cur = ctxt->myDoc->children->children;
 	*lst = cur;
 	while (cur != NULL) {
-#ifdef LIBXML_VALID_ENABLED
-	    if ((oldctxt->validate) && (oldctxt->wellFormed) &&
-		(oldctxt->myDoc) && (oldctxt->myDoc->intSubset) &&
-		(cur->type == XML_ELEMENT_NODE)) {
-		oldctxt->valid &= xmlValidateElement(&oldctxt->vctxt,
-			oldctxt->myDoc, cur);
-	    }
-#endif /* LIBXML_VALID_ENABLED */
 	    cur->parent = NULL;
 	    cur = cur->next;
 	}

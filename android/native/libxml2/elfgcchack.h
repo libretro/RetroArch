@@ -1743,18 +1743,6 @@ extern __typeof (xmlFreeURI) xmlFreeURI__internal_alias __attribute((visibility(
 #endif
 #endif
 
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlFreeValidCtxt
-extern __typeof (xmlFreeValidCtxt) xmlFreeValidCtxt __attribute((alias("xmlFreeValidCtxt__internal_alias")));
-#else
-#ifndef xmlFreeValidCtxt
-extern __typeof (xmlFreeValidCtxt) xmlFreeValidCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlFreeValidCtxt xmlFreeValidCtxt__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_xmlmemory
 #undef xmlGcMemGet
 extern __typeof (xmlGcMemGet) xmlGcMemGet __attribute((alias("xmlGcMemGet__internal_alias")));
@@ -2346,18 +2334,6 @@ extern __typeof (xmlHashUpdateEntry3) xmlHashUpdateEntry3 __attribute((alias("xm
 #ifndef xmlHashUpdateEntry3
 extern __typeof (xmlHashUpdateEntry3) xmlHashUpdateEntry3__internal_alias __attribute((visibility("hidden")));
 #define xmlHashUpdateEntry3 xmlHashUpdateEntry3__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_parser
-#undef xmlIOParseDTD
-extern __typeof (xmlIOParseDTD) xmlIOParseDTD __attribute((alias("xmlIOParseDTD__internal_alias")));
-#else
-#ifndef xmlIOParseDTD
-extern __typeof (xmlIOParseDTD) xmlIOParseDTD__internal_alias __attribute((visibility("hidden")));
-#define xmlIOParseDTD xmlIOParseDTD__internal_alias
-#endif
 #endif
 #endif
 
@@ -3488,18 +3464,6 @@ extern __typeof (xmlNewTextReaderFilename) xmlNewTextReaderFilename__internal_al
 #endif
 #endif
 
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlNewValidCtxt
-extern __typeof (xmlNewValidCtxt) xmlNewValidCtxt __attribute((alias("xmlNewValidCtxt__internal_alias")));
-#else
-#ifndef xmlNewValidCtxt
-extern __typeof (xmlNewValidCtxt) xmlNewValidCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlNewValidCtxt xmlNewValidCtxt__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_parserInternals
 #undef xmlNextChar
 extern __typeof (xmlNextChar) xmlNextChar __attribute((alias("xmlNextChar__internal_alias")));
@@ -3844,18 +3808,6 @@ extern __typeof (xmlParseCtxtExternalEntity) xmlParseCtxtExternalEntity __attrib
 #ifndef xmlParseCtxtExternalEntity
 extern __typeof (xmlParseCtxtExternalEntity) xmlParseCtxtExternalEntity__internal_alias __attribute((visibility("hidden")));
 #define xmlParseCtxtExternalEntity xmlParseCtxtExternalEntity__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_parser
-#undef xmlParseDTD
-extern __typeof (xmlParseDTD) xmlParseDTD __attribute((alias("xmlParseDTD__internal_alias")));
-#else
-#ifndef xmlParseDTD
-extern __typeof (xmlParseDTD) xmlParseDTD__internal_alias __attribute((visibility("hidden")));
-#define xmlParseDTD xmlParseDTD__internal_alias
-#endif
 #endif
 #endif
 
@@ -5186,18 +5138,6 @@ extern __typeof (xmlSAX2UnparsedEntityDecl) xmlSAX2UnparsedEntityDecl __attribut
 #ifndef xmlSAX2UnparsedEntityDecl
 extern __typeof (xmlSAX2UnparsedEntityDecl) xmlSAX2UnparsedEntityDecl__internal_alias __attribute((visibility("hidden")));
 #define xmlSAX2UnparsedEntityDecl xmlSAX2UnparsedEntityDecl__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_parser
-#undef xmlSAXParseDTD
-extern __typeof (xmlSAXParseDTD) xmlSAXParseDTD __attribute((alias("xmlSAXParseDTD__internal_alias")));
-#else
-#ifndef xmlSAXParseDTD
-extern __typeof (xmlSAXParseDTD) xmlSAXParseDTD__internal_alias __attribute((visibility("hidden")));
-#define xmlSAXParseDTD xmlSAXParseDTD__internal_alias
-#endif
 #endif
 #endif
 
@@ -6794,150 +6734,6 @@ extern __typeof (xmlUnsetProp) xmlUnsetProp__internal_alias __attribute((visibil
 #endif
 #endif
 
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidCtxtNormalizeAttributeValue
-extern __typeof (xmlValidCtxtNormalizeAttributeValue) xmlValidCtxtNormalizeAttributeValue __attribute((alias("xmlValidCtxtNormalizeAttributeValue__internal_alias")));
-#else
-#ifndef xmlValidCtxtNormalizeAttributeValue
-extern __typeof (xmlValidCtxtNormalizeAttributeValue) xmlValidCtxtNormalizeAttributeValue__internal_alias __attribute((visibility("hidden")));
-#define xmlValidCtxtNormalizeAttributeValue xmlValidCtxtNormalizeAttributeValue__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidGetPotentialChildren
-extern __typeof (xmlValidGetPotentialChildren) xmlValidGetPotentialChildren __attribute((alias("xmlValidGetPotentialChildren__internal_alias")));
-#else
-#ifndef xmlValidGetPotentialChildren
-extern __typeof (xmlValidGetPotentialChildren) xmlValidGetPotentialChildren__internal_alias __attribute((visibility("hidden")));
-#define xmlValidGetPotentialChildren xmlValidGetPotentialChildren__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidGetValidElements
-extern __typeof (xmlValidGetValidElements) xmlValidGetValidElements __attribute((alias("xmlValidGetValidElements__internal_alias")));
-#else
-#ifndef xmlValidGetValidElements
-extern __typeof (xmlValidGetValidElements) xmlValidGetValidElements__internal_alias __attribute((visibility("hidden")));
-#define xmlValidGetValidElements xmlValidGetValidElements__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidNormalizeAttributeValue
-extern __typeof (xmlValidNormalizeAttributeValue) xmlValidNormalizeAttributeValue __attribute((alias("xmlValidNormalizeAttributeValue__internal_alias")));
-#else
-#ifndef xmlValidNormalizeAttributeValue
-extern __typeof (xmlValidNormalizeAttributeValue) xmlValidNormalizeAttributeValue__internal_alias __attribute((visibility("hidden")));
-#define xmlValidNormalizeAttributeValue xmlValidNormalizeAttributeValue__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateAttributeDecl
-extern __typeof (xmlValidateAttributeDecl) xmlValidateAttributeDecl __attribute((alias("xmlValidateAttributeDecl__internal_alias")));
-#else
-#ifndef xmlValidateAttributeDecl
-extern __typeof (xmlValidateAttributeDecl) xmlValidateAttributeDecl__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateAttributeDecl xmlValidateAttributeDecl__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateAttributeValue
-extern __typeof (xmlValidateAttributeValue) xmlValidateAttributeValue __attribute((alias("xmlValidateAttributeValue__internal_alias")));
-#else
-#ifndef xmlValidateAttributeValue
-extern __typeof (xmlValidateAttributeValue) xmlValidateAttributeValue__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateAttributeValue xmlValidateAttributeValue__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateDocument
-extern __typeof (xmlValidateDocument) xmlValidateDocument __attribute((alias("xmlValidateDocument__internal_alias")));
-#else
-#ifndef xmlValidateDocument
-extern __typeof (xmlValidateDocument) xmlValidateDocument__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateDocument xmlValidateDocument__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateDocumentFinal
-extern __typeof (xmlValidateDocumentFinal) xmlValidateDocumentFinal __attribute((alias("xmlValidateDocumentFinal__internal_alias")));
-#else
-#ifndef xmlValidateDocumentFinal
-extern __typeof (xmlValidateDocumentFinal) xmlValidateDocumentFinal__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateDocumentFinal xmlValidateDocumentFinal__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateDtd
-extern __typeof (xmlValidateDtd) xmlValidateDtd __attribute((alias("xmlValidateDtd__internal_alias")));
-#else
-#ifndef xmlValidateDtd
-extern __typeof (xmlValidateDtd) xmlValidateDtd__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateDtd xmlValidateDtd__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateDtdFinal
-extern __typeof (xmlValidateDtdFinal) xmlValidateDtdFinal __attribute((alias("xmlValidateDtdFinal__internal_alias")));
-#else
-#ifndef xmlValidateDtdFinal
-extern __typeof (xmlValidateDtdFinal) xmlValidateDtdFinal__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateDtdFinal xmlValidateDtdFinal__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateElement
-extern __typeof (xmlValidateElement) xmlValidateElement __attribute((alias("xmlValidateElement__internal_alias")));
-#else
-#ifndef xmlValidateElement
-extern __typeof (xmlValidateElement) xmlValidateElement__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateElement xmlValidateElement__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateElementDecl
-extern __typeof (xmlValidateElementDecl) xmlValidateElementDecl __attribute((alias("xmlValidateElementDecl__internal_alias")));
-#else
-#ifndef xmlValidateElementDecl
-extern __typeof (xmlValidateElementDecl) xmlValidateElementDecl__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateElementDecl xmlValidateElementDecl__internal_alias
-#endif
-#endif
-#endif
-
 #if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlValidateNCName
@@ -6974,114 +6770,6 @@ extern __typeof (xmlValidateName) xmlValidateName__internal_alias __attribute((v
 #endif
 #endif
 
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateNameValue
-extern __typeof (xmlValidateNameValue) xmlValidateNameValue __attribute((alias("xmlValidateNameValue__internal_alias")));
-#else
-#ifndef xmlValidateNameValue
-extern __typeof (xmlValidateNameValue) xmlValidateNameValue__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateNameValue xmlValidateNameValue__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateNamesValue
-extern __typeof (xmlValidateNamesValue) xmlValidateNamesValue __attribute((alias("xmlValidateNamesValue__internal_alias")));
-#else
-#ifndef xmlValidateNamesValue
-extern __typeof (xmlValidateNamesValue) xmlValidateNamesValue__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateNamesValue xmlValidateNamesValue__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateNmtokenValue
-extern __typeof (xmlValidateNmtokenValue) xmlValidateNmtokenValue __attribute((alias("xmlValidateNmtokenValue__internal_alias")));
-#else
-#ifndef xmlValidateNmtokenValue
-extern __typeof (xmlValidateNmtokenValue) xmlValidateNmtokenValue__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateNmtokenValue xmlValidateNmtokenValue__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateNmtokensValue
-extern __typeof (xmlValidateNmtokensValue) xmlValidateNmtokensValue __attribute((alias("xmlValidateNmtokensValue__internal_alias")));
-#else
-#ifndef xmlValidateNmtokensValue
-extern __typeof (xmlValidateNmtokensValue) xmlValidateNmtokensValue__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateNmtokensValue xmlValidateNmtokensValue__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateNotationDecl
-extern __typeof (xmlValidateNotationDecl) xmlValidateNotationDecl __attribute((alias("xmlValidateNotationDecl__internal_alias")));
-#else
-#ifndef xmlValidateNotationDecl
-extern __typeof (xmlValidateNotationDecl) xmlValidateNotationDecl__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateNotationDecl xmlValidateNotationDecl__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateNotationUse
-extern __typeof (xmlValidateNotationUse) xmlValidateNotationUse __attribute((alias("xmlValidateNotationUse__internal_alias")));
-#else
-#ifndef xmlValidateNotationUse
-extern __typeof (xmlValidateNotationUse) xmlValidateNotationUse__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateNotationUse xmlValidateNotationUse__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateOneAttribute
-extern __typeof (xmlValidateOneAttribute) xmlValidateOneAttribute __attribute((alias("xmlValidateOneAttribute__internal_alias")));
-#else
-#ifndef xmlValidateOneAttribute
-extern __typeof (xmlValidateOneAttribute) xmlValidateOneAttribute__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateOneAttribute xmlValidateOneAttribute__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateOneElement
-extern __typeof (xmlValidateOneElement) xmlValidateOneElement __attribute((alias("xmlValidateOneElement__internal_alias")));
-#else
-#ifndef xmlValidateOneElement
-extern __typeof (xmlValidateOneElement) xmlValidateOneElement__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateOneElement xmlValidateOneElement__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateOneNamespace
-extern __typeof (xmlValidateOneNamespace) xmlValidateOneNamespace __attribute((alias("xmlValidateOneNamespace__internal_alias")));
-#else
-#ifndef xmlValidateOneNamespace
-extern __typeof (xmlValidateOneNamespace) xmlValidateOneNamespace__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateOneNamespace xmlValidateOneNamespace__internal_alias
-#endif
-#endif
-#endif
-
 #if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlValidateQName
@@ -7090,18 +6778,6 @@ extern __typeof (xmlValidateQName) xmlValidateQName __attribute((alias("xmlValid
 #ifndef xmlValidateQName
 extern __typeof (xmlValidateQName) xmlValidateQName__internal_alias __attribute((visibility("hidden")));
 #define xmlValidateQName xmlValidateQName__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_valid
-#undef xmlValidateRoot
-extern __typeof (xmlValidateRoot) xmlValidateRoot __attribute((alias("xmlValidateRoot__internal_alias")));
-#else
-#ifndef xmlValidateRoot
-extern __typeof (xmlValidateRoot) xmlValidateRoot__internal_alias __attribute((visibility("hidden")));
-#define xmlValidateRoot xmlValidateRoot__internal_alias
 #endif
 #endif
 #endif

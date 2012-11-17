@@ -854,19 +854,6 @@ XMLPUBFUN int XMLCALL
 XMLPUBFUN int XMLCALL		
 		xmlParseExtParsedEnt	(xmlParserCtxtPtr ctxt);
 
-#ifdef LIBXML_VALID_ENABLED
-XMLPUBFUN xmlDtdPtr XMLCALL	
-		xmlSAXParseDTD		(xmlSAXHandlerPtr sax,
-					 const xmlChar *ExternalID,
-					 const xmlChar *SystemID);
-XMLPUBFUN xmlDtdPtr XMLCALL	
-		xmlParseDTD		(const xmlChar *ExternalID,
-					 const xmlChar *SystemID);
-XMLPUBFUN xmlDtdPtr XMLCALL	
-		xmlIOParseDTD		(xmlSAXHandlerPtr sax,
-					 xmlParserInputBufferPtr input,
-					 xmlCharEncoding enc);
-#endif /* LIBXML_VALID_ENABLE */
 XMLPUBFUN xmlParserErrors XMLCALL
 		xmlParseInNodeContext	(xmlNodePtr node,
 					 const char *data,

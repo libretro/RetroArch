@@ -744,14 +744,6 @@ xmlSAX2AttributeDecl(void *ctx, const xmlChar *elem, const xmlChar *fullname,
 	xmlFreeEnumeration(tree);
 	return;
     }
-#ifdef LIBXML_VALID_ENABLED
-    if (ctxt->vctxt.valid == 0)
-	ctxt->valid = 0;
-    if ((attr != NULL) && (ctxt->validate) && (ctxt->wellFormed) &&
-        (ctxt->myDoc->intSubset != NULL))
-	ctxt->valid &= xmlValidateAttributeDecl(&ctxt->vctxt, ctxt->myDoc,
-	                                        attr);
-#endif /* LIBXML_VALID_ENABLED */
     if (prefix != NULL)
 	xmlFree(prefix);
     if (name != NULL)
@@ -794,14 +786,6 @@ xmlSAX2ElementDecl(void *ctx, const xmlChar * name, int type,
 	               name, NULL);
         return;
     }
-#ifdef LIBXML_VALID_ENABLED
-    if (elem == NULL)
-        ctxt->valid = 0;
-    if (ctxt->validate && ctxt->wellFormed &&
-        ctxt->myDoc && ctxt->myDoc->intSubset)
-        ctxt->valid &=
-            xmlValidateElementDecl(&ctxt->vctxt, ctxt->myDoc, elem);
-#endif /* LIBXML_VALID_ENABLED */
 }
 
 /**
@@ -845,13 +829,6 @@ xmlSAX2NotationDecl(void *ctx, const xmlChar *name,
 	               name, NULL);
 	return;
     }
-#ifdef LIBXML_VALID_ENABLED
-    if (nota == NULL) ctxt->valid = 0;
-    if ((ctxt->validate) && (ctxt->wellFormed) &&
-        (ctxt->myDoc->intSubset != NULL))
-	ctxt->valid &= xmlValidateNotationDecl(&ctxt->vctxt, ctxt->myDoc,
-	                                       nota);
-#endif /* LIBXML_VALID_ENABLED */
 }
 
 /**
@@ -1011,11 +988,6 @@ xmlSAX2EndDocument(void *ctx)
 	    "SAX.xmlSAX2EndDocument()\n");
 #endif
     if (ctx == NULL) return;
-#ifdef LIBXML_VALID_ENABLED
-    if (ctxt->validate && ctxt->wellFormed &&
-        ctxt->myDoc && ctxt->myDoc->intSubset)
-	ctxt->valid &= xmlValidateDocumentFinal(&ctxt->vctxt, ctxt->myDoc);
-#endif /* LIBXML_VALID_ENABLED */
 
     /*
      * Grab the encoding if it was added on-the-fly
@@ -1115,37 +1087,6 @@ skip:
 	xmlRegisterNodeDefaultValue(ret);
     return(ret);
 }
-
-#ifdef LIBXML_VALID_ENABLED
-/*
- * xmlSAX2DecodeAttrEntities:
- * @ctxt:  the parser context
- * @str:  the input string
- * @len: the string length
- * 
- * Remove the entities from an attribute value
- *
- * Returns the newly allocated string or NULL if not needed or error
- */
-static xmlChar *
-xmlSAX2DecodeAttrEntities(xmlParserCtxtPtr ctxt, const xmlChar *str,
-                          const xmlChar *end) {
-    const xmlChar *in;
-    xmlChar *ret;
-
-    in = str;
-    while (in < end)
-        if (*in++ == '&')
-	    goto decode;
-    return(NULL);
-decode:
-    ctxt->depth++;
-    ret = xmlStringLenDecodeEntities(ctxt, str, end - str,
-				     XML_SUBSTITUTE_REF, 0,0,0);
-    ctxt->depth--;
-    return(ret);
-}
-#endif /* LIBXML_VALID_ENABLED */
 
 /**
  * xmlSAX2AttributeNs:
@@ -1262,76 +1203,6 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
 	}
     }
 
-#ifdef LIBXML_VALID_ENABLED
-    if ((!ctxt->html) && ctxt->validate && ctxt->wellFormed &&
-        ctxt->myDoc && ctxt->myDoc->intSubset) {
-	/*
-	 * If we don't substitute entities, the validation should be
-	 * done on a value with replaced entities anyway.
-	 */
-        if (!ctxt->replaceEntities) {
-	    dup = xmlSAX2DecodeAttrEntities(ctxt, value, valueend);
-	    if (dup == NULL) {
-	        if (*valueend == 0) {
-		    ctxt->valid &= xmlValidateOneAttribute(&ctxt->vctxt,
-				    ctxt->myDoc, ctxt->node, ret, value);
-		} else {
-		    /*
-		     * That should already be normalized.
-		     * cheaper to finally allocate here than duplicate
-		     * entry points in the full validation code
-		     */
-		    dup = xmlStrndup(value, valueend - value);
-
-		    ctxt->valid &= xmlValidateOneAttribute(&ctxt->vctxt,
-				    ctxt->myDoc, ctxt->node, ret, dup);
-		}
-	    } else {
-	        /*
-		 * dup now contains a string of the flattened attribute
-		 * content with entities substitued. Check if we need to
-		 * apply an extra layer of normalization.
-		 * It need to be done twice ... it's an extra burden related
-		 * to the ability to keep references in attributes
-		 */
-		if (ctxt->attsSpecial != NULL) {
-		    xmlChar *nvalnorm;
-		    xmlChar fn[50];
-		    xmlChar *fullname;
-		    
-		    fullname = xmlBuildQName(localname, prefix, fn, 50);
-		    if (fullname != NULL) {
-			ctxt->vctxt.valid = 1;
-		        nvalnorm = xmlValidCtxtNormalizeAttributeValue(
-			                 &ctxt->vctxt, ctxt->myDoc,
-					 ctxt->node, fullname, dup);
-			if (ctxt->vctxt.valid != 1)
-			    ctxt->valid = 0;
-
-			if ((fullname != fn) && (fullname != localname))
-			    xmlFree(fullname);
-			if (nvalnorm != NULL) {
-			    xmlFree(dup);
-			    dup = nvalnorm;
-			}
-		    }
-		}
-
-		ctxt->valid &= xmlValidateOneAttribute(&ctxt->vctxt,
-			        ctxt->myDoc, ctxt->node, ret, dup);
-	    }
-	} else {
-	    /*
-	     * if entities already have been substitued, then
-	     * the attribute as passed is already normalized
-	     */
-	    dup = xmlStrndup(value, valueend - value);
-
-	    ctxt->valid &= xmlValidateOneAttribute(&ctxt->vctxt,
-	                             ctxt->myDoc, ctxt->node, ret, dup);
-	}
-    } else
-#endif /* LIBXML_VALID_ENABLED */
            if (((ctxt->loadsubset & XML_SKIP_IDS) == 0) &&
 	       (((ctxt->replaceEntities == 0) && (ctxt->external != 2)) ||
 	        ((ctxt->replaceEntities != 0) && (ctxt->inSubset == 0)))) {
@@ -1349,13 +1220,6 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
 	     */
 	    if (dup == NULL)
 	        dup = xmlStrndup(value, valueend - value);
-#ifdef LIBXML_VALID_ENABLED
-	    if (xmlValidateNCName(dup, 1) != 0) {
-	        xmlErrValid(ctxt, XML_DTD_XMLID_VALUE,
-		      "xml:id : attribute value %s is not an NCName\n",
-			    (const char *) dup, NULL);
-	    }
-#endif
 	    xmlAddID(&ctxt->vctxt, ctxt->myDoc, dup, ret);
 	} else if (xmlIsID(ctxt->myDoc, ctxt->node, ret)) {
 	    /* might be worth duplicate entry points and not copy */
@@ -1512,13 +1376,6 @@ xmlSAX2StartElementNs(void *ctx,
              */
 	    continue;
 	}
-#ifdef LIBXML_VALID_ENABLED
-	if ((!ctxt->html) && ctxt->validate && ctxt->wellFormed &&
-	    ctxt->myDoc && ctxt->myDoc->intSubset) {
-	    ctxt->valid &= xmlValidateOneNamespace(&ctxt->vctxt, ctxt->myDoc,
-	                                           ret, prefix, ns, uri);
-	}
-#endif /* LIBXML_VALID_ENABLED */
     }
     ctxt->nodemem = -1;
 
@@ -1607,23 +1464,6 @@ xmlSAX2StartElementNs(void *ctx,
 	}
     }
 
-#ifdef LIBXML_VALID_ENABLED
-    /*
-     * If it's the Document root, finish the DTD validation and
-     * check the document root element for validity
-     */
-    if ((ctxt->validate) && (ctxt->vctxt.finishDtd == XML_CTXT_FINISH_DTD_0)) {
-	int chk;
-
-	chk = xmlValidateDtdFinal(&ctxt->vctxt, ctxt->myDoc);
-	if (chk <= 0)
-	    ctxt->valid = 0;
-	if (chk < 0)
-	    ctxt->wellFormed = 0;
-	ctxt->valid &= xmlValidateRoot(&ctxt->vctxt, ctxt->myDoc);
-	ctxt->vctxt.finishDtd = XML_CTXT_FINISH_DTD_1;
-    }
-#endif /* LIBXML_VALID_ENABLED */
 }
 
 /**
@@ -1657,11 +1497,6 @@ xmlSAX2EndElementNs(void *ctx,
     }
     ctxt->nodemem = -1;
 
-#ifdef LIBXML_VALID_ENABLED
-    if (ctxt->validate && ctxt->wellFormed &&
-        ctxt->myDoc && ctxt->myDoc->intSubset)
-        ctxt->valid &= xmlValidateOneElement(&ctxt->vctxt, ctxt->myDoc, cur);
-#endif /* LIBXML_VALID_ENABLED */
 
     /*
      * end of parsing of this node.
