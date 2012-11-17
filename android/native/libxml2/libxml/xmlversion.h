@@ -158,15 +158,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_UNICODE_ENABLED:
- *
- * Whether the Unicode related interfaces are compiled in
- */
-#if 0
-#define LIBXML_UNICODE_ENABLED
-#endif
-
-/**
  * LIBXML_REGEXP_ENABLED:
  *
  * Whether the regular expressions interfaces are compiled in

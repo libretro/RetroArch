@@ -825,11 +825,7 @@ xmlHasFeature(xmlFeature feature)
             return(0);
 #endif
         case XML_WITH_UNICODE:
-#ifdef LIBXML_UNICODE_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_REGEXP:
 #ifdef LIBXML_REGEXP_ENABLED
             return(1);
