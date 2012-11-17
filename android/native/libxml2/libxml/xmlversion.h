@@ -149,15 +149,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_ICU_ENABLED:
- *
- * Whether icu support is available
- */
-#if 1
-#define LIBXML_ICU_ENABLED
-#endif
-
-/**
  * LIBXML_ISO8859X_ENABLED:
  *
  * Whether ISO-8859-* support is made available in case iconv is not
