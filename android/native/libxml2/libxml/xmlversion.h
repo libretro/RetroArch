@@ -176,15 +176,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_AUTOMATA_ENABLED:
- *
- * Whether the automata interfaces are compiled in
- */
-#if 1
-#define LIBXML_AUTOMATA_ENABLED
-#endif
-
-/**
  * LIBXML_EXPR_ENABLED:
  *
  * Whether the formal expressions interfaces are compiled in
