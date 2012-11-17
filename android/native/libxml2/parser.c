@@ -837,11 +837,7 @@ xmlHasFeature(xmlFeature feature)
         case XML_WITH_DEBUG:
             return(0);
         case XML_WITH_DEBUG_MEM:
-#ifdef DEBUG_MEMORY_LOCATION
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_DEBUG_RUN:
             return(0);
         case XML_WITH_ZLIB:
@@ -2949,14 +2945,6 @@ xmlSplitQName(xmlParserCtxtPtr ctxt, const xmlChar *name, xmlChar **prefix) {
  *	Routines to parse Name, NCName and NmToken			*
  *									*
  ************************************************************************/
-#ifdef DEBUG
-static unsigned long nbParseName = 0;
-static unsigned long nbParseNmToken = 0;
-static unsigned long nbParseNCName = 0;
-static unsigned long nbParseNCNameComplex = 0;
-static unsigned long nbParseNameComplex = 0;
-static unsigned long nbParseStringName = 0;
-#endif
 
 /*
  * The two following functions are related to the change of accepted
@@ -3046,10 +3034,6 @@ xmlParseNameComplex(xmlParserCtxtPtr ctxt) {
     int len = 0, l;
     int c;
     int count = 0;
-
-#ifdef DEBUG
-    nbParseNameComplex++;
-#endif
 
     /*
      * Handler for more complex cases
@@ -3165,10 +3149,6 @@ xmlParseName(xmlParserCtxtPtr ctxt) {
 
     GROW;
 
-#ifdef DEBUG
-    nbParseName++;
-#endif
-
     /*
      * Accelerator for simple ASCII names
      */
@@ -3203,10 +3183,6 @@ xmlParseNCNameComplex(xmlParserCtxtPtr ctxt) {
     int len = 0, l;
     int c;
     int count = 0;
-
-#ifdef DEBUG
-    nbParseNCNameComplex++;
-#endif
 
     /*
      * Handler for more complex cases
@@ -3251,10 +3227,6 @@ xmlParseNCName(xmlParserCtxtPtr ctxt) {
     const xmlChar *in;
     const xmlChar *ret;
     int count = 0;
-
-#ifdef DEBUG
-    nbParseNCName++;
-#endif
 
     /*
      * Accelerator for simple ASCII names
@@ -3349,10 +3321,6 @@ xmlParseStringName(xmlParserCtxtPtr ctxt, const xmlChar** str) {
     int len = 0, l;
     int c;
 
-#ifdef DEBUG
-    nbParseStringName++;
-#endif
-
     c = CUR_SCHAR(cur, l);
     if (!xmlIsNameStartChar(ctxt, c)) {
 	return(NULL);
@@ -3424,10 +3392,6 @@ xmlParseNmtoken(xmlParserCtxtPtr ctxt) {
     int len = 0, l;
     int c;
     int count = 0;
-
-#ifdef DEBUG
-    nbParseNmToken++;
-#endif
 
     GROW;
     c = CUR_CHAR(l);
@@ -9986,35 +9950,10 @@ xmlParseLookupSequence(xmlParserCtxtPtr ctxt, xmlChar first,
 		if (buf[base + 1] != next) continue;
 	    }
 	    ctxt->checkIndex = 0;
-#ifdef DEBUG_PUSH
-	    if (next == 0)
-		xmlGenericError(xmlGenericErrorContext,
-			"PP: lookup '%c' found at %d\n",
-			first, base);
-	    else if (third == 0)
-		xmlGenericError(xmlGenericErrorContext,
-			"PP: lookup '%c%c' found at %d\n",
-			first, next, base);
-	    else 
-		xmlGenericError(xmlGenericErrorContext,
-			"PP: lookup '%c%c%c' found at %d\n",
-			first, next, third, base);
-#endif
 	    return(base - (in->cur - in->base));
 	}
     }
     ctxt->checkIndex = base;
-#ifdef DEBUG_PUSH
-    if (next == 0)
-	xmlGenericError(xmlGenericErrorContext,
-		"PP: lookup '%c' failed\n", first);
-    else if (third == 0)
-	xmlGenericError(xmlGenericErrorContext,
-		"PP: lookup '%c%c' failed\n", first, next);
-    else	
-	xmlGenericError(xmlGenericErrorContext,
-		"PP: lookup '%c%c%c' failed\n", first, next, third);
-#endif
     return(-1);
 }
 
@@ -10161,59 +10100,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
     if (ctxt->input == NULL)
         return(0);
 
-#ifdef DEBUG_PUSH
-    switch (ctxt->instate) {
-	case XML_PARSER_EOF:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "PP: try EOF\n"); break;
-	case XML_PARSER_START:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "PP: try START\n"); break;
-	case XML_PARSER_MISC:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "PP: try MISC\n");break;
-	case XML_PARSER_COMMENT:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "PP: try COMMENT\n");break;
-	case XML_PARSER_PROLOG:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "PP: try PROLOG\n");break;
-	case XML_PARSER_START_TAG:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "PP: try START_TAG\n");break;
-	case XML_PARSER_CONTENT:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "PP: try CONTENT\n");break;
-	case XML_PARSER_CDATA_SECTION:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "PP: try CDATA_SECTION\n");break;
-	case XML_PARSER_END_TAG:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "PP: try END_TAG\n");break;
-	case XML_PARSER_ENTITY_DECL:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "PP: try ENTITY_DECL\n");break;
-	case XML_PARSER_ENTITY_VALUE:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "PP: try ENTITY_VALUE\n");break;
-	case XML_PARSER_ATTRIBUTE_VALUE:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "PP: try ATTRIBUTE_VALUE\n");break;
-	case XML_PARSER_DTD:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "PP: try DTD\n");break;
-	case XML_PARSER_EPILOG:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "PP: try EPILOG\n");break;
-	case XML_PARSER_PI:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "PP: try PI\n");break;
-        case XML_PARSER_IGNORE:
-            xmlGenericError(xmlGenericErrorContext,
-		    "PP: try IGNORE\n");break;
-    }
-#endif
-
     if ((ctxt->input != NULL) &&
         (ctxt->input->cur - ctxt->input->base > 4096)) {
 	xmlSHRINK(ctxt);
@@ -10303,10 +10189,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 						      &xmlDefaultSAXLocator);
 		    xmlFatalErr(ctxt, XML_ERR_DOCUMENT_EMPTY, NULL);
 		    ctxt->instate = XML_PARSER_EOF;
-#ifdef DEBUG_PUSH
-		    xmlGenericError(xmlGenericErrorContext,
-			    "PP: entering EOF\n");
-#endif
 		    if ((ctxt->sax) && (ctxt->sax->endDocument != NULL))
 			ctxt->sax->endDocument(ctxt->userData);
 		    goto done;
@@ -10325,10 +10207,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 			(ctxt->input->cur[4] == 'l') &&
 			(IS_BLANK_CH(ctxt->input->cur[5]))) {
 			ret += 5;
-#ifdef DEBUG_PUSH
-			xmlGenericError(xmlGenericErrorContext,
-				"PP: Parsing XML Decl\n");
-#endif
 			xmlParseXMLDecl(ctxt);
 			if (ctxt->errNo == XML_ERR_UNSUPPORTED_ENCODING) {
 			    /*
@@ -10346,20 +10224,12 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 			    (!ctxt->disableSAX))
 			    ctxt->sax->startDocument(ctxt->userData);
 			ctxt->instate = XML_PARSER_MISC;
-#ifdef DEBUG_PUSH
-			xmlGenericError(xmlGenericErrorContext,
-				"PP: entering MISC\n");
-#endif
 		    } else {
 			ctxt->version = xmlCharStrdup(XML_DEFAULT_VERSION);
 			if ((ctxt->sax) && (ctxt->sax->startDocument) &&
 			    (!ctxt->disableSAX))
 			    ctxt->sax->startDocument(ctxt->userData);
 			ctxt->instate = XML_PARSER_MISC;
-#ifdef DEBUG_PUSH
-			xmlGenericError(xmlGenericErrorContext,
-				"PP: entering MISC\n");
-#endif
 		    }
 		} else {
 		    if ((ctxt->sax) && (ctxt->sax->setDocumentLocator))
@@ -10374,10 +10244,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 		        (!ctxt->disableSAX))
 			ctxt->sax->startDocument(ctxt->userData);
 		    ctxt->instate = XML_PARSER_MISC;
-#ifdef DEBUG_PUSH
-		    xmlGenericError(xmlGenericErrorContext,
-			    "PP: entering MISC\n");
-#endif
 		}
 		break;
             case XML_PARSER_START_TAG: {
@@ -10648,10 +10514,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 		    SKIPL(base + 3);
 		    ctxt->checkIndex = 0;
 		    ctxt->instate = XML_PARSER_CONTENT;
-#ifdef DEBUG_PUSH
-		    xmlGenericError(xmlGenericErrorContext,
-			    "PP: entering CONTENT\n");
-#endif
 		}
 		break;
 	    }
@@ -10671,10 +10533,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 		    if ((!terminate) &&
 		        (xmlParseLookupSequence(ctxt, '?', '>', 0) < 0))
 			goto done;
-#ifdef DEBUG_PUSH
-		    xmlGenericError(xmlGenericErrorContext,
-			    "PP: Parsing PI\n");
-#endif
 		    xmlParsePI(ctxt);
 		    ctxt->checkIndex = 0;
 		} else if ((cur == '<') && (next == '!') &&
@@ -10683,10 +10541,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 		    if ((!terminate) &&
 		        (xmlParseLookupSequence(ctxt, '-', '-', '>') < 0))
 			goto done;
-#ifdef DEBUG_PUSH
-		    xmlGenericError(xmlGenericErrorContext,
-			    "PP: Parsing Comment\n");
-#endif
 		    xmlParseComment(ctxt);
 		    ctxt->instate = XML_PARSER_MISC;
 		    ctxt->checkIndex = 0;
@@ -10701,18 +10555,10 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 		    if ((!terminate) &&
 		        (xmlParseLookupSequence(ctxt, '>', 0, 0) < 0))
 			goto done;
-#ifdef DEBUG_PUSH
-		    xmlGenericError(xmlGenericErrorContext,
-			    "PP: Parsing internal subset\n");
-#endif
 		    ctxt->inSubset = 1;
 		    xmlParseDocTypeDecl(ctxt);
 		    if (RAW == '[') {
 			ctxt->instate = XML_PARSER_DTD;
-#ifdef DEBUG_PUSH
-			xmlGenericError(xmlGenericErrorContext,
-				"PP: entering DTD\n");
-#endif
 		    } else {
 			/*
 			 * Create and update the external subset.
@@ -10726,10 +10572,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 			ctxt->inSubset = 0;
 			xmlCleanSpecialAttr(ctxt);
 			ctxt->instate = XML_PARSER_PROLOG;
-#ifdef DEBUG_PUSH
-			xmlGenericError(xmlGenericErrorContext,
-				"PP: entering PROLOG\n");
-#endif
 		    }
 		} else if ((cur == '<') && (next == '!') &&
 		           (avail < 9)) {
@@ -10738,10 +10580,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 		    ctxt->instate = XML_PARSER_START_TAG;
 		    ctxt->progressive = 1;
 		    xmlParseGetLasts(ctxt, &lastlt, &lastgt);
-#ifdef DEBUG_PUSH
-		    xmlGenericError(xmlGenericErrorContext,
-			    "PP: entering START_TAG\n");
-#endif
 		}
 		break;
             case XML_PARSER_PROLOG:
@@ -10758,20 +10596,12 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 		    if ((!terminate) &&
 		        (xmlParseLookupSequence(ctxt, '?', '>', 0) < 0))
 			goto done;
-#ifdef DEBUG_PUSH
-		    xmlGenericError(xmlGenericErrorContext,
-			    "PP: Parsing PI\n");
-#endif
 		    xmlParsePI(ctxt);
 		} else if ((cur == '<') && (next == '!') &&
 		    (ctxt->input->cur[2] == '-') && (ctxt->input->cur[3] == '-')) {
 		    if ((!terminate) &&
 		        (xmlParseLookupSequence(ctxt, '-', '-', '>') < 0))
 			goto done;
-#ifdef DEBUG_PUSH
-		    xmlGenericError(xmlGenericErrorContext,
-			    "PP: Parsing Comment\n");
-#endif
 		    xmlParseComment(ctxt);
 		    ctxt->instate = XML_PARSER_PROLOG;
 		} else if ((cur == '<') && (next == '!') &&
@@ -10782,10 +10612,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 		    if (ctxt->progressive == 0)
 			ctxt->progressive = 1;
 		    xmlParseGetLasts(ctxt, &lastlt, &lastgt);
-#ifdef DEBUG_PUSH
-		    xmlGenericError(xmlGenericErrorContext,
-			    "PP: entering START_TAG\n");
-#endif
 		}
 		break;
             case XML_PARSER_EPILOG:
@@ -10802,10 +10628,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 		    if ((!terminate) &&
 		        (xmlParseLookupSequence(ctxt, '?', '>', 0) < 0))
 			goto done;
-#ifdef DEBUG_PUSH
-		    xmlGenericError(xmlGenericErrorContext,
-			    "PP: Parsing PI\n");
-#endif
 		    xmlParsePI(ctxt);
 		    ctxt->instate = XML_PARSER_EPILOG;
 		} else if ((cur == '<') && (next == '!') &&
@@ -10813,10 +10635,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 		    if ((!terminate) &&
 		        (xmlParseLookupSequence(ctxt, '-', '-', '>') < 0))
 			goto done;
-#ifdef DEBUG_PUSH
-		    xmlGenericError(xmlGenericErrorContext,
-			    "PP: Parsing Comment\n");
-#endif
 		    xmlParseComment(ctxt);
 		    ctxt->instate = XML_PARSER_EPILOG;
 		} else if ((cur == '<') && (next == '!') &&
@@ -10825,10 +10643,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 		} else {
 		    xmlFatalErr(ctxt, XML_ERR_DOCUMENT_END, NULL);
 		    ctxt->instate = XML_PARSER_EOF;
-#ifdef DEBUG_PUSH
-		    xmlGenericError(xmlGenericErrorContext,
-			    "PP: entering EOF\n");
-#endif
 		    if ((ctxt->sax) && (ctxt->sax->endDocument != NULL))
 			ctxt->sax->endDocument(ctxt->userData);
 		    goto done;
@@ -10937,11 +10751,6 @@ not_end_of_int_subset:
 		/*
 		 * We didn't found the end of the Internal subset
 		 */
-#ifdef DEBUG_PUSH
-		if (next == 0)
-		    xmlGenericError(xmlGenericErrorContext,
-			    "PP: lookup of int subset end filed\n");
-#endif
 	        goto done;
 
 found_end_int_subset:
@@ -10955,90 +10764,51 @@ found_end_int_subset:
 		xmlCleanSpecialAttr(ctxt);
 		ctxt->instate = XML_PARSER_PROLOG;
 		ctxt->checkIndex = 0;
-#ifdef DEBUG_PUSH
-		xmlGenericError(xmlGenericErrorContext,
-			"PP: entering PROLOG\n");
-#endif
                 break;
 	    }
             case XML_PARSER_COMMENT:
 		xmlGenericError(xmlGenericErrorContext,
 			"PP: internal error, state == COMMENT\n");
 		ctxt->instate = XML_PARSER_CONTENT;
-#ifdef DEBUG_PUSH
-		xmlGenericError(xmlGenericErrorContext,
-			"PP: entering CONTENT\n");
-#endif
 		break;
             case XML_PARSER_IGNORE:
 		xmlGenericError(xmlGenericErrorContext,
 			"PP: internal error, state == IGNORE");
 	        ctxt->instate = XML_PARSER_DTD;
-#ifdef DEBUG_PUSH
-		xmlGenericError(xmlGenericErrorContext,
-			"PP: entering DTD\n");
-#endif
 	        break;
             case XML_PARSER_PI:
 		xmlGenericError(xmlGenericErrorContext,
 			"PP: internal error, state == PI\n");
 		ctxt->instate = XML_PARSER_CONTENT;
-#ifdef DEBUG_PUSH
-		xmlGenericError(xmlGenericErrorContext,
-			"PP: entering CONTENT\n");
-#endif
 		break;
             case XML_PARSER_ENTITY_DECL:
 		xmlGenericError(xmlGenericErrorContext,
 			"PP: internal error, state == ENTITY_DECL\n");
 		ctxt->instate = XML_PARSER_DTD;
-#ifdef DEBUG_PUSH
-		xmlGenericError(xmlGenericErrorContext,
-			"PP: entering DTD\n");
-#endif
 		break;
             case XML_PARSER_ENTITY_VALUE:
 		xmlGenericError(xmlGenericErrorContext,
 			"PP: internal error, state == ENTITY_VALUE\n");
 		ctxt->instate = XML_PARSER_CONTENT;
-#ifdef DEBUG_PUSH
-		xmlGenericError(xmlGenericErrorContext,
-			"PP: entering DTD\n");
-#endif
 		break;
             case XML_PARSER_ATTRIBUTE_VALUE:
 		xmlGenericError(xmlGenericErrorContext,
 			"PP: internal error, state == ATTRIBUTE_VALUE\n");
 		ctxt->instate = XML_PARSER_START_TAG;
-#ifdef DEBUG_PUSH
-		xmlGenericError(xmlGenericErrorContext,
-			"PP: entering START_TAG\n");
-#endif
 		break;
             case XML_PARSER_SYSTEM_LITERAL:
 		xmlGenericError(xmlGenericErrorContext,
 			"PP: internal error, state == SYSTEM_LITERAL\n");
 		ctxt->instate = XML_PARSER_START_TAG;
-#ifdef DEBUG_PUSH
-		xmlGenericError(xmlGenericErrorContext,
-			"PP: entering START_TAG\n");
-#endif
 		break;
             case XML_PARSER_PUBLIC_LITERAL:
 		xmlGenericError(xmlGenericErrorContext,
 			"PP: internal error, state == PUBLIC_LITERAL\n");
 		ctxt->instate = XML_PARSER_START_TAG;
-#ifdef DEBUG_PUSH
-		xmlGenericError(xmlGenericErrorContext,
-			"PP: entering START_TAG\n");
-#endif
 		break;
 	}
     }
 done:    
-#ifdef DEBUG_PUSH
-    xmlGenericError(xmlGenericErrorContext, "PP: done %d\n", ret);
-#endif
     return(ret);
 encoding_error:
     {
@@ -11136,9 +10906,6 @@ xmldecl_done:
 	ctxt->input->cur = ctxt->input->base + cur;
 	ctxt->input->end =
 	    &ctxt->input->buf->buffer->content[ctxt->input->buf->buffer->use];
-#ifdef DEBUG_PUSH
-	xmlGenericError(xmlGenericErrorContext, "PP: pushed %d\n", size);
-#endif
 
     } else if (ctxt->instate != XML_PARSER_EOF) {
 	if ((ctxt->input != NULL) && ctxt->input->buf != NULL) {
@@ -11327,9 +11094,6 @@ xmlCreatePushParserCtxt(xmlSAXHandlerPtr sax, void *user_data,
 	ctxt->input->cur = ctxt->input->base + cur;
 	ctxt->input->end =
 	    &ctxt->input->buf->buffer->content[ctxt->input->buf->buffer->use];
-#ifdef DEBUG_PUSH
-	xmlGenericError(xmlGenericErrorContext, "PP: pushed %d\n", size);
-#endif
     }
 
     if (enc != XML_CHAR_ENCODING_NONE) {
@@ -12709,9 +12473,6 @@ xmlCtxtResetPush(xmlParserCtxtPtr ctxt, const char *chunk,
         ctxt->input->end =
             &ctxt->input->buf->buffer->content[ctxt->input->buf->buffer->
                                                use];
-#ifdef DEBUG_PUSH
-        xmlGenericError(xmlGenericErrorContext, "PP: pushed %d\n", size);
-#endif
     }
 
     if (encoding != NULL) {

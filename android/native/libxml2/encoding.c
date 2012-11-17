@@ -55,14 +55,8 @@ static xmlCharEncodingAliasPtr xmlCharEncodingAliases = NULL;
 static int xmlCharEncodingAliasesNb = 0;
 static int xmlCharEncodingAliasesMax = 0;
 
-#if defined(LIBXML_ICONV_ENABLED)
-#if 0
-#define DEBUG_ENCODING  /* Define this to get encoding traces */
-#endif
-#else
 #ifdef LIBXML_ISO8859X_ENABLED
 static void xmlRegisterCharEncodingHandlersISO8859x (void);
-#endif
 #endif
 
 static int xmlLittleEndian = 1;
@@ -712,9 +706,6 @@ xmlParseCharEncoding(const char* name)
     if (!strcmp(upper, "SHIFT_JIS")) return(XML_CHAR_ENCODING_SHIFT_JIS);
     if (!strcmp(upper, "EUC-JP")) return(XML_CHAR_ENCODING_EUC_JP);
 
-#ifdef DEBUG_ENCODING
-    xmlGenericError(xmlGenericErrorContext, "Unknown encoding %s\n", name);
-#endif
     return(XML_CHAR_ENCODING_ERROR);
 }
 
@@ -873,10 +864,6 @@ xmlNewCharEncodingHandler(const char *name,
      * registers and returns the handler.
      */
     xmlRegisterCharEncodingHandler(handler);
-#ifdef DEBUG_ENCODING
-    xmlGenericError(xmlGenericErrorContext,
-	    "Registered encoding handler for %s\n", name);
-#endif
     return(handler);
 }
 
@@ -1101,10 +1088,6 @@ xmlGetCharEncodingHandler(xmlCharEncoding enc) {
 	    break;
     }
 
-#ifdef DEBUG_ENCODING
-    xmlGenericError(xmlGenericErrorContext,
-	    "No handler found for encoding %d\n", enc);
-#endif
     return(NULL);
 }
 
@@ -1152,10 +1135,6 @@ xmlFindCharEncodingHandler(const char *name) {
     if (handlers != NULL) {
         for (i = 0;i < nbCharEncodingHandler; i++) {
             if (!strcmp(upper, handlers[i]->name)) {
-#ifdef DEBUG_ENCODING
-                xmlGenericError(xmlGenericErrorContext,
-                        "Found registered handler for encoding %s\n", name);
-#endif
                 return(handlers[i]);
             }
         }
@@ -1185,21 +1164,12 @@ xmlFindCharEncodingHandler(const char *name) {
 	    enc->output = NULL;
 	    enc->iconv_in = icv_in;
 	    enc->iconv_out = icv_out;
-#ifdef DEBUG_ENCODING
-            xmlGenericError(xmlGenericErrorContext,
-		    "Found iconv handler for encoding %s\n", name);
-#endif
 	    return enc;
     } else if ((icv_in != (iconv_t) -1) || icv_out != (iconv_t) -1) {
 	    xmlEncodingErr(XML_ERR_INTERNAL_ERROR,
 		    "iconv : problems with filters for '%s'\n", name);
     }
 #endif /* LIBXML_ICONV_ENABLED */
-
-#ifdef DEBUG_ENCODING
-    xmlGenericError(xmlGenericErrorContext,
-	    "No handler found for encoding %s\n", name);
-#endif
 
     /*
      * Fallback using the canonical names
@@ -1358,29 +1328,6 @@ xmlCharEncFirstLineInt(xmlCharEncodingHandler *handler, xmlBufferPtr out,
 	if (ret == -1) ret = -3;
     }
 #endif /* LIBXML_ICONV_ENABLED */
-#ifdef DEBUG_ENCODING
-    switch (ret) {
-        case 0:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "converted %d bytes to %d bytes of input\n",
-	            toconv, written);
-	    break;
-        case -1:
-	    xmlGenericError(xmlGenericErrorContext,"converted %d bytes to %d bytes of input, %d left\n",
-	            toconv, written, in->use);
-	    break;
-        case -2:
-	    xmlGenericError(xmlGenericErrorContext,
-		    "input conversion failed due to input error\n");
-	    break;
-        case -3:
-	    xmlGenericError(xmlGenericErrorContext,"converted %d bytes to %d bytes of input, %d left\n",
-	            toconv, written, in->use);
-	    break;
-	default:
-	    xmlGenericError(xmlGenericErrorContext,"Unknown input conversion failed %d\n", ret);
-    }
-#endif /* DEBUG_ENCODING */
     /*
      * Ignore when input buffer is not on a boundary
      */
@@ -1465,25 +1412,10 @@ xmlCharEncInFunc(xmlCharEncodingHandler * handler, xmlBufferPtr out,
 #endif /* LIBXML_ICONV_ENABLED */
     switch (ret) {
         case 0:
-#ifdef DEBUG_ENCODING
-            xmlGenericError(xmlGenericErrorContext,
-                            "converted %d bytes to %d bytes of input\n",
-                            toconv, written);
-#endif
             break;
         case -1:
-#ifdef DEBUG_ENCODING
-            xmlGenericError(xmlGenericErrorContext,
-                         "converted %d bytes to %d bytes of input, %d left\n",
-                            toconv, written, in->use);
-#endif
             break;
         case -3:
-#ifdef DEBUG_ENCODING
-            xmlGenericError(xmlGenericErrorContext,
-                        "converted %d bytes to %d bytes of input, %d left\n",
-                            toconv, written, in->use);
-#endif
             break;
         case -2: {
             char buf[50];
@@ -1563,10 +1495,6 @@ retry:
 	    out->content[out->use] = 0;
 	}
 #endif /* LIBXML_ICONV_ENABLED */
-#ifdef DEBUG_ENCODING
-	xmlGenericError(xmlGenericErrorContext,
-		"initialized encoder\n");
-#endif
         return(0);
     }
 
@@ -1622,23 +1550,10 @@ retry:
      */
     switch (ret) {
         case 0:
-#ifdef DEBUG_ENCODING
-	    xmlGenericError(xmlGenericErrorContext,
-		    "converted %d bytes to %d bytes of output\n",
-	            toconv, written);
-#endif
 	    break;
         case -1:
-#ifdef DEBUG_ENCODING
-	    xmlGenericError(xmlGenericErrorContext,
-		    "output conversion failed by lack of space\n");
-#endif
 	    break;
         case -3:
-#ifdef DEBUG_ENCODING
-	    xmlGenericError(xmlGenericErrorContext,"converted %d bytes to %d bytes of output %d left\n",
-	            toconv, written, in->use);
-#endif
 	    break;
         case -2: {
 	    int len = in->use;
@@ -1649,14 +1564,6 @@ retry:
 	    if (cur > 0) {
 		xmlChar charref[20];
 
-#ifdef DEBUG_ENCODING
-		xmlGenericError(xmlGenericErrorContext,
-			"handling output conversion error\n");
-		xmlGenericError(xmlGenericErrorContext,
-			"Bytes: 0x%02X 0x%02X 0x%02X 0x%02X\n",
-			in->content[0], in->content[1],
-			in->content[2], in->content[3]);
-#endif
 		/*
 		 * Removes the UTF8 sequence, and replace it by a charref
 		 * and continue the transcoding phase, hoping the error
@@ -1726,14 +1633,6 @@ xmlCharEncCloseFunc(xmlCharEncodingHandler *handler) {
         handler->name = NULL;
         xmlFree(handler);
     }
-#ifdef DEBUG_ENCODING
-    if (ret)
-        xmlGenericError(xmlGenericErrorContext,
-		"failed to close the encoding handler\n");
-    else
-        xmlGenericError(xmlGenericErrorContext,
-		"closed the encoding handler\n");
-#endif
 
     return(ret);
 }

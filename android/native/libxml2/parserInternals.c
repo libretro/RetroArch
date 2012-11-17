@@ -226,39 +226,10 @@ xmlIsLetter(int c) {
  *									*
  ************************************************************************/
 
-/* #define DEBUG_INPUT */
-/* #define DEBUG_STACK */
-/* #define DEBUG_PUSH */
-
-
 /* we need to keep enough input to show errors in context */
 #define LINE_LEN        80
 
-#ifdef DEBUG_INPUT
-#define CHECK_BUFFER(in) check_buffer(in)
-
-static
-void check_buffer(xmlParserInputPtr in) {
-    if (in->base != in->buf->buffer->content) {
-        xmlGenericError(xmlGenericErrorContext,
-		"xmlParserInput: base mismatch problem\n");
-    }
-    if (in->cur < in->base) {
-        xmlGenericError(xmlGenericErrorContext,
-		"xmlParserInput: cur < base problem\n");
-    }
-    if (in->cur > in->base + in->buf->buffer->use) {
-        xmlGenericError(xmlGenericErrorContext,
-		"xmlParserInput: cur > base + use problem\n");
-    }
-    xmlGenericError(xmlGenericErrorContext,"buffer %x : content %x, cur %d, use %d, size %d\n",
-            (int) in, (int) in->buf->buffer->content, in->cur - in->base,
-	    in->buf->buffer->use, in->buf->buffer->size);
-}
-
-#else
 #define CHECK_BUFFER(in) 
-#endif
 
 
 /**
@@ -279,9 +250,6 @@ xmlParserInputRead(xmlParserInputPtr in, int len) {
     int indx;
 
     if (in == NULL) return(-1);
-#ifdef DEBUG_INPUT
-    xmlGenericError(xmlGenericErrorContext, "Read\n");
-#endif
     if (in->buf == NULL) return(-1);
     if (in->base == NULL) return(-1);
     if (in->cur == NULL) return(-1);
@@ -329,9 +297,6 @@ xmlParserInputGrow(xmlParserInputPtr in, int len) {
     int indx;
 
     if (in == NULL) return(-1);
-#ifdef DEBUG_INPUT
-    xmlGenericError(xmlGenericErrorContext, "Grow\n");
-#endif
     if (in->buf == NULL) return(-1);
     if (in->base == NULL) return(-1);
     if (in->cur == NULL) return(-1);
@@ -384,9 +349,6 @@ xmlParserInputShrink(xmlParserInputPtr in) {
     int ret;
     int indx;
 
-#ifdef DEBUG_INPUT
-    xmlGenericError(xmlGenericErrorContext, "Shrink\n");
-#endif
     if (in == NULL) return;
     if (in->buf == NULL) return;
     if (in->base == NULL) return;

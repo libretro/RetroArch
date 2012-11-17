@@ -57,9 +57,6 @@ typedef unsigned __int32 uint32_t;
 #include <libxml/xmlerror.h>
 #include <libxml/globals.h>
 
-/* #define DEBUG_GROW */
-/* #define DICT_DEBUG_PATTERNS */
-
 #define MAX_HASH_LEN 3
 #define MIN_DICT_SIZE 128
 #define MAX_DICT_HASH 8 * 2048
@@ -187,9 +184,6 @@ xmlDictAddString(xmlDictPtr dict, const xmlChar *name, int namelen) {
     const xmlChar *ret;
     int size = 0; /* + sizeof(_xmlDictStrings) == 1024 */
 
-#ifdef DICT_DEBUG_PATTERNS
-    fprintf(stderr, "-");
-#endif
     pool = dict->strings;
     while (pool != NULL) {
 	if (pool->end - pool->free > namelen)
@@ -214,9 +208,6 @@ xmlDictAddString(xmlDictPtr dict, const xmlChar *name, int namelen) {
 	pool->end = &pool->array[size];
 	pool->next = dict->strings;
 	dict->strings = pool;
-#ifdef DICT_DEBUG_PATTERNS
-        fprintf(stderr, "+");
-#endif
     }
 found_pool:
     ret = pool->free;
@@ -249,9 +240,6 @@ xmlDictAddQString(xmlDictPtr dict, const xmlChar *prefix, int plen,
 
     if (prefix == NULL) return(xmlDictAddString(dict, name, namelen));
 
-#ifdef DICT_DEBUG_PATTERNS
-    fprintf(stderr, "=");
-#endif
     pool = dict->strings;
     while (pool != NULL) {
 	if (pool->end - pool->free > namelen + plen + 1)
@@ -276,9 +264,6 @@ xmlDictAddQString(xmlDictPtr dict, const xmlChar *prefix, int plen,
 	pool->end = &pool->array[size];
 	pool->next = dict->strings;
 	dict->strings = pool;
-#ifdef DICT_DEBUG_PATTERNS
-        fprintf(stderr, "+");
-#endif
     }
 found_pool:
     ret = pool->free;
@@ -472,9 +457,6 @@ xmlDictCreate(void) {
         if (!xmlInitializeDict())
             return(NULL);
 
-#ifdef DICT_DEBUG_PATTERNS
-    fprintf(stderr, "C");
-#endif
 
     dict = xmlMalloc(sizeof(xmlDict));
     if (dict) {
@@ -515,9 +497,6 @@ xmlDictCreateSub(xmlDictPtr sub) {
     xmlDictPtr dict = xmlDictCreate();
 
     if ((dict != NULL) && (sub != NULL)) {
-#ifdef DICT_DEBUG_PATTERNS
-        fprintf(stderr, "R");
-#endif
         dict->seed = sub->seed;
         dict->subdict = sub;
 	xmlDictReference(dict->subdict);
@@ -561,9 +540,6 @@ xmlDictGrow(xmlDictPtr dict, int size) {
     int oldsize, i;
     xmlDictEntryPtr iter, next;
     struct _xmlDictEntry *olddict;
-#ifdef DEBUG_GROW
-    unsigned long nbElem = 0;
-#endif
     int ret = 0;
     int keep_keys = 1;
 
@@ -574,9 +550,6 @@ xmlDictGrow(xmlDictPtr dict, int size) {
     if (size > 8 * 2048)
 	return(-1);
 
-#ifdef DICT_DEBUG_PATTERNS
-    fprintf(stderr, "*");
-#endif
 
     oldsize = dict->size;
     olddict = dict->dict;
@@ -632,9 +605,6 @@ xmlDictGrow(xmlDictPtr dict, int size) {
 	        ret = -1;
 	    }
 	}
-#ifdef DEBUG_GROW
-	nbElem++;
-#endif
     }
 
     for (i = 0; i < oldsize; i++) {
@@ -663,9 +633,6 @@ xmlDictGrow(xmlDictPtr dict, int size) {
 		dict->dict[key].next = iter;
 	    }
 
-#ifdef DEBUG_GROW
-	    nbElem++;
-#endif
 
 	    iter = next;
 	}
@@ -673,10 +640,6 @@ xmlDictGrow(xmlDictPtr dict, int size) {
 
     xmlFree(olddict);
 
-#ifdef DEBUG_GROW
-    xmlGenericError(xmlGenericErrorContext,
-	    "xmlDictGrow : from %d to %d, %d elems\n", oldsize, size, nbElem);
-#endif
 
     return(ret);
 }

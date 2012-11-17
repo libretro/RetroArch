@@ -45,8 +45,6 @@
 
 #define MAX_HASH_LEN 8
 
-/* #define DEBUG_GROW */
-
 #ifdef HASH_RANDOMIZATION
 static int hash_initialized = 0;
 #endif
@@ -235,9 +233,6 @@ xmlHashGrow(xmlHashTablePtr table, int size) {
     int oldsize, i;
     xmlHashEntryPtr iter, next;
     struct _xmlHashEntry *oldtable;
-#ifdef DEBUG_GROW
-    unsigned long nbElem = 0;
-#endif
   
     if (table == NULL)
 	return(-1);
@@ -294,9 +289,6 @@ xmlHashGrow(xmlHashTablePtr table, int size) {
 	    	table->table[key].next = iter;
 	    }
 
-#ifdef DEBUG_GROW
-	    nbElem++;
-#endif
 
 	    iter = next;
 	}
@@ -304,10 +296,6 @@ xmlHashGrow(xmlHashTablePtr table, int size) {
 
     xmlFree(oldtable);
 
-#ifdef DEBUG_GROW
-    xmlGenericError(xmlGenericErrorContext,
-	    "xmlHashGrow : from %d to %d, %d elems\n", oldsize, size, nbElem);
-#endif
 
     return(0);
 }

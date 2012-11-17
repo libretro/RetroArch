@@ -92,15 +92,7 @@
 #include <libxml/xmlerror.h>
 #include <libxml/globals.h>
 
-/* #define VERBOSE_FAILURE */
-/* #define DEBUG_EXTERNAL_ENTITIES */
-/* #define DEBUG_INPUT */
-
-#ifdef DEBUG_INPUT
-#define MINLEN 40
-#else
 #define MINLEN 4000
-#endif
 
 /*
  * Input I/O callback sets
@@ -1644,11 +1636,6 @@ xmlParserInputBufferPush(xmlParserInputBufferPtr in,
 	if (ret != 0)
 	    return(-1);
     }
-#ifdef DEBUG_INPUT
-    xmlGenericError(xmlGenericErrorContext,
-	    "I/O: pushed %d chars, buffer %d/%d\n",
-            nbchars, in->buffer->use, in->buffer->size);
-#endif
     return(nbchars);
 }
 
@@ -1754,11 +1741,6 @@ xmlParserInputBufferGrow(xmlParserInputBufferPtr in, int len) {
    	in->buffer->use += nbchars;
 	buffer[nbchars] = 0;
     }
-#ifdef DEBUG_INPUT
-    xmlGenericError(xmlGenericErrorContext,
-	    "I/O: read %d chars, buffer %d/%d\n",
-            nbchars, in->buffer->use, in->buffer->size);
-#endif
     return(nbchars);
 }
 
@@ -1900,10 +1882,6 @@ xmlDefaultExternalEntityLoader(const char *URL, const char *ID,
     xmlParserInputPtr ret = NULL;
     xmlChar *resource = NULL;
 
-#ifdef DEBUG_EXTERNAL_ENTITIES
-    xmlGenericError(xmlGenericErrorContext,
-                    "xmlDefaultExternalEntityLoader(%s, xxx)\n", URL);
-#endif
     if ((ctxt != NULL) && (ctxt->options & XML_PARSE_NONET)) {
         int options = ctxt->options;
 

@@ -23,8 +23,6 @@
 #include <libxml/xmlmemory.h>
 #include <libxml/threads.h>
 
-/* #define DEBUG_GLOBALS */
-
 /*
  * Helpful Macro
  */
@@ -75,13 +73,6 @@ void xmlCleanupGlobals(void)
 #undef	xmlMemStrdup
 #undef	xmlRealloc
 
-#if defined(DEBUG_MEMORY_LOCATION) || defined(DEBUG_MEMORY)
-xmlFreeFunc xmlFree = (xmlFreeFunc) xmlMemFree;
-xmlMallocFunc xmlMalloc = (xmlMallocFunc) xmlMemMalloc;
-xmlMallocFunc xmlMallocAtomic = (xmlMallocFunc) xmlMemMalloc;
-xmlReallocFunc xmlRealloc = (xmlReallocFunc) xmlMemRealloc;
-xmlStrdupFunc xmlMemStrdup = (xmlStrdupFunc) xmlMemoryStrdup;
-#else
 /**
  * xmlFree:
  * @mem: an already allocated block of memory
@@ -128,7 +119,6 @@ xmlReallocFunc xmlRealloc = (xmlReallocFunc) realloc;
  * Returns the copy of the string or NULL in case of error
  */
 xmlStrdupFunc xmlMemStrdup = (xmlStrdupFunc) xmlStrdup;
-#endif /* DEBUG_MEMORY_LOCATION || DEBUG_MEMORY */
 
 #include <libxml/threads.h>
 #include <libxml/globals.h>
@@ -375,11 +365,6 @@ xmlSAXLocator xmlDefaultSAXLocator = {
 void
 xmlInitializeGlobalState(xmlGlobalStatePtr gs)
 {
-#ifdef DEBUG_GLOBALS
-    fprintf(stderr, "Initializing globals at %lu for thread %d\n",
-	    (unsigned long) gs, xmlGetThreadId());
-#endif
-
     /*
      * Perform initialization as required by libxml
      */
@@ -397,19 +382,11 @@ xmlInitializeGlobalState(xmlGlobalStatePtr gs)
     gs->xmlDefaultSAXLocator.getColumnNumber = xmlSAX2GetColumnNumber;
     gs->xmlDoValidityCheckingDefaultValue = 
          xmlDoValidityCheckingDefaultValueThrDef;
-#if defined(DEBUG_MEMORY_LOCATION) | defined(DEBUG_MEMORY)
-    gs->xmlFree = (xmlFreeFunc) xmlMemFree;
-    gs->xmlMalloc = (xmlMallocFunc) xmlMemMalloc;
-    gs->xmlMallocAtomic = (xmlMallocFunc) xmlMemMalloc;
-    gs->xmlRealloc = (xmlReallocFunc) xmlMemRealloc;
-    gs->xmlMemStrdup = (xmlStrdupFunc) xmlMemoryStrdup;
-#else
     gs->xmlFree = (xmlFreeFunc) free;
     gs->xmlMalloc = (xmlMallocFunc) malloc;
     gs->xmlMallocAtomic = (xmlMallocFunc) malloc;
     gs->xmlRealloc = (xmlReallocFunc) realloc;
     gs->xmlMemStrdup = (xmlStrdupFunc) xmlStrdup;
-#endif
     gs->xmlGetWarningsDefaultValue = xmlGetWarningsDefaultValueThrDef;
     gs->xmlIndentTreeOutput = xmlIndentTreeOutputThrDef;
     gs->xmlTreeIndentString = xmlTreeIndentStringThrDef;

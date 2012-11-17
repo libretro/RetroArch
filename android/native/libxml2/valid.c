@@ -28,9 +28,6 @@
 
 static xmlElementPtr xmlGetDtdElementDesc2(xmlDtdPtr dtd, const xmlChar *name,
 	                           int create);
-/* #define DEBUG_VALID_ALGO */
-/* #define DEBUG_REGEXP_ALGO */
-
 #define TODO 								\
     xmlGenericError(xmlGenericErrorContext,				\
 	    "Unimplemented block at %s:%d\n",				\
