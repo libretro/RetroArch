@@ -827,11 +827,7 @@ xmlHasFeature(xmlFeature feature)
         case XML_WITH_AUTOMATA:
             return(0);
         case XML_WITH_EXPR:
-#ifdef LIBXML_EXPR_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_SCHEMAS:
             return(0);
         case XML_WITH_SCHEMATRON:
@@ -847,11 +843,7 @@ xmlHasFeature(xmlFeature feature)
             return(0);
 #endif
         case XML_WITH_DEBUG_RUN:
-#ifdef LIBXML_DEBUG_RUNTIME
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_ZLIB:
             return(0);
         case XML_WITH_LZMA:

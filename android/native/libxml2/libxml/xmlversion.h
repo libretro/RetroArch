@@ -140,24 +140,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_DEBUG_RUNTIME:
- *
- * Whether the runtime debugging is configured in
- */
-#if 0
-#define LIBXML_DEBUG_RUNTIME
-#endif
-
-/**
- * LIBXML_EXPR_ENABLED:
- *
- * Whether the formal expressions interfaces are compiled in
- */
-#if 0
-#define LIBXML_EXPR_ENABLED
-#endif
-
-/**
  * LIBXML_LZMA_ENABLED:
  *
  * Whether the Lzma support is compiled in
