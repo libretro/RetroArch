@@ -252,89 +252,6 @@ xmlErrValidWarning(xmlValidCtxtPtr ctxt,
 }
 
 
-
-#ifdef LIBXML_REGEXP_ENABLED
-/*
- * If regexp are enabled we can do continuous validation without the
- * need of a tree to validate the content model. this is done in each
- * callbacks.
- * Each xmlValidState represent the validation state associated to the
- * set of nodes currently open from the document root to the current element.
- */
-
-
-typedef struct _xmlValidState {
-    xmlElementPtr	 elemDecl;	/* pointer to the content model */
-    xmlNodePtr           node;		/* pointer to the current node */
-    xmlRegExecCtxtPtr    exec;		/* regexp runtime */
-} _xmlValidState;
-
-
-static int
-vstateVPush(xmlValidCtxtPtr ctxt, xmlElementPtr elemDecl, xmlNodePtr node) {
-    if ((ctxt->vstateMax == 0) || (ctxt->vstateTab == NULL)) {
-	ctxt->vstateMax = 10;
-	ctxt->vstateTab = (xmlValidState *) xmlMalloc(ctxt->vstateMax *
-		              sizeof(ctxt->vstateTab[0]));
-        if (ctxt->vstateTab == NULL) {
-	    xmlVErrMemory(ctxt, "malloc failed");
-	    return(-1);
-	}
-    }
-
-    if (ctxt->vstateNr >= ctxt->vstateMax) {
-        xmlValidState *tmp;
-
-	tmp = (xmlValidState *) xmlRealloc(ctxt->vstateTab,
-	             2 * ctxt->vstateMax * sizeof(ctxt->vstateTab[0]));
-        if (tmp == NULL) {
-	    xmlVErrMemory(ctxt, "realloc failed");
-	    return(-1);
-	}
-	ctxt->vstateMax *= 2;
-	ctxt->vstateTab = tmp;
-    }
-    ctxt->vstate = &ctxt->vstateTab[ctxt->vstateNr];
-    ctxt->vstateTab[ctxt->vstateNr].elemDecl = elemDecl;
-    ctxt->vstateTab[ctxt->vstateNr].node = node;
-    if ((elemDecl != NULL) && (elemDecl->etype == XML_ELEMENT_TYPE_ELEMENT)) {
-	if (elemDecl->contModel == NULL)
-	    xmlValidBuildContentModel(ctxt, elemDecl);
-	if (elemDecl->contModel != NULL) {
-	    ctxt->vstateTab[ctxt->vstateNr].exec = 
-		xmlRegNewExecCtxt(elemDecl->contModel, NULL, NULL);
-	} else {
-	    ctxt->vstateTab[ctxt->vstateNr].exec = NULL;
-	    xmlErrValidNode(ctxt, (xmlNodePtr) elemDecl,
-	                    XML_ERR_INTERNAL_ERROR,
-			    "Failed to build content model regexp for %s\n",
-			    node->name, NULL, NULL);
-	}
-    }
-    return(ctxt->vstateNr++);
-}
-
-static int
-vstateVPop(xmlValidCtxtPtr ctxt) {
-    xmlElementPtr elemDecl;
-
-    if (ctxt->vstateNr < 1) return(-1);
-    ctxt->vstateNr--;
-    elemDecl = ctxt->vstateTab[ctxt->vstateNr].elemDecl;
-    ctxt->vstateTab[ctxt->vstateNr].elemDecl = NULL;
-    ctxt->vstateTab[ctxt->vstateNr].node = NULL;
-    if ((elemDecl != NULL) && (elemDecl->etype == XML_ELEMENT_TYPE_ELEMENT)) {
-	xmlRegFreeExecCtxt(ctxt->vstateTab[ctxt->vstateNr].exec);
-    }
-    ctxt->vstateTab[ctxt->vstateNr].exec = NULL;
-    if (ctxt->vstateNr >= 1)
-	ctxt->vstate = &ctxt->vstateTab[ctxt->vstateNr - 1];
-    else
-	ctxt->vstate = NULL;
-    return(ctxt->vstateNr);
-}
-
-#else /* not LIBXML_REGEXP_ENABLED */
 /*
  * If regexp are not enabled, it uses a home made algorithm less
  * complex and easier to
@@ -430,8 +347,6 @@ vstateVPop(xmlValidCtxtPtr ctxt) {
     ctxt->vstate->state = ctxt->vstateTab[ctxt->vstateNr].state;
     return(ctxt->vstateNr);
 }
-
-#endif /* LIBXML_REGEXP_ENABLED */
 
 static int
 nodeVPush(xmlValidCtxtPtr ctxt, xmlNodePtr value)
@@ -631,233 +546,6 @@ xmlValidStateDebug(xmlValidCtxtPtr ctxt) {
    if (doc == NULL) return(0);					\
    else if ((doc->intSubset == NULL) &&				\
 	    (doc->extSubset == NULL)) return(0)
-
-#ifdef LIBXML_REGEXP_ENABLED
-
-/************************************************************************
- *									*
- *		Content model validation based on the regexps		*
- *									*
- ************************************************************************/
-
-/**
- * xmlValidBuildAContentModel:
- * @content:  the content model
- * @ctxt:  the schema parser context
- * @name:  the element name whose content is being built
- *
- * Generate the automata sequence needed for that type
- *
- * Returns 1 if successful or 0 in case of error.
- */
-static int
-xmlValidBuildAContentModel(xmlElementContentPtr content,
-		           xmlValidCtxtPtr ctxt,
-		           const xmlChar *name) {
-    if (content == NULL) {
-	xmlErrValidNode(ctxt, NULL, XML_ERR_INTERNAL_ERROR,
-			"Found NULL content in content model of %s\n",
-			name, NULL, NULL);
-	return(0);
-    }
-    switch (content->type) {
-	case XML_ELEMENT_CONTENT_PCDATA:
-	    xmlErrValidNode(ctxt, NULL, XML_ERR_INTERNAL_ERROR,
-			    "Found PCDATA in content model of %s\n",
-		            name, NULL, NULL);
-	    return(0);
-	    break;
-	case XML_ELEMENT_CONTENT_ELEMENT: {
-	    xmlAutomataStatePtr oldstate = ctxt->state;
-	    xmlChar fn[50];
-	    xmlChar *fullname;
-	    
-	    fullname = xmlBuildQName(content->name, content->prefix, fn, 50);
-	    if (fullname == NULL) {
-	        xmlVErrMemory(ctxt, "Building content model");
-		return(0);
-	    }
-
-	    switch (content->ocur) {
-		case XML_ELEMENT_CONTENT_ONCE:
-		    ctxt->state = xmlAutomataNewTransition(ctxt->am,
-			    ctxt->state, NULL, fullname, NULL);
-		    break;
-		case XML_ELEMENT_CONTENT_OPT:
-		    ctxt->state = xmlAutomataNewTransition(ctxt->am,
-			    ctxt->state, NULL, fullname, NULL);
-		    xmlAutomataNewEpsilon(ctxt->am, oldstate, ctxt->state);
-		    break;
-		case XML_ELEMENT_CONTENT_PLUS:
-		    ctxt->state = xmlAutomataNewTransition(ctxt->am,
-			    ctxt->state, NULL, fullname, NULL);
-		    xmlAutomataNewTransition(ctxt->am, ctxt->state,
-			                     ctxt->state, fullname, NULL);
-		    break;
-		case XML_ELEMENT_CONTENT_MULT:
-		    ctxt->state = xmlAutomataNewEpsilon(ctxt->am,
-		    			    ctxt->state, NULL);
-		    xmlAutomataNewTransition(ctxt->am,
-		    	    ctxt->state, ctxt->state, fullname, NULL);
-		    break;
-	    }
-	    if ((fullname != fn) && (fullname != content->name))
-		xmlFree(fullname);
-	    break;
-	}
-	case XML_ELEMENT_CONTENT_SEQ: {
-	    xmlAutomataStatePtr oldstate, oldend;
-	    xmlElementContentOccur ocur;
-
-	    /*
-	     * Simply iterate over the content
-	     */
-	    oldstate = ctxt->state;
-	    ocur = content->ocur;
-	    if (ocur != XML_ELEMENT_CONTENT_ONCE) {
-		ctxt->state = xmlAutomataNewEpsilon(ctxt->am, oldstate, NULL);
-		oldstate = ctxt->state;
-	    }
-	    do {
-		xmlValidBuildAContentModel(content->c1, ctxt, name);
-		content = content->c2;
-	    } while ((content->type == XML_ELEMENT_CONTENT_SEQ) &&
-		     (content->ocur == XML_ELEMENT_CONTENT_ONCE));
-	    xmlValidBuildAContentModel(content, ctxt, name);
-	    oldend = ctxt->state;
-	    ctxt->state = xmlAutomataNewEpsilon(ctxt->am, oldend, NULL);
-	    switch (ocur) {
-		case XML_ELEMENT_CONTENT_ONCE:
-		    break;
-		case XML_ELEMENT_CONTENT_OPT:
-		    xmlAutomataNewEpsilon(ctxt->am, oldstate, ctxt->state);
-		    break;
-		case XML_ELEMENT_CONTENT_MULT:
-		    xmlAutomataNewEpsilon(ctxt->am, oldstate, ctxt->state);
-		    xmlAutomataNewEpsilon(ctxt->am, oldend, oldstate);
-		    break;
-		case XML_ELEMENT_CONTENT_PLUS:
-		    xmlAutomataNewEpsilon(ctxt->am, oldend, oldstate);
-		    break;
-	    }
-	    break;
-	}
-	case XML_ELEMENT_CONTENT_OR: {
-	    xmlAutomataStatePtr oldstate, oldend;
-	    xmlElementContentOccur ocur;
-
-	    ocur = content->ocur;
-	    if ((ocur == XML_ELEMENT_CONTENT_PLUS) || 
-		(ocur == XML_ELEMENT_CONTENT_MULT)) {
-		ctxt->state = xmlAutomataNewEpsilon(ctxt->am,
-			ctxt->state, NULL);
-	    }
-	    oldstate = ctxt->state;
-	    oldend = xmlAutomataNewState(ctxt->am);
-
-	    /*
-	     * iterate over the subtypes and remerge the end with an
-	     * epsilon transition
-	     */
-	    do {
-		ctxt->state = oldstate;
-		xmlValidBuildAContentModel(content->c1, ctxt, name);
-		xmlAutomataNewEpsilon(ctxt->am, ctxt->state, oldend);
-		content = content->c2;
-	    } while ((content->type == XML_ELEMENT_CONTENT_OR) &&
-		     (content->ocur == XML_ELEMENT_CONTENT_ONCE));
-	    ctxt->state = oldstate;
-	    xmlValidBuildAContentModel(content, ctxt, name);
-	    xmlAutomataNewEpsilon(ctxt->am, ctxt->state, oldend);
-	    ctxt->state = xmlAutomataNewEpsilon(ctxt->am, oldend, NULL);
-	    switch (ocur) {
-		case XML_ELEMENT_CONTENT_ONCE:
-		    break;
-		case XML_ELEMENT_CONTENT_OPT:
-		    xmlAutomataNewEpsilon(ctxt->am, oldstate, ctxt->state);
-		    break;
-		case XML_ELEMENT_CONTENT_MULT:
-		    xmlAutomataNewEpsilon(ctxt->am, oldstate, ctxt->state);
-		    xmlAutomataNewEpsilon(ctxt->am, oldend, oldstate);
-		    break;
-		case XML_ELEMENT_CONTENT_PLUS:
-		    xmlAutomataNewEpsilon(ctxt->am, oldend, oldstate);
-		    break;
-	    }
-	    break;
-	}
-	default:
-	    xmlErrValid(ctxt, XML_ERR_INTERNAL_ERROR,
-	                "ContentModel broken for element %s\n",
-			(const char *) name);
-	    return(0);
-    }
-    return(1);
-}
-/**
- * xmlValidBuildContentModel:
- * @ctxt:  a validation context
- * @elem:  an element declaration node
- *
- * (Re)Build the automata associated to the content model of this
- * element
- *
- * Returns 1 in case of success, 0 in case of error
- */
-int
-xmlValidBuildContentModel(xmlValidCtxtPtr ctxt, xmlElementPtr elem) {
-
-    if ((ctxt == NULL) || (elem == NULL))
-	return(0);
-    if (elem->type != XML_ELEMENT_DECL)
-	return(0);
-    if (elem->etype != XML_ELEMENT_TYPE_ELEMENT)
-	return(1);
-    /* TODO: should we rebuild in this case ? */
-    if (elem->contModel != NULL) {
-	if (!xmlRegexpIsDeterminist(elem->contModel)) {
-	    ctxt->valid = 0;
-	    return(0);
-	}
-	return(1);
-    }
-
-    ctxt->am = xmlNewAutomata();
-    if (ctxt->am == NULL) {
-	xmlErrValidNode(ctxt, (xmlNodePtr) elem,
-	                XML_ERR_INTERNAL_ERROR,
-	                "Cannot create automata for element %s\n",
-		        elem->name, NULL, NULL);
-	return(0);
-    }
-    ctxt->state = xmlAutomataGetInitState(ctxt->am);
-    xmlValidBuildAContentModel(elem->content, ctxt, elem->name);
-    xmlAutomataSetFinalState(ctxt->am, ctxt->state);
-    elem->contModel = xmlAutomataCompile(ctxt->am);
-    if (xmlRegexpIsDeterminist(elem->contModel) != 1) {
-	char expr[5000];
-	expr[0] = 0;
-	xmlSnprintfElementContent(expr, 5000, elem->content, 1);
-	xmlErrValidNode(ctxt, (xmlNodePtr) elem,
-	                XML_DTD_CONTENT_NOT_DETERMINIST,
-	       "Content model of %s is not determinist: %s\n",
-	       elem->name, BAD_CAST expr, NULL);
-#ifdef DEBUG_REGEXP_ALGO
-        xmlRegexpPrint(stderr, elem->contModel);
-#endif
-        ctxt->valid = 0;
-	ctxt->state = NULL;
-	xmlFreeAutomata(ctxt->am);
-	ctxt->am = NULL;
-	return(0);
-    }
-    ctxt->state = NULL;
-    xmlFreeAutomata(ctxt->am);
-    ctxt->am = NULL;
-    return(1);
-}
-
-#endif /* LIBXML_REGEXP_ENABLED */
 
 /****************************************************************
  *								*
@@ -1262,10 +950,6 @@ xmlFreeElement(xmlElementPtr elem) {
 	xmlFree((xmlChar *) elem->name);
     if (elem->prefix != NULL)
 	xmlFree((xmlChar *) elem->prefix);
-#ifdef LIBXML_REGEXP_ENABLED
-    if (elem->contModel != NULL)
-	xmlRegFreeRegexp(elem->contModel);
-#endif
     xmlFree(elem);
 }
 
@@ -3861,13 +3545,6 @@ xmlValidateElementDecl(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
     
     if (elem == NULL) return(1);
 
-#if 0
-#ifdef LIBXML_REGEXP_ENABLED
-    /* Build the regexp associated to the content model */
-    ret = xmlValidBuildContentModel(ctxt, elem);
-#endif
-#endif
-
     /* No Duplicate Types */
     if (elem->etype == XML_ELEMENT_TYPE_MIXED) {
 	xmlElementContentPtr cur, next;
@@ -4350,7 +4027,6 @@ xmlNodePtr elem, const xmlChar *prefix, xmlNsPtr ns, const xmlChar *value) {
     return(ret);
 }
 
-#ifndef  LIBXML_REGEXP_ENABLED
 /**
  * xmlValidateSkipIgnorable:
  * @ctxt:  the validation context
@@ -4754,7 +4430,6 @@ analyze:
     }
     return(determinist);
 }
-#endif
 
 /**
  * xmlSnprintfElements:
@@ -4854,9 +4529,7 @@ static int
 xmlValidateElementContent(xmlValidCtxtPtr ctxt, xmlNodePtr child,
        xmlElementPtr elemDecl, int warn, xmlNodePtr parent) {
     int ret = 1;
-#ifndef  LIBXML_REGEXP_ENABLED
     xmlNodePtr repl = NULL, last = NULL, tmp;
-#endif
     xmlNodePtr cur;
     xmlElementContentPtr cont;
     const xmlChar *name;
@@ -4866,85 +4539,6 @@ xmlValidateElementContent(xmlValidCtxtPtr ctxt, xmlNodePtr child,
     cont = elemDecl->content;
     name = elemDecl->name;
 
-#ifdef LIBXML_REGEXP_ENABLED
-    /* Build the regexp associated to the content model */
-    if (elemDecl->contModel == NULL)
-	ret = xmlValidBuildContentModel(ctxt, elemDecl);
-    if (elemDecl->contModel == NULL) {
-	return(-1);
-    } else {
-	xmlRegExecCtxtPtr exec;
-
-	if (!xmlRegexpIsDeterminist(elemDecl->contModel)) {
-	    return(-1);
-	}
-	ctxt->nodeMax = 0;
-	ctxt->nodeNr = 0;
-	ctxt->nodeTab = NULL;
-	exec = xmlRegNewExecCtxt(elemDecl->contModel, NULL, NULL);
-	if (exec != NULL) {
-	    cur = child;
-	    while (cur != NULL) {
-		switch (cur->type) {
-		    case XML_ENTITY_REF_NODE:
-			/*
-			 * Push the current node to be able to roll back
-			 * and process within the entity
-			 */
-			if ((cur->children != NULL) &&
-			    (cur->children->children != NULL)) {
-			    nodeVPush(ctxt, cur);
-			    cur = cur->children->children;
-			    continue;
-			}
-			break;
-		    case XML_TEXT_NODE:
-			if (xmlIsBlankNode(cur))
-			    break;
-			ret = 0;
-			goto fail;
-		    case XML_CDATA_SECTION_NODE:
-			/* TODO */
-			ret = 0;
-			goto fail;
-		    case XML_ELEMENT_NODE:
-			if ((cur->ns != NULL) && (cur->ns->prefix != NULL)) {
-			    xmlChar fn[50];
-			    xmlChar *fullname;
-			    
-			    fullname = xmlBuildQName(cur->name,
-				                     cur->ns->prefix, fn, 50);
-			    if (fullname == NULL) {
-				ret = -1;
-				goto fail;
-			    }
-                            ret = xmlRegExecPushString(exec, fullname, NULL);
-			    if ((fullname != fn) && (fullname != cur->name))
-				xmlFree(fullname);
-			} else {
-			    ret = xmlRegExecPushString(exec, cur->name, NULL);
-			}
-			break;
-		    default:
-			break;
-		}
-		/*
-		 * Switch to next element
-		 */
-		cur = cur->next;
-		while (cur == NULL) {
-		    cur = nodeVPop(ctxt);
-		    if (cur == NULL)
-			break;
-		    cur = cur->next;
-		}
-	    }
-	    ret = xmlRegExecPushString(exec, NULL, NULL);
-fail:
-	    xmlRegFreeExecCtxt(exec);
-	}
-    }
-#else  /* LIBXML_REGEXP_ENABLED */
     /*
      * Allocate the stack
      */
@@ -5059,7 +4653,6 @@ fail:
 	STATE = 0;
 	ret = xmlValidateElementType(ctxt);
     }
-#endif /* LIBXML_REGEXP_ENABLED */
     if ((warn) && ((ret != 1) && (ret != -3))) {
 	if (ctxt != NULL) {
 	    char expr[5000];
@@ -5068,11 +4661,9 @@ fail:
 	    expr[0] = 0;
 	    xmlSnprintfElementContent(&expr[0], 5000, cont, 1);
 	    list[0] = 0;
-#ifndef LIBXML_REGEXP_ENABLED
 	    if (repl != NULL)
 		xmlSnprintfElements(&list[0], 5000, repl, 1);
 	    else
-#endif /* LIBXML_REGEXP_ENABLED */
 		xmlSnprintfElements(&list[0], 5000, child, 1);
 
 	    if (name != NULL) {
@@ -5100,7 +4691,6 @@ fail:
     if (ret == -3)
 	ret = 1;
 
-#ifndef  LIBXML_REGEXP_ENABLED
 done:
     /*
      * Deallocate the copy if done, and free up the validation stack
@@ -5115,7 +4705,6 @@ done:
 	xmlFree(ctxt->vstateTab);
 	ctxt->vstateTab = NULL;
     }
-#endif
     ctxt->nodeMax = 0;
     ctxt->nodeNr = 0;
     if (ctxt->nodeTab != NULL) {
@@ -5320,228 +4909,6 @@ xmlValidGetElemDecl(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
     }
     return(elemDecl);
 }
-
-#ifdef LIBXML_REGEXP_ENABLED
-/**
- * xmlValidatePushElement:
- * @ctxt:  the validation context
- * @doc:  a document instance
- * @elem:  an element instance
- * @qname:  the qualified name as appearing in the serialization
- *
- * Push a new element start on the validation stack.
- *
- * returns 1 if no validation problem was found or 0 otherwise
- */
-int
-xmlValidatePushElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
-                       xmlNodePtr elem, const xmlChar *qname) {
-    int ret = 1;
-    xmlElementPtr eDecl;
-    int extsubset = 0;
-
-    if (ctxt == NULL)
-        return(0);
-/* printf("PushElem %s\n", qname); */
-    if ((ctxt->vstateNr > 0) && (ctxt->vstate != NULL)) {
-	xmlValidStatePtr state = ctxt->vstate;
-	xmlElementPtr elemDecl;
-
-	/*
-	 * Check the new element agaisnt the content model of the new elem.
-	 */
-	if (state->elemDecl != NULL) {
-	    elemDecl = state->elemDecl;
-
-	    switch(elemDecl->etype) {
-		case XML_ELEMENT_TYPE_UNDEFINED:
-		    ret = 0;
-		    break;
-		case XML_ELEMENT_TYPE_EMPTY:
-		    xmlErrValidNode(ctxt, state->node,
-				    XML_DTD_NOT_EMPTY,
-	       "Element %s was declared EMPTY this one has content\n",
-			   state->node->name, NULL, NULL);
-		    ret = 0;
-		    break;
-		case XML_ELEMENT_TYPE_ANY:
-		    /* I don't think anything is required then */
-		    break;
-		case XML_ELEMENT_TYPE_MIXED:
-		    /* simple case of declared as #PCDATA */
-		    if ((elemDecl->content != NULL) &&
-			(elemDecl->content->type ==
-			 XML_ELEMENT_CONTENT_PCDATA)) {
-			xmlErrValidNode(ctxt, state->node,
-					XML_DTD_NOT_PCDATA,
-	       "Element %s was declared #PCDATA but contains non text nodes\n",
-				state->node->name, NULL, NULL);
-			ret = 0;
-		    } else {
-			ret = xmlValidateCheckMixed(ctxt, elemDecl->content,
-				                    qname);
-			if (ret != 1) {
-			    xmlErrValidNode(ctxt, state->node,
-					    XML_DTD_INVALID_CHILD,
-	       "Element %s is not declared in %s list of possible children\n",
-				    qname, state->node->name, NULL);
-			}
-		    }
-		    break;
-		case XML_ELEMENT_TYPE_ELEMENT:
-		    /*
-		     * TODO:
-		     * VC: Standalone Document Declaration
-		     *     - element types with element content, if white space
-		     *       occurs directly within any instance of those types.
-		     */
-		    if (state->exec != NULL) {
-			ret = xmlRegExecPushString(state->exec, qname, NULL);
-			if (ret < 0) {
-			    xmlErrValidNode(ctxt, state->node,
-					    XML_DTD_CONTENT_MODEL,
-	       "Element %s content does not follow the DTD, Misplaced %s\n",
-				   state->node->name, qname, NULL);
-			    ret = 0;
-			} else {
-			    ret = 1;
-			}
-		    }
-		    break;
-	    }
-	}
-    }
-    eDecl = xmlValidGetElemDecl(ctxt, doc, elem, &extsubset);
-    vstateVPush(ctxt, eDecl, elem);
-    return(ret);
-}
-
-/**
- * xmlValidatePushCData:
- * @ctxt:  the validation context
- * @data:  some character data read
- * @len:  the lenght of the data
- *
- * check the CData parsed for validation in the current stack
- *
- * returns 1 if no validation problem was found or 0 otherwise
- */
-int
-xmlValidatePushCData(xmlValidCtxtPtr ctxt, const xmlChar *data, int len) {
-    int ret = 1;
-
-/* printf("CDATA %s %d\n", data, len); */
-    if (ctxt == NULL)
-        return(0);
-    if (len <= 0)
-	return(ret);
-    if ((ctxt->vstateNr > 0) && (ctxt->vstate != NULL)) {
-	xmlValidStatePtr state = ctxt->vstate;
-	xmlElementPtr elemDecl;
-
-	/*
-	 * Check the new element agaisnt the content model of the new elem.
-	 */
-	if (state->elemDecl != NULL) {
-	    elemDecl = state->elemDecl;
-
-	    switch(elemDecl->etype) {
-		case XML_ELEMENT_TYPE_UNDEFINED:
-		    ret = 0;
-		    break;
-		case XML_ELEMENT_TYPE_EMPTY:
-		    xmlErrValidNode(ctxt, state->node,
-				    XML_DTD_NOT_EMPTY,
-	       "Element %s was declared EMPTY this one has content\n",
-			   state->node->name, NULL, NULL);
-		    ret = 0;
-		    break;
-		case XML_ELEMENT_TYPE_ANY:
-		    break;
-		case XML_ELEMENT_TYPE_MIXED:
-		    break;
-		case XML_ELEMENT_TYPE_ELEMENT:
-		    if (len > 0) {
-			int i;
-
-			for (i = 0;i < len;i++) {
-			    if (!IS_BLANK_CH(data[i])) {
-				xmlErrValidNode(ctxt, state->node,
-						XML_DTD_CONTENT_MODEL,
-	   "Element %s content does not follow the DTD, Text not allowed\n",
-				       state->node->name, NULL, NULL);
-				ret = 0;
-				goto done;
-			    }
-			}
-			/*
-			 * TODO:
-			 * VC: Standalone Document Declaration
-			 *  element types with element content, if white space
-			 *  occurs directly within any instance of those types.
-			 */
-		    }
-		    break;
-	    }
-	}
-    }
-done:
-    return(ret);
-}
-
-/**
- * xmlValidatePopElement:
- * @ctxt:  the validation context
- * @doc:  a document instance
- * @elem:  an element instance
- * @qname:  the qualified name as appearing in the serialization
- *
- * Pop the element end from the validation stack.
- *
- * returns 1 if no validation problem was found or 0 otherwise
- */
-int
-xmlValidatePopElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc ATTRIBUTE_UNUSED,
-                      xmlNodePtr elem ATTRIBUTE_UNUSED,
-		      const xmlChar *qname ATTRIBUTE_UNUSED) {
-    int ret = 1;
-
-    if (ctxt == NULL)
-        return(0);
-/* printf("PopElem %s\n", qname); */
-    if ((ctxt->vstateNr > 0) && (ctxt->vstate != NULL)) {
-	xmlValidStatePtr state = ctxt->vstate;
-	xmlElementPtr elemDecl;
-
-	/*
-	 * Check the new element agaisnt the content model of the new elem.
-	 */
-	if (state->elemDecl != NULL) {
-	    elemDecl = state->elemDecl;
-
-	    if (elemDecl->etype == XML_ELEMENT_TYPE_ELEMENT) {
-		if (state->exec != NULL) {
-		    ret = xmlRegExecPushString(state->exec, NULL, NULL);
-		    if (ret == 0) {
-			xmlErrValidNode(ctxt, state->node,
-			                XML_DTD_CONTENT_MODEL,
-	   "Element %s content does not follow the DTD, Expecting more child\n",
-			       state->node->name, NULL,NULL);
-		    } else {
-			/*
-			 * previous validation errors should not generate
-			 * a new one here
-			 */
-			ret = 1;
-		    }
-		}
-	    }
-	}
-	vstateVPop(ctxt);
-    }
-    return(ret);
-}
-#endif /* LIBXML_REGEXP_ENABLED */
 
 /**
  * xmlValidateOneElement:

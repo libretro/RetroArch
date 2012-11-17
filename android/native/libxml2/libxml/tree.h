@@ -316,11 +316,7 @@ struct _xmlElement {
     xmlElementContentPtr content;	/* the allowed element content */
     xmlAttributePtr   attributes;	/* List of the declared attributes */
     const xmlChar        *prefix;	/* the namespace prefix if any */
-#ifdef LIBXML_REGEXP_ENABLED
-    xmlRegexpPtr       contModel;	/* the validating regexp */
-#else
     void	      *contModel;
-#endif
 };
 
 

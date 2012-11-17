@@ -100,13 +100,8 @@ struct _xmlValidCtxt {
     int                vstateMax;     /* Max depth of the validation stack */
     xmlValidState     *vstateTab;     /* array of validation states */
 
-#ifdef LIBXML_REGEXP_ENABLED
-    xmlAutomataPtr            am;     /* the automata */
-    xmlAutomataStatePtr    state;     /* used to build the automata */
-#else
     void                     *am;
     void                  *state;
-#endif
 };
 
 /*
@@ -397,29 +392,6 @@ XMLPUBFUN int XMLCALL
 XMLPUBFUN int XMLCALL		
 		xmlValidateNmtokensValue(const xmlChar *value);
 
-#ifdef LIBXML_REGEXP_ENABLED
-/*
- * Validation based on the regexp support
- */
-XMLPUBFUN int XMLCALL		
-		xmlValidBuildContentModel(xmlValidCtxtPtr ctxt,
-					 xmlElementPtr elem);
-
-XMLPUBFUN int XMLCALL		
-		xmlValidatePushElement	(xmlValidCtxtPtr ctxt,
-					 xmlDocPtr doc,
-					 xmlNodePtr elem,
-					 const xmlChar *qname);
-XMLPUBFUN int XMLCALL		
-		xmlValidatePushCData	(xmlValidCtxtPtr ctxt,
-					 const xmlChar *data,
-					 int len);
-XMLPUBFUN int XMLCALL		
-		xmlValidatePopElement	(xmlValidCtxtPtr ctxt,
-					 xmlDocPtr doc,
-					 xmlNodePtr elem,
-					 const xmlChar *qname);
-#endif /* LIBXML_REGEXP_ENABLED */
 #endif /* LIBXML_VALID_ENABLED */
 #ifdef __cplusplus
 }

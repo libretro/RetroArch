@@ -158,15 +158,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_REGEXP_ENABLED:
- *
- * Whether the regular expressions interfaces are compiled in
- */
-#if 0
-#define LIBXML_REGEXP_ENABLED
-#endif
-
-/**
  * LIBXML_EXPR_ENABLED:
  *
  * Whether the formal expressions interfaces are compiled in

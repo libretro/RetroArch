@@ -13,7 +13,4 @@
 #include <libxml/xmlversion.h>
 #include <libxml/tree.h>
 
-#ifdef LIBXML_REGEXP_ENABLED
-#endif /* LIBXML_REGEXP_ENABLED */
-
 #endif /* __XML_AUTOMATA_H__ */
