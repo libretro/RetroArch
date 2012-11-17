@@ -1067,12 +1067,6 @@ XMLPUBFUN void XMLCALL
 		xmlBufferWriteQuotedString(xmlBufferPtr buf,
 					 const xmlChar *string);
 
-#ifdef LIBXML_OUTPUT_ENABLED
-XMLPUBFUN void xmlAttrSerializeTxtContent(xmlBufferPtr buf,
-					 xmlDocPtr doc,
-					 xmlAttrPtr attr,
-					 const xmlChar *string);
-#endif /* LIBXML_OUTPUT_ENABLED */
 
 #ifdef LIBXML_TREE_ENABLED
 /*
@@ -1083,84 +1077,6 @@ XMLPUBFUN int XMLCALL
 					 xmlNodePtr tree);
 #endif
 
-#ifdef LIBXML_OUTPUT_ENABLED
-/*
- * Saving.
- */
-XMLPUBFUN void XMLCALL		
-		xmlDocDumpFormatMemory	(xmlDocPtr cur,
-					 xmlChar **mem,
-					 int *size,
-					 int format);
-XMLPUBFUN void XMLCALL		
-		xmlDocDumpMemory	(xmlDocPtr cur,
-					 xmlChar **mem,
-					 int *size);
-XMLPUBFUN void XMLCALL		
-		xmlDocDumpMemoryEnc	(xmlDocPtr out_doc,
-					 xmlChar **doc_txt_ptr,
-					 int * doc_txt_len,
-					 const char *txt_encoding);
-XMLPUBFUN void XMLCALL		
-		xmlDocDumpFormatMemoryEnc(xmlDocPtr out_doc,
-					 xmlChar **doc_txt_ptr,
-					 int * doc_txt_len,
-					 const char *txt_encoding,
-					 int format);
-XMLPUBFUN int XMLCALL		
-		xmlDocFormatDump	(FILE *f,
-					 xmlDocPtr cur,
-					 int format);
-XMLPUBFUN int XMLCALL	
-		xmlDocDump		(FILE *f,
-					 xmlDocPtr cur);
-XMLPUBFUN void XMLCALL		
-		xmlElemDump		(FILE *f,
-					 xmlDocPtr doc,
-					 xmlNodePtr cur);
-XMLPUBFUN int XMLCALL		
-		xmlSaveFile		(const char *filename,
-					 xmlDocPtr cur);
-XMLPUBFUN int XMLCALL		
-		xmlSaveFormatFile	(const char *filename,
-					 xmlDocPtr cur,
-					 int format);
-XMLPUBFUN int XMLCALL		
-		xmlNodeDump		(xmlBufferPtr buf,
-					 xmlDocPtr doc,
-					 xmlNodePtr cur,
-					 int level,
-					 int format);
-
-XMLPUBFUN int XMLCALL		
-		xmlSaveFileTo		(xmlOutputBufferPtr buf,
-					 xmlDocPtr cur,
-					 const char *encoding);
-XMLPUBFUN int XMLCALL             
-		xmlSaveFormatFileTo     (xmlOutputBufferPtr buf,
-					 xmlDocPtr cur,
-				         const char *encoding,
-				         int format);
-XMLPUBFUN void XMLCALL		
-		xmlNodeDumpOutput	(xmlOutputBufferPtr buf,
-					 xmlDocPtr doc,
-					 xmlNodePtr cur,
-					 int level,
-					 int format,
-					 const char *encoding);
-
-XMLPUBFUN int XMLCALL		
-		xmlSaveFormatFileEnc    (const char *filename,
-					 xmlDocPtr cur,
-					 const char *encoding,
-					 int format);
-
-XMLPUBFUN int XMLCALL		
-		xmlSaveFileEnc		(const char *filename,
-					 xmlDocPtr cur,
-					 const char *encoding);
-
-#endif /* LIBXML_OUTPUT_ENABLED */
 /*
  * XHTML
  */

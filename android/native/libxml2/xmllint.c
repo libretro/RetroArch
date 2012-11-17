@@ -82,9 +82,6 @@
 #ifdef LIBXML_C14N_ENABLED
 #include <libxml/c14n.h>
 #endif
-#ifdef LIBXML_OUTPUT_ENABLED
-#include <libxml/xmlsave.h>
-#endif
 
 #ifndef XML_XML_DEFAULT_CATALOG
 #define XML_XML_DEFAULT_CATALOG "file:///etc/xml/catalog"
@@ -114,12 +111,6 @@ static int noenc = 0;
 static int noblanks = 0;
 static int noout = 0;
 static int nowrap = 0;
-#ifdef LIBXML_OUTPUT_ENABLED
-static int format = 0;
-static const char *output = NULL;
-static int compress = 0;
-static int oldout = 0;
-#endif /* LIBXML_OUTPUT_ENABLED */
 #ifdef LIBXML_VALID_ENABLED
 static int valid = 0;
 static int postvalid = 0;
@@ -1991,168 +1982,6 @@ static void parseAndPrintFile(char *filename, xmlParserCtxtPtr rectxt) {
         walkDoc(doc);
     }
 #endif /* LIBXML_READER_ENABLED */
-#ifdef LIBXML_OUTPUT_ENABLED
-    if (noout == 0) {
-        int ret;
-
-	/*
-	 * print it.
-	 */
-	    if ((timing) && (!repeat)) {
-		startTimer();
-	    }
-#ifdef LIBXML_C14N_ENABLED
-            if (canonical) {
-	        xmlChar *result = NULL;
-		int size;
-
-		size = xmlC14NDocDumpMemory(doc, NULL, XML_C14N_1_0, NULL, 1, &result);
-		if (size >= 0) {
-		    if (write(1, result, size) == -1) {
-		        fprintf(stderr, "Can't write data\n");
-		    }
-		    xmlFree(result);
-		} else {
-		    fprintf(stderr, "Failed to canonicalize\n");
-		    progresult = XMLLINT_ERR_OUT;
-		}
-	    } else if (canonical) {
-	        xmlChar *result = NULL;
-		int size;
-
-		size = xmlC14NDocDumpMemory(doc, NULL, XML_C14N_1_1, NULL, 1, &result);
-		if (size >= 0) {
-		    if (write(1, result, size) == -1) {
-		        fprintf(stderr, "Can't write data\n");
-		    }
-		    xmlFree(result);
-		} else {
-		    fprintf(stderr, "Failed to canonicalize\n");
-		    progresult = XMLLINT_ERR_OUT;
-		}
-	    } else
-            if (exc_canonical) {
-	        xmlChar *result = NULL;
-		int size;
-
-		size = xmlC14NDocDumpMemory(doc, NULL, XML_C14N_EXCLUSIVE_1_0, NULL, 1, &result);
-		if (size >= 0) {
-		    if (write(1, result, size) == -1) {
-		        fprintf(stderr, "Can't write data\n");
-		    }
-		    xmlFree(result);
-		} else {
-		    fprintf(stderr, "Failed to canonicalize\n");
-		    progresult = XMLLINT_ERR_OUT;
-		}
-	    } else
-#endif
-#ifdef HAVE_SYS_MMAN_H
-	    if (memory) {
-		xmlChar *result;
-		int len;
-
-		if (encoding != NULL) {
-		    if (format == 1) {
-		        xmlDocDumpFormatMemoryEnc(doc, &result, &len, encoding, 1);
-		    } else {
-			xmlDocDumpMemoryEnc(doc, &result, &len, encoding);
-		    }
-		} else {
-		    if (format == 1)
-			xmlDocDumpFormatMemory(doc, &result, &len, 1);
-		    else
-			xmlDocDumpMemory(doc, &result, &len);
-		}
-		if (result == NULL) {
-		    fprintf(stderr, "Failed to save\n");
-		    progresult = XMLLINT_ERR_OUT;
-		} else {
-		    if (write(1, result, len) == -1) {
-		        fprintf(stderr, "Can't write data\n");
-		    }
-		    xmlFree(result);
-		}
-
-	    } else
-#endif /* HAVE_SYS_MMAN_H */
-	    if (compress) {
-		xmlSaveFile(output ? output : "-", doc);
-	    } else if (oldout) {
-	        if (encoding != NULL) {
-		    if (format == 1) {
-			ret = xmlSaveFormatFileEnc(output ? output : "-", doc,
-						   encoding, 1);
-		    }
-		    else {
-			ret = xmlSaveFileEnc(output ? output : "-", doc,
-			                     encoding);
-		    }
-		    if (ret < 0) {
-			fprintf(stderr, "failed save to %s\n",
-				output ? output : "-");
-			progresult = XMLLINT_ERR_OUT;
-		    }
-		} else if (format == 1) {
-		    ret = xmlSaveFormatFile(output ? output : "-", doc, 1);
-		    if (ret < 0) {
-			fprintf(stderr, "failed save to %s\n",
-				output ? output : "-");
-			progresult = XMLLINT_ERR_OUT;
-		    }
-		} else {
-		    FILE *out;
-		    if (output == NULL)
-			out = stdout;
-		    else {
-			out = fopen(output,"wb");
-		    }
-		    if (out != NULL) {
-			if (xmlDocDump(out, doc) < 0)
-			    progresult = XMLLINT_ERR_OUT;
-
-			if (output != NULL)
-			    fclose(out);
-		    } else {
-			fprintf(stderr, "failed to open %s\n", output);
-			progresult = XMLLINT_ERR_OUT;
-		    }
-		}
-	    } else {
-	        xmlSaveCtxtPtr ctxt;
-		int saveOpts = 0;
-
-                if (format == 1)
-		    saveOpts |= XML_SAVE_FORMAT;
-                else if (format == 2)
-                    saveOpts |= XML_SAVE_WSNONSIG;
-
-#if defined(LIBXML_VALID_ENABLED)
-                if (xmlout)
-                    saveOpts |= XML_SAVE_AS_XML;
-#endif
-
-		if (output == NULL)
-		    ctxt = xmlSaveToFd(1, encoding, saveOpts);
-		else
-		    ctxt = xmlSaveToFilename(output, encoding, saveOpts);
-
-		if (ctxt != NULL) {
-		    if (xmlSaveDoc(ctxt, doc) < 0) {
-			fprintf(stderr, "failed save to %s\n",
-				output ? output : "-");
-			progresult = XMLLINT_ERR_OUT;
-		    }
-		    xmlSaveClose(ctxt);
-		} else {
-		    progresult = XMLLINT_ERR_OUT;
-		}
-	    }
-	    if ((timing) && (!repeat)) {
-		endTimer("Saving");
-	    }
-    }
-#endif /* LIBXML_OUTPUT_ENABLED */
 
 #ifdef LIBXML_VALID_ENABLED
     /*
@@ -2296,11 +2125,7 @@ static void showVersion(const char *name) {
 
 static void usage(const char *name) {
     printf("Usage : %s [options] XMLfiles ...\n", name);
-#ifdef LIBXML_OUTPUT_ENABLED
-    printf("\tParse the XML files and output the result of the parsing\n");
-#else
     printf("\tParse the XML files\n");
-#endif /* LIBXML_OUTPUT_ENABLED */
     printf("\t--version : display the version of the XML library used\n");
 #ifdef LIBXML_READER_ENABLED
     printf("\t--debug : dump the nodes content when using --stream\n");
@@ -2330,11 +2155,6 @@ static void usage(const char *name) {
     printf("\t--output file or -o file: save to a given file\n");
     printf("\t--repeat : repeat 100 times, for timing or profiling\n");
     printf("\t--insert : ad-hoc test for valid insertions\n");
-#ifdef LIBXML_OUTPUT_ENABLED
-#ifdef HAVE_ZLIB_H
-    printf("\t--compress : turn on gzip compression of output\n");
-#endif
-#endif /* LIBXML_OUTPUT_ENABLED */
 #ifdef LIBXML_PUSH_ENABLED
     printf("\t--push : use the push mode of the parser\n");
 #endif /* LIBXML_PUSH_ENABLED */
@@ -2345,15 +2165,6 @@ static void usage(const char *name) {
     printf("\t--nowarning : do not emit warnings from parser/validator\n");
     printf("\t--noblanks : drop (ignorable?) blanks spaces\n");
     printf("\t--nocdata : replace cdata section with text nodes\n");
-#ifdef LIBXML_OUTPUT_ENABLED
-    printf("\t--format : reformat/reindent the input\n");
-    printf("\t--encode encoding : output in the given encoding\n");
-    printf("\t--dropdtd : remove the DOCTYPE of the input docs\n");
-    printf("\t--pretty STYLE : pretty-print in a particular style\n");
-    printf("\t                 0 Do not pretty print\n");
-    printf("\t                 1 Format the XML content, as --format\n");
-    printf("\t                 2 Add whitespace inside tags, preserving content\n");
-#endif /* LIBXML_OUTPUT_ENABLED */
     printf("\t--c14n : save in W3C canonical format v1.0 (with comments)\n");
     printf("\t--c14n11 : save in W3C canonical format v1.1 (with comments)\n");
     printf("\t--exc-c14n : save in W3C exclusive canonical format (with comments)\n");
@@ -2448,14 +2259,6 @@ main(int argc, char **argv) {
 	} else if ((!strcmp(argv[i], "-noout")) ||
 	         (!strcmp(argv[i], "--noout")))
 	    noout++;
-#ifdef LIBXML_OUTPUT_ENABLED
-	else if ((!strcmp(argv[i], "-o")) ||
-	         (!strcmp(argv[i], "-output")) ||
-	         (!strcmp(argv[i], "--output"))) {
-	    i++;
-	    output = argv[i];
-	}
-#endif /* LIBXML_OUTPUT_ENABLED */
 	else if ((!strcmp(argv[i], "-htmlout")) ||
 	         (!strcmp(argv[i], "--htmlout")))
 	    htmlout++;
@@ -2528,15 +2331,6 @@ main(int argc, char **argv) {
 	else if ((!strcmp(argv[i], "-testIO")) ||
 	         (!strcmp(argv[i], "--testIO")))
 	    testIO++;
-#ifdef LIBXML_OUTPUT_ENABLED
-#ifdef HAVE_ZLIB_H
-	else if ((!strcmp(argv[i], "-compress")) ||
-	         (!strcmp(argv[i], "--compress"))) {
-	    compress++;
-	    xmlSetCompressMode(9);
-        }
-#endif
-#endif /* LIBXML_OUTPUT_ENABLED */
 	else if ((!strcmp(argv[i], "-nowarning")) ||
 	         (!strcmp(argv[i], "--nowarning"))) {
 	    xmlGetWarningsDefaultValue = 0;
@@ -2593,17 +2387,11 @@ main(int argc, char **argv) {
 	else if ((!strcmp(argv[i], "-format")) ||
 	         (!strcmp(argv[i], "--format"))) {
 	     noblanks++;
-#ifdef LIBXML_OUTPUT_ENABLED
-	     format = 1;
-#endif /* LIBXML_OUTPUT_ENABLED */
 	     xmlKeepBlanksDefault(0);
 	}
 	else if ((!strcmp(argv[i], "-pretty")) ||
 	         (!strcmp(argv[i], "--pretty"))) {
 	     i++;
-#ifdef LIBXML_OUTPUT_ENABLED
-	     format = atoi(argv[i]);
-#endif /* LIBXML_OUTPUT_ENABLED */
 	     if (format == 1) {
 	         noblanks++;
 	         xmlKeepBlanksDefault(0);

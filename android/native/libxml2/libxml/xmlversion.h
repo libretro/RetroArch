@@ -95,15 +95,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_OUTPUT_ENABLED:
- *
- * Whether the serialization/saving support is configured in
- */
-#if 1
-#define LIBXML_OUTPUT_ENABLED
-#endif
-
-/**
  * LIBXML_PUSH_ENABLED:
  *
  * Whether the push parsing interfaces are configured in

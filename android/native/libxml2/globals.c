@@ -550,11 +550,6 @@ xmlThrDefOutputBufferCreateFilenameDefault(xmlOutputBufferCreateFilenameFunc fun
     
     xmlMutexLock(xmlThrDefMutex);
     old = xmlOutputBufferCreateFilenameValueThrDef;
-#ifdef LIBXML_OUTPUT_ENABLED
-    if (old == NULL) {
-		old = __xmlOutputBufferCreateFilename;
-	}
-#endif
     xmlOutputBufferCreateFilenameValueThrDef = func;
     xmlMutexUnlock(xmlThrDefMutex);
 

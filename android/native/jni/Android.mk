@@ -27,8 +27,7 @@ LOCAL_MODULE    := retroarch-activity
 
 RARCH_PATH  := ../../..
 LIBXML_PATH := ../libxml2
-LOCAL_LIBXML_SRC_FILES = $(LIBXML_PATH)/c14n.c \
-							$(LIBXML_PATH)/chvalid.c \
+LOCAL_LIBXML_SRC_FILES = $(LIBXML_PATH)/chvalid.c \
 							$(LIBXML_PATH)/dict.c \
 							$(LIBXML_PATH)/encoding.c \
 							$(LIBXML_PATH)/entities.c \

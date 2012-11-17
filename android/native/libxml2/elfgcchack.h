@@ -276,18 +276,6 @@ extern __typeof (xmlAddSibling) xmlAddSibling__internal_alias __attribute((visib
 #endif
 #endif
 
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlIO
-#undef xmlAllocOutputBuffer
-extern __typeof (xmlAllocOutputBuffer) xmlAllocOutputBuffer __attribute((alias("xmlAllocOutputBuffer__internal_alias")));
-#else
-#ifndef xmlAllocOutputBuffer
-extern __typeof (xmlAllocOutputBuffer) xmlAllocOutputBuffer__internal_alias __attribute((visibility("hidden")));
-#define xmlAllocOutputBuffer xmlAllocOutputBuffer__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_xmlIO
 #undef xmlAllocParserInputBuffer
 extern __typeof (xmlAllocParserInputBuffer) xmlAllocParserInputBuffer __attribute((alias("xmlAllocParserInputBuffer__internal_alias")));
@@ -295,18 +283,6 @@ extern __typeof (xmlAllocParserInputBuffer) xmlAllocParserInputBuffer __attribut
 #ifndef xmlAllocParserInputBuffer
 extern __typeof (xmlAllocParserInputBuffer) xmlAllocParserInputBuffer__internal_alias __attribute((visibility("hidden")));
 #define xmlAllocParserInputBuffer xmlAllocParserInputBuffer__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlAttrSerializeTxtContent
-extern __typeof (xmlAttrSerializeTxtContent) xmlAttrSerializeTxtContent __attribute((alias("xmlAttrSerializeTxtContent__internal_alias")));
-#else
-#ifndef xmlAttrSerializeTxtContent
-extern __typeof (xmlAttrSerializeTxtContent) xmlAttrSerializeTxtContent__internal_alias __attribute((visibility("hidden")));
-#define xmlAttrSerializeTxtContent xmlAttrSerializeTxtContent__internal_alias
-#endif
 #endif
 #endif
 
@@ -744,54 +720,6 @@ extern __typeof (xmlByteConsumed) xmlByteConsumed__internal_alias __attribute((v
 #endif
 #endif
 
-#if defined(LIBXML_C14N_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_c14n
-#undef xmlC14NDocDumpMemory
-extern __typeof (xmlC14NDocDumpMemory) xmlC14NDocDumpMemory __attribute((alias("xmlC14NDocDumpMemory__internal_alias")));
-#else
-#ifndef xmlC14NDocDumpMemory
-extern __typeof (xmlC14NDocDumpMemory) xmlC14NDocDumpMemory__internal_alias __attribute((visibility("hidden")));
-#define xmlC14NDocDumpMemory xmlC14NDocDumpMemory__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_C14N_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_c14n
-#undef xmlC14NDocSave
-extern __typeof (xmlC14NDocSave) xmlC14NDocSave __attribute((alias("xmlC14NDocSave__internal_alias")));
-#else
-#ifndef xmlC14NDocSave
-extern __typeof (xmlC14NDocSave) xmlC14NDocSave__internal_alias __attribute((visibility("hidden")));
-#define xmlC14NDocSave xmlC14NDocSave__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_C14N_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_c14n
-#undef xmlC14NDocSaveTo
-extern __typeof (xmlC14NDocSaveTo) xmlC14NDocSaveTo __attribute((alias("xmlC14NDocSaveTo__internal_alias")));
-#else
-#ifndef xmlC14NDocSaveTo
-extern __typeof (xmlC14NDocSaveTo) xmlC14NDocSaveTo__internal_alias __attribute((visibility("hidden")));
-#define xmlC14NDocSaveTo xmlC14NDocSaveTo__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_C14N_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_c14n
-#undef xmlC14NExecute
-extern __typeof (xmlC14NExecute) xmlC14NExecute __attribute((alias("xmlC14NExecute__internal_alias")));
-#else
-#ifndef xmlC14NExecute
-extern __typeof (xmlC14NExecute) xmlC14NExecute__internal_alias __attribute((visibility("hidden")));
-#define xmlC14NExecute xmlC14NExecute__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_uri
 #undef xmlCanonicPath
 extern __typeof (xmlCanonicPath) xmlCanonicPath __attribute((alias("xmlCanonicPath__internal_alias")));
@@ -982,18 +910,6 @@ extern __typeof (xmlCleanupMemory) xmlCleanupMemory __attribute((alias("xmlClean
 #ifndef xmlCleanupMemory
 extern __typeof (xmlCleanupMemory) xmlCleanupMemory__internal_alias __attribute((visibility("hidden")));
 #define xmlCleanupMemory xmlCleanupMemory__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlIO
-#undef xmlCleanupOutputCallbacks
-extern __typeof (xmlCleanupOutputCallbacks) xmlCleanupOutputCallbacks __attribute((alias("xmlCleanupOutputCallbacks__internal_alias")));
-#else
-#ifndef xmlCleanupOutputCallbacks
-extern __typeof (xmlCleanupOutputCallbacks) xmlCleanupOutputCallbacks__internal_alias __attribute((visibility("hidden")));
-#define xmlCleanupOutputCallbacks xmlCleanupOutputCallbacks__internal_alias
-#endif
 #endif
 #endif
 
@@ -1675,78 +1591,6 @@ extern __typeof (xmlDocCopyNodeList) xmlDocCopyNodeList__internal_alias __attrib
 #endif
 #endif
 
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlDocDump
-extern __typeof (xmlDocDump) xmlDocDump __attribute((alias("xmlDocDump__internal_alias")));
-#else
-#ifndef xmlDocDump
-extern __typeof (xmlDocDump) xmlDocDump__internal_alias __attribute((visibility("hidden")));
-#define xmlDocDump xmlDocDump__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlDocDumpFormatMemory
-extern __typeof (xmlDocDumpFormatMemory) xmlDocDumpFormatMemory __attribute((alias("xmlDocDumpFormatMemory__internal_alias")));
-#else
-#ifndef xmlDocDumpFormatMemory
-extern __typeof (xmlDocDumpFormatMemory) xmlDocDumpFormatMemory__internal_alias __attribute((visibility("hidden")));
-#define xmlDocDumpFormatMemory xmlDocDumpFormatMemory__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlDocDumpFormatMemoryEnc
-extern __typeof (xmlDocDumpFormatMemoryEnc) xmlDocDumpFormatMemoryEnc __attribute((alias("xmlDocDumpFormatMemoryEnc__internal_alias")));
-#else
-#ifndef xmlDocDumpFormatMemoryEnc
-extern __typeof (xmlDocDumpFormatMemoryEnc) xmlDocDumpFormatMemoryEnc__internal_alias __attribute((visibility("hidden")));
-#define xmlDocDumpFormatMemoryEnc xmlDocDumpFormatMemoryEnc__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlDocDumpMemory
-extern __typeof (xmlDocDumpMemory) xmlDocDumpMemory __attribute((alias("xmlDocDumpMemory__internal_alias")));
-#else
-#ifndef xmlDocDumpMemory
-extern __typeof (xmlDocDumpMemory) xmlDocDumpMemory__internal_alias __attribute((visibility("hidden")));
-#define xmlDocDumpMemory xmlDocDumpMemory__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlDocDumpMemoryEnc
-extern __typeof (xmlDocDumpMemoryEnc) xmlDocDumpMemoryEnc __attribute((alias("xmlDocDumpMemoryEnc__internal_alias")));
-#else
-#ifndef xmlDocDumpMemoryEnc
-extern __typeof (xmlDocDumpMemoryEnc) xmlDocDumpMemoryEnc__internal_alias __attribute((visibility("hidden")));
-#define xmlDocDumpMemoryEnc xmlDocDumpMemoryEnc__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlDocFormatDump
-extern __typeof (xmlDocFormatDump) xmlDocFormatDump __attribute((alias("xmlDocFormatDump__internal_alias")));
-#else
-#ifndef xmlDocFormatDump
-extern __typeof (xmlDocFormatDump) xmlDocFormatDump__internal_alias __attribute((visibility("hidden")));
-#define xmlDocFormatDump xmlDocFormatDump__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_tree
 #undef xmlDocGetRootElement
 extern __typeof (xmlDocGetRootElement) xmlDocGetRootElement __attribute((alias("xmlDocGetRootElement__internal_alias")));
@@ -1765,114 +1609,6 @@ extern __typeof (xmlDocSetRootElement) xmlDocSetRootElement __attribute((alias("
 #ifndef xmlDocSetRootElement
 extern __typeof (xmlDocSetRootElement) xmlDocSetRootElement__internal_alias __attribute((visibility("hidden")));
 #define xmlDocSetRootElement xmlDocSetRootElement__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_valid
-#undef xmlDumpAttributeDecl
-extern __typeof (xmlDumpAttributeDecl) xmlDumpAttributeDecl __attribute((alias("xmlDumpAttributeDecl__internal_alias")));
-#else
-#ifndef xmlDumpAttributeDecl
-extern __typeof (xmlDumpAttributeDecl) xmlDumpAttributeDecl__internal_alias __attribute((visibility("hidden")));
-#define xmlDumpAttributeDecl xmlDumpAttributeDecl__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_valid
-#undef xmlDumpAttributeTable
-extern __typeof (xmlDumpAttributeTable) xmlDumpAttributeTable __attribute((alias("xmlDumpAttributeTable__internal_alias")));
-#else
-#ifndef xmlDumpAttributeTable
-extern __typeof (xmlDumpAttributeTable) xmlDumpAttributeTable__internal_alias __attribute((visibility("hidden")));
-#define xmlDumpAttributeTable xmlDumpAttributeTable__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_valid
-#undef xmlDumpElementDecl
-extern __typeof (xmlDumpElementDecl) xmlDumpElementDecl __attribute((alias("xmlDumpElementDecl__internal_alias")));
-#else
-#ifndef xmlDumpElementDecl
-extern __typeof (xmlDumpElementDecl) xmlDumpElementDecl__internal_alias __attribute((visibility("hidden")));
-#define xmlDumpElementDecl xmlDumpElementDecl__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_valid
-#undef xmlDumpElementTable
-extern __typeof (xmlDumpElementTable) xmlDumpElementTable __attribute((alias("xmlDumpElementTable__internal_alias")));
-#else
-#ifndef xmlDumpElementTable
-extern __typeof (xmlDumpElementTable) xmlDumpElementTable__internal_alias __attribute((visibility("hidden")));
-#define xmlDumpElementTable xmlDumpElementTable__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_entities
-#undef xmlDumpEntitiesTable
-extern __typeof (xmlDumpEntitiesTable) xmlDumpEntitiesTable __attribute((alias("xmlDumpEntitiesTable__internal_alias")));
-#else
-#ifndef xmlDumpEntitiesTable
-extern __typeof (xmlDumpEntitiesTable) xmlDumpEntitiesTable__internal_alias __attribute((visibility("hidden")));
-#define xmlDumpEntitiesTable xmlDumpEntitiesTable__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_entities
-#undef xmlDumpEntityDecl
-extern __typeof (xmlDumpEntityDecl) xmlDumpEntityDecl __attribute((alias("xmlDumpEntityDecl__internal_alias")));
-#else
-#ifndef xmlDumpEntityDecl
-extern __typeof (xmlDumpEntityDecl) xmlDumpEntityDecl__internal_alias __attribute((visibility("hidden")));
-#define xmlDumpEntityDecl xmlDumpEntityDecl__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_valid
-#undef xmlDumpNotationDecl
-extern __typeof (xmlDumpNotationDecl) xmlDumpNotationDecl __attribute((alias("xmlDumpNotationDecl__internal_alias")));
-#else
-#ifndef xmlDumpNotationDecl
-extern __typeof (xmlDumpNotationDecl) xmlDumpNotationDecl__internal_alias __attribute((visibility("hidden")));
-#define xmlDumpNotationDecl xmlDumpNotationDecl__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_valid
-#undef xmlDumpNotationTable
-extern __typeof (xmlDumpNotationTable) xmlDumpNotationTable __attribute((alias("xmlDumpNotationTable__internal_alias")));
-#else
-#ifndef xmlDumpNotationTable
-extern __typeof (xmlDumpNotationTable) xmlDumpNotationTable__internal_alias __attribute((visibility("hidden")));
-#define xmlDumpNotationTable xmlDumpNotationTable__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlElemDump
-extern __typeof (xmlElemDump) xmlElemDump __attribute((alias("xmlElemDump__internal_alias")));
-#else
-#ifndef xmlElemDump
-extern __typeof (xmlElemDump) xmlElemDump__internal_alias __attribute((visibility("hidden")));
-#define xmlElemDump xmlElemDump__internal_alias
 #endif
 #endif
 #endif
@@ -4330,30 +4066,6 @@ extern __typeof (xmlNodeBufGetContent) xmlNodeBufGetContent__internal_alias __at
 #endif
 #endif
 
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlNodeDump
-extern __typeof (xmlNodeDump) xmlNodeDump __attribute((alias("xmlNodeDump__internal_alias")));
-#else
-#ifndef xmlNodeDump
-extern __typeof (xmlNodeDump) xmlNodeDump__internal_alias __attribute((visibility("hidden")));
-#define xmlNodeDump xmlNodeDump__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlNodeDumpOutput
-extern __typeof (xmlNodeDumpOutput) xmlNodeDumpOutput __attribute((alias("xmlNodeDumpOutput__internal_alias")));
-#else
-#ifndef xmlNodeDumpOutput
-extern __typeof (xmlNodeDumpOutput) xmlNodeDumpOutput__internal_alias __attribute((visibility("hidden")));
-#define xmlNodeDumpOutput xmlNodeDumpOutput__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_tree
 #undef xmlNodeGetBase
 extern __typeof (xmlNodeGetBase) xmlNodeGetBase __attribute((alias("xmlNodeGetBase__internal_alias")));
@@ -4516,66 +4228,6 @@ extern __typeof (xmlNormalizeWindowsPath) xmlNormalizeWindowsPath__internal_alia
 #endif
 #endif
 
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlIO
-#undef xmlOutputBufferClose
-extern __typeof (xmlOutputBufferClose) xmlOutputBufferClose __attribute((alias("xmlOutputBufferClose__internal_alias")));
-#else
-#ifndef xmlOutputBufferClose
-extern __typeof (xmlOutputBufferClose) xmlOutputBufferClose__internal_alias __attribute((visibility("hidden")));
-#define xmlOutputBufferClose xmlOutputBufferClose__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlIO
-#undef xmlOutputBufferCreateBuffer
-extern __typeof (xmlOutputBufferCreateBuffer) xmlOutputBufferCreateBuffer __attribute((alias("xmlOutputBufferCreateBuffer__internal_alias")));
-#else
-#ifndef xmlOutputBufferCreateBuffer
-extern __typeof (xmlOutputBufferCreateBuffer) xmlOutputBufferCreateBuffer__internal_alias __attribute((visibility("hidden")));
-#define xmlOutputBufferCreateBuffer xmlOutputBufferCreateBuffer__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlIO
-#undef xmlOutputBufferCreateFd
-extern __typeof (xmlOutputBufferCreateFd) xmlOutputBufferCreateFd __attribute((alias("xmlOutputBufferCreateFd__internal_alias")));
-#else
-#ifndef xmlOutputBufferCreateFd
-extern __typeof (xmlOutputBufferCreateFd) xmlOutputBufferCreateFd__internal_alias __attribute((visibility("hidden")));
-#define xmlOutputBufferCreateFd xmlOutputBufferCreateFd__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlIO
-#undef xmlOutputBufferCreateFile
-extern __typeof (xmlOutputBufferCreateFile) xmlOutputBufferCreateFile __attribute((alias("xmlOutputBufferCreateFile__internal_alias")));
-#else
-#ifndef xmlOutputBufferCreateFile
-extern __typeof (xmlOutputBufferCreateFile) xmlOutputBufferCreateFile__internal_alias __attribute((visibility("hidden")));
-#define xmlOutputBufferCreateFile xmlOutputBufferCreateFile__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlIO
-#undef xmlOutputBufferCreateFilename
-extern __typeof (xmlOutputBufferCreateFilename) xmlOutputBufferCreateFilename __attribute((alias("xmlOutputBufferCreateFilename__internal_alias")));
-#else
-#ifndef xmlOutputBufferCreateFilename
-extern __typeof (xmlOutputBufferCreateFilename) xmlOutputBufferCreateFilename__internal_alias __attribute((visibility("hidden")));
-#define xmlOutputBufferCreateFilename xmlOutputBufferCreateFilename__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_xmlIO
 #undef xmlOutputBufferCreateFilenameDefault
 extern __typeof (xmlOutputBufferCreateFilenameDefault) xmlOutputBufferCreateFilenameDefault __attribute((alias("xmlOutputBufferCreateFilenameDefault__internal_alias")));
@@ -4583,66 +4235,6 @@ extern __typeof (xmlOutputBufferCreateFilenameDefault) xmlOutputBufferCreateFile
 #ifndef xmlOutputBufferCreateFilenameDefault
 extern __typeof (xmlOutputBufferCreateFilenameDefault) xmlOutputBufferCreateFilenameDefault__internal_alias __attribute((visibility("hidden")));
 #define xmlOutputBufferCreateFilenameDefault xmlOutputBufferCreateFilenameDefault__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlIO
-#undef xmlOutputBufferCreateIO
-extern __typeof (xmlOutputBufferCreateIO) xmlOutputBufferCreateIO __attribute((alias("xmlOutputBufferCreateIO__internal_alias")));
-#else
-#ifndef xmlOutputBufferCreateIO
-extern __typeof (xmlOutputBufferCreateIO) xmlOutputBufferCreateIO__internal_alias __attribute((visibility("hidden")));
-#define xmlOutputBufferCreateIO xmlOutputBufferCreateIO__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlIO
-#undef xmlOutputBufferFlush
-extern __typeof (xmlOutputBufferFlush) xmlOutputBufferFlush __attribute((alias("xmlOutputBufferFlush__internal_alias")));
-#else
-#ifndef xmlOutputBufferFlush
-extern __typeof (xmlOutputBufferFlush) xmlOutputBufferFlush__internal_alias __attribute((visibility("hidden")));
-#define xmlOutputBufferFlush xmlOutputBufferFlush__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlIO
-#undef xmlOutputBufferWrite
-extern __typeof (xmlOutputBufferWrite) xmlOutputBufferWrite __attribute((alias("xmlOutputBufferWrite__internal_alias")));
-#else
-#ifndef xmlOutputBufferWrite
-extern __typeof (xmlOutputBufferWrite) xmlOutputBufferWrite__internal_alias __attribute((visibility("hidden")));
-#define xmlOutputBufferWrite xmlOutputBufferWrite__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlIO
-#undef xmlOutputBufferWriteEscape
-extern __typeof (xmlOutputBufferWriteEscape) xmlOutputBufferWriteEscape __attribute((alias("xmlOutputBufferWriteEscape__internal_alias")));
-#else
-#ifndef xmlOutputBufferWriteEscape
-extern __typeof (xmlOutputBufferWriteEscape) xmlOutputBufferWriteEscape__internal_alias __attribute((visibility("hidden")));
-#define xmlOutputBufferWriteEscape xmlOutputBufferWriteEscape__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlIO
-#undef xmlOutputBufferWriteString
-extern __typeof (xmlOutputBufferWriteString) xmlOutputBufferWriteString __attribute((alias("xmlOutputBufferWriteString__internal_alias")));
-#else
-#ifndef xmlOutputBufferWriteString
-extern __typeof (xmlOutputBufferWriteString) xmlOutputBufferWriteString__internal_alias __attribute((visibility("hidden")));
-#define xmlOutputBufferWriteString xmlOutputBufferWriteString__internal_alias
-#endif
 #endif
 #endif
 
@@ -5861,18 +5453,6 @@ extern __typeof (xmlRegisterDefaultInputCallbacks) xmlRegisterDefaultInputCallba
 #endif
 #endif
 
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlIO
-#undef xmlRegisterDefaultOutputCallbacks
-extern __typeof (xmlRegisterDefaultOutputCallbacks) xmlRegisterDefaultOutputCallbacks __attribute((alias("xmlRegisterDefaultOutputCallbacks__internal_alias")));
-#else
-#ifndef xmlRegisterDefaultOutputCallbacks
-extern __typeof (xmlRegisterDefaultOutputCallbacks) xmlRegisterDefaultOutputCallbacks__internal_alias __attribute((visibility("hidden")));
-#define xmlRegisterDefaultOutputCallbacks xmlRegisterDefaultOutputCallbacks__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_xmlIO
 #undef xmlRegisterInputCallbacks
 extern __typeof (xmlRegisterInputCallbacks) xmlRegisterInputCallbacks __attribute((alias("xmlRegisterInputCallbacks__internal_alias")));
@@ -5890,18 +5470,6 @@ extern __typeof (xmlRegisterNodeDefault) xmlRegisterNodeDefault __attribute((ali
 #ifndef xmlRegisterNodeDefault
 extern __typeof (xmlRegisterNodeDefault) xmlRegisterNodeDefault__internal_alias __attribute((visibility("hidden")));
 #define xmlRegisterNodeDefault xmlRegisterNodeDefault__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlIO
-#undef xmlRegisterOutputCallbacks
-extern __typeof (xmlRegisterOutputCallbacks) xmlRegisterOutputCallbacks __attribute((alias("xmlRegisterOutputCallbacks__internal_alias")));
-#else
-#ifndef xmlRegisterOutputCallbacks
-extern __typeof (xmlRegisterOutputCallbacks) xmlRegisterOutputCallbacks__internal_alias __attribute((visibility("hidden")));
-#define xmlRegisterOutputCallbacks xmlRegisterOutputCallbacks__internal_alias
-#endif
 #endif
 #endif
 
@@ -6279,198 +5847,6 @@ extern __typeof (xmlSAXVersion) xmlSAXVersion__internal_alias __attribute((visib
 #endif
 #endif
 
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveClose
-extern __typeof (xmlSaveClose) xmlSaveClose __attribute((alias("xmlSaveClose__internal_alias")));
-#else
-#ifndef xmlSaveClose
-extern __typeof (xmlSaveClose) xmlSaveClose__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveClose xmlSaveClose__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveDoc
-extern __typeof (xmlSaveDoc) xmlSaveDoc __attribute((alias("xmlSaveDoc__internal_alias")));
-#else
-#ifndef xmlSaveDoc
-extern __typeof (xmlSaveDoc) xmlSaveDoc__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveDoc xmlSaveDoc__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveFile
-extern __typeof (xmlSaveFile) xmlSaveFile __attribute((alias("xmlSaveFile__internal_alias")));
-#else
-#ifndef xmlSaveFile
-extern __typeof (xmlSaveFile) xmlSaveFile__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveFile xmlSaveFile__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveFileEnc
-extern __typeof (xmlSaveFileEnc) xmlSaveFileEnc __attribute((alias("xmlSaveFileEnc__internal_alias")));
-#else
-#ifndef xmlSaveFileEnc
-extern __typeof (xmlSaveFileEnc) xmlSaveFileEnc__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveFileEnc xmlSaveFileEnc__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveFileTo
-extern __typeof (xmlSaveFileTo) xmlSaveFileTo __attribute((alias("xmlSaveFileTo__internal_alias")));
-#else
-#ifndef xmlSaveFileTo
-extern __typeof (xmlSaveFileTo) xmlSaveFileTo__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveFileTo xmlSaveFileTo__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveFlush
-extern __typeof (xmlSaveFlush) xmlSaveFlush __attribute((alias("xmlSaveFlush__internal_alias")));
-#else
-#ifndef xmlSaveFlush
-extern __typeof (xmlSaveFlush) xmlSaveFlush__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveFlush xmlSaveFlush__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveFormatFile
-extern __typeof (xmlSaveFormatFile) xmlSaveFormatFile __attribute((alias("xmlSaveFormatFile__internal_alias")));
-#else
-#ifndef xmlSaveFormatFile
-extern __typeof (xmlSaveFormatFile) xmlSaveFormatFile__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveFormatFile xmlSaveFormatFile__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveFormatFileEnc
-extern __typeof (xmlSaveFormatFileEnc) xmlSaveFormatFileEnc __attribute((alias("xmlSaveFormatFileEnc__internal_alias")));
-#else
-#ifndef xmlSaveFormatFileEnc
-extern __typeof (xmlSaveFormatFileEnc) xmlSaveFormatFileEnc__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveFormatFileEnc xmlSaveFormatFileEnc__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveFormatFileTo
-extern __typeof (xmlSaveFormatFileTo) xmlSaveFormatFileTo __attribute((alias("xmlSaveFormatFileTo__internal_alias")));
-#else
-#ifndef xmlSaveFormatFileTo
-extern __typeof (xmlSaveFormatFileTo) xmlSaveFormatFileTo__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveFormatFileTo xmlSaveFormatFileTo__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveSetAttrEscape
-extern __typeof (xmlSaveSetAttrEscape) xmlSaveSetAttrEscape __attribute((alias("xmlSaveSetAttrEscape__internal_alias")));
-#else
-#ifndef xmlSaveSetAttrEscape
-extern __typeof (xmlSaveSetAttrEscape) xmlSaveSetAttrEscape__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveSetAttrEscape xmlSaveSetAttrEscape__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveSetEscape
-extern __typeof (xmlSaveSetEscape) xmlSaveSetEscape __attribute((alias("xmlSaveSetEscape__internal_alias")));
-#else
-#ifndef xmlSaveSetEscape
-extern __typeof (xmlSaveSetEscape) xmlSaveSetEscape__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveSetEscape xmlSaveSetEscape__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveToBuffer
-extern __typeof (xmlSaveToBuffer) xmlSaveToBuffer __attribute((alias("xmlSaveToBuffer__internal_alias")));
-#else
-#ifndef xmlSaveToBuffer
-extern __typeof (xmlSaveToBuffer) xmlSaveToBuffer__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveToBuffer xmlSaveToBuffer__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveToFd
-extern __typeof (xmlSaveToFd) xmlSaveToFd __attribute((alias("xmlSaveToFd__internal_alias")));
-#else
-#ifndef xmlSaveToFd
-extern __typeof (xmlSaveToFd) xmlSaveToFd__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveToFd xmlSaveToFd__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveToFilename
-extern __typeof (xmlSaveToFilename) xmlSaveToFilename __attribute((alias("xmlSaveToFilename__internal_alias")));
-#else
-#ifndef xmlSaveToFilename
-extern __typeof (xmlSaveToFilename) xmlSaveToFilename__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveToFilename xmlSaveToFilename__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveToIO
-extern __typeof (xmlSaveToIO) xmlSaveToIO __attribute((alias("xmlSaveToIO__internal_alias")));
-#else
-#ifndef xmlSaveToIO
-extern __typeof (xmlSaveToIO) xmlSaveToIO__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveToIO xmlSaveToIO__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_xmlsave
-#undef xmlSaveTree
-extern __typeof (xmlSaveTree) xmlSaveTree __attribute((alias("xmlSaveTree__internal_alias")));
-#else
-#ifndef xmlSaveTree
-extern __typeof (xmlSaveTree) xmlSaveTree__internal_alias __attribute((visibility("hidden")));
-#define xmlSaveTree xmlSaveTree__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_uri
 #undef xmlSaveUri
 extern __typeof (xmlSaveUri) xmlSaveUri __attribute((alias("xmlSaveUri__internal_alias")));
@@ -6663,18 +6039,6 @@ extern __typeof (xmlSplitQName3) xmlSplitQName3 __attribute((alias("xmlSplitQNam
 #ifndef xmlSplitQName3
 extern __typeof (xmlSplitQName3) xmlSplitQName3__internal_alias __attribute((visibility("hidden")));
 #define xmlSplitQName3 xmlSplitQName3__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_valid
-#undef xmlSprintfElementContent
-extern __typeof (xmlSprintfElementContent) xmlSprintfElementContent __attribute((alias("xmlSprintfElementContent__internal_alias")));
-#else
-#ifndef xmlSprintfElementContent
-extern __typeof (xmlSprintfElementContent) xmlSprintfElementContent__internal_alias __attribute((visibility("hidden")));
-#define xmlSprintfElementContent xmlSprintfElementContent__internal_alias
-#endif
 #endif
 #endif
 

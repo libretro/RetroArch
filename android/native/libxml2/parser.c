@@ -769,11 +769,7 @@ xmlHasFeature(xmlFeature feature)
             return(0);
 #endif
         case XML_WITH_OUTPUT:
-#ifdef LIBXML_OUTPUT_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_PUSH:
 #ifdef LIBXML_PUSH_ENABLED
             return(1);
@@ -12819,9 +12815,6 @@ xmlInitParser(void) {
 	xmlInitCharEncodingHandlers();
 	xmlDefaultSAXHandlerInit();
 	xmlRegisterDefaultInputCallbacks();
-#ifdef LIBXML_OUTPUT_ENABLED
-	xmlRegisterDefaultOutputCallbacks();
-#endif /* LIBXML_OUTPUT_ENABLED */
 	xmlParserInitialized = 1;
 }
 
@@ -12855,9 +12848,6 @@ xmlCleanupParser(void) {
     xmlCleanupCharEncodingHandlers();
     xmlDictCleanup();
     xmlCleanupInputCallbacks();
-#ifdef LIBXML_OUTPUT_ENABLED
-    xmlCleanupOutputCallbacks();
-#endif
     xmlCleanupGlobals();
     xmlResetLastError();
     xmlCleanupThreads(); /* must be last if called not from the main thread */

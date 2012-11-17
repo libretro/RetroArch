@@ -162,14 +162,6 @@ XMLPUBFUN xmlNotationTablePtr XMLCALL
 #endif /* LIBXML_TREE_ENABLED */
 XMLPUBFUN void XMLCALL		    
 		xmlFreeNotationTable	(xmlNotationTablePtr table);
-#ifdef LIBXML_OUTPUT_ENABLED
-XMLPUBFUN void XMLCALL		    
-		xmlDumpNotationDecl	(xmlBufferPtr buf,
-					 xmlNotationPtr nota);
-XMLPUBFUN void XMLCALL		    
-		xmlDumpNotationTable	(xmlBufferPtr buf,
-					 xmlNotationTablePtr table);
-#endif /* LIBXML_OUTPUT_ENABLED */
 
 /* Element Content */
 /* the non Doc version are being deprecated */
@@ -196,13 +188,6 @@ XMLPUBFUN void XMLCALL
 					 int size,
 	                                 xmlElementContentPtr content,
 					 int englob);
-#ifdef LIBXML_OUTPUT_ENABLED
-/* DEPRECATED */
-XMLPUBFUN void XMLCALL		     
-		xmlSprintfElementContent(char *buf,
-	                                 xmlElementContentPtr content,
-					 int englob);
-#endif /* LIBXML_OUTPUT_ENABLED */
 /* DEPRECATED */
 
 /* Element */
@@ -218,14 +203,6 @@ XMLPUBFUN xmlElementTablePtr XMLCALL
 #endif /* LIBXML_TREE_ENABLED */
 XMLPUBFUN void XMLCALL		   
 		xmlFreeElementTable	(xmlElementTablePtr table);
-#ifdef LIBXML_OUTPUT_ENABLED
-XMLPUBFUN void XMLCALL		   
-		xmlDumpElementTable	(xmlBufferPtr buf,
-					 xmlElementTablePtr table);
-XMLPUBFUN void XMLCALL		   
-		xmlDumpElementDecl	(xmlBufferPtr buf,
-					 xmlElementPtr elem);
-#endif /* LIBXML_OUTPUT_ENABLED */
 
 /* Enumeration */
 XMLPUBFUN xmlEnumerationPtr XMLCALL 
@@ -254,14 +231,6 @@ XMLPUBFUN xmlAttributeTablePtr XMLCALL
 #endif /* LIBXML_TREE_ENABLED */
 XMLPUBFUN void XMLCALL		     
 		xmlFreeAttributeTable  (xmlAttributeTablePtr table);
-#ifdef LIBXML_OUTPUT_ENABLED
-XMLPUBFUN void XMLCALL		     
-		xmlDumpAttributeTable  (xmlBufferPtr buf,
-					xmlAttributeTablePtr table);
-XMLPUBFUN void XMLCALL		     
-		xmlDumpAttributeDecl   (xmlBufferPtr buf,
-					xmlAttributePtr attr);
-#endif /* LIBXML_OUTPUT_ENABLED */
 
 /* IDs */
 XMLPUBFUN xmlIDPtr XMLCALL	
