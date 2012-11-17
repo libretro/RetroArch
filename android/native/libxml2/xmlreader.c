@@ -37,9 +37,6 @@
 #include <libxml/xmlschemas.h>
 #endif
 #include <libxml/uri.h>
-#ifdef LIBXML_XINCLUDE_ENABLED
-#include <libxml/xinclude.h>
-#endif
 
 #define MAX_ERR_MSG_SIZE 64000
 
@@ -157,13 +154,6 @@ struct _xmlTextReader {
     int                   xsdPreserveCtxt; /* 1 if the context was provided by the user */
     int                   xsdValidErrors;/* The number of errors detected */
     xmlSchemaSAXPlugPtr   xsdPlug;	/* the schemas plug in SAX pipeline */
-#endif
-#ifdef LIBXML_XINCLUDE_ENABLED
-    /* Handling of XInclude processing */
-    int                xinclude;	/* is xinclude asked for */
-    const xmlChar *    xinclude_name;	/* the xinclude name from dict */
-    xmlXIncludeCtxtPtr xincctxt;	/* the xinclude context */
-    int                in_xinclude;	/* counts for xinclude */
 #endif
     int                preserves;	/* level of preserves */
     int                parserFlags;	/* the set of options set */
@@ -1353,9 +1343,6 @@ get_next_node:
             (reader->node->type == XML_ELEMENT_NODE) &&
 	    (reader->node->children == NULL) &&
 	    ((reader->node->extra & NODE_IS_EMPTY) == 0)
-#ifdef LIBXML_XINCLUDE_ENABLED
-	    && (reader->in_xinclude <= 0)
-#endif
 	    ) {
 	    reader->state = XML_TEXTREADER_END;
 	    goto node_found;
@@ -1375,9 +1362,6 @@ get_next_node:
 	 * Cleanup of the old node
 	 */
 	if ((reader->preserves == 0) &&
-#ifdef LIBXML_XINCLUDE_ENABLED
-	    (reader->in_xinclude == 0) &&
-#endif
 	    (reader->entNr == 0) &&
 	    (reader->node->prev != NULL) &&
             (reader->node->prev->type != XML_DTD_NODE) &&
@@ -1422,9 +1406,6 @@ get_next_node:
 	 * Cleanup of the old node
 	 */
 	if ((oldnode != NULL) && (reader->preserves == 0) &&
-#ifdef LIBXML_XINCLUDE_ENABLED
-	    (reader->in_xinclude == 0) &&
-#endif
 	    (reader->entNr == 0) &&
 	    (oldnode->type != XML_DTD_NODE) &&
 	    ((oldnode->extra & NODE_IS_PRESERVED) == 0) &&
@@ -1436,9 +1417,6 @@ get_next_node:
 	goto node_end;
     }
     if ((reader->preserves == 0) &&
-#ifdef LIBXML_XINCLUDE_ENABLED
-        (reader->in_xinclude == 0) &&
-#endif
 	(reader->entNr == 0) &&
         (reader->node->last != NULL) &&
         ((reader->node->last->extra & NODE_IS_PRESERVED) == 0)) {
@@ -1463,36 +1441,6 @@ node_found:
 	        return -1;
     }
 
-#ifdef LIBXML_XINCLUDE_ENABLED
-    /*
-     * Handle XInclude if asked for
-     */
-    if ((reader->xinclude) && (reader->node != NULL) &&
-	(reader->node->type == XML_ELEMENT_NODE) &&
-	(reader->node->ns != NULL) &&
-	((xmlStrEqual(reader->node->ns->href, XINCLUDE_NS)) ||
-	 (xmlStrEqual(reader->node->ns->href, XINCLUDE_OLD_NS)))) {
-	if (reader->xincctxt == NULL) {
-	    reader->xincctxt = xmlXIncludeNewContext(reader->ctxt->myDoc);
-	    xmlXIncludeSetFlags(reader->xincctxt,
-	                        reader->parserFlags & (~XML_PARSE_NOXINCNODE));
-	}
-	/*
-	 * expand that node and process it
-	 */
-	if (xmlTextReaderExpand(reader) == NULL)
-	    return -1;
-	xmlXIncludeProcessNode(reader->xincctxt, reader->node);
-    }
-    if ((reader->node != NULL) && (reader->node->type == XML_XINCLUDE_START)) {
-        reader->in_xinclude++;
-	goto get_next_node;
-    }
-    if ((reader->node != NULL) && (reader->node->type == XML_XINCLUDE_END)) {
-        reader->in_xinclude--;
-	goto get_next_node;
-    }
-#endif
     /*
      * Handle entities enter and exit when in entity replacement mode
      */
@@ -2102,9 +2050,6 @@ xmlNewTextReader(xmlParserInputBufferPtr input, const char *URI) {
      */
     ret->ctxt->docdict = 1;
     ret->dict = ret->ctxt->dict;
-#ifdef LIBXML_XINCLUDE_ENABLED
-    ret->xinclude = 0;
-#endif
     return(ret);
 }
 
@@ -2172,10 +2117,6 @@ xmlFreeTextReader(xmlTextReaderPtr reader) {
 	xmlSchemaFree(reader->xsdSchemas);
 	reader->xsdSchemas = NULL;
     }
-#endif
-#ifdef LIBXML_XINCLUDE_ENABLED
-    if (reader->xincctxt != NULL)
-	xmlXIncludeFreeContext(reader->xincctxt);
 #endif
     if (reader->faketext != NULL) {
 	xmlFreeNode(reader->faketext);
@@ -3011,10 +2952,6 @@ xmlTextReaderIsEmptyElement(xmlTextReaderPtr reader) {
 	return(0);
     if (reader->doc != NULL)
         return(1);
-#ifdef LIBXML_XINCLUDE_ENABLED
-    if (reader->in_xinclude > 0)
-        return(1);
-#endif
     return((reader->node->extra & NODE_IS_EMPTY) != 0);
 }
 
@@ -4973,20 +4910,6 @@ xmlTextReaderSetup(xmlTextReaderPtr reader,
      */
     reader->ctxt->docdict = 1;
     reader->ctxt->parseMode = XML_PARSE_READER;
-
-#ifdef LIBXML_XINCLUDE_ENABLED
-    if (reader->xincctxt != NULL) {
-	xmlXIncludeFreeContext(reader->xincctxt);
-	reader->xincctxt = NULL;
-    }
-    if (options & XML_PARSE_XINCLUDE) {
-        reader->xinclude = 1;
-	reader->xinclude_name = xmlDictLookup(reader->dict, XINCLUDE_NODE, -1);
-	options -= XML_PARSE_XINCLUDE;
-    } else
-        reader->xinclude = 0;
-    reader->in_xinclude = 0;
-#endif
 
     if (options & XML_PARSE_DTDVALID)
         reader->validate = XML_TEXTREADER_VALIDATE_DTD;

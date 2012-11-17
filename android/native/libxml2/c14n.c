@@ -1677,10 +1677,6 @@ xmlC14NProcessNode(xmlC14NCtxPtr ctx, xmlNodePtr cur)
         case XML_ELEMENT_DECL:
         case XML_ATTRIBUTE_DECL:
         case XML_ENTITY_DECL:
-#ifdef LIBXML_XINCLUDE_ENABLED
-        case XML_XINCLUDE_START:
-        case XML_XINCLUDE_END:
-#endif
             /* 
              * should be ignored according to "W3C Canonical XML" 
              */

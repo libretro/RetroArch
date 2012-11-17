@@ -46,7 +46,6 @@ LOCAL_LIBXML_SRC_FILES = $(LIBXML_PATH)/c14n.c \
 							$(LIBXML_PATH)/tree.c \
 							$(LIBXML_PATH)/uri.c \
 							$(LIBXML_PATH)/valid.c \
-							$(LIBXML_PATH)/xinclude.c \
 							$(LIBXML_PATH)/xmlIO.c \
 							$(LIBXML_PATH)/xmlmemory.c \
 							$(LIBXML_PATH)/xmlmodule.c \

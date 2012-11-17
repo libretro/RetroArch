@@ -844,11 +844,7 @@ xmlHasFeature(xmlFeature feature)
         case XML_WITH_XPTR:
             return(0);
         case XML_WITH_XINCLUDE:
-#ifdef LIBXML_XINCLUDE_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_ICONV:
 #ifdef LIBXML_ICONV_ENABLED
             return(1);

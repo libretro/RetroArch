@@ -77,9 +77,6 @@
 #include <libxml/xpath.h>
 #include <libxml/debugXML.h>
 #include <libxml/xmlerror.h>
-#ifdef LIBXML_XINCLUDE_ENABLED
-#include <libxml/xinclude.h>
-#endif
 #include <libxml/globals.h>
 #include <libxml/xmlreader.h>
 #ifdef LIBXML_SCHEMAS_ENABLED
@@ -150,9 +147,6 @@ static int memory = 0;
 #endif
 static int testIO = 0;
 static char *encoding = NULL;
-#ifdef LIBXML_XINCLUDE_ENABLED
-static int xinclude = 0;
-#endif
 static int dtdattrs = 0;
 static int loaddtd = 0;
 static xmllintReturnCode progresult = XMLLINT_RETURN_OK;
@@ -2039,18 +2033,6 @@ static void parseAndPrintFile(char *filename, xmlParserCtxtPtr rectxt) {
 	}
     }
 
-#ifdef LIBXML_XINCLUDE_ENABLED
-    if (xinclude) {
-	if ((timing) && (!repeat)) {
-	    startTimer();
-	}
-	if (xmlXIncludeProcessFlags(doc, options) < 0)
-	    progresult = XMLLINT_ERR_UNCLASS;
-	if ((timing) && (!repeat)) {
-	    endTimer("Xinclude processing");
-	}
-    }
-#endif
 
 #ifdef LIBXML_TREE_ENABLED
     /*
@@ -2536,11 +2518,6 @@ static void usage(const char *name) {
     printf("\t--nsclean : remove redundant namespace declarations\n");
     printf("\t--testIO : test user I/O support\n");
     printf("\t--auto : generate a small doc on the fly\n");
-#ifdef LIBXML_XINCLUDE_ENABLED
-    printf("\t--xinclude : do XInclude processing\n");
-    printf("\t--noxincludenode : same but do not generate XInclude nodes\n");
-    printf("\t--nofixup-base-uris : do not fixup xml:base uris\n");
-#endif
     printf("\t--loaddtd : fetch external DTD\n");
     printf("\t--dtdattr : loaddtd + populate the tree with inherited attributes \n");
 #ifdef LIBXML_READER_ENABLED
@@ -2714,25 +2691,6 @@ main(int argc, char **argv) {
 	else if ((!strcmp(argv[i], "-testIO")) ||
 	         (!strcmp(argv[i], "--testIO")))
 	    testIO++;
-#ifdef LIBXML_XINCLUDE_ENABLED
-	else if ((!strcmp(argv[i], "-xinclude")) ||
-	         (!strcmp(argv[i], "--xinclude"))) {
-	    xinclude++;
-	    options |= XML_PARSE_XINCLUDE;
-	}
-	else if ((!strcmp(argv[i], "-noxincludenode")) ||
-	         (!strcmp(argv[i], "--noxincludenode"))) {
-	    xinclude++;
-	    options |= XML_PARSE_XINCLUDE;
-	    options |= XML_PARSE_NOXINCNODE;
-	}
-	else if ((!strcmp(argv[i], "-nofixup-base-uris")) ||
-	         (!strcmp(argv[i], "--nofixup-base-uris"))) {
-	    xinclude++;
-	    options |= XML_PARSE_XINCLUDE;
-	    options |= XML_PARSE_NOBASEFIX;
-	}
-#endif
 #ifdef LIBXML_OUTPUT_ENABLED
 #ifdef HAVE_ZLIB_H
 	else if ((!strcmp(argv[i], "-compress")) ||

@@ -960,7 +960,7 @@ XMLPUBFUN xmlNsPtr XMLCALL
 /*
  * Changing the content.
  */
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XINCLUDE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
 XMLPUBFUN xmlAttrPtr XMLCALL	
 		xmlSetProp		(xmlNodePtr node,
 					 const xmlChar *name,
@@ -970,7 +970,7 @@ XMLPUBFUN xmlAttrPtr XMLCALL
 					 xmlNsPtr ns,
 					 const xmlChar *name,
 					 const xmlChar *value);
-#endif /* defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XINCLUDE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) */
+#endif /* defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) */
 XMLPUBFUN xmlChar * XMLCALL	
 		xmlGetNoNsProp		(xmlNodePtr node,
 					 const xmlChar *name);
@@ -1041,7 +1041,7 @@ XMLPUBFUN void XMLCALL
 XMLPUBFUN xmlChar * XMLCALL	
 		xmlNodeGetBase		(xmlDocPtr doc,
 					 xmlNodePtr cur);
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XINCLUDE_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 XMLPUBFUN void XMLCALL		
 		xmlNodeSetBase		(xmlNodePtr cur,
 					 const xmlChar *uri);

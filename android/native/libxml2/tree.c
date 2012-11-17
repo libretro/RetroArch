@@ -5033,7 +5033,7 @@ xmlNodeSetName(xmlNodePtr cur, const xmlChar *name) {
 }
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XINCLUDE_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 /**
  * xmlNodeSetBase:
  * @cur:  the node being changed
@@ -6618,7 +6618,7 @@ xmlUnsetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name) {
 }
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XINCLUDE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
 /**
  * xmlSetProp:
  * @node:  the node

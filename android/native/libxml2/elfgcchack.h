@@ -4639,7 +4639,7 @@ extern __typeof (xmlNodeListGetString) xmlNodeListGetString__internal_alias __at
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XINCLUDE_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlNodeSetBase
 extern __typeof (xmlNodeSetBase) xmlNodeSetBase __attribute((alias("xmlNodeSetBase__internal_alias")));
@@ -8163,7 +8163,7 @@ extern __typeof (xmlSetNs) xmlSetNs__internal_alias __attribute((visibility("hid
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XINCLUDE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
 #ifdef bottom_tree
 #undef xmlSetNsProp
 extern __typeof (xmlSetNsProp) xmlSetNsProp __attribute((alias("xmlSetNsProp__internal_alias")));
@@ -8175,7 +8175,7 @@ extern __typeof (xmlSetNsProp) xmlSetNsProp__internal_alias __attribute((visibil
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XINCLUDE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
+#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)
 #ifdef bottom_tree
 #undef xmlSetProp
 extern __typeof (xmlSetProp) xmlSetProp __attribute((alias("xmlSetProp__internal_alias")));
@@ -12968,127 +12968,6 @@ extern __typeof (xmlValidateRoot) xmlValidateRoot__internal_alias __attribute((v
 #endif
 #endif
 #endif
-
-#if defined(LIBXML_XINCLUDE_ENABLED)
-#ifdef bottom_xinclude
-#undef xmlXIncludeFreeContext
-extern __typeof (xmlXIncludeFreeContext) xmlXIncludeFreeContext __attribute((alias("xmlXIncludeFreeContext__internal_alias")));
-#else
-#ifndef xmlXIncludeFreeContext
-extern __typeof (xmlXIncludeFreeContext) xmlXIncludeFreeContext__internal_alias __attribute((visibility("hidden")));
-#define xmlXIncludeFreeContext xmlXIncludeFreeContext__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_XINCLUDE_ENABLED)
-#ifdef bottom_xinclude
-#undef xmlXIncludeNewContext
-extern __typeof (xmlXIncludeNewContext) xmlXIncludeNewContext __attribute((alias("xmlXIncludeNewContext__internal_alias")));
-#else
-#ifndef xmlXIncludeNewContext
-extern __typeof (xmlXIncludeNewContext) xmlXIncludeNewContext__internal_alias __attribute((visibility("hidden")));
-#define xmlXIncludeNewContext xmlXIncludeNewContext__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_XINCLUDE_ENABLED)
-#ifdef bottom_xinclude
-#undef xmlXIncludeProcess
-extern __typeof (xmlXIncludeProcess) xmlXIncludeProcess __attribute((alias("xmlXIncludeProcess__internal_alias")));
-#else
-#ifndef xmlXIncludeProcess
-extern __typeof (xmlXIncludeProcess) xmlXIncludeProcess__internal_alias __attribute((visibility("hidden")));
-#define xmlXIncludeProcess xmlXIncludeProcess__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_XINCLUDE_ENABLED)
-#ifdef bottom_xinclude
-#undef xmlXIncludeProcessFlags
-extern __typeof (xmlXIncludeProcessFlags) xmlXIncludeProcessFlags __attribute((alias("xmlXIncludeProcessFlags__internal_alias")));
-#else
-#ifndef xmlXIncludeProcessFlags
-extern __typeof (xmlXIncludeProcessFlags) xmlXIncludeProcessFlags__internal_alias __attribute((visibility("hidden")));
-#define xmlXIncludeProcessFlags xmlXIncludeProcessFlags__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_XINCLUDE_ENABLED)
-#ifdef bottom_xinclude
-#undef xmlXIncludeProcessFlagsData
-extern __typeof (xmlXIncludeProcessFlagsData) xmlXIncludeProcessFlagsData __attribute((alias("xmlXIncludeProcessFlagsData__internal_alias")));
-#else
-#ifndef xmlXIncludeProcessFlagsData
-extern __typeof (xmlXIncludeProcessFlagsData) xmlXIncludeProcessFlagsData__internal_alias __attribute((visibility("hidden")));
-#define xmlXIncludeProcessFlagsData xmlXIncludeProcessFlagsData__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_XINCLUDE_ENABLED)
-#ifdef bottom_xinclude
-#undef xmlXIncludeProcessNode
-extern __typeof (xmlXIncludeProcessNode) xmlXIncludeProcessNode __attribute((alias("xmlXIncludeProcessNode__internal_alias")));
-#else
-#ifndef xmlXIncludeProcessNode
-extern __typeof (xmlXIncludeProcessNode) xmlXIncludeProcessNode__internal_alias __attribute((visibility("hidden")));
-#define xmlXIncludeProcessNode xmlXIncludeProcessNode__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_XINCLUDE_ENABLED)
-#ifdef bottom_xinclude
-#undef xmlXIncludeProcessTree
-extern __typeof (xmlXIncludeProcessTree) xmlXIncludeProcessTree __attribute((alias("xmlXIncludeProcessTree__internal_alias")));
-#else
-#ifndef xmlXIncludeProcessTree
-extern __typeof (xmlXIncludeProcessTree) xmlXIncludeProcessTree__internal_alias __attribute((visibility("hidden")));
-#define xmlXIncludeProcessTree xmlXIncludeProcessTree__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_XINCLUDE_ENABLED)
-#ifdef bottom_xinclude
-#undef xmlXIncludeProcessTreeFlags
-extern __typeof (xmlXIncludeProcessTreeFlags) xmlXIncludeProcessTreeFlags __attribute((alias("xmlXIncludeProcessTreeFlags__internal_alias")));
-#else
-#ifndef xmlXIncludeProcessTreeFlags
-extern __typeof (xmlXIncludeProcessTreeFlags) xmlXIncludeProcessTreeFlags__internal_alias __attribute((visibility("hidden")));
-#define xmlXIncludeProcessTreeFlags xmlXIncludeProcessTreeFlags__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_XINCLUDE_ENABLED)
-#ifdef bottom_xinclude
-#undef xmlXIncludeProcessTreeFlagsData
-extern __typeof (xmlXIncludeProcessTreeFlagsData) xmlXIncludeProcessTreeFlagsData __attribute((alias("xmlXIncludeProcessTreeFlagsData__internal_alias")));
-#else
-#ifndef xmlXIncludeProcessTreeFlagsData
-extern __typeof (xmlXIncludeProcessTreeFlagsData) xmlXIncludeProcessTreeFlagsData__internal_alias __attribute((visibility("hidden")));
-#define xmlXIncludeProcessTreeFlagsData xmlXIncludeProcessTreeFlagsData__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_XINCLUDE_ENABLED)
-#ifdef bottom_xinclude
-#undef xmlXIncludeSetFlags
-extern __typeof (xmlXIncludeSetFlags) xmlXIncludeSetFlags __attribute((alias("xmlXIncludeSetFlags__internal_alias")));
-#else
-#ifndef xmlXIncludeSetFlags
-extern __typeof (xmlXIncludeSetFlags) xmlXIncludeSetFlags__internal_alias __attribute((visibility("hidden")));
-#define xmlXIncludeSetFlags xmlXIncludeSetFlags__internal_alias
-#endif
-#endif
-#endif
-
 
 #endif
 #endif
