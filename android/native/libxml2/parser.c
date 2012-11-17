@@ -923,11 +923,7 @@ xmlHasFeature(xmlFeature feature)
             return(0);
 #endif
         case XML_WITH_DEBUG:
-#ifdef LIBXML_DEBUG_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_DEBUG_MEM:
 #ifdef DEBUG_MEMORY_LOCATION
             return(1);

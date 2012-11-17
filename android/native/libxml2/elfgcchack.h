@@ -635,18 +635,6 @@ extern __typeof (xmlAutomataSetFinalState) xmlAutomataSetFinalState__internal_al
 #endif
 #endif
 
-#if defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlBoolToText
-extern __typeof (xmlBoolToText) xmlBoolToText __attribute((alias("xmlBoolToText__internal_alias")));
-#else
-#ifndef xmlBoolToText
-extern __typeof (xmlBoolToText) xmlBoolToText__internal_alias __attribute((visibility("hidden")));
-#define xmlBoolToText xmlBoolToText__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_tree
 #undef xmlBufferAdd
 extern __typeof (xmlBufferAdd) xmlBufferAdd __attribute((alias("xmlBufferAdd__internal_alias")));
@@ -1906,138 +1894,6 @@ extern __typeof (xmlDOMWrapRemoveNode) xmlDOMWrapRemoveNode __attribute((alias("
 #ifndef xmlDOMWrapRemoveNode
 extern __typeof (xmlDOMWrapRemoveNode) xmlDOMWrapRemoveNode__internal_alias __attribute((visibility("hidden")));
 #define xmlDOMWrapRemoveNode xmlDOMWrapRemoveNode__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlDebugCheckDocument
-extern __typeof (xmlDebugCheckDocument) xmlDebugCheckDocument __attribute((alias("xmlDebugCheckDocument__internal_alias")));
-#else
-#ifndef xmlDebugCheckDocument
-extern __typeof (xmlDebugCheckDocument) xmlDebugCheckDocument__internal_alias __attribute((visibility("hidden")));
-#define xmlDebugCheckDocument xmlDebugCheckDocument__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlDebugDumpAttr
-extern __typeof (xmlDebugDumpAttr) xmlDebugDumpAttr __attribute((alias("xmlDebugDumpAttr__internal_alias")));
-#else
-#ifndef xmlDebugDumpAttr
-extern __typeof (xmlDebugDumpAttr) xmlDebugDumpAttr__internal_alias __attribute((visibility("hidden")));
-#define xmlDebugDumpAttr xmlDebugDumpAttr__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlDebugDumpAttrList
-extern __typeof (xmlDebugDumpAttrList) xmlDebugDumpAttrList __attribute((alias("xmlDebugDumpAttrList__internal_alias")));
-#else
-#ifndef xmlDebugDumpAttrList
-extern __typeof (xmlDebugDumpAttrList) xmlDebugDumpAttrList__internal_alias __attribute((visibility("hidden")));
-#define xmlDebugDumpAttrList xmlDebugDumpAttrList__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlDebugDumpDTD
-extern __typeof (xmlDebugDumpDTD) xmlDebugDumpDTD __attribute((alias("xmlDebugDumpDTD__internal_alias")));
-#else
-#ifndef xmlDebugDumpDTD
-extern __typeof (xmlDebugDumpDTD) xmlDebugDumpDTD__internal_alias __attribute((visibility("hidden")));
-#define xmlDebugDumpDTD xmlDebugDumpDTD__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlDebugDumpDocument
-extern __typeof (xmlDebugDumpDocument) xmlDebugDumpDocument __attribute((alias("xmlDebugDumpDocument__internal_alias")));
-#else
-#ifndef xmlDebugDumpDocument
-extern __typeof (xmlDebugDumpDocument) xmlDebugDumpDocument__internal_alias __attribute((visibility("hidden")));
-#define xmlDebugDumpDocument xmlDebugDumpDocument__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlDebugDumpDocumentHead
-extern __typeof (xmlDebugDumpDocumentHead) xmlDebugDumpDocumentHead __attribute((alias("xmlDebugDumpDocumentHead__internal_alias")));
-#else
-#ifndef xmlDebugDumpDocumentHead
-extern __typeof (xmlDebugDumpDocumentHead) xmlDebugDumpDocumentHead__internal_alias __attribute((visibility("hidden")));
-#define xmlDebugDumpDocumentHead xmlDebugDumpDocumentHead__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlDebugDumpEntities
-extern __typeof (xmlDebugDumpEntities) xmlDebugDumpEntities __attribute((alias("xmlDebugDumpEntities__internal_alias")));
-#else
-#ifndef xmlDebugDumpEntities
-extern __typeof (xmlDebugDumpEntities) xmlDebugDumpEntities__internal_alias __attribute((visibility("hidden")));
-#define xmlDebugDumpEntities xmlDebugDumpEntities__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlDebugDumpNode
-extern __typeof (xmlDebugDumpNode) xmlDebugDumpNode __attribute((alias("xmlDebugDumpNode__internal_alias")));
-#else
-#ifndef xmlDebugDumpNode
-extern __typeof (xmlDebugDumpNode) xmlDebugDumpNode__internal_alias __attribute((visibility("hidden")));
-#define xmlDebugDumpNode xmlDebugDumpNode__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlDebugDumpNodeList
-extern __typeof (xmlDebugDumpNodeList) xmlDebugDumpNodeList __attribute((alias("xmlDebugDumpNodeList__internal_alias")));
-#else
-#ifndef xmlDebugDumpNodeList
-extern __typeof (xmlDebugDumpNodeList) xmlDebugDumpNodeList__internal_alias __attribute((visibility("hidden")));
-#define xmlDebugDumpNodeList xmlDebugDumpNodeList__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlDebugDumpOneNode
-extern __typeof (xmlDebugDumpOneNode) xmlDebugDumpOneNode __attribute((alias("xmlDebugDumpOneNode__internal_alias")));
-#else
-#ifndef xmlDebugDumpOneNode
-extern __typeof (xmlDebugDumpOneNode) xmlDebugDumpOneNode__internal_alias __attribute((visibility("hidden")));
-#define xmlDebugDumpOneNode xmlDebugDumpOneNode__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlDebugDumpString
-extern __typeof (xmlDebugDumpString) xmlDebugDumpString __attribute((alias("xmlDebugDumpString__internal_alias")));
-#else
-#ifndef xmlDebugDumpString
-extern __typeof (xmlDebugDumpString) xmlDebugDumpString__internal_alias __attribute((visibility("hidden")));
-#define xmlDebugDumpString xmlDebugDumpString__internal_alias
-#endif
 #endif
 #endif
 
@@ -3327,7 +3183,7 @@ extern __typeof (xmlGetNoNsProp) xmlGetNoNsProp__internal_alias __attribute((vis
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_DEBUG_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 #ifdef bottom_tree
 #undef xmlGetNodePath
 extern __typeof (xmlGetNodePath) xmlGetNodePath __attribute((alias("xmlGetNodePath__internal_alias")));
@@ -4326,30 +4182,6 @@ extern __typeof (xmlLockLibrary) xmlLockLibrary __attribute((alias("xmlLockLibra
 #ifndef xmlLockLibrary
 extern __typeof (xmlLockLibrary) xmlLockLibrary__internal_alias __attribute((visibility("hidden")));
 #define xmlLockLibrary xmlLockLibrary__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlLsCountNode
-extern __typeof (xmlLsCountNode) xmlLsCountNode __attribute((alias("xmlLsCountNode__internal_alias")));
-#else
-#ifndef xmlLsCountNode
-extern __typeof (xmlLsCountNode) xmlLsCountNode__internal_alias __attribute((visibility("hidden")));
-#define xmlLsCountNode xmlLsCountNode__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlLsOneNode
-extern __typeof (xmlLsOneNode) xmlLsOneNode __attribute((alias("xmlLsOneNode__internal_alias")));
-#else
-#ifndef xmlLsOneNode
-extern __typeof (xmlLsOneNode) xmlLsOneNode__internal_alias __attribute((visibility("hidden")));
-#define xmlLsOneNode xmlLsOneNode__internal_alias
-#endif
 #endif
 #endif
 
@@ -9107,174 +8939,6 @@ extern __typeof (xmlSetupParserForBuffer) xmlSetupParserForBuffer__internal_alia
 #endif
 #endif
 
-#if defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlShell
-extern __typeof (xmlShell) xmlShell __attribute((alias("xmlShell__internal_alias")));
-#else
-#ifndef xmlShell
-extern __typeof (xmlShell) xmlShell__internal_alias __attribute((visibility("hidden")));
-#define xmlShell xmlShell__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlShellBase
-extern __typeof (xmlShellBase) xmlShellBase __attribute((alias("xmlShellBase__internal_alias")));
-#else
-#ifndef xmlShellBase
-extern __typeof (xmlShellBase) xmlShellBase__internal_alias __attribute((visibility("hidden")));
-#define xmlShellBase xmlShellBase__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlShellCat
-extern __typeof (xmlShellCat) xmlShellCat __attribute((alias("xmlShellCat__internal_alias")));
-#else
-#ifndef xmlShellCat
-extern __typeof (xmlShellCat) xmlShellCat__internal_alias __attribute((visibility("hidden")));
-#define xmlShellCat xmlShellCat__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlShellDir
-extern __typeof (xmlShellDir) xmlShellDir __attribute((alias("xmlShellDir__internal_alias")));
-#else
-#ifndef xmlShellDir
-extern __typeof (xmlShellDir) xmlShellDir__internal_alias __attribute((visibility("hidden")));
-#define xmlShellDir xmlShellDir__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlShellDu
-extern __typeof (xmlShellDu) xmlShellDu __attribute((alias("xmlShellDu__internal_alias")));
-#else
-#ifndef xmlShellDu
-extern __typeof (xmlShellDu) xmlShellDu__internal_alias __attribute((visibility("hidden")));
-#define xmlShellDu xmlShellDu__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlShellList
-extern __typeof (xmlShellList) xmlShellList __attribute((alias("xmlShellList__internal_alias")));
-#else
-#ifndef xmlShellList
-extern __typeof (xmlShellList) xmlShellList__internal_alias __attribute((visibility("hidden")));
-#define xmlShellList xmlShellList__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlShellLoad
-extern __typeof (xmlShellLoad) xmlShellLoad __attribute((alias("xmlShellLoad__internal_alias")));
-#else
-#ifndef xmlShellLoad
-extern __typeof (xmlShellLoad) xmlShellLoad__internal_alias __attribute((visibility("hidden")));
-#define xmlShellLoad xmlShellLoad__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlShellPrintNode
-extern __typeof (xmlShellPrintNode) xmlShellPrintNode __attribute((alias("xmlShellPrintNode__internal_alias")));
-#else
-#ifndef xmlShellPrintNode
-extern __typeof (xmlShellPrintNode) xmlShellPrintNode__internal_alias __attribute((visibility("hidden")));
-#define xmlShellPrintNode xmlShellPrintNode__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlShellPrintXPathError
-extern __typeof (xmlShellPrintXPathError) xmlShellPrintXPathError __attribute((alias("xmlShellPrintXPathError__internal_alias")));
-#else
-#ifndef xmlShellPrintXPathError
-extern __typeof (xmlShellPrintXPathError) xmlShellPrintXPathError__internal_alias __attribute((visibility("hidden")));
-#define xmlShellPrintXPathError xmlShellPrintXPathError__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlShellPrintXPathResult
-extern __typeof (xmlShellPrintXPathResult) xmlShellPrintXPathResult __attribute((alias("xmlShellPrintXPathResult__internal_alias")));
-#else
-#ifndef xmlShellPrintXPathResult
-extern __typeof (xmlShellPrintXPathResult) xmlShellPrintXPathResult__internal_alias __attribute((visibility("hidden")));
-#define xmlShellPrintXPathResult xmlShellPrintXPathResult__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlShellPwd
-extern __typeof (xmlShellPwd) xmlShellPwd __attribute((alias("xmlShellPwd__internal_alias")));
-#else
-#ifndef xmlShellPwd
-extern __typeof (xmlShellPwd) xmlShellPwd__internal_alias __attribute((visibility("hidden")));
-#define xmlShellPwd xmlShellPwd__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlShellSave
-extern __typeof (xmlShellSave) xmlShellSave __attribute((alias("xmlShellSave__internal_alias")));
-#else
-#ifndef xmlShellSave
-extern __typeof (xmlShellSave) xmlShellSave__internal_alias __attribute((visibility("hidden")));
-#define xmlShellSave xmlShellSave__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_VALID_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlShellValidate
-extern __typeof (xmlShellValidate) xmlShellValidate __attribute((alias("xmlShellValidate__internal_alias")));
-#else
-#ifndef xmlShellValidate
-extern __typeof (xmlShellValidate) xmlShellValidate__internal_alias __attribute((visibility("hidden")));
-#define xmlShellValidate xmlShellValidate__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
-#ifdef bottom_debugXML
-#undef xmlShellWrite
-extern __typeof (xmlShellWrite) xmlShellWrite __attribute((alias("xmlShellWrite__internal_alias")));
-#else
-#ifndef xmlShellWrite
-extern __typeof (xmlShellWrite) xmlShellWrite__internal_alias __attribute((visibility("hidden")));
-#define xmlShellWrite xmlShellWrite__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_parser
 #undef xmlSkipBlankChars
 extern __typeof (xmlSkipBlankChars) xmlSkipBlankChars __attribute((alias("xmlSkipBlankChars__internal_alias")));
@@ -13893,7 +13557,7 @@ extern __typeof (xmlValidateElementDecl) xmlValidateElementDecl__internal_alias 
 #endif
 #endif
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XPATH_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) || defined(LIBXML_DEBUG_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED) || defined(LIBXML_DOCB_ENABLED)
+#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XPATH_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED) || defined(LIBXML_DOCB_ENABLED)
 #ifdef bottom_tree
 #undef xmlValidateNCName
 extern __typeof (xmlValidateNCName) xmlValidateNCName __attribute((alias("xmlValidateNCName__internal_alias")));
@@ -14573,30 +14237,6 @@ extern __typeof (xmlXPathCtxtCompile) xmlXPathCtxtCompile __attribute((alias("xm
 #ifndef xmlXPathCtxtCompile
 extern __typeof (xmlXPathCtxtCompile) xmlXPathCtxtCompile__internal_alias __attribute((visibility("hidden")));
 #define xmlXPathCtxtCompile xmlXPathCtxtCompile__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_xpath
-#undef xmlXPathDebugDumpCompExpr
-extern __typeof (xmlXPathDebugDumpCompExpr) xmlXPathDebugDumpCompExpr __attribute((alias("xmlXPathDebugDumpCompExpr__internal_alias")));
-#else
-#ifndef xmlXPathDebugDumpCompExpr
-extern __typeof (xmlXPathDebugDumpCompExpr) xmlXPathDebugDumpCompExpr__internal_alias __attribute((visibility("hidden")));
-#define xmlXPathDebugDumpCompExpr xmlXPathDebugDumpCompExpr__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_DEBUG_ENABLED)
-#ifdef bottom_xpath
-#undef xmlXPathDebugDumpObject
-extern __typeof (xmlXPathDebugDumpObject) xmlXPathDebugDumpObject __attribute((alias("xmlXPathDebugDumpObject__internal_alias")));
-#else
-#ifndef xmlXPathDebugDumpObject
-extern __typeof (xmlXPathDebugDumpObject) xmlXPathDebugDumpObject__internal_alias __attribute((visibility("hidden")));
-#define xmlXPathDebugDumpObject xmlXPathDebugDumpObject__internal_alias
 #endif
 #endif
 #endif

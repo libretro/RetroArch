@@ -616,7 +616,7 @@ struct _xmlDOMWrapCtxt {
 /*
  * Some helper functions
  */
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XPATH_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) || defined(LIBXML_DEBUG_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED) || defined(LIBXML_DOCB_ENABLED)
+#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XPATH_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED) || defined(LIBXML_DOCB_ENABLED)
 XMLPUBFUN int XMLCALL
 		xmlValidateNCName	(const xmlChar *value,
 					 int space);
@@ -867,10 +867,10 @@ XMLPUBFUN xmlNodePtr XMLCALL
  */
 XMLPUBFUN long XMLCALL		
 		xmlGetLineNo		(xmlNodePtr node);
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_DEBUG_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 XMLPUBFUN xmlChar * XMLCALL	
 		xmlGetNodePath		(xmlNodePtr node);
-#endif /* defined(LIBXML_TREE_ENABLED) || defined(LIBXML_DEBUG_ENABLED) */
+#endif /* defined(LIBXML_TREE_ENABLED) */
 XMLPUBFUN xmlNodePtr XMLCALL	
 		xmlDocGetRootElement	(xmlDocPtr doc);
 XMLPUBFUN xmlNodePtr XMLCALL	

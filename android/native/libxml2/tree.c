@@ -34,9 +34,6 @@
 #include <libxml/xmlerror.h>
 #include <libxml/parserInternals.h>
 #include <libxml/globals.h>
-#ifdef LIBXML_DEBUG_ENABLED
-#include <libxml/debugXML.h>
-#endif
 
 int __xmlRegisterCallbacks = 0;
 
@@ -346,7 +343,7 @@ xmlSplitQName3(const xmlChar *name, int *len) {
 
 #define CUR_SCHAR(s, l) xmlStringCurrentChar(NULL, s, &l)
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XPATH_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) || defined(LIBXML_DEBUG_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED) || defined(LIBXML_DOCB_ENABLED)
+#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_XPATH_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED) || defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_WRITER_ENABLED) || defined(LIBXML_DOCB_ENABLED)
 /**
  * xmlValidateNCName:
  * @value: the value to check
@@ -1196,11 +1193,6 @@ xmlFreeDoc(xmlDocPtr cur) {
 #endif
 	return;
     }
-#ifdef LIBXML_DEBUG_RUNTIME
-#ifdef LIBXML_DEBUG_ENABLED
-    xmlDebugCheckDocument(stderr, cur);
-#endif
-#endif
 
     if (cur != NULL) dict = cur->dict;
 
@@ -4527,7 +4519,7 @@ xmlGetLineNo(xmlNodePtr node)
     return result;
 }
 
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_DEBUG_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 /**
  * xmlGetNodePath:
  * @node: a node

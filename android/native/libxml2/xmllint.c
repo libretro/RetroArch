@@ -119,10 +119,6 @@ typedef enum {
     XMLLINT_ERR_MEM = 9,	/* Out of memory error */
     XMLLINT_ERR_XPATH = 10	/* XPath evaluation error */
 } xmllintReturnCode;
-#ifdef LIBXML_DEBUG_ENABLED
-static int shell = 0;
-static int debugent = 0;
-#endif
 static int debug = 0;
 static int maxmem = 0;
 #ifdef LIBXML_TREE_ENABLED
@@ -769,50 +765,6 @@ xmlHTMLValidityWarning(void *ctx, const char *msg, ...)
  *			Shell Interface					*
  *									*
  ************************************************************************/
-#ifdef LIBXML_DEBUG_ENABLED
-#ifdef LIBXML_XPATH_ENABLED
-/**
- * xmlShellReadline:
- * @prompt:  the prompt value
- *
- * Read a string
- *
- * Returns a pointer to it or NULL on EOF the caller is expected to
- *     free the returned string.
- */
-static char *
-xmlShellReadline(char *prompt) {
-#ifdef HAVE_LIBREADLINE
-    char *line_read;
-
-    /* Get a line from the user. */
-    line_read = readline (prompt);
-
-    /* If the line has any text in it, save it on the history. */
-    if (line_read && *line_read)
-	add_history (line_read);
-
-    return (line_read);
-#else
-    char line_read[501];
-    char *ret;
-    int len;
-
-    if (prompt != NULL)
-	fprintf(stdout, "%s", prompt);
-    if (!fgets(line_read, 500, stdin))
-        return(NULL);
-    line_read[500] = 0;
-    len = strlen(line_read);
-    ret = (char *) malloc(len + 1);
-    if (ret != NULL) {
-	memcpy (ret, line_read, len + 1);
-    }
-    return(ret);
-#endif
-}
-#endif /* LIBXML_XPATH_ENABLED */
-#endif /* LIBXML_DEBUG_ENABLED */
 
 /************************************************************************
  *									*
@@ -1758,7 +1710,7 @@ static void processNode(xmlTextReaderPtr reader) {
 	    match = xmlPatternMatch(patternc, xmlTextReaderCurrentNode(reader));
 
 	    if (match) {
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_DEBUG_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 		path = xmlGetNodePath(xmlTextReaderCurrentNode(reader));
 		printf("Node %s matches pattern %s\n", path, pattern);
 #else
@@ -1779,7 +1731,7 @@ static void processNode(xmlTextReaderPtr reader) {
                     xmlFreeStreamCtxt(patstream);
 		    patstream = NULL;
 		} else if (ret != match) {
-#if defined(LIBXML_TREE_ENABLED) || defined(LIBXML_DEBUG_ENABLED)
+#if defined(LIBXML_TREE_ENABLED)
 		    if (path == NULL) {
 		        path = xmlGetNodePath(
 		                       xmlTextReaderCurrentNode(reader));
@@ -2363,18 +2315,6 @@ static void parseAndPrintFile(char *filename, xmlParserCtxtPtr rectxt) {
     }
 #endif
 
-#ifdef LIBXML_DEBUG_ENABLED
-#ifdef LIBXML_XPATH_ENABLED
-    /*
-     * shell interaction
-     */
-    if (shell) {
-        xmlXPathOrderDocElems(doc);
-        xmlShell(doc, filename, xmlShellReadline, stdout);
-    }
-#endif
-#endif
-
 #ifdef LIBXML_TREE_ENABLED
     /*
      * test intermediate copy if needed.
@@ -2436,9 +2376,6 @@ static void parseAndPrintFile(char *filename, xmlParserCtxtPtr rectxt) {
 	/*
 	 * print it.
 	 */
-#ifdef LIBXML_DEBUG_ENABLED
-	if (!debug) {
-#endif
 	    if ((timing) && (!repeat)) {
 		startTimer();
 	    }
@@ -2592,25 +2529,6 @@ static void parseAndPrintFile(char *filename, xmlParserCtxtPtr rectxt) {
 	    if ((timing) && (!repeat)) {
 		endTimer("Saving");
 	    }
-#ifdef LIBXML_DEBUG_ENABLED
-	} else {
-	    FILE *out;
-	    if (output == NULL)
-	        out = stdout;
-	    else {
-		out = fopen(output,"wb");
-	    }
-	    if (out != NULL) {
-		xmlDebugDumpDocument(out, doc);
-
-		if (output != NULL)
-		    fclose(out);
-	    } else {
-		fprintf(stderr, "failed to open %s\n", output);
-		progresult = XMLLINT_ERR_OUT;
-	    }
-	}
-#endif
     }
 #endif /* LIBXML_OUTPUT_ENABLED */
 
@@ -2797,13 +2715,6 @@ static void parseAndPrintFile(char *filename, xmlParserCtxtPtr rectxt) {
     }
 #endif
 
-#ifdef LIBXML_DEBUG_ENABLED
-#if defined(LIBXML_VALID_ENABLED)
-    if ((debugent) && (!html))
-	xmlDebugDumpEntities(stderr, doc);
-#endif
-#endif
-
     /*
      * free it.
      */
@@ -2868,11 +2779,6 @@ static void usage(const char *name) {
     printf("\tParse the XML files\n");
 #endif /* LIBXML_OUTPUT_ENABLED */
     printf("\t--version : display the version of the XML library used\n");
-#ifdef LIBXML_DEBUG_ENABLED
-    printf("\t--debug : dump a debug tree of the in-memory document\n");
-    printf("\t--shell : run a navigating shell\n");
-    printf("\t--debugent : debug the entities defined in the document\n");
-#else
 #ifdef LIBXML_READER_ENABLED
     printf("\t--debug : dump the nodes content when using --stream\n");
 #endif /* LIBXML_READER_ENABLED */
@@ -3010,13 +2916,6 @@ main(int argc, char **argv) {
 	if ((!strcmp(argv[i], "-debug")) || (!strcmp(argv[i], "--debug")))
 	    debug++;
 	else
-#ifdef LIBXML_DEBUG_ENABLED
-	if ((!strcmp(argv[i], "-shell")) ||
-	         (!strcmp(argv[i], "--shell"))) {
-	    shell++;
-            noout = 1;
-        } else
-#endif
 #ifdef LIBXML_TREE_ENABLED
 	if ((!strcmp(argv[i], "-copy")) || (!strcmp(argv[i], "--copy")))
 	    copy++;
@@ -3173,13 +3072,6 @@ main(int argc, char **argv) {
 	    xmlPedanticParserDefault(1);
 	    options |= XML_PARSE_PEDANTIC;
         }
-#ifdef LIBXML_DEBUG_ENABLED
-	else if ((!strcmp(argv[i], "-debugent")) ||
-		 (!strcmp(argv[i], "--debugent"))) {
-	    debugent++;
-	    xmlParserDebugEntities = 1;
-	}
-#endif
 #ifdef LIBXML_C14N_ENABLED
 	else if ((!strcmp(argv[i], "-c14n")) ||
 		 (!strcmp(argv[i], "--c14n"))) {

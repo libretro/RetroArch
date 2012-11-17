@@ -260,15 +260,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_DEBUG_ENABLED:
- *
- * Whether Debugging module is configured in
- */
-#if 0
-#define LIBXML_DEBUG_ENABLED
-#endif
-
-/**
  * DEBUG_MEMORY_LOCATION:
  *
  * Whether the memory debugging is configured in

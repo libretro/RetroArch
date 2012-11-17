@@ -356,16 +356,6 @@ XMLPUBFUN void XMLCALL
 		xmlXPathErr	(xmlXPathParserContextPtr ctxt,
 				 int error);
 
-#ifdef LIBXML_DEBUG_ENABLED
-XMLPUBFUN void XMLCALL		
-		xmlXPathDebugDumpObject	(FILE *output,
-					 xmlXPathObjectPtr cur,
-					 int depth);
-XMLPUBFUN void XMLCALL		
-	    xmlXPathDebugDumpCompExpr(FILE *output,
-					 xmlXPathCompExprPtr comp,
-					 int depth);
-#endif
 /**
  * NodeSet handling.
  */

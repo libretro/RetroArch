@@ -560,10 +560,6 @@ xmlTextReaderDebug(xmlTextReaderPtr reader) {
     if (reader->input->buffer == NULL) {
 	fprintf(stderr, "buffer is NULL\n");
     } else {
-#ifdef LIBXML_DEBUG_ENABLED
-	xmlDebugDumpString(stderr,
-		&reader->input->buffer->content[reader->cur]);
-#endif
 	fprintf(stderr, "\n");
     }
 }

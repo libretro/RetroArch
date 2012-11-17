@@ -31,9 +31,6 @@
 
 /* #define DEBUG_XINCLUDE */
 #ifdef DEBUG_XINCLUDE
-#ifdef LIBXML_DEBUG_ENABLED
-#include <libxml/debugXML.h>
-#endif
 #endif
 
 /************************************************************************
