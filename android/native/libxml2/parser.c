@@ -800,11 +800,7 @@ xmlHasFeature(xmlFeature feature)
             return(0);
 #endif
         case XML_WITH_PATTERN:
-#ifdef LIBXML_PATTERN_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_WRITER:
 #ifdef LIBXML_WRITER_ENABLED
             return(1);

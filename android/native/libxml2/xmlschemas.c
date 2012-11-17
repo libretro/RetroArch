@@ -63,9 +63,6 @@
 #include <libxml/dict.h>
 #include <libxml/encoding.h>
 #include <libxml/xmlIO.h>
-#ifdef LIBXML_PATTERN_ENABLED
-#include <libxml/pattern.h>
-#endif
 #ifdef LIBXML_READER_ENABLED
 #include <libxml/xmlreader.h>
 #endif

@@ -40,9 +40,6 @@
 #ifdef LIBXML_XINCLUDE_ENABLED
 #include <libxml/xinclude.h>
 #endif
-#ifdef LIBXML_PATTERN_ENABLED
-#include <libxml/pattern.h>
-#endif
 
 #define MAX_ERR_MSG_SIZE 64000
 
@@ -167,11 +164,6 @@ struct _xmlTextReader {
     const xmlChar *    xinclude_name;	/* the xinclude name from dict */
     xmlXIncludeCtxtPtr xincctxt;	/* the xinclude context */
     int                in_xinclude;	/* counts for xinclude */
-#endif
-#ifdef LIBXML_PATTERN_ENABLED
-    int                patternNr;       /* number of preserve patterns */
-    int                patternMax;      /* max preserve patterns */
-    xmlPatternPtr     *patternTab;      /* array of preserve patterns */
 #endif
     int                preserves;	/* level of preserves */
     int                parserFlags;	/* the set of options set */
@@ -1552,18 +1544,6 @@ node_found:
 	}
     }
 #endif /* LIBXML_REGEXP_ENABLED */
-#ifdef LIBXML_PATTERN_ENABLED
-    if ((reader->patternNr > 0) && (reader->state != XML_TEXTREADER_END) &&
-        (reader->state != XML_TEXTREADER_BACKTRACK)) {
-        int i;
-	for (i = 0;i < reader->patternNr;i++) {
-	     if (xmlPatternMatch(reader->patternTab[i], reader->node) == 1) {
-	         xmlTextReaderPreserve(reader);
-		 break;
-             }
-	}
-    }
-#endif /* LIBXML_PATTERN_ENABLED */
 #ifdef LIBXML_SCHEMAS_ENABLED
     if ((reader->validate == XML_TEXTREADER_VALIDATE_XSD) &&
         (reader->xsdValidErrors == 0) &&
@@ -2125,10 +2105,6 @@ xmlNewTextReader(xmlParserInputBufferPtr input, const char *URI) {
 #ifdef LIBXML_XINCLUDE_ENABLED
     ret->xinclude = 0;
 #endif
-#ifdef LIBXML_PATTERN_ENABLED
-    ret->patternMax = 0;
-    ret->patternTab = NULL;
-#endif
     return(ret);
 }
 
@@ -2200,16 +2176,6 @@ xmlFreeTextReader(xmlTextReaderPtr reader) {
 #ifdef LIBXML_XINCLUDE_ENABLED
     if (reader->xincctxt != NULL)
 	xmlXIncludeFreeContext(reader->xincctxt);
-#endif
-#ifdef LIBXML_PATTERN_ENABLED
-    if (reader->patternTab != NULL) {
-        int i;
-	for (i = 0;i < reader->patternNr;i++) {
-	    if (reader->patternTab[i] != NULL)
-	        xmlFreePattern(reader->patternTab[i]);
-	}
-	xmlFree(reader->patternTab);
-    }
 #endif
     if (reader->faketext != NULL) {
 	xmlFreeNode(reader->faketext);
@@ -3908,59 +3874,6 @@ xmlTextReaderPreserve(xmlTextReaderPtr reader) {
     return(cur);
 }
 
-#ifdef LIBXML_PATTERN_ENABLED
-/**
- * xmlTextReaderPreservePattern:
- * @reader:  the xmlTextReaderPtr used
- * @pattern:  an XPath subset pattern
- * @namespaces: the prefix definitions, array of [URI, prefix] or NULL
- *
- * This tells the XML Reader to preserve all nodes matched by the
- * pattern. The caller must also use xmlTextReaderCurrentDoc() to
- * keep an handle on the resulting document once parsing has finished
- *
- * Returns a positive number in case of success and -1 in case of error
- */
-int
-xmlTextReaderPreservePattern(xmlTextReaderPtr reader, const xmlChar *pattern,
-                             const xmlChar **namespaces)
-{
-    xmlPatternPtr comp;
-
-    if ((reader == NULL) || (pattern == NULL))
-	return(-1);
-
-    comp = xmlPatterncompile(pattern, reader->dict, 0, namespaces);
-    if (comp == NULL)
-        return(-1);
-
-    if (reader->patternMax <= 0) {
-	reader->patternMax = 4;
-	reader->patternTab = (xmlPatternPtr *) xmlMalloc(reader->patternMax *
-					      sizeof(reader->patternTab[0]));
-        if (reader->patternTab == NULL) {
-            xmlGenericError(xmlGenericErrorContext, "xmlMalloc failed !\n");
-            return (-1);
-        }
-    }
-    if (reader->patternNr >= reader->patternMax) {
-        xmlPatternPtr *tmp;
-        reader->patternMax *= 2;
-	tmp = (xmlPatternPtr *) xmlRealloc(reader->patternTab,
-                                      reader->patternMax *
-                                      sizeof(reader->patternTab[0]));
-        if (tmp == NULL) {
-            xmlGenericError(xmlGenericErrorContext, "xmlRealloc failed !\n");
-	    reader->patternMax /= 2;
-            return (-1);
-        }
-	reader->patternTab = tmp;
-    }
-    reader->patternTab[reader->patternNr] = comp;
-    return(reader->patternNr++);
-}
-#endif
-
 /**
  * xmlTextReaderCurrentDoc:
  * @reader:  the xmlTextReaderPtr used
@@ -5073,19 +4986,6 @@ xmlTextReaderSetup(xmlTextReaderPtr reader,
     } else
         reader->xinclude = 0;
     reader->in_xinclude = 0;
-#endif
-#ifdef LIBXML_PATTERN_ENABLED
-    if (reader->patternTab == NULL) {
-        reader->patternNr = 0;
-	reader->patternMax = 0;
-    }
-    while (reader->patternNr > 0) {
-        reader->patternNr--;
-	if (reader->patternTab[reader->patternNr] != NULL) {
-	    xmlFreePattern(reader->patternTab[reader->patternNr]);
-            reader->patternTab[reader->patternNr] = NULL;
-	}
-    }
 #endif
 
     if (options & XML_PARSE_DTDVALID)

@@ -134,15 +134,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_PATTERN_ENABLED:
- *
- * Whether the xmlPattern node selection interface is configured in
- */
-#if 0
-#define LIBXML_PATTERN_ENABLED
-#endif
-
-/**
  * LIBXML_WRITER_ENABLED:
  *
  * Whether the xmlWriter saving interface is configured in

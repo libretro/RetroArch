@@ -89,9 +89,6 @@
 #include <libxml/relaxng.h>
 #include <libxml/xmlschemas.h>
 #endif
-#ifdef LIBXML_PATTERN_ENABLED
-#include <libxml/pattern.h>
-#endif
 #ifdef LIBXML_C14N_ENABLED
 #include <libxml/c14n.h>
 #endif
@@ -183,11 +180,6 @@ static int nbregister = 0;
 #ifdef LIBXML_SAX1_ENABLED
 static int sax1 = 0;
 #endif /* LIBXML_SAX1_ENABLED */
-#ifdef LIBXML_PATTERN_ENABLED
-static const char *pattern = NULL;
-static xmlPatternPtr patternc = NULL;
-static xmlStreamCtxtPtr patstream = NULL;
-#endif
 #ifdef LIBXML_XPATH_ENABLED
 static const char *xpathquery = NULL;
 #endif
@@ -1693,68 +1685,6 @@ static void processNode(xmlTextReaderPtr reader) {
 	    printf(" %s\n", value);
 	}
     }
-#ifdef LIBXML_PATTERN_ENABLED
-    if (patternc) {
-        xmlChar *path = NULL;
-        int match = -1;
-
-	if (type == XML_READER_TYPE_ELEMENT) {
-	    /* do the check only on element start */
-	    match = xmlPatternMatch(patternc, xmlTextReaderCurrentNode(reader));
-
-	    if (match) {
-#if defined(LIBXML_TREE_ENABLED)
-		path = xmlGetNodePath(xmlTextReaderCurrentNode(reader));
-		printf("Node %s matches pattern %s\n", path, pattern);
-#else
-                printf("Node %s matches pattern %s\n",
-                       xmlTextReaderConstName(reader), pattern);
-#endif
-	    }
-	}
-	if (patstream != NULL) {
-	    int ret;
-
-	    if (type == XML_READER_TYPE_ELEMENT) {
-		ret = xmlStreamPush(patstream,
-		                    xmlTextReaderConstLocalName(reader),
-				    xmlTextReaderConstNamespaceUri(reader));
-		if (ret < 0) {
-		    fprintf(stderr, "xmlStreamPush() failure\n");
-                    xmlFreeStreamCtxt(patstream);
-		    patstream = NULL;
-		} else if (ret != match) {
-#if defined(LIBXML_TREE_ENABLED)
-		    if (path == NULL) {
-		        path = xmlGetNodePath(
-		                       xmlTextReaderCurrentNode(reader));
-		    }
-#endif
-		    fprintf(stderr,
-		            "xmlPatternMatch and xmlStreamPush disagree\n");
-                    if (path != NULL)
-                        fprintf(stderr, "  pattern %s node %s\n",
-                                pattern, path);
-                    else
-		        fprintf(stderr, "  pattern %s node %s\n",
-			    pattern, xmlTextReaderConstName(reader));
-		}
-
-	    }
-	    if ((type == XML_READER_TYPE_END_ELEMENT) ||
-	        ((type == XML_READER_TYPE_ELEMENT) && (empty))) {
-	        ret = xmlStreamPop(patstream);
-		if (ret < 0) {
-		    fprintf(stderr, "xmlStreamPop() failure\n");
-                    xmlFreeStreamCtxt(patstream);
-		    patstream = NULL;
-		}
-	    }
-	}
-	if (path != NULL)
-	    xmlFree(path);
-    }
-#endif
 }
 
 static void streamFile(char *filename) {
@@ -1780,28 +1710,6 @@ static void streamFile(char *filename) {
     } else
 #endif
 	reader = xmlReaderForFile(filename, NULL, options);
-#ifdef LIBXML_PATTERN_ENABLED
-    if (pattern != NULL) {
-        patternc = xmlPatterncompile((const xmlChar *) pattern, NULL, 0, NULL);
-	if (patternc == NULL) {
-	    xmlGenericError(xmlGenericErrorContext,
-		    "Pattern %s failed to compile\n", pattern);
-            progresult = XMLLINT_ERR_SCHEMAPAT;
-	    pattern = NULL;
-	}
-    }
-    if (patternc != NULL) {
-        patstream = xmlPatternGetStreamCtxt(patternc);
-	if (patstream != NULL) {
-	    ret = xmlStreamPush(patstream, NULL, NULL);
-	    if (ret < 0) {
-		fprintf(stderr, "xmlStreamPush() failure\n");
-		xmlFreeStreamCtxt(patstream);
-		patstream = NULL;
-            }
-	}
-    }
-#endif
 
 
     if (reader != NULL) {
@@ -1853,9 +1761,6 @@ static void streamFile(char *filename) {
 	ret = xmlTextReaderRead(reader);
 	while (ret == 1) {
 	    if ((debug)
-#ifdef LIBXML_PATTERN_ENABLED
-	        || (patternc)
-#endif
 	       )
 		processNode(reader);
 	    ret = xmlTextReaderRead(reader);
@@ -1905,12 +1810,6 @@ static void streamFile(char *filename) {
 	fprintf(stderr, "Unable to open %s\n", filename);
 	progresult = XMLLINT_ERR_UNCLASS;
     }
-#ifdef LIBXML_PATTERN_ENABLED
-    if (patstream != NULL) {
-	xmlFreeStreamCtxt(patstream);
-	patstream = NULL;
-    }
-#endif
 #ifdef HAVE_SYS_MMAN_H
     if (memory) {
         xmlFreeParserInputBuffer(input);
@@ -1924,42 +1823,6 @@ static void walkDoc(xmlDocPtr doc) {
     xmlTextReaderPtr reader;
     int ret;
 
-#ifdef LIBXML_PATTERN_ENABLED
-    xmlNodePtr root;
-    const xmlChar *namespaces[22];
-    int i;
-    xmlNsPtr ns;
-
-    root = xmlDocGetRootElement(doc);
-    for (ns = root->nsDef, i = 0;ns != NULL && i < 20;ns=ns->next) {
-        namespaces[i++] = ns->href;
-        namespaces[i++] = ns->prefix;
-    }
-    namespaces[i++] = NULL;
-    namespaces[i] = NULL;
-
-    if (pattern != NULL) {
-        patternc = xmlPatterncompile((const xmlChar *) pattern, doc->dict,
-	                             0, &namespaces[0]);
-	if (patternc == NULL) {
-	    xmlGenericError(xmlGenericErrorContext,
-		    "Pattern %s failed to compile\n", pattern);
-            progresult = XMLLINT_ERR_SCHEMAPAT;
-	    pattern = NULL;
-	}
-    }
-    if (patternc != NULL) {
-        patstream = xmlPatternGetStreamCtxt(patternc);
-	if (patstream != NULL) {
-	    ret = xmlStreamPush(patstream, NULL, NULL);
-	    if (ret < 0) {
-		fprintf(stderr, "xmlStreamPush() failure\n");
-		xmlFreeStreamCtxt(patstream);
-		patstream = NULL;
-            }
-	}
-    }
-#endif /* LIBXML_PATTERN_ENABLED */
     reader = xmlReaderWalker(doc);
     if (reader != NULL) {
 	if ((timing) && (!repeat)) {
@@ -1968,9 +1831,6 @@ static void walkDoc(xmlDocPtr doc) {
 	ret = xmlTextReaderRead(reader);
 	while (ret == 1) {
 	    if ((debug)
-#ifdef LIBXML_PATTERN_ENABLED
-	        || (patternc)
-#endif
 	       )
 		processNode(reader);
 	    ret = xmlTextReaderRead(reader);
@@ -1987,12 +1847,6 @@ static void walkDoc(xmlDocPtr doc) {
 	fprintf(stderr, "Failed to crate a reader from the document\n");
 	progresult = XMLLINT_ERR_UNCLASS;
     }
-#ifdef LIBXML_PATTERN_ENABLED
-    if (patstream != NULL) {
-	xmlFreeStreamCtxt(patstream);
-	patstream = NULL;
-    }
-#endif
 }
 #endif /* LIBXML_READER_ENABLED */
 
@@ -2843,9 +2697,6 @@ static void usage(const char *name) {
     printf("\t--stream : use the streaming interface to process very large files\n");
     printf("\t--walker : create a reader and walk though the resulting doc\n");
 #endif /* LIBXML_READER_ENABLED */
-#ifdef LIBXML_PATTERN_ENABLED
-    printf("\t--pattern pattern_value : test the pattern support\n");
-#endif
     printf("\t--chkregister : verify the node registration code\n");
 #ifdef LIBXML_SCHEMAS_ENABLED
     printf("\t--relaxng schema : do RelaxNG validation against the schema\n");
@@ -3178,12 +3029,6 @@ main(int argc, char **argv) {
                    (!strcmp(argv[i], "--path"))) {
 	    i++;
 	    parsePath(BAD_CAST argv[i]);
-#ifdef LIBXML_PATTERN_ENABLED
-        } else if ((!strcmp(argv[i], "-pattern")) ||
-                   (!strcmp(argv[i], "--pattern"))) {
-	    i++;
-	    pattern = argv[i];
-#endif
 #ifdef LIBXML_XPATH_ENABLED
         } else if ((!strcmp(argv[i], "-xpath")) ||
                    (!strcmp(argv[i], "--xpath"))) {
@@ -3338,21 +3183,6 @@ main(int argc, char **argv) {
 	}
     }
 #endif /* LIBXML_SCHEMAS_ENABLED */
-#ifdef LIBXML_PATTERN_ENABLED
-    if ((pattern != NULL)
-#ifdef LIBXML_READER_ENABLED
-        && (walker == 0)
-#endif
-	) {
-        patternc = xmlPatterncompile((const xmlChar *) pattern, NULL, 0, NULL);
-	if (patternc == NULL) {
-	    xmlGenericError(xmlGenericErrorContext,
-		    "Pattern %s failed to compile\n", pattern);
-            progresult = XMLLINT_ERR_SCHEMAPAT;
-	    pattern = NULL;
-	}
-    }
-#endif /* LIBXML_PATTERN_ENABLED */
     for (i = 1; i < argc ; i++) {
 	if ((!strcmp(argv[i], "-encode")) ||
 	         (!strcmp(argv[i], "--encode"))) {
@@ -3406,13 +3236,6 @@ main(int argc, char **argv) {
 	    i++;
 	    continue;
         }
-#ifdef LIBXML_PATTERN_ENABLED
-        if ((!strcmp(argv[i], "-pattern")) ||
-	    (!strcmp(argv[i], "--pattern"))) {
-	    i++;
-	    continue;
-	}
-#endif
 #ifdef LIBXML_XPATH_ENABLED
         if ((!strcmp(argv[i], "-xpath")) ||
 	    (!strcmp(argv[i], "--xpath"))) {
@@ -3489,10 +3312,6 @@ main(int argc, char **argv) {
     if (wxschemas != NULL)
 	xmlSchemaFree(wxschemas);
     xmlRelaxNGCleanupTypes();
-#endif
-#ifdef LIBXML_PATTERN_ENABLED
-    if (patternc != NULL)
-        xmlFreePattern(patternc);
 #endif
     xmlCleanupParser();
     xmlMemoryDump();

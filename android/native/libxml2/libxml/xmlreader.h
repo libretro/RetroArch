@@ -264,12 +264,6 @@ XMLPUBFUN int XMLCALL
 
 XMLPUBFUN xmlNodePtr XMLCALL
 		    xmlTextReaderPreserve	(xmlTextReaderPtr reader);
-#ifdef LIBXML_PATTERN_ENABLED
-XMLPUBFUN int XMLCALL
-		    xmlTextReaderPreservePattern(xmlTextReaderPtr reader,
-						 const xmlChar *pattern,
-						 const xmlChar **namespaces);
-#endif /* LIBXML_PATTERN_ENABLED */
 XMLPUBFUN xmlDocPtr XMLCALL
 		    xmlTextReaderCurrentDoc	(xmlTextReaderPtr reader);
 XMLPUBFUN xmlNodePtr XMLCALL

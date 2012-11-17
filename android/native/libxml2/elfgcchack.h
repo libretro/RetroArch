@@ -2447,30 +2447,6 @@ extern __typeof (xmlFreeParserInputBuffer) xmlFreeParserInputBuffer__internal_al
 #endif
 #endif
 
-#if defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_pattern
-#undef xmlFreePattern
-extern __typeof (xmlFreePattern) xmlFreePattern __attribute((alias("xmlFreePattern__internal_alias")));
-#else
-#ifndef xmlFreePattern
-extern __typeof (xmlFreePattern) xmlFreePattern__internal_alias __attribute((visibility("hidden")));
-#define xmlFreePattern xmlFreePattern__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_pattern
-#undef xmlFreePatternList
-extern __typeof (xmlFreePatternList) xmlFreePatternList __attribute((alias("xmlFreePatternList__internal_alias")));
-#else
-#ifndef xmlFreePatternList
-extern __typeof (xmlFreePatternList) xmlFreePatternList__internal_alias __attribute((visibility("hidden")));
-#define xmlFreePatternList xmlFreePatternList__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_tree
 #undef xmlFreeProp
 extern __typeof (xmlFreeProp) xmlFreeProp __attribute((alias("xmlFreeProp__internal_alias")));
@@ -2508,18 +2484,6 @@ extern __typeof (xmlFreeRefTable) xmlFreeRefTable __attribute((alias("xmlFreeRef
 #ifndef xmlFreeRefTable
 extern __typeof (xmlFreeRefTable) xmlFreeRefTable__internal_alias __attribute((visibility("hidden")));
 #define xmlFreeRefTable xmlFreeRefTable__internal_alias
-#endif
-#endif
-
-#if defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_pattern
-#undef xmlFreeStreamCtxt
-extern __typeof (xmlFreeStreamCtxt) xmlFreeStreamCtxt __attribute((alias("xmlFreeStreamCtxt__internal_alias")));
-#else
-#ifndef xmlFreeStreamCtxt
-extern __typeof (xmlFreeStreamCtxt) xmlFreeStreamCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlFreeStreamCtxt xmlFreeStreamCtxt__internal_alias
-#endif
 #endif
 #endif
 
@@ -5839,90 +5803,6 @@ extern __typeof (xmlPathToURI) xmlPathToURI__internal_alias __attribute((visibil
 #endif
 #endif
 
-#if defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_pattern
-#undef xmlPatternFromRoot
-extern __typeof (xmlPatternFromRoot) xmlPatternFromRoot __attribute((alias("xmlPatternFromRoot__internal_alias")));
-#else
-#ifndef xmlPatternFromRoot
-extern __typeof (xmlPatternFromRoot) xmlPatternFromRoot__internal_alias __attribute((visibility("hidden")));
-#define xmlPatternFromRoot xmlPatternFromRoot__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_pattern
-#undef xmlPatternGetStreamCtxt
-extern __typeof (xmlPatternGetStreamCtxt) xmlPatternGetStreamCtxt __attribute((alias("xmlPatternGetStreamCtxt__internal_alias")));
-#else
-#ifndef xmlPatternGetStreamCtxt
-extern __typeof (xmlPatternGetStreamCtxt) xmlPatternGetStreamCtxt__internal_alias __attribute((visibility("hidden")));
-#define xmlPatternGetStreamCtxt xmlPatternGetStreamCtxt__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_pattern
-#undef xmlPatternMatch
-extern __typeof (xmlPatternMatch) xmlPatternMatch __attribute((alias("xmlPatternMatch__internal_alias")));
-#else
-#ifndef xmlPatternMatch
-extern __typeof (xmlPatternMatch) xmlPatternMatch__internal_alias __attribute((visibility("hidden")));
-#define xmlPatternMatch xmlPatternMatch__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_pattern
-#undef xmlPatternMaxDepth
-extern __typeof (xmlPatternMaxDepth) xmlPatternMaxDepth __attribute((alias("xmlPatternMaxDepth__internal_alias")));
-#else
-#ifndef xmlPatternMaxDepth
-extern __typeof (xmlPatternMaxDepth) xmlPatternMaxDepth__internal_alias __attribute((visibility("hidden")));
-#define xmlPatternMaxDepth xmlPatternMaxDepth__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_pattern
-#undef xmlPatternMinDepth
-extern __typeof (xmlPatternMinDepth) xmlPatternMinDepth __attribute((alias("xmlPatternMinDepth__internal_alias")));
-#else
-#ifndef xmlPatternMinDepth
-extern __typeof (xmlPatternMinDepth) xmlPatternMinDepth__internal_alias __attribute((visibility("hidden")));
-#define xmlPatternMinDepth xmlPatternMinDepth__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_pattern
-#undef xmlPatternStreamable
-extern __typeof (xmlPatternStreamable) xmlPatternStreamable __attribute((alias("xmlPatternStreamable__internal_alias")));
-#else
-#ifndef xmlPatternStreamable
-extern __typeof (xmlPatternStreamable) xmlPatternStreamable__internal_alias __attribute((visibility("hidden")));
-#define xmlPatternStreamable xmlPatternStreamable__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_pattern
-#undef xmlPatterncompile
-extern __typeof (xmlPatterncompile) xmlPatterncompile __attribute((alias("xmlPatterncompile__internal_alias")));
-#else
-#ifndef xmlPatterncompile
-extern __typeof (xmlPatterncompile) xmlPatterncompile__internal_alias __attribute((visibility("hidden")));
-#define xmlPatterncompile xmlPatterncompile__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_parserInternals
 #undef xmlPedanticParserDefault
 extern __typeof (xmlPedanticParserDefault) xmlPedanticParserDefault __attribute((alias("xmlPedanticParserDefault__internal_alias")));
@@ -8655,66 +8535,6 @@ extern __typeof (xmlStrdup) xmlStrdup__internal_alias __attribute((visibility("h
 #endif
 #endif
 
-#if defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_pattern
-#undef xmlStreamPop
-extern __typeof (xmlStreamPop) xmlStreamPop __attribute((alias("xmlStreamPop__internal_alias")));
-#else
-#ifndef xmlStreamPop
-extern __typeof (xmlStreamPop) xmlStreamPop__internal_alias __attribute((visibility("hidden")));
-#define xmlStreamPop xmlStreamPop__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_pattern
-#undef xmlStreamPush
-extern __typeof (xmlStreamPush) xmlStreamPush __attribute((alias("xmlStreamPush__internal_alias")));
-#else
-#ifndef xmlStreamPush
-extern __typeof (xmlStreamPush) xmlStreamPush__internal_alias __attribute((visibility("hidden")));
-#define xmlStreamPush xmlStreamPush__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_pattern
-#undef xmlStreamPushAttr
-extern __typeof (xmlStreamPushAttr) xmlStreamPushAttr __attribute((alias("xmlStreamPushAttr__internal_alias")));
-#else
-#ifndef xmlStreamPushAttr
-extern __typeof (xmlStreamPushAttr) xmlStreamPushAttr__internal_alias __attribute((visibility("hidden")));
-#define xmlStreamPushAttr xmlStreamPushAttr__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_pattern
-#undef xmlStreamPushNode
-extern __typeof (xmlStreamPushNode) xmlStreamPushNode __attribute((alias("xmlStreamPushNode__internal_alias")));
-#else
-#ifndef xmlStreamPushNode
-extern __typeof (xmlStreamPushNode) xmlStreamPushNode__internal_alias __attribute((visibility("hidden")));
-#define xmlStreamPushNode xmlStreamPushNode__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_pattern
-#undef xmlStreamWantsAnyNode
-extern __typeof (xmlStreamWantsAnyNode) xmlStreamWantsAnyNode __attribute((alias("xmlStreamWantsAnyNode__internal_alias")));
-#else
-#ifndef xmlStreamWantsAnyNode
-extern __typeof (xmlStreamWantsAnyNode) xmlStreamWantsAnyNode__internal_alias __attribute((visibility("hidden")));
-#define xmlStreamWantsAnyNode xmlStreamWantsAnyNode__internal_alias
-#endif
-#endif
-#endif
-
 #ifdef bottom_parserInternals
 #undef xmlStringCurrentChar
 extern __typeof (xmlStringCurrentChar) xmlStringCurrentChar __attribute((alias("xmlStringCurrentChar__internal_alias")));
@@ -9501,18 +9321,6 @@ extern __typeof (xmlTextReaderPreserve) xmlTextReaderPreserve __attribute((alias
 #ifndef xmlTextReaderPreserve
 extern __typeof (xmlTextReaderPreserve) xmlTextReaderPreserve__internal_alias __attribute((visibility("hidden")));
 #define xmlTextReaderPreserve xmlTextReaderPreserve__internal_alias
-#endif
-#endif
-#endif
-
-#if defined(LIBXML_READER_ENABLED) && defined(LIBXML_PATTERN_ENABLED)
-#ifdef bottom_xmlreader
-#undef xmlTextReaderPreservePattern
-extern __typeof (xmlTextReaderPreservePattern) xmlTextReaderPreservePattern __attribute((alias("xmlTextReaderPreservePattern__internal_alias")));
-#else
-#ifndef xmlTextReaderPreservePattern
-extern __typeof (xmlTextReaderPreservePattern) xmlTextReaderPreservePattern__internal_alias __attribute((visibility("hidden")));
-#define xmlTextReaderPreservePattern xmlTextReaderPreservePattern__internal_alias
 #endif
 #endif
 #endif
