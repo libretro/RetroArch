@@ -779,13 +779,13 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
       //Output memory usage
 
-      static char fps_txt[128];
+      char fps_txt[128];
       char buf[128];
       bool ret = false;
       snprintf(buf, sizeof(buf), "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
       xfonts_render_msg_place(d3d, font_x + 30, font_y + 50, 0 /* scale */, buf);
 
-      gfx_window_title(fps_txt, sizeof(fps_txt));
+      gfx_fps_title(fps_txt, sizeof(fps_txt));
       xfonts_render_msg_place(d3d, font_x + 30, font_y + 70, 0 /* scale */, fps_txt);
    }
 
