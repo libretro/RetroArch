@@ -1258,8 +1258,7 @@ static bool resolve_extensions(gl_t *gl)
    return true;
 }
 
-#ifdef RARCH_CONSOLE
-static void gl_reinit_textures(gl_t *gl, const video_info_t *video)
+static inline void gl_reinit_textures(gl_t *gl, const video_info_t *video)
 {
    unsigned old_base_size = gl->base_size;
    unsigned old_width     = gl->tex_w;
@@ -1284,17 +1283,20 @@ static void gl_reinit_textures(gl_t *gl, const video_info_t *video)
       gl_init_textures_data(gl);
 
 #ifdef HAVE_FBO
-      gl_deinit_fbo(gl);
-      gl_init_fbo(gl, gl->tex_w, gl->tex_h);
+      if (gl->tex_w > old_width || gl->tex_h > old_height)
+      {
+         RARCH_LOG("Reiniting FBO.\n");
+         gl_deinit_fbo(gl);
+         gl_init_fbo(gl, gl->tex_w, gl->tex_h);
+      }
 #endif
    }
    else
       RARCH_LOG("Reinitializing textures skipped.\n");
 
    if (!gl_check_error())
-      RARCH_LOG("GL error reported while reinitializing textures. This should not happen ...\n");
+      RARCH_ERR("GL error reported while reinitializing textures. This should not happen ...\n");
 }
-#endif
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
@@ -1393,10 +1395,12 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    RARCH_LOG("GL: Loaded %u program(s).\n", gl_shader_num(gl));
 
+   gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
+   gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
+
 #ifdef HAVE_FBO
    // Set up render to texture.
-   gl_init_fbo(gl, RARCH_SCALE_BASE * video->input_scale,
-         RARCH_SCALE_BASE * video->input_scale);
+   gl_init_fbo(gl, gl->tex_w, gl->tex_h);
 #endif
 
    gl->keep_aspect = video->force_aspect;
@@ -1429,9 +1433,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->coords.color          = white_color;
    gl->coords.lut_tex_coord  = tex_coords;
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
-
-   gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
-   gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
 
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
