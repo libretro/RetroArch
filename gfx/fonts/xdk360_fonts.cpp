@@ -14,9 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define NONET
 #include <xtl.h>
-#include "xdk360_fonts.h"
 #include "../../general.h"
 #include "../../xdk/xdk_resources.h"
 
@@ -79,9 +77,7 @@ enum SavedStates
 
 typedef struct
 {
-   unsigned int m_bSaveState;
    unsigned long m_dwSavedState[ SAVEDSTATE_COUNT ];
-   unsigned long m_dwNestedBeginCount;
    unsigned long m_cMaxGlyph;           // Number of entries in the translator table
    unsigned long m_dwNumGlyphs;         // Number of valid glyphs
    float m_fFontHeight;                 // Height of the font strike in pixels
@@ -295,7 +291,6 @@ static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * s
    font->m_fYScaleFactor = 2.0f;
    font->m_cMaxGlyph = 0;
    font->m_TranslatorTable = NULL;
-   font->m_dwNestedBeginCount = 0L;
 
    // Create the font
    if( FAILED( m_xprResource.Create( strFontFileName ) ) )
@@ -352,9 +347,6 @@ static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * s
    font->m_rcWindow.y1 = 0;
    font->m_rcWindow.x2 = DisplayMode.Width;
    font->m_rcWindow.y2 = DisplayMode.Height;
-
-   // Determine whether we should save/restore state
-   font->m_bSaveState = TRUE;
 
    return 0;
 }
@@ -435,7 +427,6 @@ void d3d9_deinit_font(void)
    font->m_Glyphs = NULL;
    font->m_cMaxGlyph = 0;
    font->m_TranslatorTable = NULL;
-   font->m_dwNestedBeginCount = 0L;
 
    if( ( s_FontLocals.m_pFontPixelShader != NULL ) && ( s_FontLocals.m_pFontPixelShader->Release() == 0 ) )
       s_FontLocals.m_pFontPixelShader = NULL;
@@ -449,11 +440,7 @@ void d3d9_deinit_font(void)
 
 void xdk_render_msg_post(xdk360_video_font_t * font)
 {
-   if( --font->m_dwNestedBeginCount > 0 )
-      return;
-
    // Restore state
-   if( font->m_bSaveState )
    {
       // Cache the global pointer into a register
       xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
@@ -477,14 +464,11 @@ void xdk_render_msg_post(xdk360_video_font_t * font)
 static void xdk_render_msg_pre(xdk360_video_font_t * font)
 {
    // Set state on the first call
-   if( font->m_dwNestedBeginCount == 0 )
-   {
       // Cache the global pointer into a register
       xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
       D3DDevice *pD3dDevice = vid->d3d_render_device;
 
       // Save state
-      if( font->m_bSaveState )
       {
          pD3dDevice->GetRenderState( D3DRS_ALPHABLENDENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHABLENDENABLE ] );
          pD3dDevice->GetRenderState( D3DRS_SRCBLEND, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_SRCBLEND ] );
@@ -528,18 +512,11 @@ static void xdk_render_msg_pre(xdk360_video_font_t * font)
       // Set the texture scaling factor as a vertex shader constant
       // Call here to avoid load hit store from writing to vTexScale above
       pD3dDevice->SetVertexShaderConstantF( 2, vTexScale, 1 );
-   }
-
-   // Keep track of the nested begin/end calls.
-   font->m_dwNestedBeginCount++;
 }
 
 static void xdk_video_font_draw_text(xdk360_video_font_t *font, 
       float fOriginX, float fOriginY, const wchar_t * strText, float fMaxPixelWidth )
 {
-   if( strText == NULL || strText[0] == L'\0')
-      return;
-
    xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
    D3DDevice *pd3dDevice = vid->d3d_render_device;
 
@@ -549,8 +526,6 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    vColor[1] = ( ( 0xffffffff & 0x0000ff00 ) >> 8L ) / 255.0F;
    vColor[2] = ( ( 0xffffffff & 0x000000ff ) >> 0L ) / 255.0F;
    vColor[3] = ( ( 0xffffffff & 0xff000000 ) >> 24L ) / 255.0F;
-
-   xdk_render_msg_pre(font);
 
    // Perform the actual storing of the color constant here to prevent
    // a load-hit-store by inserting work between the store and the use of
@@ -686,8 +661,6 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    // Undo window offsets
    font->m_fCursorX -= Winx;
    font->m_fCursorY -= Winy;
-
-   xdk_render_msg_post(font);
 }
 
 void xdk_render_msg(void *driver, const char * strFormat)
@@ -760,18 +733,20 @@ void xdk_render_msg(void *driver, const char * strFormat)
          video_console.m_nScrollOffset + 1 )
       % video_console.m_cScreenHeightVirtual;
 
-   xdk_render_msg_pre(&m_Font);
-
    for( unsigned int nScreenLine = 0; nScreenLine < video_console.m_cScreenHeight; nScreenLine++ )
    {
-      xdk_video_font_draw_text(&m_Font, (float)( video_console.m_cxSafeAreaOffset ),
+	   const wchar_t *msg = video_console.m_Lines[nTextLine];
+	   if (msg != NULL || msg[0] != L'\0')
+	   {
+		   xdk_render_msg_pre(&m_Font);
+		   xdk_video_font_draw_text(&m_Font, (float)( video_console.m_cxSafeAreaOffset ),
             (float)( video_console.m_cySafeAreaOffset + video_console.m_fLineHeight * nScreenLine ), 
-            video_console.m_Lines[nTextLine], 0.0f );
+            msg, 0.0f );
+		   xdk_render_msg_post(&m_Font);
+	   }
 
       nTextLine = ( nTextLine + 1 ) % video_console.m_cScreenHeightVirtual;
    }
-
-   xdk_render_msg_post(&m_Font);
 }
 
 
