@@ -18,10 +18,88 @@
 #include <xtl.h>
 #include "xdk360_fonts.h"
 #include "../../general.h"
+#include "../../xdk/xdk_resources.h"
 
-video_console_t video_console;
-xdk360_video_font_t m_Font;
+#define PAGE_UP               (255)
+#define PAGE_DOWN             (-255)
 
+#define SCREEN_SIZE_X_DEFAULT 640
+#define SCREEN_SIZE_Y_DEFAULT 480
+
+#define SAFE_AREA_PCT_4x3     85
+#define SAFE_AREA_PCT_HDTV    70
+
+typedef struct
+{
+   float m_fLineHeight;                 // height of a single line in pixels
+   unsigned int m_nScrollOffset;        // offset to display text (in lines)
+   unsigned int m_cxSafeArea;
+   unsigned int m_cySafeArea;
+   unsigned int m_cxSafeAreaOffset;
+   unsigned int m_cySafeAreaOffset;
+   unsigned int m_nCurLine;             // index of current line being written to
+   unsigned int m_cCurLineLength;       // length of the current line
+   unsigned int m_cScreenHeight;        // height in lines of screen area
+   unsigned int m_cScreenHeightVirtual; // height in lines of text storage buffer
+   unsigned int m_cScreenWidth;         // width in characters
+   wchar_t * m_Buffer;			// buffer big enough to hold a full screen
+   wchar_t ** m_Lines;			// pointers to individual lines
+} video_console_t;
+
+typedef struct GLYPH_ATTR
+{
+   unsigned short tu1, tv1, tu2, tv2;   // Texture coordinates for the image
+   short wOffset;                       // Pixel offset for glyph start
+   short wWidth;                        // Pixel width of the glyph
+   short wAdvance;                      // Pixels to advance after the glyph
+   unsigned short wMask;                // Channel mask
+} GLYPH_ATTR;
+
+enum SavedStates
+{
+   SAVEDSTATE_D3DRS_ALPHABLENDENABLE,
+   SAVEDSTATE_D3DRS_SRCBLEND,
+   SAVEDSTATE_D3DRS_DESTBLEND,
+   SAVEDSTATE_D3DRS_BLENDOP,
+   SAVEDSTATE_D3DRS_ALPHATESTENABLE,
+   SAVEDSTATE_D3DRS_ALPHAREF,
+   SAVEDSTATE_D3DRS_ALPHAFUNC,
+   SAVEDSTATE_D3DRS_FILLMODE,
+   SAVEDSTATE_D3DRS_CULLMODE,
+   SAVEDSTATE_D3DRS_ZENABLE,
+   SAVEDSTATE_D3DRS_STENCILENABLE,
+   SAVEDSTATE_D3DRS_VIEWPORTENABLE,
+   SAVEDSTATE_D3DSAMP_MINFILTER,
+   SAVEDSTATE_D3DSAMP_MAGFILTER,
+   SAVEDSTATE_D3DSAMP_ADDRESSU,
+   SAVEDSTATE_D3DSAMP_ADDRESSV,
+
+   SAVEDSTATE_COUNT
+};
+
+typedef struct
+{
+   unsigned int m_bSaveState;
+   unsigned long m_dwSavedState[ SAVEDSTATE_COUNT ];
+   unsigned long m_dwNestedBeginCount;
+   unsigned long m_cMaxGlyph;           // Number of entries in the translator table
+   unsigned long m_dwNumGlyphs;         // Number of valid glyphs
+   float m_fFontHeight;                 // Height of the font strike in pixels
+   float m_fFontTopPadding;             // Padding above the strike zone
+   float m_fFontBottomPadding;          // Padding below the strike zone
+   float m_fFontYAdvance;               // Number of pixels to move the cursor for a line feed
+   float m_fXScaleFactor;               // Scaling constants
+   float m_fYScaleFactor;
+   float m_fCursorX;                    // Current text cursor
+   float m_fCursorY;
+   D3DRECT m_rcWindow;                  // Bounds rect of the text window, modify via accessors only!
+   wchar_t * m_TranslatorTable;         // ASCII to glyph lookup table
+   D3DTexture* m_pFontTexture;
+   const GLYPH_ATTR* m_Glyphs;          // Array of glyphs
+} xdk360_video_font_t;
+
+static video_console_t video_console;
+static xdk360_video_font_t m_Font;
 static PackedResource m_xprResource;
 
 #define CALCFONTFILEHEADERSIZE(x) ( sizeof(unsigned long) + (sizeof(float)* 4) + sizeof(unsigned short) + (sizeof(wchar_t)*(x)) )
@@ -43,35 +121,35 @@ typedef struct {
 } FontFileStrikesImage_t; 
 
 static const char g_strFontShader[] =
-   "struct VS_IN\n"
-   "{\n"
-      "float2 Pos : POSITION;\n"
-      "float2 Tex : TEXCOORD0;\n"
-   "};\n"
-   "struct VS_OUT\n"
-   "{\n"
-      "float4 Position : POSITION;\n"
-      "float2 TexCoord0 : TEXCOORD0;\n"
-   "};\n"
-   "uniform float4 Color : register(c1);\n"
-   "uniform float2 TexScale : register(c2);\n"
-   "sampler FontTexture : register(s0);\n"
-   "VS_OUT main_vertex( VS_IN In )\n"
-   "{\n"
-     "VS_OUT Out;\n"
-     "Out.Position.x  = (In.Pos.x-0.5);\n"
-     "Out.Position.y  = (In.Pos.y-0.5);\n"
-     "Out.Position.z  = ( 0.0 );\n"
-     "Out.Position.w  = ( 1.0 );\n"
-     "Out.TexCoord0.x = In.Tex.x * TexScale.x;\n"
-     "Out.TexCoord0.y = In.Tex.y * TexScale.y;\n"
-     "return Out;\n"
-   "}\n"
-   "float4 main_fragment( VS_OUT In ) : COLOR0\n"
-   "{\n"
-     "float4 FontTexel = tex2D( FontTexture, In.TexCoord0 );\n"
-     "return FontTexel;\n"
-   "}\n";
+"struct VS_IN\n"
+"{\n"
+"float2 Pos : POSITION;\n"
+"float2 Tex : TEXCOORD0;\n"
+"};\n"
+"struct VS_OUT\n"
+"{\n"
+"float4 Position : POSITION;\n"
+"float2 TexCoord0 : TEXCOORD0;\n"
+"};\n"
+"uniform float4 Color : register(c1);\n"
+"uniform float2 TexScale : register(c2);\n"
+"sampler FontTexture : register(s0);\n"
+"VS_OUT main_vertex( VS_IN In )\n"
+"{\n"
+"VS_OUT Out;\n"
+"Out.Position.x  = (In.Pos.x-0.5);\n"
+"Out.Position.y  = (In.Pos.y-0.5);\n"
+"Out.Position.z  = ( 0.0 );\n"
+"Out.Position.w  = ( 1.0 );\n"
+"Out.TexCoord0.x = In.Tex.x * TexScale.x;\n"
+"Out.TexCoord0.y = In.Tex.y * TexScale.y;\n"
+"return Out;\n"
+"}\n"
+"float4 main_fragment( VS_OUT In ) : COLOR0\n"
+"{\n"
+"float4 FontTexel = tex2D( FontTexture, In.TexCoord0 );\n"
+"return FontTexel;\n"
+"}\n";
 
 typedef struct {
    D3DVertexDeclaration* m_pFontVertexDecl;
@@ -83,127 +161,127 @@ static Font_Locals_t s_FontLocals;
 
 static void xdk360_video_font_get_text_width(xdk360_video_font_t * font, const wchar_t * strText, float * pWidth, float * pHeight)
 {
-    int iWidth = 0;
-    float fHeight = 0.0f;
+   int iWidth = 0;
+   float fHeight = 0.0f;
 
-    if( strText )
-    {
-        // Initialize counters that keep track of text extent
-        int ix = 0;
-        float fy = font->m_fFontHeight;       // One character high to start
-        if( fy > fHeight )
-            fHeight = fy;
+   if( strText )
+   {
+      // Initialize counters that keep track of text extent
+      int ix = 0;
+      float fy = font->m_fFontHeight;       // One character high to start
+      if( fy > fHeight )
+         fHeight = fy;
 
-        // Loop through each character and update text extent
-        unsigned long letter;
-        while( (letter = *strText) != 0 )
-        {
-            ++strText;
+      // Loop through each character and update text extent
+      unsigned long letter;
+      while( (letter = *strText) != 0 )
+      {
+         ++strText;
 
-            // Handle newline character
-            if (letter == L'\n')
-               break;
+         // Handle newline character
+         if (letter == L'\n')
+            break;
 
-            // Translate unprintable characters
-            const GLYPH_ATTR* pGlyph;
-            
-            if( letter > font->m_cMaxGlyph )
-                letter = 0;     // Out of bounds?
-            else
-                letter = font->m_TranslatorTable[letter];     // Remap ASCII to glyph
+         // Translate unprintable characters
+         const GLYPH_ATTR* pGlyph;
 
-            pGlyph = &font->m_Glyphs[letter];                 // Get the requested glyph
+         if( letter > font->m_cMaxGlyph )
+            letter = 0;     // Out of bounds?
+         else
+            letter = font->m_TranslatorTable[letter];     // Remap ASCII to glyph
 
-            // Get text extent for this character's glyph
-            ix += pGlyph->wOffset;
-            ix += pGlyph->wAdvance;
+         pGlyph = &font->m_Glyphs[letter];                 // Get the requested glyph
 
-            // Since the x widened, test against the x extent
+         // Get text extent for this character's glyph
+         ix += pGlyph->wOffset;
+         ix += pGlyph->wAdvance;
 
-            if( ix > iWidth )
-                iWidth = ix;
-        }
-    }
+         // Since the x widened, test against the x extent
 
-    float fWidth = (float)iWidth;
-    fHeight *= font->m_fYScaleFactor;     // Apply the scale factor to the result
-    *pHeight = fHeight;                   // Store the final results
+         if( ix > iWidth )
+            iWidth = ix;
+      }
+   }
 
-    fWidth *= font->m_fXScaleFactor;
-    *pWidth = fWidth;
+   float fWidth = (float)iWidth;
+   fHeight *= font->m_fYScaleFactor;     // Apply the scale factor to the result
+   *pHeight = fHeight;                   // Store the final results
+
+   fWidth *= font->m_fXScaleFactor;
+   *pWidth = fWidth;
 }
 
 static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
 {
-    HRESULT hr;
+   HRESULT hr;
 
-    if (!s_FontLocals.m_pFontVertexDecl)
-    {
-        do
-        {
-            static const D3DVERTEXELEMENT9 decl[] =
-            {
-                { 0,  0, D3DDECLTYPE_FLOAT2,   D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-                { 0,  8, D3DDECLTYPE_USHORT2,  D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-                { 0, 12, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 1 },
-                D3DDECL_END()
-            };
-            
-            xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
-            D3DDevice *pd3dDevice = vid->d3d_render_device;
+   if (!s_FontLocals.m_pFontVertexDecl)
+   {
+      do
+      {
+         static const D3DVERTEXELEMENT9 decl[] =
+         {
+            { 0,  0, D3DDECLTYPE_FLOAT2,   D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+            { 0,  8, D3DDECLTYPE_USHORT2,  D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+            { 0, 12, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 1 },
+            D3DDECL_END()
+         };
 
-            hr = pd3dDevice->CreateVertexDeclaration( decl, &s_FontLocals.m_pFontVertexDecl );
+         xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
+         D3DDevice *pd3dDevice = vid->d3d_render_device;
+
+         hr = pd3dDevice->CreateVertexDeclaration( decl, &s_FontLocals.m_pFontVertexDecl );
+
+         if (hr >= 0)
+         {
+            ID3DXBuffer* pShaderCode;
+
+            hr = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
+                  NULL, NULL, "main_vertex", "vs.2.0", 0,&pShaderCode, NULL, NULL );
 
             if (hr >= 0)
             {
-                ID3DXBuffer* pShaderCode;
+               hr = pd3dDevice->CreateVertexShader( ( unsigned long * )pShaderCode->GetBufferPointer(),
+                     &s_FontLocals.m_pFontVertexShader );
+               pShaderCode->Release();
 
-                hr = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
-                    NULL, NULL, "main_vertex", "vs.2.0", 0,&pShaderCode, NULL, NULL );
+               if (hr >= 0)
+               {
+                  hr = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
+                        NULL, NULL, "main_fragment", "ps.2.0", 0,&pShaderCode, NULL, NULL );
 
-                if (hr >= 0)
-                {
-                    hr = pd3dDevice->CreateVertexShader( ( unsigned long * )pShaderCode->GetBufferPointer(),
-                        &s_FontLocals.m_pFontVertexShader );
-                    pShaderCode->Release();
-                    
-                    if (hr >= 0)
-                    {
-                        hr = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
-                            NULL, NULL, "main_fragment", "ps.2.0", 0,&pShaderCode, NULL, NULL );
+                  if (hr >= 0)
+                  {
+                     hr = pd3dDevice->CreatePixelShader( ( DWORD* )pShaderCode->GetBufferPointer(),
+                           &s_FontLocals.m_pFontPixelShader );
+                     pShaderCode->Release();
 
-                        if (hr >= 0)
-                        {
-                            hr = pd3dDevice->CreatePixelShader( ( DWORD* )pShaderCode->GetBufferPointer(),
-                                &s_FontLocals.m_pFontPixelShader );
-                            pShaderCode->Release();
+                     if (hr >= 0) 
+                     {
+                        hr = 0;
+                        break;
+                     }
+                  }
+                  D3DResource_Release((D3DResource *)s_FontLocals.m_pFontVertexShader);
+               }
 
-                            if (hr >= 0) 
-                            {
-                                hr = 0;
-                                break;
-                            }
-                        }
-                        D3DResource_Release((D3DResource *)s_FontLocals.m_pFontVertexShader);
-                    }
+               s_FontLocals.m_pFontVertexShader = NULL;
+            }
 
-                    s_FontLocals.m_pFontVertexShader = NULL;
-                }
-
-                D3DResource_Release((D3DResource *)s_FontLocals.m_pFontVertexDecl);
-            }  
-            s_FontLocals.m_pFontVertexDecl = NULL;
-        }while(0);
-        return hr;
-    }
-    else
-    {
-       D3DResource_AddRef((D3DResource *)s_FontLocals.m_pFontVertexDecl);
-       D3DResource_AddRef((D3DResource *)s_FontLocals.m_pFontVertexShader);
-       D3DResource_AddRef((D3DResource *)s_FontLocals.m_pFontPixelShader);
-       hr = 0;
-    }
-    return hr;
+            D3DResource_Release((D3DResource *)s_FontLocals.m_pFontVertexDecl);
+         }  
+         s_FontLocals.m_pFontVertexDecl = NULL;
+      }while(0);
+      return hr;
+   }
+   else
+   {
+      D3DResource_AddRef((D3DResource *)s_FontLocals.m_pFontVertexDecl);
+      D3DResource_AddRef((D3DResource *)s_FontLocals.m_pFontVertexShader);
+      D3DResource_AddRef((D3DResource *)s_FontLocals.m_pFontPixelShader);
+      hr = 0;
+   }
+   return hr;
 }
 
 static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * strFontFileName)
@@ -218,7 +296,7 @@ static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * s
    font->m_cMaxGlyph = 0;
    font->m_TranslatorTable = NULL;
    font->m_dwNestedBeginCount = 0L;
-    
+
    // Create the font
    if( FAILED( m_xprResource.Create( strFontFileName ) ) )
       return E_FAIL;
@@ -370,69 +448,34 @@ void d3d9_deinit_font(void)
       m_xprResource.Destroy();
 }
 
-void xdk360_console_format(const char * strFormat)
+void xdk_render_msg_post(xdk360_video_font_t * font)
 {
-   video_console.m_nCurLine = 0;
-   video_console.m_cCurLineLength = 0;
+   if( --font->m_dwNestedBeginCount > 0 )
+      return;
 
-   memset( video_console.m_Buffer, 0, 
-      video_console.m_cScreenHeightVirtual * 
-      ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-
-   // Output the string to the console
-   unsigned long uStringLength = strlen(strFormat);
-   for( unsigned long i = 0; i < uStringLength; i++ )
+   // Restore state
+   if( font->m_bSaveState )
    {
-      wchar_t wch;
-	  convert_char_to_wchar(&wch, &strFormat[i], sizeof(wch));
+      // Cache the global pointer into a register
+      xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
+      D3DDevice *pD3dDevice = vid->d3d_render_device;
 
-      // If this is a newline, just increment lines and move on
-      if( wch == L'\n' )
-      {
-         video_console.m_nCurLine = ( video_console.m_nCurLine + 1 ) 
-         % video_console.m_cScreenHeightVirtual;
-         video_console.m_cCurLineLength = 0;
-         memset(video_console.m_Lines[video_console.m_nCurLine], 0, 
-        ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-        continue;
-      }
-
-      int bIncrementLine = FALSE;  // Whether to wrap to the next line
-
-      if( video_console.m_cCurLineLength == video_console.m_cScreenWidth )
-         bIncrementLine = TRUE;
-      else
-      {
-         float fTextWidth, fTextHeight;
-         // Try to append the character to the line
-         video_console.m_Lines[ video_console.m_nCurLine ][ video_console.m_cCurLineLength ] = wch;
-         xdk360_video_font_get_text_width(&m_Font, video_console.m_Lines[ video_console.m_nCurLine ], &fTextWidth,
-            &fTextHeight);
-		 
-		 if( fTextHeight > video_console.m_cxSafeArea )
-		 {
-			 // The line is too long, we need to wrap the character to the next line
-			 video_console.m_Lines[video_console.m_nCurLine][ video_console.m_cCurLineLength ] = L'\0';
-			 bIncrementLine = TRUE;
-		 }
-	  }
-	  
-	  // If we need to skip to the next line, do so
-	  if( bIncrementLine )
-	  {
-		  video_console.m_nCurLine = ( video_console.m_nCurLine + 1 ) 
-			  % video_console.m_cScreenHeightVirtual;
-		  video_console.m_cCurLineLength = 0;
-		  memset( video_console.m_Lines[video_console.m_nCurLine], 0,
-			  ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-		  video_console.m_Lines[video_console.m_nCurLine ][0] = wch;
-	  }
-	  
-	  video_console.m_cCurLineLength++;
+      pD3dDevice->SetTexture(0, NULL);
+      pD3dDevice->SetVertexDeclaration(NULL);
+      D3DDevice_SetVertexShader(pD3dDevice, NULL );
+      D3DDevice_SetPixelShader(pD3dDevice, NULL );
+      D3DDevice_SetRenderState_AlphaBlendEnable(pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHABLENDENABLE ]);
+      D3DDevice_SetRenderState_SrcBlend(pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_SRCBLEND ] );
+      D3DDevice_SetRenderState_DestBlend( pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_DESTBLEND ] );
+      pD3dDevice->SetRenderState( D3DRS_ALPHAREF, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAREF ] );
+      pD3dDevice->SetRenderState( D3DRS_ALPHAFUNC, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAFUNC ] );
+      pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
+      pD3dDevice->SetSamplerState(0, D3DSAMP_MINFILTER, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ]);
+      pD3dDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ]);
    }
 }
 
-void d3d9_render_msg_pre(xdk360_video_font_t * font)
+static void xdk_render_msg_pre(xdk360_video_font_t * font)
 {
    // Set state on the first call
    if( font->m_dwNestedBeginCount == 0 )
@@ -446,13 +489,13 @@ void d3d9_render_msg_pre(xdk360_video_font_t * font)
       {
          pD3dDevice->GetRenderState( D3DRS_ALPHABLENDENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHABLENDENABLE ] );
          pD3dDevice->GetRenderState( D3DRS_SRCBLEND, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_SRCBLEND ] );
-		 pD3dDevice->GetRenderState( D3DRS_DESTBLEND, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_DESTBLEND ] );
-		 pD3dDevice->GetRenderState( D3DRS_ALPHAREF, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAREF ] );
-		 pD3dDevice->GetRenderState( D3DRS_ALPHAFUNC, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAFUNC ] );
-		 pD3dDevice->GetRenderState( D3DRS_FILLMODE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_FILLMODE ] );
-		 pD3dDevice->GetRenderState( D3DRS_VIEWPORTENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
-		 font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ] = D3DDevice_GetSamplerState_MinFilter( pD3dDevice, 0 );
-		 font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ] = D3DDevice_GetSamplerState_MagFilter( pD3dDevice, 0 );
+         pD3dDevice->GetRenderState( D3DRS_DESTBLEND, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_DESTBLEND ] );
+         pD3dDevice->GetRenderState( D3DRS_ALPHAREF, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAREF ] );
+         pD3dDevice->GetRenderState( D3DRS_ALPHAFUNC, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAFUNC ] );
+         pD3dDevice->GetRenderState( D3DRS_FILLMODE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_FILLMODE ] );
+         pD3dDevice->GetRenderState( D3DRS_VIEWPORTENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
+         font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ] = D3DDevice_GetSamplerState_MinFilter( pD3dDevice, 0 );
+         font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ] = D3DDevice_GetSamplerState_MagFilter( pD3dDevice, 0 );
       }
 
       // Set the texture scaling factor as a vertex shader constant
@@ -492,29 +535,244 @@ void d3d9_render_msg_pre(xdk360_video_font_t * font)
    font->m_dwNestedBeginCount++;
 }
 
-void d3d9_render_msg_post(xdk360_video_font_t * font)
+static void xdk_video_font_draw_text(xdk360_video_font_t *font, 
+      float fOriginX, float fOriginY, const wchar_t * strText, float fMaxPixelWidth )
 {
-   if( --font->m_dwNestedBeginCount > 0 )
+   if( strText == NULL || strText[0] == L'\0')
       return;
 
-   // Restore state
-   if( font->m_bSaveState )
+   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
+   D3DDevice *pd3dDevice = vid->d3d_render_device;
+
+   // Set the color as a vertex shader constant
+   float vColor[4];
+   vColor[0] = ( ( 0xffffffff & 0x00ff0000 ) >> 16L ) / 255.0F;
+   vColor[1] = ( ( 0xffffffff & 0x0000ff00 ) >> 8L ) / 255.0F;
+   vColor[2] = ( ( 0xffffffff & 0x000000ff ) >> 0L ) / 255.0F;
+   vColor[3] = ( ( 0xffffffff & 0xff000000 ) >> 24L ) / 255.0F;
+
+   xdk_render_msg_pre(font);
+
+   // Perform the actual storing of the color constant here to prevent
+   // a load-hit-store by inserting work between the store and the use of
+   // the vColor array.
+   pd3dDevice->SetVertexShaderConstantF( 1, vColor, 1 );
+
+   // Set the starting screen position
+   if((fOriginX < 0.0f))
+      fOriginX += font->m_rcWindow.x2;
+   if( fOriginY < 0.0f )
+      fOriginY += font->m_rcWindow.y2;
+
+   font->m_fCursorX = floorf( fOriginX );
+   font->m_fCursorY = floorf( fOriginY );
+
+   // Adjust for padding
+   fOriginY -= font->m_fFontTopPadding;
+
+   // Add window offsets
+   float Winx = 0.0f;
+   float Winy = 0.0f;
+   fOriginX += Winx;
+   fOriginY += Winy;
+   font->m_fCursorX += Winx;
+   font->m_fCursorY += Winy;
+
+   // Begin drawing the vertices
+
+   // Declared as volatile to force writing in ascending
+   // address order. It prevents out of sequence writing in write combined
+   // memory.
+
+   volatile float * pVertex;
+
+   unsigned long dwNumChars = wcslen(strText);
+   HRESULT hr = pd3dDevice->BeginVertices( D3DPT_QUADLIST, 4 * dwNumChars, sizeof( XMFLOAT4 ) ,
+         ( VOID** )&pVertex );
+
+   // The ring buffer may run out of space when tiling, doing z-prepasses,
+   // or using BeginCommandBuffer. If so, make the buffer larger.
+   if( hr < 0 )
+      RARCH_ERR( "Ring buffer out of memory.\n" );
+
+   // Draw four vertices for each glyph
+   while( *strText )
    {
-      // Cache the global pointer into a register
-      xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
-      D3DDevice *pD3dDevice = vid->d3d_render_device;
-	  
-      pD3dDevice->SetTexture(0, NULL);
-      pD3dDevice->SetVertexDeclaration(NULL);
-      D3DDevice_SetVertexShader(pD3dDevice, NULL );
-      D3DDevice_SetPixelShader(pD3dDevice, NULL );
-      D3DDevice_SetRenderState_AlphaBlendEnable(pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHABLENDENABLE ]);
-      D3DDevice_SetRenderState_SrcBlend(pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_SRCBLEND ] );
-      D3DDevice_SetRenderState_DestBlend( pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_DESTBLEND ] );
-      pD3dDevice->SetRenderState( D3DRS_ALPHAREF, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAREF ] );
-      pD3dDevice->SetRenderState( D3DRS_ALPHAFUNC, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAFUNC ] );
-      pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
-      pD3dDevice->SetSamplerState(0, D3DSAMP_MINFILTER, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ]);
-      pD3dDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ]);
+      wchar_t letter;
+
+      // Get the current letter in the string
+      letter = *strText++;
+
+      // Handle the newline character
+      if( letter == L'\n' )
+      {
+         font->m_fCursorX = fOriginX;
+         font->m_fCursorY += font->m_fFontYAdvance * font->m_fYScaleFactor;
+         continue;
+      }
+
+      // Translate unprintable characters
+      const GLYPH_ATTR * pGlyph = &font->m_Glyphs[ ( letter <= font->m_cMaxGlyph )
+         ? font->m_TranslatorTable[letter] : 0 ];
+
+      float fOffset = font->m_fXScaleFactor * (float)pGlyph->wOffset;
+      float fAdvance = font->m_fXScaleFactor * (float)pGlyph->wAdvance;
+      float fWidth = font->m_fXScaleFactor * (float)pGlyph->wWidth;
+      float fHeight = font->m_fYScaleFactor * font->m_fFontHeight;
+
+      // Setup the screen coordinates
+      font->m_fCursorX += fOffset;
+      float X4 = font->m_fCursorX;
+      float X1 = X4;
+      float X3 = X4 + fWidth;
+      float X2 = X1 + fWidth;
+      float Y1 = font->m_fCursorY;
+      float Y3 = Y1 + fHeight;
+      float Y2 = Y1;
+      float Y4 = Y3;
+
+      font->m_fCursorX += fAdvance;
+
+      // Add the vertices to draw this glyph
+
+      unsigned long tu1 = pGlyph->tu1;        // Convert shorts to 32 bit longs for in register merging
+      unsigned long tv1 = pGlyph->tv1;
+      unsigned long tu2 = pGlyph->tu2;
+      unsigned long tv2 = pGlyph->tv2;
+
+      // NOTE: The vertexs are 2 floats for the screen coordinates,
+      // followed by two USHORTS for the u/vs of the character,
+      // terminated with the ARGB 32 bit color.
+      // This makes for 16 bytes per vertex data (Easier to read)
+      // Second NOTE: The uvs are merged and written using a DWORD due
+      // to the write combining hardware being only able to handle 32,
+      // 64 and 128 writes. Never store to write combined memory with
+      // 8 or 16 bit instructions. You've been warned.
+
+      pVertex[0] = X1;
+      pVertex[1] = Y1;
+      ((volatile unsigned long *)pVertex)[2] = (tu1<<16)|tv1;         // Merged using big endian rules
+      pVertex[3] = 0;
+      pVertex[4] = X2;
+      pVertex[5] = Y2;
+      ((volatile unsigned long *)pVertex)[6] = (tu2<<16)|tv1;         // Merged using big endian rules
+      pVertex[7] = 0;
+      pVertex[8] = X3;
+      pVertex[9] = Y3;
+      ((volatile unsigned long *)pVertex)[10] = (tu2<<16)|tv2;        // Merged using big endian rules
+      pVertex[11] = 0;
+      pVertex[12] = X4;
+      pVertex[13] = Y4;
+      ((volatile unsigned long *)pVertex)[14] = (tu1<<16)|tv2;        // Merged using big endian rules
+      pVertex[15] = 0;
+      pVertex+=16;
+
+      dwNumChars--;
    }
+
+   // Since we allocated vertex data space based on the string length, we now need to
+   // add some dummy verts for any skipped characters (like newlines, etc.)
+   while( dwNumChars )
+   {
+      for(int i = 0; i < 16; i++)
+         pVertex[i] = 0;
+
+      pVertex += 16;
+      dwNumChars--;
+   }
+
+   // Stop drawing vertices
+   D3DDevice_EndVertices(pd3dDevice);
+
+   // Undo window offsets
+   font->m_fCursorX -= Winx;
+   font->m_fCursorY -= Winy;
+
+   xdk_render_msg_post(font);
 }
+
+void xdk_render_msg(void *driver, const char * strFormat)
+{
+   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver;
+
+   video_console.m_nCurLine = 0;
+   video_console.m_cCurLineLength = 0;
+
+   memset( video_console.m_Buffer, 0, 
+         video_console.m_cScreenHeightVirtual * 
+         ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
+
+   // Output the string to the console
+   unsigned long uStringLength = strlen(strFormat);
+
+   for( unsigned long i = 0; i < uStringLength; i++ )
+   {
+      wchar_t wch;
+      convert_char_to_wchar(&wch, &strFormat[i], sizeof(wch));
+
+      // If this is a newline, just increment lines and move on
+      if( wch == L'\n' )
+      {
+         video_console.m_nCurLine = ( video_console.m_nCurLine + 1 ) 
+            % video_console.m_cScreenHeightVirtual;
+         video_console.m_cCurLineLength = 0;
+         memset(video_console.m_Lines[video_console.m_nCurLine], 0, 
+               ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
+         continue;
+      }
+
+      int bIncrementLine = FALSE;  // Whether to wrap to the next line
+
+      if( video_console.m_cCurLineLength == video_console.m_cScreenWidth )
+         bIncrementLine = TRUE;
+      else
+      {
+         float fTextWidth, fTextHeight;
+         // Try to append the character to the line
+         video_console.m_Lines[ video_console.m_nCurLine ][ video_console.m_cCurLineLength ] = wch;
+         xdk360_video_font_get_text_width(&m_Font, video_console.m_Lines[ video_console.m_nCurLine ], &fTextWidth,
+               &fTextHeight);
+
+         if( fTextHeight > video_console.m_cxSafeArea )
+         {
+            // The line is too long, we need to wrap the character to the next line
+            video_console.m_Lines[video_console.m_nCurLine][ video_console.m_cCurLineLength ] = L'\0';
+            bIncrementLine = TRUE;
+         }
+      }
+
+      // If we need to skip to the next line, do so
+      if( bIncrementLine )
+      {
+         video_console.m_nCurLine = ( video_console.m_nCurLine + 1 ) 
+            % video_console.m_cScreenHeightVirtual;
+         video_console.m_cCurLineLength = 0;
+         memset( video_console.m_Lines[video_console.m_nCurLine], 0,
+               ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
+         video_console.m_Lines[video_console.m_nCurLine ][0] = wch;
+      }
+
+      video_console.m_cCurLineLength++;
+   }
+
+   // The top line
+   unsigned int nTextLine = ( video_console.m_nCurLine - 
+         video_console.m_cScreenHeight + video_console.m_cScreenHeightVirtual - 
+         video_console.m_nScrollOffset + 1 )
+      % video_console.m_cScreenHeightVirtual;
+
+   xdk_render_msg_pre(&m_Font);
+
+   for( unsigned int nScreenLine = 0; nScreenLine < video_console.m_cScreenHeight; nScreenLine++ )
+   {
+      xdk_video_font_draw_text(&m_Font, (float)( video_console.m_cxSafeAreaOffset ),
+            (float)( video_console.m_cySafeAreaOffset + video_console.m_fLineHeight * nScreenLine ), 
+            video_console.m_Lines[nTextLine], 0.0f );
+
+      nTextLine = ( nTextLine + 1 ) % video_console.m_cScreenHeightVirtual;
+   }
+
+   xdk_render_msg_post(&m_Font);
+}
+
+
