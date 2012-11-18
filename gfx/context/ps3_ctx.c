@@ -401,7 +401,6 @@ static void gfx_ctx_set_fbo(bool enable)
 {
    gl_t *gl = driver.video_data;
    gl->fbo_inited = enable;
-   gl->render_to_tex = enable;
 }
 
 static void gfx_ctx_apply_fbo_state_changes(unsigned mode)

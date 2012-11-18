@@ -113,7 +113,6 @@ struct settings
       {
          float scale_x;
          float scale_y;
-         bool enable;
       } fbo;
 
       char second_pass_shader[PATH_MAX];

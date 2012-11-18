@@ -209,8 +209,8 @@ static void populate_setting_item(unsigned i, item *current_item)
 	 break;
       case SETTING_SCALE_ENABLED:
          snprintf(current_item->text, sizeof(current_item->text), "Custom Scaling/Dual Shaders");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_settings.video.fbo.enable ? "ON" : "OFF");
-	 snprintf(current_item->comment, sizeof(current_item->comment), g_settings.video.fbo.enable ? "INFO - [Custom Scaling] is set to 'ON' - 2x shaders will look much\nbetter, and you can select a shader for [Shader #2]." : "INFO - [Custom Scaling] is set to 'OFF'.");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_settings.video.render_to_texture ? "ON" : "OFF");
+	 snprintf(current_item->comment, sizeof(current_item->comment), g_settings.video.render_to_texture ? "INFO - [Custom Scaling] is set to 'ON' - 2x shaders will look much\nbetter, and you can select a shader for [Shader #2]." : "INFO - [Custom Scaling] is set to 'OFF'.");
 	 break;
       case SETTING_SCALE_FACTOR:
          snprintf(current_item->text, sizeof(current_item->text), "Custom Scaling Factor");
@@ -1058,7 +1058,7 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 		   {
 			   rarch_settings_change(S_SCALE_ENABLED);
-			   context->set_fbo_enable(g_settings.video.fbo.enable);
+			   context->set_fbo_enable(g_settings.video.render_to_texture);
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
 		   {
@@ -1070,7 +1070,7 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 	   case SETTING_SCALE_FACTOR:
 		   if(input & (1 << RMENU_DEVICE_NAV_LEFT))
 		   {
-            if(g_settings.video.fbo.enable)
+            if(g_settings.video.render_to_texture)
 		      {
                bool should_decrement = g_settings.video.fbo.scale_x > MIN_SCALING_FACTOR;
                
@@ -1083,7 +1083,7 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 		   }
 		   if((input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 		   {
-			   if(g_settings.video.fbo.enable)
+			   if(g_settings.video.render_to_texture)
 			   {
 				   bool should_increment = g_settings.video.fbo.scale_x < MAX_SCALING_FACTOR;
 				   if(should_increment)

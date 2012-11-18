@@ -60,9 +60,6 @@ void rarch_config_load(const char *conf_name, bool upgrade_core_succeeded)
       CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
 #endif
       CONFIG_GET_BOOL(video.smooth, "video_smooth");
-#ifdef HAVE_FBO
-      CONFIG_GET_BOOL(video.fbo.enable, "fbo_enabled");
-#endif
       CONFIG_GET_BOOL(video.vsync, "video_vsync");
       CONFIG_GET_INT(video.aspect_ratio_idx, "aspect_ratio_index");
       CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
@@ -143,7 +140,6 @@ void rarch_config_save(const char * conf_name)
       config_set_string(conf, "video_second_pass_shader", g_settings.video.second_pass_shader);
       config_set_bool(conf, "video_render_to_texture", g_settings.video.render_to_texture);
       config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
-      config_set_bool(conf, "fbo_enabled", g_settings.video.fbo.enable);
 #endif
       config_set_bool(conf, "video_smooth", g_settings.video.smooth);
       config_set_bool(conf, "video_vsync", g_settings.video.vsync);

@@ -137,7 +137,7 @@ void rarch_settings_change(unsigned setting)
          g_extern.state_slot++;
          break;
       case S_SCALE_ENABLED:
-         g_settings.video.fbo.enable = !g_settings.video.fbo.enable;
+         g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
          break;
       case S_SCALE_FACTOR_DECREMENT:
          g_settings.video.fbo.scale_x -= 1.0f;
@@ -202,7 +202,7 @@ void rarch_settings_default(unsigned setting)
          g_extern.state_slot = 0;
          break;
       case S_DEF_SCALE_ENABLED:
-         g_settings.video.fbo.enable = true;
+         g_settings.video.render_to_texture = true;
          g_settings.video.fbo.scale_x = 2.0f;
          g_settings.video.fbo.scale_y = 2.0f;
          break;
@@ -395,11 +395,6 @@ void rarch_settings_set_default(void)
    g_extern.console.screen.resolutions.current.id = 0;
    strlcpy(g_extern.console.main_wrap.paths.default_rom_startup_dir, default_paths.filebrowser_startup_dir, sizeof(g_extern.console.main_wrap.paths.default_rom_startup_dir));
    strlcpy(g_extern.console.main_wrap.paths.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.paths.default_savestate_dir));
-#ifdef HAVE_FBO
-   g_settings.video.fbo.enable = true;
-#else
-   g_settings.video.fbo.enable = false;
-#endif
    g_settings.video.aspect_ratio_idx = 0;
    g_extern.console.block_config_read = true;
    g_extern.console.screen.state.frame_advance.enable = false;

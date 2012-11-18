@@ -1597,16 +1597,18 @@ static void gl_start(void)
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
    video_info.fullscreen = true;
+
    if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       video_info.width  = g_extern.console.screen.viewports.custom_vp.width;
       video_info.height = g_extern.console.screen.viewports.custom_vp.height;
    }
+
    driver.video_data = gl_init(&video_info, NULL, NULL);
 
    gl_t *gl = (gl_t*)driver.video_data;
 
-   context_set_fbo_func(g_settings.video.fbo.enable);
+   context_set_fbo_func(g_settings.video.render_to_texture);
    context_get_available_resolutions_func();
 
    gl_init_menu(gl);
@@ -1614,7 +1616,7 @@ static void gl_start(void)
 #ifdef HAVE_FBO
 // FBO mode has to be enabled once even if FBO mode has to be 
 // turned off
-   if (!g_settings.video.fbo.enable)
+   if (!g_settings.video.render_to_texture)
    {
       context_apply_fbo_state_changes_func(FBO_DEINIT);
       context_apply_fbo_state_changes_func(FBO_INIT);
