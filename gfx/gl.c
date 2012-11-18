@@ -1612,17 +1612,6 @@ static void gl_start(void)
    context_get_available_resolutions_func();
 
    gl_init_menu(gl);
-
-#ifdef HAVE_FBO
-// FBO mode has to be enabled once even if FBO mode has to be 
-// turned off
-   if (!g_settings.video.render_to_texture)
-   {
-      context_apply_fbo_state_changes_func(FBO_DEINIT);
-      context_apply_fbo_state_changes_func(FBO_INIT);
-      context_apply_fbo_state_changes_func(FBO_DEINIT);
-   }
-#endif
 }
 
 static void gl_stop(void)
