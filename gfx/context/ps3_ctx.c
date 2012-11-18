@@ -232,39 +232,15 @@ static bool gfx_ctx_rmenu_init(void)
    return true;
 }
 
-#if defined(HAVE_CG) && defined(HAVE_RMENU)
+#if defined(HAVE_RMENU)
 static void gfx_ctx_rmenu_frame(void *data)
 {
    gl_t *gl = (gl_t*)data;
 
-   gl_cg_use(RARCH_CG_MENU_SHADER_INDEX);
+   gl_shader_use(gl, RARCH_CG_MENU_SHADER_INDEX);
    gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
 
-   gl_cg_set_params(gl->win_width, gl->win_height, 
-         gl->win_width, gl->win_height, 
-         gl->win_width, gl->win_height, 
-         gl->frame_count, NULL, NULL, NULL, 0);
-
-   glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, menu_texture_id);
-
-   gl->coords.vertex = vertexes_flipped;
-
-   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-}
-#elif defined(HAVE_GLSL) && defined(HAVE_RMENU)
-static void gfx_ctx_rmenu_frame(void *data)
-{
-   gl_t *gl = (gl_t*)data;
-
-   gl_glsl_use(RARCH_CG_MENU_SHADER_INDEX);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
-
-   gl_glsl_set_params(gl->win_width, gl->win_height, 
+   gl_shader_set_params(gl, gl->win_width, gl->win_height, 
          gl->win_width, gl->win_height, 
          gl->win_width, gl->win_height, 
          gl->frame_count, NULL, NULL, NULL, 0);
