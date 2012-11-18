@@ -238,7 +238,7 @@ static void gfx_ctx_rmenu_frame(void *data)
    gl_t *gl = (gl_t*)data;
 
    gl_cg_use(RARCH_CG_MENU_SHADER_INDEX);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
 
    gl_cg_set_params(gl->win_width, gl->win_height, 
          gl->win_width, gl->win_height, 
@@ -254,6 +254,7 @@ static void gfx_ctx_rmenu_frame(void *data)
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 #elif defined(HAVE_GLSL) && defined(HAVE_RMENU)
 static void gfx_ctx_rmenu_frame(void *data)
@@ -261,7 +262,7 @@ static void gfx_ctx_rmenu_frame(void *data)
    gl_t *gl = (gl_t*)data;
 
    gl_glsl_use(RARCH_CG_MENU_SHADER_INDEX);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
 
    gl_glsl_set_params(gl->win_width, gl->win_height, 
          gl->win_width, gl->win_height, 
@@ -277,6 +278,7 @@ static void gfx_ctx_rmenu_frame(void *data)
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 #endif
 
