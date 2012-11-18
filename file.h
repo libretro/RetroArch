@@ -69,6 +69,14 @@ bool path_is_directory(const char *path);
 bool path_file_exists(const char *path);
 const char *path_get_extension(const char *path);
 
+// Returns basename from path.
+const char *path_basename(const char *path);
+
+// Extracts base directory by mutating path. Keeps trailing '/'.
+void path_basedir(char *path);
+
+bool path_is_absolute(const char *path);
+
 // Path-name operations.
 // If any of these operation are detected to overflow, the application will be terminated.
 
@@ -76,8 +84,8 @@ const char *path_get_extension(const char *path);
 // The extension here is considered to be the string from the last '.' to the end.
 // If no '.' is present, in_path and replace will simply be concatenated.
 // 'size' is buffer size of 'out_path'.
-// I.e.: in_path = "/foo/bar/baz/boo.c", replace = ".asm" => out_path = "/foo/bar/baz/boo.asm" 
-// I.e.: in_path = "/foo/bar/baz/boo.c", replace = ""     => out_path = "/foo/bar/baz/boo" 
+// E.g.: in_path = "/foo/bar/baz/boo.c", replace = ".asm" => out_path = "/foo/bar/baz/boo.asm" 
+// E.g.: in_path = "/foo/bar/baz/boo.c", replace = ""     => out_path = "/foo/bar/baz/boo" 
 void fill_pathname(char *out_path, const char *in_path, const char *replace, size_t size);
 
 // Appends a filename extension 'replace' to 'in_path', and outputs result in 'out_path'.
@@ -89,7 +97,7 @@ void fill_pathname_noext(char *out_path, const char *in_path, const char *replac
 // Basename of in_basename is the string after the last '/' or '\\', i.e the filename without directories.
 // If in_basename has no '/' or '\\', the whole 'in_basename' will be used.
 // 'size' is buffer size of 'in_dir'.
-// I.e.: in_dir = "/tmp/some_dir", in_basename = "/some_roms/foo.c", replace = ".asm" =>
+// E.g..: in_dir = "/tmp/some_dir", in_basename = "/some_roms/foo.c", replace = ".asm" =>
 //    in_dir = "/tmp/some_dir/foo.c.asm"
 void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replace, size_t size);
 
@@ -97,8 +105,13 @@ void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replac
 void fill_pathname_base(char *out_path, const char *in_path, size_t size);
 
 // Copies base directory of in_path into out_path.
-// If in_path is a path without any slashes (relative current directory), out_path will get path ".".
+// If in_path is a path without any slashes (relative current directory), out_path will get path "./".
 void fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
+
+// Joins basedir of in_refpath together with in_path.
+// If in_path is an absolute path, out_path = in_path.
+// E.g.: in_refpath = "/foo/bar/baz.a", in_path = "foobar.cg", out_path = "/foo/bar/foobar.cg".
+void fill_pathname_resolve_relative(char *out_path, const char *in_refpath, const char *in_path, size_t size);
 
 size_t convert_char_to_wchar(wchar_t *out_wchar, const char *in_char, size_t size);
 size_t convert_wchar_to_char(char *out_char, const wchar_t *in_wchar, size_t size);

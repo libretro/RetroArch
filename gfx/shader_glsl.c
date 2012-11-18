@@ -21,6 +21,7 @@
 #include "../compat/posix_string.h"
 #include "state_tracker.h"
 #include "../dynamic.h"
+#include "../file.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -422,9 +423,8 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
 
    bool linear = true;
    xmlChar *filename = xmlGetProp(ptr, (const xmlChar*)"file");
-   xmlChar *filter = xmlGetProp(ptr, (const xmlChar*)"filter");
-   xmlChar *id = xmlGetProp(ptr, (const xmlChar*)"id");
-   char *last = NULL;
+   xmlChar *filter   = xmlGetProp(ptr, (const xmlChar*)"filter");
+   xmlChar *id       = xmlGetProp(ptr, (const xmlChar*)"id");
    struct texture_image img;
 
    if (!id)
@@ -443,13 +443,7 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
       linear = false;
 
    char tex_path[PATH_MAX];
-   strlcpy(tex_path, shader_path, sizeof(tex_path));
-
-   last = strrchr(tex_path, '/');
-   if (!last) last = strrchr(tex_path, '\\');
-   if (last) last[1] = '\0';
-
-   strlcat(tex_path, (const char*)filename, sizeof(tex_path));
+   fill_pathname_resolve_relative(tex_path, shader_path, (const char*)filename, sizeof(tex_path));
 
    RARCH_LOG("Loading texture image from: \"%s\" ...\n", tex_path);
    if (!texture_image_load(tex_path, &img))
@@ -529,12 +523,7 @@ static bool get_script(const char *path, xmlNodePtr ptr)
    xmlChar *src = xmlGetProp(ptr, (const xmlChar*)"src");
    if (src)
    {
-      strlcpy(gl_tracker_script, path, sizeof(gl_tracker_script));
-      char *dir_ptr = strrchr(gl_tracker_script, '/');
-      if (!dir_ptr) dir_ptr = strrchr(gl_tracker_script, '\\');
-      if (dir_ptr) dir_ptr[1] = '\0';
-      strlcat(gl_tracker_script, (const char*)src, sizeof(gl_tracker_script));
-
+      fill_pathname_resolve_relative(gl_tracker_script, path, (const char*)src, sizeof(gl_tracker_script));
       xmlFree(src);
    }
    else

@@ -410,17 +410,62 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
 void fill_pathname_basedir(char *out_dir, const char *in_path, size_t size)
 {
    rarch_assert(strlcpy(out_dir, in_path, size) < size);
+   path_basedir(out_dir);
+}
 
-   char *base = strrchr(out_dir, '/');
-   if (!base)
-      base = strrchr(out_dir, '\\');
+void path_basedir(char *path)
+{
+   if (strlen(path) < 2)
+      return;
 
-   if (base)
-      *base = '\0';
-   else if (size >= 2)
+   char *last = strrchr(path, '/');
+#ifdef _WIN32
+   if (!last)
+      last = strrchr(path, '\\');
+#endif
+
+   if (last)
+      last[1] = '\0';
+   else
    {
-      out_dir[0] = '.';
-      out_dir[1] = '\0';
+      path[0] = '.';
+      path[1] = '/';
+      path[2] = '\0';
+   }
+}
+
+const char *path_basename(const char *path)
+{
+   const char *last = strrchr(path, '/');
+#ifdef _WIN32
+   if (!last)
+      last = strrchr(path, '\\');
+#endif
+
+   if (last)
+      return last + 1;
+   else
+      return path;
+}
+
+bool path_is_absolute(const char *path)
+{
+#ifdef _WIN32
+   return path[0] == '/' || strstr(path, ":/") || strstr(path, ":\\");
+#else
+   return path[0] == '/';
+#endif
+}
+
+void fill_pathname_resolve_relative(char *out_path, const char *in_refpath, const char *in_path, size_t size)
+{
+   if (path_is_absolute(in_path))
+      rarch_assert(strlcpy(out_path, in_path, size) < size);
+   else
+   {
+      rarch_assert(strlcpy(out_path, in_refpath, size) < size);
+      path_basedir(out_path);
+      rarch_assert(strlcat(out_path, in_path, size) < size);
    }
 }
 

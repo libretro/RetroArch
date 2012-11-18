@@ -28,6 +28,7 @@ OBJ = retroarch.o \
 
 JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
 	conf/config_file.o \
+	file_path.o \
 	compat/compat.o \
 	input/input_common.o
 

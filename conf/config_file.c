@@ -23,6 +23,7 @@
 #include "../compat/strl.h"
 #include "../compat/posix_string.h"
 #include "../msvc/msvc_compat.h"
+#include "../file.h"
 
 #if !defined(_WIN32) && !defined(__CELLOS_LV2__) && !defined(_XBOX)
 #include <sys/param.h> // PATH_MAX
@@ -196,55 +197,21 @@ static void add_sub_conf(config_file_t *conf, char *line)
       return;
 
    add_include_list(conf, path);
-
    char real_path[PATH_MAX];
 
 #ifdef _WIN32
-   // Accomodate POSIX systems on Win32.
-   bool is_full_path = *path == '/';
-
-   if (is_full_path)
-      strlcpy(real_path, path, sizeof(real_path));
-   else
-   {
-      // Workaround GetFullPathName not existing on XDK.
-      // : is not a valid element in a path name. (NTFS streams?)
-      if (strchr(path, ':') == NULL)
-      {
-         strlcpy(real_path, conf->path, sizeof(real_path));
-         char *split = strrchr(real_path, '/');
-         if (!split)
-            split = strrchr(real_path, '\\');
-
-         split[1] = '\0';
-         strlcat(real_path, path, sizeof(real_path));
-      }
-      else
-         strlcpy(real_path, path, sizeof(real_path));
-   }
+   fill_pathname_resolve_relative(real_path, conf->path, path, sizeof(real_path));
 #else
-   if (*path == '/')
-      strlcpy(real_path, path, sizeof(real_path));
 #ifndef __CELLOS_LV2__
-   else if (*path == '~')
+   if (*path == '~')
    {
       const char *home = getenv("HOME");
-      strlcpy(real_path, home ? home : "/", sizeof(real_path));
+      strlcpy(real_path, home ? home : "", sizeof(real_path));
       strlcat(real_path, path + 1, sizeof(real_path));
    }
-#endif
    else
-   {
-      strlcpy(real_path, conf->path, sizeof(real_path));
-      char *split = strrchr(real_path, '/');
-      if (split)
-      {
-         split[1] = '\0';
-         strlcat(real_path, path, sizeof(real_path));
-      }
-      else
-         strlcpy(real_path, path, sizeof(real_path));
-   }
+#endif
+      fill_pathname_resolve_relative(real_path, conf->path, path, sizeof(real_path));
 #endif
 
    config_file_t *sub_conf = config_file_new_internal(real_path, conf->include_depth + 1);

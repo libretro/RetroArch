@@ -28,6 +28,7 @@
 #include "image.h"
 #include "../dynamic.h"
 #include "../compat/posix_string.h"
+#include "../file.h"
 
 #ifdef HAVE_CONFIGFILE
 #include "state_tracker.h"
@@ -533,7 +534,7 @@ static void load_texture_data(GLuint *obj, const struct texture_image *img, bool
    free(img->pixels);
 }
 
-static bool load_textures(const char *dir_path, config_file_t *conf)
+static bool load_textures(const char *cgp_path, config_file_t *conf)
 {
    bool ret = true;
    char *textures = NULL;
@@ -566,11 +567,8 @@ static bool load_textures(const char *dir_path, config_file_t *conf)
       if (!config_get_bool(conf, id_absolute, &absolute))
          absolute = false;
 
-      char image_path[512];
-      if (absolute)
-         print_buf(image_path, "%s", path);
-      else
-         print_buf(image_path, "%s%s", dir_path, path);
+      char image_path[PATH_MAX];
+      fill_pathname_resolve_relative(image_path, cgp_path, path, sizeof(image_path));
 
       RARCH_LOG("Loading image from: \"%s\".\n", image_path);
       struct texture_image img;
@@ -596,7 +594,7 @@ end:
    return ret;
 }
 
-static bool load_imports(const char *dir_path, config_file_t *conf)
+static bool load_imports(const char *cgp_path, config_file_t *conf)
 {
    bool ret = true;
    char *imports = NULL;
@@ -744,9 +742,7 @@ static bool load_imports(const char *dir_path, config_file_t *conf)
 #ifdef HAVE_PYTHON
    if (config_get_string(conf, "import_script", &script))
    {
-      strlcpy(script_path, dir_path, sizeof(script_path));
-      strlcat(script_path, script, sizeof(script_path));
-
+      fill_pathname_resolve_relative(script_path, cgp_path, script, sizeof(script_path));
       tracker_info.script = script_path;
    }
    if (config_get_string(conf, "import_script_class", &script_class))
@@ -772,7 +768,7 @@ end:
 }
 #endif
 
-static bool load_shader(const char *dir_path, unsigned i, config_file_t *conf)
+static bool load_shader(const char *cgp_path, unsigned i, config_file_t *conf)
 {
    char *shader_path = NULL;
    char attr_buf[64];
@@ -781,8 +777,7 @@ static bool load_shader(const char *dir_path, unsigned i, config_file_t *conf)
    print_buf(attr_buf, "shader%u", i);
    if (config_get_string(conf, attr_buf, &shader_path))
    {
-      strlcpy(path_buf, dir_path, sizeof(path_buf));
-      strlcat(path_buf, shader_path, sizeof(path_buf));
+      fill_pathname_resolve_relative(path_buf, cgp_path, shader_path, sizeof(path_buf));
       free(shader_path);
    }
    else
@@ -945,9 +940,6 @@ static bool load_preset(const char *path)
       return false;
 
    int shaders = 0;
-   // Basedir.
-   char dir_path[PATH_MAX];
-   char *ptr = NULL;
 
    RARCH_LOG("Loading Cg meta-shader: %s\n", path);
    config_file_t *conf = config_file_new(path);
@@ -994,14 +986,6 @@ static bool load_preset(const char *path)
          fbo_smooth[i + 1] = smooth ? FILTER_LINEAR : FILTER_NEAREST;
    }
 
-   strlcpy(dir_path, path, sizeof(dir_path));
-   ptr = strrchr(dir_path, '/');
-   if (!ptr) ptr = strrchr(dir_path, '\\');
-   if (ptr) 
-      ptr[1] = '\0';
-   else // No directory.
-      dir_path[0] = '\0';
-
    for (int i = 0; i < shaders; i++)
    {
       if (!load_shader_params(i, conf))
@@ -1011,7 +995,7 @@ static bool load_preset(const char *path)
          goto end;
       }
 
-      if (!load_shader(dir_path, i, conf))
+      if (!load_shader(path, i, conf))
       {
          RARCH_ERR("Failed to load shaders ...\n");
          ret = false;
@@ -1019,14 +1003,14 @@ static bool load_preset(const char *path)
       }
    }
 
-   if (!load_textures(dir_path, conf))
+   if (!load_textures(path, conf))
    {
       RARCH_ERR("Failed to load lookup textures ...\n");
       ret = false;
       goto end;
    }
 
-   if (!load_imports(dir_path, conf))
+   if (!load_imports(path, conf))
    {
       RARCH_ERR("Failed to load imports ...\n");
       ret = false;

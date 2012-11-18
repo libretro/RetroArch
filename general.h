@@ -708,8 +708,9 @@ static inline void rarch_sleep(unsigned msec)
 #endif
 }
 
-#define rarch_assert(cond) \
-   if (!(cond)) { RARCH_ERR("Assertion failed at %s:%d.\n", __FILE__, __LINE__); exit(2); }
+#define rarch_assert(cond) do { \
+   if (!(cond)) { RARCH_ERR("Assertion failed at %s:%d.\n", __FILE__, __LINE__); exit(2); } \
+} while(0)
 
 static inline void rarch_fail(int error_code, const char *error)
 {
