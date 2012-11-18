@@ -1290,6 +1290,9 @@ static void gl_reinit_textures(gl_t *gl, const video_info_t *video)
    }
    else
       RARCH_LOG("Reinitializing textures skipped.\n");
+
+   if (!gl_check_error())
+      RARCH_LOG("GL error reported while reinitializing textures. This should not happen ...\n");
 }
 #endif
 
