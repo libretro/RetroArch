@@ -515,7 +515,6 @@ void gl_deinit_fbo(gl_t *gl)
       memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
       memset(gl->fbo, 0, sizeof(gl->fbo));
       gl->fbo_inited = false;
-      gl->render_to_tex = false;
       gl->fbo_pass = 0;
    }
 }
@@ -700,7 +699,6 @@ static inline void gl_start_frame_fbo(gl_t *gl)
 {
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
-   gl->render_to_tex = true;
    gl_set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true, false);
 
    // Need to preserve the "flipped" state when in FBO as well to have 
@@ -810,7 +808,6 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
    glClear(GL_COLOR_BUFFER_BIT);
-   gl->render_to_tex = false;
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
    gl_shader_set_params(gl, prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
@@ -829,7 +826,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
 static void gl_update_resize(gl_t *gl)
 {
 #ifdef HAVE_FBO
-   if (!gl->render_to_tex)
+   if (!gl->fbo_inited)
       gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
    else
    {
