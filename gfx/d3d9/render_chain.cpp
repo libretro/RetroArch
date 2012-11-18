@@ -313,8 +313,10 @@ void RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
 
 void RenderChain::compile_shaders(Pass &pass, const std::string &shader)
 {
-   CGprofile fragment_profile = cgD3D9GetLatestPixelProfile();
    CGprofile vertex_profile = cgD3D9GetLatestVertexProfile();
+   CGprofile fragment_profile = cgD3D9GetLatestPixelProfile();
+   RARCH_LOG("[D3D9 Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
+   RARCH_LOG("[D3D9 Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
    const char **fragment_opts = cgD3D9GetOptimalOptions(fragment_profile);
    const char **vertex_opts = cgD3D9GetOptimalOptions(vertex_profile);
 
