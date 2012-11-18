@@ -920,9 +920,6 @@ static void gl_init_textures_data(gl_t *gl)
 #if defined(HAVE_PSGL)
 static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
-   if (!gl->fbo_inited)
-      gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-
    size_t buffer_addr        = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
    size_t buffer_stride      = gl->tex_w * gl->base_size;
    const uint8_t *frame_copy = frame;
