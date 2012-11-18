@@ -685,11 +685,11 @@ static void select_file(menu *current_menu, uint64_t input)
                break;
             case PRESET_CHOICE:
                strlcpy(g_extern.file_state.cgp_path, path, sizeof(g_extern.file_state.cgp_path));
-               context->apply_fbo_state_changes(FBO_DEINIT);
+               context->set_fbo_enable(FBO_DEINIT);
 #ifdef HAVE_OPENGL
                gl_cg_reinit(path);
 #endif
-               context->apply_fbo_state_changes(FBO_INIT);
+               context->set_fbo_enable(FBO_INIT);
                break;
 #endif
             case INPUT_PRESET_CHOICE:
@@ -1058,13 +1058,16 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 		   if((input & (1 << RMENU_DEVICE_NAV_LEFT)) || (input & (1 << RMENU_DEVICE_NAV_RIGHT)) || (input & (1 << RMENU_DEVICE_NAV_B)))
 		   {
 			   rarch_settings_change(S_SCALE_ENABLED);
-			   context->set_fbo_enable(g_settings.video.render_to_texture);
+
+            if(g_settings.video.render_to_texture)
+               context->set_fbo_enable(FBO_INIT);
+            else
+               context->set_fbo_enable(FBO_DEINIT);
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
 		   {
 			   rarch_settings_default(S_DEF_SCALE_ENABLED);
-			   context->apply_fbo_state_changes(FBO_DEINIT);
-			   context->apply_fbo_state_changes(FBO_INIT);
+            context->set_fbo_enable(FBO_REINIT);
 		   }
 		   break;
 	   case SETTING_SCALE_FACTOR:
@@ -1077,7 +1080,7 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
                if(should_decrement)
                {
                   rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
-                  context->apply_fbo_state_changes(FBO_REINIT);
+                  context->set_fbo_enable(FBO_REINIT);
                }
             }
 		   }
@@ -1089,15 +1092,14 @@ static void set_setting_action(menu *current_menu, unsigned switchvalue, uint64_
 				   if(should_increment)
 				   {
 					   rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
-					   context->apply_fbo_state_changes(FBO_REINIT);
+                  context->set_fbo_enable(FBO_REINIT);
 				   }
 			   }
 		   }
 		   if(input & (1 << RMENU_DEVICE_NAV_START))
 		   {
 			   rarch_settings_default(S_DEF_SCALE_FACTOR);
-			   context->apply_fbo_state_changes(FBO_DEINIT);
-			   context->apply_fbo_state_changes(FBO_INIT);
+            context->set_fbo_enable(FBO_REINIT);
 		   }
 		   break;
 #endif

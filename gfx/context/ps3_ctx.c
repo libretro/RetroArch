@@ -361,11 +361,7 @@ static void gfx_ctx_set_filtering(unsigned index, bool set_smooth)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
-static void gfx_ctx_set_fbo(bool enable)
-{
-}
-
-static void gfx_ctx_apply_fbo_state_changes(unsigned mode)
+static void gfx_ctx_set_fbo(unsigned mode)
 {
    gl_t *gl = driver.video_data;
 
@@ -438,7 +434,6 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
 #endif
 
    gfx_ctx_set_fbo,
-   gfx_ctx_apply_fbo_state_changes,
 #ifdef HAVE_RMENU
    gfx_ctx_rmenu_frame
 #endif

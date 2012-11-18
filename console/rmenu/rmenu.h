@@ -75,8 +75,7 @@ typedef struct rmenu_context
    void (*set_filtering)(unsigned index, bool set_smooth);
    void (*set_aspect_ratio)(unsigned aspectratio_index);
    void (*blend)(bool enable);
-   void (*set_fbo_enable)(bool enable);
-   void (*apply_fbo_state_changes)(unsigned i);
+   void (*set_fbo_enable)(unsigned i);
    void (*free_textures)(void);
    void (*init_textures)(void);
    void (*render_selection_panel)(rmenu_position_t *position);

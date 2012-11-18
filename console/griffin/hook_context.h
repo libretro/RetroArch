@@ -20,8 +20,7 @@
 #define context_destroy_func()                       gfx_ctx_destroy()
 
 #ifdef HAVE_FBO
-#define context_set_fbo_func(enable)                 gl->ctx_driver->set_fbo(enable)
-#define context_apply_fbo_state_changes_func(var)    gl->ctx_driver->apply_fbo_state_changes(var)
+#define context_set_fbo_func(var)                    gl->ctx_driver->set_fbo(var)
 #endif
 
 #define context_get_available_resolutions_func()     gl->ctx_driver->get_available_resolutions()

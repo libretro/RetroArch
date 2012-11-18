@@ -464,10 +464,6 @@ static void gfx_ctx_xdk_set_fbo(bool enable)
 #endif
 }
 
-void gfx_ctx_xdk_apply_fbo_state_changes(unsigned mode)
-{
-}
-
 void gfx_ctx_xdk_screenshot_dump(void *data)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
@@ -562,5 +558,4 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    gfx_ctx_xdk_menu_init,
 
    gfx_ctx_xdk_set_fbo,
-   gfx_ctx_xdk_apply_fbo_state_changes,
 };

@@ -97,8 +97,7 @@ typedef struct gfx_ctx_driver
    void (*get_available_resolutions)(void);
    int  (*check_resolution)(unsigned resolution_id);
    bool (*rmenu_init)(void);
-   void (*set_fbo)(bool);
-   void (*apply_fbo_state_changes)(unsigned);
+   void (*set_fbo)(unsigned);
 #endif
 #ifdef HAVE_RMENU
    void (*rmenu_frame)(void *data);

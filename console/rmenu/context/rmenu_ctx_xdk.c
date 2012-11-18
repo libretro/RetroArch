@@ -220,15 +220,11 @@ static void rmenu_ctx_xdk_set_aspect_ratio(unsigned aspectratio_index)
    driver.video->set_aspect_ratio(NULL, aspectratio_index);
 }
 
-static void rmenu_ctx_xdk_set_fbo_enable(bool enable)
+static void rmenu_ctx_xdk_set_fbo_enable(unsigned i)
 {
-   gfx_ctx_xdk_set_fbo(enable);
+   gfx_ctx_xdk_set_fbo(i);
 }
 
-static void rmenu_ctx_xdk_apply_fbo_state_changes(unsigned i)
-{
-   gfx_ctx_xdk_apply_fbo_state_changes(i);
-}
 
 const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_clear,
@@ -236,7 +232,6 @@ const rmenu_context_t rmenu_ctx_xdk = {
    rmenu_ctx_xdk_set_aspect_ratio,
    rmenu_ctx_xdk_blend,
    rmenu_ctx_xdk_set_fbo_enable,
-   rmenu_ctx_xdk_apply_fbo_state_changes,
    rmenu_ctx_xdk_free_textures,
    rmenu_ctx_xdk_init_textures,
    rmenu_ctx_xdk_render_selection_panel,
