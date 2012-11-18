@@ -1608,7 +1608,6 @@ static void gl_start(void)
 
    gl_t *gl = (gl_t*)driver.video_data;
 
-   context_set_fbo_func(g_settings.video.render_to_texture);
    context_get_available_resolutions_func();
 
    gl_init_menu(gl);
