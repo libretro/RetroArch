@@ -252,6 +252,56 @@ static const char *stock_fragment_modern =
    "}";
 
 #ifdef HAVE_XML
+static bool xml_get_prop(char *buf, size_t size, xmlNodePtr node, const char *prop)
+{
+   if (!size)
+      return false;
+
+   xmlChar *p = xmlGetProp(node, (const xmlChar*)prop);
+   if (p)
+   {
+      bool ret = strlcpy(buf, (const char*)p, size) < size;
+      xmlFree(p);
+      return ret;
+   }
+   else
+   {
+      *buf = '\0';
+      return false;
+   }
+}
+
+static char *xml_get_content(xmlNodePtr node)
+{
+   xmlChar *content = xmlNodeGetContent(node);
+   if (!content)
+      return NULL;
+
+   char *ret = strdup((const char*)content);
+   xmlFree(content);
+   return ret;
+}
+
+static char *xml_replace_if_file(char *content, const char *path, xmlNodePtr node, const char *src_prop)
+{
+   char prop[64];
+   if (!xml_get_prop(prop, sizeof(prop), node, src_prop))
+      return content;
+
+   free(content);
+   content = NULL;
+
+   char shader_path[PATH_MAX];
+   fill_pathname_resolve_relative(shader_path, path, (const char*)prop, sizeof(shader_path));
+
+   RARCH_LOG("Loading external source from \"%s\".\n", shader_path);
+   if (read_file(shader_path, (void**)&content) >= 0)
+      return content;
+   else
+      return NULL;
+}
+
+
 static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
 {
    prog->scale_x = 1.0;
@@ -260,43 +310,45 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
    prog->valid_scale = false;
 
    // Check if shader forces a certain texture filtering.
-   xmlChar *attr = xmlGetProp(ptr, (const xmlChar*)"filter");
-   if (attr)
+   char attr[64];
+   if (xml_get_prop(attr, sizeof(attr), ptr, "filter"))
    {
-      if (strcmp((const char*)attr, "nearest") == 0)
+      if (strcmp(attr, "nearest") == 0)
       {
          prog->filter = RARCH_GL_NEAREST;
          RARCH_LOG("XML: Shader forces GL_NEAREST.\n");
       }
-      else if (strcmp((const char*)attr, "linear") == 0)
+      else if (strcmp(attr, "linear") == 0)
       {
          prog->filter = RARCH_GL_LINEAR;
          RARCH_LOG("XML: Shader forces GL_LINEAR.\n");
       }
       else
          RARCH_WARN("XML: Invalid property for filter.\n");
-
-      xmlFree(attr);
    }
    else
       prog->filter = RARCH_GL_NOFORCE;
 
    // Check for scaling attributes *lots of code <_<*
-   xmlChar *attr_scale = xmlGetProp(ptr, (const xmlChar*)"scale");
-   xmlChar *attr_scale_x = xmlGetProp(ptr, (const xmlChar*)"scale_x");
-   xmlChar *attr_scale_y = xmlGetProp(ptr, (const xmlChar*)"scale_y");
-   xmlChar *attr_size = xmlGetProp(ptr, (const xmlChar*)"size");
-   xmlChar *attr_size_x = xmlGetProp(ptr, (const xmlChar*)"size_x");
-   xmlChar *attr_size_y = xmlGetProp(ptr, (const xmlChar*)"size_y");
-   xmlChar *attr_outscale = xmlGetProp(ptr, (const xmlChar*)"outscale");
-   xmlChar *attr_outscale_x = xmlGetProp(ptr, (const xmlChar*)"outscale_x");
-   xmlChar *attr_outscale_y = xmlGetProp(ptr, (const xmlChar*)"outscale_y");
+   char attr_scale[64], attr_scale_x[64], attr_scale_y[64];
+   char attr_size[64], attr_size_x[64], attr_size_y[64];
+   char attr_outscale[64], attr_outscale_x[64], attr_outscale_y[64];
+
+   xml_get_prop(attr_scale, sizeof(attr_scale), ptr, "scale");
+   xml_get_prop(attr_scale_x, sizeof(attr_scale_x), ptr, "scale_x");
+   xml_get_prop(attr_scale_y, sizeof(attr_scale_y), ptr, "scale_y");
+   xml_get_prop(attr_size, sizeof(attr_size), ptr, "size");
+   xml_get_prop(attr_size_x, sizeof(attr_size_x), ptr, "size_x");
+   xml_get_prop(attr_size_y, sizeof(attr_size_y), ptr, "size_y");
+   xml_get_prop(attr_outscale, sizeof(attr_outscale), ptr, "outscale");
+   xml_get_prop(attr_outscale_x, sizeof(attr_outscale_x), ptr, "outscale_x");
+   xml_get_prop(attr_outscale_y, sizeof(attr_outscale_y), ptr, "outscale_y");
 
    unsigned x_attr_cnt = 0, y_attr_cnt = 0;
 
-   if (attr_scale)
+   if (*attr_scale)
    {
-      float scale = strtod((const char*)attr_scale, NULL);
+      float scale = strtod(attr_scale, NULL);
       prog->scale_x = scale;
       prog->scale_y = scale;
       prog->valid_scale = true;
@@ -306,9 +358,9 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       y_attr_cnt++;
    }
 
-   if (attr_scale_x)
+   if (*attr_scale_x)
    {
-      float scale = strtod((const char*)attr_scale_x, NULL);
+      float scale = strtod(attr_scale_x, NULL);
       prog->scale_x = scale;
       prog->valid_scale = true;
       prog->type_x = RARCH_SCALE_INPUT;
@@ -316,9 +368,9 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       x_attr_cnt++;
    }
 
-   if (attr_scale_y)
+   if (*attr_scale_y)
    {
-      float scale = strtod((const char*)attr_scale_y, NULL);
+      float scale = strtod(attr_scale_y, NULL);
       prog->scale_y = scale;
       prog->valid_scale = true;
       prog->type_y = RARCH_SCALE_INPUT;
@@ -326,9 +378,9 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       y_attr_cnt++;
    }
    
-   if (attr_size)
+   if (*attr_size)
    {
-      prog->abs_x = prog->abs_y = strtoul((const char*)attr_size, NULL, 0);
+      prog->abs_x = prog->abs_y = strtoul(attr_size, NULL, 0);
       prog->valid_scale = true;
       prog->type_x = prog->type_y = RARCH_SCALE_ABSOLUTE;
       RARCH_LOG("Got size attr: %u\n", prog->abs_x);
@@ -336,27 +388,27 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       y_attr_cnt++;
    }
 
-   if (attr_size_x)
+   if (*attr_size_x)
    {
-      prog->abs_x = strtoul((const char*)attr_size_x, NULL, 0);
+      prog->abs_x = strtoul(attr_size_x, NULL, 0);
       prog->valid_scale = true;
       prog->type_x = RARCH_SCALE_ABSOLUTE;
       RARCH_LOG("Got size_x attr: %u\n", prog->abs_x);
       x_attr_cnt++;
    }
 
-   if (attr_size_y)
+   if (*attr_size_y)
    {
-      prog->abs_y = strtoul((const char*)attr_size_y, NULL, 0);
+      prog->abs_y = strtoul(attr_size_y, NULL, 0);
       prog->valid_scale = true;
       prog->type_y = RARCH_SCALE_ABSOLUTE;
       RARCH_LOG("Got size_y attr: %u\n", prog->abs_y);
       y_attr_cnt++;
    }
 
-   if (attr_outscale)
+   if (*attr_outscale)
    {
-      float scale = strtod((const char*)attr_outscale, NULL);
+      float scale = strtod(attr_outscale, NULL);
       prog->scale_x = scale;
       prog->scale_y = scale;
       prog->valid_scale = true;
@@ -366,9 +418,9 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       y_attr_cnt++;
    }
 
-   if (attr_outscale_x)
+   if (*attr_outscale_x)
    {
-      float scale = strtod((const char*)attr_outscale_x, NULL);
+      float scale = strtod(attr_outscale_x, NULL);
       prog->scale_x = scale;
       prog->valid_scale = true;
       prog->type_x = RARCH_SCALE_VIEWPORT;
@@ -376,34 +428,15 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       x_attr_cnt++;
    }
 
-   if (attr_outscale_y)
+   if (*attr_outscale_y)
    {
-      float scale = strtod((const char*)attr_outscale_y, NULL);
+      float scale = strtod(attr_outscale_y, NULL);
       prog->scale_y = scale;
       prog->valid_scale = true;
       prog->type_y = RARCH_SCALE_VIEWPORT;
       RARCH_LOG("Got outscale_y attr: %.1f\n", scale);
       y_attr_cnt++;
    }
-
-   if (attr_scale)
-      xmlFree(attr_scale);
-   if (attr_scale_x)
-      xmlFree(attr_scale_x);
-   if (attr_scale_y)
-      xmlFree(attr_scale_y);
-   if (attr_size)
-      xmlFree(attr_size);
-   if (attr_size_x)
-      xmlFree(attr_size_x);
-   if (attr_size_y)
-      xmlFree(attr_size_y);
-   if (attr_outscale)
-      xmlFree(attr_outscale);
-   if (attr_outscale_x)
-      xmlFree(attr_outscale_x);
-   if (attr_outscale_y)
-      xmlFree(attr_outscale_y);
 
    if (x_attr_cnt > 1)
       return false;
@@ -422,24 +455,27 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
    }
 
    bool linear = true;
-   xmlChar *filename = xmlGetProp(ptr, (const xmlChar*)"file");
-   xmlChar *filter   = xmlGetProp(ptr, (const xmlChar*)"filter");
-   xmlChar *id       = xmlGetProp(ptr, (const xmlChar*)"id");
+   char filename[PATH_MAX];
+   char filter[64];
+   char id[64];
+   xml_get_prop(filename, sizeof(filename), ptr, "file");
+   xml_get_prop(filter, sizeof(filter), ptr, "filter");
+   xml_get_prop(id, sizeof(id), ptr, "id");
    struct texture_image img;
 
-   if (!id)
+   if (!*id)
    {
       RARCH_ERR("Could not find ID in texture.\n");
-      goto error;
+      return false;
    }
 
-   if (!filename)
+   if (!*filename)
    {
       RARCH_ERR("Could not find filename in texture.\n");
-      goto error;
+      return false;
    }
 
-   if (filter && strcmp((const char*)filter, "nearest") == 0)
+   if (strcmp(filter, "nearest") == 0)
       linear = false;
 
    char tex_path[PATH_MAX];
@@ -449,7 +485,7 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
    if (!texture_image_load(tex_path, &img))
    {
       RARCH_ERR("Failed to load texture image from: \"%s\"\n", tex_path);
-      goto error;
+      return false;
    }
 
    strlcpy(gl_teximage_uniforms[gl_teximage_cnt], (const char*)id, sizeof(gl_teximage_uniforms[0]));
@@ -473,23 +509,9 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
    glBindTexture(GL_TEXTURE_2D, 0);
    free(img.pixels);
 
-   xmlFree(filename);
-   xmlFree(id);
-   if (filter)
-      xmlFree(filter);
-
    gl_teximage_cnt++;
 
    return true;
-
-error:
-   if (filename)
-      xmlFree(filename);
-   if (filter)
-      xmlFree(filter);
-   if (filter)
-      xmlFree(id);
-   return false;
 }
 
 #ifdef HAVE_PYTHON
@@ -501,41 +523,28 @@ static bool get_script(const char *path, xmlNodePtr ptr)
       return false;
    }
 
-   xmlChar *script_class = xmlGetProp(ptr, (const xmlChar*)"class");
-   if (script_class)
-   {
-      strlcpy(gl_tracker_script_class, (const char*)script_class, sizeof(gl_tracker_script_class));
-      xmlFree(script_class);
-   }
+   char script_class[64];
+   xml_get_prop(script_class, sizeof(script_class), ptr, "class");
+   if (*script_class)
+      strlcpy(gl_tracker_script_class, script_class, sizeof(gl_tracker_script_class));
 
-   xmlChar *language = xmlGetProp(ptr, (const xmlChar*)"language");
-   if (!language || strcmp((const char*)language, "python") != 0)
+   char language[64];
+   xml_get_prop(language, sizeof(language), ptr, "language");
+   if (strcmp(language, "python") != 0)
    {
       RARCH_ERR("Script language is not Python.\n");
-      if (language)
-         xmlFree(language);
       return false;
    }
 
-   if (language)
-      xmlFree(language);
+   char *script = xml_get_content(ptr);
+   if (!script)
+      return false;
 
-   xmlChar *src = xmlGetProp(ptr, (const xmlChar*)"src");
-   if (src)
+   script = xml_replace_if_file(script, path, ptr, "src"); 
+   if (!script)
    {
-      fill_pathname_resolve_relative(gl_tracker_script, path, (const char*)src, sizeof(gl_tracker_script));
-      xmlFree(src);
-   }
-   else
-   {
-      xmlChar *script = xmlNodeGetContent(ptr);
-      if (!script)
-      {
-         RARCH_ERR("No content in script.\n");
-         return false;
-      }
-      gl_script_program = strdup((const char*)script);
-      xmlFree(script);
+      RARCH_ERR("Cannot find Python script.\n");
+      return false;
    }
 
    return true;
@@ -544,19 +553,19 @@ static bool get_script(const char *path, xmlNodePtr ptr)
 
 static bool get_import_value(xmlNodePtr ptr)
 {
-   bool ret = true;
    if (gl_tracker_info_cnt >= MAX_VARIABLES)
    {
       RARCH_ERR("Too many import variables ...\n");
       return false;
    }
 
-   xmlChar *id = xmlGetProp(ptr, (const xmlChar*)"id");
-   xmlChar *semantic = xmlGetProp(ptr, (const xmlChar*)"semantic");
-   xmlChar *wram = xmlGetProp(ptr, (const xmlChar*)"wram");
-   xmlChar *input = xmlGetProp(ptr, (const xmlChar*)"input_slot");
-   xmlChar *bitmask = xmlGetProp(ptr, (const xmlChar*)"mask");
-   xmlChar *bitequal = xmlGetProp(ptr, (const xmlChar*)"equal");
+   char id[64], semantic[64], wram[64], input[64], bitmask[64], bitequal[64];
+   xml_get_prop(id, sizeof(id), ptr, "id");
+   xml_get_prop(semantic, sizeof(semantic), ptr, "semantic");
+   xml_get_prop(wram, sizeof(wram), ptr, "wram");
+   xml_get_prop(input, sizeof(input), ptr, "input_slot");
+   xml_get_prop(bitmask, sizeof(bitmask), ptr, "mask");
+   xml_get_prop(bitequal, sizeof(bitequal), ptr, "equal");
 
    unsigned memtype;
    enum state_tracker_type tracker_type;
@@ -565,41 +574,39 @@ static bool get_import_value(xmlNodePtr ptr)
    unsigned mask_value = 0;
    unsigned mask_equal = 0;
 
-   if (!semantic || !id)
+   if (!*semantic || !*id)
    {
       RARCH_ERR("No semantic or ID for import value.\n");
-      ret = false;
-      goto end;
+      return false;
    }
 
-   if (strcmp((const char*)semantic, "capture") == 0)
+   if (strcmp(semantic, "capture") == 0)
       tracker_type = RARCH_STATE_CAPTURE;
-   else if (strcmp((const char*)semantic, "capture_previous") == 0)
+   else if (strcmp(semantic, "capture_previous") == 0)
       tracker_type = RARCH_STATE_CAPTURE_PREV;
-   else if (strcmp((const char*)semantic, "transition") == 0)
+   else if (strcmp(semantic, "transition") == 0)
       tracker_type = RARCH_STATE_TRANSITION;
-   else if (strcmp((const char*)semantic, "transition_count") == 0)
+   else if (strcmp(semantic, "transition_count") == 0)
       tracker_type = RARCH_STATE_TRANSITION_COUNT;
-   else if (strcmp((const char*)semantic, "transition_previous") == 0)
+   else if (strcmp(semantic, "transition_previous") == 0)
       tracker_type = RARCH_STATE_TRANSITION_PREV;
 #ifdef HAVE_PYTHON
-   else if (strcmp((const char*)semantic, "python") == 0)
+   else if (strcmp(semantic, "python") == 0)
       tracker_type = RARCH_STATE_PYTHON;
 #endif
    else
    {
       RARCH_ERR("Invalid semantic for import value.\n");
-      ret = false;
-      goto end;
+      return false;
    }
 
 #ifdef HAVE_PYTHON
    if (tracker_type != RARCH_STATE_PYTHON)
 #endif
    {
-      if (input) 
+      if (*input) 
       {
-         unsigned slot = strtoul((const char*)input, NULL, 0);
+         unsigned slot = strtoul(input, NULL, 0);
          switch (slot)
          {
             case 1:
@@ -611,20 +618,18 @@ static bool get_import_value(xmlNodePtr ptr)
 
             default:
                RARCH_ERR("Invalid input slot for import.\n");
-               ret = false;
-               goto end;
+               return false;
          }
       }
-      else if (wram)
+      else if (*wram)
       {
-         addr = strtoul((const char*)wram, NULL, 16);
+         addr = strtoul(wram, NULL, 16);
          ram_type = RARCH_STATE_WRAM;
       }
       else
       {
          RARCH_ERR("No RAM address specificed for import value.\n");
-         ret = false;
-         goto end;
+         return false;
       }
    }
 
@@ -641,16 +646,15 @@ static bool get_import_value(xmlNodePtr ptr)
    if ((memtype != -1u) && (addr >= pretro_get_memory_size(memtype)))
    {
       RARCH_ERR("Address out of bounds.\n");
-      ret = false;
-      goto end;
+      return false;
    }
 
-   if (bitmask)
-      mask_value = strtoul((const char*)bitmask, NULL, 16);
-   if (bitequal)
-      mask_equal = strtoul((const char*)bitequal, NULL, 16);
+   if (*bitmask)
+      mask_value = strtoul(bitmask, NULL, 16);
+   if (*bitequal)
+      mask_equal = strtoul(bitequal, NULL, 16);
 
-   strlcpy(gl_tracker_info[gl_tracker_info_cnt].id, (const char*)id, sizeof(gl_tracker_info[0].id));
+   strlcpy(gl_tracker_info[gl_tracker_info_cnt].id, id, sizeof(gl_tracker_info[0].id));
    gl_tracker_info[gl_tracker_info_cnt].addr = addr;
    gl_tracker_info[gl_tracker_info_cnt].type = tracker_type;
    gl_tracker_info[gl_tracker_info_cnt].ram_type = ram_type;
@@ -658,33 +662,7 @@ static bool get_import_value(xmlNodePtr ptr)
    gl_tracker_info[gl_tracker_info_cnt].equal = mask_equal;
    gl_tracker_info_cnt++;
 
-end:
-   if (id) xmlFree(id);
-   if (semantic) xmlFree(semantic);
-   if (wram) xmlFree(wram);
-   if (input) xmlFree(input);
-   if (bitmask) xmlFree(bitmask);
-   if (bitequal) xmlFree(bitequal);
-   return ret;
-}
-
-static char *xml_replace_if_file(char *content, const char *path, xmlNodePtr node, const char *src_prop)
-{
-   xmlChar *prop = xmlGetProp(node, (const xmlChar*)src_prop);
-   if (!prop)
-      return content;
-
-   free(content);
-   content = NULL;
-
-   char shader_path[PATH_MAX];
-   fill_pathname_resolve_relative(shader_path, path, (const char*)prop, sizeof(shader_path));
-
-   RARCH_LOG("Loading external source from \"%s\".\n", shader_path);
-   if (read_file(shader_path, (void**)&content) >= 0)
-      return content;
-   else
-      return NULL;
+   return true;
 }
 
 static unsigned get_xml_shaders(const char *path, struct shader_program *prog, size_t size)
@@ -725,21 +703,13 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       if (strcmp((const char*)cur->name, "shader") != 0)
          continue;
 
-      xmlChar *attr;
-      attr = xmlGetProp(cur, (const xmlChar*)"language");
-      if (attr && strcmp((const char*)attr, "GLSL") != 0)
-      {
-         xmlFree(attr);
+      char attr[64];
+      xml_get_prop(attr, sizeof(attr), cur, "language");
+      if (strcmp(attr, "GLSL") != 0)
          continue;
-      }
 
-      if (attr)
-         xmlFree(attr);
-
-      attr        = xmlGetProp(cur, (const xmlChar*)"style");
-      glsl_modern = attr && (strcmp((const char*)attr, "GLES2") == 0);
-      if (attr)
-         xmlFree(attr);
+      xml_get_prop(attr, sizeof(attr), cur, "style");
+      glsl_modern = strcmp(attr, "GLES2") == 0;
 
       if (glsl_modern)
          RARCH_LOG("[GL]: Shader reports a GLES2 style shader.\n");
@@ -757,11 +727,7 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       if (cur->type != XML_ELEMENT_NODE)
          continue;
 
-      xmlChar *content_ = xmlNodeGetContent(cur);
-      if (!content_)
-         continue;
-      char *content = strdup((const char*)content_);
-      xmlFree(content_);
+      char *content = xml_get_content(cur);
       if (!content)
          continue;
 
