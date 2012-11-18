@@ -74,12 +74,12 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
       g_settings.input.binds[2],
       g_settings.input.binds[3],
       g_settings.input.binds[4],
+      g_settings.input.binds[5],
+      g_settings.input.binds[6],
+      g_settings.input.binds[7],
    };
 
-   int16_t res = input_input_state_func(binds, player > 1, 
-         player > 2 ? RETRO_DEVICE_JOYPAD_MULTITAP : RETRO_DEVICE_JOYPAD,
-         player > 2 ? player - 2 : 0,
-         key);
+   int16_t res = input_input_state_func(binds, player - 1, RETRO_DEVICE_JOYPAD, 0, key);
 
    return PyBool_FromLong(res);
 }
@@ -151,6 +151,11 @@ static void py_set_attrs(PyObject *mod)
    DECL_ATTR_RARCH(SCREENSHOT);
    DECL_ATTR_RARCH(DSP_CONFIG);
    DECL_ATTR_RARCH(MUTE);
+   DECL_ATTR_RARCH(NETPLAY_FLIP);
+   DECL_ATTR_RARCH(SLOWMOTION);
+   DECL_ATTR_RARCH(ENABLE_HOTKEY);
+   DECL_ATTR_RARCH(VOLUME_UP);
+   DECL_ATTR_RARCH(VOLUME_DOWN);
 }
 
 static PyModuleDef RarchModule = {
@@ -252,7 +257,7 @@ py_state_t *py_state_new(const char *script, unsigned is_file, const char *pycla
    {
       // Have to hack around the fact that the
       // FILE struct isn't standardized across environments.
-      // PyRun_SimpleFile() breaks on Windows.
+      // PyRun_SimpleFile() breaks on Windows because it's compiled with MSVC.
 
       char *script_ = NULL;
       if (read_file(script, (void**)&script_) < 0)
@@ -330,7 +335,12 @@ float py_state_get(py_state_t *handle, const char *id,
    if (!ret)
    {
       if (!handle->warned_ret)
+      {
          RARCH_WARN("Didn't get return value from script. Bug?\n");
+         PyErr_Print();
+         PyErr_Clear();
+      }
+
       handle->warned_ret = true;
       return 0.0f;
    }

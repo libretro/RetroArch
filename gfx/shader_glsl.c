@@ -154,7 +154,6 @@ static char gl_teximage_uniforms[MAX_TEXTURES][64];
 static state_tracker_t *gl_state_tracker;
 static struct state_tracker_uniform_info gl_tracker_info[MAX_VARIABLES];
 static unsigned gl_tracker_info_cnt;
-static char gl_tracker_script[PATH_MAX];
 static char gl_tracker_script_class[64];
 
 static char *gl_script_program;
@@ -517,7 +516,7 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
 #ifdef HAVE_PYTHON
 static bool get_script(const char *path, xmlNodePtr ptr)
 {
-   if (*gl_tracker_script || gl_script_program)
+   if (gl_script_program)
    {
       RARCH_ERR("Script already imported.\n");
       return false;
@@ -540,8 +539,8 @@ static bool get_script(const char *path, xmlNodePtr ptr)
    if (!script)
       return false;
 
-   script = xml_replace_if_file(script, path, ptr, "src"); 
-   if (!script)
+   gl_script_program = xml_replace_if_file(script, path, ptr, "src"); 
+   if (!gl_script_program)
    {
       RARCH_ERR("Cannot find Python script.\n");
       return false;
@@ -1164,15 +1163,9 @@ bool gl_glsl_init(const char *path)
       info.info_elem = gl_tracker_info_cnt;
 
 #ifdef HAVE_PYTHON
-      if (*gl_tracker_script)
-         info.script = gl_tracker_script;
-      else if (gl_script_program)
-         info.script = gl_script_program;
-      else
-         info.script = NULL;
-
+      info.script = gl_script_program;
       info.script_class   = *gl_tracker_script_class ? gl_tracker_script_class : NULL;
-      info.script_is_file = *gl_tracker_script;
+      info.script_is_file = false;
 #endif
 
       gl_state_tracker = state_tracker_init(&info);
@@ -1225,14 +1218,10 @@ void gl_glsl_deinit(void)
 
    gl_tracker_info_cnt = 0;
    memset(gl_tracker_info, 0, sizeof(gl_tracker_info));
-   memset(gl_tracker_script, 0, sizeof(gl_tracker_script));
    memset(gl_tracker_script_class, 0, sizeof(gl_tracker_script_class));
 
-   if (gl_script_program)
-   {
-      free(gl_script_program);
-      gl_script_program = NULL;
-   }
+   free(gl_script_program);
+   gl_script_program = NULL;
 
    if (gl_state_tracker)
    {

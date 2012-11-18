@@ -92,7 +92,16 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
 
 #ifdef HAVE_PYTHON
       if (info->info[i].type == RARCH_STATE_PYTHON)
+      {
+         if (!tracker->py)
+         {
+            free(tracker->info);
+            free(tracker);
+            RARCH_ERR("Python semantic was requested, but Python tracker is not loaded.\n");
+            return NULL;
+         }
          tracker->info[i].py = tracker->py;
+      }
 #endif
 
       // If we don't have a valid pointer.
