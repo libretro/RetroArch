@@ -901,6 +901,25 @@ static inline void gl_convert_frame_rgb16_32(gl_t *gl, void *output, const void 
 }
 #endif
 
+static void gl_init_textures_data(gl_t *gl)
+{
+   for (unsigned i = 0; i < TEXTURES; i++)
+   {
+      gl->last_width[i]  = gl->tex_w;
+      gl->last_height[i] = gl->tex_h;
+   }
+
+   for (unsigned i = 0; i < TEXTURES; i++)
+   {
+      gl->prev_info[i].tex           = gl->texture[(gl->tex_index - (i + 1)) & TEXTURES_MASK];
+      gl->prev_info[i].input_size[0] = gl->tex_w;
+      gl->prev_info[i].tex_size[0]   = gl->tex_w;
+      gl->prev_info[i].input_size[1] = gl->tex_h;
+      gl->prev_info[i].tex_size[1]   = gl->tex_h;
+      memcpy(gl->prev_info[i].coord, tex_coords, sizeof(tex_coords)); 
+   }
+}
+
 #if defined(HAVE_PSGL)
 static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
@@ -1251,16 +1270,25 @@ static void gl_reinit_textures(gl_t *gl, const video_info_t *video)
 
    gl->tex_w = gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
 
+   gl->empty_buf = realloc(gl->empty_buf, sizeof(uint32_t) * gl->tex_w * gl->tex_h);
+   if (gl->empty_buf)
+      memset(gl->empty_buf, 0, sizeof(uint32_t) * gl->tex_w * gl->tex_h);
+
    if (old_base_size != gl->base_size || old_width != gl->tex_w || old_height != gl->tex_h)
    {
+      RARCH_LOG("Reinitializing textures (%u x %u @ %u bpp)\n", gl->tex_w, gl->tex_h, gl->base_size * CHAR_BIT);
+      glBindTexture(GL_TEXTURE_2D, 0);
       glDeleteTextures(TEXTURES, gl->texture);
       gl_init_textures(gl, video);
+      gl_init_textures_data(gl);
 
 #ifdef HAVE_FBO
       gl_deinit_fbo(gl);
       gl_init_fbo(gl, gl->tex_w, gl->tex_h);
 #endif
    }
+   else
+      RARCH_LOG("Reinitializing textures skipped.\n");
 }
 #endif
 
@@ -1415,22 +1443,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #endif
 
    gl_init_textures(gl, video);
-
-   for (unsigned i = 0; i < TEXTURES; i++)
-   {
-      gl->last_width[i] = gl->tex_w;
-      gl->last_height[i] = gl->tex_h;
-   }
-
-   for (unsigned i = 0; i < TEXTURES; i++)
-   {
-      gl->prev_info[i].tex           = gl->texture[(gl->tex_index - (i + 1)) & TEXTURES_MASK];
-      gl->prev_info[i].input_size[0] = gl->tex_w;
-      gl->prev_info[i].tex_size[0]   = gl->tex_w;
-      gl->prev_info[i].input_size[1] = gl->tex_h;
-      gl->prev_info[i].tex_size[1]   = gl->tex_h;
-      memcpy(gl->prev_info[i].coord, tex_coords, sizeof(tex_coords)); 
-   }
+   gl_init_textures_data(gl);
 
    context_input_driver_func(input, input_data);
    gl_init_font(gl, g_settings.video.font_path, g_settings.video.font_size);
