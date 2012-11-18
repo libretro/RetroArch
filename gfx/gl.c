@@ -1277,8 +1277,16 @@ static inline void gl_reinit_textures(gl_t *gl, const video_info_t *video)
    if (old_base_size != gl->base_size || old_width != gl->tex_w || old_height != gl->tex_h)
    {
       RARCH_LOG("Reinitializing textures (%u x %u @ %u bpp)\n", gl->tex_w, gl->tex_h, gl->base_size * CHAR_BIT);
+
+#if defined(HAVE_PSGL)
+      glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
+      glDeleteBuffers(1, &gl->pbo);
+      gl->pbo = 0;
+#endif
+
       glBindTexture(GL_TEXTURE_2D, 0);
       glDeleteTextures(TEXTURES, gl->texture);
+
       gl_init_textures(gl, video);
       gl_init_textures_data(gl);
 
