@@ -706,8 +706,7 @@ static inline void gl_start_frame_fbo(gl_t *gl)
    // Need to preserve the "flipped" state when in FBO as well to have 
    // consistent texture coordinates.
    // We will "flip" it in place on last pass.
-   if (gl->render_to_tex)
-      gl->coords.vertex = vertexes;
+   gl->coords.vertex = vertexes;
 }
 
 static void gl_check_fbo_dimensions(gl_t *gl)
