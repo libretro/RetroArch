@@ -668,6 +668,25 @@ end:
    return ret;
 }
 
+static char *xml_replace_if_file(char *content, const char *path, xmlNodePtr node, const char *src_prop)
+{
+   xmlChar *prop = xmlGetProp(node, (const xmlChar*)src_prop);
+   if (!prop)
+      return content;
+
+   free(content);
+   content = NULL;
+
+   char shader_path[PATH_MAX];
+   fill_pathname_resolve_relative(shader_path, path, (const char*)prop, sizeof(shader_path));
+
+   RARCH_LOG("Loading external source from \"%s\".\n", shader_path);
+   if (read_file(shader_path, (void**)&content) >= 0)
+      return content;
+   else
+      return NULL;
+}
+
 static unsigned get_xml_shaders(const char *path, struct shader_program *prog, size_t size)
 {
    LIBXML_TEST_VERSION;
@@ -738,7 +757,11 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       if (cur->type != XML_ELEMENT_NODE)
          continue;
 
-      xmlChar *content = xmlNodeGetContent(cur);
+      xmlChar *content_ = xmlNodeGetContent(cur);
+      if (!content_)
+         continue;
+      char *content = strdup((const char*)content_);
+      xmlFree(content_);
       if (!content)
          continue;
 
@@ -747,22 +770,36 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
          if (prog[num].vertex)
          {
             RARCH_ERR("Cannot have more than one vertex shader in a program.\n");
-            xmlFree(content);
+            free(content);
             goto error;
          }
 
-         prog[num].vertex = (char*)content;
+         content = xml_replace_if_file(content, path, cur, "src");
+         if (!content)
+         {
+            RARCH_ERR("Shader source file was provided, but failed to read.\n");
+            goto error;
+         }
+
+         prog[num].vertex = content;
       }
       else if (strcmp((const char*)cur->name, "fragment") == 0)
       {
          if (glsl_modern && !prog[num].vertex)
          {
             RARCH_ERR("Modern GLSL was chosen and vertex shader was not provided. This is an error.\n");
-            xmlFree(content);
+            free(content);
             goto error;
          }
 
-         prog[num].fragment = (char*)content;
+         content = xml_replace_if_file(content, path, cur, "src");
+         if (!content)
+         {
+            RARCH_ERR("Shader source file was provided, but failed to read.\n");
+            goto error;
+         }
+
+         prog[num].fragment = content;
          if (!get_xml_attrs(&prog[num], cur))
          {
             RARCH_ERR("XML shader attributes do not comply with specifications.\n");
@@ -772,6 +809,7 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       }
       else if (strcmp((const char*)cur->name, "texture") == 0)
       {
+         free(content);
          if (!get_texture_image(path, cur))
          {
             RARCH_ERR("Texture image failed to load.\n");
@@ -780,6 +818,7 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       }
       else if (strcmp((const char*)cur->name, "import") == 0)
       {
+         free(content);
          if (!get_import_value(cur))
          {
             RARCH_ERR("Import value is invalid.\n");
@@ -789,6 +828,7 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
 #ifdef HAVE_PYTHON
       else if (strcmp((const char*)cur->name, "script") == 0)
       {
+         free(content);
          if (!get_script(path, cur))
          {
             RARCH_ERR("Script is invalid.\n");
