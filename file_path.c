@@ -451,7 +451,8 @@ const char *path_basename(const char *path)
 bool path_is_absolute(const char *path)
 {
 #ifdef _WIN32
-   return path[0] == '/' || strstr(path, ":/") || strstr(path, ":\\");
+   // Many roads lead to Rome ...
+   return path[0] == '/' || (strstr(path, "\\\\") == path) || strstr(path, ":/") || strstr(path, ":\\") || strstr(path, ":\\\\");
 #else
    return path[0] == '/';
 #endif
