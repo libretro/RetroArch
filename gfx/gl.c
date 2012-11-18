@@ -582,6 +582,7 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    if (!gl_create_fbo_targets(gl))
    {
       glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
+      RARCH_ERR("Failed to create FBO targets. Will continue without FBO.\n");
       return;
    }
 
