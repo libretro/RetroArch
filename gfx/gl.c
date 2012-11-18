@@ -961,7 +961,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 
       glTextureReferenceSCE(GL_TEXTURE_2D, 1,
             gl->tex_w, gl->tex_h, 0, 
-            gl->texture_fmt,
+            gl->internal_fmt,
             gl->tex_w * gl->base_size,
             gl->tex_w * gl->tex_h * i * gl->base_size);
    }
