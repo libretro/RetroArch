@@ -17,8 +17,6 @@
 
 #define MAX_INDENT 60
 
-#include <libxml/HTMLtree.h>
-
 /************************************************************************
  *									*
  *			XHTML detection					*

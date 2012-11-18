@@ -24,22 +24,6 @@
  * libxml i.e. if libxml has been configured with --with-debug-mem too.
  */
 /* #define DEBUG_MEMORY_FREED */
-/* #define DEBUG_MEMORY_LOCATION */
-
-#ifdef DEBUG
-#ifndef DEBUG_MEMORY
-#define DEBUG_MEMORY
-#endif
-#endif
-
-/**
- * DEBUG_MEMORY_LOCATION:
- *
- * DEBUG_MEMORY_LOCATION should be activated only when debugging
- * libxml i.e. if libxml has been configured with --with-debug-mem too.
- */
-#ifdef DEBUG_MEMORY_LOCATION
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -166,48 +150,6 @@ XMLPUBFUN void * XMLCALL
 XMLPUBFUN char * XMLCALL
 	xmlMemStrdupLoc	(const char *str, const char *file, int line);
 
-
-#ifdef DEBUG_MEMORY_LOCATION
-/**
- * xmlMalloc:
- * @size:  number of bytes to allocate
- *
- * Wrapper for the malloc() function used in the XML library.
- *
- * Returns the pointer to the allocated area or NULL in case of error.
- */
-#define xmlMalloc(size) xmlMallocLoc((size), __FILE__, __LINE__)
-/**
- * xmlMallocAtomic:
- * @size:  number of bytes to allocate
- *
- * Wrapper for the malloc() function used in the XML library for allocation
- * of block not containing pointers to other areas.
- *
- * Returns the pointer to the allocated area or NULL in case of error.
- */
-#define xmlMallocAtomic(size) xmlMallocAtomicLoc((size), __FILE__, __LINE__)
-/**
- * xmlRealloc:
- * @ptr:  pointer to the existing allocated area
- * @size:  number of bytes to allocate
- *
- * Wrapper for the realloc() function used in the XML library.
- *
- * Returns the pointer to the allocated area or NULL in case of error.
- */
-#define xmlRealloc(ptr, size) xmlReallocLoc((ptr), (size), __FILE__, __LINE__)
-/**
- * xmlMemStrdup:
- * @str:  pointer to the existing string
- *
- * Wrapper for the strdup() function, xmlStrdup() is usually preferred.
- *
- * Returns the pointer to the allocated area or NULL in case of error.
- */
-#define xmlMemStrdup(str) xmlMemStrdupLoc((str), __FILE__, __LINE__)
-
-#endif /* DEBUG_MEMORY_LOCATION */
 
 #ifdef __cplusplus
 }

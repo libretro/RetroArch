@@ -14,7 +14,6 @@
 
 #include <libxml/xmlversion.h>
 #include <libxml/parser.h>
-#include <libxml/HTMLparser.h>
 #include <libxml/chvalid.h>
 
 #ifdef __cplusplus

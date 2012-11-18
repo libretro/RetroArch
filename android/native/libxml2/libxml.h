@@ -21,18 +21,7 @@
 #include "config.h"
 #include <libxml/xmlversion.h>
 
-#ifndef WITH_TRIO
 #include <stdio.h>
-#else
-/**
- * TRIO_REPLACE_STDIO:
- *
- * This macro is defined if teh trio string formatting functions are to
- * be used instead of the default stdio ones.
- */
-#define TRIO_REPLACE_STDIO
-#include "trio.h"
-#endif
 
 /*
  * Internal variable indicating if a callback has been registered for

@@ -826,10 +826,6 @@ typedef enum {
     XML_I18N_EXCESS_HANDLER, /* 6002 */
     XML_I18N_CONV_FAILED, /* 6003 */
     XML_I18N_NO_OUTPUT /* 6004 */
-#if 0
-    XML_CHECK_, /* 5033 */
-    XML_CHECK_X /* 503 */
-#endif
 } xmlParserErrors;
 
 /**

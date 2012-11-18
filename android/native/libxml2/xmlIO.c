@@ -88,7 +88,6 @@
 #include <libxml/parserInternals.h>
 #include <libxml/xmlIO.h>
 #include <libxml/uri.h>
-#include <libxml/nanohttp.h>
 #include <libxml/xmlerror.h>
 #include <libxml/globals.h>
 

@@ -1650,13 +1650,6 @@ xmlNodeListGetString(xmlDocPtr doc, xmlNodePtr list, int inLine)
                 ret = xmlStrncat(ret, buf, 1);
             }
         }
-#if 0
-        else {
-            xmlGenericError(xmlGenericErrorContext,
-                            "xmlGetNodeListString : invalid node type %d\n",
-                            node->type);
-        }
-#endif
         node = node->next;
     }
     return (ret);
@@ -1733,13 +1726,6 @@ xmlNodeListGetRawString(xmlDocPtr doc, xmlNodePtr list, int inLine)
                 ret = xmlStrncat(ret, buf, 1);
             }
         }
-#if 0
-        else {
-            xmlGenericError(xmlGenericErrorContext,
-                            "xmlGetNodeListString : invalid node type %d\n",
-                            node->type);
-        }
-#endif
         node = node->next;
     }
     return (ret);

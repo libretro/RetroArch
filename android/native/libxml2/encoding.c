@@ -31,11 +31,6 @@
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef LIBXML_ICONV_ENABLED
-#ifdef HAVE_ERRNO_H
-#include <errno.h>
-#endif
-#endif
 #include <libxml/encoding.h>
 #include <libxml/xmlmemory.h>
 #include <libxml/globals.h>
@@ -855,11 +850,6 @@ xmlNewCharEncodingHandler(const char *name,
     handler->output = output;
     handler->name = up;
 
-#ifdef LIBXML_ICONV_ENABLED
-    handler->iconv_in = NULL;
-    handler->iconv_out = NULL;
-#endif
-
     /*
      * registers and returns the handler.
      */
@@ -905,10 +895,8 @@ xmlInitCharEncodingHandlers(void) {
     xmlNewCharEncodingHandler("ISO-8859-1", isolat1ToUTF8, NULL);
     xmlNewCharEncodingHandler("ASCII", asciiToUTF8, NULL);
     xmlNewCharEncodingHandler("US-ASCII", asciiToUTF8, NULL);
-#if !defined(LIBXML_ICONV_ENABLED)
 #ifdef LIBXML_ISO8859X_ENABLED
     xmlRegisterCharEncodingHandlersISO8859x ();
-#endif
 #endif
 
 }
@@ -1104,10 +1092,6 @@ xmlFindCharEncodingHandler(const char *name) {
     const char *nalias;
     const char *norig;
     xmlCharEncoding alias;
-#ifdef LIBXML_ICONV_ENABLED
-    xmlCharEncodingHandlerPtr enc;
-    iconv_t icv_in, icv_out;
-#endif /* LIBXML_ICONV_ENABLED */
     char upper[100];
     int i;
 
@@ -1140,37 +1124,6 @@ xmlFindCharEncodingHandler(const char *name) {
         }
     }
 
-#ifdef LIBXML_ICONV_ENABLED
-    /* check whether iconv can handle this */
-    icv_in = iconv_open("UTF-8", name);
-    icv_out = iconv_open(name, "UTF-8");
-    if (icv_in == (iconv_t) -1) {
-        icv_in = iconv_open("UTF-8", upper);
-    }
-    if (icv_out == (iconv_t) -1) {
-	icv_out = iconv_open(upper, "UTF-8");
-    }
-    if ((icv_in != (iconv_t) -1) && (icv_out != (iconv_t) -1)) {
-	    enc = (xmlCharEncodingHandlerPtr)
-	          xmlMalloc(sizeof(xmlCharEncodingHandler));
-	    if (enc == NULL) {
-	        iconv_close(icv_in);
-	        iconv_close(icv_out);
-		return(NULL);
-	    }
-            memset(enc, 0, sizeof(xmlCharEncodingHandler));
-	    enc->name = xmlMemStrdup(name);
-	    enc->input = NULL;
-	    enc->output = NULL;
-	    enc->iconv_in = icv_in;
-	    enc->iconv_out = icv_out;
-	    return enc;
-    } else if ((icv_in != (iconv_t) -1) || icv_out != (iconv_t) -1) {
-	    xmlEncodingErr(XML_ERR_INTERNAL_ERROR,
-		    "iconv : problems with filters for '%s'\n", name);
-    }
-#endif /* LIBXML_ICONV_ENABLED */
-
     /*
      * Fallback using the canonical names
      */
@@ -1186,72 +1139,6 @@ xmlFindCharEncodingHandler(const char *name) {
     /* If "none of the above", give up */
     return(NULL);
 }
-
-/************************************************************************
- *									*
- *		ICONV based generic conversion functions		*
- *									*
- ************************************************************************/
-
-#ifdef LIBXML_ICONV_ENABLED
-/**
- * xmlIconvWrapper:
- * @cd:		iconv converter data structure
- * @out:  a pointer to an array of bytes to store the result
- * @outlen:  the length of @out
- * @in:  a pointer to an array of ISO Latin 1 chars
- * @inlen:  the length of @in
- *
- * Returns 0 if success, or
- *     -1 by lack of space, or
- *     -2 if the transcoding fails (for *in is not valid utf8 string or
- *        the result of transformation can't fit into the encoding we want), or
- *     -3 if there the last byte can't form a single output char.
- *
- * The value of @inlen after return is the number of octets consumed
- *     as the return value is positive, else unpredictable.
- * The value of @outlen after return is the number of ocetes consumed.
- */
-static int
-xmlIconvWrapper(iconv_t cd, unsigned char *out, int *outlen,
-                const unsigned char *in, int *inlen) {
-    size_t icv_inlen, icv_outlen;
-    const char *icv_in = (const char *) in;
-    char *icv_out = (char *) out;
-    int ret;
-
-    if ((out == NULL) || (outlen == NULL) || (inlen == NULL) || (in == NULL)) {
-        if (outlen != NULL) *outlen = 0;
-        return(-1);
-    }
-    icv_inlen = *inlen;
-    icv_outlen = *outlen;
-    ret = iconv(cd, (ICONV_CONST char **) &icv_in, &icv_inlen, &icv_out, &icv_outlen);
-    *inlen -= icv_inlen;
-    *outlen -= icv_outlen;
-    if ((icv_inlen != 0) || (ret == -1)) {
-#ifdef EILSEQ
-        if (errno == EILSEQ) {
-            return -2;
-        } else
-#endif
-#ifdef E2BIG
-        if (errno == E2BIG) {
-            return -1;
-        } else
-#endif
-#ifdef EINVAL
-        if (errno == EINVAL) {
-            return -3;
-        } else
-#endif
-        {
-            return -3;
-        }
-    }
-    return 0;
-}
-#endif /* LIBXML_ICONV_ENABLED */
 
 /************************************************************************
  *									*
@@ -1318,16 +1205,6 @@ xmlCharEncFirstLineInt(xmlCharEncodingHandler *handler, xmlBufferPtr out,
 	out->use += written;
 	out->content[out->use] = 0;
     }
-#ifdef LIBXML_ICONV_ENABLED
-    else if (handler->iconv_in != NULL) {
-	ret = xmlIconvWrapper(handler->iconv_in, &out->content[out->use],
-	                      &written, in->content, &toconv);
-	xmlBufferShrink(in, toconv);
-	out->use += written;
-	out->content[out->use] = 0;
-	if (ret == -1) ret = -3;
-    }
-#endif /* LIBXML_ICONV_ENABLED */
     /*
      * Ignore when input buffer is not on a boundary
      */
@@ -1399,17 +1276,6 @@ xmlCharEncInFunc(xmlCharEncodingHandler * handler, xmlBufferPtr out,
         out->use += written;
         out->content[out->use] = 0;
     }
-#ifdef LIBXML_ICONV_ENABLED
-    else if (handler->iconv_in != NULL) {
-        ret = xmlIconvWrapper(handler->iconv_in, &out->content[out->use],
-                              &written, in->content, &toconv);
-        xmlBufferShrink(in, toconv);
-        out->use += written;
-        out->content[out->use] = 0;
-        if (ret == -1)
-            ret = -3;
-    }
-#endif /* LIBXML_ICONV_ENABLED */
     switch (ret) {
         case 0:
             break;
@@ -1487,14 +1353,6 @@ retry:
 		out->content[out->use] = 0;
 	    }
 	}
-#ifdef LIBXML_ICONV_ENABLED
-	else if (handler->iconv_out != NULL) {
-	    ret = xmlIconvWrapper(handler->iconv_out, &out->content[out->use],
-				  &written, NULL, &toconv);
-	    out->use += written;
-	    out->content[out->use] = 0;
-	}
-#endif /* LIBXML_ICONV_ENABLED */
         return(0);
     }
 
@@ -1518,25 +1376,6 @@ retry:
 	}
 	out->content[out->use] = 0;
     }
-#ifdef LIBXML_ICONV_ENABLED
-    else if (handler->iconv_out != NULL) {
-	ret = xmlIconvWrapper(handler->iconv_out, &out->content[out->use],
-	                      &written, in->content, &toconv);
-	xmlBufferShrink(in, toconv);
-	out->use += written;
-	writtentot += written;
-	out->content[out->use] = 0;
-	if (ret == -1) {
-	    if (written > 0) {
-		/*
-		 * Can be a limitation of iconv
-		 */
-		goto retry;
-	    }
-	    ret = -3;
-	}
-    }
-#endif /* LIBXML_ICONV_ENABLED */
     else {
 	xmlEncodingErr(XML_I18N_NO_OUTPUT,
 		       "xmlCharEncOutFunc: no output function !\n", NULL);
@@ -1607,25 +1446,6 @@ xmlCharEncCloseFunc(xmlCharEncodingHandler *handler) {
     int tofree = 0;
     if (handler == NULL) return(-1);
     if (handler->name == NULL) return(-1);
-#ifdef LIBXML_ICONV_ENABLED
-    /*
-     * Iconv handlers can be used only once, free the whole block.
-     * and the associated icon resources.
-     */
-    if ((handler->iconv_out != NULL) || (handler->iconv_in != NULL)) {
-        tofree = 1;
-	if (handler->iconv_out != NULL) {
-	    if (iconv_close(handler->iconv_out))
-		ret = -1;
-	    handler->iconv_out = NULL;
-	}
-	if (handler->iconv_in != NULL) {
-	    if (iconv_close(handler->iconv_in))
-		ret = -1;
-	    handler->iconv_in = NULL;
-	}
-    }
-#endif /* LIBXML_ICONV_ENABLED */
     if (tofree) {
         /* free up only dynamic handlers iconv/uconv */
         if (handler->name != NULL)
@@ -1683,23 +1503,6 @@ xmlByteConsumed(xmlParserCtxtPtr ctxt) {
 		    unused += written;
 		    cur += toconv;
 		} while (ret == -2);
-#ifdef LIBXML_ICONV_ENABLED
-	    } else if (handler->iconv_out != NULL) {
-	        do {
-		    toconv = in->end - cur;
-		    written = 32000;
-		    ret = xmlIconvWrapper(handler->iconv_out, &convbuf[0],
-	                      &written, cur, &toconv);
-		    if (ret < 0) {
-		        if (written > 0)
-			    ret = -2;
-			else
-			    return(-1);
-		    }
-		    unused += written;
-		    cur += toconv;
-		} while (ret == -2);
-#endif
             } else {
 	        /* could not find a converter */
 	        return(-1);
@@ -1712,7 +1515,6 @@ xmlByteConsumed(xmlParserCtxtPtr ctxt) {
     return(in->consumed + (in->cur - in->base));
 }
 
-#if !defined(LIBXML_ICONV_ENABLED)
 #ifdef LIBXML_ISO8859X_ENABLED
 
 /**
@@ -2780,7 +2582,6 @@ xmlRegisterCharEncodingHandlersISO8859x (void) {
     xmlNewCharEncodingHandler ("ISO-8859-16", ISO8859_16ToUTF8, UTF8ToISO8859_16);
 }
 
-#endif
 #endif
 
 #define bottom_encoding

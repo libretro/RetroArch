@@ -19,12 +19,10 @@
 #include <libxml/valid.h>
 #include <libxml/entities.h>
 #include <libxml/xmlerror.h>
-#include <libxml/debugXML.h>
 #include <libxml/xmlIO.h>
 #include <libxml/SAX.h>
 #include <libxml/uri.h>
 #include <libxml/valid.h>
-#include <libxml/HTMLtree.h>
 #include <libxml/globals.h>
 
 /* Define SIZE_T_MAX unless defined through <limits.h>. */

@@ -288,7 +288,6 @@ typedef enum {
 #ifdef __cplusplus
 }
 #endif
-#include <libxml/xmlregexp.h>
 #ifdef __cplusplus
 extern "C" {
 #endif

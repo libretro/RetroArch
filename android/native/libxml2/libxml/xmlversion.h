@@ -60,31 +60,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
  */
 #define LIBXML_TEST_VERSION xmlCheckVersion(20708);
 
-#ifndef VMS
-#if 0
-/**
- * WITH_TRIO:
- *
- * defined if the trio support need to be configured in
- */
-#define WITH_TRIO
-#else
-/**
- * WITHOUT_TRIO:
- *
- * defined if the trio support should not be configured in
- */
-#define WITHOUT_TRIO
-#endif
-#else /* VMS */
-/**
- * WITH_TRIO:
- *
- * defined if the trio support need to be configured in
- */
-#define WITH_TRIO 1
-#endif /* VMS */
-
 /**
  * LIBXML_TREE_ENABLED:
  *
@@ -113,30 +88,12 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 /**
- * LIBXML_ICONV_ENABLED:
- *
- * Whether iconv support is available
- */
-#if 0
-#define LIBXML_ICONV_ENABLED
-#endif
-
-/**
  * LIBXML_ISO8859X_ENABLED:
  *
  * Whether ISO-8859-* support is made available in case iconv is not
  */
 #if 1
 #define LIBXML_ISO8859X_ENABLED
-#endif
-
-/**
- * DEBUG_MEMORY_LOCATION:
- *
- * Whether the memory debugging is configured in
- */
-#if 0
-#define DEBUG_MEMORY_LOCATION
 #endif
 
 /**

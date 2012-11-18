@@ -15,8 +15,6 @@
 #include <libxml/xmlerror.h>
 #include <libxml/tree.h>
 #include <libxml/list.h>
-#include <libxml/xmlautomata.h>
-#include <libxml/xmlregexp.h>
 
 #ifdef __cplusplus
 extern "C" {

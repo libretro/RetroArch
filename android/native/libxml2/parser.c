@@ -448,11 +448,6 @@ xmlFatalErr(xmlParserCtxtPtr ctxt, xmlParserErrors error, const char *info)
         case XML_ERR_VERSION_MISSING:
             errmsg = "Malformed declaration expecting version\n";
             break;
-#if 0
-        case:
-            errmsg = "\n";
-            break;
-#endif
         default:
             errmsg = "Unregistered error message\n";
     }
@@ -809,11 +804,7 @@ xmlHasFeature(xmlFeature feature)
         case XML_WITH_XINCLUDE:
             return(0);
         case XML_WITH_ICONV:
-#ifdef LIBXML_ICONV_ENABLED
-            return(1);
-#else
             return(0);
-#endif
         case XML_WITH_ISO8859X:
 #ifdef LIBXML_ISO8859X_ENABLED
             return(1);
@@ -10694,9 +10685,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 				}
 		            }
 			    if (!found) {
-#if 0
-			        fprintf(stderr, "unfinished comment\n");
-#endif
 			        break; /* for */
 		            }
 		            continue;
@@ -10711,10 +10699,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 			continue;
 		    }
 		    if (buf[base] == ']') {
-#if 0
-		        fprintf(stderr, "%c%c%c%c: ", buf[base],
-			        buf[base + 1], buf[base + 2], buf[base + 3]);
-#endif
 		        if ((unsigned int) base +1 >=
 		            ctxt->input->buf->buffer->use)
 			    break;
@@ -10727,21 +10711,12 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
 		     (unsigned int) base + i < ctxt->input->buf->buffer->use;
 		             i++) {
 			    if (buf[base + i] == '>') {
-#if 0
-			        fprintf(stderr, "found\n");
-#endif
 			        goto found_end_int_subset;
 			    }
 			    if (!IS_BLANK_CH(buf[base + i])) {
-#if 0
-			        fprintf(stderr, "not found\n");
-#endif
 			        goto not_end_of_int_subset;
 			    }
 			}
-#if 0
-			fprintf(stderr, "end of stream\n");
-#endif
 		        break;
                         
 		    }
@@ -12359,11 +12334,6 @@ xmlCtxtReset(xmlParserCtxtPtr ctxt)
     ctxt->nsWellFormed = 1;
     ctxt->disableSAX = 0;
     ctxt->valid = 1;
-#if 0
-    ctxt->vctxt.userData = ctxt;
-    ctxt->vctxt.error = xmlParserValidityError;
-    ctxt->vctxt.warning = xmlParserValidityWarning;
-#endif
     ctxt->record_info = 0;
     ctxt->nbChars = 0;
     ctxt->checkIndex = 0;
