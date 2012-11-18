@@ -237,13 +237,6 @@ static void gfx_ctx_rmenu_frame(void *data)
 {
    gl_t *gl = (gl_t*)data;
 
-   const GLfloat vertexes_flipped[] = {
-      0, 1,
-      1, 1,
-      0, 0,
-      1, 0
-   };
-
    gl_cg_use(RARCH_CG_MENU_SHADER_INDEX);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 
@@ -266,13 +259,6 @@ static void gfx_ctx_rmenu_frame(void *data)
 static void gfx_ctx_rmenu_frame(void *data)
 {
    gl_t *gl = (gl_t*)data;
-
-   const GLfloat vertexes_flipped[] = {
-      0, 1,
-      1, 1,
-      0, 0,
-      1, 0
-   };
 
    gl_glsl_use(RARCH_CG_MENU_SHADER_INDEX);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
