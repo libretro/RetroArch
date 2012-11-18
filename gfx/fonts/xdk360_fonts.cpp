@@ -408,7 +408,6 @@ HRESULT d3d9_init_font(const char *font_path)
    video_console.m_nCurLine = 0;
    video_console.m_cCurLineLength = 0;
    memset( video_console.m_Buffer, 0, video_console.m_cScreenHeightVirtual * ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-   xdk360_console_draw();
 
    return hr;
 }
