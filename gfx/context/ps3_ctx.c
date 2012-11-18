@@ -73,7 +73,7 @@ static float gfx_ctx_get_aspect_ratio(void)
       case CELL_VIDEO_OUT_ASPECT_4_3:
          return 4.0f/3.0f;
       case CELL_VIDEO_OUT_ASPECT_16_9:
-	 return 16.0f/9.0f;
+         return 16.0f/9.0f;
    }
 
    return 16.0f/9.0f;
@@ -222,13 +222,13 @@ static bool gfx_ctx_rmenu_init(void)
 
    glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
          menu_texture.width, menu_texture.height, 0,
-		   RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, menu_texture.pixels);
+         RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, menu_texture.pixels);
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    free(menu_texture.pixels);
 #endif
-	
+
    return true;
 }
 
@@ -238,10 +238,10 @@ static void gfx_ctx_rmenu_frame(void *data)
    gl_t *gl = (gl_t*)data;
 
    const GLfloat vertexes_flipped[] = {
-	   0, 1,
-	   1, 1,
-	   0, 0,
-	   1, 0
+      0, 1,
+      1, 1,
+      0, 0,
+      1, 0
    };
 
    gl_cg_use(RARCH_CG_MENU_SHADER_INDEX);
@@ -268,10 +268,10 @@ static void gfx_ctx_rmenu_frame(void *data)
    gl_t *gl = (gl_t*)data;
 
    const GLfloat vertexes_flipped[] = {
-	   0, 1,
-	   1, 1,
-	   0, 0,
-	   1, 0
+      0, 1,
+      1, 1,
+      0, 0,
+      1, 0
    };
 
    gl_glsl_use(RARCH_CG_MENU_SHADER_INDEX);
@@ -307,9 +307,9 @@ static bool gfx_ctx_init(void)
 {
 #if defined(HAVE_PSGL)
    PSGLinitOptions options = {
-	   .enable = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS,
-	   .maxSPUs = 1,
-	   .initializeSPUs = GL_FALSE,
+      .enable = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS,
+      .maxSPUs = 1,
+      .initializeSPUs = GL_FALSE,
    };
 #if CELL_SDK_VERSION < 0x340000
    options.enable |=	PSGL_INIT_HOST_MEMORY_SIZE;
@@ -322,8 +322,8 @@ static bool gfx_ctx_init(void)
    PSGLdeviceParameters params;
 
    params.enable = PSGL_DEVICE_PARAMETERS_COLOR_FORMAT |
-		   PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT |
-		   PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE;
+      PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT |
+      PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE;
    params.colorFormat = GL_ARGB_SCE;
    params.depthFormat = GL_NONE;
    params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
@@ -404,8 +404,6 @@ static void gfx_ctx_set_fbo(bool enable)
    gl->render_to_tex = enable;
 }
 
-#define INPUT_SCALE 2
-
 static void gfx_ctx_apply_fbo_state_changes(unsigned mode)
 {
    gl_t *gl = driver.video_data;
@@ -415,14 +413,11 @@ static void gfx_ctx_apply_fbo_state_changes(unsigned mode)
       case FBO_DEINIT:
          gl_deinit_fbo(gl);
          break;
-      case FBO_INIT:
-         gl_init_fbo(gl, RARCH_SCALE_BASE * INPUT_SCALE,
-            RARCH_SCALE_BASE * INPUT_SCALE);
-         break;
       case FBO_REINIT:
          gl_deinit_fbo(gl);
-         gl_init_fbo(gl, RARCH_SCALE_BASE * INPUT_SCALE,
-			 RARCH_SCALE_BASE * INPUT_SCALE);
+         /* fall-through */
+      case FBO_INIT:
+         gl_init_fbo(gl, gl->tex_w, gl->tex_h);
          break;
    }
 }
