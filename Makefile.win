@@ -34,6 +34,7 @@ OBJ = retroarch.o \
 JOBJ := conf/config_file.o \
 	tools/retroarch-joyconfig.o \
 	compat/compat.o \
+	file_path.o \
 	input/input_common.o \
 	input/dinput.o
 
