@@ -20,6 +20,8 @@
 #include "../../xdk/xdk_d3d.h"
 #endif
 
+#include "../image.h"
+
 #include <stdint.h>
 
 #ifdef HAVE_CONFIG_H
@@ -31,6 +33,7 @@
 #include "../../screenshot.h"
 
 #if defined(_XBOX1)
+#include "../fonts/xdk1_xfonts.h"
 // for Xbox 1
 #define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTATIONINTERVAL
 #else
@@ -161,7 +164,7 @@ static bool gfx_ctx_xdk_menu_init(void)
    ypos = width == 640 ? 430 : 670;
 #endif
 
-   rmenu_inited = false;
+   rmenu_inited = true;
    return true;
 }
 
@@ -271,8 +274,8 @@ static void gfx_ctx_xdk_menu_set_default_pos(rmenu_default_positions_t *position
 static void gfx_ctx_xdk_menu_render_msg(float xpos, float ypos, float scale, unsigned color, const char *msg, ...)
 {
 #ifdef _XBOX1
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   xfonts_render_msg_place(d3d, xpos, ypos, scale, msg);
+   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
+   xfonts_render_msg_place(device_ptr, xpos, ypos, scale, msg);
 #endif
 }
 
@@ -325,7 +328,7 @@ static void gfx_ctx_xdk_update_window_title(bool reset) { }
 
 static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 #if defined(_XBOX360)
    XVIDEO_MODE video_mode;
    XGetVideoMode(&video_mode);
@@ -342,9 +345,9 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
    if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
    {
       // Check for 16:9 mode (PAL REGION)
-      if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+      if(device_ptr->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
-         if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+         if(device_ptr->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
 	      {	//60 Hz, 720x480i
             *width = 720;
 	         *height = 480;
@@ -359,7 +362,7 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
    else
    {
       // Check for 16:9 mode (NTSC REGIONS)
-      if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+      if(device_ptr->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
          *width = 720;
 	      *height = 480;
@@ -368,17 +371,17 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
 
    if(XGetAVPack() == XC_AV_PACK_HDTV)
    {
-      if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+      if(device_ptr->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
       {
          *width	= 640;
          *height  = 480;
       }
-	   else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
+	   else if(device_ptr->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
 	   {
          *width	= 1280;
          *height  = 720;
 	   }
-	   else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+	   else if(device_ptr->video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
 	   {
          *width	= 1920;
          *height  = 1080;

@@ -341,7 +341,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->vsync = video->vsync;
 
 #if defined(_XBOX1)
-   d3d->driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D8_API);
+   d3d->ctx_driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D8_API);
 #elif defined(_XBOX360)
    d3d->ctx_driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D9_API);
 #endif
