@@ -379,25 +379,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    xdk_d3d_set_rotation(d3d, g_extern.console.screen.orientation);
 
-#if defined(_XBOX1)
-   /* load debug fonts */
-   XFONT_OpenDefaultFont(&d3d->debug_font);
-   d3d->debug_font->SetBkMode(XFONT_TRANSPARENT);
-   d3d->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
-   d3d->debug_font->SetTextHeight(14);
-   d3d->debug_font->SetTextAntialiasLevel(d3d->debug_font->GetTextAntialiasLevel());
-
-   font_x = 0;
-   font_y = 0;
-#elif defined(_XBOX360)
-   HRESULT hr = d3d9_init_font("game:\\media\\Arial_12.xpr");
-
-   if(hr < 0)
-   {
-      RARCH_ERR("Couldn't initialize HLSL shader fonts.\n");
-   }
-#endif
-
    //really returns driver.video_data to driver.video_data - see comment above
    return d3d;
 }
@@ -413,8 +394,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    D3DSurface* pRenderTarget0;
 #endif
    bool menu_enabled = g_extern.console.rmenu.state.rmenu.enable;
-#ifdef _XBOX1
    bool fps_enable = g_extern.console.rmenu.state.msg_fps.enable;
+#ifdef _XBOX1
    unsigned flicker_filter = g_extern.console.screen.state.flicker_filter.value;
    bool soft_filter_enable = g_extern.console.screen.state.soft_filter.enable;
 #endif
@@ -654,11 +635,30 @@ static void xdk_d3d_start(void)
 
    video_info.vsync = g_settings.video.vsync;
    video_info.force_aspect = false;
-   video_info.fullscreen = true;
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
+   video_info.fullscreen = true;
 
    driver.video_data = xdk_d3d_init(&video_info, NULL, NULL);
+
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
+#if defined(_XBOX1)
+   /* load debug fonts */
+   XFONT_OpenDefaultFont(&d3d->debug_font);
+   d3d->debug_font->SetBkMode(XFONT_TRANSPARENT);
+   d3d->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
+   d3d->debug_font->SetTextHeight(14);
+   d3d->debug_font->SetTextAntialiasLevel(d3d->debug_font->GetTextAntialiasLevel());
+
+   font_x = 0;
+   font_y = 0;
+#elif defined(_XBOX360)
+   HRESULT hr = d3d9_init_font("game:\\media\\Arial_12.xpr");
+
+   if(hr < 0)
+      RARCH_ERR("Couldn't initialize HLSL shader fonts.\n");
+#endif
 }
 
 static void xdk_d3d_restart(void)
