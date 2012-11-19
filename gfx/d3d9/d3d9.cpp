@@ -46,7 +46,7 @@
 #define MAX_MONITORS 9
 
 /* TODO: Make Cg optional - same as in the GL driver where we can either bake in
- * GLSL, Cg or HLSL shader support */
+ * Cg or HLSL shader support */
 
 namespace Monitor
 {
@@ -60,6 +60,7 @@ namespace Callback
 {
    static bool quit = false;
    static D3DVideo *curD3D = nullptr;
+   static HRESULT d3d_err;
 
    LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
          WPARAM wParam, LPARAM lParam)
@@ -110,7 +111,7 @@ void D3DVideo::init_base(const video_info_t &info)
    if (!g_pD3D)
       throw std::runtime_error("Failed to create D3D9 interface!");
 
-   if (FAILED(g_pD3D->CreateDevice(
+   if (FAILED(Callback::d3d_err = g_pD3D->CreateDevice(
                Monitor::cur_mon_id,
                D3DDEVTYPE_HAL,
                hWnd,
@@ -235,13 +236,13 @@ bool D3DVideo::read_viewport(uint8_t *buffer)
    IDirect3DSurface9 *target = nullptr;
    IDirect3DSurface9 *dest   = nullptr;
 
-   if (FAILED(dev->GetRenderTarget(0, &target)))
+   if (FAILED(Callback::d3d_err = dev->GetRenderTarget(0, &target)))
    {
       ret = false;
       goto end;
    }
 
-   if (FAILED(dev->CreateOffscreenPlainSurface(screen_width, screen_height,
+   if (FAILED(Callback::d3d_err = dev->CreateOffscreenPlainSurface(screen_width, screen_height,
         D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM,
         &dest, nullptr)))
    {
@@ -249,7 +250,7 @@ bool D3DVideo::read_viewport(uint8_t *buffer)
       goto end;
    }
 
-   if (FAILED(dev->GetRenderTargetData(target, dest)))
+   if (FAILED(Callback::d3d_err = dev->GetRenderTargetData(target, dest)))
    {
       ret = false;
       goto end;
@@ -364,7 +365,8 @@ RECT D3DVideo::monitor_rect()
 }
 
 D3DVideo::D3DVideo(const video_info_t *info) :
-   g_pD3D(nullptr), dev(nullptr), font(nullptr), rotation(0), needs_restore(false), cgCtx(nullptr)
+   g_pD3D(nullptr), dev(nullptr), font(nullptr),
+   rotation(0), needs_restore(false), cgCtx(nullptr)
 {
    gfx_set_dwm();
 
@@ -1147,7 +1149,7 @@ static void *d3d9_init(const video_info_t *info, const input_driver_t **input,
    }
    catch (const std::exception &e)
    {
-      RARCH_ERR("[D3D9]: Failed to init D3D9 (%s).\n", e.what());
+      RARCH_ERR("[D3D9]: Failed to init D3D9 (%s, code: 0x%x).\n", e.what(), (unsigned)Callback::d3d_err);
       return nullptr;
    }
 }
