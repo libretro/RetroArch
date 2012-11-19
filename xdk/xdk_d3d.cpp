@@ -420,17 +420,6 @@ static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *vide
 
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
-   // use an orthogonal matrix for the projection matrix
-   D3DXMATRIX mat;
-   D3DXMatrixOrthoOffCenterLH(&mat, 0,  d3d->d3dpp.BackBufferWidth ,  d3d->d3dpp.BackBufferHeight , 0, 0.0f, 1.0f);
-
-   d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &mat);
-
-   // use an identity matrix for the world and view matrices
-   D3DXMatrixIdentity(&mat);
-   d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &mat);
-   d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &mat);
-
    d3d->d3d_render_device->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0, g_settings.video.color_format ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5, 0, &d3d->lpTexture);
    D3DLOCKED_RECT d3dlr;
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, 0);
@@ -439,23 +428,6 @@ static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *vide
 
    d3d->last_width = d3d->tex_w;
    d3d->last_height = d3d->tex_h;
-
-   d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
-	   D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf);
-
-   const DrawVerticeFormats init_verts[] = {
-      { -1.0f, -1.0f, 1.0f, 0.0f, 1.0f },
-      {  1.0f, -1.0f, 1.0f, 1.0f, 1.0f },
-      { -1.0f,  1.0f, 1.0f, 0.0f, 0.0f },
-      {  1.0f,  1.0f, 1.0f, 1.0f, 0.0f },
-   };
-
-   BYTE *verts_ptr;
-   d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
-   memcpy(verts_ptr, init_verts, sizeof(init_verts));
-   d3d->vertex_buf->Unlock();
-
-   d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
 
    d3d->d3d_render_device->SetRenderState(D3DRS_LIGHTING, FALSE);
    d3d->d3d_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
@@ -512,30 +484,6 @@ static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *vide
 
    d3d->last_width = d3d->tex_w;
    d3d->last_height = d3d->tex_h;
-
-   d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
-	   0, 0, 0, &d3d->vertex_buf, NULL);
-
-   static const DrawVerticeFormats init_verts[] = {
-      { -1.0f, -1.0f, 0.0f, 1.0f },
-      {  1.0f, -1.0f, 1.0f, 1.0f },
-      { -1.0f,  1.0f, 0.0f, 0.0f },
-      {  1.0f,  1.0f, 1.0f, 0.0f },
-   };
-   
-   void *verts_ptr;
-   d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
-   memcpy(verts_ptr, init_verts, sizeof(init_verts));
-   d3d->vertex_buf->Unlock();
-
-   static const D3DVERTEXELEMENT VertexElements[] =
-   {
-      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-      D3DDECL_END()
-   };
-
-   d3d->d3d_render_device->CreateVertexDeclaration(VertexElements, &d3d->v_decl);
    
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
 	   0xff000000, 1.0f, 0);
@@ -591,10 +539,64 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    xdk_d3d_init_textures(d3d, video);
 
+#if defined(_XBOX1)
+   // use an orthogonal matrix for the projection matrix
+   D3DXMATRIX mat;
+   D3DXMatrixOrthoOffCenterLH(&mat, 0,  d3d->d3dpp.BackBufferWidth ,  d3d->d3dpp.BackBufferHeight , 0, 0.0f, 1.0f);
+
+   d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &mat);
+
+   // use an identity matrix for the world and view matrices
+   D3DXMatrixIdentity(&mat);
+   d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &mat);
+   d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &mat);
+
+   d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
+	   D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf);
+
+   const DrawVerticeFormats init_verts[] = {
+      { -1.0f, -1.0f, 1.0f, 0.0f, 1.0f },
+      {  1.0f, -1.0f, 1.0f, 1.0f, 1.0f },
+      { -1.0f,  1.0f, 1.0f, 0.0f, 0.0f },
+      {  1.0f,  1.0f, 1.0f, 1.0f, 0.0f },
+   };
+
+   BYTE *verts_ptr;
+   d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
+   memcpy(verts_ptr, init_verts, sizeof(init_verts));
+   d3d->vertex_buf->Unlock();
+
+   d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
+#elif defined(_XBOX360)
+   d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
+	   0, 0, 0, &d3d->vertex_buf, NULL);
+
+   static const DrawVerticeFormats init_verts[] = {
+      { -1.0f, -1.0f, 0.0f, 1.0f },
+      {  1.0f, -1.0f, 1.0f, 1.0f },
+      { -1.0f,  1.0f, 0.0f, 0.0f },
+      {  1.0f,  1.0f, 1.0f, 0.0f },
+   };
+   
+   void *verts_ptr;
+   d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
+   memcpy(verts_ptr, init_verts, sizeof(init_verts));
+   d3d->vertex_buf->Unlock();
+
+   static const D3DVERTEXELEMENT VertexElements[] =
+   {
+      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+      D3DDECL_END()
+   };
+
+   d3d->d3d_render_device->CreateVertexDeclaration(VertexElements, &d3d->v_decl);
+#endif
+
    d3d->ctx_driver->get_video_size(&d3d->full_x, &d3d->full_y);
    RARCH_LOG("Detecting screen resolution: %ux%u.\n", d3d->full_x, d3d->full_y);
 
-   gfx_ctx_xdk_set_swap_interval(d3d->vsync ? 1 : 0);
+   d3d->ctx_driver->swap_interval(d3d->vsync ? 1 : 0);
 
 #ifdef HAVE_HLSL
    if (!hlsl_shader_init())
