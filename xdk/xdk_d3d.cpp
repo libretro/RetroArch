@@ -308,13 +308,13 @@ static void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
       d3d->lpSurface = NULL;
    }
 
-   d3d->d3d_render_device->CreateTexture(512 * g_settings.video.fbo.scale_x, 512 * g_settings.video.fbo.scale_y,
+   d3d->d3d_render_device->CreateTexture(d3d->tex_w * g_settings.video.fbo.scale_x, d3d->tex_h * g_settings.video.fbo.scale_y,
          1, 0, g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8,
          0, &d3d->lpTexture_ot
 		 , NULL
 		 );
 
-   d3d->d3d_render_device->CreateRenderTarget(512 * g_settings.video.fbo.scale_x, 512 * g_settings.video.fbo.scale_y,
+   d3d->d3d_render_device->CreateRenderTarget(d3d->tex_w * g_settings.video.fbo.scale_x, d3d->tex_h * g_settings.video.fbo.scale_y,
          g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 
 	      0, 0, &d3d->lpSurface, NULL);
 
@@ -339,6 +339,9 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    d3d->vsync = video->vsync;
+   /* FIXME: Hack */
+   d3d->tex_w = 512;
+   d3d->tex_h = 512;
 
 #if defined(_XBOX1)
    d3d->ctx_driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D8_API);
@@ -421,7 +424,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       D3DLOCKED_RECT d3dlr;
 
       d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-      memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
+      memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
       d3d->lpTexture->UnlockRect(0);
 
 #if defined(_XBOX1)
@@ -435,8 +438,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
          {  1.0f,  1.0f, 1.0f, tex_w, 0.0f },
       };
 #elif defined(_XBOX360)
-      float tex_w = width / 512.0f;
-      float tex_h = height / 512.0f;
+      float tex_w = width / (float)d3d->tex_w;
+      float tex_h = height / (float)d3d->tex_h;
 
       DrawVerticeFormats verts[] = {
          { -1.0f, -1.0f, 0.0f,  tex_h },
@@ -449,8 +452,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       // Align texels and vertices (D3D9 quirk).
       for (unsigned i = 0; i < 4; i++)
       {
-         verts[i].x -= 0.5f / 512.0f;
-         verts[i].y += 0.5f / 512.0f;
+         verts[i].x -= 0.5f / (float)d3d->tex_w;
+         verts[i].y += 0.5f / (float)d3d->tex_h;
       }
 
 #if defined(_XBOX1)
@@ -493,7 +496,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if(d3d->fbo_inited)
    {
 #ifdef HAVE_HLSL
-      hlsl_set_params(width, height, 512, 512, g_settings.video.fbo.scale_x * width,
+      hlsl_set_params(width, height, d3d->tex_w, d3d->tex_h, g_settings.video.fbo.scale_x * width,
             g_settings.video.fbo.scale_y * height, d3d->frame_count);
 #endif
       D3DVIEWPORT vp = {0};
@@ -509,7 +512,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
    {
 #ifdef HAVE_HLSL
-      hlsl_set_params(width, height, 512, 512, d3d->d3dpp.BackBufferWidth,
+      hlsl_set_params(width, height, d3d->tex_w, d3d->tex_h, d3d->d3dpp.BackBufferWidth,
             d3d->d3dpp.BackBufferHeight, d3d->frame_count);
 #endif
    }
@@ -571,7 +574,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
 #ifdef HAVE_HLSL
       hlsl_use(2);
-      hlsl_set_params(g_settings.video.fbo.scale_x * width, g_settings.video.fbo.scale_y * height, g_settings.video.fbo.scale_x * 512, g_settings.video.fbo.scale_y * 512, d3d->d3dpp.BackBufferWidth,
+      hlsl_set_params(g_settings.video.fbo.scale_x * width, g_settings.video.fbo.scale_y * height, g_settings.video.fbo.scale_x * d3d->tex_w, g_settings.video.fbo.scale_y * d3d->tex_h, d3d->d3dpp.BackBufferWidth,
             d3d->d3dpp.BackBufferHeight, d3d->frame_count);
 #endif
       xdk_d3d_set_viewport(false);

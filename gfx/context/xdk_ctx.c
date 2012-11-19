@@ -509,14 +509,14 @@ static bool gfx_ctx_xdk_init(void)
    d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &mat);
    d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &mat);
 
-   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, g_settings.video.color_format ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5, 0, &d3d->lpTexture);
+   d3d->d3d_render_device->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0, g_settings.video.color_format ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5, 0, &d3d->lpTexture);
    D3DLOCKED_RECT d3dlr;
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, 0);
-   memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
+   memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
    d3d->lpTexture->UnlockRect(0);
 
-   d3d->last_width = 512;
-   d3d->last_height = 512;
+   d3d->last_width = d3d->tex_w;
+   d3d->last_height = d3d->tex_h;
 
    d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
 	   D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf);
@@ -578,18 +578,18 @@ static bool gfx_ctx_xdk_init(void)
    d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
 	   &d3d->d3dpp, &d3d->d3d_render_device);
 
-   d3d->d3d_render_device->CreateTexture(512, 512, 1, 0, g_settings.video.color_format ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5,
+   d3d->d3d_render_device->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0, g_settings.video.color_format ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5,
       0, &d3d->lpTexture
    , NULL
    );
 
    D3DLOCKED_RECT d3dlr;
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-   memset(d3dlr.pBits, 0, 512 * d3dlr.Pitch);
+   memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
    d3d->lpTexture->UnlockRect(0);
 
-   d3d->last_width = 512;
-   d3d->last_height = 512;
+   d3d->last_width = d3d->tex_w;
+   d3d->last_height = d3d->tex_h;
 
    d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
 	   0, 0, 0, &d3d->vertex_buf, NULL);
