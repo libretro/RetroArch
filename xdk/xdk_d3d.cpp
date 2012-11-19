@@ -321,7 +321,7 @@ static void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
    d3d->lpTexture_ot_as16srgb = *d3d->lpTexture_ot;
    xdk_convert_texture_to_as16_srgb(d3d->lpTexture);
    xdk_convert_texture_to_as16_srgb(&d3d->lpTexture_ot_as16srgb);
-   d3d->fbo_enabled = 1;
+   d3d->fbo_inited = 1;
 }
 #endif
 
@@ -343,9 +343,9 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 #if defined(_XBOX1)
    d3d->driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D8_API);
 #elif defined(_XBOX360)
-   d3d->driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D9_API);
+   d3d->ctx_driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D9_API);
 #endif
-   if (!d3d->driver)
+   if (!d3d->ctx_driver)
    {
       free(d3d);
       return NULL;
@@ -467,7 +467,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_FBO
-   if (d3d->fbo_enabled)
+   if (d3d->fbo_inited)
    {
       d3d->d3d_render_device->GetRenderTarget(0, &pRenderTarget0);
       d3d->d3d_render_device->SetRenderTarget(0, d3d->lpSurface);
@@ -490,7 +490,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_FBO
-   if(d3d->fbo_enabled)
+   if(d3d->fbo_inited)
    {
 #ifdef HAVE_HLSL
       hlsl_set_params(width, height, 512, 512, g_settings.video.fbo.scale_x * width,
@@ -560,7 +560,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_FBO
-   if(d3d->fbo_enabled)
+   if(d3d->fbo_inited)
    {
       d3d->d3d_render_device->Resolve(D3DRESOLVE_RENDERTARGET0, NULL, d3d->lpTexture_ot,
          NULL, 0, 0, NULL, 0, 0, NULL);

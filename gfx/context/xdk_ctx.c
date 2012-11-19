@@ -82,8 +82,8 @@ texture_image m_menuMainRomSelectPanel;
 texture_image m_menuMainBG;
 
 // Rom list coords
-int m_menuMainRomListPos_x;
-int m_menuMainRomListPos_y;
+unsigned m_menuMainRomListPos_x;
+unsigned m_menuMainRomListPos_y;
 #endif
 
 bool rmenu_inited = false;
@@ -131,6 +131,53 @@ static void gfx_ctx_xdk_check_window(bool *quit,
 
 static void gfx_ctx_xdk_set_resize(unsigned width, unsigned height) { }
 
+static bool gfx_ctx_xdk_menu_init(void)
+{
+#ifdef _XBOX1
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
+   int width  = d3d->d3dpp.BackBufferWidth;
+
+   // Load background image
+   if(width == 640)
+   {
+      texture_image_load("D:\\Media\\main-menu_480p.png", &m_menuMainBG);
+      m_menuMainRomListPos_x = 60;
+      m_menuMainRomListPos_y = 80;
+   }
+   else if(width == 1280)
+   {
+      texture_image_load("D:\\Media\\main-menu_720p.png", &m_menuMainBG);
+      m_menuMainRomListPos_x = 360;
+      m_menuMainRomListPos_y = 130;
+   }
+
+   // Load rom selector panel
+   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &m_menuMainRomSelectPanel);
+   
+   //Display some text
+   //Center the text (hardcoded)
+   xpos = width == 640 ? 65 : 400;
+   ypos = width == 640 ? 430 : 670;
+#endif
+
+   rmenu_inited = false;
+   return true;
+}
+
+static void gfx_ctx_xdk_menu_frame(void* data)
+{
+	(void)data;
+}
+
+static void gfx_ctx_xdk_menu_free(void)
+{
+#ifdef _XBOX1
+   texture_image_free(&m_menuMainBG);
+   texture_image_free(&m_menuMainRomSelectPanel);
+#endif
+}
+
 static void gfx_ctx_menu_enable(bool enable)
 {
    if (enable)
@@ -174,48 +221,6 @@ static void gfx_ctx_xdk_clear(void)
 static bool gfx_ctx_xdk_window_has_focus(void)
 {
    return true;
-}
-
-static bool gfx_ctx_xdk_menu_init(void)
-{
-#ifdef _XBOX1
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-
-   int width  = d3d->d3dpp.BackBufferWidth;
-
-   // Load background image
-   if(width == 640)
-   {
-      texture_image_load("D:\\Media\\main-menu_480p.png", &m_menuMainBG);
-      m_menuMainRomListPos_x = 60;
-      m_menuMainRomListPos_y = 80;
-   }
-   else if(width == 1280)
-   {
-      texture_image_load("D:\\Media\\main-menu_720p.png", &m_menuMainBG);
-      m_menuMainRomListPos_x = 360;
-      m_menuMainRomListPos_y = 130;
-   }
-
-   // Load rom selector panel
-   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &m_menuMainRomSelectPanel);
-   
-   //Display some text
-   //Center the text (hardcoded)
-   xpos = width == 640 ? 65 : 400;
-   ypos = width == 640 ? 430 : 670;
-#endif
-
-   rmenu_inited = false;
-   return true;
-}
-
-static void gfx_ctx_xdk_menu_free(void)
-{
-#ifdef _XBOX1
-   texture_image_free(&m_menuMainBG);
-   texture_image_free(&m_menuMainRomSelectPanel);
-#endif
 }
 
 static void gfx_ctx_xdk_menu_draw_bg(rarch_position_t *position)
@@ -277,7 +282,29 @@ static void gfx_ctx_xdk_menu_screenshot_enable(bool enable)
 
 static void gfx_ctx_xdk_menu_screenshot_dump(void *data)
 {
-   gfx_ctx_xdk_screenshot_dump(NULL);
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   HRESULT ret = S_OK;
+   char filename[PATH_MAX];
+   char shotname[PATH_MAX];
+
+   screenshot_generate_filename(shotname, sizeof(shotname));
+   snprintf(filename, sizeof(filename), "%s\\%s", default_paths.screenshots_dir, shotname);
+   
+#if defined(_XBOX1)
+   D3DSurface *surf = NULL;
+   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
+   ret = XGWriteSurfaceToFile(surf, filename);
+   surf->Release();
+#elif defined(_XBOX360)
+   ret = 1; //false
+   //ret = D3DXSaveTextureToFile(filename, D3DXIFF_BMP, d3d->lpTexture, NULL);
+#endif
+
+   if(ret == S_OK)
+   {
+      RARCH_LOG("Screenshot saved: %s.\n", filename);
+      msg_queue_push(g_extern.msg_queue, "Screenshot saved.", 1, 30);
+   }
 }
 
 static const char *gfx_ctx_xdk_menu_drive_mapping_previous(void)
@@ -626,46 +653,16 @@ static void gfx_ctx_xdk_destroy(void)
 
 static void gfx_ctx_xdk_input_driver(const input_driver_t **input, void **input_data) { }
 
-static void gfx_ctx_xdk_set_filtering(unsigned index, bool set_smooth)
-{
-   /* TODO: implement */
-}
+static void gfx_ctx_xdk_set_filtering(unsigned index, bool set_smooth) { }
 
-static void gfx_ctx_xdk_set_fbo(bool enable)
+static void gfx_ctx_xdk_set_fbo(unsigned enable)
 {
 #ifdef HAVE_FBO
    /* TODO: implement properly */
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 
-   d3d->fbo_enabled = enable;
+   device_ptr->fbo_inited = enable;
 #endif
-}
-
-void gfx_ctx_xdk_screenshot_dump(void *data)
-{
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   HRESULT ret = S_OK;
-   char filename[PATH_MAX];
-   char shotname[PATH_MAX];
-
-   screenshot_generate_filename(shotname, sizeof(shotname));
-   snprintf(filename, sizeof(filename), "%s\\%s", default_paths.screenshots_dir, shotname);
-   
-#if defined(_XBOX1)
-   D3DSurface *surf = NULL;
-   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
-   ret = XGWriteSurfaceToFile(surf, filename);
-   surf->Release();
-#elif defined(_XBOX360)
-   ret = 1; //false
-   //ret = D3DXSaveTextureToFile(filename, D3DXIFF_BMP, d3d->lpTexture, NULL);
-#endif
-
-   if(ret == S_OK)
-   {
-      RARCH_LOG("Screenshot saved: %s.\n", filename);
-      msg_queue_push(g_extern.msg_queue, "Screenshot saved.", 1, 30);
-   }
 }
 
 static bool gfx_ctx_xdk_bind_api(enum gfx_ctx_api api)
@@ -735,6 +732,7 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    gfx_ctx_xdk_check_resolution,
    gfx_ctx_xdk_set_fbo,
 
+#if defined(HAVE_RMENU) || defined(_XBOX360)
    gfx_ctx_xdk_menu_init,
    gfx_ctx_xdk_menu_frame,
    gfx_ctx_xdk_menu_free,
@@ -747,4 +745,5 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    gfx_ctx_xdk_menu_screenshot_dump,
    gfx_ctx_xdk_menu_drive_mapping_previous,
    gfx_ctx_xdk_menu_drive_mapping_next
+#endif
 };

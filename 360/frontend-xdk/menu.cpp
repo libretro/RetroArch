@@ -38,7 +38,6 @@ HXUIOBJ hCur;
 filebrowser_t browser;
 filebrowser_t tmp_browser;
 uint32_t set_shader = 0;
-static const rmenu_context_t *context;
 
 wchar_t strw_buffer[PATH_MAX];
 char str_buffer[PATH_MAX];
@@ -384,7 +383,7 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
-   m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.fbo.enable ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
+   m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
    rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SHADER, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SHADER, strw_buffer);
    m_settingslist.SetText(SETTING_COLOR_FORMAT, g_settings.video.color_format ? L"Color format: 32bit ARGB" : L"Color format: 16bit RGBA");
@@ -400,6 +399,7 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
 HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
+   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
    int current_index;
    HRESULT hr;
 
@@ -472,9 +472,9 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
             break;
          case SETTING_SCALE_ENABLED:
-            g_settings.video.fbo.enable = !g_settings.video.fbo.enable;
-            m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.fbo.enable ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-            context->set_fbo_enable(g_settings.video.fbo.enable);
+            g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
+            m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
+            device_ptr->ctx_driver->set_fbo(g_settings.video.render_to_texture);
             break;
          case SETTING_ZIP_EXTRACT:
             if(g_extern.file_state.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
@@ -494,7 +494,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
 {
    int current_index;
-   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 
    current_index = m_settingslist.GetCurSel();
 
@@ -531,7 +531,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                   rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
             case SETTING_SCALE_FACTOR:
-               if(vid->fbo_enabled)
+               if(device_ptr->fbo_inited)
                {
                   if((g_settings.video.fbo.scale_x > MIN_SCALING_FACTOR))
                   {
@@ -557,9 +557,9 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
                break;
             case SETTING_SCALE_ENABLED:
-               g_settings.video.fbo.enable = !g_settings.video.fbo.enable;
-               m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.fbo.enable ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-               context->set_fbo_enable(g_settings.video.fbo.enable);
+               g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
+               m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
+               device_ptr->ctx_driver->set_fbo(g_settings.video.render_to_texture);
                break;
             default:
                break;
@@ -596,7 +596,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                   rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
             case SETTING_SCALE_FACTOR:
-               if(vid->fbo_enabled)
+               if(device_ptr->fbo_inited)
                {
                   if((g_settings.video.fbo.scale_x < MAX_SCALING_FACTOR))
                   {
@@ -622,9 +622,9 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
                break;
             case SETTING_SCALE_ENABLED:
-               g_settings.video.fbo.enable = !g_settings.video.fbo.enable;
-               m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.fbo.enable ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-               context->set_fbo_enable(g_settings.video.fbo.enable);
+				g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
+               m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
+               device_ptr->ctx_driver->set_fbo(g_settings.video.render_to_texture);
                break;
             default:
                break;
@@ -739,7 +739,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
 
    if(aspectratio_changed)
    {
-      context->set_aspect_ratio(g_settings.video.aspect_ratio_idx);
+      driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
       rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
       m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
    }
@@ -763,7 +763,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
 
 HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
    int current_index;
 
    if ( hObjPressed == m_quickmenulist)
@@ -788,7 +788,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             break;
          case MENU_ITEM_KEEP_ASPECT_RATIO:
             rarch_settings_default(S_DEF_ASPECT_RATIO);
-            context->set_aspect_ratio(g_settings.video.aspect_ratio_idx);
+            driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
             rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
             m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
             break;
@@ -814,7 +814,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             break;
          case MENU_ITEM_SCREENSHOT_MODE:
             if (g_extern.console.rmenu.state.msg_info.enable)
-               gfx_ctx_xdk_screenshot_dump(NULL);
+               device_ptr->ctx_driver->rmenu_screenshot_dump(NULL);
             break;
          case MENU_ITEM_RESET:
             if (g_extern.console.emulator_initialized)
@@ -1042,13 +1042,11 @@ void menu_init (void)
 {
    HRESULT hr;
 
-   context = (rmenu_context_t*)&rmenu_ctx_xdk;
-
-   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 
    bool hdmenus_allowed = g_extern.console.rmenu.state.rmenu_hd.enable;
 
-   hr = app.InitShared(vid->d3d_render_device, &vid->d3dpp, XuiPNGTextureLoader);
+   hr = app.InitShared(device_ptr->d3d_render_device, &device_ptr->d3dpp, XuiPNGTextureLoader);
 
    if (hr < 0)
    {
@@ -1131,11 +1129,11 @@ static void ingame_menu_resize (void)
 void menu_loop(void)
 {
    HRESULT hr;
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 
    g_extern.console.rmenu.state.rmenu.enable = true;
 
-   d3d->block_swap = true;
+   device_ptr->block_swap = true;
 
    g_extern.console.rmenu.input_loop = INPUT_LOOP_MENU;
 
@@ -1145,8 +1143,8 @@ void menu_loop(void)
          rarch_render_cached_frame();
       else
       {
-         d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
-         d3d->frame_count++;
+		 device_ptr->ctx_driver->clear();
+         device_ptr->frame_count++;
       }
 
       XINPUT_STATE state;
@@ -1154,7 +1152,7 @@ void menu_loop(void)
 
       g_extern.console.rmenu.state.rmenu.enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
             && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.console.emulator_initialized)
-            && IS_TIMER_EXPIRED(d3d));
+            && IS_TIMER_EXPIRED(device_ptr));
 
       g_extern.console.rmenu.mode = g_extern.console.rmenu.state.rmenu.enable ? MODE_MENU : MODE_EMULATION;
 
@@ -1186,20 +1184,20 @@ void menu_loop(void)
 
       if(g_extern.console.rmenu.mode == MODE_EMULATION && !g_extern.console.screen.state.frame_advance.enable)
       {
-         SET_TIMER_EXPIRATION(d3d, 30);
+         SET_TIMER_EXPIRATION(device_ptr, 30);
       }
 
       const char *message = msg_queue_pull(g_extern.msg_queue);
 
       if (message)
       {
-         xdk_render_msg(d3d, message);
+         xdk_render_msg(device_ptr, message);
       }
 
-      context->swap_buffers();
+      device_ptr->ctx_driver->swap_buffers();
    }while(g_extern.console.rmenu.state.rmenu.enable);
 
-   d3d->block_swap = false;
+   device_ptr->block_swap = false;
 
    g_extern.console.rmenu.state.ingame_menu.enable = false;
 }

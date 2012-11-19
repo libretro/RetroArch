@@ -113,7 +113,7 @@ typedef struct gfx_ctx_driver
    void (*set_fbo)(unsigned);
 #endif
 
-#ifdef HAVE_RMENU
+#if defined(HAVE_RMENU) || defined(_XBOX360)
    bool (*rmenu_init)(void);
    void (*rmenu_frame)(void *data);
    void (*rmenu_free)(void);
