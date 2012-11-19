@@ -38,7 +38,7 @@ CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map -T gx/ld/ogc.ld
 LIBS := -lfat -lretro_ngc -logc
 
-OBJ = console/griffin/griffin.o console/font.binobj console/rzlib/rzlib.o
+OBJ = console/griffin/griffin.o console/font.binobj
 
 ifeq ($(PERF_TEST), 1)
    CFLAGS += -DPERF_TEST
@@ -57,7 +57,7 @@ CFLAGS		+= -DHAVE_FILE_LOGGER
 CFLAGS          += -Iconsole/logger
 endif
 
-CFLAGS += -std=gnu99 -DHAVE_DEFAULT_RETROPAD_INPUT -DHAVE_RGUI -DHAVE_THREAD -DRARCH_CONSOLE -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_RARCH_EXEC -DHAVE_CONFIGFILE=1 -DGEKKO -DHAVE_ZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DHAVE_SCREENSHOTS -DPACKAGE_VERSION=\"0.9.8-beta2\" -Dmain=rarch_main -Wno-char-subscripts 
+CFLAGS += -std=gnu99 -DHAVE_DEFAULT_RETROPAD_INPUT -DHAVE_RGUI -DHAVE_THREAD -DRARCH_CONSOLE -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_RARCH_EXEC -DHAVE_CONFIGFILE=1 -DGEKKO -DHAVE_ZLIB -DWANT_RZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DHAVE_SCREENSHOTS -DPACKAGE_VERSION=\"0.9.8-beta2\" -Dmain=rarch_main -Wno-char-subscripts 
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g

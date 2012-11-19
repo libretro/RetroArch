@@ -374,3 +374,10 @@ MENU
 #elif defined(_XBOX1)
 #include "../../xbox1/frontend/RetroLaunch/IoSupport.cpp"
 #endif
+
+/*============================================================
+RZLIB
+============================================================ */
+#ifdef WANT_RZLIB
+#include "../rzlib/rzlib.c"
+#endif
