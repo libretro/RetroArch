@@ -38,14 +38,6 @@ typedef struct
    unsigned char page;			/* page						*/
 } item;
 
-typedef struct rmenu_position
-{
-   float x;
-   float y;
-   float width;
-   float height;
-} rmenu_position_t;
-
 typedef struct rmenu_default_positions
 {
    float x_position;
@@ -68,28 +60,6 @@ typedef struct rmenu_default_positions
    float core_msg_font_size;
    unsigned entries_per_page;
 } rmenu_default_positions_t;
-
-typedef struct rmenu_context
-{
-   void (*clear)(void); 
-   void (*set_filtering)(unsigned index, bool set_smooth);
-   void (*set_aspect_ratio)(unsigned aspectratio_index);
-   void (*blend)(bool enable);
-   void (*set_fbo_enable)(unsigned i);
-   void (*free_textures)(void);
-   void (*init_textures)(void);
-   void (*render_selection_panel)(rmenu_position_t *position);
-   void (*render_bg)(rmenu_position_t *position);
-   void (*render_menu_enable)(bool enable);
-   void (*render_msg)(float xpos, float ypos, float scale, unsigned color, const char *msg, ...);
-   void (*screenshot_enable)(bool enable);
-   void (*screenshot_dump)(void *data);
-   void (*swap_buffers)(void);
-   void (*set_swap_interval)(unsigned interval);
-   void (*set_default_pos)(rmenu_default_positions_t *position);
-   const char * (*drive_mapping_prev)(void);
-   const char * (*drive_mapping_next)(void);
-} rmenu_context_t;
 
 enum
 {

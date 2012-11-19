@@ -122,7 +122,7 @@ static void check_window(xdk_d3d_video_t *d3d)
 {
    bool quit, resize;
 
-   d3d->driver->check_window(&quit,
+   d3d->ctx_driver->check_window(&quit,
          &resize, NULL, NULL,
          d3d->frame_count);
 
@@ -161,7 +161,7 @@ static void xdk_d3d_free(void * data)
    d3d9_deinit_font();
 #endif
 
-   d3d->driver->destroy();
+   d3d->ctx_driver->destroy();
 
    free(d3d);
 }
@@ -351,9 +351,9 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
       return NULL;
    }
 
-   RARCH_LOG("Found D3D context: %s\n", d3d->driver->ident);
+   RARCH_LOG("Found D3D context: %s\n", d3d->ctx_driver->ident);
 
-   d3d->driver->get_video_size(&d3d->full_x, &d3d->full_y);
+   d3d->ctx_driver->get_video_size(&d3d->full_x, &d3d->full_y);
    RARCH_LOG("Detecting screen resolution: %ux%u.\n", d3d->full_x, d3d->full_y);
 
    gfx_ctx_xdk_set_swap_interval(d3d->vsync ? 1 : 0);
@@ -362,7 +362,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    if (!hlsl_shader_init())
    {
       RARCH_ERR("Shader init failed.\n");
-	  d3d->driver->destroy();
+	  d3d->ctx_driver->destroy();
 	  free(d3d);
 	  return NULL;
    }

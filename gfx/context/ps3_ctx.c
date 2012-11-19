@@ -31,6 +31,7 @@
 #include "../image.h"
 
 #include "../gfx_context.h"
+#include "../gl_font.h"
 
 #if defined(HAVE_RMENU)
 GLuint menu_texture_id;
@@ -41,6 +42,38 @@ static struct texture_image menu_texture;
 static PSGLdevice* gl_device;
 static PSGLcontext* gl_context;
 #endif
+
+#define HARDCODE_FONT_SIZE 0.91f
+#define POSITION_X 0.09f
+#define POSITION_X_CENTER 0.5f
+#define POSITION_Y_START 0.17f
+#define POSITION_Y_INCREMENT 0.035f
+#define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
+#define COMMENT_TWO_Y_POSITION 0.91f
+#define COMMENT_Y_POSITION 0.82f
+
+#define MSG_QUEUE_X_POSITION g_settings.video.msg_pos_x
+#define MSG_QUEUE_Y_POSITION 0.76f
+#define MSG_QUEUE_FONT_SIZE 1.03f
+
+#define MSG_PREV_NEXT_Y_POSITION 0.03f
+#define CURRENT_PATH_Y_POSITION 0.15f
+#define CURRENT_PATH_FONT_SIZE FONT_SIZE
+
+#define FONT_SIZE (g_extern.console.rmenu.font_size)
+
+#define NUM_ENTRY_PER_PAGE 15
+
+#define DRIVE_MAPPING_SIZE 4
+
+const char drive_mappings[DRIVE_MAPPING_SIZE][32] = {
+   "/app_home/",
+   "/dev_hdd0/",
+   "/dev_hdd1/",
+   "/host_root/"
+};
+
+unsigned char drive_mapping_idx = 1;
 
 static int gfx_ctx_check_resolution(unsigned resolution_id)
 {
@@ -77,6 +110,76 @@ static float gfx_ctx_get_aspect_ratio(void)
    }
 
    return 16.0f/9.0f;
+}
+
+static void gfx_ctx_ps3_set_default_pos(rmenu_default_positions_t *position)
+{
+   position->x_position = POSITION_X;
+   position->x_position_center = POSITION_X_CENTER;
+   position->y_position = POSITION_Y_BEGIN;
+   position->comment_y_position = COMMENT_Y_POSITION;
+   position->y_position_increment = POSITION_Y_INCREMENT;
+   position->starting_y_position = POSITION_Y_START;
+   position->comment_two_y_position = COMMENT_TWO_Y_POSITION;
+   position->font_size = HARDCODE_FONT_SIZE;
+   position->msg_queue_x_position = MSG_QUEUE_X_POSITION;
+   position->msg_queue_y_position = MSG_QUEUE_Y_POSITION;
+   position->msg_queue_font_size= MSG_QUEUE_FONT_SIZE;
+   position->msg_prev_next_y_position = MSG_PREV_NEXT_Y_POSITION;
+   position->current_path_font_size = CURRENT_PATH_FONT_SIZE;
+   position->current_path_y_position = CURRENT_PATH_Y_POSITION;
+   position->variable_font_size = FONT_SIZE;
+   position->entries_per_page = NUM_ENTRY_PER_PAGE;
+   position->core_msg_x_position = 0.3f;
+   position->core_msg_y_position = 0.06f;
+   position->core_msg_font_size = COMMENT_Y_POSITION;
+}
+
+static void rmenu_ctx_ps3_render_msg(float xpos, float ypos, float scale, unsigned color, const char *msg, ...)
+{
+   gl_t *gl = driver.video_data;
+
+   gl_render_msg_place(gl, xpos, ypos, scale, color, msg);
+}
+
+static void rmenu_ctx_ps3_screenshot_enable(bool enable)
+{
+#if(CELL_SDK_VERSION > 0x340000)
+   if(enable)
+   {
+      cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+      CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
+
+      screenshot_param.photo_title = "RetroArch PS3";
+      screenshot_param.game_title = "RetroArch PS3";
+      cellScreenShotSetParameter (&screenshot_param);
+      cellScreenShotEnable();
+   }
+   else
+   {
+      cellScreenShotDisable();
+      cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+   }
+#endif
+}
+
+static void rmenu_ctx_ps3_screenshot_dump(void *data)
+{
+   (void)data;
+}
+
+static const char * rmenu_ctx_ps3_drive_mapping_previous(void)
+{
+   if(drive_mapping_idx > 0)
+      drive_mapping_idx--;
+   return drive_mappings[drive_mapping_idx];
+}
+
+static const char * rmenu_ctx_ps3_drive_mapping_next(void)
+{
+   if((drive_mapping_idx + 1) < DRIVE_MAPPING_SIZE)
+      drive_mapping_idx++;
+   return drive_mappings[drive_mapping_idx];
 }
 
 static void gfx_ctx_get_available_resolutions (void)
@@ -197,6 +300,8 @@ static void gfx_ctx_set_blend(bool enable)
 
 static void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 
+bool rmenu_inited = false;
+
 static bool gfx_ctx_rmenu_init(void)
 {
    gl_t *gl = driver.video_data;
@@ -229,10 +334,34 @@ static bool gfx_ctx_rmenu_init(void)
    free(menu_texture.pixels);
 #endif
 
+   rmenu_inited = true;
+
    return true;
 }
 
 #if defined(HAVE_RMENU)
+static void gfx_ctx_rmenu_free(void)
+{
+   gl_t *gl = driver.video_data;
+   gl->draw_rmenu = false;
+}
+
+static void gfx_ctx_menu_enable(bool enable)
+{
+   gl_t *gl = driver.video_data;
+
+   if (enable)
+   {
+      if(!rmenu_inited)
+         gfx_ctx_rmenu_init();
+      gl->draw_rmenu = true;
+   }
+   else
+   {
+      gfx_ctx_rmenu_free();
+   }
+}
+
 static void gfx_ctx_rmenu_frame(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -240,10 +369,13 @@ static void gfx_ctx_rmenu_frame(void *data)
    gl_shader_use(gl, RARCH_CG_MENU_SHADER_INDEX);
    gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
 
-   gl_shader_set_params(gl, gl->win_width, gl->win_height, 
-         gl->win_width, gl->win_height, 
-         gl->win_width, gl->win_height, 
-         gl->frame_count, NULL, NULL, NULL, 0);
+   if (gl->shader)
+   {
+      gl->shader->set_params(gl->win_width, gl->win_height, 
+            gl->win_width, gl->win_height, 
+            gl->win_width, gl->win_height, 
+            gl->frame_count, NULL, NULL, NULL, 0);
+   }
 
    glActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, menu_texture_id);
@@ -255,6 +387,17 @@ static void gfx_ctx_rmenu_frame(void *data)
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+}
+
+
+static void gfx_ctx_menu_draw_panel(rarch_position_t *position)
+{
+   (void)position;
+}
+
+static void gfx_ctx_menu_draw_bg(rarch_position_t *position)
+{
+   (void)position;
 }
 #endif
 
@@ -423,19 +566,26 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    "ps3",
 
    // RARCH_CONSOLE stuff.
+   gfx_ctx_clear,
+   gfx_ctx_set_blend,
    gfx_ctx_set_filtering,
    gfx_ctx_get_available_resolutions,
    gfx_ctx_check_resolution,
+   gfx_ctx_set_fbo,
 
 #ifdef HAVE_RMENU
    gfx_ctx_rmenu_init,
-#else
-   NULL,
-#endif
-
-   gfx_ctx_set_fbo,
-#ifdef HAVE_RMENU
-   gfx_ctx_rmenu_frame
+   gfx_ctx_rmenu_frame,
+   gfx_ctx_rmenu_free,
+   gfx_ctx_menu_enable,
+   gfx_ctx_menu_draw_bg,
+   gfx_ctx_menu_draw_panel,
+   gfx_ctx_ps3_set_default_pos,
+   rmenu_ctx_ps3_render_msg,
+   rmenu_ctx_ps3_screenshot_enable,
+   rmenu_ctx_ps3_screenshot_dump,
+   rmenu_ctx_ps3_drive_mapping_previous,
+   rmenu_ctx_ps3_drive_mapping_next,
 #endif
 };
 

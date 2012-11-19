@@ -364,11 +364,7 @@ static void gl_shader_scale(gl_t *gl, unsigned index, struct gl_fbo_scale *scale
    if (gl->shader)
       gl->shader->shader_scale(index, scale);
 }
-#endif
-///////////////////
 
-
-#ifdef HAVE_FBO
 static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
       unsigned vp_width, unsigned vp_height)
 {

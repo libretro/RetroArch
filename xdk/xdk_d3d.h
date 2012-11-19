@@ -54,7 +54,7 @@ typedef struct DrawVerticeFormats
 
 typedef struct xdk_d3d_video
 {
-   const gfx_ctx_driver_t *driver;
+   const gfx_ctx_driver_t *ctx_driver;
    bool block_swap;
 #ifdef HAVE_FBO
    bool fbo_enabled;

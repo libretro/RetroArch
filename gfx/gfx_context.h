@@ -23,6 +23,10 @@
 #include "../config.h"
 #endif
 
+#if defined(RARCH_CONSOLE) || defined(HAVE_RMENU)
+#include "../console/rmenu/rmenu.h"
+#endif
+
 #define MAX_EGLIMAGE_TEXTURES 32
 
 enum gfx_ctx_api
@@ -33,6 +37,14 @@ enum gfx_ctx_api
    GFX_CTX_DIRECT3D9_API,
    GFX_CTX_OPENVG_API
 };
+
+typedef struct rarch_position
+{
+   float x;
+   float y;
+   float width;
+   float height;
+} rarch_position_t;
 
 typedef void (*gfx_ctx_proc_t)(void);
 
@@ -93,14 +105,27 @@ typedef struct gfx_ctx_driver
    const char *ident;
 
 #ifdef RARCH_CONSOLE
+   void (*clear)(void);
+   void (*set_blend)(bool enable);
    void (*set_filtering)(unsigned index, bool set_smooth);
    void (*get_available_resolutions)(void);
    int  (*check_resolution)(unsigned resolution_id);
-   bool (*rmenu_init)(void);
    void (*set_fbo)(unsigned);
 #endif
+
 #ifdef HAVE_RMENU
+   bool (*rmenu_init)(void);
    void (*rmenu_frame)(void *data);
+   void (*rmenu_free)(void);
+   void (*rmenu_enable)(bool enable);
+   void (*rmenu_draw_bg)(rarch_position_t *position);
+   void (*rmenu_draw_panel)(rarch_position_t *position);
+   void (*rmenu_set_default_pos)(rmenu_default_positions_t *position);
+   void (*rmenu_render_msg)(float xpos, float ypos, float scale, unsigned color, const char *msg, ...);
+   void (*rmenu_screenshot_enable)(bool enable);
+   void (*rmenu_screenshot_dump)(void *data);
+   const char *(*drive_mapping_previous)(void);
+   const char *(*drive_mapping_next)(void);
 #endif
 } gfx_ctx_driver_t;
 
