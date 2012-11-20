@@ -275,8 +275,7 @@ static void xdk_d3d_set_rotation(void * data, unsigned orientation)
 
 #if defined(HAVE_HLSL)
    /* TODO: Move to D3DXMATRIX here */
-   hlsl_set_proj_matrix(XMMatrixRotationZ(d3d->angle));
-   d3d->should_resize = TRUE;
+   hlsl_set_proj_matrix(XMMatrixRotationZ(angle));
 #elif defined(_XBOX1)
    D3DXMATRIX p_out, p_rotate;
    D3DXMatrixIdentity(&p_out);
