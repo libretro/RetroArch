@@ -474,7 +474,11 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
          case SETTING_SCALE_ENABLED:
             g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
             m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-            device_ptr->ctx_driver->set_fbo(g_settings.video.render_to_texture);
+
+            if(g_settings.video.render_to_texture)
+               device_ptr->ctx_driver->set_fbo(FBO_INIT);
+            else
+               device_ptr->ctx_driver->set_fbo(FBO_DEINIT);
             break;
          case SETTING_ZIP_EXTRACT:
             if(g_extern.file_state.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
@@ -536,7 +540,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                   if((g_settings.video.fbo.scale_x > MIN_SCALING_FACTOR))
                   {
                      rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
-                     //xdk360_gfx_init_fbo(vid);
+                     device_ptr->ctx_driver->set_fbo(FBO_REINIT);
                      rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
                      m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
                   }
@@ -559,7 +563,10 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
             case SETTING_SCALE_ENABLED:
                g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
                m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-               device_ptr->ctx_driver->set_fbo(g_settings.video.render_to_texture);
+               if(g_settings.video.render_to_texture)
+                  device_ptr->ctx_driver->set_fbo(FBO_INIT);
+               else
+                  device_ptr->ctx_driver->set_fbo(FBO_DEINIT);
                break;
             default:
                break;
@@ -601,7 +608,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                   if((g_settings.video.fbo.scale_x < MAX_SCALING_FACTOR))
                   {
                      rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
-                     //xdk360_gfx_init_fbo(vid);
+                     device_ptr->ctx_driver->set_fbo(FBO_REINIT);
                      rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
                      m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
                   }
@@ -624,7 +631,11 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
             case SETTING_SCALE_ENABLED:
 				g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
                m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-               device_ptr->ctx_driver->set_fbo(g_settings.video.render_to_texture);
+
+               if(g_settings.video.render_to_texture)
+                  device_ptr->ctx_driver->set_fbo(FBO_INIT);
+               else
+                  device_ptr->ctx_driver->set_fbo(FBO_DEINIT);
                break;
             default:
                break;

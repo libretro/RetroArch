@@ -458,13 +458,22 @@ static void gfx_ctx_xdk_input_driver(const input_driver_t **input, void **input_
 
 static void gfx_ctx_xdk_set_filtering(unsigned index, bool set_smooth) { }
 
-static void gfx_ctx_xdk_set_fbo(unsigned enable)
+static void gfx_ctx_xdk_set_fbo(unsigned mode)
 {
 #ifdef HAVE_FBO
    /* TODO: implement properly */
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 
-   device_ptr->fbo_inited = enable;
+   switch(mode)
+   {
+      case FBO_DEINIT:
+         xdk_d3d_deinit_fbo(device_ptr);
+         break;
+      case FBO_REINIT:
+      case FBO_INIT:
+         xdk_d3d_init_fbo(device_ptr);
+         break;
+   }
 #endif
 }
 
