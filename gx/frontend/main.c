@@ -507,6 +507,7 @@ int main(int argc, char *argv[])
    LWP_CreateThread(&gx_device_thread, gx_devthread, NULL, NULL, 0, 66);
 #endif
 
+   rarch_main_clear_state();
    get_environment_settings();
    make_directories();
    config_set_defaults();
