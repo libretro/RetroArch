@@ -375,9 +375,17 @@ MENU
 #include "../../xbox1/frontend/RetroLaunch/IoSupport.cpp"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*============================================================
 RZLIB
 ============================================================ */
 #ifdef WANT_RZLIB
 #include "../../deps/rzlib/rzlib.c"
+#endif
+
+#ifdef __cplusplus
+}
 #endif
