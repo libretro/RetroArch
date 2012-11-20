@@ -352,8 +352,9 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    if (!video->fullscreen)
       RARCH_LOG("Creating window @ %ux%u\n", video->width, video->height);
 
-   vid->render32 = !g_settings.video.force_16bit;
-   vid->screen = SDL_SetVideoMode(video->width, video->height, vid->render32 ? 32 : 16, SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
+   vid->render32 = true;
+   vid->screen = SDL_SetVideoMode(video->width, video->height, 32,
+         SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
 
    if (!vid->screen)
    {
@@ -361,27 +362,16 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
       goto error;
    }
 
-   if (!video->rgb32 && vid->render32)
+   if (!video->rgb32)
       vid->upsample = true;
 
    if (video->fullscreen)
       SDL_ShowCursor(SDL_DISABLE);
 
    fmt = vid->screen->format;
-   if (vid->render32)
-   {
-      RARCH_LOG("SDL: Creating 32-bit buffer.\n");
-      vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, RARCH_SCALE_BASE * video->input_scale,
-            RARCH_SCALE_BASE * video->input_scale, 32,
-            fmt->Rmask, fmt->Bmask, fmt->Gmask, fmt->Amask);
-   }
-   else
-   {
-      RARCH_LOG("SDL: Creating 16-bit buffer.\n");
-      vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, RARCH_SCALE_BASE * video->input_scale,
-            RARCH_SCALE_BASE * video->input_scale, 16,
-            fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
-   }
+   vid->buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, RARCH_SCALE_BASE * video->input_scale,
+         RARCH_SCALE_BASE * video->input_scale, 32,
+         fmt->Rmask, fmt->Bmask, fmt->Gmask, fmt->Amask);
    RARCH_LOG("[Debug]: SDL Pixel format: Rshift = %u, Gshift = %u, Bshift = %u\n",
          (unsigned)fmt->Rshift, (unsigned)fmt->Gshift, (unsigned)fmt->Bshift);
 

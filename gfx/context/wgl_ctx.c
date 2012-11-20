@@ -275,10 +275,8 @@ static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use)
 
 static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
-      unsigned bits, bool fullscreen)
+      bool fullscreen)
 {
-   (void)bits;
-
    DWORD style;
 
    HMONITOR hm_to_use = NULL;

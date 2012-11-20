@@ -250,11 +250,10 @@ static void gfx_ctx_update_window_title(bool reset)
 
 static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
-      unsigned bits, bool fullscreen)
+      bool fullscreen)
 {
    (void)width;
    (void)height;
-   (void)bits;
    (void)fullscreen;
    return true;
 }

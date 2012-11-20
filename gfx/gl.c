@@ -1341,8 +1341,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       win_height = gl->full_y;
    }
 
-   if (!context_set_video_mode_func(win_width, win_height,
-            g_settings.video.force_16bit ? 15 : 0, video->fullscreen))
+   if (!context_set_video_mode_func(win_width, win_height, video->fullscreen))
    {
       free(gl);
       return NULL;

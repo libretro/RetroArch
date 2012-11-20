@@ -125,7 +125,6 @@ struct settings
       float msg_color_g;
       float msg_color_b;
 
-      bool force_16bit;
       bool disable_composition;
 
       bool hires_record;

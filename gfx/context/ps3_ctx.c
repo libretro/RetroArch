@@ -460,7 +460,7 @@ static bool gfx_ctx_init(void)
 
 static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
-      unsigned bits, bool fullscreen)
+      bool fullscreen)
 {
    return true;
 }

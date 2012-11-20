@@ -113,8 +113,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
       win_height = vg->mScreenHeight;
    }
 
-   if (!vg->driver->set_video_mode(win_width, win_height,
-            g_settings.video.force_16bit ? 15 : 0, video->fullscreen))
+   if (!vg->driver->set_video_mode(win_width, win_height, video->fullscreen))
    {
       free(vg);
       return NULL;

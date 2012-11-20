@@ -70,7 +70,7 @@
 #define context_has_focus_func()                     gl->ctx_driver->has_focus()
 #define context_check_window_func(quit, resize, width, height, frame_count) gl->ctx_driver->check_window(quit, resize, width, height, frame_count)
 #define context_update_window_title_func(var)        gl->ctx_driver->update_window_title(var)
-#define context_set_video_mode_func(width, height, force_16bit, fullscreen) gl->ctx_driver->set_video_mode(width, height, force_16bit, fullscreen)
+#define context_set_video_mode_func(width, height, fullscreen) gl->ctx_driver->set_video_mode(width, height, fullscreen)
 #define context_input_driver_func(input, input_data) gl->ctx_driver->input_driver(input, input_data)
 
 #ifdef HAVE_RMENU

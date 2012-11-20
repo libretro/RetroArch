@@ -227,10 +227,8 @@ error:
 
 static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
-      unsigned bits, bool fullscreen)
+      bool fullscreen)
 {
-   (void)bits;
-
    struct sigaction sa = {{0}};
    sa.sa_handler = sighandler;
    sa.sa_flags   = SA_RESTART;

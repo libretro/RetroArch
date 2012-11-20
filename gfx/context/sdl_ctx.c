@@ -151,7 +151,7 @@ static void sdl_set_handles(void)
 
 static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
-      unsigned bits, bool fullscreen)
+      bool fullscreen)
 {
 #ifndef __APPLE__ // Resizing on OSX is broken in 1.2 it seems :)
    static const int resizable = SDL_RESIZABLE;
@@ -162,7 +162,7 @@ static bool gfx_ctx_set_video_mode(
    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, g_interval);
 
-   if (!SDL_SetVideoMode(width, height, bits,
+   if (!SDL_SetVideoMode(width, height, 0,
          SDL_OPENGL | (fullscreen ? SDL_FULLSCREEN : resizable)))
    {
       RARCH_ERR("Failed to create SDL window.\n");

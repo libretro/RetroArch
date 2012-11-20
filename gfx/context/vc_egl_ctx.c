@@ -231,9 +231,8 @@ error:
 
 static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
-      unsigned bits, bool fullscreen)
+      bool fullscreen)
 {
-   (void)bits;
    if (g_inited)
       return false;
 

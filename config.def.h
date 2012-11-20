@@ -168,9 +168,6 @@ static const unsigned monitor_index = 0; // Which monitor to prefer. 0 is any mo
 static const unsigned fullscreen_x = 0; // Fullscreen resolution. A value of 0 uses the desktop resolution.
 static const unsigned fullscreen_y = 0;
 
-// Force 16-bit colors.
-static const bool force_16bit = false;
-
 // Forcibly disable composition. Only valid on Windows Vista/7 for now.
 static const bool disable_composition = false;
 

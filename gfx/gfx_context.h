@@ -59,7 +59,7 @@ typedef struct gfx_ctx_driver
    void (*swap_interval)(unsigned);
 
    // Sets video mode. Creates a window, etc.
-   bool (*set_video_mode)(unsigned, unsigned, unsigned, bool);
+   bool (*set_video_mode)(unsigned, unsigned, bool);
 
    // Gets current window size.
    // If not initialized yet, it returns current screen size.
