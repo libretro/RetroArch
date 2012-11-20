@@ -308,7 +308,7 @@ void xdk_d3d_deinit_fbo(xdk_d3d_video_t *d3d)
    }
 }
 
-static void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
+void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
 {
    if(!g_settings.video.render_to_texture)
       return;
