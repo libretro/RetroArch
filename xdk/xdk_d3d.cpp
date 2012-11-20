@@ -325,9 +325,11 @@ static void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
 }
 #endif
 
-static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *video)
+void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp)
 {
-   memset(&d3d->d3dpp, 0, sizeof(d3d->d3dpp));
+	xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+	
+	memset(d3dpp, 0, sizeof(*d3dpp));
 
 #if defined(_XBOX1)
 // Get the "video mode"
@@ -335,35 +337,35 @@ static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *vide
 
    // Check if we are able to use progressive mode
    if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
-      d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
+      *d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
    else
-      d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;
+      *d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
 
     // Safe mode
-    d3d->d3dpp.BackBufferWidth = 640;
-    d3d->d3dpp.BackBufferHeight = 480;
+    *d3dpp->BackBufferWidth = 640;
+    *d3dpp->BackBufferHeight = 480;
     g_extern.console.rmenu.state.rmenu_hd.enable = false;
 
    // Only valid in PAL mode, not valid for HDTV modes!
    if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
    {
       if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
-         d3d->d3dpp.FullScreen_RefreshRateInHz = 60;
+         *d3dpp->FullScreen_RefreshRateInHz = 60;
       else
-         d3d->d3dpp.FullScreen_RefreshRateInHz = 50;
+         *d3dpp->FullScreen_RefreshRateInHz = 50;
 
       // Check for 16:9 mode (PAL REGION)
       if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
          if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
 	      {	//60 Hz, 720x480i
-            d3d->d3dpp.BackBufferWidth = 720;
-	         d3d->d3dpp.BackBufferHeight = 480;
+            *d3dpp->BackBufferWidth = 720;
+	        *d3dpp->BackBufferHeight = 480;
 	      }
 	    else
 	      {	//50 Hz, 720x576i
-           d3d->d3dpp.BackBufferWidth = 720;
-           d3d->d3dpp.BackBufferHeight = 576;
+           *d3dpp->BackBufferWidth = 720;
+           *d3dpp->BackBufferHeight = 576;
 	      }
       }
    }
@@ -372,8 +374,8 @@ static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *vide
       // Check for 16:9 mode (NTSC REGIONS)
       if(d3d->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
-         d3d->d3dpp.BackBufferWidth = 720;
-	      d3d->d3dpp.BackBufferHeight = 480;
+         *d3dpp->BackBufferWidth = 720;
+	     *d3dpp->BackBufferHeight = 480;
       }
    }
 
@@ -382,41 +384,82 @@ static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *vide
       if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
       {
          g_extern.console.rmenu.state.rmenu_hd.enable = false;
-         d3d->d3dpp.BackBufferWidth	= 640;
-         d3d->d3dpp.BackBufferHeight = 480;
-         d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
+         *d3dpp->BackBufferWidth	= 640;
+         *d3dpp->BackBufferHeight = 480;
+         *d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
       }
       else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
       {
          g_extern.console.rmenu.state.rmenu_hd.enable = true;
-	 d3d->d3dpp.BackBufferWidth	= 1280;
-	 d3d->d3dpp.BackBufferHeight = 720;
-	 d3d->d3dpp.Flags = D3DPRESENTFLAG_PROGRESSIVE;
+		 *d3dpp->BackBufferWidth	= 1280;
+		 *d3dpp->BackBufferHeight = 720;
+		 *d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
       }
       else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
       {
          g_extern.console.rmenu.state.rmenu_hd.enable = true;
-	 d3d->d3dpp.BackBufferWidth	= 1920;
-	 d3d->d3dpp.BackBufferHeight = 1080;
-	 d3d->d3dpp.Flags = D3DPRESENTFLAG_INTERLACED;
+		 *d3dpp->BackBufferWidth	= 1920;
+		 *d3dpp->BackBufferHeight = 1080;
+		 *d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
       }
    }
 
-   d3d->win_width = d3d->d3dpp.BackBufferWidth;
-   d3d->win_height = d3d->d3dpp.BackBufferHeight;
-
-   if(d3d->d3dpp.BackBufferWidth > 640 && ((float)d3d->d3dpp.BackBufferHeight / (float)d3d->d3dpp.BackBufferWidth != 0.75) ||
-      ((d3d->d3dpp.BackBufferWidth == 720) && (d3d->d3dpp.BackBufferHeight == 576))) // 16:9
-        d3d->d3dpp.Flags |= D3DPRESENTFLAG_WIDESCREEN;
+   if(d3dpp->BackBufferWidth > 640 && ((float)d3dpp->BackBufferHeight / (float)d3dpp->BackBufferWidth != 0.75) ||
+      ((d3dpp->BackBufferWidth == 720) && (d3dpp->BackBufferHeight == 576))) // 16:9
+        *d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
   // no letterboxing in 4:3 mode (if widescreen is unsupported
-   d3d->d3dpp.BackBufferFormat                     = D3DFMT_A8R8G8B8;
-   d3d->d3dpp.FullScreen_PresentationInterval		= d3d->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
-   d3d->d3dpp.MultiSampleType                      = D3DMULTISAMPLE_NONE;
-   d3d->d3dpp.BackBufferCount                      = 2;
-   d3d->d3dpp.EnableAutoDepthStencil               = FALSE;
-   d3d->d3dpp.SwapEffect                           = D3DSWAPEFFECT_COPY;
+   *d3dpp->BackBufferFormat                     = D3DFMT_A8R8G8B8;
+   *d3dpp->FullScreen_PresentationInterval		= d3d->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+   *d3dpp->MultiSampleType                      = D3DMULTISAMPLE_NONE;
+   *d3dpp->BackBufferCount                      = 2;
+   *d3dpp->EnableAutoDepthStencil               = FALSE;
+   *d3dpp->SwapEffect                           = D3DSWAPEFFECT_COPY;
+#elif defined(_XBOX360)
+   // no letterboxing in 4:3 mode (if widescreen is
+   // unsupported
+   // Get video settings
+   memset(&d3d->video_mode, 0, sizeof(d3d->video_mode));
+   XGetVideoMode(&d3d->video_mode);
 
-   d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &d3d->d3dpp, &d3d->d3d_render_device);
+   if(!d3d->video_mode.fIsWideScreen)
+      d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
+
+   g_extern.console.rmenu.state.rmenu_hd.enable = d3d->video_mode.fIsHiDef;
+   
+   d3dpp->BackBufferWidth         = d3d->video_mode.fIsHiDef ? 1280 : 640;
+   d3dpp->BackBufferHeight        = d3d->video_mode.fIsHiDef ? 720 : 480;
+
+   if(g_extern.console.screen.gamma_correction)
+   {
+      d3dpp->BackBufferFormat        = g_settings.video.color_format ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : (D3DFORMAT)MAKESRGBFMT(D3DFMT_LIN_R5G6B5);
+      d3dpp->FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
+   }
+   else
+   {
+      d3dpp->BackBufferFormat        = g_settings.video.color_format ? D3DFMT_A8R8G8B8 : D3DFMT_LIN_R5G6B5;
+      d3dpp->FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;
+   }
+   d3dpp->MultiSampleQuality      = 0;
+   d3dpp->PresentationInterval    = d3d->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+
+   d3dpp->MultiSampleType         = D3DMULTISAMPLE_NONE;
+   d3dpp->BackBufferCount         = 2;
+   d3dpp->EnableAutoDepthStencil  = FALSE;
+   d3dpp->SwapEffect              = D3DSWAPEFFECT_DISCARD;
+#endif
+
+   d3d->win_width  = d3dpp->BackBufferWidth;
+   d3d->win_height = d3dpp->BackBufferHeight;
+}
+
+static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *video)
+{
+	D3DPRESENT_PARAMETERS d3dpp;
+	xdk_d3d_generate_pp(&d3dpp);
+#if defined(_XBOX1)
+
+
+   d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &d3dpp, &d3d->d3d_render_device);
 
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
@@ -437,40 +480,9 @@ static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *vide
    vp.Width  = d3d->d3dpp.BackBufferWidth;
    vp.Height = d3d->d3dpp.BackBufferHeight;
 #elif defined(_XBOX360)
-   // no letterboxing in 4:3 mode (if widescreen is
-   // unsupported
-   // Get video settings
-   memset(&d3d->video_mode, 0, sizeof(d3d->video_mode));
-   XGetVideoMode(&d3d->video_mode);
-
-   if(!d3d->video_mode.fIsWideScreen)
-      d3d->d3dpp.Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
-
-   g_extern.console.rmenu.state.rmenu_hd.enable = d3d->video_mode.fIsHiDef;
-   
-   d3d->d3dpp.BackBufferWidth         = d3d->video_mode.fIsHiDef ? 1280 : 640;
-   d3d->d3dpp.BackBufferHeight        = d3d->video_mode.fIsHiDef ? 720 : 480;
-
-   if(g_extern.console.screen.gamma_correction)
-   {
-      d3d->d3dpp.BackBufferFormat        = g_settings.video.color_format ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : (D3DFORMAT)MAKESRGBFMT(D3DFMT_LIN_R5G6B5);
-      d3d->d3dpp.FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
-   }
-   else
-   {
-      d3d->d3dpp.BackBufferFormat        = g_settings.video.color_format ? D3DFMT_A8R8G8B8 : D3DFMT_LIN_R5G6B5;
-      d3d->d3dpp.FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;
-   }
-   d3d->d3dpp.MultiSampleQuality      = 0;
-   d3d->d3dpp.PresentationInterval    = d3d->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
-
-   d3d->d3dpp.MultiSampleType         = D3DMULTISAMPLE_NONE;
-   d3d->d3dpp.BackBufferCount         = 2;
-   d3d->d3dpp.EnableAutoDepthStencil  = FALSE;
-   d3d->d3dpp.SwapEffect              = D3DSWAPEFFECT_DISCARD;
 
    d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
-	   &d3d->d3dpp, &d3d->d3d_render_device);
+	   &d3dpp, &d3d->d3d_render_device);
 
    d3d->d3d_render_device->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0, g_settings.video.color_format ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5,
       0, &d3d->lpTexture
@@ -730,8 +742,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
    {
 #ifdef HAVE_HLSL
-      hlsl_set_params(width, height, d3d->tex_w, d3d->tex_h, d3d->d3dpp.BackBufferWidth,
-            d3d->d3dpp.BackBufferHeight, d3d->frame_count);
+      hlsl_set_params(width, height, d3d->tex_w, d3d->tex_h, d3d->win_width,
+            d3d->win_height, d3d->frame_count);
 #endif
    }
 
@@ -792,8 +804,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
 #ifdef HAVE_HLSL
       hlsl_use(2);
-      hlsl_set_params(g_settings.video.fbo.scale_x * width, g_settings.video.fbo.scale_y * height, g_settings.video.fbo.scale_x * d3d->tex_w, g_settings.video.fbo.scale_y * d3d->tex_h, d3d->d3dpp.BackBufferWidth,
-            d3d->d3dpp.BackBufferHeight, d3d->frame_count);
+      hlsl_set_params(g_settings.video.fbo.scale_x * width, g_settings.video.fbo.scale_y * height, g_settings.video.fbo.scale_x * d3d->tex_w, g_settings.video.fbo.scale_y * d3d->tex_h, d3d->win_width,
+            d3d->win_height, d3d->frame_count);
 #endif
       xdk_d3d_set_viewport(false);
 

@@ -86,7 +86,6 @@ typedef struct xdk_d3d_video
 #elif defined(_XBOX360)
    XVIDEO_MODE video_mode;
 #endif
-   D3DPRESENT_PARAMETERS d3dpp;
    LPDIRECT3DSURFACE lpSurface;
 } xdk_d3d_video_t;
 

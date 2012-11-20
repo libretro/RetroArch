@@ -1046,7 +1046,10 @@ void menu_init (void)
 
    bool hdmenus_allowed = g_extern.console.rmenu.state.rmenu_hd.enable;
 
-   hr = app.InitShared(device_ptr->d3d_render_device, &device_ptr->d3dpp, XuiPNGTextureLoader);
+   D3DPRESENT_PARAMETERS d3dpp;
+   xdk_d3d_generate_pp(&d3dpp);
+
+   hr = app.InitShared(device_ptr->d3d_render_device, &d3dpp, XuiPNGTextureLoader);
 
    if (hr < 0)
    {

@@ -364,11 +364,11 @@ HRESULT d3d9_init_font(const char *font_path)
    unsigned int uiSafeAreaPct = vid->video_mode.fIsHiDef ? SAFE_AREA_PCT_HDTV
       : SAFE_AREA_PCT_4x3;
 
-   video_console.m_cxSafeArea = ( vid->d3dpp.BackBufferWidth * uiSafeAreaPct ) / 100;
-   video_console.m_cySafeArea = ( vid->d3dpp.BackBufferHeight * uiSafeAreaPct ) / 100;
+   video_console.m_cxSafeArea = ( vid->win_width * uiSafeAreaPct ) / 100;
+   video_console.m_cySafeArea = ( vid->win_height * uiSafeAreaPct ) / 100;
 
-   video_console.m_cxSafeAreaOffset = ( vid->d3dpp.BackBufferWidth - video_console.m_cxSafeArea ) / 2;
-   video_console.m_cySafeAreaOffset = ( vid->d3dpp.BackBufferHeight - video_console.m_cySafeArea ) / 2;
+   video_console.m_cxSafeAreaOffset = ( vid->win_width - video_console.m_cxSafeArea ) / 2;
+   video_console.m_cySafeAreaOffset = ( vid->win_height - video_console.m_cySafeArea ) / 2;
 
    // Create the font
    HRESULT hr = xdk360_video_font_init(&m_Font, font_path);
