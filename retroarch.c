@@ -706,8 +706,13 @@ static void set_paths(const char *path)
       RARCH_LOG("Redirecting save state to \"%s\".\n", g_extern.savestate_name);
    }
 
-#if !defined(RARCH_CONSOLE) || !defined(HAVE_RMENU)
+#if !defined(RARCH_CONSOLE)
    /* we DON'T want the system directory overwritten for the consoles */
+   /* FIXME - this is a really nasty piece of code that can cost many hours of 
+   fruitless debugging chores without realizing it's due to this. Try to make
+   this entirely optional at runtime through some kind of variable you have to
+   enable to do this logic - as it is it is really not acceptable and can lead
+   to many unintended problems on consoles */
    fill_pathname_basedir(g_settings.system_directory, path, sizeof(g_settings.system_directory));
 #endif
 
