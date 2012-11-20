@@ -1540,6 +1540,9 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 {
    gl_t *gl = (gl_t*)data;
 
+   RARCH_PERFORMANCE_INIT(read_viewport);
+   RARCH_PERFORMANCE_START(read_viewport);
+
    glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
 #ifdef HAVE_OPENGLES
@@ -1564,6 +1567,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
          GL_BGR, GL_UNSIGNED_BYTE, buffer);
 #endif
 
+   RARCH_PERFORMANCE_STOP(read_viewport);
    return true;
 }
 #endif
