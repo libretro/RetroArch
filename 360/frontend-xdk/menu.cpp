@@ -386,7 +386,6 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
    rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SHADER, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SHADER, strw_buffer);
-   m_settingslist.SetText(SETTING_COLOR_FORMAT, g_settings.video.force_16bit ? L"Force 16bit color: ON" : L"Force 16bit color: OFF");
    rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SHADER_2, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SHADER_2, strw_buffer);
    rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
@@ -427,12 +426,6 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
          case SETTING_GAMMA_CORRECTION_ENABLED:
             g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
             m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-            if (g_extern.console.rmenu.state.msg_info.enable)
-               rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
-            break;
-         case SETTING_COLOR_FORMAT:
-			 g_settings.video.force_16bit = !g_settings.video.force_16bit;
-            m_settingslist.SetText(SETTING_COLOR_FORMAT, g_settings.video.force_16bit ? L"Force 16bit color: ON" : L"Force 16bit color: OFF");
             if (g_extern.console.rmenu.state.msg_info.enable)
                rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
             break;
@@ -528,12 +521,6 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                if (g_extern.console.rmenu.state.msg_info.enable)
                   rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
-            case SETTING_COLOR_FORMAT:
-				g_settings.video.force_16bit = !g_settings.video.force_16bit;
-				m_settingslist.SetText(SETTING_COLOR_FORMAT, g_settings.video.force_16bit ? L"Force 16bit color: ON" : L"Force 16bit color: OFF");
-               if (g_extern.console.rmenu.state.msg_info.enable)
-                  rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
-               break;
             case SETTING_SCALE_FACTOR:
                if(device_ptr->fbo_inited)
                {
@@ -586,12 +573,6 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
             case SETTING_GAMMA_CORRECTION_ENABLED:
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
                m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-               if (g_extern.console.rmenu.state.msg_info.enable)
-                  rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
-               break;
-            case SETTING_COLOR_FORMAT:
-				g_settings.video.force_16bit = !g_settings.video.force_16bit;
-               m_settingslist.SetText(SETTING_COLOR_FORMAT, g_settings.video.force_16bit ? L"Force 16bit color: ON" : L"Force 16bit color: OFF");
                if (g_extern.console.rmenu.state.msg_info.enable)
                   rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
@@ -1065,8 +1046,7 @@ void menu_init (void)
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
    video_info.fullscreen = true;
-   if(g_settings.video.force_16bit)
-	   video_info.rgb32 = false;
+   video_info.rgb32 = false;
 
    xdk_d3d_generate_pp(&d3dpp, &video_info);
 

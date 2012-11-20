@@ -859,8 +859,7 @@ static void xdk_d3d_start(void)
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
    video_info.fullscreen = true;
-   if(g_settings.video.force_16bit)
-      video_info.rgb32 = false;
+   video_info.rgb32 = false;
 
    driver.video_data = xdk_d3d_init(&video_info, NULL, NULL);
 
