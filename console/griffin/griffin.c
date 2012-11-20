@@ -232,7 +232,7 @@ AUDIO HERMITE
 RSOUND
 ============================================================ */
 #ifdef HAVE_RSOUND
-#include "../../console/librsound/librsound.c"
+#include "../../deps/librsound/librsound.c"
 #include "../../audio/rsound.c"
 #endif
 
@@ -379,5 +379,5 @@ MENU
 RZLIB
 ============================================================ */
 #ifdef WANT_RZLIB
-#include "../rzlib/rzlib.c"
+#include "../../deps/rzlib/rzlib.c"
 #endif

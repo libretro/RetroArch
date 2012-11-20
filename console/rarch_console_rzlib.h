@@ -17,7 +17,7 @@
 #ifndef _RARCH_CONSOLE_RZLIB_H
 #define _RARCH_CONSOLE_RZLIB_H
 
-#include "rzlib/zlib.h"
+#include "../deps/rzlib/zlib.h"
 
 #define WRITEBUFFERSIZE (1024 * 512)
 

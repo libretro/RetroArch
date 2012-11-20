@@ -17,7 +17,7 @@
 #include "../driver.h"
 #include <stdlib.h>
 #ifdef RARCH_CONSOLE
-#include "../console/librsound/rsound.h"
+#include "../deps/librsound/rsound.h"
 #else
 #include <rsound.h>
 #endif
