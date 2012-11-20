@@ -374,9 +374,7 @@ void rarch_settings_set_default(void)
    g_settings.video.msg_pos_x = 0.05f;
    g_settings.video.msg_pos_y = 0.90f;
    g_settings.video.aspect_ratio = -1.0f;
-#ifdef _XBOX360
-   g_settings.video.color_format = 0;
-#endif
+   g_settings.video.force_16bit = false;
 
    // g_extern
    strlcpy(g_extern.console.main_wrap.paths.default_sram_dir, default_paths.sram_dir, sizeof(g_extern.console.main_wrap.paths.default_sram_dir));

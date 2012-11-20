@@ -103,10 +103,6 @@ struct settings
       enum rarch_shader_type shader_type;
       float refresh_rate;
 
-#ifdef RARCH_CONSOLE
-      unsigned color_format;
-#endif
-
       bool render_to_texture;
 
       struct
