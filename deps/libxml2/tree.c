@@ -338,7 +338,7 @@ xmlSplitQName3(const xmlChar *name, int *len) {
  *									*
  ************************************************************************/
 
-#define CUR_SCHAR(s, l) xmlStringCurrentChar(NULL, s, &l)
+#define TREE_CUR_SCHAR(s, l) xmlStringCurrentChar(NULL, s, &l)
 
 #if defined(LIBXML_TREE_ENABLED)
 /**
@@ -384,27 +384,27 @@ try_complex:
      * Second check for chars outside the ASCII range
      */
     cur = value;
-    c = CUR_SCHAR(cur, l);
+    c = TREE_CUR_SCHAR(cur, l);
     if (space) {
 	while (IS_BLANK(c)) {
 	    cur += l;
-	    c = CUR_SCHAR(cur, l);
+	    c = TREE_CUR_SCHAR(cur, l);
 	}
     }
     if ((!IS_LETTER(c)) && (c != '_'))
 	return(1);
     cur += l;
-    c = CUR_SCHAR(cur, l);
+    c = TREE_CUR_SCHAR(cur, l);
     while (IS_LETTER(c) || IS_DIGIT(c) || (c == '.') ||
 	   (c == '-') || (c == '_') || IS_COMBINING(c) ||
 	   IS_EXTENDER(c)) {
 	cur += l;
-	c = CUR_SCHAR(cur, l);
+	c = TREE_CUR_SCHAR(cur, l);
     }
     if (space) {
 	while (IS_BLANK(c)) {
 	    cur += l;
-	    c = CUR_SCHAR(cur, l);
+	    c = TREE_CUR_SCHAR(cur, l);
 	}
     }
     if (c != 0)
@@ -471,41 +471,41 @@ try_complex:
      * Second check for chars outside the ASCII range
      */
     cur = value;
-    c = CUR_SCHAR(cur, l);
+    c = TREE_CUR_SCHAR(cur, l);
     if (space) {
 	while (IS_BLANK(c)) {
 	    cur += l;
-	    c = CUR_SCHAR(cur, l);
+	    c = TREE_CUR_SCHAR(cur, l);
 	}
     }
     if ((!IS_LETTER(c)) && (c != '_'))
 	return(1);
     cur += l;
-    c = CUR_SCHAR(cur, l);
+    c = TREE_CUR_SCHAR(cur, l);
     while (IS_LETTER(c) || IS_DIGIT(c) || (c == '.') ||
 	   (c == '-') || (c == '_') || IS_COMBINING(c) ||
 	   IS_EXTENDER(c)) {
 	cur += l;
-	c = CUR_SCHAR(cur, l);
+	c = TREE_CUR_SCHAR(cur, l);
     }
     if (c == ':') {
 	cur += l;
-	c = CUR_SCHAR(cur, l);
+	c = TREE_CUR_SCHAR(cur, l);
 	if ((!IS_LETTER(c)) && (c != '_'))
 	    return(1);
 	cur += l;
-	c = CUR_SCHAR(cur, l);
+	c = TREE_CUR_SCHAR(cur, l);
 	while (IS_LETTER(c) || IS_DIGIT(c) || (c == '.') ||
 	       (c == '-') || (c == '_') || IS_COMBINING(c) ||
 	       IS_EXTENDER(c)) {
 	    cur += l;
-	    c = CUR_SCHAR(cur, l);
+	    c = TREE_CUR_SCHAR(cur, l);
 	}
     }
     if (space) {
 	while (IS_BLANK(c)) {
 	    cur += l;
-	    c = CUR_SCHAR(cur, l);
+	    c = TREE_CUR_SCHAR(cur, l);
 	}
     }
     if (c != 0)
@@ -555,26 +555,26 @@ try_complex:
      * Second check for chars outside the ASCII range
      */
     cur = value;
-    c = CUR_SCHAR(cur, l);
+    c = TREE_CUR_SCHAR(cur, l);
     if (space) {
 	while (IS_BLANK(c)) {
 	    cur += l;
-	    c = CUR_SCHAR(cur, l);
+	    c = TREE_CUR_SCHAR(cur, l);
 	}
     }
     if ((!IS_LETTER(c)) && (c != '_') && (c != ':'))
 	return(1);
     cur += l;
-    c = CUR_SCHAR(cur, l);
+    c = TREE_CUR_SCHAR(cur, l);
     while (IS_LETTER(c) || IS_DIGIT(c) || (c == '.') || (c == ':') ||
 	   (c == '-') || (c == '_') || IS_COMBINING(c) || IS_EXTENDER(c)) {
 	cur += l;
-	c = CUR_SCHAR(cur, l);
+	c = TREE_CUR_SCHAR(cur, l);
     }
     if (space) {
 	while (IS_BLANK(c)) {
 	    cur += l;
-	    c = CUR_SCHAR(cur, l);
+	    c = TREE_CUR_SCHAR(cur, l);
 	}
     }
     if (c != 0)
@@ -626,27 +626,27 @@ try_complex:
      * Second check for chars outside the ASCII range
      */
     cur = value;
-    c = CUR_SCHAR(cur, l);
+    c = TREE_CUR_SCHAR(cur, l);
     if (space) {
 	while (IS_BLANK(c)) {
 	    cur += l;
-	    c = CUR_SCHAR(cur, l);
+	    c = TREE_CUR_SCHAR(cur, l);
 	}
     }
     if (!(IS_LETTER(c) || IS_DIGIT(c) || (c == '.') || (c == ':') ||
         (c == '-') || (c == '_') || IS_COMBINING(c) || IS_EXTENDER(c)))
 	return(1);
     cur += l;
-    c = CUR_SCHAR(cur, l);
+    c = TREE_CUR_SCHAR(cur, l);
     while (IS_LETTER(c) || IS_DIGIT(c) || (c == '.') || (c == ':') ||
 	   (c == '-') || (c == '_') || IS_COMBINING(c) || IS_EXTENDER(c)) {
 	cur += l;
-	c = CUR_SCHAR(cur, l);
+	c = TREE_CUR_SCHAR(cur, l);
     }
     if (space) {
 	while (IS_BLANK(c)) {
 	    cur += l;
-	    c = CUR_SCHAR(cur, l);
+	    c = TREE_CUR_SCHAR(cur, l);
 	}
     }
     if (c != 0)

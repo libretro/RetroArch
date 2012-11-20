@@ -56,18 +56,21 @@ typedef void (XMLCDECL *xmlValidityWarningFunc) (void *ctx,
 			       const char *msg,
 			       ...) LIBXML_ATTR_FORMAT(2,3);
 
-#ifdef IN_LIBXML
 /**
  * XML_CTXT_FINISH_DTD_0:
  *
  * Special value for finishDtd field when embedded in an xmlParserCtxt
  */
+#ifndef XML_CTXT_FINISH_DTD_0
 #define XML_CTXT_FINISH_DTD_0 0xabcd1234
+#endif
+
 /**
  * XML_CTXT_FINISH_DTD_1:
  *
  * Special value for finishDtd field when embedded in an xmlParserCtxt
  */
+#ifndef XML_CTXT_FINISH_DTD_1
 #define XML_CTXT_FINISH_DTD_1 0xabcd1235
 #endif
 

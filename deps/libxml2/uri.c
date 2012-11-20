@@ -92,7 +92,7 @@ static void xmlCleanURI(xmlURIPtr uri);
  * Skip to next pointer char, handle escaped sequences
  */
 
-#define NEXT(p) ((*p == '%')? p += 3 : p++)
+#define URI_NEXT(p) ((*p == '%')? p += 3 : p++)
 
 /*
  * Productions from the spec.
@@ -222,7 +222,7 @@ xmlParse3986Fragment(xmlURIPtr uri, const char **str)
     while ((ISA_PCHAR(cur)) || (*cur == '/') || (*cur == '?') ||
            (*cur == '[') || (*cur == ']') ||
            ((uri != NULL) && (uri->cleanup & 1) && (IS_UNWISE(cur))))
-        NEXT(cur);
+        URI_NEXT(cur);
     if (uri != NULL) {
         if (uri->fragment != NULL)
             xmlFree(uri->fragment);
@@ -258,7 +258,7 @@ xmlParse3986Query(xmlURIPtr uri, const char **str)
 
     while ((ISA_PCHAR(cur)) || (*cur == '/') || (*cur == '?') ||
            ((uri != NULL) && (uri->cleanup & 1) && (IS_UNWISE(cur))))
-        NEXT(cur);
+        URI_NEXT(cur);
     if (uri != NULL) {
         if (uri->query != NULL)
             xmlFree(uri->query);
@@ -329,7 +329,7 @@ xmlParse3986Userinfo(xmlURIPtr uri, const char **str)
     cur = *str;
     while (ISA_UNRESERVED(cur) || ISA_PCT_ENCODED(cur) ||
            ISA_SUB_DELIM(cur) || (*cur == ':'))
-	NEXT(cur);
+	URI_NEXT(cur);
     if (*cur == '@') {
 	if (uri != NULL) {
 	    if (uri->user != NULL) xmlFree(uri->user);
@@ -442,7 +442,7 @@ not_ipv4:
      * then this should be a hostname which can be empty
      */
     while (ISA_UNRESERVED(cur) || ISA_PCT_ENCODED(cur) || ISA_SUB_DELIM(cur))
-        NEXT(cur);
+        URI_NEXT(cur);
 found:
     if (uri != NULL) {
 	if (uri->authority != NULL) xmlFree(uri->authority);
@@ -526,7 +526,7 @@ xmlParse3986Segment(const char **str, char forbid, int empty)
 	return(1);
     }
     while (ISA_PCHAR(cur) && (*cur != forbid))
-        NEXT(cur);
+        URI_NEXT(cur);
     *str = cur;
     return (0);
 }

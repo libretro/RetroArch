@@ -72,7 +72,7 @@ xmlSAX2ErrMemory(xmlParserCtxtPtr ctxt, const char *msg) {
  * Handle a validation error
  */
 static void
-xmlErrValid(xmlParserCtxtPtr ctxt, xmlParserErrors error,
+SAXxmlErrValid(xmlParserCtxtPtr ctxt, xmlParserErrors error,
             const char *msg, const char *str1, const char *str2)
 {
     xmlStructuredErrorFunc schannel = NULL;
@@ -102,7 +102,7 @@ xmlErrValid(xmlParserCtxtPtr ctxt, xmlParserErrors error,
 }
 
 /**
- * xmlFatalErrMsg:
+ * SAXxmlFatalErrMsg:
  * @ctxt:  an XML parser context
  * @error:  the error number
  * @msg:  the error message
@@ -112,7 +112,7 @@ xmlErrValid(xmlParserCtxtPtr ctxt, xmlParserErrors error,
  * Handle a fatal parser error, i.e. violating Well-Formedness constraints
  */
 static void
-xmlFatalErrMsg(xmlParserCtxtPtr ctxt, xmlParserErrors error,
+SAXxmlFatalErrMsg(xmlParserCtxtPtr ctxt, xmlParserErrors error,
                const char *msg, const xmlChar *str1, const xmlChar *str2)
 {
     if ((ctxt != NULL) && (ctxt->disableSAX != 0) &&
@@ -529,7 +529,7 @@ xmlSAX2GetEntity(void *ctx, const xmlChar *name)
 		ctxt->myDoc->standalone = 0;
 		ret = xmlGetDocEntity(ctxt->myDoc, name);
 		if (ret != NULL) {
-		    xmlFatalErrMsg(ctxt, XML_ERR_NOT_STANDALONE,
+		    SAXxmlFatalErrMsg(ctxt, XML_ERR_NOT_STANDALONE,
 	 "Entity(%s) document marked standalone but requires external subset\n",
 				   name, NULL);
 		}
@@ -556,7 +556,7 @@ xmlSAX2GetEntity(void *ctx, const xmlChar *name)
 	if (val == 0) {
 	    xmlAddChildList((xmlNodePtr) ret, children);
 	} else {
-	    xmlFatalErrMsg(ctxt, XML_ERR_ENTITY_PROCESSING,
+	    SAXxmlFatalErrMsg(ctxt, XML_ERR_ENTITY_PROCESSING,
 		           "Failure to process entity %s\n", name, NULL);
 	    ctxt->validate = 0;
 	    return(NULL);
@@ -648,7 +648,7 @@ xmlSAX2EntityDecl(void *ctx, const xmlChar *name, int type,
 	    ent->URI = URI;
 	}
     } else {
-	xmlFatalErrMsg(ctxt, XML_ERR_ENTITY_PROCESSING,
+	SAXxmlFatalErrMsg(ctxt, XML_ERR_ENTITY_PROCESSING,
 	               "SAX.xmlSAX2EntityDecl(%s) called while not in subset\n",
 		       name, NULL);
     }
@@ -684,7 +684,7 @@ xmlSAX2AttributeDecl(void *ctx, const xmlChar *elem, const xmlChar *fullname,
 	 * Raise the error but keep the validity flag
 	 */
 	int tmp = ctxt->valid;
-	xmlErrValid(ctxt, XML_DTD_XMLID_TYPE,
+	SAXxmlErrValid(ctxt, XML_DTD_XMLID_TYPE,
 	      "xml:id : attribute type should be ID\n", NULL, NULL);
 	ctxt->valid = tmp;
     }
@@ -700,7 +700,7 @@ xmlSAX2AttributeDecl(void *ctx, const xmlChar *elem, const xmlChar *fullname,
 	   name, prefix, (xmlAttributeType) type, 
 	   (xmlAttributeDefault) def, defaultValue, tree);
     else {
-        xmlFatalErrMsg(ctxt, XML_ERR_INTERNAL_ERROR,
+        SAXxmlFatalErrMsg(ctxt, XML_ERR_INTERNAL_ERROR,
 	     "SAX.xmlSAX2AttributeDecl(%s) called while not in subset\n",
 	               name, NULL);
 	xmlFreeEnumeration(tree);
@@ -739,7 +739,7 @@ xmlSAX2ElementDecl(void *ctx, const xmlChar * name, int type,
         elem = xmlAddElementDecl(&ctxt->vctxt, ctxt->myDoc->extSubset,
                                  name, (xmlElementTypeVal) type, content);
     else {
-        xmlFatalErrMsg(ctxt, XML_ERR_INTERNAL_ERROR,
+        SAXxmlFatalErrMsg(ctxt, XML_ERR_INTERNAL_ERROR,
 	     "SAX.xmlSAX2ElementDecl(%s) called while not in subset\n",
 	               name, NULL);
         return;
@@ -767,7 +767,7 @@ xmlSAX2NotationDecl(void *ctx, const xmlChar *name,
 
 
     if ((publicId == NULL) && (systemId == NULL)) {
-	xmlFatalErrMsg(ctxt, XML_ERR_NOTATION_PROCESSING,
+	SAXxmlFatalErrMsg(ctxt, XML_ERR_NOTATION_PROCESSING,
 	     "SAX.xmlSAX2NotationDecl(%s) externalID or PublicID missing\n",
 	               name, NULL);
 	return;
@@ -778,7 +778,7 @@ xmlSAX2NotationDecl(void *ctx, const xmlChar *name,
 	nota = xmlAddNotationDecl(&ctxt->vctxt, ctxt->myDoc->extSubset, name,
                               publicId, systemId);
     else {
-	xmlFatalErrMsg(ctxt, XML_ERR_NOTATION_PROCESSING,
+	SAXxmlFatalErrMsg(ctxt, XML_ERR_NOTATION_PROCESSING,
 	     "SAX.xmlSAX2NotationDecl(%s) called while not in subset\n",
 	               name, NULL);
 	return;
@@ -844,7 +844,7 @@ xmlSAX2UnparsedEntityDecl(void *ctx, const xmlChar *name,
 	    ent->URI = URI;
 	}
     } else {
-        xmlFatalErrMsg(ctxt, XML_ERR_INTERNAL_ERROR,
+        SAXxmlFatalErrMsg(ctxt, XML_ERR_INTERNAL_ERROR,
 	     "SAX.xmlSAX2UnparsedEntityDecl(%s) called while not in subset\n",
 	               name, NULL);
     }
@@ -1220,7 +1220,7 @@ xmlSAX2StartElementNs(void *ctx,
 	  (ctxt->myDoc->intSubset->elements == NULL) &&
 	  (ctxt->myDoc->intSubset->attributes == NULL) && 
 	  (ctxt->myDoc->intSubset->entities == NULL)))) {
-	xmlErrValid(ctxt, XML_ERR_NO_DTD,
+	SAXxmlErrValid(ctxt, XML_ERR_NO_DTD,
 	  "Validation failed: no DTD found !", NULL, NULL);
 	ctxt->validate = 0;
     }

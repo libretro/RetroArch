@@ -171,13 +171,13 @@ static void xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur);
 static void xmlTextReaderFreeNodeList(xmlTextReaderPtr reader, xmlNodePtr cur);
 
 /**
- * xmlFreeID:
+ * ReaderxmlFreeID:
  * @not:  A id
  *
  * Deallocate the memory used by an id definition
  */
 static void
-xmlFreeID(xmlIDPtr id) {
+ReaderxmlFreeID(xmlIDPtr id) {
     xmlDictPtr dict = NULL;
 
     if (id == NULL) return;
@@ -439,7 +439,7 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
  */
 static void
 xmlTextReaderFreeIDTable(xmlIDTablePtr table) {
-    xmlHashFree(table, (xmlHashDeallocator) xmlFreeID);
+    xmlHashFree(table, (xmlHashDeallocator) ReaderxmlFreeID);
 }
 
 /**

@@ -43,7 +43,10 @@
 #include <libxml/xmlerror.h>
 #include <libxml/globals.h>
 
+#ifndef MAX_HASH_LEN
+#undef MAX_HASH_LEN
 #define MAX_HASH_LEN 8
+#endif
 
 #ifdef HASH_RANDOMIZATION
 static int hash_initialized = 0;
