@@ -327,15 +327,15 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
 	unsigned width, height;
 	d3d->ctx_driver->get_video_size(&width, &height);
 
-   d3dpp->BackBufferWidth  = d3d->full_x = width;
-   d3dpp->BackBufferHeight = d3d->full_y = height;
+   d3dpp->BackBufferWidth  = d3d->win_width = width;
+   d3dpp->BackBufferHeight = d3d->win_height = height;
 
 #if defined(_XBOX1)
 // Get the "video mode"
-   d3d->video_mode = XGetVideoFlags();
+   DWORD video_mode = XGetVideoFlags();
 
    // Check if we are able to use progressive mode
-   if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+   if(video_mode & XC_VIDEO_FLAGS_HDTV_480p)
       d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
    else
       d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
@@ -343,7 +343,7 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
    // Only valid in PAL mode, not valid for HDTV modes!
    if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
    {
-      if(d3d->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+      if(video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
          d3dpp->FullScreen_RefreshRateInHz = 60;
       else
          d3dpp->FullScreen_RefreshRateInHz = 50;
@@ -351,15 +351,15 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
 
    if(XGetAVPack() == XC_AV_PACK_HDTV)
    {
-      if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+      if(video_mode & XC_VIDEO_FLAGS_HDTV_480p)
       {
          d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
       }
-      else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
+      else if(video_mode & XC_VIDEO_FLAGS_HDTV_720p)
       {
 		 d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
       }
-      else if(d3d->video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+      else if(video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
       {
 		 d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
       }
@@ -430,8 +430,8 @@ static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *vide
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
 	   0xff000000, 1.0f, 0);
 #endif
-   vp.Width  = d3d->full_x;
-   vp.Height = d3d->full_y;
+   vp.Width  = d3d->win_width;
+   vp.Height = d3d->win_height;
 
    d3d->d3d_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
    d3d->d3d_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
@@ -578,8 +578,8 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->d3d_render_device->CreateVertexDeclaration(VertexElements, &d3d->v_decl);
 #endif
 
-   d3d->ctx_driver->get_video_size(&d3d->full_x, &d3d->full_y);
-   RARCH_LOG("Detecting screen resolution: %ux%u.\n", d3d->full_x, d3d->full_y);
+   d3d->ctx_driver->get_video_size(&d3d->win_width, &d3d->win_height);
+   RARCH_LOG("Detecting screen resolution: %ux%u.\n", d3d->win_width, d3d->win_height);
 
    d3d->ctx_driver->swap_interval(d3d->vsync ? 1 : 0);
 
@@ -715,8 +715,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
    {
 #ifdef HAVE_HLSL
-      hlsl_set_params(width, height, d3d->tex_w, d3d->tex_h, d3d->full_x,
-            d3d->full_y, d3d->frame_count);
+      hlsl_set_params(width, height, d3d->tex_w, d3d->tex_h, d3d->win_width,
+            d3d->win_height, d3d->frame_count);
 #endif
    }
 
@@ -777,8 +777,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
 #ifdef HAVE_HLSL
       hlsl_use(2);
-      hlsl_set_params(g_settings.video.fbo.scale_x * width, g_settings.video.fbo.scale_y * height, g_settings.video.fbo.scale_x * d3d->tex_w, g_settings.video.fbo.scale_y * d3d->tex_h, d3d->full_x,
-            d3d->full_y, d3d->frame_count);
+      hlsl_set_params(g_settings.video.fbo.scale_x * width, g_settings.video.fbo.scale_y * height, g_settings.video.fbo.scale_x * d3d->tex_w, g_settings.video.fbo.scale_y * d3d->tex_h, d3d->win_width,
+            d3d->win_height, d3d->frame_count);
 #endif
       xdk_d3d_set_viewport(false);
 

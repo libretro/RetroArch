@@ -363,9 +363,9 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
    if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
    {
       // Check for 16:9 mode (PAL REGION)
-      if(device_ptr->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+      if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
-         if(device_ptr->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+         if(video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
 		 {	//60 Hz, 720x480i
 			 *width = 720;
 	         *height = 480;
@@ -383,7 +383,7 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
    else
    {
       // Check for 16:9 mode (NTSC REGIONS)
-      if(device_ptr->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+      if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
          *width = 720;
 		 *height = 480;
@@ -395,21 +395,21 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
 
    if(XGetAVPack() == XC_AV_PACK_HDTV)
    {
-      if(device_ptr->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+      if(video_mode & XC_VIDEO_FLAGS_HDTV_480p)
       {
          *width	  = 640;
          *height  = 480;
 		 g_extern.console.rmenu.state.rmenu_widescreen.enable = false;
 		 g_extern.console.rmenu.state.rmenu_hd.enable = true;
       }
-	   else if(device_ptr->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
+	   else if(video_mode & XC_VIDEO_FLAGS_HDTV_720p)
 	   {
          *width	  = 1280;
          *height  = 720;
 		 g_extern.console.rmenu.state.rmenu_widescreen.enable = true;
 		 g_extern.console.rmenu.state.rmenu_hd.enable = true;
 	   }
-	   else if(device_ptr->video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+	   else if(video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
 	   {
          *width	  = 1920;
          *height  = 1080;
