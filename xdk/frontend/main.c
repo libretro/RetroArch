@@ -118,7 +118,7 @@ static void get_environment_settings (void)
    strlcpy(default_paths.screenshots_dir, "game:", sizeof(default_paths.screenshots_dir));
    strlcpy(default_paths.shader_file, "game:\\media\\shaders\\stock.cg", sizeof(default_paths.shader_file));
    strlcpy(default_paths.config_file, "game:\\retroarch.cfg", sizeof(default_paths.config_file));
-   strlcpy(default_paths.system_dir, "game:\\system\\", sizeof(default_paths.system_dir));
+   strlcpy(default_paths.system_dir, "game:\\system", sizeof(default_paths.system_dir));
    strlcpy(default_paths.executable_extension, ".xex", sizeof(default_paths.executable_extension));
    strlcpy(default_paths.filebrowser_startup_dir, "game:", sizeof(default_paths.filebrowser_startup_dir));
    snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "default.xex");
