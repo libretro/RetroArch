@@ -193,13 +193,9 @@ static void xdk_d3d_set_viewport(bool force_full)
 #if defined(_XBOX1)
    // Get the "video mode"
    d3d->video_mode = XGetVideoFlags();
-
-   width  = d3d->d3dpp.BackBufferWidth;
-   height = d3d->d3dpp.BackBufferHeight;
-#elif defined(_XBOX360)
-   width = d3d->video_mode.fIsHiDef ? 1280 : 640;
-   height = d3d->video_mode.fIsHiDef ? 720 : 480;
 #endif
+   width  = d3d->win_width;
+   height = d3d->win_width;
    m_viewport_x_temp = 0;
    m_viewport_y_temp = 0;
    m_viewport_width_temp = width;

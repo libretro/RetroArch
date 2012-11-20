@@ -139,7 +139,7 @@ static bool gfx_ctx_xdk_menu_init(void)
 #ifdef _XBOX1
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
-   int width  = d3d->d3dpp.BackBufferWidth;
+   int width  = d3d->win_width;
 
    // Load background image
    if(width == 640)
