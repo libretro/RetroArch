@@ -1047,7 +1047,17 @@ void menu_init (void)
    bool hdmenus_allowed = g_extern.console.rmenu.state.rmenu_hd.enable;
 
    D3DPRESENT_PARAMETERS d3dpp;
-   xdk_d3d_generate_pp(&d3dpp);
+   video_info_t video_info = {0};
+
+   video_info.vsync = g_settings.video.vsync;
+   video_info.force_aspect = false;
+   video_info.smooth = g_settings.video.smooth;
+   video_info.input_scale = 2;
+   video_info.fullscreen = true;
+   if(g_settings.video.force_16bit)
+	   video_info.rgb32 = false;
+
+   xdk_d3d_generate_pp(&d3dpp, &video_info);
 
    hr = app.InitShared(device_ptr->d3d_render_device, &d3dpp, XuiPNGTextureLoader);
 

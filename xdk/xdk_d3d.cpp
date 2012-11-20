@@ -310,9 +310,7 @@ static void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
 
    d3d->d3d_render_device->CreateTexture(d3d->tex_w * g_settings.video.fbo.scale_x, d3d->tex_h * g_settings.video.fbo.scale_y,
          1, 0, g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8,
-         0, &d3d->lpTexture_ot
-		 , NULL
-		 );
+         0, &d3d->lpTexture_ot, NULL);
 
    d3d->d3d_render_device->CreateRenderTarget(d3d->tex_w * g_settings.video.fbo.scale_x, d3d->tex_h * g_settings.video.fbo.scale_y,
          g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 
@@ -325,11 +323,14 @@ static void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
 }
 #endif
 
-void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp)
+void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video)
 {
 	xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 	
 	memset(d3dpp, 0, sizeof(*d3dpp));
+
+	d3d->texture_fmt = video->rgb32 ? D3DFMT_A8R8G8B8 : D3DFMT_LIN_R5G6B5;
+	d3d->base_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
 #if defined(_XBOX1)
 // Get the "video mode"
@@ -426,12 +427,12 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp)
 
    if(g_extern.console.screen.gamma_correction)
    {
-      d3dpp->BackBufferFormat        = g_settings.video.color_format ? (D3DFORMAT)MAKESRGBFMT(D3DFMT_A8R8G8B8) : (D3DFORMAT)MAKESRGBFMT(D3DFMT_LIN_R5G6B5);
+      d3dpp->BackBufferFormat        = (D3DFORMAT)MAKESRGBFMT(d3d->texture_fmt);
       d3dpp->FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
    }
    else
    {
-      d3dpp->BackBufferFormat        = g_settings.video.color_format ? D3DFMT_A8R8G8B8 : D3DFMT_LIN_R5G6B5;
+      d3dpp->BackBufferFormat        = d3d->texture_fmt;
       d3dpp->FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;
    }
    d3dpp->MultiSampleQuality      = 0;
@@ -450,11 +451,19 @@ static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *vide
 {
 	D3DPRESENT_PARAMETERS d3dpp;
 	D3DVIEWPORT vp = {0};
-	xdk_d3d_generate_pp(&d3dpp);
+	xdk_d3d_generate_pp(&d3dpp, video);
+
+	d3d->texture_fmt = video->rgb32 ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5;
+	d3d->base_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+
+   if (d3d->lpTexture)
+   {
+      d3d->lpTexture->Release();
+      d3d->lpTexture = NULL;
+   }
 	
-	d3d->d3d_render_device->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0,
-	   g_settings.video.color_format ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5,
-	   0, &d3d->lpTexture
+	d3d->d3d_render_device->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0, d3d->texture_fmt,
+		0, &d3d->lpTexture
 #ifdef _XBOX360
 	   , NULL
 #endif
@@ -471,8 +480,8 @@ static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *vide
 #if defined(_XBOX1)
    d3d->d3d_render_device->SetRenderState(D3DRS_LIGHTING, FALSE);
 
-   vp.Width  = d3d->d3dpp.BackBufferWidth;
-   vp.Height = d3d->d3dpp.BackBufferHeight;
+   vp.Width  = d3dpp.BackBufferWidth;
+   vp.Height = d3dpp.BackBufferHeight;
 #elif defined(_XBOX360)
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
 	   0xff000000, 1.0f, 0);
@@ -495,10 +504,45 @@ static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *vide
       g_extern.console.screen.viewports.custom_vp.height = vp.Height;
 }
 
+static void xdk_d3d_reinit_textures(xdk_d3d_video_t *d3d, const video_info_t *video)
+{
+	unsigned old_base_size = d3d->base_size;
+	unsigned old_width     = d3d->tex_w;
+	unsigned old_height    = d3d->tex_h;
+	d3d->texture_fmt = video->rgb32 ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5;
+	d3d->base_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+
+	//FIXME - temporary hack
+	d3d->tex_w = d3d->tex_h = 512;
+
+	if (old_base_size != d3d->base_size || old_width != d3d->tex_w || old_height != d3d->tex_h)
+	{
+		RARCH_LOG("Reinitializing textures (%u x %u @ %u bpp)\n", d3d->tex_w,
+			d3d->tex_h, d3d->base_size * CHAR_BIT);
+
+		xdk_d3d_init_textures(d3d, video);
+
+#ifdef HAVE_FBO
+		if (d3d->tex_w > old_width || d3d->tex_h > old_height)
+		{
+			RARCH_LOG("Reiniting FBO.\n");
+			xdk_d3d_init_fbo(d3d);
+		}
+#endif
+	}
+	else
+		RARCH_LOG("Reinitializing textures skipped.\n");
+}
+
 static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    if (driver.video_data)
-      return driver.video_data;
+   {
+	   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+	   // Reinitialize textures as we might have changed pixel formats.
+	   xdk_d3d_reinit_textures(d3d, video);
+	   return driver.video_data;
+   }
 
    //we'll just use driver.video_data throughout here because it needs to
    //exist when we delegate initing to the context file
@@ -518,7 +562,16 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 #elif defined(_XBOX360)
    d3d->ctx_driver = gfx_ctx_init_first(GFX_CTX_DIRECT3D9_API);
 #endif
-   if (!d3d->ctx_driver)
+   if (d3d->ctx_driver)
+   {
+	   D3DPRESENT_PARAMETERS d3dpp;
+	   xdk_d3d_generate_pp(&d3dpp, video);
+	   
+	   d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
+	   &d3dpp, &d3d->d3d_render_device);
+	   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+   }
+   else
    {
       free(d3d);
       return NULL;
@@ -531,7 +584,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 #if defined(_XBOX1)
    // use an orthogonal matrix for the projection matrix
    D3DXMATRIX mat;
-   D3DXMatrixOrthoOffCenterLH(&mat, 0,  d3d->d3dpp.BackBufferWidth ,  d3d->d3dpp.BackBufferHeight , 0, 0.0f, 1.0f);
+   D3DXMatrixOrthoOffCenterLH(&mat, 0,  d3d->win_width ,  d3d->win_height , 0, 0.0f, 1.0f);
 
    d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &mat);
 
@@ -726,12 +779,12 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
    D3DLOCKED_RECT d3dlr;
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-   size_t size_screen = g_settings.video.color_format ? sizeof(uint32_t) : sizeof(uint16_t);
+
    for (unsigned y = 0; y < height; y++)
    {
       const uint8_t *in = (const uint8_t*)frame + y * pitch;
       uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
-      memcpy(out, in, width * size_screen);
+      memcpy(out, in, width * d3d->base_size);
    }
    d3d->lpTexture->UnlockRect(0);
 
