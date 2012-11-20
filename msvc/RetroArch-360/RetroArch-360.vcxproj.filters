@@ -24,9 +24,6 @@
     <Filter Include="Source Files\console">
       <UniqueIdentifier>{e45d1737-2bab-4209-87c0-3d66cf3aee07}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\console\rzlib">
-      <UniqueIdentifier>{60603fec-c1c0-4562-8573-b1dc3af0ee40}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\compat">
       <UniqueIdentifier>{cf25b88e-c7b2-4823-876a-ed0dd8020821}</UniqueIdentifier>
     </Filter>
@@ -44,9 +41,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\console\rzlib\rzlib.c">
-      <Filter>Source Files\console\rzlib</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\console\griffin\griffin.c">
       <Filter>Source Files\console\griffin</Filter>
     </ClCompile>
