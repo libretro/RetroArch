@@ -397,6 +397,7 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
 static bool gfx_ctx_xdk_init(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   D3DPRESENT_PARAMETERS d3dpp;
 
    d3d->d3d_device = direct3d_create_ctx(D3D_SDK_VERSION);
    if (!d3d->d3d_device)
@@ -404,6 +405,17 @@ static bool gfx_ctx_xdk_init(void)
       free(d3d);
       return NULL;
    }
+
+   xdk_d3d_generate_pp(&d3dpp);
+
+#if defined(_XBOX1)
+   d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
+	   &d3dpp, &d3d->d3d_render_device);
+#elif defined(_XBOX360)
+   d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
+	   &d3dpp, &d3d->d3d_render_device);
+#endif
+   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
    return true;
 }

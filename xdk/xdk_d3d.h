@@ -89,4 +89,6 @@ typedef struct xdk_d3d_video
    LPDIRECT3DSURFACE lpSurface;
 } xdk_d3d_video_t;
 
+extern void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp);
+
 #endif

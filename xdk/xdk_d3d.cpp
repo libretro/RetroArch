@@ -455,58 +455,41 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp)
 static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *video)
 {
 	D3DPRESENT_PARAMETERS d3dpp;
+	D3DVIEWPORT vp = {0};
 	xdk_d3d_generate_pp(&d3dpp);
+	
+	d3d->d3d_render_device->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0,
+	   g_settings.video.color_format ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5,
+	   0, &d3d->lpTexture
+#ifdef _XBOX360
+	   , NULL
+#endif
+	   );
+	
+	D3DLOCKED_RECT d3dlr;
+	d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+	memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
+	d3d->lpTexture->UnlockRect(0);
+	
+	d3d->last_width = d3d->tex_w;
+	d3d->last_height = d3d->tex_h;
+
 #if defined(_XBOX1)
-
-
-   d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING, &d3dpp, &d3d->d3d_render_device);
-
-   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
-
-   d3d->d3d_render_device->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0, g_settings.video.color_format ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5, 0, &d3d->lpTexture);
-   D3DLOCKED_RECT d3dlr;
-   d3d->lpTexture->LockRect(0, &d3dlr, NULL, 0);
-   memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
-   d3d->lpTexture->UnlockRect(0);
-
-   d3d->last_width = d3d->tex_w;
-   d3d->last_height = d3d->tex_h;
-
    d3d->d3d_render_device->SetRenderState(D3DRS_LIGHTING, FALSE);
-   d3d->d3d_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-   d3d->d3d_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
 
-   D3DVIEWPORT vp = {0};
    vp.Width  = d3d->d3dpp.BackBufferWidth;
    vp.Height = d3d->d3dpp.BackBufferHeight;
 #elif defined(_XBOX360)
-
-   d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
-	   &d3dpp, &d3d->d3d_render_device);
-
-   d3d->d3d_render_device->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0, g_settings.video.color_format ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5,
-      0, &d3d->lpTexture
-   , NULL
-   );
-
-   D3DLOCKED_RECT d3dlr;
-   d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-   memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
-   d3d->lpTexture->UnlockRect(0);
-
-   d3d->last_width = d3d->tex_w;
-   d3d->last_height = d3d->tex_h;
-   
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
 	   0xff000000, 1.0f, 0);
+
+   vp.Width  = d3d->video_mode.fIsHiDef ? 1280 : 640;
+   vp.Height = d3d->video_mode.fIsHiDef ? 720 : 480;
+#endif
 
    d3d->d3d_render_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
    d3d->d3d_render_device->SetRenderState(D3DRS_ZENABLE, FALSE);
 
-   D3DVIEWPORT vp = {0};
-   vp.Width  = d3d->video_mode.fIsHiDef ? 1280 : 640;
-   vp.Height = d3d->video_mode.fIsHiDef ? 720 : 480;
-#endif
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
    d3d->d3d_render_device->SetViewport(&vp);
@@ -887,6 +870,8 @@ static void xdk_d3d_start(void)
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
    video_info.fullscreen = true;
+   if(g_settings.video.force_16bit)
+	   video_info.rgb32 = false;
 
    driver.video_data = xdk_d3d_init(&video_info, NULL, NULL);
 
