@@ -93,7 +93,6 @@ void rarch_config_load(const char *conf_name, bool upgrade_core_succeeded)
 #ifdef HAVE_ZLIB
       CONFIG_GET_INT_EXTERN(file_state.zip_extract_mode, "zip_extract_mode");
 #endif
-      CONFIG_GET_BOOL(video.force_16bit, "video_force_16bit");
       CONFIG_GET_INT_EXTERN(console.screen.resolutions.current.id, "current_resolution_id");
       CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
       CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
@@ -142,7 +141,6 @@ void rarch_config_save(const char * conf_name)
       config_set_bool(conf, "video_smooth", g_settings.video.smooth);
       config_set_bool(conf, "video_vsync", g_settings.video.vsync);
       config_set_int(conf, "aspect_ratio_index", g_settings.video.aspect_ratio_idx);
-      config_set_bool(conf, "video_force_16bit", g_settings.video.force_16bit);
       config_set_string(conf, "audio_device", g_settings.audio.device);
       config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
       config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
