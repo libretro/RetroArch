@@ -471,6 +471,7 @@ struct global
             rarch_boolean_state_t msg_info;
             rarch_boolean_state_t ingame_menu;
             rarch_boolean_state_t rmenu;
+            rarch_boolean_state_t rmenu_widescreen;
             rarch_boolean_state_t rmenu_hd;
          } state;
       } rmenu;

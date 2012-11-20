@@ -67,8 +67,6 @@ typedef struct xdk_d3d_video
    unsigned last_height;
    unsigned full_x;
    unsigned full_y;
-   unsigned win_width;
-   unsigned win_height;
    unsigned tex_w, tex_h;
    LPDIRECT3D d3d_device;
    LPDIRECT3DDEVICE d3d_render_device;
@@ -80,11 +78,8 @@ typedef struct xdk_d3d_video
    IDirect3DVertexDeclaration9* v_decl;
 #endif
 #if defined(_XBOX1)
-   DWORD video_mode;
    XFONT *debug_font;
    D3DSurface *pBackBuffer, *pFrontBuffer;
-#elif defined(_XBOX360)
-   XVIDEO_MODE video_mode;
 #endif
    D3DFORMAT internal_fmt;
    D3DFORMAT texture_fmt;

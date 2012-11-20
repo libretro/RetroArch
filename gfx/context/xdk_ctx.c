@@ -335,6 +335,24 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
 
    *width  = video_mode.dwDisplayWidth;
    *height = video_mode.dwDisplayHeight;
+
+   if(video_mode.fIsHiDef)
+   {
+	   *width = 1280;
+	   *height = 720;
+	   g_extern.console.rmenu.state.rmenu_hd.enable = true;
+   }
+   else
+   {
+	   *width = 640;
+	   *height = 480;
+	   g_extern.console.rmenu.state.rmenu_hd.enable = false;
+   }
+
+   if(video_mode.fIsWideScreen)
+	   g_extern.console.rmenu.state.rmenu_widescreen.enable = true;
+   else
+	   g_extern.console.rmenu.state.rmenu_widescreen.enable = false;
 #elif defined(_XBOX1)
    DWORD video_mode = XGetVideoFlags();
 
@@ -348,16 +366,19 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
       if(device_ptr->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
          if(device_ptr->video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
-	      {	//60 Hz, 720x480i
-            *width = 720;
+		 {	//60 Hz, 720x480i
+			 *width = 720;
 	         *height = 480;
+		 }
+		 else
+		 {	//50 Hz, 720x576i
+			 *width = 720;
+			 *height = 576;
 	      }
-	    else
-	      {	//50 Hz, 720x576i
-           *width = 720;
-           *height = 576;
-	      }
+		 g_extern.console.rmenu.state.rmenu_widescreen.enable = true;
       }
+	  else
+		 g_extern.console.rmenu.state.rmenu_widescreen.enable = false;
    }
    else
    {
@@ -365,26 +386,35 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
       if(device_ptr->video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
          *width = 720;
-	      *height = 480;
+		 *height = 480;
+		 g_extern.console.rmenu.state.rmenu_widescreen.enable = true;
       }
+	  else
+		 g_extern.console.rmenu.state.rmenu_widescreen.enable = false;
    }
 
    if(XGetAVPack() == XC_AV_PACK_HDTV)
    {
       if(device_ptr->video_mode & XC_VIDEO_FLAGS_HDTV_480p)
       {
-         *width	= 640;
+         *width	  = 640;
          *height  = 480;
+		 g_extern.console.rmenu.state.rmenu_widescreen.enable = false;
+		 g_extern.console.rmenu.state.rmenu_hd.enable = true;
       }
 	   else if(device_ptr->video_mode & XC_VIDEO_FLAGS_HDTV_720p)
 	   {
-         *width	= 1280;
+         *width	  = 1280;
          *height  = 720;
+		 g_extern.console.rmenu.state.rmenu_widescreen.enable = true;
+		 g_extern.console.rmenu.state.rmenu_hd.enable = true;
 	   }
 	   else if(device_ptr->video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
 	   {
-         *width	= 1920;
+         *width	  = 1920;
          *height  = 1080;
+		 g_extern.console.rmenu.state.rmenu_widescreen.enable = true;
+		 g_extern.console.rmenu.state.rmenu_hd.enable = true;
 	   }
    }
 #else
