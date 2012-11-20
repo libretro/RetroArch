@@ -80,7 +80,7 @@ void rarch_set_auto_viewport(unsigned width, unsigned height)
    aspectratio_lut[ASPECT_RATIO_AUTO].value = (float) aspect_x / aspect_y;
 }
 
-void rarch_set_core_viewport()
+void rarch_set_core_viewport(void)
 {
    if (!g_extern.console.emulator_initialized)
       return;
