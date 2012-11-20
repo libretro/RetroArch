@@ -47,7 +47,6 @@
 #if defined(_XBOX1)
 wchar_t strw_buffer[128];
 unsigned font_x, font_y;
-FLOAT angle;
 #elif defined(_XBOX360)
 const DWORD g_MapLinearToSrgbGpuFormat[] = 
 {
@@ -256,30 +255,37 @@ static void xdk_d3d_set_rotation(void * data, unsigned orientation)
 {
    (void)data;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-   FLOAT angle;
+   FLOAT angle = 0;
 
    switch(orientation)
    {
       case ORIENTATION_NORMAL:
          angle = M_PI * 0 / 180;
-	 break;
-      case ORIENTATION_VERTICAL:
-         angle = M_PI * 270 / 180;
+	      break;
+      case ORIENTATION_FLIPPED_ROTATED:
+         angle = M_PI * 90 / 180;
          break;
       case ORIENTATION_FLIPPED:
          angle = M_PI * 180 / 180;
          break;
-      case ORIENTATION_FLIPPED_ROTATED:
-         angle = M_PI * 90 / 180;
+      case ORIENTATION_VERTICAL:
+         angle = M_PI * 270 / 180;
          break;
    }
 
-#ifdef HAVE_HLSL
+#if defined(HAVE_HLSL)
    /* TODO: Move to D3DXMATRIX here */
-   hlsl_set_proj_matrix(XMMatrixRotationZ(angle));
-#endif
-
+   hlsl_set_proj_matrix(XMMatrixRotationZ(d3d->angle));
    d3d->should_resize = TRUE;
+#elif defined(_XBOX1)
+   D3DXMATRIX p_out, p_rotate;
+   D3DXMatrixIdentity(&p_out);
+   D3DXMatrixRotationZ(&p_rotate, angle);
+
+   d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &p_rotate);
+   d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &p_out);
+   d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &p_out);
+#endif
 }
 
 #ifdef HAVE_FBO
@@ -352,17 +358,11 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
    if(XGetAVPack() == XC_AV_PACK_HDTV)
    {
       if(video_mode & XC_VIDEO_FLAGS_HDTV_480p)
-      {
          d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
-      }
       else if(video_mode & XC_VIDEO_FLAGS_HDTV_720p)
-      {
 		 d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
-      }
       else if(video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
-      {
 		 d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
-      }
    }
 
    if(g_extern.console.rmenu.state.rmenu_widescreen.enable)
@@ -738,14 +738,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
 #if defined(_XBOX1)
    d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
-
-   D3DXMATRIX p_out, p_rotate;
-   D3DXMatrixIdentity(&p_out);
-   D3DXMatrixRotationZ(&p_rotate, angle);
-
-   d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &p_rotate);
-   d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &p_out);
-   d3d->d3d_render_device->SetTransform(D3DTS_PROJECTION, &p_out);
 
    d3d->d3d_render_device->SetStreamSource(0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
