@@ -232,6 +232,8 @@ void D3DVideo::viewport_info(rarch_viewport &vp)
 
 bool D3DVideo::read_viewport(uint8_t *buffer)
 {
+   RARCH_PERFORMANCE_INIT(d3d_read_viewport);
+   RARCH_PERFORMANCE_START(d3d_read_viewport);
    bool ret = true;
    IDirect3DSurface9 *target = nullptr;
    IDirect3DSurface9 *dest   = nullptr;
@@ -284,6 +286,7 @@ bool D3DVideo::read_viewport(uint8_t *buffer)
    }
 
 end:
+   RARCH_PERFORMANCE_STOP(d3d_read_viewport);
    if (target)
       target->Release();
    if (dest)
