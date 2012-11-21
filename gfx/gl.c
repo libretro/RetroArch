@@ -1162,11 +1162,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    gl_next_texture_index(gl, &tex_info);
 
-#ifndef HAVE_OPENGLES
-   if (gl->pbo_readback_enable)
-      gl_pbo_async_readback(gl);
-#endif
- 
 #ifdef FPS_COUNTER
    bool fps_enable = g_extern.console.rmenu.state.msg_fps.enable;
    if (fps_enable)
@@ -1196,6 +1191,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       context_rmenu_frame_func(gl);
 #endif
 
+#ifndef HAVE_OPENGLES
+   if (gl->pbo_readback_enable)
+      gl_pbo_async_readback(gl);
+#endif
+ 
    return true;
 }
 
@@ -1353,7 +1353,7 @@ static void gl_init_pbo_readback(gl_t *gl)
    {
       pglBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[i]);
       pglBufferData(GL_PIXEL_PACK_BUFFER, gl->vp.width * gl->vp.height * sizeof(uint32_t),
-            NULL, GL_DYNAMIC_READ);
+            NULL, GL_STREAM_READ);
    }
    pglBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 #else
