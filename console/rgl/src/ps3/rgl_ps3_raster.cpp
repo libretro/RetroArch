@@ -1106,14 +1106,14 @@ void rglSetDefaultValuesVP( _CGprogram *program )
          const float *itemDefaultValues = program->defaultValues + program->defaultValuesIndices[i].defaultValueIndex;
          int registerStride = isMatrix(( CGtype )parameterResource->type ) ? rglGetTypeRowCount(( CGtype )parameterResource->type ) : 1;
          if ( parameterEntry->flags & CGP_CONTIGUOUS )
-            memcpy( rtParameter->pushBufferPointer, itemDefaultValues, arrayCount * registerStride *4*sizeof( float ) );
+            __builtin_memcpy( rtParameter->pushBufferPointer, itemDefaultValues, arrayCount * registerStride *4*sizeof( float ) );
          else
          {
             unsigned int *pushBufferPointer = (( unsigned int * )rtParameter->pushBufferPointer );
             for ( int j = 0;j < arrayCount;j++ )
             {
                unsigned int *pushBufferAddress = isArray ? ( *( unsigned int** )pushBufferPointer ) : pushBufferPointer;
-               memcpy( pushBufferAddress, itemDefaultValues, registerStride*4*sizeof( float ) );
+               __builtin_memcpy( pushBufferAddress, itemDefaultValues, registerStride*4*sizeof( float ) );
                pushBufferPointer += isArray ? 1 : 3 + registerStride * 4;
                itemDefaultValues += 4 * registerStride;
             }
@@ -1163,7 +1163,7 @@ void rglSetDefaultValuesFP( _CGprogram *program )
                dst[2] = SWAP_IF_BIG_ENDIAN( itemDefaultValues[2] );
                dst[3] = SWAP_IF_BIG_ENDIAN( itemDefaultValues[3] );
             }
-            memcpy(( void* )hostMemoryCopy, ( void* )itemDefaultValues, sizeof( float )*4 );
+            __builtin_memcpy(( void* )hostMemoryCopy, ( void* )itemDefaultValues, sizeof( float )*4 );
             hostMemoryCopy += 4;
             itemDefaultValues += 4;
             resource++; //skip the register of the next item
@@ -1255,9 +1255,7 @@ void rglPlatformBufferObjectSetData( rglBufferObject* bufferObject, GLintptr off
    rglGcmBufferObject *rglBuffer = ( rglGcmBufferObject * )bufferObject->platformBufferObject;
 
    if ( size == bufferObject->size && tryImmediateCopy )
-   {
-      memcpy( gmmIdToAddress( rglBuffer->bufferId ) + offset, data, size );
-   }
+      __builtin_memcpy( gmmIdToAddress( rglBuffer->bufferId ) + offset, data, size );
    else
       if ( size >= bufferObject->size )
       {
@@ -1276,16 +1274,14 @@ void rglPlatformBufferObjectSetData( rglBufferObject* bufferObject, GLintptr off
                rglSetError( GL_OUT_OF_MEMORY );
                return;
             default:
-               memcpy( gmmIdToAddress( rglBuffer->bufferId ), data, size );
+               __builtin_memcpy( gmmIdToAddress( rglBuffer->bufferId ), data, size );
                break;
          }
       }
       else
       {
          if ( tryImmediateCopy )
-         {
-            memcpy( gmmIdToAddress( rglBuffer->bufferId ) + offset, data, size );
-         }
+            __builtin_memcpy( gmmIdToAddress( rglBuffer->bufferId ) + offset, data, size );
          else
          {
             // partial buffer write
@@ -1440,7 +1436,7 @@ void rglFBClear( GLbitfield mask )
       GLuint bufferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 
             CELL_GCM_LOCATION_LOCAL, 0, sizeof(rglClearVertexBuffer));
 
-      memcpy( gmmIdToAddress(bufferId), rglClearVertexBuffer, sizeof( rglClearVertexBuffer ) );
+      __builtin_memcpy(gmmIdToAddress(bufferId), rglClearVertexBuffer, sizeof(rglClearVertexBuffer));
       rglGcmFifoGlVertexAttribPointer( 0, 3, RGLGCM_FLOAT, RGLGCM_FALSE, 3*sizeof( GLfloat ), 1, 0, gmmIdToOffset(bufferId) );
       RGLBIT_TRUE( LContext->attribs->DirtyMask, 0 );
 
@@ -1867,9 +1863,9 @@ GLuint rglValidateAttributesSlow( rglDrawParams *dparams, GLboolean *isMain )
    rglBitfield needsUpdateMask = ( as->DirtyMask | ( as->EnabledMask & ~as->HasVBOMask ) );
 
    // for any remaining attributes that need updating, do it now.
-   if ( needsUpdateMask )
+   if(needsUpdateMask)
    {
-      for ( GLuint i = 0; i < RGL_MAX_VERTEX_ATTRIBS; ++i )
+      for(GLuint i = 0; i < RGL_MAX_VERTEX_ATTRIBS; ++i)
       {
          // skip this attribute if not needing update
          if ( ! RGLBIT_GET( needsUpdateMask, i ) ) continue;
@@ -1888,9 +1884,9 @@ GLuint rglValidateAttributesSlow( rglDrawParams *dparams, GLboolean *isMain )
                GLuint offset = ( dparams->firstVertex / freq ) * stride;
 
                char * b = ( char * )xferBuffer + dparams->attribXferOffset[i];
-               memcpy( b + offset,
-                     ( char * )attrib->clientData + offset,
-                     dparams->attribXferSize[i] - offset );
+               __builtin_memcpy(b + offset,
+                     ( char*)attrib->clientData + offset,
+                     dparams->attribXferSize[i] - offset);
 
                // draw directly from bounce buffer
                *isMain = gmmIdIsMain(xferId);
@@ -2353,7 +2349,7 @@ void rglPlatformUploadTexture( rglTexture* texture )
 
    // create surface descriptors for image transfer
    rglGcmSurface src = {
-source:		RGLGCM_SURFACE_SOURCE_TEMPORARY,
+            source:		RGLGCM_SURFACE_SOURCE_TEMPORARY,
             width:		0,		// replaced per image
             height:		0,		// replaced per image
             bpp:		pixelBytes,
@@ -2366,7 +2362,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEMPORARY,
    };
 
    rglGcmSurface dst = {
-source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
+            source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
             width:		0,		// replaced per image
             height:		0,		// replaced per image
             bpp:		pixelBytes,
@@ -2380,74 +2376,70 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
 
    // use a bounce buffer to transfer to GPU
    GLuint bounceBufferId = GMM_ERROR;
+
+   // check if upload is needed for this image
+   rglImage *image = texture->image;
+
+   if ( image->dataState == RGL_IMAGE_DATASTATE_HOST )
    {
+      // determine image offset from base address
+      // TODO: compute all offsets at once for efficiency
+      //  This is the offset in bytes for this face/image from the
+      //  texture base address.
+      const GLuint dataOffset = rglGetGcmImageOffset( layout, 0, 0 );
+
+      // set source pixel buffer
+      src.ppuData = image->data;
+
+      // lazy allocation of bounce buffer
+      if ( bounceBufferId == GMM_ERROR && layout->baseDepth == 1 )
+         bounceBufferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
+               CELL_GCM_LOCATION_LOCAL, 0, gcmTexture->gpuSize);
+
+      if ( bounceBufferId != GMM_ERROR )
       {
-         // check if upload is needed for this image
-         rglImage *image = texture->image;
-         if ( image->dataState == RGL_IMAGE_DATASTATE_HOST )
-         {
-            // determine image offset from base address
-            // TODO: compute all offsets at once for efficiency
-            //  This is the offset in bytes for this face/image from the
-            //  texture base address.
-            const GLuint dataOffset = rglGetGcmImageOffset( layout, 0, 0 );
+         // copy image to bounce buffer
+         src.dataId = bounceBufferId;
+         src.dataIdOffset = dataOffset;
 
-            // set source pixel buffer
-            src.ppuData = image->data;
+         // NPOT DXT
+         __builtin_memcpy( gmmIdToAddress( src.dataId ) + dataOffset, 
+               image->data, image->storageSize );
+      }
 
-            // lazy allocation of bounce buffer
-            if ( bounceBufferId == GMM_ERROR && layout->baseDepth == 1 )
-               bounceBufferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-                     CELL_GCM_LOCATION_LOCAL, 0, gcmTexture->gpuSize);
+      // use surface copy functions
+      src.width = image->width;
+      src.height = image->height;
+      src.pitch = pixelBytes * src.width;
 
-            if ( bounceBufferId != GMM_ERROR )
-            {
-               // copy image to bounce buffer
-               src.dataId = bounceBufferId;
-               src.dataIdOffset = dataOffset;
+      dst.width = src.width;
+      dst.height = image->height;
+      dst.dataId = gcmTexture->gpuAddressId;
+      dst.dataIdOffset = gcmTexture->gpuAddressIdOffset + dataOffset;
 
-               // NPOT DXT
-               memcpy( gmmIdToAddress( src.dataId ) + dataOffset, 
-                     image->data, 
-                     image->storageSize );
-            }
+      GLuint offsetHeight = 0;
 
-            {
-               // use surface copy functions
-               src.width = image->width;
-               src.height = image->height;
-               src.pitch = pixelBytes * src.width;
+      if(dst.pitch)
+      {
+         // linear (not swizzled)
+         //  The tiled linear format requires that render
+         //  targets be aligned to 8*pitch from the start of
+         //  the tiled region.
+         offsetHeight = ( dataOffset / dst.pitch ) % 8;
+         dst.height += offsetHeight;
+         dst.dataIdOffset -= offsetHeight * dst.pitch;
+      }
 
-               dst.width = src.width;
-               dst.height = image->height;
-               dst.dataId = gcmTexture->gpuAddressId;
-               dst.dataIdOffset = gcmTexture->gpuAddressIdOffset + dataOffset;
+      rglGcmCopySurface(
+            &src, 0, 0,
+            &dst, 0, offsetHeight,
+            src.width, src.height,
+            GL_TRUE );	// don't bypass GPU pipeline
 
-               GLuint offsetHeight = 0;
-               if ( dst.pitch )
-               {
-                  // linear (not swizzled)
-                  //  The tiled linear format requires that render
-                  //  targets be aligned to 8*pitch from the start of
-                  //  the tiled region.
-                  offsetHeight = ( dataOffset / dst.pitch ) % 8;
-                  dst.height += offsetHeight;
-                  dst.dataIdOffset -= offsetHeight * dst.pitch;
-               }
-
-               rglGcmCopySurface(
-                     &src, 0, 0,
-                     &dst, 0, offsetHeight,
-                     src.width, src.height,
-                     GL_TRUE );	// don't bypass GPU pipeline
-            }
-
-            // free CPU copy of data
-            rglImageFreeCPUStorage( image );
-            image->dataState |= RGL_IMAGE_DATASTATE_GPU;
-         } // newer data on host
-      } // loop over levels
-   } // loop over faces
+      // free CPU copy of data
+      rglImageFreeCPUStorage( image );
+      image->dataState |= RGL_IMAGE_DATASTATE_GPU;
+   } // newer data on host
 
    if ( bounceBufferId != GMM_ERROR )
       gmmFree( bounceBufferId );
@@ -2469,10 +2461,8 @@ static inline void rglGcmUpdateGcmTexture( rglTexture * texture, rglGcmTextureLa
          platformTexture->gcmTexture.format, platformTexture->gcmTexture.remap );
 
    // This is just to cover the conversion from swizzled to linear
-   if ( layout->pitch )
-   {
+   if(layout->pitch)
       platformTexture->gcmTexture.format += 0x20; // see class doc definitions for SZ_NR vs LN_NR...
-   }
 
    platformTexture->gcmTexture.width = layout->baseWidth;
    platformTexture->gcmTexture.height = layout->baseHeight;
@@ -2541,7 +2531,7 @@ void rglGcmUpdateMethods( rglTexture * texture )
 
    // -----------------------------------------------------------------------
    // set the SET_TEXTURE_CONTROL0 params
-   platformTexture->gcmMethods.control0.maxAniso = rglGcmMapAniso( maxAniso );
+   platformTexture->gcmMethods.control0.maxAniso = CELL_GCM_TEXTURE_MAX_ANISO_1;
    const GLfloat minLOD = MAX( texture->minLod, texture->baseLevel );
    const GLfloat maxLOD = MIN( texture->maxLod, texture->maxLevel );
    platformTexture->gcmMethods.control0.minLOD = ( GLuint )( MAX( minLOD, 0 ) * 256.0f );
@@ -3046,8 +3036,21 @@ void rglValidateVertexProgram()
 void rglValidateVertexConstants()
 {
    RGLcontext*	LContext = _CurrentContext;
+   _CGprogram *cgprog = LContext->BoundVertexProgram;
 
-   rglGcmPushProgramPushBuffer( LContext->BoundVertexProgram );
+   // Push a CG program onto the current command buffer
+
+   // make sure there is space for the pushbuffer + any nops we need to add for alignment  
+   rglGcmFifoWaitForFreeSpace( &rglGcmState_i.fifo,  cgprog->constantPushBufferWordSize + 4 + 32); 
+
+   // first add nops to get us the next alligned position in the fifo 
+   // [YLIN] Use VMX register to copy
+   uint32_t padding_in_word = ( ( 0x10-(((uint32_t)rglGcmState_i.fifo.current)&0xf))&0xf )>>2;
+   uint32_t padded_size = ( ((cgprog->constantPushBufferWordSize)<<2) + 0xf )&~0xf;
+
+   GCM_FUNC( cellGcmSetNopCommandUnsafe, padding_in_word );
+   memcpy16(rglGcmState_i.fifo.current, cgprog->constantPushBuffer, padded_size);
+   rglGcmState_i.fifo.current+=cgprog->constantPushBufferWordSize;
 }
 
 /*============================================================

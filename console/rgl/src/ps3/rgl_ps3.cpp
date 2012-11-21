@@ -2375,38 +2375,6 @@ void rglGcmDestroyRM( rglGcmResource* gcmResource )
    return;
 }
 
-void rglGcmGraphicsHandler( const uint32_t head )
-{
-   // GCM will call this Graphics Handler if there is a channel error which 
-   // can be caused by bad fifo commands, and GPU error, or GPU memory access. 
-
-   printf( "========================================\n" );
-   printf( " RGL [rglGcmGraphicsHandler]  \n" );
-   printf( " GCM triggers this because of RSX error \n" );
-   printf( "  due to invalid Fifo Commands, \n" );
-   printf( "  invalid GPU state, or invalid memory access\n" );
-   printf( "========================================\n" );
-
-   // print out the previous 10 words from the current position;
-   rglGcmState_i.fifo.updateLastGetRead(); 
-
-   // Dumping current fifo state 
-   printf(" Current RGL FIFO info \n" ); 
-   printf(" Fifo Begin %p End %p Current %p and Get %p \n", 
-         rglGcmState_i.fifo.begin, 
-         rglGcmState_i.fifo.end,
-         rglGcmState_i.fifo.current,
-         rglGcmState_i.fifo.lastGetRead ); 
-
-   printf(" Last 10 words of the RGL Fifo from the ppu put/current position \n" );  
-   rglPrintFifoFromPut( 10 ); 
-
-   printf(" Last 10 words of the RGL Fifo from the gpu get position \n" );  
-   rglPrintFifoFromGet( 10 ); 
-}
-
-extern GLboolean _psglDisableCompression;
-
 int rglGcmInitRM( rglGcmResource *gcmResource, unsigned int hostMemorySize, int inSysMem, unsigned int dmaPushBufferSize )
 {
    memset( gcmResource, 0, sizeof( rglGcmResource ) );
@@ -2434,10 +2402,6 @@ int rglGcmInitRM( rglGcmResource *gcmResource, unsigned int hostMemorySize, int 
       fprintf( stderr, "RSXIF failed initialization\n" );
       return GL_FALSE;
    }
-
-   cellGcmSetDebugOutputLevel( CELL_GCM_DEBUG_LEVEL2 );
-   // set the rglGcm graphics error callback
-   cellGcmSetGraphicsHandler( &rglGcmGraphicsHandler );
 
    // Get Gpu configuration
    CellGcmConfig config;
@@ -2751,7 +2715,7 @@ static void rglGcmAllocateTiledSurface(
    //  certain dimension combinations, but this is simple and may conserve
    //  tiled region usage over some alternatives.
    GLuint padSize = RGLGCM_TILED_BUFFER_ALIGNMENT; // 64KB
-   
+
    while (( padSize % ( tiledPitch*8 ) ) != 0 )
       padSize += RGLGCM_TILED_BUFFER_ALIGNMENT;
 

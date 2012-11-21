@@ -19,7 +19,7 @@ typedef struct  _tagMODESTRUC
    GLushort  wVertSyncStart;
    GLushort  wVertSyncEnd;
    GLushort  wVertBlankEnd;
-   GLuint      dwDotClock;      // In 10K Hertz
+   GLuint    dwDotClock;      // In 10K Hertz
    GLushort  wHSyncPolarity;
    GLushort  wVSyncPolarity;
 } MODESTRUC;

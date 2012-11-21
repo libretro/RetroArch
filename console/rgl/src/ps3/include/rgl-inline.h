@@ -85,30 +85,25 @@ static inline void rglGcmFifoGlViewport( GLint x, GLint y, GLsizei width, GLsize
       clipY0 = y;
       clipY1 = y + height;
    }
+
    if ( clipX0 < 0 )
-   {
       clipX0 = 0;
-   }
    if ( clipY0 < 0 )
-   {
       clipY0 = 0;
-   }
+
    if ( clipX1 >= RGLGCM_MAX_RT_DIMENSION )
-   {
       clipX1 = RGLGCM_MAX_RT_DIMENSION;
-   }
+
    if ( clipY1 >= RGLGCM_MAX_RT_DIMENSION )
-   {
       clipY1 = RGLGCM_MAX_RT_DIMENSION;
-   }
+
    if (( clipX1 <= clipX0 ) || ( clipY1 <= clipY0 ) )
-   {
       clipX0 = clipY0 = clipX1 = clipY1 = 0;
-   }
 
    // update viewport info
    vp->xScale = width * 0.5f;
    vp->xCenter = ( GLfloat )( x + vp->xScale + RGLGCM_SUBPIXEL_ADJUST );
+
    if ( rt->yInverted )
    {
       vp->yScale = height * -0.5f;
@@ -226,7 +221,7 @@ static inline void rglGcmFifoGlDrawArrays( rglGcmEnum mode, GLint first, GLsizei
 
 static inline GLuint rglGcmMapMinTextureFilter( GLenum filter )
 {
-   switch ( filter )
+   switch (filter)
    {
       case GL_NEAREST:
          return CELL_GCM_TEXTURE_NEAREST;
@@ -266,44 +261,6 @@ static inline GLuint rglGcmMapMagTextureFilter( GLenum filter )
          return 0;
    }
    return filter;
-}
-
-static inline GLuint rglGcmMapAniso( GLuint maxAniso )
-{
-
-   if ( maxAniso >= 16 )
-      return CELL_GCM_TEXTURE_MAX_ANISO_16;
-   if ( maxAniso == 1 )
-      return CELL_GCM_TEXTURE_MAX_ANISO_1;
-
-   switch ( maxAniso / 2 )
-   {
-      case 1:
-         return CELL_GCM_TEXTURE_MAX_ANISO_2;
-         break;
-      case 2:
-         return CELL_GCM_TEXTURE_MAX_ANISO_4;
-         break;
-      case 3:
-         return CELL_GCM_TEXTURE_MAX_ANISO_6;
-         break;
-      case 4:
-         return CELL_GCM_TEXTURE_MAX_ANISO_8;
-         break;
-      case 5:
-         return CELL_GCM_TEXTURE_MAX_ANISO_10;
-         break;
-      case 6:
-         return CELL_GCM_TEXTURE_MAX_ANISO_12;
-         break;
-      case 7:
-         return CELL_GCM_TEXTURE_MAX_ANISO_16;
-         break;
-      default:
-         return 0;
-         break;
-   }
-   return 0;
 }
 
 static inline GLuint rglGcmMapWrapMode( GLuint mode )
@@ -566,69 +523,6 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmF
 static inline void rglGcmFifoGlInvalidateTextureCache( void )
 {
    GCM_FUNC( cellGcmSetInvalidateTextureCache, CELL_GCM_INVALIDATE_TEXTURE );
-}
-
-/* writes the supplied new semaphore value once the gpu has completed all
- ** currently pending work.
- **
- ** note:
- **  - we do not enforce pairing of Acquire/Release, so you can (ab)use it to
- **    write synchronized signal values...
- */
-
-static inline void rglGcmFifoGlReleaseSemaphore( rglGcmEnum target, GLuint semaphoreId, GLuint newSemphoreValue )
-{
-   rglGcmSemaphoreMemory *semaphores = rglGcmState_i.semaphores;
-
-   switch ( target )
-   {
-      case RGLGCM_SEMAPHORE_USING_GPU:
-         // let the backend(rop/fb) write the release value
-         // -- guarantees all reads/writes have completed
-         GCM_FUNC( cellGcmSetWriteBackEndLabel, semaphoreId, newSemphoreValue );
-         break;
-      case RGLGCM_SEMAPHORE_USING_GPU_NO_WRITE_FLUSH:
-         // write the semaphore value once host/vb/ib/tex are no longer referencing
-         // any data prior to the method.
-         // -- does _NOT_ guarantee that read/writes on the render target surfaces
-         //    have completed (iow: cpu read on the color buffer will be undefined)
-
-         GCM_FUNC( cellGcmSetWriteTextureLabel, semaphoreId, newSemphoreValue );
-         break;
-      case RGLGCM_SEMAPHORE_USING_CPU:
-         semaphores->userSemaphores[semaphoreId].val = newSemphoreValue;
-         break;
-      default:
-         break;
-   }
-}
-
-/* lets the gpu/cpu wait until the specific semaphore is equal to the requested
- ** semaphore value.
- **
- ** note:
- **  - we do not enforce pairing of Acquire/Release, so you can (ab)use it to
- **  - What about aquire timeouts (after a few seconds) ?
- */
-void static inline rglGcmFifoGlAcquireSemaphore( rglGcmEnum target, GLuint semaphoreId, GLuint reqSemphoreValue )
-{
-   rglGcmSemaphoreMemory *semaphores = rglGcmState_i.semaphores;
-
-   // pick location
-   switch ( target )
-   {
-      case RGLGCM_SEMAPHORE_USING_GPU:
-         // let the frontend aquire the semaphore...
-         GCM_FUNC( cellGcmSetWaitLabel, semaphoreId, reqSemphoreValue );
-         break;
-      case RGLGCM_SEMAPHORE_USING_CPU:
-         // lame polling for now...
-         for ( ;semaphores->userSemaphores[semaphoreId].val != reqSemphoreValue; )
-            sys_timer_usleep(10);
-         break;
-      default:
-         break;
-   }
 }
 
 // Fast conversion for values between 0.0 and 65535.0
@@ -902,7 +796,7 @@ static inline void rglGcmFifoGlBlendEquation( rglGcmEnum mode, rglGcmEnum modeAl
    GCM_FUNC( cellGcmSetBlendEquation, mode, modeAlpha );
 }
 
-   void static inline rglGcmFifoGlVertexAttribPointer
+static inline void rglGcmFifoGlVertexAttribPointer
 (
  GLuint          index,
  GLint           size,
@@ -939,13 +833,9 @@ static inline void rglGcmFifoGlBlendEquation( rglGcmEnum mode, rglGcmEnum modeAl
    {
       case RGLGCM_UNSIGNED_BYTE:
          if (normalized)
-         {
             gcmType = CELL_GCM_VERTEX_UB;
-         }
          else
-         {
             gcmType = CELL_GCM_VERTEX_UB256;
-         }
          break;
 
       case RGLGCM_SHORT:
@@ -969,12 +859,7 @@ static inline void rglGcmFifoGlBlendEquation( rglGcmEnum mode, rglGcmEnum modeAl
          break;
    }
 
-   uint8_t location = CELL_GCM_LOCATION_LOCAL;
-
-   if ( isMain )
-      location = CELL_GCM_LOCATION_MAIN;
-
-   GCM_FUNC( cellGcmSetVertexDataArray, index, frequency, stride, size, gcmType, location, offset );
+   GCM_FUNC( cellGcmSetVertexDataArray, index, frequency, stride, size, gcmType, CELL_GCM_LOCATION_LOCAL, offset );
 }
 
 // set the vertex attribute to the specified value.
@@ -1104,10 +989,22 @@ static inline void rglFifoGlProgramParameterfvVP( const _CGprogram *program, con
             // set 4 consts
             {
                GLfloat v2[16];
-               v2[0] = value[0];v2[1] = value[4];v2[2] = value[8];v2[3] = value[12];
-               v2[4] = value[1];v2[5] = value[5];v2[6] = value[9];v2[7] = value[13];
-               v2[8] = value[2];v2[9] = value[6];v2[10] = value[10];v2[11] = value[14];
-               v2[12] = value[3];v2[13] = value[7];v2[14] = value[11];v2[15] = value[15];
+               v2[0] = value[0];
+               v2[1] = value[4];
+               v2[2] = value[8];
+               v2[3] = value[12];
+               v2[4] = value[1];
+               v2[5] = value[5];
+               v2[6] = value[9];
+               v2[7] = value[13];
+               v2[8] = value[2];
+               v2[9] = value[6];
+               v2[10] = value[10];
+               v2[11] = value[14];
+               v2[12] = value[3];
+               v2[13] = value[7];
+               v2[14] = value[11];
+               v2[15] = value[15];
                GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 4, v2 ); // GCM_PORT_TESTED [Cedric]
             }
             break;
@@ -1128,21 +1025,6 @@ static inline void rglFifoGlProgramParameterfvVP( const _CGprogram *program, con
             break;
       }
    }
-}
-
-// Push a CG program onto the current command buffer
-static inline void rglGcmPushProgramPushBuffer( _CGprogram * cgprog )
-{
-   // make sure there is space for the pushbuffer + any nops we need to add for alignment  
-   rglGcmFifoWaitForFreeSpace( &rglGcmState_i.fifo,  cgprog->constantPushBufferWordSize + 4 + 32); 
-   // first add nops to get us the next alligned position in the fifo 
-   // [YLIN] Use VMX register to copy
-   uint32_t padding_in_word = ( ( 0x10-(((uint32_t)rglGcmState_i.fifo.current)&0xf))&0xf )>>2;
-   uint32_t padded_size = ( ((cgprog->constantPushBufferWordSize)<<2) + 0xf )&~0xf;
-   GCM_FUNC( cellGcmSetNopCommandUnsafe, padding_in_word );
-   memcpy16(rglGcmState_i.fifo.current, cgprog->constantPushBuffer, padded_size);
-   rglGcmState_i.fifo.current+=cgprog->constantPushBufferWordSize;
-
 }
 
 // Look up the memory location of a buffer object (VBO, PBO)
