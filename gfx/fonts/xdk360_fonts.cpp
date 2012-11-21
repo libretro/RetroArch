@@ -57,20 +57,9 @@ typedef struct GLYPH_ATTR
 
 enum SavedStates
 {
-   SAVEDSTATE_D3DRS_ALPHABLENDENABLE,
-   SAVEDSTATE_D3DRS_SRCBLEND,
-   SAVEDSTATE_D3DRS_DESTBLEND,
-   SAVEDSTATE_D3DRS_BLENDOP,
-   SAVEDSTATE_D3DRS_ALPHATESTENABLE,
-   SAVEDSTATE_D3DRS_ALPHAREF,
-   SAVEDSTATE_D3DRS_ALPHAFUNC,
    SAVEDSTATE_D3DRS_FILLMODE,
    SAVEDSTATE_D3DRS_CULLMODE,
-   SAVEDSTATE_D3DRS_ZENABLE,
-   SAVEDSTATE_D3DRS_STENCILENABLE,
    SAVEDSTATE_D3DRS_VIEWPORTENABLE,
-   SAVEDSTATE_D3DSAMP_MINFILTER,
-   SAVEDSTATE_D3DSAMP_MAGFILTER,
    SAVEDSTATE_D3DSAMP_ADDRESSU,
    SAVEDSTATE_D3DSAMP_ADDRESSV,
 
@@ -448,35 +437,19 @@ void xdk_render_msg_post(xdk360_video_font_t * font)
       pD3dDevice->SetVertexDeclaration(NULL);
       D3DDevice_SetVertexShader(pD3dDevice, NULL );
       D3DDevice_SetPixelShader(pD3dDevice, NULL );
-      D3DDevice_SetRenderState_AlphaBlendEnable(pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHABLENDENABLE ]);
-      D3DDevice_SetRenderState_SrcBlend(pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_SRCBLEND ] );
-      D3DDevice_SetRenderState_DestBlend( pD3dDevice, font->m_dwSavedState[ SAVEDSTATE_D3DRS_DESTBLEND ] );
-      pD3dDevice->SetRenderState( D3DRS_ALPHAREF, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAREF ] );
-      pD3dDevice->SetRenderState( D3DRS_ALPHAFUNC, font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAFUNC ] );
       pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
-      pD3dDevice->SetSamplerState(0, D3DSAMP_MINFILTER, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ]);
-      pD3dDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ]);
    }
 }
 
 static void xdk_render_msg_pre(xdk360_video_font_t * font)
 {
-   // Set state on the first call
-      // Cache the global pointer into a register
-      xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
-      D3DDevice *pD3dDevice = vid->d3d_render_device;
+      xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+      D3DDevice *pD3dDevice = d3d->d3d_render_device;
 
       // Save state
       {
-         pD3dDevice->GetRenderState( D3DRS_ALPHABLENDENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHABLENDENABLE ] );
-         pD3dDevice->GetRenderState( D3DRS_SRCBLEND, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_SRCBLEND ] );
-         pD3dDevice->GetRenderState( D3DRS_DESTBLEND, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_DESTBLEND ] );
-         pD3dDevice->GetRenderState( D3DRS_ALPHAREF, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAREF ] );
-         pD3dDevice->GetRenderState( D3DRS_ALPHAFUNC, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_ALPHAFUNC ] );
          pD3dDevice->GetRenderState( D3DRS_FILLMODE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_FILLMODE ] );
          pD3dDevice->GetRenderState( D3DRS_VIEWPORTENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
-         font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MINFILTER ] = D3DDevice_GetSamplerState_MinFilter( pD3dDevice, 0 );
-         font->m_dwSavedState[ SAVEDSTATE_D3DSAMP_MAGFILTER ] = D3DDevice_GetSamplerState_MagFilter( pD3dDevice, 0 );
       }
 
       // Set the texture scaling factor as a vertex shader constant
@@ -493,15 +466,8 @@ static void xdk_render_msg_pre(xdk360_video_font_t * font)
       vTexScale[2] = 0.0f;
       vTexScale[3] = 0.0f;
 
-      D3DDevice_SetRenderState_AlphaBlendEnable( pD3dDevice, TRUE );
-      D3DDevice_SetRenderState_SrcBlend(pD3dDevice, D3DBLEND_SRCALPHA );
-      D3DDevice_SetRenderState_DestBlend( pD3dDevice, D3DBLEND_INVSRCALPHA );
-      pD3dDevice->SetRenderState( D3DRS_ALPHAREF, 0x08 );
-      pD3dDevice->SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL );
       pD3dDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID );
       pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, FALSE );
-      pD3dDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-      pD3dDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 
       pD3dDevice->SetVertexDeclaration(s_FontLocals.m_pFontVertexDecl);
       D3DDevice_SetVertexShader(pD3dDevice, s_FontLocals.m_pFontVertexShader );
@@ -513,10 +479,10 @@ static void xdk_render_msg_pre(xdk360_video_font_t * font)
 }
 
 static void xdk_video_font_draw_text(xdk360_video_font_t *font, 
-      float fOriginX, float fOriginY, const wchar_t * strText, float fMaxPixelWidth )
+      float fOriginX, float fOriginY, const wchar_t * strText)
 {
-   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
-   D3DDevice *pd3dDevice = vid->d3d_render_device;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   D3DDevice *pd3dDevice = d3d->d3d_render_device;
 
    // Set the color as a vertex shader constant
    float vColor[4];
@@ -559,13 +525,8 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    volatile float * pVertex;
 
    unsigned long dwNumChars = wcslen(strText);
-   HRESULT hr = pd3dDevice->BeginVertices( D3DPT_QUADLIST, 4 * dwNumChars, sizeof( XMFLOAT4 ) ,
-         ( VOID** )&pVertex );
-
-   // The ring buffer may run out of space when tiling, doing z-prepasses,
-   // or using BeginCommandBuffer. If so, make the buffer larger.
-   if( hr < 0 )
-      RARCH_ERR( "Ring buffer out of memory.\n" );
+   pd3dDevice->BeginVertices(D3DPT_QUADLIST, 4 * dwNumChars, sizeof(XMFLOAT4),
+	   (void**)&pVertex);
 
    // Draw four vertices for each glyph
    while( *strText )
@@ -653,8 +614,7 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
       dwNumChars--;
    }
 
-   // Stop drawing vertices
-   D3DDevice_EndVertices(pd3dDevice);
+   pd3dDevice->EndVertices();
 
    // Undo window offsets
    font->m_fCursorX -= Winx;
@@ -739,7 +699,7 @@ void xdk_render_msg(void *driver, const char * strFormat)
 		   xdk_render_msg_pre(&m_Font);
 		   xdk_video_font_draw_text(&m_Font, (float)( video_console.m_cxSafeAreaOffset ),
             (float)( video_console.m_cySafeAreaOffset + video_console.m_fLineHeight * nScreenLine ), 
-            msg, 0.0f );
+            msg);
 		   xdk_render_msg_post(&m_Font);
 	   }
 
