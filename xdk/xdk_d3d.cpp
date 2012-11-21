@@ -316,11 +316,11 @@ void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
    xdk_d3d_deinit_fbo(d3d);
 
    d3d->d3d_render_device->CreateTexture(d3d->tex_w * g_settings.video.fbo.scale_x, d3d->tex_h * g_settings.video.fbo.scale_y,
-         1, 0, g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8,
+         1, 0, g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_X8R8G8B8 ) : D3DFMT_X8R8G8B8,
          0, &d3d->lpTexture_ot, NULL);
 
    d3d->d3d_render_device->CreateRenderTarget(d3d->tex_w * g_settings.video.fbo.scale_x, d3d->tex_h * g_settings.video.fbo.scale_y,
-         g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_A8R8G8B8 ) : D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 
+         g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_X8R8G8B8 ) : D3DFMT_X8R8G8B8, D3DMULTISAMPLE_NONE, 
          0, 0, &d3d->lpSurface, NULL);
 
    d3d->lpTexture_ot_as16srgb = *d3d->lpTexture_ot;
@@ -337,7 +337,7 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
 
    memset(d3dpp, 0, sizeof(*d3dpp));
 
-   d3d->texture_fmt = video->rgb32 ? D3DFMT_A8R8G8B8 : D3DFMT_LIN_R5G6B5;
+   d3d->texture_fmt = video->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
    d3d->base_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    unsigned width, height;
@@ -378,7 +378,7 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
    if(g_extern.console.rmenu.state.rmenu_widescreen.enable)
       d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
 
-   d3dpp->BackBufferFormat                     = D3DFMT_A8R8G8B8;
+   d3dpp->BackBufferFormat                     = D3DFMT_X8R8G8B8;
    d3dpp->FullScreen_PresentationInterval	   = d3d->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
    d3dpp->SwapEffect                           = D3DSWAPEFFECT_COPY;
 #elif defined(_XBOX360)
@@ -410,7 +410,7 @@ static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *vide
    D3DVIEWPORT vp = {0};
    xdk_d3d_generate_pp(&d3dpp, video);
 
-   d3d->texture_fmt = video->rgb32 ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5;
+   d3d->texture_fmt = video->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
    d3d->base_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    if (d3d->lpTexture)
@@ -462,7 +462,7 @@ static void xdk_d3d_reinit_textures(xdk_d3d_video_t *d3d, const video_info_t *vi
    unsigned old_base_size = d3d->base_size;
    unsigned old_width     = d3d->tex_w;
    unsigned old_height    = d3d->tex_h;
-   d3d->texture_fmt = video->rgb32 ? D3DFMT_LIN_A8R8G8B8 : D3DFMT_LIN_R5G6B5;
+   d3d->texture_fmt = video->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
    d3d->base_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    //FIXME - temporary hack
