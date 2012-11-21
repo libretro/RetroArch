@@ -158,15 +158,23 @@ static bool ffemu_init_audio(struct ff_audio_info *audio, struct ffemu_params *p
 static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_params *param)
 {
    AVCodec *codec = NULL;
+
    if (g_settings.video.h264_record)
    {
       codec = avcodec_find_encoder_by_name("libx264rgb");
       // Older versions of FFmpeg have RGB encoding in libx264.
       if (!codec)
          codec = avcodec_find_encoder_by_name("libx264");
+
+      video->pix_fmt = PIX_FMT_BGR24;
+      video->scaler.out_fmt = SCALER_FMT_BGR24;
    }
    else
+   {
       codec = avcodec_find_encoder_by_name("ffv1");
+      video->pix_fmt = PIX_FMT_RGB32;
+      video->scaler.out_fmt = SCALER_FMT_ARGB8888;
+   }
 
    if (!codec)
       return false;
@@ -192,17 +200,6 @@ static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_par
 
       default:
          return false;
-   }
-
-   if (g_settings.video.h264_record)
-   {
-      video->pix_fmt = PIX_FMT_BGR24;
-      video->scaler.out_fmt = SCALER_FMT_BGR24;
-   }
-   else
-   {
-      video->pix_fmt = PIX_FMT_RGB32;
-      video->scaler.out_fmt = SCALER_FMT_ARGB8888;
    }
 
 #ifdef HAVE_FFMPEG_ALLOC_CONTEXT3
