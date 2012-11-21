@@ -1087,7 +1087,7 @@ static void gl_pbo_async_readback(gl_t *gl)
    RARCH_PERFORMANCE_START(async_readback);
    glReadPixels(gl->vp.x, gl->vp.y,
          gl->vp.width, gl->vp.height,
-         GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+         GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
    RARCH_PERFORMANCE_STOP(async_readback);
 
    pglBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
@@ -1233,7 +1233,10 @@ static void gl_free(void *data)
 
 #ifndef HAVE_OPENGLES
    if (gl->pbo_readback_enable)
+   {
       pglDeleteBuffers(4, gl->pbo_readback);
+      scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+   }
 #endif
 
 #ifdef HAVE_FBO
@@ -1356,6 +1359,25 @@ static void gl_init_pbo_readback(gl_t *gl)
             NULL, GL_STREAM_READ);
    }
    pglBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+
+   struct scaler_ctx *scaler = &gl->pbo_readback_scaler;
+   scaler->in_width    = gl->vp.width;
+   scaler->in_height   = gl->vp.height;
+   scaler->out_width   = gl->vp.width;
+   scaler->out_height  = gl->vp.height;
+   scaler->in_stride   = gl->vp.width * sizeof(uint32_t);
+   scaler->out_stride  = gl->vp.width * 3;
+   scaler->in_fmt      = SCALER_FMT_ARGB8888;
+   scaler->out_fmt     = SCALER_FMT_BGR24;
+   scaler->scaler_type = SCALER_FMT_BGR24;
+
+   if (!scaler_ctx_gen_filter(scaler))
+   {
+      gl->pbo_readback_enable = false;
+      RARCH_ERR("Failed to init pixel conversion for PBO.\n");
+      pglDeleteBuffers(4, gl->pbo_readback);
+   }
+
 #else
    (void)gl;
 #endif
@@ -1610,7 +1632,6 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    RARCH_PERFORMANCE_INIT(read_viewport);
    RARCH_PERFORMANCE_START(read_viewport);
 
-
 #ifdef HAVE_OPENGLES
    glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * 3));
    glReadPixels(gl->vp.x, gl->vp.y,
@@ -1633,19 +1654,14 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
          return false;
 
       pglBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index]);
-      const uint8_t *ptr = (const uint8_t*)pglMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+      const void *ptr = pglMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
       if (!ptr)
       {
          RARCH_ERR("Failed to map pixel unpack buffer.\n");
          return false;
       }
-      unsigned pixels = gl->vp.width * gl->vp.height;
-      for (unsigned i = 0; i < pixels; i++, buffer += 3, ptr += 4)
-      {
-         buffer[0] = ptr[0];
-         buffer[1] = ptr[1];
-         buffer[2] = ptr[2];
-      }
+
+      scaler_ctx_scale(&gl->pbo_readback_scaler, buffer, ptr);
       pglUnmapBuffer(GL_PIXEL_PACK_BUFFER);
       pglBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
    }

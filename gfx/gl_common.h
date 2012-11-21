@@ -279,6 +279,7 @@ typedef struct gl
    bool pbo_readback_enable;
    bool pbo_readback_valid;
    unsigned pbo_readback_index;
+   struct scaler_ctx pbo_readback_scaler;
 #endif
 } gl_t;
 
