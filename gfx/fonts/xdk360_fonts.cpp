@@ -27,6 +27,8 @@
 #define SAFE_AREA_PCT_4x3     85
 #define SAFE_AREA_PCT_HDTV    70
 
+#define FONT_SCALE (g_extern.console.rmenu.state.rmenu_hd.enable ? 2 : 1)
+
 typedef struct
 {
    float m_fLineHeight;                 // height of a single line in pixels
@@ -84,8 +86,6 @@ typedef struct
    float m_fFontTopPadding;             // Padding above the strike zone
    float m_fFontBottomPadding;          // Padding below the strike zone
    float m_fFontYAdvance;               // Number of pixels to move the cursor for a line feed
-   float m_fXScaleFactor;               // Scaling constants
-   float m_fYScaleFactor;
    float m_fCursorX;                    // Current text cursor
    float m_fCursorY;
    D3DRECT m_rcWindow;                  // Bounds rect of the text window, modify via accessors only!
@@ -200,10 +200,10 @@ static void xdk360_video_font_get_text_width(xdk360_video_font_t * font, const w
    }
 
    float fWidth = (float)iWidth;
-   fHeight *= font->m_fYScaleFactor;     // Apply the scale factor to the result
+   fHeight *= FONT_SCALE;
    *pHeight = fHeight;                   // Store the final results
 
-   fWidth *= font->m_fXScaleFactor;
+   fWidth *= FONT_SCALE;
    *pWidth = fWidth;
 }
 
@@ -287,8 +287,6 @@ static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * s
    font->m_Glyphs = NULL;
    font->m_fCursorX = 0.0f;
    font->m_fCursorY = 0.0f;
-   font->m_fXScaleFactor = 2.0f;
-   font->m_fYScaleFactor = 2.0f;
    font->m_cMaxGlyph = 0;
    font->m_TranslatorTable = NULL;
 
@@ -581,7 +579,7 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
       if( letter == L'\n' )
       {
          font->m_fCursorX = fOriginX;
-         font->m_fCursorY += font->m_fFontYAdvance * font->m_fYScaleFactor;
+         font->m_fCursorY += font->m_fFontYAdvance * FONT_SCALE;
          continue;
       }
 
@@ -589,10 +587,10 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
       const GLYPH_ATTR * pGlyph = &font->m_Glyphs[ ( letter <= font->m_cMaxGlyph )
          ? font->m_TranslatorTable[letter] : 0 ];
 
-      float fOffset = font->m_fXScaleFactor * (float)pGlyph->wOffset;
-      float fAdvance = font->m_fXScaleFactor * (float)pGlyph->wAdvance;
-      float fWidth = font->m_fXScaleFactor * (float)pGlyph->wWidth;
-      float fHeight = font->m_fYScaleFactor * font->m_fFontHeight;
+      float fOffset  = FONT_SCALE * (float)pGlyph->wOffset;
+      float fAdvance = FONT_SCALE * (float)pGlyph->wAdvance;
+      float fWidth   = FONT_SCALE * (float)pGlyph->wWidth;
+      float fHeight  = FONT_SCALE * font->m_fFontHeight;
 
       // Setup the screen coordinates
       font->m_fCursorX += fOffset;
