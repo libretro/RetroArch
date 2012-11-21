@@ -632,6 +632,16 @@ static inline uint32_t next_pow2(uint32_t v)
    return v;
 }
 
+static inline uint32_t prev_pow2(uint32_t v)
+{
+   v |= v >> 1;
+   v |= v >> 2;
+   v |= v >> 4;
+   v |= v >> 8;
+   v |= v >> 16;
+   return v - (v >> 1);
+}
+
 static inline uint8_t is_little_endian(void)
 {
    union
