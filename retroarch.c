@@ -226,9 +226,11 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
          return;
       }
 
-      // Big bottleneck. Also adds one frame "delay" to video output as we haven't rendered the current frame yet.
-      // It will probably improve performance a lot though, who knows.
-      video_read_viewport_func(g_extern.record_gpu_buffer);
+      // Big bottleneck.
+      // Since we might need to do read-backs asynchronously, it might take 3-4 times
+      // before this returns true ...
+      if (!video_read_viewport_func(g_extern.record_gpu_buffer))
+         return;
 
       ffemu_data.pitch  = g_extern.record_gpu_width * 3;
       ffemu_data.width  = g_extern.record_gpu_width;
