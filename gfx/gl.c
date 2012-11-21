@@ -160,6 +160,8 @@ static bool load_fbo_proc(gl_t *gl)
 #ifdef _WIN32
 PFNGLCLIENTACTIVETEXTUREPROC pglClientActiveTexture;
 PFNGLACTIVETEXTUREPROC pglActiveTexture;
+static PFNGLGENBUFFERSPROC pglGenBuffers;
+static PFNGLGENBUFFERSPROC pglDeleteBuffers;
 static PFNGLBINDBUFFERPROC pglBindBuffer;
 static PFNGLBUFFERSUBDATAPROC pglBufferSubData;
 static PFNGLBUFFERDATAPROC pglBufferData;
@@ -169,15 +171,22 @@ static inline bool load_gl_proc_win32(gl_t *gl)
 {
    LOAD_GL_SYM(ClientActiveTexture);
    LOAD_GL_SYM(ActiveTexture);
+   LOAD_GL_SYM(GenBuffers);
+   LOAD_GL_SYM(DeleteBuffers);
    LOAD_GL_SYM(BindBuffer);
    LOAD_GL_SYM(BufferSubData);
    LOAD_GL_SYM(BufferData);
    LOAD_GL_SYM(MapBuffer);
    LOAD_GL_SYM(UnmapBuffer);
-   return pglClientActiveTexture && pglActiveTexture && pglBindBuffer &&
-      pglBufferSubData && pglBufferData && pglMapBuffer && pglUnmapBuffer;
+
+   return pglClientActiveTexture && pglActiveTexture &&
+      pglGenBuffers && pglDeleteBuffers &&
+      pglBindBuffer && pglBufferSubData && pglBufferData &&
+      pglMapBuffer && pglUnmapBuffer;
 }
 #else
+#define pglGenBuffers glGenBuffers
+#define pglDeleteBuffers glDeleteBuffers
 #define pglBindBuffer glBindBuffer
 #define pglBufferSubData glBufferSubData
 #define pglBufferData glBufferData
@@ -1061,6 +1070,30 @@ static inline void gl_set_shader_viewport(gl_t *gl, unsigned shader)
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
+#ifndef HAVE_OPENGLES
+static void gl_pbo_async_readback(gl_t *gl)
+{
+   pglBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index++]);
+   gl->pbo_readback_index &= 3;
+
+   // If set, we 3 rendered frames already buffered up.
+   gl->pbo_readback_valid |= gl->pbo_readback_index == 0;
+
+   glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+   glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * sizeof(uint32_t)));
+
+   // Read asynchronously into PBO buffer.
+   RARCH_PERFORMANCE_INIT(async_readback);
+   RARCH_PERFORMANCE_START(async_readback);
+   glReadPixels(gl->vp.x, gl->vp.y,
+         gl->vp.width, gl->vp.height,
+         GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+   RARCH_PERFORMANCE_STOP(async_readback);
+
+   pglBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+}
+#endif
+
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    RARCH_PERFORMANCE_INIT(frame_run);
@@ -1128,7 +1161,12 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
 
    gl_next_texture_index(gl, &tex_info);
-   
+
+#ifndef HAVE_OPENGLES
+   if (gl->pbo_readback_enable)
+      gl_pbo_async_readback(gl);
+#endif
+ 
 #ifdef FPS_COUNTER
    bool fps_enable = g_extern.console.rmenu.state.msg_fps.enable;
    if (fps_enable)
@@ -1191,6 +1229,11 @@ static void gl_free(void *data)
 #if defined(HAVE_PSGL)
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
    glDeleteBuffers(1, &gl->pbo);
+#endif
+
+#ifndef HAVE_OPENGLES
+   if (gl->pbo_readback_enable)
+      pglDeleteBuffers(4, gl->pbo_readback);
 #endif
 
 #ifdef HAVE_FBO
@@ -1293,6 +1336,29 @@ static inline void gl_reinit_textures(gl_t *gl, const video_info_t *video)
 
    if (!gl_check_error())
       RARCH_ERR("GL error reported while reinitializing textures. This should not happen ...\n");
+}
+
+static void gl_init_pbo_readback(gl_t *gl)
+{
+#ifndef HAVE_OPENGLES
+   // Only bother with this if we're doing FFmpeg GPU recording.
+   gl->pbo_readback_enable = g_settings.video.gpu_record && g_extern.recording;
+   if (!gl->pbo_readback_enable)
+      return;
+
+   RARCH_LOG("Async PBO readback enabled.\n");
+
+   pglGenBuffers(4, gl->pbo_readback);
+   for (unsigned i = 0; i < 4; i++)
+   {
+      pglBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[i]);
+      pglBufferData(GL_PIXEL_PACK_BUFFER, gl->vp.width * gl->vp.height * sizeof(uint32_t),
+            NULL, GL_DYNAMIC_READ);
+   }
+   pglBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+#else
+   (void)gl;
+#endif
 }
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
@@ -1449,6 +1515,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    context_input_driver_func(input, input_data);
    gl_init_font(gl, g_settings.video.font_path, g_settings.video.font_size);
 
+   gl_init_pbo_readback(gl);
+
    if (!gl_check_error())
    {
       context_destroy_func();
@@ -1542,9 +1610,9 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    RARCH_PERFORMANCE_INIT(read_viewport);
    RARCH_PERFORMANCE_START(read_viewport);
 
-   glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * 3));
 
 #ifdef HAVE_OPENGLES
+   glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * 3));
    glReadPixels(gl->vp.x, gl->vp.y,
          gl->vp.width, gl->vp.height,
          GL_RGB, GL_UNSIGNED_BYTE, buffer);
@@ -1559,11 +1627,37 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       pixels[0] = tmp;
    }
 #else
-   glPixelStorei(GL_PACK_ROW_LENGTH, gl->vp.width);
+   if (gl->pbo_readback_enable)
+   {
+      if (!gl->pbo_readback_valid) // We haven't buffered up enough frames yet, come back later.
+         return false;
 
-   glReadPixels(gl->vp.x, gl->vp.y,
-         gl->vp.width, gl->vp.height,
-         GL_BGR, GL_UNSIGNED_BYTE, buffer);
+      pglBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index]);
+      const uint8_t *ptr = (const uint8_t*)pglMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+      if (!ptr)
+      {
+         RARCH_ERR("Failed to map pixel unpack buffer.\n");
+         return false;
+      }
+      unsigned pixels = gl->vp.width * gl->vp.height;
+      for (unsigned i = 0; i < pixels; i++, buffer += 3, ptr += 4)
+      {
+         buffer[0] = ptr[0];
+         buffer[1] = ptr[1];
+         buffer[2] = ptr[2];
+      }
+      pglUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+      pglBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+   }
+   else // Use slow synchronous readbacks. Use this with plain screenshots as we don't really care about performance in this case.
+   {
+      glPixelStorei(GL_PACK_ROW_LENGTH, gl->vp.width);
+      glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * 3));
+
+      glReadPixels(gl->vp.x, gl->vp.y,
+            gl->vp.width, gl->vp.height,
+            GL_BGR, GL_UNSIGNED_BYTE, buffer);
+   }
 #endif
 
    RARCH_PERFORMANCE_STOP(read_viewport);

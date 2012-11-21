@@ -272,6 +272,14 @@ typedef struct gl
 #endif
 
    bool egl_images;
+
+#ifndef HAVE_OPENGLES
+   // PBOs used for asynchronous viewport readbacks.
+   GLuint pbo_readback[4];
+   bool pbo_readback_enable;
+   bool pbo_readback_valid;
+   unsigned pbo_readback_index;
+#endif
 } gl_t;
 
 // Windows ... <_<
