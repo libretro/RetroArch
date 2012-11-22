@@ -21,5 +21,6 @@ HRESULT d3d9_init_font(const char *font_path);
 void d3d9_deinit_font(void);
 
 void xdk_render_msg(void *driver, const char *str);
+void xdk_render_msg_place(void *driver, float x, float y, const char *str_msg);
 
 #endif

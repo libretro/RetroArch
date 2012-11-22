@@ -814,6 +814,13 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (msg)
       xfonts_render_msg_place(d3d, 60, 365, 0, msg); //TODO: dehardcode x/y here for HD (720p) mode
 #elif defined(_XBOX360)
+   if(fps_enable)
+   {
+      char fps_txt[128];
+	  gfx_fps_title(fps_txt, sizeof(fps_txt));
+	  xdk_render_msg_place(d3d, g_extern.console.rmenu.state.rmenu_hd.enable ? 160 : 100, 90, fps_txt);
+   }
+
    if (msg && !menu_enabled)
    {
       xdk_render_msg(d3d, msg);

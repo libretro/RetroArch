@@ -460,7 +460,7 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    pd3dDevice->EndVertices();
 }
 
-void xdk_render_msg(void *driver, const char *str_msg)
+void xdk_render_msg_place(void *driver, float x, float y, const char *str_msg)
 {
    xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver;
 
@@ -470,10 +470,19 @@ void xdk_render_msg(void *driver, const char *str_msg)
 	if (msg != NULL || msg[0] != L'\0')
 	{
 		xdk_render_msg_pre(&m_Font);
-		xdk_video_font_draw_text(&m_Font, (float)( video_console.m_cxSafeAreaOffset ),
-        (float)( video_console.m_cySafeAreaOffset), msg);
+		xdk_video_font_draw_text(&m_Font, x, y, msg);
 		xdk_render_msg_post(&m_Font);
 	}
+}
+
+void xdk_render_msg(void *driver, const char *str_msg)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver;
+
+   float x = g_extern.console.rmenu.state.rmenu_hd.enable ? 160 : 100;
+   float y = 120;
+
+   xdk_render_msg_place(d3d, x, y, str_msg);
 }
 
 
