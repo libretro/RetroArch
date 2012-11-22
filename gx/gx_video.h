@@ -24,10 +24,12 @@ typedef struct gx_video
    bool should_resize;
    bool keep_aspect;
    bool double_strike;
+   bool rgb32;
    uint32_t frame_count;
    uint32_t *menu_data;
    unsigned win_width;
    unsigned win_height;
+   unsigned scale;
    char msg[128];
 } gx_video_t;
 

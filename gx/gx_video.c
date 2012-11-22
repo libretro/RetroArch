@@ -43,13 +43,13 @@ lwpq_t g_video_cond;
 volatile bool g_draw_done;
 uint32_t g_orientation;
 
-struct
+static struct
 {
-   uint32_t data[512 * 256];
+   uint32_t *data; // needs to be resizable
    GXTexObj obj;
-} g_tex ATTRIBUTE_ALIGN(32);
+} g_tex;
 
-struct
+static struct
 {
    uint32_t data[240 * 200];
    GXTexObj obj;
@@ -279,9 +279,10 @@ static void setup_video_mode()
 
 static void init_texture(unsigned width, unsigned height)
 {
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
    unsigned g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
 
-   GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjLOD(&g_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_InitTexObj(&menu_tex.obj, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjLOD(&menu_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
@@ -318,8 +319,9 @@ static void init_vtx()
 
    GX_SetBlendMode(GX_BM_BLEND, GX_BL_ONE, GX_BL_INVSRCALPHA, 0);
 
-   memset(g_tex.data, 0, sizeof(g_tex.data));
-   DCFlushRange(g_tex.data, sizeof(g_tex.data));
+   g_tex.data = memalign(32, 4 * 4 * 2);
+   memset(g_tex.data, 0, 4 * 4 * 2);
+   DCFlushRange(g_tex.data, 4 * 4 * 2);
    init_texture(4, 4); // for menu texture
    GX_Flush();
 }
@@ -401,7 +403,27 @@ static void *gx_init(const video_info_t *video,
    g_vsync = video->vsync;
 
    if (driver.video_data)
+   {
+      gx_video_t *gx = (gx_video_t*)driver.video_data;
+
+      if (gx->scale != video->input_scale || gx->rgb32 != video->rgb32)
+      {
+         RARCH_LOG("[GX] reallocate texture\n");
+         free(g_tex.data);
+         g_tex.data = memalign(32, RARCH_SCALE_BASE * RARCH_SCALE_BASE * video->input_scale * 2 * (video->rgb32 ? 4 : 2));
+
+         if (!g_tex.data)
+         {
+            RARCH_ERR("[GX] Error allocating video texture\n");
+            exit(1);
+         }
+      }
+
+      gx->rgb32 = video->rgb32;
+      gx->scale = video->input_scale;
+      gx->should_resize = true;
       return driver.video_data;
+   }
 
    gx_video_t *gx = (gx_video_t*)calloc(1, sizeof(gx_video_t));
    if (!gx)
@@ -414,10 +436,6 @@ static void gx_start(void)
    video_info_t video_info = {0};
 
    video_info.vsync = g_settings.video.vsync;
-   video_info.force_aspect = false;
-   video_info.fullscreen = true;
-   video_info.smooth = g_settings.video.smooth;
-   video_info.input_scale = 2;
 
    driver.video_data = gx_init(&video_info, NULL, NULL);
 
@@ -503,6 +521,7 @@ static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src, c
          [width]  "b"   (width),
          [height] "b"   (height),
          [pitch]  "b"   (pitch)
+      :  "cc"
    );
 }
 
@@ -526,50 +545,31 @@ static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src, c
    src2 += tmp_pitch; \
 }
 
-static void update_texture(const uint32_t *src,
-      unsigned width, unsigned height, unsigned pitch)
+static void convert_texture(const uint32_t *_src, uint32_t *_dst,
+      unsigned width, unsigned height, unsigned pitch, bool rgb32)
 {
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
-   if (src)
+   if (rgb32)
    {
-#ifdef ASM_BLITTER
-      if (width && height && !(width & 3) && !(height & 3))
-      {
-         update_texture_asm(src, g_tex.data, width, height, pitch);
-      }
-      else
-#endif
-      {
-         width &= ~15;
-         height &= ~3;
-         unsigned tmp_pitch = pitch >> 2;
-         unsigned width2 = width >> 1;
-
-         // Texture data is 4x4 tiled @ 15bpp.
-         // Use 32-bit to transfer more data per cycle.
-         const uint32_t *src2 = src;
-         uint32_t *dst = g_tex.data;
-         for (unsigned i = 0; i < height; i += 4, dst += 4 * width2)
-         {
-            BLIT_LINE(0)
-            BLIT_LINE(2)
-            BLIT_LINE(4)
-            BLIT_LINE(6)
-         }
-      }
+      // TODO: actually convert this
+      memcpy(_dst, _src, width * height * 4);
    }
-
-   if(gx->menu_render)
+   else
    {
 #ifdef ASM_BLITTER
-      update_texture_asm(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2);
+      width &= ~3;
+      height &= ~3;
+      update_texture_asm(_src, _dst, width, height, pitch);
 #else
-      unsigned tmp_pitch = (RGUI_WIDTH * 2) >> 2;
-      unsigned width2 = RGUI_WIDTH >> 1;
+      width &= ~15;
+      height &= ~3;
+      unsigned tmp_pitch = pitch >> 2;
+      unsigned width2 = width >> 1;
 
-      const uint32_t *src2 = gx->menu_data;
-      uint32_t *dst = menu_tex.data;
-      for (unsigned i = 0; i < RGUI_HEIGHT; i += 4, dst += 4 * width2)
+      // Texture data is 4x4 tiled @ 16bpp.
+      // Use 32-bit to transfer more data per cycle.
+      const uint32_t *src2 = _src;
+      uint32_t *dst = _dst;
+      for (unsigned i = 0; i < height; i += 4, dst += 4 * width2)
       {
          BLIT_LINE(0)
          BLIT_LINE(2)
@@ -579,8 +579,24 @@ static void update_texture(const uint32_t *src,
 #endif
    }
 
-   DCFlushRange(g_tex.data, sizeof(g_tex.data));
-   DCFlushRange(menu_tex.data, sizeof(menu_tex.data));
+   DCFlushRange(_dst, height * (width << (rgb32 ? 2 : 1)));
+}
+
+static void update_textures(const uint32_t *src,
+      unsigned width, unsigned height, unsigned pitch)
+{
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
+
+   if (src)
+   {
+      convert_texture(src, g_tex.data, width, height, pitch, gx->rgb32);
+   }
+
+   if(gx->menu_render)
+   {
+      convert_texture(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2, false);
+   }
+
    GX_InvalidateTexAll();
 }
 
@@ -810,7 +826,7 @@ static bool gx_frame(void *data, const void *frame,
 
    g_draw_done = false;
    g_current_framebuf ^= 1;
-   update_texture(frame, width, height, pitch);
+   update_textures(frame, width, height, pitch);
 
    //if (frame)
    {

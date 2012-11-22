@@ -95,6 +95,7 @@
 #define video_stop_func()			gx_stop()
 #define video_start_func()			gx_start()
 #define video_viewport_size_func(width, height) ((void)0)
+#define video_viewport_info_func(info)          ((void)0)
 #define video_read_viewport_func(buffer)        (false)
 
 #else /* NULL */
