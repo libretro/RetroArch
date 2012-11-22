@@ -52,16 +52,12 @@ typedef struct GLYPH_ATTR
    short wOffset;                       // Pixel offset for glyph start
    short wWidth;                        // Pixel width of the glyph
    short wAdvance;                      // Pixels to advance after the glyph
-   unsigned short wMask;                // Channel mask
+   unsigned short wMask;
 } GLYPH_ATTR;
 
 enum SavedStates
 {
-   SAVEDSTATE_D3DRS_FILLMODE,
-   SAVEDSTATE_D3DRS_CULLMODE,
    SAVEDSTATE_D3DRS_VIEWPORTENABLE,
-   SAVEDSTATE_D3DSAMP_ADDRESSU,
-   SAVEDSTATE_D3DSAMP_ADDRESSV,
 
    SAVEDSTATE_COUNT
 };
@@ -340,8 +336,8 @@ static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * s
 
 HRESULT d3d9_init_font(const char *font_path)
 {
-   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
-   D3DDevice *m_pd3dDevice = vid->d3d_render_device;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   D3DDevice *m_pd3dDevice = d3d->d3d_render_device;
 
    video_console.m_Buffer = NULL;
    video_console.m_Lines = NULL;
@@ -351,11 +347,10 @@ HRESULT d3d9_init_font(const char *font_path)
    unsigned int uiSafeAreaPct = g_extern.console.rmenu.state.rmenu_hd.enable 
 	   ? SAFE_AREA_PCT_HDTV : SAFE_AREA_PCT_4x3;
 
-   video_console.m_cxSafeArea = ( vid->win_width * uiSafeAreaPct ) / 100;
-   video_console.m_cySafeArea = ( vid->win_height * uiSafeAreaPct ) / 100;
-
-   video_console.m_cxSafeAreaOffset = ( vid->win_width - video_console.m_cxSafeArea ) / 2;
-   video_console.m_cySafeAreaOffset = ( vid->win_height - video_console.m_cySafeArea ) / 2;
+   video_console.m_cxSafeArea       = ( d3d->win_width * uiSafeAreaPct ) / 100;
+   video_console.m_cySafeArea       = ( d3d->win_height * uiSafeAreaPct ) / 100;
+   video_console.m_cxSafeAreaOffset = ( d3d->win_width - video_console.m_cxSafeArea ) / 2;
+   video_console.m_cySafeAreaOffset = ( d3d->win_height - video_console.m_cySafeArea ) / 2;
 
    // Create the font
    HRESULT hr = xdk360_video_font_init(&m_Font, font_path);
@@ -430,8 +425,8 @@ void xdk_render_msg_post(xdk360_video_font_t * font)
    // Restore state
    {
       // Cache the global pointer into a register
-      xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
-      D3DDevice *pD3dDevice = vid->d3d_render_device;
+      xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+      D3DDevice *pD3dDevice = d3d->d3d_render_device;
 
       pD3dDevice->SetTexture(0, NULL);
       pD3dDevice->SetVertexDeclaration(NULL);
@@ -448,7 +443,6 @@ static void xdk_render_msg_pre(xdk360_video_font_t * font)
 
       // Save state
       {
-         pD3dDevice->GetRenderState( D3DRS_FILLMODE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_FILLMODE ] );
          pD3dDevice->GetRenderState( D3DRS_VIEWPORTENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
       }
 
@@ -466,12 +460,11 @@ static void xdk_render_msg_pre(xdk360_video_font_t * font)
       vTexScale[2] = 0.0f;
       vTexScale[3] = 0.0f;
 
-      pD3dDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID );
       pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, FALSE );
 
       pD3dDevice->SetVertexDeclaration(s_FontLocals.m_pFontVertexDecl);
-      D3DDevice_SetVertexShader(pD3dDevice, s_FontLocals.m_pFontVertexShader );
-      D3DDevice_SetPixelShader(pD3dDevice, s_FontLocals.m_pFontPixelShader );
+	  pD3dDevice->SetVertexShader(s_FontLocals.m_pFontVertexShader);
+	  pD3dDevice->SetPixelShader(s_FontLocals.m_pFontPixelShader);
 
       // Set the texture scaling factor as a vertex shader constant
       // Call here to avoid load hit store from writing to vTexScale above
