@@ -31,15 +31,10 @@
 
 typedef struct
 {
-   float m_fLineHeight;                 // height of a single line in pixels
-   unsigned int m_nScrollOffset;        // offset to display text (in lines)
    unsigned int m_cxSafeArea;
    unsigned int m_cySafeArea;
    unsigned int m_cxSafeAreaOffset;
    unsigned int m_cySafeAreaOffset;
-   unsigned int m_cScreenHeight;        // height in lines of screen area
-   unsigned int m_cScreenHeightVirtual; // height in lines of text storage buffer
-   unsigned int m_cScreenWidth;         // width in characters
 } video_console_t;
 
 typedef struct GLYPH_ATTR
@@ -135,58 +130,6 @@ typedef struct {
 } Font_Locals_t;
 
 static Font_Locals_t s_FontLocals;
-
-static void xdk360_video_font_get_text_width(xdk360_video_font_t * font, const wchar_t * strText, float * pWidth, float * pHeight)
-{
-   int iWidth = 0;
-   float fHeight = 0.0f;
-
-   if( strText )
-   {
-      // Initialize counters that keep track of text extent
-      int ix = 0;
-      float fy = font->m_fFontHeight;       // One character high to start
-      if( fy > fHeight )
-         fHeight = fy;
-
-      // Loop through each character and update text extent
-      unsigned long letter;
-      while( (letter = *strText) != 0 )
-      {
-         ++strText;
-
-         // Handle newline character
-         if (letter == L'\n')
-            break;
-
-         // Translate unprintable characters
-         const GLYPH_ATTR* pGlyph;
-
-         if( letter > font->m_cMaxGlyph )
-            letter = 0;     // Out of bounds?
-         else
-            letter = font->m_TranslatorTable[letter];     // Remap ASCII to glyph
-
-         pGlyph = &font->m_Glyphs[letter];                 // Get the requested glyph
-
-         // Get text extent for this character's glyph
-         ix += pGlyph->wOffset;
-         ix += pGlyph->wAdvance;
-
-         // Since the x widened, test against the x extent
-
-         if( ix > iWidth )
-            iWidth = ix;
-      }
-   }
-
-   float fWidth = (float)iWidth;
-   fHeight *= FONT_SCALE;
-   *pHeight = fHeight;                   // Store the final results
-
-   fWidth *= FONT_SCALE;
-   *pWidth = fWidth;
-}
 
 static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
 {
@@ -335,8 +278,6 @@ HRESULT d3d9_init_font(const char *font_path)
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    D3DDevice *m_pd3dDevice = d3d->d3d_render_device;
 
-   video_console.m_nScrollOffset = 0;
-
    // Calculate the safe area
    unsigned int uiSafeAreaPct = g_extern.console.rmenu.state.rmenu_hd.enable 
 	   ? SAFE_AREA_PCT_HDTV : SAFE_AREA_PCT_4x3;
@@ -353,17 +294,6 @@ HRESULT d3d9_init_font(const char *font_path)
       RARCH_ERR( "Could not create font.\n" );
       return -1;
    }
-
-   // Calculate the number of lines on the screen
-   float fCharWidth, fCharHeight;
-   xdk360_video_font_get_text_width(&m_Font, L"i", &fCharWidth, &fCharHeight);
-
-   video_console.m_cScreenHeight = (unsigned int)( video_console.m_cySafeArea / fCharHeight );
-   video_console.m_cScreenWidth = (unsigned int)( video_console.m_cxSafeArea / fCharWidth );
-
-   video_console.m_cScreenHeightVirtual = video_console.m_cScreenHeight;
-
-   video_console.m_fLineHeight = fCharHeight;
 
    return hr;
 }
@@ -594,8 +524,7 @@ void xdk_render_msg(void *driver, const char * strFormat)
 	{
 		xdk_render_msg_pre(&m_Font);
 		xdk_video_font_draw_text(&m_Font, (float)( video_console.m_cxSafeAreaOffset ),
-        (float)( video_console.m_cySafeAreaOffset + video_console.m_fLineHeight ), 
-        msg);
+        (float)( video_console.m_cySafeAreaOffset), msg);
 		xdk_render_msg_post(&m_Font);
 	}
 }
