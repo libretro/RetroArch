@@ -46,15 +46,9 @@ typedef struct GLYPH_ATTR
    unsigned short wMask;
 } GLYPH_ATTR;
 
-enum SavedStates
-{
-   SAVEDSTATE_D3DRS_VIEWPORTENABLE,
-   SAVEDSTATE_COUNT
-};
-
 typedef struct
 {
-   unsigned long m_dwSavedState[ SAVEDSTATE_COUNT ];
+   unsigned long m_dwSavedState;
    unsigned long m_cMaxGlyph;           // Number of entries in the translator table
    unsigned long m_dwNumGlyphs;         // Number of valid glyphs
    float m_fFontHeight;                 // Height of the font strike in pixels
@@ -318,7 +312,7 @@ void xdk_render_msg_post(xdk360_video_font_t * font)
       pD3dDevice->SetVertexDeclaration(NULL);
       D3DDevice_SetVertexShader(pD3dDevice, NULL );
       D3DDevice_SetPixelShader(pD3dDevice, NULL );
-      pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
+      pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState );
    }
 }
 
@@ -328,9 +322,7 @@ static void xdk_render_msg_pre(xdk360_video_font_t * font)
       D3DDevice *pD3dDevice = d3d->d3d_render_device;
 
       // Save state
-      {
-         pD3dDevice->GetRenderState( D3DRS_VIEWPORTENABLE, &font->m_dwSavedState[ SAVEDSTATE_D3DRS_VIEWPORTENABLE ] );
-      }
+      pD3dDevice->GetRenderState( D3DRS_VIEWPORTENABLE, &font->m_dwSavedState );
 
       // Set the texture scaling factor as a vertex shader constant
       D3DSURFACE_DESC TextureDesc;
@@ -365,18 +357,18 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
 
    // Set the color as a vertex shader constant
    float vColor[4];
-   vColor[0] = ( ( 0xffffffff & 0x00ff0000 ) >> 16L ) / 255.0F;
-   vColor[1] = ( ( 0xffffffff & 0x0000ff00 ) >> 8L ) / 255.0F;
-   vColor[2] = ( ( 0xffffffff & 0x000000ff ) >> 0L ) / 255.0F;
-   vColor[3] = ( ( 0xffffffff & 0xff000000 ) >> 24L ) / 255.0F;
+   vColor[0] = ( ( 0xffffffff & 0x00ff0000 ) >> 16L ) / 255.0f;
+   vColor[1] = ( ( 0xffffffff & 0x0000ff00 ) >> 8L )  / 255.0f;
+   vColor[2] = ( ( 0xffffffff & 0x000000ff ) >> 0L )  / 255.0f;
+   vColor[3] = ( ( 0xffffffff & 0xff000000 ) >> 24L ) / 255.0f;
 
    // Perform the actual storing of the color constant here to prevent
    // a load-hit-store by inserting work between the store and the use of
    // the vColor array.
    pd3dDevice->SetVertexShaderConstantF( 1, vColor, 1 );
 
-   font->m_fCursorX = floorf( fOriginX );
-   font->m_fCursorY = floorf( fOriginY );
+   font->m_fCursorX = floorf(fOriginX);
+   font->m_fCursorY = floorf(fOriginY);
 
    // Adjust for padding
    fOriginY -= font->m_fFontTopPadding;
@@ -396,40 +388,31 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    // Draw four vertices for each glyph
    while( *strText )
    {
-      wchar_t letter;
-
       // Get the current letter in the string
-      letter = *strText++;
+      wchar_t letter = *strText++;
 
-      // Handle the newline character
       if( letter == L'\n' )
       {
+		  // Handle the newline character
          font->m_fCursorX = fOriginX;
          font->m_fCursorY += font->m_fFontYAdvance * FONT_SCALE;
          continue;
       }
 
       // Translate unprintable characters
-      const GLYPH_ATTR * pGlyph = &font->m_Glyphs[ ( letter <= font->m_cMaxGlyph )
-         ? font->m_TranslatorTable[letter] : 0 ];
+	  const GLYPH_ATTR *pGlyph;
+
+	  if (letter <= font->m_cMaxGlyph)
+		  pGlyph = &font->m_Glyphs[font->m_TranslatorTable[letter]];
+	  else
+		  pGlyph = &font->m_Glyphs[0];
 
       float fOffset  = FONT_SCALE * (float)pGlyph->wOffset;
       float fAdvance = FONT_SCALE * (float)pGlyph->wAdvance;
       float fWidth   = FONT_SCALE * (float)pGlyph->wWidth;
       float fHeight  = FONT_SCALE * font->m_fFontHeight;
 
-      // Setup the screen coordinates
       font->m_fCursorX += fOffset;
-      float X4 = font->m_fCursorX;
-      float X1 = X4;
-      float X3 = X4 + fWidth;
-      float X2 = X1 + fWidth;
-      float Y1 = font->m_fCursorY;
-      float Y3 = Y1 + fHeight;
-      float Y2 = Y1;
-      float Y4 = Y3;
-
-      font->m_fCursorX += fAdvance;
 
       // Add the vertices to draw this glyph
 
@@ -438,7 +421,7 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
       unsigned long tu2 = pGlyph->tu2;
       unsigned long tv2 = pGlyph->tv2;
 
-      // NOTE: The vertexs are 2 floats for the screen coordinates,
+      // NOTE: The vertexes are 2 floats for the screen coordinates,
       // followed by two USHORTS for the u/vs of the character,
       // terminated with the ARGB 32 bit color.
       // This makes for 16 bytes per vertex data (Easier to read)
@@ -447,23 +430,29 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
       // 64 and 128 writes. Never store to write combined memory with
       // 8 or 16 bit instructions. You've been warned.
 
-      pVertex[0] = X1;
-      pVertex[1] = Y1;
-      ((volatile unsigned long *)pVertex)[2] = (tu1<<16)|tv1;         // Merged using big endian rules
-      pVertex[3] = 0;
-      pVertex[4] = X2;
-      pVertex[5] = Y2;
-      ((volatile unsigned long *)pVertex)[6] = (tu2<<16)|tv1;         // Merged using big endian rules
-      pVertex[7] = 0;
-      pVertex[8] = X3;
-      pVertex[9] = Y3;
-      ((volatile unsigned long *)pVertex)[10] = (tu2<<16)|tv2;        // Merged using big endian rules
+	  // Setup the vertex/screen coordinates
+
+      pVertex[0]  = font->m_fCursorX;
+      pVertex[1]  = font->m_fCursorY;
+      pVertex[3]  = 0;
+      pVertex[4]  = font->m_fCursorX + fWidth;
+      pVertex[5]  = font->m_fCursorY;
+      pVertex[7]  = 0;
+      pVertex[8]  = font->m_fCursorX + fWidth;
+      pVertex[9]  = font->m_fCursorY + fHeight;
       pVertex[11] = 0;
-      pVertex[12] = X4;
-      pVertex[13] = Y4;
-      ((volatile unsigned long *)pVertex)[14] = (tu1<<16)|tv2;        // Merged using big endian rules
+      pVertex[12] = font->m_fCursorX;
+      pVertex[13] = font->m_fCursorY + fHeight;
+#ifndef LSB_FIRST
+      ((volatile unsigned long *)pVertex)[2]  = (tu1 << 16) | tv1;         // Merged using big endian rules
+      ((volatile unsigned long *)pVertex)[6]  = (tu2 << 16) | tv1;         // Merged using big endian rules
+      ((volatile unsigned long *)pVertex)[10] = (tu2 << 16) | tv2;        // Merged using big endian rules
+      ((volatile unsigned long *)pVertex)[14] = (tu1 << 16) | tv2;        // Merged using big endian rules
+#endif
       pVertex[15] = 0;
-      pVertex+=16;
+      pVertex += 16;
+
+      font->m_fCursorX += fAdvance;
 
       dwNumChars--;
    }
@@ -472,7 +461,7 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    // add some dummy verts for any skipped characters (like newlines, etc.)
    while( dwNumChars )
    {
-      for(int i = 0; i < 16; i++)
+      for(unsigned i = 0; i < 16; i++)
          pVertex[i] = 0;
 
       pVertex += 16;
@@ -482,12 +471,12 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    pd3dDevice->EndVertices();
 }
 
-void xdk_render_msg(void *driver, const char * strFormat)
+void xdk_render_msg(void *driver, const char *str_msg)
 {
    xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver;
 
    wchar_t msg[PATH_MAX];
-   convert_char_to_wchar(msg, strFormat, sizeof(msg));
+   convert_char_to_wchar(msg, str_msg, sizeof(msg));
 
 	if (msg != NULL || msg[0] != L'\0')
 	{
