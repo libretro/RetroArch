@@ -797,6 +797,19 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
 
 #if defined(_XBOX1)
+#define fonts_render_msg_place_func(device, x, y, scale, msg) xfonts_render_msg_place(device, x, y, scale, msg)
+	  float width      = font_x + 30;
+	  float height     = font_y + 50;
+	  float msg_width  = 60;
+	  float msg_height = 365;
+#elif defined(_XBOX360)
+#define fonts_render_msg_place_func(device, x, y, scale, msg) xdk_render_msg_place(device, x, y, msg)
+	  float mem_width  = g_extern.console.rmenu.state.rmenu_hd.enable ? 160 : 100;
+	  float mem_height = 70;
+	  float msg_width  = mem_width;
+	  float msg_height = mem_height + 50;
+#endif
+
    if(fps_enable)
    {
       MEMORYSTATUS stat;
@@ -804,28 +817,20 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
       char fps_txt[128];
       char buf[128];
+
       snprintf(buf, sizeof(buf), "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
-      xfonts_render_msg_place(d3d, font_x + 30, font_y + 50, 0 /* scale */, buf);
+      fonts_render_msg_place_func(d3d, mem_width, mem_height, 0, buf);
 
       gfx_fps_title(fps_txt, sizeof(fps_txt));
-      xfonts_render_msg_place(d3d, font_x + 30, font_y + 70, 0 /* scale */, fps_txt);
+      fonts_render_msg_place_func(d3d, mem_width, mem_height + 30, 0, fps_txt);
    }
 
-   if (msg)
-      xfonts_render_msg_place(d3d, 60, 365, 0, msg); //TODO: dehardcode x/y here for HD (720p) mode
-#elif defined(_XBOX360)
-   if(fps_enable)
-   {
-      char fps_txt[128];
-	  gfx_fps_title(fps_txt, sizeof(fps_txt));
-	  xdk_render_msg_place(d3d, g_extern.console.rmenu.state.rmenu_hd.enable ? 160 : 100, 90, fps_txt);
-   }
-
-   if (msg && !menu_enabled)
-   {
-      xdk_render_msg(d3d, msg);
-   }
+   if (msg
+#ifdef _XBOX360
+	   && !menu_enabled
 #endif
+	   )
+      fonts_render_msg_place_func(d3d, msg_width, msg_height, 0, msg); //TODO: dehardcode x/y here for HD (720p) mode
 
    if(!d3d->block_swap)
       gfx_ctx_xdk_swap_buffers();
