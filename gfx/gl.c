@@ -1369,7 +1369,7 @@ static void gl_init_pbo_readback(gl_t *gl)
    scaler->out_stride  = gl->vp.width * 3;
    scaler->in_fmt      = SCALER_FMT_ARGB8888;
    scaler->out_fmt     = SCALER_FMT_BGR24;
-   scaler->scaler_type = SCALER_FMT_BGR24;
+   scaler->scaler_type = SCALER_TYPE_POINT;
 
    if (!scaler_ctx_gen_filter(scaler))
    {
