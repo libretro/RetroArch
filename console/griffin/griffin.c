@@ -187,7 +187,7 @@ FONTS
 #include "../../gfx/fonts/freetype.c"
 #include "../../gfx/fonts/fonts.c"
 #elif defined(HAVE_LIBDBGFONT)
-#include "../../gfx/fonts/ps3_libdbgfont.c"
+#include "../../gfx/fonts/ps_libdbgfont.c"
 #elif defined(_XBOX1)
 #include "../../gfx/fonts/xdk1_xfonts.c"
 #elif defined(_XBOX360)

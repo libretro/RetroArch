@@ -18,8 +18,8 @@
 
 #include "gl_common.h"
 
-void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size);
-void gl_deinit_font(gl_t *gl);
+void gl_init_font(void *data, const char *font_path, unsigned font_size);
+void gl_deinit_font(void *data);
 void gl_render_msg(void *data, const char *msg);
 
 #ifdef RARCH_CONSOLE

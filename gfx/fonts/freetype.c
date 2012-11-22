@@ -16,11 +16,13 @@
 
 #include "../gl_common.h"
 
-void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size)
+void gl_init_font(void *data, const char *font_path, unsigned font_size)
 {
 #ifdef HAVE_FREETYPE
    if (!g_settings.video.font_enable)
       return;
+
+   gl_t *gl = (gl_t*)data;
 
    const char *path = font_path;
    if (!*path)
@@ -60,15 +62,17 @@ void gl_init_font(gl_t *gl, const char *font_path, unsigned font_size)
       gl->font_color_dark[4 * i + 3] = 1.0;
    }
 #else
-   (void)gl;
+   (void)data;
    (void)font_path;
    (void)font_size;
 #endif
 }
 
-void gl_deinit_font(gl_t *gl)
+void gl_deinit_font(void *data)
 {
 #ifdef HAVE_FREETYPE
+   gl_t *gl = (gl_t*)data;
+
    if (gl->font)
    {
       font_renderer_free(gl->font);
@@ -78,7 +82,7 @@ void gl_deinit_font(gl_t *gl)
          free(gl->font_tex_buf);
    }
 #else
-   (void)gl;
+   (void)data;
 #endif
 }
 
