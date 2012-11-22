@@ -23,7 +23,7 @@
 #define DbgFontInit sceDbgFontInit
 #define DbgFontExit sceDbgFontExit
 #define DbgFontDraw sceDbgFontFlush
-#else
+#elif defined(__CELLOS_LV2__)
 #include <cell/dbgfont.h>
 #define SCE_DBGFONT_BUFSIZE_LARGE 512
 #define DbgFontPrint(x, y, scale, color, msg) cellDbgFontPrintf(x, y, scale, color, msg)
@@ -41,7 +41,7 @@ void gl_init_font(void *data, const char *font_path, unsigned font_size)
    DbgFontConfig cfg;
 #if defined(SN_TARGET_PSP2)
    cfg.fontSize     = SCE_DBGFONT_FONTSIZE_LARGE;
-#else
+#elif defined(__CELLOS_LV2__)
    gl_t *gl = (gl_t*)data;
 
    cfg.bufSize      = SCE_DBGFONT_BUFSIZE_LARGE;
