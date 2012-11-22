@@ -40,8 +40,6 @@ typedef struct
    unsigned int m_cScreenHeight;        // height in lines of screen area
    unsigned int m_cScreenHeightVirtual; // height in lines of text storage buffer
    unsigned int m_cScreenWidth;         // width in characters
-   wchar_t * m_Buffer;			// buffer big enough to hold a full screen
-   wchar_t ** m_Lines;			// pointers to individual lines
 } video_console_t;
 
 typedef struct GLYPH_ATTR
@@ -337,8 +335,6 @@ HRESULT d3d9_init_font(const char *font_path)
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    D3DDevice *m_pd3dDevice = d3d->d3d_render_device;
 
-   video_console.m_Buffer = NULL;
-   video_console.m_Lines = NULL;
    video_console.m_nScrollOffset = 0;
 
    // Calculate the safe area
@@ -369,35 +365,12 @@ HRESULT d3d9_init_font(const char *font_path)
 
    video_console.m_fLineHeight = fCharHeight;
 
-   // Allocate memory to hold the lines
-   video_console.m_Buffer = (wchar_t*)malloc(sizeof(wchar_t*) * video_console.m_cScreenHeightVirtual * ( video_console.m_cScreenWidth + 1 ));
-   video_console.m_Lines = (wchar_t**)malloc( video_console.m_cScreenHeightVirtual * sizeof(wchar_t*));
-
-   // Set the line pointers as indexes into the buffer
-   for( unsigned int i = 0; i < video_console.m_cScreenHeightVirtual; i++ )
-      video_console.m_Lines[ i ] = video_console.m_Buffer + ( video_console.m_cScreenWidth + 1 ) * i;
-
-   memset( video_console.m_Buffer, 0, video_console.m_cScreenHeightVirtual * ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-
    return hr;
 }
 
 void d3d9_deinit_font(void)
 {
    xdk360_video_font_t *font = &m_Font;
-
-   // Delete the memory we've allocated
-   if(video_console.m_Lines)
-   {
-      free(video_console.m_Lines);
-      video_console.m_Lines = NULL;
-   }
-
-   if(video_console.m_Buffer)
-   {
-      free(video_console.m_Buffer);
-      video_console.m_Buffer = NULL;
-   }
 
    // Destroy the font
    font->m_pFontTexture = NULL;
@@ -614,22 +587,9 @@ void xdk_render_msg(void *driver, const char * strFormat)
 {
    xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver;
 
-   memset( video_console.m_Buffer, 0, 
-         video_console.m_cScreenHeightVirtual * 
-         ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
+   wchar_t msg[PATH_MAX];
+   convert_char_to_wchar(msg, strFormat, sizeof(msg));
 
-   // Output the string to the console
-   unsigned msg_len = strlen(strFormat);
-
-   for(unsigned i = 0; i < msg_len; i++)
-   {
-      wchar_t wch;
-      convert_char_to_wchar(&wch, &strFormat[i], sizeof(wch));
-
-      video_console.m_Lines[0][i] = wch;
-   }
-
-	const wchar_t *msg = video_console.m_Lines[0];
 	if (msg != NULL || msg[0] != L'\0')
 	{
 		xdk_render_msg_pre(&m_Font);
