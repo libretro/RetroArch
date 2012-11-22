@@ -49,7 +49,6 @@ typedef struct GLYPH_ATTR
 enum SavedStates
 {
    SAVEDSTATE_D3DRS_VIEWPORTENABLE,
-
    SAVEDSTATE_COUNT
 };
 
@@ -64,7 +63,6 @@ typedef struct
    float m_fFontYAdvance;               // Number of pixels to move the cursor for a line feed
    float m_fCursorX;                    // Current text cursor
    float m_fCursorY;
-   D3DRECT m_rcWindow;                  // Bounds rect of the text window, modify via accessors only!
    wchar_t * m_TranslatorTable;         // ASCII to glyph lookup table
    D3DTexture* m_pFontTexture;
    const GLYPH_ATTR* m_Glyphs;          // Array of glyphs
@@ -259,17 +257,6 @@ static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * s
       return E_FAIL;
    }
 
-   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
-   D3DDevice *pd3dDevice = vid->d3d_render_device;
-
-   // Initialize the window
-   D3DDISPLAYMODE DisplayMode;
-   pd3dDevice->GetDisplayMode( 0, &DisplayMode );
-   font->m_rcWindow.x1 = 0;
-   font->m_rcWindow.y1 = 0;
-   font->m_rcWindow.x2 = DisplayMode.Width;
-   font->m_rcWindow.y2 = DisplayMode.Height;
-
    return 0;
 }
 
@@ -388,25 +375,11 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    // the vColor array.
    pd3dDevice->SetVertexShaderConstantF( 1, vColor, 1 );
 
-   // Set the starting screen position
-   if((fOriginX < 0.0f))
-      fOriginX += font->m_rcWindow.x2;
-   if( fOriginY < 0.0f )
-      fOriginY += font->m_rcWindow.y2;
-
    font->m_fCursorX = floorf( fOriginX );
    font->m_fCursorY = floorf( fOriginY );
 
    // Adjust for padding
    fOriginY -= font->m_fFontTopPadding;
-
-   // Add window offsets
-   float Winx = 0.0f;
-   float Winy = 0.0f;
-   fOriginX += Winx;
-   fOriginY += Winy;
-   font->m_fCursorX += Winx;
-   font->m_fCursorY += Winy;
 
    // Begin drawing the vertices
 
@@ -507,10 +480,6 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    }
 
    pd3dDevice->EndVertices();
-
-   // Undo window offsets
-   font->m_fCursorX -= Winx;
-   font->m_fCursorY -= Winy;
 }
 
 void xdk_render_msg(void *driver, const char * strFormat)
