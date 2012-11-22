@@ -798,8 +798,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
 #if defined(_XBOX1)
 #define fonts_render_msg_place_func(device, x, y, scale, msg) xfonts_render_msg_place(device, x, y, scale, msg)
-	  float width      = font_x + 30;
-	  float height     = font_y + 50;
+	  float mem_width  = font_x + 30;
+	  float mem_height = font_y + 50;
 	  float msg_width  = 60;
 	  float msg_height = 365;
 #elif defined(_XBOX360)
