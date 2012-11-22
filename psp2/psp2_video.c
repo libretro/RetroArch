@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2012 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -81,7 +82,7 @@ static void *malloc_gpu(SceKernelMemBlockType type, uint32_t size,
       size = GXM_ALIGN(size, 4096);
 
    if(((params & MALLOC_PARAMS_FRAGMENT_FLAG) == MALLOC_PARAMS_FRAGMENT_FLAG) ||
-     ((params & MALLOC_PARAMS_VERTEX_FLAG) == MALLOC_PARAMS_VERTEX_FLAG))
+         ((params & MALLOC_PARAMS_VERTEX_FLAG) == MALLOC_PARAMS_VERTEX_FLAG))
       type = SCE_KERNEL_MEMBLOCK_TYPE_USER_RWDATA_UNCACHE;
 
    *uid = sceKernelAllocMemBlock("basic", type, size, NULL);
@@ -165,9 +166,9 @@ static void psp2_gfx_init_fbo(void *data, const video_info_t *video)
    rtparams.hostMem        = malloc(host_mem_size);
    rtparams.hostMemSize    = host_mem_size;
    rtparams.driverMemBlock = sceKernelAllocMemBlock(
-                             "SampleRT",
-                             SCE_KERNEL_MEMBLOCK_TYPE_USER_RWDATA_UNCACHE,
-                             driver_mem_sie, NULL);
+         "SampleRT",
+         SCE_KERNEL_MEMBLOCK_TYPE_USER_RWDATA_UNCACHE,
+         driver_mem_sie, NULL);
 
    int ret = sceGxmCreateRenderTarget(&rtparams, &vid->rt);
 
@@ -183,7 +184,7 @@ static void disp_callback(const void *callback_data)
    const DisplayData *display_data = (const DisplayData*)callback_data;
 
    memset(&framebuf, 0, sizeof(SceDisplayFrameBuf));
-   
+
    framebuf.size        = sizeof(SceDisplayFrameBuf);
    framebuf.base        = display_data->address;
    framebuf.pitch       = PSP2_PITCH_PIXELS;
@@ -225,31 +226,31 @@ static int psp2_gfx_init_shader_patcher(const video_info_t *video)
    patcher_params.bufferAllocCallback     = NULL;
    patcher_params.bufferreeCallback       = NULL;
    patcher_params.bufferMem               = malloc_gpu(
-                                            SCE_KERNEL_MEMBLOCK_TYPE_USER_RWDATA_UNCACHE,
-                                            64 * 1024,
-                                            SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-                                            &vid->patcher_buf_uid, 0, NULL);
+         SCE_KERNEL_MEMBLOCK_TYPE_USER_RWDATA_UNCACHE,
+         64 * 1024,
+         SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
+         &vid->patcher_buf_uid, 0, NULL);
    patcher_params.bufferMemSize           = 64 * 1024;
    patcher_params.vertexUsseAllocCallback = NULL;
    patcher_params.vertexUsseFreeCallback  = NULL;
    patcher_params.vertexUsseMem           = malloc_gpu(
-                                            0,
-                                            64 * 1024,
-                                            0,
-                                            &vid->patcher_vertex_usse_uid,
-                                            MALLOC_PARAMS_VERTEX_FLAG,
-                                            &patcherVertexUsseOffset);
+         0,
+         64 * 1024,
+         0,
+         &vid->patcher_vertex_usse_uid,
+         MALLOC_PARAMS_VERTEX_FLAG,
+         &patcherVertexUsseOffset);
    patcher_params.vertexUsseMemSize       = 64 * 1024;
    patcher_params.vertexUsseOffset        = patcherVertexUsseOffset;
    patcher_params.fragmentUsseAllocCallback = NULL;
    patcher_params.fragmentUsseFreeCallback  = NULL;
    patcher_params.fragmentUsseMem         = malloc_gpu(
-                                            0,
-                                            64 * 1024,
-                                            0,
-                                            &vid->patcher_fragment_usse_uid,
-                                            MALLOC_PARAMS_FRAGMENT_FLAG,
-                                            &patcherFragmentUsseOffset);
+         0,
+         64 * 1024,
+         0,
+         &vid->patcher_fragment_usse_uid,
+         MALLOC_PARAMS_FRAGMENT_FLAG,
+         &patcherFragmentUsseOffset);
    patcher_params.fragmentUsseMemSize     = 64 * 1024;
    patcher_params.fragmentUsseOffset      = patcherFragmentUsseOffset;
 
@@ -343,30 +344,30 @@ static void *psp2_gfx_init(const video_info_t *video,
    ctx_params.hostMem                       = vid->context_host_mem;
    ctx_params.hostMemSize                   = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
    ctx_params.vdmRingBufferMem              = malloc_gpu(
-                                              SCE_KERNEL_MEMBLOCK_TYPE_USER_RWDATA_UNCACHE,
-                                              SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE,
-                                              SCE_GXM_MEMORY_ATTRIB_READ,
-                                              &vid->rb_uid, 0, NULL);
+         SCE_KERNEL_MEMBLOCK_TYPE_USER_RWDATA_UNCACHE,
+         SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE,
+         SCE_GXM_MEMORY_ATTRIB_READ,
+         &vid->rb_uid, 0, NULL);
    ctx_params.vdmRingBufferMemSize          = SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE;
    ctx_params.vertexRingBufferMem           = malloc_gpu(
-                                              SCE_KERNEL_MEMBLOCK_TYPE_USER_RWDATA_UNCACHE,
-                                              SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE,
-                                              SCE_GXM_MEMORY_ATTRIB_READ,
-                                              &vid->vtx_rb_uid, 0, NULL);
+         SCE_KERNEL_MEMBLOCK_TYPE_USER_RWDATA_UNCACHE,
+         SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE,
+         SCE_GXM_MEMORY_ATTRIB_READ,
+         &vid->vtx_rb_uid, 0, NULL);
    ctx_params.vertexRingBufferMemSize       = SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE;
    ctx_params.fragmentRingBufferMem         = malloc_gpu(
-                                              SCE_KERNEL_MEMBLOCK_TYPE_USER_RWDATA_UNCACHE,
-                                              SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE,
-                                              SCE_GXM_MEMORY_ATTRIB_READ,
-                                              &vid->fp_rb_uid, 0, NULL);
+         SCE_KERNEL_MEMBLOCK_TYPE_USER_RWDATA_UNCACHE,
+         SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE,
+         SCE_GXM_MEMORY_ATTRIB_READ,
+         &vid->fp_rb_uid, 0, NULL);
    ctx_params.fragmentRingBufferMemSize     = SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE;
    ctx_params.fragmentUsseRingBufferMem     = malloc_gpu(
-                                              0,
-                                              SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE,
-                                              0,
-                                              &vid->fp_usse_rb_uid,
-                                              MALLOC_PARAMS_FRAGMENT_FLAG,
-                                              &fp_usse_ring_buffer_offset);
+         0,
+         SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE,
+         0,
+         &vid->fp_usse_rb_uid,
+         MALLOC_PARAMS_FRAGMENT_FLAG,
+         &fp_usse_ring_buffer_offset);
    ctx_params.fragmentUsseRingBufferMemSize = SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE;
    ctx_params.fragmentUsseRingBufferOffset  = vid->fp_rb_uid;
 
