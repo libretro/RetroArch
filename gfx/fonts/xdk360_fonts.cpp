@@ -18,12 +18,6 @@
 #include "../../general.h"
 #include "../../xdk/xdk_resources.h"
 
-#define PAGE_UP               (255)
-#define PAGE_DOWN             (-255)
-
-#define SCREEN_SIZE_X_DEFAULT 640
-#define SCREEN_SIZE_Y_DEFAULT 480
-
 #define SAFE_AREA_PCT_4x3     85
 #define SAFE_AREA_PCT_HDTV    70
 
@@ -162,7 +156,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
 
                   if (hr >= 0)
                   {
-                     hr = pd3dDevice->CreatePixelShader( ( DWORD* )pShaderCode->GetBufferPointer(),
+                     hr = pd3dDevice->CreatePixelShader((DWORD*)pShaderCode->GetBufferPointer(),
                            &s_FontLocals.m_pFontPixelShader );
                      pShaderCode->Release();
 
@@ -172,29 +166,28 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
                         break;
                      }
                   }
-                  D3DResource_Release((D3DResource *)s_FontLocals.m_pFontVertexShader);
+				  s_FontLocals.m_pFontVertexShader->Release();
                }
 
                s_FontLocals.m_pFontVertexShader = NULL;
             }
 
-            D3DResource_Release((D3DResource *)s_FontLocals.m_pFontVertexDecl);
+			s_FontLocals.m_pFontVertexDecl->Release();
          }  
          s_FontLocals.m_pFontVertexDecl = NULL;
       }while(0);
-      return hr;
    }
    else
    {
-      D3DResource_AddRef((D3DResource *)s_FontLocals.m_pFontVertexDecl);
-      D3DResource_AddRef((D3DResource *)s_FontLocals.m_pFontVertexShader);
-      D3DResource_AddRef((D3DResource *)s_FontLocals.m_pFontPixelShader);
-      hr = 0;
+	   s_FontLocals.m_pFontVertexDecl->AddRef();
+	   s_FontLocals.m_pFontVertexShader->AddRef();
+	   s_FontLocals.m_pFontPixelShader->AddRef();
+	   hr = 0;
    }
    return hr;
 }
 
-static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * strFontFileName)
+static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char *path)
 {
    font->m_pFontTexture = NULL;
    font->m_dwNumGlyphs = 0L;
@@ -203,11 +196,11 @@ static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * s
    font->m_TranslatorTable = NULL;
 
    // Create the font
-   if( FAILED( m_xprResource.Create( strFontFileName ) ) )
+   if(FAILED( m_xprResource.Create(path)))
       return E_FAIL;
 
-   D3DTexture * pFontTexture = m_xprResource.GetTexture( "FontTexture" );
-   const void * pFontData = m_xprResource.GetData( "FontData"); 
+   D3DTexture *pFontTexture = m_xprResource.GetTexture( "FontTexture" );
+   const void *pFontData    = m_xprResource.GetData( "FontData"); 
 
    // Save a copy of the texture
    font->m_pFontTexture = pFontTexture;
