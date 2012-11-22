@@ -798,16 +798,16 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
 #if defined(_XBOX1)
 #define fonts_render_msg_place_func(device, x, y, scale, msg) xfonts_render_msg_place(device, x, y, scale, msg)
-	  float mem_width  = font_x + 30;
-	  float mem_height = font_y + 50;
-	  float msg_width  = 60;
-	  float msg_height = 365;
+   float mem_width  = font_x + 30;
+   float mem_height = font_y + 50;
+   float msg_width  = 60;
+   float msg_height = 365;
 #elif defined(_XBOX360)
 #define fonts_render_msg_place_func(device, x, y, scale, msg) xdk_render_msg_place(device, x, y, msg)
-	  float mem_width  = g_extern.console.rmenu.state.rmenu_hd.enable ? 160 : 100;
-	  float mem_height = 70;
-	  float msg_width  = mem_width;
-	  float msg_height = mem_height + 50;
+   float mem_width  = g_extern.console.rmenu.state.rmenu_hd.enable ? 160 : 100;
+   float mem_height = 70;
+   float msg_width  = mem_width;
+   float msg_height = mem_height + 50;
 #endif
 
    if(fps_enable)
@@ -827,9 +827,9 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
    if (msg
 #ifdef _XBOX360
-	   && !menu_enabled
+         && !menu_enabled
 #endif
-	   )
+      )
       fonts_render_msg_place_func(d3d, msg_width, msg_height, 0, msg); //TODO: dehardcode x/y here for HD (720p) mode
 
    if(!d3d->block_swap)
