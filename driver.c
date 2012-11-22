@@ -98,6 +98,9 @@ static const video_driver_t *video_drivers[] = {
 #if defined(HAVE_WIN32_D3D9)
    &video_d3d9,
 #endif
+#ifdef SN_TARGET_PSP2
+   &video_psp2_gxm,
+#endif
 #ifdef HAVE_SDL
    &video_sdl,
 #endif

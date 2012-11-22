@@ -162,6 +162,8 @@ VIDEO DRIVER
 #include "../../wii/mem2_manager.c"
 #endif
 #include "../../gx/gx_video.c"
+#elif defined(SN_TARGET_PSP2)
+#include "../../psp2/psp2_video.c"
 #endif
 
 #ifdef HAVE_DYLIB
