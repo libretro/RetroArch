@@ -223,7 +223,7 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
    switch(setting)
    {
       case S_MSG_CACHE_PARTITION:
-         snprintf(str, sizeof(str), "INFO - All the contents of the ZIP files you have selected in the filebrowser\nare extracted to this partition.");
+         snprintf(str, sizeof(str), "INFO - All the contents of the ZIP files you have selected\nare extracted to this partition.");
          break;
       case S_MSG_CHANGE_CONTROLS:
          snprintf(str, sizeof(str), "INFO - Press LEFT/RIGHT to change the controls, and press\n[RetroPad Start] to reset a button to default values.");

@@ -37,8 +37,6 @@ typedef struct
    unsigned int m_cySafeArea;
    unsigned int m_cxSafeAreaOffset;
    unsigned int m_cySafeAreaOffset;
-   unsigned int m_nCurLine;             // index of current line being written to
-   unsigned int m_cCurLineLength;       // length of the current line
    unsigned int m_cScreenHeight;        // height in lines of screen area
    unsigned int m_cScreenHeightVirtual; // height in lines of text storage buffer
    unsigned int m_cScreenWidth;         // width in characters
@@ -379,8 +377,6 @@ HRESULT d3d9_init_font(const char *font_path)
    for( unsigned int i = 0; i < video_console.m_cScreenHeightVirtual; i++ )
       video_console.m_Lines[ i ] = video_console.m_Buffer + ( video_console.m_cScreenWidth + 1 ) * i;
 
-   video_console.m_nCurLine = 0;
-   video_console.m_cCurLineLength = 0;
    memset( video_console.m_Buffer, 0, video_console.m_cScreenHeightVirtual * ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
 
    return hr;
@@ -618,86 +614,30 @@ void xdk_render_msg(void *driver, const char * strFormat)
 {
    xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver;
 
-   video_console.m_nCurLine = 0;
-   video_console.m_cCurLineLength = 0;
-
    memset( video_console.m_Buffer, 0, 
          video_console.m_cScreenHeightVirtual * 
          ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
 
    // Output the string to the console
-   unsigned long uStringLength = strlen(strFormat);
+   unsigned msg_len = strlen(strFormat);
 
-   for( unsigned long i = 0; i < uStringLength; i++ )
+   for(unsigned i = 0; i < msg_len; i++)
    {
       wchar_t wch;
       convert_char_to_wchar(&wch, &strFormat[i], sizeof(wch));
 
-      // If this is a newline, just increment lines and move on
-      if( wch == L'\n' )
-      {
-         video_console.m_nCurLine = ( video_console.m_nCurLine + 1 ) 
-            % video_console.m_cScreenHeightVirtual;
-         video_console.m_cCurLineLength = 0;
-         memset(video_console.m_Lines[video_console.m_nCurLine], 0, 
-               ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-         continue;
-      }
-
-      int bIncrementLine = FALSE;  // Whether to wrap to the next line
-
-      if( video_console.m_cCurLineLength == video_console.m_cScreenWidth )
-         bIncrementLine = TRUE;
-      else
-      {
-         float fTextWidth, fTextHeight;
-         // Try to append the character to the line
-         video_console.m_Lines[ video_console.m_nCurLine ][ video_console.m_cCurLineLength ] = wch;
-         xdk360_video_font_get_text_width(&m_Font, video_console.m_Lines[ video_console.m_nCurLine ], &fTextWidth,
-               &fTextHeight);
-
-         if( fTextHeight > video_console.m_cxSafeArea )
-         {
-            // The line is too long, we need to wrap the character to the next line
-            video_console.m_Lines[video_console.m_nCurLine][ video_console.m_cCurLineLength ] = L'\0';
-            bIncrementLine = TRUE;
-         }
-      }
-
-      // If we need to skip to the next line, do so
-      if( bIncrementLine )
-      {
-         video_console.m_nCurLine = ( video_console.m_nCurLine + 1 ) 
-            % video_console.m_cScreenHeightVirtual;
-         video_console.m_cCurLineLength = 0;
-         memset( video_console.m_Lines[video_console.m_nCurLine], 0,
-               ( video_console.m_cScreenWidth + 1 ) * sizeof( wchar_t ) );
-         video_console.m_Lines[video_console.m_nCurLine ][0] = wch;
-      }
-
-      video_console.m_cCurLineLength++;
+      video_console.m_Lines[0][i] = wch;
    }
 
-   // The top line
-   unsigned int nTextLine = ( video_console.m_nCurLine - 
-         video_console.m_cScreenHeight + video_console.m_cScreenHeightVirtual - 
-         video_console.m_nScrollOffset + 1 )
-      % video_console.m_cScreenHeightVirtual;
-
-   for( unsigned int nScreenLine = 0; nScreenLine < video_console.m_cScreenHeight; nScreenLine++ )
-   {
-	   const wchar_t *msg = video_console.m_Lines[nTextLine];
-	   if (msg != NULL || msg[0] != L'\0')
-	   {
-		   xdk_render_msg_pre(&m_Font);
-		   xdk_video_font_draw_text(&m_Font, (float)( video_console.m_cxSafeAreaOffset ),
-            (float)( video_console.m_cySafeAreaOffset + video_console.m_fLineHeight * nScreenLine ), 
-            msg);
-		   xdk_render_msg_post(&m_Font);
-	   }
-
-      nTextLine = ( nTextLine + 1 ) % video_console.m_cScreenHeightVirtual;
-   }
+	const wchar_t *msg = video_console.m_Lines[0];
+	if (msg != NULL || msg[0] != L'\0')
+	{
+		xdk_render_msg_pre(&m_Font);
+		xdk_video_font_draw_text(&m_Font, (float)( video_console.m_cxSafeAreaOffset ),
+        (float)( video_console.m_cySafeAreaOffset + video_console.m_fLineHeight ), 
+        msg);
+		xdk_render_msg_post(&m_Font);
+	}
 }
 
 
