@@ -18,18 +18,7 @@
 #include "../../general.h"
 #include "../../xdk/xdk_resources.h"
 
-#define SAFE_AREA_PCT_4x3     85
-#define SAFE_AREA_PCT_HDTV    70
-
 #define FONT_SCALE (g_extern.console.rmenu.state.rmenu_hd.enable ? 2 : 1)
-
-typedef struct
-{
-   unsigned int m_cxSafeArea;
-   unsigned int m_cySafeArea;
-   unsigned int m_cxSafeAreaOffset;
-   unsigned int m_cySafeAreaOffset;
-} video_console_t;
 
 typedef struct GLYPH_ATTR
 {
@@ -54,7 +43,6 @@ typedef struct
    const GLYPH_ATTR* m_Glyphs;          // Array of glyphs
 } xdk360_video_font_t;
 
-static video_console_t video_console;
 static xdk360_video_font_t m_Font;
 static PackedResource m_xprResource;
 
@@ -187,8 +175,11 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
    return hr;
 }
 
-static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char *path)
+HRESULT d3d9_init_font(const char *path)
 {
+   // Create the font
+	xdk360_video_font_t *font = &m_Font;
+
    font->m_pFontTexture = NULL;
    font->m_dwNumGlyphs = 0L;
    font->m_Glyphs = NULL;
@@ -197,7 +188,7 @@ static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char *pa
 
    // Create the font
    if(FAILED( m_xprResource.Create(path)))
-      return E_FAIL;
+      goto error;
 
    D3DTexture *pFontTexture = m_xprResource.GetTexture( "FontTexture" );
    const void *pFontData    = m_xprResource.GetData( "FontData"); 
@@ -230,42 +221,21 @@ static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char *pa
    else
    {
       RARCH_ERR( "Incorrect version number on font file.\n" );
-      return E_FAIL;
+      goto error;
    }
 
    // Create the vertex and pixel shaders for rendering the font
    if( FAILED( xdk360_video_font_create_shaders(font) ) )
    {
       RARCH_ERR( "Could not create font shaders.\n" );
-      return E_FAIL;
+      goto error;
    }
 
+   RARCH_LOG("Successfully initialized D3D9 HLSL fonts.\n");
    return 0;
-}
-
-HRESULT d3d9_init_font(const char *font_path)
-{
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   D3DDevice *m_pd3dDevice = d3d->d3d_render_device;
-
-   // Calculate the safe area
-   unsigned int uiSafeAreaPct = g_extern.console.rmenu.state.rmenu_hd.enable 
-	   ? SAFE_AREA_PCT_HDTV : SAFE_AREA_PCT_4x3;
-
-   video_console.m_cxSafeArea       = ( d3d->win_width * uiSafeAreaPct ) / 100;
-   video_console.m_cySafeArea       = ( d3d->win_height * uiSafeAreaPct ) / 100;
-   video_console.m_cxSafeAreaOffset = ( d3d->win_width - video_console.m_cxSafeArea ) / 2;
-   video_console.m_cySafeAreaOffset = ( d3d->win_height - video_console.m_cySafeArea ) / 2;
-
-   // Create the font
-   HRESULT hr = xdk360_video_font_init(&m_Font, font_path);
-   if (hr < 0)
-   {
-      RARCH_ERR( "Could not create font.\n" );
-      return -1;
-   }
-
-   return hr;
+error:
+   RARCH_ERR("Could not initialize D3D9 HLSL fonts.\n");
+   return E_FAIL;
 }
 
 void d3d9_deinit_font(void)
