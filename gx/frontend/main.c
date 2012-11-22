@@ -409,8 +409,6 @@ static void menu_free(void)
    rgui_free(rgui);
 }
 
-int rarch_main(int argc, char **argv);
-
 static void get_environment_settings(void)
 {
 #ifdef HW_DOL
@@ -471,12 +469,18 @@ static void make_directories(void)
    MAKE_FILE(default_paths.config_file);
 }
 
+extern void __exception_setreload(int t);
+
 int main(int argc, char *argv[])
 {
 #ifdef HW_RVL
    IOS_ReloadIOS(IOS_GetVersion());
    L2Enhance();
    gx_init_mem2();
+#endif
+
+#ifndef DEBUG
+   __exception_setreload(8);
 #endif
 
    fatInitDefault();
