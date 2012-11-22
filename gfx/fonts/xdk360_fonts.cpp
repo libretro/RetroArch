@@ -55,8 +55,6 @@ typedef struct
    float m_fFontTopPadding;             // Padding above the strike zone
    float m_fFontBottomPadding;          // Padding below the strike zone
    float m_fFontYAdvance;               // Number of pixels to move the cursor for a line feed
-   float m_fCursorX;                    // Current text cursor
-   float m_fCursorY;
    wchar_t * m_TranslatorTable;         // ASCII to glyph lookup table
    D3DTexture* m_pFontTexture;
    const GLYPH_ATTR* m_Glyphs;          // Array of glyphs
@@ -201,8 +199,6 @@ static HRESULT xdk360_video_font_init(xdk360_video_font_t * font, const char * s
    font->m_pFontTexture = NULL;
    font->m_dwNumGlyphs = 0L;
    font->m_Glyphs = NULL;
-   font->m_fCursorX = 0.0f;
-   font->m_fCursorY = 0.0f;
    font->m_cMaxGlyph = 0;
    font->m_TranslatorTable = NULL;
 
@@ -350,7 +346,7 @@ static void xdk_render_msg_pre(xdk360_video_font_t * font)
 }
 
 static void xdk_video_font_draw_text(xdk360_video_font_t *font, 
-      float fOriginX, float fOriginY, const wchar_t * strText)
+      float x, float y, const wchar_t * strText)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    D3DDevice *pd3dDevice = d3d->d3d_render_device;
@@ -367,11 +363,11 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    // the vColor array.
    pd3dDevice->SetVertexShaderConstantF( 1, vColor, 1 );
 
-   font->m_fCursorX = floorf(fOriginX);
-   font->m_fCursorY = floorf(fOriginY);
+   float m_fCursorX = floorf(x);
+   float m_fCursorY = floorf(y);
 
    // Adjust for padding
-   fOriginY -= font->m_fFontTopPadding;
+   y -= font->m_fFontTopPadding;
 
    // Begin drawing the vertices
 
@@ -394,8 +390,8 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
       if( letter == L'\n' )
       {
 		  // Handle the newline character
-         font->m_fCursorX = fOriginX;
-         font->m_fCursorY += font->m_fFontYAdvance * FONT_SCALE;
+         m_fCursorX = x;
+         m_fCursorY += font->m_fFontYAdvance * FONT_SCALE;
          continue;
       }
 
@@ -412,7 +408,7 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
       float fWidth   = FONT_SCALE * (float)pGlyph->wWidth;
       float fHeight  = FONT_SCALE * font->m_fFontHeight;
 
-      font->m_fCursorX += fOffset;
+      m_fCursorX += fOffset;
 
       // Add the vertices to draw this glyph
 
@@ -432,17 +428,17 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
 
 	  // Setup the vertex/screen coordinates
 
-      pVertex[0]  = font->m_fCursorX;
-      pVertex[1]  = font->m_fCursorY;
+      pVertex[0]  = m_fCursorX;
+      pVertex[1]  = m_fCursorY;
       pVertex[3]  = 0;
-      pVertex[4]  = font->m_fCursorX + fWidth;
-      pVertex[5]  = font->m_fCursorY;
+      pVertex[4]  = m_fCursorX + fWidth;
+      pVertex[5]  = m_fCursorY;
       pVertex[7]  = 0;
-      pVertex[8]  = font->m_fCursorX + fWidth;
-      pVertex[9]  = font->m_fCursorY + fHeight;
+      pVertex[8]  = m_fCursorX + fWidth;
+      pVertex[9]  = m_fCursorY + fHeight;
       pVertex[11] = 0;
-      pVertex[12] = font->m_fCursorX;
-      pVertex[13] = font->m_fCursorY + fHeight;
+      pVertex[12] = m_fCursorX;
+      pVertex[13] = m_fCursorY + fHeight;
 #ifndef LSB_FIRST
       ((volatile unsigned long *)pVertex)[2]  = (tu1 << 16) | tv1;         // Merged using big endian rules
       ((volatile unsigned long *)pVertex)[6]  = (tu2 << 16) | tv1;         // Merged using big endian rules
@@ -452,7 +448,7 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
       pVertex[15] = 0;
       pVertex += 16;
 
-      font->m_fCursorX += fAdvance;
+      m_fCursorX += fAdvance;
 
       dwNumChars--;
    }
