@@ -305,7 +305,7 @@ extern const input_driver_t input_sdl;
 extern const input_driver_t input_dinput;
 extern const input_driver_t input_x;
 extern const input_driver_t input_ps3;
-extern const input_driver_t input_psp2;
+extern const input_driver_t input_psp;
 extern const input_driver_t input_xenon360;
 extern const input_driver_t input_gx;
 extern const input_driver_t input_xinput;

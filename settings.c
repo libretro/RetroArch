@@ -115,8 +115,8 @@ const char *config_get_default_input(void)
          return "android_input";
       case INPUT_PS3:
          return "ps3";
-      case INPUT_PSP2:
-         return "psp2";
+      case INPUT_PSP:
+         return "psp";
       case INPUT_SDL:
          return "sdl";
       case INPUT_DINPUT:

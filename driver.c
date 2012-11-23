@@ -123,8 +123,8 @@ static const input_driver_t *input_drivers[] = {
 #ifdef __CELLOS_LV2__
    &input_ps3,
 #endif
-#ifdef SN_TARGET_PSP2
-   &input_psp2,
+#if defined(SN_TARGET_PSP2) || defined(PSP)
+   &input_psp,
 #endif
 #ifdef HAVE_SDL
    &input_sdl,

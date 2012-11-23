@@ -205,8 +205,8 @@ INPUT
 ============================================================ */
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/ps3_input.c"
-#elif defined(SN_TARGET_PSP2)
-#include "../../psp2/psp2_input.c"
+#elif defined(SN_TARGET_PSP2) || defined(PSP)
+#include "../../psp/psp_input.c"
 #elif defined(GEKKO)
 #include "../../gx/gx_input.c"
 #elif defined(_XBOX)
