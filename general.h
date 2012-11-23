@@ -690,14 +690,18 @@ static inline float db_to_gain(float db)
    return powf(10.0f, db / 20.0f);
 }
 
-#ifdef GEKKO
+#if defined(GEKKO)
 #include <unistd.h>
+#elif defined(PSP)
+#include <pspthreadman.h>
 #endif
 
 static inline void rarch_sleep(unsigned msec)
 {
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    sys_timer_usleep(1000 * msec);
+#elif defined(PSP)
+   sceKernelDelayThread(1000 * msec);
 #elif defined(_WIN32)
    Sleep(msec);
 #elif defined(XENON)
