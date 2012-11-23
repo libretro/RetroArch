@@ -764,6 +764,8 @@ static bool encode_audio(ffemu_t *handle, AVPacket *pkt, bool dry)
 
 #ifdef HAVE_FFMPEG_AVCODEC_ENCODE_AUDIO2
    AVFrame *frame = avcodec_alloc_frame();
+   if (!frame)
+      return false;
 
    frame->nb_samples = handle->audio.frames_in_buffer;
    frame->pts = handle->audio.frame_cnt;
