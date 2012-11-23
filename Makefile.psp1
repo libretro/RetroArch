@@ -13,7 +13,8 @@ CFLAGS += $(RARCH_DEFINES)
 
 LIBDIR =
 LDFLAGS =
-LIBS = -lpspaudiolib -lpspaudio
+#LIBS = -lpspaudiolib -lpspaudio
+LIBS = -lpspgu -lpspgum -lm
 
 #EXTRA_TARGETS = EBOOT.PBP
 #PSP_EBOOT_TITLE = RetroArch PSP1
