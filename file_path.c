@@ -268,6 +268,22 @@ error:
    return NULL;
 }
 #else
+static bool dirent_is_directory(const char *path, const struct dirent *entry)
+{
+#if defined(PSP)
+   return (entry->d_stat.st_attr & FIO_SO_IFDIR) == FIO_SO_IFDIR;
+#elif defined(DT_DIR)
+   if (entry->d_type == DT_DIR)
+      return true;
+   else if (entry->d_type == DT_UNKNOWN) // This can happen on certain file systems.
+      return path_is_directory(path);
+   else
+      return false;
+#else // dirent struct doesn't have d_type, do it the slow way ...
+   return path_is_directory(path);
+#endif
+}
+
 struct string_list *dir_list_new(const char *dir, const char *ext, bool include_dirs)
 {
    struct string_list *list = string_list_new();
@@ -289,12 +305,11 @@ struct string_list *dir_list_new(const char *dir, const char *ext, bool include_
    {
       const char *name     = entry->d_name;
       const char *file_ext = path_get_extension(name);
-#ifdef PSP
-      bool is_dir          = ((entry->d_stat.st_attr & FIO_SO_IFDIR) == FIO_SO_IFDIR);
-#else
-      bool is_dir          = entry->d_type == DT_DIR;
-#endif
 
+      char file_path[PATH_MAX];
+      snprintf(file_path, sizeof(file_path), "%s/%s", dir, name);
+
+      bool is_dir = dirent_is_directory(file_path, entry);
       if (!include_dirs && is_dir)
          continue;
 
@@ -303,9 +318,6 @@ struct string_list *dir_list_new(const char *dir, const char *ext, bool include_
 
       if (!is_dir && ext_list && !string_list_find_elem_prefix(ext_list, ".", file_ext))
          continue;
-
-      char file_path[PATH_MAX];
-      snprintf(file_path, sizeof(file_path), "%s/%s", dir, name);
 
       union string_list_elem_attr attr;
       attr.b = is_dir;
