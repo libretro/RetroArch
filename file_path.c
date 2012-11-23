@@ -289,7 +289,11 @@ struct string_list *dir_list_new(const char *dir, const char *ext, bool include_
    {
       const char *name     = entry->d_name;
       const char *file_ext = path_get_extension(name);
+#ifdef PSP
+      bool is_dir          = ((entry->d_stat.st_attr & FIO_SO_IFDIR) == FIO_SO_IFDIR);
+#else
       bool is_dir          = entry->d_type == DT_DIR;
+#endif
 
       if (!include_dirs && is_dir)
          continue;
