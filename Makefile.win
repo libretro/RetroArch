@@ -195,7 +195,7 @@ ifeq ($(HAVE_DINPUT), 1)
 endif
 
 ifeq ($(HAVE_FFMPEG), 1)
-   LIBS += -lavformat -lavcodec -lavutil -lws2_32 -lz
+   LIBS += -lavformat -lavcodec -lavutil -lswscale -lws2_32 -lz
    DEFINES += -DHAVE_FFMPEG -Iffmpeg
    DEFINES += -DHAVE_FFMPEG_ALLOC_CONTEXT3
    DEFINES += -DHAVE_FFMPEG_AVCODEC_OPEN2
