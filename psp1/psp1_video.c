@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2012 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -15,7 +16,8 @@
 
 #include <pspkernel.h>
 #include <pspdisplay.h>
-#include <pspgpu.h>
+#include <pspgu.h>
+#include <pspgum.h>
 
 #include "../psp/sdk_defines.h"
 #include "../general.h"
@@ -37,6 +39,8 @@ static unsigned int __attribute__((aligned(16))) list[262144];
 
 static void init_texture(void *data, const video_info_t *video)
 {
+   psp1_video_t *vid = (psp1_video_t*)data;
+
    sceGuInit();
    sceGuStart(GU_DIRECT, list);
 
@@ -51,7 +55,7 @@ static void init_texture(void *data, const video_info_t *video)
    sceGuScissor(0, 0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
    sceGuEnable(GU_SCISSOR_TEST);
    sceGuTexMode(vid->rgb32 ? GU_PSM_8888 : GU_PSM_5650, 0, 0, GU_FALSE);
-   sceGuTxFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
+   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
    sceGuTexFilter(GU_LINEAR, GU_LINEAR);
    sceGuEnable(GU_TEXTURE_2D);
 
@@ -130,7 +134,7 @@ static bool psp_gfx_frame(void *data, const void *frame,
    sceGuFinish(); 
 
    sceDisplayWaitVblankStart();
-   sceDisplaySetFrameBuf(frame, pitch, 
+   DisplaySetFrameBuf(frame, pitch, 
          vid->rgb32 ? PSP_DISPLAY_PIXEL_FORMAT_8888 : PSP_DISPLAY_PIXEL_FORMAT_565,
          PSP_DISPLAY_SETBUF_IMMEDIATE);
 

@@ -32,13 +32,15 @@
 #if defined(SN_TARGET_PSP2)
 #define PSP_DISPLAY_PIXEL_FORMAT_8888 (SCE_DISPLAY_PIXELFORMAT_A8B8G8R8)
 
-#define sceDisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, sync) sceDisplaySetFrameBuf(topaddr, sync)
+#define DisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, sync) sceDisplaySetFrameBuf(topaddr, sync)
 
 #define PSP_FB_WIDTH        960
 #define PSP_FB_HEIGHT       544
 #define PSP_PITCH_PIXELS 1024
 
 #elif defined(PSP)
+#define DisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, sync) sceDisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, sync)
+
 #define SCE_DISPLAY_UPDATETIMING_NEXTVSYNC 1
 
 #define PSP_FB_WIDTH        512
@@ -73,17 +75,22 @@
 #define PSP_CTRL_L SCE_CTRL_L
 #define PSP_CTRL_R SCE_CTRL_R
 
-#define sceCtrlReadBufferPositive(port, pad_data, bufs) sceCtrlReadBufferPositive(port, pad_data, bufs)
+#define CtrlReadBufferPositive(port, pad_data, bufs) sceCtrlReadBufferPositive(port, pad_data, bufs)
 
 #elif defined(PSP)
 
+#define PSP_CTRL_L PSP_CTRL_LTRIGGER
+#define PSP_CTRL_R PSP_CTRL_RTRIGGER
+
 #define STATE_BUTTON(state) ((state).Buttons)
 #define STATE_ANALOGLX(state) ((state).Lx)
-#define STATE_ANALOGLX(state) ((state).Ly)
+#define STATE_ANALOGLY(state) ((state).Ly)
 #define STATE_ANALOGRX(state) ((state).Rx)
 #define STATE_ANALOGRY(state) ((state).Ry)
 
 #define DEFAULT_SAMPLING_MODE (PSP_CTRL_MODE_ANALOG)
 
-#define sceCtrlReadBufferPositive(port, pad_data, bufs) sceCtrlReadBufferPositive(pad_data, bufs)
+#define CtrlReadBufferPositive(port, pad_data, bufs) sceCtrlReadBufferPositive(pad_data, bufs)
+#endif
+
 #endif

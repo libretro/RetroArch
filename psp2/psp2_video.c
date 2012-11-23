@@ -187,9 +187,9 @@ static void disp_callback(const void *callback_data)
    framebuf.width       = PSP_FB_WIDTH;
    framebuf.height      = PSP_FB_HEIGHT;
 
-   ret = sceDisplaySetFrameBuf(&framebuf, PSP_FB_WIDTH, PSP_DISPLAY_PIXELFORMAT_8888, SCE_DISPLAY_UPDATETIMING_NEXTVSYNC);
+   ret = DisplaySetFrameBuf(&framebuf, PSP_FB_WIDTH, PSP_DISPLAY_PIXELFORMAT_8888, SCE_DISPLAY_UPDATETIMING_NEXTVSYNC);
 #elif defined(PSP)
-   ret = sceDisplaySetFrameBuf(&display_data->address, PSP_FB_WIDTH, PSP_DISPLAY_PIXELFORMAT_8888, SCE_DISPLAY_UPDATETIMING_NEXTVSYNC);
+   ret = DisplaySetFrameBuf(&display_data->address, PSP_FB_WIDTH, PSP_DISPLAY_PIXELFORMAT_8888, SCE_DISPLAY_UPDATETIMING_NEXTVSYNC);
 #endif
 
    /* TODO - Don't bother with error checking for now in here */

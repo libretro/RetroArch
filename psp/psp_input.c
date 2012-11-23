@@ -35,6 +35,8 @@
 #define ANALOGSTICK_DEADZONE_LOW  (0x40)
 #define ANALOGSTICK_DEADZONE_HIGH (0xc0)
 
+#define MAX_PADS 1
+
 static uint64_t state;
 
 static void psp_input_poll(void *data)
@@ -42,7 +44,7 @@ static void psp_input_poll(void *data)
    (void)data;
 
    SceCtrlData state_tmp;
-   int ret = sceCtrlReadBufferPositive(0, &state_tmp, 1);
+   int ret = CtrlReadBufferPositive(0, &state_tmp, 1);
 
    if (ret == SCE_OK)
    {

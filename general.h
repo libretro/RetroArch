@@ -45,7 +45,10 @@
 #include "android/native/jni/android_general.h"
 #endif
 
-#if defined(XENON) || defined(__CELLOS_LV2__)
+/* FIXME - If PATH_MAX is not defined, can we instead define
+ * it here? Could get rid of this long if conditional here
+ * which is a maintenance hazard */
+#if defined(XENON) || defined(__CELLOS_LV2__) || defined(PSP)
 #undef PATH_MAX
 #define PATH_MAX 4096
 #endif
