@@ -4,8 +4,8 @@ TARGET = retroarch_psp
 OBJS = console/griffin/griffin.o
 
 INCDIR = 
-CFLAGS = -O2 -G0 -Wall -std=gnu99
-CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
+CFLAGS = -O2 -G0 -Wall -std=gnu99 -G 4
+CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti -G 4
 ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES = -DPSP -DHAVE_DEFAULT_RETROPAD_INPUT -DRARCH_CONSOLE -DHAVE_FILEBROWSER -DHAVE_RARCH_MAIN_WRAP -DHAVE_ZLIB -DWANT_RZLIB -DHAVE_CONFIGFILE=1 -DHAVE_GRIFFIN=1 -DPACKAGE_VERSION=\"$(RARCH_VERSION)\" -Dmain=rarch_main
