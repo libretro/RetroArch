@@ -572,8 +572,19 @@ static void init_shader_dir(void)
 }
 #endif
 
+static void deinit_pixel_converter(void)
+{
+   scaler_ctx_gen_reset(&driver.scaler);
+   memset(&driver.scaler, 0, sizeof(driver.scaler));
+   free(driver.scaler_out);
+   driver.scaler_out = NULL;
+}
+
 static bool init_video_pixel_converter(unsigned size)
 {
+   // This function can be called multiple times without deiniting first on consoles.
+   deinit_pixel_converter();
+
    if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
    {
       RARCH_WARN("0RGB1555 pixel format is deprecated, and will be slower. For 15/16-bit, RGB565 format is preferred.\n");
@@ -707,14 +718,6 @@ void init_video_input(void)
          rarch_fail(1, "init_video_input()");
       }
    }
-}
-
-static void deinit_pixel_converter(void)
-{
-   scaler_ctx_gen_reset(&driver.scaler);
-   memset(&driver.scaler, 0, sizeof(driver.scaler));
-   free(driver.scaler_out);
-   driver.scaler_out = NULL;
 }
 
 void uninit_video_input(void)
