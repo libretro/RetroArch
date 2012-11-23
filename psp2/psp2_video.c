@@ -518,7 +518,7 @@ static void psp2_gfx_restart(void) {}
 static void psp2_gfx_stop(void) {}
 #endif
 
-const video_driver_t video_psp2_gxm = {
+const video_driver_t video_psp2 = {
    psp2_gfx_init,
    psp2_gfx_frame,
    psp2_gfx_set_nonblock_state,
@@ -526,7 +526,7 @@ const video_driver_t video_psp2_gxm = {
    psp2_gfx_focus,
    NULL,
    psp2_gfx_free,
-   "psp2_gxm",
+   "psp2",
 
 #ifdef RARCH_CONSOLE
    psp2_gfx_start,

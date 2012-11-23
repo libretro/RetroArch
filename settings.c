@@ -90,8 +90,10 @@ const char *config_get_default_video(void)
          return "xdk_d3d";
       case VIDEO_D3D9:
          return "d3d9";
-      case VIDEO_PSP2_GXM:
-         return "psp2_gxm";
+      case VIDEO_PSP1:
+         return "psp1";
+      case VIDEO_PSP2:
+         return "psp2";
       case VIDEO_XVIDEO:
          return "xvideo";
       case VIDEO_SDL:
