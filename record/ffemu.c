@@ -780,7 +780,7 @@ static bool encode_audio(ffemu_t *handle, AVPacket *pkt, bool dry)
    if (avcodec_encode_audio2(handle->audio.codec,
             pkt, dry ? NULL : frame, &got_packet) < 0)
    {
-      av_freep(&frame);
+      avcodec_free_frame(&frame);
       return false;
    }
 
@@ -789,7 +789,7 @@ static bool encode_audio(ffemu_t *handle, AVPacket *pkt, bool dry)
       pkt->size = 0;
       pkt->pts = AV_NOPTS_VALUE;
       pkt->dts = AV_NOPTS_VALUE;
-      av_freep(&frame);
+      avcodec_free_frame(&frame);
       return true;
    }
 
@@ -807,7 +807,7 @@ static bool encode_audio(ffemu_t *handle, AVPacket *pkt, bool dry)
             handle->muxer.astream->time_base);
    }
 
-   av_freep(&frame);
+   avcodec_free_frame(&frame);
 
 #else
    if (dry)
