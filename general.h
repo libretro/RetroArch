@@ -32,36 +32,57 @@
 #include "audio/ext/rarch_dsp.h"
 #include "compat/strl.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+// Platform-specific headers
+// PS3
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <sys/timer.h>
 #include "ps3/ps3_input.h"
 #endif
 
+// libxenon
 #ifdef XENON
 #include <time/time.h>
 #endif
 
+// Android
 #ifdef ANDROID
 #include "android/native/jni/android_general.h"
 #endif
 
+// Windows
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#elif defined(_XBOX)
-#include <xtl.h>
-#endif
-
-#if defined(_WIN32)
 #include "msvc/msvc_compat.h"
 #endif
 
-#ifndef PATH_MAX
-#define PATH_MAX 4096
+// XBox
+#if defined(_XBOX)
+#include <xtl.h>
+#include "msvc/msvc_compat.h"
 #endif
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+// Wii
+#if defined(GEKKO)
+#include <unistd.h>
+#endif
+
+// PSP
+#if defined(PSP)
+#include <pspthreadman.h>
+#endif
+//////////////
+
+// Some platforms do not set this value.
+// Just assume a value. It's usually 4KiB.
+// Platforms with a known value (like Win32)
+// set this value explicitly in platform specific headers.
+#ifndef PATH_MAX
+#define PATH_MAX 4096
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -689,12 +710,6 @@ static inline float db_to_gain(float db)
 {
    return powf(10.0f, db / 20.0f);
 }
-
-#if defined(GEKKO)
-#include <unistd.h>
-#elif defined(PSP)
-#include <pspthreadman.h>
-#endif
 
 static inline void rarch_sleep(unsigned msec)
 {
