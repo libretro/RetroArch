@@ -485,6 +485,7 @@ static void deinit_thread_buf(ffemu_t *handle)
 ffemu_t *ffemu_new(const struct ffemu_params *params)
 {
    av_register_all();
+   avformat_network_init();
 
    ffemu_t *handle = (ffemu_t*)calloc(1, sizeof(*handle));
    if (!handle)
