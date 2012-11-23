@@ -1070,7 +1070,7 @@ static inline void gl_set_shader_viewport(gl_t *gl, unsigned shader)
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
-#ifndef HAVE_OPENGLES
+#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
 static void gl_pbo_async_readback(gl_t *gl)
 {
    pglBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index++]);
@@ -1191,7 +1191,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       context_rmenu_frame_func(gl);
 #endif
 
-#ifndef HAVE_OPENGLES
+#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
    if (gl->pbo_readback_enable)
       gl_pbo_async_readback(gl);
 #endif
@@ -1231,7 +1231,7 @@ static void gl_free(void *data)
    glDeleteBuffers(1, &gl->pbo);
 #endif
 
-#ifndef HAVE_OPENGLES
+#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
    if (gl->pbo_readback_enable)
    {
       pglDeleteBuffers(4, gl->pbo_readback);
@@ -1343,7 +1343,7 @@ static inline void gl_reinit_textures(gl_t *gl, const video_info_t *video)
 
 static void gl_init_pbo_readback(gl_t *gl)
 {
-#ifndef HAVE_OPENGLES
+#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
    // Only bother with this if we're doing FFmpeg GPU recording.
    gl->pbo_readback_enable = g_settings.video.gpu_record && g_extern.recording;
    if (!gl->pbo_readback_enable)
@@ -1648,6 +1648,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       pixels[0] = tmp;
    }
 #else
+#ifdef HAVE_FFMPEG
    if (gl->pbo_readback_enable)
    {
       if (!gl->pbo_readback_valid) // We haven't buffered up enough frames yet, come back later.
@@ -1666,6 +1667,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       pglBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
    }
    else // Use slow synchronous readbacks. Use this with plain screenshots as we don't really care about performance in this case.
+#endif
    {
       glPixelStorei(GL_PACK_ROW_LENGTH, gl->vp.width);
       glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * 3));

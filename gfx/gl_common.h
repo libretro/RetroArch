@@ -273,7 +273,7 @@ typedef struct gl
 
    bool egl_images;
 
-#ifndef HAVE_OPENGLES
+#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
    // PBOs used for asynchronous viewport readbacks.
    GLuint pbo_readback[4];
    bool pbo_readback_enable;
