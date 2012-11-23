@@ -321,6 +321,8 @@ static void gx_input_poll(void *data)
       }
 
 #ifdef HW_RVL
+      uint32_t type = 0;
+      if (WPAD_Probe(port, &type) == WPAD_ERR_NONE)
       {
          uint32_t down = WPAD_ButtonsHeld(port);
 
@@ -337,7 +339,7 @@ static void gx_input_poll(void *data)
 
          expansion_t exp;
          WPAD_Expansion(port, &exp);
-         switch (exp.type)
+         switch (type)
          {
             case WPAD_EXP_NUNCHUK:
             {
