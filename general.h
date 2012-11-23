@@ -45,11 +45,18 @@
 #include "android/native/jni/android_general.h"
 #endif
 
-/* FIXME - If PATH_MAX is not defined, can we instead define
- * it here? Could get rid of this long if conditional here
- * which is a maintenance hazard */
-#if defined(XENON) || defined(__CELLOS_LV2__) || defined(PSP)
-#undef PATH_MAX
+#if defined(_WIN32) && !defined(_XBOX)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#elif defined(_XBOX)
+#include <xtl.h>
+#endif
+
+#if defined(_WIN32)
+#include "msvc/msvc_compat.h"
+#endif
+
+#ifndef PATH_MAX
 #define PATH_MAX 4096
 #endif
 
@@ -66,17 +73,6 @@
 #endif
 
 #include "audio/resampler.h"
-
-#if defined(_WIN32) && !defined(_XBOX)
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#elif defined(_XBOX)
-#include <xtl.h>
-#endif
-
-#if defined(_WIN32)
-#include "msvc/msvc_compat.h"
-#endif
 
 #define MAX_PLAYERS 8
 
