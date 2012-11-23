@@ -659,6 +659,7 @@ static void print_help(void)
 
 #ifdef HAVE_FFMPEG
    puts("\t-r/--record: Path to record video file.\n\t\tUsing .mkv extension is recommended.");
+   puts("\t--recordconfig: Path to settings used during recording.");
    puts("\t--size: Overrides output video size when recording with FFmpeg (format: WIDTHxHEIGHT).");
 #endif
    puts("\t-v/--verbose: Verbose logging.");
@@ -789,6 +790,7 @@ static void parse_input(int argc, char *argv[])
       { "fullscreen", 0, NULL, 'f' },
 #ifdef HAVE_FFMPEG
       { "record", 1, NULL, 'r' },
+      { "recordconfig", 1, &val, 'R' },
       { "size", 1, &val, 's' },
 #endif
       { "verbose", 0, NULL, 'v' },
@@ -1117,6 +1119,10 @@ static void parse_input(int argc, char *argv[])
                   }
                   break;
                }
+
+               case 'R':
+                  strlcpy(g_extern.record_config, optarg, sizeof(g_extern.record_config));
+                  break;
 #endif
                case 'f':
                   print_features();
@@ -1280,6 +1286,7 @@ static void init_recording(void)
    params.fps        = fps;
    params.samplerate = samplerate;
    params.pix_fmt    = g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888 ? FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
+   params.config     = *g_extern.record_config ? g_extern.record_config : NULL;
 
    if (g_settings.video.gpu_record && driver.video->read_viewport)
    {
@@ -1326,11 +1333,6 @@ static void init_recording(void)
          params.out_width = g_extern.record_width;
          params.out_height = g_extern.record_height;
       }
-      else if (g_settings.video.hires_record)
-      {
-         params.out_width  *= 2;
-         params.out_height *= 2;
-      }
 
       if (g_settings.video.force_aspect && (g_settings.video.aspect_ratio > 0.0f))
          params.aspect_ratio = g_settings.video.aspect_ratio;
@@ -1369,15 +1371,15 @@ static void init_recording(void)
 
 static void deinit_recording(void)
 {
-   if (g_extern.recording)
-   {
-      ffemu_finalize(g_extern.rec);
-      ffemu_free(g_extern.rec);
-      g_extern.rec = NULL;
+   if (!g_extern.recording)
+      return;
 
-      free(g_extern.record_gpu_buffer);
-      g_extern.record_gpu_buffer = NULL;
-   }
+   ffemu_finalize(g_extern.rec);
+   ffemu_free(g_extern.rec);
+   g_extern.rec = NULL;
+
+   free(g_extern.record_gpu_buffer);
+   g_extern.record_gpu_buffer = NULL;
 }
 #endif
 

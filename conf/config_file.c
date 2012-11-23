@@ -44,12 +44,12 @@
 
 #define MAX_INCLUDE_DEPTH 16
 
-struct entry_list
+struct config_entry_list
 {
    bool readonly; // If we got this from an #include, do not allow write.
    char *key;
    char *value;
-   struct entry_list *next;
+   struct config_entry_list *next;
 };
 
 struct include_list
@@ -61,8 +61,8 @@ struct include_list
 struct config_file
 {
    char *path;
-   struct entry_list *entries;
-   struct entry_list *tail;
+   struct config_entry_list *entries;
+   struct config_entry_list *tail;
    unsigned include_depth;
 
    struct include_list *includes;
@@ -132,7 +132,7 @@ static char *extract_value(char *line, bool is_value)
    }
 }
 
-static void set_list_readonly(struct entry_list *list)
+static void set_list_readonly(struct config_entry_list *list)
 {
    while (list)
    {
@@ -146,7 +146,7 @@ static void add_child_list(config_file_t *parent, config_file_t *child)
 {
    if (parent->entries)
    {
-      struct entry_list *head = parent->entries;
+      struct config_entry_list *head = parent->entries;
       while (head->next)
          head = head->next;
 
@@ -164,7 +164,7 @@ static void add_child_list(config_file_t *parent, config_file_t *child)
    // Rebase tail.
    if (parent->entries)
    {
-      struct entry_list *head = parent->entries;
+      struct config_entry_list *head = parent->entries;
       while (head->next)
          head = head->next;
       parent->tail = head;
@@ -227,7 +227,7 @@ static void add_sub_conf(config_file_t *conf, char *line)
    free(path);
 }
 
-static bool parse_line(config_file_t *conf, struct entry_list *list, char *line)
+static bool parse_line(config_file_t *conf, struct config_entry_list *list, char *line)
 {
    // Remove everything after comment.
    char *comment = strchr(line, '#');
@@ -324,7 +324,7 @@ static config_file_t *config_file_new_internal(const char *path, unsigned depth)
 
    while (!feof(file))
    {
-      struct entry_list *list = (struct entry_list*)calloc(1, sizeof(*list));
+      struct config_entry_list *list = (struct config_entry_list*)calloc(1, sizeof(*list));
       char *line = getaline(file);
 
       if (line)
@@ -364,12 +364,12 @@ void config_file_free(config_file_t *conf)
    if (!conf)
       return;
 
-   struct entry_list *tmp = conf->entries;
+   struct config_entry_list *tmp = conf->entries;
    while (tmp)
    {
       free(tmp->key);
       free(tmp->value);
-      struct entry_list *hold = tmp;
+      struct config_entry_list *hold = tmp;
       tmp = tmp->next;
       free(hold);
    }
@@ -389,7 +389,7 @@ void config_file_free(config_file_t *conf)
 
 bool config_get_double(config_file_t *conf, const char *key, double *in)
 {
-   struct entry_list *list = conf->entries;
+   struct config_entry_list *list = conf->entries;
 
    while (list)
    {
@@ -405,7 +405,7 @@ bool config_get_double(config_file_t *conf, const char *key, double *in)
 
 bool config_get_float(config_file_t *conf, const char *key, float *in)
 {
-   struct entry_list *list = conf->entries;
+   struct config_entry_list *list = conf->entries;
 
    while (list)
    {
@@ -426,7 +426,7 @@ bool config_get_float(config_file_t *conf, const char *key, float *in)
 
 bool config_get_int(config_file_t *conf, const char *key, int *in)
 {
-   struct entry_list *list = conf->entries;
+   struct config_entry_list *list = conf->entries;
 
    while (list)
    {
@@ -449,7 +449,7 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
 
 bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 {
-   struct entry_list *list = conf->entries;
+   struct config_entry_list *list = conf->entries;
 
    while (list)
    {
@@ -473,7 +473,7 @@ bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 
 bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
 {
-  struct entry_list *list = conf->entries;
+  struct config_entry_list *list = conf->entries;
   
   while (list != NULL)
   {
@@ -490,7 +490,7 @@ bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
 
 bool config_get_hex(config_file_t *conf, const char *key, unsigned *in)
 {
-   struct entry_list *list = conf->entries;
+   struct config_entry_list *list = conf->entries;
 
    while (list)
    {
@@ -513,7 +513,7 @@ bool config_get_hex(config_file_t *conf, const char *key, unsigned *in)
 
 bool config_get_char(config_file_t *conf, const char *key, char *in)
 {
-   struct entry_list *list = conf->entries;
+   struct config_entry_list *list = conf->entries;
 
    while (list)
    {
@@ -531,7 +531,7 @@ bool config_get_char(config_file_t *conf, const char *key, char *in)
 
 bool config_get_string(config_file_t *conf, const char *key, char **str)
 {
-   struct entry_list *list = conf->entries;
+   struct config_entry_list *list = conf->entries;
 
    while (list)
    {
@@ -547,7 +547,7 @@ bool config_get_string(config_file_t *conf, const char *key, char **str)
 
 bool config_get_array(config_file_t *conf, const char *key, char *buf, size_t size)
 {
-   struct entry_list *list = conf->entries;
+   struct config_entry_list *list = conf->entries;
 
    while (list)
    {
@@ -563,7 +563,7 @@ bool config_get_path(config_file_t *conf, const char *key, char *buf, size_t siz
 #if defined(_WIN32) || defined(RARCH_CONSOLE)
    return config_get_array(conf, key, buf, size);
 #else
-   struct entry_list *list = conf->entries;
+   struct config_entry_list *list = conf->entries;
 
    while (list)
    {
@@ -595,7 +595,7 @@ bool config_get_path(config_file_t *conf, const char *key, char *buf, size_t siz
 
 bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 {
-   struct entry_list *list = conf->entries;
+   struct config_entry_list *list = conf->entries;
 
    while (list)
    {
@@ -621,8 +621,8 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 
 void config_set_string(config_file_t *conf, const char *key, const char *val)
 {
-   struct entry_list *list = conf->entries;
-   struct entry_list *last = list;
+   struct config_entry_list *list = conf->entries;
+   struct config_entry_list *last = list;
    while (list)
    {
       if (!list->readonly && (strcmp(key, list->key) == 0))
@@ -636,7 +636,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
       list = list->next;
    }
 
-   struct entry_list *elem = (struct entry_list*)calloc(1, sizeof(*elem));
+   struct config_entry_list *elem = (struct config_entry_list*)calloc(1, sizeof(*elem));
    elem->key = strdup(key);
    elem->value = strdup(val);
 
@@ -724,7 +724,7 @@ void config_file_dump(config_file_t *conf, FILE *file)
       includes = includes->next;
    }
 
-   struct entry_list *list = conf->entries;
+   struct config_entry_list *list = conf->entries;
    while (list)
    {
       if (!list->readonly)
@@ -742,7 +742,7 @@ void config_file_dump_all(config_file_t *conf, FILE *file)
       includes = includes->next;
    }
 
-   struct entry_list *list = conf->entries;
+   struct config_entry_list *list = conf->entries;
    while (list)
    {
       fprintf(file, "%s = \"%s\" %s\n", list->key, list->value, list->readonly ? "(included)" : "");
@@ -752,7 +752,7 @@ void config_file_dump_all(config_file_t *conf, FILE *file)
 
 bool config_entry_exists(config_file_t *conf, const char *entry)
 {
-   struct entry_list *list = conf->entries;
+   struct config_entry_list *list = conf->entries;
 
    while (list)
    {
@@ -762,5 +762,29 @@ bool config_entry_exists(config_file_t *conf, const char *entry)
    }
 
    return false;
+}
+
+bool config_get_entry_list_head(config_file_t *conf, struct config_file_entry *entry)
+{
+   const struct config_entry_list *head = conf->entries;
+   if (!head)
+      return false;
+
+   entry->key   = head->key;
+   entry->value = head->value;
+   entry->next  = head->next;
+   return true;
+}
+
+bool config_get_entry_list_next(struct config_file_entry *entry)
+{
+   const struct config_entry_list *next = entry->next;
+   if (!next)
+      return false;
+
+   entry->key   = next->key;
+   entry->value = next->value;
+   entry->next  = next->next;
+   return true;
 }
 

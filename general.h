@@ -147,8 +147,6 @@ struct settings
 
       bool disable_composition;
 
-      bool hires_record;
-      bool h264_record;
       bool post_filter_record;
       bool gpu_record;
       bool gpu_screenshot;
@@ -434,6 +432,7 @@ struct global
 #ifdef HAVE_FFMPEG
    ffemu_t *rec;
    char record_path[PATH_MAX];
+   char record_config[PATH_MAX];
    bool recording;
    unsigned record_width;
    unsigned record_height;

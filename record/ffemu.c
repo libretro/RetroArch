@@ -25,6 +25,8 @@ extern "C" {
 #include <libavutil/opt.h>
 #include <libavformat/avformat.h>
 #include <libavutil/avconfig.h>
+#include <libavutil/pixdesc.h>
+#include <libswscale/swscale.h>
 #ifdef __cplusplus
 }
 #endif
@@ -37,6 +39,7 @@ extern "C" {
 #include "../thread.h"
 #include "../general.h"
 #include "../gfx/scaler/scaler.h"
+#include "../conf/config_file.h"
 #include "ffemu.h"
 #include <assert.h>
 
@@ -60,12 +63,19 @@ struct ff_video_info
    uint8_t *outbuf;
    size_t outbuf_size;
 
+   // Output pixel format.
    enum PixelFormat pix_fmt;
+   // Input pixel format. Only used by sws.
+   enum PixelFormat in_pix_fmt;
+
+   // Input pixel size.
    size_t pix_size;
 
    AVFormatContext *format;
 
    struct scaler_ctx scaler;
+   struct SwsContext *sws;
+   bool use_sws;
 };
 
 struct ff_audio_info
@@ -89,11 +99,25 @@ struct ff_muxer_info
    AVStream *vstream;
 };
 
+struct ff_config_param
+{
+   config_file_t *conf;
+   char vcodec[64];
+   char acodec[64];
+   char format[64];
+   enum PixelFormat out_pix_fmt;
+   unsigned threads;
+
+   AVDictionary *video_opts;
+   AVDictionary *audio_opts;
+};
+
 struct ffemu
 {
    struct ff_video_info video;
    struct ff_audio_info audio;
    struct ff_muxer_info muxer;
+   struct ff_config_param config;
    
    struct ffemu_params params;
 
@@ -109,9 +133,9 @@ struct ffemu
    volatile bool can_sleep;
 };
 
-static bool ffemu_init_audio(struct ff_audio_info *audio, struct ffemu_params *param)
+static bool ffemu_init_audio(struct ff_config_param *params, struct ff_audio_info *audio, struct ffemu_params *param)
 {
-   AVCodec *codec = avcodec_find_encoder_by_name("flac");
+   AVCodec *codec = avcodec_find_encoder_by_name(*params->acodec ? params->acodec : "flac");
    if (!codec)
       return false;
 
@@ -131,7 +155,7 @@ static bool ffemu_init_audio(struct ff_audio_info *audio, struct ffemu_params *p
    audio->codec->sample_fmt = AV_SAMPLE_FMT_S16;
 
 #ifdef HAVE_FFMPEG_AVCODEC_OPEN2
-   if (avcodec_open2(audio->codec, codec, NULL) != 0)
+   if (avcodec_open2(audio->codec, codec, params->audio_opts ? &params->audio_opts : NULL) != 0)
 #else
    if (avcodec_open(audio->codec, codec) != 0)
 #endif
@@ -155,25 +179,24 @@ static bool ffemu_init_audio(struct ff_audio_info *audio, struct ffemu_params *p
    return true;
 }
 
-static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_params *param)
+static bool ffemu_init_video(struct ff_config_param *params, struct ff_video_info *video, const struct ffemu_params *param)
 {
    AVCodec *codec = NULL;
 
-   if (g_settings.video.h264_record)
+   if (*params->vcodec)
+      codec = avcodec_find_encoder_by_name(params->vcodec);
+   else
    {
       codec = avcodec_find_encoder_by_name("libx264rgb");
       // Older versions of FFmpeg have RGB encoding in libx264.
       if (!codec)
          codec = avcodec_find_encoder_by_name("libx264");
 
-      video->pix_fmt = PIX_FMT_BGR24;
+      video->pix_fmt        = PIX_FMT_BGR24;
       video->scaler.out_fmt = SCALER_FMT_BGR24;
-   }
-   else
-   {
-      codec = avcodec_find_encoder_by_name("ffv1");
-      video->pix_fmt = PIX_FMT_RGB32;
-      video->scaler.out_fmt = SCALER_FMT_ARGB8888;
+
+      // By default, we want lossless video.
+      av_dict_set(&params->video_opts, "qp", "0", 0);
    }
 
    if (!codec)
@@ -181,21 +204,49 @@ static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_par
 
    video->encoder = codec;
 
+   // Don't use swscaler unless format is not something "in-house" scaler supports.
+   // libswscale doesn't scale RGB -> RGB correctly (goes via YUV first), and it's non-trivial to fix
+   // upstream as it's heavily geared towards YUV.
+   // If we're dealing with strange formats or YUV, just use libswscale.
+   if (params->out_pix_fmt != PIX_FMT_NONE)
+   {
+      video->pix_fmt = params->out_pix_fmt;
+      if (video->pix_fmt != PIX_FMT_BGR24 && video->pix_fmt != PIX_FMT_RGB32)
+         video->use_sws = true;
+
+      switch (video->pix_fmt)
+      {
+         case PIX_FMT_BGR24:
+            video->scaler.out_fmt = SCALER_FMT_BGR24;
+            break;
+
+         case PIX_FMT_RGB32:
+            video->scaler.out_fmt = SCALER_FMT_ARGB8888;
+            break;
+
+         default:
+            break;
+      }
+   }
+
    switch (param->pix_fmt)
    {
       case FFEMU_PIX_RGB565:
          video->scaler.in_fmt = SCALER_FMT_RGB565;
-         video->pix_size = 2;
+         video->in_pix_fmt    = PIX_FMT_RGB565;
+         video->pix_size      = 2;
          break;
 
       case FFEMU_PIX_BGR24:
          video->scaler.in_fmt = SCALER_FMT_BGR24;
-         video->pix_size = 3;
+         video->in_pix_fmt    = PIX_FMT_BGR24;
+         video->pix_size      = 3;
          break;
 
       case FFEMU_PIX_ARGB8888:
          video->scaler.in_fmt = SCALER_FMT_ARGB8888;
-         video->pix_size = 4;
+         video->in_pix_fmt    = PIX_FMT_RGB32;
+         video->pix_size      = 4;
          break;
 
       default:
@@ -215,29 +266,14 @@ static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_par
    video->codec->sample_aspect_ratio = av_d2q(param->aspect_ratio * param->out_height / param->out_width, 255);
    video->codec->pix_fmt = video->pix_fmt;
 
-#ifdef HAVE_FFMPEG_AVCODEC_OPEN2
-   AVDictionary *opts = NULL;
-#endif
-
-   if (g_settings.video.h264_record)
-   {
-      video->codec->thread_count = 3;
-      av_dict_set(&opts, "qp", "0", 0);
-   }
-   else
-      video->codec->thread_count = 2;
+   video->codec->thread_count = params->threads;
 
 #ifdef HAVE_FFMPEG_AVCODEC_OPEN2
-   if (avcodec_open2(video->codec, codec, &opts) != 0)
+   if (avcodec_open2(video->codec, codec, params->video_opts ? &params->video_opts : NULL) != 0)
 #else
    if (avcodec_open(video->codec, codec) != 0)
 #endif
       return false;
-
-#ifdef HAVE_FFMPEG_AVCODEC_OPEN2
-   if (opts)
-      av_dict_free(&opts);
-#endif
 
    // Allocate a big buffer :p ffmpeg API doesn't seem to give us some clues how big this buffer should be.
    video->outbuf_size = 1 << 23;
@@ -251,11 +287,67 @@ static bool ffemu_init_video(struct ff_video_info *video, const struct ffemu_par
    return true;
 }
 
+static bool ffemu_init_config(struct ff_config_param *params, const char *config)
+{
+   params->out_pix_fmt = PIX_FMT_NONE;
+   if (!config)
+      return true;
+
+   params->conf = config_file_new(config);
+   if (!params->conf)
+   {
+      RARCH_ERR("Failed to load FFmpeg config \"%s\".\n", config);
+      return false;
+   }
+
+   config_get_array(params->conf, "vcodec", params->vcodec, sizeof(params->vcodec));
+   config_get_array(params->conf, "acodec", params->acodec, sizeof(params->acodec));
+   config_get_array(params->conf, "format", params->format, sizeof(params->format));
+
+   if (!config_get_uint(params->conf, "threads", &params->threads))
+      params->threads = 1;
+
+   char pix_fmt[64] = {0};
+   if (config_get_array(params->conf, "pix_fmt", pix_fmt, sizeof(pix_fmt)))
+   {
+      params->out_pix_fmt = av_get_pix_fmt(pix_fmt);
+      if (params->out_pix_fmt == PIX_FMT_NONE)
+      {
+         RARCH_ERR("Cannot find pix_fmt \"%s\".\n", pix_fmt);
+         return false;
+      }
+   }
+
+   struct config_file_entry entry;
+   if (!config_get_entry_list_head(params->conf, &entry))
+      return true;
+
+   do
+   {
+      if (strstr(entry.key, "video_") == entry.key)
+      {
+         const char *key = entry.key + strlen("video_");
+         av_dict_set(&params->video_opts, key, entry.value, 0);
+      }
+      else if (strstr(entry.key, "audio_") == entry.key)
+      {
+         const char *key = entry.key + strlen("audio_");
+         av_dict_set(&params->audio_opts, key, entry.value, 0);
+      }
+   } while (config_get_entry_list_next(&entry));
+
+   return true;
+}
+
 static bool ffemu_init_muxer(ffemu_t *handle)
 {
    AVFormatContext *ctx = avformat_alloc_context();
    av_strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
-   ctx->oformat = av_guess_format(NULL, ctx->filename, NULL);
+
+   if (*handle->config.format)
+      ctx->oformat = av_guess_format(handle->config.format, NULL, NULL); 
+   else
+      ctx->oformat = av_guess_format(NULL, ctx->filename, NULL);
 
    if (!ctx->oformat)
       return false;
@@ -308,8 +400,7 @@ static bool ffemu_init_muxer(ffemu_t *handle)
 #ifdef AVFMT_TS_NONSTRICT
    // Avoids a warning at end about non-monotonically increasing DTS values.
    // It seems to be harmless to disable this.
-   if (g_settings.video.h264_record)
-      ctx->oformat->flags |= AVFMT_TS_NONSTRICT;
+   ctx->oformat->flags |= AVFMT_TS_NONSTRICT;
 #endif
 
    av_dict_set(&ctx->metadata, "title", "RetroArch video dump", 0); 
@@ -401,10 +492,13 @@ ffemu_t *ffemu_new(const struct ffemu_params *params)
 
    handle->params = *params;
 
-   if (!ffemu_init_video(&handle->video, &handle->params))
+   if (!ffemu_init_config(&handle->config, params->config))
       goto error;
 
-   if (!ffemu_init_audio(&handle->audio, &handle->params))
+   if (!ffemu_init_video(&handle->config, &handle->video, &handle->params))
+      goto error;
+
+   if (!ffemu_init_audio(&handle->config, &handle->audio, &handle->params))
       goto error;
 
    if (!ffemu_init_muxer(handle))
@@ -422,36 +516,46 @@ error:
 
 void ffemu_free(ffemu_t *handle)
 {
-   if (handle)
+   if (!handle)
+      return;
+
+   deinit_thread(handle);
+   deinit_thread_buf(handle);
+
+   if (handle->audio.codec)
    {
-      deinit_thread(handle);
-      deinit_thread_buf(handle);
-
-      if (handle->audio.codec)
-      {
-         avcodec_close(handle->audio.codec);
-         av_free(handle->audio.codec);
-      }
-
-      if (handle->audio.buffer)
-         av_free(handle->audio.buffer);
-
-      if (handle->video.codec)
-      {
-         avcodec_close(handle->video.codec);
-         av_free(handle->video.codec);
-      }
-
-      if (handle->video.conv_frame)
-         av_free(handle->video.conv_frame);
-
-      if (handle->video.conv_frame_buf)
-         av_free(handle->video.conv_frame_buf);
-
-      scaler_ctx_gen_reset(&handle->video.scaler);
-
-      free(handle);
+      avcodec_close(handle->audio.codec);
+      av_free(handle->audio.codec);
    }
+
+   if (handle->audio.buffer)
+      av_free(handle->audio.buffer);
+
+   if (handle->video.codec)
+   {
+      avcodec_close(handle->video.codec);
+      av_free(handle->video.codec);
+   }
+
+   if (handle->video.conv_frame)
+      av_free(handle->video.conv_frame);
+
+   if (handle->video.conv_frame_buf)
+      av_free(handle->video.conv_frame_buf);
+
+   scaler_ctx_gen_reset(&handle->video.scaler);
+
+   if (handle->video.sws)
+      sws_freeContext(handle->video.sws);
+
+   if (handle->config.conf)
+      config_file_free(handle->config.conf);
+   if (handle->config.video_opts)
+      av_dict_free(&handle->config.video_opts);
+   if (handle->config.audio_opts)
+      av_dict_free(&handle->config.audio_opts);
+
+   free(handle);
 }
 
 bool ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
@@ -594,9 +698,22 @@ static bool encode_video(ffemu_t *handle, AVPacket *pkt, AVFrame *frame)
    return true;
 }
 
-static bool ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_data *data)
+static void ffemu_scale_input(ffemu_t *handle, const struct ffemu_video_data *data)
 {
-   if (!data->is_dupe)
+   // Attempt to preserve more information if we scale down.
+   bool shrunk = handle->params.out_width < data->width || handle->params.out_height < data->height;
+
+   if (handle->video.use_sws)
+   {
+      handle->video.sws = sws_getCachedContext(handle->video.sws, data->width, data->height, handle->video.in_pix_fmt,
+            handle->params.out_width, handle->params.out_height, handle->video.pix_fmt,
+            shrunk ? SWS_BILINEAR : SWS_POINT, NULL, NULL, NULL);
+
+      int linesize = data->pitch;
+      sws_scale(handle->video.sws, (const uint8_t* const*)&data->data, &linesize, 0,
+            data->height, handle->video.conv_frame->data, handle->video.conv_frame->linesize);
+   }
+   else
    {
       if ((int)data->width != handle->video.scaler.in_width || (int)data->height != handle->video.scaler.in_height)
       {
@@ -604,8 +721,6 @@ static bool ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_da
          handle->video.scaler.in_height = data->height;
          handle->video.scaler.in_stride = data->pitch;
 
-         // Attempt to preserve more information if we scale down.
-         bool shrunk = handle->params.out_width < data->width || handle->params.out_height < data->height;
          handle->video.scaler.scaler_type = shrunk ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
 
          handle->video.scaler.out_width  = handle->params.out_width;
@@ -617,6 +732,12 @@ static bool ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_da
 
       scaler_ctx_scale(&handle->video.scaler, handle->video.conv_frame->data[0], data->data);
    }
+}
+
+static bool ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_data *data)
+{
+   if (!data->is_dupe)
+      ffemu_scale_input(handle, data);
 
    handle->video.conv_frame->pts = handle->video.frame_cnt;
 

@@ -53,10 +53,14 @@ struct ffemu_params
    // Audio channels.
    unsigned channels;
 
+   // Input pixel format.
    enum ffemu_pix_format pix_fmt;
 
    // Filename to dump to.
    const char *filename;
+
+   // Path to config. Optional.
+   const char *config;
 };
 
 struct ffemu_video_data

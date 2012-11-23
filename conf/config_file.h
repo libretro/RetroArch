@@ -53,6 +53,17 @@ bool config_append_file(config_file_t *conf, const char *path);
 
 bool config_entry_exists(config_file_t *conf, const char *entry);
 
+struct config_entry_list;
+struct config_file_entry
+{
+   const char *key;
+   const char *value;
+   const struct config_entry_list *next; // Used internally. Opaque here.
+};
+
+bool config_get_entry_list_head(config_file_t *conf, struct config_file_entry *entry);
+bool config_get_entry_list_next(struct config_file_entry *entry);
+
 // Extracts a double from config file.
 bool config_get_double(config_file_t *conf, const char *entry, double *in);
 // Extracts a float from config file.

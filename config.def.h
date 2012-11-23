@@ -214,12 +214,6 @@ static const float fbo_scale_x = 2.0;
 static const float fbo_scale_y = 2.0;
 static const bool second_pass_smooth = true;
 
-// Record video assuming game runs hi-res.
-static const bool hires_record = false;
-
-// Enables lossless RGB H.264 recording if possible (if not, FFV1 is used).
-static const bool h264_record = true;
-
 // Record post-filtered (CPU filter) video rather than raw game output.
 static const bool post_filter_record = false;
 
