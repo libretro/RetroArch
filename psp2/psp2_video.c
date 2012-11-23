@@ -24,23 +24,17 @@
  * - Actually run and test this to make sure it does work
  */
 
+#include "../psp/sdk_defines.h"
 #include "../general.h"
 #include "../driver.h"
 
 #define MALLOC_PARAMS_FRAGMENT_FLAG (1 << 0)
 #define MALLOC_PARAMS_VERTEX_FLAG   (1 << 1)
 
-#define PSP2_WIDTH        960
-#define PSP2_HEIGHT       544
-#define PSP2_PITCH_PIXELS 1024
-
-#define TEX_FMT_32BPP SCE_GXM_COLOR_FORMAT_A8R8G8B8
-#define PIX_FMT_32BPP SCE_DISPLAY_PIXELFORMAT_A8R8G8B8
-
 #define GXM_ALIGN(x, a)					(((x) + ((a) - 1)) & ~((a) - 1))
 
 #define DISPLAY_BUFFER_COUNT 3
-#define DISPLAY_BUFFER_SIZE (GXM_ALIGN(PSP2_PITCH_PIXELS * PSP2_HEIGHT * 4, 1024 * 1024))
+#define DISPLAY_BUFFER_SIZE (GXM_ALIGN(PSP_PITCH_PIXELS * PSP_FB_HEIGHT * 4, 1024 * 1024))
 #define DISPLAY_MAX_PENDING_SWAPS 2
 
 typedef struct psp2_video
@@ -150,8 +144,8 @@ static void psp2_gfx_init_fbo(void *data, const video_info_t *video)
    memset(&rtparams, 0, sizeof(SceGxmRenderTargetParams));
 
    rtparams.flags                = 0;
-   rtparams.width                = PSP2_WIDTH;
-   rtparams.height               = PSP2_HEIGHT;
+   rtparams.width                = PSP_FB_WIDTH;
+   rtparams.height               = PSP_FB_HEIGHT;
    rtparams.scenesPerFrame       = 1;
    rtparams.multisampleMode      = SCE_GXM_MULTISAMPLE_NONE;
    rtparams.multisampleLocations = 0;
@@ -179,7 +173,8 @@ static void disp_callback(const void *callback_data)
 {
    int ret = SCE_OK;
 
-   SceDisplyFrameBuf framebuf;
+#if defined(SN_TARGET_PSP2)
+   SceDisplayFrameBuf framebuf;
 
    const DisplayData *display_data = (const DisplayData*)callback_data;
 
@@ -187,14 +182,17 @@ static void disp_callback(const void *callback_data)
 
    framebuf.size        = sizeof(SceDisplayFrameBuf);
    framebuf.base        = display_data->address;
-   framebuf.pitch       = PSP2_PITCH_PIXELS;
-   framebuf.pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
-   framebuf.width       = PSP2_WIDTH;
-   framebuf.height      = PSP2_HEIGHT;
+   framebuf.pitch       = PSP_PITCH_PIXELS;
+   framebuf.pixelformat = PSP_DISPLAY_PIXELFORMAT_8888;
+   framebuf.width       = PSP_FB_WIDTH;
+   framebuf.height      = PSP_FB_HEIGHT;
+
+   ret = sceDisplaySetFrameBuf(&framebuf, PSP_FB_WIDTH, PSP_DISPLAY_PIXELFORMAT_8888, SCE_DISPLAY_UPDATETIMING_NEXTVSYNC);
+#elif defined(PSP)
+   ret = sceDisplaySetFrameBuf(&display_data->address, PSP_FB_WIDTH, PSP_DISPLAY_PIXELFORMAT_8888, SCE_DISPLAY_UPDATETIMING_NEXTVSYNC);
+#endif
 
    /* TODO - Don't bother with error checking for now in here */
-
-   ret = sceDisplaySetFrameBuf(&framebuf, SCE_DISPLAY_UPDATETIMING_NEXTVSYNC);
 
    // Block until swap has occurred and the old buffer is no longer displayed
    ret = sceDisplayWaitSetFrameBuf();
@@ -277,9 +275,9 @@ static void psp2_gfx_init_sync_objects(const video_info_t *video)
             SCE_GXM_COLOR_SURFACE_LINEAR,
             SCE_GXM_COLOR_SURFACE_SCALE_NONE,
             SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-            PSP2_WIDTH,
-            PS2P_HEIGHT,
-            PSP2_PITCH_PIXELS,
+            PSP_FB_WIDTH,
+            PSP_FB_HEIGHT,
+            PSP_PITCH_PIXELS,
             vid->disp_buf_data[i]);
 
       if(ret != SCE_OK)
@@ -536,4 +534,3 @@ const video_driver_t video_psp2_gxm = {
    psp2_gfx_restart,
 #endif
 };
-

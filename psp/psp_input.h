@@ -42,38 +42,4 @@ enum {
 #endif
 };
 
-#ifdef SN_TARGET_PSP2
-#define STATE_BUTTON(state) ((state).buttons)
-#define STATE_ANALOGLX(state) ((state).lx)
-#define STATE_ANALOGLY(state) ((state).ly)
-#define STATE_ANALOGRX(state) ((state).rx)
-#define STATE_ANALOGRY(state) ((state).ry)
-#define DEFAULT_SAMPLING_MODE (SCE_CTRL_MODE_DIGITALANALOG)
-
-#define PSP_CTRL_LEFT SCE_CTRL_LEFT
-#define PSP_CTRL_DOWN SCE_CTRL_DOWN
-#define PSP_CTRL_RIGHT SCE_CTRL_RIGHT
-#define PSP_CTRL_UP SCE_CTRL_UP
-#define PSP_CTRL_START SCE_CTRL_START
-#define PSP_CTRL_SELECT SCE_CTRL_SELECT
-#define PSP_CTRL_TRIANGLE SCE_CTRL_TRIANGLE
-#define PSP_CTRL_SQUARE SCE_CTRL_SQUARE
-#define PSP_CTRL_CROSS SCE_CTRL_CROSS
-#define PSP_CTRL_CIRCLE SCE_CTRL_CIRCLE
-#define PSP_CTRL_L SCE_CTRL_L
-#define PSP_CTRL_R SCE_CTRL_R
-
-#define sceCtrlReadBufferPositive(port, pad_data, bufs) sceCtrlReadBufferPositive(port, pad_data, bufs)
-#else
-#define STATE_BUTTON(state) ((state).Buttons)
-#define STATE_ANALOGLX(state) ((state).Lx)
-#define STATE_ANALOGLX(state) ((state).Ly)
-#define STATE_ANALOGRX(state) ((state).Rx)
-#define STATE_ANALOGRY(state) ((state).Ry)
-
-#define DEFAULT_SAMPLING_MODE (PSP_CTRL_MODE_ANALOG)
-
-#define sceCtrlReadBufferPositive(port, pad_data, bufs) sceCtrlReadBufferPositive(pad_data, bufs)
-#endif
-
 #endif

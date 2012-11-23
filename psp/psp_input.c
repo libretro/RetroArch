@@ -25,6 +25,7 @@
 #include <pspctrl.h>
 #endif
 
+#include "sdk_defines.h"
 #include "psp_input.h"
 
 #include "../driver.h"
