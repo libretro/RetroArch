@@ -763,30 +763,33 @@ static bool encode_audio(ffemu_t *handle, AVPacket *pkt, bool dry)
    pkt->size = handle->audio.outbuf_size;
 
 #ifdef HAVE_FFMPEG_AVCODEC_ENCODE_AUDIO2
-   AVFrame frame;
-   avcodec_get_frame_defaults(&frame);
+   AVFrame *frame = avcodec_alloc_frame();
 
-   frame.nb_samples = handle->audio.frames_in_buffer;
-   frame.pts = handle->audio.frame_cnt;
+   frame->nb_samples = handle->audio.frames_in_buffer;
+   frame->pts = handle->audio.frame_cnt;
 
-   int samples_size = frame.nb_samples *
+   int samples_size = frame->nb_samples *
       handle->audio.codec->channels *
       sizeof(int16_t);
 
-   avcodec_fill_audio_frame(&frame, handle->audio.codec->channels,
+   avcodec_fill_audio_frame(frame, handle->audio.codec->channels,
          handle->audio.codec->sample_fmt, (const uint8_t*)handle->audio.buffer,
          samples_size, 1);
 
    int got_packet = 0;
    if (avcodec_encode_audio2(handle->audio.codec,
-            pkt, dry ? NULL : &frame, &got_packet) < 0)
+            pkt, dry ? NULL : frame, &got_packet) < 0)
+   {
+      av_freep(&frame);
       return false;
+   }
 
    if (!got_packet)
    {
       pkt->size = 0;
       pkt->pts = AV_NOPTS_VALUE;
       pkt->dts = AV_NOPTS_VALUE;
+      av_freep(&frame);
       return true;
    }
 
@@ -803,6 +806,8 @@ static bool encode_audio(ffemu_t *handle, AVPacket *pkt, bool dry)
             handle->audio.codec->time_base,
             handle->muxer.astream->time_base);
    }
+
+   av_freep(&frame);
 
 #else
    if (dry)
