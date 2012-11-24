@@ -37,6 +37,54 @@
 
 #define MAX_PADS 1
 
+const struct platform_bind platform_keys[] = {
+   { PSP_GAMEPAD_CIRCLE, "Circle button" },
+   { PSP_GAMEPAD_CROSS, "Cross button" },
+   { PSP_GAMEPAD_TRIANGLE, "Triangle button" },
+   { PSP_GAMEPAD_SQUARE, "Square button" },
+   { PSP_GAMEPAD_DPAD_UP, "D-Pad Up" },
+   { PSP_GAMEPAD_DPAD_DOWN, "D-Pad Down" },
+   { PSP_GAMEPAD_DPAD_LEFT, "D-Pad Left" },
+   { PSP_GAMEPAD_DPAD_RIGHT, "D-Pad Right" },
+   { PSP_GAMEPAD_SELECT, "Select button" },
+   { PSP_GAMEPAD_START, "Start button" },
+   { PSP_GAMEPAD_L, "L button" },
+   { 0, "Unused" },
+   { 0, "Unused" },
+   { PSP_GAMEPAD_R, "R button" },
+   { 0, "Unused" },
+   { 0, "Unused" },
+   { PSP_GAMEPAD_LSTICK_LEFT_MASK, "LStick Left" },
+   { PSP_GAMEPAD_LSTICK_RIGHT_MASK, "LStick Right" },
+   { PSP_GAMEPAD_LSTICK_UP_MASK, "LStick Up" },
+   { PSP_GAMEPAD_LSTICK_DOWN_MASK, "LStick Down" },
+   { PSP_GAMEPAD_DPAD_LEFT | PSP_GAMEPAD_LSTICK_LEFT_MASK, "LStick D-Pad Left" },
+   { PSP_GAMEPAD_DPAD_RIGHT | PSP_GAMEPAD_LSTICK_RIGHT_MASK, "LStick D-Pad Right" },
+   { PSP_GAMEPAD_DPAD_UP | PSP_GAMEPAD_LSTICK_UP_MASK, "LStick D-Pad Up" },
+   { PSP_GAMEPAD_DPAD_DOWN | PSP_GAMEPAD_LSTICK_DOWN_MASK, "LStick D-Pad Down" },
+#ifdef SN_TARGET_PSP2
+   { PSP_GAMEPAD_RSTICK_LEFT_MASK, "RStick Left" },
+   { PSP_GAMEPAD_RSTICK_RIGHT_MASK, "RStick Right" },
+   { PSP_GAMEPAD_RSTICK_UP_MASK, "RStick Up" },
+   { PSP_GAMEPAD_RSTICK_DOWN_MASK, "RStick Down" },
+   { PSP_GAMEPAD_DPAD_LEFT | PSP_GAMEPAD_RSTICK_LEFT_MASK, "RStick D-Pad Left" },
+   { PSP_GAMEPAD_DPAD_RIGHT | PSP_GAMEPAD_RSTICK_RIGHT_MASK, "RStick D-Pad Right" },
+   { PSP_GAMEPAD_DPAD_UP | PSP_GAMEPAD_RSTICK_UP_MASK, "RStick D-Pad Up" },
+   { PSP_GAMEPAD_DPAD_DOWN | PSP_GAMEPAD_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
+#else
+   { 0, "Unused" },
+   { 0, "Unused" },
+   { 0, "Unused" },
+   { 0, "Unused" },
+   { 0, "Unused" },
+   { 0, "Unused" },
+   { 0, "Unused" },
+   { 0, "Unused" },
+#endif
+};
+
+const unsigned platform_keys_size = sizeof(platform_keys);
+
 static uint64_t state;
 
 static void psp_input_poll(void *data)
