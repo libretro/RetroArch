@@ -117,21 +117,11 @@ check_pkgconf LIBPNG libpng 1.5
 
 if [ "$HAVE_THREADS" != 'no' ]; then
    if [ "$HAVE_FFMPEG" != 'no' ]; then
-      check_pkgconf AVCODEC libavcodec
-      check_pkgconf AVFORMAT libavformat
-      check_pkgconf AVUTIL libavutil
-      check_pkgconf SWSCALE libswscale
+      check_pkgconf AVCODEC libavcodec 54
+      check_pkgconf AVFORMAT libavformat 54
+      check_pkgconf AVUTIL libavutil 51
+      check_pkgconf SWSCALE libswscale 2.1
       ( [ "$HAVE_FFMPEG" = 'auto' ] && ( [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ] ) && HAVE_FFMPEG='no' ) || HAVE_FFMPEG='yes'
-   fi
-
-   if [ "$HAVE_FFMPEG" = 'yes' ]; then
-      check_lib FFMPEG_ALLOC_CONTEXT3 "$AVCODEC_LIBS" avcodec_alloc_context3
-      check_lib FFMPEG_AVCODEC_OPEN2 "$AVCODEC_LIBS" avcodec_open2
-      check_lib FFMPEG_AVCODEC_ENCODE_AUDIO2 "$AVCODEC_LIBS" avcodec_encode_audio2
-      check_lib FFMPEG_AVIO_OPEN "$AVFORMAT_LIBS $AVCODEC_LIBS $AVUTIL_LIBS" avio_open
-      check_lib FFMPEG_AVFORMAT_WRITE_HEADER "$AVFORMAT_LIBS $AVCODEC_LIBS $AVUTIL_LIBS" avformat_write_header
-      check_lib FFMPEG_AVFORMAT_NEW_STREAM "$AVFORMAT_LIBS $AVCODEC_LIBS $AVUTIL_LIBS" avformat_new_stream
-      check_lib FFMPEG_AVCODEC_ENCODE_VIDEO2 "$AVCODEC_LIBS" avcodec_encode_video2
    fi
 else
    echo "Not building with threading support. Will skip FFmpeg."

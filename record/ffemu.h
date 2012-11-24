@@ -74,7 +74,7 @@ struct ffemu_video_data
 
 struct ffemu_audio_data
 {
-   const int16_t *data;
+   const void *data;
    size_t frames;
 };
 

@@ -197,11 +197,6 @@ endif
 ifeq ($(HAVE_FFMPEG), 1)
    LIBS += -lavformat -lavcodec -lavutil -lswscale -lws2_32 -lz
    DEFINES += -DHAVE_FFMPEG -Iffmpeg
-   DEFINES += -DHAVE_FFMPEG_ALLOC_CONTEXT3
-   DEFINES += -DHAVE_FFMPEG_AVCODEC_OPEN2
-   DEFINES += -DHAVE_FFMPEG_AVIO_OPEN
-   DEFINES += -DHAVE_FFMPEG_AVFORMAT_WRITE_HEADER
-   DEFINES += -DHAVE_FFMPEG_AVFORMAT_NEW_STREAM
    OBJ += record/ffemu.o
 endif
 
