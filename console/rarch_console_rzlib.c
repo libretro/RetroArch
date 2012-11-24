@@ -145,6 +145,8 @@ int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *f
    unzFile uf = unzOpen(zip_path); 
 
    unz_global_info gi;
+   memset(&gi, 0, sizeof(unz_global_info));
+
    int ret = unzGetGlobalInfo(uf, &gi);
    if(ret != UNZ_OK)
       RARCH_ERR("Error %d while trying to get ZIP file global info.\n", ret);

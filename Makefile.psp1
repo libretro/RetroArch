@@ -1,11 +1,9 @@
 RARCH_VERSION		= "0.9.8-beta2"
 
-TARGET = retroarch_psp
-OBJS = console/griffin/griffin.o
+TARGET = retroarchpsp
 
 INCDIR = 
-CFLAGS = -O2 -G0 -Wall -std=gnu99 
-CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
+CFLAGS = -O2 -G0 -Wall -g -std=gnu99 -ffast-math
 ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES = -DPSP -DHAVE_DEFAULT_RETROPAD_INPUT -DRARCH_CONSOLE -DHAVE_GETOPT_LONG -DHAVE_FILEBROWSER -DHAVE_RARCH_MAIN_WRAP -DHAVE_ZLIB -DWANT_RZLIB -DHAVE_CONFIGFILE=1 -DHAVE_GRIFFIN=1 -DPACKAGE_VERSION=\"$(RARCH_VERSION)\" -Dmain=rarch_main
@@ -13,10 +11,14 @@ CFLAGS += $(RARCH_DEFINES)
 
 LIBDIR =
 LDFLAGS =
-#LIBS = -lpspaudiolib -lpspaudio
-LIBS = -lpspgu -lpspgum -lretro_psp1 -lm
+LIBS = -lretro_psp1 -lstdc++ -lpspgu -lpspgum -lm
 
-#EXTRA_TARGETS = EBOOT.PBP
-#PSP_EBOOT_TITLE = RetroArch PSP1
+EXTRA_TARGETS = EBOOT.PBP
+PSP_EBOOT_TITLE = RetroArch PSP1
 
+PSP_OBJECTS = console/griffin/griffin.o
+
+OBJS = $(PSP_OBJECTS)
+
+PSPSDK=$(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build.mak

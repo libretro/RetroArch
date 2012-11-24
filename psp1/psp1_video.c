@@ -134,7 +134,8 @@ static bool psp_gfx_frame(void *data, const void *frame,
    sceGuFinish(); 
 
    sceDisplayWaitVblankStart();
-   DisplaySetFrameBuf(frame, pitch, 
+   void *frame_ptr = &frame;
+   DisplaySetFrameBuf(frame_ptr, pitch, 
          vid->rgb32 ? PSP_DISPLAY_PIXEL_FORMAT_8888 : PSP_DISPLAY_PIXEL_FORMAT_565,
          PSP_DISPLAY_SETBUF_IMMEDIATE);
 
