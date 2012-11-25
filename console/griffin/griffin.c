@@ -363,7 +363,7 @@ RETROARCH
 THREAD
 ============================================================ */
 #if defined(HAVE_THREAD) && defined(XENON)
-#include "../../tread/xenon_sdl_threads.c"
+#include "../../thread/xenon_sdl_threads.c"
 #elif defined(HAVE_THREAD)
 #include "../../thread.c"
 #ifdef ANDROID
