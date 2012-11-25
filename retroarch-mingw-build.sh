@@ -81,7 +81,6 @@ do_build()
    RetroArch_DIR="$1"
    LIBZIPNAME="$2"
    BUILDTYPE="$3"
-   MAKEARGS="$4"
 
    if [ ! -d "$RetroArch_DIR" ]; then
       git clone git://github.com/Themaister/RetroArch.git "$RetroArch_DIR"
@@ -96,8 +95,8 @@ do_build()
    fi
 
    make -f Makefile.win clean || die "Failed to clean ..."
-   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" -j4 all SLIM=1 || die "Failed to build ..."
-   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" dist_${BUILDTYPE} SLIM=1 || die "Failed to dist ..."
+   make -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" -j4 all SLIM=1 || die "Failed to build ..."
+   make -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" dist_${BUILDTYPE} SLIM=1 || die "Failed to dist ..."
    if [ -z "`find . | grep "retroarch-win"`" ]; then
       die "Did not find build ..."
    fi
@@ -116,8 +115,8 @@ do_build()
    mv -v "$ZIP_BASE" "../$ZIP_SLIM" || die "Failed to move final build ..."
 
    make -f Makefile.win clean || die "Failed to clean ..."
-   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" HAVE_D3D9=1 -j4 all || die "Failed to build ..."
-   make -f Makefile.win $MAKEARGS CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" HAVE_D3D9=1 dist_${BUILDTYPE} || die "Failed to dist ..."
+   make -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" HAVE_D3D9=1 -j4 all || die "Failed to build ..."
+   make -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" HAVE_D3D9=1 dist_${BUILDTYPE} || die "Failed to dist ..."
 
    if [ "$BUILD_PHOENIX_GUI" = "yes" ]; then
       zip "$ZIP_BASE" retroarch-phoenix.exe retroarch-phoenix.cfg
@@ -132,10 +131,10 @@ do_build()
 
 if [ "$BUILD_32BIT" = yes ]; then
    message "Building for 32-bit!"
-   C_COMPILER=${MINGW32_BASE}-gcc
-   CXX_COMPILER=${MINGW32_BASE}-g++
+   C_COMPILER="${MINGW32_BASE}-gcc -msse"
+   CXX_COMPILER="${MINGW32_BASE}-g++ -msse"
    WINDRES=${MINGW32_BASE}-windres
-   do_build "RetroArch-w32" "RetroArch-win32-libs.zip" "x86" ""
+   do_build "RetroArch-w32" "RetroArch-win32-libs.zip" "x86"
 fi
 
 if [ "$BUILD_64BIT" = yes ]; then
@@ -143,7 +142,7 @@ if [ "$BUILD_64BIT" = yes ]; then
    C_COMPILER=${MINGW64_BASE}-gcc
    CXX_COMPILER=${MINGW64_BASE}-g++
    WINDRES=${MINGW64_BASE}-windres
-   do_build "RetroArch-w64" "RetroArch-win64-libs.zip" "x86_64" "HAVE_SINC=1"
+   do_build "RetroArch-w64" "RetroArch-win64-libs.zip" "x86_64"
 fi
 
 message "Built successfully! :)"
