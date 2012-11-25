@@ -89,7 +89,7 @@ static int if_up_with(int index)
       if (ret < 0)
       {
          printf("cellNetCtlGetState() failed(%x)\n", ret);
-	 return (-1);
+         return (-1);
       }
       if (state == CELL_NET_CTL_STATE_IPObtained)
          break;
@@ -99,7 +99,7 @@ static int if_up_with(int index)
       if (index && timeout_count < 0)
       {
          printf("if_up_with(%d) timeout\n", index);
-	 return (0);
+         return (0);
       }
    }
 #elif defined(GEKKO)

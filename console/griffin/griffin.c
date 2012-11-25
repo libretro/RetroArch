@@ -18,6 +18,16 @@
 #include "../../msvc/msvc_compat.h"
 #endif
 
+/*============================================================
+LOGGERS
+============================================================ */
+
+#if defined(HAVE_LOGGER) && defined(__PSL1GHT__)
+#include "../logger/psl1ght_logger.c"
+#elif defined(HAVE_LOGGER)
+#include "../logger/logger.c"
+#endif
+
 #ifdef RARCH_CONSOLE
 
 /*============================================================
@@ -65,6 +75,7 @@ default_paths_t default_paths;
 #ifdef HAVE_LIBRETRO_MANAGEMENT
 #include "../rarch_console_libretro_mgmt.c"
 #endif
+
 
 #endif
 
@@ -166,6 +177,8 @@ VIDEO DRIVER
 #include "../../psp2/psp2_video.c"
 #elif defined(PSP)
 #include "../../psp1/psp1_video.c"
+#elif defined(XENON)
+#include "../../360/xenon360_video.c"
 #endif
 
 #ifdef HAVE_DYLIB
@@ -213,6 +226,8 @@ INPUT
 #include "../../gx/gx_input.c"
 #elif defined(_XBOX)
 #include "../../xdk/xdk_xinput_input.c"
+#elif defined(XENON)
+#include "../../360/xenon360_input.c"
 #elif defined(ANDROID)
 #include "../../android/native/jni/input_android.c"
 #endif
@@ -254,6 +269,8 @@ AUDIO
 #include "../../ps3/ps3_audio.c"
 #elif defined(_XBOX360)
 #include "../../360/xdk360_audio.cpp"
+#elif defined(XENON)
+#include "../../360/xenon360_audio.c"
 #elif defined(GEKKO)
 #include "../../gx/gx_audio.c"
 #endif
@@ -325,6 +342,8 @@ MAIN
 ============================================================ */
 #if defined(_XBOX)
 #include "../../xdk/frontend/main.c"
+#elif defined(XENON)
+#include "../../360/frontend-xenon/main.c"
 #elif defined(GEKKO)
 #include "../../gx/frontend/main.c"
 #elif defined(__CELLOS_LV2__)
@@ -343,7 +362,9 @@ RETROARCH
 /*============================================================
 THREAD
 ============================================================ */
-#ifdef HAVE_THREAD
+#if defined(HAVE_THREAD) && defined(XENON)
+#include "../../tread/xenon_sdl_threads.c"
+#elif defined(HAVE_THREAD)
 #include "../../thread.c"
 #ifdef ANDROID
 #include "../../autosave.c"
