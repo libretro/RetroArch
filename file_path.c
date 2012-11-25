@@ -514,7 +514,7 @@ void fill_pathname_join(char *out_path, const char *dir, const char *path, size_
    if (dir_len)
    {
       if (out_path[dir_len - 1] != '/' && out_path[dir_len - 1] != '\\')
-         rarch_assert(strlcat(out_path, join_str, sizeof(out_path)));
+         rarch_assert(strlcat(out_path, join_str, size));
    }
 
    rarch_assert(strlcat(out_path, path, size) < size);
