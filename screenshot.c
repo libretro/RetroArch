@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "general.h"
+#include "file.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -234,7 +235,7 @@ bool screenshot_dump(const char *folder, const void *frame,
    char shotname[PATH_MAX];
 
    screenshot_generate_filename(shotname, sizeof(shotname));
-   snprintf(filename, sizeof(filename), "%s/%s", folder, shotname);
+   fill_pathname_join(filename, folder, shotname, sizeof(filename));
 
    FILE *file = fopen(filename, "wb");
    if (!file)

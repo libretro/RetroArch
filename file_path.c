@@ -244,7 +244,7 @@ struct string_list *dir_list_new(const char *dir, const char *ext, bool include_
          continue;
 
       char file_path[PATH_MAX];
-      snprintf(file_path, sizeof(file_path), "%s\\%s", dir, name);
+      fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
       union string_list_elem_attr attr;
       attr.b = is_dir;
@@ -307,7 +307,7 @@ struct string_list *dir_list_new(const char *dir, const char *ext, bool include_
       const char *file_ext = path_get_extension(name);
 
       char file_path[PATH_MAX];
-      snprintf(file_path, sizeof(file_path), "%s/%s", dir, name);
+      fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
       bool is_dir = dirent_is_directory(file_path, entry);
       if (!include_dirs && is_dir)
@@ -484,6 +484,26 @@ void fill_pathname_resolve_relative(char *out_path, const char *in_refpath, cons
       path_basedir(out_path);
       rarch_assert(strlcat(out_path, in_path, size) < size);
    }
+}
+
+void fill_pathname_join(char *out_path, const char *dir, const char *path, size_t size)
+{
+#ifdef _WIN32
+   const char join_str[] = "\\";
+#else
+   const char join_str[] = "/";
+#endif
+
+   size_t dir_len;
+   rarch_assert((dir_len = strlcpy(out_path, dir, size)) < size);
+
+   if (dir_len)
+   {
+      if (out_path[dir_len - 1] != '/' && out_path[dir_len - 1] != '\\')
+         rarch_assert(strlcat(out_path, join_str, sizeof(out_path)));
+   }
+
+   rarch_assert(strlcat(out_path, path, size) < size);
 }
 
 size_t convert_char_to_wchar(wchar_t *out_wchar, const char *in_char, size_t size)
