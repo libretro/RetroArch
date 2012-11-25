@@ -95,7 +95,7 @@ static bool filebrowser_pop_directory (filebrowser_t * filebrowser)
    if (filebrowser->directory_stack_size > 0)
       pop_dir -= 1;
 
-   fill_pathname_basedir(previous_dir, filebrowser->directory_path, sizeof(previous_dir));
+   fill_pathname_parent_dir(previous_dir, filebrowser->directory_path, sizeof(previous_dir));
    strlcpy(directory_path_tmp, filebrowser->directory_path, sizeof(directory_path_tmp));
 
    //test first if previous directory can be accessed

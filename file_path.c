@@ -429,6 +429,12 @@ void fill_pathname_basedir(char *out_dir, const char *in_path, size_t size)
    path_basedir(out_dir);
 }
 
+void fill_pathname_parent_dir(char *out_dir, const char *in_dir, size_t size)
+{
+   rarch_assert(strlcpy(out_dir, in_dir, size) < size);
+   path_parent_dir(out_dir);
+}
+
 void path_basedir(char *path)
 {
    if (strlen(path) < 2)
@@ -448,6 +454,14 @@ void path_basedir(char *path)
       path[1] = '/';
       path[2] = '\0';
    }
+}
+
+void path_parent_dir(char *path)
+{
+   size_t len = strlen(path);
+   if (len && ((path[len - 1] == '/') || (path[len - 1] == '\\')))
+      path[len - 1] = '\0';
+   path_basedir(path);
 }
 
 const char *path_basename(const char *path)

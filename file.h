@@ -75,6 +75,10 @@ const char *path_basename(const char *path);
 // Extracts base directory by mutating path. Keeps trailing '/'.
 void path_basedir(char *path);
 
+// Extracts parent directory by mutating path.
+// Assumes that path is a directory. Keeps trailing '/'.
+void path_parent_dir(char *path);
+
 bool path_is_absolute(const char *path);
 
 // Path-name operations.
@@ -107,6 +111,10 @@ void fill_pathname_base(char *out_path, const char *in_path, size_t size);
 // Copies base directory of in_path into out_path.
 // If in_path is a path without any slashes (relative current directory), out_path will get path "./".
 void fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
+
+// Copies parent directory of in_dir into out_dir.
+// Assumes in_dir is a directory. Keeps trailing '/'.
+void fill_pathname_parent_dir(char *out_dir, const char *in_dir, size_t size);
 
 // Joins basedir of in_refpath together with in_path.
 // If in_path is an absolute path, out_path = in_path.
