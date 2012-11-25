@@ -47,7 +47,7 @@
 
 #define SIDELOBES 8
 #define TAPS (SIDELOBES * 2)
-#define CUTOFF 1.0
+#define CUTOFF 0.98
 
 struct rarch_resampler
 {
