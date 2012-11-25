@@ -254,14 +254,13 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
          frames--;
       }
 
-      if (re->time >= PHASES)
-         break;
-
-      process_sinc(re, output);
-      output += 2;
-      out_frames++;
-
-      re->time += ratio;
+      while (re->time < PHASES)
+      {
+         process_sinc(re, output);
+         output += 2;
+         out_frames++;
+         re->time += ratio;
+      }
    }
 
    data->output_frames = out_frames;

@@ -64,8 +64,22 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
    const float *in_data = data->data_in;
    float *out_data = data->data_out;
 
-   for (size_t i = 0; i < in_frames; i++)
+   size_t i = 0;
+   while (i < in_frames)
    {
+      while (re->r_frac >= 1.0 && i < in_frames)
+      {
+         re->r_frac -= 1.0;
+         for (unsigned i = 0; i < CHANNELS; i++)
+         {
+            re->chan_data[i][0] = re->chan_data[i][1];
+            re->chan_data[i][1] = re->chan_data[i][2];
+            re->chan_data[i][2] = re->chan_data[i][3];
+            re->chan_data[i][3] = *in_data++;
+         }
+         i++;
+      }
+
       while (re->r_frac <= 1.0)
       {
          re->r_frac += r_step;
@@ -76,18 +90,6 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
             *out_data++ = res;
          }
          processed_out++;
-      }
-
-      while (re->r_frac >= 1.0)
-      {
-         re->r_frac -= 1.0;
-         for (unsigned i = 0; i < CHANNELS; i++)
-         {
-            re->chan_data[i][0] = re->chan_data[i][1];
-            re->chan_data[i][1] = re->chan_data[i][2];
-            re->chan_data[i][2] = re->chan_data[i][3];
-            re->chan_data[i][3] = *in_data++;
-         }
       }
    }
 
