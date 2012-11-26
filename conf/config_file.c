@@ -411,12 +411,8 @@ bool config_get_float(config_file_t *conf, const char *key, float *in)
    {
       if (strcmp(key, list->key) == 0)
       {
-#ifdef __cplusplus
-         // strtof() is C99/POSIX.
+         // strtof() is C99/POSIX. Just use the more portable kind.
          *in = (float)strtod(list->value, NULL);
-#else
-         *in = strtof(list->value, NULL);
-#endif
          return true;
       }
       list = list->next;
