@@ -24,6 +24,7 @@ OBJ = retroarch.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/filter.o \
+		gfx/image.o \
 		performance.o
 
 JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
@@ -238,9 +239,9 @@ ifeq ($(HAVE_XML), 1)
 endif
 
 ifeq ($(HAVE_XML), 1)
-   OBJ += gfx/state_tracker.o gfx/image.o 
+   OBJ += gfx/state_tracker.o
 else ifeq ($(HAVE_CG), 1)
-   OBJ += gfx/state_tracker.o gfx/image.o 
+   OBJ += gfx/state_tracker.o
 endif
 
 ifeq ($(HAVE_DYLIB), 1)
