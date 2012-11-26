@@ -439,8 +439,8 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
             *in = val;
             return true;
          }
-         return
-            false;
+         else
+            return false;
       }
       list = list->next;
    }
@@ -462,29 +462,35 @@ bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
             *in = val;
             return true;
          }
-         return
-            false;
+         else
+            return false;
       }
       list = list->next;
    }
    return false;
 }
 
-
 bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
 {
-  struct config_entry_list *list = conf->entries;
-  
-  while (list != NULL)
-  {
-    if (strcmp(key, list->key) == 0)
-    {
-      *in = strtol(list->value, NULL, 0);
-      return true;
-    }
-    list = list->next;
+   struct config_entry_list *list = conf->entries;
+
+   while (list != NULL)
+   {
+      if (strcmp(key, list->key) == 0)
+      {
+         errno = 0;
+         unsigned val = strtoul(list->value, NULL, 0);
+         if (errno == 0)
+         {
+            *in = val;
+            return true;
+         }
+         else
+            return false;
+      }
+      list = list->next;
    }
-   
+
    return false;
 }
 
