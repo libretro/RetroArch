@@ -343,6 +343,10 @@ static bool ffemu_init_video(struct ff_config_param *params, struct ff_video_inf
 static bool ffemu_init_config(struct ff_config_param *params, const char *config)
 {
    params->out_pix_fmt = PIX_FMT_NONE;
+   params->scale_factor = 1;
+   params->threads = 1;
+   params->frame_drop_ratio = 1;
+
    if (!config)
       return true;
 
@@ -357,17 +361,14 @@ static bool ffemu_init_config(struct ff_config_param *params, const char *config
    config_get_array(params->conf, "acodec", params->acodec, sizeof(params->acodec));
    config_get_array(params->conf, "format", params->format, sizeof(params->format));
 
-   if (!config_get_uint(params->conf, "threads", &params->threads))
-      params->threads = 1;
+   config_get_uint(params->conf, "threads", &params->threads);
 
    if (!config_get_uint(params->conf, "frame_drop_ratio", &params->frame_drop_ratio)
          || !params->frame_drop_ratio)
       params->frame_drop_ratio = 1;
 
-   if (!config_get_uint(params->conf, "sample_rate", &params->sample_rate))
-      params->sample_rate = 0;
-   if (!config_get_uint(params->conf, "scale_factor", &params->scale_factor))
-      params->scale_factor = 1;
+   config_get_uint(params->conf, "sample_rate", &params->sample_rate);
+   config_get_uint(params->conf, "scale_factor", &params->scale_factor);
 
    params->audio_qscale = config_get_int(params->conf, "audio_global_quality", &params->audio_global_quality);
    config_get_int(params->conf, "audio_bit_rate", &params->audio_bit_rate);
@@ -437,10 +438,6 @@ static bool ffemu_init_muxer(ffemu_t *handle)
    if (ctx->oformat->flags & AVFMT_GLOBALHEADER)
       handle->audio.codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
    handle->muxer.astream = stream;
-
-   // Avoids a warning at end about non-monotonically increasing DTS values.
-   // It seems to be harmless to disable this.
-   ctx->oformat->flags |= AVFMT_TS_NONSTRICT;
 
    av_dict_set(&ctx->metadata, "title", "RetroArch video dump", 0); 
 
