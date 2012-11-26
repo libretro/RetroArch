@@ -99,7 +99,7 @@ static const video_driver_t *video_drivers[] = {
    &video_d3d9,
 #endif
 #ifdef SN_TARGET_PSP2
-   &video_psp2,
+   &video_vita,
 #endif
 #ifdef PSP
    &video_psp1,

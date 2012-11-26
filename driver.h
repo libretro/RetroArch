@@ -291,7 +291,7 @@ extern const audio_driver_t audio_gx;
 extern const audio_driver_t audio_null;
 extern const video_driver_t video_gl;
 extern const video_driver_t video_psp1;
-extern const video_driver_t video_psp2;
+extern const video_driver_t video_vita;
 extern const video_driver_t video_d3d9;
 extern const video_driver_t video_gx;
 extern const video_driver_t video_xenon360;

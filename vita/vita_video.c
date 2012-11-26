@@ -37,7 +37,7 @@
 #define DISPLAY_BUFFER_SIZE (GXM_ALIGN(PSP_PITCH_PIXELS * PSP_FB_HEIGHT * 4, 1024 * 1024))
 #define DISPLAY_MAX_PENDING_SWAPS 2
 
-typedef struct psp2_video
+typedef struct vita_video
 {
    SceGxmContext *gxm_ctx;
    void             *context_host_mem;
@@ -58,7 +58,7 @@ typedef struct psp2_video
    SceUID patcher_buf_uid;
    unsigned disp_back_buf_index;
    unsigned disp_front_buf_index;
-} psp2_video_t;
+} vita_video_t;
 
 typedef struct
 {
@@ -136,9 +136,9 @@ error:
    RARCH_ERR("Error during GPU memory deallocation.\n");
 }
 
-static void psp2_gfx_init_fbo(void *data, const video_info_t *video)
+static void vita_gfx_init_fbo(void *data, const video_info_t *video)
 {
-   psp2_video_t *vid = (psp2_video_t*)driver.video_data;
+   vita_video_t *vid = (vita_video_t*)driver.video_data;
 
    SceGxmRenderTargetParams rtparams;
    memset(&rtparams, 0, sizeof(SceGxmRenderTargetParams));
@@ -210,9 +210,9 @@ static void patcher_host_free(void *user_data, void *mem)
    free(mem);
 }
 
-static int psp2_gfx_init_shader_patcher(const video_info_t *video)
+static int vita_gfx_init_shader_patcher(const video_info_t *video)
 {
-   ps2p_video_t *vid = (psp2_video_t*)driver.video_data;
+   ps2p_video_t *vid = (vita_video_t*)driver.video_data;
 
    SceGxmShaderPatcherParams patcher_params;
    uint32_t patcherVertexUsseOffset, patcherFragmentUsseOffset;
@@ -257,9 +257,9 @@ static int psp2_gfx_init_shader_patcher(const video_info_t *video)
    return ret;
 }
 
-static void psp2_gfx_init_sync_objects(const video_info_t *video)
+static void vita_gfx_init_sync_objects(const video_info_t *video)
 {
-   psp2_video_t *vid = (psp2_video_t*)driver.video_data;
+   vita_video_t *vid = (vita_video_t*)driver.video_data;
 
    for (unsigned i = 0; i < DISPLAY_BUFFER_COUNT; ++i)
    {
@@ -294,7 +294,7 @@ static void psp2_gfx_init_sync_objects(const video_info_t *video)
    }
 }
 
-static void *psp2_gfx_init(const video_info_t *video,
+static void *vita_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    *input = NULL;
@@ -303,14 +303,14 @@ static void *psp2_gfx_init(const video_info_t *video,
 
    if (driver.video_data)
    {
-      psp2_video_t *vid = (psp2_video_t*)driver.video_data;
+      vita_video_t *vid = (vita_video_t*)driver.video_data;
 
       /* TODO - Reinitialize textures here */
 
       return driver.video_data;
    }
 
-   psp2_video_t *vid = (psp2_video_t*)calloc(1, sizeof(psp2_video_t));
+   vita_video_t *vid = (vita_video_t*)calloc(1, sizeof(vita_video_t));
 
    if (!vid)
       goto error;
@@ -376,17 +376,17 @@ static void *psp2_gfx_init(const video_info_t *video,
    if (ret != SCE_OK)
       goto error;
 
-   if((psp2_gfx_init_fbo()) != SCE_OK)
+   if((vita_gfx_init_fbo()) != SCE_OK)
       goto error;
    else
       RARCH_LOG("FBO initialized successfully.\n");
 
-   if((psp2_gfx_init_shader_patcher()) != SCE_OK)
+   if((vita_gfx_init_shader_patcher()) != SCE_OK)
       goto error;
    else
       RARCH_LOG("Shader patcher initialized successfully.\n");
 
-   psp2_gfx_init_sync_objects(video);
+   vita_gfx_init_sync_objects(video);
 
    /* Clear display buffer for first swap */
    memset(vid->disp_buf_data[vid>disp_front_buf_index], 0x00, DISPLAY_BUFFER_SIZE);
@@ -396,13 +396,13 @@ static void *psp2_gfx_init(const video_info_t *video,
 
    return vid;
 error:
-   RARCH_ERR("PSP2 libgxm video could not be initialized.\n");
+   RARCH_ERR("Vita libgxm video could not be initialized.\n");
    return (void*)-1;
 }
 
-static inline void psp2_gfx_swap(void)
+static inline void vita_gfx_swap(void)
 {
-   psp2_video_t *vid = (psp2_video_t*)driver.video_data;
+   vita_video_t *vid = (vita_video_t*)driver.video_data;
 
    DisplayData display_data;
 
@@ -419,7 +419,7 @@ static inline void psp2_gfx_swap(void)
    vid->disp_back_buf_index  = (vid->disp_back_buf_index + 1) & DISPLAY_BUFFER_COUNT;
 }
 
-static bool psp2_gfx_frame(void *data, const void *frame,
+static bool vita_gfx_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    (void)data;
@@ -429,7 +429,7 @@ static bool psp2_gfx_frame(void *data, const void *frame,
    (void)pitch;
    (void)msg;
 
-   psp2_video_t *vid = (psp2_video_t*)data;
+   vita_video_t *vid = (vita_video_t*)data;
 
    sceGxmBeginScene(vid->gcm_ctx, 0, vid->rt, NULL,
          NULL, vid->disp_buf_sync[vid->disp_back_buf_index]);
@@ -441,30 +441,30 @@ static bool psp2_gfx_frame(void *data, const void *frame,
    /* notify end of frame */
    sceGxmPadHeartBeat(&vid->disp_surface[vid->disp_back_buf_index], vid->disp_buf_sync[vid->disp_back_buf_index]);
 
-   psp2_gfx_swap();
+   vita_gfx_swap();
 
    return true;
 }
 
-static void psp2_gfx_set_nonblock_state(void *data, bool toggle)
+static void vita_gfx_set_nonblock_state(void *data, bool toggle)
 {
    (void)data;
    (void)toggle;
 }
 
-static bool psp2_gfx_alive(void *data)
+static bool vita_gfx_alive(void *data)
 {
    (void)data;
    return true;
 }
 
-static bool psp2_gfx_focus(void *data)
+static bool vita_gfx_focus(void *data)
 {
    (void)data;
    return true;
 }
 
-static void psp2_gfx_free(void *data)
+static void vita_gfx_free(void *data)
 {
    (void)data;
    void *hostmem;
@@ -473,7 +473,7 @@ static void psp2_gfx_free(void *data)
 
    /* TDO: error checking */
 
-   psp2_video_t *vid = (psp2_video_t*)driver.video_data;
+   vita_video_t *vid = (vita_video_t*)driver.video_data;
 
    sceGxmFinish(vid->gxm_ctx);
 
@@ -513,24 +513,24 @@ static void psp2_gfx_free(void *data)
 }
 
 #ifdef RARCH_CONSOLE
-static void psp2_gfx_start(void) {}
-static void psp2_gfx_restart(void) {}
-static void psp2_gfx_stop(void) {}
+static void vita_gfx_start(void) {}
+static void vita_gfx_restart(void) {}
+static void vita_gfx_stop(void) {}
 #endif
 
-const video_driver_t video_psp2 = {
-   psp2_gfx_init,
-   psp2_gfx_frame,
-   psp2_gfx_set_nonblock_state,
-   psp2_gfx_alive,
-   psp2_gfx_focus,
+const video_driver_t video_vita = {
+   vita_gfx_init,
+   vita_gfx_frame,
+   vita_gfx_set_nonblock_state,
+   vita_gfx_alive,
+   vita_gfx_focus,
    NULL,
-   psp2_gfx_free,
-   "psp2",
+   vita_gfx_free,
+   "vita",
 
 #ifdef RARCH_CONSOLE
-   psp2_gfx_start,
-   psp2_gfx_stop,
-   psp2_gfx_restart,
+   vita_gfx_start,
+   vita_gfx_stop,
+   vita_gfx_restart,
 #endif
 };
