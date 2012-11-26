@@ -23,9 +23,17 @@
 #include "../general.h"
 #include "../driver.h"
 
-#define PSP_SCREEN_WIDTH  480
-#define PSP_SCREEN_HEIGHT 272
-#define PSP_LINE_SIZE     512
+#ifndef SCEGU_SCR_WIDTH
+#define SCEGU_SCR_WIDTH 480
+#endif
+
+#ifndef SCEGU_SCR_HEIGHT
+#define SCEGU_SCR_HEIGHT 272
+#endif
+
+#ifndef SCEGU_VRAM_WIDTH
+#define SCEGU_VRAM_WIDTH 512
+#endif
 
 typedef struct psp1_video
 {
@@ -44,15 +52,15 @@ static void init_texture(void *data, const video_info_t *video)
    sceGuInit();
    sceGuStart(GU_DIRECT, list);
 
-   sceGuDrawBuffer(vid->rgb32 ? GU_PSM_8888 : GU_PSM_5650, (void*)0, PSP_LINE_SIZE);
-   sceGuDispBuffer(PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT, (void*)0x88000, PSP_LINE_SIZE);
+   sceGuDrawBuffer(vid->rgb32 ? GU_PSM_8888 : GU_PSM_5650, (void*)0, SCEGU_VRAM_WIDTH);
+   sceGuDispBuffer(SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, (void*)0x88000, SCEGU_VRAM_WIDTH);
    sceGuClear(GU_COLOR_BUFFER_BIT);
 
-   sceGuOffset(2048 - (PSP_SCREEN_WIDTH / 2), 2048 - (PSP_SCREEN_HEIGHT / 2));
-   sceGuViewport(2048, 2048, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
+   sceGuOffset(2048 - (SCEGU_SCR_WIDTH / 2), 2048 - (SCEGU_SCR_HEIGHT / 2));
+   sceGuViewport(2048, 2048, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT);
 
    /* FIXME - we will want to disable all this */
-   sceGuScissor(0, 0, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
+   sceGuScissor(0, 0, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT);
    sceGuEnable(GU_SCISSOR_TEST);
    sceGuTexMode(vid->rgb32 ? GU_PSM_8888 : GU_PSM_5650, 0, 0, GU_FALSE);
    sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);

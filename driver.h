@@ -312,42 +312,8 @@ extern const input_driver_t input_gx;
 extern const input_driver_t input_xinput;
 extern const input_driver_t input_linuxraw;
 extern const input_driver_t input_null;
-////////////////////////////////////////////////
 
-// Convenience macros.
-
-#ifdef HAVE_GRIFFIN
-#include "console/griffin/hook.h"
-#else
-#define audio_init_func(device, rate, latency)  driver.audio->init(device, rate, latency)
-#define audio_write_func(buf, size)             driver.audio->write(driver.audio_data, buf, size)
-#define audio_stop_func()                       driver.audio->stop(driver.audio_data)
-#define audio_start_func()                      driver.audio->start(driver.audio_data)
-#define audio_set_nonblock_state_func(state)    driver.audio->set_nonblock_state(driver.audio_data, state)
-#define audio_free_func()                       driver.audio->free(driver.audio_data)
-#define audio_use_float_func()                  driver.audio->use_float(driver.audio_data)
-#define audio_write_avail_func()                driver.audio->write_avail(driver.audio_data)
-#define audio_buffer_size_func()                driver.audio->buffer_size(driver.audio_data)
-
-#define video_init_func(video_info, input, input_data) \
-                                                driver.video->init(video_info, input, input_data)
-#define video_frame_func(data, width, height, pitch, msg) \
-                                                driver.video->frame(driver.video_data, data, width, height, pitch, msg)
-#define video_set_nonblock_state_func(state) driver.video->set_nonblock_state(driver.video_data, state)
-#define video_alive_func()                      driver.video->alive(driver.video_data)
-#define video_focus_func()                      driver.video->focus(driver.video_data)
-#define video_set_shader_func(type, path)       driver.video->set_shader(driver.video_data, type, path)
-#define video_set_rotation_func(rotate)         driver.video->set_rotation(driver.video_data, rotate)
-#define video_set_aspect_ratio_func(aspect_idx) driver.video->set_aspect_ratio(driver.video_data, aspect_idx)
-#define video_viewport_info_func(info)          driver.video->viewport_info(driver.video_data, info)
-#define video_read_viewport_func(buffer)        driver.video->read_viewport(driver.video_data, buffer)
-#define video_free_func()                       driver.video->free(driver.video_data)
-
-#define input_init_func()                       driver.input->init()
-#define input_poll_func()                       driver.input->poll(driver.input_data)
-#define input_input_state_func(retro_keybinds, port, device, index, id) \
-                                                driver.input->input_state(driver.input_data, retro_keybinds, port, device, index, id)
-#define input_free_func()                       driver.input->free(driver.input_data)
+#include "driver_funcs.h"
 
 static inline bool input_key_pressed_func(int key)
 {
@@ -361,7 +327,6 @@ static inline bool input_key_pressed_func(int key)
 #endif
    return ret;
 }
-#endif
 
 #endif
 
