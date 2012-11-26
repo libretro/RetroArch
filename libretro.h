@@ -388,7 +388,21 @@ enum retro_key
                                            // It is up to the frontend to present this in a usable way.
                                            // The array is terminated by retro_input_descriptor::description being set to NULL.
                                            // This function can be called at any time, but it is recommended to call it as early as possible.
+#define RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK 12
+                                           // const struct retro_keyboard_callback * --
+                                           // Sets a callback function used to notify core about keyboard events.
 
+
+// Callback type passed in RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK. Called by the frontend in response to keyboard events.
+// down is set if the key is being pressed, or false if it is being released.
+// keycode is the RETROK value of the char.
+// character is the text character of the pressed key. (UTF?)
+typedef void (*retro_keyboard_event_t)(bool down, unsigned keycode, unsigned character);
+
+struct retro_keyboard_callback
+{
+    retro_keyboard_event_t callback;
+};
 
 enum retro_pixel_format
 {

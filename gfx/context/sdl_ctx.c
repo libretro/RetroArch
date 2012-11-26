@@ -254,6 +254,24 @@ static void gfx_ctx_check_window(bool *quit,
             *width  = event.resize.w;
             *height = event.resize.h;
             break;
+            
+         case SDL_KEYDOWN:
+         case SDL_KEYUP:
+            if(g_extern.system.key_event)
+            {
+               static bool unicodeOn = false;
+               
+               if(!unicodeOn)
+               {
+                  unicodeOn = true;
+                  SDL_EnableUNICODE(true);
+               }
+               
+               // For now it seems that all RETROK_* constant values match the SDLK_* values.
+               // Ultimately the table in sdl_input.c should be used in case this changes.
+               g_extern.system.key_event(event.type == SDL_KEYDOWN, event.key.keysym.sym, event.key.keysym.unicode);
+            }
+            break;
       }
    }
 
