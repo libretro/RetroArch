@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
    g_extern.verbose = true;
 
 #ifdef HAVE_FILE_LOGGER
-   log_fp = fopen("ms0:/retroarch-log.txt", "w");
+   g_extern.log_file = fopen("ms0:/retroarch-log.txt", "w");
 #endif
 
    get_environment_settings(argc, argv);
@@ -185,7 +185,9 @@ begin_shutdown:
    g_extern.verbose = false;
 
 #ifdef HAVE_FILE_LOGGER
-   fclose(log_fp);
+   if (g_extern.log_file)
+      fclose(g_extern.log_file);
+   g_extern.log_file = NULL;
 #endif
 
    sceKernelExitGame();

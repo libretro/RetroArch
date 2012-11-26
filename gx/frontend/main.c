@@ -146,7 +146,7 @@ int gx_logger_net(struct _reent *r, int fd, const char *ptr, size_t len)
 #elif defined(HAVE_FILE_LOGGER)
 int gx_logger_file(struct _reent *r, int fd, const char *ptr, size_t len)
 {
-   fwrite(ptr, 1, len, log_fp);
+   fwrite(ptr, 1, len, g_extern.log_file);
    return len;
 }
 #endif
@@ -489,7 +489,7 @@ int main(int argc, char *argv[])
    dotab_stdout.write_r = gx_logger_net;
 #elif defined(HAVE_FILE_LOGGER)
    g_extern.verbose = true;
-   log_fp = fopen("/retroarch-log.txt", "w");
+   g_extern.log_file = fopen("/retroarch-log.txt", "w");
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
    dotab_stdout.write_r = gx_logger_file;
@@ -608,7 +608,9 @@ begin_shutdown:
 #ifdef HAVE_LOGGER
    logger_shutdown();
 #elif defined(HAVE_FILE_LOGGER)
-   fclose(log_fp);
+   if (g_extern.log_file)
+      fclose(g_extern.log_file);
+   g_extern.log_file = NULL;
 #endif
 
    if(g_extern.console.external_launch.enable)
