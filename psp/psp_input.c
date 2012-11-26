@@ -170,6 +170,8 @@ static bool psp_key_pressed(void *data, int key)
 
    switch (key)
    {
+      case RARCH_QUIT_KEY:
+         return true;
       default:
          return false;
    }

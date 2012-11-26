@@ -77,17 +77,17 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
    switch (status)
    {
       case CELL_SYSUTIL_REQUEST_EXITGAME:
-	 gl->quitting = true;
+         gl->quitting = true;
          rarch_settings_change(S_QUIT);
-	 break;
+         break;
 #ifdef HAVE_OSKUTIL
       case CELL_SYSUTIL_OSKDIALOG_FINISHED:
-	 oskutil_close(osk);
-	 oskutil_finished(osk);
-	 break;
+         oskutil_close(osk);
+         oskutil_finished(osk);
+         break;
       case CELL_SYSUTIL_OSKDIALOG_UNLOADED:
-	 oskutil_unload(osk);
-	 break;
+         oskutil_unload(osk);
+         break;
 #endif
    }
 }
@@ -100,7 +100,7 @@ void menu_init (void)
 
 void menu_loop (void)
 {
-	rarch_console_load_game_wrap("/dev_hdd0/game/SSNE10000/USRDIR/mm3.nes", 0, 0);
+   rarch_console_load_game_wrap("/dev_hdd0/game/SSNE10000/USRDIR/mm3.nes", 0, 0);
 }
 
 void menu_free (void)
@@ -134,7 +134,7 @@ static void get_environment_settings(int argc, char *argv[])
 #ifdef HAVE_MULTIMAN
    /* not launched from external launcher, set default path */
    strlcpy(default_paths.multiman_self_file, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
-      sizeof(default_paths.multiman_self_file));
+         sizeof(default_paths.multiman_self_file));
 
    if(path_file_exists(default_paths.multiman_self_file) && argc > 1 &&  path_file_exists(argv[1]))
    {
@@ -165,10 +165,10 @@ static void get_environment_settings(int argc, char *argv[])
       {
          case CELL_GAME_GAMETYPE_DISC:
             RARCH_LOG("RetroArch was launched on Optical Disc Drive.\n");
-	    break;
-	 case CELL_GAME_GAMETYPE_HDD:
-	    RARCH_LOG("RetroArch was launched on HDD.\n");
-	    break;
+            break;
+         case CELL_GAME_GAMETYPE_HDD:
+            RARCH_LOG("RetroArch was launched on HDD.\n");
+            break;
       }
 
       if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) == CELL_GAME_ATTRIBUTE_APP_HOME)
@@ -180,7 +180,7 @@ static void get_environment_settings(int argc, char *argv[])
       if(g_extern.console.external_launch.support == EXTERN_LAUNCHER_MULTIMAN)
       {
          snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
-	 snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
+         snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
       }
 #endif
 
@@ -191,8 +191,8 @@ static void get_environment_settings(int argc, char *argv[])
       else
       {
          RARCH_LOG("cellGameContentPermit() OK.\n");
-	 RARCH_LOG("contentInfoPath : [%s].\n", contentInfoPath);
-	 RARCH_LOG("usrDirPath : [%s].\n", default_paths.port_dir);
+         RARCH_LOG("contentInfoPath : [%s].\n", contentInfoPath);
+         RARCH_LOG("usrDirPath : [%s].\n", default_paths.port_dir);
       }
 
 #ifdef HAVE_HDD_CACHE_PARTITION
@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    bool find_libretro_file = rarch_configure_libretro_core(core_exe_path, path_prefix, path_prefix, 
-   default_paths.config_file, extension);
+         default_paths.config_file, extension);
 #else
    bool find_libretro_file = false;
 #endif
@@ -328,14 +328,14 @@ int main(int argc, char *argv[])
    {
       case EXTERN_LAUNCHER_SALAMANDER:
          g_extern.console.rmenu.mode = MODE_MENU;
-	 break;
+         break;
 #ifdef HAVE_MULTIMAN
       case EXTERN_LAUNCHER_MULTIMAN:
-	 RARCH_LOG("Started from multiMAN, will auto-start game.\n");
-	 strlcpy(g_extern.file_state.rom_path, argv[1], sizeof(g_extern.file_state.rom_path));
+         RARCH_LOG("Started from multiMAN, will auto-start game.\n");
+         strlcpy(g_extern.file_state.rom_path, argv[1], sizeof(g_extern.file_state.rom_path));
          rarch_settings_change(S_START_RARCH);
-	 rarch_startup(default_paths.config_file);
-	 break;
+         rarch_startup(default_paths.config_file);
+         break;
 #endif
       default:
          break;
@@ -387,7 +387,7 @@ begin_shutdown:
 
 #if defined(HAVE_SYSMODULES)
 
-/* Freetype font PRX */
+   /* Freetype font PRX */
 
 #ifdef HAVE_FREETYPE
    cellSysmoduleLoadModule(CELL_SYSMODULE_FONTFT);
@@ -395,7 +395,7 @@ begin_shutdown:
    cellSysmoduleUnloadModule(CELL_SYSMODULE_FONT);
 #endif
 
-/* screenshot PRX */
+   /* screenshot PRX */
 
 #ifndef __PSL1GHT__
    if(g_extern.console.screen.state.screenshots.enable)
@@ -405,7 +405,7 @@ begin_shutdown:
    cellSysmoduleUnloadModule(CELL_SYSMODULE_JPGDEC);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_PNGDEC);
 
-/* system game utility PRX */
+   /* system game utility PRX */
 #ifndef __PSL1GHT__
    cellSysmoduleUnloadModule(CELL_SYSMODULE_AVCONF_EXT);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);

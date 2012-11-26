@@ -83,7 +83,7 @@ static void *psp_gfx_init(const video_info_t *video,
       psp1_video_t *vid = (psp1_video_t*)driver.video_data;
 
       /* Reinitialize textures here */
-      init_texture(vid, video);
+      //init_texture(vid, video);
 
       return driver.video_data;
    }
@@ -134,10 +134,13 @@ static bool psp_gfx_frame(void *data, const void *frame,
    sceGuFinish(); 
 
    sceDisplayWaitVblankStart();
+
+#if 0
    void *frame_ptr = &frame;
    DisplaySetFrameBuf(frame_ptr, pitch, 
          vid->rgb32 ? PSP_DISPLAY_PIXEL_FORMAT_8888 : PSP_DISPLAY_PIXEL_FORMAT_565,
          PSP_DISPLAY_SETBUF_IMMEDIATE);
+#endif
 
    return true;
 }

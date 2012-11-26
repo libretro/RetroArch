@@ -33,14 +33,32 @@ int rarch_main(int argc, char *argv[]);
 
 static int exit_callback(int arg1, int arg2, void *common)
 {
+   sceKernelExitGame();
    return 0;
 }
 
 static void get_environment_settings(int argc, char *argv[])
 {
-   g_extern.verbose = true;
+   fill_pathname_basedir(default_paths.port_dir, argv[0], sizeof(default_paths.port_dir));
+   RARCH_LOG("port dir: [%s]\n", default_paths.port_dir);
 
-   g_extern.verbose = false;
+   snprintf(default_paths.core_dir, sizeof(default_paths.core_dir), "%s/cores", default_paths.port_dir);
+   snprintf(default_paths.executable_extension, sizeof(default_paths.executable_extension), ".SELF");
+   snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.core_dir);
+   snprintf(default_paths.filesystem_root_dir, sizeof(default_paths.filesystem_root_dir), "/");
+   snprintf(default_paths.filebrowser_startup_dir, sizeof(default_paths.filebrowser_startup_dir), default_paths.filesystem_root_dir);
+   snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.core_dir);
+
+   snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.core_dir);
+
+   /* now we fill in all the variables */
+   snprintf(default_paths.border_file, sizeof(default_paths.border_file), "%s/borders/Centered-1080p/mega-man-2.png", default_paths.core_dir);
+   snprintf(default_paths.menu_border_file, sizeof(default_paths.menu_border_file), "%s/borders/Menu/main-menu.png", default_paths.core_dir);
+   snprintf(default_paths.cgp_dir, sizeof(default_paths.cgp_dir), "%s/presets", default_paths.core_dir);
+   snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.cgp_dir);
+   snprintf(default_paths.border_dir, sizeof(default_paths.border_dir), "%s/borders", default_paths.core_dir);
+   snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
+   snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "EBOOT.BIN");
 }
 
 int callback_thread(SceSize args, void *argp)
@@ -62,6 +80,24 @@ static int setup_callback(void)
    return thread_id;
 }
 
+void menu_init (void)
+{
+   g_extern.console.rmenu.mode = MODE_MENU;
+}
+
+void menu_loop (void)
+{
+   char game_rom[256];
+   snprintf(game_rom, sizeof(game_rom), "%s%s", default_paths.port_dir, "dkc.sfc");
+   RARCH_LOG("game ROM: %s\n", game_rom);
+   rarch_console_load_game_wrap(game_rom, 0, 0);
+   g_extern.console.rmenu.mode = MODE_EMULATION;
+}
+
+void menu_free (void)
+{
+}
+
 int main(int argc, char *argv[])
 {
    //initialize debug screen
@@ -70,22 +106,81 @@ int main(int argc, char *argv[])
 
    setup_callback();
 
-   get_environment_settings(argc, argv);
+   rarch_main_clear_state();
+
+   g_extern.verbose = true;
 
 #ifdef HAVE_FILE_LOGGER
    log_fp = fopen("ms0:/retroarch-log.txt", "w");
 #endif
 
-   g_extern.verbose = true;
+   get_environment_settings(argc, argv);
 
-   RARCH_LOG("TEST...\n");
+   config_set_defaults();
+   input_psp.init();
 
-   sceDisplayWaitVblankStart();
-   pspDebugScreenClear();
-   pspDebugScreenSetXY(0, 0);
-   RARCH_LOG("RetroArch PSP test.\n");
+   char tmp_path[PATH_MAX];
+   snprintf(tmp_path, sizeof(tmp_path), "%s/", default_paths.core_dir);
+   const char *path_prefix = tmp_path; 
+   const char *extension = default_paths.executable_extension;
+   const input_driver_t *input = &input_psp;
 
-   rarch_sleep(20);
+   char core_exe_path[1024];
+   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
+
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+   bool find_libretro_file = rarch_configure_libretro_core(core_exe_path, path_prefix, path_prefix, 
+   default_paths.config_file, extension);
+#else
+   bool find_libretro_file = false;
+#endif
+
+   rarch_settings_set_default();
+   rarch_input_set_controls_default(input);
+   rarch_config_load(default_paths.config_file, find_libretro_file);
+   init_libretro_sym();
+
+   input_psp.post_init();
+
+   video_psp1.start();
+   driver.video = &video_psp1;
+   
+   menu_init();
+
+begin_loop:
+   if(g_extern.console.rmenu.mode == MODE_EMULATION)
+   {
+      bool repeat = false;
+
+      input_psp.poll(NULL);
+
+      driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+
+      do{
+         repeat = rarch_main_iterate();
+      }while(repeat && !g_extern.console.screen.state.frame_advance.enable);
+   }
+   else if(g_extern.console.rmenu.mode == MODE_MENU)
+   {
+      menu_loop();
+
+      if (g_extern.console.rmenu.mode != MODE_EXIT)
+         rarch_startup(default_paths.config_file);
+   }
+   else
+      goto begin_shutdown;
+
+   goto begin_loop;
+
+begin_shutdown:
+   rarch_config_save(default_paths.config_file);
+
+   if(g_extern.console.emulator_initialized)
+      rarch_main_deinit();
+
+   input_psp.free(NULL);
+   video_psp1.stop();
+   menu_free();
 
    g_extern.verbose = false;
 
