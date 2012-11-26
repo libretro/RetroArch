@@ -70,6 +70,9 @@ struct ff_video_info
    // Input pixel format. Only used by sws.
    enum PixelFormat in_pix_fmt;
 
+   unsigned frame_drop_ratio;
+   unsigned frame_drop_count;
+
    // Input pixel size.
    size_t pix_size;
 
@@ -122,6 +125,7 @@ struct ff_config_param
    char format[64];
    enum PixelFormat out_pix_fmt;
    unsigned threads;
+   unsigned frame_drop_ratio;
    unsigned sample_rate;
    unsigned scale_factor;
 
@@ -312,7 +316,7 @@ static bool ffemu_init_video(struct ff_config_param *params, struct ff_video_inf
    video->codec->codec_type          = AVMEDIA_TYPE_VIDEO;
    video->codec->width               = param->out_width;
    video->codec->height              = param->out_height;
-   video->codec->time_base           = av_d2q(1.0 / param->fps, 1000000); // Arbitrary big number.
+   video->codec->time_base           = av_d2q((double)params->frame_drop_ratio / param->fps, 1000000); // Arbitrary big number.
    video->codec->sample_aspect_ratio = av_d2q(param->aspect_ratio * param->out_height / param->out_width, 255);
    video->codec->pix_fmt             = video->pix_fmt;
 
@@ -324,6 +328,8 @@ static bool ffemu_init_video(struct ff_config_param *params, struct ff_video_inf
    // Allocate a big buffer :p ffmpeg API doesn't seem to give us some clues how big this buffer should be.
    video->outbuf_size = 1 << 23;
    video->outbuf = (uint8_t*)av_malloc(video->outbuf_size);
+
+   video->frame_drop_ratio = params->frame_drop_ratio;
 
    size_t size = avpicture_get_size(video->pix_fmt, param->out_width, param->out_height);
    video->conv_frame_buf = (uint8_t*)av_malloc(size);
@@ -353,6 +359,10 @@ static bool ffemu_init_config(struct ff_config_param *params, const char *config
 
    if (!config_get_uint(params->conf, "threads", &params->threads))
       params->threads = 1;
+
+   if (!config_get_uint(params->conf, "frame_drop_ratio", &params->frame_drop_ratio)
+         || !params->frame_drop_ratio)
+      params->frame_drop_ratio = 1;
 
    if (!config_get_uint(params->conf, "sample_rate", &params->sample_rate))
       params->sample_rate = 0;
@@ -591,6 +601,11 @@ void ffemu_free(ffemu_t *handle)
 
 bool ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
 {
+   bool drop_frame = handle->video.frame_drop_count++ % handle->video.frame_drop_ratio;
+   handle->video.frame_drop_count %= handle->video.frame_drop_ratio;
+   if (drop_frame)
+      return true;
+
    for (;;)
    {
       slock_lock(handle->lock);
