@@ -400,13 +400,13 @@ static void ps3_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad
    }
 }
 
-static void ps3_free_input(void *data)
+static void ps3_input_free_input(void *data)
 {
    (void)data;
    //cellPadEnd();
 }
 
-static void* ps3_input_initialize(void)
+static void* ps3_input_init(void)
 {
    cellPadInit(MAX_PADS);
 #ifdef HAVE_MOUSE
@@ -423,7 +423,7 @@ static void ps3_input_post_init(void)
       ps3_input_set_analog_dpad_mapping(STUB_DEVICE, g_settings.input.dpad_emulation[i], i);
 }
 
-static bool ps3_key_pressed(void *data, int key)
+static bool ps3_input_key_pressed(void *data, int key)
 {
    (void)data;
 #ifdef HAVE_OPENGL
@@ -502,11 +502,11 @@ static void ps3_set_default_keybind_lut(unsigned device, unsigned port)
 }
 
 const input_driver_t input_ps3 = {
-   .init = ps3_input_initialize,
+   .init = ps3_input_init,
    .poll = ps3_input_poll,
    .input_state = ps3_input_state,
-   .key_pressed = ps3_key_pressed,
-   .free = ps3_free_input,
+   .key_pressed = ps3_input_key_pressed,
+   .free = ps3_input_free_input,
    .set_default_keybind_lut = ps3_set_default_keybind_lut,
    .set_analog_dpad_mapping = ps3_input_set_analog_dpad_mapping,
    .post_init = ps3_input_post_init,

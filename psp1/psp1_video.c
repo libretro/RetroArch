@@ -79,7 +79,7 @@ static void init_texture(void *data, const video_info_t *video)
    vid->rgb32 = video->rgb32;
 }
 
-static void *psp_gfx_init(const video_info_t *video,
+static void *psp_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    *input = NULL;
@@ -112,7 +112,7 @@ error:
    return (void*)-1;
 }
 
-static bool psp_gfx_frame(void *data, const void *frame,
+static bool psp_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    (void)width;
@@ -153,25 +153,25 @@ static bool psp_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void psp_gfx_set_nonblock_state(void *data, bool toggle)
+static void psp_set_nonblock_state(void *data, bool toggle)
 {
    (void)data;
    (void)toggle;
 }
 
-static bool psp_gfx_alive(void *data)
+static bool psp_alive(void *data)
 {
    (void)data;
    return true;
 }
 
-static bool psp_gfx_focus(void *data)
+static bool psp_focus(void *data)
 {
    (void)data;
    return true;
 }
 
-static void psp_gfx_free(void *data)
+static void psp_free(void *data)
 {
    (void)data;
 
@@ -179,25 +179,33 @@ static void psp_gfx_free(void *data)
 }
 
 #ifdef RARCH_CONSOLE
-static void psp_gfx_start(void) {}
-static void psp_gfx_restart(void) {}
-static void psp_gfx_stop(void) {}
+static void psp_start(void) {}
+static void psp_restart(void) {}
+static void psp_stop(void) {}
 #endif
 
+static void psp_set_rotation(void *data, unsigned rotation)
+{
+}
+
 const video_driver_t video_psp1 = {
-   psp_gfx_init,
-   psp_gfx_frame,
-   psp_gfx_set_nonblock_state,
-   psp_gfx_alive,
-   psp_gfx_focus,
+   psp_init,
+   psp_frame,
+   psp_set_nonblock_state,
+   psp_alive,
+   psp_focus,
    NULL,
-   psp_gfx_free,
+   psp_free,
    "psp1",
 
 #ifdef RARCH_CONSOLE
-   psp_gfx_start,
-   psp_gfx_stop,
-   psp_gfx_restart,
+   psp_start,
+   psp_stop,
+   psp_restart,
+   NULL,
+   NULL,
 #endif
+
+   psp_set_rotation,
 };
 

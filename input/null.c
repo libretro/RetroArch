@@ -16,17 +16,17 @@
 #include "../general.h"
 #include "../driver.h"
 
-static void *null_input_init(void)
+static void *nullinput_input_init(void)
 {
    return (void*)-1;
 }
 
-static void null_input_poll(void *data)
+static void nullinput_input_poll(void *data)
 {
    (void)data;
 }
 
-static int16_t null_input_state(void *data, const struct retro_keybind **retro_keybinds, unsigned port, unsigned device, unsigned index, unsigned id)
+static int16_t nullinput_input_state(void *data, const struct retro_keybind **retro_keybinds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
    (void)data;
    (void)retro_keybinds;
@@ -38,7 +38,7 @@ static int16_t null_input_state(void *data, const struct retro_keybind **retro_k
    return 0;
 }
 
-static bool null_input_key_pressed(void *data, int key)
+static bool nullinput_input_key_pressed(void *data, int key)
 {
    (void)data;
    (void)key;
@@ -46,38 +46,38 @@ static bool null_input_key_pressed(void *data, int key)
    return false;
 }
 
-static void null_input_free(void *data)
+static void nullinput_input_free_input(void *data)
 {
    (void)data;
 }
 
 #ifdef RARCH_CONSOLE
-static void null_set_default_keybind_lut(unsigned device, unsigned port)
+static void nullinput_set_default_keybind_lut(unsigned device, unsigned port)
 {
    (void)device;
    (void)port;
 }
 
-static void null_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
+static void nullinput_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
 {
    (void)device;
    (void)map_dpad_enum;
    (void)controller_id;
 }
 
-static void null_input_post_init(void) {}
+static void nullinput_input_post_init(void) {}
 #endif
 
 const input_driver_t input_null = {
-   null_input_init,
-   null_input_poll,
-   null_input_state,
-   null_input_key_pressed,
-   null_input_free,
+   nullinput_input_init,
+   nullinput_input_poll,
+   nullinput_input_state,
+   nullinput_input_key_pressed,
+   nullinput_input_free_input,
 #ifdef RARCH_CONSOLE
-   null_set_default_keybind_lut,
-   null_set_analog_dpad_mapping,
-   null_input_post_init,
+   nullinput_set_default_keybind_lut,
+   nullinput_set_analog_dpad_mapping,
+   nullinput_input_post_init,
    2,
 #endif
    "null",

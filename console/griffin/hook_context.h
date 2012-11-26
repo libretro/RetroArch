@@ -30,7 +30,7 @@
 #define context_swap_interval_func(var)              eglSwapInterval(g_egl_dpy, var)
 #define context_has_focus_func()                     (true)
 #define context_check_window_func(quit, resize, width, height, frame_count) gfx_ctx_check_window(quit, resize, width, height, frame_count)
-#define context_set_video_mode_func(width, height, force_16bit, fullscreen) gfx_ctx_set_video_mode(width, height, force_16bit, fullscreen)
+#define context_set_video_mode_func(width, height, fullscreen) gfx_ctx_set_video_mode(width, height, fullscreen)
 #define context_input_driver_func(input, input_data) gl->ctx_driver->input_driver(input, input_data)
 #endif
 
