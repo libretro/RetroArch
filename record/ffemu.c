@@ -125,6 +125,11 @@ struct ff_config_param
    unsigned sample_rate;
    unsigned scale_factor;
 
+   // Keep same naming conventions as libavcodec.
+   bool audio_qscale;
+   int audio_global_quality;
+   int audio_bit_rate;
+
    AVDictionary *video_opts;
    AVDictionary *audio_opts;
 };
@@ -154,7 +159,10 @@ static bool ffemu_init_audio(struct ff_config_param *params, struct ff_audio_inf
 {
    AVCodec *codec = avcodec_find_encoder_by_name(*params->acodec ? params->acodec : "flac");
    if (!codec)
+   {
+      RARCH_ERR("[FFmpeg]: Cannot find acodec %s.\n", *params->acodec ? params->acodec : "flac");
       return false;
+   }
 
    audio->encoder = codec;
 
@@ -181,6 +189,14 @@ static bool ffemu_init_audio(struct ff_config_param *params, struct ff_audio_inf
       audio->codec->sample_rate = (int)roundf(param->samplerate);
       audio->codec->time_base = av_d2q(1.0 / param->samplerate, 1000000);
    }
+
+   if (params->audio_qscale)
+   {
+      audio->codec->flags |= CODEC_FLAG_QSCALE;
+      audio->codec->global_quality = params->audio_global_quality;
+   }
+   else if (params->audio_bit_rate)
+      audio->codec->bit_rate = params->audio_bit_rate;
 
    audio->sample_size = audio->use_float ? sizeof(float) : sizeof(int16_t);
 
@@ -219,20 +235,16 @@ static bool ffemu_init_video(struct ff_config_param *params, struct ff_video_inf
       codec = avcodec_find_encoder_by_name(params->vcodec);
    else
    {
-      codec = avcodec_find_encoder_by_name("libx264rgb");
-      // Older versions of FFmpeg have RGB encoding in libx264.
-      if (!codec)
-         codec = avcodec_find_encoder_by_name("libx264");
-
-      video->pix_fmt        = PIX_FMT_BGR24;
-      video->scaler.out_fmt = SCALER_FMT_BGR24;
-
-      // By default, we want lossless video.
+      // By default, lossless video.
       av_dict_set(&params->video_opts, "qp", "0", 0);
+      codec = avcodec_find_encoder_by_name("libx264rgb");
    }
 
    if (!codec)
+   {
+      RARCH_ERR("[FFmpeg]: Cannot find vcodec %s.\n", *params->vcodec ? params->vcodec : "libx264rgb");
       return false;
+   }
 
    video->encoder = codec;
 
@@ -259,6 +271,11 @@ static bool ffemu_init_video(struct ff_config_param *params, struct ff_video_inf
          default:
             break;
       }
+   }
+   else // Use BGR24 as default out format.
+   {
+      video->pix_fmt        = PIX_FMT_BGR24;
+      video->scaler.out_fmt = SCALER_FMT_BGR24;
    }
 
    switch (param->pix_fmt)
@@ -287,6 +304,8 @@ static bool ffemu_init_video(struct ff_config_param *params, struct ff_video_inf
 
    video->codec = avcodec_alloc_context3(codec);
 
+   // Useful to set scale_factor to 2 for chroma subsampled formats to maintain full chroma resolution.
+   // (Or just use 4:4:4 or RGB ...)
    param->out_width  *= params->scale_factor;
    param->out_height *= params->scale_factor;
 
@@ -339,6 +358,9 @@ static bool ffemu_init_config(struct ff_config_param *params, const char *config
       params->sample_rate = 0;
    if (!config_get_uint(params->conf, "scale_factor", &params->scale_factor))
       params->scale_factor = 1;
+
+   params->audio_qscale = config_get_int(params->conf, "audio_global_quality", &params->audio_global_quality);
+   config_get_int(params->conf, "audio_bit_rate", &params->audio_bit_rate);
 
    char pix_fmt[64] = {0};
    if (config_get_array(params->conf, "pix_fmt", pix_fmt, sizeof(pix_fmt)))
