@@ -21,7 +21,14 @@
 #include <android/log.h>
 #endif
 
-#if defined(RARCH_CONSOLE) && (defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER) || defined(_XBOX1))
+#ifdef HAVE_FILE_LOGGER
+extern FILE * log_fp;
+#define STDERR_OUT (log_fp)
+#else
+#define STDERR_OUT (stderr)
+#endif
+
+#if defined(RARCH_CONSOLE) && (defined(HAVE_LOGGER) || defined(_XBOX1))
 #include <logger_override.h>
 #else
 
@@ -30,15 +37,15 @@
 #define  RARCH_LOG(...)  __android_log_print(ANDROID_LOG_INFO,"RetroArch: ",__VA_ARGS__)
 #elif defined(IS_SALAMANDER)
 #define RARCH_LOG(...) do { \
-      fprintf(stderr, "RetroArch Salamander: " __VA_ARGS__); \
-      fflush(stderr); \
+      fprintf(STDERR_OUT, "RetroArch Salamander: " __VA_ARGS__); \
+      fflush(STDERR_OUT); \
    } while (0)
 #else
 #define RARCH_LOG(...) do { \
       if (g_extern.verbose) \
       { \
-         fprintf(stderr, "RetroArch: " __VA_ARGS__); \
-         fflush(stderr); \
+         fprintf(STDERR_OUT, "RetroArch: " __VA_ARGS__); \
+         fflush(STDERR_OUT); \
       } \
    } while (0)
 #endif
@@ -49,15 +56,15 @@
 #define  RARCH_LOG_OUTPUT(...)  __android_log_print(ANDROID_LOG_INFO,"stderr: ",__VA_ARGS__)
 #elif defined(IS_SALAMANDER)
 #define RARCH_LOG_OUTPUT(...) do { \
-      fprintf(stderr, "stderr: " __VA_ARGS__); \
-      fflush(stderr); \
+      fprintf(STDERR_OUT, "stderr: " __VA_ARGS__); \
+      fflush(STDERR_OUT); \
    } while (0)
 #else
 #define RARCH_LOG_OUTPUT(...) do { \
       if (g_extern.verbose) \
       { \
-         fprintf(stderr, __VA_ARGS__); \
-         fflush(stderr); \
+         fprintf(STDERR_OUT, __VA_ARGS__); \
+         fflush(STDERR_OUT); \
       } \
    } while (0)
 #endif
@@ -68,13 +75,13 @@
 #define  RARCH_ERR(...)  __android_log_print(ANDROID_LOG_INFO, "RetroArch [ERROR] :: ",__VA_ARGS__)
 #elif defined(IS_SALAMANDER)
 #define RARCH_ERR(...) do { \
-      fprintf(stderr, "RetroArch Salamander [ERROR] :: " __VA_ARGS__); \
-      fflush(stderr); \
+      fprintf(STDERR_OUT, "RetroArch Salamander [ERROR] :: " __VA_ARGS__); \
+      fflush(STDERR_OUT); \
    } while (0)
 #else
 #define RARCH_ERR(...) do { \
-      fprintf(stderr, "RetroArch [ERROR] :: " __VA_ARGS__); \
-      fflush(stderr); \
+      fprintf(STDERR_OUT, "RetroArch [ERROR] :: " __VA_ARGS__); \
+      fflush(STDERR_OUT); \
    } while (0)
 #endif
 #endif
@@ -84,13 +91,13 @@
 #define  RARCH_ERR_OUTPUT(...)  __android_log_print(ANDROID_LOG_INFO, "stderr [ERROR] :: ",__VA_ARGS__)
 #elif defined(IS_SALAMANDER)
 #define RARCH_ERR_OUTPUT(...) do { \
-      fprintf(stderr, "stderr [ERROR] :: " __VA_ARGS__); \
-      fflush(stderr); \
+      fprintf(STDERR_OUT, "stderr [ERROR] :: " __VA_ARGS__); \
+      fflush(STDERR_OUT); \
    } while (0)
 #else
 #define RARCH_ERR_OUTPUT(...) do { \
-      fprintf(stderr, "stderr [ERROR] :: " __VA_ARGS__); \
-      fflush(stderr); \
+      fprintf(STDERR_OUT, "stderr [ERROR] :: " __VA_ARGS__); \
+      fflush(STDERR_OUT); \
    } while (0)
 #endif
 #endif
@@ -100,13 +107,13 @@
 #define  RARCH_WARN(...)  __android_log_print(ANDROID_LOG_INFO, "RetroArch [WARN] :: ",__VA_ARGS__)
 #elif defined(IS_SALAMANDER)
 #define RARCH_WARN(...) do { \
-      fprintf(stderr, "RetroArch Salamander [WARN] :: " __VA_ARGS__); \
-      fflush(stderr); \
+      fprintf(STDERR_OUT, "RetroArch Salamander [WARN] :: " __VA_ARGS__); \
+      fflush(STDERR_OUT); \
    } while (0)
 #else
 #define RARCH_WARN(...) do { \
-      fprintf(stderr, "RetroArch [WARN] :: " __VA_ARGS__); \
-      fflush(stderr); \
+      fprintf(STDERR_OUT, "RetroArch [WARN] :: " __VA_ARGS__); \
+      fflush(STDERR_OUT); \
    } while (0)
 #endif
 #endif
@@ -116,13 +123,13 @@
 #define  RARCH_WARN_OUTPUT(...)  __android_log_print(ANDROID_LOG_INFO, "stderr [WARN] :: ",__VA_ARGS__)
 #elif defined(IS_SALAMANDER)
 #define RARCH_WARN_OUTPUT(...) do { \
-      fprintf(stderr, "stderr [WARN] :: " __VA_ARGS__); \
-      fflush(stderr); \
+      fprintf(STDERR_OUT, "stderr [WARN] :: " __VA_ARGS__); \
+      fflush(STDERR_OUT); \
    } while (0)
 #else
 #define RARCH_WARN_OUTPUT(...) do { \
-      fprintf(stderr, "stderr [WARN] :: " __VA_ARGS__); \
-      fflush(stderr); \
+      fprintf(STDERR_OUT, "stderr [WARN] :: " __VA_ARGS__); \
+      fflush(STDERR_OUT); \
    } while (0)
 #endif
 #endif

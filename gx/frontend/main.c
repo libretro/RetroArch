@@ -54,10 +54,6 @@
 #include <sdcard/gcsd.h>
 #include <fat.h>
 
-#ifdef HAVE_FILE_LOGGER
-FILE * log_fp;
-#endif
-
 enum
 {
    GX_DEVICE_SD = 0,

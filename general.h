@@ -283,6 +283,10 @@ struct global
    char config_path[PATH_MAX];
    char append_config_path[PATH_MAX];
 #endif
+
+#ifdef HAVE_FILE_LOGGER
+   char default_log_file[PATH_MAX];
+#endif
    
    char basename[PATH_MAX];
    char fullpath[PATH_MAX];

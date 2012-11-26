@@ -56,6 +56,10 @@
 #define RARCH_PERFORMANCE_MODE
 #endif
 
+#ifdef HAVE_FILE_LOGGER
+FILE *log_fp;
+#endif
+
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
 static void set_fast_forward_button(bool new_button_state, bool new_hold_button_state)
 {
@@ -2551,6 +2555,11 @@ static void init_state(void)
    g_extern.video_active = true;
    g_extern.audio_active = true;
    g_extern.game_type = RARCH_CART_NORMAL;
+
+#if defined(HAVE_FILE_LOGGER) && !defined(RARCH_CONSOLE)
+   snprintf(g_extern.default_log_file, sizeof(g_extern.default_log_file), "/retroarch-log.txt");
+   log_fp = fopen(g_extern.default_log_file, "w");
+#endif
 }
 
 void rarch_main_clear_state(void)
@@ -2864,6 +2873,10 @@ int rarch_main(int argc, char *argv[])
 #endif
 
    rarch_main_clear_state();
+
+#if defined(HAVE_FILE_LOGGER) && !defined(RARCH_CONSOLE)
+   fclose(log_fp);
+#endif
    return 0;
 }
 
