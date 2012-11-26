@@ -35,20 +35,32 @@
 #define video_frame_func(data, width, height, pitch, msg) \
    driver.video->frame(driver.video_data, data, width, height, pitch, msg)
 #define video_set_nonblock_state_func(state) driver.video->set_nonblock_state(driver.video_data, state)
-#define video_alive_func()                      driver.video->alive(driver.video_data)
-#define video_focus_func()                      driver.video->focus(driver.video_data)
-#define video_set_shader_func(type, path)       driver.video->set_shader(driver.video_data, type, path)
-#define video_set_rotation_func(rotate)         driver.video->set_rotation(driver.video_data, rotate)
+#define video_alive_func() driver.video->alive(driver.video_data)
+#define video_focus_func() driver.video->focus(driver.video_data)
+#define video_set_shader_func(type, path) driver.video->set_shader(driver.video_data, type, path)
+#define video_set_rotation_func(rotate) driver.video->set_rotation(driver.video_data, rotate)
 #define video_set_aspect_ratio_func(aspect_idx) driver.video->set_aspect_ratio(driver.video_data, aspect_idx)
-#define video_viewport_info_func(info)          driver.video->viewport_info(driver.video_data, info)
-#define video_read_viewport_func(buffer)        driver.video->read_viewport(driver.video_data, buffer)
-#define video_free_func()                       driver.video->free(driver.video_data)
-
-#define input_init_func()                       driver.input->init()
-#define input_poll_func()                       driver.input->poll(driver.input_data)
+#define video_viewport_info_func(info) driver.video->viewport_info(driver.video_data, info)
+#define video_read_viewport_func(buffer) driver.video->read_viewport(driver.video_data, buffer)
+#define video_free_func() driver.video->free(driver.video_data)
+#define input_init_func() driver.input->init()
+#define input_poll_func() driver.input->poll(driver.input_data)
 #define input_input_state_func(retro_keybinds, port, device, index, id) \
    driver.input->input_state(driver.input_data, retro_keybinds, port, device, index, id)
-#define input_free_func()                       driver.input->free(driver.input_data)
+#define input_free_func() driver.input->free(driver.input_data)
+
+static inline bool input_key_pressed_func(int key)
+{
+   if (driver.block_hotkey)
+      return false;
+
+   bool ret = driver.input->key_pressed(driver.input_data, key);
+#ifdef HAVE_COMMAND
+   if (!ret && driver.command)
+      ret = rarch_cmd_get(driver.command, key);
+#endif
+   return ret;
+}
 
 #else /* for Griffin */
 
@@ -133,6 +145,20 @@
 #define video_viewport_size_func(width, height) ((void)0)
 #define video_viewport_info_func(info) ((void)0)
 #define video_read_viewport_func(buffer) (false)
+
+#elif defined(PSP) /* PSP1 */
+#define video_init_func(video_info, input, input_data) psp_gfx_init(video_info, input, input_data)
+#define video_frame_func(data, width, height, pitch, msg) \
+   psp_gfx_frame(driver.video_data, data, width, height, pitch, msg)
+#define video_set_nonblock_state_func(state) psp_gfx_set_nonblock_state(driver.video_data, state)
+#define video_alive_func() psp_gfx_alive(driver.video_data)
+#define video_focus_func() psp_gfx_focus(driver.video_data)
+#define video_xml_shader_func(path) driver.video->xml_shader(driver.video_data, path)
+#define video_free_func() psp_gfx_free(driver.video_data)
+#define video_set_rotation_func(orientation)	(true)
+#define video_set_aspect_ratio_func(aspectratio_idx) (true)
+#define video_stop_func() psp_gfx_stop()
+#define video_start_func()	psp_gfx_start()
 
 #else /* NULL */
 #define video_init_func(video_info, input, input_data) null_gfx_init(video_info, input, input_data)
