@@ -72,12 +72,26 @@ int main(int argc, char *argv[])
 
    get_environment_settings(argc, argv);
 
+#ifdef HAVE_FILE_LOGGER
+   log_fp = fopen("ms0:/retroarch-log.txt", "w");
+#endif
+
+   g_extern.verbose = true;
+
+   RARCH_LOG("TEST...\n");
+
    sceDisplayWaitVblankStart();
    pspDebugScreenClear();
    pspDebugScreenSetXY(0, 0);
-   printf("RetroArch PSP test.\n");
+   RARCH_LOG("RetroArch PSP test.\n");
 
    rarch_sleep(20);
+
+   g_extern.verbose = false;
+
+#ifdef HAVE_FILE_LOGGER
+   fclose(log_fp);
+#endif
 
    sceKernelExitGame();
    return 1;
