@@ -145,7 +145,7 @@ static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
    return (binds[port][id].joykey & pad_state[port]) ? 1 : 0;
 }
 
-static void gx_free_input(void *data)
+static void gx_input_free_input(void *data)
 {
    (void)data;
 }
@@ -241,7 +241,7 @@ static void gx_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_
    }
 }
 
-static void *gx_input_initialize(void)
+static void *gx_input_init(void)
 {
    PAD_Init();
 #ifdef HW_RVL
@@ -456,7 +456,7 @@ static void gx_input_poll(void *data)
    }
 }
 
-static bool gx_key_pressed(void *data, int key)
+static bool gx_input_key_pressed(void *data, int key)
 {
    (void)data;
 
@@ -580,11 +580,11 @@ static void gx_set_default_keybind_lut(unsigned device, unsigned port)
 }
 
 const input_driver_t input_gx = {
-   .init = gx_input_initialize,
+   .init = gx_input_init,
    .poll = gx_input_poll,
    .input_state = gx_input_state,
-   .key_pressed = gx_key_pressed,
-   .free = gx_free_input,
+   .key_pressed = gx_input_key_pressed,
+   .free = gx_input_free_input,
    .set_default_keybind_lut = gx_set_default_keybind_lut,
    .set_analog_dpad_mapping = gx_input_set_analog_dpad_mapping,
    .post_init = gx_input_post_init,
