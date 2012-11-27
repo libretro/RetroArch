@@ -35,9 +35,10 @@ ifeq ($(CELL_BUILD_TOOLS),SNC)
 	PPU_CLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe
 	PPU_CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
 else
-ifneq($(system_platform), win)
+	PPU_CFLAGS += -std=gnu99
 	PPU_CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
 	PPU_CLD = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ld.exe
+	PPU_CXXLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe
 endif
 
 PPU_LDLIBS		+= -lm -lnet_stub -lnetctl_stub -lio_stub -lsysmodule_stub -lsysutil_stub -lsysutil_game_stub -lfs_stub -lsysutil_np_stub
