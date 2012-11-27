@@ -159,8 +159,12 @@ struct ffemu
    volatile bool can_sleep;
 };
 
-static bool ffemu_init_audio(struct ff_config_param *params, struct ff_audio_info *audio, struct ffemu_params *param)
+static bool ffemu_init_audio(ffemu_t *handle)
 {
+   struct ff_config_param *params = &handle->config;
+   struct ff_audio_info *audio    = &handle->audio;
+   struct ffemu_params *param     = &handle->params;
+
    AVCodec *codec = avcodec_find_encoder_by_name(*params->acodec ? params->acodec : "flac");
    if (!codec)
    {
@@ -207,6 +211,9 @@ static bool ffemu_init_audio(struct ff_config_param *params, struct ff_audio_inf
    // Allow experimental codecs.
    audio->codec->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
 
+   if (handle->muxer.ctx->oformat->flags & AVFMT_GLOBALHEADER)
+      audio->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
+
    if (avcodec_open2(audio->codec, codec, params->audio_opts ? &params->audio_opts : NULL) != 0)
       return false;
 
@@ -231,8 +238,12 @@ static bool ffemu_init_audio(struct ff_config_param *params, struct ff_audio_inf
    return true;
 }
 
-static bool ffemu_init_video(struct ff_config_param *params, struct ff_video_info *video, struct ffemu_params *param)
+static bool ffemu_init_video(ffemu_t *handle)
 {
+   struct ff_config_param *params = &handle->config;
+   struct ff_video_info *video    = &handle->video;
+   struct ffemu_params *param     = &handle->params;
+
    AVCodec *codec = NULL;
 
    if (*params->vcodec)
@@ -322,6 +333,9 @@ static bool ffemu_init_video(struct ff_config_param *params, struct ff_video_inf
 
    video->codec->thread_count = params->threads;
 
+   if (handle->muxer.ctx->oformat->flags & AVFMT_GLOBALHEADER)
+      video->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
+
    if (avcodec_open2(video->codec, codec, params->video_opts ? &params->video_opts : NULL) != 0)
       return false;
 
@@ -405,7 +419,7 @@ static bool ffemu_init_config(struct ff_config_param *params, const char *config
    return true;
 }
 
-static bool ffemu_init_muxer(ffemu_t *handle)
+static bool ffemu_init_muxer_pre(ffemu_t *handle)
 {
    AVFormatContext *ctx = avformat_alloc_context();
    av_strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
@@ -424,28 +438,24 @@ static bool ffemu_init_muxer(ffemu_t *handle)
       return false;
    }
 
-   AVStream *stream = avformat_new_stream(ctx, handle->video.encoder);
-   stream->codec = handle->video.codec;
+   handle->muxer.ctx = ctx;
+   return true;
+}
 
-   if (ctx->oformat->flags & AVFMT_GLOBALHEADER)
-      handle->video.codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
+static bool ffemu_init_muxer_post(ffemu_t *handle)
+{
+   AVStream *stream = avformat_new_stream(handle->muxer.ctx, handle->video.encoder);
+   stream->codec = handle->video.codec;
    handle->muxer.vstream = stream;
    handle->muxer.vstream->sample_aspect_ratio = handle->video.codec->sample_aspect_ratio;
 
-   stream = avformat_new_stream(ctx, handle->audio.encoder);
+   stream = avformat_new_stream(handle->muxer.ctx, handle->audio.encoder);
    stream->codec = handle->audio.codec;
-
-   if (ctx->oformat->flags & AVFMT_GLOBALHEADER)
-      handle->audio.codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
    handle->muxer.astream = stream;
 
-   av_dict_set(&ctx->metadata, "title", "RetroArch video dump", 0); 
+   av_dict_set(&handle->muxer.ctx->metadata, "title", "RetroArch video dump", 0); 
 
-   if (avformat_write_header(ctx, NULL) < 0)
-      return false;
-
-   handle->muxer.ctx = ctx;
-   return true;
+   return avformat_write_header(handle->muxer.ctx, NULL) >= 0;
 }
 
 #define MAX_FRAMES 32
@@ -528,13 +538,16 @@ ffemu_t *ffemu_new(const struct ffemu_params *params)
    if (!ffemu_init_config(&handle->config, params->config))
       goto error;
 
-   if (!ffemu_init_video(&handle->config, &handle->video, &handle->params))
+   if (!ffemu_init_muxer_pre(handle))
       goto error;
 
-   if (!ffemu_init_audio(&handle->config, &handle->audio, &handle->params))
+   if (!ffemu_init_video(handle))
       goto error;
 
-   if (!ffemu_init_muxer(handle))
+   if (!ffemu_init_audio(handle))
+      goto error;
+
+   if (!ffemu_init_muxer_post(handle))
       goto error;
 
    if (!init_thread(handle))
