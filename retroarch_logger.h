@@ -21,7 +21,11 @@
 #include <android/log.h>
 #endif
 
+#ifdef IS_SALAMANDER
+#define LOG_FILE (stderr)
+#else
 #define LOG_FILE (g_extern.log_file ? g_extern.log_file : stderr)
+#endif
 
 #if defined(RARCH_CONSOLE) && (defined(HAVE_LOGGER) || defined(_XBOX1))
 #include <logger_override.h>
