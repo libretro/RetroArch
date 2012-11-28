@@ -103,10 +103,17 @@ struct ff_audio_info
    bool use_float;
    unsigned sample_size;
 
+   enum AVSampleFormat fill_format;
+
    float *float_conv;
    size_t float_conv_frames;
+
    float *resample_out;
    size_t resample_out_frames;
+
+   int16_t *fixed_conv;
+   size_t fixed_conv_frames;
+
    double ratio;
 };
 
@@ -159,6 +166,51 @@ struct ffemu
    volatile bool can_sleep;
 };
 
+static bool ffemu_codec_has_sample_format(enum AVSampleFormat fmt, const enum AVSampleFormat *fmts)
+{
+   for (unsigned i = 0; fmts[i] != AV_SAMPLE_FMT_NONE; i++)
+      if (fmt == fmts[i])
+         return true;
+   return false;
+}
+
+static void ffemu_audio_resolve_format(struct ff_audio_info *audio, AVCodec *codec)
+{
+   audio->codec->sample_fmt = AV_SAMPLE_FMT_NONE;
+   audio->fill_format       = AV_SAMPLE_FMT_NONE;
+
+   if (ffemu_codec_has_sample_format(AV_SAMPLE_FMT_FLTP, codec->sample_fmts))
+   {
+      audio->codec->sample_fmt = AV_SAMPLE_FMT_FLT;
+      audio->fill_format       = AV_SAMPLE_FMT_FLTP;
+      audio->use_float         = true;
+      RARCH_LOG("[FFmpeg]: Using sample format FLTP.\n");
+   }
+   else if (ffemu_codec_has_sample_format(AV_SAMPLE_FMT_FLT, codec->sample_fmts))
+   {
+      audio->codec->sample_fmt = AV_SAMPLE_FMT_FLT;
+      audio->fill_format       = AV_SAMPLE_FMT_FLT;
+      audio->use_float         = true;
+      RARCH_LOG("[FFmpeg]: Using sample format FLT.\n");
+   }
+   else if (ffemu_codec_has_sample_format(AV_SAMPLE_FMT_S16P, codec->sample_fmts))
+   {
+      audio->codec->sample_fmt = AV_SAMPLE_FMT_S16;
+      audio->fill_format       = AV_SAMPLE_FMT_S16P;
+      audio->use_float         = false;
+      RARCH_LOG("[FFmpeg]: Using sample format S16P.\n");
+   }
+   else if (ffemu_codec_has_sample_format(AV_SAMPLE_FMT_S16, codec->sample_fmts))
+   {
+      audio->codec->sample_fmt = AV_SAMPLE_FMT_S16;
+      audio->fill_format       = AV_SAMPLE_FMT_S16;
+      audio->use_float         = false;
+      RARCH_LOG("[FFmpeg]: Using sample format S16.\n");
+   }
+
+   audio->sample_size = audio->use_float ? sizeof(float) : sizeof(int16_t);
+}
+
 static bool ffemu_init_audio(ffemu_t *handle)
 {
    struct ff_config_param *params = &handle->config;
@@ -176,23 +228,22 @@ static bool ffemu_init_audio(ffemu_t *handle)
 
    audio->codec = avcodec_alloc_context3(codec);
 
-   audio->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-   audio->codec->channels = param->channels;
+   audio->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
+   audio->codec->channels       = param->channels;
    audio->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+
+   ffemu_audio_resolve_format(audio, codec);
+
    if (params->sample_rate)
    {
-      RARCH_LOG("[FFmpeg]: Using FLT sampling format.\n");
-      audio->codec->sample_fmt = AV_SAMPLE_FMT_FLT;
       audio->ratio = (double)params->sample_rate / param->samplerate;
       audio->codec->sample_rate = params->sample_rate;
       audio->codec->time_base = av_d2q(1.0 / params->sample_rate, 1000000);
 
       audio->resampler = resampler_new();
-      audio->use_float = true;
    }
    else
    {
-      RARCH_LOG("[FFmpeg]: Using S16 sampling format.\n");
       audio->codec->sample_fmt = AV_SAMPLE_FMT_S16;
       audio->codec->sample_rate = (int)roundf(param->samplerate);
       audio->codec->time_base = av_d2q(1.0 / param->samplerate, 1000000);
@@ -205,8 +256,6 @@ static bool ffemu_init_audio(ffemu_t *handle)
    }
    else if (params->audio_bit_rate)
       audio->codec->bit_rate = params->audio_bit_rate;
-
-   audio->sample_size = audio->use_float ? sizeof(float) : sizeof(int16_t);
 
    // Allow experimental codecs.
    audio->codec->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
@@ -574,8 +623,7 @@ void ffemu_free(ffemu_t *handle)
       av_free(handle->audio.codec);
    }
 
-   if (handle->audio.buffer)
-      av_free(handle->audio.buffer);
+   av_free(handle->audio.buffer);
 
    if (handle->video.codec)
    {
@@ -583,11 +631,8 @@ void ffemu_free(ffemu_t *handle)
       av_free(handle->video.codec);
    }
 
-   if (handle->video.conv_frame)
-      av_free(handle->video.conv_frame);
-
-   if (handle->video.conv_frame_buf)
-      av_free(handle->video.conv_frame_buf);
+   av_free(handle->video.conv_frame);
+   av_free(handle->video.conv_frame_buf);
 
    scaler_ctx_gen_reset(&handle->video.scaler);
 
@@ -603,8 +648,10 @@ void ffemu_free(ffemu_t *handle)
 
    if (handle->audio.resampler)
       resampler_free(handle->audio.resampler);
+
    av_free(handle->audio.float_conv);
    av_free(handle->audio.resample_out);
+   av_free(handle->audio.fixed_conv);
 
    free(handle);
 }
@@ -807,7 +854,7 @@ static bool encode_audio(ffemu_t *handle, AVPacket *pkt, bool dry)
       handle->audio.sample_size;
 
    avcodec_fill_audio_frame(frame, handle->audio.codec->channels,
-         handle->audio.use_float ? AV_SAMPLE_FMT_FLTP : AV_SAMPLE_FMT_S16,
+         handle->audio.fill_format,
          handle->audio.buffer,
          samples_size, 1);
 
@@ -850,7 +897,7 @@ static bool encode_audio(ffemu_t *handle, AVPacket *pkt, bool dry)
 
 static void ffemu_audio_resample(ffemu_t *handle, struct ffemu_audio_data *data)
 {
-   if (!handle->audio.use_float)
+   if (!handle->audio.use_float && !handle->audio.resampler)
       return;
 
    if (data->frames > handle->audio.float_conv_frames)
@@ -869,11 +916,21 @@ static void ffemu_audio_resample(ffemu_t *handle, struct ffemu_audio_data *data)
             handle->audio.resample_out_frames * handle->params.channels * sizeof(float));
       if (!handle->audio.resample_out)
          return;
+
+      handle->audio.fixed_conv_frames = max(handle->audio.resample_out_frames, handle->audio.float_conv_frames);
+      handle->audio.fixed_conv = (int16_t*)av_realloc(handle->audio.fixed_conv,
+            handle->audio.fixed_conv_frames * handle->params.channels * sizeof(int16_t));
+      if (!handle->audio.fixed_conv)
+         return;
    }
 
-   audio_convert_s16_to_float(handle->audio.float_conv, (const int16_t*)data->data, data->frames * handle->params.channels, 1.0);
+   if (handle->audio.use_float || handle->audio.resampler)
+   {
+      audio_convert_s16_to_float(handle->audio.float_conv,
+            (const int16_t*)data->data, data->frames * handle->params.channels, 1.0);
+      data->data = handle->audio.float_conv;
+   }
 
-   data->data = handle->audio.float_conv;
    if (handle->audio.resampler)
    {
       // It's always two channels ...
@@ -886,6 +943,13 @@ static void ffemu_audio_resample(ffemu_t *handle, struct ffemu_audio_data *data)
       resampler_process(handle->audio.resampler, &info);
       data->data   = handle->audio.resample_out;
       data->frames = info.output_frames;
+
+      if (!handle->audio.use_float)
+      {
+         audio_convert_float_to_s16(handle->audio.fixed_conv, handle->audio.resample_out,
+               data->frames * handle->params.channels);
+         data->data = handle->audio.fixed_conv;
+      }
    }
 }
 
