@@ -123,6 +123,7 @@ static bool psp_frame(void *data, const void *frame,
    if(!frame)
       return true;
 
+#if 0
    psp1_video_t *vid = (psp1_video_t*)data;
 
    sceKernelDcacheWritebackInvalidateAll(); 
@@ -143,7 +144,6 @@ static bool psp_frame(void *data, const void *frame,
 
    sceDisplayWaitVblankStart();
 
-#if 0
    void *frame_ptr = &frame;
    DisplaySetFrameBuf(frame_ptr, pitch, 
          vid->rgb32 ? PSP_DISPLAY_PIXEL_FORMAT_8888 : PSP_DISPLAY_PIXEL_FORMAT_565,

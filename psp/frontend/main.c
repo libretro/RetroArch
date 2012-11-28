@@ -33,6 +33,14 @@ int rarch_main(int argc, char *argv[]);
 
 static int exit_callback(int arg1, int arg2, void *common)
 {
+   g_extern.verbose = false;
+
+#ifdef HAVE_FILE_LOGGER
+   if (g_extern.log_file)
+      fclose(g_extern.log_file);
+   g_extern.log_file = NULL;
+#endif
+
    sceKernelExitGame();
    return 0;
 }
@@ -152,12 +160,21 @@ begin_loop:
    {
       bool repeat = false;
 
+      RARCH_LOG("Gets to: #2.0\n");
+
       input_psp.poll(NULL);
+
+      RARCH_LOG("Gets to: #2.1\n");
 
       driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
+      RARCH_LOG("Gets to: #2.2\n");
+
+      int count = 0;
+
       do{
          repeat = rarch_main_iterate();
+         RARCH_LOG("Iterate: %d\n", count++);
       }while(repeat && !g_extern.console.screen.state.frame_advance.enable);
    }
    else if(g_extern.console.rmenu.mode == MODE_MENU)

@@ -171,6 +171,7 @@ static bool psp_key_pressed(void *data, int key)
    switch (key)
    {
       case RARCH_QUIT_KEY:
+         RARCH_LOG("Got to here once.\n");
          return true;
       default:
          return false;
