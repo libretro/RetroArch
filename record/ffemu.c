@@ -174,7 +174,7 @@ static bool ffemu_codec_has_sample_format(enum AVSampleFormat fmt, const enum AV
    return false;
 }
 
-static void ffemu_audio_resolve_format(struct ff_audio_info *audio, AVCodec *codec)
+static void ffemu_audio_resolve_format(struct ff_audio_info *audio, const AVCodec *codec)
 {
    audio->codec->sample_fmt = AV_SAMPLE_FMT_NONE;
    audio->fill_format       = AV_SAMPLE_FMT_NONE;
@@ -211,6 +211,42 @@ static void ffemu_audio_resolve_format(struct ff_audio_info *audio, AVCodec *cod
    audio->sample_size = audio->use_float ? sizeof(float) : sizeof(int16_t);
 }
 
+static void ffemu_audio_resolve_sample_rate(ffemu_t *handle, const AVCodec *codec)
+{
+   struct ff_config_param *params = &handle->config;
+   struct ffemu_params *param     = &handle->params;
+
+   // We'll have to force resampling to some supported sampling rate.
+   if (codec->supported_samplerates && !params->sample_rate)
+   {
+      int input_rate = (int)param->samplerate;
+
+      // Favor closest sampling rate, but always prefer ratio > 1.0.
+      int best_rate = codec->supported_samplerates[0];
+      int best_diff = best_rate - input_rate;
+
+      for (unsigned i = 1; codec->supported_samplerates[i]; i++)
+      {
+         int diff = codec->supported_samplerates[i] - input_rate;
+
+         bool better_rate;
+         if (best_diff < 0)
+            better_rate = diff > best_diff;
+         else
+            better_rate = diff >= 0 && diff < best_diff;
+
+         if (better_rate)
+         {
+            best_rate = codec->supported_samplerates[i];
+            best_diff = diff;
+         }
+      }
+
+      params->sample_rate = best_rate;
+      RARCH_LOG("[FFmpeg]: Using output sampling rate: %u.\n", best_rate);
+   }
+}
+
 static bool ffemu_init_audio(ffemu_t *handle)
 {
    struct ff_config_param *params = &handle->config;
@@ -230,9 +266,10 @@ static bool ffemu_init_audio(ffemu_t *handle)
 
    audio->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
    audio->codec->channels       = param->channels;
-   audio->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+   audio->codec->channel_layout = param->channels > 1 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
 
    ffemu_audio_resolve_format(audio, codec);
+   ffemu_audio_resolve_sample_rate(handle, codec);
 
    if (params->sample_rate)
    {
