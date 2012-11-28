@@ -1491,14 +1491,7 @@ void rglSetNativeCgFragmentProgram( const GLvoid *header )
    conf.fragmentControl &= ~CELL_GCM_MASK_SET_SHADER_CONTROL_CONTROL_TXP; 
    conf.fragmentControl |= controlTxp << CELL_GCM_SHIFT_SET_SHADER_CONTROL_CONTROL_TXP; 
 
-   if ( ps->inLocalMemory )
-   {
-      GCM_FUNC( cellGcmSetFragmentProgramLoad, &conf );
-   }
-   else
-   {
-      GCM_FUNC( cellGcmSetFragmentProgramLoadLocation, &conf, CELL_GCM_LOCATION_MAIN ); 
-   }
+   GCM_FUNC( cellGcmSetFragmentProgramLoad, &conf );
 
    GCM_FUNC( cellGcmSetZMinMaxControl, ( ps->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? RGLGCM_FALSE : RGLGCM_TRUE, RGLGCM_FALSE, RGLGCM_FALSE );
 }
