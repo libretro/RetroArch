@@ -1988,31 +1988,11 @@ static inline int rescIsEnabled( RGLdeviceParameters* params )
          RGL_DEVICE_PARAMETERS_RESC_ADJUST_ASPECT_RATIO );
 }
 
-uint64_t rglGetLastFlipTime()
-{
-   // special case for resc
-   RGLdevice *device = psglGetCurrentDevice();
-   if ( rescIsEnabled( &device->deviceParameters ) )
-      return cellRescGetLastFlipTime();
-
-   // general case
-   return cellGcmGetLastFlipTime();
-}
-
 // Platform-specific initialization for Cell processor:
 // manage allocation/free of SPUs, and optional debugging console.
 
 void rglPlatformInit( RGLinitOptions* options )
 {
-   // option defaults
-   int consoleEnabled = 0;
-
-   if ( options != NULL )
-   {
-      if ( options->enable & RGL_INIT_ERROR_CONSOLE )
-         consoleEnabled = options->errorConsole;
-
-   }
 }
 
 
@@ -2024,24 +2004,12 @@ void rglPlatformExit()
   PLATFORM REPORTING
   ============================================================ */
 
-static FILE* consoleHandle = 0;
-
 void rglInitConsole( GLuint enable )
 {
-   //logical_console_open(&console, id);
-   if ( enable )
-   {
-      consoleHandle = stderr;
-      fprintf( consoleHandle, "%s\n", "\nRGL console initialized\n" );
-      fflush( consoleHandle );
-   }
-   else consoleHandle = 0;
 }
 
 void rglExitConsole()
 {
-   //if (console!=-1U) logical_console_close(console);
-   consoleHandle = 0;
 }
 
 /*============================================================
@@ -2277,35 +2245,17 @@ int32_t rglOutOfSpaceCallback( struct CellGcmContextData* fifoContext, uint32_t 
 
    uint32_t *nextbegin, *nextend, nextbeginoffset, nextendoffset;
 
-   //printf(" rglOutOfSpaceCallback \n" ); 
-
    fifo->updateLastGetRead(); 
-
 
    // If the current end isn't the same as the full fifo end we 
    // aren't at the end.  Just go ahead and set the next begin and end 
    if(fifo->end != fifo->dmaPushBufferEnd)
    {
-      //printf(" Next Block \n" ); 
-      //printf(" b %p e %p c %p g %p \n", 
-      //	   fifo->begin, fifo->end, fifo->current, fifo->lastGetRead ); 
       nextbegin = (uint32_t *)fifo->end + 1; 
       nextend = nextbegin + fifo->fifoBlockSize/sizeof(uint32_t) - 1;
-
-      //	printf(" Current RGL FIFO info \n" ); 
-      //	printf(" Fifo Begin %p End %p Current %p and Get %p \n", 
-      //		rglGcmState_i.fifo.begin, rglGcmState_i.fifo.end,rglGcmState_i.fifo.current,rglGcmState_i.fifo.lastGetRead ); 
-
-      //	printf(" Last 10 words of the RGL Fifo from the ppu put/current position \n" );  
-      //	rglPrintFifoFromPut( 10 ); 
-
    }
-   // end up at fifo buffer
    else
    {
-      //printf(" Jump To First! \n" ); 
-      //printf(" b %p e %p c %p g %p \n", 
-      //	   fifo->begin, fifo->end, fifo->current, fifo->lastGetRead ); 
       nextbegin = (uint32_t *)fifo->dmaPushBufferBegin;
       nextend = nextbegin + (fifo->fifoBlockSize)/sizeof(uint32_t) - 1;
    }
@@ -2372,8 +2322,6 @@ int rglGcmInitRM( rglGcmResource *gcmResource, unsigned int hostMemorySize, int 
 {
    memset( gcmResource, 0, sizeof( rglGcmResource ) );
 
-   const unsigned int iDPM2DataAreaSize = 0;
-
    // XXX currently we need to decide how much host memory is needed before we know the GPU type
    // It sucks because we don't know if the push buffer is in host memory or not.
    // So, assume that it is...
@@ -2381,9 +2329,7 @@ int rglGcmInitRM( rglGcmResource *gcmResource, unsigned int hostMemorySize, int 
 
    // in case of host push buffer we need to add padding to avoid GPU push buffer prefetch to
    // cause a problem fetching invalid addresses at the end of the push buffer.
-   gcmResource->hostMemorySize = rglPad( RGLGCM_FIFO_SIZE + hostMemorySize + dmaPushBufferSize + RGLGCM_DMA_PUSH_BUFFER_PREFETCH_PADDING 
-         //+ iDPM2DataAreaSize, 1 << 20 ); // also need to add in the space needed for the report query locations 
-      + iDPM2DataAreaSize + (RGLGCM_LM_MAX_TOTAL_QUERIES * sizeof( GLuint )), 1 << 20 );
+   gcmResource->hostMemorySize = rglPad( RGLGCM_FIFO_SIZE + hostMemorySize + dmaPushBufferSize + RGLGCM_DMA_PUSH_BUFFER_PREFETCH_PADDING + (RGLGCM_LM_MAX_TOTAL_QUERIES * sizeof( GLuint )), 1 << 20 );
 
    if ( gcmResource->hostMemorySize > 0 )
       gcmResource->hostMemoryBase = (char *)memalign( 1 << 20, gcmResource->hostMemorySize  );
@@ -2571,14 +2517,15 @@ static const unsigned int validPitchCount = sizeof( validPitch ) / sizeof( valid
 
 static unsigned int findValidPitch( unsigned int pitch )
 {
-   if ( pitch <= validPitch[0] ) return validPitch[0];
+   if (pitch <= validPitch[0])
+      return validPitch[0];
    else
    {
       // dummy linear search
       for ( GLuint i = 0;i < validPitchCount - 1;++i )
-      {
-         if (( pitch > validPitch[i] ) && ( pitch <= validPitch[i+1] ) ) return validPitch[i+1];
-      }
+         if (( pitch > validPitch[i] ) && ( pitch <= validPitch[i+1] ) )
+            return validPitch[i+1];
+
       return validPitch[validPitchCount-1];
    }
 }
@@ -3092,10 +3039,8 @@ int rglPlatformCreateDevice( RGLdevice* device )
       params->renderHeight = params->height;
    }
 
-   if ( rescIsEnabled( params ) )
-   {
+   if (rescIsEnabled(params))
       rescInit( params, gcmDevice );
-   }
 
    gcmDevice->deviceType = 0;
    gcmDevice->TVStandard = params->TVStandard;
