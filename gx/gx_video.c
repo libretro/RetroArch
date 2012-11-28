@@ -92,6 +92,9 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    unsigned viHeightMultiplier = 1;
    unsigned viWidth = 640;
 #if defined(HW_RVL)
+   if (CONF_GetAspectRatio() == CONF_ASPECT_16_9)
+      viWidth = 678;
+
    bool progressive = CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable();
    unsigned tvmode;
    switch (CONF_GetVideo())
@@ -148,15 +151,17 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    if (lines == 0 || fbWidth == 0)
    {
       VIDEO_GetPreferredMode(&gx_mode);
+      // still bring over the viWidth changes
+      gx_mode.viWidth = viWidth;
+      gx_mode.viXOrigin = (max_width - gx_mode.viWidth) / 2;
       goto config;
    }
 
    if (lines > max_height)
       lines = max_height;
+
    if (fbWidth > max_width)
-   {
-      fbWidth = viWidth = max_width;
-   }
+      fbWidth = max_width;
 
    gx_mode.viTVMode = VI_TVMODE(tvmode, modetype);
    gx_mode.fbWidth = fbWidth;
@@ -165,10 +170,12 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    gx_mode.viWidth = viWidth;
    gx_mode.viHeight = lines * viHeightMultiplier;
    gx_mode.viXOrigin = (max_width - gx_mode.viWidth) / 2;
+
    if (viHeightMultiplier == 2)
       gx_mode.viYOrigin = (max_height / 2 - gx_mode.viHeight / 2) / 2;
    else
       gx_mode.viYOrigin = (max_height - gx_mode.viHeight) / 2;
+
    gx_mode.xfbMode = modetype == VI_INTERLACE ? VI_XFBMODE_DF : VI_XFBMODE_SF;
    gx_mode.field_rendering = GX_FALSE;
    gx_mode.aa = GX_FALSE;
@@ -209,6 +216,7 @@ config:
    RGUI_HEIGHT &= ~3;
    if (RGUI_HEIGHT > 240)
       RGUI_HEIGHT = 240;
+
    RGUI_WIDTH = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
    RGUI_WIDTH &= ~3;
    if (RGUI_WIDTH > 400)
