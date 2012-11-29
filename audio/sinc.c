@@ -52,7 +52,7 @@
 
 struct rarch_resampler
 {
-   sample_t phase_table[PHASES][TAPS];
+   sample_t phase_table[1 << PHASE_BITS][TAPS];
    sample_t buffer_l[2 * TAPS];
    sample_t buffer_r[2 * TAPS];
 
