@@ -338,18 +338,18 @@ static bool xinput_input_key_pressed(void *data, int key)
       case RARCH_REWIND:
          return ((state[0] & XINPUT1_GAMEPAD_RSTICK_UP_MASK) && !(state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
       case RARCH_QUIT_KEY:
-         if(IS_TIMER_EXPIRED(d3d))
+         if(IS_TIMER_EXPIRED(d3d, 0))
          {
             uint32_t left_thumb_pressed = (state[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L3));
             uint32_t right_thumb_pressed = (state[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R3));
 
-            g_extern.console.rmenu.state.rmenu.enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED(d3d);
+            g_extern.console.rmenu.state.rmenu.enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED(d3d, 0);
             g_extern.console.rmenu.state.ingame_menu.enable = right_thumb_pressed && !left_thumb_pressed;
             
             if(g_extern.console.rmenu.state.rmenu.enable || (g_extern.console.rmenu.state.ingame_menu.enable && !g_extern.console.rmenu.state.rmenu.enable))
             {
                g_extern.console.rmenu.mode = MODE_MENU;
-               SET_TIMER_EXPIRATION(d3d, 30);
+               SET_TIMER_EXPIRATION(d3d, 0, 30);
                retval = g_extern.console.rmenu.state.rmenu.enable;
             }
             retval = g_extern.console.rmenu.state.ingame_menu.enable ? g_extern.console.rmenu.state.ingame_menu.enable : g_extern.console.rmenu.state.rmenu.enable;

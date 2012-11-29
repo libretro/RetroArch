@@ -2260,10 +2260,10 @@ void menu_loop(void)
          if(!first_held)
          {
             first_held = true;
-            SET_TIMER_EXPIRATION(device_ptr, 7);
+            SET_TIMER_EXPIRATION(device_ptr, 1, 7);
          }
 
-         if(IS_TIMER_EXPIRED(device_ptr))
+         if(IS_TIMER_EXPIRED(device_ptr, 1))
          {
             first_held = false;
             trig_state = input_state; //second input frame set as current frame
@@ -2344,7 +2344,7 @@ void menu_loop(void)
 
       old_state = input_state_first_frame;
 
-      if(IS_TIMER_EXPIRED(device_ptr))
+      if(IS_TIMER_EXPIRED(device_ptr, 0))
       {
          // if we want to force goto the emulation loop, skip this
          if(g_extern.console.rmenu.mode != MODE_EMULATION)
@@ -2372,7 +2372,7 @@ void menu_loop(void)
       // press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
       if(g_extern.console.rmenu.mode == MODE_EMULATION && !g_extern.console.screen.state.frame_advance.enable)
       {
-         SET_TIMER_EXPIRATION(device_ptr, 30);
+         SET_TIMER_EXPIRATION(device_ptr, 0, 30);
       }
 
       const char * message = msg_queue_pull(g_extern.msg_queue);

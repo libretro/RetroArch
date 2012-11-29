@@ -304,10 +304,10 @@ static void menu_loop(void)
          if(!first_held)
          {
             first_held = true;
-            SET_TIMER_EXPIRATION(gx, (initial_held) ? 15 : 7);
+            SET_TIMER_EXPIRATION(gx, 1, (initial_held) ? 15 : 7);
          }
 
-         if(IS_TIMER_EXPIRED(gx))
+         if(IS_TIMER_EXPIRED(gx, 1))
          {
             first_held = false;
             trigger_state = input_state; //second input frame set as current frame
@@ -357,7 +357,7 @@ static void menu_loop(void)
       bool goto_menu_key_pressed = (trigger_state & (1 << GX_DEVICE_NAV_MENU));
       bool quit_key_pressed = (trigger_state & (1 << GX_DEVICE_NAV_QUIT));
 
-      if(IS_TIMER_EXPIRED(gx))
+      if(IS_TIMER_EXPIRED(gx, 0))
       {
          // if we want to force goto the emulation loop, skip this
          if(g_extern.console.rmenu.mode != MODE_EMULATION)
@@ -380,7 +380,7 @@ static void menu_loop(void)
       // press and holding QUIT in the emulation loop (lasts for 30 frame ticks)
       if(g_extern.console.rmenu.mode == MODE_EMULATION)
       {
-         SET_TIMER_EXPIRATION(gx, 30);
+         SET_TIMER_EXPIRATION(gx, 0, 30);
       }
 
    }while(g_extern.console.rmenu.state.rmenu.enable);

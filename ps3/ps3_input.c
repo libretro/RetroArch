@@ -454,18 +454,18 @@ static bool ps3_input_key_pressed(void *data, int key)
          return (state[0] & PS3_GAMEPAD_RSTICK_UP_MASK) && !(state[0] & PS3_GAMEPAD_R2);
       case RARCH_QUIT_KEY:
 #ifdef HAVE_OPENGL
-         if(IS_TIMER_EXPIRED(gl))
+         if(IS_TIMER_EXPIRED(gl, 0))
          {
             uint32_t r3_pressed = state[0] & PS3_GAMEPAD_R3;
             uint32_t l3_pressed = state[0] & PS3_GAMEPAD_L3;
             bool retval = false;
-            g_extern.console.rmenu.state.rmenu.enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED(gl));
+            g_extern.console.rmenu.state.rmenu.enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED(gl, 0));
             g_extern.console.rmenu.state.ingame_menu.enable = r3_pressed && !l3_pressed;
 
             if(g_extern.console.rmenu.state.rmenu.enable || (g_extern.console.rmenu.state.ingame_menu.enable && !g_extern.console.rmenu.state.rmenu.enable))
             {
                g_extern.console.rmenu.mode = MODE_MENU;
-               SET_TIMER_EXPIRATION(gl, 30);
+               SET_TIMER_EXPIRATION(gl, 0, 30);
                retval = g_extern.console.rmenu.state.rmenu.enable;
             }
 

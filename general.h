@@ -474,6 +474,7 @@ struct global
       bool block_config_read;
       bool initialize_rarch_enable;
       unsigned emulator_initialized;
+      rarch_frame_count_t general_timers[2];
 
       struct
       {
@@ -497,12 +498,6 @@ struct global
             rarch_boolean_state_t rmenu_hd;
          } state;
       } rmenu;
-
-      struct
-      {
-         rarch_frame_count_t control_timer;
-         rarch_frame_count_t general_timer;
-      } timers;
 
       struct
       {

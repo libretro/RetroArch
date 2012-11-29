@@ -1169,7 +1169,7 @@ void menu_loop(void)
 
       g_extern.console.rmenu.state.rmenu.enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
             && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.console.emulator_initialized)
-            && IS_TIMER_EXPIRED(device_ptr));
+            && IS_TIMER_EXPIRED(device_ptr, 0));
 
       g_extern.console.rmenu.mode = g_extern.console.rmenu.state.rmenu.enable ? MODE_MENU : MODE_EMULATION;
 
@@ -1181,7 +1181,7 @@ void menu_loop(void)
                {
                uint64_t action = (1 << RMENU_DEVICE_NAV_A);
                browser_update(browser, action, rarch_console_get_rom_ext());
-               SET_TIMER_EXPIRATION(d3d, 15);
+               SET_TIMER_EXPIRATION(d3d, 0, 15);
                }
                */
          case INPUT_LOOP_MENU:
@@ -1201,7 +1201,7 @@ void menu_loop(void)
 
       if(g_extern.console.rmenu.mode == MODE_EMULATION && !g_extern.console.screen.state.frame_advance.enable)
       {
-         SET_TIMER_EXPIRATION(device_ptr, 30);
+         SET_TIMER_EXPIRATION(device_ptr, 0, 30);
       }
 
       const char *message = msg_queue_pull(g_extern.msg_queue);

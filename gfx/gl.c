@@ -1749,7 +1749,7 @@ static void gl_restart(void)
 
 #ifdef RARCH_CONSOLE
    gl->block_swap = should_block_swap;
-   SET_TIMER_EXPIRATION(gl, 30);
+   SET_TIMER_EXPIRATION(gl, 0, 30);
 #endif
 }
 
