@@ -43,7 +43,8 @@
 #endif
 
 #define PHASE_BITS 16
-#define PHASES (1 << PHASE_BITS)
+#define SUBPHASE_BITS 10
+#define PHASES (1 << (PHASE_BITS + SUBPHASE_BITS))
 
 #define SIDELOBES 8
 #define TAPS (SIDELOBES * 2)
@@ -75,7 +76,7 @@ static inline double lanzcos(double index)
 static void init_sinc_table(rarch_resampler_t *resamp)
 {
    // Sinc phases: [..., p + 3, p + 2, p + 1, p + 0, p - 1, p - 2, p - 3, p - 4, ...]
-   for (int i = 0; i < PHASES; i++)
+   for (int i = 0; i < (1 << PHASE_BITS); i++)
    {
       for (int j = 0; j < TAPS; j++)
       {
@@ -138,7 +139,7 @@ static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
    const float *buffer_l = resamp->buffer_l + resamp->ptr;
    const float *buffer_r = resamp->buffer_r + resamp->ptr;
 
-   unsigned phase = resamp->time;
+   unsigned phase = resamp->time >> SUBPHASE_BITS;
    const float *phase_table = resamp->phase_table[phase];
 
    for (unsigned i = 0; i < TAPS; i += 8)
@@ -173,7 +174,7 @@ static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
    const float *buffer_l = resamp->buffer_l + resamp->ptr;
    const float *buffer_r = resamp->buffer_r + resamp->ptr;
 
-   unsigned phase = resamp->time;
+   unsigned phase = resamp->time >> SUBPHASE_BITS;
    const float *phase_table = resamp->phase_table[phase];
 
    for (unsigned i = 0; i < TAPS; i += 4)
@@ -215,7 +216,7 @@ static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
    const float *buffer_l = resamp->buffer_l + resamp->ptr;
    const float *buffer_r = resamp->buffer_r + resamp->ptr;
 
-   unsigned phase = resamp->time;
+   unsigned phase = resamp->time >> SUBPHASE_BITS;
    const float *phase_table = resamp->phase_table[phase];
 
    for (unsigned i = 0; i < TAPS; i++)
