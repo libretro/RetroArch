@@ -430,14 +430,12 @@ LIBXML2
 #include "../../deps/libxml2/parser.c"
 #include "../../deps/libxml2/parserInternals.c"
 #include "../../deps/libxml2/SAX2.c"
-#include "../../deps/libxml2/libxml_threads.c"
 #include "../../deps/libxml2/tree.c"
 #include "../../deps/libxml2/uri.c"
 #include "../../deps/libxml2/valid.c"
 #include "../../deps/libxml2/xmlIO.c"
 #include "../../deps/libxml2/xmlmemory.c"
 #include "../../deps/libxml2/xmlreader.c"
-#include "../../deps/libxml2/xmlsave.c"
 #include "../../deps/libxml2/xmlstring.c"
 #endif
 

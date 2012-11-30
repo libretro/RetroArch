@@ -12203,7 +12203,6 @@ xmlInitParser(void) {
     if (xmlParserInitialized != 0)
 	return;
 
-	xmlInitThreads();
 	xmlInitGlobals();
 	if ((xmlGenericError == xmlGenericErrorDefaultFunc) ||
 	    (xmlGenericError == NULL))
@@ -12247,7 +12246,6 @@ xmlCleanupParser(void) {
     xmlCleanupInputCallbacks();
     xmlCleanupGlobals();
     xmlResetLastError();
-    xmlCleanupThreads(); /* must be last if called not from the main thread */
     xmlCleanupMemory();
     xmlParserInitialized = 0;
 }

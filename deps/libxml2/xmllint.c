@@ -1927,7 +1927,6 @@ static void parseAndPrintFile(char *filename, xmlParserCtxtPtr rectxt) {
 static void showVersion(const char *name) {
     fprintf(stderr, "%s: using libxml version %s\n", name, xmlParserVersion);
     fprintf(stderr, "   compiled with: ");
-    if (xmlHasFeature(XML_WITH_THREAD)) fprintf(stderr, "Threads ");
     if (xmlHasFeature(XML_WITH_TREE)) fprintf(stderr, "Tree ");
     if (xmlHasFeature(XML_WITH_OUTPUT)) fprintf(stderr, "Output ");
     if (xmlHasFeature(XML_WITH_PUSH)) fprintf(stderr, "Push ");

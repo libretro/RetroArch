@@ -122,12 +122,6 @@ struct _xmlDict {
 };
 
 /*
- * A mutex for modifying the reference counter for shared
- * dictionaries.
- */
-static xmlRMutexPtr xmlDictMutex = NULL;
-
-/*
  * Whether the dictionary mutex was initialized.
  */
 static int xmlDictInitialized = 0;
@@ -142,9 +136,6 @@ static int xmlDictInitialized = 0;
 static int xmlInitializeDict(void) {
     if (xmlDictInitialized)
         return(1);
-
-    if ((xmlDictMutex = xmlNewRMutex()) == NULL)
-        return(0);
 
 #ifdef DICT_RANDOMIZATION
     srand(time(NULL));
@@ -162,8 +153,6 @@ void
 xmlDictCleanup(void) {
     if (!xmlDictInitialized)
         return;
-
-    xmlFreeRMutex(xmlDictMutex);
 
     xmlDictInitialized = 0;
 }
@@ -519,9 +508,7 @@ xmlDictReference(xmlDictPtr dict) {
             return(-1);
 
     if (dict == NULL) return -1;
-    xmlRMutexLock(xmlDictMutex);
     dict->ref_counter++;
-    xmlRMutexUnlock(xmlDictMutex);
     return(0);
 }
 
@@ -667,14 +654,10 @@ xmlDictFree(xmlDictPtr dict) {
             return;
 
     /* decrement the counter, it may be shared by a parser and docs */
-    xmlRMutexLock(xmlDictMutex);
     dict->ref_counter--;
     if (dict->ref_counter > 0) {
-        xmlRMutexUnlock(xmlDictMutex);
         return;
     }
-
-    xmlRMutexUnlock(xmlDictMutex);
 
     if (dict->subdict != NULL) {
         xmlDictFree(dict->subdict);

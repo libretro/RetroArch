@@ -50,7 +50,6 @@
 #include "libxml/xmlmemory.h"
 #include "libxml/xmlreader.h"
 #include "libxml/xmlregexp.h"
-#include "libxml/xmlsave.h"
 #include "libxml/xmlschemas.h"
 #include "libxml/xmlschemastypes.h"
 #include "libxml/xmlstring.h"
@@ -716,17 +715,6 @@ extern __typeof (xmlCleanupParser) xmlCleanupParser __attribute((alias("xmlClean
 #ifndef xmlCleanupParser
 extern __typeof (xmlCleanupParser) xmlCleanupParser__internal_alias __attribute((visibility("hidden")));
 #define xmlCleanupParser xmlCleanupParser__internal_alias
-#endif
-#endif
-
-
-#ifdef bottom_threads
-#undef xmlCleanupThreads
-extern __typeof (xmlCleanupThreads) xmlCleanupThreads __attribute((alias("xmlCleanupThreads__internal_alias")));
-#else
-#ifndef xmlCleanupThreads
-extern __typeof (xmlCleanupThreads) xmlCleanupThreads__internal_alias __attribute((visibility("hidden")));
-#define xmlCleanupThreads xmlCleanupThreads__internal_alias
 #endif
 #endif
 
@@ -1601,16 +1589,6 @@ extern __typeof (xmlFreeInputStream) xmlFreeInputStream__internal_alias __attrib
 #endif
 #endif
 
-#ifdef bottom_threads
-#undef xmlFreeMutex
-extern __typeof (xmlFreeMutex) xmlFreeMutex __attribute((alias("xmlFreeMutex__internal_alias")));
-#else
-#ifndef xmlFreeMutex
-extern __typeof (xmlFreeMutex) xmlFreeMutex__internal_alias __attribute((visibility("hidden")));
-#define xmlFreeMutex xmlFreeMutex__internal_alias
-#endif
-#endif
-
 #ifdef bottom_tree
 #undef xmlFreeNode
 extern __typeof (xmlFreeNode) xmlFreeNode __attribute((alias("xmlFreeNode__internal_alias")));
@@ -1698,16 +1676,6 @@ extern __typeof (xmlFreePropList) xmlFreePropList __attribute((alias("xmlFreePro
 #ifndef xmlFreePropList
 extern __typeof (xmlFreePropList) xmlFreePropList__internal_alias __attribute((visibility("hidden")));
 #define xmlFreePropList xmlFreePropList__internal_alias
-#endif
-#endif
-
-#ifdef bottom_threads
-#undef xmlFreeRMutex
-extern __typeof (xmlFreeRMutex) xmlFreeRMutex __attribute((alias("xmlFreeRMutex__internal_alias")));
-#else
-#ifndef xmlFreeRMutex
-extern __typeof (xmlFreeRMutex) xmlFreeRMutex__internal_alias __attribute((visibility("hidden")));
-#define xmlFreeRMutex xmlFreeRMutex__internal_alias
 #endif
 #endif
 
@@ -1903,16 +1871,6 @@ extern __typeof (xmlGetExternalEntityLoader) xmlGetExternalEntityLoader__interna
 #endif
 #endif
 
-#ifdef bottom_threads
-#undef xmlGetGlobalState
-extern __typeof (xmlGetGlobalState) xmlGetGlobalState __attribute((alias("xmlGetGlobalState__internal_alias")));
-#else
-#ifndef xmlGetGlobalState
-extern __typeof (xmlGetGlobalState) xmlGetGlobalState__internal_alias __attribute((visibility("hidden")));
-#define xmlGetGlobalState xmlGetGlobalState__internal_alias
-#endif
-#endif
-
 #ifdef bottom_valid
 #undef xmlGetID
 extern __typeof (xmlGetID) xmlGetID __attribute((alias("xmlGetID__internal_alias")));
@@ -2044,16 +2002,6 @@ extern __typeof (xmlGetRefs) xmlGetRefs __attribute((alias("xmlGetRefs__internal
 #ifndef xmlGetRefs
 extern __typeof (xmlGetRefs) xmlGetRefs__internal_alias __attribute((visibility("hidden")));
 #define xmlGetRefs xmlGetRefs__internal_alias
-#endif
-#endif
-
-#ifdef bottom_threads
-#undef xmlGetThreadId
-extern __typeof (xmlGetThreadId) xmlGetThreadId __attribute((alias("xmlGetThreadId__internal_alias")));
-#else
-#ifndef xmlGetThreadId
-extern __typeof (xmlGetThreadId) xmlGetThreadId__internal_alias __attribute((visibility("hidden")));
-#define xmlGetThreadId xmlGetThreadId__internal_alias
 #endif
 #endif
 
@@ -2397,16 +2345,6 @@ extern __typeof (xmlInitParserCtxt) xmlInitParserCtxt__internal_alias __attribut
 #endif
 #endif
 
-#ifdef bottom_threads
-#undef xmlInitThreads
-extern __typeof (xmlInitThreads) xmlInitThreads __attribute((alias("xmlInitThreads__internal_alias")));
-#else
-#ifndef xmlInitThreads
-extern __typeof (xmlInitThreads) xmlInitThreads__internal_alias __attribute((visibility("hidden")));
-#define xmlInitThreads xmlInitThreads__internal_alias
-#endif
-#endif
-
 #ifdef bottom_globals
 #undef xmlInitializeGlobalState
 extern __typeof (xmlInitializeGlobalState) xmlInitializeGlobalState __attribute((alias("xmlInitializeGlobalState__internal_alias")));
@@ -2518,16 +2456,6 @@ extern __typeof (xmlIsLetter) xmlIsLetter__internal_alias __attribute((visibilit
 #endif
 #endif
 
-#ifdef bottom_threads
-#undef xmlIsMainThread
-extern __typeof (xmlIsMainThread) xmlIsMainThread __attribute((alias("xmlIsMainThread__internal_alias")));
-#else
-#ifndef xmlIsMainThread
-extern __typeof (xmlIsMainThread) xmlIsMainThread__internal_alias __attribute((visibility("hidden")));
-#define xmlIsMainThread xmlIsMainThread__internal_alias
-#endif
-#endif
-
 #ifdef bottom_valid
 #undef xmlIsMixedElement
 extern __typeof (xmlIsMixedElement) xmlIsMixedElement __attribute((alias("xmlIsMixedElement__internal_alias")));
@@ -2555,16 +2483,6 @@ extern __typeof (xmlIsRef) xmlIsRef __attribute((alias("xmlIsRef__internal_alias
 #ifndef xmlIsRef
 extern __typeof (xmlIsRef) xmlIsRef__internal_alias __attribute((visibility("hidden")));
 #define xmlIsRef xmlIsRef__internal_alias
-#endif
-#endif
-
-#ifdef bottom_xmlsave
-#undef xmlIsXHTML
-extern __typeof (xmlIsXHTML) xmlIsXHTML __attribute((alias("xmlIsXHTML__internal_alias")));
-#else
-#ifndef xmlIsXHTML
-extern __typeof (xmlIsXHTML) xmlIsXHTML__internal_alias __attribute((visibility("hidden")));
-#define xmlIsXHTML xmlIsXHTML__internal_alias
 #endif
 #endif
 
@@ -2870,16 +2788,6 @@ extern __typeof (xmlLoadExternalEntity) xmlLoadExternalEntity__internal_alias __
 #endif
 #endif
 
-#ifdef bottom_threads
-#undef xmlLockLibrary
-extern __typeof (xmlLockLibrary) xmlLockLibrary __attribute((alias("xmlLockLibrary__internal_alias")));
-#else
-#ifndef xmlLockLibrary
-extern __typeof (xmlLockLibrary) xmlLockLibrary__internal_alias __attribute((visibility("hidden")));
-#define xmlLockLibrary xmlLockLibrary__internal_alias
-#endif
-#endif
-
 #ifdef bottom_xmlmemory
 #undef xmlMallocAtomicLoc
 extern __typeof (xmlMallocAtomicLoc) xmlMallocAtomicLoc __attribute((alias("xmlMallocAtomicLoc__internal_alias")));
@@ -3027,26 +2935,6 @@ extern __typeof (xmlMemoryStrdup) xmlMemoryStrdup __attribute((alias("xmlMemoryS
 #ifndef xmlMemoryStrdup
 extern __typeof (xmlMemoryStrdup) xmlMemoryStrdup__internal_alias __attribute((visibility("hidden")));
 #define xmlMemoryStrdup xmlMemoryStrdup__internal_alias
-#endif
-#endif
-
-#ifdef bottom_threads
-#undef xmlMutexLock
-extern __typeof (xmlMutexLock) xmlMutexLock __attribute((alias("xmlMutexLock__internal_alias")));
-#else
-#ifndef xmlMutexLock
-extern __typeof (xmlMutexLock) xmlMutexLock__internal_alias __attribute((visibility("hidden")));
-#define xmlMutexLock xmlMutexLock__internal_alias
-#endif
-#endif
-
-#ifdef bottom_threads
-#undef xmlMutexUnlock
-extern __typeof (xmlMutexUnlock) xmlMutexUnlock __attribute((alias("xmlMutexUnlock__internal_alias")));
-#else
-#ifndef xmlMutexUnlock
-extern __typeof (xmlMutexUnlock) xmlMutexUnlock__internal_alias __attribute((visibility("hidden")));
-#define xmlMutexUnlock xmlMutexUnlock__internal_alias
 #endif
 #endif
 
@@ -3286,16 +3174,6 @@ extern __typeof (xmlNewInputStream) xmlNewInputStream__internal_alias __attribut
 #endif
 #endif
 
-#ifdef bottom_threads
-#undef xmlNewMutex
-extern __typeof (xmlNewMutex) xmlNewMutex __attribute((alias("xmlNewMutex__internal_alias")));
-#else
-#ifndef xmlNewMutex
-extern __typeof (xmlNewMutex) xmlNewMutex__internal_alias __attribute((visibility("hidden")));
-#define xmlNewMutex xmlNewMutex__internal_alias
-#endif
-#endif
-
 #ifdef bottom_tree
 #undef xmlNewNode
 extern __typeof (xmlNewNode) xmlNewNode __attribute((alias("xmlNewNode__internal_alias")));
@@ -3375,16 +3253,6 @@ extern __typeof (xmlNewProp) xmlNewProp __attribute((alias("xmlNewProp__internal
 extern __typeof (xmlNewProp) xmlNewProp__internal_alias __attribute((visibility("hidden")));
 #define xmlNewProp xmlNewProp__internal_alias
 #endif
-#endif
-#endif
-
-#ifdef bottom_threads
-#undef xmlNewRMutex
-extern __typeof (xmlNewRMutex) xmlNewRMutex __attribute((alias("xmlNewRMutex__internal_alias")));
-#else
-#ifndef xmlNewRMutex
-extern __typeof (xmlNewRMutex) xmlNewRMutex__internal_alias __attribute((visibility("hidden")));
-#define xmlNewRMutex xmlNewRMutex__internal_alias
 #endif
 #endif
 
@@ -4510,26 +4378,6 @@ extern __typeof (xmlPushInput) xmlPushInput __attribute((alias("xmlPushInput__in
 #ifndef xmlPushInput
 extern __typeof (xmlPushInput) xmlPushInput__internal_alias __attribute((visibility("hidden")));
 #define xmlPushInput xmlPushInput__internal_alias
-#endif
-#endif
-
-#ifdef bottom_threads
-#undef xmlRMutexLock
-extern __typeof (xmlRMutexLock) xmlRMutexLock __attribute((alias("xmlRMutexLock__internal_alias")));
-#else
-#ifndef xmlRMutexLock
-extern __typeof (xmlRMutexLock) xmlRMutexLock__internal_alias __attribute((visibility("hidden")));
-#define xmlRMutexLock xmlRMutexLock__internal_alias
-#endif
-#endif
-
-#ifdef bottom_threads
-#undef xmlRMutexUnlock
-extern __typeof (xmlRMutexUnlock) xmlRMutexUnlock __attribute((alias("xmlRMutexUnlock__internal_alias")));
-#else
-#ifndef xmlRMutexUnlock
-extern __typeof (xmlRMutexUnlock) xmlRMutexUnlock__internal_alias __attribute((visibility("hidden")));
-#define xmlRMutexUnlock xmlRMutexUnlock__internal_alias
 #endif
 #endif
 
@@ -6697,16 +6545,6 @@ extern __typeof (xmlUnlinkNode) xmlUnlinkNode __attribute((alias("xmlUnlinkNode_
 #ifndef xmlUnlinkNode
 extern __typeof (xmlUnlinkNode) xmlUnlinkNode__internal_alias __attribute((visibility("hidden")));
 #define xmlUnlinkNode xmlUnlinkNode__internal_alias
-#endif
-#endif
-
-#ifdef bottom_threads
-#undef xmlUnlockLibrary
-extern __typeof (xmlUnlockLibrary) xmlUnlockLibrary __attribute((alias("xmlUnlockLibrary__internal_alias")));
-#else
-#ifndef xmlUnlockLibrary
-extern __typeof (xmlUnlockLibrary) xmlUnlockLibrary__internal_alias __attribute((visibility("hidden")));
-#define xmlUnlockLibrary xmlUnlockLibrary__internal_alias
 #endif
 #endif
 

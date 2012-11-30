@@ -35,13 +35,6 @@ extern int __xmlRegisterCallbacks;
 void __xmlIOErr(int domain, int code, const char *extra);
 void __xmlLoaderErr(void *ctx, const char *msg, const char *filename);
 
-/*
- * internal global initialization critical section routines.
- */
-void __xmlGlobalInitMutexLock(void);
-void __xmlGlobalInitMutexUnlock(void);
-void __xmlGlobalInitMutexDestroy(void);
-
 #ifdef IN_LIBXML
 #ifdef __GNUC__
 #ifdef PIC

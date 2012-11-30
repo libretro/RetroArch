@@ -38,7 +38,6 @@ static int xmlMemInitialized = 0;
 static unsigned long  debugMemSize = 0;
 static unsigned long  debugMemBlocks = 0;
 static unsigned long  debugMaxMemSize = 0;
-static xmlMutexPtr xmlMemMutex = NULL;
 
 void xmlMallocBreakpoint(void);
 
@@ -153,12 +152,10 @@ xmlMallocLoc(size_t size, const char * file, int line)
     p->mh_type = MALLOC_TYPE;
     p->mh_file = file;
     p->mh_line = line;
-    xmlMutexLock(xmlMemMutex);
     p->mh_number = ++block;
     debugMemSize += size;
     debugMemBlocks++;
     if (debugMemSize > debugMaxMemSize) debugMaxMemSize = debugMemSize;
-    xmlMutexUnlock(xmlMemMutex);
 
 
     if (xmlMemStopAtBlock == p->mh_number) xmlMallocBreakpoint();
@@ -211,12 +208,10 @@ xmlMallocAtomicLoc(size_t size, const char * file, int line)
     p->mh_type = MALLOC_ATOMIC_TYPE;
     p->mh_file = file;
     p->mh_line = line;
-    xmlMutexLock(xmlMemMutex);
     p->mh_number = ++block;
     debugMemSize += size;
     debugMemBlocks++;
     if (debugMemSize > debugMaxMemSize) debugMaxMemSize = debugMemSize;
-    xmlMutexUnlock(xmlMemMutex);
 
 
     if (xmlMemStopAtBlock == p->mh_number) xmlMallocBreakpoint();
@@ -281,10 +276,8 @@ xmlReallocLoc(void *ptr,size_t size, const char * file, int line)
 	 goto error;
     }
     p->mh_tag = ~MEMTAG;
-    xmlMutexLock(xmlMemMutex);
     debugMemSize -= p->mh_size;
     debugMemBlocks--;
-    xmlMutexUnlock(xmlMemMutex);
 
     p = (MEMHDR *) realloc(p,RESERVE_SIZE+size);
     if (!p) {
@@ -303,11 +296,9 @@ xmlReallocLoc(void *ptr,size_t size, const char * file, int line)
     p->mh_size = size;
     p->mh_file = file;
     p->mh_line = line;
-    xmlMutexLock(xmlMemMutex);
     debugMemSize += size;
     debugMemBlocks++;
     if (debugMemSize > debugMaxMemSize) debugMaxMemSize = debugMemSize;
-    xmlMutexUnlock(xmlMemMutex);
 
     TEST_POINT
 
@@ -371,10 +362,8 @@ xmlMemFree(void *ptr)
     if (xmlMemStopAtBlock == p->mh_number) xmlMallocBreakpoint();
     p->mh_tag = ~MEMTAG;
     memset(target, -1, p->mh_size);
-    xmlMutexLock(xmlMemMutex);
     debugMemSize -= p->mh_size;
     debugMemBlocks--;
-    xmlMutexUnlock(xmlMemMutex);
 
     free(p);
 
@@ -420,12 +409,10 @@ xmlMemStrdupLoc(const char *str, const char *file, int line)
     p->mh_type = STRDUP_TYPE;
     p->mh_file = file;
     p->mh_line = line;
-    xmlMutexLock(xmlMemMutex);
     p->mh_number = ++block;
     debugMemSize += size;
     debugMemBlocks++;
     if (debugMemSize > debugMaxMemSize) debugMaxMemSize = debugMemSize;
-    xmlMutexUnlock(xmlMemMutex);
 
     s = (char *) HDR_2_CLIENT(p);
 
@@ -611,7 +598,6 @@ xmlInitMemory(void)
     */
      if (xmlMemInitialized) return(-1);
      xmlMemInitialized = 1;
-     xmlMemMutex = xmlNewMutex();
 
 #ifdef HAVE_STDLIB_H
      breakpoint = getenv("XML_MEM_BREAKPOINT");
@@ -640,8 +626,6 @@ xmlCleanupMemory(void) {
     if (xmlMemInitialized == 0)
         return;
 
-    xmlFreeMutex(xmlMemMutex);
-    xmlMemMutex = NULL;
     xmlMemInitialized = 0;
 }
 
