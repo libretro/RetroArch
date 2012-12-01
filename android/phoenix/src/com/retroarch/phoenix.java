@@ -91,6 +91,7 @@ public class phoenix extends Activity
     				   myIntent = new Intent(this, NativeActivity.class);
     				   myIntent.putExtra("ROM", data.getStringExtra("PATH"));
     				   myIntent.putExtra("LIBRETRO", libretro_path);
+    				   myIntent.putExtra("ANDROIDVER", Integer.toString(android.os.Build.VERSION.SDK_INT));
     				   startActivity(myIntent);
     			   }
     			   else
