@@ -1,6 +1,6 @@
 RARCH_VERSION		= "0.9.8-beta3"
 LOCAL_PATH := $(call my-dir)
-PERF_TEST := 0
+PERF_TEST := 1
 HAVE_OPENSL     := 1
 
 include $(CLEAR_VARS)
@@ -15,8 +15,9 @@ LOCAL_CFLAGS += -DANDROID_X86 -DHAVE_SSSE3
 endif
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
-#LOCAL_CFLAGS += -mfpu=neon
-LOCAL_CFLAGS += -DANDROID_ARM_V7
+LOCAL_CFLAGS += -mfpu=neon
+LOCAL_CFLAGS += -DANDROID_ARM_V7 -DHAVE_NEON
+LOCAL_SRC_FILES += ../../../audio/sinc_neon.S.neon
 endif
 
 ifeq ($(TARGET_ARCH),mips)
@@ -27,7 +28,7 @@ LOCAL_MODULE    := retroarch-activity
 
 RARCH_PATH  := ../../..
 LIBXML_PATH := ../../../deps/libxml2
-LOCAL_SRC_FILES    =	$(RARCH_PATH)/console/griffin/griffin.c
+LOCAL_SRC_FILES  +=	$(RARCH_PATH)/console/griffin/griffin.c
 
 
 ifeq ($(PERF_TEST), 1)

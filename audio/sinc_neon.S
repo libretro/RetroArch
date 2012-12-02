@@ -26,8 +26,8 @@ process_sinc_neon_asm:
    vld1.f32 {q4-q5},   [r2]!
    vld1.f32 {q6-q7},   [r2]!
    # Coeff
-   vld1.f32 {q8-q9},   [r3, :1024]!
-   vld1.f32 {q10-q11}, [r3, :1024]!
+   vld1.f32 {q8-q9},   [r3, :128]!
+   vld1.f32 {q10-q11}, [r3, :128]!
 
    # Left
    vmul.f32 q0, q0, q8
