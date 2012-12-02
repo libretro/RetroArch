@@ -19,6 +19,11 @@
 #define context_update_window_title_func(var)        gfx_ctx_update_window_title(var)
 #define context_destroy_func()                       gfx_ctx_destroy()
 
+#define gl_shader_use_func(vid, num)                 gl_glsl_use(num)
+#define gl_shader_num_func(vid)                      gl_glsl_num()
+#define gl_shader_set_params_func(vid, width, height, tex_width, tex_height, out_width, out_height, frame_count, info, prev_info, fbo_info, fbo_info_cnt) gl_glsl_set_params(width, height, tex_width, tex_height, out_width, out_height, frame_count, info, prev_info, fbo_info, fbo_info_cnt)
+#define gl_shader_set_coords_func(vid, coords, mat)  gl_glsl_set_coords(coords); gl_glsl_set_mvp(mat)
+
 #ifdef HAVE_FBO
 #define context_set_fbo_func(var)                    gl->ctx_driver->set_fbo(var)
 #endif
