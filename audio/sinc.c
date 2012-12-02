@@ -80,7 +80,7 @@ static void init_sinc_table(rarch_resampler_t *resamp)
    {
       for (int j = 0; j < TAPS; j++)
       {
-         double p = (double)i / PHASES;
+         double p = (double)i / (1 << PHASE_BITS);
          double sinc_phase = M_PI * (p + (SIDELOBES - 1 - j));
 
          float val = CUTOFF * sinc(CUTOFF * sinc_phase) * lanzcos(sinc_phase / SIDELOBES);
