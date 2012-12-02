@@ -147,7 +147,7 @@ static inline bool input_key_pressed_func(int key)
   ============================================================ */
 
 #if defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9)) /* D3D */
-
+#define MAKENAME_INPUT(A) CONCAT2(xdk, A)
 #elif defined(GEKKO) /* Gamecube, Wii */
 #define MAKENAME_INPUT(A) CONCAT2(gx, A) 
 #define gfx_ctx_window_has_focus() (true)

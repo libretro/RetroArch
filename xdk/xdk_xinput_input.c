@@ -83,7 +83,7 @@ const struct platform_bind platform_keys[] = {
 
 const unsigned int platform_keys_size = sizeof(platform_keys);
 
-static void xinput_input_poll(void *data)
+static void xdk_input_poll(void *data)
 {
    (void)data;
    
@@ -201,7 +201,7 @@ static void xinput_input_poll(void *data)
 #endif
 }
 
-static int16_t xinput_input_state(void *data, const struct retro_keybind **binds,
+static int16_t xdk_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
@@ -212,12 +212,12 @@ static int16_t xinput_input_state(void *data, const struct retro_keybind **binds
    return (state[player] & button) ? 1 : 0;
 }
 
-static void xinput_input_free_input(void *data)
+static void xdk_input_free_input(void *data)
 {
    (void)data;
 }
 
-static void xinput_set_default_keybind_lut(unsigned device, unsigned port)
+static void xdk_set_default_keybind_lut(unsigned device, unsigned port)
 {
    (void)device;
    (void)port;
@@ -247,7 +247,7 @@ static void xinput_set_default_keybind_lut(unsigned device, unsigned port)
    rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]     = platform_keys[XDK_DEVICE_ID_RSTICK_THUMB].joykey;
 }
 
-static void xinput_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
+static void xdk_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
 {
    (void)device;
    
@@ -277,7 +277,7 @@ static void xinput_input_set_analog_dpad_mapping(unsigned device, unsigned map_d
    }
 }
 
-static void* xinput_input_init(void)
+static void *xdk_input_init(void)
 {
 #ifdef _XBOX1
    XInitDevices(0, NULL);
@@ -303,13 +303,13 @@ static void* xinput_input_init(void)
 
 #define STUB_DEVICE 0
 
-static void xinput_input_post_init(void)
+static void xdk_input_post_init(void)
 {
    for(unsigned i = 0; i < MAX_PADS; i++)
-      xinput_input_set_analog_dpad_mapping(STUB_DEVICE, g_settings.input.dpad_emulation[i], i);
+      xdk_input_set_analog_dpad_mapping(STUB_DEVICE, g_settings.input.dpad_emulation[i], i);
 }
 
-static bool xinput_input_key_pressed(void *data, int key)
+static bool xdk_input_key_pressed(void *data, int key)
 {
    (void)data;
    bool retval = false;
@@ -361,14 +361,14 @@ static bool xinput_input_key_pressed(void *data, int key)
 
 const input_driver_t input_xinput = 
 {
-   xinput_input_init,
-   xinput_input_poll,
-   xinput_input_state,
-   xinput_input_key_pressed,
-   xinput_input_free_input,
-   xinput_set_default_keybind_lut,
-   xinput_input_set_analog_dpad_mapping,
-   xinput_input_post_init,
+   xdk_input_init,
+   xdk_input_poll,
+   xdk_input_state,
+   xdk_input_key_pressed,
+   xdk_input_free_input,
+   xdk_set_default_keybind_lut,
+   xdk_input_set_analog_dpad_mapping,
+   xdk_input_post_init,
    MAX_PADS,
    "xinput"
 };
