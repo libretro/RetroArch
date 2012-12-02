@@ -1,6 +1,6 @@
 .\" retroarch.1:
 
-.TH  "RetroArch" "1" "November 2011" "RetroArch" "System Manager's Manual: retroarch"
+.TH  "RETROARCH" "1" "November 1, 2011" "RETROARCH" "System Manager's Manual: retroarch"
 
 .SH NAME
 
@@ -12,7 +12,7 @@ retroarch \- A simple frontend for the libretro API.
 
 .SH "DESCRIPTION"
 
-\fBretroarch\fR is an emulator frontend for the libretro API. 
+\fBretroarch\fR is an emulator frontend for the libretro API.
 libretro provides emulation of a game system, and can be implemented by any frontend.
 \fBretroarch\fR focuses on exposing needed functionality for the game system through the use of command line and configuration files.
 
@@ -44,7 +44,7 @@ If two or more different implementations claim to support a certain ROM extensio
 .TP
 \fB--save PATH, -s PATH\fR
 Overrides the path used for save ram (*.srm).
-Without this flag, the save ram path will be inferred from the rom path name, and put in the same directory as the rom file with the extention replaced with '.srm'. 
+Without this flag, the save ram path will be inferred from the rom path name, and put in the same directory as the rom file with the extention replaced with '.srm'.
 When rom is loaded from \fBstdin\fR, this flag is mandatory to define as no path can be inferred.
 If PATH is a directory, RetroArch will treat this as the save file directory, where the save file name will be inferred from the rom name.
 When loading a rom from stdin, the path must be a full path, however.
@@ -89,7 +89,7 @@ Path to a Nintendo Game Boy ROM. If this flag is set, the Super Game Boy subsyst
 
 .TP
 \fB--bsx PATH, -b PATH\fR
-Path to BS-X rom. Load BS-X BIOS as the regular rom. 
+Path to BS-X rom. Load BS-X BIOS as the regular rom.
 When using BS-X, save ram paths will be inferred from the BS-X BIOS path, not BS-X rom path.
 
 .TP
@@ -212,17 +212,17 @@ This is purely cosmetic, and only serves to help players identify each other.
 
 .TP
 \fB--ups PATCH, -U PATCH\fR
-Attempts to apply an UPS patch to the current ROM image. No files are altered. 
+Attempts to apply an UPS patch to the current ROM image. No files are altered.
 If this flag is not specified, RetroArch will look for a .ups file with same basename as ROM specified.
 
 .TP
 \fB--bps PATCH\fR
-Attempts to apply a BPS patch to the current ROM image. No files are altered. 
+Attempts to apply a BPS patch to the current ROM image. No files are altered.
 If this flag is not specified, RetroArch will look for a .bps file with same basename as ROM specified.
 
 .TP
 \fB--ips PATCH\fR
-Attempts to apply a IPS patch to the current ROM image. No files are altered. 
+Attempts to apply a IPS patch to the current ROM image. No files are altered.
 If this flag is not specified, RetroArch will look for a .ips file with same basename as ROM specified.
 Note that RetroArch cannot perform any error checking if patching was successful due to how IPS works.
 
