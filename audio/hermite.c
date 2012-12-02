@@ -70,12 +70,12 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
       while (re->r_frac >= 1.0 && i < in_frames)
       {
          re->r_frac -= 1.0;
-         for (unsigned i = 0; i < CHANNELS; i++)
+         for (unsigned c = 0; c < CHANNELS; c++)
          {
-            re->chan_data[i][0] = re->chan_data[i][1];
-            re->chan_data[i][1] = re->chan_data[i][2];
-            re->chan_data[i][2] = re->chan_data[i][3];
-            re->chan_data[i][3] = *in_data++;
+            re->chan_data[c][0] = re->chan_data[c][1];
+            re->chan_data[c][1] = re->chan_data[c][2];
+            re->chan_data[c][2] = re->chan_data[c][3];
+            re->chan_data[c][3] = *in_data++;
          }
          i++;
       }
@@ -83,10 +83,11 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
       while (re->r_frac <= 1.0)
       {
          re->r_frac += r_step;
-         for (unsigned i = 0; i < CHANNELS; i++)
+         for (unsigned c = 0; c < CHANNELS; c++)
          {
             float res = hermite_kernel((float)re->r_frac, 
-                  re->chan_data[i][0], re->chan_data[i][1], re->chan_data[i][2], re->chan_data[i][3]);
+                  re->chan_data[c][0], re->chan_data[c][1],
+                  re->chan_data[c][2], re->chan_data[c][3]);
             *out_data++ = res;
          }
          processed_out++;
