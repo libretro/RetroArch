@@ -123,7 +123,7 @@ rarch_resampler_t *resampler_new(void)
    RARCH_LOG("Sinc resampler [AVX]\n");
 #elif defined(__SSE__)
    RARCH_LOG("Sinc resampler [SSE]\n");
-#elif defined(HAVE_NEON)
+#elif defined(WANT_NEON)
    RARCH_LOG("Sinc resampler [NEON]\n");
 #else
    RARCH_LOG("Sinc resampler [C]\n");
@@ -210,7 +210,7 @@ static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
    // movehl { X, R, X, L } == { X, R, X, R }
    _mm_store_ss(out_buffer + 1, _mm_movehl_ps(sum, sum));
 }
-#elif defined(HAVE_NEON)
+#elif defined(WANT_NEON)
 void process_sinc_neon_asm(float *out, const float *left, const float *right, const float *coeff);
 static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
 {
