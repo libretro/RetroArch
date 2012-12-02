@@ -348,8 +348,8 @@ install: $(TARGET)
 	mkdir -p $(DESTDIR)$(PREFIX)/share/icons 2>/dev/null || /bin/true
 	install -m755 $(TARGET) $(DESTDIR)$(PREFIX)/bin 
 	install -m644 retroarch.cfg $(DESTDIR)/etc/retroarch.cfg
-	install -m644 docs/retroarch.1 $(DESTDIR)$(PREFIX)/share/man/man1
-	install -m644 docs/retroarch-joyconfig.1 $(DESTDIR)$(PREFIX)/share/man/man1
+	install -m644 docs/retroarch.1 $(DESTDIR)$(MAN_DIR)
+	install -m644 docs/retroarch-joyconfig.1 $(DESTDIR)$(MAN_DIR)
 	install -m755 retroarch-zip $(DESTDIR)$(PREFIX)/bin
 	install -m644 media/retroarch.png $(DESTDIR)/usr/share/icons
 

@@ -37,6 +37,12 @@ fi
    add_define_make libretro "$LIBRETRO"
 }
 
+if [ "$MAN_DIR" ]; then
+   add_define_make MAN_DIR "$MAN_DIR"
+else
+   add_define_make MAN_DIR "${PREFIX}/share/man/man1"
+fi
+
 check_lib THREADS -lpthread pthread_create
 check_lib DYLIB "$DYLIB" dlopen
 
