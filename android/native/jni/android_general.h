@@ -34,9 +34,10 @@ struct droid
    unsigned width;
    unsigned height;
    struct saved_state state;
-   int version;
 };
 
 extern struct droid g_android;
+
+extern int android_get_sdk_version(void);
 
 #endif

@@ -65,6 +65,11 @@ static void print_cur_config(struct android_app* android_app)
          AConfiguration_getUiModeNight(android_app->config));
 }
 
+int android_get_sdk_version(void)
+{
+   return AConfiguration_getSdkVersion(g_android.app->config);
+}
+
 static void android_get_char_argv(char *argv, size_t sizeof_argv, const char *arg_name)
 {
    JNIEnv *env;
@@ -283,15 +288,11 @@ static void* android_app_entry(void* param)
 
    char rom_path[512];
    char libretro_path[512];
-   char android_version[16];
 
    // Get arguments */
    android_get_char_argv(rom_path, sizeof(rom_path), "ROM");
    android_get_char_argv(libretro_path, sizeof(libretro_path), "LIBRETRO");
-   android_get_char_argv(android_version, sizeof(android_version), "ANDROIDVER");
-   g_android.version = atoi(android_version);
 
-   RARCH_LOG("Android version: %d\n", g_android.version);
    RARCH_LOG("Checking arguments passed...\n");
    RARCH_LOG("ROM Filename: [%s].\n", rom_path);
    RARCH_LOG("Libretro path: [%s].\n", libretro_path);

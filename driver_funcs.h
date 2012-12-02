@@ -74,7 +74,7 @@ static inline bool input_key_pressed_func(int key)
 #define audio_free_func()                       sl_free(driver.audio_data)
 #define audio_use_float_func()                  driver.audio->use_float(driver.audio_data)
 #define audio_write_avail_func()                sl_write_avail(driver.audio_data)
-#define audio_buffer_size_func()                (BUFFER_SIZE * NUM_BUFFERS)
+#define audio_buffer_size_func()                (BUFFER_SIZE * ((sl_t*)driver.audio_data)->buf_count)
 
 #else
 

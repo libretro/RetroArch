@@ -36,7 +36,6 @@
 
 // TODO: Are these sane?
 #define BUFFER_SIZE 4096
-#define NUM_BUFFERS 8
 
 typedef struct sl
 {
@@ -53,6 +52,7 @@ typedef struct sl
    slock_t *lock;
    scond_t *cond;
    bool nonblock;
+   unsigned buf_count;
 } sl_t;
 
 static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
@@ -132,6 +132,17 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    GOTO_IF_FAIL(SLEngineItf_CreateOutputMix(sl->engine, &sl->output_mix, 0, NULL, NULL));
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->output_mix, SL_BOOLEAN_FALSE));
 
+   int api_level = android_get_sdk_version();
+   if(api_level > 15)
+   {
+      RARCH_LOG("API level 16 and higher has a fast OpenSL mixer - adjust settings for lower audio latency...\n");
+      sl->buf_count = 4;
+   }
+   else
+      sl->buf_count = 8;
+
+   RARCH_LOG("[SLES] : Android API level [%d] detected, setting audio latency (buffer size: [%d])..\n", api_level, sl->buf_count * BUFFER_SIZE);
+
    fmt_pcm.formatType    = SL_DATAFORMAT_PCM;
    fmt_pcm.numChannels   = 2;
    fmt_pcm.samplesPerSec = rate * 1000; // Samplerate is in milli-Hz.
@@ -144,7 +155,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    audio_src.pFormat  = &fmt_pcm;
 
    loc_bufq.locatorType = SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE;
-   loc_bufq.numBuffers  = NUM_BUFFERS;
+   loc_bufq.numBuffers  = sl->buf_count;
 
    loc_outmix.locatorType = SL_DATALOCATOR_OUTPUTMIX;
    loc_outmix.outputMix   = sl->output_mix;
@@ -161,7 +172,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
 
    sl->cond = scond_new();
    sl->lock = slock_new();
-   sl->fifo = fifo_new(BUFFER_SIZE * NUM_BUFFERS);
+   sl->fifo = fifo_new(BUFFER_SIZE * sl->buf_count);
 
    (*buffer_queue)->RegisterCallback(buffer_queue, opensl_callback, sl);
    (*buffer_queue)->Enqueue(buffer_queue, sl->buffer, BUFFER_SIZE);
@@ -248,7 +259,8 @@ static size_t sl_write_avail(void *data)
 
 static size_t sl_buffer_size(void *data)
 {
-   return BUFFER_SIZE * NUM_BUFFERS;
+   sl_t *sl = (sl_t*)data;
+   return BUFFER_SIZE * sl->buf_count;
 }
 
 const audio_driver_t audio_opensl = {
