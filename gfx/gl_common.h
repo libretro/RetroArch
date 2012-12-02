@@ -60,7 +60,11 @@
 #else
 #define gl_shader_use_func(vid, num)                 gl_shader_use(vid, num)
 #define gl_shader_num_func(vid)                      gl_shader_num(vid)
-#define gl_shader_set_params_func(vid, width, height, tex_width, tex_height, out_width, out_height, frame_count, info, prev_info, fbo_info, fbo_info_cnt) gl_shader_set_params(vid, width, height, tex_width, tex_height, out_width, out_height, frame_count, info, prev_info, fbo_info, fbo_info_cnt)
+#define gl_shader_set_params_func(vid, width, height, \
+      tex_width, tex_height, out_width, out_height, \
+      frame_count, info, prev_info, fbo_info, fbo_info_cnt) \
+         gl_shader_set_params(vid, width, height, tex_width, tex_height, \
+               out_width, out_height, frame_count, info, prev_info, fbo_info, fbo_info_cnt)
 #define gl_shader_set_coords_func(vid, coords, mat)  gl_shader_set_coords(vid, coords, mat)
 
 #define context_get_video_size_func(win, height)     gl->ctx_driver->get_video_size(win, height)
@@ -73,7 +77,9 @@
 #define context_swap_buffers_func()                  gl->ctx_driver->swap_buffers()
 #define context_swap_interval_func(var)              gl->ctx_driver->swap_interval(var)
 #define context_has_focus_func()                     gl->ctx_driver->has_focus()
-#define context_check_window_func(quit, resize, width, height, frame_count) gl->ctx_driver->check_window(quit, resize, width, height, frame_count)
+#define context_check_window_func(quit, resize, width, height, frame_count) \
+   gl->ctx_driver->check_window(quit, resize, width, height, frame_count)
+
 #define context_update_window_title_func(var)        gl->ctx_driver->update_window_title(var)
 #define context_set_video_mode_func(width, height, fullscreen) gl->ctx_driver->set_video_mode(width, height, fullscreen)
 #define context_input_driver_func(input, input_data) gl->ctx_driver->input_driver(input, input_data)
@@ -85,8 +91,8 @@
 
 #ifdef HAVE_EGL
 #define context_init_egl_image_buffer_func(video)    gl->ctx_driver->init_egl_image_buffer(video)
-
-#define context_write_egl_image_func(frame, width, height, pitch, base_size, tex_index, img) gl->ctx_driver->write_egl_image(frame, width, height, pitch, base_size, tex_index,img)
+#define context_write_egl_image_func(frame, width, height, pitch, base_size, tex_index, img) \
+   gl->ctx_driver->write_egl_image(frame, width, height, pitch, base_size, tex_index,img)
 #endif
 #endif
 
