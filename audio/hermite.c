@@ -52,6 +52,7 @@ static inline float hermite_kernel(float mu1, float a, float b, float c, float d
 
 rarch_resampler_t *resampler_new(void)
 {
+   RARCH_LOG("Hermite resampler [C]\n");
    return (rarch_resampler_t*)calloc(1, sizeof(rarch_resampler_t));
 }
 
