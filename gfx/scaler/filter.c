@@ -95,7 +95,7 @@ static bool gen_filter_bilinear(struct scaler_ctx *ctx)
    return true;
 }
 
-static inline double sinc(double phase)
+static inline double filter_sinc(double phase)
 {
    if (fabs(phase) < 0.0001)
       return 1.0;
@@ -116,7 +116,7 @@ static void gen_filter_sinc_sub(struct scaler_filter *filter, int len, int pos, 
       {
          double sinc_phase    = M_PI * ((double)((sinc_size << 15) + (pos & 0xffff)) / 0x10000 - j);
          double lanczos_phase = sinc_phase / ((sinc_size >> 1));
-         int16_t sinc_val     = FILTER_UNITY * sinc(sinc_phase * phase_mul) * sinc(lanczos_phase) * phase_mul;
+         int16_t sinc_val     = FILTER_UNITY * filter_sinc(sinc_phase * phase_mul) * filter_sinc(lanczos_phase) * phase_mul;
          //sinc_sum += sinc_val;
 
          filter->filter[i * sinc_size + j] = sinc_val;
