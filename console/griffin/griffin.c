@@ -247,7 +247,7 @@ FIFO BUFFER
 /*============================================================
 AUDIO HERMITE
 ============================================================ */
-#ifdef WANT_NEON
+#ifdef HAVE_SINC
 #include "../../audio/sinc.c"
 #else
 #include "../../audio/hermite.c"

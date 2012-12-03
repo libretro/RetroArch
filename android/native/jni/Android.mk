@@ -2,7 +2,8 @@ RARCH_VERSION		= "0.9.8-beta3"
 LOCAL_PATH := $(call my-dir)
 PERF_TEST := 1
 HAVE_OPENSL     := 1
-WANT_NEON := 0
+WANT_NEON := 1
+HAVE_SINC := 1
 
 include $(CLEAR_VARS)
 
@@ -16,10 +17,18 @@ LOCAL_CFLAGS += -DANDROID_X86 -DHAVE_SSSE3
 endif
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+
 ifeq ($(WANT_NEON),1)
 LOCAL_CFLAGS += -DWANT_NEON
+endif
+
+ifeq ($(HAVE_SINC),1)
+ifeq ($(WANT_NEON),1)
 LOCAL_SRC_FILES += ../../../audio/sinc_neon.S.neon
 endif
+LOCAL_CFLAGS += -DHAVE_SINC
+endif
+
 LOCAL_CFLAGS += -DANDROID_ARM_V7
 endif
 
