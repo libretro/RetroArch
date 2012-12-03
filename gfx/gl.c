@@ -1175,7 +1175,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (msg)
       gl_render_msg(gl, msg);
 
-#if !defined(RARCH_CONSOLE) && !defined(ANDROID)
+#if !defined(RARCH_CONSOLE)
    context_update_window_title_func(false);
 #endif
 

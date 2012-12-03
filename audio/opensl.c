@@ -109,8 +109,6 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
 {
    (void)device;
 
-   g_settings.audio.out_rate = 44100;
-
    SLDataFormat_PCM fmt_pcm = {0};
    SLDataSource audio_src   = {0};
    SLDataSink audio_sink    = {0};
