@@ -26,3 +26,6 @@ ipch
 *.zip
 RetroArch-w32/
 RetroArch-w64/
+android/native/obj/
+android/phoenix/bin/
+android/phoenix/gen/
