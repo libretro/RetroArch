@@ -15,9 +15,9 @@
 
 #include "utils.h"
 
-#if __SSE2__
+#if defined(__SSE2__)
 #include <emmintrin.h>
-#elif __ALTIVEC__
+#elif defined(__ALTIVEC__)
 #include <altivec.h>
 #endif
 
@@ -39,7 +39,7 @@ void audio_convert_float_to_s16_C(int16_t *out,
    }
 }
 
-#if __SSE2__
+#if defined(__SSE2__)
 void audio_convert_s16_to_float_SSE2(float *out,
       const int16_t *in, size_t samples, float gain)
 {
@@ -84,7 +84,7 @@ void audio_convert_float_to_s16_SSE2(int16_t *out,
 
    audio_convert_float_to_s16_C(out, in, samples - i);
 }
-#elif __ALTIVEC__
+#elif defined(__ALTIVEC__)
 void audio_convert_s16_to_float_altivec(float *out,
       const int16_t *in, size_t samples, float gain)
 {
@@ -133,6 +133,28 @@ void audio_convert_float_to_s16_altivec(int16_t *out,
    else
       audio_convert_float_to_s16_C(out, in, samples);
 }
+#elif defined(HAVE_NEON)
+void audio_convert_s16_float_asm(float *out, const int16_t *in, size_t samples);
+void audio_convert_s16_to_float_neon(float *out, const int16_t *in, size_t samples,
+      float gain)
+{
+   (void)gain; // gain is ignored for now.
 
+   size_t aligned_samples = samples & ~7;
+   audio_convert_s16_float_asm(out, in, aligned_samples);
+
+   // Could do all conversion in ASM, but keep it simple for now.
+   audio_convert_s16_to_float_C(out + aligned_samples, in + aligned_samples,
+         samples - aligned_samples, 1.0f);
+}
+
+void audio_convert_float_s16_asm(int16_t *out, const float *in, size_t samples);
+void audio_convert_float_to_s16_neon(int16_t *out, const float *in, size_t samples)
+{
+   size_t aligned_samples = samples & ~7;
+   audio_convert_float_s16_asm(out, in, aligned_samples);
+   audio_convert_float_to_s16_C(out + aligned_samples, in + aligned_samples,
+         samples - aligned_samples);
+}
 #endif
 
