@@ -24,6 +24,7 @@
 #include "android_general.h"
 #include "../../../general.h"
 #include "../../../performance.h"
+#include "../../../driver.h"
 
 void free_saved_state(struct android_app* android_app)
 {
@@ -154,6 +155,7 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
             gfx_ctx_init();
             g_extern.audio_active = true;
             g_extern.video_active = true;
+            g_android.reinit_video = 1;
          }
 
          pthread_cond_broadcast(&android_app->cond);
@@ -174,6 +176,9 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
 
          /* POSTEXEC */
          free_saved_state(android_app);
+         
+         g_android.activity_paused = false;
+         
          break;
       case APP_CMD_START:
          RARCH_LOG("engine_handle_cmd: APP_CMD_START.\n");
@@ -202,6 +207,7 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
             g_android.input_state |= (1ULL << RARCH_REENTRANT);
             g_extern.audio_active = false;
             g_extern.video_active = false;
+            g_android.activity_paused = true;
          }
          break;
       case APP_CMD_STOP:
@@ -258,6 +264,38 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
 }
 
 #define MAX_ARGS 32
+
+static bool android_run_events(struct android_app* android_app)
+{
+   // Read all pending events.
+   int id;
+
+   // Block forever waiting for events.
+   while ((id = ALooper_pollOnce(0, NULL, 0, NULL)) >= 0)
+   {
+      // Process this event.
+      if (id)
+      {
+         int8_t cmd;
+
+         if (read(android_app->msgread, &cmd, sizeof(cmd)) == sizeof(cmd))
+         {
+            if(cmd == APP_CMD_SAVE_STATE)
+               free_saved_state(android_app);
+         }
+         else
+            cmd = -1;
+
+         engine_handle_cmd(android_app, cmd);
+      }
+
+      // Check if we are exiting.
+      if (android_app->destroyRequested != 0)
+         return false;
+   }
+   
+   return true;
+}
 
 /**
  * This is the main entry point of a native application that is using
@@ -335,31 +373,9 @@ static void* android_app_entry(void* param)
 
    while(!(g_android.input_state & (1ULL << RARCH_WINDOW_READY)))
    {
-      // Read all pending events.
-      int id;
-
-      // Block forever waiting for events.
-      while ((id = ALooper_pollOnce(0, NULL, 0, NULL)) >= 0)
+      if(!android_run_events(android_app))
       {
-         // Process this event.
-         if (id)
-         {
-            int8_t cmd;
-
-            if (read(android_app->msgread, &cmd, sizeof(cmd)) == sizeof(cmd))
-            {
-               if(cmd == APP_CMD_SAVE_STATE)
-                  free_saved_state(android_app);
-            }
-            else
-               cmd = -1;
-
-            engine_handle_cmd(android_app, cmd);
-         }
-
-         // Check if we are exiting.
-         if (android_app->destroyRequested != 0)
-            goto exit;
+         goto exit;
       }
    }
 
@@ -388,6 +404,21 @@ static void* android_app_entry(void* param)
       g_android.last_orient = AConfiguration_getOrientation(android_app->config);
       while (rarch_main_iterate())
       {
+         while(g_android.activity_paused)
+         {
+            if(!android_run_events(android_app))
+            {
+               goto exit;
+            }
+         }
+      
+         if (g_android.reinit_video)
+         {
+            uninit_drivers();
+            init_drivers();
+            g_android.reinit_video = 0;         
+         }
+
          if (AConfiguration_getOrientation(android_app->config) != g_android.last_orient)
          {
             // reinit video driver for new window dimensions
