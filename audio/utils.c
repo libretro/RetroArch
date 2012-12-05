@@ -145,14 +145,12 @@ void audio_convert_s16_to_float_neon(float *out, const int16_t *in, size_t sampl
 
    // Could do all conversion in ASM, but keep it simple for now.
    audio_convert_s16_to_float_C(out + aligned_samples, in + aligned_samples,
-         samples - aligned_samples);
+         samples - aligned_samples, 1.0f);
 }
 
 void audio_convert_float_s16_asm(int16_t *out, const float *in, size_t samples);
 void audio_convert_float_to_s16_neon(int16_t *out, const float *in, size_t samples)
 {
-   (void)gain; // gain is ignored for now.
-
    size_t aligned_samples = samples & 7;
    audio_convert_float_s16_asm(out, in, aligned_samples);
    audio_convert_float_to_s16_C(out + aligned_samples, in + aligned_samples,
