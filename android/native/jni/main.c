@@ -395,10 +395,11 @@ static void* android_app_entry(void* param)
       g_android.input_state |= (1ULL << RARCH_QUIT_KEY);
       g_android.input_state |= (1ULL << RARCH_KILL);
    }
+   else
+      RARCH_LOG("Initializing succeeded.\n");
 
    if (init_ret == 0)
    {
-      RARCH_LOG("Initializing succeeded.\n");
       RARCH_LOG("RetroArch started.\n");
       rarch_init_msg_queue();
       g_android.last_orient = AConfiguration_getOrientation(android_app->config);
@@ -407,24 +408,7 @@ static void* android_app_entry(void* param)
          while(g_android.activity_paused)
          {
             if(!android_run_events(android_app))
-            {
                goto exit;
-            }
-         }
-      
-         if (g_android.reinit_video)
-         {
-            uninit_drivers();
-            init_drivers();
-            g_android.reinit_video = 0;         
-         }
-
-         if (AConfiguration_getOrientation(android_app->config) != g_android.last_orient)
-         {
-            // reinit video driver for new window dimensions
-            driver.video->free(driver.video_data);
-            init_video_input();
-            g_android.last_orient = AConfiguration_getOrientation(android_app->config);
          }
       }
       RARCH_LOG("RetroArch stopped.\n");
