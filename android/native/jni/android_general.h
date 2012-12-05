@@ -35,6 +35,8 @@ struct droid
    unsigned height;
    struct saved_state state;
    int32_t last_orient;
+   unsigned reinit_video;
+   unsigned activity_paused;
 };
 
 extern struct droid g_android;
