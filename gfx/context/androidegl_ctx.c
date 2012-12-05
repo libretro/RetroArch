@@ -207,16 +207,23 @@ static void gfx_ctx_check_window(bool *quit,
    *quit = false;
    *resize = false;
 
+   if (g_android.reinit_video)
+   {
+      uninit_drivers();
+      init_drivers();
+      g_android.reinit_video = 0;
+      *resize = true;
+   }
+
    int32_t new_orient = AConfiguration_getOrientation(g_android.app->config);
 
-   if (new_orient != g_android.last_orient || g_android.reinit_video)
+   if (new_orient != g_android.last_orient)
    {
       *resize = true;
       g_android.last_orient = new_orient;
       // reinit video driver for new window dimensions
       driver.video->free(driver.video_data);
       init_video_input();
-      g_android.reinit_video = 0;   
    }
 
    // Check if we are exiting.
