@@ -270,6 +270,8 @@ static bool android_run_events(struct android_app* android_app)
    // Read all pending events.
    int id;
 
+   RARCH_LOG("RetroArch Android paused.\n");
+
    // Block forever waiting for events.
    while ((id = ALooper_pollOnce(g_android.activity_paused ? -1 : 100, NULL, 0, NULL)) >= 0)
    {
@@ -293,6 +295,8 @@ static bool android_run_events(struct android_app* android_app)
       if (android_app->destroyRequested != 0)
          return false;
    }
+
+   RARCH_LOG("RetroArch Android unpaused.\n");
    
    return true;
 }
@@ -374,9 +378,7 @@ static void* android_app_entry(void* param)
    while(!(g_android.input_state & (1ULL << RARCH_WINDOW_READY)))
    {
       if(!android_run_events(android_app))
-      {
          goto exit;
-      }
    }
 
    int init_ret;
@@ -405,11 +407,9 @@ static void* android_app_entry(void* param)
       g_android.last_orient = AConfiguration_getOrientation(android_app->config);
       while (rarch_main_iterate())
       {
-         while(g_android.activity_paused)
-         {
+         if(g_android.activity_paused)
             if(!android_run_events(android_app))
                goto exit;
-         }
       }
       RARCH_LOG("RetroArch stopped.\n");
    }
