@@ -271,7 +271,7 @@ static bool android_run_events(struct android_app* android_app)
    int id;
 
    // Block forever waiting for events.
-   while ((id = ALooper_pollOnce(0, NULL, 0, NULL)) >= 0)
+   while ((id = ALooper_pollOnce(g_android.activity_paused ? -1 : 100, NULL, 0, NULL)) >= 0)
    {
       // Process this event.
       if (id)
