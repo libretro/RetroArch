@@ -389,7 +389,7 @@ static void* android_app_entry(void* param)
 
       /* We've done everything state-wise needed for RARCH_REENTRANT,
        * get rid of it now */
-      g_android.input_state |= ~(1ULL << RARCH_REENTRANT);
+      g_android.input_state &= ~(1ULL << RARCH_REENTRANT);
    }
    else if ((init_ret = rarch_main_init(argc, argv)) != 0)
    {
