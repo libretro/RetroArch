@@ -37,7 +37,7 @@ class FileWrapper implements IconAdapterItem
     
     @Override public int getIconResourceId()
     {
-    	return file.isFile() ? R.drawable.file : R.drawable.folder;
+    	return file.isFile() ? R.drawable.ic_file : R.drawable.ic_dir;
     }
     
     @Override public Drawable getIconDrawable()
@@ -85,10 +85,7 @@ public class DirectoryActivity extends Activity implements AdapterView.OnItemCli
         
         // Load Directory
         String path = getIntent().getStringExtra("ROM");
-        if(path == null)
-        {
-            path = Environment.getExternalStorageDirectory().getPath();
-        }
+        path = (path == null) ? "/" : path;
         
         wrapFiles(new File(path));
         setTitle(path);

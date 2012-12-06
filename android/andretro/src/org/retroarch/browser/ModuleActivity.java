@@ -43,14 +43,12 @@ class ModuleWrapper implements IconAdapterItem
 
 public class ModuleActivity extends Activity implements AdapterView.OnItemClickListener
 {
-	// HACK: Hard path
-	private static final String modulePath = "/data/data/org.retroarch/lib/";
     private IconAdapter<ModuleWrapper> adapter;
     
     @Override public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        
+               
         setContentView(R.layout.line_list);
         
         // Setup the list
@@ -61,6 +59,8 @@ public class ModuleActivity extends Activity implements AdapterView.OnItemClickL
         
         setTitle("Select Emulator");
     	
+    	// Populate the list
+    	final String modulePath = getApplicationInfo().nativeLibraryDir;
         for(final File lib: new File(modulePath).listFiles())
         {
         	if(lib.getName().startsWith("libretro_"))
