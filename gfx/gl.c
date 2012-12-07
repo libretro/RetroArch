@@ -1000,7 +1000,7 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
          const unsigned frame_bytes = width * height * gl->base_size;
          const unsigned line_bytes = width * gl->base_size;
          
-         if(gl->tex_pack_buf_size < frame_bytes)
+         if (gl->tex_pack_buf_size < frame_bytes)
          {
             free(gl->tex_pack_buf);
             gl->tex_pack_buf = malloc(frame_bytes);
