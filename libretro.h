@@ -310,6 +310,21 @@ enum retro_key
    RETROK_LAST
 };
 
+enum retro_mod
+{
+   RETROKMOD_NONE       = 0x0000,
+
+   RETROKMOD_SHIFT      = 0x01,
+   RETROKMOD_CTRL       = 0x02,
+   RETROKMOD_ALT        = 0x04,
+   RETROKMOD_META       = 0x08,
+
+   RETROKMOD_NUMLOCK    = 0x10,
+   RETROKMOD_CAPSLOCK   = 0x20,
+   RETROKMOD_SCROLLOCK  = 0x40
+};
+
+
 // Environment commands.
 #define RETRO_ENVIRONMENT_SET_ROTATION  1  // const unsigned * --
                                            // Sets screen rotation of graphics.
@@ -353,7 +368,7 @@ enum retro_key
                                            //
                                            // It can be used by the frontend to potentially warn
                                            // about too demanding implementations.
-                                           // 
+                                           //
                                            // The levels are "floating", but roughly defined as:
                                            // 0: Low-powered embedded devices such as Raspberry Pi
                                            // 1: 6th generation consoles, such as Wii/Xbox 1, and phones, tablets, etc.
@@ -396,8 +411,9 @@ enum retro_key
 // Callback type passed in RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK. Called by the frontend in response to keyboard events.
 // down is set if the key is being pressed, or false if it is being released.
 // keycode is the RETROK value of the char.
-// character is the text character of the pressed key. (UTF?)
-typedef void (*retro_keyboard_event_t)(bool down, unsigned keycode, unsigned character);
+// character is the text character of the pressed key. (UTF-32).
+// key_modifiers is a set of RETROKMOD values or'ed together.
+typedef void (*retro_keyboard_event_t)(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers);
 
 struct retro_keyboard_callback
 {
