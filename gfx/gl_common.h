@@ -292,6 +292,12 @@ typedef struct gl
    unsigned pbo_readback_index;
    struct scaler_ctx pbo_readback_scaler;
 #endif
+
+#if defined(HAVE_OPENGLES)
+   uint8_t* tex_pack_buf;
+   unsigned tex_pack_buf_size;
+#endif
+
 } gl_t;
 
 // Windows ... <_<
