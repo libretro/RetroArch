@@ -1,0 +1,5 @@
+/gen
+/bin
+/libs/*/*
+/obj
+/jni/modules/*.so
