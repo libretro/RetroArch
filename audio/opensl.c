@@ -133,13 +133,9 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->output_mix, SL_BOOLEAN_FALSE));
 
    int api_level = android_get_sdk_version();
-   if(api_level > 15)
-   {
-      RARCH_LOG("API level 16 and higher has a fast OpenSL mixer - adjust settings for lower audio latency...\n");
-      sl->buf_count = 4;
-   }
-   else
-      sl->buf_count = 8;
+   (void)api_level;
+
+   sl->buf_count = 8;
 
    RARCH_LOG("[SLES] : Android API level [%d] detected, setting audio latency (buffer size: [%d])..\n", api_level, sl->buf_count * BUFFER_SIZE);
 
