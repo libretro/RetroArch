@@ -299,7 +299,7 @@ ifeq ($(DEBUG), 1)
    OPTIMIZE_FLAG = -O0
 endif
 
-CFLAGS += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) -g -I. -pedantic
+CFLAGS += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) -g -I.
 ifeq ($(CXX_BUILD), 1)
    LD = $(CXX)
    CFLAGS += -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS
@@ -314,9 +314,6 @@ endif
 
 ifeq ($(NOUNUSED), yes)
    CFLAGS += -Wno-unused-result
-endif
-ifeq ($(NOEXTTOKEN), yes)
-   CFLAGS += -Wno-language-extension-token
 endif
 
 all: $(TARGET) config.mk
