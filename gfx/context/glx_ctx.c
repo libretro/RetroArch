@@ -20,7 +20,6 @@
 #include "../gfx_context.h"
 #include "../gl_common.h"
 #include "../gfx_common.h"
-#include "../../input/input_common.h"
 #include "x11_common.h"
 
 #include <signal.h>
@@ -219,21 +218,7 @@ static void gfx_ctx_check_window(bool *quit,
 
          case KeyPress:
          case KeyRelease:
-            if (g_extern.system.key_event)
-            {
-               static XComposeStatus state;
-               char keybuf[32];
-
-               bool down          = event.type == KeyPress;
-               uint32_t character = 0;
-               unsigned key       = input_translate_keysym_to_rk(XLookupKeysym(&event.xkey, 0));
-
-               // FIXME: UTF-8.
-               if (down && XLookupString(&event.xkey, keybuf, sizeof(keybuf), 0, &state))
-                  character = keybuf[0];
-
-               g_extern.system.key_event(down, key, character, 0);
-            }
+            x11_handle_key_event(&event);
             break;
       }
    }

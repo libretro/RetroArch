@@ -20,6 +20,7 @@
 #include <X11/Xatom.h>
 #include "../image.h"
 #include "../../general.h"
+#include "../../input/input_common.h"
 
 void x11_hide_mouse(Display *dpy, Window win)
 {
@@ -284,4 +285,24 @@ unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
    return monitor;
 }
 #endif
+
+void x11_handle_key_event(XEvent *event)
+{
+   if (!g_extern.system.key_event)
+      return;
+
+   static XComposeStatus state;
+   char keybuf[32];
+
+   bool down          = event->type == KeyPress;
+   uint32_t character = 0;
+   unsigned key       = input_translate_keysym_to_rk(XLookupKeysym(&event->xkey, 0));
+
+   // FIXME: UTF-8.
+   if (down && XLookupString(&event->xkey, keybuf, sizeof(keybuf), 0, &state))
+      character = keybuf[0];
+
+   // FIXME: Mod handling.
+   g_extern.system.key_event(down, key, character, 0);
+}
 

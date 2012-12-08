@@ -49,5 +49,7 @@ unsigned x11_get_xinerama_monitor(Display *dpy,
       int x, int y, int w, int h);
 #endif
 
+void x11_handle_key_event(XEvent *event);
+
 #endif
 
