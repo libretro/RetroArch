@@ -103,8 +103,6 @@ struct ff_audio_info
    bool use_float;
    unsigned sample_size;
 
-   enum AVSampleFormat fill_format;
-
    float *float_conv;
    size_t float_conv_frames;
 
@@ -177,33 +175,28 @@ static bool ffemu_codec_has_sample_format(enum AVSampleFormat fmt, const enum AV
 static void ffemu_audio_resolve_format(struct ff_audio_info *audio, const AVCodec *codec)
 {
    audio->codec->sample_fmt = AV_SAMPLE_FMT_NONE;
-   audio->fill_format       = AV_SAMPLE_FMT_NONE;
 
    if (ffemu_codec_has_sample_format(AV_SAMPLE_FMT_FLTP, codec->sample_fmts))
    {
-      audio->codec->sample_fmt = AV_SAMPLE_FMT_FLT;
-      audio->fill_format       = AV_SAMPLE_FMT_FLTP;
+      audio->codec->sample_fmt = AV_SAMPLE_FMT_FLTP;
       audio->use_float         = true;
       RARCH_LOG("[FFmpeg]: Using sample format FLTP.\n");
    }
    else if (ffemu_codec_has_sample_format(AV_SAMPLE_FMT_FLT, codec->sample_fmts))
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_FLT;
-      audio->fill_format       = AV_SAMPLE_FMT_FLT;
       audio->use_float         = true;
       RARCH_LOG("[FFmpeg]: Using sample format FLT.\n");
    }
    else if (ffemu_codec_has_sample_format(AV_SAMPLE_FMT_S16P, codec->sample_fmts))
    {
-      audio->codec->sample_fmt = AV_SAMPLE_FMT_S16;
-      audio->fill_format       = AV_SAMPLE_FMT_S16P;
+      audio->codec->sample_fmt = AV_SAMPLE_FMT_S16P;
       audio->use_float         = false;
       RARCH_LOG("[FFmpeg]: Using sample format S16P.\n");
    }
    else if (ffemu_codec_has_sample_format(AV_SAMPLE_FMT_S16, codec->sample_fmts))
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_S16;
-      audio->fill_format       = AV_SAMPLE_FMT_S16;
       audio->use_float         = false;
       RARCH_LOG("[FFmpeg]: Using sample format S16.\n");
    }
@@ -891,7 +884,7 @@ static bool encode_audio(ffemu_t *handle, AVPacket *pkt, bool dry)
       handle->audio.sample_size;
 
    avcodec_fill_audio_frame(frame, handle->audio.codec->channels,
-         handle->audio.fill_format,
+         handle->audio.codec->sample_fmt,
          handle->audio.buffer,
          samples_size, 1);
 
