@@ -101,6 +101,7 @@ struct ff_audio_info
    // Use either S16 or (planar) float for simplicity.
    rarch_resampler_t *resampler;
    bool use_float;
+   bool is_planar;
    unsigned sample_size;
 
    float *float_conv;
@@ -111,6 +112,9 @@ struct ff_audio_info
 
    int16_t *fixed_conv;
    size_t fixed_conv_frames;
+
+   void *planar_buf;
+   size_t planar_buf_frames;
 
    double ratio;
 };
@@ -180,27 +184,30 @@ static void ffemu_audio_resolve_format(struct ff_audio_info *audio, const AVCode
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_FLTP;
       audio->use_float         = true;
+      audio->is_planar         = true;
       RARCH_LOG("[FFmpeg]: Using sample format FLTP.\n");
    }
    else if (ffemu_codec_has_sample_format(AV_SAMPLE_FMT_FLT, codec->sample_fmts))
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_FLT;
       audio->use_float         = true;
+      audio->is_planar         = false;
       RARCH_LOG("[FFmpeg]: Using sample format FLT.\n");
    }
    else if (ffemu_codec_has_sample_format(AV_SAMPLE_FMT_S16P, codec->sample_fmts))
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_S16P;
       audio->use_float         = false;
+      audio->is_planar         = true;
       RARCH_LOG("[FFmpeg]: Using sample format S16P.\n");
    }
    else if (ffemu_codec_has_sample_format(AV_SAMPLE_FMT_S16, codec->sample_fmts))
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_S16;
       audio->use_float         = false;
+      audio->is_planar         = false;
       RARCH_LOG("[FFmpeg]: Using sample format S16.\n");
    }
-
    audio->sample_size = audio->use_float ? sizeof(float) : sizeof(int16_t);
 }
 
@@ -682,6 +689,7 @@ void ffemu_free(ffemu_t *handle)
    av_free(handle->audio.float_conv);
    av_free(handle->audio.resample_out);
    av_free(handle->audio.fixed_conv);
+   av_free(handle->audio.planar_buf);
 
    free(handle);
 }
@@ -866,6 +874,47 @@ static bool ffemu_push_video_thread(ffemu_t *handle, const struct ffemu_video_da
    return true;
 }
 
+static void planarize_float(float *out, const float *in, size_t frames)
+{
+   for (size_t i = 0; i < frames; i++)
+   {
+      out[i] = in[2 * i + 0];
+      out[i + frames] = in[2 * i + 1];
+   }
+}
+
+static void planarize_s16(int16_t *out, const int16_t *in, size_t frames)
+{
+   for (size_t i = 0; i < frames; i++)
+   {
+      out[i] = in[2 * i + 0];
+      out[i + frames] = in[2 * i + 1];
+   }
+}
+
+static void planarize_audio(ffemu_t *handle)
+{
+   if (!handle->audio.is_planar)
+      return;
+
+   if (handle->audio.frames_in_buffer > handle->audio.planar_buf_frames)
+   {
+      handle->audio.planar_buf = av_realloc(handle->audio.planar_buf, 
+            handle->audio.resample_out_frames * handle->params.channels * handle->audio.sample_size);
+      if (!handle->audio.planar_buf)
+         return;
+
+      handle->audio.planar_buf_frames = handle->audio.frames_in_buffer;
+   }
+
+   if (handle->audio.use_float)
+      planarize_float((float*)handle->audio.planar_buf,
+            (const float*)handle->audio.buffer, handle->audio.frames_in_buffer);
+   else
+      planarize_s16((int16_t*)handle->audio.planar_buf,
+            (const int16_t*)handle->audio.buffer, handle->audio.frames_in_buffer);
+}
+
 static bool encode_audio(ffemu_t *handle, AVPacket *pkt, bool dry)
 {
    av_init_packet(pkt);
@@ -876,17 +925,21 @@ static bool encode_audio(ffemu_t *handle, AVPacket *pkt, bool dry)
    if (!frame)
       return false;
 
-   frame->nb_samples = handle->audio.frames_in_buffer;
-   frame->pts = handle->audio.frame_cnt;
+   frame->nb_samples     = handle->audio.frames_in_buffer;
+   frame->format         = handle->audio.codec->sample_fmt;
+   frame->channel_layout = handle->audio.codec->channel_layout;
+   frame->pts            = handle->audio.frame_cnt;
 
-   int samples_size = frame->nb_samples *
-      handle->audio.codec->channels *
-      handle->audio.sample_size;
+   planarize_audio(handle);
+
+   int samples_size = av_samples_get_buffer_size(NULL, handle->audio.codec->channels,
+         handle->audio.frames_in_buffer,
+         handle->audio.codec->sample_fmt, 0);
 
    avcodec_fill_audio_frame(frame, handle->audio.codec->channels,
          handle->audio.codec->sample_fmt,
-         handle->audio.buffer,
-         samples_size, 1);
+         handle->audio.is_planar ? (uint8_t*)handle->audio.planar_buf : handle->audio.buffer,
+         samples_size, 0);
 
    int got_packet = 0;
    if (avcodec_encode_audio2(handle->audio.codec,
