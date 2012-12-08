@@ -307,7 +307,9 @@ enum retro_key
    RETROK_EURO           = 321,
    RETROK_UNDO           = 322,
 
-   RETROK_LAST
+   RETROK_LAST,
+
+   RETROK_DUMMY          = INT_MAX, // Ensure sizeof(enum) == sizeof(int)
 };
 
 enum retro_mod
@@ -321,7 +323,9 @@ enum retro_mod
 
    RETROKMOD_NUMLOCK    = 0x10,
    RETROKMOD_CAPSLOCK   = 0x20,
-   RETROKMOD_SCROLLOCK  = 0x40
+   RETROKMOD_SCROLLOCK  = 0x40,
+
+   RETROKMOD_DUMMY = INT_MAX, // Ensure sizeof(enum) == sizeof(int)
 };
 
 
