@@ -339,6 +339,11 @@ static void* android_app_entry(void* param)
    RARCH_LOG("ROM Filename: [%s].\n", rom_path);
    RARCH_LOG("Libretro path: [%s].\n", libretro_path);
 
+#ifdef PHOENIX_LEGACY
+   /* ugly hack for now - hardcode libretro path to 'allowed' dir */
+   snprintf(libretro_path, sizeof(libretro_path), "/data/data/com.retroarch/lib/libretro.so");
+#endif
+
    int argc = 0;
    char *argv[MAX_ARGS] = {NULL};
 
