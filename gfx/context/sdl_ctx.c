@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -70,11 +70,11 @@ static void gfx_ctx_swap_interval(unsigned interval)
          GL_SYM_WRAP(glx_swap_interval, "glXSwapInterval");
       if (!glx_swap_interval)
          GL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalMESA");
-      if (!glx_swap_interval) 
+      if (!glx_swap_interval)
          GL_SYM_WRAP(glx_swap_interval, "glXSwapIntervalSGI");
       if (glx_swap_interval)
          success = glx_swap_interval(g_interval) == 0;
-      else 
+      else
          RARCH_WARN("Could not find GLX VSync call.\n");
 #endif
    }
@@ -118,7 +118,7 @@ static bool gfx_ctx_init(void)
    return ret;
 }
 
-static void gfx_ctx_destroy(void) 
+static void gfx_ctx_destroy(void)
 {
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
    g_inited = false;
@@ -253,6 +253,34 @@ static void gfx_ctx_check_window(bool *quit,
             *resize = true;
             *width  = event.resize.w;
             *height = event.resize.h;
+            break;
+
+         case SDL_KEYDOWN:
+         case SDL_KEYUP:
+            if (g_extern.system.key_event)
+            {
+               SDL_EnableUNICODE(true);
+
+               uint16_t mods = 0;
+
+               if (event.key.keysym.mod)
+               {
+                  mods |= (event.key.keysym.mod & KMOD_CTRL)  ? RETROKMOD_CTRL : 0;
+                  mods |= (event.key.keysym.mod & KMOD_ALT)   ? RETROKMOD_ALT : 0;
+                  mods |= (event.key.keysym.mod & KMOD_SHIFT) ? RETROKMOD_SHIFT : 0;
+                  mods |= (event.key.keysym.mod & KMOD_META)  ? RETROKMOD_META : 0;
+                  mods |= (event.key.keysym.mod & KMOD_NUM)   ? RETROKMOD_NUMLOCK : 0;
+                  mods |= (event.key.keysym.mod & KMOD_CAPS)  ? RETROKMOD_CAPSLOCK : 0;
+
+                  // TODO: What is KMOD_MODE in SDL?
+                  mods |= (event.key.keysym.mod & KMOD_MODE)  ? RETROKMOD_SCROLLOCK : 0;
+               }
+
+               // For now it seems that all RETROK_* constant values match the SDLK_* values.
+               // Ultimately the table in sdl_input.c should be used in case this changes.
+               // TODO: event.key.keysym.unicode is UTF-16
+               g_extern.system.key_event(event.type == SDL_KEYDOWN, event.key.keysym.sym, event.key.keysym.unicode, mods);
+            }
             break;
       }
    }
