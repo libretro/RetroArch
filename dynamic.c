@@ -482,6 +482,15 @@ static bool environment_cb(unsigned cmd, void *data)
 
          break;
       }
+      
+      case RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
+      {
+         const struct retro_keyboard_callback *info = (const struct retro_keyboard_callback*)data;
+      
+         g_extern.system.key_event = info->callback;
+      
+         break;
+      }
 
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
