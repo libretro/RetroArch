@@ -33,110 +33,9 @@ typedef struct sdl_input
    int mouse_l, mouse_r, mouse_m;
 } sdl_input_t;
 
-struct key_bind
-{
-   unsigned sdl;
-   enum retro_key sk;
-};
-
-static unsigned keysym_lut[RETROK_LAST];
-static const struct key_bind lut_binds[] = {
-   { SDLK_LEFT, RETROK_LEFT },
-   { SDLK_RIGHT, RETROK_RIGHT },
-   { SDLK_UP, RETROK_UP },
-   { SDLK_DOWN, RETROK_DOWN },
-   { SDLK_RETURN, RETROK_RETURN },
-   { SDLK_TAB, RETROK_TAB },
-   { SDLK_INSERT, RETROK_INSERT },
-   { SDLK_DELETE, RETROK_DELETE },
-   { SDLK_RSHIFT, RETROK_RSHIFT },
-   { SDLK_LSHIFT, RETROK_LSHIFT },
-   { SDLK_LCTRL, RETROK_LCTRL },
-   { SDLK_END, RETROK_END },
-   { SDLK_HOME, RETROK_HOME },
-   { SDLK_PAGEDOWN, RETROK_PAGEDOWN },
-   { SDLK_PAGEUP, RETROK_PAGEUP },
-   { SDLK_LALT, RETROK_LALT },
-   { SDLK_SPACE, RETROK_SPACE },
-   { SDLK_ESCAPE, RETROK_ESCAPE },
-   { SDLK_BACKSPACE, RETROK_BACKSPACE },
-   { SDLK_KP_ENTER, RETROK_KP_ENTER },
-   { SDLK_KP_PLUS, RETROK_KP_PLUS },
-   { SDLK_KP_MINUS, RETROK_KP_MINUS },
-   { SDLK_KP_MULTIPLY, RETROK_KP_MULTIPLY },
-   { SDLK_KP_DIVIDE, RETROK_KP_DIVIDE },
-   { SDLK_BACKQUOTE, RETROK_BACKQUOTE },
-   { SDLK_PAUSE, RETROK_PAUSE },
-   { SDLK_KP0, RETROK_KP0 },
-   { SDLK_KP1, RETROK_KP1 },
-   { SDLK_KP2, RETROK_KP2 },
-   { SDLK_KP3, RETROK_KP3 },
-   { SDLK_KP4, RETROK_KP4 },
-   { SDLK_KP5, RETROK_KP5 },
-   { SDLK_KP6, RETROK_KP6 },
-   { SDLK_KP7, RETROK_KP7 },
-   { SDLK_KP8, RETROK_KP8 },
-   { SDLK_KP9, RETROK_KP9 },
-   { SDLK_0, RETROK_0 },
-   { SDLK_1, RETROK_1 },
-   { SDLK_2, RETROK_2 },
-   { SDLK_3, RETROK_3 },
-   { SDLK_4, RETROK_4 },
-   { SDLK_5, RETROK_5 },
-   { SDLK_6, RETROK_6 },
-   { SDLK_7, RETROK_7 },
-   { SDLK_8, RETROK_8 },
-   { SDLK_9, RETROK_9 },
-   { SDLK_F1, RETROK_F1 },
-   { SDLK_F2, RETROK_F2 },
-   { SDLK_F3, RETROK_F3 },
-   { SDLK_F4, RETROK_F4 },
-   { SDLK_F5, RETROK_F5 },
-   { SDLK_F6, RETROK_F6 },
-   { SDLK_F7, RETROK_F7 },
-   { SDLK_F8, RETROK_F8 },
-   { SDLK_F9, RETROK_F9 },
-   { SDLK_F10, RETROK_F10 },
-   { SDLK_F11, RETROK_F11 },
-   { SDLK_F12, RETROK_F12 },
-   { SDLK_a, RETROK_a },
-   { SDLK_b, RETROK_b },
-   { SDLK_c, RETROK_c },
-   { SDLK_d, RETROK_d },
-   { SDLK_e, RETROK_e },
-   { SDLK_f, RETROK_f },
-   { SDLK_g, RETROK_g },
-   { SDLK_h, RETROK_h },
-   { SDLK_i, RETROK_i },
-   { SDLK_j, RETROK_j },
-   { SDLK_k, RETROK_k },
-   { SDLK_l, RETROK_l },
-   { SDLK_m, RETROK_m },
-   { SDLK_n, RETROK_n },
-   { SDLK_o, RETROK_o },
-   { SDLK_p, RETROK_p },
-   { SDLK_q, RETROK_q },
-   { SDLK_r, RETROK_r },
-   { SDLK_s, RETROK_s },
-   { SDLK_t, RETROK_t },
-   { SDLK_u, RETROK_u },
-   { SDLK_v, RETROK_v },
-   { SDLK_w, RETROK_w },
-   { SDLK_x, RETROK_x },
-   { SDLK_y, RETROK_y },
-   { SDLK_z, RETROK_z },
-};
-
-static void init_lut(void)
-{
-   memset(keysym_lut, 0, sizeof(keysym_lut));
-   for (unsigned i = 0; i < sizeof(lut_binds) / sizeof(lut_binds[0]); i++)
-      keysym_lut[lut_binds[i].sk] = lut_binds[i].sdl;
-}
-
 static void *sdl_input_init(void)
 {
-   init_lut();
+   input_init_keyboard_lut(rarch_key_map_sdl);
    sdl_input_t *sdl = (sdl_input_t*)calloc(1, sizeof(*sdl));
    if (!sdl)
       return NULL;
@@ -150,12 +49,14 @@ static bool sdl_key_pressed(int key)
    if (key >= RETROK_LAST)
       return false;
 
+   int sym = input_translate_rk_to_keysym((enum retro_key)key);
+
    int num_keys;
    Uint8 *keymap = SDL_GetKeyState(&num_keys);
-   if (key >= num_keys)
+   if (sym < 0 || sym >= num_keys)
       return false;
 
-   return keymap[key];
+   return keymap[sym];
 }
 
 static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num, const struct retro_keybind *key)

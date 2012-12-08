@@ -37,7 +37,6 @@ struct dinput_input
    LPDIRECTINPUTDEVICE8 mouse;
    const rarch_joypad_driver_t *joypad;
    uint8_t state[256];
-   int rk_to_di_lut[RETROK_LAST];
 
    int mouse_rel_x;
    int mouse_rel_y;
@@ -51,105 +50,6 @@ struct dinput_joypad
    LPDIRECTINPUTDEVICE8 joypad;
    DIJOYSTATE2 joy_state;
 };
-
-struct key_map
-{
-   int di;
-   int rk;
-};
-
-static const struct key_map rk_to_di[] = {
-   { DIK_LEFT, RETROK_LEFT },
-   { DIK_RIGHT, RETROK_RIGHT },
-   { DIK_UP, RETROK_UP },
-   { DIK_DOWN, RETROK_DOWN },
-   { DIK_RETURN, RETROK_RETURN },
-   { DIK_TAB, RETROK_TAB },
-   { DIK_INSERT, RETROK_INSERT },
-   { DIK_DELETE, RETROK_DELETE },
-   { DIK_RSHIFT, RETROK_RSHIFT },
-   { DIK_LSHIFT, RETROK_LSHIFT },
-   { DIK_LCONTROL, RETROK_LCTRL },
-   { DIK_END, RETROK_END },
-   { DIK_HOME, RETROK_HOME },
-   { DIK_NEXT, RETROK_PAGEDOWN },
-   { DIK_PRIOR, RETROK_PAGEUP },
-   { DIK_LALT, RETROK_LALT },
-   { DIK_SPACE, RETROK_SPACE },
-   { DIK_ESCAPE, RETROK_ESCAPE },
-   { DIK_BACKSPACE, RETROK_BACKSPACE },
-   { DIK_NUMPADENTER, RETROK_KP_ENTER },
-   { DIK_NUMPADPLUS, RETROK_KP_PLUS },
-   { DIK_NUMPADMINUS, RETROK_KP_MINUS },
-   { DIK_NUMPADSTAR, RETROK_KP_MULTIPLY },
-   { DIK_NUMPADSLASH, RETROK_KP_DIVIDE },
-   { DIK_GRAVE, RETROK_BACKQUOTE },
-   { DIK_PAUSE, RETROK_PAUSE },
-   { DIK_NUMPAD0, RETROK_KP0 },
-   { DIK_NUMPAD1, RETROK_KP1 },
-   { DIK_NUMPAD2, RETROK_KP2 },
-   { DIK_NUMPAD3, RETROK_KP3 },
-   { DIK_NUMPAD4, RETROK_KP4 },
-   { DIK_NUMPAD5, RETROK_KP5 },
-   { DIK_NUMPAD6, RETROK_KP6 },
-   { DIK_NUMPAD7, RETROK_KP7 },
-   { DIK_NUMPAD8, RETROK_KP8 },
-   { DIK_NUMPAD9, RETROK_KP9 },
-   { DIK_0, RETROK_0 },
-   { DIK_1, RETROK_1 },
-   { DIK_2, RETROK_2 },
-   { DIK_3, RETROK_3 },
-   { DIK_4, RETROK_4 },
-   { DIK_5, RETROK_5 },
-   { DIK_6, RETROK_6 },
-   { DIK_7, RETROK_7 },
-   { DIK_8, RETROK_8 },
-   { DIK_9, RETROK_9 },
-   { DIK_F1, RETROK_F1 },
-   { DIK_F2, RETROK_F2 },
-   { DIK_F3, RETROK_F3 },
-   { DIK_F4, RETROK_F4 },
-   { DIK_F5, RETROK_F5 },
-   { DIK_F6, RETROK_F6 },
-   { DIK_F7, RETROK_F7 },
-   { DIK_F8, RETROK_F8 },
-   { DIK_F9, RETROK_F9 },
-   { DIK_F10, RETROK_F10 },
-   { DIK_F11, RETROK_F11 },
-   { DIK_F12, RETROK_F12 },
-   { DIK_A, RETROK_a },
-   { DIK_B, RETROK_b },
-   { DIK_C, RETROK_c },
-   { DIK_D, RETROK_d },
-   { DIK_E, RETROK_e },
-   { DIK_F, RETROK_f },
-   { DIK_G, RETROK_g },
-   { DIK_H, RETROK_h },
-   { DIK_I, RETROK_i },
-   { DIK_J, RETROK_j },
-   { DIK_K, RETROK_k },
-   { DIK_L, RETROK_l },
-   { DIK_M, RETROK_m },
-   { DIK_N, RETROK_n },
-   { DIK_O, RETROK_o },
-   { DIK_P, RETROK_p },
-   { DIK_Q, RETROK_q },
-   { DIK_R, RETROK_r },
-   { DIK_S, RETROK_s },
-   { DIK_T, RETROK_t },
-   { DIK_U, RETROK_u },
-   { DIK_V, RETROK_v },
-   { DIK_W, RETROK_w },
-   { DIK_X, RETROK_x },
-   { DIK_Y, RETROK_y },
-   { DIK_Z, RETROK_z },
-};
-
-static void init_lut(int *lut)
-{
-   for (unsigned i = 0; i < sizeof(rk_to_di) / sizeof(rk_to_di[0]); i++)
-      lut[rk_to_di[i].rk] = rk_to_di[i].di;
-}
 
 static unsigned g_joypad_cnt;
 static struct dinput_joypad g_pads[MAX_PLAYERS];
@@ -225,7 +125,7 @@ static void *dinput_init(void)
          DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
    IDirectInputDevice8_Acquire(di->mouse);
 
-   init_lut(di->rk_to_di_lut);
+   input_init_keyboard_lut(rarch_key_map_dinput);
    di->joypad = input_joypad_init_first();
 
    return di;
@@ -278,7 +178,8 @@ static bool dinput_keyboard_pressed(struct dinput_input *di, unsigned key)
    if (key >= RETROK_LAST)
       return false;
 
-   return di->state[di->rk_to_di_lut[key]] & 0x80;
+   unsigned sym = input_translate_rk_to_keysym(key);
+   return di->state[sym] & 0x80;
 }
 
 static bool dinput_is_pressed(struct dinput_input *di, const struct retro_keybind *binds,

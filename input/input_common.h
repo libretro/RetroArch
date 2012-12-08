@@ -82,5 +82,20 @@ extern const rarch_joypad_driver_t dinput_joypad;
 extern const rarch_joypad_driver_t linuxraw_joypad;
 extern const rarch_joypad_driver_t sdl_joypad;
 
+
+struct rarch_key_map
+{
+   unsigned sym;
+   enum retro_key rk;
+};
+
+extern const struct rarch_key_map rarch_key_map_x11[];
+extern const struct rarch_key_map rarch_key_map_sdl[];
+extern const struct rarch_key_map rarch_key_map_dinput[];
+
+void input_init_keyboard_lut(const struct rarch_key_map *map);
+enum retro_key input_translate_keysym_to_rk(unsigned sym);
+unsigned input_translate_rk_to_keysym(enum retro_key key);
+
 #endif
 
