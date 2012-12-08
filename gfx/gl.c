@@ -997,10 +997,9 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
       }
       else // Slower path.
       {
-         const unsigned frame_bytes = width * height * gl->base_size;
          const unsigned line_bytes = width * gl->base_size;
 
-         uint8_t *dst = (uint8_t*)gl->conv_buffer;
+         uint8_t *dst = (uint8_t*)gl->conv_buffer; // This buffer is preallocated for this purpose.
          const uint8_t *src = (const uint8_t*)frame;
 
          for (unsigned h = 0; h < height; h++, src += pitch, dst += line_bytes)
