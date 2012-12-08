@@ -49,6 +49,108 @@ static bool g_is_double;
 
 static int (*g_pglSwapInterval)(int);
 
+struct key_bind
+{
+   unsigned x;
+   enum retro_key sk;
+};
+
+static unsigned keysym_lut[RETROK_LAST];
+
+static const struct key_bind lut_binds[] = {
+   { XK_Left, RETROK_LEFT },
+   { XK_Right, RETROK_RIGHT },
+   { XK_Up, RETROK_UP },
+   { XK_Down, RETROK_DOWN },
+   { XK_Return, RETROK_RETURN },
+   { XK_Tab, RETROK_TAB },
+   { XK_Insert, RETROK_INSERT },
+   { XK_Home, RETROK_HOME },
+   { XK_End, RETROK_END },
+   { XK_Page_Up, RETROK_PAGEUP },
+   { XK_Page_Down, RETROK_PAGEDOWN },
+   { XK_Delete, RETROK_DELETE },
+   { XK_Shift_R, RETROK_RSHIFT },
+   { XK_Shift_L, RETROK_LSHIFT },
+   { XK_Control_L, RETROK_LCTRL },
+   { XK_Alt_L, RETROK_LALT },
+   { XK_space, RETROK_SPACE },
+   { XK_Escape, RETROK_ESCAPE },
+   { XK_BackSpace, RETROK_BACKSPACE },
+   { XK_KP_Enter, RETROK_KP_ENTER },
+   { XK_KP_Add, RETROK_KP_PLUS },
+   { XK_KP_Subtract, RETROK_KP_MINUS },
+   { XK_KP_Multiply, RETROK_KP_MULTIPLY },
+   { XK_KP_Divide, RETROK_KP_DIVIDE },
+   { XK_grave, RETROK_BACKQUOTE },
+   { XK_Pause, RETROK_PAUSE },
+   { XK_KP_0, RETROK_KP0 },
+   { XK_KP_1, RETROK_KP1 },
+   { XK_KP_2, RETROK_KP2 },
+   { XK_KP_3, RETROK_KP3 },
+   { XK_KP_4, RETROK_KP4 },
+   { XK_KP_5, RETROK_KP5 },
+   { XK_KP_6, RETROK_KP6 },
+   { XK_KP_7, RETROK_KP7 },
+   { XK_KP_8, RETROK_KP8 },
+   { XK_KP_9, RETROK_KP9 },
+   { XK_0, RETROK_0 },
+   { XK_1, RETROK_1 },
+   { XK_2, RETROK_2 },
+   { XK_3, RETROK_3 },
+   { XK_4, RETROK_4 },
+   { XK_5, RETROK_5 },
+   { XK_6, RETROK_6 },
+   { XK_7, RETROK_7 },
+   { XK_8, RETROK_8 },
+   { XK_9, RETROK_9 },
+   { XK_F1, RETROK_F1 },
+   { XK_F2, RETROK_F2 },
+   { XK_F3, RETROK_F3 },
+   { XK_F4, RETROK_F4 },
+   { XK_F5, RETROK_F5 },
+   { XK_F6, RETROK_F6 },
+   { XK_F7, RETROK_F7 },
+   { XK_F8, RETROK_F8 },
+   { XK_F9, RETROK_F9 },
+   { XK_F10, RETROK_F10 },
+   { XK_F11, RETROK_F11 },
+   { XK_F12, RETROK_F12 },
+   { XK_a, RETROK_a },
+   { XK_b, RETROK_b },
+   { XK_c, RETROK_c },
+   { XK_d, RETROK_d },
+   { XK_e, RETROK_e },
+   { XK_f, RETROK_f },
+   { XK_g, RETROK_g },
+   { XK_h, RETROK_h },
+   { XK_i, RETROK_i },
+   { XK_j, RETROK_j },
+   { XK_k, RETROK_k },
+   { XK_l, RETROK_l },
+   { XK_m, RETROK_m },
+   { XK_n, RETROK_n },
+   { XK_o, RETROK_o },
+   { XK_p, RETROK_p },
+   { XK_q, RETROK_q },
+   { XK_r, RETROK_r },
+   { XK_s, RETROK_s },
+   { XK_t, RETROK_t },
+   { XK_u, RETROK_u },
+   { XK_v, RETROK_v },
+   { XK_w, RETROK_w },
+   { XK_x, RETROK_x },
+   { XK_y, RETROK_y },
+   { XK_z, RETROK_z },
+};
+
+static void init_lut(void)
+{
+   memset(keysym_lut, 0, sizeof(keysym_lut));
+   for (unsigned i = 0; i < sizeof(lut_binds) / sizeof(lut_binds[0]); i++)
+      keysym_lut[lut_binds[i].sk] = lut_binds[i].x;
+}
+
 static void sighandler(int sig)
 {
    (void)sig;
@@ -112,6 +214,36 @@ static void gfx_ctx_check_window(bool *quit,
 
          case UnmapNotify:
             g_has_focus = false;
+            break;
+
+         case KeyPress:
+         case KeyRelease:
+            if (g_extern.system.key_event)
+            {
+               static XComposeStatus state;
+               char keybuf[32];
+               const unsigned x_keycode = XKeycodeToKeysym(g_dpy, event.xkey.keycode, 0);
+
+               bool down = event.type == KeyPress;
+               uint32_t character = 0;
+               unsigned key = RETROK_UNKNOWN;
+
+               for (int i = 0; i != RETROK_LAST; i ++)
+               {
+                  if (keysym_lut[i] == x_keycode)
+                  {
+                     key = i;
+                     break;
+                  }
+               }
+
+               if (down && XLookupString(&event.xkey, keybuf, sizeof(keybuf), 0, &state))
+               {
+                  character = keybuf[0];
+               }
+
+               g_extern.system.key_event(down, key, character, 0);
+            }
             break;
       }
    }
@@ -192,6 +324,8 @@ static bool gfx_ctx_init(void)
 
    g_quit = 0;
 
+   init_lut();
+
    g_dpy = XOpenDisplay(NULL);
    if (!g_dpy)
       goto error;
@@ -249,7 +383,7 @@ static bool gfx_ctx_set_video_mode(
 
    swa.colormap = g_cmap = XCreateColormap(g_dpy, RootWindow(g_dpy, vi->screen),
          vi->visual, AllocNone);
-   swa.event_mask = StructureNotifyMask;
+   swa.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask;
    swa.override_redirect = fullscreen ? True : False;
 
    if (fullscreen && !windowed_full)
