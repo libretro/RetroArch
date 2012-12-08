@@ -222,13 +222,13 @@ static void gfx_ctx_check_window(bool *quit,
             {
                static XComposeStatus state;
                char keybuf[32];
-               const unsigned x_keycode = XKeycodeToKeysym(g_dpy, event.xkey.keycode, 0);
+               const unsigned x_keycode = XLookupKeysym(&event.xkey, 0);
 
                bool down = event.type == KeyPress;
                uint32_t character = 0;
                unsigned key = RETROK_UNKNOWN;
 
-               for (int i = 0; i != RETROK_LAST; i ++)
+               for (int i = 0; i < RETROK_LAST; i++)
                {
                   if (keysym_lut[i] == x_keycode)
                   {

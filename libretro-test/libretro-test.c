@@ -187,6 +187,13 @@ void retro_run(void)
    render_audio();
 }
 
+static void keyboard_cb(bool down, unsigned keycode,
+      uint32_t character, uint16_t mod)
+{
+   fprintf(stderr, "Down: %s, Code: %d, Char: %u, Mod: %u.\n",
+         down ? "yes" : "no", keycode, character, mod);
+}
+
 bool retro_load_game(const struct retro_game_info *info)
 {
    struct retro_input_descriptor desc[] = {
@@ -205,6 +212,9 @@ bool retro_load_game(const struct retro_game_info *info)
       fprintf(stderr, "RGB565 is not supported.\n");
       return false;
    }
+
+   struct retro_keyboard_callback cb = { keyboard_cb };
+   environ_cb(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &cb);
 
    (void)info;
    return true;
