@@ -4,9 +4,9 @@ check_switch_c NOUNUSED -Wno-unused-result
 add_define_make NOUNUSED "$HAVE_NOUNUSED"
 
 # There are still broken 64-bit Linux distros out there. :)
-[ -d /usr/lib64 ] && add_library_dirs /usr/lib64
+[ -z "$CROSS_COMPILE" ] && [ -d /usr/lib64 ] && add_library_dirs /usr/lib64
 
-[ -d /opt/local/lib ] && add_library_dirs /opt/local/lib
+[ -z "$CROSS_COMPILE" ] && [ -d /opt/local/lib ] && add_library_dirs /opt/local/lib
 
 if [ "$OS" = 'BSD' ]; then DYLIB=-lc; else DYLIB=-ldl; fi
 [ "$OS" = 'Darwin' ] && HAVE_X11=no # X11 breaks on recent OSXes even if present.
