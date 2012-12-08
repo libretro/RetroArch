@@ -999,25 +999,16 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
       {
          const unsigned frame_bytes = width * height * gl->base_size;
          const unsigned line_bytes = width * gl->base_size;
-         
-         if (gl->tex_pack_buf_size < frame_bytes)
-         {
-            free(gl->tex_pack_buf);
-            gl->tex_pack_buf = malloc(frame_bytes);
-            gl->tex_pack_buf_size = frame_bytes;
-         }
 
-         uint8_t* dst = gl->tex_pack_buf;
+         uint8_t *dst = (uint8_t*)gl->conv_buffer;
          const uint8_t *src = (const uint8_t*)frame;
 
          for (unsigned h = 0; h < height; h++, src += pitch, dst += line_bytes)
-         {
             memcpy(dst, src, line_bytes);
-         }
-         
+
          glTexSubImage2D(GL_TEXTURE_2D,
                0, 0, 0, width, height, gl->texture_type,
-               gl->texture_fmt, gl->tex_pack_buf);         
+               gl->texture_fmt, gl->conv_buffer);         
       }
    }
 #else
@@ -1261,10 +1252,6 @@ static void gl_free(void *data)
 
    free(gl->empty_buf);
    free(gl->conv_buffer);
-
-#if defined(HAVE_OPENGLES)
-   free(gl->tex_pack_buf);
-#endif
 
    free(gl);
 }
