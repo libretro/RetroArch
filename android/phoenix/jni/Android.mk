@@ -20,6 +20,7 @@ ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
 
 ifeq ($(HAVE_NEON),1)
 LOCAL_CFLAGS += -DHAVE_NEON
+LOCAL_SRC_FILES += ../../../audio/utils_neon.S.neon
 endif
 
 ifeq ($(HAVE_SINC),1)

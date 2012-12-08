@@ -136,7 +136,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    if(api_level > 15)
    {
       RARCH_LOG("API level 16 and higher has a fast OpenSL mixer - adjust settings for lower audio latency...\n");
-      sl->buf_count = 4;
+      sl->buf_count = 8;
    }
    else
       sl->buf_count = 8;

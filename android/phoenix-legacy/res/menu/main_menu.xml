@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+<item android:id="@+id/main" android:showAsAction="ifRoom|withText" android:title="Main" android:icon="@drawable/ic_action_main"></item>
+<item android:id="@+id/open" android:showAsAction="collapseActionView" android:title="Select ROM" android:icon="@drawable/ic_action_open"></item>
+<item android:id="@+id/libretro" android:showAsAction="collapseActionView" android:title="Select libretro core" android:icon="@drawable/ic_launcher"></item>
+<item android:id="@+id/settings" android:showAsAction="collapseActionView" android:title="Settings" android:icon="@drawable/ic_action_settings"></item>
+
+</menu>
