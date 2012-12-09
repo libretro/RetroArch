@@ -1,7 +1,19 @@
 # Contributing to RetroArch
 
 If you are a developer and want to contribute to the development of RetroArch, please read this.
-If you have found a bug and want to submit a minor patch, please read this as well.
+If you have found a bug and want to submit a minor patch or a bug report, please read this as well.
+
+# Submitting a bug report
+When submitting a bug report, make sure that the bug is local to RetroArch.
+A bug in a libretro core or something deemed to be external is likely to be closed very fast.
+If you still suspect a bug in RetroArch, make sure to test with several cores to make sure.
+
+If you have troubles building RetroArch on Linux/BSD/OSX, make sure to paste shell output of ./configure,
+as well as config.log and shell output of make. If building on Windows, just paste shell output of make.
+
+If the issue occurs during runtime, make sure to paste RetroArch's verbose log.
+If using Phoenix frontend, you can find log in (File -> Show Log) after running.
+In console, make sure to run with verbose (-v) flag.
 
 # Pull Requests
 Outside contributions are generally only accepted in the form of a pull request. The process is very simple.
