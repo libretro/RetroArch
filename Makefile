@@ -347,7 +347,7 @@ endif
 
 %.o: %.S config.h config.mk $(HEADERS)
 	$(Q)$(CC) $(CFLAGS) $(ASFLAGS) $(DEFINES) -c -o $@ $<
-	@$(if $(Q), $(shell echo echo CC $<),)
+	@$(if $(Q), $(shell echo echo AS $<),)
 
 install: $(TARGET)
 	mkdir -p $(DESTDIR)$(PREFIX)/bin 2>/dev/null || /bin/true
