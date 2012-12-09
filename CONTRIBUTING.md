@@ -1,0 +1,35 @@
+# Contributing to RetroArch
+
+If you are a developer and want to contribute to the development of RetroArch, please read this.
+If you have found a bug and want to submit a minor patch, please read this as well.
+
+# Pull Requests
+Outside contributions are generally only accepted in the form of a pull request. The process is very simple.
+Fork RetroArch, make your changes, and issue a pull request on GitHub. This can all be done within the browser.
+The changes are reviewed, and might be merged in. If the pull request isn't acceptable at the time,
+note that it's possible to continue pushing up commits to your branch.
+
+If you want to develop a larger feature,
+we'd like to discuss this first (ideally on IRC) so that you don't risk developing something
+that won't be merged. A pull request with a proof-of-concept is fine, but please indicate so.
+
+# Coding style
+Having a consistent code style throughout the code base is highly valued.
+Please look through the code to get a feel for the coding style.
+A pull request may be asked to fix the coding style before submission.
+In other cases, a pull request may be followed up with a "style nit commit".
+
+# Copyright Headers and AUTHORS
+If you have contributed to a part of a source file (a chunk of code that's written by you),
+you should add yourself to the copyright header in that file.
+If you have contributed significantly
+(a feature, a contribution you can "name", e.g. "Added audio driver foo"), you should add yourself to AUTHORS file.
+We'd like your full name and email, and which features you have been part of.
+
+# IRC
+Active development happens on IRC. (#retroarch @ irc.freenode.org)
+We value discussing things in "real-time".
+
+# Commit Access
+Contributors who show a track record of making good pull requests over time will eventually get commit access to the repo.
+This typically happens when the "overhead" of looking through pull requests over time becomes a burden.
