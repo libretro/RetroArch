@@ -23,30 +23,30 @@ process_sinc_neon_asm:
    vld1.f32 {q0-q1},   [r1]!
    vld1.f32 {q2-q3},   [r1]!
    # Right
-   vld1.f32 {q4-q5},   [r2]!
-   vld1.f32 {q6-q7},   [r2]!
+   vld1.f32 {q8-q9},   [r2]!
+   vld1.f32 {q10-q11}, [r2]!
    # Coeff
-   vld1.f32 {q8-q9},   [r3, :128]!
-   vld1.f32 {q10-q11}, [r3, :128]!
+   vld1.f32 {q12-q13}, [r3, :128]!
+   vld1.f32 {q14-q15}, [r3, :128]!
 
    # Left
-   vmul.f32 q0, q0, q8
-   vmul.f32 q1, q1, q9
-   vmla.f32 q0, q2, q10
-   vmla.f32 q1, q3, q11
+   vmul.f32 q0, q0, q12
+   vmul.f32 q1, q1, q13
+   vmla.f32 q0, q2, q14
+   vmla.f32 q1, q3, q15
 
    # Right
-   vmul.f32 q4, q4, q8
-   vmul.f32 q5, q5, q9
-   vmla.f32 q4, q6, q10
-   vmla.f32 q5, q7, q11
+   vmul.f32 q8, q8, q12
+   vmul.f32 q9, q9, q13
+   vmla.f32 q8, q10, q14
+   vmla.f32 q9, q11, q15
 
    # Add everything together
    vadd.f32 q0, q0, q1
-   vadd.f32 q4, q4, q5
+   vadd.f32 q8, q8, q9
    vadd.f32 d0, d0, d1
-   vadd.f32 d8, d8, d9
-   vpadd.f32 d0, d0, d8
+   vadd.f32 d16, d16, d17
+   vpadd.f32 d0, d0, d16
    vst1.f32 d0, [r0]
    
    bx lr

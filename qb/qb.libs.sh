@@ -144,6 +144,27 @@ EOF
 	}
 }
 
+check_macro()	#$1 = HAVE_$1	$2 = macro name
+{	tmpval="$(eval echo \$HAVE_$1)"
+	[ "$tmpval" = 'no' ] && return 0
+	ECHOBUF="Checking presence of predefined macro $2"
+#	echo -n "Checking presence of predefined macro $2"
+	cat << EOF > "$TEMP_C"
+#ifndef $2
+#error $2 is not defined
+#endif
+int main(void) { return 0; }
+EOF
+	answer='no'
+	"$CC" -o "$TEMP_EXE" "$TEMP_C" $CFLAGS $INCLUDE_DIRS >>config.log 2>&1 && answer='yes'
+	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
+	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
+	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && {
+		echo "Build assumed that $2 is defined, but it's not. Exiting ..."
+		exit 1
+	}
+}
+
 check_switch_c()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checked only if non-empty]
 {	ECHOBUF="Checking for availability of switch $2 in $CC"
 #	echo -n "Checking for availability of switch $2 in $CC "
