@@ -900,7 +900,7 @@ static void planarize_audio(ffemu_t *handle)
    if (handle->audio.frames_in_buffer > handle->audio.planar_buf_frames)
    {
       handle->audio.planar_buf = av_realloc(handle->audio.planar_buf, 
-            handle->audio.resample_out_frames * handle->params.channels * handle->audio.sample_size);
+            handle->audio.frames_in_buffer * handle->params.channels * handle->audio.sample_size);
       if (!handle->audio.planar_buf)
          return;
 
