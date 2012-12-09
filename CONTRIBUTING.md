@@ -25,11 +25,22 @@ If you want to develop a larger feature,
 we'd like to discuss this first (ideally on IRC) so that you don't risk developing something
 that won't be merged. A pull request with a proof-of-concept is fine, but please indicate so.
 
+## libretro API
+If you wish to add functionality to libretro's API, it can take some time to merge in, because changes
+to libretro API will affect other projects as well, and we highly value API/ABI stability.
+Features will only be added when deemed *necessary* for a concrete libretro core to function properly.
+Features will not be added on basis of hypothetical libretro implementations.
+
 # Coding style
 Having a consistent code style throughout the code base is highly valued.
 Please look through the code to get a feel for the coding style.
 A pull request may be asked to fix the coding style before submission.
 In other cases, a pull request may be followed up with a "style nit commit".
+
+## Non-obvious things:
+  - Code should be both ISO C99 and ISO C++ compatible. This dual requirement is for XBox360 and MSVC in general. Think of it as a C++ compatible subset of C99.
+  - Warnings are not allowed (-Wall). Make sure your code is warning-free. Note that warning sensitivity differs a bit across compiler versions.
+  - Using deprecated APIs is discouraged.
 
 # Copyright Headers and AUTHORS
 If you have contributed to a part of a source file (a chunk of code that's written by you),
