@@ -191,7 +191,7 @@ void config_set_defaults(void)
 
    // Android screens can have variable refresh rates - don't set a 
    // hardcoded value for Android devices
-#if defined(ANDROID) && defined(PHOENIX_LEGACY)
+#if defined(ANDROID)
    g_settings.video.refresh_rate = g_android.disp_refresh_rate;
 #else
    g_settings.video.refresh_rate = refresh_rate;

@@ -169,10 +169,10 @@ public class DirectoryActivity extends Activity implements AdapterView.OnItemCli
         }
         else
         {
-            final Intent intent = new Intent(this, selected.isFile() ? NativeActivity.class : DirectoryActivity.class)
-                    .putExtra("ROM", selected.getAbsolutePath())
-                    .putExtra("LIBRETRO", getIntent().getStringExtra("LIBRETRO"));
-            startActivity(intent);
+            Intent intent=new Intent();   
+            intent.putExtra("PATH", selected.getAbsolutePath());
+            setResult(RESULT_OK, intent);  
+            finish();
         }
 	}
 

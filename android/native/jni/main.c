@@ -26,9 +26,7 @@
 #include "../../../performance.h"
 #include "../../../driver.h"
 
-#ifdef PHOENIX_LEGACY
 #include "../../../config.def.h"
-#endif
 
 void free_saved_state(struct android_app* android_app)
 {
@@ -338,21 +336,19 @@ static void* android_app_entry(void* param)
    // Get arguments */
    android_get_char_argv(rom_path, sizeof(rom_path), "ROM");
    android_get_char_argv(libretro_path, sizeof(libretro_path), "LIBRETRO");
-#ifdef PHOENIX_LEGACY
    char refreshrate_char[128];
    float refreshrate;
 
    android_get_char_argv(refreshrate_char,sizeof(refreshrate_char), "REFRESHRATE");
 
    refreshrate = (float)strtod(refreshrate_char, NULL);
-#endif
 
    RARCH_LOG("Checking arguments passed...\n");
    RARCH_LOG("ROM Filename: [%s].\n", rom_path);
    RARCH_LOG("Libretro path: [%s].\n", libretro_path);
-#ifdef PHOENIX_LEGACY
    RARCH_LOG("Display Refresh rate: %.2fHz.\n", refreshrate);
 
+#ifdef PHOENIX_LEGACY
    /* ugly hack for now - hardcode libretro path to 'allowed' dir */
    snprintf(libretro_path, sizeof(libretro_path), "/data/data/com.retroarch/lib/libretro.so");
 #endif
@@ -390,7 +386,6 @@ static void* android_app_entry(void* param)
 
    g_extern.verbose = true;
 
-#ifdef PHOENIX_LEGACY
    bool disp_refresh_read = refreshrate > 0.0f;
 
    g_android.disp_refresh_rate = refresh_rate;
@@ -405,7 +400,6 @@ static void* android_app_entry(void* param)
    }
 
    RARCH_LOG("Setting RetroArch video refresh rate to: %.2fHz.\n", g_android.disp_refresh_rate);
-#endif
 
    while(!(g_android.input_state & (1ULL << RARCH_WINDOW_READY)))
    {

@@ -1,6 +1,7 @@
 package org.retroarch.browser;
 import org.retroarch.R;
 
+
 import java.io.*;
 
 import android.content.*;
@@ -44,6 +45,16 @@ class ModuleWrapper implements IconAdapterItem
 public class ModuleActivity extends Activity implements AdapterView.OnItemClickListener
 {
     private IconAdapter<ModuleWrapper> adapter;
+	static private final int ACTIVITY_LOAD_ROM = 0;
+	static private String libretro_path;
+    
+    public float getRefreshRate()
+    {
+    	final WindowManager wm = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
+    	final Display display = wm.getDefaultDisplay();
+    	float rate = display.getRefreshRate();
+    	return rate;
+    }
     
     @Override public void onCreate(Bundle savedInstanceState)
     {
@@ -57,7 +68,7 @@ public class ModuleActivity extends Activity implements AdapterView.OnItemClickL
         list.setAdapter(adapter);
         list.setOnItemClickListener(this);
         
-        setTitle("Select Emulator");
+        setTitle("Select Libretro core");
     	
     	// Populate the list
     	final String modulePath = getApplicationInfo().nativeLibraryDir;
@@ -80,10 +91,32 @@ public class ModuleActivity extends Activity implements AdapterView.OnItemClickL
 	@Override public void onItemClick(AdapterView<?> aListView, View aView, int aPosition, long aID)
 	{
 		final ModuleWrapper item = adapter.getItem(aPosition);
-
-		startActivity(new Intent(ModuleActivity.this, DirectoryActivity.class)
-			.putExtra("LIBRETRO", item.file.getAbsolutePath()));
+    	libretro_path = item.file.getAbsolutePath();
+		
+    	Intent myIntent;
+    	myIntent = new Intent(this, DirectoryActivity.class);
+    	startActivityForResult(myIntent, ACTIVITY_LOAD_ROM);
 	}
+	
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+    	Intent myIntent;
+    	
+    	switch(requestCode)
+    	{
+    	   case ACTIVITY_LOAD_ROM:
+    		   if(data.getStringExtra("PATH") != null)
+    		   {
+    			       Toast.makeText(this, "Loading: ["+ data.getStringExtra("PATH") + "]...", Toast.LENGTH_SHORT).show();
+    				   myIntent = new Intent(this, NativeActivity.class);
+    				   myIntent.putExtra("ROM", data.getStringExtra("PATH"));
+    				   myIntent.putExtra("LIBRETRO", libretro_path);
+    				   myIntent.putExtra("REFRESHRATE", Float.toString(getRefreshRate()));
+    				   startActivity(myIntent);
+    		   }
+    		   break;
+    	}
+    }
 		
     @Override public boolean onCreateOptionsMenu(Menu aMenu)
     {
