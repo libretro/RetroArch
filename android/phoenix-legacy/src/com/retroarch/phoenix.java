@@ -21,10 +21,13 @@ import com.retroarch.fileio.FileChooser;
 
 import android.app.Activity;
 import android.app.NativeActivity;
+import android.content.Context;
 import android.content.Intent;
+import android.view.Display;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.WindowManager;
 import android.widget.Toast;
 import android.os.Bundle;
 
@@ -48,6 +51,14 @@ public class phoenix extends Activity
     	MenuInflater inflater = getMenuInflater();
     	inflater.inflate(R.menu.main_menu, menu);
     	return true;
+    }
+    
+    public float getRefreshRate()
+    {
+    	final WindowManager wm = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
+    	final Display display = wm.getDefaultDisplay();
+    	float rate = display.getRefreshRate();
+    	return rate;
     }
     
     public boolean onOptionsItemSelected(MenuItem item)
@@ -91,6 +102,7 @@ public class phoenix extends Activity
     				   myIntent = new Intent(this, NativeActivity.class);
     				   myIntent.putExtra("ROM", data.getStringExtra("PATH"));
     				   myIntent.putExtra("LIBRETRO", libretro_path);
+    				   myIntent.putExtra("REFRESHRATE", Float.toString(getRefreshRate()));
     				   startActivity(myIntent);
     			   }
     			   else

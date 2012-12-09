@@ -37,6 +37,7 @@ struct droid
    int32_t last_orient;
    unsigned reinit_video;
    unsigned activity_paused;
+   float disp_refresh_rate;
 };
 
 extern struct droid g_android;

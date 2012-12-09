@@ -189,7 +189,13 @@ void config_set_defaults(void)
    g_settings.video.second_pass_smooth = second_pass_smooth;
 #endif
 
+   // Android screens can have variable refresh rates - don't set a 
+   // hardcoded value for Android devices
+#if defined(ANDROID) && defined(PHOENIX_LEGACY)
+   g_settings.video.refresh_rate = g_android.disp_refresh_rate;
+#else
    g_settings.video.refresh_rate = refresh_rate;
+#endif
    g_settings.video.post_filter_record = post_filter_record;
    g_settings.video.gpu_record = gpu_record;
    g_settings.video.gpu_screenshot = gpu_screenshot;
