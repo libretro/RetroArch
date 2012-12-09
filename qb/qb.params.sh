@@ -16,6 +16,7 @@ LDFLAGS:    Linker flags
 
 General options:
 --prefix=\$path: Install path prefix
+--host=HOST: cross-compile to build programs to run on HOST
 --help: Show this help
 
 Custom options:
@@ -50,6 +51,7 @@ parse_input() # Parse stuff :V
 	while [ "$1" ]; do
 		case "$1" in
 			--prefix=*) PREFIX=${1##--prefix=};;
+			--host=*) CROSS_COMPILE=${1##--host=}-;;
 			--enable-*)
 				opt_exists "${1##--enable-}"
 				eval "HAVE_$opt=yes"

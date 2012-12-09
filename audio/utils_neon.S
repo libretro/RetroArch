@@ -22,11 +22,11 @@ audio_convert_s16_float_asm:
    # Hacky way to get a constant of 2^-15.
    # Might be faster to just load a constant from memory.
    # It's just done once however ...
-   vmov.f32 q5, #0.25
-   vmul.f32 q5, q5, q5
-   vmul.f32 q5, q5, q5
-   vmul.f32 q5, q5, q5
-   vadd.f32 q5, q5, q5
+   vmov.f32 q8, #0.25
+   vmul.f32 q8, q8, q8
+   vmul.f32 q8, q8, q8
+   vmul.f32 q8, q8, q8
+   vadd.f32 q8, q8, q8
 
 1:
    # Preload here?
@@ -37,13 +37,13 @@ audio_convert_s16_float_asm:
    vmovl.s16 q2, d1
 
    # Convert to float
-   vcvt.f32.s32 q3, q1
-   vcvt.f32.s32 q4, q2
+   vcvt.f32.s32 q1, q1
+   vcvt.f32.s32 q2, q2
 
-   vmul.f32 q3, q3, q5
-   vmul.f32 q4, q4, q5
+   vmul.f32 q1, q1, q8
+   vmul.f32 q2, q2, q8
 
-   vst1.f32 {q3-q4}, [r0]!
+   vst1.f32 {q1-q2}, [r0]!
 
    # Guaranteed to get samples in multiples of 8.
    subs r2, r2, #8
@@ -57,18 +57,18 @@ audio_convert_s16_float_asm:
 audio_convert_float_s16_asm:
    # Hacky way to get a constant of 2^15.
    # ((2^4)^2)^2 * 0.5 = 2^15
-   vmov.f32 q5, #16.0
-   vmov.f32 q6, #0.5
-   vmul.f32 q5, q5, q5
-   vmul.f32 q5, q5, q5
-   vmul.f32 q5, q5, q6
+   vmov.f32 q8, #16.0
+   vmov.f32 q9, #0.5
+   vmul.f32 q8, q8, q8
+   vmul.f32 q8, q8, q8
+   vmul.f32 q8, q8, q9
 
 1:
    # Preload here?
    vld1.f32 {q0-q1}, [r1]!
 
-   vmul.f32 q0, q0, q5
-   vmul.f32 q1, q1, q5
+   vmul.f32 q0, q0, q8
+   vmul.f32 q1, q1, q8
 
    vcvt.s32.f32 q0, q0
    vcvt.s32.f32 q1, q1

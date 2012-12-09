@@ -19,6 +19,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #if defined(__SSE2__)
 #define audio_convert_s16_to_float audio_convert_s16_to_float_SSE2
 #define audio_convert_float_to_s16 audio_convert_float_to_s16_SSE2

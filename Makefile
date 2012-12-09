@@ -285,10 +285,17 @@ endif
 
 ifeq ($(HAVE_SINC), 1)
    OBJ += audio/sinc.o
+
+   ifeq ($(HAVE_NEON),1)
+      OBJ += audio/sinc_neon.o
+   endif
 else
    OBJ += audio/hermite.o
 endif
 OBJ += audio/utils.o
+ifeq ($(HAVE_NEON),1)
+   OBJ += audio/utils_neon.o
+endif
 
 ifneq ($(V),1)
    Q := @
@@ -336,6 +343,10 @@ endif
 
 %.o: %.c config.h config.mk $(HEADERS)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+
+%.o: %.S config.h config.mk $(HEADERS)
+	$(Q)$(CC) $(CFLAGS) $(ASFLAGS) $(DEFINES) -c -o $@ $<
 	@$(if $(Q), $(shell echo echo CC $<),)
 
 install: $(TARGET)
