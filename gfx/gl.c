@@ -913,7 +913,7 @@ static void gl_init_textures_data(gl_t *gl)
 
    for (unsigned i = 0; i < TEXTURES; i++)
    {
-      gl->prev_info[i].tex           = gl->texture[(gl->tex_index - (i + 1)) & TEXTURES_MASK];
+      gl->prev_info[i].tex           = gl->texture[0];
       gl->prev_info[i].input_size[0] = gl->tex_w;
       gl->prev_info[i].tex_size[0]   = gl->tex_w;
       gl->prev_info[i].input_size[1] = gl->tex_h;
@@ -1108,8 +1108,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_shader_use_func(gl, 1);
    gl->frame_count++;
 
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-
 #ifdef HAVE_FBO
    // Render to texture in first pass.
    if (gl->fbo_inited)
@@ -1130,16 +1128,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl_update_resize(gl);
    }
 
-   if (frame) // Can be NULL for frame dupe / NULL render.
-   {
-      gl_update_input_size(gl, width, height, pitch);
-
-      RARCH_PERFORMANCE_INIT(copy_frame);
-      RARCH_PERFORMANCE_START(copy_frame);
-      gl_copy_frame(gl, frame, width, height, pitch);
-      RARCH_PERFORMANCE_STOP(copy_frame);
-   }
-
    struct gl_tex_info tex_info = {0};
    tex_info.tex           = gl->texture[gl->tex_index];
    tex_info.input_size[0] = width;
@@ -1148,6 +1136,21 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    tex_info.tex_size[1]   = gl->tex_h;
 
    memcpy(tex_info.coord, gl->tex_coords, sizeof(gl->tex_coords));
+
+   if (frame) // Can be NULL for frame dupe / NULL render.
+   {
+      gl_next_texture_index(gl, &tex_info);
+      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+
+      gl_update_input_size(gl, width, height, pitch);
+
+      RARCH_PERFORMANCE_INIT(copy_frame);
+      RARCH_PERFORMANCE_START(copy_frame);
+      gl_copy_frame(gl, frame, width, height, pitch);
+      RARCH_PERFORMANCE_STOP(copy_frame);
+   }
+   else
+      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    glClear(GL_COLOR_BUFFER_BIT);
    gl_shader_set_params_func(gl, width, height,
@@ -1163,8 +1166,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (gl->fbo_inited)
       gl_frame_fbo(gl, &tex_info);
 #endif
-
-   gl_next_texture_index(gl, &tex_info);
 
 #ifdef FPS_COUNTER
    bool fps_enable = g_extern.console.rmenu.state.msg_fps.enable;
