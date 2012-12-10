@@ -179,11 +179,20 @@ public class DirectoryActivity extends Activity implements AdapterView.OnItemCli
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event)
     {
-        if(keyCode == KeyEvent.KEYCODE_BACK && backStack.size() > 1)
+        if(keyCode == KeyEvent.KEYCODE_BACK)
         {
-            backStack.remove(backStack.size() - 1);
-            wrapFiles();
-            return true;
+        	if(backStack.size() > 1)
+        	{
+        		backStack.remove(backStack.size() - 1);
+        		wrapFiles();
+        	}
+        	else
+        	{
+        		Intent intent=new Intent();
+                setResult(RESULT_CANCELED, intent);
+        		finish();
+        	}
+    		return true;
         }
 
         return super.onKeyDown(keyCode, event);
