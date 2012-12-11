@@ -223,20 +223,34 @@ static bool gfx_ctx_init(void)
    if (!g_dpy)
       goto error;
 
-   g_egl_dpy = eglGetDisplay(g_dpy);
+   g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)g_dpy);
    if (!g_egl_dpy)
+   {
+      RARCH_ERR("[X/EGL]: EGL display not available.\n");
       goto error;
+   }
 
    EGLint egl_major, egl_minor;
    if (!eglInitialize(g_egl_dpy, &egl_major, &egl_minor))
+   {
+      RARCH_ERR("[X/EGL]: Unable to initialize EGL.\n");
       goto error;
+   }
 
    RARCH_LOG("[X/EGL]: EGL version: %d.%d\n", egl_major, egl_minor);
 
    EGLint num_configs;
-   if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_config, 1, &num_configs)
-         || num_configs == 0 || !g_config)
+   if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_config, 1, &num_configs))
+   {
+      RARCH_ERR("[X/EGL]: eglChooseConfig failed with %x.\n", eglGetError());
       goto error;
+   }
+
+   if (num_configs == 0 || !g_config)
+   {
+      RARCH_ERR("[X/EGL]: No EGL configurations available.\n");
+      goto error;
+   }
 
    return true;
 
@@ -333,7 +347,7 @@ static bool gfx_ctx_set_video_mode(
    if (!g_egl_ctx)
       goto error;
 
-   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, g_win, NULL);
+   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, (EGLNativeWindowType)g_win, NULL);
    if (!g_egl_surf)
       goto error;
 
