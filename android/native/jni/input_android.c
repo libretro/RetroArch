@@ -275,12 +275,11 @@ static void android_input_poll(void *data)
    (void)data;
 
    // Read all pending events.
-   int do_event;
    struct android_app* android_app = g_android.app;
-   int id = ALooper_pollOnce(0, NULL, &do_event, NULL);
+   int id;
 
    // Process this event.
-   if(do_event)
+   while((id = ALooper_pollAll(0, NULL, NULL, NULL)) >= 0)
    {
       if(id == LOOPER_ID_INPUT)
       {
@@ -292,7 +291,7 @@ static void android_input_poll(void *data)
                return;
 
             int keycode = AKeyEvent_getKeyCode(event);
-            int32_t handled = 0;
+            int32_t handled = 1;
             uint64_t input_state = keycode_lut[keycode];
 
 
@@ -320,22 +319,21 @@ static void android_input_poll(void *data)
                state[i] |= PRESSED_RIGHT(x, y) ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
                state[i] |= PRESSED_UP(x, y)    ? (1 << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
                state[i] |= PRESSED_DOWN(x, y)  ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
-
-               handled = 1;
             }
             else if(input_state < (1 << RARCH_FIRST_META_KEY))
             {
                int action  = AKeyEvent_getAction(event);
 
-               if(action == AKEY_EVENT_ACTION_DOWN || action == AKEY_EVENT_ACTION_MULTIPLE)
+               if(action == AKEY_EVENT_ACTION_DOWN)
                   state[i] |= input_state;
                else if(action == AKEY_EVENT_ACTION_UP)
                   state[i] &= ~(input_state);
-
-               handled = 1;
             }
             else if(input_state != -1)
+            {
                g_android.input_state = input_state;
+               handled = 0;
+            }
 
             AInputQueue_finishEvent(android_app->inputQueue, event, handled);
          }
