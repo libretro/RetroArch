@@ -1,0 +1,5 @@
+Usage:
+  Ensure ANDROID_HOME is in the environment, it should be set to the root of your android SDK installation.
+  Ensure the tools 'ant' and 'ndk-build' are in your path.
+  Place desired libretro cores in 'jni/modules' with the name 'libretro_${modname}.so'
+  Run 'install-package-debug.sh $(PACKAGENAME)' (where $(PACKAGENAME) is a unique package name) to install for testing.
