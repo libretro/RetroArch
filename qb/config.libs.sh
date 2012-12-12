@@ -17,11 +17,17 @@ check_lib VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm"
 if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    [ -d /opt/vc/include ] && add_include_dirs /opt/vc/include
    [ -d /opt/vc/include/interface/vcos/pthreads ] && add_include_dirs /opt/vc/include/interface/vcos/pthreads
-   HAVE_GLES='yes'
-   HAVE_VG='yes'
-   HAVE_EGL='yes'
-else
+   HAVE_GLES='auto'
+   EXTRA_GL_LIBS="-lGLESv2 -lbcm_host -lvcos -lvchiq_arm"
+fi
+
+if [ "$HAVE_EGL" != "no" ]; then
    check_pkgconf EGL egl
+   # some systems have EGL libs, but no pkgconfig
+   if [ "$HAVE_EGL" = "no" ]; then
+      HAVE_EGL=auto && check_lib EGL "-lEGL $EXTRA_GL_LIBS"
+      [ "$HAVE_EGL" = "yes" ] && EGL_LIBS=-lEGL
+   fi
 fi
 
 if [ "$LIBRETRO" ]; then
@@ -149,17 +155,23 @@ fi
 
 check_pkgconf XML libxml-2.0
 
-# On videocore, these libraries will exist without proper pkg-config.
-if [ "$HAVE_VIDEOCORE" != "yes" ] && [ "$HAVE_EGL" = "yes" ]; then
-
-   if [ "$HAVE_XML" = "yes" ]; then
-      check_pkgconf GLES glesv2
-   else
+if [ "$HAVE_EGL" = "yes" ]; then
+   if [ "$HAVE_XML" != "yes" ]; then
       echo "Cannot find XML. GLES will not work."
       exit 1
    fi
-   check_pkgconf VG vg
-elif [ "$HAVE_VIDEOCORE" != "yes" ]; then
+   if [ "$HAVE_GLES" != "no" ]; then
+      HAVE_GLES=auto check_pkgconf GLES glesv2
+      [ "$HAVE_GLES" = "no" ] && HAVE_GLES=auto check_lib GLES "-lGLESv2 $EXTRA_GL_LIBS"
+   fi
+   if [ "$HAVE_VG" != "no" ]; then
+      check_pkgconf VG vg
+      if [ "$HAVE_VG" = "no" ]; then
+         HAVE_VG=auto check_lib VG "-lOpenVG $EXTRA_GL_LIBS"
+         [ "$HAVE_VG" = "yes" ] && VG_LIBS=-lOpenVG
+      fi
+   fi
+else
    HAVE_VG=no
    HAVE_GLES=no
 fi
