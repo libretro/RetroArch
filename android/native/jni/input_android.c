@@ -270,13 +270,6 @@ static void *android_input_init(void)
    return (void*)-1;
 }
 
-static int android_poll_all(void)
-{
-   int result;
-   while((result = ALooper_pollOnce(0, NULL, NULL, NULL)) == ALOOPER_POLL_CALLBACK);
-   return result;
-}
-
 static void android_input_poll(void *data)
 {
    (void)data;
@@ -285,8 +278,10 @@ static void android_input_poll(void *data)
    struct android_app* android_app = g_android.app;
    int id;
 
+   while((id = ALooper_pollOnce(0, NULL, NULL, NULL)) == ALOOPER_POLL_CALLBACK);
+
    // Process this event.
-   while((id = android_poll_all()) >= 0)
+   while(id >= 0)
    {
       if(id == LOOPER_ID_INPUT)
       {
@@ -356,6 +351,7 @@ static void android_input_poll(void *data)
 
          engine_handle_cmd(android_app, cmd);
       }
+      while((id = ALooper_pollOnce(0, NULL, NULL, NULL)) == ALOOPER_POLL_CALLBACK);
    }
 }
 
