@@ -270,6 +270,13 @@ static void *android_input_init(void)
    return (void*)-1;
 }
 
+static int android_poll_all(void)
+{
+   int result;
+   while((result = ALooper_pollOnce(0, NULL, NULL, NULL)) == ALOOPER_POLL_CALLBACK);
+   return result;
+}
+
 static void android_input_poll(void *data)
 {
    (void)data;
@@ -279,7 +286,7 @@ static void android_input_poll(void *data)
    int id;
 
    // Process this event.
-   while((id = ALooper_pollAll(0, NULL, NULL, NULL)) >= 0)
+   while((id = android_poll_all()) >= 0)
    {
       if(id == LOOPER_ID_INPUT)
       {
@@ -287,9 +294,6 @@ static void android_input_poll(void *data)
 
          if (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
          {
-            if (AInputQueue_preDispatchEvent(android_app->inputQueue, event))
-               return;
-
             int keycode = AKeyEvent_getKeyCode(event);
             int32_t handled = 1;
             uint64_t input_state = keycode_lut[keycode];
