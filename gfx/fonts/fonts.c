@@ -134,6 +134,7 @@ void font_renderer_free(font_renderer_t *handle)
       FT_Done_Face(handle->face);
    if (handle->lib)
       FT_Done_FreeType(handle->lib);
+   free(handle);
 }
 
 // Not the cleanest way to do things for sure, but should hopefully work ... :)
