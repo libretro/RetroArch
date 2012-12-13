@@ -123,6 +123,9 @@ void font_renderer_free_output(struct font_output_list *output)
 
 void font_renderer_free(font_renderer_t *handle)
 {
+   if (!handle)
+      return;
+
    if (handle->face)
       FT_Done_Face(handle->face);
    if (handle->lib)
