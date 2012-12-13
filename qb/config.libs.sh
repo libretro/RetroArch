@@ -156,10 +156,6 @@ fi
 check_pkgconf XML libxml-2.0
 
 if [ "$HAVE_EGL" = "yes" ]; then
-   if [ "$HAVE_XML" != "yes" ]; then
-      echo "Cannot find XML. GLES will not work."
-      exit 1
-   fi
    if [ "$HAVE_GLES" != "no" ]; then
       HAVE_GLES=auto check_pkgconf GLES glesv2
       [ "$HAVE_GLES" = "no" ] && HAVE_GLES=auto check_lib GLES "-lGLESv2 $EXTRA_GL_LIBS"
