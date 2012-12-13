@@ -198,9 +198,14 @@ FONTS
 
 #if defined(HAVE_OPENGL) || defined(HAVE_D3D8) || defined(HAVE_D3D9)
 
-#if defined(HAVE_FREETYPE)
+#ifdef HAVE_FREETYPE
 #include "../../gfx/fonts/freetype.c"
+#endif
+
+#if defined(HAVE_FREETYPE) && !defined(ANDROID)
 #include "../../gfx/fonts/fonts.c"
+#elif defined(HAVE_FREETYPE) && defined(ANDROID)
+#include "../../gfx/fonts/bitmapfont.c"
 #elif defined(HAVE_LIBDBGFONT)
 #include "../../gfx/fonts/ps_libdbgfont.c"
 #elif defined(_XBOX1)
