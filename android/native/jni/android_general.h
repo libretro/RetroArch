@@ -40,8 +40,27 @@ struct droid
    float disp_refresh_rate;
 };
 
+struct jni_params
+{
+   JavaVM *java_vm;
+   jobject class_obj;
+   char class_name[128];
+   char method_name[128];
+   char method_signature[128];
+   char obj_method_name[128];
+   char obj_method_signature[128];
+};
+
+struct jni_out_params_char
+{
+   char *out;
+   size_t out_sizeof;
+   char in[128];
+};
+
 extern struct droid g_android;
 
-extern int android_get_sdk_version(void);
+int android_get_sdk_version(void);
+void jni_get_char_argv(struct jni_params *params, struct jni_out_params_char *out_params);
 
 #endif

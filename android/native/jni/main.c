@@ -20,7 +20,7 @@
 #include <string.h>
 #include <sys/resource.h>
 
-#include "jni_utils.h"
+#include <jni.h>
 #include "android_general.h"
 #include "../../../general.h"
 #include "../../../performance.h"
@@ -71,6 +71,30 @@ static void print_cur_config(struct android_app* android_app)
 int android_get_sdk_version(void)
 {
    return AConfiguration_getSdkVersion(g_android.app->config);
+}
+
+void jni_get_char_argv(struct jni_params *params, struct jni_out_params_char *out_params)
+{
+   JNIEnv *env;
+   JavaVM *vm = params->java_vm;
+
+   (*vm)->AttachCurrentThread(vm, &env, 0);
+
+   jclass acl = (*env)->GetObjectClass(env, params->class_obj); //class pointer
+   jmethodID giid = (*env)->GetMethodID(env, acl, params->method_name, params->method_signature);
+   jobject obj = (*env)->CallObjectMethod(env, params->class_obj, giid); //Got our object
+
+   jclass class_obj = (*env)->GetObjectClass(env, obj); //class pointer of object
+   jmethodID gseid = (*env)->GetMethodID(env, class_obj, params->obj_method_name, params->obj_method_signature);
+
+   jstring jsParam1 = (*env)->CallObjectMethod(env, obj, gseid, (*env)->NewStringUTF(env, out_params->in));
+   const char *test_argv = (*env)->GetStringUTFChars(env, jsParam1, 0);
+
+   strncpy(out_params->out, test_argv, out_params->out_sizeof);
+
+   (*env)->ReleaseStringUTFChars(env, jsParam1, test_argv);
+
+   (*vm)->DetachCurrentThread(vm);
 }
 
 /**
