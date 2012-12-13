@@ -109,7 +109,7 @@ extern unsigned RGUI_HEIGHT;
 
 rgui_handle_t *rgui_init(const char *base_path,
       uint16_t *framebuf, size_t framebuf_pitch,
-      const uint8_t *font_bmp_buf, uint8_t *font_bin_buf,
+      const uint8_t *font_bmp_buf, const uint8_t *font_bin_buf,
       rgui_folder_enum_cb_t folder_cb, void *userdata);
 
 void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action);

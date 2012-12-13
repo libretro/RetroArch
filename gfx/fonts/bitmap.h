@@ -1,3 +1,21 @@
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
+ * 
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef __RARCH_FONT_BITMAP_H
+#define __RARCH_FONT_BITMAP_H
+
 #define FONT_WIDTH 5
 #define FONT_HEIGHT 10
 #define FONT_WIDTH_STRIDE (FONT_WIDTH + 1)
@@ -119,3 +137,5 @@ const unsigned char bitmap_bin[1792] = {
    0x63, 0xF4, 0x00, 0x00, 0x40, 0x81, 0x18, 0x63, 0xF4, 0x00, 0x00, 0x44, 0x80, 0x18, 0x63, 0xF4,
    0xD0, 0x01, 0x20, 0x84, 0x17, 0x63, 0x7C, 0x21, 0x00, 0x40, 0x81, 0x18, 0x63, 0xF4, 0xD0, 0x01
 };
+
+#endif

@@ -18,7 +18,7 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../console/rarch_console_video.h"
-#include "../console/font.h"
+#include "../gfx/fonts/bitmap.h"
 #include "../console/rgui/rgui.h"
 #include "../gfx/gfx_common.h"
 
@@ -752,7 +752,7 @@ static void gx_blit_line(unsigned x, unsigned y, const char *message)
             GXColor c;
             uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
             unsigned offset = (i + j * FONT_WIDTH) >> 3;
-            bool col = (_binary_console_font_bin_start[FONT_OFFSET((unsigned char) *message) + offset] & rem);
+            bool col = (bitmap_bin[FONT_OFFSET((unsigned char) *message) + offset] & rem);
 
             if (col)
                c = w;

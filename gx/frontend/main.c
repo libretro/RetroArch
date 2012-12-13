@@ -23,7 +23,7 @@
 #include "../../libretro.h"
 
 #include "../../console/rgui/rgui.h"
-#include "../../console/font.h"
+#include "../../gfx/fonts/bitmap.h"
 
 #include "../../console/rarch_console_exec.h"
 #include "../../console/rarch_console_input.h"
@@ -394,7 +394,7 @@ static void menu_init(void)
 {
    rgui = rgui_init("",
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
-         NULL /* _binary_console_font_bmp_start */, _binary_console_font_bin_start, folder_cb, NULL);
+         NULL /* _binary_console_font_bmp_start */, bitmap_bin, folder_cb, NULL);
 
    g_extern.console.rmenu.mode = MODE_MENU;
    rgui_iterate(rgui, RGUI_ACTION_REFRESH);

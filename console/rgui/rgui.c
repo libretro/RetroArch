@@ -16,7 +16,7 @@
 #include "rgui.h"
 #include "list.h"
 #include "../rarch_console_video.h"
-#include "../font.h"
+#include "../../gfx/fonts/bitmap.h"
 #include "../../screenshot.h"
 #include <stdlib.h>
 #include <stddef.h>
@@ -90,7 +90,7 @@ struct rgui_handle
 
    char path_buf[PATH_MAX];
 
-   uint8_t *font;
+   const uint8_t *font;
    bool alloc_font;
 };
 
@@ -152,20 +152,22 @@ static void copy_glyph(uint8_t *glyph, const uint8_t *buf)
 
 static void init_font(rgui_handle_t *rgui, const uint8_t *font_bmp_buf)
 {
-   rgui->font = (uint8_t *) calloc(1, FONT_OFFSET(256));
+   uint8_t *font = (uint8_t *) calloc(1, FONT_OFFSET(256));
    rgui->alloc_font = true;
    for (unsigned i = 0; i < 256; i++)
    {
       unsigned y = i / 16;
       unsigned x = i % 16;
-      copy_glyph(&rgui->font[FONT_OFFSET(i)],
+      copy_glyph(&font[FONT_OFFSET(i)],
             font_bmp_buf + 54 + 3 * (256 * (255 - 16 * y) + 16 * x));
    }
+
+   rgui->font = font;
 }
 
 rgui_handle_t *rgui_init(const char *base_path,
       uint16_t *framebuf, size_t framebuf_pitch,
-      const uint8_t *font_bmp_buf, uint8_t *font_bin_buf,
+      const uint8_t *font_bmp_buf, const uint8_t *font_bin_buf,
       rgui_folder_enum_cb_t folder_cb, void *userdata)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
@@ -198,7 +200,7 @@ void rgui_free(rgui_handle_t *rgui)
    rgui_list_free(rgui->path_stack);
    rgui_list_free(rgui->folder_buf);
    if (rgui->alloc_font)
-      free(rgui->font);
+      free((uint8_t *) rgui->font);
    free(rgui);
 }
 
