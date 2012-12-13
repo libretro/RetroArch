@@ -15,12 +15,12 @@
  */
 
 #include <stdio.h>
-#include <jni.h>
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/resource.h>
 
+#include "jni_utils.h"
 #include "android_general.h"
 #include "../../../general.h"
 #include "../../../performance.h"
@@ -71,32 +71,6 @@ static void print_cur_config(struct android_app* android_app)
 int android_get_sdk_version(void)
 {
    return AConfiguration_getSdkVersion(g_android.app->config);
-}
-
-static void android_get_char_argv(char *argv, size_t sizeof_argv, const char *arg_name)
-{
-   JNIEnv *env;
-   JavaVM *rarch_vm = g_android.app->activity->vm;
-
-   (*rarch_vm)->AttachCurrentThread(rarch_vm, &env, 0);
-
-   jobject me = g_android.app->activity->clazz;
-
-   jclass acl = (*env)->GetObjectClass(env, me); //class pointer of NativeActivity
-   jmethodID giid = (*env)->GetMethodID(env, acl, "getIntent", "()Landroid/content/Intent;");
-   jobject intent = (*env)->CallObjectMethod(env, me, giid); //Got our intent
-
-   jclass icl = (*env)->GetObjectClass(env, intent); //class pointer of Intent
-   jmethodID gseid = (*env)->GetMethodID(env, icl, "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
-
-   jstring jsParam1 = (*env)->CallObjectMethod(env, intent, gseid, (*env)->NewStringUTF(env, arg_name));
-   const char *test_argv = (*env)->GetStringUTFChars(env, jsParam1, 0);
-
-   strncpy(argv, test_argv, sizeof_argv);
-
-   (*env)->ReleaseStringUTFChars(env, jsParam1, test_argv);
-
-   (*rarch_vm)->DetachCurrentThread(rarch_vm);
 }
 
 /**
@@ -334,12 +308,37 @@ static void* android_app_entry(void* param)
    char libretro_path[512];
 
    // Get arguments */
-   android_get_char_argv(rom_path, sizeof(rom_path), "ROM");
-   android_get_char_argv(libretro_path, sizeof(libretro_path), "LIBRETRO");
+   struct jni_params jni_args;
+
+   jni_args.java_vm = g_android.app->activity->vm;
+   jni_args.class_obj = g_android.app->activity->clazz;
+   snprintf(jni_args.method_name, sizeof(jni_args.method_name), "getIntent");
+   snprintf(jni_args.method_signature, sizeof(jni_args.method_signature), "()Landroid/content/Intent;");
+   snprintf(jni_args.obj_method_name, sizeof(jni_args.obj_method_name), "getStringExtra");
+   snprintf(jni_args.obj_method_signature, sizeof(jni_args.obj_method_signature), "(Ljava/lang/String;)Ljava/lang/String;");
+
+   struct jni_out_params_char out_args;
+
+   out_args.out = rom_path;
+   out_args.out_sizeof = sizeof(rom_path);
+   snprintf(out_args.in, sizeof(out_args.in), "ROM");
+
+   jni_get_char_argv(&jni_args, &out_args);
+
+   out_args.out = libretro_path;
+   out_args.out_sizeof = sizeof(libretro_path);
+   snprintf(out_args.in, sizeof(out_args.in), "LIBRETRO");
+
+   jni_get_char_argv(&jni_args, &out_args);
+
    char refreshrate_char[128];
    float refreshrate;
+   
+   out_args.out = refreshrate_char;
+   out_args.out_sizeof = sizeof(refreshrate_char);
+   snprintf(out_args.in, sizeof(out_args.in), "REFRESHRATE");
 
-   android_get_char_argv(refreshrate_char,sizeof(refreshrate_char), "REFRESHRATE");
+   jni_get_char_argv(&jni_args, &out_args);
 
    refreshrate = (float)strtod(refreshrate_char, NULL);
 

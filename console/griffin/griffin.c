@@ -28,11 +28,18 @@ LOGGERS
 #include "../logger/logger.c"
 #endif
 
-#ifdef RARCH_CONSOLE
+/*============================================================
+JNI UTILS
+============================================================ */
+
+#ifdef ANDROID
+#include "../../android/native/jni/jni_utils.c"
+#endif
 
 /*============================================================
 CONSOLE EXTENSIONS
 ============================================================ */
+#ifdef RARCH_CONSOLE
 
 #include "../rarch_console.h"
 
@@ -75,7 +82,6 @@ default_paths_t default_paths;
 #ifdef HAVE_LIBRETRO_MANAGEMENT
 #include "../rarch_console_libretro_mgmt.c"
 #endif
-
 
 #endif
 
