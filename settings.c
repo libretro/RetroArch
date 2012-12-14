@@ -170,7 +170,6 @@ void config_set_defaults(void)
    g_settings.video.shader_type = RARCH_SHADER_AUTO;
    g_settings.video.allow_rotate = allow_rotate;
 
-#ifdef HAVE_FREETYPE
    g_settings.video.font_enable = font_enable;
    g_settings.video.font_size = font_size;
    g_settings.video.font_scale = font_scale;
@@ -180,7 +179,6 @@ void config_set_defaults(void)
    g_settings.video.msg_color_r = ((message_color >> 16) & 0xff) / 255.0f;
    g_settings.video.msg_color_g = ((message_color >>  8) & 0xff) / 255.0f;
    g_settings.video.msg_color_b = ((message_color >>  0) & 0xff) / 255.0f;
-#endif
 
 #if defined(HAVE_CG) || defined(HAVE_XML)
    g_settings.video.render_to_texture = render_to_texture;
