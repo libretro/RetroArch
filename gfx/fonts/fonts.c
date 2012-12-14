@@ -24,6 +24,9 @@ static const font_renderer_driver_t *backends[] = {
 #ifdef HAVE_FREETYPE
    &ft_font_renderer,
 #endif
+#ifdef HAVE_LIBDBGFONT
+   &libdbgps_font_renderer,
+#endif
    &bitmap_font_renderer,
 };
 

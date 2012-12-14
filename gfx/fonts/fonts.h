@@ -50,6 +50,7 @@ typedef struct font_renderer_driver
 
 extern const font_renderer_driver_t ft_font_renderer;
 extern const font_renderer_driver_t bitmap_font_renderer;
+extern const font_renderer_driver_t libdbgps_font_renderer;
 
 bool font_renderer_create_default(const font_renderer_driver_t **driver, void **handle);
 

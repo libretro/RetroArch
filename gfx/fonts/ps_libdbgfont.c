@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../gl_common.h"
+#include "fonts.h"
 
 #if defined(SN_TARGET_PSP2)
 #include <libdbgfont.h>
@@ -33,16 +33,20 @@
 #define DbgFontDraw cellDbgFontDraw
 #endif
 
-void gl_init_font(void *data, const char *font_path, unsigned font_size)
+static void *libdbgpsfont_renderer_init(const char *font_path, unsigned font_size)
 {
    (void)font_path;
    (void)font_size;
+
+   font_renderer_t *handle = (font_renderer_t*)calloc(1, sizeof(*handle));
+   if (!handle)
+      return NULL;
 
    DbgFontConfig cfg;
 #if defined(SN_TARGET_PSP2)
    cfg.fontSize     = SCE_DBGFONT_FONTSIZE_LARGE;
 #elif defined(__CELLOS_LV2__)
-   gl_t *gl = (gl_t*)data;
+   gl_t *gl = (gl_t*)driver.video_data;
 
    cfg.bufSize      = SCE_DBGFONT_BUFSIZE_LARGE;
    cfg.screenWidth  = gl->win_width;
@@ -50,26 +54,57 @@ void gl_init_font(void *data, const char *font_path, unsigned font_size)
 #endif
 
    DbgFontInit(&cfg);
+
+   return handle;
 }
 
-void gl_deinit_font(void *data)
+static void libdbgpsfont_renderer_free(void *data)
 {
+   (void)data;
+
    DbgFontExit();
 }
 
-void gl_render_msg(void *data, const char *msg)
+static void libdbgpsfont_renderer_free_output(void *data, struct font_output_list *output)
 {
-   (void)data;
-
-   DbgFontPrint(g_settings.video.msg_pos_x, 0.76f, 1.04f, SILVER, msg);
-   DbgFontPrint(g_settings.video.msg_pos_x, 0.76f, 1.03f, WHITE, msg);
-   DbgFontDraw();
 }
 
-void gl_render_msg_place(void *data, float x, float y, float scale, uint32_t color, const char *msg)
+static void libdbgpsfont_renderer_msg(void *data, const char *msg, struct font_output_list *output) 
 {
    (void)data;
+   float x, y, scale;
+   unsigned color;
+
+   if(!output)
+   {
+      x = g_settings.video.msg_pos_x;
+      y = 0.76f;
+      scale = 1.04f;
+      color = SILVER;
+   }
+   else
+   {
+      x = output->head->off_x;
+      y = output->head->off_y;
+      scale = output->head->scaling_factor;
+      color = WHITE;
+   }
 
    DbgFontPrint(x, y, scale, color, msg);
+   DbgFontPrint(x, y, scale - 0.01f, WHITE, msg);
    DbgFontDraw();
 }
+
+static const char *libdbgpsfont_renderer_get_default_font(void)
+{
+   return "";
+}
+
+const font_renderer_driver_t libdbgps_font_renderer = {
+   libdbgpsfont_renderer_init,
+   libdbgpsfont_renderer_msg,
+   libdbgpsfont_renderer_free_output,
+   libdbgpsfont_renderer_free,
+   libdbgpsfont_renderer_get_default_font,
+   "libdbgpsfont",
+};
