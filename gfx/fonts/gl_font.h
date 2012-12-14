@@ -13,21 +13,26 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gl_font.h"
-#include "../general.h"
+#ifndef GL_FONT_H__
+#define GL_FONT_H__
 
-static const gl_font_renderer_t *backends[] = {
-   &gl_raster_font,
-};
+#include <stdint.h>
+#include "../../boolean.h"
 
-const gl_font_renderer_t *gl_font_init_first(void *data, const char *font_path, unsigned font_size)
+typedef struct gl_font_renderer
 {
-   for (unsigned i = 0; i < ARRAY_SIZE(backends); i++)
-   {
-      if (backends[i]->init(data, font_path, font_size))
-         return backends[i];
-   }
+   bool (*init)(void *data, const char *font_path, unsigned font_size);
+   void (*deinit)(void *data);
+   void (*render_msg)(void *data, const char *msg);
+   void (*render_msg_place)(void *data, float x, float y,
+         float scale, uint32_t color, const char *msg);
+   const char *ident;
+} gl_font_renderer_t;
 
-   return NULL;
-}
+extern const gl_font_renderer_t gl_raster_font;
+
+const gl_font_renderer_t *gl_font_init_first(void *data,
+      const char *font_path, unsigned font_size);
+
+#endif
 

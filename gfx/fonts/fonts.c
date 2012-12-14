@@ -20,7 +20,7 @@
 #include "../../config.h"
 #endif
 
-static const font_renderer_driver_t *backends[] = {
+static const font_renderer_driver_t *font_backends[] = {
 #ifdef HAVE_FREETYPE
    &ft_font_renderer,
 #endif
@@ -32,24 +32,24 @@ static const font_renderer_driver_t *backends[] = {
 
 bool font_renderer_create_default(const font_renderer_driver_t **driver, void **handle)
 {
-   for (unsigned i = 0; i < ARRAY_SIZE(backends); i++)
+   for (unsigned i = 0; i < ARRAY_SIZE(font_backends); i++)
    {
       const char *font_path = *g_settings.video.font_path ? g_settings.video.font_path : NULL;
       if (!font_path)
-         font_path = backends[i]->get_default_font();
+         font_path = font_backends[i]->get_default_font();
 
       if (!font_path)
          continue;
 
-      *handle = backends[i]->init(font_path, g_settings.video.font_size);
+      *handle = font_backends[i]->init(font_path, g_settings.video.font_size);
       if (*handle)
       {
-         RARCH_LOG("Using font rendering backend: %s.\n", backends[i]->ident);
-         *driver = backends[i];
+         RARCH_LOG("Using font rendering backend: %s.\n", font_backends[i]->ident);
+         *driver = font_backends[i];
          return true;
       }
       else
-         RARCH_ERR("Failed to create rendering backend: %s.\n", backends[i]->ident);
+         RARCH_ERR("Failed to create rendering backend: %s.\n", font_backends[i]->ident);
    }
 
    *driver = NULL;

@@ -34,7 +34,6 @@
 #endif
 
 #include "gl_common.h"
-#include "gl_font.h"
 #include "gfx_common.h"
 #include "gfx_context.h"
 #include "../compat/strl.h"

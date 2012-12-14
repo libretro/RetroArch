@@ -21,7 +21,7 @@
 #include "math/matrix.h"
 #include "gfx_context.h"
 #include "scaler/scaler.h"
-#include "gl_font.h"
+#include "fonts/gl_font.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

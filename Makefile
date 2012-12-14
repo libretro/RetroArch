@@ -162,7 +162,7 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
-   OBJ += gfx/gl.o gfx/gfx_context.o gfx/gl_font.o gfx/fonts/gl_raster_font.o gfx/math/matrix.o
+   OBJ += gfx/gl.o gfx/gfx_context.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/math/matrix.o
 
    ifeq ($(HAVE_KMS), 1)
       OBJ += gfx/context/drm_egl_ctx.o
