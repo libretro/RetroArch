@@ -21,10 +21,7 @@
 void gl_init_font(void *data, const char *font_path, unsigned font_size);
 void gl_deinit_font(void *data);
 void gl_render_msg(void *data, const char *msg);
-
-#ifdef RARCH_CONSOLE
 void gl_render_msg_place(void *data, float x, float y, float scale, uint32_t color, const char *msg);
-#endif
 
 #endif
 

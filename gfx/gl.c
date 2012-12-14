@@ -1188,7 +1188,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    RARCH_PERFORMANCE_STOP(frame_run);
 
-#ifdef RARCH_CONSOLE
+#if defined(HAVE_RMENU)
    if (!gl->block_swap)
 #endif
       context_swap_buffers_func();
@@ -1690,7 +1690,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 }
 #endif
 
-#ifdef RARCH_CONSOLE
+#ifdef HAVE_RMENU
 static void gl_start(void)
 {
    video_info_t video_info = {0};
@@ -1735,10 +1735,8 @@ static void gl_restart(void)
    if (!gl)
 	   return;
 
-#ifdef RARCH_CONSOLE
-   bool should_block_swap = gl->block_swap;
-#endif
 #ifdef HAVE_RMENU
+   bool should_block_swap = gl->block_swap;
    bool should_draw_rmenu = gl->draw_rmenu;
 #endif
 
@@ -1750,14 +1748,11 @@ static void gl_restart(void)
 
 #ifdef HAVE_RMENU
    gl->draw_rmenu = should_draw_rmenu;
-#endif
-
-   gl->frame_count = 0;
-
-#ifdef RARCH_CONSOLE
    gl->block_swap = should_block_swap;
    SET_TIMER_EXPIRATION(gl, 0, 30);
 #endif
+
+   gl->frame_count = 0;
 }
 
 static void gl_apply_state_changes(void)
@@ -1800,7 +1795,7 @@ const video_driver_t video_gl = {
    gl_free,
    "gl",
 
-#ifdef RARCH_CONSOLE
+#ifdef HAVE_RMENU
    gl_start,
    gl_stop,
    gl_restart,

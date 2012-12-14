@@ -275,10 +275,8 @@ typedef struct gl
    GLfloat font_color_dark[16];
 #endif
 
-#ifdef RARCH_CONSOLE
-   bool block_swap;
-#endif
 #ifdef HAVE_RMENU
+   bool block_swap;
    bool draw_rmenu;
 #endif
 

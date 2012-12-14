@@ -320,8 +320,8 @@ static bool gfx_ctx_rmenu_init(void)
    }
 
    glBindTexture(GL_TEXTURE_2D, menu_texture_id);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
@@ -388,7 +388,6 @@ static void gfx_ctx_rmenu_frame(void *data)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
-
 
 static void gfx_ctx_menu_draw_panel(rarch_position_t *position)
 {
@@ -564,16 +563,13 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_init_egl_image_buffer,
    gfx_ctx_write_egl_image,
    "ps3",
-
-   // RARCH_CONSOLE stuff.
+#ifdef HAVE_RMENU
    gfx_ctx_clear,
    gfx_ctx_set_blend,
    gfx_ctx_set_filtering,
    gfx_ctx_get_available_resolutions,
    gfx_ctx_check_resolution,
    gfx_ctx_set_fbo,
-
-#ifdef HAVE_RMENU
    gfx_ctx_rmenu_init,
    gfx_ctx_rmenu_frame,
    gfx_ctx_rmenu_free,

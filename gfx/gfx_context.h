@@ -104,16 +104,13 @@ typedef struct gfx_ctx_driver
    // Human readable string.
    const char *ident;
 
-#ifdef RARCH_CONSOLE
+#if defined(HAVE_RMENU) || defined(_XBOX360)
    void (*clear)(void);
    void (*set_blend)(bool enable);
    void (*set_filtering)(unsigned index, bool set_smooth);
    void (*get_available_resolutions)(void);
    int  (*check_resolution)(unsigned resolution_id);
    void (*set_fbo)(unsigned);
-#endif
-
-#if defined(HAVE_RMENU) || defined(_XBOX360)
    bool (*rmenu_init)(void);
    void (*rmenu_frame)(void *data);
    void (*rmenu_free)(void);

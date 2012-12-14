@@ -123,11 +123,9 @@ static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer;
 #define MAX_VARIABLES 256
 
 #ifdef RARCH_GPU_PERFORMANCE_MODE
-#define MAX_PROGRAMS 8
 #define MAX_TEXTURES 4
 #define PREV_TEXTURES 3
 #else
-#define MAX_PROGRAMS 16
 #define MAX_TEXTURES 8
 #define PREV_TEXTURES 7
 #endif
@@ -141,9 +139,9 @@ enum filter_type
 
 static bool glsl_enable;
 static bool glsl_modern;
-static GLuint gl_program[MAX_PROGRAMS];
-static enum filter_type gl_filter_type[MAX_PROGRAMS];
-static struct gl_fbo_scale gl_scale[MAX_PROGRAMS];
+static GLuint gl_program[RARCH_GLSL_MAX_SHADERS];
+static enum filter_type gl_filter_type[RARCH_GLSL_MAX_SHADERS];
+static struct gl_fbo_scale gl_scale[RARCH_GLSL_MAX_SHADERS];
 static unsigned gl_num_programs;
 static unsigned active_index;
 
@@ -158,7 +156,7 @@ static char gl_tracker_script_class[64];
 
 static char *gl_script_program;
 
-static GLint gl_attribs[PREV_TEXTURES + 1 + 4 + MAX_PROGRAMS];
+static GLint gl_attribs[PREV_TEXTURES + 1 + 4 + RARCH_GLSL_MAX_SHADERS];
 static unsigned gl_attrib_index;
 
 static gfx_ctx_proc_t (*glsl_get_proc_address)(const char*);
@@ -205,11 +203,11 @@ struct shader_uniforms
    int lut_texture[MAX_TEXTURES];
    
    struct shader_uniforms_frame orig;
-   struct shader_uniforms_frame pass[MAX_PROGRAMS];
+   struct shader_uniforms_frame pass[RARCH_GLSL_MAX_SHADERS];
    struct shader_uniforms_frame prev[PREV_TEXTURES];
 };
 
-static struct shader_uniforms gl_uniforms[MAX_PROGRAMS];
+static struct shader_uniforms gl_uniforms[RARCH_GLSL_MAX_SHADERS];
 
 static const char *stock_vertex_legacy =
    "varying vec4 color;\n"
@@ -1001,7 +999,7 @@ static void find_uniforms(GLuint prog, struct shader_uniforms *uni)
    find_uniforms_frame(prog, &uni->orig, "rubyOrig");
 
    char frame_base[64];
-   for (unsigned i = 0; i < MAX_PROGRAMS; i++)
+   for (unsigned i = 0; i < RARCH_GLSL_MAX_SHADERS; i++)
    {
       snprintf(frame_base, sizeof(frame_base), "rubyPass%u", i + 1);
       find_uniforms_frame(prog, &uni->pass[i], frame_base);
@@ -1073,11 +1071,11 @@ bool gl_glsl_init(const char *path)
 #endif
 
    unsigned num_progs = 0;
-   struct shader_program progs[MAX_PROGRAMS] = {{0}};
+   struct shader_program progs[RARCH_GLSL_MAX_SHADERS] = {{0}};
 #ifdef HAVE_XML
    if (path)
    {
-      num_progs = get_xml_shaders(path, progs, MAX_PROGRAMS - 1);
+      num_progs = get_xml_shaders(path, progs, RARCH_GLSL_MAX_SHADERS - 1);
 
       if (num_progs == 0)
       {
