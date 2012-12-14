@@ -33,7 +33,7 @@
 #define DbgFontDraw cellDbgFontDraw
 #endif
 
-static void *libdbgpsfont_renderer_init(const char *font_path, unsigned font_size)
+static bool gl_init_font(void *data, const char *font_path, unsigned font_size)
 {
    (void)font_path;
    (void)font_size;
@@ -46,6 +46,7 @@ static void *libdbgpsfont_renderer_init(const char *font_path, unsigned font_siz
 #if defined(SN_TARGET_PSP2)
    cfg.fontSize     = SCE_DBGFONT_FONTSIZE_LARGE;
 #elif defined(__CELLOS_LV2__)
+   // FIXME - We need to do init_font_first in gl_start because of this
    gl_t *gl = (gl_t*)driver.video_data;
 
    cfg.bufSize      = SCE_DBGFONT_BUFSIZE_LARGE;
@@ -55,56 +56,39 @@ static void *libdbgpsfont_renderer_init(const char *font_path, unsigned font_siz
 
    DbgFontInit(&cfg);
 
-   return handle;
+   return true;
 }
 
-static void libdbgpsfont_renderer_free(void *data)
+static void gl_deinit_font(void *data)
 {
    (void)data;
 
    DbgFontExit();
 }
 
-static void libdbgpsfont_renderer_free_output(void *data, struct font_output_list *output)
-{
-}
-
-static void libdbgpsfont_renderer_msg(void *data, const char *msg, struct font_output_list *output) 
+static void gl_render_msg(void *data, const char *msg)
 {
    (void)data;
-   float x, y, scale;
-   unsigned color;
-
-   if(!output)
-   {
-      x = g_settings.video.msg_pos_x;
-      y = 0.76f;
-      scale = 1.04f;
-      color = SILVER;
-   }
-   else
-   {
-      x = output->head->off_x;
-      y = output->head->off_y;
-      scale = output->head->scaling_factor;
-      color = WHITE;
-   }
+   float x = g_settings.video.msg_pos_x;
+   float y = 0.76f;
+   float scale = 1.04f;
+   unsigned color = SILVER;
 
    DbgFontPrint(x, y, scale, color, msg);
    DbgFontPrint(x, y, scale - 0.01f, WHITE, msg);
    DbgFontDraw();
 }
 
-static const char *libdbgpsfont_renderer_get_default_font(void)
+static void gl_render_msg_place(void *data, float x, float y, float scale, uint32_t color, const char *msg)
 {
-   return "";
+   DbgFontPrint(x, y, scale, color, msg);
+   DbgFontDraw();
 }
 
-const font_renderer_driver_t libdbgps_font_renderer = {
-   libdbgpsfont_renderer_init,
-   libdbgpsfont_renderer_msg,
-   libdbgpsfont_renderer_free_output,
-   libdbgpsfont_renderer_free,
-   libdbgpsfont_renderer_get_default_font,
-   "libdbgpsfont",
+const gl_font_renderer_t libdbg_font = {
+   gl_init_font,
+   gl_deinit_font,
+   gl_render_msg,
+   gl_render_msg_place,
+   "GL raster",
 };

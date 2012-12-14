@@ -17,7 +17,11 @@
 #include "../../general.h"
 
 static const gl_font_renderer_t *gl_font_backends[] = {
+#ifdef HAVE_LIBDBGFONT
+   &libdbg_font,
+#else
    &gl_raster_font,
+#endif
 };
 
 const gl_font_renderer_t *gl_font_init_first(void *data, const char *font_path, unsigned font_size)

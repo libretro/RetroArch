@@ -1543,7 +1543,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    context_input_driver_func(input, input_data);
    
+#ifndef HAVE_RMENU
+   // Comes too early for console - moved to gl_start
    gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
+#endif
 
    gl_init_pbo_readback(gl);
 
@@ -1712,6 +1715,11 @@ static void gl_start(void)
    driver.video_data = gl_init(&video_info, NULL, NULL);
 
    gl_t *gl = (gl_t*)driver.video_data;
+
+#ifdef RARCH_CONSOLE
+   // Comes too early for console - moved to gl_start
+   gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
+#endif
 
    context_get_available_resolutions_func();
 

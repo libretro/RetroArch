@@ -31,7 +31,7 @@
 #include "../image.h"
 
 #include "../gfx_context.h"
-#include "../gl_font.h"
+#include "../fonts/gl_font.h"
 
 #if defined(HAVE_RMENU)
 GLuint menu_texture_id;
@@ -133,13 +133,6 @@ static void gfx_ctx_ps3_set_default_pos(rmenu_default_positions_t *position)
    position->core_msg_x_position = 0.3f;
    position->core_msg_y_position = 0.06f;
    position->core_msg_font_size = COMMENT_Y_POSITION;
-}
-
-static void rmenu_ctx_ps3_render_msg(float xpos, float ypos, float scale, unsigned color, const char *msg, ...)
-{
-   gl_t *gl = driver.video_data;
-
-   gl_render_msg_place(gl, xpos, ypos, scale, color, msg);
 }
 
 static void rmenu_ctx_ps3_screenshot_enable(bool enable)
@@ -577,7 +570,6 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_menu_draw_bg,
    gfx_ctx_menu_draw_panel,
    gfx_ctx_ps3_set_default_pos,
-   rmenu_ctx_ps3_render_msg,
    rmenu_ctx_ps3_screenshot_enable,
    rmenu_ctx_ps3_screenshot_dump,
    rmenu_ctx_ps3_drive_mapping_previous,

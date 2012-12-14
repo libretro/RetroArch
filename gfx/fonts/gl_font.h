@@ -30,6 +30,7 @@ typedef struct gl_font_renderer
 } gl_font_renderer_t;
 
 extern const gl_font_renderer_t gl_raster_font;
+extern const gl_font_renderer_t libdbg_font;
 
 const gl_font_renderer_t *gl_font_init_first(void *data,
       const char *font_path, unsigned font_size);
