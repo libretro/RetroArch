@@ -28,7 +28,7 @@ struct platform_bind
    const char *label;
 };
 
-uint64_t rarch_default_keybind_lut[RARCH_FIRST_META_KEY];
+uint64_t rarch_default_keybind_lut[RARCH_CUSTOM_BIND_LIST_END];
 
 char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][32] = {
    "RetroPad Button B",          /* RETRO_DEVICE_ID_JOYPAD_B      */
@@ -131,7 +131,7 @@ void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t 
 
 void rarch_input_set_default_keybinds(unsigned player)
 {
-   for (unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
+   for (unsigned i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
    {
       g_settings.input.binds[player][i].id = i;
       g_settings.input.binds[player][i].joykey = rarch_default_keybind_lut[i];
