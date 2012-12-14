@@ -19,26 +19,27 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "../../general.h"
-
-static uint8_t bitmap_chars[256][50];
-
 struct font_renderer
 {
    unsigned scale_factor;
+   uint8_t *bitmap_chars[256];
+   uint8_t *bitmap_alloc;
 };
 
-static void char_to_texture(uint8_t letter, uint8_t *buffer)
+static void char_to_texture(font_renderer_t *handle, uint8_t letter)
 {
-   for (unsigned j = 0; j < FONT_HEIGHT; j++)
+   handle->bitmap_chars[letter] = &handle->bitmap_alloc[letter * FONT_WIDTH * FONT_HEIGHT * handle->scale_factor * handle->scale_factor];
+   for (unsigned y = 0; y < FONT_HEIGHT; y++)
    {
-      for (unsigned i = 0; i < FONT_WIDTH; i++)
+      for (unsigned x = 0; x < FONT_WIDTH; x++)
       {
-         uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
-         unsigned offset = (i + j * FONT_WIDTH) >> 3;
-         bool col = (bitmap_bin[FONT_OFFSET(letter) + offset] & rem);
+         uint8_t rem = 1 << ((x + y * FONT_WIDTH) & 7);
+         unsigned offset = (x + y * FONT_WIDTH) >> 3;
+         uint8_t col = (bitmap_bin[FONT_OFFSET(letter) + offset] & rem) ? 0xFF : 0;
 
-         buffer[i + j * FONT_WIDTH] = col ? 0xFF : 0;
+         for (unsigned xo = 0; xo < handle->scale_factor; xo++)
+            for (unsigned yo = 0; yo < handle->scale_factor; yo++)
+               handle->bitmap_chars[letter][x * handle->scale_factor + xo + (y * handle->scale_factor + yo) * FONT_WIDTH * handle->scale_factor] = col;
       }
    }
 }
@@ -53,10 +54,17 @@ static void *font_renderer_init(const char *font_path, unsigned font_size)
    handle->scale_factor = font_size / FONT_HEIGHT;
    if (!handle->scale_factor)
       handle->scale_factor = 1;
-   RARCH_LOG("scale_factor: %d\n", handle->scale_factor);
+
+   handle->bitmap_alloc = malloc(FONT_WIDTH * FONT_HEIGHT * handle->scale_factor * handle->scale_factor * 256);
+
+   if (!handle->bitmap_alloc)
+   {
+      free(handle);
+      return NULL;
+   }
 
    for (unsigned i = 0; i < 256; i++)
-      char_to_texture(i, bitmap_chars[i]);
+      char_to_texture(handle, i);
 
    return handle;
 }
@@ -76,20 +84,7 @@ static void font_renderer_msg(void *data, const char *msg, struct font_output_li
       if (!tmp)
          break;
 
-      tmp->output = (uint8_t*)malloc(FONT_WIDTH * FONT_HEIGHT * handle->scale_factor * handle->scale_factor);
-      if (!tmp->output)
-      {
-         free(tmp);
-         break;
-      }
-
-      unsigned msg_char = msg[i];
-      for (unsigned x = 0; x < FONT_WIDTH; x++)
-         for (unsigned y = 0; y < FONT_HEIGHT; y++)
-            for (unsigned xo = 0; xo < handle->scale_factor; xo++)
-               for (unsigned yo = 0; yo < handle->scale_factor; yo++)
-                  tmp->output[x * handle->scale_factor + xo + (y * handle->scale_factor + yo) * FONT_WIDTH * handle->scale_factor] = bitmap_chars[msg_char][x + y * FONT_WIDTH];
-
+      tmp->output = handle->bitmap_chars[(unsigned) msg[i]];
       tmp->width = FONT_WIDTH * handle->scale_factor;
       tmp->height = FONT_HEIGHT * handle->scale_factor;
       tmp->pitch = tmp->width;
@@ -119,7 +114,6 @@ static void font_renderer_free_output(void *data, struct font_output_list *outpu
    struct font_output *tmp = NULL;
    while (itr != NULL)
    {
-      free(itr->output);
       tmp = itr;
       itr = itr->next;
       free(tmp);
@@ -130,6 +124,7 @@ static void font_renderer_free_output(void *data, struct font_output_list *outpu
 static void font_renderer_free(void *data)
 {
    font_renderer_t *handle = (font_renderer_t*)data;
+   free(handle->bitmap_alloc);
    free(handle);
 }
 
@@ -146,4 +141,3 @@ const font_renderer_driver_t bitmap_font_renderer = {
    font_renderer_get_default_font,
    "bitmap",
 };
-
