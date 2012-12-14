@@ -265,7 +265,7 @@ typedef struct gl
    unsigned base_size; // 2 or 4
 
    // Fonts
-   font_renderer_t *font;
+   void *font;
    const font_renderer_driver_t *font_driver;
    GLuint font_tex;
    int font_tex_w, font_tex_h;

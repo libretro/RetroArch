@@ -40,7 +40,7 @@ typedef struct sdl_video
    SDL_Surface *screen;
    bool quitting;
 
-   font_renderer_t *font;
+   void *font;
    const font_renderer_driver_t *font_driver;
    uint8_t font_r;
    uint8_t font_g;

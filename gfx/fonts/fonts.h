@@ -49,7 +49,7 @@ typedef struct font_renderer_driver
 extern const font_renderer_driver_t ft_font_renderer;
 extern const font_renderer_driver_t bitmap_font_renderer;
 
-bool font_renderer_create_default(const font_renderer_driver_t **driver, font_renderer_t **handle);
+bool font_renderer_create_default(const font_renderer_driver_t **driver, void **handle);
 
 #endif
 

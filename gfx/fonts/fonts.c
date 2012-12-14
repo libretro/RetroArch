@@ -27,7 +27,7 @@ static const font_renderer_driver_t *backends[] = {
    &bitmap_font_renderer,
 };
 
-bool font_renderer_create_default(const font_renderer_driver_t **driver, font_renderer_t **handle)
+bool font_renderer_create_default(const font_renderer_driver_t **driver, void **handle)
 {
    for (unsigned i = 0; i < ARRAY_SIZE(backends); i++)
    {
