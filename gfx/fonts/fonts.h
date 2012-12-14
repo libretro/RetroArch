@@ -38,10 +38,10 @@ struct font_output_list
 
 typedef struct font_renderer_driver
 {
-   font_renderer_t *(*init)(const char *font_path, unsigned font_size);
-   void (*render_msg)(font_renderer_t *handle, const char *msg, struct font_output_list *output);
-   void (*free_output)(font_renderer_t *handle, struct font_output_list *list);
-   void (*free)(font_renderer_t *handle);
+   void *(*init)(const char *font_path, unsigned font_size);
+   void (*render_msg)(void *data, const char *msg, struct font_output_list *output);
+   void (*free_output)(void *data, struct font_output_list *list);
+   void (*free)(void *data);
    const char *(*get_default_font)(void);
    const char *ident;
 } font_renderer_driver_t;

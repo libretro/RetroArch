@@ -28,8 +28,9 @@ struct font_renderer
    FT_Face face;
 };
 
-static void ft_renderer_free(font_renderer_t *handle)
+static void ft_renderer_free(void *data)
 {
+   font_renderer_t *handle = (font_renderer_t*)data;
    if (!handle)
       return;
 
@@ -40,7 +41,7 @@ static void ft_renderer_free(font_renderer_t *handle)
    free(handle);
 }
 
-static font_renderer_t *ft_renderer_init(const char *font_path, unsigned font_size)
+static void *ft_renderer_init(const char *font_path, unsigned font_size)
 {
    (void)font_size;
    FT_Error err;
@@ -67,8 +68,9 @@ error:
    return NULL;
 }
 
-static void ft_renderer_msg(font_renderer_t *handle, const char *msg, struct font_output_list *output) 
+static void ft_renderer_msg(void *data, const char *msg, struct font_output_list *output) 
 {
+   font_renderer_t *handle = (font_renderer_t*)data;
    output->head = NULL;
 
    FT_GlyphSlot slot = handle->face->glyph;
@@ -119,9 +121,9 @@ static void ft_renderer_msg(font_renderer_t *handle, const char *msg, struct fon
    }
 }
 
-static void ft_renderer_free_output(font_renderer_t *handle, struct font_output_list *output)
+static void ft_renderer_free_output(void *data, struct font_output_list *output)
 {
-   (void)handle;
+   (void)data;
 
    struct font_output *itr = output->head;
    struct font_output *tmp = NULL;

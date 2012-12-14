@@ -44,7 +44,7 @@ static void char_to_texture(uint8_t letter, uint8_t *buffer)
 }
 
 
-static font_renderer_t *font_renderer_init(const char *font_path, unsigned font_size)
+static void *font_renderer_init(const char *font_path, unsigned font_size)
 {
    font_renderer_t *handle = (font_renderer_t*)calloc(1, sizeof(*handle));
    if (!handle)
@@ -61,8 +61,9 @@ static font_renderer_t *font_renderer_init(const char *font_path, unsigned font_
    return handle;
 }
 
-static void font_renderer_msg(font_renderer_t *handle, const char *msg, struct font_output_list *output) 
+static void font_renderer_msg(void *data, const char *msg, struct font_output_list *output) 
 {
+   font_renderer_t *handle = (font_renderer_t*)data;
    output->head = NULL;
 
    struct font_output *cur = NULL;
@@ -111,9 +112,9 @@ static void font_renderer_msg(font_renderer_t *handle, const char *msg, struct f
    }
 }
 
-static void font_renderer_free_output(font_renderer_t *handle, struct font_output_list *output)
+static void font_renderer_free_output(void *data, struct font_output_list *output)
 {
-   (void)handle;
+   (void)data;
    struct font_output *itr = output->head;
    struct font_output *tmp = NULL;
    while (itr != NULL)
@@ -126,8 +127,9 @@ static void font_renderer_free_output(font_renderer_t *handle, struct font_outpu
    output->head = NULL;
 }
 
-static void font_renderer_free(font_renderer_t *handle)
+static void font_renderer_free(void *data)
 {
+   font_renderer_t *handle = (font_renderer_t*)data;
    free(handle);
 }
 
