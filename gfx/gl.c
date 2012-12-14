@@ -1174,12 +1174,13 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    {
       char fps_txt[128];
       gfx_fps_title(fps_txt, sizeof(fps_txt));
-      gl_render_msg_place(gl, g_settings.video.msg_pos_x, 0.56f, 1.04f, WHITE, fps_txt);
+      if (gl->font_ctx)
+         gl->font_ctx->render_msg_place(gl, g_settings.video.msg_pos_x, 0.56f, 1.04f, WHITE, fps_txt);
    }
 #endif
 
-   if (msg)
-      gl_render_msg(gl, msg);
+   if (msg && gl->font_ctx)
+      gl->font_ctx->render_msg(gl, msg);
 
 #if !defined(RARCH_CONSOLE)
    context_update_window_title_func(false);
@@ -1223,7 +1224,8 @@ static void gl_free(void *data)
 
    gl_t *gl = (gl_t*)data;
 
-   gl_deinit_font(gl);
+   if (gl->font_ctx)
+      gl->font_ctx->deinit(gl);
    gl_shader_deinit(gl);
 
 #ifndef NO_GL_FF_VERTEX
@@ -1541,7 +1543,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_init_textures_data(gl);
 
    context_input_driver_func(input, input_data);
-   gl_init_font(gl, g_settings.video.font_path, g_settings.video.font_size);
+   
+   gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
 
    gl_init_pbo_readback(gl);
 

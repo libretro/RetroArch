@@ -21,6 +21,7 @@
 #include "math/matrix.h"
 #include "gfx_context.h"
 #include "scaler/scaler.h"
+#include "gl_font.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -266,6 +267,7 @@ typedef struct gl
 
    // Fonts
    void *font;
+   const gl_font_renderer_t *font_ctx;
    const font_renderer_driver_t *font_driver;
    GLuint font_tex;
    int font_tex_w, font_tex_h;

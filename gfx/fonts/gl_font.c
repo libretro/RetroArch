@@ -16,10 +16,10 @@
 
 #include "../gl_common.h"
 
-void gl_init_font(void *data, const char *font_path, unsigned font_size)
+static bool gl_init_font(void *data, const char *font_path, unsigned font_size)
 {
    if (!g_settings.video.font_enable)
-      return;
+      return false;
 
    gl_t *gl = (gl_t*)data;
 
@@ -34,7 +34,10 @@ void gl_init_font(void *data, const char *font_path, unsigned font_size)
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    }
    else
+   {
       RARCH_WARN("Couldn't init font renderer.\n");
+      return false;
+   }
 
    for (unsigned i = 0; i < 4; i++)
    {
@@ -50,6 +53,8 @@ void gl_init_font(void *data, const char *font_path, unsigned font_size)
          gl->font_color_dark[4 * i + j] = 0.3 * gl->font_color[4 * i + j];
       gl->font_color_dark[4 * i + 3] = 1.0;
    }
+
+   return true;
 }
 
 void gl_deinit_font(void *data)
@@ -291,7 +296,7 @@ static void setup_font(void *data, const char *msg, GLfloat scale, GLfloat pos_x
    gl_set_projection(gl, &ortho, true);
 }
 
-void gl_render_msg(void *data, const char *msg)
+static void gl_render_msg(void *data, const char *msg)
 {
    (void)data;
    (void)msg;
@@ -302,7 +307,7 @@ void gl_render_msg(void *data, const char *msg)
          g_settings.video.msg_pos_x, g_settings.video.msg_pos_y);
 }
 
-void gl_render_msg_place(void *data, float pos_x, float pos_y, float scale, uint32_t color, const char *msg)
+static void gl_render_msg_place(void *data, float pos_x, float pos_y, float scale, uint32_t color, const char *msg)
 {
    (void)data;
    (void)msg;
@@ -312,3 +317,12 @@ void gl_render_msg_place(void *data, float pos_x, float pos_y, float scale, uint
    setup_font(data, msg, scale, pos_x, pos_y);
 #endif
 }
+
+const gl_font_renderer_t gl_raster_font = {
+   gl_init_font,
+   gl_deinit_font,
+   gl_render_msg,
+   gl_render_msg_place,
+   "GL raster",
+};
+
