@@ -179,6 +179,21 @@ static void ps3_input_poll(void *data)
       }
    }
 
+   g_extern.lifecycle_state &= ~((1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_REWIND));
+
+   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN)) && !(state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      g_extern.lifecycle_state |= (1ULL << RARCH_FAST_FORWARD_HOLD_KEY);
+   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      g_extern.lifecycle_state |= (1ULL << RARCH_LOAD_STATE_KEY);
+   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      g_extern.lifecycle_state |= (1ULL << RARCH_SAVE_STATE_KEY);
+   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      g_extern.lifecycle_state |= (1ULL << RARCH_STATE_SLOT_PLUS);
+   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      g_extern.lifecycle_state |= (1ULL << RARCH_STATE_SLOT_MINUS);
+   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)) && !(state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      g_extern.lifecycle_state |= (1ULL << RARCH_REWIND);
+
    cellPadGetInfo2(&pad_info);
    pads_connected = pad_info.now_connect; 
 #ifdef HAVE_MOUSE
@@ -431,18 +446,11 @@ static bool ps3_input_key_pressed(void *data, int key)
    gl_t *gl = driver.video_data;
 #endif
 
+   if(g_extern.lifecycle_state & (1ULL << key))
+      return true;
+
    switch (key)
    {
-      case RARCH_FAST_FORWARD_HOLD_KEY:
-         return (state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN)) && !(state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2));
-      case RARCH_LOAD_STATE_KEY:
-         return ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)));
-      case RARCH_SAVE_STATE_KEY:
-         return ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)));
-      case RARCH_STATE_SLOT_PLUS:
-         return ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)));
-      case RARCH_STATE_SLOT_MINUS:
-         return ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)));
       case RARCH_FRAMEADVANCE:
          if(g_extern.console.screen.state.frame_advance.enable)
          {
@@ -451,8 +459,6 @@ static bool ps3_input_key_pressed(void *data, int key)
             g_extern.console.rmenu.mode = MODE_MENU;
          }
          return false;
-      case RARCH_REWIND:
-         return (state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)) && !(state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2));
       case RARCH_QUIT_KEY:
 #ifdef HAVE_OPENGL
          if(IS_TIMER_EXPIRED(gl, 0))
