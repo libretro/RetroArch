@@ -52,17 +52,16 @@ typedef struct
    VGint scissor[4];
    EGLImageKHR last_egl_image;
 
-#ifdef HAVE_FREETYPE
    char *mLastMsg;
    uint32_t mFontHeight;
    VGFont mFont;
    font_renderer_t *mFontRenderer;
+   const font_renderer_driver_t *font_driver
    bool mFontsOn;
    VGuint mMsgLength;
    VGuint mGlyphIndices[1024];
    VGPaint mPaintFg;
    VGPaint mPaintBg;
-#endif
 } vg_t;
 
 static PFNVGCREATEEGLIMAGETARGETKHRPROC pvgCreateEGLImageTargetKHR;
@@ -138,21 +137,15 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    vg->driver->input_driver(input, input_data);
 
-#ifdef HAVE_FREETYPE
-   if (g_settings.video.font_enable)
+   if (g_settings.video.font_enable && font_renderer_create_default(vg->font_driver, vg->mFontRenderer))
    {
       vg->mFont = vgCreateFont(0);
-      vg->mFontHeight = g_settings.video.font_size * (g_settings.video.font_scale ? (float) vg->mScreenWidth / 1280.0f : 1.0f);
 
-      const char *path = g_settings.video.font_path;
-      if (!*path || !path_file_exists(path))
-         path = font_renderer_get_default_font();
-
-      vg->mFontRenderer = font_renderer_new(path, vg->mFontHeight);
-
-      if (vg->mFont != VG_INVALID_HANDLE && vg->mFontRenderer)
+      if (vg->mFont != VG_INVALID_HANDLE)
       {
          vg->mFontsOn = true;
+
+         vg->mFontHeight = g_settings.video.font_size * (g_settings.video.font_scale ? (float) vg->mScreenWidth / 1280.0f : 1.0f);
 
          vg->mPaintFg = vgCreatePaint();
          vg->mPaintBg = vgCreatePaint();
@@ -166,7 +159,6 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
          vgSetParameterfv(vg->mPaintBg, VG_PAINT_COLOR, 4, paintBg);
       }
    }
-#endif
 
    if (vg_query_extension("KHR_EGL_image") && vg->driver->init_egl_image_buffer(video))
    {
@@ -194,22 +186,18 @@ static void vg_free(void *data)
 
    vgDestroyImage(vg->mImage);
 
-#ifdef HAVE_FREETYPE
    if (vg->mFontsOn)
    {
       vgDestroyFont(vg->mFont);
-      font_renderer_free(vg->mFontRenderer);
+      vg->font_driver->free(vg->mFontRenderer);
       vgDestroyPaint(vg->mPaintFg);
       vgDestroyPaint(vg->mPaintBg);
    }
-#endif
 
    vg->driver->destroy();
 
    free(vg);
 }
-
-#ifdef HAVE_FREETYPE
 
 static void vg_render_message(vg_t *vg, const char *msg)
 {
@@ -225,7 +213,7 @@ static void vg_render_message(vg_t *vg, const char *msg)
    }
 
    struct font_output_list out;
-   font_renderer_msg(vg->mFontRenderer, msg, &out);
+   vg->font_driver->renderer_msg(vg->mFontRenderer, msg, &out);
    struct font_output *head = out.head;
 
    while (head)
@@ -285,8 +273,6 @@ static void vg_draw_message(vg_t *vg, const char *msg)
    vgSeti(VG_SCISSORING, VG_TRUE);
    vgSeti(VG_IMAGE_MODE, VG_DRAW_IMAGE_NORMAL);
 }
-
-#endif
 
 static void vg_calculate_quad(vg_t *vg)
 {
@@ -399,12 +385,8 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    vgDrawImage(vg->mImage);
 
-#ifdef HAVE_FREETYPE
    if (msg && vg->mFontsOn)
       vg_draw_message(vg, msg);
-#else
-   (void)msg;
-#endif
 
    RARCH_PERFORMANCE_STOP(vg_fr);
    vg->driver->swap_buffers();
