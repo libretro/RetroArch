@@ -26,6 +26,8 @@ struct font_output
 {
    uint8_t *output; // 8-bit alpha.
    unsigned width, height, pitch;
+   unsigned color;
+   unsigned scaling_factor;
    int off_x, off_y;
    int advance_x, advance_y, char_off_x, char_off_y; // for advanced font rendering
    struct font_output *next; // linked list.
