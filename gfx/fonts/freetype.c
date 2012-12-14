@@ -28,7 +28,7 @@ struct font_renderer
    FT_Face face;
 };
 
-static void font_renderer_free(font_renderer_t *handle)
+static void ft_renderer_free(font_renderer_t *handle)
 {
    if (!handle)
       return;
@@ -40,7 +40,7 @@ static void font_renderer_free(font_renderer_t *handle)
    free(handle);
 }
 
-static font_renderer_t *font_renderer_init(const char *font_path, unsigned font_size)
+static font_renderer_t *ft_renderer_init(const char *font_path, unsigned font_size)
 {
    (void)font_size;
    FT_Error err;
@@ -63,11 +63,11 @@ static font_renderer_t *font_renderer_init(const char *font_path, unsigned font_
    return handle;
 
 error:
-   font_renderer_free(handle);
+   ft_renderer_free(handle);
    return NULL;
 }
 
-static void font_renderer_msg(font_renderer_t *handle, const char *msg, struct font_output_list *output) 
+static void ft_renderer_msg(font_renderer_t *handle, const char *msg, struct font_output_list *output) 
 {
    output->head = NULL;
 
@@ -119,7 +119,7 @@ static void font_renderer_msg(font_renderer_t *handle, const char *msg, struct f
    }
 }
 
-static void font_renderer_free_output(font_renderer_t *handle, struct font_output_list *output)
+static void ft_renderer_free_output(font_renderer_t *handle, struct font_output_list *output)
 {
    (void)handle;
 
@@ -155,7 +155,7 @@ static const char *font_paths[] = {
 };
 
 // Highly OS/platform dependent.
-static const char *font_renderer_get_default_font(void)
+static const char *ft_renderer_get_default_font(void)
 {
    for (size_t i = 0; i < sizeof(font_paths) / sizeof(font_paths[0]); i++)
    {
@@ -167,11 +167,11 @@ static const char *font_renderer_get_default_font(void)
 }
 
 const font_renderer_driver_t ft_font_renderer = {
-   font_renderer_init,
-   font_renderer_msg,
-   font_renderer_free_output,
-   font_renderer_free,
-   font_renderer_get_default_font,
+   ft_renderer_init,
+   ft_renderer_msg,
+   ft_renderer_free_output,
+   ft_renderer_free,
+   ft_renderer_get_default_font,
    "freetype",
 };
 
