@@ -44,10 +44,8 @@ static void char_to_texture(uint8_t letter, uint8_t *buffer)
 }
 
 
-font_renderer_t *font_renderer_new(const char *font_path, unsigned font_size)
+static font_renderer_t *font_renderer_init(const char *font_path, unsigned font_size)
 {
-   (void)font_size;
-
    font_renderer_t *handle = (font_renderer_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
@@ -63,7 +61,7 @@ font_renderer_t *font_renderer_new(const char *font_path, unsigned font_size)
    return handle;
 }
 
-void font_renderer_msg(font_renderer_t *handle, const char *msg, struct font_output_list *output) 
+static void font_renderer_msg(font_renderer_t *handle, const char *msg, struct font_output_list *output) 
 {
    output->head = NULL;
 
@@ -113,8 +111,9 @@ void font_renderer_msg(font_renderer_t *handle, const char *msg, struct font_out
    }
 }
 
-void font_renderer_free_output(struct font_output_list *output)
+static void font_renderer_free_output(font_renderer_t *handle, struct font_output_list *output)
 {
+   (void)handle;
    struct font_output *itr = output->head;
    struct font_output *tmp = NULL;
    while (itr != NULL)
@@ -127,12 +126,22 @@ void font_renderer_free_output(struct font_output_list *output)
    output->head = NULL;
 }
 
-void font_renderer_free(font_renderer_t *handle)
+static void font_renderer_free(font_renderer_t *handle)
 {
    free(handle);
 }
 
-const char *font_renderer_get_default_font(void)
+static const char *font_renderer_get_default_font(void)
 {
    return "";
 }
+
+const font_renderer_driver_t bitmap_font_renderer = {
+   font_renderer_init,
+   font_renderer_msg,
+   font_renderer_free_output,
+   font_renderer_free,
+   font_renderer_get_default_font,
+   "bitmap",
+};
+

@@ -21,6 +21,7 @@
 #include "scaler/scaler.h"
 #include "gfx_common.h"
 #include "gfx_context.h"
+#include "fonts/fonts.h"
 
 #ifdef HAVE_X11
 #include "context/x11_common.h"
@@ -28,10 +29,6 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
-
-#ifdef HAVE_FREETYPE
-#include "fonts/fonts.h"
 #endif
 
 #ifndef __APPLE__ // Broken on OSX.
@@ -43,12 +40,11 @@ typedef struct sdl_video
    SDL_Surface *screen;
    bool quitting;
 
-#ifdef HAVE_FREETYPE
    font_renderer_t *font;
+   const font_renderer_driver_t *font_driver;
    uint8_t font_r;
    uint8_t font_g;
    uint8_t font_b;
-#endif
 
    struct scaler_ctx scaler;
    unsigned last_width;
@@ -63,10 +59,8 @@ static void sdl_gfx_free(void *data)
 
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
-#ifdef HAVE_FREETYPE
    if (vid->font)
-      font_renderer_free(vid->font);
-#endif
+      vid->font_driver->free(vid->font);
 
    scaler_ctx_gen_reset(&vid->scaler);
 
@@ -75,19 +69,11 @@ static void sdl_gfx_free(void *data)
 
 static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font_size)
 {
-#ifdef HAVE_FREETYPE
    if (!g_settings.video.font_enable)
       return;
 
-   const char *path = font_path;
-   if (!*path)
-      path = font_renderer_get_default_font();
-
-   if (path)
+   if (font_renderer_create_default(&vid->font_driver, &vid->font))
    {
-      vid->font = font_renderer_new(path, font_size);
-      if (vid->font)
-      {
          int r = g_settings.video.msg_color_r * 255;
          int g = g_settings.video.msg_color_g * 255;
          int b = g_settings.video.msg_color_b * 255;
@@ -99,28 +85,19 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
          vid->font_r = r;
          vid->font_g = g;
          vid->font_b = b;
-      }
-      else
-         RARCH_WARN("Failed to init font.\n");
    }
    else
-      RARCH_LOG("Did not find default font.\n");
-#else
-   (void)vid;
-   (void)font_path;
-   (void)font_size;
-#endif
+      RARCH_LOG("Could not initialize fonts.\n");
 }
 
 static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
       const char *msg, unsigned width, unsigned height, const SDL_PixelFormat *fmt)
 {
-#ifdef HAVE_FREETYPE
    if (!vid->font)
       return;
 
    struct font_output_list out;
-   font_renderer_msg(vid->font, msg, &out);
+   vid->font_driver->render_msg(vid->font, msg, &out);
    struct font_output *head = out.head;
 
    int msg_base_x = g_settings.video.msg_pos_x * width;
@@ -185,15 +162,7 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
       }
    }
 
-   font_renderer_free_output(&out);
-
-#else
-   (void)vid;
-   (void)buffer;
-   (void)msg;
-   (void)width;
-   (void)height;
-#endif
+   vid->font_driver->free_output(vid->font, &out);
 }
 
 static void sdl_gfx_set_handles(void)

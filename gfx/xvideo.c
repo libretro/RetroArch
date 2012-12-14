@@ -20,10 +20,7 @@
 #include <signal.h>
 #include <math.h>
 #include "gfx_common.h"
-
-#ifdef HAVE_FREETYPE
 #include "fonts/fonts.h"
-#endif
 
 #include "context/x11_common.h"
 
@@ -65,8 +62,8 @@ typedef struct xv
    uint8_t *utable;
    uint8_t *vtable;
 
-#ifdef HAVE_FREETYPE
    font_renderer_t *font;
+   const font_renderer_driver_t *font_driver;
 
    unsigned luma_index[2];
    unsigned chroma_u_index;
@@ -75,7 +72,6 @@ typedef struct xv
    uint8_t font_y;
    uint8_t font_u;
    uint8_t font_v;
-#endif
 
    void (*render_func)(struct xv*, const void *frame, unsigned width, unsigned height, unsigned pitch);
 } xv_t;
@@ -127,35 +123,23 @@ static void init_yuv_tables(xv_t *xv)
 
 static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
 {
-#ifdef HAVE_FREETYPE
    if (!g_settings.video.font_enable)
       return;
 
-   const char *path = font_path;
-   if (!*path)
-      path = font_renderer_get_default_font();
-
-   if (path)
+   if (font_renderer_create_default(&xv->font_driver, &xv->font))
    {
-      xv->font = font_renderer_new(path, font_size);
-      if (xv->font)
-      {
-         int r = g_settings.video.msg_color_r * 255;
-         r = (r < 0 ? 0 : (r > 255 ? 255 : r));
-         int g = g_settings.video.msg_color_g * 255;
-         g = (g < 0 ? 0 : (g > 255 ? 255 : g));
-         int b = g_settings.video.msg_color_b * 255;
-         b = (b < 0 ? 0 : (b > 255 ? 255 : b));
+      int r = g_settings.video.msg_color_r * 255;
+      r = (r < 0 ? 0 : (r > 255 ? 255 : r));
+      int g = g_settings.video.msg_color_g * 255;
+      g = (g < 0 ? 0 : (g > 255 ? 255 : g));
+      int b = g_settings.video.msg_color_b * 255;
+      b = (b < 0 ? 0 : (b > 255 ? 255 : b));
 
-         calculate_yuv(&xv->font_y, &xv->font_u, &xv->font_v,
-               r, g, b);
-      }
-      else
-         RARCH_WARN("Failed to init font.\n");
+      calculate_yuv(&xv->font_y, &xv->font_u, &xv->font_v,
+            r, g, b);
    }
    else
-      RARCH_LOG("Did not find default font.\n");
-#endif
+      RARCH_LOG("Could not initialize fonts.\n");
 }
 
 // We render @ 2x scale to combat chroma downsampling. Also makes fonts more bearable :)
@@ -325,12 +309,10 @@ static bool adaptor_set_format(xv_t *xv, Display *dpy, XvPortID port, const vide
                xv->fourcc = format[i].id;
                xv->render_func = video->rgb32 ? formats[j].render_32 : formats[j].render_16;
 
-#ifdef HAVE_FREETYPE
                xv->luma_index[0] = formats[j].luma_index[0];
                xv->luma_index[1] = formats[j].luma_index[1];
                xv->chroma_u_index = formats[j].u_index;
                xv->chroma_v_index = formats[j].v_index;
-#endif
                XFree(format);
                return true;
             }
@@ -590,12 +572,11 @@ static void calc_out_rect(bool keep_aspect, struct rarch_viewport *vp, unsigned 
 // Hacky C code is hacky :D Yay.
 static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned height)
 {
-#ifdef HAVE_FREETYPE
    if (!xv->font)
       return;
 
    struct font_output_list out;
-   font_renderer_msg(xv->font, msg, &out);
+   xv->font_driver->render_msg(xv->font, msg, &out);
    struct font_output *head = out.head;
 
    int msg_base_x = g_settings.video.msg_pos_x * width;
@@ -677,13 +658,7 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
       }
    }
 
-   font_renderer_free_output(&out);
-#else
-   (void)xv;
-   (void)msg;
-   (void)width;
-   (void)height;
-#endif
+   xv->font_driver->free_output(xv->font, &out);
 }
 
 static bool xv_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
@@ -774,10 +749,8 @@ static void xv_free(void *data)
    free(xv->utable);
    free(xv->vtable);
 
-#ifdef HAVE_FREETYPE
    if (xv->font)
-      font_renderer_free(xv->font);
-#endif
+      xv->font_driver->free(xv->font);
 
    free(xv);
 }

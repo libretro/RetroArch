@@ -264,8 +264,9 @@ typedef struct gl
    GLenum border_type;
    unsigned base_size; // 2 or 4
 
-#ifdef HAVE_FREETYPE
+   // Fonts
    font_renderer_t *font;
+   const font_renderer_driver_t *font_driver;
    GLuint font_tex;
    int font_tex_w, font_tex_h;
    uint16_t *font_tex_buf;
@@ -273,7 +274,6 @@ typedef struct gl
    int font_last_width, font_last_height;
    GLfloat font_color[16];
    GLfloat font_color_dark[16];
-#endif
 
 #ifdef HAVE_RMENU
    bool block_swap;

@@ -25,6 +25,8 @@ OBJ = retroarch.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/filter.o \
 		gfx/image.o \
+		gfx/fonts/fonts.o \
+		gfx/fonts/bitmapfont.o \
 		performance.o
 
 JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
@@ -160,7 +162,7 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
-   OBJ += gfx/gl.o gfx/gfx_context.o gfx/fonts/freetype.o gfx/math/matrix.o
+   OBJ += gfx/gl.o gfx/gfx_context.o gfx/fonts/gl_font.o gfx/math/matrix.o
 
    ifeq ($(HAVE_KMS), 1)
       OBJ += gfx/context/drm_egl_ctx.o
@@ -250,7 +252,7 @@ ifeq ($(HAVE_DYLIB), 1)
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)
-   OBJ += gfx/fonts/fonts.o
+   OBJ += gfx/fonts/freetype.o
    LIBS += $(FREETYPE_LIBS)
    DEFINES += $(FREETYPE_CFLAGS)
 endif

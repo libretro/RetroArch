@@ -18,12 +18,13 @@
 #define __RARCH_FONTS_H
 
 #include <stdint.h>
+#include "../../boolean.h"
 
 typedef struct font_renderer font_renderer_t;
 
 struct font_output
 {
-   uint8_t *output; // 8-bit intensity.
+   uint8_t *output; // 8-bit alpha.
    unsigned width, height, pitch;
    int off_x, off_y;
    int advance_x, advance_y, char_off_x, char_off_y; // for advanced font rendering
@@ -35,13 +36,20 @@ struct font_output_list
    struct font_output *head;
 };
 
-font_renderer_t *font_renderer_new(const char *font_path, unsigned font_size);
-void font_renderer_msg(font_renderer_t *handle, const char *msg,
-      struct font_output_list *output);
+typedef struct font_renderer_driver
+{
+   font_renderer_t *(*init)(const char *font_path, unsigned font_size);
+   void (*render_msg)(font_renderer_t *handle, const char *msg, struct font_output_list *output);
+   void (*free_output)(font_renderer_t *handle, struct font_output_list *list);
+   void (*free)(font_renderer_t *handle);
+   const char *(*get_default_font)(void);
+   const char *ident;
+} font_renderer_driver_t;
 
-void font_renderer_free_output(struct font_output_list *list);
-void font_renderer_free(font_renderer_t *handle);
+extern const font_renderer_driver_t ft_font_renderer;
+extern const font_renderer_driver_t bitmap_font_renderer;
 
-const char *font_renderer_get_default_font(void);
+bool font_renderer_create_default(const font_renderer_driver_t **driver, font_renderer_t **handle);
 
 #endif
+

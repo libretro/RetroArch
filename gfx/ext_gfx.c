@@ -276,15 +276,8 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
    const char *font = NULL;
    if (g_settings.video.font_enable)
    {
-#ifdef HAVE_FREETYPE
-      if (*g_settings.video.font_path)
-         font = g_settings.video.font_path;
-      else
-         font = font_renderer_get_default_font();
-#else
       font = *g_settings.video.font_path ?
          g_settings.video.font_path : NULL;
-#endif
    }
 
    char title_buf[128];

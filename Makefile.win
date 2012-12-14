@@ -28,6 +28,8 @@ OBJ = retroarch.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/filter.o \
 		gfx/state_tracker.o \
+		gfx/fonts/fonts.o \
+		gfx/fonts/bitmapfont.o \
 		gfx/image.o \
 		performance.o
 
@@ -100,7 +102,7 @@ ifeq ($(HAVE_THREADS), 1)
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
-   OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/freetype.o gfx/gfx_context.o gfx/context/wgl_ctx.o
+   OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o
    DEFINES += -DHAVE_OPENGL
    LIBS += -lopengl32 -lgdi32
 endif
@@ -164,7 +166,7 @@ ifeq ($(HAVE_NETPLAY), 1)
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)
-   OBJ += gfx/fonts/fonts.o
+   OBJ += gfx/fonts/freetype.o
    DEFINES += -DHAVE_FREETYPE -Ifreetype2
    LIBS += -lfreetype -lz
 endif
