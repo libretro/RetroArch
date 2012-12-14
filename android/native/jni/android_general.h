@@ -60,7 +60,6 @@ struct jni_out_params_char
 
 extern struct droid g_android;
 
-int android_get_sdk_version(void);
 void jni_get_char_argv(struct jni_params *params, struct jni_out_params_char *out_params);
 
 #endif

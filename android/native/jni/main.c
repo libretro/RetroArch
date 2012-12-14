@@ -68,11 +68,6 @@ static void print_cur_config(struct android_app* android_app)
          AConfiguration_getUiModeNight(android_app->config));
 }
 
-int android_get_sdk_version(void)
-{
-   return AConfiguration_getSdkVersion(g_android.app->config);
-}
-
 void jni_get_char_argv(struct jni_params *params, struct jni_out_params_char *out_params)
 {
    JNIEnv *env;

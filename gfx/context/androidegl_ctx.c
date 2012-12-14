@@ -352,8 +352,8 @@ static void gfx_ctx_get_available_resolutions (void)
 bool rmenu_inited = false;
 const char drive_mappings[DRIVE_MAPPING_SIZE][32] = {
    "/",
-   "/mnt/sdcard",
-   "/mnt/extsd"
+   "/mnt/",
+   "/mnt/sdcard"
 };
 unsigned char drive_mapping_idx = 1;
 
