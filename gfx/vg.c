@@ -55,7 +55,7 @@ typedef struct
    uint32_t mFontHeight;
    VGFont mFont;
    font_renderer_t *mFontRenderer;
-   const font_renderer_driver_t *font_driver
+   const font_renderer_driver_t *font_driver;
    bool mFontsOn;
    VGuint mMsgLength;
    VGuint mGlyphIndices[1024];
@@ -136,7 +136,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    vg->driver->input_driver(input, input_data);
 
-   if (g_settings.video.font_enable && font_renderer_create_default(vg->font_driver, vg->mFontRenderer))
+   if (g_settings.video.font_enable && font_renderer_create_default(&vg->font_driver, &vg->mFontRenderer))
    {
       vg->mFont = vgCreateFont(0);
 
@@ -212,7 +212,7 @@ static void vg_render_message(vg_t *vg, const char *msg)
    }
 
    struct font_output_list out;
-   vg->font_driver->renderer_msg(vg->mFontRenderer, msg, &out);
+   vg->font_driver->render_msg(vg->mFontRenderer, msg, &out);
    struct font_output *head = out.head;
 
    while (head)
@@ -241,7 +241,7 @@ static void vg_render_message(vg_t *vg, const char *msg)
       head = head->next;
    }
 
-   font_renderer_free_output(&out);
+   vg->font_driver->free_output(vg->mFontRenderer, &out);
 
    for (unsigned i = 0; i < vg->mMsgLength; i++)
       vg->mGlyphIndices[i] = i;
