@@ -442,9 +442,6 @@ static void ps3_input_post_init(void)
 static bool ps3_input_key_pressed(void *data, int key)
 {
    (void)data;
-#ifdef HAVE_OPENGL
-   gl_t *gl = driver.video_data;
-#endif
 
    if(g_extern.lifecycle_state & (1ULL << key))
       return true;
@@ -460,19 +457,19 @@ static bool ps3_input_key_pressed(void *data, int key)
          }
          return false;
       case RARCH_QUIT_KEY:
-#ifdef HAVE_OPENGL
-         if(IS_TIMER_EXPIRED(gl, 0))
+#ifdef HAVE_RMENU
+         if(IS_TIMER_EXPIRED(0))
          {
             uint32_t r3_pressed = state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
             uint32_t l3_pressed = state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
             bool retval = false;
-            g_extern.console.rmenu.state.rmenu.enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED(gl, 0));
+            g_extern.console.rmenu.state.rmenu.enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED(0));
             g_extern.console.rmenu.state.ingame_menu.enable = r3_pressed && !l3_pressed;
 
             if(g_extern.console.rmenu.state.rmenu.enable || (g_extern.console.rmenu.state.ingame_menu.enable && !g_extern.console.rmenu.state.rmenu.enable))
             {
                g_extern.console.rmenu.mode = MODE_MENU;
-               SET_TIMER_EXPIRATION(gl, 0, 30);
+               SET_TIMER_EXPIRATION(0, 30);
                retval = g_extern.console.rmenu.state.rmenu.enable;
             }
 

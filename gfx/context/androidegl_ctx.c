@@ -414,7 +414,7 @@ static void gfx_ctx_rmenu_frame(void *data)
       gl->shader->set_params(gl->win_width, gl->win_height, 
             gl->win_width, gl->win_height, 
             gl->win_width, gl->win_height, 
-            gl->frame_count, NULL, NULL, NULL, 0);
+            g_extern.frame_count, NULL, NULL, NULL, 0);
    }
 
    glActiveTexture(GL_TEXTURE0);

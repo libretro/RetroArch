@@ -234,9 +234,7 @@ typedef struct rarch_boolean_state
 
 typedef struct rarch_frame_count
 {
-   bool is_expired;
    unsigned expire_frame;
-   unsigned current;
 } rarch_frame_count_t;
 
 typedef struct rarch_resolution
@@ -456,6 +454,7 @@ struct global
       size_t pitch;
    } frame_cache;
 
+   unsigned frame_count;
    char title_buf[64];
 
    struct

@@ -89,7 +89,6 @@ typedef struct gl
    struct XenosShader * g_pVertexShader;
    struct XenosShader * g_pPixelTexturedShader;
    struct XenosSurface * g_pTexture;
-   unsigned frame_count;
 } gl_t;
 
 static float ScreenUv[4] = {0.f, 1.0f, 1.0f, 0.f};
@@ -195,8 +194,6 @@ static void *xenon360_gfx_init(const video_info_t *video, const input_driver_t *
 static bool xenon360_gfx_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *vid = data;
-
-   vid->frame_count++;
 
    ScreenUv[UV_TOP]	= ((float) (width) / (float) XE_W)*2;
    ScreenUv[UV_LEFT]	= ((float) (height) / (float) XE_H)*2;

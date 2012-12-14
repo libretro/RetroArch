@@ -202,9 +202,13 @@ FONTS
 #include "../../gfx/fonts/freetype.c"
 #endif
 
-#if defined(HAVE_FREETYPE) && !defined(ANDROID)
 #include "../../gfx/fonts/fonts.c"
-#elif defined(HAVE_FREETYPE) && defined(ANDROID)
+
+#ifdef HAVE_OPENGL
+#include "../../gfx/fonts/gl_font.c"
+#endif
+
+#if defined(ANDROID)
 #include "../../gfx/fonts/bitmapfont.c"
 #elif defined(HAVE_LIBDBGFONT)
 #include "../../gfx/fonts/ps_libdbgfont.c"

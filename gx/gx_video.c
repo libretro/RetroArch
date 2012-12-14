@@ -810,11 +810,7 @@ static bool gx_frame(void *data, const void *frame,
       return true;
 
    if (!frame)
-   {
       width = height = 4; // draw a black square in the background
-   }
-
-   gx->frame_count++;
 
    if(should_resize)
    {

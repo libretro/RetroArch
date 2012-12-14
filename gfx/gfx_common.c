@@ -79,8 +79,6 @@ static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, i
    return frames/time;
 }
 
-static unsigned gl_frames;
-
 static bool gfx_get_fps(char *buf, size_t size, bool always_write)
 {
    static struct timeval tv;
@@ -88,13 +86,13 @@ static bool gfx_get_fps(char *buf, size_t size, bool always_write)
    struct timeval new_tv;
    bool ret = false;
 
-   if (gl_frames == 0)
+   if (g_extern.frame_count == 0)
    {
       gettimeofday(&tv, NULL);
       snprintf(buf, size, "%s", g_extern.title_buf);
       ret = true;
    }
-   else if ((gl_frames % 180) == 0)
+   else if ((g_extern.frame_count % 180) == 0)
    {
       gettimeofday(&new_tv, NULL);
       struct timeval tmp_tv = tv;
@@ -103,18 +101,18 @@ static bool gfx_get_fps(char *buf, size_t size, bool always_write)
       last_fps = tv_to_fps(&tmp_tv, &new_tv, 180);
 
 #ifdef RARCH_CONSOLE
-      snprintf(buf, size, "FPS: %6.1f || Frames: %d", last_fps, gl_frames);
+      snprintf(buf, size, "FPS: %6.1f || Frames: %d", last_fps, g_extern.frame_count);
 #else
-      snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, last_fps, gl_frames);
+      snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, last_fps, g_extern.frame_count);
 #endif
       ret = true;
    }
    else if (always_write)
    {
 #ifdef RARCH_CONSOLE
-      snprintf(buf, size, "FPS: %6.1f || Frames: %d", last_fps, gl_frames);
+      snprintf(buf, size, "FPS: %6.1f || Frames: %d", last_fps, g_extern.frame_count);
 #else
-      snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, last_fps, gl_frames);
+      snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, last_fps, g_extern.frame_count);
 #endif
    }
 
@@ -123,21 +121,17 @@ static bool gfx_get_fps(char *buf, size_t size, bool always_write)
 
 void gfx_window_title_reset(void)
 {
-   gl_frames = 0;
+   g_extern.frame_count = 0;
 }
 
 bool gfx_window_title(char *buf, size_t size)
 {
-   bool ret = gfx_get_fps(buf, size, false);
-
-   gl_frames++;
-   return ret;
+   return gfx_get_fps(buf, size, false);
 }
 
 void gfx_fps_title(char *buf, size_t size)
 {
    gfx_get_fps(buf, size, true);
-   gl_frames++;
 }
 
 #if defined(_WIN32) && !defined(_XBOX)

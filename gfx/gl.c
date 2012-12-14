@@ -791,7 +791,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
       gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
       gl_shader_set_params_func(gl, prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
-            gl->vp.width, gl->vp.height, gl->frame_count, 
+            gl->vp.width, gl->vp.height, g_extern.frame_count, 
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
       gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp);
@@ -817,7 +817,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
    gl_shader_set_params_func(gl, prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
-         gl->vp.width, gl->vp.height, gl->frame_count, 
+         gl->vp.width, gl->vp.height, g_extern.frame_count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
    gl->coords.vertex = vertex_ptr;
@@ -1106,7 +1106,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_t *gl = (gl_t*)data;
 
    gl_shader_use_func(gl, 1);
-   gl->frame_count++;
 
 #ifdef HAVE_FBO
    // Render to texture in first pass.
@@ -1156,7 +1155,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_shader_set_params_func(gl, width, height,
          gl->tex_w, gl->tex_h,
          gl->vp.width, gl->vp.height,
-         gl->frame_count, 
+         g_extern.frame_count, 
          &tex_info, gl->prev_info, NULL, 0);
 
    gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp);
@@ -1563,7 +1562,7 @@ static bool gl_alive(void *data)
 
    context_check_window_func(&quit,
          &resize, &gl->win_width, &gl->win_height,
-         gl->frame_count);
+         g_extern.frame_count);
 
    if (quit)
       gl->quitting = true;
@@ -1749,10 +1748,10 @@ static void gl_restart(void)
 #ifdef HAVE_RMENU
    gl->draw_rmenu = should_draw_rmenu;
    gl->block_swap = should_block_swap;
-   SET_TIMER_EXPIRATION(gl, 0, 30);
+   SET_TIMER_EXPIRATION(0, 30);
 #endif
 
-   gl->frame_count = 0;
+   g_extern.frame_count = 0;
 }
 
 static void gl_apply_state_changes(void)

@@ -45,7 +45,6 @@ typedef struct
    unsigned mRenderWidth;
    unsigned mRenderHeight;
    unsigned x1, y1, x2, y2;
-   unsigned frame_count;
    VGImageFormat mTexType;
    VGImage mImage;
    math_matrix_3x3 mTransformMatrix;
@@ -357,7 +356,6 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
    RARCH_PERFORMANCE_INIT(vg_fr);
    RARCH_PERFORMANCE_START(vg_fr);
    vg_t *vg = (vg_t*)data;
-   vg->frame_count++;
 
    if (width != vg->mRenderWidth || height != vg->mRenderHeight || vg->should_resize)
    {
@@ -401,7 +399,7 @@ static bool vg_alive(void *data)
 
    vg->driver->check_window(&quit,
          &vg->should_resize, &vg->mScreenWidth, &vg->mScreenHeight,
-         vg->frame_count);
+         g_extern.frame_count);
    return !quit;
 }
 

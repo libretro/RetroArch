@@ -122,8 +122,7 @@ static void check_window(xdk_d3d_video_t *d3d)
    bool quit, resize;
 
    d3d->ctx_driver->check_window(&quit,
-         &resize, NULL, NULL,
-         d3d->frame_count);
+         &resize, NULL, NULL, g_extern.frame_count);
 
    if (quit)
       d3d->quitting = true;
@@ -693,7 +692,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (d3d->should_resize)
       xdk_d3d_set_viewport(false);
 
-   d3d->frame_count++;
 #ifdef _XBOX360
    d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
          0xff000000, 1.0f, 0);
@@ -710,7 +708,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    {
 #ifdef HAVE_HLSL
       hlsl_set_params(width, height, d3d->tex_w, d3d->tex_h, g_settings.video.fbo.scale_x * width,
-            g_settings.video.fbo.scale_y * height, d3d->frame_count);
+            g_settings.video.fbo.scale_y * height, g_extern.frame_count);
 #endif
       D3DVIEWPORT vp = {0};
       vp.Width  = g_settings.video.fbo.scale_x * width;
@@ -726,7 +724,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    {
 #ifdef HAVE_HLSL
       hlsl_set_params(width, height, d3d->tex_w, d3d->tex_h, d3d->win_width,
-            d3d->win_height, d3d->frame_count);
+            d3d->win_height, g_extern.frame_count);
 #endif
    }
 
@@ -780,7 +778,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #ifdef HAVE_HLSL
       hlsl_use(2);
       hlsl_set_params(g_settings.video.fbo.scale_x * width, g_settings.video.fbo.scale_y * height, g_settings.video.fbo.scale_x * d3d->tex_w, g_settings.video.fbo.scale_y * d3d->tex_h, d3d->win_width,
-            d3d->win_height, d3d->frame_count);
+            d3d->win_height, g_extern.frame_count);
 #endif
       xdk_d3d_set_viewport(false);
 

@@ -59,7 +59,6 @@ typedef struct xdk_d3d_video
    bool should_resize;
    bool quitting;
    bool vsync;
-   unsigned frame_count;
    unsigned last_width;
    unsigned last_height;
    unsigned win_width;

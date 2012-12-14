@@ -1160,8 +1160,8 @@ void menu_loop(void)
          rarch_render_cached_frame();
       else
       {
-		 device_ptr->ctx_driver->clear();
-         device_ptr->frame_count++;
+         device_ptr->ctx_driver->clear();
+         g_extern.frame_count++;
       }
 
       XINPUT_STATE state;
