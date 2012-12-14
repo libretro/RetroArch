@@ -145,7 +145,7 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          /* The window is being shown, get it ready. */
          android_app->window = android_app->pendingWindow;
 
-         if (g_android.input_state & (1ULL << RARCH_REENTRANT))
+         if (g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT))
          {
             gfx_ctx_init();
             g_extern.audio_active = true;
@@ -157,7 +157,7 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          pthread_mutex_unlock(&android_app->mutex);
 
          if (android_app->window != NULL)
-            g_android.input_state |= (1ULL << RARCH_WINDOW_READY);
+            g_extern.lifecycle_state |= (1ULL << RARCH_WINDOW_READY);
 
          break;
       case APP_CMD_RESUME:
@@ -194,12 +194,12 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          pthread_mutex_unlock(&android_app->mutex);
 
          /* EXEC */
-         if(g_android.input_state & (1ULL << RARCH_QUIT_KEY)) { }
+         if(g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY)) { }
          else
          {
             /* Setting reentrancy */
             RARCH_LOG("Setting up RetroArch re-entrancy...\n");
-            g_android.input_state |= (1ULL << RARCH_REENTRANT);
+            g_extern.lifecycle_state |= (1ULL << RARCH_REENTRANT);
             g_extern.audio_active = false;
             g_extern.video_active = false;
             g_android.activity_paused = true;
@@ -231,7 +231,7 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          /* EXEC */
          /* The window is being hidden or closed, clean it up. */
          /* terminate display/EGL context here */
-         if(g_android.input_state & (1ULL << RARCH_REENTRANT))
+         if(g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT))
             gfx_ctx_destroy();
 
          /* POSTEXEC */
@@ -381,10 +381,10 @@ static void* android_app_entry(void* param)
       // We are starting with a previous saved state; restore from it.
       RARCH_LOG("Restoring reentrant savestate.\n");
       g_android.state = *(struct saved_state*)android_app->savedState;
-      g_android.input_state = g_android.state.input_state;
+      g_extern.lifecycle_state = g_android.state.lifecycle_state;
    }
 
-   bool rarch_reentrant = (g_android.input_state & (1ULL << RARCH_REENTRANT));
+   bool rarch_reentrant = (g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT));
 
    if(rarch_reentrant)
    {
@@ -414,7 +414,7 @@ static void* android_app_entry(void* param)
 
    RARCH_LOG("Setting RetroArch video refresh rate to: %.2fHz.\n", g_android.disp_refresh_rate);
 
-   while(!(g_android.input_state & (1ULL << RARCH_WINDOW_READY)))
+   while(!(g_extern.lifecycle_state & (1ULL << RARCH_WINDOW_READY)))
    {
       if(!android_run_events(android_app))
          goto exit;
@@ -428,13 +428,13 @@ static void* android_app_entry(void* param)
 
       /* We've done everything state-wise needed for RARCH_REENTRANT,
        * get rid of it now */
-      g_android.input_state &= ~(1ULL << RARCH_REENTRANT);
+      g_extern.lifecycle_state &= ~(1ULL << RARCH_REENTRANT);
    }
    else if ((init_ret = rarch_main_init(argc, argv)) != 0)
    {
       RARCH_LOG("Initialization failed.\n");
-      g_android.input_state |= (1ULL << RARCH_QUIT_KEY);
-      g_android.input_state |= (1ULL << RARCH_KILL);
+      g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+      g_extern.lifecycle_state |= (1ULL << RARCH_KILL);
    }
    else
       RARCH_LOG("Initializing succeeded.\n");
@@ -454,7 +454,7 @@ static void* android_app_entry(void* param)
    }
 
 exit:
-   if(g_android.input_state & (1ULL << RARCH_QUIT_KEY))
+   if(g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY))
    {
       RARCH_LOG("Deinitializing RetroArch...\n");
       rarch_main_deinit();
@@ -465,10 +465,10 @@ exit:
       rarch_main_clear_state();
 
       /* Make sure to quit RetroArch later on too */
-      g_android.input_state |= (1ULL << RARCH_KILL);
+      g_extern.lifecycle_state |= (1ULL << RARCH_KILL);
    }
 
-   if(g_android.input_state & (1ULL << RARCH_KILL))
+   if(g_extern.lifecycle_state & (1ULL << RARCH_KILL))
    {
       RARCH_LOG("android_app_destroy!");
       free_saved_state(android_app);

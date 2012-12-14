@@ -24,13 +24,12 @@ struct saved_state
 {
     int32_t x;
     int32_t y;
-    uint64_t input_state;
+    uint64_t lifecycle_state;
 };
 
 struct droid
 {
    struct android_app* app;
-   uint64_t input_state;
    unsigned width;
    unsigned height;
    struct saved_state state;

@@ -165,7 +165,7 @@ static bool gfx_ctx_init(void)
       goto error;
    }
 
-   if (g_android.input_state & (1ULL << RARCH_REENTRANT))
+   if (g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT))
    {
       RARCH_LOG("[ANDROID/EGL]: Setting up reentrant state.\n");
 
@@ -234,7 +234,7 @@ static void gfx_ctx_check_window(bool *quit,
    }
 
    // Check if we are exiting.
-   if (g_android.app->destroyRequested != 0 || (g_android.input_state & (1ULL << RARCH_KILL)))
+   if (g_android.app->destroyRequested != 0 || (g_extern.lifecycle_state & (1ULL << RARCH_KILL)))
       *quit = true;
 }
 

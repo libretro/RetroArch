@@ -328,7 +328,7 @@ static void android_input_poll(void *data)
             }
             else if(input_state != -1)
             {
-               g_android.input_state = input_state;
+               g_extern.lifecycle_state = input_state;
                handled = 0;
             }
          }
@@ -376,9 +376,9 @@ static bool android_input_key_pressed(void *data, int key)
 {
    (void)data;
 
-   if(key == RARCH_QUIT_KEY && (g_android.input_state & (1ULL << RARCH_KILL)))
+   if(key == RARCH_QUIT_KEY && (g_extern.lifecycle_state & (1ULL << RARCH_KILL)))
       return true;
-   else if(g_android.input_state & (1ULL << key))
+   else if(g_extern.lifecycle_state & (1ULL << key))
       return true;
 
    return false;
