@@ -296,7 +296,11 @@ static void android_input_poll(void *data)
          if(i == -1)
             i = state_device_ids[id] = pads_connected++;
 
-         if(type == AINPUT_EVENT_TYPE_MOTION)
+         int motion_action = AMotionEvent_getAction(event);
+         bool motion_do = ((motion_action == AMOTION_EVENT_ACTION_DOWN) || (motion_action ==
+               AMOTION_EVENT_ACTION_POINTER_DOWN) || (motion_action == AMOTION_EVENT_ACTION_MOVE));
+
+         if(type == AINPUT_EVENT_TYPE_MOTION && motion_do)
          {
             float x = AMotionEvent_getX(event, 0);
             float y = AMotionEvent_getY(event, 0);
@@ -310,7 +314,7 @@ static void android_input_poll(void *data)
             state[i] |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
             state[i] |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
          }
-         else 
+         else if(type == AINPUT_EVENT_TYPE_KEY)
          {
             int keycode = AKeyEvent_getKeyCode(event);
             uint64_t input_state = keycode_lut[keycode];
