@@ -115,6 +115,11 @@ static void gfx_ctx_check_window(bool *quit,
          case UnmapNotify:
             g_has_focus = false;
             break;
+
+         case KeyPress:
+         case KeyRelease:
+            x11_handle_key_event(&event);
+            break;
       }
    }
 
@@ -291,7 +296,7 @@ static bool gfx_ctx_set_video_mode(
 
    swa.colormap = g_cmap = XCreateColormap(g_dpy, RootWindow(g_dpy, vi->screen),
          vi->visual, AllocNone);
-   swa.event_mask = StructureNotifyMask;
+   swa.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask;
    swa.override_redirect = fullscreen ? True : False;
 
    if (fullscreen && !windowed_full)
