@@ -806,10 +806,7 @@ static bool gx_frame(void *data, const void *frame,
    else
       gx->msg[0] = 0;
 
-   if(!frame && !menu_render)
-      return true;
-
-   if (!frame)
+   if (!frame && menu_render)
       width = height = 4; // draw a black square in the background
 
    if(should_resize)
@@ -830,7 +827,9 @@ static bool gx_frame(void *data, const void *frame,
 
    g_draw_done = false;
    g_current_framebuf ^= 1;
-   update_textures(frame, width, height, pitch);
+
+   if(frame)
+      update_textures(frame, width, height, pitch);
 
    //if (frame)
    {
