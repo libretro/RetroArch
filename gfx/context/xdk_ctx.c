@@ -32,7 +32,7 @@
 
 #include "../../screenshot.h"
 
-#include "../fonts/d3d_fonts.h"
+#include "../fonts/d3d_font.h"
 
 #if defined(_XBOX1)
 #define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTATIONINTERVAL
@@ -267,14 +267,6 @@ static void gfx_ctx_xdk_menu_set_default_pos(rmenu_default_positions_t *position
    position->core_msg_x_position = position->x_position;
    position->core_msg_y_position = position->msg_prev_next_y_position + 0.01f;
    position->core_msg_font_size = position->font_size;
-#endif
-}
-
-static void gfx_ctx_xdk_menu_render_msg(float xpos, float ypos, float scale, unsigned color, const char *msg, ...)
-{
-#ifdef _XBOX1
-   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
-   xfonts_render_msg_place(device_ptr, xpos, ypos, scale, msg);
 #endif
 }
 
@@ -550,7 +542,6 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    gfx_ctx_xdk_menu_draw_bg,
    gfx_ctx_xdk_menu_draw_panel,
    gfx_ctx_xdk_menu_set_default_pos,
-   gfx_ctx_xdk_menu_render_msg,
    gfx_ctx_xdk_menu_screenshot_enable,
    gfx_ctx_xdk_menu_screenshot_dump,
    gfx_ctx_xdk_menu_drive_mapping_previous,

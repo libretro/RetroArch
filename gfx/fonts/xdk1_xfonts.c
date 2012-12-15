@@ -20,9 +20,16 @@
 
 static bool xfonts_init_font(void *data, const char *font_path, unsigned font_size)
 {
-   (void)data;
    (void)font_path;
    (void)font_size;
+
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+
+   XFONT_OpenDefaultFont(&d3d->debug_font);
+   d3d->debug_font->SetBkMode(XFONT_TRANSPARENT);
+   d3d->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
+   d3d->debug_font->SetTextHeight(14);
+   d3d->debug_font->SetTextAntialiasLevel(d3d->debug_font->GetTextAntialiasLevel());
 
    return true;
 }
@@ -32,12 +39,7 @@ static void xfonts_deinit_font(void *data)
    (void)data;
 }
 
-static void xfonts_render_msg(void *data, const char *msg)
-{
-   xfonts_render_msg_place(data, g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 0, msg);
-}
-
-static void xfonts_render_msg_place(void *data, float x, float y, float scale, const char *msg)
+static void xfonts_render_msg_place(void *data, float x, float y, float scale, uint32_t color, const char *msg)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
@@ -48,6 +50,11 @@ static void xfonts_render_msg_place(void *data, float x, float y, float scale, c
    d3d->debug_font->TextOut(d3d->pFrontBuffer, str, (unsigned)-1, x, y);
 
    d3d->pFrontBuffer->Release();
+}
+
+static void xfonts_render_msg(void *data, const char *msg)
+{
+   xfonts_render_msg_place(data, g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 0, 0, msg);
 }
 
 const d3d_font_renderer_t d3d_xdk1_font = {

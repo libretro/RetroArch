@@ -21,6 +21,7 @@
 #ifdef _XBOX1
 #include <xfont.h>
 #endif
+#include "../gfx/fonts/d3d_font.h"
 
 #include "../gfx/gfx_context.h"
 #include "../xdk/xdk_defines.h"
@@ -73,6 +74,7 @@ typedef struct xdk_d3d_video
    LPDIRECT3DTEXTURE lpTexture_ot;
    IDirect3DVertexDeclaration9* v_decl;
 #endif
+   const d3d_font_renderer_t *font_ctx;
 #if defined(_XBOX1)
    XFONT *debug_font;
    D3DSurface *pBackBuffer, *pFrontBuffer;

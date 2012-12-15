@@ -209,6 +209,10 @@ FONTS
 #include "../../gfx/fonts/gl_font.c"
 #endif
 
+#ifdef _XBOX
+#include "../../gfx/fonts/d3d_font.c"
+#endif
+
 #if defined(HAVE_LIBDBGFONT)
 #include "../../gfx/fonts/ps_libdbgfont.c"
 #elif defined(HAVE_OPENGL)

@@ -428,9 +428,9 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    pd3dDevice->EndVertices();
 }
 
-static void xdk_render_msg_place(void *driver, float x, float y, const char *str_msg)
+static void xdk_render_msg_place(void *data, float x, float y, float scale, uint32_t color, const char *str_msg)
 {
-   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver;
+   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)data;
 
    wchar_t msg[PATH_MAX];
    convert_char_to_wchar(msg, str_msg, sizeof(msg));

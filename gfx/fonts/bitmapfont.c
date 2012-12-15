@@ -17,7 +17,7 @@
 #include "bitmap.h"
 #include <string.h>
 #include <stdlib.h>
-#include <stdbool.h>
+#include "../../boolean.h"
 
 struct font_renderer
 {
@@ -55,7 +55,7 @@ static void *font_renderer_init(const char *font_path, unsigned font_size)
    if (!handle->scale_factor)
       handle->scale_factor = 1;
 
-   handle->bitmap_alloc = malloc(FONT_WIDTH * FONT_HEIGHT * handle->scale_factor * handle->scale_factor * 256);
+   handle->bitmap_alloc = (uint8_t*)malloc(FONT_WIDTH * FONT_HEIGHT * handle->scale_factor * handle->scale_factor * 256);
 
    if (!handle->bitmap_alloc)
    {

@@ -34,8 +34,6 @@
 #include "config.h"
 #endif
 
-#include "../gfx/fonts/d3d_fonts.h"
-
 #include "../xdk/xdk_resources.h"
 
 #if defined(_XBOX1)
@@ -789,13 +787,11 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
 
 #if defined(_XBOX1)
-#define fonts_render_msg_place_func(device, x, y, scale, msg) xfonts_render_msg_place(device, x, y, scale, msg)
    float mem_width  = font_x + 30;
    float mem_height = font_y + 50;
    float msg_width  = 60;
    float msg_height = 365;
 #elif defined(_XBOX360)
-#define fonts_render_msg_place_func(device, x, y, scale, msg) xdk_render_msg_place(device, x, y, msg)
    float mem_width  = g_extern.console.rmenu.state.rmenu_hd.enable ? 160 : 100;
    float mem_height = 70;
    float msg_width  = mem_width;
@@ -811,10 +807,10 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       char buf[128];
 
       snprintf(buf, sizeof(buf), "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
-      fonts_render_msg_place_func(d3d, mem_width, mem_height, 0, buf);
+      d3d->font_ctx->render_msg_place(d3d, mem_width, mem_height, 0, 0, buf);
 
       gfx_fps_title(fps_txt, sizeof(fps_txt));
-      fonts_render_msg_place_func(d3d, mem_width, mem_height + 30, 0, fps_txt);
+      d3d->font_ctx->render_msg_place(d3d, mem_width, mem_height + 30, 0, 0, fps_txt);
    }
 
    if (msg
@@ -822,7 +818,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
          && !menu_enabled
 #endif
       )
-      fonts_render_msg_place_func(d3d, msg_width, msg_height, 0, msg); //TODO: dehardcode x/y here for HD (720p) mode
+      d3d->font_ctx->render_msg_place(d3d, msg_width, msg_height, 0, 0, msg); //TODO: dehardcode x/y here for HD (720p) mode
 
    if(!d3d->block_swap)
       gfx_ctx_xdk_swap_buffers();
@@ -870,21 +866,12 @@ static void xdk_d3d_start(void)
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
 #if defined(_XBOX1)
-   /* load debug fonts */
-   XFONT_OpenDefaultFont(&d3d->debug_font);
-   d3d->debug_font->SetBkMode(XFONT_TRANSPARENT);
-   d3d->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
-   d3d->debug_font->SetTextHeight(14);
-   d3d->debug_font->SetTextAntialiasLevel(d3d->debug_font->GetTextAntialiasLevel());
-
    font_x = 0;
    font_y = 0;
 #elif defined(_XBOX360)
-   HRESULT hr = d3d9_init_font("game:\\media\\Arial_12.xpr");
-
-   if(hr < 0)
-      RARCH_ERR("Couldn't initialize HLSL shader fonts.\n");
+   snprintf(g_settings.video.font_path, sizeof(g_settings.video.font_path), "game:\\media\\Arial_12.xpr");
 #endif
+   d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path, g_settings.video.font_size);
 }
 
 static void xdk_d3d_restart(void)
