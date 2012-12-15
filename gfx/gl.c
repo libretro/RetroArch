@@ -1194,7 +1194,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       context_swap_buffers_func();
 
 #ifdef HAVE_RMENU
-   if (gl->draw_rmenu)
+   if (g_extern.draw_menu)
       context_rmenu_frame_func(gl);
 #endif
 
@@ -1747,7 +1747,6 @@ static void gl_restart(void)
 
 #ifdef HAVE_RMENU
    bool should_block_swap = gl->block_swap;
-   bool should_draw_rmenu = gl->draw_rmenu;
 #endif
 
    gl_stop();
@@ -1757,7 +1756,6 @@ static void gl_restart(void)
    gl_start();
 
 #ifdef HAVE_RMENU
-   gl->draw_rmenu = should_draw_rmenu;
    gl->block_swap = should_block_swap;
    SET_TIMER_EXPIRATION(0, 30);
 #endif

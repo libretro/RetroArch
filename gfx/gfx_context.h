@@ -114,7 +114,6 @@ typedef struct gfx_ctx_driver
    bool (*rmenu_init)(void);
    void (*rmenu_frame)(void *data);
    void (*rmenu_free)(void);
-   void (*rmenu_enable)(bool enable);
    void (*rmenu_draw_bg)(rarch_position_t *position);
    void (*rmenu_draw_panel)(rarch_position_t *position);
    void (*rmenu_set_default_pos)(rmenu_default_positions_t *position);

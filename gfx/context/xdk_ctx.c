@@ -88,8 +88,6 @@ unsigned m_menuMainRomListPos_x;
 unsigned m_menuMainRomListPos_y;
 #endif
 
-bool rmenu_inited = false;
-
 static void gfx_ctx_xdk_set_blend(bool enable)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
@@ -163,7 +161,6 @@ static bool gfx_ctx_xdk_menu_init(void)
    ypos = width == 640 ? 430 : 670;
 #endif
 
-   rmenu_inited = true;
    return true;
 }
 
@@ -178,20 +175,6 @@ static void gfx_ctx_xdk_menu_free(void)
    texture_image_free(&m_menuMainBG);
    texture_image_free(&m_menuMainRomSelectPanel);
 #endif
-}
-
-static void gfx_ctx_menu_enable(bool enable)
-{
-   if (enable)
-   {
-      if(!rmenu_inited)
-         gfx_ctx_xdk_menu_init();
-   }
-   else
-   {
-      gfx_ctx_xdk_menu_free();
-      rmenu_inited = false;
-   }
 }
 
 static void gfx_ctx_xdk_swap_buffers(void)
@@ -538,7 +521,6 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    gfx_ctx_xdk_menu_init,
    gfx_ctx_xdk_menu_frame,
    gfx_ctx_xdk_menu_free,
-   gfx_ctx_menu_enable,
    gfx_ctx_xdk_menu_draw_bg,
    gfx_ctx_xdk_menu_draw_panel,
    gfx_ctx_xdk_menu_set_default_pos,

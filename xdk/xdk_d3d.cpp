@@ -610,7 +610,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #ifdef HAVE_FBO
    D3DSurface* pRenderTarget0;
 #endif
-   bool menu_enabled = g_extern.console.rmenu.state.rmenu.enable;
+   bool menu_enabled = g_extern.draw_menu;
    bool fps_enable = g_extern.console.rmenu.state.msg_fps.enable;
 #ifdef _XBOX1
    unsigned flicker_filter = g_extern.console.screen.state.flicker_filter.value;
@@ -817,7 +817,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
          && !menu_enabled
 #endif
       )
-      d3d->font_ctx->render_msg_place(d3d, msg_width, msg_height, 0.0f, 0, msg); //TODO: dehardcode x/y here for HD (720p) mode
+      d3d->font_ctx->render_msg_place(d3d, msg_width, msg_height, 0.0f, 0, msg);
 
    if(!d3d->block_swap)
       gfx_ctx_xdk_swap_buffers();

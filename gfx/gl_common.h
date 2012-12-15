@@ -279,7 +279,6 @@ typedef struct gl
 
 #ifdef HAVE_RMENU
    bool block_swap;
-   bool draw_rmenu;
 #endif
 
    bool egl_images;

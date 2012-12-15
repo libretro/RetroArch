@@ -182,9 +182,9 @@ int main(int argc, char *argv[])
    menu_init();
 
 begin_loop:
+   bool repeat = false;
    if(g_extern.console.rmenu.mode == MODE_EMULATION)
    {
-      bool repeat = false;
 
       input_xinput.poll(NULL);
 
@@ -196,7 +196,9 @@ begin_loop:
    }
    else if(g_extern.console.rmenu.mode == MODE_MENU)
    {
-      menu_loop();
+      do{
+         repeat = rmenu_iterate();
+      }while(repeat);
 
       if (g_extern.console.rmenu.mode != MODE_EXIT)
          rarch_startup(default_paths.config_file);

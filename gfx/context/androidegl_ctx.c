@@ -349,13 +349,13 @@ static void gfx_ctx_get_available_resolutions (void)
 
 #ifdef HAVE_RMENU
 #define DRIVE_MAPPING_SIZE 3
-bool rmenu_inited = false;
 const char drive_mappings[DRIVE_MAPPING_SIZE][32] = {
    "/",
    "/mnt/",
    "/mnt/sdcard"
 };
 unsigned char drive_mapping_idx = 1;
+bool rmenu_inited = false;
 
 static bool gfx_ctx_rmenu_init(void)
 {
@@ -363,6 +363,9 @@ static bool gfx_ctx_rmenu_init(void)
 
    if (!gl)
       return false;
+
+   if (rmenu_inited)
+      return true;
 
 #ifdef HAVE_RMENU
    glGenTextures(1, &menu_texture_id);
@@ -451,22 +454,6 @@ static const char * rmenu_ctx_drive_mapping_next(void)
    if((drive_mapping_idx + 1) < DRIVE_MAPPING_SIZE)
       drive_mapping_idx++;
    return drive_mappings[drive_mapping_idx];
-}
-
-static void gfx_ctx_menu_enable(bool enable)
-{
-   gl_t *gl = driver.video_data;
-
-   if (enable)
-   {
-      if(!rmenu_inited)
-         gfx_ctx_rmenu_init();
-      gl->draw_rmenu = true;
-   }
-   else
-   {
-      gfx_ctx_rmenu_free();
-   }
 }
 #endif
 

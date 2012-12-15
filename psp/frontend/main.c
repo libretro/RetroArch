@@ -93,13 +93,15 @@ void menu_init (void)
    g_extern.console.rmenu.mode = MODE_MENU;
 }
 
-void menu_loop (void)
+bool rmenu_iterate(void)
 {
    char game_rom[256];
    snprintf(game_rom, sizeof(game_rom), "%s%s", default_paths.port_dir, "dkc.sfc");
    RARCH_LOG("game ROM: %s\n", game_rom);
    rarch_console_load_game_wrap(game_rom, 0, 0);
    g_extern.console.rmenu.mode = MODE_EMULATION;
+
+   return false;
 }
 
 void menu_free (void)
@@ -156,9 +158,9 @@ int main(int argc, char *argv[])
    menu_init();
 
 begin_loop:
+   bool repeat = false;
    if(g_extern.console.rmenu.mode == MODE_EMULATION)
    {
-      bool repeat = false;
 
       RARCH_LOG("Gets to: #2.0\n");
 
@@ -179,7 +181,9 @@ begin_loop:
    }
    else if(g_extern.console.rmenu.mode == MODE_MENU)
    {
-      menu_loop();
+      do{
+         repeat = rmenu_iterate();
+      }while(repeat);
 
       if (g_extern.console.rmenu.mode != MODE_EXIT)
          rarch_startup(default_paths.config_file);

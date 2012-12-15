@@ -272,7 +272,7 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
    return true;
 }
 
-static void menu_loop(void)
+static bool rmenu_iterate(void)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
 
@@ -390,6 +390,8 @@ static void menu_loop(void)
    gx->menu_render = false;
 
    g_extern.console.rmenu.state.ingame_menu.enable = false;
+
+   return true;
 }
 
 static void menu_init(void)
@@ -586,7 +588,7 @@ begin_loop:
    }
    else if(g_extern.console.rmenu.mode == MODE_MENU)
    {
-      menu_loop();
+      rmenu_iterate();
 
       if (g_extern.console.rmenu.mode != MODE_EXIT)
          rarch_startup(default_paths.config_file);

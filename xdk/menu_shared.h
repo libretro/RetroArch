@@ -19,6 +19,6 @@
 
 void menu_init (void);
 void menu_free (void);
-void menu_loop (void);
+bool rmenu_iterate(void);
 
 #endif

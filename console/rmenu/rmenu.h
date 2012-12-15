@@ -206,7 +206,7 @@ enum
 #define MAX_NO_OF_CONTROLS_SETTINGS			SETTING_CONTROLS_DEFAULT_ALL+1
 
 void menu_init (void);
-void menu_loop (void);
+bool rmenu_iterate(void);
 void menu_free (void);
 
 #endif /* MENU_H_ */

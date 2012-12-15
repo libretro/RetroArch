@@ -293,7 +293,7 @@ static void gfx_ctx_set_blend(bool enable)
 
 static void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 
-bool rmenu_inited = false;
+static bool rmenu_inited = false;
 
 static bool gfx_ctx_rmenu_init(void)
 {
@@ -301,6 +301,9 @@ static bool gfx_ctx_rmenu_init(void)
 
    if (!gl)
       return false;
+
+   if (rmenu_inited)
+      return true;
 
 #ifdef HAVE_RMENU
    glGenTextures(1, &menu_texture_id);
@@ -335,24 +338,6 @@ static bool gfx_ctx_rmenu_init(void)
 #if defined(HAVE_RMENU)
 static void gfx_ctx_rmenu_free(void)
 {
-   gl_t *gl = driver.video_data;
-   gl->draw_rmenu = false;
-}
-
-static void gfx_ctx_menu_enable(bool enable)
-{
-   gl_t *gl = driver.video_data;
-
-   if (enable)
-   {
-      if(!rmenu_inited)
-         gfx_ctx_rmenu_init();
-      gl->draw_rmenu = true;
-   }
-   else
-   {
-      gfx_ctx_rmenu_free();
-   }
 }
 
 static void gfx_ctx_rmenu_frame(void *data)
@@ -566,7 +551,6 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_rmenu_init,
    gfx_ctx_rmenu_frame,
    gfx_ctx_rmenu_free,
-   gfx_ctx_menu_enable,
    gfx_ctx_menu_draw_bg,
    gfx_ctx_menu_draw_panel,
    gfx_ctx_ps3_set_default_pos,

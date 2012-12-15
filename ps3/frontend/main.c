@@ -98,9 +98,11 @@ void menu_init (void)
 {
 }
 
-void menu_loop (void)
+bool rmenu_iterate(void)
 {
    rarch_console_load_game_wrap("/dev_hdd0/game/SSNE10000/USRDIR/mm3.nes", 0, 0);
+
+   return false;
 }
 
 void menu_free (void)
@@ -227,6 +229,8 @@ static void get_environment_settings(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+   bool repeat = false;
+
 #ifdef HAVE_SYSUTILS
    RARCH_LOG("Registering system utility callback...\n");
    cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
@@ -344,8 +348,6 @@ int main(int argc, char *argv[])
 begin_loop:
    if(g_extern.console.rmenu.mode == MODE_EMULATION)
    {
-      bool repeat = false;
-
       input_ps3.poll(NULL);
 
       driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
@@ -356,7 +358,9 @@ begin_loop:
    }
    else if(g_extern.console.rmenu.mode == MODE_MENU)
    {
-      menu_loop();
+      do{
+         repeat = rmenu_iterate();
+      }while(repeat);
 
       if (g_extern.console.rmenu.mode != MODE_EXIT)
          rarch_startup(default_paths.config_file);

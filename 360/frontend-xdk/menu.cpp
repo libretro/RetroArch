@@ -1146,80 +1146,92 @@ static void ingame_menu_resize (void)
       g_extern.console.rmenu.input_loop = INPUT_LOOP_MENU;
 }
 
-void menu_loop(void)
+bool rmenu_iterate(void)
 {
+   static bool preinit = true;
    HRESULT hr;
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 
-   g_extern.console.rmenu.state.rmenu.enable = true;
-
-   device_ptr->block_swap = true;
-
-   g_extern.console.rmenu.input_loop = INPUT_LOOP_MENU;
-
-   do
+   if(preinit)
    {
-	   g_extern.frame_count++;
+      device_ptr->block_swap = true;
+      g_extern.console.rmenu.input_loop = INPUT_LOOP_MENU;
+      g_extern.draw_menu = true;
+      preinit = false;
+   }
 
-      if(g_extern.console.emulator_initialized)
-         rarch_render_cached_frame();
-      else
-      {
-         device_ptr->ctx_driver->clear();
-         g_extern.frame_count++;
-      }
+   g_extern.frame_count++;
 
-      XINPUT_STATE state;
-      XInputGetState(0, &state);
+   if(g_extern.console.emulator_initialized)
+      rarch_render_cached_frame();
+   else
+   {
+      device_ptr->ctx_driver->clear();
+      g_extern.frame_count++;
+   }
 
-      g_extern.console.rmenu.state.rmenu.enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
-            && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.console.emulator_initialized)
-            && IS_TIMER_EXPIRED(0));
+   XINPUT_STATE state;
+   XInputGetState(0, &state);
 
-      g_extern.console.rmenu.mode = g_extern.console.rmenu.state.rmenu.enable ? MODE_MENU : MODE_EMULATION;
+   bool rmenu_enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
+         && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.console.emulator_initialized)
+         && IS_TIMER_EXPIRED(0));
 
-      switch(g_extern.console.rmenu.input_loop)
-      {
-         case INPUT_LOOP_FILEBROWSER:
-            /*
-               if(((state.Gamepad.wButtons & XINPUT_GAMEPAD_Y) && hCur != app.hMainScene))
-               {
-               uint64_t action = (1 << RMENU_DEVICE_NAV_A);
-               browser_update(browser, action, rarch_console_get_rom_ext());
-               SET_TIMER_EXPIRATION(d3d, 0, 15);
-               }
-               */
-         case INPUT_LOOP_MENU:
-            app.RunFrame(); /* Update XUI */
-            if((state.Gamepad.wButtons & XINPUT_GAMEPAD_B) && hCur != app.hMainScene)
-               XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
-            break;
-         case INPUT_LOOP_RESIZE_MODE:
-            ingame_menu_resize();
-            break;
-         default:
-            break;
-      }
+   g_extern.console.rmenu.mode = rmenu_enable ? MODE_MENU : MODE_EMULATION;
 
-      hr = app.Render();   /* Render XUI */
-      hr = XuiTimersRun(); /* Update XUI timers */
+   if(g_extern.console.rmenu.mode == MODE_EMULATION || g_extern.console.rmenu.mode == MODE_EXIT)
+      goto deinit;
 
-      if(g_extern.console.rmenu.mode == MODE_EMULATION && !(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
-      {
-         SET_TIMER_EXPIRATION(0, 30);
-      }
+   switch(g_extern.console.rmenu.input_loop)
+   {
+      case INPUT_LOOP_FILEBROWSER:
+         /*
+            if(((state.Gamepad.wButtons & XINPUT_GAMEPAD_Y) && hCur != app.hMainScene))
+            {
+            uint64_t action = (1 << RMENU_DEVICE_NAV_A);
+            browser_update(browser, action, rarch_console_get_rom_ext());
+            SET_TIMER_EXPIRATION(d3d, 0, 15);
+            }
+            */
+      case INPUT_LOOP_MENU:
+         app.RunFrame(); /* Update XUI */
+         if((state.Gamepad.wButtons & XINPUT_GAMEPAD_B) && hCur != app.hMainScene)
+            XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
+         break;
+      case INPUT_LOOP_RESIZE_MODE:
+         ingame_menu_resize();
+         break;
+      default:
+         break;
+   }
 
-      const char *message = msg_queue_pull(g_extern.msg_queue);
+   hr = app.Render();   /* Render XUI */
+   hr = XuiTimersRun(); /* Update XUI timers */
 
-      if (message)
-      {
-         device_ptr->font_ctx->render_msg(device_ptr, message);
-      }
 
-      device_ptr->ctx_driver->swap_buffers();
-   }while(g_extern.console.rmenu.state.rmenu.enable);
+   const char *message = msg_queue_pull(g_extern.msg_queue);
+
+   if (message)
+   {
+      device_ptr->font_ctx->render_msg(device_ptr, message);
+   }
+
+   device_ptr->ctx_driver->swap_buffers();
+
+   return true;
+
+deinit:
+   if(!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
+   {
+      // set a timer delay so that we don't instantly switch back to the menu when
+      // press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
+      SET_TIMER_EXPIRATION(0, 30);
+   }
 
    device_ptr->block_swap = false;
-
    g_extern.console.rmenu.state.ingame_menu.enable = false;
+   g_extern.draw_menu = false;
+   preinit = true;
+
+   return false;
 }
