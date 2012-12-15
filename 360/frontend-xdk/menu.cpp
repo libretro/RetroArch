@@ -815,7 +815,10 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             break;
          case MENU_ITEM_FRAME_ADVANCE:
             if (g_extern.console.emulator_initialized)
+            {
+               g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
                rarch_settings_change(S_FRAME_ADVANCE);
+            }
             break;
          case MENU_ITEM_SCREENSHOT_MODE:
             if (g_extern.console.rmenu.state.msg_info.enable)

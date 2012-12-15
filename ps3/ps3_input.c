@@ -460,19 +460,7 @@ static bool ps3_input_key_pressed(void *data, int key)
    if(g_extern.lifecycle_state & (1ULL << key))
       return true;
 
-   switch (key)
-   {
-      case RARCH_FRAMEADVANCE:
-         if(g_extern.console.screen.state.frame_advance.enable)
-         {
-            g_extern.console.rmenu.state.rmenu.enable = true;
-            g_extern.console.rmenu.state.ingame_menu.enable = true;
-            g_extern.console.rmenu.mode = MODE_MENU;
-         }
-         return false;
-      default:
-         return false;
-   }
+   return false;
 }
 
 static void ps3_set_default_keybind_lut(unsigned device, unsigned port)

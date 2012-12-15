@@ -344,14 +344,6 @@ static bool xdk_input_key_pressed(void *data, int key)
          return ((state[0] & XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK) && (state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
       case RARCH_STATE_SLOT_MINUS:
          return ((state[0] & XINPUT1_GAMEPAD_RSTICK_LEFT_MASK) && (state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
-      case RARCH_FRAMEADVANCE:
-         if(g_extern.console.screen.state.frame_advance.enable)
-         {
-            g_extern.console.rmenu.state.rmenu.enable = true;
-            g_extern.console.rmenu.mode = MODE_MENU;
-            g_extern.console.rmenu.state.ingame_menu.enable = true;
-         }
-         return false;
       case RARCH_REWIND:
          return ((state[0] & XINPUT1_GAMEPAD_RSTICK_UP_MASK) && !(state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
       default:

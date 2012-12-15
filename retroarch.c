@@ -2821,6 +2821,17 @@ bool rarch_main_iterate(void)
    }
 #endif
 
+#ifdef HAVE_RMENU
+   if (input_key_pressed_func(RARCH_FRAMEADVANCE))
+   {
+      g_extern.lifecycle_state &= ~(1ULL << RARCH_FRAMEADVANCE);
+      g_extern.console.rmenu.state.rmenu.enable = true;
+      g_extern.console.rmenu.state.ingame_menu.enable = true;
+      g_extern.console.rmenu.mode = MODE_MENU;
+      return false;
+   }
+#endif
+
    return true;
 }
 

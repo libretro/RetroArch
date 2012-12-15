@@ -2036,6 +2036,7 @@ static void ingame_menu(menu *current_menu, uint64_t input)
       case MENU_ITEM_FRAME_ADVANCE:
          if((input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_R2)) || (input & (1ULL << RMENU_DEVICE_NAV_L2)))
          {
+            g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
             rarch_settings_change(S_FRAME_ADVANCE);
             g_extern.console.rmenu.ingame_menu.idx = MENU_ITEM_FRAME_ADVANCE;
          }
