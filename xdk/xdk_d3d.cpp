@@ -606,9 +606,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 static bool xdk_d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   if (!frame)
-      return true;
-
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 #ifdef HAVE_FBO
    D3DSurface* pRenderTarget0;
@@ -717,6 +714,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
    }
 
+   if(frame)
+   {
    D3DLOCKED_RECT d3dlr;
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
 
@@ -727,6 +726,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       memcpy(out, in, width * d3d->base_size);
    }
    d3d->lpTexture->UnlockRect(0);
+   }
 
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
