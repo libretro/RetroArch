@@ -1149,6 +1149,8 @@ static void ingame_menu_resize (void)
 bool rmenu_iterate(void)
 {
    static bool preinit = true;
+   const char *msg;
+
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 
    if(preinit)
@@ -1161,10 +1163,6 @@ bool rmenu_iterate(void)
 
    g_extern.frame_count++;
 
-   device_ptr->ctx_driver->clear();
-
-   rarch_render_cached_frame();
-
    XINPUT_STATE state;
    XInputGetState(0, &state);
 
@@ -1172,19 +1170,15 @@ bool rmenu_iterate(void)
          && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.console.emulator_initialized)
          && IS_TIMER_EXPIRED(0));
 
+   device_ptr->ctx_driver->clear();
+
+   rarch_render_cached_frame();
+
    g_extern.console.rmenu.mode = rmenu_enable ? MODE_MENU : MODE_EMULATION;
 
    switch(g_extern.console.rmenu.input_loop)
    {
       case INPUT_LOOP_FILEBROWSER:
-         /*
-            if(((state.Gamepad.wButtons & XINPUT_GAMEPAD_Y) && hCur != app.hMainScene))
-            {
-            uint64_t action = (1 << RMENU_DEVICE_NAV_A);
-            browser_update(browser, action, rarch_console_get_rom_ext());
-            SET_TIMER_EXPIRATION(d3d, 0, 15);
-            }
-            */
       case INPUT_LOOP_MENU:
          app.RunFrame(); /* Update XUI */
          if((state.Gamepad.wButtons & XINPUT_GAMEPAD_B) && hCur != app.hMainScene)
@@ -1200,11 +1194,11 @@ bool rmenu_iterate(void)
    if(g_extern.console.rmenu.mode == MODE_EMULATION || g_extern.console.rmenu.mode == MODE_EXIT)
       goto deinit;
 
-   const char *message = msg_queue_pull(g_extern.msg_queue);
+   msg = msg_queue_pull(g_extern.msg_queue);
 
-   if (message)
+   if (msg)
    {
-      device_ptr->font_ctx->render_msg(device_ptr, message);
+      device_ptr->font_ctx->render_msg(device_ptr, msg);
    }
 
    device_ptr->ctx_driver->swap_buffers();
