@@ -572,17 +572,13 @@ int main(int argc, char *argv[])
 begin_loop:
    if(g_extern.console.rmenu.mode == MODE_EMULATION)
    {
-      bool repeat = false;
-
       input_gx.poll(NULL);
 
       video_set_aspect_ratio_func(g_settings.video.aspect_ratio_idx);
 
       audio_start_func();
 
-      do{
-         repeat = rarch_main_iterate();
-      }while(repeat);
+      while(rarch_main_iterate());
 
       audio_stop_func();
    }

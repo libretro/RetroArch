@@ -182,7 +182,6 @@ int main(int argc, char *argv[])
    menu_init();
 
 begin_loop:
-   bool repeat = false;
    if(g_extern.console.rmenu.mode == MODE_EMULATION)
    {
 
@@ -190,15 +189,11 @@ begin_loop:
 
       driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
-      do{
-         repeat = rarch_main_iterate();
-      }while(repeat);
+      while(rarch_main_iterate());
    }
    else if(g_extern.console.rmenu.mode == MODE_MENU)
    {
-      do{
-         repeat = rmenu_iterate();
-      }while(repeat);
+      while(rmenu_iterate());
 
       if (g_extern.console.rmenu.mode != MODE_EXIT)
          rarch_startup(default_paths.config_file);

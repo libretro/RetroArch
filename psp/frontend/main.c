@@ -158,7 +158,6 @@ int main(int argc, char *argv[])
    menu_init();
 
 begin_loop:
-   bool repeat = false;
    if(g_extern.console.rmenu.mode == MODE_EMULATION)
    {
 
@@ -174,16 +173,14 @@ begin_loop:
 
       int count = 0;
 
-      do{
-         repeat = rarch_main_iterate();
+      while(rarch_main_iterate())
+      {
          RARCH_LOG("Iterate: %d\n", count++);
-      }while(repeat);
+      }
    }
    else if(g_extern.console.rmenu.mode == MODE_MENU)
    {
-      do{
-         repeat = rmenu_iterate();
-      }while(repeat);
+      while(rmenu_iterate());
 
       if (g_extern.console.rmenu.mode != MODE_EXIT)
          rarch_startup(default_paths.config_file);
