@@ -54,7 +54,7 @@ typedef struct
    char *mLastMsg;
    uint32_t mFontHeight;
    VGFont mFont;
-   font_renderer_t *mFontRenderer;
+   void *mFontRenderer;
    const font_renderer_driver_t *font_driver;
    bool mFontsOn;
    VGuint mMsgLength;
@@ -136,7 +136,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    vg->driver->input_driver(input, input_data);
 
-   if (g_settings.video.font_enable && font_renderer_create_default(&vg->font_driver, (void**)&vg->mFontRenderer))
+   if (g_settings.video.font_enable && font_renderer_create_default(&vg->font_driver, &vg->mFontRenderer))
    {
       vg->mFont = vgCreateFont(0);
 
