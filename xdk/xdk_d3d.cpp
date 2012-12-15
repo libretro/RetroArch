@@ -39,6 +39,8 @@
 #if defined(_XBOX1)
 unsigned font_x, font_y;
 #elif defined(_XBOX360)
+#include "../360/frontend-xdk/menu.h"
+extern CRetroArch app;
 const DWORD g_MapLinearToSrgbGpuFormat[] = 
 {
    GPUTEXTUREFORMAT_1_REVERSE,
@@ -678,11 +680,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (d3d->should_resize)
       xdk_d3d_set_viewport(false);
 
-#ifdef _XBOX360
-   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
-         0xff000000, 1.0f, 0);
-#endif
-
    d3d->d3d_render_device->SetTexture(0, d3d->lpTexture);
 
 #ifdef HAVE_HLSL
@@ -812,15 +809,19 @@ static bool xdk_d3d_frame(void *data, const void *frame,
          d3d->font_ctx->render_msg_place(d3d, mem_width, mem_height + 30, 0, 0, fps_txt);
    }
 
-   if (msg
-#ifdef _XBOX360
-         && !menu_enabled
-#endif
-      )
+   if (msg)
       d3d->font_ctx->render_msg_place(d3d, msg_width, msg_height, 0.0f, 0, msg);
 
    if(!d3d->block_swap)
       gfx_ctx_xdk_swap_buffers();
+
+#ifdef _XBOX360
+   if(menu_enabled)
+   {
+	   app.Render();
+	   XuiTimersRun();
+   }
+#endif
 
    return true;
 }

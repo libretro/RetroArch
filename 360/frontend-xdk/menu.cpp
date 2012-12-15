@@ -1149,7 +1149,6 @@ static void ingame_menu_resize (void)
 bool rmenu_iterate(void)
 {
    static bool preinit = true;
-   HRESULT hr;
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 
    if(preinit)
@@ -1162,13 +1161,9 @@ bool rmenu_iterate(void)
 
    g_extern.frame_count++;
 
-   if(g_extern.console.emulator_initialized)
-      rarch_render_cached_frame();
-   else
-   {
-      device_ptr->ctx_driver->clear();
-      g_extern.frame_count++;
-   }
+   device_ptr->ctx_driver->clear();
+
+   rarch_render_cached_frame();
 
    XINPUT_STATE state;
    XInputGetState(0, &state);
@@ -1201,9 +1196,6 @@ bool rmenu_iterate(void)
       default:
          break;
    }
-
-   hr = app.Render();   /* Render XUI */
-   hr = XuiTimersRun(); /* Update XUI timers */
 
    if(g_extern.console.rmenu.mode == MODE_EMULATION || g_extern.console.rmenu.mode == MODE_EXIT)
       goto deinit;
