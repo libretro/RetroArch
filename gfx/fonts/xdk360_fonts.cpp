@@ -188,7 +188,7 @@ static bool xdk_init_font(void *data, const char *font_path, unsigned font_size)
    font->m_TranslatorTable = NULL;
 
    // Create the font
-   if(FAILED( m_xprResource.Create(path)))
+   if(FAILED( m_xprResource.Create(font_path)))
       goto error;
 
    D3DTexture *pFontTexture = m_xprResource.GetTexture( "FontTexture" );
@@ -233,10 +233,10 @@ static bool xdk_init_font(void *data, const char *font_path, unsigned font_size)
    }
 
    RARCH_LOG("Successfully initialized D3D9 HLSL fonts.\n");
-   return 0;
+   return true;
 error:
    RARCH_ERR("Could not initialize D3D9 HLSL fonts.\n");
-   return E_FAIL;
+   return false;
 }
 
 static void xdk_deinit_font(void *data)
@@ -430,7 +430,7 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
 
 static void xdk_render_msg_place(void *data, float x, float y, float scale, uint32_t color, const char *str_msg)
 {
-   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)data;
+	(void)data;
 
    wchar_t msg[PATH_MAX];
    convert_char_to_wchar(msg, str_msg, sizeof(msg));
@@ -450,7 +450,7 @@ static void xdk_render_msg(void *driver, const char *msg)
    float x = g_extern.console.rmenu.state.rmenu_hd.enable ? 160 : 100;
    float y = 120;
 
-   xdk_render_msg_place(d3d, x, y, msg);
+   xdk_render_msg_place(d3d, x, y, 0, 0, msg);
 }
 
 const d3d_font_renderer_t d3d_xbox360_font = {

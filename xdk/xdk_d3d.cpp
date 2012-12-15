@@ -147,9 +147,7 @@ static void xdk_d3d_free(void * data)
 #ifdef HAVE_HLSL
    hlsl_deinit();
 #endif
-#ifdef HAVE_D3D9
-   d3d9_deinit_font();
-#endif
+   d3d->font_ctx->deinit(d3d);
 
    d3d->ctx_driver->destroy();
 
@@ -818,7 +816,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
          && !menu_enabled
 #endif
       )
-      d3d->font_ctx->render_msg_place(d3d, msg_width, msg_height, 0, 0, msg); //TODO: dehardcode x/y here for HD (720p) mode
+      d3d->font_ctx->render_msg_place(d3d, msg_width, msg_height, 0.0f, 0, msg); //TODO: dehardcode x/y here for HD (720p) mode
 
    if(!d3d->block_swap)
       gfx_ctx_xdk_swap_buffers();

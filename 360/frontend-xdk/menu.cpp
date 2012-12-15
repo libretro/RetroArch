@@ -1159,6 +1159,8 @@ void menu_loop(void)
 
    do
    {
+	   g_extern.frame_count++;
+
       if(g_extern.console.emulator_initialized)
          rarch_render_cached_frame();
       else
@@ -1172,7 +1174,7 @@ void menu_loop(void)
 
       g_extern.console.rmenu.state.rmenu.enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
             && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.console.emulator_initialized)
-            && IS_TIMER_EXPIRED(device_ptr, 0));
+            && IS_TIMER_EXPIRED(0));
 
       g_extern.console.rmenu.mode = g_extern.console.rmenu.state.rmenu.enable ? MODE_MENU : MODE_EMULATION;
 
@@ -1204,14 +1206,14 @@ void menu_loop(void)
 
       if(g_extern.console.rmenu.mode == MODE_EMULATION && !(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
       {
-         SET_TIMER_EXPIRATION(device_ptr, 0, 30);
+         SET_TIMER_EXPIRATION(0, 30);
       }
 
       const char *message = msg_queue_pull(g_extern.msg_queue);
 
       if (message)
       {
-         xdk_render_msg(device_ptr, message);
+         device_ptr->font_ctx->render_msg(device_ptr, message);
       }
 
       device_ptr->ctx_driver->swap_buffers();
