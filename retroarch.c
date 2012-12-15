@@ -2735,6 +2735,29 @@ error:
    return 1;
 }
 
+static inline bool rarch_main_paused(void)
+{
+   return g_extern.is_paused && !g_extern.is_oneshot;
+}
+
+static bool rarch_main_idle_iterate(void)
+{
+#ifdef HAVE_COMMAND
+   if (driver.command)
+      rarch_cmd_pre_frame(driver.command);
+#endif
+
+   if (input_key_pressed_func(RARCH_QUIT_KEY) ||
+         !video_alive_func())
+      return false;
+
+   do_state_checks();
+
+   input_poll();
+   rarch_sleep(10);
+   return true;
+}
+
 bool rarch_main_iterate(void)
 {
 #ifdef HAVE_DYLIB
@@ -2753,7 +2776,7 @@ bool rarch_main_iterate(void)
    }
 
 #ifdef ANDROID
-   if(g_android.activity_paused)
+   if (g_android.activity_paused)
       return android_run_events(g_android.app);
 #endif
 
@@ -2765,7 +2788,7 @@ bool rarch_main_iterate(void)
       g_extern.console.rmenu.state.rmenu.enable = input_key_pressed_func(RARCH_RMENU_TOGGLE);
       g_extern.console.rmenu.state.ingame_menu.enable = input_key_pressed_func(RARCH_RMENU_QUICKMENU_TOGGLE); 
 
-      if(g_extern.console.rmenu.state.rmenu.enable || (g_extern.console.rmenu.state.ingame_menu.enable && !g_extern.console.rmenu.state.rmenu.enable))
+      if (g_extern.console.rmenu.state.rmenu.enable || (g_extern.console.rmenu.state.ingame_menu.enable && !g_extern.console.rmenu.state.rmenu.enable))
       {
          g_extern.console.rmenu.mode = MODE_MENU;
          SET_TIMER_EXPIRATION(0, 30);
@@ -2783,47 +2806,35 @@ bool rarch_main_iterate(void)
    do_state_checks();
 
    // Run libretro for one frame.
-#if !defined(RARCH_PERFORMANCE_MODE) // On consoles pausing is handled better elsewhere.
-   if (!g_extern.is_paused || g_extern.is_oneshot)
-#endif
-   {
 #ifdef HAVE_THREADS
-      lock_autosave();
+   lock_autosave();
 #endif
 
 #ifdef HAVE_NETPLAY
-      if (g_extern.netplay)
-         netplay_pre_frame(g_extern.netplay);
+   if (g_extern.netplay)
+      netplay_pre_frame(g_extern.netplay);
 #endif
 
 #ifdef HAVE_BSV_MOVIE
-      if (g_extern.bsv.movie)
-         bsv_movie_set_frame_start(g_extern.bsv.movie);
+   if (g_extern.bsv.movie)
+      bsv_movie_set_frame_start(g_extern.bsv.movie);
 #endif
 
-      pretro_run();
-      g_extern.frame_count++;
+   pretro_run();
+   g_extern.frame_count++;
 
 #ifdef HAVE_BSV_MOVIE
-      if (g_extern.bsv.movie)
-         bsv_movie_set_frame_end(g_extern.bsv.movie);
+   if (g_extern.bsv.movie)
+      bsv_movie_set_frame_end(g_extern.bsv.movie);
 #endif
 
 #ifdef HAVE_NETPLAY
-      if (g_extern.netplay)
-         netplay_post_frame(g_extern.netplay);
+   if (g_extern.netplay)
+      netplay_post_frame(g_extern.netplay);
 #endif
 
 #ifdef HAVE_THREADS
-      unlock_autosave();
-#endif
-   }
-#if !defined(RARCH_PERFORMANCE_MODE)
-   else
-   {
-      input_poll();
-      rarch_sleep(10);
-   }
+   unlock_autosave();
 #endif
 
 #ifdef HAVE_RMENU
@@ -2888,7 +2899,7 @@ int rarch_main(int argc, char *argv[])
    int init_ret;
    if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
    rarch_init_msg_queue();
-   while (rarch_main_iterate());
+   while (rarch_main_paused() ? rarch_main_idle_iterate() : rarch_main_iterate());
    rarch_main_deinit();
    rarch_deinit_msg_queue();
 
