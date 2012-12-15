@@ -398,7 +398,7 @@ SCREENSHOTS
 /*============================================================
 MENU
 ============================================================ */
-#ifdef HAVE_RMENU
+#if defined(HAVE_RMENU_GUI)
 #include "../rmenu/rmenu_stack.c"
 #include "../rmenu/rmenu.c"
 #endif

@@ -2755,7 +2755,19 @@ bool rarch_main_iterate(void)
    // Time to drop?
    if (input_key_pressed_func(RARCH_QUIT_KEY) ||
          !video_alive_func())
+   {
+#ifdef HAVE_RMENU
+      g_extern.console.rmenu.state.rmenu.enable = input_key_pressed_func(RARCH_RMENU_TOGGLE);
+      g_extern.console.rmenu.state.ingame_menu.enable = input_key_pressed_func(RARCH_RMENU_QUICKMENU_TOGGLE); 
+
+      if(g_extern.console.rmenu.state.rmenu.enable || (g_extern.console.rmenu.state.ingame_menu.enable && !g_extern.console.rmenu.state.rmenu.enable))
+      {
+         g_extern.console.rmenu.mode = MODE_MENU;
+         SET_TIMER_EXPIRATION(0, 30);
+      }
+#endif
       return false;
+   }
 
 #ifdef HAVE_COMMAND
    if (driver.command)

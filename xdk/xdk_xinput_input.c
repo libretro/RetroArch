@@ -199,6 +199,22 @@ static void xdk_input_poll(void *data)
       }
    }
 #endif
+
+   g_extern.lifecycle_state &= ~((1ULL << RARCH_QUIT_KEY) | (1ULL << RARCH_RMENU_TOGGLE) | (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE));
+
+   if(IS_TIMER_EXPIRED(0))
+   {
+      if((state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
+      {
+         g_extern.lifecycle_state |= (1ULL << RARCH_RMENU_TOGGLE);
+         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+      }
+      if(!(state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
+      {
+         g_extern.lifecycle_state |= (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE);
+         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+      }
+   }
 }
 
 static int16_t xdk_input_state(void *data, const struct retro_keybind **binds,
@@ -312,8 +328,9 @@ static void xdk_input_post_init(void)
 static bool xdk_input_key_pressed(void *data, int key)
 {
    (void)data;
-   bool retval = false;
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
+   if(g_extern.lifecycle_state & (1ULL << key))
+      return true;
    
    switch(key)
    {
@@ -337,26 +354,11 @@ static bool xdk_input_key_pressed(void *data, int key)
          return false;
       case RARCH_REWIND:
          return ((state[0] & XINPUT1_GAMEPAD_RSTICK_UP_MASK) && !(state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
-      case RARCH_QUIT_KEY:
-         if(IS_TIMER_EXPIRED(0))
-         {
-            uint32_t left_thumb_pressed = (state[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L3));
-            uint32_t right_thumb_pressed = (state[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R3));
-
-            g_extern.console.rmenu.state.rmenu.enable = right_thumb_pressed && left_thumb_pressed && IS_TIMER_EXPIRED(0);
-            g_extern.console.rmenu.state.ingame_menu.enable = right_thumb_pressed && !left_thumb_pressed;
-            
-            if(g_extern.console.rmenu.state.rmenu.enable || (g_extern.console.rmenu.state.ingame_menu.enable && !g_extern.console.rmenu.state.rmenu.enable))
-            {
-               g_extern.console.rmenu.mode = MODE_MENU;
-               SET_TIMER_EXPIRATION(0, 30);
-               retval = g_extern.console.rmenu.state.rmenu.enable;
-            }
-            retval = g_extern.console.rmenu.state.ingame_menu.enable ? g_extern.console.rmenu.state.ingame_menu.enable : g_extern.console.rmenu.state.rmenu.enable;
-         }
+      default:
+         return false;
    }
 
-   return retval;
+   return false;
 }
 
 const input_driver_t input_xinput = 

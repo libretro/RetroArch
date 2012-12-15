@@ -179,7 +179,8 @@ static void ps3_input_poll(void *data)
       }
    }
 
-   g_extern.lifecycle_state &= ~((1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_REWIND));
+   g_extern.lifecycle_state &= ~((1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_REWIND)
+         | (1ULL << RARCH_QUIT_KEY) | (1ULL << RARCH_RMENU_TOGGLE) | (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE));
 
    if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN)) && !(state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
       g_extern.lifecycle_state |= (1ULL << RARCH_FAST_FORWARD_HOLD_KEY);
@@ -193,6 +194,19 @@ static void ps3_input_poll(void *data)
       g_extern.lifecycle_state |= (1ULL << RARCH_STATE_SLOT_MINUS);
    if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)) && !(state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
       g_extern.lifecycle_state |= (1ULL << RARCH_REWIND);
+   if(IS_TIMER_EXPIRED(0))
+   {
+      if((state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
+      {
+         g_extern.lifecycle_state |= (1ULL << RARCH_RMENU_TOGGLE);
+         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+      }
+      if(!(state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
+      {
+         g_extern.lifecycle_state |= (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE);
+         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+      }
+   }
 
    cellPadGetInfo2(&pad_info);
    pads_connected = pad_info.now_connect; 
@@ -456,27 +470,6 @@ static bool ps3_input_key_pressed(void *data, int key)
             g_extern.console.rmenu.mode = MODE_MENU;
          }
          return false;
-      case RARCH_QUIT_KEY:
-#ifdef HAVE_RMENU
-         if(IS_TIMER_EXPIRED(0))
-         {
-            uint32_t r3_pressed = state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
-            uint32_t l3_pressed = state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
-            bool retval = false;
-            g_extern.console.rmenu.state.rmenu.enable = (r3_pressed && l3_pressed && IS_TIMER_EXPIRED(0));
-            g_extern.console.rmenu.state.ingame_menu.enable = r3_pressed && !l3_pressed;
-
-            if(g_extern.console.rmenu.state.rmenu.enable || (g_extern.console.rmenu.state.ingame_menu.enable && !g_extern.console.rmenu.state.rmenu.enable))
-            {
-               g_extern.console.rmenu.mode = MODE_MENU;
-               SET_TIMER_EXPIRATION(0, 30);
-               retval = g_extern.console.rmenu.state.rmenu.enable;
-            }
-
-            retval = g_extern.console.rmenu.state.ingame_menu.enable ? g_extern.console.rmenu.state.ingame_menu.enable : g_extern.console.rmenu.state.rmenu.enable;
-            return retval;
-         }
-#endif
       default:
          return false;
    }
