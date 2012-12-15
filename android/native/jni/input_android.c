@@ -283,7 +283,9 @@ static void android_input_poll(void *data)
    // Process this event.
    while(id >= 0)
    {
-      if(id == LOOPER_ID_INPUT)
+      bool looper_input_do = id == LOOPER_ID_INPUT;
+
+      if(looper_input_do && AInputQueue_hasEvents(android_app->inputQueue))
       {
          AInputEvent* event = NULL;
          AInputQueue_getEvent(android_app->inputQueue, &event);
@@ -298,7 +300,7 @@ static void android_input_poll(void *data)
 
          int motion_action = AMotionEvent_getAction(event);
          bool motion_do = ((motion_action == AMOTION_EVENT_ACTION_DOWN) || (motion_action ==
-               AMOTION_EVENT_ACTION_POINTER_DOWN) || (motion_action == AMOTION_EVENT_ACTION_MOVE));
+                  AMOTION_EVENT_ACTION_POINTER_DOWN) || (motion_action == AMOTION_EVENT_ACTION_MOVE));
 
          if(type == AINPUT_EVENT_TYPE_MOTION && motion_do)
          {
@@ -336,10 +338,9 @@ static void android_input_poll(void *data)
                handled = 0;
             }
          }
-
          AInputQueue_finishEvent(android_app->inputQueue, event, handled);
       }
-      else
+      else if(!looper_input_do)
       {
          int8_t cmd;
 
