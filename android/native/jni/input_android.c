@@ -87,18 +87,18 @@ static void setup_keycode_lut(void)
     * builtinKeyboard=false
     */
 
-   keycode_lut[AKEYCODE_BUTTON_2] = (1 << RETRO_DEVICE_ID_JOYPAD_B);
-   keycode_lut[AKEYCODE_BUTTON_1] = (1 << RETRO_DEVICE_ID_JOYPAD_Y);
-   keycode_lut[AKEYCODE_BUTTON_9] = (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
-   keycode_lut[AKEYCODE_BUTTON_10] = (1 << RETRO_DEVICE_ID_JOYPAD_START);
-   keycode_lut[AKEYCODE_BUTTON_3] = (1 << RETRO_DEVICE_ID_JOYPAD_A);
-   keycode_lut[AKEYCODE_BUTTON_4] = (1 << RETRO_DEVICE_ID_JOYPAD_X);
-   keycode_lut[AKEYCODE_BUTTON_5] = (1 << RETRO_DEVICE_ID_JOYPAD_L);
-   keycode_lut[AKEYCODE_BUTTON_6] = (1 << RETRO_DEVICE_ID_JOYPAD_R);
-   keycode_lut[AKEYCODE_BUTTON_7] = (1 << RETRO_DEVICE_ID_JOYPAD_L2);
-   keycode_lut[AKEYCODE_BUTTON_8] = (1 << RETRO_DEVICE_ID_JOYPAD_R2);
-   keycode_lut[AKEYCODE_BUTTON_11] = (1 << RETRO_DEVICE_ID_JOYPAD_L3);
-   keycode_lut[AKEYCODE_BUTTON_12] = (1 << RETRO_DEVICE_ID_JOYPAD_R3);
+   keycode_lut[AKEYCODE_BUTTON_2] = (1ULL << RETRO_DEVICE_ID_JOYPAD_B);
+   keycode_lut[AKEYCODE_BUTTON_1] = (1ULL << RETRO_DEVICE_ID_JOYPAD_Y);
+   keycode_lut[AKEYCODE_BUTTON_9] = (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT);
+   keycode_lut[AKEYCODE_BUTTON_10] = (1ULL << RETRO_DEVICE_ID_JOYPAD_START);
+   keycode_lut[AKEYCODE_BUTTON_3] = (1ULL << RETRO_DEVICE_ID_JOYPAD_A);
+   keycode_lut[AKEYCODE_BUTTON_4] = (1ULL << RETRO_DEVICE_ID_JOYPAD_X);
+   keycode_lut[AKEYCODE_BUTTON_5] = (1ULL << RETRO_DEVICE_ID_JOYPAD_L);
+   keycode_lut[AKEYCODE_BUTTON_6] = (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
+   keycode_lut[AKEYCODE_BUTTON_7] = (1ULL << RETRO_DEVICE_ID_JOYPAD_L2);
+   keycode_lut[AKEYCODE_BUTTON_8] = (1ULL << RETRO_DEVICE_ID_JOYPAD_R2);
+   keycode_lut[AKEYCODE_BUTTON_11] = (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
+   keycode_lut[AKEYCODE_BUTTON_12] = (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
 
    /* Control scheme 2
     * Tested with: SNES Pad USB converter
@@ -112,14 +112,14 @@ static void setup_keycode_lut(void)
     * builtinKeyboard=false
     */
 
-   keycode_lut[AKEYCODE_BUTTON_C] = (1 << RETRO_DEVICE_ID_JOYPAD_B);
-   keycode_lut[AKEYCODE_BUTTON_X] = (1 << RETRO_DEVICE_ID_JOYPAD_Y);
-   keycode_lut[AKEYCODE_BUTTON_L2] = (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
-   keycode_lut[AKEYCODE_BUTTON_R2] = (1 << RETRO_DEVICE_ID_JOYPAD_START);
-   keycode_lut[AKEYCODE_BUTTON_B] = (1 << RETRO_DEVICE_ID_JOYPAD_A);
-   keycode_lut[AKEYCODE_BUTTON_A] = (1 << RETRO_DEVICE_ID_JOYPAD_X);
-   keycode_lut[AKEYCODE_BUTTON_L1] = (1 << RETRO_DEVICE_ID_JOYPAD_L);
-   keycode_lut[AKEYCODE_BUTTON_R1] = (1 << RETRO_DEVICE_ID_JOYPAD_R);
+   keycode_lut[AKEYCODE_BUTTON_C] = (1ULL << RETRO_DEVICE_ID_JOYPAD_B);
+   keycode_lut[AKEYCODE_BUTTON_X] = (1ULL << RETRO_DEVICE_ID_JOYPAD_Y);
+   keycode_lut[AKEYCODE_BUTTON_L2] = (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT);
+   keycode_lut[AKEYCODE_BUTTON_R2] = (1ULL << RETRO_DEVICE_ID_JOYPAD_START);
+   keycode_lut[AKEYCODE_BUTTON_B] = (1ULL << RETRO_DEVICE_ID_JOYPAD_A);
+   keycode_lut[AKEYCODE_BUTTON_A] = (1ULL << RETRO_DEVICE_ID_JOYPAD_X);
+   keycode_lut[AKEYCODE_BUTTON_L1] = (1ULL << RETRO_DEVICE_ID_JOYPAD_L);
+   keycode_lut[AKEYCODE_BUTTON_R1] = (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
 
    /* Control scheme 3
     * fd=196
@@ -202,18 +202,18 @@ static void setup_keycode_lut(void)
     * TODO: Map L2/R2/L3/R3
     * */
 
-   keycode_lut[AKEYCODE_Z] = (1 << RETRO_DEVICE_ID_JOYPAD_B);
-   keycode_lut[AKEYCODE_A] = (1 << RETRO_DEVICE_ID_JOYPAD_Y);
-   keycode_lut[AKEYCODE_SHIFT_RIGHT] = (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
-   keycode_lut[AKEYCODE_ENTER] = (1 << RETRO_DEVICE_ID_JOYPAD_START);
-   keycode_lut[AKEYCODE_DPAD_UP] = (1 << RETRO_DEVICE_ID_JOYPAD_UP);
-   keycode_lut[AKEYCODE_DPAD_DOWN] = (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
-   keycode_lut[AKEYCODE_DPAD_LEFT] = (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
-   keycode_lut[AKEYCODE_DPAD_RIGHT] = (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
-   keycode_lut[AKEYCODE_X] = (1 << RETRO_DEVICE_ID_JOYPAD_A);
-   keycode_lut[AKEYCODE_S] = (1 << RETRO_DEVICE_ID_JOYPAD_X);
-   keycode_lut[AKEYCODE_Q] = (1 << RETRO_DEVICE_ID_JOYPAD_L);
-   keycode_lut[AKEYCODE_W] = (1 << RETRO_DEVICE_ID_JOYPAD_R);
+   keycode_lut[AKEYCODE_Z] = (1ULL << RETRO_DEVICE_ID_JOYPAD_B);
+   keycode_lut[AKEYCODE_A] = (1ULL << RETRO_DEVICE_ID_JOYPAD_Y);
+   keycode_lut[AKEYCODE_SHIFT_RIGHT] = (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT);
+   keycode_lut[AKEYCODE_ENTER] = (1ULL << RETRO_DEVICE_ID_JOYPAD_START);
+   keycode_lut[AKEYCODE_DPAD_UP] = (1ULL << RETRO_DEVICE_ID_JOYPAD_UP);
+   keycode_lut[AKEYCODE_DPAD_DOWN] = (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN);
+   keycode_lut[AKEYCODE_DPAD_LEFT] = (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT);
+   keycode_lut[AKEYCODE_DPAD_RIGHT] = (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+   keycode_lut[AKEYCODE_X] = (1ULL << RETRO_DEVICE_ID_JOYPAD_A);
+   keycode_lut[AKEYCODE_S] = (1ULL << RETRO_DEVICE_ID_JOYPAD_X);
+   keycode_lut[AKEYCODE_Q] = (1ULL << RETRO_DEVICE_ID_JOYPAD_L);
+   keycode_lut[AKEYCODE_W] = (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
 
    /* Misc control scheme */
    keycode_lut[AKEYCODE_BACK] = (1ULL << RARCH_QUIT_KEY);
@@ -244,22 +244,22 @@ static void *android_input_init(void)
 
    for(int player = 0; player < 4; player++)
    {
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_B].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_B);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_Y].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_Y);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_START].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_START);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_UP].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_UP);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_A].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_A);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_X].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_X);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_L);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_R);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L2].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_L2);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R2].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_R2);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L3].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_L3);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1 << RETRO_DEVICE_ID_JOYPAD_R3);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_B].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_B);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_Y].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_Y);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_START].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_START);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_UP].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_UP);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_A].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_A);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_X].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_X);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L2);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R2);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
    }
 
    for(int i = 0; i < MAX_DEVICE_IDS; i++)
@@ -303,12 +303,12 @@ static void android_input_poll(void *data)
 #ifdef RARCH_INPUT_DEBUG
             RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, pad: %d, x: %f, y: %f.\n", i, x, y);
 #endif
-            state[i] &= ~((1 << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
-                  (1 << RETRO_DEVICE_ID_JOYPAD_UP) | (1 << RETRO_DEVICE_ID_JOYPAD_DOWN));
-            state[i] |= PRESSED_LEFT(x, y)  ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
-            state[i] |= PRESSED_RIGHT(x, y) ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-            state[i] |= PRESSED_UP(x, y)    ? (1 << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
-            state[i] |= PRESSED_DOWN(x, y)  ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+            state[i] &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
+                  (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
+            state[i] |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
+            state[i] |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+            state[i] |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
+            state[i] |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
          }
          else 
          {
@@ -317,7 +317,7 @@ static void android_input_poll(void *data)
 #ifdef RARCH_INPUT_DEBUG
             RARCH_LOG("Keycode RetroPad %d : %d.\n", i, keycode);
 #endif
-            if(input_state < (1 << RARCH_FIRST_META_KEY))
+            if(input_state < (1ULL << RARCH_FIRST_META_KEY))
             {
                int action  = AKeyEvent_getAction(event);
 

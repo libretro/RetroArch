@@ -295,11 +295,11 @@ static bool rmenu_iterate(void)
       for (unsigned i = 0; i < GX_DEVICE_NAV_LAST; i++)
       {
          input_state |= input_gx.input_state(NULL, gx_nav_binds, 0,
-               RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
+               RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
       }
 
       uint16_t trigger_state = input_state & ~old_input_state;
-      bool do_held = (input_state & ((1 << GX_DEVICE_NAV_UP) | (1 << GX_DEVICE_NAV_DOWN) | (1 << GX_DEVICE_NAV_LEFT) | (1 << GX_DEVICE_NAV_RIGHT))) && !(input_state & ((1 << GX_DEVICE_NAV_MENU) | (1 << GX_DEVICE_NAV_QUIT)));
+      bool do_held = (input_state & ((1ULL << GX_DEVICE_NAV_UP) | (1ULL << GX_DEVICE_NAV_DOWN) | (1ULL << GX_DEVICE_NAV_LEFT) | (1ULL << GX_DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << GX_DEVICE_NAV_MENU) | (1ULL << GX_DEVICE_NAV_QUIT)));
 
       if(do_held)
       {
@@ -328,21 +328,21 @@ static bool rmenu_iterate(void)
       // don't run anything first frame, only capture held inputs for old_input_state
       if (!first)
       {
-         if (trigger_state & (1 << GX_DEVICE_NAV_UP))
+         if (trigger_state & (1ULL << GX_DEVICE_NAV_UP))
             action = RGUI_ACTION_UP;
-         else if (trigger_state & (1 << GX_DEVICE_NAV_DOWN))
+         else if (trigger_state & (1ULL << GX_DEVICE_NAV_DOWN))
             action = RGUI_ACTION_DOWN;
-         else if (trigger_state & (1 << GX_DEVICE_NAV_LEFT))
+         else if (trigger_state & (1ULL << GX_DEVICE_NAV_LEFT))
             action = RGUI_ACTION_LEFT;
-         else if (trigger_state & (1 << GX_DEVICE_NAV_RIGHT))
+         else if (trigger_state & (1ULL << GX_DEVICE_NAV_RIGHT))
             action = RGUI_ACTION_RIGHT;
-         else if (trigger_state & (1 << GX_DEVICE_NAV_B))
+         else if (trigger_state & (1ULL << GX_DEVICE_NAV_B))
             action = RGUI_ACTION_CANCEL;
-         else if (trigger_state & (1 << GX_DEVICE_NAV_A))
+         else if (trigger_state & (1ULL << GX_DEVICE_NAV_A))
             action = RGUI_ACTION_OK;
-         else if (trigger_state & (1 << GX_DEVICE_NAV_START))
+         else if (trigger_state & (1ULL << GX_DEVICE_NAV_START))
             action = RGUI_ACTION_START;
-         else if (trigger_state & (1 << GX_DEVICE_NAV_SELECT))
+         else if (trigger_state & (1ULL << GX_DEVICE_NAV_SELECT))
             action = RGUI_ACTION_SETTINGS;
       }
       else
@@ -356,8 +356,8 @@ static bool rmenu_iterate(void)
 
       old_input_state = input_state;
 
-      bool goto_menu_key_pressed = (trigger_state & (1 << GX_DEVICE_NAV_MENU));
-      bool quit_key_pressed = (trigger_state & (1 << GX_DEVICE_NAV_QUIT));
+      bool goto_menu_key_pressed = (trigger_state & (1ULL << GX_DEVICE_NAV_MENU));
+      bool quit_key_pressed = (trigger_state & (1ULL << GX_DEVICE_NAV_QUIT));
 
       if(IS_TIMER_EXPIRED(0))
       {

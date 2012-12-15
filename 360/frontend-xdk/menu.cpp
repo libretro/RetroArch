@@ -104,21 +104,21 @@ static void browser_update(filebrowser_t * b, uint64_t input, const char *extens
    bool ret = true;
    filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
 
-   if (input & (1 << RMENU_DEVICE_NAV_DOWN))
+   if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
       action = FILEBROWSER_ACTION_DOWN;
-   else if (input & (1 << RMENU_DEVICE_NAV_UP))
+   else if (input & (1ULL << RMENU_DEVICE_NAV_UP))
       action = FILEBROWSER_ACTION_UP;
-   else if (input & (1 << RMENU_DEVICE_NAV_RIGHT))
+   else if (input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
       action = FILEBROWSER_ACTION_RIGHT;
-   else if (input & (1 << RMENU_DEVICE_NAV_LEFT))
+   else if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
       action = FILEBROWSER_ACTION_LEFT;
-   else if (input & (1 << RMENU_DEVICE_NAV_R2))
+   else if (input & (1ULL << RMENU_DEVICE_NAV_R2))
       action = FILEBROWSER_ACTION_SCROLL_DOWN;
-   else if (input & (1 << RMENU_DEVICE_NAV_L2))
+   else if (input & (1ULL << RMENU_DEVICE_NAV_L2))
       action = FILEBROWSER_ACTION_SCROLL_UP;
-   else if (input & (1 << RMENU_DEVICE_NAV_A))
+   else if (input & (1ULL << RMENU_DEVICE_NAV_A))
       action = FILEBROWSER_ACTION_CANCEL;
-   else if (input & (1 << RMENU_DEVICE_NAV_START))
+   else if (input & (1ULL << RMENU_DEVICE_NAV_START))
    {
       action = FILEBROWSER_ACTION_RESET;
       filebrowser_set_root(b, default_paths.filesystem_root_dir);
@@ -161,7 +161,7 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
 
    filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), g_extern.console.main_wrap.paths.default_rom_startup_dir);
 
-   uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+   uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
    filebrowser_fetch_directory_entries(&browser, action, &m_romlist, &m_rompathtitle);
 
    return 0;
@@ -183,7 +183,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       else if(browser.current_dir.list->elems[index].attr.b)
       {
          snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(&browser), str_buffer);
-         uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+         uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
          filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), path);
          filebrowser_fetch_directory_entries(&browser, action, &m_romlist, &m_rompathtitle);
       }
@@ -191,14 +191,14 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    else if (hObjPressed == m_dir_game)
    {
       filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), g_extern.console.main_wrap.paths.default_rom_startup_dir);
-      uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+      uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
       filebrowser_fetch_directory_entries(&browser, action, &m_romlist, &m_rompathtitle);
    }
 #ifdef HAVE_HDD_CACHE_PARTITION
    else if (hObjPressed == m_dir_cache)
    {
       filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), "cache:");
-      uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+      uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
       filebrowser_fetch_directory_entries(&browser, action, &m_romlist, &m_rompathtitle);
 
       if (g_extern.console.rmenu.state.msg_info.enable)
@@ -853,7 +853,7 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
    GetChildById(L"XuiTxtRomPath", &m_shaderpathtitle);
 
    filebrowser_set_root_and_ext(&tmp_browser, "cg|CG", "game:\\media\\shaders");
-   uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+   uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
    filebrowser_fetch_directory_entries(&tmp_browser, action, &m_shaderlist, &m_shaderpathtitle);
 
    return 0;
@@ -889,7 +889,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
          convert_wchar_to_char(str_buffer, (const wchar_t *)m_shaderlist.GetText(index), sizeof(str_buffer));
          snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), str_buffer);
          filebrowser_set_root_and_ext(&tmp_browser, "cg|CG", path);
-         uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+         uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
          filebrowser_fetch_directory_entries(&tmp_browser, action, &m_shaderlist, &m_shaderpathtitle);
       }
    }
@@ -906,7 +906,7 @@ HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiTxtRomPath", &m_rompathtitle);
 
    filebrowser_set_root_and_ext(&tmp_browser, "xex|XEX", "game:");
-   uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+   uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
    filebrowser_fetch_directory_entries(&tmp_browser, action, &m_romlist, &m_rompathtitle);
 
    return 0;
@@ -929,7 +929,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       {
          snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), str_buffer);
          filebrowser_set_root_and_ext(&tmp_browser, "xex|XEX", path);
-         uint64_t action = (1 << RMENU_DEVICE_NAV_B);
+         uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
          filebrowser_fetch_directory_entries(&tmp_browser, action, &m_romlist, &m_rompathtitle);
       }
    }
