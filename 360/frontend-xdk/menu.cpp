@@ -1179,9 +1179,6 @@ bool rmenu_iterate(void)
 
    g_extern.console.rmenu.mode = rmenu_enable ? MODE_MENU : MODE_EMULATION;
 
-   if(g_extern.console.rmenu.mode == MODE_EMULATION || g_extern.console.rmenu.mode == MODE_EXIT)
-      goto deinit;
-
    switch(g_extern.console.rmenu.input_loop)
    {
       case INPUT_LOOP_FILEBROWSER:
@@ -1208,6 +1205,8 @@ bool rmenu_iterate(void)
    hr = app.Render();   /* Render XUI */
    hr = XuiTimersRun(); /* Update XUI timers */
 
+   if(g_extern.console.rmenu.mode == MODE_EMULATION || g_extern.console.rmenu.mode == MODE_EXIT)
+      goto deinit;
 
    const char *message = msg_queue_pull(g_extern.msg_queue);
 
