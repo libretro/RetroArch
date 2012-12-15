@@ -18,6 +18,9 @@
 #include "d3d_font.h"
 #include "../../general.h"
 
+static XFONT *debug_font;
+static D3DSurface *pFrontBuffer;
+
 static bool xfonts_init_font(void *data, const char *font_path, unsigned font_size)
 {
    (void)font_path;
@@ -25,11 +28,11 @@ static bool xfonts_init_font(void *data, const char *font_path, unsigned font_si
 
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
-   XFONT_OpenDefaultFont(&d3d->debug_font);
-   d3d->debug_font->SetBkMode(XFONT_TRANSPARENT);
-   d3d->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
-   d3d->debug_font->SetTextHeight(14);
-   d3d->debug_font->SetTextAntialiasLevel(d3d->debug_font->GetTextAntialiasLevel());
+   XFONT_OpenDefaultFont(&debug_font);
+   debug_font->SetBkMode(XFONT_TRANSPARENT);
+   debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
+   debug_font->SetTextHeight(14);
+   debug_font->SetTextAntialiasLevel(debug_font->GetTextAntialiasLevel());
 
    return true;
 }
@@ -43,13 +46,13 @@ static void xfonts_render_msg_place(void *data, float x, float y, float scale, u
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
-   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
+   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &pFrontBuffer);
 
    wchar_t str[256];
    convert_char_to_wchar(str, msg, sizeof(str));
-   d3d->debug_font->TextOut(d3d->pFrontBuffer, str, (unsigned)-1, x, y);
+   debug_font->TextOut(pFrontBuffer, str, (unsigned)-1, x, y);
 
-   d3d->pFrontBuffer->Release();
+   pFrontBuffer->Release();
 }
 
 static void xfonts_render_msg(void *data, const char *msg)

@@ -37,7 +37,6 @@
 #include "../xdk/xdk_resources.h"
 
 #if defined(_XBOX1)
-wchar_t strw_buffer[128];
 unsigned font_x, font_y;
 #elif defined(_XBOX360)
 const DWORD g_MapLinearToSrgbGpuFormat[] = 
@@ -805,10 +804,12 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       char buf[128];
 
       snprintf(buf, sizeof(buf), "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
+      if (d3d->font_ctx)
       d3d->font_ctx->render_msg_place(d3d, mem_width, mem_height, 0, 0, buf);
 
       gfx_get_fps(fps_txt, sizeof(fps_txt), true);
-      d3d->font_ctx->render_msg_place(d3d, mem_width, mem_height + 30, 0, 0, fps_txt);
+      if (d3d->font_ctx)
+         d3d->font_ctx->render_msg_place(d3d, mem_width, mem_height + 30, 0, 0, fps_txt);
    }
 
    if (msg

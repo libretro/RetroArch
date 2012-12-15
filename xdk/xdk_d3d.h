@@ -75,10 +75,6 @@ typedef struct xdk_d3d_video
    IDirect3DVertexDeclaration9* v_decl;
 #endif
    const d3d_font_renderer_t *font_ctx;
-#if defined(_XBOX1)
-   XFONT *debug_font;
-   D3DSurface *pBackBuffer, *pFrontBuffer;
-#endif
    D3DFORMAT internal_fmt;
    D3DFORMAT texture_fmt;
    unsigned base_size;
