@@ -217,8 +217,6 @@ FONTS
 #include "../../gfx/fonts/xdk1_xfonts.c"
 #elif defined(_XBOX360)
 #include "../../gfx/fonts/xdk360_fonts.cpp"
-#else
-#include "../../gfx/fonts/null_fonts.c"
 #endif
 
 #endif
