@@ -1202,7 +1202,7 @@ void menu_loop(void)
       hr = app.Render();   /* Render XUI */
       hr = XuiTimersRun(); /* Update XUI timers */
 
-      if(g_extern.console.rmenu.mode == MODE_EMULATION && !g_extern.console.screen.state.frame_advance.enable)
+      if(g_extern.console.rmenu.mode == MODE_EMULATION && !(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
       {
          SET_TIMER_EXPIRATION(device_ptr, 0, 30);
       }

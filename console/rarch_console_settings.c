@@ -51,7 +51,7 @@ void rarch_settings_change(unsigned setting)
          g_settings.audio.rate_control = true;
          break;
       case S_FRAME_ADVANCE:
-         g_extern.console.screen.state.frame_advance.enable = true;
+         g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
          g_extern.console.rmenu.state.rmenu.enable = false;
          g_extern.console.rmenu.mode = MODE_EMULATION;
          break;
@@ -98,7 +98,6 @@ void rarch_settings_change(unsigned setting)
          g_extern.console.rmenu.mode = MODE_EXIT;
          break;
       case S_RETURN_TO_GAME:
-         g_extern.console.screen.state.frame_advance.enable = false;
          g_extern.console.rmenu.state.rmenu.enable = false;
          g_extern.console.rmenu.mode = MODE_EMULATION;
          break;
@@ -394,7 +393,6 @@ void rarch_settings_set_default(void)
    strlcpy(g_extern.console.main_wrap.paths.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.paths.default_savestate_dir));
    g_settings.video.aspect_ratio_idx = 0;
    g_extern.console.block_config_read = true;
-   g_extern.console.screen.state.frame_advance.enable = false;
    g_extern.state_slot = 0;
    g_extern.audio_data.mute = 0;
    g_extern.verbose = true;

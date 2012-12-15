@@ -530,7 +530,6 @@ struct global
 
          struct
          {
-            rarch_boolean_state_t frame_advance;
             rarch_boolean_state_t triple_buffering;
             rarch_boolean_state_t overscan;
             rarch_boolean_state_t flicker_filter;

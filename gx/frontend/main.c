@@ -578,7 +578,7 @@ begin_loop:
 
       do{
          repeat = rarch_main_iterate();
-      }while(repeat && !g_extern.console.screen.state.frame_advance.enable);
+      }while(repeat);
 
       audio_stop_func();
    }

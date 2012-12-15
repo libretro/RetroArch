@@ -2373,7 +2373,7 @@ void menu_loop(void)
 
       // set a timer delay so that we don't instantly switch back to the menu when
       // press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
-      if(g_extern.console.rmenu.mode == MODE_EMULATION && !g_extern.console.screen.state.frame_advance.enable)
+      if(g_extern.console.rmenu.mode == MODE_EMULATION && !(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
       {
          SET_TIMER_EXPIRATION(0, 30);
       }

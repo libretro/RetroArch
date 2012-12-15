@@ -352,7 +352,7 @@ begin_loop:
 
       do{
          repeat = rarch_main_iterate();
-      }while(repeat && !g_extern.console.screen.state.frame_advance.enable);
+      }while(repeat);
    }
    else if(g_extern.console.rmenu.mode == MODE_MENU)
    {
