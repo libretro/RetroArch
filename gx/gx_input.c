@@ -265,11 +265,10 @@ static void gx_input_post_init(void)
 
 static void gx_input_poll(void *data)
 {
-#ifdef HW_RVL
-   //TODO: Hack, analog stick twitchiness needs to be properly fixed
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
-#endif
    (void)data;
+
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
+
    bool quit_gc = false;
 #ifdef HW_RVL
    bool quit_classic = false;
@@ -465,7 +464,7 @@ static bool gx_input_key_pressed(void *data, int key)
    switch (key)
    {
       case RARCH_QUIT_KEY:
-      if(IS_TIMER_EXPIRED(gx, 0))
+      if(IS_TIMER_EXPIRED(0))
       {
          uint64_t goto_menu_pressed = pad_state[0] & (GX_WIIMOTE_HOME
 #ifdef HW_RVL
@@ -474,13 +473,13 @@ static bool gx_input_key_pressed(void *data, int key)
  );
          uint64_t quit_rarch = pad_state[0] & GX_QUIT_KEY;
          bool retval = false;
-         g_extern.console.rmenu.state.rmenu.enable = ((quit_rarch || goto_menu_pressed) && IS_TIMER_EXPIRED(gx, 0));
+         g_extern.console.rmenu.state.rmenu.enable = ((quit_rarch || goto_menu_pressed));
 
          if(g_extern.console.rmenu.state.rmenu.enable)
          {
             g_extern.console.rmenu.mode = MODE_MENU;
             g_extern.console.rmenu.state.ingame_menu.enable = true;
-            SET_TIMER_EXPIRATION(gx, 0, 30);
+            SET_TIMER_EXPIRATION(0, 30);
          }
 
          if(quit_rarch)
