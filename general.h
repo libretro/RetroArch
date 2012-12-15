@@ -572,9 +572,7 @@ struct global
 #endif
    } console;
 
-#if defined(ANDROID) || defined(HAVE_RMENU)
    uint64_t lifecycle_state;
-#endif
 
    struct
    {

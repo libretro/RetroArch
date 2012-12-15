@@ -459,8 +459,6 @@ static bool gx_input_key_pressed(void *data, int key)
 {
    (void)data;
 
-   gx_video_t *gx = driver.video_data;
-
    switch (key)
    {
       case RARCH_QUIT_KEY:
