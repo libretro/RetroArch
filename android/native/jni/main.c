@@ -260,7 +260,7 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
 
 #define MAX_ARGS 32
 
-static bool android_run_events(struct android_app* android_app)
+bool android_run_events(struct android_app* android_app)
 {
    // Read all pending events.
    int id;
@@ -444,12 +444,7 @@ static void* android_app_entry(void* param)
       RARCH_LOG("RetroArch started.\n");
       rarch_init_msg_queue();
       g_android.last_orient = AConfiguration_getOrientation(android_app->config);
-      while (rarch_main_iterate())
-      {
-         if(g_android.activity_paused)
-            if(!android_run_events(android_app))
-               goto exit;
-      }
+      while(rarch_main_iterate());
       RARCH_LOG("RetroArch stopped.\n");
    }
 
@@ -488,7 +483,7 @@ exit:
 }
 
 
-static void android_app_write_cmd(struct android_app* android_app, int8_t cmd)
+static inline void android_app_write_cmd(struct android_app* android_app, int8_t cmd)
 {
    if (write(android_app->msgwrite, &cmd, sizeof(cmd)) != sizeof(cmd))
       RARCH_ERR("Failure writing android_app cmd: %s\n", strerror(errno));

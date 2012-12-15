@@ -60,5 +60,6 @@ struct jni_out_params_char
 extern struct droid g_android;
 
 void jni_get_char_argv(struct jni_params *params, struct jni_out_params_char *out_params);
+bool android_run_events(struct android_app* android_app);
 
 #endif
