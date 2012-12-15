@@ -393,7 +393,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    xv->colormap = XCreateColormap(xv->display, DefaultRootWindow(xv->display), visualinfo->visual, AllocNone);
    attributes.colormap = xv->colormap;
    attributes.border_pixel = 0;
-   attributes.event_mask = StructureNotifyMask | DestroyNotify | ClientMessage;
+   attributes.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask | DestroyNotify | ClientMessage;
 
    width = video->fullscreen ? ((video->width == 0) ? geom->base_width : video->width) : video->width;
    height = video->fullscreen ? ((video->height == 0) ? geom->base_height : video->height) : video->height;
@@ -715,6 +715,12 @@ static bool xv_alive(void *data)
          case UnmapNotify:
             xv->focus = false;
             break;
+
+         case KeyPress:
+         case KeyRelease:
+            x11_handle_key_event(&event);
+            break;
+
          default:
             break;
       }
