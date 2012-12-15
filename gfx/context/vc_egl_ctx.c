@@ -115,7 +115,7 @@ static void gfx_ctx_update_window_title(bool reset)
 
    char buf[128];
 
-   if (gfx_window_title(buf, sizeof(buf)))
+   if (gfx_get_fps(buf, sizeof(buf), false))
       RARCH_LOG("%s.\n", buf);
 }
 

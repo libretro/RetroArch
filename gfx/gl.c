@@ -1172,7 +1172,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (fps_enable)
    {
       char fps_txt[128];
-      gfx_fps_title(fps_txt, sizeof(fps_txt));
+      gfx_get_fps(fps_txt, sizeof(fps_txt), true);
+
       if (gl->font_ctx)
          gl->font_ctx->render_msg_place(gl, g_settings.video.msg_pos_x, 0.56f, 1.04f, WHITE, fps_txt);
    }

@@ -807,7 +807,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       snprintf(buf, sizeof(buf), "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
       d3d->font_ctx->render_msg_place(d3d, mem_width, mem_height, 0, 0, buf);
 
-      gfx_fps_title(fps_txt, sizeof(fps_txt));
+      gfx_get_fps(fps_txt, sizeof(fps_txt), true);
       d3d->font_ctx->render_msg_place(d3d, mem_width, mem_height + 30, 0, 0, fps_txt);
    }
 

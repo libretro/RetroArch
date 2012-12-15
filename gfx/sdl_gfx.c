@@ -307,7 +307,7 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width, unsigne
       SDL_UnlockSurface(vid->screen);
 
    char buf[128];
-   if (gfx_window_title(buf, sizeof(buf)))
+   if (gfx_get_fps(buf, sizeof(buf), false))
       SDL_WM_SetCaption(buf, NULL);
 
    SDL_Flip(vid->screen);

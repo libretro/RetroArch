@@ -79,7 +79,7 @@ static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, i
    return frames/time;
 }
 
-static bool gfx_get_fps(char *buf, size_t size, bool always_write)
+bool gfx_get_fps(char *buf, size_t size, bool always_write)
 {
    static struct timeval tv;
    static float last_fps;
@@ -122,16 +122,6 @@ static bool gfx_get_fps(char *buf, size_t size, bool always_write)
 void gfx_window_title_reset(void)
 {
    g_extern.frame_count = 0;
-}
-
-bool gfx_window_title(char *buf, size_t size)
-{
-   return gfx_get_fps(buf, size, false);
-}
-
-void gfx_fps_title(char *buf, size_t size)
-{
-   gfx_get_fps(buf, size, true);
 }
 
 #if defined(_WIN32) && !defined(_XBOX)

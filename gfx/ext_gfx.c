@@ -282,7 +282,7 @@ static bool setup_video(ext_t *ext, const video_info_t *video, const input_drive
 
    char title_buf[128];
    gfx_window_title_reset();
-   gfx_window_title(title_buf, sizeof(title_buf));
+   gfx_get_fps(title_buf, sizeof(title_buf), false);
 
    rarch_video_info_t info = {0};
    info.width              = video->width;
