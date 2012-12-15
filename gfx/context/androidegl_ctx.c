@@ -24,7 +24,7 @@
 #include "../../android/native/jni/android_general.h"
 #include "../image.h"
 
-#include "../gl_font.h"
+#include "../fonts/gl_font.h"
 #include <stdint.h>
 
 #if defined(HAVE_RMENU)
@@ -498,13 +498,6 @@ static unsigned gfx_ctx_get_resolution_width(unsigned resolution_id)
    eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &gl_width);
 
    return gl_width;
-}
-
-static void rmenu_ctx_render_msg(float xpos, float ypos, float scale, unsigned color, const char *msg, ...)
-{
-   gl_t *gl = driver.video_data;
-
-   gl_render_msg_place(gl, xpos, ypos, scale, color, msg);
 }
 
 static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)

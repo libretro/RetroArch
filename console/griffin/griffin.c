@@ -211,6 +211,8 @@ FONTS
 
 #if defined(HAVE_LIBDBGFONT)
 #include "../../gfx/fonts/ps_libdbgfont.c"
+#elif defined(HAVE_OPENGL)
+#include "../../gfx/fonts/gl_raster_font.c"
 #elif defined(_XBOX1)
 #include "../../gfx/fonts/xdk1_xfonts.c"
 #elif defined(_XBOX360)
