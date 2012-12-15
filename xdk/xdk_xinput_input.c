@@ -39,46 +39,44 @@ bool bRemoved[MAX_PADS];
 #endif
 
 const struct platform_bind platform_keys[] = {
-   { XINPUT1_GAMEPAD_B, "B button" },
-   { XINPUT1_GAMEPAD_A, "A button" },
-   { XINPUT1_GAMEPAD_Y, "Y button" },
-   { XINPUT1_GAMEPAD_X, "X button" },
-   { XINPUT1_GAMEPAD_DPAD_UP, "D-Pad Up" },
-   { XINPUT1_GAMEPAD_DPAD_DOWN, "D-Pad Down" },
-   { XINPUT1_GAMEPAD_DPAD_LEFT, "D-Pad Left" },
-   { XINPUT1_GAMEPAD_DPAD_RIGHT, "D-Pad Right" },
-   { XINPUT1_GAMEPAD_BACK, "Back button" },
-   { XINPUT1_GAMEPAD_START, "Start button" },
-#if defined(_XBOX1)
-   { XINPUT1_GAMEPAD_WHITE, "White button" },
-#elif defined(_XBOX360)
-   { XINPUT1_GAMEPAD_WHITE, "Right shoulder" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_B), "A button" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_Y), "X button" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT), "Back button" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_START), "Start button" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_UP), "D-Pad Up" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN), "D-Pad Down" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT), "D-Pad Left" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT), "D-Pad Right" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_A), "B button" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_X), "Y button" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_L), "Left trigger" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_R), "Right trigger" },
+#if defined(_XBOX360)
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_L2), "Left shoulder" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_R2), "Right shoulder" },
+#elif defined(_XBOX1)
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_L2), "Black button" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_R2), "White button" },
 #endif
-   { XINPUT1_GAMEPAD_LEFT_TRIGGER, "Left Trigger" },
-   { XINPUT1_GAMEPAD_LEFT_THUMB, "Left Thumb" },
-#if defined(_XBOX1)
-   { XINPUT1_GAMEPAD_BLACK, "Black button" },
-#elif defined(_XBOX360)
-   { XINPUT1_GAMEPAD_BLACK, "Left shoulder" },
-#endif
-   { XINPUT1_GAMEPAD_RIGHT_TRIGGER, "Right Trigger" },
-   { XINPUT1_GAMEPAD_RIGHT_THUMB, "Right Thumb" },
-   { XINPUT1_GAMEPAD_LSTICK_LEFT_MASK, "LStick Left" },
-   { XINPUT1_GAMEPAD_LSTICK_RIGHT_MASK, "LStick Right" },
-   { XINPUT1_GAMEPAD_LSTICK_UP_MASK, "LStick Up" },
-   { XINPUT1_GAMEPAD_LSTICK_DOWN_MASK, "LStick Down" },
-   { XINPUT1_GAMEPAD_DPAD_LEFT | XINPUT1_GAMEPAD_LSTICK_LEFT_MASK, "LStick D-Pad Left" },
-   { XINPUT1_GAMEPAD_DPAD_RIGHT | XINPUT1_GAMEPAD_LSTICK_RIGHT_MASK, "LStick D-Pad Right" },
-   { XINPUT1_GAMEPAD_DPAD_UP | XINPUT1_GAMEPAD_LSTICK_UP_MASK, "LStick D-Pad Up" },
-   { XINPUT1_GAMEPAD_DPAD_DOWN | XINPUT1_GAMEPAD_LSTICK_DOWN_MASK, "LStick D-Pad Down" },
-   { XINPUT1_GAMEPAD_RSTICK_LEFT_MASK, "RStick Left" },
-   { XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK, "RStick Right" },
-   { XINPUT1_GAMEPAD_RSTICK_UP_MASK, "RStick Up" },
-   { XINPUT1_GAMEPAD_RSTICK_DOWN_MASK, "RStick Down" },
-   { XINPUT1_GAMEPAD_DPAD_LEFT | XINPUT1_GAMEPAD_RSTICK_LEFT_MASK, "RStick D-Pad Left" },
-   { XINPUT1_GAMEPAD_DPAD_RIGHT | XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK, "RStick D-Pad Right" },
-   { XINPUT1_GAMEPAD_DPAD_UP | XINPUT1_GAMEPAD_RSTICK_UP_MASK, "RStick D-Pad Up" },
-   { XINPUT1_GAMEPAD_DPAD_DOWN | XINPUT1_GAMEPAD_RSTICK_DOWN_MASK, "RStick D-Pad Down" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_L3), "Left thumb" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_R3), "Right thumb" },
+   { (1ULL << RARCH_TURBO_ENABLE), "Turbo button (Unmapped)" },
+   { (1ULL << RARCH_ANALOG_LEFT_X_PLUS), "LStick Left" },
+   { (1ULL << RARCH_ANALOG_LEFT_X_MINUS), "LStick Right" },
+   { (1ULL << RARCH_ANALOG_LEFT_Y_PLUS), "LStick Up" },
+   { (1ULL << RARCH_ANALOG_LEFT_Y_MINUS), "LStick Down" },
+   { (1ULL << RARCH_ANALOG_RIGHT_X_PLUS), "RStick Left" },
+   { (1ULL << RARCH_ANALOG_RIGHT_X_MINUS), "RStick Right" },
+   { (1ULL << RARCH_ANALOG_RIGHT_Y_PLUS), "RStick Up" },
+   { (1ULL << RARCH_ANALOG_RIGHT_Y_MINUS), "RStick Down" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT), "LStick D-Pad Left" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) | (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT), "LStick D-Pad Right" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP), "LStick D-Pad Up" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN), "LStick D-Pad Down" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT), "RStick D-Pad Left" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) | (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT), "RStick D-Pad Right" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP), "RStick D-Pad Up" },
+   { (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) | (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN), "RStick D-Pad Down" },
 };
 
 const unsigned int platform_keys_size = sizeof(platform_keys);
@@ -136,30 +134,30 @@ static void xdk_input_poll(void *data)
          if(retval == ERROR_SUCCESS)
          {
             pads_connected++;
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_B]) ? XINPUT1_GAMEPAD_B : 0);
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A]) ? XINPUT1_GAMEPAD_A : 0);
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_Y]) ? XINPUT1_GAMEPAD_Y : 0);
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X]) ? XINPUT1_GAMEPAD_X : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? XINPUT1_GAMEPAD_DPAD_LEFT : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? XINPUT1_GAMEPAD_DPAD_RIGHT : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? XINPUT1_GAMEPAD_DPAD_UP : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? XINPUT1_GAMEPAD_DPAD_DOWN : 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_LEFT_MASK : 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_RIGHT_MASK : 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_UP_MASK : 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_DOWN_MASK : 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_LEFT_MASK : 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK : 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_UP_MASK : 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_DOWN_MASK : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_START) ? XINPUT1_GAMEPAD_START : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? XINPUT1_GAMEPAD_BACK : 0);
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER]) ? XINPUT1_GAMEPAD_LEFT_TRIGGER : 0);
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER]) ? XINPUT1_GAMEPAD_RIGHT_TRIGGER : 0);
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_WHITE]) ? XINPUT1_GAMEPAD_WHITE : 0);
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_BLACK]) ? XINPUT1_GAMEPAD_BLACK : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? XINPUT1_GAMEPAD_LEFT_THUMB : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? XINPUT1_GAMEPAD_RIGHT_THUMB : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_B]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_Y]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT): 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT) : 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP) : 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN) : 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT) : 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT) : 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP) : 0);
+            state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN) : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_START) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_WHITE]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0);
+            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_BLACK]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L3) : 0);
+            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R3) : 0);
          }
       }
    }
@@ -172,36 +170,49 @@ static void xdk_input_poll(void *data)
          retval = XInputGetState(i, &state_tmp);
          pads_connected += (retval == ERROR_DEVICE_NOT_CONNECTED) ? 0 : 1;
          state[i] = 0;
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_B) ? XINPUT1_GAMEPAD_B : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_A) ? XINPUT1_GAMEPAD_A : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_Y) ? XINPUT1_GAMEPAD_Y : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_X) ? XINPUT1_GAMEPAD_X : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? XINPUT1_GAMEPAD_DPAD_LEFT : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? XINPUT1_GAMEPAD_DPAD_RIGHT : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? XINPUT1_GAMEPAD_DPAD_UP : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? XINPUT1_GAMEPAD_DPAD_DOWN : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_LEFT_MASK : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_RIGHT_MASK : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_UP_MASK : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE) ? XINPUT1_GAMEPAD_LSTICK_DOWN_MASK : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_LEFT_MASK : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_UP_MASK : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE) ? XINPUT1_GAMEPAD_RSTICK_DOWN_MASK : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_START) ? XINPUT1_GAMEPAD_START : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? XINPUT1_GAMEPAD_BACK : 0);
-         state[i] |= ((state_tmp.Gamepad.bLeftTrigger > 128) ? XINPUT1_GAMEPAD_LEFT_TRIGGER : 0);
-         state[i] |= ((state_tmp.Gamepad.bRightTrigger > 128) ? XINPUT1_GAMEPAD_RIGHT_TRIGGER : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) ? XINPUT1_GAMEPAD_WHITE : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) ? XINPUT1_GAMEPAD_BLACK : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? XINPUT1_GAMEPAD_LEFT_THUMB : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? XINPUT1_GAMEPAD_RIGHT_THUMB : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_B) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_A) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_Y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_X) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT) : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT) : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP) : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN) : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT) : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT) : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP) : 0);
+         state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN) : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_START) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0);
+         state[i] |= ((state_tmp.Gamepad.bLeftTrigger > 128) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0);
+         state[i] |= ((state_tmp.Gamepad.bRightTrigger > 128) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L3) : 0);
+         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R3) : 0);
       }
    }
 #endif
 
-   g_extern.lifecycle_state &= ~((1ULL << RARCH_QUIT_KEY) | (1ULL << RARCH_RMENU_TOGGLE) | (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE));
+   g_extern.lifecycle_state &= ~((1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_REWIND)
+         | (1ULL << RARCH_QUIT_KEY) | (1ULL << RARCH_RMENU_TOGGLE) | (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE));
 
+   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN)) && !(state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      g_extern.lifecycle_state |= (1ULL << RARCH_FAST_FORWARD_HOLD_KEY);
+   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      g_extern.lifecycle_state |= (1ULL << RARCH_LOAD_STATE_KEY);
+   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      g_extern.lifecycle_state |= (1ULL << RARCH_SAVE_STATE_KEY);
+   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      g_extern.lifecycle_state |= (1ULL << RARCH_STATE_SLOT_PLUS);
+   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      g_extern.lifecycle_state |= (1ULL << RARCH_STATE_SLOT_MINUS);
+   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)) && !(state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      g_extern.lifecycle_state |= (1ULL << RARCH_REWIND);
    if(IS_TIMER_EXPIRED(0))
    {
       if((state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
@@ -238,57 +249,36 @@ static void xdk_set_default_keybind_lut(unsigned device, unsigned port)
    (void)device;
    (void)port;
 
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_B]		= platform_keys[XDK_DEVICE_ID_JOYPAD_A].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_Y]		= platform_keys[XDK_DEVICE_ID_JOYPAD_X].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_SELECT]	= platform_keys[XDK_DEVICE_ID_JOYPAD_BACK].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_START]	= platform_keys[XDK_DEVICE_ID_JOYPAD_START].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_UP]		= platform_keys[XDK_DEVICE_ID_JOYPAD_UP].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_DOWN]	= platform_keys[XDK_DEVICE_ID_JOYPAD_DOWN].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_LEFT]	= platform_keys[XDK_DEVICE_ID_JOYPAD_LEFT].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_RIGHT]	= platform_keys[XDK_DEVICE_ID_JOYPAD_RIGHT].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_A]		= platform_keys[XDK_DEVICE_ID_JOYPAD_B].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_X]		= platform_keys[XDK_DEVICE_ID_JOYPAD_Y].joykey;
-#if defined(_XBOX1)
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[XDK_DEVICE_ID_JOYPAD_LEFT_TRIGGER].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[XDK_DEVICE_ID_JOYPAD_RIGHT_TRIGGER].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = platform_keys[XDK_DEVICE_ID_JOYPAD_LB].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]     = platform_keys[XDK_DEVICE_ID_JOYPAD_RB].joykey;
-#elif defined(_XBOX360)
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[XDK_DEVICE_ID_JOYPAD_LB].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[XDK_DEVICE_ID_JOYPAD_RB].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L2]     = platform_keys[XDK_DEVICE_ID_JOYPAD_LEFT_TRIGGER].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R2]     = platform_keys[XDK_DEVICE_ID_JOYPAD_RIGHT_TRIGGER].joykey;
-#endif
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_L3]     = platform_keys[XDK_DEVICE_ID_LSTICK_THUMB].joykey;
-   rarch_default_keybind_lut[RETRO_DEVICE_ID_JOYPAD_R3]     = platform_keys[XDK_DEVICE_ID_RSTICK_THUMB].joykey;
+   for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+	   rarch_default_keybind_lut[i] = platform_keys[i].joykey;
 }
 
 static void xdk_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
 {
    (void)device;
-   
+
    switch(map_dpad_enum)
    {
       case DPAD_EMULATION_NONE:
-		 g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_NONE;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[XDK_DEVICE_ID_JOYPAD_UP].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[XDK_DEVICE_ID_JOYPAD_DOWN].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[XDK_DEVICE_ID_JOYPAD_LEFT].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[XDK_DEVICE_ID_JOYPAD_RIGHT].joykey;
+         g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_NONE;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_UP].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_DOWN].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_LEFT].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey;
          break;
       case DPAD_EMULATION_LSTICK:
-		 g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_LSTICK;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[XDK_DEVICE_ID_LSTICK_UP_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[XDK_DEVICE_ID_LSTICK_DOWN_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[XDK_DEVICE_ID_LSTICK_LEFT_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[XDK_DEVICE_ID_LSTICK_RIGHT_DPAD].joykey;
+         g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_LSTICK;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RARCH_ANALOG_LEFT_Y_DPAD_UP].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RARCH_ANALOG_LEFT_Y_DPAD_DOWN].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RARCH_ANALOG_LEFT_X_DPAD_LEFT].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RARCH_ANALOG_LEFT_X_DPAD_RIGHT].joykey;
          break;
       case DPAD_EMULATION_RSTICK:
-		 g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_RSTICK;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[XDK_DEVICE_ID_RSTICK_UP_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[XDK_DEVICE_ID_RSTICK_DOWN_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[XDK_DEVICE_ID_RSTICK_LEFT_DPAD].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[XDK_DEVICE_ID_RSTICK_RIGHT_DPAD].joykey;
+         g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_RSTICK;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RARCH_ANALOG_RIGHT_Y_DPAD_UP].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RARCH_ANALOG_RIGHT_Y_DPAD_DOWN].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RARCH_ANALOG_RIGHT_X_DPAD_LEFT].joykey;
+         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RARCH_ANALOG_RIGHT_X_DPAD_RIGHT].joykey;
          break;
    }
 }
@@ -331,24 +321,6 @@ static bool xdk_input_key_pressed(void *data, int key)
 
    if(g_extern.lifecycle_state & (1ULL << key))
       return true;
-   
-   switch(key)
-   {
-      case RARCH_FAST_FORWARD_HOLD_KEY:
-         return ((state[0] & XINPUT1_GAMEPAD_RSTICK_DOWN_MASK) && !(state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
-      case RARCH_LOAD_STATE_KEY:
-         return ((state[0] & XINPUT1_GAMEPAD_RSTICK_UP_MASK) && (state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
-      case RARCH_SAVE_STATE_KEY:
-         return ((state[0] & XINPUT1_GAMEPAD_RSTICK_DOWN_MASK) && (state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
-      case RARCH_STATE_SLOT_PLUS:
-         return ((state[0] & XINPUT1_GAMEPAD_RSTICK_RIGHT_MASK) && (state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
-      case RARCH_STATE_SLOT_MINUS:
-         return ((state[0] & XINPUT1_GAMEPAD_RSTICK_LEFT_MASK) && (state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
-      case RARCH_REWIND:
-         return ((state[0] & XINPUT1_GAMEPAD_RSTICK_UP_MASK) && !(state[0] & XINPUT1_GAMEPAD_RIGHT_TRIGGER));
-      default:
-         return false;
-   }
 
    return false;
 }
