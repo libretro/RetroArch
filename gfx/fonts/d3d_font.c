@@ -14,13 +14,25 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef RARCH_360_FONTS_H
-#define RARCH_360_FONTS_H
+#include "d3d_font.h"
+#include "../../general.h"
 
-HRESULT d3d9_init_font(const char *font_path);
-void d3d9_deinit_font(void);
-
-void xdk_render_msg(void *driver, const char *str);
-void xdk_render_msg_place(void *driver, float x, float y, const char *str_msg);
-
+static const d3d_font_renderer_t *d3d_font_backends[] = {
+#if defined(_XBOX1)
+   &d3d_xdk1_font,
+#elif defined(_XBOX360
+   &d3d_xbox360_font,
 #endif
+};
+
+const d3d_font_renderer_t *d3d_font_init_first(void *data, const char *font_path, unsigned font_size)
+{
+   for (unsigned i = 0; i < ARRAY_SIZE(d3d_font_backends); i++)
+   {
+      if (d3d_font_backends[i]->init(data, font_path, font_size))
+         return d3d_font_backends[i];
+   }
+
+   return NULL;
+}
+

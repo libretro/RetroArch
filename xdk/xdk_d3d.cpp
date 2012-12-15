@@ -26,10 +26,6 @@
 #include "../gfx/shader_hlsl.h"
 #endif
 
-#ifdef _XBOX1
-#include "./../gfx/fonts/xdk1_xfonts.h"
-#endif
-
 #include "./../gfx/gfx_context.h"
 #include "../general.h"
 #include "../message.h"
@@ -38,9 +34,7 @@
 #include "config.h"
 #endif
 
-#ifdef _XBOX360
-#include "../gfx/fonts/xdk360_fonts.h"
-#endif
+#include "../gfx/fonts/d3d_fonts.h"
 
 #include "../xdk/xdk_resources.h"
 

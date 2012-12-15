@@ -32,12 +32,11 @@
 
 #include "../../screenshot.h"
 
+#include "../fonts/d3d_fonts.h"
+
 #if defined(_XBOX1)
-#include "../fonts/xdk1_xfonts.h"
-// for Xbox 1
 #define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTATIONINTERVAL
-#else
-// for Xbox 360
+#elif defined(_XBOX360)
 #define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
 #endif
 

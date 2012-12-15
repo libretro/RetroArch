@@ -15,25 +15,45 @@
  */
 
 #include <xtl.h>
-#include "xdk1_xfonts.h"
+#include "d3d_font.h"
 #include "../../general.h"
 
-void xfonts_deinit_font(void)
+static bool xfonts_init_font(void *data, const char *font_path, unsigned font_size)
 {
+   (void)data;
+   (void)font_path;
+   (void)font_size;
+
+   return true;
 }
 
-void xfonts_render_msg_place(void *data, float x, float y, float scale, const char *msg)
+static void xfonts_deinit_font(void *data)
+{
+   (void)data;
+}
+
+static void xfonts_render_msg(void *data, const char *msg)
+{
+   xfonts_render_msg_place(data, g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 0, msg);
+}
+
+static void xfonts_render_msg_place(void *data, float x, float y, float scale, const char *msg)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
    d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &d3d->pFrontBuffer);
-   //d3d->d3d_render_device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d->pBackBuffer);
 
    wchar_t str[256];
    convert_char_to_wchar(str, msg, sizeof(str));
    d3d->debug_font->TextOut(d3d->pFrontBuffer, str, (unsigned)-1, x, y);
-   //d3d->debug_font->TextOut(d3d->pBackBuffer, str, (unsigned)-1, x, y);
 
    d3d->pFrontBuffer->Release();
-   //d3d->pBackBuffer->Release();
 }
+
+const d3d_font_renderer_t d3d_xdk1_font = {
+   xfonts_init_font,
+   xfonts_deinit_font,
+   xfonts_render_msg,
+   xfonts_render_msg_place,
+   "XDK1 Xfonts",
+};

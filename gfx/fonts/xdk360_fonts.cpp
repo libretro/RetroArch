@@ -15,6 +15,7 @@
  */
 
 #include <xtl.h>
+#include "d3d_font.h"
 #include "../../general.h"
 #include "../../xdk/xdk_resources.h"
 
@@ -175,7 +176,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
    return hr;
 }
 
-HRESULT d3d9_init_font(const char *path)
+static bool xdk_init_font(void *data, const char *font_path, unsigned font_size)
 {
    // Create the font
    xdk360_video_font_t *font = &m_Font;
@@ -238,7 +239,7 @@ error:
    return E_FAIL;
 }
 
-void d3d9_deinit_font(void)
+static void xdk_deinit_font(void *data)
 {
    xdk360_video_font_t *font = &m_Font;
 
@@ -261,18 +262,15 @@ void d3d9_deinit_font(void)
 
 void xdk_render_msg_post(xdk360_video_font_t * font)
 {
-   // Restore state
-   {
-      // Cache the global pointer into a register
-      xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-      D3DDevice *pD3dDevice = d3d->d3d_render_device;
+   // Cache the global pointer into a register
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   D3DDevice *pD3dDevice = d3d->d3d_render_device;
 
-      pD3dDevice->SetTexture(0, NULL);
-      pD3dDevice->SetVertexDeclaration(NULL);
-      D3DDevice_SetVertexShader(pD3dDevice, NULL );
-      D3DDevice_SetPixelShader(pD3dDevice, NULL );
-      pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState );
-   }
+   pD3dDevice->SetTexture(0, NULL);
+   pD3dDevice->SetVertexDeclaration(NULL);
+   D3DDevice_SetVertexShader(pD3dDevice, NULL );
+   D3DDevice_SetPixelShader(pD3dDevice, NULL );
+   pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState );
 }
 
 static void xdk_render_msg_pre(xdk360_video_font_t * font)
@@ -430,7 +428,7 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    pd3dDevice->EndVertices();
 }
 
-void xdk_render_msg_place(void *driver, float x, float y, const char *str_msg)
+static void xdk_render_msg_place(void *driver, float x, float y, const char *str_msg)
 {
    xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver;
 
@@ -445,14 +443,20 @@ void xdk_render_msg_place(void *driver, float x, float y, const char *str_msg)
    }
 }
 
-void xdk_render_msg(void *driver, const char *str_msg)
+static void xdk_render_msg(void *driver, const char *msg)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver;
 
    float x = g_extern.console.rmenu.state.rmenu_hd.enable ? 160 : 100;
    float y = 120;
 
-   xdk_render_msg_place(d3d, x, y, str_msg);
+   xdk_render_msg_place(d3d, x, y, msg);
 }
 
-
+const d3d_font_renderer_t d3d_xbox360_font = {
+   xdk_init_font,
+   xdk_deinit_font,
+   xdk_render_msg,
+   xdk_render_msg_place,
+   "Xbox 360 fonts",
+};

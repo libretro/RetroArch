@@ -1,6 +1,5 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2012 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2012 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,10 +13,27 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef RARCH_XDK1_FONTS_H
-#define RARCH_XDK1_FONTS_H
+#ifndef GL_FONT_H__
+#define GL_FONT_H__
 
-void xfonts_deinit_font(void);
-void xfonts_render_msg_place(void *data, float x, float y, float scale, const char *msg);
+#include <stdint.h>
+#include "../../boolean.h"
+
+typedef struct d3d_font_renderer
+{
+   bool (*init)(void *data, const char *font_path, unsigned font_size);
+   void (*deinit)(void *data);
+   void (*render_msg)(void *data, const char *msg);
+   void (*render_msg_place)(void *data, float x, float y,
+         float scale, uint32_t color, const char *msg);
+   const char *ident;
+} d3d_font_renderer_t;
+
+extern const d3d_font_renderer_t d3d_xbox360_font;
+extern const d3d_font_renderer_t d3d_xdk1_font;
+
+const d3d_font_renderer_t *d3d_font_init_first(void *data,
+      const char *font_path, unsigned font_size);
 
 #endif
+
