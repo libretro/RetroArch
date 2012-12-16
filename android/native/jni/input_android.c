@@ -274,87 +274,63 @@ static void android_input_poll(void *data)
 {
    (void)data;
 
-   // Read all pending events.
    struct android_app* android_app = g_android.app;
-   int id;
 
-   while((id = ALooper_pollOnce(0, NULL, NULL, NULL)) == ALOOPER_POLL_CALLBACK);
-
-   // Process this event.
-   while(id >= 0)
+   // Read all pending events.
+   while(AInputQueue_hasEvents(android_app->inputQueue))
    {
-      bool looper_input_do = id == LOOPER_ID_INPUT;
+      AInputEvent* event = NULL;
+      AInputQueue_getEvent(android_app->inputQueue, &event);
+      int32_t handled = 1;
 
-      if(looper_input_do && AInputQueue_hasEvents(android_app->inputQueue))
+      int id = AInputEvent_getDeviceId(event);
+      int type = AInputEvent_getType(event);
+      int i = state_device_ids[id];
+
+      if(i == -1)
+         i = state_device_ids[id] = pads_connected++;
+
+      int motion_action = AMotionEvent_getAction(event);
+      bool motion_do = ((motion_action == AMOTION_EVENT_ACTION_DOWN) || (motion_action ==
+               AMOTION_EVENT_ACTION_POINTER_DOWN) || (motion_action == AMOTION_EVENT_ACTION_MOVE));
+
+      if(type == AINPUT_EVENT_TYPE_MOTION && motion_do)
       {
-         AInputEvent* event = NULL;
-         AInputQueue_getEvent(android_app->inputQueue, &event);
-         int32_t handled = 1;
-
-         int id = AInputEvent_getDeviceId(event);
-         int type = AInputEvent_getType(event);
-         int i = state_device_ids[id];
-
-         if(i == -1)
-            i = state_device_ids[id] = pads_connected++;
-
-         int motion_action = AMotionEvent_getAction(event);
-         bool motion_do = ((motion_action == AMOTION_EVENT_ACTION_DOWN) || (motion_action ==
-                  AMOTION_EVENT_ACTION_POINTER_DOWN) || (motion_action == AMOTION_EVENT_ACTION_MOVE));
-
-         if(type == AINPUT_EVENT_TYPE_MOTION && motion_do)
-         {
-            float x = AMotionEvent_getX(event, 0);
-            float y = AMotionEvent_getY(event, 0);
+         float x = AMotionEvent_getX(event, 0);
+         float y = AMotionEvent_getY(event, 0);
 #ifdef RARCH_INPUT_DEBUG
-            RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, pad: %d, x: %f, y: %f.\n", i, x, y);
+         RARCH_LOG("AINPUT_EVENT_TYPE_MOTION, pad: %d, x: %f, y: %f.\n", i, x, y);
 #endif
-            state[i] &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
-                  (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
-            state[i] |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
-            state[i] |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-            state[i] |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
-            state[i] |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
-         }
-         else if(type == AINPUT_EVENT_TYPE_KEY)
-         {
-            int keycode = AKeyEvent_getKeyCode(event);
-            uint64_t input_state = keycode_lut[keycode];
-#ifdef RARCH_INPUT_DEBUG
-            RARCH_LOG("Keycode RetroPad %d : %d.\n", i, keycode);
-#endif
-            if(input_state < (1ULL << RARCH_FIRST_META_KEY))
-            {
-               int action  = AKeyEvent_getAction(event);
-
-               if(action == AKEY_EVENT_ACTION_DOWN)
-                  state[i] |= input_state;
-               else if(action == AKEY_EVENT_ACTION_UP)
-                  state[i] &= ~(input_state);
-            }
-            else if(input_state != -1)
-            {
-               g_extern.lifecycle_state = input_state;
-               handled = 0;
-            }
-         }
-         AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+         state[i] &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
+               (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
+         state[i] |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
+         state[i] |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+         state[i] |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
+         state[i] |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
       }
-      else if(!looper_input_do)
+      else
       {
-         int8_t cmd;
-
-         if (read(android_app->msgread, &cmd, sizeof(cmd)) == sizeof(cmd))
+         int keycode = AKeyEvent_getKeyCode(event);
+         uint64_t input_state = keycode_lut[keycode];
+#ifdef RARCH_INPUT_DEBUG
+         RARCH_LOG("Keycode RetroPad %d : %d.\n", i, keycode);
+#endif
+         if(input_state < (1ULL << RARCH_FIRST_META_KEY))
          {
-            if(cmd == APP_CMD_SAVE_STATE)
-               free_saved_state(android_app);
-         }
-         else
-            cmd = -1;
+            int action  = AKeyEvent_getAction(event);
 
-         engine_handle_cmd(android_app, cmd);
+            if(action == AKEY_EVENT_ACTION_DOWN)
+               state[i] |= input_state;
+            else if(action == AKEY_EVENT_ACTION_UP)
+               state[i] &= ~(input_state);
+         }
+         else if(input_state != -1)
+         {
+            g_extern.lifecycle_state = input_state;
+            handled = 0;
+         }
       }
-      while((id = ALooper_pollOnce(0, NULL, NULL, NULL)) == ALOOPER_POLL_CALLBACK);
+      AInputQueue_finishEvent(android_app->inputQueue, event, handled);
    }
 }
 

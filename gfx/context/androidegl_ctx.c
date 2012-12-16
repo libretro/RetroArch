@@ -211,8 +211,28 @@ static void gfx_ctx_check_window(bool *quit,
    (void)height;
    (void)frame_count;
 
+   int id;
+   struct android_app* android_app = g_android.app;
+
    *quit = false;
    *resize = false;
+
+   while((id = ALooper_pollOnce(0, NULL, NULL, NULL)) == ALOOPER_POLL_CALLBACK);
+
+   if(id == LOOPER_ID_MAIN)
+   {
+      int8_t cmd;
+
+      if (read(android_app->msgread, &cmd, sizeof(cmd)) == sizeof(cmd))
+      {
+         if(cmd == APP_CMD_SAVE_STATE)
+            free_saved_state(android_app);
+      }
+      else
+         cmd = -1;
+
+      engine_handle_cmd(android_app, cmd);
+   }
 
    if (g_android.reinit_video)
    {
