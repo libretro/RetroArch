@@ -323,7 +323,9 @@ static void gx_input_poll(void *data)
       uint32_t type = 0;
       if (WPAD_Probe(port, &type) == WPAD_ERR_NONE)
       {
-         uint32_t down = WPAD_ButtonsHeld(port);
+         WPADData *wpaddata = WPAD_Data(port);
+
+         uint32_t down = wpaddata->btns_h;
 
          state |= (down & WPAD_BUTTON_A) ? GX_WIIMOTE_A : 0;
          state |= (down & WPAD_BUTTON_B) ? GX_WIIMOTE_B : 0;
@@ -336,8 +338,8 @@ static void gx_input_poll(void *data)
          if((down & WPAD_BUTTON_HOME) && (down & WPAD_BUTTON_B))
             quit_wiimote = true;
 
-         expansion_t exp;
-         WPAD_Expansion(port, &exp);
+         expansion_t exp = wpaddata->exp;
+
          switch (type)
          {
             case WPAD_EXP_NUNCHUK:
