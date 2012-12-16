@@ -292,8 +292,10 @@ static void android_input_poll(void *data)
          i = state_device_ids[id] = pads_connected++;
 
       int motion_action = AMotionEvent_getAction(event);
+      int pointer_count = AMotionEvent_getPointerCount(event);
       bool motion_do = ((motion_action == AMOTION_EVENT_ACTION_DOWN) || (motion_action ==
-               AMOTION_EVENT_ACTION_POINTER_DOWN) || (motion_action == AMOTION_EVENT_ACTION_MOVE));
+               AMOTION_EVENT_ACTION_POINTER_DOWN) || (motion_action == AMOTION_EVENT_ACTION_MOVE)
+            && pointer_count);
 
       if(type == AINPUT_EVENT_TYPE_MOTION && motion_do)
       {
