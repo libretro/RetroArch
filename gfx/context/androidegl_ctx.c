@@ -216,8 +216,8 @@ static void gfx_ctx_check_window(bool *quit,
 
    *quit = false;
    *resize = false;
-
-   while((id = ALooper_pollOnce(0, NULL, NULL, NULL)) == ALOOPER_POLL_CALLBACK);
+   
+   id = ALooper_pollOnce(0, NULL, 0, NULL);
 
    if(id == LOOPER_ID_MAIN)
    {
