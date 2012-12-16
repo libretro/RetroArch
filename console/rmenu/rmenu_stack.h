@@ -26,6 +26,8 @@ typedef struct
    unsigned char first_setting;
    unsigned char max_settings;
    unsigned char category_id;
+   int (*iterate)(void *data, uint64_t input);
+   void (*browser_draw)(void *data);
 } menu;
 
 #endif
