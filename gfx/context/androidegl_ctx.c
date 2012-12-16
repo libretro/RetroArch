@@ -216,6 +216,9 @@ static void gfx_ctx_check_window(bool *quit,
 
    *quit = false;
    *resize = false;
+
+   RARCH_PERFORMANCE_INIT(alooper_pollonce);
+   RARCH_PERFORMANCE_START(alooper_pollonce);
    
    id = ALooper_pollOnce(0, NULL, 0, NULL);
 
@@ -233,6 +236,8 @@ static void gfx_ctx_check_window(bool *quit,
 
       engine_handle_cmd(android_app, cmd);
    }
+
+   RARCH_PERFORMANCE_STOP(alooper_pollonce);
 
    if (g_android.reinit_video)
    {
@@ -283,7 +288,7 @@ static void gfx_ctx_set_resize(unsigned width, unsigned height)
 static void gfx_ctx_update_window_title(bool reset)
 {
    (void)reset;
-#ifdef PERF_TEST
+#if 0
    if (reset)
       gfx_window_title_reset();
 

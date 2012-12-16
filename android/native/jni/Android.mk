@@ -1,6 +1,6 @@
 RARCH_VERSION		= "0.9.8-beta3"
 LOCAL_PATH := $(call my-dir)
-PERF_TEST := 0
+PERF_TEST := 1
 HAVE_NEON := 1
 HAVE_SINC := 1
 HAVE_LOGGER := 1

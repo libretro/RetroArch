@@ -272,6 +272,9 @@ static void android_input_poll(void *data)
 {
    (void)data;
 
+   RARCH_PERFORMANCE_INIT(input_poll);
+   RARCH_PERFORMANCE_START(input_poll);
+
    struct android_app* android_app = g_android.app;
 
    g_extern.lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS));
@@ -292,10 +295,8 @@ static void android_input_poll(void *data)
          i = state_device_ids[id] = pads_connected++;
 
       int motion_action = AMotionEvent_getAction(event);
-      int pointer_count = AMotionEvent_getPointerCount(event);
       bool motion_do = ((motion_action == AMOTION_EVENT_ACTION_DOWN) || (motion_action ==
-               AMOTION_EVENT_ACTION_POINTER_DOWN) || (motion_action == AMOTION_EVENT_ACTION_MOVE)
-            && pointer_count);
+               AMOTION_EVENT_ACTION_POINTER_DOWN) || (motion_action == AMOTION_EVENT_ACTION_MOVE));
 
       if(type == AINPUT_EVENT_TYPE_MOTION && motion_do)
       {
@@ -343,6 +344,8 @@ static void android_input_poll(void *data)
       }
       AInputQueue_finishEvent(android_app->inputQueue, event, handled);
    }
+
+   RARCH_PERFORMANCE_STOP(input_poll);
 }
 
 static int16_t android_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
