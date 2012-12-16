@@ -24,7 +24,7 @@ LOGGERS
 
 #if defined(HAVE_LOGGER) && defined(__PSL1GHT__)
 #include "../logger/psl1ght_logger.c"
-#elif defined(HAVE_LOGGER)
+#elif defined(HAVE_LOGGER) && !defined(ANDROID)
 #include "../logger/logger.c"
 #endif
 

@@ -17,7 +17,7 @@
 #ifndef __RARCH_LOGGER_H
 #define __RARCH_LOGGER_H
 
-#ifdef ANDROID
+#if defined(ANDROID) && defined(HAVE_LOGGER)
 #include <android/log.h>
 #endif
 
@@ -32,7 +32,7 @@
 #else
 
 #ifndef RARCH_LOG
-#if defined(ANDROID)
+#if defined(ANDROID) && defined(HAVE_LOGGER)
 #define  RARCH_LOG(...)  __android_log_print(ANDROID_LOG_INFO, "RetroArch: ", __VA_ARGS__)
 #elif defined(IS_SALAMANDER)
 #define RARCH_LOG(...) do { \
@@ -51,7 +51,7 @@
 #endif
 
 #ifndef RARCH_LOG_OUTPUT
-#if defined(ANDROID)
+#if defined(ANDROID) && defined(HAVE_LOGGER)
 #define  RARCH_LOG_OUTPUT(...)  __android_log_print(ANDROID_LOG_INFO,"stderr: ",__VA_ARGS__)
 #elif defined(IS_SALAMANDER)
 #define RARCH_LOG_OUTPUT(...) do { \
@@ -70,7 +70,7 @@
 #endif
 
 #ifndef RARCH_ERR
-#if defined(ANDROID)
+#if defined(ANDROID) && defined(HAVE_LOGGER)
 #define  RARCH_ERR(...)  __android_log_print(ANDROID_LOG_INFO, "RetroArch [ERROR] :: ", __VA_ARGS__)
 #elif defined(IS_SALAMANDER)
 #define RARCH_ERR(...) do { \
@@ -86,7 +86,7 @@
 #endif
 
 #ifndef RARCH_ERR_OUTPUT
-#if defined(ANDROID)
+#if defined(ANDROID) && defined(HAVE_LOGGER)
 #define  RARCH_ERR_OUTPUT(...)  __android_log_print(ANDROID_LOG_INFO, "stderr [ERROR] :: ", __VA_ARGS__)
 #elif defined(IS_SALAMANDER)
 #define RARCH_ERR_OUTPUT(...) do { \
@@ -102,7 +102,7 @@
 #endif
 
 #ifndef RARCH_WARN
-#if defined(ANDROID)
+#if defined(ANDROID) && defined(HAVE_LOGGER)
 #define  RARCH_WARN(...)  __android_log_print(ANDROID_LOG_INFO, "RetroArch [WARN] :: ", __VA_ARGS__)
 #elif defined(IS_SALAMANDER)
 #define RARCH_WARN(...) do { \
@@ -118,7 +118,7 @@
 #endif
 
 #ifndef RARCH_WARN
-#if defined(ANDROID)
+#if defined(ANDROID) && defined(HAVE_LOGGER)
 #define  RARCH_WARN_OUTPUT(...)  __android_log_print(ANDROID_LOG_INFO, "stderr [WARN] :: ", __VA_ARGS__)
 #elif defined(IS_SALAMANDER)
 #define RARCH_WARN_OUTPUT(...) do { \
