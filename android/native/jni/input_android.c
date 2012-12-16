@@ -276,11 +276,14 @@ static void android_input_poll(void *data)
 
    struct android_app* android_app = g_android.app;
 
+   g_extern.lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS));
+
    // Read all pending events.
    while(AInputQueue_hasEvents(android_app->inputQueue))
    {
       AInputEvent* event = NULL;
       AInputQueue_getEvent(android_app->inputQueue, &event);
+
       int32_t handled = 1;
 
       int id = AInputEvent_getDeviceId(event);
@@ -315,20 +318,24 @@ static void android_input_poll(void *data)
 #ifdef RARCH_INPUT_DEBUG
          RARCH_LOG("Keycode RetroPad %d : %d.\n", i, keycode);
 #endif
-         if(input_state < (1ULL << RARCH_FIRST_META_KEY))
-         {
-            int action  = AKeyEvent_getAction(event);
+         int action  = AKeyEvent_getAction(event);
+         uint64_t *key = NULL;
 
-            if(action == AKEY_EVENT_ACTION_DOWN)
-               state[i] |= input_state;
-            else if(action == AKEY_EVENT_ACTION_UP)
-               state[i] &= ~(input_state);
-         }
+         if(input_state < (1ULL << RARCH_FIRST_META_KEY))
+            key = &state[i];
          else if(input_state != -1)
+            key = &g_extern.lifecycle_state;
+
+         if(key != NULL)
          {
-            g_extern.lifecycle_state = input_state;
-            handled = 0;
+            if(action == AKEY_EVENT_ACTION_DOWN)
+               *key |= input_state;
+            else if(action == AKEY_EVENT_ACTION_UP)
+               *key &= ~(input_state);
          }
+
+         if(keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN || input_state != -1)
+            handled = 0;
       }
       AInputQueue_finishEvent(android_app->inputQueue, event, handled);
    }
