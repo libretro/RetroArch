@@ -2785,10 +2785,10 @@ bool rarch_main_iterate(void)
          !video_alive_func())
    {
 #ifdef HAVE_RMENU
-      g_extern.console.rmenu.state.rmenu.enable = input_key_pressed_func(RARCH_RMENU_TOGGLE);
+      bool rmenu_enable = input_key_pressed_func(RARCH_RMENU_TOGGLE);
       g_extern.console.rmenu.state.ingame_menu.enable = input_key_pressed_func(RARCH_RMENU_QUICKMENU_TOGGLE); 
 
-      if (g_extern.console.rmenu.state.rmenu.enable || (g_extern.console.rmenu.state.ingame_menu.enable && !g_extern.console.rmenu.state.rmenu.enable))
+      if (rmenu_enable || (g_extern.console.rmenu.state.ingame_menu.enable && !rmenu_enable))
       {
          g_extern.console.rmenu.mode = MODE_MENU;
          SET_TIMER_EXPIRATION(0, 30);
@@ -2841,7 +2841,6 @@ bool rarch_main_iterate(void)
    if (input_key_pressed_func(RARCH_FRAMEADVANCE))
    {
       g_extern.lifecycle_state &= ~(1ULL << RARCH_FRAMEADVANCE);
-      g_extern.console.rmenu.state.rmenu.enable = true;
       g_extern.console.rmenu.state.ingame_menu.enable = true;
       g_extern.console.rmenu.mode = MODE_MENU;
       return false;
