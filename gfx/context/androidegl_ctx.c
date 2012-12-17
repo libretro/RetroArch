@@ -239,14 +239,6 @@ static void gfx_ctx_check_window(bool *quit,
 
    RARCH_PERFORMANCE_STOP(alooper_pollonce);
 
-   if (g_android.reinit_video)
-   {
-      uninit_drivers();
-      init_drivers();
-      g_android.reinit_video = 0;
-      *resize = true;
-   }
-
    int32_t new_orient = AConfiguration_getOrientation(g_android.app->config);
 
    if (new_orient != g_android.last_orient)

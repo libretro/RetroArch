@@ -145,19 +145,10 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          /* The window is being shown, get it ready. */
          android_app->window = android_app->pendingWindow;
 
-         if (g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT))
-         {
-            gfx_ctx_init();
-            g_extern.audio_active = true;
-            g_extern.video_active = true;
-            g_android.reinit_video = 1;
-         }
 
          pthread_cond_broadcast(&android_app->cond);
          pthread_mutex_unlock(&android_app->mutex);
 
-         if (android_app->window != NULL)
-            g_extern.lifecycle_state |= (1ULL << RARCH_WINDOW_READY);
 
          break;
       case APP_CMD_RESUME:
@@ -200,8 +191,6 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
             /* Setting reentrancy */
             RARCH_LOG("Setting up RetroArch re-entrancy...\n");
             g_extern.lifecycle_state |= (1ULL << RARCH_REENTRANT);
-            g_extern.audio_active = false;
-            g_extern.video_active = false;
             g_android.activity_paused = true;
          }
          break;
@@ -232,7 +221,10 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          /* The window is being hidden or closed, clean it up. */
          /* terminate display/EGL context here */
          if(g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT))
-            gfx_ctx_destroy();
+         {
+            uninit_drivers();
+            g_extern.lifecycle_state &= ~(1ULL << RARCH_WINDOW_READY);
+         }
 
          /* POSTEXEC */
          android_app->window = NULL;
@@ -284,6 +276,15 @@ bool android_run_events(struct android_app* android_app)
             cmd = -1;
 
          engine_handle_cmd(android_app, cmd);
+
+         if (cmd == APP_CMD_INIT_WINDOW)
+         {
+            if(g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT))
+                  init_drivers();
+
+            if (android_app->window != NULL)
+               g_extern.lifecycle_state |= (1ULL << RARCH_WINDOW_READY);
+         }
       }
 
       // Check if we are exiting.
