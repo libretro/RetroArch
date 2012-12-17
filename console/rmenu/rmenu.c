@@ -50,6 +50,8 @@
 
 #include "rmenu.h"
 
+rmenu_state_t rmenu_state;
+
 static bool set_libretro_core_as_launch;
 
 filebrowser_t browser;
@@ -848,32 +850,52 @@ static void set_keybind_digital(uint64_t default_retro_joypad_id, uint64_t input
    rarch_input_set_keybind(currently_selected_controller_menu, keybind_action, default_retro_joypad_id);
 }
 
+#if defined(HAVE_OSKUTIL)
 #ifdef __CELLOS_LV2__
-static void rarch_filename_input_and_save(unsigned filename_type)
-{
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-   bool filename_entered = false;
-   char filename_tmp[256], filepath[PATH_MAX];
-   oskutil_write_initial_message(&g_extern.console.misc.oskutil_handle, L"example");
-   oskutil_write_message(&g_extern.console.misc.oskutil_handle, L"Enter filename for preset (with no file extension)");
+static char filepath[PATH_MAX];
 
+static bool osk_callback_enter_rsound(void *data)
+{
+   rmenu_state_t *rstate = (rmenu_state_t*)state;
+
+   if(!(OSK_IS_RUNNING(g_extern.console.misc.oskutil_handle)) && g_extern.console.misc.oskutil_handle.text_can_be_fetched)
+   {
+      strlcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_extern.console.misc.oskutil_handle), sizeof(g_settings.audio.device));
+
+      if(!rstate->osk_unbind_after_finish)
+         rstate->osk_callback = NULL;
+
+      return true;
+   }
+   return false;
+}
+
+static bool osk_callback_enter_rsound_init(void *data)
+{
+   rmenu_state_t *rstate = (rmenu_state_t*)state;
+
+   oskutil_write_initial_message(&g_extern.console.misc.oskutil_handle, L"192.168.1.1");
+   oskutil_write_message(&g_extern.console.misc.oskutil_handle, L"Enter IP address for the RSound Server.");
    oskutil_start(&g_extern.console.misc.oskutil_handle);
 
-   while(OSK_IS_RUNNING(g_extern.console.misc.oskutil_handle))
-   {
-      device_ptr->ctx_driver->clear();
-      device_ptr->ctx_driver->swap_buffers();
-      bool quit, resize;
-      unsigned width, height, frame_count;
-      frame_count = 0;
-      device_ptr->ctx_driver->check_window(&quit, &resize, &width, &height, frame_count);
-   }
+   rstate->osk_unbind_after_finish = true;
+   rstate->osk_callback = osk_callback_enter_rsound;
 
-   if(g_extern.console.misc.oskutil_handle.text_can_be_fetched)
+   return true;
+}
+
+static bool osk_callback_enter_title_init(void *data);
+
+static bool osk_callback_enter_filename(void *data)
+{
+   rmenu_state_t *rstate = (rmenu_state_t*)state;
+   char filename_tmp[256];
+
+   if(!(OSK_IS_RUNNING(g_extern.console.misc.oskutil_handle)) && g_extern.console.misc.oskutil_handle.text_can_be_fetched)
    {
       strlcpy(filename_tmp, OUTPUT_TEXT_STRING(g_extern.console.misc.oskutil_handle), sizeof(filename_tmp));
 
-      switch(filename_type)
+      switch(rstate->osk_param)
       {
          case CONFIG_FILE:
             break;
@@ -885,33 +907,49 @@ static void rarch_filename_input_and_save(unsigned filename_type)
             break;
       }
 
-      filename_entered = true;
+      if(!rstate->osk_unbind_after_finish)
+         rstate->osk_callback = NULL;
+
+      rstate->osk_init  = osk_callback_enter_title_init;
+
+      return true;
    }
 
-   if(filename_entered)
+   return false;
+}
+
+static bool osk_callback_enter_filename_init(void *data)
+{
+   rmenu_state_t *rstate = (rmenu_state_t*)state;
+
+   oskutil_write_initial_message(&g_extern.console.misc.oskutil_handle, L"example");
+   oskutil_write_message(&g_extern.console.misc.oskutil_handle, 
+         L"Enter filename for preset (with no file extension)");
+   oskutil_start(&g_extern.console.misc.oskutil_handle);
+
+   rstate->osk_unbind_after_finish = false;
+
+   if(!rstate->osk_unbind_after_finish)
+      rstate->osk_init = NULL;
+
+   rstate->osk_callback = osk_callback_enter_filename;
+
+   return true;
+}
+
+static bool osk_callback_enter_title(void *data)
+{
+   rmenu_state_t *rstate = (rmenu_state_t*)state;
+   char filetitle_tmp[256];
+
+   if(!(OSK_IS_RUNNING(g_extern.console.misc.oskutil_handle)) && g_extern.console.misc.oskutil_handle.text_can_be_fetched)
    {
-      char filetitle_tmp[256];
-      oskutil_write_initial_message(&g_extern.console.misc.oskutil_handle, L"Example file title");
-      oskutil_write_message(&g_extern.console.misc.oskutil_handle, L"Enter title for preset");
-      oskutil_start(&g_extern.console.misc.oskutil_handle);
-
-      while(OSK_IS_RUNNING(g_extern.console.misc.oskutil_handle))
-      {
-         /* OSK Util gets updated */
-         device_ptr->ctx_driver->clear();
-         device_ptr->ctx_driver->swap_buffers();
-         bool quit, resize;
-         unsigned width, height, frame_count;
-         frame_count = 0;
-         device_ptr->ctx_driver->check_window(&quit, &resize, &width, &height, frame_count);
-      }
-
       if(g_extern.console.misc.oskutil_handle.text_can_be_fetched)
          snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", OUTPUT_TEXT_STRING(g_extern.console.misc.oskutil_handle));
       else
          snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", "Custom");
 
-      switch(filename_type)
+      switch(rstate->osk_param)
       {
          case CONFIG_FILE:
             break;
@@ -931,8 +969,31 @@ static void rarch_filename_input_and_save(unsigned filename_type)
             config_save_keybinds(filepath);
             break;
       }
+
+      if(!rstate->osk_unbind_after_finish)
+         rstate->osk_callback = NULL;
+
+      return true;
    }
+
+   return false;
 }
+
+static bool osk_callback_enter_title_init(void *data)
+{
+   rmenu_state_t *rstate = (rmenu_state_t*)state;
+
+   oskutil_write_initial_message(&g_extern.console.misc.oskutil_handle, L"Example file title");
+   oskutil_write_message(&g_extern.console.misc.oskutil_handle, L"Enter title for preset");
+   oskutil_start(&g_extern.console.misc.oskutil_handle);
+
+   rstate->osk_unbind_after_finish = true;
+   rstate->osk_callback = osk_callback_enter_title;
+
+   return true;
+}
+
+#endif
 #endif
 
 static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
@@ -1209,8 +1270,13 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_SAVE_SHADER_PRESET:
+#ifdef HAVE_OSKUTIL
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-            rarch_filename_input_and_save(SHADER_PRESET_FILE);
+         {
+            rmenu_state.osk_param = SHADER_PRESET_FILE;
+            rmenu_state.osk_init = osk_callback_enter_filename_init;
+         }
+#endif
          break;
       case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
          break;
@@ -1249,21 +1315,9 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_RSOUND_SERVER_IP_ADDRESS:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            oskutil_write_initial_message(&g_extern.console.misc.oskutil_handle, L"192.168.1.1");
-            oskutil_write_message(&g_extern.console.misc.oskutil_handle, L"Enter IP address for the RSound Server.");
-            oskutil_start(&g_extern.console.misc.oskutil_handle);
-            while(OSK_IS_RUNNING(g_extern.console.misc.oskutil_handle))
-            {
-               device_ptr->ctx_driver->clear();
-               device_ptr->ctx_driver->swap_buffers();
-               bool quit, resize;
-               unsigned width, height, frame_count;
-               frame_count = 0;
-               device_ptr->ctx_driver->check_window(&quit, &resize, &width, &height, frame_count);
-            }
-
-            if(g_extern.console.misc.oskutil_handle.text_can_be_fetched)
-               strlcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_extern.console.misc.oskutil_handle), sizeof(g_settings.audio.device));
+#ifdef HAVE_OSKUTIL
+            rmenu_state.osk_init = osk_callback_enter_rsound_init;
+#endif
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
             strlcpy(g_settings.audio.device, "0.0.0.0", sizeof(g_settings.audio.device));
@@ -1563,10 +1617,14 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
          set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_R3, input);
          break;
-#ifdef __CELLOS_LV2__
+#ifdef HAVE_OSKUTIL
       case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_START)))
-            rarch_filename_input_and_save(INPUT_PRESET_FILE);
+         {
+            rmenu_state_t *rstate = (rmenu_state_t*)&rmenu_state;
+            rstate->osk_param = INPUT_PRESET_FILE;
+            rstate->osk_init = osk_callback_enter_filename_init;
+         }
          break;
 #endif
       case SETTING_CONTROLS_DEFAULT_ALL:
@@ -2307,7 +2365,6 @@ void free_filebrowser(void *data)
 RMENU API
 ============================================================ */
 
-rmenu_state_t rmenu_state;
 
 void menu_init(void)
 {
@@ -2375,6 +2432,22 @@ bool rmenu_iterate(void)
 
    if(current_menu.input_poll)
       current_menu.input_poll(&current_menu, &rmenu_state);
+
+#ifdef HAVE_OSKUTIL
+   bool osk_init_succeeded = false;
+   bool osk_callback_finished = false;
+   if(rmenu_state.osk_init)
+      osk_init_succeeded = rmenu_state.osk_init(&rmenu_state);
+
+   if(osk_init_succeeded && rmenu_state.osk_unbind_after_finish)
+      rmenu_state.osk_init = NULL;
+
+   if(rmenu_state.osk_callback)
+      osk_callback_finished = rmenu_state.osk_callback(&rmenu_state);
+
+   if(osk_callback_finished && rmenu_state.osk_unbind_after_finish)
+      rmenu_state.osk_callback = NULL;
+#endif
 
    int repeat = true;
 
