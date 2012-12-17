@@ -163,8 +163,7 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          /* POSTEXEC */
          free_saved_state(android_app);
          
-         g_android.activity_paused = false;
-         
+         g_extern.lifecycle_state &= ~(1ULL << RARCH_PAUSE_TOGGLE);
          break;
       case APP_CMD_START:
          RARCH_LOG("engine_handle_cmd: APP_CMD_START.\n");
@@ -191,7 +190,7 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
             /* Setting reentrancy */
             RARCH_LOG("Setting up RetroArch re-entrancy...\n");
             g_extern.lifecycle_state |= (1ULL << RARCH_REENTRANT);
-            g_android.activity_paused = true;
+            g_extern.lifecycle_state |= (1ULL << RARCH_PAUSE_TOGGLE);
          }
          break;
       case APP_CMD_STOP:
@@ -260,7 +259,7 @@ bool android_run_events(struct android_app* android_app)
    RARCH_LOG("RetroArch Android paused.\n");
 
    // Block forever waiting for events.
-   while ((id = ALooper_pollOnce(g_android.activity_paused ? -1 : 100, NULL, 0, NULL)) >= 0)
+   while ((id = ALooper_pollOnce(input_key_pressed_func(RARCH_PAUSE_TOGGLE) ? -1 : 100, NULL, 0, NULL)) >= 0)
    {
       // Process this event.
       if (id)

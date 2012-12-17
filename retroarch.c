@@ -2776,7 +2776,7 @@ bool rarch_main_iterate(void)
    }
 
 #ifdef ANDROID
-   if (g_android.activity_paused)
+   if (input_key_pressed_func(RARCH_PAUSE_TOGGLE))
       return android_run_events(g_android.app);
 #endif
 
