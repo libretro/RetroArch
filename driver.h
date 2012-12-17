@@ -104,7 +104,6 @@ enum // RetroArch specific bind IDs.
    RARCH_SRAM_WRITE_PROTECT,
 #endif
 #ifdef ANDROID
-   RARCH_KILL,
    RARCH_WINDOW_READY,
 #endif
 #ifdef HAVE_RMENU

@@ -49,7 +49,6 @@ struct android_app
    ANativeWindow* window;
    ARect contentRect;
    int activityState;
-   int destroyRequested;
 
    pthread_mutex_t mutex;
    pthread_cond_t cond;

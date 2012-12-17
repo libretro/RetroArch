@@ -371,9 +371,7 @@ static bool android_input_key_pressed(void *data, int key)
 {
    (void)data;
 
-   if(key == RARCH_QUIT_KEY && (g_extern.lifecycle_state & (1ULL << RARCH_KILL)))
-      return true;
-   else if(g_extern.lifecycle_state & (1ULL << key))
+   if(g_extern.lifecycle_state & (1ULL << key))
       return true;
 
    return false;

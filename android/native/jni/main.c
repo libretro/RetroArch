@@ -245,7 +245,7 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          RARCH_LOG("engine_handle_cmd: APP_CMD_DESTROY\n");
 
          /* PREEXEC */
-         android_app->destroyRequested = 1;
+         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
          break;
    }
 }
@@ -288,7 +288,7 @@ bool android_run_events(struct android_app* android_app)
       }
 
       // Check if we are exiting.
-      if (android_app->destroyRequested != 0)
+      if (g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY))
          return false;
    }
 
@@ -435,7 +435,6 @@ static void* android_app_entry(void* param)
    {
       RARCH_LOG("Initialization failed.\n");
       g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
-      g_extern.lifecycle_state |= (1ULL << RARCH_KILL);
    }
    else
       RARCH_LOG("Initializing succeeded.\n");
@@ -460,12 +459,7 @@ exit:
 #endif
       rarch_main_clear_state();
 
-      /* Make sure to quit RetroArch later on too */
-      g_extern.lifecycle_state |= (1ULL << RARCH_KILL);
-   }
-
-   if(g_extern.lifecycle_state & (1ULL << RARCH_KILL))
-   {
+      /* Quit RetroArch */
       RARCH_LOG("android_app_destroy!");
       free_saved_state(android_app);
       pthread_mutex_lock(&android_app->mutex);
@@ -480,6 +474,7 @@ exit:
       // Can't touch android_app object after this.
       exit(0);
    }
+
    return NULL;
 }
 
