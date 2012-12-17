@@ -2496,7 +2496,7 @@ static void do_state_checks(void)
       check_pause();
       check_oneshot();
 
-      if (g_extern.is_paused)
+      if (check_fullscreen() && g_extern.is_paused)
          rarch_render_cached_frame();
 
       if (g_extern.is_paused && !g_extern.is_oneshot)
