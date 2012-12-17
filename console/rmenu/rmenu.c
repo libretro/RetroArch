@@ -61,22 +61,6 @@ char m_title[256];
 
 static uint64_t old_state = 0;
 
-typedef enum {
-   SETTINGS_ACTION_DOWN,
-   SETTINGS_ACTION_UP,
-   SETTINGS_ACTION_TAB_PREVIOUS,
-   SETTINGS_ACTION_TAB_NEXT,
-   SETTINGS_ACTION_NOOP
-} settings_action_t;
-
-typedef enum {
-   MENU_ROMSELECT_ACTION_OK,
-   MENU_ROMSELECT_ACTION_GOTO_SETTINGS,
-   MENU_ROMSELECT_ACTION_NOOP,
-   MENU_DRIVE_MAPPING_PREV,
-   MENU_DRIVE_MAPPING_NEXT
-} menu_romselect_action_t;
-
 static const struct retro_keybind _rmenu_nav_binds[] = {
    { 0, 0, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP), 0 },
    { 0, 0, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN), 0 },
@@ -137,14 +121,14 @@ enum
    RMENU_DEVICE_NAV_LAST
 };
 
-static void populate_setting_item(unsigned i, void *data)
+static void populate_setting_item(void *data, unsigned input)
 {
    item *current_item = (item*)data;
    char fname[PATH_MAX];
    (void)fname;
 
-   unsigned currentsetting = i;
-   current_item->enum_id = i;
+   unsigned currentsetting = input;
+   current_item->enum_id = input;
 
    switch(currentsetting)
    {
@@ -1574,54 +1558,6 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
    }
 }
 
-static void settings_iterate(void *data, void *data_items, settings_action_t action)
-{
-   menu *current_menu = (menu*)data;
-   item *items = (item*)data_items;
-
-   switch(action)
-   {
-      case SETTINGS_ACTION_DOWN:
-         current_menu->selected++;
-
-         if (current_menu->selected >= current_menu->max_settings)
-            current_menu->selected = current_menu->first_setting; 
-         if (items[current_menu->selected].page != current_menu->page)
-            current_menu->page = items[current_menu->selected].page;
-         break;
-      case SETTINGS_ACTION_UP:
-         if (current_menu->selected == current_menu->first_setting)
-            current_menu->selected = current_menu->max_settings-1;
-         else
-            current_menu->selected--;
-
-         if (items[current_menu->selected].page != current_menu->page)
-            current_menu->page = items[current_menu->selected].page;
-         break;
-      case SETTINGS_ACTION_TAB_PREVIOUS:
-         menu_stack_pop();
-         break;
-      case SETTINGS_ACTION_TAB_NEXT:
-         switch(current_menu->enum_id)
-         {
-            case GENERAL_VIDEO_MENU:
-            case GENERAL_AUDIO_MENU:
-            case EMU_GENERAL_MENU:
-            case EMU_VIDEO_MENU:
-            case EMU_AUDIO_MENU:
-            case PATH_MENU:
-               menu_stack_push(current_menu->enum_id + 1);
-               break;
-            case CONTROLS_MENU:
-            default:
-               break;
-         }
-         break;
-      default:
-         break;
-   }
-}
-
 static int select_setting(void *data, uint64_t input)
 {
    menu *current_menu = (menu*)data;
@@ -1638,7 +1574,7 @@ static int select_setting(void *data, uint64_t input)
    int page = 0;
    for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
    {
-      populate_setting_item(i, &items[i]);
+      populate_setting_item(&items[i], i);
 
       if(!(j < default_pos.entries_per_page))
       {
@@ -1650,20 +1586,45 @@ static int select_setting(void *data, uint64_t input)
       j++;
    }
 
-   settings_action_t action = SETTINGS_ACTION_NOOP;
-
    /* back to ROM menu if CIRCLE is pressed */
    if ((input & (1ULL << RMENU_DEVICE_NAV_L1)) || (input & (1ULL << RMENU_DEVICE_NAV_A)))
-      action = SETTINGS_ACTION_TAB_PREVIOUS;
+      menu_stack_pop();
    else if (input & (1ULL << RMENU_DEVICE_NAV_R1))
-      action = SETTINGS_ACTION_TAB_NEXT;
+   {
+      switch(current_menu->enum_id)
+      {
+         case GENERAL_VIDEO_MENU:
+         case GENERAL_AUDIO_MENU:
+         case EMU_GENERAL_MENU:
+         case EMU_VIDEO_MENU:
+         case EMU_AUDIO_MENU:
+         case PATH_MENU:
+            menu_stack_push(current_menu->enum_id + 1);
+            break;
+         case CONTROLS_MENU:
+         default:
+            break;
+      }
+   }
    else if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
-      action = SETTINGS_ACTION_DOWN;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_UP))
-      action = SETTINGS_ACTION_UP;
+   {
+      current_menu->selected++;
 
-   if(action != SETTINGS_ACTION_NOOP)
-      settings_iterate(current_menu, items, action);
+      if (current_menu->selected >= current_menu->max_settings)
+         current_menu->selected = current_menu->first_setting; 
+      if (items[current_menu->selected].page != current_menu->page)
+         current_menu->page = items[current_menu->selected].page;
+   }
+   else if (input & (1ULL << RMENU_DEVICE_NAV_UP))
+   {
+      if (current_menu->selected == current_menu->first_setting)
+         current_menu->selected = current_menu->max_settings-1;
+      else
+         current_menu->selected--;
+
+      if (items[current_menu->selected].page != current_menu->page)
+         current_menu->page = items[current_menu->selected].page;
+   }
 
    set_setting_action(current_menu, current_menu->selected, input);
 
@@ -1700,50 +1661,45 @@ static int select_setting(void *data, uint64_t input)
    return 1;
 }
 
-static void menu_romselect_iterate(void *data, menu_romselect_action_t action)
+int select_rom_input_iterate(void *data, uint64_t input)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)data;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-   bool ret = true;
 
-   switch(action)
+   if (input & (1ULL << RMENU_DEVICE_NAV_SELECT))
+      menu_stack_push(GENERAL_VIDEO_MENU);
+   else if (input & (1ULL << RMENU_DEVICE_NAV_B))
    {
-      case MENU_DRIVE_MAPPING_PREV:
-         {
-            const char * drive_map = device_ptr->ctx_driver->drive_mapping_previous();
-            if(drive_map != NULL)
-            {
-               filebrowser_set_root_and_ext(filebrowser, rarch_console_get_rom_ext(), drive_map);
-               browser_update(filebrowser, 1ULL << RMENU_DEVICE_NAV_B, rarch_console_get_rom_ext());
-            }
-         }
-         break;
-      case MENU_DRIVE_MAPPING_NEXT:
-         {
-            const char * drive_map = device_ptr->ctx_driver->drive_mapping_next();
-            if(drive_map != NULL)
-            {
-               filebrowser_set_root_and_ext(filebrowser, rarch_console_get_rom_ext(), drive_map);
-               browser_update(filebrowser, 1ULL << RMENU_DEVICE_NAV_B, rarch_console_get_rom_ext());
-            }
-         }
-         break;
-      case MENU_ROMSELECT_ACTION_OK:
-         if(filebrowser_get_current_path_isdir(filebrowser))
-            ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
-         else
-            rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_extern.file_state.zip_extract_mode, S_DELAY_45);
-         break;
-      case MENU_ROMSELECT_ACTION_GOTO_SETTINGS:
-         menu_stack_push(GENERAL_VIDEO_MENU);
-         break;
-      default:
-         break;
+      if(filebrowser_get_current_path_isdir(filebrowser))
+      {
+         bool ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
+
+         if(!ret)
+            rarch_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
+      }
+      else
+         rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_extern.file_state.zip_extract_mode, S_DELAY_45);
+   }
+   else if (input & (1ULL << RMENU_DEVICE_NAV_L1))
+   {
+      const char * drive_map = device_ptr->ctx_driver->drive_mapping_previous();
+      if(drive_map != NULL)
+      {
+         filebrowser_set_root_and_ext(filebrowser, rarch_console_get_rom_ext(), drive_map);
+         browser_update(filebrowser, 1ULL << RMENU_DEVICE_NAV_B, rarch_console_get_rom_ext());
+      }
+   }
+   else if (input & (1ULL << RMENU_DEVICE_NAV_R1))
+   {
+      const char * drive_map = device_ptr->ctx_driver->drive_mapping_next();
+      if(drive_map != NULL)
+      {
+         filebrowser_set_root_and_ext(filebrowser, rarch_console_get_rom_ext(), drive_map);
+         browser_update(filebrowser, 1ULL << RMENU_DEVICE_NAV_B, rarch_console_get_rom_ext());
+      }
    }
 
-   if(!ret)
-      rarch_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
-
+   return 1;
 }
 
 int select_rom(void *data, uint64_t input)
@@ -1757,22 +1713,10 @@ int select_rom(void *data, uint64_t input)
 
    browser_update(&browser, input, rarch_console_get_rom_ext());
 
-   menu_romselect_action_t action = MENU_ROMSELECT_ACTION_NOOP;
-
-   if (input & (1ULL << RMENU_DEVICE_NAV_SELECT))
-      action = MENU_ROMSELECT_ACTION_GOTO_SETTINGS;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_B))
-      action = MENU_ROMSELECT_ACTION_OK;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_L1))
-      action = MENU_DRIVE_MAPPING_PREV;
-   else if (input & (1ULL << RMENU_DEVICE_NAV_R1))
-      action = MENU_DRIVE_MAPPING_NEXT;
-
-   if (action != MENU_ROMSELECT_ACTION_NOOP)
-      menu_romselect_iterate(&browser, action);
+   if(current_menu->input_iterate)
+      current_menu->input_iterate(&browser, input);
 
    bool is_dir = filebrowser_get_current_path_isdir(&browser);
-
 
    if (is_dir)
    {
@@ -1794,8 +1738,6 @@ int select_rom(void *data, uint64_t input)
 
    return 1;
 }
-
-static bool show_menu_screen = true;
 
 int ingame_menu_resize(void *data, uint64_t input)
 {
@@ -1879,15 +1821,13 @@ int ingame_menu_resize(void *data, uint64_t input)
    if (input & (1ULL << RMENU_DEVICE_NAV_A))
    {
       menu_stack_pop();
-      show_menu_screen = true;
+      g_extern.draw_menu = true;
    }
 
    if((input & (1ULL << RMENU_DEVICE_NAV_Y)))
-   {
-      show_menu_screen = !show_menu_screen;
-   }
+      g_extern.draw_menu = !g_extern.draw_menu;
 
-   if(show_menu_screen)
+   if(g_extern.draw_menu)
    {
       char viewport_x[32], viewport_y[32], viewport_w[32], viewport_h[32];
       char msg[256];
@@ -2313,13 +2253,8 @@ bool rmenu_iterate(void)
 
    device_ptr->ctx_driver->clear();
 
-   if(!show_menu_screen || current_menu.enum_id == INGAME_MENU_SCREENSHOT)
-   {
-   }
-   else
-   {
+   if (g_extern.draw_menu)
       device_ptr->ctx_driver->set_blend(true);
-   }
 
    rarch_render_cached_frame();
 
@@ -2393,9 +2328,7 @@ bool rmenu_iterate(void)
    frame_count = 0;
    device_ptr->ctx_driver->check_window(&quit, &resize, &width, &height, frame_count);
 
-   if(current_menu.enum_id == INGAME_MENU_RESIZE && (old_state & (1ULL << RMENU_DEVICE_NAV_Y)) || current_menu.enum_id == INGAME_MENU_SCREENSHOT)
-   { }
-   else
+   if(g_extern.draw_menu)
       device_ptr->ctx_driver->set_blend(false);
 
    return true;

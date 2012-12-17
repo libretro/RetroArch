@@ -27,7 +27,23 @@ typedef struct
    unsigned char max_settings;
    unsigned char category_id;
    int (*iterate)(void *data, uint64_t input);
+   int (*input_iterate)(void *data, uint64_t input);
    void (*browser_draw)(void *data);
 } menu;
+
+// iterate forward declarations
+int select_file(void *data, uint64_t input);
+int select_directory(void *data, uint64_t input);
+int select_setting(void *data, uint64_t input);
+int select_rom(void *data, uint64_t input);
+int ingame_menu_resize(void *data, uint64_t input);
+int ingame_menu_screenshot(void *data, uint64_t input);
+int ingame_menu(void *data, uint64_t input);
+
+// input iterate forward declarations
+int select_rom_input_iterate(void *data, uint64_t input);
+
+// browser_draw forward declarations
+void browser_render(void *data);
 
 #endif

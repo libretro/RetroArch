@@ -16,16 +16,6 @@
 
 #include "rmenu_stack.h"
 
-//forward declarations
-int select_file(void *data, uint64_t input);
-int select_directory(void *data, uint64_t input);
-int select_setting(void *data, uint64_t input);
-int select_rom(void *data, uint64_t input);
-int ingame_menu_resize(void *data, uint64_t input);
-int ingame_menu_screenshot(void *data, uint64_t input);
-int ingame_menu(void *data, uint64_t input);
-
-void browser_render(void *data);
 
 static unsigned char menu_stack_enum_array[10];
 static unsigned stack_idx = 0;
@@ -58,7 +48,8 @@ static void menu_stack_get_current_ptr(menu *current_menu)
 
    unsigned menu_id = menu_stack_enum_array[stack_idx];
 
-   current_menu->browser_draw = NULL;
+   current_menu->browser_draw  = NULL;
+   current_menu->input_iterate = NULL;
 
    switch(menu_id)
    {
@@ -93,6 +84,7 @@ static void menu_stack_get_current_ptr(menu *current_menu)
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          current_menu->iterate = select_rom;
+         current_menu->input_iterate = select_rom_input_iterate;
          break;
       case LIBRETRO_CHOICE:
          strlcpy(current_menu->title, "Libretro", sizeof(current_menu->title));
