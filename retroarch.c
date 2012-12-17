@@ -57,8 +57,10 @@
 #endif
 
 // To avoid continous switching if we hold the button down, we require that the button must go from pressed, unpressed back to pressed to be able to toggle between then.
-static void set_fast_forward_button(bool new_button_state, bool new_hold_button_state)
+static void check_fast_forward_button(void)
 {
+   bool new_button_state = input_key_pressed_func(RARCH_FAST_FORWARD_KEY);
+   bool new_hold_button_state = input_key_pressed_func(RARCH_FAST_FORWARD_HOLD_KEY);
    bool update_sync = false;
    static bool old_button_state = false;
    static bool old_hold_button_state = false;
@@ -2227,6 +2229,7 @@ static void check_pause(void)
 }
 #endif
 
+#if !defined(RARCH_PERFORMANCE_MODE)
 static void check_oneshot(void)
 {
    static bool old_state = false;
@@ -2240,6 +2243,7 @@ static void check_oneshot(void)
    g_extern.is_oneshot |= new_rewind_state && !old_rewind_state;
    old_rewind_state = new_rewind_state;
 }
+#endif
 
 void rarch_game_reset(void)
 {
@@ -2490,26 +2494,16 @@ static void do_state_checks(void)
 #endif
 #if !defined(RARCH_PERFORMANCE_MODE)
       check_pause();
-#endif
       check_oneshot();
 
-#if defined(RARCH_PERFORMANCE_MODE)
       if (g_extern.is_paused)
-#else
-      if (check_fullscreen() && g_extern.is_paused)
-#endif
-      {
          rarch_render_cached_frame();
-      }
 
-#if !defined(RARCH_PERFORMANCE_MODE)
       if (g_extern.is_paused && !g_extern.is_oneshot)
          return;
 #endif
 
-      set_fast_forward_button(
-            input_key_pressed_func(RARCH_FAST_FORWARD_KEY),
-            input_key_pressed_func(RARCH_FAST_FORWARD_HOLD_KEY));
+      check_fast_forward_button();
 
       check_stateslots();
 #ifdef HAVE_BSV_MOVIE
