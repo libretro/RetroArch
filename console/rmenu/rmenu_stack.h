@@ -26,24 +26,42 @@ typedef struct
    unsigned char first_setting;
    unsigned char max_settings;
    unsigned char category_id;
-   int (*iterate)(void *data, uint64_t input);
-   int (*input_iterate)(void *data, uint64_t input);
+   int (*entry)(void *data, void *state);
+   void (*input_process)(void *data, void *state);
+   void (*input_poll)(void *data, void *state);
    void (*browser_draw)(void *data);
 } menu;
 
-// iterate forward declarations
-int select_file(void *data, uint64_t input);
-int select_directory(void *data, uint64_t input);
-int select_setting(void *data, uint64_t input);
-int select_rom(void *data, uint64_t input);
-int ingame_menu_resize(void *data, uint64_t input);
-int ingame_menu_screenshot(void *data, uint64_t input);
-int ingame_menu(void *data, uint64_t input);
+typedef struct
+{
+   uint64_t input;
+   uint64_t old_state;
+   void (*init_resources)(void *data);
+   void (*free_resources)(void *data);
+} rmenu_state_t;
 
-// input iterate forward declarations
-int select_rom_input_iterate(void *data, uint64_t input);
+// iterate forward declarations
+int select_file(void *data, void *state);
+int select_directory(void *data, void *state);
+int select_setting(void *data, void *state);
+int select_rom(void *data, void *state);
+int ingame_menu_resize(void *data, void *state);
+int ingame_menu_screenshot(void *data, void *state);
+int ingame_menu(void *data, void *state);
+
+// input poll forward declarations
+void rmenu_input_poll(void *data, void *state);
+
+// input process forward declarations
+void rmenu_input_process(void *data, void *state);
 
 // browser_draw forward declarations
 void browser_render(void *data);
+
+// init resources forward declarations
+void init_filebrowser(void *data);
+
+// free resources forward declarations
+void free_filebrowser(void *data);
 
 #endif

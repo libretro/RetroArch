@@ -50,7 +50,6 @@
 
 #include "rmenu.h"
 
-
 static bool set_libretro_core_as_launch;
 
 filebrowser_t browser;
@@ -58,8 +57,6 @@ filebrowser_t tmpBrowser;
 unsigned set_shader = 0;
 unsigned currently_selected_controller_menu = 0;
 char m_title[256];
-
-static uint64_t old_state = 0;
 
 static const struct retro_keybind _rmenu_nav_binds[] = {
    { 0, 0, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP), 0 },
@@ -120,6 +117,10 @@ enum
    RMENU_DEVICE_NAV_R3,
    RMENU_DEVICE_NAV_LAST
 };
+
+/*============================================================
+EVENT CALLBACKS (AND RELATED)
+============================================================ */
 
 static void populate_setting_item(void *data, unsigned input)
 {
@@ -613,9 +614,13 @@ void browser_render(void *data)
    }
 }
 
-int select_file(void *data, uint64_t input)
+int select_file(void *data, void *state)
 {
    menu *current_menu = (menu*)data;
+   rmenu_state_t *rstate = (rmenu_state_t*)state;
+
+   uint64_t input = rstate->input;
+
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    char extensions[256], comment[256], path[PATH_MAX];
    bool ret = true;
@@ -727,9 +732,13 @@ int select_file(void *data, uint64_t input)
    return 1;
 }
 
-int select_directory(void *data, uint64_t input)
+int select_directory(void *data, void *state)
 {
    menu *current_menu = (menu*)data;
+   rmenu_state_t *rstate = (rmenu_state_t*)state;
+
+   uint64_t input = rstate->input;
+
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    char path[PATH_MAX], msg[256];
    bool ret = true;
@@ -1567,9 +1576,13 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
    }
 }
 
-static int select_setting(void *data, uint64_t input)
+static int select_setting(void *data, void *state)
 {
    menu *current_menu = (menu*)data;
+   rmenu_state_t *rstate = (rmenu_state_t*)state;
+
+   uint64_t input = rstate->input;
+
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    item *items = (item*)malloc(current_menu->max_settings * sizeof(*items));
    unsigned i;
@@ -1674,10 +1687,21 @@ static int select_setting(void *data, uint64_t input)
    return 1;
 }
 
-int select_rom_input_iterate(void *data, uint64_t input)
+int select_rom(void *data, void *state)
 {
-   filebrowser_t *filebrowser = (filebrowser_t*)data;
+   menu *current_menu = (menu*)data;
+   rmenu_state_t *rstate = (rmenu_state_t*)state;
+
+   uint64_t input = rstate->input;
+
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
+   char msg[128];
+   rmenu_default_positions_t default_pos;
+   filebrowser_t *filebrowser = &browser;
+
+   device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
+
+   browser_update(filebrowser, input, rarch_console_get_rom_ext());
 
    if (input & (1ULL << RMENU_DEVICE_NAV_SELECT))
       menu_stack_push(GENERAL_VIDEO_MENU);
@@ -1712,24 +1736,6 @@ int select_rom_input_iterate(void *data, uint64_t input)
       }
    }
 
-   return 1;
-}
-
-int select_rom(void *data, uint64_t input)
-{
-   menu *current_menu = (menu*)data;
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-   char msg[128];
-   rmenu_default_positions_t default_pos;
-   filebrowser_t *filebrowser = &browser;
-
-   device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
-
-   browser_update(filebrowser, input, rarch_console_get_rom_ext());
-
-   if(current_menu->input_iterate)
-      current_menu->input_iterate(filebrowser, input);
-
    bool is_dir = filebrowser_get_current_path_isdir(filebrowser);
 
    if (is_dir)
@@ -1756,9 +1762,12 @@ int select_rom(void *data, uint64_t input)
    return 1;
 }
 
-int ingame_menu_resize(void *data, uint64_t input)
+int ingame_menu_resize(void *data, void *state)
 {
    menu *current_menu = (menu*)data;
+   rmenu_state_t *rstate = (rmenu_state_t*)state;
+
+   uint64_t input = rstate->input;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
    filebrowser_t *filebrowser = NULL;
@@ -1918,9 +1927,13 @@ int ingame_menu_resize(void *data, uint64_t input)
    return 1;
 }
 
-int ingame_menu_screenshot(void *data, uint64_t input)
+int ingame_menu_screenshot(void *data, void *state)
 {
    menu *current_menu = (menu*)data;
+   rmenu_state_t *rstate = (rmenu_state_t*)state;
+
+   uint64_t input = rstate->input;
+   
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    filebrowser_t *filebrowser = NULL;
 
@@ -1947,12 +1960,15 @@ int ingame_menu_screenshot(void *data, uint64_t input)
 
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
-int ingame_menu(void *data, uint64_t input)
+int ingame_menu(void *data, void *state)
 {
    //if(!g_extern.console.rmenu.state.ingame_menu.enable)
       //return false;
 
-   menu *current_menu = (menu*)data;
+   menu *current_menu    = (menu*)data;
+   rmenu_state_t *rstate = (rmenu_state_t*)state;
+
+   uint64_t input = rstate->input;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    char strw_buffer[256];
    unsigned menuitem_colors[MENU_ITEM_LAST];
@@ -2175,18 +2191,123 @@ int ingame_menu(void *data, uint64_t input)
    return 1;
 }
 
-static void rmenu_filebrowser_init(void)
+/*============================================================
+INPUT POLL CALLBACK
+============================================================ */
+
+void rmenu_input_poll(void *data, void *state)
 {
+   menu *current_menu    = (menu*)data;
+   rmenu_state_t *rstate = (rmenu_state_t*)state;
+
+   //first button input frame
+   uint64_t input_state_first_frame = 0;
+   uint64_t input_state = 0;
+   static bool first_held = false;
+
+   input_ptr.poll(NULL);
+
+   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
+      input_state |= input_ptr.input_state(NULL, rmenu_nav_binds, 0,
+            RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
+
+   //set first button input frame as trigger
+   rstate->input = input_state & ~(rstate->old_state);
+   //hold onto first button input frame
+   input_state_first_frame = input_state;          
+
+   //second button input frame
+   input_state = 0;
+   input_ptr.poll(NULL);
+
+   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
+   {
+      input_state |= input_ptr.input_state(NULL, rmenu_nav_binds, 0,
+            RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
+   }
+
+   bool analog_sticks_pressed = (input_state & (1ULL << RMENU_DEVICE_NAV_LEFT_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_RIGHT_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_UP_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_DOWN_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_LEFT_ANALOG_R)) || (input_state & (1ULL << RMENU_DEVICE_NAV_RIGHT_ANALOG_R)) || (input_state & (1ULL << RMENU_DEVICE_NAV_UP_ANALOG_R)) || (input_state & (1ULL << RMENU_DEVICE_NAV_DOWN_ANALOG_R));
+   bool shoulder_buttons_pressed = ((input_state & (1ULL << RMENU_DEVICE_NAV_L2)) || (input_state & (1ULL << RMENU_DEVICE_NAV_R2))) && current_menu->category_id != CATEGORY_SETTINGS;
+   bool do_held = analog_sticks_pressed || shoulder_buttons_pressed;
+
+   if(do_held)
+   {
+      if(!first_held)
+      {
+         first_held = true;
+         SET_TIMER_EXPIRATION(1, 7);
+      }
+
+      if(IS_TIMER_EXPIRED(1))
+      {
+         first_held = false;
+         rstate->input = input_state; //second input frame set as current frame
+      }
+   }
+
+   rstate->old_state = input_state_first_frame;
+}
+
+/*============================================================
+INPUT PROCESS CALLBACK
+============================================================ */
+
+void rmenu_input_process(void *data, void *state)
+{
+   (void)data;
+   rmenu_state_t *rstate = (rmenu_state_t*)state;
+
+   if(IS_TIMER_EXPIRED(0))
+   {
+      // if we want to force goto the emulation loop, skip this
+      if(g_extern.console.rmenu.mode != MODE_EMULATION)
+      {
+         if(g_extern.console.rmenu.mode == MODE_EXIT)
+         {
+         }
+         // for ingame menu, we need a different precondition because menu_enable
+         // can be set to false when going back from ingame menu to menu
+         else if(g_extern.console.rmenu.state.ingame_menu.enable == true)
+         {
+            //we want to force exit when g_extern.console.mode is set to MODE_EXIT
+            if(g_extern.console.rmenu.mode != MODE_EXIT)
+               g_extern.console.rmenu.mode = (((rstate->old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (rstate->old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.console.emulator_initialized)) ? MODE_EMULATION : MODE_MENU;
+         }
+         else
+         {
+            bool rmenu_enable = !(((rstate->old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (rstate->old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.console.emulator_initialized));
+            g_extern.console.rmenu.mode = rmenu_enable ? MODE_MENU : MODE_EMULATION;
+         }
+      }
+   }
+}
+
+/*============================================================
+RESOURCE CALLBACKS
+============================================================ */
+
+void init_filebrowser(void *data)
+{
+   (void)data;
+
    menu_stack_push(FILE_BROWSER_MENU);
    filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), default_paths.filebrowser_startup_dir);
    filebrowser_set_root(&tmpBrowser, default_paths.filesystem_root_dir);
 }
 
-static void rmenu_filebrowser_free(void)
+void free_filebrowser(void *data)
 {
+   (void)data;
+
    filebrowser_free(&browser);
    filebrowser_free(&tmpBrowser);
 }
+
+/*============================================================
+RMENU API
+============================================================ */
+
+rmenu_state_t rmenu_state;
 
 void menu_init(void)
 {
@@ -2198,14 +2319,21 @@ void menu_init(void)
    const char *id = info.library_name ? info.library_name : "Unknown";
    snprintf(m_title, sizeof(m_title), "%s %s", id, info.library_version);
 
-   rmenu_filebrowser_init();
+   rmenu_state.init_resources = init_filebrowser;
+   rmenu_state.free_resources = free_filebrowser;
+   rmenu_state.input          = 0;
+   rmenu_state.old_state      = 0;
+
+   if(rmenu_state.init_resources)
+      rmenu_state.init_resources(&rmenu_state);
 
    device_ptr->ctx_driver->rmenu_init();
 }
 
 void menu_free(void)
 {
-   rmenu_filebrowser_free();
+   if(rmenu_state.free_resources)
+      rmenu_state.free_resources(&rmenu_state);
 }
 
 bool rmenu_iterate(void)
@@ -2233,53 +2361,10 @@ bool rmenu_iterate(void)
 
    g_extern.frame_count++;
 
-   //first button input frame
-   uint64_t input_state_first_frame = 0;
-   uint64_t input_state = 0;
-   static bool first_held = false;
-   rmenu_default_positions_t default_pos;
-
    menu_stack_get_current_ptr(&current_menu);
 
+   rmenu_default_positions_t default_pos;
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
-
-   input_ptr.poll(NULL);
-
-   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
-      input_state |= input_ptr.input_state(NULL, rmenu_nav_binds, 0,
-            RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
-
-   uint64_t trig_state = input_state & ~old_state; //set first button input frame as trigger
-   input_state_first_frame = input_state;          //hold onto first button input frame
-
-   //second button input frame
-   input_state = 0;
-   input_ptr.poll(NULL);
-
-   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
-   {
-      input_state |= input_ptr.input_state(NULL, rmenu_nav_binds, 0,
-            RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
-   }
-
-   bool analog_sticks_pressed = (input_state & (1ULL << RMENU_DEVICE_NAV_LEFT_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_RIGHT_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_UP_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_DOWN_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_LEFT_ANALOG_R)) || (input_state & (1ULL << RMENU_DEVICE_NAV_RIGHT_ANALOG_R)) || (input_state & (1ULL << RMENU_DEVICE_NAV_UP_ANALOG_R)) || (input_state & (1ULL << RMENU_DEVICE_NAV_DOWN_ANALOG_R));
-   bool shoulder_buttons_pressed = ((input_state & (1ULL << RMENU_DEVICE_NAV_L2)) || (input_state & (1ULL << RMENU_DEVICE_NAV_R2))) && current_menu.category_id != CATEGORY_SETTINGS;
-   bool do_held = analog_sticks_pressed || shoulder_buttons_pressed;
-
-   if(do_held)
-   {
-      if(!first_held)
-      {
-         first_held = true;
-         SET_TIMER_EXPIRATION(1, 7);
-      }
-
-      if(IS_TIMER_EXPIRED(1))
-      {
-         first_held = false;
-         trig_state = input_state; //second input frame set as current frame
-      }
-   }
 
    device_ptr->ctx_driver->clear();
 
@@ -2288,36 +2373,16 @@ bool rmenu_iterate(void)
 
    rarch_render_cached_frame();
 
+   if(current_menu.input_poll)
+      current_menu.input_poll(&current_menu, &rmenu_state);
+
    int repeat = true;
 
-   if(current_menu.iterate)
-      repeat = current_menu.iterate(&current_menu, trig_state);
+   if(current_menu.entry)
+      repeat = current_menu.entry(&current_menu, &rmenu_state);
 
-   old_state = input_state_first_frame;
-
-   if(IS_TIMER_EXPIRED(0))
-   {
-      // if we want to force goto the emulation loop, skip this
-      if(g_extern.console.rmenu.mode != MODE_EMULATION)
-      {
-         if(g_extern.console.rmenu.mode == MODE_EXIT)
-         {
-         }
-         // for ingame menu, we need a different precondition because menu_enable
-         // can be set to false when going back from ingame menu to menu
-         else if(g_extern.console.rmenu.state.ingame_menu.enable == true)
-         {
-            //we want to force exit when g_extern.console.mode is set to MODE_EXIT
-            if(g_extern.console.rmenu.mode != MODE_EXIT)
-               g_extern.console.rmenu.mode = (((old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.console.emulator_initialized)) ? MODE_EMULATION : MODE_MENU;
-         }
-         else
-         {
-            bool rmenu_enable = !(((old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.console.emulator_initialized));
-            g_extern.console.rmenu.mode = rmenu_enable ? MODE_MENU : MODE_EMULATION;
-         }
-      }
-   }
+   if(current_menu.input_process)
+      current_menu.input_process(&current_menu, &rmenu_state);
 
    if(g_extern.console.rmenu.mode == MODE_EMULATION || g_extern.console.rmenu.mode == MODE_EXIT || repeat == 0)
       goto deinit;
@@ -2335,7 +2400,10 @@ bool rmenu_iterate(void)
    frame_count = 0;
    device_ptr->ctx_driver->check_window(&quit, &resize, &width, &height, frame_count);
 
-   if(g_extern.draw_menu)
+   if (quit)
+      g_extern.console.rmenu.mode = MODE_EXIT;
+
+   if (g_extern.draw_menu)
       device_ptr->ctx_driver->set_blend(false);
 
    return true;
