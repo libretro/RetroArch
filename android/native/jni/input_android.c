@@ -350,21 +350,13 @@ static void android_input_poll(void *data)
 
 static int16_t android_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
-   unsigned player = port; 
-   uint64_t button = binds[player][id].joykey;
-   int16_t retval = 0;
-
-   if((player < pads_connected))
+   switch (device)
    {
-      switch (device)
-      {
-         case RETRO_DEVICE_JOYPAD:
-            retval = (state[player] & button) ? 1 : 0;
-            break;
-      }
-    }
-
-   return retval;
+      case RETRO_DEVICE_JOYPAD:
+         return ((state[port] & binds[port][id].joykey) && (port < pads_connected));
+      default:
+         return 0;
+   }
 }
 
 static bool android_input_key_pressed(void *data, int key)
