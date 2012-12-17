@@ -620,6 +620,7 @@ int select_file(void *data, uint64_t input)
    char extensions[256], comment[256], path[PATH_MAX];
    bool ret = true;
 
+   filebrowser_t *filebrowser = &tmpBrowser;
    rmenu_default_positions_t default_pos;
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
 
@@ -647,16 +648,16 @@ int select_file(void *data, uint64_t input)
          break;
    }
 
-   browser_update(&tmpBrowser, input, extensions);
+   browser_update(filebrowser, input, extensions);
 
    if (input & (1ULL << RMENU_DEVICE_NAV_B))
    {
-      bool is_dir = filebrowser_get_current_path_isdir(&tmpBrowser);
+      bool is_dir = filebrowser_get_current_path_isdir(filebrowser);
       if(is_dir)
-         ret = filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
+         ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
       else
       {
-         snprintf(path, sizeof(path), filebrowser_get_current_path(&tmpBrowser));
+         snprintf(path, sizeof(path), filebrowser_get_current_path(filebrowser));
 
          switch(current_menu->enum_id)
          {
@@ -720,6 +721,9 @@ int select_file(void *data, uint64_t input)
    snprintf(comment, sizeof(comment), "[%s] - return to settings [%s] - Reset Startdir", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
    device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, comment);
 
+   if(current_menu->browser_draw)
+      current_menu->browser_draw(filebrowser);
+
    return 1;
 }
 
@@ -730,18 +734,19 @@ int select_directory(void *data, uint64_t input)
    char path[PATH_MAX], msg[256];
    bool ret = true;
 
+   filebrowser_t *filebrowser = &tmpBrowser;
    rmenu_default_positions_t default_pos;
 
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
 
-   bool is_dir = filebrowser_get_current_path_isdir(&tmpBrowser);
-   browser_update(&tmpBrowser, input, "empty");
+   bool is_dir = filebrowser_get_current_path_isdir(filebrowser);
+   browser_update(filebrowser, input, "empty");
 
    if (input & (1ULL << RMENU_DEVICE_NAV_Y))
    {
       if(is_dir)
       {
-         snprintf(path, sizeof(path), filebrowser_get_current_path(&tmpBrowser));
+         snprintf(path, sizeof(path), filebrowser_get_current_path(filebrowser));
 
          switch(current_menu->enum_id)
          {
@@ -795,7 +800,7 @@ int select_directory(void *data, uint64_t input)
    else if (input & (1ULL << RMENU_DEVICE_NAV_B))
    {
       if(is_dir)
-         ret = filebrowser_iterate(&tmpBrowser, FILEBROWSER_ACTION_OK);
+         ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
    }
 
    if(!ret)
@@ -811,6 +816,9 @@ int select_directory(void *data, uint64_t input)
 
    snprintf(msg, sizeof(msg), "INFO - Browse to a directory and assign it as the path by\npressing [%s].", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_Y));
    device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, msg);
+
+   if(current_menu->browser_draw)
+      current_menu->browser_draw(filebrowser);
 
    return 1;
 }
@@ -922,6 +930,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
 {
    (void)data;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
+   filebrowser_t *filebrowser = &tmpBrowser;
    
    switch(switchvalue)
    {
@@ -973,7 +982,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             if(g_extern.console.emulator_initialized)
             {
                menu_stack_push(PRESET_CHOICE);
-               filebrowser_set_root_and_ext(&tmpBrowser, EXT_CGP_PRESETS, default_paths.cgp_dir);
+               filebrowser_set_root_and_ext(filebrowser, EXT_CGP_PRESETS, default_paths.cgp_dir);
             }
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -983,7 +992,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(SHADER_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, EXT_SHADERS, default_paths.shader_dir);
+            filebrowser_set_root_and_ext(filebrowser, EXT_SHADERS, default_paths.shader_dir);
             set_shader = 0;
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -996,7 +1005,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(SHADER_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, EXT_SHADERS, default_paths.shader_dir);
+            filebrowser_set_root_and_ext(filebrowser, EXT_SHADERS, default_paths.shader_dir);
             set_shader = 1;
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1304,7 +1313,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(LIBRETRO_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, EXT_EXECUTABLES, default_paths.core_dir);
+            filebrowser_set_root_and_ext(filebrowser, EXT_EXECUTABLES, default_paths.core_dir);
             set_libretro_core_as_launch = false;
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1368,7 +1377,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(PATH_DEFAULT_ROM_DIR_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
+            filebrowser_set_root_and_ext(filebrowser, "empty", default_paths.filesystem_root_dir);
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1378,7 +1387,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(PATH_SAVESTATES_DIR_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
+            filebrowser_set_root_and_ext(filebrowser, "empty", default_paths.filesystem_root_dir);
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1389,7 +1398,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(PATH_SRAM_DIR_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
+            filebrowser_set_root_and_ext(filebrowser, "empty", default_paths.filesystem_root_dir);
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1400,7 +1409,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(PATH_CHEATS_DIR_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.filesystem_root_dir);
+            filebrowser_set_root_and_ext(filebrowser, "empty", default_paths.filesystem_root_dir);
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1411,7 +1420,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(PATH_SYSTEM_DIR_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, "empty", default_paths.system_dir);
+            filebrowser_set_root_and_ext(filebrowser, "empty", default_paths.system_dir);
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1444,7 +1453,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_START)))
          {
             menu_stack_push(INPUT_PRESET_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, EXT_INPUT_PRESETS, default_paths.input_presets_dir);
+            filebrowser_set_root_and_ext(filebrowser, EXT_INPUT_PRESETS, default_paths.input_presets_dir);
          }
          break;
       case SETTING_CONTROLS_NUMBER:
@@ -1566,6 +1575,7 @@ static int select_setting(void *data, uint64_t input)
    unsigned i;
    char msg[256];
 
+   filebrowser_t *filebrowser = NULL;
    rmenu_default_positions_t default_pos;
 
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
@@ -1658,6 +1668,9 @@ static int select_setting(void *data, uint64_t input)
    snprintf(msg, sizeof(msg), "[%s] - Reset to default", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
    device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), default_pos.font_size, YELLOW, msg);
 
+   if(current_menu->browser_draw)
+      current_menu->browser_draw(filebrowser);
+
    return 1;
 }
 
@@ -1708,19 +1721,20 @@ int select_rom(void *data, uint64_t input)
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    char msg[128];
    rmenu_default_positions_t default_pos;
+   filebrowser_t *filebrowser = &browser;
 
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
 
-   browser_update(&browser, input, rarch_console_get_rom_ext());
+   browser_update(filebrowser, input, rarch_console_get_rom_ext());
 
    if(current_menu->input_iterate)
-      current_menu->input_iterate(&browser, input);
+      current_menu->input_iterate(filebrowser, input);
 
-   bool is_dir = filebrowser_get_current_path_isdir(&browser);
+   bool is_dir = filebrowser_get_current_path_isdir(filebrowser);
 
    if (is_dir)
    {
-      const char *current_path = filebrowser_get_current_path(&browser);
+      const char *current_path = filebrowser_get_current_path(filebrowser);
       snprintf(msg, sizeof(msg), "INFO - Press [%s] to enter the directory.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
    }
    else
@@ -1736,6 +1750,9 @@ int select_rom(void *data, uint64_t input)
    snprintf(msg, sizeof(msg), "[%s] - Settings", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT));
    device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), default_pos.font_size, YELLOW, msg);
 
+   if(current_menu->browser_draw)
+      current_menu->browser_draw(filebrowser);
+
    return 1;
 }
 
@@ -1744,6 +1761,7 @@ int ingame_menu_resize(void *data, uint64_t input)
    menu *current_menu = (menu*)data;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
+   filebrowser_t *filebrowser = NULL;
    rmenu_default_positions_t default_pos;
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
 
@@ -1894,12 +1912,17 @@ int ingame_menu_resize(void *data, uint64_t input)
       device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, msg);
    }
 
+   if(current_menu->browser_draw)
+      current_menu->browser_draw(filebrowser);
+
    return 1;
 }
 
 int ingame_menu_screenshot(void *data, uint64_t input)
 {
+   menu *current_menu = (menu*)data;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
+   filebrowser_t *filebrowser = NULL;
 
    g_extern.draw_menu = false;
 
@@ -1916,6 +1939,9 @@ int ingame_menu_screenshot(void *data, uint64_t input)
             device_ptr->ctx_driver->rmenu_screenshot_dump(NULL);
    }
 
+   if(current_menu->browser_draw)
+      current_menu->browser_draw(filebrowser);
+
    return 1;
 }
 
@@ -1931,6 +1957,7 @@ int ingame_menu(void *data, uint64_t input)
    char strw_buffer[256];
    unsigned menuitem_colors[MENU_ITEM_LAST];
 
+   filebrowser_t *filebrowser = &tmpBrowser;
    rmenu_default_positions_t default_pos;
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
 
@@ -2049,7 +2076,7 @@ int ingame_menu(void *data, uint64_t input)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             menu_stack_push(LIBRETRO_CHOICE);
-            filebrowser_set_root_and_ext(&tmpBrowser, EXT_EXECUTABLES, default_paths.core_dir);
+            filebrowser_set_root_and_ext(filebrowser, EXT_EXECUTABLES, default_paths.core_dir);
             set_libretro_core_as_launch = true;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to choose another core.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
@@ -2141,6 +2168,9 @@ int ingame_menu(void *data, uint64_t input)
    position.x = default_pos.x_position;
    position.y = (default_pos.y_position+(default_pos.y_position_increment * g_extern.console.rmenu.ingame_menu.idx));
    device_ptr->ctx_driver->rmenu_draw_panel(&position);
+
+   if(current_menu->browser_draw)
+      current_menu->browser_draw(filebrowser);
 
    return 1;
 }
@@ -2262,29 +2292,6 @@ bool rmenu_iterate(void)
 
    if(current_menu.iterate)
       repeat = current_menu.iterate(&current_menu, trig_state);
-
-   filebrowser_t * fb = &browser;
-
-   switch(current_menu.enum_id)
-   {
-      case SHADER_CHOICE:
-      case PRESET_CHOICE:
-      case BORDER_CHOICE:
-      case LIBRETRO_CHOICE:
-      case INPUT_PRESET_CHOICE:
-      case PATH_SAVESTATES_DIR_CHOICE:
-      case PATH_DEFAULT_ROM_DIR_CHOICE:
-#ifdef HAVE_XML
-      case PATH_CHEATS_DIR_CHOICE:
-#endif
-      case PATH_SRAM_DIR_CHOICE:
-      case PATH_SYSTEM_DIR_CHOICE:
-         fb = &tmpBrowser;
-         break;
-   }
-
-   if(current_menu.browser_draw)
-      current_menu.browser_draw(fb);
 
    old_state = input_state_first_frame;
 
