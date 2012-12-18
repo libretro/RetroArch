@@ -2421,8 +2421,6 @@ bool rmenu_iterate(void)
    rmenu_default_positions_t default_pos;
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
 
-   device_ptr->ctx_driver->clear();
-
    if (g_extern.draw_menu)
       device_ptr->ctx_driver->set_blend(true);
 

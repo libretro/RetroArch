@@ -186,23 +186,6 @@ static void gfx_ctx_xdk_swap_buffers(void)
    d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL);
 }
 
-static void gfx_ctx_xdk_clear(void)
-{
-   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
-#ifdef _XBOX1
-   unsigned flicker_filter = g_extern.console.screen.state.flicker_filter.value;
-   bool soft_filter_enable = g_extern.console.screen.state.soft_filter.enable;
-#endif
-
-   device_ptr->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET,
-      D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
-#ifdef _XBOX1
-   device_ptr->d3d_render_device->BeginScene();
-   device_ptr->d3d_render_device->SetFlickerFilter(flicker_filter);
-   device_ptr->d3d_render_device->SetSoftDisplayFilter(soft_filter_enable);
-#endif
-}
-
 static bool gfx_ctx_xdk_window_has_focus(void)
 {
    return true;
@@ -510,7 +493,6 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    "xdk",
 
    // RARCH_CONSOLE stuff.
-   gfx_ctx_xdk_clear,
    gfx_ctx_xdk_set_blend,
    gfx_ctx_xdk_set_filtering,
    gfx_ctx_xdk_get_available_resolutions,

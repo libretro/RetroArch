@@ -105,7 +105,6 @@ typedef struct gfx_ctx_driver
    const char *ident;
 
 #if defined(HAVE_RMENU) || defined(_XBOX360)
-   void (*clear)(void);
    void (*set_blend)(bool enable);
    void (*set_filtering)(unsigned index, bool set_smooth);
    void (*get_available_resolutions)(void);

@@ -275,11 +275,6 @@ static void gfx_ctx_swap_buffers(void)
 #endif
 }
 
-static void gfx_ctx_clear(void)
-{
-   glClear(GL_COLOR_BUFFER_BIT);
-}
-
 static void gfx_ctx_set_blend(bool enable)
 {
    if(enable)
@@ -542,7 +537,6 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_write_egl_image,
    "ps3",
 #ifdef HAVE_RMENU
-   gfx_ctx_clear,
    gfx_ctx_set_blend,
    gfx_ctx_set_filtering,
    gfx_ctx_get_available_resolutions,
