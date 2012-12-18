@@ -1169,8 +1169,6 @@ bool rmenu_iterate(void)
          && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.console.emulator_initialized)
          && IS_TIMER_EXPIRED(0));
 
-   device_ptr->ctx_driver->clear();
-
    rarch_render_cached_frame();
 
    g_extern.console.rmenu.mode = rmenu_enable ? MODE_MENU : MODE_EMULATION;
