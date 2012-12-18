@@ -296,6 +296,9 @@ static void android_input_poll(void *data)
       AInputEvent* event = NULL;
       AInputQueue_getEvent(android_app->inputQueue, &event);
 
+      if (AInputQueue_preDispatchEvent(android_app->inputQueue, event))
+         continue;
+
       int32_t handled = 1;
 
       int id = AInputEvent_getDeviceId(event);
@@ -356,7 +359,7 @@ static void android_input_poll(void *data)
                *key &= ~(input_state);
          }
 
-         if(keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN || input_state)
+         if(keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN)
             handled = 0;
       }
       AInputQueue_finishEvent(android_app->inputQueue, event, handled);
