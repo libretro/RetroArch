@@ -2769,11 +2769,6 @@ bool rarch_main_iterate(void)
       return false;
    }
 
-#ifdef ANDROID
-   if (input_key_pressed_func(RARCH_PAUSE_TOGGLE))
-      return android_run_events(g_android.app);
-#endif
-
    // Time to drop?
    if (input_key_pressed_func(RARCH_QUIT_KEY) ||
          !video_alive_func())
