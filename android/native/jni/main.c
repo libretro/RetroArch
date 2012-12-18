@@ -222,7 +222,7 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          if(g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT))
          {
             uninit_drivers();
-            g_extern.lifecycle_state &= ~(1ULL << RARCH_WINDOW_READY);
+            g_android.window_ready = false;
          }
 
          /* POSTEXEC */
@@ -282,7 +282,7 @@ bool android_run_events(struct android_app* android_app)
                   init_drivers();
 
             if (android_app->window != NULL)
-               g_extern.lifecycle_state |= (1ULL << RARCH_WINDOW_READY);
+               g_android.window_ready = true;
          }
       }
 
@@ -414,7 +414,7 @@ static void* android_app_entry(void* param)
 
    RARCH_LOG("Setting RetroArch video refresh rate to: %.2fHz.\n", g_android.disp_refresh_rate);
 
-   while(!(g_extern.lifecycle_state & (1ULL << RARCH_WINDOW_READY)))
+   while(!g_android.window_ready)
    {
       if(!android_run_events(android_app))
          goto exit;

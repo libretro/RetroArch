@@ -103,9 +103,6 @@ enum // RetroArch specific bind IDs.
    RARCH_CHEAT_INPUT,
    RARCH_SRAM_WRITE_PROTECT,
 #endif
-#ifdef ANDROID
-   RARCH_WINDOW_READY,
-#endif
 #ifdef HAVE_RMENU
    RARCH_RMENU_TOGGLE,
    RARCH_RMENU_QUICKMENU_TOGGLE,

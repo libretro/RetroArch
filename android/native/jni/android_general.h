@@ -34,6 +34,7 @@ struct droid
    unsigned height;
    struct saved_state state;
    int32_t last_orient;
+   bool window_ready;
    float disp_refresh_rate;
 };
 
