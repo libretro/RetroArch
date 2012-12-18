@@ -2732,23 +2732,6 @@ static inline bool rarch_main_paused(void)
    return g_extern.is_paused && !g_extern.is_oneshot;
 }
 
-static bool rarch_main_idle_iterate(void)
-{
-#ifdef HAVE_COMMAND
-   if (driver.command)
-      rarch_cmd_pre_frame(driver.command);
-#endif
-
-   if (input_key_pressed_func(RARCH_QUIT_KEY) ||
-         !video_alive_func())
-      return false;
-
-   do_state_checks();
-
-   input_poll();
-   rarch_sleep(10);
-   return true;
-}
 
 bool rarch_main_iterate(void)
 {
@@ -2880,6 +2863,24 @@ void rarch_main_deinit(void)
 }
 
 #ifndef HAVE_RARCH_MAIN_WRAP
+static bool rarch_main_idle_iterate(void)
+{
+#ifdef HAVE_COMMAND
+   if (driver.command)
+      rarch_cmd_pre_frame(driver.command);
+#endif
+
+   if (input_key_pressed_func(RARCH_QUIT_KEY) ||
+         !video_alive_func())
+      return false;
+
+   do_state_checks();
+
+   input_poll();
+   rarch_sleep(10);
+   return true;
+}
+
 int rarch_main(int argc, char *argv[])
 {
    int init_ret;
