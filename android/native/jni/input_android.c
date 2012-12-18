@@ -302,7 +302,7 @@ static void android_input_poll(void *data)
       int type = AInputEvent_getType(event);
       int state_id = state_device_ids[id];
 
-      if(state_i == -1)
+      if(state_id == -1)
          state_id = state_device_ids[id] = pads_connected++;
 
       int motion_action = AMotionEvent_getAction(event);
@@ -333,7 +333,7 @@ static void android_input_poll(void *data)
           * because we 'added' 1 to each entry in the LUT -
           * RETRO_DEVICE_ID_JOYPAD_B is 0
           */
-         uint8_t unpacked = (keycode_lut[keycode] >> ((i+1) << 3)) - 1;
+         uint8_t unpacked = (keycode_lut[keycode] >> ((state_id+1) << 3)) - 1;
          uint64_t input_state = (1ULL << unpacked);
 #ifdef RARCH_INPUT_DEBUG
          char msg[128];
