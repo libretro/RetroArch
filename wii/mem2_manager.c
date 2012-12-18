@@ -16,28 +16,28 @@ u32 MALLOC_MEM2 = 0;
 
 /*** from libogc (lwp_heap.inl) ****/
 
-static __inline__ heap_block *__lwp_heap_blockat(heap_block *block, u32 offset)
+static inline heap_block *__lwp_heap_blockat(heap_block *block, u32 offset)
 {
    return (heap_block *) ((char *) block + offset);
 }
 
-static __inline__ heap_block *__lwp_heap_usrblockat(void *ptr)
+static inline heap_block *__lwp_heap_usrblockat(void *ptr)
 {
    u32 offset = *(((u32 *) ptr) - 1);
    return __lwp_heap_blockat(ptr, -offset + -HEAP_BLOCK_USED_OVERHEAD);
 }
 
-static __inline__ bool __lwp_heap_blockin(heap_cntrl *heap, heap_block *block)
+static inline bool __lwp_heap_blockin(heap_cntrl *heap, heap_block *block)
 {
    return ((u32) block >= (u32) heap->start && (u32) block <= (u32) heap->final);
 }
 
-static __inline__ bool __lwp_heap_blockfree(heap_block *block)
+static inline bool __lwp_heap_blockfree(heap_block *block)
 {
    return !(block->front_flag & HEAP_BLOCK_USED);
 }
 
-static __inline__ u32 __lwp_heap_blocksize(heap_block *block)
+static inline u32 __lwp_heap_blocksize(heap_block *block)
 {
    return (block->front_flag & ~HEAP_BLOCK_USED);
 }
@@ -197,11 +197,6 @@ u32 gx_mem2_total()
    return info.used_size + info.free_size;
 }
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 void *__real_malloc(size_t size);
 void *__real_calloc(size_t n, size_t size);
 void *__real_memalign(size_t a, size_t size);
@@ -304,7 +299,3 @@ __attribute__ ((used)) size_t __wrap_malloc_usable_size(void *p)
       return __lwp_heap_block_size(&gx_mem2_heap, p);
    return __real_malloc_usable_size(p);
 }
-
-#ifdef __cplusplus
-}
-#endif
