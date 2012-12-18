@@ -48,11 +48,6 @@
 #include <time/time.h>
 #endif
 
-// Android
-#ifdef ANDROID
-#include "android/native/jni/android_general.h"
-#endif
-
 // Windows
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
