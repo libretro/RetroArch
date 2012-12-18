@@ -277,10 +277,6 @@ typedef struct gl
    GLfloat font_color[16];
    GLfloat font_color_dark[16];
 
-#ifdef HAVE_RMENU
-   bool block_swap;
-#endif
-
    bool egl_images;
 
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)

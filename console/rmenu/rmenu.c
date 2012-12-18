@@ -2403,8 +2403,6 @@ bool rmenu_iterate(void)
 
    if(preinit)
    {
-      device_ptr->block_swap = true;
-
       if(g_extern.console.rmenu.state.ingame_menu.enable)
          menu_stack_push(INGAME_MENU);
 
@@ -2468,6 +2466,7 @@ bool rmenu_iterate(void)
    }
 
    device_ptr->ctx_driver->swap_buffers();
+
    bool quit, resize;
    unsigned width, height, frame_count;
    frame_count = 0;
@@ -2492,7 +2491,6 @@ deinit:
    if(g_extern.console.rmenu.state.ingame_menu.enable)
       menu_stack_pop();
 
-   device_ptr->block_swap = false;
    g_extern.draw_menu = false;
    g_extern.console.rmenu.state.ingame_menu.enable = false;
 

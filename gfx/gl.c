@@ -1188,15 +1188,12 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    RARCH_PERFORMANCE_STOP(frame_run);
 
-#if defined(HAVE_RMENU)
-   if (!gl->block_swap)
-#endif
-      context_swap_buffers_func();
-
 #ifdef HAVE_RMENU
    if (g_extern.draw_menu)
       context_rmenu_frame_func(gl);
+   else
 #endif
+      context_swap_buffers_func();
 
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
    if (gl->pbo_readback_enable)
@@ -1745,10 +1742,6 @@ static void gl_restart(void)
    if (!gl)
 	   return;
 
-#ifdef HAVE_RMENU
-   bool should_block_swap = gl->block_swap;
-#endif
-
    gl_stop();
 #ifdef HAVE_CG
    gl_cg_invalidate_context();
@@ -1756,7 +1749,6 @@ static void gl_restart(void)
    gl_start();
 
 #ifdef HAVE_RMENU
-   gl->block_swap = should_block_swap;
    SET_TIMER_EXPIRATION(0, 30);
 #endif
 
