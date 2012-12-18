@@ -274,15 +274,13 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
 
 static bool rmenu_iterate(void)
 {
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
-
    uint16_t old_input_state = 0;
    bool first = true;
    bool first_held = false;
    bool initial_held = true;
 
    g_extern.console.rmenu.state.rmenu.enable = true;
-   gx->menu_render = true;
+   g_extern.draw_menu = true;
 
    do
    {
@@ -387,7 +385,7 @@ static bool rmenu_iterate(void)
 
    }while(g_extern.console.rmenu.state.rmenu.enable);
 
-   gx->menu_render = false;
+   g_extern.draw_menu = false;
 
    g_extern.console.rmenu.state.ingame_menu.enable = false;
 
@@ -560,9 +558,9 @@ int main(int argc, char *argv[])
       rarch_console_load_game_wrap(rom, g_extern.file_state.zip_extract_mode, S_DELAY_1);
 
       rgui_iterate(rgui, RGUI_ACTION_MESSAGE);
-      gx->menu_render = true;
+      g_extern.draw_menu = true;
       rarch_render_cached_frame();
-      gx->menu_render = false;
+      g_extern.draw_menu = false;
 
       rarch_startup(default_paths.config_file);
    }

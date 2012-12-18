@@ -267,8 +267,6 @@ static void gx_input_poll(void *data)
 {
    (void)data;
 
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
-
    bool quit_gc = false;
 #ifdef HW_RVL
    bool quit_classic = false;
@@ -384,7 +382,7 @@ static void gx_input_poll(void *data)
                   quit_classic = true;
 
                //TODO: Hack, analog stick twitchiness needs to be properly fixed
-               if(gx->menu_render)
+               if(g_extern.draw_menu)
                {
                   s8 x = gx_stick_x(exp.classic.ljs);
                   s8 y = gx_stick_y(exp.classic.ljs);

@@ -20,7 +20,6 @@
 
 typedef struct gx_video
 {
-   bool menu_render;
    bool should_resize;
    bool keep_aspect;
    bool double_strike;

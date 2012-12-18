@@ -600,7 +600,7 @@ static void update_textures(const uint32_t *src,
       convert_texture(src, g_tex.data, width, height, pitch, gx->rgb32);
    }
 
-   if(gx->menu_render)
+   if(g_extern.draw_menu)
    {
       convert_texture(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2, false);
    }
@@ -795,7 +795,6 @@ static bool gx_frame(void *data, const void *frame,
       const char *msg)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
-   bool menu_render = gx->menu_render;
    bool should_resize = gx->should_resize;
    u8 clear_efb = GX_FALSE;
 
@@ -806,7 +805,7 @@ static bool gx_frame(void *data, const void *frame,
    else
       gx->msg[0] = 0;
 
-   if (!frame && menu_render)
+   if (!frame && g_extern.draw_menu)
       width = height = 4; // draw a black square in the background
 
    if(should_resize)
@@ -815,7 +814,7 @@ static bool gx_frame(void *data, const void *frame,
       clear_efb = GX_TRUE;
    }
 
-   while ((g_vsync || menu_render) && !g_draw_done)
+   while ((g_vsync || g_extern.draw_menu) && !g_draw_done)
       LWP_ThreadSleep(g_video_cond);
 
    if (width != gx_old_width || height != gx_old_height)
@@ -838,7 +837,7 @@ static bool gx_frame(void *data, const void *frame,
       GX_DrawDone();
    }
 
-   if(menu_render)
+   if(g_extern.draw_menu)
    {
       GX_LoadTexObj(&menu_tex.obj, GX_TEXMAP0);
       GX_CallDispList(display_list, display_list_size);
