@@ -1155,7 +1155,6 @@ bool rmenu_iterate(void)
 
    if(preinit)
    {
-      device_ptr->block_swap = true;
       g_extern.console.rmenu.input_loop = INPUT_LOOP_MENU;
       g_extern.draw_menu = true;
       preinit = false;
@@ -1213,7 +1212,6 @@ deinit:
       SET_TIMER_EXPIRATION(0, 30);
    }
 
-   device_ptr->block_swap = false;
    g_extern.console.rmenu.state.ingame_menu.enable = false;
    g_extern.draw_menu = false;
    preinit = true;
