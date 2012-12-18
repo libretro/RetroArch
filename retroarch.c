@@ -2227,9 +2227,7 @@ static void check_pause(void)
    old_focus = focus;
    old_state = new_state;
 }
-#endif
 
-#if !defined(RARCH_PERFORMANCE_MODE)
 static void check_oneshot(void)
 {
    static bool old_state = false;
