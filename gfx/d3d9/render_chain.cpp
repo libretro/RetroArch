@@ -101,7 +101,7 @@ void RenderChain::add_pass(const LinkInfo &info)
 
    if (FAILED(dev->CreateVertexBuffer(
                4 * sizeof(Vertex),
-               0,
+               dev->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
                FVF,
                D3DPOOL_DEFAULT,
                &pass.vertex_buf,
@@ -279,7 +279,7 @@ void RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
 
       if (FAILED(dev->CreateVertexBuffer(
                   4 * sizeof(Vertex),
-                  0,
+                  dev->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
                   FVF,
                   D3DPOOL_DEFAULT,
                   &prev.vertex_buf[i],

@@ -119,7 +119,19 @@ void D3DVideo::init_base(const video_info_t &info)
                &d3dpp,
                &dev)))
    {
-      throw std::runtime_error("Failed to init device");
+      RARCH_WARN("[D3D9]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
+                 (unsigned)Callback::d3d_err);
+
+      if (FAILED(Callback::d3d_err = g_pD3D->CreateDevice(
+                  Monitor::cur_mon_id,
+                  D3DDEVTYPE_HAL,
+                  hWnd,
+                  D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+                  &d3dpp,
+                  &dev)))
+      {
+         throw std::runtime_error("Failed to init device");
+      }
    }
 }
 
