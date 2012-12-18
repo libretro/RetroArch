@@ -255,11 +255,6 @@ static void gfx_ctx_check_window(bool *quit,
       *quit = true;
 }
 
-static void gfx_ctx_clear(void)
-{
-   glClear(GL_COLOR_BUFFER_BIT);
-}
-
 static void gfx_ctx_set_blend(bool enable)
 {
    if(enable)
@@ -555,7 +550,6 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    gfx_ctx_write_egl_image,
    "android",
 #ifdef HAVE_RMENU
-   gfx_ctx_clear,
    gfx_ctx_set_blend,
    gfx_ctx_set_filtering,
    gfx_ctx_get_available_resolutions,
