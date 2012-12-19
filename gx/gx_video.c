@@ -465,12 +465,12 @@ static void gx_start(void)
 
 #ifdef ASM_BLITTER
 
-static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src, const uint32_t *dst,
+static void update_texture_asm(const uint32_t *src, const uint32_t *dst,
       unsigned width, unsigned height, unsigned pitch)
 {
    register uint32_t tmp0, tmp1, tmp2, tmp3, line2, line2b, line3, line3b, line4, line4b, line5;
 
-   __asm__ __volatile__ (
+   asm volatile (
       "     srwi     %[width],   %[width],   2           \n"
       "     srwi     %[height],  %[height],  2           \n"
       "     subi     %[tmp3],    %[dst],     4           \n"
@@ -524,7 +524,7 @@ static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src, c
          [line4]  "=&b" (line4),
          [line4b] "=&b" (line4b),
          [line5]  "=&b" (line5),
-         [dst]    "+b"  (dst)
+         [dst]    "+&b"  (dst)
       :  [src]    "b"   (src),
          [width]  "b"   (width),
          [height] "b"   (height),
@@ -595,22 +595,8 @@ static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src, c
    src += tmp_pitch; \
 }
 
-static void convert_texture(gx_video_t *gx, bool menu, const uint32_t *_src, uint32_t *_dst,
-   if (rgb32 && !menu)
-      width &= ~15;
-      height &= ~3;
-      unsigned tmp_pitch = pitch >> 1;
-      unsigned width2 = width << 1;
-
-      const uint16_t *src = (uint16_t *) _src;
-      uint16_t *dst = (uint16_t *) _dst;
-      for (unsigned i = 0; i < height; i += 4, dst += 4 * width2)
-      {
-         BLIT_LINE_32(0)
-         BLIT_LINE_32(4)
-         BLIT_LINE_32(8)
-         BLIT_LINE_32(12)
-      }
+static void convert_texture16(const uint32_t *_src, uint32_t *_dst,
+      unsigned width, unsigned height, unsigned pitch)
 {
 #ifdef ASM_BLITTER
    width &= ~3;
@@ -634,11 +620,27 @@ static void convert_texture(gx_video_t *gx, bool menu, const uint32_t *_src, uin
          BLIT_LINE_16(6)
    }
 #endif
-
 }
 
-      convert_texture(gx, false, src, g_tex.data, width, height, pitch, gx->rgb32);
-      convert_texture(gx, true, gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2, false);
+static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
+      unsigned width, unsigned height, unsigned pitch)
+{
+   width &= ~15;
+   height &= ~3;
+   unsigned tmp_pitch = pitch >> 1;
+   unsigned width2 = width << 1;
+
+   const uint16_t *src = (uint16_t *) _src;
+   uint16_t *dst = (uint16_t *) _dst;
+   for (unsigned i = 0; i < height; i += 4, dst += 4 * width2)
+   {
+      BLIT_LINE_32(0)
+      BLIT_LINE_32(4)
+      BLIT_LINE_32(8)
+      BLIT_LINE_32(12)
+   }
+}
+
 static void gx_resize(gx_video_t *gx)
 {
    int x = 0, y = 0;
@@ -864,16 +866,16 @@ static bool gx_frame(void *data, const void *frame,
    if (frame)
    {
       if(gx->rgb32)
-         memcpy(g_tex.data, frame, width * height * 4); // TODO: actually convert this
+         convert_texture32(frame, g_tex.data, width, height, pitch);
       else
-         convert_texture(frame, g_tex.data, width, height, pitch);
+         convert_texture16(frame, g_tex.data, width, height, pitch);
       DCFlushRange(g_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
    }
 
    if (g_extern.draw_menu)
    {
-      convert_texture(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2);
-      DCFlushRange(menu_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
+      convert_texture16(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2);
+      DCFlushRange(menu_tex.data, RGUI_WIDTH * RGUI_HEIGHT * 2);
    }
 
    GX_InvalidateTexAll();
