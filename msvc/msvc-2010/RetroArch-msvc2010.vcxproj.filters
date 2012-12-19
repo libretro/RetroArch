@@ -105,9 +105,6 @@
     <ClCompile Include="..\..\audio\ext_audio.c">
       <Filter>Source Files\audio</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\audio\hermite.c">
-      <Filter>Source Files\audio</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\audio\null.c">
       <Filter>Source Files\audio</Filter>
     </ClCompile>
@@ -177,9 +174,6 @@
     <ClCompile Include="..\..\audio\xaudio-c\xaudio-c.c">
       <Filter>Source Files\audio</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\gfx\fonts\freetype.c">
-      <Filter>Source Files\gfx\fonts</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\gfx\d3d9\d3d9.cpp">
       <Filter>Source Files\gfx\d3d9</Filter>
     </ClCompile>
@@ -188,6 +182,21 @@
     </ClCompile>
     <ClCompile Include="..\..\gfx\shader_cg.c">
       <Filter>Source Files\gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\fonts\gl_font.c">
+      <Filter>Source Files\gfx\fonts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\audio\sinc.c">
+      <Filter>Source Files\audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\fonts\gl_raster_font.c">
+      <Filter>Source Files\gfx\fonts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\fonts\bitmapfont.c">
+      <Filter>Source Files\gfx\fonts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\fonts\fonts.c">
+      <Filter>Source Files\gfx\fonts</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

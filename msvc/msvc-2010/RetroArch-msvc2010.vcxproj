@@ -167,14 +167,13 @@
     </ClCompile>
     <ClCompile Include="..\..\audio\ext_audio.c">
     </ClCompile>
-    <ClCompile Include="..\..\audio\hermite.c">
-    </ClCompile>
     <ClCompile Include="..\..\audio\null.c">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\nullaudio.obj</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)\nullaudio.obj</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\nullaudio.obj</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)\nullaudio.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\..\audio\sinc.c" />
     <ClCompile Include="..\..\audio\utils.c">
     </ClCompile>
     <ClCompile Include="..\..\audio\xaudio-c\xaudio-c.c">
@@ -185,8 +184,10 @@
     </ClCompile>
     <ClCompile Include="..\..\gfx\d3d9\d3d9.cpp" />
     <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp" />
-    <ClCompile Include="..\..\gfx\fonts\freetype.c">
-    </ClCompile>
+    <ClCompile Include="..\..\gfx\fonts\bitmapfont.c" />
+    <ClCompile Include="..\..\gfx\fonts\fonts.c" />
+    <ClCompile Include="..\..\gfx\fonts\gl_font.c" />
+    <ClCompile Include="..\..\gfx\fonts\gl_raster_font.c" />
     <ClCompile Include="..\..\gfx\shader_cg.c" />
     <ClCompile Include="..\..\performance.c">
     </ClCompile>
