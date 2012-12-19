@@ -535,9 +535,9 @@ static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src, c
 
 #endif
 
-#define BLIT_LINE(off) \
+#define BLIT_LINE_16(off) \
 { \
-   const uint32_t *tmp_src = src2; \
+   const uint32_t *tmp_src = src; \
    uint32_t *tmp_dst = dst; \
    for (unsigned x = 0; x < width2; x += 8, tmp_src += 8, tmp_dst += 32) \
    { \
@@ -550,11 +550,67 @@ static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src, c
       tmp_dst[24 + off] = tmp_src[6]; \
       tmp_dst[25 + off] = tmp_src[7]; \
    } \
-   src2 += tmp_pitch; \
+   src += tmp_pitch; \
 }
 
-static void convert_texture(const uint32_t *_src, uint32_t *_dst,
-      unsigned width, unsigned height, unsigned pitch)
+#define BLIT_LINE_32(off) \
+{ \
+   const uint16_t *tmp_src = src; \
+   uint16_t *tmp_dst = dst; \
+   for (unsigned x = 0; x < width2; x += 8, tmp_src += 32, tmp_dst += 128) \
+   { \
+      tmp_dst[  0 + off] = tmp_src[0] | 0xFF00; \
+      tmp_dst[ 16 + off] = tmp_src[1]; \
+      tmp_dst[  1 + off] = tmp_src[2] | 0xFF00; \
+      tmp_dst[ 17 + off] = tmp_src[3]; \
+      tmp_dst[  2 + off] = tmp_src[4] | 0xFF00; \
+      tmp_dst[ 18 + off] = tmp_src[5]; \
+      tmp_dst[  3 + off] = tmp_src[6] | 0xFF00; \
+      tmp_dst[ 19 + off] = tmp_src[7]; \
+      tmp_dst[ 32 + off] = tmp_src[8] | 0xFF00; \
+      tmp_dst[ 48 + off] = tmp_src[9]; \
+      tmp_dst[ 33 + off] = tmp_src[10] | 0xFF00; \
+      tmp_dst[ 49 + off] = tmp_src[11]; \
+      tmp_dst[ 34 + off] = tmp_src[12] | 0xFF00; \
+      tmp_dst[ 50 + off] = tmp_src[13]; \
+      tmp_dst[ 35 + off] = tmp_src[14] | 0xFF00; \
+      tmp_dst[ 51 + off] = tmp_src[15]; \
+      tmp_dst[ 64 + off] = tmp_src[16] | 0xFF00; \
+      tmp_dst[ 80 + off] = tmp_src[17]; \
+      tmp_dst[ 65 + off] = tmp_src[18] | 0xFF00; \
+      tmp_dst[ 81 + off] = tmp_src[19]; \
+      tmp_dst[ 66 + off] = tmp_src[20] | 0xFF00; \
+      tmp_dst[ 82 + off] = tmp_src[21]; \
+      tmp_dst[ 67 + off] = tmp_src[22] | 0xFF00; \
+      tmp_dst[ 83 + off] = tmp_src[23]; \
+      tmp_dst[ 96 + off] = tmp_src[24] | 0xFF00; \
+      tmp_dst[112 + off] = tmp_src[25]; \
+      tmp_dst[ 97 + off] = tmp_src[26] | 0xFF00; \
+      tmp_dst[113 + off] = tmp_src[27]; \
+      tmp_dst[ 98 + off] = tmp_src[28] | 0xFF00; \
+      tmp_dst[114 + off] = tmp_src[29]; \
+      tmp_dst[ 99 + off] = tmp_src[30] | 0xFF00; \
+      tmp_dst[115 + off] = tmp_src[31]; \
+   } \
+   src += tmp_pitch; \
+}
+
+static void convert_texture(gx_video_t *gx, bool menu, const uint32_t *_src, uint32_t *_dst,
+   if (rgb32 && !menu)
+      width &= ~15;
+      height &= ~3;
+      unsigned tmp_pitch = pitch >> 1;
+      unsigned width2 = width << 1;
+
+      const uint16_t *src = (uint16_t *) _src;
+      uint16_t *dst = (uint16_t *) _dst;
+      for (unsigned i = 0; i < height; i += 4, dst += 4 * width2)
+      {
+         BLIT_LINE_32(0)
+         BLIT_LINE_32(4)
+         BLIT_LINE_32(8)
+         BLIT_LINE_32(12)
+      }
 {
 #ifdef ASM_BLITTER
    width &= ~3;
@@ -568,19 +624,21 @@ static void convert_texture(const uint32_t *_src, uint32_t *_dst,
 
    // Texture data is 4x4 tiled @ 16bpp.
    // Use 32-bit to transfer more data per cycle.
-   const uint32_t *src2 = _src;
+      const uint32_t *src = _src;
    uint32_t *dst = _dst;
    for (unsigned i = 0; i < height; i += 4, dst += 4 * width2)
    {
-      BLIT_LINE(0)
-         BLIT_LINE(2)
-         BLIT_LINE(4)
-         BLIT_LINE(6)
+         BLIT_LINE_16(0)
+         BLIT_LINE_16(2)
+         BLIT_LINE_16(4)
+         BLIT_LINE_16(6)
    }
 #endif
 
 }
 
+      convert_texture(gx, false, src, g_tex.data, width, height, pitch, gx->rgb32);
+      convert_texture(gx, true, gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2, false);
 static void gx_resize(gx_video_t *gx)
 {
    int x = 0, y = 0;
