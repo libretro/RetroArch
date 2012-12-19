@@ -554,40 +554,31 @@ static __attribute__ ((noinline)) void update_texture_asm(const uint32_t *src, c
 }
 
 static void convert_texture(const uint32_t *_src, uint32_t *_dst,
-      unsigned width, unsigned height, unsigned pitch, bool rgb32)
+      unsigned width, unsigned height, unsigned pitch)
 {
-   if (rgb32)
-   {
-      // TODO: actually convert this
-      memcpy(_dst, _src, width * height * 4);
-   }
-   else
-   {
 #ifdef ASM_BLITTER
-      width &= ~3;
-      height &= ~3;
-      update_texture_asm(_src, _dst, width, height, pitch);
+   width &= ~3;
+   height &= ~3;
+   update_texture_asm(_src, _dst, width, height, pitch);
 #else
-      width &= ~15;
-      height &= ~3;
-      unsigned tmp_pitch = pitch >> 2;
-      unsigned width2 = width >> 1;
+   width &= ~15;
+   height &= ~3;
+   unsigned tmp_pitch = pitch >> 2;
+   unsigned width2 = width >> 1;
 
-      // Texture data is 4x4 tiled @ 16bpp.
-      // Use 32-bit to transfer more data per cycle.
-      const uint32_t *src2 = _src;
-      uint32_t *dst = _dst;
-      for (unsigned i = 0; i < height; i += 4, dst += 4 * width2)
-      {
-         BLIT_LINE(0)
+   // Texture data is 4x4 tiled @ 16bpp.
+   // Use 32-bit to transfer more data per cycle.
+   const uint32_t *src2 = _src;
+   uint32_t *dst = _dst;
+   for (unsigned i = 0; i < height; i += 4, dst += 4 * width2)
+   {
+      BLIT_LINE(0)
          BLIT_LINE(2)
          BLIT_LINE(4)
          BLIT_LINE(6)
-      }
-#endif
    }
+#endif
 
-   DCFlushRange(_dst, height * (width << (rgb32 ? 2 : 1)));
 }
 
 static void gx_resize(gx_video_t *gx)
@@ -813,10 +804,19 @@ static bool gx_frame(void *data, const void *frame,
    g_current_framebuf ^= 1;
 
    if (frame)
-      convert_texture(frame, g_tex.data, width, height, pitch, gx->rgb32);
+   {
+      if(gx->rgb32)
+         memcpy(g_tex.data, frame, width * height * 4); // TODO: actually convert this
+      else
+         convert_texture(frame, g_tex.data, width, height, pitch);
+      DCFlushRange(g_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
+   }
 
    if (g_extern.draw_menu)
-      convert_texture(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2, false);
+   {
+      convert_texture(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2);
+      DCFlushRange(menu_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
+   }
 
    GX_InvalidateTexAll();
 
