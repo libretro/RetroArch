@@ -178,7 +178,7 @@ static bool dinput_keyboard_pressed(struct dinput_input *di, unsigned key)
    if (key >= RETROK_LAST)
       return false;
 
-   unsigned sym = input_translate_rk_to_keysym((retro_key)key);
+   unsigned sym = input_translate_rk_to_keysym((enum retro_key)key);
    return di->state[sym] & 0x80;
 }
 
