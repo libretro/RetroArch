@@ -590,24 +590,6 @@ static void convert_texture(const uint32_t *_src, uint32_t *_dst,
    DCFlushRange(_dst, height * (width << (rgb32 ? 2 : 1)));
 }
 
-static void update_textures(const uint32_t *src,
-      unsigned width, unsigned height, unsigned pitch)
-{
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
-
-   if (src)
-   {
-      convert_texture(src, g_tex.data, width, height, pitch, gx->rgb32);
-   }
-
-   if(g_extern.draw_menu)
-   {
-      convert_texture(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2, false);
-   }
-
-   GX_InvalidateTexAll();
-}
-
 static void gx_resize(gx_video_t *gx)
 {
    int x = 0, y = 0;
@@ -829,7 +811,14 @@ static bool gx_frame(void *data, const void *frame,
 
    g_draw_done = false;
    g_current_framebuf ^= 1;
-   update_textures(frame, width, height, pitch);
+
+   if (frame)
+      convert_texture(frame, g_tex.data, width, height, pitch, gx->rgb32);
+
+   if (g_extern.draw_menu)
+      convert_texture(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2, false);
+
+   GX_InvalidateTexAll();
 
    //if (frame)
    {
