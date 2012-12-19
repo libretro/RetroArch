@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "../boolean.h"
+#include "../general.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
