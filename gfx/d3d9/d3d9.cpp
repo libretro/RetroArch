@@ -448,6 +448,13 @@ D3DVideo::D3DVideo(const video_info_t *info) :
    SetForegroundWindow(hWnd);
    SetFocus(hWnd);
 
+#ifdef HAVE_CG
+    auto shader_type = g_settings.video.shader_type;
+    if ((shader_type == RARCH_SHADER_CG ||
+		 shader_type == RARCH_SHADER_AUTO) && *g_settings.video.cg_shader_path)
+        cg_shader = g_settings.video.cg_shader_path;
+#endif
+
    video_info = *info;
    init(video_info);
 
@@ -612,15 +619,6 @@ void D3DVideo::init_chain_singlepass(const video_info_t &video_info)
    LinkInfo info_second = {0};
 
 #ifdef HAVE_CG
-   if (cg_shader.empty())
-   {
-      auto shader_type = g_settings.video.shader_type;
-      if ((
-			      shader_type == RARCH_SHADER_CG ||
-			      shader_type == RARCH_SHADER_AUTO) && *g_settings.video.cg_shader_path)
-         cg_shader = g_settings.video.cg_shader_path;
-   }
-
    info.shader_path = cg_shader;
 #endif
 
