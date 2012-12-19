@@ -76,6 +76,7 @@
 #define context_translate_aspect_func(width, height) gl->ctx_driver->translate_aspect(width, height)
 #define context_set_resize_func(width, height)       gl->ctx_driver->set_resize(width, height)
 #define context_swap_buffers_func()                  gl->ctx_driver->swap_buffers()
+#define context_post_render_func(gl)                 gl->ctx_driver->post_render(gl)
 #define context_swap_interval_func(var)              gl->ctx_driver->swap_interval(var)
 #define context_has_focus_func()                     gl->ctx_driver->has_focus()
 #define context_check_window_func(quit, resize, width, height, frame_count) \
@@ -279,6 +280,12 @@ typedef struct gl
 
    bool egl_images;
 
+   // Overlay rendering
+   GLuint tex_overlay;
+   GLfloat overlay_tex_coord[8];
+   GLfloat overlay_vertex_coord[8];
+   GLfloat overlay_alpha_mod; // TODO. Needs a specific shader.
+
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
    // PBOs used for asynchronous viewport readbacks.
    GLuint pbo_readback[4];
@@ -359,4 +366,14 @@ void gl_shader_set_coords(gl_t *gl, const struct gl_coords *coords, const math_m
 void gl_init_fbo(gl_t *gl, unsigned width, unsigned height);
 void gl_deinit_fbo(gl_t *gl);
 
+bool gl_load_overlay(gl_t *gl, const char *path);
+void gl_set_overlay_tex_coord(gl_t *gl,
+      GLfloat x, GLfloat y, // Relative coordinates [0, 1] range for screen.
+      GLfloat w, GLfloat h);
+void gl_set_overlay_vertex_coord(gl_t *gl,
+      GLfloat x, GLfloat y, // Relative coordinates [0, 1] range for screen.
+      GLfloat w, GLfloat h);
+void gl_render_overlay(gl_t *gl);
+
 #endif
+

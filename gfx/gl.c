@@ -21,6 +21,7 @@
 #include "../driver.h"
 #include "../performance.h"
 #include "scaler/scaler.h"
+#include "image.h"
 
 #include <stdint.h>
 #include "../libretro.h"
@@ -1182,6 +1183,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (msg && gl->font_ctx)
       gl->font_ctx->render_msg(gl, msg);
 
+   if (gl->ctx_driver->post_render)
+      context_post_render_func(gl);
+
 #if !defined(RARCH_CONSOLE)
    context_update_window_title_func(false);
 #endif
@@ -1230,6 +1234,8 @@ static void gl_free(void *data)
 #endif
 
    glDeleteTextures(TEXTURES, gl->texture);
+   if (gl->tex_overlay)
+      glDeleteTextures(1, &gl->tex_overlay);
 
 #if defined(HAVE_PSGL)
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
@@ -1776,8 +1782,77 @@ static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
    gl->keep_aspect = true;
    gl->should_resize = true;
 }
-
 #endif
+
+bool gl_load_overlay(gl_t *gl, const char *path)
+{
+   if (!gl->tex_overlay)
+      glGenTextures(1, &gl->tex_overlay);
+
+   glBindTexture(GL_TEXTURE_2D, gl->tex_overlay);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+   struct texture_image img = {0};
+   if (!texture_image_load(path, &img))
+   {
+      RARCH_ERR("Failed to load overlay image: %s.\n", path);
+      return false;
+   }
+
+   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(img.width * sizeof(uint32_t)));
+   glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
+         img.width, img.height, 0, RARCH_GL_TEXTURE_TYPE32,
+         RARCH_GL_FORMAT32, img.pixels);
+
+   free(img.pixels);
+   gl_set_overlay_tex_coord(gl, 0, 0, 1, 1); // Default. Stretch to whole screen.
+   gl_set_overlay_vertex_coord(gl, 0, 0, 1, 1);
+   return true;
+}
+
+void gl_set_overlay_tex_coord(gl_t *gl,
+      GLfloat x, GLfloat y,
+      GLfloat w, GLfloat h)
+{
+   gl->overlay_tex_coord[0] = x;     gl->overlay_tex_coord[1] = y;
+   gl->overlay_tex_coord[2] = x + w; gl->overlay_tex_coord[3] = y;
+   gl->overlay_tex_coord[4] = x;     gl->overlay_tex_coord[5] = y + h;
+   gl->overlay_tex_coord[6] = x + w; gl->overlay_tex_coord[7] = y + h;
+}
+
+void gl_set_overlay_vertex_coord(gl_t *gl,
+      GLfloat x, GLfloat y,
+      GLfloat w, GLfloat h)
+{
+   // Flipped, so we preserve top-down semantics.
+   y = 1.0f - y;
+   h = -h;
+
+   gl->overlay_vertex_coord[0] = x;     gl->overlay_vertex_coord[1] = y;
+   gl->overlay_vertex_coord[2] = x + w; gl->overlay_vertex_coord[3] = y;
+   gl->overlay_vertex_coord[4] = x;     gl->overlay_vertex_coord[5] = y + h;
+   gl->overlay_vertex_coord[6] = x + w; gl->overlay_vertex_coord[7] = y + h;
+}
+
+void gl_render_overlay(gl_t *gl)
+{
+   glBindTexture(GL_TEXTURE_2D, gl->tex_overlay);
+
+   gl_shader_use_func(gl, 0);
+   glEnable(GL_BLEND);
+   gl->coords.vertex    = gl->overlay_vertex_coord;
+   gl->coords.tex_coord = gl->overlay_tex_coord;
+   gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp);
+
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glDisable(GL_BLEND);
+
+   gl->coords.vertex    = vertex_ptr;
+   gl->coords.tex_coord = gl->tex_coords;
+}
 
 const video_driver_t video_gl = {
    gl_init,
