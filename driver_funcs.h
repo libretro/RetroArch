@@ -167,12 +167,10 @@ static inline bool input_key_pressed_func(int key)
 #define input_poll_func() MAKENAME_INPUT(_input_poll)(driver.input_data)
 #define input_input_state_func(retro_keybinds, port, device, index, id) \
    MAKENAME_INPUT(_input_state)(driver.input_data, retro_keybinds, port, device, index, id)
-#ifdef ANDROID
-#define input_key_pressed_func(key) ((g_extern.lifecycle_state & (1ULL << key)) ? true : false)
-#else
 #define input_key_pressed_func(key) MAKENAME_INPUT(_input_key_pressed)(driver.input_data, key)
-#endif
 #define input_free_func() MAKENAME_INPUT(_input_free_input)(driver.input_data)
+
+#define video_overlay_interface_func(iface) driver.video->overlay_interface(driver.video_data, iface)
 
 #endif
 
