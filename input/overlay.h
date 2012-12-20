@@ -29,6 +29,8 @@ typedef struct input_overlay input_overlay_t;
 input_overlay_t *input_overlay_new(const char *overlay);
 void input_overlay_free(input_overlay_t *ol);
 
+void input_overlay_enable(input_overlay_t *ol, bool enable);
+
 // norm_x and norm_y are the result of input_translate_coord_viewport().
 // Resulting state is a bitmask of (1 << key_bind_id).
 uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y);

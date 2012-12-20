@@ -23,6 +23,7 @@ struct input_overlay
 {
    void *iface_data;
    const video_overlay_interface_t *iface;
+   bool enable;
 };
 
 input_overlay_t *input_overlay_new(const char *overlay)
@@ -57,12 +58,19 @@ input_overlay_t *input_overlay_new(const char *overlay)
    free(img.pixels);
 
    ol->iface->enable(ol->iface_data, true);
+   ol->enable = true;
 
    return ol;
 
 error:
    input_overlay_free(ol);
    return NULL;
+}
+
+void input_overlay_enable(input_overlay_t *ol, bool enable)
+{
+   ol->enable = enable;
+   ol->iface->enable(ol->iface_data, enable);
 }
 
 struct overlay_desc
@@ -96,6 +104,9 @@ static const struct overlay_desc descs[] = {
 
 uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
 {
+   if (!ol->enable)
+      return 0;
+
    // norm_x and norm_y is in [-0x7fff, 0x7fff] range, like RETRO_DEVICE_POINTER.
    float x = (float)(norm_x + 0x7fff) / 0xffff;
    float y = (float)(norm_y + 0x7fff) / 0xffff;
