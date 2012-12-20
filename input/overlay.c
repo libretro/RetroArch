@@ -28,9 +28,8 @@ struct input_overlay
 
 input_overlay_t *input_overlay_new(const char *overlay)
 {
-   (void)overlay;
-
    input_overlay_t *ol = (input_overlay_t*)calloc(1, sizeof(*ol));
+
    if (!ol)
       goto error;
 
@@ -46,9 +45,8 @@ input_overlay_t *input_overlay_new(const char *overlay)
    if (!ol->iface)
       goto error;
 
-   // Test hardcoded.
    struct texture_image img = {0};
-   if (!texture_image_load("/tmp/basic_overlay.png", &img))
+   if (!texture_image_load(overlay, &img))
    {
       RARCH_ERR("Failed to load overlay image.\n");
       goto error;
