@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include "msvc/msvc_compat.h"
 #include "gfx/scaler/scaler.h"
+#include "input/overlay.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -277,6 +278,9 @@ typedef struct driver
 
    struct scaler_ctx scaler;
    void *scaler_out;
+
+   input_overlay_t *overlay;
+   uint64_t overlay_state;
 } driver_t;
 
 void init_drivers(void);

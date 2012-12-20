@@ -56,6 +56,7 @@ static inline bool input_key_pressed_func(int key)
       return false;
 
    bool ret = driver.input->key_pressed(driver.input_data, key);
+   ret |= driver.overlay_state & (UINT64_C(1) << key);
 #ifdef HAVE_COMMAND
    if (!ret && driver.command)
       ret = rarch_cmd_get(driver.command, key);

@@ -14,7 +14,6 @@
  */
 
 #include "input_common.h"
-#include "overlay.h"
 
 #include "../driver.h"
 
@@ -30,10 +29,6 @@
 typedef struct x11_input
 {
    const rarch_joypad_driver_t *joypad;
-
-   bool ol_defer;
-   input_overlay_t *ol;
-   uint64_t ol_state;
 
    Display *display;
    Window win;
@@ -62,11 +57,6 @@ static void *x_input_init(void)
 
    x11->joypad = input_joypad_init_first();
    input_init_keyboard_lut(rarch_key_map_x11);
-
-   if (driver.video_data) // Video driver isn't initialized yet, init later.
-      x11->ol = input_overlay_new(NULL);
-   else
-      x11->ol_defer = true;
 
    return x11;
 }
@@ -97,8 +87,7 @@ static bool x_bind_button_pressed(void *data, int key)
 {
    x11_input_t *x11 = (x11_input_t*)data;
    return x_is_pressed(x11, g_settings.input.binds[0], key) ||
-      input_joypad_pressed(x11->joypad, 0, &g_settings.input.binds[0][key]) ||
-      (x11->ol_state & (UINT64_C(1) << key));
+      input_joypad_pressed(x11->joypad, 0, &g_settings.input.binds[0][key]);
 }
 
 static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
@@ -176,8 +165,7 @@ static int16_t x_input_state(void *data, const struct retro_keybind **binds, uns
    {
       case RETRO_DEVICE_JOYPAD:
          return x_is_pressed(x11, binds[port], id) ||
-            input_joypad_pressed(x11->joypad, port, &binds[port][id]) ||
-            ((port == 0) && (x11->ol_state & (UINT64_C(1) << id)));
+            input_joypad_pressed(x11->joypad, port, &binds[port][id]);
 
       case RETRO_DEVICE_KEYBOARD:
          return x_key_pressed(x11, id);
@@ -206,25 +194,7 @@ static void x_input_free(void *data)
    if (x11->joypad)
       x11->joypad->destroy();
 
-   if (x11->ol)
-      input_overlay_free(x11->ol);
-
    free(data);
-}
-
-static void x_input_poll_overlay(x11_input_t *x11)
-{
-   if (!x11->ol)
-      return;
-
-   if (x11->mouse_l)
-   {
-      int16_t norm_x = 0, norm_y = 0;
-      bool valid = input_translate_coord_viewport(x11->mouse_x, x11->mouse_y, &norm_x, &norm_y);
-      x11->ol_state = valid ? input_overlay_poll(x11->ol, norm_x, norm_y) : 0;
-   }
-   else
-      x11->ol_state = 0;
 }
 
 static void x_input_poll_mouse(x11_input_t *x11)
@@ -248,19 +218,11 @@ static void x_input_poll_mouse(x11_input_t *x11)
    x11->mouse_l = mask & Button1Mask; 
    x11->mouse_m = mask & Button2Mask; 
    x11->mouse_r = mask & Button3Mask; 
-
-   x_input_poll_overlay(x11);
 }
 
 static void x_input_poll(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
-
-   if (x11->ol_defer)
-   {
-      x11->ol = input_overlay_new(NULL);
-      x11->ol_defer = false;
-   }
 
    if (video_focus_func())
       XQueryKeymap(x11->display, x11->state);
