@@ -469,9 +469,31 @@ size_t audio_sample_batch(const int16_t *data, size_t frames)
    return frames;
 }
 
+// TODO: This might need to be #ifdeffed out for irrelevant platforms.
+static inline void input_poll_overlay(void)
+{
+   bool pressed = input_input_state_func(NULL, 0,
+         RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
+
+   driver.overlay_state = 0;
+   if (!pressed)
+      return;
+
+   int16_t x = input_input_state_func(NULL, 0,
+         RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
+   int16_t y = input_input_state_func(NULL, 0,
+         RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
+
+   driver.overlay_state = input_overlay_poll(driver.overlay, x, y);
+}
+
 static void input_poll(void)
 {
    input_poll_func();
+
+   // TODO: This might need to be #ifdeffed out for irrelevant platforms.
+   if (driver.overlay) // Poll overlay state
+      input_poll_overlay();
 }
 
 // Turbo scheme: If turbo button is held, all buttons pressed except for D-pad will go into
@@ -519,6 +541,9 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
    int16_t res = 0;
    if (id < RARCH_FIRST_META_KEY || device == RETRO_DEVICE_KEYBOARD)
       res = input_input_state_func(binds, port, device, index, id);
+
+   if (device == RETRO_DEVICE_JOYPAD && port == 0)
+      res |= driver.overlay_state & (UINT64_C(1) << id) ? 1 : 0;
 
    // Don't allow turbo for D-pad.
    if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP || id > RETRO_DEVICE_ID_JOYPAD_RIGHT))

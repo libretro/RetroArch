@@ -718,10 +718,22 @@ void init_video_input(void)
          rarch_fail(1, "init_video_input()");
       }
    }
+
+   // TODO: This should probably be done somewhere else.
+   if (driver.overlay)
+      input_overlay_free(driver.overlay);
+   driver.overlay = input_overlay_new(NULL);
 }
 
 void uninit_video_input(void)
 {
+   if (driver.overlay)
+   {
+      input_overlay_free(driver.overlay);
+      driver.overlay = NULL;
+      driver.overlay_state = 0;
+   }
+
    if (driver.input_data != driver.video_data && driver.input)
       input_free_func();
 

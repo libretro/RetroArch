@@ -281,6 +281,7 @@ typedef struct gl
    bool egl_images;
 
    // Overlay rendering
+   bool overlay_enable;
    GLuint tex_overlay;
    GLfloat overlay_tex_coord[8];
    GLfloat overlay_vertex_coord[8];
@@ -365,15 +366,6 @@ void gl_shader_set_coords(gl_t *gl, const struct gl_coords *coords, const math_m
 
 void gl_init_fbo(gl_t *gl, unsigned width, unsigned height);
 void gl_deinit_fbo(gl_t *gl);
-
-bool gl_load_overlay(gl_t *gl, const char *path);
-void gl_set_overlay_tex_coord(gl_t *gl,
-      GLfloat x, GLfloat y, // Relative coordinates [0, 1] range for screen.
-      GLfloat w, GLfloat h);
-void gl_set_overlay_vertex_coord(gl_t *gl,
-      GLfloat x, GLfloat y, // Relative coordinates [0, 1] range for screen.
-      GLfloat w, GLfloat h);
-void gl_render_overlay(gl_t *gl);
 
 #endif
 

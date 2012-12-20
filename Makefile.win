@@ -20,6 +20,7 @@ OBJ = retroarch.o \
 		audio/utils.o \
 		audio/null.o \
 		input/null.o \
+		input/overlay.o \
 		fifo_buffer.o \
 		gfx/null.o \
 		media/rarch.o \

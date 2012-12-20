@@ -13,8 +13,9 @@ OBJ = retroarch.o \
 		rewind.o \
 		gfx/gfx_common.o \
 		input/input_common.o \
+		input/overlay.o \
 		patch.o \
-	   fifo_buffer.o \
+		fifo_buffer.o \
 		compat/compat.o \
 		audio/null.o \
 		gfx/null.o \
