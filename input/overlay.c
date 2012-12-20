@@ -73,10 +73,25 @@ struct overlay_desc
    unsigned key;
 };
 
-// TODO: This will be part of a config of some sort.
+// TODO: This will be part of a config of some sort, all customizable and nice.
+//
+// basic_overlay.png
 static const struct overlay_desc descs[] = {
-   { 0.25, 0.5, 0.1, RETRO_DEVICE_ID_JOYPAD_LEFT },
-   { 0.75, 0.5, 0.1, RETRO_DEVICE_ID_JOYPAD_RIGHT },
+   {  15.0 / 256.0, 210.0 / 256.0, 10.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_LEFT },
+   {  60.0 / 256.0, 210.0 / 256.0, 10.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_RIGHT },
+   {  37.5 / 256.0, 188.0 / 256.0, 10.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_UP },
+   {  37.5 / 256.0, 231.0 / 256.0, 10.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_DOWN },
+   {   7.5 / 256.0, 113.0 / 256.0, 20.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_L },
+   {   7.5 / 256.0,  59.0 / 256.0, 20.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_L2 },
+   { 246.0 / 256.0, 113.0 / 256.0, 20.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_R },
+   { 246.0 / 256.0,  59.0 / 256.0, 20.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_R2 },
+   {  91.0 / 256.0, 168.0 / 256.0, 10.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_SELECT },
+   { 134.0 / 256.0, 168.0 / 256.0, 10.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_START },
+
+   { 200.0 / 256.0, 237.0 / 256.0, 15.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_B},
+   { 234.0 / 256.0, 210.0 / 256.0, 15.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_A },
+   { 200.0 / 256.0, 180.0 / 256.0, 15.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_X },
+   { 163.0 / 256.0, 210.0 / 256.0, 15.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_Y },
 };
 
 uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
