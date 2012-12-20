@@ -318,7 +318,7 @@ static void android_input_poll(void *data)
          float y = AMotionEvent_getY(event, 0);
 #ifdef RARCH_INPUT_DEBUG
          char msg[128];
-         snprintf(msg, sizeof(msg), "RetroPad %d : x = %f, y = %f.\n", i, x, y);
+         snprintf(msg, sizeof(msg), "RetroPad %d : x = %f, y = %f.\n", state_id, x, y);
          msg_queue_push(g_extern.msg_queue, msg, 0, 30);
 #endif
          state[state_id] &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
@@ -340,7 +340,7 @@ static void android_input_poll(void *data)
          uint64_t input_state = (1ULL << unpacked);
 #ifdef RARCH_INPUT_DEBUG
          char msg[128];
-         snprintf(msg, sizeof(msg), "Keycode RetroPad %d : %d.\n", i, keycode);
+         snprintf(msg, sizeof(msg), "Keycode RetroPad %d : %d.\n", state_id, keycode);
          msg_queue_push(g_extern.msg_queue, msg, 0, 30);
 #endif
          int action  = AKeyEvent_getAction(event);
