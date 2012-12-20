@@ -104,17 +104,24 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
 {
    // TODO: Check more gracefully.
    if (!strstr(path, ".tga"))
+   {
+      RARCH_ERR("Extension is not .tga.\n");
       return false;
+   }
 
    void *raw_buf = NULL;
    ssize_t len = read_file(path, &raw_buf);
    if (len < 0)
+   {
+      RARCH_ERR("Failed to read image: %s.\n", path);
       return false;
+   }
 
    uint8_t *buf = (uint8_t*)raw_buf;
 
    if (buf[2] != 2) // Uncompressed RGB
    {
+      RARCH_ERR("TGA image is not uncompressed RGB.\n");
       free(buf);
       return false;
    }
@@ -137,6 +144,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    out_img->height = height;
    if (!out_img->pixels)
    {
+      RARCH_ERR("Failed to allocate TGA pixels.\n");
       free(buf);
       return false;
    }
@@ -168,6 +176,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    }
    else
    {
+      RARCH_ERR("Bit depth of TGA image is wrong. Only 32-bit and 24-bit supported.\n");
       free(buf);
       free(out_img->pixels);
       out_img->pixels = NULL;
