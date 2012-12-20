@@ -1555,8 +1555,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    gl_init_pbo_readback(gl);
 
-   //gl_load_overlay(gl, "/home/twinaphex/retropad-mono-256.png");
-   //gl_set_overlay_vertex_coord(gl, 0, 0.5, 1.0, 0.5);
+   //gl_load_overlay(gl, "/mnt/extsd/basic_quickmenu.tga");
+   //gl_set_overlay_vertex_coord(gl, 0, 0, 1.0, 1.0);
 
    if (!gl_check_error())
    {
