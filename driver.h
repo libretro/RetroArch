@@ -208,7 +208,7 @@ struct rarch_viewport;
 typedef struct video_overlay_interface
 {
    void (*enable)(void *data, bool state);
-   bool (*load)(void *data, const char *path);
+   bool (*load)(void *data, const uint32_t *image, unsigned width, unsigned height);
    void (*tex_geom)(void *data, float x, float y, float w, float h);
    void (*vertex_geom)(void *data, float x, float y, float w, float h);
 } video_overlay_interface_t;

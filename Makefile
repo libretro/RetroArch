@@ -13,6 +13,7 @@ OBJ = retroarch.o \
 		rewind.o \
 		gfx/gfx_common.o \
 		input/input_common.o \
+		input/overlay.o \
 		patch.o \
 	   fifo_buffer.o \
 		compat/compat.o \

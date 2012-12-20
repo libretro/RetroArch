@@ -42,6 +42,7 @@
 #define video_set_aspect_ratio_func(aspect_idx) driver.video->set_aspect_ratio(driver.video_data, aspect_idx)
 #define video_viewport_info_func(info) driver.video->viewport_info(driver.video_data, info)
 #define video_read_viewport_func(buffer) driver.video->read_viewport(driver.video_data, buffer)
+#define video_overlay_interface_func(iface) driver.video->overlay_interface(driver.video_data, iface)
 #define video_free_func() driver.video->free(driver.video_data)
 #define input_init_func() driver.input->init()
 #define input_poll_func() driver.input->poll(driver.input_data)

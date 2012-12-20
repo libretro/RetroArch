@@ -1792,7 +1792,7 @@ static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
 }
 #endif
 
-static bool gl_overlay_load(void *data, const char *path)
+static bool gl_overlay_load(void *data, const uint32_t *image, unsigned width, unsigned height)
 {
    gl_t *gl = (gl_t*)data;
 
@@ -1805,19 +1805,11 @@ static bool gl_overlay_load(void *data, const char *path)
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-   struct texture_image img = {0};
-   if (!texture_image_load(path, &img))
-   {
-      RARCH_ERR("Failed to load overlay image: %s.\n", path);
-      return false;
-   }
-
-   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(img.width * sizeof(uint32_t)));
+   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t)));
    glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
-         img.width, img.height, 0, RARCH_GL_TEXTURE_TYPE32,
-         RARCH_GL_FORMAT32, img.pixels);
+         width, height, 0, RARCH_GL_TEXTURE_TYPE32,
+         RARCH_GL_FORMAT32, image);
 
-   free(img.pixels);
    gl_overlay_tex_geom(gl, 0, 0, 1, 1); // Default. Stretch to whole screen.
    gl_overlay_vertex_geom(gl, 0, 0, 1, 1);
    return true;
