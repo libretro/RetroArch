@@ -47,7 +47,7 @@ input_overlay_t *input_overlay_new(const char *overlay)
 
    // Test hardcoded.
    struct texture_image img = {0};
-   if (!texture_image_load("/tmp/test.png", &img))
+   if (!texture_image_load("/tmp/basic_overlay.png", &img))
    {
       RARCH_ERR("Failed to load overlay image.\n");
       goto error;
@@ -88,7 +88,7 @@ static const struct overlay_desc descs[] = {
    {  91.0 / 256.0, 168.0 / 256.0, 10.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_SELECT },
    { 134.0 / 256.0, 168.0 / 256.0, 10.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_START },
 
-   { 200.0 / 256.0, 237.0 / 256.0, 15.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_B},
+   { 200.0 / 256.0, 237.0 / 256.0, 15.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_B },
    { 234.0 / 256.0, 210.0 / 256.0, 15.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_A },
    { 200.0 / 256.0, 180.0 / 256.0, 15.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_X },
    { 163.0 / 256.0, 210.0 / 256.0, 15.0 / 256.0, RETRO_DEVICE_ID_JOYPAD_Y },
@@ -113,7 +113,7 @@ uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
 
 void input_overlay_next(input_overlay_t *ol)
 {
-   // Dummy
+   // Dummy. Useful when we have configs and multiple overlays.
    (void)ol;
 }
 
