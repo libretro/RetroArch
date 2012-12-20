@@ -469,6 +469,7 @@ size_t audio_sample_batch(const int16_t *data, size_t frames)
    return frames;
 }
 
+// TODO: This might need to be #ifdeffed out for irrelevant platforms.
 static inline void input_poll_overlay(void)
 {
    bool pressed = input_input_state_func(NULL, 0,
@@ -490,6 +491,7 @@ static void input_poll(void)
 {
    input_poll_func();
 
+   // TODO: This might need to be #ifdeffed out for irrelevant platforms.
    if (driver.overlay) // Poll overlay state
       input_poll_overlay();
 }

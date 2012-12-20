@@ -719,6 +719,9 @@ void init_video_input(void)
       }
    }
 
+   // TODO: This should probably be done somewhere else.
+   if (driver.overlay)
+      input_overlay_free(driver.overlay);
    driver.overlay = input_overlay_new(NULL);
 }
 
