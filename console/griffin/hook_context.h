@@ -49,3 +49,5 @@
 
 #define context_write_egl_image_func(frame, width, height, pitch, base_size, tex_index, img) gl->ctx_driver->write_egl_image(frame, width, height, pitch, base_size, tex_index,img)
 #endif
+
+#define context_post_render_func(gl)                 ((void)0)
