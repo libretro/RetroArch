@@ -185,6 +185,8 @@ struct settings
 
       unsigned turbo_period;
       unsigned turbo_duty_cycle;
+
+      char overlay[PATH_MAX];
    } input;
 
    char libretro[PATH_MAX];

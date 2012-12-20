@@ -721,8 +721,17 @@ void init_video_input(void)
 
    // TODO: This should probably be done somewhere else.
    if (driver.overlay)
+   {
       input_overlay_free(driver.overlay);
-   driver.overlay = input_overlay_new(NULL);
+      driver.overlay = NULL;
+   }
+
+   if (*g_settings.input.overlay)
+   {
+      driver.overlay = input_overlay_new(g_settings.input.overlay);
+      if (!driver.overlay)
+         RARCH_ERR("Failed to load overlay.\n");
+   }
 }
 
 void uninit_video_input(void)
