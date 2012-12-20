@@ -77,6 +77,12 @@ static const GLfloat tex_coords[] = {
    1, 1
 };
 
+static void gl_render_overlay(gl_t *gl);
+static void gl_overlay_vertex_geom(void *data,
+      float x, float y, float w, float h);
+static void gl_overlay_tex_geom(void *data,
+      float x, float y, float w, float h);
+
 static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yamt)
 {
    coords[2] = xamt;
@@ -1185,7 +1191,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    if (gl->ctx_driver->post_render)
       context_post_render_func(gl);
-   //gl_render_overlay(gl);
+   else if (gl->overlay_enable)
+      gl_render_overlay(gl);
 
 #if !defined(RARCH_CONSOLE)
    context_update_window_title_func(false);
@@ -1555,9 +1562,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    gl_init_pbo_readback(gl);
 
-   //gl_load_overlay(gl, "/mnt/extsd/basic_quickmenu.tga");
-   //gl_set_overlay_vertex_coord(gl, 0, 0, 1.0, 1.0);
-
    if (!gl_check_error())
    {
       context_destroy_func();
@@ -1788,8 +1792,10 @@ static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
 }
 #endif
 
-bool gl_load_overlay(gl_t *gl, const char *path)
+static bool gl_overlay_load(void *data, const char *path)
 {
+   gl_t *gl = (gl_t*)data;
+
    if (!gl->tex_overlay)
       glGenTextures(1, &gl->tex_overlay);
 
@@ -1812,25 +1818,29 @@ bool gl_load_overlay(gl_t *gl, const char *path)
          RARCH_GL_FORMAT32, img.pixels);
 
    free(img.pixels);
-   gl_set_overlay_tex_coord(gl, 0, 0, 1, 1); // Default. Stretch to whole screen.
-   gl_set_overlay_vertex_coord(gl, 0, 0, 1, 1);
+   gl_overlay_tex_geom(gl, 0, 0, 1, 1); // Default. Stretch to whole screen.
+   gl_overlay_vertex_geom(gl, 0, 0, 1, 1);
    return true;
 }
 
-void gl_set_overlay_tex_coord(gl_t *gl,
+static void gl_overlay_tex_geom(void *data,
       GLfloat x, GLfloat y,
       GLfloat w, GLfloat h)
 {
+   gl_t *gl = (gl_t*)data;
+
    gl->overlay_tex_coord[0] = x;     gl->overlay_tex_coord[1] = y;
    gl->overlay_tex_coord[2] = x + w; gl->overlay_tex_coord[3] = y;
    gl->overlay_tex_coord[4] = x;     gl->overlay_tex_coord[5] = y + h;
    gl->overlay_tex_coord[6] = x + w; gl->overlay_tex_coord[7] = y + h;
 }
 
-void gl_set_overlay_vertex_coord(gl_t *gl,
-      GLfloat x, GLfloat y,
-      GLfloat w, GLfloat h)
+static void gl_overlay_vertex_geom(void *data,
+      float x, float y,
+      float w, float h)
 {
+   gl_t *gl = (gl_t*)data;
+
    // Flipped, so we preserve top-down semantics.
    y = 1.0f - y;
    h = -h;
@@ -1841,7 +1851,13 @@ void gl_set_overlay_vertex_coord(gl_t *gl,
    gl->overlay_vertex_coord[6] = x + w; gl->overlay_vertex_coord[7] = y + h;
 }
 
-void gl_render_overlay(gl_t *gl)
+static void gl_overlay_enable(void *data, bool state)
+{
+   gl_t *gl = (gl_t*)data;
+   gl->overlay_enable = state;
+}
+
+static void gl_render_overlay(gl_t *gl)
 {
    glBindTexture(GL_TEXTURE_2D, gl->tex_overlay);
 
@@ -1856,6 +1872,19 @@ void gl_render_overlay(gl_t *gl)
 
    gl->coords.vertex    = vertex_ptr;
    gl->coords.tex_coord = gl->tex_coords;
+}
+
+static const video_overlay_interface_t gl_overlay_interface = {
+   gl_overlay_enable,
+   gl_overlay_load,
+   gl_overlay_tex_geom,
+   gl_overlay_vertex_geom,
+};
+
+static void gl_get_overlay_interface(void *data, const video_overlay_interface_t **iface)
+{
+   (void)data;
+   *iface = &gl_overlay_interface;
 }
 
 const video_driver_t video_gl = {
@@ -1891,5 +1920,8 @@ const video_driver_t video_gl = {
    NULL,
    NULL,
 #endif
+
+   gl_get_overlay_interface,
 };
+
 
