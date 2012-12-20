@@ -1183,8 +1183,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (msg && gl->font_ctx)
       gl->font_ctx->render_msg(gl, msg);
 
-   if (gl->ctx_driver->post_render)
-      context_post_render_func(gl);
+   //if (gl->ctx_driver->post_render)
+      //context_post_render_func(gl);
+   gl_render_overlay(gl);
 
 #if !defined(RARCH_CONSOLE)
    context_update_window_title_func(false);
@@ -1553,6 +1554,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #endif
 
    gl_init_pbo_readback(gl);
+
+   gl_load_overlay(gl, "/home/twinaphex/retropad-mono-256.png");
+   gl_set_overlay_vertex_coord(gl, 0, 0.5, 1.0, 0.5);
 
    if (!gl_check_error())
    {
