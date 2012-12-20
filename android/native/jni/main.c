@@ -594,13 +594,6 @@ static void onConfigurationChanged(ANativeActivity* activity)
    android_app_write_cmd(android_app, APP_CMD_CONFIG_CHANGED);
 }
 
-static void onLowMemory(ANativeActivity* activity)
-{
-   struct android_app* android_app = (struct android_app*)activity->instance;
-   RARCH_LOG("LowMemory: %p\n", activity);
-   android_app_write_cmd(android_app, APP_CMD_LOW_MEMORY);
-}
-
 static void onWindowFocusChanged(ANativeActivity* activity, int focused)
 {
    RARCH_LOG("WindowFocusChanged: %p -- %d\n", activity, focused);
@@ -649,7 +642,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    activity->callbacks->onPause = onPause;
    activity->callbacks->onStop = onStop;
    activity->callbacks->onConfigurationChanged = onConfigurationChanged;
-   activity->callbacks->onLowMemory = onLowMemory;
+   activity->callbacks->onLowMemory = NULL;
    activity->callbacks->onWindowFocusChanged = onWindowFocusChanged;
    activity->callbacks->onNativeWindowCreated = onNativeWindowCreated;
    activity->callbacks->onNativeWindowDestroyed = onNativeWindowDestroyed;
