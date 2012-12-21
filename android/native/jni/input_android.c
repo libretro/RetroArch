@@ -17,6 +17,7 @@
 #include <android/keycodes.h>
 #include <unistd.h>
 #include "android_general.h"
+#include "../../../input/input_common.h"
 #include "../../../performance.h"
 #include "../../../general.h"
 #include "../../../driver.h"
@@ -67,6 +68,10 @@ static unsigned pads_connected;
 static uint64_t state[MAX_PADS];
 static int8_t state_device_ids[MAX_DEVICE_IDS];
 static uint64_t keycode_lut[LAST_KEYCODE];
+
+static int16_t pointer_x;
+static int16_t pointer_y;
+static int32_t type_event;
 
 static void setup_keycode_lut(void)
 {
@@ -276,6 +281,9 @@ static void *android_input_init(void)
 
    setup_keycode_lut();
 
+   pointer_x = 0;
+   pointer_y = 0;
+
    return (void*)-1;
 }
 
@@ -303,31 +311,42 @@ static void android_input_poll(void *data)
 
       int source = AInputEvent_getSource(event);
       int id = AInputEvent_getDeviceId(event);
-      int type = AInputEvent_getType(event);
+      type_event = AInputEvent_getType(event);
       int state_id = state_device_ids[id];
 
       if(state_id == -1)
          state_id = state_device_ids[id] = pads_connected++;
 
       int motion_action = AMotionEvent_getAction(event);
-      bool motion_do = ((motion_action == AMOTION_EVENT_ACTION_DOWN) || (motion_action ==
-               AMOTION_EVENT_ACTION_POINTER_DOWN) || (motion_action == AMOTION_EVENT_ACTION_MOVE));
 
-      if(type == AINPUT_EVENT_TYPE_MOTION && motion_do)
+      if(type_event == AINPUT_EVENT_TYPE_MOTION)
       {
+         char msg[128];
          float x = AMotionEvent_getX(event, 0);
          float y = AMotionEvent_getY(event, 0);
+         if(source != AINPUT_SOURCE_TOUCHSCREEN)
+         {
+            state[state_id] &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
+                  (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
+            state[state_id] |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
+            state[state_id] |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+            state[state_id] |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
+            state[state_id] |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
 #ifdef RARCH_INPUT_DEBUG
-         char msg[128];
-         snprintf(msg, sizeof(msg), "Pad %d : x = %f, y = %f, src %d.\n", state_id, x, y, source);
-         msg_queue_push(g_extern.msg_queue, msg, 0, 30);
+            char msg[128];
+            snprintf(msg, sizeof(msg), "Pad %d : x = %.2f, y = %.2f, src %d.\n", state_id, x, y, source);
 #endif
-         state[state_id] &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
-               (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
-         state[state_id] |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
-         state[state_id] |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-         state[state_id] |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
-         state[state_id] |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+         }
+         else
+         {
+            int16_t x_new = 0;
+            int16_t y_new = 0;
+            input_translate_coord_viewport(x, y, &x_new, &y_new);
+#ifdef RARCH_INPUT_DEBUG
+            snprintf(msg, sizeof(msg), "Pad %d : x = %d, y = %d, src %d.\n", state_id, x_new, y_new, source);
+#endif
+         }
+            msg_queue_push(g_extern.msg_queue, msg, 0, 30);
       }
       else
       {
@@ -375,6 +394,18 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
    {
       case RETRO_DEVICE_JOYPAD:
          return ((state[port] & binds[port][id].joykey) && (port < pads_connected));
+      case RETRO_DEVICE_POINTER:
+         switch(id)
+         {
+            case RETRO_DEVICE_ID_POINTER_X:
+               return pointer_x;
+            case RETRO_DEVICE_ID_POINTER_Y:
+               return pointer_y;
+            case RETRO_DEVICE_ID_POINTER_PRESSED:
+               return false; /* TODO - don't yet know how to tell if touchscreen is being pressed at exact time */
+            default:
+               return 0;
+         }
       default:
          return 0;
    }

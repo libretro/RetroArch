@@ -117,7 +117,6 @@ static inline bool input_key_pressed_func(int key)
 
 #define video_set_aspect_ratio_func(aspectratio_idx) gx_set_aspect_ratio(driver.video_data, aspectratio_idx)
 #define video_viewport_size_func(width, height) ((void)0)
-#define video_viewport_info_func(info) ((void)0)
 #define video_read_viewport_func(buffer) (false)
 
 #elif defined(PSP) /* PSP1 */
@@ -130,6 +129,8 @@ static inline bool input_key_pressed_func(int key)
 #define video_set_aspect_ratio_func(aspectratio_idx) (true)
 
 #endif
+
+#define video_viewport_info_func(info) driver.video->viewport_info(driver.video_data, info)
 
 #define video_init_func(video_info, input, input_data) MAKENAME_VIDEO(_init)(video_info, input, input_data)
 #define video_frame_func(data, width, height, pitch, msg) \
