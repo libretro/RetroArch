@@ -71,7 +71,7 @@ static uint64_t keycode_lut[LAST_KEYCODE];
 
 static int16_t pointer_x;
 static int16_t pointer_y;
-static int32_t type_event;
+static uint8_t pointer_dirty;
 
 static void setup_keycode_lut(void)
 {
@@ -294,6 +294,8 @@ static void android_input_poll(void *data)
    RARCH_PERFORMANCE_INIT(input_poll);
    RARCH_PERFORMANCE_START(input_poll);
 
+   pointer_dirty = 0;
+
    struct android_app* android_app = g_android.app;
 
    g_extern.lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS));
@@ -311,7 +313,7 @@ static void android_input_poll(void *data)
 
       int source = AInputEvent_getSource(event);
       int id = AInputEvent_getDeviceId(event);
-      type_event = AInputEvent_getType(event);
+      int type_event = AInputEvent_getType(event);
       int state_id = state_device_ids[id];
 
       if(state_id == -1)
@@ -343,6 +345,7 @@ static void android_input_poll(void *data)
             int16_t x_new = 0;
             int16_t y_new = 0;
             input_translate_coord_viewport(x, y, &x_new, &y_new);
+            pointer_dirty = 1;
 #ifdef RARCH_INPUT_DEBUG
             snprintf(msg, sizeof(msg), "Pad %d : x = %d, y = %d, src %d.\n", state_id, x_new, y_new, source);
 #endif
@@ -403,7 +406,7 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
             case RETRO_DEVICE_ID_POINTER_Y:
                return pointer_y;
             case RETRO_DEVICE_ID_POINTER_PRESSED:
-               return false; /* TODO - don't yet know how to tell if touchscreen is being pressed at exact time */
+               return pointer_dirty;
             default:
                return 0;
          }
