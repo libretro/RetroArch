@@ -317,11 +317,13 @@ static void android_input_poll(void *data)
       if(state_id == -1)
          state_id = state_device_ids[id] = pads_connected++;
 
-      int motion_action = AMotionEvent_getAction(event);
+      int action = 0;
+#ifdef RARCH_INPUT_DEBUG
+      char msg[128];
+#endif
 
       if(type_event == AINPUT_EVENT_TYPE_MOTION)
       {
-         char msg[128];
          float x = AMotionEvent_getX(event, 0);
          float y = AMotionEvent_getY(event, 0);
          if(source != AINPUT_SOURCE_TOUCHSCREEN)
@@ -333,7 +335,6 @@ static void android_input_poll(void *data)
             state[state_id] |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
             state[state_id] |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
 #ifdef RARCH_INPUT_DEBUG
-            char msg[128];
             snprintf(msg, sizeof(msg), "Pad %d : x = %.2f, y = %.2f, src %d.\n", state_id, x, y, source);
 #endif
          }
@@ -346,7 +347,6 @@ static void android_input_poll(void *data)
             snprintf(msg, sizeof(msg), "Pad %d : x = %d, y = %d, src %d.\n", state_id, x_new, y_new, source);
 #endif
          }
-            msg_queue_push(g_extern.msg_queue, msg, 0, 30);
       }
       else
       {
@@ -358,12 +358,10 @@ static void android_input_poll(void *data)
           */
          uint8_t unpacked = (keycode_lut[keycode] >> ((state_id+1) << 3)) - 1;
          uint64_t input_state = (1ULL << unpacked);
-#ifdef RARCH_INPUT_DEBUG
-         char msg[128];
-         snprintf(msg, sizeof(msg), "Pad %d : %d, src = %d.\n", state_id, keycode, source);
-         msg_queue_push(g_extern.msg_queue, msg, 0, 30);
-#endif
          int action  = AKeyEvent_getAction(event);
+#ifdef RARCH_INPUT_DEBUG
+         snprintf(msg, sizeof(msg), "Pad %d : %d, ac = %d, src = %d.\n", state_id, keycode, action, source);
+#endif
          uint64_t *key = NULL;
 
          if(input_state < (1ULL << RARCH_FIRST_META_KEY))
@@ -373,15 +371,18 @@ static void android_input_poll(void *data)
 
          if(key != NULL)
          {
-            if(action == AKEY_EVENT_ACTION_DOWN)
-               *key |= input_state;
-            else if(action == AKEY_EVENT_ACTION_UP)
+            if (action)
                *key &= ~(input_state);
+            else
+               *key |= input_state;
          }
 
          if(keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN)
             handled = 0;
       }
+#ifdef RARCH_INPUT_DEBUG
+      msg_queue_push(g_extern.msg_queue, msg, 0, 30);
+#endif
       AInputQueue_finishEvent(android_app->inputQueue, event, handled);
    }
 
