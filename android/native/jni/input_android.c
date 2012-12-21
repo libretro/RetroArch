@@ -294,8 +294,6 @@ static void android_input_poll(void *data)
    RARCH_PERFORMANCE_INIT(input_poll);
    RARCH_PERFORMANCE_START(input_poll);
 
-   pointer_dirty = 0;
-
    struct android_app* android_app = g_android.app;
 
    g_extern.lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS));
@@ -328,6 +326,7 @@ static void android_input_poll(void *data)
       {
          float x = AMotionEvent_getX(event, 0);
          float y = AMotionEvent_getY(event, 0);
+         action = AMotionEvent_getAction(event);
          if(source != AINPUT_SOURCE_TOUCHSCREEN)
          {
             state[state_id] &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
@@ -342,13 +341,22 @@ static void android_input_poll(void *data)
          }
          else
          {
-            int16_t x_new = 0;
-            int16_t y_new = 0;
-            input_translate_coord_viewport(x, y, &x_new, &y_new);
-            pointer_dirty = 1;
+            if (action == AMOTION_EVENT_ACTION_UP || action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP)
+            {
+               pointer_dirty = 0;
+            }
+            else
+            {
+               int16_t x_new = 0;
+               int16_t y_new = 0;
+               input_translate_coord_viewport(x, y, &x_new, &y_new);
+               pointer_x = x_new;
+               pointer_y = y_new;
+               pointer_dirty = 1;
 #ifdef RARCH_INPUT_DEBUG
-            snprintf(msg, sizeof(msg), "Pad %d : x = %d, y = %d, src %d.\n", state_id, x_new, y_new, source);
+               snprintf(msg, sizeof(msg), "Pad %d : x = %d, y = %d, src %d.\n", state_id, x_new, y_new, source);
 #endif
+            }
          }
       }
       else
