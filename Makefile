@@ -65,9 +65,10 @@ ifneq ($(findstring Linux,$(OS)),)
    JOYCONFIG_OBJ += input/linuxraw_joypad.o
 endif
 
+OBJ += autosave.o thread.o
+
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o thread.o
-   LIBS += -lpthread
+   LIBS +=
 endif
 
 ifeq ($(HAVE_CONFIGFILE), 1)
