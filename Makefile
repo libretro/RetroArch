@@ -72,7 +72,9 @@ endif
 OBJ += autosave.o thread.o
 
 ifeq ($(HAVE_THREADS), 1)
-   LIBS +=
+ifneq ($(findstring Haiku,$(OS)),)
+   LIBS += -lpthread
+endif
 endif
 
 ifeq ($(HAVE_CONFIGFILE), 1)
