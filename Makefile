@@ -54,7 +54,10 @@ else
 endif
 
 BSD_LOCAL_INC =
+ifneq
+($findstring HAIKU,$(OS)),)
 DYLIB_LIB = -ldl
+endif
 ifneq ($(findstring BSD,$(OS)),)
    BSD_LOCAL_INC = -I/usr/local/include
    DYLIB_LIB = -lc
