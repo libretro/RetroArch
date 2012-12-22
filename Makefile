@@ -54,7 +54,7 @@ else
 endif
 
 BSD_LOCAL_INC =
-ifneq ($findstring HAIKU,$(OS)),)
+ifneq ($(findstring Haiku,$(OS)),)
 DYLIB_LIB = -ldl
 endif
 ifneq ($(findstring BSD,$(OS)),)
