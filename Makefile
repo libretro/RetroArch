@@ -36,9 +36,11 @@ JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
 	input/input_common.o
 
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
-ifneq ($(findstring Haiku,$(OS)),)
+
+ifeq ($(findstring Haiku,$(OS)),)
 	LIBS = -lm
 endif
+
 DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS
 
 ifeq ($(REENTRANT_TEST), 1)
@@ -53,14 +55,8 @@ else
    OSX := 0
 endif
 
-BSD_LOCAL_INC =
-ifneq ($(findstring Haiku,$(OS)),)
-   DYLIB_LIB = -ldl
-endif
-
 ifneq ($(findstring BSD,$(OS)),)
    BSD_LOCAL_INC = -I/usr/local/include
-   DYLIB_LIB = -lc
 endif
 
 ifneq ($(findstring Linux,$(OS)),)
@@ -72,9 +68,9 @@ endif
 OBJ += autosave.o thread.o
 
 ifeq ($(HAVE_THREADS), 1)
-ifneq ($(findstring Haiku,$(OS)),)
-   LIBS += -lpthread
-endif
+   ifeq ($(findstring Haiku,$(OS)),)
+      LIBS += -lpthread
+   endif
 endif
 
 ifeq ($(HAVE_CONFIGFILE), 1)
