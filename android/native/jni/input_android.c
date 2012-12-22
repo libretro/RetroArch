@@ -347,14 +347,10 @@ static void android_input_poll(void *data)
             }
             else
             {
-               int16_t x_new = 0;
-               int16_t y_new = 0;
-               input_translate_coord_viewport(x, y, &x_new, &y_new);
-               pointer_x = x_new;
-               pointer_y = y_new;
                pointer_dirty = 1;
+               input_translate_coord_viewport(x, y, &pointer_x, &pointer_y);
 #ifdef RARCH_INPUT_DEBUG
-               snprintf(msg, sizeof(msg), "Pad %d : x = %d, y = %d, src %d.\n", state_id, x_new, y_new, source);
+               snprintf(msg, sizeof(msg), "Pad %d : x = %d, y = %d, src %d.\n", state_id, pointer_x, pointer_y, source);
 #endif
             }
          }
