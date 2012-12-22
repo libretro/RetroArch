@@ -67,9 +67,6 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_PULSE
    &audio_pulse,
 #endif
-#ifdef HAVE_DYLIB
-   &audio_ext,
-#endif
 #ifdef __CELLOS_LV2__
    &audio_ps3,
 #endif
@@ -109,9 +106,6 @@ static const video_driver_t *video_drivers[] = {
 #endif
 #ifdef HAVE_XVIDEO
    &video_xvideo,
-#endif
-#ifdef HAVE_DYLIB
-   &video_ext,
 #endif
 #ifdef GEKKO
    &video_gx,

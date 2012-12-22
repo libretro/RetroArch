@@ -147,7 +147,6 @@ struct settings
       bool gpu_screenshot;
 
       bool allow_rotate;
-      char external_driver[PATH_MAX];
    } video;
 
    struct
@@ -162,7 +161,6 @@ struct settings
       bool sync;
 
       char dsp_plugin[PATH_MAX];
-      char external_driver[PATH_MAX];
 
       bool rate_control;
       float rate_control_delta;

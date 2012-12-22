@@ -563,7 +563,7 @@ static void print_features(void)
    _PSUPP(dsound, "DirectSound", "audio driver");
    _PSUPP(xaudio, "XAudio2", "audio driver");
    _PSUPP(al, "OpenAL", "audio driver");
-   _PSUPP(dylib, "External", "External filter and driver support");
+   _PSUPP(dylib, "External", "External filter and plugin support");
    _PSUPP(cg, "Cg", "Cg pixel shaders");
    _PSUPP(xml, "XML", "bSNES XML pixel shaders");
    _PSUPP(sdl_image, "SDL_image", "SDL_image image loading");

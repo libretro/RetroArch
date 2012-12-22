@@ -247,7 +247,6 @@ else ifeq ($(HAVE_CG), 1)
 endif
 
 ifeq ($(HAVE_DYLIB), 1)
-   OBJ += gfx/ext_gfx.o audio/ext_audio.o
    LIBS += $(DYLIB_LIB)
 endif
 
