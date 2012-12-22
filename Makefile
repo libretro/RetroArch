@@ -38,7 +38,10 @@ JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
 
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
-LIBS = -lm
+ifeq ($(findstring Haiku,$(OS)),)
+	LIBS = -lm
+endif
+
 DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS
 
 ifeq ($(REENTRANT_TEST), 1)
@@ -53,11 +56,8 @@ else
    OSX := 0
 endif
 
-BSD_LOCAL_INC =
-DYLIB_LIB = -ldl
 ifneq ($(findstring BSD,$(OS)),)
    BSD_LOCAL_INC = -I/usr/local/include
-   DYLIB_LIB = -lc
 endif
 
 ifneq ($(findstring Linux,$(OS)),)
@@ -66,9 +66,12 @@ ifneq ($(findstring Linux,$(OS)),)
    JOYCONFIG_OBJ += input/linuxraw_joypad.o
 endif
 
+OBJ += autosave.o thread.o
+
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o thread.o
-   LIBS += -lpthread
+   ifeq ($(findstring Haiku,$(OS)),)
+      LIBS += -lpthread
+   endif
 endif
 
 ifeq ($(HAVE_CONFIGFILE), 1)
@@ -361,7 +364,7 @@ install: $(TARGET)
 	install -m644 docs/retroarch.1 $(DESTDIR)$(MAN_DIR)
 	install -m644 docs/retroarch-joyconfig.1 $(DESTDIR)$(MAN_DIR)
 	install -m755 retroarch-zip $(DESTDIR)$(PREFIX)/bin
-	install -m644 media/retroarch.png $(DESTDIR)/usr/share/icons
+	install -m644 media/retroarch.png $(DESTDIR)$(PREFIX)/share/icons
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch
@@ -370,7 +373,7 @@ uninstall:
 	rm -f $(DESTDIR)/etc/retroarch.cfg
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch.1
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch-joyconfig.1
-	rm -f $(DESTDIR)/usr/share/icons/retroarch.png
+	rm -f $(DESTDIR)$(PREFIX)/share/icons/retroarch.png
 
 clean:
 	rm -f *.o 
