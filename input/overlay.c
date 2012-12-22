@@ -49,6 +49,8 @@ struct overlay
    uint32_t *image;
    unsigned width;
    unsigned height;
+
+   float x, y, w, h;
 };
 
 struct input_overlay
@@ -151,6 +153,26 @@ static bool input_overlay_load_overlay(config_file_t *conf, const char *config_p
    overlay->width  = img.width;
    overlay->height = img.height;
 
+   // By default, we stretch the overlay out in full.
+   overlay->x = overlay->y = 0.0f;
+   overlay->w = overlay->h = 1.0f;
+
+   char overlay_rect_key[64];
+   snprintf(overlay_rect_key, sizeof(overlay_rect_key), "overlay%u_rect", index);
+   char overlay_rect[256];
+   if (config_get_array(conf, overlay_rect_key, overlay_rect, sizeof(overlay_rect)))
+   {
+      struct string_list *list = string_split(overlay_rect, ", ");
+      if (list->size < 4)
+         return false;
+
+      overlay->x = strtod(list->elems[0].data, NULL);
+      overlay->y = strtod(list->elems[1].data, NULL);
+      overlay->w = strtod(list->elems[2].data, NULL);
+      overlay->h = strtod(list->elems[3].data, NULL);
+      string_list_free(list);
+   }
+
    char overlay_descs_key[64];
    snprintf(overlay_descs_key, sizeof(overlay_descs_key), "overlay%u_descs", index);
 
@@ -244,6 +266,8 @@ input_overlay_t *input_overlay_new(const char *overlay)
 
    ol->active = &ol->overlays[0];
    ol->iface->load(ol->iface_data, ol->active->image, ol->active->width, ol->active->height);
+   ol->iface->vertex_geom(ol->iface_data,
+         ol->active->x, ol->active->y, ol->active->w, ol->active->h);
 
    ol->iface->enable(ol->iface_data, true);
    ol->enable = true;
@@ -292,6 +316,11 @@ uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
    float x = (float)(norm_x + 0x7fff) / 0xffff;
    float y = (float)(norm_y + 0x7fff) / 0xffff;
 
+   x -= ol->active->x;
+   y -= ol->active->y;
+   x /= ol->active->w;
+   y /= ol->active->h;
+
    uint64_t state = 0;
    for (size_t i = 0; i < ol->active->size; i++)
    {
@@ -308,6 +337,8 @@ void input_overlay_next(input_overlay_t *ol)
    ol->active = &ol->overlays[ol->index];
 
    ol->iface->load(ol->iface_data, ol->active->image, ol->active->width, ol->active->height);
+   ol->iface->vertex_geom(ol->iface_data,
+         ol->active->x, ol->active->y, ol->active->w, ol->active->h);
 }
 
 void input_overlay_free(input_overlay_t *ol)
