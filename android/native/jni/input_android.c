@@ -84,135 +84,109 @@ static void setup_keycode_lut(void)
 
    for(int i = 0; i < MAX_PADS; i++)
    {
-      /* Control scheme 1
-       * fd=196
-       * path='/dev/input/event4'
-       * name='Logitech Logitech RumblePad 2 USB'
-       * classes=0x80000141
-       * configuration=''
-       * keyLayout='/system/usr/keylayout/Generic.kl'
-       * keyCharacterMap='/system/usr/keychars/Generic.kcm'
-       * builtinKeyboard=false
-       */
+      // Hack - we have to add '1' to the bit mask here because
+      // RETRO_DEVICE_ID_JOYPAD_B is 0
 
-      /* Hack - we have to add '1' to the bit mask here because
-       * RETRO_DEVICE_ID_JOYPAD_B is 0
-       */
+#if 1
+      // name='Logitech Logitech RumblePad 2 USB'
 
-      keycode_lut[AKEYCODE_BUTTON_2] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
-      keycode_lut[AKEYCODE_BUTTON_1] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
-      keycode_lut[AKEYCODE_BUTTON_9] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
-      keycode_lut[AKEYCODE_BUTTON_10] |= ((RETRO_DEVICE_ID_JOYPAD_START+1)  << shift);
-      keycode_lut[AKEYCODE_BUTTON_3] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
-      keycode_lut[AKEYCODE_BUTTON_4] |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
-      keycode_lut[AKEYCODE_BUTTON_5] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
-      keycode_lut[AKEYCODE_BUTTON_6] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
-      keycode_lut[AKEYCODE_BUTTON_7] |=  ((RETRO_DEVICE_ID_JOYPAD_L2+1)     << shift);
-      keycode_lut[AKEYCODE_BUTTON_8] |=  ((RETRO_DEVICE_ID_JOYPAD_R2+1)     << shift);
-      keycode_lut[AKEYCODE_BUTTON_11] |= ((RETRO_DEVICE_ID_JOYPAD_L3+1)     << shift);
-      keycode_lut[AKEYCODE_BUTTON_12] |= ((RETRO_DEVICE_ID_JOYPAD_R3+1)     << shift);
+      keycode_lut[AKEYCODE_BUTTON_2]  |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
+      keycode_lut[AKEYCODE_BUTTON_1]  |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
+      keycode_lut[AKEYCODE_BUTTON_9]  |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_10] |= ((RETRO_DEVICE_ID_JOYPAD_START+1)   << shift);
+      keycode_lut[AKEYCODE_BUTTON_3]  |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
+      keycode_lut[AKEYCODE_BUTTON_4]  |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
+      keycode_lut[AKEYCODE_BUTTON_5]  |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
+      keycode_lut[AKEYCODE_BUTTON_6]  |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
+      keycode_lut[AKEYCODE_BUTTON_7]  |=  ((RETRO_DEVICE_ID_JOYPAD_L2+1)     << shift);
+      keycode_lut[AKEYCODE_BUTTON_8]  |=  ((RETRO_DEVICE_ID_JOYPAD_R2+1)     << shift);
+      keycode_lut[AKEYCODE_BUTTON_11] |= ((RETRO_DEVICE_ID_JOYPAD_L3+1)      << shift);
+      keycode_lut[AKEYCODE_BUTTON_12] |= ((RETRO_DEVICE_ID_JOYPAD_R3+1)      << shift);
+#endif
 
-      /* Control scheme 2
-       * Tested with: SNES Pad USB converter
-       * fd=196
-       * path='/dev/input/event4'
-       * name='HuiJia  USB GamePad'
-       * classes=0x80000141
-       * configuration=''
-       * keyLayout='/system/usr/keylayout/Generic.kl'
-       * keyCharacterMap='/system/usr/keychars/Generic.kcm'
-       * builtinKeyboard=false
-       */
 
-      keycode_lut[AKEYCODE_BUTTON_C] |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
-      keycode_lut[AKEYCODE_BUTTON_X] |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
-      keycode_lut[AKEYCODE_BUTTON_L2] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
-      keycode_lut[AKEYCODE_BUTTON_R2] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
-      keycode_lut[AKEYCODE_BUTTON_B] |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
-      keycode_lut[AKEYCODE_BUTTON_A] |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
+#if 0
+      // name='HuiJia  USB GamePad' (SNES PAD USB Converter)
+      keycode_lut[AKEYCODE_BUTTON_3]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_4]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_9] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_10] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_2]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_1]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_7] |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_8] |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift);
+#endif
+
+#if 0
+      // name='Microsoft® Microsoft® SideWinder® Game Pad USB'
+
+      keycode_lut[AKEYCODE_BUTTON_A]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_X]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_R2] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_L2] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_B]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_Y]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
       keycode_lut[AKEYCODE_BUTTON_L1] |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift);
       keycode_lut[AKEYCODE_BUTTON_R1] |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_Z]  |= ((RETRO_DEVICE_ID_JOYPAD_L2+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_C]  |= ((RETRO_DEVICE_ID_JOYPAD_R2+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_11] |= ((RETRO_DEVICE_ID_JOYPAD_L3+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_12] |= ((RETRO_DEVICE_ID_JOYPAD_R3+1) << shift);
+#endif
 
-      /* Control scheme 3
-       * fd=196
-       * path='/dev/input/event4'
-       * name='Microsoft® Microsoft® SideWinder® Game Pad USB'
-       * classes=0x80000141
-       * configuration=''
-       * keyLayout='/system/usr/keylayout/Generic.kl'
-       * keyCharacterMap='/system/usr/keychars/Generic.kcm'
-       * builtinKeyboard=false
-       */
+#if 0
+      // name='Microsoft SideWinder Dual Strike USB version 1.0'
 
-      /*
-         keycode_lut[AKEYCODE_BUTTON_A] = ANDROID_GAMEPAD_CROSS;
-         keycode_lut[AKEYCODE_BUTTON_X] = ANDROID_GAMPAD_SQUARE:
-         keycode_lut[AKEYCODE_BUTTON_R2] = ANDROID_GAMEPAD_SELECT;
-         keycode_lut[AKEYCODE_BUTTON_L2] = ANDROID_GAMEPAD_START;
-         keycode_lut[AKEYCODE_BUTTON_B] = ANDROID_GAMEPAD_CIRCLE;
-         keycode_lut[AKEYCODE_BUTTON_Y] = ANDROID_GAMEPAD_TRIANGLE;
-         keycode_lut[AKEYCODE_BUTTON_L1] = ANDROID_GAMEPAD_L1;
-         keycode_lut[AKEYCODE_BUTTON_R1] = ANDROID_GAMEPAD_R1;
-         keycode_lut[AKEYCODE_BUTTON_Z] = ANDROID_GAMEPAD_L2;
-         keycode_lut[AKEYCODE_BUTTON_C] = ANDROID_GAMEPAD_R2;
-         keycode_lut[AKEYCODE_BUTTON_11] = ANDROID_GAMEPAD_L3;
-         keycode_lut[AKEYCODE_BUTTON_12] = ANDROID_GAMEPAD_R3;
-         */
+      keycode_lut[AKEYCODE_BUTTON_4] |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_2] |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_6] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_5] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_3] |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_1] |= ((RETRO_DEVICE_ID_JOYPAD_X) << shift);
+      keycode_lut[AKEYCODE_BUTTON_7] |= ((RETRO_DEVICE_ID_JOYPAD_L) << shift);
+      keycode_lut[AKEYCODE_BUTTON_8] |= ((RETRO_DEVICE_ID_JOYPAD_R) << shift);
+      keycode_lut[AKEYCODE_BUTTON_9] |= ((RETRO_DEVICE_ID_JOYPAD_L2) << shift);
+#endif
 
-      /* Control scheme 4
-       * Tested with: Sidewinder Dual Strike
-       * fd=196
-       * path='/dev/input/event4'
-       * name='Microsoft SideWinder Dual Strike USB version 1.0'
-       * classes=0x80000141
-       * configuration=''
-       * keyLayout='/system/usr/keylayout/Generic.kl'
-       * keyCharacterMap='/system/usr/keychars/Generic.kcm'
-       * builtinKeyboard=false
-       */
+#if 0
+      // name='WiseGroup.,Ltd MP-8866 Dual USB Joypad' (PS2 to USB converter)
 
-      /*
-         keycode_lut[AKEYCODE_BUTTON_4] = ANDROID_GAMEPAD_CROSS;
-         keycode_lut[AKEYCODE_BUTTON_2] = ANDROID_GAMPAD_SQUARE:
-         keycode_lut[AKEYCODE_BUTTON_6] = ANDROID_GAMEPAD_SELECT;
-         keycode_lut[AKEYCODE_BUTTON_5] = ANDROID_GAMEPAD_START;
-         keycode_lut[AKEYCODE_BUTTON_3] = ANDROID_GAMEPAD_CIRCLE;
-         keycode_lut[AKEYCODE_BUTTON_1] = ANDROID_GAMEPAD_TRIANGLE;
-         keycode_lut[AKEYCODE_BUTTON_7] = ANDROID_GAMEPAD_L1;
-         keycode_lut[AKEYCODE_BUTTON_8] = ANDROID_GAMEPAD_R1;
-         keycode_lut[AKEYCODE_BUTTON_9] = ANDROID_GAMEPAD_L2;
-         */
+      keycode_lut[AKEYCODE_BUTTON_3]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_4]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_10] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_9]  |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_2]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_1]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_7]  |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_8]  |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_5]  |= ((RETRO_DEVICE_ID_JOYPAD_L2+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_6]  |= ((RETRO_DEVICE_ID_JOYPAD_R2+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_11] |= ((RETRO_DEVICE_ID_JOYPAD_L3+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_12] |= ((RETRO_DEVICE_ID_JOYPAD_R3+1) << shift);
+#endif
 
-      /* Control scheme 5
-       * fd=196
-       * path='/dev/input/event4'
-       * name='WiseGroup.,Ltd MP-8866 Dual USB Joypad'
-       * classes=0x80000141
-       * configuration=''
-       * keyLayout='/system/usr/keylayout/Generic.kl'
-       * keyCharacterMap='/system/usr/keychars/Generic.kcm'
-       * builtinKeyboard=false
-       */
+#if 0
+      //DualShock 3/Sixaxis pad
+      //keycode_lut[AKEYCODE_DPAD_UP] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
+      //keycode_lut[AKEYCODE_DPAD_DOWN] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
+      //keycode_lut[AKEYCODE_DPAD_LEFT] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
+      //keycode_lut[AKEYCODE_DPAD_RIGHT] |=  ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)      << shift);
+      keycode_lut[AKEYCODE_BUTTON_X] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
+      keycode_lut[AKEYCODE_BUTTON_A] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
+      keycode_lut[AKEYCODE_BUTTON_SELECT] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_START] |= ((RETRO_DEVICE_ID_JOYPAD_START+1)  << shift);
+      keycode_lut[AKEYCODE_BUTTON_Y] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
+      keycode_lut[AKEYCODE_BUTTON_B] |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
+      keycode_lut[AKEYCODE_BUTTON_L1] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
+      keycode_lut[AKEYCODE_BUTTON_R1] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
+      keycode_lut[AKEYCODE_BUTTON_L2] |=  ((RETRO_DEVICE_ID_JOYPAD_L2+1)     << shift);
+      keycode_lut[AKEYCODE_BUTTON_R2] |=  ((RETRO_DEVICE_ID_JOYPAD_R2+1)     << shift);
+      keycode_lut[AKEYCODE_BUTTON_THUMBL] |= ((RETRO_DEVICE_ID_JOYPAD_L3+1)     << shift);
+      keycode_lut[AKEYCODE_BUTTON_THUMBR] |= ((RETRO_DEVICE_ID_JOYPAD_R3+1)     << shift);
+#endif
 
-      /*
-         keycode_lut[AKEYCODE_BUTTON_3] = ANDROID_GAMEPAD_CROSS;
-         keycode_lut[AKEYCODE_BUTTON_4] = ANDROID_GAMPAD_SQUARE:
-         keycode_lut[AKEYCODE_BUTTON_10] = ANDROID_GAMEPAD_SELECT;
-         keycode_lut[AKEYCODE_BUTTON_9] = ANDROID_GAMEPAD_START;
-         keycode_lut[AKEYCODE_BUTTON_2] = ANDROID_GAMEPAD_CIRCLE;
-         keycode_lut[AKEYCODE_BUTTON_1] = ANDROID_GAMEPAD_TRIANGLE;
-         keycode_lut[AKEYCODE_BUTTON_7] = ANDROID_GAMEPAD_L1;
-         keycode_lut[AKEYCODE_BUTTON_8] = ANDROID_GAMEPAD_R1;
-         keycode_lut[AKEYCODE_BUTTON_5] = ANDROID_GAMEPAD_L2;
-         keycode_lut[AKEYCODE_BUTTON_6] = ANDROID_GAMEPAD_R2;
-         keycode_lut[AKEYCODE_BUTTON_11] = ANDROID_GAMEPAD_L3;
-         keycode_lut[AKEYCODE_BUTTON_12] = ANDROID_GAMEPAD_R3;
-         */
-
-      /* Control scheme 6
-       * Keyboard
-       * TODO: Map L2/R2/L3/R3
-       * */
+      // Keyboard
+      // TODO: Map L2/R2/L3/R3
 
       keycode_lut[AKEYCODE_Z] |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
       keycode_lut[AKEYCODE_A] |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
@@ -342,9 +316,7 @@ static void android_input_poll(void *data)
          else
          {
             if (action == AMOTION_EVENT_ACTION_UP || action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP)
-            {
                pointer_dirty = 0;
-            }
             else
             {
                pointer_dirty = 1;
@@ -378,9 +350,9 @@ static void android_input_poll(void *data)
 
          if(key != NULL)
          {
-            if (action)
+            if (action == AKEY_EVENT_ACTION_UP)
                *key &= ~(input_state);
-            else
+            else if (action == AKEY_EVENT_ACTION_DOWN)
                *key |= input_state;
          }
 
