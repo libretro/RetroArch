@@ -478,8 +478,6 @@ bool config_load_file(const char *path)
 
 #ifdef HAVE_DYLIB
    CONFIG_GET_PATH(video.filter_path, "video_filter");
-   CONFIG_GET_PATH(video.external_driver, "video_external_driver");
-   CONFIG_GET_PATH(audio.external_driver, "audio_external_driver");
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_XML)
