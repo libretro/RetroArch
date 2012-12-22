@@ -12,6 +12,7 @@ case "$(uname)" in
 	'Darwin') OS='Darwin';;
 	'MINGW32'*) OS='MinGW';;
 	'CYGWIN'*) OS='Cygwin';;
+	'Haiku') OS='Haiku';;
 	*) OS="Win32";;
 esac
 echo "$ECHOBUF ... $OS"
