@@ -8,7 +8,7 @@ add_define_make NOUNUSED "$HAVE_NOUNUSED"
 
 [ -z "$CROSS_COMPILE" ] && [ -d /opt/local/lib ] && add_library_dirs /opt/local/lib
 
-if [ "$OS" = 'BSD' ]; then DYLIB=-lc; elif [ "$OS" = 'Haiku' ]: then DYLIB=""; else DYLIB=-ldl; fi
+if [ "$OS" = 'BSD' ]; then DYLIB=-lc; elif [ "$OS" = 'Haiku' ]; then DYLIB=""; else DYLIB=-ldl; fi
 [ "$OS" = 'Darwin' ] && HAVE_X11=no # X11 breaks on recent OSXes even if present.
 
 [ -d /opt/vc/lib ] && add_library_dirs /opt/vc/lib
