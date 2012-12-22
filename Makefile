@@ -36,7 +36,7 @@ JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
 	input/input_common.o
 
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
-ifneq ($(findstring HAIKU,$(OS)),)
+ifneq ($(findstring Haiku,$(OS)),)
 	LIBS = -lm
 endif
 DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS
