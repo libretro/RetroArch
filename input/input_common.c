@@ -539,6 +539,7 @@ static const struct str_to_bind_map str_to_bind[] = {
    { "enable_hotkey",         RARCH_ENABLE_HOTKEY },
    { "volume_up",             RARCH_VOLUME_UP },
    { "volume_down",           RARCH_VOLUME_DOWN },
+   { "overlay_next",          RARCH_OVERLAY_NEXT },
 };
 
 unsigned input_str_to_bind(const char *str)

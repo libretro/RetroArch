@@ -2310,8 +2310,8 @@ static void check_turbo(void)
 #ifdef HAVE_XML
 static void check_shader_dir(void)
 {
-   static bool old_pressed_next = false;
-   static bool old_pressed_prev = false;
+   static bool old_pressed_next;
+   static bool old_pressed_prev;
 
    if (!g_extern.shader_dir.list || !driver.video->set_shader)
       return;
@@ -2370,9 +2370,9 @@ static void check_cheats(void)
    if (!g_extern.cheat)
       return;
 
-   static bool old_pressed_prev = false;
-   static bool old_pressed_next = false;
-   static bool old_pressed_toggle = false;
+   static bool old_pressed_prev;
+   static bool old_pressed_next;
+   static bool old_pressed_toggle;
 
    bool pressed_next = input_key_pressed_func(RARCH_CHEAT_INDEX_PLUS);
    bool pressed_prev = input_key_pressed_func(RARCH_CHEAT_INDEX_MINUS);
@@ -2394,7 +2394,7 @@ static void check_cheats(void)
 #if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
 static void check_screenshot(void)
 {
-   static bool old_pressed = false;
+   static bool old_pressed;
    bool pressed = input_key_pressed_func(RARCH_SCREENSHOT);
    if (pressed && !old_pressed)
       take_screenshot();
@@ -2409,7 +2409,7 @@ static void check_dsp_config(void)
    if (!g_extern.audio_data.dsp_plugin || !g_extern.audio_data.dsp_plugin->config)
       return;
 
-   static bool old_pressed = false;
+   static bool old_pressed;
    bool pressed = input_key_pressed_func(RARCH_DSP_CONFIG);
    if (pressed && !old_pressed)
       g_extern.audio_data.dsp_plugin->config(g_extern.audio_data.dsp_handle);
@@ -2424,7 +2424,7 @@ static void check_mute(void)
    if (!g_extern.audio_active)
       return;
 
-   static bool old_pressed = false;
+   static bool old_pressed;
    bool pressed = input_key_pressed_func(RARCH_MUTE);
    if (pressed && !old_pressed)
    {
@@ -2475,7 +2475,7 @@ static void check_volume(void)
 #ifdef HAVE_NETPLAY
 static void check_netplay_flip(void)
 {
-   static bool old_pressed = false;
+   static bool old_pressed;
    bool pressed = input_key_pressed_func(RARCH_NETPLAY_FLIP);
    if (pressed && !old_pressed)
       netplay_flip_players(g_extern.netplay);
@@ -2497,6 +2497,19 @@ static void check_block_hotkey(void)
    driver.block_hotkey = !input_key_pressed_func(RARCH_ENABLE_HOTKEY);
 }
 
+static void check_overlay(void)
+{
+   if (!driver.overlay)
+      return;
+
+   static bool old_pressed;
+   bool pressed = input_key_pressed_func(RARCH_OVERLAY_NEXT);
+   if (pressed && !old_pressed)
+      input_overlay_next(driver.overlay);
+
+   old_pressed = pressed;
+}
+
 static void do_state_checks(void)
 {
    check_block_hotkey();
@@ -2510,6 +2523,7 @@ static void do_state_checks(void)
 #endif
 
    check_turbo();
+   check_overlay();
 
 #ifdef HAVE_NETPLAY
    if (!g_extern.netplay)

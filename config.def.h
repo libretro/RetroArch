@@ -406,6 +406,7 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_ENABLE_HOTKEY,              RETROK_UNKNOWN, NO_BTN,     AXIS_NONE },
    { true, RARCH_VOLUME_UP,                  RETROK_KP_PLUS, NO_BTN,     AXIS_NONE },
    { true, RARCH_VOLUME_DOWN,                RETROK_KP_MINUS, NO_BTN,    AXIS_NONE },
+   { true, RARCH_OVERLAY_NEXT,               RETROK_UNKNOWN, NO_BTN,     AXIS_NONE },
 };
 
 // Player 2-5

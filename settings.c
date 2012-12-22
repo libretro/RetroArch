@@ -678,6 +678,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][RARCH_BIND_LIST_END_NULL] = 
       DECLARE_BIND(enable_hotkey,         RARCH_ENABLE_HOTKEY),
       DECLARE_BIND(volume_up,             RARCH_VOLUME_UP),
       DECLARE_BIND(volume_down,           RARCH_VOLUME_DOWN),
+      DECLARE_BIND(overlay_next,          RARCH_OVERLAY_NEXT),
    },
 
    { DECL_PLAYER(2) },
