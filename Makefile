@@ -199,6 +199,9 @@ ifeq ($(HAVE_OPENGL), 1)
          LIBS += -lGL
       endif
    endif
+
+   OBJ += gfx/shader_glsl.o 
+   DEFINES += -DHAVE_GLSL
 endif
 
 ifeq ($(HAVE_VG), 1)
@@ -236,11 +239,6 @@ ifeq ($(HAVE_XML), 1)
    OBJ += cheats.o 
    LIBS += $(XML_LIBS)
    DEFINES += $(XML_CFLAGS)
-
-   ifeq ($(HAVE_OPENGL), 1)
-      OBJ += gfx/shader_glsl.o 
-      DEFINES += -DHAVE_GLSL
-   endif
 endif
 
 ifeq ($(HAVE_XML), 1)
