@@ -238,9 +238,18 @@ static void adjust_system_rates(void)
 
    RARCH_LOG("Set audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
 
-#if defined(RARCH_CONSOLE) && !defined(ANDROID)
-   video_set_nonblock_state_func(!g_settings.video.vsync || g_extern.system.force_nonblock);
-#endif
+   if (driver.video_data)
+      video_set_nonblock_state_func(!g_settings.video.vsync || g_extern.system.force_nonblock);
+}
+
+void driver_set_monitor_refresh_rate(float hz)
+{
+   g_settings.video.refresh_rate = hz;
+   adjust_system_rates();
+
+   g_extern.audio_data.orig_src_ratio =
+      g_extern.audio_data.src_ratio =
+      (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
 }
 
 void init_drivers(void)

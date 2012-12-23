@@ -299,6 +299,8 @@ void uninit_video_input(void);
 void init_audio(void);
 void uninit_audio(void);
 
+void driver_set_monitor_refresh_rate(float hz);
+
 extern driver_t driver;
 
 //////////////////////////////////////////////// Backends
