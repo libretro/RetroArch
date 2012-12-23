@@ -290,7 +290,7 @@ static void init_texture(unsigned width, unsigned height)
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    unsigned g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
 
-   GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : (g_extern.draw_menu) ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjLOD(&g_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_InitTexObj(&menu_tex.obj, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjLOD(&menu_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
@@ -541,14 +541,14 @@ static void update_texture_asm(const uint32_t *src, const uint32_t *dst,
    uint32_t *tmp_dst = dst; \
    for (unsigned x = 0; x < width2; x += 8, tmp_src += 8, tmp_dst += 32) \
    { \
-      tmp_dst[ 0 + off] = tmp_src[0]; \
-      tmp_dst[ 1 + off] = tmp_src[1]; \
-      tmp_dst[ 8 + off] = tmp_src[2]; \
-      tmp_dst[ 9 + off] = tmp_src[3]; \
-      tmp_dst[16 + off] = tmp_src[4]; \
-      tmp_dst[17 + off] = tmp_src[5]; \
-      tmp_dst[24 + off] = tmp_src[6]; \
-      tmp_dst[25 + off] = tmp_src[7]; \
+      tmp_dst[ 0 + off] = BLIT_LINE_16_CONV(tmp_src[0]); \
+      tmp_dst[ 1 + off] = BLIT_LINE_16_CONV(tmp_src[1]); \
+      tmp_dst[ 8 + off] = BLIT_LINE_16_CONV(tmp_src[2]); \
+      tmp_dst[ 9 + off] = BLIT_LINE_16_CONV(tmp_src[3]); \
+      tmp_dst[16 + off] = BLIT_LINE_16_CONV(tmp_src[4]); \
+      tmp_dst[17 + off] = BLIT_LINE_16_CONV(tmp_src[5]); \
+      tmp_dst[24 + off] = BLIT_LINE_16_CONV(tmp_src[6]); \
+      tmp_dst[25 + off] = BLIT_LINE_16_CONV(tmp_src[7]); \
    } \
    src += tmp_pitch; \
 }
@@ -610,16 +610,39 @@ static void convert_texture16(const uint32_t *_src, uint32_t *_dst,
 
    // Texture data is 4x4 tiled @ 16bpp.
    // Use 32-bit to transfer more data per cycle.
-      const uint32_t *src = _src;
+   const uint32_t *src = _src;
    uint32_t *dst = _dst;
    for (unsigned i = 0; i < height; i += 4, dst += 4 * width2)
    {
+#define BLIT_LINE_16_CONV(x) x
          BLIT_LINE_16(0)
          BLIT_LINE_16(2)
          BLIT_LINE_16(4)
          BLIT_LINE_16(6)
+#undef BLIT_LINE_16_CONV
    }
 #endif
+}
+
+static void convert_texture16_conv(const uint32_t *_src, uint32_t *_dst,
+      unsigned width, unsigned height, unsigned pitch)
+{
+   width &= ~15;
+   height &= ~3;
+   unsigned tmp_pitch = pitch >> 2;
+   unsigned width2 = width >> 1;
+
+   const uint32_t *src = _src;
+   uint32_t *dst = _dst;
+   for (unsigned i = 0; i < height; i += 4, dst += 4 * width2)
+   {
+#define BLIT_LINE_16_CONV(x) (0x80008000 | (((x) & 0xFFC0FFC0) >> 1) | ((x) & 0x001F001F))
+         BLIT_LINE_16(0)
+         BLIT_LINE_16(2)
+         BLIT_LINE_16(4)
+         BLIT_LINE_16(6)
+#undef BLIT_LINE_16_CONV
+   }
 }
 
 static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
@@ -865,8 +888,10 @@ static bool gx_frame(void *data, const void *frame,
 
    if (frame)
    {
-      if(gx->rgb32)
+      if (gx->rgb32)
          convert_texture32(frame, g_tex.data, width, height, pitch);
+      else if (g_extern.draw_menu)
+         convert_texture16_conv(frame, g_tex.data, width, height, pitch);
       else
          convert_texture16(frame, g_tex.data, width, height, pitch);
       DCFlushRange(g_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
@@ -945,7 +970,7 @@ static void gx_free(void *data)
    (void)data;
 }
 
-static void gx_set_rotation(void * data, unsigned orientation)
+static void gx_set_rotation(void *data, unsigned orientation)
 {
    (void)data;
    gx_video_t *gx = (gx_video_t*)driver.video_data;

@@ -281,6 +281,7 @@ static bool rmenu_iterate(void)
 
    g_extern.console.rmenu.state.rmenu.enable = true;
    g_extern.draw_menu = true;
+   video_gx.apply_state_changes();
 
    do
    {
