@@ -101,9 +101,9 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    {
       case CONF_VIDEO_PAL:
          if (CONF_GetEuRGB60() > 0)
-            tvmode = VI_PAL;
-         else
             tvmode = VI_EURGB60;
+         else
+            tvmode = VI_PAL;
          break;
       case CONF_VIDEO_MPAL:
          tvmode = VI_MPAL;
@@ -243,6 +243,21 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
    GX_InvalidateTexAll();
    GX_Flush();
+
+   if (tvmode == VI_PAL)
+   {
+      if (modetype == VI_NON_INTERLACE)
+         driver_set_monitor_refresh_rate(50.0801f);
+      else
+         driver_set_monitor_refresh_rate(50.0f);
+   }
+   else
+   {
+      if (modetype == VI_NON_INTERLACE)
+         driver_set_monitor_refresh_rate(59.8261f);
+      else
+         driver_set_monitor_refresh_rate(59.94f);
+   }
 
    g_current_framebuf = 0;
 }
@@ -922,7 +937,7 @@ static bool gx_frame(void *data, const void *frame,
       char fps_txt[128];
       char mem1_txt[128];
       unsigned x = 15;
-      unsigned y = 15;
+      unsigned y = 35;
 
       gfx_get_fps(fps_txt, sizeof(fps_txt), true);
       gx_blit_line(x, y, fps_txt);
