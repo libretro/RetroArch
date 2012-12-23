@@ -104,7 +104,7 @@ endif
 
 ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o
-   DEFINES += -DHAVE_OPENGL
+   DEFINES += -DHAVE_OPENGL -DHAVE_OVERLAY
    LIBS += -lopengl32 -lgdi32
 endif
 

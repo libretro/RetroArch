@@ -469,7 +469,7 @@ size_t audio_sample_batch(const int16_t *data, size_t frames)
    return frames;
 }
 
-// TODO: This might need to be #ifdeffed out for irrelevant platforms.
+#ifdef HAVE_OVERLAY
 static inline void input_poll_overlay(void)
 {
    bool pressed = input_input_state_func(NULL, 0,
@@ -486,14 +486,16 @@ static inline void input_poll_overlay(void)
 
    driver.overlay_state = input_overlay_poll(driver.overlay, x, y);
 }
+#endif
 
 static void input_poll(void)
 {
    input_poll_func();
 
-   // TODO: This might need to be #ifdeffed out for irrelevant platforms.
+#ifdef HAVE_OVERLAY
    if (driver.overlay) // Poll overlay state
       input_poll_overlay();
+#endif
 }
 
 // Turbo scheme: If turbo button is held, all buttons pressed except for D-pad will go into
@@ -542,8 +544,10 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
    if (id < RARCH_FIRST_META_KEY || device == RETRO_DEVICE_KEYBOARD)
       res = input_input_state_func(binds, port, device, index, id);
 
+#ifdef HAVE_OVERLAY
    if (device == RETRO_DEVICE_JOYPAD && port == 0)
       res |= driver.overlay_state & (UINT64_C(1) << id) ? 1 : 0;
+#endif
 
    // Don't allow turbo for D-pad.
    if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP || id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
@@ -2479,6 +2483,7 @@ static void check_block_hotkey(void)
    driver.block_hotkey = !input_key_pressed_func(RARCH_ENABLE_HOTKEY);
 }
 
+#ifdef HAVE_OVERLAY
 static void check_overlay(void)
 {
    if (!driver.overlay)
@@ -2491,6 +2496,7 @@ static void check_overlay(void)
 
    old_pressed = pressed;
 }
+#endif
 
 static void do_state_checks(void)
 {
@@ -2505,7 +2511,10 @@ static void do_state_checks(void)
 #endif
 
    check_turbo();
+
+#ifdef HAVE_OVERLAY
    check_overlay();
+#endif
 
 #ifdef HAVE_NETPLAY
    if (!g_extern.netplay)

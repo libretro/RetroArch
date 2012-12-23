@@ -199,7 +199,7 @@ ifeq ($(HAVE_OPENGL), 1)
    endif
 
    OBJ += gfx/shader_glsl.o 
-   DEFINES += -DHAVE_GLSL
+   DEFINES += -DHAVE_GLSL -DHAVE_OVERLAY
 endif
 
 ifeq ($(HAVE_VG), 1)

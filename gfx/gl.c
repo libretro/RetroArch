@@ -77,11 +77,13 @@ static const GLfloat tex_coords[] = {
    1, 1
 };
 
+#ifdef HAVE_OVERLAY
 static void gl_render_overlay(gl_t *gl);
 static void gl_overlay_vertex_geom(void *data,
       float x, float y, float w, float h);
 static void gl_overlay_tex_geom(void *data,
       float x, float y, float w, float h);
+#endif
 
 static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yamt)
 {
@@ -1191,8 +1193,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    if (gl->ctx_driver->post_render)
       context_post_render_func(gl);
+#ifdef HAVE_OVERLAY
    else if (gl->overlay_enable)
       gl_render_overlay(gl);
+#endif
 
 #if !defined(RARCH_CONSOLE)
    context_update_window_title_func(false);
@@ -1242,8 +1246,11 @@ static void gl_free(void *data)
 #endif
 
    glDeleteTextures(TEXTURES, gl->texture);
+
+#ifdef HAVE_OVERLAY
    if (gl->tex_overlay)
       glDeleteTextures(1, &gl->tex_overlay);
+#endif
 
 #if defined(HAVE_PSGL)
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
@@ -1792,6 +1799,7 @@ static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
 }
 #endif
 
+#ifdef HAVE_OVERLAY
 static bool gl_overlay_load(void *data, const uint32_t *image, unsigned width, unsigned height)
 {
    gl_t *gl = (gl_t*)data;
@@ -1878,6 +1886,7 @@ static void gl_get_overlay_interface(void *data, const video_overlay_interface_t
    (void)data;
    *iface = &gl_overlay_interface;
 }
+#endif
 
 const video_driver_t video_gl = {
    gl_init,
@@ -1913,7 +1922,9 @@ const video_driver_t video_gl = {
    NULL,
 #endif
 
+#ifdef HAVE_OVERLAY
    gl_get_overlay_interface,
+#endif
 };
 
 

@@ -713,7 +713,7 @@ void init_video_input(void)
       }
    }
 
-   // TODO: This should probably be done somewhere else.
+#ifdef HAVE_OVERLAY
    if (driver.overlay)
    {
       input_overlay_free(driver.overlay);
@@ -726,16 +726,19 @@ void init_video_input(void)
       if (!driver.overlay)
          RARCH_ERR("Failed to load overlay.\n");
    }
+#endif
 }
 
 void uninit_video_input(void)
 {
+#ifdef HAVE_OVERLAY
    if (driver.overlay)
    {
       input_overlay_free(driver.overlay);
       driver.overlay = NULL;
       driver.overlay_state = 0;
    }
+#endif
 
    if (driver.input_data != driver.video_data && driver.input)
       input_free_func();

@@ -207,6 +207,7 @@ typedef struct input_driver
 
 struct rarch_viewport;
 
+#ifdef HAVE_OVERLAY
 typedef struct video_overlay_interface
 {
    void (*enable)(void *data, bool state);
@@ -214,6 +215,7 @@ typedef struct video_overlay_interface
    void (*tex_geom)(void *data, float x, float y, float w, float h);
    void (*vertex_geom)(void *data, float x, float y, float w, float h);
 } video_overlay_interface_t;
+#endif
 
 typedef struct video_driver
 {
@@ -243,7 +245,9 @@ typedef struct video_driver
    // Reads out in BGR byte order (24bpp).
    bool (*read_viewport)(void *data, uint8_t *buffer);
 
+#ifdef HAVE_OVERLAY
    void (*overlay_interface)(void *data, const video_overlay_interface_t **iface);
+#endif
 } video_driver_t;
 
 enum rarch_display_type
@@ -280,8 +284,10 @@ typedef struct driver
    struct scaler_ctx scaler;
    void *scaler_out;
 
+#ifdef HAVE_OVERLAY
    input_overlay_t *overlay;
    uint64_t overlay_state;
+#endif
 } driver_t;
 
 void init_drivers(void);
