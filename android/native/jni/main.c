@@ -68,26 +68,49 @@ static void print_cur_config(struct android_app* android_app)
          AConfiguration_getUiModeNight(android_app->config));
 }
 
-void jni_get_char_argv(struct jni_params *params, struct jni_out_params_char *out_params)
+#define JNI_OUT_CHAR 0
+
+void jni_get(void *params, void *out_params, unsigned out_type)
 {
    JNIEnv *env;
-   JavaVM *vm = params->java_vm;
+   struct jni_params *in_params = (struct jni_params*)params;
+
+   JavaVM *vm = in_params->java_vm;
+   jobject obj = NULL;
+   jmethodID gseid = NULL;
 
    (*vm)->AttachCurrentThread(vm, &env, 0);
 
-   jclass acl = (*env)->GetObjectClass(env, params->class_obj); //class pointer
-   jmethodID giid = (*env)->GetMethodID(env, acl, params->method_name, params->method_signature);
-   jobject obj = (*env)->CallObjectMethod(env, params->class_obj, giid); //Got our object
+   if (in_params->class_obj)
+   {
+      jclass acl = (*env)->GetObjectClass(env, in_params->class_obj); //class pointer
+      jmethodID giid = (*env)->GetMethodID(env, acl, in_params->method_name, in_params->method_signature);
+      obj = (*env)->CallObjectMethod(env, in_params->class_obj, giid); //Got our object
+   }
 
-   jclass class_obj = (*env)->GetObjectClass(env, obj); //class pointer of object
-   jmethodID gseid = (*env)->GetMethodID(env, class_obj, params->obj_method_name, params->obj_method_signature);
+   if (in_params->obj_method_name && obj)
+   {
+      jclass class_obj = (*env)->GetObjectClass(env, obj); //class pointer of object
+      gseid = (*env)->GetMethodID(env, class_obj, in_params->obj_method_name,
+            in_params->obj_method_signature);
+   }
 
-   jstring jsParam1 = (*env)->CallObjectMethod(env, obj, gseid, (*env)->NewStringUTF(env, out_params->in));
-   const char *test_argv = (*env)->GetStringUTFChars(env, jsParam1, 0);
-
-   strncpy(out_params->out, test_argv, out_params->out_sizeof);
-
-   (*env)->ReleaseStringUTFChars(env, jsParam1, test_argv);
+   switch (out_type)
+   {
+      case JNI_OUT_CHAR:
+         if(gseid != NULL)
+         {
+            struct jni_out_params_char *out_params_char =  (struct jni_out_params_char*)out_params;
+            jstring jsParam1 = (*env)->CallObjectMethod(env, obj, 
+                  gseid, (*env)->NewStringUTF(env, out_params_char->in));
+            const char *test_argv = (*env)->GetStringUTFChars(env, jsParam1, 0);
+            strncpy(out_params_char->out, test_argv, out_params_char->out_sizeof);
+            (*env)->ReleaseStringUTFChars(env, jsParam1, test_argv);
+         }
+         break;
+      default:
+         break;
+   }
 
    (*vm)->DetachCurrentThread(vm);
 }
@@ -342,13 +365,13 @@ static void* android_app_entry(void* param)
    out_args.out_sizeof = sizeof(rom_path);
    snprintf(out_args.in, sizeof(out_args.in), "ROM");
 
-   jni_get_char_argv(&jni_args, &out_args);
+   jni_get(&jni_args, &out_args, JNI_OUT_CHAR);
 
    out_args.out = libretro_path;
    out_args.out_sizeof = sizeof(libretro_path);
    snprintf(out_args.in, sizeof(out_args.in), "LIBRETRO");
 
-   jni_get_char_argv(&jni_args, &out_args);
+   jni_get(&jni_args, &out_args, JNI_OUT_CHAR);
 
    char refreshrate_char[128];
    float refreshrate;
@@ -357,7 +380,7 @@ static void* android_app_entry(void* param)
    out_args.out_sizeof = sizeof(refreshrate_char);
    snprintf(out_args.in, sizeof(out_args.in), "REFRESHRATE");
 
-   jni_get_char_argv(&jni_args, &out_args);
+   jni_get(&jni_args, &out_args, JNI_OUT_CHAR);
 
    refreshrate = (float)strtod(refreshrate_char, NULL);
 

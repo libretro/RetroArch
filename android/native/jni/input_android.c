@@ -298,6 +298,36 @@ static void *android_input_init(void)
    return (void*)-1;
 }
 
+#if 0
+static void android_input_get_devicename(int id, struct jni_params *params, struct jni_out_params_char *out_params)
+{
+   JNIEnv *env;
+   JavaVM *vm = params->java_vm;
+
+   (*vm)->AttachCurrentThread(vm, &env, 0);
+
+   jclass clazz = (*env)->FindClass(env, "org.retroarch.browser.ModuleActivity");
+
+   jmethodID giid = (*env)->GetMethodID(env, clazz, params->method_name, params->method_signature);
+
+   jobject obj = (*env)->CallObjectMethod(env, params->class_obj, giid); //Got our object
+
+   jclass class_obj = (*env)->GetObjectClass(env, obj); //class pointer of object
+
+   jmethodID gseid = (*env)->GetMethodID(env, class_obj, params->obj_method_name, params->obj_method_signature);
+
+   jstring jsParam1 = (*env)->CallObjectMethod(env, obj, gseid, (*env)->NewStringUTF(env, out_params->in));
+
+   const char *test_argv = (*env)->GetStringUTFChars(env, jsParam1, 0);
+
+   strncpy(out_params->out, test_argv, out_params->out_sizeof);
+
+   (*env)->ReleaseStringUTFChars(env, jsParam1, test_argv);
+
+   (*vm)->DetachCurrentThread(vm);
+}
+#endif
+
 static void android_input_poll(void *data)
 {
    (void)data;
@@ -308,6 +338,7 @@ static void android_input_poll(void *data)
    struct android_app* android_app = g_android.app;
 
    g_extern.lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS));
+
 
    // Read all pending events.
    while(AInputQueue_hasEvents(android_app->inputQueue))
@@ -322,6 +353,26 @@ static void android_input_poll(void *data)
 
       int source = AInputEvent_getSource(event);
       int id = AInputEvent_getDeviceId(event);
+
+#if 0
+   char devicename[512];
+   
+   struct jni_out_params_char out_args;
+   struct jni_params jni_args;
+
+   jni_args.java_vm = g_android.app->activity->vm;
+   snprintf(jni_args.method_name, sizeof(jni_args.method_name), "getDeviceName");
+   snprintf(jni_args.method_signature, sizeof(jni_args.method_signature), "(Ljava/lang/String;)Ljava/lang/String;");
+
+   out_args.out = devicename;
+   out_args.out_sizeof = sizeof(devicename);
+
+   android_input_get_devicename(id, &jni_args, &out_args);
+
+   RARCH_LOG("Device name: %s\n", out_args.out);
+#endif
+
+
       int type_event = AInputEvent_getType(event);
       int state_id = state_device_ids[id];
 

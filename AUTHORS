@@ -31,6 +31,7 @@ Michael Lelli - <toadking@toadking.com>
    - Gamecube/Wii libogc port
    - Raspberry Pi video driver
    - Linux Raw keyboard input driver
+   - Android port patches
 
 Darren Alton -
    - OpenPandora port
