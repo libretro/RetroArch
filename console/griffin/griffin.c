@@ -230,7 +230,10 @@ FONTS
 INPUT
 ============================================================ */
 #include "../../input/input_common.c"
+
+#ifdef HAVE_OVERLAY
 #include "../../input/overlay.c"
+#endif
 
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/ps3_input.c"
