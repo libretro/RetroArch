@@ -317,12 +317,7 @@ static void xdk_input_post_init(void)
 
 static bool xdk_input_key_pressed(void *data, int key)
 {
-   (void)data;
-
-   if(g_extern.lifecycle_state & (1ULL << key))
-      return true;
-
-   return false;
+   return (g_extern.lifecycle_state & (1ULL << key));
 }
 
 const input_driver_t input_xinput = 

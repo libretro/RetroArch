@@ -455,12 +455,7 @@ static void ps3_input_post_init(void)
 
 static bool ps3_input_key_pressed(void *data, int key)
 {
-   (void)data;
-
-   if(g_extern.lifecycle_state & (1ULL << key))
-      return true;
-
-   return false;
+   return (g_extern.lifecycle_state & (1ULL << key));
 }
 
 static void ps3_set_default_keybind_lut(unsigned device, unsigned port)
