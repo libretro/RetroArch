@@ -60,40 +60,57 @@ void jni_get(void *params, void *out_params, unsigned out_type)
       return;
 
    JavaVM *vm = in_params->java_vm;
+   jclass class_ptr = NULL;
    jobject obj = NULL;
-   jmethodID gseid = NULL;
+   jmethodID giid = NULL;
+
+   jstring ret_char;
+   struct jni_out_params_char *out_params_char = NULL;
+   
+   (void)ret_char;
+   (void)out_params_char;
 
    (*vm)->AttachCurrentThread(vm, &env, 0);
 
    if (in_params->class_obj)
    {
-      jclass acl = (*env)->GetObjectClass(env, in_params->class_obj); //class pointer
-      jmethodID giid = (*env)->GetMethodID(env, acl, in_params->method_name, in_params->method_signature);
+      class_ptr = (*env)->GetObjectClass(env, in_params->class_obj); //class pointer
+      giid = (*env)->GetMethodID(env, class_ptr, in_params->method_name, in_params->method_signature);
       obj = (*env)->CallObjectMethod(env, in_params->class_obj, giid); //Got our object
    }
 
    if (in_params->obj_method_name && obj)
    {
-      jclass class_obj = (*env)->GetObjectClass(env, obj); //class pointer of object
-      gseid = (*env)->GetMethodID(env, class_obj, in_params->obj_method_name,
+      class_ptr = (*env)->GetObjectClass(env, obj); //class pointer of object
+      giid = (*env)->GetMethodID(env, class_ptr, in_params->obj_method_name,
             in_params->obj_method_signature);
+
+      switch(out_type)
+      {
+         case JNI_OUT_CHAR:
+            {
+               out_params_char =  (struct jni_out_params_char*)out_params;
+
+               if (!out_params_char)
+                  goto do_exit;
+               ret_char = (*env)->CallObjectMethod(env, obj, giid, 
+                     (*env)->NewStringUTF(env, out_params_char->in));
+            }
+            break;
+         case JNI_OUT_NONE:
+         default:
+            break;
+      }
    }
 
    switch (out_type)
    {
       case JNI_OUT_CHAR:
-         if(gseid != NULL)
+         if(giid != NULL && ret_char)
          {
-            struct jni_out_params_char *out_params_char =  (struct jni_out_params_char*)out_params;
-
-            if (!out_params_char)
-               goto do_exit;
-
-            jstring jsParam1 = (*env)->CallObjectMethod(env, obj, 
-                  gseid, (*env)->NewStringUTF(env, out_params_char->in));
-            const char *test_argv = (*env)->GetStringUTFChars(env, jsParam1, 0);
+            const char *test_argv = (*env)->GetStringUTFChars(env, ret_char, 0);
             strncpy(out_params_char->out, test_argv, out_params_char->out_sizeof);
-            (*env)->ReleaseStringUTFChars(env, jsParam1, test_argv);
+            (*env)->ReleaseStringUTFChars(env, ret_char, test_argv);
          }
          break;
       case JNI_OUT_NONE:
