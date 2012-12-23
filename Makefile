@@ -163,7 +163,12 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
-   OBJ += gfx/gl.o gfx/gfx_context.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/math/matrix.o
+   OBJ += gfx/gl.o \
+			 gfx/gfx_context.o \
+			 gfx/fonts/gl_font.o \
+			 gfx/fonts/gl_raster_font.o \
+			 gfx/math/matrix.o \
+			 gfx/state_tracker.o
 
    ifeq ($(HAVE_KMS), 1)
       OBJ += gfx/context/drm_egl_ctx.o
@@ -237,12 +242,6 @@ ifeq ($(HAVE_XML), 1)
    OBJ += cheats.o 
    LIBS += $(XML_LIBS)
    DEFINES += $(XML_CFLAGS)
-endif
-
-ifeq ($(HAVE_XML), 1)
-   OBJ += gfx/state_tracker.o
-else ifeq ($(HAVE_CG), 1)
-   OBJ += gfx/state_tracker.o
 endif
 
 ifeq ($(HAVE_DYLIB), 1)
