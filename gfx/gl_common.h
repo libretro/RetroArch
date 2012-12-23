@@ -255,7 +255,7 @@ typedef struct gl
    unsigned last_height[TEXTURES];
    unsigned tex_w, tex_h;
    GLfloat tex_coords[8];
-   math_matrix mvp;
+   math_matrix mvp, mvp_no_rot;
 
    struct gl_coords coords;
 

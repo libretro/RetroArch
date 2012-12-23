@@ -617,18 +617,18 @@ void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
 #endif
 
    // Calculate projection.
-   math_matrix proj;
-   matrix_ortho(&proj, ortho->left, ortho->right,
+   matrix_ortho(&gl->mvp_no_rot, ortho->left, ortho->right,
          ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
 
    if (allow_rotate)
    {
       math_matrix rot;
       matrix_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
-      matrix_multiply(&proj, &rot, &proj);
+      matrix_multiply(&gl->mvp, &rot, &gl->mvp_no_rot);
    }
+   else
+      gl->mvp = gl->mvp_no_rot;
 
-   gl->mvp = proj;
    gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp);
 }
 
@@ -1865,7 +1865,7 @@ static void gl_render_overlay(gl_t *gl)
    glEnable(GL_BLEND);
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
-   gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp);
+   gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp_no_rot);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);
