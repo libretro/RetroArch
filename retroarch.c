@@ -596,7 +596,6 @@ static void print_features(void)
    _PSUPP(fbo, "FBO", "OpenGL render-to-texture (multi-pass shaders)");
    _PSUPP(dynamic, "Dynamic", "Dynamic run-time loading of libretro library");
    _PSUPP(ffmpeg, "FFmpeg", "On-the-fly recording of gameplay with libavcodec");
-   _PSUPP(configfile, "Config file", "Configuration file support");
    _PSUPP(freetype, "FreeType", "TTF font rendering with FreeType");
    _PSUPP(netplay, "Netplay", "Peer-to-peer netplay");
    _PSUPP(python, "Python", "Script support in shaders");
@@ -639,11 +638,9 @@ static void print_help(void)
    puts("\t-s/--save: Path for save file (*.srm). Required when rom is input from stdin.");
    puts("\t-f/--fullscreen: Start RetroArch in fullscreen regardless of config settings.");
    puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
-#ifdef HAVE_CONFIGFILE
    puts("\t-c/--config: Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
    puts("\t--appendconfig: Extra config files are loaded in, and take priority over config selected in -c (or default).");
    puts("\t\tMultiple configs are delimited by ','.");
-#endif
 #ifdef HAVE_DYNAMIC
    puts("\t-L/--libretro: Path to libretro implementation. Overrides any config setting.");
 #endif
@@ -741,7 +738,6 @@ static void set_paths(const char *path)
    if (!*g_settings.system_directory)
       fill_pathname_basedir(g_settings.system_directory, path, sizeof(g_settings.system_directory));
 
-#ifdef HAVE_CONFIGFILE
    if (*g_extern.config_path && path_is_directory(g_extern.config_path))
    {
       fill_pathname_dir(g_extern.config_path, g_extern.basename, ".cfg", sizeof(g_extern.config_path));
@@ -752,7 +748,6 @@ static void set_paths(const char *path)
          RARCH_LOG("Did not find config file. Using system default.\n");
       }
    }
-#endif
 }
 
 static void verify_stdin_paths(void)
@@ -782,15 +777,12 @@ static void verify_stdin_paths(void)
       print_help();
       rarch_fail(1, "verify_stdin_paths()");
    }
-
-#ifdef HAVE_CONFIGFILE
    else if (path_is_directory(g_extern.config_path))
    {
       RARCH_ERR("Cannot specify directory for config file (--config) when reading from stdin.\n");
       print_help();
       rarch_fail(1, "verify_stdin_paths()");
    }
-#endif
 
    driver.stdin_claimed = true;
 }
@@ -822,10 +814,8 @@ static void parse_input(int argc, char *argv[])
 #endif
       { "verbose", 0, NULL, 'v' },
       { "gameboy", 1, NULL, 'g' },
-#ifdef HAVE_CONFIGFILE
       { "config", 1, NULL, 'c' },
       { "appendconfig", 1, &val, 'C' },
-#endif
       { "mouse", 1, NULL, 'm' },
       { "nodevice", 1, NULL, 'N' },
       { "scope", 0, NULL, 'p' },
@@ -870,12 +860,6 @@ static void parse_input(int argc, char *argv[])
 #define FFMPEG_RECORD_ARG
 #endif
 
-#ifdef HAVE_CONFIGFILE
-#define CONFIG_FILE_ARG "c:"
-#else
-#define CONFIG_FILE_ARG
-#endif
-
 #ifdef HAVE_DYNAMIC
 #define DYNAMIC_ARG "L:"
 #else
@@ -894,7 +878,7 @@ static void parse_input(int argc, char *argv[])
 #define BSV_MOVIE_ARG
 #endif
 
-   const char *optstring = "hs:fvS:m:p4jJA:g:b:B:Y:Z:U:DN:X:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
+   const char *optstring = "hs:fvS:m:p4jJA:g:b:c:B:Y:Z:U:DN:X:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
    for (;;)
    {
       val = 0;
@@ -1002,11 +986,9 @@ static void parse_input(int argc, char *argv[])
             g_extern.has_scope = true;
             break;
 
-#ifdef HAVE_CONFIGFILE
          case 'c':
             strlcpy(g_extern.config_path, optarg, sizeof(g_extern.config_path));
             break;
-#endif
 
 #ifdef HAVE_FFMPEG
          case 'r':

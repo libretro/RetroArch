@@ -30,9 +30,7 @@
 #include "../compat/posix_string.h"
 #include "../file.h"
 
-#ifdef HAVE_CONFIGFILE
 #include "state_tracker.h"
-#endif
 
 //#define RARCH_CG_DEBUG
 
@@ -150,9 +148,7 @@ static char lut_textures_uniform[MAX_TEXTURES][64];
 static CGparameter cg_attribs[PREV_TEXTURES + 1 + 4 + RARCH_CG_MAX_SHADERS];
 static unsigned cg_attrib_index;
 
-#ifdef HAVE_CONFIGFILE
 static state_tracker_t *state_tracker = NULL;
-#endif
 
 static void gl_cg_reset_attrib(void)
 {
@@ -306,7 +302,6 @@ void gl_cg_set_params(unsigned width, unsigned height,
       }
    }
 
-#ifdef HAVE_CONFIGFILE
    // Set state parameters
    if (state_tracker)
    {
@@ -325,7 +320,6 @@ void gl_cg_set_params(unsigned width, unsigned height,
          set_param_1f(param_f, info[i].value);
       }
    }
-#endif
 }
 
 static void gl_cg_deinit_progs(void)
@@ -366,13 +360,11 @@ static void gl_cg_deinit_state(void)
    glDeleteTextures(lut_textures_num, lut_textures);
    lut_textures_num = 0;
 
-#ifdef HAVE_CONFIGFILE
    if (state_tracker)
    {
       state_tracker_free(state_tracker);
       state_tracker = NULL;
    }
-#endif
 }
 
 // Final deinit.
@@ -513,7 +505,6 @@ static bool load_menu_shader(void)
 
 #define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
 
-#ifdef HAVE_CONFIGFILE
 static void load_texture_data(GLuint *obj, const struct texture_image *img, bool smooth)
 {
    glGenTextures(1, obj);
@@ -766,7 +757,6 @@ end:
    free(imports);
    return ret;
 }
-#endif
 
 static bool load_shader(const char *cgp_path, unsigned i, config_file_t *conf)
 {
@@ -933,7 +923,6 @@ end:
 
 static bool load_preset(const char *path)
 {
-#ifdef HAVE_CONFIGFILE
    bool ret = true;
 
    if (!load_stock())
@@ -1021,12 +1010,6 @@ end:
    if (conf)
       config_file_free(conf);
    return ret;
-
-#else
-   (void)path;
-   RARCH_ERR("No config file support compiled in.\n");
-   return false;
-#endif
 }
 
 static void set_program_base_attrib(unsigned i)
