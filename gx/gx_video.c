@@ -138,6 +138,14 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
          break;
    }
 
+   if (lines == 0 || fbWidth == 0)
+   {
+      GXRModeObj tmp_mode;
+      VIDEO_GetPreferredMode(&tmp_mode);
+      fbWidth = tmp_mode.fbWidth;
+      lines = tmp_mode.xfbHeight;
+   }
+
    if (lines <= max_height / 2)
    {
       modetype = VI_NON_INTERLACE;
@@ -146,15 +154,6 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    else
    {
       modetype = (progressive) ? VI_PROGRESSIVE : VI_INTERLACE;
-   }
-
-   if (lines == 0 || fbWidth == 0)
-   {
-      VIDEO_GetPreferredMode(&gx_mode);
-      // still bring over the viWidth changes
-      gx_mode.viWidth = viWidth;
-      gx_mode.viXOrigin = (max_width - gx_mode.viWidth) / 2;
-      goto config;
    }
 
    if (lines > max_height)
@@ -204,12 +203,11 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
       gx_mode.vfilter[6] = 0;
    }
 
-config:
    RARCH_LOG("GX Resolution: %dx%d (%s)\n", gx_mode.fbWidth, gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE ? "interlaced" : "progressive");
 
    gx->win_width = gx_mode.fbWidth;
    gx->win_height = gx_mode.efbHeight;
-   gx->double_strike = modetype == VI_NON_INTERLACE;
+   gx->double_strike = (modetype == VI_NON_INTERLACE);
    gx->should_resize = true;
 
    RGUI_HEIGHT = gx_mode.efbHeight / (gx->double_strike ? 1 : 2);
