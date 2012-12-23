@@ -18,6 +18,7 @@ OBJ = retroarch.o \
 		compat/compat.o \
 		audio/null.o \
 		gfx/null.o \
+		conf/config_file.o \
 		input/null.o \
 		screenshot.o \
 		gfx/scaler/scaler.o \
@@ -71,10 +72,6 @@ ifeq ($(HAVE_THREADS), 1)
    ifeq ($(findstring Haiku,$(OS)),)
       LIBS += -lpthread
    endif
-endif
-
-ifeq ($(HAVE_CONFIGFILE), 1)
-   OBJ += conf/config_file.o
 endif
 
 ifeq ($(HAVE_BSV_MOVIE), 1)

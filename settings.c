@@ -245,9 +245,7 @@ void config_set_defaults(void)
    rarch_init_msg_queue();
 }
 
-#ifdef HAVE_CONFIGFILE
 static void parse_config_file(void);
-#endif
 
 void config_load(void)
 {
@@ -256,14 +254,10 @@ void config_load(void)
 #endif
    {
       config_set_defaults();
-
-#ifdef HAVE_CONFIGFILE
       parse_config_file();
-#endif
    }
 }
 
-#ifdef HAVE_CONFIGFILE
 static config_file_t *open_default_config_file(void)
 {
    config_file_t *conf = NULL;
@@ -368,10 +362,7 @@ static config_file_t *open_default_config_file(void)
 
    return conf;
 }
-#endif
 
-
-#ifdef HAVE_CONFIGFILE
 static void config_read_keybinds_conf(config_file_t *conf);
 
 static void parse_config_file(void)
@@ -1025,6 +1016,4 @@ bool config_save_keybinds(const char *path)
    config_file_free(conf);
    return true;
 }
-
-#endif
 

@@ -270,10 +270,8 @@ struct global
    bool has_set_save_path;
    bool has_set_state_path;
 
-#ifdef HAVE_CONFIGFILE
    char config_path[PATH_MAX];
    char append_config_path[PATH_MAX];
-#endif
 
 #ifdef HAVE_FILE_LOGGER
    char default_log_file[PATH_MAX];
@@ -596,12 +594,10 @@ const char *config_get_default_video(void);
 const char *config_get_default_audio(void);
 const char *config_get_default_input(void);
 
-#ifdef HAVE_CONFIGFILE
 #include "conf/config_file.h"
 bool config_load_file(const char *path);
 bool config_read_keybinds(const char *path);
 bool config_save_keybinds(const char *path);
-#endif
 
 void rarch_game_reset(void);
 void rarch_main_clear_state(void);

@@ -57,9 +57,7 @@ default_paths_t default_paths;
 #include "../rarch_console_rsound.c"
 #endif
 
-#ifdef HAVE_CONFIGFILE
 #include "../rarch_console_config.c"
-#endif
 
 #ifdef HAVE_DEFAULT_RETROPAD_INPUT
 #include "../rarch_console_input.c"
@@ -101,9 +99,7 @@ CONFIG FILE
 #undef strcasecmp
 #endif
 
-#ifdef HAVE_CONFIGFILE
 #include "../../conf/config_file.c"
-#endif
 
 /*============================================================
 CHEATS

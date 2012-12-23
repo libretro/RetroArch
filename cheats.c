@@ -24,9 +24,7 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_CONFIGFILE
 #include "conf/config_file.h"
-#endif
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -151,7 +149,6 @@ static void cheat_manager_apply_cheats(cheat_manager_t *handle)
 
 static void cheat_manager_load_config(cheat_manager_t *handle, const char *path, const char *sha256)
 {
-#ifdef HAVE_CONFIGFILE
    if (!(*path))
       return;
 
@@ -181,17 +178,10 @@ static void cheat_manager_load_config(cheat_manager_t *handle, const char *path,
    config_file_free(conf);
 
    cheat_manager_apply_cheats(handle);
-
-#else
-   (void)handle;
-   (void)path;
-   (void)sha256;
-#endif
 }
 
 static void cheat_manager_save_config(cheat_manager_t *handle, const char *path, const char *sha256)
 {
-#ifdef HAVE_CONFIGFILE
    if (!(*path))
       return;
 
@@ -226,12 +216,6 @@ static void cheat_manager_save_config(cheat_manager_t *handle, const char *path,
       RARCH_ERR("Failed to write XML cheat settings to \"%s\". Check permissions.\n", path);
 
    config_file_free(conf);
-
-#else
-   (void)handle;
-   (void)path;
-   (void)sha256;
-#endif
 }
 
 cheat_manager_t *cheat_manager_new(const char *path)
