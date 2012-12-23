@@ -20,8 +20,8 @@
 #include <string.h>
 #include <sys/resource.h>
 
-#include <jni.h>
 #include "android_general.h"
+#include "jni_wrapper.h"
 #include "../../../general.h"
 #include "../../../performance.h"
 #include "../../../driver.h"
@@ -66,53 +66,6 @@ static void print_cur_config(struct android_app* android_app)
          AConfiguration_getScreenLong(android_app->config),
          AConfiguration_getUiModeType(android_app->config),
          AConfiguration_getUiModeNight(android_app->config));
-}
-
-#define JNI_OUT_CHAR 0
-
-void jni_get(void *params, void *out_params, unsigned out_type)
-{
-   JNIEnv *env;
-   struct jni_params *in_params = (struct jni_params*)params;
-
-   JavaVM *vm = in_params->java_vm;
-   jobject obj = NULL;
-   jmethodID gseid = NULL;
-
-   (*vm)->AttachCurrentThread(vm, &env, 0);
-
-   if (in_params->class_obj)
-   {
-      jclass acl = (*env)->GetObjectClass(env, in_params->class_obj); //class pointer
-      jmethodID giid = (*env)->GetMethodID(env, acl, in_params->method_name, in_params->method_signature);
-      obj = (*env)->CallObjectMethod(env, in_params->class_obj, giid); //Got our object
-   }
-
-   if (in_params->obj_method_name && obj)
-   {
-      jclass class_obj = (*env)->GetObjectClass(env, obj); //class pointer of object
-      gseid = (*env)->GetMethodID(env, class_obj, in_params->obj_method_name,
-            in_params->obj_method_signature);
-   }
-
-   switch (out_type)
-   {
-      case JNI_OUT_CHAR:
-         if(gseid != NULL)
-         {
-            struct jni_out_params_char *out_params_char =  (struct jni_out_params_char*)out_params;
-            jstring jsParam1 = (*env)->CallObjectMethod(env, obj, 
-                  gseid, (*env)->NewStringUTF(env, out_params_char->in));
-            const char *test_argv = (*env)->GetStringUTFChars(env, jsParam1, 0);
-            strncpy(out_params_char->out, test_argv, out_params_char->out_sizeof);
-            (*env)->ReleaseStringUTFChars(env, jsParam1, test_argv);
-         }
-         break;
-      default:
-         break;
-   }
-
-   (*vm)->DetachCurrentThread(vm);
 }
 
 /**
@@ -349,11 +302,14 @@ static void* android_app_entry(void* param)
    char rom_path[512];
    char libretro_path[512];
 
+   JNI_OnLoad(g_android.app->activity->vm, NULL);
+
    // Get arguments */
    struct jni_params jni_args;
 
    jni_args.java_vm = g_android.app->activity->vm;
    jni_args.class_obj = g_android.app->activity->clazz;
+
    snprintf(jni_args.method_name, sizeof(jni_args.method_name), "getIntent");
    snprintf(jni_args.method_signature, sizeof(jni_args.method_signature), "()Landroid/content/Intent;");
    snprintf(jni_args.obj_method_name, sizeof(jni_args.obj_method_name), "getStringExtra");

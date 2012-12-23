@@ -14,33 +14,32 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _ANDROID_GENERAL_H
-#define _ANDROID_GENERAL_H
+#ifndef _JNI_WRAPPER_H
+#define _JNI_WRAPPER_H
 
-#include "android_glue.h"
-#include "../../../boolean.h"
-
-struct saved_state
+enum
 {
-    int32_t x;
-    int32_t y;
-    uint64_t lifecycle_state;
+   JNI_OUT_NONE = 0,
+   JNI_OUT_CHAR
 };
 
-struct droid
+struct jni_params
 {
-   struct android_app* app;
-   unsigned width;
-   unsigned height;
-   struct saved_state state;
-   int32_t last_orient;
-   bool window_ready;
-   float disp_refresh_rate;
-   jobject class_loader_obj;
+   JavaVM *java_vm;
+   jobject class_obj;
+   char class_name[128];
+   char method_name[128];
+   char method_signature[128];
+   char obj_method_name[128];
+   char obj_method_signature[128];
 };
 
-extern struct droid g_android;
+struct jni_out_params_char
+{
+   char *out;
+   size_t out_sizeof;
+   char in[128];
+};
 
-bool android_run_events(struct android_app* android_app);
-
+void jni_get(void *params, void *out_params, unsigned out_type);
 #endif
