@@ -184,6 +184,16 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          AConfiguration_fromAssetManager(android_app->config,
                android_app->activity->assetManager);
          print_cur_config(android_app);
+
+         int32_t new_orient = AConfiguration_getOrientation(g_android.app->config);
+
+         if (new_orient != g_android.last_orient && g_android.window_ready)
+         {
+            g_android.last_orient = new_orient;
+            gfx_ctx_orientation_update();
+            // reinit video driver for new window dimensions
+         }
+
          break;
       case APP_CMD_TERM_WINDOW:
          RARCH_LOG("engine_handle_cmd: APP_CMD_TERM_WINDOW.\n");

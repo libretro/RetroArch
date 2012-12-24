@@ -85,6 +85,30 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
    }
 }
 
+static bool gfx_ctx_orientation_update(void)
+{
+   gl_t *gl = (gl_t*)driver.video_data;
+
+   // Get real known video size, which might have been altered by context.
+   gfx_ctx_get_video_size(&gl->win_width, &gl->win_height);
+   RARCH_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
+
+   if (gl->full_x || gl->full_y) // We got bogus from gfx_ctx_get_video_size. Replace.
+   {
+      gl->full_x = gl->win_width;
+      gl->full_y = gl->win_height;
+   }
+
+#ifdef HAVE_GLSL
+   gl_glsl_use(0);
+#endif
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+#ifdef HAVE_GLSL
+   gl_glsl_use(1);
+#endif
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+}
+
 static bool gfx_ctx_init(void)
 {
    RARCH_LOG("gfx_ctx_init().\n");
@@ -168,27 +192,7 @@ static bool gfx_ctx_init(void)
    if (g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT))
    {
       RARCH_LOG("[ANDROID/EGL]: Setting up reentrant state.\n");
-
-      gl_t *gl = (gl_t*)driver.video_data;
-
-      // Get real known video size, which might have been altered by context.
-      gfx_ctx_get_video_size(&gl->win_width, &gl->win_height);
-      RARCH_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
-
-      if (gl->full_x || gl->full_y) // We got bogus from gfx_ctx_get_video_size. Replace.
-      {
-         gl->full_x = gl->win_width;
-         gl->full_y = gl->win_height;
-      }
-
-#ifdef HAVE_GLSL
-      gl_glsl_use(0);
-#endif
-      gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-#ifdef HAVE_GLSL
-      gl_glsl_use(1);
-#endif
-      gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+      gfx_ctx_orientation_update();
    }
 
    return true;
@@ -238,17 +242,6 @@ static void gfx_ctx_check_window(bool *quit,
    }
 
    RARCH_PERFORMANCE_STOP(alooper_pollonce);
-
-   int32_t new_orient = AConfiguration_getOrientation(g_android.app->config);
-
-   if (new_orient != g_android.last_orient && g_android.window_ready)
-   {
-      *resize = true;
-      g_android.last_orient = new_orient;
-      // reinit video driver for new window dimensions
-      driver.video->free(driver.video_data);
-      init_video_input();
-   }
 
    // Check if we are exiting.
    if (g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY))
