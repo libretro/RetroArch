@@ -23,28 +23,9 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved)
 {
    (void)reserved;
 
-   /*
-   JNIEnv *env;
-   jclass loader;
-
-   (*vm)->AttachCurrentThread(vm, &env, 0);
-
-   loader = (*env)->FindClass(env, "org/retroarch/browser/ModuleActivity");
-
-   if (loader == NULL)
-   {
-      RARCH_ERR("JNI - Can't find LoaderClass.\n");
-      goto do_exit;
-   }
-   */
-
    RARCH_LOG("JNI - Successfully executed JNI_OnLoad.\n");
 
    return JNI_VERSION_1_4;
-
-do_exit:
-   //(*vm)->DetachCurrentThread(vm);
-   return -1;
 }
 
 #define JNI_EXCEPTION(env) \
@@ -72,8 +53,6 @@ do_exit:
 
 void jni_get(void *params, void *out_params, unsigned out_type)
 {
-   JNIEnv *env;
-
    if (!params)
       return;
 
@@ -82,7 +61,6 @@ void jni_get(void *params, void *out_params, unsigned out_type)
    if (!in_params)
       return;
 
-   JavaVM *vm = in_params->java_vm;
    jclass class_ptr = NULL;
    jobject obj = NULL;
    jmethodID giid = NULL;
@@ -93,19 +71,19 @@ void jni_get(void *params, void *out_params, unsigned out_type)
    (void)ret_char;
    (void)out_params_char;
 
-   (*vm)->AttachCurrentThread(vm, &env, 0);
+   (*in_params->java_vm)->AttachCurrentThread(in_params->java_vm, &in_params->env, 0);
 
    if (in_params->class_obj)
    {
-      GET_OBJECT_CLASS(env, class_ptr, in_params->class_obj);
-      GET_METHOD_ID(env, giid, class_ptr, in_params->method_name, in_params->method_signature);
-      CALL_OBJ_METHOD(env, obj, in_params->class_obj, giid);
+      GET_OBJECT_CLASS(in_params->env, class_ptr, in_params->class_obj);
+      GET_METHOD_ID(in_params->env, giid, class_ptr, in_params->method_name, in_params->method_signature);
+      CALL_OBJ_METHOD(in_params->env, obj, in_params->class_obj, giid);
    }
 
    if (in_params->obj_method_name && obj)
    {
-      GET_OBJECT_CLASS(env, class_ptr, obj);
-      GET_METHOD_ID(env, giid, class_ptr, in_params->obj_method_name, in_params->obj_method_signature);
+      GET_OBJECT_CLASS(in_params->env, class_ptr, obj);
+      GET_METHOD_ID(in_params->env, giid, class_ptr, in_params->obj_method_name, in_params->obj_method_signature);
 
       switch(out_type)
       {
@@ -115,7 +93,15 @@ void jni_get(void *params, void *out_params, unsigned out_type)
 
                if (!out_params_char)
                   goto do_exit;
-               CALL_OBJ_METHOD_PARAM(env, ret_char, obj, giid, (*env)->NewStringUTF(env, out_params_char->in));
+
+               CALL_OBJ_METHOD_PARAM(in_params->env, ret_char, obj, giid, (*in_params->env)->NewStringUTF(in_params->env, out_params_char->in));
+
+               if(giid != NULL && ret_char)
+               {
+                  const char *test_argv = (*in_params->env)->GetStringUTFChars(in_params->env, ret_char, 0);
+                  strncpy(out_params_char->out, test_argv, out_params_char->out_sizeof);
+                  (*in_params->env)->ReleaseStringUTFChars(in_params->env, ret_char, test_argv);
+               }
             }
             break;
          case JNI_OUT_NONE:
@@ -124,21 +110,6 @@ void jni_get(void *params, void *out_params, unsigned out_type)
       }
    }
 
-   switch (out_type)
-   {
-      case JNI_OUT_CHAR:
-         if(giid != NULL && ret_char)
-         {
-            const char *test_argv = (*env)->GetStringUTFChars(env, ret_char, 0);
-            strncpy(out_params_char->out, test_argv, out_params_char->out_sizeof);
-            (*env)->ReleaseStringUTFChars(env, ret_char, test_argv);
-         }
-         break;
-      case JNI_OUT_NONE:
-      default:
-         break;
-   }
-
 do_exit:
-   (*vm)->DetachCurrentThread(vm);
+   (*in_params->java_vm)->DetachCurrentThread(in_params->java_vm);
 }
