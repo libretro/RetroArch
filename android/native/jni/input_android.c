@@ -393,7 +393,7 @@ static void android_input_poll(void *data)
          float x = AMotionEvent_getX(event, motion_pointer);
          float y = AMotionEvent_getY(event, motion_pointer);
 
-         if(source != AINPUT_SOURCE_TOUCHSCREEN && source != AINPUT_SOURCE_MOUSE)
+         if(source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
          {
             state[state_id] &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
                   (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
@@ -401,9 +401,6 @@ static void android_input_poll(void *data)
             state[state_id] |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
             state[state_id] |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
             state[state_id] |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
-#ifdef RARCH_INPUT_DEBUG
-            snprintf(msg, sizeof(msg), "Pad %d : x = %.2f, y = %.2f, src %d.\n", state_id, x, y, source);
-#endif
          }
          else
          {
@@ -411,17 +408,14 @@ static void android_input_poll(void *data)
             bool pointer_is_not_dirty = (action == AMOTION_EVENT_ACTION_UP ||
                   action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP);
 
-            if (mouse_is_not_dirty || pointer_is_not_dirty)
-               pointer_dirty = 0;
-            else
-            {
-               pointer_dirty = 1;
+            pointer_dirty = !(mouse_is_not_dirty || pointer_is_not_dirty);
+
+            if (pointer_dirty)
                input_translate_coord_viewport(x, y, &pointer_x, &pointer_y);
-#ifdef RARCH_INPUT_DEBUG
-               snprintf(msg, sizeof(msg), "Pad %d : x = %d, y = %d, src %d.\n", state_id, pointer_x, pointer_y, source);
-#endif
-            }
          }
+#ifdef RARCH_INPUT_DEBUG
+         snprintf(msg, sizeof(msg), "Pad %d : x = %.2f, y = %.2f, src %d.\n", state_id, x, y, source);
+#endif
       }
       else
       {
