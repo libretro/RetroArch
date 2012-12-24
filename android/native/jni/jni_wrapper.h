@@ -43,12 +43,24 @@ struct jni_out_params_char
       (*env)->ExceptionClear(env); \
    }
 
+#define FIND_CLASS(env, var, classname) \
+   var = (*env)->FindClass(classname); \
+   JNI_EXCEPTION(env)
+
 #define GET_OBJECT_CLASS(env, var, clazz_obj) \
    var = (*env)->GetObjectClass(env, clazz_obj); \
    JNI_EXCEPTION(env)
 
+#define GET_FIELD_ID(env, var, clazz, fieldName, fieldDescriptor) \
+   var = (*env)->GetFieldID(env, clazz, fieldName, fieldDescriptor); \
+   JNI_EXCEPTION(env)
+
 #define GET_METHOD_ID(env, var, clazz, methodName, fieldDescriptor) \
    var = (*env)->GetMethodID(env, clazz, methodName, fieldDescriptor); \
+   JNI_EXCEPTION(env)
+
+#define GET_STATIC_METHOD_ID(env, var, clazz, methodName, fieldDescriptor) \
+   var = (*env)->GetStaticMethodID(env, clazz, methodName, fieldDescriptor); \
    JNI_EXCEPTION(env)
 
 #define CALL_OBJ_METHOD(env, var, clazz_obj, methodId) \
