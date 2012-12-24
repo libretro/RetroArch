@@ -139,7 +139,6 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          /* POSTEXEC */
          free_saved_state(android_app);
          
-         g_extern.lifecycle_state &= ~(1ULL << RARCH_PAUSE_TOGGLE);
          break;
       case APP_CMD_START:
          RARCH_LOG("engine_handle_cmd: APP_CMD_START.\n");
@@ -209,6 +208,7 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
       case APP_CMD_GAINED_FOCUS:
          RARCH_LOG("engine_handle_cmd: APP_CMD_GAINED_FOCUS.\n");
 
+         g_extern.lifecycle_state &= ~(1ULL << RARCH_PAUSE_TOGGLE);
          /* EXEC */
          break;
       case APP_CMD_LOST_FOCUS:
@@ -229,46 +229,36 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
 
 bool android_run_events(struct android_app* android_app)
 {
-   // Read all pending events.
-   int id;
+   int id = ALooper_pollOnce(0, NULL, 0, NULL);
 
-   RARCH_LOG("RetroArch Android paused.\n");
-
-   // Block forever waiting for events.
-   while ((id = ALooper_pollOnce(input_key_pressed_func(RARCH_PAUSE_TOGGLE) ? -1 : 100, NULL, 0, NULL)) >= 0)
+   if (id == LOOPER_ID_MAIN)
    {
-      // Process this event.
-      if (id)
+      int8_t cmd;
+
+      if (read(android_app->msgread, &cmd, sizeof(cmd)) == sizeof(cmd))
       {
-         int8_t cmd;
-
-         if (read(android_app->msgread, &cmd, sizeof(cmd)) == sizeof(cmd))
-         {
-            if(cmd == APP_CMD_SAVE_STATE)
-               free_saved_state(android_app);
-         }
-         else
-            cmd = -1;
-
-         engine_handle_cmd(android_app, cmd);
-
-         if (cmd == APP_CMD_INIT_WINDOW)
-         {
-            if(g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT))
-                  init_drivers();
-
-            if (android_app->window != NULL)
-               g_android.window_ready = true;
-         }
+         if(cmd == APP_CMD_SAVE_STATE)
+            free_saved_state(android_app);
       }
+      else
+         cmd = -1;
 
-      // Check if we are exiting.
-      if (g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY))
-         return false;
+      engine_handle_cmd(android_app, cmd);
+
+      if (cmd == APP_CMD_INIT_WINDOW)
+      {
+         if(g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT))
+            init_drivers();
+
+         if (android_app->window != NULL)
+            g_android.window_ready = true;
+      }
    }
 
-   RARCH_LOG("RetroArch Android unpaused.\n");
-   
+   // Check if we are exiting.
+   if (g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY))
+      return false;
+
    return true;
 }
 
