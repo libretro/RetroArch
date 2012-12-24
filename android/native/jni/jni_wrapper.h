@@ -17,11 +17,7 @@
 #ifndef _JNI_WRAPPER_H
 #define _JNI_WRAPPER_H
 
-enum
-{
-   JNI_OUT_NONE = 0,
-   JNI_OUT_CHAR
-};
+#include <jni.h>
 
 struct jni_params
 {
@@ -31,8 +27,6 @@ struct jni_params
    char class_name[128];
    char method_name[128];
    char method_signature[128];
-   char obj_method_name[128];
-   char obj_method_signature[128];
 };
 
 struct jni_out_params_char
@@ -42,5 +36,27 @@ struct jni_out_params_char
    char in[128];
 };
 
-void jni_get(void *params, void *out_params, unsigned out_type);
+#define JNI_EXCEPTION(env) \
+   if ((*env)->ExceptionOccurred(env)) \
+   { \
+      (*env)->ExceptionDescribe(env); \
+      (*env)->ExceptionClear(env); \
+   }
+
+#define GET_OBJECT_CLASS(env, var, clazz_obj) \
+   var = (*env)->GetObjectClass(env, clazz_obj); \
+   JNI_EXCEPTION(env)
+
+#define GET_METHOD_ID(env, var, clazz, methodName, fieldDescriptor) \
+   var = (*env)->GetMethodID(env, clazz, methodName, fieldDescriptor); \
+   JNI_EXCEPTION(env)
+
+#define CALL_OBJ_METHOD(env, var, clazz_obj, methodId) \
+   var = (*env)->CallObjectMethod(env, clazz_obj, methodId); \
+   JNI_EXCEPTION(env)
+
+#define CALL_OBJ_METHOD_PARAM(env, var, clazz_obj, methodId, methodParam) \
+   var = (*env)->CallObjectMethod(env, clazz_obj, methodId, methodParam); \
+   JNI_EXCEPTION(env)
+
 #endif

@@ -277,6 +277,103 @@ bool android_run_events(struct android_app* android_app)
  * android_native_app_glue.  It runs in its own thread, with its own
  * event loop for receiving input events and doing other things.
  */
+static void jni_get(struct jni_params *in_params, struct jni_out_params_char *out_args)
+{
+   char obj_method_name[128];
+   char obj_method_signature[128];
+   jclass class_ptr = NULL;
+   jobject obj = NULL;
+   jmethodID giid = NULL;
+   jstring ret_char;
+
+   snprintf(obj_method_name, sizeof(obj_method_name), "getStringExtra");
+   snprintf(obj_method_signature, sizeof(obj_method_signature), "(Ljava/lang/String;)Ljava/lang/String;");
+
+   GET_OBJECT_CLASS(in_params->env, class_ptr, in_params->class_obj);
+   GET_METHOD_ID(in_params->env, giid, class_ptr, in_params->method_name, in_params->method_signature);
+   CALL_OBJ_METHOD(in_params->env, obj, in_params->class_obj, giid);
+
+   GET_OBJECT_CLASS(in_params->env, class_ptr, obj);
+   GET_METHOD_ID(in_params->env, giid, class_ptr, obj_method_name, obj_method_signature);
+
+   CALL_OBJ_METHOD_PARAM(in_params->env, ret_char, obj, giid, (*in_params->env)->NewStringUTF(in_params->env, out_args->in));
+
+   if(giid != NULL && ret_char)
+   {
+      const char *test_argv = (*in_params->env)->GetStringUTFChars(in_params->env, ret_char, 0);
+      strncpy(out_args->out, test_argv, out_args->out_sizeof);
+      (*in_params->env)->ReleaseStringUTFChars(in_params->env, ret_char, test_argv);
+   }
+}
+
+static float refreshrate;
+
+static int android_app_set_argv(char** argv)
+{
+   char rom_path[512];
+   char libretro_path[512];
+
+   struct jni_params in_params;
+   struct jni_out_params_char out_args;
+
+   JNI_OnLoad(g_android.app->activity->vm, NULL);
+
+   // Get arguments */
+
+   in_params.java_vm = g_android.app->activity->vm;
+   in_params.class_obj = g_android.app->activity->clazz;
+
+   snprintf(in_params.method_name, sizeof(in_params.method_name), "getIntent");
+   snprintf(in_params.method_signature, sizeof(in_params.method_signature), "()Landroid/content/Intent;");
+
+   out_args.out = rom_path;
+   out_args.out_sizeof = sizeof(rom_path);
+   snprintf(out_args.in, sizeof(out_args.in), "ROM");
+
+   (*in_params.java_vm)->AttachCurrentThread(in_params.java_vm, &in_params.env, 0);
+
+   /* for ROM - begin */
+   jni_get(&in_params, &out_args);
+
+   /* for ROM - end */
+
+   out_args.out = libretro_path;
+   out_args.out_sizeof = sizeof(libretro_path);
+   snprintf(out_args.in, sizeof(out_args.in), "LIBRETRO");
+
+   /* for LIBRETRO - begin */
+   jni_get(&in_params, &out_args);
+   /* for LIBRETRO - end */
+
+   char refreshrate_char[128];
+   
+   out_args.out = refreshrate_char;
+   out_args.out_sizeof = sizeof(refreshrate_char);
+   snprintf(out_args.in, sizeof(out_args.in), "REFRESHRATE");
+
+   /* for REFRESHRATE - begin */
+   jni_get(&in_params, &out_args);
+   /* for REFRESHRATE - end */
+
+   (*in_params.java_vm)->DetachCurrentThread(in_params.java_vm);
+
+   refreshrate = (float)strtod(refreshrate_char, NULL);
+
+   RARCH_LOG("Checking arguments passed...\n");
+   RARCH_LOG("ROM Filename: [%s].\n", rom_path);
+   RARCH_LOG("Libretro path: [%s].\n", libretro_path);
+   RARCH_LOG("Display Refresh rate: %.2fHz.\n", refreshrate);
+
+   int argc = 0;
+
+   argv[argc++] = strdup("retroarch");
+   argv[argc++] = strdup(rom_path);
+   argv[argc++] = strdup("-L");
+   argv[argc++] = strdup(libretro_path);
+   argv[argc++] = strdup("-v");
+
+   return argc;
+}
 
 static void* android_app_entry(void* param)
 {
@@ -299,61 +396,8 @@ static void* android_app_entry(void* param)
    memset(&g_android, 0, sizeof(g_android));
    g_android.app = android_app;
 
-   char rom_path[512];
-   char libretro_path[512];
-
-   JNI_OnLoad(g_android.app->activity->vm, NULL);
-
-   // Get arguments */
-   struct jni_params jni_args;
-
-   jni_args.java_vm = g_android.app->activity->vm;
-   jni_args.class_obj = g_android.app->activity->clazz;
-
-   snprintf(jni_args.method_name, sizeof(jni_args.method_name), "getIntent");
-   snprintf(jni_args.method_signature, sizeof(jni_args.method_signature), "()Landroid/content/Intent;");
-   snprintf(jni_args.obj_method_name, sizeof(jni_args.obj_method_name), "getStringExtra");
-   snprintf(jni_args.obj_method_signature, sizeof(jni_args.obj_method_signature), "(Ljava/lang/String;)Ljava/lang/String;");
-
-   struct jni_out_params_char out_args;
-
-   out_args.out = rom_path;
-   out_args.out_sizeof = sizeof(rom_path);
-   snprintf(out_args.in, sizeof(out_args.in), "ROM");
-
-   jni_get(&jni_args, &out_args, JNI_OUT_CHAR);
-
-   out_args.out = libretro_path;
-   out_args.out_sizeof = sizeof(libretro_path);
-   snprintf(out_args.in, sizeof(out_args.in), "LIBRETRO");
-
-   jni_get(&jni_args, &out_args, JNI_OUT_CHAR);
-
-   char refreshrate_char[128];
-   float refreshrate;
-   
-   out_args.out = refreshrate_char;
-   out_args.out_sizeof = sizeof(refreshrate_char);
-   snprintf(out_args.in, sizeof(out_args.in), "REFRESHRATE");
-
-   jni_get(&jni_args, &out_args, JNI_OUT_CHAR);
-
-   refreshrate = (float)strtod(refreshrate_char, NULL);
-
-   RARCH_LOG("Checking arguments passed...\n");
-   RARCH_LOG("ROM Filename: [%s].\n", rom_path);
-   RARCH_LOG("Libretro path: [%s].\n", libretro_path);
-   RARCH_LOG("Display Refresh rate: %.2fHz.\n", refreshrate);
-
-   int argc = 0;
    char *argv[MAX_ARGS] = {NULL};
-
-   argv[argc++] = strdup("retroarch");
-   argv[argc++] = strdup(rom_path);
-   argv[argc++] = strdup("-L");
-   argv[argc++] = strdup(libretro_path);
-   argv[argc++] = strdup("-v");
-
+   int argc = android_app_set_argv(argv);
 
    if (android_app->savedState != NULL)
    {
