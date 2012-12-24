@@ -48,15 +48,6 @@ public class ModuleActivity extends Activity implements AdapterView.OnItemClickL
 	static private final int ACTIVITY_LOAD_ROM = 0;
 	static private String libretro_path;
 	
-	public String getDeviceName(int id)
-	{
-		final String name = InputDevice.getDevice(7).getName();
-		if(name != null)
-			return name;
-		else
-			return "";
-	}
-    
     public float getRefreshRate()
     {
     	final WindowManager wm = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
@@ -116,8 +107,7 @@ public class ModuleActivity extends Activity implements AdapterView.OnItemClickL
     	   case ACTIVITY_LOAD_ROM:
     		   if(data.getStringExtra("PATH") != null)
     		   {
-    			       Toast.makeText(this, "Loading: ["+ data.getStringExtra("PATH") + "]...", Toast.LENGTH_SHORT).show();
-    			       //Toast.makeText(this, getDeviceName(5), Toast.LENGTH_SHORT).show();
+    			      Toast.makeText(this, "Loading: ["+ data.getStringExtra("PATH") + "]...", Toast.LENGTH_SHORT).show();
     				   myIntent = new Intent(this, NativeActivity.class);
     				   myIntent.putExtra("ROM", data.getStringExtra("PATH"));
     				   myIntent.putExtra("LIBRETRO", libretro_path);
