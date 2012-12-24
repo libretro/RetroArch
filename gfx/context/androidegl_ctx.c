@@ -241,7 +241,7 @@ static void gfx_ctx_check_window(bool *quit,
 
    int32_t new_orient = AConfiguration_getOrientation(g_android.app->config);
 
-   if (new_orient != g_android.last_orient)
+   if (new_orient != g_android.last_orient && g_android.window_ready)
    {
       *resize = true;
       g_android.last_orient = new_orient;
