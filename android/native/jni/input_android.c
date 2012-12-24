@@ -393,7 +393,7 @@ static void android_input_poll(void *data)
          float x = AMotionEvent_getX(event, motion_pointer);
          float y = AMotionEvent_getY(event, motion_pointer);
 
-         if(source != AINPUT_SOURCE_TOUCHSCREEN)
+         if(source != AINPUT_SOURCE_TOUCHSCREEN && source != AINPUT_SOURCE_MOUSE)
          {
             state[state_id] &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
                   (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
@@ -407,7 +407,11 @@ static void android_input_poll(void *data)
          }
          else
          {
-            if (action == AMOTION_EVENT_ACTION_UP || action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP)
+            bool mouse_is_not_dirty = (source == AINPUT_SOURCE_MOUSE && action != AMOTION_EVENT_ACTION_DOWN);
+            bool pointer_is_not_dirty = (action == AMOTION_EVENT_ACTION_UP ||
+                  action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP);
+
+            if (mouse_is_not_dirty || pointer_is_not_dirty)
                pointer_dirty = 0;
             else
             {
