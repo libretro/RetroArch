@@ -47,6 +47,25 @@ do_exit:
    return -1;
 }
 
+#define JNI_EXCEPTION(env) \
+   if ((*env)->ExceptionOccurred(env)) \
+   { \
+      (*env)->ExceptionDescribe(env); \
+      (*env)->ExceptionClear(env); \
+   }
+
+#define GET_METHOD_ID(env, var, clazz, methodName, fieldDescriptor) \
+   var = (*env)->GetMethodID(env, clazz, methodName, fieldDescriptor); \
+   JNI_EXCEPTION(env)
+
+#define CALL_OBJ_METHOD(env, var, clazz_obj, methodId) \
+   var = (*env)->CallObjectMethod(env, clazz_obj, methodId); \
+   JNI_EXCEPTION(env)
+
+#define CALL_OBJ_METHOD_PARAM(env, var, clazz_obj, methodId, methodParam) \
+   var = (*env)->CallObjectMethod(env, clazz_obj, methodId, methodParam); \
+   JNI_EXCEPTION(env)
+
 void jni_get(void *params, void *out_params, unsigned out_type)
 {
    JNIEnv *env;
@@ -75,15 +94,14 @@ void jni_get(void *params, void *out_params, unsigned out_type)
    if (in_params->class_obj)
    {
       class_ptr = (*env)->GetObjectClass(env, in_params->class_obj); //class pointer
-      giid = (*env)->GetMethodID(env, class_ptr, in_params->method_name, in_params->method_signature);
-      obj = (*env)->CallObjectMethod(env, in_params->class_obj, giid); //Got our object
+      GET_METHOD_ID(env, giid, class_ptr, in_params->method_name, in_params->method_signature);
+      CALL_OBJ_METHOD(env, obj, in_params->class_obj, giid);
    }
 
    if (in_params->obj_method_name && obj)
    {
       class_ptr = (*env)->GetObjectClass(env, obj); //class pointer of object
-      giid = (*env)->GetMethodID(env, class_ptr, in_params->obj_method_name,
-            in_params->obj_method_signature);
+      GET_METHOD_ID(env, giid, class_ptr, in_params->obj_method_name, in_params->obj_method_signature);
 
       switch(out_type)
       {
@@ -93,8 +111,7 @@ void jni_get(void *params, void *out_params, unsigned out_type)
 
                if (!out_params_char)
                   goto do_exit;
-               ret_char = (*env)->CallObjectMethod(env, obj, giid, 
-                     (*env)->NewStringUTF(env, out_params_char->in));
+               CALL_OBJ_METHOD_PARAM(env, ret_char, obj, giid, (*env)->NewStringUTF(env, out_params_char->in));
             }
             break;
          case JNI_OUT_NONE:
