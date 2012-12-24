@@ -386,9 +386,13 @@ static void android_input_poll(void *data)
 
       if(type_event == AINPUT_EVENT_TYPE_MOTION)
       {
-         float x = AMotionEvent_getX(event, 0);
-         float y = AMotionEvent_getY(event, 0);
          action = AMotionEvent_getAction(event);
+         int8_t motion_action = action & AMOTION_EVENT_ACTION_MASK;
+         size_t motion_pointer = action >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+
+         float x = AMotionEvent_getX(event, motion_pointer);
+         float y = AMotionEvent_getY(event, motion_pointer);
+
          if(source != AINPUT_SOURCE_TOUCHSCREEN)
          {
             state[state_id] &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
