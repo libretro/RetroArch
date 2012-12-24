@@ -43,7 +43,7 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved)
    return JNI_VERSION_1_4;
 
 do_exit:
-   (*vm)->DetachCurrentThread(vm);
+   //(*vm)->DetachCurrentThread(vm);
    return -1;
 }
 
@@ -53,6 +53,10 @@ do_exit:
       (*env)->ExceptionDescribe(env); \
       (*env)->ExceptionClear(env); \
    }
+
+#define GET_OBJECT_CLASS(env, var, clazz_obj) \
+   var = (*env)->GetObjectClass(env, clazz_obj); \
+   JNI_EXCEPTION(env)
 
 #define GET_METHOD_ID(env, var, clazz, methodName, fieldDescriptor) \
    var = (*env)->GetMethodID(env, clazz, methodName, fieldDescriptor); \
@@ -93,14 +97,14 @@ void jni_get(void *params, void *out_params, unsigned out_type)
 
    if (in_params->class_obj)
    {
-      class_ptr = (*env)->GetObjectClass(env, in_params->class_obj); //class pointer
+      GET_OBJECT_CLASS(env, class_ptr, in_params->class_obj);
       GET_METHOD_ID(env, giid, class_ptr, in_params->method_name, in_params->method_signature);
       CALL_OBJ_METHOD(env, obj, in_params->class_obj, giid);
    }
 
    if (in_params->obj_method_name && obj)
    {
-      class_ptr = (*env)->GetObjectClass(env, obj); //class pointer of object
+      GET_OBJECT_CLASS(env, class_ptr, obj);
       GET_METHOD_ID(env, giid, class_ptr, in_params->obj_method_name, in_params->obj_method_signature);
 
       switch(out_type)
