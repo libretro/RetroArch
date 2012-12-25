@@ -19,7 +19,6 @@
 #include "../gl_common.h"
 
 #include <EGL/egl.h> /* Requires NDK r5 or newer */
-#include <GLES/gl.h>
 
 #include "../../android/native/jni/android_general.h"
 #include "../image.h"
