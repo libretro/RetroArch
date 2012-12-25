@@ -50,7 +50,7 @@ static const rarch_joypad_driver_t *joypad_drivers[] = {
 
 const rarch_joypad_driver_t *input_joypad_find_driver(const char *ident)
 {
-   for (unsigned i = 0; i < sizeof(joypad_drivers) / sizeof(joypad_drivers[0]); i++)
+   for (unsigned i = 0; i < ARRAY_SIZE(joypad_drivers); i++)
    {
       if (strcmp(ident, joypad_drivers[i]->ident) == 0)
       {
@@ -64,7 +64,7 @@ const rarch_joypad_driver_t *input_joypad_find_driver(const char *ident)
 
 const rarch_joypad_driver_t *input_joypad_init_first(void)
 {
-   for (unsigned i = 0; i < sizeof(joypad_drivers) / sizeof(joypad_drivers[0]); i++)
+   for (unsigned i = 0; i < ARRAY_SIZE(joypad_drivers); i++)
    {
       if (joypad_drivers[i]->init())
       {
@@ -95,7 +95,7 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
    if (!key->valid)
       return false;
 
-   if (driver->button(joy_index, key->joykey))
+   if (driver->button(joy_index, (uint16_t)key->joykey))
       return true;
 
    int16_t axis = driver->axis(joy_index, key->joyaxis);
@@ -130,8 +130,8 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
    if (res != 0)
       return res;
 
-   int16_t digital_left  = driver->button(joy_index, bind_minus->joykey) ? -0x7fff : 0;
-   int16_t digital_right = driver->button(joy_index, bind_plus->joykey)  ?  0x7fff : 0;
+   int16_t digital_left  = driver->button(joy_index, (uint16_t)bind_minus->joykey) ? -0x7fff : 0;
+   int16_t digital_right = driver->button(joy_index, (uint16_t)bind_plus->joykey)  ?  0x7fff : 0;
    return digital_right + digital_left;
 }
 
