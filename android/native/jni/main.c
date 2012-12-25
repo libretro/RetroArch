@@ -313,59 +313,57 @@ static float refreshrate;
 
 static int android_app_set_argv(char** argv)
 {
-   char rom_path[512];
-   char libretro_path[512];
+   char rom_path[PATH_MAX];
+   char libretro_path[PATH_MAX];
+   char config_file[PATH_MAX];
 
    struct jni_params in_params;
    struct jni_out_params_char out_args;
 
    JNI_OnLoad(g_android.app->activity->vm, NULL);
 
-   // Get arguments */
-
    in_params.java_vm = g_android.app->activity->vm;
    in_params.class_obj = g_android.app->activity->clazz;
 
-   snprintf(in_params.method_name, sizeof(in_params.method_name), "getIntent");
-   snprintf(in_params.method_signature, sizeof(in_params.method_signature), "()Landroid/content/Intent;");
-
-   out_args.out = rom_path;
-   out_args.out_sizeof = sizeof(rom_path);
-   snprintf(out_args.in, sizeof(out_args.in), "ROM");
+   strlcpy(in_params.method_name, "getIntent", sizeof(in_params.method_name));
+   strlcpy(in_params.method_signature, "()Landroid/content/Intent;", sizeof(in_params.method_signature));
 
    (*in_params.java_vm)->AttachCurrentThread(in_params.java_vm, &in_params.env, 0);
 
-   /* for ROM - begin */
+   // ROM
+   out_args.out = rom_path;
+   out_args.out_sizeof = sizeof(rom_path);
+   strlcpy(out_args.in, "ROM", sizeof(out_args.in));
    jni_get(&in_params, &out_args);
 
-   /* for ROM - end */
-
+   // libretro
    out_args.out = libretro_path;
    out_args.out_sizeof = sizeof(libretro_path);
-   snprintf(out_args.in, sizeof(out_args.in), "LIBRETRO");
-
-   /* for LIBRETRO - begin */
+   strlcpy(out_args.in, "LIBRETRO", sizeof(out_args.in));
    jni_get(&in_params, &out_args);
-   /* for LIBRETRO - end */
 
+   // Refresh rate
    char refreshrate_char[128];
-   
    out_args.out = refreshrate_char;
    out_args.out_sizeof = sizeof(refreshrate_char);
-   snprintf(out_args.in, sizeof(out_args.in), "REFRESHRATE");
-
-   /* for REFRESHRATE - begin */
+   strlcpy(out_args.in, "REFRESHRATE", sizeof(out_args.in));
    jni_get(&in_params, &out_args);
-   /* for REFRESHRATE - end */
+   refreshrate = (float)strtod(refreshrate_char, NULL);
+
+   // Config file
+   out_args.out = config_file;
+   out_args.out_sizeof = sizeof(config_file);
+   strlcpy(out_args.in, "CONFIGFILE", sizeof(out_args.in));
+   jni_get(&in_params, &out_args);
+
 
    (*in_params.java_vm)->DetachCurrentThread(in_params.java_vm);
 
-   refreshrate = (float)strtod(refreshrate_char, NULL);
-
-   RARCH_LOG("Checking arguments passed...\n");
+   RARCH_LOG("Checking arguments passed ...\n");
    RARCH_LOG("ROM Filename: [%s].\n", rom_path);
    RARCH_LOG("Libretro path: [%s].\n", libretro_path);
-   RARCH_LOG("Display Refresh rate: %.2fHz.\n", refreshrate);
+   RARCH_LOG("Display Refresh rate: %.2f Hz.\n", refreshrate);
+   RARCH_LOG("Config file: [%s].\n", config_file);
 
    int argc = 0;
 
@@ -374,6 +372,11 @@ static int android_app_set_argv(char** argv)
    argv[argc++] = strdup("-L");
    argv[argc++] = strdup(libretro_path);
    argv[argc++] = strdup("-v");
+   if (*config_file)
+   {
+      argv[argc++] = strdup("-c");
+      argv[argc++] = strdup(config_file);
+   }
 
    return argc;
 }
@@ -412,16 +415,13 @@ static void* android_app_entry(void* param)
 
    bool rarch_reentrant = (g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT));
 
-   if(rarch_reentrant)
-   {
+   if (rarch_reentrant)
       RARCH_LOG("Native Activity started (reentrant).\n");
-   }
    else
    {
       RARCH_LOG("Native Activity started.\n");
       rarch_main_clear_state();
    }
-
 
    g_extern.verbose = true;
 
@@ -429,9 +429,9 @@ static void* android_app_entry(void* param)
 
    g_android.disp_refresh_rate = refresh_rate;
 
-   if(disp_refresh_read)
+   if (disp_refresh_read)
    {
-      if(refreshrate < refresh_rate)
+      if (refreshrate < refresh_rate)
       {
          RARCH_WARN("Display refresh rate of your device is likely lower than 60Hz.\n");
          g_android.disp_refresh_rate = refreshrate;

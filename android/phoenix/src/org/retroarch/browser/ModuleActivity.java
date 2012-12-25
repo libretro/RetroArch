@@ -112,6 +112,7 @@ public class ModuleActivity extends Activity implements AdapterView.OnItemClickL
     				   myIntent.putExtra("ROM", data.getStringExtra("PATH"));
     				   myIntent.putExtra("LIBRETRO", libretro_path);
     				   myIntent.putExtra("REFRESHRATE", Float.toString(getRefreshRate()));
+    				   myIntent.putExtra("CONFIGFILE", "");
     				   startActivity(myIntent);
     		   }
     		   break;
