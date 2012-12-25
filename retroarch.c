@@ -1468,8 +1468,10 @@ static void deinit_rewind(void)
 {
    if (g_extern.state_manager)
       state_manager_free(g_extern.state_manager);
-   if (g_extern.state_buf)
-      free(g_extern.state_buf);
+   g_extern.state_manager = NULL;
+
+   free(g_extern.state_buf);
+   g_extern.state_buf = NULL;
 }
 
 #ifdef HAVE_BSV_MOVIE
