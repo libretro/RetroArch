@@ -255,6 +255,8 @@ void config_load(void)
 static config_file_t *open_default_config_file(void)
 {
    config_file_t *conf = NULL;
+   char conf_path[PATH_MAX];
+
 #if defined(_WIN32) && !defined(_XBOX)
    // Just do something for now.
    conf = config_file_new("retroarch.cfg");
@@ -263,9 +265,7 @@ static config_file_t *open_default_config_file(void)
       const char *appdata = getenv("APPDATA");
       if (appdata)
       {
-         char conf_path[PATH_MAX];
-         strlcpy(conf_path, appdata, sizeof(conf_path));
-         strlcat(conf_path, "/retroarch.cfg", sizeof(conf_path));
+         snprintf(conf_path, sizeof(conf_path), "%s/retroarch.cfg", appdata);
          conf = config_file_new(conf_path);
       }
    }
@@ -273,61 +273,46 @@ static config_file_t *open_default_config_file(void)
    const char *home = getenv("HOME");
    if (home)
    {
-      char conf_path[PATH_MAX];
-      strlcpy(conf_path, home, sizeof(conf_path));
-      strlcat(conf_path, "/.retroarch.cfg", sizeof(conf_path));
+      snprintf(conf_path, sizeof(conf_path), "%s/.retroarch.cfg", home);
       conf = config_file_new(conf_path);
    }
    if (!conf)
       conf = config_file_new("/etc/retroarch.cfg");
 #elif defined(ANDROID)
-   bool succeeded = false;
-   char *home = getenv("EXTERNAL_STORAGE");
-   char conf_path[PATH_MAX];
+   const char *storage = getenv("EXTERNAL_STORAGE");
    
-   if(home)
+   if (storage)
    {
-      strlcpy(conf_path, home, sizeof(conf_path));
-      strlcat(conf_path, "/retroarch.cfg", sizeof(conf_path));
+      snprintf(conf_path, sizeof(conf_path), "%s/retroarch.cfg", storage);
       conf = config_file_new(conf_path);
 
-      if(!conf)
+      if (!conf)
          RARCH_WARN("Could not load config file: [%s].\n", conf_path);
-      else
-         succeeded = true;
    }
 
-   if (!succeeded)
+   if (!conf)
    {
-      home = NULL;
-      home = getenv("INTERNAL_STORAGE");
+      storage = getenv("INTERNAL_STORAGE");
 
-      if(home)
+      if (storage)
       {
-         strlcpy(conf_path, home, sizeof(conf_path));
-         strlcat(conf_path, "/retroarch.cfg", sizeof(conf_path));
+         snprintf(conf_path, sizeof(conf_path), "%s/retroarch.cfg", storage);
          RARCH_WARN("Trying: [%s].\n", conf_path);
          conf = config_file_new(conf_path);
 
-         if(!conf)
+         if (!conf)
             RARCH_WARN("Could not load config file: [%s].\n", conf_path);
       }
-
-      if(conf)
-         succeeded = true;
    }
 
    // Try this as a last chance (EXTSD)...
-   if (!succeeded)
+   if (!conf)
    {
       RARCH_WARN("Trying last fallback: [%s].\n", "/mnt/extsd/retroarch.cfg");
       conf = config_file_new("/mnt/extsd/retroarch.cfg");
 
-      if(conf)
-      {
+      if (conf)
          RARCH_LOG("Successfully loaded config file: [%s].\n", "/mnt/extsd/retroarch.cfg");
-         succeeded = true;
-      }
    }
 #elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
    const char *xdg = getenv("XDG_CONFIG_HOME");
@@ -337,16 +322,12 @@ static config_file_t *open_default_config_file(void)
    const char *home = getenv("HOME");
    if (xdg)
    {
-      char conf_path[PATH_MAX];
-      strlcpy(conf_path, xdg, sizeof(conf_path));
-      strlcat(conf_path, "/retroarch/retroarch.cfg", sizeof(conf_path));
+      snprintf(conf_path, sizeof(conf_path), "%s/retroarch/retroarch.cfg", xdg);
       conf = config_file_new(conf_path);
    }
    else if (home)
    {
-      char conf_path[PATH_MAX];
-      strlcpy(conf_path, home, sizeof(conf_path));
-      strlcat(conf_path, "/.retroarch.cfg", sizeof(conf_path));
+      snprintf(conf_path, sizeof(conf_path), "%s/.retroarch.cfg", home);
       conf = config_file_new(conf_path);
    }
    // Try this as a last chance...
