@@ -255,10 +255,10 @@ void config_load(void)
 static config_file_t *open_default_config_file(void)
 {
    config_file_t *conf = NULL;
-   char conf_path[PATH_MAX];
 
 #if defined(_WIN32) && !defined(_XBOX)
    // Just do something for now.
+   char conf_path[PATH_MAX];
    conf = config_file_new("retroarch.cfg");
    if (!conf)
    {
@@ -270,6 +270,7 @@ static config_file_t *open_default_config_file(void)
       }
    }
 #elif defined(__APPLE__)
+   char conf_path[PATH_MAX];
    const char *home = getenv("HOME");
    if (home)
    {
@@ -279,6 +280,7 @@ static config_file_t *open_default_config_file(void)
    if (!conf)
       conf = config_file_new("/etc/retroarch.cfg");
 #elif defined(ANDROID)
+   char conf_path[PATH_MAX];
    const char *storage = getenv("EXTERNAL_STORAGE");
    
    if (storage)
@@ -315,6 +317,7 @@ static config_file_t *open_default_config_file(void)
          RARCH_LOG("Successfully loaded config file: [%s].\n", "/mnt/extsd/retroarch.cfg");
    }
 #elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
+   char conf_path[PATH_MAX];
    const char *xdg = getenv("XDG_CONFIG_HOME");
    if (!xdg)
       RARCH_WARN("XDG_CONFIG_HOME is not defined. Will look for config in $HOME/.retroarch.cfg ...\n");
