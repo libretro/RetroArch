@@ -207,9 +207,6 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          if(g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT))
          {
             uninit_drivers();
-            driver.video_data = NULL;
-            driver.audio_data = NULL;
-            driver.input_data = NULL;
             g_android.window_ready = false;
          }
 

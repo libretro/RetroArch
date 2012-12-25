@@ -267,6 +267,17 @@ typedef struct driver
    void *video_data;
    void *input_data;
 
+   // Set if the respective handles are owned by RetroArch driver core.
+   // Consoles upper logic will generally intialize the drivers before
+   // the driver core initializes. It will then be up to upper logic
+   // to finally free() up the driver handles.
+   // Driver core will still call init() and free(), but in this case
+   // these calls should be seen as "reinit() + ref_count++" and "ref_count--"
+   // respectively.
+   bool video_data_own;
+   bool audio_data_own;
+   bool input_data_own;
+
 #ifdef HAVE_COMMAND
    rarch_cmd_t *command;
 #endif

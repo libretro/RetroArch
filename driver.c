@@ -254,6 +254,10 @@ void driver_set_monitor_refresh_rate(float hz)
 
 void init_drivers(void)
 {
+   driver.video_data_own = !driver.video_data;
+   driver.audio_data_own = !driver.audio_data;
+   driver.input_data_own = !driver.input_data;
+
    adjust_system_rates();
 
    init_video_input();
@@ -264,6 +268,17 @@ void uninit_drivers(void)
 {
    uninit_audio();
    uninit_video_input();
+
+   if (driver.video_data_own)
+      driver.video_data = NULL;
+   if (driver.audio_data_own)
+      driver.audio_data = NULL;
+   if (driver.input_data_own)
+      driver.input_data = NULL;
+
+   driver.video_data_own = false;
+   driver.audio_data_own = false;
+   driver.input_data_own = false;
 }
 
 #ifdef HAVE_DYLIB
