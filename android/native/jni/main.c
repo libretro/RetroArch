@@ -469,6 +469,7 @@ static void* android_app_entry(void* param)
       RARCH_LOG("RetroArch started.\n");
       rarch_init_msg_queue();
       g_android.last_orient = AConfiguration_getOrientation(android_app->config);
+      driver_set_monitor_refresh_rate(g_android.disp_refresh_rate);
       while((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ? android_run_events(g_android.app) : rarch_main_iterate());
       RARCH_LOG("RetroArch stopped.\n");
    }
