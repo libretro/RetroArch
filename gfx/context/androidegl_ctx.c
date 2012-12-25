@@ -84,9 +84,11 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
    }
 }
 
-static bool gfx_ctx_orientation_update(void)
+static void gfx_ctx_orientation_update(void)
 {
    gl_t *gl = (gl_t*)driver.video_data;
+   if (!gl)
+      return;
 
    // Get real known video size, which might have been altered by context.
    gfx_ctx_get_video_size(&gl->win_width, &gl->win_height);
