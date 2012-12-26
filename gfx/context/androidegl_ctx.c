@@ -19,7 +19,6 @@
 #include "../gl_common.h"
 
 #include <EGL/egl.h> /* Requires NDK r5 or newer */
-#include <GLES/gl.h>
 
 #include "../../android/native/jni/android_general.h"
 #include "../image.h"
@@ -85,9 +84,11 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
    }
 }
 
-static bool gfx_ctx_orientation_update(void)
+static void gfx_ctx_orientation_update(void)
 {
    gl_t *gl = (gl_t*)driver.video_data;
+   if (!gl)
+      return;
 
    // Get real known video size, which might have been altered by context.
    gfx_ctx_get_video_size(&gl->win_width, &gl->win_height);
@@ -123,9 +124,6 @@ static bool gfx_ctx_init(void)
    EGLint num_config;
    EGLint egl_version_major, egl_version_minor;
    EGLint format;
-   EGLint width;
-   EGLint height;
-   GLfloat ratio;
 
    EGLint context_attributes[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2,
@@ -179,13 +177,6 @@ static bool gfx_ctx_init(void)
    if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
    {
       RARCH_ERR("eglMakeCurrent failed.\n");
-      goto error;
-   }
-
-   if (!eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &width) ||
-         !eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &height))
-   {
-      RARCH_ERR("eglQuerySurface failed.\n");
       goto error;
    }
 
@@ -329,9 +320,9 @@ static void gfx_ctx_set_filtering(unsigned index, bool set_smooth)
 
 static void gfx_ctx_set_fbo(unsigned mode)
 {
+#ifdef HAVE_FBO
    gl_t *gl = driver.video_data;
 
-#ifdef HAVE_FBO
    switch(mode)
    {
       case FBO_DEINIT:
