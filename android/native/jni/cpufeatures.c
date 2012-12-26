@@ -129,7 +129,7 @@ extract_cpuinfo_field(char* buffer, int buflen, const char* field)
     int  fieldlen = strlen(field);
     char* bufend = buffer + buflen;
     char* result = NULL;
-    int len, ignore;
+    int len;
     const char *p, *q;
 
     /* Look for first field occurence, and ensures it starts the line.
@@ -400,9 +400,6 @@ android_cpuInit(void)
 
 #ifdef __ARM_ARCH__
     {
-        char*  features = NULL;
-        char*  architecture = NULL;
-
         /* Extract architecture from the "CPU Architecture" field.
          * The list is well-known, unlike the the output of
          * the 'Processor' field which can vary greatly.

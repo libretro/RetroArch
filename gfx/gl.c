@@ -1279,8 +1279,6 @@ static void gl_free(void *data)
 
 static void gl_set_nonblock_state(void *data, bool state)
 {
-   gl_t *gl = (gl_t*)data;
-
    RARCH_LOG("GL VSync => %s\n", state ? "off" : "on");
    context_swap_interval_func(state ? 0 : 1);
 }
@@ -1598,7 +1596,6 @@ static bool gl_alive(void *data)
 
 static bool gl_focus(void *data)
 {
-   gl_t *gl = (gl_t*)data;
    return context_has_focus_func();
 }
 
