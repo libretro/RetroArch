@@ -124,8 +124,6 @@ static bool gfx_ctx_init(void)
    EGLint num_config;
    EGLint egl_version_major, egl_version_minor;
    EGLint format;
-   EGLint width;
-   EGLint height;
    GLfloat ratio;
 
    EGLint context_attributes[] = {
@@ -180,13 +178,6 @@ static bool gfx_ctx_init(void)
    if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
    {
       RARCH_ERR("eglMakeCurrent failed.\n");
-      goto error;
-   }
-
-   if (!eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &width) ||
-         !eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &height))
-   {
-      RARCH_ERR("eglQuerySurface failed.\n");
       goto error;
    }
 
