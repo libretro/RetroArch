@@ -39,11 +39,6 @@ GLfloat _angle;
 
 static enum gfx_ctx_api g_api;
 
-static float gfx_ctx_get_aspect_ratio(void)
-{
-   return 4.0f / 3.0f;
-}
-
 static void gfx_ctx_set_swap_interval(unsigned interval)
 {
    RARCH_LOG("gfx_ctx_set_swap_interval(%d).\n", interval);
