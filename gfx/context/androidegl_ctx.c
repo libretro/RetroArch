@@ -26,11 +26,6 @@
 #include "../fonts/gl_font.h"
 #include <stdint.h>
 
-#if defined(HAVE_RMENU)
-GLuint menu_texture_id;
-static struct texture_image menu_texture;
-#endif
-
 #ifdef HAVE_GLSL
 #include "../shader_glsl.h"
 #endif
@@ -239,17 +234,6 @@ static void gfx_ctx_check_window(bool *quit,
       *quit = true;
 }
 
-static void gfx_ctx_set_blend(bool enable)
-{
-   if(enable)
-   {
-      glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-      glEnable(GL_BLEND);
-   }
-   else
-      glDisable(GL_BLEND);
-}
-
 static void gfx_ctx_set_resize(unsigned width, unsigned height)
 {
    (void)width;
@@ -270,8 +254,6 @@ static void gfx_ctx_update_window_title(bool reset)
 #endif
 }
 
-
-
 static bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       bool fullscreen)
@@ -287,192 +269,6 @@ static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data
 {
    *input = NULL;
    *input_data = NULL;
-}
-
-static void gfx_ctx_set_filtering(unsigned index, bool set_smooth)
-{
-   gl_t *gl = driver.video_data;
-
-   if (!gl)
-      return;
-
-   if (index == 1)
-   {
-      // Apply to all PREV textures.
-      for (unsigned i = 0; i < TEXTURES; i++)
-      {
-         glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-      }
-   }
-#ifdef HAVE_FBO
-   else if (index >= 2 && gl->fbo_inited)
-   {
-      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index - 2]);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-   }
-#endif
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-}
-
-static void gfx_ctx_set_fbo(unsigned mode)
-{
-#ifdef HAVE_FBO
-   gl_t *gl = driver.video_data;
-
-   switch(mode)
-   {
-      case FBO_DEINIT:
-         gl_deinit_fbo(gl);
-         break;
-      case FBO_REINIT:
-         gl_deinit_fbo(gl);
-         /* fall-through */
-      case FBO_INIT:
-         gl_init_fbo(gl, gl->tex_w, gl->tex_h);
-         break;
-   }
-#endif
-}
-
-static void gfx_ctx_get_available_resolutions (void)
-{
-   /* TODO */
-}
-
-#ifdef HAVE_RMENU
-#define DRIVE_MAPPING_SIZE 3
-const char drive_mappings[DRIVE_MAPPING_SIZE][32] = {
-   "/",
-   "/mnt/",
-   "/mnt/sdcard"
-};
-unsigned char drive_mapping_idx = 1;
-bool rmenu_inited = false;
-
-static bool gfx_ctx_rmenu_init(void)
-{
-   gl_t *gl = driver.video_data;
-
-   if (!gl)
-      return false;
-
-   if (rmenu_inited)
-      return true;
-
-#ifdef HAVE_RMENU
-   glGenTextures(1, &menu_texture_id);
-
-   RARCH_LOG("Loading texture image for menu...\n");
-   if (!texture_image_load(default_paths.menu_border_file, &menu_texture))
-   {
-      RARCH_ERR("Failed to load texture image for menu.\n");
-      return false;
-   }
-
-   glBindTexture(GL_TEXTURE_2D, menu_texture_id);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-   glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
-         menu_texture.width, menu_texture.height, 0,
-         RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, menu_texture.pixels);
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-
-   free(menu_texture.pixels);
-#endif
-
-   rmenu_inited = true;
-
-   return true;
-}
-
-static void gfx_ctx_rmenu_free(void)
-{
-   gl_t *gl = driver.video_data;
-#ifdef HAVE_RMENU
-   gl->draw_rmenu = false;
-#endif
-}
-
-static void gfx_ctx_rmenu_frame(void *data)
-{
-   gl_t *gl = (gl_t*)data;
-
-   gl_shader_use(gl, RARCH_GLSL_MENU_SHADER_INDEX);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
-
-   if (gl->shader)
-   {
-      gl->shader->set_params(gl->win_width, gl->win_height, 
-            gl->win_width, gl->win_height, 
-            gl->win_width, gl->win_height, 
-            g_extern.frame_count, NULL, NULL, NULL, 0);
-   }
-
-   glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, menu_texture_id);
-
-   gl->coords.vertex = vertexes_flipped;
-
-   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-}
-
-static void gfx_ctx_menu_draw_panel(rarch_position_t *position)
-{
-   (void)position;
-}
-
-static void gfx_ctx_menu_draw_bg(rarch_position_t *position)
-{
-   (void)position;
-}
-
-static const char * rmenu_ctx_drive_mapping_previous(void)
-{
-   if(drive_mapping_idx > 0)
-      drive_mapping_idx--;
-   return drive_mappings[drive_mapping_idx];
-}
-
-static const char * rmenu_ctx_drive_mapping_next(void)
-{
-   if((drive_mapping_idx + 1) < DRIVE_MAPPING_SIZE)
-      drive_mapping_idx++;
-   return drive_mappings[drive_mapping_idx];
-}
-#endif
-
-static void rmenu_ctx_screenshot_enable(bool enable)
-{
-   /* TODO */
-   (void)enable;
-}
-
-
-static void gfx_ctx_set_overscan(void)
-{
-   gl_t *gl = driver.video_data;
-   if (!gl)
-      return;
-
-   gl->should_resize = true;
-}
-
-static int gfx_ctx_check_resolution(unsigned resolution_id)
-{
-   /* TODO */
-   return 0;
 }
 
 static unsigned gfx_ctx_get_resolution_width(unsigned resolution_id)
@@ -534,23 +330,4 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    gfx_ctx_write_egl_image,
    NULL,
    "android",
-#ifdef HAVE_RMENU
-   gfx_ctx_set_blend,
-   gfx_ctx_set_filtering,
-   gfx_ctx_get_available_resolutions,
-   gfx_ctx_check_resolution,
-   gfx_ctx_set_fbo,
-   gfx_ctx_rmenu_init,
-   gfx_ctx_rmenu_frame,
-   gfx_ctx_rmenu_free,
-   gfx_ctx_menu_enable,
-   gfx_ctx_menu_draw_bg,
-   gfx_ctx_menu_draw_panel,
-   gfx_ctx_ps3_set_default_pos,
-   rmenu_ctx_render_msg,
-   rmenu_ctx_screenshot_enable,
-   rmenu_ctx_screenshot_dump,
-   rmenu_ctx_drive_mapping_previous,
-   rmenu_ctx_drive_mapping_next,
-#endif
 };

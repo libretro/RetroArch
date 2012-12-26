@@ -641,7 +641,7 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full,
    {
       float desired_aspect = g_settings.video.aspect_ratio;
 
-      float device_aspect;
+      float device_aspect = 0.0f;
       if (gl->ctx_driver->translate_aspect)
          device_aspect = context_translate_aspect_func(width, height);
       else
