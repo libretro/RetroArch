@@ -124,7 +124,6 @@ static bool gfx_ctx_init(void)
    EGLint num_config;
    EGLint egl_version_major, egl_version_minor;
    EGLint format;
-   GLfloat ratio;
 
    EGLint context_attributes[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2,
@@ -321,9 +320,9 @@ static void gfx_ctx_set_filtering(unsigned index, bool set_smooth)
 
 static void gfx_ctx_set_fbo(unsigned mode)
 {
+#ifdef HAVE_FBO
    gl_t *gl = driver.video_data;
 
-#ifdef HAVE_FBO
    switch(mode)
    {
       case FBO_DEINIT:

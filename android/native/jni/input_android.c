@@ -338,7 +338,6 @@ static void android_input_poll(void *data)
       if(type_event == AINPUT_EVENT_TYPE_MOTION)
       {
          action = AMotionEvent_getAction(event);
-         int8_t motion_action = action & AMOTION_EVENT_ACTION_MASK;
          size_t motion_pointer = action >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
 
          float x = AMotionEvent_getX(event, motion_pointer);
