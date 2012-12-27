@@ -24,7 +24,7 @@
 
 #define AKEY_EVENT_NO_ACTION 255
 #define MAX_PADS 8
-#define MAX_TOUCH 4
+#define MAX_TOUCH 8
 
 enum {
    AKEYCODE_ESCAPE          = 111,
@@ -70,9 +70,13 @@ static uint64_t state[MAX_PADS];
 static int8_t state_device_ids[MAX_DEVICE_IDS];
 static uint64_t keycode_lut[LAST_KEYCODE];
 
-static int16_t pointer_x[MAX_TOUCH];
-static int16_t pointer_y[MAX_TOUCH];
-static uint8_t pointer_dirty[MAX_TOUCH];
+struct input_pointer
+{
+   int16_t x, y;
+};
+
+static struct input_pointer pointer[MAX_TOUCH];
+static unsigned pointer_count;
 
 static void setup_keycode_lut(void)
 {
@@ -308,15 +312,6 @@ static void android_input_poll(void *data)
 
    g_extern.lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS));
 
-   for(int i = 0; i < MAX_TOUCH; i++)
-   {
-      pointer_x[i] = 0;
-      pointer_y[i] = 0;
-      pointer_dirty[i] = 0;
-   }
-
-   unsigned motionevent_count = 0;
-
    // Read all pending events.
    while(AInputQueue_hasEvents(android_app->inputQueue))
    {
@@ -346,7 +341,7 @@ static void android_input_poll(void *data)
       {
          action = AMotionEvent_getAction(event);
          size_t motion_pointer = action >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-
+         action &= AMOTION_EVENT_ACTION_MASK;
 
          if(source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
          {
@@ -365,19 +360,21 @@ static void android_input_poll(void *data)
                   action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP) ||
                (source == AINPUT_SOURCE_MOUSE && action != AMOTION_EVENT_ACTION_DOWN);
 
-            pointer_dirty[motionevent_count] = false;
-
             if (!keyup)
             {
-               pointer_dirty[motionevent_count] = true;
-               float x = AMotionEvent_getX(event, motionevent_count);
-               float y = AMotionEvent_getY(event, motionevent_count);
+               float x = AMotionEvent_getX(event, motion_pointer);
+               float y = AMotionEvent_getY(event, motion_pointer);
 
-               if (pointer_dirty[motionevent_count])
-                  input_translate_coord_viewport(x, y, &pointer_x[motionevent_count], &pointer_y[motionevent_count]);
+               input_translate_coord_viewport(x, y,
+                     &pointer[motion_pointer].x, &pointer[motion_pointer].y);
+
+               pointer_count = max(pointer_count, motion_pointer + 1);
             }
-
-            motionevent_count++;
+            else
+            {
+               memmove(pointer + motion_pointer, pointer + motion_pointer + 1, (MAX_TOUCH - motion_pointer - 1) * sizeof(struct input_pointer));
+               pointer_count--;
+            }
          }
 #ifdef RARCH_INPUT_DEBUG
          snprintf(msg, sizeof(msg), "Pad %d : x = %.2f, y = %.2f, src %d.\n", state_id, x, y, source);
@@ -421,6 +418,15 @@ static void android_input_poll(void *data)
       AInputQueue_finishEvent(android_app->inputQueue, event, handled);
    }
 
+#ifdef RARCH_INPUT_DEBUG
+   {
+      char msg[64];
+      snprintf(msg, sizeof(msg), "Pointers: %u", pointer_count);
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, msg, 0, 30);
+   }
+#endif
+
    RARCH_PERFORMANCE_STOP(input_poll);
 }
 
@@ -434,11 +440,11 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
          switch(id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
-               return pointer_x[index];
+               return pointer[index].x;
             case RETRO_DEVICE_ID_POINTER_Y:
-               return pointer_y[index];
+               return pointer[index].y;
             case RETRO_DEVICE_ID_POINTER_PRESSED:
-               return pointer_dirty[index];
+               return index < pointer_count;
             default:
                return 0;
          }
