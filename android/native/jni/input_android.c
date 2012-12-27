@@ -361,17 +361,22 @@ static void android_input_poll(void *data)
          }
          else
          {
-            bool mouse_is_not_dirty = (source == AINPUT_SOURCE_MOUSE && action != AMOTION_EVENT_ACTION_DOWN);
-            bool pointer_is_not_dirty = (action == AMOTION_EVENT_ACTION_UP ||
-                  action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP);
+            bool keyup = (action == AMOTION_EVENT_ACTION_UP ||
+                  action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP) ||
+               (source == AINPUT_SOURCE_MOUSE && action != AMOTION_EVENT_ACTION_DOWN);
 
-            float x = AMotionEvent_getX(event, motionevent_count);
-            float y = AMotionEvent_getY(event, motionevent_count);
+            pointer_dirty[motionevent_count] = false;
 
-            pointer_dirty[motionevent_count] = !(mouse_is_not_dirty || pointer_is_not_dirty);
+            if (!keyup)
+            {
+               pointer_dirty[motionevent_count] = true;
+               float x = AMotionEvent_getX(event, motionevent_count);
+               float y = AMotionEvent_getY(event, motionevent_count);
 
-            if (pointer_dirty[motionevent_count])
-               input_translate_coord_viewport(x, y, &pointer_x[motionevent_count], &pointer_y[motionevent_count]);
+               if (pointer_dirty[motionevent_count])
+                  input_translate_coord_viewport(x, y, &pointer_x[motionevent_count], &pointer_y[motionevent_count]);
+            }
+
             motionevent_count++;
          }
 #ifdef RARCH_INPUT_DEBUG
