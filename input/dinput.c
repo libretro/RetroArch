@@ -237,8 +237,11 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
    }
 }
 
-static int16_t dinput_pointer_state(struct dinput_input *di, unsigned id)
+static int16_t dinput_pointer_state(struct dinput_input *di, unsigned index, unsigned id)
 {
+   if (index != 0)
+      return 0;
+
    int16_t res_x = 0, res_y = 0;
    bool valid = input_translate_coord_viewport(di->mouse_x, di->mouse_y, &res_x, &res_y);
 
@@ -284,7 +287,7 @@ static int16_t dinput_input_state(void *data,
          return dinput_mouse_state(di, id);
 
       case RETRO_DEVICE_POINTER:
-         return dinput_pointer_state(di, id);
+         return dinput_pointer_state(di, index, id);
 
       case RETRO_DEVICE_LIGHTGUN:
          return dinput_lightgun_state(di, id);

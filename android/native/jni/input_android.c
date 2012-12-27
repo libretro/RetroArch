@@ -415,6 +415,8 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
       case RETRO_DEVICE_JOYPAD:
          return ((state[port] & binds[port][id].joykey) && (port < pads_connected));
       case RETRO_DEVICE_POINTER:
+         if (index != 0) // TODO: Multitouch.
+            return 0;
          switch(id)
          {
             case RETRO_DEVICE_ID_POINTER_X:

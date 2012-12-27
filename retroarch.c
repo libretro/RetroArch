@@ -472,19 +472,19 @@ size_t audio_sample_batch(const int16_t *data, size_t frames)
 #ifdef HAVE_OVERLAY
 static inline void input_poll_overlay(void)
 {
-   bool pressed = input_input_state_func(NULL, 0,
-         RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
-
    driver.overlay_state = 0;
-   if (!pressed)
-      return;
 
-   int16_t x = input_input_state_func(NULL, 0,
-         RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
-   int16_t y = input_input_state_func(NULL, 0,
-         RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
+   for (unsigned i = 0;
+         input_input_state_func(NULL, 0, RETRO_DEVICE_POINTER, i, RETRO_DEVICE_ID_POINTER_PRESSED);
+         i++)
+   {
+      int16_t x = input_input_state_func(NULL, 0,
+            RETRO_DEVICE_POINTER, i, RETRO_DEVICE_ID_POINTER_X);
+      int16_t y = input_input_state_func(NULL, 0,
+            RETRO_DEVICE_POINTER, i, RETRO_DEVICE_ID_POINTER_Y);
 
-   driver.overlay_state = input_overlay_poll(driver.overlay, x, y);
+      driver.overlay_state |= input_overlay_poll(driver.overlay, x, y);
+   }
 }
 #endif
 

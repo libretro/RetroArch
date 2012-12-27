@@ -107,8 +107,11 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
    }
 }
 
-static int16_t x_pointer_state(x11_input_t *x11, unsigned id)
+static int16_t x_pointer_state(x11_input_t *x11, unsigned index, unsigned id)
 {
+   if (index != 0)
+      return 0;
+
    int16_t res_x = 0, res_y = 0;
    bool valid = input_translate_coord_viewport(x11->mouse_x, x11->mouse_y, &res_x, &res_y);
 
@@ -177,7 +180,7 @@ static int16_t x_input_state(void *data, const struct retro_keybind **binds, uns
          return x_mouse_state(x11, id);
 
       case RETRO_DEVICE_POINTER:
-         return x_pointer_state(x11, id);
+         return x_pointer_state(x11, index, id);
 
       case RETRO_DEVICE_LIGHTGUN:
          return x_lightgun_state(x11, id);

@@ -1286,7 +1286,7 @@ static void gl_set_nonblock_state(void *data, bool state)
    context_swap_interval_func(state ? 0 : 1);
 }
 
-static bool resolve_extensions(gl_t *gl)
+static bool resolve_extensions(gl_t *gl, bool rgb32)
 {
 #ifdef _WIN32
    // Win32 GL lib doesn't have some elementary functions needed.
@@ -1467,7 +1467,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 #endif
 
-   if (!resolve_extensions(gl))
+   if (!resolve_extensions(gl, video->rgb32))
    {
       context_destroy_func();
       free(gl);

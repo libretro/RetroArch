@@ -120,8 +120,11 @@ static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
    }
 }
 
-static int16_t sdl_pointer_device_state(sdl_input_t *sdl, unsigned id)
+static int16_t sdl_pointer_device_state(sdl_input_t *sdl, unsigned index, unsigned id)
 {
+   if (index != 0)
+      return 0;
+
    int16_t res_x = 0, res_y = 0;
    bool valid = input_translate_coord_viewport(sdl->mouse_abs_x, sdl->mouse_abs_y, &res_x, &res_y);
 
@@ -182,7 +185,7 @@ static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds, 
       case RETRO_DEVICE_MOUSE:
          return sdl_mouse_device_state(data, id);
       case RETRO_DEVICE_POINTER:
-         return sdl_pointer_device_state(data, id);
+         return sdl_pointer_device_state(data, index, id);
       case RETRO_DEVICE_KEYBOARD:
          return sdl_keyboard_device_state(data, id);
       case RETRO_DEVICE_LIGHTGUN:
