@@ -65,6 +65,11 @@ extern "C" {
 // PRESSED returns 1 or 0.
 // If using a mouse, PRESSED will usually correspond to the left mouse button.
 // PRESSED will only return 1 if the pointer is inside the game screen.
+//
+// For multi-touch, the index variable can be used to successively query more presses.
+// If index = 0 returns true for _PRESSED, coordinates can be extracted
+// with _X, _Y for index = 0. One can then query _PRESSED, _X, _Y with index = 1, and so on.
+// Eventually _PRESSED will return false for an index. No further presses are registered at this point.
 #define RETRO_DEVICE_POINTER      6
 
 // These device types are specializations of the base types above.
