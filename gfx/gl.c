@@ -695,7 +695,7 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full,
       gl->vp_out_height = height;
    }
 
-   RARCH_LOG("Setting viewport @ %ux%u\n", width, height);
+   //RARCH_LOG("Setting viewport @ %ux%u\n", width, height);
 }
 
 static void gl_set_rotation(void *data, unsigned rotation)
