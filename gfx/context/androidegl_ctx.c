@@ -63,32 +63,19 @@ static void gfx_ctx_destroy(void)
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
-   (void)width;
-   (void)height;
-
    if (g_egl_dpy)
    {
       EGLint gl_width, gl_height;
       eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &gl_width);
       eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &gl_height);
-      *width = gl_width;
+      *width  = gl_width;
       *height = gl_height;
    }
-}
-
-static void gfx_ctx_orientation_update(void)
-{
-   gl_t *gl = (gl_t*)driver.video_data;
-   if (!gl)
-      return;
-
-   unsigned width = 0, height = 0;
-   gfx_ctx_get_video_size(&width, &height);
-   gl->full_x = width;
-   gl->full_y = height;
-   RARCH_LOG("GL: New orientation %ux%u\n", width, height);
-
-   g_resize = true;
+   else
+   {
+      *width  = 0;
+      *height = 0;
+   }
 }
 
 static bool gfx_ctx_init(void)
@@ -161,12 +148,6 @@ static bool gfx_ctx_init(void)
       goto error;
    }
 
-   if (g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT))
-   {
-      RARCH_LOG("[ANDROID/EGL]: Setting up reentrant state.\n");
-      gfx_ctx_orientation_update();
-   }
-
    return true;
 
 error:
@@ -190,9 +171,14 @@ static void gfx_ctx_check_window(bool *quit,
 
    *quit = false;
 
-   *resize  = g_resize;
-   g_resize = false;
-   gfx_ctx_get_video_size(width, height);
+   unsigned new_width, new_height;
+   gfx_ctx_get_video_size(&new_width, &new_height);
+   if (new_width != *width || new_height != *height)
+   {
+      *width  = new_width;
+      *height = new_height;
+      *resize = true;
+   }
 
    RARCH_PERFORMANCE_INIT(alooper_pollonce);
    RARCH_PERFORMANCE_START(alooper_pollonce);

@@ -179,21 +179,6 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          break;
       case APP_CMD_CONFIG_CHANGED:
          RARCH_LOG("engine_handle_cmd: APP_CMD_CONFIG_CHANGED.\n");
-
-         /* PREEXEC */
-         AConfiguration_fromAssetManager(android_app->config,
-               android_app->activity->assetManager);
-         print_cur_config(android_app);
-
-         int32_t new_orient = AConfiguration_getOrientation(g_android.app->config);
-
-         if (new_orient != g_android.last_orient && g_android.window_ready)
-         {
-            g_android.last_orient = new_orient;
-            gfx_ctx_orientation_update();
-            // reinit video driver for new window dimensions
-         }
-
          break;
       case APP_CMD_TERM_WINDOW:
          RARCH_LOG("engine_handle_cmd: APP_CMD_TERM_WINDOW.\n");
@@ -465,7 +450,6 @@ static void* android_app_entry(void* param)
    {
       RARCH_LOG("RetroArch started.\n");
       rarch_init_msg_queue();
-      g_android.last_orient = AConfiguration_getOrientation(android_app->config);
       driver_set_monitor_refresh_rate(g_android.disp_refresh_rate);
       while((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ? android_run_events(g_android.app) : rarch_main_iterate());
       RARCH_LOG("RetroArch stopped.\n");
