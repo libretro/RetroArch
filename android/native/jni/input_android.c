@@ -24,6 +24,7 @@
 
 #define AKEY_EVENT_NO_ACTION 255
 #define MAX_PADS 8
+#define MAX_TOUCH 4
 
 enum {
    AKEYCODE_ESCAPE          = 111,
@@ -69,9 +70,9 @@ static uint64_t state[MAX_PADS];
 static int8_t state_device_ids[MAX_DEVICE_IDS];
 static uint64_t keycode_lut[LAST_KEYCODE];
 
-static int16_t pointer_x;
-static int16_t pointer_y;
-static uint8_t pointer_dirty;
+static int16_t pointer_x[MAX_TOUCH];
+static int16_t pointer_y[MAX_TOUCH];
+static uint8_t pointer_dirty[MAX_TOUCH];
 
 static void setup_keycode_lut(void)
 {
@@ -292,8 +293,6 @@ static void *android_input_init(void)
 
    setup_keycode_lut();
 
-   pointer_x = 0;
-   pointer_y = 0;
 
    return (void*)-1;
 }
@@ -309,6 +308,14 @@ static void android_input_poll(void *data)
 
    g_extern.lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS));
 
+   for(int i = 0; i < MAX_TOUCH; i++)
+   {
+      pointer_x[i] = 0;
+      pointer_y[i] = 0;
+      pointer_dirty[i] = 0;
+   }
+
+   unsigned motionevent_count = 0;
 
    // Read all pending events.
    while(AInputQueue_hasEvents(android_app->inputQueue))
@@ -340,11 +347,11 @@ static void android_input_poll(void *data)
          action = AMotionEvent_getAction(event);
          size_t motion_pointer = action >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
 
-         float x = AMotionEvent_getX(event, motion_pointer);
-         float y = AMotionEvent_getY(event, motion_pointer);
 
          if(source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
          {
+            float x = AMotionEvent_getX(event, motion_pointer);
+            float y = AMotionEvent_getY(event, motion_pointer);
             state[state_id] &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
                   (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
             state[state_id] |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
@@ -358,10 +365,14 @@ static void android_input_poll(void *data)
             bool pointer_is_not_dirty = (action == AMOTION_EVENT_ACTION_UP ||
                   action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP);
 
-            pointer_dirty = !(mouse_is_not_dirty || pointer_is_not_dirty);
+            float x = AMotionEvent_getX(event, motionevent_count);
+            float y = AMotionEvent_getY(event, motionevent_count);
 
-            if (pointer_dirty)
-               input_translate_coord_viewport(x, y, &pointer_x, &pointer_y);
+            pointer_dirty[motionevent_count] = !(mouse_is_not_dirty || pointer_is_not_dirty);
+
+            if (pointer_dirty[motionevent_count])
+               input_translate_coord_viewport(x, y, &pointer_x[motionevent_count], &pointer_y[motionevent_count]);
+            motionevent_count++;
          }
 #ifdef RARCH_INPUT_DEBUG
          snprintf(msg, sizeof(msg), "Pad %d : x = %.2f, y = %.2f, src %d.\n", state_id, x, y, source);
@@ -415,16 +426,14 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
       case RETRO_DEVICE_JOYPAD:
          return ((state[port] & binds[port][id].joykey) && (port < pads_connected));
       case RETRO_DEVICE_POINTER:
-         if (index != 0) // TODO: Multitouch.
-            return 0;
          switch(id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
-               return pointer_x;
+               return pointer_x[index];
             case RETRO_DEVICE_ID_POINTER_Y:
-               return pointer_y;
+               return pointer_y[index];
             case RETRO_DEVICE_ID_POINTER_PRESSED:
-               return pointer_dirty;
+               return pointer_dirty[index];
             default:
                return 0;
          }
