@@ -34,6 +34,7 @@ static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
 static EGLConfig g_config;
+static bool g_resize;
 
 GLfloat _angle;
 
@@ -57,6 +58,7 @@ static void gfx_ctx_destroy(void)
    g_egl_surf = EGL_NO_SURFACE;
    g_egl_ctx = EGL_NO_CONTEXT;
    g_config   = 0;
+   g_resize   = false;
 }
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
@@ -80,24 +82,13 @@ static void gfx_ctx_orientation_update(void)
    if (!gl)
       return;
 
-   // Get real known video size, which might have been altered by context.
-   gfx_ctx_get_video_size(&gl->win_width, &gl->win_height);
-   RARCH_LOG("GL: Using resolution %ux%u\n", gl->win_width, gl->win_height);
+   unsigned width = 0, height = 0;
+   gfx_ctx_get_video_size(&width, &height);
+   gl->full_x = width;
+   gl->full_y = height;
+   RARCH_LOG("GL: New orientation %ux%u\n", width, height);
 
-   if (gl->full_x || gl->full_y) // We got bogus from gfx_ctx_get_video_size. Replace.
-   {
-      gl->full_x = gl->win_width;
-      gl->full_y = gl->win_height;
-   }
-
-#ifdef HAVE_GLSL
-   gl_glsl_use(0);
-#endif
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-#ifdef HAVE_GLSL
-   gl_glsl_use(1);
-#endif
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   g_resize = true;
 }
 
 static bool gfx_ctx_init(void)
@@ -192,15 +183,16 @@ static void gfx_ctx_swap_buffers(void)
 static void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
-   (void)width;
-   (void)height;
    (void)frame_count;
 
    int id;
    struct android_app* android_app = g_android.app;
 
    *quit = false;
-   *resize = false;
+
+   *resize  = g_resize;
+   g_resize = false;
+   gfx_ctx_get_video_size(width, height);
 
    RARCH_PERFORMANCE_INIT(alooper_pollonce);
    RARCH_PERFORMANCE_START(alooper_pollonce);
