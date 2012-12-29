@@ -5,6 +5,7 @@ import org.retroarch.R;
 import java.io.*;
 
 import android.content.*;
+import android.content.pm.*;
 import android.app.*;
 import android.os.*;
 import android.widget.*;
@@ -71,20 +72,32 @@ public class ModuleActivity extends Activity implements AdapterView.OnItemClickL
         setTitle("Select Libretro core");
     	
     	// Populate the list
-    	final String modulePath = getApplicationInfo().nativeLibraryDir;
-        for(final File lib: new File(modulePath).listFiles())
+        final PackageManager pm = getPackageManager();
+        final String[] packages = pm.getPackagesForUid(getApplicationInfo().uid);
+        for(final String pack: packages)
         {
-        	if(lib.getName().startsWith("libretro_"))
-        	{
-        		try
-        		{
-        			adapter.add(new ModuleWrapper(this, lib));;
-        		}
-        		catch(Exception e)
-        		{
-        			//Logger.d("Couldn't add module: " + lib.getPath());
-        		}
-        	}
+            try
+            {
+                final String modulePath = pm.getApplicationInfo(pack, PackageManager.GET_SHARED_LIBRARY_FILES).nativeLibraryDir;
+                for(final File lib: new File(modulePath).listFiles())
+                {
+                    if(lib.getName().startsWith("libretro_"))
+                    {
+                        try
+                        {
+                            adapter.add(new ModuleWrapper(this, lib));;
+                        }
+                        catch(Exception e)
+                        {
+                            //Logger.d("Couldn't add module: " + lib.getPath());
+                        }
+                    }
+                }
+            }
+            catch(PackageManager.NameNotFoundException e)
+            {
+                // TODO: Log it
+            }
         }
     }
     
