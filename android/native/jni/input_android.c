@@ -200,7 +200,7 @@ static void setup_keycode_lut(unsigned port, unsigned id)
    }
    else if (strstr(name_buf, "Microsoft"))
    {
-      if (strstr(name_buf, "SideWinder Dual Strike"))
+      if (strstr(name_buf, "Dual Strike"))
       {
          snprintf(msg, sizeof(msg), "RetroPad #%d is: Sidewinder Dual Strike.\n", port);
          keycode_lut[AKEYCODE_BUTTON_4] |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
