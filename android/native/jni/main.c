@@ -479,12 +479,6 @@ static void onResume(ANativeActivity* activity)
    android_app_set_activity_state((struct android_app*)activity->instance, APP_CMD_RESUME);
 }
 
-static void* onSaveInstanceState(ANativeActivity* activity, size_t* outLen)
-{
-   *outLen = 0;
-   return NULL;
-}
-
 static void onPause(ANativeActivity* activity)
 {
    RARCH_LOG("Pause: %p\n", activity);
@@ -546,7 +540,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    activity->callbacks->onDestroy = onDestroy;
    activity->callbacks->onStart = onStart;
    activity->callbacks->onResume = onResume;
-   activity->callbacks->onSaveInstanceState = onSaveInstanceState;
+   activity->callbacks->onSaveInstanceState = NULL;
    activity->callbacks->onPause = onPause;
    activity->callbacks->onStop = onStop;
    activity->callbacks->onConfigurationChanged = onConfigurationChanged;
