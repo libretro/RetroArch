@@ -613,7 +613,7 @@ begin_shutdown:
 #endif
 
    if(g_extern.console.external_launch.enable)
-      rarch_console_exec(g_extern.console.external_launch.launch_app);
+      rarch_console_exec(g_settings.libretro);
 
    exit(0);
 }
