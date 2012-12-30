@@ -85,6 +85,8 @@ void rarch_config_load(const char *conf_name, bool upgrade_core_succeeded)
       CONFIG_GET_BOOL_EXTERN(console.screen.state.triple_buffering.enable, "triple_buffering_enable");
       CONFIG_GET_BOOL_EXTERN(console.screen.state.overscan.enable, "overscan_enable");
       CONFIG_GET_BOOL_EXTERN(console.sound.custom_bgm.enable, "custom_bgm_enable");
+      CONFIG_GET_BOOL_EXTERN(console.main_wrap.state.default_sram_dir.enable, "sram_dir_enable");
+      CONFIG_GET_BOOL_EXTERN(console.main_wrap.state.default_savestate_dir.enable, "savestate_dir_enable");
       CONFIG_GET_FLOAT_EXTERN(console.screen.overscan_amount, "overscan_amount");
 #ifdef _XBOX1
       CONFIG_GET_INT_EXTERN(console.screen.state.flicker_filter.enable, "flicker_filter");
@@ -184,6 +186,9 @@ void rarch_config_save(const char * conf_name)
       config_set_bool(conf, "soft_display_filter_enable", g_extern.console.screen.state.soft_filter.enable);
       config_set_int(conf, "screen_orientation", g_extern.console.screen.orientation);
       config_set_bool(conf, "custom_bgm_enable", g_extern.console.sound.custom_bgm.enable);
+
+      config_set_bool(conf, "sram_dir_enable", g_extern.console.main_wrap.state.default_sram_dir.enable);
+      config_set_bool(conf, "savestate_dir_enable", g_extern.console.main_wrap.state.default_savestate_dir.enable);
 
       if (!config_file_write(conf, conf_name))
          RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", conf_name);
