@@ -301,6 +301,34 @@ static void *android_input_init(void)
    return (void*)-1;
 }
 
+static void get_device_name(char *buf, size_t size, int id)
+{
+   JavaVM *vm = g_android.app->activity->vm;
+   JNIEnv *env = NULL;
+   (*vm)->AttachCurrentThread(vm, &env, 0);
+
+   jclass input_device_class = NULL;
+   FIND_CLASS(env, input_device_class, "android/view/InputDevice");
+
+   jmethodID method = NULL;
+   GET_STATIC_METHOD_ID(env, method, input_device_class, "getDevice", "(I)Landroid/view/InputDevice;");
+
+   jobject device = NULL;
+   CALL_OBJ_STATIC_METHOD_PARAM(env, device, input_device_class, method, (jint)id);
+
+   jmethodID getName = NULL;
+   GET_METHOD_ID(env, getName, input_device_class, "getName", "()Ljava/lang/String;");
+
+   jobject name = NULL;
+   CALL_OBJ_METHOD(env, name, device, getName);
+
+   const char *str = (*env)->GetStringUTFChars(env, name, 0);
+   strlcpy(buf, str, size);
+   (*env)->ReleaseStringUTFChars(env, name, str);
+
+   (*vm)->DetachCurrentThread(vm);
+}
+
 static void android_input_poll(void *data)
 {
    (void)data;
@@ -325,6 +353,12 @@ static void android_input_poll(void *data)
 
       int source = AInputEvent_getSource(event);
       int id = AInputEvent_getDeviceId(event);
+
+      // FIXME: Only call when name is updated.
+      char name_buf[256];
+      get_device_name(name_buf, sizeof(name_buf), id);
+      RARCH_LOG("Device %d: %s.\n", id, name_buf);
+      ////
 
       int type_event = AInputEvent_getType(event);
       int state_id = state_device_ids[id];

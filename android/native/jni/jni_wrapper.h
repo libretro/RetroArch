@@ -44,7 +44,7 @@ struct jni_out_params_char
    }
 
 #define FIND_CLASS(env, var, classname) \
-   var = (*env)->FindClass(classname); \
+   var = (*env)->FindClass(env, classname); \
    JNI_EXCEPTION(env)
 
 #define GET_OBJECT_CLASS(env, var, clazz_obj) \
@@ -67,8 +67,16 @@ struct jni_out_params_char
    var = (*env)->CallObjectMethod(env, clazz_obj, methodId); \
    JNI_EXCEPTION(env)
 
-#define CALL_OBJ_METHOD_PARAM(env, var, clazz_obj, methodId, methodParam) \
-   var = (*env)->CallObjectMethod(env, clazz_obj, methodId, methodParam); \
+#define CALL_OBJ_STATIC_METHOD(env, var, clazz, methodId) \
+   var = (*env)->CallStaticObjectMethod(env, clazz, methodId); \
+   JNI_EXCEPTION(env)
+
+#define CALL_OBJ_STATIC_METHOD_PARAM(env, var, clazz, methodId, ...) \
+   var = (*env)->CallStaticObjectMethod(env, clazz, methodId, __VA_ARGS__); \
+   JNI_EXCEPTION(env)
+
+#define CALL_OBJ_METHOD_PARAM(env, var, clazz_obj, methodId, ...) \
+   var = (*env)->CallObjectMethod(env, clazz_obj, methodId, __VA_ARGS__); \
    JNI_EXCEPTION(env)
 
 #endif
