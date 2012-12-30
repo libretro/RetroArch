@@ -20,20 +20,11 @@
 #include "android_glue.h"
 #include "../../../boolean.h"
 
-struct saved_state
-{
-    int32_t x;
-    int32_t y;
-    uint64_t lifecycle_state;
-};
-
 struct droid
 {
    struct android_app* app;
    unsigned width;
    unsigned height;
-   struct saved_state state;
-   int32_t last_orient;
    bool window_ready;
    float disp_refresh_rate;
    jobject class_loader_obj;

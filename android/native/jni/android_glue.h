@@ -60,7 +60,6 @@ struct android_app
 
    int running;
    int stateSaved;
-   int destroyed;
    int redrawNeeded;
    AInputQueue* pendingInputQueue;
    ANativeWindow* pendingWindow;
@@ -167,12 +166,14 @@ enum {
     * and waiting for the app thread to clean up and exit before proceeding.
     */
    APP_CMD_DESTROY,
+
+   // Set by thread when it will no longer reply to commands.
+   APP_CMD_DEAD,
 };
 
 int8_t android_app_read_cmd(struct android_app* android_app);
 
 extern void engine_app_read_cmd(struct android_app *app);
 extern void engine_handle_cmd(struct android_app* android_app, int32_t cmd);
-extern void free_saved_state(struct android_app* android_app);
 
 #endif /* _ANDROID_NATIVE_APP_GLUE_H */
