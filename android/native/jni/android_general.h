@@ -41,6 +41,4 @@ struct droid
 
 extern struct droid g_android;
 
-bool android_run_events(struct android_app* android_app);
-
 #endif

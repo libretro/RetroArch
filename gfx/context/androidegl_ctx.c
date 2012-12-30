@@ -166,7 +166,6 @@ static void gfx_ctx_check_window(bool *quit,
 {
    (void)frame_count;
 
-   int id;
    struct android_app* android_app = g_android.app;
 
    *quit = false;
@@ -183,9 +182,7 @@ static void gfx_ctx_check_window(bool *quit,
    RARCH_PERFORMANCE_INIT(alooper_pollonce);
    RARCH_PERFORMANCE_START(alooper_pollonce);
    
-   id = ALooper_pollOnce(0, NULL, 0, NULL);
-
-   if(id == LOOPER_ID_MAIN)
+   while (ALooper_pollOnce(0, NULL, NULL, NULL) == LOOPER_ID_MAIN)
    {
       int8_t cmd;
 

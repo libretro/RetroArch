@@ -222,9 +222,9 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
 
 #define MAX_ARGS 32
 
-bool android_run_events(struct android_app* android_app)
+static bool android_run_events(struct android_app* android_app)
 {
-   int id = ALooper_pollOnce(0, NULL, 0, NULL);
+   int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
 
    if (id == LOOPER_ID_MAIN)
    {
@@ -242,7 +242,7 @@ bool android_run_events(struct android_app* android_app)
 
       if (cmd == APP_CMD_INIT_WINDOW)
       {
-         if(g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT))
+         if (g_extern.lifecycle_state & (1ULL << RARCH_REENTRANT))
             init_drivers();
 
          if (android_app->window != NULL)
