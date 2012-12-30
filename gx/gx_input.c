@@ -462,30 +462,35 @@ static bool gx_input_key_pressed(void *data, int key)
    switch (key)
    {
       case RARCH_QUIT_KEY:
-      if(IS_TIMER_EXPIRED(0))
-      {
-         uint64_t goto_menu_pressed = pad_state[0] & (GX_WIIMOTE_HOME
+         if(IS_TIMER_EXPIRED(0))
+         {
+            uint64_t goto_menu_pressed = pad_state[0] & (GX_WIIMOTE_HOME
 #ifdef HW_RVL
  | GX_CLASSIC_HOME
 #endif
- );
-         uint64_t quit_rarch = pad_state[0] & GX_QUIT_KEY;
-         bool retval = false;
-         g_extern.console.rmenu.state.rmenu.enable = ((quit_rarch || goto_menu_pressed));
+    );
+            uint64_t quit_rarch = pad_state[0] & GX_QUIT_KEY;
+            bool retval = false;
+            g_extern.console.rmenu.state.rmenu.enable = ((quit_rarch || goto_menu_pressed));
 
-         if(g_extern.console.rmenu.state.rmenu.enable)
-         {
-            g_extern.console.rmenu.mode = MODE_MENU;
-            g_extern.console.rmenu.state.ingame_menu.enable = true;
-            SET_TIMER_EXPIRATION(0, 30);
+            if(g_extern.console.rmenu.state.rmenu.enable)
+            {
+               g_extern.console.rmenu.mode = MODE_MENU;
+               g_extern.console.rmenu.state.ingame_menu.enable = true;
+               SET_TIMER_EXPIRATION(0, 30);
+            }
+
+            if(quit_rarch)
+               g_extern.console.rmenu.mode = MODE_EXIT;
+
+            retval = g_extern.console.rmenu.state.rmenu.enable;
+            return retval;
          }
-
-         if(quit_rarch)
-            g_extern.console.rmenu.mode = MODE_EXIT;
-
-         retval = g_extern.console.rmenu.state.rmenu.enable;
-         return retval;
-      }
+         return false;
+         break;
+      case RARCH_RMENU_QUICKMENU_TOGGLE:
+         return pad_state[0] & GX_WIIMOTE_HOME;
+         break;
       default:
          return false;
    }

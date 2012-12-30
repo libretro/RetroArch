@@ -423,6 +423,12 @@ static void render_text(rgui_handle_t *rgui)
                   break;
             }
             break;
+         case RGUI_SETTINGS_SRAM_DIR:
+            snprintf(type_str, sizeof(type_str), g_extern.console.main_wrap.state.default_sram_dir.enable ? "ON" : "OFF");
+            break;
+         case RGUI_SETTINGS_STATE_DIR:
+            snprintf(type_str, sizeof(type_str), g_extern.console.main_wrap.state.default_savestate_dir.enable ? "ON" : "OFF");
+            break;
          case RGUI_SETTINGS_DEBUG_TEXT:
             snprintf(type_str, sizeof(type_str), g_extern.console.rmenu.state.msg_fps.enable ? "ON" : "OFF");
             break;
@@ -681,6 +687,18 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          else if (action == RGUI_ACTION_RIGHT && g_extern.file_state.zip_extract_mode < LAST_ZIP_EXTRACT)
             g_extern.file_state.zip_extract_mode++;
          break;
+      case RGUI_SETTINGS_SRAM_DIR:
+         if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
+            g_extern.console.main_wrap.state.default_sram_dir.enable = false;
+         else if (action == RGUI_ACTION_RIGHT)
+            g_extern.console.main_wrap.state.default_sram_dir.enable = true;
+         break;
+      case RGUI_SETTINGS_STATE_DIR:
+         if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
+            g_extern.console.main_wrap.state.default_savestate_dir.enable = false;
+         else if (action == RGUI_ACTION_RIGHT)
+            g_extern.console.main_wrap.state.default_savestate_dir.enable = true;
+         break;
       case RGUI_SETTINGS_DEBUG_TEXT:
          if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
             g_extern.console.rmenu.state.msg_fps.enable = false;
@@ -788,6 +806,8 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
    RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);
    RGUI_MENU_ITEM("Zip Extract Directory", RGUI_SETTINGS_ZIP_EXTRACT);
+   RGUI_MENU_ITEM("SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR);
+   RGUI_MENU_ITEM("State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR);
    RGUI_MENU_ITEM("Core", RGUI_SETTINGS_CORE);
    RGUI_MENU_ITEM("Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1);
    RGUI_MENU_ITEM("Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2);
