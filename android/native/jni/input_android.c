@@ -131,7 +131,6 @@ static void setup_keycode_lut(unsigned port, unsigned id)
    g_settings.input.dpad_emulation[port] = DPAD_EMULATION_LSTICK;
 
    get_device_name(name_buf, sizeof(name_buf), id);
-   RARCH_LOG("Device %d: %s, port: %d.\n", id, name_buf, port);
 
    /* eight 8-bit values are packed into one uint64_t
     * one for each of the 8 pads */
@@ -308,7 +307,14 @@ static void setup_keycode_lut(unsigned port, unsigned id)
    keycode_lut[AKEYCODE_ESCAPE] |= ((RARCH_QUIT_KEY+1) << shift);
    keycode_lut[AKEYCODE_BACK] |= ((RARCH_QUIT_KEY+1) << shift);
 
-   if (msg[0] != 0)
+   RARCH_LOG("Device %d: %s, port: %d.\n", id, name_buf, port);
+
+   if (msg[0] == 0)
+   {
+      snprintf(msg, sizeof(msg), "HID [%s] unbound.\n", name_buf);
+      msg_queue_push(g_extern.msg_queue, msg, 0, 120);
+   }
+   else
       msg_queue_push(g_extern.msg_queue, msg, 0, 30);
 }
 
