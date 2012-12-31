@@ -1,7 +1,5 @@
 package org.retroarch.browser;
 
-import java.util.prefs.Preferences;
-
 import org.retroarch.R;
 
 import android.app.Activity;
