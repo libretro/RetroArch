@@ -26,14 +26,6 @@
 #define MAX_PADS 8
 #define MAX_TOUCH 8
 
-enum
-{
-   DPAD_EMULATION_NONE = 0,
-   DPAD_EMULATION_LSTICK,
-   DPAD_EMULATION_RSTICK,
-   DPAD_EMULATION_LAST
-};
-
 enum {
    AKEYCODE_ESCAPE          = 111,
    AKEYCODE_BREAK           = 121,
@@ -114,10 +106,14 @@ static void get_device_name(char *buf, size_t size, int id)
    (*vm)->DetachCurrentThread(vm);
 }
 
-static void setup_keycode_lut(unsigned port, unsigned id)
+static void setup_keycode_lut(unsigned port, unsigned id, int source)
 {
+   // Hack - we have to add '1' to the bit mask here because
+   // RETRO_DEVICE_ID_JOYPAD_B is 0
+ 
    char msg[128];
-   msg[0] = 0;
+   char name_buf[256];
+   msg[0] = name_buf[0] = 0;
 
    if (port > MAX_PADS)
    {
@@ -126,18 +122,68 @@ static void setup_keycode_lut(unsigned port, unsigned id)
       return;
    }
 
-   char name_buf[256];
-
-   g_settings.input.dpad_emulation[port] = DPAD_EMULATION_LSTICK;
-
-   get_device_name(name_buf, sizeof(name_buf), id);
-
    /* eight 8-bit values are packed into one uint64_t
     * one for each of the 8 pads */
    uint8_t shift = 8 + (port * 8);
 
-   // Hack - we have to add '1' to the bit mask here because
-   // RETRO_DEVICE_ID_JOYPAD_B is 0
+   g_settings.input.dpad_emulation[port] = DPAD_EMULATION_LSTICK;
+
+   char *current_ime = g_android.current_ime;
+
+   if (strstr(current_ime, "com.ccpcreations.android.WiiUseAndroid"))
+   {
+      // Player 1
+      switch (port)
+      {
+         case 0:
+            snprintf(msg, sizeof(msg), "RetroPad #%d is: Wiimote (IME).\n", port);
+            snprintf(name_buf, sizeof(name_buf), "ccpcreations WiiUse");
+            g_settings.input.dpad_emulation[port] = DPAD_EMULATION_NONE;
+            keycode_lut[AKEYCODE_DPAD_UP]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)    << shift);
+            keycode_lut[AKEYCODE_DPAD_DOWN] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
+            keycode_lut[AKEYCODE_DPAD_LEFT] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)    << shift);
+            keycode_lut[AKEYCODE_DPAD_RIGHT]|= ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)    << shift);
+            keycode_lut[AKEYCODE_1]         |= ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
+            keycode_lut[AKEYCODE_2]         |= ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
+            keycode_lut[AKEYCODE_3]         |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
+            keycode_lut[AKEYCODE_4]         |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
+            keycode_lut[AKEYCODE_5]         |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)    << shift);
+            keycode_lut[AKEYCODE_6]         |= ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)   << shift);
+            keycode_lut[AKEYCODE_M]         |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)  << shift);
+            keycode_lut[AKEYCODE_P]         |= ((RETRO_DEVICE_ID_JOYPAD_START+1)   << shift);
+            keycode_lut[AKEYCODE_E]         |= ((RETRO_DEVICE_ID_JOYPAD_Y+1)       << shift);
+            keycode_lut[AKEYCODE_B]         |= ((RETRO_DEVICE_ID_JOYPAD_X+1)       << shift);
+            keycode_lut[AKEYCODE_F]         |= ((RETRO_DEVICE_ID_JOYPAD_B+1)       << shift);
+            keycode_lut[AKEYCODE_G]         |= ((RETRO_DEVICE_ID_JOYPAD_A+1)       << shift);
+            keycode_lut[AKEYCODE_C]         |= ((RETRO_DEVICE_ID_JOYPAD_L+1)       << shift);
+            keycode_lut[AKEYCODE_LEFT_BRACKET]  |= ((RETRO_DEVICE_ID_JOYPAD_L2+1)       << shift);
+            keycode_lut[AKEYCODE_RIGHT_BRACKET] |= ((RETRO_DEVICE_ID_JOYPAD_R2+1)       << shift);
+            keycode_lut[AKEYCODE_Z]         |= ((RETRO_DEVICE_ID_JOYPAD_R+1)       << shift);
+            keycode_lut[AKEYCODE_H]         |= ((RARCH_RESET+1)                    << shift);
+            keycode_lut[AKEYCODE_W]         |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
+            keycode_lut[AKEYCODE_S]         |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
+            keycode_lut[AKEYCODE_A]         |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)    << shift);
+            keycode_lut[AKEYCODE_D]         |= ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)    << shift);
+            keycode_lut[AKEYCODE_C]         |= ((RETRO_DEVICE_ID_JOYPAD_A+1)    << shift);
+            keycode_lut[AKEYCODE_Z]         |= ((RETRO_DEVICE_ID_JOYPAD_B+1)    << shift);
+
+         case 1:
+         case 2:
+         case 3:
+         case 4:
+         default:
+            break;
+      }
+      shift = 8;
+      for(int i = 0; i < MAX_PADS; i++)
+      {
+         keycode_lut[AKEYCODE_BACK] |= ((RARCH_QUIT_KEY+1) << shift);
+         shift += 8;
+      }
+      goto do_exit;
+   }
+
+   get_device_name(name_buf, sizeof(name_buf), id);
 
    if (strstr(name_buf, "Logitech"))
    {
@@ -158,41 +204,6 @@ static void setup_keycode_lut(unsigned port, unsigned id)
          keycode_lut[AKEYCODE_BUTTON_12] |= ((RETRO_DEVICE_ID_JOYPAD_R3+1)      << shift);
       }
    }
-
-#if 0
-   // com.ccpcreations.android.WiiUseAndroid IME driver
-
-   // Player 1
-
-   keycode_lut[AKEYCODE_DPAD_UP]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)    << shift);
-   keycode_lut[AKEYCODE_DPAD_DOWN] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
-   keycode_lut[AKEYCODE_DPAD_LEFT] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)    << shift);
-   keycode_lut[AKEYCODE_DPAD_RIGHT]|= ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)    << shift);
-   keycode_lut[AKEYCODE_1]         |= ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
-   keycode_lut[AKEYCODE_2]         |= ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
-   keycode_lut[AKEYCODE_3]         |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
-   keycode_lut[AKEYCODE_4]         |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
-   keycode_lut[AKEYCODE_5]         |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)    << shift);
-   keycode_lut[AKEYCODE_6]         |= ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)   << shift);
-   keycode_lut[AKEYCODE_M]         |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)  << shift);
-   keycode_lut[AKEYCODE_P]         |= ((RETRO_DEVICE_ID_JOYPAD_START+1)   << shift);
-   keycode_lut[AKEYCODE_E]         |= ((RETRO_DEVICE_ID_JOYPAD_Y+1)       << shift);
-   keycode_lut[AKEYCODE_B]         |= ((RETRO_DEVICE_ID_JOYPAD_X+1)       << shift);
-   keycode_lut[AKEYCODE_F]         |= ((RETRO_DEVICE_ID_JOYPAD_B+1)       << shift);
-   keycode_lut[AKEYCODE_G]         |= ((RETRO_DEVICE_ID_JOYPAD_A+1)       << shift);
-   keycode_lut[AKEYCODE_C]         |= ((RETRO_DEVICE_ID_JOYPAD_L+1)       << shift);
-   keycode_lut[AKEYCODE_LEFT_BRACKET]  |= ((RETRO_DEVICE_ID_JOYPAD_L2+1)       << shift);
-   keycode_lut[AKEYCODE_RIGHT_BRACKET] |= ((RETRO_DEVICE_ID_JOYPAD_R2+1)       << shift);
-   keycode_lut[AKEYCODE_Z]         |= ((RETRO_DEVICE_ID_JOYPAD_R+1)       << shift);
-   keycode_lut[AKEYCODE_H]         |= ((RARCH_RESET+1)                    << shift);
-   keycode_lut[AKEYCODE_W]         |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
-   keycode_lut[AKEYCODE_S]         |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
-   keycode_lut[AKEYCODE_A]         |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)    << shift);
-   keycode_lut[AKEYCODE_D]         |= ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)    << shift);
-   keycode_lut[AKEYCODE_C]         |= ((RETRO_DEVICE_ID_JOYPAD_A+1)    << shift);
-   keycode_lut[AKEYCODE_Z]         |= ((RETRO_DEVICE_ID_JOYPAD_B+1)    << shift);
-#endif
-
    else if (strstr(name_buf, "HuiJia  USB GamePad"))
    {
       snprintf(msg, sizeof(msg), "RetroPad #%d is: HuiJia USB Gamepad.\n", port);
@@ -386,15 +397,27 @@ static void setup_keycode_lut(unsigned port, unsigned id)
    keycode_lut[AKEYCODE_ESCAPE] |= ((RARCH_QUIT_KEY+1) << shift);
    keycode_lut[AKEYCODE_BACK] |= ((RARCH_QUIT_KEY+1) << shift);
 
-   RARCH_LOG("Device %d: %s, port: %d.\n", id, name_buf, port);
+do_exit:
+   if (name_buf[0] != 0)
+      RARCH_LOG("Device %d: %s, port: %d.\n", id, name_buf, port);
+
+   unsigned timeout_val = 30;
 
    if (msg[0] == 0)
    {
-      snprintf(msg, sizeof(msg), "HID [%s] unbound.\n", name_buf);
-      msg_queue_push(g_extern.msg_queue, msg, 0, 120);
+      if (source == AINPUT_SOURCE_TOUCHSCREEN)
+         snprintf(msg, sizeof(msg), "RetroPad #%d is: Touchscreen.\n", port);
+      else if (source == AINPUT_SOURCE_MOUSE)
+         snprintf(msg, sizeof(msg), "RetroPad #%d is: Mouse.\n", port);
+      else if (source == AINPUT_SOURCE_KEYBOARD)
+         snprintf(msg, sizeof(msg), "RetroPad #%d is: Keyboard.\n", port);
+      else if (name_buf[0] != 0)
+         snprintf(msg, sizeof(msg), "HID [%s] unbound.\n", name_buf);
+      timeout_val = 120;
    }
-   else
-      msg_queue_push(g_extern.msg_queue, msg, 0, 30);
+
+   if (msg[0] != 0)
+      msg_queue_push(g_extern.msg_queue, msg, 0, timeout_val);
 }
 
 static void *android_input_init(void)
@@ -470,7 +493,7 @@ static void android_input_poll(void *data)
       if(state_id == -1)
       {
          state_id = state_device_ids[id] = pads_connected++;
-         setup_keycode_lut(state_id, id);
+         setup_keycode_lut(state_id, id, source);
       }
 
       int action = 0;

@@ -8,6 +8,7 @@ import android.content.*;
 import android.app.*;
 import android.os.*;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.widget.*;
 import android.util.Log;
 import android.view.*;
@@ -148,6 +149,7 @@ public class ModuleActivity extends Activity implements
 
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		Intent myIntent;
+		String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
 		
 		updateConfigFile();
 		
@@ -163,6 +165,7 @@ public class ModuleActivity extends Activity implements
 				myIntent.putExtra("REFRESHRATE",
 						Float.toString(getRefreshRate()));
 				myIntent.putExtra("CONFIGFILE", getDefaultConfigPath());
+				myIntent.putExtra("IME", current_ime);
 				startActivity(myIntent);
 			}
 			break;

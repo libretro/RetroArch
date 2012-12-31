@@ -92,6 +92,14 @@
 
 #define MAX_PLAYERS 8
 
+enum dpad_emu_enums
+{
+   DPAD_EMULATION_NONE = 0,
+   DPAD_EMULATION_LSTICK,
+   DPAD_EMULATION_RSTICK,
+   DPAD_EMULATION_LAST
+};
+
 // All config related settings go here.
 struct settings
 {
@@ -173,7 +181,7 @@ struct settings
       struct retro_keybind binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
       float axis_threshold;
       int joypad_map[MAX_PLAYERS];
-      unsigned dpad_emulation[MAX_PLAYERS];
+      enum dpad_emu_enums dpad_emulation[MAX_PLAYERS];
 #ifdef RARCH_CONSOLE
       unsigned currently_selected_controller_no;
       unsigned map_dpad_to_stick;

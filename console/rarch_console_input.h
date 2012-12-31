@@ -27,14 +27,6 @@ enum keybind_set_id
    KEYBIND_DEFAULT
 };
 
-enum
-{
-   DPAD_EMULATION_NONE = 0,
-   DPAD_EMULATION_LSTICK,
-   DPAD_EMULATION_RSTICK,
-   DPAD_EMULATION_LAST
-};
-
 extern uint64_t rarch_default_keybind_lut[RARCH_FIRST_META_KEY];
 extern char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][32];
 extern char rarch_dpad_emulation_name_lut[KEYBIND_DEFAULT][32];

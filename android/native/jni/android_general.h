@@ -23,11 +23,9 @@
 struct droid
 {
    struct android_app* app;
-   unsigned width;
-   unsigned height;
    bool window_ready;
    float disp_refresh_rate;
-   jobject class_loader_obj;
+   char current_ime[PATH_MAX];
 };
 
 extern struct droid g_android;
