@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    <item android:id="@+id/input_method_select" android:title="@string/input_method" android:showAsAction="ifRoom"></item>
+    <item android:id="@+id/settings"
+        android:title="@string/settings"
+        android:icon="@drawable/ic_file"
+        android:showAsAction="ifRoom" />
 </menu>

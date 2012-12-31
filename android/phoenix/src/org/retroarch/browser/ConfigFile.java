@@ -15,40 +15,46 @@ public class ConfigFile {
 	public void append(File file) throws IOException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(
 				new FileInputStream(file.getAbsolutePath())));
-		
+
 		String line;
 		while ((line = br.readLine()) != null)
 			parseLine(line);
-		
+
 		br.close();
 	}
-	
+
 	public void open(File file) throws IOException {
 		clear();
 		append(file);
 	}
 	
+	public ConfigFile(File file) throws IOException {
+		open(file);
+	}
+	
+	public ConfigFile() {}
+
 	private void parseLine(String line) {
 		String[] tokens = line.split("=", 2);
 		if (tokens.length < 2) {
 			System.err.println("Didn't find two tokens in config line ...");
 			return;
 		}
-		
+
 		for (int i = 0; i < tokens.length; i++)
 			tokens[i] = tokens[i].trim();
-		
+
 		String key = tokens[0];
 		String value = tokens[1];
-		
+
 		if (value.startsWith("\""))
 			value = value.substring(1, value.lastIndexOf('\"'));
 		else
 			value = value.split(" ")[0];
-		
+
 		if (value.length() > 0)
 			map.put(key, value);
-		
+
 		System.out.println("Parsed: \"" + key + "\" => \"" + value + "\"");
 	}
 
@@ -69,7 +75,7 @@ public class ConfigFile {
 	public void setString(String key, String value) {
 		map.put(key, value);
 	}
-	
+
 	public void setBoolean(String key, boolean value) {
 		map.put(key, Boolean.toString(value));
 	}
@@ -81,15 +87,15 @@ public class ConfigFile {
 	public void setDouble(String key, double value) {
 		map.put(key, Double.toString(value));
 	}
-	
+
 	public boolean keyExists(String key) {
 		return map.containsKey(key);
 	}
-		
+
 	public String getString(String key) {
 		Object ret = map.get(key);
 		if (ret != null)
-			return (String)ret;
+			return (String) ret;
 		else
 			return null;
 	}
@@ -101,7 +107,7 @@ public class ConfigFile {
 		else
 			throw new NumberFormatException();
 	}
-	
+
 	public double getDouble(String key) throws NumberFormatException {
 		String str = getString(key);
 		if (str != null)
@@ -109,7 +115,7 @@ public class ConfigFile {
 		else
 			throw new NumberFormatException();
 	}
-	
+
 	public boolean getBoolean(String key) {
 		String str = getString(key);
 		return Boolean.parseBoolean(str);

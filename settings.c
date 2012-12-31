@@ -279,43 +279,6 @@ static config_file_t *open_default_config_file(void)
    }
    if (!conf)
       conf = config_file_new("/etc/retroarch.cfg");
-#elif defined(ANDROID)
-   char conf_path[PATH_MAX];
-   const char *storage = getenv("EXTERNAL_STORAGE");
-   
-   if (storage)
-   {
-      snprintf(conf_path, sizeof(conf_path), "%s/retroarch.cfg", storage);
-      conf = config_file_new(conf_path);
-
-      if (!conf)
-         RARCH_WARN("Could not load config file: [%s].\n", conf_path);
-   }
-
-   if (!conf)
-   {
-      storage = getenv("INTERNAL_STORAGE");
-
-      if (storage)
-      {
-         snprintf(conf_path, sizeof(conf_path), "%s/retroarch.cfg", storage);
-         RARCH_WARN("Trying: [%s].\n", conf_path);
-         conf = config_file_new(conf_path);
-
-         if (!conf)
-            RARCH_WARN("Could not load config file: [%s].\n", conf_path);
-      }
-   }
-
-   // Try this as a last chance (EXTSD)...
-   if (!conf)
-   {
-      RARCH_WARN("Trying last fallback: [%s].\n", "/mnt/extsd/retroarch.cfg");
-      conf = config_file_new("/mnt/extsd/retroarch.cfg");
-
-      if (conf)
-         RARCH_LOG("Successfully loaded config file: [%s].\n", "/mnt/extsd/retroarch.cfg");
-   }
 #elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
    char conf_path[PATH_MAX];
    const char *xdg = getenv("XDG_CONFIG_HOME");
