@@ -3,6 +3,7 @@
     <string-array name="aspect_ratios">
         <item>Full screen</item>
         <item>Auto</item>
+        <item>Square pixel</item>
         <item>4:3</item>
         <item>16:9</item>
         <item>16:10</item>
@@ -12,6 +13,7 @@
     <string-array name="aspect_values">
         <item>full</item>
         <item>auto</item>
+        <item>square</item>
         <item>1.33333</item>
         <item>1.77777</item>
         <item>1.60000</item>

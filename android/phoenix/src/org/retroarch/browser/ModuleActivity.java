@@ -145,6 +145,10 @@ public class ModuleActivity extends Activity implements
 			config.setBoolean("video_force_aspect", true);
 			config.setBoolean("video_force_aspect_auto", true);
 			config.setDouble("video_aspect_ratio", -1.0);
+		} else if (aspect.equals("square")) {
+			config.setBoolean("video_force_aspect", true);
+			config.setBoolean("video_force_aspect_auto", false);
+			config.setDouble("video_aspect_ratio", -1.0);
 		} else {
 			double aspect_ratio = Double.parseDouble(aspect);
 			config.setBoolean("video_force_aspect", true);
