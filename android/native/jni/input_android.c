@@ -114,7 +114,7 @@ static void get_device_name(char *buf, size_t size, int id)
    (*vm)->DetachCurrentThread(vm);
 }
 
-static void setup_keycode_lut(unsigned port, unsigned id)
+static void setup_keycode_lut(unsigned port, unsigned id, int source)
 {
    char msg[128];
    msg[0] = 0;
@@ -388,13 +388,22 @@ static void setup_keycode_lut(unsigned port, unsigned id)
 
    RARCH_LOG("Device %d: %s, port: %d.\n", id, name_buf, port);
 
+   unsigned timeout_val = 30;
+
    if (msg[0] == 0)
    {
-      snprintf(msg, sizeof(msg), "HID [%s] unbound.\n", name_buf);
-      msg_queue_push(g_extern.msg_queue, msg, 0, 120);
+      if (source == AINPUT_SOURCE_TOUCHSCREEN)
+         snprintf(msg, sizeof(msg), "RetroPad #%d is: Touchscreen.\n", port);
+      else if (source == AINPUT_SOURCE_MOUSE)
+         snprintf(msg, sizeof(msg), "RetroPad #%d is: Mouse.\n", port);
+      else if (source == AINPUT_SOURCE_KEYBOARD)
+         snprintf(msg, sizeof(msg), "RetroPad #%d is: Keyboard.\n", port);
+      else
+         snprintf(msg, sizeof(msg), "HID [%s] unbound.\n", name_buf);
+      timeout_val = 120;
    }
-   else
-      msg_queue_push(g_extern.msg_queue, msg, 0, 30);
+
+   msg_queue_push(g_extern.msg_queue, msg, 0, timeout_val);
 }
 
 static void *android_input_init(void)
@@ -470,7 +479,7 @@ static void android_input_poll(void *data)
       if(state_id == -1)
       {
          state_id = state_device_ids[id] = pads_connected++;
-         setup_keycode_lut(state_id, id);
+         setup_keycode_lut(state_id, id, source);
       }
 
       int action = 0;
