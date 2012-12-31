@@ -249,7 +249,6 @@ static int android_app_set_argv(char** argv)
    char rom_path[PATH_MAX];
    char libretro_path[PATH_MAX];
    char config_file[PATH_MAX];
-   char current_ime[PATH_MAX];
 
    struct jni_params in_params;
    struct jni_out_params_char out_args;
@@ -291,8 +290,8 @@ static int android_app_set_argv(char** argv)
    jni_get(&in_params, &out_args);
 
    // Current IME
-   out_args.out = current_ime;
-   out_args.out_sizeof = sizeof(current_ime);
+   out_args.out = g_android.current_ime;
+   out_args.out_sizeof = sizeof(g_android.current_ime);
    strlcpy(out_args.in, "IME", sizeof(out_args.in));
    jni_get(&in_params, &out_args);
 
@@ -304,7 +303,7 @@ static int android_app_set_argv(char** argv)
    RARCH_LOG("Libretro path: [%s].\n", libretro_path);
    RARCH_LOG("Display Refresh rate: %.2f Hz.\n", refreshrate);
    RARCH_LOG("Config file: [%s].\n", config_file);
-   RARCH_LOG("Current IME: [%s].\n", current_ime);
+   RARCH_LOG("Current IME: [%s].\n", g_android.current_ime);
 
    int argc = 0;
 
