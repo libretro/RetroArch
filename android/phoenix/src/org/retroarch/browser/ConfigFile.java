@@ -36,10 +36,8 @@ public class ConfigFile {
 
 	private void parseLine(String line) {
 		String[] tokens = line.split("=", 2);
-		if (tokens.length < 2) {
-			System.err.println("Didn't find two tokens in config line ...");
+		if (tokens.length < 2)
 			return;
-		}
 
 		for (int i = 0; i < tokens.length; i++)
 			tokens[i] = tokens[i].trim();
@@ -54,8 +52,6 @@ public class ConfigFile {
 
 		if (value.length() > 0)
 			map.put(key, value);
-
-		System.out.println("Parsed: \"" + key + "\" => \"" + value + "\"");
 	}
 
 	public void clear() {
@@ -64,11 +60,8 @@ public class ConfigFile {
 
 	public void write(File file) throws IOException {
 		PrintWriter writer = new PrintWriter(file.getAbsolutePath());
-		for (Map.Entry<String, String> entry : map.entrySet()) {
-			System.out.println("Key: " + entry.getKey() + " Value: "
-					+ entry.getValue());
+		for (Map.Entry<String, String> entry : map.entrySet())
 			writer.println(entry.getKey() + " = \"" + entry.getValue() + "\"");
-		}
 		writer.close();
 	}
 
