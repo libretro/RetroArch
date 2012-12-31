@@ -16,11 +16,13 @@
             android:key="video_smooth"
             android:summary="Applies bilinear filter, smooths out edges"
             android:title="Bilinear filter" />
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="video_force_aspect"
-            android:summary="Let game decide aspect ratio"
-            android:title="Force aspect correction" />
+
+        <ListPreference
+            android:entryValues="@array/aspect_values"
+            android:entries="@array/aspect_ratios"
+            android:key="video_aspect_ratio"
+            android:title="Aspect ratio"
+            android:summary="Aspect ratio to enforce" />
         
     </PreferenceScreen>
     

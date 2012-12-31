@@ -133,11 +133,23 @@ public class ModuleActivity extends Activity implements
 	
 	private void updateConfigFile() {
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-		config.setBoolean("video_force_aspect", prefs.getBoolean("video_force_aspect", true));
 		config.setBoolean("audio_rate_control", prefs.getBoolean("audio_rate_control", true));
 		config.setBoolean("audio_enable", prefs.getBoolean("audio_enable", true));
 		config.setBoolean("video_smooth", prefs.getBoolean("video_smooth", true));
 		config.setBoolean("savestate_auto_save", prefs.getBoolean("savestate_auto_save", false));
+		
+		String aspect = prefs.getString("video_aspect_ratio", "auto");
+		if (aspect.equals("full")) {
+			config.setBoolean("video_force_aspect", false);
+		} else if (aspect.equals("auto")) {
+			config.setBoolean("video_force_aspect", true);
+			config.setBoolean("video_force_aspect_auto", true);
+			config.setDouble("video_aspect_ratio", -1.0);
+		} else {
+			double aspect_ratio = Double.parseDouble(aspect);
+			config.setBoolean("video_force_aspect", true);
+			config.setDouble("video_aspect_ratio", aspect_ratio);
+		}
 
 		String confPath = getDefaultConfigPath();
 		try {
