@@ -403,7 +403,8 @@ static void setup_keycode_lut(unsigned port, unsigned id, int source)
       timeout_val = 120;
    }
 
-   msg_queue_push(g_extern.msg_queue, msg, 0, timeout_val);
+   if (msg[0] != 0)
+      msg_queue_push(g_extern.msg_queue, msg, 0, timeout_val);
 }
 
 static void *android_input_init(void)
