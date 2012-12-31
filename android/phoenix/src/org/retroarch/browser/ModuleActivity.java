@@ -42,7 +42,7 @@ class ModuleWrapper implements IconAdapterItem {
 }
 
 public class ModuleActivity extends Activity implements
-		AdapterView.OnItemClickListener {
+		AdapterView.OnItemClickListener, PopupMenu.OnMenuItemClickListener {
 	private IconAdapter<ModuleWrapper> adapter;
 	static private final int ACTIVITY_LOAD_ROM = 0;
 	static private String libretro_path;
@@ -161,31 +161,7 @@ public class ModuleActivity extends Activity implements
 		PopupMenu menu = new PopupMenu(this, v);
 		MenuInflater inflater = menu.getMenuInflater();
 		inflater.inflate(R.menu.context_menu, menu.getMenu());
-		menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-			@Override
-			public boolean onMenuItemClick(MenuItem item) {
-				switch (item.getItemId()) {
-				case R.id.input_method_select:
-					InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-					imm.showInputMethodPicker();
-					return true;
-					
-				case R.id.video_settings:
-					Log.i(TAG, "Video settings clicked!");
-					return true;
-					
-				case R.id.audio_settings:
-					Log.i(TAG, "Audio settings clicked!");
-					return true;
-					
-				case R.id.general_settings:
-					Log.i(TAG, "General settings clicked!");
-					return true;
-				default:
-					return false;
-				}
-			}
-		});
+		menu.setOnMenuItemClickListener(this);
 		menu.show();
 	}
 
@@ -199,6 +175,40 @@ public class ModuleActivity extends Activity implements
 
 		default:
 			return super.onOptionsItemSelected(aItem);
+		}
+	}
+
+	@Override
+	public boolean onMenuItemClick(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.input_method_select:
+			InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+			imm.showInputMethodPicker();
+			return true;
+			
+		case R.id.video_settings:
+			Log.i(TAG, "Video settings clicked!");
+			
+			Intent vset = new Intent(this, SettingsActivity.class);
+			vset.putExtra("TITLE", "Video Config");
+			startActivity(vset);
+			return true;
+			
+		case R.id.audio_settings:
+			Log.i(TAG, "Audio settings clicked!");
+			Intent aset = new Intent(this, SettingsActivity.class);
+			aset.putExtra("TITLE", "Audio Config");
+			startActivity(aset);
+			return true;
+			
+		case R.id.general_settings:
+			Log.i(TAG, "General settings clicked!");
+			Intent gset = new Intent(this, SettingsActivity.class);
+			gset.putExtra("TITLE", "General Config");
+			startActivity(gset);
+			return true;
+		default:
+			return false;
 		}
 	}
 }

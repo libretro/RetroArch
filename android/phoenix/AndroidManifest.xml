@@ -13,15 +13,16 @@
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name" >
-        <activity android:name=".browser.ModuleActivity">
+        <activity android:name="org.retroarch.browser.ModuleActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            
         </activity>
         
-        <activity android:name=".browser.DirectoryActivity"></activity>
+        <activity android:name="org.retroarch.browser.SettingsActivity"></activity>
+        <activity android:name="org.retroarch.browser.DirectoryActivity"></activity>
+        
         <activity android:name="android.app.NativeActivity" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale">
         	<meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
          <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
