@@ -1,12 +1,16 @@
 package org.retroarch.browser;
 
+import java.util.prefs.Preferences;
+
 import org.retroarch.R;
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.preference.PreferenceFragment;
+import android.preference.PreferenceManager;
 
 class SettingsFragment extends PreferenceFragment {
+	
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -20,10 +24,8 @@ public class SettingsActivity extends Activity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
-		setTitle(getIntent().getStringExtra("TITLE"));
-		
 		getFragmentManager().beginTransaction().
 			replace(android.R.id.content, new SettingsFragment()).commit();
+		PreferenceManager.setDefaultValues(this, R.xml.prefs, false);
 	}
 }

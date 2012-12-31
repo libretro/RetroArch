@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    <item android:id="@+id/general_settings" android:title="@string/general_settings" android:showAsAction="ifRoom" />
-    <item android:id="@+id/video_settings" android:title="@string/video_settings" android:showAsAction="ifRoom" />
-    <item android:id="@+id/audio_settings" android:title="@string/audio_settings" android:showAsAction="ifRoom" />
+    <item android:id="@+id/rarch_settings" android:title="@string/rarch_settings" android:showAsAction="ifRoom" />
     <item android:id="@+id/input_method_select" android:title="@string/input_method" android:showAsAction="ifRoom" />
 </menu>

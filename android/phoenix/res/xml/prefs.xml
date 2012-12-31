@@ -1,8 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
-    <CheckBoxPreference
-        android:key="foo"
-        android:title="Check me!"
-        android:summary="Check me if you can!"
-        android:defaultValue="true" />
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" 
+    android:title="RetroArch Config" >
+    
+    <PreferenceScreen android:title="System Config" >
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="savestate_auto_save"
+            android:summary="Automatically saves and restores game state"
+            android:title="Auto save state" />
+    </PreferenceScreen>
+    
+    <PreferenceScreen android:title="Video Config" >
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="video_smooth"
+            android:summary="Applies bilinear filter, smooths out edges"
+            android:title="Bilinear filter" />
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="video_force_aspect"
+            android:summary="Let game decide aspect ratio"
+            android:title="Force aspect correction" />
+    </PreferenceScreen>
+    
+    <PreferenceScreen android:title="Audio Config" >
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="audio_enable"
+            android:summary="Enable audio"
+            android:title="Audio enable" />
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="audio_rate_control"
+            android:summary="Enable dynamic rate control"
+            android:title="Dynamic Rate Control" />
+
+    </PreferenceScreen>
 </PreferenceScreen>

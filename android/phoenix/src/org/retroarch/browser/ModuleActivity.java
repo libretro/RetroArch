@@ -7,6 +7,7 @@ import java.io.*;
 import android.content.*;
 import android.app.*;
 import android.os.*;
+import android.preference.PreferenceManager;
 import android.widget.*;
 import android.util.Log;
 import android.view.*;
@@ -128,10 +129,28 @@ public class ModuleActivity extends Activity implements
 		else
 			return getCacheDir().getAbsolutePath() + File.separator + "retroarch.cfg";
 	}
+	
+	private void updateConfigFile() {
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		config.setBoolean("video_force_aspect", prefs.getBoolean("video_force_aspect", true));
+		config.setBoolean("audio_rate_control", prefs.getBoolean("audio_rate_control", true));
+		config.setBoolean("audio_enable", prefs.getBoolean("audio_enable", true));
+		config.setBoolean("video_smooth", prefs.getBoolean("video_smooth", true));
+		config.setBoolean("savestate_auto_save", prefs.getBoolean("savestate_auto_save", false));
+
+		String confPath = getDefaultConfigPath();
+		try {
+			config.write(new File(confPath));
+		} catch (IOException e) {
+			Log.e(TAG, "Failed to save config file to: " + confPath);
+		}
+	}
 
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		Intent myIntent;
-
+		
+		updateConfigFile();
+		
 		switch (requestCode) {
 		case ACTIVITY_LOAD_ROM:
 			if (data.getStringExtra("PATH") != null) {
@@ -186,27 +205,12 @@ public class ModuleActivity extends Activity implements
 			imm.showInputMethodPicker();
 			return true;
 			
-		case R.id.video_settings:
-			Log.i(TAG, "Video settings clicked!");
-			
-			Intent vset = new Intent(this, SettingsActivity.class);
-			vset.putExtra("TITLE", "Video Config");
-			startActivity(vset);
+		case R.id.rarch_settings:
+			Log.i(TAG, "Rarch settings clicked!");			
+			Intent rset = new Intent(this, SettingsActivity.class);
+			startActivity(rset);
 			return true;
-			
-		case R.id.audio_settings:
-			Log.i(TAG, "Audio settings clicked!");
-			Intent aset = new Intent(this, SettingsActivity.class);
-			aset.putExtra("TITLE", "Audio Config");
-			startActivity(aset);
-			return true;
-			
-		case R.id.general_settings:
-			Log.i(TAG, "General settings clicked!");
-			Intent gset = new Intent(this, SettingsActivity.class);
-			gset.putExtra("TITLE", "General Config");
-			startActivity(gset);
-			return true;
+
 		default:
 			return false;
 		}

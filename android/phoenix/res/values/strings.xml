@@ -4,6 +4,7 @@
     <string name="input_method">Input Method</string>
     <string name="file_type_icon">File type icon</string>
     <string name="video_settings">Video Config</string>
+    <string name="rarch_settings">RetroArch Config</string>
     <string name="audio_settings">Audio Config</string>
     <string name="general_settings">General Config</string>
     <string name="settings">Settings</string>
