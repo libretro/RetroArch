@@ -7,6 +7,7 @@ import java.io.*;
 import android.content.*;
 import android.app.*;
 import android.os.*;
+import android.provider.Settings;
 import android.widget.*;
 import android.view.*;
 import android.view.inputmethod.*;
@@ -48,7 +49,7 @@ public class ModuleActivity extends Activity implements AdapterView.OnItemClickL
 	static private final int ACTIVITY_LOAD_ROM = 0;
 	static private String libretro_path;
 	
-    public float getRefreshRate()
+    private final float getRefreshRate()
     {
     	final WindowManager wm = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
     	final Display display = wm.getDefaultDisplay();
@@ -107,12 +108,14 @@ public class ModuleActivity extends Activity implements AdapterView.OnItemClickL
     	   case ACTIVITY_LOAD_ROM:
     		   if(data.getStringExtra("PATH") != null)
     		   {
+    			   String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
     			      Toast.makeText(this, "Loading: ["+ data.getStringExtra("PATH") + "]...", Toast.LENGTH_SHORT).show();
     				   myIntent = new Intent(this, NativeActivity.class);
     				   myIntent.putExtra("ROM", data.getStringExtra("PATH"));
     				   myIntent.putExtra("LIBRETRO", libretro_path);
     				   myIntent.putExtra("REFRESHRATE", Float.toString(getRefreshRate()));
     				   myIntent.putExtra("CONFIGFILE", "");
+    				   myIntent.putExtra("IME", current_ime);
     				   startActivity(myIntent);
     		   }
     		   break;
