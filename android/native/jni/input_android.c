@@ -198,7 +198,7 @@ static void android_input_poll(void *data)
                *key |= input_state;
          }
 
-         if(keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN)
+         if(volume_enable && (keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
             handled = 0;
       }
 #ifdef RARCH_INPUT_DEBUG

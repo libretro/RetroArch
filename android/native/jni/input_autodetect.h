@@ -22,8 +22,15 @@
 #define AKEY_EVENT_NO_ACTION 255
 
 enum {
+   AKEYCODE_META_FUNCTION_ON = 8,
    AKEYCODE_ESCAPE          = 111,
+   AKEYCODE_CAPS_LOCK       = 115,
+   AKEYCODE_SCROLL_LOCK     = 116,
+   AKEYCODE_SYSRQ           = 120,
    AKEYCODE_BREAK           = 121,
+   AKEYCODE_MOVE_HOME       = 122,
+   AKEYCODE_MEDIA_PLAY      = 126,
+   AKEYCODE_MEDIA_PAUSE     = 127,
    AKEYCODE_F2              = 132,
    AKEYCODE_F3              = 133,
    AKEYCODE_F4              = 134,
@@ -54,6 +61,7 @@ enum {
 #define LAST_KEYCODE AKEYCODE_ASSIST
 
 extern uint64_t keycode_lut[LAST_KEYCODE];
+extern bool volume_enable;
 
 void input_autodetect_init (void);
 void input_autodetect_setup(unsigned port, unsigned id, int source);
