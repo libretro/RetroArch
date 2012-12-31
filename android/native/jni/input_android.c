@@ -291,6 +291,21 @@ static void setup_keycode_lut(unsigned port, unsigned id)
       keycode_lut[AKEYCODE_BUTTON_L1] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
       keycode_lut[AKEYCODE_BUTTON_R1] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
    }
+   else if (strstr(name_buf, "Sony Navigation Controller"))
+   {
+      snprintf(msg, sizeof(msg), "RetroPad #%d is: PS Move Navi.\n", port);
+      keycode_lut[AKEYCODE_BUTTON_8]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_5]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_6]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_7]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
+
+      keycode_lut[AKEYCODE_BUTTON_11]  |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_9]  |= ((RETRO_DEVICE_ID_JOYPAD_L2+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_2]  |= ((RETRO_DEVICE_ID_JOYPAD_L3+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_15]  |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift);
+      keycode_lut[AKEYCODE_BUTTON_14]  |= ((RETRO_DEVICE_ID_JOYPAD_R2+1) << shift);
+      keycode_lut[AKEYCODE_UNKNOWN]   |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
+   }
 
    // Keyboard
    // TODO: Map L2/R2/L3/R3
@@ -418,14 +433,16 @@ static void android_input_poll(void *data)
 
       if(type_event == AINPUT_EVENT_TYPE_MOTION && (g_settings.input.dpad_emulation[state_id] != DPAD_EMULATION_NONE))
       {
+         float x = 0.0f;
+         float y = 0.0f;
          action = AMotionEvent_getAction(event);
          size_t motion_pointer = action >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
          action &= AMOTION_EVENT_ACTION_MASK;
 
          if(source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
          {
-            float x = AMotionEvent_getX(event, motion_pointer);
-            float y = AMotionEvent_getY(event, motion_pointer);
+            x = AMotionEvent_getX(event, motion_pointer);
+            y = AMotionEvent_getY(event, motion_pointer);
             state[state_id] &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
                   (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
             state[state_id] |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
@@ -441,8 +458,8 @@ static void android_input_poll(void *data)
 
             if (!keyup)
             {
-               float x = AMotionEvent_getX(event, motion_pointer);
-               float y = AMotionEvent_getY(event, motion_pointer);
+               x = AMotionEvent_getX(event, motion_pointer);
+               y = AMotionEvent_getY(event, motion_pointer);
 
                input_translate_coord_viewport(x, y,
                      &pointer[motion_pointer].x, &pointer[motion_pointer].y);
@@ -462,6 +479,9 @@ static void android_input_poll(void *data)
       else if (type_event == AINPUT_EVENT_TYPE_KEY)
       {
          int keycode = AKeyEvent_getKeyCode(event);
+#ifdef RARCH_INPUT_DEBUG
+         snprintf(msg, sizeof(msg), "Pad %d : %d, ac = %d, src = %d.\n", state_id, keycode, action, source);
+#endif
 
          /* Hack - we have to decrease the unpacked value by 1
           * because we 'added' 1 to each entry in the LUT -
@@ -470,9 +490,6 @@ static void android_input_poll(void *data)
          uint8_t unpacked = (keycode_lut[keycode] >> ((state_id+1) << 3)) - 1;
          uint64_t input_state = (1ULL << unpacked);
          int action  = AKeyEvent_getAction(event);
-#ifdef RARCH_INPUT_DEBUG
-         snprintf(msg, sizeof(msg), "Pad %d : %d, ac = %d, src = %d.\n", state_id, keycode, action, source);
-#endif
          uint64_t *key = NULL;
 
          if(input_state < (1ULL << RARCH_FIRST_META_KEY))
@@ -497,7 +514,7 @@ static void android_input_poll(void *data)
       AInputQueue_finishEvent(android_app->inputQueue, event, handled);
    }
 
-#ifdef RARCH_INPUT_DEBUG
+#if 0
    {
       char msg[64];
       snprintf(msg, sizeof(msg), "Pointers: %u", pointer_count);
