@@ -26,14 +26,6 @@
 #define MAX_PADS 8
 #define MAX_TOUCH 8
 
-enum
-{
-   DPAD_EMULATION_NONE = 0,
-   DPAD_EMULATION_LSTICK,
-   DPAD_EMULATION_RSTICK,
-   DPAD_EMULATION_LAST
-};
-
 enum {
    AKEYCODE_ESCAPE          = 111,
    AKEYCODE_BREAK           = 121,
