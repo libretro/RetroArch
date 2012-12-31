@@ -21,6 +21,7 @@
             android:key="video_force_aspect"
             android:summary="Let game decide aspect ratio"
             android:title="Force aspect correction" />
+        
     </PreferenceScreen>
     
     <PreferenceScreen android:title="Audio Config" >

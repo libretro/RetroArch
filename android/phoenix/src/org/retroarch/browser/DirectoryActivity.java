@@ -200,8 +200,18 @@ public class DirectoryActivity extends Activity implements
 		final File[] files = listedDirectory.listFiles();
 		if (files != null) {
 			for (File file : files) {
-				adapter.add(new FileWrapper(file, false,
-						file.isDirectory() || true));
+				String path = file.getName();
+
+				boolean isRomFile = !path.endsWith(".srm")
+						&& !path.endsWith(".state")
+						&& !path.contains(".state.auto")
+						&& !path.endsWith(".rtc");
+
+				// Don't list save files in ROM list.
+				if (isRomFile) {
+					adapter.add(new FileWrapper(file, false,
+							file.isDirectory() || true));
+				}
 			}
 		}
 

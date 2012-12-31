@@ -132,7 +132,7 @@ public class ModuleActivity extends Activity implements
 	}
 	
 	private void updateConfigFile() {
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 		config.setBoolean("video_force_aspect", prefs.getBoolean("video_force_aspect", true));
 		config.setBoolean("audio_rate_control", prefs.getBoolean("audio_rate_control", true));
 		config.setBoolean("audio_enable", prefs.getBoolean("audio_enable", true));
