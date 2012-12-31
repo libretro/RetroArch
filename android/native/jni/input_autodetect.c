@@ -198,7 +198,7 @@ void input_autodetect_setup(unsigned port, unsigned id, int source)
       }
       goto do_exit;
    }
-   else if (strstr(current_ime, "com.dancingpixelstudios.sixaxiscontroller"))
+   else if (strstr(current_ime, "SixaxisIME"))
    {
       snprintf(msg, sizeof(msg), "RetroPad #%d is: SixAxis Bluetooth (IME).\n", port);
       snprintf(name_buf, sizeof(name_buf), "dancingpixelstudios.SixAxis");
@@ -207,7 +207,7 @@ void input_autodetect_setup(unsigned port, unsigned id, int source)
       keycode_lut[AKEYCODE_DPAD_DOWN] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
       keycode_lut[AKEYCODE_DPAD_LEFT] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)    << shift);
       keycode_lut[AKEYCODE_DPAD_RIGHT]|= ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)    << shift);
-      keycode_lut[AKEYCODE_SOFT_LEFT] |= ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
+      keycode_lut[AKEYCODE_4] |= ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
       keycode_lut[AKEYCODE_5]         |= ((RETRO_DEVICE_ID_JOYPAD_L2+1)      << shift);
       keycode_lut[AKEYCODE_6]         |= ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
       keycode_lut[AKEYCODE_7]         |= ((RETRO_DEVICE_ID_JOYPAD_R2+1)      << shift);
