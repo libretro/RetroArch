@@ -253,7 +253,8 @@ static void setup_keycode_lut(unsigned port, unsigned id)
       keycode_lut[AKEYCODE_BUTTON_11] |= ((RETRO_DEVICE_ID_JOYPAD_L3+1) << shift);
       keycode_lut[AKEYCODE_BUTTON_12] |= ((RETRO_DEVICE_ID_JOYPAD_R3+1) << shift);
    }
-   else if (strstr(name_buf, "PLAYSTATION(R)3"))
+   else if (strstr(name_buf, "PLAYSTATION(R)3") || strstr(name_buf, "Dualshock3")
+         || strstr(name_buf,"Sixaxis"))
    {
       snprintf(msg, sizeof(msg), "RetroPad #%d is: DualShock3/Sixaxis.\n", port);
       g_settings.input.dpad_emulation[port] = DPAD_EMULATION_NONE;
