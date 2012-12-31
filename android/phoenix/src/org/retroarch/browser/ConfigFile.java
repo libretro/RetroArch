@@ -69,6 +69,10 @@ public class ConfigFile {
 	public void setString(String key, String value) {
 		map.put(key, value);
 	}
+	
+	public void setBoolean(String key, boolean value) {
+		map.put(key, Boolean.toString(value));
+	}
 
 	public void setInt(String key, int value) {
 		map.put(key, Integer.toString(value));
@@ -78,6 +82,10 @@ public class ConfigFile {
 		map.put(key, Double.toString(value));
 	}
 	
+	public boolean keyExists(String key) {
+		return map.containsKey(key);
+	}
+		
 	public String getString(String key) {
 		Object ret = map.get(key);
 		if (ret != null)
@@ -85,11 +93,7 @@ public class ConfigFile {
 		else
 			return null;
 	}
-	
-	public boolean keyExists(String key) {
-		return map.containsKey(key);
-	}
-	
+
 	public int getInt(String key) throws NumberFormatException {
 		String str = getString(key);
 		if (str != null)
@@ -104,5 +108,10 @@ public class ConfigFile {
 			return Double.parseDouble(str);
 		else
 			throw new NumberFormatException();
+	}
+	
+	public boolean getBoolean(String key) {
+		String str = getString(key);
+		return Boolean.parseBoolean(str);
 	}
 }
