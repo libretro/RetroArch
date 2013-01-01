@@ -36,7 +36,6 @@ struct android_app
    AInputQueue* inputQueue;
 
    ANativeWindow* window;
-   ARect contentRect;
    int activityState;
 
    pthread_mutex_t mutex;
@@ -48,11 +47,8 @@ struct android_app
    pthread_t thread;
 
    int running;
-   int stateSaved;
-   int redrawNeeded;
    AInputQueue* pendingInputQueue;
    ANativeWindow* pendingWindow;
-   ARect pendingContentRect;
 };
 
 enum {
