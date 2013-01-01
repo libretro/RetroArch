@@ -568,13 +568,6 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    pthread_mutex_init(&android_app->mutex, NULL);
    pthread_cond_init(&android_app->cond, NULL);
 
-   if (savedState != NULL)
-   {
-      android_app->savedState = malloc(savedStateSize);
-      android_app->savedStateSize = savedStateSize;
-      memcpy(android_app->savedState, savedState, savedStateSize);
-   }
-
    int msgpipe[2];
    if (pipe(msgpipe))
    {

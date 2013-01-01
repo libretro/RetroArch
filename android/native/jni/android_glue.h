@@ -32,17 +32,6 @@ struct android_app
    ANativeActivity* activity;
    AConfiguration* config;
 
-   // This is the last instance's saved state, as provided at creation time.
-   // It is NULL if there was no state.  You can use this as you need; the
-   // memory will remain around until you call android_app_exec_cmd() for
-   // APP_CMD_RESUME, at which point it will be freed and savedState set to NULL.
-   // These variables should only be changed when processing a APP_CMD_SAVE_STATE,
-   // at which point they will be initialized to NULL and you can malloc your
-   // state and place the information here.  In that case the memory will be
-   // freed for you later.
-   void* savedState;
-   size_t savedStateSize;
-
    ALooper* looper;
    AInputQueue* inputQueue;
 
@@ -144,10 +133,7 @@ enum {
 
    /**
     * Command from main thread: the app should generate a new saved state
-    * for itself, to restore from later if needed.  If you have saved state,
-    * allocate it with malloc and place it in android_app.savedState with
-    * the size in android_app.savedStateSize.  The will be freed for you
-    * later.
+    * for itself, to restore from later if needed.  
     */
    APP_CMD_SAVE_STATE,
 
