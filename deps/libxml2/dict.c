@@ -2,7 +2,7 @@
  * dict.c: dictionary of reusable strings, just used to avoid allocation
  *         and freeing operations.
  *
- * Copyright (C) 2003-2012 Daniel Veillard.
+ * Copyright (C) 2003-2013 Daniel Veillard.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
