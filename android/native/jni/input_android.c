@@ -30,7 +30,7 @@
 #define PRESSED_LEFT(x, y) ((-0.80f > x) && (x >= -1.00f))
 #define PRESSED_RIGHT(x, y) ((0.80f  < x) && (x <= 1.00f))
 
-#define MAX_DEVICE_IDS 0x100
+#define MAX_DEVICE_IDS 50
 
 static unsigned pads_connected;
 static uint64_t state[MAX_PADS];
@@ -101,21 +101,21 @@ static void android_input_poll(void *data)
       AInputEvent* event = NULL;
       AInputQueue_getEvent(android_app->inputQueue, &event);
 
+      if (AInputQueue_preDispatchEvent(android_app->inputQueue, event))
+         continue;
+
       int32_t handled = 1;
 
       int source = AInputEvent_getSource(event);
       int id = AInputEvent_getDeviceId(event);
 
-      // Some Android devices tend to have really high values for device ID. E.g. 0 and 0x10001.
-      // We assume that the lower 8 bits of ID are unique.
-      int lut_id = id & 0xff;
 
       int type_event = AInputEvent_getType(event);
-      int state_id = state_device_ids[lut_id];
+      int state_id = state_device_ids[id];
 
       if(state_id == -1)
       {
-         state_id = state_device_ids[lut_id] = pads_connected++;
+         state_id = state_device_ids[id] = pads_connected++;
          input_autodetect_setup(state_id, id, source);
       }
 
