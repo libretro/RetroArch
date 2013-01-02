@@ -23,6 +23,11 @@
             android:title="Bilinear filter" />
         <CheckBoxPreference
             android:defaultValue="true"
+            android:key="video_vsync"
+            android:summary="When set to enabled, prevents screen tearing"
+            android:title="VSync" />
+        <CheckBoxPreference
+            android:defaultValue="true"
             android:key="video_allow_rotate"
             android:summary="Will auto-rotate the screen for vertically oriented games."
             android:title="Auto-rotate" />
