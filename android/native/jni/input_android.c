@@ -102,9 +102,6 @@ static void android_input_poll(void *data)
       if (AInputQueue_getEvent(android_app->inputQueue, &event) < 0)
          break;
 
-      if (AInputQueue_preDispatchEvent(android_app->inputQueue, event))
-         continue;
-
       int32_t handled = 1;
 
       int source = AInputEvent_getSource(event);
