@@ -161,7 +161,7 @@ static void cheat_manager_load_config(cheat_manager_t *handle, const char *path,
    if (!conf)
       return;
 
-   char *str;
+   char *str = NULL;
    if (!config_get_string(conf, sha256, &str))
    {
       config_file_free(conf);

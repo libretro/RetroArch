@@ -163,8 +163,8 @@ static void sha256_final(struct sha256_ctx *p)
    memset(p->in.u8 + p->inlen, 0, 56 - p->inlen);
 
    len = p->len << 3;
-   store32be(p->in.u32 + 14, len >> 32);
-   store32be(p->in.u32 + 15, len);
+   store32be(p->in.u32 + 14, (uint32_t)(len >> 32));
+   store32be(p->in.u32 + 15, (uint32_t)len);
    sha256_block(p);
 }
 
