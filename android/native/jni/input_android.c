@@ -102,6 +102,7 @@ static void android_input_poll(void *data)
 
       int source = AInputEvent_getSource(event);
       int id = AInputEvent_getDeviceId(event);
+      int keycode = AKeyEvent_getKeyCode(event);
 
       int type_event = AInputEvent_getType(event);
       int state_id = -1;
@@ -122,7 +123,13 @@ static void android_input_poll(void *data)
       char msg[128];
 #endif
 
-      if(type_event == AINPUT_EVENT_TYPE_MOTION && (g_settings.input.dpad_emulation[state_id] != DPAD_EMULATION_NONE))
+      if (keycode == AKEYCODE_BACK && (source & (AINPUT_SOURCE_KEYBOARD)))
+      {
+         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+         AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+         break;
+      }
+      else if(type_event == AINPUT_EVENT_TYPE_MOTION && (g_settings.input.dpad_emulation[state_id] != DPAD_EMULATION_NONE))
       {
          float x = 0.0f;
          float y = 0.0f;
@@ -169,11 +176,9 @@ static void android_input_poll(void *data)
       }
       else if (type_event == AINPUT_EVENT_TYPE_KEY)
       {
-         int keycode = AKeyEvent_getKeyCode(event);
 #ifdef RARCH_INPUT_DEBUG
          snprintf(msg, sizeof(msg), "Pad %d : %d, ac = %d, src = %d.\n", state_id, keycode, action, source);
 #endif
-
          /* Hack - we have to decrease the unpacked value by 1
           * because we 'added' 1 to each entry in the LUT -
           * RETRO_DEVICE_ID_JOYPAD_B is 0
