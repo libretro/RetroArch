@@ -64,7 +64,7 @@ typedef void *xmlParserCtxtPtr;
 typedef rxml_document_t *xmlDocPtr;
 #define XML_ELEMENT_NODE (0)
 #define xmlNewParserCtxt() ((void*)-1)
-#define xmlCtxtReadFile(ctx, path, ...) rxml_load_document(path)
+#define xmlCtxtReadFile(ctx, path, a, b) rxml_load_document(path)
 #define xmlGetProp(node, prop) rxml_node_attrib(node, prop)
 #define xmlFree(p) ((void)0)
 #define xmlNodeGetContent(node) (node->data)
