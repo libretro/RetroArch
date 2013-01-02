@@ -33,8 +33,8 @@
 #define MAX_DEVICE_IDS 50
 
 static unsigned pads_connected;
+static int state_device_ids[MAX_DEVICE_IDS];
 static uint64_t state[MAX_PADS];
-static int8_t state_device_ids[MAX_DEVICE_IDS];
 
 struct input_pointer
 {
@@ -75,11 +75,7 @@ static void *android_input_init(void)
       g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
    }
 
-   for(int i = 0; i < MAX_DEVICE_IDS; i++)
-      state_device_ids[i] = -1;
-
    input_autodetect_init();
-
    return (void*)-1;
 }
 
@@ -96,7 +92,7 @@ static void android_input_poll(void *data)
    g_extern.lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS));
 
    // Read all pending events.
-   while(AInputQueue_hasEvents(android_app->inputQueue) > 0)
+   while (AInputQueue_hasEvents(android_app->inputQueue) > 0)
    {
       AInputEvent* event = NULL;
       if (AInputQueue_getEvent(android_app->inputQueue, &event) < 0)
@@ -107,13 +103,17 @@ static void android_input_poll(void *data)
       int source = AInputEvent_getSource(event);
       int id = AInputEvent_getDeviceId(event);
 
-
       int type_event = AInputEvent_getType(event);
-      int state_id = state_device_ids[id];
+      int state_id = -1;
 
-      if(state_id == -1)
+      for (unsigned i = 0; i < pads_connected; i++)
+         if (state_device_ids[i] == id)
+            state_id = i;
+
+      if (state_id < 0)
       {
-         state_id = state_device_ids[id] = pads_connected++;
+         state_id = pads_connected;
+         state_device_ids[pads_connected++] = id;
          input_autodetect_setup(state_id, id, source);
       }
 
