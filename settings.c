@@ -180,7 +180,7 @@ void config_set_defaults(void)
    g_settings.video.msg_color_g = ((message_color >>  8) & 0xff) / 255.0f;
    g_settings.video.msg_color_b = ((message_color >>  0) & 0xff) / 255.0f;
 
-#if defined(HAVE_CG) || defined(HAVE_XML)
+#if defined(HAVE_CG) || defined(HAVE_GLSL)
    g_settings.video.render_to_texture = render_to_texture;
    g_settings.video.fbo.scale_x = fbo_scale_x;
    g_settings.video.fbo.scale_y = fbo_scale_y;
@@ -412,7 +412,6 @@ bool config_load_file(const char *path)
    CONFIG_GET_PATH(video.filter_path, "video_filter");
 #endif
 
-#if defined(HAVE_CG) || defined(HAVE_XML)
    if (config_get_array(conf, "video_shader_type", tmp_str, sizeof(tmp_str)))
    {
       if (strcmp("cg", tmp_str) == 0)
@@ -424,11 +423,8 @@ bool config_load_file(const char *path)
       else if (strcmp("none", tmp_str) == 0)
          g_settings.video.shader_type = RARCH_SHADER_NONE;
    }
-#endif
 
-#if defined(HAVE_XML)
    CONFIG_GET_PATH(video.shader_dir, "video_shader_dir");
-#endif
 
    CONFIG_GET_FLOAT(input.axis_threshold, "input_axis_threshold");
    CONFIG_GET_BOOL(input.netplay_client_swap_input, "netplay_client_swap_input");

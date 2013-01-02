@@ -594,7 +594,7 @@ static void print_features(void)
    _PSUPP(al, "OpenAL", "audio driver");
    _PSUPP(dylib, "External", "External filter and plugin support");
    _PSUPP(cg, "Cg", "Cg pixel shaders");
-   _PSUPP(xml, "XML", "bSNES XML pixel shaders");
+   _PSUPP(libxml2, "libxml2", "libxml2 XML parsing");
    _PSUPP(sdl_image, "SDL_image", "SDL_image image loading");
    _PSUPP(libpng, "libpng", "libpng screenshot support");
    _PSUPP(fbo, "FBO", "OpenGL render-to-texture (multi-pass shaders)");
@@ -1413,7 +1413,6 @@ void rarch_deinit_msg_queue(void)
    }
 }
 
-#ifdef HAVE_XML
 static void init_cheats(void)
 {
    if (*g_settings.cheat_database)
@@ -1425,7 +1424,6 @@ static void deinit_cheats(void)
    if (g_extern.cheat)
       cheat_manager_free(g_extern.cheat);
 }
-#endif
 
 static void init_rewind(void)
 {
@@ -2295,7 +2293,6 @@ static void check_turbo(void)
          input_input_state_func(binds, i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
 }
 
-#ifdef HAVE_XML
 static void check_shader_dir(void)
 {
    static bool old_pressed_next;
@@ -2377,7 +2374,6 @@ static void check_cheats(void)
    old_pressed_next = pressed_next;
    old_pressed_toggle = pressed_toggle;
 }
-#endif
 
 #if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
 static void check_screenshot(void)
@@ -2549,10 +2545,8 @@ static void do_state_checks(void)
       check_movie();
 #endif
      
-#ifdef HAVE_XML
       check_shader_dir();
       check_cheats();
-#endif
 
 #ifdef HAVE_DYLIB
       check_dsp_config();
@@ -2677,9 +2671,7 @@ int rarch_main_init(int argc, char *argv[])
    pretro_init();
 
    g_extern.use_sram = true;
-#ifdef HAVE_XML
    bool allow_cheats = true;
-#endif
 
    fill_pathnames();
    set_savestate_auto_index();
@@ -2736,7 +2728,6 @@ int rarch_main_init(int argc, char *argv[])
       init_autosave();
 #endif
       
-#ifdef HAVE_XML
 #ifdef HAVE_NETPLAY
    allow_cheats &= !g_extern.netplay;
 #endif
@@ -2745,7 +2736,6 @@ int rarch_main_init(int argc, char *argv[])
 #endif
    if (allow_cheats)
       init_cheats();
-#endif
 
    g_extern.error_in_init = false;
    return 0;
@@ -2878,9 +2868,7 @@ void rarch_main_deinit(void)
 #endif
       deinit_rewind();
 
-#ifdef HAVE_XML
    deinit_cheats();
-#endif
 
 #ifdef HAVE_BSV_MOVIE
    deinit_movie();

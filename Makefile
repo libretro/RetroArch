@@ -18,6 +18,7 @@ OBJ = retroarch.o \
 		fifo_buffer.o \
 		compat/compat.o \
 		audio/null.o \
+		cheats.o \
 		gfx/null.o \
 		conf/config_file.o \
 		input/null.o \
@@ -238,10 +239,11 @@ ifeq ($(HAVE_CG), 1)
    endif
 endif
 
-ifeq ($(HAVE_XML), 1)
-   OBJ += cheats.o 
-   LIBS += $(XML_LIBS)
-   DEFINES += $(XML_CFLAGS)
+ifeq ($(HAVE_LIBXML2), 1)
+   LIBS += $(LIBXML2_LIBS)
+   DEFINES += $(LIBXML2_CFLAGS)
+else
+   OBJ += compat/rxml/rxml.o
 endif
 
 ifeq ($(HAVE_DYLIB), 1)
@@ -380,6 +382,7 @@ clean:
 	rm -f gfx/py_state/*.o
 	rm -f gfx/scaler/*.o
 	rm -f compat/*.o
+	rm -f compat/rxml/*.o
 	rm -f record/*.o
 	rm -f input/*.o
 	rm -f tools/*.o

@@ -109,10 +109,8 @@ CONFIG FILE
 /*============================================================
 CHEATS
 ============================================================ */
-#ifdef HAVE_XML
 #include "../../cheats.c"
 #include "../../hash.c"
-#endif
 
 /*============================================================
 VIDEO CONTEXT
@@ -440,28 +438,10 @@ RZLIB
 #endif
 
 /*============================================================
-LIBXML2
+XML
 ============================================================ */
-#ifdef WANT_LIBXML2
-#include "../../deps/libxml2/error.c"
-#include "../../deps/libxml2/chvalid.c"
-#include "../../deps/libxml2/dict.c"
-#include "../../deps/libxml2/encoding.c"
-#include "../../deps/libxml2/entities.c"
-#include "../../deps/libxml2/globals.c"
-#include "../../deps/libxml2/libxml_hash.c"
-#include "../../deps/libxml2/libxml_list.c"
-#include "../../deps/libxml2/parser.c"
-#include "../../deps/libxml2/parserInternals.c"
-#include "../../deps/libxml2/SAX2.c"
-#include "../../deps/libxml2/tree.c"
-#include "../../deps/libxml2/uri.c"
-#include "../../deps/libxml2/valid.c"
-#include "../../deps/libxml2/xmlIO.c"
-#include "../../deps/libxml2/xmlmemory.c"
-#include "../../deps/libxml2/xmlreader.c"
-#include "../../deps/libxml2/xmlstring.c"
-#endif
+#define RXML_LIBXML2_COMPAT
+#include "../../compat/rxml/rxml.c"
 
 #ifdef __cplusplus
 }

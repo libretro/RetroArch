@@ -236,7 +236,7 @@ static bool gl_shader_init(gl_t *gl)
          }
 #endif
 
-#ifdef HAVE_XML
+#ifdef HAVE_GLSL
          if (*g_settings.video.bsnes_shader_path)
          {
             backend     = &gl_glsl_backend;
@@ -253,7 +253,7 @@ static bool gl_shader_init(gl_t *gl)
          break;
 #endif
 
-#ifdef HAVE_XML
+#ifdef HAVE_GLSL
       case RARCH_SHADER_BSNES:
          backend     = &gl_glsl_backend;
          shader_path = g_settings.video.bsnes_shader_path;
@@ -1604,7 +1604,7 @@ static bool gl_focus(void *data)
    return context_has_focus_func();
 }
 
-#if defined(HAVE_XML) || defined(HAVE_CG)
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
 static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *path)
 {
    gl_t *gl = (gl_t*)data;
@@ -1618,7 +1618,7 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
 
    switch (type)
    {
-#ifdef HAVE_XML
+#ifdef HAVE_GLSL
       case RARCH_SHADER_BSNES:
          if (!gl_glsl_init(path))
             return false;
@@ -1897,7 +1897,7 @@ const video_driver_t video_gl = {
    gl_alive,
    gl_focus,
 
-#if defined(HAVE_XML) || defined(HAVE_CG)
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
    gl_set_shader,
 #else
    NULL,

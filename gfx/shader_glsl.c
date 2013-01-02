@@ -52,9 +52,12 @@
 #include "gfx_context.h"
 #include <stdlib.h>
 
-#ifdef HAVE_XML
+#ifdef HAVE_LIBXML2
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#else
+#define RXML_LIBXML2_COMPAT
+#include "../compat/rxml/rxml.h"
 #endif
 
 #include "gl_common.h"
@@ -248,7 +251,6 @@ static const char *stock_fragment_modern =
    "   gl_FragColor = color * texture2D(rubyTexture, tex_coord);\n"
    "}";
 
-#ifdef HAVE_XML
 static bool xml_get_prop(char *buf, size_t size, xmlNodePtr node, const char *prop)
 {
    if (!size)
@@ -685,11 +687,13 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       goto error;
    }
 
+#ifdef HAVE_LIBXML2
    if (ctx->valid == 0)
    {
       RARCH_ERR("Cannot validate XML shader: %s\n", path);
       goto error;
    }
+#endif
 
    head = xmlDocGetRootElement(doc);
 
@@ -818,7 +822,6 @@ error:
    xmlFreeParserCtxt(ctx);
    return 0;
 }
-#endif // HAVE_XML
 
 static void print_shader_log(GLuint obj)
 {
@@ -1072,7 +1075,6 @@ bool gl_glsl_init(const char *path)
 
    unsigned num_progs = 0;
    struct shader_program progs[RARCH_GLSL_MAX_SHADERS] = {{0}};
-#ifdef HAVE_XML
    if (path)
    {
       num_progs = get_xml_shaders(path, progs, RARCH_GLSL_MAX_SHADERS - 1);
@@ -1084,7 +1086,6 @@ bool gl_glsl_init(const char *path)
       }
    }
    else
-#endif
    {
       RARCH_WARN("[GL]: Stock GLSL shaders will be used.\n");
       num_progs = 1;
@@ -1126,7 +1127,6 @@ bool gl_glsl_init(const char *path)
    if (!compile_programs(&gl_program[1], progs, num_progs))
       return false;
 
-#ifdef HAVE_XML
    // RetroArch custom two-pass with two different files.
    if (num_progs == 1 && *g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
    {
@@ -1142,7 +1142,6 @@ bool gl_glsl_init(const char *path)
          return false;
       }
    }
-#endif
 
    for (unsigned i = 0; i <= num_progs; i++)
       find_uniforms(gl_program[i], &gl_uniforms[i]);
@@ -1152,7 +1151,6 @@ bool gl_glsl_init(const char *path)
       RARCH_WARN("Detected GL error in GLSL.\n");
 #endif
 
-#ifdef HAVE_XML
    if (gl_tracker_info_cnt > 0)
    {
       struct state_tracker_info info = {0};
@@ -1170,7 +1168,6 @@ bool gl_glsl_init(const char *path)
       if (!gl_state_tracker)
          RARCH_WARN("Failed to init state tracker.\n");
    }
-#endif
    
    glsl_enable                      = true;
    gl_num_programs                  = num_progs;
