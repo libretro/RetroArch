@@ -96,10 +96,11 @@ static void android_input_poll(void *data)
    g_extern.lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS));
 
    // Read all pending events.
-   while(AInputQueue_hasEvents(android_app->inputQueue))
+   while(AInputQueue_hasEvents(android_app->inputQueue) > 0)
    {
       AInputEvent* event = NULL;
-      AInputQueue_getEvent(android_app->inputQueue, &event);
+      if (AInputQueue_getEvent(android_app->inputQueue, &event) < 0)
+         break;
 
       if (AInputQueue_preDispatchEvent(android_app->inputQueue, event))
          continue;
