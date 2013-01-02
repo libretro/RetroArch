@@ -8,6 +8,11 @@
             android:key="savestate_auto_save"
             android:summary="Automatically saves and restores game state"
             android:title="Auto save state" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="rewind_enable"
+            android:summary="Rewind a game in real-time (WARNING - very CPU intensive)."
+            android:title="Rewind" />
     </PreferenceScreen>
     
     <PreferenceScreen android:title="Video Config" >
@@ -16,6 +21,11 @@
             android:key="video_smooth"
             android:summary="Applies bilinear filter, smooths out edges"
             android:title="Bilinear filter" />
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="video_allow_rotate"
+            android:summary="Will auto-rotate the screen for vertically oriented games."
+            android:title="Auto-rotate" />
 
         <ListPreference
             android:entryValues="@array/aspect_values"
