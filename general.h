@@ -466,9 +466,7 @@ struct global
 
    char sha256[64 + 1];
 
-#ifdef HAVE_XML
    cheat_manager_t *cheat;
-#endif
 
    // Settings and/or global state that is specific to a console-style implementation.
    struct

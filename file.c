@@ -277,10 +277,8 @@ static ssize_t read_rom_file(FILE *file, void **buf)
    }
    
    g_extern.cart_crc = crc32_calculate(ret_buf, ret);
-#ifdef HAVE_XML
    sha256_hash(g_extern.sha256, ret_buf, ret);
    RARCH_LOG("SHA256 sum: %s\n", g_extern.sha256);
-#endif
    *buf = ret_buf;
    return ret;
 }

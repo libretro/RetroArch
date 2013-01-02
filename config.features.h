@@ -116,10 +116,10 @@ static const bool _cg_supp = true;
 static const bool _cg_supp = false;
 #endif
 
-#ifdef HAVE_XML
-static const bool _xml_supp = true;
+#ifdef HAVE_LIBXML2
+static const bool _libxml2_supp = true;
 #else
-static const bool _xml_supp = false;
+static const bool _libxml2_supp = false;
 #endif
 
 #ifdef HAVE_SDL_IMAGE

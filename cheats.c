@@ -30,8 +30,13 @@
 #include <stddef.h>
 #include <string.h>
 
+#ifdef HAVE_LIBXML2
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#else
+#define RXML_LIBXML2_COMPAT
+#include "compat/rxml/rxml.h"
+#endif
 
 struct cheat
 {
@@ -252,11 +257,13 @@ cheat_manager_t *cheat_manager_new(const char *path)
       goto error;
    }
 
+#ifdef HAVE_LIBXML2
    if (ctx->valid == 0)
    {
       RARCH_ERR("Cannot validate XML file: %s\n", path);
       goto error;
    }
+#endif
 
    head = xmlDocGetRootElement(doc);
    for (cur = head; cur; cur = cur->next)
