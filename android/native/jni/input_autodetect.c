@@ -23,29 +23,49 @@ bool volume_enable;
 
 static void input_autodetect_get_device_name(char *buf, size_t size, int id)
 {
+   buf[0] = '\0';
+
    JavaVM *vm = g_android.app->activity->vm;
    JNIEnv *env = NULL;
    (*vm)->AttachCurrentThread(vm, &env, 0);
 
    jclass input_device_class = NULL;
    FIND_CLASS(env, input_device_class, "android/view/InputDevice");
+   if (!input_device_class)
+      goto end;
 
    jmethodID method = NULL;
    GET_STATIC_METHOD_ID(env, method, input_device_class, "getDevice", "(I)Landroid/view/InputDevice;");
+   if (!method)
+      goto end;
 
    jobject device = NULL;
    CALL_OBJ_STATIC_METHOD_PARAM(env, device, input_device_class, method, (jint)id);
+   if (!device)
+   {
+      RARCH_ERR("Failed to find device for ID: %d\n", id);
+      goto end;
+   }
 
    jmethodID getName = NULL;
    GET_METHOD_ID(env, getName, input_device_class, "getName", "()Ljava/lang/String;");
+   if (getName)
+      goto end;
 
    jobject name = NULL;
    CALL_OBJ_METHOD(env, name, device, getName);
+   if (!name)
+   {
+      RARCH_ERR("Failed to find name for device ID: %d\n", id);
+      goto end;
+   }
 
    const char *str = (*env)->GetStringUTFChars(env, name, 0);
-   strlcpy(buf, str, size);
+   if (str)
+      strlcpy(buf, str, size);
    (*env)->ReleaseStringUTFChars(env, name, str);
 
+end:
    (*vm)->DetachCurrentThread(vm);
 }
 
