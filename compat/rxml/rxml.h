@@ -16,6 +16,10 @@
 #ifndef RXML_H__
 #define RXML_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Total NIH. Very trivial "XML" implementation for use in RetroArch.
 // Error checking is minimal. Invalid documents may lead to very buggy behavior, but
 // memory corruption should never happen.
@@ -71,6 +75,10 @@ typedef rxml_document_t *xmlDocPtr;
 #define xmlDocGetRootElement(doc) rxml_root_node(doc)
 #define xmlFreeDoc(doc) rxml_free_document(doc)
 #define xmlFreeParserCtxt(ctx) ((void)0)
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif
