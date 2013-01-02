@@ -25,11 +25,6 @@ static void input_autodetect_get_device_name(char *buf, size_t size, int id)
 {
    buf[0] = '\0';
 
-#if 0
-   if (id <= 0)
-      return;
-#endif
-
    JavaVM *vm = g_android.app->activity->vm;
    JNIEnv *env = NULL;
    (*vm)->AttachCurrentThread(vm, &env, 0);
