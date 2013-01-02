@@ -17,6 +17,7 @@ OBJ = retroarch.o \
 		patch.o \
 		compat/compat.o \
 		screenshot.o \
+		cheats.o \
 		audio/utils.o \
 		audio/null.o \
 		input/null.o \
@@ -60,7 +61,7 @@ DYNAMIC = 1
 ifeq ($(SLIM),)
    HAVE_SDL = 1
    HAVE_SDL_IMAGE = 1
-   HAVE_XML = 1
+   HAVE_LIBXML2 = 1
    HAVE_FREETYPE = 1
    HAVE_RSOUND = 1
    HAVE_FBO = 1
@@ -103,8 +104,8 @@ ifeq ($(HAVE_THREADS), 1)
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
-   OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o
-   DEFINES += -DHAVE_OPENGL -DHAVE_OVERLAY
+   OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o gfx/shader_glsl.o 
+   DEFINES += -DHAVE_OPENGL -DHAVE_OVERLAY -DHAVE_GLSL
    LIBS += -lopengl32 -lgdi32
 endif
 
@@ -145,10 +146,11 @@ ifeq ($(HAVE_RSOUND), 1)
    LIBS += -lrsound
 endif
 
-ifeq ($(HAVE_XML), 1)
-   OBJ += gfx/shader_glsl.o cheats.o
-   DEFINES += -Ilibxml2 -DHAVE_XML -DHAVE_GLSL
+ifeq ($(HAVE_LIBXML2), 1)
+   DEFINES += -Ilibxml2 -DHAVE_LIBXML2 -DHAVE_GLSL
    LIBS += -lxml2 -liconv
+else
+   OBJ += compat/rxml/rxml.o
 endif
 
 ifeq ($(HAVE_DYLIB), 1)
@@ -258,6 +260,7 @@ clean:
 	rm -f audio/*.o
 	rm -f audio/xaudio-c/*.o
 	rm -f compat/*.o
+	rm -f compat/rxml/*.o
 	rm -f conf/*.o
 	rm -f gfx/scaler/*.o
 	rm -f gfx/*.o

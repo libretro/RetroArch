@@ -561,7 +561,6 @@ error:
 }
 #endif
 
-#ifdef HAVE_XML
 static void deinit_shader_dir(void)
 {
    // It handles NULL, no worries :D
@@ -588,7 +587,6 @@ static void init_shader_dir(void)
    for (unsigned i = 0; i < g_extern.shader_dir.list->size; i++)
       RARCH_LOG("Found shader \"%s\"\n", g_extern.shader_dir.list->elems[i].data);
 }
-#endif
 
 static void deinit_pixel_converter(void)
 {
@@ -628,9 +626,7 @@ void init_video_input(void)
    init_filter(g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 #endif
 
-#ifdef HAVE_XML
    init_shader_dir();
-#endif
 
    const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
    unsigned max_dim = max(geom->max_width, geom->max_height);
@@ -776,9 +772,7 @@ void uninit_video_input(void)
    deinit_filter();
 #endif
 
-#ifdef HAVE_XML
    deinit_shader_dir();
-#endif
 }
 
 driver_t driver;
