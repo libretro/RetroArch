@@ -321,6 +321,15 @@ void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
 }
 #endif
 
+static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const char *path)
+{
+   (void)data;
+   (void)type;
+   (void)path;
+
+   return false;
+}
+
 void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;

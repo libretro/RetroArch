@@ -181,7 +181,7 @@ struct settings
       struct retro_keybind binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
       float axis_threshold;
       int joypad_map[MAX_PLAYERS];
-      enum dpad_emu_enums dpad_emulation[MAX_PLAYERS];
+      unsigned dpad_emulation[MAX_PLAYERS];
 #ifdef RARCH_CONSOLE
       unsigned currently_selected_controller_no;
       unsigned map_dpad_to_stick;
