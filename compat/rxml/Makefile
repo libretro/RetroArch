@@ -3,7 +3,7 @@ TARGET := rxml
 SOURCES := $(wildcard *.c)
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -Wall -pedantic -std=gnu99 -O3 -g
+CFLAGS += -DRXML_TEST -Wall -pedantic -std=gnu99 -O0 -g
 
 all: $(TARGET)
 

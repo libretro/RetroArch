@@ -25,8 +25,8 @@ static void print_siblings(struct rxml_node *node, unsigned level)
    for (const struct rxml_attrib_node *attrib = node->attrib; attrib; attrib = attrib->next)
       fprintf(stderr, "%*s  Attrib: %s = %s\n", level * 4, "", attrib->attrib, attrib->value);
 
-   if (node->childs)
-      print_siblings(node->childs, level + 1);
+   if (node->children)
+      print_siblings(node->children, level + 1);
 
    if (node->next)
       print_siblings(node->next, level);
