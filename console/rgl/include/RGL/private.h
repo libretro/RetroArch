@@ -184,50 +184,50 @@ extern "C"
    //----------------------------------------
    // Platform/Init.c
    //----------------------------------------
-   extern void rglPlatformInit( PSGLinitOptions* options );
-   extern void rglPlatformExit();
+   extern void rglPlatformInit (PSGLinitOptions* options);
+   extern void rglPlatformExit (void);
 
    //----------------------------------------
    // Device/Device.c
    //----------------------------------------
-   extern void rglDeviceInit( PSGLinitOptions* options );
-   extern void rglDeviceExit();
-   extern PSGLdeviceParameters * rglShadowDeviceParameters( void );
+   extern void rglDeviceInit (PSGLinitOptions* options);
+   extern void rglDeviceExit (void);
+   extern PSGLdeviceParameters * rglShadowDeviceParameters (void);
 
 
    //----------------------------------------
    // Device/.../PlatformDevice.c
    //----------------------------------------
-   extern GLboolean		rglPlatformDeviceInit( PSGLinitOptions* options );
-   extern void		rglPlatformDeviceExit();
-   extern int		rglPlatformDeviceSize();
-   extern int		rglPlatformCreateDevice( RGLdevice* device );
-   extern void		rglPlatformDestroyDevice( RGLdevice* device );
-   extern void		rglPlatformMakeCurrent( void* device );
-   extern void		rglPlatformSwapBuffers( RGLdevice* device );
-   extern const GLvoid*	rglPlatformGetProcAddress( const char *funcName );
+   extern GLboolean rglPlatformDeviceInit (PSGLinitOptions* options);
+   extern void		rglPlatformDeviceExit (void);
+   extern int		rglPlatformDeviceSize (void);
+   extern int		rglPlatformCreateDevice (void *data);
+   extern void		rglPlatformDestroyDevice (void *data);
+   extern void		rglPlatformMakeCurrent (void *data);
+   extern void		rglPlatformSwapBuffers (void *data);
+   extern const GLvoid*	rglPlatformGetProcAddress (const char *funcName);
 
    //----------------------------------------
    // Raster/.../PlatformRaster.c
    //----------------------------------------
    void*	rglPlatformRasterInit (void);
-   void	rglPlatformRasterExit (void* driver);
+   void	rglPlatformRasterExit (void* data);
    void	rglPlatformRasterDestroyResources (void);
-   void	rglPlatformDraw( rglDrawParams* dparams );
-   GLboolean rglPlatformNeedsConversion( const rglAttributeState* as, GLuint index );
+   void	rglPlatformDraw (rglDrawParams* dparams);
+   GLboolean rglPlatformNeedsConversion (const rglAttributeState* as, GLuint index);
    // [YLIN] Try to avoid LHS inside this function.
    //   In oringinal implementation, indexType and indexCount will be stored right before this function
    //   and since we will load them right after enter this function, there are LHS.
    GLboolean rglPlatformRequiresSlowPath( rglDrawParams* dparams, const GLenum indexType, uint32_t indexCount);
    void rglPlatformRasterGetIntegerv( GLenum pname, GLint* params );
-   void	rglPlatformRasterFlush();
-   void	rglPlatformRasterFinish();
-   void	rglValidateFragmentProgram();
-   void	rglValidateFragmentProgramSharedConstants();
-   void	rglValidateClipPlanes();
-   void	rglInvalidateAttributes();
-   GLuint	rglValidateAttributes( const GLvoid* indices, GLboolean *isMain );
-   GLuint	rglValidateAttributesSlow( rglDrawParams *dparams, GLboolean *isMain );
+   void	rglPlatformRasterFlush (void);
+   void	rglPlatformRasterFinish (void);
+   void	rglValidateFragmentProgram (void);
+   void	rglValidateFragmentProgramSharedConstants (void);
+   void	rglValidateClipPlanes (void);
+   void	rglInvalidateAttributes (void);
+   GLuint	rglValidateAttributes (const void* indices, GLboolean *isMain);
+   GLuint	rglValidateAttributesSlow (rglDrawParams *dparams, GLboolean *isMain);
 
    //----------------------------------------
    // Raster/.../PlatformTexture.c

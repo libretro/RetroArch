@@ -2976,8 +2976,9 @@ static void rglSetDisplayMode( const VideoMode *vm, GLushort bitsPerPixel, GLuin
    cellVideoOutConfigure( CELL_VIDEO_OUT_PRIMARY, &videocfg, NULL, 0 );
 }
 
-int rglPlatformCreateDevice( RGLdevice* device )
+int rglPlatformCreateDevice (void *data)
 {
+   RGLdevice *device = (RGLdevice*)data;
    rglGcmDevice *gcmDevice = ( rglGcmDevice * )device->platformDevice;
    RGLdeviceParameters* params = &device->deviceParameters;
    rglDuringDestroyDevice = GL_FALSE;
@@ -3209,10 +3210,11 @@ int rglPlatformCreateDevice( RGLdevice* device )
    return 0;
 }
 
-void rglPlatformDestroyDevice( RGLdevice* device )
+void rglPlatformDestroyDevice (void *data)
 {
+   RGLdevice *device = (RGLdevice*)data;
    rglGcmDevice *gcmDevice = ( rglGcmDevice * )device->platformDevice;
-   RGLdeviceParameters* params = &device->deviceParameters;
+   RGLdeviceParameters *params = &device->deviceParameters;
 
    rglpFifoGlFinish();
 
@@ -3249,10 +3251,11 @@ void rglPlatformDestroyDevice( RGLdevice* device )
    rglDuringDestroyDevice = GL_FALSE;
 }
 
-void rglPlatformSwapBuffers( RGLdevice* device )
+void rglPlatformSwapBuffers (void *data)
 {
    gmmUpdateFreeList(CELL_GCM_LOCATION_LOCAL);
 
+   RGLdevice *device = (RGLdevice*)data;
    rglGcmDevice *gcmDevice = (rglGcmDevice *)device->platformDevice;
 
    const GLuint drawBuffer = gcmDevice->drawBuffer;
@@ -3281,7 +3284,8 @@ void rglPlatformSwapBuffers( RGLdevice* device )
       if ( res != CELL_OK )
       {
          //RGL_REPORT_EXTRA(RGL_REPORT_RESC_FLIP_ERROR, "WARNING: RESC cellRescSetConvertAndFlip returned error code %d.\n", res);
-         if ( _CurrentContext ) _CurrentContext->needValidate |= RGL_VALIDATE_FRAMEBUFFER;
+         if ( _CurrentContext )
+            _CurrentContext->needValidate |= RGL_VALIDATE_FRAMEBUFFER;
          return;
       }
    }
@@ -3296,7 +3300,8 @@ void rglPlatformSwapBuffers( RGLdevice* device )
          cellGcmSetWaitFlip(); // GPU will wait until flip actually occurs
    }
 
-   const char * __restrict v = rglGetGcmDriver()->sharedVPConstants;
+   rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
+   const char * __restrict v = driver->sharedVPConstants;
    GCM_FUNC( cellGcmSetVertexProgramParameterBlock, 0, 8, ( float* )v ); // GCM_PORT_UNTESTED [KHOFF]
 
    rglGcmFifoGlEnable( RGLGCM_DITHER );
@@ -3330,7 +3335,7 @@ void rglPlatformSwapBuffers( RGLdevice* device )
    }
 }
 
-void rglpValidateViewport(void)
+void rglpValidateViewport (void)
 {
    RGLcontext*	LContext = _CurrentContext;
 

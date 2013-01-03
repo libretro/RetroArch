@@ -43,7 +43,6 @@ static inline GLuint rglPlatformGetBitsPerPixel( GLenum internalFormat )
    }
 }
 
-
 #define SUBPIXEL_BITS 12
 #define SUBPIXEL_ADJUST (0.5/(1<<SUBPIXEL_BITS))
 
@@ -196,7 +195,7 @@ static inline void rglGcmFifoGlDrawArrays( rglGcmEnum mode, GLint first, GLsizei
    }
 }
 
-   static inline void rglGcmFifoGlTransferDataVidToVid
+static inline void rglGcmFifoGlTransferDataVidToVid
 (
  GLuint dstVidId,   
  GLuint dstVidIdOffset,
@@ -297,7 +296,6 @@ static inline GLuint rglGcmMapWrapMode( GLuint mode )
    }
    return 0;
 }
-
 
 static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmFormat, uint32_t & remap )
 {
@@ -520,13 +518,13 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmF
 }
 
 // Explicitly invalidate the L2 texture cache
-static inline void rglGcmFifoGlInvalidateTextureCache( void )
+static inline void rglGcmFifoGlInvalidateTextureCache (void)
 {
    GCM_FUNC( cellGcmSetInvalidateTextureCache, CELL_GCM_INVALIDATE_TEXTURE );
 }
 
 // Fast conversion for values between 0.0 and 65535.0
-GLuint inline static RGLGCM_QUICK_FLOAT2UINT( const GLfloat f )
+static inline GLuint RGLGCM_QUICK_FLOAT2UINT( const GLfloat f )
 {
    union
    {
@@ -538,7 +536,7 @@ GLuint inline static RGLGCM_QUICK_FLOAT2UINT( const GLfloat f )
 }
 
 // construct a packed unsigned int ARGB8 color
-void inline static RGLGCM_CALC_COLOR_LE_ARGB8( GLuint *color0, const GLfloat r, const GLfloat g, const GLfloat b, const GLfloat a )
+inline static void RGLGCM_CALC_COLOR_LE_ARGB8( GLuint *color0, const GLfloat r, const GLfloat g, const GLfloat b, const GLfloat a )
 {
    GLuint r2 = RGLGCM_QUICK_FLOAT2UINT( r * 255.0f );
    GLuint g2 = RGLGCM_QUICK_FLOAT2UINT( g * 255.0f );
@@ -679,7 +677,7 @@ static inline void rglGcmFifoGlBlendFunc( rglGcmEnum sf, rglGcmEnum df, rglGcmEn
 // Can be used for printing out macro and constant values.
 // example: rglPrintIt( RGLGCM_3DCONST(SET_SURFACE_FORMAT, COLOR, LE_A8R8G8B8) );
 //          00 00 00 08 : 00000000 00000000 00000000 00001000 */
-void static inline rglPrintIt (unsigned int v )
+static inline void rglPrintIt (unsigned int v)
 {
    // HEX (space between bytes)
    printf( "%02x %02x %02x %02x : ", ( v >> 24 )&0xff, ( v >> 16 )&0xff, ( v >> 8 )&0xff, v&0xff );
@@ -691,14 +689,14 @@ void static inline rglPrintIt (unsigned int v )
 }
 
 // prints the last numWords of the command fifo
-void static inline rglPrintFifoFromPut( unsigned int numWords ) 
+static inline void rglPrintFifoFromPut( unsigned int numWords ) 
 {
    for ( int i = -numWords; i <= -1; i++ )
       rglPrintIt((( uint32_t* )rglGcmState_i.fifo.current )[i] );
 }
 
 // prints the last numWords of the command fifo
-void static inline rglPrintFifoFromGet( unsigned int numWords ) 
+static inline void rglPrintFifoFromGet( unsigned int numWords ) 
 {
    for ( int i = -numWords; i <= -1; i++ )
       rglPrintIt((( uint32_t* )rglGcmState_i.fifo.lastGetRead )[i] );
@@ -706,7 +704,7 @@ void static inline rglPrintFifoFromGet( unsigned int numWords )
 
 // Determine whether a given location in a command buffer has been passed, by 
 // using reference markers.
-GLboolean static inline rglGcmFifoGlTestFenceRef( const GLuint ref )
+static inline GLboolean rglGcmFifoGlTestFenceRef (const GLuint ref)
 {
    rglGcmFifo *fifo = &rglGcmState_i.fifo;
    return rglGcmFifoReferenceInUse( fifo, ref );
@@ -714,14 +712,14 @@ GLboolean static inline rglGcmFifoGlTestFenceRef( const GLuint ref )
 
 // Add a reference marker to the command buffer to determine whether a location 
 // in the command buffer has been passed
-void static inline rglGcmFifoGlIncFenceRef( GLuint *ref )
+static inline void rglGcmFifoGlIncFenceRef (GLuint *ref)
 {
    rglGcmFifo *fifo = &rglGcmState_i.fifo;
    *ref = rglGcmFifoPutReference( fifo );
 }
 
 // Flush the current FIFO.
-void static inline rglGcmFifoGlFlush( void )
+static inline void rglGcmFifoGlFlush (void)
 {
    GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
    rglGcmFifoFlush( &rglGcmState_i.fifo );
@@ -856,7 +854,7 @@ static inline void rglGcmFifoGlVertexAttribPointer
 }
 
 // set the vertex attribute to the specified value.
-void static inline rglGcmFifoGlVertexAttrib4fv( GLuint index, const GLfloat v[4] )
+static inline void rglGcmFifoGlVertexAttrib4fv( GLuint index, const GLfloat v[4] )
 {
    GCM_FUNC( cellGcmSetVertexData4f, index, v );
 }
@@ -873,7 +871,7 @@ static inline void rglGcmFifoGlClear( GLbitfield mask )
    if ( mask & RGLGCM_COLOR_BUFFER_BIT && rglGcmState_i.renderTarget.colorFormat)
       hwMask = CELL_GCM_CLEAR_R | CELL_GCM_CLEAR_G | CELL_GCM_CLEAR_B | CELL_GCM_CLEAR_A;
 
-   if ( hwMask )
+   if (hwMask)
    {
       GCM_FUNC( cellGcmSetClearSurface, hwMask );
    }
@@ -881,7 +879,7 @@ static inline void rglGcmFifoGlClear( GLbitfield mask )
 
 static inline void rglGcmFifoGlEnable( rglGcmEnum cap )
 {
-   switch ( cap )
+   switch (cap)
    {
       case RGLGCM_BLEND:
          GCM_FUNC( cellGcmSetBlendEnable,  RGLGCM_TRUE );
@@ -900,8 +898,7 @@ static inline void rglGcmFifoGlEnable( rglGcmEnum cap )
 
 static inline void rglGcmFifoGlDisable( rglGcmEnum cap )
 {
-
-   switch ( cap )
+   switch (cap)
    {
       case RGLGCM_BLEND:
          GCM_FUNC( cellGcmSetBlendEnable, RGLGCM_FALSE );
@@ -1029,9 +1026,3 @@ static inline GLuint rglGcmGetBufferObjectOrigin (GLuint buffer)
    rglGcmBufferObject *gcmBuffer = ( rglGcmBufferObject * ) & bufferObject->platformBufferObject;
    return gcmBuffer->bufferId;
 }
-
-static inline rglGcmDriver *rglGetGcmDriver(void)
-{
-   return ( rglGcmDriver * )( _CurrentDevice->rasterDriver );
-}
-
