@@ -1772,7 +1772,12 @@ void rglGcmSetOpenGLState( rglGcmState *rglGcmSt )
    }
 
    // Set zNear and zFar to the default 0.0f and 1.0f here
-   rglGcmFifoGlViewport( 0, 0, RGLGCM_MAX_RT_DIMENSION, RGLGCM_MAX_RT_DIMENSION, 0.0f, 1.0f );
+   rglGcmViewportState *v = &rglGcmState_i.state.viewport;
+   v->x = 0;
+   v->y = 0;
+   v->w = RGLGCM_MAX_RT_DIMENSION;
+   v->h = RGLGCM_MAX_RT_DIMENSION;
+   rglGcmFifoGlViewport(v, 0.0f, 1.0f );
 }
 
 GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
@@ -3077,7 +3082,12 @@ int rglPlatformCreateDevice (void *data)
    gcmDevice->rt.width = width;
    gcmDevice->rt.height = height;
 
-   rglGcmFifoGlViewport( 0, 0, width, height );
+   rglGcmViewportState *v = &rglGcmState_i.state.viewport;
+   v->x = 0;
+   v->y = 0;
+   v->w = width;
+   v->h = height;
+   rglGcmFifoGlViewport(v, 0.0f, 1.0f);
    rglGcmFifoGlClearColor( 0.f, 0.f, 0.f, 0.f );
 
    if ( fpColor )
@@ -3339,13 +3349,13 @@ void rglpValidateViewport (void)
 {
    RGLcontext*	LContext = _CurrentContext;
 
-   rglGcmFifoGlViewport(
-         LContext->ViewPort.X, 
-         LContext->ViewPort.Y, 
-         LContext->ViewPort.XSize, 
-         LContext->ViewPort.YSize,
-         LContext->DepthNear,
-         LContext->DepthFar);
+   rglGcmViewportState *v = &rglGcmState_i.state.viewport;
+   v->x = LContext->ViewPort.X;
+   v->y = LContext->ViewPort.Y;
+   v->w = LContext->ViewPort.XSize;
+   v->h = LContext->ViewPort.YSize;
+
+   rglGcmFifoGlViewport(v, LContext->DepthNear, LContext->DepthFar);
 }
 
 void rglpValidateBlending(void)

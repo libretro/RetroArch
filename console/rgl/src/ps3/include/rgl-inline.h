@@ -46,72 +46,53 @@ static inline GLuint rglPlatformGetBitsPerPixel( GLenum internalFormat )
 #define SUBPIXEL_BITS 12
 #define SUBPIXEL_ADJUST (0.5/(1<<SUBPIXEL_BITS))
 
-/* the affine transformation of x and y from normalized device coordinates to
- ** window coordinates.
- **
- ** notes:
- **   - 1:1 port of glViewport (see spec for details)
- **   - x, y, width, height are clamped to the surface limits
- **   - initially, x, y width and height are zero!!
- **   - (0,0) is in the lower left [yInverted == TRUE]
- **   - important: because there is no concept of a window it is the callers
- **     responsibility to set the viewport to non zero values
- **   - [Jun] Two new paramenters zNear and zFar with default values to make
- **     this function compatible with cellGcmSetViewport
- */
-static inline void rglGcmFifoGlViewport( GLint x, GLint y, GLsizei width, GLsizei height, GLclampf zNear = 0.0f, GLclampf zFar = 1.0f )
+static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFar)
 {
-   rglGcmViewportState *vp = &rglGcmState_i.state.viewport;
+   rglGcmViewportState *vp = (rglGcmViewportState*)data;
    rglGcmRenderTarget *rt = &rglGcmState_i.renderTarget;
-   GLint clipX0, clipX1, clipY0, clipY1;
 
-   // keep for yInverted handling/disable+enable
-   vp->x = x;
-   vp->y = y;
-   vp->w = width;
-   vp->h = height;
+   GLint clipY0, clipY1;
+   GLint clipX0 = vp->x;
+   GLint clipX1 = vp->x + vp->w;
 
-   // clamp to hw limits
-   clipX0 = x;
-   clipX1 = x + width;
-   if ( rt->yInverted )
+   if (rt->yInverted)
    {
-      clipY0 = rt->gcmRenderTarget.height - ( y + height );
-      clipY1 = rt->gcmRenderTarget.height - y;
+      clipY0 = rt->gcmRenderTarget.height - (vp->y + vp->h);
+      clipY1 = rt->gcmRenderTarget.height - vp->y;
    }
    else
    {
-      clipY0 = y;
-      clipY1 = y + height;
+      clipY0 = vp->y;
+      clipY1 = vp->y + vp->h;
    }
 
-   if ( clipX0 < 0 )
+   if (clipX0 < 0)
       clipX0 = 0;
-   if ( clipY0 < 0 )
+   if (clipY0 < 0)
       clipY0 = 0;
 
-   if ( clipX1 >= RGLGCM_MAX_RT_DIMENSION )
+   if (clipX1 >= RGLGCM_MAX_RT_DIMENSION)
       clipX1 = RGLGCM_MAX_RT_DIMENSION;
 
-   if ( clipY1 >= RGLGCM_MAX_RT_DIMENSION )
+   if (clipY1 >= RGLGCM_MAX_RT_DIMENSION)
       clipY1 = RGLGCM_MAX_RT_DIMENSION;
 
-   if (( clipX1 <= clipX0 ) || ( clipY1 <= clipY0 ) )
+   if ((clipX1 <= clipX0) || (clipY1 <= clipY0))
       clipX0 = clipY0 = clipX1 = clipY1 = 0;
 
    // update viewport info
-   vp->xScale = width * 0.5f;
-   vp->xCenter = ( GLfloat )( x + vp->xScale + RGLGCM_SUBPIXEL_ADJUST );
+   vp->xScale = vp->w * 0.5f;
+   vp->xCenter = (GLfloat)(vp->x + vp->xScale + RGLGCM_SUBPIXEL_ADJUST);
 
-   if ( rt->yInverted )
+   if (rt->yInverted)
    {
-      vp->yScale = height * -0.5f;
-      vp->yCenter = ( GLfloat )( rt->gcmRenderTarget.height - RGLGCM_VIEWPORT_EPSILON - y +  vp->yScale + RGLGCM_SUBPIXEL_ADJUST );
+      vp->yScale = vp->h * -0.5f;
+      vp->yCenter = (GLfloat)(rt->gcmRenderTarget.height - RGLGCM_VIEWPORT_EPSILON - vp->y +  vp->yScale + RGLGCM_SUBPIXEL_ADJUST);
    }
    else
    {
-      vp->yScale = height * 0.5f;
-      vp->yCenter = ( GLfloat )( y +  vp->yScale + RGLGCM_SUBPIXEL_ADJUST );
+      vp->yScale = vp->h * 0.5f;
+      vp->yCenter = (GLfloat)(vp->y + vp->yScale + RGLGCM_SUBPIXEL_ADJUST);
    }
 
    // Clamp depth range to legal values
@@ -123,37 +104,25 @@ static inline void rglGcmFifoGlViewport( GLint x, GLint y, GLsizei width, GLsize
    GLfloat z_center = ( GLfloat )( 0.5f * ( zFar + zNear ) );
 
    // hw zNear/zFar clipper
-   if ( zNear > zFar )
+   if (zNear > zFar)
    {
       GLclampf tmp = zNear;
       zNear = zFar;
       zFar = tmp;
    }
 
-   float scale[4] = {  vp->xScale,  vp->yScale,  z_scale, 0.0f };
-   float offset[4] = {   vp->xCenter,  vp->yCenter,  z_center, 0.0f };
+   float scale[4] = { vp->xScale,  vp->yScale,  z_scale, 0.0f};
+   float offset[4] = { vp->xCenter,  vp->yCenter,  z_center, 0.0f};
 
    GCM_FUNC( cellGcmSetViewport, clipX0, clipY0, clipX1 - clipX0,
          clipY1 - clipY0, zNear, zFar, scale, offset );
 }
 
-/* When you call glDrawArrays, count sequential elements from each enabled
- ** array are used to construct a sequence of geometric primitives, beginning
- ** with the first element. The mode parameter specifies what kind of primitive
- ** to construct and how to use the array elements to construct the primitives.
- **
- ** note:
- **   - 1:1 port of glDrawArrays (see spec for details)
- **   - legal values for mode are RGLGCM_POINTS, RGLGCM_LINES, RGLGCM_LINE_LOOP, RGLGCM_LINE_STRIP,
- **     RGLGCM_TRIANGLES, RGLGCM_TRIANGLE_STRIP, RGLGCM_TRIANGLE_FAN, RGLGCM_QUADS, RGLGCM_QUAD_STRIP
- **     and RGLGCM_POLYGON
- **   - legal values for first, first+Count are [0, 0xfffff]
- **   - if vertex reusage exists, glDrawElements is preferred
- */
-static inline void rglGcmFifoGlDrawArrays( rglGcmEnum mode, GLint first, GLsizei count )
+static inline void rglGcmFifoGlDrawArrays(rglGcmEnum mode, GLint first, GLsizei count)
 {
    uint8_t gcmMode = 0;
-   switch ( mode )
+
+   switch (mode)
    {
       case RGLGCM_POINTS:
          gcmMode = CELL_GCM_PRIMITIVE_POINTS;
@@ -297,16 +266,16 @@ static inline GLuint rglGcmMapWrapMode( GLuint mode )
    return 0;
 }
 
-static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmFormat, uint32_t & remap )
+static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t *gcmFormat, uint32_t *remap )
 {
-   gcmFormat = 0;
+   *gcmFormat = 0;
 
-   switch ( internalFormat )
+   switch (internalFormat)
    {
       case RGLGCM_ALPHA8:                 // in_rgba = xxAx, out_rgba = 000A
          {
-            gcmFormat =  CELL_GCM_TEXTURE_B8;
-            remap = CELL_GCM_REMAP_MODE(
+            *gcmFormat =  CELL_GCM_TEXTURE_B8;
+            *remap = CELL_GCM_REMAP_MODE(
                   CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
                   CELL_GCM_TEXTURE_REMAP_FROM_B,
                   CELL_GCM_TEXTURE_REMAP_FROM_R,
@@ -321,8 +290,8 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmF
          break;
       case RGLGCM_ALPHA16:                // in_rgba = xAAx, out_rgba = 000A
          {
-            gcmFormat =  CELL_GCM_TEXTURE_X16;
-            remap = CELL_GCM_REMAP_MODE(
+            *gcmFormat =  CELL_GCM_TEXTURE_X16;
+            *remap = CELL_GCM_REMAP_MODE(
                   CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
                   CELL_GCM_TEXTURE_REMAP_FROM_G,
                   CELL_GCM_TEXTURE_REMAP_FROM_B,
@@ -337,8 +306,8 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmF
          break;
       case RGLGCM_HILO8:                  // in_rgba = HLxx, out_rgba = HL11
          {
-            gcmFormat =  CELL_GCM_TEXTURE_COMPRESSED_HILO8;
-            remap = CELL_GCM_REMAP_MODE(
+            *gcmFormat =  CELL_GCM_TEXTURE_COMPRESSED_HILO8;
+            *remap = CELL_GCM_REMAP_MODE(
                   CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
                   CELL_GCM_TEXTURE_REMAP_FROM_A,
                   CELL_GCM_TEXTURE_REMAP_FROM_R,
@@ -353,8 +322,8 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmF
          break;
       case RGLGCM_HILO16:                 // in_rgba = HLxx, out_rgba = HL11
          {
-            gcmFormat =  CELL_GCM_TEXTURE_Y16_X16;
-            remap = CELL_GCM_REMAP_MODE(
+            *gcmFormat =  CELL_GCM_TEXTURE_Y16_X16;
+            *remap = CELL_GCM_REMAP_MODE(
                   CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
                   CELL_GCM_TEXTURE_REMAP_FROM_A,
                   CELL_GCM_TEXTURE_REMAP_FROM_R,
@@ -369,8 +338,8 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmF
          break;
       case RGLGCM_ARGB8:                  // in_rgba = RGBA, out_rgba = RGBA
          {
-            gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
-            remap = CELL_GCM_REMAP_MODE(
+            *gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
+            *remap = CELL_GCM_REMAP_MODE(
                   CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
                   CELL_GCM_TEXTURE_REMAP_FROM_A,
                   CELL_GCM_TEXTURE_REMAP_FROM_R,
@@ -385,8 +354,8 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmF
          break;
       case RGLGCM_BGRA8:                  // in_rgba = GRAB, out_rgba = RGBA ** NEEDS TO BE TESTED
          {
-            gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
-            remap = CELL_GCM_REMAP_MODE(
+            *gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
+            *remap = CELL_GCM_REMAP_MODE(
                   CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
                   CELL_GCM_TEXTURE_REMAP_FROM_B,
                   CELL_GCM_TEXTURE_REMAP_FROM_G,
@@ -401,8 +370,8 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmF
          break;
       case RGLGCM_RGBA8:                  // in_rgba = GBAR, out_rgba = RGBA ** NEEDS TO BE TESTED
          {
-            gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
-            remap = CELL_GCM_REMAP_MODE(
+            *gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
+            *remap = CELL_GCM_REMAP_MODE(
                   CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
                   CELL_GCM_TEXTURE_REMAP_FROM_B,
                   CELL_GCM_TEXTURE_REMAP_FROM_A,
@@ -416,8 +385,8 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmF
          break;
       case RGLGCM_ABGR8:                  // in_rgba = BGRA, out_rgba = RGBA  ** NEEDS TO BE TESTED
          {
-            gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
-            remap = CELL_GCM_REMAP_MODE(
+            *gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
+            *remap = CELL_GCM_REMAP_MODE(
                   CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
                   CELL_GCM_TEXTURE_REMAP_FROM_A,
                   CELL_GCM_TEXTURE_REMAP_FROM_B,
@@ -432,8 +401,8 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmF
          break;
       case RGLGCM_RGBX8:                  // in_rgba = BGRA, out_rgba = RGB1  ** NEEDS TO BE TESTED
          {
-            gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
-            remap = CELL_GCM_REMAP_MODE(
+            *gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
+            *remap = CELL_GCM_REMAP_MODE(
                   CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
                   CELL_GCM_TEXTURE_REMAP_FROM_B,
                   CELL_GCM_TEXTURE_REMAP_FROM_A,
@@ -448,8 +417,8 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmF
          break;
       case RGLGCM_XBGR8:                  // in_rgba = BGRA, out_rgba = RGB1  ** NEEDS TO BE TESTED
          {
-            gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
-            remap = CELL_GCM_REMAP_MODE(
+            *gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
+            *remap = CELL_GCM_REMAP_MODE(
                   CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
                   CELL_GCM_TEXTURE_REMAP_FROM_A,
                   CELL_GCM_TEXTURE_REMAP_FROM_B,
@@ -464,8 +433,8 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmF
          break;
       case RGLGCM_FLOAT_R32:              // in_rgba = Rxxx, out_rgba = R001
          {
-            gcmFormat =  CELL_GCM_TEXTURE_X32_FLOAT;
-            remap = CELL_GCM_REMAP_MODE(
+            *gcmFormat =  CELL_GCM_TEXTURE_X32_FLOAT;
+            *remap = CELL_GCM_REMAP_MODE(
                   CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
                   CELL_GCM_TEXTURE_REMAP_FROM_A,
                   CELL_GCM_TEXTURE_REMAP_FROM_R,
@@ -480,8 +449,8 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmF
          break;
       case RGLGCM_RGB5_A1_SCE:          // in_rgba = RGBA, out_rgba = RGBA
          {
-            gcmFormat =  CELL_GCM_TEXTURE_A1R5G5B5;
-            remap = CELL_GCM_REMAP_MODE(
+            *gcmFormat =  CELL_GCM_TEXTURE_A1R5G5B5;
+            *remap = CELL_GCM_REMAP_MODE(
                   CELL_GCM_TEXTURE_REMAP_ORDER_XXXY,
                   CELL_GCM_TEXTURE_REMAP_FROM_A,
                   CELL_GCM_TEXTURE_REMAP_FROM_R,
@@ -496,8 +465,8 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmF
          break;
       case RGLGCM_RGB565_SCE:          // in_rgba = RGBA, out_rgba = RGBA
          {
-            gcmFormat =  CELL_GCM_TEXTURE_R5G6B5;
-            remap = CELL_GCM_REMAP_MODE(
+            *gcmFormat =  CELL_GCM_TEXTURE_R5G6B5;
+            *remap = CELL_GCM_REMAP_MODE(
                   CELL_GCM_TEXTURE_REMAP_ORDER_XXXY,
                   CELL_GCM_TEXTURE_REMAP_FROM_A,
                   CELL_GCM_TEXTURE_REMAP_FROM_R,
@@ -512,15 +481,7 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t & gcmF
          break;
       default:
          break;
-   };
-
-   return;
-}
-
-// Explicitly invalidate the L2 texture cache
-static inline void rglGcmFifoGlInvalidateTextureCache (void)
-{
-   GCM_FUNC( cellGcmSetInvalidateTextureCache, CELL_GCM_INVALIDATE_TEXTURE );
+   }
 }
 
 // Fast conversion for values between 0.0 and 65535.0
@@ -543,16 +504,6 @@ inline static void RGLGCM_CALC_COLOR_LE_ARGB8( GLuint *color0, const GLfloat r, 
    GLuint b2 = RGLGCM_QUICK_FLOAT2UINT( b * 255.0f );
    GLuint a2 = RGLGCM_QUICK_FLOAT2UINT( a * 255.0f );
    *color0 = ( a2 << 24 ) | ( r2 << 16 ) | ( g2 << 8 ) | ( b2 << 0 );
-}
-
-// Wait for the gpu to pass the given fence in the command buffer.
-static inline void rglGcmFifoGlFinishFenceRef( const GLuint ref )
-{
-   rglGcmFifo *fifo = &rglGcmState_i.fifo;
-
-   // wait for completion
-   while (rglGcmFifoReferenceInUse(fifo, ref))
-      sys_timer_usleep(10);
 }
 
 #define RGLGCM_UTIL_LABEL_INDEX 253

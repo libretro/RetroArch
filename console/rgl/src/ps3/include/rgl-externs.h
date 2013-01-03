@@ -19,7 +19,6 @@ void rglSetDefaultValuesVP( _CGprogram *program );
 void rglGcmSend( unsigned int dstId, unsigned dstOffset, unsigned int pitch, const char *src, unsigned int size );
 void rglGcmMemcpy( const GLuint dstId, unsigned dstOffset, unsigned int pitch, const GLuint srcId, GLuint srcOffset, unsigned int size );
 void rglPlatformValidateTextureResources (void *data);
-GLuint rglGetGcmImageOffset (rglGcmTextureLayout *layout, GLuint face, GLuint level );
 void rglSetNativeCgFragmentProgram(const void *data);
 void rglGcmFreeTiledSurface (GLuint bufferId);
 

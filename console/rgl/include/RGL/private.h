@@ -124,7 +124,8 @@ extern void rglRawRasterToImage (const void *in_data, void *out_data, GLuint x, 
 // FramebufferObject.c
 //----------------------------------------
 rglFramebuffer *rglCreateFramebuffer( void );
-void rglDestroyFramebuffer( rglFramebuffer *framebuffer );
+void rglDestroyFramebuffer (void *data);
+
 static inline rglFramebuffer *rglGetFramebuffer( RGLcontext *LContext, GLuint name )
 {
    return ( rglFramebuffer * )LContext->framebufferNameSpace.data[name];
@@ -194,12 +195,12 @@ extern const GLvoid*	rglPlatformGetProcAddress (const char *funcName);
 void*	rglPlatformRasterInit (void);
 void	rglPlatformRasterExit (void* data);
 void	rglPlatformRasterDestroyResources (void);
-void	rglPlatformDraw (rglDrawParams* dparams);
+void	rglPlatformDraw (void *data);
 GLboolean rglPlatformNeedsConversion (const rglAttributeState* as, GLuint index);
 // [YLIN] Try to avoid LHS inside this function.
 //   In oringinal implementation, indexType and indexCount will be stored right before this function
 //   and since we will load them right after enter this function, there are LHS.
-GLboolean rglPlatformRequiresSlowPath( rglDrawParams* dparams, const GLenum indexType, uint32_t indexCount);
+GLboolean rglPlatformRequiresSlowPath (void *data, const GLenum indexType, uint32_t indexCount);
 void rglPlatformRasterGetIntegerv( GLenum pname, GLint* params );
 void	rglPlatformRasterFlush (void);
 void	rglPlatformRasterFinish (void);
@@ -208,15 +209,15 @@ void	rglValidateFragmentProgramSharedConstants (void);
 void	rglValidateClipPlanes (void);
 void	rglInvalidateAttributes (void);
 GLuint	rglValidateAttributes (const void* indices, GLboolean *isMain);
-GLuint	rglValidateAttributesSlow (rglDrawParams *dparams, GLboolean *isMain);
+GLuint	rglValidateAttributesSlow (void *data, GLboolean *isMain);
 
 //----------------------------------------
 // Raster/.../PlatformTexture.c
 //----------------------------------------
 extern int	rglPlatformTextureSize (void);
 extern int	rglPlatformTextureMaxUnits (void);
-extern void	rglPlatformCreateTexture( rglTexture* texture );
-extern void	rglPlatformDestroyTexture( rglTexture* texture );
+extern void	rglPlatformCreateTexture (void *data);
+extern void	rglPlatformDestroyTexture (void *data);
 extern void	rglPlatformValidateTextureStage (int unit, void *data);
 void rglPlatformValidateVertexTextures (void);
 extern GLenum rglPlatformChooseInternalStorage (void *data, GLenum internalformat);
@@ -225,7 +226,7 @@ extern void rglPlatformCopyTexSubImage3D( GLenum target, GLint level, GLint xoff
 GLenum rglPlatformChooseInternalFormat( GLenum internalformat );
 void rglPlatformExpandInternalFormat( GLenum internalformat, GLenum *format, GLenum *type );
 void rglPlatformGetImageData( GLenum target, GLint level, rglTexture *texture, rglImage *image );
-GLboolean rglPlatformTextureReference (void *data, GLuint pitch, rglBufferObject *bufferObject, GLintptr offset);
+GLboolean rglPlatformTextureReference (void *data, GLuint pitch, void *data_buf, GLintptr offset);
 
 //----------------------------------------
 // Raster/.../PlatformFBops.c
