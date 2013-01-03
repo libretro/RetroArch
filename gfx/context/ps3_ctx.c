@@ -288,17 +288,12 @@ static void gfx_ctx_set_blend(bool enable)
 
 static void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 
-static bool rmenu_inited = false;
-
 static bool gfx_ctx_rmenu_init(void)
 {
    gl_t *gl = driver.video_data;
 
    if (!gl)
       return false;
-
-   if (rmenu_inited)
-      return true;
 
 #ifdef HAVE_RMENU
    glGenTextures(1, &menu_texture_id);
@@ -324,8 +319,6 @@ static bool gfx_ctx_rmenu_init(void)
 
    free(menu_texture.pixels);
 #endif
-
-   rmenu_inited = true;
 
    return true;
 }

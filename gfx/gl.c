@@ -1830,12 +1830,6 @@ static void gl_restart(void)
    gl_cg_invalidate_context();
 #endif
    gl_start();
-
-#ifdef HAVE_RMENU
-   SET_TIMER_EXPIRATION(0, 30);
-#endif
-
-   g_extern.frame_count = 0;
 }
 
 static void gl_apply_state_changes(void)
