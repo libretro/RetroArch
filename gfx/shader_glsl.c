@@ -481,6 +481,7 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
    fill_pathname_resolve_relative(tex_path, shader_path, (const char*)filename, sizeof(tex_path));
 
    RARCH_LOG("Loading texture image from: \"%s\" ...\n", tex_path);
+
    if (!texture_image_load(tex_path, &img))
    {
       RARCH_ERR("Failed to load texture image from: \"%s\"\n", tex_path);
@@ -501,8 +502,9 @@ static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
    glTexImage2D(GL_TEXTURE_2D,
-         0, RARCH_GL_INTERNAL_FORMAT32,
-         img.width, img.height, 0, RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, img.pixels);
+         0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
+         img.width, img.height, 0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
+         RARCH_GL_FORMAT32, img.pixels);
 
    pglActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, 0);

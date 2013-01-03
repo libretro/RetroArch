@@ -505,13 +505,19 @@ static bool load_menu_shader(void)
 
 #define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
 
+#ifdef HAVE_OPENGLES2
+#define BORDER_FUNC GL_CLAMP_TO_EDGE
+#else
+#define BORDER_FUNC GL_CLAMP_TO_BORDER
+#endif
+
 static void load_texture_data(GLuint *obj, const struct texture_image *img, bool smooth)
 {
    glGenTextures(1, obj);
    glBindTexture(GL_TEXTURE_2D, *obj);
 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, BORDER_FUNC);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, BORDER_FUNC);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
 
@@ -519,8 +525,8 @@ static void load_texture_data(GLuint *obj, const struct texture_image *img, bool
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 #endif
    glTexImage2D(GL_TEXTURE_2D,
-         0, RARCH_GL_INTERNAL_FORMAT32, img->width, img->height,
-         0, RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, img->pixels);
+         0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32, img->width, img->height,
+         0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, img->pixels);
 
    free(img->pixels);
 }
@@ -562,6 +568,7 @@ static bool load_textures(const char *cgp_path, config_file_t *conf)
       fill_pathname_resolve_relative(image_path, cgp_path, path, sizeof(image_path));
 
       RARCH_LOG("Loading image from: \"%s\".\n", image_path);
+
       struct texture_image img;
       if (!texture_image_load(image_path, &img))
       {

@@ -912,6 +912,28 @@ static inline void gl_convert_frame_rgb16_32(gl_t *gl, void *output, const void 
 }
 #endif
 
+#ifdef HAVE_OPENGLES2
+static inline void gl_convert_frame_argb8888_abgr8888(gl_t *gl, void *output, const void *input,
+      int width, int height, int in_pitch)
+{
+   if (width != gl->scaler.in_width || height != gl->scaler.in_height)
+   {
+      gl->scaler.in_width    = width;
+      gl->scaler.in_height   = height;
+      gl->scaler.out_width   = width;
+      gl->scaler.out_height  = height;
+      gl->scaler.in_fmt      = SCALER_FMT_ARGB8888;
+      gl->scaler.out_fmt     = SCALER_FMT_ABGR8888;
+      gl->scaler.scaler_type = SCALER_TYPE_POINT;
+      scaler_ctx_gen_filter(&gl->scaler);
+   }
+
+   gl->scaler.in_stride  = in_pitch;
+   gl->scaler.out_stride = width * sizeof(uint32_t);
+   scaler_ctx_scale(&gl->scaler, output, input);
+}
+#endif
+
 static void gl_init_textures_data(gl_t *gl)
 {
    for (unsigned i = 0; i < TEXTURES; i++)
@@ -996,27 +1018,40 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
    else
 #endif
    {
-      // No GL_UNPACK_ROW_LENGTH ;(
-      unsigned pitch_width = pitch / gl->base_size;
-      if (width == pitch_width) // Happy path :D
+      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * gl->base_size));
+
+      // Fallback for GLES devices without GL_BGRA_EXT.
+      if (gl->base_size == 4 && driver.gfx_use_rgba)
       {
+         gl_convert_frame_argb8888_abgr8888(gl, gl->conv_buffer, frame, width, height, pitch);
          glTexSubImage2D(GL_TEXTURE_2D,
                0, 0, 0, width, height, gl->texture_type,
-               gl->texture_fmt, frame);
+               gl->texture_fmt, gl->conv_buffer);
       }
-      else // Slower path.
+      else
       {
-         const unsigned line_bytes = width * gl->base_size;
+         // No GL_UNPACK_ROW_LENGTH ;(
+         unsigned pitch_width = pitch / gl->base_size;
+         if (width == pitch_width) // Happy path :D
+         {
+            glTexSubImage2D(GL_TEXTURE_2D,
+                  0, 0, 0, width, height, gl->texture_type,
+                  gl->texture_fmt, frame);
+         }
+         else // Slower path.
+         {
+            const unsigned line_bytes = width * gl->base_size;
 
-         uint8_t *dst = (uint8_t*)gl->conv_buffer; // This buffer is preallocated for this purpose.
-         const uint8_t *src = (const uint8_t*)frame;
+            uint8_t *dst = (uint8_t*)gl->conv_buffer; // This buffer is preallocated for this purpose.
+            const uint8_t *src = (const uint8_t*)frame;
 
-         for (unsigned h = 0; h < height; h++, src += pitch, dst += line_bytes)
-            memcpy(dst, src, line_bytes);
+            for (unsigned h = 0; h < height; h++, src += pitch, dst += line_bytes)
+               memcpy(dst, src, line_bytes);
 
-         glTexSubImage2D(GL_TEXTURE_2D,
-               0, 0, 0, width, height, gl->texture_type,
-               gl->texture_fmt, gl->conv_buffer);         
+            glTexSubImage2D(GL_TEXTURE_2D,
+                  0, 0, 0, width, height, gl->texture_type,
+                  gl->texture_fmt, gl->conv_buffer);         
+         }
       }
    }
 #else
@@ -1257,6 +1292,8 @@ static void gl_free(void *data)
    glDeleteBuffers(1, &gl->pbo);
 #endif
 
+   scaler_ctx_gen_reset(&gl->scaler);
+
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
    if (gl->pbo_readback_enable)
    {
@@ -1302,11 +1339,15 @@ static bool resolve_extensions(gl_t *gl)
    gl->border_type = GL_CLAMP_TO_BORDER;
 #endif
 
+   driver.gfx_use_rgba = false;
 #ifdef HAVE_OPENGLES2
-   if (!gl_query_extension("BGRA8888"))
+   if (gl_query_extension("BGRA8888"))
+      RARCH_LOG("[GL]: BGRA8888 extension found for GLES.\n");
+   else
    {
-      RARCH_ERR("[GL]: GLES implementation does not have BGRA8888 extension.\n");
-      return false;
+      driver.gfx_use_rgba = true;
+      RARCH_WARN("[GL]: GLES implementation does not have BGRA8888 extension.\n"
+                 "32-bit path will require conversion.\n");
    }
 #endif
 
@@ -1320,16 +1361,27 @@ static bool resolve_extensions(gl_t *gl)
    return true;
 }
 
+static inline void gl_set_texture_fmts(gl_t *gl, bool rgb32)
+{
+   gl->internal_fmt = rgb32 ? RARCH_GL_INTERNAL_FORMAT32 : RARCH_GL_INTERNAL_FORMAT16;
+   gl->texture_type = rgb32 ? RARCH_GL_TEXTURE_TYPE32 : RARCH_GL_TEXTURE_TYPE16;
+   gl->texture_fmt  = rgb32 ? RARCH_GL_FORMAT32 : RARCH_GL_FORMAT16;
+   gl->base_size    = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+
+   if (driver.gfx_use_rgba && rgb32)
+   {
+      gl->internal_fmt = GL_RGBA;
+      gl->texture_type = GL_RGBA;
+   }
+}
+
 static inline void gl_reinit_textures(gl_t *gl, const video_info_t *video)
 {
    unsigned old_base_size = gl->base_size;
    unsigned old_width     = gl->tex_w;
    unsigned old_height    = gl->tex_h;
-   gl->internal_fmt = video->rgb32 ? RARCH_GL_INTERNAL_FORMAT32 : RARCH_GL_INTERNAL_FORMAT16;
-   gl->texture_type = video->rgb32 ? RARCH_GL_TEXTURE_TYPE32 : RARCH_GL_TEXTURE_TYPE16;
-   gl->texture_fmt  = video->rgb32 ? RARCH_GL_FORMAT32 : RARCH_GL_FORMAT16;
-   gl->base_size    = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
+   gl_set_texture_fmts(gl, video->rgb32);
    gl->tex_w = gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
 
    gl->empty_buf = realloc(gl->empty_buf, sizeof(uint32_t) * gl->tex_w * gl->tex_h);
@@ -1526,10 +1578,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    else
       gl->tex_filter = video->smooth ? GL_LINEAR : GL_NEAREST;
 
-   gl->internal_fmt = video->rgb32 ? RARCH_GL_INTERNAL_FORMAT32 : RARCH_GL_INTERNAL_FORMAT16;
-   gl->texture_type = video->rgb32 ? RARCH_GL_TEXTURE_TYPE32 : RARCH_GL_TEXTURE_TYPE16;
-   gl->texture_fmt  = video->rgb32 ? RARCH_GL_FORMAT32 : RARCH_GL_FORMAT16;
-   gl->base_size    = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   gl_set_texture_fmts(gl, video->rgb32);
 
 #ifndef HAVE_OPENGLES
    glEnable(GL_TEXTURE_2D);
@@ -1816,8 +1865,8 @@ static bool gl_overlay_load(void *data, const uint32_t *image, unsigned width, u
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t)));
-   glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
-         width, height, 0, RARCH_GL_TEXTURE_TYPE32,
+   glTexImage2D(GL_TEXTURE_2D, 0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
+         width, height, 0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
          RARCH_GL_FORMAT32, image);
 
    gl_overlay_tex_geom(gl, 0, 0, 1, 1); // Default. Stretch to whole screen.

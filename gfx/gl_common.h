@@ -260,6 +260,7 @@ typedef struct gl
    struct gl_coords coords;
 
    GLuint pbo;
+
    GLenum internal_fmt;
    GLenum texture_type; // RGB565 or ARGB
    GLenum texture_fmt;

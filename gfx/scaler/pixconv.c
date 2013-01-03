@@ -645,6 +645,23 @@ void conv_argb8888_bgr24(void *output_, const void *input_,
 }
 #endif
 
+void conv_argb8888_abgr8888(void *output_, const void *input_,
+      int width, int height,
+      int out_stride, int in_stride)
+{
+   const uint32_t *input = (const uint32_t*)input_;
+   uint32_t *output      = (uint32_t*)output_;
+
+   for (int h = 0; h < height; h++, output += out_stride >> 2, input += in_stride >> 2)
+   {
+      for (int w = 0; w < width; w++)
+      {
+         uint32_t col = input[w];
+         output[w] = ((col << 16) & 0xff0000) | ((col >> 16) & 0xff) | (col & 0xff00ff00);
+      }
+   }
+}
+
 void conv_copy(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)

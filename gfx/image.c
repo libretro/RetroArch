@@ -28,7 +28,8 @@
 #ifdef HAVE_SDL_IMAGE
 
 #include "SDL_image.h"
-bool texture_image_load(const char *path, struct texture_image *out_img)
+bool texture_image_load_argb_shift(const char *path, struct texture_image *out_img,
+      unsigned a_shift, unsigned r_shift, unsigned g_shift, unsigned b_shift)
 {
    SDL_Surface *img = IMG_Load(path);
    if (!img)
@@ -61,7 +62,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
             uint32_t g = (src[x] & fmt->Gmask) >> fmt->Gshift;
             uint32_t b = (src[x] & fmt->Bmask) >> fmt->Bshift;
             uint32_t a = (src[x] & fmt->Amask) >> fmt->Ashift;
-            dst[x] = (a << 24) | (r << 16) | (g << 8) | b;
+            dst[x] = (a << a_shift) | (r << r_shift) | (g << g_shift) | (b << b_shift);
          }
       }
    }
@@ -82,7 +83,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
             uint32_t r = (color & fmt->Rmask) >> fmt->Rshift;
             uint32_t g = (color & fmt->Gmask) >> fmt->Gshift;
             uint32_t b = (color & fmt->Bmask) >> fmt->Bshift;
-            dst[x] = (0xff << 24) | (r << 16) | (g << 8) | b;
+            dst[x] = (0xff << a_shift) | (r << r_shift) | (g << g_shift) | (b << b_shift);
          }
       }
    }
@@ -100,7 +101,8 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
 
 #else
 
-bool texture_image_load(const char *path, struct texture_image *out_img)
+bool texture_image_load_argb_shift(const char *path, struct texture_image *out_img,
+      unsigned a_shift, unsigned r_shift, unsigned g_shift, unsigned b_shift)
 {
    // TODO: Check more gracefully.
    if (!strstr(path, ".tga"))
@@ -159,7 +161,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
          uint32_t r = tmp[i * 4 + 2];
          uint32_t a = tmp[i * 4 + 3];
 
-         out_img->pixels[i] = (a << 24) | (r << 16) | (g << 8) | b;
+         out_img->pixels[i] = (0xff << a_shift) | (r << r_shift) | (g << g_shift) | (b << b_shift);
       }
    }
    else if (bits == 24)
@@ -171,7 +173,7 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
          uint32_t r = tmp[i * 3 + 2];
          uint32_t a = 0xff;
 
-         out_img->pixels[i] = (a << 24) | (r << 16) | (g << 8) | b;
+         out_img->pixels[i] = (a << a_shift) | (r << r_shift) | (g << g_shift) | (b << b_shift);
       }
    }
    else
@@ -188,3 +190,13 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
 }
 
 #endif
+
+bool texture_image_load(const char *path, struct texture_image *out_img)
+{
+   // This interface "leak" is very ugly. FIXME: Fix this properly ...
+   if (driver.gfx_use_rgba)
+      return texture_image_load_argb_shift(path, out_img, 24, 0, 8, 16);
+   else
+      return texture_image_load_argb_shift(path, out_img, 24, 16, 8, 0);
+}
+
