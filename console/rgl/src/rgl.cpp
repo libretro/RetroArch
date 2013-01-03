@@ -22,7 +22,7 @@
   BUFFERS
   ============================================================ */
 
-static rglBufferObject *rglCreateBufferObject(void)
+static rglBufferObject *rglCreateBufferObject (void)
 {
    GLuint size = sizeof( rglBufferObject ) + rglpBufferObjectSize();
    rglBufferObject *buffer = (rglBufferObject*)malloc(size);
@@ -1114,7 +1114,8 @@ RGLcontext* psglCreateContext(void)
 
    rglResetContext( LContext );
 
-   if ( rglContextCreateHook ) rglContextCreateHook( LContext );
+   if (rglContextCreateHook)
+      rglContextCreateHook( LContext );
 
    return( LContext );
 }
@@ -1131,8 +1132,9 @@ RGLcontext *psglGetCurrentContext(void)
    return _CurrentContext;
 }
 
-void RGL_EXPORT psglDestroyContext( RGLcontext* LContext )
+void RGL_EXPORT psglDestroyContext (void *data)
 {
+   RGLcontext *LContext = (RGLcontext*)data;
    if ( _CurrentContext == LContext )
       rglpFifoGlFinish();
 
@@ -1161,9 +1163,7 @@ void RGL_EXPORT psglDestroyContext( RGLcontext* LContext )
    rglTexNameSpaceFree( &LContext->framebufferNameSpace );
 
    if ( _CurrentContext == LContext )
-   {
       psglMakeCurrent( NULL, NULL );
-   }
 
    free( LContext );
 }
@@ -1175,9 +1175,9 @@ void rglInvalidateAllStates (void *data)
    context->attribs->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
 }
 
-void rglAttachContext( RGLdevice *device, RGLcontext* context )
+void rglAttachContext (RGLdevice *device, RGLcontext* context)
 {
-   if ( !context->everAttached )
+   if (!context->everAttached)
    {
       context->ViewPort.XSize = device->deviceParameters.width;
       context->ViewPort.YSize = device->deviceParameters.height;
@@ -1289,9 +1289,11 @@ GLAPI void APIENTRY glDisableClientState( GLenum array )
 
 GLAPI void APIENTRY glFlush(void)
 {
-   RGLcontext* LContext = _CurrentContext;
+   RGLcontext * LContext = _CurrentContext;
+
    if (RGL_UNLIKELY(LContext->needValidate))
       rglValidateStates( RGL_VALIDATE_ALL );
+
    rglPlatformRasterFlush();
 }
 
@@ -1315,8 +1317,9 @@ GLAPI const GLubyte* APIENTRY glGetString( GLenum name )
    }
 }
 
-void psglInit( RGLinitOptions* options )
+void psglInit (void *data)
 {
+   RGLinitOptions *options = (RGLinitOptions*)data;
    rglPsglPlatformInit(options);
 }
 
@@ -1346,8 +1349,8 @@ GLAPI void APIENTRY glViewport( GLint x, GLint y, GLsizei width, GLsizei height 
 
 rglTexture *rglAllocateTexture(void)
 {
-   GLuint size = sizeof( rglTexture ) + rglPlatformTextureSize();
-   rglTexture *texture = ( rglTexture * )malloc( size );
+   GLuint size = sizeof(rglTexture) + rglPlatformTextureSize();
+   rglTexture *texture = (rglTexture*)malloc(size);
    memset( texture, 0, size );
    texture->target = 0;
    texture->minFilter = GL_NEAREST_MIPMAP_LINEAR;
@@ -1396,10 +1399,12 @@ void rglFreeTexture (void *data)
    free( texture );
 }
 
-void rglTextureUnbind( RGLcontext* context, GLuint name )
+void rglTextureUnbind (void *data, GLuint name )
 {
+   RGLcontext *context = (RGLcontext*)data;
    int unit;
-   for ( unit = 0;unit < RGL_MAX_TEXTURE_IMAGE_UNITS;++unit )
+
+   for ( unit = 0; unit < RGL_MAX_TEXTURE_IMAGE_UNITS; ++unit)
    {
       rglTextureImageUnit *tu = context->TextureImageUnits + unit;
       GLboolean dirty = GL_FALSE;
@@ -1442,10 +1447,14 @@ GLboolean rglTextureIsValid (const void *data)
 }
 
 // Reallocate images held by a texture
-void rglReallocateImages( rglTexture *texture, GLint level, GLsizei dimension )
+void rglReallocateImages (void *data, GLint level, GLsizei dimension )
 {
+   rglTexture *texture = (rglTexture*)data;
    GLuint oldCount = texture->imageCount;
-   if ( dimension <= 0 ) dimension = 1;
+
+   if (dimension <= 0)
+      dimension = 1;
+
    GLuint n = level + 1 + rglLog2( dimension );
    n = MAX( n, oldCount );
 
@@ -1457,8 +1466,9 @@ void rglReallocateImages( rglTexture *texture, GLint level, GLsizei dimension )
 }
 
 // Get an enabled texture mode of a texture image unit
-GLenum rglGetEnabledTextureMode( const rglTextureImageUnit *unit )
+GLenum rglGetEnabledTextureMode (const void *data)
 {
+   const rglTextureImageUnit *unit = (const rglTextureImageUnit*)data;
    // here, if fragment program is enabled and a valid program is set, get the enabled
    // units from the program instead of the texture units.
    if ( _CurrentContext->BoundFragmentProgram != NULL && _CurrentContext->FragmentProgram != GL_FALSE)
@@ -1469,8 +1479,9 @@ GLenum rglGetEnabledTextureMode( const rglTextureImageUnit *unit )
    return 0;
 }
 
-rglTexture *rglGetCurrentTexture( const rglTextureImageUnit *unit, GLenum target )
+rglTexture *rglGetCurrentTexture (const void *data, GLenum target)
 {
+   const rglTextureImageUnit *unit = (const rglTextureImageUnit*)data;
    RGLcontext*	LContext = _CurrentContext;
    GLuint name = 0;
    rglTexture *defaultTexture = NULL;
@@ -1489,8 +1500,9 @@ rglTexture *rglGetCurrentTexture( const rglTextureImageUnit *unit, GLenum target
       return defaultTexture;
 }
 
-void rglUpdateCurrentTextureCache( rglTextureImageUnit *unit )
+void rglUpdateCurrentTextureCache (void *data)
 {
+   rglTextureImageUnit *unit = (rglTextureImageUnit*)data;
    GLenum target = rglGetEnabledTextureMode( unit );
    unit->currentTexture = rglGetCurrentTexture( unit, target );
 }
@@ -1526,12 +1538,13 @@ void rglBindTextureInternal (void *data, GLuint name, GLenum target )
    rglTextureImageUnit *unit = (rglTextureImageUnit*)data;
    RGLcontext*	LContext = _CurrentContext;
    rglTexture *texture = NULL;
-   if ( name )
+
+   if (name)
    {
       rglTexNameSpaceCreateNameLazy( &LContext->textureNameSpace, name );
       texture = ( rglTexture * )LContext->textureNameSpace.data[name];
 
-      if ( !texture->target )
+      if (!texture->target)
       {
          texture->target = target;
          texture->faceCount = 1;
@@ -1568,10 +1581,13 @@ GLAPI void APIENTRY glGenTextures( GLsizei n, GLuint *textures )
 GLAPI void APIENTRY glDeleteTextures( GLsizei n, const GLuint *textures )
 {
    RGLcontext*	LContext = _CurrentContext;
+
    for ( int i = 0;i < n;++i )
    {
-      if ( textures[i] ) rglTextureUnbind( LContext, textures[i] );
+      if (textures[i])
+         rglTextureUnbind( LContext, textures[i] );
    }
+
    rglTexNameSpaceDeleteNames( &LContext->textureNameSpace, n, textures );
 }
 
@@ -1763,12 +1779,12 @@ void rglVertexAttribPointerNV(
       GLenum type,
       GLboolean normalized,
       GLsizei stride,
-      const GLvoid* pointer )
+      const void* pointer)
 {
    RGLcontext*	LContext = _CurrentContext;
 
    GLsizei defaultStride = 0;
-   switch ( type )
+   switch (type)
    {
       case GL_FLOAT:
       case GL_HALF_FLOAT_ARB:
@@ -1791,7 +1807,7 @@ void rglVertexAttribPointerNV(
    attrib->clientSize = fsize;
    attrib->clientType = type;
    attrib->clientStride = stride ? stride : defaultStride;
-   attrib->clientData = ( void* )pointer;
+   attrib->clientData = (void*)pointer;
    attrib->arrayBuffer = LContext->ArrayBuffer;
    attrib->normalized = normalized;
    RGLBIT_ASSIGN( as->HasVBOMask, index, attrib->arrayBuffer != 0 );
@@ -1799,27 +1815,24 @@ void rglVertexAttribPointerNV(
    RGLBIT_TRUE( as->DirtyMask, index );
 }
 
-void rglEnableVertexAttribArrayNV( GLuint index )
+void rglEnableVertexAttribArrayNV (GLuint index)
 {
    RGLcontext *LContext = _CurrentContext;
 
    RGLBIT_TRUE( LContext->attribs->EnabledMask, index );
    RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
-
 }
 
-void rglDisableVertexAttribArrayNV( GLuint index )
+void rglDisableVertexAttribArrayNV (GLuint index)
 {
    RGLcontext *LContext = _CurrentContext;
 
    RGLBIT_FALSE( LContext->attribs->EnabledMask, index );
    RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
-
 }
 
-void rglVertexAttrib1fNV( GLuint index, GLfloat x )
+void rglVertexAttrib1fNV (GLuint index, GLfloat x)
 {
-
    RGLcontext*	LContext = _CurrentContext;
 
    rglAttribute* attrib = LContext->attribs->attrib + index;
@@ -1828,7 +1841,6 @@ void rglVertexAttrib1fNV( GLuint index, GLfloat x )
    attrib->value[2] = 0.0f;
    attrib->value[3] = 1.0f;
    RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
-
 }
 
 void rglVertexAttrib2fNV( GLuint index, GLfloat x, GLfloat y )
@@ -1888,7 +1900,7 @@ void rglVertexAttrib4fvNV( GLuint index, const GLfloat* v )
    rglVertexAttrib4fNV( index, v[0], v[1], v[2], v[3] );
 }
 
-GLAPI void APIENTRY glDrawArrays( GLenum mode, GLint first, GLsizei count )
+GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
 {
    RGLcontext*	LContext = _CurrentContext;
 
@@ -1920,9 +1932,10 @@ GLAPI void APIENTRY glDrawArrays( GLenum mode, GLint first, GLsizei count )
 
 RGLdevice *_CurrentDevice = NULL;
 
-void rglDeviceInit( RGLinitOptions* options )
+void rglDeviceInit (void *data)
 {
-   rglPlatformDeviceInit( options );
+   RGLinitOptions *options = (RGLinitOptions*)data;
+   rglPlatformDeviceInit(options);
 }
 
 void rglDeviceExit(void)
@@ -1935,39 +1948,45 @@ RGL_EXPORT RGLdevice*	psglCreateDeviceAuto( GLenum colorFormat, GLenum depthForm
    return rglPlatformCreateDeviceAuto(colorFormat, depthFormat, multisamplingMode);
 }
 
-RGL_EXPORT RGLdevice*	psglCreateDeviceExtended( const RGLdeviceParameters *parameters )
+RGL_EXPORT RGLdevice*	psglCreateDeviceExtended (const void *data)
 {
+   const RGLdeviceParameters *parameters = (const RGLdeviceParameters*)data;
    return rglPlatformCreateDeviceExtended(parameters);
 }
 
-RGL_EXPORT GLfloat psglGetDeviceAspectRatio( const RGLdevice * device )
+RGL_EXPORT GLfloat psglGetDeviceAspectRatio (const void *data)
 {
+   const RGLdevice *device = (const RGLdevice*)data;
    return rglPlatformGetDeviceAspectRatio(device);
 }
 
-RGL_EXPORT void psglGetDeviceDimensions( const RGLdevice * device, GLuint *width, GLuint *height )
+RGL_EXPORT void psglGetDeviceDimensions (const RGLdevice * device, GLuint *width, GLuint *height)
 {
    *width = device->deviceParameters.width;
    *height = device->deviceParameters.height;
 }
 
-RGL_EXPORT void psglGetRenderBufferDimensions( const RGLdevice * device, GLuint *width, GLuint *height )
+RGL_EXPORT void psglGetRenderBufferDimensions (const RGLdevice * device, GLuint *width, GLuint *height)
 {
    *width = device->deviceParameters.renderWidth;
    *height = device->deviceParameters.renderHeight;
 }
 
-RGL_EXPORT void psglDestroyDevice( RGLdevice *device )
+RGL_EXPORT void psglDestroyDevice (void *data)
 {
-   if ( _CurrentDevice == device ) psglMakeCurrent( NULL, NULL );
+   RGLdevice *device = (RGLdevice*)data;
+   if (_CurrentDevice == device)
+      psglMakeCurrent( NULL, NULL );
 
-   if ( device->rasterDriver ) rglPlatformRasterExit( device->rasterDriver );
+   if (device->rasterDriver)
+      rglPlatformRasterExit( device->rasterDriver );
+
    rglPlatformDestroyDevice( device );
 
    free( device );
 }
 
-void RGL_EXPORT psglMakeCurrent( RGLcontext *context, RGLdevice *device )
+void RGL_EXPORT psglMakeCurrent (RGLcontext *context, RGLdevice *device)
 {
    if ( context && device )
    {
@@ -1988,13 +2007,13 @@ void RGL_EXPORT psglMakeCurrent( RGLcontext *context, RGLdevice *device )
    }
 }
 
-RGLdevice *psglGetCurrentDevice(void)
+RGLdevice *psglGetCurrentDevice (void)
 {
    return _CurrentDevice;
 }
 
-GLAPI void RGL_EXPORT psglSwap( void )
+GLAPI void RGL_EXPORT psglSwap (void)
 {
-   if ( _CurrentDevice != NULL )
+   if ( _CurrentDevice != NULL)
       rglPlatformSwapBuffers( _CurrentDevice );
 }

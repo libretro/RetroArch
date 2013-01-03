@@ -14,37 +14,36 @@
 #include <sdk_version.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-   typedef struct PSGLdevice PSGLdevice;
-   typedef struct PSGLcontext PSGLcontext;
+typedef struct PSGLdevice PSGLdevice;
+typedef struct PSGLcontext PSGLcontext;
 
-   typedef enum PSGLtvStandard
-   {
-      PSGL_TV_STANDARD_NONE,
-      PSGL_TV_STANDARD_NTSC_M,
-      PSGL_TV_STANDARD_NTSC_J,
-      PSGL_TV_STANDARD_PAL_M,
-      PSGL_TV_STANDARD_PAL_B,
-      PSGL_TV_STANDARD_PAL_D,
-      PSGL_TV_STANDARD_PAL_G,
-      PSGL_TV_STANDARD_PAL_H,
-      PSGL_TV_STANDARD_PAL_I,
-      PSGL_TV_STANDARD_PAL_N,
-      PSGL_TV_STANDARD_PAL_NC,
-      PSGL_TV_STANDARD_HD480I,
-      PSGL_TV_STANDARD_HD480P,
-      PSGL_TV_STANDARD_HD576I,
-      PSGL_TV_STANDARD_HD576P,
-      PSGL_TV_STANDARD_HD720P,
-      PSGL_TV_STANDARD_HD1080I,
-      PSGL_TV_STANDARD_HD1080P,
-      PSGL_TV_STANDARD_1280x720_ON_VESA_1280x768 = 128,
-      PSGL_TV_STANDARD_1280x720_ON_VESA_1280x1024,
-      PSGL_TV_STANDARD_1920x1080_ON_VESA_1920x1200,
-   } PSGLtvStandard;
+typedef enum PSGLtvStandard
+{
+   PSGL_TV_STANDARD_NONE,
+   PSGL_TV_STANDARD_NTSC_M,
+   PSGL_TV_STANDARD_NTSC_J,
+   PSGL_TV_STANDARD_PAL_M,
+   PSGL_TV_STANDARD_PAL_B,
+   PSGL_TV_STANDARD_PAL_D,
+   PSGL_TV_STANDARD_PAL_G,
+   PSGL_TV_STANDARD_PAL_H,
+   PSGL_TV_STANDARD_PAL_I,
+   PSGL_TV_STANDARD_PAL_N,
+   PSGL_TV_STANDARD_PAL_NC,
+   PSGL_TV_STANDARD_HD480I,
+   PSGL_TV_STANDARD_HD480P,
+   PSGL_TV_STANDARD_HD576I,
+   PSGL_TV_STANDARD_HD576P,
+   PSGL_TV_STANDARD_HD720P,
+   PSGL_TV_STANDARD_HD1080I,
+   PSGL_TV_STANDARD_HD1080P,
+   PSGL_TV_STANDARD_1280x720_ON_VESA_1280x768 = 128,
+   PSGL_TV_STANDARD_1280x720_ON_VESA_1280x1024,
+   PSGL_TV_STANDARD_1920x1080_ON_VESA_1920x1200,
+} PSGLtvStandard;
 
 #define RGL_TV_STANDARD_NONE (PSGL_TV_STANDARD_NONE)
 #define RGL_TV_STANDARD_NTSC_M 1
@@ -68,28 +67,28 @@ extern "C"
 #define RGL_TV_STANDARD_1280x720_ON_VESA_1280x1024 129
 #define RGL_TV_STANDARD_1920x1080_ON_VESA_1920x1200 130
 
-   typedef enum PSGLbufferingMode
-   {
-      PSGL_BUFFERING_MODE_SINGLE = 1,
-      PSGL_BUFFERING_MODE_DOUBLE = 2,
-      PSGL_BUFFERING_MODE_TRIPLE = 3,
-   } PSGLbufferingMode;
+typedef enum PSGLbufferingMode
+{
+   PSGL_BUFFERING_MODE_SINGLE = 1,
+   PSGL_BUFFERING_MODE_DOUBLE = 2,
+   PSGL_BUFFERING_MODE_TRIPLE = 3,
+} PSGLbufferingMode;
 
 /* spoof as PSGL */
 #define RGL_BUFFERING_MODE_SINGLE (PSGL_BUFFERING_MODE_SINGLE)
 #define RGL_BUFFERING_MODE_DOUBLE (PSGL_BUFFERING_MODE_DOUBLE)
 #define RGL_BUFFERING_MODE_TRIPLE (PSGL_BUFFERING_MODE_TRIPLE)
 
-   typedef enum PSGLdeviceConnector
-   {
-      PSGL_DEVICE_CONNECTOR_NONE,
-      PSGL_DEVICE_CONNECTOR_VGA,
-      PSGL_DEVICE_CONNECTOR_DVI,
-      PSGL_DEVICE_CONNECTOR_HDMI,
-      PSGL_DEVICE_CONNECTOR_COMPOSITE,
-      PSGL_DEVICE_CONNECTOR_SVIDEO,
-      PSGL_DEVICE_CONNECTOR_COMPONENT,
-   } PSGLdeviceConnector;
+typedef enum PSGLdeviceConnector
+{
+   PSGL_DEVICE_CONNECTOR_NONE,
+   PSGL_DEVICE_CONNECTOR_VGA,
+   PSGL_DEVICE_CONNECTOR_DVI,
+   PSGL_DEVICE_CONNECTOR_HDMI,
+   PSGL_DEVICE_CONNECTOR_COMPOSITE,
+   PSGL_DEVICE_CONNECTOR_SVIDEO,
+   PSGL_DEVICE_CONNECTOR_COMPONENT,
+} PSGLdeviceConnector;
 
 #define RGL_DEVICE_CONNECTOR_NONE (PSGL_DEVICE_CONNECTOR_NONE)
 #define RGL_DEVICE_CONNECTOR_VGA 1
@@ -99,29 +98,27 @@ extern "C"
 #define RGL_DEVICE_CONNECTOR_SVIDEO 5
 #define RGL_DEVICE_CONNECTOR_COMPONENT 6
 
+typedef enum RescRatioMode
+{
+   RESC_RATIO_MODE_FULLSCREEN,
+   RESC_RATIO_MODE_LETTERBOX,  // default
+   RESC_RATIO_MODE_PANSCAN,
+} RescRatioMode;
 
+typedef enum RescPalTemporalMode
+{
+   RESC_PAL_TEMPORAL_MODE_50_NONE,  // default - no conversion
+   RESC_PAL_TEMPORAL_MODE_60_DROP,
+   RESC_PAL_TEMPORAL_MODE_60_INTERPOLATE,
+   RESC_PAL_TEMPORAL_MODE_60_INTERPOLATE_30_DROP,
+   RESC_PAL_TEMPORAL_MODE_60_INTERPOLATE_DROP_FLEXIBLE,
+} RescPalTemporalMode;
 
-   typedef enum RescRatioMode
-   {
-      RESC_RATIO_MODE_FULLSCREEN,
-      RESC_RATIO_MODE_LETTERBOX,  // default
-      RESC_RATIO_MODE_PANSCAN,
-   } RescRatioMode;
-
-   typedef enum RescPalTemporalMode
-   {
-      RESC_PAL_TEMPORAL_MODE_50_NONE,  // default - no conversion
-      RESC_PAL_TEMPORAL_MODE_60_DROP,
-      RESC_PAL_TEMPORAL_MODE_60_INTERPOLATE,
-      RESC_PAL_TEMPORAL_MODE_60_INTERPOLATE_30_DROP,
-      RESC_PAL_TEMPORAL_MODE_60_INTERPOLATE_DROP_FLEXIBLE,
-   } RescPalTemporalMode;
-
-   typedef enum RescInterlaceMode
-   {
-      RESC_INTERLACE_MODE_NORMAL_BILINEAR,
-      RESC_INTERLACE_MODE_INTERLACE_FILTER,
-   } RescInterlaceMode;
+typedef enum RescInterlaceMode
+{
+   RESC_INTERLACE_MODE_NORMAL_BILINEAR,
+   RESC_INTERLACE_MODE_INTERLACE_FILTER,
+} RescInterlaceMode;
 
 #define PSGL_DEVICE_PARAMETERS_COLOR_FORMAT             0x0001
 #define PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT             0x0002
@@ -151,8 +148,7 @@ extern "C"
 #define RGL_DEVICE_PARAMETERS_RESC_INTERLACE_MODE      0x0400
 #define RGL_DEVICE_PARAMETERS_RESC_ADJUST_ASPECT_RATIO 0x0800
 
-
-   // mask for validation
+// mask for validation
 #define PSGL_VALIDATE_NONE                         0x00000000 
 #define PSGL_VALIDATE_FRAMEBUFFER                  0x00000001             
 #define PSGL_VALIDATE_TEXTURES_USED                0x00000002 
@@ -222,33 +218,33 @@ extern "C"
 #define RGLdeviceParameters PSGLdeviceParameters
 #define RGLcontext PSGLcontext
 
-   typedef struct
-   {
-      GLuint enable;
-      GLenum colorFormat;
-      GLenum depthFormat;
-      GLenum multisamplingMode;
-      PSGLtvStandard TVStandard;
-      PSGLdeviceConnector connector;
-      PSGLbufferingMode bufferingMode;
-      GLuint width;   // dimensions of display device (scanout buffer)
-      GLuint height;
+typedef struct
+{
+   GLuint enable;
+   GLenum colorFormat;
+   GLenum depthFormat;
+   GLenum multisamplingMode;
+   PSGLtvStandard TVStandard;
+   PSGLdeviceConnector connector;
+   PSGLbufferingMode bufferingMode;
+   GLuint width;   // dimensions of display device (scanout buffer)
+   GLuint height;
 
-      // dimensions of render buffer. Only set explicitly if the render target buffer
-      // needs to be different size than display scanout buffer (resolution scaling required).
-      // These can only be set if PSGL_DEVICE_PARAMETERS_RESC_RENDER_WIDTH_HEIGHT is set in the "enable" mask,
-      // otherwise, render buffer dimensions are set to device dimensions (width/height).
-      GLuint renderWidth;
-      GLuint renderHeight;
+   // dimensions of render buffer. Only set explicitly if the render target buffer
+   // needs to be different size than display scanout buffer (resolution scaling required).
+   // These can only be set if PSGL_DEVICE_PARAMETERS_RESC_RENDER_WIDTH_HEIGHT is set in the "enable" mask,
+   // otherwise, render buffer dimensions are set to device dimensions (width/height).
+   GLuint renderWidth;
+   GLuint renderHeight;
 
-      RescRatioMode rescRatioMode;             // RESC aspect ratio rescaling mode: full screen, letterbox, or pan & scan
-      RescPalTemporalMode rescPalTemporalMode; // RESC pal frame rate conversion mode: none, drop frame, interpolate
-      RescInterlaceMode rescInterlaceMode;     // RESC interlace filter mode: normal bilinear or use the anti-flicker interlace filter
+   RescRatioMode rescRatioMode;             // RESC aspect ratio rescaling mode: full screen, letterbox, or pan & scan
+   RescPalTemporalMode rescPalTemporalMode; // RESC pal frame rate conversion mode: none, drop frame, interpolate
+   RescInterlaceMode rescInterlaceMode;     // RESC interlace filter mode: normal bilinear or use the anti-flicker interlace filter
 
-      // horizontal and vertical scaling to adjust for the difference in overscan rates for each SD/HD mode or TV
-      GLfloat horizontalScale;
-      GLfloat verticalScale;
-   } PSGLdeviceParameters;
+   // horizontal and vertical scaling to adjust for the difference in overscan rates for each SD/HD mode or TV
+   GLfloat horizontalScale;
+   GLfloat verticalScale;
+} PSGLdeviceParameters;
 
 
 #define	PSGL_INIT_MAX_SPUS				0x0001
@@ -260,7 +256,7 @@ extern "C"
 #define	PSGL_INIT_HOST_MEMORY_SIZE			0x0040
 #define PSGL_INIT_USE_PMQUERIES           0x0080
 
-/* spoof as PSGL */
+   /* spoof as PSGL */
 #define	RGL_INIT_MAX_SPUS				0x0001
 #define	RGL_INIT_INITIALIZE_SPUS			0x0002
 #define	RGL_INIT_PERSISTENT_MEMORY_SIZE	0x0004
@@ -270,97 +266,55 @@ extern "C"
 #define	RGL_INIT_HOST_MEMORY_SIZE			0x0040
 #define RGL_INIT_USE_PMQUERIES           0x0080
 
-   typedef struct PSGLinitOptions
-   {
-      GLuint			enable;	// bitfield of options to set
-      GLuint 			maxSPUs;
-      GLboolean		initializeSPUs;
-      GLuint			persistentMemorySize;
-      GLuint			transientMemorySize;
-      int				errorConsole;
-      GLuint			fifoSize;
-      GLuint			hostMemorySize;
-   } PSGLinitOptions;
+typedef struct PSGLinitOptions
+{
+   GLuint			enable;	// bitfield of options to set
+   GLuint 			maxSPUs;
+   GLboolean		initializeSPUs;
+   GLuint			persistentMemorySize;
+   GLuint			transientMemorySize;
+   int				errorConsole;
+   GLuint			fifoSize;
+   GLuint			hostMemorySize;
+} PSGLinitOptions;
 
 #define RGLinitOptions PSGLinitOptions
 
-   typedef void*( *PSGLmallocFunc )( size_t LSize );		// expected to return 16-byte aligned
-   typedef void*( *PSGLmemalignFunc )( size_t align, size_t LSize );
-   typedef void*( *PSGLreallocFunc )( void* LBlock, size_t LSize );
-   typedef void( *PSGLfreeFunc )( void* LBlock );
+typedef void*( *PSGLmallocFunc )( size_t LSize );		// expected to return 16-byte aligned
+typedef void*( *PSGLmemalignFunc )( size_t align, size_t LSize );
+typedef void*( *PSGLreallocFunc )( void* LBlock, size_t LSize );
+typedef void( *PSGLfreeFunc )( void* LBlock );
 
-   extern PSGL_EXPORT void	psglInit( PSGLinitOptions* options );
-   extern PSGL_EXPORT void	psglExit();
+extern PSGL_EXPORT void	psglInit (void *data);
+extern PSGL_EXPORT void	psglExit (void);
 
-   PSGL_EXPORT PSGLdevice*	psglCreateDeviceAuto( GLenum colorFormat, GLenum depthFormat, GLenum multisamplingMode );
-   PSGL_EXPORT PSGLdevice*	psglCreateDeviceExtended( const PSGLdeviceParameters *parameters );
-   PSGL_EXPORT GLfloat psglGetDeviceAspectRatio( const PSGLdevice * device );
-   PSGL_EXPORT void psglGetDeviceDimensions( const PSGLdevice * device, GLuint *width, GLuint *height );
-   PSGL_EXPORT void psglGetRenderBufferDimensions( const PSGLdevice * device, GLuint *width, GLuint *height );
-   PSGL_EXPORT void psglDestroyDevice( PSGLdevice* device );
+PSGL_EXPORT PSGLdevice*	psglCreateDeviceAuto( GLenum colorFormat, GLenum depthFormat, GLenum multisamplingMode );
+PSGL_EXPORT PSGLdevice*	psglCreateDeviceExtended( const void *data);
+PSGL_EXPORT GLfloat psglGetDeviceAspectRatio( const PSGLdevice * device );
+PSGL_EXPORT void psglGetDeviceDimensions( const PSGLdevice * device, GLuint *width, GLuint *height );
+PSGL_EXPORT void psglGetRenderBufferDimensions( const PSGLdevice * device, GLuint *width, GLuint *height );
+PSGL_EXPORT void psglDestroyDevice (void *data);
 
-   PSGL_EXPORT void psglMakeCurrent( PSGLcontext* context, PSGLdevice* device );
-   PSGL_EXPORT PSGLcontext* psglCreateContext();
-   PSGL_EXPORT void psglDestroyContext( PSGLcontext* LContext );
-   PSGL_EXPORT void psglResetCurrentContext();
-   PSGL_EXPORT PSGLcontext* psglGetCurrentContext();
-   PSGL_EXPORT PSGLdevice* psglGetCurrentDevice();
-   PSGL_EXPORT void psglSwap( void );
+PSGL_EXPORT void psglMakeCurrent( PSGLcontext* context, PSGLdevice* device );
+PSGL_EXPORT PSGLcontext* psglCreateContext (void);
+PSGL_EXPORT void psglDestroyContext (void *data);
+PSGL_EXPORT void psglResetCurrentContext (void);
+PSGL_EXPORT PSGLcontext* psglGetCurrentContext (void);
+PSGL_EXPORT PSGLdevice* psglGetCurrentDevice (void);
+PSGL_EXPORT void psglSwap (void);
 
-   PSGL_EXPORT void psglLoadShaderLibrary( const char *filename );
+static inline PSGL_EXPORT void psglRescAdjustAspectRatio( const float horizontalScale, const float verticalScale )
+{
+   cellRescAdjustAspectRatio( horizontalScale, verticalScale );
+}
 
-   PSGL_EXPORT void psglSetFlipHandler( void( *handler )( const GLuint head ) );
-   PSGL_EXPORT void psglSetVBlankHandler( void( *handler )( const GLuint head ) );
-
-   PSGL_EXPORT GLboolean psglSetAllocatorFuncs( PSGLmallocFunc mallocFunc, PSGLmemalignFunc memalignFunc, PSGLreallocFunc reallocFunc, PSGLfreeFunc freeFunc );
-
-   PSGL_EXPORT void psglAddressToOffset(const void *address, GLuint *offset);
-   PSGL_EXPORT void psglSetVertexProgramRegister(GLuint reg, const void * __restrict value);
-   PSGL_EXPORT void psglSetVertexProgramRegisterBlock(GLuint reg, GLuint count, const void * __restrict value);
-   PSGL_EXPORT void psglSetVertexProgramTransformBranchBits(GLuint values);
-   PSGL_EXPORT void psglSetVertexProgramConfiguration(const CellCgbVertexProgramConfiguration *conf, const void *ucodeStorageAddress);
-
-   PSGL_EXPORT void psglSetFragmentProgramEmbeddedConstant(const GLuint offset, const GLfloat *value, const GLuint sizeInWords);
-   PSGL_EXPORT void psglSetFragmentProgramConfiguration(const CellCgbFragmentProgramConfiguration *conf);
-
-   PSGL_EXPORT void psglSetFragmentProgramEmbeddedConstantMemoryLocation(const GLuint offset, const GLfloat *value, const GLuint sizeInWords, bool inLocalMemory);
-   PSGL_EXPORT void psglSetFragmentProgramConfigurationMemoryLocation(const CellCgbFragmentProgramConfiguration *conf, bool inLocalMemory);
-
-   PSGL_EXPORT void psglSetUserClipPlanes( const GLuint userClipControlMask, const GLuint vertexOutputAttributeMask );
-
-   static inline PSGL_EXPORT void psglRescAdjustAspectRatio( const float horizontalScale, const float verticalScale )
-   { cellRescAdjustAspectRatio( horizontalScale, verticalScale ); }
-
-#define PSGL_ADD_RETURN true
-#define PSGL_DO_NOT_ADD_RETURN false
-
-#define PSGL_STALL true
-#define PSGL_DO_NOT_STALL false
-
-   // This funciton validates states specified in mask
-   //  mask - specify states to be validated
-   //  returns mask of states which was NOT validated
-   PSGL_EXPORT GLuint psglValidateStates( GLuint mask );
-   // This function invalidates states specified in mask
-   //  mask - specify states to be invalidateted
-   PSGL_EXPORT void psglInvalidateStates( GLuint mask );
-
-   // This funciton validates attributes with index buffer at specified offset
-   //  indices - specify offset to index buffer object
-   //  isMain - true will be set if index buffer object is on main memory, false for local memory
-   //  returns RSX offset of index buffer
-   PSGL_EXPORT GLuint psglValidateAttributes( const GLvoid* indices, GLboolean *isMain );
-   // This function invalidates all attributes
-   PSGL_EXPORT void psglInvalidateAttributes();
-
-   /*  hw cursor error code */
+/*  hw cursor error code */
 #define PSGL_HW_CURSOR_OK					CELL_OK		
 #define PSGL_HW_CURSOR_ERROR_FAILURE		CELL_GCM_ERROR_FAILURE 
 #define PSGL_HW_CURSOR_ERROR_INVALID_VALUE	CELL_GCM_ERROR_INVALID_VALUE 
 
-
 #ifdef __cplusplus
-}	// Close scope of 'extern "C"' declaration which encloses file.
+}
 #endif
 
 #endif /* RGL_EXPORT_H */
