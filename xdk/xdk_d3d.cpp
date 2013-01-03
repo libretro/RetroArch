@@ -110,8 +110,10 @@ const DWORD g_MapLinearToSrgbGpuFormat[] =
 };
 #endif
 
-static void check_window(xdk_d3d_video_t *d3d)
+static void check_window(void *data)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+
    bool quit, resize;
 
    d3d->ctx_driver->check_window(&quit,
@@ -133,7 +135,7 @@ static bool hlsl_shader_init(void)
 }
 #endif
 
-static void xdk_d3d_free(void * data)
+static void xdk_d3d_free(void *data)
 {
 #ifdef RARCH_CONSOLE
    if (driver.video_data)
@@ -241,7 +243,7 @@ static void xdk_d3d_set_viewport(bool force_full)
    //}
 }
 
-static void xdk_d3d_set_rotation(void * data, unsigned orientation)
+static void xdk_d3d_set_rotation(void *data, unsigned orientation)
 {
    (void)data;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
@@ -278,8 +280,10 @@ static void xdk_d3d_set_rotation(void * data, unsigned orientation)
 }
 
 #ifdef HAVE_FBO
-void xdk_d3d_deinit_fbo(xdk_d3d_video_t *d3d)
+void xdk_d3d_deinit_fbo(void *data)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+
    if (d3d->fbo_inited)
    {
       if (d3d->lpTexture_ot)
@@ -298,8 +302,10 @@ void xdk_d3d_deinit_fbo(xdk_d3d_video_t *d3d)
    }
 }
 
-void xdk_d3d_init_fbo(xdk_d3d_video_t *d3d)
+void xdk_d3d_init_fbo(void *data)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+
    if(!g_settings.video.render_to_texture)
       return;
 
@@ -403,8 +409,10 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
    d3dpp->EnableAutoDepthStencil  = FALSE;
 }
 
-static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *video)
+static void xdk_d3d_init_textures(void *data, const video_info_t *video)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+
    D3DPRESENT_PARAMETERS d3dpp;
    D3DVIEWPORT vp = {0};
    xdk_d3d_generate_pp(&d3dpp, video);
@@ -456,8 +464,10 @@ static void xdk_d3d_init_textures(xdk_d3d_video_t *d3d, const video_info_t *vide
       g_extern.console.screen.viewports.custom_vp.height = vp.Height;
 }
 
-static void xdk_d3d_reinit_textures(xdk_d3d_video_t *d3d, const video_info_t *video)
+static void xdk_d3d_reinit_textures(void *data, const video_info_t *video)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+
    unsigned old_base_size = d3d->base_size;
    unsigned old_width     = d3d->tex_w;
    unsigned old_height    = d3d->tex_h;

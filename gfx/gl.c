@@ -272,8 +272,10 @@ static bool gl_shader_init(gl_t *gl)
 }
 #endif
 
-void gl_shader_use(gl_t *gl, unsigned index)
+void gl_shader_use(void *data, unsigned index)
 {
+   gl_t *gl = (gl_t*)data;
+
    if (gl->shader)
       gl->shader->use(index);
 }
@@ -316,8 +318,10 @@ static void gl_set_mvp(const math_matrix *mat)
 }
 #endif
 
-void gl_shader_set_coords(gl_t *gl, const struct gl_coords *coords, const math_matrix *mat)
+void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math_matrix *mat)
 {
+   gl_t *gl = (gl_t*)data;
+
    bool ret_coords = false;
    bool ret_mvp    = false;
 
@@ -520,8 +524,10 @@ error:
    return false;
 }
 
-void gl_deinit_fbo(gl_t *gl)
+void gl_deinit_fbo(void *data)
 {
+   gl_t *gl = (gl_t*)data;
+
    if (gl->fbo_inited)
    {
       glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
@@ -533,8 +539,10 @@ void gl_deinit_fbo(gl_t *gl)
    }
 }
 
-void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
+void gl_init_fbo(void *data, unsigned width, unsigned height)
 {
+   gl_t *gl = (gl_t*)data;
+
    // No need to use FBOs.
    if (!g_settings.video.render_to_texture && gl_shader_num_func(gl) == 0)
       return;
@@ -605,8 +613,9 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 
 ////////////
 
-void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
+void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
 {
+   gl_t *gl = (gl_t*)data;
 #ifdef RARCH_CONSOLE
    if (g_extern.console.screen.state.overscan.enable)
    {
@@ -632,8 +641,10 @@ void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
    gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp);
 }
 
-void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
+void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_full, bool allow_rotate)
 {
+   gl_t *gl = (gl_t*)data;
+
    unsigned x = 0, y = 0;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
 

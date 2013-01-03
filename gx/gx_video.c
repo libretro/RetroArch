@@ -262,7 +262,7 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    g_current_framebuf = 0;
 }
 
-const char *gx_get_video_mode()
+const char *gx_get_video_mode(void)
 {
    static char format[16];
    snprintf(format, sizeof(format), "%.3ux%.3u%c", gx_mode.fbWidth, gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE ? 'i' : 'p');
@@ -284,7 +284,7 @@ void gx_set_aspect_ratio(void *data, unsigned aspectratio_idx)
    gx->should_resize = true;
 }
 
-static void setup_video_mode()
+static void setup_video_mode(void)
 {
    for (unsigned i = 0; i < 2; i++)
       g_framebuf[i] = MEM_K0_TO_K1(memalign(32, 640 * 576 * VI_DISPLAY_PIX_SZ));
@@ -310,7 +310,7 @@ static void init_texture(unsigned width, unsigned height)
    GX_InvalidateTexAll();
 }
 
-static void init_vtx()
+static void init_vtx(void)
 {
    GX_SetCullMode(GX_CULL_NONE);
    GX_SetClipMode(GX_CLIP_DISABLE);
@@ -366,7 +366,7 @@ static void build_disp_list(void)
 #ifdef TAKE_EFB_SCREENSHOT_ON_EXIT
 
 // Adapted from code by Crayon for GRRLIB (http://code.google.com/p/grrlib)
-static void gx_efb_screenshot()
+static void gx_efb_screenshot(void)
 {
    int x, y;
 
@@ -677,8 +677,10 @@ static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
    }
 }
 
-static void gx_resize(gx_video_t *gx)
+static void gx_resize(void *data)
 {
+   gx_video_t *gx = (gx_video_t*)data;
+
    int x = 0, y = 0;
    unsigned width = gx->win_width, height = gx->win_height;
 
