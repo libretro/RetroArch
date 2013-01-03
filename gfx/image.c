@@ -161,7 +161,7 @@ bool texture_image_load_argb_shift(const char *path, struct texture_image *out_i
          uint32_t r = tmp[i * 4 + 2];
          uint32_t a = tmp[i * 4 + 3];
 
-         out_img->pixels[i] = (0xff << a_shift) | (r << r_shift) | (g << g_shift) | (b << b_shift);
+         out_img->pixels[i] = (a << a_shift) | (r << r_shift) | (g << g_shift) | (b << b_shift);
       }
    }
    else if (bits == 24)
