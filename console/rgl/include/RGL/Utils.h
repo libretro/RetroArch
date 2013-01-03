@@ -6,8 +6,7 @@
 #include "platform.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #ifndef MSVC
@@ -87,11 +86,11 @@ extern "C"
 
    // names API
 
-   RGL_EXPORT void rglInitNameSpace( struct rglNameSpace * name );
-   RGL_EXPORT void rglFreeNameSpace( struct rglNameSpace * name );
-   RGL_EXPORT unsigned int rglCreateName( struct rglNameSpace * ns, void* object );
-   RGL_EXPORT unsigned int rglIsName( struct rglNameSpace* ns, unsigned int name );
-   RGL_EXPORT void rglEraseName( struct rglNameSpace* ns, unsigned int name );
+   RGL_EXPORT void rglInitNameSpace (void *data);
+   RGL_EXPORT void rglFreeNameSpace (void *data);
+   RGL_EXPORT unsigned int rglCreateName (void *data, void* object);
+   RGL_EXPORT unsigned int rglIsName( void *data, unsigned int name);
+   RGL_EXPORT void rglEraseName (void *data, unsigned int name);
    static inline void * rglGetNamedValue( struct rglNameSpace* ns, unsigned int name )
    {
       return ns->data[name - 1];
@@ -109,7 +108,7 @@ extern "C"
 
 
 #ifdef __cplusplus
-}	// Close scope of 'extern "C"' declaration that encloses file.
+}
 #endif
 
 #ifndef RGLT_UNUSED

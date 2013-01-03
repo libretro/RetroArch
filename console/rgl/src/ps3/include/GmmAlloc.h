@@ -116,15 +116,9 @@ uint32_t gmmInit(
       const uint32_t mainSize
       );
 
-uint32_t gmmDestroy();
-
-uint32_t gmmIdToOffset(
-      const uint32_t id
-      );
-
-char *gmmIdToAddress(
-      const uint32_t id
-      );
+uint32_t gmmDestroy(void);
+uint32_t gmmIdToOffset(const uint32_t id);
+char *gmmIdToAddress(const uint32_t id);
 
 uint32_t gmmFPOffsetToId(
       const uint32_t offset,
@@ -132,21 +126,10 @@ uint32_t gmmFPOffsetToId(
       bool bLocalMemory
       );
 
-void gmmPinId(
-      const uint32_t id
-      );
-
-void gmmUnpinId(
-      const uint32_t id
-      );
-
-uint32_t gmmFree(
-      const uint32_t freeId
-      );
-
-void gmmUpdateFreeList(
-      const uint8_t location
-      );
+void gmmPinId (const uint32_t id);
+void gmmUnpinId (const uint32_t id);
+uint32_t gmmFree (const uint32_t freeId);
+void gmmUpdateFreeList (const uint8_t location);
 
 uint32_t gmmAlloc(
       void *data,
@@ -161,9 +144,7 @@ uint32_t gmmAllocExtendedTileBlock(
       const uint32_t tag
       );
 
-uint32_t gmmGetBlockSize(
-      const uint32_t id
-      );
+uint32_t gmmGetBlockSize (const uint32_t id);
 
 void gmmSetTileAttrib(
       const uint32_t id,
@@ -171,13 +152,13 @@ void gmmSetTileAttrib(
       void *pData
       );
 
-void *gmmGetTileData(const uint32_t id);
+void *gmmGetTileData (const uint32_t id);
 
-void gmmPinAllocations(void);
+void gmmPinAllocations (void);
 
-void gmmUnpinAllocations(void);
+void gmmUnpinAllocations (void);
 
-static inline uint8_t gmmIdIsMain(const uint32_t id)
+static inline uint8_t gmmIdIsMain (const uint32_t id)
 {
    return false; 
 }

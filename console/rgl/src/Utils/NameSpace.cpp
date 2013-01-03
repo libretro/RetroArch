@@ -5,31 +5,36 @@
 
 #include <string.h>
 
-void rglInitNameSpace( rglNameSpace * name )
+void rglInitNameSpace(void *data)
 {
+   rglNameSpace *name = (rglNameSpace*)data;
    name->data = NULL;
    name->firstFree = NULL;
    name->capacity = 0;
 }
 
-void rglFreeNameSpace( rglNameSpace * ns )
+void rglFreeNameSpace(void *data)
 {
-   // XXX should we verify all names were freed ?
+   rglNameSpace *name = (rglNameSpace*)data;
 
-   if ( ns->data ) { free( ns->data ); };
-   ns->data = NULL;
-   ns->capacity = 0;
-   ns->firstFree = NULL;
+   if (name->data)
+      free(name->data);
+
+   name->data = NULL;
+   name->capacity = 0;
+   name->firstFree = NULL;
 }
 
 static const int NAME_INCREMENT = 4;
-unsigned int rglCreateName( rglNameSpace * ns, void* object )
+
+unsigned int rglCreateName(void *data, void* object)
 {
+   rglNameSpace *name = (rglNameSpace*)data;
    // NULL is reserved for the guard of the linked list.
-   if (ns->firstFree == NULL)
+   if (name->firstFree == NULL)
    {
       // need to allocate more pointer space
-      int newCapacity = ns->capacity + NAME_INCREMENT;
+      int newCapacity = name->capacity + NAME_INCREMENT;
 
       // realloc the block of pointers
       void** newData = ( void** )malloc( newCapacity * sizeof( void* ) );
@@ -39,37 +44,41 @@ unsigned int rglCreateName( rglNameSpace * ns, void* object )
          rglCgRaiseError( CG_MEMORY_ALLOC_ERROR );
          return 0;
       }
-      memcpy( newData, ns->data, ns->capacity * sizeof( void* ) );
-      if ( ns->data != NULL ) free( ns->data );
-      ns->data = newData;
+      memcpy( newData, name->data, name->capacity * sizeof( void* ) );
+
+      if (name->data != NULL)
+         free (name->data);
+
+      name->data = newData;
 
       // initialize the pointers to the next free elements.
       // (effectively build a linked list of free elements in place)
       // treat the last item differently, by linking it to NULL
-      for ( int index = ns->capacity; index < newCapacity - 1; ++index )
-         ns->data[index] = ns->data + index + 1;
+      for ( int index = name->capacity; index < newCapacity - 1; ++index )
+         name->data[index] = name->data + index + 1;
 
-      ns->data[newCapacity - 1] = NULL;
+      name->data[newCapacity - 1] = NULL;
       // update the first free element to the new data pointer.
-      ns->firstFree = ns->data + ns->capacity;
+      name->firstFree = name->data + name->capacity;
       // update the new capacity.
-      ns->capacity = newCapacity;
+      name->capacity = newCapacity;
    }
    // firstFree is a pointer, compute the index of it
-   unsigned int result = ns->firstFree - ns->data;
+   unsigned int result = name->firstFree - name->data;
 
    // update the first free to the next free element.
-   ns->firstFree = ( void** ) * ns->firstFree;
+   name->firstFree = (void**)*name->firstFree;
 
    // store the object in data.
-   ns->data[result] = object;
+   name->data[result] = object;
 
    // offset the index by 1 to avoid the name 0
    return result + 1;
 }
 
-unsigned int rglIsName( rglNameSpace* ns, unsigned int name )
+unsigned int rglIsName (void *data, unsigned int name )
 {
+   rglNameSpace *ns = (rglNameSpace*)data;
    // there should always be a namesepace
    // 0 is never valid.
    if (RGL_UNLIKELY(name == 0))
@@ -95,8 +104,9 @@ unsigned int rglIsName( rglNameSpace* ns, unsigned int name )
    return 1;
 }
 
-void rglEraseName( rglNameSpace* ns, unsigned int name )
+void rglEraseName(void *data, unsigned int name )
 {
+   rglNameSpace *ns = (rglNameSpace*)data;
    if (rglIsName(ns, name))
    {
       --name;

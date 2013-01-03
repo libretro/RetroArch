@@ -56,7 +56,7 @@ extern "C"
    extern GLuint	rglValidateStates( GLuint mask );
    void rglAttachContext( RGLdevice *device, RGLcontext* context );
    void rglDetachContext( RGLdevice *device, RGLcontext* context );
-   void rglInvalidateAllStates( RGLcontext* context );
+   void rglInvalidateAllStates (void *data);
    void rglResetAttributeState( rglAttributeState* as );
    void rglSetFlipHandler(void (*handler)(const GLuint head), RGLdevice *device);
    void rglSetVBlankHandler(void (*handler)(const GLuint head), RGLdevice *device);
@@ -64,8 +64,8 @@ extern "C"
    //----------------------------------------
    // Texture.c
    //----------------------------------------
-   rglTexture *rglAllocateTexture();
-   void rglFreeTexture( rglTexture *texture );
+   rglTexture *rglAllocateTexture (void);
+   void rglFreeTexture (void *data);
    void rglTextureUnbind( RGLcontext* context, GLuint name );
    extern int	rglTextureInit( RGLcontext* context, GLuint name );
    extern void	rglTextureDelete( RGLcontext* context, GLuint name );
@@ -111,8 +111,8 @@ extern "C"
    GLboolean rglIsType( GLenum type );
    GLboolean rglIsFormat( GLenum format );
    GLboolean rglIsValidPair( GLenum format, GLenum type );
-   void rglImageAllocCPUStorage( rglImage *image );
-   void rglImageFreeCPUStorage( rglImage *image );
+   void rglImageAllocCPUStorage (void *data);
+   void rglImageFreeCPUStorage (void *data);
    extern void	rglSetImage( rglImage* image, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment, GLenum format, GLenum type, const GLvoid* pixels );
    extern void	rglSetSubImage( GLenum target, GLint level, rglTexture *texture, rglImage* image, GLint x, GLint y, GLint z, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment, GLenum format, GLenum type, const GLvoid* pixels );
    extern int	rglGetPixelSize( GLenum format, GLenum type );
@@ -126,7 +126,7 @@ extern "C"
    extern int	rglGetStorageSize( GLenum format, GLenum type, GLsizei width, GLsizei height, GLsizei depth );
    extern void rglImageToRaster( const rglImage* image, rglRaster* raster, GLuint x, GLuint y, GLuint z );
    extern void rglRasterToImage( const rglRaster* raster, rglImage* image, GLuint x, GLuint y, GLuint z );
-   extern void rglRawRasterToImage( const rglRaster* raster, rglImage* image, GLuint x, GLuint y, GLuint z );
+   extern void rglRawRasterToImage (const void *in_data, void *out_data, GLuint x, GLuint y, GLuint z);
    void rglResampleImage3D( rglImage* src, rglImage* dst );
 
    //----------------------------------------
@@ -210,9 +210,9 @@ extern "C"
    //----------------------------------------
    // Raster/.../PlatformRaster.c
    //----------------------------------------
-   void*	rglPlatformRasterInit();
-   void	rglPlatformRasterExit( void* driver );
-   void	rglPlatformRasterDestroyResources();
+   void*	rglPlatformRasterInit (void);
+   void	rglPlatformRasterExit (void* driver);
+   void	rglPlatformRasterDestroyResources (void);
    void	rglPlatformDraw( rglDrawParams* dparams );
    GLboolean rglPlatformNeedsConversion( const rglAttributeState* as, GLuint index );
    // [YLIN] Try to avoid LHS inside this function.
@@ -232,51 +232,19 @@ extern "C"
    //----------------------------------------
    // Raster/.../PlatformTexture.c
    //----------------------------------------
-   extern int	rglPlatformTextureSize();
-   extern int	rglPlatformTextureMaxUnits();
+   extern int	rglPlatformTextureSize (void);
+   extern int	rglPlatformTextureMaxUnits (void);
    extern void	rglPlatformCreateTexture( rglTexture* texture );
    extern void	rglPlatformDestroyTexture( rglTexture* texture );
-   extern void	rglPlatformValidateTextureStage( int unit, rglTexture*texture );
-   void rglPlatformValidateVertexTextures();
-   extern GLenum rglPlatformChooseInternalStorage( rglImage* image, GLenum internalformat );
+   extern void	rglPlatformValidateTextureStage (int unit, void *data);
+   void rglPlatformValidateVertexTextures (void);
+   extern GLenum rglPlatformChooseInternalStorage (void *data, GLenum internalformat);
    extern GLenum rglPlatformTranslateTextureFormat( GLenum internalFormat );
    extern void rglPlatformCopyTexSubImage3D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height );
    GLenum rglPlatformChooseInternalFormat( GLenum internalformat );
    void rglPlatformExpandInternalFormat( GLenum internalformat, GLenum *format, GLenum *type );
    void rglPlatformGetImageData( GLenum target, GLint level, rglTexture *texture, rglImage *image );
-   extern void rglPlatformSetCompressedTexture(
-         GLenum target,
-         GLint level,
-         GLenum internalformat,
-         GLsizei width, GLsizei height, GLsizei depth,
-         GLint border,
-         GLsizei imageSize,
-         const GLvoid* data );
-   extern void rglPlatformSetCompressedTextureSub(
-         GLenum target,
-         GLint level,
-         GLint xoffset, GLint yoffset, GLint zoffset,
-         GLsizei width, GLsizei height, GLsizei depth,
-         GLenum format,
-         GLsizei imageSize,
-         const GLvoid* data );
-   extern GLboolean rglPlatformTexturePBOImage(
-         rglTexture* texture,
-         rglImage* image,
-         GLint level,
-         GLint internalformat,
-         GLsizei width, GLsizei height, GLsizei depth,
-         GLenum format, GLenum type,
-         const GLvoid *offset );
-   extern GLboolean rglPlatformTexturePBOSubImage(
-         rglTexture* texture,
-         rglImage* image,
-         GLint level,
-         GLint xoffset, GLint yoffset, GLint zoffset,
-         GLsizei width, GLsizei height, GLsizei depth,
-         GLenum format, GLenum type,
-         const GLvoid *pixels );
-   GLboolean rglPlatformTextureReference( rglTexture *texture, GLuint pitch, rglBufferObject *bufferObject, GLintptr offset );
+   GLboolean rglPlatformTextureReference (void *data, GLuint pitch, rglBufferObject *bufferObject, GLintptr offset);
 
    //----------------------------------------
    // Raster/.../PlatformFBops.c
@@ -302,14 +270,14 @@ extern "C"
    GLboolean rglPlatformCreateBufferObject( rglBufferObject* bufferObject );
    void rglPlatformDestroyBufferObject( rglBufferObject* bufferObject );
    void rglPlatformBufferObjectSetData( rglBufferObject* bufferObject, GLintptr offset, GLsizeiptr size, const GLvoid *data, GLboolean tryImmediateCopy );
-   GLvoid rglPlatformBufferObjectCopyData( rglBufferObject* bufferObjectDst, rglBufferObject* bufferObjectSrc );
+   GLvoid rglPlatformBufferObjectCopyData (void *dst, void *src);
    // map / unmap buffers. Internally refcounted
    char *rglPlatformBufferObjectMap( rglBufferObject* bufferObject, GLenum access );
    GLboolean rglPlatformBufferObjectUnmap( rglBufferObject* bufferObject );
    void rglPlatformGetBufferParameteriv( rglBufferObject *bufferObject, GLenum pname, int *params );
 
    // this is shared in glBindTexture and cgGL code
-   RGL_EXPORT void rglBindTextureInternal( rglTextureImageUnit *unit, GLuint name, GLenum target );
+   RGL_EXPORT void rglBindTextureInternal (void *data, GLuint name, GLenum target);
    void rglBindVertexTextureInternal( GLuint unit, GLuint name );
 
    //----------------------------------------

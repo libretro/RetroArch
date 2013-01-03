@@ -384,9 +384,7 @@ uint32_t gmmIdToOffset(const uint32_t id)
    return offset;
 }
 
-char *gmmIdToAddress(
-      const uint32_t id
-      )
+char *gmmIdToAddress (const uint32_t id)
 {
    GmmBaseBlock    *pBaseBlock = (GmmBaseBlock *)id;
 
@@ -704,8 +702,9 @@ static GmmTileBlock *gmmAllocTileBlock(GmmAllocator *pAllocator,
    return pBlock;
 }
 
-static void gmmFreeBlock(GmmBlock *pBlock)
+static void gmmFreeBlock (void *data)
 {
+   GmmBlock *pBlock = (GmmBlock*)data;
    GmmAllocator    *pAllocator;
 
    if (pBlock->pPrev)
@@ -745,7 +744,7 @@ static void gmmFreeBlock(GmmBlock *pBlock)
    gmmFreeFixedBlock(pBlock);
 }
 
-static void gmmAddPendingFree(void *data)
+static void gmmAddPendingFree (void *data)
 {
    GmmBlock *pBlock = (GmmBlock*)data;
    GmmAllocator    *pAllocator;
@@ -1224,14 +1223,10 @@ static void gmmRemovePendingFree(
 
 void gmmUpdateFreeList(const uint8_t location)
 {
-   GmmAllocator    *pAllocator;
    const uint32_t  fence = rglGcmState_i.semaphores->userSemaphores[RGLGCM_SEMA_FENCE].val;
    GmmBlock        *pBlock = NULL;
    GmmBlock        *pTemp = NULL;
-
-
-   pAllocator =  pGmmLocalAllocator;
-
+   GmmAllocator *pAllocator =  pGmmLocalAllocator;
 
    pBlock = pAllocator->pPendingFreeHead;
 
@@ -1251,12 +1246,9 @@ void gmmUpdateFreeList(const uint8_t location)
 
 static void gmmFreeAll(const uint8_t location)
 {
-   GmmAllocator    *pAllocator;
    GmmBlock        *pBlock;
    GmmBlock        *pTemp;
-
-
-   pAllocator =  pGmmLocalAllocator;
+   GmmAllocator *pAllocator =  pGmmLocalAllocator;
 
    pBlock = pAllocator->pPendingFreeHead;
    while (pBlock)
@@ -1444,31 +1436,31 @@ uint32_t gmmAlloc(void *data, const uint8_t location,
   FRAGMENT SHADER
   ============================================================ */
 
-void rglSetNativeCgFragmentProgram(const void *header)
+void rglSetNativeCgFragmentProgram(const void *data)
 {
-   const _CGprogram *ps = (const _CGprogram *)header;
+   const _CGprogram *program = (const _CGprogram *)data;
 
    CellCgbFragmentProgramConfiguration conf;
 
-   conf.offset = gmmIdToOffset(ps->loadProgramId) + ps->loadProgramOffset;
+   conf.offset = gmmIdToOffset(program->loadProgramId) + program->loadProgramOffset;
 
    rglGcmInterpolantState *s = &rglGcmState_i.state.interpolant;
-   s->fragmentProgramAttribMask |= ps->header.attributeInputMask | CELL_GCM_ATTRIB_OUTPUT_MASK_POINTSIZE;
+   s->fragmentProgramAttribMask |= program->header.attributeInputMask | CELL_GCM_ATTRIB_OUTPUT_MASK_POINTSIZE;
 
    conf.attributeInputMask = ( s->vertexProgramAttribMask) &
       s->fragmentProgramAttribMask;
 
-   conf.texCoordsInputMask = ps->header.fragmentProgram.texcoordInputMask;
-   conf.texCoords2D = ps->header.fragmentProgram.texcoord2d;
-   conf.texCoordsCentroid = ps->header.fragmentProgram.texcoordCentroid;
+   conf.texCoordsInputMask = program->header.fragmentProgram.texcoordInputMask;
+   conf.texCoords2D = program->header.fragmentProgram.texcoord2d;
+   conf.texCoordsCentroid = program->header.fragmentProgram.texcoordCentroid;
 
    int fragmentControl = ( 1 << 15 ) | ( 1 << 10 );
-   fragmentControl |= ps->header.fragmentProgram.flags & CGF_DEPTHREPLACE ? 0xE : 0x0;
-   fragmentControl |= ps->header.fragmentProgram.flags & CGF_OUTPUTFROMH0 ? 0x00 : 0x40;
-   fragmentControl |= ps->header.fragmentProgram.flags & CGF_PIXELKILL ? 0x80 : 0x00;
+   fragmentControl |= program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ? 0xE : 0x0;
+   fragmentControl |= program->header.fragmentProgram.flags & CGF_OUTPUTFROMH0 ? 0x00 : 0x40;
+   fragmentControl |= program->header.fragmentProgram.flags & CGF_PIXELKILL ? 0x80 : 0x00;
 
    conf.fragmentControl  = fragmentControl;
-   conf.registerCount = ps->header.fragmentProgram.registerCount < 2 ? 2 : ps->header.fragmentProgram.registerCount;
+   conf.registerCount = program->header.fragmentProgram.registerCount < 2 ? 2 : program->header.fragmentProgram.registerCount;
 
    uint32_t controlTxp = _CurrentContext->AllowTXPDemotion; 
    conf.fragmentControl &= ~CELL_GCM_MASK_SET_SHADER_CONTROL_CONTROL_TXP; 
@@ -1476,41 +1468,41 @@ void rglSetNativeCgFragmentProgram(const void *header)
 
    GCM_FUNC( cellGcmSetFragmentProgramLoad, &conf );
 
-   GCM_FUNC( cellGcmSetZMinMaxControl, ( ps->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? RGLGCM_FALSE : RGLGCM_TRUE, RGLGCM_FALSE, RGLGCM_FALSE );
+   GCM_FUNC( cellGcmSetZMinMaxControl, ( program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? RGLGCM_FALSE : RGLGCM_TRUE, RGLGCM_FALSE, RGLGCM_FALSE );
 }
 
 /*============================================================
   VERTEX SHADER
   ============================================================ */
 
-void rglSetNativeCgVertexProgram(const void *header)
+void rglSetNativeCgVertexProgram(const void *data)
 {
-   const _CGprogram *vs = (const _CGprogram*) header;
+   const _CGprogram *program = (const _CGprogram*)data;
 
-   __dcbt(vs->ucode);
-   __dcbt(((uint8_t*)vs->ucode)+128);
-   __dcbt(((uint8_t*)vs->ucode)+256);
-   __dcbt(((uint8_t*)vs->ucode)+384);
+   __dcbt(program->ucode);
+   __dcbt(((uint8_t*)program->ucode)+128);
+   __dcbt(((uint8_t*)program->ucode)+256);
+   __dcbt(((uint8_t*)program->ucode)+384);
 
    CellCgbVertexProgramConfiguration conf;
-   conf.instructionSlot = vs->header.vertexProgram.instructionSlot;
-   conf.instructionCount = vs->header.instructionCount;
-   conf.registerCount = vs->header.vertexProgram.registerCount;
-   conf.attributeInputMask = vs->header.attributeInputMask;
+   conf.instructionSlot = program->header.vertexProgram.instructionSlot;
+   conf.instructionCount = program->header.instructionCount;
+   conf.registerCount = program->header.vertexProgram.registerCount;
+   conf.attributeInputMask = program->header.attributeInputMask;
 
    rglGcmFifoWaitForFreeSpace( &rglGcmState_i.fifo, 7 + 5 * conf.instructionCount );
 
-   GCM_FUNC( cellGcmSetVertexProgramLoad, &conf, vs->ucode );
+   GCM_FUNC( cellGcmSetVertexProgramLoad, &conf, program->ucode );
 
    GCM_FUNC( cellGcmSetUserClipPlaneControl, 0, 0, 0, 0, 0, 0 );
 
    rglGcmInterpolantState *s = &rglGcmState_i.state.interpolant;
-   s->vertexProgramAttribMask = vs->header.vertexProgram.attributeOutputMask;
+   s->vertexProgramAttribMask = program->header.vertexProgram.attributeOutputMask;
 
    GCM_FUNC( cellGcmSetVertexAttribOutputMask, (( s->vertexProgramAttribMask) &
             s->fragmentProgramAttribMask) );
 
-   _CGprogram *program = ( _CGprogram* )vs;
+   program = (_CGprogram*)data;
    int count = program->defaultValuesIndexCount;
    for ( int i = 0;i < count;i++ )
    {
@@ -1529,13 +1521,15 @@ void rglSetNativeCgVertexProgram(const void *header)
   ============================================================ */
 
 void rglGcmCopySurface(
-      const rglGcmSurface* src,
+      const void *data,
       GLuint srcX, GLuint srcY,
-      const rglGcmSurface* dst,
+      const void *data_dst,
       GLuint dstX, GLuint dstY,
       GLuint width, GLuint height,
       GLboolean writeSync )	// don't overwrite dst directly (not used yet)
 {
+   const rglGcmSurface *src = (const rglGcmSurface*)data;
+   const rglGcmSurface *dst = (const rglGcmSurface*)data_dst;
    const GLuint srcPitch = src->pitch ? src->pitch : src->bpp * src->width;
    const GLuint dstPitch = dst->pitch ? dst->pitch : dst->bpp * dst->width;
 

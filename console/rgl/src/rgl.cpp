@@ -37,8 +37,10 @@ static rglBufferObject *rglCreateBufferObject(void)
    return buffer;
 }
 
-static void rglFreeBufferObject( rglBufferObject *buffer )
+static void rglFreeBufferObject (void *data)
 {
+   rglBufferObject *buffer = (rglBufferObject*)data;
+
    if ( --buffer->refCount == 0 )
    {
       rglPlatformDestroyBufferObject( buffer );
@@ -47,8 +49,9 @@ static void rglFreeBufferObject( rglBufferObject *buffer )
    }
 }
 
-static void rglUnbindBufferObject( RGLcontext *LContext, GLuint name )
+static void rglUnbindBufferObject (void *data, GLuint name)
 {
+   RGLcontext *LContext = (RGLcontext*)data;
    if ( LContext->ArrayBuffer == name ) LContext->ArrayBuffer = 0;
    if ( LContext->PixelUnpackBuffer == name ) LContext->PixelUnpackBuffer = 0;
    for ( int i = 0;i < RGL_MAX_VERTEX_ATTRIBS;++i )
@@ -631,11 +634,11 @@ int rglGetPixelSize( GLenum format, GLenum type )
    return rglGetComponentCount( format )*componentSize;
 }
 
-void rglRawRasterToImage(
-      const rglRaster* raster,
-      rglImage* image,
-      GLuint x, GLuint y, GLuint z )
+void rglRawRasterToImage(const void *in_data,
+      void *out_data, GLuint x, GLuint y, GLuint z )
 {
+   const rglRaster* raster = (const rglRaster*)in_data;
+   rglImage *image = (rglImage*)out_data;
    const int pixelBits = rglGetPixelSize( image->format, image->type ) * 8;
 
    const GLuint size = pixelBits / 8;
@@ -696,8 +699,10 @@ void rglRawRasterToImage(
    }
 }
 
-void rglImageAllocCPUStorage( rglImage *image )
+void rglImageAllocCPUStorage (void *data)
 {
+   rglImage *image = (rglImage*)data;
+
    if (( image->storageSize > image->mallocStorageSize ) || ( !image->mallocData ) )
    {
       if (image->mallocData)
@@ -709,8 +714,9 @@ void rglImageAllocCPUStorage( rglImage *image )
    image->data = rglPadPtr( image->mallocData, 128 );
 }
 
-void rglImageFreeCPUStorage( rglImage *image )
+void rglImageFreeCPUStorage(void *data)
 {
+   rglImage *image = (rglImage*)data;
    if (!image->mallocData)
       return;
 
@@ -985,8 +991,10 @@ void rglResetAttributeState( rglAttributeState* as )
    as->HasVBOMask = 0;
 }
 
-static void rglResetContext( RGLcontext *LContext )
+static void rglResetContext (void *data)
 {
+   RGLcontext *LContext = (RGLcontext*)data;
+
    rglTexNameSpaceResetNames( &LContext->textureNameSpace );
    rglTexNameSpaceResetNames( &LContext->bufferObjectNameSpace );
    rglTexNameSpaceResetNames( &LContext->framebufferNameSpace );
@@ -1067,7 +1075,9 @@ static void rglResetContext( RGLcontext *LContext )
 RGLcontext* psglCreateContext(void)
 {
    RGLcontext* LContext = ( RGLcontext* )malloc( sizeof( RGLcontext ) );
-   if ( !LContext ) return NULL;
+
+   if (!LContext)
+      return NULL;
 
    memset( LContext, 0, sizeof( RGLcontext ) );
 
@@ -1158,8 +1168,9 @@ void RGL_EXPORT psglDestroyContext( RGLcontext* LContext )
    free( LContext );
 }
 
-void rglInvalidateAllStates( RGLcontext* context )
+void rglInvalidateAllStates (void *data)
 {
+   RGLcontext *context = (RGLcontext*)data;
    context->needValidate = RGL_VALIDATE_ALL;
    context->attribs->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
 }
@@ -1367,9 +1378,10 @@ rglTexture *rglAllocateTexture(void)
    return texture;
 }
 
-void rglFreeTexture( rglTexture *texture )
+void rglFreeTexture (void *data)
 {
-   rglTextureTouchFBOs( texture );
+   rglTexture *texture = (rglTexture*)data;
+   rglTextureTouchFBOs(texture);
    texture->framebuffers.~Vector<rglFramebuffer *>();
 
    if ( texture->image )
@@ -1404,8 +1416,9 @@ void rglTextureUnbind( RGLcontext* context, GLuint name )
    }
 }
 
-GLboolean rglTextureIsValid( const rglTexture* texture )
+GLboolean rglTextureIsValid (const void *data)
 {
+   const rglTexture *texture = (const rglTexture*)data;
    if ( texture->imageCount < 1 + texture->baseLevel )
       return GL_FALSE;
    if ( !texture->image )
@@ -1449,11 +1462,11 @@ GLenum rglGetEnabledTextureMode( const rglTextureImageUnit *unit )
    // here, if fragment program is enabled and a valid program is set, get the enabled
    // units from the program instead of the texture units.
    if ( _CurrentContext->BoundFragmentProgram != NULL && _CurrentContext->FragmentProgram != GL_FALSE)
-   {
       return unit->fragmentTarget;
-   }
-   else if ( unit->enable2D ) return GL_TEXTURE_2D;
-   else return 0;
+   else if ( unit->enable2D )
+      return GL_TEXTURE_2D;
+
+   return 0;
 }
 
 rglTexture *rglGetCurrentTexture( const rglTextureImageUnit *unit, GLenum target )
@@ -1508,8 +1521,9 @@ int rglGetImage( GLenum target, GLint level, rglTexture **texture, rglImage **im
    return 0;
 }
 
-void rglBindTextureInternal( rglTextureImageUnit *unit, GLuint name, GLenum target )
+void rglBindTextureInternal (void *data, GLuint name, GLenum target )
 {
+   rglTextureImageUnit *unit = (rglTextureImageUnit*)data;
    RGLcontext*	LContext = _CurrentContext;
    rglTexture *texture = NULL;
    if ( name )
@@ -1524,6 +1538,7 @@ void rglBindTextureInternal( rglTextureImageUnit *unit, GLuint name, GLenum targ
       }
    }
 
+#if 0
    switch ( target )
    {
       case GL_TEXTURE_2D:
@@ -1532,6 +1547,10 @@ void rglBindTextureInternal( rglTextureImageUnit *unit, GLuint name, GLenum targ
       default:
          break;
    }
+#else
+   unit->bound2D = name;
+#endif
+
    rglUpdateCurrentTextureCache( unit );
    LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
 }
@@ -1565,9 +1584,7 @@ GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param )
       case GL_TEXTURE_MIN_FILTER:
          texture->minFilter = param;
          if ( texture->referenceBuffer == 0 )
-         {
             texture->revalidate |= RGL_TEXTURE_REVALIDATE_LAYOUT;
-         }
          break;
       case GL_TEXTURE_MAG_FILTER:
          texture->magFilter = param;
@@ -1586,10 +1603,9 @@ GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param )
          break;
       case GL_TEXTURE_FROM_VERTEX_PROGRAM_SCE:
          if ( param != 0 )
-         {
             texture->vertexEnable = GL_TRUE;
-         }
-         else texture->vertexEnable = GL_FALSE;
+         else
+            texture->vertexEnable = GL_FALSE;
          texture->revalidate |= RGL_TEXTURE_REVALIDATE_LAYOUT;
          break;
       case GL_TEXTURE_ALLOCATION_HINT_SCE:
@@ -1660,9 +1676,7 @@ GLAPI void APIENTRY glTexImage2D( GLenum target, GLint level, GLint internalForm
 
 
    if ( LContext->PixelUnpackBuffer != 0 )
-   {
       rglPlatformBufferObjectUnmap( bufferObject );
-   }
 
    texture->revalidate |= RGL_TEXTURE_REVALIDATE_IMAGES;
 

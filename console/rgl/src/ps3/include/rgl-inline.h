@@ -553,21 +553,14 @@ static inline void rglGcmFifoGlFinishFenceRef( const GLuint ref )
    rglGcmFifo *fifo = &rglGcmState_i.fifo;
 
    // wait for completion
-   for ( ;; )
-   {
-      // gpu passed reference ?
-      if ( !rglGcmFifoReferenceInUse( fifo, ref ) )
-         break;
-
-      // avoid polling on bus (interrupts memory traffic)
+   while (rglGcmFifoReferenceInUse(fifo, ref))
       sys_timer_usleep(10);
-   }
 }
 
 #define RGLGCM_UTIL_LABEL_INDEX 253
 
 // Utility to let RSX wait for complete RSX pipeline idle
-static inline void rglGcmUtilWaitForIdle()
+static inline void rglGcmUtilWaitForIdle (void)
 {
    // set write label command in push buffer, and wait
    // NOTE: this is for RSX to wailt
@@ -686,7 +679,7 @@ static inline void rglGcmFifoGlBlendFunc( rglGcmEnum sf, rglGcmEnum df, rglGcmEn
 // Can be used for printing out macro and constant values.
 // example: rglPrintIt( RGLGCM_3DCONST(SET_SURFACE_FORMAT, COLOR, LE_A8R8G8B8) );
 //          00 00 00 08 : 00000000 00000000 00000000 00001000 */
-void static inline rglPrintIt( unsigned int v )
+void static inline rglPrintIt (unsigned int v )
 {
    // HEX (space between bytes)
    printf( "%02x %02x %02x %02x : ", ( v >> 24 )&0xff, ( v >> 16 )&0xff, ( v >> 8 )&0xff, v&0xff );
@@ -925,9 +918,11 @@ static inline void rglGcmFifoGlDisable( rglGcmEnum cap )
    }
 }
 
-static inline void rglFifoGlProgramParameterfvVP( const _CGprogram *program, const CgParameterEntry *parameterEntry, const GLfloat *value )
+static inline void rglFifoGlProgramParameterfvVP (const void *data, const CgParameterEntry *parameterEntry, const GLfloat *value)
 {
+   const _CGprogram *program = (const _CGprogram*)data;
    const CgParameterResource *parameterResource = rglGetParameterResource( program, parameterEntry );
+
    if ( parameterResource->resource != ( unsigned short ) - 1 )
    {
       switch ( parameterResource->type )
@@ -1028,7 +1023,7 @@ static inline void rglFifoGlProgramParameterfvVP( const _CGprogram *program, con
 }
 
 // Look up the memory location of a buffer object (VBO, PBO)
-static inline GLuint rglGcmGetBufferObjectOrigin( GLuint buffer )
+static inline GLuint rglGcmGetBufferObjectOrigin (GLuint buffer)
 {
    rglBufferObject *bufferObject = (rglBufferObject*)_CurrentContext->bufferObjectNameSpace.data[buffer];
    rglGcmBufferObject *gcmBuffer = ( rglGcmBufferObject * ) & bufferObject->platformBufferObject;
