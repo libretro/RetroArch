@@ -745,8 +745,9 @@ static void gmmFreeBlock(GmmBlock *pBlock)
    gmmFreeFixedBlock(pBlock);
 }
 
-static void gmmAddPendingFree(GmmBlock *pBlock)
+static void gmmAddPendingFree(void *data)
 {
+   GmmBlock *pBlock = (GmmBlock*)data;
    GmmAllocator    *pAllocator;
 
    pAllocator = pGmmLocalAllocator;
@@ -776,9 +777,7 @@ static void gmmAddPendingFree(GmmBlock *pBlock)
    pBlock->fence = nvFenceCounter;
 }
 
-static uint8_t gmmSizeToFreeIndex(
-      uint32_t size
-      )
+static uint8_t gmmSizeToFreeIndex(uint32_t size)
 {
    if (size >= GMM_FREE_BIN_0 && size < GMM_FREE_BIN_1)
       return 0;
@@ -929,13 +928,10 @@ uint32_t gmmFree(const uint32_t freeId)
    return CELL_OK;
 }
 
-static inline void gmmLocalMemcpy(
-      CellGcmContextData *thisContext,
-      const uint32_t dstOffset,
-      const uint32_t srcOffset,
-      const uint32_t moveSize
-      )
+static inline void gmmLocalMemcpy(void *data, const uint32_t dstOffset,
+      const uint32_t srcOffset, const uint32_t moveSize)
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)data;
    int32_t offset = 0;
    int32_t sizeLeft = moveSize;
    int32_t dimension = 4096;
@@ -986,43 +982,37 @@ static inline void gmmLocalMemcpy(
    }
 }
 
-static inline void gmmMemcpy(
-      CellGcmContextData *thisContext,
-      const uint8_t mode,
-      const uint32_t dstOffset,
-      const uint32_t srcOffset,
-      const uint32_t moveSize
-      )
+static inline void gmmMemcpy(void *data, const uint8_t mode,
+      const uint32_t dstOffset, const uint32_t srcOffset,
+      const uint32_t moveSize)
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)data;
+
+   if (dstOffset + moveSize <= srcOffset)
    {
-      if (dstOffset + moveSize <= srcOffset)
+      gmmLocalMemcpy(thisContext,
+            dstOffset,
+            srcOffset,
+            moveSize);
+   }
+   else
+   {
+      uint32_t moveBlockSize = srcOffset-dstOffset;
+      uint32_t iterations = (moveSize+moveBlockSize-1)/moveBlockSize;
+
+      for (uint32_t i=0; i<iterations; i++)
       {
          gmmLocalMemcpy(thisContext,
-               dstOffset,
-               srcOffset,
-               moveSize);
-      }
-      else
-      {
-         uint32_t moveBlockSize = srcOffset-dstOffset;
-         uint32_t iterations = (moveSize+moveBlockSize-1)/moveBlockSize;
-
-         for (uint32_t i=0; i<iterations; i++)
-         {
-            gmmLocalMemcpy(thisContext,
-                  dstOffset+(i*moveBlockSize),
-                  srcOffset+(i*moveBlockSize),
-                  moveBlockSize);
-         }
+               dstOffset+(i*moveBlockSize),
+               srcOffset+(i*moveBlockSize),
+               moveBlockSize);
       }
    }
 }
 
-static uint8_t gmmInternalSweep(
-      CellGcmContextData *thisContext,
-      const uint8_t location
-      )
+static uint8_t gmmInternalSweep(void *data, const uint8_t location)
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)data;
    GmmAllocator    *pAllocator;
    GmmBlock        *pBlock;       
    GmmBlock        *pSrcBlock;
@@ -1259,9 +1249,7 @@ void gmmUpdateFreeList(const uint8_t location)
    }
 }
 
-static void gmmFreeAll(
-      const uint8_t location
-      )
+static void gmmFreeAll(const uint8_t location)
 {
    GmmAllocator    *pAllocator;
    GmmBlock        *pBlock;
@@ -1294,11 +1282,9 @@ static void gmmFreeAll(
    }
 }
 
-static void gmmAllocSweep(
-      CellGcmContextData *thisContext,
-      const uint8_t location
-      )
+static void gmmAllocSweep(void *data, const uint8_t location)
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)data;
    gmmFreeAll(location);
 
    if (gmmInternalSweep(thisContext, location))
@@ -1406,13 +1392,10 @@ static uint32_t gmmFindFreeBlock(
    return retId;
 }
 
-uint32_t gmmAlloc(
-      CellGcmContextData *thisContext,
-      const uint8_t location, 
-      const uint8_t isTile,
-      const uint32_t size
-      )
+uint32_t gmmAlloc(void *data, const uint8_t location, 
+      const uint8_t isTile, const uint32_t size)
 {
+   CellGcmContextData *thisContext = (CellGcmContextData*)data;
    GmmAllocator    *pAllocator;
    uint32_t        retId;
    uint32_t        newSize;
@@ -1461,9 +1444,9 @@ uint32_t gmmAlloc(
   FRAGMENT SHADER
   ============================================================ */
 
-void rglSetNativeCgFragmentProgram( const GLvoid *header )
+void rglSetNativeCgFragmentProgram(const void *header)
 {
-   const _CGprogram *ps = ( const _CGprogram * )header;
+   const _CGprogram *ps = (const _CGprogram *)header;
 
    CellCgbFragmentProgramConfiguration conf;
 
@@ -1500,9 +1483,9 @@ void rglSetNativeCgFragmentProgram( const GLvoid *header )
   VERTEX SHADER
   ============================================================ */
 
-void rglSetNativeCgVertexProgram( const void *header )
+void rglSetNativeCgVertexProgram(const void *header)
 {
-   const _CGprogram *vs = ( const _CGprogram* ) header;
+   const _CGprogram *vs = (const _CGprogram*) header;
 
    __dcbt(vs->ucode);
    __dcbt(((uint8_t*)vs->ucode)+128);
@@ -1772,10 +1755,7 @@ void rglGcmSetOpenGLState( rglGcmState *rglGcmSt )
    rglGcmFifoGlDisable( RGLGCM_PSHADER_SRGB_REMAPPING );
 
    for ( i = 0; i < RGLGCM_ATTRIB_COUNT; i++ )
-   {
       rglGcmFifoGlVertexAttribPointer( i, 0, RGLGCM_FLOAT, RGLGCM_FALSE, 0, 0, 0, 0 );
-   }
-
 
    rglGcmFifoGlEnable( RGLGCM_DITHER );
 
@@ -1827,7 +1807,7 @@ GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
 }
 
 
-void rglGcmDestroy( void )
+void rglGcmDestroy(void)
 {
    rglGcmState *rglGcmSt = &rglGcmState_i;
    memset( rglGcmSt, 0, sizeof( *rglGcmSt ) );
@@ -1840,12 +1820,12 @@ void rglGcmDestroy( void )
 static GLuint MemoryClock = 0;
 static GLuint GraphicsClock = 0;
 
-GLuint rglGcmGetMemoryClock()
+GLuint rglGcmGetMemoryClock(void)
 {
    return MemoryClock;
 }
 
-GLuint rglGcmGetGraphicsClock()
+GLuint rglGcmGetGraphicsClock(void)
 {
    return GraphicsClock;
 }
@@ -1959,7 +1939,8 @@ void rglGcmMemcpy( const GLuint dstId, unsigned dstOffset, unsigned int pitch, c
    }
 }
 
-void rglGcmSend( unsigned int dstId, unsigned dstOffset, unsigned int pitch, const char *src, unsigned int size )
+void rglGcmSend( unsigned int dstId, unsigned dstOffset, unsigned int pitch,
+      const char *src, unsigned int size )
 {
    // try allocating the whole block in the bounce buffer
    GLuint id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
@@ -1996,7 +1977,7 @@ void rglPlatformInit( RGLinitOptions* options )
 }
 
 
-void rglPlatformExit()
+void rglPlatformExit(void)
 {
 }
 
@@ -2008,7 +1989,7 @@ void rglInitConsole( GLuint enable )
 {
 }
 
-void rglExitConsole()
+void rglExitConsole(void)
 {
 }
 
@@ -2078,7 +2059,7 @@ void rglPsglPlatformInit( RGLinitOptions* options )
    rglInitCompleted = 1;
 }
 
-void rglPsglPlatformExit()
+void rglPsglPlatformExit(void)
 {
    RGLcontext* LContext = _CurrentContext;
    if ( LContext )

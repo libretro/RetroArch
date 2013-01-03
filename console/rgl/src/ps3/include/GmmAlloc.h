@@ -149,7 +149,7 @@ void gmmUpdateFreeList(
       );
 
 uint32_t gmmAlloc(
-      CellGcmContextData *thisContext,
+      void *data,
       const uint8_t location, 
       const uint8_t isTile,
       const uint32_t size
@@ -171,17 +171,13 @@ void gmmSetTileAttrib(
       void *pData
       );
 
-void *gmmGetTileData(
-      const uint32_t id
-      );
+void *gmmGetTileData(const uint32_t id);
 
-void gmmPinAllocations();
+void gmmPinAllocations(void);
 
-void gmmUnpinAllocations();
+void gmmUnpinAllocations(void);
 
-static inline uint8_t gmmIdIsMain(
-      const uint32_t id
-      )
+static inline uint8_t gmmIdIsMain(const uint32_t id)
 {
    return false; 
 }
