@@ -47,14 +47,14 @@ typedef enum
    FILEBROWSER_ACTION_NOOP
 } filebrowser_action_t;
 
-const char * filebrowser_get_current_dir (filebrowser_t *filebrowser);
-const char * filebrowser_get_current_path (filebrowser_t *filebrowser);
-bool filebrowser_get_current_path_isdir (filebrowser_t *filebrowser);
-size_t filebrowser_get_current_index (filebrowser_t *filebrowser);
-void filebrowser_set_root(filebrowser_t *filebrowser, const char *root_dir);
-void filebrowser_set_root_and_ext(filebrowser_t *browser, const char *ext, const char *root_dir);
-void filebrowser_free(filebrowser_t *filebrowser);
-void filebrowser_set_current_at (filebrowser_t *filebrowser, size_t pos);
-bool filebrowser_iterate(filebrowser_t *filebrowser, filebrowser_action_t action);
+const char * filebrowser_get_current_dir (void *data);
+const char * filebrowser_get_current_path (void *data);
+bool filebrowser_get_current_path_isdir (void *data);
+size_t filebrowser_get_current_index (void *data);
+void filebrowser_set_root(void *data, const char *root_dir);
+void filebrowser_set_root_and_ext(void *data, const char *ext, const char *root_dir);
+void filebrowser_free(void *data);
+void filebrowser_set_current_at (void *dat, size_t pos);
+bool filebrowser_iterate(void *data, unsigned action);
 
 #endif /* FILEBROWSER_H_ */
