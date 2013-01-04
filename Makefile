@@ -107,7 +107,7 @@ ifeq ($(HAVE_OSS_LIB), 1)
 endif
 
 ifeq ($(HAVE_ALSA), 1)
-   OBJ += audio/alsa.o
+   OBJ += audio/alsa.o audio/alsathread.o
    LIBS += $(ALSA_LIBS)
    DEFINES += $(ALSA_CFLAGS)
 endif

@@ -43,6 +43,8 @@ const char *config_get_default_audio(void)
          return "oss";
       case AUDIO_ALSA:
          return "alsa";
+      case AUDIO_ALSATHREAD:
+         return "alsathread";
       case AUDIO_ROAR:
          return "roar";
       case AUDIO_COREAUDIO:
