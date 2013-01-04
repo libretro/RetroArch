@@ -178,7 +178,7 @@ extern PSGLdeviceParameters * rglShadowDeviceParameters (void);
 //----------------------------------------
 // Device/.../PlatformDevice.c
 //----------------------------------------
-extern GLboolean rglPlatformDeviceInit (PSGLinitOptions* options);
+extern GLboolean rglPlatformDeviceInit (void *data);
 extern void		rglPlatformDeviceExit (void);
 extern int		rglPlatformDeviceSize (void);
 extern int		rglPlatformCreateDevice (void *data);

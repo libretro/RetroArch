@@ -81,13 +81,13 @@ typedef struct
 extern CGbool rglpSupportsVertexProgram( CGprofile p );
 extern CGbool rglpSupportsFragmentProgram( CGprofile p );
 extern CGprofile rglpGetLatestProfile( CGGLenum profile_type );
-extern int rglpCopyProgram( _CGprogram* source, _CGprogram* destination );
-extern int rglpGenerateFragmentProgram( _CGprogram *program,
+extern int rglpCopyProgram (void *src_data, void *dst_data);
+extern int rglpGenerateFragmentProgram (void *data,
    const CgProgramHeader *programHeader, const void *ucode,
    const CgParameterTableHeader *parameterHeader,
    const char *stringTable, const float *defaultValues );
 
-extern int rglpGenerateVertexProgram( _CGprogram *program,
+extern int rglpGenerateVertexProgram (void *data,
    const CgProgramHeader *programHeader, const void *ucode,
    const CgParameterTableHeader *parameterHeader, const char *stringTable,
    const float *defaultValues );
@@ -95,7 +95,7 @@ extern int rglpGenerateVertexProgram( _CGprogram *program,
 extern CGprogram rglpCgUpdateProgramAtIndex( CGprogramGroup group, int index,
    int refcount );
 
-extern void rglpProgramErase( _CGprogram* prog );
+extern void rglpProgramErase (void *data);
 
 extern bool cgOpenElf( const void *ptr, size_t size, CGELFBinary *elfBinary );
 extern bool cgGetElfProgramByIndex( CGELFBinary *elfBinary, int index, CGELFProgram *elfProgram );

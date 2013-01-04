@@ -53,16 +53,18 @@ CGprofile rglpGetLatestProfile( CGGLenum profile_type )
 
 // uploads the given fp shader to gpu memory. Allocates if needed.
 // This also builds the shared constants push buffer if needed, since it depends on the load address
-static int rglpsLoadFPShader( _CGprogram *program )
+static int rglpsLoadFPShader (void *data)
 {
+   _CGprogram *program = (_CGprogram*)data;
    unsigned int ucodeSize = program->header.instructionCount * 16;
+
    if ( program->loadProgramId == GMM_ERROR )
    {
       program->loadProgramId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
             CELL_GCM_LOCATION_LOCAL, 0, ucodeSize);
       program->loadProgramOffset = 0;
    }
-   // always upload shader
+
    rglGcmSend( program->loadProgramId, program->loadProgramOffset, 0, ( char* )program->ucode, ucodeSize );
    return GL_TRUE;
 }
@@ -79,10 +81,10 @@ static void rglpsUnloadFPShader(_CGprogram *program)
 
 //new binary addition
 
-int rglGcmGenerateProgram( _CGprogram *program, int profileIndex, const CgProgramHeader *programHeader, const void *ucode, const CgParameterTableHeader *parameterHeader,
+int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramHeader *programHeader, const void *ucode, const CgParameterTableHeader *parameterHeader,
       const CgParameterEntry *parameterEntries, const char *stringTable, const float *defaultValues )
 {
-   // validate the input
+   _CGprogram *program = (_CGprogram*)data;
    CGprofile profile = ( CGprofile )programHeader->profile;
 
    int need_swapping = 0;
@@ -416,13 +418,13 @@ void rglCgDestroyProgramGroup( CGprogramGroup group )
    free( _group );
 }
 
-const char *rglCgGetProgramGroupName( CGprogramGroup group )
+const char *rglCgGetProgramGroupName (CGprogramGroup group)
 {
    _CGprogramGroup *_group = ( _CGprogramGroup * )group;
    return _group->name;
 }
 
-int rglCgGetProgramIndex( CGprogramGroup group, const char *name )
+int rglCgGetProgramIndex (CGprogramGroup group, const char *name)
 {
    int i;
    for ( i = 0;i < ( int )group->programCount;i++ )
@@ -433,9 +435,10 @@ int rglCgGetProgramIndex( CGprogramGroup group, const char *name )
    return -1;
 }
 
-void rglpProgramErase( _CGprogram* platformProgram )
+void rglpProgramErase (void *data)
 {
-   _CGprogram* program = ( _CGprogram* )platformProgram;
+   _CGprogram* platformProgram = (_CGprogram*)data;
+   _CGprogram* program = (_CGprogram*)platformProgram;
 
    if ( program->loadProgramId != GMM_ERROR )
       rglpsUnloadFPShader( program );
@@ -471,8 +474,10 @@ void rglpProgramErase( _CGprogram* platformProgram )
 }
 
 //TODO: use a ref mechanism for the string table or duplicate it !
-int rglpCopyProgram( _CGprogram* source, _CGprogram* destination )
+int rglpCopyProgram (void *src_data, void *dst_data)
 {
+   _CGprogram *source = (_CGprogram*)src_data;
+   _CGprogram *destination = (_CGprogram*)dst_data;
    //extract the layout of the parameter buffers from the source
    CgParameterTableHeader parameterHeader;
    parameterHeader.entryCount = source->rtParametersCount;
@@ -502,21 +507,20 @@ int rglpCopyProgram( _CGprogram* source, _CGprogram* destination )
    return rglGcmGenerateProgram( destination, profileIndex, &source->header, source->ucode, &parameterHeader, source->parametersEntries, source->stringTable, source->defaultValues );
 }
 
-int rglpGenerateVertexProgram( _CGprogram *program,
-      const CgProgramHeader *programHeader, const void *ucode,
-      const CgParameterTableHeader *parameterHeader, const char *stringTable,
+int rglpGenerateVertexProgram (void *data, const CgProgramHeader *programHeader,
+      const void *ucode, const CgParameterTableHeader *parameterHeader, const char *stringTable,
       const float *defaultValues )
 {
-   // we currently have the same interface for vertex and fragment programs.
+   _CGprogram *program = (_CGprogram*)data;
    return rglGcmGenerateProgram( program, VERTEX_PROFILE_INDEX, programHeader,
          ucode, parameterHeader, NULL, stringTable, defaultValues );
 
 }
 
-int rglpGenerateFragmentProgram( _CGprogram *program, const CgProgramHeader *programHeader, const void *ucode,
+int rglpGenerateFragmentProgram (void *data, const CgProgramHeader *programHeader, const void *ucode,
       const CgParameterTableHeader *parameterHeader, const char *stringTable, const float *defaultValues )
 {
-   // we currently have the same interface for vertex and fragment programs.
+   _CGprogram *program = (_CGprogram*)data;
    return rglGcmGenerateProgram( program, FRAGMENT_PROFILE_INDEX, programHeader, ucode, parameterHeader, NULL, stringTable, defaultValues );
 
 }

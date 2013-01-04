@@ -194,7 +194,7 @@ static void gmmFreeFixed(uint8_t isTile, void *pBlock)
    }
 }
 
-static void gmmDestroyFixedAllocator()
+static void gmmDestroyFixedAllocator (void)
 {
    if (pGmmFixedAllocData)
    {
@@ -215,32 +215,34 @@ static void gmmDestroyFixedAllocator()
    }
 }
 
-static GmmBlock *gmmAllocFixedBlock()
+static GmmBlock *gmmAllocFixedBlock (void)
 {
    return (GmmBlock *)gmmAllocFixed(0);
 }
 
-static void gmmFreeFixedBlock(GmmBlock *pBlock)
+static void gmmFreeFixedBlock (void *data)
 {
+   GmmBlock *pBlock = (GmmBlock*)data;
    gmmFreeFixed(0, pBlock);
 }
 
-static GmmTileBlock *gmmAllocFixedTileBlock()
+static GmmTileBlock *gmmAllocFixedTileBlock (void)
 {
    return (GmmTileBlock *)gmmAllocFixed(1);
 }
 
-static void gmmFreeFixedTileBlock(GmmTileBlock *pTileBlock)
+static void gmmFreeFixedTileBlock (void *data)
 {
+   GmmTileBlock *pTileBlock = (GmmTileBlock*)data;
    gmmFreeFixed(1, pTileBlock);
 }
 
-void gmmPinAllocations()
+void gmmPinAllocations (void)
 {
    pinAllocations = 1;
 }
 
-void gmmUnpinAllocations()
+void gmmUnpinAllocations (void)
 {
    pinAllocations = 0;
 }
@@ -293,23 +295,16 @@ uint32_t gmmInit(
    return gmmInitFixedAllocator();
 }
 
-static inline void gmmWaitForSweep()
+static inline void gmmWaitForSweep (void)
 {
-   do
+   while (cachedLockValue != 0)
    {
-      if (cachedLockValue == 0)
-         break;
-
-      cachedLockValue = *pLock;
-
-      if (cachedLockValue == 0)
-         break;
-
       sys_timer_usleep(30);
-   }while(1);
+      cachedLockValue = *pLock;
+   }
 }
 
-uint32_t gmmDestroy()
+uint32_t gmmDestroy (void)
 {
    GmmBlock *pBlock, *pTmpBlock;
    GmmTileBlock *pTileBlock, *pTmpTileBlock;
@@ -555,10 +550,9 @@ static GmmTileBlock *gmmCreateTileBlock(
    return pNewBlock;
 }
 
-static void gmmFreeTileBlock(
-      GmmTileBlock    *pTileBlock
-      )
+static void gmmFreeTileBlock (void *data)
 {
+   GmmTileBlock    *pTileBlock = (GmmTileBlock*)data;
    GmmAllocator    *pAllocator;
 
    if (pTileBlock->pPrev)
@@ -2019,8 +2013,10 @@ enable: 0,
 static int rglInitCompleted = 0;
 int _getJsInitCompleted(){ return rglInitCompleted; } // accessor
 
-void rglPsglPlatformInit( RGLinitOptions* options )
+void rglPsglPlatformInit (void *data)
 {
+   RGLinitOptions *options = (RGLinitOptions*)data;
+
    if ( !rglInitCompleted )
    {
       int ret = cellSysmoduleLoadModule( CELL_SYSMODULE_GCM_SYS );
@@ -2085,9 +2081,10 @@ RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceAuto( GLenum colorFormat, GLenum de
    return psglCreateDeviceExtended( &parameters );
 }
 
-RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceExtended( const RGLdeviceParameters *parameters )
+RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceExtended (const void *data)
 {
-   RGLdevice *device = ( RGLdevice * )malloc( sizeof( RGLdevice ) + rglPlatformDeviceSize() );
+   RGLdeviceParameters *parameters = (RGLdeviceParameters*)data;
+   RGLdevice *device = (RGLdevice*)malloc( sizeof( RGLdevice ) + rglPlatformDeviceSize() );
    if ( !device )
    {
       rglSetError( GL_OUT_OF_MEMORY );
@@ -2163,8 +2160,9 @@ RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceExtended( const RGLdeviceParameters
    return device;
 }
 
-RGL_EXPORT GLfloat rglPlatformGetDeviceAspectRatio( const RGLdevice * device )
+RGL_EXPORT GLfloat rglPlatformGetDeviceAspectRatio (const void *data)
 {
+   const RGLdevice *device = (const RGLdevice*)data;
    CellVideoOutState videoState;
    cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &videoState);
 
@@ -2211,10 +2209,9 @@ RGL_EXPORT GLfloat rglPlatformGetDeviceAspectRatio( const RGLdevice * device )
 #define RGLGCM_CONTEXT_2D_SURFACE                    0xBBBB2000
 #define RGLGCM_CONTEXT_SWIZ_SURFACE                  0xBBBB2001
 
-int32_t rglOutOfSpaceCallback( struct CellGcmContextData* fifoContext, uint32_t spaceInWords )
+int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
 {
-   // NOTE the fifo passed in is our very own rglGcmFifo.fifo 
-   // but let's just make sure 
+   struct CellGcmContextData *fifoContext = (struct CellGcmContextData*)data;
    rglGcmFifo * fifo = &rglGcmState_i.fifo;
 
    // make sure that the space requested will actually fit in to
@@ -2416,8 +2413,9 @@ void rglGcmTiledMemoryInit( void )
       retVal = cellGcmUnbindTile( i );
 }
 
-GLboolean rglPlatformDeviceInit( RGLinitOptions* options )
+GLboolean rglPlatformDeviceInit (void *data)
 {
+   RGLinitOptions *options = (RGLinitOptions*)data;
    GLuint fifoSize = RGLGCM_FIFO_SIZE_DEFAULT;
    GLuint hostSize = RGLGCM_HOST_SIZE_DEFAULT;
 
@@ -2439,14 +2437,14 @@ GLboolean rglPlatformDeviceInit( RGLinitOptions* options )
 }
 
 
-void rglPlatformDeviceExit()
+void rglPlatformDeviceExit (void)
 {
    rglGcmDestroy();
    rglGcmDestroyRM( &rglGcmResource );
 }
 
 
-int rglPlatformDeviceSize()
+int rglPlatformDeviceSize (void)
 {
    return sizeof( rglGcmDevice );
 }

@@ -29,11 +29,11 @@
 
 #include <Cg/CgCommon.h>
 
-void rglPsglPlatformInit( RGLinitOptions* options );
-void rglPsglPlatformExit(void);
+void rglPsglPlatformInit (void *data);
+void rglPsglPlatformExit (void);
 
 RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceAuto( GLenum colorFormat, GLenum depthFormat, GLenum multisamplingMode );
-RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceExtended( const RGLdeviceParameters *parameters );
-RGL_EXPORT GLfloat rglPlatformGetDeviceAspectRatio( const RGLdevice * device );
+RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceExtended (const void *data);
+RGL_EXPORT GLfloat rglPlatformGetDeviceAspectRatio (const void *data);
 
 #endif
