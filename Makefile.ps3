@@ -151,12 +151,12 @@ copy-media-files:
 
 create-shaders:
 ifeq ($(DOWNLOAD_SHADERS),1)
-	if [ -d $(SHADER_PKG_DIR) ]; then
-      cd $(SHADER_PKG_DIR)
-		$(GIT) pull
-		cd ../../../../..
-	else
-      $(GIT) clone git://github.com/libretro/common-shaders.git $(SHADER_PKG_DIR)
+	@if test -d $(SHADER_PKG_DIR); then \
+      cd $(SHADER_PKG_DIR); \
+		$(GIT) pull; \
+		cd ../../../../..; \
+	else \
+      $(GIT) clone git://github.com/libretro/common-shaders.git $(SHADER_PKG_DIR); \
 	fi
 endif
 
