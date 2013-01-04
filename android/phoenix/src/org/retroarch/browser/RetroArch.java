@@ -234,9 +234,13 @@ public class RetroArch extends Activity implements
 		config.setString("video_fbo_scale_x", prefs.getString("video_fbo_scale", "2.0"));
 		config.setString("video_fbo_scale_y", prefs.getString("video_fbo_scale", "2.0"));
 		
-		config.setString("input_overlay",
-				prefs.getBoolean("input_overlay_enable", false) ? 
-						prefs.getString("input_overlay", "") : "");
+		boolean useOverlay = prefs.getBoolean("input_overlay_enable", true);
+		if (useOverlay) {
+			String overlayPath = prefs.getString("input_overlay", getCacheDir() + "/Overlays/basic_overlay.cfg");
+			config.setString("input_overlay", overlayPath);
+		} else {
+			config.setString("input_overlay", "");
+		}
 
 		String confPath = getDefaultConfigPath();
 		try {

@@ -43,7 +43,7 @@
         </PreferenceCategory>
         <PreferenceCategory android:title="Overlay" >
             <CheckBoxPreference
-                android:defaultValue="false"
+                android:defaultValue="true"
                 android:key="input_overlay_enable"
                 android:title="Enable" />
 
