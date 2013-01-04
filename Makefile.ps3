@@ -9,6 +9,8 @@ CELL_PSGL_VERSION	= ultra-opt
 DEBUG			= 0
 DOWNLOAD_SHADERS	= 1
 SHADER_PKG_DIR := ps3/pkg/USRDIR/cores/shaders
+SHADER_DIR     := media/shaders
+RMENU_IMG_DIR  := media/rmenu
 STRIPPING_ENABLE	= 0
 HAVE_RGL		= 1
 HAVE_LOGGER		= 0
@@ -147,34 +149,35 @@ create-salamander:
 	$(MAKE_SELF) $(SALAMANDER_TARGET) $(EBOOT_PATH) $(CONTENT_ID_FULL)
 
 copy-media-files:
-	@cp console/rmenu/images/main-menu_1080p.png ps3/pkg/USRDIR/cores/borders/Menu/main-menu.png
+	@cp $(RMENU_IMG_DIR)/main-menu_1080p.png ps3/pkg/USRDIR/cores/borders/Menu/main-menu.png
+	@cp -r $(SHADER_DIR) $(SHADER_PKG_DIR)
 
 create-shaders:
 ifeq ($(DOWNLOAD_SHADERS),1)
-	@if test -d $(SHADER_PKG_DIR); then \
-      cd $(SHADER_PKG_DIR); \
+	@if test -d $(SHADER_DIR); then \
+      cd $(SHADER_DIR); \
 		$(GIT) pull; \
 		cd ../../../../..; \
 	else \
-      $(GIT) clone git://github.com/libretro/common-shaders.git $(SHADER_PKG_DIR); \
+      $(GIT) clone git://github.com/libretro/common-shaders.git $(SHADER_DIR); \
 	fi
 endif
 
-pkg: $(PPU_TARGET) copy-media-files create-shaders create-npdrm-salamander create-npdrm-core
+pkg: $(PPU_TARGET)  create-shaders copy-media-files create-npdrm-salamander create-npdrm-core
 	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
 
-pkg-signed: $(PPU_TARGET) copy-media-files create-shaders create-salamander create-core
+pkg-signed: $(PPU_TARGET)  create-shaders copy-media-files create-salamander create-core
 	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION).pkg
 
-pkg-signed-standalone: $(PPU_TARGET) copy-media-files create-shaders create-core
+pkg-signed-standalone: $(PPU_TARGET)  create-shaders copy-media-files create-core
 	$(MAKE_SELF) $(PPU_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
 	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION).pkg
 
-pkg-signed-cfw: $(PPU_TARGET) copy-media-files create-shaders create-salamander create-core
+pkg-signed-cfw: $(PPU_TARGET)  create-shaders copy-media-files create-salamander create-core
 	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
 	$(PKG_FINALIZE) retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
 
-pkg-signed-cfw-standalone: $(PPU_TARGET) copy-media-files create-shaders create-core
+pkg-signed-cfw-standalone: $(PPU_TARGET)  create-shaders copy-media-files create-core
 	$(MAKE_SELF) $(PPU_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
 	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION).pkg
 	$(PKG_FINALIZE) retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
