@@ -8,6 +8,7 @@ CELL_PSGL_VERSION	= ultra-opt
 
 DEBUG			= 0
 DOWNLOAD_SHADERS	= 1
+SHADER_PKG_DIR := ps3/pkg/USRDIR/cores/shaders
 STRIPPING_ENABLE	= 0
 HAVE_RGL		= 1
 HAVE_LOGGER		= 0
@@ -150,8 +151,13 @@ copy-media-files:
 
 create-shaders:
 ifeq ($(DOWNLOAD_SHADERS),1)
-	$(RM) -rf ps3/pkg/USRDIR/cores/shaders
-	$(GIT) clone git://github.com/libretro/common-shaders.git ps3/pkg/USRDIR/cores/shaders
+	if [ -d $(SHADER_PKG_DIR) ]; then
+      cd $(SHADER_PKG_DIR)
+		$(GIT) pull
+		cd ../../../../..
+	else
+      $(GIT) clone git://github.com/libretro/common-shaders.git $(SHADER_PKG_DIR)
+	fi
 endif
 
 pkg: $(PPU_TARGET) copy-media-files create-shaders create-npdrm-salamander create-npdrm-core
