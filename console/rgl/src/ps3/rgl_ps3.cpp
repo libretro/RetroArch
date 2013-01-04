@@ -1601,24 +1601,22 @@ void rglGcmCopySurface(
 
 const uint32_t c_rounded_size_ofrglDrawParams = (sizeof(rglDrawParams)+0x7f)&~0x7f;
 
-void rglGcmFifoFinish( rglGcmFifo *fifo )
+void rglGcmFifoFinish (void *data)
 {
+   rglGcmFifo *fifo = (rglGcmFifo*)data;
    GLuint ref = rglGcmFifoPutReference( fifo );
 
    rglGcmFifoFlush( fifo );
 
-   for ( ;; )
-   {
-      if ( !rglGcmFifoReferenceInUse( fifo, ref ) )
-         break;
-
-      sys_timer_usleep( 10 );
-   }
+   while (rglGcmFifoReferenceInUse(fifo, ref))
+      sys_timer_usleep(10);
 }
 
-void rglGcmFifoFlush( rglGcmFifo *fifo )
+void rglGcmFifoFlush (void *data)
 {
+   rglGcmFifo *fifo = (rglGcmFifo*)data;
    unsigned int offsetInBytes = 0;
+
    cellGcmAddressToOffset( fifo->current, ( uint32_t * )&offsetInBytes );
 
    cellGcmFlush();
@@ -1629,16 +1627,15 @@ void rglGcmFifoFlush( rglGcmFifo *fifo )
    fifo->lastSWReferenceFlushed = fifo->lastSWReferenceWritten;
 }
 
-GLuint rglGcmFifoPutReference( rglGcmFifo *fifo )
+GLuint rglGcmFifoPutReference (void *data)
 {
+   rglGcmFifo *fifo = (rglGcmFifo*)data;
    fifo->lastSWReferenceWritten++;
 
    GCM_FUNC( cellGcmSetReferenceCommand, fifo->lastSWReferenceWritten );
 
    if (( fifo->lastSWReferenceWritten & 0x7fffffff ) == 0 )
-   {
       rglGcmFifoFinish( fifo );
-   }
 
    return fifo->lastSWReferenceWritten;
 }
@@ -1650,17 +1647,16 @@ GLuint rglGcmFifoReadReference( rglGcmFifo *fifo )
    return ref;
 }
 
-GLboolean rglGcmFifoReferenceInUse( rglGcmFifo *fifo, GLuint reference )
+GLboolean rglGcmFifoReferenceInUse (void *data, GLuint reference)
 {
+   rglGcmFifo *fifo = (rglGcmFifo*)data;
    // compare against cached hw ref value (accounting wrap)
    if ( !(( fifo->lastHWReferenceRead - reference ) & 0x80000000 ) )
       return GL_FALSE;
 
    // has the reference already been flushed out ?
    if (( fifo->lastSWReferenceFlushed - reference ) & 0x80000000 )
-   {
       rglGcmFifoFlush( fifo );
-   }
 
    // read current hw reference
    rglGcmFifoReadReference( fifo );
@@ -1675,17 +1671,22 @@ GLboolean rglGcmFifoReferenceInUse( rglGcmFifo *fifo, GLuint reference )
 
 // Wait until the requested space is available.
 // If not currently available, will call the out of space callback
-uint32_t * rglGcmFifoWaitForFreeSpace( rglGcmFifo *fifo, GLuint spaceInWords )
+
+uint32_t * rglGcmFifoWaitForFreeSpace (void *data, GLuint spaceInWords)
 {
+   rglGcmFifo *fifo = (rglGcmFifo*)data;
+
    if ( fifo->current + spaceInWords + 1024 > fifo->end )
       rglOutOfSpaceCallback( fifo, spaceInWords );
 
    return rglGcmState_i.fifo.current;
 }
 
-void rglGcmFifoInit( rglGcmFifo *fifo, void *dmaControl, unsigned long dmaPushBufferOffset, uint32_t*dmaPushBuffer,
+void rglGcmFifoInit (void *data, void *dmaControl, unsigned long dmaPushBufferOffset, uint32_t*dmaPushBuffer,
       GLuint dmaPushBufferSize )
 {
+   rglGcmFifo *fifo = (rglGcmFifo*)data;
+
    // init fifoBlockSize
    fifo->fifoBlockSize = DEFAULT_FIFO_BLOCK_SIZE;
 
@@ -1735,9 +1736,9 @@ void rglGcmFifoInit( rglGcmFifo *fifo, void *dmaControl, unsigned long dmaPushBu
   GL INITIALIZATION
   ============================================================ */
 
-
-void rglGcmSetOpenGLState( rglGcmState *rglGcmSt )
+void rglGcmSetOpenGLState (void *data)
 {
+   rglGcmState *rglGcmSt = (rglGcmState*)data;
    GLuint i;
 
    // initialize the default OpenGL state
@@ -1797,14 +1798,13 @@ GLboolean rglGcmInitFromRM( rglGcmResource *rmResource )
    rglGcmFifoFinish( &rglGcmSt->fifo );
 
    // Set the GPU to a known state
-   rglGcmSetOpenGLState( rglGcmSt );
+   rglGcmSetOpenGLState(rglGcmSt);
 
    // wait for setup to complete
-   rglGcmFifoFinish( &rglGcmSt->fifo );
+   rglGcmFifoFinish(&rglGcmSt->fifo);
 
    return GL_TRUE;
 }
-
 
 void rglGcmDestroy(void)
 {

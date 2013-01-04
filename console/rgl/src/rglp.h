@@ -27,8 +27,8 @@ extern void rglpValidateBlending(void);
 extern void rglpValidateShaderSRGBRemap(void);
 
 extern int rglpBufferObjectSize(void);
-extern GLboolean rglpCreateBufferObject(rglBufferObject* bufferObject);
+extern GLboolean rglpCreateBufferObject (void *data);
 
-void rglpFifoGlFinish( void );
+void rglpFifoGlFinish (void);
 
 #endif

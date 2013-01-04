@@ -1,10 +1,10 @@
-void rglGcmFifoFinish (rglGcmFifo *fifo);
-GLboolean rglGcmFifoReferenceInUse (rglGcmFifo *fifo, GLuint reference);
-GLuint rglGcmFifoPutReference (rglGcmFifo *fifo);
-void rglGcmFifoFlush (rglGcmFifo *fifo);
-uint32_t * rglGcmFifoWaitForFreeSpace (rglGcmFifo *fifo, GLuint spaceInWords);
-void rglGcmGetTileRegionInfo (void* data, GLuint *address, GLuint *size);
-GLboolean rglGcmTryResizeTileRegion( GLuint address, GLuint size, void* data );
+void rglGcmFifoFinish (void *data);
+GLboolean rglGcmFifoReferenceInUse (void *data, GLuint reference);
+GLuint rglGcmFifoPutReference (void *data);
+void rglGcmFifoFlush (void *data);
+uint32_t *rglGcmFifoWaitForFreeSpace (void *data, GLuint spaceInWords);
+void rglGcmGetTileRegionInfo (void *data, GLuint *address, GLuint *size);
+GLboolean rglGcmTryResizeTileRegion( GLuint address, GLuint size, void *data);
 
 void rglGcmTransferData (GLuint dstId, GLuint dstIdOffset, 
  GLint dstPitch, GLuint srcId, GLuint srcIdOffset,
@@ -14,8 +14,8 @@ int32_t rglOutOfSpaceCallback (struct CellGcmContextData* fifoContext, uint32_t 
 void rglGcmFifoGlSetRenderTarget (rglGcmRenderTargetEx const * const args);
 void rglpFifoGlFinish (void);
 void rglCreatePushBuffer (void *data);
-void rglSetDefaultValuesFP( _CGprogram *program );
-void rglSetDefaultValuesVP( _CGprogram *program );
+void rglSetDefaultValuesFP (void *data);
+void rglSetDefaultValuesVP (void *data);
 void rglGcmSend( unsigned int dstId, unsigned dstOffset, unsigned int pitch, const char *src, unsigned int size );
 void rglGcmMemcpy( const GLuint dstId, unsigned dstOffset, unsigned int pitch, const GLuint srcId, GLuint srcOffset, unsigned int size );
 void rglPlatformValidateTextureResources (void *data);

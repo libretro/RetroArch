@@ -119,7 +119,7 @@ struct rglPlatformFramebuffer: public rglFramebuffer
       memset( &rt, 0, sizeof( rt ) );
    };
    virtual ~rglPlatformFramebuffer() {};
-   void validate( PSGLcontext *LContext );
+   void validate (void *data);
 };
 
 typedef struct

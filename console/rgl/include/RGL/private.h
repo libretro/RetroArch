@@ -14,11 +14,11 @@
 extern "C" {
 #endif
 
-   extern RGL_EXPORT RGLcontext*	_CurrentContext;
-   extern RGLdevice*	_CurrentDevice;
-   extern RGL_EXPORT char*    rglVersion;
+extern RGL_EXPORT RGLcontext*	_CurrentContext;
+extern RGLdevice*	_CurrentDevice;
+extern RGL_EXPORT char*    rglVersion;
 
-   // only for internal purpose
+// only for internal purpose
 #define GL_UNSIGNED_BYTE_4_4 0x4A00
 #define GL_UNSIGNED_BYTE_4_4_REV 0x4A01
 #define GL_UNSIGNED_BYTE_6_2 0x4A02
@@ -137,10 +137,8 @@ static inline rglFramebuffer *rglGetFramebufferSafe( RGLcontext *LContext, GLuin
 }
 
 void rglFramebufferGetAttachmentTexture( RGLcontext* LContext, const rglFramebufferAttachment* attachment, rglTexture** texture, GLuint* face );
-GLenum rglPlatformFramebufferCheckStatus( rglFramebuffer* framebuffer );
-GLboolean rglPlatformGenerateMipmap( rglTexture* texture, GLuint face );
+GLenum rglPlatformFramebufferCheckStatus (void *data);
 void rglPlatformFramebufferGetParameteriv( GLenum pname, GLint* params );
-void rglPlatformResolveFramebuffer();
 void rglGetFramebufferSize( GLuint* width, GLuint* height );
 
 //----------------------------------------
@@ -249,12 +247,11 @@ void rglValidateVertexConstants (void);
 //----------------------------------------
 int rglPlatformBufferObjectSize (void);
 GLboolean rglPlatformCreateBufferObject( rglBufferObject* bufferObject );
-void rglPlatformDestroyBufferObject( rglBufferObject* bufferObject );
-void rglPlatformBufferObjectSetData( rglBufferObject* bufferObject, GLintptr offset, GLsizeiptr size, const GLvoid *data, GLboolean tryImmediateCopy );
+void rglPlatformDestroyBufferObject (void *data);
+void rglPlatformBufferObjectSetData (void *buf_data, GLintptr offset, GLsizeiptr size, const GLvoid *data, GLboolean tryImmediateCopy );
 GLvoid rglPlatformBufferObjectCopyData (void *dst, void *src);
-// map / unmap buffers. Internally refcounted
-char *rglPlatformBufferObjectMap( rglBufferObject* bufferObject, GLenum access );
-GLboolean rglPlatformBufferObjectUnmap( rglBufferObject* bufferObject );
+char *rglPlatformBufferObjectMap (void *data, GLenum access );
+GLboolean rglPlatformBufferObjectUnmap (void *data);
 void rglPlatformGetBufferParameteriv( rglBufferObject *bufferObject, GLenum pname, int *params );
 
 // this is shared in glBindTexture and cgGL code

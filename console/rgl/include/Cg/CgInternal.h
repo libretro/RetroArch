@@ -2,8 +2,7 @@
 #define _cg_internal_h
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
    //Hardware shader settings
@@ -152,7 +151,7 @@ extern "C"
    CgProgramHeader;
 
 #ifdef __cplusplus
-}	// Close scope of 'extern "C"' declaration that encloses file.
+}
 #endif
 
 #endif

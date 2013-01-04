@@ -1,5 +1,5 @@
-#ifndef	_RGLTypes_h
-#define	_RGLTypes_h
+#ifndef	_RGL_TYPES_H
+#define	_RGL_TYPES_H
 
 #include <stdlib.h>
 #include <float.h>
@@ -34,19 +34,13 @@ struct rglFramebuffer
 
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
-
-   typedef float        RGLFColorComponent;
-   typedef float	     RGLCoordinate;
-   typedef unsigned int rglBitfield;
 
 #define RGLBIT_GET(f,n)			((f) & (1<<(n)))
 #define RGLBIT_TRUE(f,n)			((f) |= (1<<(n)))
 #define RGLBIT_FALSE(f,n)		((f) &= ~(1<<(n)))
 #define RGLBIT_ASSIGN(f,n,val)	do { if(val) RGLBIT_TRUE(f,n); else RGLBIT_FALSE(f,n); } while(0)
-
 
 #define ALIGN16 __attribute__((aligned (16)))
 #define _RGL_RESTRICT __restrict
@@ -288,9 +282,9 @@ extern "C"
       rglAttribute		attrib[RGL_MAX_VERTEX_ATTRIBS];
 
       // bitfields corresponding to the attrib[] array elements:
-      rglBitfield DirtyMask; // 1 == attribute has changed & needs updating
-      rglBitfield EnabledMask; // 1 == attribute is enabled for drawing
-      rglBitfield HasVBOMask; // 1 == attribute is in a VBO (ie server-side)
+      unsigned int DirtyMask; // 1 == attribute has changed & needs updating
+      unsigned int EnabledMask; // 1 == attribute is enabled for drawing
+      unsigned int HasVBOMask; // 1 == attribute is in a VBO (ie server-side)
    } ALIGN16 rglAttributeState;
 
    struct rglBufferObject
@@ -432,8 +426,7 @@ extern "C"
 #endif
 
 #ifdef __cplusplus
-}	// Close scope of 'extern "C"' declaration which encloses file.
+}
 #endif
 
-
-#endif	// _RGLTypes_h
+#endif

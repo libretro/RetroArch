@@ -1070,11 +1070,12 @@ void rglCreatePushBuffer(void *data)
 //this function sets the embedded constant to their default value in the ucode of a fragment shader
 //it's called at setup time right after loading the program. this function could be removed if the
 //default values were already in the shader code
-void rglSetDefaultValuesVP( _CGprogram *program )
+void rglSetDefaultValuesVP (void *data)
 {
-
+   _CGprogram *program = (_CGprogram*)data;
    int count = program->defaultValuesIndexCount;
-   for ( int i = 0;i < count;i++ )
+
+   for (int i = 0; i < count; i++)
    {
       int index = ( int )program->defaultValuesIndices[i].entryIndex;
       CgRuntimeParameter *rtParameter = program->runtimeParameters + index;
@@ -1113,9 +1114,11 @@ void rglSetDefaultValuesVP( _CGprogram *program )
    }
 }
 
-void rglSetDefaultValuesFP( _CGprogram *program )
+void rglSetDefaultValuesFP (void *data)
 {
+   _CGprogram *program = (_CGprogram*)data;
    int count = program->defaultValuesIndexCount;
+
    for ( int i = 0;i < count;i++ )
    {
       const void * __restrict pItemDefaultValues = program->defaultValues + program->defaultValuesIndices[i].defaultValueIndex;
@@ -1218,10 +1221,14 @@ static void rglpsAllocateBuffer(rglBufferObject* bufferObject)
    }
 }
 
-int rglpBufferObjectSize(void) { return sizeof(rglGcmBufferObject); }
-
-GLboolean rglpCreateBufferObject( rglBufferObject* bufferObject )
+int rglpBufferObjectSize(void)
 {
+   return sizeof(rglGcmBufferObject);
+}
+
+GLboolean rglpCreateBufferObject (void *data)
+{
+   rglBufferObject *bufferObject = (rglBufferObject*)data;
    rglGcmBufferObject *rglBuffer = ( rglGcmBufferObject * )bufferObject->platformBufferObject;
 
    rglBuffer->pool = RGLGCM_SURFACE_POOL_NONE;
@@ -1236,40 +1243,41 @@ GLboolean rglpCreateBufferObject( rglBufferObject* bufferObject )
    return rglBuffer->bufferId != GMM_ERROR;
 }
 
-void rglPlatformDestroyBufferObject( rglBufferObject* bufferObject )
+void rglPlatformDestroyBufferObject (void *data)
 {
+   rglBufferObject *bufferObject = (rglBufferObject*)data;
    rglDeallocateBuffer( bufferObject );
 }
 
-void rglPlatformBufferObjectSetData( rglBufferObject* bufferObject, GLintptr offset, GLsizeiptr size, const GLvoid *data, GLboolean tryImmediateCopy )
+void rglPlatformBufferObjectSetData(void *buf_data, GLintptr offset, GLsizeiptr size, const GLvoid *data, GLboolean tryImmediateCopy)
 {
+   rglBufferObject *bufferObject = (rglBufferObject*)buf_data;
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
    rglGcmBufferObject *rglBuffer = ( rglGcmBufferObject * )bufferObject->platformBufferObject;
 
    if ( size == bufferObject->size && tryImmediateCopy )
       __builtin_memcpy( gmmIdToAddress( rglBuffer->bufferId ) + offset, data, size );
-   else
-      if ( size >= bufferObject->size )
-      {
-         // reallocate the buffer
-         //  To avoid waiting for the GPU to finish with the buffer, just
-         //  allocate a whole new one.
-         rglBuffer->bufferSize = rglPad( size, RGL_BUFFER_OBJECT_BLOCK_SIZE );
-         rglpsAllocateBuffer( bufferObject );
+   else if ( size >= bufferObject->size )
+   {
+      // reallocate the buffer
+      //  To avoid waiting for the GPU to finish with the buffer, just
+      //  allocate a whole new one.
+      rglBuffer->bufferSize = rglPad( size, RGL_BUFFER_OBJECT_BLOCK_SIZE );
+      rglpsAllocateBuffer( bufferObject );
 
-         // copy directly to newly allocated memory
-         //  TODO: For GPU destination, should we copy to system memory and
-         //  pull from GPU?
-         switch ( rglBuffer->pool )
-         {
-            case RGLGCM_SURFACE_POOL_NONE:
-               rglSetError( GL_OUT_OF_MEMORY );
-               return;
-            default:
-               __builtin_memcpy( gmmIdToAddress( rglBuffer->bufferId ), data, size );
-               break;
-         }
+      // copy directly to newly allocated memory
+      //  TODO: For GPU destination, should we copy to system memory and
+      //  pull from GPU?
+      switch ( rglBuffer->pool )
+      {
+         case RGLGCM_SURFACE_POOL_NONE:
+            rglSetError( GL_OUT_OF_MEMORY );
+            return;
+         default:
+            __builtin_memcpy( gmmIdToAddress( rglBuffer->bufferId ), data, size );
+            break;
       }
+   }
       else
       {
          if ( tryImmediateCopy )
@@ -1296,22 +1304,20 @@ GLvoid rglPlatformBufferObjectCopyData(void *bufferObjectDst, void *bufferObject
    rglGcmBufferObject* dst = (rglGcmBufferObject*)in_dst->platformBufferObject;
    rglGcmBufferObject* src = (rglGcmBufferObject*)in_src->platformBufferObject;
 
-   // copy data
-   //  There is currently no requirement to copy from one pool to another.
-
    rglGcmMemcpy( dst->bufferId, 0, dst->pitch, src->bufferId, 0, src->bufferSize );
 
    // be conservative here. Whenever we write to any Buffer Object, invalidate the vertex cache
    driver->invalidateVertexCache = GL_TRUE;
 }
 
-char *rglPlatformBufferObjectMap( rglBufferObject* bufferObject, GLenum access )
+char *rglPlatformBufferObjectMap (void *data, GLenum access)
 {
-   rglGcmBufferObject *rglBuffer = ( rglGcmBufferObject * )bufferObject->platformBufferObject;
+   rglBufferObject *bufferObject = (rglBufferObject*)data;
+   rglGcmBufferObject *rglBuffer = (rglGcmBufferObject*)bufferObject->platformBufferObject;
 
-   if ( rglBuffer->mapCount++ == 0 )
+   if (rglBuffer->mapCount++ == 0)
    {
-      if ( access == GL_WRITE_ONLY )
+      if (access == GL_WRITE_ONLY)
       {
          // replace entire buffer
          //  To avoid waiting for the GPU to finish using the buffer,
@@ -1344,10 +1350,11 @@ char *rglPlatformBufferObjectMap( rglBufferObject* bufferObject, GLenum access )
    return gmmIdToAddress( rglBuffer->bufferId );
 }
 
-GLboolean rglPlatformBufferObjectUnmap( rglBufferObject* bufferObject )
+GLboolean rglPlatformBufferObjectUnmap (void *data)
 {
-   // can't unmap if not mapped
+   rglBufferObject *bufferObject = (rglBufferObject*)data;
    rglGcmBufferObject *rglBuffer = ( rglGcmBufferObject * )bufferObject->platformBufferObject;
+   // can't unmap if not mapped
 
    if ( --rglBuffer->mapCount == 0 )
    {
@@ -1459,7 +1466,7 @@ void rglFBClear( GLbitfield mask )
   PLATFORM FRAMEBUFFER
   ============================================================ */
 
-rglFramebuffer* rglCreateFramebuffer( void )
+rglFramebuffer* rglCreateFramebuffer (void)
 {
    rglFramebuffer* framebuffer = new rglPlatformFramebuffer();
    return framebuffer;
@@ -1473,8 +1480,9 @@ void rglDestroyFramebuffer (void *data)
       delete framebuffer;
 }
 
-GLenum rglPlatformFramebufferCheckStatus( rglFramebuffer* framebuffer )
+GLenum rglPlatformFramebufferCheckStatus (void *data)
 {
+   rglFramebuffer *framebuffer = (rglFramebuffer*)data;
    RGLcontext* LContext = _CurrentContext;
 
    GLuint nBuffers = 0;	// number of attached buffers
@@ -1595,8 +1603,9 @@ static GLuint rglGetGcmImageOffset (void *data, GLuint face, GLuint level)
    return 0;
 }
 
-void rglPlatformFramebuffer::validate( RGLcontext *LContext )
+void rglPlatformFramebuffer::validate (void *data)
 {
+   RGLcontext *LContext = (RGLcontext*)data;
    complete = (rglPlatformFramebufferCheckStatus(this) == GL_FRAMEBUFFER_COMPLETE_OES);
 
    if (!complete)
@@ -1746,11 +1755,11 @@ void rglPlatformRasterExit (void *data)
    gmmFree( driver->sharedFPConstantsId );
    free( driver->sharedVPConstants );
 
-   if ( driver )
-      free( driver );
+   if (driver)
+      free(driver);
 }
 
-void rglDumpFifo( char * name );
+void rglDumpFifo (char *name);
 
 // Fast rendering path called by several glDraw calls:
 //   glDrawElements, glDrawRangeElements, glDrawArrays
@@ -1856,7 +1865,7 @@ void rglPlatformRasterFlush (void)
    rglGcmFifoGlFlush();
 }
 
-void rglpFifoGlFinish( void )
+void rglpFifoGlFinish (void)
 {
    GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
    rglGcmFifoFinish( &rglGcmState_i.fifo );
@@ -1889,12 +1898,12 @@ GLuint rglValidateAttributesSlow (void *data, GLboolean *isMain)
 
    // which attributes are known to need updating?
    // (due to being dirty or enabled client-side arrays)
-   rglBitfield needsUpdateMask = ( as->DirtyMask | ( as->EnabledMask & ~as->HasVBOMask ) );
+   unsigned int needsUpdateMask = (as->DirtyMask | (as->EnabledMask & ~as->HasVBOMask));
 
    // for any remaining attributes that need updating, do it now.
    if(needsUpdateMask)
    {
-      for(GLuint i = 0; i < RGL_MAX_VERTEX_ATTRIBS; ++i)
+      for (GLuint i = 0; i < RGL_MAX_VERTEX_ATTRIBS; ++i)
       {
          // skip this attribute if not needing update
          if (!RGLBIT_GET( needsUpdateMask, i))
@@ -1998,14 +2007,15 @@ GLuint rglGetGcmTextureSize (void *data)
 
 
 // Get size of a texture
-int rglPlatformTextureSize()
+int rglPlatformTextureSize (void)
 {
-   return sizeof( rglGcmTexture );
+   return sizeof(rglGcmTexture);
 }
 
 // Calculate pitch for a texture
-static GLuint _getTexturePitch(const rglTexture * texture)
+static GLuint _getTexturePitch (const void *data)
 {
+   const rglTexture *texture = (const rglTexture*)data;
    return rglPad( rglGetStorageSize( texture->image->format, texture->image->type, texture->image->width, 1, 1 ), 64 ); // TransferVid2Vid needs 64byte pitch alignment
 }
 
@@ -2128,13 +2138,13 @@ static inline GLenum unFilter( GLenum filter )
 
 // Choose a texture layout and store it to newLayout, based on texture's filtering mode, swizzling, and size
 void rglPlatformChooseGPUFormatAndLayout(
-      const rglTexture* texture,
-      GLboolean forceLinear,
-      GLuint pitch,
-      rglGcmTextureLayout* newLayout )
+      const void *data, GLboolean forceLinear,
+      GLuint pitch, rglGcmTextureLayout* newLayout )
 {
+   const rglTexture *texture = (const rglTexture*)data;
    rglImage *image = texture->image + texture->baseLevel;
 
+#if 0
    GLuint levels = rglLog2( MAX( MAX( image->width, image->height ), image->depth ) ) + 1;
    levels = MIN( levels, texture->maxLevel + 1 );
 
@@ -2142,6 +2152,9 @@ void rglPlatformChooseGPUFormatAndLayout(
    // This is to avoid a big cost when switching from mipmaps to non-mipmaps.
    if (( texture->minFilter == GL_LINEAR ) || ( texture->minFilter == GL_NEAREST ) )
       levels = 1;
+#else
+   GLuint levels = 1;
+#endif
 
    newLayout->levels = levels;
    newLayout->faces = texture->faceCount;
@@ -2150,7 +2163,7 @@ void rglPlatformChooseGPUFormatAndLayout(
    newLayout->baseDepth = image->depth;
    newLayout->internalFormat = ( rglGcmEnum )image->internalFormat;
    newLayout->pixelBits = rglPlatformGetBitsPerPixel( newLayout->internalFormat );
-   newLayout->pitch = pitch ? pitch : _getTexturePitch( texture );
+   newLayout->pitch = pitch ? pitch : _getTexturePitch(texture);
 }
 
 // texture strategy actions
@@ -2493,7 +2506,7 @@ static inline void rglGcmUpdateGcmTexture (void *data_tex, void *data_layout, vo
 }
 
 // map RGL internal types to GCM
-void rglGcmUpdateMethods(void *data)
+void rglGcmUpdateMethods (void *data)
 {
    rglTexture *texture = (rglTexture*)data;
    rglGcmTexture *platformTexture = ( rglGcmTexture * )texture->platformTexture;

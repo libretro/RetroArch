@@ -6,9 +6,9 @@
 //   incorrect in the case of NaN.
 #define RGLGCM_CLAMPF_01(x) ((x) >= 0.0f ? ((x) > 1.0f ? 1.0f : (x)) : 0.0f)
 
-static inline GLboolean rglIsDrawableColorFormat( GLenum colorFormat )
+static inline GLboolean rglIsDrawableColorFormat (GLenum colorFormat)
 {
-   switch ( colorFormat )
+   switch (colorFormat)
    {
       case RGLGCM_ARGB8:
       case RGLGCM_FLOAT_R32:
@@ -18,9 +18,9 @@ static inline GLboolean rglIsDrawableColorFormat( GLenum colorFormat )
    }
 }
 
-static inline GLuint rglPlatformGetBitsPerPixel( GLenum internalFormat )
+static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
 {
-   switch ( internalFormat )
+   switch (internalFormat)
    {
       case RGLGCM_ALPHA16:
       case RGLGCM_HILO8:
@@ -485,7 +485,7 @@ static inline void rglGcmMapTextureFormat( GLuint internalFormat, uint8_t *gcmFo
 }
 
 // Fast conversion for values between 0.0 and 65535.0
-static inline GLuint RGLGCM_QUICK_FLOAT2UINT( const GLfloat f )
+static inline GLuint RGLGCM_QUICK_FLOAT2UINT (const GLfloat f)
 {
    union
    {
@@ -871,7 +871,7 @@ static inline void rglFifoGlProgramParameterfvVP (const void *data, const CgPara
    const _CGprogram *program = (const _CGprogram*)data;
    const CgParameterResource *parameterResource = rglGetParameterResource( program, parameterEntry );
 
-   if ( parameterResource->resource != ( unsigned short ) - 1 )
+   if (parameterResource->resource != (unsigned short) - 1)
    {
       switch ( parameterResource->type )
       {
@@ -974,6 +974,6 @@ static inline void rglFifoGlProgramParameterfvVP (const void *data, const CgPara
 static inline GLuint rglGcmGetBufferObjectOrigin (GLuint buffer)
 {
    rglBufferObject *bufferObject = (rglBufferObject*)_CurrentContext->bufferObjectNameSpace.data[buffer];
-   rglGcmBufferObject *gcmBuffer = ( rglGcmBufferObject * ) & bufferObject->platformBufferObject;
+   rglGcmBufferObject *gcmBuffer = (rglGcmBufferObject *)bufferObject->platformBufferObject;
    return gcmBuffer->bufferId;
 }

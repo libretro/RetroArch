@@ -170,9 +170,9 @@ int rglGcmGenerateProgram( _CGprogram *program, int profileIndex, const CgProgra
 
    rglCreatePushBuffer( program );
    if ( profileIndex == FRAGMENT_PROFILE_INDEX )
-      rglSetDefaultValuesFP( program ); // modifies the ucode
+      rglSetDefaultValuesFP(program); // modifies the ucode
    else
-      rglSetDefaultValuesVP( program ); // modifies the push buffer
+      rglSetDefaultValuesVP(program); // modifies the push buffer
 
    // not loaded yet
    program->loadProgramId = GMM_ERROR;
