@@ -49,7 +49,7 @@ public class RetroArch extends Activity implements
 	private IconAdapter<ModuleWrapper> adapter;
 	static private final int ACTIVITY_LOAD_ROM = 0;
 	static private String libretro_path;
-	static private final String TAG = "RetroArch";
+	static private final String TAG = "RetroArch-Phoenix";
 	private ConfigFile config;
 
 	public float getRefreshRate() {
@@ -71,16 +71,16 @@ public class RetroArch extends Activity implements
 	private void extractAssets(AssetManager manager, String cacheDir, String relativePath, int level) throws IOException {
 		final String[] paths = manager.list(relativePath);
 		if (paths != null && paths.length > 0) { // Directory
-			Log.i(TAG, "Extracting assets directory: " + relativePath);
+			Log.d(TAG, "Extracting assets directory: " + relativePath);
 			for (final String path : paths)
 				extractAssets(manager, cacheDir, relativePath + (level > 0 ? File.separator : "") + path, level + 1);	
 		} else { // File, extract.
-			Log.i(TAG, "Extracting assets file: " + relativePath);
+			Log.d(TAG, "Extracting assets file: " + relativePath);
 			
 			String parentPath = new File(relativePath).getParent();
 			
 			File parentFile = new File(cacheDir, parentPath);
-			Log.i(TAG, "Creating folder: " + parentFile.getAbsolutePath());
+			Log.d(TAG, "Creating folder: " + parentFile.getAbsolutePath());
 			parentFile.mkdirs(); // Doesn't throw.
 			
 			byte[] asset = loadAsset(relativePath);
@@ -220,6 +220,16 @@ public class RetroArch extends Activity implements
 			config.setString("video_shader_type", "none");
 			config.setString("video_bsnes_shader", "");
 		}
+		
+		config.setBoolean("video_render_to_texture", prefs.getBoolean("video_render_to_texture", false));
+		config.setString("video_second_pass_shader",
+				prefs.getBoolean("video_second_pass_shader_enable", false) ?
+						config.getString("video_second_pass_shader") : "");
+		
+		config.setBoolean("video_second_pass_smooth", prefs.getBoolean("video_second_pass_smooth", true));
+		
+		config.setString("video_fbo_scale_x", prefs.getString("video_fbo_scale", "2.0"));
+		config.setString("video_fbo_scale_y", prefs.getString("video_fbo_scale", "2.0"));
 		
 		config.setString("input_overlay",
 				prefs.getBoolean("input_overlay_enable", false) ? 

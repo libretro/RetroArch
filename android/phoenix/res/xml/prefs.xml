@@ -7,7 +7,7 @@
             <CheckBoxPreference
                 android:defaultValue="false"
                 android:key="savestate_auto_save"
-                android:summary="Automatically saves and restores game state"
+                android:summary="Automatically saves and restores game state."
                 android:title="Auto save state" />
             <CheckBoxPreference
                 android:defaultValue="false"
@@ -21,12 +21,12 @@
             <CheckBoxPreference
                 android:defaultValue="true"
                 android:key="video_smooth"
-                android:summary="Applies bilinear filter, smooths out edges"
+                android:summary="Applies bilinear filter, smooths out edges."
                 android:title="Bilinear filter" />
             <CheckBoxPreference
                 android:defaultValue="true"
                 android:key="video_vsync"
-                android:summary="When set to enabled, prevents screen tearing"
+                android:summary="When set to enabled, prevents screen tearing."
                 android:title="VSync" />
             <CheckBoxPreference
                 android:defaultValue="true"
@@ -38,46 +38,84 @@
                 android:entries="@array/aspect_ratios"
                 android:entryValues="@array/aspect_values"
                 android:key="video_aspect_ratio"
-                android:summary="Aspect ratio to enforce"
+                android:summary="Aspect ratio to enforce."
                 android:title="Aspect ratio" />
         </PreferenceCategory>
         <PreferenceCategory android:title="Overlay" >
-            <CheckBoxPreference android:title="Enable"
+            <CheckBoxPreference
+                android:defaultValue="false"
                 android:key="input_overlay_enable"
-                android:defaultValue="false" />
+                android:title="Enable" />
+
             <Preference
-                android:summary="Sets touchscreen overlay config"
+                android:summary="Sets touchscreen overlay config."
                 android:title="Input overlay" >
                 <intent
                     android:targetClass="org.retroarch.browser.OverlayActivity"
                     android:targetPackage="org.retroarch" />
             </Preference>
         </PreferenceCategory>
-        <PreferenceCategory android:title="Shaders" >
-            <CheckBoxPreference android:title="Enable"
+        <PreferenceCategory android:title="Shaders (1st pass)" >
+            <CheckBoxPreference
+                android:defaultValue="false"
                 android:key="video_shader_enable"
-                android:defaultValue="false" />
+                android:title="Enable" />
+
             <Preference
-                android:summary="Sets GLES2 style XML shader"
+                android:summary="Sets GLES2 style XML shader."
                 android:title="XML shader" >
                 <intent
                     android:targetClass="org.retroarch.browser.ShaderActivity"
                     android:targetPackage="org.retroarch" />
             </Preference>
         </PreferenceCategory>
+        <PreferenceCategory android:title="Shaders (Multi-pass)" >
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="video_render_to_texture"
+                android:summary="Render first pass to texture (FBO). Stretch to screen with second shader."
+                android:title="Render to texture" />
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="video_second_pass_shader_enable"
+                android:summary="Enable custom shader for use after rendering to FBO."
+                android:title="Enable shader #2" />
+
+            <Preference
+                android:summary="Sets shader to use for second pass."
+                android:title="XML shader (2nd pass)" >
+                <intent
+                    android:targetClass="org.retroarch.browser.Shader2Activity"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+
+            <ListPreference
+                android:entries="@array/fbo_scales"
+                android:entryValues="@array/fbo_scale_values"
+                android:key="video_fbo_scale"
+                android:summary="Scale to use when rendering to FBO."
+                android:title="FBO scale" />
+        </PreferenceCategory>
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="video_second_pass_smooth"
+            android:summary="Use bilinear filtering on FBO texture on second pass."
+            android:title="Second pass bilinear" />
     </PreferenceScreen>
     <PreferenceScreen android:title="Audio Config" >
         <PreferenceCategory android:title="General" >
             <CheckBoxPreference
                 android:defaultValue="true"
                 android:key="audio_enable"
-                android:summary="Enable audio"
+                android:summary="Enable audio."
                 android:title="Audio enable" />
             <CheckBoxPreference
                 android:defaultValue="true"
                 android:key="audio_rate_control"
-                android:summary="Enable dynamic rate control"
+                android:summary="Enable dynamic rate control."
                 android:title="Dynamic Rate Control" />
         </PreferenceCategory>
     </PreferenceScreen>
+
 </PreferenceScreen>

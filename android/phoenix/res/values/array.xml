@@ -19,4 +19,20 @@
         <item>1.60000</item>
         <item>1.14286</item>
     </string-array>
+    
+    <string-array name="fbo_scales">
+        <item>1.0x</item>
+        <item>2.0x</item>
+        <item>3.0x</item>
+        <item>4.0x</item>
+        <item>5.0x</item>
+    </string-array>
+    
+    <string-array name="fbo_scale_values">
+        <item>1.0</item>
+        <item>2.0</item>
+        <item>3.0</item>
+        <item>4.0</item>
+        <item>5.0</item>
+    </string-array>
 </resources>
