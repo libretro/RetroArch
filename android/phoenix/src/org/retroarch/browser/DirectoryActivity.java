@@ -8,6 +8,7 @@ import java.io.*;
 import android.content.*;
 import android.app.*;
 import android.os.*;
+import android.preference.PreferenceManager;
 import android.widget.*;
 import android.view.*;
 import android.graphics.drawable.*;
@@ -107,6 +108,17 @@ public class DirectoryActivity extends Activity implements
 	}
 
 	private ArrayList<BackStackItem> backStack;
+	
+	protected String startDirectory;
+	protected String pathSettingKey;
+	
+	protected void setStartDirectory(String path) {
+		startDirectory = path;
+	}
+	
+	protected void setPathSettingKey(String key) {
+		pathSettingKey = key;
+	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -126,8 +138,9 @@ public class DirectoryActivity extends Activity implements
 
 		if (backStack == null || backStack.size() == 0) {
 			backStack = new ArrayList<BackStackItem>();
-			backStack.add(new BackStackItem(Environment
-					.getExternalStorageDirectory().getPath(), false));
+			String startPath = (startDirectory == null || startDirectory.isEmpty()) ? Environment
+					.getExternalStorageDirectory().getPath() : startDirectory;
+			backStack.add(new BackStackItem(startPath, false));
 		}
 
 		wrapFiles();
@@ -159,7 +172,16 @@ public class DirectoryActivity extends Activity implements
 			wrapFiles();
 		} else {
 			Intent intent = new Intent();
-			intent.putExtra("PATH", selected.getAbsolutePath());
+			String filePath = selected.getAbsolutePath();
+			
+			if (pathSettingKey != null && !pathSettingKey.isEmpty()) {
+				SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+				SharedPreferences.Editor editor = settings.edit();
+				editor.putString(pathSettingKey, filePath);
+				editor.commit();
+			}
+			
+			intent.putExtra("PATH", filePath);
 			setResult(RESULT_OK, intent);
 			finish();
 		}
@@ -180,6 +202,41 @@ public class DirectoryActivity extends Activity implements
 		}
 
 		return super.onKeyDown(keyCode, event);
+	}
+	
+	private ArrayList<String> allowedExt;
+	private ArrayList<String> disallowedExt;
+	
+	private boolean filterPath(String path) {
+		if (disallowedExt != null) {
+			for (String ext : disallowedExt)
+				if (path.endsWith(ext))
+					return false;
+		}
+		
+		if (allowedExt != null) {
+			for (String ext : allowedExt)
+				if (path.endsWith(ext))
+					return true;
+			
+			return false;
+		}
+
+		return true;
+	}
+	
+	protected void addAllowedExt(String ext) {
+		if (allowedExt == null)
+			allowedExt = new ArrayList<String>();
+		
+		allowedExt.add(ext);
+	}
+	
+	protected void addDisallowedExt(String ext) {
+		if (disallowedExt == null)
+			disallowedExt = new ArrayList<String>();
+		
+		disallowedExt.add(ext);
 	}
 
 	private void wrapFiles() {
@@ -202,16 +259,12 @@ public class DirectoryActivity extends Activity implements
 			for (File file : files) {
 				String path = file.getName();
 
-				boolean isRomFile = !path.endsWith(".srm")
-						&& !path.endsWith(".state")
-						&& !path.contains(".state.auto")
-						&& !path.endsWith(".rtc");
+				boolean allowFile = filterPath(path);
 
 				// Don't list save files in ROM list.
-				if (isRomFile) {
+				if (allowFile)
 					adapter.add(new FileWrapper(file, false,
 							file.isDirectory() || true));
-				}
 			}
 		}
 

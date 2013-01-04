@@ -43,7 +43,7 @@ class ModuleWrapper implements IconAdapterItem {
 	}
 }
 
-public class ModuleActivity extends Activity implements
+public class RetroArch extends Activity implements
 		AdapterView.OnItemClickListener, PopupMenu.OnMenuItemClickListener {
 	private IconAdapter<ModuleWrapper> adapter;
 	static private final int ACTIVITY_LOAD_ROM = 0;
@@ -101,7 +101,7 @@ public class ModuleActivity extends Activity implements
 		libretro_path = item.file.getAbsolutePath();
 
 		Intent myIntent;
-		myIntent = new Intent(this, DirectoryActivity.class);
+		myIntent = new Intent(this, ROMActivity.class);
 		startActivityForResult(myIntent, ACTIVITY_LOAD_ROM);
 	}
 	
@@ -156,6 +156,15 @@ public class ModuleActivity extends Activity implements
 			double aspect_ratio = Double.parseDouble(aspect);
 			config.setBoolean("video_force_aspect", true);
 			config.setDouble("video_aspect_ratio", aspect_ratio);
+		}
+		
+		String shaderPath = prefs.getString("video_bsnes_shader", "");
+		if (new File(shaderPath).exists()) {
+			config.setString("video_shader_type", "bsnes");
+			config.setString("video_bsnes_shader", shaderPath);
+		} else {
+			config.setString("video_shader_type", "none");
+			config.setString("video_bsnes_shader", "");
 		}
 
 		String confPath = getDefaultConfigPath();

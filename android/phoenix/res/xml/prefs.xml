@@ -21,6 +21,16 @@
             android:key="video_smooth"
             android:summary="Applies bilinear filter, smooths out edges"
             android:title="Bilinear filter" />
+        
+		<Preference
+		    android:title="XML shader"
+		    android:summary="Sets GLES2 style XML shader">
+		    <intent 
+		        android:action="org.retroarch.action.ShaderSelect"
+		        android:targetPackage="org.retroarch"
+		        android:targetClass="org.retroarch.ShaderActivity" />
+		</Preference>
+        
         <CheckBoxPreference
             android:defaultValue="true"
             android:key="video_vsync"
