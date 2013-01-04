@@ -259,9 +259,8 @@ public class DirectoryActivity extends Activity implements
 			for (File file : files) {
 				String path = file.getName();
 
-				boolean allowFile = filterPath(path);
+				boolean allowFile = file.isDirectory() || filterPath(path);
 
-				// Don't list save files in ROM list.
 				if (allowFile)
 					adapter.add(new FileWrapper(file, false,
 							file.isDirectory() || true));

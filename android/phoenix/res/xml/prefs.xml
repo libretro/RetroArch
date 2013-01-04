@@ -1,67 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" 
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     android:title="RetroArch Config" >
-    
+
     <PreferenceScreen android:title="System Config" >
-        <CheckBoxPreference
-            android:defaultValue="false"
-            android:key="savestate_auto_save"
-            android:summary="Automatically saves and restores game state"
-            android:title="Auto save state" />
-        <CheckBoxPreference
-            android:defaultValue="false"
-            android:key="rewind_enable"
-            android:summary="Rewind a game in real-time (WARNING - very CPU intensive)."
-            android:title="Rewind" />
+        <PreferenceCategory android:title="General" >
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="savestate_auto_save"
+                android:summary="Automatically saves and restores game state"
+                android:title="Auto save state" />
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="rewind_enable"
+                android:summary="Allow rewinding a game in real-time (WARNING - CPU intensive)."
+                android:title="Rewind" />
+        </PreferenceCategory>
     </PreferenceScreen>
-    
     <PreferenceScreen android:title="Video Config" >
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="video_smooth"
-            android:summary="Applies bilinear filter, smooths out edges"
-            android:title="Bilinear filter" />
-        
-		<Preference
-		    android:title="XML shader"
-		    android:summary="Sets GLES2 style XML shader">
-		    <intent 
-		        android:action="org.retroarch.action.ShaderSelect"
-		        android:targetPackage="org.retroarch"
-		        android:targetClass="org.retroarch.ShaderActivity" />
-		</Preference>
-        
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="video_vsync"
-            android:summary="When set to enabled, prevents screen tearing"
-            android:title="VSync" />
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="video_allow_rotate"
-            android:summary="Will auto-rotate the screen for vertically oriented games."
-            android:title="Auto-rotate" />
+        <PreferenceCategory android:title="General" >
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="video_smooth"
+                android:summary="Applies bilinear filter, smooths out edges"
+                android:title="Bilinear filter" />
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="video_vsync"
+                android:summary="When set to enabled, prevents screen tearing"
+                android:title="VSync" />
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="video_allow_rotate"
+                android:summary="Will auto-rotate the screen for vertically oriented games."
+                android:title="Auto-rotate" />
 
-        <ListPreference
-            android:entryValues="@array/aspect_values"
-            android:entries="@array/aspect_ratios"
-            android:key="video_aspect_ratio"
-            android:title="Aspect ratio"
-            android:summary="Aspect ratio to enforce" />
-        
+            <ListPreference
+                android:entries="@array/aspect_ratios"
+                android:entryValues="@array/aspect_values"
+                android:key="video_aspect_ratio"
+                android:summary="Aspect ratio to enforce"
+                android:title="Aspect ratio" />
+        </PreferenceCategory>
+        <PreferenceCategory android:title="Overlay" >
+            <CheckBoxPreference android:title="Enable"
+                android:key="input_overlay_enable"
+                android:defaultValue="false" />
+            <Preference
+                android:summary="Sets touchscreen overlay config"
+                android:title="Input overlay" >
+                <intent
+                    android:targetClass="org.retroarch.browser.OverlayActivity"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+        </PreferenceCategory>
+        <PreferenceCategory android:title="Shaders" >
+            <CheckBoxPreference android:title="Enable"
+                android:key="video_shader_enable"
+                android:defaultValue="false" />
+            <Preference
+                android:summary="Sets GLES2 style XML shader"
+                android:title="XML shader" >
+                <intent
+                    android:targetClass="org.retroarch.browser.ShaderActivity"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+        </PreferenceCategory>
     </PreferenceScreen>
-    
     <PreferenceScreen android:title="Audio Config" >
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="audio_enable"
-            android:summary="Enable audio"
-            android:title="Audio enable" />
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="audio_rate_control"
-            android:summary="Enable dynamic rate control"
-            android:title="Dynamic Rate Control" />
-
+        <PreferenceCategory android:title="General" >
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="audio_enable"
+                android:summary="Enable audio"
+                android:title="Audio enable" />
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="audio_rate_control"
+                android:summary="Enable dynamic rate control"
+                android:title="Dynamic Rate Control" />
+        </PreferenceCategory>
     </PreferenceScreen>
 </PreferenceScreen>

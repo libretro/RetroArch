@@ -159,13 +159,17 @@ public class RetroArch extends Activity implements
 		}
 		
 		String shaderPath = prefs.getString("video_bsnes_shader", "");
-		if (new File(shaderPath).exists()) {
+		if (prefs.getBoolean("video_shader_enable", false) && new File(shaderPath).exists()) {
 			config.setString("video_shader_type", "bsnes");
 			config.setString("video_bsnes_shader", shaderPath);
 		} else {
 			config.setString("video_shader_type", "none");
 			config.setString("video_bsnes_shader", "");
 		}
+		
+		config.setString("input_overlay",
+				prefs.getBoolean("input_overlay_enable", false) ? 
+						prefs.getString("input_overlay", "") : "");
 
 		String confPath = getDefaultConfigPath();
 		try {
