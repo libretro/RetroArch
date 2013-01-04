@@ -5,7 +5,7 @@ import org.retroarch.R;
 import java.io.*;
 
 import android.content.*;
-//import android.content.res.AssetManager;
+import android.content.res.AssetManager;
 import android.app.*;
 import android.os.*;
 import android.preference.PreferenceManager;
@@ -59,7 +59,6 @@ public class RetroArch extends Activity implements
 		return rate;
 	}
 	
-	/*
 	private byte[] loadAsset(String asset) throws IOException {
 		String path = asset;
 		InputStream stream = getAssets().open(path);
@@ -79,10 +78,11 @@ public class RetroArch extends Activity implements
 			Log.d(TAG, "Extracting assets file: " + relativePath);
 			
 			String parentPath = new File(relativePath).getParent();
-			
-			File parentFile = new File(cacheDir, parentPath);
-			Log.d(TAG, "Creating folder: " + parentFile.getAbsolutePath());
-			parentFile.mkdirs(); // Doesn't throw.
+			if (parentPath != null) {
+				File parentFile = new File(cacheDir, parentPath);
+				Log.d(TAG, "Creating folder: " + parentFile.getAbsolutePath());
+				parentFile.mkdirs(); // Doesn't throw.
+			}
 			
 			byte[] asset = loadAsset(relativePath);
 			BufferedOutputStream writer = new BufferedOutputStream(
@@ -99,13 +99,12 @@ public class RetroArch extends Activity implements
 			AssetManager assets = getAssets();
 			String cacheDir = getCacheDir().getAbsolutePath();
 			//extractAssets(assets, cacheDir, "", 0);
-			extractAssets(assets, cacheDir, "Shaders", 1);
+			//extractAssets(assets, cacheDir, "Shaders", 1);
 			extractAssets(assets, cacheDir, "Overlays", 1);
 		} catch (IOException e) {
 			Log.e(TAG, "Failed to extract assets to cache.");			
 		}
 	}
-	*/
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -117,8 +116,6 @@ public class RetroArch extends Activity implements
 			config = new ConfigFile();
 		}
 		
-
-		/*
 		// Extracting assets appears to take considerable amount of time, so
 		// move extraction to a thread.
 		Thread assetThread = new Thread(new Runnable() {
@@ -127,7 +124,6 @@ public class RetroArch extends Activity implements
 			}
 		});
 		assetThread.start();
-		*/
 		
 		setContentView(R.layout.line_list);
 
