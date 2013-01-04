@@ -227,7 +227,7 @@ public class RetroArch extends Activity implements
 		config.setBoolean("video_render_to_texture", prefs.getBoolean("video_render_to_texture", false));
 		config.setString("video_second_pass_shader",
 				prefs.getBoolean("video_second_pass_shader_enable", false) ?
-						config.getString("video_second_pass_shader") : "");
+						prefs.getString("video_second_pass_shader", "") : "");
 		
 		config.setBoolean("video_second_pass_smooth", prefs.getBoolean("video_second_pass_smooth", true));
 		
