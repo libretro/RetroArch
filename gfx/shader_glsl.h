@@ -20,12 +20,7 @@
 #include "../boolean.h"
 #include "shader_common.h"
 
-#ifdef RARCH_GPU_PERFORMANCE_MODE
-#define RARCH_GLSL_MAX_SHADERS 8
-#else
 #define RARCH_GLSL_MAX_SHADERS 16
-#endif
-
 #define RARCH_GLSL_MENU_SHADER_INDEX (RARCH_GLSL_MAX_SHADERS - 1)
 
 bool gl_glsl_init(const char *path);
