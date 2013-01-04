@@ -139,9 +139,9 @@ def hack_source_vertex(source):
    for index, line in enumerate(source):
       if 'void main()' in line:
          source.insert(index + 2, '    mat4 rubyMVPMatrix_ = transpose_(rubyMVPMatrix);') # transpose() is GLSL 1.20+, doesn't exist in GLSL ES 1.0
-         source.insert(index, 'uniform vec2 rubyInputSize;')
-         source.insert(index, 'uniform vec2 rubyTextureSize;')
-         source.insert(index, 'uniform vec2 rubyOutputSize;')
+         source.insert(index, 'uniform mediump vec2 rubyInputSize;')
+         source.insert(index, 'uniform mediump vec2 rubyTextureSize;')
+         source.insert(index, 'uniform mediump vec2 rubyOutputSize;')
          source.insert(index, """
          mat4 transpose_(mat4 matrix)
          {
@@ -175,9 +175,9 @@ def replace_global_fragment(source):
 def hack_source_fragment(source):
    for index, line in enumerate(source):
       if 'void main()' in line:
-         source.insert(index, 'uniform vec2 rubyInputSize;')
-         source.insert(index, 'uniform vec2 rubyTextureSize;')
-         source.insert(index, 'uniform vec2 rubyOutputSize;')
+         source.insert(index, 'uniform mediump vec2 rubyInputSize;')
+         source.insert(index, 'uniform mediump vec2 rubyTextureSize;')
+         source.insert(index, 'uniform mediump vec2 rubyOutputSize;')
          break
 
    for line in source:
