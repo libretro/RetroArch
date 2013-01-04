@@ -29,9 +29,9 @@ extern "C"
 #define RGL_BOOLEAN_REGISTERS_COUNT 32
 
    // parameter setter, prototype of functions called when a uniform is set.
-   typedef void( *_cgSetFunction )( struct CgRuntimeParameter* _RGL_RESTRICT, const void* _RGL_RESTRICT );
+   typedef void( *_cgSetFunction )( void *, const void* _RGL_RESTRICT );
 
-   typedef void( *_cgSetArrayIndexFunction )( struct CgRuntimeParameter* _RGL_RESTRICT, const void* _RGL_RESTRICT, const int index );
+   typedef void( *_cgSetArrayIndexFunction )( void *, const void*, const int index );
 
    typedef struct _CgUniform
    {
@@ -199,12 +199,12 @@ extern "C"
    RGL_EXPORT void rglCgProgramErase( _CGprogram* prog );
 
    // default setters
-   void _cgRaiseInvalidParam( CgRuntimeParameter*p, const void*v );
-   void _cgRaiseNotMatrixParam( CgRuntimeParameter*p, const void*v );
-   void _cgIgnoreSetParam( CgRuntimeParameter*p, const void*v );
-   void _cgRaiseInvalidParamIndex( CgRuntimeParameter*p, const void*v, const int index );
-   void _cgRaiseNotMatrixParamIndex( CgRuntimeParameter*p, const void*v, const int index );
-   void _cgIgnoreSetParamIndex( CgRuntimeParameter*p, const void*v, const int index );
+   void _cgRaiseInvalidParam( void *data, const void*v );
+   void _cgRaiseNotMatrixParam( void *data, const void*v );
+   void _cgIgnoreSetParam( void *dat, const void*v );
+   void _cgRaiseInvalidParamIndex( void *dat, const void*v, const int index );
+   void _cgRaiseNotMatrixParamIndex( void *dat, const void*v, const int index );
+   void _cgIgnoreSetParamIndex( void *dat, const void*v, const int index );
 
    // cg helpers
 

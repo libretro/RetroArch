@@ -1006,33 +1006,22 @@ static inline void gmmMemcpy(void *data, const uint8_t mode,
 static uint8_t gmmInternalSweep(void *data, const uint8_t location)
 {
    CellGcmContextData *thisContext = (CellGcmContextData*)data;
-   GmmAllocator    *pAllocator;
-   GmmBlock        *pBlock;       
-   GmmBlock        *pSrcBlock;
+   GmmAllocator    *pAllocator = pGmmLocalAllocator;
+   GmmBlock        *pBlock = pAllocator->pSweepHead;
+   GmmBlock        *pSrcBlock = pBlock;
    GmmBlock        *pTempBlock;
    GmmBlock        *pTempBlockNext;
-   uint32_t        dstAddress, srcAddress;
+   uint32_t        dstAddress = 0;
+   uint32_t        srcAddress = 0;
    uint32_t        srcOffset, dstOffset;
-   uint32_t        prevEndAddress;
+   uint32_t        prevEndAddress = 0;
    uint32_t        moveSize, moveDistance;
-   uint8_t         mode;
+   uint8_t         mode = CELL_GCM_TRANSFER_LOCAL_TO_LOCAL;
    uint8_t         ret = 0;
    uint32_t        totalMoveSize = 0;
 
-
-   pAllocator = pGmmLocalAllocator;
-
-   mode = CELL_GCM_TRANSFER_LOCAL_TO_LOCAL;
-
-   pBlock = pAllocator->pSweepHead;
-   srcAddress = 0;
-   dstAddress = 0;
-   prevEndAddress = 0;
-   pSrcBlock = pBlock;
-
    while (pBlock != NULL)
    {
-
       if (pBlock->isPinned == 0)
       {
          if (pBlock->pPrev)
@@ -1197,10 +1186,8 @@ static uint8_t gmmInternalSweep(void *data, const uint8_t location)
    return ret;
 }
 
-static void gmmRemovePendingFree(
-      GmmAllocator *pAllocator,
-      GmmBlock *pBlock
-      )
+static void gmmRemovePendingFree (GmmAllocator *pAllocator,
+      GmmBlock *pBlock)
 {
    if (pBlock == pAllocator->pPendingFreeHead)
       pAllocator->pPendingFreeHead = pBlock->pNextFree;
@@ -1634,9 +1621,10 @@ GLuint rglGcmFifoPutReference (void *data)
    return fifo->lastSWReferenceWritten;
 }
 
-GLuint rglGcmFifoReadReference( rglGcmFifo *fifo )
+GLuint rglGcmFifoReadReference (void *data)
 {
-   GLuint ref = *(( volatile GLuint * ) & fifo->dmaControl->Reference );
+   rglGcmFifo *fifo = (rglGcmFifo*)data;
+   GLuint ref = *((volatile GLuint *)&fifo->dmaControl->Reference);
    fifo->lastHWReferenceRead = ref;
    return ref;
 }
@@ -1661,7 +1649,6 @@ GLboolean rglGcmFifoReferenceInUse (void *data, GLuint reference)
 
    return GL_TRUE;
 }
-
 
 // Wait until the requested space is available.
 // If not currently available, will call the out of space callback
@@ -1715,11 +1702,8 @@ void rglGcmFifoInit (void *data, void *dmaControl, unsigned long dmaPushBufferOf
       rglGcmFifoFlush( fifo ); // Here, we jump to this new buffer
 
       // a finish that waits for 0 specifically.
-      for ( ;; )
-      {
-         if ( rglGcmFifoReadReference( fifo ) == 0 ) break;
-         sys_timer_usleep( 10 );
-      }
+      while (rglGcmFifoReadReference(fifo) != 0)
+         sys_timer_usleep(10);
    }
    fifo->dmaPushBufferGPU = dmaPushBuffer;
    fifo->spuid = 0;
@@ -1823,8 +1807,10 @@ GLuint rglGcmGetGraphicsClock(void)
    return GraphicsClock;
 }
 
-GLboolean rglGcmInit( RGLinitOptions* options, rglGcmResource *resource )
+GLboolean rglGcmInit (void *opt_data, void *res_data)
 {
+   rglGcmResource *resource = (rglGcmResource*)res_data;
+   RGLinitOptions *options = (RGLinitOptions*)opt_data;
    if ( !rglGcmInitFromRM( resource ) )
    {
       fprintf( stderr, "RGL GCM failed initialisation" );
@@ -1953,8 +1939,9 @@ void rglGcmSend( unsigned int dstId, unsigned dstOffset, unsigned int pitch,
   ============================================================ */
 
 // resc is enabled by setting ANY of the resc related device parameters (using the enable mask)
-static inline int rescIsEnabled( RGLdeviceParameters* params )
+static inline int rescIsEnabled (void *data)
 {
+   RGLdeviceParameters *params = (RGLdeviceParameters*)data;
    return params->enable & ( RGL_DEVICE_PARAMETERS_RESC_RENDER_WIDTH_HEIGHT |
          RGL_DEVICE_PARAMETERS_RESC_RATIO_MODE |
          RGL_DEVICE_PARAMETERS_RESC_PAL_TEMPORAL_MODE |
@@ -1965,8 +1952,9 @@ static inline int rescIsEnabled( RGLdeviceParameters* params )
 // Platform-specific initialization for Cell processor:
 // manage allocation/free of SPUs, and optional debugging console.
 
-void rglPlatformInit( RGLinitOptions* options )
+void rglPlatformInit (void *data)
 {
+   (void)data;
 }
 
 
@@ -1978,8 +1966,9 @@ void rglPlatformExit(void)
   PLATFORM REPORTING
   ============================================================ */
 
-void rglInitConsole( GLuint enable )
+void rglInitConsole (GLuint enable)
 {
+   (void)enable;
 }
 
 void rglExitConsole(void)
@@ -2057,6 +2046,7 @@ void rglPsglPlatformInit (void *data)
 void rglPsglPlatformExit(void)
 {
    RGLcontext* LContext = _CurrentContext;
+
    if ( LContext )
    {
       glFlush();
@@ -2362,7 +2352,6 @@ int rglGcmInitRM( rglGcmResource *gcmResource, unsigned int hostMemorySize, int 
 
    // Set our Fifo functions
    gCellGcmCurrentContext->callback = ( CellGcmContextCallback )rglOutOfSpaceCallback;
-
 
    fprintf(stderr, "RGLGCM resource: MClk: %f Mhz NVClk: %f Mhz\n", ( float )gcmResource->MemoryClock / 1E6, ( float )gcmResource->GraphicsClock / 1E6 );
    fprintf(stderr, "RGLGCM resource: Video Memory: %i MB\n", gcmResource->localSize / ( 1024*1024 ) );

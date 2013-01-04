@@ -46,7 +46,7 @@ PPU_RANLIB = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ranlib.exe
 
 PPU_LDLIBS = -lio_stub 
 
-DEFINES += -D__CELLOS_LV2__ -DJS_PLATFORM_CELL
+DEFINES += -D__CELLOS_LV2__
 
 ifeq ($(DEBUG), 1)
    PPU_OPTIMIZE_LV	:= -O0 -g

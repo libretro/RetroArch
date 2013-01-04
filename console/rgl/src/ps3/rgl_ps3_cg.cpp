@@ -69,8 +69,10 @@ static int rglpsLoadFPShader (void *data)
    return GL_TRUE;
 }
 
-static void rglpsUnloadFPShader(_CGprogram *program)
+static void rglpsUnloadFPShader (void *data)
 {
+   _CGprogram *program = (_CGprogram*)data;
+
    if ( program->loadProgramId != GMM_ERROR )
    {
       gmmFree( program->loadProgramId );

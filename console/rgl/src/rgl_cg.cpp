@@ -263,26 +263,32 @@ unsigned int rglCountFloatsInCgType( CGtype type )
    return size;
 }
 
-void _cgRaiseInvalidParam( CgRuntimeParameter*p, const void*v )
+void _cgRaiseInvalidParam (void *data, const void*v )
 {
+   (void)data;
    rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
 }
-void _cgRaiseInvalidParamIndex( CgRuntimeParameter*p, const void*v, const int index )
+void _cgRaiseInvalidParamIndex (void *data, const void*v, const int index )
 {
+   (void)data;
    rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
 }
 
-void _cgRaiseNotMatrixParam( CgRuntimeParameter*p, const void*v )
+void _cgRaiseNotMatrixParam (void *data, const void*v )
 {
-   rglCgRaiseError( CG_NOT_MATRIX_PARAM_ERROR );
-}
-void _cgRaiseNotMatrixParamIndex( CgRuntimeParameter*p, const void*v, const int index )
-{
+   (void)data;
    rglCgRaiseError( CG_NOT_MATRIX_PARAM_ERROR );
 }
 
-void _cgIgnoreSetParamIndex( CgRuntimeParameter*p, const void*v, const int index )
+void _cgRaiseNotMatrixParamIndex( void *data, const void*v, const int index )
 {
+   (void)data;
+   rglCgRaiseError( CG_NOT_MATRIX_PARAM_ERROR );
+}
+
+void _cgIgnoreSetParamIndex (void *data, const void*v, const int index )
+{
+   (void)data;
    // nothing
 }
 
@@ -712,9 +718,10 @@ void rglCgDestroyContextParam( CgRuntimeParameter* ptr )
    free( ptr );
 }
 
-static void _setSamplerRuntimeParameter( CgRuntimeParameter*ptr, const void*v, int /*index*/ )
+static void _setSamplerRuntimeParameter (void *data, const void*v, int /*index*/ )
 {
-   if ( v )
+   CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
+   if (v)
    {
       *( GLuint* )ptr->pushBufferPointer = *( GLuint* )v;
    }
