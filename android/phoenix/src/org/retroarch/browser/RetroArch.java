@@ -97,7 +97,9 @@ public class RetroArch extends Activity implements
 		try {
 			AssetManager assets = getAssets();
 			String cacheDir = getCacheDir().getAbsolutePath();
-			extractAssets(assets, cacheDir, "", 0);
+			//extractAssets(assets, cacheDir, "", 0);
+			extractAssets(assets, cacheDir, "Shaders", 1);
+			extractAssets(assets, cacheDir, "Overlays", 1);
 		} catch (IOException e) {
 			Log.e(TAG, "Failed to extract assets to cache.");			
 		}
