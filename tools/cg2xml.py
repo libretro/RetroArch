@@ -283,6 +283,7 @@ def convert(source, dest):
 def main():
    if len(sys.argv) != 3:
       print('Usage: {} prog.cg prog.shader'.format(sys.argv[0]))
+      print('Batch mode usage: {} cg-dir out-xml-shader-dir'.format(sys.argv[0]))
       return 1
 
    if os.path.isdir(sys.argv[1]):
