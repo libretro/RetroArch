@@ -5,6 +5,7 @@ import org.retroarch.R;
 import java.io.*;
 
 import android.content.*;
+import android.content.res.AssetManager;
 import android.app.*;
 import android.os.*;
 import android.preference.PreferenceManager;
@@ -57,6 +58,50 @@ public class RetroArch extends Activity implements
 		float rate = display.getRefreshRate();
 		return rate;
 	}
+	
+	private byte[] loadAsset(String asset) throws IOException {
+		String path = asset;
+		InputStream stream = getAssets().open(path);
+		int len = stream.available();
+		byte[] buf = new byte[len];
+		stream.read(buf, 0, len);
+		return buf;
+	}
+	
+	private void extractAssets(AssetManager manager, String cacheDir, String relativePath, int level) throws IOException {
+		final String[] paths = manager.list(relativePath);
+		if (paths != null && paths.length > 0) { // Directory
+			Log.i(TAG, "Extracting assets directory: " + relativePath);
+			for (final String path : paths)
+				extractAssets(manager, cacheDir, relativePath + (level > 0 ? File.separator : "") + path, level + 1);	
+		} else { // File, extract.
+			Log.i(TAG, "Extracting assets file: " + relativePath);
+			
+			String parentPath = new File(relativePath).getParent();
+			
+			File parentFile = new File(cacheDir, parentPath);
+			Log.i(TAG, "Creating folder: " + parentFile.getAbsolutePath());
+			parentFile.mkdirs(); // Doesn't throw.
+			
+			byte[] asset = loadAsset(relativePath);
+			BufferedOutputStream writer = new BufferedOutputStream(
+					new FileOutputStream(new File(cacheDir, relativePath)));
+
+			writer.write(asset, 0, asset.length);
+			writer.flush();
+			writer.close();
+		}
+	}
+	
+	private void extractAssets() {
+		try {
+			AssetManager assets = getAssets();
+			String cacheDir = getCacheDir().getAbsolutePath();
+			extractAssets(assets, cacheDir, "", 0);
+		} catch (IOException e) {
+			Log.e(TAG, "Failed to extract assets to cache.");			
+		}
+	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -67,6 +112,15 @@ public class RetroArch extends Activity implements
 		} catch (IOException e) {
 			config = new ConfigFile();
 		}
+		
+		// Extracting assets appears to take considerable amount of time, so
+		// move extraction to a thread.
+		Thread assetThread = new Thread(new Runnable() {
+			public void run() {
+				extractAssets();
+			}
+		});
+		assetThread.start();
 		
 		setContentView(R.layout.line_list);
 
