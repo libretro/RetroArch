@@ -8,8 +8,6 @@ CELL_PSGL_VERSION	= ultra-opt
 
 DEBUG			= 0
 DOWNLOAD_SHADERS	= 1
-SHADER_PKG_DIR := ps3/pkg/USRDIR/cores/shaders
-SHADER_DIR     := media/shaders
 RMENU_IMG_DIR  := media/rmenu
 STRIPPING_ENABLE	= 0
 HAVE_RGL		= 1
@@ -150,18 +148,9 @@ create-salamander:
 
 copy-media-files:
 	@cp $(RMENU_IMG_DIR)/main-menu_1080p.png ps3/pkg/USRDIR/cores/borders/Menu/main-menu.png
-	@cp -r $(SHADER_DIR) $(SHADER_PKG_DIR)
 
 create-shaders:
-ifeq ($(DOWNLOAD_SHADERS),1)
-	@if test -d $(SHADER_DIR); then \
-      cd $(SHADER_DIR); \
-		$(GIT) pull; \
-		cd ../../../../..; \
-	else \
-      $(GIT) clone git://github.com/libretro/common-shaders.git $(SHADER_DIR); \
-	fi
-endif
+	make -f Makefile.shaders deploy-ps3
 
 pkg: $(PPU_TARGET)  create-shaders copy-media-files create-npdrm-salamander create-npdrm-core
 	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg

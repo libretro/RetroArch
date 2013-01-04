@@ -1,0 +1,51 @@
+DOWNLOAD_SHADERS	= 1
+SHADER_DIR     := media/shaders
+SHADER_XML_DIR := media/shaders_xml
+
+SHADER_DEST_PS3_DIR := ps3/pkg/USRDIR/cores/shaders
+
+# system platform
+system_platform = unix
+ifeq ($(shell uname -a),)
+EXE_EXT = .exe
+   system_platform = win
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+   system_platform = osx
+else ifneq ($(findstring MINGW,$(shell uname -a)),)
+   system_platform = win
+endif
+
+ifeq ($(shell uname), Linux)
+PYTHON2		= python2
+PYTHON3		= python
+GIT			= git
+else
+PYTHON2		= python2.exe
+PYTHON3		= python.exe
+GIT			= git.exe
+endif
+
+checkout-shaders:
+ifeq ($(DOWNLOAD_SHADERS),1)
+	@if test -d $(SHADER_DIR); then \
+		echo "[SHADER CHECKOUT::] Git pulling common-shaders..."; \
+      cd $(SHADER_DIR); \
+		$(GIT) pull; \
+		cd ../../../../..; \
+	else \
+	echo "[SHADER CHECKOUT::] Git cloning common-shaders first..."; \
+      $(GIT) clone git://github.com/libretro/common-shaders.git $(SHADER_DIR); \
+	fi
+endif
+
+convert-xml:
+	$(PYTHON) tools/cg2xml.py $(SHADER_DIR) $(SHADER_XML_DIR)
+
+deploy-ps3: checkout-shaders
+	@if test -d $(SHADER_DEST_PS3_DIR); then \
+		cp -r $(SHADER_DIR)/* $(SHADER_DEST_PS3_DIR); \
+	else \
+	echo "[DEPLOY PS3::] Creating PS3 shader directory first..."; \
+		mkdir -p $(SHADER_DEST_PS3_DIR) || bin/true; \
+	fi
+	@echo "[DEPLOY PS3::] Copied shaders to PS3 shaders directory."
