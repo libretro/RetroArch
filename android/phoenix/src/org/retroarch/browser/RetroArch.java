@@ -5,7 +5,7 @@ import org.retroarch.R;
 import java.io.*;
 
 import android.content.*;
-import android.content.res.AssetManager;
+//import android.content.res.AssetManager;
 import android.app.*;
 import android.os.*;
 import android.preference.PreferenceManager;
@@ -59,6 +59,7 @@ public class RetroArch extends Activity implements
 		return rate;
 	}
 	
+	/*
 	private byte[] loadAsset(String asset) throws IOException {
 		String path = asset;
 		InputStream stream = getAssets().open(path);
@@ -104,6 +105,7 @@ public class RetroArch extends Activity implements
 			Log.e(TAG, "Failed to extract assets to cache.");			
 		}
 	}
+	*/
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -115,6 +117,8 @@ public class RetroArch extends Activity implements
 			config = new ConfigFile();
 		}
 		
+
+		/*
 		// Extracting assets appears to take considerable amount of time, so
 		// move extraction to a thread.
 		Thread assetThread = new Thread(new Runnable() {
@@ -123,6 +127,7 @@ public class RetroArch extends Activity implements
 			}
 		});
 		assetThread.start();
+		*/
 		
 		setContentView(R.layout.line_list);
 
