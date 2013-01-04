@@ -331,24 +331,24 @@ config.mk: configure qb/*
 	@exit 1
 
 retroarch: $(OBJ)
-	$(Q)$(LD) -o $@ $(OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 	@$(if $(Q), $(shell echo echo LD $@),)
+	$(Q)$(LD) -o $@ $(OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 
 tools/retroarch-joyconfig: $(JOYCONFIG_OBJ)
+	@$(if $(Q), $(shell echo echo LD $@),)
 ifeq ($(CXX_BUILD), 1)
 	$(Q)$(CXX) -o $@ $(JOYCONFIG_OBJ) $(SDL_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 else
 	$(Q)$(CC) -o $@ $(JOYCONFIG_OBJ) $(SDL_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 endif
-	@$(if $(Q), $(shell echo echo LD $@),)
 
 %.o: %.c config.h config.mk $(HEADERS)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 %.o: %.S config.h config.mk $(HEADERS)
-	$(Q)$(CC) $(CFLAGS) $(ASFLAGS) $(DEFINES) -c -o $@ $<
 	@$(if $(Q), $(shell echo echo AS $<),)
+	$(Q)$(CC) $(CFLAGS) $(ASFLAGS) $(DEFINES) -c -o $@ $<
 
 install: $(TARGET)
 	mkdir -p $(DESTDIR)$(PREFIX)/bin 2>/dev/null || /bin/true

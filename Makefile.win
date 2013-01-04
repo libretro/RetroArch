@@ -232,28 +232,28 @@ endif
 all: $(TARGET) $(JTARGET)
 
 $(TARGET): $(OBJ)
-	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS) $(LDCXXFLAGS)
 	@$(if $(Q), $(shell echo echo LD $@),)
+	$(Q)$(CXX) -o $@ $(OBJ) $(LIBS) $(LDFLAGS) $(LDCXXFLAGS)
 
 %.o: %.c
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 %.o: %.cpp
-	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -c -o $@ $<
 	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -c -o $@ $<
 
 %.o: %.rc
-	$(Q)$(WINDRES) -o $@ $<
 	@$(if $(Q), $(shell echo echo WINDRES $<),)
+	$(Q)$(WINDRES) -o $@ $<
 
 $(JTARGET): $(JOBJ)
+	@$(if $(Q), $(shell echo echo LD $@),)
 ifeq ($(CXX_BUILD), 1)
 	$(Q)$(CXX) -o $@ $(JOBJ) -ldxguid -ldinput8 -lole32 $(LDFLAGS) $(JLIBS)
 else
 	$(Q)$(CC) -o $@ $(JOBJ) -ldxguid -ldinput8 -lole32 $(LDFLAGS) $(JLIBS)
 endif
-	@$(if $(Q), $(shell echo echo LD $@),)
 
 clean:
 	rm -f *.o 
