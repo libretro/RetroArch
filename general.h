@@ -594,6 +594,7 @@ struct global
    // If this is non-NULL. RARCH_LOG and friends will write to this file.
    FILE *log_file;
 
+   bool main_is_init;
    bool error_in_init;
    char error_string[1024];
    jmp_buf error_sjlj_context;

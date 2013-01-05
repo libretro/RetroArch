@@ -2738,6 +2738,7 @@ int rarch_main_init(int argc, char *argv[])
       init_cheats();
 
    g_extern.error_in_init = false;
+   g_extern.main_is_init  = true;
    return 0;
 
 error:
@@ -2745,6 +2746,8 @@ error:
    pretro_deinit();
    uninit_drivers();
    uninit_libretro_sym();
+
+   g_extern.main_is_init  = false;
 
    return 1;
 }
@@ -2880,6 +2883,8 @@ void rarch_main_deinit(void)
    pretro_deinit();
    uninit_drivers();
    uninit_libretro_sym();
+
+   g_extern.main_is_init  = false;
 }
 
 #ifndef HAVE_RARCH_MAIN_WRAP
