@@ -147,10 +147,7 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
          /* The window is being hidden or closed, clean it up. */
          /* terminate display/EGL context here */
          if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
-         {
             uninit_drivers();
-            g_android.window_ready = false;
-         }
          else
             RARCH_WARN("Window is terminated outside PAUSED state.\n");
 
@@ -195,9 +192,6 @@ static bool android_run_events(struct android_app* android_app)
       {
          if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
             init_drivers();
-
-         if (android_app->window != NULL)
-            g_android.window_ready = true;
       }
    }
 
@@ -341,7 +335,7 @@ static void* android_app_entry(void* param)
    g_extern.verbose = true;
 
 
-   while (!g_android.window_ready)
+   while (!android_app->window)
    {
       if (!android_run_events(android_app))
          goto exit;

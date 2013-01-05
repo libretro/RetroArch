@@ -23,7 +23,6 @@
 struct droid
 {
    struct android_app* app;
-   bool window_ready;
    char current_ime[PATH_MAX];
 };
 
