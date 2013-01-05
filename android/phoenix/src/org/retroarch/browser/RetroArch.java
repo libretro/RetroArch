@@ -202,12 +202,12 @@ public class RetroArch extends Activity implements
 		if (prefs.getBoolean("video_sync_refreshrate_to_screen", true) &&
 				(getRefreshRate() < 59.95))
 		{
-			Log.e(TAG, "Refresh rate of screen lower than 59.95Hz, adjusting to screen.");	
+			Log.i(TAG, "Refresh rate of screen lower than 59.95Hz, adjusting to screen.");	
 			config.setDouble("video_refresh_rate", getRefreshRate());
 		}
 		else
 		{
-			Log.e(TAG, "Refresh rate set to 59.95Hz (default).");	
+			Log.i(TAG, "Refresh rate set to 59.95Hz (default).");	
 			config.setDouble("video_refresh_rate", 59.95);
 		}
 		
