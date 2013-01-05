@@ -1049,7 +1049,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_SHADER_PRESETS:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            if(g_extern.console.emulator_initialized)
+            if(g_extern.main_is_init)
             {
                menu_stack_push(PRESET_CHOICE);
                filebrowser_set_root_and_ext(filebrowser, EXT_CGP_PRESETS, default_paths.cgp_dir);
@@ -2329,11 +2329,11 @@ void rmenu_input_process(void *data, void *state)
          {
             //we want to force exit when g_extern.console.mode is set to MODE_EXIT
             if(g_extern.console.rmenu.mode != MODE_EXIT)
-               g_extern.console.rmenu.mode = (((rstate->old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (rstate->old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.console.emulator_initialized)) ? MODE_EMULATION : MODE_MENU;
+               g_extern.console.rmenu.mode = (((rstate->old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (rstate->old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.main_is_init)) ? MODE_EMULATION : MODE_MENU;
          }
          else
          {
-            bool rmenu_enable = !(((rstate->old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (rstate->old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.console.emulator_initialized));
+            bool rmenu_enable = !(((rstate->old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (rstate->old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.main_is_init));
             g_extern.console.rmenu.mode = rmenu_enable ? MODE_MENU : MODE_EMULATION;
          }
       }

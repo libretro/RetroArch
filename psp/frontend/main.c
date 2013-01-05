@@ -193,7 +193,7 @@ begin_loop:
 begin_shutdown:
    config_save_file(default_paths.config_file);
 
-   if(g_extern.console.emulator_initialized)
+   if(g_extern.main_is_init)
       rarch_main_deinit();
 
    input_psp.free(NULL);

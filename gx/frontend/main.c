@@ -365,7 +365,7 @@ static bool rmenu_iterate(void)
          {
             if(goto_menu_key_pressed)
             {
-               g_extern.console.rmenu.state.rmenu.enable = (goto_menu_key_pressed && g_extern.console.emulator_initialized) ? false : true;
+               g_extern.console.rmenu.state.rmenu.enable = (goto_menu_key_pressed && g_extern.main_is_init) ? false : true;
                g_extern.console.rmenu.mode = g_extern.console.rmenu.state.rmenu.enable ? MODE_MENU : MODE_EMULATION;
             }
          }
@@ -596,7 +596,7 @@ begin_shutdown:
    config_save_file(default_paths.config_file);
    config_save_keybinds(input_path);
 
-   if(g_extern.console.emulator_initialized)
+   if(g_extern.main_is_init)
       rarch_main_deinit();
 
    input_gx.free(NULL);

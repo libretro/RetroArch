@@ -778,14 +778,14 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
       switch(current_index)
       {
          case MENU_ITEM_LOAD_STATE:
-            if (g_extern.console.emulator_initialized)
+            if (g_extern.main_is_init)
             {
                rarch_load_state();
                rarch_settings_change(S_RETURN_TO_GAME);
             }
             break;
          case MENU_ITEM_SAVE_STATE:
-            if (g_extern.console.emulator_initialized)
+            if (g_extern.main_is_init)
             {
                rarch_save_state();
                rarch_settings_change(S_RETURN_TO_GAME);
@@ -814,7 +814,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
                rarch_settings_msg(S_MSG_RESIZE_SCREEN, S_DELAY_270);
             break;
          case MENU_ITEM_FRAME_ADVANCE:
-            if (g_extern.console.emulator_initialized)
+            if (g_extern.main_is_init)
             {
                g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
                rarch_settings_change(S_FRAME_ADVANCE);
@@ -825,14 +825,14 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
                device_ptr->ctx_driver->rmenu_screenshot_dump(NULL);
             break;
          case MENU_ITEM_RESET:
-            if (g_extern.console.emulator_initialized)
+            if (g_extern.main_is_init)
             {
                rarch_settings_change(S_RETURN_TO_GAME);
                rarch_game_reset();
             }
             break;
          case MENU_ITEM_RETURN_TO_GAME:
-            if (g_extern.console.emulator_initialized)
+            if (g_extern.main_is_init)
                rarch_settings_change(S_RETURN_TO_GAME);
             break;
          case MENU_ITEM_QUIT_RARCH:
@@ -1166,7 +1166,7 @@ bool rmenu_iterate(void)
    XInputGetState(0, &state);
 
    bool rmenu_enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
-         && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.console.emulator_initialized)
+         && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.main_is_init)
          && IS_TIMER_EXPIRED(0));
 
    rarch_render_cached_frame();

@@ -82,7 +82,7 @@ void rarch_set_auto_viewport(unsigned width, unsigned height)
 
 void rarch_set_core_viewport(void)
 {
-   if (!g_extern.console.emulator_initialized)
+   if (!g_extern.main_is_init)
       return;
 
    // fallback to 1:1 pixel ratio if none provided

@@ -85,7 +85,7 @@ bool rarch_startup (const char * config_path)
 
    if(g_extern.console.initialize_rarch_enable)
    {
-      if(g_extern.console.emulator_initialized)
+      if(g_extern.main_is_init)
          rarch_main_deinit();
 
       struct rarch_main_wrap args = {0};
@@ -104,14 +104,12 @@ bool rarch_startup (const char * config_path)
 
       if(init_ret == 0)
       {
-         g_extern.console.emulator_initialized = 1;
          g_extern.console.initialize_rarch_enable = 0;
          retval = true;
       }
       else
       {
          //failed to load the ROM for whatever reason
-         g_extern.console.emulator_initialized = 0;
          g_extern.console.rmenu.mode = MODE_MENU;
          rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
       }

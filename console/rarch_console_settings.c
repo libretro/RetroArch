@@ -397,7 +397,6 @@ void rarch_settings_set_default(void)
    g_extern.audio_data.mute = 0;
    g_extern.verbose = true;
 
-   g_extern.console.emulator_initialized = 0;
    g_extern.console.rmenu.mode = MODE_MENU;
    g_extern.console.rmenu.font_size = 1.0f;
    g_extern.console.sound.mode = SOUND_MODE_NORMAL;
