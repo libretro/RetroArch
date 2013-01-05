@@ -8,6 +8,7 @@
 
 static inline GLboolean rglIsDrawableColorFormat (GLenum colorFormat)
 {
+#ifndef HAVE_RGL_2D
    switch (colorFormat)
    {
       case RGLGCM_ARGB8:
@@ -16,6 +17,9 @@ static inline GLboolean rglIsDrawableColorFormat (GLenum colorFormat)
       default:
          return GL_FALSE;
    }
+#else
+   return GL_TRUE;
+#endif
 }
 
 static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)

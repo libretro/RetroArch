@@ -100,8 +100,9 @@ template<int SIZE> inline static void swapandsetfp( int ucodeSize, unsigned int 
 
 }
 
-template<int SIZE> static void setVectorTypefp( CgRuntimeParameter* __restrict ptr, const void* __restrict v )
+template<int SIZE> static void setVectorTypefp( void *dat, const void* __restrict v )
 {
+   CgRuntimeParameter *ptr = (CgRuntimeParameter*)dat;
    float * __restrict  f = ( float* )v;
    float * __restrict  data = ( float* )ptr->pushBufferPointer;/*(float*)ptr->offset*;*/
    for ( long i = 0; i < SIZE; ++i ) //TODO: ced: find out if this loop for the get or for the reset in a future use of the same shader or just for the alignment???
@@ -416,7 +417,6 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndexArray
    ++LContext->LastFPConstantModification;
 }
 
-//TODO ?: check: //works only for the consecutive alloc...
 template <int ROWS, int COLS, int ORDER> static void setMatrixvpIndexArray (void *data, const void* __restrict v, const int index )
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
@@ -578,7 +578,7 @@ _cgSetArrayIndexFunction getMatrixTypeIndexSetterFunction( unsigned short a, uns
    return setMatrixTypeIndex[a][b][c][d][e][f];
 }
 
-static void setSamplerfp (void *data, const void*v, int ) //index
+static void setSamplerfp (void *data, const void*v, int /* index */)
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
    _CGprogram *program = (( CgRuntimeParameter* )ptr )->program;
@@ -589,16 +589,16 @@ static void setSamplerfp (void *data, const void*v, int ) //index
    // this may be called by a connected param to propagate its value
    // the spec says that the set should not cause the bind
    // so only do the bind when the call comes from cgGLEnableTextureParameter
-   if ( v )
-      *( GLuint* )ptr->pushBufferPointer = *( GLuint* )v;
+   if (v)
+      *(GLuint*)ptr->pushBufferPointer = *(GLuint*)v;
    else
    {
       rglTextureImageUnit *unit = _CurrentContext->TextureImageUnits + ( parameterResource->resource - CG_TEXUNIT0 );
-      rglBindTextureInternal( unit, *( GLuint* )ptr->pushBufferPointer, ptr->glType );
+      rglBindTextureInternal( unit, *(GLuint*)ptr->pushBufferPointer, ptr->glType );
    }
 }
 
-static void setSamplervp (void *data, const void*v, int ) //index
+static void setSamplervp (void *data, const void*v, int /* index */)
 {
    // the value of v == NULL when it is called from cgGLEnableTextureParameter
    // the value of v == NULL when it is called from  cgGLSetTextureParameter
@@ -607,9 +607,7 @@ static void setSamplervp (void *data, const void*v, int ) //index
    // so only do the bind when the call comes from cgGLEnableTextureParameter
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
    if (v)
-   {
       *(GLuint*)ptr->pushBufferPointer = *( GLuint* )v;
-   }
 }
 
 
@@ -773,6 +771,7 @@ void rglCreatePushBuffer(void *data)
    //second pass to fill the buffer
    arrayCount = 1;
    const CgParameterEntry *containerEntry = NULL;
+
    for ( int i = 0;i < program->rtParametersCount;i++ )
    {
       CgRuntimeParameter *rtParameter = program->runtimeParameters + i;
@@ -1290,6 +1289,7 @@ void rglPlatformBufferObjectSetData(void *buf_data, GLintptr offset, GLsizeiptr 
       // copy directly to newly allocated memory
       //  TODO: For GPU destination, should we copy to system memory and
       //  pull from GPU?
+#ifndef HAVE_RGL_2D
       switch ( rglBuffer->pool )
       {
          case RGLGCM_SURFACE_POOL_NONE:
@@ -1299,6 +1299,9 @@ void rglPlatformBufferObjectSetData(void *buf_data, GLintptr offset, GLsizeiptr 
             __builtin_memcpy( gmmIdToAddress( rglBuffer->bufferId ), data, size );
             break;
       }
+#else
+      __builtin_memcpy( gmmIdToAddress( rglBuffer->bufferId ), data, size );
+#endif
    }
       else
       {
@@ -1553,10 +1556,11 @@ GLenum rglPlatformFramebufferCheckStatus (void *data)
       }
    }
 
+#ifndef HAVE_RGL_2D
    // check for supported color format
-   if ( nBuffers )
+   if (nBuffers)
    {
-      if ( !rglIsDrawableColorFormat( colorFormat ) )
+      if ( !rglIsDrawableColorFormat(colorFormat))
          return GL_FRAMEBUFFER_UNSUPPORTED_OES;
 
       switch ( colorFormat )
@@ -1570,6 +1574,7 @@ GLenum rglPlatformFramebufferCheckStatus (void *data)
             return GL_FRAMEBUFFER_UNSUPPORTED_OES;
       }
    }
+#endif
 
    // at least once attachment is required
    if ( nBuffers == 0 )
@@ -1652,7 +1657,9 @@ void rglPlatformFramebuffer::validate (void *data)
       rglTexture* colorTexture = NULL;
       GLuint face = 0;
       rglFramebufferGetAttachmentTexture( LContext, &color[i], &colorTexture, &face );
-      if ( colorTexture == NULL ) continue;
+
+      if (colorTexture == NULL)
+         continue;
 
       rglGcmTexture* nvTexture = ( rglGcmTexture * )colorTexture->platformTexture;
 
@@ -1718,7 +1725,7 @@ void rglValidateFramebuffer (void)
 
    if (LContext->framebuffer)
    {
-      rglPlatformFramebuffer* framebuffer = static_cast<rglPlatformFramebuffer *>( rglGetFramebuffer( LContext, LContext->framebuffer ) );
+      rglPlatformFramebuffer* framebuffer = (rglPlatformFramebuffer *)rglGetFramebuffer(LContext, LContext->framebuffer);
 
       if (framebuffer->needValidate)
          framebuffer->validate( LContext );
@@ -1753,19 +1760,18 @@ void rglValidateFramebuffer (void)
 void *rglPlatformRasterInit (void)
 {
    rglpFifoGlFinish();
-   rglGcmDriver *driver = ( rglGcmDriver * )malloc( sizeof( rglGcmDriver ) );
-   memset( driver, 0, sizeof( rglGcmDriver ) );
+   rglGcmDriver *driver = (rglGcmDriver*)malloc(sizeof(rglGcmDriver));
+   memset(driver, 0, sizeof(rglGcmDriver));
 
    driver->rt.yInverted = RGLGCM_TRUE;
-
    driver->invalidateVertexCache = GL_FALSE;
-
    driver->flushBufferCount = 0;
 
    // [YLIN] Make it 16 byte align
-   driver->sharedVPConstants = ( char * )memalign( 16, 4 * sizeof( float ) * RGL_MAX_VP_SHARED_CONSTANTS );
+   driver->sharedVPConstants = (char*)memalign(16, 4 * sizeof( float ) * RGL_MAX_VP_SHARED_CONSTANTS);
    driver->sharedFPConstantsId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
          CELL_GCM_LOCATION_LOCAL, 0, 4 * sizeof(float) * RGL_MAX_FP_SHARED_CONSTANTS);
+
    return driver;
 }
 
@@ -2858,11 +2864,11 @@ GLboolean rglPlatformTextureReference (void *data, GLuint pitch, void *data_buf,
 
    GLboolean isRenderTarget = GL_FALSE;
    GLboolean vertexEnable = GL_FALSE;
+#ifndef HAVE_RGL_2D
    // can usually be a render target, except for restrictions below
    if (rglIsDrawableColorFormat( newLayout.internalFormat))
       isRenderTarget = GL_TRUE;
 
-#ifndef HAVE_RGL_2D
    switch (newLayout.internalFormat)
    {
       case GL_FLOAT_RGBA32:
@@ -2888,7 +2894,7 @@ GLboolean rglPlatformTextureReference (void *data, GLuint pitch, void *data_buf,
    gcmTexture->gpuAddressIdOffset = offset;
    gcmTexture->gpuSize = rglGetGcmTextureSize( &newLayout );
 
-   texture->revalidate &= ~( RGL_TEXTURE_REVALIDATE_LAYOUT | RGL_TEXTURE_REVALIDATE_IMAGES );
+   texture->revalidate &= ~(RGL_TEXTURE_REVALIDATE_LAYOUT | RGL_TEXTURE_REVALIDATE_IMAGES);
    texture->revalidate |= RGL_TEXTURE_REVALIDATE_PARAMETERS;
    rglTextureTouchFBOs( texture );
    return GL_TRUE;
