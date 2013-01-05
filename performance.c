@@ -93,9 +93,7 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
 #endif
 
 #if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__)
-#if !defined(ANDROID_ARM) || !defined(ANDROID_MIPS)
 #define CPU_X86
-#endif
 #endif
 
 #if defined(_MSC_VER) && !defined(_XBOX)
@@ -122,9 +120,11 @@ static void x86_cpuid(int func, int flags[4])
          "xchg %%" REG_b ", %%" REG_S "\n"
          : "=a"(flags[0]), "=S"(flags[1]), "=c"(flags[2]), "=d"(flags[3])
          : "a"(func));
-
 #elif defined(_MSC_VER)
    __cpuid(flags, func);
+#else
+   RARCH_WARN("Unknown compiler. Cannot check CPUID with inline assembly.\n");
+   memset(flags, 0, 4 * sizeof(int));
 #endif
 }
 #endif

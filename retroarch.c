@@ -2637,6 +2637,10 @@ static void validate_cpu_features(void)
    if (!(cpu.simd & RARCH_SIMD_AVX))
       FAIL_CPU("AVX");
 #endif
+#ifdef HAVE_NEON
+   if (!(cpu.simd & RARCH_SIMD_NEON))
+      FAIL_CPU("NEON");
+#endif
 }
 
 int rarch_main_init(int argc, char *argv[])
