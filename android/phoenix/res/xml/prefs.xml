@@ -2,6 +2,16 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     android:title="RetroArch Settings" >
 
+    <PreferenceScreen android:title="Path Settings">
+        <PreferenceCategory android:title="ROM paths">
+            <Preference android:title="ROM directory"
+                android:summary="Sets directory where ROM browser will first browse for ROM files.">
+                <intent
+                    android:targetClass="org.retroarch.browser.ROMDirActivity"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+        </PreferenceCategory>
+    </PreferenceScreen>
     <PreferenceScreen android:title="System Settings" >
         <PreferenceCategory android:title="General" >
             <CheckBoxPreference

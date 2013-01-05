@@ -27,6 +27,7 @@
         <activity android:name="org.retroarch.browser.ShaderActivity"></activity>
         <activity android:name="org.retroarch.browser.Shader2Activity"></activity>
         <activity android:name="org.retroarch.browser.OverlayActivity"></activity>
+        <activity android:name="org.retroarch.browser.ROMDirActivity"></activity>
         
         <activity android:name="android.app.NativeActivity" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale">
         	<meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />

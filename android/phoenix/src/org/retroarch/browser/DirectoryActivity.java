@@ -16,15 +16,24 @@ import android.graphics.drawable.*;
 class FileWrapper implements IconAdapterItem {
 	public final File file;
 	public final boolean parentItem;
-	protected final int typeIndex;
+	public final boolean dirSelectItem;
+	
 	protected final boolean enabled;
+	
+	public static final int DIRSELECT = 0;
+	public static final int PARENT = 1;
+	public static final int FILE = 2;
+	
+	protected final int typeIndex;
 
-	public FileWrapper(File aFile, boolean aIsParentItem, boolean aIsEnabled) {
+	public FileWrapper(File aFile, int type, boolean aIsEnabled) {
 		file = aFile;
-		typeIndex = aIsParentItem ? 0 : (file.isDirectory() ? 1 : 0)
-				+ (file.isFile() ? 2 : 0);
-		parentItem = aIsParentItem;
-		enabled = aIsParentItem || aIsEnabled;
+		
+		parentItem = type == PARENT;
+		dirSelectItem = type == DIRSELECT;		
+		typeIndex = type == FILE ? (FILE + (file.isDirectory() ? 0 : 1)) : type;	
+		
+		enabled = parentItem || dirSelectItem || aIsEnabled;
 	}
 
 	@Override
@@ -34,12 +43,17 @@ class FileWrapper implements IconAdapterItem {
 
 	@Override
 	public String getText() {
-		return parentItem ? "[Parent Directory]" : file.getName();
+		if (dirSelectItem)
+			return "[[Use this directory]]";
+		else if (parentItem)
+			return "[Parent Directory]";
+		else
+			return file.getName();
 	}
 
 	@Override
 	public int getIconResourceId() {
-		if (!parentItem) {
+		if (!parentItem && !dirSelectItem) {
 			return file.isFile() ? R.drawable.ic_file : R.drawable.ic_dir;
 		} else {
 			return R.drawable.ic_dir;
@@ -52,7 +66,7 @@ class FileWrapper implements IconAdapterItem {
 	}
 
 	public int compareTo(FileWrapper aOther) {
-		if (null != aOther) {
+		if (aOther != null) {
 			// Who says ternary is hard to follow
 			if (isEnabled() == aOther.isEnabled()) {
 				return (typeIndex == aOther.typeIndex) ? file
@@ -119,6 +133,11 @@ public class DirectoryActivity extends Activity implements
 	protected void setPathSettingKey(String key) {
 		pathSettingKey = key;
 	}
+	
+	private boolean isDirectoryTarget;
+	protected void setIsDirectoryTarget(boolean enable) {
+		isDirectoryTarget = enable;
+	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -151,6 +170,20 @@ public class DirectoryActivity extends Activity implements
 		super.onSaveInstanceState(aState);
 		aState.putParcelableArrayList("BACKSTACK", backStack);
 	}
+	
+	private void finishWithPath(String path) {
+		if (pathSettingKey != null && !pathSettingKey.isEmpty()) {
+			SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+			SharedPreferences.Editor editor = settings.edit();
+			editor.putString(pathSettingKey, path);
+			editor.commit();
+		}
+		
+		Intent intent = new Intent();			
+		intent.putExtra("PATH", path);
+		setResult(RESULT_OK, intent);
+		finish();
+	}
 
 	@Override
 	public void onItemClick(AdapterView<?> aListView, View aView,
@@ -160,6 +193,9 @@ public class DirectoryActivity extends Activity implements
 		if (item.parentItem && backStack.get(backStack.size() - 1).parentIsBack) {
 			backStack.remove(backStack.size() - 1);
 			wrapFiles();
+			return;
+		} else if (item.dirSelectItem) {
+			finishWithPath(listedDirectory.getAbsolutePath());
 			return;
 		}
 
@@ -171,19 +207,8 @@ public class DirectoryActivity extends Activity implements
 					!item.parentItem));
 			wrapFiles();
 		} else {
-			Intent intent = new Intent();
 			String filePath = selected.getAbsolutePath();
-			
-			if (pathSettingKey != null && !pathSettingKey.isEmpty()) {
-				SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-				SharedPreferences.Editor editor = settings.edit();
-				editor.putString(pathSettingKey, filePath);
-				editor.commit();
-			}
-			
-			intent.putExtra("PATH", filePath);
-			setResult(RESULT_OK, intent);
-			finish();
+			finishWithPath(filePath);
 		}
 	}
 
@@ -248,10 +273,12 @@ public class DirectoryActivity extends Activity implements
 
 		adapter.clear();
 		setTitle(listedDirectory.getAbsolutePath());
+		
+		if (isDirectoryTarget)
+			adapter.add(new FileWrapper(null, FileWrapper.DIRSELECT, true));
 
-		if (listedDirectory.getParentFile() != null) {
-			adapter.add(new FileWrapper(null, true, true));
-		}
+		if (listedDirectory.getParentFile() != null)
+			adapter.add(new FileWrapper(null, FileWrapper.PARENT, true));
 
 		// Copy new items
 		final File[] files = listedDirectory.listFiles();
@@ -259,10 +286,10 @@ public class DirectoryActivity extends Activity implements
 			for (File file : files) {
 				String path = file.getName();
 
-				boolean allowFile = file.isDirectory() || filterPath(path);
+				boolean allowFile = file.isDirectory() || (filterPath(path) && !isDirectoryTarget);
 
 				if (allowFile)
-					adapter.add(new FileWrapper(file, false,
+					adapter.add(new FileWrapper(file, FileWrapper.FILE,
 							file.isDirectory() || true));
 			}
 		}
