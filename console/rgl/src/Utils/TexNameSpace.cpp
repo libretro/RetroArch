@@ -7,8 +7,10 @@
 static const unsigned int capacityIncr = 16;
 
 // Initialize texture namespace ns with creation and destruction functions
-void rglTexNameSpaceInit( rglTexNameSpace *ns, rglTexNameSpaceCreateFunction create, rglTexNameSpaceDestroyFunction destroy )
+void rglTexNameSpaceInit(void *data, rglTexNameSpaceCreateFunction create, rglTexNameSpaceDestroyFunction destroy)
 {
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
+
    ns->capacity = capacityIncr;
    ns->data = (void **)malloc( ns->capacity * sizeof( void* ) );
    memset( ns->data, 0, ns->capacity*sizeof( void* ) );
@@ -17,18 +19,23 @@ void rglTexNameSpaceInit( rglTexNameSpace *ns, rglTexNameSpaceCreateFunction cre
 }
 
 // Free texture namespace ns
-void rglTexNameSpaceFree( rglTexNameSpace *ns )
+void rglTexNameSpaceFree(void *data)
 {
-   for ( GLuint i = 1;i < ns->capacity;++i )
-      if ( ns->data[i] ) ns->destroy( ns->data[i] );
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
+
+   for (GLuint i = 1;i < ns->capacity; ++i)
+      if (ns->data[i])
+         ns->destroy( ns->data[i] );
 
    free( ns->data );
    ns->data = NULL;
 }
 
 // Reset all names in namespace ns to NULL
-void rglTexNameSpaceResetNames( rglTexNameSpace *ns )
+void rglTexNameSpaceResetNames(void *data)
 {
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
+
    for ( GLuint i = 1;i < ns->capacity;++i )
    {
       if ( ns->data[i] )
@@ -40,9 +47,11 @@ void rglTexNameSpaceResetNames( rglTexNameSpace *ns )
 }
 
 // Get an index of the first free name in namespace ns
-GLuint rglTexNameSpaceGetFree( rglTexNameSpace *ns )
+GLuint rglTexNameSpaceGetFree(void *data)
 {
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
    GLuint i;
+
    for (i = 1;i < ns->capacity;++i)
       if (!ns->data[i])
          break;
@@ -51,8 +60,10 @@ GLuint rglTexNameSpaceGetFree( rglTexNameSpace *ns )
 
 // Add name to namespace by increasing capacity and calling creation call back function
 // Return GL_TRUE for success, GL_FALSE for failure
-GLboolean rglTexNameSpaceCreateNameLazy( rglTexNameSpace *ns, GLuint name )
+GLboolean rglTexNameSpaceCreateNameLazy(void *data, GLuint name )
 {
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
+
    if (name >= ns->capacity)
    {
       int newCapacity = name >= ns->capacity + capacityIncr ? name + 1 : ns->capacity + capacityIncr;
@@ -71,15 +82,20 @@ GLboolean rglTexNameSpaceCreateNameLazy( rglTexNameSpace *ns, GLuint name )
 
 // Check if name is a valid name in namespace ns
 // Return GL_TRUE if so, GL_FALSE otherwise
-GLboolean rglTexNameSpaceIsName( rglTexNameSpace *ns, GLuint name )
+GLboolean rglTexNameSpaceIsName(void *data, GLuint name )
 {
-   if (( name > 0 ) && ( name < ns->capacity ) ) return( ns->data[name] != 0 );
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
+   
+   if ((name > 0) && (name < ns->capacity))
+      return( ns->data[name] != 0 );
    else return GL_FALSE;
 }
 
 // Generate new n names in namespace ns
-void rglTexNameSpaceGenNames( rglTexNameSpace *ns, GLsizei n, GLuint *names )
+void rglTexNameSpaceGenNames(void *data, GLsizei n, GLuint *names )
 {
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
+
    for ( int i = 0;i < n;++i )
    {
       GLuint name = rglTexNameSpaceGetFree( ns );
@@ -90,8 +106,10 @@ void rglTexNameSpaceGenNames( rglTexNameSpace *ns, GLsizei n, GLuint *names )
 }
 
 // Delete n names from namespace ns
-void rglTexNameSpaceDeleteNames( rglTexNameSpace *ns, GLsizei n, const GLuint *names )
+void rglTexNameSpaceDeleteNames(void *data, GLsizei n, const GLuint *names )
 {
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
+
    for ( int i = 0;i < n;++i )
    {
       GLuint name = names[i];

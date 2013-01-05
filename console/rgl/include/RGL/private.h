@@ -41,7 +41,7 @@ extern GLuint	rglValidateStates( GLuint mask );
 void rglAttachContext( RGLdevice *device, RGLcontext* context );
 void rglDetachContext( RGLdevice *device, RGLcontext* context );
 void rglInvalidateAllStates (void *data);
-void rglResetAttributeState( rglAttributeState* as );
+void rglResetAttributeState(void *data);
 void rglSetFlipHandler(void (*handler)(const GLuint head), RGLdevice *device);
 void rglSetVBlankHandler(void (*handler)(const GLuint head), RGLdevice *device);
 
@@ -104,7 +104,7 @@ GLboolean rglIsFormat( GLenum format );
 GLboolean rglIsValidPair( GLenum format, GLenum type );
 void rglImageAllocCPUStorage (void *data);
 void rglImageFreeCPUStorage (void *data);
-extern void	rglSetImage( rglImage* image, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment, GLenum format, GLenum type, const GLvoid* pixels );
+extern void	rglSetImage(void *data, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment, GLenum format, GLenum type, const GLvoid* pixels );
 extern void	rglSetSubImage( GLenum target, GLint level, rglTexture *texture, rglImage* image, GLint x, GLint y, GLint z, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment, GLenum format, GLenum type, const GLvoid* pixels );
 extern int	rglGetPixelSize( GLenum format, GLenum type );
 

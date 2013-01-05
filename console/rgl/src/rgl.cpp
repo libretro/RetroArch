@@ -52,8 +52,12 @@ static void rglFreeBufferObject (void *data)
 static void rglUnbindBufferObject (void *data, GLuint name)
 {
    RGLcontext *LContext = (RGLcontext*)data;
-   if ( LContext->ArrayBuffer == name ) LContext->ArrayBuffer = 0;
-   if ( LContext->PixelUnpackBuffer == name ) LContext->PixelUnpackBuffer = 0;
+
+   if (LContext->ArrayBuffer == name)
+      LContext->ArrayBuffer = 0;
+   if (LContext->PixelUnpackBuffer == name)
+      LContext->PixelUnpackBuffer = 0;
+
    for ( int i = 0;i < RGL_MAX_VERTEX_ATTRIBS;++i )
    {
       if ( LContext->attribs->attrib[i].arrayBuffer == name )
@@ -67,7 +71,9 @@ static void rglUnbindBufferObject (void *data, GLuint name)
 GLAPI void APIENTRY glBindBuffer( GLenum target, GLuint name )
 {
    RGLcontext *LContext = _CurrentContext;
-   if ( name ) rglTexNameSpaceCreateNameLazy( &LContext->bufferObjectNameSpace, name );
+
+   if (name)
+      rglTexNameSpaceCreateNameLazy( &LContext->bufferObjectNameSpace, name );
 
    switch ( target )
    {
@@ -89,6 +95,7 @@ GLAPI GLvoid* APIENTRY glMapBuffer( GLenum target, GLenum access )
 {
    RGLcontext *LContext = _CurrentContext;
    GLuint name = 0;
+
    switch ( target )
    {
       case GL_ARRAY_BUFFER:
@@ -106,7 +113,7 @@ GLAPI GLvoid* APIENTRY glMapBuffer( GLenum target, GLenum access )
    }
    rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
 
-
+#ifndef HAVE_RGL_2D
    switch ( access )
    {
       case GL_READ_ONLY:
@@ -117,6 +124,9 @@ GLAPI GLvoid* APIENTRY glMapBuffer( GLenum target, GLenum access )
          rglSetError( GL_INVALID_ENUM );
          return NULL;
    }
+#else
+   (void)0;
+#endif
 
    bufferObject->mapped = GL_TRUE;
    void *result = rglPlatformBufferObjectMap( bufferObject, access );
@@ -124,12 +134,11 @@ GLAPI GLvoid* APIENTRY glMapBuffer( GLenum target, GLenum access )
    return result;
 }
 
-
-
 GLAPI GLboolean APIENTRY glUnmapBuffer( GLenum target )
 {
    RGLcontext *LContext = _CurrentContext;
    GLuint name = 0;
+
    switch ( target )
    {
       case GL_ARRAY_BUFFER:
@@ -154,9 +163,10 @@ GLAPI GLboolean APIENTRY glUnmapBuffer( GLenum target )
 GLAPI void APIENTRY glDeleteBuffers( GLsizei n, const GLuint *buffers )
 {
    RGLcontext *LContext = _CurrentContext;
-   for ( int i = 0;i < n;++i )
+   for (int i = 0; i < n; ++i)
    {
-      if(!rglTexNameSpaceIsName( &LContext->bufferObjectNameSpace, buffers[i] ) ) continue;
+      if(!rglTexNameSpaceIsName(&LContext->bufferObjectNameSpace, buffers[i]))
+         continue;
       if (buffers[i])
          rglUnbindBufferObject( LContext, buffers[i] );
    }
@@ -174,6 +184,7 @@ GLAPI void APIENTRY glBufferData( GLenum target, GLsizeiptr size, const GLvoid *
    RGLcontext *LContext = _CurrentContext;
 
    GLuint name = 0;
+
    switch ( target )
    {
       case GL_ARRAY_BUFFER:
@@ -199,7 +210,9 @@ GLAPI void APIENTRY glBufferData( GLenum target, GLsizeiptr size, const GLvoid *
       bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
    }
 
-   if ( bufferObject->size > 0 ) rglPlatformDestroyBufferObject( bufferObject );
+   if (bufferObject->size > 0)
+      rglPlatformDestroyBufferObject( bufferObject );
+
    bufferObject->size = size;
    bufferObject->width = 0;
    bufferObject->height = 0;
@@ -213,7 +226,8 @@ GLAPI void APIENTRY glBufferData( GLenum target, GLsizeiptr size, const GLvoid *
          rglSetError( GL_OUT_OF_MEMORY );
          return;
       }
-      if ( data ) rglPlatformBufferObjectSetData( bufferObject, 0, size, data, GL_TRUE );
+      if (data)
+         rglPlatformBufferObjectSetData( bufferObject, 0, size, data, GL_TRUE );
    }
 }
 
@@ -221,6 +235,7 @@ GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr 
 {
    RGLcontext *LContext = _CurrentContext;
    GLuint name = 0;
+
    switch ( target )
    {
       case GL_ARRAY_BUFFER:
@@ -272,7 +287,6 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
    if ( LContext->needValidate & RGL_VALIDATE_FRAMEBUFFER )
       rglValidateFramebuffer();
    rglFBClear( mask );
-
 }
 
 GLAPI void APIENTRY glClearColor( GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha )
@@ -339,8 +353,10 @@ void rglFramebufferGetAttachmentTexture(
    }
 }
 
-rglFramebufferAttachment* rglFramebufferGetAttachment( rglFramebuffer *framebuffer, GLenum attachment )
+rglFramebufferAttachment* rglFramebufferGetAttachment(void *data, GLenum attachment)
 {
+   rglFramebuffer *framebuffer = (rglFramebuffer*)data;
+
    switch ( attachment )
    {
       case GL_COLOR_ATTACHMENT0_EXT:
@@ -364,7 +380,7 @@ void rglGetFramebufferSize( GLuint* width, GLuint* height )
    {
       rglFramebuffer* framebuffer = rglGetFramebuffer( LContext, LContext->framebuffer );
 
-      if ( rglPlatformFramebufferCheckStatus( framebuffer ) != GL_FRAMEBUFFER_COMPLETE_OES )
+      if (rglPlatformFramebufferCheckStatus(framebuffer) != GL_FRAMEBUFFER_COMPLETE_OES)
          return;
 
       for ( int i = 0; i < RGL_MAX_COLOR_ATTACHMENTS; ++i )
@@ -433,7 +449,7 @@ GLAPI GLenum APIENTRY glCheckFramebufferStatusOES( GLenum target )
 {
    RGLcontext* LContext = _CurrentContext;
 
-   if ( LContext->framebuffer )
+   if (LContext->framebuffer)
    {
       rglFramebuffer* framebuffer = rglGetFramebuffer( LContext, LContext->framebuffer );
 
@@ -448,22 +464,26 @@ GLAPI void APIENTRY glFramebufferTexture2DOES( GLenum target, GLenum attachment,
    RGLcontext* LContext = _CurrentContext;
 
    rglFramebuffer* framebuffer = rglGetFramebuffer( LContext, LContext->framebuffer );
-
    rglFramebufferAttachment* attach = rglFramebufferGetAttachment( framebuffer, attachment );
-   if ( !attach ) return;
+
+   if (!attach)
+      return;
 
    rglTexture *textureObject = NULL;
    GLuint face;
    rglFramebufferGetAttachmentTexture( LContext, attach, &textureObject, &face );
-   if ( textureObject ) textureObject->framebuffers.removeElement( framebuffer );
 
-   if ( texture )
+   if (textureObject)
+      textureObject->framebuffers.removeElement( framebuffer );
+
+   if (texture)
    {
       attach->type = RGL_FRAMEBUFFER_ATTACHMENT_TEXTURE;
       textureObject = rglGetTexture( LContext, texture );
       textureObject->framebuffers.pushBack( framebuffer );
    }
-   else attach->type = RGL_FRAMEBUFFER_ATTACHMENT_NONE;
+   else
+      attach->type = RGL_FRAMEBUFFER_ATTACHMENT_NONE;
    attach->name = texture;
    attach->textureTarget = textarget;
 
@@ -540,12 +560,27 @@ DECLARE_C_TYPES
 #undef DECLARE_TYPE
 
 typedef GLfloat type_GL_FLOAT;
-static inline type_GL_FLOAT rglFloatTo_GL_FLOAT( float v ) {return v;}
-static inline float rglFloatFrom_GL_FLOAT( type_GL_FLOAT v ) {return v;}
-
 typedef GLhalfARB type_GL_HALF_FLOAT_ARB;
-static inline type_GL_HALF_FLOAT_ARB rglFloatTo_GL_HALF_FLOAT_ARB( float x ) {return rglFloatToHalf( x );}
-static inline float rglFloatFrom_GL_HALF_FLOAT_ARB( type_GL_HALF_FLOAT_ARB x ) {return rglHalfToFloat( x );}
+
+static inline type_GL_FLOAT rglFloatTo_GL_FLOAT(float v)
+{
+   return v;
+}
+
+static inline float rglFloatFrom_GL_FLOAT(type_GL_FLOAT v)
+{
+   return v;
+}
+
+static inline type_GL_HALF_FLOAT_ARB rglFloatTo_GL_HALF_FLOAT_ARB(float x)
+{
+   return rglFloatToHalf(x);
+}
+
+static inline float rglFloatFrom_GL_HALF_FLOAT_ARB(type_GL_HALF_FLOAT_ARB x)
+{
+   return rglHalfToFloat(x);
+}
 
 #define DECLARE_PACKED_TYPE_AND_REV_2(REALTYPE,S1,S2) \
    DECLARE_PACKED_TYPE(GL_##REALTYPE,GL_##REALTYPE##_##S1##_##S2,2,S1,S2,0,0,) \
@@ -643,38 +678,34 @@ void rglRawRasterToImage(const void *in_data,
 
    const GLuint size = pixelBits / 8;
 
+   if ( raster->xstride == image->xstride &&
+         raster->ystride == image->ystride &&
+         raster->zstride == image->zstride )
    {
-      if ( raster->xstride == image->xstride &&
-            raster->ystride == image->ystride &&
-            raster->zstride == image->zstride )
-      {
-         memcpy(
-               ( char * )image->data +
-               x*image->xstride + y*image->ystride + z*image->zstride,
-               raster->data,
-               raster->depth*raster->zstride );
+      memcpy((char*)image->data +
+            x*image->xstride + y*image->ystride + z*image->zstride,
+            raster->data, raster->depth*raster->zstride );
 
-         return;
-      }
-      else if ( raster->xstride == image->xstride )
+      return;
+   }
+   else if ( raster->xstride == image->xstride )
+   {
+      const GLuint lineBytes = raster->width * raster->xstride;
+      for ( int i = 0; i < raster->depth; ++i )
       {
-         const GLuint lineBytes = raster->width * raster->xstride;
-         for ( int i = 0; i < raster->depth; ++i )
+         for ( int j = 0; j < raster->height; ++j )
          {
-            for ( int j = 0; j < raster->height; ++j )
-            {
-               const char *src = ( const char * )raster->data +
-                  i * raster->zstride + j * raster->ystride;
-               char *dst = ( char * )image->data +
-                  ( i + z ) * image->zstride +
-                  ( j + y ) * image->ystride +
-                  x * image->xstride;
-               memcpy( dst, src, lineBytes );
-            }
+            const char *src = ( const char * )raster->data +
+               i * raster->zstride + j * raster->ystride;
+            char *dst = ( char * )image->data +
+               ( i + z ) * image->zstride +
+               ( j + y ) * image->ystride +
+               x * image->xstride;
+            memcpy( dst, src, lineBytes );
          }
-
-         return;
       }
+
+      return;
    }
 
    for ( int i = 0; i < raster->depth; ++i )
@@ -717,6 +748,7 @@ void rglImageAllocCPUStorage (void *data)
 void rglImageFreeCPUStorage(void *data)
 {
    rglImage *image = (rglImage*)data;
+
    if (!image->mallocData)
       return;
 
@@ -727,8 +759,10 @@ void rglImageFreeCPUStorage(void *data)
    image->dataState &= ~RGL_IMAGE_DATASTATE_HOST;
 }
 
-static inline void rglSetImageTexRef( rglImage *image, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment)
+static inline void rglSetImageTexRef(void *data, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment)
 {
+   rglImage *image = (rglImage*)data;
+
    image->width = width;
    image->height = height;
    image->depth = depth;
@@ -753,20 +787,20 @@ static inline void rglSetImageTexRef( rglImage *image, GLint internalFormat, GLs
 
    image->isSet = GL_TRUE;
 
-   {
-      if ( image->xstride == 0 )
-         image->xstride = rglGetPixelSize( image->format, image->type );
-      if ( image->ystride == 0 )
-         image->ystride = image->width * image->xstride;
-      if ( image->zstride == 0 )
-         image->zstride = image->height * image->ystride;
-   }
+   if ( image->xstride == 0 )
+      image->xstride = rglGetPixelSize( image->format, image->type );
+   if ( image->ystride == 0 )
+      image->ystride = image->width * image->xstride;
+   if ( image->zstride == 0 )
+      image->zstride = image->height * image->ystride;
 
    image->dataState = RGL_IMAGE_DATASTATE_UNSET;
 }
 
-void rglSetImage( rglImage *image, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment, GLenum format, GLenum type, const GLvoid *pixels )
+void rglSetImage(void *data, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment, GLenum format, GLenum type, const void *pixels )
 {
+   rglImage *image = (rglImage*)data;
+
    image->width = width;
    image->height = height;
    image->depth = depth;
@@ -800,7 +834,7 @@ void rglSetImage( rglImage *image, GLint internalFormat, GLsizei width, GLsizei 
          image->zstride = image->height * image->ystride;
    }
 
-   if ( pixels )
+   if (pixels)
    {
       rglImageAllocCPUStorage( image );
       if ( !image->data )
@@ -812,10 +846,10 @@ void rglSetImage( rglImage *image, GLint internalFormat, GLsizei width, GLsizei 
       raster.width = width;
       raster.height = height;
       raster.depth = depth;
-      raster.data = ( void * )pixels;
+      raster.data = (void*)pixels;
 
       raster.xstride = rglGetPixelSize( raster.format, raster.type );
-      raster.ystride = ( raster.width * raster.xstride + alignment - 1 ) / alignment * alignment;
+      raster.ystride = (raster.width * raster.xstride + alignment - 1) / alignment * alignment;
       raster.zstride = raster.height * raster.ystride;
 
       rglRawRasterToImage( &raster, image, 0, 0, 0 );
@@ -836,7 +870,6 @@ static char* rglExtensionsString = "";
 
 static char* rglVersionNumber = "2.00";
 char* rglVersion = "2.00";
-
 
 RGLcontext* _CurrentContext = NULL;
 
@@ -895,13 +928,13 @@ GLuint rglValidateStates (GLuint mask)
 
    GLuint  needValidate = LContext->needValidate;
 
-   if ( RGL_UNLIKELY( needValidate & RGL_VALIDATE_FRAMEBUFFER ) )
+   if (RGL_UNLIKELY( needValidate & RGL_VALIDATE_FRAMEBUFFER))
    {
       rglValidateFramebuffer();
       needValidate = LContext->needValidate;
    }
 
-   if ( RGL_UNLIKELY( needValidate & RGL_VALIDATE_TEXTURES_USED ) )
+   if (RGL_UNLIKELY( needValidate & RGL_VALIDATE_TEXTURES_USED))
    {
       long unitInUseCount = LContext->BoundFragmentProgram->samplerCount;
       const GLuint* unitsInUse = LContext->BoundFragmentProgram->samplerUnits;
@@ -910,22 +943,22 @@ GLuint rglValidateStates (GLuint mask)
          long unit = unitsInUse[i];
          rglTexture* texture = LContext->TextureImageUnits[unit].currentTexture;
 
-         if ( texture )
+         if (texture)
             rglPlatformValidateTextureStage( unit, texture );
       }
    }
 
-   if ( RGL_UNLIKELY( needValidate & RGL_VALIDATE_VERTEX_PROGRAM ) )
+   if (RGL_UNLIKELY(needValidate & RGL_VALIDATE_VERTEX_PROGRAM))
    {
       rglValidateVertexProgram();
    }
 
-   if ( RGL_LIKELY( needValidate & RGL_VALIDATE_VERTEX_CONSTANTS ) )
+   if (RGL_LIKELY(needValidate & RGL_VALIDATE_VERTEX_CONSTANTS))
    {
       rglValidateVertexConstants();
    }
 
-   if ( RGL_UNLIKELY( needValidate & RGL_VALIDATE_FRAGMENT_PROGRAM ) )
+   if (RGL_UNLIKELY(needValidate & RGL_VALIDATE_FRAGMENT_PROGRAM))
    {
       rglValidateFragmentProgram();
    }
@@ -952,8 +985,10 @@ GLuint rglValidateStates (GLuint mask)
    return dirty;
 }
 
-void rglResetAttributeState( rglAttributeState* as )
+void rglResetAttributeState(void *data)
 {
+   rglAttributeState *as = (rglAttributeState*)data;
+
    for ( int i = 0; i < RGL_MAX_VERTEX_ATTRIBS; ++i )
    {
       as->attrib[i].clientSize = 4;
@@ -1074,12 +1109,12 @@ static void rglResetContext (void *data)
 
 RGLcontext* psglCreateContext(void)
 {
-   RGLcontext* LContext = ( RGLcontext* )malloc( sizeof( RGLcontext ) );
+   RGLcontext* LContext = (RGLcontext*)malloc(sizeof(RGLcontext));
 
    if (!LContext)
       return NULL;
 
-   memset( LContext, 0, sizeof( RGLcontext ) );
+   memset(LContext, 0, sizeof(RGLcontext));
 
    LContext->error = GL_NO_ERROR;
 
@@ -1424,15 +1459,18 @@ void rglTextureUnbind (void *data, GLuint name )
 GLboolean rglTextureIsValid (const void *data)
 {
    const rglTexture *texture = (const rglTexture*)data;
-   if ( texture->imageCount < 1 + texture->baseLevel )
+
+   if (texture->imageCount < 1 + texture->baseLevel)
       return GL_FALSE;
    if ( !texture->image )
       return GL_FALSE;
+
    const rglImage* image = texture->image + texture->baseLevel;
 
    GLenum format = image->format;
    GLenum type = image->type;
    GLenum internalFormat = image->internalFormat;
+
    if (( texture->vertexEnable ) && ( internalFormat != GL_FLOAT_RGBA32 )
          && ( internalFormat != GL_RGBA32F_ARB ))
       return GL_FALSE;
@@ -1551,7 +1589,7 @@ void rglBindTextureInternal (void *data, GLuint name, GLenum target )
       }
    }
 
-#if 0
+#ifndef HAVE_RGL_2D
    switch ( target )
    {
       case GL_TEXTURE_2D:
@@ -1843,7 +1881,7 @@ void rglVertexAttrib1fNV (GLuint index, GLfloat x)
    RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
 }
 
-void rglVertexAttrib2fNV( GLuint index, GLfloat x, GLfloat y )
+void rglVertexAttrib2fNV (GLuint index, GLfloat x, GLfloat y)
 {
    RGLcontext*	LContext = _CurrentContext;
 
@@ -2014,6 +2052,8 @@ RGLdevice *psglGetCurrentDevice (void)
 
 GLAPI void RGL_EXPORT psglSwap (void)
 {
+#ifndef HAVE_RGL_2D
    if ( _CurrentDevice != NULL)
+#endif
       rglPlatformSwapBuffers( _CurrentDevice );
 }

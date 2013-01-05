@@ -201,14 +201,14 @@ int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramHeader *
 
 CGprogram rglpCgUpdateProgramAtIndex( CGprogramGroup group, int index, int refcount )
 {
-   if ( index < ( int )group->programCount )
+   if (index < ( int )group->programCount)
    {
       //index can be < 0 , in that case refcount update on the group only, used when destroying a copied program
-      if ( index >= 0 )
+      if (index >= 0)
       {
          //if it has already been referenced duplicate instead of returning the same index, until the API offer a native support for
          //group of programs ( //fixed bug 13007 )
-         if ( refcount == 1 && group->programs[index].refCount == 1 )
+         if (refcount == 1 && group->programs[index].refCount == 1)
          {
             //it will handle the refcounting
             CGprogram res = cgCopyProgram( group->programs[index].program );
@@ -218,12 +218,10 @@ CGprogram rglpCgUpdateProgramAtIndex( CGprogramGroup group, int index, int refco
       }
 
       group->refCount += refcount;
-      if ( refcount < 0 )
+      if (refcount < 0)
       {
-         if ( group->refCount == 0 && !group->userCreated )
-         {
+         if (group->refCount == 0 && !group->userCreated)
             rglCgDestroyProgramGroup( group );
-         }
          return NULL;
       }
       else
@@ -236,7 +234,7 @@ CGprogram rglpCgUpdateProgramAtIndex( CGprogramGroup group, int index, int refco
 //add the group to the context:
 static void rglCgAddGroup( CGcontext ctx, CGprogramGroup group )
 {
-   _CGcontext *context = _cgGetContextPtr( ctx );
+   _CGcontext *context = _cgGetContextPtr(ctx);
    if ( !context->groupList )
       context->groupList = group;
    else

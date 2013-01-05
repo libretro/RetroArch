@@ -2166,7 +2166,7 @@ void rglPlatformChooseGPUFormatAndLayout(
    const rglTexture *texture = (const rglTexture*)data;
    rglImage *image = texture->image + texture->baseLevel;
 
-#if 0
+#ifndef HAVE_RGL_2D
    GLuint levels = rglLog2( MAX( MAX( image->width, image->height ), image->depth ) ) + 1;
    levels = MIN( levels, texture->maxLevel + 1 );
 
@@ -2512,7 +2512,7 @@ static inline void rglGcmUpdateGcmTexture (void *data_tex, void *data_layout, vo
    platformTexture->gcmTexture.pitch = layout->pitch;
    platformTexture->gcmTexture.mipmap = layout->levels;
    platformTexture->gcmTexture.cubemap = CELL_GCM_FALSE;
-#if 0
+#ifndef HAVE_RGL_2D
    // set dimension, swizzled implies P2 width/height/depth
    switch ( texture->target )
    {
@@ -2543,7 +2543,7 @@ void rglGcmUpdateMethods (void *data)
    // XXX make sure that REVALIDATE_PARAMETERS is set if the format of the texture changes
    // revalidate the texture registers cache just to ensure we are in the correct filtering mode
    // based on the internal format.
-#if 0
+#ifndef HAVE_RGL_2D
    switch ( layout->internalFormat )
    {
       case RGLGCM_FLOAT_R32:
@@ -2862,7 +2862,7 @@ GLboolean rglPlatformTextureReference (void *data, GLuint pitch, void *data_buf,
    if (rglIsDrawableColorFormat( newLayout.internalFormat))
       isRenderTarget = GL_TRUE;
 
-#if 0
+#ifndef HAVE_RGL_2D
    switch (newLayout.internalFormat)
    {
       case GL_FLOAT_RGBA32:
