@@ -86,6 +86,7 @@ static void android_input_poll(void *data)
    RARCH_PERFORMANCE_INIT(input_poll);
    RARCH_PERFORMANCE_START(input_poll);
 
+   bool debug_enable = g_settings.input.debug_enable;
    struct android_app* android_app = (struct android_app*)g_android;
 
    g_extern.lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS));
@@ -98,6 +99,9 @@ static void android_input_poll(void *data)
          break;
 
       int32_t handled = 1;
+      int action = 0;
+      char msg[128];
+      msg[0] = 0;
 
       int source = AInputEvent_getSource(event);
       int id = AInputEvent_getDeviceId(event);
@@ -115,11 +119,8 @@ static void android_input_poll(void *data)
          state_id = pads_connected;
          state_device_ids[pads_connected++] = id;
 
-         input_autodetect_setup(android_app, state_id, id, source);
+         input_autodetect_setup(android_app, msg, sizeof(msg), state_id, id, source);
       }
-
-      int action = 0;
-      char msg[128];
 
       if (keycode == AKEYCODE_BACK && (source & (AINPUT_SOURCE_KEYBOARD)))
       {
@@ -169,12 +170,12 @@ static void android_input_poll(void *data)
             }
          }
 
-         if (g_settings.input.debug_enable)
+         if (debug_enable)
             snprintf(msg, sizeof(msg), "Pad %d : x = %.2f, y = %.2f, src %d.\n", state_id, x, y, source);
       }
       else if (type_event == AINPUT_EVENT_TYPE_KEY)
       {
-         if (g_settings.input.debug_enable)
+         if (debug_enable)
             snprintf(msg, sizeof(msg), "Pad %d : %d, ac = %d, src = %d.\n", state_id, keycode, action, source);
 
          /* Hack - we have to decrease the unpacked value by 1
@@ -203,7 +204,7 @@ static void android_input_poll(void *data)
             handled = 0;
       }
 
-      if (g_settings.input.debug_enable)
+      if (msg[0] != 0)
          msg_queue_push(g_extern.msg_queue, msg, 0, 30);
 
       AInputQueue_finishEvent(android_app->inputQueue, event, handled);
