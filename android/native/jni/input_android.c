@@ -115,6 +115,7 @@ static void android_input_poll(void *data)
       {
          state_id = pads_connected;
          state_device_ids[pads_connected++] = id;
+
          input_autodetect_setup(state_id, id, source);
       }
 

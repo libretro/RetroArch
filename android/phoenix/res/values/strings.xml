@@ -3,10 +3,11 @@
     <string name="app_name">RetroArch</string>
     <string name="input_method">Input Method</string>
     <string name="file_type_icon">File type icon</string>
-    <string name="video_settings">Video Config</string>
-    <string name="rarch_settings">RetroArch Config</string>
-    <string name="audio_settings">Audio Config</string>
-    <string name="general_settings">General Config</string>
+    <string name="video_settings">Video Settings</string>
+    <string name="rarch_settings">RetroArch Settings</string>
+    <string name="audio_settings">Audio Settings</string>
+    <string name="input_settings">Input Settings</string>
+    <string name="general_settings">General Settings</string>
     <string name="settings">Settings</string>
 
 </resources>

@@ -493,6 +493,9 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT(input.turbo_duty_cycle, "input_duty_cycle");
 
    CONFIG_GET_PATH(input.overlay, "input_overlay");
+#ifdef ANDROID
+   CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
+#endif
 
    if (config_get_string(conf, "environment_variables",
             &g_extern.system.environment))

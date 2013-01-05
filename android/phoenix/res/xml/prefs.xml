@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    android:title="RetroArch Config" >
+    android:title="RetroArch Settings" >
 
-    <PreferenceScreen android:title="System Config" >
+    <PreferenceScreen android:title="System Settings" >
         <PreferenceCategory android:title="General" >
             <CheckBoxPreference
                 android:defaultValue="false"
@@ -18,7 +18,7 @@
                 android:title="Enable" />
         </PreferenceCategory>
     </PreferenceScreen>
-    <PreferenceScreen android:title="Video Config" >
+    <PreferenceScreen android:title="Video Settings" >
         <PreferenceCategory android:title="General" >
             <CheckBoxPreference
                 android:defaultValue="true"
@@ -105,18 +105,26 @@
             android:summary="Use bilinear filtering on FBO texture on second pass."
             android:title="Second pass bilinear" />
     </PreferenceScreen>
-    <PreferenceScreen android:title="Audio Config" >
-        <PreferenceCategory android:title="General" >
+    <PreferenceScreen android:title="Audio Settings" >
+        <PreferenceCategory android:title="Audio" >
             <CheckBoxPreference
                 android:defaultValue="true"
                 android:key="audio_enable"
-                android:summary="Enable audio."
-                android:title="Audio enable" />
+                android:title="Enable" />
             <CheckBoxPreference
                 android:defaultValue="true"
                 android:key="audio_rate_control"
-                android:summary="Enable dynamic rate control."
+                android:summary="Enable dynamic rate control (recommended)."
                 android:title="Dynamic Rate Control" />
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Input Settings" >
+        <PreferenceCategory android:title="Configuration" >
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="input_autodetect_enable"
+                android:summary="This will attempt to preconfigure various gamepads and/or IME apps that you connect."
+                android:title="Enable" />
         </PreferenceCategory>
     </PreferenceScreen>
 

@@ -197,6 +197,7 @@ public class RetroArch extends Activity implements
 		config.setBoolean("savestate_auto_save", prefs.getBoolean("savestate_auto_save", false));
 		config.setBoolean("rewind_enable", prefs.getBoolean("rewind_enable", false));
 		config.setBoolean("video_vsync", prefs.getBoolean("video_vsync", true));
+		config.setBoolean("input_autodetect_enable", prefs.getBoolean("input_autodetect_enable", true));
 		
 		String aspect = prefs.getString("video_aspect_ratio", "auto");
 		if (aspect.equals("full")) {
