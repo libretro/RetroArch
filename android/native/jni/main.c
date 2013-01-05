@@ -28,6 +28,8 @@
 
 #include "../../../config.def.h"
 
+struct android_app *g_android;
+
 static void print_cur_config (void *data)
 {
    struct android_app *android_app = (struct android_app*)data;
@@ -329,7 +331,7 @@ static void* android_app_entry(void *data)
    pthread_mutex_unlock(&android_app->mutex);
 
    memset(&g_android, 0, sizeof(g_android));
-   g_android.app = android_app;
+   g_android = android_app;
 
    char *argv[MAX_ARGS] = {NULL};
    int argc = android_app_set_argv(android_app, argv);

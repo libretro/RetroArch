@@ -20,11 +20,6 @@
 #include "android_glue.h"
 #include "../../../boolean.h"
 
-struct droid
-{
-   struct android_app* app;
-};
-
-extern struct droid g_android;
+extern struct android_app *g_android;
 
 #endif

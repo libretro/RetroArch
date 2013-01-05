@@ -29,9 +29,6 @@
 
 struct settings g_settings;
 struct global g_extern;
-#ifdef ANDROID
-struct droid g_android;
-#endif
 
 const char *config_get_default_audio(void)
 {

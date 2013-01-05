@@ -80,7 +80,7 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 
 static bool gfx_ctx_init(void)
 {
-   struct android_app *android_app = (struct android_app*)g_android.app;
+   struct android_app *android_app = (struct android_app*)g_android;
    const EGLint attribs[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -166,7 +166,7 @@ static void gfx_ctx_check_window(bool *quit,
 {
    (void)frame_count;
 
-   struct android_app* android_app = g_android.app;
+   struct android_app *android_app = (struct android_app*)g_android;
 
    *quit = false;
 
