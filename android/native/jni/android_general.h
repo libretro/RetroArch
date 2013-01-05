@@ -23,7 +23,6 @@
 struct droid
 {
    struct android_app* app;
-   char current_ime[PATH_MAX];
 };
 
 extern struct droid g_android;

@@ -21,11 +21,12 @@ uint64_t keycode_lut[LAST_KEYCODE];
 
 bool volume_enable;
 
-static void input_autodetect_get_device_name(char *buf, size_t size, int id)
+static void input_autodetect_get_device_name(void *data, char *buf, size_t size, int id)
 {
+   struct android_app *android_app = (struct android_app*)data;
    buf[0] = '\0';
 
-   JavaVM *vm = g_android.app->activity->vm;
+   JavaVM *vm = android_app->activity->vm;
    JNIEnv *env = NULL;
    (*vm)->AttachCurrentThread(vm, &env, 0);
 
@@ -77,8 +78,9 @@ void input_autodetect_init (void)
    volume_enable = true;
 }
 
-void input_autodetect_setup(unsigned port, unsigned id, int source)
+void input_autodetect_setup (void *data, unsigned port, unsigned id, int source)
 {
+   struct android_app *android_app = (struct android_app*)data;
    // Hack - we have to add '1' to the bit mask here because
    // RETRO_DEVICE_ID_JOYPAD_B is 0
  
@@ -99,11 +101,11 @@ void input_autodetect_setup(unsigned port, unsigned id, int source)
 
    g_settings.input.dpad_emulation[port] = DPAD_EMULATION_LSTICK;
 
-   char *current_ime = g_android.current_ime;
+   char *current_ime = android_app->current_ime;
 
    if (g_settings.input.autodetect_enable)
    {
-      input_autodetect_get_device_name(name_buf, sizeof(name_buf), id);
+      input_autodetect_get_device_name(android_app, name_buf, sizeof(name_buf), id);
       if (*name_buf)
       {
          if (strstr(name_buf, "Logitech"))

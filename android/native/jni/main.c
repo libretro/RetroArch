@@ -28,8 +28,9 @@
 
 #include "../../../config.def.h"
 
-static void print_cur_config(struct android_app* android_app)
+static void print_cur_config (void *data)
 {
+   struct android_app *android_app = (struct android_app*)data;
    char lang[2], country[2];
    AConfiguration_getLanguage(android_app->config, lang);
    AConfiguration_getCountry(android_app->config, country);
@@ -57,8 +58,10 @@ static void print_cur_config(struct android_app* android_app)
 /**
  * Process the next main command.
  */
-void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
+void engine_handle_cmd (void *data, int32_t cmd)
 {
+   struct android_app *android_app = (struct android_app*)data;
+
    switch (cmd)
    {
       case APP_CMD_INPUT_CHANGED:
@@ -175,8 +178,9 @@ void engine_handle_cmd(struct android_app* android_app, int32_t cmd)
 
 #define MAX_ARGS 32
 
-static bool android_run_events(struct android_app* android_app)
+static bool android_run_events (void *data)
 {
+   struct android_app *android_app = (struct android_app*)data;
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
 
    if (id == LOOPER_ID_MAIN)
@@ -236,8 +240,9 @@ static void jni_get(struct jni_params *in_params, struct jni_out_params_char *ou
    }
 }
 
-static int android_app_set_argv(char** argv)
+static int android_app_set_argv (void *data, char** argv)
 {
+   struct android_app *android_app = (struct android_app*)data;
    char rom_path[PATH_MAX];
    char libretro_path[PATH_MAX];
    char config_file[PATH_MAX];
@@ -245,10 +250,10 @@ static int android_app_set_argv(char** argv)
    struct jni_params in_params;
    struct jni_out_params_char out_args;
 
-   JNI_OnLoad(g_android.app->activity->vm, NULL);
+   JNI_OnLoad(android_app->activity->vm, NULL);
 
-   in_params.java_vm = g_android.app->activity->vm;
-   in_params.class_obj = g_android.app->activity->clazz;
+   in_params.java_vm = android_app->activity->vm;
+   in_params.class_obj = android_app->activity->clazz;
 
    strlcpy(in_params.method_name, "getIntent", sizeof(in_params.method_name));
    strlcpy(in_params.method_signature, "()Landroid/content/Intent;", sizeof(in_params.method_signature));
@@ -274,8 +279,8 @@ static int android_app_set_argv(char** argv)
    jni_get(&in_params, &out_args);
 
    // Current IME
-   out_args.out = g_android.current_ime;
-   out_args.out_sizeof = sizeof(g_android.current_ime);
+   out_args.out = android_app->current_ime;
+   out_args.out_sizeof = sizeof(android_app->current_ime);
    strlcpy(out_args.in, "IME", sizeof(out_args.in));
    jni_get(&in_params, &out_args);
 
@@ -286,7 +291,7 @@ static int android_app_set_argv(char** argv)
    RARCH_LOG("ROM Filename: [%s].\n", rom_path);
    RARCH_LOG("Libretro path: [%s].\n", libretro_path);
    RARCH_LOG("Config file: [%s].\n", config_file);
-   RARCH_LOG("Current IME: [%s].\n", g_android.current_ime);
+   RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
 
    int argc = 0;
 
@@ -304,9 +309,9 @@ static int android_app_set_argv(char** argv)
    return argc;
 }
 
-static void* android_app_entry(void* param)
+static void* android_app_entry(void *data)
 {
-   struct android_app* android_app = (struct android_app*)param;
+   struct android_app* android_app = (struct android_app*)data;
    int init_ret = -1;
 
    android_app->config = AConfiguration_new();
@@ -327,7 +332,7 @@ static void* android_app_entry(void* param)
    g_android.app = android_app;
 
    char *argv[MAX_ARGS] = {NULL};
-   int argc = android_app_set_argv(argv);
+   int argc = android_app_set_argv(android_app, argv);
 
    RARCH_LOG("Native Activity started.\n");
    rarch_main_clear_state();
@@ -352,14 +357,14 @@ static void* android_app_entry(void* param)
       rarch_init_msg_queue();
 
       while ((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ?
-            android_run_events(g_android.app) :
+            android_run_events(android_app) :
             rarch_main_iterate());
 
       RARCH_LOG("RetroArch stopped.\n");
    }
 
 exit:
-   g_android.app->activityState = APP_CMD_DEAD;
+   android_app->activityState = APP_CMD_DEAD;
    RARCH_LOG("Deinitializing RetroArch...\n");
 
    if (init_ret == 0)
@@ -382,14 +387,16 @@ exit:
    exit(init_ret);
 }
 
-static inline void android_app_write_cmd(struct android_app* android_app, int8_t cmd)
+static inline void android_app_write_cmd (void *data, int8_t cmd)
 {
+   struct android_app *android_app = (struct android_app*)data;
    if (write(android_app->msgwrite, &cmd, sizeof(cmd)) != sizeof(cmd))
       RARCH_ERR("Failure writing android_app cmd: %s\n", strerror(errno));
 }
 
-static void android_app_set_input(struct android_app* android_app, AInputQueue* inputQueue)
+static void android_app_set_input (void *data, AInputQueue* inputQueue)
 {
+   struct android_app *android_app = (struct android_app*)data;
    pthread_mutex_lock(&android_app->mutex);
    android_app->pendingInputQueue = inputQueue;
    android_app_write_cmd(android_app, APP_CMD_INPUT_CHANGED);
@@ -398,8 +405,9 @@ static void android_app_set_input(struct android_app* android_app, AInputQueue* 
    pthread_mutex_unlock(&android_app->mutex);
 }
 
-static void android_app_set_window(struct android_app* android_app, ANativeWindow* window)
+static void android_app_set_window (void *data, ANativeWindow* window)
 {
+   struct android_app *android_app = (struct android_app*)data;
    pthread_mutex_lock(&android_app->mutex);
    if (android_app->pendingWindow != NULL)
       android_app_write_cmd(android_app, APP_CMD_TERM_WINDOW);

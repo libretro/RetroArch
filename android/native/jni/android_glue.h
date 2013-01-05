@@ -49,6 +49,7 @@ struct android_app
    int running;
    AInputQueue* pendingInputQueue;
    ANativeWindow* pendingWindow;
+   char current_ime[PATH_MAX];
 };
 
 enum {
@@ -153,9 +154,8 @@ enum {
    APP_CMD_DEAD,
 };
 
-int8_t android_app_read_cmd(struct android_app* android_app);
-
-extern void engine_app_read_cmd(struct android_app *app);
-extern void engine_handle_cmd(struct android_app* android_app, int32_t cmd);
+int8_t android_app_read_cmd (void *data);
+extern void engine_app_read_cmd (void *data);
+extern void engine_handle_cmd (void *data, int32_t cmd);
 
 #endif /* _ANDROID_NATIVE_APP_GLUE_H */

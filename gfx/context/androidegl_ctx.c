@@ -80,7 +80,7 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 
 static bool gfx_ctx_init(void)
 {
-   RARCH_LOG("gfx_ctx_init().\n");
+   struct android_app *android_app = (struct android_app*)g_android.app;
    const EGLint attribs[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -128,9 +128,9 @@ static bool gfx_ctx_init(void)
       goto error;
    }
 
-   ANativeWindow_setBuffersGeometry(g_android.app->window, 0, 0, format);
+   ANativeWindow_setBuffersGeometry(android_app->window, 0, 0, format);
 
-   if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, g_android.app->window, 0)))
+   if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, android_app->window, 0)))
    {
       RARCH_ERR("eglCreateWindowSurface failed.\n");
       goto error;
