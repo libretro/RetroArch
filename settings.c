@@ -232,6 +232,11 @@ void config_set_defaults(void)
    g_settings.input.netplay_client_swap_input = netplay_client_swap_input;
    g_settings.input.turbo_period = turbo_period;
    g_settings.input.turbo_duty_cycle = turbo_duty_cycle;
+   g_settings.input.debug_enable = input_debug_enable;
+#ifdef ANDROID
+   g_settings.input.autodetect_enable = input_autodetect_enable;
+#endif
+
    for (int i = 0; i < MAX_PLAYERS; i++)
       g_settings.input.joypad_map[i] = i;
 
@@ -490,10 +495,10 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT(input.turbo_duty_cycle, "input_duty_cycle");
 
    CONFIG_GET_PATH(input.overlay, "input_overlay");
+   CONFIG_GET_BOOL(input.debug_enable, "input_debug_enable");
 #ifdef ANDROID
    CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
 #endif
-   CONFIG_GET_BOOL(input.debug_enable, "input_debug_enable");
 
    if (config_get_string(conf, "environment_variables",
             &g_extern.system.environment))
