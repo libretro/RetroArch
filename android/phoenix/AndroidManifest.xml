@@ -2,7 +2,7 @@
     package="org.retroarch"
     android:versionCode="1"
     android:versionName="0.9.8" >
-
+	<uses-feature android:glEsVersion="0x00020000" />
     <uses-sdk
         android:minSdkVersion="11"
         android:targetSdkVersion="16" />
