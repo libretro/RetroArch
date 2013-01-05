@@ -255,6 +255,11 @@ public class RetroArch extends Activity implements
 		} else {
 			config.setString("input_overlay", "");
 		}
+		
+		config.setString("savefile_directory", prefs.getBoolean("savefile_directory_enable", false) ?
+				prefs.getString("savefile_directory", "") : "");
+		config.setString("savestate_directory", prefs.getBoolean("savestate_directory_enable", false) ?
+				prefs.getString("savestate_directory", "") : "");
 
 		String confPath = getDefaultConfigPath();
 		try {

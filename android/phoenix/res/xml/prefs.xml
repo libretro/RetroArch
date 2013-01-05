@@ -11,6 +11,31 @@
                     android:targetPackage="org.retroarch" />
             </Preference>
         </PreferenceCategory>
+        
+        <PreferenceCategory android:title="Save files">
+            <CheckBoxPreference android:title="Enable custom directory"
+                android:summary="Enables use of custom save file folder. (.srm) save files will be saved and loaded to configured directory. If not enabled, save files will reside in ROM folder."
+                android:key="savefile_directory_enable"
+                android:defaultValue="false"/>
+            <Preference android:title="Savefile directory"
+                android:summary="Sets directory where to save and load game save files.">
+                <intent
+                    android:targetClass="org.retroarch.browser.SRMDirActivity"
+                    android:targetPackage="org.retroarch" />
+            </Preference>            
+        </PreferenceCategory>
+        <PreferenceCategory android:title="Save states">
+            <CheckBoxPreference android:title="Enable custom directory"
+                android:summary="Enables use of custom save state folder. (.state) save states will be saved and loaded to configured directory. If not enabled, save states will reside in ROM folder."
+                android:key="savestate_directory_enable"
+                android:defaultValue="false"/>
+            <Preference android:title="Save state directory"
+                android:summary="Sets directory where to save and load game save states.">
+                <intent
+                    android:targetClass="org.retroarch.browser.StateDirActivity"
+                    android:targetPackage="org.retroarch" />
+            </Preference>            
+        </PreferenceCategory>
     </PreferenceScreen>
     <PreferenceScreen android:title="System Settings" >
         <PreferenceCategory android:title="General" >
