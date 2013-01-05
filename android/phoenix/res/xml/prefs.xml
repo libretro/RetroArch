@@ -43,20 +43,6 @@
                 android:summary="Aspect ratio to enforce."
                 android:title="Aspect ratio" />
         </PreferenceCategory>
-        <PreferenceCategory android:title="Overlay" >
-            <CheckBoxPreference
-                android:defaultValue="true"
-                android:key="input_overlay_enable"
-                android:title="Enable" />
-
-            <Preference
-                android:summary="Sets touchscreen overlay config."
-                android:title="Input overlay" >
-                <intent
-                    android:targetClass="org.retroarch.browser.OverlayActivity"
-                    android:targetPackage="org.retroarch" />
-            </Preference>
-        </PreferenceCategory>
         <PreferenceCategory android:title="Shaders (1st pass)" >
             <CheckBoxPreference
                 android:defaultValue="false"
@@ -125,6 +111,20 @@
                 android:key="input_autodetect_enable"
                 android:summary="This will attempt to preconfigure various gamepads and/or IME apps that you connect."
                 android:title="Enable" />
+        </PreferenceCategory>
+        <PreferenceCategory android:title="Touchscreen Overlay" >
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="input_overlay_enable"
+                android:title="Enable" />
+
+            <Preference
+                android:summary="Sets touchscreen overlay config."
+                android:title="Input overlay" >
+                <intent
+                    android:targetClass="org.retroarch.browser.OverlayActivity"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
         </PreferenceCategory>
     </PreferenceScreen>
 
