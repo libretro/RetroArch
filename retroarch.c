@@ -2747,8 +2747,7 @@ error:
    uninit_drivers();
    uninit_libretro_sym();
 
-   g_extern.main_is_init  = false;
-
+   g_extern.main_is_init = false;
    return 1;
 }
 
@@ -2884,7 +2883,7 @@ void rarch_main_deinit(void)
    uninit_drivers();
    uninit_libretro_sym();
 
-   g_extern.main_is_init  = false;
+   g_extern.main_is_init = false;
 }
 
 #ifndef HAVE_RARCH_MAIN_WRAP
