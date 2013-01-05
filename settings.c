@@ -391,7 +391,6 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
    CONFIG_GET_BOOL(video.allow_rotate, "video_allow_rotate");
 
-#ifdef HAVE_FREETYPE
    CONFIG_GET_PATH(video.font_path, "video_font_path");
    CONFIG_GET_INT(video.font_size, "video_font_size");
    CONFIG_GET_BOOL(video.font_enable, "video_font_enable");
@@ -406,7 +405,6 @@ bool config_load_file(const char *path)
       g_settings.video.msg_color_g = ((msg_color >>  8) & 0xff) / 255.0f;
       g_settings.video.msg_color_b = ((msg_color >>  0) & 0xff) / 255.0f;
    }
-#endif
 
    CONFIG_GET_BOOL(video.post_filter_record, "video_post_filter_record");
    CONFIG_GET_BOOL(video.gpu_record, "video_gpu_record");
