@@ -9,11 +9,13 @@
                 android:key="savestate_auto_save"
                 android:summary="Automatically saves and restores game state."
                 android:title="Auto save state" />
+        </PreferenceCategory>
+        <PreferenceCategory android:title="Rewinding" >
             <CheckBoxPreference
                 android:defaultValue="false"
                 android:key="rewind_enable"
-                android:summary="Allow rewinding a game in real-time (WARNING - CPU intensive)."
-                android:title="Rewind" />
+                android:summary="WARNING - very CPU intensive - will decrease ingame performance."
+                android:title="Enable" />
         </PreferenceCategory>
     </PreferenceScreen>
     <PreferenceScreen android:title="Video Config" >
