@@ -1663,7 +1663,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    
 #ifndef HAVE_RMENU
    // Comes too early for console - moved to gl_start
-   gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
+   if (g_settings.video.font_enable)
+      gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
 #endif
 
    gl_init_pbo_readback(gl);
