@@ -208,13 +208,10 @@ static bool android_run_events (void *data)
    return true;
 }
 
-/**
- * This is the main entry point of a native application that is using
- * android_native_app_glue.  It runs in its own thread, with its own
- * event loop for receiving input events and doing other things.
- */
-static void jni_get(struct jni_params *in_params, struct jni_out_params_char *out_args)
+static void jni_get (void *data_in, void *data_out)
 {
+   struct jni_params *in_params = (struct jni_params*)data_in;
+   struct jni_out_params_char *out_args = (struct jni_out_params_char*)data_out;
    char obj_method_name[128];
    char obj_method_signature[128];
    jclass class_ptr = NULL;
@@ -425,8 +422,9 @@ static void android_app_set_window (void *data, ANativeWindow* window)
    pthread_mutex_unlock(&android_app->mutex);
 }
 
-static void android_app_set_activity_state(struct android_app* android_app, int8_t cmd)
+static void android_app_set_activity_state (void *data, int8_t cmd)
 {
+   struct android_app *android_app = (struct android_app*)data;
    pthread_mutex_lock(&android_app->mutex);
    android_app_write_cmd(android_app, cmd);
    while (android_app->activityState != cmd && android_app->activityState != APP_CMD_DEAD)
@@ -478,7 +476,7 @@ static void onStop(ANativeActivity* activity)
    android_app_set_activity_state((struct android_app*)activity->instance, APP_CMD_STOP);
 }
 
-static void onConfigurationChanged(ANativeActivity* activity)
+static void onConfigurationChanged (ANativeActivity *activity)
 {
    struct android_app* android_app = (struct android_app*)activity->instance;
    RARCH_LOG("ConfigurationChanged: %p\n", activity);
@@ -523,6 +521,9 @@ static void onInputQueueDestroyed(ANativeActivity* activity, AInputQueue* queue)
 void ANativeActivity_onCreate(ANativeActivity* activity,
       void* savedState, size_t savedStateSize)
 {
+   (void)savedState;
+   (void)savedStateSize;
+
    RARCH_LOG("Creating Native Activity: %p\n", activity);
    activity->callbacks->onDestroy = onDestroy;
    activity->callbacks->onStart = onStart;
