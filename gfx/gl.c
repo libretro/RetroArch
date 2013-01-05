@@ -78,7 +78,7 @@ static const GLfloat tex_coords[] = {
 };
 
 #ifdef HAVE_OVERLAY
-static void gl_render_overlay(gl_t *gl);
+static void gl_render_overlay(void *data);
 static void gl_overlay_vertex_geom(void *data,
       float x, float y, float w, float h);
 static void gl_overlay_tex_geom(void *data,
@@ -205,8 +205,9 @@ static inline bool load_gl_proc_win32(gl_t *gl)
 ////////////////// Shaders
 
 #ifdef HAVE_OPENGLES2
-static bool gl_shader_init(gl_t *gl) // We always need a shader alive in GLES2.
+static bool gl_shader_init(void *data) // We always need a shader alive in GLES2.
 {
+   gl_t *gl = (gl_t*)data;
    const char *shader_path = NULL;
    if ((g_settings.video.shader_type == RARCH_SHADER_AUTO || g_settings.video.shader_type == RARCH_SHADER_BSNES)
          && *g_settings.video.bsnes_shader_path)
@@ -216,8 +217,9 @@ static bool gl_shader_init(gl_t *gl) // We always need a shader alive in GLES2.
    return gl->shader->init(shader_path);
 }
 #else
-static bool gl_shader_init(gl_t *gl)
+static bool gl_shader_init(void *data)
 {
+   gl_t *gl = (gl_t*)data;
    const gl_shader_backend_t *backend = NULL;
    const char *shader_path            = NULL;
 
@@ -280,8 +282,10 @@ void gl_shader_use(void *data, unsigned index)
       gl->shader->use(index);
 }
 
-static inline void gl_shader_deinit(gl_t *gl)
+static inline void gl_shader_deinit(void *data)
 {
+   gl_t *gl = (gl_t*)data;
+
    if (gl->shader)
       gl->shader->deinit();
    gl->shader = NULL;
@@ -309,8 +313,9 @@ static void gl_set_coords(const struct gl_coords *coords)
 #endif
 
 #ifndef NO_GL_FF_MATRIX
-static void gl_set_mvp(const math_matrix *mat)
+static void gl_set_mvp(const void *data)
 {
+   const math_matrix *mat = (const math_matrix*)data;
    glMatrixMode(GL_PROJECTION);
    glLoadMatrixf(mat->data);
    glMatrixMode(GL_MODELVIEW);
@@ -345,7 +350,7 @@ void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math
 #endif
 }
 
-static inline void gl_shader_set_params(gl_t *gl, unsigned width, unsigned height, 
+static inline void gl_shader_set_params(void *data, unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
@@ -353,6 +358,8 @@ static inline void gl_shader_set_params(gl_t *gl, unsigned width, unsigned heigh
       const struct gl_tex_info *prev_info,
       const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
 {
+   gl_t *gl = (gl_t*)data;
+
    if (gl->shader)
    {
       gl->shader->set_params(width, height, 
@@ -362,16 +369,20 @@ static inline void gl_shader_set_params(gl_t *gl, unsigned width, unsigned heigh
    }
 }
 
-static inline unsigned gl_shader_num(gl_t *gl)
+static inline unsigned gl_shader_num(void *data)
 {
+   gl_t *gl = (gl_t*)data;
+   
    if (gl->shader)
       return gl->shader->num_shaders();
    else
       return 0;
 }
 
-static bool gl_shader_filter_type(gl_t *gl, unsigned index, bool *smooth)
+static bool gl_shader_filter_type(void *data, unsigned index, bool *smooth)
 {
+   gl_t *gl = (gl_t*)data;
+
    if (gl->shader)
       return gl->shader->filter_type(index, smooth);
    else
@@ -379,16 +390,19 @@ static bool gl_shader_filter_type(gl_t *gl, unsigned index, bool *smooth)
 }
 
 #ifdef HAVE_FBO
-static void gl_shader_scale(gl_t *gl, unsigned index, struct gl_fbo_scale *scale)
+static void gl_shader_scale(void *data, unsigned index, struct gl_fbo_scale *scale)
 {
+   gl_t *gl = (gl_t*)data;
+
    scale->valid = false;
    if (gl->shader)
       gl->shader->shader_scale(index, scale);
 }
 
-static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
+static void gl_compute_fbo_geometry(void *data, unsigned width, unsigned height,
       unsigned vp_width, unsigned vp_height)
 {
+   gl_t *gl = (gl_t*)data;
    unsigned last_width = width;
    unsigned last_height = height;
    unsigned last_max_width = gl->tex_w;
@@ -473,8 +487,10 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
    }
 }
 
-static void gl_create_fbo_textures(gl_t *gl)
+static void gl_create_fbo_textures(void *data)
 {
+   gl_t *gl = (gl_t*)data;
+
    glGenTextures(gl->fbo_pass, gl->fbo_texture);
 
    GLuint base_filt = g_settings.video.second_pass_smooth ? GL_LINEAR : GL_NEAREST;
@@ -502,8 +518,10 @@ static void gl_create_fbo_textures(gl_t *gl)
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-static bool gl_create_fbo_targets(gl_t *gl)
+static bool gl_create_fbo_targets(void *data)
 {
+   gl_t *gl = (gl_t*)data;
+
    glBindTexture(GL_TEXTURE_2D, 0);
    pglGenFramebuffers(gl->fbo_pass, gl->fbo);
    for (int i = 0; i < gl->fbo_pass; i++)
@@ -610,8 +628,6 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
    gl->fbo_inited = true;
 }
 #endif
-
-////////////
 
 void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
 {
@@ -720,8 +736,10 @@ static void gl_set_rotation(void *data, unsigned rotation)
 
 #ifdef HAVE_FBO
 
-static inline void gl_start_frame_fbo(gl_t *gl)
+static inline void gl_start_frame_fbo(void *data)
 {
+   gl_t *gl = (gl_t*)data;
+
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    pglBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
    gl_set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true, false);
@@ -732,8 +750,10 @@ static inline void gl_start_frame_fbo(gl_t *gl)
    gl->coords.vertex = vertexes;
 }
 
-static void gl_check_fbo_dimensions(gl_t *gl)
+static void gl_check_fbo_dimensions(void *data)
 {
+   gl_t *gl = (gl_t*)data;
+
    // Check if we have to recreate our FBO textures.
    for (int i = 0; i < gl->fbo_pass; i++)
    {
@@ -766,8 +786,9 @@ static void gl_check_fbo_dimensions(gl_t *gl)
    }
 }
 
-static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
+static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
 {
+   gl_t *gl = (gl_t*)data;
    GLfloat fbo_tex_coords[8] = {0.0f};
 
    // Render the rest of our passes.
@@ -848,8 +869,9 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
 }
 #endif
 
-static void gl_update_resize(gl_t *gl)
+static void gl_update_resize(void *data)
 {
+   gl_t *gl = (gl_t*)data;
 #ifdef HAVE_FBO
    if (!gl->fbo_inited)
       gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
@@ -865,8 +887,9 @@ static void gl_update_resize(gl_t *gl)
 #endif
 }
 
-static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsigned pitch)
+static void gl_update_input_size(void *data, unsigned width, unsigned height, unsigned pitch)
 {
+   gl_t *gl = (gl_t*)data;
    // Res change. Need to clear out texture.
    if ((width != gl->last_width[gl->tex_index] || height != gl->last_height[gl->tex_index]) && gl->empty_buf)
    {
@@ -903,8 +926,9 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
 
 // It is *much* faster (order of mangnitude on my setup) to use a custom SIMD-optimized conversion routine than letting GL do it :(
 #if !defined(HAVE_PSGL) && !defined(HAVE_OPENGLES2)
-static inline void gl_convert_frame_rgb16_32(gl_t *gl, void *output, const void *input, int width, int height, int in_pitch)
+static inline void gl_convert_frame_rgb16_32(void *data, void *output, const void *input, int width, int height, int in_pitch)
 {
+   gl_t *gl = (gl_t*)data;
    if (width != gl->scaler.in_width || height != gl->scaler.in_height)
    {
       gl->scaler.in_width    = width;
@@ -924,9 +948,10 @@ static inline void gl_convert_frame_rgb16_32(gl_t *gl, void *output, const void 
 #endif
 
 #ifdef HAVE_OPENGLES2
-static inline void gl_convert_frame_argb8888_abgr8888(gl_t *gl, void *output, const void *input,
+static inline void gl_convert_frame_argb8888_abgr8888(void *data, void *output, const void *input,
       int width, int height, int in_pitch)
 {
+   gl_t *gl = (gl_t*)data;
    if (width != gl->scaler.in_width || height != gl->scaler.in_height)
    {
       gl->scaler.in_width    = width;
@@ -945,8 +970,9 @@ static inline void gl_convert_frame_argb8888_abgr8888(gl_t *gl, void *output, co
 }
 #endif
 
-static void gl_init_textures_data(gl_t *gl)
+static void gl_init_textures_data(void *data)
 {
+   gl_t *gl = (gl_t*)data;
    for (unsigned i = 0; i < TEXTURES; i++)
    {
       gl->last_width[i]  = gl->tex_w;
@@ -965,8 +991,9 @@ static void gl_init_textures_data(gl_t *gl)
 }
 
 #if defined(HAVE_PSGL)
-static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
+static inline void gl_copy_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
+   gl_t *gl = (gl_t*)data;
    size_t buffer_addr        = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
    size_t buffer_stride      = gl->tex_w * gl->base_size;
    const uint8_t *frame_copy = frame;
@@ -979,8 +1006,10 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
    glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
 }
 
-static void gl_init_textures(gl_t *gl, const video_info_t *video)
+static void gl_init_textures(void *data, const video_info_t *video)
 {
+   gl_t *gl = (gl_t*)data;
+   
    if (!gl->pbo)
       glGenBuffers(1, &gl->pbo);
 
@@ -1008,8 +1037,9 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 #else
-static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
+static inline void gl_copy_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
+   gl_t *gl = (gl_t*)data;
 #ifdef HAVE_OPENGLES2
 #ifdef HAVE_EGL
    if (gl->egl_images)
@@ -1087,8 +1117,9 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
 #endif
 }
 
-static void gl_init_textures(gl_t *gl, const video_info_t *video)
+static void gl_init_textures(void *data, const video_info_t *video)
 {
+   gl_t *gl = (gl_t*)data;
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
    gl->egl_images = load_eglimage_proc(gl) && context_init_egl_image_buffer_func(video);
 #else
@@ -1116,21 +1147,24 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 }
 #endif
 
-static inline void gl_set_prev_texture(gl_t *gl, const struct gl_tex_info *tex_info)
+static inline void gl_set_prev_texture(void *data, const struct gl_tex_info *tex_info)
 {
+   gl_t *gl = (gl_t*)data;
    memmove(gl->prev_info + 1, gl->prev_info, sizeof(*tex_info) * (TEXTURES - 1));
    memcpy(&gl->prev_info[0], tex_info, sizeof(*tex_info));
 }
 
-static inline void gl_set_shader_viewport(gl_t *gl, unsigned shader)
+static inline void gl_set_shader_viewport(void *data, unsigned shader)
 {
+   gl_t *gl = (gl_t*)data;
    gl_shader_use_func(gl, shader);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
-static void gl_pbo_async_readback(gl_t *gl)
+static void gl_pbo_async_readback(void *data)
 {
+   gl_t *gl = (gl_t*)data;
    pglBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index++]);
    gl->pbo_readback_index &= 3;
 
@@ -1372,8 +1406,10 @@ static bool resolve_extensions(gl_t *gl)
    return true;
 }
 
-static inline void gl_set_texture_fmts(gl_t *gl, bool rgb32)
+static inline void gl_set_texture_fmts(void *data, bool rgb32)
 {
+   gl_t *gl = (gl_t*)data;
+
    gl->internal_fmt = rgb32 ? RARCH_GL_INTERNAL_FORMAT32 : RARCH_GL_INTERNAL_FORMAT16;
    gl->texture_type = rgb32 ? RARCH_GL_TEXTURE_TYPE32 : RARCH_GL_TEXTURE_TYPE16;
    gl->texture_fmt  = rgb32 ? RARCH_GL_FORMAT32 : RARCH_GL_FORMAT16;
@@ -1386,8 +1422,9 @@ static inline void gl_set_texture_fmts(gl_t *gl, bool rgb32)
    }
 }
 
-static inline void gl_reinit_textures(gl_t *gl, const video_info_t *video)
+static inline void gl_reinit_textures(void *data, const video_info_t *video)
 {
+   gl_t *gl = (gl_t*)data;
    unsigned old_base_size = gl->base_size;
    unsigned old_width     = gl->tex_w;
    unsigned old_height    = gl->tex_h;
@@ -1431,8 +1468,9 @@ static inline void gl_reinit_textures(gl_t *gl, const video_info_t *video)
       RARCH_ERR("GL error reported while reinitializing textures. This should not happen ...\n");
 }
 
-static void gl_init_pbo_readback(gl_t *gl)
+static void gl_init_pbo_readback(void *data)
 {
+   gl_t *gl = (gl_t*)data;
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
    // Only bother with this if we're doing FFmpeg GPU recording.
    gl->pbo_readback_enable = g_settings.video.gpu_record && g_extern.recording;
@@ -1913,8 +1951,10 @@ static void gl_overlay_enable(void *data, bool state)
    gl->overlay_enable = state;
 }
 
-static void gl_render_overlay(gl_t *gl)
+static void gl_render_overlay(void *data)
 {
+   gl_t *gl = (gl_t*)data;
+
    glBindTexture(GL_TEXTURE_2D, gl->tex_overlay);
 
    gl_shader_use_func(gl, 0);
