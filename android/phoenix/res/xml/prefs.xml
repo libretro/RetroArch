@@ -123,13 +123,18 @@
                 android:key="video_fbo_scale"
                 android:summary="Scale to use when rendering to FBO."
                 android:title="FBO scale" />
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="video_second_pass_smooth"
+                android:summary="Use Bilinear filtering on FBO texture on second pass."
+                android:title="Second pass Bilinear Filtering" />
         </PreferenceCategory>
-
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="video_second_pass_smooth"
-            android:summary="Use Bilinear filtering on FBO texture on second pass."
-            android:title="Second pass Bilinear Filtering" />
+        <PreferenceCategory android:title="Fonts">
+            <CheckBoxPreference android:title="Enable on-screen fonts"
+                android:summary="Enable rendering of on-screen fonts for messages."
+                android:key="video_font_enable"
+                android:defaultValue="true"/>
+        </PreferenceCategory>
     </PreferenceScreen>
     <PreferenceScreen android:title="Audio Settings" >
         <PreferenceCategory android:title="Audio" >

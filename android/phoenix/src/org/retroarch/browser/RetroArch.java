@@ -260,6 +260,8 @@ public class RetroArch extends Activity implements
 				prefs.getString("savefile_directory", "") : "");
 		config.setString("savestate_directory", prefs.getBoolean("savestate_directory_enable", false) ?
 				prefs.getString("savestate_directory", "") : "");
+		
+		config.setBoolean("video_font_enable", prefs.getBoolean("video_font_enable", true));
 
 		String confPath = getDefaultConfigPath();
 		try {
