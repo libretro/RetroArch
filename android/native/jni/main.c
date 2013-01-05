@@ -242,8 +242,6 @@ static void jni_get(struct jni_params *in_params, struct jni_out_params_char *ou
    }
 }
 
-static float refreshrate;
-
 static int android_app_set_argv(char** argv)
 {
    char rom_path[PATH_MAX];
@@ -275,14 +273,6 @@ static int android_app_set_argv(char** argv)
    strlcpy(out_args.in, "LIBRETRO", sizeof(out_args.in));
    jni_get(&in_params, &out_args);
 
-   // Refresh rate
-   char refreshrate_char[128];
-   out_args.out = refreshrate_char;
-   out_args.out_sizeof = sizeof(refreshrate_char);
-   strlcpy(out_args.in, "REFRESHRATE", sizeof(out_args.in));
-   jni_get(&in_params, &out_args);
-   refreshrate = (float)strtod(refreshrate_char, NULL);
-
    // Config file
    out_args.out = config_file;
    out_args.out_sizeof = sizeof(config_file);
@@ -301,7 +291,6 @@ static int android_app_set_argv(char** argv)
    RARCH_LOG("Checking arguments passed ...\n");
    RARCH_LOG("ROM Filename: [%s].\n", rom_path);
    RARCH_LOG("Libretro path: [%s].\n", libretro_path);
-   RARCH_LOG("Display Refresh rate: %.2f Hz.\n", refreshrate);
    RARCH_LOG("Config file: [%s].\n", config_file);
    RARCH_LOG("Current IME: [%s].\n", g_android.current_ime);
 
@@ -351,18 +340,6 @@ static void* android_app_entry(void* param)
 
    g_extern.verbose = true;
 
-   bool disp_refresh_read = refreshrate > 0.0f;
-   g_android.disp_refresh_rate = refresh_rate;
-   if (disp_refresh_read)
-   {
-      if (refreshrate < refresh_rate)
-      {
-         RARCH_WARN("Display refresh rate of your device is likely lower than 60Hz.\n");
-         g_android.disp_refresh_rate = refreshrate;
-      }
-   }
-
-   RARCH_LOG("Setting RetroArch video refresh rate to: %.2fHz.\n", g_android.disp_refresh_rate);
 
    while (!g_android.window_ready)
    {
@@ -379,7 +356,6 @@ static void* android_app_entry(void* param)
    {
       RARCH_LOG("RetroArch started.\n");
       rarch_init_msg_queue();
-      driver_set_monitor_refresh_rate(g_android.disp_refresh_rate);
 
       while ((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ?
             android_run_events(g_android.app) :

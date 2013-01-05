@@ -245,12 +245,14 @@ static void adjust_system_rates(void)
 
 void driver_set_monitor_refresh_rate(float hz)
 {
+   RARCH_LOG("Setting refresh rate to: %.2fHz.\n", hz);
    g_settings.video.refresh_rate = hz;
    adjust_system_rates();
 
    g_extern.audio_data.orig_src_ratio =
       g_extern.audio_data.src_ratio =
       (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
+
 }
 
 void init_drivers(void)

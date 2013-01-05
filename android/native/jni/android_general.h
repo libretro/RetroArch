@@ -24,7 +24,6 @@ struct droid
 {
    struct android_app* app;
    bool window_ready;
-   float disp_refresh_rate;
    char current_ime[PATH_MAX];
 };
 

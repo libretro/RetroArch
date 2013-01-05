@@ -52,10 +52,10 @@ public class RetroArch extends Activity implements
 	static private final String TAG = "RetroArch-Phoenix";
 	private ConfigFile config;
 
-	public float getRefreshRate() {
+	private final double getRefreshRate() {
 		final WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
 		final Display display = wm.getDefaultDisplay();
-		float rate = display.getRefreshRate();
+		double rate = display.getRefreshRate();
 		return rate;
 	}
 	
@@ -199,6 +199,18 @@ public class RetroArch extends Activity implements
 		config.setBoolean("video_vsync", prefs.getBoolean("video_vsync", true));
 		config.setBoolean("input_autodetect_enable", prefs.getBoolean("input_autodetect_enable", true));
 		
+		if (prefs.getBoolean("video_sync_refreshrate_to_screen", true) &&
+				(getRefreshRate() < 59.95))
+		{
+			Log.e(TAG, "Refresh rate of screen lower than 59.95Hz, adjusting to screen.");	
+			config.setDouble("video_refresh_rate", getRefreshRate());
+		}
+		else
+		{
+			Log.e(TAG, "Refresh rate set to 59.95Hz (default).");	
+			config.setDouble("video_refresh_rate", 59.95);
+		}
+		
 		String aspect = prefs.getString("video_aspect_ratio", "auto");
 		if (aspect.equals("full")) {
 			config.setBoolean("video_force_aspect", false);
@@ -266,8 +278,6 @@ public class RetroArch extends Activity implements
 				myIntent = new Intent(this, NativeActivity.class);
 				myIntent.putExtra("ROM", data.getStringExtra("PATH"));
 				myIntent.putExtra("LIBRETRO", libretro_path);
-				myIntent.putExtra("REFRESHRATE",
-						Float.toString(getRefreshRate()));
 				myIntent.putExtra("CONFIGFILE", getDefaultConfigPath());
 				myIntent.putExtra("IME", current_ime);
 				startActivity(myIntent);

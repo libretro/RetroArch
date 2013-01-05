@@ -22,14 +22,14 @@
         <PreferenceCategory android:title="General" >
             <CheckBoxPreference
                 android:defaultValue="true"
-                android:key="video_smooth"
-                android:summary="Applies bilinear filter, smooths out edges."
-                android:title="Bilinear filter" />
-            <CheckBoxPreference
-                android:defaultValue="true"
                 android:key="video_vsync"
                 android:summary="When set to enabled, prevents screen tearing."
                 android:title="VSync" />
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="video_sync_refreshrate_to_screen"
+                android:summary="Synchronize RetroArch's refresh rate to the screen's refresh rate (recommended - some screens have refresh rates below 59.95Hz and need this enabled to get good audio/video sync)."
+                android:title="Sync refreshrate to screen" />
             <CheckBoxPreference
                 android:defaultValue="true"
                 android:key="video_allow_rotate"
@@ -44,6 +44,11 @@
                 android:title="Aspect ratio" />
         </PreferenceCategory>
         <PreferenceCategory android:title="Shaders (1st pass)" >
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="video_smooth"
+                android:summary="Applies Bilinear filtering, smooths out edges (settings still apply even if no shader is selected)."
+                android:title="Bilinear filter" />
             <CheckBoxPreference
                 android:defaultValue="false"
                 android:key="video_shader_enable"
@@ -88,8 +93,8 @@
         <CheckBoxPreference
             android:defaultValue="true"
             android:key="video_second_pass_smooth"
-            android:summary="Use bilinear filtering on FBO texture on second pass."
-            android:title="Second pass bilinear" />
+            android:summary="Use Bilinear filtering on FBO texture on second pass."
+            android:title="Second pass Bilinear Filtering" />
     </PreferenceScreen>
     <PreferenceScreen android:title="Audio Settings" >
         <PreferenceCategory android:title="Audio" >
