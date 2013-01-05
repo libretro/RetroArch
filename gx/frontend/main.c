@@ -593,7 +593,7 @@ begin_loop:
    goto begin_loop;
 
 begin_shutdown:
-   rarch_config_save(default_paths.config_file);
+   config_save_file(default_paths.config_file);
    config_save_keybinds(input_path);
 
    if(g_extern.console.emulator_initialized)

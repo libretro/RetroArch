@@ -204,7 +204,7 @@ begin_loop:
    goto begin_loop;
 
 begin_shutdown:
-   rarch_config_save(default_paths.config_file);
+   config_save_file(default_paths.config_file);
 
    menu_free();
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9)

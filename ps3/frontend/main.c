@@ -365,7 +365,7 @@ begin_loop:
    goto begin_loop;
 
 begin_shutdown:
-   rarch_config_save(default_paths.config_file);
+   config_save_file(default_paths.config_file);
 
    if(g_extern.console.emulator_initialized)
       rarch_main_deinit();

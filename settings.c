@@ -941,6 +941,8 @@ static void save_keybind(config_file_t *conf,
    save_keybind_key(conf, map, bind);
    save_keybind_joykey(conf, map, bind);
    save_keybind_axis(conf, map, bind);
+#ifdef RARCH_CONSOLE
+#endif
 }
 
 static void save_keybinds_player(config_file_t *conf, unsigned i)
@@ -948,6 +950,84 @@ static void save_keybinds_player(config_file_t *conf, unsigned i)
    for (unsigned j = 0; j < RARCH_BIND_LIST_END; j++)
       save_keybind(conf, &bind_maps[i][j], &g_settings.input.binds[i][j]);
 }
+
+#ifdef RARCH_CONSOLE
+bool config_save_file(const char *path)
+{
+   config_file_t *conf = config_file_new(path);
+   if (!conf)
+      conf = config_file_new(NULL);
+   if (!conf)
+      return false;
+
+   config_set_string(conf, "libretro_path", g_settings.libretro);
+   config_set_string(conf, "cheat_database_path", g_settings.cheat_database);
+   config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
+   config_set_string(conf, "video_cg_shader", g_settings.video.cg_shader_path);
+   config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
+#ifdef HAVE_FBO
+   config_set_float(conf, "video_fbo_scale_x", g_settings.video.fbo.scale_x);
+   config_set_float(conf, "video_fbo_scale_y", g_settings.video.fbo.scale_y);
+   config_set_string(conf, "video_second_pass_shader", g_settings.video.second_pass_shader);
+   config_set_bool(conf, "video_render_to_texture", g_settings.video.render_to_texture);
+   config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
+#endif
+   config_set_bool(conf, "video_smooth", g_settings.video.smooth);
+   config_set_bool(conf, "video_vsync", g_settings.video.vsync);
+   config_set_int(conf, "aspect_ratio_index", g_settings.video.aspect_ratio_idx);
+   config_set_string(conf, "audio_device", g_settings.audio.device);
+   config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
+   config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
+   config_set_string(conf, "system_directory", g_settings.system_directory);
+
+   config_set_bool(conf, "overscan_enable", g_extern.console.screen.state.overscan.enable);
+   config_set_bool(conf, "screenshots_enable", g_extern.console.screen.state.screenshots.enable);
+   config_set_bool(conf, "gamma_correction", g_extern.console.screen.gamma_correction);
+#ifdef _XBOX1
+   config_set_int(conf, "flicker_filter", g_extern.console.screen.state.flicker_filter.value);
+   config_set_int(conf, "sound_volume_level", g_extern.console.sound.volume_level);
+#endif
+   config_set_bool(conf, "throttle_enable", g_extern.console.screen.state.throttle.enable);
+   config_set_bool(conf, "triple_buffering_enable", g_extern.console.screen.state.triple_buffering.enable);
+   config_set_bool(conf, "info_msg_enable", g_extern.console.rmenu.state.msg_info.enable);
+   config_set_int(conf, "current_resolution_id", g_extern.console.screen.resolutions.current.id);
+   config_set_int(conf, "custom_viewport_width", g_extern.console.screen.viewports.custom_vp.width);
+   config_set_int(conf, "custom_viewport_height", g_extern.console.screen.viewports.custom_vp.height);
+   config_set_int(conf, "custom_viewport_x", g_extern.console.screen.viewports.custom_vp.x);
+   config_set_int(conf, "custom_viewport_y", g_extern.console.screen.viewports.custom_vp.y);
+   config_set_string(conf, "default_rom_startup_dir", g_extern.console.main_wrap.paths.default_rom_startup_dir);
+   config_set_float(conf, "menu_font_size", g_extern.console.rmenu.font_size);
+   config_set_float(conf, "overscan_amount", g_extern.console.screen.overscan_amount);
+#ifdef HAVE_ZLIB
+   config_set_int(conf, "zip_extract_mode", g_extern.file_state.zip_extract_mode);
+#endif
+
+   // g_extern
+   config_set_int(conf, "sound_mode", g_extern.console.sound.mode);
+   config_set_int(conf, "state_slot", g_extern.state_slot);
+   config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
+   config_set_bool(conf, "soft_display_filter_enable", g_extern.console.screen.state.soft_filter.enable);
+   config_set_int(conf, "screen_orientation", g_extern.console.screen.orientation);
+   config_set_bool(conf, "custom_bgm_enable", g_extern.console.sound.custom_bgm.enable);
+
+   config_set_bool(conf, "sram_dir_enable", g_extern.console.main_wrap.state.default_sram_dir.enable);
+   config_set_bool(conf, "savestate_dir_enable", g_extern.console.main_wrap.state.default_savestate_dir.enable);
+
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   {
+      char cfg[64];
+      snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
+      config_set_int(conf, cfg, g_settings.input.dpad_emulation[i]);
+      snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
+      config_set_int(conf, cfg, g_settings.input.device[i]);
+   }
+
+   config_file_write(conf, path);  
+   config_file_free(conf);
+
+   return true;
+}
+#endif
 
 bool config_save_keybinds(const char *path)
 {

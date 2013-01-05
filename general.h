@@ -608,6 +608,9 @@ const char *config_get_default_input(void);
 
 #include "conf/config_file.h"
 bool config_load_file(const char *path);
+#ifdef RARCH_CONSOLE
+bool config_save_file(const char *path);
+#endif
 bool config_read_keybinds(const char *path);
 bool config_save_keybinds(const char *path);
 
