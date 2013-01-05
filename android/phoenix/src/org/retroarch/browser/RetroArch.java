@@ -198,6 +198,7 @@ public class RetroArch extends Activity implements
 		config.setBoolean("rewind_enable", prefs.getBoolean("rewind_enable", false));
 		config.setBoolean("video_vsync", prefs.getBoolean("video_vsync", true));
 		config.setBoolean("input_autodetect_enable", prefs.getBoolean("input_autodetect_enable", true));
+		config.setBoolean("input_debug_enable", prefs.getBoolean("input_debug_enable", false));
 		
 		if (prefs.getBoolean("video_sync_refreshrate_to_screen", true) &&
 				(getRefreshRate() < 59.95))

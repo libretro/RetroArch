@@ -182,6 +182,7 @@ struct settings
       float axis_threshold;
       int joypad_map[MAX_PLAYERS];
       unsigned dpad_emulation[MAX_PLAYERS];
+      bool debug_enable;
 #ifdef ANDROID
       bool autodetect_enable;
 #endif

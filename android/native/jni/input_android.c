@@ -79,7 +79,6 @@ static void *android_input_init(void)
    return (void*)-1;
 }
 
-
 static void android_input_poll(void *data)
 {
    (void)data;
@@ -120,9 +119,7 @@ static void android_input_poll(void *data)
       }
 
       int action = 0;
-#ifdef RARCH_INPUT_DEBUG
       char msg[128];
-#endif
 
       if (keycode == AKEYCODE_BACK && (source & (AINPUT_SOURCE_KEYBOARD)))
       {
@@ -171,15 +168,15 @@ static void android_input_poll(void *data)
                pointer_count--;
             }
          }
-#ifdef RARCH_INPUT_DEBUG
-         snprintf(msg, sizeof(msg), "Pad %d : x = %.2f, y = %.2f, src %d.\n", state_id, x, y, source);
-#endif
+
+         if (g_settings.input.debug_enable)
+            snprintf(msg, sizeof(msg), "Pad %d : x = %.2f, y = %.2f, src %d.\n", state_id, x, y, source);
       }
       else if (type_event == AINPUT_EVENT_TYPE_KEY)
       {
-#ifdef RARCH_INPUT_DEBUG
-         snprintf(msg, sizeof(msg), "Pad %d : %d, ac = %d, src = %d.\n", state_id, keycode, action, source);
-#endif
+         if (g_settings.input.debug_enable)
+            snprintf(msg, sizeof(msg), "Pad %d : %d, ac = %d, src = %d.\n", state_id, keycode, action, source);
+
          /* Hack - we have to decrease the unpacked value by 1
           * because we 'added' 1 to each entry in the LUT -
           * RETRO_DEVICE_ID_JOYPAD_B is 0
@@ -205,9 +202,10 @@ static void android_input_poll(void *data)
          if(volume_enable && (keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
             handled = 0;
       }
-#ifdef RARCH_INPUT_DEBUG
-      msg_queue_push(g_extern.msg_queue, msg, 0, 30);
-#endif
+
+      if (g_settings.input.debug_enable)
+         msg_queue_push(g_extern.msg_queue, msg, 0, 30);
+
       AInputQueue_finishEvent(android_app->inputQueue, event, handled);
    }
 

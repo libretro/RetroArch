@@ -493,6 +493,7 @@ bool config_load_file(const char *path)
 #ifdef ANDROID
    CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
 #endif
+   CONFIG_GET_BOOL(input.debug_enable, "input_debug_enable");
 
    if (config_get_string(conf, "environment_variables",
             &g_extern.system.environment))
