@@ -21,7 +21,7 @@
 
 #include "rarch_console_config.h"
 
-void rarch_config_load(const char *conf_name, bool upgrade_core_succeeded)
+void rarch_config_load(const char *path, bool upgrade_core_succeeded)
 {
       char libretro_path_tmp[PATH_MAX];
 
@@ -30,14 +30,14 @@ void rarch_config_load(const char *conf_name, bool upgrade_core_succeeded)
          snprintf(libretro_path_tmp, sizeof(libretro_path_tmp), g_settings.libretro);
       
 
-      config_file_t * conf = config_file_new(conf_name);
+      config_file_t * conf = config_file_new(path);
 
       if(!conf)
       {
 #ifdef RARCH_CONSOLE
          FILE * f;
-         RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", conf_name);
-         f = fopen(conf_name, "w");
+         RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", path);
+         f = fopen(path, "w");
          fclose(f);
 #endif
          return;
@@ -111,17 +111,17 @@ void rarch_config_load(const char *conf_name, bool upgrade_core_succeeded)
       {
          //save config file with new libretro path
          snprintf(g_settings.libretro, sizeof(g_settings.libretro), libretro_path_tmp);
-         rarch_config_save(conf_name);
+         rarch_config_save(path);
       }
 }
 
-void rarch_config_save(const char * conf_name)
+void rarch_config_save(const char *path)
 {
-      config_file_t * conf = config_file_new(conf_name);
+      config_file_t * conf = config_file_new(path);
 
       if(!conf)
       {
-         RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", conf_name);
+         RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", path);
          return;
       }
 
@@ -190,8 +190,8 @@ void rarch_config_save(const char * conf_name)
       config_set_bool(conf, "sram_dir_enable", g_extern.console.main_wrap.state.default_sram_dir.enable);
       config_set_bool(conf, "savestate_dir_enable", g_extern.console.main_wrap.state.default_savestate_dir.enable);
 
-      if (!config_file_write(conf, conf_name))
-         RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", conf_name);
+      if (!config_file_write(conf, path))
+         RARCH_ERR("Failed to write config file to \"%s\". Check permissions.\n", path);
 
       free(conf);
 }

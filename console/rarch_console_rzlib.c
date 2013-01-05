@@ -33,8 +33,9 @@
 
 #include "rarch_console_rzlib.h"
 
-static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir, char *slash, char *write_filename, size_t write_filename_size, unsigned extract_zip_mode)
+static int rarch_extract_currentfile_in_zip(void *data, const char *current_dir, char *slash, char *write_filename, size_t write_filename_size, unsigned extract_zip_mode)
 {
+   unzFile *uf = (unzFile*)data;
    char filename_inzip[PATH_MAX];
    bool is_dir = false;
    FILE *file_out = NULL;
@@ -160,7 +161,7 @@ int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *f
 #else
       snprintf(slash, sizeof(slash), "/");
 #endif
-      if (rarch_extract_currentfile_in_zip(uf, current_dir, slash, write_filename, sizeof(write_filename), extract_zip_mode) != UNZ_OK)
+      if (rarch_extract_currentfile_in_zip(&uf, current_dir, slash, write_filename, sizeof(write_filename), extract_zip_mode) != UNZ_OK)
       {
          RARCH_ERR("Failed to extract current file from ZIP archive.\n");
          break;

@@ -32,12 +32,6 @@
 #include "rarch_console_rzlib.h"
 #endif
 
-static void rarch_console_load_game(const char *path)
-{
-   snprintf(g_extern.file_state.rom_path, sizeof(g_extern.file_state.rom_path), path);
-   rarch_settings_change(S_START_RARCH);
-}
-
 void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, unsigned delay)
 {
    const char *game_to_load;
@@ -80,7 +74,8 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, u
 
    if(load_game)
    {
-      rarch_console_load_game(game_to_load);
+      snprintf(g_extern.file_state.rom_path, sizeof(g_extern.file_state.rom_path), game_to_load);
+      rarch_settings_change(S_START_RARCH);
 
       if(g_extern.console.rmenu.state.msg_info.enable)
          rarch_settings_msg(S_MSG_LOADING_ROM, delay);

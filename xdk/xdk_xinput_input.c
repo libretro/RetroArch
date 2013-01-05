@@ -133,31 +133,32 @@ static void xdk_input_poll(void *data)
          retval = XInputGetState(gamepads[i], &state_tmp);
          if(retval == ERROR_SUCCESS)
          {
+            uint64_t *state_cur = &state[i];
             pads_connected++;
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_B]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0);
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0);
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_Y]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0);
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT): 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT) : 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP) : 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN) : 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT) : 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT) : 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP) : 0);
-            state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN) : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_START) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0);
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0);
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0);
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_WHITE]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0);
-            state[i] |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_BLACK]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L3) : 0);
-            state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R3) : 0);
+            *state_cur |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_B]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0);
+            *state_cur |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0);
+            *state_cur |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_Y]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0);
+            *state_cur |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0);
+            *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0);
+            *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0);
+            *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0);
+            *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0);
+            *state_cur |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT): 0);
+            *state_cur |= ((state_tmp.Gamepad.sThumbLX > DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT) : 0);
+            *state_cur |= ((state_tmp.Gamepad.sThumbLY > DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP) : 0);
+            *state_cur |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN) : 0);
+            *state_cur |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT) : 0);
+            *state_cur |= ((state_tmp.Gamepad.sThumbRX > DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT) : 0);
+            *state_cur |= ((state_tmp.Gamepad.sThumbRY > DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP) : 0);
+            *state_cur |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN) : 0);
+            *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_START) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0);
+            *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0);
+            *state_cur |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0);
+            *state_cur |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0);
+            *state_cur |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_WHITE]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0);
+            *state_cur |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_BLACK]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0);
+            *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L3) : 0);
+            *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R3) : 0);
          }
       }
    }
@@ -167,33 +168,35 @@ static void xdk_input_poll(void *data)
       XINPUT_STATE state_tmp;
       unsigned long retval;
       {
+         uint64_t *state_cur = &state[i];
          retval = XInputGetState(i, &state_tmp);
          pads_connected += (retval == ERROR_DEVICE_NOT_CONNECTED) ? 0 : 1;
-         state[i] = 0;
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_B) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_A) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_Y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_X) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT) : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbLX > DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT) : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbLY > DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP) : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN) : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT) : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbRX > DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT) : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbRY > DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP) : 0);
-         state[i] |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN) : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_START) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0);
-         state[i] |= ((state_tmp.Gamepad.bLeftTrigger > 128) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0);
-         state[i] |= ((state_tmp.Gamepad.bRightTrigger > 128) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L3) : 0);
-         state[i] |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R3) : 0);
+
+         *state_cur = 0;
+         *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_B) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0);
+         *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_A) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0);
+         *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_Y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0);
+         *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_X) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0);
+         *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0);
+         *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0);
+         *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0);
+         *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0);
+         *state_cur |= ((state_tmp.Gamepad.sThumbLX < -DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT) : 0);
+         *state_cur |= ((state_tmp.Gamepad.sThumbLX > DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT) : 0);
+         *state_cur |= ((state_tmp.Gamepad.sThumbLY > DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP) : 0);
+         *state_cur |= ((state_tmp.Gamepad.sThumbLY < -DEADZONE) ? (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN) : 0);
+         *state_cur |= ((state_tmp.Gamepad.sThumbRX < -DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT) : 0);
+         *state_cur |= ((state_tmp.Gamepad.sThumbRX > DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT) : 0);
+         *state_cur |= ((state_tmp.Gamepad.sThumbRY > DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP) : 0);
+         *state_cur |= ((state_tmp.Gamepad.sThumbRY < -DEADZONE) ? (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN) : 0);
+         *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_START) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0);
+         *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0);
+         *state_cur |= ((state_tmp.Gamepad.bLeftTrigger > 128) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0);
+         *state_cur |= ((state_tmp.Gamepad.bRightTrigger > 128) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0);
+         *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0);
+         *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0);
+         *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L3) : 0);
+         *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R3) : 0);
       }
    }
 #endif

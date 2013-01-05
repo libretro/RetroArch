@@ -37,7 +37,7 @@ void rarch_input_set_default_keybinds(unsigned player);
 
 void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
 
-void rarch_input_set_controls_default (const input_driver_t *input);
+void rarch_input_set_controls_default (const void *data);
 const char *rarch_input_get_default_keybind_name (unsigned id);
 
 #endif

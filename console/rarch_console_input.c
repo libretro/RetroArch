@@ -141,8 +141,10 @@ void rarch_input_set_default_keybinds(unsigned player)
 
 #define STUB_DEVICE 0
 
-void rarch_input_set_controls_default (const input_driver_t *input)
+void rarch_input_set_controls_default (const void *data)
 {
+   const input_driver_t *input = (const input_driver_t*)data;
+
    for(uint32_t x = 0; x < MAX_PLAYERS; x++)
    {
       input->set_default_keybind_lut(STUB_DEVICE, x);
