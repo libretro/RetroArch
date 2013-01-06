@@ -598,6 +598,16 @@ struct global
    jmp_buf error_sjlj_context;
 };
 
+struct rarch_main_wrap
+{
+   const char *rom_path;
+   const char *sram_path;
+   const char *state_path;
+   const char *config_path;
+   const char *libretro_path;
+   bool verbose;
+};
+
 // Public functions
 void config_load(void);
 void config_set_defaults(void);
@@ -616,6 +626,7 @@ bool config_save_keybinds(const char *path);
 void rarch_game_reset(void);
 void rarch_main_clear_state(void);
 int rarch_main(int argc, char *argv[]);
+int rarch_main_init_wrap(const struct rarch_main_wrap *args);
 int rarch_main_init(int argc, char *argv[]);
 bool rarch_main_iterate(void);
 void rarch_main_deinit(void);
