@@ -274,7 +274,7 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
 static bool rmenu_iterate(void)
 {
    static uint16_t old_input_state = 0;
-   bool initial_held = true;
+   static bool initial_held = true;
    static bool first_held = false;
 
    g_extern.draw_menu = true;
@@ -355,9 +355,7 @@ static bool rmenu_iterate(void)
          case MODE_EMULATION:
             break;
          default:
-            if (quit_key_pressed)
-               g_extern.console.rmenu.mode = MODE_EXIT;
-            g_extern.console.rmenu.mode = rmenu_enable ? MODE_EMULATION : MODE_MENU;
+            g_extern.console.rmenu.mode = quit_key_pressed ? MODE_EXIT : rmenu_enable ? MODE_EMULATION : MODE_MENU;
             break;
       }
    }

@@ -385,10 +385,7 @@ static void gx_input_poll(void *data)
    }
 #endif
 
-   u32 gc_pads_connected = PAD_ScanPads();
-
-   if (!gc_pads_connected)
-      goto do_exit;
+   PAD_ScanPads();
 
    for (unsigned port = 0; port < MAX_PADS; port++)
    {
@@ -448,17 +445,20 @@ do_exit:
       g_quit = false;
    }
 
-   if (pad_state[0] & GX_QUIT_KEY)
-      g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
-
-   if (pad_state[0] & (GX_WIIMOTE_HOME
-#ifdef HW_RVL
-            | GX_CLASSIC_HOME
-#endif
-            ))
+   if (IS_TIMER_EXPIRED(0))
    {
-      g_extern.lifecycle_state |= (1ULL << RARCH_RMENU_TOGGLE);
-      g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+      if (pad_state[0] & GX_QUIT_KEY)
+         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+
+      if (pad_state[0] & (GX_WIIMOTE_HOME
+#ifdef HW_RVL
+               | GX_CLASSIC_HOME
+#endif
+               ))
+      {
+         g_extern.lifecycle_state |= (1ULL << RARCH_RMENU_TOGGLE);
+         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+      }
    }
 }
 
