@@ -2909,6 +2909,75 @@ static bool rarch_main_idle_iterate(void)
    return true;
 }
 
+#define MAX_ARGS 32
+int rarch_main_init_wrap(const struct rarch_main_wrap *args)
+{
+   if (g_extern.main_is_init)
+      rarch_main_deinit();
+
+   int argc = 0;
+   char *argv[MAX_ARGS] = {NULL};
+   char *argv_copy[MAX_ARGS];
+
+   argv[argc++] = strdup("retroarch");
+
+   if (args->rom_path)
+      argv[argc++] = strdup(args->rom_path);
+
+   if (args->sram_path)
+   {
+      argv[argc++] = strdup("-s");
+      argv[argc++] = strdup(args->sram_path);
+   }
+
+   if (args->state_path)
+   {
+      argv[argc++] = strdup("-S");
+      argv[argc++] = strdup(args->state_path);
+   }
+
+   if (args->config_path)
+   {
+      argv[argc++] = strdup("-c");
+      argv[argc++] = strdup(args->config_path);
+   }
+
+   if (args->libretro_path)
+   {
+      argv[argc++] = strdup("-L");
+      argv[argc++] = strdup(args->libretro_path);
+   }
+
+   if (args->verbose)
+      argv[argc++] = strdup("-v");
+
+#ifdef HAVE_FILE_LOGGER
+   for (int i = 0; i < argc; i++)
+      RARCH_LOG("arg #%d: %s\n", i, argv[i]);
+#endif
+
+   // The pointers themselves are not const, and can be messed around with by getopt_long().
+   memcpy(argv_copy, argv, sizeof(argv));
+
+   int ret = rarch_main_init(argc, argv);
+
+#ifdef RARCH_CONSOLE
+   if (ret == 0)
+      g_extern.console.rmenu.mode = MODE_EMULATION;
+   else
+   {
+      //failed to load the ROM for whatever reason
+      g_extern.console.rmenu.mode = MODE_MENU;
+      rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
+   }
+#endif
+
+   for (int i = 0; i < ARRAY_SIZE(argv_copy); i++)
+      free(argv_copy[i]);
+
+   return ret;
+}
+
 int rarch_main(int argc, char *argv[])
 {
    int init_ret;

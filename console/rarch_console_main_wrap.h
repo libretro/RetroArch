@@ -17,16 +17,6 @@
 #ifndef RARCH_CONSOLE_MAIN_WRAP_H__
 #define RARCH_CONSOLE_MAIN_WRAP_H__
 
-struct rarch_main_wrap
-{
-   const char *rom_path;
-   const char *sram_path;
-   const char *state_path;
-   const char *config_path;
-   const char *libretro_path;
-   bool verbose;
-};
-
 bool rarch_startup (const char * config_path);
 
 #endif

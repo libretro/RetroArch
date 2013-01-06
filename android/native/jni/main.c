@@ -231,7 +231,7 @@ static void jni_get (void *data_in, void *data_out)
 
    CALL_OBJ_METHOD_PARAM(in_params->env, ret_char, obj, giid, (*in_params->env)->NewStringUTF(in_params->env, out_args->in));
 
-   if(giid != NULL && ret_char)
+   if (giid != NULL && ret_char)
    {
       const char *test_argv = (*in_params->env)->GetStringUTFChars(in_params->env, ret_char, 0);
       strncpy(out_args->out, test_argv, out_args->out_sizeof);
@@ -239,9 +239,8 @@ static void jni_get (void *data_in, void *data_out)
    }
 }
 
-static int android_app_set_argv (void *data, char** argv)
+static bool android_app_start_main(struct android_app *android_app, int *init_ret)
 {
-   struct android_app *android_app = (struct android_app*)data;
    char rom_path[PATH_MAX];
    char libretro_path[PATH_MAX];
    char config_file[PATH_MAX];
@@ -283,7 +282,6 @@ static int android_app_set_argv (void *data, char** argv)
    strlcpy(out_args.in, "IME", sizeof(out_args.in));
    jni_get(&in_params, &out_args);
 
-
    (*in_params.java_vm)->DetachCurrentThread(in_params.java_vm);
 
    RARCH_LOG("Checking arguments passed ...\n");
@@ -292,26 +290,33 @@ static int android_app_set_argv (void *data, char** argv)
    RARCH_LOG("Config file: [%s].\n", config_file);
    RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
 
-   int argc = 0;
+   struct rarch_main_wrap args = {0};
 
-   argv[argc++] = strdup("retroarch");
-   argv[argc++] = strdup(rom_path);
-   argv[argc++] = strdup("-L");
-   argv[argc++] = strdup(libretro_path);
-   argv[argc++] = strdup("-v");
-   if (*config_file)
+   args.verbose = true;
+   args.config_path = config_file;
+   args.sram_path = NULL;
+   args.state_path = NULL;
+   args.rom_path = rom_path;
+   args.libretro_path = libretro_path;
+
+   *init_ret = rarch_main_init_wrap(&args);
+
+   if (*init_ret == 0)
    {
-      argv[argc++] = strdup("-c");
-      argv[argc++] = strdup(config_file);
+      RARCH_LOG("rarch_main_init succeeded.\n");
+      return true;
    }
-
-   return argc;
+   else
+   {
+      RARCH_ERR("rarch_main_init failed.\n");
+      return false;
+   }
 }
 
-static void* android_app_entry(void *data)
+static void *android_app_entry(void *data)
 {
    struct android_app* android_app = (struct android_app*)data;
-   int init_ret = -1;
+   int init_ret = 0;
 
    android_app->config = AConfiguration_new();
    AConfiguration_fromAssetManager(android_app->config, android_app->activity->assetManager);
@@ -330,14 +335,8 @@ static void* android_app_entry(void *data)
    memset(&g_android, 0, sizeof(g_android));
    g_android = android_app;
 
-   char *argv[MAX_ARGS] = {NULL};
-   int argc = android_app_set_argv(android_app, argv);
-
    RARCH_LOG("Native Activity started.\n");
    rarch_main_clear_state();
-
-   g_extern.verbose = true;
-
 
    while (!android_app->window)
    {
@@ -345,15 +344,14 @@ static void* android_app_entry(void *data)
          goto exit;
    }
 
-   if ((init_ret = rarch_main_init(argc, argv)) != 0)
-      RARCH_LOG("Initialization failed.\n");
-   else
-      RARCH_LOG("Initializing succeeded.\n");
+   rarch_init_msg_queue();
 
-   if (init_ret == 0)
+   if (!android_app_start_main(android_app, &init_ret))
+      goto exit;
+
+   if (g_extern.main_is_init)
    {
       RARCH_LOG("RetroArch started.\n");
-      rarch_init_msg_queue();
 
       while ((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ?
             android_run_events(android_app) :
@@ -366,7 +364,7 @@ exit:
    android_app->activityState = APP_CMD_DEAD;
    RARCH_LOG("Deinitializing RetroArch...\n");
 
-   if (init_ret == 0)
+   if (g_extern.main_is_init)
       rarch_main_deinit();
 
    rarch_deinit_msg_queue();
