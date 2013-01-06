@@ -81,38 +81,31 @@ static int rarch_main_init_wrap(const struct rarch_main_wrap *args)
 
 bool rarch_startup (const char * config_path)
 {
-   bool retval = false;
+   if(g_extern.main_is_init)
+      rarch_main_deinit();
 
-   if(g_extern.console.initialize_rarch_enable)
-   {
-      if(g_extern.main_is_init)
-         rarch_main_deinit();
+   struct rarch_main_wrap args = {0};
 
-      struct rarch_main_wrap args = {0};
-
-      args.verbose = g_extern.verbose;
-      args.config_path = config_path;
-      args.sram_path = g_extern.console.main_wrap.state.default_sram_dir.enable ? g_extern.console.main_wrap.paths.default_sram_dir : NULL,
+   args.verbose = g_extern.verbose;
+   args.config_path = config_path;
+   args.sram_path = g_extern.console.main_wrap.state.default_sram_dir.enable ? g_extern.console.main_wrap.paths.default_sram_dir : NULL,
       args.state_path = g_extern.console.main_wrap.state.default_savestate_dir.enable ? g_extern.console.main_wrap.paths.default_savestate_dir : NULL,
       args.rom_path = g_extern.file_state.rom_path;
-      args.libretro_path = g_settings.libretro;
+   args.libretro_path = g_settings.libretro;
 
-      int init_ret = rarch_main_init_wrap(&args);
-      (void)init_ret;
+   int init_ret = rarch_main_init_wrap(&args);
+   (void)init_ret;
 
-      if(init_ret == 0)
-      {
-         g_extern.console.initialize_rarch_enable = 0;
-         g_extern.console.rmenu.mode = MODE_EMULATION;
-         retval = true;
-      }
-      else
-      {
-         //failed to load the ROM for whatever reason
-         g_extern.console.rmenu.mode = MODE_MENU;
-         rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
-      }
+   if(init_ret == 0)
+      g_extern.console.rmenu.mode = MODE_EMULATION;
+   else
+   {
+      //failed to load the ROM for whatever reason
+      g_extern.console.rmenu.mode = MODE_MENU;
+      rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
+
+      return false;
    }
 
-   return retval;
+   return true;
 }

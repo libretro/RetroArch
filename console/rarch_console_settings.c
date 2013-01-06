@@ -94,7 +94,6 @@ void rarch_settings_change(unsigned setting)
          break;
       case S_QUIT_RARCH:
          g_extern.console.rmenu.state.rmenu.enable = false;
-         g_extern.console.initialize_rarch_enable = false;
          g_extern.console.rmenu.mode = MODE_EXIT;
          break;
       case S_RETURN_TO_GAME:
@@ -104,7 +103,6 @@ void rarch_settings_change(unsigned setting)
       case S_RETURN_TO_LAUNCHER:
          g_extern.console.external_launch.enable = true;
          g_extern.console.rmenu.state.rmenu.enable = false;
-         g_extern.console.initialize_rarch_enable = false;
          g_extern.console.rmenu.mode = MODE_EXIT;
          break;
       case S_RETURN_TO_MENU:
@@ -122,7 +120,6 @@ void rarch_settings_change(unsigned setting)
          break;
       case S_START_RARCH:
          g_extern.console.rmenu.state.rmenu.enable = false;
-         g_extern.console.initialize_rarch_enable = 1;
          g_extern.console.rmenu.mode = MODE_INIT;
          break;
       case S_REWIND:
@@ -380,7 +377,6 @@ void rarch_settings_set_default(void)
    g_extern.console.screen.overscan_amount = 0.0f;
    g_extern.console.sound.custom_bgm.enable = true;
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
-   g_extern.console.initialize_rarch_enable = false;
    g_extern.console.screen.state.screenshots.enable = true;
    g_extern.console.screen.state.throttle.enable = true;
    g_extern.console.rmenu.state.msg_info.enable = true;
