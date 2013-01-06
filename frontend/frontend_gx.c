@@ -18,19 +18,19 @@
 #undef main
 
 #include <stdbool.h>
-#include "../../driver.h"
-#include "../../general.h"
-#include "../../libretro.h"
+#include "../driver.h"
+#include "../general.h"
+#include "../libretro.h"
 
-#include "../../console/rgui/rgui.h"
-#include "../../gfx/fonts/bitmap.h"
+#include "../console/rgui/rgui.h"
+#include "../gfx/fonts/bitmap.h"
 
-#include "../../console/rarch_console_exec.h"
-#include "../../console/rarch_console_input.h"
-#include "../../console/rarch_console_settings.h"
+#include "../console/rarch_console_exec.h"
+#include "../console/rarch_console_input.h"
+#include "../console/rarch_console_settings.h"
 
 #ifdef HW_RVL
-#include "../../wii/mem2_manager.h"
+#include "../wii/mem2_manager.h"
 #endif
 
 #include <stdlib.h>

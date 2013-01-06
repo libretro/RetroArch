@@ -359,15 +359,15 @@ REWIND
 MAIN
 ============================================================ */
 #if defined(_XBOX)
-#include "../../xdk/frontend/main.c"
+#include "../../frontend/frontend_xdk.c"
 #elif defined(XENON)
-#include "../../360/frontend-xenon/main.c"
+#include "../../frontend/frontend_xenon.c"
 #elif defined(GEKKO)
-#include "../../gx/frontend/main.c"
+#include "../../frontend/frontend_gx.c"
 #elif defined(__CELLOS_LV2__)
-#include "../../ps3/frontend/main.c"
+#include "../../frontend/frontend_ps3.c"
 #elif defined(PSP)
-#include "../../psp/frontend/main.c"
+#include "../../frontend/frontend_psp.c"
 #elif defined(ANDROID)
 #include "../../android/native/jni/main.c"
 #endif

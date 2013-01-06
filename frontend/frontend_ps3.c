@@ -15,36 +15,33 @@
  */
 
 #include <stdint.h>
-#include "../../boolean.h"
+#include "../boolean.h"
 #include <stddef.h>
 #include <string.h>
-
-#include "../sdk_defines.h"
-
 #include <sys/process.h>
 
-#include "../ps3_input.h"
+#include "../ps3/sdk_defines.h"
+#include "../ps3/ps3_input.h"
 
-#include "../../gfx/gl_common.h"
+#include "../gfx/gl_common.h"
 
-#include "../../console/rarch_console.h"
+#include "../console/rarch_console.h"
 
 #ifdef HAVE_RARCH_EXEC
-#include "../../console/rarch_console_exec.h"
+#include "../console/rarch_console_exec.h"
 #endif
 
-#include "../../console/rarch_console_libretro_mgmt.h"
+#include "../console/rarch_console_libretro_mgmt.h"
+#include "../console/rarch_console_input.h"
+#include "../console/rarch_console_config.h"
+#include "../console/rarch_console_settings.h"
+#include "../console/rarch_console_video.h"
+#include "../conf/config_file.h"
+#include "../conf/config_file_macros.h"
+#include "../general.h"
+#include "../file.h"
 
-#include "../../console/rarch_console_input.h"
-#include "../../console/rarch_console_config.h"
-#include "../../console/rarch_console_settings.h"
-#include "../../console/rarch_console_video.h"
-#include "../../conf/config_file.h"
-#include "../../conf/config_file_macros.h"
-#include "../../general.h"
-#include "../../file.h"
-
-#include "../../console/rmenu/rmenu.h"
+#include "../console/rmenu/rmenu.h"
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 

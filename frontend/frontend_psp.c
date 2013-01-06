@@ -18,12 +18,12 @@
 #include <pspdebug.h>
 
 #include <stdint.h>
-#include "../../boolean.h"
+#include "../boolean.h"
 #include <stddef.h>
 #include <string.h>
 
 #undef main
-#include "../sdk_defines.h"
+#include "../psp/sdk_defines.h"
 
 PSP_MODULE_INFO("RetroArch PSP", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);

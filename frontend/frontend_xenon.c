@@ -31,7 +31,7 @@
 #include <xenon_soc/xenon_power.h>
 #include <elf/elf.h>
 #include <dirent.h>
-#include "../../compat/strl.h"
+#include "../compat/strl.h"
 
 #undef main
 
@@ -241,4 +241,3 @@ int main(void)
 
    return 0;
 }
-
