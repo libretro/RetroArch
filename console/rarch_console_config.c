@@ -60,7 +60,7 @@ void rarch_config_load (void)
    CONFIG_GET_BOOL(audio.rate_control, "audio_rate_control");
    CONFIG_GET_FLOAT(audio.rate_control_delta, "audio_rate_control_delta");
 
-   for (unsigned i = 0; i < MAX_PADS; i++)
+   for (unsigned i = 0; i < 8; i++)
    {
       char cfg[64];
       snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
