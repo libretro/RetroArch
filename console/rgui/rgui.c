@@ -794,7 +794,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->folder_buf);
 
-   if (g_extern.console.rmenu.state.ingame_menu.enable)
+   if (g_extern.main_is_init)
    {
       RGUI_MENU_ITEM("Save State", RGUI_SETTINGS_SAVESTATE_SAVE);
       RGUI_MENU_ITEM("Load State", RGUI_SETTINGS_SAVESTATE_LOAD);

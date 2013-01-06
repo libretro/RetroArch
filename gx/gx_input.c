@@ -433,6 +433,9 @@ static void gx_input_poll(void *data)
    }
 
 do_exit:
+   g_extern.lifecycle_state &= ~((1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_REWIND)
+         | (1ULL << RARCH_QUIT_KEY) | (1ULL << RARCH_RMENU_TOGGLE) | (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE));
+
    if (g_menu)
    {
       pad_state[0] |= GX_WIIMOTE_HOME;
@@ -444,47 +447,24 @@ do_exit:
       pad_state[0] |= GX_QUIT_KEY;
       g_quit = false;
    }
+
+   if (pad_state[0] & GX_QUIT_KEY)
+      g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+
+   if (pad_state[0] & (GX_WIIMOTE_HOME
+#ifdef HW_RVL
+            | GX_CLASSIC_HOME
+#endif
+            ))
+   {
+      g_extern.lifecycle_state |= (1ULL << RARCH_RMENU_TOGGLE);
+      g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+   }
 }
 
 static bool gx_input_key_pressed(void *data, int key)
 {
-   (void)data;
-
-   switch (key)
-   {
-      case RARCH_QUIT_KEY:
-         if(IS_TIMER_EXPIRED(0))
-         {
-            uint64_t goto_menu_pressed = pad_state[0] & (GX_WIIMOTE_HOME
-#ifdef HW_RVL
- | GX_CLASSIC_HOME
-#endif
-    );
-            uint64_t quit_rarch = pad_state[0] & GX_QUIT_KEY;
-            bool retval = false;
-            bool rmenu_enable = ((quit_rarch || goto_menu_pressed));
-
-            if(rmenu_enable)
-            {
-               g_extern.console.rmenu.mode = MODE_MENU;
-               g_extern.console.rmenu.state.ingame_menu.enable = true;
-               SET_TIMER_EXPIRATION(0, 30);
-            }
-
-            if(quit_rarch)
-               g_extern.console.rmenu.mode = MODE_EXIT;
-
-            retval = rmenu_enable;
-            return retval;
-         }
-         return false;
-         break;
-      case RARCH_RMENU_QUICKMENU_TOGGLE:
-         return pad_state[0] & GX_WIIMOTE_HOME;
-         break;
-      default:
-         return false;
-   }
+   return (g_extern.lifecycle_state & (1ULL << key));
 }
 
 static void gx_set_default_keybind_lut(unsigned device, unsigned port)
