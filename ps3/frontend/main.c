@@ -289,7 +289,7 @@ int main(int argc, char *argv[])
 
    rarch_settings_set_default();
    rarch_input_set_controls_default(input);
-   rarch_config_load(g_extern.config_path, find_libretro_file);
+   rarch_config_load(find_libretro_file);
    init_libretro_sym();
 
    input_ps3.post_init();

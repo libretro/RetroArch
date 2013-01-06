@@ -2923,11 +2923,13 @@ int rarch_main_init_wrap(const struct rarch_main_wrap *args)
       argv[argc++] = strdup(args->config_path);
    }
 
+#ifdef HAVE_DYNAMIC
    if (args->libretro_path)
    {
       argv[argc++] = strdup("-L");
       argv[argc++] = strdup(args->libretro_path);
    }
+#endif
 
    if (args->verbose)
       argv[argc++] = strdup("-v");

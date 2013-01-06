@@ -21,96 +21,94 @@
 
 #include "rarch_console_config.h"
 
-void rarch_config_load(const char *path, bool upgrade_core_succeeded)
+void rarch_config_load(bool upgrade_core_succeeded)
 {
-      char libretro_path_tmp[PATH_MAX];
+   config_file_t *conf = NULL;
+   char libretro_path_tmp[PATH_MAX];
 
-      //if a core has been upgraded, settings need to saved at the end
-      if(upgrade_core_succeeded)
-         snprintf(libretro_path_tmp, sizeof(libretro_path_tmp), g_settings.libretro);
-      
+   //if a core has been upgraded, settings need to saved at the end
+   if(upgrade_core_succeeded)
+      snprintf(libretro_path_tmp, sizeof(libretro_path_tmp), g_settings.libretro);
 
-      config_file_t * conf = config_file_new(path);
+   if (*g_extern.config_path)
+      conf = config_file_new(g_extern.config_path);
+   else
+      conf = config_file_new(NULL);
 
-      if(!conf)
-      {
-#ifdef RARCH_CONSOLE
-         FILE * f;
-         RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", path);
-         f = fopen(path, "w");
-         fclose(f);
-#endif
-         return;
-      }
+   if (!conf)
+   {
+      RARCH_ERR("Couldn't find config at path: \"%s\"\n", g_extern.config_path);
+      rarch_fail(1, "rarch_config_load()");
+   }
 
-      // g_settings
+   // g_settings
 
-      CONFIG_GET_STRING(libretro, "libretro_path");
-      CONFIG_GET_STRING(system_directory, "system_directory");
+   CONFIG_GET_STRING(libretro, "libretro_path");
+   CONFIG_GET_STRING(system_directory, "system_directory");
 #ifdef HAVE_XML
-      CONFIG_GET_STRING(cheat_database, "cheat_database");
+   CONFIG_GET_STRING(cheat_database, "cheat_database");
 #endif
-      CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
-      CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
+   CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
+   CONFIG_GET_STRING(video.cg_shader_path, "video_cg_shader");
 #ifdef HAVE_FBO
-      CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
-      CONFIG_GET_FLOAT(video.fbo.scale_x, "video_fbo_scale_x");
-      CONFIG_GET_FLOAT(video.fbo.scale_y, "video_fbo_scale_y");
-      CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
-      CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
+   CONFIG_GET_STRING(video.second_pass_shader, "video_second_pass_shader");
+   CONFIG_GET_FLOAT(video.fbo.scale_x, "video_fbo_scale_x");
+   CONFIG_GET_FLOAT(video.fbo.scale_y, "video_fbo_scale_y");
+   CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
+   CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
 #endif
-      CONFIG_GET_BOOL(video.smooth, "video_smooth");
-      CONFIG_GET_BOOL(video.vsync, "video_vsync");
-      CONFIG_GET_INT(video.aspect_ratio_idx, "aspect_ratio_index");
-      CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
-      CONFIG_GET_STRING(audio.device, "audio_device");
-      CONFIG_GET_BOOL(audio.rate_control, "audio_rate_control");
-      CONFIG_GET_FLOAT(audio.rate_control_delta, "audio_rate_control_delta");
+   CONFIG_GET_BOOL(video.smooth, "video_smooth");
+   CONFIG_GET_BOOL(video.vsync, "video_vsync");
+   CONFIG_GET_INT(video.aspect_ratio_idx, "aspect_ratio_index");
+   CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
+   CONFIG_GET_STRING(audio.device, "audio_device");
+   CONFIG_GET_BOOL(audio.rate_control, "audio_rate_control");
+   CONFIG_GET_FLOAT(audio.rate_control_delta, "audio_rate_control_delta");
 
-      for (unsigned i = 0; i < 7; i++)
-      {
-         char cfg[64];
-         snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
-         CONFIG_GET_INT(input.dpad_emulation[i], cfg);
-         snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
-         CONFIG_GET_INT(input.device[i], cfg);
-      }
+   for (unsigned i = 0; i < 7; i++)
+   {
+      char cfg[64];
+      snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
+      CONFIG_GET_INT(input.dpad_emulation[i], cfg);
+      snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
+      CONFIG_GET_INT(input.device[i], cfg);
+   }
 
-      // g_extern
-      CONFIG_GET_STRING_EXTERN(console.main_wrap.paths.default_rom_startup_dir, "default_rom_startup_dir");
-      CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
-      CONFIG_GET_BOOL_EXTERN(console.rmenu.state.msg_info.enable, "info_msg_enable");
-      CONFIG_GET_BOOL_EXTERN(console.screen.state.screenshots.enable, "screenshots_enable");
-      CONFIG_GET_BOOL_EXTERN(console.screen.state.throttle.enable, "throttle_enable");
-      CONFIG_GET_BOOL_EXTERN(console.screen.state.triple_buffering.enable, "triple_buffering_enable");
-      CONFIG_GET_BOOL_EXTERN(console.screen.state.overscan.enable, "overscan_enable");
-      CONFIG_GET_BOOL_EXTERN(console.sound.custom_bgm.enable, "custom_bgm_enable");
-      CONFIG_GET_BOOL_EXTERN(console.main_wrap.state.default_sram_dir.enable, "sram_dir_enable");
-      CONFIG_GET_BOOL_EXTERN(console.main_wrap.state.default_savestate_dir.enable, "savestate_dir_enable");
-      CONFIG_GET_FLOAT_EXTERN(console.screen.overscan_amount, "overscan_amount");
+   // g_extern
+   CONFIG_GET_STRING_EXTERN(console.main_wrap.paths.default_rom_startup_dir, "default_rom_startup_dir");
+   CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
+   CONFIG_GET_BOOL_EXTERN(console.rmenu.state.msg_info.enable, "info_msg_enable");
+   CONFIG_GET_BOOL_EXTERN(console.screen.state.screenshots.enable, "screenshots_enable");
+   CONFIG_GET_BOOL_EXTERN(console.screen.state.throttle.enable, "throttle_enable");
+   CONFIG_GET_BOOL_EXTERN(console.screen.state.triple_buffering.enable, "triple_buffering_enable");
+   CONFIG_GET_BOOL_EXTERN(console.screen.state.overscan.enable, "overscan_enable");
+   CONFIG_GET_BOOL_EXTERN(console.sound.custom_bgm.enable, "custom_bgm_enable");
+   CONFIG_GET_BOOL_EXTERN(console.main_wrap.state.default_sram_dir.enable, "sram_dir_enable");
+   CONFIG_GET_BOOL_EXTERN(console.main_wrap.state.default_savestate_dir.enable, "savestate_dir_enable");
+   CONFIG_GET_FLOAT_EXTERN(console.screen.overscan_amount, "overscan_amount");
 #ifdef _XBOX1
-      CONFIG_GET_INT_EXTERN(console.screen.state.flicker_filter.enable, "flicker_filter");
-      CONFIG_GET_INT_EXTERN(console.sound.volume_level, "sound_volume_level");
+   CONFIG_GET_INT_EXTERN(console.screen.state.flicker_filter.enable, "flicker_filter");
+   CONFIG_GET_INT_EXTERN(console.sound.volume_level, "sound_volume_level");
 #endif
 #ifdef HAVE_ZLIB
-      CONFIG_GET_INT_EXTERN(file_state.zip_extract_mode, "zip_extract_mode");
+   CONFIG_GET_INT_EXTERN(file_state.zip_extract_mode, "zip_extract_mode");
 #endif
-      CONFIG_GET_INT_EXTERN(console.screen.resolutions.current.id, "current_resolution_id");
-      CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
-      CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
-      CONFIG_GET_BOOL_EXTERN(console.screen.state.soft_filter.enable, "soft_display_filter_enable");
-      CONFIG_GET_INT_EXTERN(console.screen.orientation, "screen_orientation");
-      CONFIG_GET_INT_EXTERN(console.sound.mode, "sound_mode");
-      CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.x, "custom_viewport_x");
-      CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.y, "custom_viewport_y");
-      CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.width, "custom_viewport_width");
-      CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.height, "custom_viewport_height");
-      CONFIG_GET_FLOAT_EXTERN(console.rmenu.font_size, "menu_font_size");
+   CONFIG_GET_INT_EXTERN(console.screen.resolutions.current.id, "current_resolution_id");
+   CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
+   CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
+   CONFIG_GET_BOOL_EXTERN(console.screen.state.soft_filter.enable, "soft_display_filter_enable");
+   CONFIG_GET_INT_EXTERN(console.screen.orientation, "screen_orientation");
+   CONFIG_GET_INT_EXTERN(console.sound.mode, "sound_mode");
+   CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.x, "custom_viewport_x");
+   CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.y, "custom_viewport_y");
+   CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.width, "custom_viewport_width");
+   CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.height, "custom_viewport_height");
+   CONFIG_GET_FLOAT_EXTERN(console.rmenu.font_size, "menu_font_size");
 
-      if(upgrade_core_succeeded)
-      {
-         //save config file with new libretro path
-         snprintf(g_settings.libretro, sizeof(g_settings.libretro), libretro_path_tmp);
-         config_save_file(path);
-      }
+   if(upgrade_core_succeeded)
+   {
+      //save config file with new libretro path
+      snprintf(g_settings.libretro, sizeof(g_settings.libretro), libretro_path_tmp);
+      config_save_file(g_extern.config_path);
+   }
 }

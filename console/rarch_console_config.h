@@ -24,6 +24,6 @@ enum
    INPUT_PRESET_FILE
 };
 
-void rarch_config_load(const char *path, bool upgrade_core_succeeded);
+void rarch_config_load(bool upgrade_core_succeeded);
 
 #endif

@@ -532,7 +532,7 @@ int main(int argc, char *argv[])
 
    rarch_settings_set_default();
    rarch_input_set_controls_default(input);
-   rarch_config_load(g_extern.config_path, find_libretro_file);
+   rarch_config_load(find_libretro_file);
 
    char core_name[64];
    rarch_console_name_from_id(core_name, sizeof(core_name));
