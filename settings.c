@@ -398,7 +398,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_FLOAT(video.msg_pos_x, "video_message_pos_x");
    CONFIG_GET_FLOAT(video.msg_pos_y, "video_message_pos_y");
 
-   unsigned msg_color;
+   unsigned msg_color = 0;
    if (config_get_hex(conf, "video_message_color", &msg_color))
    {
       g_settings.video.msg_color_r = ((msg_color >> 16) & 0xff) / 255.0f;
