@@ -125,7 +125,6 @@ static void ps3_input_poll(void *data)
       if (state_tmp.len != 0)
       {
          uint64_t *state_cur = &state[i];
-
          *state_cur = 0;
 #ifdef __PSL1GHT__
          *state_cur |= (state_tmp.BTN_LEFT)     ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
@@ -181,32 +180,43 @@ static void ps3_input_poll(void *data)
       }
    }
 
-   g_extern.lifecycle_state &= ~((1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_REWIND)
-         | (1ULL << RARCH_QUIT_KEY) | (1ULL << RARCH_RMENU_TOGGLE) | (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE));
+   uint64_t *state_p1 = &state[0];
+   uint64_t *lifecycle_state = &g_extern.lifecycle_state;
 
-   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN)) && !(state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
-      g_extern.lifecycle_state |= (1ULL << RARCH_FAST_FORWARD_HOLD_KEY);
-   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
-      g_extern.lifecycle_state |= (1ULL << RARCH_LOAD_STATE_KEY);
-   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
-      g_extern.lifecycle_state |= (1ULL << RARCH_SAVE_STATE_KEY);
-   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
-      g_extern.lifecycle_state |= (1ULL << RARCH_STATE_SLOT_PLUS);
-   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
-      g_extern.lifecycle_state |= (1ULL << RARCH_STATE_SLOT_MINUS);
-   if ((state[0] & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)) && !(state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
-      g_extern.lifecycle_state |= (1ULL << RARCH_REWIND);
+   *lifecycle_state &= ~(
+         (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | 
+         (1ULL << RARCH_LOAD_STATE_KEY) | 
+         (1ULL << RARCH_SAVE_STATE_KEY) | 
+         (1ULL << RARCH_STATE_SLOT_PLUS) | 
+         (1ULL << RARCH_STATE_SLOT_MINUS) | 
+         (1ULL << RARCH_REWIND) |
+         (1ULL << RARCH_QUIT_KEY) |
+         (1ULL << RARCH_RMENU_TOGGLE) |
+         (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE));
+
+   if ((*state_p1 & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN)) && !(*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      *lifecycle_state |= (1ULL << RARCH_FAST_FORWARD_HOLD_KEY);
+   if ((*state_p1 & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      *lifecycle_state |= (1ULL << RARCH_LOAD_STATE_KEY);
+   if ((*state_p1 & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      *lifecycle_state |= (1ULL << RARCH_SAVE_STATE_KEY);
+   if ((*state_p1 & (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      *lifecycle_state |= (1ULL << RARCH_STATE_SLOT_PLUS);
+   if ((*state_p1 & (1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      *lifecycle_state |= (1ULL << RARCH_STATE_SLOT_MINUS);
+   if ((*state_p1 & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)) && !(*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
+      *lifecycle_state |= (1ULL << RARCH_REWIND);
    if(IS_TIMER_EXPIRED(0))
    {
-      if((state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
+      if((*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
       {
-         g_extern.lifecycle_state |= (1ULL << RARCH_RMENU_TOGGLE);
-         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+         *lifecycle_state |= (1ULL << RARCH_RMENU_TOGGLE);
+         *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
       }
-      if(!(state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (state[0] & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
+      if(!(*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
       {
-         g_extern.lifecycle_state |= (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE);
-         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+         *lifecycle_state |= (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE);
+         *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
       }
    }
 
