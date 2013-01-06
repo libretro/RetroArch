@@ -44,10 +44,6 @@ default_paths_t default_paths;
 #include "../rarch_console_rom_ext.c"
 #include "../rarch_console_video.c"
 
-#ifdef HAVE_RARCH_MAIN_WRAP
-#include "../rarch_console_main_wrap.c"
-#endif
-
 #ifdef HW_DOL
 #include "../../ngc/ssaram.c"
 #include "../../ngc/sidestep.c"
