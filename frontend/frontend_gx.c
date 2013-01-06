@@ -532,7 +532,13 @@ int main(int argc, char *argv[])
 
    rarch_settings_set_default();
    rarch_input_set_controls_default(input);
-   rarch_config_load(find_libretro_file);
+   rarch_config_load();
+
+   if (find_libretro_file)
+   {
+      RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
+      config_save_file(g_extern.config_path);
+   }
 
    char core_name[64];
    rarch_console_name_from_id(core_name, sizeof(core_name));

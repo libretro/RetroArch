@@ -21,14 +21,9 @@
 
 #include "rarch_console_config.h"
 
-void rarch_config_load(bool upgrade_core_succeeded)
+void rarch_config_load (void)
 {
    config_file_t *conf = NULL;
-   char libretro_path_tmp[PATH_MAX];
-
-   //if a core has been upgraded, settings need to saved at the end
-   if(upgrade_core_succeeded)
-      snprintf(libretro_path_tmp, sizeof(libretro_path_tmp), g_settings.libretro);
 
    if (*g_extern.config_path)
       conf = config_file_new(g_extern.config_path);
@@ -65,7 +60,7 @@ void rarch_config_load(bool upgrade_core_succeeded)
    CONFIG_GET_BOOL(audio.rate_control, "audio_rate_control");
    CONFIG_GET_FLOAT(audio.rate_control_delta, "audio_rate_control_delta");
 
-   for (unsigned i = 0; i < 7; i++)
+   for (unsigned i = 0; i < MAX_PADS; i++)
    {
       char cfg[64];
       snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
@@ -104,11 +99,4 @@ void rarch_config_load(bool upgrade_core_succeeded)
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.width, "custom_viewport_width");
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.height, "custom_viewport_height");
    CONFIG_GET_FLOAT_EXTERN(console.rmenu.font_size, "menu_font_size");
-
-   if(upgrade_core_succeeded)
-   {
-      //save config file with new libretro path
-      snprintf(g_settings.libretro, sizeof(g_settings.libretro), libretro_path_tmp);
-      config_save_file(g_extern.config_path);
-   }
 }
