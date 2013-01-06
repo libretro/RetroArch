@@ -20,13 +20,13 @@
 #include <string.h>
 #include <sys/resource.h>
 
-#include "android_general.h"
-#include "jni_wrapper.h"
-#include "../../../general.h"
-#include "../../../performance.h"
-#include "../../../driver.h"
+#include "../android/native/jni/android_general.h"
+#include "../android/native/jni/jni_wrapper.h"
+#include "../general.h"
+#include "../performance.h"
+#include "../driver.h"
 
-#include "../../../config.def.h"
+#include "../config.def.h"
 
 struct android_app *g_android;
 

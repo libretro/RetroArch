@@ -369,7 +369,7 @@ MAIN
 #elif defined(PSP)
 #include "../../frontend/frontend_psp.c"
 #elif defined(ANDROID)
-#include "../../android/native/jni/main.c"
+#include "../../frontend/frontend_android.c"
 #endif
 
 /*============================================================
