@@ -35,7 +35,7 @@
     <ClCompile Include="..\..\console\rarch_console_libretro_mgmt.c">
       <Filter>Source Files\console</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\xdk\salamander\main.c">
+    <ClCompile Include="..\..\frontend\salamander\salamander_xdk.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
