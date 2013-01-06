@@ -471,9 +471,9 @@ static bool gx_input_key_pressed(void *data, int key)
     );
             uint64_t quit_rarch = pad_state[0] & GX_QUIT_KEY;
             bool retval = false;
-            g_extern.console.rmenu.state.rmenu.enable = ((quit_rarch || goto_menu_pressed));
+            bool rmenu_enable = ((quit_rarch || goto_menu_pressed));
 
-            if(g_extern.console.rmenu.state.rmenu.enable)
+            if(rmenu_enable)
             {
                g_extern.console.rmenu.mode = MODE_MENU;
                g_extern.console.rmenu.state.ingame_menu.enable = true;
@@ -483,7 +483,7 @@ static bool gx_input_key_pressed(void *data, int key)
             if(quit_rarch)
                g_extern.console.rmenu.mode = MODE_EXIT;
 
-            retval = g_extern.console.rmenu.state.rmenu.enable;
+            retval = rmenu_enable;
             return retval;
          }
          return false;

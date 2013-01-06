@@ -273,120 +273,111 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
 
 static bool rmenu_iterate(void)
 {
-   uint16_t old_input_state = 0;
-   bool first = true;
-   bool first_held = false;
+   static uint16_t old_input_state = 0;
    bool initial_held = true;
+   static bool first_held = false;
 
-   g_extern.console.rmenu.state.rmenu.enable = true;
    g_extern.draw_menu = true;
    video_gx.apply_state_changes();
 
-   do
+   g_extern.frame_count++;
+
+   uint16_t input_state = 0;
+
+   input_gx.poll(NULL);
+
+   for (unsigned i = 0; i < GX_DEVICE_NAV_LAST; i++)
    {
-      g_extern.frame_count++;
+      input_state |= input_gx.input_state(NULL, gx_nav_binds, 0,
+            RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
+   }
 
-      uint16_t input_state = 0;
+   uint16_t trigger_state = input_state & ~old_input_state;
+   bool do_held = (input_state & ((1ULL << GX_DEVICE_NAV_UP) | (1ULL << GX_DEVICE_NAV_DOWN) | (1ULL << GX_DEVICE_NAV_LEFT) | (1ULL << GX_DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << GX_DEVICE_NAV_MENU) | (1ULL << GX_DEVICE_NAV_QUIT)));
 
-      input_gx.poll(NULL);
-
-      for (unsigned i = 0; i < GX_DEVICE_NAV_LAST; i++)
+   if(do_held)
+   {
+      if(!first_held)
       {
-         input_state |= input_gx.input_state(NULL, gx_nav_binds, 0,
-               RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
+         first_held = true;
+         SET_TIMER_EXPIRATION(1, (initial_held) ? 15 : 7);
       }
 
-      uint16_t trigger_state = input_state & ~old_input_state;
-      bool do_held = (input_state & ((1ULL << GX_DEVICE_NAV_UP) | (1ULL << GX_DEVICE_NAV_DOWN) | (1ULL << GX_DEVICE_NAV_LEFT) | (1ULL << GX_DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << GX_DEVICE_NAV_MENU) | (1ULL << GX_DEVICE_NAV_QUIT)));
-
-      if(do_held)
-      {
-         if(!first_held)
-         {
-            first_held = true;
-            SET_TIMER_EXPIRATION(1, (initial_held) ? 15 : 7);
-         }
-
-         if(IS_TIMER_EXPIRED(1))
-         {
-            first_held = false;
-            trigger_state = input_state; //second input frame set as current frame
-         }
-
-         initial_held = false;
-      }
-      else
+      if(IS_TIMER_EXPIRED(1))
       {
          first_held = false;
-         initial_held = true;
+         trigger_state = input_state; //second input frame set as current frame
       }
 
-      rgui_action_t action = RGUI_ACTION_NOOP;
+      initial_held = false;
+   }
+   else
+   {
+      first_held = false;
+      initial_held = true;
+   }
 
-      // don't run anything first frame, only capture held inputs for old_input_state
-      if (!first)
+   rgui_action_t action = RGUI_ACTION_NOOP;
+
+   // don't run anything first frame, only capture held inputs for old_input_state
+   if (trigger_state & (1ULL << GX_DEVICE_NAV_UP))
+      action = RGUI_ACTION_UP;
+   else if (trigger_state & (1ULL << GX_DEVICE_NAV_DOWN))
+      action = RGUI_ACTION_DOWN;
+   else if (trigger_state & (1ULL << GX_DEVICE_NAV_LEFT))
+      action = RGUI_ACTION_LEFT;
+   else if (trigger_state & (1ULL << GX_DEVICE_NAV_RIGHT))
+      action = RGUI_ACTION_RIGHT;
+   else if (trigger_state & (1ULL << GX_DEVICE_NAV_B))
+      action = RGUI_ACTION_CANCEL;
+   else if (trigger_state & (1ULL << GX_DEVICE_NAV_A))
+      action = RGUI_ACTION_OK;
+   else if (trigger_state & (1ULL << GX_DEVICE_NAV_START))
+      action = RGUI_ACTION_START;
+   else if (trigger_state & (1ULL << GX_DEVICE_NAV_SELECT))
+      action = RGUI_ACTION_SETTINGS;
+
+   rgui_iterate(rgui, action);
+
+   rarch_render_cached_frame();
+
+   old_input_state = input_state;
+
+   if(IS_TIMER_EXPIRED(0))
+   {
+      bool rmenu_enable = ((trigger_state & (1ULL << GX_DEVICE_NAV_MENU)) && g_extern.main_is_init);
+      bool quit_key_pressed = (trigger_state & (1ULL << GX_DEVICE_NAV_QUIT));
+
+      switch(g_extern.console.rmenu.mode)
       {
-         if (trigger_state & (1ULL << GX_DEVICE_NAV_UP))
-            action = RGUI_ACTION_UP;
-         else if (trigger_state & (1ULL << GX_DEVICE_NAV_DOWN))
-            action = RGUI_ACTION_DOWN;
-         else if (trigger_state & (1ULL << GX_DEVICE_NAV_LEFT))
-            action = RGUI_ACTION_LEFT;
-         else if (trigger_state & (1ULL << GX_DEVICE_NAV_RIGHT))
-            action = RGUI_ACTION_RIGHT;
-         else if (trigger_state & (1ULL << GX_DEVICE_NAV_B))
-            action = RGUI_ACTION_CANCEL;
-         else if (trigger_state & (1ULL << GX_DEVICE_NAV_A))
-            action = RGUI_ACTION_OK;
-         else if (trigger_state & (1ULL << GX_DEVICE_NAV_START))
-            action = RGUI_ACTION_START;
-         else if (trigger_state & (1ULL << GX_DEVICE_NAV_SELECT))
-            action = RGUI_ACTION_SETTINGS;
+         case MODE_EXIT:
+         case MODE_INIT:
+         case MODE_EMULATION:
+            break;
+         default:
+            if (quit_key_pressed)
+               g_extern.console.rmenu.mode = MODE_EXIT;
+            g_extern.console.rmenu.mode = rmenu_enable ? MODE_EMULATION : MODE_MENU;
+            break;
       }
-      else
-         first = false;
+   }
 
-      rgui_iterate(rgui, action);
+   if (g_extern.console.rmenu.mode != MODE_MENU)
+      goto deinit;
 
-      rarch_render_cached_frame();
+   return true;
 
-      old_input_state = input_state;
-
-      if(IS_TIMER_EXPIRED(0))
-      {
-         bool rmenu_enable = ((trigger_state & (1ULL << GX_DEVICE_NAV_MENU)) && g_extern.main_is_init);
-         bool quit_key_pressed = (trigger_state & (1ULL << GX_DEVICE_NAV_QUIT));
-
-         switch(g_extern.console.rmenu.mode)
-         {
-            case MODE_EXIT:
-            case MODE_INIT:
-               break;
-            case MODE_EMULATION:
-               // set a timer delay so that we don't instantly switch back to the menu when
-               // press and holding QUIT in the emulation loop (lasts for 30 frame ticks)
-               SET_TIMER_EXPIRATION(0, 30);
-               break;
-            default:
-               if (quit_key_pressed)
-               {
-                  g_extern.console.rmenu.mode = MODE_EXIT;
-                  g_extern.console.rmenu.state.rmenu.enable = false;
-               }
-               else
-               {
-                  g_extern.console.rmenu.state.rmenu.enable = rmenu_enable ? false : true;
-                  g_extern.console.rmenu.mode = rmenu_enable ? MODE_EMULATION : MODE_MENU;
-               }
-               break;
-         }
-      }
-   }while(g_extern.console.rmenu.state.rmenu.enable);
-
+deinit:
+   if (!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
+   {
+      // set a timer delay so that we don't instantly switch back to the menu when
+      // press and holding QUIT in the emulation loop (lasts for 30 frame ticks)
+      SET_TIMER_EXPIRATION(0, 30);
+   }
    g_extern.draw_menu = false;
    g_extern.console.rmenu.state.ingame_menu.enable = false;
 
-   return true;
+   return false;
 }
 
 static void menu_init(void)
