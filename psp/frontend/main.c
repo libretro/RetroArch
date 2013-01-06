@@ -158,33 +158,36 @@ int main(int argc, char *argv[])
    menu_init();
 
 begin_loop:
-   if(g_extern.console.rmenu.mode == MODE_EMULATION)
+   if (g_extern.console.rmenu.mode == MODE_EMULATION)
    {
-
-      RARCH_LOG("Gets to: #2.0\n");
-
       input_psp.poll(NULL);
-
-      RARCH_LOG("Gets to: #2.1\n");
-
       driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
-      RARCH_LOG("Gets to: #2.2\n");
+      while(rarch_main_iterate());
+   }
+   else if (g_extern.console.rmenu.mode == MODE_INIT)
+   {
+      if(g_extern.main_is_init)
+         rarch_main_deinit();
 
-      int count = 0;
+      struct rarch_main_wrap args = {0};
 
-      while(rarch_main_iterate())
-      {
-         RARCH_LOG("Iterate: %d\n", count++);
-      }
+      args.verbose = g_extern.verbose;
+      args.config_path = g_extern.config_path;
+      args.sram_path = g_extern.console.main_wrap.state.default_sram_dir.enable ? g_extern.console.main_wrap.paths.default_sram_dir : NULL,
+         args.state_path = g_extern.console.main_wrap.state.default_savestate_dir.enable ? g_extern.console.main_wrap.paths.default_savestate_dir : NULL,
+         args.rom_path = g_extern.file_state.rom_path;
+      args.libretro_path = g_settings.libretro;
+
+      int init_ret = rarch_main_init_wrap(&args);
+
+      if (init_ret == 0)
+         RARCH_LOG("rarch_main_init succeeded.\n");
+      else
+         RARCH_ERR("rarch_main_init failed.\n");
    }
    else if(g_extern.console.rmenu.mode == MODE_MENU)
-   {
       while(rmenu_iterate());
-
-      if (g_extern.console.rmenu.mode != MODE_EXIT)
-         rarch_startup();
-   }
    else
       goto begin_shutdown;
 

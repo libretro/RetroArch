@@ -31,7 +31,6 @@
 #include "../../console/rarch_console_input.h"
 #include "../../console/rarch_console_config.h"
 #include "../../console/rarch_console_settings.h"
-#include "../../console/rarch_console_main_wrap.h"
 #include "../../conf/config_file.h"
 #include "../../conf/config_file_macros.h"
 #include "../../general.h"

@@ -27,7 +27,6 @@
 
 #include "../../console/rarch_console_exec.h"
 #include "../../console/rarch_console_input.h"
-#include "../../console/rarch_console_main_wrap.h"
 #include "../../console/rarch_console_settings.h"
 
 #ifdef HW_RVL
@@ -560,7 +559,7 @@ int main(int argc, char *argv[])
       rarch_render_cached_frame();
       g_extern.draw_menu = false;
 
-      rarch_startup();
+      g_extern.console.rmenu.mode = MODE_INIT;
    }
    else
       g_extern.console.external_launch.support = EXTERN_LAUNCHER_SALAMANDER;
@@ -578,13 +577,29 @@ begin_loop:
 
       audio_stop_func();
    }
-   else if(g_extern.console.rmenu.mode == MODE_MENU)
+   else if (g_extern.console.rmenu.mode == MODE_INIT)
    {
-      rmenu_iterate();
+      if(g_extern.main_is_init)
+         rarch_main_deinit();
 
-      if (g_extern.console.rmenu.mode != MODE_EXIT)
-         rarch_startup();
+      struct rarch_main_wrap args = {0};
+
+      args.verbose = g_extern.verbose;
+      args.config_path = g_extern.config_path;
+      args.sram_path = g_extern.console.main_wrap.state.default_sram_dir.enable ? g_extern.console.main_wrap.paths.default_sram_dir : NULL,
+         args.state_path = g_extern.console.main_wrap.state.default_savestate_dir.enable ? g_extern.console.main_wrap.paths.default_savestate_dir : NULL,
+         args.rom_path = g_extern.file_state.rom_path;
+      args.libretro_path = g_settings.libretro;
+
+      int init_ret = rarch_main_init_wrap(&args);
+
+      if (init_ret == 0)
+         RARCH_LOG("rarch_main_init succeeded.\n");
+      else
+         RARCH_ERR("rarch_main_init failed.\n");
    }
+   else if(g_extern.console.rmenu.mode == MODE_MENU)
+      rmenu_iterate();
    else
       goto begin_shutdown;
    goto begin_loop;

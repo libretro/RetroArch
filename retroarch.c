@@ -2890,25 +2890,6 @@ void rarch_main_deinit(void)
    g_extern.main_is_init = false;
 }
 
-#ifndef HAVE_RARCH_MAIN_WRAP
-static bool rarch_main_idle_iterate(void)
-{
-#ifdef HAVE_COMMAND
-   if (driver.command)
-      rarch_cmd_pre_frame(driver.command);
-#endif
-
-   if (input_key_pressed_func(RARCH_QUIT_KEY) ||
-         !video_alive_func())
-      return false;
-
-   do_state_checks();
-
-   input_poll();
-   rarch_sleep(10);
-   return true;
-}
-
 #define MAX_ARGS 32
 int rarch_main_init_wrap(const struct rarch_main_wrap *args)
 {
@@ -2977,6 +2958,26 @@ int rarch_main_init_wrap(const struct rarch_main_wrap *args)
 
    return ret;
 }
+
+#ifndef HAVE_RARCH_MAIN_WRAP
+static bool rarch_main_idle_iterate(void)
+{
+#ifdef HAVE_COMMAND
+   if (driver.command)
+      rarch_cmd_pre_frame(driver.command);
+#endif
+
+   if (input_key_pressed_func(RARCH_QUIT_KEY) ||
+         !video_alive_func())
+      return false;
+
+   do_state_checks();
+
+   input_poll();
+   rarch_sleep(10);
+   return true;
+}
+
 
 int rarch_main(int argc, char *argv[])
 {
