@@ -419,7 +419,7 @@ static void get_environment_settings(void)
       snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "%.*s/retroarch", device_end - default_paths.core_dir, default_paths.core_dir);
    else
       strlcpy(default_paths.port_dir, "/retroarch", sizeof(default_paths.port_dir));
-   snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
+   snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
    snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.port_dir);
    snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.port_dir);
    strlcpy(default_paths.filesystem_root_dir, "/", sizeof(default_paths.filesystem_root_dir));
@@ -462,7 +462,7 @@ static void make_directories(void)
    MAKE_DIR(default_paths.sram_dir);
    MAKE_DIR(default_paths.input_presets_dir);
 
-   MAKE_FILE(default_paths.config_file);
+   MAKE_FILE(g_extern.config_path);
 }
 
 extern void __exception_setreload(int t);
@@ -529,11 +529,11 @@ int main(int argc, char *argv[])
    snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
 
    bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
-   default_paths.config_file, extension);
+   g_extern.config_path, extension);
 
    rarch_settings_set_default();
    rarch_input_set_controls_default(input);
-   rarch_config_load(default_paths.config_file, find_libretro_file);
+   rarch_config_load(g_extern.config_path, find_libretro_file);
 
    char core_name[64];
    rarch_console_name_from_id(core_name, sizeof(core_name));
@@ -560,7 +560,7 @@ int main(int argc, char *argv[])
       rarch_render_cached_frame();
       g_extern.draw_menu = false;
 
-      rarch_startup(default_paths.config_file);
+      rarch_startup();
    }
    else
       g_extern.console.external_launch.support = EXTERN_LAUNCHER_SALAMANDER;
@@ -583,14 +583,14 @@ begin_loop:
       rmenu_iterate();
 
       if (g_extern.console.rmenu.mode != MODE_EXIT)
-         rarch_startup(default_paths.config_file);
+         rarch_startup();
    }
    else
       goto begin_shutdown;
    goto begin_loop;
 
 begin_shutdown:
-   config_save_file(default_paths.config_file);
+   config_save_file(g_extern.config_path);
    config_save_keybinds(input_path);
 
    if(g_extern.main_is_init)

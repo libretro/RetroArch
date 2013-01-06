@@ -90,7 +90,6 @@ typedef struct
    char cache_dir[MAXIMUM_PATH];
 #endif
    char cgp_dir[MAXIMUM_PATH];
-   char config_file[MAXIMUM_PATH];
    char core_dir[MAXIMUM_PATH];
    char executable_extension[MAXIMUM_PATH];
    char filebrowser_startup_dir[MAXIMUM_PATH];

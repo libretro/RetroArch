@@ -103,7 +103,7 @@ static void get_environment_settings (void)
 
 #if defined(_XBOX1)
    strlcpy(default_paths.core_dir, "D:", sizeof(default_paths.core_dir));
-   strlcpy(default_paths.config_file, "D:\\retroarch.cfg", sizeof(default_paths.config_file));
+   strlcpy(g_extern.config_path, "D:\\retroarch.cfg", sizeof(g_extern.config_path));
    strlcpy(default_paths.system_dir, "D:\\system", sizeof(default_paths.system_dir));
    strlcpy(default_paths.filesystem_root_dir, "D:", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.executable_extension, ".xbe", sizeof(default_paths.executable_extension));
@@ -117,7 +117,7 @@ static void get_environment_settings (void)
    strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.screenshots_dir, "game:", sizeof(default_paths.screenshots_dir));
    strlcpy(default_paths.shader_file, "game:\\media\\shaders\\stock.cg", sizeof(default_paths.shader_file));
-   strlcpy(default_paths.config_file, "game:\\retroarch.cfg", sizeof(default_paths.config_file));
+   strlcpy(g_extern.config_path, "game:\\retroarch.cfg", sizeof(g_extern.config_path));
    strlcpy(default_paths.system_dir, "game:\\system", sizeof(default_paths.system_dir));
    strlcpy(default_paths.executable_extension, ".xex", sizeof(default_paths.executable_extension));
    strlcpy(default_paths.filebrowser_startup_dir, "game:", sizeof(default_paths.filebrowser_startup_dir));
@@ -160,11 +160,11 @@ int main(int argc, char *argv[])
    snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
 
    bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
-   default_paths.config_file, extension);
+   g_extern.config_path, extension);
 
    rarch_settings_set_default();
    rarch_input_set_controls_default(input);
-   rarch_config_load(default_paths.config_file, find_libretro_file);
+   rarch_config_load(g_extern.config_path, find_libretro_file);
    init_libretro_sym();
 
    input_xinput.post_init();
@@ -196,7 +196,7 @@ begin_loop:
       while(rmenu_iterate());
 
       if (g_extern.console.rmenu.mode != MODE_EXIT)
-         rarch_startup(default_paths.config_file);
+         rarch_startup();
    }
    else
       goto begin_shutdown;
@@ -204,7 +204,7 @@ begin_loop:
    goto begin_loop;
 
 begin_shutdown:
-   config_save_file(default_paths.config_file);
+   config_save_file(g_extern.config_path);
 
    menu_free();
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9)

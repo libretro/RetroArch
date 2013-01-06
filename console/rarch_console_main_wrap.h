@@ -27,6 +27,6 @@ struct rarch_main_wrap
    bool verbose;
 };
 
-bool rarch_startup (const char * config_path);
+bool rarch_startup (void);
 
 #endif

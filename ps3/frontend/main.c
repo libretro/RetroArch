@@ -220,7 +220,7 @@ static void get_environment_settings(int argc, char *argv[])
       snprintf(default_paths.shader_file, sizeof(default_paths.shader_file), "%s/shaders/stock.cg", default_paths.core_dir);
       snprintf(default_paths.menu_shader_file, sizeof(default_paths.menu_shader_file), "%s/shaders/Borders/Menu/border-only-rarch.cg", default_paths.core_dir);
 #endif
-      snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
+      snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
       snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "EBOOT.BIN");
    }
 
@@ -283,14 +283,14 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    bool find_libretro_file = rarch_configure_libretro_core(core_exe_path, path_prefix, path_prefix, 
-         default_paths.config_file, extension);
+         g_extern.config_path, extension);
 #else
    bool find_libretro_file = false;
 #endif
 
    rarch_settings_set_default();
    rarch_input_set_controls_default(input);
-   rarch_config_load(default_paths.config_file, find_libretro_file);
+   rarch_config_load(g_extern.config_path, find_libretro_file);
    init_libretro_sym();
 
    input_ps3.post_init();
@@ -350,7 +350,7 @@ begin_loop:
       while(rarch_main_iterate());
    }
    else if (g_extern.console.rmenu.mode == MODE_INIT)
-      rarch_startup(default_paths.config_file);
+      rarch_startup();
    else if(g_extern.console.rmenu.mode == MODE_MENU)
       while(rmenu_iterate());
    else
@@ -359,7 +359,7 @@ begin_loop:
    goto begin_loop;
 
 begin_shutdown:
-   config_save_file(default_paths.config_file);
+   config_save_file(g_extern.config_path);
 
    if(g_extern.main_is_init)
       rarch_main_deinit();

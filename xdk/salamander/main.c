@@ -39,6 +39,7 @@
 DWORD volume_device_type;
 
 char libretro_path[PATH_MAX];
+char config_path[PATH_MAX];
 
 default_paths_t default_paths;
 
@@ -74,7 +75,7 @@ static void init_settings(void)
    char tmp_str[PATH_MAX];
    bool config_file_exists = false;
 
-   if(path_file_exists(default_paths.config_file))
+   if(path_file_exists(config_path))
       config_file_exists = true;
 
    //try to find CORE executable
@@ -95,7 +96,7 @@ static void init_settings(void)
    {
       if(config_file_exists)
       {
-		  config_file_t * conf = config_file_new(default_paths.config_file);
+		  config_file_t * conf = config_file_new(config_path);
          config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
          snprintf(libretro_path, sizeof(libretro_path), tmp_str);
       }
@@ -113,7 +114,7 @@ static void init_settings(void)
       {
          config_file_t *new_conf = config_file_new(NULL);
          config_set_string(new_conf, "libretro_path", libretro_path);
-         config_file_write(new_conf, default_paths.config_file);
+         config_file_write(new_conf, config_path);
          config_file_free(new_conf);
       }
    }
@@ -170,7 +171,7 @@ static void get_environment_settings (void)
 
 #if defined(_XBOX1)
    strlcpy(default_paths.core_dir, "D:", sizeof(default_paths.core_dir));
-   strlcpy(default_paths.config_file, "D:\\retroarch.cfg", sizeof(default_paths.config_file));
+   strlcpy(config_path, "D:\\retroarch.cfg", sizeof(config_path));
    strlcpy(default_paths.system_dir, "D:\\system", sizeof(default_paths.system_dir));
    strlcpy(default_paths.filesystem_root_dir, "D:", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.executable_extension, ".xbe", sizeof(default_paths.executable_extension));
@@ -180,7 +181,7 @@ static void get_environment_settings (void)
 #elif defined(_XBOX360)
    strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.screenshots_dir, "game:", sizeof(default_paths.screenshots_dir));
-   strlcpy(default_paths.config_file, "game:\\retroarch.cfg", sizeof(default_paths.config_file));
+   strlcpy(config_path, "game:\\retroarch.cfg", sizeof(config_path));
    strlcpy(default_paths.system_dir, "game:\\system\\", sizeof(default_paths.system_dir));
    strlcpy(default_paths.executable_extension, ".xex", sizeof(default_paths.executable_extension));
    snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "default.xex");

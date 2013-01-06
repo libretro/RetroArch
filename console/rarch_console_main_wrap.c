@@ -79,8 +79,10 @@ static int rarch_main_init_wrap(const struct rarch_main_wrap *args)
    return ret;
 }
 
-bool rarch_startup (const char * config_path)
+bool rarch_startup (void)
 {
+   const char *config_path = g_extern.config_path;
+
    if(g_extern.main_is_init)
       rarch_main_deinit();
 

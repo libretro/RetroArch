@@ -65,7 +65,7 @@ static void get_environment_settings(int argc, char *argv[])
    snprintf(default_paths.cgp_dir, sizeof(default_paths.cgp_dir), "%s/presets", default_paths.core_dir);
    snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.cgp_dir);
    snprintf(default_paths.border_dir, sizeof(default_paths.border_dir), "%s/borders", default_paths.core_dir);
-   snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
+   snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
    snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "EBOOT.BIN");
 }
 
@@ -140,14 +140,14 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    bool find_libretro_file = rarch_configure_libretro_core(core_exe_path, path_prefix, path_prefix, 
-   default_paths.config_file, extension);
+   g_extern.config_path, extension);
 #else
    bool find_libretro_file = false;
 #endif
 
    rarch_settings_set_default();
    rarch_input_set_controls_default(input);
-   rarch_config_load(default_paths.config_file, find_libretro_file);
+   rarch_config_load(g_extern.config_path, find_libretro_file);
    init_libretro_sym();
 
    input_psp.post_init();
@@ -183,7 +183,7 @@ begin_loop:
       while(rmenu_iterate());
 
       if (g_extern.console.rmenu.mode != MODE_EXIT)
-         rarch_startup(default_paths.config_file);
+         rarch_startup();
    }
    else
       goto begin_shutdown;
@@ -191,7 +191,7 @@ begin_loop:
    goto begin_loop;
 
 begin_shutdown:
-   config_save_file(default_paths.config_file);
+   config_save_file(g_extern.config_path);
 
    if(g_extern.main_is_init)
       rarch_main_deinit();

@@ -38,6 +38,7 @@
 #include "../../file.h"
 
 char libretro_path[512];
+char config_path[PATH_MAX];
 
 default_paths_t default_paths;
 
@@ -72,13 +73,13 @@ static void init_settings(void)
    char tmp_str[512] = {0};
    bool config_file_exists;
 
-   if(!path_file_exists(default_paths.config_file))
+   if(!path_file_exists(config_path))
    {
       FILE * f;
       config_file_exists = false;
-      RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", default_paths.config_file);
+      RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", config_path);
       MAKE_DIR(default_paths.port_dir);
-      f = fopen(default_paths.config_file, "w");
+      f = fopen(config_path, "w");
       fclose(f);
    }
    else
@@ -98,7 +99,7 @@ static void init_settings(void)
    {
       if(config_file_exists)
       {
-         config_file_t * conf = config_file_new(default_paths.config_file);
+         config_file_t * conf = config_file_new(config_path);
          config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
          config_file_free(conf);
          snprintf(libretro_path, sizeof(libretro_path), tmp_str);
@@ -115,7 +116,7 @@ static void init_settings(void)
       {
          config_file_t *new_conf = config_file_new(NULL);
          config_set_string(new_conf, "libretro_path", libretro_path);
-         config_file_write(new_conf, default_paths.config_file);
+         config_file_write(new_conf, config_path);
          config_file_free(new_conf);
       }
    }
@@ -135,7 +136,7 @@ static void get_environment_settings(void)
       snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "%.*s/retroarch", device_end - default_paths.core_dir, default_paths.core_dir);
    else
       snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/retroarch");
-   snprintf(default_paths.config_file, sizeof(default_paths.config_file), "%s/retroarch.cfg", default_paths.port_dir);
+   snprintf(config_path, sizeof(config_path), "%s/retroarch.cfg", default_paths.port_dir);
    snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.port_dir);
    snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.port_dir);
    snprintf(default_paths.filesystem_root_dir, sizeof(default_paths.filesystem_root_dir), "/");
