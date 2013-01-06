@@ -14,7 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "android_general.h"
+#include "android_glue.h"
+#include "jni_macros.h"
 #include "input_autodetect.h"
 
 uint64_t keycode_lut[LAST_KEYCODE];

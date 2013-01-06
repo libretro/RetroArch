@@ -20,8 +20,8 @@
 #include <string.h>
 #include <sys/resource.h>
 
-#include "../android/native/jni/android_general.h"
-#include "../android/native/jni/jni_wrapper.h"
+#include "../android/native/jni/android_glue.h"
+#include "../android/native/jni/jni_macros.h"
 #include "../general.h"
 #include "../performance.h"
 #include "../driver.h"
@@ -247,8 +247,6 @@ static bool android_app_start_main(struct android_app *android_app, int *init_re
 
    struct jni_params in_params;
    struct jni_out_params_char out_args;
-
-   JNI_OnLoad(android_app->activity->vm, NULL);
 
    in_params.java_vm = android_app->activity->vm;
    in_params.class_obj = android_app->activity->clazz;

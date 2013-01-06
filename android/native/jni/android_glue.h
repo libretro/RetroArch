@@ -158,4 +158,6 @@ int8_t android_app_read_cmd (void *data);
 extern void engine_app_read_cmd (void *data);
 extern void engine_handle_cmd (void *data, int32_t cmd);
 
+extern struct android_app *g_android;
+
 #endif /* _ANDROID_NATIVE_APP_GLUE_H */

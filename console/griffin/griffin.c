@@ -18,10 +18,6 @@
 #include "../../msvc/msvc_compat.h"
 #endif
 
-#ifdef ANDROID
-#include "../../android/native/jni/jni_wrapper.c"
-#endif
-
 /*============================================================
 LOGGERS
 ============================================================ */

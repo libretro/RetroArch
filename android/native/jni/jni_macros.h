@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _JNI_WRAPPER_H
-#define _JNI_WRAPPER_H
+#ifndef _JNI_MACROS_H
+#define _JNI_MACROS_H
 
 #include <jni.h>
 
