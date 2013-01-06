@@ -2030,6 +2030,7 @@ int ingame_menu(void *data, void *state)
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    char strw_buffer[256];
    unsigned menuitem_colors[MENU_ITEM_LAST];
+   static unsigned menu_idx = 0;
 
    filebrowser_t *filebrowser = &tmpBrowser;
    rmenu_default_positions_t default_pos;
@@ -2038,12 +2039,12 @@ int ingame_menu(void *data, void *state)
    for(int i = 0; i < MENU_ITEM_LAST; i++)
       menuitem_colors[i] = WHITE;
 
-   menuitem_colors[g_extern.console.rmenu.ingame_menu.idx] = RED;
+   menuitem_colors[menu_idx] = RED;
 
    if(input & (1ULL << RMENU_DEVICE_NAV_A))
       rarch_settings_change(S_RETURN_TO_GAME);
 
-   switch(g_extern.console.rmenu.ingame_menu.idx)
+   switch(menu_idx)
    {
       case MENU_ITEM_LOAD_STATE:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -2111,7 +2112,7 @@ int ingame_menu(void *data, void *state)
          {
             g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
             rarch_settings_change(S_FRAME_ADVANCE);
-            g_extern.console.rmenu.ingame_menu.idx = MENU_ITEM_FRAME_ADVANCE;
+            menu_idx = MENU_ITEM_FRAME_ADVANCE;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to step one frame.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
          break;
@@ -2143,6 +2144,7 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             rarch_settings_change(S_RETURN_TO_MENU);
+            menu_idx = 0;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to return to the ROM Browser.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
          break;
@@ -2177,18 +2179,18 @@ int ingame_menu(void *data, void *state)
 
    if(input & (1ULL << RMENU_DEVICE_NAV_UP))
    {
-      if(g_extern.console.rmenu.ingame_menu.idx > 0)
-         g_extern.console.rmenu.ingame_menu.idx--;
+      if (menu_idx > 0)
+         menu_idx--;
       else
-         g_extern.console.rmenu.ingame_menu.idx = MENU_ITEM_LAST - 1;
+         menu_idx = MENU_ITEM_LAST - 1;
    }
 
    if(input & (1ULL << RMENU_DEVICE_NAV_DOWN))
    {
-      if(g_extern.console.rmenu.ingame_menu.idx < (MENU_ITEM_LAST-1))
-         g_extern.console.rmenu.ingame_menu.idx++;
+      if(menu_idx < (MENU_ITEM_LAST-1))
+         menu_idx++;
       else
-         g_extern.console.rmenu.ingame_menu.idx = 0;
+         menu_idx = 0;
    }
 
    if((input & (1ULL << RMENU_DEVICE_NAV_L3)) && (input & (1ULL << RMENU_DEVICE_NAV_R3)))
@@ -2240,7 +2242,7 @@ int ingame_menu(void *data, void *state)
 
    rarch_position_t position = {0};
    position.x = default_pos.x_position;
-   position.y = (default_pos.y_position+(default_pos.y_position_increment * g_extern.console.rmenu.ingame_menu.idx));
+   position.y = (default_pos.y_position+(default_pos.y_position_increment * menu_idx));
    device_ptr->ctx_driver->rmenu_draw_panel(&position);
 
    if(current_menu->browser_draw)

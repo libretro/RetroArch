@@ -107,7 +107,6 @@ void rarch_settings_change(unsigned setting)
          break;
       case S_RETURN_TO_MENU:
          g_extern.console.rmenu.state.rmenu.enable = false;
-         g_extern.console.rmenu.ingame_menu.idx = 0;
          g_extern.console.rmenu.mode = MODE_MENU;
          break;
       case S_ROTATION_DECREMENT:

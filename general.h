@@ -480,12 +480,6 @@ struct global
 
       struct
       {
-         struct
-         {
-            unsigned idx;
-         } ingame_menu;
-
-
          unsigned mode;
          unsigned input_loop;
          float font_size;
