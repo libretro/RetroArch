@@ -58,6 +58,7 @@ enum {
 enum
 {
    MODE_EMULATION = 0,
+   MODE_INIT,
    MODE_MENU,
    MODE_EXIT
 };

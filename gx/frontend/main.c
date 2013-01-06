@@ -345,9 +345,7 @@ static bool rmenu_iterate(void)
             action = RGUI_ACTION_SETTINGS;
       }
       else
-      {
          first = false;
-      }
 
       rgui_iterate(rgui, action);
 
@@ -355,39 +353,38 @@ static bool rmenu_iterate(void)
 
       old_input_state = input_state;
 
-      bool goto_menu_key_pressed = (trigger_state & (1ULL << GX_DEVICE_NAV_MENU));
-      bool quit_key_pressed = (trigger_state & (1ULL << GX_DEVICE_NAV_QUIT));
-
       if(IS_TIMER_EXPIRED(0))
       {
-         // if we want to force goto the emulation loop, skip this
-         if(g_extern.console.rmenu.mode != MODE_EMULATION)
+         bool rmenu_enable = ((trigger_state & (1ULL << GX_DEVICE_NAV_MENU)) && g_extern.main_is_init);
+         bool quit_key_pressed = (trigger_state & (1ULL << GX_DEVICE_NAV_QUIT));
+
+         switch(g_extern.console.rmenu.mode)
          {
-            if(goto_menu_key_pressed)
-            {
-               g_extern.console.rmenu.state.rmenu.enable = (goto_menu_key_pressed && g_extern.main_is_init) ? false : true;
-               g_extern.console.rmenu.mode = g_extern.console.rmenu.state.rmenu.enable ? MODE_MENU : MODE_EMULATION;
-            }
+            case MODE_EXIT:
+            case MODE_INIT:
+               break;
+            case MODE_EMULATION:
+               // set a timer delay so that we don't instantly switch back to the menu when
+               // press and holding QUIT in the emulation loop (lasts for 30 frame ticks)
+               SET_TIMER_EXPIRATION(0, 30);
+               break;
+            default:
+               if (quit_key_pressed)
+               {
+                  g_extern.console.rmenu.mode = MODE_EXIT;
+                  g_extern.console.rmenu.state.rmenu.enable = false;
+               }
+               else
+               {
+                  g_extern.console.rmenu.state.rmenu.enable = rmenu_enable ? false : true;
+                  g_extern.console.rmenu.mode = rmenu_enable ? MODE_EMULATION : MODE_MENU;
+               }
+               break;
          }
       }
-
-      if(quit_key_pressed)
-      {
-         g_extern.console.rmenu.state.rmenu.enable = false;
-         g_extern.console.rmenu.mode = MODE_EXIT;
-      }
-
-      // set a timer delay so that we don't instantly switch back to the menu when
-      // press and holding QUIT in the emulation loop (lasts for 30 frame ticks)
-      if(g_extern.console.rmenu.mode == MODE_EMULATION)
-      {
-         SET_TIMER_EXPIRATION(0, 30);
-      }
-
    }while(g_extern.console.rmenu.state.rmenu.enable);
 
    g_extern.draw_menu = false;
-
    g_extern.console.rmenu.state.ingame_menu.enable = false;
 
    return true;

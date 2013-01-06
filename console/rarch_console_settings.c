@@ -123,7 +123,7 @@ void rarch_settings_change(unsigned setting)
       case S_START_RARCH:
          g_extern.console.rmenu.state.rmenu.enable = false;
          g_extern.console.initialize_rarch_enable = 1;
-         g_extern.console.rmenu.mode = MODE_EMULATION;
+         g_extern.console.rmenu.mode = MODE_INIT;
          break;
       case S_REWIND:
          g_settings.rewind_enable = !g_settings.rewind_enable;

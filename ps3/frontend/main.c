@@ -336,7 +336,6 @@ int main(int argc, char *argv[])
          RARCH_LOG("Started from multiMAN, will auto-start game.\n");
          strlcpy(g_extern.file_state.rom_path, argv[1], sizeof(g_extern.file_state.rom_path));
          rarch_settings_change(S_START_RARCH);
-         rarch_startup(default_paths.config_file);
          break;
 #endif
       default:
@@ -347,18 +346,13 @@ begin_loop:
    if(g_extern.console.rmenu.mode == MODE_EMULATION)
    {
       input_ps3.poll(NULL);
-
       driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-
       while(rarch_main_iterate());
    }
+   else if (g_extern.console.rmenu.mode == MODE_INIT)
+      rarch_startup(default_paths.config_file);
    else if(g_extern.console.rmenu.mode == MODE_MENU)
-   {
       while(rmenu_iterate());
-
-      if (g_extern.console.rmenu.mode != MODE_EXIT)
-         rarch_startup(default_paths.config_file);
-   }
    else
       goto begin_shutdown;
 

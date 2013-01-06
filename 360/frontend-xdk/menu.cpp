@@ -1165,13 +1165,25 @@ bool rmenu_iterate(void)
    XINPUT_STATE state;
    XInputGetState(0, &state);
 
-   bool rmenu_enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
-         && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.main_is_init)
-         && IS_TIMER_EXPIRED(0));
+
+   if (IS_TIMER_EXPIRED(0))
+   {
+      bool rmenu_enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
+            && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.main_is_init));
+
+      switch(g_extern.console.rmenu.mode)
+      {
+         case MODE_EXIT:
+         case MODE_INIT:
+         case MODE_EMULATION:
+            break;
+         default:
+            g_extern.console.rmenu.mode = rmenu_enable ? MODE_EMULATION : MODE_MENU;
+            break;
+      }
+   }
 
    rarch_render_cached_frame();
-
-   g_extern.console.rmenu.mode = rmenu_enable ? MODE_MENU : MODE_EMULATION;
 
    switch(g_extern.console.rmenu.input_loop)
    {
@@ -1188,15 +1200,13 @@ bool rmenu_iterate(void)
          break;
    }
 
-   if(g_extern.console.rmenu.mode == MODE_EMULATION || g_extern.console.rmenu.mode == MODE_EXIT)
+   if(g_extern.console.rmenu.mode != MODE_MENU)
       goto deinit;
 
    msg = msg_queue_pull(g_extern.msg_queue);
 
    if (msg)
-   {
       device_ptr->font_ctx->render_msg(device_ptr, msg);
-   }
 
    device_ptr->ctx_driver->swap_buffers();
 

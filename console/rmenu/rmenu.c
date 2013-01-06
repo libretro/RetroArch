@@ -2315,27 +2315,19 @@ void rmenu_input_process(void *data, void *state)
    (void)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
 
-   if(IS_TIMER_EXPIRED(0))
+   if (IS_TIMER_EXPIRED(0))
    {
-      // if we want to force goto the emulation loop, skip this
-      if(g_extern.console.rmenu.mode != MODE_EMULATION)
+      bool rmenu_enable = (((rstate->old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (rstate->old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.main_is_init));
+
+      switch(g_extern.console.rmenu.mode)
       {
-         if(g_extern.console.rmenu.mode == MODE_EXIT)
-         {
-         }
-         // for ingame menu, we need a different precondition because menu_enable
-         // can be set to false when going back from ingame menu to menu
-         else if(g_extern.console.rmenu.state.ingame_menu.enable == true)
-         {
-            //we want to force exit when g_extern.console.mode is set to MODE_EXIT
-            if(g_extern.console.rmenu.mode != MODE_EXIT)
-               g_extern.console.rmenu.mode = (((rstate->old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (rstate->old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.main_is_init)) ? MODE_EMULATION : MODE_MENU;
-         }
-         else
-         {
-            bool rmenu_enable = !(((rstate->old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (rstate->old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.main_is_init));
-            g_extern.console.rmenu.mode = rmenu_enable ? MODE_MENU : MODE_EMULATION;
-         }
+         case MODE_EXIT:
+         case MODE_INIT:
+         case MODE_EMULATION:
+            break;
+         default:
+            g_extern.console.rmenu.mode = rmenu_enable ? MODE_EMULATION : MODE_MENU;
+            break;
       }
    }
 }
@@ -2453,7 +2445,7 @@ bool rmenu_iterate(void)
    if(current_menu.input_process)
       current_menu.input_process(&current_menu, &rmenu_state);
 
-   if(g_extern.console.rmenu.mode == MODE_EMULATION || g_extern.console.rmenu.mode == MODE_EXIT || repeat == 0)
+   if(g_extern.console.rmenu.mode != MODE_MENU || repeat == 0)
       goto deinit;
 
    msg = msg_queue_pull(g_extern.msg_queue);

@@ -95,9 +95,7 @@ bool rarch_startup (const char * config_path)
       args.sram_path = g_extern.console.main_wrap.state.default_sram_dir.enable ? g_extern.console.main_wrap.paths.default_sram_dir : NULL,
       args.state_path = g_extern.console.main_wrap.state.default_savestate_dir.enable ? g_extern.console.main_wrap.paths.default_savestate_dir : NULL,
       args.rom_path = g_extern.file_state.rom_path;
-#ifdef HAVE_DYLIB
       args.libretro_path = g_settings.libretro;
-#endif
 
       int init_ret = rarch_main_init_wrap(&args);
       (void)init_ret;
@@ -105,6 +103,7 @@ bool rarch_startup (const char * config_path)
       if(init_ret == 0)
       {
          g_extern.console.initialize_rarch_enable = 0;
+         g_extern.console.rmenu.mode = MODE_EMULATION;
          retval = true;
       }
       else
