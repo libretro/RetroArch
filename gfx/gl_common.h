@@ -89,6 +89,7 @@
 #ifdef HAVE_RMENU
 #define context_rmenu_init_func()                    gl->ctx_driver->rmenu_init()
 #define context_rmenu_frame_func(ctx)                gl->ctx_driver->rmenu_frame(ctx)
+#define context_rmenu_free_func()                    gl->ctx_driver->rmenu_free()
 #endif
 
 #ifdef HAVE_EGL

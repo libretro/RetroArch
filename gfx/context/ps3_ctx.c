@@ -288,11 +288,16 @@ static void gfx_ctx_set_blend(bool enable)
 
 static void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 
+bool menu_bg_inited = false;
+
 static bool gfx_ctx_rmenu_init(void)
 {
    gl_t *gl = driver.video_data;
 
    if (!gl)
+      return false;
+
+   if (menu_bg_inited)
       return false;
 
 #ifdef HAVE_RMENU
@@ -318,6 +323,8 @@ static bool gfx_ctx_rmenu_init(void)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    free(menu_texture.pixels);
+
+   menu_bg_inited = true;
 #endif
 
    return true;
@@ -326,6 +333,7 @@ static bool gfx_ctx_rmenu_init(void)
 #if defined(HAVE_RMENU)
 static void gfx_ctx_rmenu_free(void)
 {
+   menu_bg_inited = false;
 }
 
 static void gfx_ctx_rmenu_frame(void *data)

@@ -1317,6 +1317,11 @@ static void gl_free(void *data)
 
    gl_t *gl = (gl_t*)data;
 
+#ifdef HAVE_RMENU
+   if (gl->ctx_driver->rmenu_free)
+      context_rmenu_free_func();
+#endif
+
    if (gl->font_ctx)
       gl->font_ctx->deinit(gl);
    gl_shader_deinit(gl);
@@ -1589,7 +1594,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
 #if defined(HAVE_RMENU) && defined(HAVE_CG)
-   RARCH_LOG("Initializing menu shader ...\n");
+   RARCH_LOG("Initializing CG menu shader ...\n");
    gl_cg_set_menu_shader(default_paths.menu_shader_file);
 #endif
 
@@ -1844,7 +1849,6 @@ static void gl_start(void)
    context_get_available_resolutions_func();
 
 #ifdef HAVE_RMENU
-   RARCH_LOG("Initializing menu shader...\n");
    if (gl->ctx_driver->rmenu_init)
       context_rmenu_init_func();
 #endif
