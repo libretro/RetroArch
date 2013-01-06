@@ -268,19 +268,18 @@ static void gx_input_poll(void *data)
    (void)data;
 
    bool quit_gc = false;
+   u32 gc_pads_connected = PAD_ScanPads();
 #ifdef HW_RVL
    bool quit_classic = false;
    bool quit_wiimote = false;
-#endif
-
-   PAD_ScanPads();
-#ifdef HW_RVL
-   WPAD_ScanPads();
+   WPAD_ReadPending(WPAD_CHAN_ALL, NULL);
 #endif
 
    for (unsigned port = 0; port < MAX_PADS; port++)
    {
       uint64_t state = 0;
+
+      if (gc_pads_connected)
       {
          uint16_t down = PAD_ButtonsHeld(port);
 
