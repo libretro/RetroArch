@@ -209,7 +209,7 @@ static bool gl_shader_init(void *data) // We always need a shader alive in GLES2
 {
    gl_t *gl = (gl_t*)data;
    const char *shader_path = NULL;
-   if ((g_settings.video.shader_type == RARCH_SHADER_AUTO || g_settings.video.shader_type == RARCH_SHADER_BSNES)
+   if ((g_settings.video.shader_type == RARCH_SHADER_AUTO || g_settings.video.shader_type == RARCH_SHADER_GLSL)
          && *g_settings.video.bsnes_shader_path)
       shader_path = g_settings.video.bsnes_shader_path;
 
@@ -256,7 +256,7 @@ static bool gl_shader_init(void *data)
 #endif
 
 #ifdef HAVE_GLSL
-      case RARCH_SHADER_BSNES:
+      case RARCH_SHADER_GLSL:
          backend     = &gl_glsl_backend;
          shader_path = g_settings.video.bsnes_shader_path;
          break;
@@ -1726,7 +1726,7 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
    switch (type)
    {
 #ifdef HAVE_GLSL
-      case RARCH_SHADER_BSNES:
+      case RARCH_SHADER_GLSL:
          if (mask & (1ULL << RARCH_SHADER_MULTIPASS))
          {
             if (!gl_glsl_init(path))

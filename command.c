@@ -214,7 +214,7 @@ static bool cmd_set_shader(const char *arg)
    if (ext)
    {
       if (strcmp(ext, ".shader") == 0)
-         type = RARCH_SHADER_BSNES;
+         type = RARCH_SHADER_GLSL;
       else if (strcmp(ext, ".cg") == 0 || strcmp(ext, ".cgp") == 0)
          type = RARCH_SHADER_CG;
    }

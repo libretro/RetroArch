@@ -419,7 +419,7 @@ bool config_load_file(const char *path)
       if (strcmp("cg", tmp_str) == 0)
          g_settings.video.shader_type = RARCH_SHADER_CG;
       else if (strcmp("bsnes", tmp_str) == 0)
-         g_settings.video.shader_type = RARCH_SHADER_BSNES;
+         g_settings.video.shader_type = RARCH_SHADER_GLSL;
       else if (strcmp("auto", tmp_str) == 0)
          g_settings.video.shader_type = RARCH_SHADER_AUTO;
       else if (strcmp("none", tmp_str) == 0)

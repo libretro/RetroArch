@@ -618,7 +618,7 @@ void browser_render(void *data)
 unsigned get_shader_type(void)
 {
 #if defined(HAVE_GLSL)
-   return RARCH_SHADER_BSNES;
+   return RARCH_SHADER_GLSL;
 #elif defined(HAVE_CG)
    return RARCH_SHADER_CG;
 #elif defined(HAVE_HLSL)
