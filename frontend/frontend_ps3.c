@@ -270,19 +270,18 @@ int main(int argc, char *argv[])
    init_drivers_pre();
    driver.input->init();
 
-   char tmp_path[PATH_MAX];
-   snprintf(tmp_path, sizeof(tmp_path), "%s/", default_paths.core_dir);
-   const char *path_prefix = tmp_path; 
-   const char *extension = default_paths.executable_extension;
-
-   char core_exe_path[1024];
-   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
-
    rarch_settings_set_default();
    rarch_input_set_controls_default(driver.input);
    rarch_config_load();
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
+   char core_exe_path[PATH_MAX];
+   char path_prefix[PATH_MAX];
+   const char *extension = default_paths.executable_extension;
+   snprintf(path_prefix, sizeof(path_prefix), "%s/", default_paths.core_dir);
+   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
+
+
    if (path_file_exists(core_exe_path))
    {
       if (rarch_libretro_core_install(core_exe_path, path_prefix, path_prefix, 

@@ -147,22 +147,21 @@ int main(int argc, char *argv[])
    init_drivers_pre();
    driver.input->init();
 
-#ifdef _XBOX1
-   char path_prefix[256];
-   snprintf(path_prefix, sizeof(path_prefix), "D:\\");
-#else
-   const char *path_prefix = default_paths.filesystem_root_dir;
-#endif
-   const char *extension = default_paths.executable_extension;
-
-   char core_exe_path[1024];
-   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
-
    rarch_settings_set_default();
    rarch_input_set_controls_default(driver.input);
    rarch_config_load();
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
+   char core_exe_path[PATH_MAX];
+   char path_prefix[PATH_MAX];
+   const char *extension = default_paths.executable_extension;
+#ifdef _XBOX1
+   snprintf(path_prefix, sizeof(path_prefix), "D:\\");
+#else
+   snprintf(path_prefix, sizeof(path_prefix), default_paths.filesystem_root_dir);
+#endif
+   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
+
    if (path_file_exists(core_exe_path))
    {
       if (rarch_libretro_core_install(core_exe_path, path_prefix, path_prefix, 

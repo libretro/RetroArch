@@ -506,19 +506,17 @@ int main(int argc, char *argv[])
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    gx->menu_data = (uint32_t *) menu_framebuf;
 
-   char tmp_path[PATH_MAX];
-   const char *extension = default_paths.executable_extension;
-   snprintf(tmp_path, sizeof(tmp_path), "%s/", default_paths.core_dir);
-   const char *path_prefix = tmp_path; 
-
-   char core_exe_path[1024];
-   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
-
    rarch_settings_set_default();
    rarch_input_set_controls_default(driver.input);
    rarch_config_load();
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
+   char core_exe_path[PATH_MAX];
+   char path_prefix[PATH_MAX];
+   const char *extension = default_paths.executable_extension;
+   snprintf(path_prefix, sizeof(path_prefix), "%s/", default_paths.core_dir);
+   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
+
    if (path_file_exists(core_exe_path))
    {
       if (rarch_libretro_core_install(core_exe_path, path_prefix, path_prefix, 
