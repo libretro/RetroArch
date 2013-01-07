@@ -389,6 +389,9 @@ static void gx_input_poll(void *data)
 
    for (unsigned port = 0; port < MAX_PADS; port++)
    {
+      if (!(SI_GetType(port) & SI_TYPE_GC))
+         continue;
+
       uint64_t *state_cur = &pad_state[port];
 
       uint16_t down = PAD_ButtonsHeld(port);
