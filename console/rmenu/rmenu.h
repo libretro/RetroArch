@@ -19,15 +19,8 @@
 
 #if defined(HAVE_OPENGL)
 #define DEVICE_CAST gl_t*
-#endif
-
-#if defined(__CELLOS_LV2__)
-#define input_ptr input_ps3
-#elif defined(ANDROID)
-#define input_ptr input_android
 #elif defined(_XBOX1)
 #define DEVICE_CAST xdk_d3d_video_t*
-#define input_ptr input_xinput
 #endif
 
 typedef struct

@@ -1573,10 +1573,10 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
                case DPAD_EMULATION_NONE:
                   break;
                case DPAD_EMULATION_LSTICK:
-                  input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_NONE, currently_selected_controller_menu);
+                  driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_NONE, currently_selected_controller_menu);
                   break;
                case DPAD_EMULATION_RSTICK:
-                  input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
+                  driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
                   break;
             }
          }
@@ -1586,10 +1586,10 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
             {
                case DPAD_EMULATION_NONE:
-                  input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
+                  driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
                   break;
                case DPAD_EMULATION_LSTICK:
-                  input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_RSTICK, currently_selected_controller_menu);
+                  driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_RSTICK, currently_selected_controller_menu);
                   break;
                case DPAD_EMULATION_RSTICK:
                   break;
@@ -1597,7 +1597,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            input_ptr.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
+            driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
          break;
       case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
          set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_UP, input);
@@ -2292,10 +2292,10 @@ void rmenu_input_poll(void *data, void *state)
    uint64_t input_state = 0;
    static bool first_held = false;
 
-   input_ptr.poll(NULL);
+   driver.input->poll(NULL);
 
    for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
-      input_state |= input_ptr.input_state(NULL, rmenu_nav_binds, 0,
+      input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
    //set first button input frame as trigger
@@ -2305,11 +2305,11 @@ void rmenu_input_poll(void *data, void *state)
 
    //second button input frame
    input_state = 0;
-   input_ptr.poll(NULL);
+   driver.input->poll(NULL);
 
    for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
    {
-      input_state |= input_ptr.input_state(NULL, rmenu_nav_binds, 0,
+      input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
    }
 

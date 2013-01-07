@@ -284,13 +284,11 @@ static bool rmenu_iterate(void)
 
    uint16_t input_state = 0;
 
-   input_gx.poll(NULL);
+   driver.input->poll(NULL);
 
    for (unsigned i = 0; i < GX_DEVICE_NAV_LAST; i++)
-   {
-      input_state |= input_gx.input_state(NULL, gx_nav_binds, 0,
+      input_state |= driver.input->input_state(NULL, gx_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
-   }
 
    uint16_t trigger_state = input_state & ~old_input_state;
    bool do_held = (input_state & ((1ULL << GX_DEVICE_NAV_UP) | (1ULL << GX_DEVICE_NAV_DOWN) | (1ULL << GX_DEVICE_NAV_LEFT) | (1ULL << GX_DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << GX_DEVICE_NAV_MENU) | (1ULL << GX_DEVICE_NAV_QUIT)));
@@ -499,9 +497,10 @@ int main(int argc, char *argv[])
    get_environment_settings();
    make_directories();
    config_set_defaults();
-   input_gx.init();
 
-   find_video_driver();
+   init_drivers_pre();
+
+   driver.input->init();
    driver.video->start();
 
    gx_video_t *gx = (gx_video_t*)driver.video_data;
@@ -510,24 +509,23 @@ int main(int argc, char *argv[])
    char tmp_path[PATH_MAX];
    const char *extension = default_paths.executable_extension;
    snprintf(tmp_path, sizeof(tmp_path), "%s/", default_paths.core_dir);
-   const input_driver_t *input = &input_gx;
    const char *path_prefix = tmp_path; 
 
    char full_path[1024];
    snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
 
-   bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
-   g_extern.config_path, extension);
-
    rarch_settings_set_default();
-   rarch_input_set_controls_default(input);
+   rarch_input_set_controls_default(driver.input);
    rarch_config_load();
 
-   if (find_libretro_file)
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+   if (rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
+   g_extern.config_path, extension))
    {
       RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
       config_save_file(g_extern.config_path);
    }
+#endif
 
    char core_name[64];
    rarch_console_name_from_id(core_name, sizeof(core_name));
@@ -537,7 +535,7 @@ int main(int argc, char *argv[])
 
    init_libretro_sym();
 
-   input_gx.post_init();
+   driver.input->post_init();
 
    menu_init();
 
@@ -562,7 +560,7 @@ int main(int argc, char *argv[])
 begin_loop:
    if(g_extern.console.rmenu.mode == MODE_EMULATION)
    {
-      input_gx.poll(NULL);
+      driver.input->poll(NULL);
 
       video_set_aspect_ratio_func(g_settings.video.aspect_ratio_idx);
 
@@ -606,7 +604,7 @@ begin_shutdown:
    if(g_extern.main_is_init)
       rarch_main_deinit();
 
-   input_gx.free(NULL);
+   driver.input->free(NULL);
    driver.video->stop();
    menu_free();
 

@@ -144,7 +144,8 @@ int main(int argc, char *argv[])
 
    config_set_defaults();
    
-   input_xinput.init();
+   init_drivers_pre();
+   driver.input->init();
 
 #ifdef _XBOX1
    char path_prefix[256];
@@ -153,29 +154,26 @@ int main(int argc, char *argv[])
    const char *path_prefix = default_paths.filesystem_root_dir;
 #endif
    const char *extension = default_paths.executable_extension;
-   const input_driver_t *input = &input_xinput;
 
    char full_path[1024];
    snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
 
-   bool find_libretro_file = rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
-   g_extern.config_path, extension);
-
    rarch_settings_set_default();
-   rarch_input_set_controls_default(input);
+   rarch_input_set_controls_default(driver.input);
    rarch_config_load();
 
-   if (find_libretro_file)
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+   if (rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
+   g_extern.config_path, extension))
    {
       RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
       config_save_file(g_extern.config_path);
    }
+#endif
 
    init_libretro_sym();
 
-   input_xinput.post_init();
-
-   find_video_driver();
+   driver.input->init();
    driver.video->start();
 
    system_init();
@@ -186,8 +184,7 @@ begin_loop:
    if(g_extern.console.rmenu.mode == MODE_EMULATION)
    {
 
-      input_xinput.poll(NULL);
-
+      driver.input->poll(NULL);
       driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
       while(rarch_main_iterate());
@@ -225,7 +222,7 @@ begin_shutdown:
 
    menu_free();
    driver.video->stop();
-   input_xinput.free(NULL);
+   driver.input->free(NULL);
 
    if(g_extern.console.external_launch.enable)
       rarch_console_exec(g_extern.console.external_launch.launch_app);

@@ -271,10 +271,10 @@ HRESULT CRetroArchControls::OnControlNavigate(
                   case DPAD_EMULATION_NONE:
                      break;
                   case DPAD_EMULATION_LSTICK:
-                     input_xinput.set_analog_dpad_mapping(0, DPAD_EMULATION_NONE, controlno);
+                     driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_NONE, controlno);
                      break;
                   case DPAD_EMULATION_RSTICK:
-                     input_xinput.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, controlno);
+                     driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, controlno);
                      break;
                }
                break;
@@ -295,10 +295,10 @@ HRESULT CRetroArchControls::OnControlNavigate(
                switch(g_settings.input.dpad_emulation[controlno])
                {
                   case DPAD_EMULATION_NONE:
-                     input_xinput.set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, controlno);
+                     driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, controlno);
                      break;
                   case DPAD_EMULATION_LSTICK:
-                     input_xinput.set_analog_dpad_mapping(0, DPAD_EMULATION_RSTICK, controlno);
+                     driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_RSTICK, controlno);
                      break;
                   case DPAD_EMULATION_RSTICK:
                      break;
@@ -681,7 +681,6 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
 {
    bool aspectratio_changed = false;
    int current_index;
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    current_index = m_quickmenulist.GetCurSel();
 
@@ -706,7 +705,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
                rarch_settings_change(S_ROTATION_DECREMENT);
                rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
-               video_xdk_d3d.set_rotation(driver.video_data, g_extern.console.screen.orientation);
+               driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
                break;
             default:
                break;
@@ -731,7 +730,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
                rarch_settings_change(S_ROTATION_INCREMENT);
                rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
-               video_xdk_d3d.set_rotation(driver.video_data, g_extern.console.screen.orientation);
+               driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
                break;
             default:
                break;
@@ -805,7 +804,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             rarch_settings_default(S_DEF_ROTATION);
             rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
             m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
-            video_xdk_d3d.set_rotation(driver.video_data, g_extern.console.screen.orientation);
+            driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
             break;
          case MENU_ITEM_RESIZE_MODE:
             g_extern.console.rmenu.input_loop = INPUT_LOOP_RESIZE_MODE;

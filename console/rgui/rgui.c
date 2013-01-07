@@ -776,9 +776,9 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          else if (action == RGUI_ACTION_RIGHT)
             g_settings.input.device[port]++;
          g_settings.input.device[port] %= RARCH_DEVICE_LAST;
-         input_gx.set_default_keybind_lut(g_settings.input.device[port], port);
+         driver.input->set_default_keybind_lut(g_settings.input.device[port], port);
          rarch_input_set_default_keybinds(port);
-         input_gx.set_analog_dpad_mapping(g_settings.input.device[port], g_settings.input.dpad_emulation[port], port);
+         driver.input->set_analog_dpad_mapping(g_settings.input.device[port], g_settings.input.dpad_emulation[port], port);
          break;
       case RGUI_SETTINGS_BIND_DPAD_EMULATION:
          g_settings.input.dpad_emulation[port] += DPAD_EMULATION_LAST;
@@ -789,7 +789,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          else if (action == RGUI_ACTION_RIGHT)
             g_settings.input.dpad_emulation[port]++;
          g_settings.input.dpad_emulation[port] %= DPAD_EMULATION_LAST;
-         input_gx.set_analog_dpad_mapping(g_settings.input.device[port], g_settings.input.dpad_emulation[port], port);
+         driver.input->set_analog_dpad_mapping(g_settings.input.device[port], g_settings.input.dpad_emulation[port], port);
          break;
       case RGUI_SETTINGS_BIND_UP:
       case RGUI_SETTINGS_BIND_DOWN:

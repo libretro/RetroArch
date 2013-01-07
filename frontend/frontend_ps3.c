@@ -266,37 +266,34 @@ int main(int argc, char *argv[])
    get_environment_settings(argc, argv);
 
    config_set_defaults();
-   input_ps3.init();
+
+   init_drivers_pre();
+   driver.input->init();
 
    char tmp_path[PATH_MAX];
    snprintf(tmp_path, sizeof(tmp_path), "%s/", default_paths.core_dir);
    const char *path_prefix = tmp_path; 
    const char *extension = default_paths.executable_extension;
-   const input_driver_t *input = &input_ps3;
 
    char core_exe_path[1024];
    snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-   bool find_libretro_file = rarch_configure_libretro_core(core_exe_path, path_prefix, path_prefix, 
-         g_extern.config_path, extension);
-#else
-   bool find_libretro_file = false;
-#endif
-
    rarch_settings_set_default();
-   rarch_input_set_controls_default(input);
+   rarch_input_set_controls_default(driver.input);
    rarch_config_load();
 
-   if (find_libretro_file)
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+   if (rarch_configure_libretro_core(core_exe_path, path_prefix, path_prefix, 
+         g_extern.config_path, extension))
    {
       RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
       config_save_file(g_extern.config_path);
    }
+#endif
 
    init_libretro_sym();
 
-   input_ps3.post_init();
+   driver.input->post_init();
 
 #if (CELL_SDK_VERSION > 0x340000) && !defined(__PSL1GHT__)
    if (g_extern.console.screen.state.screenshots.enable)
@@ -319,7 +316,6 @@ int main(int argc, char *argv[])
 #endif
 #endif
 
-   find_video_driver();
    driver.video->start();
 
 #ifdef HAVE_OSKUTIL
@@ -348,7 +344,7 @@ int main(int argc, char *argv[])
 begin_loop:
    if(g_extern.console.rmenu.mode == MODE_EMULATION)
    {
-      input_ps3.poll(NULL);
+      driver.input->poll(NULL);
       driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
       while(rarch_main_iterate());
    }
@@ -386,7 +382,7 @@ begin_shutdown:
    if(g_extern.main_is_init)
       rarch_main_deinit();
 
-   input_ps3.free(NULL);
+   driver.input->free(NULL);
    driver.video->stop();
    menu_free();
 

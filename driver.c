@@ -169,7 +169,7 @@ static void find_audio_driver(void)
    rarch_fail(1, "find_audio_driver()");
 }
 
-void find_video_driver(void)
+static void find_video_driver(void)
 {
    for (unsigned i = 0; i < ARRAY_SIZE(video_drivers); i++)
    {
