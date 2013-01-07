@@ -399,17 +399,15 @@ begin_shutdown:
 
 #if defined(HAVE_SYSMODULES)
 
-   /* Freetype font PRX */
-
 #ifdef HAVE_FREETYPE
+   /* Freetype font PRX */
    cellSysmoduleLoadModule(CELL_SYSMODULE_FONTFT);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_FREETYPE);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_FONT);
 #endif
 
-   /* screenshot PRX */
-
 #ifndef __PSL1GHT__
+   /* screenshot PRX */
    if(g_extern.console.screen.state.screenshots.enable)
       cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
 #endif
@@ -417,8 +415,8 @@ begin_shutdown:
    cellSysmoduleUnloadModule(CELL_SYSMODULE_JPGDEC);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_PNGDEC);
 
-   /* system game utility PRX */
 #ifndef __PSL1GHT__
+   /* system game utility PRX */
    cellSysmoduleUnloadModule(CELL_SYSMODULE_AVCONF_EXT);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
 #endif

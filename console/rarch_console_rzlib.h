@@ -28,6 +28,6 @@ enum
    ZIP_EXTRACT_TO_CACHE_DIR
 };
 
-int rarch_extract_zipfile(const char *zip_path, const char *current_dir, char *first_file, size_t first_file_size, unsigned extract_zip_mode);
+int rarch_extract_zipfile(const char *zip_path, char *first_file, size_t first_file_size, unsigned extract_zip_mode);
 
 #endif

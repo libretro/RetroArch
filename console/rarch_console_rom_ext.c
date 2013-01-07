@@ -36,28 +36,20 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, u
 {
    const char *game_to_load;
    char first_file_inzip[PATH_MAX];
-   char rom_path_temp[PATH_MAX];
-   char dir_path_temp[PATH_MAX];
    struct retro_system_info info;
-   bool block_zip_extract = false;
    bool extract_zip_cond = false;
    bool extract_zip_and_load_game_cond = false;
    bool load_game = !extract_zip_cond;
 
    retro_get_system_info(&info);
-   block_zip_extract = info.block_extract;
-
-   snprintf(rom_path_temp, sizeof(rom_path_temp), path);
 
 #ifdef HAVE_ZLIB
-   extract_zip_cond = (strstr(rom_path_temp, ".zip") || strstr(rom_path_temp, ".ZIP"))
-   && !block_zip_extract;
+   extract_zip_cond = (strstr(path, ".zip") || strstr(path, ".ZIP"))
+   && !info.block_extract;
 
    if(extract_zip_cond)
    {
-      fill_pathname_basedir(dir_path_temp, rom_path_temp, sizeof(dir_path_temp));
-      rarch_extract_zipfile(rom_path_temp, dir_path_temp, first_file_inzip, sizeof(first_file_inzip), extract_zip_mode);
-
+      rarch_extract_zipfile(path, first_file_inzip, sizeof(first_file_inzip), extract_zip_mode);
       if(g_extern.console.rmenu.state.msg_info.enable)
          rarch_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
    }

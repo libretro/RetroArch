@@ -34,7 +34,9 @@ void rarch_console_name_from_id(char *name, size_t size);
 
 //We need to set libretro to the first entry in the cores
 //directory so that it will be saved to the config file
-void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first_file, const char *libretro_path, const char * exe_ext);
+void rarch_manage_libretro_set_first_file(char *first_file, 
+      size_t size_of_first_file, const char *libretro_path, 
+      const char * exe_ext);
 
 #ifndef IS_SALAMANDER
 
