@@ -80,12 +80,8 @@ static void event_ack(struct wiimote_t *wm,ubyte *msg)
 
 	wiiuse_pressed_buttons(wm,msg);
 
-	if(!cmd || cmd->state!=CMD_SENT || cmd->data[0]==WM_CMD_READ_DATA || cmd->data[0]==WM_CMD_CTRL_STATUS || cmd->data[0]!=msg[2]) {
+	if(!cmd || cmd->state!=CMD_SENT || cmd->data[0]==WM_CMD_READ_DATA || cmd->data[0]==WM_CMD_CTRL_STATUS || cmd->data[0]!=msg[2] || msg[3]) {
 		//WIIUSE_WARNING("Unsolicited event ack: report %02x status %02x", msg[2], msg[3]);
-		return;
-	}
-	if(msg[3]) {
-		//WIIUSE_WARNING("Command %02x %02x failed: status %02x", cmd->data[0], cmd->data[1], msg[3]);
 		return;
 	}
 

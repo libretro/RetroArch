@@ -657,7 +657,7 @@ s32 WPAD_ReadEvent(s32 chan, WPADData *data)
 	struct _wpad_cb *wpdcb = NULL;
 	WPADData *lstate = NULL,*wpadd = NULL;
 
-	if(chan<WPAD_CHAN_0 || chan>=WPAD_MAX_WIIMOTES) return WPAD_ERR_BAD_CHANNEL;
+	//if(chan<WPAD_CHAN_0 || chan>=WPAD_MAX_WIIMOTES) return WPAD_ERR_BAD_CHANNEL;
 
 	_CPU_ISR_Disable(level);
 	if(__wpads_inited==WPAD_STATE_DISABLED) {

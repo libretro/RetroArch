@@ -26,11 +26,11 @@ void wiiuse_send_next_command(struct wiimote_t *wm)
 	cmd->state = CMD_SENT;
 	if(WIIMOTE_IS_SET(wm,WIIMOTE_STATE_RUMBLE)) cmd->data[1] |= 0x01;
 
-	WIIUSE_DEBUG("Sending command: %02x %02x", cmd->data[0], cmd->data[1]);
+	//WIIUSE_DEBUG("Sending command: %02x %02x", cmd->data[0], cmd->data[1]);
 	wiiuse_io_write(wm,cmd->data,cmd->len);
 }
 
-static __inline__ void __wiiuse_push_command(struct wiimote_t *wm,struct cmd_blk_t *cmd)
+static inline void __wiiuse_push_command(struct wiimote_t *wm,struct cmd_blk_t *cmd)
 {
 	uint level;
 
