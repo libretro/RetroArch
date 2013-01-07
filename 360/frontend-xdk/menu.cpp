@@ -875,7 +875,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), str_buffer);
                if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                {
-                  device_ptr->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.cg_shader_path, (1ULL << RARCH_SHADER_PASS0));
+                  driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.cg_shader_path, (1ULL << RARCH_SHADER_PASS0));
                   if (g_extern.console.rmenu.state.msg_info.enable)
                      rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                }
@@ -886,7 +886,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), str_buffer);
                if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                {
-                  device_ptr->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.second_pass_shader, (1ULL << RARCH_SHADER_PASS1));
+                  driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.second_pass_shader, (1ULL << RARCH_SHADER_PASS1));
                   if (g_extern.console.rmenu.state.msg_info.enable)
                      rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                }

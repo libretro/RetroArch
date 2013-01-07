@@ -341,21 +341,22 @@ static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const ch
       case RARCH_SHADER_HLSL:
          if (mask & (1ULL << RARCH_SHADER_MULTIPASS))
          {
-            if (!gl_hlsl_init(path))
+            if (!hlsl_init(path, d3d->d3d_render_device))
                return false;
          }
          else if (mask & (1ULL << RARCH_SHADER_PASS0))
          {
-            if (!gl_hlsl_load_shader(1, (mask & RARCH_SHADER_PASS0_STOCK) ? NULL : path))
+            if (!hlsl_load_shader(1, (mask & RARCH_SHADER_PASS0_STOCK) ? NULL : path))
                return false;
          }
          else if (mask & (1ULL << RARCH_SHADER_PASS1))
          {
-            if (!gl_hlsl_load_shader(2, (mask & RARCH_SHADER_PASS1_STOCK) ? NULL : path))
+            if (!hlsl_load_shader(2, (mask & RARCH_SHADER_PASS1_STOCK) ? NULL : path))
                return false;
          }
          break;
 #endif
+      case RARCH_SHADER_NONE:
       default:
          RARCH_ERR("Invalid shader type in gl_set_shader().\n");
          return false;
