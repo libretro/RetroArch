@@ -103,6 +103,5 @@ extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
 extern void rarch_set_auto_viewport(unsigned width, unsigned height);
 extern void rarch_set_core_viewport(void);
-extern void rarch_load_shader(unsigned slot, const char *path);
 
 #endif

@@ -327,13 +327,41 @@ void xdk_d3d_init_fbo(void *data)
 }
 #endif
 
-static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const char *path)
+static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const char *path, unsigned mask)
 {
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+
    (void)data;
    (void)type;
    (void)path;
 
-   return false;
+   switch (type)
+   {
+#if defined(HAVE_HLSL)
+      case RARCH_SHADER_HLSL:
+         if (mask & (1ULL << RARCH_SHADER_MULTIPASS))
+         {
+            if (!gl_hlsl_init(path))
+               return false;
+         }
+         else if (mask & (1ULL << RARCH_SHADER_PASS0))
+         {
+            if (!gl_hlsl_load_shader(1, (mask & RARCH_SHADER_PASS0_STOCK) ? NULL : path))
+               return false;
+         }
+         else if (mask & (1ULL << RARCH_SHADER_PASS1))
+         {
+            if (!gl_hlsl_load_shader(2, (mask & RARCH_SHADER_PASS1_STOCK) ? NULL : path))
+               return false;
+         }
+         break;
+#endif
+      default:
+         RARCH_ERR("Invalid shader type in gl_set_shader().\n");
+         return false;
+   }
+
+   return true;
 }
 
 void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video)

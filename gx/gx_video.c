@@ -999,11 +999,14 @@ static void gx_apply_state_changes(void)
    gx->should_resize = true;
 }
 
-static bool gx_set_shader(void *data, enum rarch_shader_type type, const char *path)
+static bool gx_set_shader(void *data, enum rarch_shader_type type, const char *path, unsigned mask)
 {
    (void)data;
    (void)type;
    (void)path;
+   (void)mask;
+
+   RARCH_WARN("Shader support is not implemented for GX.\n");
 
    return false;
 }

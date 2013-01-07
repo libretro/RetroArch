@@ -91,19 +91,3 @@ void rarch_set_core_viewport(void)
    else
       aspectratio_lut[ASPECT_RATIO_CORE].value = g_extern.system.av_info.geometry.aspect_ratio;
 }
-
-#if defined(HAVE_HLSL) || defined(HAVE_CG) || defined(HAVE_GLSL)
-void rarch_load_shader(unsigned slot, const char *path)
-{
-#if defined(HAVE_HLSL)
-   hlsl_load_shader(slot, path);
-#elif defined(HAVE_CG) && defined(HAVE_OPENGL)
-   gl_cg_load_shader(slot, path);
-#else
-RARCH_WARN("Shader support is not implemented for this build.\n");
-#endif
-
-   if (g_extern.console.rmenu.state.msg_info.enable)
-      rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
-}
-#endif

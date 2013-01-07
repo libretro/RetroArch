@@ -229,7 +229,7 @@ static bool cmd_set_shader(const char *arg)
    msg_queue_push(g_extern.msg_queue, msg, 1, 120);
    RARCH_LOG("Applying shader \"%s\".\n", arg);
 
-   return video_set_shader_func(type, arg);
+   return video_set_shader_func(type, arg, (1ULL << RARCH_SHADER_MULTIPASS));
 }
 
 static const struct cmd_action_map action_map[] = {

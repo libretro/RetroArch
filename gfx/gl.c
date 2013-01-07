@@ -1709,30 +1709,59 @@ static bool gl_focus(void *data)
 }
 
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
-static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *path)
+static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *path, unsigned mask)
 {
    gl_t *gl = (gl_t*)data;
 
+   if (mask & (1ULL << RARCH_SHADER_MULTIPASS))
+   {
 #ifdef HAVE_FBO
-   gl_deinit_fbo(gl);
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+      gl_deinit_fbo(gl);
+      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 #endif
 
-   gl_shader_deinit(gl);
+      gl_shader_deinit(gl);
+   }
 
    switch (type)
    {
 #ifdef HAVE_GLSL
       case RARCH_SHADER_BSNES:
-         if (!gl_glsl_init(path))
-            return false;
+         if (mask & (1ULL << RARCH_SHADER_MULTIPASS))
+         {
+            if (!gl_glsl_init(path))
+               return false;
+         }
+         else if (mask & (1ULL << RARCH_SHADER_PASS0))
+         {
+            if (!gl_glsl_load_shader(1, (mask & (1ULL << RARCH_SHADER_PASS0_STOCK)) ? NULL : path))
+               return false;
+         }
+         else if (mask & (1ULL << RARCH_SHADER_PASS1))
+         {
+            if (!gl_glsl_load_shader(2, (mask & (1ULL << RARCH_SHADER_PASS1_STOCK)) ? NULL : path))
+               return false;
+         }
          break;
 #endif
 
 #ifdef HAVE_CG
       case RARCH_SHADER_CG:
-         if (!gl_cg_init(path))
-            return false;
+         if (mask & (1ULL << RARCH_SHADER_MULTIPASS))
+         {
+            if (!gl_cg_init(path))
+               return false;
+         }
+         else if (mask & (1ULL << RARCH_SHADER_PASS0))
+         {
+            if (!gl_cg_load_shader(1, (mask & (1ULL << RARCH_SHADER_PASS0_STOCK)) ? NULL : path))
+               return false;
+         }
+         else if (mask & (1ULL << RARCH_SHADER_PASS1))
+         {
+            if (!gl_cg_load_shader(2, (mask & (1ULL << RARCH_SHADER_PASS1_STOCK)) ? NULL : path))
+               return false;
+         }
          break;
 #endif
 
@@ -1741,14 +1770,17 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
          return false;
    }
 
+   if (mask & (1ULL << RARCH_SHADER_MULTIPASS))
+   {
 #ifdef HAVE_FBO
-   // Set up render to texture again.
-   gl_init_fbo(gl, gl->tex_w, gl->tex_h);
+      // Set up render to texture again.
+      gl_init_fbo(gl, gl->tex_w, gl->tex_h);
 #endif
 
-   // Apparently need to set viewport for passes when we aren't using FBOs.
-   gl_set_shader_viewport(gl, 0);
-   gl_set_shader_viewport(gl, 1);
+      // Apparently need to set viewport for passes when we aren't using FBOs.
+      gl_set_shader_viewport(gl, 0);
+      gl_set_shader_viewport(gl, 1);
+   }
 
    return true;
 }
