@@ -58,7 +58,6 @@ filebrowser_t browser;
 filebrowser_t tmpBrowser;
 unsigned set_shader = 0;
 unsigned currently_selected_controller_menu = 0;
-char m_title[256];
 
 static const struct retro_keybind _rmenu_nav_binds[] = {
    { 0, 0, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP), 0 },
@@ -541,7 +540,7 @@ static void display_menubar(void *data)
    rarch_position_t position = {0};
    device_ptr->ctx_driver->rmenu_draw_bg(&position);
 
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.core_msg_x_position, default_pos.core_msg_y_position, default_pos.core_msg_font_size, WHITE, m_title);
+   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.core_msg_x_position, default_pos.core_msg_y_position, default_pos.core_msg_font_size, WHITE, g_extern.title_buf);
 #ifdef __CELLOS_LV2__
    device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, 0.05f, 1.4f, WHITE, current_menu->title);
    device_ptr->font_ctx->render_msg_place(device_ptr,0.80f, 0.015f, 0.82f, WHITE, rarch_version);
@@ -2365,7 +2364,7 @@ void menu_init(void)
    struct retro_system_info info;
    retro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
-   snprintf(m_title, sizeof(m_title), "%s %s", id, info.library_version);
+   snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "%s %s", id, info.library_version);
 
    rmenu_state.init_resources = init_filebrowser;
    rmenu_state.free_resources = free_filebrowser;

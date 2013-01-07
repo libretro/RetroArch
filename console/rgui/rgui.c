@@ -373,7 +373,6 @@ static void render_text(rgui_handle_t *rgui)
 
    render_background(rgui);
 
-   char title[TERM_WIDTH];
    const char *dir = 0;
    rgui_file_type_t menu_type = 0;
    rgui_list_back(rgui->path_stack, &dir, &menu_type, NULL);
