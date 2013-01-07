@@ -238,11 +238,6 @@ typedef struct rarch_boolean_state
    unsigned value;
 } rarch_boolean_state_t;
 
-typedef struct rarch_frame_count
-{
-   unsigned expire_frame;
-} rarch_frame_count_t;
-
 typedef struct rarch_resolution
 {
    unsigned idx;
@@ -459,6 +454,7 @@ struct global
    } frame_cache;
 
    unsigned frame_count;
+   unsigned delay_timer;
    char title_buf[64];
 
    struct
@@ -475,7 +471,6 @@ struct global
    struct
    {
       bool block_config_read;
-      rarch_frame_count_t general_timers[2];
 
       struct
       {

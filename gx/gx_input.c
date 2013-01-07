@@ -449,7 +449,7 @@ static void gx_input_poll(void *data)
       g_quit = false;
    }
 
-   if (IS_TIMER_EXPIRED(0))
+   if (!(g_extern.frame_count < g_extern.delay_timer))
    {
       if (*pad_p1 & GX_QUIT_KEY)
          *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);

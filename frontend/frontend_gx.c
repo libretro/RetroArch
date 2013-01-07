@@ -298,10 +298,10 @@ static bool rmenu_iterate(void)
       if(!first_held)
       {
          first_held = true;
-         SET_TIMER_EXPIRATION(1, (initial_held) ? 15 : 7);
+         g_extern.delay_timer = g_extern.frame_count + (initial_held ? 15 : 7);
       }
 
-      if(IS_TIMER_EXPIRED(1))
+      if (!(g_extern.frame_count < g_extern.delay_timer))
       {
          first_held = false;
          trigger_state = input_state; //second input frame set as current frame
@@ -341,7 +341,7 @@ static bool rmenu_iterate(void)
 
    old_input_state = input_state;
 
-   if(IS_TIMER_EXPIRED(0))
+   if (!(g_extern.frame_count < g_extern.delay_timer))
    {
       bool rmenu_enable = ((trigger_state & (1ULL << GX_DEVICE_NAV_MENU)) && g_extern.main_is_init);
       bool quit_key_pressed = (trigger_state & (1ULL << GX_DEVICE_NAV_QUIT));
@@ -364,12 +364,11 @@ static bool rmenu_iterate(void)
    return true;
 
 deinit:
+   // set a timer delay so that we don't instantly switch back to the menu when
+   // press and holding QUIT in the emulation loop (lasts for 30 frame ticks)
    if (!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
-   {
-      // set a timer delay so that we don't instantly switch back to the menu when
-      // press and holding QUIT in the emulation loop (lasts for 30 frame ticks)
-      SET_TIMER_EXPIRATION(0, 30);
-   }
+      g_extern.delay_timer = g_extern.frame_count + 30;
+
    g_extern.draw_menu = false;
    g_extern.console.rmenu.state.ingame_menu.enable = false;
 

@@ -1179,7 +1179,7 @@ bool rmenu_iterate(void)
    XInputGetState(0, &state);
 
 
-   if (IS_TIMER_EXPIRED(0))
+   if (!(g_extern.frame_count < g_extern.delay_timer))
    {
       bool rmenu_enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
             && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.main_is_init));
@@ -1226,12 +1226,10 @@ bool rmenu_iterate(void)
    return true;
 
 deinit:
+   // set a timer delay so that we don't instantly switch back to the menu when
+   // press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
    if(!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
-   {
-      // set a timer delay so that we don't instantly switch back to the menu when
-      // press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
-      SET_TIMER_EXPIRATION(0, 30);
-   }
+      g_extern.delay_timer = g_extern.frame_count + 30;
 
    g_extern.console.rmenu.state.ingame_menu.enable = false;
    g_extern.draw_menu = false;

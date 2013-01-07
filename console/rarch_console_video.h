@@ -17,10 +17,6 @@
 #ifndef RARCH_CONSOLE_VIDEO_H__
 #define RARCH_CONSOLE_VIDEO_H__
 
-#define IS_TIMER_NOT_EXPIRED(index)        (g_extern.frame_count < g_extern.console.general_timers[(index)].expire_frame)
-#define IS_TIMER_EXPIRED(index)            (!(IS_TIMER_NOT_EXPIRED(index)))
-#define SET_TIMER_EXPIRATION(index, value) (g_extern.console.general_timers[(index)].expire_frame = g_extern.frame_count + (value))
-
 #define MIN_SCALING_FACTOR (1.0f)
 
 #if defined(__CELLOS_LV2__)

@@ -2789,7 +2789,7 @@ bool rarch_main_iterate(void)
       if (rmenu_enable || (g_extern.console.rmenu.state.ingame_menu.enable && !rmenu_enable))
       {
          g_extern.console.rmenu.mode = MODE_MENU;
-         SET_TIMER_EXPIRATION(0, 30);
+         g_extern.delay_timer = g_extern.frame_count + 30;
       }
 #endif
       return false;

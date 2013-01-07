@@ -222,7 +222,8 @@ static void xdk_input_poll(void *data)
       *lifecycle_state |= (1ULL << RARCH_STATE_SLOT_MINUS);
    if ((*state_p1 & (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP)) && !(*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)))
       *lifecycle_state |= (1ULL << RARCH_REWIND);
-   if(IS_TIMER_EXPIRED(0))
+
+   if (!(g_extern.frame_count < g_extern.delay_timer))
    {
       if((*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
       {
