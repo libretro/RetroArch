@@ -729,28 +729,32 @@ s32 WPAD_ReadEvent(s32 chan, WPADData *data)
 	return 0;
 }
 
+static s32 pad_readpending_temp(s32 chan)
+{
+   s32 count = 0;
+   s32 ret;
+
+   while(1)
+   {
+      ret = WPAD_ReadEvent(chan, &wpaddata[chan]);
+      if(ret < WPAD_ERR_NONE)
+         break;
+      count++;
+   }
+   if(ret == WPAD_ERR_QUEUE_EMPTY) return count;
+   return ret;
+}
+
 s32 WPAD_ReadPending(s32 chan, WPADDataCallback datacb)
 {
-	u32 i;
-	s32 count = 0;
-	s32 ret;
+   u32 i;
+   s32 count = 0;
+   s32 ret;
 
-	if(chan == WPAD_CHAN_ALL) {
-		for(i=WPAD_CHAN_0; i<WPAD_MAX_WIIMOTES; i++)
-			if((ret = WPAD_ReadPending(i, NULL)) >= WPAD_ERR_NONE)
-				count += ret;
-		return count;
-	}
-
-	while(1)
-   {
-		ret = WPAD_ReadEvent(chan,&wpaddata[chan]);
-		if(ret < WPAD_ERR_NONE)
-         break;
-		count++;
-	}
-	if(ret == WPAD_ERR_QUEUE_EMPTY) return count;
-	return ret;
+   for(i= WPAD_CHAN_0; i < WPAD_MAX_WIIMOTES; i++)
+      if((ret = pad_readpending_temp(i)) >= WPAD_ERR_NONE)
+         count += ret;
+   return count;
 }
 
 s32 WPAD_SetMotionPlus(s32 chan, u8 enable)
@@ -962,11 +966,6 @@ void WPAD_SetIdleTimeout(u32 seconds)
 	_CPU_ISR_Disable(level);
 	__wpad_idletimeout = seconds;
 	_CPU_ISR_Restore(level);
-}
-
-s32 WPAD_ScanPads()
-{
-	return WPAD_ReadPending(WPAD_CHAN_ALL, NULL);
 }
 
 #ifdef HAVE_WIIUSE_RUMBLE
