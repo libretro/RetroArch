@@ -1734,12 +1734,18 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
          }
          else if (mask & (1ULL << RARCH_SHADER_PASS0))
          {
+#if 0
+            /* TODO - doesn't seem to be added yet? */
             if (!gl_glsl_load_shader(1, (mask & (1ULL << RARCH_SHADER_PASS0_STOCK)) ? NULL : path))
+#endif
                return false;
          }
          else if (mask & (1ULL << RARCH_SHADER_PASS1))
          {
+#if 0
+            /* TODO - doesn't seem to be added yet? */
             if (!gl_glsl_load_shader(2, (mask & (1ULL << RARCH_SHADER_PASS1_STOCK)) ? NULL : path))
+#endif
                return false;
          }
          break;
