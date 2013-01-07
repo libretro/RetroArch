@@ -128,7 +128,7 @@ static struct rxml_attrib_node *rxml_parse_attrs(const char *str)
    struct rxml_attrib_node *tail = NULL;
 
    char *save;
-   const char *elem = strtok_r(copy, " ", &save);
+   const char *elem = strtok_r(copy, " \n\t\f\v\r", &save);
    while (elem)
    {
       const char *eq = strstr(elem, "=\"");
@@ -159,7 +159,7 @@ static struct rxml_attrib_node *rxml_parse_attrs(const char *str)
       else
          list = tail = new_node;
 
-      elem = strtok_r(NULL, " ", &save);
+      elem = strtok_r(NULL, " \n\t\f\v\r", &save);
    }
 
 end:
@@ -167,12 +167,20 @@ end:
    return list;
 }
 
+static char *find_first_space(const char *str)
+{
+   while (*str && !isspace(*str))
+      str++;
+
+   return isspace(*str) ? (char*)str : NULL;
+}
+
 static bool rxml_parse_tag(struct rxml_node *node, const char *str)
 {
    const char *str_ptr = str;
    skip_spaces(&str_ptr);
 
-   const char *name_end = strchr(str_ptr, ' ');
+   const char *name_end = find_first_space(str_ptr);
    if (name_end)
    {
       node->name = strdup_range(str_ptr, name_end);
