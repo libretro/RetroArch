@@ -570,7 +570,7 @@ static void update_texture_asm(const uint32_t *src, const uint32_t *dst,
 { \
    const uint16_t *tmp_src = src; \
    uint16_t *tmp_dst = dst; \
-   for (unsigned x = 0; x < width2; x += 8, tmp_src += 32, tmp_dst += 128) \
+   for (unsigned x = 0; x < width2 >> 2; x += 8, tmp_src += 32, tmp_dst += 128) \
    { \
       tmp_dst[  0 + off] = tmp_src[0] | 0xFF00; \
       tmp_dst[ 16 + off] = tmp_src[1]; \
