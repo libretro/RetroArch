@@ -41,7 +41,11 @@ distribution.
 #include "lwp_threads.inl"
 #include "conf.h"
 #include "ir.h"
+
+#ifdef HAVE_WIIUSE_SPEAKER
 #include "speaker.h"
+#endif
+
 #include "dynamics.h"
 #include "wiiuse_internal.h"
 #include "wiiuse/wpad.h"
@@ -151,6 +155,7 @@ static void __wpad_timeouthandler(syswd_t alarm,void *cbarg)
 	__lwp_thread_dispatchunnest();
 }
 
+#ifdef HAVE_WIIUSE_SPEAKER
 static void __wpad_sounddata_alarmhandler(syswd_t alarm,void *cbarg)
 {
 	u8 *snd_data;
@@ -174,6 +179,7 @@ static void __wpad_sounddata_alarmhandler(syswd_t alarm,void *cbarg)
 	wpdcb->sound_off += MAX_STREAMDATA_LEN;
 	wiiuse_write_streamdata(wm,(snd_data+snd_off),MAX_STREAMDATA_LEN,NULL);
 }
+#endif
 
 static void __wpad_setfmt(s32 chan)
 {
@@ -526,7 +532,9 @@ static void __wpad_eventCB(struct wiimote_t *wm,s32 event)
 			wiiuse_set_ir_position(wm,(CONF_GetSensorBarPosition()^1));
 			wiiuse_set_ir_sensitivity(wm,CONF_GetIRSensitivity());
 			wiiuse_set_leds(wm,(WIIMOTE_LED_1<<(chan%WPAD_BALANCE_BOARD)),NULL);
+#ifdef HAVE_WIIUSE_SPEAKER
 			wiiuse_set_speaker(wm,wpdcb->speaker_enabled);
+#endif
 			__wpad_setfmt(chan);
 			__wpads_active |= (0x01<<chan);
 			break;
@@ -1028,6 +1036,7 @@ s32 WPAD_ScanPads()
 	return WPAD_ReadPending(WPAD_CHAN_ALL, NULL);
 }
 
+#ifdef HAVE_WIIUSE_RUMBLE
 s32 WPAD_Rumble(s32 chan, int status)
 {
 	int i;
@@ -1055,6 +1064,7 @@ s32 WPAD_Rumble(s32 chan, int status)
 	_CPU_ISR_Restore(level);
 	return WPAD_ERR_NONE;
 }
+#endif
 
 s32 WPAD_SetIdleThresholds(s32 chan, s32 btns, s32 ir, s32 accel, s32 js, s32 wb, s32 mp)
 {
@@ -1088,6 +1098,7 @@ s32 WPAD_SetIdleThresholds(s32 chan, s32 btns, s32 ir, s32 accel, s32 js, s32 wb
 	return WPAD_ERR_NONE;
 }
 
+#ifdef HAVE_WIIUSE_SPEAKER
 s32 WPAD_ControlSpeaker(s32 chan,s32 enable)
 {
 	int i;
@@ -1142,12 +1153,11 @@ s32 WPAD_IsSpeakerEnabled(s32 chan)
 	_CPU_ISR_Restore(level);
 	return ret;
 }
+#endif
 
 s32 WPAD_SendStreamData(s32 chan,void *buf,u32 len)
 {
 	u32 level;
-	struct timespec tb;
-	wiimote *wm = NULL;
 
 	if(chan<WPAD_CHAN_0 || chan>=WPAD_MAX_WIIMOTES) return WPAD_ERR_BAD_CHANNEL;
 
@@ -1157,7 +1167,9 @@ s32 WPAD_SendStreamData(s32 chan,void *buf,u32 len)
 		return WPAD_ERR_NOT_READY;
 	}
 
-	wm = __wpads[chan];
+#ifdef HAVE_WIIUSE_SPEAKER
+	struct timespec tb;
+	wiimote *wm = __wpads[chan];
 	if(wm!=NULL  && WIIMOTE_IS_SET(wm,WIIMOTE_STATE_CONNECTED)) {
 		if(WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE_COMPLETE)
 			&& WIIMOTE_IS_SET(wm,WIIMOTE_STATE_SPEAKER)) {
@@ -1170,11 +1182,13 @@ s32 WPAD_SendStreamData(s32 chan,void *buf,u32 len)
 			SYS_SetPeriodicAlarm(__wpdcb[chan].sound_alarm,&tb,&tb,__wpad_sounddata_alarmhandler, &__wpdcb[chan]);
 		}
 	}
+#endif
 
 	_CPU_ISR_Restore(level);
 	return WPAD_ERR_NONE;
 }
 
+#ifdef HAVE_WIIUSE_SPEAKER
 void WPAD_EncodeData(WPADEncStatus *info,u32 flag,const s16 *pcmSamples,s32 numSamples,u8 *encData)
 {
 	int n;
@@ -1192,6 +1206,7 @@ void WPAD_EncodeData(WPADEncStatus *info,u32 flag,const s16 *pcmSamples,s32 numS
 		samples += 2;
 	}
 }
+#endif
 
 WPADData *WPAD_Data(int chan)
 {

@@ -101,7 +101,9 @@ static void event_status(struct wiimote_t *wm,ubyte *msg)
 {
 	int ir = 0;
 	int attachment = 0;
+#ifdef HAVE_WIIUSE_SPEAKER
 	int speaker = 0;
+#endif
 	//int led[4]= {0};
 	struct cmd_blk_t *cmd = wm->cmd_head;
 
@@ -114,7 +116,9 @@ static void event_status(struct wiimote_t *wm,ubyte *msg)
 	//if(msg[2]&WM_CTRL_STATUS_BYTE1_LED_4) led[3] = 1;
 
 	if((msg[2]&WM_CTRL_STATUS_BYTE1_ATTACHMENT)==WM_CTRL_STATUS_BYTE1_ATTACHMENT) attachment = 1;
+#ifdef HAVE_WIIUSE_SPEAKER
 	if((msg[2]&WM_CTRL_STATUS_BYTE1_SPEAKER_ENABLED)==WM_CTRL_STATUS_BYTE1_SPEAKER_ENABLED) speaker = 1;
+#endif
 	if((msg[2]&WM_CTRL_STATUS_BYTE1_IR_ENABLED)==WM_CTRL_STATUS_BYTE1_IR_ENABLED) ir = 1;
 
 	wm->battery_level = msg[5];
@@ -127,6 +131,7 @@ static void event_status(struct wiimote_t *wm,ubyte *msg)
 	if(ir && !WIIMOTE_IS_SET(wm,WIIMOTE_STATE_IR)) WIIMOTE_ENABLE_STATE(wm,WIIMOTE_STATE_IR);
 	else if(!ir && WIIMOTE_IS_SET(wm,WIIMOTE_STATE_IR)) WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_IR);
 
+#ifdef HAVE_WIIUSE_SPEAKER
 	if(!speaker && WIIMOTE_IS_SET(wm,WIIMOTE_STATE_SPEAKER_INIT)) {
 		WIIMOTE_DISABLE_STATE(wm,WIIMOTE_STATE_SPEAKER_INIT);
 		wiiuse_set_speaker(wm,1);
@@ -134,6 +139,7 @@ static void event_status(struct wiimote_t *wm,ubyte *msg)
 	}
 	if(speaker && !WIIMOTE_IS_SET(wm,WIIMOTE_STATE_SPEAKER)) WIIMOTE_ENABLE_STATE(wm,WIIMOTE_STATE_SPEAKER);
 	else if(!speaker && WIIMOTE_IS_SET(wm,WIIMOTE_STATE_SPEAKER)) WIIMOTE_DISABLE_STATE(wm,WIIMOTE_STATE_SPEAKER);
+#endif
 
 	if(attachment) {
 		if(!WIIMOTE_IS_SET(wm,WIIMOTE_STATE_EXP) && !WIIMOTE_IS_SET(wm,WIIMOTE_STATE_EXP_FAILED) && !WIIMOTE_IS_SET(wm,WIIMOTE_STATE_EXP_HANDSHAKE)) {

@@ -236,7 +236,9 @@ INPUT
 #include "../../wii/wiiuse/ir.c"
 #include "../../wii/wiiuse/motion_plus.c"
 #include "../../wii/wiiuse/nunchuk.c"
+#ifdef HAVE_WIIUSE_SPEAKER
 #include "../../wii/wiiuse/speaker.c"
+#endif
 #include "../../wii/wiiuse/wiiuse.c"
 #include "../../wii/wiiuse/wpad.c"
 #endif

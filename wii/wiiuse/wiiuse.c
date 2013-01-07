@@ -24,7 +24,9 @@ void wiiuse_send_next_command(struct wiimote_t *wm)
 	if(cmd->state!=CMD_READY) return;
 
 	cmd->state = CMD_SENT;
+#ifdef HAVE_WIIUSE_RUMBLE
 	if(WIIMOTE_IS_SET(wm,WIIMOTE_STATE_RUMBLE)) cmd->data[1] |= 0x01;
+#endif
 
 	//WIIUSE_DEBUG("Sending command: %02x %02x", cmd->data[0], cmd->data[1]);
 	wiiuse_io_write(wm,cmd->data,cmd->len);
@@ -162,6 +164,7 @@ void wiiuse_motion_sensing(struct wiimote_t* wm, int status)
  *
  *	@param wm		Pointer to a wiimote_t structure.
  */
+#ifdef HAVE_WIIUSE_RUMBLE
 void wiiuse_toggle_rumble(struct wiimote_t* wm) 
 {
 	if (!wm) return;
@@ -184,6 +187,7 @@ void wiiuse_rumble(struct wiimote_t* wm, int status)
 	else if(!status && !WIIMOTE_IS_SET(wm,WIIMOTE_STATE_RUMBLE)) return;
 	wiiuse_toggle_rumble(wm);
 }
+#endif
 
 void wiiuse_set_leds(struct wiimote_t *wm,int leds,cmd_blk_cb cb)
 {
