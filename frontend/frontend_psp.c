@@ -144,11 +144,14 @@ int main(int argc, char *argv[])
    rarch_config_load();
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-   if (rarch_configure_libretro_core(core_exe_path, path_prefix, path_prefix, 
-   g_extern.config_path, extension))
+   if (path_file_exists(core_exe_path))
    {
-      RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
-      config_save_file(g_extern.config_path);
+      if (rarch_libretro_core_install(core_exe_path, path_prefix, path_prefix, 
+               g_extern.config_path, extension))
+      {
+         RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
+         config_save_file(g_extern.config_path);
+      }
    }
 #endif
 

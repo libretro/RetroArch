@@ -511,19 +511,22 @@ int main(int argc, char *argv[])
    snprintf(tmp_path, sizeof(tmp_path), "%s/", default_paths.core_dir);
    const char *path_prefix = tmp_path; 
 
-   char full_path[1024];
-   snprintf(full_path, sizeof(full_path), "%sCORE%s", path_prefix, extension);
+   char core_exe_path[1024];
+   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
 
    rarch_settings_set_default();
    rarch_input_set_controls_default(driver.input);
    rarch_config_load();
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-   if (rarch_configure_libretro_core(full_path, path_prefix, path_prefix, 
-   g_extern.config_path, extension))
+   if (path_file_exists(core_exe_path))
    {
-      RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
-      config_save_file(g_extern.config_path);
+      if (rarch_libretro_core_install(core_exe_path, path_prefix, path_prefix, 
+               g_extern.config_path, extension))
+      {
+         RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
+         config_save_file(g_extern.config_path);
+      }
    }
 #endif
 

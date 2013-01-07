@@ -38,10 +38,8 @@ void rarch_manage_libretro_set_first_file(char *first_file, size_t size_of_first
 
 #ifndef IS_SALAMANDER
 
-// if a CORE executable exists (full_path), this means we have just installed
-// a new libretro port and therefore we need to change it to a more
-// sane name.
-bool rarch_configure_libretro_core(const char *full_path, const char *tmp_path,
+//install/upgrade (and rename) libretro core if 'CORE' executable exists
+bool rarch_libretro_core_install(const char *full_path, const char *tmp_path,
  const char *libretro_path, const char *config_path, const char *extension);
 
 // Transforms a library id to a name suitable as a pathname.

@@ -50,57 +50,51 @@ void rarch_console_name_from_id(char *name, size_t size)
    }
 }
 
-bool rarch_configure_libretro_core(const char *core_exe_path, const char *tmp_path,
+// if a CORE executable exists (full_path), this means we have just installed
+// a new libretro port and therefore we need to change it to a more
+// sane name.
+
+bool rarch_libretro_core_install(const char *core_exe_path, const char *tmp_path,
  const char *libretro_path, const char *config_path, const char *extension)
 {
-   bool upgrade_core_succeeded = false;
+   int ret = 0;
+   char tmp_path2[PATH_MAX], tmp_pathnewfile[PATH_MAX];
 
-   g_extern.verbose = true;
+   rarch_console_name_from_id(tmp_path2, sizeof(tmp_path2));
+   strlcat(tmp_path2, extension, sizeof(tmp_path2));
+   snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", tmp_path, tmp_path2);
 
-   //install and rename libretro core first if 'CORE' executable exists
-   if (path_file_exists(core_exe_path))
+   if (path_file_exists(tmp_pathnewfile))
    {
-      bool ret = false;
-      char tmp_path2[PATH_MAX], tmp_pathnewfile[PATH_MAX];
+      // if libretro core already exists, this means we are
+      // upgrading the libretro core - so delete pre-existing
+      // file first.
 
-      rarch_console_name_from_id(tmp_path2, sizeof(tmp_path2));
-      strlcat(tmp_path2, extension, sizeof(tmp_path2));
-      snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", tmp_path, tmp_path2);
-
-      if (path_file_exists(tmp_pathnewfile))
-      {
-         // if libretro core already exists, this means we are
-         // upgrading the libretro core - so delete pre-existing
-         // file first.
-
-         RARCH_LOG("Upgrading emulator core...\n");
-         ret = remove(tmp_pathnewfile);
-
-         if (ret == 0)
-            RARCH_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-         else
-            RARCH_ERR("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
-      }
-
-      //now attempt the renaming.
-      ret = rename(core_exe_path, tmp_pathnewfile);
+      RARCH_LOG("Upgrading emulator core...\n");
+      ret = remove(tmp_pathnewfile);
 
       if (ret == 0)
-      {
-         RARCH_LOG("libretro core [%s] renamed to: [%s].\n", core_exe_path, tmp_pathnewfile);
-         snprintf(g_settings.libretro, sizeof(g_settings.libretro), tmp_pathnewfile);
-         upgrade_core_succeeded = true;
-      }
+         RARCH_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
       else
-      {
-         RARCH_ERR("Failed to rename CORE executable.\n");
-         RARCH_WARN("CORE executable was not found, or some other error occurred. Will attempt to load libretro core path from config file.\n");
-      }
+         RARCH_ERR("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
    }
 
-   g_extern.verbose = false;
+   //now attempt the renaming.
+   ret = rename(core_exe_path, tmp_pathnewfile);
 
-   return upgrade_core_succeeded;
+   if (ret == 0)
+   {
+      RARCH_LOG("Libretro core [%s] successfully renamed to: [%s].\n", core_exe_path, tmp_pathnewfile);
+      snprintf(g_settings.libretro, sizeof(g_settings.libretro), tmp_pathnewfile);
+   }
+   else
+   {
+      RARCH_ERR("Failed to rename CORE executable.\n");
+      RARCH_WARN("CORE executable was not found, or some other error occurred. Will attempt to load libretro core path from config file.\n");
+      return false;
+   }
+
+   return true;
 }
 
 bool rarch_manage_libretro_extension_supported(const char *filename)
