@@ -47,7 +47,7 @@ RetroArch requires these libraries to build:
 RetroArch can utilize these libraries if enabled:
 
    - nvidia-cg-toolkit
-   - libxml2 (bSNES XML shaders)
+   - libxml2 (GLSL XML shaders)
    - libfreetype2 (TTF font rendering on screen)
    - libsamplerate
 

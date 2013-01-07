@@ -291,7 +291,6 @@ static const float audio_volume = 0.0;
 //////////////
 
 // Enables use of rewind. This will incur some memory footprint depending on the save state buffer.
-// This rewind only works when using bSNES core atm.
 static const bool rewind_enable = false;
 
 // The buffer size for the rewind buffer. This needs to be about 15-20MB per minute. Very game dependant.

@@ -228,7 +228,7 @@ static bool gl_shader_init(void *data)
       case RARCH_SHADER_AUTO:
       {
          if (*g_settings.video.cg_shader_path && *g_settings.video.bsnes_shader_path)
-            RARCH_WARN("Both Cg and bSNES XML shader are defined in config file. Cg shader will be selected by default.\n");
+            RARCH_WARN("Both Cg and GLSL XML shader are defined in config file. Cg shader will be selected by default.\n");
 
 #ifdef HAVE_CG
          if (*g_settings.video.cg_shader_path)
