@@ -340,9 +340,9 @@ static void init_vtx(void)
 
    GX_SetBlendMode(GX_BM_BLEND, GX_BL_ONE, GX_BL_INVSRCALPHA, 0);
 
-   g_tex.data = memalign(32, 4 * 4 * 2);
-   memset(g_tex.data, 0, 4 * 4 * 2);
-   DCFlushRange(g_tex.data, 4 * 4 * 2);
+   g_tex.data = memalign(32, 4 * 4 * 4);
+   memset(g_tex.data, 0, 4 * 4 * 4);
+   DCFlushRange(g_tex.data, 4 * 4 * 4);
    init_texture(4, 4); // for menu texture
    GX_Flush();
 }
@@ -431,7 +431,7 @@ static void *gx_init(const video_info_t *video,
       {
          RARCH_LOG("[GX] reallocate texture\n");
          free(g_tex.data);
-         g_tex.data = memalign(32, RARCH_SCALE_BASE * RARCH_SCALE_BASE * video->input_scale * 2 * (video->rgb32 ? 4 : 2));
+         g_tex.data = memalign(32, RARCH_SCALE_BASE * RARCH_SCALE_BASE * video->input_scale * video->input_scale * (video->rgb32 ? 4 : 2));
 
          if (!g_tex.data)
          {

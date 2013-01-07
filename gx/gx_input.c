@@ -429,7 +429,6 @@ static void gx_input_poll(void *data)
          *state_cur |= GX_WIIMOTE_HOME;
    }
 
-do_exit:
    g_extern.lifecycle_state &= ~((1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_REWIND)
          | (1ULL << RARCH_QUIT_KEY) | (1ULL << RARCH_RMENU_TOGGLE) | (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE));
 
