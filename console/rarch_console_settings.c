@@ -342,6 +342,18 @@ void rarch_settings_set_default(void)
    g_settings.video.second_pass_smooth = true;
 #endif
 
+#if defined(_XBOX360)
+   g_settings.video.shader_type = RARCH_SHADER_HLSL;
+#elif defined(__PSL1GHT__)
+   g_settings.video.shader_type = RARCH_SHADER_GLSL;
+#elif defined(__CELLOS_LV2__)
+   g_settings.video.shader_type = RARCH_SHADER_CG;
+#elif defined(HAVE_GLSL)
+   g_settings.video.shader_type = RARCH_SHADER_GLSL;
+#else
+   g_settings.video.shader_type = RARCH_SHADER_NONE;
+#endif
+
 #ifdef HAVE_FBO
    g_settings.video.fbo.scale_x = 2.0f;
    g_settings.video.fbo.scale_y = 2.0f;

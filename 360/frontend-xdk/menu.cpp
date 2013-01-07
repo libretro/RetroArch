@@ -859,15 +859,6 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
    return 0;
 }
 
-unsigned get_shader_type(void)
-{
-#if defined(HAVE_HLSL)
-   return RARCH_SHADER_HLSL;
-#else
-   return RARCH_SHADER_NONE;
-#endif
-}
-
 HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 {
    char path[PATH_MAX];
@@ -878,15 +869,14 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
       if(path_file_exists(tmp_browser.current_dir.list->elems[index].data))
       {
          convert_wchar_to_char(str_buffer, (const wchar_t *)m_shaderlist.GetText(index), sizeof(str_buffer));
-         unsigned shader_type = get_shader_type();
 
          switch(set_shader)
          {
             case 1:
                snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), str_buffer);
-               if (shader_type != RARCH_SHADER_NONE)
+               if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                {
-                  device_ptr->set_shader(driver.video_data, (enum rarch_shader_type)shader_type, g_settings.video.cg_shader_path, (1ULL << RARCH_SHADER_PASS0));
+                  device_ptr->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.cg_shader_path, (1ULL << RARCH_SHADER_PASS0));
                   if (g_extern.console.rmenu.state.msg_info.enable)
                      rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                }
@@ -895,9 +885,9 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                break;
             case 2:
                snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), str_buffer);
-               if (shader_type != RARCH_SHADER_NONE)
+               if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                {
-                  device_ptr->set_shader(driver.video_data, (enum rarch_shader_type)shader_type, g_settings.video.second_pass_shader, (1ULL << RARCH_SHADER_PASS1));
+                  device_ptr->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.second_pass_shader, (1ULL << RARCH_SHADER_PASS1));
                   if (g_extern.console.rmenu.state.msg_info.enable)
                      rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                }

@@ -615,19 +615,6 @@ void browser_render(void *data)
    }
 }
 
-unsigned get_shader_type(void)
-{
-#if defined(HAVE_GLSL)
-   return RARCH_SHADER_GLSL;
-#elif defined(HAVE_CG)
-   return RARCH_SHADER_CG;
-#elif defined(HAVE_HLSL)
-   return RARCH_SHADER_HLSL;
-#else
-   return RARCH_SHADER_NONE;
-#endif
-}
-
 int select_file(void *data, void *state)
 {
    menu *current_menu = (menu*)data;
@@ -676,9 +663,6 @@ int select_file(void *data, void *state)
          ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
       else
       {
-         unsigned shader_type = 0;
-         (void)shader_type;
-
          snprintf(path, sizeof(path), filebrowser_get_current_path(filebrowser));
 
          switch(current_menu->enum_id)
@@ -690,10 +674,9 @@ int select_file(void *data, void *state)
                   case 1:
                      strlcpy(g_settings.video.cg_shader_path, path, sizeof(g_settings.video.cg_shader_path));
 
-                     shader_type = get_shader_type();
-                     if (shader_type != RARCH_SHADER_NONE)
+                     if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                      {
-                        driver.video->set_shader(driver.video_data, (enum rarch_shader_type)shader_type, path, 1ULL << RARCH_SHADER_PASS0);
+                        driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, 1ULL << RARCH_SHADER_PASS0);
                         if (g_extern.console.rmenu.state.msg_info.enable)
                            rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                      }
@@ -703,10 +686,9 @@ int select_file(void *data, void *state)
                   case 2:
                      strlcpy(g_settings.video.second_pass_shader, path, sizeof(g_settings.video.second_pass_shader));
 
-                     shader_type = get_shader_type();
-                     if (shader_type != RARCH_SHADER_NONE)
+                     if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                      {
-                        driver.video->set_shader(driver.video_data, (enum rarch_shader_type)shader_type, path, 1ULL << RARCH_SHADER_PASS1);
+                        driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, 1ULL << RARCH_SHADER_PASS1);
                         if (g_extern.console.rmenu.state.msg_info.enable)
                            rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                      }
@@ -1102,10 +1084,9 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
-            unsigned shader_type = get_shader_type();
-            if (shader_type != RARCH_SHADER_NONE)
+            if (g_settings.video.shader_type != RARCH_SHADER_NONE)
             {
-               driver.video->set_shader(driver.video_data, (enum rarch_shader_type)shader_type, NULL, (1ULL << RARCH_SHADER_PASS0) | (1ULL << RARCH_SHADER_PASS0_STOCK));
+               driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, NULL, (1ULL << RARCH_SHADER_PASS0) | (1ULL << RARCH_SHADER_PASS0_STOCK));
                if (g_extern.console.rmenu.state.msg_info.enable)
                   rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
             }
@@ -1123,10 +1104,9 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
-            unsigned shader_type = get_shader_type();
-            if (shader_type != RARCH_SHADER_NONE)
+            if (g_settings.video.shader_type != RARCH_SHADER_NONE)
             {
-               driver.video->set_shader(driver.video_data, (enum rarch_shader_type)shader_type, NULL, (1ULL << RARCH_SHADER_PASS1) | (1ULL << RARCH_SHADER_PASS1_STOCK));
+               driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, NULL, (1ULL << RARCH_SHADER_PASS1) | (1ULL << RARCH_SHADER_PASS1_STOCK));
                if (g_extern.console.rmenu.state.msg_info.enable)
                   rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
             }
