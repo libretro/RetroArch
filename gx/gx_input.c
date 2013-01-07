@@ -276,18 +276,22 @@ static void gx_input_poll(void *data)
 
 #ifdef HW_RVL
    WPAD_ReadPending(WPAD_CHAN_ALL, NULL);
+#endif
 
    for (unsigned port = 0; port < MAX_PADS; port++)
    {
       uint32_t type = 0;
+      uint32_t down = 0;
+      uint64_t *state_cur = NULL;
 
+#ifdef HW_RVL
       if (WPAD_Probe(port, &type) != WPAD_ERR_NONE)
          continue;
 
-      uint64_t *state_cur = &pad_state[port];
+      state_cur = &pad_state[port];
       WPADData *wpaddata = WPAD_Data(port);
 
-      uint32_t down = wpaddata->btns_h;
+      down = wpaddata->btns_h;
 
       *state_cur |= (down & WPAD_BUTTON_A) ? GX_WIIMOTE_A : 0;
       *state_cur |= (down & WPAD_BUTTON_B) ? GX_WIIMOTE_B : 0;
@@ -384,6 +388,7 @@ static void gx_input_poll(void *data)
          if (abs(y) > JOYSTICK_THRESHOLD)
             *state_cur |= y > 0 ? GX_NUNCHUK_UP : GX_NUNCHUK_DOWN;
       }
+#endif
 
       if (!(SI_GetType(port) & SI_TYPE_GC))
          continue;
@@ -425,7 +430,6 @@ static void gx_input_poll(void *data)
       if ((*state_cur & (GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
          *state_cur |= GX_WIIMOTE_HOME;
    }
-#endif
 
    g_extern.lifecycle_state &= ~((1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_REWIND)
          | (1ULL << RARCH_QUIT_KEY) | (1ULL << RARCH_RMENU_TOGGLE) | (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE));
