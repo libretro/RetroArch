@@ -43,13 +43,17 @@ const char *path, const char * extensions)
       return false;
 }
 
-static bool filebrowser_new(void *data, const char *start_dir, 
-const char *extensions)
+filebrowser_t *filebrowser_init(const char *start_dir, const char *extensions)
+{
+   filebrowser_t *filebrowser = (filebrowser_t*)calloc(1, sizeof(*filebrowser));
+   filebrowser_parse_directory(filebrowser, 0, start_dir, extensions);
+   return filebrowser;
+}
+
+static bool filebrowser_reset(void *data, const char *start_dir, const char *extensions)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)data;
-
    bool ret = filebrowser_parse_directory(filebrowser, 0, start_dir, extensions);
-
    return ret;
 }
 
@@ -72,9 +76,9 @@ void filebrowser_free(void *data)
    filebrowser_t *filebrowser = (filebrowser_t*)data;
 
    dir_list_free(filebrowser->current_dir.list);
-
    filebrowser->current_dir.list = NULL;
    filebrowser->current_dir.ptr   = 0;
+   free(filebrowser);
 }
 
 static bool filebrowser_push_directory(void *data, const char * path,
@@ -210,7 +214,7 @@ bool filebrowser_iterate(void *data, unsigned action)
          ret = filebrowser_pop_directory(filebrowser);
          break;
       case FILEBROWSER_ACTION_RESET:
-         ret = filebrowser_new(filebrowser, filebrowser->root_dir, filebrowser->extensions);
+         ret = filebrowser_reset(filebrowser, filebrowser->root_dir, filebrowser->extensions);
          break;
       case FILEBROWSER_ACTION_NOOP:
       default:

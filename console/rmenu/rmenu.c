@@ -54,8 +54,8 @@ rmenu_state_t rmenu_state;
 
 static bool set_libretro_core_as_launch;
 
-filebrowser_t browser;
-filebrowser_t tmpBrowser;
+filebrowser_t *browser;
+filebrowser_t *tmpBrowser;
 unsigned set_shader = 0;
 unsigned currently_selected_controller_menu = 0;
 
@@ -483,7 +483,7 @@ static void display_menubar(void *data)
 {
    menu *current_menu = (menu*)data;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-   filebrowser_t *fb = &browser;
+   filebrowser_t *fb = browser;
    char current_path[256], rarch_version[128], msg[128];
 
    rmenu_default_positions_t default_pos;
@@ -528,7 +528,7 @@ static void display_menubar(void *data)
 #endif
       case PATH_SRAM_DIR_CHOICE:
       case PATH_SYSTEM_DIR_CHOICE:
-         fb = &tmpBrowser;
+         fb = tmpBrowser;
       case FILE_BROWSER_MENU:
          snprintf(current_path, sizeof(current_path), "PATH: %s", filebrowser_get_current_dir(fb));
          device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.current_path_y_position, default_pos.current_path_font_size, WHITE, current_path);
@@ -626,7 +626,7 @@ int select_file(void *data, void *state)
    char extensions[256], comment[256], path[PATH_MAX];
    bool ret = true;
 
-   filebrowser_t *filebrowser = &tmpBrowser;
+   filebrowser_t *filebrowser = tmpBrowser;
    rmenu_default_positions_t default_pos;
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
 
@@ -761,7 +761,7 @@ int select_directory(void *data, void *state)
    char path[PATH_MAX], msg[256];
    bool ret = true;
 
-   filebrowser_t *filebrowser = &tmpBrowser;
+   filebrowser_t *filebrowser = tmpBrowser;
    rmenu_default_positions_t default_pos;
 
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
@@ -1016,7 +1016,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
 {
    (void)data;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-   filebrowser_t *filebrowser = &tmpBrowser;
+   filebrowser_t *filebrowser = tmpBrowser;
    
    switch(switchvalue)
    {
@@ -1785,7 +1785,7 @@ int select_rom(void *data, void *state)
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    char msg[128];
    rmenu_default_positions_t default_pos;
-   filebrowser_t *filebrowser = &browser;
+   filebrowser_t *filebrowser = browser;
 
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
 
@@ -2059,7 +2059,7 @@ int ingame_menu(void *data, void *state)
    unsigned menuitem_colors[MENU_ITEM_LAST];
    static unsigned menu_idx = 0;
 
-   filebrowser_t *filebrowser = &tmpBrowser;
+   filebrowser_t *filebrowser = tmpBrowser;
    rmenu_default_positions_t default_pos;
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
 
@@ -2369,17 +2369,20 @@ void init_filebrowser(void *data)
 {
    (void)data;
 
+   browser    = filebrowser_init(default_paths.filebrowser_startup_dir, rarch_console_get_rom_ext());
+   tmpBrowser = filebrowser_init(default_paths.filesystem_root_dir, "");
+
    menu_stack_push(FILE_BROWSER_MENU);
-   filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), default_paths.filebrowser_startup_dir);
-   filebrowser_set_root(&tmpBrowser, default_paths.filesystem_root_dir);
+   filebrowser_set_root_and_ext(browser, rarch_console_get_rom_ext(), default_paths.filebrowser_startup_dir);
+   filebrowser_set_root(tmpBrowser, default_paths.filesystem_root_dir);
 }
 
 void free_filebrowser(void *data)
 {
    (void)data;
 
-   filebrowser_free(&browser);
-   filebrowser_free(&tmpBrowser);
+   filebrowser_free(browser);
+   filebrowser_free(tmpBrowser);
 }
 
 /*============================================================
