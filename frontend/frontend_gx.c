@@ -278,7 +278,7 @@ static bool rmenu_iterate(void)
    static bool first_held = false;
 
    g_extern.draw_menu = true;
-   video_gx.apply_state_changes();
+   driver.video->apply_state_changes();
 
    g_extern.frame_count++;
 
@@ -501,8 +501,8 @@ int main(int argc, char *argv[])
    config_set_defaults();
    input_gx.init();
 
-   video_gx.start();
-   driver.video = &video_gx;
+   find_video_driver();
+   driver.video->start();
 
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    gx->menu_data = (uint32_t *) menu_framebuf;
@@ -607,8 +607,7 @@ begin_shutdown:
       rarch_main_deinit();
 
    input_gx.free(NULL);
-
-   video_gx.stop();
+   driver.video->stop();
    menu_free();
 
 #ifdef HAVE_LOGGER

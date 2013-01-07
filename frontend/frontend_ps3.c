@@ -319,8 +319,8 @@ int main(int argc, char *argv[])
 #endif
 #endif
 
-   video_gl.start();
-   driver.video = &video_gl;
+   find_video_driver();
+   driver.video->start();
 
 #ifdef HAVE_OSKUTIL
    oskutil_params *osk = &g_extern.console.misc.oskutil_handle;
@@ -387,7 +387,7 @@ begin_shutdown:
       rarch_main_deinit();
 
    input_ps3.free(NULL);
-   video_gl.stop();
+   driver.video->stop();
    menu_free();
 
 #ifdef HAVE_OSKUTIL

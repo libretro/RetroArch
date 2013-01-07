@@ -319,6 +319,8 @@ void init_drivers(void);
 void init_drivers_pre(void);
 void uninit_drivers(void);
 
+void find_video_driver(void);
+
 void init_video_input(void);
 void uninit_video_input(void);
 void init_audio(void);

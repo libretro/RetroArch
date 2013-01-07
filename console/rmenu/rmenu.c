@@ -1033,13 +1033,13 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
                if(gfx_ctx_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
                {
                   //ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
-                  video_ptr.restart();
+                  driver.video->restart();
                }
             }
             else
             {
                //ps3graphics_set_pal60hz(0);
-               video_ptr.restart();
+               driver.video->restart();
             }
          }
          break;
@@ -1275,7 +1275,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             rarch_settings_change(S_TRIPLE_BUFFERING);
-            video_ptr.restart();
+            driver.video->restart();
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
@@ -1283,7 +1283,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             rarch_settings_default(S_DEF_TRIPLE_BUFFERING);
 
             if(!old_buffer_input)
-               video_ptr.restart();
+               driver.video->restart();
          }
          break;
       case SETTING_ENABLE_SCREENSHOTS:
@@ -2112,19 +2112,19 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
             rarch_settings_change(S_ROTATION_DECREMENT);
-            video_ptr.set_rotation(NULL, g_extern.console.screen.orientation);
+            driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
          }
 
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             rarch_settings_change(S_ROTATION_INCREMENT);
-            video_ptr.set_rotation(NULL, g_extern.console.screen.orientation);
+            driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             rarch_settings_default(S_DEF_ROTATION);
-            video_ptr.set_rotation(NULL, g_extern.console.screen.orientation);
+            driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
          break;

@@ -175,13 +175,8 @@ int main(int argc, char *argv[])
 
    input_xinput.post_init();
 
-#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
-   video_xdk_d3d.start();
-   driver.video = &video_xdk_d3d;
-#else
-   video_null.start();
-   driver.video = &video_null;
-#endif
+   find_video_driver();
+   driver.video->start();
 
    system_init();
 
@@ -229,11 +224,7 @@ begin_shutdown:
    config_save_file(g_extern.config_path);
 
    menu_free();
-#if defined(HAVE_D3D8) || defined(HAVE_D3D9)
-   video_xdk_d3d.stop();
-#else
-   video_null.stop();
-#endif
+   driver.video->stop();
    input_xinput.free(NULL);
 
    if(g_extern.console.external_launch.enable)

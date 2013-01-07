@@ -159,8 +159,8 @@ int main(int argc, char *argv[])
 
    input_psp.post_init();
 
-   video_psp1.start();
-   driver.video = &video_psp1;
+   find_video_driver();
+   driver.video->start();
    
    menu_init();
 
@@ -207,7 +207,7 @@ begin_shutdown:
       rarch_main_deinit();
 
    input_psp.free(NULL);
-   video_psp1.stop();
+   driver.video->stop();
    menu_free();
 
    g_extern.verbose = false;

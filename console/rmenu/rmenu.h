@@ -19,7 +19,6 @@
 
 #if defined(HAVE_OPENGL)
 #define DEVICE_CAST gl_t*
-#define video_ptr video_gl
 #endif
 
 #if defined(__CELLOS_LV2__)
@@ -29,9 +28,6 @@
 #elif defined(_XBOX1)
 #define DEVICE_CAST xdk_d3d_video_t*
 #define input_ptr input_xinput
-#define video_ptr video_xdk_d3d
-
-
 #endif
 
 typedef struct
