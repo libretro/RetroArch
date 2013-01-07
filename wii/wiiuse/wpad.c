@@ -28,6 +28,9 @@ distribution.
 
 -------------------------------------------------------------*/
 
+/* This source as presented is a modified version of original wiiuse for use 
+ * with RetroArch, and must not be confused with the original software. */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -78,13 +81,17 @@ struct _wpad_cb {
 	s32 speaker_enabled;
 	struct _wpad_thresh thresh;
 
+#ifdef HAVE_WIIUSE_SPEAKER
 	void *sound_data;
 	u32 sound_len;
 	u32 sound_off;
 	syswd_t sound_alarm;
+#endif
 
 	WPADData lstate;
+#ifdef HAVE_WIIUSE_QUEUE_EXT
 	WPADData *queue_ext;
+#endif
 	WPADData queue_int[EVENTQUEUE_LENGTH];
 };
 
@@ -495,10 +502,14 @@ static void __wpad_eventCB(struct wiimote_t *wm,s32 event)
 			chan = wm->unid;
 			wpdcb = &__wpdcb[chan];
 
+#ifdef HAVE_WIIUSE_QUEUE_EXT
 			if(wpdcb->queue_ext!=NULL) {
 				maxbufs = wpdcb->queue_length;
 				wpadd = &(wpdcb->queue_ext[wpdcb->queue_tail]);
-			} else {
+			}
+         else
+#endif
+         {
 				maxbufs = EVENTQUEUE_LENGTH;
 				wpadd = &(wpdcb->queue_int[wpdcb->queue_tail]);
 			}
@@ -546,7 +557,9 @@ static void __wpad_eventCB(struct wiimote_t *wm,s32 event)
 			wpdcb->queue_tail = 0;
 			wpdcb->queue_full = 0;
 			wpdcb->queue_length = 0;
+#ifdef HAVE_WIIUSE_QUEUE_EXT
 			wpdcb->queue_ext = NULL;
+#endif
 			wpdcb->idle_time = -1;
 			memset(&wpdcb->lstate,0,sizeof(WPADData));
 			memset(&wpaddata[chan],0,sizeof(WPADData));
@@ -600,12 +613,14 @@ s32 WPAD_Init()
 			__wpdcb[i].thresh.js = WPAD_THRESH_DEFAULT_JOYSTICK;
 			__wpdcb[i].thresh.mp = WPAD_THRESH_DEFAULT_MOTION_PLUS;
 
+#ifdef HAVE_WIIUSE_SPEAKER
 			if (SYS_CreateAlarm(&__wpdcb[i].sound_alarm) < 0)
 			{
 				WPAD_Shutdown();
 				_CPU_ISR_Restore(level);
 				return WPAD_ERR_UNKNOWN;
 			}
+#endif
 		}
 
 		if(CONF_GetPadDevices(&__wpad_devs) < 0) {
@@ -676,10 +691,14 @@ s32 WPAD_ReadEvent(s32 chan, WPADData *data)
 	if(__wpads[chan] && WIIMOTE_IS_SET(__wpads[chan],WIIMOTE_STATE_CONNECTED)) {
 		if(WIIMOTE_IS_SET(__wpads[chan],WIIMOTE_STATE_HANDSHAKE_COMPLETE)) {
 			wpdcb = &__wpdcb[chan];
+#ifdef HAVE_WIIUSE_QUEUE_EXT
 			if(wpdcb->queue_ext!=NULL) {
 				maxbufs = wpdcb->queue_length;
 				wpadd = wpdcb->queue_ext;
-			} else {
+			}
+         else
+#endif
+         {
 				maxbufs = EVENTQUEUE_LENGTH;
 				wpadd = wpdcb->queue_int;
 			}
@@ -710,6 +729,7 @@ s32 WPAD_ReadEvent(s32 chan, WPADData *data)
 	return 0;
 }
 
+#if 0
 s32 WPAD_DroppedEvents(s32 chan)
 {
 	u32 level;
@@ -761,6 +781,7 @@ s32 WPAD_Flush(s32 chan)
 	if(ret == WPAD_ERR_QUEUE_EMPTY) return count;
 	return ret;
 }
+#endif
 
 s32 WPAD_ReadPending(s32 chan, WPADDataCallback datacb)
 {
@@ -786,6 +807,7 @@ s32 WPAD_ReadPending(s32 chan, WPADDataCallback datacb)
 	return ret;
 }
 
+#if 0
 s32 WPAD_SetDataFormat(s32 chan, s32 fmt)
 {
 	u32 level;
@@ -823,6 +845,7 @@ s32 WPAD_SetDataFormat(s32 chan, s32 fmt)
 	_CPU_ISR_Restore(level);
 	return WPAD_ERR_NONE;
 }
+#endif
 
 s32 WPAD_SetMotionPlus(s32 chan, u8 enable)
 {
@@ -898,7 +921,7 @@ s32 WPAD_Probe(s32 chan,u32 *type)
 	u32 level,dev;
 	wiimote *wm = NULL;
 
-	if(chan<WPAD_CHAN_0 || chan>=WPAD_MAX_WIIMOTES) return WPAD_ERR_BAD_CHANNEL;
+	//if(chan<WPAD_CHAN_0 || chan>=WPAD_MAX_WIIMOTES) return WPAD_ERR_BAD_CHANNEL;
 
 	_CPU_ISR_Disable(level);
 	if(__wpads_inited==WPAD_STATE_DISABLED) {
@@ -928,7 +951,8 @@ s32 WPAD_Probe(s32 chan,u32 *type)
 
 	return ret;
 }
-
+ 
+#ifdef HAVE_WIIUSE_QUEUE_EXT
 s32 WPAD_SetEventBufs(s32 chan, WPADData *bufs, u32 cnt)
 {
 	u32 level;
@@ -946,6 +970,7 @@ s32 WPAD_SetEventBufs(s32 chan, WPADData *bufs, u32 cnt)
 	_CPU_ISR_Restore(level);
 	return WPAD_ERR_NONE;
 }
+#endif
 
 void WPAD_SetPowerButtonCallback(WPADShutdownCallback cb)
 {
@@ -1007,7 +1032,9 @@ void WPAD_Shutdown()
 	SYS_RemoveAlarm(__wpad_timer);
 	for(i=0;i<WPAD_MAX_WIIMOTES;i++) {
 		wpdcb = &__wpdcb[i];
+#ifdef HAVE_WIIUSE_SPEAKER
 		SYS_RemoveAlarm(wpdcb->sound_alarm);
+#endif
 		__wpad_disconnect(wpdcb);
 	}
 
@@ -1066,6 +1093,7 @@ s32 WPAD_Rumble(s32 chan, int status)
 }
 #endif
 
+#if 0
 s32 WPAD_SetIdleThresholds(s32 chan, s32 btns, s32 ir, s32 accel, s32 js, s32 wb, s32 mp)
 {
 	int i;
@@ -1097,6 +1125,7 @@ s32 WPAD_SetIdleThresholds(s32 chan, s32 btns, s32 ir, s32 accel, s32 js, s32 wb
 	_CPU_ISR_Restore(level);
 	return WPAD_ERR_NONE;
 }
+#endif
 
 #ifdef HAVE_WIIUSE_SPEAKER
 s32 WPAD_ControlSpeaker(s32 chan,s32 enable)
@@ -1155,6 +1184,7 @@ s32 WPAD_IsSpeakerEnabled(s32 chan)
 }
 #endif
 
+#if 0
 s32 WPAD_SendStreamData(s32 chan,void *buf,u32 len)
 {
 	u32 level;
@@ -1187,6 +1217,7 @@ s32 WPAD_SendStreamData(s32 chan,void *buf,u32 len)
 	_CPU_ISR_Restore(level);
 	return WPAD_ERR_NONE;
 }
+#endif
 
 #ifdef HAVE_WIIUSE_SPEAKER
 void WPAD_EncodeData(WPADEncStatus *info,u32 flag,const s16 *pcmSamples,s32 numSamples,u8 *encData)

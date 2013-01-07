@@ -1,3 +1,6 @@
+/* This source as presented is a modified version of original wiiuse for use 
+ * with RetroArch, and must not be confused with the original software. */
+
 #include <stdio.h>
 
 #ifndef WIN32

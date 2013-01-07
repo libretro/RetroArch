@@ -1,7 +1,7 @@
 #ifndef __LWP_PRIORITY_INL__
 #define __LWP_PRIORITY_INL__
 
-static __inline__ void __lwp_priomap_init(prio_cntrl *theprio,u32 prio)
+static inline void __lwp_priomap_init(prio_cntrl *theprio,u32 prio)
 {
 	u32 major,minor,mask;
 	
@@ -22,20 +22,20 @@ static __inline__ void __lwp_priomap_init(prio_cntrl *theprio,u32 prio)
 #endif
 }
 
-static __inline__ void __lwp_priomap_addto(prio_cntrl *theprio)
+static inline void __lwp_priomap_addto(prio_cntrl *theprio)
 {
 	*theprio->minor |= theprio->ready_minor;
 	_prio_major_bitmap |= theprio->ready_major;
 }
 
-static __inline__ void __lwp_priomap_removefrom(prio_cntrl *theprio)
+static inline void __lwp_priomap_removefrom(prio_cntrl *theprio)
 {
 	*theprio->minor &= theprio->block_minor;
 	if(*theprio->minor==0)
 		_prio_major_bitmap &= theprio->block_major;
 }
 
-static __inline__ u32 __lwp_priomap_highest()
+static inline u32 __lwp_priomap_highest()
 {
 	u32 major,minor;
 	major = cntlzw(_prio_major_bitmap);
