@@ -2020,9 +2020,6 @@ int ingame_menu_screenshot(void *data, void *state)
 
 int ingame_menu(void *data, void *state)
 {
-   //if(!g_extern.console.rmenu.state.ingame_menu.enable)
-      //return false;
-
    menu *current_menu    = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
 

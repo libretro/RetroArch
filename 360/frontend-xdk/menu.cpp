@@ -221,7 +221,7 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiBackButton", &m_back);
    GetChildById(L"XuiControlNoSlider", &m_controlnoslider);
 
-   m_controlnoslider.SetValue(g_settings.input.currently_selected_controller_no);
+   m_controlnoslider.SetValue(0);
    m_controlnoslider.GetValue(&controlno);
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)

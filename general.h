@@ -187,7 +187,6 @@ struct settings
       bool autodetect_enable;
 #endif
 #ifdef RARCH_CONSOLE
-      unsigned currently_selected_controller_no;
       unsigned map_dpad_to_stick;
       unsigned device[MAX_PLAYERS];
 #endif
