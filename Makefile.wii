@@ -30,13 +30,13 @@ ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
 DOL_TARGET := retroarch_wii.dol
 ELF_TARGET := retroarch_wii.elf
 
-INCLUDE := -I. -I$(DEVKITPRO)/libogc/include
+INCLUDE := -I. -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/libogc/include/ogc
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size -T gx/ld/rvl.ld
-LIBS := -lfat -lretro_wii -lwiiuse -logc -lbte
+LIBS := -lfat -lretro_wii -logc -lbte
 
 APP_BOOTER_DIR = wii/app_booter
 
@@ -57,7 +57,7 @@ CFLAGS		+= -DHAVE_FILE_LOGGER
 CFLAGS          += -Iconsole/logger
 endif
 
-CFLAGS += -std=gnu99 -DHAVE_DEFAULT_RETROPAD_INPUT -DHAVE_RGUI -DHAVE_THREAD -DRARCH_CONSOLE -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_RARCH_EXEC -DHAVE_RMENU -DGEKKO -DHAVE_ZLIB -DWANT_RZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DHAVE_SCREENSHOTS -DPACKAGE_VERSION=\"0.9.8-beta3\" -Dmain=rarch_main -Wno-char-subscripts 
+CFLAGS += -std=gnu99 -DHAVE_DEFAULT_RETROPAD_INPUT -DHAVE_WIIUSE -DHAVE_RGUI -DHAVE_THREAD -DRARCH_CONSOLE -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_RARCH_EXEC -DHAVE_RMENU -DGEKKO -DHAVE_ZLIB -DWANT_RZLIB -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DHAVE_SCREENSHOTS -DPACKAGE_VERSION=\"0.9.8-beta3\" -Dmain=rarch_main -Wno-char-subscripts 
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g -DDEBUG
