@@ -170,7 +170,8 @@ static void android_input_poll(void *data)
                else
                {
                   memmove(pointer + motion_pointer, pointer + motion_pointer + 1, (MAX_TOUCH - motion_pointer - 1) * sizeof(struct input_pointer));
-                  pointer_count--;
+                  if (pointer_count > 0)
+                     pointer_count--;
                }
             }
             else
