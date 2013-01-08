@@ -377,7 +377,7 @@ MAIN
 #elif defined(GEKKO)
 #include "../../frontend/frontend_gx.c"
 #elif defined(__CELLOS_LV2__)
-#include "../../frontend/frontend_ps3.c"
+#include "../../frontend/frontend_console.c"
 #elif defined(PSP)
 #include "../../frontend/frontend_psp.c"
 #elif defined(ANDROID)
