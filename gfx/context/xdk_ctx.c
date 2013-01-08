@@ -388,6 +388,7 @@ static bool gfx_ctx_xdk_init(void)
    d3d->d3d_device = direct3d_create_ctx(D3D_SDK_VERSION);
    if (!d3d->d3d_device)
    {
+      RARCH_ERR("Could not create Direct3D context.\n");
       free(d3d);
       return NULL;
    }
@@ -500,7 +501,7 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    gfx_ctx_xdk_check_resolution,
    gfx_ctx_xdk_set_fbo,
 
-#if defined(HAVE_RMENU) || defined(_XBOX360)
+#if defined(HAVE_RMENU)
    gfx_ctx_xdk_menu_init,
    gfx_ctx_xdk_menu_frame,
    gfx_ctx_xdk_menu_free,

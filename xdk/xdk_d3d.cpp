@@ -304,6 +304,7 @@ void xdk_d3d_deinit_fbo(void *data)
 
 void xdk_d3d_init_fbo(void *data)
 {
+   HRESULT ret;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
    if(!g_settings.video.render_to_texture)
@@ -315,9 +316,15 @@ void xdk_d3d_init_fbo(void *data)
          1, 0, g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_X8R8G8B8 ) : D3DFMT_X8R8G8B8,
          0, &d3d->lpTexture_ot, NULL);
 
-   d3d->d3d_render_device->CreateRenderTarget(d3d->tex_w * g_settings.video.fbo.scale_x, d3d->tex_h * g_settings.video.fbo.scale_y,
+   ret = d3d->d3d_render_device->CreateRenderTarget(d3d->tex_w * g_settings.video.fbo.scale_x, d3d->tex_h * g_settings.video.fbo.scale_y,
          g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_X8R8G8B8 ) : D3DFMT_X8R8G8B8, D3DMULTISAMPLE_NONE, 
          0, 0, &d3d->lpSurface, NULL);
+
+   if (ret != S_OK)
+   {
+      RARCH_ERR("[xdk_d3d_init_fbo::] Failed at CreateRenderTarget.\n");
+      return;
+   }
 
    d3d->lpTexture_ot_as16srgb = *d3d->lpTexture_ot;
    xdk_convert_texture_to_as16_srgb(d3d->lpTexture);
@@ -431,6 +438,7 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
 
 static void xdk_d3d_init_textures(void *data, const video_info_t *video)
 {
+   HRESULT ret;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
    D3DPRESENT_PARAMETERS d3dpp;
@@ -446,12 +454,18 @@ static void xdk_d3d_init_textures(void *data, const video_info_t *video)
       d3d->lpTexture = NULL;
    }
 
-   d3d->d3d_render_device->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0, d3d->texture_fmt,
+   ret = d3d->d3d_render_device->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0, d3d->texture_fmt,
          0, &d3d->lpTexture
 #ifdef _XBOX360
          , NULL
 #endif
          );
+
+   if (ret != S_OK)
+   {
+      RARCH_ERR("[xdk_d3d_init_textures::] failed at CreateTexture.\n");
+      return;
+   }
 
    D3DLOCKED_RECT d3dlr;
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
@@ -518,6 +532,8 @@ static void xdk_d3d_reinit_textures(void *data, const video_info_t *video)
 
 static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+   HRESULT ret;
+
    if (driver.video_data)
    {
       xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
@@ -549,8 +565,11 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
       D3DPRESENT_PARAMETERS d3dpp;
       xdk_d3d_generate_pp(&d3dpp, video);
 
-      d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
+      ret = d3d->d3d_device->CreateDevice(0, D3DDEVTYPE_HAL, NULL, D3DCREATE_HARDWARE_VERTEXPROCESSING,
             &d3dpp, &d3d->d3d_render_device);
+
+      if (ret != S_OK)
+         RARCH_ERR("Failed at CreateDevice.\n");
       d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
    }
    else
