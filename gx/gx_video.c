@@ -1023,4 +1023,5 @@ const video_driver_t video_gx = {
    .stop = gx_stop,
    .restart = gx_restart,
    .apply_state_changes = gx_apply_state_changes,
+   .set_aspect_ratio = gx_set_aspect_ratio
 };

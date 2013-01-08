@@ -19,10 +19,10 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "../console/rmenu/rmenu.h"
-
 #if defined(__CELLOS_LV2__)
 #include "frontend_ps3.c"
+#elif defined(GEKKO)
+#include "frontend_gx.c"
 #endif
 
 #undef main
@@ -86,7 +86,9 @@ begin_loop:
    {
       driver.input->poll(NULL);
       driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+      audio_start_func();
       while(rarch_main_iterate());
+      audio_stop_func();
    }
    else if (g_extern.console.rmenu.mode == MODE_INIT)
    {
@@ -119,12 +121,22 @@ begin_loop:
 begin_shutdown:
    config_save_file(g_extern.config_path);
 
+   system_deinit_save();
+
    if(g_extern.main_is_init)
       rarch_main_deinit();
 
    driver.input->free(NULL);
    driver.video->stop();
    menu_free();
+
+#ifdef HAVE_LOGGER
+   logger_shutdown();
+#elif defined(HAVE_FILE_LOGGER)
+   if (g_extern.log_file)
+      fclose(g_extern.log_file);
+   g_extern.log_file = NULL;
+#endif
 
    system_deinit();
    system_exitspawn();

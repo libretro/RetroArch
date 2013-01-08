@@ -55,6 +55,9 @@ static void dma_callback(void)
 
 static void *gx_audio_init(const char *device, unsigned rate, unsigned latency)
 {
+   if (g_audio)
+      return g_audio;
+
    AUDIO_Init(NULL);
    AUDIO_RegisterDMACallback(dma_callback);
 

@@ -15,8 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#undef main
-
 #include <stdbool.h>
 #include "../driver.h"
 #include "../general.h"
@@ -62,6 +60,7 @@ enum
 
 uint16_t menu_framebuf[400 * 240];
 rgui_handle_t *rgui;
+char input_path[1024];
 
 #if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
 static devoptab_t dotab_stdout = {
@@ -390,31 +389,6 @@ static void menu_free(void)
    rgui_free(rgui);
 }
 
-static void get_environment_settings(void)
-{
-#ifdef HW_DOL
-   chdir("carda:/retroarch");
-#endif
-   getcwd(default_paths.core_dir, MAXPATHLEN);
-   char *last_slash = strrchr(default_paths.core_dir, '/');
-   if (last_slash)
-      *last_slash = 0;
-   char *device_end = strchr(default_paths.core_dir, '/');
-   if (device_end)
-      snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "%.*s/retroarch", device_end - default_paths.core_dir, default_paths.core_dir);
-   else
-      strlcpy(default_paths.port_dir, "/retroarch", sizeof(default_paths.port_dir));
-   snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
-   snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.port_dir);
-   snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.port_dir);
-   strlcpy(default_paths.filesystem_root_dir, "/", sizeof(default_paths.filesystem_root_dir));
-   snprintf(default_paths.filebrowser_startup_dir, sizeof(default_paths.filebrowser_startup_dir), default_paths.filesystem_root_dir);
-   snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.port_dir);
-   snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.port_dir);
-   strlcpy(default_paths.executable_extension, ".dol", sizeof(default_paths.executable_extension));
-   strlcpy(default_paths.salamander_file, "boot.dol", sizeof(default_paths.salamander_file));
-}
-
 #define MAKE_FILE(x) {\
    if (!path_file_exists((x)))\
    {\
@@ -439,8 +413,33 @@ static void get_environment_settings(void)
    }\
 }
 
-static void make_directories(void)
+static void get_environment_settings(int argc, char *argv[])
 {
+   (void)argc;
+   (void)argv;
+
+#ifdef HW_DOL
+   chdir("carda:/retroarch");
+#endif
+   getcwd(default_paths.core_dir, MAXPATHLEN);
+   char *last_slash = strrchr(default_paths.core_dir, '/');
+   if (last_slash)
+      *last_slash = 0;
+   char *device_end = strchr(default_paths.core_dir, '/');
+   if (device_end)
+      snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "%.*s/retroarch", device_end - default_paths.core_dir, default_paths.core_dir);
+   else
+      strlcpy(default_paths.port_dir, "/retroarch", sizeof(default_paths.port_dir));
+   snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
+   snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.port_dir);
+   snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.port_dir);
+   strlcpy(default_paths.filesystem_root_dir, "/", sizeof(default_paths.filesystem_root_dir));
+   snprintf(default_paths.filebrowser_startup_dir, sizeof(default_paths.filebrowser_startup_dir), default_paths.filesystem_root_dir);
+   snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.port_dir);
+   snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.port_dir);
+   strlcpy(default_paths.executable_extension, ".dol", sizeof(default_paths.executable_extension));
+   strlcpy(default_paths.salamander_file, "boot.dol", sizeof(default_paths.salamander_file));
+
    MAKE_DIR(default_paths.port_dir);
    MAKE_DIR(default_paths.system_dir);
    MAKE_DIR(default_paths.savestate_dir);
@@ -450,9 +449,10 @@ static void make_directories(void)
    MAKE_FILE(g_extern.config_path);
 }
 
+
 extern void __exception_setreload(int t);
 
-int main(int argc, char *argv[])
+static void system_init(void)
 {
 #ifdef HW_RVL
    IOS_ReloadIOS(IOS_GetVersion());
@@ -491,54 +491,22 @@ int main(int argc, char *argv[])
    LWP_MutexInit(&gx_device_mutex, false);
    LWP_CreateThread(&gx_device_thread, gx_devthread, NULL, NULL, 0, 66);
 #endif
+}
 
-   rarch_main_clear_state();
-   get_environment_settings();
-   make_directories();
-   config_set_defaults();
-
-   init_drivers_pre();
-
-   driver.input->init();
-   driver.video->start();
-
+static void system_post_init(void)
+{
    gx_video_t *gx = (gx_video_t*)driver.video_data;
-   gx->menu_data = (uint32_t *) menu_framebuf;
-
-   rarch_settings_set_default();
-   rarch_input_set_controls_default(driver.input);
-   rarch_config_load();
-
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-   char core_exe_path[PATH_MAX];
-   char path_prefix[PATH_MAX];
-   const char *extension = default_paths.executable_extension;
-   snprintf(path_prefix, sizeof(path_prefix), "%s/", default_paths.core_dir);
-   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
-
-   if (path_file_exists(core_exe_path))
-   {
-      if (rarch_libretro_core_install(core_exe_path, path_prefix, path_prefix, 
-               g_extern.config_path, extension))
-      {
-         RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
-         config_save_file(g_extern.config_path);
-      }
-   }
-#endif
-
    char core_name[64];
+
    rarch_console_name_from_id(core_name, sizeof(core_name));
-   char input_path[1024];
    snprintf(input_path, sizeof(input_path), "%s/%s.cfg", default_paths.input_presets_dir, core_name);
    config_read_keybinds(input_path);
 
-   init_libretro_sym();
+   gx->menu_data = (uint32_t *) menu_framebuf;
+}
 
-   driver.input->post_init();
-
-   menu_init();
-
+static void system_process_args(int argc, char *argv[])
+{
    if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
       char rom[PATH_MAX];
@@ -556,69 +524,19 @@ int main(int argc, char *argv[])
    }
    else
       g_extern.console.external_launch.support = EXTERN_LAUNCHER_SALAMANDER;
-
-begin_loop:
-   if(g_extern.console.rmenu.mode == MODE_EMULATION)
-   {
-      driver.input->poll(NULL);
-
-      video_set_aspect_ratio_func(g_settings.video.aspect_ratio_idx);
-
-      audio_start_func();
-
-      while(rarch_main_iterate());
-
-      audio_stop_func();
-   }
-   else if (g_extern.console.rmenu.mode == MODE_INIT)
-   {
-      if(g_extern.main_is_init)
-         rarch_main_deinit();
-
-      struct rarch_main_wrap args = {0};
-
-      args.verbose = g_extern.verbose;
-      args.config_path = g_extern.config_path;
-      args.sram_path = g_extern.console.main_wrap.state.default_sram_dir.enable ? g_extern.console.main_wrap.paths.default_sram_dir : NULL,
-         args.state_path = g_extern.console.main_wrap.state.default_savestate_dir.enable ? g_extern.console.main_wrap.paths.default_savestate_dir : NULL,
-         args.rom_path = g_extern.file_state.rom_path;
-      args.libretro_path = g_settings.libretro;
-
-      int init_ret = rarch_main_init_wrap(&args);
-
-      if (init_ret == 0)
-         RARCH_LOG("rarch_main_init succeeded.\n");
-      else
-         RARCH_ERR("rarch_main_init failed.\n");
-   }
-   else if(g_extern.console.rmenu.mode == MODE_MENU)
-      rmenu_iterate();
-   else
-      goto begin_shutdown;
-   goto begin_loop;
-
-begin_shutdown:
-   config_save_file(g_extern.config_path);
-   config_save_keybinds(input_path);
-
-   if(g_extern.main_is_init)
-      rarch_main_deinit();
-
-   driver.input->free(NULL);
-   driver.video->stop();
-   menu_free();
-
-#ifdef HAVE_LOGGER
-   logger_shutdown();
-#elif defined(HAVE_FILE_LOGGER)
-   if (g_extern.log_file)
-      fclose(g_extern.log_file);
-   g_extern.log_file = NULL;
-#endif
-
-   if(g_extern.console.external_launch.enable)
-      rarch_console_exec(g_settings.libretro);
-
-   exit(0);
 }
 
+static void system_deinit_save(void)
+{
+   config_save_keybinds(input_path);
+}
+
+static void system_deinit(void)
+{
+}
+
+static void system_exitspawn(void)
+{
+   if(g_extern.console.external_launch.enable)
+      rarch_console_exec(g_settings.libretro);
+}

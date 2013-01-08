@@ -374,9 +374,7 @@ MAIN
 #include "../../frontend/frontend_xdk.c"
 #elif defined(XENON)
 #include "../../frontend/frontend_xenon.c"
-#elif defined(GEKKO)
-#include "../../frontend/frontend_gx.c"
-#elif defined(__CELLOS_LV2__)
+#elif defined(__CELLOS_LV2__) || defined(GEKKO)
 #include "../../frontend/frontend_console.c"
 #elif defined(PSP)
 #include "../../frontend/frontend_psp.c"

@@ -217,6 +217,9 @@ static void adjust_system_rates(void)
    g_extern.system.force_nonblock = false;
    const struct retro_system_timing *info = &g_extern.system.av_info.timing;
 
+   if (!info->fps || !info->sample_rate)
+      return;
+
    float timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
    if (timing_skew > 0.05f) // We don't want to adjust pitch too much. If we have extreme cases, just don't readjust at all.
    {
