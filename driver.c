@@ -356,6 +356,10 @@ static void deinit_dsp_plugin(void)
 
 void init_audio(void)
 {
+   // Resource leaks will follow if audio is initialized twice.
+   if (driver.audio_data)
+      return;
+
    // Accomodate rewind since at some point we might have two full buffers.
    size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    size_t outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * g_settings.slowmotion_ratio;
