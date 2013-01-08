@@ -1206,7 +1206,11 @@ bool rmenu_iterate(void)
 #endif
    }
 
-   rarch_render_cached_frame();
+   if (g_extern.main_is_init)
+      rarch_render_cached_frame();
+
+   app.Render();
+   XuiTimersRun();
 
    switch(g_extern.console.rmenu.input_loop)
    {

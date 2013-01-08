@@ -893,13 +893,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (msg)
       d3d->font_ctx->render_msg_place(d3d, msg_width, msg_height, 0.0f, 0, msg);
 
-#ifdef _XBOX360
-   if(g_extern.draw_menu)
-   {
-	   app.Render();
-	   XuiTimersRun();
-   }
-#endif
    if (!g_extern.draw_menu)
       gfx_ctx_xdk_swap_buffers();
 
