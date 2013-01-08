@@ -327,31 +327,22 @@ void xdk_d3d_init_fbo(void *data)
 }
 #endif
 
-static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const char *path, unsigned mask)
+static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const char *path, unsigned index)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-
-   (void)data;
-   (void)type;
-   (void)path;
 
    switch (type)
    {
 #if defined(HAVE_HLSL)
       case RARCH_SHADER_HLSL:
-         if (mask & (1ULL << RARCH_SHADER_MULTIPASS))
+         if (index == RARCH_SHADER_INDEX_MULTIPASS)
          {
             if (!hlsl_init(path, d3d->d3d_render_device))
                return false;
          }
-         else if (mask & (1ULL << RARCH_SHADER_PASS0))
+         else
          {
-            if (!hlsl_load_shader(1, (mask & RARCH_SHADER_PASS0_STOCK) ? NULL : path))
-               return false;
-         }
-         else if (mask & (1ULL << RARCH_SHADER_PASS1))
-         {
-            if (!hlsl_load_shader(2, (mask & RARCH_SHADER_PASS1_STOCK) ? NULL : path))
+            if (!hlsl_load_shader(index, path))
                return false;
          }
          break;
