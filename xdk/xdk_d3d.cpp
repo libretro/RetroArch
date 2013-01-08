@@ -858,6 +858,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    }
    else
 #endif
+      if (!g_extern.draw_menu)
       gfx_ctx_xdk_swap_buffers();
 
    return true;
