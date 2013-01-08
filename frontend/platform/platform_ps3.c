@@ -21,7 +21,7 @@
 #include "../../ps3/sdk_defines.h"
 #include "../../ps3/ps3_input.h"
 
-#include "../console/rarch_console.h"
+#include "../../console/rarch_console.h"
 
 #ifdef HAVE_RARCH_EXEC
 #include "../../console/rarch_console_exec.h"
@@ -47,15 +47,117 @@
 static uint8_t np_pool[NP_POOL_SIZE];
 #endif
 
+//TODO - not sure if stack size needs to be lower for Salamander
+#ifdef IS_SALAMANDER
+SYS_PROCESS_PARAM(1001, 0x100000)
+#else
 SYS_PROCESS_PARAM(1001, 0x200000)
+#endif
 
 #undef main
+
+#ifdef IS_SALAMANDER
+#include <netex/net.h>
+#include <np.h>
+#include <np/drm.h>
+#include <cell/pad.h>
+#include <cell/sysmodule.h>
+
+default_paths_t default_paths;
+
+static void find_and_set_first_file(void)
+{
+   //Last fallback - we'll need to start the first executable file 
+   // we can find in the RetroArch cores directory
+
+   char first_file[PATH_MAX];
+   rarch_manage_libretro_set_first_file(first_file, sizeof(first_file), default_paths.core_dir, "SELF");
+
+   if(first_file)
+   {
+      snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), 
+            "%s/%s", default_paths.core_dir, first_file);
+      RARCH_LOG("libretro_path now set to: %s.\n", default_paths.libretro_path);
+   }
+   else
+      RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
+}
+
+static void salamander_init_settings(void)
+{
+   CellPadData pad_data;
+   cellPadInit(7);
+
+   cellPadGetData(0, &pad_data);
+
+   if(pad_data.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_TRIANGLE)
+   {
+      //override path, boot first executable in cores directory
+      RARCH_LOG("Fallback - Will boot first executable in RetroArch cores/ directory.\n");
+      find_and_set_first_file();
+   }
+   else
+   {
+      //normal executable loading path
+      char tmp_str[PATH_MAX];
+      bool config_file_exists = false;
+
+      if(path_file_exists(default_paths.config_path))
+         config_file_exists = true;
+
+      //try to find CORE executable
+      char core_executable[1024];
+      snprintf(core_executable, sizeof(core_executable), "%s/CORE.SELF", default_paths.core_dir);
+
+      if(path_file_exists(core_executable))
+      {
+         //Start CORE executable
+         snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), core_executable);
+         RARCH_LOG("Start [%s].\n", default_paths.libretro_path);
+      }
+      else
+      {
+         if(config_file_exists)
+         {
+            config_file_t * conf = config_file_new(default_paths.config_path);
+            config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
+            config_file_free(conf);
+            snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), tmp_str);
+         }
+
+         if(!config_file_exists || !strcmp(default_paths.libretro_path, ""))
+         {
+            find_and_set_first_file();
+         }
+         else
+         {
+            RARCH_LOG("Start [%s] found in retroarch.cfg.\n", default_paths.libretro_path);
+         }
+
+         if (!config_file_exists)
+         {
+            config_file_t *new_conf = config_file_new(NULL);
+            config_set_string(new_conf, "libretro_path", default_paths.libretro_path);
+            config_file_write(new_conf, default_paths.config_path);
+            config_file_free(new_conf);
+         }
+      }
+   }
+
+   cellPadEnd();
+
+}
+
+#endif
 
 #ifdef HAVE_SYSUTILS
 static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
 {
-   (void) param;
-   (void) userdata;
+   (void)param;
+   (void)userdata;
+   (void)status;
+
+#ifndef IS_SALAMANDER
 #ifdef HAVE_OSKUTIL
    oskutil_params *osk = &g_extern.console.misc.oskutil_handle;
 #endif
@@ -77,6 +179,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
          break;
 #endif
    }
+#endif
 }
 #endif
 
@@ -99,7 +202,9 @@ void menu_free (void)
 
 static void get_environment_settings(int argc, char *argv[])
 {
+#ifndef IS_SALAMANDER
    g_extern.verbose = true;
+#endif
 
    int ret;
    unsigned int get_type;
@@ -132,10 +237,12 @@ static void get_environment_settings(int argc, char *argv[])
    }
    else
 #endif
+#ifndef IS_SALAMANDER
    {
       g_extern.console.external_launch.support = EXTERN_LAUNCHER_SALAMANDER;
       RARCH_WARN("Not started from multiMAN, auto-game start disabled.\n");
    }
+#endif
 
    memset(&size, 0x00, sizeof(CellGameContentSize));
 
@@ -207,11 +314,18 @@ static void get_environment_settings(int argc, char *argv[])
       snprintf(default_paths.shader_file, sizeof(default_paths.shader_file), "%s/shaders/stock.cg", default_paths.core_dir);
       snprintf(default_paths.menu_shader_file, sizeof(default_paths.menu_shader_file), "%s/shaders/Borders/Menu/border-only-rarch.cg", default_paths.core_dir);
 #endif
+
+#ifdef IS_SALAMANDER
+      snprintf(default_paths.config_path, sizeof(default_paths.config_path), "%s/retroarch.cfg", default_paths.port_dir);
+#else
       snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
+#endif
       snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "EBOOT.BIN");
    }
 
+#ifndef IS_SALAMANDER
    g_extern.verbose = false;
+#endif
 }
 
 static void system_init(void)
@@ -233,10 +347,14 @@ static void system_init(void)
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
 #ifndef __PSL1GHT__
    cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_GAME);
+#endif
+#ifndef IS_SALAMANDER
+#ifndef __PSL1GHT__
    cellSysmoduleLoadModule(CELL_SYSMODULE_AVCONF_EXT);
 #endif
    cellSysmoduleLoadModule(CELL_SYSMODULE_PNGDEC);
    cellSysmoduleLoadModule(CELL_SYSMODULE_JPGDEC);
+#endif
    cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
    cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_NP);
 #endif
@@ -304,6 +422,8 @@ static void system_process_args(int argc, char *argv[])
 
 static void system_deinit(void)
 {
+#ifndef IS_SALAMANDER
+
 #ifdef HAVE_OSKUTIL
    oskutil_params *osk = &g_extern.console.misc.oskutil_handle;
 
@@ -349,6 +469,8 @@ static void system_deinit(void)
       RARCH_ERR("System cache partition could not be cleared on exit.\n");
    }
 #endif
+
+#endif
 }
 
 static void system_deinit_save(void)
@@ -358,7 +480,18 @@ static void system_deinit_save(void)
 static void system_exitspawn(void)
 {
 #ifdef HAVE_RARCH_EXEC
+
+#ifdef IS_SALAMANDER
+   rarch_console_exec(default_paths.libretro_path);
+
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
+#else
    if(g_extern.console.external_launch.enable)
       rarch_console_exec(g_extern.console.external_launch.launch_app);
 #endif
+
+#endif
+
 }
