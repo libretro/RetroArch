@@ -1709,75 +1709,73 @@ static bool gl_focus(void *data)
 }
 
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
-static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *path, unsigned mask)
+static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *path, unsigned index)
 {
    gl_t *gl = (gl_t*)data;
 
-   if (mask & (1ULL << RARCH_SHADER_MULTIPASS))
+   if (type == RARCH_SHADER_NONE)
+      return false;
+
+   if (index == RARCH_SHADER_INDEX_MULTIPASS && !path)
    {
+      RARCH_ERR("[GL]: Cannot set stock shader to multipass.\n");
+      return false;
+   }
+
+   if (!gl->shader && index != RARCH_SHADER_INDEX_MULTIPASS)
+   {
+      RARCH_ERR("[GL]: No shader core is init. Cannot set shader %s to pass %u.\n", path, index);
+      return false;
+   }
+
+   if (gl->shader && gl->shader->type != type)
+   {
+      RARCH_ERR("[GL]: Trying to set a specific shader pass %u, but that particular shader core is not initialized.\n", index);
+      return false;
+   }
+
+   // Need full teardown for multipass.
+   if (index == RARCH_SHADER_INDEX_MULTIPASS)
+   {
+      gl_shader_deinit(gl);
+
+      switch (type)
+      {
+#ifdef HAVE_GLSL
+         case RARCH_SHADER_GLSL:
+            gl->shader = &gl_glsl_backend;
+            break;
+#endif
+#ifdef HAVE_CG
+         case RARCH_SHADER_CG:
+            gl->shader = &gl_cg_backend;
+            break;
+#endif
+
+         default:
+            gl->shader = NULL;
+            break;
+      }
+
+      if (!gl->shader)
+      {
+         RARCH_ERR("[GL]: Cannot find shader core for path: %s.\n", path);
+         return false;
+      }
+
 #ifdef HAVE_FBO
       gl_deinit_fbo(gl);
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 #endif
 
-      gl_shader_deinit(gl);
-   }
+      bool ret = gl->shader->init(path);
+      if (!ret)
+      {
+         gl->shader = NULL;
+         RARCH_WARN("[GL]: Failed to set multipass shader. Falling back to stock.\n");
+         return gl->shader->init(NULL);
+      }
 
-   switch (type)
-   {
-#ifdef HAVE_GLSL
-      case RARCH_SHADER_GLSL:
-         if (mask & (1ULL << RARCH_SHADER_MULTIPASS))
-         {
-            if (!gl_glsl_init(path))
-               return false;
-         }
-         else if (mask & (1ULL << RARCH_SHADER_PASS0))
-         {
-#if 0
-            /* TODO - doesn't seem to be added yet? */
-            if (!gl_glsl_load_shader(1, (mask & (1ULL << RARCH_SHADER_PASS0_STOCK)) ? NULL : path))
-#endif
-               return false;
-         }
-         else if (mask & (1ULL << RARCH_SHADER_PASS1))
-         {
-#if 0
-            /* TODO - doesn't seem to be added yet? */
-            if (!gl_glsl_load_shader(2, (mask & (1ULL << RARCH_SHADER_PASS1_STOCK)) ? NULL : path))
-#endif
-               return false;
-         }
-         break;
-#endif
-
-#ifdef HAVE_CG
-      case RARCH_SHADER_CG:
-         if (mask & (1ULL << RARCH_SHADER_MULTIPASS))
-         {
-            if (!gl_cg_init(path))
-               return false;
-         }
-         else if (mask & (1ULL << RARCH_SHADER_PASS0))
-         {
-            if (!gl_cg_load_shader(1, (mask & (1ULL << RARCH_SHADER_PASS0_STOCK)) ? NULL : path))
-               return false;
-         }
-         else if (mask & (1ULL << RARCH_SHADER_PASS1))
-         {
-            if (!gl_cg_load_shader(2, (mask & (1ULL << RARCH_SHADER_PASS1_STOCK)) ? NULL : path))
-               return false;
-         }
-         break;
-#endif
-
-      default:
-         RARCH_ERR("Invalid shader type in gl_set_shader().\n");
-         return false;
-   }
-
-   if (mask & (1ULL << RARCH_SHADER_MULTIPASS))
-   {
 #ifdef HAVE_FBO
       // Set up render to texture again.
       gl_init_fbo(gl, gl->tex_w, gl->tex_h);
@@ -1786,9 +1784,19 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
       // Apparently need to set viewport for passes when we aren't using FBOs.
       gl_set_shader_viewport(gl, 0);
       gl_set_shader_viewport(gl, 1);
+      return true;
    }
+   else // Replace a currently loaded shader directly.
+   {
+      if (index > gl->shader->num_shaders())
+      {
+         RARCH_ERR("Can only load shader for passes that already exist. "
+                  "Attempted to set pass %u, but only %u passes exist.\n", index, gl->shader->num_shaders());
+         return false;
+      }
 
-   return true;
+      return gl->shader->load_shader(index, path);
+   }
 }
 #endif
 

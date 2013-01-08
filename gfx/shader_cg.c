@@ -477,21 +477,30 @@ static bool load_plain(const char *path)
    if (!load_stock())
       return false;
 
-   RARCH_LOG("Loading Cg file: %s\n", path);
-
-   if (!load_program(1, path, true))
-      return false;
-
-   if (*g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
+   if (path)
    {
-      if (!load_program(2, g_settings.video.second_pass_shader, true))
+      RARCH_LOG("Loading Cg file: %s\n", path);
+
+      if (!load_program(1, path, true))
          return false;
 
-      cg_shader_num = 2;
+      if (*g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
+      {
+         if (!load_program(2, g_settings.video.second_pass_shader, true))
+            return false;
+
+         cg_shader_num = 2;
+      }
+      else
+      {
+         prg[2] = prg[0];
+         cg_shader_num = 1;
+      }
    }
    else
    {
-      prg[2] = prg[0];
+      RARCH_LOG("Loading stock Cg file.\n");
+      prg[2] = prg[1] = prg[0];
       cg_shader_num = 1;
    }
 
@@ -1360,5 +1369,8 @@ const gl_shader_backend_t gl_cg_backend = {
    gl_cg_shader_scale,
    gl_cg_set_coords,
    gl_cg_set_mvp,
+
+   gl_cg_load_shader,
+   RARCH_SHADER_CG,
 };
 

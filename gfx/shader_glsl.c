@@ -894,6 +894,8 @@ static bool link_program(GLuint prog)
 
 static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size_t num)
 {
+   bool ret = true;
+
    for (unsigned i = 0; i < num; i++)
    {
       gl_prog[i] = pglCreateProgram();
@@ -901,7 +903,8 @@ static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size
       if (gl_prog[i] == 0)
       {
          RARCH_ERR("Failed to create GL program #%u.\n", i);
-         return false;
+         ret = false;
+         goto end;
       }
 
       if (progs[i].vertex)
@@ -911,11 +914,11 @@ static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size
          if (!compile_shader(shader, progs[i].vertex))
          {
             RARCH_ERR("Failed to compile vertex shader #%u\n", i);
-            return false;
+            ret = false;
+            goto end;
          }
 
          pglAttachShader(gl_prog[i], shader);
-         free(progs[i].vertex);
       }
 
       if (progs[i].fragment)
@@ -925,11 +928,11 @@ static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size
          if (!compile_shader(shader, progs[i].fragment))
          {
             RARCH_ERR("Failed to compile fragment shader #%u\n", i);
-            return false;
+            ret = false;
+            goto end;
          }
 
          pglAttachShader(gl_prog[i], shader);
-         free(progs[i].fragment);
       }
 
       if (progs[i].vertex || progs[i].fragment)
@@ -938,7 +941,8 @@ static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size
          if (!link_program(gl_prog[i]))
          {
             RARCH_ERR("Failed to link program #%u\n", i);
-            return false;
+            ret = false;
+            goto end;
          }
 
          GLint location = pglGetUniformLocation(gl_prog[i], "rubyTexture");
@@ -947,7 +951,16 @@ static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size
       }
    }
 
-   return true;
+end:
+   for (unsigned i = 0; i < num; i++)
+   {
+      free(progs[i].vertex);
+      free(progs[i].fragment);
+      progs[i].vertex   = NULL;
+      progs[i].fragment = NULL;
+   }
+
+   return ret;
 }
 
 static void gl_glsl_reset_attrib(void)
@@ -1012,6 +1025,56 @@ static void find_uniforms(GLuint prog, struct shader_uniforms *uni)
    }
 
    pglUseProgram(0);
+}
+
+static void gl_glsl_delete_shader(GLuint prog)
+{
+   GLsizei count;
+   GLuint shaders[2] = {0};
+
+   pglGetAttachedShaders(prog, 2, &count, shaders);
+   for (GLsizei i = 0; i < count; i++)
+   {
+      pglDetachShader(prog, shaders[i]);
+      pglDeleteShader(shaders[i]);
+   }
+
+   pglDeleteProgram(prog);
+}
+
+static bool gl_glsl_load_shader(unsigned index, const char *path)
+{
+   pglUseProgram(0);
+
+   if (gl_program[index] != gl_program[0])
+   {
+      gl_glsl_delete_shader(gl_program[index]);
+      gl_program[index] = 0;
+   }
+
+   if (path)
+   {
+      struct shader_program prog = {0};
+      unsigned progs = get_xml_shaders(path, &prog, 1);
+      if (progs != 1)
+         return false;
+
+      if (!compile_programs(&gl_program[index], &prog, 1))
+      {
+         RARCH_ERR("Failed to compile shader: %s.\n", path);
+         return false;
+      }
+
+      find_uniforms(gl_program[index], &gl_uniforms[index]);
+   }
+   else
+   {
+      gl_program[index]  = gl_program[0];
+      gl_uniforms[index] = gl_uniforms[0];
+   }
+
+   pglUseProgram(gl_program[active_index]);
+   return true;
 }
 
 // Platforms with broken get_proc_address.
@@ -1129,7 +1192,12 @@ bool gl_glsl_init(const char *path)
       unsigned secondary_progs = get_xml_shaders(g_settings.video.second_pass_shader, progs, 1);
       if (secondary_progs == 1)
       {
-         compile_programs(&gl_program[2], progs, 1);
+         if (!compile_programs(&gl_program[2], progs, 1))
+         {
+            RARCH_ERR("Failed to compile second pass shader.\n");
+            return false;
+         }
+
          num_progs++;
       }
       else
@@ -1185,17 +1253,7 @@ void gl_glsl_deinit(void)
          if (gl_program[i] == 0 || (i && gl_program[i] == gl_program[0]))
             continue;
 
-         GLsizei count;
-         GLuint shaders[2];
-
-         pglGetAttachedShaders(gl_program[i], 2, &count, shaders);
-         for (GLsizei j = 0; j < count; j++)
-         {
-            pglDetachShader(gl_program[i], shaders[j]);
-            pglDeleteShader(shaders[j]);
-         }
-
-         pglDeleteProgram(gl_program[i]);
+         gl_glsl_delete_shader(gl_program[i]);
       }
 
       glDeleteTextures(gl_teximage_cnt, gl_teximage);
@@ -1507,5 +1565,8 @@ const gl_shader_backend_t gl_glsl_backend = {
    gl_glsl_shader_scale,
    gl_glsl_set_coords,
    gl_glsl_set_mvp,
+
+   gl_glsl_load_shader,
+   RARCH_SHADER_GLSL,
 };
 

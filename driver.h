@@ -136,13 +136,11 @@ enum rarch_shader_type
    RARCH_SHADER_NONE
 };
 
-enum rarch_shader_mask
+enum rarch_shader_index
 {
-   RARCH_SHADER_MULTIPASS   = 1,
-   RARCH_SHADER_PASS0,
-   RARCH_SHADER_PASS0_STOCK,
-   RARCH_SHADER_PASS1,
-   RARCH_SHADER_PASS1_STOCK
+   RARCH_SHADER_INDEX_MULTIPASS = 0,
+   RARCH_SHADER_INDEX_PASS0 = 1,
+   RARCH_SHADER_INDEX_PASS1 = 2
 };
 
 typedef struct video_info
@@ -233,7 +231,7 @@ typedef struct video_driver
    // Is the window still active?
    bool (*alive)(void *data);
    bool (*focus)(void *data); // Does the window have focus?
-   bool (*set_shader)(void *data, enum rarch_shader_type type, const char *path, unsigned mask); // Sets shader. Might not be implemented.
+   bool (*set_shader)(void *data, enum rarch_shader_type type, const char *path, unsigned index); // Sets shader. Might not be implemented.
    void (*free)(void *data);
    const char *ident;
 
