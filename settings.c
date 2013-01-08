@@ -193,6 +193,7 @@ void config_set_defaults(void)
 
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
+   g_settings.audio.in_rate = out_rate;
    g_settings.audio.rate_step = audio_rate_step;
    if (audio_device)
       strlcpy(g_settings.audio.device, audio_device, sizeof(g_settings.audio.device));
@@ -215,12 +216,6 @@ void config_set_defaults(void)
    g_settings.network_cmd_enable   = network_cmd_enable;
    g_settings.network_cmd_port     = network_cmd_port;
    g_settings.stdin_cmd_enable     = stdin_cmd_enable;
-
-#ifdef RARCH_CONSOLE
-   //hack - need this to get past assert() during premature video/audio/input
-   //init on consoles
-   g_settings.audio.in_rate = out_rate;
-#endif
 
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
