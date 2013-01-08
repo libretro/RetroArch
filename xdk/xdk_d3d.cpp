@@ -286,6 +286,7 @@ void xdk_d3d_deinit_fbo(void *data)
 
    if (d3d->fbo_inited)
    {
+      RARCH_LOG("[xdk_d3d_deinit_fbo::] Deiniting FBO.\n");
       if (d3d->lpTexture_ot)
       {
          d3d->lpTexture_ot->Release();
@@ -312,9 +313,15 @@ void xdk_d3d_init_fbo(void *data)
 
    xdk_d3d_deinit_fbo(d3d);
 
-   d3d->d3d_render_device->CreateTexture(d3d->tex_w * g_settings.video.fbo.scale_x, d3d->tex_h * g_settings.video.fbo.scale_y,
+   ret = d3d->d3d_render_device->CreateTexture(d3d->tex_w * g_settings.video.fbo.scale_x, d3d->tex_h * g_settings.video.fbo.scale_y,
          1, 0, g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_X8R8G8B8 ) : D3DFMT_X8R8G8B8,
          0, &d3d->lpTexture_ot, NULL);
+
+   if (ret != S_OK)
+   {
+      RARCH_ERR("[xdk_d3d_init_fbo::] Failed at CreateTexture.\n");
+      return;
+   }
 
    ret = d3d->d3d_render_device->CreateRenderTarget(d3d->tex_w * g_settings.video.fbo.scale_x, d3d->tex_h * g_settings.video.fbo.scale_y,
          g_extern.console.screen.gamma_correction ? ( D3DFORMAT )MAKESRGBFMT( D3DFMT_X8R8G8B8 ) : D3DFMT_X8R8G8B8, D3DMULTISAMPLE_NONE, 
@@ -594,8 +601,14 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    d3d->d3d_render_device->SetTransform(D3DTS_WORLD, &mat);
    d3d->d3d_render_device->SetTransform(D3DTS_VIEW, &mat);
 
-   d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
+   ret = d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
          D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf);
+
+   if (ret != S_OK)
+   {
+      RARCH_ERR("[xdk_d3d_init::] Failed at CreateVertexBuffer.\n");
+      return NULL;
+   }
 
    const DrawVerticeFormats init_verts[] = {
       { -1.0f, -1.0f, 1.0f, 0.0f, 1.0f },
@@ -611,8 +624,14 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 
    d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
 #elif defined(_XBOX360)
-   d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
+   ret = d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
          0, 0, 0, &d3d->vertex_buf, NULL);
+
+   if (ret != S_OK)
+   {
+      RARCH_ERR("[xdk_d3d_init::] Failed at CreateVertexBuffer.\n");
+      return NULL;
+   }
 
    static const DrawVerticeFormats init_verts[] = {
       { -1.0f, -1.0f, 0.0f, 1.0f },
@@ -633,7 +652,12 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
       D3DDECL_END()
    };
 
-   d3d->d3d_render_device->CreateVertexDeclaration(VertexElements, &d3d->v_decl);
+   ret = d3d->d3d_render_device->CreateVertexDeclaration(VertexElements, &d3d->v_decl);
+
+   if (ret != S_OK)
+   {
+      RARCH_ERR("[xdk_d3d_init::] Failed at CreateVertexDeclaration.\n");
+   }
 #endif
 
    d3d->ctx_driver->get_video_size(&d3d->win_width, &d3d->win_height);
