@@ -454,7 +454,8 @@ struct global
    } frame_cache;
 
    unsigned frame_count;
-   unsigned delay_timer;
+   // two timers, the first for handling menu and exit button delays, the second for scrolling delays
+   unsigned delay_timer[2];
    char title_buf[64];
 
    struct
