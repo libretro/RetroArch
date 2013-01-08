@@ -159,7 +159,7 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiBtnGameDir", &m_dir_game);
    GetChildById(L"XuiBtnCacheDir", &m_dir_cache);
 
-   filebrowser_set_root_and_ext(browser, rarch_console_get_rom_ext(), g_extern.console.main_wrap.paths.default_rom_startup_dir);
+   filebrowser_set_root_and_ext(browser, rarch_console_get_rom_ext(), default_paths.filebrowser_startup_dir);
 
    uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
    filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
