@@ -31,6 +31,21 @@
 
 #undef main
 
+#ifdef IS_SALAMANDER
+
+int main(int argc, char *argv[])
+{
+   system_init();
+   get_environment_settings(argc, argv);
+   salamander_init_settings();
+   system_deinit();
+   system_exitspawn();
+
+   return 1;
+}
+
+#else
+
 // Only called once on init and deinit.
 // Video and input drivers need to be active (owned)
 // before retroarch core starts.
@@ -174,3 +189,5 @@ begin_shutdown:
 
    return 1;
 }
+
+#endif

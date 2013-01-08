@@ -23,13 +23,19 @@
 #include "platform_inl.h"
 
 #include "../../console/rgui/rgui.h"
-#include "../../gfx/fonts/bitmap.h"
 
+#ifndef IS_SALAMANDER
+#include "../../gfx/fonts/bitmap.h"
+#endif
+
+#include "../../console/rarch_console.h"
 #include "../../console/rarch_console_exec.h"
+#include "../../console/rarch_console_libretro_mgmt.h"
 #include "../../console/rarch_console_input.h"
 #include "../../console/rarch_console_settings.h"
+#include "../../file.h"
 
-#ifdef HW_RVL
+#if defined(HW_RVL) && !defined(IS_SALAMANDER)
 #include "../../wii/mem2_manager.h"
 #endif
 
@@ -52,6 +58,105 @@
 #endif
 #include <sdcard/gcsd.h>
 #include <fat.h>
+
+#define MAKE_FILE(x) {\
+   if (!path_file_exists((x)))\
+   {\
+      RARCH_WARN("File \"%s\" does not exists, creating\n", (x));\
+      FILE *f = fopen((x), "wb");\
+      if (!f)\
+      {\
+         RARCH_ERR("Could not create file \"%s\"\n", (x));\
+      }\
+      fclose(f);\
+   }\
+}
+
+#define MAKE_DIR(x) {\
+   if (!path_is_directory((x)))\
+   {\
+      RARCH_WARN("Directory \"%s\" does not exists, creating\n", (x));\
+      if (mkdir((x), 0777) != 0)\
+      {\
+         RARCH_ERR("Could not create directory \"%s\"\n", (x));\
+      }\
+   }\
+}
+
+#ifdef IS_SALAMANDER
+
+default_paths_t default_paths;
+
+static void find_and_set_first_file(void)
+{
+   //Last fallback - we'll need to start the first executable file 
+   // we can find in the RetroArch cores directory
+
+   char first_file[512] = {0};
+   rarch_manage_libretro_set_first_file(first_file, sizeof(first_file),
+   default_paths.core_dir, "dol");
+
+   if(first_file[0])
+      strlcpy(default_paths.libretro_path, first_file, sizeof(default_paths.libretro_path));
+   else
+      RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
+}
+
+static void salamander_init_settings(void)
+{
+   char tmp_str[512] = {0};
+   bool config_file_exists;
+
+   if(!path_file_exists(default_paths.config_path))
+   {
+      FILE * f;
+      config_file_exists = false;
+      RARCH_ERR("Config file \"%s\" doesn't exist. Creating...\n", default_paths.config_path);
+      MAKE_DIR(default_paths.port_dir);
+      f = fopen(default_paths.config_path, "w");
+      fclose(f);
+   }
+   else
+      config_file_exists = true;
+
+   //try to find CORE executable
+   char core_executable[1024];
+   snprintf(core_executable, sizeof(core_executable), "%s/CORE.dol", default_paths.core_dir);
+
+   if(path_file_exists(core_executable))
+   {
+      //Start CORE executable
+      snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), core_executable);
+      RARCH_LOG("Start [%s].\n", default_paths.libretro_path);
+   }
+   else
+   {
+      if(config_file_exists)
+      {
+         config_file_t * conf = config_file_new(default_paths.config_path);
+         config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
+         config_file_free(conf);
+         snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), tmp_str);
+      }
+
+      if(!config_file_exists || !strcmp(default_paths.libretro_path, ""))
+         find_and_set_first_file();
+      else
+      {
+         RARCH_LOG("Start [%s] found in retroarch.cfg.\n", default_paths.libretro_path);
+      }
+
+      if (!config_file_exists)
+      {
+         config_file_t *new_conf = config_file_new(NULL);
+         config_set_string(new_conf, "libretro_path", default_paths.libretro_path);
+         config_file_write(new_conf, default_paths.config_path);
+         config_file_free(new_conf);
+      }
+   }
+}
+
+#else
 
 enum
 {
@@ -391,29 +496,8 @@ static void menu_free(void)
    rgui_free(rgui);
 }
 
-#define MAKE_FILE(x) {\
-   if (!path_file_exists((x)))\
-   {\
-      RARCH_WARN("File \"%s\" does not exists, creating\n", (x));\
-      FILE *f = fopen((x), "wb");\
-      if (!f)\
-      {\
-         RARCH_ERR("Could not create file \"%s\"\n", (x));\
-      }\
-      fclose(f);\
-   }\
-}
+#endif
 
-#define MAKE_DIR(x) {\
-   if (!path_is_directory((x)))\
-   {\
-      RARCH_WARN("Directory \"%s\" does not exists, creating\n", (x));\
-      if (mkdir((x), 0777) != 0)\
-      {\
-         RARCH_ERR("Could not create directory \"%s\"\n", (x));\
-      }\
-   }\
-}
 
 static void get_environment_settings(int argc, char *argv[])
 {
@@ -432,7 +516,11 @@ static void get_environment_settings(int argc, char *argv[])
       snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "%.*s/retroarch", device_end - default_paths.core_dir, default_paths.core_dir);
    else
       strlcpy(default_paths.port_dir, "/retroarch", sizeof(default_paths.port_dir));
+#ifdef IS_SALAMANDER
+   snprintf(default_paths.config_path, sizeof(default_paths.config_path), "%s/retroarch.cfg", default_paths.port_dir);
+#else
    snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
+#endif
    snprintf(default_paths.system_dir, sizeof(default_paths.system_dir), "%s/system", default_paths.port_dir);
    snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.port_dir);
    strlcpy(default_paths.filesystem_root_dir, "/", sizeof(default_paths.filesystem_root_dir));
@@ -442,6 +530,7 @@ static void get_environment_settings(int argc, char *argv[])
    strlcpy(default_paths.executable_extension, ".dol", sizeof(default_paths.executable_extension));
    strlcpy(default_paths.salamander_file, "boot.dol", sizeof(default_paths.salamander_file));
 
+#ifndef IS_SALAMANDER
    MAKE_DIR(default_paths.port_dir);
    MAKE_DIR(default_paths.system_dir);
    MAKE_DIR(default_paths.savestate_dir);
@@ -449,8 +538,8 @@ static void get_environment_settings(int argc, char *argv[])
    MAKE_DIR(default_paths.input_presets_dir);
 
    MAKE_FILE(g_extern.config_path);
+#endif
 }
-
 
 extern void __exception_setreload(int t);
 
@@ -459,7 +548,9 @@ static void system_init(void)
 #ifdef HW_RVL
    IOS_ReloadIOS(IOS_GetVersion());
    L2Enhance();
+#ifndef IS_SALAMANDER
    gx_init_mem2();
+#endif
 #endif
 
 #ifndef DEBUG
@@ -475,12 +566,14 @@ static void system_init(void)
    dotab_stdout.write_r = gx_logger_net;
 #elif defined(HAVE_FILE_LOGGER)
    inl_logger_init();
+#ifndef IS_SALAMANDER
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
    dotab_stdout.write_r = gx_logger_file;
 #endif
+#endif
 
-#ifdef HW_RVL
+#if defined(HW_RVL) && !defined(IS_SALAMANDER)
    lwp_t gx_device_thread;
    gx_devices[GX_DEVICE_SD].interface = &__io_wiisd;
    gx_devices[GX_DEVICE_SD].name = "sd";
@@ -493,6 +586,25 @@ static void system_init(void)
 #endif
 }
 
+static void system_exitspawn(void)
+{
+#ifdef IS_SALAMANDER
+   rarch_console_exec(default_paths.libretro_path);
+#else
+   if(g_extern.console.external_launch.enable)
+      rarch_console_exec(g_settings.libretro);
+#endif
+}
+
+static void system_deinit(void)
+{
+#if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
+   inl_logger_deinit()
+#endif
+}
+
+#ifndef IS_SALAMANDER
+
 static void system_post_init(void)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
@@ -503,6 +615,11 @@ static void system_post_init(void)
    config_read_keybinds(input_path);
 
    gx->menu_data = (uint32_t *) menu_framebuf;
+}
+
+static void system_deinit_save(void)
+{
+   config_save_keybinds(input_path);
 }
 
 static void system_process_args(int argc, char *argv[])
@@ -526,20 +643,4 @@ static void system_process_args(int argc, char *argv[])
       g_extern.console.external_launch.support = EXTERN_LAUNCHER_SALAMANDER;
 }
 
-static void system_deinit_save(void)
-{
-   config_save_keybinds(input_path);
-}
-
-static void system_deinit(void)
-{
-#if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
-   inl_logger_deinit()
 #endif
-}
-
-static void system_exitspawn(void)
-{
-   if(g_extern.console.external_launch.enable)
-      rarch_console_exec(g_settings.libretro);
-}
