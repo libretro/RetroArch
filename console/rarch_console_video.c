@@ -19,12 +19,6 @@
 #include "rarch_console_settings.h"
 #include "rarch_console_video.h"
 
-#if defined(HAVE_HLSL)
-#include "../gfx/shader_hlsl.h"
-#elif defined(HAVE_CG) && defined(HAVE_OPENGL)
-#include "../gfx/shader_cg.h"
-#endif
-
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "1:1",           1.0f },
    { "2:1",           2.0f },
