@@ -1771,9 +1771,11 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
       bool ret = gl->shader->init(path);
       if (!ret)
       {
-         gl->shader = NULL;
          RARCH_WARN("[GL]: Failed to set multipass shader. Falling back to stock.\n");
-         return gl->shader->init(NULL);
+         bool ret = gl->shader->init(NULL);
+         if (!ret)
+            gl->shader = NULL;
+         return ret;
       }
 
 #ifdef HAVE_FBO
