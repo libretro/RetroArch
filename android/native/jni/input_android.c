@@ -23,7 +23,7 @@
 #include "../../../general.h"
 #include "../../../driver.h"
 
-#define MAX_TOUCH 8
+#define MAX_TOUCH 16
 
 #define PRESSED_UP(x, y)   ((-0.80f > y) && (x >= -1.00f))
 #define PRESSED_DOWN(x, y) ((0.80f  < y) && (y <= 1.00f))
@@ -155,21 +155,26 @@ static void android_input_poll(void *data)
                   action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP) ||
                (source == AINPUT_SOURCE_MOUSE && action != AMOTION_EVENT_ACTION_DOWN);
 
-            if (!keyup)
+            if (motion_pointer < MAX_TOUCH)
             {
-               x = AMotionEvent_getX(event, motion_pointer);
-               y = AMotionEvent_getY(event, motion_pointer);
+               if (!keyup)
+               {
+                  x = AMotionEvent_getX(event, motion_pointer);
+                  y = AMotionEvent_getY(event, motion_pointer);
 
-               input_translate_coord_viewport(x, y,
-                     &pointer[motion_pointer].x, &pointer[motion_pointer].y);
+                  input_translate_coord_viewport(x, y,
+                        &pointer[motion_pointer].x, &pointer[motion_pointer].y);
 
-               pointer_count = max(pointer_count, motion_pointer + 1);
+                  pointer_count = max(pointer_count, motion_pointer + 1);
+               }
+               else
+               {
+                  memmove(pointer + motion_pointer, pointer + motion_pointer + 1, (MAX_TOUCH - motion_pointer - 1) * sizeof(struct input_pointer));
+                  pointer_count--;
+               }
             }
             else
-            {
-               memmove(pointer + motion_pointer, pointer + motion_pointer + 1, (MAX_TOUCH - motion_pointer - 1) * sizeof(struct input_pointer));
-               pointer_count--;
-            }
+               RARCH_WARN("Got motion pointer out of range (index: %u).\n", motion_pointer);
          }
 
          if (debug_enable)
