@@ -700,6 +700,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    bool soft_filter_enable = g_extern.console.screen.state.soft_filter.enable;
 #endif
 
+   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+
    if (d3d->last_width != width || d3d->last_height != height)
    {
       D3DLOCKED_RECT d3dlr;
@@ -893,7 +895,14 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (msg)
       d3d->font_ctx->render_msg_place(d3d, msg_width, msg_height, 0.0f, 0, msg);
 
-   if (!g_extern.draw_menu)
+   if (g_extern.draw_menu)
+   {
+#ifdef _XBOX360
+      app.Render();
+      XuiTimersRun();
+#endif
+    }
+    else
       gfx_ctx_xdk_swap_buffers();
 
    return true;
