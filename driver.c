@@ -217,7 +217,7 @@ static void adjust_system_rates(void)
    g_extern.system.force_nonblock = false;
    const struct retro_system_timing *info = &g_extern.system.av_info.timing;
 
-   if (!info->fps || !info->sample_rate)
+   if (info->fps <= 0.0 || info->sample_rate <= 0.0)
       return;
 
    float timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
