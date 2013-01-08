@@ -996,7 +996,7 @@ const video_driver_t video_xdk_d3d = {
    xdk_d3d_set_nonblock_state,
    xdk_d3d_alive,
    xdk_d3d_focus,
-   NULL,
+   xdk_d3d_set_shader,
    xdk_d3d_free,
    "xdk_d3d",
    xdk_d3d_start,
