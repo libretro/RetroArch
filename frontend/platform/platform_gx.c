@@ -20,6 +20,8 @@
 #include "../../general.h"
 #include "../../libretro.h"
 
+#include "platform_inl.h"
+
 #include "../../console/rgui/rgui.h"
 #include "../../gfx/fonts/bitmap.h"
 
@@ -467,14 +469,12 @@ static void system_init(void)
    fatInitDefault();
 
 #ifdef HAVE_LOGGER
-   g_extern.verbose = true;
-   logger_init();
+   inl_logger_init();
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
    dotab_stdout.write_r = gx_logger_net;
 #elif defined(HAVE_FILE_LOGGER)
-   g_extern.verbose = true;
-   g_extern.log_file = fopen("/retroarch-log.txt", "w");
+   inl_logger_init();
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
    dotab_stdout.write_r = gx_logger_file;
@@ -533,6 +533,9 @@ static void system_deinit_save(void)
 
 static void system_deinit(void)
 {
+#if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
+   inl_logger_deinit()
+#endif
 }
 
 static void system_exitspawn(void)

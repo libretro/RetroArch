@@ -16,6 +16,8 @@
 
 #include <sys/process.h>
 
+#include "platform_inl.h"
+
 #include "../../ps3/sdk_defines.h"
 #include "../../ps3/ps3_input.h"
 
@@ -243,8 +245,8 @@ static void system_init(void)
    sys_net_initialize_network();
 #endif
 
-#ifdef HAVE_LOGGER
-   logger_init();
+#if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
+   inl_logger_init();
 #endif
 
 #ifndef __PSL1GHT__
@@ -309,8 +311,8 @@ static void system_deinit(void)
       oskutil_unload(osk);
 #endif
 
-#ifdef HAVE_LOGGER
-   logger_shutdown();
+#if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
+   inl_logger_deinit();
 #endif
 
 #if defined(HAVE_SYSMODULES)

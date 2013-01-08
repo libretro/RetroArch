@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include <string>
 
+#include "platform_inl.h"
+
 #if defined(_XBOX360)
 #include <xfilecache.h>
 #include "../../360/frontend-xdk/menu.h"
@@ -128,6 +130,10 @@ static void system_post_init(void)
 
 static void system_init(void)
 {
+#if defined (HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
+   inl_logger_init();
+#endif
+
 #ifdef _XBOX1
    // Mount drives
    xbox_io_mount("A:", "cdrom0");
@@ -147,6 +153,9 @@ static void system_process_args(int argc, char *argv[])
 
 static void system_deinit(void)
 {
+#if defined (HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
+   logger_deinit();
+#endif
 }
 
 static void system_deinit_save(void)

@@ -150,12 +150,8 @@ begin_shutdown:
    menu_free();
    uninit_drivers_console();
 
-#ifdef HAVE_LOGGER
-   logger_shutdown();
-#elif defined(HAVE_FILE_LOGGER)
-   if (g_extern.log_file)
-      fclose(g_extern.log_file);
-   g_extern.log_file = NULL;
+#ifdef PERF_TEST
+   rarch_perf_log();
 #endif
 
    system_deinit();
