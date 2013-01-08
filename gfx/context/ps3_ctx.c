@@ -33,6 +33,14 @@
 #include "../gfx_context.h"
 #include "../fonts/gl_font.h"
 
+#ifdef HAVE_GLSL
+#include "../shader_glsl.h"
+#endif
+
+#ifdef HAVE_CG
+#include "../shader_cg.h"
+#endif
+
 #if defined(HAVE_RMENU)
 GLuint menu_texture_id;
 static struct texture_image menu_texture;
@@ -42,6 +50,7 @@ static struct texture_image menu_texture;
 static PSGLdevice* gl_device;
 static PSGLcontext* gl_context;
 #endif
+
 
 #define HARDCODE_FONT_SIZE 0.91f
 #define POSITION_X 0.09f
