@@ -967,15 +967,12 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiTxtCoreText", &m_core);
    GetChildById(L"XuiBtnLibretroCore", &m_change_libretro_core);
 
-   char core_text[256];
-   snprintf(core_text, sizeof(core_text), "%s %s", id, info.library_version);
+   snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "%s %s", id, info.library_version);
 
-   convert_char_to_wchar(strw_buffer, core_text, sizeof(strw_buffer));
+   convert_char_to_wchar(strw_buffer, g_extern.title_buf, sizeof(strw_buffer));
    m_core.SetText(strw_buffer);
    rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
    m_title.SetText(strw_buffer);
-
-   g_extern.console.rmenu.input_loop = INPUT_LOOP_NONE;
 
    return 0;
 }
@@ -1067,6 +1064,9 @@ void menu_init (void)
 
    bool hdmenus_allowed = g_extern.console.rmenu.state.rmenu_hd.enable;
 
+   if (hdmenus_allowed)
+      RARCH_LOG("HD menus enabled.\n");
+
    D3DPRESENT_PARAMETERS d3dpp;
    video_info_t video_info = {0};
 
@@ -1081,7 +1081,7 @@ void menu_init (void)
 
    hr = app.InitShared(device_ptr->d3d_render_device, &d3dpp, XuiPNGTextureLoader);
 
-   if (hr < 0)
+   if (hr != S_OK)
    {
       RARCH_ERR("Failed initializing XUI application.\n");
       return;
@@ -1089,31 +1089,37 @@ void menu_init (void)
 
    /* Register font */
    hr = app.RegisterDefaultTypeface(L"Arial Unicode MS", L"file://game:/media/rarch.ttf" );
-   if (hr < 0)
+   if (hr != S_OK)
    {
       RARCH_ERR("Failed to register default typeface.\n");
       return;
    }
 
    hr = app.LoadSkin( L"file://game:/media/rarch_scene_skin.xur");
-   if (hr < 0)
+   if (hr != S_OK)
    {
       RARCH_ERR("Failed to load skin.\n");
       return;
    }
 
    hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_main.xur", NULL, &app.hMainScene);
-   if (hr < 0)
+   if (hr != S_OK)
    {
       RARCH_ERR("Failed to create scene 'rarch_main.xur'.\n");
       return;
    }
 
    hCur = app.hMainScene;
-   XuiSceneNavigateFirst(app.GetRootObj(), app.hMainScene, XUSER_INDEX_FOCUS);
+   hr = XuiSceneNavigateFirst(app.GetRootObj(), app.hMainScene, XUSER_INDEX_FOCUS);
+   if (hr != S_OK)
+   {
+      RARCH_ERR("XuiSceneNavigateFirst failed.\n");
+      return;
+   }
 
    browser = (filebrowser_t*)filebrowser_init(default_paths.filebrowser_startup_dir, rarch_console_get_rom_ext());
    tmp_browser = (filebrowser_t*)filebrowser_init(default_paths.filebrowser_startup_dir, "");
+
    g_extern.console.rmenu.mode = MODE_MENU;
 }
 
@@ -1186,6 +1192,7 @@ bool rmenu_iterate(void)
       bool rmenu_enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
             && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.main_is_init));
 
+#if 0
       switch(g_extern.console.rmenu.mode)
       {
          case MODE_EXIT:
@@ -1196,6 +1203,7 @@ bool rmenu_iterate(void)
             g_extern.console.rmenu.mode = rmenu_enable ? MODE_EMULATION : MODE_MENU;
             break;
       }
+#endif
    }
 
    rarch_render_cached_frame();
