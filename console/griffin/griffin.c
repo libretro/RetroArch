@@ -372,10 +372,8 @@ MAIN
 ============================================================ */
 #if defined(XENON)
 #include "../../frontend/frontend_xenon.c"
-#elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX)
+#elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX) || defined(PSP)
 #include "../../frontend/frontend_console.c"
-#elif defined(PSP)
-#include "../../frontend/frontend_psp.c"
 #elif defined(ANDROID)
 #include "../../frontend/frontend_android.c"
 #endif

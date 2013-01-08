@@ -25,6 +25,8 @@
 #include "platform/platform_gx.c"
 #elif defined(_XBOX)
 #include "platform/platform_xdk.c"
+#elif defined(PSP)
+#include "platform/platform_psp.c"
 #endif
 
 #undef main

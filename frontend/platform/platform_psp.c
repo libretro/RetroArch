@@ -18,18 +18,16 @@
 #include <pspdebug.h>
 
 #include <stdint.h>
-#include "../boolean.h"
+#include "../../boolean.h"
 #include <stddef.h>
 #include <string.h>
 
 #undef main
-#include "../psp/sdk_defines.h"
+#include "../../psp/sdk_defines.h"
 
 PSP_MODULE_INFO("RetroArch PSP", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 PSP_HEAP_SIZE_MAX();
-
-int rarch_main(int argc, char *argv[]);
 
 static int exit_callback(int arg1, int arg2, void *common)
 {
@@ -47,6 +45,13 @@ static int exit_callback(int arg1, int arg2, void *common)
 
 static void get_environment_settings(int argc, char *argv[])
 {
+   (void)argc;
+   (void)argv;
+
+#ifdef HAVE_FILE_LOGGER
+   g_extern.log_file = fopen("ms0:/retroarch-log.txt", "w");
+#endif
+
    fill_pathname_basedir(default_paths.port_dir, argv[0], sizeof(default_paths.port_dir));
    RARCH_LOG("port dir: [%s]\n", default_paths.port_dir);
 
@@ -108,107 +113,31 @@ void menu_free (void)
 {
 }
 
-int main(int argc, char *argv[])
+static void system_init(void)
 {
    //initialize debug screen
    pspDebugScreenInit();
    pspDebugScreenClear();
 
    setup_callback();
+}
 
-   rarch_main_clear_state();
+static void system_post_init(void)
+{
+}
 
-   g_extern.verbose = true;
+static void system_process_args(int argc, char *argv[])
+{
+   (void)argc;
+   (void)argv;
+}
 
-#ifdef HAVE_FILE_LOGGER
-   g_extern.log_file = fopen("ms0:/retroarch-log.txt", "w");
-#endif
+static void system_deinit_save(void)
+{
+}
 
-   get_environment_settings(argc, argv);
-
-   config_set_defaults();
-
-   init_drivers_pre();
-   driver.input->init();
-
-   rarch_settings_set_default();
-   rarch_input_set_controls_default(input);
-   rarch_config_load();
-
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-   char core_exe_path[PATH_MAX];
-   char path_prefix[PATH_MAX];
-   const char *extension = default_paths.executable_extension;
-   snprintf(path_prefix, sizeof(path_prefix), "%s/", default_paths.core_dir);
-   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
-
-   if (path_file_exists(core_exe_path))
-   {
-      if (rarch_libretro_core_install(core_exe_path, path_prefix, path_prefix, 
-               g_extern.config_path, extension))
-      {
-         RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
-         config_save_file(g_extern.config_path);
-      }
-   }
-#endif
-
-   init_libretro_sym();
-
-   driver.input->post_init();
-
-   driver.video->start();
-   
-   menu_init();
-
-begin_loop:
-   if (g_extern.console.rmenu.mode == MODE_EMULATION)
-   {
-      driver.input->poll(NULL);
-      driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-
-      while(rarch_main_iterate());
-   }
-   else if (g_extern.console.rmenu.mode == MODE_INIT)
-   {
-      if(g_extern.main_is_init)
-         rarch_main_deinit();
-
-      struct rarch_main_wrap args = {0};
-
-      args.verbose = g_extern.verbose;
-      args.config_path = g_extern.config_path;
-      args.sram_path = g_extern.console.main_wrap.state.default_sram_dir.enable ? g_extern.console.main_wrap.paths.default_sram_dir : NULL,
-         args.state_path = g_extern.console.main_wrap.state.default_savestate_dir.enable ? g_extern.console.main_wrap.paths.default_savestate_dir : NULL,
-         args.rom_path = g_extern.file_state.rom_path;
-      args.libretro_path = g_settings.libretro;
-
-      int init_ret = rarch_main_init_wrap(&args);
-
-      if (init_ret == 0)
-         RARCH_LOG("rarch_main_init succeeded.\n");
-      else
-         RARCH_ERR("rarch_main_init failed.\n");
-   }
-   else if(g_extern.console.rmenu.mode == MODE_MENU)
-      while(rmenu_iterate());
-   else
-      goto begin_shutdown;
-
-   goto begin_loop;
-
-begin_shutdown:
-   config_save_file(g_extern.config_path);
-
-   if(g_extern.main_is_init)
-      rarch_main_deinit();
-
-   driver.input->free(NULL);
-   driver.video->stop();
-   menu_free();
-
-   g_extern.verbose = false;
-
+static void system_deinit(void)
+{
 #ifdef HAVE_FILE_LOGGER
    if (g_extern.log_file)
       fclose(g_extern.log_file);
@@ -216,5 +145,8 @@ begin_shutdown:
 #endif
 
    sceKernelExitGame();
-   return 1;
+}
+
+static void system_exitspawn(void)
+{
 }
