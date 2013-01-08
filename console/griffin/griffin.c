@@ -370,11 +370,9 @@ REWIND
 /*============================================================
 MAIN
 ============================================================ */
-#if defined(_XBOX)
-#include "../../frontend/frontend_xdk.c"
-#elif defined(XENON)
+#if defined(XENON)
 #include "../../frontend/frontend_xenon.c"
-#elif defined(__CELLOS_LV2__) || defined(GEKKO)
+#elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX)
 #include "../../frontend/frontend_console.c"
 #elif defined(PSP)
 #include "../../frontend/frontend_psp.c"

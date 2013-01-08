@@ -44,13 +44,11 @@
 #include "../file.h"
 #include "../general.h"
 
-int rarch_main(int argc, char *argv[]);
-
-#undef main
-
-static void get_environment_settings (void)
+static void get_environment_settings(int argc, char *argv[])
 {
    HRESULT ret;
+   (void)argc;
+   (void)argv;
    (void)ret;
 #ifdef HAVE_HDD_CACHE_PARTITION
    ret = XSetFileCacheSize(0x100000);
@@ -124,6 +122,10 @@ static void get_environment_settings (void)
 #endif
 }
 
+static void system_post_init(void)
+{
+}
+
 static void system_init(void)
 {
 #ifdef _XBOX1
@@ -137,97 +139,22 @@ static void system_init(void)
 #endif
 }
 
-int main(int argc, char *argv[])
+static void system_process_args(int argc, char *argv[])
 {
-   rarch_main_clear_state();
-   get_environment_settings();
+   (void)argc;
+   (void)argv;
+}
 
-   config_set_defaults();
-   
-   init_drivers_pre();
-   driver.input->init();
+static void system_deinit(void)
+{
+}
 
-   rarch_settings_set_default();
-   rarch_input_set_controls_default(driver.input);
-   rarch_config_load();
+static void system_deinit_save(void)
+{
+}
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-   char core_exe_path[PATH_MAX];
-   char path_prefix[PATH_MAX];
-   const char *extension = default_paths.executable_extension;
-#ifdef _XBOX1
-   snprintf(path_prefix, sizeof(path_prefix), "D:\\");
-#else
-   snprintf(path_prefix, sizeof(path_prefix), default_paths.filesystem_root_dir);
-#endif
-   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
-
-   if (path_file_exists(core_exe_path))
-   {
-      if (rarch_libretro_core_install(core_exe_path, path_prefix, path_prefix, 
-               g_extern.config_path, extension))
-      {
-         RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
-         config_save_file(g_extern.config_path);
-      }
-   }
-#endif
-
-   init_libretro_sym();
-
-   driver.input->init();
-   driver.video->start();
-
-   system_init();
-
-   menu_init();
-
-begin_loop:
-   if(g_extern.console.rmenu.mode == MODE_EMULATION)
-   {
-
-      driver.input->poll(NULL);
-      driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-
-      while(rarch_main_iterate());
-   }
-   else if (g_extern.console.rmenu.mode == MODE_INIT)
-   {
-      if(g_extern.main_is_init)
-         rarch_main_deinit();
-
-      struct rarch_main_wrap args = {0};
-
-      args.verbose = g_extern.verbose;
-      args.config_path = g_extern.config_path;
-      args.sram_path = g_extern.console.main_wrap.state.default_sram_dir.enable ? g_extern.console.main_wrap.paths.default_sram_dir : NULL,
-         args.state_path = g_extern.console.main_wrap.state.default_savestate_dir.enable ? g_extern.console.main_wrap.paths.default_savestate_dir : NULL,
-         args.rom_path = g_extern.file_state.rom_path;
-      args.libretro_path = g_settings.libretro;
-
-      int init_ret = rarch_main_init_wrap(&args);
-
-      if (init_ret == 0)
-         RARCH_LOG("rarch_main_init succeeded.\n");
-      else
-         RARCH_ERR("rarch_main_init failed.\n");
-   }
-   else if(g_extern.console.rmenu.mode == MODE_MENU)
-      while(rmenu_iterate());
-   else
-      goto begin_shutdown;
-
-   goto begin_loop;
-
-begin_shutdown:
-   config_save_file(g_extern.config_path);
-
-   menu_free();
-   driver.video->stop();
-   driver.input->free(NULL);
-
+static void system_exitspawn(void)
+{
    if(g_extern.console.external_launch.enable)
       rarch_console_exec(g_extern.console.external_launch.launch_app);
-
-   return 0;
 }

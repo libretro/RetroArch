@@ -23,6 +23,8 @@
 #include "frontend_ps3.c"
 #elif defined(GEKKO)
 #include "frontend_gx.c"
+#elif defined(_XBOX)
+#include "frontend_xdk.c"
 #endif
 
 #undef main
@@ -58,7 +60,13 @@ int main(int argc, char *argv[])
    char core_exe_path[PATH_MAX];
    char path_prefix[PATH_MAX];
    const char *extension = default_paths.executable_extension;
+#if defined(_XBOX1)
+   snprintf(path_prefix, sizeof(path_prefix), "D:\\");
+#elif defined(_XBOX360)
+   snprintf(path_prefix, sizeof(path_prefix), default_paths.filesystem_root_dir);
+#else
    snprintf(path_prefix, sizeof(path_prefix), "%s/", default_paths.core_dir);
+#endif
    snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
 
 
