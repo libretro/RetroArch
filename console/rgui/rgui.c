@@ -387,10 +387,7 @@ static void render_text(rgui_handle_t *rgui)
 
    blit_line(rgui, TERM_START_X + 15, 15, title, true);
 
-   struct retro_system_info info;
-   retro_get_system_info(&info);
-   snprintf(title, sizeof(title), "CORE: %s %s", info.library_name, info.library_version);
-   blit_line(rgui, TERM_START_X + 15, (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, title, true);
+   blit_line(rgui, TERM_START_X + 15, (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, g_extern.title_buf, true);
 
    unsigned x = TERM_START_X;
    unsigned y = TERM_START_Y;

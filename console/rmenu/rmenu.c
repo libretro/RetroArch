@@ -2394,12 +2394,6 @@ void menu_init(void)
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   //Set libretro filename and version to variable
-   struct retro_system_info info;
-   retro_get_system_info(&info);
-   const char *id = info.library_name ? info.library_name : "Unknown";
-   snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "%s %s", id, info.library_version);
-
    rmenu_state.init_resources = init_filebrowser;
    rmenu_state.free_resources = free_filebrowser;
    rmenu_state.input          = 0;

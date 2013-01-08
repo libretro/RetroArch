@@ -953,10 +953,6 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
 
 HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
-   struct retro_system_info info;
-   retro_get_system_info(&info);
-   const char *id = info.library_name ? info.library_name : "Unknown";
-
    GetChildById(L"XuiLogo", &m_logoimage);
    GetChildById(L"XuiBtnRomBrowser", &m_filebrowser);
    GetChildById(L"XuiBtnSettings", &m_settings);
@@ -966,8 +962,6 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiTxtTitle", &m_title);
    GetChildById(L"XuiTxtCoreText", &m_core);
    GetChildById(L"XuiBtnLibretroCore", &m_change_libretro_core);
-
-   snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "%s %s", id, info.library_version);
 
    convert_char_to_wchar(strw_buffer, g_extern.title_buf, sizeof(strw_buffer));
    m_core.SetText(strw_buffer);
