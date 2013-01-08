@@ -2586,7 +2586,7 @@ void rarch_main_clear_state(void)
    init_state();
 }
 
-static void init_system_info(void)
+void rarch_init_system_info(void)
 {
    struct retro_system_info *info = &g_extern.system.info;
    pretro_get_system_info(info);
@@ -2667,7 +2667,7 @@ int rarch_main_init(int argc, char *argv[])
    config_load();
 
    init_libretro_sym();
-   init_system_info();
+   rarch_init_system_info();
 
    init_drivers_pre();
 

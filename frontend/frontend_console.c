@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 
    config_load();
    init_libretro_sym();
-   init_system_info();
+   rarch_init_system_info();
 
    init_console_drivers();
 
