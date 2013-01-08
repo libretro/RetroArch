@@ -159,7 +159,7 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiBtnGameDir", &m_dir_game);
    GetChildById(L"XuiBtnCacheDir", &m_dir_cache);
 
-   filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), g_extern.console.main_wrap.paths.default_rom_startup_dir);
+   filebrowser_set_root_and_ext(browser, rarch_console_get_rom_ext(), g_extern.console.main_wrap.paths.default_rom_startup_dir);
 
    uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
    filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
@@ -184,7 +184,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       {
          snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), str_buffer);
          uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
-         filebrowser_set_root_and_ext(&browser, rarch_console_get_rom_ext(), path);
+         filebrowser_set_root_and_ext(browser, rarch_console_get_rom_ext(), path);
          filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
       }
    }
@@ -872,7 +872,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
          switch(set_shader)
          {
             case 1:
-               snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), str_buffer);
+               snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
                if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.cg_shader_path, RARCH_SHADER_INDEX_PASS0);
@@ -883,7 +883,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                   RARCH_ERR("Shaders are unsupported on this platform.\n");
                break;
             case 2:
-               snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), str_buffer);
+               snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
                if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.second_pass_shader, RARCH_SHADER_INDEX_PASS1);
@@ -900,8 +900,8 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
       else if(tmp_browser->current_dir.list->elems[index].attr.b)
       {
          convert_wchar_to_char(str_buffer, (const wchar_t *)m_shaderlist.GetText(index), sizeof(str_buffer));
-         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), str_buffer);
-         filebrowser_set_root_and_ext(&tmp_browser, "cg|CG", path);
+         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
+         filebrowser_set_root_and_ext(tmp_browser, "cg|CG", path);
          uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
          filebrowser_fetch_directory_entries(tmp_browser, action, &m_shaderlist, &m_shaderpathtitle);
       }
@@ -935,7 +935,7 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       convert_wchar_to_char(str_buffer, (const wchar_t *)m_romlist.GetText(index), sizeof(str_buffer));
       if(path_file_exists(tmp_browser->current_dir.list->elems[index].data))
       {
-         snprintf(g_extern.console.external_launch.launch_app, sizeof(g_extern.console.external_launch.launch_app), "%s\\%s", filebrowser_get_current_dir(&tmp_browser), str_buffer);
+         snprintf(g_extern.console.external_launch.launch_app, sizeof(g_extern.console.external_launch.launch_app), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
          rarch_settings_change(S_RETURN_TO_LAUNCHER);
       }
       else if(tmp_browser->current_dir.list->elems[index].attr.b)
