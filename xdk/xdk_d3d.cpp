@@ -700,7 +700,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    bool soft_filter_enable = g_extern.console.screen.state.soft_filter.enable;
 #endif
 
-   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.0f, 0);
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
