@@ -555,10 +555,6 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">true</ExcludedFromBuild>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
