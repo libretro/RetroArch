@@ -22,27 +22,27 @@
 
 #if defined(_XBOX360)
 #include <xfilecache.h>
-#include "../360/frontend-xdk/menu.h"
-#include "../xdk/menu_shared.h"
+#include "../../360/frontend-xdk/menu.h"
+#include "../../xdk/menu_shared.h"
 #elif defined(_XBOX1)
-#include "../xbox1/frontend/RetroLaunch/IoSupport.h"
-#include "../console/rmenu/rmenu.h"
+#include "../../xbox1/frontend/RetroLaunch/IoSupport.h"
+#include "../../console/rmenu/rmenu.h"
 #endif
 
 #include <xbdm.h>
 
 #ifdef _XBOX
-#include "../xdk/xdk_d3d.h"
+#include "../../xdk/xdk_d3d.h"
 #endif
 
-#include "../console/rarch_console.h"
-#include "../console/rarch_console_exec.h"
-#include "../console/rarch_console_libretro_mgmt.h"
-#include "../console/rarch_console_config.h"
-#include "../conf/config_file.h"
-#include "../conf/config_file_macros.h"
-#include "../file.h"
-#include "../general.h"
+#include "../../console/rarch_console.h"
+#include "../../console/rarch_console_exec.h"
+#include "../../console/rarch_console_libretro_mgmt.h"
+#include "../../console/rarch_console_config.h"
+#include "../../conf/config_file.h"
+#include "../../conf/config_file_macros.h"
+#include "../../file.h"
+#include "../../general.h"
 
 static void get_environment_settings(int argc, char *argv[])
 {

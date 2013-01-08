@@ -20,11 +20,11 @@
 #include <string.h>
 
 #if defined(__CELLOS_LV2__)
-#include "frontend_ps3.c"
+#include "platform/platform_ps3.c"
 #elif defined(GEKKO)
-#include "frontend_gx.c"
+#include "platform/platform_gx.c"
 #elif defined(_XBOX)
-#include "frontend_xdk.c"
+#include "platform/platform_xdk.c"
 #endif
 
 #undef main

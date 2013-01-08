@@ -1,22 +1,38 @@
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2013 - Daniel De Matteis
+ * 
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <sys/process.h>
 
-#include "../ps3/sdk_defines.h"
-#include "../ps3/ps3_input.h"
+#include "../../ps3/sdk_defines.h"
+#include "../../ps3/ps3_input.h"
 
 #include "../console/rarch_console.h"
 
 #ifdef HAVE_RARCH_EXEC
-#include "../console/rarch_console_exec.h"
+#include "../../console/rarch_console_exec.h"
 #endif
 
-#include "../console/rarch_console_libretro_mgmt.h"
-#include "../console/rarch_console_config.h"
-#include "../console/rarch_console_settings.h"
-#include "../conf/config_file.h"
-#include "../general.h"
-#include "../file.h"
+#include "../../console/rarch_console_libretro_mgmt.h"
+#include "../../console/rarch_console_config.h"
+#include "../../console/rarch_console_settings.h"
+#include "../../conf/config_file.h"
+#include "../../general.h"
+#include "../../file.h"
 
-#include "../console/rmenu/rmenu.h"
+#include "../../console/rmenu/rmenu.h"
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 
@@ -331,6 +347,10 @@ static void system_deinit(void)
       RARCH_ERR("System cache partition could not be cleared on exit.\n");
    }
 #endif
+}
+
+static void system_deinit_save(void)
+{
 }
 
 static void system_exitspawn(void)
