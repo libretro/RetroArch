@@ -31,11 +31,13 @@
 
 #undef main
 
-int rarch_console_preinit(void);
-
+// Only called once on init and deinit.
+// Video and input drivers need to be active (owned)
+// before retroarch core starts.
 static void init_console_drivers(void)
 {
-   driver.video->start();
+   init_drivers_pre(); // Set driver.* function callbacks.
+   driver.video->start(); // Statically starts video driver. Sets driver.video_data.
    driver.input_data = driver.input->init();
    rarch_input_set_controls_default(driver.input);
    driver.input->post_init();
@@ -69,7 +71,9 @@ int main(int argc, char *argv[])
    rarch_settings_set_default();
    rarch_config_load();
 
-   rarch_console_preinit();
+   config_load();
+   init_libretro_sym();
+   init_system_info();
 
    init_console_drivers();
 
