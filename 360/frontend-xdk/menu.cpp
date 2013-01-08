@@ -1189,21 +1189,21 @@ bool rmenu_iterate(void)
 
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
-      bool rmenu_enable = !((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
+      bool rmenu_enable = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
             && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.main_is_init));
 
-#if 0
       switch(g_extern.console.rmenu.mode)
       {
          case MODE_EXIT:
          case MODE_INIT:
          case MODE_EMULATION:
             break;
+         case MODE_MENU:
          default:
-            g_extern.console.rmenu.mode = rmenu_enable ? MODE_EMULATION : MODE_MENU;
+            if (rmenu_enable)
+               g_extern.console.rmenu.mode = MODE_EMULATION;
             break;
       }
-#endif
    }
 
       rarch_render_cached_frame();
