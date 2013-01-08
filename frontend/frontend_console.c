@@ -47,6 +47,12 @@ static void init_drivers_console(void)
    init_audio();
 }
 
+static void uninit_drivers_console(void)
+{
+   driver.input->free(NULL);
+   driver.video->stop();
+}
+
 int main(int argc, char *argv[])
 {
    system_init();
@@ -115,9 +121,16 @@ begin_loop:
       int init_ret = rarch_main_init_wrap(&args);
 
       if (init_ret == 0)
+      {
          RARCH_LOG("rarch_main_init succeeded.\n");
+         g_extern.console.rmenu.mode = MODE_EMULATION;
+      }
       else
+      {
          RARCH_ERR("rarch_main_init failed.\n");
+         g_extern.console.rmenu.mode = MODE_MENU;
+         rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
+      }
    }
    else if(g_extern.console.rmenu.mode == MODE_MENU)
       while(rmenu_iterate());
@@ -134,9 +147,8 @@ begin_shutdown:
    if(g_extern.main_is_init)
       rarch_main_deinit();
 
-   driver.input->free(NULL);
-   driver.video->stop();
    menu_free();
+   uninit_drivers_console();
 
 #ifdef HAVE_LOGGER
    logger_shutdown();

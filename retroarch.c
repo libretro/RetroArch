@@ -2944,17 +2944,6 @@ int rarch_main_init_wrap(const struct rarch_main_wrap *args)
 
    int ret = rarch_main_init(argc, argv);
 
-#ifdef RARCH_CONSOLE
-   if (ret == 0)
-      g_extern.console.rmenu.mode = MODE_EMULATION;
-   else
-   {
-      //failed to load the ROM for whatever reason
-      g_extern.console.rmenu.mode = MODE_MENU;
-      rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
-   }
-#endif
-
    for (int i = 0; i < ARRAY_SIZE(argv_copy); i++)
       free(argv_copy[i]);
 
