@@ -31,28 +31,31 @@
 
 #undef main
 
-static void init_drivers_console(void)
+int rarch_console_preinit(void);
+
+static void init_console_drivers(void)
 {
-   config_set_defaults();
-   rarch_settings_set_default();
-
-   init_drivers_pre();
-
-   rarch_config_load();
-
+   driver.video->start();
    driver.input_data = driver.input->init();
    rarch_input_set_controls_default(driver.input);
-
    driver.input->post_init();
 
-   driver.video->start();
-   init_audio();
+   // Core handles audio.
 }
 
-static void uninit_drivers_console(void)
+static void uninit_console_drivers(void)
 {
-   driver.input->free(NULL);
-   driver.video->stop();
+   if (driver.video_data)
+   {
+      driver.video->stop();
+      driver.video_data = NULL;
+   }
+
+   if (driver.input_data)
+   {
+      driver.input->free(NULL);
+      driver.input_data = NULL;
+   }
 }
 
 int main(int argc, char *argv[])
@@ -60,9 +63,15 @@ int main(int argc, char *argv[])
    system_init();
 
    rarch_main_clear_state();
-   get_environment_settings(argc, argv);
 
-   init_drivers_console();
+   get_environment_settings(argc, argv);
+   config_set_defaults();
+   rarch_settings_set_default();
+   rarch_config_load();
+
+   rarch_console_preinit();
+
+   init_console_drivers();
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    char core_exe_path[PATH_MAX];
@@ -150,7 +159,7 @@ begin_shutdown:
       rarch_main_deinit();
 
    menu_free();
-   uninit_drivers_console();
+   uninit_console_drivers();
 
 #ifdef PERF_TEST
    rarch_perf_log();

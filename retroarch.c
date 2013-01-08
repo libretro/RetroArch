@@ -2643,6 +2643,38 @@ static void validate_cpu_features(void)
 #endif
 }
 
+#ifdef RARCH_CONSOLE
+int rarch_console_preinit(void)
+{
+   init_state();
+
+   if (g_extern.verbose)
+   {
+      RARCH_LOG_OUTPUT("=== Build =======================================");
+      print_compiler(stderr);
+      RARCH_LOG_OUTPUT("=================================================\n");
+   }
+
+   validate_cpu_features();
+   config_load();
+
+   init_libretro_sym();
+   init_system_info();
+
+   init_drivers_pre();
+
+   return 0;
+
+#if 0
+error:
+   pretro_deinit();
+   uninit_libretro_sym();
+
+   return 1;
+#endif
+}
+#endif
+
 int rarch_main_init(int argc, char *argv[])
 {
    init_state();
