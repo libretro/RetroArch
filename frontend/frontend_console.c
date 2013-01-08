@@ -25,6 +25,26 @@
 #include "frontend_ps3.c"
 #endif
 
+#undef main
+
+static void init_drivers_console(void)
+{
+   config_set_defaults();
+   rarch_settings_set_default();
+
+   init_drivers_pre();
+
+   rarch_config_load();
+
+   driver.input_data = driver.input->init();
+   rarch_input_set_controls_default(driver.input);
+
+   driver.input->post_init();
+
+   driver.video->start();
+   init_audio();
+}
+
 int main(int argc, char *argv[])
 {
    system_init();
@@ -32,14 +52,7 @@ int main(int argc, char *argv[])
    rarch_main_clear_state();
    get_environment_settings(argc, argv);
 
-   config_set_defaults();
-
-   init_drivers_pre();
-   driver.input->init();
-
-   rarch_settings_set_default();
-   rarch_input_set_controls_default(driver.input);
-   rarch_config_load();
+   init_drivers_console();
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    char core_exe_path[PATH_MAX];
@@ -62,10 +75,7 @@ int main(int argc, char *argv[])
 
    init_libretro_sym();
 
-   driver.input->post_init();
    system_post_init();
-
-   driver.video->start();
 
    menu_init();
 

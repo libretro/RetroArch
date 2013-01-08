@@ -216,6 +216,12 @@ void config_set_defaults(void)
    g_settings.network_cmd_port     = network_cmd_port;
    g_settings.stdin_cmd_enable     = stdin_cmd_enable;
 
+#ifdef RARCH_CONSOLE
+   //hack - need this to get past assert() during premature video/audio/input
+   //init on consoles
+   g_settings.audio.in_rate = out_rate;
+#endif
+
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
    memcpy(g_settings.input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
