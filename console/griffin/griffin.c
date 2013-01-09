@@ -412,8 +412,14 @@ MENU
 #include "../../frontend/menu/rgui.c"
 #endif
 
+#ifdef HAVE_RMENU
+
 #if defined(_XBOX360)
 #include "../../frontend/menu/rmenu_xui.cpp"
+#elif defined(GEKKO)
+#include "../../frontend/menu/rmenu_gx.c"
+#endif
+
 #endif
 
 #ifdef __cplusplus

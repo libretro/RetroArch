@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "frontend_console.h"
+#include "menu/rmenu.h"
 
 #if defined(__CELLOS_LV2__)
 #include "platform/platform_ps3.c"
