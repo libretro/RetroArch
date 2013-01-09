@@ -15,9 +15,6 @@
     <Filter Include="Source Files\conf">
       <UniqueIdentifier>{7ffc19c2-b69a-4272-b986-4fafee630f77}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\console">
-      <UniqueIdentifier>{26ff8241-2b47-497e-8464-6867f4c5bb8e}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\conf\config_file.c">
@@ -28,9 +25,6 @@
     </ClCompile>
     <ClCompile Include="..\..\file_path.c">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\console\rarch_console_libretro_mgmt.c">
-      <Filter>Source Files\console</Filter>
     </ClCompile>
     <ClCompile Include="..\..\frontend\frontend_console.c">
       <Filter>Source Files</Filter>
