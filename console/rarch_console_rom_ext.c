@@ -34,6 +34,8 @@
 #ifdef HAVE_ZLIB
 #include "../deps/rzlib/zlib.h"
 
+#define WRITEBUFFERSIZE (1024 * 512)
+
 static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir, char *slash, char *write_filename, size_t write_filename_size, unsigned extract_zip_mode)
 {
    char filename_inzip[PATH_MAX];

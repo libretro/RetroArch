@@ -17,11 +17,7 @@
 #ifndef RARCH_ROM_EXT_H__
 #define RARCH_ROM_EXT_H__
 
-void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, unsigned delay);
-
 #ifdef HAVE_ZLIB
-#define WRITEBUFFERSIZE (1024 * 512)
-
 enum
 {
    ZIP_EXTRACT_TO_CURRENT_DIR = 0,
@@ -29,5 +25,7 @@ enum
    ZIP_EXTRACT_TO_CACHE_DIR
 };
 #endif
+
+void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, unsigned delay);
 
 #endif
