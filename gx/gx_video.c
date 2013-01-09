@@ -19,7 +19,7 @@
 #include "../general.h"
 #include "../console/rarch_console_video.h"
 #include "../gfx/fonts/bitmap.h"
-#include "../console/rgui/rgui.h"
+#include "../frontend/menu/rgui.h"
 #include "../gfx/gfx_common.h"
 
 #ifdef HW_RVL

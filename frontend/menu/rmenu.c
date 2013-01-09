@@ -14,6 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "rmenu.h"
+#include "utils/file_browser.h"
+#include "utils/menu_stack.h"
+
 #if defined(__CELLOS_LV2__)
 #include <sdk_version.h>
 
@@ -22,8 +26,6 @@
 #endif
 
 #endif
-
-#include "../../console/fileio/file_browser.h"
 
 #include "../../console/rarch_console.h"
 #include "../../console/rarch_console_rom_ext.h"
@@ -44,7 +46,6 @@
 #include "../../file.h"
 #include "../../general.h"
 
-#include "rmenu.h"
 
 rmenu_state_t rmenu_state;
 

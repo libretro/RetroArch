@@ -332,7 +332,7 @@ DYNAMIC
 FILE
 ============================================================ */
 #ifdef HAVE_FILEBROWSER
-#include "../fileio/file_browser.c"
+#include "../../frontend/menu/utils/file_browser.c"
 #endif
 #include "../../file.c"
 #include "../../file_path.c"
@@ -403,17 +403,17 @@ SCREENSHOTS
 MENU
 ============================================================ */
 #if defined(HAVE_RMENU_GUI)
-#include "../rmenu/rmenu_stack.c"
-#include "../rmenu/rmenu.c"
+#include "../../frontend/menu/utils/menu_stack.c"
+#include "../../frontend/menu/rmenu.c"
 #endif
 
 #ifdef HAVE_RGUI
-#include "../rgui/rgui.c"
-#include "../rgui/list.c"
+#include "../../frontend/menu/utils/file_list.c"
+#include "../../frontend/menu/rgui.c"
 #endif
 
 #if defined(_XBOX360)
-#include "../../360/frontend-xdk/menu.cpp"
+#include "../../frontend/menu/rmenu_xui.cpp"
 #endif
 
 #ifdef __cplusplus

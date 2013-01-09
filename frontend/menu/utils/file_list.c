@@ -13,11 +13,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "list.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+
+#include "file_list.h"
+#include "../rgui.h"
 
 struct rgui_file
 {

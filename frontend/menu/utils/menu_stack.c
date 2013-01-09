@@ -14,8 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "rmenu_stack.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
 
+#include "menu_stack.h"
 
 static unsigned char menu_stack_enum_array[10];
 static unsigned stack_idx = 0;

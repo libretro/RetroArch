@@ -24,7 +24,7 @@
 #endif
 
 #if defined(RARCH_CONSOLE) || defined(HAVE_RMENU)
-#include "../console/rmenu/rmenu.h"
+#include "../frontend/menu/rmenu.h"
 #endif
 
 #define MAX_EGLIMAGE_TEXTURES 32

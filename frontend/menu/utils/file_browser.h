@@ -17,9 +17,7 @@
 #ifndef FILEBROWSER_H_
 #define FILEBROWSER_H_
 
-#include <stdint.h>
-#include <stdlib.h>
-#include "../../general.h"
+#include "../../../general.h"
 
 typedef struct
 {

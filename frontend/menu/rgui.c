@@ -13,16 +13,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "rgui.h"
-#include "list.h"
-#include "../rarch_console_video.h"
-#include "../../gfx/fonts/bitmap.h"
-#include "../../screenshot.h"
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
+
+#include "rgui.h"
+#include "utils/file_list.h"
+#include "../../console/rarch_console_video.h"
+#include "../../gfx/fonts/bitmap.h"
+#include "../../screenshot.h"
 
 #define TERM_START_X 15
 #define TERM_START_Y 27

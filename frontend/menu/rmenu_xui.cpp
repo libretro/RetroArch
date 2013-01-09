@@ -18,6 +18,9 @@
 #include <crtdefs.h>
 #include <tchar.h>
 #include <xtl.h>
+
+#include "rmenu_xui.h"
+
 #include "../../console/fileio/file_browser.h"
 
 #include "../../console/rarch_console.h"
@@ -28,7 +31,6 @@
 #include "../../gfx/gfx_context.h"
 
 #include "../../xdk/xdk_d3d.h"
-#include "menu.h"
 #include "../../message.h"
 
 #include "../../general.h"

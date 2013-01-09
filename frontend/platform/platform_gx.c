@@ -22,7 +22,7 @@
 
 #include "platform_inl.h"
 
-#include "../../console/rgui/rgui.h"
+#include "../menu/rgui.h"
 
 #ifndef IS_SALAMANDER
 #include "../../gfx/fonts/bitmap.h"

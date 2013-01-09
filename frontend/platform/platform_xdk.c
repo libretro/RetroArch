@@ -25,9 +25,9 @@
 
 #if defined(_XBOX360)
 #include <xfilecache.h>
-#include "../../360/frontend-xdk/menu.h"
+#include "../menu/menu_xui.h"
 #elif defined(_XBOX1)
-#include "../../console/rmenu/rmenu.h"
+#include "../menu/rmenu.h"
 #endif
 
 #include <xbdm.h>

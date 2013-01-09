@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _MENU_XUI_H_
-#define _MENU_XUI_H_
+#ifndef _RMENU_XUI_H_
+#define _RMENU_XUI_H_
 
 #include <xui.h>
 #include <xuiapp.h>

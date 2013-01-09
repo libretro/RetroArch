@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <stdlib.h>
 #include "file_browser.h"
 
 static bool filebrowser_parse_directory(void *data, unsigned stack_size, 

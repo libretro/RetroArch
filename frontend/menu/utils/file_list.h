@@ -16,9 +16,6 @@
 #ifndef RGUI_LIST_H__
 #define RGUI_LIST_H__
 
-#include "rgui.h"
-#include <stddef.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
