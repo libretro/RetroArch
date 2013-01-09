@@ -21,13 +21,12 @@
 
 #include "rmenu_xui.h"
 
-#include "../../console/fileio/file_browser.h"
+#include "utils/file_browser.h"
 
 #include "../../console/rarch_console.h"
 #include "../../console/rarch_console_settings.h"
 #include "../../console/rarch_console_video.h"
 
-#include "../../console/rmenu/rmenu.h"
 #include "../../gfx/gfx_context.h"
 
 #include "../../xdk/xdk_d3d.h"

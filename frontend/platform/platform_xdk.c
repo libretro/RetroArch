@@ -25,7 +25,7 @@
 
 #if defined(_XBOX360)
 #include <xfilecache.h>
-#include "../menu/menu_xui.h"
+#include "../menu/rmenu_xui.h"
 #elif defined(_XBOX1)
 #include "../menu/rmenu.h"
 #endif

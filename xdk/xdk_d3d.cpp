@@ -39,7 +39,7 @@
 #if defined(_XBOX1)
 unsigned font_x, font_y;
 #elif defined(_XBOX360)
-#include "../360/frontend-xdk/menu.h"
+#include "../frontend/menu/rmenu_xui.h"
 extern CRetroArch app;
 const DWORD g_MapLinearToSrgbGpuFormat[] = 
 {
