@@ -230,8 +230,6 @@ int main(int argc, char *argv[])
    const char *extension = default_paths.executable_extension;
 #if defined(_XBOX1)
    snprintf(path_prefix, sizeof(path_prefix), "D:\\");
-#elif defined(_XBOX360)
-   snprintf(path_prefix, sizeof(path_prefix), default_paths.filesystem_root_dir);
 #else
    snprintf(path_prefix, sizeof(path_prefix), "%s/", default_paths.core_dir);
 #endif
