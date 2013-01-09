@@ -412,8 +412,6 @@ MENU
 
 #if defined(_XBOX360)
 #include "../../360/frontend-xdk/menu.cpp"
-#elif defined(_XBOX1)
-#include "../../xbox1/frontend/RetroLaunch/IoSupport.cpp"
 #endif
 
 #ifdef __cplusplus

@@ -10,6 +10,8 @@
 #ifndef __XBOX_INTERNAL_H__
 #define __XBOX_INTERNAL_H__
 
+#ifdef _XBOX1
+
 #include <pshpack4.h>
 
 // Do extern "C" for C++
@@ -1368,6 +1370,6 @@ extern "C"
 	extern DWORD* LaunchDataPage;  
 }
 
- 
+#endif
 
 #endif // __XBOX_INTERNAL_H__

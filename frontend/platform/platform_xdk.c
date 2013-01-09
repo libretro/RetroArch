@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <string>
 
+#include "platform_xdk.h"
 #include "platform_inl.h"
 
 #if defined(_XBOX360)
@@ -141,6 +142,122 @@ static void salamander_init_settings(void)
 		   }
 	   }
    }
+}
+
+#endif
+
+#ifdef _XBOX1
+
+#define CTLCODE(DeviceType, Function, Method, Access) ( ((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method)  )
+#define FSCTL_DISMOUNT_VOLUME  CTLCODE( FILE_DEVICE_FILE_SYSTEM, 0x08, METHOD_BUFFERED, FILE_ANY_ACCESS )
+
+static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
+{
+   char szSourceDevice[48];
+   char szDestinationDrive[16];
+
+   snprintf(szSourceDevice, sizeof(szSourceDevice), "\\Device\\%s", szDevice);
+   snprintf(szDestinationDrive, sizeof(szDestinationDrive), "\\??\\%s", szDrive);
+   RARCH_LOG("xbox_io_mount() - source device: %s.\n", szSourceDevice);
+   RARCH_LOG("xbox_io_mount() - destination drive: %s.\n", szDestinationDrive);
+
+   STRING DeviceName =
+   {
+      strlen(szSourceDevice),
+      strlen(szSourceDevice) + 1,
+      szSourceDevice
+   };
+
+   STRING LinkName =
+   {
+      strlen(szDestinationDrive),
+      strlen(szDestinationDrive) + 1,
+      szDestinationDrive
+   };
+
+   IoCreateSymbolicLink(&LinkName, &DeviceName);
+
+   return S_OK;
+}
+
+static HRESULT xbox_io_unmount(char *szDrive)
+{
+   char szDestinationDrive[16];
+   snprintf(szDestinationDrive, sizeof(szDestinationDrive), "\\??\\%s", szDrive);
+
+   STRING LinkName =
+   {
+      strlen(szDestinationDrive),
+      strlen(szDestinationDrive) + 1,
+      szDestinationDrive
+   };
+
+   IoDeleteSymbolicLink(&LinkName);
+
+   return S_OK;
+}
+
+static HRESULT xbox_io_remount(char *szDrive, char *szDevice)
+{
+   char szSourceDevice[48];
+   snprintf(szSourceDevice, sizeof(szSourceDevice), "\\Device\\%s", szDevice);
+
+   xbox_io_unmount(szDrive);
+
+   ANSI_STRING filename;
+   OBJECT_ATTRIBUTES attributes;
+   IO_STATUS_BLOCK status;
+   HANDLE hDevice;
+   NTSTATUS error;
+   DWORD dummy;
+
+   RtlInitAnsiString(&filename, szSourceDevice);
+   InitializeObjectAttributes(&attributes, &filename, OBJ_CASE_INSENSITIVE, NULL);
+
+   if (!NT_SUCCESS(error = NtCreateFile(&hDevice, GENERIC_READ |
+               SYNCHRONIZE | FILE_READ_ATTRIBUTES, &attributes, &status, NULL, 0,
+               FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, FILE_OPEN,
+               FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT)))
+   {
+      return E_FAIL;
+   }
+
+   if (!DeviceIoControl(hDevice, FSCTL_DISMOUNT_VOLUME, NULL, 0, NULL, 0, &dummy, NULL))
+   {
+      CloseHandle(hDevice);
+      return E_FAIL;
+   }
+
+   CloseHandle(hDevice);
+   xbox_io_mount(szDrive, szDevice);
+
+   return S_OK;
+}
+
+static HRESULT xbox_io_remap(char *szMapping)
+{
+   char szMap[32];
+   strlcpy(szMap, szMapping, sizeof(szMap));
+
+   char *pComma = strstr(szMap, ",");
+
+   if (pComma)
+   {
+      *pComma = 0;
+
+      // map device to drive letter
+      xbox_io_unmount(szMap);
+      xbox_io_mount(szMap, &pComma[1]);
+      return S_OK;
+   }
+
+   return E_FAIL;
+}
+
+static HRESULT xbox_io_shutdown(void)
+{
+   HalInitiateShutdown();
+   return S_OK;
 }
 
 #endif
