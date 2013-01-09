@@ -23,7 +23,6 @@
 
 #include "../../console/rarch_console.h"
 
-#include "../../console/rarch_console_libretro_mgmt.h"
 #include "../../console/rarch_console_config.h"
 #include "../../console/rarch_console_settings.h"
 #include "../../conf/config_file.h"

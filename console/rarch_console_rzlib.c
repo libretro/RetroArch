@@ -27,10 +27,6 @@
 
 #include "../boolean.h"
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-#include "rarch_console_libretro_mgmt.h"
-#endif
-
 #include "rarch_console_rzlib.h"
 
 static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir, char *slash, char *write_filename, size_t write_filename_size, unsigned extract_zip_mode)
@@ -174,7 +170,16 @@ int rarch_extract_zipfile(const char *zip_path, char *first_file, size_t first_f
       {
          if(!found_first_file)
          {
-            found_first_file = rarch_manage_libretro_extension_supported(write_filename);
+            // is the extension of the file supported by the libretro core?
+            struct string_list *ext_list = NULL;
+            const char *file_ext = path_get_extension(write_filename);
+            const char *ext = rarch_console_get_rom_ext();
+
+            if (ext)
+               ext_list = string_split(ext, "|");
+
+            if (ext_list && string_list_find_elem(ext_list, file_ext))
+               found_first_file = true; 
 
             if(found_first_file)
                snprintf(first_file, first_file_size, write_filename);

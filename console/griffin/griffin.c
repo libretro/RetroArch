@@ -61,10 +61,6 @@ default_paths_t default_paths;
 
 #include "../rarch_console_settings.c"
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-#include "../rarch_console_libretro_mgmt.c"
-#endif
-
 #endif
 
 
