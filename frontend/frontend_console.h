@@ -22,9 +22,9 @@ static void rarch_console_exec(const char *path);
 
 #ifdef IS_SALAMANDER
 //optional Salamander forward declarations
-static void rarch_manage_libretro_set_first_file(char *first_file,
-   size_t size_of_first_file, const char *libretro_path,
-   const char * exe_ext);
+static void find_first_libretro_core(char *first_file,
+   size_t size_of_first_file, const char *dir,
+   const char * ext);
 #endif
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT

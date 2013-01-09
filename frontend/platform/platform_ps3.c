@@ -62,7 +62,7 @@ static void find_and_set_first_file(void)
    // we can find in the RetroArch cores directory
 
    char first_file[PATH_MAX];
-   rarch_manage_libretro_set_first_file(first_file, sizeof(first_file), default_paths.core_dir, "SELF");
+   find_first_libretro_core(first_file, sizeof(first_file), default_paths.core_dir, "SELF");
 
    if(first_file)
    {

@@ -42,48 +42,49 @@ default_paths_t default_paths;
 
 //We need to set libretro to the first entry in the cores
 //directory so that it will be saved to the config file
-static void rarch_manage_libretro_set_first_file(char *first_file,
-   size_t size_of_first_file, const char *libretro_path,
-   const char * exe_ext)
+static void find_first_libretro_core(char *first_file,
+   size_t size_of_first_file, const char *dir,
+   const char * ext)
 {
-   struct string_list *dir_list = dir_list_new(libretro_path, exe_ext, false);
+   bool ret = false;
 
-   const char * first_exe;
+   RARCH_LOG("Searching for valid libretro implementation in: \"%s\".\n", dir);
 
-   if (!dir_list)
+   struct string_list *list = dir_list_new(dir, ext, false);
+   if (!list)
    {
-      RARCH_ERR("Couldn't read directory.\n");
-      RARCH_ERR("Failed to set first entry to libretro path.\n");
-      goto end;
+      RARCH_ERR("Couldn't read directory. Cannot infer default libretro core.\n");
+      return;
    }
-
-   first_exe = dir_list->elems[0].data;
-
-   if(first_exe)
+   
+   for (size_t i = 0; i < list->size && !ret; i++)
    {
-      char fname_tmp[PATH_MAX];
-      fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
+      RARCH_LOG("Checking library: \"%s\".\n", list->elems[i].data);
+      const char * libretro_elem = list->elems[i].data;
 
-      if(strncmp(fname_tmp, default_paths.salamander_file, sizeof(fname_tmp)) == 0)
+      if (libretro_elem)
       {
-         RARCH_WARN("First entry is RetroArch Salamander itself, increment entry by one and check if it exists.\n");
-         first_exe = dir_list->elems[1].data;
-         fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
+         char fname[PATH_MAX];
+         fill_pathname_base(fname, libretro_elem, sizeof(fname));
 
-         if(!first_exe)
+         if (strncmp(fname, default_paths.salamander_file, sizeof(fname)) == 0)
          {
-            RARCH_ERR("Unlikely error happened - no second entry - no choice but to set it to RetroArch Salamander\n");
-            first_exe = dir_list->elems[0].data;
-            fill_pathname_base(fname_tmp, first_exe, sizeof(fname_tmp));
-         }
-      }
+            if ((i + 1) == list->size)
+            {
+               RARCH_WARN("Entry is RetroArch Salamander itself, but is last entry. No choice but to set it.\n");
+               strlcpy(first_file, fname, size_of_first_file);
+            }
 
-      strlcpy(first_file, fname_tmp, size_of_first_file);
-      RARCH_LOG("Set first entry in libretro core dir to libretro path: [%s].\n", first_file);
+            continue;
+         }
+
+         strlcpy(first_file, fname, size_of_first_file);
+         RARCH_LOG("First found libretro core is: \"%s\".\n", first_file);
+         ret = true;
+      }
    }
 
-end:
-   dir_list_free(dir_list);
+   dir_list_free(list);
 }
 
 int main(int argc, char *argv[])
