@@ -28,7 +28,6 @@
 #include "../../360/frontend-xdk/menu.h"
 #include "../../xdk/menu_shared.h"
 #elif defined(_XBOX1)
-#include "../../xbox1/frontend/RetroLaunch/IoSupport.h"
 #include "../../console/rmenu/rmenu.h"
 #endif
 
