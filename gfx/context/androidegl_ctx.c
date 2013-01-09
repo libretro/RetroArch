@@ -20,7 +20,7 @@
 
 #include <EGL/egl.h> /* Requires NDK r5 or newer */
 
-#include "../../android/native/jni/android_glue.h"
+#include "../../frontend/frontend_android.h"
 #include "../image.h"
 
 #include "../fonts/gl_font.h"

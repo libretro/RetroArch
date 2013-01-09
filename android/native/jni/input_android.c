@@ -16,8 +16,8 @@
 
 #include <android/keycodes.h>
 #include <unistd.h>
-#include "android_glue.h"
 #include "input_autodetect.h"
+#include "../../../frontend/frontend_android.h"
 #include "../../../input/input_common.h"
 #include "../../../performance.h"
 #include "../../../general.h"

@@ -20,7 +20,7 @@
 #include <string.h>
 #include <sys/resource.h>
 
-#include "../android/native/jni/android_glue.h"
+#include "frontend_android.h"
 #include "../android/native/jni/jni_macros.h"
 #include "../general.h"
 #include "../performance.h"
