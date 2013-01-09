@@ -83,8 +83,6 @@
 
 #ifdef IS_SALAMANDER
 
-default_paths_t default_paths;
-
 static void find_and_set_first_file(void)
 {
    //Last fallback - we'll need to start the first executable file 

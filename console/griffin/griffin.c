@@ -33,10 +33,6 @@ CONSOLE EXTENSIONS
 ============================================================ */
 #ifdef RARCH_CONSOLE
 
-#include "../rarch_console.h"
-
-default_paths_t default_paths;
-
 #include "../rarch_console_rom_ext.c"
 #include "../rarch_console_video.c"
 
@@ -99,7 +95,7 @@ VIDEO CONTEXT
 #ifdef HAVE_VID_CONTEXT
 #include "../../gfx/gfx_context.c"
 
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+#if defined(__CELLOS_LV2__)
 #include "../../gfx/context/ps3_ctx.c"
 #elif defined(_XBOX)
 #include "../../gfx/context/xdk_ctx.c"
@@ -143,19 +139,11 @@ VIDEO DRIVER
 
 #if defined(HAVE_OPENGL)
 #include "../../gfx/math/matrix.c"
-#include "../../gfx/gl.c"
 #elif defined(GEKKO)
 #ifdef HW_RVL
 #include "../../wii/vi_encoder.c"
 #include "../../wii/mem2_manager.c"
 #endif
-#include "../../gx/gx_video.c"
-#elif defined(SN_TARGET_PSP2)
-#include "../../vita/vita_video.c"
-#elif defined(PSP)
-#include "../../psp1/psp1_video.c"
-#elif defined(XENON)
-#include "../../360/xenon360_video.c"
 #endif
 
 #ifdef HAVE_DYLIB
@@ -166,10 +154,23 @@ VIDEO DRIVER
 
 #ifdef _XBOX
 #include "../../xdk/xdk_resources.cpp"
-#include "../../xdk/xdk_d3d.cpp"
 #endif
 
+#if defined(HAVE_OPENGL)
+#include "../../gfx/gl.c"
+#elif defined(_XBOX)
+#include "../../xdk/xdk_d3d.cpp"
+#elif defined(GEKKO)
+#include "../../gx/gx_video.c"
+#elif defined(SN_TARGET_PSP2)
+#include "../../vita/vita_video.c"
+#elif defined(PSP)
+#include "../../psp1/psp1_video.c"
+#elif defined(XENON)
+#include "../../360/xenon360_video.c"
+#else
 #include "../../gfx/null.c"
+#endif
 
 /*============================================================
 FONTS
@@ -244,9 +245,9 @@ INPUT
 #elif defined(ANDROID)
 #include "../../android/native/jni/input_autodetect.c"
 #include "../../android/native/jni/input_android.c"
-#endif
-
+#else
 #include "../../input/null.c"
+#endif
 
 /*============================================================
 STATE TRACKER
@@ -291,21 +292,17 @@ AUDIO
 #include "../../360/xenon360_audio.c"
 #elif defined(GEKKO)
 #include "../../gx/gx_audio.c"
-#endif
-
-#ifdef HAVE_DSOUND
+#elif defined(HAVE_DSOUND)
 #include "../../audio/dsound.c"
+#elif defined(HAVE_SL)
+#include "../../audio/opensl.c"
+#else
+#include "../../audio/null.c"
 #endif
 
 #ifdef HAVE_DYLIB
 #include "../../audio/ext_audio.c"
 #endif
-
-#ifdef HAVE_SL
-#include "../../audio/opensl.c"
-#endif
-
-#include "../../audio/null.c"
 
 /*============================================================
 DRIVERS
@@ -319,7 +316,6 @@ SCALERS
 #include "../../gfx/scaler/pixconv.c"
 #include "../../gfx/scaler/scaler.c"
 #include "../../gfx/scaler/scaler_int.c"
-
 
 /*============================================================
 DYNAMIC
@@ -360,7 +356,7 @@ MAIN
 ============================================================ */
 #if defined(XENON)
 #include "../../frontend/frontend_xenon.c"
-#elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX) || defined(PSP)
+#elif defined(RARCH_CONSOLE) || defined(PSP)
 #include "../../frontend/frontend_console.c"
 #elif defined(ANDROID)
 #include "../../frontend/frontend_android.c"

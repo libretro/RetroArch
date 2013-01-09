@@ -80,7 +80,9 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef GEKKO
    &audio_gx,
 #endif
+#ifdef HAVE_NULLAUDIO
    &audio_null,
+#endif
 };
 
 static const video_driver_t *video_drivers[] = {
@@ -114,7 +116,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_VG
    &video_vg,
 #endif
+#ifdef HAVE_NULLVIDEO
    &video_null,
+#endif
 };
 
 static const input_driver_t *input_drivers[] = {
@@ -148,7 +152,9 @@ static const input_driver_t *input_drivers[] = {
 #if defined(__linux__) && !defined(ANDROID)
    &input_linuxraw,
 #endif
+#ifdef HAVE_NULLINPUT
    &input_null,
+#endif
 };
 
 static void find_audio_driver(void)

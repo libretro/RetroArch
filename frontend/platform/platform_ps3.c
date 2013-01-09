@@ -49,16 +49,12 @@ SYS_PROCESS_PARAM(1001, 0x100000)
 SYS_PROCESS_PARAM(1001, 0x200000)
 #endif
 
-#undef main
-
 #ifdef IS_SALAMANDER
 #include <netex/net.h>
 #include <np.h>
 #include <np/drm.h>
 #include <cell/pad.h>
 #include <cell/sysmodule.h>
-
-default_paths_t default_paths;
 
 static void find_and_set_first_file(void)
 {

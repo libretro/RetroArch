@@ -36,6 +36,8 @@
 
 #undef main
 
+default_paths_t default_paths;
+
 #ifdef IS_SALAMANDER
 
 //We need to set libretro to the first entry in the cores

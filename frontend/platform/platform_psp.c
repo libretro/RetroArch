@@ -22,7 +22,6 @@
 #include <stddef.h>
 #include <string.h>
 
-#undef main
 #include "../../psp/sdk_defines.h"
 
 PSP_MODULE_INFO("RetroArch PSP", 0, 1, 1);
