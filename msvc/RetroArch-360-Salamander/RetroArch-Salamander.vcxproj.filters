@@ -29,9 +29,6 @@
     <ClCompile Include="..\..\file_path.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\console\rarch_console_exec.c">
-      <Filter>Source Files\console</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\console\rarch_console_libretro_mgmt.c">
       <Filter>Source Files\console</Filter>
     </ClCompile>
