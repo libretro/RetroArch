@@ -23,10 +23,6 @@
 
 #include "../../console/rarch_console.h"
 
-#ifdef HAVE_RARCH_EXEC
-#include "../../console/rarch_console_exec.h"
-#endif
-
 #include "../../console/rarch_console_libretro_mgmt.h"
 #include "../../console/rarch_console_config.h"
 #include "../../console/rarch_console_settings.h"

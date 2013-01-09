@@ -19,12 +19,18 @@
 #include <stddef.h>
 #include <string.h>
 
+//forward declarations
+static void rarch_console_exec(const char *path);
+
 #if defined(__CELLOS_LV2__)
 #include "platform/platform_ps3.c"
+#include "platform/platform_ps3_exec.c"
 #elif defined(GEKKO)
 #include "platform/platform_gx.c"
+#include "platform/platform_gx_exec.c"
 #elif defined(_XBOX)
 #include "platform/platform_xdk.c"
+#include "platform/platform_xdk_exec.c"
 #elif defined(PSP)
 #include "platform/platform_psp.c"
 #endif

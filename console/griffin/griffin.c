@@ -45,10 +45,6 @@ default_paths_t default_paths;
 #include "../../ngc/sidestep.c"
 #endif
 
-#ifdef HAVE_RARCH_EXEC
-#include "../rarch_console_exec.c"
-#endif
-
 #ifdef HAVE_RSOUND
 #include "../rarch_console_rsound.c"
 #endif

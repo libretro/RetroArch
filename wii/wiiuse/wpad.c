@@ -38,10 +38,6 @@ distribution.
 #include <unistd.h>
 
 #include "os.h"
-#include "lwp_wkspace.inl"
-#include "lwp_priority.inl"
-#include "lwp_watchdog.inl"
-#include "lwp_threads.inl"
 #include "conf.h"
 #include "ir.h"
 
@@ -147,7 +143,7 @@ static void __wpad_timeouthandler(syswd_t alarm,void *cbarg)
 
 	if(!__wpads_active) return;
 
-	__lwp_thread_dispatchdisable();
+   ++_thread_dispatch_disable_level;
 	for(i=0;i<WPAD_MAX_WIIMOTES;i++) {
 		wpdcb = &__wpdcb[i];
 		wm = wpdcb->wm;
@@ -159,7 +155,7 @@ static void __wpad_timeouthandler(syswd_t alarm,void *cbarg)
 			}
 		}
 	}
-	__lwp_thread_dispatchunnest();
+   --_thread_dispatch_disable_level;
 }
 
 #ifdef HAVE_WIIUSE_SPEAKER

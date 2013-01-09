@@ -162,7 +162,7 @@ void wiiuse_init_cmd_queue(struct wiimote_t *wm)
 
 	if (!__queue_buffer[wm->unid]) {
 		size = (MAX_COMMANDS*sizeof(struct cmd_blk_t));
-		__queue_buffer[wm->unid] = __lwp_wkspace_allocate(size);
+		__queue_buffer[wm->unid] = __lwp_heap_allocate(&__wkspace_heap,size);
 		if(!__queue_buffer[wm->unid]) return;
 	}
 
