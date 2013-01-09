@@ -37,7 +37,7 @@ CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map
 LIBS := -lfat -logc
 
-OBJ = frontend/frontend_console.o console/rarch_console_libretro_mgmt.o file_path.o compat/compat.o conf/config_file.o ngc/ssaram.o ngc/sidestep.o
+OBJ = frontend/frontend_console.o file_path.o compat/compat.o conf/config_file.o ngc/ssaram.o ngc/sidestep.o
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER

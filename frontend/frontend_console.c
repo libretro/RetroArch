@@ -19,11 +19,15 @@
 #include <stddef.h>
 #include <string.h>
 
-//optional forward declarations
+//optional RetroArch forward declarations
 static void rarch_console_exec(const char *path);
+
+#ifdef IS_SALAMANDER
+//optional Salamander forward declarations
 static void rarch_manage_libretro_set_first_file(char *first_file,
    size_t size_of_first_file, const char *libretro_path,
    const char * exe_ext);
+#endif
 
 #if defined(__CELLOS_LV2__)
 #include "platform/platform_ps3.c"
