@@ -30,13 +30,6 @@ enum
 #endif
 };
 
-void rarch_console_name_from_id(char *name, size_t size);
-
-//install/upgrade (and rename) libretro core if 'CORE' executable exists
-bool rarch_libretro_core_install(const char *full_path, const char *tmp_path,
- const char *libretro_path, const char *config_path, const char *extension);
-
-// Transforms a library id to a name suitable as a pathname.
 bool rarch_manage_libretro_extension_supported(const char *filename);
 
 #endif

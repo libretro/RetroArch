@@ -19,15 +19,7 @@
 #include <stddef.h>
 #include <string.h>
 
-//optional RetroArch forward declarations
-static void rarch_console_exec(const char *path);
-
-#ifdef IS_SALAMANDER
-//optional Salamander forward declarations
-static void rarch_manage_libretro_set_first_file(char *first_file,
-   size_t size_of_first_file, const char *libretro_path,
-   const char * exe_ext);
-#endif
+#include "frontend_console.h"
 
 #if defined(__CELLOS_LV2__)
 #include "platform/platform_ps3.c"
@@ -105,6 +97,84 @@ int main(int argc, char *argv[])
 
 #else
 
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+
+// Transforms a library id to a name suitable as a pathname.
+static void get_libretro_core_name(char *name, size_t size)
+{
+   if (size == 0)
+      return;
+
+   struct retro_system_info info;
+   retro_get_system_info(&info);
+   const char *id = info.library_name ? info.library_name : "Unknown";
+
+   if (!id || strlen(id) >= size)
+   {
+      name[0] = '\0';
+      return;
+   }
+
+   name[strlen(id)] = '\0';
+
+   for (size_t i = 0; id[i] != '\0'; i++)
+   {
+      char c = id[i];
+      if (isspace(c) || isblank(c))
+         name[i] = '_';
+      else
+         name[i] = tolower(c);
+   }
+}
+
+// If a CORE executable of name CORE.extension exists, rename filename
+// to a more sane name.
+static bool install_libretro_core(const char *core_exe_path, const char *tmp_path,
+ const char *libretro_path, const char *config_path, const char *extension)
+{
+   int ret = 0;
+   char tmp_path2[PATH_MAX], tmp_pathnewfile[PATH_MAX];
+
+   get_libretro_core_name(tmp_path2, sizeof(tmp_path2));
+
+   strlcat(tmp_path2, extension, sizeof(tmp_path2));
+   snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", tmp_path, tmp_path2);
+
+   if (path_file_exists(tmp_pathnewfile))
+   {
+      // If core already exists, we are upgrading the core -
+      // delete existing file first.
+
+      RARCH_LOG("Upgrading emulator core...\n");
+      ret = remove(tmp_pathnewfile);
+
+      if (ret == 0)
+         RARCH_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+      else
+         RARCH_ERR("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+   }
+
+   // Now attempt the renaming of the core.
+   ret = rename(core_exe_path, tmp_pathnewfile);
+
+   if (ret == 0)
+   {
+      RARCH_LOG("Libretro core [%s] successfully renamed to: [%s].\n", core_exe_path, tmp_pathnewfile);
+      snprintf(g_settings.libretro, sizeof(g_settings.libretro), tmp_pathnewfile);
+   }
+   else
+   {
+      RARCH_ERR("Failed to rename CORE executable.\n");
+      RARCH_WARN("CORE executable was not found, or some other error occurred. Will attempt to load libretro core path from config file.\n");
+      return false;
+   }
+
+   return true;
+}
+
+
+#endif
+
 // Only called once on init and deinit.
 // Video and input drivers need to be active (owned)
 // before retroarch core starts.
@@ -167,7 +237,7 @@ int main(int argc, char *argv[])
 
    if (path_file_exists(core_exe_path))
    {
-      if (rarch_libretro_core_install(core_exe_path, path_prefix, path_prefix, 
+      if (install_libretro_core(core_exe_path, path_prefix, path_prefix, 
                g_extern.config_path, extension))
       {
          RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);

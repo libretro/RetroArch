@@ -609,7 +609,7 @@ static void system_post_init(void)
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    char core_name[64];
 
-   rarch_console_name_from_id(core_name, sizeof(core_name));
+   get_libretro_core_name(core_name, sizeof(core_name));
    snprintf(input_path, sizeof(input_path), "%s/%s.cfg", default_paths.input_presets_dir, core_name);
    config_read_keybinds(input_path);
 
