@@ -17,7 +17,7 @@
 #include "../driver.h"
 #include <stdlib.h>
 #include <xtl.h>
-#include "xaudio-c/xaudio.h"
+#include "../audio/xaudio-c/xaudio_xdk360.h"
 #include "../general.h"
 
 #define MAX_BUFFERS 16
