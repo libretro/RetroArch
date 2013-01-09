@@ -17,11 +17,8 @@ OBJ = retroarch.o \
 		patch.o \
 		fifo_buffer.o \
 		compat/compat.o \
-		audio/null.o \
 		cheats.o \
-		gfx/null.o \
 		conf/config_file.o \
-		input/null.o \
 		screenshot.o \
 		gfx/scaler/scaler.o \
 		gfx/scaler/pixconv.o \

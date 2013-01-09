@@ -2604,8 +2604,8 @@ void rarch_init_system_info(void)
 
    snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "RetroArch : %s %s",
          info->library_name, info->library_version);
-   snprintf(g_extern.system.valid_extensions, sizeof(g_extern.system.valid_extensions),
-         info->valid_extensions ? info->valid_extensions : DEFAULT_EXT);
+   strlcpy(g_extern.system.valid_extensions, info->valid_extensions ? info->valid_extensions : DEFAULT_EXT,
+         sizeof(g_extern.system.valid_extensions));
 }
 
 static void init_system_av_info(void)

@@ -19,11 +19,8 @@ OBJ = retroarch.o \
 		screenshot.o \
 		cheats.o \
 		audio/utils.o \
-		audio/null.o \
-		input/null.o \
 		input/overlay.o \
 		fifo_buffer.o \
-		gfx/null.o \
 		media/rarch.o \
 		gfx/scaler/scaler.o \
 		gfx/scaler/pixconv.o \
