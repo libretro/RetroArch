@@ -168,7 +168,9 @@ VIDEO DRIVER
 #include "../../psp1/psp1_video.c"
 #elif defined(XENON)
 #include "../../360/xenon360_video.c"
-#else
+#endif
+
+#if defined(HAVE_NULLVIDEO)
 #include "../../gfx/null.c"
 #endif
 
@@ -245,7 +247,9 @@ INPUT
 #elif defined(ANDROID)
 #include "../../android/native/jni/input_autodetect.c"
 #include "../../android/native/jni/input_android.c"
-#else
+#endif
+
+#if defined(HAVE_NULLINPUT)
 #include "../../input/null.c"
 #endif
 
@@ -296,7 +300,9 @@ AUDIO
 #include "../../audio/dsound.c"
 #elif defined(HAVE_SL)
 #include "../../audio/opensl.c"
-#else
+#endif
+
+#if defined(HAVE_NULLAUDIO)
 #include "../../audio/null.c"
 #endif
 
