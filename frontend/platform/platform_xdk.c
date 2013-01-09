@@ -46,13 +46,117 @@
 #include "../../file.h"
 #include "../../general.h"
 
+#ifdef IS_SALAMANDER
+
+default_paths_t default_paths;
+
+static void find_and_set_first_file(void)
+{
+   //Last fallback - we'll need to start the first executable file 
+   // we can find in the RetroArch cores directory
+
+   char first_file[PATH_MAX];
+   rarch_manage_libretro_set_first_file(first_file, sizeof(first_file),
+#if defined(_XBOX360)
+   "game:", "xex"
+#elif defined(_XBOX1)
+   "D:", "xbe"
+#endif
+);
+
+   if(first_file)
+   {
+#ifdef _XBOX1
+      snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), "D:\\%s", first_file);
+#else
+      strlcpy(default_paths.libretro_path, first_file, sizeof(default_paths.libretro_path));
+#endif
+      RARCH_LOG("libretro_path now set to: %s.\n", default_paths.libretro_path);
+   }
+   else
+      RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
+}
+
+static void salamander_init_settings(void)
+{
+   XINPUT_STATE state;
+   (void)state;
+
+   //WIP - no Xbox 1 controller input yet
+#ifdef _XBOX360
+   XInputGetState(0, &state);
+
+   if(state.Gamepad.wButtons & XINPUT_GAMEPAD_Y)
+   {
+      //override path, boot first executable in cores directory
+      RARCH_LOG("Fallback - Will boot first executable in RetroArch cores directory.\n");
+      find_and_set_first_file();
+   }
+   else
+#endif
+   {
+	   //normal executable loading path
+	   char tmp_str[PATH_MAX];
+	   bool config_file_exists = false;
+
+	   if(path_file_exists(default_paths.config_path))
+		   config_file_exists = true;
+
+	   //try to find CORE executable
+	   char core_executable[1024];
+#if defined(_XBOX360)
+	   snprintf(core_executable, sizeof(core_executable), "game:\\CORE.xex");
+#elif defined(_XBOX1)
+	   snprintf(core_executable, sizeof(core_executable), "D:\\CORE.xbe");
+#endif
+
+	   if(path_file_exists(core_executable))
+	   {
+		   //Start CORE executable
+		   snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), core_executable);
+		   RARCH_LOG("Start [%s].\n", default_paths.libretro_path);
+	   }
+	   else
+	   {
+		   if(config_file_exists)
+		   {
+			   config_file_t * conf = config_file_new(default_paths.config_path);
+			   config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
+			   snprintf(default_paths.libretro_path, sizeof(default_paths.libretro_path), tmp_str);
+		   }
+
+		   if(!config_file_exists || !strcmp(default_paths.libretro_path, ""))
+		   {
+			   find_and_set_first_file();
+		   }
+		   else
+		   {
+			   RARCH_LOG("Start [%s] found in retroarch.cfg.\n", default_paths.libretro_path);
+		   }
+
+		   if (!config_file_exists)
+		   {
+			   config_file_t *new_conf = config_file_new(NULL);
+			   config_set_string(new_conf, "libretro_path", default_paths.libretro_path);
+			   config_file_write(new_conf, default_paths.config_path);
+			   config_file_free(new_conf);
+		   }
+	   }
+   }
+}
+
+#endif
+
 static void get_environment_settings(int argc, char *argv[])
 {
    HRESULT ret;
    (void)argc;
    (void)argv;
    (void)ret;
-#ifdef HAVE_HDD_CACHE_PARTITION
+#if defined(_XBOX360) || defined(HAVE_HDD_CACHE_PARTITION)
+   //for devkits only, we will need to mount all partitions for retail
+   //in a different way
+   //DmMapDevkitDrive();
    ret = XSetFileCacheSize(0x100000);
 
    if(ret != TRUE)
@@ -73,6 +177,7 @@ static void get_environment_settings(int argc, char *argv[])
 #ifdef _XBOX360
    // detect install environment
    unsigned long license_mask;
+   DWORD volume_device_type;
 
    if (XContentGetLicenseMask(&license_mask, NULL) != ERROR_SUCCESS)
    {
@@ -80,9 +185,9 @@ static void get_environment_settings(int argc, char *argv[])
    }
    else
    {
-      XContentQueryVolumeDeviceType("GAME",&g_extern.file_state.volume_device_type, NULL);
+      XContentQueryVolumeDeviceType("GAME",&volume_device_type, NULL);
 
-      switch(g_extern.file_state.volume_device_type)
+      switch(volume_device_type)
       {
          case XCONTENTDEVICETYPE_HDD:
             RARCH_LOG("RetroArch was launched from a content package on HDD.\n");
@@ -102,21 +207,29 @@ static void get_environment_settings(int argc, char *argv[])
 
 #if defined(_XBOX1)
    strlcpy(default_paths.core_dir, "D:", sizeof(default_paths.core_dir));
+#ifdef IS_SALAMANDER
+   strlcpy(default_paths.config_path, "D:\\retroarch.cfg", sizeof(default_paths.config_path));
+#else
    strlcpy(g_extern.config_path, "D:\\retroarch.cfg", sizeof(g_extern.config_path));
+#endif
    strlcpy(default_paths.system_dir, "D:\\system", sizeof(default_paths.system_dir));
    strlcpy(default_paths.filesystem_root_dir, "D:", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.executable_extension, ".xbe", sizeof(default_paths.executable_extension));
    strlcpy(default_paths.filebrowser_startup_dir, "D:", sizeof(default_paths.filebrowser_startup_dir));
    strlcpy(default_paths.screenshots_dir, "D:\\screenshots", sizeof(default_paths.screenshots_dir));
-   snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "default.xbe");
+   strlcpy(default_paths.salamander_file, "default.xbe", sizeof(default_paths.salamander_file));
 #elif defined(_XBOX360)
 #ifdef HAVE_HDD_CACHE_PARTITION
    strlcpy(default_paths.cache_dir, "cache:\\", sizeof(default_paths.cache_dir));
 #endif
    strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.screenshots_dir, "game:", sizeof(default_paths.screenshots_dir));
+#ifdef IS_SALAMANDER
+   strlcpy(default_paths.config_path, "game:\\retroarch.cfg", sizeof(default_paths.config_path));
+#else
    strlcpy(default_paths.shader_file, "game:\\media\\shaders\\stock.cg", sizeof(default_paths.shader_file));
    strlcpy(g_extern.config_path, "game:\\retroarch.cfg", sizeof(g_extern.config_path));
+#endif
    strlcpy(default_paths.system_dir, "game:\\system", sizeof(default_paths.system_dir));
    strlcpy(default_paths.executable_extension, ".xex", sizeof(default_paths.executable_extension));
    strlcpy(default_paths.filebrowser_startup_dir, "game:", sizeof(default_paths.filebrowser_startup_dir));
@@ -134,7 +247,7 @@ static void system_init(void)
    inl_logger_init();
 #endif
 
-#ifdef _XBOX1
+#if defined(_XBOX1) && !defined(IS_SALAMANDER)
    // Mount drives
    xbox_io_mount("A:", "cdrom0");
    xbox_io_mount("C:", "Harddisk0\\Partition0");
@@ -164,6 +277,10 @@ static void system_deinit_save(void)
 
 static void system_exitspawn(void)
 {
+#ifdef IS_SALAMANDER
+   rarch_console_exec(default_paths.libretro_path);
+#else
    if(g_extern.console.external_launch.enable)
       rarch_console_exec(g_extern.console.external_launch.launch_app);
+#endif
 }
