@@ -597,7 +597,7 @@ static void system_exitspawn(void)
 static void system_deinit(void)
 {
 #if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
-   inl_logger_deinit()
+   inl_logger_deinit();
 #endif
 }
 

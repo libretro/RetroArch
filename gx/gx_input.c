@@ -280,11 +280,12 @@ static void gx_input_poll(void *data)
 
    for (unsigned port = 0; port < MAX_PADS; port++)
    {
-      uint32_t type = 0;
       uint32_t down = 0;
       uint64_t *state_cur = &pad_state[port];
 
 #ifdef HW_RVL
+      uint32_t type = 0;
+      
       if (WPAD_Probe(port, &type) == WPAD_ERR_NONE)
       {
          WPADData *wpaddata = WPAD_Data(port);
