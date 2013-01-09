@@ -326,7 +326,7 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
    if (core_chooser)
       strlcpy(exts, "dol|DOL", sizeof(exts));
    else
-      strlcpy(exts, rarch_console_get_rom_ext(), sizeof(exts));
+      strlcpy(exts, g_extern.system.valid_extensions, sizeof(exts));
    struct string_list *ext_list = string_split(exts, "|");
 
    char _dir[PATH_MAX];

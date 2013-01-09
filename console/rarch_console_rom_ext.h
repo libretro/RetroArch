@@ -19,10 +19,6 @@
 
 void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, unsigned delay);
 
-// Get rom extensions for current library.
-// Returns NULL if library doesn't have any preferences in particular.
-const char *rarch_console_get_rom_ext(void);
-
 #ifdef HAVE_ZLIB
 #define WRITEBUFFERSIZE (1024 * 512)
 

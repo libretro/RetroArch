@@ -159,7 +159,7 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiBtnGameDir", &m_dir_game);
    GetChildById(L"XuiBtnCacheDir", &m_dir_cache);
 
-   filebrowser_set_root_and_ext(browser, rarch_console_get_rom_ext(), default_paths.filebrowser_startup_dir);
+   filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, default_paths.filebrowser_startup_dir);
 
    uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
    filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
@@ -184,20 +184,21 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       {
          snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), str_buffer);
          uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
-         filebrowser_set_root_and_ext(browser, rarch_console_get_rom_ext(), path);
+         filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, path);
          filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
       }
    }
    else if (hObjPressed == m_dir_game)
    {
-      filebrowser_set_root_and_ext(browser, rarch_console_get_rom_ext(), g_extern.console.main_wrap.paths.default_rom_startup_dir);
+      filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions,
+            g_extern.console.main_wrap.paths.default_rom_startup_dir);
       uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
       filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
    }
 #ifdef HAVE_HDD_CACHE_PARTITION
    else if (hObjPressed == m_dir_cache)
    {
-      filebrowser_set_root_and_ext(browser, rarch_console_get_rom_ext(), "cache:");
+      filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, "cache:");
       uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
       filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
 
@@ -1111,7 +1112,7 @@ void menu_init (void)
       return;
    }
 
-   browser = (filebrowser_t*)filebrowser_init(default_paths.filebrowser_startup_dir, rarch_console_get_rom_ext());
+   browser = (filebrowser_t*)filebrowser_init(default_paths.filebrowser_startup_dir, g_extern.system.valid_extensions);
    tmp_browser = (filebrowser_t*)filebrowser_init(default_paths.filebrowser_startup_dir, "");
 
    g_extern.console.rmenu.mode = MODE_MENU;

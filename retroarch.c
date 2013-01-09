@@ -2586,6 +2586,12 @@ void rarch_main_clear_state(void)
    init_state();
 }
 
+#ifdef HAVE_ZLIB
+#define DEFAULT_EXT "ZIP|zip"
+#else
+#define DEFAULT_EXT ""
+#endif
+
 void rarch_init_system_info(void)
 {
    struct retro_system_info *info = &g_extern.system.info;
@@ -2598,6 +2604,8 @@ void rarch_init_system_info(void)
 
    snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "RetroArch : %s %s",
          info->library_name, info->library_version);
+   snprintf(g_extern.system.valid_extensions, sizeof(g_extern.system.valid_extensions),
+         info->valid_extensions ? info->valid_extensions : DEFAULT_EXT);
 }
 
 static void init_system_av_info(void)

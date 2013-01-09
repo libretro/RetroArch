@@ -178,10 +178,9 @@ int rarch_extract_zipfile(const char *zip_path, char *first_file, size_t first_f
             // is the extension of the file supported by the libretro core?
             struct string_list *ext_list = NULL;
             const char *file_ext = path_get_extension(write_filename);
-            const char *ext = rarch_console_get_rom_ext();
 
-            if (ext)
-               ext_list = string_split(ext, "|");
+            if (g_extern.system.valid_extensions)
+               ext_list = string_split(g_extern.system.valid_extensions, "|");
 
             if (ext_list && string_list_find_elem(ext_list, file_ext))
                found_first_file = true; 
@@ -248,19 +247,4 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, u
       if(g_extern.console.rmenu.state.msg_info.enable)
          rarch_settings_msg(S_MSG_LOADING_ROM, delay);
    }
-}
-
-const char *rarch_console_get_rom_ext(void)
-{
-   const char *retval = NULL;
-
-   struct retro_system_info info;
-   retro_get_system_info(&info);
-
-   if (info.valid_extensions)
-      retval = info.valid_extensions;
-   else
-      retval = "ZIP|zip";
-
-   return retval;
 }

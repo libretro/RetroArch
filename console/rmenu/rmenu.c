@@ -1785,7 +1785,7 @@ int select_rom(void *data, void *state)
 
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
 
-   browser_update(filebrowser, input, rarch_console_get_rom_ext());
+   browser_update(filebrowser, input, g_extern.system.valid_extensions);
 
    if (input & (1ULL << RMENU_DEVICE_NAV_SELECT))
       menu_stack_push(GENERAL_VIDEO_MENU);
@@ -1806,8 +1806,8 @@ int select_rom(void *data, void *state)
       const char * drive_map = device_ptr->ctx_driver->drive_mapping_previous();
       if(drive_map != NULL)
       {
-         filebrowser_set_root_and_ext(filebrowser, rarch_console_get_rom_ext(), drive_map);
-         browser_update(filebrowser, 1ULL << RMENU_DEVICE_NAV_B, rarch_console_get_rom_ext());
+         filebrowser_set_root_and_ext(filebrowser, g_extern.system.valid_extensions, drive_map);
+         browser_update(filebrowser, 1ULL << RMENU_DEVICE_NAV_B, g_extern.system.valid_extensions);
       }
    }
    else if (input & (1ULL << RMENU_DEVICE_NAV_R1))
@@ -1815,8 +1815,8 @@ int select_rom(void *data, void *state)
       const char * drive_map = device_ptr->ctx_driver->drive_mapping_next();
       if(drive_map != NULL)
       {
-         filebrowser_set_root_and_ext(filebrowser, rarch_console_get_rom_ext(), drive_map);
-         browser_update(filebrowser, 1ULL << RMENU_DEVICE_NAV_B, rarch_console_get_rom_ext());
+         filebrowser_set_root_and_ext(filebrowser, g_extern.system.valid_extensions, drive_map);
+         browser_update(filebrowser, 1ULL << RMENU_DEVICE_NAV_B, g_extern.system.valid_extensions);
       }
    }
 
@@ -2365,11 +2365,11 @@ void init_filebrowser(void *data)
 {
    (void)data;
 
-   browser    = filebrowser_init(default_paths.filebrowser_startup_dir, rarch_console_get_rom_ext());
+   browser    = filebrowser_init(default_paths.filebrowser_startup_dir, g_extern.system.valid_extensions);
    tmpBrowser = filebrowser_init(default_paths.filesystem_root_dir, "");
 
    menu_stack_push(FILE_BROWSER_MENU);
-   filebrowser_set_root_and_ext(browser, rarch_console_get_rom_ext(), default_paths.filebrowser_startup_dir);
+   filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, default_paths.filebrowser_startup_dir);
    filebrowser_set_root(tmpBrowser, default_paths.filesystem_root_dir);
 }
 
