@@ -341,7 +341,6 @@ extern const audio_driver_t audio_pulse;
 extern const audio_driver_t audio_dsound;
 extern const audio_driver_t audio_coreaudio;
 extern const audio_driver_t audio_xenon360;
-extern const audio_driver_t audio_xdk360;
 extern const audio_driver_t audio_ps3;
 extern const audio_driver_t audio_gx;
 extern const audio_driver_t audio_null;

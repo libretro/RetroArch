@@ -290,15 +290,27 @@ AUDIO
 ============================================================ */
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/ps3_audio.c"
-#elif defined(_XBOX360)
-#include "../../360/xdk360_audio.cpp"
 #elif defined(XENON)
 #include "../../360/xenon360_audio.c"
 #elif defined(GEKKO)
 #include "../../gx/gx_audio.c"
-#elif defined(HAVE_DSOUND)
+#endif
+
+#ifdef HAVE_XAUDIO
+#include "../../audio/xaudio.c"
+
+#ifdef _XBOX
+#include "../../audio/xaudio-c/xaudio-xdk360.cpp"
+#else
+#include "../../audio/xaudio-c/xaudio-c.c"
+#endif
+#endif
+
+#ifdef HAVE_DSOUND
 #include "../../audio/dsound.c"
-#elif defined(HAVE_SL)
+#endif
+
+#ifdef HAVE_SL
 #include "../../audio/opensl.c"
 #endif
 

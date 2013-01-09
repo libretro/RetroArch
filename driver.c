@@ -74,9 +74,6 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef XENON
    &audio_xenon360,
 #endif
-#ifdef _XBOX360
-   &audio_xdk360,
-#endif
 #ifdef GEKKO
    &audio_gx,
 #endif

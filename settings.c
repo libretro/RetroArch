@@ -62,8 +62,6 @@ const char *config_get_default_audio(void)
          return "ext";
       case AUDIO_XENON360:
          return "xenon360";
-      case AUDIO_XDK360:
-         return "xdk360";
       case AUDIO_PS3:
          return "ps3";
       case AUDIO_WII:
