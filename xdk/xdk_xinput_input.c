@@ -84,12 +84,12 @@ const unsigned int platform_keys_size = sizeof(platform_keys);
 static void xdk_input_poll(void *data)
 {
    (void)data;
-   
+
    pads_connected = 0;
 
 #if defined(_XBOX1)
    unsigned int dwInsertions, dwRemovals;
-   
+
    XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD, reinterpret_cast<PDWORD>(&dwInsertions), reinterpret_cast<PDWORD>(&dwRemovals));
 
    for (unsigned i = 0; i < MAX_PADS; i++)
@@ -107,7 +107,7 @@ static void xdk_input_poll(void *data)
          if(gamepads[i])
             XInputClose(gamepads[i]);
 
-          gamepads[i] = NULL;
+         gamepads[i] = NULL;
       }
 
       // handle inserted devices
@@ -122,7 +122,7 @@ static void xdk_input_poll(void *data)
          m_pollingParameters.bOutputInterval = 8;
          gamepads[i] = XInputOpen(XDEVICE_TYPE_GAMEPAD, i, XDEVICE_NO_SLOT, NULL);
       }
-	  
+
       if (gamepads[i])
       {
          // if the controller is removed after XGetDeviceChanges but before
@@ -260,7 +260,7 @@ static void xdk_set_default_keybind_lut(unsigned device, unsigned port)
    (void)port;
 
    for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
-	   rarch_default_keybind_lut[i] = platform_keys[i].joykey;
+      rarch_default_keybind_lut[i] = platform_keys[i].joykey;
 }
 
 static void xdk_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
@@ -299,16 +299,16 @@ static void *xdk_input_init(void)
    XInitDevices(0, NULL);
 
    dwDeviceMask = XGetDevices(XDEVICE_TYPE_GAMEPAD);
-   
+
    //Check the device status
    switch(XGetDeviceEnumerationStatus())
    {
       case XDEVICE_ENUMERATION_IDLE:
          RARCH_LOG("Input state status: XDEVICE_ENUMERATION_IDLE\n");
-			break;
+         break;
       case XDEVICE_ENUMERATION_BUSY:
-			RARCH_LOG("Input state status: XDEVICE_ENUMERATION_BUSY\n");
-			break;
+         RARCH_LOG("Input state status: XDEVICE_ENUMERATION_BUSY\n");
+         break;
    }
 
    while(XGetDeviceEnumerationStatus() == XDEVICE_ENUMERATION_BUSY) {}

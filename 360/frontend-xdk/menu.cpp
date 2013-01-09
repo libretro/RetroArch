@@ -517,10 +517,10 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                g_extern.console.rmenu.state.msg_info.enable = !g_extern.console.rmenu.state.msg_info.enable;
                m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_extern.console.rmenu.state.msg_info.enable ? L"Info messages: ON" : L"Info messages: OFF");
                break;
-         case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-            g_extern.console.rmenu.state.msg_fps.enable = !g_extern.console.rmenu.state.msg_fps.enable;
-            m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, g_extern.console.rmenu.state.msg_fps.enable ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
-            break;
+            case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
+               g_extern.console.rmenu.state.msg_fps.enable = !g_extern.console.rmenu.state.msg_fps.enable;
+               m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, g_extern.console.rmenu.state.msg_fps.enable ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
+               break;
             case SETTING_EMU_MENUS:
                g_extern.console.rmenu.state.rmenu_hd.enable = !g_extern.console.rmenu.state.rmenu_hd.enable;
                m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.rmenu_hd.enable ? L"Menus: HD" : L"Menus: SD");
@@ -576,10 +576,10 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                g_extern.console.rmenu.state.msg_info.enable = !g_extern.console.rmenu.state.msg_info.enable;
                m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_extern.console.rmenu.state.msg_info.enable ? L"Info messages: ON" : L"Info messages: OFF");
                break;
-         case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-            g_extern.console.rmenu.state.msg_fps.enable = !g_extern.console.rmenu.state.msg_fps.enable;
-            m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, g_extern.console.rmenu.state.msg_fps.enable ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
-            break;
+            case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
+               g_extern.console.rmenu.state.msg_fps.enable = !g_extern.console.rmenu.state.msg_fps.enable;
+               m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, g_extern.console.rmenu.state.msg_fps.enable ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
+               break;
             case SETTING_EMU_MENUS:
                g_extern.console.rmenu.state.rmenu_hd.enable = !g_extern.console.rmenu.state.rmenu_hd.enable;
                m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.rmenu_hd.enable ? L"Menus: HD" : L"Menus: SD");
@@ -624,7 +624,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
                break;
             case SETTING_SCALE_ENABLED:
-				g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
+               g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
                m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
 
                if(g_settings.video.render_to_texture)
@@ -1201,7 +1201,7 @@ bool rmenu_iterate(void)
       }
    }
 
-      rarch_render_cached_frame();
+   rarch_render_cached_frame();
 
    switch(g_extern.console.rmenu.input_loop)
    {

@@ -164,7 +164,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
 
    XAudio *xa = new XAudio;
    if (!xa->init(rate, latency))
-   	goto error;
+      goto error;
 
    return xa;
 

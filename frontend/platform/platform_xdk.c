@@ -26,7 +26,6 @@
 #if defined(_XBOX360)
 #include <xfilecache.h>
 #include "../../360/frontend-xdk/menu.h"
-#include "../../xdk/menu_shared.h"
 #elif defined(_XBOX1)
 #include "../../console/rmenu/rmenu.h"
 #endif

@@ -796,16 +796,16 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
    if(frame)
    {
-   D3DLOCKED_RECT d3dlr;
-   d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+      D3DLOCKED_RECT d3dlr;
+      d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
 
-   for (unsigned y = 0; y < height; y++)
-   {
-      const uint8_t *in = (const uint8_t*)frame + y * pitch;
-      uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
-      memcpy(out, in, width * d3d->base_size);
-   }
-   d3d->lpTexture->UnlockRect(0);
+      for (unsigned y = 0; y < height; y++)
+      {
+         const uint8_t *in = (const uint8_t*)frame + y * pitch;
+         uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
+         memcpy(out, in, width * d3d->base_size);
+      }
+      d3d->lpTexture->UnlockRect(0);
    }
 
    d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
@@ -885,7 +885,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
       snprintf(buf, sizeof(buf), "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
       if (d3d->font_ctx)
-      d3d->font_ctx->render_msg_place(d3d, mem_width, mem_height, 0, 0, buf);
+         d3d->font_ctx->render_msg_place(d3d, mem_width, mem_height, 0, 0, buf);
 
       gfx_get_fps(fps_txt, sizeof(fps_txt), true);
       if (d3d->font_ctx)
@@ -901,8 +901,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       app.Render();
       XuiTimersRun();
 #endif
-    }
-    else
+   }
+   else
       gfx_ctx_xdk_swap_buffers();
 
    return true;

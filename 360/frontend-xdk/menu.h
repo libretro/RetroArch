@@ -92,7 +92,7 @@ class CRetroArchMain: public CXuiSceneImpl
       CXuiControl m_quit;
       CXuiTextElement m_title;
       CXuiTextElement m_core;
-	  CXuiControl m_logoimage;
+      CXuiControl m_logoimage;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
       HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
@@ -100,7 +100,7 @@ class CRetroArchMain: public CXuiSceneImpl
       XUI_BEGIN_MSG_MAP()
          XUI_ON_XM_INIT( OnInit)
          XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-      XUI_END_MSG_MAP();
+         XUI_END_MSG_MAP();
 
       XUI_IMPLEMENT_CLASS(CRetroArchMain, L"RetroArchMain", XUI_CLASS_SCENE)
 };
@@ -120,7 +120,7 @@ class CRetroArchFileBrowser: public CXuiSceneImpl
       XUI_BEGIN_MSG_MAP()
          XUI_ON_XM_INIT( OnInit)
          XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-      XUI_END_MSG_MAP();
+         XUI_END_MSG_MAP();
 
       XUI_IMPLEMENT_CLASS(CRetroArchFileBrowser, L"RetroArchFileBrowser", XUI_CLASS_SCENE)
 };
@@ -136,9 +136,9 @@ class CRetroArchCoreBrowser: public CXuiSceneImpl
       HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
 
       XUI_BEGIN_MSG_MAP()
-	      XUI_ON_XM_INIT( OnInit)
-	      XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-      XUI_END_MSG_MAP();
+         XUI_ON_XM_INIT( OnInit)
+         XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+         XUI_END_MSG_MAP();
 
       XUI_IMPLEMENT_CLASS(CRetroArchCoreBrowser, L"RetroArchCoreBrowser", XUI_CLASS_SCENE)
 };
@@ -156,7 +156,7 @@ class CRetroArchShaderBrowser: public CXuiSceneImpl
       XUI_BEGIN_MSG_MAP()
          XUI_ON_XM_INIT( OnInit)
          XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-      XUI_END_MSG_MAP();
+         XUI_END_MSG_MAP();
 
       XUI_IMPLEMENT_CLASS(CRetroArchShaderBrowser, L"RetroArchShaderBrowser", XUI_CLASS_SCENE)
 };
@@ -175,7 +175,7 @@ class CRetroArchQuickMenu: public CXuiSceneImpl
          XUI_ON_XM_INIT( OnInit)
          XUI_ON_XM_CONTROL_NAVIGATE( OnControlNavigate )
          XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-      XUI_END_MSG_MAP();
+         XUI_END_MSG_MAP();
 
       XUI_IMPLEMENT_CLASS(CRetroArchQuickMenu, L"RetroArchQuickMenu", XUI_CLASS_SCENE)
 };
@@ -194,7 +194,7 @@ class CRetroArchSettings: public CXuiSceneImpl
          XUI_ON_XM_INIT( OnInit)
          XUI_ON_XM_CONTROL_NAVIGATE( OnControlNavigate )
          XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-      XUI_END_MSG_MAP();
+         XUI_END_MSG_MAP();
 
       XUI_IMPLEMENT_CLASS(CRetroArchSettings, L"RetroArchSettings", XUI_CLASS_SCENE)
 };
@@ -214,7 +214,7 @@ class CRetroArchControls: public CXuiSceneImpl
          XUI_ON_XM_INIT( OnInit)
          XUI_ON_XM_CONTROL_NAVIGATE( OnControlNavigate )
          XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
-      XUI_END_MSG_MAP();
+         XUI_END_MSG_MAP();
 
       XUI_IMPLEMENT_CLASS(CRetroArchControls, L"RetroArchControls", XUI_CLASS_SCENE)
 };

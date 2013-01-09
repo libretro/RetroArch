@@ -220,7 +220,7 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, u
 
 #ifdef HAVE_ZLIB
    extract_zip_cond = (strstr(path, ".zip") || strstr(path, ".ZIP"))
-   && !info.block_extract;
+      && !info.block_extract;
 
    if(extract_zip_cond)
    {
@@ -230,7 +230,7 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, u
    }
 
    extract_zip_and_load_game_cond = (extract_zip_cond && 
-   g_extern.file_state.zip_extract_mode == ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE);
+         g_extern.file_state.zip_extract_mode == ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE);
    load_game = (extract_zip_and_load_game_cond) || (!extract_zip_cond);
 
    if(extract_zip_and_load_game_cond)
