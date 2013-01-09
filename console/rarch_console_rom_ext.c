@@ -242,7 +242,7 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, u
 
    if(load_game)
    {
-      snprintf(g_extern.file_state.rom_path, sizeof(g_extern.file_state.rom_path), game_to_load);
+      snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), game_to_load);
       rarch_settings_change(S_START_RARCH);
 
       if(g_extern.console.rmenu.state.msg_info.enable)

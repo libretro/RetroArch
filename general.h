@@ -566,14 +566,10 @@ struct global
 
    struct
    {
-      char rom_path[PATH_MAX];
       char cgp_path[PATH_MAX];
       char input_cfg_path[PATH_MAX];
 #ifdef HAVE_ZLIB
       unsigned zip_extract_mode;
-#endif
-#ifdef _XBOX
-      DWORD volume_device_type;
 #endif
    } file_state;
 

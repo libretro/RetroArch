@@ -276,7 +276,7 @@ begin_loop:
       args.config_path = g_extern.config_path;
       args.sram_path = g_extern.console.main_wrap.state.default_sram_dir.enable ? g_extern.console.main_wrap.paths.default_sram_dir : NULL,
          args.state_path = g_extern.console.main_wrap.state.default_savestate_dir.enable ? g_extern.console.main_wrap.paths.default_savestate_dir : NULL,
-         args.rom_path = g_extern.file_state.rom_path;
+         args.rom_path = g_extern.fullpath;
       args.libretro_path = g_settings.libretro;
 
       int init_ret = rarch_main_init_wrap(&args);

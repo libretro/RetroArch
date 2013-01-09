@@ -233,7 +233,7 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
          }
          break;
       case S_MSG_LOADING_ROM:
-         fill_pathname_base(tmp, g_extern.file_state.rom_path, sizeof(tmp));
+         fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
          snprintf(str, sizeof(str), "INFO - Loading %s...", tmp);
          break;
       case S_MSG_DIR_LOADING_ERROR:

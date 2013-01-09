@@ -402,7 +402,7 @@ static void system_process_args(int argc, char *argv[])
 #ifdef HAVE_MULTIMAN
       case EXTERN_LAUNCHER_MULTIMAN:
          RARCH_LOG("Started from multiMAN, will auto-start game.\n");
-         strlcpy(g_extern.file_state.rom_path, argv[1], sizeof(g_extern.file_state.rom_path));
+         strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
          rarch_settings_change(S_START_RARCH);
          break;
 #endif
