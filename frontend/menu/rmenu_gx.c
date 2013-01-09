@@ -17,6 +17,8 @@
 #include "rmenu.h"
 #include "rgui.h"
 
+#include "../../gfx/fonts/bitmap.h"
+
 uint16_t menu_framebuf[400 * 240];
 
 static const struct retro_keybind _gx_nav_binds[] = {

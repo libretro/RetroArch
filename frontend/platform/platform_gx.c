@@ -22,10 +22,6 @@
 
 #include "platform_inl.h"
 
-#ifndef IS_SALAMANDER
-#include "../../gfx/fonts/bitmap.h"
-#endif
-
 #include "../../console/rarch_console.h"
 #include "../../console/rarch_console_input.h"
 #include "../../console/rarch_console_settings.h"
