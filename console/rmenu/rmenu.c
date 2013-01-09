@@ -39,10 +39,6 @@
 
 #include "../../console/rarch_console_video.h"
 
-#ifdef HAVE_ZLIB
-#include "../../console/rarch_console_rzlib.h"
-#endif
-
 #include "../../gfx/gfx_context.h"
 
 #include "../../file.h"

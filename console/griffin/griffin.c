@@ -55,10 +55,6 @@ default_paths_t default_paths;
 #include "../rarch_console_input.c"
 #endif
 
-#ifdef HAVE_ZLIB
-#include "../rarch_console_rzlib.c"
-#endif
-
 #include "../rarch_console_settings.c"
 
 #endif
