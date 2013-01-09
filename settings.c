@@ -315,9 +315,15 @@ static void parse_config_file(void)
 {
    bool ret;
    if (*g_extern.config_path)
+   {
+      RARCH_LOG("Loading config from: %s.\n", g_extern.config_path);
       ret = config_load_file(g_extern.config_path);
+   }
    else
+   {
+      RARCH_LOG("Loading NULL config.\n");
       ret = config_load_file(NULL);
+   }
 
    if (!ret)
    {
