@@ -103,11 +103,12 @@ static void gfx_ctx_xdk_set_blend(bool enable)
 static void gfx_ctx_xdk_set_swap_interval(unsigned interval)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
 
    if (interval)
-      d3d->d3d_render_device->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_ONE);
+      d3dr->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_ONE);
    else
-      d3d->d3d_render_device->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_IMMEDIATE);
+      d3dr->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_IMMEDIATE);
 }
 
 static void gfx_ctx_xdk_get_available_resolutions (void)
@@ -180,10 +181,11 @@ static void gfx_ctx_xdk_menu_free(void)
 static void gfx_ctx_xdk_swap_buffers(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   LPDIRECT3DDEVICE d3dr = d3d->d3d_render_device;
 #ifdef _XBOX1
-   d3d->d3d_render_device->EndScene();
+   d3dr->EndScene();
 #endif
-   d3d->d3d_render_device->Present(NULL, NULL, NULL, NULL);
+   d3dr->Present(NULL, NULL, NULL, NULL);
 }
 
 static bool gfx_ctx_xdk_window_has_focus(void)

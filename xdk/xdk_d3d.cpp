@@ -176,11 +176,12 @@ static void xdk_convert_texture_to_as16_srgb( D3DTexture *pTexture )
 static void xdk_d3d_set_viewport(bool force_full)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
    unsigned width, height;      // Set the viewport based on the current resolution
    int m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
    float m_zNear, m_zFar;
 
-   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+   d3dr->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
    d3d->ctx_driver->get_video_size(&width, &height);
    m_viewport_x_temp = 0;
@@ -228,7 +229,7 @@ static void xdk_d3d_set_viewport(bool force_full)
    vp.Y      = m_viewport_y_temp;
    vp.MinZ   = m_zNear;
    vp.MaxZ   = m_zFar;
-   d3d->d3d_render_device->SetViewport(&vp);
+   d3dr->SetViewport(&vp);
 
 #ifdef _XBOX1
    font_x = vp.X;
@@ -691,6 +692,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
 #ifdef HAVE_FBO
    D3DSurface* pRenderTarget0;
 #endif
@@ -700,7 +702,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    bool soft_filter_enable = g_extern.console.screen.state.soft_filter.enable;
 #endif
 
-   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.0f, 0);
+   d3dr->Clear(0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.0f, 0);
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
@@ -755,15 +757,15 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #ifdef HAVE_FBO
    if (d3d->fbo_inited)
    {
-      d3d->d3d_render_device->GetRenderTarget(0, &pRenderTarget0);
-      d3d->d3d_render_device->SetRenderTarget(0, d3d->lpSurface);
+      d3dr->GetRenderTarget(0, &pRenderTarget0);
+      d3dr->SetRenderTarget(0, d3d->lpSurface);
    }
 #endif
 
    if (d3d->should_resize)
       xdk_d3d_set_viewport(false);
 
-   d3d->d3d_render_device->SetTexture(0, d3d->lpTexture);
+   d3dr->SetTexture(0, d3d->lpTexture);
 
 #ifdef HAVE_HLSL
    hlsl_use(1);
@@ -783,7 +785,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       vp.Y      = 0;
       vp.MinZ   = 0.0f;
       vp.MaxZ   = 1.0f;
-      d3d->d3d_render_device->SetViewport(&vp);
+      d3dr->SetViewport(&vp);
    }
    else
 #endif
@@ -796,6 +798,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
    if(frame)
    {
+      unsigned base_size = d3d->base_size;
       D3DLOCKED_RECT d3dlr;
       d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
 
@@ -803,46 +806,42 @@ static bool xdk_d3d_frame(void *data, const void *frame,
       {
          const uint8_t *in = (const uint8_t*)frame + y * pitch;
          uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
-         memcpy(out, in, width * d3d->base_size);
+         memcpy(out, in, width * base_size);
       }
       d3d->lpTexture->UnlockRect(0);
    }
 
-   d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   d3dr->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 
 #if defined(_XBOX1)
-   d3d->d3d_render_device->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
+   d3dr->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
 
-   d3d->d3d_render_device->SetStreamSource(0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
-   d3d->d3d_render_device->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+   d3dr->SetStreamSource(0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
+   d3dr->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
-   d3d->d3d_render_device->BeginScene();
-   d3d->d3d_render_device->SetFlickerFilter(flicker_filter);
-   d3d->d3d_render_device->SetSoftDisplayFilter(soft_filter_enable);
-   d3d->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-   d3d->d3d_render_device->EndScene();
+   d3dr->BeginScene();
+   d3dr->SetFlickerFilter(flicker_filter);
+   d3dr->SetSoftDisplayFilter(soft_filter_enable);
+   d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+   d3dr->EndScene();
 #elif defined(_XBOX360)
-
-   d3d->d3d_render_device->SetVertexDeclaration(d3d->v_decl);
-   d3d->d3d_render_device->SetStreamSource(0, d3d->vertex_buf,
-         0,
-         sizeof(DrawVerticeFormats));
-
-   d3d->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+   d3dr->SetVertexDeclaration(d3d->v_decl);
+   d3dr->SetStreamSource(0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
+   d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
 #endif
 
 #ifdef HAVE_FBO
    if(d3d->fbo_inited)
    {
-      d3d->d3d_render_device->Resolve(D3DRESOLVE_RENDERTARGET0, NULL, d3d->lpTexture_ot,
+      d3dr->Resolve(D3DRESOLVE_RENDERTARGET0, NULL, d3d->lpTexture_ot,
             NULL, 0, 0, NULL, 0, 0, NULL);
 
-      d3d->d3d_render_device->SetRenderTarget(0, pRenderTarget0);
+      d3dr->SetRenderTarget(0, pRenderTarget0);
       pRenderTarget0->Release();
-      d3d->d3d_render_device->SetTexture(0, &d3d->lpTexture_ot_as16srgb);
+      d3dr->SetTexture(0, &d3d->lpTexture_ot_as16srgb);
 
 #ifdef HAVE_HLSL
       hlsl_use(2);
@@ -851,15 +850,13 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
       xdk_d3d_set_viewport(false);
 
-      d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-      d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-      d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-      d3d->d3d_render_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      d3d->d3d_render_device->SetVertexDeclaration(d3d->v_decl);
-      d3d->d3d_render_device->SetStreamSource(0, d3d->vertex_buf,
-            0,
-            sizeof(DrawVerticeFormats));
-      d3d->d3d_render_device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+      d3dr->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+      d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+      d3dr->SetVertexDeclaration(d3d->v_decl);
+      d3dr->SetStreamSource(0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
+      d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
    }
 #endif
 
