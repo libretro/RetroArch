@@ -167,7 +167,7 @@ VIDEO DRIVER
 #elif defined(PSP)
 #include "../../psp1/psp1_video.c"
 #elif defined(XENON)
-#include "../../360/xenon360_video.c"
+#include "../../xenon/xenon360_video.c"
 #endif
 
 #if defined(HAVE_NULLVIDEO)
@@ -243,7 +243,7 @@ INPUT
 #elif defined(_XBOX)
 #include "../../xdk/xdk_xinput_input.c"
 #elif defined(XENON)
-#include "../../360/xenon360_input.c"
+#include "../../xenon/xenon360_input.c"
 #elif defined(ANDROID)
 #include "../../android/native/jni/input_autodetect.c"
 #include "../../android/native/jni/input_android.c"
@@ -291,7 +291,7 @@ AUDIO
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/ps3_audio.c"
 #elif defined(XENON)
-#include "../../360/xenon360_audio.c"
+#include "../../xenon/xenon360_audio.c"
 #elif defined(GEKKO)
 #include "../../gx/gx_audio.c"
 #endif
