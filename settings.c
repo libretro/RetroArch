@@ -1081,7 +1081,7 @@ bool config_save_file(const char *path)
    if (!conf)
       return false;
 
-   RARCH_LOG("Saving config at path: \"%s\"\n", g_extern.config_path);
+   RARCH_LOG("Saving config at path: \"%s\"\n", path);
 
    config_set_string(conf, "libretro_path", g_settings.libretro);
    config_set_string(conf, "cheat_database_path", g_settings.cheat_database);
