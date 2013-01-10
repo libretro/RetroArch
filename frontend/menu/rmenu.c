@@ -2031,9 +2031,9 @@ int ingame_menu_screenshot(void *data, void *state)
 
    g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
 
-   if(g_extern.console.rmenu.state.ingame_menu.enable)
+   if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_INGAME))
    {
-      if(input & (1ULL << RMENU_DEVICE_NAV_A))
+      if (input & (1ULL << RMENU_DEVICE_NAV_A))
       {
          menu_stack_pop();
          g_extern.lifecycle_menu_state |= (1 << MODE_MENU_DRAW);
@@ -2425,7 +2425,7 @@ bool rmenu_iterate(void)
 
    if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_PREINIT))
    {
-      if(g_extern.console.rmenu.state.ingame_menu.enable)
+      if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_INGAME))
          menu_stack_push(INGAME_MENU);
 
       menu_stack_force_refresh();
@@ -2506,11 +2506,11 @@ deinit:
    if (!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
       g_extern.delay_timer[0] = g_extern.frame_count + 30;
 
-   if(g_extern.console.rmenu.state.ingame_menu.enable)
+   if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_INGAME))
       menu_stack_pop();
 
    g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
-   g_extern.console.rmenu.state.ingame_menu.enable = false;
+   g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_INGAME);
 
    device_ptr->ctx_driver->rmenu_free();
 

@@ -266,7 +266,7 @@ deinit:
       g_extern.delay_timer[0] = g_extern.frame_count + 30;
 
    g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
-   g_extern.console.rmenu.state.ingame_menu.enable = false;
+   g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_INGAME);
 
    return false;
 }

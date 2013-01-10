@@ -1237,7 +1237,7 @@ deinit:
    if(!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
       g_extern.delay_timer[0] = g_extern.frame_count + 30;
 
-   g_extern.console.rmenu.state.ingame_menu.enable = false;
+   g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_INGAME);
    g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
 
    return false;

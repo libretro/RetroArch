@@ -87,7 +87,7 @@ void rarch_settings_change(unsigned setting)
          }
          break;
       case S_QUIT:
-         g_extern.console.rmenu.state.ingame_menu.enable = false;
+         g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_INGAME);
          g_extern.lifecycle_menu_state = (1 << MODE_EXIT);
          break;
       case S_QUIT_RARCH:
