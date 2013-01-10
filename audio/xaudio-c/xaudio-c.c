@@ -16,11 +16,7 @@
 
 // Simple C interface for XAudio2
 
-#ifdef _XBOX
-#include "xaudio-xdk360.h"
-#else
 #include "xaudio.h"
-#endif
 #include "xaudio-c.h"
 #include <stdint.h>
 #include <stdio.h>
