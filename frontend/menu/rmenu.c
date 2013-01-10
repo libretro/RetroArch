@@ -2413,13 +2413,12 @@ void menu_free(void)
 
 bool rmenu_iterate(void)
 {
-   static bool preinit = true;
    const char *msg;
 
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    menu current_menu;
 
-   if(preinit)
+   if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_PREINIT))
    {
       if(g_extern.console.rmenu.state.ingame_menu.enable)
          menu_stack_push(INGAME_MENU);
@@ -2429,7 +2428,7 @@ bool rmenu_iterate(void)
 
       device_ptr->ctx_driver->rmenu_init();
 
-      preinit = false;
+      g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_PREINIT);
    }
 
    g_extern.frame_count++;
@@ -2511,8 +2510,6 @@ deinit:
    g_extern.console.rmenu.state.ingame_menu.enable = false;
 
    device_ptr->ctx_driver->rmenu_free();
-
-   preinit = true;
 
    return false;
 }

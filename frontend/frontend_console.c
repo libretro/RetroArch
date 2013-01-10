@@ -305,7 +305,10 @@ begin_loop:
       }
    }
    else if(g_extern.lifecycle_menu_state & (1 << MODE_MENU))
+   {
+      g_extern.lifecycle_menu_state |= (1 << MODE_MENU_PREINIT);
       while(rmenu_iterate());
+   }
    else
       goto begin_shutdown;
 

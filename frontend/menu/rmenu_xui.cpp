@@ -1164,16 +1164,16 @@ static void ingame_menu_resize (void)
 
 bool rmenu_iterate(void)
 {
-   static bool preinit = true;
    const char *msg;
 
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 
-   if(preinit)
+   if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_PREINIT))
    {
       g_extern.console.rmenu.input_loop = INPUT_LOOP_MENU;
       g_extern.draw_menu = true;
-      preinit = false;
+
+      g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_PREINIT);
    }
 
    g_extern.frame_count++;
@@ -1240,7 +1240,6 @@ deinit:
 
    g_extern.console.rmenu.state.ingame_menu.enable = false;
    g_extern.draw_menu = false;
-   preinit = true;
 
    return false;
 }
