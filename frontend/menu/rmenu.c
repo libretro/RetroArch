@@ -2340,21 +2340,21 @@ void rmenu_input_process(void *data, void *state)
    (void)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
 
-   if (g_extern.console.rmenu.mode & (1ULL << MODE_LOAD_GAME))
+   if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME))
    {
       if(g_extern.console.rmenu.state.msg_info.enable)
          rarch_settings_msg(S_MSG_LOADING_ROM, 100);
 
-      g_extern.console.rmenu.mode = (1ULL << MODE_INIT);
+      g_extern.lifecycle_menu_state = (1 << MODE_INIT);
    }
 
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
       bool rmenu_enable = (((rstate->old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (rstate->old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.main_is_init));
 
-      if (g_extern.console.rmenu.mode & (1ULL << MODE_MENU))
+      if (g_extern.lifecycle_menu_state & (1 << MODE_MENU))
          if (rmenu_enable)
-            g_extern.console.rmenu.mode = (1ULL << MODE_EMULATION);
+            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
    }
 }
 
@@ -2486,10 +2486,10 @@ bool rmenu_iterate(void)
       device_ptr->ctx_driver->set_blend(false);
 
    if (quit)
-      g_extern.console.rmenu.mode = (1ULL << MODE_EXIT);
+      g_extern.lifecycle_menu_state = (1 << MODE_EXIT);
 
-   if((!(g_extern.console.rmenu.mode & (1ULL <<  MODE_MENU))
-         && !(g_extern.console.rmenu.mode & (1ULL << MODE_LOAD_GAME))) ||
+   if((!(g_extern.lifecycle_menu_state & (1 <<  MODE_MENU))
+         && !(g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME))) ||
             repeat == 0)
       goto deinit;
 

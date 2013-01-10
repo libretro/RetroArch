@@ -477,7 +477,6 @@ struct global
    {
       struct
       {
-         unsigned mode;
          unsigned input_loop;
          float font_size;
 
@@ -565,6 +564,7 @@ struct global
 
    bool draw_menu;
    uint64_t lifecycle_state;
+   unsigned lifecycle_menu_state;
 
    struct
    {

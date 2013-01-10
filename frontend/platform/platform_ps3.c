@@ -387,7 +387,7 @@ static void system_process_args(int argc, char *argv[])
    switch(g_extern.console.external_launch.support)
    {
       case EXTERN_LAUNCHER_SALAMANDER:
-         g_extern.console.rmenu.mode = (1ULL << MODE_MENU);
+         g_extern.lifecycle_menu_state = (1 << MODE_MENU);
          break;
 #ifdef HAVE_MULTIMAN
       case EXTERN_LAUNCHER_MULTIMAN:

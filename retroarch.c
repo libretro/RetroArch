@@ -2782,7 +2782,7 @@ bool rarch_main_iterate(void)
    if (g_extern.system.shutdown)
    {
 #ifdef HAVE_RMENU
-      g_extern.console.rmenu.mode = (1ULL << MODE_EXIT);
+      g_extern.lifecycle_menu_state = (1 << MODE_EXIT);
 #endif
       return false;
    }
@@ -2797,7 +2797,7 @@ bool rarch_main_iterate(void)
 
       if (rmenu_enable || (g_extern.console.rmenu.state.ingame_menu.enable && !rmenu_enable))
       {
-         g_extern.console.rmenu.mode = (1ULL << MODE_MENU);
+         g_extern.lifecycle_menu_state = (1 << MODE_MENU);
          g_extern.delay_timer[0] = g_extern.frame_count + 30;
       }
 #endif
@@ -2849,7 +2849,7 @@ bool rarch_main_iterate(void)
    {
       g_extern.lifecycle_state &= ~(1ULL << RARCH_FRAMEADVANCE);
       g_extern.console.rmenu.state.ingame_menu.enable = true;
-      g_extern.console.rmenu.mode = (1ULL << MODE_MENU);
+      g_extern.lifecycle_menu_state = (1 << MODE_MENU);
       return false;
    }
 #endif

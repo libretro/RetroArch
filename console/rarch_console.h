@@ -73,6 +73,8 @@ enum
    MODE_INIT      = 1 << 2,
    MODE_MENU      = 1 << 3,
    MODE_EXIT      = 1 << 4,
+   MODE_LOAD_FIRST_SHADER = 1 << 5,
+   MODE_LOAD_SECOND_SHADER = 1 << 6,
 };
 
 enum

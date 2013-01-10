@@ -1116,7 +1116,7 @@ void menu_init (void)
    browser = (filebrowser_t*)filebrowser_init(default_paths.filebrowser_startup_dir, g_extern.system.valid_extensions);
    tmp_browser = (filebrowser_t*)filebrowser_init(default_paths.filebrowser_startup_dir, "");
 
-   g_extern.console.rmenu.mode = (1ULL << MODE_MENU);
+   g_extern.lifecycle_menu_state = (1 << MODE_MENU);
 }
 
 void menu_free (void)
@@ -1182,13 +1182,13 @@ bool rmenu_iterate(void)
    XINPUT_STATE state;
    XInputGetState(0, &state);
 
-   if (g_extern.console.rmenu.mode & (1ULL << MODE_LOAD_GAME))
+   if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME))
    {
       if(g_extern.console.rmenu.state.msg_info.enable)
          rarch_settings_msg(S_MSG_LOADING_ROM, 100);
 
       if (g_extern.fullpath)
-         g_extern.console.rmenu.mode = (1ULL << MODE_INIT);
+         g_extern.lifecycle_menu_state = (1 << MODE_INIT);
    }
 
 
@@ -1198,9 +1198,9 @@ bool rmenu_iterate(void)
             && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.main_is_init));
 
 
-      if (g_extern.console.rmenu.mode & (1ULL << MODE_MENU))
+      if (g_extern.lifecycle_menu_state & (1 << MODE_MENU))
          if (rmenu_enable)
-            g_extern.console.rmenu.mode = (1ULL << MODE_EMULATION);
+            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
    }
 
    rarch_render_cached_frame();
@@ -1227,8 +1227,8 @@ bool rmenu_iterate(void)
 
    device_ptr->ctx_driver->swap_buffers();
 
-   if(!(g_extern.console.rmenu.mode & (1ULL <<  MODE_MENU))
-         && !(g_extern.console.rmenu.mode & (1ULL << MODE_LOAD_GAME)))
+   if(!(g_extern.lifecycle_menu_state & (1 <<  MODE_MENU))
+         && !(g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME)))
       goto deinit;
 
    return true;

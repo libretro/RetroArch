@@ -250,5 +250,5 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode)
       snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), path);
 
 do_init:
-   g_extern.console.rmenu.mode |= (1ULL << MODE_LOAD_GAME);
+   g_extern.lifecycle_menu_state |= (1 << MODE_LOAD_GAME);
 }

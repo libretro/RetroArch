@@ -268,7 +268,7 @@ int main(int argc, char *argv[])
    system_process_args(argc, argv);
 
 begin_loop:
-   if(g_extern.console.rmenu.mode & (1ULL << MODE_EMULATION))
+   if(g_extern.lifecycle_menu_state & (1 << MODE_EMULATION))
    {
       driver.input->poll(NULL);
       driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
@@ -276,7 +276,7 @@ begin_loop:
       while(rarch_main_iterate());
       audio_stop_func();
    }
-   else if (g_extern.console.rmenu.mode & (1ULL << MODE_INIT))
+   else if (g_extern.lifecycle_menu_state & (1 << MODE_INIT))
    {
       if(g_extern.main_is_init)
          rarch_main_deinit();
@@ -295,16 +295,16 @@ begin_loop:
       if (init_ret == 0)
       {
          RARCH_LOG("rarch_main_init succeeded.\n");
-         g_extern.console.rmenu.mode = (1ULL << MODE_EMULATION);
+         g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
       }
       else
       {
          RARCH_ERR("rarch_main_init failed.\n");
-         g_extern.console.rmenu.mode = (1ULL << MODE_MENU);
+         g_extern.lifecycle_menu_state = (1 << MODE_MENU);
          rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
       }
    }
-   else if(g_extern.console.rmenu.mode & (1ULL << MODE_MENU))
+   else if(g_extern.lifecycle_menu_state & (1 << MODE_MENU))
       while(rmenu_iterate());
    else
       goto begin_shutdown;
