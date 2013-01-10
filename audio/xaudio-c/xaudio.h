@@ -44,13 +44,14 @@ DEFINE_IID(IXAudio2, 8bcf1f58, 9fe7, 4583, 8a, c6, e2, ad, c4, 65, c8, bb);
 #pragma pack(push, 1)
 
 #else
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <basetyps.h>
 #include <objbase.h>
 #include <mmreg.h>
 
-// C opaque handle
+#undef OPAQUE
 #define OPAQUE struct
 
 #define DEFINE_GUID_X(n, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
@@ -357,8 +358,11 @@ STDAPI XAudio2Create(__deref_out IXAudio2** ppXAudio2, UINT32 Flags X2DEFAULT(0)
 #define IXAudio2SourceVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
 #define IXAudio2MasteringVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
 
-static inline HRESULT XAudio2Create(IXAudio2 **ppXAudio2, int, int)
+static inline HRESULT XAudio2Create(IXAudio2 **ppXAudio2, UINT32 flags, XAUDIO2_PROCESSOR proc)
 {
+   (void)flags;
+   (void)proc;
+
    IXAudio2 *pXAudio2;
 
 #ifdef __cplusplus
