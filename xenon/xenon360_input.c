@@ -27,6 +27,7 @@
 #define MAX_PADS
 
 static struct controller_data_s pad[MAX_PADS];
+
 static void xenon360_input_poll(void *data)
 {
    (void)data;

@@ -156,11 +156,15 @@ VIDEO DRIVER
 #include "../../xdk/xdk_resources.cpp"
 #endif
 
-#if defined(HAVE_OPENGL)
+#ifdef HAVE_OPENGL
 #include "../../gfx/gl.c"
-#elif defined(_XBOX)
+#endif
+
+#ifdef _XBOX
 #include "../../xdk/xdk_d3d.cpp"
-#elif defined(GEKKO)
+#endif
+
+#if defined(GEKKO)
 #include "../../gx/gx_video.c"
 #elif defined(SN_TARGET_PSP2)
 #include "../../vita/vita_video.c"
