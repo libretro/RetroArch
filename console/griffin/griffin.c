@@ -168,8 +168,8 @@ VIDEO DRIVER
 #include "../../gx/gx_video.c"
 #elif defined(SN_TARGET_PSP2)
 #include "../../vita/vita_video.c"
-#elif defined(PSP)
-#include "../../psp1/psp1_video.c"
+//#elif defined(PSP)
+//#include "../../psp1/psp1_video.c"
 #elif defined(XENON)
 #include "../../xenon/xenon360_video.c"
 #endif

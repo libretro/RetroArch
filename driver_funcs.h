@@ -124,9 +124,9 @@ static inline bool input_key_pressed_func(int key)
 #define video_viewport_size_func(width, height) ((void)0)
 #define video_read_viewport_func(buffer) (false)
 
-#elif defined(PSP) /* PSP1 */
-#define MAKENAME_VIDEO(A) CONCAT2(psp, A) 
-#define video_set_aspect_ratio_func(aspectratio_idx) (true)
+//#elif defined(PSP) /* PSP1 */
+//#define MAKENAME_VIDEO(A) CONCAT2(psp, A) 
+//#define video_set_aspect_ratio_func(aspectratio_idx) (true)
 
 #else /* NULL */
 #define MAKENAME_VIDEO(A) CONCAT2(nullvideo, A) 
