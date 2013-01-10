@@ -30,7 +30,6 @@
 #include "../../console/rarch_console.h"
 #include "../../console/rarch_console_rom_ext.h"
 #include "../../console/rarch_console_input.h"
-#include "../../console/rarch_console_config.h"
 #include "../../console/rarch_console_settings.h"
 
 #include "../../gfx/image.h"

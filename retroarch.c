@@ -2672,7 +2672,10 @@ int rarch_main_init(int argc, char *argv[])
    }
 
    validate_cpu_features();
+#ifndef RARCH_CONSOLE
+   /* we already do this at startup */
    config_load();
+#endif
 
    init_libretro_sym();
    rarch_init_system_info();

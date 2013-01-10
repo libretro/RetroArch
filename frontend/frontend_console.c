@@ -226,11 +226,8 @@ int main(int argc, char *argv[])
    verbose_log_init();
 
    get_environment_settings(argc, argv);
-   config_set_defaults();
-   rarch_settings_set_default();
-   rarch_config_load();
-
    config_load();
+
    init_libretro_sym();
    rarch_init_system_info();
 

@@ -45,8 +45,6 @@ CONSOLE EXTENSIONS
 #include "../rarch_console_rsound.c"
 #endif
 
-#include "../rarch_console_config.c"
-
 #ifdef HAVE_DEFAULT_RETROPAD_INPUT
 #include "../rarch_console_input.c"
 #endif

@@ -239,6 +239,78 @@ void config_set_defaults(void)
    for (int i = 0; i < MAX_PLAYERS; i++)
       g_settings.input.joypad_map[i] = i;
 
+#ifdef RARCH_CONSOLE
+   /* TODO - will be refactored - I'm aware this is messy right now */
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+   strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
+   strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
+   g_settings.video.second_pass_smooth = true;
+#endif
+
+#if defined(_XBOX360)
+   g_settings.video.shader_type = RARCH_SHADER_HLSL;
+#elif defined(__PSL1GHT__)
+   g_settings.video.shader_type = RARCH_SHADER_GLSL;
+#elif defined(__CELLOS_LV2__)
+   g_settings.video.shader_type = RARCH_SHADER_CG;
+#elif defined(HAVE_GLSL)
+   g_settings.video.shader_type = RARCH_SHADER_GLSL;
+#else
+   g_settings.video.shader_type = RARCH_SHADER_NONE;
+#endif
+
+#ifdef GEKKO
+   g_settings.audio.rate_control_delta = 0.006;
+   g_settings.audio.rate_control = true;
+#endif
+
+   g_settings.video.render_to_texture = true;
+   g_settings.video.refresh_rate = 59.92;
+
+   strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
+
+   g_settings.video.msg_pos_x = 0.05f;
+   g_settings.video.msg_pos_y = 0.90f;
+   g_settings.video.aspect_ratio = -1.0f;
+
+   // g_extern
+   strlcpy(g_extern.console.main_wrap.paths.default_sram_dir, default_paths.sram_dir, sizeof(g_extern.console.main_wrap.paths.default_sram_dir));
+   g_extern.console.screen.state.overscan.enable = false;
+   g_extern.console.screen.overscan_amount = 0.0f;
+   g_extern.console.sound.custom_bgm.enable = true;
+   g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
+   g_extern.console.screen.state.screenshots.enable = true;
+   g_extern.console.screen.state.throttle.enable = true;
+   g_extern.console.rmenu.state.msg_info.enable = true;
+   g_extern.console.screen.state.triple_buffering.enable = true;
+   g_extern.console.main_wrap.state.default_savestate_dir.enable = false;
+   g_extern.console.main_wrap.state.default_sram_dir.enable = false;
+   g_extern.console.screen.orientation = ORIENTATION_NORMAL;
+   g_extern.console.screen.resolutions.current.id = 0;
+   strlcpy(g_extern.console.main_wrap.paths.default_rom_startup_dir, default_paths.filebrowser_startup_dir, sizeof(g_extern.console.main_wrap.paths.default_rom_startup_dir));
+   strlcpy(g_extern.console.main_wrap.paths.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.paths.default_savestate_dir));
+   g_settings.video.aspect_ratio_idx = 0;
+   g_extern.state_slot = 0;
+   g_extern.audio_data.mute = 0;
+   g_extern.verbose = true;
+
+   g_extern.console.rmenu.mode = MODE_MENU;
+   g_extern.console.rmenu.font_size = 1.0f;
+   g_extern.console.sound.mode = SOUND_MODE_NORMAL;
+   g_extern.console.screen.viewports.custom_vp.width = 0;
+   g_extern.console.screen.viewports.custom_vp.height = 0;
+   g_extern.console.screen.viewports.custom_vp.x = 0;
+   g_extern.console.screen.viewports.custom_vp.y = 0;
+#ifdef _XBOX1
+   g_extern.console.screen.state.flicker_filter.enable = 1;
+   g_extern.console.sound.volume_level = 0;
+#endif
+   g_extern.console.screen.state.soft_filter.enable = true;
+#ifdef HAVE_ZLIB
+   g_extern.file_state.zip_extract_mode = 0;
+#endif
+#endif
+
    rarch_init_msg_queue();
 }
 
@@ -246,13 +318,8 @@ static void parse_config_file(void);
 
 void config_load(void)
 {
-#ifdef RARCH_CONSOLE
-   if (!g_extern.console.block_config_read)
-#endif
-   {
-      config_set_defaults();
-      parse_config_file();
-   }
+   config_set_defaults();
+   parse_config_file();
 }
 
 static config_file_t *open_default_config_file(void)
@@ -402,6 +469,52 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.font_scale, "video_font_scale");
    CONFIG_GET_FLOAT(video.msg_pos_x, "video_message_pos_x");
    CONFIG_GET_FLOAT(video.msg_pos_y, "video_message_pos_y");
+
+#ifdef RARCH_CONSOLE
+   /* TODO - will be refactored later to make it more clean - it's more 
+    * important that it works for consoles right now */
+   CONFIG_GET_INT(video.aspect_ratio_idx, "aspect_ratio_index");
+   CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
+
+   for (unsigned i = 0; i < 8; i++)
+   {
+      char cfg[64];
+      snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
+      CONFIG_GET_INT(input.dpad_emulation[i], cfg);
+      snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
+      CONFIG_GET_INT(input.device[i], cfg);
+   }
+
+   CONFIG_GET_STRING_EXTERN(console.main_wrap.paths.default_rom_startup_dir, "default_rom_startup_dir");
+   CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
+   CONFIG_GET_BOOL_EXTERN(console.rmenu.state.msg_info.enable, "info_msg_enable");
+   CONFIG_GET_BOOL_EXTERN(console.screen.state.screenshots.enable, "screenshots_enable");
+   CONFIG_GET_BOOL_EXTERN(console.screen.state.throttle.enable, "throttle_enable");
+   CONFIG_GET_BOOL_EXTERN(console.screen.state.triple_buffering.enable, "triple_buffering_enable");
+   CONFIG_GET_BOOL_EXTERN(console.screen.state.overscan.enable, "overscan_enable");
+   CONFIG_GET_BOOL_EXTERN(console.sound.custom_bgm.enable, "custom_bgm_enable");
+   CONFIG_GET_BOOL_EXTERN(console.main_wrap.state.default_sram_dir.enable, "sram_dir_enable");
+   CONFIG_GET_BOOL_EXTERN(console.main_wrap.state.default_savestate_dir.enable, "savestate_dir_enable");
+   CONFIG_GET_FLOAT_EXTERN(console.screen.overscan_amount, "overscan_amount");
+#ifdef _XBOX1
+   CONFIG_GET_INT_EXTERN(console.screen.state.flicker_filter.enable, "flicker_filter");
+   CONFIG_GET_INT_EXTERN(console.sound.volume_level, "sound_volume_level");
+#endif
+#ifdef HAVE_ZLIB
+   CONFIG_GET_INT_EXTERN(file_state.zip_extract_mode, "zip_extract_mode");
+#endif
+   CONFIG_GET_INT_EXTERN(console.screen.resolutions.current.id, "current_resolution_id");
+   CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
+   CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
+   CONFIG_GET_BOOL_EXTERN(console.screen.state.soft_filter.enable, "soft_display_filter_enable");
+   CONFIG_GET_INT_EXTERN(console.screen.orientation, "screen_orientation");
+   CONFIG_GET_INT_EXTERN(console.sound.mode, "sound_mode");
+   CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.x, "custom_viewport_x");
+   CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.y, "custom_viewport_y");
+   CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.width, "custom_viewport_width");
+   CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.height, "custom_viewport_height");
+   CONFIG_GET_FLOAT_EXTERN(console.rmenu.font_size, "menu_font_size");
+#endif
 
    unsigned msg_color = 0;
    if (config_get_hex(conf, "video_message_color", &msg_color))
