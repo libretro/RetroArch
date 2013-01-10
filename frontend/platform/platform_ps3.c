@@ -193,10 +193,6 @@ void menu_free (void)
 
 static void get_environment_settings(int argc, char *argv[])
 {
-#ifndef IS_SALAMANDER
-   g_extern.verbose = true;
-#endif
-
    int ret;
    unsigned int get_type;
    unsigned int get_attributes;
@@ -313,10 +309,6 @@ static void get_environment_settings(int argc, char *argv[])
 #endif
       snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "EBOOT.BIN");
    }
-
-#ifndef IS_SALAMANDER
-   g_extern.verbose = false;
-#endif
 }
 
 static void system_init(void)

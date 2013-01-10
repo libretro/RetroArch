@@ -16,13 +16,14 @@
 
 #if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
 
+
 static inline void inl_logger_init(void)
 {
 #if defined(HAVE_LOGGER)
-   g_extern.verbose = true;
+   verbose_log_init();
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
-   g_extern.verbose = true;
+   verbose_log_init();
    g_extern.log_file = fopen("/retroarch-log.txt", "w");
 #endif
 }

@@ -101,6 +101,15 @@ int main(int argc, char *argv[])
 
 #else
 
+static void verbose_log_init(void)
+{
+   if (!g_extern.verbose)
+   {
+      g_extern.verbose = true;
+      RARCH_LOG("Turning on verbose logging...\n");
+   }
+}
+
 #ifdef HAVE_LIBRETRO_MANAGEMENT
 
 // Transforms a library id to a name suitable as a pathname.
@@ -213,6 +222,8 @@ int main(int argc, char *argv[])
    system_init();
 
    rarch_main_clear_state();
+
+   verbose_log_init();
 
    get_environment_settings(argc, argv);
    config_set_defaults();

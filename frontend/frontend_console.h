@@ -19,6 +19,7 @@
 
 //optional RetroArch forward declarations
 static void rarch_console_exec(const char *path);
+static void verbose_log_init(void);
 
 #ifdef IS_SALAMANDER
 //optional Salamander forward declarations
