@@ -300,7 +300,7 @@ AUDIO
 
 #ifdef HAVE_XAUDIO
 #include "../../audio/xaudio.c"
-#include "../../audio/xaudio-c/xaudio-c.c"
+#include "../../audio/xaudio-c/xaudio-c.cpp"
 #endif
 
 #ifdef HAVE_DSOUND
