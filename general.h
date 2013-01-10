@@ -61,8 +61,8 @@
 #include "msvc/msvc_compat.h"
 #endif
 
-// Wii
-#if defined(GEKKO)
+// Wii and PSL1GHT - for usleep (among others)
+#if defined(GEKKO) || defined(__PSL1GHT__)
 #include <unistd.h>
 #endif
 
@@ -726,7 +726,7 @@ static inline void rarch_sleep(unsigned msec)
    Sleep(msec);
 #elif defined(XENON)
    udelay(1000 * msec);
-#elif defined(GEKKO)
+#elif defined(GEKKO) || defined(__PSL1GHT__)
    usleep(1000 * msec);
 #else
    struct timespec tv = {0};
