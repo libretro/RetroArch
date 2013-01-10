@@ -381,7 +381,7 @@
     <ClInclude Include="..\..\ups.h" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\rarch.ttf">
+    <CustomBuild Include="..\..\media\360\rarch.ttf">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">copy %(FullPath) $(OutDir)media\rarch.ttf</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\rarch.ttf;%(Outputs)</Outputs>
@@ -390,7 +390,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\rarch_scene_skin.xui">
+    <CustomBuild Include="..\..\media\360\rarch_scene_skin.xui">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_scene_skin.xui" "$(OutDir)media\rarch_scene_skin.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_scene_skin.xui" "$(OutDir)media\rarch_scene_skin.xur"</Command>
@@ -407,7 +407,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\sd\rarch_main.xui">
+    <CustomBuild Include="..\..\media\360\sd\rarch_main.xui">
       <FileType>Document</FileType>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\rarch_main.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\rarch_main.xur;</Outputs>
@@ -424,7 +424,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\sd\rarch_settings.xui">
+    <CustomBuild Include="..\..\media\360\sd\rarch_settings.xui">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_settings.xui" "$(OutDir)media\sd\rarch_settings.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_settings.xui" "$(OutDir)media\sd\rarch_settings.xur"</Command>
@@ -441,7 +441,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\sd\rarch_filebrowser.xui">
+    <CustomBuild Include="..\..\media\360\sd\rarch_filebrowser.xui">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\sd\rarch_filebrowser.xur"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\rarch_filebrowser.xur;</Outputs>
@@ -458,7 +458,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\a.png">
+    <CustomBuild Include="..\..\media\360\a.png">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">copy %(FullPath) $(OutDir)media\a.png</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">copy %(FullPath) $(OutDir)media\a.png</Command>
@@ -473,7 +473,7 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\a.png;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\a.png;%(Outputs)</Outputs>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\b.png">
+    <CustomBuild Include="..\..\media\360\b.png">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">copy %(FullPath) $(OutDir)media\b.png</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">copy %(FullPath) $(OutDir)media\b.png</Command>
@@ -490,7 +490,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\Arial_12.rdf">
+    <CustomBuild Include="..\..\media\360\Arial_12.rdf">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">Bundler %(FullPath) /o $(OutDir)media\Arial_12.xpr</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">Bundler %(FullPath) /o $(OutDir)media\Arial_12.xpr</Command>
@@ -507,7 +507,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\sd\rarch_quickmenu.xui">
+    <CustomBuild Include="..\..\media\360\sd\rarch_quickmenu.xui">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\sd\rarch_quickmenu.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\sd\rarch_quickmenu.xur"</Command>
@@ -524,7 +524,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\sd\rarch_libretrocore_browser.xui">
+    <CustomBuild Include="..\..\media\360\sd\rarch_libretrocore_browser.xui">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\sd\rarch_libretrocore_browser.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\sd\rarch_libretrocore_browser.xur"</Command>
@@ -541,7 +541,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\shaders\stock.cg">
+    <CustomBuild Include="..\..\media\360\shaders\stock.cg">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\shaders\stock.cg;%(Outputs)</Outputs>
@@ -558,7 +558,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\hd\rarch_filebrowser.xui">
+    <CustomBuild Include="..\..\media\360\hd\rarch_filebrowser.xui">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\hd\rarch_filebrowser.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\hd\rarch_filebrowser.xur"</Command>
@@ -573,7 +573,7 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\rarch_filebrowser.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\rarch_filebrowser.xur;</Outputs>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\hd\rarch_libretrocore_browser.xui">
+    <CustomBuild Include="..\..\media\360\hd\rarch_libretrocore_browser.xui">
       <FileType>Document</FileType>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_libretrocore_browser.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_libretrocore_browser.xur;</Outputs>
@@ -588,7 +588,7 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\hd\rarch_libretrocore_browser.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_libretrocore_browser.xui" "$(OutDir)media\hd\rarch_libretrocore_browser.xur"</Command>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\hd\rarch_main.xui">
+    <CustomBuild Include="..\..\media\360\hd\rarch_main.xui">
       <FileType>Document</FileType>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_main.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_main.xur;</Outputs>
@@ -603,7 +603,7 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\hd\rarch_main.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\hd\rarch_main.xur"</Command>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\hd\rarch_quickmenu.xui">
+    <CustomBuild Include="..\..\media\360\hd\rarch_quickmenu.xui">
       <FileType>Document</FileType>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_quickmenu.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_quickmenu.xur;</Outputs>
@@ -618,7 +618,7 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\hd\rarch_quickmenu.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_quickmenu.xui" "$(OutDir)media\hd\rarch_quickmenu.xur"</Command>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\hd\rarch_settings.xui">
+    <CustomBuild Include="..\..\media\360\hd\rarch_settings.xui">
       <FileType>Document</FileType>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\rarch_settings.xur;</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_settings.xui" "$(OutDir)media\hd\rarch_settings.xur"</Command>
@@ -635,7 +635,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\hd\rarch_shader_browser.xui">
+    <CustomBuild Include="..\..\media\360\hd\rarch_shader_browser.xui">
       <FileType>Document</FileType>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_shader_browser.xur</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_shader_browser.xur</Outputs>
@@ -650,7 +650,7 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_shader_browser.xui" "$(OutDir)media\hd\rarch_shader_browser.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_shader_browser.xui" "$(OutDir)media\hd\rarch_shader_browser.xur"</Command>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\sd\rarch_shader_browser.xui">
+    <CustomBuild Include="..\..\media\360\sd\rarch_shader_browser.xui">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_shader_browser.xui" "$(OutDir)media\sd\rarch_shader_browser.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_shader_browser.xui" "$(OutDir)media\sd\rarch_shader_browser.xur"</Command>
@@ -667,7 +667,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\360\media\hd\rarch_controls.xui">
+    <CustomBuild Include="..\..\media\360\hd\rarch_controls.xui">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_controls.xui" "$(OutDir)media\hd\rarch_controls.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_controls.xui" "$(OutDir)media\hd\rarch_controls.xur"</Command>
@@ -682,7 +682,7 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\hd\rarch_controls.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\hd\rarch_controls.xur;</Outputs>
     </CustomBuild>
-    <CustomBuild Include="..\..\360\media\sd\rarch_controls.xui">
+    <CustomBuild Include="..\..\media\360\sd\rarch_controls.xui">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_controls.xui" "$(OutDir)media\sd\rarch_controls.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_controls.xui" "$(OutDir)media\sd\rarch_controls.xur"</Command>
