@@ -267,6 +267,21 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
          void *pReserved X2DEFAULT(NULL)) PURE;
 };
 
+#ifdef _XBOX
+// C++ hooks.
+#define IXAudio2SourceVoice_SubmitSourceBuffer(handle, a, b) handle->SubmitSourceBuffer(a, b)
+#define IXAudio2SourceVoice_Stop(handle, a, b) handle->Stop(a, b)
+#define IXAudio2SourceVoice_DestroyVoice(handle) handle->DestroyVoice()
+#define IXAudio2MasteringVoice_DestroyVoice(handle) handle->DestroyVoice()
+#define IXAudio2_Release(handle) handle->Release()
+#define IXAudio2_CreateSourceVoice(handle, a, b, c, d, e, f, g) handle->CreateSourceVoice(a, b, c, d, e, f, g)
+#define IXAudio2_CreateMasteringVoice(handle, a, b, c, d, e, f) handle->CreateMasteringVoice(a, b, c, d, e, f)
+#define IXAudio2SourceVoice_Start(handle, a, b) handle->Start(a, b)
+
+STDAPI XAudio2Create(__deref_out IXAudio2** ppXAudio2, UINT32 Flags X2DEFAULT(0),
+		XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR));
+
+#else
 // C hooks.
 #define IXAudio2_Initialize(THIS, ...) (THIS)->lpVtbl->Initialize(THIS, __VA_ARGS__)
 #define IXAudio2_Release(THIS) (THIS)->lpVtbl->Release(THIS)
@@ -281,13 +296,6 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
 #define IXAudio2SourceVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
 #define IXAudio2MasteringVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
 
-
-#ifdef _XBOX
-
-STDAPI XAudio2Create(__deref_out IXAudio2** ppXAudio2, UINT32 Flags X2DEFAULT(0),
-		XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR));
-
-#else
 static inline HRESULT XAudio2Create(IXAudio2 **ppXAudio2, UINT32 flags, XAUDIO2_PROCESSOR proc)
 {
    (void)flags;
@@ -311,9 +319,7 @@ static inline HRESULT XAudio2Create(IXAudio2 **ppXAudio2, UINT32 flags, XAUDIO2_
    }
    return hr;
 }
-
 #endif
-
 
 #ifdef _XBOX
 // Undo the #pragma pack(push, 1) directive at the top of this file
