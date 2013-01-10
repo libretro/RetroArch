@@ -15,7 +15,7 @@
  */
 
 #include "../gfx/image.h"
-#include "../xdk/xdk_d3d.h"
+#include "xdk_d3d.h"
 
 bool texture_image_load(const char *path, struct texture_image *out_img)
 {

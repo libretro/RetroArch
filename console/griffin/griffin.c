@@ -126,7 +126,7 @@ VIDEO IMAGE
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/image.c"
 #elif defined(_XBOX1)
-#include "../../xbox1/image.c"
+#include "../../xdk/image.c"
 #elif defined(ANDROID)
 #include "../../gfx/image.c"
 #endif
