@@ -52,7 +52,6 @@ static bool set_libretro_core_as_launch;
 
 filebrowser_t *browser;
 filebrowser_t *tmpBrowser;
-unsigned set_shader = 0;
 unsigned currently_selected_controller_menu = 0;
 
 static const struct retro_keybind _rmenu_nav_binds[] = {
@@ -665,32 +664,36 @@ int select_file(void *data, void *state)
          {
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
             case SHADER_CHOICE:
-               switch(set_shader+1)
+               if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_FIRST_SHADER))
                {
-                  case 1:
-                     strlcpy(g_settings.video.cg_shader_path, path, sizeof(g_settings.video.cg_shader_path));
+                  strlcpy(g_settings.video.cg_shader_path, path, sizeof(g_settings.video.cg_shader_path));
 
-                     if (g_settings.video.shader_type != RARCH_SHADER_NONE)
-                     {
-                        driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS0);
-                        if (g_extern.console.rmenu.state.msg_info.enable)
-                           rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
-                     }
-                     else
-                        RARCH_ERR("Shaders are unsupported on this platform.\n");
-                     break;
-                  case 2:
-                     strlcpy(g_settings.video.second_pass_shader, path, sizeof(g_settings.video.second_pass_shader));
+                  if (g_settings.video.shader_type != RARCH_SHADER_NONE)
+                  {
+                     driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS0);
+                     if (g_extern.console.rmenu.state.msg_info.enable)
+                        rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+                  }
+                  else
+                     RARCH_ERR("Shaders are unsupported on this platform.\n");
 
-                     if (g_settings.video.shader_type != RARCH_SHADER_NONE)
-                     {
-                        driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS1);
-                        if (g_extern.console.rmenu.state.msg_info.enable)
-                           rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
-                     }
-                     else
-                        RARCH_ERR("Shaders are unsupported on this platform.\n");
-                     break;
+                  g_extern.lifecycle_menu_state &= ~(1 << MODE_LOAD_FIRST_SHADER);
+               }
+
+               if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_SECOND_SHADER))
+               {
+                  strlcpy(g_settings.video.second_pass_shader, path, sizeof(g_settings.video.second_pass_shader));
+
+                  if (g_settings.video.shader_type != RARCH_SHADER_NONE)
+                  {
+                     driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS1);
+                     if (g_extern.console.rmenu.state.msg_info.enable)
+                        rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+                  }
+                  else
+                     RARCH_ERR("Shaders are unsupported on this platform.\n");
+
+                  g_extern.lifecycle_menu_state &= ~(1 << MODE_LOAD_SECOND_SHADER);
                }
                break;
             case PRESET_CHOICE:
@@ -1075,7 +1078,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             menu_stack_push(SHADER_CHOICE);
             filebrowser_set_root_and_ext(filebrowser, EXT_SHADERS, default_paths.shader_dir);
-            set_shader = 0;
+            g_extern.lifecycle_menu_state |= (1 << MODE_LOAD_FIRST_SHADER);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
@@ -1095,7 +1098,7 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             menu_stack_push(SHADER_CHOICE);
             filebrowser_set_root_and_ext(filebrowser, EXT_SHADERS, default_paths.shader_dir);
-            set_shader = 1;
+            g_extern.lifecycle_menu_state |= (1 << MODE_LOAD_SECOND_SHADER);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
