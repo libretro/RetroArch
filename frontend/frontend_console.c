@@ -240,14 +240,17 @@ int main(int argc, char *argv[])
    char core_exe_path[PATH_MAX];
    char path_prefix[PATH_MAX];
    const char *extension = default_paths.executable_extension;
-#if defined(_XBOX1)
-   snprintf(path_prefix, sizeof(path_prefix), "D:\\");
+   char slash;
+#if defined(_WIN32)
+   slash = '\\';
 #else
-   snprintf(path_prefix, sizeof(path_prefix), "%s/", default_paths.core_dir);
+   slash = '/';
 #endif
+
+   snprintf(path_prefix, sizeof(path_prefix), "%s%c", default_paths.core_dir, slash);
    snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
 
-
+   RARCH_LOG("core_exe_path: %s\n", core_exe_path);
    if (path_file_exists(core_exe_path))
    {
       if (install_libretro_core(core_exe_path, path_prefix, path_prefix, 

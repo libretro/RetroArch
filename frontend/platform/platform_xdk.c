@@ -333,7 +333,7 @@ static void get_environment_settings(int argc, char *argv[])
 #ifdef HAVE_HDD_CACHE_PARTITION
    strlcpy(default_paths.cache_dir, "cache:\\", sizeof(default_paths.cache_dir));
 #endif
-   strlcpy(default_paths.core_dir, "game:\\", sizeof(default_paths.core_dir));
+   strlcpy(default_paths.core_dir, "game:", sizeof(default_paths.core_dir));
    strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.screenshots_dir, "game:", sizeof(default_paths.screenshots_dir));
 #ifdef IS_SALAMANDER
