@@ -52,7 +52,7 @@
 			<Tool
 				Name="XboxDeploymentTool"
 				RemotePath="xe:\$(SolutionName)\CORE.xbe"
-				AdditionalFiles="..\..\xbox1\Media;roms;system;screenshots"
+				AdditionalFiles="..\..\media\xbox1;roms;system;screenshots"
 				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
@@ -106,7 +106,7 @@
 			<Tool
 				Name="XboxDeploymentTool"
 				RemotePath="xe:\$(SolutionName)\CORE.xbe"
-				AdditionalFiles="..\..\xbox1\Media;roms;system;screenshots"
+				AdditionalFiles="..\..\media\xbox1;roms;system;screenshots"
 				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
@@ -162,7 +162,7 @@
 			<Tool
 				Name="XboxDeploymentTool"
 				RemotePath="xe:\$(SolutionName)\CORE.xbe"
-				AdditionalFiles="..\..\xbox1\Media;roms;system;screenshots"
+				AdditionalFiles="..\..\media\xbox1;roms;system;screenshots"
 				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
@@ -222,7 +222,7 @@
 			<Tool
 				Name="XboxDeploymentTool"
 				RemotePath="xe:\$(SolutionName)\CORE.xbe"
-				AdditionalFiles="..\..\xbox1\Media;roms;system;screenshots"
+				AdditionalFiles="..\..\media\xbox1;roms;system;screenshots"
 				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
@@ -275,7 +275,7 @@
 			<Tool
 				Name="XboxDeploymentTool"
 				RemotePath="xe:\$(SolutionName)\CORE.xbe"
-				AdditionalFiles="..\..\xbox1\Media;roms;system;screenshots"
+				AdditionalFiles="..\..\media\xbox1;roms;system;screenshots"
 				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
