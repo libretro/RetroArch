@@ -215,7 +215,7 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
 #define IXAudio2SourceVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
 #define IXAudio2MasteringVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
 
-static inline HRESULT XAudio2Create(IXAudio2 **ppXAudio2)
+static inline HRESULT XAudio2Create(IXAudio2 **ppXAudio2, int, int)
 {
    IXAudio2 *pXAudio2;
 

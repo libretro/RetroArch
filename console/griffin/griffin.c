@@ -298,12 +298,7 @@ AUDIO
 
 #ifdef HAVE_XAUDIO
 #include "../../audio/xaudio.c"
-
-#ifdef _XBOX
-#include "../../audio/xaudio-c/xaudio-xdk360.cpp"
-#else
 #include "../../audio/xaudio-c/xaudio-c.c"
-#endif
 #endif
 
 #ifdef HAVE_DSOUND

@@ -236,18 +236,14 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
 };
 
 // C++ hooks.
-#define IXAudio2_Initialize(This,Flags,XAudio2Processor) ((This)->lpVtbl->Initialize(This,Flags,XAudio2Processor))
-#define IXAudio2_Release(This) ((This)->lpVtbl->Release(This))
-#define IXAudio2_CreateSourceVoice(This,ppSourceVoice,pSourceFormat,Flags,MaxFrequencyRatio,pCallback,pSendList,pEffectChain) ((This)->lpVtbl->CreateSourceVoice(This,ppSourceVoice,pSourceFormat,Flags,MaxFrequencyRatio,pCallback,pSendList,pEffectChain))
-#define IXAudio2_CreateMasteringVoice(This,ppMasteringVoice,InputChannels,InputSampleRate,Flags,DeviceIndex,pEffectChain) ((This)->lpVtbl->CreateMasteringVoice(This,ppMasteringVoice,InputChannels,InputSampleRate,Flags,DeviceIndex,pEffectChain))
-#define IXAudio2_GetDeviceCount(This,puCount) ((This)->lpVtbl->GetDeviceCount(This,puCount))
-#define IXAudio2_GetDeviceDetails(This,Index,pDeviceDetails) ((This)->lpVtbl->GetDeviceDetails(This,Index,pDeviceDetails))
-
-#define IXAudio2SourceVoice_Start(This,Flags,OperationSet) ((This)->lpVtbl->Start(This,Flags,OperationSet))
-#define IXAudio2SourceVoice_Stop(This,Flags,OperationSet) ((This)->lpVtbl->Stop(This,Flags,OperationSet))
-#define IXAudio2SourceVoice_SubmitSourceBuffer(This,pBuffer,pBufferWMA) ((This)->lpVtbl->SubmitSourceBuffer(This,pBuffer,pBufferWMA))
-#define IXAudio2SourceVoice_DestroyVoice IXAudio2Voice_DestroyVoice
-#define IXAudio2MasteringVoice_DestroyVoice IXAudio2Voice_DestroyVoice
+#define IXAudio2SourceVoice_SubmitSourceBuffer(handle, a, b) handle->SubmitSourceBuffer(a, b)
+#define IXAudio2SourceVoice_Stop(handle, a, b) handle->Stop(a, b)
+#define IXAudio2SourceVoice_DestroyVoice(handle) handle->DestroyVoice()
+#define IXAudio2MasteringVoice_DestroyVoice(handle) handle->DestroyVoice()
+#define IXAudio2_Release(handle) handle->Release()
+#define IXAudio2_CreateSourceVoice(handle, a, b, c, d, e, f, g) handle->CreateSourceVoice(a, b, c, d, e, f, g)
+#define IXAudio2_CreateMasteringVoice(handle, a, b, c, d, e, f) handle->CreateMasteringVoice(a, b, c, d, e, f)
+#define IXAudio2SourceVoice_Start(handle, a, b) handle->Start(a, b)
 
 STDAPI XAudio2Create(__deref_out IXAudio2** ppXAudio2, UINT32 Flags X2DEFAULT(0),
 		XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR));
