@@ -113,35 +113,12 @@ void xaudio2_enumerate_devices(xaudio2_t *xa)
 #endif
 }
 
-static void xaudio2_set_wavefmt(WAVEFORMATEX *wfx, bool use_float,
-		unsigned channels, unsigned samplerate)
-{
-	if (use_float)
-	{
-		wfx->wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
-		wfx->nBlockAlign = channels * sizeof(float);
-		wfx->wBitsPerSample = sizeof(float) * 8;
-	}
-	else
-	{
-		wfx->wFormatTag = WAVE_FORMAT_PCM;
-		wfx->nBlockAlign = channels * sizeof(int16_t);
-		wfx->wBitsPerSample = sizeof(int16_t) * 8;
-	}
-	wfx->nChannels = channels;
-	wfx->nSamplesPerSec = samplerate;
-
-	wfx->nAvgBytesPerSec = wfx->nSamplesPerSec * wfx->nBlockAlign;
-	wfx->cbSize = 0;
-}
 
 xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
 		size_t size, unsigned device)
 {
-	bool float_supported = true;
 #ifdef _XBOX
 	xaudio2_t *handle = new xaudio2;
-	float_supported = false;
 #else
 	xaudio2_t *handle = (xaudio2_t*)calloc(1, sizeof(*handle));
 #endif
@@ -161,7 +138,14 @@ xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
 					&handle->pMasterVoice, channels, samplerate, 0, device, NULL)))
 		goto error;
 
-	xaudio2_set_wavefmt(&wfx, float_supported, channels, samplerate);
+	wfx.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
+	wfx.nBlockAlign = channels * sizeof(float);
+	wfx.wBitsPerSample = sizeof(float) * 8;
+	wfx.nChannels = channels;
+	wfx.nSamplesPerSec = samplerate;
+
+	wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
+	wfx.cbSize = 0;
 
 	if (FAILED(IXAudio2_CreateSourceVoice(handle->pXAudio2,
 					&handle->pSourceVoice, &wfx,

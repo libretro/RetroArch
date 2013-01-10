@@ -98,11 +98,7 @@ static bool xa_start(void *data)
 static bool xa_use_float(void *data)
 {
    (void)data;
-#ifdef _XBOX
-   return false;
-#else
    return true;
-#endif
 }
 
 static void xa_free(void *data)
