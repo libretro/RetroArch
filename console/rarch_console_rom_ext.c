@@ -182,13 +182,19 @@ int rarch_extract_zipfile(const char *zip_path, char *first_file, size_t first_f
             const char *file_ext = path_get_extension(write_filename);
 
             if (g_extern.system.valid_extensions)
+            {
+               RARCH_LOG("valid extensions: %s.\n", g_extern.system.valid_extensions);
                ext_list = string_split(g_extern.system.valid_extensions, "|");
+            }
 
             if (ext_list && string_list_find_elem(ext_list, file_ext))
                found_first_file = true; 
 
             if(found_first_file)
+            {
                snprintf(first_file, first_file_size, write_filename);
+               RARCH_LOG("first found ZIP file is: %s.\n", write_filename);
+            }
          }
       }
 #endif
@@ -224,8 +230,17 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode)
 
       if(g_extern.file_state.zip_extract_mode == ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE)
       {
-         snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), first_file);
-         goto do_init;
+         if (first_file[0] != 0)
+         {
+            RARCH_LOG("Found compatible game, loading it...\n");
+            snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), first_file);
+            goto do_init;
+         }
+         else
+         {
+            msg_queue_push(g_extern.msg_queue, "Could not find compatible game, not loading first file.\n", 1, 100);
+            return;
+         }
       }
       else
          return;
