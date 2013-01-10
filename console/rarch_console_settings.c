@@ -52,7 +52,7 @@ void rarch_settings_change(unsigned setting)
          break;
       case S_FRAME_ADVANCE:
          g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
-         g_extern.console.rmenu.mode = MODE_EMULATION;
+         g_extern.console.rmenu.mode = (1ULL << MODE_EMULATION);
          break;
       case S_HW_TEXTURE_FILTER:
          g_settings.video.smooth = !g_settings.video.smooth;
@@ -88,20 +88,20 @@ void rarch_settings_change(unsigned setting)
          break;
       case S_QUIT:
          g_extern.console.rmenu.state.ingame_menu.enable = false;
-         g_extern.console.rmenu.mode = MODE_EXIT;
+         g_extern.console.rmenu.mode = (1ULL << MODE_EXIT);
          break;
       case S_QUIT_RARCH:
-         g_extern.console.rmenu.mode = MODE_EXIT;
+         g_extern.console.rmenu.mode = (1ULL << MODE_EXIT);
          break;
       case S_RETURN_TO_GAME:
-         g_extern.console.rmenu.mode = MODE_EMULATION;
+         g_extern.console.rmenu.mode = (1ULL << MODE_EMULATION);
          break;
       case S_RETURN_TO_LAUNCHER:
          g_extern.console.external_launch.enable = true;
-         g_extern.console.rmenu.mode = MODE_EXIT;
+         g_extern.console.rmenu.mode = (1ULL << MODE_EXIT);
          break;
       case S_RETURN_TO_MENU:
-         g_extern.console.rmenu.mode = MODE_MENU;
+         g_extern.console.rmenu.mode = (1ULL << MODE_MENU);
          break;
       case S_ROTATION_DECREMENT:
          if(g_extern.console.screen.orientation > 0)
@@ -112,7 +112,7 @@ void rarch_settings_change(unsigned setting)
             g_extern.console.screen.orientation++;
          break;
       case S_START_RARCH:
-         g_extern.console.rmenu.mode = MODE_INIT;
+         g_extern.console.rmenu.mode = (1ULL << MODE_INIT);
          break;
       case S_REWIND:
          g_settings.rewind_enable = !g_settings.rewind_enable;

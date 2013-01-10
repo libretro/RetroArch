@@ -156,7 +156,7 @@ void menu_init(void)
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
          NULL /* _binary_console_font_bmp_start */, bitmap_bin, folder_cb, NULL);
 
-   g_extern.console.rmenu.mode = MODE_MENU;
+   g_extern.console.rmenu.mode = (1ULL << MODE_MENU);
    rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 }
 
@@ -235,24 +235,26 @@ bool rmenu_iterate(void)
 
    old_input_state = input_state;
 
+   if (g_extern.console.rmenu.mode & (1ULL << MODE_LOAD_GAME))
+   {
+      if(g_extern.console.rmenu.state.msg_info.enable)
+         rarch_settings_msg(S_MSG_LOADING_ROM, 100);
+
+      if (g_extern.fullpath)
+         g_extern.console.rmenu.mode = (1ULL << MODE_INIT);
+   }
+
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
       bool rmenu_enable = ((trigger_state & (1ULL << GX_DEVICE_NAV_MENU)) && g_extern.main_is_init);
       bool quit_key_pressed = (trigger_state & (1ULL << GX_DEVICE_NAV_QUIT));
 
-      switch(g_extern.console.rmenu.mode)
-      {
-         case MODE_EXIT:
-         case MODE_INIT:
-         case MODE_EMULATION:
-            break;
-         default:
-            g_extern.console.rmenu.mode = quit_key_pressed ? MODE_EXIT : rmenu_enable ? MODE_EMULATION : MODE_MENU;
-            break;
-      }
+      if (g_extern.console.rmenu.mode & (1ULL << MODE_MENU))
+            g_extern.console.rmenu.mode = quit_key_pressed ? (1ULL << MODE_EXIT) : rmenu_enable ? (1ULL << MODE_EMULATION) : (1ULL << MODE_MENU);
    }
 
-   if (g_extern.console.rmenu.mode != MODE_MENU)
+   if(!(g_extern.console.rmenu.mode & (1ULL <<  MODE_MENU))
+            && !(g_extern.console.rmenu.mode & (1ULL << MODE_LOAD_GAME)))
       goto deinit;
 
    return true;

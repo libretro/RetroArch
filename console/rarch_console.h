@@ -68,10 +68,11 @@ enum {
 
 enum
 {
-   MODE_EMULATION = 0,
-   MODE_INIT,
-   MODE_MENU,
-   MODE_EXIT
+   MODE_EMULATION = 1 << 0,
+   MODE_LOAD_GAME = 1 << 1,
+   MODE_INIT      = 1 << 2,
+   MODE_MENU      = 1 << 3,
+   MODE_EXIT      = 1 << 4,
 };
 
 enum

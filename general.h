@@ -318,6 +318,7 @@ struct global
       unsigned performance_level;
       enum retro_pixel_format pix_fmt;
 
+      bool block_extract;
       bool force_nonblock;
 
       const char *input_desc_btn[MAX_PLAYERS][RARCH_FIRST_CUSTOM_BIND];

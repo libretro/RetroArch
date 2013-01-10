@@ -1799,7 +1799,7 @@ int select_rom(void *data, void *state)
             rarch_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
       }
       else
-         rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_extern.file_state.zip_extract_mode, S_DELAY_45);
+         rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_extern.file_state.zip_extract_mode);
    }
    else if (input & (1ULL << RMENU_DEVICE_NAV_L1))
    {
@@ -2340,20 +2340,21 @@ void rmenu_input_process(void *data, void *state)
    (void)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
 
+   if (g_extern.console.rmenu.mode & (1ULL << MODE_LOAD_GAME))
+   {
+      if(g_extern.console.rmenu.state.msg_info.enable)
+         rarch_settings_msg(S_MSG_LOADING_ROM, 100);
+
+      g_extern.console.rmenu.mode = (1ULL << MODE_INIT);
+   }
+
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
       bool rmenu_enable = (((rstate->old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (rstate->old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.main_is_init));
 
-      switch(g_extern.console.rmenu.mode)
-      {
-         case MODE_EXIT:
-         case MODE_INIT:
-         case MODE_EMULATION:
-            break;
-         default:
-            g_extern.console.rmenu.mode = rmenu_enable ? MODE_EMULATION : MODE_MENU;
-            break;
-      }
+      if (g_extern.console.rmenu.mode & (1ULL << MODE_MENU))
+         if (rmenu_enable)
+            g_extern.console.rmenu.mode = (1ULL << MODE_EMULATION);
    }
 }
 
@@ -2467,9 +2468,6 @@ bool rmenu_iterate(void)
    if(current_menu.input_process)
       current_menu.input_process(&current_menu, &rmenu_state);
 
-   if(g_extern.console.rmenu.mode != MODE_MENU || repeat == 0)
-      goto deinit;
-
    msg = msg_queue_pull(g_extern.msg_queue);
 
    if (msg && g_extern.console.rmenu.state.msg_info.enable)
@@ -2484,11 +2482,16 @@ bool rmenu_iterate(void)
    frame_count = 0;
    device_ptr->ctx_driver->check_window(&quit, &resize, &width, &height, frame_count);
 
-   if (quit)
-      g_extern.console.rmenu.mode = MODE_EXIT;
-
    if (g_extern.draw_menu)
       device_ptr->ctx_driver->set_blend(false);
+
+   if (quit)
+      g_extern.console.rmenu.mode = (1ULL << MODE_EXIT);
+
+   if((!(g_extern.console.rmenu.mode & (1ULL <<  MODE_MENU))
+         && !(g_extern.console.rmenu.mode & (1ULL << MODE_LOAD_GAME))) ||
+            repeat == 0)
+      goto deinit;
 
    return true;
 

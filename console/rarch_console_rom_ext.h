@@ -26,6 +26,6 @@ enum
 };
 #endif
 
-void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, unsigned delay);
+void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode);
 
 #endif

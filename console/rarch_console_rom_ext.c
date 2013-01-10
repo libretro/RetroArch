@@ -209,44 +209,31 @@ int rarch_extract_zipfile(const char *zip_path, char *first_file, size_t first_f
 
 #endif
 
-void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode, unsigned delay)
+void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode)
 {
-   const char *game_to_load;
-   char first_file_inzip[PATH_MAX];
-   struct retro_system_info info;
-   bool extract_zip_cond = false;
-   bool extract_zip_and_load_game_cond = false;
-   bool load_game = !extract_zip_cond;
-
-   retro_get_system_info(&info);
-
 #ifdef HAVE_ZLIB
-   extract_zip_cond = (strstr(path, ".zip") || strstr(path, ".ZIP"))
-      && !info.block_extract;
-
-   if(extract_zip_cond)
+   if ((strstr(path, ".zip") || strstr(path, ".ZIP"))
+         && !g_extern.system.block_extract)
    {
-      rarch_extract_zipfile(path, first_file_inzip, sizeof(first_file_inzip), extract_zip_mode);
+      char first_file[PATH_MAX];
+      first_file[0] = '\0';
+
+      rarch_extract_zipfile(path, first_file, sizeof(first_file), extract_zip_mode);
       if(g_extern.console.rmenu.state.msg_info.enable)
          rarch_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
+
+      if(g_extern.file_state.zip_extract_mode == ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE)
+      {
+         snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), first_file);
+         goto do_init;
+      }
+      else
+         return;
    }
-
-   extract_zip_and_load_game_cond = (extract_zip_cond && 
-         g_extern.file_state.zip_extract_mode == ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE);
-   load_game = (extract_zip_and_load_game_cond) || (!extract_zip_cond);
-
-   if(extract_zip_and_load_game_cond)
-      game_to_load = first_file_inzip;
    else
 #endif
-      game_to_load = path;
+      snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), path);
 
-   if(load_game)
-   {
-      snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), game_to_load);
-      rarch_settings_change(S_START_RARCH);
-
-      if(g_extern.console.rmenu.state.msg_info.enable)
-         rarch_settings_msg(S_MSG_LOADING_ROM, delay);
-   }
+do_init:
+   g_extern.console.rmenu.mode |= (1ULL << MODE_LOAD_GAME);
 }

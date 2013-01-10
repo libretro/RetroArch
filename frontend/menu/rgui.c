@@ -361,7 +361,9 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
 
 static void render_text(rgui_handle_t *rgui)
 {
-   if (rgui->need_refresh && g_extern.console.rmenu.mode == MODE_MENU && !rgui->msg_force)
+   if (rgui->need_refresh && 
+         (g_extern.console.rmenu.mode & (1ULL << MODE_MENU))
+         && !rgui->msg_force)
       return;
 
    size_t begin = rgui->directory_ptr >= TERM_HEIGHT / 2 ?
@@ -1193,7 +1195,7 @@ void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             else
             {
                snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s", dir, path);
-               rarch_console_load_game_wrap(rgui->path_buf, g_extern.file_state.zip_extract_mode, S_DELAY_1);
+               rarch_console_load_game_wrap(rgui->path_buf, g_extern.file_state.zip_extract_mode);
                rgui->need_refresh = true; // in case of zip extract
                rgui->msg_force = true;
             }
@@ -1231,7 +1233,7 @@ void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    // refresh values in case the stack changed
    rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
-   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE) && g_extern.console.rmenu.mode == MODE_MENU)
+   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE) && (g_extern.console.rmenu.mode & (1ULL << MODE_MENU)))
    {
       rgui->need_refresh = false;
       rgui_list_clear(rgui->folder_buf);

@@ -179,7 +179,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       if(path_file_exists(browser->current_dir.list->elems[index].data))
       {
          snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), str_buffer);
-         rarch_console_load_game_wrap(path, g_extern.file_state.zip_extract_mode, S_DELAY_45);
+         rarch_console_load_game_wrap(path, g_extern.file_state.zip_extract_mode);
       }
       else if(browser->current_dir.list->elems[index].attr.b)
       {
@@ -1116,7 +1116,7 @@ void menu_init (void)
    browser = (filebrowser_t*)filebrowser_init(default_paths.filebrowser_startup_dir, g_extern.system.valid_extensions);
    tmp_browser = (filebrowser_t*)filebrowser_init(default_paths.filebrowser_startup_dir, "");
 
-   g_extern.console.rmenu.mode = MODE_MENU;
+   g_extern.console.rmenu.mode = (1ULL << MODE_MENU);
 }
 
 void menu_free (void)
@@ -1182,24 +1182,25 @@ bool rmenu_iterate(void)
    XINPUT_STATE state;
    XInputGetState(0, &state);
 
+   if (g_extern.console.rmenu.mode & (1ULL << MODE_LOAD_GAME))
+   {
+      if(g_extern.console.rmenu.state.msg_info.enable)
+         rarch_settings_msg(S_MSG_LOADING_ROM, 100);
+
+      if (g_extern.fullpath)
+         g_extern.console.rmenu.mode = (1ULL << MODE_INIT);
+   }
+
 
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
       bool rmenu_enable = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
             && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.main_is_init));
 
-      switch(g_extern.console.rmenu.mode)
-      {
-         case MODE_EXIT:
-         case MODE_INIT:
-         case MODE_EMULATION:
-            break;
-         case MODE_MENU:
-         default:
-            if (rmenu_enable)
-               g_extern.console.rmenu.mode = MODE_EMULATION;
-            break;
-      }
+
+      if (g_extern.console.rmenu.mode & (1ULL << MODE_MENU))
+         if (rmenu_enable)
+            g_extern.console.rmenu.mode = (1ULL << MODE_EMULATION);
    }
 
    rarch_render_cached_frame();
@@ -1219,15 +1220,16 @@ bool rmenu_iterate(void)
          break;
    }
 
-   if(g_extern.console.rmenu.mode != MODE_MENU)
-      goto deinit;
-
    msg = msg_queue_pull(g_extern.msg_queue);
 
    if (msg)
       device_ptr->font_ctx->render_msg(device_ptr, msg);
 
    device_ptr->ctx_driver->swap_buffers();
+
+   if(!(g_extern.console.rmenu.mode & (1ULL <<  MODE_MENU))
+         && !(g_extern.console.rmenu.mode & (1ULL << MODE_LOAD_GAME)))
+      goto deinit;
 
    return true;
 

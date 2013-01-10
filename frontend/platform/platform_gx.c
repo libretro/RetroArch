@@ -375,14 +375,14 @@ static void system_process_args(int argc, char *argv[])
       g_extern.console.external_launch.support = EXTERN_LAUNCHER_CHANNEL;
       snprintf(rom, sizeof(rom), "%s%s", argv[1], argv[2]);
       g_extern.file_state.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE;
-      rarch_console_load_game_wrap(rom, g_extern.file_state.zip_extract_mode, S_DELAY_1);
+      rarch_console_load_game_wrap(rom, g_extern.file_state.zip_extract_mode);
 
       rgui_iterate(rgui, RGUI_ACTION_MESSAGE);
       g_extern.draw_menu = true;
       rarch_render_cached_frame();
       g_extern.draw_menu = false;
 
-      g_extern.console.rmenu.mode = MODE_INIT;
+      g_extern.console.rmenu.mode = (1ULL << MODE_INIT);
    }
    else
       g_extern.console.external_launch.support = EXTERN_LAUNCHER_SALAMANDER;

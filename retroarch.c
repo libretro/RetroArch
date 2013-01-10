@@ -2606,6 +2606,7 @@ void rarch_init_system_info(void)
          info->library_name, info->library_version);
    strlcpy(g_extern.system.valid_extensions, info->valid_extensions ? info->valid_extensions : DEFAULT_EXT,
          sizeof(g_extern.system.valid_extensions));
+   g_extern.system.block_extract = info->block_extract;
 }
 
 static void init_system_av_info(void)
@@ -2781,7 +2782,7 @@ bool rarch_main_iterate(void)
    if (g_extern.system.shutdown)
    {
 #ifdef HAVE_RMENU
-      g_extern.console.rmenu.mode = MODE_EXIT;
+      g_extern.console.rmenu.mode = (1ULL << MODE_EXIT);
 #endif
       return false;
    }
@@ -2796,7 +2797,7 @@ bool rarch_main_iterate(void)
 
       if (rmenu_enable || (g_extern.console.rmenu.state.ingame_menu.enable && !rmenu_enable))
       {
-         g_extern.console.rmenu.mode = MODE_MENU;
+         g_extern.console.rmenu.mode = (1ULL << MODE_MENU);
          g_extern.delay_timer[0] = g_extern.frame_count + 30;
       }
 #endif
@@ -2848,7 +2849,7 @@ bool rarch_main_iterate(void)
    {
       g_extern.lifecycle_state &= ~(1ULL << RARCH_FRAMEADVANCE);
       g_extern.console.rmenu.state.ingame_menu.enable = true;
-      g_extern.console.rmenu.mode = MODE_MENU;
+      g_extern.console.rmenu.mode = (1ULL << MODE_MENU);
       return false;
    }
 #endif
