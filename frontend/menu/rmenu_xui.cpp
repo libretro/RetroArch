@@ -38,7 +38,6 @@ CRetroArch app;
 HXUIOBJ hCur;
 filebrowser_t *browser;
 filebrowser_t *tmp_browser;
-uint32_t set_shader = 0;
 
 wchar_t strw_buffer[PATH_MAX];
 char str_buffer[PATH_MAX];
@@ -437,7 +436,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
                rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
             break;
          case SETTING_SHADER:
-            set_shader = 1;
+            g_extern.lifecycle_menu_state |= (1 << MODE_LOAD_FIRST_SHADER);
             hr = XuiSceneCreate(g_extern.console.rmenu.state.rmenu_hd.enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
 
             if (hr < 0)
@@ -451,7 +450,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             NavigateForward(app.hShaderBrowser);
             break;
          case SETTING_SHADER_2:
-            set_shader = 2;
+            g_extern.lifecycle_menu_state |= (1 << MODE_LOAD_SECOND_SHADER);
             hr = XuiSceneCreate(g_extern.console.rmenu.state.rmenu_hd.enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
             if (hr < 0)
                RARCH_ERR("Failed to load scene.\n");
@@ -871,9 +870,8 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
       {
          convert_wchar_to_char(str_buffer, (const wchar_t *)m_shaderlist.GetText(index), sizeof(str_buffer));
 
-         switch(set_shader)
+         if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_FIRST_SHADER))
          {
-            case 1:
                snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
                if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                {
@@ -883,8 +881,11 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                }
                else
                   RARCH_ERR("Shaders are unsupported on this platform.\n");
-               break;
-            case 2:
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_LOAD_FIRST_SHADER);
+         }
+
+         if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_SECOND_SHADER))
+         {
                snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
                if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                {
@@ -894,9 +895,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                }
                else
                   RARCH_ERR("Shaders are unsupported on this platform.\n");
-               break;
-            default:
-               break;
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_LOAD_SECOND_SHADER);
          }
       }
       else if(tmp_browser->current_dir.list->elems[index].attr.b)

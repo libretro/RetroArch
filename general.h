@@ -564,7 +564,7 @@ struct global
 
    bool draw_menu;
    uint64_t lifecycle_state;
-   unsigned lifecycle_menu_state;
+   uint32_t lifecycle_menu_state;
 
    struct
    {
