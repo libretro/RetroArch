@@ -1935,13 +1935,18 @@ int ingame_menu_resize(void *data, void *state)
    if (input & (1ULL << RMENU_DEVICE_NAV_A))
    {
       menu_stack_pop();
-      g_extern.draw_menu = true;
+      g_extern.lifecycle_menu_state |= (1 << MODE_MENU_DRAW);
    }
 
    if((input & (1ULL << RMENU_DEVICE_NAV_Y)))
-      g_extern.draw_menu = !g_extern.draw_menu;
+   {
+      if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
+         g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
+      else
+         g_extern.lifecycle_menu_state |= (1 << MODE_MENU_DRAW);
+   }
 
-   if(g_extern.draw_menu)
+   if(g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
    {
       char viewport_x[32], viewport_y[32], viewport_w[32], viewport_h[32];
       char msg[256];
@@ -2024,14 +2029,14 @@ int ingame_menu_screenshot(void *data, void *state)
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    filebrowser_t *filebrowser = NULL;
 
-   g_extern.draw_menu = false;
+   g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
 
    if(g_extern.console.rmenu.state.ingame_menu.enable)
    {
       if(input & (1ULL << RMENU_DEVICE_NAV_A))
       {
          menu_stack_pop();
-         g_extern.draw_menu = true;
+         g_extern.lifecycle_menu_state |= (1 << MODE_MENU_DRAW);
       }
 
       if(input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -2424,10 +2429,8 @@ bool rmenu_iterate(void)
          menu_stack_push(INGAME_MENU);
 
       menu_stack_force_refresh();
-      g_extern.draw_menu = true;
-
+      g_extern.lifecycle_menu_state |= (1 << MODE_MENU_DRAW);
       device_ptr->ctx_driver->rmenu_init();
-
       g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_PREINIT);
    }
 
@@ -2438,7 +2441,7 @@ bool rmenu_iterate(void)
    rmenu_default_positions_t default_pos;
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
 
-   if (g_extern.draw_menu)
+   if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
       device_ptr->ctx_driver->set_blend(true);
 
    rarch_render_cached_frame();
@@ -2484,7 +2487,7 @@ bool rmenu_iterate(void)
    frame_count = 0;
    device_ptr->ctx_driver->check_window(&quit, &resize, &width, &height, frame_count);
 
-   if (g_extern.draw_menu)
+   if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
       device_ptr->ctx_driver->set_blend(false);
 
    if (quit)
@@ -2506,7 +2509,7 @@ deinit:
    if(g_extern.console.rmenu.state.ingame_menu.enable)
       menu_stack_pop();
 
-   g_extern.draw_menu = false;
+   g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
    g_extern.console.rmenu.state.ingame_menu.enable = false;
 
    device_ptr->ctx_driver->rmenu_free();

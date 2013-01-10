@@ -378,10 +378,9 @@ static void system_process_args(int argc, char *argv[])
       rarch_console_load_game_wrap(rom, g_extern.file_state.zip_extract_mode);
 
       rgui_iterate(rgui, RGUI_ACTION_MESSAGE);
-      g_extern.draw_menu = true;
+      g_extern.lifecycle_menu_state |= (1 << MODE_MENU_DRAW);
       rarch_render_cached_frame();
-      g_extern.draw_menu = false;
-
+      g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
       g_extern.lifecycle_menu_state = (1 << MODE_INIT);
    }
    else

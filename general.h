@@ -562,7 +562,6 @@ struct global
 #endif
    } console;
 
-   bool draw_menu;
    uint64_t lifecycle_state;
    uint32_t lifecycle_menu_state;
 

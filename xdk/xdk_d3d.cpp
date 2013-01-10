@@ -895,7 +895,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (msg)
       d3d->font_ctx->render_msg_place(d3d, msg_width, msg_height, 0.0f, 0, msg);
 
-   if (g_extern.draw_menu)
+   if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
    {
 #ifdef _XBOX360
       app.Render();

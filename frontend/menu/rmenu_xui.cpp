@@ -1171,8 +1171,7 @@ bool rmenu_iterate(void)
    if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_PREINIT))
    {
       g_extern.console.rmenu.input_loop = INPUT_LOOP_MENU;
-      g_extern.draw_menu = true;
-
+      g_extern.lifecycle_menu_state |= (1 << MODE_MENU_DRAW);
       g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_PREINIT);
    }
 
@@ -1239,7 +1238,7 @@ deinit:
       g_extern.delay_timer[0] = g_extern.frame_count + 30;
 
    g_extern.console.rmenu.state.ingame_menu.enable = false;
-   g_extern.draw_menu = false;
+   g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
 
    return false;
 }
