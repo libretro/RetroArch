@@ -309,6 +309,8 @@ void config_set_defaults(void)
 #ifdef HAVE_ZLIB
    g_extern.file_state.zip_extract_mode = 0;
 #endif
+
+   g_extern.block_config_read = true;
 #endif
 
    rarch_init_msg_queue();
@@ -318,8 +320,11 @@ static void parse_config_file(void);
 
 void config_load(void)
 {
-   config_set_defaults();
-   parse_config_file();
+   if (!g_extern.block_config_read)
+   {
+      config_set_defaults();
+      parse_config_file();
+   }
 }
 
 static config_file_t *open_default_config_file(void)

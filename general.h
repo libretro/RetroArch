@@ -469,6 +469,8 @@ struct global
 
    cheat_manager_t *cheat;
 
+   bool block_config_read;
+
    // Settings and/or global state that is specific to a console-style implementation.
    struct
    {
