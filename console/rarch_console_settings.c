@@ -86,13 +86,6 @@ void rarch_settings_change(unsigned setting)
             g_extern.console.screen.resolutions.current.id = g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
          }
          break;
-      case S_QUIT:
-         g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_INGAME);
-         g_extern.lifecycle_menu_state = (1 << MODE_EXIT);
-         break;
-      case S_QUIT_RARCH:
-         g_extern.lifecycle_menu_state = (1 << MODE_EXIT);
-         break;
       case S_RETURN_TO_GAME:
          g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
          break;

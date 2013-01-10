@@ -1415,7 +1415,8 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_QUIT_RARCH:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            rarch_settings_change(S_QUIT_RARCH);
+            g_extern.lifecycle_menu_state &= ~((1 << MODE_MENU) | (1 << MODE_MENU_INGAME) | (1 << MODE_EMULATION));
+            g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
          }
          break;
       case SETTING_EMU_AUDIO_MUTE:
@@ -2202,7 +2203,10 @@ int ingame_menu(void *data, void *state)
 #endif
       case MENU_ITEM_QUIT_RARCH:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
-            rarch_settings_change(S_QUIT_RARCH);
+         {
+            g_extern.lifecycle_menu_state &= ~((1 << MODE_MENU) | (1 << MODE_MENU_INGAME) | (1 << MODE_EMULATION));
+            g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+         }
 
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to quit RetroArch.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
          break;

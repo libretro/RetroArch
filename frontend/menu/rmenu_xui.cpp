@@ -836,7 +836,8 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
                rarch_settings_change(S_RETURN_TO_GAME);
             break;
          case MENU_ITEM_QUIT_RARCH:
-            rarch_settings_change(S_QUIT_RARCH);
+            g_extern.lifecycle_menu_state &= ~((1 << MODE_MENU) | (1 << MODE_MENU_INGAME) | (1 << MODE_EMULATION));
+            g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
             break;
       }
    }
@@ -1045,7 +1046,10 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       NavigateForward(app.hRetroArchSettings);
    }
    else if ( hObjPressed == m_quit )
-      rarch_settings_change(S_QUIT_RARCH);
+   {
+      g_extern.lifecycle_menu_state &= ~((1 << MODE_MENU) | (1 << MODE_MENU_INGAME) | (1 << MODE_EMULATION));
+      g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+   }
 
    bHandled = TRUE;
    return 0;

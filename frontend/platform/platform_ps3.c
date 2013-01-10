@@ -156,7 +156,8 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
    {
       case CELL_SYSUTIL_REQUEST_EXITGAME:
          gl->quitting = true;
-         rarch_settings_change(S_QUIT);
+         g_extern.lifecycle_menu_state &= ~((1 << MODE_MENU) | (1 << MODE_MENU_INGAME) | (1 << MODE_EMULATION));
+         g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
          break;
 #ifdef HAVE_OSKUTIL
       case CELL_SYSUTIL_OSKDIALOG_FINISHED:

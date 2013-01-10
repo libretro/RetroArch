@@ -238,7 +238,8 @@ rgui_handle_t *rgui_init(const char *base_path,
    else
    {
       RARCH_ERR("no font bmp or bin, abort");
-      rarch_settings_change(S_QUIT);
+      g_extern.lifecycle_menu_state &= ~((1 << MODE_MENU) | (1 << MODE_MENU_INGAME) | (1 << MODE_EMULATION));
+      g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
    }
 
    return rgui;
@@ -764,7 +765,10 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
          break;
       case RGUI_SETTINGS_QUIT_EMULATOR:
          if (action == RGUI_ACTION_OK)
-            rarch_settings_change(S_QUIT);
+         {
+            g_extern.lifecycle_menu_state &= ~((1 << MODE_MENU) | (1 << MODE_MENU_INGAME) | (1 << MODE_EMULATION));
+            g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+         }
          break;
       // controllers
       case RGUI_SETTINGS_BIND_DEVICE:
