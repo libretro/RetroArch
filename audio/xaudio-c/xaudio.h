@@ -71,14 +71,16 @@ DEFINE_IID_X(IXAudio2, 8bcf1f58, 9fe7, 4583, 8a, c6, e2, ad, c4, 65, c8, bb);
 
 #endif
 
-#define XAUDIO2_COMMIT_NOW              0
-#define XAUDIO2_DEFAULT_CHANNELS        0
-#define XAUDIO2_DEFAULT_SAMPLERATE      0
 #ifdef _XBOX
 #define XAUDIO2_DEFAULT_FREQ_RATIO      2.0f
 #else
 #define XAUDIO2_DEFAULT_FREQ_RATIO      4.0f
 #endif
+
+#define XAUDIO2_COMMIT_NOW              0
+#define XAUDIO2_DEFAULT_CHANNELS        0
+#define XAUDIO2_DEFAULT_SAMPLERATE      0
+
 #define XAUDIO2_DEBUG_ENGINE            0x0001
 #define XAUDIO2_VOICE_NOSRC             0x0004
 
@@ -167,70 +169,6 @@ DECLARE_INTERFACE(IXAudio2VoiceCallback)
    STDMETHOD_(void, OnVoiceError) (THIS_ void *pBufferContext, HRESULT Error) PURE;
 };
 
-#ifdef _XBOX
-
-DECLARE_INTERFACE(IXAudio2Voice)
-{
-#define Declare_IXAudio2Voice_Methods() \
-   STDMETHOD_(void, GetVoiceDetails) (THIS_ XAUDIO2_VOICE_DETAILS* pVoiceDetails) PURE; \
-	STDMETHOD(SetOutputVoices) (THIS_ __in_opt const XAUDIO2_VOICE_SENDS* pSendList) PURE; \
-	\
-	STDMETHOD(SetEffectChain) (THIS_ __in_opt const XAUDIO2_EFFECT_CHAIN* pEffectChain) PURE; \
-	\
-	STDMETHOD(EnableEffect) (THIS_ UINT32 EffectIndex, \
-			UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
-	\
-	STDMETHOD(DisableEffect) (THIS_ UINT32 EffectIndex, \
-			UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
-	\
-	STDMETHOD_(void, GetEffectState) (THIS_ UINT32 EffectIndex, __out BOOL* pEnabled) PURE; \
-	\
-	STDMETHOD(SetEffectParameters) (THIS_ UINT32 EffectIndex, \
-			__in_bcount(ParametersByteSize) const void* pParameters, \
-			UINT32 ParametersByteSize, \
-			UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
-	\
-	STDMETHOD(GetEffectParameters) (THIS_ UINT32 EffectIndex, \
-			__out_bcount(ParametersByteSize) void* pParameters, \
-			UINT32 ParametersByteSize) PURE; \
-	\
-	STDMETHOD(SetFilterParameters) (THIS_ __in const XAUDIO2_FILTER_PARAMETERS* pParameters, \
-			UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
-	\
-	STDMETHOD_(void, GetFilterParameters) (THIS_ __out XAUDIO2_FILTER_PARAMETERS* pParameters) PURE; \
-	\
-	STDMETHOD(SetOutputFilterParameters) (THIS_ __in_opt IXAudio2Voice* pDestinationVoice, \
-			__in const XAUDIO2_FILTER_PARAMETERS* pParameters, \
-			UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
-	\
-	STDMETHOD_(void, GetOutputFilterParameters) (THIS_ __in_opt IXAudio2Voice* pDestinationVoice, \
-			__out XAUDIO2_FILTER_PARAMETERS* pParameters) PURE; \
-	\
-	STDMETHOD(SetVolume) (THIS_ float Volume, \
-			UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
-	\
-	STDMETHOD_(void, GetVolume) (THIS_ __out float* pVolume) PURE; \
-	\
-	STDMETHOD(SetChannelVolumes) (THIS_ UINT32 Channels, __in_ecount(Channels) const float* pVolumes, \
-			UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
-	\
-	STDMETHOD_(void, GetChannelVolumes) (THIS_ UINT32 Channels, __out_ecount(Channels) float* pVolumes) PURE; \
-	\
-   STDMETHOD(SetOutputMatrix) (THIS_ IXAudio2Voice* pDestinationVoice, \
-         UINT32 SourceChannels, UINT32 DestinationChannels, \
-         const float* pLevelMatrix, \
-         UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
-	\
-   STDMETHOD_(void, GetOutputMatrix) (THIS_ IXAudio2Voice* pDestinationVoice, \
-         UINT32 SourceChannels, UINT32 DestinationChannels, \
-         float* pLevelMatrix) PURE; \
-	\
-	STDMETHOD_(void, DestroyVoice) (THIS) PURE
-
-	Declare_IXAudio2Voice_Methods();
-};
-#else
-
 DECLARE_INTERFACE(IXAudio2Voice)
 {
 #define Declare_IXAudio2Voice_Methods() \
@@ -268,8 +206,6 @@ DECLARE_INTERFACE(IXAudio2Voice)
 
    Declare_IXAudio2Voice_Methods();
 };
-
-#endif
 
 DECLARE_INTERFACE_(IXAudio2MasteringVoice, IXAudio2Voice)
 {
@@ -328,22 +264,6 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
          void *pReserved X2DEFAULT(NULL)) PURE;
 };
 
-
-#ifdef _XBOX
-
-#define IXAudio2SourceVoice_SubmitSourceBuffer(handle, a, b) handle->SubmitSourceBuffer(a, b)
-#define IXAudio2SourceVoice_Stop(handle, a, b) handle->Stop(a, b)
-#define IXAudio2SourceVoice_DestroyVoice(handle) handle->DestroyVoice()
-#define IXAudio2MasteringVoice_DestroyVoice(handle) handle->DestroyVoice()
-#define IXAudio2_Release(handle) handle->Release()
-#define IXAudio2_CreateSourceVoice(handle, a, b, c, d, e, f, g) handle->CreateSourceVoice(a, b, c, d, e, f, g)
-#define IXAudio2_CreateMasteringVoice(handle, a, b, c, d, e, f) handle->CreateMasteringVoice(a, b, c, d, e, f)
-#define IXAudio2SourceVoice_Start(handle, a, b) handle->Start(a, b)
-
-STDAPI XAudio2Create(__deref_out IXAudio2** ppXAudio2, UINT32 Flags X2DEFAULT(0),
-		XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR));
-
-#else
 // C hooks.
 #define IXAudio2_Initialize(THIS, ...) (THIS)->lpVtbl->Initialize(THIS, __VA_ARGS__)
 #define IXAudio2_Release(THIS) (THIS)->lpVtbl->Release(THIS)
@@ -358,6 +278,13 @@ STDAPI XAudio2Create(__deref_out IXAudio2** ppXAudio2, UINT32 Flags X2DEFAULT(0)
 #define IXAudio2SourceVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
 #define IXAudio2MasteringVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
 
+
+#ifdef _XBOX
+
+STDAPI XAudio2Create(__deref_out IXAudio2** ppXAudio2, UINT32 Flags X2DEFAULT(0),
+		XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR));
+
+#else
 static inline HRESULT XAudio2Create(IXAudio2 **ppXAudio2, UINT32 flags, XAUDIO2_PROCESSOR proc)
 {
    (void)flags;
