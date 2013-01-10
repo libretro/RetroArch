@@ -189,6 +189,9 @@ DECLARE_INTERFACE(IXAudio2Voice)
    STDMETHOD(SetFilterParameters) (THIS_ const XAUDIO2_FILTER_PARAMETERS* pParameters, \
          UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
    STDMETHOD_(void, GetFilterParameters) (THIS_ XAUDIO2_FILTER_PARAMETERS* pParameters) PURE; \
+   STDMETHOD_(void, SetOutputFilterParameters) (THIS_ IXAudio2Voice *voice, const XAUDIO2_FILTER_PARAMETERS* param, \
+         UINT32 op X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
+   STDMETHOD_(void, GetOutputFilterParameters) (THIS_ IXAudio2Voice *voice, XAUDIO2_FILTER_PARAMETERS* param) PURE; \
    STDMETHOD(SetVolume) (THIS_ float Volume, \
          UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
    STDMETHOD_(void, GetVolume) (THIS_ float* pVolume) PURE; \
