@@ -42,6 +42,8 @@ filebrowser_t *tmp_browser;
 wchar_t strw_buffer[PATH_MAX];
 char str_buffer[PATH_MAX];
 
+static int process_input_ret = 0;
+
 enum
 {
    RMENU_DEVICE_NAV_UP = 0,
@@ -170,6 +172,7 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
 HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 {
    char path[PATH_MAX];
+   process_input_ret = 0;
 
    if(hObjPressed == m_romlist)
    {
@@ -333,6 +336,7 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
    int current_index, i, controlno;
    char buttons[RARCH_FIRST_META_KEY][128];
    m_controlnoslider.GetValue(&controlno);
+   process_input_ret = 0;
 
    if ( hObjPressed == m_controlslist)
    {
@@ -403,6 +407,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
    int current_index;
    HRESULT hr;
+   process_input_ret = 0;
 
    if ( hObjPressed == m_settingslist)
    {
@@ -769,7 +774,8 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
 HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
-   int current_index;
+   int current_index = 0;
+   process_input_ret = 0;
 
    if ( hObjPressed == m_quickmenulist)
    {
@@ -781,14 +787,16 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             if (g_extern.main_is_init)
             {
                rarch_load_state();
-               g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+               g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+               process_input_ret = -1;
             }
             break;
          case MENU_ITEM_SAVE_STATE:
             if (g_extern.main_is_init)
             {
                rarch_save_state();
-               g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+               g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+               process_input_ret = -1;
             }
             break;
          case MENU_ITEM_KEEP_ASPECT_RATIO:
@@ -818,6 +826,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             {
                g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
                rarch_settings_change(S_FRAME_ADVANCE);
+               process_input_ret = -1;
             }
             break;
          case MENU_ITEM_SCREENSHOT_MODE:
@@ -828,16 +837,21 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             if (g_extern.main_is_init)
             {
                rarch_game_reset();
-               g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+               g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+               process_input_ret = -1;
             }
             break;
          case MENU_ITEM_RETURN_TO_GAME:
             if (g_extern.main_is_init)
-               g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+            {
+               g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+               process_input_ret = -1;
+            }
             break;
          case MENU_ITEM_QUIT_RARCH:
-            g_extern.lifecycle_menu_state &= ~((1 << MODE_MENU) | (1 << MODE_MENU_INGAME) | (1 << MODE_EMULATION));
+            g_extern.lifecycle_menu_state &= ~(1 << MODE_EMULATION);
             g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+            process_input_ret = -1;
             break;
       }
    }
@@ -863,6 +877,7 @@ HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandl
 HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
 {
    char path[PATH_MAX];
+   process_input_ret = 0;
 
    if(hObjPressed == m_shaderlist)
    {
@@ -931,6 +946,8 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
 {
    char path[PATH_MAX];
 
+   process_input_ret = 0;
+
    if(hObjPressed == m_romlist)
    {
       int index = m_romlist.GetCurSel();
@@ -939,7 +956,8 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       {
          snprintf(g_extern.console.external_launch.launch_app, sizeof(g_extern.console.external_launch.launch_app), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
          g_extern.console.external_launch.enable = true;
-         g_extern.lifecycle_menu_state = (1 << MODE_EXIT);
+         g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+         process_input_ret = -1;
       }
       else if(tmp_browser->current_dir.list->elems[index].attr.b)
       {
@@ -998,9 +1016,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_quickmenu.xur", NULL, &app.hQuickMenu);
 
       if (hr < 0)
-      {
          RARCH_ERR("Failed to load scene.\n");
-      }
 
       hCur = app.hQuickMenu;
       NavigateForward(app.hQuickMenu);
@@ -1010,9 +1026,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_controls.xur", NULL, &app.hControlsMenu);
 
       if (hr < 0)
-      {
          RARCH_ERR("Failed to load scene.\n");
-      }
 
       hCur = app.hControlsMenu;
 
@@ -1026,9 +1040,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_libretrocore_browser.xur", NULL, &app.hCoreBrowser);
 
       if (hr < 0)
-      {
          RARCH_ERR("Failed to load scene.\n");
-      }
       hCur = app.hCoreBrowser;
 
       if (g_extern.console.rmenu.state.msg_info.enable)
@@ -1036,7 +1048,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
       NavigateForward(app.hCoreBrowser);
    }
-   else if ( hObjPressed == m_settings )
+   else if (hObjPressed == m_settings)
    {
       hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_settings.xur", NULL, &app.hRetroArchSettings);
 
@@ -1046,10 +1058,11 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hCur = app.hRetroArchSettings;
       NavigateForward(app.hRetroArchSettings);
    }
-   else if ( hObjPressed == m_quit )
+   else if (hObjPressed == m_quit)
    {
-      g_extern.lifecycle_menu_state &= ~((1 << MODE_MENU) | (1 << MODE_MENU_INGAME) | (1 << MODE_EMULATION));
+      g_extern.lifecycle_menu_state &= ~(1 << MODE_EMULATION);
       g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+      process_input_ret = -1;
    }
 
    bHandled = TRUE;
@@ -1190,8 +1203,9 @@ bool rmenu_iterate(void)
       if(g_extern.console.rmenu.state.msg_info.enable)
          rarch_settings_msg(S_MSG_LOADING_ROM, 100);
 
-      if (g_extern.fullpath)
-         g_extern.lifecycle_menu_state = (1 << MODE_INIT);
+      g_extern.lifecycle_menu_state |= (1 << MODE_INIT);
+      g_extern.lifecycle_menu_state &= ~(1 << MODE_LOAD_GAME);
+      process_input_ret = -1;
    }
 
 
@@ -1200,10 +1214,12 @@ bool rmenu_iterate(void)
       bool rmenu_enable = ((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) 
             && (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) && (g_extern.main_is_init));
 
-
       if (g_extern.lifecycle_menu_state & (1 << MODE_MENU))
          if (rmenu_enable)
-            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+         {
+            g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+            process_input_ret = -1;
+         }
    }
 
    rarch_render_cached_frame();
@@ -1230,8 +1246,7 @@ bool rmenu_iterate(void)
 
    device_ptr->ctx_driver->swap_buffers();
 
-   if(!(g_extern.lifecycle_menu_state & (1 <<  MODE_MENU))
-         && !(g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME)))
+   if(process_input_ret != 0)
       goto deinit;
 
    return true;
@@ -1244,6 +1259,8 @@ deinit:
 
    g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_INGAME);
    g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
+
+   process_input_ret = 0;
 
    return false;
 }
