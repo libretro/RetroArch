@@ -2956,7 +2956,7 @@ int rarch_main_init_wrap(const struct rarch_main_wrap *args)
 
    int ret = rarch_main_init(argc, argv);
 
-   for (int i = 0; i < ARRAY_SIZE(argv_copy); i++)
+   for (unsigned i = 0; i < ARRAY_SIZE(argv_copy); i++)
       free(argv_copy[i]);
 
    return ret;

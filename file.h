@@ -24,6 +24,10 @@
 #include <sys/types.h>
 #include "general.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Generic file, path and directory handling.
 
 ssize_t read_file(const char *path, void **buf);
@@ -126,5 +130,9 @@ void fill_pathname_join(char *out_path, const char *dir, const char *path, size_
 
 size_t convert_char_to_wchar(wchar_t *out_wchar, const char *in_char, size_t size);
 size_t convert_wchar_to_char(char *out_char, const wchar_t *in_wchar, size_t size);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

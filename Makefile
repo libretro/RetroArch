@@ -397,6 +397,7 @@ clean:
 	rm -f record/*.o
 	rm -f input/*.o
 	rm -f tools/*.o
+	rm -f tools/retrolaunch/*.o
 	rm -f $(TARGET)
 
 .PHONY: all install uninstall clean

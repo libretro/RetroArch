@@ -15,8 +15,8 @@
 #define MAGIC_LEN 16
 
 struct MagicEntry {
-    char* system_name;
-    char* magic;
+    const char* system_name;
+    const char* magic;
 };
 
 static struct MagicEntry MAGIC_NUMBERS[] = {
@@ -121,7 +121,8 @@ static int detect_ps1_game(const char* track_path, int32_t offset,
                           char* game_name, size_t max_len) {
     int rv;
     char buff[4096];
-    char* pattern = "cdrom:";
+    const char* pattern = "cdrom:";
+    const char* pat_c;
     char* c;
     char* id_start;
     int i;
@@ -141,7 +142,8 @@ static int detect_ps1_game(const char* track_path, int32_t offset,
             goto clean;
         }
     }
-    c = pattern;
+    memset(buff, 0, sizeof(buff));
+    pat_c = pattern;
     while (1) {
         rv = read(fd, buff, 4096);
         if (rv < 0) {
@@ -149,20 +151,26 @@ static int detect_ps1_game(const char* track_path, int32_t offset,
             goto clean;
         }
 
-        for(i = 0; i < 4096; i++) {
-            if (*c == buff[i]) {
-                c++;
+        for (i = 0; i < rv; i++) {
+            if (*pat_c == buff[i]) {
+                pat_c++;
             } else {
-                c = pattern;
+                pat_c = pattern;
                 continue;
             }
 
-            if (*c == '\0') {
+            if (*pat_c == '\0') {
                 id_start = &buff[i] + 1;
-                *strchr(id_start, ';') = '\0';
-                c = strrchr(id_start, '\\') + 1;
+                c = strchr(id_start, ';');
+                if (!c) {
+                    LOG_DEBUG("Invalid pattern in buffer.");
+                    rv = -EINVAL;
+                    goto clean;
+                }
+                *c = '\0';
+                c = strrchr(id_start, '\\');
                 if (c != NULL) {
-                    id_start = c;
+                    id_start = c + 1;
                 }
                 id_start[4] = '-';
                 id_start[8] = id_start[9];
@@ -181,7 +189,7 @@ clean:
 }
 
 static int detect_system(const char* track_path, int32_t offset,
-        char** system_name) {
+        const char** system_name) {
     int rv;
     char magic[MAGIC_LEN];
     int fd;
@@ -272,7 +280,7 @@ int detect_cd_game(const char* target_path, char* game_name, size_t max_len) {
     char cue_path[PATH_MAX];
     char track_path[PATH_MAX];
     int32_t offset = 0;
-    char* system_name = NULL;
+    const char* system_name = NULL;
     int rv;
     if (strcasecmp(target_path + strlen(target_path) - 4, ".m3u") == 0) {
         rv = find_fist_cue(target_path, cue_path, PATH_MAX);

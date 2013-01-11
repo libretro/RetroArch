@@ -54,7 +54,7 @@ static int
 find_rom_canonical_name(const char *hash, char *game_name, size_t max_len)
 {
 	// TODO: Error handling
-	int i;
+	size_t i;
 	int rv;
 	int fd;
 	int offs;
@@ -199,7 +199,7 @@ static int get_run_info(struct RunInfo *info, char *game_name)
 	return rv;
 }
 
-char *SUFFIX_MATCH[] = {
+const char *SUFFIX_MATCH[] = {
 	".a26", "a26",
 	".bin", "smd",
 	".gba", "gba",
@@ -222,8 +222,8 @@ static int detect_rom_game(const char *path, char *game_name, size_t max_len)
 {
 	char hash[HASH_LEN + 1];
 	int rv;
-   char *suffix;
-	char **tmp_suffix;
+   const char *suffix;
+	const char **tmp_suffix;
 
 	suffix = strrchr(path, '.');
 	if (!suffix) {
@@ -270,7 +270,7 @@ static int run_retroarch(const char *path, const struct RunInfo *info)
 {
 	char core_path[PATH_MAX];
 	sprintf(core_path, "./cores/libretro-%s.so", info->core);
-	char *retro_argv[30] = { "retroarch",
+	const char *retro_argv[30] = { "retroarch",
 		"-L", core_path
 	};
 	int argi = 3;
@@ -295,7 +295,7 @@ static int run_retroarch(const char *path, const struct RunInfo *info)
 	retro_argv[argi] = strdup(path);
 	argi++;
 	retro_argv[argi] = NULL;
-	execvp(retro_argv[0], retro_argv);
+	execvp(retro_argv[0], (char * const*)retro_argv);
 	return -errno;
 }
 

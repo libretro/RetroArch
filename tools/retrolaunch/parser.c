@@ -51,17 +51,20 @@ ssize_t get_token(int fd, char *token, size_t max_len)
 
 		len++;
 		c++;
-		if (len == max_len) {
+		if (len == (ssize_t)max_len) {
 			*c = '\0';
 			return len;
 		}
 	}
 }
 
-int find_token(int fd, char *token)
+int find_token(int fd, const char *token)
 {
 	int tmp_len = strlen(token);
-	char *tmp_token = calloc(tmp_len, sizeof(char));
+	char *tmp_token = (char*)calloc(tmp_len, 1);
+	if (!tmp_token) {
+		return -1;
+	}
 	while (strncmp(tmp_token, token, tmp_len) != 0) {
 		if (get_token(fd, tmp_token, tmp_len) <= 0) {
 			return -1;
