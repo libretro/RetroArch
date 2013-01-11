@@ -42,12 +42,18 @@
 #define WRITEBUFFERSIZE (1024 * 512)
 
 static int rarch_zlib_extract_file(unzFile uf, 
-      const char *current_dir, char *slash, char *write_filename, 
+      const char *current_dir, char *write_filename, 
       size_t write_filename_size, unsigned extract_zip_mode)
 {
    char filename_inzip[PATH_MAX];
    bool is_dir = false;
    FILE *file_out = NULL;
+   char slash;
+#if defined(_WIN32)
+      slash = '\\';
+#else
+      slash = '/';
+#endif
 
    unz_file_info file_info;
    int ret = unzGetCurrentFileInfo(uf,
@@ -72,7 +78,7 @@ static int rarch_zlib_extract_file(unzFile uf,
    {
       case ZIP_EXTRACT_TO_CURRENT_DIR:
       case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
-         snprintf(write_filename, write_filename_size, "%s%s%s", current_dir, slash, filename_inzip);
+         snprintf(write_filename, write_filename_size, "%s%c%s", current_dir, slash, filename_inzip);
          break;
 #if defined(HAVE_HDD_CACHE_PARTITION)
       case ZIP_EXTRACT_TO_CACHE_DIR:
@@ -169,13 +175,7 @@ int rarch_zlib_extract_archive(const char *zip_path, char *first_file,
    for (unsigned i = 0; i < gi.number_entry; i++)
    {
       static char write_filename[PATH_MAX];
-      char slash[6];
-#ifdef _XBOX
-      snprintf(slash, sizeof(slash), "\\");
-#else
-      snprintf(slash, sizeof(slash), "/");
-#endif
-      if (rarch_zlib_extract_file(uf, dir_path, slash, write_filename, sizeof(write_filename), extract_zip_mode) != UNZ_OK)
+      if (rarch_zlib_extract_file(uf, dir_path, write_filename, sizeof(write_filename), extract_zip_mode) != UNZ_OK)
       {
          RARCH_ERR("Failed to extract current file from ZIP archive.\n");
          break;
