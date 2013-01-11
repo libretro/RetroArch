@@ -38,7 +38,7 @@ struct overlay_desc
    enum overlay_hitbox hitbox;
    float range_x, range_y;
 
-   unsigned key;
+   uint64_t key_mask;
 };
 
 struct overlay
@@ -101,14 +101,18 @@ static bool input_overlay_load_desc(config_file_t *conf, struct overlay_desc *de
       return false;
    }
 
-   const char *key = list->elems[0].data;
    const char *x   = list->elems[1].data;
    const char *y   = list->elems[2].data;
    const char *box = list->elems[3].data;
 
-   desc->key = input_str_to_bind(key);
-   desc->x   = strtod(x, NULL) / width;
-   desc->y   = strtod(y, NULL) / height;
+   char *key = list->elems[0].data;
+   char *save;
+   desc->key_mask = 0;
+   for (const char *tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
+      desc->key_mask |= UINT64_C(1) << input_str_to_bind(tmp);
+
+   desc->x        = strtod(x, NULL) / width;
+   desc->y        = strtod(y, NULL) / height;
 
    if (!strcmp(box, "radial"))
       desc->hitbox = OVERLAY_HITBOX_RADIAL;
@@ -333,7 +337,7 @@ uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
    for (size_t i = 0; i < ol->active->size; i++)
    {
       if (inside_hitbox(&ol->active->descs[i], x, y))
-         state |= UINT64_C(1) << ol->active->descs[i].key;
+         state |= ol->active->descs[i].key_mask;
    }
 
    return state;
