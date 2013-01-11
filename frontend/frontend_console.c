@@ -275,6 +275,7 @@ begin_loop:
       audio_start_func();
       while(rarch_main_iterate());
       audio_stop_func();
+      g_extern.lifecycle_menu_state &= ~(1 << MODE_EMULATION);
    }
    else if (g_extern.lifecycle_menu_state & (1 << MODE_INIT))
    {
@@ -295,14 +296,15 @@ begin_loop:
       if (init_ret == 0)
       {
          RARCH_LOG("rarch_main_init succeeded.\n");
-         g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+         g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
       }
       else
       {
          RARCH_ERR("rarch_main_init failed.\n");
-         g_extern.lifecycle_menu_state = (1 << MODE_MENU);
+         g_extern.lifecycle_menu_state |= (1 << MODE_MENU);
          rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
       }
+      g_extern.lifecycle_menu_state &= ~(1 << MODE_INIT);
    }
    else if(g_extern.lifecycle_menu_state & (1 << MODE_MENU))
    {
