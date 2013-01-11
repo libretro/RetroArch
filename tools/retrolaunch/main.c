@@ -60,6 +60,7 @@ find_rom_canonical_name(const char *hash, char *game_name, size_t max_len)
 	int offs;
 	char *dat_path;
 	char *dat_name;
+   char *dat_name_dot;
 	struct string_list *files;
 
 	files = dir_list_new("db", "dat", false);
@@ -70,7 +71,12 @@ find_rom_canonical_name(const char *hash, char *game_name, size_t max_len)
 	for (i = 0; i < files->size; i++) {
 		dat_path = files->elems[i].data;
 		dat_name = basename(dat_path);
-		offs = strchr(dat_name, '.') - dat_name + 1;
+      dat_name_dot = strchr(dat_name, '.');
+		if (!dat_name_dot) {
+			rv = -1;
+			goto clean;
+		}
+		offs = dat_name_dot - dat_name + 1;
 		memcpy(game_name, dat_name, offs);
 
 		fd = open(dat_path, O_RDONLY);
@@ -215,8 +221,17 @@ static int detect_rom_game(const char *path, char *game_name, size_t max_len)
 {
 	char hash[HASH_LEN + 1];
 	int rv;
-	char *suffix = strrchr(path, '.');
+   char *suffix;
 	char **tmp_suffix;
+
+	suffix = strrchr(path, '.');
+	if (!suffix) {
+		LOG_WARN("Could not find extension for: %s", path);
+		return -EINVAL;
+	}
+
+	memset(hash, 0, sizeof(hash));
+
 	if ((rv = get_sha1(path, hash)) < 0) {
 		LOG_WARN("Could not calculate hash: %s", strerror(-rv));
 	}
