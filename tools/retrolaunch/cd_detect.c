@@ -309,6 +309,6 @@ int detect_cd_game(const char* target_path, char* game_name, size_t max_len) {
         }
     }
 
-    snprintf(game_name, max_len, "<unknown>", system_name);
+    snprintf(game_name, max_len, "<unknown>");
     return 0;
 }
