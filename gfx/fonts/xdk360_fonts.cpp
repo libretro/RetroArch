@@ -19,7 +19,7 @@
 #include "../../general.h"
 #include "../../xdk/xdk_resources.h"
 
-#define FONT_SCALE (g_extern.console.rmenu.state.rmenu_hd.enable ? 2 : 1)
+#define FONT_SCALE ((g_extern.lifecycle_menu_state & (1 << MODE_MENU_HD)) ? 2 : 1)
 
 typedef struct GLYPH_ATTR
 {
@@ -447,7 +447,7 @@ static void xdk_render_msg(void *driver, const char *msg)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver;
 
-   float x = g_extern.console.rmenu.state.rmenu_hd.enable ? 160 : 100;
+   float x = (g_extern.lifecycle_menu_state & (1 << MODE_MENU_HD)) ? 160 : 100;
    float y = 120;
 
    xdk_render_msg_place(d3d, x, y, 0, 0, msg);

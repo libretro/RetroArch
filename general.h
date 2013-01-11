@@ -106,6 +106,8 @@ enum menu_enums
    MODE_LOAD_GAME,
    MODE_INIT,
    MODE_MENU,
+   MODE_MENU_WIDESCREEN,
+   MODE_MENU_HD,
    MODE_MENU_PREINIT,
    MODE_MENU_INGAME,
    MODE_MENU_DRAW,
@@ -501,12 +503,6 @@ struct global
       {
          unsigned input_loop;
          float font_size;
-
-         struct
-         {
-            rarch_boolean_state_t rmenu_widescreen;
-            rarch_boolean_state_t rmenu_hd;
-         } state;
       } rmenu;
 
       struct

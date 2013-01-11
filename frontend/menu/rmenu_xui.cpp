@@ -385,7 +385,7 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW)) ? L"Info messages: ON" : L"Info messages: OFF");
    m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
-   m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.rmenu_hd.enable ? L"Menus: HD" : L"Menus: SD");
+   m_settingslist.SetText(SETTING_EMU_MENUS, (g_extern.lifecycle_menu_state & (1 << MODE_MENU_HD)) ? L"Menus: HD" : L"Menus: SD");
    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
@@ -437,8 +437,11 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
             break;
          case SETTING_EMU_MENUS:
-            g_extern.console.rmenu.state.rmenu_hd.enable = !g_extern.console.rmenu.state.rmenu_hd.enable;
-            m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.rmenu_hd.enable ? L"Menus: HD" : L"Menus: SD");
+            if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_HD))
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_HD);
+            else
+               g_extern.lifecycle_menu_state |= (1 << MODE_MENU_HD);
+            m_settingslist.SetText(SETTING_EMU_MENUS, (g_extern.lifecycle_menu_status & (1 << MODE_MENU_HD)) ? L"Menus: HD" : L"Menus: SD");
             break;
          case SETTING_GAMMA_CORRECTION_ENABLED:
             g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
@@ -448,7 +451,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             break;
          case SETTING_SHADER:
             g_extern.lifecycle_menu_state |= (1 << MODE_LOAD_FIRST_SHADER);
-            hr = XuiSceneCreate(g_extern.console.rmenu.state.rmenu_hd.enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
+            hr = XuiSceneCreate((g_extern.lifecycle_menu_state & (1 << MODE_MENU_HD)) ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
 
             if (hr < 0)
                RARCH_ERR("Failed to load scene.\n");
@@ -462,7 +465,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             break;
          case SETTING_SHADER_2:
             g_extern.lifecycle_menu_state |= (1 << MODE_LOAD_SECOND_SHADER);
-            hr = XuiSceneCreate(g_extern.console.rmenu.state.rmenu_hd.enable ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
+            hr = XuiSceneCreate((g_extern.lifecycle_menu_state & (1 << MODE_MENU_HD)) ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
             if (hr < 0)
                RARCH_ERR("Failed to load scene.\n");
 
@@ -539,8 +542,11 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
                break;
             case SETTING_EMU_MENUS:
-               g_extern.console.rmenu.state.rmenu_hd.enable = !g_extern.console.rmenu.state.rmenu_hd.enable;
-               m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.rmenu_hd.enable ? L"Menus: HD" : L"Menus: SD");
+               if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_HD))
+                  g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_HD);
+               else
+                  g_extern.lifecycle_menu_state |= (1 << MODE_MENU_HD);
+               m_settingslist.SetText(SETTING_EMU_MENUS, (g_extern.lifecycle_menu_status & (1 << MODE_MENU_HD)) ? L"Menus: HD" : L"Menus: SD");
                break;
             case SETTING_GAMMA_CORRECTION_ENABLED:
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
@@ -604,8 +610,11 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
                break;
             case SETTING_EMU_MENUS:
-               g_extern.console.rmenu.state.rmenu_hd.enable = !g_extern.console.rmenu.state.rmenu_hd.enable;
-               m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.rmenu_hd.enable ? L"Menus: HD" : L"Menus: SD");
+               if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_HD))
+                  g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_HD);
+               else
+                  g_extern.lifecycle_menu_state |= (1 << MODE_MENU_HD);
+               m_settingslist.SetText(SETTING_EMU_MENUS, (g_extern.lifecycle_menu_status & (1 << MODE_MENU_HD)) ? L"Menus: HD" : L"Menus: SD");
                break;
             case SETTING_GAMMA_CORRECTION_ENABLED:
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
@@ -1014,7 +1023,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
    xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
 
-   bool hdmenus_allowed = g_extern.console.rmenu.state.rmenu_hd.enable;
+   bool hdmenus_allowed = (g_extern.lifecycle_menu_state & (1 << MODE_MENU_HD));
 
    HRESULT hr;
 
@@ -1093,7 +1102,7 @@ void menu_init (void)
 
    xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
 
-   bool hdmenus_allowed = g_extern.console.rmenu.state.rmenu_hd.enable;
+   bool hdmenus_allowed = (g_extern.lifecycle_menu_state & (1 << MODE_MENU_HD));
 
    if (hdmenus_allowed)
       RARCH_LOG("HD menus enabled.\n");

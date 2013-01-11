@@ -198,7 +198,7 @@ static void xdk_d3d_set_viewport(bool force_full)
       float delta;
 
       // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), 
-      if(g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
          m_viewport_x_temp = g_extern.console.screen.viewports.custom_vp.x;
@@ -236,7 +236,7 @@ static void xdk_d3d_set_viewport(bool force_full)
    font_y = vp.Y;
 #endif
 
-   //if(gl->overscan_enable && !force_full)
+   //if (gl->overscan_enable && !force_full)
    //{
    //	m_left = -gl->overscan_amount/2;
    //	m_right = 1 + gl->overscan_amount/2;
@@ -309,7 +309,7 @@ void xdk_d3d_init_fbo(void *data)
    HRESULT ret;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
-   if(!g_settings.video.render_to_texture)
+   if (!g_settings.video.render_to_texture)
       return;
 
    xdk_d3d_deinit_fbo(d3d);
@@ -374,6 +374,7 @@ static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const ch
 void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   unsigned lifecycle_menu_state = g_extern.lifecycle_menu_state;
 
    memset(d3dpp, 0, sizeof(*d3dpp));
 
@@ -391,41 +392,41 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
    DWORD video_mode = XGetVideoFlags();
 
    // Check if we are able to use progressive mode
-   if(video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+   if (video_mode & XC_VIDEO_FLAGS_HDTV_480p)
       d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
    else
       d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
 
    // Only valid in PAL mode, not valid for HDTV modes!
-   if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
+   if (XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
    {
-      if(video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+      if (video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
          d3dpp->FullScreen_RefreshRateInHz = 60;
       else
          d3dpp->FullScreen_RefreshRateInHz = 50;
    }
 
-   if(XGetAVPack() == XC_AV_PACK_HDTV)
+   if (XGetAVPack() == XC_AV_PACK_HDTV)
    {
-      if(video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+      if (video_mode & XC_VIDEO_FLAGS_HDTV_480p)
          d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
-      else if(video_mode & XC_VIDEO_FLAGS_HDTV_720p)
+      else if (video_mode & XC_VIDEO_FLAGS_HDTV_720p)
          d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
-      else if(video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+      else if (video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
          d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
    }
 
-   if(g_extern.console.rmenu.state.rmenu_widescreen.enable)
+   if (lifecycle_menu_state & MODE_MENU_WIDESCREEN)
       d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
 
    d3dpp->BackBufferFormat                     = D3DFMT_X8R8G8B8;
    d3dpp->FullScreen_PresentationInterval	   = d3d->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
    d3dpp->SwapEffect                           = D3DSWAPEFFECT_COPY;
 #elif defined(_XBOX360)
-   if(!g_extern.console.rmenu.state.rmenu_widescreen.enable)
+   if (!lifecycle_menu_state & MODE_MENU_WIDESCREEN)
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
 
-   if(g_extern.console.screen.gamma_correction)
+   if (g_extern.console.screen.gamma_correction)
    {
       d3dpp->BackBufferFormat        = (D3DFORMAT)MAKESRGBFMT(d3d->texture_fmt);
       d3dpp->FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
@@ -499,10 +500,10 @@ static void xdk_d3d_init_textures(void *data, const video_info_t *video)
    vp.MaxZ   = 1.0f;
    d3d->d3d_render_device->SetViewport(&vp);
 
-   if(g_extern.console.screen.viewports.custom_vp.width == 0)
+   if (g_extern.console.screen.viewports.custom_vp.width == 0)
       g_extern.console.screen.viewports.custom_vp.width = vp.Width;
 
-   if(g_extern.console.screen.viewports.custom_vp.height == 0)
+   if (g_extern.console.screen.viewports.custom_vp.height == 0)
       g_extern.console.screen.viewports.custom_vp.height = vp.Height;
 }
 
@@ -772,7 +773,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_FBO
-   if(d3d->fbo_inited)
+   if (d3d->fbo_inited)
    {
 #ifdef HAVE_HLSL
       hlsl_set_params(width, height, d3d->tex_w, d3d->tex_h, g_settings.video.fbo.scale_x * width,
@@ -796,7 +797,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
    }
 
-   if(frame)
+   if (frame)
    {
       unsigned base_size = d3d->base_size;
       D3DLOCKED_RECT d3dlr;
@@ -834,7 +835,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_FBO
-   if(d3d->fbo_inited)
+   if (d3d->fbo_inited)
    {
       d3dr->Resolve(D3DRESOLVE_RENDERTARGET0, NULL, d3d->lpTexture_ot,
             NULL, 0, 0, NULL, 0, 0, NULL);
@@ -866,7 +867,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    float msg_width  = 60;
    float msg_height = 365;
 #elif defined(_XBOX360)
-   float mem_width  = g_extern.console.rmenu.state.rmenu_hd.enable ? 160 : 100;
+   float mem_width  = (lifecycle_menu_state & (1 << MODE_MENU_HD)) ? 160 : 100;
    float mem_height = 70;
    float msg_width  = mem_width;
    float msg_height = mem_height + 50;
@@ -909,7 +910,7 @@ static void xdk_d3d_set_nonblock_state(void *data, bool state)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
-   if(d3d->vsync)
+   if (d3d->vsync)
    {
       RARCH_LOG("D3D Vsync => %s\n", state ? "off" : "on");
       gfx_ctx_xdk_set_swap_interval(state ? 0 : 1);
@@ -977,9 +978,9 @@ static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspectratio_index)
    (void)data;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
-   if(g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
+   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
       rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
-   else if(g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
+   else if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
       rarch_set_core_viewport();
 
    g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
