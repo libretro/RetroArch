@@ -53,7 +53,7 @@ static void *font_renderer_init(const char *font_path, float font_size)
    if (!handle)
       return NULL;
 
-   handle->scale_factor = (unsigned)round(font_size / FONT_HEIGHT);
+   handle->scale_factor = (unsigned)roundf(font_size / FONT_HEIGHT);
    if (!handle->scale_factor)
       handle->scale_factor = 1;
 
