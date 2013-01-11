@@ -1,6 +1,6 @@
 include config.mk
 
-TARGET = retroarch tools/retroarch-joyconfig
+TARGET = retroarch tools/retroarch-joyconfig tools/retrolaunch/retrolaunch
 
 OBJ = retroarch.o \
 		file.o \
@@ -34,6 +34,17 @@ JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
 	file_path.o \
 	compat/compat.o \
 	input/input_common.o
+
+RETROLAUNCH_OBJ = tools/retrolaunch/main.o      \
+	tools/retrolaunch/sha1.o      \
+	tools/retrolaunch/parser.o    \
+	tools/retrolaunch/cd_detect.o \
+	tools/retrolaunch/rl_fnmatch.o \
+	file_path.o \
+	compat/compat.o \
+	conf/config_file.o \
+	settings.o \
+      $(NULL)
 
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
@@ -338,6 +349,10 @@ ifeq ($(CXX_BUILD), 1)
 else
 	$(Q)$(CC) -o $@ $(JOYCONFIG_OBJ) $(SDL_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 endif
+
+tools/retrolaunch/retrolaunch: $(RETROLAUNCH_OBJ)
+	@$(if $(Q), $(shell echo echo LD $@),)
+	$(Q)$(LD) -o $@ $(RETROLAUNCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 
 %.o: %.c config.h config.mk $(HEADERS)
 	@$(if $(Q), $(shell echo echo CC $<),)
