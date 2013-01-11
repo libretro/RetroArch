@@ -633,7 +633,7 @@ void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
 {
    gl_t *gl = (gl_t*)data;
 #ifdef RARCH_CONSOLE
-   if (g_extern.console.screen.state.overscan.enable)
+   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_OVERSCAN_ENABLE))
    {
       ortho->left = -g_extern.console.screen.overscan_amount / 2;
       ortho->right = 1 + g_extern.console.screen.overscan_amount / 2;

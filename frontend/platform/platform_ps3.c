@@ -357,7 +357,7 @@ static void system_init(void)
 static void system_post_init(void)
 {
 #if (CELL_SDK_VERSION > 0x340000) && !defined(__PSL1GHT__)
-   if (g_extern.console.screen.state.screenshots.enable)
+   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE))
    {
 #ifdef HAVE_SYSMODULES
       cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
@@ -372,7 +372,7 @@ static void system_post_init(void)
 #endif
    }
 #ifdef HAVE_SYSUTILS
-   if (g_extern.console.sound.custom_bgm.enable)
+   if (g_extern.lifecycle_menu_state & (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE))
       cellSysutilEnableBgmPlayback();
 #endif
 #endif
@@ -422,7 +422,7 @@ static void system_deinit(void)
 
 #ifndef __PSL1GHT__
    /* screenshot PRX */
-   if(g_extern.console.screen.state.screenshots.enable)
+   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE))
       cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
 #endif
 

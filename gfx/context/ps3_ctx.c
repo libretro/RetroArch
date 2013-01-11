@@ -417,7 +417,7 @@ static bool gfx_ctx_init(void)
    params.depthFormat = GL_NONE;
    params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
 
-   if (g_extern.console.screen.state.triple_buffering.enable)
+   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
    {
       params.enable |= PSGL_DEVICE_PARAMETERS_BUFFERING_MODE;
       params.bufferingMode = PSGL_BUFFERING_MODE_TRIPLE;

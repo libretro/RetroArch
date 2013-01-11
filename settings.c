@@ -256,14 +256,16 @@ void config_set_defaults(void)
 
    // g_extern
    strlcpy(g_extern.console.main_wrap.paths.default_sram_dir, default_paths.sram_dir, sizeof(g_extern.console.main_wrap.paths.default_sram_dir));
-   g_extern.console.screen.state.overscan.enable = false;
    g_extern.console.screen.overscan_amount = 0.0f;
-   g_extern.console.sound.custom_bgm.enable = true;
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
-   g_extern.console.screen.state.screenshots.enable = true;
-   g_extern.console.screen.state.throttle.enable = true;
+   g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_OVERSCAN_ENABLE);
+   g_extern.lifecycle_menu_state |= (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+   g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SCREENSHOTS_ENABLE);
+   g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_THROTTLE_ENABLE);
+   g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+   g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
+   g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_FLICKER_FILTER_ENABLE);
 
-   g_extern.console.screen.state.triple_buffering.enable = true;
    g_extern.console.main_wrap.state.default_savestate_dir.enable = false;
    g_extern.console.main_wrap.state.default_sram_dir.enable = false;
    g_extern.console.screen.orientation = ORIENTATION_NORMAL;
@@ -282,10 +284,8 @@ void config_set_defaults(void)
    g_extern.console.screen.viewports.custom_vp.x = 0;
    g_extern.console.screen.viewports.custom_vp.y = 0;
 #ifdef _XBOX1
-   g_extern.console.screen.state.flicker_filter.enable = 1;
    g_extern.console.sound.volume_level = 0;
 #endif
-   g_extern.console.screen.state.soft_filter.enable = true;
 #ifdef HAVE_ZLIB
    g_extern.file_state.zip_extract_mode = 0;
 #endif
@@ -474,6 +474,14 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
 
    bool msg_enable = false;
+   bool throttle_enable = false;
+   bool triple_buffering_enable = false;
+   bool custom_bgm_enable = false;
+   bool overscan_enable = false;
+   bool screenshots_enable = false;
+   bool flicker_filter_enable = false;
+   bool soft_filter_enable = false;
+
    if (config_get_bool(conf, "info_msg_enable", &msg_enable))
    {
       if (msg_enable)
@@ -482,16 +490,68 @@ bool config_load_file(const char *path)
          g_extern.lifecycle_menu_state &= ~(1 << MODE_INFO_DRAW);
    }
 
-   CONFIG_GET_BOOL_EXTERN(console.screen.state.screenshots.enable, "screenshots_enable");
-   CONFIG_GET_BOOL_EXTERN(console.screen.state.throttle.enable, "throttle_enable");
-   CONFIG_GET_BOOL_EXTERN(console.screen.state.triple_buffering.enable, "triple_buffering_enable");
-   CONFIG_GET_BOOL_EXTERN(console.screen.state.overscan.enable, "overscan_enable");
-   CONFIG_GET_BOOL_EXTERN(console.sound.custom_bgm.enable, "custom_bgm_enable");
+   if (config_get_bool(conf, "throttle_enable", &throttle_enable))
+   {
+      if (throttle_enable)
+         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_THROTTLE_ENABLE);
+      else
+         g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_THROTTLE_ENABLE);
+   }
+
+   if (config_get_bool(conf, "triple_buffering_enable", &triple_buffering_enable))
+   {
+      if (triple_buffering_enable)
+         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+      else
+         g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+   }
+
+   if (config_get_bool(conf, "overscan_enable", &overscan_enable))
+   {
+      if (overscan_enable)
+         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_OVERSCAN_ENABLE);
+      else
+         g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_OVERSCAN_ENABLE);
+   }
+
+   if (config_get_bool(conf, "custom_bgm_enable", &custom_bgm_enable))
+   {
+      if (custom_bgm_enable)
+         g_extern.lifecycle_menu_state |= (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+      else
+         g_extern.lifecycle_menu_state &= ~(1 << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+   }
+
+   if (config_get_bool(conf, "screenshots_enable", &screenshots_enable))
+   {
+      if (screenshots_enable)
+         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SCREENSHOTS_ENABLE);
+      else
+         g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_SCREENSHOTS_ENABLE);
+   }
+
+   if (config_get_bool(conf, "flicker_filter_enable", &flicker_filter_enable))
+   {
+      if (flicker_filter_enable)
+         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_FLICKER_FILTER_ENABLE);
+      else 
+         g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_FLICKER_FILTER_ENABLE);
+   }
+
+   if (config_get_bool(conf, "soft_filter_enable", &soft_filter_enable))
+   {
+      if (soft_filter_enable)
+         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
+      else 
+         g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
+   }
+
    CONFIG_GET_BOOL_EXTERN(console.main_wrap.state.default_sram_dir.enable, "sram_dir_enable");
    CONFIG_GET_BOOL_EXTERN(console.main_wrap.state.default_savestate_dir.enable, "savestate_dir_enable");
    CONFIG_GET_FLOAT_EXTERN(console.screen.overscan_amount, "overscan_amount");
+   CONFIG_GET_INT_EXTERN(console.screen.flicker_filter_index, "flicker_filter_index");
+   CONFIG_GET_INT_EXTERN(console.screen.soft_filter_index, "soft_filter_index");
 #ifdef _XBOX1
-   CONFIG_GET_INT_EXTERN(console.screen.state.flicker_filter.enable, "flicker_filter");
    CONFIG_GET_INT_EXTERN(console.sound.volume_level, "sound_volume_level");
 #endif
 #ifdef HAVE_ZLIB
@@ -500,7 +560,6 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT_EXTERN(console.screen.resolutions.current.id, "current_resolution_id");
    CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
    CONFIG_GET_INT_EXTERN(audio_data.mute, "audio_mute");
-   CONFIG_GET_BOOL_EXTERN(console.screen.state.soft_filter.enable, "soft_display_filter_enable");
    CONFIG_GET_INT_EXTERN(console.screen.orientation, "screen_orientation");
    CONFIG_GET_INT_EXTERN(console.sound.mode, "sound_mode");
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.x, "custom_viewport_x");
@@ -1092,21 +1151,47 @@ bool config_save_file(const char *path)
    config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
    config_set_string(conf, "system_directory", g_settings.system_directory);
 
-   config_set_bool(conf, "overscan_enable", g_extern.console.screen.state.overscan.enable);
-   config_set_bool(conf, "screenshots_enable", g_extern.console.screen.state.screenshots.enable);
+   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_OVERSCAN_ENABLE))
+      config_set_bool(conf, "overscan_enable", true);
+   else
+      config_set_bool(conf, "overscan_enable", false);
+
+   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE))
+      config_set_bool(conf, "screenshots_enable", true);
+   else
+      config_set_bool(conf, "screenshots_enable", false);
+
    config_set_bool(conf, "gamma_correction", g_extern.console.screen.gamma_correction);
 #ifdef _XBOX1
-   config_set_int(conf, "flicker_filter", g_extern.console.screen.state.flicker_filter.value);
    config_set_int(conf, "sound_volume_level", g_extern.console.sound.volume_level);
 #endif
-   config_set_bool(conf, "throttle_enable", g_extern.console.screen.state.throttle.enable);
-   config_set_bool(conf, "triple_buffering_enable", g_extern.console.screen.state.triple_buffering.enable);
+   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE))
+      config_set_bool(conf, "throttle_enable", true);
+   else
+      config_set_bool(conf, "throttle_enable", false);
+
+   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
+      config_set_bool(conf, "triple_buffering_enable", true);
+   else
+      config_set_bool(conf, "triple_buffering_enable", false);
 
    if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
       config_set_bool(conf, "info_msg_enable", true);
    else
       config_set_bool(conf, "info_msg_enable", false);
 
+   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SOFT_FILTER_ENABLE))
+      config_set_bool(conf, "soft_filter_enable", true);
+   else
+      config_set_bool(conf, "soft_filter_enable", false);
+
+   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_FLICKER_FILTER_ENABLE))
+      config_set_bool(conf, "flicker_filter_enable", true);
+   else
+      config_set_bool(conf, "flicker_filter_enable", false);
+
+   config_set_int(conf, "flicker_filter_index", g_extern.console.screen.flicker_filter_index);
+   config_set_int(conf, "soft_filter_index", g_extern.console.screen.soft_filter_index);
    config_set_int(conf, "current_resolution_id", g_extern.console.screen.resolutions.current.id);
    config_set_int(conf, "custom_viewport_width", g_extern.console.screen.viewports.custom_vp.width);
    config_set_int(conf, "custom_viewport_height", g_extern.console.screen.viewports.custom_vp.height);
@@ -1123,9 +1208,12 @@ bool config_save_file(const char *path)
    config_set_int(conf, "sound_mode", g_extern.console.sound.mode);
    config_set_int(conf, "state_slot", g_extern.state_slot);
    config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
-   config_set_bool(conf, "soft_display_filter_enable", g_extern.console.screen.state.soft_filter.enable);
    config_set_int(conf, "screen_orientation", g_extern.console.screen.orientation);
-   config_set_bool(conf, "custom_bgm_enable", g_extern.console.sound.custom_bgm.enable);
+
+   if (g_extern.lifecycle_menu_state & (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+      config_set_bool(conf, "custom_bgm_enable", true);
+   else
+      config_set_bool(conf, "custom_bgm_enable", false);
 
    config_set_bool(conf, "sram_dir_enable", g_extern.console.main_wrap.state.default_sram_dir.enable);
    config_set_bool(conf, "savestate_dir_enable", g_extern.console.main_wrap.state.default_savestate_dir.enable);

@@ -683,9 +683,10 @@ static void gx_resize(void *data)
 
    int x = 0, y = 0;
    unsigned width = gx->win_width, height = gx->win_height;
+   u32 lifecycle_menu_state = g_extern.lifecycle_menu_state;
 
 #ifdef HW_RVL
-   VIDEO_SetTrapFilter(g_extern.console.screen.state.soft_filter.enable);
+   VIDEO_SetTrapFilter(lifecycle_menu_state & (1 << MODE_VIDEO_SOFT_FILTER_ENABLE));
 #endif
    GX_SetDispCopyGamma(g_extern.console.screen.gamma_correction);
 
@@ -746,7 +747,8 @@ static void gx_resize(void *data)
 
    Mtx44 m1, m2;
    float top = 1, bottom = -1, left = -1, right = 1;
-   if (g_extern.console.screen.state.overscan.enable)
+
+   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_OVERSCAN_ENABLE))
    {
       top    -= g_extern.console.screen.overscan_amount / 2;
       left   += g_extern.console.screen.overscan_amount / 2;

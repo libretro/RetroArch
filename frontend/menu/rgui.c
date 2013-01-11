@@ -428,7 +428,7 @@ static void render_text(rgui_handle_t *rgui)
             break;
 #ifdef HW_RVL
          case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
-            snprintf(type_str, sizeof(type_str), g_extern.console.screen.state.soft_filter.enable ? "ON" : "OFF");
+            snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
             break;
 #endif
 #ifdef GEKKO
@@ -625,7 +625,10 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
 #ifdef HW_RVL
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
          {
-            g_extern.console.screen.state.soft_filter.enable = !g_extern.console.screen.state.soft_filter.enable;
+            if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SOFT_FILTER_ENABLE))
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
+            else
+               g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
             driver.video->apply_state_changes();
          }
          break;

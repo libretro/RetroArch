@@ -62,15 +62,15 @@ void rarch_settings_change(unsigned setting)
          break;
       case S_OVERSCAN_DECREMENT:
          g_extern.console.screen.overscan_amount -= 0.01f;
-         g_extern.console.screen.state.overscan.enable = true;
+         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_OVERSCAN_ENABLE);
          if(g_extern.console.screen.overscan_amount == 0.0f)
-            g_extern.console.screen.state.overscan.enable = false;
+            g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_OVERSCAN_ENABLE);
          break;
       case S_OVERSCAN_INCREMENT:
          g_extern.console.screen.overscan_amount += 0.01f;
-         g_extern.console.screen.state.overscan.enable = true;
+         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_OVERSCAN_ENABLE);
          if(g_extern.console.screen.overscan_amount == 0.0f)
-            g_extern.console.screen.state.overscan.enable = 0;
+            g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_OVERSCAN_ENABLE);
          break;
       case S_RESOLUTION_PREVIOUS:
          if (g_extern.console.screen.resolutions.current.idx)
@@ -117,12 +117,18 @@ void rarch_settings_change(unsigned setting)
          break;
       case S_THROTTLE:
          if(!g_extern.system.force_nonblock)
-            g_extern.console.screen.state.throttle.enable = 
-               !g_extern.console.screen.state.throttle.enable;
+         {
+            if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE))
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_THROTTLE_ENABLE);
+            else
+               g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_THROTTLE_ENABLE);
+         }
          break;
       case S_TRIPLE_BUFFERING:
-         g_extern.console.screen.state.triple_buffering.enable = 
-            !g_extern.console.screen.state.triple_buffering.enable;
+         if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
+            g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+         else
+            g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
          break;
    }
 }
@@ -154,17 +160,17 @@ void rarch_settings_default(unsigned setting)
          break;
       case S_DEF_OVERSCAN:
          g_extern.console.screen.overscan_amount = 0.0f;
-         g_extern.console.screen.state.overscan.enable = false;
+         g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_OVERSCAN_ENABLE);
          break;
       case S_DEF_ROTATION:
          g_extern.console.screen.orientation = ORIENTATION_NORMAL;
          break;
       case S_DEF_THROTTLE:
          if(!g_extern.system.force_nonblock)
-            g_extern.console.screen.state.throttle.enable = true;
+            g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_THROTTLE_ENABLE);
          break;
       case S_DEF_TRIPLE_BUFFERING:
-         g_extern.console.screen.state.triple_buffering.enable = true;
+         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
          break;
       case S_DEF_SAVE_STATE:
          g_extern.state_slot = 0;

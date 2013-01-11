@@ -201,7 +201,7 @@ static void populate_setting_item(void *data, unsigned input)
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
          snprintf(current_item->text, sizeof(current_item->text), "Flicker Filter");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.console.screen.state.flicker_filter.enable);
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_FLICKER_FILTER_ENABLE) ? true : false));
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Flicker Filter].");
          break;
       case SETTING_SOFT_DISPLAY_FILTER:
@@ -217,18 +217,18 @@ static void populate_setting_item(void *data, unsigned input)
          break;
       case SETTING_THROTTLE_MODE:
          snprintf(current_item->text, sizeof(current_item->text), "Throttle Mode");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.screen.state.throttle.enable ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), g_extern.console.screen.state.throttle.enable ? "INFO - [Throttle Mode] is 'ON' - Vsync is enabled." : "INFO - [Throttle Mode] is 'OFF' - Vsync is disabled.");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE)) ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE)) ? "INFO - [Throttle Mode] is 'ON' - Vsync is enabled." : "INFO - [Throttle Mode] is 'OFF' - Vsync is disabled.");
          break;
       case SETTING_TRIPLE_BUFFERING:
          snprintf(current_item->text, sizeof(current_item->text), "Triple Buffering");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.screen.state.triple_buffering.enable ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), g_extern.console.screen.state.triple_buffering.enable ? "INFO - [Triple Buffering] is set to 'ON'." : "INFO - [Triple Buffering] is set to 'OFF'.");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "INFO - [Triple Buffering] is set to 'ON'." : "INFO - [Triple Buffering] is set to 'OFF'.");
          break;
       case SETTING_ENABLE_SCREENSHOTS:
          snprintf(current_item->text, sizeof(current_item->text), "Screenshot Option");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.screen.state.screenshots.enable ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Screenshots feature is set to '%s'.", g_extern.console.screen.state.screenshots.enable ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Screenshots feature is set to '%s'.", (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? "ON" : "OFF");
          break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
@@ -353,8 +353,8 @@ static void populate_setting_item(void *data, unsigned input)
 #endif
       case SETTING_ENABLE_CUSTOM_BGM:
          snprintf(current_item->text, sizeof(current_item->text), "Custom BGM Option");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.sound.custom_bgm.enable ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom BGM] is set to '%s'.", g_extern.console.sound.custom_bgm.enable ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_menu_state & (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom BGM] is set to '%s'.", (g_extern.lifecycle_menu_state & (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
          break;
       case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
          snprintf(current_item->text, sizeof(current_item->text), "Startup ROM Directory");
@@ -1225,22 +1225,27 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_FLICKER_FILTER:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
-            if(g_extern.console.screen.state.flicker_filter.value > 0)
-               g_extern.console.screen.state.flicker_filter.value--;
+            if(g_extern.console.screen.flicker_filter_index > 0)
+               g_extern.console.screen.flicker_filter_index--;
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
          {
-            if(g_extern.console.screen.state.flicker_filter.value < 5)
-               g_extern.console.screen.state.flicker_filter.value++;
+            if(g_extern.console.screen.flicker_filter_index < 5)
+               g_extern.console.screen.flicker_filter_index++;
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            g_extern.console.screen.state.flicker_filter.value = 0;
+            g_extern.console.screen.flicker_filter_index = 0;
          break;
       case SETTING_SOFT_DISPLAY_FILTER:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-            g_extern.console.screen.state.soft_filter.enable = !g_extern.console.screen.state.soft_filter.enable;
+         {
+            if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SOFT_FILTER_ENABLE))
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
+            else
+               g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
+         }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            g_extern.console.screen.state.soft_filter.enable = true;
+            g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
          break;
 #endif
       case SETTING_HW_OVERSCAN_AMOUNT:
@@ -1264,12 +1269,12 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             rarch_settings_change(S_THROTTLE);
-            device_ptr->ctx_driver->swap_interval(g_extern.console.screen.state.throttle.enable);
+            device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE)));
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             rarch_settings_default(S_DEF_THROTTLE);
-            device_ptr->ctx_driver->swap_interval(g_extern.console.screen.state.throttle.enable);
+            device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE)));
          }
          break;
       case SETTING_TRIPLE_BUFFERING:
@@ -1280,23 +1285,25 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            bool old_buffer_input = g_extern.console.screen.state.triple_buffering.enable;
             rarch_settings_default(S_DEF_TRIPLE_BUFFERING);
 
-            if(!old_buffer_input)
+            if(!(g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)))
                driver.video->restart();
          }
          break;
       case SETTING_ENABLE_SCREENSHOTS:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            g_extern.console.screen.state.screenshots.enable = !g_extern.console.screen.state.screenshots.enable;
-            device_ptr->ctx_driver->rmenu_screenshot_enable(g_extern.console.screen.state.screenshots.enable);
+            if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE))
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_SCREENSHOTS_ENABLE);
+            else
+               g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SCREENSHOTS_ENABLE);
+            device_ptr->ctx_driver->rmenu_screenshot_enable((g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE)));
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            g_extern.console.screen.state.screenshots.enable = true;
-            device_ptr->ctx_driver->rmenu_screenshot_enable(g_extern.console.screen.state.screenshots.enable);
+            g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SCREENSHOTS_ENABLE);
+            device_ptr->ctx_driver->rmenu_screenshot_enable((g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE)));
          }
          break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
@@ -1460,8 +1467,11 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
 #if(CELL_SDK_VERSION > 0x340000)
-            g_extern.console.sound.custom_bgm.enable = !g_extern.console.sound.custom_bgm.enable;
-            if(g_extern.console.sound.custom_bgm.enable)
+            if (g_extern.lifecycle_menu_state & (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+            else
+               g_extern.lifecycle_menu_state |= (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+            if (g_extern.lifecycle_menu_state & (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE))
                cellSysutilEnableBgmPlayback();
             else
                cellSysutilDisableBgmPlayback();
@@ -1471,7 +1481,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
 #if(CELL_SDK_VERSION > 0x340000)
-            g_extern.console.sound.custom_bgm.enable = true;
+            g_extern.lifecycle_menu_state |= (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE);
 #endif
          }
          break;

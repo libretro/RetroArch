@@ -698,10 +698,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #ifdef HAVE_FBO
    D3DSurface* pRenderTarget0;
 #endif
-#ifdef _XBOX1
-   unsigned flicker_filter = g_extern.console.screen.state.flicker_filter.value;
-   bool soft_filter_enable = g_extern.console.screen.state.soft_filter.enable;
-#endif
 
    d3dr->Clear(0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.0f, 0);
 
@@ -824,8 +820,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    d3dr->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
    d3dr->BeginScene();
-   d3dr->SetFlickerFilter(flicker_filter);
-   d3dr->SetSoftDisplayFilter(soft_filter_enable);
+   d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
+   d3dr->SetSoftDisplayFilter(g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SOFT_FILTER_ENABLE));
    d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
    d3dr->EndScene();
 #elif defined(_XBOX360)

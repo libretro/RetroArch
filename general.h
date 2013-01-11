@@ -120,6 +120,13 @@ enum menu_enums
    MODE_EXITSPAWN,
    MODE_LOAD_FIRST_SHADER,
    MODE_LOAD_SECOND_SHADER,
+   MODE_VIDEO_TRIPLE_BUFFERING_ENABLE,
+   MODE_VIDEO_FLICKER_FILTER_ENABLE,
+   MODE_VIDEO_SOFT_FILTER_ENABLE,
+   MODE_VIDEO_SCREENSHOTS_ENABLE,
+   MODE_VIDEO_THROTTLE_ENABLE,
+   MODE_VIDEO_OVERSCAN_ENABLE,
+   MODE_AUDIO_CUSTOM_BGM_ENABLE,
 };
 
 // All config related settings go here.
@@ -525,21 +532,12 @@ struct global
          unsigned orientation;
          float overscan_amount;
          unsigned gamma_correction;
-
-         struct
-         {
-            rarch_boolean_state_t triple_buffering;
-            rarch_boolean_state_t overscan;
-            rarch_boolean_state_t flicker_filter;
-            rarch_boolean_state_t soft_filter;
-            rarch_boolean_state_t screenshots;
-            rarch_boolean_state_t throttle;
-         } state;
+         unsigned char flicker_filter_index;
+         unsigned char soft_filter_index;
       } screen;
 
       struct
       {
-         rarch_boolean_state_t custom_bgm;
          unsigned mode;
 #ifdef _XBOX1
          unsigned volume_level;
