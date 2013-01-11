@@ -237,13 +237,9 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode)
             goto do_init;
          }
          else
-         {
             msg_queue_push(g_extern.msg_queue, "Could not find compatible game, not loading first file.\n", 1, 100);
-            return;
-         }
       }
-      else
-         return;
+      return;
    }
    else
 #endif
