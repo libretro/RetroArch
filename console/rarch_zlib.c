@@ -80,14 +80,14 @@ static int rarch_zlib_extract_file(unzFile uf,
       case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
          snprintf(write_filename, write_filename_size, "%s%c%s", current_dir, slash, filename_inzip);
          break;
-#if defined(HAVE_HDD_CACHE_PARTITION)
+#if defined(HAVE_HDD_CACHE_PARTITION) && defined(RARCH_CONSOLE)
       case ZIP_EXTRACT_TO_CACHE_DIR:
          snprintf(write_filename, write_filename_size, "%s%s", default_paths.cache_dir, filename_inzip);
          break;
 #endif
    }
 
-   if(filename_inzip[strlen(filename_inzip) - 1] == slash)
+   if (filename_inzip[strlen(filename_inzip) - 1] == slash)
       is_dir = true;
 
    ret = unzOpenCurrentFile(uf);
@@ -96,7 +96,7 @@ static int rarch_zlib_extract_file(unzFile uf,
    else
    {
       /* success */
-      if(is_dir)
+      if (is_dir)
       {
 #ifdef _WIN32
          _mkdir(write_filename);
@@ -169,7 +169,7 @@ int rarch_zlib_extract_archive(const char *zip_path, char *first_file,
    memset(&gi, 0, sizeof(unz_global_info));
 
    int ret = unzGetGlobalInfo(uf, &gi);
-   if(ret != UNZ_OK)
+   if (ret != UNZ_OK)
       RARCH_ERR("Error %d while trying to get ZIP file global info.\n", ret);
 
    for (unsigned i = 0; i < gi.number_entry; i++)
@@ -183,7 +183,7 @@ int rarch_zlib_extract_archive(const char *zip_path, char *first_file,
 #ifdef HAVE_LIBRETRO_MANAGEMENT
       else
       {
-         if(!found_first_file)
+         if (!found_first_file)
          {
             // is the extension of the file supported by the libretro core?
             struct string_list *ext_list = NULL;
@@ -198,7 +198,7 @@ int rarch_zlib_extract_archive(const char *zip_path, char *first_file,
             if (ext_list && string_list_find_elem(ext_list, file_ext))
                found_first_file = true; 
 
-            if(found_first_file)
+            if (found_first_file)
             {
                snprintf(first_file, first_file_size, write_filename);
                RARCH_LOG("first found ZIP file is: %s.\n", write_filename);
