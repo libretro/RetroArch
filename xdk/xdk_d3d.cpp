@@ -423,7 +423,7 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
    d3dpp->FullScreen_PresentationInterval	   = d3d->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
    d3dpp->SwapEffect                           = D3DSWAPEFFECT_COPY;
 #elif defined(_XBOX360)
-   if (!lifecycle_menu_state & MODE_MENU_WIDESCREEN)
+   if (!(lifecycle_menu_state & (1 << MODE_MENU_WIDESCREEN)))
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
 
    if (g_extern.console.screen.gamma_correction)

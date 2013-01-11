@@ -441,7 +441,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
                g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_HD);
             else
                g_extern.lifecycle_menu_state |= (1 << MODE_MENU_HD);
-            m_settingslist.SetText(SETTING_EMU_MENUS, (g_extern.lifecycle_menu_status & (1 << MODE_MENU_HD)) ? L"Menus: HD" : L"Menus: SD");
+            m_settingslist.SetText(SETTING_EMU_MENUS, (g_extern.lifecycle_menu_state & (1 << MODE_MENU_HD)) ? L"Menus: HD" : L"Menus: SD");
             break;
          case SETTING_GAMMA_CORRECTION_ENABLED:
             g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
@@ -546,7 +546,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                   g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_HD);
                else
                   g_extern.lifecycle_menu_state |= (1 << MODE_MENU_HD);
-               m_settingslist.SetText(SETTING_EMU_MENUS, (g_extern.lifecycle_menu_status & (1 << MODE_MENU_HD)) ? L"Menus: HD" : L"Menus: SD");
+               m_settingslist.SetText(SETTING_EMU_MENUS, (g_extern.lifecycle_menu_state & (1 << MODE_MENU_HD)) ? L"Menus: HD" : L"Menus: SD");
                break;
             case SETTING_GAMMA_CORRECTION_ENABLED:
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
@@ -614,7 +614,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                   g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_HD);
                else
                   g_extern.lifecycle_menu_state |= (1 << MODE_MENU_HD);
-               m_settingslist.SetText(SETTING_EMU_MENUS, (g_extern.lifecycle_menu_status & (1 << MODE_MENU_HD)) ? L"Menus: HD" : L"Menus: SD");
+               m_settingslist.SetText(SETTING_EMU_MENUS, (g_extern.lifecycle_menu_state & (1 << MODE_MENU_HD)) ? L"Menus: HD" : L"Menus: SD");
                break;
             case SETTING_GAMMA_CORRECTION_ENABLED:
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
