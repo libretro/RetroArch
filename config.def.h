@@ -161,6 +161,25 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_NULL
 #endif
 
+#if defined(XENON) || defined(_XBOX360) || defined(__CELLOS_LV2__)
+#define DEFAULT_ASPECT_RATIO 1.7778f
+#elif defined(_XBOX1) || defined(GEKKO) || defined(ANDROID)
+#define DEFAULT_ASPECT_RATIO 1.3333f
+#else
+#define DEFAULT_ASPECT_RATIO -1.0f
+#endif
+
+#if defined(_XBOX360)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
+#elif defined(__PSL1GHT__)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
+#elif defined(__CELLOS_LV2__)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_CG
+#elif defined(ANDROID)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
+#else
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_AUTO
+#endif
 
 ////////////////
 // Video
@@ -190,7 +209,7 @@ static const bool video_smooth = true;
 static const bool force_aspect = true; 
 
 // Controls aspect ratio handling.
-static const float aspect_ratio = -1.0; // Automatic
+static const float aspect_ratio = DEFAULT_ASPECT_RATIO; // Automatic
 static const bool aspect_ratio_auto = false; // 1:1 PAR
 
 // Crop overscanned frames (7/8 or 15/15 for interlaced frames).
@@ -209,7 +228,11 @@ static const float message_pos_offset_y = 0.05;
 static const uint32_t message_color = 0xffff00; // RGB hex value.
 
 // Render-to-texture before rendering to screen (multi-pass shaders)
+#if defined(__CELLOS_LV2__) || defined(_XBOX360)
+static const bool render_to_texture = true;
+#else
 static const bool render_to_texture = false;
+#endif
 static const float fbo_scale_x = 2.0;
 static const float fbo_scale_y = 2.0;
 static const bool second_pass_smooth = true;
@@ -234,7 +257,7 @@ static const bool font_enable = true;
 // This value should stay close to 60Hz to avoid large pitch changes.
 // If your monitor does not run at 60Hz, or something close to it, disable VSync,
 // and leave this at its default.
-#if defined(__CELLOS_LV2__) || defined(XENON) || defined(GEKKO)
+#if defined(RARCH_CONSOLE)
 static const float refresh_rate = 59.92; 
 #else
 static const float refresh_rate = 59.95; 

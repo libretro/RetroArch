@@ -164,7 +164,7 @@ void config_set_defaults(void)
    g_settings.video.crop_overscan = crop_overscan;
    g_settings.video.aspect_ratio = aspect_ratio;
    g_settings.video.aspect_ratio_auto = aspect_ratio_auto; // Let implementation decide if automatic, or 1:1 PAR.
-   g_settings.video.shader_type = RARCH_SHADER_AUTO;
+   g_settings.video.shader_type = DEFAULT_SHADER_TYPE;
    g_settings.video.allow_rotate = allow_rotate;
 
    g_settings.video.font_enable = font_enable;
@@ -246,28 +246,7 @@ void config_set_defaults(void)
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
    strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
-   g_settings.video.second_pass_smooth = true;
 #endif
-
-#if defined(_XBOX360)
-   g_settings.video.shader_type = RARCH_SHADER_HLSL;
-#elif defined(__PSL1GHT__)
-   g_settings.video.shader_type = RARCH_SHADER_GLSL;
-#elif defined(__CELLOS_LV2__)
-   g_settings.video.shader_type = RARCH_SHADER_CG;
-#elif defined(HAVE_GLSL)
-   g_settings.video.shader_type = RARCH_SHADER_GLSL;
-#else
-   g_settings.video.shader_type = RARCH_SHADER_NONE;
-#endif
-
-#ifdef GEKKO
-   g_settings.audio.rate_control_delta = 0.006;
-   g_settings.audio.rate_control = true;
-#endif
-
-   g_settings.video.render_to_texture = true;
-   g_settings.video.refresh_rate = 59.92;
 
    strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
 
@@ -283,7 +262,6 @@ void config_set_defaults(void)
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
    g_extern.console.screen.state.screenshots.enable = true;
    g_extern.console.screen.state.throttle.enable = true;
-
 
    g_extern.console.screen.state.triple_buffering.enable = true;
    g_extern.console.main_wrap.state.default_savestate_dir.enable = false;
