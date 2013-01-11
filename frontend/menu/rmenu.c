@@ -162,7 +162,7 @@ static void populate_setting_item(void *data, unsigned input)
 #endif
       case SETTING_FONT_SIZE:
          snprintf(current_item->text, sizeof(current_item->text), "Font Size");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_extern.console.rmenu.font_size);
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_settings.video.font_size);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Increase or decrease the [Font Size].");
          break;
       case SETTING_KEEP_ASPECT_RATIO:
@@ -1119,16 +1119,16 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_FONT_SIZE:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
-            if(g_extern.console.rmenu.font_size > 0) 
-               g_extern.console.rmenu.font_size -= 0.01f;
+            if(g_settings.video.font_size > 0) 
+               g_settings.video.font_size -= 0.01f;
          }
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            if((g_extern.console.rmenu.font_size < 2.0f))
-               g_extern.console.rmenu.font_size += 0.01f;
+            if((g_settings.video.font_size < 2.0f))
+               g_settings.video.font_size += 0.01f;
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            g_extern.console.rmenu.font_size = 1.0f;
+            g_settings.video.font_size = 1.0f;
          break;
       case SETTING_KEEP_ASPECT_RATIO:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))

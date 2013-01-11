@@ -216,7 +216,11 @@ static const bool aspect_ratio_auto = false; // 1:1 PAR
 static const bool crop_overscan = true;
 
 // Font size for on-screen messages.
+#ifdef HAVE_RMENU
+static const float font_size = 1.0f;
+#else
 static const unsigned font_size = 48;
+#endif
 // Attempt to scale the font size.
 // The scale factor will be window_size / desktop_size.
 static const bool font_scale = true;

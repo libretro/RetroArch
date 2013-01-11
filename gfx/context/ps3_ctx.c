@@ -67,9 +67,6 @@ static PSGLcontext* gl_context;
 
 #define MSG_PREV_NEXT_Y_POSITION 0.03f
 #define CURRENT_PATH_Y_POSITION 0.15f
-#define CURRENT_PATH_FONT_SIZE FONT_SIZE
-
-#define FONT_SIZE (g_extern.console.rmenu.font_size)
 
 #define NUM_ENTRY_PER_PAGE 15
 
@@ -135,9 +132,9 @@ static void gfx_ctx_ps3_set_default_pos(rmenu_default_positions_t *position)
    position->msg_queue_y_position = MSG_QUEUE_Y_POSITION;
    position->msg_queue_font_size= MSG_QUEUE_FONT_SIZE;
    position->msg_prev_next_y_position = MSG_PREV_NEXT_Y_POSITION;
-   position->current_path_font_size = CURRENT_PATH_FONT_SIZE;
+   position->current_path_font_size = g_settings.video.font_size;
    position->current_path_y_position = CURRENT_PATH_Y_POSITION;
-   position->variable_font_size = FONT_SIZE;
+   position->variable_font_size = g_settings.video.font_size;
    position->entries_per_page = NUM_ENTRY_PER_PAGE;
    position->core_msg_x_position = 0.3f;
    position->core_msg_y_position = 0.06f;

@@ -43,6 +43,7 @@ wchar_t strw_buffer[PATH_MAX];
 char str_buffer[PATH_MAX];
 
 static int process_input_ret = 0;
+static unsigned input_loop = 0;
 
 enum
 {
@@ -843,7 +844,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
             break;
          case MENU_ITEM_RESIZE_MODE:
-            g_extern.console.rmenu.input_loop = INPUT_LOOP_RESIZE_MODE;
+            input_loop = INPUT_LOOP_RESIZE_MODE;
 
             if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                rarch_settings_msg(S_MSG_RESIZE_SCREEN, S_DELAY_270);
@@ -1029,7 +1030,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
    if ( hObjPressed == m_filebrowser )
    {
-      g_extern.console.rmenu.input_loop = INPUT_LOOP_FILEBROWSER;
+      input_loop = INPUT_LOOP_FILEBROWSER;
       hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_filebrowser.xur", NULL, &app.hFileBrowser);
 
       if (hr < 0)
@@ -1202,7 +1203,7 @@ static void ingame_menu_resize (void)
       g_extern.console.screen.viewports.custom_vp.height = 720; //FIXME: hardcoded
    }
    if(state.Gamepad.wButtons & XINPUT_GAMEPAD_B)
-      g_extern.console.rmenu.input_loop = INPUT_LOOP_MENU;
+      input_loop = INPUT_LOOP_MENU;
 }
 
 bool rmenu_iterate(void)
@@ -1213,7 +1214,7 @@ bool rmenu_iterate(void)
 
    if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_PREINIT))
    {
-      g_extern.console.rmenu.input_loop = INPUT_LOOP_MENU;
+      input_loop = INPUT_LOOP_MENU;
       g_extern.lifecycle_menu_state |= (1 << MODE_MENU_DRAW);
       g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_PREINIT);
    }
@@ -1249,7 +1250,7 @@ bool rmenu_iterate(void)
 
    rarch_render_cached_frame();
 
-   switch(g_extern.console.rmenu.input_loop)
+   switch(input_loop)
    {
       case INPUT_LOOP_FILEBROWSER:
       case INPUT_LOOP_MENU:

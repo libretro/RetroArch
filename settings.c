@@ -277,7 +277,6 @@ void config_set_defaults(void)
    g_extern.audio_data.mute = 0;
    g_extern.verbose = true;
 
-   g_extern.console.rmenu.font_size = 1.0f;
    g_extern.console.sound.mode = SOUND_MODE_NORMAL;
    g_extern.console.screen.viewports.custom_vp.width = 0;
    g_extern.console.screen.viewports.custom_vp.height = 0;
@@ -449,7 +448,11 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.allow_rotate, "video_allow_rotate");
 
    CONFIG_GET_PATH(video.font_path, "video_font_path");
+#ifdef HAVE_RMENU
+   CONFIG_GET_FLOAT(video.font_size, "video_font_size");
+#else
    CONFIG_GET_INT(video.font_size, "video_font_size");
+#endif
    CONFIG_GET_BOOL(video.font_enable, "video_font_enable");
    CONFIG_GET_BOOL(video.font_scale, "video_font_scale");
    CONFIG_GET_FLOAT(video.msg_pos_x, "video_message_pos_x");
@@ -566,7 +569,6 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.y, "custom_viewport_y");
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.width, "custom_viewport_width");
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.height, "custom_viewport_height");
-   CONFIG_GET_FLOAT_EXTERN(console.rmenu.font_size, "menu_font_size");
 #endif
 
    unsigned msg_color = 0;
@@ -1198,10 +1200,15 @@ bool config_save_file(const char *path)
    config_set_int(conf, "custom_viewport_x", g_extern.console.screen.viewports.custom_vp.x);
    config_set_int(conf, "custom_viewport_y", g_extern.console.screen.viewports.custom_vp.y);
    config_set_string(conf, "default_rom_startup_dir", g_extern.console.main_wrap.paths.default_rom_startup_dir);
-   config_set_float(conf, "menu_font_size", g_extern.console.rmenu.font_size);
    config_set_float(conf, "overscan_amount", g_extern.console.screen.overscan_amount);
 #ifdef HAVE_ZLIB
    config_set_int(conf, "zip_extract_mode", g_extern.file_state.zip_extract_mode);
+#endif
+
+#ifdef HAVE_RMENU
+   config_set_float(conf, "video_font_size", g_settings.video.font_size);
+#else
+   config_set_int(conf, "video_font_size", g_settings.video.font_size);
 #endif
 
    // g_extern

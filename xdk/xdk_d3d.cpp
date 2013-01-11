@@ -947,7 +947,7 @@ static void xdk_d3d_start(void)
 #elif defined(_XBOX360)
    snprintf(g_settings.video.font_path, sizeof(g_settings.video.font_path), "game:\\media\\Arial_12.xpr");
 #endif
-   d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path, g_settings.video.font_size);
+   d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path, 0 /* font size - fixed/unused */);
 }
 
 static void xdk_d3d_restart(void)

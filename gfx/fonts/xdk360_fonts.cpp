@@ -178,6 +178,8 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
 
 static bool xdk_init_font(void *data, const char *font_path, unsigned font_size)
 {
+   (void)font_size;
+
    // Create the font
    xdk360_video_font_t *font = &m_Font;
 
