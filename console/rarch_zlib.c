@@ -48,12 +48,6 @@ static int rarch_zlib_extract_file(unzFile uf,
    char filename_inzip[PATH_MAX];
    bool is_dir = false;
    FILE *file_out = NULL;
-   char slash;
-#if defined(_WIN32)
-      slash = '\\';
-#else
-      slash = '/';
-#endif
 
    unz_file_info file_info;
    int ret = unzGetCurrentFileInfo(uf,
@@ -78,7 +72,7 @@ static int rarch_zlib_extract_file(unzFile uf,
    {
       case ZIP_EXTRACT_TO_CURRENT_DIR:
       case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
-         snprintf(write_filename, write_filename_size, "%s%c%s", current_dir, slash, filename_inzip);
+         snprintf(write_filename, write_filename_size, "%s%s", current_dir, filename_inzip);
          break;
 #if defined(HAVE_HDD_CACHE_PARTITION) && defined(RARCH_CONSOLE)
       case ZIP_EXTRACT_TO_CACHE_DIR:
@@ -86,7 +80,12 @@ static int rarch_zlib_extract_file(unzFile uf,
          break;
 #endif
    }
-
+   char slash;
+#if defined(_WIN32)
+      slash = '\\';
+#else
+      slash = '/';
+#endif
    if (filename_inzip[strlen(filename_inzip) - 1] == slash)
       is_dir = true;
 
