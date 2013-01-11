@@ -35,16 +35,15 @@ JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
 	compat/compat.o \
 	input/input_common.o
 
-RETROLAUNCH_OBJ = tools/retrolaunch/main.o      \
-	tools/retrolaunch/sha1.o      \
-	tools/retrolaunch/parser.o    \
+RETROLAUNCH_OBJ = tools/retrolaunch/main.o \
+	tools/retrolaunch/sha1.o \
+	tools/retrolaunch/parser.o \
 	tools/retrolaunch/cd_detect.o \
 	tools/retrolaunch/rl_fnmatch.o \
 	file_path.o \
 	compat/compat.o \
 	conf/config_file.o \
-	settings.o \
-      $(NULL)
+	settings.o
 
 HEADERS = $(wildcard */*.h) $(wildcard *.h)
 
