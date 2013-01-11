@@ -100,6 +100,20 @@ enum dpad_emu_enums
    DPAD_EMULATION_LAST
 };
 
+enum menu_enums
+{
+   MODE_EMULATION = 0,
+   MODE_LOAD_GAME,
+   MODE_INIT,
+   MODE_MENU,
+   MODE_MENU_PREINIT,
+   MODE_MENU_INGAME,
+   MODE_MENU_DRAW,
+   MODE_EXIT,
+   MODE_LOAD_FIRST_SHADER,
+   MODE_LOAD_SECOND_SHADER,
+};
+
 // All config related settings go here.
 struct settings
 {

@@ -2801,8 +2801,8 @@ bool rarch_main_iterate(void)
          g_extern.lifecycle_menu_state |= (1 << MODE_MENU);
          g_extern.delay_timer[0] = g_extern.frame_count + 30;
       }
-#endif
       else
+#endif
          g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
       return false;
    }
