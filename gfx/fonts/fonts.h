@@ -40,7 +40,7 @@ struct font_output_list
 
 typedef struct font_renderer_driver
 {
-   void *(*init)(const char *font_path, unsigned font_size);
+   void *(*init)(const char *font_path, float font_size);
    void (*render_msg)(void *data, const char *msg, struct font_output_list *output);
    void (*free_output)(void *data, struct font_output_list *list);
    void (*free)(void *data);

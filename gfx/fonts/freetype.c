@@ -41,7 +41,7 @@ static void ft_renderer_free(void *data)
    free(handle);
 }
 
-static void *ft_renderer_init(const char *font_path, unsigned font_size)
+static void *ft_renderer_init(const char *font_path, float font_size)
 {
    (void)font_size;
    FT_Error err;

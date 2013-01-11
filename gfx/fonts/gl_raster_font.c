@@ -16,11 +16,12 @@
 
 #include "../gl_common.h"
 
-static bool gl_init_font(void *data, const char *font_path, unsigned font_size)
+static bool gl_init_font(void *data, const char *font_path, float font_size)
 {
    if (!g_settings.video.font_enable)
       return false;
 
+   (void)font_size;
    gl_t *gl = (gl_t*)data;
 
    if (font_renderer_create_default(&gl->font_driver, &gl->font))

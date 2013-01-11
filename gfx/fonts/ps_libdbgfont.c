@@ -33,7 +33,7 @@
 #define DbgFontDraw cellDbgFontDraw
 #endif
 
-static bool gl_init_font(void *data, const char *font_path, unsigned font_size)
+static bool gl_init_font(void *data, const char *font_path, float font_size)
 {
    (void)font_path;
    (void)font_size;

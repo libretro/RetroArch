@@ -17,6 +17,8 @@
 #include "bitmap.h"
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
+#include "../../msvc/msvc_compat.h"
 #include "../../boolean.h"
 
 struct font_renderer
@@ -45,13 +47,13 @@ static void char_to_texture(font_renderer_t *handle, uint8_t letter)
 }
 
 
-static void *font_renderer_init(const char *font_path, unsigned font_size)
+static void *font_renderer_init(const char *font_path, float font_size)
 {
    font_renderer_t *handle = (font_renderer_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
 
-   handle->scale_factor = font_size / FONT_HEIGHT;
+   handle->scale_factor = (unsigned)round(font_size / FONT_HEIGHT);
    if (!handle->scale_factor)
       handle->scale_factor = 1;
 
