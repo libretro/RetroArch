@@ -391,7 +391,7 @@ static void system_exitspawn(void)
 #ifdef IS_SALAMANDER
    rarch_console_exec(default_paths.libretro_path);
 #else
-   if(g_extern.console.external_launch.enable)
-      rarch_console_exec(g_extern.console.external_launch.launch_app);
+   if(g_extern.fullpath)
+      rarch_console_exec(g_extern.fullpath);
 #endif
 }
