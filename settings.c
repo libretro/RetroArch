@@ -448,11 +448,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.allow_rotate, "video_allow_rotate");
 
    CONFIG_GET_PATH(video.font_path, "video_font_path");
-#ifdef HAVE_RMENU
    CONFIG_GET_FLOAT(video.font_size, "video_font_size");
-#else
-   CONFIG_GET_INT(video.font_size, "video_font_size");
-#endif
    CONFIG_GET_BOOL(video.font_enable, "video_font_enable");
    CONFIG_GET_BOOL(video.font_scale, "video_font_scale");
    CONFIG_GET_FLOAT(video.msg_pos_x, "video_message_pos_x");
@@ -1205,11 +1201,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "zip_extract_mode", g_extern.file_state.zip_extract_mode);
 #endif
 
-#ifdef HAVE_RMENU
    config_set_float(conf, "video_font_size", g_settings.video.font_size);
-#else
-   config_set_int(conf, "video_font_size", g_settings.video.font_size);
-#endif
 
    // g_extern
    config_set_int(conf, "sound_mode", g_extern.console.sound.mode);

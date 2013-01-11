@@ -168,11 +168,7 @@ struct settings
       char shader_dir[PATH_MAX];
 
       char font_path[PATH_MAX];
-#ifdef HAVE_RMENU
       float font_size;
-#else
-      unsigned font_size;
-#endif
       bool font_enable;
       bool font_scale;
       float msg_pos_x;
