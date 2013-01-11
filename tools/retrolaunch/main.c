@@ -22,7 +22,7 @@
 
 static int find_hash(int fd, const char *hash, char *game_name, size_t max_len)
 {
-	char token[MAX_TOKEN_LEN];
+	char token[MAX_TOKEN_LEN] = {0};
 	while (1) {
 		if (find_token(fd, "game") < 0) {
 			return -1;
@@ -71,11 +71,12 @@ find_rom_canonical_name(const char *hash, char *game_name, size_t max_len)
 	for (i = 0; i < files->size; i++) {
 		dat_path = files->elems[i].data;
 		dat_name = basename(dat_path);
+
       dat_name_dot = strchr(dat_name, '.');
 		if (!dat_name_dot) {
-			rv = -1;
-			goto clean;
+         continue;
 		}
+
 		offs = dat_name_dot - dat_name + 1;
 		memcpy(game_name, dat_name, offs);
 
