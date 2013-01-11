@@ -718,7 +718,8 @@ int select_file(void *data, void *state)
                {
                   strlcpy(g_extern.console.external_launch.launch_app, path, sizeof(g_extern.console.external_launch.launch_app));
                   set_libretro_core_as_launch = false;
-                  rarch_settings_change(S_RETURN_TO_LAUNCHER);
+                  g_extern.console.external_launch.enable = true;
+                  g_extern.lifecycle_menu_state = (1 << MODE_EXIT);
                }
                else
                {
@@ -2074,7 +2075,7 @@ int ingame_menu(void *data, void *state)
    menuitem_colors[menu_idx] = RED;
 
    if(input & (1ULL << RMENU_DEVICE_NAV_A))
-      rarch_settings_change(S_RETURN_TO_GAME);
+      g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
 
    switch(menu_idx)
    {
@@ -2082,7 +2083,7 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             rarch_load_state();
-            rarch_settings_change(S_RETURN_TO_GAME);
+            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
             rarch_state_slot_decrease();
@@ -2095,7 +2096,7 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             rarch_save_state();
-            rarch_settings_change(S_RETURN_TO_GAME);
+            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
@@ -2160,22 +2161,22 @@ int ingame_menu(void *data, void *state)
          break;
       case MENU_ITEM_RETURN_TO_GAME:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
-            rarch_settings_change(S_RETURN_TO_GAME);
+            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
 
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to return to the game.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
          break;
       case MENU_ITEM_RESET:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
-            rarch_settings_change(S_RETURN_TO_GAME);
             rarch_game_reset();
+            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset the game.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
          break;
       case MENU_ITEM_RETURN_TO_MENU:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
-            rarch_settings_change(S_RETURN_TO_MENU);
+            g_extern.lifecycle_menu_state = (1 << MODE_MENU);
             menu_idx = 0;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to return to the ROM Browser.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
@@ -2196,7 +2197,8 @@ int ingame_menu(void *data, void *state)
             RARCH_LOG("Boot Multiman: %s.\n", default_paths.multiman_self_file);
             strlcpy(g_extern.console.external_launch.launch_app, default_paths.multiman_self_file,
                   sizeof(g_extern.console.external_launch.launch_app));
-            rarch_settings_change(S_RETURN_TO_LAUNCHER);
+            g_extern.console.external_launch.enable = true;
+            g_extern.lifecycle_menu_state = (1 << MODE_EXIT);
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to quit RetroArch and return to multiMAN.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
          break;
@@ -2229,7 +2231,7 @@ int ingame_menu(void *data, void *state)
    }
 
    if((input & (1ULL << RMENU_DEVICE_NAV_L3)) && (input & (1ULL << RMENU_DEVICE_NAV_R3)))
-      rarch_settings_change(S_RETURN_TO_GAME);
+      g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
 
    display_menubar(current_menu);
 

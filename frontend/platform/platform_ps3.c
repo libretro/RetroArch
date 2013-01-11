@@ -394,7 +394,7 @@ static void system_process_args(int argc, char *argv[])
       case EXTERN_LAUNCHER_MULTIMAN:
          RARCH_LOG("Started from multiMAN, will auto-start game.\n");
          strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
-         rarch_settings_change(S_START_RARCH);
+         g_extern.lifecycle_menu_state = (1 << MODE_INIT);
          break;
 #endif
       default:

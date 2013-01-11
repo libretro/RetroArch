@@ -86,16 +86,6 @@ void rarch_settings_change(unsigned setting)
             g_extern.console.screen.resolutions.current.id = g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
          }
          break;
-      case S_RETURN_TO_GAME:
-         g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
-         break;
-      case S_RETURN_TO_LAUNCHER:
-         g_extern.console.external_launch.enable = true;
-         g_extern.lifecycle_menu_state = (1 << MODE_EXIT);
-         break;
-      case S_RETURN_TO_MENU:
-         g_extern.lifecycle_menu_state = (1 << MODE_MENU);
-         break;
       case S_ROTATION_DECREMENT:
          if(g_extern.console.screen.orientation > 0)
             g_extern.console.screen.orientation--;
@@ -103,9 +93,6 @@ void rarch_settings_change(unsigned setting)
       case S_ROTATION_INCREMENT:
          if(g_extern.console.screen.orientation < LAST_ORIENTATION)
             g_extern.console.screen.orientation++;
-         break;
-      case S_START_RARCH:
-         g_extern.lifecycle_menu_state = (1 << MODE_INIT);
          break;
       case S_REWIND:
          g_settings.rewind_enable = !g_settings.rewind_enable;

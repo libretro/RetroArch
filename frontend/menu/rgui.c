@@ -581,7 +581,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
                rarch_save_state();
             else
                rarch_load_state();
-            rarch_settings_change(S_RETURN_TO_GAME);
+            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
          }
          else if (action == RGUI_ACTION_START)
             rarch_settings_default(S_DEF_SAVE_STATE);
@@ -610,7 +610,7 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
       case RGUI_SETTINGS_RESTART_GAME:
          if (action == RGUI_ACTION_OK)
          {
-            rarch_settings_change(S_RETURN_TO_GAME);
+            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
             rarch_game_reset();
          }
          break;
@@ -760,7 +760,8 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
 #ifdef GEKKO
             snprintf(g_extern.console.external_launch.launch_app, sizeof(g_extern.console.external_launch.launch_app), "%s/boot.dol", default_paths.core_dir);
 #endif
-            rarch_settings_change(S_RETURN_TO_LAUNCHER);
+            g_extern.console.external_launch.enable = true;
+            g_extern.lifecycle_menu_state = (1 << MODE_EXIT);
          }
          break;
       case RGUI_SETTINGS_QUIT_EMULATOR:

@@ -781,14 +781,14 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             if (g_extern.main_is_init)
             {
                rarch_load_state();
-               rarch_settings_change(S_RETURN_TO_GAME);
+               g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
             }
             break;
          case MENU_ITEM_SAVE_STATE:
             if (g_extern.main_is_init)
             {
                rarch_save_state();
-               rarch_settings_change(S_RETURN_TO_GAME);
+               g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
             }
             break;
          case MENU_ITEM_KEEP_ASPECT_RATIO:
@@ -827,13 +827,13 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
          case MENU_ITEM_RESET:
             if (g_extern.main_is_init)
             {
-               rarch_settings_change(S_RETURN_TO_GAME);
                rarch_game_reset();
+               g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
             }
             break;
          case MENU_ITEM_RETURN_TO_GAME:
             if (g_extern.main_is_init)
-               rarch_settings_change(S_RETURN_TO_GAME);
+               g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
             break;
          case MENU_ITEM_QUIT_RARCH:
             g_extern.lifecycle_menu_state &= ~((1 << MODE_MENU) | (1 << MODE_MENU_INGAME) | (1 << MODE_EMULATION));
@@ -938,7 +938,8 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       if(path_file_exists(tmp_browser->current_dir.list->elems[index].data))
       {
          snprintf(g_extern.console.external_launch.launch_app, sizeof(g_extern.console.external_launch.launch_app), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
-         rarch_settings_change(S_RETURN_TO_LAUNCHER);
+         g_extern.console.external_launch.enable = true;
+         g_extern.lifecycle_menu_state = (1 << MODE_EXIT);
       }
       else if(tmp_browser->current_dir.list->elems[index].attr.b)
       {
