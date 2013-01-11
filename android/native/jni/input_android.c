@@ -39,6 +39,7 @@ static uint64_t state[MAX_PADS];
 struct input_pointer
 {
    int16_t x, y;
+   int16_t full_x, full_y;
 };
 
 static struct input_pointer pointer[MAX_TOUCH];
@@ -163,7 +164,8 @@ static void android_input_poll(void *data)
                   y = AMotionEvent_getY(event, motion_pointer);
 
                   input_translate_coord_viewport(x, y,
-                        &pointer[motion_pointer].x, &pointer[motion_pointer].y);
+                        &pointer[motion_pointer].x, &pointer[motion_pointer].y,
+                        &pointer[motion_pointer].full_x, &pointer[motion_pointer].full_y);
 
                   pointer_count = max(pointer_count, motion_pointer + 1);
                }
@@ -244,7 +246,19 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
             case RETRO_DEVICE_ID_POINTER_Y:
                return pointer[index].y;
             case RETRO_DEVICE_ID_POINTER_PRESSED:
-               return index < pointer_count;
+               return (index < pointer_count) && (pointer[index].x != -0x8000) && (pointer[index].y != -0x8000);
+            default:
+               return 0;
+         }
+      case RARCH_DEVICE_POINTER_SCREEN:
+         switch(id)
+         {
+            case RETRO_DEVICE_ID_POINTER_X:
+               return pointer[index].full_x;
+            case RETRO_DEVICE_ID_POINTER_Y:
+               return pointer[index].full_y;
+            case RETRO_DEVICE_ID_POINTER_PRESSED:
+               return (index < pointer_count) && (pointer[index].full_x != -0x8000) && (pointer[index].full_y != -0x8000);
             default:
                return 0;
          }
