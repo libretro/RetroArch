@@ -530,6 +530,9 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
 
 static void calc_out_rect(bool keep_aspect, struct rarch_viewport *vp, unsigned vp_width, unsigned vp_height)
 {
+   vp->full_width  = vp_width;
+   vp->full_height = vp_height;
+
    if (!keep_aspect)
    {
       vp->x = 0; vp->y = 0;

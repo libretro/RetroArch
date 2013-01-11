@@ -270,6 +270,8 @@ typedef struct rarch_viewport
    int y;
    unsigned width;
    unsigned height;
+   unsigned full_width;
+   unsigned full_height;
 } rarch_viewport_t;
 
 // All run-time- / command line flag-related globals go here.

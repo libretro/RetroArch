@@ -38,6 +38,11 @@
 #define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
 #define AUDIO_MAX_RATIO 16
 
+// Specialized _POINTER that targets the full screen regardless of viewport.
+// Should not be used by a libretro implementation as coordinates returned make no sense.
+// It is only used internally for overlays.
+#define RARCH_DEVICE_POINTER_SCREEN (RETRO_DEVICE_POINTER | 0x10000)
+
 // libretro has 16 buttons from 0-15 (libretro.h)
 // Analog binds use RETRO_DEVICE_ANALOG, but we follow the same scheme internally
 // in RetroArch for simplicity,
@@ -219,6 +224,7 @@ typedef struct video_overlay_interface
    bool (*load)(void *data, const uint32_t *image, unsigned width, unsigned height);
    void (*tex_geom)(void *data, float x, float y, float w, float h);
    void (*vertex_geom)(void *data, float x, float y, float w, float h);
+   void (*full_screen)(void *data, bool enable);
 } video_overlay_interface_t;
 #endif
 

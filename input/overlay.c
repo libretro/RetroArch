@@ -51,6 +51,7 @@ struct overlay
    unsigned height;
 
    float x, y, w, h;
+   bool full_screen;
 };
 
 struct input_overlay
@@ -173,6 +174,12 @@ static bool input_overlay_load_overlay(config_file_t *conf, const char *config_p
       string_list_free(list);
    }
 
+   char overlay_full_screen_key[64];
+   snprintf(overlay_full_screen_key, sizeof(overlay_full_screen_key),
+         "overlay%u_full_screen", index);
+   overlay->full_screen = false;
+   config_get_bool(conf, overlay_full_screen_key, &overlay->full_screen);
+
    char overlay_descs_key[64];
    snprintf(overlay_descs_key, sizeof(overlay_descs_key), "overlay%u_descs", index);
 
@@ -268,6 +275,7 @@ input_overlay_t *input_overlay_new(const char *overlay)
    ol->iface->load(ol->iface_data, ol->active->image, ol->active->width, ol->active->height);
    ol->iface->vertex_geom(ol->iface_data,
          ol->active->x, ol->active->y, ol->active->w, ol->active->h);
+   ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
 
    ol->iface->enable(ol->iface_data, true);
    ol->enable = true;
@@ -339,6 +347,12 @@ void input_overlay_next(input_overlay_t *ol)
    ol->iface->load(ol->iface_data, ol->active->image, ol->active->width, ol->active->height);
    ol->iface->vertex_geom(ol->iface_data,
          ol->active->x, ol->active->y, ol->active->w, ol->active->h);
+   ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
+}
+
+bool input_overlay_full_screen(input_overlay_t *ol)
+{
+   return ol->active->full_screen;
 }
 
 void input_overlay_free(input_overlay_t *ol)

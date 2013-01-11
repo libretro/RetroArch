@@ -46,7 +46,8 @@ static inline void input_conv_analog_id_to_bind_id(unsigned index, unsigned id,
    }
 }
 
-bool input_translate_coord_viewport(int mouse_x, int mouse_y, int16_t *res_x, int16_t *res_y);
+bool input_translate_coord_viewport(int mouse_x, int mouse_y,
+      int16_t *res_x, int16_t *res_y, int16_t *res_screen_x, int16_t *res_screen_y);
 
 typedef struct rarch_joypad_driver
 {

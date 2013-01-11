@@ -338,8 +338,8 @@ static void sdl_gfx_viewport_info(void *data, struct rarch_viewport *vp)
 {
    sdl_video_t *vid = (sdl_video_t*)data;
    vp->x = vp->y = 0;
-   vp->width     = vid->screen->w;
-   vp->height    = vid->screen->h;
+   vp->width  = vp->full_width  = vid->screen->w;
+   vp->height = vp->full_height = vid->screen->h;
 }
 
 const video_driver_t video_sdl = {

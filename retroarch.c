@@ -474,14 +474,17 @@ static inline void input_poll_overlay(void)
 {
    driver.overlay_state = 0;
 
+   unsigned device = input_overlay_full_screen(driver.overlay) ?
+      RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
+
    for (unsigned i = 0;
-         input_input_state_func(NULL, 0, RETRO_DEVICE_POINTER, i, RETRO_DEVICE_ID_POINTER_PRESSED);
+         input_input_state_func(NULL, 0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
    {
       int16_t x = input_input_state_func(NULL, 0,
-            RETRO_DEVICE_POINTER, i, RETRO_DEVICE_ID_POINTER_X);
+            device, i, RETRO_DEVICE_ID_POINTER_X);
       int16_t y = input_input_state_func(NULL, 0,
-            RETRO_DEVICE_POINTER, i, RETRO_DEVICE_ID_POINTER_Y);
+            device, i, RETRO_DEVICE_ID_POINTER_Y);
 
       driver.overlay_state |= input_overlay_poll(driver.overlay, x, y);
    }

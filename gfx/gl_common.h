@@ -285,6 +285,7 @@ typedef struct gl
 #ifdef HAVE_OVERLAY
    // Overlay rendering
    bool overlay_enable;
+   bool overlay_full_screen;
    GLuint tex_overlay;
    GLfloat overlay_tex_coord[8];
    GLfloat overlay_vertex_coord[8];

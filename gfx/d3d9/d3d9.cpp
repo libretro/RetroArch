@@ -240,6 +240,9 @@ void D3DVideo::viewport_info(rarch_viewport &vp)
    vp.y      = final_viewport.Y;
    vp.width  = final_viewport.Width;
    vp.height = final_viewport.Height;
+
+   vp.full_width  = screen_width;
+   vp.full_height = screen_height;
 }
 
 bool D3DVideo::read_viewport(uint8_t *buffer)

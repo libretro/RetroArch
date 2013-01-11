@@ -237,16 +237,23 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
    }
 }
 
-static int16_t dinput_pointer_state(struct dinput_input *di, unsigned index, unsigned id)
+static int16_t dinput_pointer_state(struct dinput_input *di, unsigned index, unsigned id, bool screen)
 {
    if (index != 0)
       return 0;
 
-   int16_t res_x = 0, res_y = 0;
-   bool valid = input_translate_coord_viewport(di->mouse_x, di->mouse_y, &res_x, &res_y);
+   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
+   bool valid = input_translate_coord_viewport(di->mouse_x, di->mouse_y,
+         &res_x, &res_y, &res_screen_x, &res_screen_y);
 
    if (!valid)
       return 0;
+
+   if (screen)
+   {
+      res_x = res_screen_x;
+      res_y = res_screen_y;
+   }
 
    bool inside = (res_x >= -0x7fff) && (res_x <= 0x7fff) &&
       (res_y >= -0x7fff) && (res_y <= 0x7fff);
@@ -287,7 +294,8 @@ static int16_t dinput_input_state(void *data,
          return dinput_mouse_state(di, id);
 
       case RETRO_DEVICE_POINTER:
-         return dinput_pointer_state(di, index, id);
+      case RARCH_DEVICE_POINTER_SCREEN:
+         return dinput_pointer_state(di, index, id, device == RARCH_DEVICE_POINTER_SCREEN);
 
       case RETRO_DEVICE_LIGHTGUN:
          return dinput_lightgun_state(di, id);

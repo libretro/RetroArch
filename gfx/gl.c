@@ -1809,6 +1809,8 @@ static void gl_viewport_info(void *data, struct rarch_viewport *vp)
 {
    gl_t *gl = (gl_t*)data;
    *vp = gl->vp;
+   vp->full_width  = gl->win_width;
+   vp->full_height = gl->win_height;
 }
 
 static bool gl_read_viewport(void *data, uint8_t *buffer)
@@ -2006,6 +2008,12 @@ static void gl_overlay_enable(void *data, bool state)
    gl->overlay_enable = state;
 }
 
+static void gl_overlay_full_screen(void *data, bool enable)
+{
+   gl_t *gl = (gl_t*)data;
+   gl->overlay_full_screen = enable;
+}
+
 static void gl_render_overlay(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -2018,7 +2026,15 @@ static void gl_render_overlay(void *data)
    gl->coords.tex_coord = gl->overlay_tex_coord;
    gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp_no_rot);
 
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   if (gl->overlay_full_screen)
+   {
+      glViewport(0, 0, gl->win_width, gl->win_height);
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+   }
+   else
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
    glDisable(GL_BLEND);
 
    gl->coords.vertex    = vertex_ptr;
@@ -2030,6 +2046,7 @@ static const video_overlay_interface_t gl_overlay_interface = {
    gl_overlay_load,
    gl_overlay_tex_geom,
    gl_overlay_vertex_geom,
+   gl_overlay_full_screen,
 };
 
 static void gl_get_overlay_interface(void *data, const video_overlay_interface_t **iface)
