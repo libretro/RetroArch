@@ -333,7 +333,8 @@ begin_shutdown:
 #endif
 
    system_deinit();
-   system_exitspawn();
+   if (g_extern.lifecycle_menu_state & (1 << MODE_EXITSPAWN))
+      system_exitspawn();
 
    return 1;
 }

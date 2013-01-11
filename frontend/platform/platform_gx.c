@@ -339,8 +339,7 @@ static void system_exitspawn(void)
 #ifdef IS_SALAMANDER
    rarch_console_exec(default_paths.libretro_path);
 #else
-   if (g_extern.lifecycle_menu_state & (1 << MODE_EXITSPAWN))
-      rarch_console_exec(g_settings.libretro);
+   rarch_console_exec(g_settings.libretro);
 #endif
 }
 

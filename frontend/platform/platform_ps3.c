@@ -464,8 +464,7 @@ static void system_exitspawn(void)
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
    cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
 #else
-   if (g_extern.lifecycle_menu_state & (1 << MODE_EXITSPAWN))
-      rarch_console_exec(g_extern.fullpath);
+   rarch_console_exec(g_extern.fullpath);
 #endif
 
 #endif
