@@ -121,9 +121,9 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
          };
 
          xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
-         D3DDevice *pd3dDevice = vid->d3d_render_device;
+         LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
 
-         hr = pd3dDevice->CreateVertexDeclaration( decl, &s_FontLocals.m_pFontVertexDecl );
+         hr = d3dr->CreateVertexDeclaration( decl, &s_FontLocals.m_pFontVertexDecl );
 
          if (hr >= 0)
          {
@@ -134,7 +134,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
 
             if (hr >= 0)
             {
-               hr = pd3dDevice->CreateVertexShader( ( unsigned long * )pShaderCode->GetBufferPointer(),
+               hr = d3dr->CreateVertexShader( ( unsigned long * )pShaderCode->GetBufferPointer(),
                      &s_FontLocals.m_pFontVertexShader );
                pShaderCode->Release();
 
@@ -145,7 +145,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
 
                   if (hr >= 0)
                   {
-                     hr = pd3dDevice->CreatePixelShader((DWORD*)pShaderCode->GetBufferPointer(),
+                     hr = d3dr->CreatePixelShader((DWORD*)pShaderCode->GetBufferPointer(),
                            &s_FontLocals.m_pFontPixelShader );
                      pShaderCode->Release();
 
@@ -164,7 +164,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
             s_FontLocals.m_pFontVertexDecl->Release();
          }  
          s_FontLocals.m_pFontVertexDecl = NULL;
-      }while(0);
+      }while (0);
    }
    else
    {
@@ -188,7 +188,7 @@ static bool xdk_init_font(void *data, const char *font_path, unsigned font_size)
    font->m_TranslatorTable = NULL;
 
    // Create the font
-   if(FAILED( m_xprResource.Create(font_path)))
+   if (FAILED( m_xprResource.Create(font_path)))
       goto error;
 
    D3DTexture *pFontTexture = m_xprResource.GetTexture( "FontTexture" );
@@ -201,7 +201,7 @@ static bool xdk_init_font(void *data, const char *font_path, unsigned font_size)
    const unsigned char * pData = (const unsigned char*)pFontData;
    unsigned long dwFileVersion = ((const FontFileHeaderImage_t *)pData)->m_dwFileVersion;
 
-   if( dwFileVersion == FONTFILEVERSION )
+   if (dwFileVersion == FONTFILEVERSION)
    {
       font->m_fFontHeight = ((const FontFileHeaderImage_t *)pData)->m_fFontHeight;
       font->m_fFontTopPadding = ((const FontFileHeaderImage_t *)pData)->m_fFontTopPadding;
@@ -226,7 +226,7 @@ static bool xdk_init_font(void *data, const char *font_path, unsigned font_size)
    }
 
    // Create the vertex and pixel shaders for rendering the font
-   if( FAILED( xdk360_video_font_create_shaders(font) ) )
+   if (FAILED(xdk360_video_font_create_shaders(font)))
    {
       RARCH_ERR( "Could not create font shaders.\n" );
       goto error;
@@ -250,13 +250,25 @@ static void xdk_deinit_font(void *data)
    font->m_cMaxGlyph = 0;
    font->m_TranslatorTable = NULL;
 
-   if( ( s_FontLocals.m_pFontPixelShader != NULL ) && ( s_FontLocals.m_pFontPixelShader->Release() == 0 ) )
+   if (s_FontLocals.m_pFontPixelShader != NULL)
+   {
+      s_FontLocals.m_pFontPixelShader->Release();
       s_FontLocals.m_pFontPixelShader = NULL;
-   if( ( s_FontLocals.m_pFontVertexShader != NULL ) && ( s_FontLocals.m_pFontVertexShader->Release() == 0 ) )
+   }
+
+   if (s_FontLocals.m_pFontVertexShader != NULL)
+   {
+      s_FontLocals.m_pFontVertexShader->Release();
       s_FontLocals.m_pFontVertexShader = NULL;
-   if( ( s_FontLocals.m_pFontVertexDecl != NULL ) && ( s_FontLocals.m_pFontVertexDecl->Release() == 0 ) )
+   }
+
+   if (s_FontLocals.m_pFontVertexDecl != NULL)
+   {
+      s_FontLocals.m_pFontVertexDecl->Release();
       s_FontLocals.m_pFontVertexDecl = NULL;
-   if( m_xprResource.Initialized())
+   }
+
+   if (m_xprResource.Initialized())
       m_xprResource.Destroy();
 }
 
@@ -264,29 +276,29 @@ void xdk_render_msg_post(xdk360_video_font_t * font)
 {
    // Cache the global pointer into a register
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   D3DDevice *pD3dDevice = d3d->d3d_render_device;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
 
-   pD3dDevice->SetTexture(0, NULL);
-   pD3dDevice->SetVertexDeclaration(NULL);
-   D3DDevice_SetVertexShader(pD3dDevice, NULL );
-   D3DDevice_SetPixelShader(pD3dDevice, NULL );
-   pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState );
+   d3dr->SetTexture(0, NULL);
+   d3dr->SetVertexDeclaration(NULL);
+   D3DDevice_SetVertexShader(d3dr, NULL);
+   D3DDevice_SetPixelShader(d3dr, NULL);
+   d3dr->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState );
 }
 
 static void xdk_render_msg_pre(xdk360_video_font_t * font)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   D3DDevice *pD3dDevice = d3d->d3d_render_device;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
 
    // Save state
-   pD3dDevice->GetRenderState( D3DRS_VIEWPORTENABLE, &font->m_dwSavedState );
+   d3dr->GetRenderState( D3DRS_VIEWPORTENABLE, &font->m_dwSavedState );
 
    // Set the texture scaling factor as a vertex shader constant
    D3DSURFACE_DESC TextureDesc;
    D3DTexture_GetLevelDesc(font->m_pFontTexture, 0, &TextureDesc); // Get the description
 
    // Set render state
-   pD3dDevice->SetTexture(0, font->m_pFontTexture);
+   d3dr->SetTexture(0, font->m_pFontTexture);
 
    // Read the TextureDesc here to ensure no load/hit/store from GetLevelDesc()
    float vTexScale[4];
@@ -295,22 +307,21 @@ static void xdk_render_msg_pre(xdk360_video_font_t * font)
    vTexScale[2] = 0.0f;
    vTexScale[3] = 0.0f;
 
-   pD3dDevice->SetRenderState( D3DRS_VIEWPORTENABLE, FALSE );
-
-   pD3dDevice->SetVertexDeclaration(s_FontLocals.m_pFontVertexDecl);
-   pD3dDevice->SetVertexShader(s_FontLocals.m_pFontVertexShader);
-   pD3dDevice->SetPixelShader(s_FontLocals.m_pFontPixelShader);
+   d3dr->SetRenderState( D3DRS_VIEWPORTENABLE, FALSE );
+   d3dr->SetVertexDeclaration(s_FontLocals.m_pFontVertexDecl);
+   d3dr->SetVertexShader(s_FontLocals.m_pFontVertexShader);
+   d3dr->SetPixelShader(s_FontLocals.m_pFontPixelShader);
 
    // Set the texture scaling factor as a vertex shader constant
    // Call here to avoid load hit store from writing to vTexScale above
-   pD3dDevice->SetVertexShaderConstantF( 2, vTexScale, 1 );
+   d3dr->SetVertexShaderConstantF( 2, vTexScale, 1 );
 }
 
 static void xdk_video_font_draw_text(xdk360_video_font_t *font, 
       float x, float y, const wchar_t * strText)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   D3DDevice *pd3dDevice = d3d->d3d_render_device;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
 
    // Set the color as a vertex shader constant
    float vColor[4];
@@ -322,7 +333,7 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    // Perform the actual storing of the color constant here to prevent
    // a load-hit-store by inserting work between the store and the use of
    // the vColor array.
-   pd3dDevice->SetVertexShaderConstantF( 1, vColor, 1 );
+   d3dr->SetVertexShaderConstantF( 1, vColor, 1 );
 
    float m_fCursorX = floorf(x);
    float m_fCursorY = floorf(y);
@@ -339,16 +350,15 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    volatile float * pVertex;
 
    unsigned long dwNumChars = wcslen(strText);
-   pd3dDevice->BeginVertices(D3DPT_QUADLIST, 4 * dwNumChars, sizeof(XMFLOAT4),
-         (void**)&pVertex);
+   d3dr->BeginVertices(D3DPT_QUADLIST, 4 * dwNumChars, sizeof(XMFLOAT4), (void**)&pVertex);
 
    // Draw four vertices for each glyph
-   while( *strText )
+   while (*strText)
    {
       // Get the current letter in the string
       wchar_t letter = *strText++;
 
-      if( letter == L'\n' )
+      if (letter == L'\n')
       {
          // Handle the newline character
          m_fCursorX = x;
@@ -416,30 +426,31 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
 
    // Since we allocated vertex data space based on the string length, we now need to
    // add some dummy verts for any skipped characters (like newlines, etc.)
-   while( dwNumChars )
+   while (dwNumChars)
    {
-      for(unsigned i = 0; i < 16; i++)
+      for (unsigned i = 0; i < 16; i++)
          pVertex[i] = 0;
 
       pVertex += 16;
       dwNumChars--;
    }
 
-   pd3dDevice->EndVertices();
+   d3dr->EndVertices();
 }
 
 static void xdk_render_msg_place(void *data, float x, float y, float scale, uint32_t color, const char *str_msg)
 {
 	(void)data;
-
+   xdk360_video_font_t *font = &m_Font;
    wchar_t msg[PATH_MAX];
+
    convert_char_to_wchar(msg, str_msg, sizeof(msg));
 
    if (msg != NULL || msg[0] != L'\0')
    {
-      xdk_render_msg_pre(&m_Font);
-      xdk_video_font_draw_text(&m_Font, x, y, msg);
-      xdk_render_msg_post(&m_Font);
+      xdk_render_msg_pre(font);
+      xdk_video_font_draw_text(font, x, y, msg);
+      xdk_render_msg_post(font);
    }
 }
 
