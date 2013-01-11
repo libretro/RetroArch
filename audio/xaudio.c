@@ -37,7 +37,8 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
 
    size_t bufsize = latency * rate / 1000;
 
-   RARCH_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n", latency, (int)bufsize * 1000 / rate);
+   RARCH_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n",
+         latency, (int)bufsize * 1000 / rate);
 
    xa->bufsize = bufsize * 2 * sizeof(float);
 
@@ -98,11 +99,7 @@ static bool xa_start(void *data)
 static bool xa_use_float(void *data)
 {
    (void)data;
-#ifdef _XBOX
-   return false;
-#else
    return true;
-#endif
 }
 
 static void xa_free(void *data)
