@@ -201,7 +201,7 @@ static void populate_setting_item(void *data, unsigned input)
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
          snprintf(current_item->text, sizeof(current_item->text), "Flicker Filter");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_FLICKER_FILTER_ENABLE) ? true : false));
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.console.screen.flicker_filter_index);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Flicker Filter].");
          break;
       case SETTING_SOFT_DISPLAY_FILTER:
