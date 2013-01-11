@@ -87,7 +87,7 @@ static int rarch_zlib_extract_file(unzFile uf,
 #endif
    }
 
-   if(filename_inzip[strlen(filename_inzip) - 1] == '/')
+   if(filename_inzip[strlen(filename_inzip) - 1] == slash)
       is_dir = true;
 
    ret = unzOpenCurrentFile(uf);
