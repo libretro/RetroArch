@@ -2171,6 +2171,7 @@ int ingame_menu(void *data, void *state)
             g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
             rarch_settings_change(S_FRAME_ADVANCE);
             menu_idx = MENU_ITEM_FRAME_ADVANCE;
+            return -1;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to step one frame.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
          break;
