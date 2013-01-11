@@ -1260,8 +1260,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_set_prev_texture(gl, &tex_info);
 
 #ifdef FPS_COUNTER
-   bool fps_enable = g_extern.console.rmenu.state.msg_fps.enable;
-   if (fps_enable)
+   if (lifecycle_menu_state & (1 << MODE_FPS_DRAW))
    {
       char fps_txt[128];
       gfx_get_fps(fps_txt, sizeof(fps_txt), true);

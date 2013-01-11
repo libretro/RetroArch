@@ -109,6 +109,7 @@ enum menu_enums
    MODE_MENU_PREINIT,
    MODE_MENU_INGAME,
    MODE_MENU_DRAW,
+   MODE_FPS_DRAW,
    MODE_EXIT,
    MODE_LOAD_FIRST_SHADER,
    MODE_LOAD_SECOND_SHADER,
@@ -496,7 +497,6 @@ struct global
 
          struct
          {
-            rarch_boolean_state_t msg_fps;
             rarch_boolean_state_t msg_info;
             rarch_boolean_state_t rmenu_widescreen;
             rarch_boolean_state_t rmenu_hd;

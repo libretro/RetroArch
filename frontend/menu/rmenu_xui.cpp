@@ -384,7 +384,7 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_extern.console.rmenu.state.msg_info.enable ? L"Info messages: ON" : L"Info messages: OFF");
-   m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, g_extern.console.rmenu.state.msg_fps.enable ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
+   m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
    m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.rmenu_hd.enable ? L"Menus: HD" : L"Menus: SD");
    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
@@ -427,8 +427,11 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_extern.console.rmenu.state.msg_info.enable ? L"Info messages: ON" : L"Info messages: OFF");
             break;
          case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-            g_extern.console.rmenu.state.msg_fps.enable = !g_extern.console.rmenu.state.msg_fps.enable;
-            m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, g_extern.console.rmenu.state.msg_fps.enable ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
+            if (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW))
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_FPS_DRAW);
+            else
+               g_extern.lifecycle_menu_state |= (1 << MODE_FPS_DRAW);
+            m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
             break;
          case SETTING_EMU_MENUS:
             g_extern.console.rmenu.state.rmenu_hd.enable = !g_extern.console.rmenu.state.rmenu_hd.enable;
@@ -523,8 +526,11 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_extern.console.rmenu.state.msg_info.enable ? L"Info messages: ON" : L"Info messages: OFF");
                break;
             case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-               g_extern.console.rmenu.state.msg_fps.enable = !g_extern.console.rmenu.state.msg_fps.enable;
-               m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, g_extern.console.rmenu.state.msg_fps.enable ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
+               if (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW))
+                  g_extern.lifecycle_menu_state &= ~(1 << MODE_FPS_DRAW);
+               else
+                  g_extern.lifecycle_menu_state |= (1 << MODE_FPS_DRAW);
+               m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
                break;
             case SETTING_EMU_MENUS:
                g_extern.console.rmenu.state.rmenu_hd.enable = !g_extern.console.rmenu.state.rmenu_hd.enable;
@@ -582,8 +588,11 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_extern.console.rmenu.state.msg_info.enable ? L"Info messages: ON" : L"Info messages: OFF");
                break;
             case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-               g_extern.console.rmenu.state.msg_fps.enable = !g_extern.console.rmenu.state.msg_fps.enable;
-               m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, g_extern.console.rmenu.state.msg_fps.enable ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
+               if (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW))
+                  g_extern.lifecycle_menu_state &= ~(1 << MODE_FPS_DRAW);
+               else
+                  g_extern.lifecycle_menu_state |= (1 << MODE_FPS_DRAW);
+               m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
                break;
             case SETTING_EMU_MENUS:
                g_extern.console.rmenu.state.rmenu_hd.enable = !g_extern.console.rmenu.state.rmenu_hd.enable;

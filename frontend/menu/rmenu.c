@@ -286,7 +286,7 @@ static void populate_setting_item(void *data, unsigned input)
          /* emu-specific */
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
          snprintf(current_item->text, sizeof(current_item->text), "Debug info messages");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.rmenu.state.msg_fps.enable ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen debug messages.");
          break;
       case SETTING_EMU_SHOW_INFO_MSG:
@@ -1366,9 +1366,14 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          break;
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-            g_extern.console.rmenu.state.msg_fps.enable = !g_extern.console.rmenu.state.msg_fps.enable;
+         {
+            if (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW))
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_FPS_DRAW);
+            else
+               g_extern.lifecycle_menu_state |= (1 << MODE_FPS_DRAW);
+         }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            g_extern.console.rmenu.state.msg_fps.enable = false;
+            g_extern.lifecycle_menu_state &= ~(1 << MODE_FPS_DRAW);
          break;
       case SETTING_EMU_SHOW_INFO_MSG:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))

@@ -935,7 +935,7 @@ static bool gx_frame(void *data, const void *frame,
       GX_DrawDone();
    }
 
-   if (g_extern.console.rmenu.state.msg_fps.enable)
+   if (lifecycle_menu_state & (1 << MODE_FPS_DRAW))
    {
       char fps_txt[128];
       char mem1_txt[128];

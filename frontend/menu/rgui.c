@@ -479,7 +479,7 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), g_extern.console.main_wrap.state.default_savestate_dir.enable ? "ON" : "OFF");
             break;
          case RGUI_SETTINGS_DEBUG_TEXT:
-            snprintf(type_str, sizeof(type_str), g_extern.console.rmenu.state.msg_fps.enable ? "ON" : "OFF");
+            snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW)) ? "ON" : "OFF");
             break;
          case RGUI_SETTINGS_CUSTOM_VIEWPORT:
          case RGUI_SETTINGS_CORE:
@@ -752,9 +752,9 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          break;
       case RGUI_SETTINGS_DEBUG_TEXT:
          if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
-            g_extern.console.rmenu.state.msg_fps.enable = false;
+            g_extern.lifecycle_menu_state &= ~(1 << MODE_FPS_DRAW);
          else if (action == RGUI_ACTION_RIGHT)
-            g_extern.console.rmenu.state.msg_fps.enable = true;
+            g_extern.lifecycle_menu_state |= (1 << MODE_FPS_DRAW);
          break;
       case RGUI_SETTINGS_RESTART_EMULATOR:
          if (action == RGUI_ACTION_OK)

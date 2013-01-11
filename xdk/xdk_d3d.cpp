@@ -697,7 +697,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #ifdef HAVE_FBO
    D3DSurface* pRenderTarget0;
 #endif
-   bool fps_enable = g_extern.console.rmenu.state.msg_fps.enable;
 #ifdef _XBOX1
    unsigned flicker_filter = g_extern.console.screen.state.flicker_filter.value;
    bool soft_filter_enable = g_extern.console.screen.state.soft_filter.enable;
@@ -873,7 +872,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    float msg_height = mem_height + 50;
 #endif
 
-   if(fps_enable)
+   if (lifecycle_menu_state & (1 << MODE_FPS_DRAW))
    {
       MEMORYSTATUS stat;
       GlobalMemoryStatus(&stat);
