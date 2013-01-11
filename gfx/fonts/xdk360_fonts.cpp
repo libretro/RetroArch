@@ -121,7 +121,7 @@ static HRESULT xdk360_video_font_create_shaders (xdk360_video_font_t * font)
          };
 
          xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
-         LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+         LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)vid->d3d_render_device;
 
          hr = d3dr->CreateVertexDeclaration( decl, &s_FontLocals.m_pFontVertexDecl );
 
