@@ -72,11 +72,11 @@ static int rarch_zlib_extract_file(unzFile uf,
    {
       case ZIP_EXTRACT_TO_CURRENT_DIR:
       case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
-         snprintf(write_filename, write_filename_size, "%s%s", current_dir, filename_inzip);
+         fill_pathname_join(write_filename, current_dir, filename_inzip, write_filename_size);
          break;
 #if defined(HAVE_HDD_CACHE_PARTITION) && defined(RARCH_CONSOLE)
       case ZIP_EXTRACT_TO_CACHE_DIR:
-         snprintf(write_filename, write_filename_size, "%s%s", default_paths.cache_dir, filename_inzip);
+         fill_pathname_join(write_filename, default_paths.cache_dir, filename_inzip, write_filename_size);
          break;
 #endif
    }
@@ -199,7 +199,7 @@ int rarch_zlib_extract_archive(const char *zip_path, char *first_file,
 
             if (found_first_file)
             {
-               snprintf(first_file, first_file_size, write_filename);
+               strlcpy(first_file, write_filename, first_file_size);
                RARCH_LOG("first found ZIP file is: %s.\n", write_filename);
             }
          }
