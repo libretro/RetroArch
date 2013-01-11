@@ -388,13 +388,13 @@ static void system_process_args(int argc, char *argv[])
    switch(g_extern.console.external_launch.support)
    {
       case EXTERN_LAUNCHER_SALAMANDER:
-         g_extern.lifecycle_menu_state = (1 << MODE_MENU);
          break;
 #ifdef HAVE_MULTIMAN
       case EXTERN_LAUNCHER_MULTIMAN:
          RARCH_LOG("Started from multiMAN, will auto-start game.\n");
          strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
-         g_extern.lifecycle_menu_state = (1 << MODE_INIT);
+         g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU);
+         g_extern.lifecycle_menu_state |= (1 << MODE_INIT);
          break;
 #endif
       default:

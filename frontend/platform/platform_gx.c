@@ -381,7 +381,8 @@ static void system_process_args(int argc, char *argv[])
       g_extern.lifecycle_menu_state |= (1 << MODE_MENU_DRAW);
       rarch_render_cached_frame();
       g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
-      g_extern.lifecycle_menu_state = (1 << MODE_INIT);
+      g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU);
+      g_extern.lifecycle_menu_state |= (1 << MODE_INIT);
    }
    else
       g_extern.console.external_launch.support = EXTERN_LAUNCHER_SALAMANDER;

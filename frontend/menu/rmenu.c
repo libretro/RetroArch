@@ -291,7 +291,7 @@ static void populate_setting_item(void *data, unsigned input)
          break;
       case SETTING_EMU_SHOW_INFO_MSG:
          snprintf(current_item->text, sizeof(current_item->text), "Info messages");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.rmenu.state.msg_info.enable ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen info messages in the menu.");
          break;
       case SETTING_EMU_REWIND_ENABLED:
@@ -671,7 +671,7 @@ int select_file(void *data, void *state)
                   if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                   {
                      driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS0);
-                     if (g_extern.console.rmenu.state.msg_info.enable)
+                     if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                         rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                   }
                   else
@@ -687,7 +687,7 @@ int select_file(void *data, void *state)
                   if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                   {
                      driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS1);
-                     if (g_extern.console.rmenu.state.msg_info.enable)
+                     if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                         rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                   }
                   else
@@ -724,7 +724,7 @@ int select_file(void *data, void *state)
                }
                else
                {
-                  if(g_extern.console.rmenu.state.msg_info.enable)
+                  if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                      rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                }
                break;
@@ -1088,7 +1088,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             if (g_settings.video.shader_type != RARCH_SHADER_NONE)
             {
                driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, NULL, RARCH_SHADER_INDEX_PASS0);
-               if (g_extern.console.rmenu.state.msg_info.enable)
+               if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                   rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
             }
             else
@@ -1108,7 +1108,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             if (g_settings.video.shader_type != RARCH_SHADER_NONE)
             {
                driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, NULL, RARCH_SHADER_INDEX_PASS1);
-               if (g_extern.console.rmenu.state.msg_info.enable)
+               if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                   rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
             }
             else
@@ -1377,16 +1377,21 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          break;
       case SETTING_EMU_SHOW_INFO_MSG:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-            g_extern.console.rmenu.state.msg_info.enable = !g_extern.console.rmenu.state.msg_info.enable;
+         {
+            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_INFO_DRAW);
+            else
+               g_extern.lifecycle_menu_state |= (1 << MODE_INFO_DRAW);
+         }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            g_extern.console.rmenu.state.msg_info.enable = true;
+            g_extern.lifecycle_menu_state |= (1 << MODE_INFO_DRAW);
          break;
       case SETTING_EMU_REWIND_ENABLED:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             rarch_settings_change(S_REWIND);
 
-            if(g_extern.console.rmenu.state.msg_info.enable)
+            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1439,14 +1444,14 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             g_extern.console.sound.volume_level = !g_extern.console.sound.volume_level;
-            if(g_extern.console.rmenu.state.msg_info.enable)
+            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             g_extern.console.sound.volume_level = 0;
-            if(g_extern.console.rmenu.state.msg_info.enable)
+            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
          }
          break;
@@ -2203,7 +2208,7 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             rarch_game_reset();
-            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+            g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
             return -1;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset the game.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
@@ -2212,7 +2217,8 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             menu_idx = 0;
-            g_extern.lifecycle_menu_state = (1 << MODE_MENU);
+            /* TODO */
+            g_extern.lifecycle_menu_state |= (1 << MODE_MENU);
             return -1;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to return to the ROM Browser.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
@@ -2399,7 +2405,7 @@ int rmenu_input_process(void *data, void *state)
 
    if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME))
    {
-      if(g_extern.console.rmenu.state.msg_info.enable)
+      if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
          rarch_settings_msg(S_MSG_LOADING_ROM, 100);
 
       g_extern.lifecycle_menu_state |= (1 << MODE_INIT);
@@ -2542,7 +2548,7 @@ bool rmenu_iterate(void)
 
    msg = msg_queue_pull(g_extern.msg_queue);
 
-   if (msg && g_extern.console.rmenu.state.msg_info.enable)
+   if (msg && (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW)))
       device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.msg_queue_x_position, default_pos.msg_queue_y_position, default_pos.msg_queue_font_size, WHITE, msg);
 
    device_ptr->ctx_driver->swap_buffers();

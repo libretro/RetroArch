@@ -225,7 +225,7 @@ void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode)
       first_file[0] = '\0';
 
       rarch_extract_zipfile(path, first_file, sizeof(first_file), extract_zip_mode);
-      if(g_extern.console.rmenu.state.msg_info.enable)
+      if(g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
          rarch_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
 
       if(g_extern.file_state.zip_extract_mode == ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE)

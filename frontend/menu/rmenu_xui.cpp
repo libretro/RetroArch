@@ -205,7 +205,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
       filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
 
-      if (g_extern.console.rmenu.state.msg_info.enable)
+      if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
          rarch_settings_msg(S_MSG_CACHE_PARTITION, S_DELAY_180);
    }
 #endif
@@ -383,7 +383,7 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiBackButton", &m_back);
 
    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-   m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_extern.console.rmenu.state.msg_info.enable ? L"Info messages: ON" : L"Info messages: OFF");
+   m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW)) ? L"Info messages: ON" : L"Info messages: OFF");
    m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
    m_settingslist.SetText(SETTING_EMU_MENUS, g_extern.console.rmenu.state.rmenu_hd.enable ? L"Menus: HD" : L"Menus: SD");
    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
@@ -419,12 +419,15 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             rarch_settings_change(S_REWIND);
             m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 
-            if (g_extern.console.rmenu.state.msg_info.enable)
+            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
             break;
          case SETTING_EMU_SHOW_INFO_MSG:
-            g_extern.console.rmenu.state.msg_info.enable = !g_extern.console.rmenu.state.msg_info.enable;
-            m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_extern.console.rmenu.state.msg_info.enable ? L"Info messages: ON" : L"Info messages: OFF");
+            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_INFO_DRAW);
+            else
+               g_extern.lifecycle_menu_state |= (1 << MODE_INFO_DRAW);
+            m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW)) ? L"Info messages: ON" : L"Info messages: OFF");
             break;
          case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
             if (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW))
@@ -440,7 +443,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
          case SETTING_GAMMA_CORRECTION_ENABLED:
             g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
             m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-            if (g_extern.console.rmenu.state.msg_info.enable)
+            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
             break;
          case SETTING_SHADER:
@@ -452,7 +455,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
             hCur = app.hShaderBrowser;
 
-            if (g_extern.console.rmenu.state.msg_info.enable)
+            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                rarch_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
 
             NavigateForward(app.hShaderBrowser);
@@ -465,7 +468,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
             hCur = app.hShaderBrowser;
 
-            if (g_extern.console.rmenu.state.msg_info.enable)
+            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                rarch_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
 
             NavigateForward(app.hShaderBrowser);
@@ -518,12 +521,15 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                rarch_settings_change(S_REWIND);
                m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 
-               if (g_extern.console.rmenu.state.msg_info.enable)
+               if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                   rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
             case SETTING_EMU_SHOW_INFO_MSG:
-               g_extern.console.rmenu.state.msg_info.enable = !g_extern.console.rmenu.state.msg_info.enable;
-               m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_extern.console.rmenu.state.msg_info.enable ? L"Info messages: ON" : L"Info messages: OFF");
+               if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+                  g_extern.lifecycle_menu_state &= ~(1 << MODE_INFO_DRAW);
+               else
+                  g_extern.lifecycle_menu_state |= (1 << MODE_INFO_DRAW);
+               m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW)) ? L"Info messages: ON" : L"Info messages: OFF");
                break;
             case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
                if (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW))
@@ -539,7 +545,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
             case SETTING_GAMMA_CORRECTION_ENABLED:
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
                m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-               if (g_extern.console.rmenu.state.msg_info.enable)
+               if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                   rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
             case SETTING_SCALE_FACTOR:
@@ -584,8 +590,11 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
          switch(current_index)
          {
             case SETTING_EMU_SHOW_INFO_MSG:
-               g_extern.console.rmenu.state.msg_info.enable = !g_extern.console.rmenu.state.msg_info.enable;
-               m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, g_extern.console.rmenu.state.msg_info.enable ? L"Info messages: ON" : L"Info messages: OFF");
+               if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+                  g_extern.lifecycle_menu_state &= ~(1 << MODE_INFO_DRAW);
+               else
+                  g_extern.lifecycle_menu_state |= (1 << MODE_INFO_DRAW);
+               m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW)) ? L"Info messages: ON" : L"Info messages: OFF");
                break;
             case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
                if (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW))
@@ -601,14 +610,14 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
             case SETTING_GAMMA_CORRECTION_ENABLED:
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
                m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-               if (g_extern.console.rmenu.state.msg_info.enable)
+               if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                   rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
             case SETTING_EMU_REWIND_ENABLED:
                rarch_settings_change(S_REWIND);
                m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 
-               if (g_extern.console.rmenu.state.msg_info.enable)
+               if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                   rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
             case SETTING_SCALE_FACTOR:
@@ -815,7 +824,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
             break;
          case MENU_ITEM_OVERSCAN_AMOUNT:
-            if (g_extern.console.rmenu.state.msg_info.enable)
+            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                rarch_settings_msg(S_MSG_NOT_IMPLEMENTED, S_DELAY_180);
             break;
          case MENU_ITEM_ORIENTATION:
@@ -827,7 +836,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
          case MENU_ITEM_RESIZE_MODE:
             g_extern.console.rmenu.input_loop = INPUT_LOOP_RESIZE_MODE;
 
-            if (g_extern.console.rmenu.state.msg_info.enable)
+            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                rarch_settings_msg(S_MSG_RESIZE_SCREEN, S_DELAY_270);
             break;
          case MENU_ITEM_FRAME_ADVANCE:
@@ -839,7 +848,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             }
             break;
          case MENU_ITEM_SCREENSHOT_MODE:
-            if (g_extern.console.rmenu.state.msg_info.enable)
+            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                device_ptr->ctx_driver->rmenu_screenshot_dump(NULL);
             break;
          case MENU_ITEM_RESET:
@@ -901,7 +910,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.cg_shader_path, RARCH_SHADER_INDEX_PASS0);
-                  if (g_extern.console.rmenu.state.msg_info.enable)
+                  if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                      rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                }
                else
@@ -915,7 +924,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.second_pass_shader, RARCH_SHADER_INDEX_PASS1);
-                  if (g_extern.console.rmenu.state.msg_info.enable)
+                  if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
                      rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                }
                else
@@ -1039,7 +1048,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 
       hCur = app.hControlsMenu;
 
-      if (g_extern.console.rmenu.state.msg_info.enable)
+      if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
          rarch_settings_msg(S_MSG_CHANGE_CONTROLS, S_DELAY_180);
 
       NavigateForward(app.hControlsMenu);
@@ -1052,7 +1061,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
          RARCH_ERR("Failed to load scene.\n");
       hCur = app.hCoreBrowser;
 
-      if (g_extern.console.rmenu.state.msg_info.enable)
+      if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
          rarch_settings_msg(S_MSG_SELECT_LIBRETRO_CORE, S_DELAY_180);
 
       NavigateForward(app.hCoreBrowser);
@@ -1141,8 +1150,6 @@ void menu_init (void)
 
    browser = (filebrowser_t*)filebrowser_init(default_paths.filebrowser_startup_dir, g_extern.system.valid_extensions);
    tmp_browser = (filebrowser_t*)filebrowser_init(default_paths.filebrowser_startup_dir, "");
-
-   g_extern.lifecycle_menu_state = (1 << MODE_MENU);
 }
 
 void menu_free (void)
@@ -1209,7 +1216,7 @@ bool rmenu_iterate(void)
 
    if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME))
    {
-      if(g_extern.console.rmenu.state.msg_info.enable)
+      if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
          rarch_settings_msg(S_MSG_LOADING_ROM, 100);
 
       g_extern.lifecycle_menu_state |= (1 << MODE_INIT);

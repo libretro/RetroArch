@@ -241,6 +241,8 @@ void config_set_defaults(void)
 
 #ifdef RARCH_CONSOLE
    /* TODO - will be refactored - I'm aware this is messy right now */
+   g_extern.lifecycle_menu_state = 0;
+   g_extern.lifecycle_menu_state |= ((1 << MODE_INFO_DRAW) | (1 << MODE_MENU));
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
    strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
@@ -281,7 +283,8 @@ void config_set_defaults(void)
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
    g_extern.console.screen.state.screenshots.enable = true;
    g_extern.console.screen.state.throttle.enable = true;
-   g_extern.console.rmenu.state.msg_info.enable = true;
+
+
    g_extern.console.screen.state.triple_buffering.enable = true;
    g_extern.console.main_wrap.state.default_savestate_dir.enable = false;
    g_extern.console.main_wrap.state.default_sram_dir.enable = false;
@@ -294,7 +297,6 @@ void config_set_defaults(void)
    g_extern.audio_data.mute = 0;
    g_extern.verbose = true;
 
-   g_extern.lifecycle_menu_state |= (1 << MODE_MENU);
    g_extern.console.rmenu.font_size = 1.0f;
    g_extern.console.sound.mode = SOUND_MODE_NORMAL;
    g_extern.console.screen.viewports.custom_vp.width = 0;
@@ -492,7 +494,16 @@ bool config_load_file(const char *path)
 
    CONFIG_GET_STRING_EXTERN(console.main_wrap.paths.default_rom_startup_dir, "default_rom_startup_dir");
    CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
-   CONFIG_GET_BOOL_EXTERN(console.rmenu.state.msg_info.enable, "info_msg_enable");
+
+   bool msg_enable = false;
+   if (config_get_bool(conf, "info_msg_enable", &msg_enable))
+   {
+      if (msg_enable)
+         g_extern.lifecycle_menu_state |= (1 << MODE_INFO_DRAW);
+      else 
+         g_extern.lifecycle_menu_state &= ~(1 << MODE_INFO_DRAW);
+   }
+
    CONFIG_GET_BOOL_EXTERN(console.screen.state.screenshots.enable, "screenshots_enable");
    CONFIG_GET_BOOL_EXTERN(console.screen.state.throttle.enable, "throttle_enable");
    CONFIG_GET_BOOL_EXTERN(console.screen.state.triple_buffering.enable, "triple_buffering_enable");
@@ -1112,7 +1123,12 @@ bool config_save_file(const char *path)
 #endif
    config_set_bool(conf, "throttle_enable", g_extern.console.screen.state.throttle.enable);
    config_set_bool(conf, "triple_buffering_enable", g_extern.console.screen.state.triple_buffering.enable);
-   config_set_bool(conf, "info_msg_enable", g_extern.console.rmenu.state.msg_info.enable);
+
+   if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+      config_set_bool(conf, "info_msg_enable", true);
+   else
+      config_set_bool(conf, "info_msg_enable", false);
+
    config_set_int(conf, "current_resolution_id", g_extern.console.screen.resolutions.current.id);
    config_set_int(conf, "custom_viewport_width", g_extern.console.screen.viewports.custom_vp.width);
    config_set_int(conf, "custom_viewport_height", g_extern.console.screen.viewports.custom_vp.height);

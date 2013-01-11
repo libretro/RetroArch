@@ -156,7 +156,6 @@ void menu_init(void)
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
          NULL /* _binary_console_font_bmp_start */, bitmap_bin, folder_cb, NULL);
 
-   g_extern.lifecycle_menu_state = (1 << MODE_MENU);
    rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 }
 
@@ -171,13 +170,12 @@ int rmenu_input_process(void *data, void *state)
 {
    if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME))
    {
-      if(g_extern.console.rmenu.state.msg_info.enable)
+      if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
          rarch_settings_msg(S_MSG_LOADING_ROM, 100);
 
       if (g_extern.fullpath)
-         g_extern.lifecycle_menu_state = (1 << MODE_INIT);
+         g_extern.lifecycle_menu_state |= (1 << MODE_INIT);
 
-      g_extern.lifecycle_menu_state |= (1 << MODE_INIT);
       g_extern.lifecycle_menu_state &= ~(1 << MODE_LOAD_GAME);
       return -1;
    }

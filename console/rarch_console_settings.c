@@ -52,7 +52,7 @@ void rarch_settings_change(unsigned setting)
          break;
       case S_FRAME_ADVANCE:
          g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
-         g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+         g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
          break;
       case S_HW_TEXTURE_FILTER:
          g_settings.video.smooth = !g_settings.video.smooth;
