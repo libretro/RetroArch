@@ -27,7 +27,7 @@ typedef struct
    unsigned char max_settings;
    unsigned char category_id;
    int (*entry)(void *data, void *state);
-   void (*input_process)(void *data, void *state);
+   int (*input_process)(void *data, void *state);
    void (*input_poll)(void *data, void *state);
    void (*browser_draw)(void *data);
 } menu;
@@ -59,7 +59,7 @@ int ingame_menu(void *data, void *state);
 void rmenu_input_poll(void *data, void *state);
 
 // input process forward declarations
-void rmenu_input_process(void *data, void *state);
+int rmenu_input_process(void *data, void *state);
 
 // browser_draw forward declarations
 void browser_render(void *data);

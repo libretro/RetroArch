@@ -310,6 +310,7 @@ begin_loop:
    {
       g_extern.lifecycle_menu_state |= (1 << MODE_MENU_PREINIT);
       while(rmenu_iterate());
+      g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU);
    }
    else
       goto begin_shutdown;

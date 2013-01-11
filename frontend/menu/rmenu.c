@@ -719,7 +719,8 @@ int select_file(void *data, void *state)
                   strlcpy(g_extern.console.external_launch.launch_app, path, sizeof(g_extern.console.external_launch.launch_app));
                   set_libretro_core_as_launch = false;
                   g_extern.console.external_launch.enable = true;
-                  g_extern.lifecycle_menu_state = (1 << MODE_EXIT);
+                  g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+                  return -1;
                }
                else
                {
@@ -747,7 +748,7 @@ int select_file(void *data, void *state)
    if(current_menu->browser_draw)
       current_menu->browser_draw(filebrowser);
 
-   return 1;
+   return 0;
 }
 
 int select_directory(void *data, void *state)
@@ -847,7 +848,7 @@ int select_directory(void *data, void *state)
    if(current_menu->browser_draw)
       current_menu->browser_draw(filebrowser);
 
-   return 1;
+   return 0;
 }
 
 static void set_keybind_digital(uint64_t default_retro_joypad_id, uint64_t input)
@@ -1012,7 +1013,7 @@ static bool osk_callback_enter_title_init(void *data)
 #endif
 #endif
 
-static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
+static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
 {
    (void)data;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
@@ -1416,8 +1417,9 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_QUIT_RARCH:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            g_extern.lifecycle_menu_state &= ~((1 << MODE_MENU) | (1 << MODE_MENU_INGAME) | (1 << MODE_EMULATION));
+            g_extern.lifecycle_menu_state &= ~((1 << MODE_EMULATION));
             g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+            return -1;
          }
          break;
       case SETTING_EMU_AUDIO_MUTE:
@@ -1663,6 +1665,8 @@ static void set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             rarch_input_set_default_keybinds(currently_selected_controller_menu);
          break;
    }
+
+   return 0;
 }
 
 static int select_setting(void *data, void *state)
@@ -1671,6 +1675,7 @@ static int select_setting(void *data, void *state)
    rmenu_state_t *rstate = (rmenu_state_t*)state;
 
    uint64_t input = rstate->input;
+   int ret = 0;
 
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    item *items = (item*)malloc(current_menu->max_settings * sizeof(*items));
@@ -1738,10 +1743,12 @@ static int select_setting(void *data, void *state)
          current_menu->page = items[current_menu->selected].page;
    }
 
-   set_setting_action(current_menu, current_menu->selected, input);
+   ret = set_setting_action(current_menu, current_menu->selected, input);
+
+   if (ret != 0)
+      return ret;
 
    display_menubar(current_menu);
-
 
    for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
    {
@@ -1773,7 +1780,7 @@ static int select_setting(void *data, void *state)
    if(current_menu->browser_draw)
       current_menu->browser_draw(filebrowser);
 
-   return 1;
+   return 0;
 }
 
 int select_rom(void *data, void *state)
@@ -1848,7 +1855,7 @@ int select_rom(void *data, void *state)
    if(current_menu->browser_draw)
       current_menu->browser_draw(filebrowser);
 
-   return 1;
+   return 0;
 }
 
 int ingame_menu_resize(void *data, void *state)
@@ -2018,7 +2025,7 @@ int ingame_menu_resize(void *data, void *state)
    if(current_menu->browser_draw)
       current_menu->browser_draw(filebrowser);
 
-   return 1;
+   return 0;
 }
 
 int ingame_menu_screenshot(void *data, void *state)
@@ -2049,7 +2056,7 @@ int ingame_menu_screenshot(void *data, void *state)
    if(current_menu->browser_draw)
       current_menu->browser_draw(filebrowser);
 
-   return 1;
+   return 0;
 }
 
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
@@ -2059,6 +2066,7 @@ int ingame_menu(void *data, void *state)
    menu *current_menu    = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
 
+   int ret = 0;
    uint64_t input = rstate->input;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    char strw_buffer[256];
@@ -2075,7 +2083,10 @@ int ingame_menu(void *data, void *state)
    menuitem_colors[menu_idx] = RED;
 
    if(input & (1ULL << RMENU_DEVICE_NAV_A))
-      g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+   {
+      g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+      return -1;
+   }
 
    switch(menu_idx)
    {
@@ -2083,7 +2094,8 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             rarch_load_state();
-            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+            g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+            return -1;
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
             rarch_state_slot_decrease();
@@ -2096,7 +2108,8 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             rarch_save_state();
-            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+            g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+            return -1;
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
@@ -2107,11 +2120,19 @@ int ingame_menu(void *data, void *state)
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to save the current state.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
          break;
       case MENU_ITEM_KEEP_ASPECT_RATIO:
-         set_setting_action(current_menu, SETTING_KEEP_ASPECT_RATIO, input);
+         ret = set_setting_action(current_menu, SETTING_KEEP_ASPECT_RATIO, input);
+
+         if (ret != 0)
+            return ret;
+
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
          break;
       case MENU_ITEM_OVERSCAN_AMOUNT:
-         set_setting_action(current_menu, SETTING_HW_OVERSCAN_AMOUNT, input);
+         ret = set_setting_action(current_menu, SETTING_HW_OVERSCAN_AMOUNT, input);
+
+         if (ret != 0)
+            return ret;
+
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
          break;
       case MENU_ITEM_ORIENTATION:
@@ -2136,7 +2157,11 @@ int ingame_menu(void *data, void *state)
          break;
 #ifdef HAVE_FBO
       case MENU_ITEM_SCALE_FACTOR:
-         set_setting_action(current_menu, SETTING_SCALE_FACTOR, input);
+         ret = set_setting_action(current_menu, SETTING_SCALE_FACTOR, input);
+
+         if (ret != 0)
+            return ret;
+
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
          break;
 #endif
@@ -2161,7 +2186,10 @@ int ingame_menu(void *data, void *state)
          break;
       case MENU_ITEM_RETURN_TO_GAME:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
-            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+         {
+            g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+            return -1;
+         }
 
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to return to the game.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
          break;
@@ -2170,14 +2198,16 @@ int ingame_menu(void *data, void *state)
          {
             rarch_game_reset();
             g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+            return -1;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset the game.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
          break;
       case MENU_ITEM_RETURN_TO_MENU:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
-            g_extern.lifecycle_menu_state = (1 << MODE_MENU);
             menu_idx = 0;
+            g_extern.lifecycle_menu_state = (1 << MODE_MENU);
+            return -1;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to return to the ROM Browser.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
          break;
@@ -2198,7 +2228,9 @@ int ingame_menu(void *data, void *state)
             strlcpy(g_extern.console.external_launch.launch_app, default_paths.multiman_self_file,
                   sizeof(g_extern.console.external_launch.launch_app));
             g_extern.console.external_launch.enable = true;
-            g_extern.lifecycle_menu_state = (1 << MODE_EXIT);
+            g_extern.lifecycle_menu_state &= ~(1 << MODE_EMULATION);
+            g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+            return -1;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to quit RetroArch and return to multiMAN.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
          break;
@@ -2206,8 +2238,9 @@ int ingame_menu(void *data, void *state)
       case MENU_ITEM_QUIT_RARCH:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
-            g_extern.lifecycle_menu_state &= ~((1 << MODE_MENU) | (1 << MODE_MENU_INGAME) | (1 << MODE_EMULATION));
+            g_extern.lifecycle_menu_state &= ~(1 << MODE_EMULATION);
             g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+            return -1;
          }
 
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to quit RetroArch.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
@@ -2231,7 +2264,10 @@ int ingame_menu(void *data, void *state)
    }
 
    if((input & (1ULL << RMENU_DEVICE_NAV_L3)) && (input & (1ULL << RMENU_DEVICE_NAV_R3)))
-      g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+   {
+      g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+      return -1;
+   }
 
    display_menubar(current_menu);
 
@@ -2285,7 +2321,7 @@ int ingame_menu(void *data, void *state)
    if(current_menu->browser_draw)
       current_menu->browser_draw(filebrowser);
 
-   return 1;
+   return 0;
 }
 
 /*============================================================
@@ -2349,9 +2385,10 @@ void rmenu_input_poll(void *data, void *state)
 INPUT PROCESS CALLBACK
 ============================================================ */
 
-void rmenu_input_process(void *data, void *state)
+int rmenu_input_process(void *data, void *state)
 {
    (void)data;
+   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
 
    if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME))
@@ -2359,17 +2396,34 @@ void rmenu_input_process(void *data, void *state)
       if(g_extern.console.rmenu.state.msg_info.enable)
          rarch_settings_msg(S_MSG_LOADING_ROM, 100);
 
-      g_extern.lifecycle_menu_state = (1 << MODE_INIT);
+      g_extern.lifecycle_menu_state |= (1 << MODE_INIT);
+      g_extern.lifecycle_menu_state &= ~(1 << MODE_LOAD_GAME);
+      return -1;
    }
 
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
-      bool rmenu_enable = (((rstate->old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (rstate->old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.main_is_init));
+      bool return_to_game_enable = (((rstate->old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (rstate->old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.main_is_init));
 
-      if (g_extern.lifecycle_menu_state & (1 << MODE_MENU))
-         if (rmenu_enable)
-            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+      if (return_to_game_enable)
+      {
+         g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+         return -1;
+      }
    }
+
+   bool quit, resize;
+   unsigned width, height, frame_count;
+   frame_count = 0;
+   device_ptr->ctx_driver->check_window(&quit, &resize, &width, &height, frame_count);
+
+   if (quit)
+   {
+      g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+      return -1;
+   }
+
+   return 0;
 }
 
 /*============================================================
@@ -2471,37 +2525,26 @@ bool rmenu_iterate(void)
       rmenu_state.osk_callback = NULL;
 #endif
 
-   int repeat = true;
+   int input_entry_ret = 0;
+   int input_process_ret = 0;
 
    if(current_menu.entry)
-      repeat = current_menu.entry(&current_menu, &rmenu_state);
+      input_entry_ret = current_menu.entry(&current_menu, &rmenu_state);
 
    if(current_menu.input_process)
-      current_menu.input_process(&current_menu, &rmenu_state);
+      input_process_ret = current_menu.input_process(&current_menu, &rmenu_state);
 
    msg = msg_queue_pull(g_extern.msg_queue);
 
    if (msg && g_extern.console.rmenu.state.msg_info.enable)
-   {
       device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.msg_queue_x_position, default_pos.msg_queue_y_position, default_pos.msg_queue_font_size, WHITE, msg);
-   }
 
    device_ptr->ctx_driver->swap_buffers();
-
-   bool quit, resize;
-   unsigned width, height, frame_count;
-   frame_count = 0;
-   device_ptr->ctx_driver->check_window(&quit, &resize, &width, &height, frame_count);
 
    if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
       device_ptr->ctx_driver->set_blend(false);
 
-   if (quit)
-      g_extern.lifecycle_menu_state = (1 << MODE_EXIT);
-
-   if((!(g_extern.lifecycle_menu_state & (1 <<  MODE_MENU))
-         && !(g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME))) ||
-            repeat == 0)
+   if (input_entry_ret != 0 || input_process_ret != 0)
       goto deinit;
 
    return true;
@@ -2513,10 +2556,12 @@ deinit:
       g_extern.delay_timer[0] = g_extern.frame_count + 30;
 
    if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_INGAME))
+   {
       menu_stack_pop();
+      g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_INGAME);
+   }
 
    g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
-   g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_INGAME);
 
    device_ptr->ctx_driver->rmenu_free();
 
