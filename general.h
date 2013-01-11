@@ -111,7 +111,11 @@ enum menu_enums
    MODE_MENU_DRAW,
    MODE_INFO_DRAW,
    MODE_FPS_DRAW,
+   MODE_EXTLAUNCH_SALAMANDER,
+   MODE_EXTLAUNCH_CHANNEL,
+   MODE_EXTLAUNCH_MULTIMAN,
    MODE_EXIT,
+   MODE_EXITSPAWN,
    MODE_LOAD_FIRST_SHADER,
    MODE_LOAD_SECOND_SHADER,
 };
@@ -502,13 +506,6 @@ struct global
             rarch_boolean_state_t rmenu_hd;
          } state;
       } rmenu;
-
-      struct
-      {
-         bool enable;
-         char launch_app[PATH_MAX];
-         unsigned support;
-      } external_launch;
 
       struct
       {

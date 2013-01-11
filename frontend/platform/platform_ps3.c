@@ -218,15 +218,15 @@ static void get_environment_settings(int argc, char *argv[])
 
    if(path_file_exists(default_paths.multiman_self_file) && argc > 1 &&  path_file_exists(argv[1]))
    {
-      g_extern.console.external_launch.support = EXTERN_LAUNCHER_MULTIMAN;
+      g_extern.lifecycle_menu_state |= (1 << MODE_EXTLAUNCH_MULTIMAN);
       RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
    }
    else
 #endif
 #ifndef IS_SALAMANDER
    {
-      g_extern.console.external_launch.support = EXTERN_LAUNCHER_SALAMANDER;
-      RARCH_WARN("Not started from multiMAN, auto-game start disabled.\n");
+      g_extern.lifecycle_menu_state |= (1 << MODE_EXTLAUNCH_SALAMANDER);
+      RARCH_WARN("Started from Salamander, auto-game start disabled.\n");
    }
 #endif
 
@@ -259,7 +259,7 @@ static void get_environment_settings(int argc, char *argv[])
       ret = cellGameContentPermit(contentInfoPath, default_paths.port_dir);
 
 #ifdef HAVE_MULTIMAN
-      if(g_extern.console.external_launch.support == EXTERN_LAUNCHER_MULTIMAN)
+      if (g_extern.lifecycle_menu_state & (1 << MODE_EXTLAUNCH_MULTIMAN))
       {
          snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
          snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
@@ -385,21 +385,15 @@ static void system_post_init(void)
 
 static void system_process_args(int argc, char *argv[])
 {
-   switch(g_extern.console.external_launch.support)
-   {
-      case EXTERN_LAUNCHER_SALAMANDER:
-         break;
 #ifdef HAVE_MULTIMAN
-      case EXTERN_LAUNCHER_MULTIMAN:
-         RARCH_LOG("Started from multiMAN, will auto-start game.\n");
-         strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
-         g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU);
-         g_extern.lifecycle_menu_state |= (1 << MODE_INIT);
-         break;
-#endif
-      default:
-         break;
+   if (g_extern.lifecycle_menu_state & (1 << MODE_EXTLAUNCH_MULTIMAN))
+   {
+      RARCH_LOG("Started from multiMAN, will auto-start game.\n");
+      strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
+      g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU);
+      g_extern.lifecycle_menu_state |= (1 << MODE_INIT);
    }
+#endif
 }
 
 static void system_deinit(void)
@@ -470,8 +464,8 @@ static void system_exitspawn(void)
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
    cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
 #else
-   if(g_extern.console.external_launch.enable)
-      rarch_console_exec(g_extern.console.external_launch.launch_app);
+   if (g_extern.lifecycle_menu_state & (1 << MODE_EXITSPAWN))
+      rarch_console_exec(g_extern.fullpath);
 #endif
 
 #endif

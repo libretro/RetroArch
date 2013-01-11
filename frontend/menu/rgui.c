@@ -760,11 +760,11 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          if (action == RGUI_ACTION_OK)
          {
 #ifdef GEKKO
-            snprintf(g_extern.console.external_launch.launch_app, sizeof(g_extern.console.external_launch.launch_app), "%s/boot.dol", default_paths.core_dir);
+            snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s/boot.dol", default_paths.core_dir);
 #endif
-            g_extern.console.external_launch.enable = true;
             g_extern.lifecycle_menu_state &= ~(1 << MODE_EMULATION);
             g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+            g_extern.lifecycle_menu_state |= (1 << MODE_EXITSPAWN);
             return -1;
          }
          break;

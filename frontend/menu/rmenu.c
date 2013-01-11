@@ -716,10 +716,10 @@ int select_file(void *data, void *state)
 
                if(set_libretro_core_as_launch)
                {
-                  strlcpy(g_extern.console.external_launch.launch_app, path, sizeof(g_extern.console.external_launch.launch_app));
+                  strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
                   set_libretro_core_as_launch = false;
-                  g_extern.console.external_launch.enable = true;
                   g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+                  g_extern.lifecycle_menu_state |= (1 << MODE_EXITSPAWN);
                   return -1;
                }
                else
@@ -2237,11 +2237,10 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             RARCH_LOG("Boot Multiman: %s.\n", default_paths.multiman_self_file);
-            strlcpy(g_extern.console.external_launch.launch_app, default_paths.multiman_self_file,
-                  sizeof(g_extern.console.external_launch.launch_app));
-            g_extern.console.external_launch.enable = true;
+            strlcpy(g_extern.fullpath, default_paths.multiman_self_file, sizeof(g_extern.fullpath));
             g_extern.lifecycle_menu_state &= ~(1 << MODE_EMULATION);
             g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+            g_extern.lifecycle_menu_state |= (1 << MODE_EXITSPAWN);
             return -1;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to quit RetroArch and return to multiMAN.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));

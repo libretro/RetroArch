@@ -972,9 +972,9 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       convert_wchar_to_char(str_buffer, (const wchar_t *)m_romlist.GetText(index), sizeof(str_buffer));
       if(path_file_exists(tmp_browser->current_dir.list->elems[index].data))
       {
-         snprintf(g_extern.console.external_launch.launch_app, sizeof(g_extern.console.external_launch.launch_app), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
-         g_extern.console.external_launch.enable = true;
+         snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
          g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+         g_extern.lifecycle_menu_state |= (1 << MODE_EXITSPAWN);
          process_input_ret = -1;
       }
       else if(tmp_browser->current_dir.list->elems[index].attr.b)

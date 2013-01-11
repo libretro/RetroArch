@@ -339,7 +339,7 @@ static void system_exitspawn(void)
 #ifdef IS_SALAMANDER
    rarch_console_exec(default_paths.libretro_path);
 #else
-   if(g_extern.console.external_launch.enable)
+   if (g_extern.lifecycle_menu_state & (1 << MODE_EXITSPAWN))
       rarch_console_exec(g_settings.libretro);
 #endif
 }
@@ -372,7 +372,7 @@ static void system_process_args(int argc, char *argv[])
    if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
       char rom[PATH_MAX];
-      g_extern.console.external_launch.support = EXTERN_LAUNCHER_CHANNEL;
+      g_extern.lifecycle_menu_state |= (1 << MODE_EXTLAUNCH_CHANNEL);
       snprintf(rom, sizeof(rom), "%s%s", argv[1], argv[2]);
       g_extern.file_state.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE;
       rarch_console_load_game_wrap(rom, g_extern.file_state.zip_extract_mode);
@@ -385,7 +385,7 @@ static void system_process_args(int argc, char *argv[])
       g_extern.lifecycle_menu_state |= (1 << MODE_INIT);
    }
    else
-      g_extern.console.external_launch.support = EXTERN_LAUNCHER_SALAMANDER;
+      g_extern.lifecycle_menu_state |= (1 << MODE_EXTLAUNCH_SALAMANDER);
 }
 
 #endif
