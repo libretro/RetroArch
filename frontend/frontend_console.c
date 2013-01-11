@@ -302,7 +302,7 @@ begin_loop:
       {
          RARCH_ERR("rarch_main_init failed.\n");
          g_extern.lifecycle_menu_state |= (1 << MODE_MENU);
-         rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
+         rmenu_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
       }
       g_extern.lifecycle_menu_state &= ~(1 << MODE_INIT);
    }

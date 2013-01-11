@@ -24,7 +24,7 @@
 #include "utils/file_browser.h"
 
 #include "../../console/rarch_console.h"
-#include "../../console/rarch_console_settings.h"
+#include "rmenu_settings.h"
 #include "../../console/rarch_console_video.h"
 
 #include "../../gfx/gfx_context.h"
@@ -132,7 +132,7 @@ static void browser_update(filebrowser_t * b, uint64_t input, const char *extens
       ret = filebrowser_iterate(b, action);
 
    if(!ret)
-      rarch_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
+      rmenu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
 }
 
 static void filebrowser_fetch_directory_entries(filebrowser_t * browser, uint64_t action, CXuiList * romlist, CXuiTextElement * rompath_title)
@@ -207,7 +207,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
 
       if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-         rarch_settings_msg(S_MSG_CACHE_PARTITION, S_DELAY_180);
+         rmenu_settings_msg(S_MSG_CACHE_PARTITION, S_DELAY_180);
    }
 #endif
 
@@ -391,13 +391,13 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SHADER, sizeof(strw_buffer));
+   rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SHADER, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SHADER, strw_buffer);
-   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SHADER_2, sizeof(strw_buffer));
+   rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SHADER_2, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SHADER_2, strw_buffer);
-   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
+   rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
-   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
+   rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
 
    return 0;
@@ -417,11 +417,11 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
       switch(current_index)
       {
          case SETTING_EMU_REWIND_ENABLED:
-            rarch_settings_change(S_REWIND);
+            rmenu_settings_set(S_REWIND);
             m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 
             if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-               rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+               rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
             break;
          case SETTING_EMU_SHOW_INFO_MSG:
             if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
@@ -448,7 +448,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
             m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
             if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-               rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+               rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
             break;
          case SETTING_SHADER:
             g_extern.lifecycle_menu_state |= (1 << MODE_LOAD_FIRST_SHADER);
@@ -460,7 +460,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             hCur = app.hShaderBrowser;
 
             if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-               rarch_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
+               rmenu_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
 
             NavigateForward(app.hShaderBrowser);
             break;
@@ -473,7 +473,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             hCur = app.hShaderBrowser;
 
             if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-               rarch_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
+               rmenu_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
 
             NavigateForward(app.hShaderBrowser);
             break;
@@ -499,7 +499,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
                g_extern.file_state.zip_extract_mode++;
             else
                g_extern.file_state.zip_extract_mode = 0;
-            rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
+            rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
             m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
             break;
       }
@@ -522,11 +522,11 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
          switch(current_index)
          {
             case SETTING_EMU_REWIND_ENABLED:
-               rarch_settings_change(S_REWIND);
+               rmenu_settings_set(S_REWIND);
                m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 
                if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-                  rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+                  rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
             case SETTING_EMU_SHOW_INFO_MSG:
                if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
@@ -553,16 +553,16 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
                m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
                if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-                  rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+                  rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
             case SETTING_SCALE_FACTOR:
                if(device_ptr->fbo_inited)
                {
                   if((g_settings.video.fbo.scale_x > MIN_SCALING_FACTOR))
                   {
-                     rarch_settings_change(S_SCALE_FACTOR_DECREMENT);
+                     rmenu_settings_set(S_SCALE_FACTOR_DECREMENT);
                      device_ptr->ctx_driver->set_fbo(FBO_REINIT);
-                     rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
+                     rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
                      m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
                   }
                }
@@ -570,7 +570,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
             case SETTING_ZIP_EXTRACT:
                if(g_extern.file_state.zip_extract_mode)
                   g_extern.file_state.zip_extract_mode--;
-               rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
+               rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
                m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
                break;
             case SETTING_HW_TEXTURE_FILTER:
@@ -621,23 +621,23 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
                m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
                if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-                  rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+                  rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
             case SETTING_EMU_REWIND_ENABLED:
-               rarch_settings_change(S_REWIND);
+               rmenu_settings_set(S_REWIND);
                m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 
                if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-                  rarch_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+                  rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
             case SETTING_SCALE_FACTOR:
                if(device_ptr->fbo_inited)
                {
                   if((g_settings.video.fbo.scale_x < MAX_SCALING_FACTOR))
                   {
-                     rarch_settings_change(S_SCALE_FACTOR_INCREMENT);
+                     rmenu_settings_set(S_SCALE_FACTOR_INCREMENT);
                      device_ptr->ctx_driver->set_fbo(FBO_REINIT);
-                     rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
+                     rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
                      m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
                   }
                }
@@ -645,7 +645,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
             case SETTING_ZIP_EXTRACT:
                if(g_extern.file_state.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
                   g_extern.file_state.zip_extract_mode++;
-               rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
+               rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
                m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
                break;
             case SETTING_HW_TEXTURE_FILTER:
@@ -696,16 +696,16 @@ HRESULT CRetroArchQuickMenu::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiQuickMenuList", &m_quickmenulist);
    GetChildById(L"XuiBackButton", &m_back);
 
-   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+   rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
    m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
 
-   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
+   rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
    m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
 
-   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
+   rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
    m_quickmenulist.SetText(MENU_ITEM_LOAD_STATE, strw_buffer);
 
-   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
+   rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
    m_quickmenulist.SetText(MENU_ITEM_SAVE_STATE, strw_buffer);
 
    return 0;
@@ -726,18 +726,18 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
             case MENU_ITEM_LOAD_STATE:
             case MENU_ITEM_SAVE_STATE:
                rarch_state_slot_decrease();
-               rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
+               rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_LOAD_STATE, strw_buffer);
-               rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
+               rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_SAVE_STATE, strw_buffer);
                break;
             case MENU_ITEM_KEEP_ASPECT_RATIO:
-               rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
+               rmenu_settings_set(S_ASPECT_RATIO_DECREMENT);
                aspectratio_changed = true;
                break;
             case MENU_ITEM_ORIENTATION:
-               rarch_settings_change(S_ROTATION_DECREMENT);
-               rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+               rmenu_settings_set(S_ROTATION_DECREMENT);
+               rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
                driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
                break;
@@ -751,18 +751,18 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
             case MENU_ITEM_LOAD_STATE:
             case MENU_ITEM_SAVE_STATE:
                rarch_state_slot_increase();
-               rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
+               rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_LOAD_STATE, strw_buffer);
-               rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
+               rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_SAVE_STATE, strw_buffer);
                break;
             case MENU_ITEM_KEEP_ASPECT_RATIO:
-               rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
+               rmenu_settings_set(S_ASPECT_RATIO_INCREMENT);
                aspectratio_changed = true;
                break;
             case MENU_ITEM_ORIENTATION:
-               rarch_settings_change(S_ROTATION_INCREMENT);
-               rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+               rmenu_settings_set(S_ROTATION_INCREMENT);
+               rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
                driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
                break;
@@ -778,7 +778,7 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
    if(aspectratio_changed)
    {
       driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-      rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
+      rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
       m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
    }
 
@@ -828,18 +828,18 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             }
             break;
          case MENU_ITEM_KEEP_ASPECT_RATIO:
-            rarch_settings_default(S_DEF_ASPECT_RATIO);
+            rmenu_settings_set_default(S_DEF_ASPECT_RATIO);
             driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-            rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
+            rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
             m_quickmenulist.SetText(MENU_ITEM_KEEP_ASPECT_RATIO, strw_buffer);
             break;
          case MENU_ITEM_OVERSCAN_AMOUNT:
             if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-               rarch_settings_msg(S_MSG_NOT_IMPLEMENTED, S_DELAY_180);
+               rmenu_settings_msg(S_MSG_NOT_IMPLEMENTED, S_DELAY_180);
             break;
          case MENU_ITEM_ORIENTATION:
-            rarch_settings_default(S_DEF_ROTATION);
-            rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+            rmenu_settings_set_default(S_DEF_ROTATION);
+            rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
             m_quickmenulist.SetText(MENU_ITEM_ORIENTATION, strw_buffer);
             driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
             break;
@@ -847,13 +847,13 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             input_loop = INPUT_LOOP_RESIZE_MODE;
 
             if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-               rarch_settings_msg(S_MSG_RESIZE_SCREEN, S_DELAY_270);
+               rmenu_settings_msg(S_MSG_RESIZE_SCREEN, S_DELAY_270);
             break;
          case MENU_ITEM_FRAME_ADVANCE:
             if (g_extern.main_is_init)
             {
                g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
-               rarch_settings_change(S_FRAME_ADVANCE);
+               rmenu_settings_set(S_FRAME_ADVANCE);
                process_input_ret = -1;
             }
             break;
@@ -921,7 +921,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.cg_shader_path, RARCH_SHADER_INDEX_PASS0);
                   if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-                     rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+                     rmenu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                }
                else
                   RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -935,7 +935,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.second_pass_shader, RARCH_SHADER_INDEX_PASS1);
                   if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-                     rarch_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+                     rmenu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                }
                else
                   RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -1014,7 +1014,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    convert_char_to_wchar(strw_buffer, g_extern.title_buf, sizeof(strw_buffer));
    m_core.SetText(strw_buffer);
-   rarch_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
+   rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
    m_title.SetText(strw_buffer);
 
    return 0;
@@ -1059,7 +1059,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hCur = app.hControlsMenu;
 
       if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-         rarch_settings_msg(S_MSG_CHANGE_CONTROLS, S_DELAY_180);
+         rmenu_settings_msg(S_MSG_CHANGE_CONTROLS, S_DELAY_180);
 
       NavigateForward(app.hControlsMenu);
    }
@@ -1072,7 +1072,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hCur = app.hCoreBrowser;
 
       if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-         rarch_settings_msg(S_MSG_SELECT_LIBRETRO_CORE, S_DELAY_180);
+         rmenu_settings_msg(S_MSG_SELECT_LIBRETRO_CORE, S_DELAY_180);
 
       NavigateForward(app.hCoreBrowser);
    }
@@ -1227,7 +1227,7 @@ bool rmenu_iterate(void)
    if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME))
    {
       if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-         rarch_settings_msg(S_MSG_LOADING_ROM, 100);
+         rmenu_settings_msg(S_MSG_LOADING_ROM, 100);
 
       g_extern.lifecycle_menu_state |= (1 << MODE_INIT);
       g_extern.lifecycle_menu_state &= ~(1 << MODE_LOAD_GAME);

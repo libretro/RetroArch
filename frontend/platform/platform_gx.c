@@ -23,8 +23,6 @@
 #include "platform_inl.h"
 
 #include "../../console/rarch_console.h"
-#include "../../console/rarch_console_input.h"
-#include "../../console/rarch_console_settings.h"
 #include "../../file.h"
 
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)

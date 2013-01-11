@@ -171,7 +171,7 @@ int rmenu_input_process(void *data, void *state)
    if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME))
    {
       if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-         rarch_settings_msg(S_MSG_LOADING_ROM, 100);
+         rmenu_settings_msg(S_MSG_LOADING_ROM, 100);
 
       if (g_extern.fullpath)
          g_extern.lifecycle_menu_state |= (1 << MODE_INIT);

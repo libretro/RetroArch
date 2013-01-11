@@ -49,7 +49,9 @@ CONSOLE EXTENSIONS
 #include "../rarch_console_input.c"
 #endif
 
-#include "../rarch_console_settings.c"
+#ifdef HAVE_RMENU
+#include "../../frontend/menu/rmenu_settings.c"
+#endif
 
 #endif
 

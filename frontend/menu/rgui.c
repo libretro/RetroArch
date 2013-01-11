@@ -21,8 +21,8 @@
 
 #include "rgui.h"
 #include "utils/file_list.h"
+#include "rmenu_settings.h"
 #include "../../console/rarch_console_video.h"
-#include "../../gfx/fonts/bitmap.h"
 #include "../../screenshot.h"
 
 #define TERM_START_X 15
@@ -448,7 +448,7 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_VIDEO_ROTATION:
             {
                char rotate_msg[64];
-               rarch_settings_create_menu_item_label(rotate_msg, S_LBL_ROTATION, sizeof(rotate_msg));
+               rmenu_settings_create_menu_item_label(rotate_msg, S_LBL_ROTATION, sizeof(rotate_msg));
                snprintf(type_str, sizeof(type_str), rotate_msg);
             }
             break;
@@ -585,11 +585,11 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
             return -1;
          }
          else if (action == RGUI_ACTION_START)
-            rarch_settings_default(S_DEF_SAVE_STATE);
+            rmenu_settings_set_default(S_DEF_SAVE_STATE);
          else if (action == RGUI_ACTION_LEFT)
-            rarch_settings_change(S_SAVESTATE_DECREMENT);
+            rmenu_settings_set(S_SAVESTATE_DECREMENT);
          else if (action == RGUI_ACTION_RIGHT)
-            rarch_settings_change(S_SAVESTATE_INCREMENT);
+            rmenu_settings_set(S_SAVESTATE_INCREMENT);
          break;
       case RGUI_SETTINGS_SCREENSHOT:
          if (action == RGUI_ACTION_OK)
@@ -618,9 +618,9 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          break;
       case RGUI_SETTINGS_VIDEO_FILTER:
          if (action == RGUI_ACTION_START)
-            rarch_settings_default(S_DEF_HW_TEXTURE_FILTER);
+            rmenu_settings_set_default(S_DEF_HW_TEXTURE_FILTER);
          else
-            rarch_settings_change(S_HW_TEXTURE_FILTER);
+            rmenu_settings_set(S_HW_TEXTURE_FILTER);
          break;
 #ifdef HW_RVL
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
@@ -678,60 +678,60 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          break;
       case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
          if (action == RGUI_ACTION_START)
-            rarch_settings_default(S_DEF_ASPECT_RATIO);
+            rmenu_settings_set_default(S_DEF_ASPECT_RATIO);
          else if (action == RGUI_ACTION_LEFT)
-            rarch_settings_change(S_ASPECT_RATIO_DECREMENT);
+            rmenu_settings_set(S_ASPECT_RATIO_DECREMENT);
          else if (action == RGUI_ACTION_RIGHT)
-            rarch_settings_change(S_ASPECT_RATIO_INCREMENT);
+            rmenu_settings_set(S_ASPECT_RATIO_INCREMENT);
          video_set_aspect_ratio_func(g_settings.video.aspect_ratio_idx);
          break;
       case RGUI_SETTINGS_VIDEO_ROTATION:
          if (action == RGUI_ACTION_START)
          {
-            rarch_settings_default(S_DEF_AUDIO_CONTROL_RATE);
+            rmenu_settings_set_default(S_DEF_AUDIO_CONTROL_RATE);
             video_set_rotation_func(g_extern.console.screen.orientation);
          }
          else if (action == RGUI_ACTION_LEFT)
          {
-            rarch_settings_change(S_ROTATION_DECREMENT);
+            rmenu_settings_set(S_ROTATION_DECREMENT);
             video_set_rotation_func(g_extern.console.screen.orientation);
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
-            rarch_settings_change(S_ROTATION_INCREMENT);
+            rmenu_settings_set(S_ROTATION_INCREMENT);
             video_set_rotation_func(g_extern.console.screen.orientation);
          }
          break;
       case RGUI_SETTINGS_VIDEO_OVERSCAN:
          if (action == RGUI_ACTION_START)
          {
-            rarch_settings_default(S_DEF_OVERSCAN);
+            rmenu_settings_set_default(S_DEF_OVERSCAN);
             driver.video->apply_state_changes();
          }
          else if (action == RGUI_ACTION_LEFT)
          {
-            rarch_settings_change(S_OVERSCAN_DECREMENT);
+            rmenu_settings_set(S_OVERSCAN_DECREMENT);
             driver.video->apply_state_changes();
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
-            rarch_settings_change(S_OVERSCAN_INCREMENT);
+            rmenu_settings_set(S_OVERSCAN_INCREMENT);
             driver.video->apply_state_changes();
          }
          break;
       case RGUI_SETTINGS_AUDIO_MUTE:
          if (action == RGUI_ACTION_START)
-            rarch_settings_default(S_DEF_AUDIO_MUTE);
+            rmenu_settings_set_default(S_DEF_AUDIO_MUTE);
          else
-            rarch_settings_change(S_AUDIO_MUTE);
+            rmenu_settings_set(S_AUDIO_MUTE);
          break;
       case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
          if (action == RGUI_ACTION_START)
-            rarch_settings_default(S_DEF_AUDIO_CONTROL_RATE);
+            rmenu_settings_set_default(S_DEF_AUDIO_CONTROL_RATE);
          else if (action == RGUI_ACTION_LEFT)
-            rarch_settings_change(S_AUDIO_CONTROL_RATE_DECREMENT);
+            rmenu_settings_set(S_AUDIO_CONTROL_RATE_DECREMENT);
          else if (action == RGUI_ACTION_RIGHT)
-            rarch_settings_change(S_AUDIO_CONTROL_RATE_INCREMENT);
+            rmenu_settings_set(S_AUDIO_CONTROL_RATE_INCREMENT);
          break;
       case RGUI_SETTINGS_ZIP_EXTRACT:
          if (action == RGUI_ACTION_START)

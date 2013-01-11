@@ -98,11 +98,11 @@ enum
    S_LBL_ZIP_EXTRACT,
 };
 
-void rarch_settings_change(unsigned setting);
-void rarch_settings_default(unsigned setting);
-void rarch_settings_msg(unsigned setting, unsigned delay);
+void rmenu_settings_set(unsigned setting);
+void rmenu_settings_set_default(unsigned setting);
+void rmenu_settings_msg(unsigned setting, unsigned delay);
 
-void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t size);
-void rarch_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size);
+void rmenu_settings_create_menu_item_label(char * str, unsigned setting, size_t size);
+void rmenu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size);
 
 #endif

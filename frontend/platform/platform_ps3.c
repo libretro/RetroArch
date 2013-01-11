@@ -22,7 +22,6 @@
 #include "../../ps3/ps3_input.h"
 
 #include "../../console/rarch_console.h"
-#include "../../console/rarch_console_settings.h"
 #include "../../conf/config_file.h"
 #include "../../general.h"
 #include "../../file.h"

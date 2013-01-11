@@ -14,15 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 
-#include "../general.h"
-#include "rarch_console_settings.h"
+#include "../../general.h"
+#include "rmenu_settings.h"
 
-void rarch_settings_change(unsigned setting)
+void rmenu_settings_set(unsigned setting)
 {
    switch(setting)
    {
@@ -133,7 +132,7 @@ void rarch_settings_change(unsigned setting)
    }
 }
 
-void rarch_settings_default(unsigned setting)
+void rmenu_settings_set_default(unsigned setting)
 {
    switch(setting)
    {
@@ -187,7 +186,7 @@ void rarch_settings_default(unsigned setting)
    }
 }
 
-void rarch_settings_msg(unsigned setting, unsigned delay)
+void rmenu_settings_msg(unsigned setting, unsigned delay)
 {
    char str[PATH_MAX], tmp[PATH_MAX];
    msg_queue_clear(g_extern.msg_queue);
@@ -251,15 +250,15 @@ void rarch_settings_msg(unsigned setting, unsigned delay)
    msg_queue_push(g_extern.msg_queue, str, 1, delay);
 }
 
-void rarch_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size)
+void rmenu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size)
 {
    char str[PATH_MAX];
 
-   rarch_settings_create_menu_item_label(str, setting, sizeof(str));
+   rmenu_settings_create_menu_item_label(str, setting, sizeof(str));
    convert_char_to_wchar(strwbuf, str, size);
 }
 
-void rarch_settings_create_menu_item_label(char * str, unsigned setting, size_t size)
+void rmenu_settings_create_menu_item_label(char * str, unsigned setting, size_t size)
 {
    switch (setting)
    {

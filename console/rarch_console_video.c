@@ -16,7 +16,6 @@
 
 #include <stdint.h>
 
-#include "rarch_console_settings.h"
 #include "rarch_console_video.h"
 
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
