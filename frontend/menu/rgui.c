@@ -363,7 +363,7 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
 static void render_text(rgui_handle_t *rgui)
 {
    if (rgui->need_refresh && 
-         (g_extern.console.rmenu.mode & (1ULL << MODE_MENU))
+         (g_extern.lifecycle_menu_state & (1ULL << MODE_MENU))
          && !rgui->msg_force)
       return;
 
@@ -567,7 +567,7 @@ static void render_text(rgui_handle_t *rgui)
 #define MAX_GAMMA_SETTING 1
 #endif
 
-static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t action, rgui_file_type_t menu_type)
+static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t action, rgui_file_type_t menu_type)
 {
    unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
 
@@ -581,7 +581,8 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
                rarch_save_state();
             else
                rarch_load_state();
-            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
+            g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+            return -1;
          }
          else if (action == RGUI_ACTION_START)
             rarch_settings_default(S_DEF_SAVE_STATE);
@@ -610,8 +611,9 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
       case RGUI_SETTINGS_RESTART_GAME:
          if (action == RGUI_ACTION_OK)
          {
-            g_extern.lifecycle_menu_state = (1 << MODE_EMULATION);
             rarch_game_reset();
+            g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+            return -1;
          }
          break;
       case RGUI_SETTINGS_VIDEO_FILTER:
@@ -761,14 +763,17 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
             snprintf(g_extern.console.external_launch.launch_app, sizeof(g_extern.console.external_launch.launch_app), "%s/boot.dol", default_paths.core_dir);
 #endif
             g_extern.console.external_launch.enable = true;
-            g_extern.lifecycle_menu_state = (1 << MODE_EXIT);
+            g_extern.lifecycle_menu_state &= ~(1 << MODE_EMULATION);
+            g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+            return -1;
          }
          break;
       case RGUI_SETTINGS_QUIT_EMULATOR:
          if (action == RGUI_ACTION_OK)
          {
-            g_extern.lifecycle_menu_state &= ~((1 << MODE_MENU) | (1 << MODE_MENU_INGAME) | (1 << MODE_EMULATION));
+            g_extern.lifecycle_menu_state &= ~(1 << MODE_EMULATION);
             g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+            return -1;
          }
          break;
       // controllers
@@ -829,6 +834,8 @@ static void rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t
       default:
          break;
    }
+
+   return 0;
 }
 
 #define RGUI_MENU_ITEM(x, y) rgui_list_push(rgui->folder_buf, x, y, 0)
@@ -896,7 +903,7 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 }
 
 
-void rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
+int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
 #ifdef GEKKO
    gx_video_t *gx = (gx_video_t*)driver.video_data;
@@ -1012,9 +1019,11 @@ void rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
       render_messagebox(rgui, "Set Upper-Left Corner");
    else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
       render_messagebox(rgui, "Set Bottom-Right Corner");
+
+   return 0;
 }
 
-void rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
+int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
    rgui->frame_buf_pitch = RGUI_WIDTH * 2;
    rgui_file_type_t type = 0;
@@ -1070,7 +1079,12 @@ void rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             video_set_aspect_ratio_func(g_settings.video.aspect_ratio_idx);
          }
          else
-            rgui_settings_toggle_setting(type, action, menu_type);
+         {
+            int ret = rgui_settings_toggle_setting(type, action, menu_type);
+
+            if (ret != 0)
+               return ret;
+         }
          break;
 
       case RGUI_ACTION_REFRESH:
@@ -1099,10 +1113,10 @@ void rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
    render_text(rgui);
 
-   return;
+   return 0;
 }
 
-void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
+int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
    const char *dir = 0;
    rgui_file_type_t menu_type = 0;
@@ -1158,7 +1172,7 @@ void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_OK:
       {
          if (rgui_list_size(rgui->folder_buf) == 0)
-            return;
+            return 0;
 
          const char *path = 0;
          rgui_file_type_t type = 0;
@@ -1203,6 +1217,7 @@ void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
                rarch_console_load_game_wrap(rgui->path_buf, g_extern.file_state.zip_extract_mode);
                rgui->need_refresh = true; // in case of zip extract
                rgui->msg_force = true;
+               return -1;
             }
          }
          break;
@@ -1238,7 +1253,7 @@ void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    // refresh values in case the stack changed
    rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
-   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE) && (g_extern.console.rmenu.mode & (1ULL << MODE_MENU)))
+   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE))
    {
       rgui->need_refresh = false;
       rgui_list_clear(rgui->folder_buf);
@@ -1251,4 +1266,6 @@ void rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    }
 
    render_text(rgui);
+
+   return 0;
 }

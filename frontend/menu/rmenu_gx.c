@@ -21,7 +21,7 @@
 
 uint16_t menu_framebuf[400 * 240];
 
-static const struct retro_keybind _gx_nav_binds[] = {
+static const struct retro_keybind _rmenu_nav_binds[] = {
 #ifdef HW_RVL
    { 0, 0, 0, GX_GC_UP | GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_CLASSIC_UP | GX_CLASSIC_LSTICK_UP | GX_CLASSIC_RSTICK_UP | GX_WIIMOTE_UP | GX_NUNCHUK_UP, 0 },
    { 0, 0, 0, GX_GC_DOWN | GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_CLASSIC_DOWN | GX_CLASSIC_LSTICK_DOWN | GX_CLASSIC_RSTICK_DOWN | GX_WIIMOTE_DOWN | GX_NUNCHUK_DOWN, 0 },
@@ -46,8 +46,8 @@ static const struct retro_keybind _gx_nav_binds[] = {
    { 0, 0, 0, GX_QUIT_KEY, 0 },
 };
 
-static const struct retro_keybind *gx_nav_binds[] = {
-   _gx_nav_binds
+static const struct retro_keybind *rmenu_nav_binds[] = {
+   _rmenu_nav_binds
 };
 
 enum
@@ -62,7 +62,7 @@ enum
    GX_DEVICE_NAV_SELECT,
    GX_DEVICE_NAV_MENU,
    GX_DEVICE_NAV_QUIT,
-   GX_DEVICE_NAV_LAST
+   RMENU_DEVICE_NAV_LAST
 };
 
 static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
@@ -165,6 +165,45 @@ void menu_free(void)
    rgui_free(rgui);
 }
 
+static uint16_t trigger_state = 0;
+
+int rmenu_input_process(void *data, void *state)
+{
+   if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME))
+   {
+      if(g_extern.console.rmenu.state.msg_info.enable)
+         rarch_settings_msg(S_MSG_LOADING_ROM, 100);
+
+      if (g_extern.fullpath)
+         g_extern.lifecycle_menu_state = (1 << MODE_INIT);
+
+      g_extern.lifecycle_menu_state |= (1 << MODE_INIT);
+      g_extern.lifecycle_menu_state &= ~(1 << MODE_LOAD_GAME);
+      return -1;
+   }
+
+   if (!(g_extern.frame_count < g_extern.delay_timer[0]))
+   {
+      bool return_to_game_enable = ((trigger_state & (1ULL << GX_DEVICE_NAV_MENU)) && g_extern.main_is_init);
+      bool quit_key_pressed = (trigger_state & (1ULL << GX_DEVICE_NAV_QUIT));
+
+      if (return_to_game_enable)
+      {
+         g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+         return -1;
+      }
+
+      if (quit_key_pressed)
+      {
+         g_extern.lifecycle_menu_state &= ~((1 << MODE_EMULATION));
+         g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+         return -1;
+      }
+   }
+
+   return 0;
+}
+
 bool rmenu_iterate(void)
 {
    static uint16_t old_input_state = 0;
@@ -176,15 +215,17 @@ bool rmenu_iterate(void)
 
    g_extern.frame_count++;
 
+   rarch_render_cached_frame();
+
    uint16_t input_state = 0;
 
    driver.input->poll(NULL);
 
-   for (unsigned i = 0; i < GX_DEVICE_NAV_LAST; i++)
-      input_state |= driver.input->input_state(NULL, gx_nav_binds, 0,
+   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
+      input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
-   uint16_t trigger_state = input_state & ~old_input_state;
+   trigger_state = input_state & ~old_input_state;
    bool do_held = (input_state & ((1ULL << GX_DEVICE_NAV_UP) | (1ULL << GX_DEVICE_NAV_DOWN) | (1ULL << GX_DEVICE_NAV_LEFT) | (1ULL << GX_DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << GX_DEVICE_NAV_MENU) | (1ULL << GX_DEVICE_NAV_QUIT)));
 
    if(do_held)
@@ -209,6 +250,8 @@ bool rmenu_iterate(void)
       initial_held = true;
    }
 
+   old_input_state = input_state;
+
    rgui_action_t action = RGUI_ACTION_NOOP;
 
    // don't run anything first frame, only capture held inputs for old_input_state
@@ -229,32 +272,14 @@ bool rmenu_iterate(void)
    else if (trigger_state & (1ULL << GX_DEVICE_NAV_SELECT))
       action = RGUI_ACTION_SETTINGS;
 
-   rgui_iterate(rgui, action);
+   int input_entry_ret = 0;
+   int input_process_ret = 0;
 
-   rarch_render_cached_frame();
+   input_entry_ret = rgui_iterate(rgui, action);
 
-   old_input_state = input_state;
+   input_process_ret = rmenu_input_process(NULL, NULL);
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME))
-   {
-      if(g_extern.console.rmenu.state.msg_info.enable)
-         rarch_settings_msg(S_MSG_LOADING_ROM, 100);
-
-      if (g_extern.fullpath)
-         g_extern.lifecycle_menu_state = (1 << MODE_INIT);
-   }
-
-   if (!(g_extern.frame_count < g_extern.delay_timer[0]))
-   {
-      bool rmenu_enable = ((trigger_state & (1ULL << GX_DEVICE_NAV_MENU)) && g_extern.main_is_init);
-      bool quit_key_pressed = (trigger_state & (1ULL << GX_DEVICE_NAV_QUIT));
-
-      if (g_extern.lifecycle_menu_state & (1 << MODE_MENU))
-            g_extern.lifecycle_menu_state = quit_key_pressed ? (1 << MODE_EXIT) : rmenu_enable ? (1 << MODE_EMULATION) : (1 << MODE_MENU);
-   }
-
-   if(!(g_extern.lifecycle_menu_state & (1 <<  MODE_MENU))
-            && !(g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME)))
+   if (input_entry_ret != 0 || input_process_ret != 0)
       goto deinit;
 
    return true;
