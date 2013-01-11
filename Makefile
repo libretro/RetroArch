@@ -376,6 +376,7 @@ install: $(TARGET)
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-joyconfig
+	rm -f $(DESTDIR)$(PREFIX)/bin/retrolaunch
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-zip
 	rm -f $(DESTDIR)/etc/retroarch.cfg
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch.1
