@@ -42,17 +42,16 @@
 #define WRITEBUFFERSIZE (1024 * 512)
 
 static int rarch_zlib_extract_file(unzFile uf, 
-      const char *current_dir, char *write_filename, 
-      size_t write_filename_size, unsigned extract_zip_mode)
+      const char *current_dir, char *out_fname, 
+      size_t out_fname_size, unsigned unzip_mode)
 {
-   char filename_inzip[PATH_MAX];
+   char fname_inzip[PATH_MAX];
    bool is_dir = false;
-   FILE *file_out = NULL;
+   FILE *fp = NULL;
 
    unz_file_info file_info;
-   int ret = unzGetCurrentFileInfo(uf,
-         &file_info, filename_inzip, sizeof(filename_inzip),
-         NULL, 0, NULL, 0);
+   int ret = unzGetCurrentFileInfo(uf, &file_info, fname_inzip,
+         sizeof(fname_inzip), NULL, 0, NULL, 0);
 
    if (ret != UNZ_OK)
    {
@@ -62,21 +61,22 @@ static int rarch_zlib_extract_file(unzFile uf,
 
    size_t size_buf = WRITEBUFFERSIZE;
    void *buf = malloc(size_buf);
+
    if (!buf)
    {
       RARCH_ERR("Error allocating memory for ZIP extract operation.\n");
       return UNZ_INTERNALERROR;
    }
 
-   switch(extract_zip_mode)
+   switch(unzip_mode)
    {
       case ZIP_EXTRACT_TO_CURRENT_DIR:
       case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
-         fill_pathname_join(write_filename, current_dir, filename_inzip, write_filename_size);
+         fill_pathname_join(out_fname, current_dir, fname_inzip, out_fname_size);
          break;
 #if defined(HAVE_HDD_CACHE_PARTITION) && defined(RARCH_CONSOLE)
       case ZIP_EXTRACT_TO_CACHE_DIR:
-         fill_pathname_join(write_filename, default_paths.cache_dir, filename_inzip, write_filename_size);
+         fill_pathname_join(out_fname, default_paths.cache_dir, fname_inzip, out_fname_size);
          break;
 #endif
    }
@@ -86,10 +86,12 @@ static int rarch_zlib_extract_file(unzFile uf,
 #else
       slash = '/';
 #endif
-   if (filename_inzip[strlen(filename_inzip) - 1] == slash)
+
+   if (fname_inzip[strlen(fname_inzip) - 1] == slash)
       is_dir = true;
 
    ret = unzOpenCurrentFile(uf);
+
    if (ret != UNZ_OK)
       RARCH_ERR("Error %d while trying to open ZIP file.\n", ret);
    else
@@ -98,27 +100,28 @@ static int rarch_zlib_extract_file(unzFile uf,
       if (is_dir)
       {
 #ifdef _WIN32
-         _mkdir(write_filename);
+         _mkdir(out_fname);
 #else
-         mkdir(write_filename, S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR);
+         mkdir(out_fname, S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR);
 #endif
       }
       else
       {
-         file_out = fopen(write_filename, "wb");
+         fp = fopen(out_fname, "wb");
 
-         if (!file_out)
-            RARCH_ERR("Error opening %s.\n", write_filename);
+         if (!fp)
+            RARCH_ERR("Error opening %s.\n", out_fname);
       }
    }
 
-   if (is_dir || file_out)
+   if (is_dir || fp)
    {
-      RARCH_LOG("Extracting: %s..\n", write_filename);
+      RARCH_LOG("Extracting: %s..\n", out_fname);
 
       do
       {
          ret = unzReadCurrentFile(uf, buf, size_buf);
+
          if (ret < 0)
          {
             RARCH_ERR("Error %d while reading from ZIP file.\n", ret);
@@ -127,7 +130,7 @@ static int rarch_zlib_extract_file(unzFile uf,
 
          if (ret > 0 && !is_dir)
          {
-            if (fwrite(buf, ret, 1, file_out) != 1)
+            if (fwrite(buf, ret, 1, fp) != 1)
             {
                RARCH_ERR("Error while extracting file(s) from ZIP.\n");
                ret = UNZ_ERRNO;
@@ -136,13 +139,14 @@ static int rarch_zlib_extract_file(unzFile uf,
          }
       }while (ret > 0);
 
-      if (!is_dir && file_out)
-         fclose(file_out);
+      if (!is_dir && fp)
+         fclose(fp);
    }
 
    if (ret == UNZ_OK)
    {
       ret = unzCloseCurrentFile (uf);
+
       if (ret != UNZ_OK)
          RARCH_ERR("Error %d while trying to close ZIP file.\n", ret);
    }
@@ -154,7 +158,7 @@ static int rarch_zlib_extract_file(unzFile uf,
 }
 
 int rarch_zlib_extract_archive(const char *zip_path, char *first_file,
-      size_t first_file_size, unsigned extract_zip_mode)
+      size_t first_file_size, unsigned unzip_mode)
 {
    char dir_path[PATH_MAX];
    bool found_first_file = false;
@@ -168,40 +172,39 @@ int rarch_zlib_extract_archive(const char *zip_path, char *first_file,
    memset(&gi, 0, sizeof(unz_global_info));
 
    int ret = unzGetGlobalInfo(uf, &gi);
+
    if (ret != UNZ_OK)
       RARCH_ERR("Error %d while trying to get ZIP file global info.\n", ret);
 
    for (unsigned i = 0; i < gi.number_entry; i++)
    {
-      static char write_filename[PATH_MAX];
-      if (rarch_zlib_extract_file(uf, dir_path, write_filename, sizeof(write_filename), extract_zip_mode) != UNZ_OK)
+      char in_fname[PATH_MAX];
+
+      if (rarch_zlib_extract_file(uf, dir_path, in_fname, sizeof(in_fname), unzip_mode) != UNZ_OK)
       {
          RARCH_ERR("Failed to extract current file from ZIP archive.\n");
-         break;
+         goto error;
       }
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-      else
+      else if (!found_first_file)
       {
-         if (!found_first_file)
+         // is the extension of the file supported by the libretro core?
+         struct string_list *ext_list = NULL;
+         const char *file_ext = path_get_extension(in_fname);
+
+         if (g_extern.system.valid_extensions)
          {
-            // is the extension of the file supported by the libretro core?
-            struct string_list *ext_list = NULL;
-            const char *file_ext = path_get_extension(write_filename);
+            RARCH_LOG("valid extensions: %s.\n", g_extern.system.valid_extensions);
+            ext_list = string_split(g_extern.system.valid_extensions, "|");
+         }
 
-            if (g_extern.system.valid_extensions)
-            {
-               RARCH_LOG("valid extensions: %s.\n", g_extern.system.valid_extensions);
-               ext_list = string_split(g_extern.system.valid_extensions, "|");
-            }
+         if (ext_list && string_list_find_elem(ext_list, file_ext))
+            found_first_file = true; 
 
-            if (ext_list && string_list_find_elem(ext_list, file_ext))
-               found_first_file = true; 
-
-            if (found_first_file)
-            {
-               strlcpy(first_file, write_filename, first_file_size);
-               RARCH_LOG("first found ZIP file is: %s.\n", write_filename);
-            }
+         if (found_first_file)
+         {
+            strlcpy(first_file, in_fname, first_file_size);
+            RARCH_LOG("first found ZIP file is: %s.\n", in_fname);
          }
       }
 #endif
@@ -209,13 +212,18 @@ int rarch_zlib_extract_archive(const char *zip_path, char *first_file,
       if ((i + 1) < gi.number_entry)
       {
          ret = unzGoToNextFile(uf);
+
          if (ret != UNZ_OK)
          {
             RARCH_ERR("Error %d while trying to go to the next file in the ZIP archive.\n", ret);
-            break;
+            goto error;
          }
       }
    }
 
    return 0;
+
+error:
+   RARCH_ERR("Error occurred while trying to unzip file, ret code: %d.\n", ret);
+   return -1;
 }
