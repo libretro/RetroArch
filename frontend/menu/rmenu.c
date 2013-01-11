@@ -28,7 +28,6 @@
 #endif
 
 #include "../../console/rarch_console.h"
-#include "../../console/rarch_console_rom_ext.h"
 #include "../../console/rarch_console_input.h"
 #include "rmenu_settings.h"
 
@@ -1831,7 +1830,7 @@ int select_rom(void *data, void *state)
             rmenu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
       }
       else
-         rarch_console_load_game_wrap(filebrowser_get_current_path(filebrowser), g_extern.file_state.zip_extract_mode);
+         console_load_game(filebrowser_get_current_path(filebrowser), g_extern.file_state.zip_extract_mode);
    }
    else if (input & (1ULL << RMENU_DEVICE_NAV_L1))
    {

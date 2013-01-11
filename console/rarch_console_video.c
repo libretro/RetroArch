@@ -14,7 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
+#include <stdio.h>
+
+#include "../general.h"
 
 #include "rarch_console_video.h"
 

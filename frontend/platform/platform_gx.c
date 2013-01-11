@@ -372,7 +372,7 @@ static void system_process_args(int argc, char *argv[])
       g_extern.lifecycle_menu_state |= (1 << MODE_EXTLAUNCH_CHANNEL);
       snprintf(rom, sizeof(rom), "%s%s", argv[1], argv[2]);
       g_extern.file_state.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE;
-      rarch_console_load_game_wrap(rom, g_extern.file_state.zip_extract_mode);
+      console_load_game(rom, g_extern.file_state.zip_extract_mode);
 
       rgui_iterate(rgui, RGUI_ACTION_MESSAGE);
       g_extern.lifecycle_menu_state |= (1 << MODE_MENU_DRAW);

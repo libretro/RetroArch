@@ -26,6 +26,8 @@ static void verbose_log_init(void);
 static void find_first_libretro_core(char *first_file,
    size_t size_of_first_file, const char *dir,
    const char * ext);
+#else
+void console_load_game(const char *path, unsigned extract_zip_mode);
 #endif
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
@@ -35,5 +37,6 @@ static bool install_libretro_core(const char *core_exe_path, const char *tmp_pat
  const char *libretro_path, const char *config_path, const char *extension);
 
 #endif
+
 
 #endif

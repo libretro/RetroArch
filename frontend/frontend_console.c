@@ -21,6 +21,7 @@
 
 #include "frontend_console.h"
 #include "menu/rmenu.h"
+#include "menu/rmenu_settings.h"
 
 #if defined(__CELLOS_LV2__)
 #include "platform/platform_ps3.c"
@@ -100,6 +101,40 @@ int main(int argc, char *argv[])
 }
 
 #else
+
+void console_load_game(const char *path, unsigned extract_zip_mode)
+{
+#ifdef HAVE_ZLIB
+   if ((strstr(path, ".zip") || strstr(path, ".ZIP"))
+         && !g_extern.system.block_extract)
+   {
+      char first_file[PATH_MAX];
+      first_file[0] = '\0';
+
+      rarch_zlib_extract_archive(path, first_file, sizeof(first_file), extract_zip_mode);
+      if(g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+         rmenu_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
+
+      if(g_extern.file_state.zip_extract_mode == ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE)
+      {
+         if (first_file[0] != 0)
+         {
+            RARCH_LOG("Found compatible game, loading it...\n");
+            snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), first_file);
+            goto do_init;
+         }
+         else
+            msg_queue_push(g_extern.msg_queue, "Could not find compatible game, not loading first file.\n", 1, 100);
+      }
+      return;
+   }
+   else
+#endif
+      snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), path);
+
+do_init:
+   g_extern.lifecycle_menu_state |= (1 << MODE_LOAD_GAME);
+}
 
 static void verbose_log_init(void)
 {

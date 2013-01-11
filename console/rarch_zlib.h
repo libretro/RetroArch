@@ -14,18 +14,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef RARCH_ROM_EXT_H__
-#define RARCH_ROM_EXT_H__
+#ifndef RARCH_ZLIB_H__
+#define RARCH_ZLIB_H__
 
-#ifdef HAVE_ZLIB
 enum
 {
    ZIP_EXTRACT_TO_CURRENT_DIR = 0,
    ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE,
    ZIP_EXTRACT_TO_CACHE_DIR
 };
-#endif
 
-void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode);
+int rarch_rzlib_extract_archive(const char *zip_path, char *first_file,
+      size_t first_file_size, unsigned extract_zip_mode);
 
 #endif

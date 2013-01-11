@@ -27,16 +27,23 @@
 #include "../general.h"
 #include "../file.h"
 
-#include "../frontend/menu/rmenu_settings.h"
-#include "rarch_console.h"
-#include "rarch_console_rom_ext.h"
+#include "rarch_zlib.h"
 
-#ifdef HAVE_ZLIB
+#ifdef WANT_RZLIB
 #include "../deps/rzlib/zlib.h"
+#else
+#include <zlib.h>
+#endif
+
+#if defined(HAVE_HDD_CACHE_PARTITION)
+#include "rarch_console.h"
+#endif
 
 #define WRITEBUFFERSIZE (1024 * 512)
 
-static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir, char *slash, char *write_filename, size_t write_filename_size, unsigned extract_zip_mode)
+static int rarch_zlib_extract_file(unzFile uf, 
+      const char *current_dir, char *slash, char *write_filename, 
+      size_t write_filename_size, unsigned extract_zip_mode)
 {
    char filename_inzip[PATH_MAX];
    bool is_dir = false;
@@ -67,7 +74,7 @@ static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir,
       case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
          snprintf(write_filename, write_filename_size, "%s%s%s", current_dir, slash, filename_inzip);
          break;
-#ifdef HAVE_HDD_CACHE_PARTITION
+#if defined(HAVE_HDD_CACHE_PARTITION)
       case ZIP_EXTRACT_TO_CACHE_DIR:
          snprintf(write_filename, write_filename_size, "%s%s", default_paths.cache_dir, filename_inzip);
          break;
@@ -141,7 +148,8 @@ static int rarch_extract_currentfile_in_zip(unzFile uf, const char *current_dir,
    return ret;
 }
 
-int rarch_extract_zipfile(const char *zip_path, char *first_file, size_t first_file_size, unsigned extract_zip_mode)
+int rarch_zlib_extract_archive(const char *zip_path, char *first_file,
+      size_t first_file_size, unsigned extract_zip_mode)
 {
    char dir_path[PATH_MAX];
    bool found_first_file = false;
@@ -167,7 +175,7 @@ int rarch_extract_zipfile(const char *zip_path, char *first_file, size_t first_f
 #else
       snprintf(slash, sizeof(slash), "/");
 #endif
-      if (rarch_extract_currentfile_in_zip(uf, dir_path, slash, write_filename, sizeof(write_filename), extract_zip_mode) != UNZ_OK)
+      if (rarch_zlib_extract_file(uf, dir_path, slash, write_filename, sizeof(write_filename), extract_zip_mode) != UNZ_OK)
       {
          RARCH_ERR("Failed to extract current file from ZIP archive.\n");
          break;
@@ -211,40 +219,4 @@ int rarch_extract_zipfile(const char *zip_path, char *first_file, size_t first_f
    }
 
    return 0;
-}
-
-#endif
-
-void rarch_console_load_game_wrap(const char *path, unsigned extract_zip_mode)
-{
-#ifdef HAVE_ZLIB
-   if ((strstr(path, ".zip") || strstr(path, ".ZIP"))
-         && !g_extern.system.block_extract)
-   {
-      char first_file[PATH_MAX];
-      first_file[0] = '\0';
-
-      rarch_extract_zipfile(path, first_file, sizeof(first_file), extract_zip_mode);
-      if(g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-         rmenu_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
-
-      if(g_extern.file_state.zip_extract_mode == ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE)
-      {
-         if (first_file[0] != 0)
-         {
-            RARCH_LOG("Found compatible game, loading it...\n");
-            snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), first_file);
-            goto do_init;
-         }
-         else
-            msg_queue_push(g_extern.msg_queue, "Could not find compatible game, not loading first file.\n", 1, 100);
-      }
-      return;
-   }
-   else
-#endif
-      snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), path);
-
-do_init:
-   g_extern.lifecycle_menu_state |= (1 << MODE_LOAD_GAME);
 }

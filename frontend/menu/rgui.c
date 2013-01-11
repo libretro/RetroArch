@@ -1217,7 +1217,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             else
             {
                snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s", dir, path);
-               rarch_console_load_game_wrap(rgui->path_buf, g_extern.file_state.zip_extract_mode);
+               console_load_game(rgui->path_buf, g_extern.file_state.zip_extract_mode);
                rgui->need_refresh = true; // in case of zip extract
                rgui->msg_force = true;
                return -1;

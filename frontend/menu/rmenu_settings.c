@@ -306,9 +306,3 @@ void rmenu_settings_create_menu_item_label(char * str, unsigned setting, size_t 
          break;
    }
 }
-
-#if defined(_XBOX360)
-#define DEFAULT_GAMMA 1
-#else
-#define DEFAULT_GAMMA 0
-#endif

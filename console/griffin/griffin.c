@@ -33,7 +33,6 @@ CONSOLE EXTENSIONS
 ============================================================ */
 #ifdef RARCH_CONSOLE
 
-#include "../rarch_console_rom_ext.c"
 #include "../rarch_console_video.c"
 
 #ifdef HW_DOL
@@ -49,10 +48,10 @@ CONSOLE EXTENSIONS
 #include "../rarch_console_input.c"
 #endif
 
-#ifdef HAVE_RMENU
-#include "../../frontend/menu/rmenu_settings.c"
 #endif
 
+#ifdef HAVE_ZLIB
+#include "../rarch_zlib.c"
 #endif
 
 
@@ -424,6 +423,7 @@ MENU
 #endif
 
 #ifdef HAVE_RMENU
+#include "../../frontend/menu/rmenu_settings.c"
 
 #if defined(_XBOX360)
 #include "../../frontend/menu/rmenu_xui.cpp"
