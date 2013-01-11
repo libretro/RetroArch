@@ -26,7 +26,7 @@ static struct MagicEntry MAGIC_NUMBERS[] = {
     {NULL, NULL}
 };
 
-static int find_first_data_track(const char* cue_path, off_t* offset,
+static int find_first_data_track(const char* cue_path, int32_t* offset,
                                  char* track_path, size_t max_len) {
     int rv;
     int fd = -1;
@@ -117,7 +117,7 @@ clean:
     return rv;
 }
 
-static int detect_ps1_game(const char* track_path, off_t offset,
+static int detect_ps1_game(const char* track_path, int32_t offset,
                           char* game_name, size_t max_len) {
     int rv;
     char buff[4096];
@@ -180,12 +180,12 @@ clean:
     return rv;
 }
 
-static int detect_system(const char* track_path, off_t offset,
+static int detect_system(const char* track_path, int32_t offset,
         char** system_name) {
     int rv;
     char magic[MAGIC_LEN];
     int fd;
-    struct MagicEntry entry;
+    //struct MagicEntry entry;
     int i;
 
     fd = open(track_path, O_RDONLY);
@@ -271,8 +271,8 @@ int find_fist_cue(const char* m3u_path, char* cue_path, size_t max_len) {
 int detect_cd_game(const char* target_path, char* game_name, size_t max_len) {
     char cue_path[PATH_MAX];
     char track_path[PATH_MAX];
-    off_t offset;
-    char* system_name;
+    int32_t offset = 0;
+    char* system_name = NULL;
     int rv;
     if (strcasecmp(target_path + strlen(target_path) - 4, ".m3u") == 0) {
         rv = find_fist_cue(target_path, cue_path, PATH_MAX);
