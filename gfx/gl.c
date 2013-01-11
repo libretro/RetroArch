@@ -1192,6 +1192,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    RARCH_PERFORMANCE_START(frame_run);
 
    gl_t *gl = (gl_t*)data;
+#ifdef HAVE_RMENU
+   unsigned lifecycle_menu_state = g_extern.lifecycle_menu_state;
+#endif
 
    gl_shader_use_func(gl, 1);
 
@@ -1285,7 +1288,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    RARCH_PERFORMANCE_STOP(frame_run);
 
 #ifdef HAVE_RMENU
-   if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
+   if (lifecycle_menu_state & (1 << MODE_MENU_DRAW))
       context_rmenu_frame_func(gl);
    else
 #endif

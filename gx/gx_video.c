@@ -868,6 +868,7 @@ static bool gx_frame(void *data, const void *frame,
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    bool should_resize = gx->should_resize;
    u8 clear_efb = GX_FALSE;
+   u32 lifecycle_menu_state = g_extern.lifecycle_menu_state;
 
    (void)data;
 
@@ -876,7 +877,7 @@ static bool gx_frame(void *data, const void *frame,
    else
       gx->msg[0] = 0;
 
-   if(!frame && !(g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW)))
+   if(!frame && !(lifecycle_menu_state & (1 << MODE_MENU_DRAW)))
       return true;
 
    if (!frame)
@@ -888,7 +889,7 @@ static bool gx_frame(void *data, const void *frame,
       clear_efb = GX_TRUE;
    }
 
-   while ((g_vsync || (g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))) && !g_draw_done)
+   while ((g_vsync || (lifecycle_menu_state & (1 << MODE_MENU_DRAW))) && !g_draw_done)
       LWP_ThreadSleep(g_video_cond);
 
    if (width != gx_old_width || height != gx_old_height)
@@ -905,14 +906,14 @@ static bool gx_frame(void *data, const void *frame,
    {
       if (gx->rgb32)
          convert_texture32(frame, g_tex.data, width, height, pitch);
-      else if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
+      else if (lifecycle_menu_state & (1 << MODE_MENU_DRAW))
          convert_texture16_conv(frame, g_tex.data, width, height, pitch);
       else
          convert_texture16(frame, g_tex.data, width, height, pitch);
       DCFlushRange(g_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
    }
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
+   if (lifecycle_menu_state & (1 << MODE_MENU_DRAW))
    {
       convert_texture16(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2);
       DCFlushRange(menu_tex.data, RGUI_WIDTH * RGUI_HEIGHT * 2);
@@ -927,7 +928,7 @@ static bool gx_frame(void *data, const void *frame,
       GX_DrawDone();
    }
 
-   if(g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
+   if(lifecycle_menu_state & (1 << MODE_MENU_DRAW))
    {
       GX_LoadTexObj(&menu_tex.obj, GX_TEXMAP0);
       GX_CallDispList(display_list, display_list_size);

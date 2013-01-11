@@ -693,6 +693,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+   unsigned lifecycle_menu_state = g_extern.lifecycle_menu_state;
 #ifdef HAVE_FBO
    D3DSurface* pRenderTarget0;
 #endif
@@ -892,7 +893,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (msg)
       d3d->font_ctx->render_msg_place(d3d, msg_width, msg_height, 0.0f, 0, msg);
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
+   if (lifecycle_menu_state & (1 << MODE_MENU_DRAW))
    {
 #ifdef _XBOX360
       app.Render();
