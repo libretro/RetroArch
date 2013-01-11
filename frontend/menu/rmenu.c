@@ -206,7 +206,7 @@ static void populate_setting_item(void *data, unsigned input)
          break;
       case SETTING_SOFT_DISPLAY_FILTER:
          snprintf(current_item->text, sizeof(current_item->text), "Soft Display Filter");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.screen.state.soft_filter.enable ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Soft Display Filter].");
          break;
 #endif
