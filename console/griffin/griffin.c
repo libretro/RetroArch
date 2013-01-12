@@ -54,6 +54,16 @@ CONSOLE EXTENSIONS
 #include "../rarch_zlib.c"
 #endif
 
+/*============================================================
+RLAUNCH
+============================================================ */
+
+#ifdef HAVE_RLAUNCH
+#include "../../tools/retrolaunch/rl_fnmatch.c"
+#include "../../tools/retrolaunch/sha1.c"
+#include "../../tools/retrolaunch/cd_detect.c"
+#include "../../tools/retrolaunch/parser.c"
+#endif
 
 /*============================================================
 PERFORMANCE
