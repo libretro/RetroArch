@@ -17,7 +17,7 @@
 #ifndef RARCH_ZLIB_H__
 #define RARCH_ZLIB_H__
 
-int rarch_rzlib_extract_archive(const char *zip_path, char *first_file,
-      size_t first_file_size, unsigned extract_zip_mode);
+int rarch_zlib_extract_archive(const char *zip_path, char *first_file,
+      size_t first_file_size);
 
 #endif
