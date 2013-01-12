@@ -183,18 +183,10 @@ int rmenu_input_process(void *data, void *state)
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
       bool return_to_game_enable = ((trigger_state & (1ULL << GX_DEVICE_NAV_MENU)) && g_extern.main_is_init);
-      bool quit_key_pressed = (trigger_state & (1ULL << GX_DEVICE_NAV_QUIT));
 
       if (return_to_game_enable)
       {
          g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
-         return -1;
-      }
-
-      if (quit_key_pressed)
-      {
-         g_extern.lifecycle_mode_state &= ~((1ULL << MODE_EMULATION));
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
          return -1;
       }
    }
@@ -269,6 +261,11 @@ bool rmenu_iterate(void)
       action = RGUI_ACTION_START;
    else if (trigger_state & (1ULL << GX_DEVICE_NAV_SELECT))
       action = RGUI_ACTION_SETTINGS;
+   else if (trigger_state & (1ULL << GX_DEVICE_NAV_QUIT))
+   {
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
+      goto deinit;
+   }
 
    int input_entry_ret = 0;
    int input_process_ret = 0;
