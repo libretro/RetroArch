@@ -43,7 +43,7 @@
 
 static int rarch_zlib_extract_file(unzFile uf, 
       const char *current_dir, char *out_fname, 
-      size_t out_fname_size, unsigned unzip_mode)
+      size_t out_fname_size)
 {
    char fname_inzip[PATH_MAX];
    bool is_dir = false;
@@ -68,18 +68,14 @@ static int rarch_zlib_extract_file(unzFile uf,
       return UNZ_INTERNALERROR;
    }
 
-   switch(unzip_mode)
-   {
-      case ZIP_EXTRACT_TO_CURRENT_DIR:
-      case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
-         fill_pathname_join(out_fname, current_dir, fname_inzip, out_fname_size);
-         break;
+   if ((g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR)) ||
+         (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE)))
+      fill_pathname_join(out_fname, current_dir, fname_inzip, out_fname_size);
 #if defined(HAVE_HDD_CACHE_PARTITION) && defined(RARCH_CONSOLE)
-      case ZIP_EXTRACT_TO_CACHE_DIR:
-         fill_pathname_join(out_fname, default_paths.cache_dir, fname_inzip, out_fname_size);
-         break;
+   else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+      fill_pathname_join(out_fname, default_paths.cache_dir, fname_inzip, out_fname_size);
 #endif
-   }
+
    char slash;
 #if defined(_WIN32)
       slash = '\\';
@@ -158,7 +154,7 @@ static int rarch_zlib_extract_file(unzFile uf,
 }
 
 int rarch_zlib_extract_archive(const char *zip_path, char *first_file,
-      size_t first_file_size, unsigned unzip_mode)
+      size_t first_file_size)
 {
    char dir_path[PATH_MAX];
    bool found_first_file = false;
@@ -180,7 +176,7 @@ int rarch_zlib_extract_archive(const char *zip_path, char *first_file,
    {
       char in_fname[PATH_MAX];
 
-      if (rarch_zlib_extract_file(uf, dir_path, in_fname, sizeof(in_fname), unzip_mode) != UNZ_OK)
+      if (rarch_zlib_extract_file(uf, dir_path, in_fname, sizeof(in_fname)) != UNZ_OK)
       {
          RARCH_ERR("Failed to extract current file from ZIP archive.\n");
          goto error;

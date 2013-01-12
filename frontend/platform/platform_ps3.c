@@ -179,7 +179,7 @@ void menu_init (void)
 
 bool rmenu_iterate(void)
 {
-   console_load_game("/dev_hdd0/game/SSNE10000/USRDIR/mm3.nes", 0, 0);
+   console_load_game("/dev_hdd0/game/SSNE10000/USRDIR/mm3.nes");
 
    return false;
 }

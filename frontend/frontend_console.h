@@ -27,7 +27,7 @@ static void find_first_libretro_core(char *first_file,
    size_t size_of_first_file, const char *dir,
    const char * ext);
 #else
-void console_load_game(const char *path, unsigned extract_zip_mode);
+void console_load_game(const char *path);
 #endif
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT

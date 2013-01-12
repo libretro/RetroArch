@@ -17,13 +17,6 @@
 #ifndef RARCH_ZLIB_H__
 #define RARCH_ZLIB_H__
 
-enum
-{
-   ZIP_EXTRACT_TO_CURRENT_DIR = 0,
-   ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE,
-   ZIP_EXTRACT_TO_CACHE_DIR
-};
-
 int rarch_rzlib_extract_archive(const char *zip_path, char *first_file,
       size_t first_file_size, unsigned extract_zip_mode);
 

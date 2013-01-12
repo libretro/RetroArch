@@ -265,6 +265,7 @@ void config_set_defaults(void)
    g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
    g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
    g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_FLICKER_FILTER_ENABLE);
+   g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
 
    g_extern.console.main_wrap.state.default_savestate_dir.enable = false;
    g_extern.console.main_wrap.state.default_sram_dir.enable = false;
@@ -284,9 +285,6 @@ void config_set_defaults(void)
    g_extern.console.screen.viewports.custom_vp.y = 0;
 #ifdef _XBOX1
    g_extern.console.sound.volume_level = 0;
-#endif
-#ifdef HAVE_ZLIB
-   g_extern.file_state.zip_extract_mode = 0;
 #endif
 
    g_extern.block_config_read = true;
@@ -480,6 +478,7 @@ bool config_load_file(const char *path)
    bool screenshots_enable = false;
    bool flicker_filter_enable = false;
    bool soft_filter_enable = false;
+   int zip_extract_mode = 0;
 
    if (config_get_bool(conf, "info_msg_enable", &msg_enable))
    {
@@ -545,6 +544,25 @@ bool config_load_file(const char *path)
          g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
    }
 
+   if (config_get_int(conf, "unzip_mode", &zip_extract_mode))
+   {
+      g_extern.lifecycle_menu_state &= ~((1 << MODE_UNZIP_TO_CURDIR) |
+            (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
+            (1 << MODE_UNZIP_TO_CACHEDIR));
+      switch(zip_extract_mode)
+      {
+         case 0:
+            g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR);
+            break;
+         case 1:
+            g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+            break;
+         case 2:
+            g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CACHEDIR);
+            break;
+      }
+   }
+
    CONFIG_GET_BOOL_EXTERN(console.main_wrap.state.default_sram_dir.enable, "sram_dir_enable");
    CONFIG_GET_BOOL_EXTERN(console.main_wrap.state.default_savestate_dir.enable, "savestate_dir_enable");
    CONFIG_GET_FLOAT_EXTERN(console.screen.overscan_amount, "overscan_amount");
@@ -552,9 +570,6 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT_EXTERN(console.screen.soft_filter_index, "soft_filter_index");
 #ifdef _XBOX1
    CONFIG_GET_INT_EXTERN(console.sound.volume_level, "sound_volume_level");
-#endif
-#ifdef HAVE_ZLIB
-   CONFIG_GET_INT_EXTERN(file_state.zip_extract_mode, "zip_extract_mode");
 #endif
    CONFIG_GET_INT_EXTERN(console.screen.resolutions.current.id, "current_resolution_id");
    CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
@@ -1188,6 +1203,13 @@ bool config_save_file(const char *path)
    else
       config_set_bool(conf, "flicker_filter_enable", false);
 
+   if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR))
+      config_set_int(conf, "unzip_mode", 0);
+   else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+      config_set_int(conf, "unzip_mode", 1);
+   else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+      config_set_int(conf, "unzip_mode", 2);
+
    config_set_int(conf, "flicker_filter_index", g_extern.console.screen.flicker_filter_index);
    config_set_int(conf, "soft_filter_index", g_extern.console.screen.soft_filter_index);
    config_set_int(conf, "current_resolution_id", g_extern.console.screen.resolutions.current.id);
@@ -1197,9 +1219,6 @@ bool config_save_file(const char *path)
    config_set_int(conf, "custom_viewport_y", g_extern.console.screen.viewports.custom_vp.y);
    config_set_string(conf, "default_rom_startup_dir", g_extern.console.main_wrap.paths.default_rom_startup_dir);
    config_set_float(conf, "overscan_amount", g_extern.console.screen.overscan_amount);
-#ifdef HAVE_ZLIB
-   config_set_int(conf, "zip_extract_mode", g_extern.file_state.zip_extract_mode);
-#endif
 
    config_set_float(conf, "video_font_size", g_settings.video.font_size);
 

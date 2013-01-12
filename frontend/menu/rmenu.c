@@ -304,20 +304,20 @@ static void populate_setting_item(void *data, unsigned input)
 #ifdef HAVE_ZLIB
       case SETTING_ZIP_EXTRACT:
          snprintf(current_item->text, sizeof(current_item->text), "ZIP Extract Option");
-         switch(g_extern.file_state.zip_extract_mode)
+         if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR))
          {
-            case ZIP_EXTRACT_TO_CURRENT_DIR:
-               snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir");
-               snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to the current dir.");
-               break;
-            case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
-               snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir and load first file");
-               snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to current dir, and auto-loaded.");
-               break;
-            case ZIP_EXTRACT_TO_CACHE_DIR:
-               snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Cache dir");
-               snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to the cache dir.");
-               break;
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir");
+            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to the current dir.");
+         }
+         else if (g_extern.lifecycle_menu_state & (1 <<MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+         {
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir and load first file");
+            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to current dir, and auto-loaded.");
+         }
+         else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+         {
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Cache dir");
+            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to the cache dir.");
          }
          break;
 #endif
@@ -1407,16 +1407,37 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_ZIP_EXTRACT:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)))
          {
-            if(g_extern.file_state.zip_extract_mode > 0)
-               g_extern.file_state.zip_extract_mode--;
+            if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+            {
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CACHEDIR);
+               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+            }
+            else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+            {
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR);
+            }
          }
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            if(g_extern.file_state.zip_extract_mode < ZIP_EXTRACT_TO_CACHE_DIR)
-               g_extern.file_state.zip_extract_mode++;
+            if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR))
+            {
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CURDIR);
+               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+            }
+            else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+            {
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CACHEDIR);
+            }
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            g_extern.file_state.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR;
+         {
+            g_extern.lifecycle_menu_state &= ~((1 << MODE_UNZIP_TO_CURDIR) |
+                  (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
+                  (1 << MODE_UNZIP_TO_CACHEDIR));
+            g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+         }
          break;
 #endif
       case SETTING_RARCH_DEFAULT_EMU:
@@ -1830,7 +1851,7 @@ int select_rom(void *data, void *state)
             rmenu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
       }
       else
-         console_load_game(filebrowser_get_current_path(filebrowser), g_extern.file_state.zip_extract_mode);
+         console_load_game(filebrowser_get_current_path(filebrowser));
    }
    else if (input & (1ULL << RMENU_DEVICE_NAV_L1))
    {

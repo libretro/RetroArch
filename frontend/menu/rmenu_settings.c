@@ -202,20 +202,14 @@ void rmenu_settings_msg(unsigned setting, unsigned delay)
          snprintf(str, sizeof(str), "INFO - Press LEFT/RIGHT to change the controls, and press\n[RetroPad Start] to reset a button to default values.");
          break;
       case S_MSG_EXTRACTED_ZIPFILE:
-         switch(g_extern.file_state.zip_extract_mode)
-         {
-            case ZIP_EXTRACT_TO_CURRENT_DIR:
-               snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to current directory.");
-               break;
-            case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
-               snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted, now loading first file.");
-               break;
+         if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR))
+            snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to current directory.");
+         else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+            snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted, now loading first file.");
 #ifdef HAVE_HDD_CACHE_PARTITION
-            case ZIP_EXTRACT_TO_CACHE_DIR:
-               snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to cache partition.");
-               break;
+         else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+            snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to cache partition.");
 #endif
-         }
          break;
       case S_MSG_LOADING_ROM:
          fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
@@ -287,22 +281,14 @@ void rmenu_settings_create_menu_item_label(char * str, unsigned setting, size_t 
          snprintf(str, size, "Save State #%d", g_extern.state_slot);
          break;
       case S_LBL_ZIP_EXTRACT:
-	 {
-            char msg[128];
-	    switch(g_extern.file_state.zip_extract_mode)
-            {
-               case ZIP_EXTRACT_TO_CURRENT_DIR:
-                  snprintf(msg, sizeof(msg), "Current dir");
-                  break;
-               case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
-                  snprintf(msg, sizeof(msg), "Current dir and load first file");
-                  break;
-			   case ZIP_EXTRACT_TO_CACHE_DIR:
-                  snprintf(msg, sizeof(msg), "Cache dir");
-                  break;
-            }
-            snprintf(str, size, "ZIP Extract: %s", msg);
-	 }
+         if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR))
+            snprintf(str, sizeof(size), "INFO - ZIP Extract: Current dir.");
+         else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+            snprintf(str, sizeof(size), "INFO - ZIP Extract: Current dir and load first file.");
+#ifdef HAVE_HDD_CACHE_PARTITION
+         else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+            snprintf(str, sizeof(size), "INFO - ZIP Extract: Cache dir.");
+#endif
          break;
    }
 }

@@ -127,6 +127,9 @@ enum menu_enums
    MODE_VIDEO_THROTTLE_ENABLE,
    MODE_VIDEO_OVERSCAN_ENABLE,
    MODE_AUDIO_CUSTOM_BGM_ENABLE,
+   MODE_UNZIP_TO_CURDIR,
+   MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE,
+   MODE_UNZIP_TO_CACHEDIR,
 };
 
 // All config related settings go here.
@@ -569,9 +572,6 @@ struct global
    {
       char cgp_path[PATH_MAX];
       char input_cfg_path[PATH_MAX];
-#ifdef HAVE_ZLIB
-      unsigned zip_extract_mode;
-#endif
    } file_state;
 
    // If this is non-NULL. RARCH_LOG and friends will write to this file.

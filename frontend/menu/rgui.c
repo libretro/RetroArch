@@ -459,18 +459,12 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
             break;
          case RGUI_SETTINGS_ZIP_EXTRACT:
-            switch(g_extern.file_state.zip_extract_mode)
-            {
-               case ZIP_EXTRACT_TO_CURRENT_DIR:
-                  snprintf(type_str, sizeof(type_str), "Current");
-                  break;
-               case ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE:
-                  snprintf(type_str, sizeof(type_str), "Current + Load");
-                  break;
-               case ZIP_EXTRACT_TO_CACHE_DIR:
-                  snprintf(type_str, sizeof(type_str), "Cache");
-                  break;
-            }
+            if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR))
+               snprintf(type_str, sizeof(type_str), "Current");
+            else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+               snprintf(type_str, sizeof(type_str), "Current + Load");
+            else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+               snprintf(type_str, sizeof(type_str), "Cache");
             break;
          case RGUI_SETTINGS_SRAM_DIR:
             snprintf(type_str, sizeof(type_str), g_extern.console.main_wrap.state.default_sram_dir.enable ? "ON" : "OFF");
@@ -735,11 +729,38 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          break;
       case RGUI_SETTINGS_ZIP_EXTRACT:
          if (action == RGUI_ACTION_START)
-            g_extern.file_state.zip_extract_mode = ZIP_EXTRACT_TO_CURRENT_DIR;
-         else if (action == RGUI_ACTION_LEFT && g_extern.file_state.zip_extract_mode > 0)
-            g_extern.file_state.zip_extract_mode--;
-         else if (action == RGUI_ACTION_RIGHT && g_extern.file_state.zip_extract_mode < LAST_ZIP_EXTRACT)
-            g_extern.file_state.zip_extract_mode++;
+         {
+            g_extern.lifecycle_menu_state &= ~((1 << MODE_UNZIP_TO_CURDIR) |
+                  (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
+                  (1 << MODE_UNZIP_TO_CACHEDIR));
+            g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+         }
+         else if (action == RGUI_ACTION_LEFT)
+         {
+            if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+            {
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CACHEDIR);
+               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+            }
+            else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+            {
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR);
+            }
+         }
+         else if (action == RGUI_ACTION_RIGHT)
+         {
+            if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR))
+            {
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CURDIR);
+               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+            }
+            else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+            {
+               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CACHEDIR);
+            }
+         }
          break;
       case RGUI_SETTINGS_SRAM_DIR:
          if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
@@ -1217,7 +1238,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             else
             {
                snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s", dir, path);
-               console_load_game(rgui->path_buf, g_extern.file_state.zip_extract_mode);
+               console_load_game(rgui->path_buf);
                rgui->need_refresh = true; // in case of zip extract
                rgui->msg_force = true;
                return -1;
