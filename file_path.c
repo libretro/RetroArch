@@ -404,17 +404,34 @@ static char *find_last_slash(const char *str)
    return (char*)slash;
 }
 
+// Assumes path is a directory. Appends a slash
+// if not already there.
+static void fill_pathname_slash(char *path, size_t size)
+{
+   size_t path_len = strlen(path);
+   const char *last_slash = find_last_slash(path);
+
+   // Try to preserve slash type.
+   if (last_slash && (last_slash != (path + path_len - 1)))
+   {
+      char join_str[2] = {*last_slash};
+      rarch_assert(strlcat(path, join_str, size) < size);
+   }
+   else if (!last_slash)
+   {
+#ifdef _WIN32
+      const char join_str[] = "\\";
+#else
+      const char join_str[] = "/";
+#endif
+      rarch_assert(strlcat(path, join_str, size) < size);
+   }
+}
+
 void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replace, size_t size)
 {
-   rarch_assert(strlcat(in_dir, "/", size) < size);
-
-   const char *base = find_last_slash(in_basename);
-
-   if (base)
-      base++;
-   else
-      base = in_basename;
-
+   fill_pathname_slash(in_dir, size);
+   const char *base = path_basename(in_basename);
    rarch_assert(strlcat(in_dir, base, size) < size);
    rarch_assert(strlcat(in_dir, replace, size) < size);
 }
@@ -502,29 +519,10 @@ void fill_pathname_resolve_relative(char *out_path, const char *in_refpath, cons
 
 void fill_pathname_join(char *out_path, const char *dir, const char *path, size_t size)
 {
-   size_t dir_len;
-   rarch_assert((dir_len = strlcpy(out_path, dir, size)) < size);
+   rarch_assert(strlcpy(out_path, dir, size) < size);
 
-   if (dir_len)
-   {
-      const char *last_slash = find_last_slash(out_path);
-
-      // Try to preserve slash type.
-      if (last_slash && (last_slash != (out_path + dir_len - 1)))
-      {
-         char join_str[2] = {*last_slash};
-         rarch_assert(strlcat(out_path, join_str, size) < size);
-      }
-      else if (!last_slash)
-      {
-#ifdef _WIN32
-         const char join_str[] = "\\";
-#else
-         const char join_str[] = "/";
-#endif
-         rarch_assert(strlcat(out_path, join_str, size) < size);
-      }
-   }
+   if (*out_path)
+      fill_pathname_slash(out_path, size);
 
    rarch_assert(strlcat(out_path, path, size) < size);
 }
