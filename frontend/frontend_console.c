@@ -307,9 +307,14 @@ begin_loop:
    {
       driver.input->poll(NULL);
       driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-      audio_start_func();
+
+      if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE))
+         audio_start_func();
+
       while(rarch_main_iterate());
-      audio_stop_func();
+
+      if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE))
+         audio_stop_func();
       g_extern.lifecycle_menu_state &= ~(1 << MODE_EMULATION);
    }
    else if (g_extern.lifecycle_menu_state & (1 << MODE_INIT))
