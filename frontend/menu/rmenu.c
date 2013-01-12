@@ -2124,6 +2124,7 @@ int ingame_menu(void *data, void *state)
 
    if(input & (1ULL << RMENU_DEVICE_NAV_A))
    {
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
       return -1;
    }
@@ -2135,6 +2136,7 @@ int ingame_menu(void *data, void *state)
          {
             rarch_load_state();
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
@@ -2149,6 +2151,7 @@ int ingame_menu(void *data, void *state)
          {
             rarch_save_state();
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
          }
 
@@ -2209,6 +2212,7 @@ int ingame_menu(void *data, void *state)
          if((input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_R2)) || (input & (1ULL << RMENU_DEVICE_NAV_L2)))
          {
             g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             rmenu_settings_set(S_FRAME_ADVANCE);
             menu_idx = MENU_ITEM_FRAME_ADVANCE;
             return -1;
@@ -2229,6 +2233,7 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
          }
 
@@ -2239,6 +2244,7 @@ int ingame_menu(void *data, void *state)
          {
             rarch_game_reset();
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset the game.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
@@ -2247,9 +2253,9 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             menu_idx = 0;
-            /* TODO */
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-            return -1;
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+            return 0;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to return to the ROM Browser.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
          break;
@@ -2269,6 +2275,7 @@ int ingame_menu(void *data, void *state)
             RARCH_LOG("Boot Multiman: %s.\n", default_paths.multiman_self_file);
             strlcpy(g_extern.fullpath, default_paths.multiman_self_file, sizeof(g_extern.fullpath));
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
             return -1;
@@ -2281,6 +2288,7 @@ int ingame_menu(void *data, void *state)
          {
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_EMULATION);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
          }
 
@@ -2307,6 +2315,7 @@ int ingame_menu(void *data, void *state)
    if((input & (1ULL << RMENU_DEVICE_NAV_L3)) && (input & (1ULL << RMENU_DEVICE_NAV_R3)))
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
       return -1;
    }
 
@@ -2585,6 +2594,13 @@ bool rmenu_iterate(void)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
       device_ptr->ctx_driver->set_blend(false);
 
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT) &&
+         g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
+   {
+      menu_stack_pop();
+      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU_INGAME) | (1ULL << MODE_MENU_INGAME_EXIT));
+   }
+
    if (input_entry_ret != 0 || input_process_ret != 0)
       goto deinit;
 
@@ -2595,12 +2611,6 @@ deinit:
    // press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
    if (!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
       g_extern.delay_timer[0] = g_extern.frame_count + 30;
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
-   {
-      menu_stack_pop();
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME);
-   }
 
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
 
