@@ -392,13 +392,23 @@ void fill_pathname_noext(char *out_path, const char *in_path, const char *replac
    rarch_assert(strlcat(out_path, replace, size) < size);
 }
 
+static char *find_last_slash(const char *str)
+{
+   const char *slash = strrchr(str, '/');
+#ifdef _WIN32
+   const char *backslash = strrchr(str, '\\');
+   if (backslash && ((slash && backslash > slash) || !slash))
+      slash = backslash;
+#endif
+
+   return (char*)slash;
+}
+
 void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replace, size_t size)
 {
    rarch_assert(strlcat(in_dir, "/", size) < size);
 
-   const char *base = strrchr(in_basename, '/');
-   if (!base)
-      base = strrchr(in_basename, '\\');
+   const char *base = find_last_slash(in_basename);
 
    if (base)
       base++;
@@ -411,9 +421,7 @@ void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replac
 
 void fill_pathname_base(char *out, const char *in_path, size_t size)
 {
-   const char *ptr = strrchr(in_path, '/');
-   if (!ptr)
-      ptr = strrchr(in_path, '\\');
+   const char *ptr = find_last_slash(in_path);
 
    if (ptr)
       ptr++;
@@ -440,11 +448,7 @@ void path_basedir(char *path)
    if (strlen(path) < 2)
       return;
 
-   char *last = strrchr(path, '/');
-#ifdef _WIN32
-   if (!last)
-      last = strrchr(path, '\\');
-#endif
+   char *last = find_last_slash(path);
 
    if (last)
       last[1] = '\0';
@@ -466,11 +470,7 @@ void path_parent_dir(char *path)
 
 const char *path_basename(const char *path)
 {
-   const char *last = strrchr(path, '/');
-#ifdef _WIN32
-   if (!last)
-      last = strrchr(path, '\\');
-#endif
+   const char *last = find_last_slash(path);
 
    if (last)
       return last + 1;
@@ -502,19 +502,28 @@ void fill_pathname_resolve_relative(char *out_path, const char *in_refpath, cons
 
 void fill_pathname_join(char *out_path, const char *dir, const char *path, size_t size)
 {
-#ifdef _WIN32
-   const char join_str[] = "\\";
-#else
-   const char join_str[] = "/";
-#endif
-
    size_t dir_len;
    rarch_assert((dir_len = strlcpy(out_path, dir, size)) < size);
 
    if (dir_len)
    {
-      if (out_path[dir_len - 1] != '/' && out_path[dir_len - 1] != '\\')
+      const char *last_slash = find_last_slash(out_path);
+
+      // Try to preserve slash type.
+      if (last_slash && (last_slash != (out_path + dir_len - 1)))
+      {
+         char join_str[2] = {*last_slash};
          rarch_assert(strlcat(out_path, join_str, size) < size);
+      }
+      else if (!last_slash)
+      {
+#ifdef _WIN32
+         const char join_str[] = "\\";
+#else
+         const char join_str[] = "/";
+#endif
+         rarch_assert(strlcat(out_path, join_str, size) < size);
+      }
    }
 
    rarch_assert(strlcat(out_path, path, size) < size);
