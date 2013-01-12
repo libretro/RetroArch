@@ -7,10 +7,11 @@
 #include <string.h>
 #include <limits.h>
 #include <stdio.h>
-#include <libgen.h>
 #include <stdlib.h>
 
 #include "log.h"
+#include "../../file.h"
+#include "../../compat/strl.h"
 
 #define MAGIC_LEN 16
 
@@ -32,17 +33,15 @@ static int find_first_data_track(const char* cue_path, int32_t* offset,
     int fd = -1;
     char tmp_token[MAX_TOKEN_LEN];
     int m, s, f;
-    char* cue_path_copy;
-    char* cue_dir;
-    cue_path_copy = strdup(cue_path);
-    cue_dir = dirname(cue_path_copy);
+    char cue_dir[PATH_MAX];
+    strlcpy(cue_dir, cue_path, PATH_MAX);
+    path_basedir(cue_dir);
 
     fd = open(cue_path, O_RDONLY);
     if (fd < 0) {
         LOG_WARN("Could not open CUE file '%s': %s", cue_path,
                  strerror(errno));
-        rv = -errno;
-        goto free_path_copy;
+        return -errno;
     }
 
     LOG_DEBUG("Parsing CUE file '%s'...", cue_path);
@@ -50,8 +49,7 @@ static int find_first_data_track(const char* cue_path, int32_t* offset,
     while (get_token(fd, tmp_token, MAX_TOKEN_LEN) > 0) {
         if (strcmp(tmp_token, "FILE") == 0) {
             get_token(fd, tmp_token, MAX_TOKEN_LEN);
-            snprintf(track_path, max_len, "%s/%s",
-                    cue_dir, tmp_token);
+            fill_pathname_join(track_path, cue_dir, tmp_token, max_len);
 
         } else if (strcasecmp(tmp_token, "TRACK") == 0) {
             get_token(fd, tmp_token, MAX_TOKEN_LEN);
@@ -81,8 +79,6 @@ static int find_first_data_track(const char* cue_path, int32_t* offset,
 
 clean:
     close(fd);
-free_path_copy:
-    free(cue_path_copy);
     return rv;
 }
 
@@ -227,11 +223,10 @@ clean:
     return rv;
 }
 
-int find_fist_cue(const char* m3u_path, char* cue_path, size_t max_len) {
+int find_first_cue(const char* m3u_path, char* cue_path, size_t max_len) {
     char c;
     int skip = 0;
     int midstream = 0;
-    char tmp_path[PATH_MAX];
 
     int fd = open(m3u_path, O_RDONLY);
     if (fd < 0) {
@@ -239,8 +234,8 @@ int find_fist_cue(const char* m3u_path, char* cue_path, size_t max_len) {
         return -errno;
     }
 
-    strncpy(tmp_path, m3u_path, PATH_MAX);
-    strcpy(cue_path, dirname(tmp_path));
+    strncpy(cue_path, m3u_path, PATH_MAX);
+    path_basedir(cue_path);
     cue_path += strlen(cue_path);
     cue_path[0] = '/';
     cue_path++;
@@ -283,7 +278,7 @@ int detect_cd_game(const char* target_path, char* game_name, size_t max_len) {
     const char* system_name = NULL;
     int rv;
     if (strcasecmp(target_path + strlen(target_path) - 4, ".m3u") == 0) {
-        rv = find_fist_cue(target_path, cue_path, PATH_MAX);
+        rv = find_first_cue(target_path, cue_path, PATH_MAX);
         if (rv < 0) {
             LOG_WARN("Could not parse m3u: %s", strerror(-rv));
             return rv;

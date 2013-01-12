@@ -6,7 +6,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <libgen.h>
 #include <limits.h>
 
 #include "sha1.h"
@@ -59,8 +58,8 @@ find_rom_canonical_name(const char *hash, char *game_name, size_t max_len)
 	int fd;
 	int offs;
 	char *dat_path;
-	char *dat_name;
-   char *dat_name_dot;
+	const char *dat_name;
+   	char *dat_name_dot;
 	struct string_list *files;
 
 	files = dir_list_new("db", "dat", false);
@@ -70,11 +69,11 @@ find_rom_canonical_name(const char *hash, char *game_name, size_t max_len)
 
 	for (i = 0; i < files->size; i++) {
 		dat_path = files->elems[i].data;
-		dat_name = basename(dat_path);
+		dat_name = path_basename(dat_path);
 
-      dat_name_dot = strchr(dat_name, '.');
+		dat_name_dot = strchr(dat_name, '.');
 		if (!dat_name_dot) {
-         continue;
+			continue;
 		}
 
 		offs = dat_name_dot - dat_name + 1;
