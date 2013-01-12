@@ -13,34 +13,34 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_HASH_H
-#define __RARCH_HASH_H
+#include "rpng.h"
+#include <stdio.h>
+#include <stdlib.h>
 
-#include <stdint.h>
-#include <stddef.h>
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-// Hashes sha256 and outputs a human readable string for comparing with the cheat XML values.
-void sha256_hash(char *out, const uint8_t *in, size_t size);
-
-#ifdef HAVE_ZLIB
-#include "deps/rzlib/zlib.h"
-static inline uint32_t crc32_calculate(const uint8_t *data, size_t length)
+int main(int argc, char *argv[])
 {
-   return crc32(0, data, length);
-}
+   if (argc != 2)
+   {
+      fprintf(stderr, "Usage: %s <png file>\n", argv[0]);
+      return 1;
+   }
 
-static inline uint32_t crc32_adjust(uint32_t crc, uint8_t data)
-{
-   return crc32(crc, &data, 1);
-}
-#else
-uint32_t crc32_calculate(const uint8_t *data, size_t length);
-uint32_t crc32_adjust(uint32_t crc, uint8_t data);
-#endif
+   uint32_t *data = NULL;
+   unsigned width = 0;
+   unsigned height = 0;
 
-#endif
+   if (!rpng_load_image_argb(argv[1], &data, &width, &height))
+      return 1;
+
+   fprintf(stderr, "Got image: %u x %u.\n", width, height);
+
+   for (unsigned h = 0; h < height; h++)
+   {
+      for (unsigned w = 0; w < width; w++)
+         fprintf(stderr, "[%08x] ", data[h * width + w]);
+      fprintf(stderr, "\n");
+   }
+
+   free(data);
+}
 

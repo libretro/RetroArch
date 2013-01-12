@@ -15,6 +15,7 @@ HAVE_EGL=auto           # Enable EGL context support
 HAVE_VG=auto            # Enable OpenVG support
 HAVE_CG=auto            # Enable Cg shader support
 HAVE_LIBXML2=auto       # Enable libxml2 support
+HAVE_ZLIB=auto          # Enable zlib support (PNG decoding)
 HAVE_FBO=auto           # Enable render-to-texture (FBO) support
 HAVE_ALSA=auto          # Enable ALSA support
 HAVE_OSS=auto           # Enable OSS support

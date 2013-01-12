@@ -266,6 +266,15 @@ endif
 ifeq ($(HAVE_SDL_IMAGE), 1)
    LIBS += $(SDL_IMAGE_LIBS)
    DEFINES += $(SDL_IMAGE_CFLAGS)
+else
+   ifeq ($(HAVE_ZLIB), 1)
+      OBJ += gfx/rpng/rpng.o
+   endif
+endif
+
+ifeq ($(HAVE_ZLIB), 1)
+   LIBS += $(ZLIB_LIBS)
+   DEFINES += $(ZLIB_CFLAGS)
 endif
 
 ifeq ($(HAVE_LIBPNG), 1)
@@ -388,6 +397,7 @@ clean:
 	rm -f audio/*.o
 	rm -f conf/*.o
 	rm -f gfx/*.o
+	rm -f gfx/rpng/*.o
 	rm -f gfx/fonts/*.o
 	rm -f gfx/math/*.o
 	rm -f gfx/context/*.o

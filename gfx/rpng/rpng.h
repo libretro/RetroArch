@@ -13,34 +13,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_HASH_H
-#define __RARCH_HASH_H
+#ifndef RPNG_H__
+#define RPNG_H__
 
 #include <stdint.h>
-#include <stddef.h>
+#include <stdbool.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-// Hashes sha256 and outputs a human readable string for comparing with the cheat XML values.
-void sha256_hash(char *out, const uint8_t *in, size_t size);
-
-#ifdef HAVE_ZLIB
-#include "deps/rzlib/zlib.h"
-static inline uint32_t crc32_calculate(const uint8_t *data, size_t length)
-{
-   return crc32(0, data, length);
-}
-
-static inline uint32_t crc32_adjust(uint32_t crc, uint8_t data)
-{
-   return crc32(crc, &data, 1);
-}
-#else
-uint32_t crc32_calculate(const uint8_t *data, size_t length);
-uint32_t crc32_adjust(uint32_t crc, uint8_t data);
-#endif
+bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, unsigned *height);
 
 #endif
 
