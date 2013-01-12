@@ -20,6 +20,8 @@
 #include "../../xdk/xdk_d3d.h"
 #endif
 
+#include "../../console/rarch_console.h"
+
 #include "../image.h"
 
 #include <stdint.h>
