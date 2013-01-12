@@ -130,6 +130,7 @@ VIDEO IMAGE
 #include "../../xdk/image.c"
 #elif defined(ANDROID)
 #include "../../gfx/image.c"
+#include "../../gfx/rpng/rpng.c"
 #endif
 
 /*============================================================

@@ -323,6 +323,9 @@ struct inflate_blocks_state {
 
 };
 
+extern int inflate(z_streamp z, int f);
+extern int inflateEnd(z_streamp z);
+
 
 /* defines for inflate input/output */
 /*   update pointers and return */
