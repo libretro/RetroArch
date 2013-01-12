@@ -303,7 +303,7 @@ static void init_texture(unsigned width, unsigned height)
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    unsigned g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
 
-   GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : (g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW)) ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW)) ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjLOD(&g_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_InitTexObj(&menu_tex.obj, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjLOD(&menu_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
@@ -683,10 +683,10 @@ static void gx_resize(void *data)
 
    int x = 0, y = 0;
    unsigned width = gx->win_width, height = gx->win_height;
-   u32 lifecycle_menu_state = g_extern.lifecycle_menu_state;
+   uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
 
 #ifdef HW_RVL
-   VIDEO_SetTrapFilter(lifecycle_menu_state & (1 << MODE_VIDEO_SOFT_FILTER_ENABLE));
+   VIDEO_SetTrapFilter(lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
 #endif
    GX_SetDispCopyGamma(g_extern.console.screen.gamma_correction);
 
@@ -748,7 +748,7 @@ static void gx_resize(void *data)
    Mtx44 m1, m2;
    float top = 1, bottom = -1, left = -1, right = 1;
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_OVERSCAN_ENABLE))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_OVERSCAN_ENABLE))
    {
       top    -= g_extern.console.screen.overscan_amount / 2;
       left   += g_extern.console.screen.overscan_amount / 2;
@@ -870,7 +870,7 @@ static bool gx_frame(void *data, const void *frame,
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    bool should_resize = gx->should_resize;
    u8 clear_efb = GX_FALSE;
-   u32 lifecycle_menu_state = g_extern.lifecycle_menu_state;
+   uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
 
    (void)data;
 
@@ -879,7 +879,7 @@ static bool gx_frame(void *data, const void *frame,
    else
       gx->msg[0] = 0;
 
-   if(!frame && !(lifecycle_menu_state & (1 << MODE_MENU_DRAW)))
+   if(!frame && !(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW)))
       return true;
 
    if (!frame)
@@ -891,7 +891,7 @@ static bool gx_frame(void *data, const void *frame,
       clear_efb = GX_TRUE;
    }
 
-   while ((g_vsync || (lifecycle_menu_state & (1 << MODE_MENU_DRAW))) && !g_draw_done)
+   while ((g_vsync || (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))) && !g_draw_done)
       LWP_ThreadSleep(g_video_cond);
 
    if (width != gx_old_width || height != gx_old_height)
@@ -908,14 +908,14 @@ static bool gx_frame(void *data, const void *frame,
    {
       if (gx->rgb32)
          convert_texture32(frame, g_tex.data, width, height, pitch);
-      else if (lifecycle_menu_state & (1 << MODE_MENU_DRAW))
+      else if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
          convert_texture16_conv(frame, g_tex.data, width, height, pitch);
       else
          convert_texture16(frame, g_tex.data, width, height, pitch);
       DCFlushRange(g_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
    }
 
-   if (lifecycle_menu_state & (1 << MODE_MENU_DRAW))
+   if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
    {
       convert_texture16(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2);
       DCFlushRange(menu_tex.data, RGUI_WIDTH * RGUI_HEIGHT * 2);
@@ -930,14 +930,14 @@ static bool gx_frame(void *data, const void *frame,
       GX_DrawDone();
    }
 
-   if(lifecycle_menu_state & (1 << MODE_MENU_DRAW))
+   if(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
    {
       GX_LoadTexObj(&menu_tex.obj, GX_TEXMAP0);
       GX_CallDispList(display_list, display_list_size);
       GX_DrawDone();
    }
 
-   if (lifecycle_menu_state & (1 << MODE_FPS_DRAW))
+   if (lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
    {
       char fps_txt[128];
       char mem1_txt[128];

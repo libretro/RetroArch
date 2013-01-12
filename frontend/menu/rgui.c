@@ -238,8 +238,8 @@ rgui_handle_t *rgui_init(const char *base_path,
    else
    {
       RARCH_ERR("no font bmp or bin, abort");
-      g_extern.lifecycle_menu_state &= ~((1 << MODE_MENU) | (1 << MODE_MENU_INGAME) | (1 << MODE_EMULATION));
-      g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_MENU_INGAME) | (1ULL << MODE_EMULATION));
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
    }
 
    return rgui;
@@ -363,7 +363,7 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
 static void render_text(rgui_handle_t *rgui)
 {
    if (rgui->need_refresh && 
-         (g_extern.lifecycle_menu_state & (1ULL << MODE_MENU))
+         (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
          && !rgui->msg_force)
       return;
 
@@ -428,7 +428,7 @@ static void render_text(rgui_handle_t *rgui)
             break;
 #ifdef HW_RVL
          case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
-            snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
+            snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
             break;
 #endif
 #ifdef GEKKO
@@ -459,11 +459,11 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
             break;
          case RGUI_SETTINGS_ZIP_EXTRACT:
-            if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR))
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
                snprintf(type_str, sizeof(type_str), "Current");
-            else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
                snprintf(type_str, sizeof(type_str), "Current + Load");
-            else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
                snprintf(type_str, sizeof(type_str), "Cache");
             break;
          case RGUI_SETTINGS_SRAM_DIR:
@@ -473,7 +473,7 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), g_extern.console.main_wrap.state.default_savestate_dir.enable ? "ON" : "OFF");
             break;
          case RGUI_SETTINGS_DEBUG_TEXT:
-            snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW)) ? "ON" : "OFF");
+            snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
             break;
          case RGUI_SETTINGS_CUSTOM_VIEWPORT:
          case RGUI_SETTINGS_CORE:
@@ -575,7 +575,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
                rarch_save_state();
             else
                rarch_load_state();
-            g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
             return -1;
          }
          else if (action == RGUI_ACTION_START)
@@ -606,7 +606,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          if (action == RGUI_ACTION_OK)
          {
             rarch_game_reset();
-            g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
             return -1;
          }
          break;
@@ -619,10 +619,10 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
 #ifdef HW_RVL
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
          {
-            if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SOFT_FILTER_ENABLE))
-               g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
             else
-               g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
             driver.video->apply_state_changes();
          }
          break;
@@ -730,35 +730,35 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
       case RGUI_SETTINGS_ZIP_EXTRACT:
          if (action == RGUI_ACTION_START)
          {
-            g_extern.lifecycle_menu_state &= ~((1 << MODE_UNZIP_TO_CURDIR) |
-                  (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
-                  (1 << MODE_UNZIP_TO_CACHEDIR));
-            g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CURDIR) |
+                  (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
+                  (1ULL << MODE_UNZIP_TO_CACHEDIR));
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
          }
          else if (action == RGUI_ACTION_LEFT)
          {
-            if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
             {
-               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CACHEDIR);
-               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CACHEDIR);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
             }
-            else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
             {
-               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR);
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR);
             }
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
-            if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR))
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
             {
-               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CURDIR);
-               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
             }
-            else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
             {
-               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CACHEDIR);
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CACHEDIR);
             }
          }
          break;
@@ -776,9 +776,9 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          break;
       case RGUI_SETTINGS_DEBUG_TEXT:
          if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
-            g_extern.lifecycle_menu_state &= ~(1 << MODE_FPS_DRAW);
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
          else if (action == RGUI_ACTION_RIGHT)
-            g_extern.lifecycle_menu_state |= (1 << MODE_FPS_DRAW);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
          break;
       case RGUI_SETTINGS_RESTART_EMULATOR:
          if (action == RGUI_ACTION_OK)
@@ -786,17 +786,17 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
 #ifdef GEKKO
             snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s/boot.dol", default_paths.core_dir);
 #endif
-            g_extern.lifecycle_menu_state &= ~(1 << MODE_EMULATION);
-            g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
-            g_extern.lifecycle_menu_state |= (1 << MODE_EXITSPAWN);
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
             return -1;
          }
          break;
       case RGUI_SETTINGS_QUIT_EMULATOR:
          if (action == RGUI_ACTION_OK)
          {
-            g_extern.lifecycle_menu_state &= ~(1 << MODE_EMULATION);
-            g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             return -1;
          }
          break;

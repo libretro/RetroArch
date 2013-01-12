@@ -241,8 +241,8 @@ void config_set_defaults(void)
 
 #ifdef RARCH_CONSOLE
    /* TODO - will be refactored - I'm aware this is messy right now */
-   g_extern.lifecycle_menu_state = 0;
-   g_extern.lifecycle_menu_state |= ((1 << MODE_INFO_DRAW) | (1 << MODE_MENU));
+   g_extern.lifecycle_mode_state = 0;
+   g_extern.lifecycle_mode_state |= ((1ULL << MODE_INFO_DRAW) | (1ULL << MODE_MENU));
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
    strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
@@ -258,14 +258,14 @@ void config_set_defaults(void)
    strlcpy(g_extern.console.main_wrap.paths.default_sram_dir, default_paths.sram_dir, sizeof(g_extern.console.main_wrap.paths.default_sram_dir));
    g_extern.console.screen.overscan_amount = 0.0f;
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
-   g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_OVERSCAN_ENABLE);
-   g_extern.lifecycle_menu_state |= (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-   g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SCREENSHOTS_ENABLE);
-   g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_THROTTLE_ENABLE);
-   g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
-   g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
-   g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_FLICKER_FILTER_ENABLE);
-   g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE);
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_THROTTLE_ENABLE);
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
 
    g_extern.console.main_wrap.state.default_savestate_dir.enable = false;
    g_extern.console.main_wrap.state.default_sram_dir.enable = false;
@@ -483,82 +483,82 @@ bool config_load_file(const char *path)
    if (config_get_bool(conf, "info_msg_enable", &msg_enable))
    {
       if (msg_enable)
-         g_extern.lifecycle_menu_state |= (1 << MODE_INFO_DRAW);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
       else 
-         g_extern.lifecycle_menu_state &= ~(1 << MODE_INFO_DRAW);
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INFO_DRAW);
    }
 
    if (config_get_bool(conf, "throttle_enable", &throttle_enable))
    {
       if (throttle_enable)
-         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_THROTTLE_ENABLE);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_THROTTLE_ENABLE);
       else
-         g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_THROTTLE_ENABLE);
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_THROTTLE_ENABLE);
    }
 
    if (config_get_bool(conf, "triple_buffering_enable", &triple_buffering_enable))
    {
       if (triple_buffering_enable)
-         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
       else
-         g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
    }
 
    if (config_get_bool(conf, "overscan_enable", &overscan_enable))
    {
       if (overscan_enable)
-         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_OVERSCAN_ENABLE);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
       else
-         g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_OVERSCAN_ENABLE);
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
    }
 
    if (config_get_bool(conf, "custom_bgm_enable", &custom_bgm_enable))
    {
       if (custom_bgm_enable)
-         g_extern.lifecycle_menu_state |= (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
       else
-         g_extern.lifecycle_menu_state &= ~(1 << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
    }
 
    if (config_get_bool(conf, "screenshots_enable", &screenshots_enable))
    {
       if (screenshots_enable)
-         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SCREENSHOTS_ENABLE);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE);
       else
-         g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_SCREENSHOTS_ENABLE);
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE);
    }
 
    if (config_get_bool(conf, "flicker_filter_enable", &flicker_filter_enable))
    {
       if (flicker_filter_enable)
-         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_FLICKER_FILTER_ENABLE);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
       else 
-         g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_FLICKER_FILTER_ENABLE);
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
    }
 
    if (config_get_bool(conf, "soft_filter_enable", &soft_filter_enable))
    {
       if (soft_filter_enable)
-         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
       else 
-         g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
    }
 
    if (config_get_int(conf, "unzip_mode", &zip_extract_mode))
    {
-      g_extern.lifecycle_menu_state &= ~((1 << MODE_UNZIP_TO_CURDIR) |
-            (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
-            (1 << MODE_UNZIP_TO_CACHEDIR));
+      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CURDIR) |
+            (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
+            (1ULL << MODE_UNZIP_TO_CACHEDIR));
       switch(zip_extract_mode)
       {
          case 0:
-            g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR);
             break;
          case 1:
-            g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
             break;
          case 2:
-            g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CACHEDIR);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CACHEDIR);
             break;
       }
    }
@@ -1164,12 +1164,12 @@ bool config_save_file(const char *path)
    config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
    config_set_string(conf, "system_directory", g_settings.system_directory);
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_OVERSCAN_ENABLE))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_OVERSCAN_ENABLE))
       config_set_bool(conf, "overscan_enable", true);
    else
       config_set_bool(conf, "overscan_enable", false);
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE))
       config_set_bool(conf, "screenshots_enable", true);
    else
       config_set_bool(conf, "screenshots_enable", false);
@@ -1178,36 +1178,36 @@ bool config_save_file(const char *path)
 #ifdef _XBOX1
    config_set_int(conf, "sound_volume_level", g_extern.console.sound.volume_level);
 #endif
-   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
       config_set_bool(conf, "throttle_enable", true);
    else
       config_set_bool(conf, "throttle_enable", false);
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
       config_set_bool(conf, "triple_buffering_enable", true);
    else
       config_set_bool(conf, "triple_buffering_enable", false);
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
       config_set_bool(conf, "info_msg_enable", true);
    else
       config_set_bool(conf, "info_msg_enable", false);
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SOFT_FILTER_ENABLE))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
       config_set_bool(conf, "soft_filter_enable", true);
    else
       config_set_bool(conf, "soft_filter_enable", false);
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_FLICKER_FILTER_ENABLE))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE))
       config_set_bool(conf, "flicker_filter_enable", true);
    else
       config_set_bool(conf, "flicker_filter_enable", false);
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
       config_set_int(conf, "unzip_mode", 0);
-   else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
       config_set_int(conf, "unzip_mode", 1);
-   else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
       config_set_int(conf, "unzip_mode", 2);
 
    config_set_int(conf, "flicker_filter_index", g_extern.console.screen.flicker_filter_index);
@@ -1228,7 +1228,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "audio_mute", g_extern.audio_data.mute);
    config_set_int(conf, "screen_orientation", g_extern.console.screen.orientation);
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
       config_set_bool(conf, "custom_bgm_enable", true);
    else
       config_set_bool(conf, "custom_bgm_enable", false);

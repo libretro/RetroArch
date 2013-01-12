@@ -155,8 +155,8 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
    {
       case CELL_SYSUTIL_REQUEST_EXITGAME:
          gl->quitting = true;
-         g_extern.lifecycle_menu_state &= ~((1 << MODE_MENU) | (1 << MODE_MENU_INGAME) | (1 << MODE_EMULATION));
-         g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+         g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_MENU_INGAME) | (1ULL << MODE_EMULATION));
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
          break;
 #ifdef HAVE_OSKUTIL
       case CELL_SYSUTIL_OSKDIALOG_FINISHED:
@@ -217,14 +217,14 @@ static void get_environment_settings(int argc, char *argv[])
 
    if(path_file_exists(default_paths.multiman_self_file) && argc > 1 &&  path_file_exists(argv[1]))
    {
-      g_extern.lifecycle_menu_state |= (1 << MODE_EXTLAUNCH_MULTIMAN);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXTLAUNCH_MULTIMAN);
       RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
    }
    else
 #endif
 #ifndef IS_SALAMANDER
    {
-      g_extern.lifecycle_menu_state |= (1 << MODE_EXTLAUNCH_SALAMANDER);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXTLAUNCH_SALAMANDER);
       RARCH_WARN("Started from Salamander, auto-game start disabled.\n");
    }
 #endif
@@ -258,7 +258,7 @@ static void get_environment_settings(int argc, char *argv[])
       ret = cellGameContentPermit(contentInfoPath, default_paths.port_dir);
 
 #ifdef HAVE_MULTIMAN
-      if (g_extern.lifecycle_menu_state & (1 << MODE_EXTLAUNCH_MULTIMAN))
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXTLAUNCH_MULTIMAN))
       {
          snprintf(contentInfoPath, sizeof(contentInfoPath), "/dev_hdd0/game/%s", EMULATOR_CONTENT_DIR);
          snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "/dev_hdd0/game/%s/USRDIR", EMULATOR_CONTENT_DIR);
@@ -356,7 +356,7 @@ static void system_init(void)
 static void system_post_init(void)
 {
 #if (CELL_SDK_VERSION > 0x340000) && !defined(__PSL1GHT__)
-   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE))
    {
 #ifdef HAVE_SYSMODULES
       cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
@@ -371,7 +371,7 @@ static void system_post_init(void)
 #endif
    }
 #ifdef HAVE_SYSUTILS
-   if (g_extern.lifecycle_menu_state & (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
       cellSysutilEnableBgmPlayback();
 #endif
 #endif
@@ -385,12 +385,12 @@ static void system_post_init(void)
 static void system_process_args(int argc, char *argv[])
 {
 #ifdef HAVE_MULTIMAN
-   if (g_extern.lifecycle_menu_state & (1 << MODE_EXTLAUNCH_MULTIMAN))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXTLAUNCH_MULTIMAN))
    {
       RARCH_LOG("Started from multiMAN, will auto-start game.\n");
       strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
-      g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU);
-      g_extern.lifecycle_menu_state |= (1 << MODE_INIT);
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
    }
 #endif
 }
@@ -421,7 +421,7 @@ static void system_deinit(void)
 
 #ifndef __PSL1GHT__
    /* screenshot PRX */
-   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE))
       cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
 #endif
 

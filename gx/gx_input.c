@@ -333,7 +333,7 @@ static void gx_input_poll(void *data)
                *state_cur |= GX_QUIT_KEY;
 
             //TODO: Hack, analog stick twitchiness needs to be properly fixed
-            if(g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
+            if(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
             {
                s8 x = gx_stick_x(exp->classic.ljs);
                s8 y = gx_stick_y(exp->classic.ljs);

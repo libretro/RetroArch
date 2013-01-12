@@ -299,19 +299,19 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
    {
       *width = 1280;
       *height = 720;
-      g_extern.lifecycle_menu_state |= (1 << MODE_MENU_HD);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_HD);
    }
    else
    {
 	   *width = 640;
 	   *height = 480;
-      g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_HD);
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_HD);
    }
 
    if(video_mode.fIsWideScreen)
-	   g_extern.lifecycle_menu_state |= (1 << MODE_MENU_WIDESCREEN);
+	   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_WIDESCREEN);
    else
-      g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_WIDESCREEN);
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_WIDESCREEN);
 #elif defined(_XBOX1)
    DWORD video_mode = XGetVideoFlags();
 
@@ -334,10 +334,10 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
             *width = 720;
             *height = 576;
          }
-         g_extern.lifecycle_menu_state |= (1 << MODE_MENU_WIDESCREEN);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_WIDESCREEN);
       }
       else
-         g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_WIDESCREEN);
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_WIDESCREEN);
    }
    else
    {
@@ -346,10 +346,10 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
       {
          *width = 720;
          *height = 480;
-         g_extern.lifecycle_menu_state |= (1 << MODE_MENU_WIDESCREEN);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_WIDESCREEN);
       }
 	  else
-       g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_WIDESCREEN);
+       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_WIDESCREEN);
    }
 
    if(XGetAVPack() == XC_AV_PACK_HDTV)
@@ -358,22 +358,22 @@ static void gfx_ctx_xdk_get_video_size(unsigned *width, unsigned *height)
       {
          *width	= 640;
          *height  = 480;
-         g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_WIDESCREEN);
-         g_extern.lifecycle_menu_state |= (1 << MODE_MENU_HD);
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_WIDESCREEN);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_HD);
       }
 	   else if(video_mode & XC_VIDEO_FLAGS_HDTV_720p)
       {
          *width	= 1280;
          *height  = 720;
-         g_extern.lifecycle_menu_state |= (1 << MODE_MENU_WIDESCREEN);
-         g_extern.lifecycle_menu_state |= (1 << MODE_MENU_HD);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_WIDESCREEN);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_HD);
       }
 	   else if(video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
       {
          *width	= 1920;
          *height  = 1080;
-         g_extern.lifecycle_menu_state |= (1 << MODE_MENU_WIDESCREEN);
-         g_extern.lifecycle_menu_state |= (1 << MODE_MENU_HD);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_WIDESCREEN);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_HD);
       }
    }
 #else

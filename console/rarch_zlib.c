@@ -68,11 +68,11 @@ static int rarch_zlib_extract_file(unzFile uf,
       return UNZ_INTERNALERROR;
    }
 
-   if ((g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR)) ||
-         (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE)))
+   if ((g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR)) ||
+         (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE)))
       fill_pathname_join(out_fname, current_dir, fname_inzip, out_fname_size);
 #if defined(HAVE_HDD_CACHE_PARTITION) && defined(RARCH_CONSOLE)
-   else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
       fill_pathname_join(out_fname, default_paths.cache_dir, fname_inzip, out_fname_size);
 #endif
 

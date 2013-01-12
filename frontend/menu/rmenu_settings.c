@@ -51,7 +51,7 @@ void rmenu_settings_set(unsigned setting)
          break;
       case S_FRAME_ADVANCE:
          g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
-         g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
          break;
       case S_HW_TEXTURE_FILTER:
          g_settings.video.smooth = !g_settings.video.smooth;
@@ -61,15 +61,15 @@ void rmenu_settings_set(unsigned setting)
          break;
       case S_OVERSCAN_DECREMENT:
          g_extern.console.screen.overscan_amount -= 0.01f;
-         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_OVERSCAN_ENABLE);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
          if(g_extern.console.screen.overscan_amount == 0.0f)
-            g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_OVERSCAN_ENABLE);
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
          break;
       case S_OVERSCAN_INCREMENT:
          g_extern.console.screen.overscan_amount += 0.01f;
-         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_OVERSCAN_ENABLE);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
          if(g_extern.console.screen.overscan_amount == 0.0f)
-            g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_OVERSCAN_ENABLE);
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
          break;
       case S_RESOLUTION_PREVIOUS:
          if (g_extern.console.screen.resolutions.current.idx)
@@ -117,17 +117,17 @@ void rmenu_settings_set(unsigned setting)
       case S_THROTTLE:
          if(!g_extern.system.force_nonblock)
          {
-            if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE))
-               g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_THROTTLE_ENABLE);
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_THROTTLE_ENABLE);
             else
-               g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_THROTTLE_ENABLE);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_THROTTLE_ENABLE);
          }
          break;
       case S_TRIPLE_BUFFERING:
-         if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
-            g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
          else
-            g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
          break;
    }
 }
@@ -159,17 +159,17 @@ void rmenu_settings_set_default(unsigned setting)
          break;
       case S_DEF_OVERSCAN:
          g_extern.console.screen.overscan_amount = 0.0f;
-         g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_OVERSCAN_ENABLE);
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
          break;
       case S_DEF_ROTATION:
          g_extern.console.screen.orientation = ORIENTATION_NORMAL;
          break;
       case S_DEF_THROTTLE:
          if(!g_extern.system.force_nonblock)
-            g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_THROTTLE_ENABLE);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_THROTTLE_ENABLE);
          break;
       case S_DEF_TRIPLE_BUFFERING:
-         g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
          break;
       case S_DEF_SAVE_STATE:
          g_extern.state_slot = 0;
@@ -202,12 +202,12 @@ void rmenu_settings_msg(unsigned setting, unsigned delay)
          snprintf(str, sizeof(str), "INFO - Press LEFT/RIGHT to change the controls, and press\n[RetroPad Start] to reset a button to default values.");
          break;
       case S_MSG_EXTRACTED_ZIPFILE:
-         if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR))
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
             snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to current directory.");
-         else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
             snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted, now loading first file.");
 #ifdef HAVE_HDD_CACHE_PARTITION
-         else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
             snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to cache partition.");
 #endif
          break;
@@ -281,12 +281,12 @@ void rmenu_settings_create_menu_item_label(char * str, unsigned setting, size_t 
          snprintf(str, size, "Save State #%d", g_extern.state_slot);
          break;
       case S_LBL_ZIP_EXTRACT:
-         if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR))
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
             snprintf(str, sizeof(size), "INFO - ZIP Extract: Current dir.");
-         else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
             snprintf(str, sizeof(size), "INFO - ZIP Extract: Current dir and load first file.");
 #ifdef HAVE_HDD_CACHE_PARTITION
-         else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
             snprintf(str, sizeof(size), "INFO - ZIP Extract: Cache dir.");
 #endif
          break;

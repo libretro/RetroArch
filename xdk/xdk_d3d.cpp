@@ -374,7 +374,7 @@ static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const ch
 void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   unsigned lifecycle_menu_state = g_extern.lifecycle_menu_state;
+   uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
 
    memset(d3dpp, 0, sizeof(*d3dpp));
 
@@ -416,14 +416,14 @@ void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video
          d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
    }
 
-   if (lifecycle_menu_state & MODE_MENU_WIDESCREEN)
+   if (lifecycle_mode_state & MODE_MENU_WIDESCREEN)
       d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
 
    d3dpp->BackBufferFormat                     = D3DFMT_X8R8G8B8;
    d3dpp->FullScreen_PresentationInterval	   = d3d->vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
    d3dpp->SwapEffect                           = D3DSWAPEFFECT_COPY;
 #elif defined(_XBOX360)
-   if (!(lifecycle_menu_state & (1 << MODE_MENU_WIDESCREEN)))
+   if (!(lifecycle_mode_state & (1ULL << MODE_MENU_WIDESCREEN)))
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
 
    if (g_extern.console.screen.gamma_correction)
@@ -694,7 +694,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
-   unsigned lifecycle_menu_state = g_extern.lifecycle_menu_state;
+   uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
 #ifdef HAVE_FBO
    D3DSurface* pRenderTarget0;
 #endif
@@ -821,7 +821,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
    d3dr->BeginScene();
    d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
-   d3dr->SetSoftDisplayFilter(g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SOFT_FILTER_ENABLE));
+   d3dr->SetSoftDisplayFilter(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
    d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
    d3dr->EndScene();
 #elif defined(_XBOX360)
@@ -863,13 +863,13 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    float msg_width  = 60;
    float msg_height = 365;
 #elif defined(_XBOX360)
-   float mem_width  = (lifecycle_menu_state & (1 << MODE_MENU_HD)) ? 160 : 100;
+   float mem_width  = (lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
    float mem_height = 70;
    float msg_width  = mem_width;
    float msg_height = mem_height + 50;
 #endif
 
-   if (lifecycle_menu_state & (1 << MODE_FPS_DRAW))
+   if (lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
    {
       MEMORYSTATUS stat;
       GlobalMemoryStatus(&stat);
@@ -889,7 +889,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (msg)
       d3d->font_ctx->render_msg_place(d3d, msg_width, msg_height, 0.0f, 0, msg);
 
-   if (lifecycle_menu_state & (1 << MODE_MENU_DRAW))
+   if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
    {
 #ifdef _XBOX360
       app.Render();

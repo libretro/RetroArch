@@ -112,10 +112,10 @@ void console_load_game(const char *path)
       first_file[0] = '\0';
 
       rarch_zlib_extract_archive(path, first_file, sizeof(first_file));
-      if(g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+      if(g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
          rmenu_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
 
-      if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
       {
          if (first_file[0] != 0)
          {
@@ -133,7 +133,7 @@ void console_load_game(const char *path)
       snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), path);
 
 do_init:
-   g_extern.lifecycle_menu_state |= (1 << MODE_LOAD_GAME);
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 }
 
 static void verbose_log_init(void)
@@ -303,21 +303,21 @@ int main(int argc, char *argv[])
    system_process_args(argc, argv);
 
 begin_loop:
-   if(g_extern.lifecycle_menu_state & (1 << MODE_EMULATION))
+   if(g_extern.lifecycle_mode_state & (1ULL << MODE_EMULATION))
    {
       driver.input->poll(NULL);
       driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
-      if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE))
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
          audio_start_func();
 
       while(rarch_main_iterate());
 
-      if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE))
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
          audio_stop_func();
-      g_extern.lifecycle_menu_state &= ~(1 << MODE_EMULATION);
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_EMULATION);
    }
-   else if (g_extern.lifecycle_menu_state & (1 << MODE_INIT))
+   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_INIT))
    {
       if(g_extern.main_is_init)
          rarch_main_deinit();
@@ -336,21 +336,21 @@ begin_loop:
       if (init_ret == 0)
       {
          RARCH_LOG("rarch_main_init succeeded.\n");
-         g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
       }
       else
       {
          RARCH_ERR("rarch_main_init failed.\n");
-         g_extern.lifecycle_menu_state |= (1 << MODE_MENU);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
          rmenu_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
       }
-      g_extern.lifecycle_menu_state &= ~(1 << MODE_INIT);
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
    }
-   else if(g_extern.lifecycle_menu_state & (1 << MODE_MENU))
+   else if(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
    {
-      g_extern.lifecycle_menu_state |= (1 << MODE_MENU_PREINIT);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_PREINIT);
       while(rmenu_iterate());
-      g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU);
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
    }
    else
       goto begin_shutdown;
@@ -373,7 +373,7 @@ begin_shutdown:
 #endif
 
    system_deinit();
-   if (g_extern.lifecycle_menu_state & (1 << MODE_EXITSPAWN))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN))
       system_exitspawn();
 
    return 1;

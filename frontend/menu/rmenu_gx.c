@@ -168,15 +168,15 @@ static uint16_t trigger_state = 0;
 
 int rmenu_input_process(void *data, void *state)
 {
-   if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
    {
-      if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
          rmenu_settings_msg(S_MSG_LOADING_ROM, 100);
 
       if (g_extern.fullpath)
-         g_extern.lifecycle_menu_state |= (1 << MODE_INIT);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
 
-      g_extern.lifecycle_menu_state &= ~(1 << MODE_LOAD_GAME);
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);
       return -1;
    }
 
@@ -187,14 +187,14 @@ int rmenu_input_process(void *data, void *state)
 
       if (return_to_game_enable)
       {
-         g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
          return -1;
       }
 
       if (quit_key_pressed)
       {
-         g_extern.lifecycle_menu_state &= ~((1 << MODE_EMULATION));
-         g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+         g_extern.lifecycle_mode_state &= ~((1ULL << MODE_EMULATION));
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
          return -1;
       }
    }
@@ -208,7 +208,7 @@ bool rmenu_iterate(void)
    static bool initial_held = true;
    static bool first_held = false;
 
-   g_extern.lifecycle_menu_state |= (1 << MODE_MENU_DRAW);
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
    driver.video->apply_state_changes();
 
    g_extern.frame_count++;
@@ -288,8 +288,8 @@ deinit:
    if (!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
       g_extern.delay_timer[0] = g_extern.frame_count + 30;
 
-   g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
-   g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_INGAME);
+   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
+   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME);
 
    return false;
 }

@@ -566,7 +566,7 @@ struct global
    } console;
 
    uint64_t lifecycle_state;
-   uint32_t lifecycle_menu_state;
+   uint64_t lifecycle_mode_state;
 
    struct
    {

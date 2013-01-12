@@ -633,7 +633,7 @@ void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
 {
    gl_t *gl = (gl_t*)data;
 #ifdef RARCH_CONSOLE
-   if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_OVERSCAN_ENABLE))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_OVERSCAN_ENABLE))
    {
       ortho->left = -g_extern.console.screen.overscan_amount / 2;
       ortho->right = 1 + g_extern.console.screen.overscan_amount / 2;
@@ -1193,7 +1193,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    gl_t *gl = (gl_t*)data;
 #ifdef HAVE_RMENU
-   unsigned lifecycle_menu_state = g_extern.lifecycle_menu_state;
+   uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
 #endif
 
    gl_shader_use_func(gl, 1);
@@ -1260,7 +1260,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_set_prev_texture(gl, &tex_info);
 
 #ifdef FPS_COUNTER
-   if (lifecycle_menu_state & (1 << MODE_FPS_DRAW))
+   if (lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
    {
       char fps_txt[128];
       gfx_get_fps(fps_txt, sizeof(fps_txt), true);
@@ -1287,7 +1287,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    RARCH_PERFORMANCE_STOP(frame_run);
 
 #ifdef HAVE_RMENU
-   if (lifecycle_menu_state & (1 << MODE_MENU_DRAW))
+   if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
       context_rmenu_frame_func(gl);
    else
 #endif

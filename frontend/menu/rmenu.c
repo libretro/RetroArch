@@ -205,7 +205,7 @@ static void populate_setting_item(void *data, unsigned input)
          break;
       case SETTING_SOFT_DISPLAY_FILTER:
          snprintf(current_item->text, sizeof(current_item->text), "Soft Display Filter");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Soft Display Filter].");
          break;
 #endif
@@ -216,18 +216,18 @@ static void populate_setting_item(void *data, unsigned input)
          break;
       case SETTING_THROTTLE_MODE:
          snprintf(current_item->text, sizeof(current_item->text), "Throttle Mode");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE)) ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE)) ? "INFO - [Throttle Mode] is 'ON' - Vsync is enabled." : "INFO - [Throttle Mode] is 'OFF' - Vsync is disabled.");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? "INFO - [Throttle Mode] is 'ON' - Vsync is enabled." : "INFO - [Throttle Mode] is 'OFF' - Vsync is disabled.");
          break;
       case SETTING_TRIPLE_BUFFERING:
          snprintf(current_item->text, sizeof(current_item->text), "Triple Buffering");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "INFO - [Triple Buffering] is set to 'ON'." : "INFO - [Triple Buffering] is set to 'OFF'.");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "INFO - [Triple Buffering] is set to 'ON'." : "INFO - [Triple Buffering] is set to 'OFF'.");
          break;
       case SETTING_ENABLE_SCREENSHOTS:
          snprintf(current_item->text, sizeof(current_item->text), "Screenshot Option");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Screenshots feature is set to '%s'.", (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Screenshots feature is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? "ON" : "OFF");
          break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
@@ -285,12 +285,12 @@ static void populate_setting_item(void *data, unsigned input)
          /* emu-specific */
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
          snprintf(current_item->text, sizeof(current_item->text), "Debug info messages");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW)) ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen debug messages.");
          break;
       case SETTING_EMU_SHOW_INFO_MSG:
          snprintf(current_item->text, sizeof(current_item->text), "Info messages");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW)) ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen info messages in the menu.");
          break;
       case SETTING_EMU_REWIND_ENABLED:
@@ -304,17 +304,17 @@ static void populate_setting_item(void *data, unsigned input)
 #ifdef HAVE_ZLIB
       case SETTING_ZIP_EXTRACT:
          snprintf(current_item->text, sizeof(current_item->text), "ZIP Extract Option");
-         if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR))
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
          {
             snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir");
             snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to the current dir.");
          }
-         else if (g_extern.lifecycle_menu_state & (1 <<MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+         else if (g_extern.lifecycle_mode_state & (1ULL <<MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
          {
             snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir and load first file");
             snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to current dir, and auto-loaded.");
          }
-         else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
          {
             snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Cache dir");
             snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to the cache dir.");
@@ -352,8 +352,8 @@ static void populate_setting_item(void *data, unsigned input)
 #endif
       case SETTING_ENABLE_CUSTOM_BGM:
          snprintf(current_item->text, sizeof(current_item->text), "Custom BGM Option");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_menu_state & (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom BGM] is set to '%s'.", (g_extern.lifecycle_menu_state & (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom BGM] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
          break;
       case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
          snprintf(current_item->text, sizeof(current_item->text), "Startup ROM Directory");
@@ -663,36 +663,36 @@ int select_file(void *data, void *state)
          {
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
             case SHADER_CHOICE:
-               if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_FIRST_SHADER))
+               if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_FIRST_SHADER))
                {
                   strlcpy(g_settings.video.cg_shader_path, path, sizeof(g_settings.video.cg_shader_path));
 
                   if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                   {
                      driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS0);
-                     if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+                     if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                         rmenu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                   }
                   else
                      RARCH_ERR("Shaders are unsupported on this platform.\n");
 
-                  g_extern.lifecycle_menu_state &= ~(1 << MODE_LOAD_FIRST_SHADER);
+                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_FIRST_SHADER);
                }
 
-               if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_SECOND_SHADER))
+               if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_SECOND_SHADER))
                {
                   strlcpy(g_settings.video.second_pass_shader, path, sizeof(g_settings.video.second_pass_shader));
 
                   if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                   {
                      driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS1);
-                     if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+                     if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                         rmenu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                   }
                   else
                      RARCH_ERR("Shaders are unsupported on this platform.\n");
 
-                  g_extern.lifecycle_menu_state &= ~(1 << MODE_LOAD_SECOND_SHADER);
+                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_SECOND_SHADER);
                }
                break;
             case PRESET_CHOICE:
@@ -717,13 +717,13 @@ int select_file(void *data, void *state)
                {
                   strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
                   set_libretro_core_as_launch = false;
-                  g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
-                  g_extern.lifecycle_menu_state |= (1 << MODE_EXITSPAWN);
+                  g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
+                  g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
                   return -1;
                }
                else
                {
-                  if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+                  if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                      rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                }
                break;
@@ -1079,7 +1079,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             menu_stack_push(SHADER_CHOICE);
             filebrowser_set_root_and_ext(filebrowser, EXT_SHADERS, default_paths.shader_dir);
-            g_extern.lifecycle_menu_state |= (1 << MODE_LOAD_FIRST_SHADER);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_FIRST_SHADER);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
@@ -1087,7 +1087,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             if (g_settings.video.shader_type != RARCH_SHADER_NONE)
             {
                driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, NULL, RARCH_SHADER_INDEX_PASS0);
-               if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+               if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                   rmenu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
             }
             else
@@ -1099,7 +1099,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             menu_stack_push(SHADER_CHOICE);
             filebrowser_set_root_and_ext(filebrowser, EXT_SHADERS, default_paths.shader_dir);
-            g_extern.lifecycle_menu_state |= (1 << MODE_LOAD_SECOND_SHADER);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_SECOND_SHADER);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
@@ -1107,7 +1107,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             if (g_settings.video.shader_type != RARCH_SHADER_NONE)
             {
                driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, NULL, RARCH_SHADER_INDEX_PASS1);
-               if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+               if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                   rmenu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
             }
             else
@@ -1238,13 +1238,13 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_SOFT_DISPLAY_FILTER:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SOFT_FILTER_ENABLE))
-               g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
             else
-               g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SOFT_FILTER_ENABLE);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
          break;
 #endif
       case SETTING_HW_OVERSCAN_AMOUNT:
@@ -1268,12 +1268,12 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             rmenu_settings_set(S_THROTTLE);
-            device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE)));
+            device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? true : false);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             rmenu_settings_set_default(S_DEF_THROTTLE);
-            device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_THROTTLE_ENABLE)));
+            device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? true : false);
          }
          break;
       case SETTING_TRIPLE_BUFFERING:
@@ -1286,23 +1286,23 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             rmenu_settings_set_default(S_DEF_TRIPLE_BUFFERING);
 
-            if(!(g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)))
+            if(!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)))
                driver.video->restart();
          }
          break;
       case SETTING_ENABLE_SCREENSHOTS:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            if (g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE))
-               g_extern.lifecycle_menu_state &= ~(1 << MODE_VIDEO_SCREENSHOTS_ENABLE);
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE))
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE);
             else
-               g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SCREENSHOTS_ENABLE);
-            device_ptr->ctx_driver->rmenu_screenshot_enable((g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE)));
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE);
+            device_ptr->ctx_driver->rmenu_screenshot_enable((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? true : false);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            g_extern.lifecycle_menu_state |= (1 << MODE_VIDEO_SCREENSHOTS_ENABLE);
-            device_ptr->ctx_driver->rmenu_screenshot_enable((g_extern.lifecycle_menu_state & (1 << MODE_VIDEO_SCREENSHOTS_ENABLE)));
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE);
+            device_ptr->ctx_driver->rmenu_screenshot_enable((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? true : false);
          }
          break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
@@ -1373,31 +1373,31 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            if (g_extern.lifecycle_menu_state & (1 << MODE_FPS_DRAW))
-               g_extern.lifecycle_menu_state &= ~(1 << MODE_FPS_DRAW);
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
             else
-               g_extern.lifecycle_menu_state |= (1 << MODE_FPS_DRAW);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            g_extern.lifecycle_menu_state &= ~(1 << MODE_FPS_DRAW);
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
          break;
       case SETTING_EMU_SHOW_INFO_MSG:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
-               g_extern.lifecycle_menu_state &= ~(1 << MODE_INFO_DRAW);
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INFO_DRAW);
             else
-               g_extern.lifecycle_menu_state |= (1 << MODE_INFO_DRAW);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            g_extern.lifecycle_menu_state |= (1 << MODE_INFO_DRAW);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
          break;
       case SETTING_EMU_REWIND_ENABLED:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             rmenu_settings_set(S_REWIND);
 
-            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1407,36 +1407,36 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_ZIP_EXTRACT:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)))
          {
-            if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CACHEDIR))
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
             {
-               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CACHEDIR);
-               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CACHEDIR);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
             }
-            else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
             {
-               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR);
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR);
             }
          }
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR))
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
             {
-               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CURDIR);
-               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
             }
-            else if (g_extern.lifecycle_menu_state & (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
             {
-               g_extern.lifecycle_menu_state &= ~(1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-               g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CACHEDIR);
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CACHEDIR);
             }
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            g_extern.lifecycle_menu_state &= ~((1 << MODE_UNZIP_TO_CURDIR) |
-                  (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
-                  (1 << MODE_UNZIP_TO_CACHEDIR));
-            g_extern.lifecycle_menu_state |= (1 << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CURDIR) |
+                  (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
+                  (1ULL << MODE_UNZIP_TO_CACHEDIR));
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
          }
          break;
 #endif
@@ -1454,8 +1454,8 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_QUIT_RARCH:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            g_extern.lifecycle_menu_state &= ~((1 << MODE_EMULATION));
-            g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_EMULATION));
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             return -1;
          }
          break;
@@ -1471,14 +1471,14 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             g_extern.console.sound.volume_level = !g_extern.console.sound.volume_level;
-            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             g_extern.console.sound.volume_level = 0;
-            if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
          }
          break;
@@ -1487,11 +1487,11 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
 #if(CELL_SDK_VERSION > 0x340000)
-            if (g_extern.lifecycle_menu_state & (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE))
-               g_extern.lifecycle_menu_state &= ~(1 << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
             else
-               g_extern.lifecycle_menu_state |= (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-            if (g_extern.lifecycle_menu_state & (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
                cellSysutilEnableBgmPlayback();
             else
                cellSysutilDisableBgmPlayback();
@@ -1501,7 +1501,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
 #if(CELL_SDK_VERSION > 0x340000)
-            g_extern.lifecycle_menu_state |= (1 << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
 #endif
          }
          break;
@@ -1984,18 +1984,18 @@ int ingame_menu_resize(void *data, void *state)
    if (input & (1ULL << RMENU_DEVICE_NAV_A))
    {
       menu_stack_pop();
-      g_extern.lifecycle_menu_state |= (1 << MODE_MENU_DRAW);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
    }
 
    if((input & (1ULL << RMENU_DEVICE_NAV_Y)))
    {
-      if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
-         g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
       else
-         g_extern.lifecycle_menu_state |= (1 << MODE_MENU_DRAW);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
    }
 
-   if(g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
+   if(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
    {
       char viewport_x[32], viewport_y[32], viewport_w[32], viewport_h[32];
       char msg[256];
@@ -2078,14 +2078,14 @@ int ingame_menu_screenshot(void *data, void *state)
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    filebrowser_t *filebrowser = NULL;
 
-   g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
+   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_INGAME))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
    {
       if (input & (1ULL << RMENU_DEVICE_NAV_A))
       {
          menu_stack_pop();
-         g_extern.lifecycle_menu_state |= (1 << MODE_MENU_DRAW);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
       }
 
       if(input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -2124,7 +2124,7 @@ int ingame_menu(void *data, void *state)
 
    if(input & (1ULL << RMENU_DEVICE_NAV_A))
    {
-      g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
       return -1;
    }
 
@@ -2134,7 +2134,7 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             rarch_load_state();
-            g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
             return -1;
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
@@ -2148,7 +2148,7 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             rarch_save_state();
-            g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
             return -1;
          }
 
@@ -2228,7 +2228,7 @@ int ingame_menu(void *data, void *state)
       case MENU_ITEM_RETURN_TO_GAME:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
-            g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
             return -1;
          }
 
@@ -2238,7 +2238,7 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             rarch_game_reset();
-            g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
             return -1;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset the game.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
@@ -2248,7 +2248,7 @@ int ingame_menu(void *data, void *state)
          {
             menu_idx = 0;
             /* TODO */
-            g_extern.lifecycle_menu_state |= (1 << MODE_MENU);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
             return -1;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to return to the ROM Browser.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
@@ -2268,9 +2268,9 @@ int ingame_menu(void *data, void *state)
          {
             RARCH_LOG("Boot Multiman: %s.\n", default_paths.multiman_self_file);
             strlcpy(g_extern.fullpath, default_paths.multiman_self_file, sizeof(g_extern.fullpath));
-            g_extern.lifecycle_menu_state &= ~(1 << MODE_EMULATION);
-            g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
-            g_extern.lifecycle_menu_state |= (1 << MODE_EXITSPAWN);
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
             return -1;
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to quit RetroArch and return to multiMAN.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
@@ -2279,8 +2279,8 @@ int ingame_menu(void *data, void *state)
       case MENU_ITEM_QUIT_RARCH:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
-            g_extern.lifecycle_menu_state &= ~(1 << MODE_EMULATION);
-            g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             return -1;
          }
 
@@ -2306,7 +2306,7 @@ int ingame_menu(void *data, void *state)
 
    if((input & (1ULL << RMENU_DEVICE_NAV_L3)) && (input & (1ULL << RMENU_DEVICE_NAV_R3)))
    {
-      g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
       return -1;
    }
 
@@ -2432,13 +2432,13 @@ int rmenu_input_process(void *data, void *state)
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_LOAD_GAME))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
    {
-      if (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW))
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
          rmenu_settings_msg(S_MSG_LOADING_ROM, 100);
 
-      g_extern.lifecycle_menu_state |= (1 << MODE_INIT);
-      g_extern.lifecycle_menu_state &= ~(1 << MODE_LOAD_GAME);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);
       return -1;
    }
 
@@ -2448,7 +2448,7 @@ int rmenu_input_process(void *data, void *state)
 
       if (return_to_game_enable)
       {
-         g_extern.lifecycle_menu_state |= (1 << MODE_EMULATION);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
          return -1;
       }
    }
@@ -2460,7 +2460,7 @@ int rmenu_input_process(void *data, void *state)
 
    if (quit)
    {
-      g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
       return -1;
    }
 
@@ -2524,15 +2524,15 @@ bool rmenu_iterate(void)
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    menu current_menu;
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_PREINIT))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
    {
-      if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_INGAME))
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
          menu_stack_push(INGAME_MENU);
 
       menu_stack_force_refresh();
-      g_extern.lifecycle_menu_state |= (1 << MODE_MENU_DRAW);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
       device_ptr->ctx_driver->rmenu_init();
-      g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_PREINIT);
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
    }
 
    g_extern.frame_count++;
@@ -2542,7 +2542,7 @@ bool rmenu_iterate(void)
    rmenu_default_positions_t default_pos;
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
       device_ptr->ctx_driver->set_blend(true);
 
    rarch_render_cached_frame();
@@ -2577,12 +2577,12 @@ bool rmenu_iterate(void)
 
    msg = msg_queue_pull(g_extern.msg_queue);
 
-   if (msg && (g_extern.lifecycle_menu_state & (1 << MODE_INFO_DRAW)))
+   if (msg && (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)))
       device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.msg_queue_x_position, default_pos.msg_queue_y_position, default_pos.msg_queue_font_size, WHITE, msg);
 
    device_ptr->ctx_driver->swap_buffers();
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_DRAW))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
       device_ptr->ctx_driver->set_blend(false);
 
    if (input_entry_ret != 0 || input_process_ret != 0)
@@ -2596,13 +2596,13 @@ deinit:
    if (!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
       g_extern.delay_timer[0] = g_extern.frame_count + 30;
 
-   if (g_extern.lifecycle_menu_state & (1 << MODE_MENU_INGAME))
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
    {
       menu_stack_pop();
-      g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_INGAME);
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME);
    }
 
-   g_extern.lifecycle_menu_state &= ~(1 << MODE_MENU_DRAW);
+   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
 
    device_ptr->ctx_driver->rmenu_free();
 

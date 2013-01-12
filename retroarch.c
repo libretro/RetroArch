@@ -2785,7 +2785,7 @@ bool rarch_main_iterate(void)
    if (g_extern.system.shutdown)
    {
 #ifdef HAVE_RMENU
-      g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
 #endif
       return false;
    }
@@ -2797,15 +2797,15 @@ bool rarch_main_iterate(void)
 #ifdef HAVE_RMENU
       bool rmenu_enable = input_key_pressed_func(RARCH_RMENU_TOGGLE);
       if (input_key_pressed_func(RARCH_RMENU_QUICKMENU_TOGGLE))
-         g_extern.lifecycle_menu_state |= (1 << MODE_MENU_INGAME);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
 
-      if (rmenu_enable || ((g_extern.lifecycle_menu_state & (1 << MODE_MENU_INGAME)) && !rmenu_enable))
+      if (rmenu_enable || ((g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME)) && !rmenu_enable))
       {
-         g_extern.lifecycle_menu_state |= (1 << MODE_MENU);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
          g_extern.delay_timer[0] = g_extern.frame_count + 30;
       }
       else
-         g_extern.lifecycle_menu_state |= (1 << MODE_EXIT);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
 #endif
       return false;
    }
@@ -2854,8 +2854,8 @@ bool rarch_main_iterate(void)
    if (input_key_pressed_func(RARCH_FRAMEADVANCE))
    {
       g_extern.lifecycle_state &= ~(1ULL << RARCH_FRAMEADVANCE);
-      g_extern.lifecycle_menu_state |= (1 << MODE_MENU);
-      g_extern.lifecycle_menu_state |= (1 << MODE_MENU_INGAME);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
       return false;
    }
 #endif
