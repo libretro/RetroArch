@@ -129,7 +129,8 @@ static int detect_ps1_game(const char* track_path, int32_t offset,
         return -errno;
     }
 
-    if (pread(fd, buff, 10, 0x9340) > 0) {
+    lseek(fd, 0x9340, SEEK_SET);
+    if (read(fd, buff, 10) > 0) {
         buff[10] = '\0';
         buff[4] = '-';
         LOG_DEBUG("Found disk label '%s'", buff);
@@ -200,7 +201,8 @@ static int detect_system(const char* track_path, int32_t offset,
         goto clean;
     }
 
-    if (pread(fd, magic, MAGIC_LEN, offset) < MAGIC_LEN) {
+    lseek(fd, offset, SEEK_SET);
+    if (read(fd, magic, MAGIC_LEN) < MAGIC_LEN) {
         LOG_WARN("Could not read data from file '%s' at offset %d: %s",
                 track_path, offset, strerror(errno));
         rv = -errno;
