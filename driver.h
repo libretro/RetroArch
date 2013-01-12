@@ -123,6 +123,7 @@ struct retro_keybind
 {
    bool valid;
    int id;
+   const char *desc;
    enum retro_key key;
 
    // PC only uses lower 16-bits.
