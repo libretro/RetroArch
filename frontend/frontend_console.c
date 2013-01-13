@@ -115,12 +115,17 @@ void console_load_game(const char *path)
       if(g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
          rmenu_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
 
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+      if ((g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE)) ||
+            (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN)))
       {
          if (first_file[0] != 0)
          {
             RARCH_LOG("Found compatible game, loading it...\n");
             snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), first_file);
+
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_DELETE_PENDING);
+
             goto do_init;
          }
          else
@@ -345,6 +350,16 @@ begin_loop:
          rmenu_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
       }
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
+#ifdef HAVE_ZLIB
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_DELETE_PENDING))
+      {
+         int ret = remove(g_extern.fullpath);
+
+         if (ret == 0)
+            RARCH_LOG("Removed temporary unzipped ROM file: [%s].\n", g_extern.fullpath);
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_DELETE_PENDING);
+      }
+#endif
    }
    else if(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
    {

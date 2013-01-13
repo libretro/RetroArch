@@ -309,7 +309,7 @@ static void populate_setting_item(void *data, unsigned input)
          break;
 #ifdef HAVE_ZLIB
       case SETTING_ZIP_EXTRACT:
-         snprintf(current_item->text, sizeof(current_item->text), "ZIP Extract Option");
+         snprintf(current_item->text, sizeof(current_item->text), "Unzip mode");
          if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
          {
             snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir");
@@ -317,8 +317,13 @@ static void populate_setting_item(void *data, unsigned input)
          }
          else if (g_extern.lifecycle_mode_state & (1ULL <<MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
          {
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir and load first file");
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir, load first file");
             snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to current dir, and auto-loaded.");
+         }
+         else if (g_extern.lifecycle_mode_state & (1ULL <<MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
+         {
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir, load first file and cleanup");
+            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to current dir, auto-loaded and then\n removed afterwards.");
          }
          else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
          {
@@ -1433,12 +1438,18 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
             {
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CACHEDIR);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
             }
             else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
             {
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
                g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR);
+            }
+
+            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
+            {
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
             }
          }
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
@@ -1451,6 +1462,11 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
             {
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
+            }
+            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
+            {
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
                g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CACHEDIR);
             }
          }
@@ -1458,6 +1474,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CURDIR) |
                   (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
+                  (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
                   (1ULL << MODE_UNZIP_TO_CACHEDIR));
             g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
          }

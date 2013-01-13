@@ -553,6 +553,7 @@ bool config_load_file(const char *path)
    {
       g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CURDIR) |
             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
+            (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
             (1ULL << MODE_UNZIP_TO_CACHEDIR));
       switch(zip_extract_mode)
       {
@@ -563,6 +564,9 @@ bool config_load_file(const char *path)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
             break;
          case 2:
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
+            break;
+         case 3:
             g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CACHEDIR);
             break;
       }
@@ -1226,8 +1230,10 @@ bool config_save_file(const char *path)
       config_set_int(conf, "unzip_mode", 0);
    else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
       config_set_int(conf, "unzip_mode", 1);
-   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
+   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
       config_set_int(conf, "unzip_mode", 2);
+   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
+      config_set_int(conf, "unzip_mode", 3);
 
    config_set_int(conf, "flicker_filter_index", g_extern.console.screen.flicker_filter_index);
    config_set_int(conf, "soft_filter_index", g_extern.console.screen.soft_filter_index);
