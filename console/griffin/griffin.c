@@ -63,6 +63,7 @@ RLAUNCH
 #include "../../tools/retrolaunch/sha1.c"
 #include "../../tools/retrolaunch/cd_detect.c"
 #include "../../tools/retrolaunch/parser.c"
+#include "../../tools/retrolaunch/main.c"
 #endif
 
 /*============================================================

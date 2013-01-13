@@ -265,6 +265,7 @@ static int detect_game(const char *path, char *game_name, size_t max_len)
 	}
 }
 
+#ifndef RARCH_CONSOLE
 static int run_retroarch(const char *path, const struct RunInfo *info)
 {
 	char core_path[PATH_MAX];
@@ -331,3 +332,4 @@ int main(int argc, char *argv[])
 
 // Stub just so that it compiles
 void rarch_init_msg_queue(void) {}
+#endif
