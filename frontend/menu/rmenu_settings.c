@@ -129,6 +129,12 @@ void rmenu_settings_set(unsigned setting)
          else
             g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
          break;
+      case S_REFRESH_RATE_DECREMENT:
+         g_settings.video.refresh_rate -= 0.01f;
+         break;
+      case S_REFRESH_RATE_INCREMENT:
+         g_settings.video.refresh_rate += 0.01f;
+         break;
    }
 }
 
@@ -182,6 +188,13 @@ void rmenu_settings_set_default(unsigned setting)
       case S_DEF_SCALE_FACTOR:
          g_settings.video.fbo.scale_x = 2.0f;
          g_settings.video.fbo.scale_y = 2.0f;
+         break;
+      case S_DEF_REFRESH_RATE:
+#if defined(RARCH_CONSOLE)
+         g_settings.video.refresh_rate = 59.92;
+#else
+         g_settings.video.refresh_rate = 59.95;
+#endif
          break;
    }
 }

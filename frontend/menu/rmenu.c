@@ -42,6 +42,7 @@
 #include "../../gfx/gfx_context.h"
 
 #include "../../file.h"
+#include "../../driver.h"
 #include "../../general.h"
 
 
@@ -213,6 +214,11 @@ static void populate_setting_item(void *data, unsigned input)
          snprintf(current_item->text, sizeof(current_item->text), "Overscan");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_extern.console.screen.overscan_amount);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Adjust or decrease [Overscan]. Set this to higher than 0.000\nif the screen doesn't fit on your TV/monitor.");
+         break;
+      case SETTING_REFRESH_RATE:
+         snprintf(current_item->text, sizeof(current_item->text), "Refresh rate");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fHz", g_settings.video.refresh_rate);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Adjust or decrease [Refresh Rate].");
          break;
       case SETTING_THROTTLE_MODE:
          snprintf(current_item->text, sizeof(current_item->text), "Throttle Mode");
@@ -1262,6 +1268,23 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             rmenu_settings_set_default(S_DEF_OVERSCAN);
             gfx_ctx_set_overscan();
+         }
+         break;
+      case SETTING_REFRESH_RATE:
+         if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         {
+            rmenu_settings_set(S_REFRESH_RATE_DECREMENT);
+            driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
+         }
+         if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         {
+            rmenu_settings_set(S_REFRESH_RATE_INCREMENT);
+            driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
+         }
+         if(input & (1ULL << RMENU_DEVICE_NAV_START))
+         {
+            rmenu_settings_set_default(S_DEF_REFRESH_RATE);
+            driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
          }
          break;
       case SETTING_THROTTLE_MODE:
