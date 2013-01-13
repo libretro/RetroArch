@@ -195,7 +195,7 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    else if (hObjPressed == m_dir_game)
    {
       filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions,
-            g_extern.console.main_wrap.paths.default_rom_startup_dir);
+            g_extern.console.main_wrap.default_rom_startup_dir);
       uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
       filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
    }
