@@ -463,6 +463,8 @@ static void render_text(rgui_handle_t *rgui)
                snprintf(type_str, sizeof(type_str), "Current");
             else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
                snprintf(type_str, sizeof(type_str), "Current + Load");
+            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
+               snprintf(type_str, sizeof(type_str), "Current + Load +_Clean");
             else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
                snprintf(type_str, sizeof(type_str), "Cache");
             break;
@@ -729,38 +731,11 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          break;
       case RGUI_SETTINGS_ZIP_EXTRACT:
          if (action == RGUI_ACTION_START)
-         {
-            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CURDIR) |
-                  (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
-                  (1ULL << MODE_UNZIP_TO_CACHEDIR));
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-         }
+            rmenu_settings_set_default(S_DEF_UNZIP_MODE);
          else if (action == RGUI_ACTION_LEFT)
-         {
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
-            {
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CACHEDIR);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-            }
-            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-            {
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR);
-            }
-         }
+            rmenu_settings_set(S_UNZIP_MODE_DECREMENT);
          else if (action == RGUI_ACTION_RIGHT)
-         {
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
-            {
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-            }
-            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-            {
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CACHEDIR);
-            }
-         }
+            rmenu_settings_set(S_UNZIP_MODE_INCREMENT);
          break;
       case RGUI_SETTINGS_SRAM_DIR:
          if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
