@@ -467,10 +467,10 @@ static void render_text(rgui_handle_t *rgui)
                snprintf(type_str, sizeof(type_str), "Cache");
             break;
          case RGUI_SETTINGS_SRAM_DIR:
-            snprintf(type_str, sizeof(type_str), g_extern.console.main_wrap.state.default_sram_dir.enable ? "ON" : "OFF");
+            snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
             break;
          case RGUI_SETTINGS_STATE_DIR:
-            snprintf(type_str, sizeof(type_str), g_extern.console.main_wrap.state.default_savestate_dir.enable ? "ON" : "OFF");
+            snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? "ON" : "OFF");
             break;
          case RGUI_SETTINGS_DEBUG_TEXT:
             snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
@@ -764,15 +764,15 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          break;
       case RGUI_SETTINGS_SRAM_DIR:
          if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
-            g_extern.console.main_wrap.state.default_sram_dir.enable = false;
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
          else if (action == RGUI_ACTION_RIGHT)
-            g_extern.console.main_wrap.state.default_sram_dir.enable = true;
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
          break;
       case RGUI_SETTINGS_STATE_DIR:
          if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
-            g_extern.console.main_wrap.state.default_savestate_dir.enable = false;
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
          else if (action == RGUI_ACTION_RIGHT)
-            g_extern.console.main_wrap.state.default_savestate_dir.enable = true;
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
          break;
       case RGUI_SETTINGS_DEBUG_TEXT:
          if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)

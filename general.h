@@ -104,6 +104,8 @@ enum menu_enums
 {
    MODE_GAME = 0,
    MODE_LOAD_GAME,
+   MODE_LOAD_GAME_SRAM_DIR_ENABLE,
+   MODE_LOAD_GAME_STATE_DIR_ENABLE,
    MODE_LOAD_FIRST_SHADER,
    MODE_LOAD_SECOND_SHADER,
    MODE_INIT,
@@ -265,12 +267,6 @@ enum rarch_game_type
    RARCH_CART_BSX_SLOTTED,
    RARCH_CART_SUFAMI
 };
-
-typedef struct rarch_boolean_state
-{
-   bool enable;
-   unsigned value;
-} rarch_boolean_state_t;
 
 typedef struct rarch_resolution
 {
@@ -545,18 +541,9 @@ struct global
 
       struct
       {
-         struct
-         {
-            char default_rom_startup_dir[PATH_MAX];
-            char default_savestate_dir[PATH_MAX];
-            char default_sram_dir[PATH_MAX];
-         } paths;
-
-         struct
-         {
-            rarch_boolean_state_t default_sram_dir;
-            rarch_boolean_state_t default_savestate_dir;
-         } state;
+         char default_rom_startup_dir[PATH_MAX];
+         char default_savestate_dir[PATH_MAX];
+         char default_sram_dir[PATH_MAX];
       } main_wrap;
 
 #ifdef HAVE_OSKUTIL

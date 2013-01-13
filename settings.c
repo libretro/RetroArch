@@ -255,7 +255,7 @@ void config_set_defaults(void)
    g_settings.video.aspect_ratio = -1.0f;
 
    // g_extern
-   strlcpy(g_extern.console.main_wrap.paths.default_sram_dir, default_paths.sram_dir, sizeof(g_extern.console.main_wrap.paths.default_sram_dir));
+   strlcpy(g_extern.console.main_wrap.default_sram_dir, default_paths.sram_dir, sizeof(g_extern.console.main_wrap.default_sram_dir));
    g_extern.console.screen.overscan_amount = 0.0f;
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
@@ -267,12 +267,10 @@ void config_set_defaults(void)
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
 
-   g_extern.console.main_wrap.state.default_savestate_dir.enable = false;
-   g_extern.console.main_wrap.state.default_sram_dir.enable = false;
    g_extern.console.screen.orientation = ORIENTATION_NORMAL;
    g_extern.console.screen.resolutions.current.id = 0;
-   strlcpy(g_extern.console.main_wrap.paths.default_rom_startup_dir, default_paths.filebrowser_startup_dir, sizeof(g_extern.console.main_wrap.paths.default_rom_startup_dir));
-   strlcpy(g_extern.console.main_wrap.paths.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.paths.default_savestate_dir));
+   strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, default_paths.filebrowser_startup_dir, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
+   strlcpy(g_extern.console.main_wrap.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.default_savestate_dir));
    g_settings.video.aspect_ratio_idx = 0;
    g_extern.state_slot = 0;
    g_extern.audio_data.mute = 0;
@@ -467,7 +465,7 @@ bool config_load_file(const char *path)
       CONFIG_GET_INT(input.device[i], cfg);
    }
 
-   CONFIG_GET_STRING_EXTERN(console.main_wrap.paths.default_rom_startup_dir, "default_rom_startup_dir");
+   CONFIG_GET_STRING_EXTERN(console.main_wrap.default_rom_startup_dir, "default_rom_startup_dir");
    CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
 
    bool msg_enable = false;
@@ -478,6 +476,8 @@ bool config_load_file(const char *path)
    bool screenshots_enable = false;
    bool flicker_filter_enable = false;
    bool soft_filter_enable = false;
+   bool sram_dir_enable = false;
+   bool state_dir_enable = false;
    int zip_extract_mode = 0;
 
    if (config_get_bool(conf, "info_msg_enable", &msg_enable))
@@ -563,8 +563,22 @@ bool config_load_file(const char *path)
       }
    }
 
-   CONFIG_GET_BOOL_EXTERN(console.main_wrap.state.default_sram_dir.enable, "sram_dir_enable");
-   CONFIG_GET_BOOL_EXTERN(console.main_wrap.state.default_savestate_dir.enable, "savestate_dir_enable");
+   if (config_get_bool(conf, "sram_dir_enable", &sram_dir_enable))
+   {
+      if (sram_dir_enable)
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
+      else
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
+   }
+
+   if (config_get_bool(conf, "savestate_dir_enable", &state_dir_enable))
+   {
+      if (state_dir_enable)
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
+      else
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
+   }
+
    CONFIG_GET_FLOAT_EXTERN(console.screen.overscan_amount, "overscan_amount");
    CONFIG_GET_INT_EXTERN(console.screen.flicker_filter_index, "flicker_filter_index");
    CONFIG_GET_INT_EXTERN(console.screen.soft_filter_index, "soft_filter_index");
@@ -1217,7 +1231,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "custom_viewport_height", g_extern.console.screen.viewports.custom_vp.height);
    config_set_int(conf, "custom_viewport_x", g_extern.console.screen.viewports.custom_vp.x);
    config_set_int(conf, "custom_viewport_y", g_extern.console.screen.viewports.custom_vp.y);
-   config_set_string(conf, "default_rom_startup_dir", g_extern.console.main_wrap.paths.default_rom_startup_dir);
+   config_set_string(conf, "default_rom_startup_dir", g_extern.console.main_wrap.default_rom_startup_dir);
    config_set_float(conf, "overscan_amount", g_extern.console.screen.overscan_amount);
 
    config_set_float(conf, "video_font_size", g_settings.video.font_size);
@@ -1233,8 +1247,15 @@ bool config_save_file(const char *path)
    else
       config_set_bool(conf, "custom_bgm_enable", false);
 
-   config_set_bool(conf, "sram_dir_enable", g_extern.console.main_wrap.state.default_sram_dir.enable);
-   config_set_bool(conf, "savestate_dir_enable", g_extern.console.main_wrap.state.default_savestate_dir.enable);
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE))
+      config_set_bool(conf, "sram_dir_enable", true);
+   else
+      config_set_bool(conf, "sram_dir_enable", false);
+
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE))
+      config_set_bool(conf, "savestate_dir_enable", true);
+   else
+      config_set_bool(conf, "savestate_dir_enable", false);
 
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {

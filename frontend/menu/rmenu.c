@@ -357,17 +357,17 @@ static void populate_setting_item(void *data, unsigned input)
          break;
       case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
          snprintf(current_item->text, sizeof(current_item->text), "Startup ROM Directory");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.paths.default_rom_startup_dir);
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.default_rom_startup_dir);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default [Startup ROM directory]. NOTE: You will have to\nrestart the emulator for this change to have any effect.");
          break;
       case SETTING_PATH_SAVESTATES_DIRECTORY:
          snprintf(current_item->text, sizeof(current_item->text), "Savestate Directory");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.paths.default_savestate_dir);
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.default_savestate_dir);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default path where all the savestate files will be saved to.");
          break;
       case SETTING_PATH_SRAM_DIRECTORY:
          snprintf(current_item->text, sizeof(current_item->text), "SRAM Directory");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.paths.default_sram_dir);
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.default_sram_dir);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default SRAM (SaveRAM) directory path. All the\nbattery backup saves will be stored in this directory.");
          break;
 #ifdef HAVE_XML
@@ -384,13 +384,13 @@ static void populate_setting_item(void *data, unsigned input)
          break;
       case SETTING_ENABLE_SRAM_PATH:
          snprintf(current_item->text, sizeof(current_item->text), "Custom SRAM Dir Enable");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.state.default_sram_dir.enable ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom SRAM Dir Path] is set to '%s'.", g_extern.console.main_wrap.state.default_sram_dir.enable ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom SRAM Dir Path] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
          break;
       case SETTING_ENABLE_STATE_PATH:
          snprintf(current_item->text, sizeof(current_item->text), "Custom Savestate Dir Enable");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.state.default_savestate_dir.enable ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom Savestate Dir Path] is set to '%s'.", g_extern.console.main_wrap.state.default_savestate_dir.enable ? "ON" : "OFF");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom Savestate Dir Path] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? "ON" : "OFF");
          break;
       case SETTING_CONTROLS_SCHEME:
          snprintf(current_item->text, sizeof(current_item->text), "Control Scheme Preset");
@@ -778,13 +778,13 @@ int select_directory(void *data, void *state)
          switch(current_menu->enum_id)
          {
             case PATH_SAVESTATES_DIR_CHOICE:
-               strlcpy(g_extern.console.main_wrap.paths.default_savestate_dir, path, sizeof(g_extern.console.main_wrap.paths.default_savestate_dir));
+               strlcpy(g_extern.console.main_wrap.default_savestate_dir, path, sizeof(g_extern.console.main_wrap.default_savestate_dir));
                break;
             case PATH_SRAM_DIR_CHOICE:
-               strlcpy(g_extern.console.main_wrap.paths.default_sram_dir, path, sizeof(g_extern.console.main_wrap.paths.default_sram_dir));
+               strlcpy(g_extern.console.main_wrap.default_sram_dir, path, sizeof(g_extern.console.main_wrap.default_sram_dir));
                break;
             case PATH_DEFAULT_ROM_DIR_CHOICE:
-               strlcpy(g_extern.console.main_wrap.paths.default_rom_startup_dir, path, sizeof(g_extern.console.main_wrap.paths.default_rom_startup_dir));
+               strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, path, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
                break;
 #ifdef HAVE_XML
             case PATH_CHEATS_DIR_CHOICE:
@@ -804,13 +804,13 @@ int select_directory(void *data, void *state)
       switch(current_menu->enum_id)
       {
          case PATH_SAVESTATES_DIR_CHOICE:
-            strlcpy(g_extern.console.main_wrap.paths.default_savestate_dir, path, sizeof(g_extern.console.main_wrap.paths.default_savestate_dir));
+            strlcpy(g_extern.console.main_wrap.default_savestate_dir, path, sizeof(g_extern.console.main_wrap.default_savestate_dir));
             break;
          case PATH_SRAM_DIR_CHOICE:
-            strlcpy(g_extern.console.main_wrap.paths.default_sram_dir, path, sizeof(g_extern.console.main_wrap.paths.default_sram_dir));
+            strlcpy(g_extern.console.main_wrap.default_sram_dir, path, sizeof(g_extern.console.main_wrap.default_sram_dir));
             break;
          case PATH_DEFAULT_ROM_DIR_CHOICE:
-            strlcpy(g_extern.console.main_wrap.paths.default_rom_startup_dir, path, sizeof(g_extern.console.main_wrap.paths.default_rom_startup_dir));
+            strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, path, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
             break;
 #ifdef HAVE_XML
          case PATH_CHEATS_DIR_CHOICE:
@@ -1517,7 +1517,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            strlcpy(g_extern.console.main_wrap.paths.default_rom_startup_dir, default_paths.filesystem_root_dir, sizeof(g_extern.console.main_wrap.paths.default_rom_startup_dir));
+            strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, default_paths.filesystem_root_dir, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
          break;
       case SETTING_PATH_SAVESTATES_DIRECTORY:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
@@ -1527,7 +1527,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            strlcpy(g_extern.console.main_wrap.paths.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.paths.default_savestate_dir));
+            strlcpy(g_extern.console.main_wrap.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.default_savestate_dir));
 
          break;
       case SETTING_PATH_SRAM_DIRECTORY:
@@ -1538,7 +1538,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            strlcpy(g_extern.console.main_wrap.paths.default_sram_dir, default_paths.sram_dir, sizeof(g_extern.console.main_wrap.paths.default_sram_dir));
+            strlcpy(g_extern.console.main_wrap.default_sram_dir, default_paths.sram_dir, sizeof(g_extern.console.main_wrap.default_sram_dir));
          break;
 #ifdef HAVE_XML
       case SETTING_PATH_CHEATS:
@@ -1564,25 +1564,36 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          break;
       case SETTING_ENABLE_SRAM_PATH:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)))
-            g_extern.console.main_wrap.state.default_sram_dir.enable = !g_extern.console.main_wrap.state.default_sram_dir.enable;
+         {
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE))
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
+            else
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
+         }
+
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            g_extern.console.main_wrap.state.default_sram_dir.enable = true;
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
          break;
       case SETTING_ENABLE_STATE_PATH:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)))
-            g_extern.console.main_wrap.state.default_savestate_dir.enable = !g_extern.console.main_wrap.state.default_savestate_dir.enable;
+         {
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE))
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
+            else
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
+         }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            g_extern.console.main_wrap.state.default_savestate_dir.enable = true;
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
          break;
       case SETTING_PATH_DEFAULT_ALL:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_START)))
          {
-            strlcpy(g_extern.console.main_wrap.paths.default_rom_startup_dir, "/", sizeof(g_extern.console.main_wrap.paths.default_rom_startup_dir));
-            strlcpy(g_extern.console.main_wrap.paths.default_savestate_dir, default_paths.port_dir, sizeof(g_extern.console.main_wrap.paths.default_savestate_dir));
+            strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, "/", sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
+            strlcpy(g_extern.console.main_wrap.default_savestate_dir, default_paths.port_dir, sizeof(g_extern.console.main_wrap.default_savestate_dir));
 #ifdef HAVE_XML
             strlcpy(g_settings.cheat_database, default_paths.port_dir, sizeof(g_settings.cheat_database));
 #endif
-            strlcpy(g_extern.console.main_wrap.paths.default_sram_dir, "", sizeof(g_extern.console.main_wrap.paths.default_sram_dir));
+            strlcpy(g_extern.console.main_wrap.default_sram_dir, "", sizeof(g_extern.console.main_wrap.default_sram_dir));
          }
          break;
       case SETTING_CONTROLS_SCHEME:

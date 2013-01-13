@@ -886,6 +886,12 @@ static void parse_input(int argc, char *argv[])
 #endif
 
    const char *optstring = "hs:fvS:m:p4jJA:g:b:c:B:Y:Z:U:DN:X:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
+#ifdef RARCH_CONSOLE
+   // hack - done for reentrancy reasons
+   g_extern.has_set_save_path = false;
+   g_extern.has_set_state_path = false;
+#endif
+
    for (;;)
    {
       val = 0;
@@ -894,6 +900,7 @@ static void parse_input(int argc, char *argv[])
 
       if (c == -1)
          break;
+
 
       switch (c)
       {
