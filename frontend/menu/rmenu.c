@@ -2495,11 +2495,11 @@ void init_filebrowser(void *data)
 {
    (void)data;
 
-   browser    = filebrowser_init(default_paths.filebrowser_startup_dir, g_extern.system.valid_extensions);
+   browser    = filebrowser_init(g_extern.console.main_wrap.default_rom_startup_dir, g_extern.system.valid_extensions);
    tmpBrowser = filebrowser_init(default_paths.filesystem_root_dir, "");
 
    menu_stack_push(FILE_BROWSER_MENU);
-   filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, default_paths.filebrowser_startup_dir);
+   filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, g_extern.console.main_wrap.default_rom_startup_dir);
    filebrowser_set_root(tmpBrowser, default_paths.filesystem_root_dir);
 }
 

@@ -465,7 +465,7 @@ bool config_load_file(const char *path)
       CONFIG_GET_INT(input.device[i], cfg);
    }
 
-   CONFIG_GET_STRING_EXTERN(console.main_wrap.default_rom_startup_dir, "default_rom_startup_dir");
+
    CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
 
    bool msg_enable = false;
@@ -479,6 +479,11 @@ bool config_load_file(const char *path)
    bool sram_dir_enable = false;
    bool state_dir_enable = false;
    int zip_extract_mode = 0;
+
+   char *has_set_path = NULL;
+
+   if (config_get_string(conf, "default_rom_startup_dir", &has_set_path))
+      strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, has_set_path, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
 
    if (config_get_bool(conf, "info_msg_enable", &msg_enable))
    {
