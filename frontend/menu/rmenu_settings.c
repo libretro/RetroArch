@@ -135,6 +135,55 @@ void rmenu_settings_set(unsigned setting)
       case S_REFRESH_RATE_INCREMENT:
          g_settings.video.refresh_rate += 0.01f;
          break;
+      case S_UNZIP_MODE_DECREMENT:
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
+         {
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CACHEDIR);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
+         }
+         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+         {
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR);
+         }
+
+         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
+         {
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+         }
+         break;
+      case S_UNZIP_MODE_INCREMENT:
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
+         {
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+         }
+         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
+         {
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
+         }
+         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
+         {
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CACHEDIR);
+         }
+         break;
+      case S_INFO_DEBUG_MSG_TOGGLE:
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
+         else
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
+         break;
+      case S_INFO_MSG_TOGGLE:
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INFO_DRAW);
+         else
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
+         break;
+      default:
+         RARCH_WARN("rmenu_settings_set - unhandled action.\n");
    }
 }
 
@@ -196,6 +245,21 @@ void rmenu_settings_set_default(unsigned setting)
          g_settings.video.refresh_rate = 59.95;
 #endif
          break;
+      case S_DEF_UNZIP_MODE:
+         g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CURDIR) |
+               (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
+               (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
+               (1ULL << MODE_UNZIP_TO_CACHEDIR));
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+         break;
+      case S_DEF_INFO_DEBUG_MSG:
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
+         break;
+      case S_DEF_INFO_MSG:
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
+         break;
+      default:
+         RARCH_WARN("rmenu_settings_set_default: unhandled action.\n");
    }
 }
 

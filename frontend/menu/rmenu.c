@@ -1400,25 +1400,15 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          break;
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
-            else
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
-         }
+            rmenu_settings_set(S_INFO_DEBUG_MSG_TOGGLE);
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
+            rmenu_settings_set_default(S_DEF_INFO_DEBUG_MSG);
          break;
       case SETTING_EMU_SHOW_INFO_MSG:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INFO_DRAW);
-            else
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
-         }
+            rmenu_settings_set(S_INFO_MSG_TOGGLE);
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
+            rmenu_settings_set_default(S_DEF_INFO_MSG);
          break;
       case SETTING_EMU_REWIND_ENABLED:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
@@ -1434,50 +1424,11 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
 #ifdef HAVE_ZLIB
       case SETTING_ZIP_EXTRACT:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)))
-         {
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
-            {
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CACHEDIR);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
-            }
-            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-            {
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR);
-            }
-
-            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
-            {
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-            }
-         }
+            rmenu_settings_set(S_UNZIP_MODE_DECREMENT);
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
-            {
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-            }
-            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-            {
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
-            }
-            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
-            {
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CACHEDIR);
-            }
-         }
+            rmenu_settings_set(S_UNZIP_MODE_INCREMENT);
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-         {
-            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CURDIR) |
-                  (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
-                  (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
-                  (1ULL << MODE_UNZIP_TO_CACHEDIR));
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-         }
+            rmenu_settings_set_default(S_DEF_UNZIP_MODE);
          break;
 #endif
       case SETTING_RARCH_DEFAULT_EMU:
