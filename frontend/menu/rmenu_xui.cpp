@@ -495,16 +495,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
                device_ptr->ctx_driver->set_fbo(FBO_DEINIT);
             break;
          case SETTING_ZIP_EXTRACT:
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
-            {
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-            }
-            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-            {
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CACHEDIR);
-            }
+			rmenu_settings_set(S_UNZIP_MODE_INCREMENT);
             rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
             m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
             break;
@@ -574,16 +565,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                }
                break;
             case SETTING_ZIP_EXTRACT:
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
-               {
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CACHEDIR);
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-               }
-               else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-               {
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR);
-               }
+               rmenu_settings_set(S_UNZIP_MODE_DECREMENT);
                rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
                m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
                break;
@@ -657,16 +639,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                }
                break;
             case SETTING_ZIP_EXTRACT:
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
-               {
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR);
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-               }
-               else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-               {
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CACHEDIR);
-               }
+               rmenu_settings_set(S_UNZIP_MODE_INCREMENT);
                rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
                m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
                break;
