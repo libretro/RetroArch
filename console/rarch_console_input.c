@@ -28,8 +28,6 @@ struct platform_bind
    const char *label;
 };
 
-uint64_t rarch_default_keybind_lut[RARCH_CUSTOM_BIND_LIST_END];
-
 char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][32] = {
    "RetroPad Button B",          /* RETRO_DEVICE_ID_JOYPAD_B      */
    "RetroPad Button Y",          /* RETRO_DEVICE_ID_JOYPAD_Y      */
@@ -121,7 +119,7 @@ void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t 
          break;
 
       case KEYBIND_DEFAULT:
-         *key = rarch_default_keybind_lut[default_retro_joypad_id];
+         *key = g_settings.input.default_binds[default_retro_joypad_id];
          break;
 
       default:
@@ -134,7 +132,7 @@ void rarch_input_set_default_keybinds(unsigned player)
    for (unsigned i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
    {
       g_settings.input.binds[player][i].id = i;
-      g_settings.input.binds[player][i].joykey = rarch_default_keybind_lut[i];
+      g_settings.input.binds[player][i].joykey = g_settings.input.default_binds[i];
    }
    g_settings.input.dpad_emulation[player] = DPAD_EMULATION_LSTICK;
 }

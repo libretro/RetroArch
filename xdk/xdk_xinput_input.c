@@ -260,7 +260,7 @@ static void xdk_set_default_keybind_lut(unsigned device, unsigned port)
    (void)port;
 
    for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
-      rarch_default_keybind_lut[i] = platform_keys[i].joykey;
+      g_settings.input.default_binds[i] = platform_keys[i].joykey;
 }
 
 static void xdk_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)

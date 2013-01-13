@@ -477,7 +477,7 @@ static void ps3_set_default_keybind_lut(unsigned device, unsigned port)
    (void)port;
 
    for(int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
-      rarch_default_keybind_lut[i] = platform_keys[i].joykey;
+      g_settings.input.default_binds[i] = platform_keys[i].joykey;
 }
 
 const input_driver_t input_ps3 = {
