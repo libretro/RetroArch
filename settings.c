@@ -480,10 +480,8 @@ bool config_load_file(const char *path)
    bool state_dir_enable = false;
    int zip_extract_mode = 0;
 
-   char *has_set_path = NULL;
-
-   if (config_get_string(conf, "default_rom_startup_dir", &has_set_path))
-      strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, has_set_path, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
+   if (config_get_path(conf, "default_rom_startup_dir", tmp_str, sizeof(tmp_str)))
+      strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, tmp_str, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
 
    if (config_get_bool(conf, "info_msg_enable", &msg_enable))
    {
