@@ -123,4 +123,3 @@ const input_driver_t input_xenon360 = {
    .max_pads = MAX_PADS,
    .ident = "xenon360",
 };
-

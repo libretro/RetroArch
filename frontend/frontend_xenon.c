@@ -20,11 +20,11 @@
 
 #include <debug.h>
 #include <xenos/xenos.h>
-#include <diskio/dvd.h>
+//#include <diskio/dvd.h>
 #include <diskio/ata.h>
 #include <input/input.h>
 #include <console/console.h>
-#include <diskio/diskio.h>
+//#include <diskio/diskio.h>
 #include <usb/usbmain.h>
 #include <time/time.h>
 #include <ppc/timebase.h>
@@ -52,8 +52,8 @@ static void start_rarch(const char *path)
 #define STICK_THRESHOLD 25000
 #define MAX_DISPLAYED_ENTRIES 20
 
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+//#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+//#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 static struct dirent entries[MAX_FILES];
 static int entrycount;
@@ -121,7 +121,7 @@ int main(void)
    usb_init();
    usb_do_poll();
    xenon_ata_init();
-   dvd_init();
+   //dvd_init();
 
    handle = -1;
    handle = bdev_enum(handle, &s);
@@ -173,7 +173,7 @@ int main(void)
          }
       }
 
-      if (pad.select)
+      if (pad.back)
       {
          append_dir_to_path(path, "..");
          load_dir(path);
@@ -236,7 +236,7 @@ int main(void)
       {
          usb_do_poll();		
          get_controller_data(&pad, 0);
-      } while (pad.a || pad.b || pad.select || pad.s1_y > STICK_THRESHOLD || pad.s1_y < -STICK_THRESHOLD);
+      } while (pad.a || pad.b || pad.back || pad.s1_y > STICK_THRESHOLD || pad.s1_y < -STICK_THRESHOLD);
    }
 
    return 0;

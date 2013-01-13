@@ -257,6 +257,12 @@ static bool xenon360_gfx_focus(void *data)
    return true;
 }
 
+static void xenon360_gfx_set_rotation(void *data, unsigned rotation)
+{
+   (void)data;
+   (void)rotation;
+}
+
 
 const video_driver_t video_xenon360 = {
    .init = xenon360_gfx_init,
