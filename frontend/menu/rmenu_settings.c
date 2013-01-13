@@ -295,12 +295,12 @@ void rmenu_settings_create_menu_item_label(char * str, unsigned setting, size_t 
          break;
       case S_LBL_ZIP_EXTRACT:
          if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
-            snprintf(str, sizeof(size), "INFO - ZIP Extract: Current dir.");
+            snprintf(str, size, "INFO - Unzip Mode: Current dir.");
          else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-            snprintf(str, sizeof(size), "INFO - ZIP Extract: Current dir and load first file.");
+            snprintf(str, size, "INFO - Unzip Mode: Current dir and load first file.");
 #ifdef HAVE_HDD_CACHE_PARTITION
          else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
-            snprintf(str, sizeof(size), "INFO - ZIP Extract: Cache dir.");
+            snprintf(str, size, "INFO - Unzip Mode: Cache dir.");
 #endif
          break;
    }
