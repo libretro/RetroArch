@@ -51,11 +51,30 @@ public class RetroArch extends Activity implements
 	static private String libretro_path;
 	static private final String TAG = "RetroArch-Phoenix";
 	private ConfigFile config;
-
-	private final double getRefreshRate() {
+	
+	private final double getDisplayRefreshRate() {
 		final WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
 		final Display display = wm.getDefaultDisplay();
-		double rate = display.getRefreshRate();
+		return display.getRefreshRate();
+	}
+
+	private final double getRefreshRate() {
+		double rate = 0;
+		SharedPreferences prefs = PreferenceManager
+				.getDefaultSharedPreferences(getBaseContext());
+		String refresh_rate = prefs.getString("video_refresh_rate", "");
+		if (!refresh_rate.isEmpty()) {
+			try {
+				rate = Double.parseDouble(refresh_rate);
+			} catch (NumberFormatException e) {
+				Log.e(TAG, "Cannot parse: " + refresh_rate + " as a double!");
+				rate = getDisplayRefreshRate();
+			}
+		} else {
+			rate = getDisplayRefreshRate();
+		}
+		
+		Log.i(TAG, "Using refresh rate: " + rate + " Hz.");
 		return rate;
 	}
 	
@@ -200,15 +219,13 @@ public class RetroArch extends Activity implements
 		config.setBoolean("input_autodetect_enable", prefs.getBoolean("input_autodetect_enable", true));
 		config.setBoolean("input_debug_enable", prefs.getBoolean("input_debug_enable", false));
 		
-		if (prefs.getBoolean("video_sync_refreshrate_to_screen", true) &&
-				(getRefreshRate() < 59.95))
-		{
-			Log.i(TAG, "Refresh rate of screen lower than 59.95Hz, adjusting to screen.");	
+		if (prefs.getBoolean("video_sync_refreshrate_to_screen", true)
+				&& (getRefreshRate() < 59.95)) {
+			Log.i(TAG,
+					"Refresh rate of screen lower than 59.95Hz, adjusting to screen.");
 			config.setDouble("video_refresh_rate", getRefreshRate());
-		}
-		else
-		{
-			Log.i(TAG, "Refresh rate set to 59.95Hz (default).");	
+		} else {
+			Log.i(TAG, "Refresh rate set to 59.95Hz (default).");
 			config.setDouble("video_refresh_rate", 59.95);
 		}
 		

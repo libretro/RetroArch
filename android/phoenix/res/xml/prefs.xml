@@ -65,6 +65,11 @@
                 android:key="video_sync_refreshrate_to_screen"
                 android:summary="Synchronize RetroArch's refresh rate to the screen's refresh rate (recommended - some screens have refresh rates below 59.95Hz and need this enabled to get good audio/video sync)."
                 android:title="Sync refreshrate to screen" />
+            <EditTextPreference
+                android:key="video_refresh_rate"
+                android:summary="Force a specific refresh rate to be detected. Only use if auto-detection of refresh rate reports wrong refresh rate."
+                android:title="Forced refresh rate (Hz)"
+                android:numeric="decimal" />
             <CheckBoxPreference
                 android:defaultValue="true"
                 android:key="video_allow_rotate"
