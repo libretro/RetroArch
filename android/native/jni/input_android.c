@@ -30,10 +30,8 @@
 #define PRESSED_LEFT(x, y) ((-0.80f > x) && (x >= -1.00f))
 #define PRESSED_RIGHT(x, y) ((0.80f  < x) && (x <= 1.00f))
 
-#define MAX_DEVICE_IDS 50
-
 static unsigned pads_connected;
-static int state_device_ids[MAX_DEVICE_IDS];
+static int state_device_ids[MAX_PADS];
 static uint64_t state[MAX_PADS];
 
 struct input_pointer
