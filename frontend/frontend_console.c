@@ -303,7 +303,7 @@ int main(int argc, char *argv[])
    system_process_args(argc, argv);
 
 begin_loop:
-   if(g_extern.lifecycle_mode_state & (1ULL << MODE_EMULATION))
+   if(g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
    {
       driver.input->poll(NULL);
       driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
@@ -315,7 +315,7 @@ begin_loop:
 
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
          audio_stop_func();
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_EMULATION);
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
    }
    else if (g_extern.lifecycle_mode_state & (1ULL << MODE_INIT))
    {
@@ -336,7 +336,7 @@ begin_loop:
       if (init_ret == 0)
       {
          RARCH_LOG("rarch_main_init succeeded.\n");
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
       }
       else
       {

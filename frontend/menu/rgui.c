@@ -238,7 +238,7 @@ rgui_handle_t *rgui_init(const char *base_path,
    else
    {
       RARCH_ERR("no font bmp or bin, abort");
-      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_MENU_INGAME) | (1ULL << MODE_EMULATION));
+      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_MENU_INGAME) | (1ULL << MODE_GAME));
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
    }
 
@@ -575,7 +575,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
                rarch_save_state();
             else
                rarch_load_state();
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
             return -1;
          }
          else if (action == RGUI_ACTION_START)
@@ -606,7 +606,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          if (action == RGUI_ACTION_OK)
          {
             rarch_game_reset();
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
             return -1;
          }
          break;
@@ -786,7 +786,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
 #ifdef GEKKO
             snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s/boot.dol", default_paths.core_dir);
 #endif
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
             return -1;
@@ -795,7 +795,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
       case RGUI_SETTINGS_QUIT_EMULATOR:
          if (action == RGUI_ACTION_OK)
          {
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             return -1;
          }

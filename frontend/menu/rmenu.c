@@ -1454,7 +1454,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_QUIT_RARCH:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_EMULATION));
+            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_GAME));
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             return -1;
          }
@@ -2125,7 +2125,7 @@ int ingame_menu(void *data, void *state)
    if(input & (1ULL << RMENU_DEVICE_NAV_A))
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
       return -1;
    }
 
@@ -2135,7 +2135,7 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             rarch_load_state();
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
          }
@@ -2150,7 +2150,7 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             rarch_save_state();
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
          }
@@ -2232,7 +2232,7 @@ int ingame_menu(void *data, void *state)
       case MENU_ITEM_RETURN_TO_GAME:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
          }
@@ -2243,7 +2243,7 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             rarch_game_reset();
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
          }
@@ -2274,7 +2274,7 @@ int ingame_menu(void *data, void *state)
          {
             RARCH_LOG("Boot Multiman: %s.\n", default_paths.multiman_self_file);
             strlcpy(g_extern.fullpath, default_paths.multiman_self_file, sizeof(g_extern.fullpath));
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
@@ -2286,7 +2286,7 @@ int ingame_menu(void *data, void *state)
       case MENU_ITEM_QUIT_RARCH:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
@@ -2314,7 +2314,7 @@ int ingame_menu(void *data, void *state)
 
    if((input & (1ULL << RMENU_DEVICE_NAV_L3)) && (input & (1ULL << RMENU_DEVICE_NAV_R3)))
    {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
       return -1;
    }
@@ -2457,7 +2457,7 @@ int rmenu_input_process(void *data, void *state)
 
       if (return_to_game_enable)
       {
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
          return -1;
       }
    }

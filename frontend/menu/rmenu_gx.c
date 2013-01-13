@@ -186,7 +186,7 @@ int rmenu_input_process(void *data, void *state)
 
       if (return_to_game_enable)
       {
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
          return -1;
       }
    }

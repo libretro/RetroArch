@@ -837,7 +837,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             if (g_extern.main_is_init)
             {
                rarch_load_state();
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
                process_input_ret = -1;
             }
             break;
@@ -845,7 +845,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             if (g_extern.main_is_init)
             {
                rarch_save_state();
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
                process_input_ret = -1;
             }
             break;
@@ -887,19 +887,19 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             if (g_extern.main_is_init)
             {
                rarch_game_reset();
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
                process_input_ret = -1;
             }
             break;
          case MENU_ITEM_RETURN_TO_GAME:
             if (g_extern.main_is_init)
             {
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
                process_input_ret = -1;
             }
             break;
          case MENU_ITEM_QUIT_RARCH:
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             process_input_ret = -1;
             break;
@@ -1110,7 +1110,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
    }
    else if (hObjPressed == m_quit)
    {
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_EMULATION);
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
       process_input_ret = -1;
    }
@@ -1265,7 +1265,7 @@ bool rmenu_iterate(void)
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
          if (rmenu_enable)
          {
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EMULATION);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
             process_input_ret = -1;
          }
    }
