@@ -280,6 +280,9 @@ bool rmenu_iterate(void)
    return true;
 
 deinit:
+   // draw last frame for loading messages
+   rarch_render_cached_frame();
+
    // set a timer delay so that we don't instantly switch back to the menu when
    // press and holding QUIT in the emulation loop (lasts for 30 frame ticks)
    if (!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))

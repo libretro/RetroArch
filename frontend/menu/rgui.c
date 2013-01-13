@@ -1121,6 +1121,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    rgui_file_type_t menu_type = 0;
    size_t directory_ptr = 0;
    rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
+   int ret = 0;
 
    if (menu_type == RGUI_SETTINGS || rgui_is_controller_menu(menu_type))
       return rgui_settings_iterate(rgui, action);
@@ -1214,9 +1215,10 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             {
                snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s", dir, path);
                console_load_game(rgui->path_buf);
+               rmenu_settings_msg(S_MSG_LOADING_ROM, S_DELAY_1);
                rgui->need_refresh = true; // in case of zip extract
                rgui->msg_force = true;
-               return -1;
+               ret = -1;
             }
          }
          break;
@@ -1266,5 +1268,5 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
    render_text(rgui);
 
-   return 0;
+   return ret;
 }
