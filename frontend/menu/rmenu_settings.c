@@ -361,7 +361,7 @@ void rmenu_settings_create_menu_item_label(char * str, unsigned setting, size_t 
          if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
             snprintf(str, size, "INFO - Unzip Mode: Current dir.");
          else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-            snprintf(str, size, "INFO - Unzip Mode: Current dir and load first file.");
+            snprintf(str, size, "INFO - Unzip Mode: Current dir, load first file.");
 #ifdef HAVE_HDD_CACHE_PARTITION
          else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
             snprintf(str, size, "INFO - Unzip Mode: Cache dir.");
