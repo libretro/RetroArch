@@ -114,7 +114,7 @@ static inline bool input_key_pressed_func(int key)
 #define MAKENAME_VIDEO(A) CONCAT2(xdk_d3d, A) 
 
 #elif defined(XENON) /* XENON */
-#define MAKENAME_VIDEO(A) CONCAT2(xenon360, A)
+#define MAKENAME_VIDEO(A) CONCAT2(xenon360_gfx, A)
 
 #define video_set_aspect_ratio_func(aspectratio_idx) gfx_ctx_set_aspect_ratio(driver.video_data, aspectratio_idx)
 
