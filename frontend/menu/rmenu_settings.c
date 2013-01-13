@@ -138,35 +138,53 @@ void rmenu_settings_set(unsigned setting)
       case S_UNZIP_MODE_DECREMENT:
          if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
          {
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CACHEDIR);
+            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CACHEDIR) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR));
             g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
          }
          else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
          {
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CACHEDIR) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR));
             g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR);
          }
 
          else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
          {
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
+            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CACHEDIR) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR));
             g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
          }
          break;
       case S_UNZIP_MODE_INCREMENT:
          if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
          {
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR);
+            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CACHEDIR) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR));
             g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
          }
          else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
          {
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
+            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CACHEDIR) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR));
             g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
          }
          else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
          {
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
+            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CACHEDIR) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
+                                             (1ULL << MODE_UNZIP_TO_CURDIR));
             g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CACHEDIR);
          }
          break;

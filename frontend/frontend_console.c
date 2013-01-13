@@ -115,6 +115,8 @@ void console_load_game(const char *path)
       if(g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
          rmenu_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
 
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_FILEBROWSER_REFRESH_PENDING);
+
       if ((g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE)) ||
             (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN)))
       {
@@ -358,6 +360,7 @@ begin_loop:
          if (ret == 0)
             RARCH_LOG("Removed temporary unzipped ROM file: [%s].\n", g_extern.fullpath);
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_DELETE_PENDING);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_FILEBROWSER_REFRESH_PENDING);
       }
 #endif
    }
