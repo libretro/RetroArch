@@ -113,6 +113,9 @@ static inline bool input_key_pressed_func(int key)
 #elif defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9)) /* D3D */
 #define MAKENAME_VIDEO(A) CONCAT2(xdk_d3d, A) 
 
+#elif defined(XENON) /* XENON */
+#define MAKENAME_VIDEO(A) CONCAT2(xenon360, A)
+
 #define video_set_aspect_ratio_func(aspectratio_idx) gfx_ctx_set_aspect_ratio(driver.video_data, aspectratio_idx)
 
 #define gfx_ctx_window_has_focus() (true)
@@ -163,6 +166,8 @@ static inline bool input_key_pressed_func(int key)
 #define MAKENAME_INPUT(A) CONCAT2(ps3, A) 
 #elif defined(ANDROID) /* ANDROID */
 #define MAKENAME_INPUT(A) CONCAT2(android, A) 
+#elif defined(XENON) /* XENON */
+#define MAKENAME_INPUT(A) CONCAT2(xenon360, A)
 #else
 #define MAKENAME_INPUT(A) CONCAT2(nullinput, A) 
 #endif

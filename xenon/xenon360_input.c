@@ -24,17 +24,33 @@
 #include <input/input.h>
 #include <usb/usbmain.h>
 
-#define MAX_PADS
+#define MAX_PADS 4
 
-static struct controller_data_s pad[MAX_PADS];
+static uint64_t state[MAX_PADS];
 
 static void xenon360_input_poll(void *data)
 {
    (void)data;
    for (unsigned i = 0; i < MAX_PADS; i++)
    {
+      struct controller_data_s pad;
       usb_do_poll();
-      get_controller_data(&pad[i], i);
+      get_controller_data(&pad, i);
+
+      uint64_t *cur_state = &state[i];
+
+      *cur_state |= pad.b ? RETRO_DEVICE_ID_JOYPAD_A : 0;
+      *cur_state |= pad.a ? RETRO_DEVICE_ID_JOYPAD_B : 0;
+      *cur_state |= pad.y ? RETRO_DEVICE_ID_JOYPAD_X : 0;
+      *cur_state |= pad.x ? RETRO_DEVICE_ID_JOYPAD_Y : 0;
+      *cur_state |= pad.left ? RETRO_DEVICE_ID_JOYPAD_LEFT : 0;
+      *cur_state |= pad.right ? RETRO_DEVICE_ID_JOYPAD_RIGHT : 0;
+      *cur_state |= pad.up ? RETRO_DEVICE_ID_JOYPAD_UP : 0;
+      *cur_state |= pad.down ? RETRO_DEVICE_ID_JOYPAD_DOWN : 0;
+      *cur_state |= pad.start ? RETRO_DEVICE_ID_JOYPAD_START : 0;
+      *cur_state |= pad.back ? RETRO_DEVICE_ID_JOYPAD_SELECT : 0;
+      *cur_state |= pad.lt ? RETRO_DEVICE_ID_JOYPAD_L : 0;
+      *cur_state |= pad.rt ? RETRO_DEVICE_ID_JOYPAD_R : 0;
    }
 }
 
@@ -43,68 +59,25 @@ static int16_t xenon360_input_state(void *data, const struct retro_keybind **bin
       unsigned index, unsigned id)
 {
    (void)data;
-   (void)binds;
    (void)index;
+   unsigned player = port;
+   uint64_t button = binds[player][id].joykey;
+   int16_t retval = 0;
 
-   if (device != SNES_DEVICE_JOYPAD)
-      return 0;
-
-   unsigned player = 0;
-   if (port == SNES_PORT_2 && device == SNES_DEVICE_MULTITAP)
-      player = index + 1;
-   else if (port == SNES_PORT_2)
-      player = 1;
-
-   bool button;
-
-   // Hardcoded binds.
-   switch (id)
+   if(player < MAX_PADS)
    {
-      case SNES_DEVICE_ID_JOYPAD_A:
-         button = pad[player].b;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_B:
-         button = pad[player].a;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_X:
-         button = pad[player].y;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_Y:
-         button = pad[player].x;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_LEFT:
-         button = pad[player].left;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_RIGHT:
-         button = pad[player].right;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_UP:
-         button = pad[player].up;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_DOWN:
-         button = pad[player].down;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_START:
-         button = pad[player].start;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_SELECT:
-         button = pad[player].select;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_L:
-         button = pad[player].lt;
-         break;
-      case SNES_DEVICE_ID_JOYPAD_R:
-         button = pad[player].rt;
-         break;
-      default:
-         button = false;
-         break;
+      switch (device)
+      {
+         case RETRO_DEVICE_JOYPAD:
+            retval = (state[player] & button) ? 1 : 0;
+            break;
+      }
    }
 
-   return button;
+   return retval;
 }
 
-static void xenon360_free_input(void *data)
+static void xenon360_input_free_input(void *data)
 {
    (void)data;
 }
@@ -138,7 +111,7 @@ const input_driver_t input_xenon360 = {
    .poll = xenon360_input_poll,
    .input_state = xenon360_input_state,
    .key_pressed = xenon360_key_pressed,
-   .free = xenon360_free_input,
+   .free = xenon360_input_free_input,
    .set_default_keybind_lut = xenon360_input_set_default_keybind_lut,
    .set_analog_dpad_mapping = xenon360_input_set_analog_dpad_mapping,
    .max_pads = MAX_PADS,
