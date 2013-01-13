@@ -123,7 +123,7 @@ void console_load_game(const char *path)
          if (first_file[0] != 0)
          {
             RARCH_LOG("Found compatible game, loading it...\n");
-            snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), first_file);
+            strlcpy(g_extern.fullpath, first_file, sizeof(g_extern.fullpath));
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
                g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_DELETE_PENDING);
@@ -137,7 +137,7 @@ void console_load_game(const char *path)
    }
    else
 #endif
-      snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), path);
+      strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
 
 do_init:
    g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
@@ -215,7 +215,7 @@ static bool install_libretro_core(const char *core_exe_path, const char *tmp_pat
    if (ret == 0)
    {
       RARCH_LOG("Libretro core [%s] successfully renamed to: [%s].\n", core_exe_path, tmp_pathnewfile);
-      snprintf(g_settings.libretro, sizeof(g_settings.libretro), tmp_pathnewfile);
+      strlcpy(g_settings.libretro, tmp_pathnewfile, sizeof(g_settings.libretro));
    }
    else
    {
