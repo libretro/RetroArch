@@ -105,8 +105,7 @@ static int get_sha1(const char *path, char *result)
 {
 	int fd;
 	int rv;
-	int buff_len = 4096;
-	unsigned char buff[buff_len];
+	unsigned char buff[4096];
 	SHA1Context sha;
 
 	fd = open(path, O_RDONLY);
@@ -117,7 +116,7 @@ static int get_sha1(const char *path, char *result)
 	SHA1Reset(&sha);
 	rv = 1;
 	while (rv > 0) {
-		rv = read(fd, buff, buff_len);
+		rv = read(fd, buff, 4096);
 		if (rv < 0) {
 			close(fd);
 			return -errno;
