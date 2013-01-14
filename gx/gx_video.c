@@ -874,7 +874,6 @@ static bool gx_frame(void *data, const void *frame,
 
    (void)data;
 
-
    if(!frame && !(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW)))
       return true;
 
@@ -954,7 +953,14 @@ static bool gx_frame(void *data, const void *frame,
    }
 
    if (msg && !(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW)))
-      gx_blit_line(15, 355, msg);
+   {
+      unsigned x = 7 * (gx->double_strike ? 1 : 2);
+      unsigned y = gx->win_height - (35 * (gx->double_strike ? 1 : 2));
+      gx_blit_line(x, y, msg);
+      clear_efb = GX_TRUE;
+   }
+   else if (msg)
+      snprintf(gx->msg, sizeof(gx->msg), "%s", msg);
    else
       gx->msg[0] = 0;
 
