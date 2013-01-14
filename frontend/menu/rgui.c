@@ -135,6 +135,7 @@ struct rgui_handle
    rgui_list_t *folder_buf;
    int directory_ptr;
    bool need_refresh;
+   bool msg_force;
 
    char path_buf[PATH_MAX];
 
@@ -361,6 +362,11 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
 
 static void render_text(rgui_handle_t *rgui)
 {
+   if (rgui->need_refresh && 
+         (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
+         && !rgui->msg_force)
+      return;
+
    size_t begin = rgui->directory_ptr >= TERM_HEIGHT / 2 ?
       rgui->directory_ptr - TERM_HEIGHT / 2 : 0;
    size_t end = rgui->directory_ptr + TERM_HEIGHT <= rgui_list_size(rgui->folder_buf) ?
@@ -533,7 +539,22 @@ static void render_text(rgui_handle_t *rgui)
       blit_line(rgui, x, y, message, i == rgui->directory_ptr);
    }
 
-   render_messagebox(rgui, msg_queue_pull(g_extern.msg_queue));
+   const char *message_queue;
+#ifdef GEKKO
+   gx_video_t *gx = (gx_video_t*)driver.video_data;
+   if (rgui->msg_force)
+   {
+      message_queue = msg_queue_pull(g_extern.msg_queue);
+      rgui->msg_force = false;
+   }
+   else
+   {
+      message_queue = gx->msg;
+   }
+#else
+   message_queue = msg_queue_pull(g_extern.msg_queue);
+#endif
+   render_messagebox(rgui, message_queue);
 }
 
 #ifdef GEKKO
@@ -980,6 +1001,11 @@ int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_SETTINGS:
          rgui_list_pop(rgui->path_stack);
          break;
+
+      case RGUI_ACTION_MESSAGE:
+         rgui->msg_force = true;
+         break;
+
       default:
          break;
    }
@@ -1064,6 +1090,11 @@ int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          rgui->directory_ptr = 0;
          rgui->need_refresh = true;
          break;
+
+      case RGUI_ACTION_MESSAGE:
+         rgui->msg_force = true;
+         break;
+
       default:
          break;
    }
@@ -1186,6 +1217,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
                console_load_game(rgui->path_buf);
                rmenu_settings_msg(S_MSG_LOADING_ROM, S_DELAY_1);
                rgui->need_refresh = true; // in case of zip extract
+               rgui->msg_force = true;
                ret = -1;
             }
          }
@@ -1210,6 +1242,11 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui->directory_ptr = 0;
          }
          return rgui_settings_iterate(rgui, RGUI_ACTION_REFRESH);
+
+      case RGUI_ACTION_MESSAGE:
+         rgui->msg_force = true;
+         break;
+
       default:
          break;
    }

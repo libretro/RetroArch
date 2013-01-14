@@ -874,6 +874,11 @@ static bool gx_frame(void *data, const void *frame,
 
    (void)data;
 
+   if (msg)
+      snprintf(gx->msg, sizeof(gx->msg), "%s", msg);
+   else
+      gx->msg[0] = 0;
+
    if(!frame && !(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW)))
       return true;
 
