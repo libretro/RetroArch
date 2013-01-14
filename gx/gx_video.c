@@ -874,10 +874,6 @@ static bool gx_frame(void *data, const void *frame,
 
    (void)data;
 
-   if (msg)
-      snprintf(gx->msg, sizeof(gx->msg), "%s", msg);
-   else
-      gx->msg[0] = 0;
 
    if(!frame && !(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW)))
       return true;
@@ -956,6 +952,11 @@ static bool gx_frame(void *data, const void *frame,
       gx_blit_line(x, y, mem2_txt);
 #endif
    }
+
+   if (msg && !(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW)))
+      gx_blit_line(15, 355, msg);
+   else
+      gx->msg[0] = 0;
 
    GX_CopyDisp(g_framebuf[g_current_framebuf], clear_efb);
    GX_Flush();
