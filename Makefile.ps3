@@ -99,7 +99,7 @@ ifneq($(system_platform), win)
 	PPU_CCLD = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ld.exe
 endif
 
-PPU_LDLIBS =  $(FONT_LIBS) $(GL_LIBS) -lretro_ps3 -lcgc -lgcm_cmd -lgcm_sys_stub -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_screenshot_stub -lsysutil_np_stub -lpngdec_stub -ljpgdec_stub -lsysmodule_stub -laudio_stub -lnet_stub -lnetctl_stub -lpthread
+PPU_LDLIBS =  $(FONT_LIBS) $(GL_LIBS) -lretro_ps3 -lcgc -lgcm_cmdasm -lgcm_sys_stub -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_screenshot_stub -lsysutil_np_stub -lpngdec_stub -ljpgdec_stub -lsysmodule_stub -laudio_stub -lnet_stub -lnetctl_stub -lpthread
 
 PPU_RANLIB = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ranlib.exe
 
