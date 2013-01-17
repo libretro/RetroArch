@@ -13,7 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../boolean.h"
 #include "utils.h"
+
+#include "../general.h"
 
 #if defined(__SSE2__)
 #include <emmintrin.h>
