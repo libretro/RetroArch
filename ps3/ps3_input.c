@@ -424,8 +424,6 @@ static void* ps3_input_init(void)
 #ifdef HAVE_MOUSE
    cellMouseInit(MAX_MICE);
 #endif
-#ifdef HAVE_OSKUTIL
-#endif
    return (void*)-1;
 }
 
