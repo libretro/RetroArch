@@ -26,7 +26,7 @@ static bool need_refresh = false;
 
 static void menu_stack_pop(void)
 {
-   if(stack_idx > 0)
+   if(stack_idx > 1)
    {
       stack_idx--;
       need_refresh = true;

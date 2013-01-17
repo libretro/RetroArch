@@ -2517,6 +2517,7 @@ bool rmenu_iterate(void)
       menu_stack_force_refresh();
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
       device_ptr->ctx_driver->rmenu_init();
+
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
    }
 
