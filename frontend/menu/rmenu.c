@@ -930,7 +930,6 @@ static bool osk_callback_enter_filename(void *data)
       char filepath[PATH_MAX];
       int num = wcstombs(tmp_str, g_extern.console.misc.oskutil_handle.text_buf, sizeof(tmp_str));
       tmp_str[num] = 0;
-      snprintf(tmp_str, sizeof(tmp_str), "%s", tmp_str);
 
       switch(rmenu_state.osk_param)
       {

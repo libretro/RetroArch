@@ -209,12 +209,12 @@ static void ps3_input_poll(void *data)
 
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
-      if((*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
+      if ((*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
       {
          *lifecycle_state |= (1ULL << RARCH_RMENU_TOGGLE);
          *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
       }
-      if(!(*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
+      if (!(*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
       {
          *lifecycle_state |= (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE);
          *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
@@ -261,7 +261,7 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
    uint64_t button = binds[player][id].joykey;
    int16_t retval = 0;
 
-   if(player < pads_connected)
+   if (player < pads_connected)
    {
       switch (device)
       {
@@ -290,7 +290,7 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
 void oskutil_init(oskutil_params *params, unsigned containersize)
 {
    params->flags = 0;
-   if(containersize)
+   if (containersize)
       params->osk_memorycontainer =  containersize; 
    else
       params->osk_memorycontainer =  1024*1024*2;
@@ -346,7 +346,7 @@ bool oskutil_start(oskutil_params *params)
 
    ret = sys_memory_container_create(&params->containerid, params->osk_memorycontainer);
 
-   if(ret < 0)
+   if (ret < 0)
       goto do_deinit;
 
    params->outputInfo.osk_callback_return_param = CELL_OSKDIALOG_INPUT_FIELD_RESULT_OK;
@@ -359,7 +359,7 @@ bool oskutil_start(oskutil_params *params)
 
    oskutil_create_activation_parameters(params);
 
-   if(!oskutil_enable_key_layout())
+   if (!oskutil_enable_key_layout())
       return (false);
 
    ret = pOskLoadAsync(params->containerid, &params->dialogParam, &params->inputFieldInfo);
@@ -433,7 +433,7 @@ static void* ps3_input_init(void)
 
 static void ps3_input_post_init(void)
 {
-   for(unsigned i = 0; i < MAX_PADS; i++)
+   for (unsigned i = 0; i < MAX_PADS; i++)
       ps3_input_set_analog_dpad_mapping(STUB_DEVICE, g_settings.input.dpad_emulation[i], i);
 }
 
@@ -447,7 +447,7 @@ static void ps3_set_default_keybind_lut(unsigned device, unsigned port)
    (void)device;
    (void)port;
 
-   for(int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+   for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
       g_settings.input.default_binds[i] = platform_keys[i].joykey;
 }
 
