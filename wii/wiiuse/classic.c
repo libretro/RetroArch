@@ -95,19 +95,19 @@ int classic_ctrl_handshake(struct wiimote_t* wm, struct classic_ctrl_t* cc, ubyt
 
 
 	/* joystick stuff */
-	cc->ljs.max.x = data[0 + offset] / 4 == 0 ? 64 : data[0 + offset] / 4;
+	cc->ljs.max.x = 64;
 	cc->ljs.min.x = data[1 + offset] / 4;
-	cc->ljs.center.x = data[2 + offset] / 4 == 0 ? 32 : data[2 + offset] / 4;
-	cc->ljs.max.y = data[3 + offset] / 4 == 0 ? 64 : data[3 + offset] / 4;
+	cc->ljs.center.x = 32;
+	cc->ljs.max.y = 64;
 	cc->ljs.min.y = data[4 + offset] / 4;
-	cc->ljs.center.y = data[5 + offset] / 4 == 0 ? 32 : data[5 + offset] / 4;
+	cc->ljs.center.y = 32;
 
-	cc->rjs.max.x = data[6 + offset] / 8 == 0 ? 32 : data[6 + offset] / 8;
+	cc->rjs.max.x = 32;
 	cc->rjs.min.x = data[7 + offset] / 8;
-	cc->rjs.center.x = data[8 + offset] / 8 == 0 ? 16 : data[8 + offset] / 8;
-	cc->rjs.max.y = data[9 + offset] / 8 == 0 ? 32 : data[9 + offset] / 8;
+	cc->rjs.center.x = 16;
+	cc->rjs.max.y = 32;
 	cc->rjs.min.y = data[10 + offset] / 8;
-	cc->rjs.center.y = data[11 + offset] / 8 == 0 ? 16 : data[11 + offset] / 8;
+	cc->rjs.center.y = 16;
 
 	/* handshake done */
 	wm->event = WIIUSE_CLASSIC_CTRL_INSERTED;
