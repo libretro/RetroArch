@@ -139,6 +139,11 @@ static void populate_setting_item(void *data, unsigned input)
             snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Change the display resolution.");
          }
          break;
+      case SETTING_PAL60_MODE:
+            snprintf(current_item->text, sizeof(current_item->text), "PAL60 Mode");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE)) ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE)) ? "INFO - [PAL60 Mode] is set to 'ON'.\nconverts frames from 60Hz to 50Hz." : "INFO - [PAL60 Mode is set to 'OFF'.\nframes are not converted.");
+         break;
 #endif
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_SHADER_PRESETS:
@@ -994,35 +999,48 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
             {
                if(gfx_ctx_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
-               {
-                  //ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
-                  driver.video->restart();
-               }
+                  g_extern.lifecycle_mode_state |= (1ULL<< MODE_VIDEO_PAL_ENABLE);
             }
             else
             {
-               //ps3graphics_set_pal60hz(0);
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_ENABLE);
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK);
+            }
+
+            driver.video->restart();
+         }
+         break;
+      case SETTING_PAL60_MODE:
+         if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         {
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
+            {
+               if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
+               {
+                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK);
+               }
+               else
+               {
+                  g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+                  g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK);
+               }
+
+               driver.video->restart();
+            }
+         }
+
+         if(input & (1ULL << RMENU_DEVICE_NAV_START))
+         {
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
+            {
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK);
                driver.video->restart();
             }
          }
          break;
-         /*
-            case SETTING_PAL60_MODE:
-            if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-            {
-            if (Graphics->GetCurrentResolution() == CELL_VIDEO_OUT_RESOLUTION_576)
-            {
-            if(Graphics->CheckResolution(CELL_VIDEO_OUT_RESOLUTION_576))
-            {
-            Settings.PS3PALTemporalMode60Hz = !Settings.PS3PALTemporalMode60Hz;
-            Graphics->SetPAL60Hz(Settings.PS3PALTemporalMode60Hz);
-            Graphics->SwitchResolution(Graphics->GetCurrentResolution(), Settings.PS3PALTemporalMode60Hz, Settings.TripleBuffering);
-            }
-            }
-
-            }
-            break;
-            */
 #endif
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_SHADER_PRESETS:
@@ -1247,13 +1265,19 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_THROTTLE_MODE:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            rmenu_settings_set(S_THROTTLE);
-            device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? true : false);
+            if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK)))
+            {
+               rmenu_settings_set(S_THROTTLE);
+               device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? true : false);
+            }
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            rmenu_settings_set_default(S_DEF_THROTTLE);
-            device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? true : false);
+            if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK)))
+            {
+               rmenu_settings_set_default(S_DEF_THROTTLE);
+               device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? true : false);
+            }
          }
          break;
       case SETTING_TRIPLE_BUFFERING:

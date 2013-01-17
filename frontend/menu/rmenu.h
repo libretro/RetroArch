@@ -101,6 +101,7 @@ enum
 {
 #ifdef __CELLOS_LV2__
    SETTING_CHANGE_RESOLUTION,
+   SETTING_PAL60_MODE,
 #endif
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    SETTING_SHADER_PRESETS,
