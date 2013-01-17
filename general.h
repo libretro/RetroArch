@@ -136,6 +136,9 @@ enum menu_enums
    MODE_UNZIP_TO_CACHEDIR,
    MODE_UNZIP_DELETE_PENDING,
    MODE_FILEBROWSER_REFRESH_PENDING,
+   MODE_OSK_DRAW,
+   MODE_OSK_ENTRY_SUCCESS,
+   MODE_OSK_ENTRY_FAIL,
 };
 
 // All config related settings go here.

@@ -884,143 +884,90 @@ static void set_keybind_digital(uint64_t default_retro_joypad_id, uint64_t input
 
 #if defined(HAVE_OSKUTIL)
 #ifdef __CELLOS_LV2__
-static char filepath[PATH_MAX];
 
 static bool osk_callback_enter_rsound(void *data)
 {
-   rmenu_state_t *rstate = (rmenu_state_t*)state;
-
-   if(!(OSK_IS_RUNNING(g_extern.console.misc.oskutil_handle)) && g_extern.console.misc.oskutil_handle.text_can_be_fetched)
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_OSK_ENTRY_SUCCESS))
    {
-      strlcpy(g_settings.audio.device, OUTPUT_TEXT_STRING(g_extern.console.misc.oskutil_handle), sizeof(g_settings.audio.device));
-
-      if(!rstate->osk_unbind_after_finish)
-         rstate->osk_callback = NULL;
-
-      return true;
+      RARCH_LOG("OSK - Applying input data.\n");
+      char tmp_str[256];
+      int num = wcstombs(tmp_str, g_extern.console.misc.oskutil_handle.text_buf, sizeof(tmp_str));
+      tmp_str[num] = 0;
+      snprintf(g_settings.audio.device, sizeof(g_settings.audio.device), "%s", tmp_str);
+      goto do_exit;
    }
+   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_OSK_ENTRY_FAIL))
+      goto do_exit;
+
    return false;
+
+do_exit:
+   g_extern.lifecycle_mode_state &= ~((1ULL << MODE_OSK_DRAW) | (1ULL << MODE_OSK_ENTRY_SUCCESS) |
+         (1ULL << MODE_OSK_ENTRY_FAIL));
+   return true;
 }
 
 static bool osk_callback_enter_rsound_init(void *data)
 {
-   rmenu_state_t *rstate = (rmenu_state_t*)state;
-
    oskutil_write_initial_message(&g_extern.console.misc.oskutil_handle, L"192.168.1.1");
    oskutil_write_message(&g_extern.console.misc.oskutil_handle, L"Enter IP address for the RSound Server.");
    oskutil_start(&g_extern.console.misc.oskutil_handle);
 
-   rstate->osk_unbind_after_finish = true;
-   rstate->osk_callback = osk_callback_enter_rsound;
-
    return true;
 }
-
-static bool osk_callback_enter_title_init(void *data);
 
 static bool osk_callback_enter_filename(void *data)
 {
-   rmenu_state_t *rstate = (rmenu_state_t*)state;
-   char filename_tmp[256];
-
-   if(!(OSK_IS_RUNNING(g_extern.console.misc.oskutil_handle)) && g_extern.console.misc.oskutil_handle.text_can_be_fetched)
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_OSK_ENTRY_SUCCESS))
    {
-      strlcpy(filename_tmp, OUTPUT_TEXT_STRING(g_extern.console.misc.oskutil_handle), sizeof(filename_tmp));
+      RARCH_LOG("OSK - Applying input data.\n");
+      char tmp_str[256];
+      char filepath[PATH_MAX];
+      int num = wcstombs(tmp_str, g_extern.console.misc.oskutil_handle.text_buf, sizeof(tmp_str));
+      tmp_str[num] = 0;
+      snprintf(tmp_str, sizeof(tmp_str), "%s", tmp_str);
 
-      switch(rstate->osk_param)
+      switch(rmenu_state.osk_param)
       {
          case CONFIG_FILE:
             break;
          case SHADER_PRESET_FILE:
-            snprintf(filepath, sizeof(filepath), "%s/%s.cgp", default_paths.cgp_dir, filename_tmp);
+            snprintf(filepath, sizeof(filepath), "%s/%s.cgp", default_paths.cgp_dir, tmp_str);
+            RARCH_LOG("[osk_callback_enter_filename]: filepath is: %s.\n", filepath);
+
+            struct gl_cg_cgp_info current_settings;
+            current_settings.shader[0] = g_settings.video.cg_shader_path;
+            current_settings.shader[1] = g_settings.video.second_pass_shader;
+            current_settings.filter_linear[0] = g_settings.video.smooth;
+            current_settings.filter_linear[1] = g_settings.video.second_pass_smooth;
+            current_settings.render_to_texture = true;
+            current_settings.fbo_scale = g_settings.video.fbo.scale_x; //fbo.scale_x and y are the same anyway
+            gl_cg_save_cgp(filepath, &current_settings);
             break;
          case INPUT_PRESET_FILE:
-            snprintf(filepath, sizeof(filepath), "%s/%s.cfg", default_paths.input_presets_dir, filename_tmp);
-            break;
-      }
-
-      if(!rstate->osk_unbind_after_finish)
-         rstate->osk_callback = NULL;
-
-      rstate->osk_init  = osk_callback_enter_title_init;
-
-      return true;
-   }
-
-   return false;
-}
-
-static bool osk_callback_enter_filename_init(void *data)
-{
-   rmenu_state_t *rstate = (rmenu_state_t*)state;
-
-   oskutil_write_initial_message(&g_extern.console.misc.oskutil_handle, L"example");
-   oskutil_write_message(&g_extern.console.misc.oskutil_handle, 
-         L"Enter filename for preset (with no file extension)");
-   oskutil_start(&g_extern.console.misc.oskutil_handle);
-
-   rstate->osk_unbind_after_finish = false;
-
-   if(!rstate->osk_unbind_after_finish)
-      rstate->osk_init = NULL;
-
-   rstate->osk_callback = osk_callback_enter_filename;
-
-   return true;
-}
-
-static bool osk_callback_enter_title(void *data)
-{
-   rmenu_state_t *rstate = (rmenu_state_t*)state;
-   char filetitle_tmp[256];
-
-   if(!(OSK_IS_RUNNING(g_extern.console.misc.oskutil_handle)) && g_extern.console.misc.oskutil_handle.text_can_be_fetched)
-   {
-      if(g_extern.console.misc.oskutil_handle.text_can_be_fetched)
-         snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", OUTPUT_TEXT_STRING(g_extern.console.misc.oskutil_handle));
-      else
-         snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", "Custom");
-
-      switch(rstate->osk_param)
-      {
-         case CONFIG_FILE:
-            break;
-         case SHADER_PRESET_FILE:
-            {
-               struct gl_cg_cgp_info current_settings;
-               current_settings.shader[0] = g_settings.video.cg_shader_path;
-               current_settings.shader[1] = g_settings.video.second_pass_shader;
-               current_settings.filter_linear[0] = g_settings.video.smooth;
-               current_settings.filter_linear[1] = g_settings.video.second_pass_smooth;
-               current_settings.render_to_texture = true;
-               current_settings.fbo_scale = g_settings.video.fbo.scale_x; //fbo.scale_x and y are the same anyway
-               gl_cg_save_cgp(filepath, &current_settings);
-            }
-            break;
-         case INPUT_PRESET_FILE:
+            snprintf(filepath, sizeof(filepath), "%s/%s.cfg", default_paths.input_presets_dir, tmp_str);
+            RARCH_LOG("[osk_callback_enter_filename]: filepath is: %s.\n", filepath);
             config_save_keybinds(filepath);
             break;
       }
 
-      if(!rstate->osk_unbind_after_finish)
-         rstate->osk_callback = NULL;
-
-      return true;
+      goto do_exit;
    }
+   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_OSK_ENTRY_FAIL))
+      goto do_exit;
 
    return false;
+do_exit:
+   g_extern.lifecycle_mode_state &= ~((1ULL << MODE_OSK_DRAW) | (1ULL << MODE_OSK_ENTRY_SUCCESS) |
+         (1ULL << MODE_OSK_ENTRY_FAIL));
+   return true;
 }
 
-static bool osk_callback_enter_title_init(void *data)
+static bool osk_callback_enter_filename_init(void *data)
 {
-   rmenu_state_t *rstate = (rmenu_state_t*)state;
-
-   oskutil_write_initial_message(&g_extern.console.misc.oskutil_handle, L"Example file title");
-   oskutil_write_message(&g_extern.console.misc.oskutil_handle, L"Enter title for preset");
+   oskutil_write_initial_message(&g_extern.console.misc.oskutil_handle, L"example");
+   oskutil_write_message(&g_extern.console.misc.oskutil_handle, L"Enter filename for preset");
    oskutil_start(&g_extern.console.misc.oskutil_handle);
-
-   rstate->osk_unbind_after_finish = true;
-   rstate->osk_callback = osk_callback_enter_title;
 
    return true;
 }
@@ -1345,6 +1292,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             rmenu_state.osk_param = SHADER_PRESET_FILE;
             rmenu_state.osk_init = osk_callback_enter_filename_init;
+            rmenu_state.osk_callback = osk_callback_enter_filename;
          }
 #endif
          break;
@@ -1387,6 +1335,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
 #ifdef HAVE_OSKUTIL
             rmenu_state.osk_init = osk_callback_enter_rsound_init;
+            rmenu_state.osk_callback = osk_callback_enter_rsound;
 #endif
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1704,6 +1653,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             rmenu_state_t *rstate = (rmenu_state_t*)&rmenu_state;
             rstate->osk_param = INPUT_PRESET_FILE;
             rstate->osk_init = osk_callback_enter_filename_init;
+            rstate->osk_callback = osk_callback_enter_filename;
          }
          break;
 #endif
@@ -2567,19 +2517,17 @@ bool rmenu_iterate(void)
       current_menu.input_poll(&current_menu, &rmenu_state);
 
 #ifdef HAVE_OSKUTIL
-   bool osk_init_succeeded = false;
-   bool osk_callback_finished = false;
-   if(rmenu_state.osk_init)
-      osk_init_succeeded = rmenu_state.osk_init(&rmenu_state);
+   if(rmenu_state.osk_init != NULL)
+   {
+      if (rmenu_state.osk_init(&rmenu_state))
+         rmenu_state.osk_init = NULL;
+   }
 
-   if(osk_init_succeeded && rmenu_state.osk_unbind_after_finish)
-      rmenu_state.osk_init = NULL;
-
-   if(rmenu_state.osk_callback)
-      osk_callback_finished = rmenu_state.osk_callback(&rmenu_state);
-
-   if(osk_callback_finished && rmenu_state.osk_unbind_after_finish)
-      rmenu_state.osk_callback = NULL;
+   if(rmenu_state.osk_callback != NULL)
+   {
+      if (rmenu_state.osk_callback(&rmenu_state))
+         rmenu_state.osk_callback = NULL;
+   }
 #endif
 
    int input_entry_ret = 0;

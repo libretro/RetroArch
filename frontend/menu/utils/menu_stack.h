@@ -37,7 +37,6 @@ typedef struct
    uint64_t input;
    uint64_t old_state;
 #ifdef HAVE_OSKUTIL
-   bool osk_unbind_after_finish;
    unsigned osk_param;
    bool (*osk_init)(void *data);
    bool (*osk_callback)(void *data);

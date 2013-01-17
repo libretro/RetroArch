@@ -290,11 +290,10 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
 void oskutil_init(oskutil_params *params, unsigned containersize)
 {
    params->flags = 0;
-   params->is_running = false;
    if(containersize)
       params->osk_memorycontainer =  containersize; 
    else
-      params->osk_memorycontainer =  1024*1024*7;
+      params->osk_memorycontainer =  1024*1024*2;
 }
 
 static bool oskutil_enable_key_layout (void)
@@ -337,18 +336,24 @@ void oskutil_write_initial_message(oskutil_params *params, const wchar_t* msg)
 
 bool oskutil_start(oskutil_params *params) 
 {
-   memset(params->osk_text_buffer, 0, sizeof(*params->osk_text_buffer));
-   memset(params->osk_text_buffer_char, 0, 256);
-
-   params->text_can_be_fetched = false;
-
    if (params->flags & OSK_IN_USE)
-      return (true);
+   {
+      RARCH_WARN("OSK util already initialized and in use\n");
+      return true;
+   }
 
-   int ret = sys_memory_container_create(&params->containerid, params->osk_memorycontainer);
+   int ret = 0;
+
+   ret = sys_memory_container_create(&params->containerid, params->osk_memorycontainer);
 
    if(ret < 0)
-      return (false);
+      goto do_deinit;
+
+   params->outputInfo.osk_callback_return_param = CELL_OSKDIALOG_INPUT_FIELD_RESULT_OK;
+   params->outputInfo.osk_callback_num_chars = 256;
+   params->outputInfo.osk_callback_return_string = (uint16_t *)params->text_buf;
+
+   memset(params->text_buf, 0, sizeof(*params->text_buf));
 
    params->inputFieldInfo.osk_inputfield_max_length = CELL_OSKDIALOG_STRING_SIZE;	
 
@@ -358,55 +363,19 @@ bool oskutil_start(oskutil_params *params)
       return (false);
 
    ret = pOskLoadAsync(params->containerid, &params->dialogParam, &params->inputFieldInfo);
-   if(ret < 0)
-      return (false);
+
+   if (ret < 0)
+      goto do_deinit;
 
    params->flags |= OSK_IN_USE;
-   params->is_running = true;
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_OSK_DRAW);
 
-   return (true);
+   return true;
+
+do_deinit:
+   RARCH_ERR("Could not properly initialize OSK util.\n");
+   return false;
 }
-
-void oskutil_close(oskutil_params *params)
-{
-   pOskAbort();
-}
-
-void oskutil_finished(oskutil_params *params)
-{
-   int num;
-
-   params->outputInfo.osk_callback_return_param = CELL_OSKDIALOG_INPUT_FIELD_RESULT_OK;
-   params->outputInfo.osk_callback_num_chars = 256;
-   params->outputInfo.osk_callback_return_string = (uint16_t *)params->osk_text_buffer;
-
-   pOskUnloadAsync(&params->outputInfo);
-
-   switch (params->outputInfo.osk_callback_return_param)
-   {
-      case CELL_OSKDIALOG_INPUT_FIELD_RESULT_OK:
-         num = wcstombs(params->osk_text_buffer_char, params->osk_text_buffer, 256);
-         params->osk_text_buffer_char[num]=0;
-         params->text_can_be_fetched = true;
-         break;
-      case CELL_OSKDIALOG_INPUT_FIELD_RESULT_CANCELED:
-      case CELL_OSKDIALOG_INPUT_FIELD_RESULT_ABORT:
-      case CELL_OSKDIALOG_INPUT_FIELD_RESULT_NO_INPUT_TEXT:
-      default:
-         params->osk_text_buffer_char[0]=0;
-         params->text_can_be_fetched = false;
-         break;
-   }
-
-   params->flags &= ~OSK_IN_USE;
-}
-
-void oskutil_unload(oskutil_params *params)
-{
-   sys_memory_container_destroy(params->containerid);
-   params->is_running = false;
-}
-
 #endif
 
 /*============================================================
@@ -454,6 +423,8 @@ static void* ps3_input_init(void)
    cellPadInit(MAX_PADS);
 #ifdef HAVE_MOUSE
    cellMouseInit(MAX_MICE);
+#endif
+#ifdef HAVE_OSKUTIL
 #endif
    return (void*)-1;
 }

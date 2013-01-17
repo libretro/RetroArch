@@ -159,12 +159,33 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
          g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
          break;
 #ifdef HAVE_OSKUTIL
+      case CELL_SYSUTIL_OSKDIALOG_LOADED:
+         break;
+      case CELL_SYSUTIL_OSKDIALOG_INPUT_CANCELED:
+         RARCH_LOG("CELL_SYSUTIL_OSKDIALOG_INPUT_CANCELED.\n");
+         pOskAbort(); //fall-through
       case CELL_SYSUTIL_OSKDIALOG_FINISHED:
-         oskutil_close(osk);
-         oskutil_finished(osk);
+         if (status == CELL_SYSUTIL_OSKDIALOG_FINISHED)
+            RARCH_LOG("CELL_SYSUTIL_OSKDIALOG_FINISHED.\n");
+
+         pOskUnloadAsync(&osk->outputInfo);
+
+         if (osk->outputInfo.result == CELL_OSKDIALOG_INPUT_FIELD_RESULT_OK)
+         {
+            RARCH_LOG("Setting MODE_OSK_ENTRY_SUCCESS.\n");
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_OSK_ENTRY_SUCCESS);
+         }
+         else
+         {
+            RARCH_LOG("Setting MODE_OSK_ENTRY_FAIL.\n");
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_OSK_ENTRY_FAIL);
+         }
+
+         osk->flags &= ~OSK_IN_USE;
          break;
       case CELL_SYSUTIL_OSKDIALOG_UNLOADED:
-         oskutil_unload(osk);
+         RARCH_LOG("CELL_SYSUTIL_OSKDIALOG_UNLOADED.\n");
+         sys_memory_container_destroy(g_extern.console.misc.oskutil_handle.containerid);
          break;
 #endif
    }
@@ -398,13 +419,6 @@ static void system_process_args(int argc, char *argv[])
 static void system_deinit(void)
 {
 #ifndef IS_SALAMANDER
-
-#ifdef HAVE_OSKUTIL
-   oskutil_params *osk = &g_extern.console.misc.oskutil_handle;
-
-   if(osk)
-      oskutil_unload(osk);
-#endif
 
 #if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
    inl_logger_deinit();
