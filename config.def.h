@@ -181,6 +181,16 @@ enum
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_AUTO
 #endif
 
+#if defined(__CELLOS_LV2__)
+#define EXT_EXECUTABLES "self|SELF|bin|BIN"
+#elif defined(_XBOX1)
+#define EXT_EXECUTABLES "xbe|XBE"
+#elif defined(_XBOX360)
+#define EXT_EXECUTABLES "xex|XEX"
+#elif defined(GEKKO)
+#define EXT_EXECUTABLES "dol|DOL"
+#endif
+
 ////////////////
 // Video
 ////////////////

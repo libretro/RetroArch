@@ -40,10 +40,6 @@ CONSOLE EXTENSIONS
 #include "../../ngc/sidestep.c"
 #endif
 
-#ifdef HAVE_RSOUND
-#include "../rarch_console_rsound.c"
-#endif
-
 #ifdef HAVE_DEFAULT_RETROPAD_INPUT
 #include "../rarch_console_input.c"
 #endif

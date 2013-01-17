@@ -33,10 +33,6 @@
 
 #include "../../gfx/image.h"
 
-#ifdef HAVE_RSOUND
-#include "../../console/rarch_console_rsound.h"
-#endif
-
 #include "../../console/rarch_console_video.h"
 
 #include "../../gfx/gfx_context.h"
@@ -1339,16 +1335,16 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
 #ifdef HAVE_RSOUND
             if(g_extern.console.sound.mode != SOUND_MODE_RSOUND)
-               rarch_console_rsound_stop();
+               rarch_rsound_stop();
             else
-               rarch_console_rsound_start(g_settings.audio.device);
+               rarch_rsound_start(g_settings.audio.device);
 #endif
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             g_extern.console.sound.mode = SOUND_MODE_NORMAL;
 #ifdef HAVE_RSOUND
-            rarch_console_rsound_stop();
+            rarch_rsound_stop();
 #endif
          }
          break;
