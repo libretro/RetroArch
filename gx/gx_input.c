@@ -444,30 +444,51 @@ static void gx_input_poll(void *data)
       }
    }
 
+   uint64_t *state_p1 = &pad_state[0];
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
-   uint64_t *pad_p1 = &pad_state[0];
 
-   *lifecycle_state &= ~((1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_REWIND)
-         | (1ULL << RARCH_QUIT_KEY) | (1ULL << RARCH_RMENU_TOGGLE) | (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE));
+   *lifecycle_state &= ~(
+         (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | 
+         (1ULL << RARCH_LOAD_STATE_KEY) | 
+         (1ULL << RARCH_SAVE_STATE_KEY) | 
+         (1ULL << RARCH_STATE_SLOT_PLUS) | 
+         (1ULL << RARCH_STATE_SLOT_MINUS) | 
+         (1ULL << RARCH_REWIND) |
+         (1ULL << RARCH_QUIT_KEY) |
+         (1ULL << RARCH_RMENU_TOGGLE) |
+         (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE));
+
+   if ((*state_p1 & GX_CLASSIC_RSTICK_DOWN) && !(*state_p1 & GX_CLASSIC_ZR_TRIGGER))
+      *lifecycle_state |= (1ULL << RARCH_FAST_FORWARD_HOLD_KEY);
+   if ((*state_p1 & GX_CLASSIC_RSTICK_UP) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER))
+      *lifecycle_state |= (1ULL << RARCH_LOAD_STATE_KEY);
+   if ((*state_p1 & GX_CLASSIC_RSTICK_DOWN) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER))
+      *lifecycle_state |= (1ULL << RARCH_SAVE_STATE_KEY);
+   if ((*state_p1 & GX_CLASSIC_RSTICK_RIGHT) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER))
+      *lifecycle_state |= (1ULL << RARCH_STATE_SLOT_PLUS);
+   if ((*state_p1 & GX_CLASSIC_RSTICK_LEFT) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER))
+      *lifecycle_state |= (1ULL << RARCH_STATE_SLOT_MINUS);
+   if ((*state_p1 & GX_CLASSIC_RSTICK_UP) && !(*state_p1 & GX_CLASSIC_ZR_TRIGGER))
+      *lifecycle_state |= (1ULL << RARCH_REWIND);
 
    if (g_menu)
    {
-      *pad_p1 |= GX_WIIMOTE_HOME;
+      *state_p1 |= GX_WIIMOTE_HOME;
       g_menu = false;
    }
 
    if (g_quit)
    {
-      *pad_p1 |= GX_QUIT_KEY;
+      *state_p1 |= GX_QUIT_KEY;
       g_quit = false;
    }
 
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
-      if (*pad_p1 & GX_QUIT_KEY)
+      if (*state_p1 & GX_QUIT_KEY)
          *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
 
-      if (*pad_p1 & (GX_WIIMOTE_HOME
+      if (*state_p1 & (GX_WIIMOTE_HOME
 #ifdef HW_RVL
                | GX_CLASSIC_HOME
 #endif
