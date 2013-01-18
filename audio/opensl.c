@@ -34,8 +34,8 @@
 #define SLPlayItf_SetPlayState(a, ...) ((*(a))->SetPlayState(a, __VA_ARGS__))
 
 // TODO: Are these sane?
-#define BUFFER_SIZE 4096
-#define BUFFER_COUNT 8
+#define BUFFER_SIZE 8092
+#define BUFFER_COUNT 4
 
 typedef struct sl
 {
@@ -170,9 +170,6 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->buffer_queue_object, SL_IID_PLAY, &sl->player));
    GOTO_IF_FAIL(SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_PLAYING));
 
-   g_settings.audio.rate_control_delta = 0.006;
-   g_settings.audio.rate_control = true;
-
    return sl;
 
 error:
@@ -245,6 +242,8 @@ static ssize_t sl_write(void *data, const void *buf_, size_t size)
          sl->buffer_ptr = 0;
       }
    }
+
+   //RARCH_LOG("Blocks: %u\n", sl->buffered_blocks);
 
    return written;
 }
