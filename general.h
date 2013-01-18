@@ -401,6 +401,10 @@ struct global
 
       float volume_db;
       float volume_gain;
+
+#define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
+      unsigned buffer_free_samples[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
+      uint64_t buffer_free_samples_count;
    } audio_data;
 
    struct
