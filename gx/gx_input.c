@@ -458,17 +458,47 @@ static void gx_input_poll(void *data)
          (1ULL << RARCH_RMENU_TOGGLE) |
          (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE));
 
-   if ((*state_p1 & GX_CLASSIC_RSTICK_DOWN) && !(*state_p1 & GX_CLASSIC_ZR_TRIGGER))
+   if (
+#ifdef HW_RVL
+         ((*state_p1 & GX_CLASSIC_RSTICK_DOWN) && !(*state_p1 & GX_CLASSIC_ZR_TRIGGER)) ||
+#endif
+         ((*state_p1 & GX_GC_RSTICK_DOWN) && !(*state_p1 & GX_GC_Z_TRIGGER))
+         )
       *lifecycle_state |= (1ULL << RARCH_FAST_FORWARD_HOLD_KEY);
-   if ((*state_p1 & GX_CLASSIC_RSTICK_UP) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER))
+   if (
+#ifdef HW_RVL
+        ((*state_p1 & GX_CLASSIC_RSTICK_UP) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER)) ||
+#endif
+        ((*state_p1 & GX_GC_RSTICK_UP) && (*state_p1 & GX_GC_Z_TRIGGER))
+         )
       *lifecycle_state |= (1ULL << RARCH_LOAD_STATE_KEY);
-   if ((*state_p1 & GX_CLASSIC_RSTICK_DOWN) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER))
+   if (
+#ifdef HW_RVL
+         ((*state_p1 & GX_CLASSIC_RSTICK_DOWN) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER)) ||
+#endif
+         ((*state_p1 & GX_GC_RSTICK_DOWN) && (*state_p1 & GX_GC_Z_TRIGGER))
+         )
       *lifecycle_state |= (1ULL << RARCH_SAVE_STATE_KEY);
-   if ((*state_p1 & GX_CLASSIC_RSTICK_RIGHT) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER))
+   if (
+#ifdef HW_RVL
+         ((*state_p1 & GX_CLASSIC_RSTICK_RIGHT) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER)) ||
+#endif
+         ((*state_p1 & GX_GC_RSTICK_RIGHT) && (*state_p1 & GX_GC_Z_TRIGGER))
+         )
       *lifecycle_state |= (1ULL << RARCH_STATE_SLOT_PLUS);
-   if ((*state_p1 & GX_CLASSIC_RSTICK_LEFT) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER))
+   if (
+#ifdef HW_RVL
+         ((*state_p1 & GX_CLASSIC_RSTICK_LEFT) && (*state_p1 & GX_CLASSIC_ZR_TRIGGER)) ||
+#endif
+         ((*state_p1 & GX_GC_RSTICK_LEFT) && (*state_p1 & GX_GC_Z_TRIGGER))
+         )
       *lifecycle_state |= (1ULL << RARCH_STATE_SLOT_MINUS);
-   if ((*state_p1 & GX_CLASSIC_RSTICK_UP) && !(*state_p1 & GX_CLASSIC_ZR_TRIGGER))
+   if (
+#ifdef HW_RVL
+         ((*state_p1 & GX_CLASSIC_RSTICK_UP) && !(*state_p1 & GX_CLASSIC_ZR_TRIGGER)) ||
+#endif
+         ((*state_p1 & GX_GC_RSTICK_UP) && !(*state_p1 & GX_GC_Z_TRIGGER))
+         )
       *lifecycle_state |= (1ULL << RARCH_REWIND);
 
    if (g_menu)
