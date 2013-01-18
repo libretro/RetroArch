@@ -30,12 +30,6 @@
 #define TERM_WIDTH (((RGUI_WIDTH - TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
 #define TERM_HEIGHT (((RGUI_HEIGHT - TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
 
-#ifdef HAVE_HDD_CACHE_PARTITION
-#define LAST_ZIP_EXTRACT ZIP_EXTRACT_TO_CACHE_DIR
-#else
-#define LAST_ZIP_EXTRACT ZIP_EXTRACT_TO_CURRENT_DIR_AND_LOAD_FIRST_FILE
-#endif
-
 #ifdef GEKKO
 enum
 {
@@ -419,6 +413,12 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), "(DEV)");
             w = 5;
             break;
+         case RGUI_SETTINGS_REWIND_ENABLE:
+            snprintf(type_str, sizeof(type_str), g_settings.rewind_enable ? "ON" : "OFF");
+            break;
+         case RGUI_SETTINGS_REWIND_GRANULARITY:
+            snprintf(type_str, sizeof(type_str), "%d", g_settings.rewind_granularity);
+            break;
          case RGUI_SETTINGS_SAVESTATE_SAVE:
          case RGUI_SETTINGS_SAVESTATE_LOAD:
             snprintf(type_str, sizeof(type_str), "%d", g_extern.state_slot);
@@ -569,6 +569,28 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
 
    switch (setting)
    {
+      case RGUI_SETTINGS_REWIND_ENABLE:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+         {
+            rmenu_settings_set(S_REWIND);
+
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+               rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+         }
+         else if (action == RGUI_ACTION_START)
+            g_settings.rewind_enable = false;
+         break;
+      case RGUI_SETTINGS_REWIND_GRANULARITY:
+         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT)
+            g_settings.rewind_granularity++;
+         else if (action == RGUI_ACTION_LEFT)
+         {
+            if (g_settings.rewind_granularity > 1)
+               g_settings.rewind_granularity--;
+         }
+         else if (action == RGUI_ACTION_START)
+            g_settings.rewind_granularity = 1;
+         break;
       case RGUI_SETTINGS_SAVESTATE_SAVE:
       case RGUI_SETTINGS_SAVESTATE_LOAD:
          if (action == RGUI_ACTION_OK)
@@ -843,6 +865,8 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->folder_buf);
 
+   RGUI_MENU_ITEM("Rewind", RGUI_SETTINGS_REWIND_ENABLE);
+   RGUI_MENU_ITEM("Rewind granularity", RGUI_SETTINGS_REWIND_GRANULARITY);
    if (g_extern.main_is_init)
    {
       RGUI_MENU_ITEM("Save State", RGUI_SETTINGS_SAVESTATE_SAVE);

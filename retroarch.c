@@ -2699,11 +2699,11 @@ int rarch_main_init(int argc, char *argv[])
    g_extern.use_sram = true;
    bool allow_cheats = true;
 
-   fill_pathnames();
-   set_savestate_auto_index();
-
    if (!init_rom_file(g_extern.game_type))
       goto error;
+
+   fill_pathnames();
+   set_savestate_auto_index();
 
    init_system_av_info();
 
