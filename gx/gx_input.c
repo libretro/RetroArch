@@ -263,6 +263,32 @@ static void gx_input_post_init(void)
 #define gx_stick_x(x) ((s8)((sin((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
 #define gx_stick_y(x) ((s8)((cos((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
 
+static s8 WPADCLASSIC_StickX(float mag, float ang)
+{
+   /* calculate X value (angle needs to be converted into radians */
+   if (mag > 1.0f)
+      mag = 1.0f;
+   else if (mag < -1.0f)
+      mag = -1.0f;
+
+   double val = mag * cos(M_PI * ang / 180.0f);
+
+   return (s8)(val * 128.0f);
+}
+
+static s8 WPADCLASSIC_StickY(float mag, float ang)
+{
+   /* calculate X value (angle needs to be converted into radians */
+   if (mag > 1.0f)
+      mag = 1.0f;
+   else if (mag < -1.0f)
+      mag = -1.0f;
+
+   double val = mag * sin(M_PI * ang / 180.0f);
+
+   return (s8)(val * 128.0f);
+}
+
 static void gx_input_poll(void *data)
 {
    (void)data;
@@ -332,19 +358,27 @@ static void gx_input_poll(void *data)
                   && (down & WPAD_CLASSIC_BUTTON_ZR))
                *state_cur |= GX_QUIT_KEY;
 
-            u8 ls_x = exp->classic.ljs.pos.x;
-            u8 ls_y = exp->classic.ljs.pos.y;
-            u8 rs_x = exp->classic.rjs.pos.x;
-            u8 rs_y = exp->classic.rjs.pos.y;
+            s8 ls_x = WPADCLASSIC_StickX(exp->classic.ljs.mag, exp->classic.ljs.ang);
+            s8 ls_y = WPADCLASSIC_StickY(exp->classic.ljs.mag, exp->classic.ljs.ang);
+            s8 rs_x = WPADCLASSIC_StickX(exp->classic.rjs.mag, exp->classic.rjs.ang);
+            s8 rs_y = WPADCLASSIC_StickY(exp->classic.rjs.mag, exp->classic.rjs.ang);
 
-            *state_cur |= (ls_x > 40) ? GX_CLASSIC_LSTICK_RIGHT : 0;
-            *state_cur |= (ls_x < 25) ? GX_CLASSIC_LSTICK_LEFT : 0;
-            *state_cur |= (ls_y > 45) ? GX_CLASSIC_LSTICK_UP : 0;
-            *state_cur |= (ls_y < 20) ? GX_CLASSIC_LSTICK_DOWN : 0;
-            *state_cur |= (rs_x > 40) ? GX_CLASSIC_RSTICK_RIGHT : 0;
-            *state_cur |= (rs_x < 25) ? GX_CLASSIC_RSTICK_LEFT: 0;
-            *state_cur |= (rs_y > 45) ? GX_CLASSIC_RSTICK_UP : 0;
-            *state_cur |= (rs_y < 20) ? GX_CLASSIC_RSTICK_DOWN : 0;
+#if 0
+            char str[128];
+            snprintf(str, sizeof(str), "ls x: %d, ls y: %d, rs x: %d, rs y: %d", ls_x, ls_y, rs_x, rs_y); 
+            msg_queue_clear(g_extern.msg_queue);
+            msg_queue_push(g_extern.msg_queue, str, 1, 48);
+#endif
+
+            *state_cur |= (ls_x < -40) ? GX_CLASSIC_LSTICK_RIGHT : 0;
+            *state_cur |= (ls_x > 40) ? GX_CLASSIC_LSTICK_LEFT : 0;
+            *state_cur |= (ls_y < -40) ? GX_CLASSIC_LSTICK_UP : 0;
+            *state_cur |= (ls_y > 40) ? GX_CLASSIC_LSTICK_DOWN : 0;
+
+            *state_cur |= (rs_x < -40) ? GX_CLASSIC_RSTICK_RIGHT : 0;
+            *state_cur |= (rs_x > 40) ? GX_CLASSIC_RSTICK_LEFT: 0;
+            *state_cur |= (rs_y < -40) ? GX_CLASSIC_RSTICK_UP : 0;
+            *state_cur |= (rs_y > 40) ? GX_CLASSIC_RSTICK_DOWN : 0;
          }
          else if (type == WPAD_EXP_NUNCHUK)
          {
