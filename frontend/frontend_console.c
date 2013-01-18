@@ -145,11 +145,11 @@ do_init:
 
 static void verbose_log_init(void)
 {
-   if (!g_extern.verbose)
-   {
-      g_extern.verbose = true;
-      RARCH_LOG("Turning on verbose logging...\n");
-   }
+   if (g_extern.verbose)
+      return;
+
+   g_extern.verbose = true;
+   RARCH_LOG("Turning on verbose logging...\n");
 }
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT

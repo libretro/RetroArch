@@ -263,32 +263,6 @@ static void gx_input_post_init(void)
 #define gx_stick_x(x) ((s8)((sin((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
 #define gx_stick_y(x) ((s8)((cos((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
 
-static s8 WPADCLASSIC_StickX(float mag, float ang)
-{
-   /* calculate X value (angle needs to be converted into radians */
-   if (mag > 1.0f)
-      mag = 1.0f;
-   else if (mag < -1.0f)
-      mag = -1.0f;
-
-   double val = mag * cos(M_PI * ang / 180.0f);
-
-   return (s8)(val * 128.0f);
-}
-
-static s8 WPADCLASSIC_StickY(float mag, float ang)
-{
-   /* calculate X value (angle needs to be converted into radians */
-   if (mag > 1.0f)
-      mag = 1.0f;
-   else if (mag < -1.0f)
-      mag = -1.0f;
-
-   double val = mag * sin(M_PI * ang / 180.0f);
-
-   return (s8)(val * 128.0f);
-}
-
 static void gx_input_poll(void *data)
 {
    (void)data;
@@ -358,11 +332,33 @@ static void gx_input_poll(void *data)
                   && (down & WPAD_CLASSIC_BUTTON_ZR))
                *state_cur |= GX_QUIT_KEY;
 
-            s8 ls_x = WPADCLASSIC_StickX(exp->classic.ljs.mag, exp->classic.ljs.ang);
-            s8 ls_y = WPADCLASSIC_StickY(exp->classic.ljs.mag, exp->classic.ljs.ang);
-            s8 rs_x = WPADCLASSIC_StickX(exp->classic.rjs.mag, exp->classic.rjs.ang);
-            s8 rs_y = WPADCLASSIC_StickY(exp->classic.rjs.mag, exp->classic.rjs.ang);
+            float ljs_mag = exp->classic.ljs.mag;
+            float ljs_ang = exp->classic.ljs.ang;
 
+            float rjs_mag = exp->classic.rjs.mag;
+            float rjs_ang = exp->classic.rjs.ang;
+
+            if (ljs_mag > 1.0f)
+               ljs_mag = 1.0f;
+            else if (ljs_mag < -1.0f)
+               ljs_mag = -1.0f;
+
+            if (rjs_mag > 1.0f)
+               rjs_mag = 1.0f;
+            else if (rjs_mag < -1.0f)
+               rjs_mag = -1.0f;
+
+            double ljs_val_x = ljs_mag * cos(M_PI * ljs_ang / 180.0f);
+            double ljs_val_y = ljs_mag * sin(M_PI * ljs_ang / 180.0f);
+
+            double rjs_val_x = rjs_mag * cos(M_PI * rjs_ang / 180.0f);
+            double rjs_val_y = rjs_mag * sin(M_PI * rjs_ang / 180.0f);
+
+            s8 ls_x = (s8)(ljs_val_x * 128.0f);
+            s8 ls_y = (s8)(ljs_val_y * 128.0f);
+
+            s8 rs_x = (s8)(rjs_val_x * 128.0f);
+            s8 rs_y = (s8)(rjs_val_y * 128.0f);
 #if 0
             char str[128];
             snprintf(str, sizeof(str), "ls x: %d, ls y: %d, rs x: %d, rs y: %d", ls_x, ls_y, rs_x, rs_y); 
