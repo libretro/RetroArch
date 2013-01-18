@@ -34,7 +34,7 @@
 #define SLPlayItf_SetPlayState(a, ...) ((*(a))->SetPlayState(a, __VA_ARGS__))
 
 // TODO: Are these sane?
-#define BUFFER_SIZE 8092
+#define BUFFER_SIZE 8192
 #define BUFFER_COUNT 4
 
 typedef struct sl
