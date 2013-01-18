@@ -332,41 +332,19 @@ static void gx_input_poll(void *data)
                   && (down & WPAD_CLASSIC_BUTTON_ZR))
                *state_cur |= GX_QUIT_KEY;
 
-            //TODO: Hack, analog stick twitchiness needs to be properly fixed
-            if(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
-            {
-               s8 x = gx_stick_x(exp->classic.ljs);
-               s8 y = gx_stick_y(exp->classic.ljs);
+            u8 ls_x = exp->classic.ljs.pos.x;
+            u8 ls_y = exp->classic.ljs.pos.y;
+            u8 rs_x = exp->classic.rjs.pos.x;
+            u8 rs_y = exp->classic.rjs.pos.y;
 
-               if (abs(x) > JOYSTICK_THRESHOLD)
-                  *state_cur |= x > 0 ? GX_CLASSIC_LSTICK_RIGHT : GX_CLASSIC_LSTICK_LEFT;
-               if (abs(y) > JOYSTICK_THRESHOLD)
-                  *state_cur |= y > 0 ? GX_CLASSIC_LSTICK_UP : GX_CLASSIC_LSTICK_DOWN;
-
-               x = gx_stick_x(exp->classic.rjs);
-               y = gx_stick_y(exp->classic.rjs);
-
-               if (abs(x) > JOYSTICK_THRESHOLD)
-                  *state_cur |= x > 0 ? GX_CLASSIC_RSTICK_RIGHT : GX_CLASSIC_RSTICK_LEFT;
-               if (abs(y) > JOYSTICK_THRESHOLD)
-                  *state_cur |= y > 0 ? GX_CLASSIC_RSTICK_UP : GX_CLASSIC_RSTICK_DOWN;
-            }
-            else
-            {
-               u8 ls_x = exp->classic.ljs.pos.x;
-               u8 ls_y = exp->classic.ljs.pos.y;
-               u8 rs_x = exp->classic.rjs.pos.x;
-               u8 rs_y = exp->classic.rjs.pos.y;
-
-               *state_cur |= (ls_x > 40) ? GX_CLASSIC_LSTICK_RIGHT : 0;
-               *state_cur |= (ls_x < 25) ? GX_CLASSIC_LSTICK_LEFT : 0;
-               *state_cur |= (ls_y > 45) ? GX_CLASSIC_LSTICK_UP : 0;
-               *state_cur |= (ls_y < 20) ? GX_CLASSIC_LSTICK_DOWN : 0;
-               *state_cur |= (rs_x > 40) ? GX_CLASSIC_RSTICK_RIGHT : 0;
-               *state_cur |= (rs_x < 25) ? GX_CLASSIC_RSTICK_LEFT: 0;
-               *state_cur |= (rs_y > 45) ? GX_CLASSIC_RSTICK_UP : 0;
-               *state_cur |= (rs_y < 20) ? GX_CLASSIC_RSTICK_DOWN : 0;
-            }
+            *state_cur |= (ls_x > 40) ? GX_CLASSIC_LSTICK_RIGHT : 0;
+            *state_cur |= (ls_x < 25) ? GX_CLASSIC_LSTICK_LEFT : 0;
+            *state_cur |= (ls_y > 45) ? GX_CLASSIC_LSTICK_UP : 0;
+            *state_cur |= (ls_y < 20) ? GX_CLASSIC_LSTICK_DOWN : 0;
+            *state_cur |= (rs_x > 40) ? GX_CLASSIC_RSTICK_RIGHT : 0;
+            *state_cur |= (rs_x < 25) ? GX_CLASSIC_RSTICK_LEFT: 0;
+            *state_cur |= (rs_y > 45) ? GX_CLASSIC_RSTICK_UP : 0;
+            *state_cur |= (rs_y < 20) ? GX_CLASSIC_RSTICK_DOWN : 0;
          }
          else if (type == WPAD_EXP_NUNCHUK)
          {
