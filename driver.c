@@ -434,6 +434,52 @@ void init_audio(void)
 #ifdef HAVE_DYLIB
    init_dsp_plugin();
 #endif
+
+   g_extern.audio_data.buffer_free_samples_count = 0;
+}
+
+static void compute_audio_buffer_statistics(void)
+{
+   unsigned samples = min(g_extern.audio_data.buffer_free_samples_count, AUDIO_BUFFER_FREE_SAMPLES_COUNT);
+   if (!samples)
+      return;
+
+   uint64_t accum = 0;
+   for (unsigned i = 0; i < samples; i++)
+      accum += g_extern.audio_data.buffer_free_samples[i];
+
+   int avg = accum / samples;
+
+   uint64_t accum_var = 0;
+   for (unsigned i = 0; i < samples; i++)
+   {
+      int diff = avg - g_extern.audio_data.buffer_free_samples[i];
+      accum_var += diff * diff;
+   }
+
+   unsigned stddev = (unsigned)sqrtf((float)accum_var / samples);
+
+   float avg_filled = 1.0f - (float)avg / g_extern.audio_data.driver_buffer_size;
+   float deviation = (float)stddev / g_extern.audio_data.driver_buffer_size;
+
+   unsigned low_water_size = g_extern.audio_data.driver_buffer_size * 3 / 4;
+   unsigned high_water_size = g_extern.audio_data.driver_buffer_size / 4;
+
+   unsigned low_water_count = 0;
+   unsigned high_water_count = 0;
+   for (unsigned i = 0; i < samples; i++)
+   {
+      if (g_extern.audio_data.buffer_free_samples[i] >= low_water_size)
+         low_water_count++;
+      else if (g_extern.audio_data.buffer_free_samples[i] <= high_water_size)
+         high_water_count++;
+   }
+
+   RARCH_LOG("Average audio buffer saturation: %.2f %%, standard deviation (percentage points): %.2f %%.\n",
+         avg_filled * 100.0, deviation * 100.0);
+   RARCH_LOG("Amount of time spent close to underrun: %.2f %%. Close to blocking: %.2f %%.\n",
+         (100.0 * low_water_count) / samples,
+         (100.0 * high_water_count) / samples);
 }
 
 void uninit_audio(void)
@@ -466,6 +512,8 @@ void uninit_audio(void)
 #ifdef HAVE_DYLIB
    deinit_dsp_plugin();
 #endif
+
+   compute_audio_buffer_statistics();
 }
 
 #ifdef HAVE_DYLIB
