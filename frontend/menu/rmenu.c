@@ -42,7 +42,7 @@
 #include "../../general.h"
 
 
-rmenu_state_t rmenu_state;
+static rmenu_state_t rmenu_state;
 
 static bool set_libretro_core_as_launch;
 
@@ -2373,7 +2373,6 @@ INPUT POLL CALLBACK
 void rmenu_input_poll(void *data, void *state)
 {
    menu *current_menu    = (menu*)data;
-   rmenu_state_t *rstate = (rmenu_state_t*)state;
 
    //first button input frame
    uint64_t input_state_first_frame = 0;
@@ -2387,7 +2386,7 @@ void rmenu_input_poll(void *data, void *state)
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
    //set first button input frame as trigger
-   rstate->input = input_state & ~(rstate->old_state);
+   rmenu_state.input = input_state & ~(rmenu_state.old_state);
    //hold onto first button input frame
    input_state_first_frame = input_state;          
 
@@ -2416,11 +2415,11 @@ void rmenu_input_poll(void *data, void *state)
       if(!(g_extern.frame_count < g_extern.delay_timer[1]))
       {
          first_held = false;
-         rstate->input = input_state; //second input frame set as current frame
+         rmenu_state.input = input_state; //second input frame set as current frame
       }
    }
 
-   rstate->old_state = input_state_first_frame;
+   rmenu_state.old_state = input_state_first_frame;
 }
 
 /*============================================================
@@ -2523,7 +2522,7 @@ bool rmenu_iterate(void)
    const char *msg;
 
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-   menu current_menu;
+   static menu current_menu;
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
    {
@@ -2550,7 +2549,7 @@ bool rmenu_iterate(void)
    rarch_render_cached_frame();
 
    if(current_menu.input_poll)
-      current_menu.input_poll(&current_menu, &rmenu_state);
+      rmenu_input_poll(&current_menu, &rmenu_state);
 
 #ifdef HAVE_OSKUTIL
    if(rmenu_state.osk_init != NULL)

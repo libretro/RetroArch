@@ -115,7 +115,7 @@ static void xdk_input_poll(void *data)
       if(bInserted[i])
       {
          XINPUT_POLLING_PARAMETERS m_pollingParameters;
-         m_pollingParameters.fAutoPoll = TRUE;
+         m_pollingParameters.fAutoPoll = FALSE;
          m_pollingParameters.fInterruptOut = TRUE;
          m_pollingParameters.bInputInterval = 8;
          m_pollingParameters.bOutputInterval = 8;
@@ -128,6 +128,9 @@ static void xdk_input_poll(void *data)
          // if the controller is removed after XGetDeviceChanges but before
          // XInputOpen, the device handle will be NULL
          XINPUT_STATE state_tmp;
+
+         if (XInputPoll(gamepads[i]) != ERROR_SUCCESS)
+            continue;
 
          if(XInputGetState(gamepads[i], &state_tmp) != ERROR_SUCCESS)
             continue;
