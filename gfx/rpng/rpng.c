@@ -500,7 +500,7 @@ static bool png_write_iend(FILE *file)
    return true;
 }
 
-static void copy_rgba_line(uint8_t *dst, const uint32_t *src, unsigned width)
+static void copy_argb_line(uint8_t *dst, const uint32_t *src, unsigned width)
 {
    for (unsigned i = 0; i < width; i++)
    {
@@ -509,6 +509,16 @@ static void copy_rgba_line(uint8_t *dst, const uint32_t *src, unsigned width)
       *dst++ = (uint8_t)(col >>  8);
       *dst++ = (uint8_t)(col >>  0);
       *dst++ = (uint8_t)(col >> 24);
+   }
+}
+
+static void copy_bgr24_line(uint8_t *dst, const uint8_t *src, unsigned width)
+{
+   for (unsigned i = 0; i < width; i++, dst += 3, src += 3)
+   {
+      dst[2] = src[0];
+      dst[1] = src[1];
+      dst[0] = src[2];
    }
 }
 
@@ -566,8 +576,8 @@ static unsigned filter_paeth(uint8_t *target, const uint8_t *line, const uint8_t
    return count_zeroes(target, width);
 }
 
-bool rpng_save_image_argb(const char *path, const uint32_t *data,
-      unsigned width, unsigned height, unsigned pitch)
+static bool rpng_save_image(const char *path, const uint8_t *data,
+      unsigned width, unsigned height, unsigned pitch, unsigned bpp)
 {
    bool ret = true;
    struct png_ihdr ihdr = {0};
@@ -582,7 +592,6 @@ bool rpng_save_image_argb(const char *path, const uint32_t *data,
    uint8_t *paeth_filtered = NULL;
    uint8_t *prev_encoded   = NULL;
    uint8_t *encode_target  = NULL;
-   unsigned bpp = sizeof(uint32_t);
 
    z_stream stream = {0};
 
@@ -596,11 +605,11 @@ bool rpng_save_image_argb(const char *path, const uint32_t *data,
    ihdr.width = width;
    ihdr.height = height;
    ihdr.depth = 8;
-   ihdr.color_type = 6; // RGBA
+   ihdr.color_type = bpp == sizeof(uint32_t) ? 6 : 2; // RGBA or RGB
    if (!png_write_ihdr(file, &ihdr))
       GOTO_END_ERROR();
 
-   encode_buf_size = (width * sizeof(uint32_t) + 1) * height;
+   encode_buf_size = (width * bpp + 1) * height;
    encode_buf = (uint8_t*)malloc(encode_buf_size);
    if (!encode_buf)
       GOTO_END_ERROR();
@@ -619,9 +628,12 @@ bool rpng_save_image_argb(const char *path, const uint32_t *data,
 
    encode_target = encode_buf;
    for (unsigned h = 0; h < height;
-         h++, encode_target += width * bpp, data += pitch >> 2)
+         h++, encode_target += width * bpp, data += pitch)
    {
-      copy_rgba_line(rgba_line, data, width);
+      if (bpp == sizeof(uint32_t))
+         copy_argb_line(rgba_line, (const uint32_t*)data, width);
+      else
+         copy_bgr24_line(rgba_line, data, width);
 
       // Try every filtering method, and choose the method
       // which has most entries as zero.
@@ -706,5 +718,18 @@ end:
    free(paeth_filtered);
    return ret;
 }
+
+bool rpng_save_image_argb(const char *path, const uint32_t *data,
+      unsigned width, unsigned height, unsigned pitch)
+{
+   return rpng_save_image(path, (const uint8_t*)data, width, height, pitch, sizeof(uint32_t));
+}
+
+bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
+      unsigned width, unsigned height, unsigned pitch)
+{
+   return rpng_save_image(path, (const uint8_t*)data, width, height, pitch, 3);
+}
+
 #endif
 

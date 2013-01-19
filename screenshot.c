@@ -22,80 +22,15 @@
 #include <string.h>
 #include "general.h"
 #include "file.h"
+#include "gfx/scaler/scaler.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#ifdef HAVE_LIBPNG
-#include <png.h>
-#endif
-
-#ifdef HAVE_LIBPNG
-static png_structp png_ptr;
-static png_infop png_info_ptr;
-
-static void destroy_png(void)
-{
-   if (png_ptr)
-      png_destroy_write_struct(&png_ptr, &png_info_ptr);
-}
-
-static bool write_header_png(FILE *file, unsigned width, unsigned height)
-{
-   png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-   if (!png_ptr)
-      return false;
-
-   if (setjmp(png_jmpbuf(png_ptr)))
-      goto error;
-
-   png_info_ptr = png_create_info_struct(png_ptr);
-   if (!png_info_ptr)
-      goto error;
-
-   png_init_io(png_ptr, file);
-
-   png_set_IHDR(png_ptr, png_info_ptr, width, height, 8,
-         PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
-         PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
-
-   png_write_info(png_ptr, png_info_ptr);
-   png_set_compression_level(png_ptr, 2);
-
-   return true;
-
-error:
-   destroy_png();
-   return false;
-}
-
-static void dump_lines_png(uint8_t **lines, int height)
-{
-   if (setjmp(png_jmpbuf(png_ptr)))
-   {
-      RARCH_ERR("PNG: dump_lines_png() failed!\n");
-      goto end;
-   }
-
-   // PNG is top-down, BMP is bottom-up.
-   for (int i = 0, j = height - 1; i < j; i++, j--)
-   {
-      uint8_t *tmp = lines[i];
-      lines[i] = lines[j];
-      lines[j] = tmp;
-   }
-
-   png_set_rows(png_ptr, png_info_ptr, lines);
-   png_write_png(png_ptr, png_info_ptr, PNG_TRANSFORM_BGR, NULL);
-   png_write_end(png_ptr, NULL);
-
-end:
-   destroy_png();
-}
-
+#ifdef HAVE_ZLIB_DEFLATE
+#include "gfx/rpng/rpng.h"
 #else
-
 static bool write_header_bmp(FILE *file, unsigned width, unsigned height)
 {
    unsigned line_size = (width * 3 + 3) & ~3;
@@ -129,8 +64,6 @@ static void dump_lines_file(FILE *file, uint8_t **lines, size_t line_size, unsig
    for (unsigned i = 0; i < height; i++)
       fwrite(lines[i], 1, line_size, file);
 }
-
-#endif
 
 static void dump_line_bgr(uint8_t *line, const uint8_t *src, unsigned width)
 {
@@ -202,24 +135,21 @@ static void dump_content(FILE *file, const void *frame,
          dump_line_16(lines[j], u.u16, width);
    }
 
-#ifdef HAVE_LIBPNG
-   dump_lines_png(lines, height);
-#else
    dump_lines_file(file, lines, line_size, height);
-#endif
 
 end:
    for (int i = 0; i < height; i++)
       free(lines[i]);
    free(lines);
 }
+#endif
 
 void screenshot_generate_filename(char *filename, size_t size)
 {
    time_t cur_time;
    time(&cur_time);
 
-#ifdef HAVE_LIBPNG
+#ifdef HAVE_ZLIB_DEFLATE
 #define IMG_EXT "png"
 #else
 #define IMG_EXT "bmp"
@@ -228,6 +158,7 @@ void screenshot_generate_filename(char *filename, size_t size)
    strftime(filename, size, "RetroArch-%m%d-%H%M%S." IMG_EXT, localtime(&cur_time));
 }
 
+// Take frame bottom-up.
 bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
 {
@@ -237,6 +168,39 @@ bool screenshot_dump(const char *folder, const void *frame,
    screenshot_generate_filename(shotname, sizeof(shotname));
    fill_pathname_join(filename, folder, shotname, sizeof(filename));
 
+#ifdef HAVE_ZLIB_DEFLATE
+   uint8_t *out_buffer = (uint8_t*)malloc(width * height * 3);
+   if (!out_buffer)
+      return false;
+
+   struct scaler_ctx scaler = {0};
+   scaler.in_width   = width;
+   scaler.in_height  = height;
+   scaler.out_width  = width;
+   scaler.out_height = height;
+   scaler.in_stride  = -pitch;
+   scaler.out_stride = width * 3;
+   scaler.out_fmt = SCALER_FMT_BGR24;
+   scaler.scaler_type = SCALER_TYPE_POINT;
+
+   if (bgr24)
+      scaler.in_fmt = SCALER_FMT_BGR24;
+   else if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
+      scaler.in_fmt = SCALER_FMT_ARGB8888;
+   else
+      scaler.in_fmt = SCALER_FMT_RGB565;
+
+   scaler_ctx_gen_filter(&scaler);
+   scaler_ctx_scale(&scaler, out_buffer, (const uint8_t*)frame + ((int)height - 1) * pitch);
+   scaler_ctx_gen_reset(&scaler);
+
+   RARCH_LOG("Using RPNG for PNG screenshots.\n");
+   bool ret = rpng_save_image_bgr24(filename, out_buffer, width, height, width * 3);
+   if (!ret)
+      RARCH_ERR("Failed to take screenshot.\n");
+   free(out_buffer);
+   return ret;
+#else
    FILE *file = fopen(filename, "wb");
    if (!file)
    {
@@ -244,11 +208,7 @@ bool screenshot_dump(const char *folder, const void *frame,
       return false;
    }
 
-#ifdef HAVE_LIBPNG
-   bool ret = write_header_png(file, width, height);
-#else
    bool ret = write_header_bmp(file, width, height);
-#endif
 
    if (ret)
       dump_content(file, frame, width, height, pitch, bgr24);
@@ -257,5 +217,6 @@ bool screenshot_dump(const char *folder, const void *frame,
 
    fclose(file);
    return ret;
+#endif
 }
 

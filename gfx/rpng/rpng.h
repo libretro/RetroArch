@@ -28,6 +28,8 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
 #ifdef HAVE_ZLIB_DEFLATE
 bool rpng_save_image_argb(const char *path, const uint32_t *data,
       unsigned width, unsigned height, unsigned pitch);
+bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
+      unsigned width, unsigned height, unsigned pitch);
 #endif
 
 #endif
