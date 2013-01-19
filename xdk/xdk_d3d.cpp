@@ -137,6 +137,11 @@ static bool hlsl_shader_init(void)
 
 static void xdk_d3d_free(void *data)
 {
+#ifdef RARCH_CONSOLE
+   if (driver.video_data)
+      return;
+#endif
+
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
    if (!d3d)
