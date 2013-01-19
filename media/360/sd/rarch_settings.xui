@@ -43,6 +43,8 @@ Hardware filtering shader #2:
 Cutom Scaling/Dual Shaders:
 Cutom Scaling Factor:
 Extract ZIP:
+SRAM Path Enable:
+Savestate Path Enable:
 </ItemsText>
 </Properties>
 <XuiListItem>

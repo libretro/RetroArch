@@ -401,6 +401,8 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
    rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_EMU_REWIND_GRANULARITY, strw_buffer);
+   m_settingslist.SetText(SETTING_ENABLE_SRAM_PATH, (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? L"SRAM Path Enable: ON" : L"SRAM Path Enable: OFF");
+   m_settingslist.SetText(SETTING_ENABLE_STATE_PATH, (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? L"Savestate Path Enable: ON" : L"Savestate Path Enable: OFF");
 
    return 0;
 }
@@ -431,6 +433,20 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 	    rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
 	    m_settingslist.SetText(SETTING_EMU_REWIND_GRANULARITY, strw_buffer);
 	    break;
+     case SETTING_ENABLE_SRAM_PATH:
+        if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE))
+           g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
+        else
+           g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
+	    m_settingslist.SetText(SETTING_ENABLE_SRAM_PATH, (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? L"SRAM Path Enable: ON" : L"SRAM Path Enable: OFF");
+        break;
+     case SETTING_ENABLE_STATE_PATH:
+        if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE))
+           g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
+        else
+           g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
+	    m_settingslist.SetText(SETTING_ENABLE_STATE_PATH, (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? L"Savestate Path Enable: ON" : L"Savestate Path Enable: OFF");
+        break;
          case SETTING_EMU_SHOW_INFO_MSG:
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INFO_DRAW);
@@ -539,6 +555,20 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 	       rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
 	       m_settingslist.SetText(SETTING_EMU_REWIND_GRANULARITY, strw_buffer);
 	       break;
+     case SETTING_ENABLE_SRAM_PATH:
+        if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE))
+           g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
+        else
+           g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
+	    m_settingslist.SetText(SETTING_ENABLE_SRAM_PATH, (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? L"SRAM Path Enable: ON" : L"SRAM Path Enable: OFF");
+        break;
+     case SETTING_ENABLE_STATE_PATH:
+        if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE))
+           g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
+        else
+           g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
+	    m_settingslist.SetText(SETTING_ENABLE_STATE_PATH, (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? L"Savestate Path Enable: ON" : L"Savestate Path Enable: OFF");
+        break;
             case SETTING_EMU_SHOW_INFO_MSG:
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INFO_DRAW);
@@ -644,6 +674,20 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 	       rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
 	       m_settingslist.SetText(SETTING_EMU_REWIND_GRANULARITY, strw_buffer);
 	       break;
+     case SETTING_ENABLE_SRAM_PATH:
+        if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE))
+           g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
+        else
+           g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
+	    m_settingslist.SetText(SETTING_ENABLE_SRAM_PATH, (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? L"SRAM Path Enable: ON" : L"SRAM Path Enable: OFF");
+        break;
+     case SETTING_ENABLE_STATE_PATH:
+        if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE))
+           g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
+        else
+           g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
+	    m_settingslist.SetText(SETTING_ENABLE_STATE_PATH, (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? L"Savestate Path Enable: ON" : L"Savestate Path Enable: OFF");
+        break;
             case SETTING_SCALE_FACTOR:
                if(device_ptr->fbo_inited)
                {
