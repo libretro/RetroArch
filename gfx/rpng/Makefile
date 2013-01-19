@@ -3,7 +3,7 @@ TARGET := rpng
 SOURCES := $(wildcard *.c)
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g
+CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -DHAVE_ZLIB
 
 all: $(TARGET)
 
@@ -11,7 +11,7 @@ all: $(TARGET)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS) -lz
+	$(CC) -o $@ $^ $(LDFLAGS) -lz -lImlib2
 
 clean:
 	rm -f $(TARGET) $(OBJS)

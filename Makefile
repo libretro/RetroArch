@@ -269,6 +269,7 @@ ifeq ($(HAVE_SDL_IMAGE), 1)
 else
    ifeq ($(HAVE_ZLIB), 1)
       OBJ += gfx/rpng/rpng.o
+      DEFINES += -DHAVE_ZLIB_DEFLATE
    endif
 endif
 

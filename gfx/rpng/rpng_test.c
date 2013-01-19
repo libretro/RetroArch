@@ -16,30 +16,71 @@
 #include "rpng.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <Imlib2.h>
 
 int main(int argc, char *argv[])
 {
-   if (argc != 2)
+   if (argc > 2)
    {
       fprintf(stderr, "Usage: %s <png file>\n", argv[0]);
       return 1;
    }
 
+   const char *in_path = argc == 2 ? argv[1] : "/tmp/test.png";
+
+   const uint32_t test_data[] = {
+      0xff000000 | 0x50, 0xff000000 | 0x80, 0xff000000 | 0x40, 0xff000000 | 0x88,
+      0xff000000 | 0x50, 0xff000000 | 0x80, 0xff000000 | 0x40, 0xff000000 | 0x88,
+      0xff000000 | 0xc3, 0xff000000 | 0xd3, 0xff000000 | 0xc3, 0xff000000 | 0xd3,
+      0xff000000 | 0xc3, 0xff000000 | 0xd3, 0xff000000 | 0xc3, 0xff000000 | 0xd3,
+   };
+
+   if (!rpng_save_image_argb("/tmp/test.png", test_data, 4, 4, 16))
+      return 1;
+
    uint32_t *data = NULL;
    unsigned width = 0;
    unsigned height = 0;
 
-   if (!rpng_load_image_argb(argv[1], &data, &width, &height))
-      return 1;
+   if (!rpng_load_image_argb(in_path, &data, &width, &height))
+      return 2;
 
    fprintf(stderr, "Got image: %u x %u.\n", width, height);
 
+   fprintf(stderr, "\nRPNG:\n");
    for (unsigned h = 0; h < height; h++)
    {
       for (unsigned w = 0; w < width; w++)
          fprintf(stderr, "[%08x] ", data[h * width + w]);
       fprintf(stderr, "\n");
    }
+
+   if (width != 4 || height != 4)
+      return 3;
+
+   // Validate with imlib2 as well.
+   Imlib_Image img = imlib_load_image(in_path);
+   if (!img)
+      return 4;
+
+   imlib_context_set_image(img);
+   width  = imlib_image_get_width();
+   height = imlib_image_get_width();
+   const uint32_t *imlib_data = imlib_image_get_data_for_reading_only();
+
+   fprintf(stderr, "\nImlib:\n");
+   for (unsigned h = 0; h < height; h++)
+   {
+      for (unsigned w = 0; w < width; w++)
+         fprintf(stderr, "[%08x] ", imlib_data[h * width + w]);
+      fprintf(stderr, "\n");
+   }
+   imlib_free_image();
+
+   if (memcmp(test_data, data, sizeof(test_data)) != 0)
+      return 5;
 
    free(data);
 }

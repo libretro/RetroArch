@@ -27,7 +27,11 @@
 void sha256_hash(char *out, const uint8_t *in, size_t size);
 
 #ifdef HAVE_ZLIB
+#ifdef WANT_RZLIB
 #include "deps/rzlib/zlib.h"
+#else
+#include <zlib.h>
+#endif
 static inline uint32_t crc32_calculate(const uint8_t *data, size_t length)
 {
    return crc32(0, data, length);

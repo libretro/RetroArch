@@ -14,19 +14,32 @@
  */
 
 #include "rpng.h"
+
+#ifdef WANT_RZLIB
+#include "../../deps/rzlib/zlib.h"
+#else
 #include <zlib.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../../hash.h"
 
 // Decodes a subset of PNG standard.
 // Does not handle much outside 24/32-bit RGB(A) images.
+//
+// Missing: Adam7 interlace, 16 bpp, various color formats.
 
 #define GOTO_END_ERROR() do { \
    fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__); \
    ret = false; \
    goto end; \
 } while(0)
+
+static const uint8_t png_magic[8] = {
+   0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a,
+};
 
 struct png_chunk
 {
@@ -163,7 +176,7 @@ end:
 }
 
 // Paeth prediction filter.
-static inline uint8_t paeth(uint8_t a, uint8_t b, uint8_t c)
+static inline int paeth(int a, int b, int c)
 {
    int p = a + b - c;
    int pa = abs(p - a);
@@ -320,13 +333,10 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
    if (fread(header, 1, sizeof(header), file) != sizeof(header))
       GOTO_END_ERROR();
 
-   static const uint8_t reference[8] = {
-      0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a,
-   };
-
-   if (memcmp(header, reference, sizeof(header)) != 0)
+   if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
       GOTO_END_ERROR();
 
+   // feof() apparently isn't triggered after a seek (IEND).
    for (long pos = ftell(file); pos < file_len && pos >= 0; pos = ftell(file))
    {
       struct png_chunk chunk = {0};
@@ -393,7 +403,10 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
    stream.next_out  = inflate_buf;
 
    if (inflate(&stream, Z_SYNC_FLUSH) != Z_STREAM_END)
+   {
+      inflateEnd(&stream);
       GOTO_END_ERROR();
+   }
    inflateEnd(&stream);
 
    *width  = ihdr.width;
@@ -414,4 +427,284 @@ end:
    free(inflate_buf);
    return ret;
 }
+
+#ifdef HAVE_ZLIB_DEFLATE
+
+static void dword_write_be(uint8_t *buf, uint32_t val)
+{
+   *buf++ = (uint8_t)(val >> 24);
+   *buf++ = (uint8_t)(val >> 16);
+   *buf++ = (uint8_t)(val >>  8);
+   *buf++ = (uint8_t)(val >>  0);
+}
+
+static bool png_write_crc(FILE *file, const uint8_t *data, size_t size)
+{
+   uint32_t crc = crc32_calculate(data, size);
+   uint8_t crc_raw[4] = {0};
+   dword_write_be(crc_raw, crc);
+   return fwrite(crc_raw, 1, sizeof(crc_raw), file) == sizeof(crc_raw);
+}
+
+static bool png_write_ihdr(FILE *file, const struct png_ihdr *ihdr)
+{
+   uint8_t ihdr_raw[] = {
+      '0', '0', '0', '0', // Size
+      'I', 'H', 'D', 'R',
+
+      0, 0, 0, 0, // Width
+      0, 0, 0, 0, // Height
+      ihdr->depth,
+      ihdr->color_type,
+      ihdr->compression,
+      ihdr->filter,
+      ihdr->interlace,
+   };
+
+   dword_write_be(ihdr_raw +  0, sizeof(ihdr_raw) - 8);
+   dword_write_be(ihdr_raw +  8, ihdr->width);
+   dword_write_be(ihdr_raw + 12, ihdr->height);
+   if (fwrite(ihdr_raw, 1, sizeof(ihdr_raw), file) != sizeof(ihdr_raw))
+      return false;
+
+   if (!png_write_crc(file, ihdr_raw + sizeof(uint32_t), sizeof(ihdr_raw) - sizeof(uint32_t)))
+      return false;
+
+   return true;
+}
+
+static bool png_write_idat(FILE *file, const uint8_t *data, size_t size)
+{
+   if (fwrite(data, 1, size, file) != size)
+      return false;
+
+   if (!png_write_crc(file, data + sizeof(uint32_t), size - sizeof(uint32_t)))
+      return false;
+
+   return true;
+}
+
+static bool png_write_iend(FILE *file)
+{
+   const uint8_t data[] = {
+      0, 0, 0, 0,
+      'I', 'E', 'N', 'D',
+   };
+
+   if (fwrite(data, 1, sizeof(data), file) != sizeof(data))
+      return false;
+
+   if (!png_write_crc(file, data + sizeof(uint32_t), sizeof(data) - sizeof(uint32_t)))
+      return false;
+
+   return true;
+}
+
+static void copy_rgba_line(uint8_t *dst, const uint32_t *src, unsigned width)
+{
+   for (unsigned i = 0; i < width; i++)
+   {
+      uint32_t col = src[i];
+      *dst++ = (uint8_t)(col >> 16);
+      *dst++ = (uint8_t)(col >>  8);
+      *dst++ = (uint8_t)(col >>  0);
+      *dst++ = (uint8_t)(col >> 24);
+   }
+}
+
+static unsigned count_zeroes(const uint8_t *data, size_t size)
+{
+   unsigned cnt = 0;
+   for (size_t i = 0; i < size; i++)
+      cnt += data[i] == 0;
+   return cnt;
+}
+
+static unsigned filter_up(uint8_t *target, const uint8_t *line, const uint8_t *prev,
+      unsigned width, unsigned bpp)
+{
+   width *= bpp;
+   for (unsigned i = 0; i < width; i++)
+      target[i] = line[i] - prev[i];
+
+   return count_zeroes(target, width);
+}
+
+static unsigned filter_sub(uint8_t *target, const uint8_t *line,
+      unsigned width, unsigned bpp)
+{
+   width *= bpp;
+   for (unsigned i = 0; i < bpp; i++)
+      target[i] = line[i];
+   for (unsigned i = bpp; i < width; i++)
+      target[i] = line[i] - line[i - bpp];
+
+   return count_zeroes(target, width);
+}
+
+static unsigned filter_avg(uint8_t *target, const uint8_t *line, const uint8_t *prev,
+      unsigned width, unsigned bpp)
+{
+   width *= bpp;
+   for (unsigned i = 0; i < bpp; i++)
+      target[i] = line[i] - (prev[i] >> 1);
+   for (unsigned i = bpp; i < width; i++)
+      target[i] = line[i] - ((line[i - bpp] + prev[i]) >> 1);
+
+   return count_zeroes(target, width);
+}
+
+static unsigned filter_paeth(uint8_t *target, const uint8_t *line, const uint8_t *prev,
+      unsigned width, unsigned bpp)
+{
+   width *= bpp;
+   for (unsigned i = 0; i < bpp; i++)
+      target[i] = line[i] - paeth(0, prev[i], 0);
+   for (unsigned i = bpp; i < width; i++)
+      target[i] = line[i] - paeth(line[i - bpp], prev[i], prev[i - bpp]);
+
+   return count_zeroes(target, width);
+}
+
+bool rpng_save_image_argb(const char *path, const uint32_t *data,
+      unsigned width, unsigned height, unsigned pitch)
+{
+   bool ret = true;
+   struct png_ihdr ihdr = {0};
+
+   size_t encode_buf_size  = 0;
+   uint8_t *encode_buf     = NULL;
+   uint8_t *deflate_buf    = NULL;
+   uint8_t *rgba_line      = NULL;
+   uint8_t *up_filtered    = NULL;
+   uint8_t *sub_filtered   = NULL;
+   uint8_t *avg_filtered   = NULL;
+   uint8_t *paeth_filtered = NULL;
+   uint8_t *prev_encoded   = NULL;
+   uint8_t *encode_target  = NULL;
+   unsigned bpp = sizeof(uint32_t);
+
+   z_stream stream = {0};
+
+   FILE *file = fopen(path, "wb");
+   if (!file)
+      GOTO_END_ERROR();
+
+   if (fwrite(png_magic, 1, sizeof(png_magic), file) != sizeof(png_magic))
+      GOTO_END_ERROR();
+
+   ihdr.width = width;
+   ihdr.height = height;
+   ihdr.depth = 8;
+   ihdr.color_type = 6; // RGBA
+   if (!png_write_ihdr(file, &ihdr))
+      GOTO_END_ERROR();
+
+   encode_buf_size = (width * sizeof(uint32_t) + 1) * height;
+   encode_buf = (uint8_t*)malloc(encode_buf_size);
+   if (!encode_buf)
+      GOTO_END_ERROR();
+
+   prev_encoded = (uint8_t*)calloc(1, width * bpp);
+   if (!prev_encoded)
+      GOTO_END_ERROR();
+
+   rgba_line      = (uint8_t*)malloc(width * bpp);
+   up_filtered    = (uint8_t*)malloc(width * bpp);
+   sub_filtered   = (uint8_t*)malloc(width * bpp);
+   avg_filtered   = (uint8_t*)malloc(width * bpp);
+   paeth_filtered = (uint8_t*)malloc(width * bpp);
+   if (!rgba_line || !up_filtered || !sub_filtered || !avg_filtered || !paeth_filtered)
+      GOTO_END_ERROR();
+
+   encode_target = encode_buf;
+   for (unsigned h = 0; h < height;
+         h++, encode_target += width * bpp, data += pitch >> 2)
+   {
+      copy_rgba_line(rgba_line, data, width);
+
+      // Try every filtering method, and choose the method
+      // which has most entries as zero.
+      // This is probably not very optimal, but it's very simple to implement.
+      unsigned none_score  = count_zeroes(rgba_line, width * bpp);
+      unsigned up_score    = filter_up(up_filtered, rgba_line, prev_encoded, width, bpp);
+      unsigned sub_score   = filter_sub(sub_filtered, rgba_line, width, bpp);
+      unsigned avg_score   = filter_avg(avg_filtered, rgba_line, prev_encoded, width, bpp);
+      unsigned paeth_score = filter_paeth(paeth_filtered, rgba_line, prev_encoded, width, bpp);
+
+      uint8_t filter = 0;
+      unsigned max_zeros = none_score;
+      const uint8_t *chosen_filtered = rgba_line;
+
+      if (sub_score > max_zeros)
+      {
+         filter = 1;
+         chosen_filtered = sub_filtered;
+         max_zeros = sub_score;
+      }
+
+      if (up_score > max_zeros)
+      {
+         filter = 2;
+         chosen_filtered = up_filtered;
+         max_zeros = up_score;
+      }
+
+      if (avg_score > max_zeros)
+      {
+         filter = 3;
+         chosen_filtered = avg_filtered;
+         max_zeros = avg_score;
+      }
+
+      if (paeth_score > max_zeros)
+      {
+         filter = 4;
+         chosen_filtered = paeth_filtered;
+         max_zeros = paeth_score;
+      }
+
+      *encode_target++ = filter;
+      memcpy(encode_target, chosen_filtered, width * bpp);
+
+      memcpy(prev_encoded, rgba_line, width * bpp);
+   }
+
+   deflate_buf = (uint8_t*)malloc(encode_buf_size * 2); // Just to be sure.
+   if (!deflate_buf)
+      GOTO_END_ERROR();
+
+   stream.next_in   = encode_buf;
+   stream.avail_in  = encode_buf_size;
+   stream.next_out  = deflate_buf + 8;
+   stream.avail_out = encode_buf_size * 2;
+
+   deflateInit(&stream, 2);
+   if (deflate(&stream, Z_FINISH) != Z_STREAM_END)
+   {
+      deflateEnd(&stream);
+      GOTO_END_ERROR();
+   }
+
+   memcpy(deflate_buf + 4, "IDAT", 4);
+   dword_write_be(deflate_buf + 0, stream.total_out);
+   if (!png_write_idat(file, deflate_buf, stream.total_out + 8))
+      GOTO_END_ERROR();
+
+   if (!png_write_iend(file))
+      GOTO_END_ERROR();
+
+end:
+   if (file)
+      fclose(file);
+   free(encode_buf);
+   free(deflate_buf);
+   free(rgba_line);
+   free(prev_encoded);
+   free(up_filtered);
+   free(avg_filtered);
+   free(paeth_filtered);
+   return ret;
+}
+#endif
 
