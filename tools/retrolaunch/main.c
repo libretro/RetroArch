@@ -63,7 +63,7 @@ find_rom_canonical_name(const char *hash, char *game_name, size_t max_len)
 	int offs;
 	char *dat_path;
 	const char *dat_name;
-   	char *dat_name_dot;
+	const char *dat_name_dot;
 	struct string_list *files;
 
 	files = dir_list_new("db", "dat", false);
