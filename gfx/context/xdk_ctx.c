@@ -411,8 +411,17 @@ static void gfx_ctx_xdk_destroy(void)
 {
    xdk_d3d_video_t * d3d = (xdk_d3d_video_t*)driver.video_data;
 
-   d3d->d3d_render_device->Release();
-   d3d->d3d_device->Release();
+   if (d3d->d3d_render_device)
+   {
+      d3d->d3d_render_device->Release();
+      d3d->d3d_render_device = 0;
+   }
+
+   if (d3d->d3d_device)
+   {
+      d3d->d3d_device->Release();
+      d3d->d3d_device = 0;
+   }
 }
 
 static void gfx_ctx_xdk_input_driver(const input_driver_t **input, void **input_data) { }
