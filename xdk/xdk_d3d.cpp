@@ -970,7 +970,7 @@ static void xdk_d3d_restart(void)
    video_info.smooth = g_settings.video.smooth;
    video_info.input_scale = 2;
    video_info.fullscreen = true;
-   video_info.rgb32 = false;
+   video_info.rgb32 = (d3d->base_size == sizeof(uint32_t)) ? true : false;
    xdk_d3d_generate_pp(&d3dpp, &video_info);
 
    d3dr->Reset(&d3dpp);
