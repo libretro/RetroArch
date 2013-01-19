@@ -81,6 +81,7 @@ static void rarch_console_exec(const char *path)
    if (!dol)
    {
       RARCH_ERR("Could not execute DOL file %s.\n", path);
+      fclose(fp);
       return;
    }
 
