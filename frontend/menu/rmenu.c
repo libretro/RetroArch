@@ -308,6 +308,11 @@ static void populate_setting_item(void *data, unsigned input)
          else
             snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Rewind] feature is set to 'OFF'.");
          break;
+      case SETTING_EMU_REWIND_GRANULARITY:
+         snprintf(current_item->text, sizeof(current_item->text), "Rewind granularity");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_settings.rewind_granularity);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the amount of frames to 'rewind'.\nIncrease this to lower CPU usage.");
+         break;
 #ifdef HAVE_ZLIB
       case SETTING_ZIP_EXTRACT:
          snprintf(current_item->text, sizeof(current_item->text), "Unzip mode");
@@ -1393,6 +1398,17 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
             g_settings.rewind_enable = false;
+         break;
+      case SETTING_EMU_REWIND_GRANULARITY:
+         if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         {
+            if (g_settings.rewind_granularity > 1)
+               g_settings.rewind_granularity--;
+         }
+         if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+            g_settings.rewind_granularity++;
+         if(input & (1ULL << RMENU_DEVICE_NAV_START))
+            g_settings.rewind_granularity = 1;
          break;
 #ifdef HAVE_ZLIB
       case SETTING_ZIP_EXTRACT:

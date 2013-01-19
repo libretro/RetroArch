@@ -1168,6 +1168,7 @@ bool config_save_file(const char *path)
    config_set_string(conf, "libretro_path", g_settings.libretro);
    config_set_string(conf, "cheat_database_path", g_settings.cheat_database);
    config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
+   config_set_int(conf, "rewind_granularity", g_settings.rewind_granularity);
    config_set_string(conf, "video_cg_shader", g_settings.video.cg_shader_path);
    config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
 #ifdef HAVE_FBO
