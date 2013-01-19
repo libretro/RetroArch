@@ -106,6 +106,7 @@ enum
    S_LBL_LOAD_STATE_SLOT,
    S_LBL_SAVE_STATE_SLOT,
    S_LBL_ZIP_EXTRACT,
+   S_LBL_REWIND_GRANULARITY,
 };
 
 void rmenu_settings_set(unsigned setting);

@@ -375,6 +375,9 @@ void rmenu_settings_create_menu_item_label(char * str, unsigned setting, size_t 
       case S_LBL_SAVE_STATE_SLOT:
          snprintf(str, size, "Save State #%d", g_extern.state_slot);
          break;
+      case S_LBL_REWIND_GRANULARITY:
+         snprintf(str, size, "Rewind granularity: %d", g_settings.rewind_granularity);
+	 break;
       case S_LBL_ZIP_EXTRACT:
          if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
             snprintf(str, size, "INFO - Unzip Mode: Current dir.");

@@ -399,6 +399,8 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
    rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
+   rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
+   m_settingslist.SetText(SETTING_EMU_REWIND_GRANULARITY, strw_buffer);
 
    return 0;
 }
@@ -423,6 +425,12 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
             break;
+	 case SETTING_EMU_REWIND_GRANULARITY:
+	    g_settings.rewind_granularity++;
+
+	    rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
+	    m_settingslist.SetText(SETTING_EMU_REWIND_GRANULARITY, strw_buffer);
+	    break;
          case SETTING_EMU_SHOW_INFO_MSG:
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INFO_DRAW);
@@ -525,6 +533,13 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                   rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
+	    case SETTING_EMU_REWIND_GRANULARITY:
+	       if (g_settings.rewind_granularity > 1)
+		       g_settings.rewind_granularity--;
+
+	       rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
+	       m_settingslist.SetText(SETTING_EMU_REWIND_GRANULARITY, strw_buffer);
+	       break;
             case SETTING_EMU_SHOW_INFO_MSG:
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INFO_DRAW);
@@ -626,6 +641,12 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                   rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
+	    case SETTING_EMU_REWIND_GRANULARITY:
+	       g_settings.rewind_granularity++;
+
+	       rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
+	       m_settingslist.SetText(SETTING_EMU_REWIND_GRANULARITY, strw_buffer);
+	       break;
             case SETTING_SCALE_FACTOR:
                if(device_ptr->fbo_inited)
                {
