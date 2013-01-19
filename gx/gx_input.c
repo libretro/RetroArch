@@ -33,7 +33,8 @@
 #include "../libretro.h"
 #include <stdlib.h>
 
-#define JOYSTICK_THRESHOLD 48
+#define GC_JOYSTICK_THRESHOLD 48
+#define WII_JOYSTICK_THRESHOLD 40
 
 #define MAX_PADS 4
 
@@ -260,9 +261,6 @@ static void gx_input_post_init(void)
       gx_input_set_analog_dpad_mapping(g_settings.input.device[i], g_settings.input.dpad_emulation[i], i);
 }
 
-#define gx_stick_x(x) ((s8)((sin((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
-#define gx_stick_y(x) ((s8)((cos((x).ang * M_PI / 180.0f)) * (x).mag * 128.0f))
-
 static void gx_input_poll(void *data)
 {
    (void)data;
@@ -348,17 +346,17 @@ static void gx_input_poll(void *data)
             else if (rjs_mag < -1.0f)
                rjs_mag = -1.0f;
 
-            double ljs_val_x = ljs_mag * cos(M_PI * ljs_ang / 180.0f);
-            double ljs_val_y = ljs_mag * sin(M_PI * ljs_ang / 180.0f);
+            double ljs_val_x = ljs_mag * cos(M_PI * ljs_ang / 180.0);
+            double ljs_val_y = ljs_mag * sin(M_PI * ljs_ang / 180.0);
 
-            double rjs_val_x = rjs_mag * cos(M_PI * rjs_ang / 180.0f);
-            double rjs_val_y = rjs_mag * sin(M_PI * rjs_ang / 180.0f);
+            double rjs_val_x = rjs_mag * cos(M_PI * rjs_ang / 180.0);
+            double rjs_val_y = rjs_mag * sin(M_PI * rjs_ang / 180.0);
 
-            s8 ls_x = (s8)(ljs_val_x * 128.0f);
-            s8 ls_y = (s8)(ljs_val_y * 128.0f);
+            s8 ls_x = (s8)(ljs_val_x * 127.0f);
+            s8 ls_y = (s8)(ljs_val_y * 127.0f);
 
-            s8 rs_x = (s8)(rjs_val_x * 128.0f);
-            s8 rs_y = (s8)(rjs_val_y * 128.0f);
+            s8 rs_x = (s8)(rjs_val_x * 127.0f);
+            s8 rs_y = (s8)(rjs_val_y * 127.0f);
 #if 0
             char str[128];
             snprintf(str, sizeof(str), "ls x: %d, ls y: %d, rs x: %d, rs y: %d", ls_x, ls_y, rs_x, rs_y); 
@@ -366,15 +364,15 @@ static void gx_input_poll(void *data)
             msg_queue_push(g_extern.msg_queue, str, 1, 48);
 #endif
 
-            *state_cur |= (ls_x < -40) ? GX_CLASSIC_LSTICK_RIGHT : 0;
-            *state_cur |= (ls_x > 40) ? GX_CLASSIC_LSTICK_LEFT : 0;
-            *state_cur |= (ls_y < -40) ? GX_CLASSIC_LSTICK_UP : 0;
-            *state_cur |= (ls_y > 40) ? GX_CLASSIC_LSTICK_DOWN : 0;
+            *state_cur |= (ls_x < -WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_LSTICK_RIGHT : 0;
+            *state_cur |= (ls_x > WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_LSTICK_LEFT : 0;
+            *state_cur |= (ls_y < -WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_LSTICK_UP : 0;
+            *state_cur |= (ls_y > WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_LSTICK_DOWN : 0;
 
-            *state_cur |= (rs_x < -40) ? GX_CLASSIC_RSTICK_RIGHT : 0;
-            *state_cur |= (rs_x > 40) ? GX_CLASSIC_RSTICK_LEFT: 0;
-            *state_cur |= (rs_y < -40) ? GX_CLASSIC_RSTICK_UP : 0;
-            *state_cur |= (rs_y > 40) ? GX_CLASSIC_RSTICK_DOWN : 0;
+            *state_cur |= (rs_x < -WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_RSTICK_RIGHT : 0;
+            *state_cur |= (rs_x > WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_RSTICK_LEFT: 0;
+            *state_cur |= (rs_y < -WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_RSTICK_UP : 0;
+            *state_cur |= (rs_y > WII_JOYSTICK_THRESHOLD) ? GX_CLASSIC_RSTICK_DOWN : 0;
          }
          else if (type == WPAD_EXP_NUNCHUK)
          {
@@ -387,13 +385,24 @@ static void gx_input_poll(void *data)
             *state_cur |= (down & WPAD_NUNCHUK_BUTTON_Z) ? GX_NUNCHUK_Z : 0;
             *state_cur |= (down & WPAD_NUNCHUK_BUTTON_C) ? GX_NUNCHUK_C : 0;
 
-            s8 x = gx_stick_x(exp->nunchuk.js);
-            s8 y = gx_stick_y(exp->nunchuk.js);
+            float js_mag = exp->nunchuk.js.mag;
+            float js_ang = exp->nunchuk.js.ang;
 
-            if (abs(x) > JOYSTICK_THRESHOLD)
-               *state_cur |= x > 0 ? GX_NUNCHUK_RIGHT : GX_NUNCHUK_LEFT;
-            if (abs(y) > JOYSTICK_THRESHOLD)
-               *state_cur |= y > 0 ? GX_NUNCHUK_UP : GX_NUNCHUK_DOWN;
+            if (js_mag > 1.0f)
+               js_mag = 1.0f;
+            else if (js_mag < -1.0f)
+               js_mag = -1.0f;
+
+            double js_val_x = js_mag * cos(M_PI * js_ang / 180.0);
+            double js_val_y = js_mag * sin(M_PI * js_ang / 180.0);
+
+            s8 x = (s8)(js_val_x * 127.0f);
+            s8 y = (s8)(js_val_y * 127.0f);
+
+            *state_cur |= (x < -WII_JOYSTICK_THRESHOLD) ? GX_NUNCHUK_RIGHT : 0;
+            *state_cur |= (x > WII_JOYSTICK_THRESHOLD) ? GX_NUNCHUK_LEFT : 0;
+            *state_cur |= (y < -WII_JOYSTICK_THRESHOLD) ? GX_NUNCHUK_UP : 0;
+            *state_cur |= (y > WII_JOYSTICK_THRESHOLD) ? GX_NUNCHUK_DOWN : 0;
          }
       }
 
@@ -419,18 +428,18 @@ static void gx_input_poll(void *data)
          s8 x = PAD_StickX(port);
          s8 y = PAD_StickY(port);
 
-         if (abs(x) > JOYSTICK_THRESHOLD)
-            *state_cur |= x > 0 ? GX_GC_LSTICK_RIGHT : GX_GC_LSTICK_LEFT;
-         if (abs(y) > JOYSTICK_THRESHOLD)
-            *state_cur |= y > 0 ? GX_GC_LSTICK_UP : GX_GC_LSTICK_DOWN;
+         *state_cur |= (x < -GC_JOYSTICK_THRESHOLD) ? GX_GC_LSTICK_LEFT : 0;
+         *state_cur |= (x > GC_JOYSTICK_THRESHOLD) ? GX_GC_LSTICK_RIGHT : 0;
+         *state_cur |= (y < -GC_JOYSTICK_THRESHOLD) ? GX_GC_LSTICK_DOWN : 0;
+         *state_cur |= (y > GC_JOYSTICK_THRESHOLD) ? GX_GC_LSTICK_UP : 0;
 
          x = PAD_SubStickX(port);
          y = PAD_SubStickY(port);
 
-         if (abs(x) > JOYSTICK_THRESHOLD)
-            *state_cur |= x > 0 ? GX_GC_RSTICK_RIGHT : GX_GC_RSTICK_LEFT;
-         if (abs(y) > JOYSTICK_THRESHOLD)
-            *state_cur |= y > 0 ? GX_GC_RSTICK_UP : GX_GC_RSTICK_DOWN;
+         *state_cur |= (x < -GC_JOYSTICK_THRESHOLD) ? GX_GC_RSTICK_LEFT : 0;
+         *state_cur |= (x > GC_JOYSTICK_THRESHOLD) ? GX_GC_RSTICK_RIGHT : 0;
+         *state_cur |= (y < -GC_JOYSTICK_THRESHOLD) ? GX_GC_RSTICK_DOWN : 0;
+         *state_cur |= (y > GC_JOYSTICK_THRESHOLD) ? GX_GC_RSTICK_UP : 0;
 
          if ((*state_cur & (GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER)) == (GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_GC_L_TRIGGER | GX_GC_R_TRIGGER))
             *state_cur |= GX_QUIT_KEY;
