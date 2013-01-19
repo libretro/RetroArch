@@ -60,6 +60,8 @@ void dol_copy_argv_path(void)
 }
 #endif
 
+// WARNING: after we move any data into EXECUTE_ADDR, we can no longer use any
+// heap memory and are restricted to the stack only
 static void rarch_console_exec(const char *path)
 {
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
@@ -67,18 +69,23 @@ static void rarch_console_exec(const char *path)
    FILE * fp = fopen(path, "rb");
    if (fp == NULL)
    {
-      RARCH_ERR("Could not execute DOL file.\n");
+      RARCH_ERR("Could not open DOL file %s.\n", path);
       return;
    }
 
    fseek(fp, 0, SEEK_END);
    size_t size = ftell(fp);
    fseek(fp, 0, SEEK_SET);
-   fread(EXECUTE_ADDR, 1, size, fp);
-   fclose(fp);
-   DCFlushRange(EXECUTE_ADDR, size);
+   // try to allocate a buffer for it. if we can't, fail
+   void *dol = malloc(size);
+   if (!dol)
+   {
+      RARCH_ERR("Could not execute DOL file %s.\n", path);
+      return;
+   }
 
-   dol_copy_argv_path();
+   fread(dol, 1, size, fp);
+   fclose(fp);
 
    fatUnmount("carda:");
    fatUnmount("cardb:");
@@ -86,6 +93,13 @@ static void rarch_console_exec(const char *path)
    fatUnmount("usb:");
    __io_wiisd.shutdown();
    __io_usbstorage.shutdown();
+
+   // luckily for us, newlib's memmove doesn't allocate a seperate buffer for
+   // copying in situations of overlap, so it's safe to do this
+   memmove(EXECUTE_ADDR, dol, size);
+   DCFlushRange(EXECUTE_ADDR, size);
+
+   dol_copy_argv_path();
 
    size_t booter_size = booter_end - booter_start;
    memcpy(BOOTER_ADDR, booter_start, booter_size);
