@@ -128,12 +128,6 @@ static const bool _sdl_image_supp = true;
 static const bool _sdl_image_supp = false;
 #endif
 
-#ifdef HAVE_LIBPNG
-static const bool _libpng_supp = true;
-#else
-static const bool _libpng_supp = false;
-#endif
-
 #ifdef HAVE_FBO
 static const bool _fbo_supp = true;
 #else
