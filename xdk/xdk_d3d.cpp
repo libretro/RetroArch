@@ -137,11 +137,6 @@ static bool hlsl_shader_init(void)
 
 static void xdk_d3d_free(void *data)
 {
-#ifdef RARCH_CONSOLE
-   if (driver.video_data)
-      return;
-#endif
-
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
    if (!d3d)
@@ -950,10 +945,6 @@ static void xdk_d3d_start(void)
    d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path, 0 /* font size - fixed/unused */);
 }
 
-static void xdk_d3d_restart(void)
-{
-}
-
 static void xdk_d3d_stop(void)
 {
    void *data = driver.video_data;
@@ -961,6 +952,17 @@ static void xdk_d3d_stop(void)
    xdk_d3d_free(data);
 
    driver.video_data = NULL;
+}
+
+static void xdk_d3d_restart(void)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
+   if (!d3d)
+      return;
+
+   xdk_d3d_stop();
+   xdk_d3d_start();
 }
 
 static void xdk_d3d_apply_state_changes(void)
