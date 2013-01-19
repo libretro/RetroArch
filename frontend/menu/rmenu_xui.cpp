@@ -456,8 +456,6 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
             driver.video->restart();
             m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
             break;
          case SETTING_SHADER:
             g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_FIRST_SHADER);
@@ -566,8 +564,6 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
                driver.video->restart();
                m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
             case SETTING_SCALE_FACTOR:
                if(device_ptr->fbo_inited)
@@ -634,8 +630,6 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
                driver.video->restart();
                m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                break;
             case SETTING_EMU_REWIND_ENABLED:
                rmenu_settings_set(S_REWIND);
