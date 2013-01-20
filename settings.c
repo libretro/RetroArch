@@ -366,7 +366,7 @@ static void parse_config_file(void)
    }
    else
    {
-      RARCH_LOG("Loading NULL config.\n");
+      RARCH_LOG("Loading default config.\n");
       ret = config_load_file(NULL);
    }
 
