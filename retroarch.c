@@ -718,14 +718,6 @@ static void set_paths(const char *path)
 {
    set_basename(path);
 
-   RARCH_LOG("Opening file: \"%s\"\n", path);
-   g_extern.rom_file = fopen(path, "rb");
-   if (g_extern.rom_file == NULL)
-   {
-      RARCH_ERR("Could not open file: \"%s\"\n", path);
-      rarch_fail(1, "set_paths()");
-   }
-
    if (!g_extern.has_set_save_path)
       fill_pathname_noext(g_extern.savefile_name_srm, g_extern.basename, ".srm", sizeof(g_extern.savefile_name_srm));
    if (!g_extern.has_set_state_path)

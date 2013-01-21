@@ -533,33 +533,37 @@ static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
    void *rom_buf[MAX_ROMS] = {NULL};
    ssize_t rom_len[MAX_ROMS] = {0};
    struct retro_game_info info[MAX_ROMS] = {{NULL}};
+   char *xml_buf = load_xml_map(g_extern.xml_name);
+
+   FILE *rom_file = NULL;
+   if (rom_paths[0])
+   {
+      RARCH_LOG("Loading ROM file: %s.\n", rom_paths[0]);
+      rom_file = fopen(rom_paths[0], "rb");
+   }
 
    if (!g_extern.system.info.need_fullpath)
    {
-      if ((rom_len[0] = read_rom_file(g_extern.rom_file, &rom_buf[0])) == -1)
+      if ((rom_len[0] = read_rom_file(rom_file, &rom_buf[0])) == -1)
       {
          RARCH_ERR("Could not read ROM file.\n");
-         return false;
+         ret = false;
+         goto end;
       }
-
-      if (g_extern.rom_file)
-         fclose(g_extern.rom_file);
 
       RARCH_LOG("ROM size: %u bytes.\n", (unsigned)rom_len[0]);
    }
    else
    {
-      if (!g_extern.rom_file)
+      if (!rom_file)
       {
          RARCH_ERR("Implementation requires a full path to be set, cannot load ROM from stdin. Aborting ...\n");
-         return false;
+         ret = false;
+         goto end;
       }
 
-      fclose(g_extern.rom_file);
       RARCH_LOG("ROM loading skipped. Implementation will load it on its own.\n");
    }
-
-   char *xml_buf = load_xml_map(g_extern.xml_name);
 
    info[0].path = rom_paths[0];
    info[0].data = rom_buf[0];
@@ -594,6 +598,8 @@ end:
    for (unsigned i = 0; i < MAX_ROMS; i++)
       free(rom_buf[i]);
    free(xml_buf);
+   if (rom_file)
+      fclose(rom_file);
 
    return ret;
 }
