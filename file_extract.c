@@ -53,6 +53,7 @@ static bool inflate_data_to_file(const char *path, uint8_t *cdata,
    if (!out_data)
       return false;
 
+   uint32_t real_crc32 = 0;
    z_stream stream = {0};
 
    if (inflateInit2(&stream, -MAX_WBITS) != Z_OK)
@@ -70,7 +71,7 @@ static bool inflate_data_to_file(const char *path, uint8_t *cdata,
    }
    inflateEnd(&stream);
 
-   uint32_t real_crc32 = crc32_calculate(out_data, size);
+   real_crc32 = crc32_calculate(out_data, size);
    if (real_crc32 != crc32)
       RARCH_WARN("File CRC differs from ZIP CRC. File: 0x%x, ZIP: 0x%x.\n",
             (unsigned)real_crc32, (unsigned)crc32);
