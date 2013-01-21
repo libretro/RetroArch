@@ -265,7 +265,6 @@ void config_set_defaults(void)
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
 
    g_extern.console.screen.orientation = ORIENTATION_NORMAL;
    g_extern.console.screen.resolutions.current.id = 0;
@@ -478,7 +477,6 @@ bool config_load_file(const char *path)
    bool soft_filter_enable = false;
    bool sram_dir_enable = false;
    bool state_dir_enable = false;
-   int zip_extract_mode = 0;
 
    if (config_get_path(conf, "default_rom_startup_dir", tmp_str, sizeof(tmp_str)))
       strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, tmp_str, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
@@ -545,29 +543,6 @@ bool config_load_file(const char *path)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
       else 
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-   }
-
-   if (config_get_int(conf, "unzip_mode", &zip_extract_mode))
-   {
-      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CURDIR) |
-            (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
-            (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
-            (1ULL << MODE_UNZIP_TO_CACHEDIR));
-      switch(zip_extract_mode)
-      {
-         case 0:
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR);
-            break;
-         case 1:
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-            break;
-         case 2:
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
-            break;
-         case 3:
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CACHEDIR);
-            break;
-      }
    }
 
    if (config_get_bool(conf, "sram_dir_enable", &sram_dir_enable))
@@ -1224,15 +1199,6 @@ bool config_save_file(const char *path)
       config_set_bool(conf, "flicker_filter_enable", true);
    else
       config_set_bool(conf, "flicker_filter_enable", false);
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
-      config_set_int(conf, "unzip_mode", 0);
-   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-      config_set_int(conf, "unzip_mode", 1);
-   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
-      config_set_int(conf, "unzip_mode", 2);
-   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
-      config_set_int(conf, "unzip_mode", 3);
 
    config_set_int(conf, "flicker_filter_index", g_extern.console.screen.flicker_filter_index);
    config_set_int(conf, "soft_filter_index", g_extern.console.screen.soft_filter_index);

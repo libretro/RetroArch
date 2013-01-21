@@ -135,59 +135,6 @@ void rmenu_settings_set(unsigned setting)
       case S_REFRESH_RATE_INCREMENT:
          g_settings.video.refresh_rate += 0.01f;
          break;
-      case S_UNZIP_MODE_DECREMENT:
-         if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
-         {
-            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CACHEDIR) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR));
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
-         }
-         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-         {
-            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CACHEDIR) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR));
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR);
-         }
-
-         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
-         {
-            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CACHEDIR) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR));
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-         }
-         break;
-      case S_UNZIP_MODE_INCREMENT:
-         if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
-         {
-            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CACHEDIR) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR));
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-         }
-         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-         {
-            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CACHEDIR) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR));
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN);
-         }
-         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
-         {
-            g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CACHEDIR) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
-                                             (1ULL << MODE_UNZIP_TO_CURDIR));
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CACHEDIR);
-         }
-         break;
       case S_INFO_DEBUG_MSG_TOGGLE:
          if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
@@ -263,13 +210,6 @@ void rmenu_settings_set_default(unsigned setting)
          g_settings.video.refresh_rate = 59.95;
 #endif
          break;
-      case S_DEF_UNZIP_MODE:
-         g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CURDIR) |
-               (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) |
-               (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN) |
-               (1ULL << MODE_UNZIP_TO_CACHEDIR));
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
-         break;
       case S_DEF_INFO_DEBUG_MSG:
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
          break;
@@ -295,16 +235,6 @@ void rmenu_settings_msg(unsigned setting, unsigned delay)
          break;
       case S_MSG_CHANGE_CONTROLS:
          snprintf(str, sizeof(str), "INFO - Press LEFT/RIGHT to change the controls, and press\n[RetroPad Start] to reset a button to default values.");
-         break;
-      case S_MSG_EXTRACTED_ZIPFILE:
-         if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
-            snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to current directory.");
-         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-            snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted, now loading first file.");
-#ifdef HAVE_HDD_CACHE_PARTITION
-         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
-            snprintf(str, sizeof(str), "INFO - ZIP file successfully extracted to cache partition.");
-#endif
          break;
       case S_MSG_LOADING_ROM:
          fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
@@ -378,17 +308,5 @@ void rmenu_settings_create_menu_item_label(char * str, unsigned setting, size_t 
       case S_LBL_REWIND_GRANULARITY:
          snprintf(str, size, "Rewind granularity: %d", g_settings.rewind_granularity);
 	 break;
-      case S_LBL_ZIP_EXTRACT:
-         if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
-            snprintf(str, size, "INFO - Unzip Mode: Current dir.");
-         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-            snprintf(str, size, "INFO - Unzip Mode: Current dir, load first file.");
-         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
-            snprintf(str, size, "INFO - Unzip Mode: Current dir, load first file, and clean.");
-#ifdef HAVE_HDD_CACHE_PARTITION
-         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
-            snprintf(str, size, "INFO - Unzip Mode: Cache dir.");
-#endif
-         break;
    }
 }

@@ -397,8 +397,6 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_SHADER_2, strw_buffer);
    rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
-   rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
-   m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
    rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_EMU_REWIND_GRANULARITY, strw_buffer);
    m_settingslist.SetText(SETTING_ENABLE_SRAM_PATH, (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? L"SRAM Path Enable: ON" : L"SRAM Path Enable: OFF");
@@ -517,11 +515,6 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             else
                device_ptr->ctx_driver->set_fbo(FBO_DEINIT);
             break;
-         case SETTING_ZIP_EXTRACT:
-			rmenu_settings_set(S_UNZIP_MODE_INCREMENT);
-            rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
-            m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
-            break;
       }
    }
 
@@ -606,11 +599,6 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                      m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
                   }
                }
-               break;
-            case SETTING_ZIP_EXTRACT:
-               rmenu_settings_set(S_UNZIP_MODE_DECREMENT);
-               rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
-               m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
                break;
             case SETTING_HW_TEXTURE_FILTER:
                g_settings.video.smooth = !g_settings.video.smooth;
@@ -699,11 +687,6 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                      m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
                   }
                }
-               break;
-            case SETTING_ZIP_EXTRACT:
-               rmenu_settings_set(S_UNZIP_MODE_INCREMENT);
-               rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ZIP_EXTRACT, sizeof(strw_buffer));
-               m_settingslist.SetText(SETTING_ZIP_EXTRACT, strw_buffer);
                break;
             case SETTING_HW_TEXTURE_FILTER:
                g_settings.video.smooth = !g_settings.video.smooth;

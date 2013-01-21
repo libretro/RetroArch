@@ -458,16 +458,6 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
             snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
             break;
-         case RGUI_SETTINGS_ZIP_EXTRACT:
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
-               snprintf(type_str, sizeof(type_str), "Current");
-            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-               snprintf(type_str, sizeof(type_str), "Current + Load");
-            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
-               snprintf(type_str, sizeof(type_str), "Current + Load +_Clean");
-            else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
-               snprintf(type_str, sizeof(type_str), "Cache");
-            break;
          case RGUI_SETTINGS_SRAM_DIR:
             snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
             break;
@@ -751,14 +741,6 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          else if (action == RGUI_ACTION_RIGHT)
             rmenu_settings_set(S_AUDIO_CONTROL_RATE_INCREMENT);
          break;
-      case RGUI_SETTINGS_ZIP_EXTRACT:
-         if (action == RGUI_ACTION_START)
-            rmenu_settings_set_default(S_DEF_UNZIP_MODE);
-         else if (action == RGUI_ACTION_LEFT)
-            rmenu_settings_set(S_UNZIP_MODE_DECREMENT);
-         else if (action == RGUI_ACTION_RIGHT)
-            rmenu_settings_set(S_UNZIP_MODE_INCREMENT);
-         break;
       case RGUI_SETTINGS_SRAM_DIR:
          if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
@@ -888,7 +870,6 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("Rotation", RGUI_SETTINGS_VIDEO_ROTATION);
    RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
    RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);
-   RGUI_MENU_ITEM("Zip Extract Directory", RGUI_SETTINGS_ZIP_EXTRACT);
    RGUI_MENU_ITEM("SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR);
    RGUI_MENU_ITEM("State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR);
    RGUI_MENU_ITEM("Core", RGUI_SETTINGS_CORE);

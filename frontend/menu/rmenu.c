@@ -313,31 +313,6 @@ static void populate_setting_item(void *data, unsigned input)
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_settings.rewind_granularity);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the amount of frames to 'rewind'.\nIncrease this to lower CPU usage.");
          break;
-#ifdef HAVE_ZLIB
-      case SETTING_ZIP_EXTRACT:
-         snprintf(current_item->text, sizeof(current_item->text), "Unzip mode");
-         if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR))
-         {
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir");
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to the current dir.");
-         }
-         else if (g_extern.lifecycle_mode_state & (1ULL <<MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE))
-         {
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir, load first file");
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to current dir, and auto-loaded.");
-         }
-         else if (g_extern.lifecycle_mode_state & (1ULL <<MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
-         {
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Current dir, load first file and cleanup");
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to current dir, auto-loaded and then\n removed afterwards.");
-         }
-         else if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CACHEDIR))
-         {
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Cache dir");
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - ZIP files are extracted to the cache dir.");
-         }
-         break;
-#endif
       case SETTING_RARCH_DEFAULT_EMU:
          snprintf(current_item->text, sizeof(current_item->text), "Default libretro core");
          fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
@@ -1410,16 +1385,6 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
             g_settings.rewind_granularity = 1;
          break;
-#ifdef HAVE_ZLIB
-      case SETTING_ZIP_EXTRACT:
-         if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)))
-            rmenu_settings_set(S_UNZIP_MODE_DECREMENT);
-         if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-            rmenu_settings_set(S_UNZIP_MODE_INCREMENT);
-         if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            rmenu_settings_set_default(S_DEF_UNZIP_MODE);
-         break;
-#endif
       case SETTING_RARCH_DEFAULT_EMU:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {

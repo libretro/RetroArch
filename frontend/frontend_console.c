@@ -104,42 +104,7 @@ int main(int argc, char *argv[])
 
 void console_load_game(const char *path)
 {
-#ifdef HAVE_ZLIB
-   if ((strstr(path, ".zip") || strstr(path, ".ZIP"))
-         && !g_extern.system.block_extract)
-   {
-      char first_file[PATH_MAX];
-      first_file[0] = '\0';
-
-      rarch_zlib_extract_archive(path, first_file, sizeof(first_file));
-      if(g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         rmenu_settings_msg(S_MSG_EXTRACTED_ZIPFILE, S_DELAY_180);
-
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_FILEBROWSER_REFRESH_PENDING);
-
-      if ((g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE)) ||
-            (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN)))
-      {
-         if (first_file[0] != 0)
-         {
-            RARCH_LOG("Found compatible game, loading it...\n");
-            strlcpy(g_extern.fullpath, first_file, sizeof(g_extern.fullpath));
-
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE_AND_CLEAN))
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_DELETE_PENDING);
-
-            goto do_init;
-         }
-         else
-            msg_queue_push(g_extern.msg_queue, "Could not find compatible game, not loading first file.\n", 1, 100);
-      }
-      return;
-   }
-   else
-#endif
-      strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
-
-do_init:
+   strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
    g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 }
 
@@ -352,17 +317,6 @@ begin_loop:
          rmenu_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
       }
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
-#ifdef HAVE_ZLIB
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_UNZIP_DELETE_PENDING))
-      {
-         int ret = remove(g_extern.fullpath);
-
-         if (ret == 0)
-            RARCH_LOG("Removed temporary unzipped ROM file: [%s].\n", g_extern.fullpath);
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_UNZIP_DELETE_PENDING);
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_FILEBROWSER_REFRESH_PENDING);
-      }
-#endif
    }
    else if(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
    {

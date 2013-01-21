@@ -16,6 +16,7 @@
 
 #include "../../driver.h"
 #include "../../ps3/sdk_defines.h"
+#include "../../console/rarch_console.h"
 
 #ifndef __PSL1GHT__
 #include <sys/spu_initialize.h>
