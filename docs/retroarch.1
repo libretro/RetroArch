@@ -21,7 +21,8 @@ libretro provides emulation of a game system, and can be implemented by any fron
 .TP
 \fB[rom file]\fR
 If no rom file path is defined on the command line, \fBretroarch\fR will try to load a rom from \fBstdin\fR.
-\fBretroarch\fR does not uncompress roms. ROM types supported depends on the libretro implementation used.
+\fBretroarch\fR use uncompressed ROMs, but can uncompress roms in the .zip/deflate format if support for it is compiled in.
+ROM types supported depend on the libretro implementation used.
 
 .TP
 \fB--help, -h\fR
