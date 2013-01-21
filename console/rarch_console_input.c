@@ -60,8 +60,11 @@ static uint64_t rarch_input_find_previous_platform_key(uint64_t joykey)
 {
    size_t arr_size = platform_keys_size / sizeof(platform_keys[0]);
 
+   if (joykey == NO_BTN)
+      return platform_keys[arr_size - 1].joykey;
+
    if (platform_keys[0].joykey == joykey)
-      return joykey;
+      return NO_BTN;
 
    for (size_t i = 1; i < arr_size; i++)
    {
@@ -76,8 +79,11 @@ static uint64_t rarch_input_find_next_platform_key(uint64_t joykey)
 {
    size_t arr_size = platform_keys_size / sizeof(platform_keys[0]);
 
+   if (joykey == NO_BTN)
+      return platform_keys[0].joykey;
+
    if (platform_keys[arr_size - 1].joykey == joykey)
-      return joykey;
+      return NO_BTN;
 
    for (size_t i = 0; i < arr_size - 1; i++)
    {
