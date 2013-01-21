@@ -756,6 +756,8 @@ static void gx_resize(void *data)
       bottom += g_extern.console.screen.overscan_amount / 2;
    }
    guOrtho(m1, top, bottom, left, right, 0, 1);
+   GX_LoadPosMtxImm(m1, GX_PNMTX1);
+
    unsigned degrees;
    switch(g_orientation)
    {
@@ -920,6 +922,7 @@ static bool gx_frame(void *data, const void *frame,
 
    //if (frame)
    {
+      GX_SetCurrentMtx(GX_PNMTX0);
       GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
       GX_CallDispList(display_list, display_list_size);
       GX_DrawDone();
@@ -927,6 +930,7 @@ static bool gx_frame(void *data, const void *frame,
 
    if(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
    {
+      GX_SetCurrentMtx(GX_PNMTX1);
       GX_LoadTexObj(&menu_tex.obj, GX_TEXMAP0);
       GX_CallDispList(display_list, display_list_size);
       GX_DrawDone();
