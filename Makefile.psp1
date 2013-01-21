@@ -1,4 +1,4 @@
-RARCH_VERSION		= "0.9.8-beta3"
+RARCH_VERSION		= "0.9.8"
 
 HAVE_FILE_LOGGER	= 1
 

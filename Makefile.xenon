@@ -21,7 +21,7 @@ INCDIRS = -I. -I$(DEVKITXENON)/usr/include
 OBJ = console/griffin/griffin.o
 
 LIBS = -lretro_xenon360 -lxenon -lm -lc
-DEFINES = -std=gnu99 -DPACKAGE_VERSION=\"0.9.8-beta3\" -DRARCH_CONSOLE -DHAVE_THREAD -DHAVE_GETOPT_LONG=1 -DHAVE_GRIFFIN -Dmain=rarch_main
+DEFINES = -std=gnu99 -DPACKAGE_VERSION=\"0.9.8\" -DRARCH_CONSOLE -DHAVE_THREAD -DHAVE_GETOPT_LONG=1 -DHAVE_GRIFFIN -Dmain=rarch_main
 DEFINES += -maltivec -mhard-float -m32 -mpowerpc64 -mcpu=cell -mtune=cell -fno-pic -g -Wall -DXENON $(INCDIRS) -Wno-char-subscripts
 DEFINES += -u read -u _start -u exc_base
 
