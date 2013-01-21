@@ -49,6 +49,7 @@ HAVE_DSOUND = 1
 HAVE_OPENGL = 1
 HAVE_DYLIB = 1
 HAVE_D3D9 = 1
+HAVE_ZLIB = 1
 HAVE_NETPLAY = 1
 HAVE_STDIN_CMD = 1
 HAVE_THREADS = 1
@@ -141,6 +142,12 @@ ifeq ($(HAVE_RSOUND), 1)
    OBJ += audio/rsound.o
    DEFINES += -DHAVE_RSOUND
    LIBS += -lrsound
+endif
+
+ifeq ($(HAVE_ZLIB), 1)
+   OBJ += gfx/rpng/rpng.o file_extract.o
+   LIBS += -lz
+   DEFINES += -DHAVE_ZLIB_DEFLATE
 endif
 
 ifeq ($(HAVE_LIBXML2), 1)
