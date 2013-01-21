@@ -266,16 +266,12 @@ endif
 ifeq ($(HAVE_SDL_IMAGE), 1)
    LIBS += $(SDL_IMAGE_LIBS)
    DEFINES += $(SDL_IMAGE_CFLAGS)
-else
-   ifeq ($(HAVE_ZLIB), 1)
-      OBJ += gfx/rpng/rpng.o
-      DEFINES += -DHAVE_ZLIB_DEFLATE
-   endif
 endif
 
 ifeq ($(HAVE_ZLIB), 1)
+   OBJ += gfx/rpng/rpng.o file_extract.o
    LIBS += $(ZLIB_LIBS)
-   DEFINES += $(ZLIB_CFLAGS)
+   DEFINES += $(ZLIB_CFLAGS) -DHAVE_ZLIB_DEFLATE
 endif
 
 ifeq ($(HAVE_FFMPEG), 1)

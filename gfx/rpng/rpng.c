@@ -402,7 +402,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
    stream.avail_out = inflate_buf_size;
    stream.next_out  = inflate_buf;
 
-   if (inflate(&stream, Z_SYNC_FLUSH) != Z_STREAM_END)
+   if (inflate(&stream, Z_FINISH) != Z_STREAM_END)
    {
       inflateEnd(&stream);
       GOTO_END_ERROR();
@@ -697,6 +697,7 @@ static bool rpng_save_image(const char *path, const uint8_t *data,
       deflateEnd(&stream);
       GOTO_END_ERROR();
    }
+   deflateEnd(&stream);
 
    memcpy(deflate_buf + 4, "IDAT", 4);
    dword_write_be(deflate_buf + 0, stream.total_out);

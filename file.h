@@ -31,6 +31,7 @@ extern "C" {
 // Generic file, path and directory handling.
 
 ssize_t read_file(const char *path, void **buf);
+bool write_file(const char *path, const void *buf, size_t size);
 
 bool load_state(const char *path);
 bool save_state(const char *path);

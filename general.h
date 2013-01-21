@@ -309,6 +309,7 @@ struct global
    bool has_justifiers;
    bool has_multitap;
 
+   bool rom_file_temporary;
    enum rarch_game_type game_type;
    uint32_t cart_crc;
 

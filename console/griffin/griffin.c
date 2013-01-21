@@ -48,6 +48,7 @@ CONSOLE EXTENSIONS
 
 #ifdef HAVE_ZLIB
 #include "../rarch_zlib.c"
+#include "../../file_extract.c"
 #endif
 
 /*============================================================

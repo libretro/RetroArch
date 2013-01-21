@@ -597,6 +597,7 @@ static void print_features(void)
    _PSUPP(pulse, "PulseAudio", "audio driver");
    _PSUPP(dsound, "DirectSound", "audio driver");
    _PSUPP(xaudio, "XAudio2", "audio driver");
+   _PSUPP(zlib, "zlib", "PNG encode/decode and .zip extraction");
    _PSUPP(al, "OpenAL", "audio driver");
    _PSUPP(dylib, "External", "External filter and plugin support");
    _PSUPP(cg, "Cg", "Cg pixel shaders");
@@ -2902,6 +2903,14 @@ void rarch_main_deinit(void)
    pretro_deinit();
    uninit_drivers();
    uninit_libretro_sym();
+
+   if (g_extern.rom_file_temporary)
+   {
+      RARCH_LOG("Removing tempoary ROM file: %s.\n", g_extern.fullpath);
+      if (remove(g_extern.fullpath) < 0)
+         RARCH_ERR("Failed to remove temporary file: %s.\n", g_extern.fullpath);
+      g_extern.rom_file_temporary = false;
+   }
 
    g_extern.main_is_init = false;
 }
