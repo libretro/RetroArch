@@ -761,13 +761,13 @@ static void set_paths(const char *path)
 
 static void verify_stdin_paths(void)
 {
-   if (strlen(g_extern.savefile_name_srm) == 0)
+   if (!*g_extern.savefile_name_srm)
    {
       RARCH_ERR("Need savefile path argument (--save) when reading rom from stdin.\n");
       print_help();
       rarch_fail(1, "verify_stdin_paths()");
    }
-   else if (strlen(g_extern.savestate_name) == 0)
+   else if (!*g_extern.savestate_name)
    {
       RARCH_ERR("Need savestate path argument (--savestate) when reading rom from stdin.\n");
       print_help();
