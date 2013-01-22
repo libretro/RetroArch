@@ -951,6 +951,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.cg_shader_path, RARCH_SHADER_INDEX_PASS0);
                   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                      rmenu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+                  XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
                }
                else
                   RARCH_ERR("Shaders are unsupported on this platform.\n");
