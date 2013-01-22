@@ -83,8 +83,7 @@ static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
 {
    (void)latency;
    (void)device;
-   (void)rate; // Always use 48kHz.
-   g_settings.audio.out_rate = 48000.0;
+   (void)rate;
 
    ps3_audio_t *data = calloc(1, sizeof(*data));
    if (!data)
