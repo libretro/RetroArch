@@ -143,8 +143,7 @@ static void get_libretro_core_name(char *name, size_t size)
 
 // If a CORE executable of name CORE.extension exists, rename filename
 // to a more sane name.
-static bool install_libretro_core(const char *core_exe_path, const char *tmp_path,
- const char *libretro_path, const char *config_path, const char *extension)
+static bool install_libretro_core(const char *core_exe_path, const char *tmp_path, const char *extension)
 {
    int ret = 0;
    char tmp_path2[PATH_MAX], tmp_pathnewfile[PATH_MAX];
@@ -248,14 +247,16 @@ int main(int argc, char *argv[])
    snprintf(path_prefix, sizeof(path_prefix), "%s%c", default_paths.core_dir, slash);
    snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
 
-   RARCH_LOG("core_exe_path: %s\n", core_exe_path);
    if (path_file_exists(core_exe_path))
    {
-      if (install_libretro_core(core_exe_path, path_prefix, path_prefix, 
-               g_extern.config_path, extension))
+      RARCH_LOG("core_exe_path: %s\n", core_exe_path);
+      if (install_libretro_core(core_exe_path, path_prefix, extension))
       {
-         RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
-         config_save_file(g_extern.config_path);
+         if (path_file_exists(g_extern.config_path))
+         {
+            RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
+            config_save_file(g_extern.config_path);
+         }
       }
    }
 #endif
