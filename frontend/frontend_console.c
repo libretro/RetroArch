@@ -252,11 +252,8 @@ int main(int argc, char *argv[])
       RARCH_LOG("core_exe_path: %s\n", core_exe_path);
       if (install_libretro_core(core_exe_path, path_prefix, extension))
       {
-         if (path_file_exists(g_extern.config_path))
-         {
-            RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
-            config_save_file(g_extern.config_path);
-         }
+         RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
+         config_save_file(g_extern.config_path);
       }
    }
 #endif
