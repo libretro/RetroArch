@@ -259,12 +259,18 @@ static bool load_plain(const char *path)
    RARCH_LOG("Loading HLSL file: %s\n", path);
 
    if (!load_program(1, path, true))
+   {
+      RARCH_ERR("Failed to load HLSL shader %s into first-pass.\n", path);
       return false;
+   }
 
    if (*g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
    {
       if (!load_program(2, g_settings.video.second_pass_shader, true))
+      {
+         RARCH_ERR("Failed to load HLSL shader %s into secondpass.\n", path);
          return false;
+      }
 
       hlsl_shader_num = 2;
    }
@@ -294,6 +300,7 @@ static void hlsl_deinit_progs(void)
       prg[0].fprg->Release();
    if (prg[0].vprg)
       prg[0].vprg->Release();
+
    prg[0].fprg = NULL;
    prg[0].vprg = NULL;
 }
@@ -327,7 +334,10 @@ bool hlsl_init(const char *path, IDirect3DDevice9 * device_ptr)
    else
    {
       if (!load_plain(path))
+      {
+         RARCH_ERR("Loading of HLSL shader %s failed.\n", path);
          return false;
+      }
    }
    for(unsigned i = 1; i <= hlsl_shader_num; i++)
       set_program_attributes(i);
@@ -358,4 +368,3 @@ void hlsl_deinit(void)
 
    hlsl_deinit_state();
 }
-
