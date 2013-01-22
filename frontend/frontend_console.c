@@ -102,12 +102,6 @@ int main(int argc, char *argv[])
 
 #else
 
-void console_load_game(const char *path)
-{
-   strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
-}
-
 static void verbose_log_init(void)
 {
    if (g_extern.verbose)

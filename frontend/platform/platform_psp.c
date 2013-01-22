@@ -96,10 +96,13 @@ void menu_init (void) {}
 
 bool rmenu_iterate(void)
 {
-   char game_rom[256];
-   snprintf(game_rom, sizeof(game_rom), "%s%s", default_paths.port_dir, "dkc.sfc");
-   RARCH_LOG("game ROM: %s\n", game_rom);
-   console_load_game(game_rom);
+   char path[256];
+   snprintf(path, sizeof(path), "%s%s", default_paths.port_dir, "dkc.sfc");
+   RARCH_LOG("game ROM: %s\n", path);
+
+   strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
 

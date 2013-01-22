@@ -1219,7 +1219,10 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             else
             {
                snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s", dir, path);
-               console_load_game(rgui->path_buf);
+
+               strlcpy(g_extern.fullpath, rgui->path_buf, sizeof(g_extern.fullpath));
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+
                rmenu_settings_msg(S_MSG_LOADING_ROM, S_DELAY_1);
                rgui->need_refresh = true; // in case of zip extract
                rgui->msg_force = true;

@@ -377,7 +377,8 @@ static void system_process_args(int argc, char *argv[])
       g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
       snprintf(rom, sizeof(rom), "%s%s", argv[1], argv[2]);
 
-      console_load_game(rom);
+      strlcpy(g_extern.fullpath, rom, sizeof(g_extern.fullpath));
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 
       rgui_iterate(rgui, RGUI_ACTION_MESSAGE);
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);

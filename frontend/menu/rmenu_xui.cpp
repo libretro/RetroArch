@@ -182,7 +182,8 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       if(path_file_exists(browser->current_dir.list->elems[index].data))
       {
          snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), str_buffer);
-         console_load_game(path);
+         strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
       }
       else if(browser->current_dir.list->elems[index].attr.b)
       {

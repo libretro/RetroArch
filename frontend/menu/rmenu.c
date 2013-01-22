@@ -1808,7 +1808,10 @@ int select_rom(void *data, void *state)
             rmenu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
       }
       else
-         console_load_game(filebrowser_get_current_path(filebrowser));
+      {
+         strlcpy(g_extern.fullpath, filebrowser_get_current_path(filebrowser), sizeof(g_extern.fullpath));
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
+      }
    }
    else if (input & (1ULL << RMENU_DEVICE_NAV_L1))
    {
