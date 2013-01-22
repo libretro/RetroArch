@@ -170,7 +170,6 @@ bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *va
                   strlcpy(zip_path, new_path, zip_path_size);
                   goto end;
                }
-               else
             default:
                GOTO_END_ERROR();
          }
