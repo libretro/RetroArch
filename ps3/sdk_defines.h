@@ -634,9 +634,6 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 #include <sysutil/sysutil_screenshot.h>
 #include <sysutil/sysutil_common.h>
 #include <sysutil/sysutil_gamecontent.h>
-#ifdef HAVE_HDD_CACHE_PARTITION
-#include <sysutil/sysutil_syscache.h>
-#endif
 #endif
 #endif
 

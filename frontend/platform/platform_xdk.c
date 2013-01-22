@@ -263,26 +263,6 @@ static void get_environment_settings(int argc, char *argv[])
    (void)argc;
    (void)argv;
    (void)ret;
-#if defined(_XBOX360) || defined(HAVE_HDD_CACHE_PARTITION)
-   //for devkits only, we will need to mount all partitions for retail
-   //in a different way
-   //DmMapDevkitDrive();
-   ret = XSetFileCacheSize(0x100000);
-
-   if(ret != TRUE)
-   {
-      RARCH_ERR("Couldn't change number of bytes reserved for file system cache.\n");
-   }
-
-   ret = XFileCacheInit(XFILECACHE_CLEAR_ALL, 0x100000, XFILECACHE_DEFAULT_THREAD, 0, 1);
-
-   if(ret != ERROR_SUCCESS)
-   {
-      RARCH_ERR("File cache could not be initialized.\n");
-   }
-
-   XFlushUtilityDrive();
-#endif
 
 #ifdef _XBOX360
    // detect install environment
@@ -331,9 +311,6 @@ static void get_environment_settings(int argc, char *argv[])
    strlcpy(default_paths.screenshots_dir, "D:\\screenshots", sizeof(default_paths.screenshots_dir));
    strlcpy(default_paths.salamander_file, "default.xbe", sizeof(default_paths.salamander_file));
 #elif defined(_XBOX360)
-#ifdef HAVE_HDD_CACHE_PARTITION
-   strlcpy(default_paths.cache_dir, "cache:\\", sizeof(default_paths.cache_dir));
-#endif
    strlcpy(default_paths.core_dir, "game:", sizeof(default_paths.core_dir));
    strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.screenshots_dir, "game:", sizeof(default_paths.screenshots_dir));

@@ -30,10 +30,6 @@
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 
-#ifdef HAVE_HDD_CACHE_PARTITION
-#define CACHE_ID "ABCD12345"
-#endif
-
 #ifndef __PSL1GHT__
 #define NP_POOL_SIZE (128*1024)
 static uint8_t np_pool[NP_POOL_SIZE];
@@ -220,18 +216,6 @@ static void get_environment_settings(int argc, char *argv[])
    char dirName[CELL_GAME_DIRNAME_SIZE];
    char contentInfoPath[PATH_MAX];
 
-#ifdef HAVE_HDD_CACHE_PARTITION
-   CellSysCacheParam param;
-   memset(&param, 0x00, sizeof(CellSysCacheParam));
-   strlcpy(param.cacheId,CACHE_ID, sizeof(CellSysCacheParam));
-
-   ret = cellSysCacheMount(&param);
-   if(ret != CELL_SYSCACHE_RET_OK_CLEARED)
-   {
-      RARCH_ERR("System cache partition could not be mounted, it might be already mounted.\n");
-   }
-#endif
-
 #ifdef HAVE_MULTIMAN
    /* not launched from external launcher, set default path */
    strlcpy(default_paths.multiman_self_file, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
@@ -298,9 +282,6 @@ static void get_environment_settings(int argc, char *argv[])
          RARCH_LOG("usrDirPath : [%s].\n", default_paths.port_dir);
       }
 
-#ifdef HAVE_HDD_CACHE_PARTITION
-      snprintf(default_paths.cache_dir, sizeof(default_paths.cache_dir), "/dev_hdd1/");
-#endif
       snprintf(default_paths.core_dir, sizeof(default_paths.core_dir), "%s/cores", default_paths.port_dir);
       snprintf(default_paths.executable_extension, sizeof(default_paths.executable_extension), ".SELF");
       snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.core_dir);
@@ -449,15 +430,6 @@ static void system_deinit(void)
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
 #endif
 
-#endif
-
-#ifdef HAVE_HDD_CACHE_PARTITION
-   int ret = cellSysCacheClear();
-
-   if(ret != CELL_SYSCACHE_RET_OK_CLEARED)
-   {
-      RARCH_ERR("System cache partition could not be cleared on exit.\n");
-   }
 #endif
 
 #endif

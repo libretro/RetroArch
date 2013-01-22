@@ -68,9 +68,6 @@ typedef struct
    char menu_border_file[MAXIMUM_PATH];
    char border_file[MAXIMUM_PATH];
    char border_dir[MAXIMUM_PATH];
-#ifdef HAVE_HDD_CACHE_PARTITION
-   char cache_dir[MAXIMUM_PATH];
-#endif
    char cgp_dir[MAXIMUM_PATH];
    char core_dir[MAXIMUM_PATH];
    char config_path[MAXIMUM_PATH];

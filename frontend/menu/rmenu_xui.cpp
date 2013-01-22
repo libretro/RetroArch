@@ -200,17 +200,6 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
       filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
    }
-#ifdef HAVE_HDD_CACHE_PARTITION
-   else if (hObjPressed == m_dir_cache)
-   {
-      filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, "cache:");
-      uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
-      filebrowser_fetch_directory_entries(browser, action, &m_romlist, &m_rompathtitle);
-
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         rmenu_settings_msg(S_MSG_CACHE_PARTITION, S_DELAY_180);
-   }
-#endif
 
    bHandled = TRUE;
 
