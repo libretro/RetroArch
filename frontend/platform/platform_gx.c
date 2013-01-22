@@ -371,10 +371,7 @@ static void system_process_args(int argc, char *argv[])
    if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
       char rom[PATH_MAX];
-      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_UNZIP_TO_CURDIR) | 
-            (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE) | (1ULL << MODE_UNZIP_TO_CACHEDIR));
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EXTLAUNCH_CHANNEL);
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_UNZIP_TO_CURDIR_AND_LOAD_FIRST_FILE);
       snprintf(rom, sizeof(rom), "%s%s", argv[1], argv[2]);
 
       strlcpy(g_extern.fullpath, rom, sizeof(g_extern.fullpath));
