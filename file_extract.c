@@ -171,9 +171,6 @@ bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *va
                   goto end;
                }
                else
-                  GOTO_END_ERROR();
-               break;
-
             default:
                GOTO_END_ERROR();
          }
