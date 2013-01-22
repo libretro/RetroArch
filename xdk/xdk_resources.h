@@ -35,7 +35,6 @@ struct XBRESOURCE
 #endif
 };
 
-// Resource types
 enum
 {
    RESOURCETYPE_USERDATA       = ( ( 'U' << 24 ) | ( 'S' << 16 ) | ( 'E' << 8 ) | ( 'R' ) ),
@@ -151,4 +150,4 @@ class PackedResource
       ~PackedResource();
 };
 
-#endif RARCH_XDK_RESOURCE_H
+#endif /* RARCH_XDK_RESOURCE_H */

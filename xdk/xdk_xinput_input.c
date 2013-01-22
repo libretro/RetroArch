@@ -22,11 +22,12 @@
 #endif
 
 #define MAX_PADS 4
+#define DEADZONE (16000)
 
 #include "../driver.h"
 #include "../general.h"
 #include "../libretro.h"
-#include "xdk_xinput_input.h"
+
 
 static uint64_t state[MAX_PADS];
 unsigned pads_connected;
