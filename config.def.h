@@ -248,7 +248,7 @@ static const float message_pos_offset_y = 0.05;
 static const uint32_t message_color = 0xffff00; // RGB hex value.
 
 // Render-to-texture before rendering to screen (multi-pass shaders)
-#if defined(__CELLOS_LV2__) || defined(_XBOX360)
+#if defined(__CELLOS_LV2__)
 static const bool render_to_texture = true;
 #else
 static const bool render_to_texture = false;

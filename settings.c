@@ -177,11 +177,11 @@ void config_set_defaults(void)
    g_settings.video.msg_color_g = ((message_color >>  8) & 0xff) / 255.0f;
    g_settings.video.msg_color_b = ((message_color >>  0) & 0xff) / 255.0f;
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL)
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    g_settings.video.render_to_texture = render_to_texture;
+   g_settings.video.second_pass_smooth = second_pass_smooth;
    g_settings.video.fbo.scale_x = fbo_scale_x;
    g_settings.video.fbo.scale_y = fbo_scale_y;
-   g_settings.video.second_pass_smooth = second_pass_smooth;
 #endif
 
    g_settings.video.refresh_rate = refresh_rate;
