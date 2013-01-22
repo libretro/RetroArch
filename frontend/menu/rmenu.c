@@ -1385,7 +1385,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             menu_stack_push(LIBRETRO_CHOICE);
             filebrowser_set_root_and_ext(filebrowser, EXT_EXECUTABLES, default_paths.core_dir);
-            set_libretro_core_as_launch = false;
+            set_libretro_core_as_launch = true;
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
