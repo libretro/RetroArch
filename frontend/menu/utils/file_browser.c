@@ -102,20 +102,6 @@ bool with_extension)
    return ret;
 }
 
-static bool filebrowser_refresh_directory(void *data, const char * path)
-{
-   filebrowser_t *filebrowser = (filebrowser_t*)data;
-   bool ret = true;
-
-   char basedir[PATH_MAX];
-   fill_pathname_basedir(basedir, path, sizeof(basedir));
-
-   ret = filebrowser_parse_directory(filebrowser, filebrowser->directory_stack_size, basedir, 
-         filebrowser->extensions);
-
-   return ret;
-}
-
 static bool filebrowser_pop_directory (void *data)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)data;
@@ -223,9 +209,6 @@ bool filebrowser_iterate(void *data, unsigned action)
       case FILEBROWSER_ACTION_SCROLL_DOWN:
          filebrowser->current_dir.ptr = (min(filebrowser->current_dir.ptr + 
          entries_to_scroll, filebrowser->current_dir.list->size-1));
-         break;
-      case FILEBROWSER_ACTION_REFRESH:
-         ret = filebrowser_refresh_directory(filebrowser, filebrowser_get_current_path(filebrowser));
          break;
       case FILEBROWSER_ACTION_OK:
          ret = filebrowser_push_directory(filebrowser, filebrowser_get_current_path(filebrowser), true);

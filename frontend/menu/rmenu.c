@@ -539,12 +539,7 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
    filebrowser_action_t action = FILEBROWSER_ACTION_NOOP;
    bool ret = true;
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_FILEBROWSER_REFRESH_PENDING))
-   {
-      action = FILEBROWSER_ACTION_REFRESH;
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FILEBROWSER_REFRESH_PENDING);
-   }
-   else if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
+   if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
       action = FILEBROWSER_ACTION_DOWN;
    else if (input & (1ULL << RMENU_DEVICE_NAV_UP))
       action = FILEBROWSER_ACTION_UP;
