@@ -86,6 +86,9 @@ end:
 
 bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *valid_exts)
 {
+   const uint8_t *footer = NULL;
+   const uint8_t *directory = NULL;
+
    bool ret = true;
    if (!valid_exts)
    {
@@ -102,7 +105,7 @@ bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *va
    if (zip_size < 22)
       GOTO_END_ERROR();
 
-   const uint8_t *footer = data + zip_size - 22;
+   footer = data + zip_size - 22;
    for (;; footer--)
    {
       if (footer <= data + 22)
@@ -115,7 +118,7 @@ bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *va
       }
    }
 
-   const uint8_t *directory = data + read_le(footer + 16, 4);
+   directory = data + read_le(footer + 16, 4);
 
    for (;;)
    {
