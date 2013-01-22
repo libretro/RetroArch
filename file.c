@@ -652,6 +652,8 @@ bool init_rom_file(enum rarch_game_type type)
       if (ext && !strcasecmp(ext, "zip"))
       {
          g_extern.rom_file_temporary = true;
+         strlcpy(g_extern.last_rom, g_extern.fullpath, sizeof(g_extern.last_rom));
+
          if (!zlib_extract_first_rom(g_extern.fullpath, sizeof(g_extern.fullpath), g_extern.system.valid_extensions))
          {
             RARCH_ERR("Failed to extract ROM from zipped file: %s.\n", g_extern.fullpath);

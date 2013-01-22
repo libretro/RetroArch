@@ -2906,9 +2906,9 @@ void rarch_main_deinit(void)
 
    if (g_extern.rom_file_temporary)
    {
-      RARCH_LOG("Removing tempoary ROM file: %s.\n", g_extern.fullpath);
-      if (remove(g_extern.fullpath) < 0)
-         RARCH_ERR("Failed to remove temporary file: %s.\n", g_extern.fullpath);
+      RARCH_LOG("Removing tempoary ROM file: %s.\n", g_extern.last_rom);
+      if (remove(g_extern.last_rom) < 0)
+         RARCH_ERR("Failed to remove temporary file: %s.\n", g_extern.last_rom);
       g_extern.rom_file_temporary = false;
    }
 

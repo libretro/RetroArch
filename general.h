@@ -305,6 +305,7 @@ struct global
    bool has_multitap;
 
    bool rom_file_temporary;
+   char last_rom[PATH_MAX];
    enum rarch_game_type game_type;
    uint32_t cart_crc;
 
