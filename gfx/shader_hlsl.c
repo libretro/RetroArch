@@ -186,9 +186,9 @@ end:
    return ret;
 }
 
-static bool load_stock(void)
+static bool load_stock(unsigned program_id)
 {
-   if (!load_program(0, stock_hlsl_program, false))
+   if (!load_program(program_id, stock_hlsl_program, false))
    {
       RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
       return false;
@@ -253,7 +253,7 @@ end:
 
 static bool load_plain(const char *path)
 {
-   if (!load_stock())
+   if (!load_stock(0))
       return false;
 
    RARCH_LOG("Loading HLSL file: %s\n", path);
@@ -261,7 +261,7 @@ static bool load_plain(const char *path)
    if (!load_program(1, path, true))
    {
       RARCH_ERR("Failed to load HLSL shader %s into first-pass.\n", path);
-      return false;
+      prg[1] = prg[0];
    }
 
    if (*g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
@@ -269,7 +269,7 @@ static bool load_plain(const char *path)
       if (!load_program(2, g_settings.video.second_pass_shader, true))
       {
          RARCH_ERR("Failed to load HLSL shader %s into secondpass.\n", path);
-         return false;
+         prg[2] = prg[0];
       }
 
       hlsl_shader_num = 2;
