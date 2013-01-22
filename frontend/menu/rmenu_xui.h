@@ -113,7 +113,6 @@ class CRetroArchFileBrowser: public CXuiSceneImpl
       CXuiList m_romlist;
       CXuiControl m_back;
       CXuiControl m_dir_game;
-      CXuiControl m_dir_cache;
       CXuiTextElement m_rompathtitle;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );

@@ -160,7 +160,6 @@ HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled
    GetChildById(L"XuiBackButton1", &m_back);
    GetChildById(L"XuiTxtRomPath", &m_rompathtitle);
    GetChildById(L"XuiBtnGameDir", &m_dir_game);
-   GetChildById(L"XuiBtnCacheDir", &m_dir_cache);
 
    filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, default_paths.filebrowser_startup_dir);
 
