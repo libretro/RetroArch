@@ -291,11 +291,15 @@ begin_loop:
       struct rarch_main_wrap args = {0};
 
       args.verbose = g_extern.verbose;
-      args.config_path = g_extern.config_path;
       args.sram_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? g_extern.console.main_wrap.default_sram_dir : NULL;
       args.state_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? g_extern.console.main_wrap.default_savestate_dir : NULL;
       args.rom_path = g_extern.fullpath;
       args.libretro_path = g_settings.libretro;
+
+      if (path_file_exists(g_extern.config_path))
+         args.config_path = g_extern.config_path;
+      else
+         args.config_path = NULL;
 
       int init_ret = rarch_main_init_wrap(&args);
 
