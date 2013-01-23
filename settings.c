@@ -270,7 +270,12 @@ void config_set_defaults(void)
    g_extern.console.screen.resolutions.current.id = 0;
    strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, default_paths.filebrowser_startup_dir, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
    strlcpy(g_extern.console.main_wrap.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.default_savestate_dir));
+
+#if defined(__CELLOS_LV2) || defined(_XBOX360)
+   g_settings.video.aspect_ratio_idx = ASPECT_RATIO_16_9;
+#else
    g_settings.video.aspect_ratio_idx = 0;
+#endif
    g_extern.state_slot = 0;
    g_extern.audio_data.mute = 0;
    g_extern.verbose = true;
