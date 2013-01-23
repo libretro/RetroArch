@@ -8,7 +8,7 @@
 <Id>XuiSceneCoreFileBrowser</Id>
 <Width>575.888062</Width>
 <Height>336.017609</Height>
-<Position>32.029999,76.040001,0.000000</Position>
+<Position>32.029999,48.040001,0.000000</Position>
 <ClassOverride>RetroArchCoreBrowser</ClassOverride>
 </Properties>
 <XuiText>

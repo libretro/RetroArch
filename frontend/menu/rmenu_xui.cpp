@@ -29,7 +29,6 @@
 
 #include "../../gfx/gfx_context.h"
 
-#include "../../xdk/xdk_d3d.h"
 #include "../../message.h"
 
 #include "../../general.h"
@@ -388,7 +387,6 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? L"Info messages: ON" : L"Info messages: OFF");
    m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
-   m_settingslist.SetText(SETTING_EMU_MENUS, (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? L"Menus: HD" : L"Menus: SD");
    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
@@ -460,13 +458,6 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             else
                g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
             m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
-            break;
-         case SETTING_EMU_MENUS:
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD))
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_HD);
-            else
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_HD);
-            m_settingslist.SetText(SETTING_EMU_MENUS, (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? L"Menus: HD" : L"Menus: SD");
             break;
          case SETTING_GAMMA_CORRECTION_ENABLED:
             g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
@@ -578,13 +569,6 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                   g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
                m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
                break;
-            case SETTING_EMU_MENUS:
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD))
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_HD);
-               else
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_HD);
-               m_settingslist.SetText(SETTING_EMU_MENUS, (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? L"Menus: HD" : L"Menus: SD");
-               break;
             case SETTING_GAMMA_CORRECTION_ENABLED:
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
                driver.video->restart();
@@ -638,13 +622,6 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                else
                   g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
                m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
-               break;
-            case SETTING_EMU_MENUS:
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD))
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_HD);
-               else
-                  g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_HD);
-               m_settingslist.SetText(SETTING_EMU_MENUS, (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? L"Menus: HD" : L"Menus: SD");
                break;
             case SETTING_GAMMA_CORRECTION_ENABLED:
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
