@@ -53,6 +53,10 @@
 #define FPS_COUNTER
 #endif
 
+#ifdef ANDROID
+#include "../frontend/frontend_android.h"
+#endif
+
 // Used for the last pass when rendering to the back buffer.
 const GLfloat vertexes_flipped[] = {
    0, 1,
@@ -200,6 +204,10 @@ static inline bool load_gl_proc_win32(gl_t *gl)
 #define pglBufferData glBufferData
 #define pglMapBuffer glMapBuffer
 #define pglUnmapBuffer glUnmapBuffer
+#endif
+
+#ifdef ANDROID
+static bool android_portrait;
 #endif
 
 ////////////////// Shaders
@@ -706,6 +714,12 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
          }
       }
    }
+
+#ifdef ANDROID
+   android_portrait = (AConfiguration_getOrientation(g_android->config) == ACONFIGURATION_ORIENTATION_PORT);
+   if (android_portrait)
+      y *= 2;
+#endif
 
    glViewport(x, y, width, height);
    gl->vp.x      = x;
@@ -1811,6 +1825,11 @@ static void gl_viewport_info(void *data, struct rarch_viewport *vp)
    *vp = gl->vp;
    vp->full_width  = gl->win_width;
    vp->full_height = gl->win_height;
+#ifdef ANDROID
+   // FIXME: ugly hack around broken logic in input_translate_coord_viewport
+   if (android_portrait)
+      vp->y = 0;
+#endif
 }
 
 static bool gl_read_viewport(void *data, uint8_t *buffer)
