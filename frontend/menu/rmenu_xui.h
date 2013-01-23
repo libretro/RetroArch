@@ -109,10 +109,8 @@ class CRetroArchMain: public CXuiSceneImpl
 class CRetroArchFileBrowser: public CXuiSceneImpl
 {
    protected:
-      CXuiList m_romlist;
       CXuiControl m_back;
       CXuiControl m_dir_game;
-      CXuiTextElement m_rompathtitle;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
       HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
@@ -128,9 +126,7 @@ class CRetroArchFileBrowser: public CXuiSceneImpl
 class CRetroArchCoreBrowser: public CXuiSceneImpl
 {
    protected:
-      CXuiList m_romlist;
       CXuiControl m_back;
-      CXuiTextElement m_rompathtitle;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
       HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
@@ -146,9 +142,7 @@ class CRetroArchCoreBrowser: public CXuiSceneImpl
 class CRetroArchShaderBrowser: public CXuiSceneImpl
 {
    protected:
-      CXuiList m_shaderlist;
       CXuiControl m_back;
-      CXuiTextElement m_shaderpathtitle;
    public:
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
       HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
