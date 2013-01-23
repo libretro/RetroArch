@@ -860,6 +860,9 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             break;
          case MENU_XUI_ITEM_RESIZE_MODE:
             input_loop = INPUT_LOOP_RESIZE_MODE;
+            g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
+            rmenu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
+            m_quickmenulist.SetText(MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
                rmenu_settings_msg(S_MSG_RESIZE_SCREEN, S_DELAY_270);
