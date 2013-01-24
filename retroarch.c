@@ -1845,6 +1845,9 @@ static void load_auto_state(void)
       return;
 #endif
 
+   if (!g_settings.savestate_auto_load)
+      return;
+
    char savestate_name_auto[PATH_MAX];
    fill_pathname_noext(savestate_name_auto, g_extern.savestate_name,
          ".auto", sizeof(savestate_name_auto));

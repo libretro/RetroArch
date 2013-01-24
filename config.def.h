@@ -358,8 +358,9 @@ static const bool savestate_auto_index = false;
 
 // Automatically saves a savestate at the end of RetroArch's lifetime.
 // The path is $SRAM_PATH.auto.
-// RetroArch will automatically load any savestate with this path on startup.
+// RetroArch will automatically load any savestate with this path on startup if savestate_auto_load is set.
 static const bool savestate_auto_save = false;
+static const bool savestate_auto_load = true;
 
 // Slowmotion ratio.
 static const float slowmotion_ratio = 3.0;

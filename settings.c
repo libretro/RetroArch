@@ -211,6 +211,7 @@ void config_set_defaults(void)
    g_settings.block_sram_overwrite = block_sram_overwrite;
    g_settings.savestate_auto_index = savestate_auto_index;
    g_settings.savestate_auto_save  = savestate_auto_save;
+   g_settings.savestate_auto_load  = savestate_auto_load;
    g_settings.network_cmd_enable   = network_cmd_enable;
    g_settings.network_cmd_port     = network_cmd_port;
    g_settings.stdin_cmd_enable     = stdin_cmd_enable;
@@ -671,6 +672,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(block_sram_overwrite, "block_sram_overwrite");
    CONFIG_GET_BOOL(savestate_auto_index, "savestate_auto_index");
    CONFIG_GET_BOOL(savestate_auto_save, "savestate_auto_save");
+   CONFIG_GET_BOOL(savestate_auto_load, "savestate_auto_load");
 
    CONFIG_GET_BOOL(network_cmd_enable, "network_cmd_enable");
    CONFIG_GET_INT(network_cmd_port, "network_cmd_port");

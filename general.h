@@ -256,6 +256,7 @@ struct settings
    bool block_sram_overwrite;
    bool savestate_auto_index;
    bool savestate_auto_save;
+   bool savestate_auto_load;
 
    bool network_cmd_enable;
    uint16_t network_cmd_port;
