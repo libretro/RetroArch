@@ -21,6 +21,7 @@
 #include <string.h>
 #include <math.h>
 #include "compat/posix_string.h"
+#include "audio/utils.h"
 
 #ifdef HAVE_X11
 #include "gfx/context/x11_common.h"
@@ -359,6 +360,8 @@ static void deinit_dsp_plugin(void)
 
 void init_audio(void)
 {
+   audio_convert_init_simd();
+
    // Resource leaks will follow if audio is initialized twice.
    if (driver.audio_data)
       return;

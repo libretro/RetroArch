@@ -44,13 +44,12 @@ void audio_convert_float_to_s16_altivec(int16_t *out,
       const float *in, size_t samples);
 
 #elif defined(HAVE_NEON)
-#define audio_convert_s16_to_float audio_convert_s16_to_float_neon
-#define audio_convert_float_to_s16 audio_convert_float_to_s16_neon
+#define audio_convert_s16_to_float audio_convert_s16_to_float_arm
+#define audio_convert_float_to_s16 audio_convert_float_to_s16_arm
 
-void audio_convert_s16_to_float_neon(float *out,
+void (*audio_convert_s16_to_float_arm)(float *out,
       const int16_t *in, size_t samples, float gain);
-
-void audio_convert_float_to_s16_neon(int16_t *out,
+void (*audio_convert_float_to_s16_arm)(int16_t *out,
       const float *in, size_t samples);
 
 #else
@@ -62,6 +61,8 @@ void audio_convert_s16_to_float_C(float *out,
       const int16_t *in, size_t samples, float gain);
 void audio_convert_float_to_s16_C(int16_t *out,
       const float *in, size_t samples);
+
+void audio_convert_init_simd(void);
 
 #ifdef HAVE_RSOUND
 bool rarch_rsound_start(const char *ip);

@@ -17,6 +17,7 @@
 #include "utils.h"
 
 #include "../general.h"
+#include "../performance.h"
 
 #if defined(__SSE2__)
 #include <emmintrin.h>
@@ -138,7 +139,7 @@ void audio_convert_float_to_s16_altivec(int16_t *out,
 }
 #elif defined(HAVE_NEON)
 void audio_convert_s16_float_asm(float *out, const int16_t *in, size_t samples);
-void audio_convert_s16_to_float_neon(float *out, const int16_t *in, size_t samples,
+static void audio_convert_s16_to_float_neon(float *out, const int16_t *in, size_t samples,
       float gain)
 {
    (void)gain; // gain is ignored for now.
@@ -153,7 +154,7 @@ void audio_convert_s16_to_float_neon(float *out, const int16_t *in, size_t sampl
 }
 
 void audio_convert_float_s16_asm(int16_t *out, const float *in, size_t samples);
-void audio_convert_float_to_s16_neon(int16_t *out, const float *in, size_t samples)
+static void audio_convert_float_to_s16_neon(int16_t *out, const float *in, size_t samples)
 {
    size_t aligned_samples = samples & ~7;
    if (aligned_samples)
@@ -163,6 +164,18 @@ void audio_convert_float_to_s16_neon(int16_t *out, const float *in, size_t sampl
          samples - aligned_samples);
 }
 #endif
+
+void audio_convert_init_simd(void)
+{
+#ifdef HAVE_NEON
+   struct rarch_cpu_features cpu;
+   rarch_get_cpu_features(&cpu);
+   audio_convert_s16_to_float_arm = cpu.simd & RARCH_SIMD_NEON ?
+      audio_convert_s16_to_float_neon : audio_convert_s16_to_float_C;
+   audio_convert_float_to_s16_arm = cpu.simd & RARCH_SIMD_NEON ?
+      audio_convert_float_to_s16_neon : audio_convert_float_to_s16_C;
+#endif
+}
 
 #ifdef HAVE_RSOUND
 
