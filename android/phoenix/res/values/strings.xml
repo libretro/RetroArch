@@ -9,5 +9,7 @@
     <string name="input_settings">Input Settings</string>
     <string name="general_settings">General Settings</string>
     <string name="settings">Settings</string>
+    <string name="retroarch_guide">RetroArch Guide</string>
+    <string name="cores_guide">Cores Guide</string>
 
 </resources>

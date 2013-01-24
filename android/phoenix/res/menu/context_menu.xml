@@ -2,4 +2,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
     <item android:id="@+id/rarch_settings" android:title="@string/rarch_settings" android:showAsAction="ifRoom" />
     <item android:id="@+id/input_method_select" android:title="@string/input_method" android:showAsAction="ifRoom" />
+    <item android:id="@+id/retroarch_guide" android:title="@string/retroarch_guide"></item>
+    <item android:id="@+id/cores_guide" android:title="@string/cores_guide"></item>
 </menu>

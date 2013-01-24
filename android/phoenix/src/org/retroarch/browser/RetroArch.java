@@ -7,6 +7,7 @@ import java.io.*;
 import android.content.*;
 import android.content.res.AssetManager;
 import android.app.*;
+import android.net.Uri;
 import android.os.*;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
@@ -351,6 +352,16 @@ public class RetroArch extends Activity implements
 			Log.i(TAG, "Rarch settings clicked!");			
 			Intent rset = new Intent(this, SettingsActivity.class);
 			startActivity(rset);
+			return true;
+
+		case R.id.retroarch_guide:
+			Intent rguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.org/documents/retroarch-manual.pdf"));
+			startActivity(rguide);
+			return true;
+
+		case R.id.cores_guide:
+			Intent cguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.org/documents/retroarch-cores-manual.pdf"));
+			startActivity(cguide);
 			return true;
 
 		default:
