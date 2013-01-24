@@ -184,11 +184,30 @@ public class RetroArch extends Activity implements
 
 		// Populate the list
 		final String modulePath = getApplicationInfo().nativeLibraryDir;
-		for (final File lib : new File(modulePath).listFiles()) {
+		final File[] libs = new File(modulePath).listFiles();
+		for (final File lib : libs) {
 			String libName = lib.getName();
 			
+			// Never append a NEON lib if we don't have NEON.
 			if (libName.contains("neon") && !cpuIsNeon)
 				continue;
+			
+			// If we have a NEON version with NEON capable CPU,
+			// never append a non-NEON version.
+			if (cpuIsNeon && !libName.contains("neon")) {
+				boolean hasNeonVersion = false;
+				for (final File lib_ : libs) {
+					String otherName = lib_.getName();
+					String baseName = libName.replace(".so", "");
+					if (otherName.contains("neon") && otherName.startsWith(baseName)) {
+						hasNeonVersion = true;
+						break;
+					}
+				}
+				
+				if (hasNeonVersion)
+					continue;
+			}
 			
 			// Allow both libretro-core.so and libretro_core.so.
 			if (libName.startsWith("libretro") && !libName.startsWith("libretroarch")) {
