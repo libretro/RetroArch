@@ -80,29 +80,27 @@ public class RetroArch extends Activity implements
 		return rate;
 	}
 	
-	private String ReadCPUinfo()
-	 {
-	  ProcessBuilder cmd;
-	  String result="";
-	  
-	  try{
-	   String[] args = {"/system/bin/cat", "/proc/cpuinfo"};
-	   cmd = new ProcessBuilder(args);
-	   
-	   Process process = cmd.start();
-	   InputStream in = process.getInputStream();
-	   byte[] re = new byte[1024];
-	   while(in.read(re) != -1){
-	    System.out.println(new String(re));
-	    result = result + new String(re);
-	   }
-	   in.close();
-	  } catch(IOException ex){
-	   ex.printStackTrace();
-	  }
-	  return result;
-	 }
+	private String readCPUInfo() {
+		String result = "";
+
+		try {
+			BufferedReader br = new BufferedReader(new InputStreamReader(
+					new FileInputStream("/proc/cpuinfo")));
+
+			String line;
+			while ((line = br.readLine()) != null)
+				result += line + "\n";
+			br.close();
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+		return result;
+	}
 	
+	private boolean cpuInfoIsNeon(String info) {
+		return info.contains("neon");
+	}
+
 	private byte[] loadAsset(String asset) throws IOException {
 		String path = asset;
 		InputStream stream = getAssets().open(path);
@@ -158,6 +156,12 @@ public class RetroArch extends Activity implements
 			config = new ConfigFile(new File(getDefaultConfigPath()));
 		} catch (IOException e) {
 			config = new ConfigFile();
+		}
+		
+		String cpuInfo = readCPUInfo();
+		boolean cpuIsNeon = cpuInfoIsNeon(cpuInfo);
+		if (cpuIsNeon) {
+			Toast.makeText(this, "CPU is NEON capable: " + (cpuIsNeon ? "yes" : "no"), Toast.LENGTH_SHORT).show();
 		}
 		
 		// Extracting assets appears to take considerable amount of time, so
