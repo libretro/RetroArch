@@ -3,7 +3,6 @@ package org.retroarch.browser;
 import org.retroarch.R;
 
 import java.io.*;
-import java.lang.Process;
 
 import android.content.*;
 import android.content.res.AssetManager;
