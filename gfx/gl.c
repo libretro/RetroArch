@@ -206,10 +206,6 @@ static inline bool load_gl_proc_win32(gl_t *gl)
 #define pglUnmapBuffer glUnmapBuffer
 #endif
 
-#ifdef ANDROID
-static bool android_portrait;
-#endif
-
 ////////////////// Shaders
 
 #ifdef HAVE_OPENGLES2
@@ -716,8 +712,7 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
    }
 
 #ifdef ANDROID
-   android_portrait = (AConfiguration_getOrientation(g_android->config) == ACONFIGURATION_ORIENTATION_PORT);
-   if (android_portrait)
+   if (AConfiguration_getOrientation(g_android->config) == ACONFIGURATION_ORIENTATION_PORT)
       y *= 2;
 #endif
 
@@ -1825,11 +1820,11 @@ static void gl_viewport_info(void *data, struct rarch_viewport *vp)
    *vp = gl->vp;
    vp->full_width  = gl->win_width;
    vp->full_height = gl->win_height;
-#ifdef ANDROID
-   // FIXME: ugly hack around broken logic in input_translate_coord_viewport
-   if (android_portrait)
-      vp->y = 0;
-#endif
+
+   // Adjust as GL viewport is bottom-up.
+   unsigned top_y = vp->y + vp->height;
+   unsigned top_dist = gl->win_height - top_y;
+   vp->y = top_dist;
 }
 
 static bool gl_read_viewport(void *data, uint8_t *buffer)
