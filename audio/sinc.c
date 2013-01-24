@@ -17,6 +17,7 @@
 // Only suitable as an upsampler, as there is no low-pass filter stage.
 
 #include "resampler.h"
+#include "../performance.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -109,30 +110,29 @@ static void aligned_free__(void *ptr)
    free(p[-1]);
 }
 
-rarch_resampler_t *resampler_new(void)
+static inline void process_sinc_C(rarch_resampler_t *resamp, float *out_buffer)
 {
-   rarch_resampler_t *re = (rarch_resampler_t*)aligned_alloc__(1024, sizeof(*re));
-   if (!re)
-      return NULL;
+   float sum_l = 0.0f;
+   float sum_r = 0.0f;
+   const float *buffer_l = resamp->buffer_l + resamp->ptr;
+   const float *buffer_r = resamp->buffer_r + resamp->ptr;
 
-   memset(re, 0, sizeof(*re));
+   unsigned phase = resamp->time >> SUBPHASE_BITS;
+   const float *phase_table = resamp->phase_table[phase];
 
-   init_sinc_table(re);
+   for (unsigned i = 0; i < TAPS; i++)
+   {
+      float sinc_val = phase_table[i];
+      sum_l         += buffer_l[i] * sinc_val;
+      sum_r         += buffer_r[i] * sinc_val;
+   }
 
-#if defined(__AVX__) && ENABLE_AVX
-   RARCH_LOG("Sinc resampler [AVX]\n");
-#elif defined(__SSE__)
-   RARCH_LOG("Sinc resampler [SSE]\n");
-#elif defined(HAVE_NEON)
-   RARCH_LOG("Sinc resampler [NEON]\n");
-#else
-   RARCH_LOG("Sinc resampler [C]\n");
-#endif
-
-   return re;
+   out_buffer[0] = sum_l;
+   out_buffer[1] = sum_r;
 }
 
 #if defined(__AVX__) && ENABLE_AVX
+#define process_sinc_func process_sinc
 static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
 {
    __m256 sum_l = _mm256_setzero_ps();
@@ -168,6 +168,7 @@ static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
    _mm_store_ss(out_buffer + 1, _mm256_extractf128_ps(res_r, 0));
 }
 #elif defined(__SSE__)
+#define process_sinc_func process_sinc
 static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
 {
    __m128 sum_l = _mm_setzero_ps();
@@ -211,8 +212,12 @@ static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
    _mm_store_ss(out_buffer + 1, _mm_movehl_ps(sum, sum));
 }
 #elif defined(HAVE_NEON)
+// Need to make this function pointer as Android doesn't have built-in targets
+// for NEON and plain ARMv7a.
+static void (*process_sinc_func)(rarch_resampler_t *resamp, float *out_buffer);
+
 void process_sinc_neon_asm(float *out, const float *left, const float *right, const float *coeff);
-static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
+static void process_sinc_neon(rarch_resampler_t *resamp, float *out_buffer)
 {
    const float *buffer_l = resamp->buffer_l + resamp->ptr;
    const float *buffer_r = resamp->buffer_r + resamp->ptr;
@@ -223,26 +228,7 @@ static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
    process_sinc_neon_asm(out_buffer, buffer_l, buffer_r, phase_table);
 }
 #else // Plain ol' C99
-static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
-{
-   float sum_l = 0.0f;
-   float sum_r = 0.0f;
-   const float *buffer_l = resamp->buffer_l + resamp->ptr;
-   const float *buffer_r = resamp->buffer_r + resamp->ptr;
-
-   unsigned phase = resamp->time >> SUBPHASE_BITS;
-   const float *phase_table = resamp->phase_table[phase];
-
-   for (unsigned i = 0; i < TAPS; i++)
-   {
-      float sinc_val = phase_table[i];
-      sum_l         += buffer_l[i] * sinc_val;
-      sum_r         += buffer_r[i] * sinc_val;
-   }
-
-   out_buffer[0] = sum_l;
-   out_buffer[1] = sum_r;
-}
+#define process_sinc_func process_sinc_C
 #endif
 
 void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
@@ -271,7 +257,7 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
 
       while (re->time < PHASES)
       {
-         process_sinc(re, output);
+         process_sinc_func(re, output);
          output += 2;
          out_frames++;
          re->time += ratio;
@@ -284,5 +270,31 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
 void resampler_free(rarch_resampler_t *re)
 {
    aligned_free__(re);
+}
+
+rarch_resampler_t *resampler_new(void)
+{
+   rarch_resampler_t *re = (rarch_resampler_t*)aligned_alloc__(1024, sizeof(*re));
+   if (!re)
+      return NULL;
+
+   memset(re, 0, sizeof(*re));
+
+   init_sinc_table(re);
+
+#if defined(__AVX__) && ENABLE_AVX
+   RARCH_LOG("Sinc resampler [AVX]\n");
+#elif defined(__SSE__)
+   RARCH_LOG("Sinc resampler [SSE]\n");
+#elif defined(HAVE_NEON)
+   struct rarch_cpu_features cpu;
+   rarch_get_cpu_features(&cpu);
+   process_sinc_func = cpu.simd & RARCH_SIMD_NEON ? process_sinc_neon : process_sinc_C;
+   RARCH_LOG("Sinc resampler [%s]\n", cpu.simd & RARCH_SIMD_NEON ? "NEON" : "C");
+#else
+   RARCH_LOG("Sinc resampler [C]\n");
+#endif
+
+   return re;
 }
 
