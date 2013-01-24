@@ -711,7 +711,8 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
    }
 
 #ifdef ANDROID
-   if (device_aspect > 1.0f)
+   // In portrait mode, we want viewport to gravitate to top of screen.
+   if (device_aspect < 1.0f)
       y *= 2;
 #endif
 
