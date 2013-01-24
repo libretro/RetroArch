@@ -159,9 +159,6 @@ public class RetroArch extends Activity implements
 		
 		String cpuInfo = readCPUInfo();
 		boolean cpuIsNeon = cpuInfoIsNeon(cpuInfo);
-		if (cpuIsNeon) {
-			Toast.makeText(this, "CPU is NEON capable: " + (cpuIsNeon ? "yes" : "no"), Toast.LENGTH_SHORT).show();
-		}
 		
 		// Extracting assets appears to take considerable amount of time, so
 		// move extraction to a thread.
