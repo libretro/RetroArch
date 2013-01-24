@@ -187,6 +187,9 @@ public class RetroArch extends Activity implements
 		for (final File lib : new File(modulePath).listFiles()) {
 			String libName = lib.getName();
 			
+			if (libName.contains("neon") && !cpuIsNeon)
+				continue;
+			
 			// Allow both libretro-core.so and libretro_core.so.
 			if (libName.startsWith("libretro") && !libName.startsWith("libretroarch")) {
 				try {
