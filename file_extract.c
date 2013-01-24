@@ -29,6 +29,7 @@
 
 // Modified from nall::unzip (higan).
 
+#undef GOTO_END_ERROR
 #define GOTO_END_ERROR() do { \
    RARCH_ERR("ZIP extraction failed at line: %d.\n", __LINE__); \
    ret = false; \

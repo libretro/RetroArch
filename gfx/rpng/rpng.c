@@ -31,6 +31,7 @@
 //
 // Missing: Adam7 interlace, 16 bpp, various color formats.
 
+#undef GOTO_END_ERROR
 #define GOTO_END_ERROR() do { \
    fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__); \
    ret = false; \
