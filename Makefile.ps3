@@ -139,7 +139,7 @@ MAKE_FSELF = $(CELL_SDK)/host-win32/bin/make_fself.exe
 MAKE_FSELF_NPDRM = $(CELL_SDK)/host-win32/bin/make_fself_npdrm.exe
 MAKE_PACKAGE_NPDRM = $(CELL_SDK)/host-win32/bin/make_package_npdrm.exe
 
-.PHONY: create-selfs-npdrm create-npdrm-core create-core create-npdrm-salamander create-npdrm-salamander create-shaders clean-selfs create-salamander
+.PHONY: create-npdrm-core create-core create-npdrm-salamander create-shaders clean-selfs create-salamander
 
 create-npdrm-core:
 	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) $(CORE_PATH)
