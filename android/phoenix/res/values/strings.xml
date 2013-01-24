@@ -11,5 +11,6 @@
     <string name="settings">Settings</string>
     <string name="retroarch_guide">RetroArch Guide</string>
     <string name="cores_guide">Cores Guide</string>
+    <string name="overlay_guide">Overlay How-to Guide</string>
 
 </resources>

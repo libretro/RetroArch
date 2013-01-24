@@ -410,7 +410,10 @@ public class RetroArch extends Activity implements
 			Intent cguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.org/documents/retroarch-cores-manual.pdf"));
 			startActivity(cguide);
 			return true;
-
+		case R.id.overlay_guide:
+			Intent mguide = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/libretro/libretro.github.com/blob/master/documents/overlay.pdf"));
+			startActivity(mguide);
+			return true;
 		default:
 			return false;
 		}
