@@ -668,16 +668,15 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
    unsigned x = 0, y = 0;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
 
+   float device_aspect = 0.0f;
+   if (gl->ctx_driver->translate_aspect)
+      device_aspect = context_translate_aspect_func(width, height);
+   else
+      device_aspect = (float)width / height;
+
    if (gl->keep_aspect && !force_full)
    {
       float desired_aspect = g_settings.video.aspect_ratio;
-
-      float device_aspect = 0.0f;
-      if (gl->ctx_driver->translate_aspect)
-         device_aspect = context_translate_aspect_func(width, height);
-      else
-         device_aspect = (float)width / height;
-
       float delta;
 
 #ifdef RARCH_CONSOLE
@@ -712,7 +711,7 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
    }
 
 #ifdef ANDROID
-   if (AConfiguration_getOrientation(g_android->config) == ACONFIGURATION_ORIENTATION_PORT)
+   if (device_aspect > 1.0f)
       y *= 2;
 #endif
 
