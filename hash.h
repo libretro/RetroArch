@@ -39,7 +39,8 @@ static inline uint32_t crc32_calculate(const uint8_t *data, size_t length)
 
 static inline uint32_t crc32_adjust(uint32_t crc, uint8_t data)
 {
-   return crc32(crc, &data, 1);
+   // zlib and nall have different assumptions on "sign" for this function.
+   return ~crc32(~crc, &data, 1);
 }
 #else
 uint32_t crc32_calculate(const uint8_t *data, size_t length);
