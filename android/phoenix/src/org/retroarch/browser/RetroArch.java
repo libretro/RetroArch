@@ -214,6 +214,7 @@ public class RetroArch extends Activity implements
 		config.setBoolean("audio_enable", prefs.getBoolean("audio_enable", true));
 		config.setBoolean("video_smooth", prefs.getBoolean("video_smooth", true));
 		config.setBoolean("video_allow_rotate", prefs.getBoolean("video_allow_rotate", true));
+		config.setBoolean("savestate_auto_load", prefs.getBoolean("savestate_auto_load", false));
 		config.setBoolean("savestate_auto_save", prefs.getBoolean("savestate_auto_save", false));
 		config.setBoolean("rewind_enable", prefs.getBoolean("rewind_enable", false));
 		config.setBoolean("video_vsync", prefs.getBoolean("video_vsync", true));
