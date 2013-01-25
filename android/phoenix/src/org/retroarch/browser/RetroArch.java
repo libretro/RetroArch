@@ -414,6 +414,10 @@ public class RetroArch extends Activity implements
 			Intent mguide = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/libretro/libretro.github.com/blob/master/documents/overlay.pdf"));
 			startActivity(mguide);
 			return true;
+		case R.id.shader_pack:
+			Intent sguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.org/shaders/xml-gles-shaders.zip"));
+			startActivity(sguide);
+			return true;
 		default:
 			return false;
 		}

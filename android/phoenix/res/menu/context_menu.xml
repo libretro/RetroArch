@@ -5,4 +5,5 @@
     <item android:id="@+id/retroarch_guide" android:title="@string/retroarch_guide"></item>
     <item android:id="@+id/cores_guide" android:title="@string/cores_guide"></item>
     <item android:id="@+id/overlay_guide" android:title="@string/overlay_guide"></item>
+    <item android:id="@+id/shader_pack" android:title="@string/shader_pack"></item>
 </menu>
