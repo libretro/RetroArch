@@ -411,7 +411,7 @@ public class RetroArch extends Activity implements
 			startActivity(cguide);
 			return true;
 		case R.id.overlay_guide:
-			Intent mguide = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/libretro/libretro.github.com/blob/master/documents/overlay.pdf"));
+			Intent mguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.org/documents/overlay.pdf"));
 			startActivity(mguide);
 			return true;
 		case R.id.shader_pack:
