@@ -1,6 +1,7 @@
 package org.retroarch.browser;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.FileInputStream;
 import java.io.File;
@@ -12,9 +13,8 @@ import java.util.Map;
 public class ConfigFile {
 	private HashMap<String, String> map = new HashMap<String, String>();
 
-	public void append(File file) throws IOException {
-		BufferedReader br = new BufferedReader(new InputStreamReader(
-				new FileInputStream(file.getAbsolutePath())));
+	public void append(InputStream stream) throws IOException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(stream));
 
 		String line;
 		while ((line = br.readLine()) != null)
@@ -25,7 +25,7 @@ public class ConfigFile {
 
 	public void open(File file) throws IOException {
 		clear();
-		append(file);
+		append(new FileInputStream(file));
 	}
 	
 	public ConfigFile(File file) throws IOException {

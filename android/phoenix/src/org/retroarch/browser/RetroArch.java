@@ -19,9 +19,11 @@ import android.graphics.drawable.*;
 
 class ModuleWrapper implements IconAdapterItem {
 	public final File file;
+	private ConfigFile config;
 
-	public ModuleWrapper(Context aContext, File aFile) throws IOException {
+	public ModuleWrapper(Context aContext, File aFile, ConfigFile config) throws IOException {
 		file = aFile;
+		this.config = config;
 	}
 
 	@Override
@@ -31,7 +33,11 @@ class ModuleWrapper implements IconAdapterItem {
 
 	@Override
 	public String getText() {
-		return file.getName();
+		String stripped = file.getName().replace(".so", "");
+		if (config.keyExists(stripped)) {
+			return config.getString(stripped);
+		} else
+			return stripped;
 	}
 
 	@Override
@@ -52,6 +58,7 @@ public class RetroArch extends Activity implements
 	static private String libretro_path;
 	static private final String TAG = "RetroArch-Phoenix";
 	private ConfigFile config;
+	private ConfigFile core_config;
 	
 	private final double getDisplayRefreshRate() {
 		final WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
@@ -151,10 +158,18 @@ public class RetroArch extends Activity implements
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		
 		try {
 			config = new ConfigFile(new File(getDefaultConfigPath()));
 		} catch (IOException e) {
 			config = new ConfigFile();
+		}
+		
+		core_config = new ConfigFile();
+		try {
+			core_config.append(getAssets().open("libretro_cores.cfg"));
+		} catch (IOException e) {
+			Log.e(TAG, "Failed to load libretro_cores.cfg from assets.");
 		}
 		
 		String cpuInfo = readCPUInfo();
@@ -209,7 +224,7 @@ public class RetroArch extends Activity implements
 			// Allow both libretro-core.so and libretro_core.so.
 			if (libName.startsWith("libretro") && !libName.startsWith("libretroarch")) {
 				try {
-					adapter.add(new ModuleWrapper(this, lib));
+					adapter.add(new ModuleWrapper(this, lib, core_config));
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
