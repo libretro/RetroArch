@@ -19,16 +19,9 @@ import android.graphics.drawable.*;
 
 class ModuleWrapper implements IconAdapterItem {
 	public final File file;
-	private String descName;
-	
-	private String getDescName(String name) {
-		name = name.replace(".so", "").replace("libretro_", "");
-		return name;
-	}
 
 	public ModuleWrapper(Context aContext, File aFile) throws IOException {
 		file = aFile;
-		descName = getDescName(file.getName());
 	}
 
 	@Override
@@ -38,7 +31,7 @@ class ModuleWrapper implements IconAdapterItem {
 
 	@Override
 	public String getText() {
-		return descName;
+		return file.getName();
 	}
 
 	@Override
