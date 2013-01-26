@@ -110,7 +110,7 @@ static void x11_set_window_icon(Display *dpy, Window win)
 {
    XA_INIT(_NET_WM_ICON);
 
-   const char *path = "/usr/share/icons/retroarch.png";
+   const char *path = "/usr/share/pixmaps/retroarch.png";
 
    struct texture_image img;
    if (texture_image_load(path, &img))
