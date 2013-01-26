@@ -26,6 +26,7 @@ check_lib VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm"
 if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    [ -d /opt/vc/include ] && add_include_dirs /opt/vc/include
    [ -d /opt/vc/include/interface/vcos/pthreads ] && add_include_dirs /opt/vc/include/interface/vcos/pthreads
+   [ -d /opt/vc/include/interface/vmcs_host/linux ] && add_include_dirs /opt/vc/include/interface/vmcs_host/linux
    HAVE_GLES='auto'
    EXTRA_GL_LIBS="-lGLESv2 -lbcm_host -lvcos -lvchiq_arm"
 fi

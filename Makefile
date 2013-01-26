@@ -222,7 +222,7 @@ ifeq ($(HAVE_VG), 1)
 endif
 
 ifeq ($(HAVE_VIDEOCORE), 1)
-   LIBS += -lbcm_host -lvcos -lvchiq_arm
+   LIBS += -lbcm_host -lvcos -lvchiq_arm -lEGL
 endif
 
 ifeq ($(HAVE_XVIDEO), 1)
