@@ -21,48 +21,14 @@ class ModuleWrapper implements IconAdapterItem {
 	public final File file;
 	private String descName;
 	
-	private String findDescName(String name) {
+	private String getDescName(String name) {
 		name = name.replace("-", "_").replace(".so", "").replace("libretro_", ""); // Make sure we always have _ as separators.
-		
-		// Ugly, but works. Can't query the libretro core directly for this, as it exposes core name only anyways.
-		// This is simpler than having some XML list of all cores as well ...
-		if (name.equals("mednafen_pce_fast")) {
-			return "PC Engine (Mednafen PCE-fast)";
-		} else if (name.equals("mednafen_wswan")) {
-			return "Wonderswan (Mednafen WSwan)";
-		} else if (name.equals("fceumm")) {
-			return "NES (FCEUmm)";
-		} else if (name.equals("fba")) {
-			return "Arcade (Final Burn Alpha)";
-		} else if (name.equals("mednafen_ngp")) {
-			return "Neo-Geo Pocket (Mednafen NGP)";
-		} else if (name.equals("gambatte")) {
-			return "GameBoy (Gambatte)";
-		} else if (name.equals("genesis_plus_gx")) {
-			return "Genesis (Genesis Plus GX)";
-		} else if (name.equals("vba_next")) {
-			return "GBA (VBA Next)";
-		} else if (name.equals("prboom")) {
-			return "DOOM (PRBoom)";
-		} else if (name.equals("snes9x_next")) {
-			return "SNES (Snes9x Next)";
-		} else if (name.equals("snes9x")) {
-			return "SNES (Snes9x)";
-		} else if (name.equals("nestopia")) {
-			return "NES (Nestopia)";
-		} else if (name.equals("pcsx_rearmed_neon")) {
-			return "PSX (PCSX ReARMed [NEON])";
-		} else if (name.equals("pcsx_rearmed")) {
-			return "PSX (PCSX ReARMed)";
-		} else if (name.equals("nxengine")) {
-			return "Cave Story (NXEngine)";
-		} else
-			return name;
+		return name;
 	}
 
 	public ModuleWrapper(Context aContext, File aFile) throws IOException {
 		file = aFile;
-		descName = findDescName(file.getName());
+		descName = getDescName(file.getName());
 	}
 
 	@Override
