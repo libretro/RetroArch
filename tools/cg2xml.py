@@ -44,6 +44,8 @@ def replace_global_vertex(source):
          ('_IN1._video_size', 'rubyInputSize'),
          ('_IN1._texture_size', 'rubyTextureSize'),
          ('_IN1._output_size', 'rubyOutputSize'),
+         ('_IN1._frame_count', 'rubyFrameCount'),
+         ('rubyFrameCount', 'float(rubyFrameCount)'),
          ('input', 'input_dummy'), # 'input' is reserved in GLSL.
          ('output', 'output_dummy'), # 'output' is reserved in GLSL.
    ]
@@ -148,6 +150,7 @@ def hack_source_vertex(source):
          source.insert(index, 'uniform mediump vec2 rubyTextureSize;')
          source.insert(index, 'uniform mediump vec2 rubyOutputSize;')
          source.insert(index, '#ifdef GL_ES')
+         source.insert(index, 'uniform int rubyFrameCount;')
 
          source.insert(index, """
          mat4 transpose_(mat4 matrix)
@@ -170,6 +173,8 @@ def replace_global_fragment(source):
          ('_IN1._video_size', 'rubyInputSize'),
          ('_IN1._texture_size', 'rubyTextureSize'),
          ('_IN1._output_size', 'rubyOutputSize'),
+         ('_IN1._frame_count', 'rubyFrameCount'),
+         ('rubyFrameCount', 'float(rubyFrameCount)'),
          ('input', 'input_dummy'),
          ('output', 'output_dummy'), # 'output' is reserved in GLSL.
    ]
@@ -191,6 +196,7 @@ def hack_source_fragment(source):
          source.insert(index, 'uniform mediump vec2 rubyTextureSize;')
          source.insert(index, 'uniform mediump vec2 rubyOutputSize;')
          source.insert(index, '#ifdef GL_ES')
+         source.insert(index, 'uniform int rubyFrameCount;')
          break
 
    for line in source:
