@@ -22,7 +22,7 @@ class ModuleWrapper implements IconAdapterItem {
 	private String descName;
 	
 	private String getDescName(String name) {
-		name = name.replace("-", "_").replace(".so", "").replace("libretro_", ""); // Make sure we always have _ as separators.
+		name = name.replace(".so", "").replace("libretro_", "");
 		return name;
 	}
 
