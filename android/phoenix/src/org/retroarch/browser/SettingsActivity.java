@@ -1,29 +1,16 @@
 package org.retroarch.browser;
 
 import org.retroarch.R;
-
-import android.app.Activity;
 import android.os.Bundle;
-import android.preference.PreferenceFragment;
+import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 
-public class SettingsActivity extends Activity {
+public class SettingsActivity extends PreferenceActivity {
+	@SuppressWarnings("deprecation")
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		getFragmentManager().beginTransaction().
-			replace(android.R.id.content, new SettingsFragment()).commit();
+		addPreferencesFromResource(R.xml.prefs);
 		PreferenceManager.setDefaultValues(this, R.xml.prefs, false);
-	}
-	
-	public static class SettingsFragment extends PreferenceFragment {
-		
-	    @Override
-	    public void onCreate(Bundle savedInstanceState) {
-	        super.onCreate(savedInstanceState);
-
-	        // Load the preferences from an XML resource
-	        addPreferencesFromResource(R.xml.prefs);
-	    }
 	}
 }
