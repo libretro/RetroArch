@@ -568,8 +568,5 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
    }
 
    if (name_buf[0] != 0)
-      RARCH_LOG("Device %d: %s, port: %d.\n", id, name_buf, port);
-
-   if (msg[0] == 0 && name_buf[0] != 0)
-      snprintf(msg, sizeof_msg, "HID [%s] unbound.\n", name_buf);
+      snprintf(msg, sizeof_msg, "HID %s %d: %s, port: %d.\n", msg[0] == 0 ? "Unbound" : "", id, name_buf, port);
 }

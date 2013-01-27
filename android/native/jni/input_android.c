@@ -98,6 +98,7 @@ static void android_input_poll(void *data)
       if (AInputQueue_getEvent(android_app->inputQueue, &event) < 0)
          break;
 
+      bool long_msg_enable = false;
       int32_t handled = 1;
       int action = 0;
       char msg[128];
@@ -120,6 +121,7 @@ static void android_input_poll(void *data)
          state_device_ids[pads_connected++] = id;
 
          input_autodetect_setup(android_app, msg, sizeof(msg), state_id, id, source);
+         long_msg_enable = true;
       }
 
       if (keycode == AKEYCODE_BACK && (source & (AINPUT_SOURCE_KEYBOARD)))
@@ -213,7 +215,7 @@ static void android_input_poll(void *data)
       }
 
       if (msg[0] != 0)
-         msg_queue_push(g_extern.msg_queue, msg, 0, 30);
+         msg_queue_push(g_extern.msg_queue, msg, 0, long_msg_enable ? 180 : 30);
 
       AInputQueue_finishEvent(android_app->inputQueue, event, handled);
    }
