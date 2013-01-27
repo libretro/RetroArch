@@ -50,7 +50,6 @@ void x11_hide_mouse(Display *dpy, Window win)
 static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
-static Atom XA_NET_WM_ICON;
 #define XA_INIT(x) XA##x = XInternAtom(dpy, #x, False)
 #define _NET_WM_STATE_ADD 1
 #define MOVERESIZE_GRAVITY_CENTER 5
@@ -106,43 +105,8 @@ static void x11_set_window_class(Display *dpy, Window win)
    XSetClassHint(dpy, win, &hint);
 }
 
-static void x11_set_window_icon(Display *dpy, Window win)
-{
-   XA_INIT(_NET_WM_ICON);
-
-   const char *path = "/usr/share/pixmaps/retroarch.png";
-
-   struct texture_image img;
-   if (texture_image_load(path, &img))
-   {
-      size_t propsize = img.width * img.height + 2;
-      unsigned long *propdata = (unsigned long*)calloc(sizeof(unsigned long), propsize); // X11 wants a long array for '32-bit' :(.
-      if (!propdata)
-      {
-         free(img.pixels);
-         return;
-      }
-
-      propdata[0] = img.width;
-      propdata[1] = img.height;
-
-      unsigned img_size = img.width * img.height;
-      for (unsigned i = 0; i < img_size; i++)
-         propdata[i + 2] = img.pixels[i];
-      free(img.pixels);
-
-      RARCH_LOG("[X11]: Setting window icon: %s\n", path);
-      XChangeProperty(dpy, win, XA_NET_WM_ICON, XA_CARDINAL, 32, PropModeReplace, (unsigned char*)propdata, propsize);
-      XFlush(dpy);
-      free(propdata);
-   }
-   else
-      RARCH_ERR("[X11]: Failed to load icon from: %s\n", path);
-}
-
 void x11_set_window_attr(Display *dpy, Window win)
 {
-   x11_set_window_icon(dpy, win);
    x11_set_window_class(dpy, win);
 }
 
