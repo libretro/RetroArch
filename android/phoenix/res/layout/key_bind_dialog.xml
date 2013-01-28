@@ -20,14 +20,25 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/key_bind_title"
         android:layout_below="@+id/key_bind_title"
-        android:text="_"
         android:textAppearance="?android:attr/textAppearanceMedium" />
+
+    <ListView
+        android:id="@+id/key_bind_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/key_bind_clear"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/key_bind_value"
+        android:entries="@array/key_bind_values" >
+
+    </ListView>
 
     <Button
         android:id="@+id/key_bind_clear"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/key_bind_value"
+        android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:text="@string/key_bind_clear" />
 

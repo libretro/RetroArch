@@ -35,4 +35,218 @@
         <item>4.0</item>
         <item>5.0</item>
     </string-array>
+    
+    <string-array name="key_bind_values">
+        <item>UNBOUND</item>
+        <item>SOFT LEFT</item>
+        <item>SOFT RIGHT</item>
+        <item>HOME</item>
+        <item>BACK</item>
+        <item>CALL</item>
+        <item>ENDCALL</item>
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>STAR</item>
+        <item>POUND</item>
+        <item>DPAD UP</item>
+        <item>DPAD DOWN</item>
+        <item>DPAD LEFT</item>
+        <item>DPAD RIGHT</item>
+        <item>DPAD CENTER</item>
+        <item>VOLUME UP</item>
+        <item>VOLUME DOWN</item>
+        <item>POWER</item>
+        <item>CAMERA</item>
+        <item>CLEAR</item>
+        <item>A</item>
+        <item>B</item>
+        <item>C</item>
+        <item>D</item>
+        <item>E</item>
+        <item>F</item>
+        <item>G</item>
+        <item>H</item>
+        <item>I</item>
+        <item>J</item>
+        <item>K</item>
+        <item>L</item>
+        <item>M</item>
+        <item>N</item>
+        <item>O</item>
+        <item>P</item>
+        <item>Q</item>
+        <item>R</item>
+        <item>S</item>
+        <item>T</item>
+        <item>U</item>
+        <item>V</item>
+        <item>W</item>
+        <item>X</item>
+        <item>Y</item>
+        <item>Z</item>
+        <item>COMMA</item>
+        <item>PERIOD</item>
+        <item>ALT LEFT</item>
+        <item>ALT RIGHT</item>
+        <item>SHIFT LEFT</item>
+        <item>SHIFT RIGHT</item>
+        <item>TAB</item>
+        <item>SPACE</item>
+        <item>SYM</item>
+        <item>EXPLORER</item>
+        <item>ENVELOPE</item>
+        <item>ENTER</item>
+        <item>DEL</item>
+        <item>GRAVE</item>
+        <item>MINUS</item>
+        <item>EQUALS</item>
+        <item>LEFT BRACKET</item>
+        <item>RIGHT BRACKET</item>
+        <item>BACKSLASH</item>
+        <item>SEMICOLON</item>
+        <item>APOSTROPHE</item>
+        <item>SLASH</item>
+        <item>AT</item>
+        <item>NUM</item>
+        <item>HEADSETHOOK</item>
+        <item>FOCUS</item>
+        <item>PLUS</item>
+        <item>MENU</item>
+        <item>NOTIFICATION</item>
+        <item>SEARCH</item>
+        <item>MEDIA PLAY PAUSE=</item>
+        <item>MEDIA STOP</item>
+        <item>MEDIA NEXT</item>
+        <item>MEDIA PREVIOUS</item>
+        <item>MEDIA REWIND</item>
+        <item>MEDIA FAST FORWARD</item>
+        <item>MUTE</item>
+        <item>PAGE UP</item>
+        <item>PAGE DOWN</item>
+        <item>PICTSYMBOLS</item>
+        <item>SWITCH CHARSET</item>
+        <item>BUTTON A</item>
+        <item>BUTTON B</item>
+        <item>BUTTON C</item>
+        <item>BUTTON X</item>
+        <item>BUTTON Y</item>
+        <item>BUTTON Z</item>
+        <item>BUTTON L1</item>
+        <item>BUTTON R1</item>
+        <item>BUTTON L2</item>
+        <item>BUTTON R2</item>
+        <item>BUTTON THUMBL</item>
+        <item>BUTTON THUMBR</item>
+        <item>BUTTON START</item>
+        <item>BUTTON SELECT</item>
+        <item>BUTTON MODE</item>
+        <item>ESCAPE</item>
+        <item>FORWARD DEL</item>
+        <item>CTRL LEFT</item>
+        <item>CTRL RIGHT</item>
+        <item>CAPS LOCK</item>
+        <item>SCROLL LOCK</item>
+        <item>META LEFT</item>
+        <item>META RIGHT</item>
+        <item>FUNCTION</item>
+        <item>SYSRQ</item>
+        <item>BREAK</item>
+        <item>MOVE HOME</item>
+        <item>MOVE END</item>
+        <item>INSERT</item>
+        <item>FORWARD</item>
+        <item>MEDIA PLAY</item>
+        <item>MEDIA PAUSE</item>
+        <item>MEDIA CLOSE</item>
+        <item>MEDIA EJECT</item>
+        <item>MEDIA RECORD</item>
+        <item>F1</item>
+        <item>F2</item>
+        <item>F3</item>
+        <item>F4</item>
+        <item>F5</item>
+        <item>F6</item>
+        <item>F7</item>
+        <item>F8</item>
+        <item>F9</item>
+        <item>F10</item>
+        <item>F11</item>
+        <item>F12</item>
+        <item>NUM LOCK</item>
+        <item>NUMPAD 0</item>
+        <item>NUMPAD 1</item>
+        <item>NUMPAD 2</item>
+        <item>NUMPAD 3</item>
+        <item>NUMPAD 4</item>
+        <item>NUMPAD 5</item>
+        <item>NUMPAD 6</item>
+        <item>NUMPAD 7</item>
+        <item>NUMPAD 8</item>
+        <item>NUMPAD 9</item>
+        <item>NUMPAD DIVIDE</item>
+        <item>NUMPAD MULTIPLY</item>
+        <item>NUMPAD SUBTRACT</item>
+        <item>NUMPAD ADD</item>
+        <item>NUMPAD DOT</item>
+        <item>NUMPAD COMMA</item>
+        <item>NUMPAD ENTER</item>
+        <item>NUMPAD EQUALS</item>
+        <item>NUMPAD LEFT PAREN</item>
+        <item>NUMPAD RIGHT PAREN</item>
+        <item>VOLUME MUTE</item>
+        <item>INFO</item>
+        <item>CHANNEL UP</item>
+        <item>CHANNEL DOWN</item>
+        <item>ZOOM IN</item>
+        <item>ZOOM OUT</item>
+        <item>TV</item>
+        <item>WINDOW</item>
+        <item>GUIDE</item>
+        <item>DVR</item>
+        <item>BOOKMARK</item>
+        <item>CAPTIONS</item>
+        <item>SETTINGS</item>
+        <item>TV POWER</item>
+        <item>TV INPUT</item>
+        <item>STB POWER</item>
+        <item>STB INPUT</item>
+        <item>AVR POWER</item>
+        <item>AVR INPUT</item>
+        <item>PROG RED</item>
+        <item>PROG GREEN</item>
+        <item>PROG YELLOW</item>
+        <item>PROG BLUE</item>
+        <item>APP SWITCH</item>
+        <item>BUTTON 1</item>
+        <item>BUTTON 2</item>
+        <item>BUTTON 3</item>
+        <item>BUTTON 4</item>
+        <item>BUTTON 5</item>
+        <item>BUTTON 6</item>
+        <item>BUTTON 7</item>
+        <item>BUTTON 8</item>
+        <item>BUTTON 9</item>
+        <item>BUTTON 10</item>
+        <item>BUTTON 11</item>
+        <item>BUTTON 12</item>
+        <item>BUTTON 13</item>
+        <item>BUTTON 14</item>
+        <item>BUTTON 15</item>
+        <item>BUTTON 16</item>
+        <item>LANGUAGE SWITCH</item>
+        <item>MANNER MODE</item>
+        <item>3D MODE</item>
+        <item>CONTACTS</item>
+        <item>CALENDAR</item>
+        <item>MUSIC</item>
+        <item>CALCULATOR</item>
+    </string-array>
 </resources>
