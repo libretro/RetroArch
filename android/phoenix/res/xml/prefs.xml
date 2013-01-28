@@ -188,11 +188,11 @@
                     android:targetPackage="org.retroarch" />
             </Preference>
         </PreferenceCategory>
-        <PreferenceCategory android:title="Button Binds" >
+        <!--<PreferenceCategory android:title="Button Binds" >
             <org.retroarch.browser.KeyBindPreference
                 android:key="testKey"
                 android:title="A Button" />
-        </PreferenceCategory>
+        </PreferenceCategory>-->
     </PreferenceScreen>
 
 </PreferenceScreen>
