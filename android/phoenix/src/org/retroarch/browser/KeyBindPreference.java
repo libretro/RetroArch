@@ -9,14 +9,42 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
-
 import org.retroarch.R;
 
-class KeyBindPreference extends DialogPreference implements View.OnKeyListener, AdapterView.OnItemClickListener, View.OnClickListener {
+class KeyBindEditText extends EditText
+{
+	KeyBindPreference pref;
+	public KeyBindEditText(Context context, AttributeSet attrs) {
+		super(context, attrs);
+	}
+	
+	public void setBoundPreference(KeyBindPreference pref)
+	{
+		this.pref = pref;
+	}
+	
+	@Override
+	public boolean onKeyPreIme(int keyCode, KeyEvent event)
+	{
+		Log.i("RetroArch", "key! " + String.valueOf(event.getKeyCode()));
+		pref.onKey(null, event.getKeyCode(), event);
+		return false;
+	}
+	
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event)
+	{
+		Log.i("RetroArch", "key! " + String.valueOf(event.getKeyCode()));
+		pref.onKey(null, event.getKeyCode(), event);
+		return false;
+	}
+}
+
+class KeyBindPreference extends DialogPreference implements View.OnKeyListener, AdapterView.OnItemClickListener, View.OnClickListener, LayoutInflater.Factory {
 	private int key_bind_code;
-	TextView keyText;
+	KeyBindEditText keyText;
 	private String[] key_labels;
 	private final int DEFAULT_KEYCODE = 0;
 
@@ -39,9 +67,11 @@ class KeyBindPreference extends DialogPreference implements View.OnKeyListener, 
 	@Override
 	protected View onCreateDialogView()
 	{
-		LayoutInflater inflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		LayoutInflater inflater = ((LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE)).cloneInContext(getContext());
+		inflater.setFactory(this);
 		View view = inflater.inflate(R.layout.key_bind_dialog, null);
-		keyText = (TextView) view.findViewById(R.id.key_bind_value);
+		keyText = (KeyBindEditText) view.findViewById(R.id.key_bind_value);
+		keyText.setBoundPreference(this);
 		view.setOnKeyListener(this);
 		((ListView) view.findViewById(R.id.key_bind_list)).setOnItemClickListener(this);
 		((Button) view.findViewById(R.id.key_bind_clear)).setOnClickListener(this);
@@ -86,5 +116,14 @@ class KeyBindPreference extends DialogPreference implements View.OnKeyListener, 
 			return "";
 		else
 			return key_labels[code];
+    }
+    
+    @Override
+    public View onCreateView(String name, Context context, AttributeSet attrs) {
+    	Log.i("RetroArch", "view name: " + name);
+    	if (name.equals("EditText"))
+    		return new KeyBindEditText(context, attrs);
+    	else
+    		return null;
     }
 }

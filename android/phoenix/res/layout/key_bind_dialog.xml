@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/key_bind_dialog"
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
@@ -14,13 +15,17 @@
         android:text="@string/key_bind_title"
         android:textAppearance="?android:attr/textAppearanceLarge" />
 
-    <TextView
+    <EditText
         android:id="@+id/key_bind_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/key_bind_title"
         android:layout_below="@+id/key_bind_title"
-        android:textAppearance="?android:attr/textAppearanceMedium" />
+        android:ems="10"
+        android:inputType="text" >
+
+        <requestFocus />
+    </EditText>
 
     <ListView
         android:id="@+id/key_bind_list"
@@ -28,7 +33,6 @@
         android:layout_height="wrap_content"
         android:layout_above="@+id/key_bind_clear"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentRight="true"
         android:layout_below="@+id/key_bind_value"
         android:entries="@array/key_bind_values" >
 
