@@ -110,7 +110,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       {
          if (strstr(name_buf, "RumblePad 2"))
          {
-            snprintf(msg, sizeof_msg, "RetroPad #%d is: RumblePad 2.\n", port);
             keycode_lut[AKEYCODE_BUTTON_2]  |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_1]  |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_9]  |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
@@ -126,7 +125,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          }
          else if (strstr(name_buf, "Dual Action"))
          {
-            snprintf(msg, sizeof_msg, "RetroPad #%d is: Dual Action.\n", port);
             keycode_lut[AKEYCODE_BUTTON_A]  |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_X]  |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_Y]  |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
@@ -145,7 +143,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       {
          if (strstr(name_buf, "RumblePad 2"))
          {
-            snprintf(msg, sizeof_msg, "RetroPad #%d is: Logitech Rumblepad2 (DInput).\n", port);
+            // Rumblepad 2 DInput */
             /* TODO: Add L3/R3 */
             keycode_lut[AKEYCODE_BUTTON_B]  |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_C]  |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
@@ -164,7 +162,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "HuiJia  USB GamePad"))
       {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: HuiJia USB Gamepad.\n", port);
          keycode_lut[AKEYCODE_BUTTON_3]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_4]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_9] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
@@ -178,7 +175,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       {
          if (strstr(name_buf, "Dual Strike"))
          {
-            snprintf(msg, sizeof_msg, "RetroPad #%d is: Sidewinder Dual Strike.\n", port);
             keycode_lut[AKEYCODE_BUTTON_4] |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
             keycode_lut[AKEYCODE_BUTTON_2] |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
             keycode_lut[AKEYCODE_BUTTON_6] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
@@ -193,7 +189,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          {
             if (strstr(name_buf, "SideWinder"))
             {
-               snprintf(msg, sizeof_msg, "RetroPad #%d is: Sidewinder.\n", port);
                keycode_lut[AKEYCODE_BUTTON_R2] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
                keycode_lut[AKEYCODE_BUTTON_L2] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
                keycode_lut[AKEYCODE_BUTTON_11] |= ((RETRO_DEVICE_ID_JOYPAD_L3+1) << shift);
@@ -204,7 +199,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
             else if (strstr(name_buf, "X-Box 360") || strstr(name_buf, "X-Box"))
             {
                /* TODO: left and right triggers for Xbox 1*/
-               snprintf(msg, sizeof_msg, "RetroPad #%d is: Xbox.\n", port);
                keycode_lut[AKEYCODE_BUTTON_SELECT] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
                keycode_lut[AKEYCODE_BUTTON_START] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
                keycode_lut[AKEYCODE_BUTTON_THUMBL]  |= ((RETRO_DEVICE_ID_JOYPAD_L3+1) << shift);
@@ -221,27 +215,10 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "WiseGroup"))
       {
-         if (strstr(name_buf, "Dual USB Joypad"))
+         if (strstr(name_buf, "TigerGame") || strstr(name_buf, "Game Controller Adapter")
+               || strstr(name_buf, "JC-PS102U") || strstr(name_buf, "Dual USB Joypad"))
          {
-            snprintf(msg, sizeof_msg, "RetroPad #%d is: WiseGroup PS2 to USB.\n", port);
-            keycode_lut[AKEYCODE_BUTTON_3]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
-            keycode_lut[AKEYCODE_BUTTON_4]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
-            keycode_lut[AKEYCODE_BUTTON_10] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
-            keycode_lut[AKEYCODE_BUTTON_9]  |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
-            keycode_lut[AKEYCODE_BUTTON_2]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
-            keycode_lut[AKEYCODE_BUTTON_1]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
-            keycode_lut[AKEYCODE_BUTTON_7]  |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift);
-            keycode_lut[AKEYCODE_BUTTON_8]  |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift);
-            keycode_lut[AKEYCODE_BUTTON_5]  |= ((RETRO_DEVICE_ID_JOYPAD_L2+1) << shift);
-            keycode_lut[AKEYCODE_BUTTON_6]  |= ((RETRO_DEVICE_ID_JOYPAD_R2+1) << shift);
-            keycode_lut[AKEYCODE_BUTTON_11] |= ((RETRO_DEVICE_ID_JOYPAD_L3+1) << shift);
-            keycode_lut[AKEYCODE_BUTTON_12] |= ((RETRO_DEVICE_ID_JOYPAD_R3+1) << shift);
-         }
-         else if (strstr(name_buf, "TigerGame") || strstr(name_buf, "Game Controller Adapter")
-               || strstr(name_buf, "JC-PS102U"))
-         {
-            snprintf(msg, sizeof_msg, "RetroPad #%d is: Mayflash PS2 converter.\n", port);
-            g_settings.input.dpad_emulation[port] = DPAD_EMULATION_NONE;
+            /* Mayflash PS2 to USB converters */
             keycode_lut[AKEYCODE_BUTTON_13] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_15] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_16] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
@@ -268,7 +245,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          bool do_invert = (strstr(name_buf, "Gamepad 0") || strstr(name_buf, "Gamepad 1") || 
                strstr(name_buf, "Gamepad 2") || strstr(name_buf, "Gamepad 3"));
 
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: DualShock3/Sixaxis.\n", port);
          g_settings.input.dpad_emulation[port] = DPAD_EMULATION_NONE;
          keycode_lut[AKEYCODE_DPAD_UP] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
          keycode_lut[AKEYCODE_DPAD_DOWN] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
@@ -307,7 +283,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "MOGA"))
       {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: MOGA.\n", port);
          g_settings.input.dpad_emulation[port] = DPAD_EMULATION_NONE;
          keycode_lut[AKEYCODE_DPAD_UP] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
          keycode_lut[AKEYCODE_DPAD_DOWN] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
@@ -324,7 +299,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "Sony Navigation Controller"))
       {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: PS Move Navi.\n", port);
          keycode_lut[AKEYCODE_BUTTON_7]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_8]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_5]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
@@ -339,7 +313,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "idroid:con"))
       {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: Snakebyte idroid.\n", port);
          keycode_lut[AKEYCODE_BUTTON_2]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_3]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_1]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
@@ -355,7 +328,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "NYKO PLAYPAD PRO"))
       {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: Nyko Playpad Pro.\n", port);
          keycode_lut[AKEYCODE_DPAD_UP] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
          keycode_lut[AKEYCODE_DPAD_DOWN] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
          keycode_lut[AKEYCODE_DPAD_LEFT] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
@@ -374,7 +346,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       else if (strstr(name_buf, "USB,2-axis 8-button gamepad") || 
             strstr(name_buf, "BUFFALO BGC-FC801"))
       {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: Buffalo NES/SNES.\n", port);
          keycode_lut[AKEYCODE_BUTTON_1]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_2]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_3]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
@@ -386,7 +357,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "RetroUSB.com RetroPad"))
       {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: RetroUSB NES.\n", port);
          keycode_lut[AKEYCODE_BUTTON_B]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_A]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_7]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
@@ -394,7 +364,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "RetroUSB.com SNES RetroPort"))
       {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: RetroUSB SNES.\n", port);
          keycode_lut[AKEYCODE_BUTTON_Z]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_B]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_Y]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
@@ -406,7 +375,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "CYPRESS USB"))
       {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: Saturn USB.\n", port);
          keycode_lut[AKEYCODE_BUTTON_A]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_B]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_C]  |= ((RETRO_DEVICE_ID_JOYPAD_R2+1) << shift);
@@ -420,7 +388,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       else if (strstr(name_buf, "Mayflash Wii Classic") ||
             strstr(name_buf, "SZMy-power LTD CO.  Dual Box WII"))
       {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: Mayflash Wii Classic.\n", port);
          g_settings.input.dpad_emulation[port] = DPAD_EMULATION_NONE;
 
          if (strstr(name_buf, "Mayflash Wii Classic"))
@@ -450,7 +417,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "Toodles 2008 ChImp"))
       {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: Chimp Board.\n", port);
          keycode_lut[AKEYCODE_BUTTON_A] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
          keycode_lut[AKEYCODE_BUTTON_X] |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
          keycode_lut[AKEYCODE_BUTTON_Z] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
@@ -464,7 +430,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "joy_key"))
       {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: Archos Gamepad.\n", port);
+         /* Archos Gamepad */
          keycode_lut[AKEYCODE_DPAD_UP] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
          keycode_lut[AKEYCODE_DPAD_DOWN] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
          keycode_lut[AKEYCODE_DPAD_LEFT] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
@@ -482,7 +448,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "matrix_keyboard"))
       {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: JXD S5110.\n", port);
+         /* JXD S5110 */
          keycode_lut[AKEYCODE_DPAD_UP] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
          keycode_lut[AKEYCODE_DPAD_DOWN] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
          keycode_lut[AKEYCODE_DPAD_LEFT] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
@@ -499,7 +465,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       else if (strstr(name_buf, "keypad-game-zeus") || strstr(name_buf, "keypad-zeus"))
       {
          volume_enable = false;
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: Xperia Play.\n", port);
+         
+         /* Xperia Play */
          /* TODO: menu button */
          /* Menu : 82 */
          keycode_lut[AKEYCODE_DPAD_CENTER] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
@@ -523,7 +490,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
           * RStick Down: 39
           * RStick Left:38
           * RStick Right: 40 */
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: Red Samurai.\n", port);
+
+         /* Red Samurai */
          keycode_lut[AKEYCODE_W]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)    << shift);
          keycode_lut[AKEYCODE_S] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
          keycode_lut[AKEYCODE_A] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)    << shift);
@@ -550,8 +518,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       if (strstr(current_ime, "com.ccpcreations.android.WiiUseAndroid"))
       {
          // Player 1
-         snprintf(msg, sizeof_msg, "RetroPad #%d, %d, %d, %d is: Wiimote (IME).\n", 
-               port, port + 1, port + 2, port + 3);
+         
+         /* Wiimote (IME) */
          snprintf(name_buf, sizeof(name_buf), "ccpcreations WiiUse");
          g_settings.input.dpad_emulation[port] = DPAD_EMULATION_NONE;
          keycode_lut[AKEYCODE_DPAD_UP]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)    << shift);
@@ -654,17 +622,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          keycode_lut[AKEYCODE_GRAVE] |= ((RETRO_DEVICE_ID_JOYPAD_L2+1) << shift);
          keycode_lut[AKEYCODE_MEDIA_PAUSE] |= ((RETRO_DEVICE_ID_JOYPAD_R2+1) << shift);
       }
-      else if (source == AINPUT_SOURCE_TOUCHSCREEN)
-      {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: Touchscreen.\n", port);
-      }
-      else if (source == AINPUT_SOURCE_MOUSE)
-      {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: Mouse.\n", port);
-      }
       else if (source == AINPUT_SOURCE_KEYBOARD)
       {
-         snprintf(msg, sizeof_msg, "RetroPad #%d is: Keyboard.\n", port);
          // Keyboard
          // TODO: Map L2/R2/L3/R3
 
@@ -700,5 +659,5 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
    }
 
    if (name_buf[0] != 0)
-      snprintf(msg, sizeof_msg, "HID %s %d: %s, port: %d.\n", msg[0] == 0 ? "Unbound" : "", id, name_buf, port);
+      snprintf(msg, sizeof_msg, "HID %s %d: %s, p: %d.\n", msg[0] == 0 ? "Unbound" : "", id, name_buf, port);
 }
