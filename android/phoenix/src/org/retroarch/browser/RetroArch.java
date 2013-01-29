@@ -425,6 +425,11 @@ public class RetroArch extends Activity implements
 			Intent rset = new Intent(this, SettingsActivity.class);
 			startActivity(rset);
 			return true;
+			
+		case R.id.report_ime:
+			String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
+			Toast.makeText(this, current_ime, Toast.LENGTH_LONG).show();
+			return true;
 
 		case R.id.retroarch_guide:
 			Intent rguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.org/documents/retroarch-manual.pdf"));
@@ -435,14 +440,17 @@ public class RetroArch extends Activity implements
 			Intent cguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.org/documents/retroarch-cores-manual.pdf"));
 			startActivity(cguide);
 			return true;
+			
 		case R.id.overlay_guide:
 			Intent mguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.org/documents/overlay.pdf"));
 			startActivity(mguide);
 			return true;
+			
 		case R.id.shader_pack:
 			Intent sguide = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.libretro.org/shaders/xml-gles-shaders.zip"));
 			startActivity(sguide);
 			return true;
+			
 		default:
 			return false;
 		}
