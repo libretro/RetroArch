@@ -226,6 +226,7 @@ typedef struct video_overlay_interface
    void (*tex_geom)(void *data, float x, float y, float w, float h);
    void (*vertex_geom)(void *data, float x, float y, float w, float h);
    void (*full_screen)(void *data, bool enable);
+   void (*set_alpha)(void *data, float mod);
 } video_overlay_interface_t;
 #endif
 

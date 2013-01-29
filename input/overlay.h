@@ -37,6 +37,10 @@ bool input_overlay_full_screen(input_overlay_t *ol);
 // Resulting state is a bitmask of (1 << key_bind_id).
 uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y);
 
+// Sets a modulating factor for alpha channel. Default is 1.0.
+// The alpha factor is applied for all overlays.
+void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
+
 void input_overlay_next(input_overlay_t *ol);
 
 #endif

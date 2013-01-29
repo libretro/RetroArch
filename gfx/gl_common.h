@@ -289,7 +289,7 @@ typedef struct gl
    GLuint tex_overlay;
    GLfloat overlay_tex_coord[8];
    GLfloat overlay_vertex_coord[8];
-   GLfloat overlay_alpha_mod; // TODO. Needs a specific shader.
+   GLfloat overlay_alpha_mod;
 #endif
 
 #if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)

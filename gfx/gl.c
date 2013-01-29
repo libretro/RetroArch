@@ -1995,6 +1995,11 @@ static bool gl_overlay_load(void *data, const uint32_t *image, unsigned width, u
 
    gl_overlay_tex_geom(gl, 0, 0, 1, 1); // Default. Stretch to whole screen.
    gl_overlay_vertex_geom(gl, 0, 0, 1, 1);
+
+   // Only override this value when we need to.
+   if (gl->overlay_alpha_mod <= 0.0f)
+      gl->overlay_alpha_mod = 1.0f;
+
    return true;
 }
 
@@ -2038,16 +2043,31 @@ static void gl_overlay_full_screen(void *data, bool enable)
    gl->overlay_full_screen = enable;
 }
 
+static void gl_overlay_set_alpha(void *data, float mod)
+{
+   gl_t *gl = (gl_t*)data;
+   gl->overlay_alpha_mod = mod;
+}
+
 static void gl_render_overlay(void *data)
 {
    gl_t *gl = (gl_t*)data;
 
    glBindTexture(GL_TEXTURE_2D, gl->tex_overlay);
 
+   const GLfloat white_color_mod[16] = {
+      1.0f, 1.0f, 1.0f, gl->overlay_alpha_mod,
+      1.0f, 1.0f, 1.0f, gl->overlay_alpha_mod,
+      1.0f, 1.0f, 1.0f, gl->overlay_alpha_mod,
+      1.0f, 1.0f, 1.0f, gl->overlay_alpha_mod,
+   };
+
    gl_shader_use_func(gl, 0);
    glEnable(GL_BLEND);
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
+   gl->coords.color     = white_color_mod;
+
    gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp_no_rot);
 
    if (gl->overlay_full_screen)
@@ -2063,6 +2083,7 @@ static void gl_render_overlay(void *data)
 
    gl->coords.vertex    = vertex_ptr;
    gl->coords.tex_coord = gl->tex_coords;
+   gl->coords.color     = white_color;
 }
 
 static const video_overlay_interface_t gl_overlay_interface = {
@@ -2071,6 +2092,7 @@ static const video_overlay_interface_t gl_overlay_interface = {
    gl_overlay_tex_geom,
    gl_overlay_vertex_geom,
    gl_overlay_full_screen,
+   gl_overlay_set_alpha,
 };
 
 static void gl_get_overlay_interface(void *data, const video_overlay_interface_t **iface)

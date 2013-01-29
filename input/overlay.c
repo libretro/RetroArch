@@ -373,3 +373,9 @@ void input_overlay_free(input_overlay_t *ol)
    free(ol);
 }
 
+void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
+{
+   ol->iface->set_alpha(ol->iface_data, mod);
+}
+
+
