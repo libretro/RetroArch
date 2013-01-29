@@ -346,11 +346,11 @@ static void gx_input_poll(void *data)
             else if (rjs_mag < -1.0f)
                rjs_mag = -1.0f;
 
-            double ljs_val_x = ljs_mag * cos(M_PI * ljs_ang / 180.0);
-            double ljs_val_y = ljs_mag * sin(M_PI * ljs_ang / 180.0);
+            double ljs_val_x = -ljs_mag * sin(M_PI * ljs_ang / 180.0);
+            double ljs_val_y = -ljs_mag * cos(M_PI * ljs_ang / 180.0);
 
-            double rjs_val_x = rjs_mag * cos(M_PI * rjs_ang / 180.0);
-            double rjs_val_y = rjs_mag * sin(M_PI * rjs_ang / 180.0);
+            double rjs_val_x = -rjs_mag * sin(M_PI * rjs_ang / 180.0);
+            double rjs_val_y = -rjs_mag * cos(M_PI * rjs_ang / 180.0);
 
             s8 ls_x = (s8)(ljs_val_x * 127.0f);
             s8 ls_y = (s8)(ljs_val_y * 127.0f);
@@ -393,8 +393,8 @@ static void gx_input_poll(void *data)
             else if (js_mag < -1.0f)
                js_mag = -1.0f;
 
-            double js_val_x = js_mag * cos(M_PI * js_ang / 180.0);
-            double js_val_y = js_mag * sin(M_PI * js_ang / 180.0);
+            double js_val_x = -js_mag * sin(M_PI * js_ang / 180.0);
+            double js_val_y = -js_mag * cos(M_PI * js_ang / 180.0);
 
             s8 x = (s8)(js_val_x * 127.0f);
             s8 y = (s8)(js_val_y * 127.0f);
