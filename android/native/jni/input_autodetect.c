@@ -702,5 +702,5 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
    }
 
    if (name_buf[0] != 0)
-      snprintf(msg, sizeof_msg, "HID %s %d: %s, p: %d.\n", msg[0] == 0 ? "(ND)" : "", id, name_buf, port);
+      snprintf(msg, sizeof_msg, "HID %d: %s, p: %d.\n", id, name_buf, port);
 }
