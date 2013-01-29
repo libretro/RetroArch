@@ -47,6 +47,8 @@ static void *android_input_init(void)
 {
    pads_connected = 0;
 
+   input_autodetect_init();
+
    for(unsigned player = 0; player < 4; player++)
       for(unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
@@ -73,8 +75,6 @@ static void *android_input_init(void)
       g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
       g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
    }
-
-   input_autodetect_init();
    return (void*)-1;
 }
 

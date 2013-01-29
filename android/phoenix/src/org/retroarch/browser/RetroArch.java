@@ -342,6 +342,16 @@ public class RetroArch extends Activity implements
 				prefs.getString("savestate_directory", "") : "");
 		
 		config.setBoolean("video_font_enable", prefs.getBoolean("video_font_enable", true));
+		
+		for (int i = 1; i <= 4; i++)
+		{
+			final String btns[] = {"up", "down", "left", "right", "a", "b", "x", "y", "start", "select", "l", "r", "l2", "r2", "l3", "r3" };
+			for (String b : btns)
+			{
+				String p = "input_player" + String.valueOf(i) + "_" + b + "_btn";
+				config.setInt(p, prefs.getInt(p, 0));
+			}
+		}
 
 		String confPath = getDefaultConfigPath();
 		try {

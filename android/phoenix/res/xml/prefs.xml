@@ -165,7 +165,8 @@
                 android:defaultValue="true"
                 android:key="input_autodetect_enable"
                 android:summary="This will attempt to preconfigure various gamepads and/or IME apps that you connect."
-                android:title="Enable" />
+                android:title="Enable"
+                android:disableDependentsState="true" />
         </PreferenceCategory>
         <PreferenceCategory android:title="Debug input reporting" >
             <CheckBoxPreference
@@ -188,11 +189,215 @@
                     android:targetPackage="org.retroarch" />
             </Preference>
         </PreferenceCategory>
-        <!--<PreferenceCategory android:title="Button Binds" >
-            <org.retroarch.browser.KeyBindPreference
-                android:key="testKey"
-                android:title="A Button" />
-        </PreferenceCategory>-->
+        <PreferenceCategory android:title="Custom Binds">
+	        <PreferenceScreen
+	            android:title="Player 1 Custom Binds"
+	            android:dependency="input_autodetect_enable" >
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_up_btn"
+	                android:title="Up Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_down_btn"
+	                android:title="Down Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_left_btn"
+	                android:title="Left Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_right_btn"
+	                android:title="Right Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_a_btn"
+	                android:title="A Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_b_btn"
+	                android:title="B Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_x_btn"
+	                android:title="X Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_y_btn"
+	                android:title="Y Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_start_btn"
+	                android:title="Start Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_select_btn"
+	                android:title="Select Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_l_btn"
+	                android:title="L1 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_r_btn"
+	                android:title="R1 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_l2_btn"
+	                android:title="L2 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_r2_btn"
+	                android:title="R2 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_l3_btn"
+	                android:title="L3 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player1_r3_btn"
+	                android:title="R3 Button" />
+	        </PreferenceScreen>
+	        <PreferenceScreen
+	            android:title="Player 2 Custom Binds"
+	            android:dependency="input_autodetect_enable" >
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_up_btn"
+	                android:title="Up Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_down_btn"
+	                android:title="Down Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_left_btn"
+	                android:title="Left Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_right_btn"
+	                android:title="Right Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_a_btn"
+	                android:title="A Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_b_btn"
+	                android:title="B Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_x_btn"
+	                android:title="X Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_y_btn"
+	                android:title="Y Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_start_btn"
+	                android:title="Start Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_select_btn"
+	                android:title="Select Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_l_btn"
+	                android:title="L1 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_r_btn"
+	                android:title="R1 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_l2_btn"
+	                android:title="L2 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_r2_btn"
+	                android:title="R2 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_l3_btn"
+	                android:title="L3 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player2_r3_btn"
+	                android:title="R3 Button" />
+	        </PreferenceScreen>
+	        <PreferenceScreen
+	            android:title="Player 3 Custom Binds"
+	            android:dependency="input_autodetect_enable" >
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_up_btn"
+	                android:title="Up Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_down_btn"
+	                android:title="Down Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_left_btn"
+	                android:title="Left Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_right_btn"
+	                android:title="Right Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_a_btn"
+	                android:title="A Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_b_btn"
+	                android:title="B Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_x_btn"
+	                android:title="X Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_y_btn"
+	                android:title="Y Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_start_btn"
+	                android:title="Start Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_select_btn"
+	                android:title="Select Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_l_btn"
+	                android:title="L1 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_r_btn"
+	                android:title="R1 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_l2_btn"
+	                android:title="L2 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_r2_btn"
+	                android:title="R2 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_l3_btn"
+	                android:title="L3 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player3_r3_btn"
+	                android:title="R3 Button" />
+	        </PreferenceScreen>
+	        <PreferenceScreen
+	            android:title="Player 4 Custom Binds"
+	            android:dependency="input_autodetect_enable" >
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_up_btn"
+	                android:title="Up Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_down_btn"
+	                android:title="Down Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_left_btn"
+	                android:title="Left Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_right_btn"
+	                android:title="Right Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_a_btn"
+	                android:title="A Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_b_btn"
+	                android:title="B Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_x_btn"
+	                android:title="X Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_y_btn"
+	                android:title="Y Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_start_btn"
+	                android:title="Start Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_select_btn"
+	                android:title="Select Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_l_btn"
+	                android:title="L1 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_r_btn"
+	                android:title="R1 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_l2_btn"
+	                android:title="L2 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_r2_btn"
+	                android:title="R2 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_l3_btn"
+	                android:title="L3 Button" />
+	            <org.retroarch.browser.KeyBindPreference
+	                android:key="input_player4_r3_btn"
+	                android:title="R3 Button" />
+	        </PreferenceScreen>
+        </PreferenceCategory>
     </PreferenceScreen>
-
 </PreferenceScreen>

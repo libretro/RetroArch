@@ -73,10 +73,27 @@ end:
 
 void input_autodetect_init (void)
 {
-   for(int j = 0; j < LAST_KEYCODE; j++)
+   int j, k;
+   for(j = 0; j < LAST_KEYCODE; j++)
       keycode_lut[j] = 0;
 
    volume_enable = true;
+   
+   if (g_settings.input.autodetect_enable)
+      return;
+
+   for (j = 0; j < MAX_PADS; j++)
+   {
+      uint8_t shift = 8 + (j * 8);
+      for (k = 0; k < RARCH_FIRST_CUSTOM_BIND; k++)
+      {
+         if (g_settings.input.binds[j][k].valid && g_settings.input.binds[j][k].joykey && g_settings.input.binds[j][k].joykey < LAST_KEYCODE)
+         {
+            RARCH_LOG("binding %llu to %d (p%d)\n", g_settings.input.binds[j][k].joykey, k, j);
+            keycode_lut[g_settings.input.binds[j][k].joykey] |= ((k + 1) << shift);
+         }
+      }
+   }
 }
 
 void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source)
