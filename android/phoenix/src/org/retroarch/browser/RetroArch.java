@@ -7,6 +7,7 @@ import java.io.*;
 import android.content.*;
 import android.content.res.AssetManager;
 import android.app.*;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.*;
 import android.preference.PreferenceManager;
@@ -230,6 +231,8 @@ public class RetroArch extends Activity implements
 				}
 			}
 		}
+		
+		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
 	}
 
 	@Override

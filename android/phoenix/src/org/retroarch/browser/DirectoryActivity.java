@@ -7,6 +7,7 @@ import java.io.*;
 
 import android.content.*;
 import android.app.*;
+import android.media.AudioManager;
 import android.os.*;
 import android.preference.PreferenceManager;
 import android.widget.*;
@@ -163,6 +164,7 @@ public class DirectoryActivity extends Activity implements
 		}
 
 		wrapFiles();
+		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
 	}
 
 	@Override
