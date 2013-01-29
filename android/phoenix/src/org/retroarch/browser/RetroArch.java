@@ -330,7 +330,7 @@ public class RetroArch extends Activity implements
 		
 		boolean useOverlay = prefs.getBoolean("input_overlay_enable", true);
 		if (useOverlay) {
-			String overlayPath = prefs.getString("input_overlay", getCacheDir() + "/Overlays/basic_overlay.cfg");
+			String overlayPath = prefs.getString("input_overlay", getCacheDir() + "/Overlays/snes-landscape.cfg");
 			config.setString("input_overlay", overlayPath);
 		} else {
 			config.setString("input_overlay", "");
