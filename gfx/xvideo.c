@@ -533,7 +533,11 @@ static void calc_out_rect(bool keep_aspect, struct rarch_viewport *vp, unsigned 
    vp->full_width  = vp_width;
    vp->full_height = vp_height;
 
-   if (!keep_aspect)
+   if (g_settings.video.scale_integer)
+   {
+      gfx_scale_integer(vp, vp_width, vp_height, g_settings.video.aspect_ratio, keep_aspect);
+   }
+   else if (!keep_aspect)
    {
       vp->x = 0; vp->y = 0;
       vp->width = vp_width;
@@ -679,6 +683,8 @@ static bool xv_frame(void *data, const void *frame, unsigned width, unsigned hei
    xv->render_func(xv, frame, width, height, pitch);
 
    calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
+   xv->vp.full_width = target.width;
+   xv->vp.full_height = target.width;
 
    if (msg)
       xv_render_msg(xv, msg, width << 1, height << 1);

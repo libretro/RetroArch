@@ -157,6 +157,7 @@ struct settings
       bool crop_overscan;
       float aspect_ratio;
       bool aspect_ratio_auto;
+      bool scale_integer;
       unsigned aspect_ratio_idx;
       char cg_shader_path[PATH_MAX];
       char bsnes_shader_path[PATH_MAX];

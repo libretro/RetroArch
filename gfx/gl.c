@@ -674,7 +674,11 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
    else
       device_aspect = (float)width / height;
 
-   if (gl->keep_aspect && !force_full)
+   if (g_settings.video.scale_integer && !force_full)
+   {
+      gfx_scale_integer(&gl->vp, width, height, g_settings.video.aspect_ratio, gl->keep_aspect);
+   }
+   else if (gl->keep_aspect && !force_full)
    {
       float desired_aspect = g_settings.video.aspect_ratio;
       float delta;
@@ -708,20 +712,26 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
             height = (unsigned)(2.0 * height * delta);
          }
       }
+
+      gl->vp.x      = x;
+      gl->vp.y      = y;
+      gl->vp.width  = width;
+      gl->vp.height = height;
+   }
+   else
+   {
+      gl->vp.x = gl->vp.y = 0;
+      gl->vp.width = width;
+      gl->vp.height = height;
    }
 
 #ifdef ANDROID
    // In portrait mode, we want viewport to gravitate to top of screen.
    if (device_aspect < 1.0f)
-      y *= 2;
+      gl->vp.y *= 2;
 #endif
 
-   glViewport(x, y, width, height);
-   gl->vp.x      = x;
-   gl->vp.y      = y;
-   gl->vp.width  = width;
-   gl->vp.height = height;
-
+   glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
    gl_set_projection(gl, &ortho, allow_rotate);
 
    // Set last backbuffer viewport.

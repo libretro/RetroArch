@@ -21,6 +21,7 @@ extern "C" {
 #endif
 
 #include <stddef.h>
+#include "../general.h"
 #include "../boolean.h"
 
 #ifdef HAVE_CONFIG_H
@@ -35,6 +36,9 @@ void gfx_window_title_reset(void);
 #ifdef _WIN32
 void gfx_set_dwm(void);
 #endif
+
+void gfx_scale_integer(struct rarch_viewport *vp, unsigned win_width, unsigned win_height,
+      float aspect_ratio, bool keep_aspect);
 
 #ifdef __cplusplus
 }

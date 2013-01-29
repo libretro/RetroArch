@@ -224,6 +224,11 @@ static const bool video_smooth = true;
 // On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 
 
+// Only scale in integer steps.
+// The base size depends on system-reported geometry and aspect ratio.
+// If video_force_aspect is not set, X/Y will be integer scaled independently.
+static const bool scale_integer = false;
+
 // Controls aspect ratio handling.
 static const float aspect_ratio = DEFAULT_ASPECT_RATIO; // Automatic
 static const bool aspect_ratio_auto = false; // 1:1 PAR
