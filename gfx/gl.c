@@ -1996,10 +1996,6 @@ static bool gl_overlay_load(void *data, const uint32_t *image, unsigned width, u
    gl_overlay_tex_geom(gl, 0, 0, 1, 1); // Default. Stretch to whole screen.
    gl_overlay_vertex_geom(gl, 0, 0, 1, 1);
 
-   // Only override this value when we need to.
-   if (gl->overlay_alpha_mod <= 0.0f)
-      gl->overlay_alpha_mod = 1.0f;
-
    return true;
 }
 
