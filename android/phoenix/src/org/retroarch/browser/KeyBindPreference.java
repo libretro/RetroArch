@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
@@ -28,22 +29,19 @@ class KeyBindEditText extends EditText
 	@Override
 	public boolean onKeyPreIme(int keyCode, KeyEvent event)
 	{
-		Log.i("RetroArch", "key! " + String.valueOf(event.getKeyCode()));
-		pref.onKey(null, event.getKeyCode(), event);
-		return false;
+		return pref.onKey(null, event.getKeyCode(), event);
 	}
 	
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event)
 	{
-		Log.i("RetroArch", "key! " + String.valueOf(event.getKeyCode()));
-		pref.onKey(null, event.getKeyCode(), event);
-		return false;
+		return pref.onKey(null, event.getKeyCode(), event);
 	}
 }
 
-class KeyBindPreference extends DialogPreference implements View.OnKeyListener, AdapterView.OnItemClickListener, View.OnClickListener, LayoutInflater.Factory {
+class KeyBindPreference extends DialogPreference implements View.OnKeyListener, AdapterView.OnItemClickListener, LayoutInflater.Factory {
 	private int key_bind_code;
+	private boolean grabKeyCode = false;
 	KeyBindEditText keyText;
 	private String[] key_labels;
 	private final int DEFAULT_KEYCODE = 0;
@@ -53,10 +51,14 @@ class KeyBindPreference extends DialogPreference implements View.OnKeyListener, 
 		key_labels = getContext().getResources().getStringArray(R.array.key_bind_values);
 	}
 	
-	private void setKey(int keyCode)
+	private void setKey(int keyCode, boolean force)
 	{
-		key_bind_code = keyCode;
-		keyText.setText("Current: " + key_labels[key_bind_code]);
+		if (grabKeyCode || force)
+		{
+			grabKeyCode = false;
+			key_bind_code = keyCode;
+			keyText.setText("Current: " + key_labels[key_bind_code]);
+		}
 	}
 
 	@Override
@@ -74,8 +76,20 @@ class KeyBindPreference extends DialogPreference implements View.OnKeyListener, 
 		keyText.setBoundPreference(this);
 		view.setOnKeyListener(this);
 		((ListView) view.findViewById(R.id.key_bind_list)).setOnItemClickListener(this);
-		((Button) view.findViewById(R.id.key_bind_clear)).setOnClickListener(this);
-		setKey(getPersistedInt(DEFAULT_KEYCODE));
+		((Button) view.findViewById(R.id.key_bind_clear)).setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+        		setKey(0, true);
+            }
+        });
+		((Button) view.findViewById(R.id.key_bind_detect)).setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+            	grabKeyCode = true;
+    			keyText.setText("Press key to use");
+            }
+        });
+		InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+		imm.hideSoftInputFromWindow(keyText.getWindowToken(), 0);
+		setKey(getPersistedInt(DEFAULT_KEYCODE), true);
 		return view;
 	}
 
@@ -91,22 +105,17 @@ class KeyBindPreference extends DialogPreference implements View.OnKeyListener, 
 	
 	@Override
 	public boolean onKey(View v, int keyCode, KeyEvent event) {
-		Log.i("RetroArch", "Key event!");
-		if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode != 0 && keyCode < key_labels.length)
+		if (grabKeyCode && event.getAction() == KeyEvent.ACTION_DOWN && keyCode != 0 && keyCode < key_labels.length)
 		{
-			setKey(keyCode);
+			setKey(keyCode, false);
+			return true;
 		}
 		return false;
 	}
 
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-		setKey((int)id);
-	}
-
-	@Override
-	public void onClick(View v) {
-		setKey(0);
+		setKey((int)id, true);
 	}
 
     @Override

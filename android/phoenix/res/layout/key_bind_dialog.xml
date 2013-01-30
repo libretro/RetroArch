@@ -34,7 +34,8 @@
         android:layout_above="@+id/key_bind_clear"
         android:layout_alignParentLeft="true"
         android:layout_below="@+id/key_bind_value"
-        android:entries="@array/key_bind_values" >
+        android:entries="@array/key_bind_values"
+        android:fastScrollEnabled="true" >
 
     </ListView>
 
@@ -43,7 +44,16 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
+        android:layout_toLeftOf="@+id/key_bind_detect"
         android:text="@string/key_bind_clear" />
+
+    <Button
+        android:id="@+id/key_bind_detect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/key_bind_list"
+        android:layout_marginRight="72dp"
+        android:text="@string/key_bind_detect" />
 
 </RelativeLayout>

@@ -16,5 +16,6 @@
     <string name="key_bind_title">Press the button to use, or select it from the list</string>
     <string name="key_bind_clear">Unbind</string>
     <string name="report_ime">Report IME</string>
+    <string name="key_bind_detect">Detect</string>
 
 </resources>
