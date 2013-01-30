@@ -460,7 +460,7 @@ public class RetroArch extends Activity implements
 			
 		case R.id.report_ime:
 			String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
-			Toast.makeText(this, current_ime, Toast.LENGTH_LONG).show();
+			new AlertDialog.Builder(this).setMessage(current_ime).setNeutralButton("Close", null).show();
 			return true;
 
 		case R.id.retroarch_guide:
