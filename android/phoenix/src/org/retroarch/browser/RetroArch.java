@@ -6,6 +6,7 @@ import java.io.*;
 
 import android.content.*;
 import android.content.res.AssetManager;
+import android.annotation.TargetApi;
 import android.app.*;
 import android.net.Uri;
 import android.os.*;
@@ -14,6 +15,7 @@ import android.provider.Settings;
 import android.widget.*;
 import android.util.Log;
 import android.view.*;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.inputmethod.*;
 import android.graphics.drawable.*;
 
@@ -52,7 +54,7 @@ class ModuleWrapper implements IconAdapterItem {
 }
 
 public class RetroArch extends Activity implements
-		AdapterView.OnItemClickListener, PopupMenu.OnMenuItemClickListener {
+		AdapterView.OnItemClickListener {
 	private IconAdapter<ModuleWrapper> adapter;
 	static private final int ACTIVITY_LOAD_ROM = 0;
 	static private String libretro_path;
@@ -230,6 +232,11 @@ public class RetroArch extends Activity implements
 				}
 			}
 		}
+		
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB)
+		{
+			this.registerForContextMenu(findViewById(android.R.id.content));
+		}
 	}
 
 	@Override
@@ -380,15 +387,38 @@ public class RetroArch extends Activity implements
 		getMenuInflater().inflate(R.menu.directory_list, aMenu);
 		return true;
 	}
-	
-	public void showPopup(View v) {
-		PopupMenu menu = new PopupMenu(this, v);
-		MenuInflater inflater = menu.getMenuInflater();
-		inflater.inflate(R.menu.context_menu, menu.getMenu());
-		menu.setOnMenuItemClickListener(this);
-		menu.show();
-	}
 
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	public void showPopup(View v) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+		{
+			PopupMenu menu = new PopupMenu(this, v);
+			MenuInflater inflater = menu.getMenuInflater();
+			inflater.inflate(R.menu.context_menu, menu.getMenu());
+			menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener()
+			{
+				@Override
+				public boolean onMenuItemClick(MenuItem item) {
+					return onContextItemSelected(item);
+				}
+				
+			});
+			menu.show();
+		}
+		else
+		{
+			this.openContextMenu(findViewById(android.R.id.content));
+		}
+	}
+	
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v,
+	                                ContextMenuInfo menuInfo) {
+	    super.onCreateContextMenu(menu, v, menuInfo);
+	    MenuInflater inflater = getMenuInflater();
+	    inflater.inflate(R.menu.context_menu, menu);
+	}
+	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem aItem) {
 		switch (aItem.getItemId()) {
@@ -401,9 +431,9 @@ public class RetroArch extends Activity implements
 			return super.onOptionsItemSelected(aItem);
 		}
 	}
-
+	
 	@Override
-	public boolean onMenuItemClick(MenuItem item) {
+	public boolean onContextItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.input_method_select:
 			InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
