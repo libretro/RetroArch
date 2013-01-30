@@ -150,6 +150,7 @@ public class DirectoryActivity extends Activity implements
 		ListView list = (ListView) findViewById(R.id.list);
 		list.setAdapter(adapter);
 		list.setOnItemClickListener(this);
+		list.setFastScrollEnabled(true);
 
 		// Load Directory
 		if (savedInstanceState != null) {
