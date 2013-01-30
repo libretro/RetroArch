@@ -6,6 +6,7 @@ import java.io.*;
 
 import android.content.*;
 import android.content.res.AssetManager;
+import android.annotation.TargetApi;
 import android.app.*;
 import android.media.AudioManager;
 import android.net.Uri;
@@ -15,6 +16,7 @@ import android.provider.Settings;
 import android.widget.*;
 import android.util.Log;
 import android.view.*;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.inputmethod.*;
 import android.graphics.drawable.*;
 
@@ -53,7 +55,7 @@ class ModuleWrapper implements IconAdapterItem {
 }
 
 public class RetroArch extends Activity implements
-		AdapterView.OnItemClickListener, PopupMenu.OnMenuItemClickListener {
+		AdapterView.OnItemClickListener {
 	private IconAdapter<ModuleWrapper> adapter;
 	static private final int ACTIVITY_LOAD_ROM = 0;
 	static private String libretro_path;
@@ -233,6 +235,11 @@ public class RetroArch extends Activity implements
 		}
 		
 		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
+		
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB)
+		{
+			this.registerForContextMenu(findViewById(android.R.id.content));
+		}
 	}
 
 	@Override
@@ -393,15 +400,37 @@ public class RetroArch extends Activity implements
 		getMenuInflater().inflate(R.menu.directory_list, aMenu);
 		return true;
 	}
-	
-	public void showPopup(View v) {
-		PopupMenu menu = new PopupMenu(this, v);
-		MenuInflater inflater = menu.getMenuInflater();
-		inflater.inflate(R.menu.context_menu, menu.getMenu());
-		menu.setOnMenuItemClickListener(this);
-		menu.show();
-	}
 
+	public void showPopup(View v) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+		{
+			PopupMenuAbstract menu = new PopupMenuAbstract(this, v);
+			MenuInflater inflater = menu.getMenuInflater();
+			inflater.inflate(R.menu.context_menu, menu.getMenu());
+			menu.setOnMenuItemClickListener(new PopupMenuAbstract.OnMenuItemClickListener()
+			{
+				@Override
+				public boolean onMenuItemClick(MenuItem item) {
+					return onContextItemSelected(item);
+				}
+				
+			});
+			menu.show();
+		}
+		else
+		{
+			this.openContextMenu(findViewById(android.R.id.content));
+		}
+	}
+	
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v,
+	                                ContextMenuInfo menuInfo) {
+	    super.onCreateContextMenu(menu, v, menuInfo);
+	    MenuInflater inflater = getMenuInflater();
+	    inflater.inflate(R.menu.context_menu, menu);
+	}
+	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem aItem) {
 		switch (aItem.getItemId()) {
@@ -414,9 +443,9 @@ public class RetroArch extends Activity implements
 			return super.onOptionsItemSelected(aItem);
 		}
 	}
-
+	
 	@Override
-	public boolean onMenuItemClick(MenuItem item) {
+	public boolean onContextItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.input_method_select:
 			InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -456,6 +485,108 @@ public class RetroArch extends Activity implements
 			
 		default:
 			return false;
+		}
+	}
+}
+
+abstract class LazyPopupMenu {
+	public abstract Menu getMenu();
+	public abstract MenuInflater getMenuInflater();
+	public abstract void setOnMenuItemClickListener(LazyPopupMenu.OnMenuItemClickListener listener);
+	public abstract void show();
+	public interface OnMenuItemClickListener {
+		public abstract boolean onMenuItemClick(MenuItem item);
+	}
+}
+
+@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+class HoneycombPopupMenu extends LazyPopupMenu {
+	private PopupMenu instance;
+	HoneycombPopupMenu.OnMenuItemClickListener listen;
+	
+	public HoneycombPopupMenu(Context context, View anchor)
+	{
+		instance = new PopupMenu(context, anchor);
+	}
+
+	@Override
+	public void setOnMenuItemClickListener(HoneycombPopupMenu.OnMenuItemClickListener listener)
+	{
+		listen = listener;
+		instance.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+			@Override
+			public boolean onMenuItemClick(MenuItem item) {
+				return listen.onMenuItemClick(item);
+			}
+			
+		});
+	}
+
+	@Override
+	public Menu getMenu() {
+		return instance.getMenu();
+	}
+
+	@Override
+	public MenuInflater getMenuInflater() {
+		return instance.getMenuInflater();
+	}
+
+	@Override
+	public void show() {
+		instance.show();
+	}
+}
+
+class PopupMenuAbstract extends LazyPopupMenu
+{
+	private LazyPopupMenu lazy;
+	
+	public PopupMenuAbstract(Context context, View anchor)
+	{
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+		{
+			lazy = new HoneycombPopupMenu(context, anchor);
+		}
+	}
+
+	@Override
+	public Menu getMenu() {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+		{
+			return lazy.getMenu();
+		}
+		else
+		{
+			return null;
+		}
+	}
+
+	@Override
+	public MenuInflater getMenuInflater() {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+		{
+			return lazy.getMenuInflater();
+		}
+		else
+		{
+			return null;
+		}
+	}
+
+	@Override
+	public void setOnMenuItemClickListener(PopupMenuAbstract.OnMenuItemClickListener listener) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+		{
+			lazy.setOnMenuItemClickListener(listener);
+		}
+	}
+
+	@Override
+	public void show() {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+		{
+			lazy.show();
 		}
 	}
 }
