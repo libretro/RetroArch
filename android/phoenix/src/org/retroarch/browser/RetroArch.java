@@ -388,7 +388,6 @@ public class RetroArch extends Activity implements
 		return true;
 	}
 
-	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	public void showPopup(View v) {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
 		{
@@ -479,6 +478,7 @@ abstract class LazyPopupMenu {
 	}
 }
 
+@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 class HoneycombPopupMenu extends LazyPopupMenu {
 	private PopupMenu instance;
 	HoneycombPopupMenu.OnMenuItemClickListener listen;
