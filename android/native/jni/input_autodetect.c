@@ -96,7 +96,7 @@ void input_autodetect_init (void)
    }
 }
 
-void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source, bool *back_exits)
+void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source)
 {
    struct android_app *android_app = (struct android_app*)data;
    // Hack - we have to add '1' to the bit mask here because
@@ -364,7 +364,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          keycode_lut[AKEYCODE_BACK] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)      << shift);
          keycode_lut[AKEYCODE_BUTTON_THUMBL] |=  ((RETRO_DEVICE_ID_JOYPAD_L3+1)      << shift);
          keycode_lut[AKEYCODE_BUTTON_THUMBR] |=  ((RETRO_DEVICE_ID_JOYPAD_R3+1)      << shift);
-         *back_exits = false;
       }
       else if (strstr(name_buf, "USB,2-axis 8-button gamepad") || 
             strstr(name_buf, "BUFFALO BGC-FC801"))
@@ -497,7 +496,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          /* Xperia Play */
          /* TODO: menu button */
          /* Menu : 82 */
-         *back_exits = false;
          keycode_lut[AKEYCODE_DPAD_CENTER] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
          keycode_lut[AKEYCODE_BACK] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
          keycode_lut[AKEYCODE_BUTTON_X] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
@@ -521,7 +519,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
           * RStick Right: 40 */
 
          /* Red Samurai */
-         *back_exits = false;
          keycode_lut[AKEYCODE_W]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)    << shift);
          keycode_lut[AKEYCODE_S] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
          keycode_lut[AKEYCODE_A] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)    << shift);

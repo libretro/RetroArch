@@ -32,8 +32,8 @@
 
 static unsigned pads_connected;
 static int state_device_ids[MAX_PADS];
-static int back_exits[MAX_PADS];
 static uint64_t state[MAX_PADS];
+static bool ignore_p1_back;
 
 struct input_pointer
 {
@@ -120,18 +120,17 @@ static void android_input_poll(void *data)
       {
          state_id = pads_connected;
          state_device_ids[pads_connected++] = id;
-         bool back_exit = true;
 
-         input_autodetect_setup(android_app, msg, sizeof(msg), state_id, id, source, &back_exit);
+         input_autodetect_setup(android_app, msg, sizeof(msg), state_id, id, source);
          long_msg_enable = true;
 
-         back_exits[state_id] = back_exit;
+         if (state_id == 0)
+            ignore_p1_back = (keycode_lut[AKEYCODE_BACK] != 0);
       }
 
-      if (keycode == AKEYCODE_BACK)
+      if (keycode == AKEYCODE_BACK && (!ignore_p1_back || state_id != 0))
       {
-         if (back_exits[state_id])
-            *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+         *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
          AInputQueue_finishEvent(android_app->inputQueue, event, handled);
          break;
       }

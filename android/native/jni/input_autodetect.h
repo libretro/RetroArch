@@ -64,6 +64,6 @@ extern uint64_t keycode_lut[LAST_KEYCODE];
 extern bool volume_enable;
 
 void input_autodetect_init (void);
-void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source, bool *back_exit);
+void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source);
 
 #endif
