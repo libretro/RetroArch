@@ -692,7 +692,7 @@ static bool rpng_save_image(const char *path, const uint8_t *data,
    stream.next_out  = deflate_buf + 8;
    stream.avail_out = encode_buf_size * 2;
 
-   deflateInit(&stream, 2);
+   deflateInit(&stream, 9);
    if (deflate(&stream, Z_FINISH) != Z_STREAM_END)
    {
       deflateEnd(&stream);
