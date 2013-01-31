@@ -523,11 +523,11 @@ static void copy_bgr24_line(uint8_t *dst, const uint8_t *src, unsigned width)
    }
 }
 
-static unsigned count_zeroes(const uint8_t *data, size_t size)
+static unsigned count_sad(const uint8_t *data, size_t size)
 {
    unsigned cnt = 0;
    for (size_t i = 0; i < size; i++)
-      cnt += data[i] == 0;
+      cnt += abs((int8_t)data[i]);
    return cnt;
 }
 
@@ -538,7 +538,7 @@ static unsigned filter_up(uint8_t *target, const uint8_t *line, const uint8_t *p
    for (unsigned i = 0; i < width; i++)
       target[i] = line[i] - prev[i];
 
-   return count_zeroes(target, width);
+   return count_sad(target, width);
 }
 
 static unsigned filter_sub(uint8_t *target, const uint8_t *line,
@@ -550,7 +550,7 @@ static unsigned filter_sub(uint8_t *target, const uint8_t *line,
    for (unsigned i = bpp; i < width; i++)
       target[i] = line[i] - line[i - bpp];
 
-   return count_zeroes(target, width);
+   return count_sad(target, width);
 }
 
 static unsigned filter_avg(uint8_t *target, const uint8_t *line, const uint8_t *prev,
@@ -562,7 +562,7 @@ static unsigned filter_avg(uint8_t *target, const uint8_t *line, const uint8_t *
    for (unsigned i = bpp; i < width; i++)
       target[i] = line[i] - ((line[i - bpp] + prev[i]) >> 1);
 
-   return count_zeroes(target, width);
+   return count_sad(target, width);
 }
 
 static unsigned filter_paeth(uint8_t *target, const uint8_t *line, const uint8_t *prev,
@@ -574,7 +574,7 @@ static unsigned filter_paeth(uint8_t *target, const uint8_t *line, const uint8_t
    for (unsigned i = bpp; i < width; i++)
       target[i] = line[i] - paeth(line[i - bpp], prev[i], prev[i - bpp]);
 
-   return count_zeroes(target, width);
+   return count_sad(target, width);
 }
 
 static bool rpng_save_image(const char *path, const uint8_t *data,
@@ -639,42 +639,42 @@ static bool rpng_save_image(const char *path, const uint8_t *data,
       // Try every filtering method, and choose the method
       // which has most entries as zero.
       // This is probably not very optimal, but it's very simple to implement.
-      unsigned none_score  = count_zeroes(rgba_line, width * bpp);
+      unsigned none_score  = count_sad(rgba_line, width * bpp);
       unsigned up_score    = filter_up(up_filtered, rgba_line, prev_encoded, width, bpp);
       unsigned sub_score   = filter_sub(sub_filtered, rgba_line, width, bpp);
       unsigned avg_score   = filter_avg(avg_filtered, rgba_line, prev_encoded, width, bpp);
       unsigned paeth_score = filter_paeth(paeth_filtered, rgba_line, prev_encoded, width, bpp);
 
       uint8_t filter = 0;
-      unsigned max_zeros = none_score;
+      unsigned max_sad = none_score;
       const uint8_t *chosen_filtered = rgba_line;
 
-      if (sub_score > max_zeros)
+      if (sub_score > max_sad)
       {
          filter = 1;
          chosen_filtered = sub_filtered;
-         max_zeros = sub_score;
+         max_sad = sub_score;
       }
 
-      if (up_score > max_zeros)
+      if (up_score > max_sad)
       {
          filter = 2;
          chosen_filtered = up_filtered;
-         max_zeros = up_score;
+         max_sad = up_score;
       }
 
-      if (avg_score > max_zeros)
+      if (avg_score > max_sad)
       {
          filter = 3;
          chosen_filtered = avg_filtered;
-         max_zeros = avg_score;
+         max_sad = avg_score;
       }
 
-      if (paeth_score > max_zeros)
+      if (paeth_score > max_sad)
       {
          filter = 4;
          chosen_filtered = paeth_filtered;
-         max_zeros = paeth_score;
+         max_sad = paeth_score;
       }
 
       *encode_target++ = filter;
