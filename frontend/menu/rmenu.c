@@ -2267,13 +2267,6 @@ int ingame_menu(void *data, void *state)
          menu_idx = 0;
    }
 
-   if((input & (1ULL << RMENU_DEVICE_NAV_L3)) && (input & (1ULL << RMENU_DEVICE_NAV_R3)))
-   {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-      return -1;
-   }
-
    display_menubar(current_menu);
 
    device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, strw_buffer);
@@ -2411,8 +2404,11 @@ int rmenu_input_process(void *data, void *state)
 
       if (return_to_game_enable)
       {
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-         return -1;
+         if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME)))
+         {
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            return -1;
+         }
       }
    }
 
@@ -2494,7 +2490,10 @@ bool rmenu_iterate(void)
 
       menu_stack_force_refresh();
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
+
+#ifndef __CELLOS_LV2__
       device_ptr->ctx_driver->rmenu_init();
+#endif
 
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
    }
@@ -2567,7 +2566,9 @@ deinit:
 
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
 
+#ifndef __CELLOS_LV2__
    device_ptr->ctx_driver->rmenu_free();
+#endif
 
    return false;
 }
