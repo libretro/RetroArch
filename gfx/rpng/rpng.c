@@ -646,35 +646,35 @@ static bool rpng_save_image(const char *path, const uint8_t *data,
       unsigned paeth_score = filter_paeth(paeth_filtered, rgba_line, prev_encoded, width, bpp);
 
       uint8_t filter = 0;
-      unsigned max_sad = none_score;
+      unsigned min_sad = none_score;
       const uint8_t *chosen_filtered = rgba_line;
 
-      if (sub_score > max_sad)
+      if (sub_score < min_sad)
       {
          filter = 1;
          chosen_filtered = sub_filtered;
-         max_sad = sub_score;
+         min_sad = sub_score;
       }
 
-      if (up_score > max_sad)
+      if (up_score < min_sad)
       {
          filter = 2;
          chosen_filtered = up_filtered;
-         max_sad = up_score;
+         min_sad = up_score;
       }
 
-      if (avg_score > max_sad)
+      if (avg_score < min_sad)
       {
          filter = 3;
          chosen_filtered = avg_filtered;
-         max_sad = avg_score;
+         min_sad = avg_score;
       }
 
-      if (paeth_score > max_sad)
+      if (paeth_score < min_sad)
       {
          filter = 4;
          chosen_filtered = paeth_filtered;
-         max_sad = paeth_score;
+         min_sad = paeth_score;
       }
 
       *encode_target++ = filter;
