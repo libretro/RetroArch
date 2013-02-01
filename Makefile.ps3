@@ -1,4 +1,4 @@
-RARCH_VERSION		= "0.9.8"
+RARCH_VERSION		= "0.9.8.1"
 
 #which compiler to build  with - GCC or SNC
 #set to GCC for debug builds for use with debugger
@@ -154,7 +154,7 @@ create-salamander:
 	$(MAKE_SELF) $(SALAMANDER_TARGET) $(EBOOT_PATH) $(CONTENT_ID_FULL)
 
 copy-media-files:
-	@cp $(RMENU_IMG_DIR)/main-menu_1080p.png ps3/pkg/USRDIR/cores/borders/Menu/main-menu.png
+	@cp -r $(RMENU_IMG_DIR)/*.png ps3/pkg/USRDIR/cores/borders/Menu/
 
 create-shaders:
 	make -f Makefile.shaders deploy-ps3
