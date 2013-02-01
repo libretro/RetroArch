@@ -329,7 +329,7 @@ void texture_image_border_load(const char *path)
 
 static bool gfx_ctx_rmenu_init(void)
 {
-   texture_image_border_load(default_paths.menu_border_file);
+   texture_image_border_load(g_extern.console.menu_texture_path);
 
    return true;
 }

@@ -141,16 +141,20 @@ static bool gfx_ctx_xdk_menu_init(void)
    // Load background image
    if(width == 640)
    {
-      texture_image_load("D:\\Media\\main-menu_480p.png", &g_extern.console.menu_texture);
+      strlcpy(g_extern.console.menu_texture_path,"D:\\Media\\main-menu_480p.png",
+            sizeof(g_extern.console.menu_texture_path));
       m_menuMainRomListPos_x = 60;
       m_menuMainRomListPos_y = 80;
    }
    else if(width == 1280)
    {
-      texture_image_load("D:\\Media\\main-menu_720p.png", &g_extern.console.menu_texture);
+      strlcpy(g_extern.console.menu_texture_path, "D:\\Media\\main-menu_720p.png",
+            sizeof(g_extern.console.menu_texture_path));
       m_menuMainRomListPos_x = 360;
       m_menuMainRomListPos_y = 130;
    }
+
+   texture_image_load(g_extern.console.menu_texture_path, &g_extern.console.menu_texture);
 
    // Load rom selector panel
    texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &g_extern.console.menu_panel);
