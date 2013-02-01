@@ -33,7 +33,6 @@
 static unsigned pads_connected;
 static int state_device_ids[MAX_PADS];
 static uint64_t state[MAX_PADS];
-static bool ignore_p1_back;
 
 struct input_pointer
 {
@@ -107,32 +106,42 @@ static void android_input_poll(void *data)
 
       int source = AInputEvent_getSource(event);
       int id = AInputEvent_getDeviceId(event);
+      if (id == zeus_second_id)
+         id = zeus_id;
       int keycode = AKeyEvent_getKeyCode(event);
 
       int type_event = AInputEvent_getType(event);
       int state_id = -1;
 
-      for (unsigned i = 0; i < pads_connected; i++)
-         if (state_device_ids[i] == id)
-            state_id = i;
+      if (source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE | AINPUT_SOURCE_TOUCHPAD | AINPUT_SOURCE_KEYBOARD))
+         state_id = 0; // touch overlay is always player 1, AINPUT_SOURCE_KEYBOARD is for phone hardware keys
+      else
+      {
+         for (unsigned i = 0; i < pads_connected; i++)
+            if (state_device_ids[i] == id)
+               state_id = i;
+      }
 
       if (state_id < 0)
       {
          state_id = pads_connected;
          state_device_ids[pads_connected++] = id;
 
-         input_autodetect_setup(android_app, msg, sizeof(msg), state_id, id, source);
-         long_msg_enable = true;
-
-         if (state_id == 0)
-            ignore_p1_back = (keycode_lut[AKEYCODE_BACK] != 0);
+         if (input_autodetect_setup(android_app, msg, sizeof(msg), &state_id, id, source))
+            pads_connected--;
+         else
+            long_msg_enable = true;
       }
 
-      if (keycode == AKEYCODE_BACK && (!ignore_p1_back || state_id != 0))
+      if (keycode == AKEYCODE_BACK)
       {
-         *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
-         AInputQueue_finishEvent(android_app->inputQueue, event, handled);
-         break;
+         int meta = AKeyEvent_getMetaState(event);
+         if (meta == AMETA_NONE)
+         {
+            *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+            AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+            break;
+         }
       }
       else if(type_event == AINPUT_EVENT_TYPE_MOTION && (g_settings.input.dpad_emulation[state_id] != DPAD_EMULATION_NONE))
       {
@@ -214,7 +223,7 @@ static void android_input_poll(void *data)
                *key |= input_state;
          }
 
-         if(volume_enable && (keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
+         if((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN) && keycode_lut[keycode] == 0)
             handled = 0;
       }
 

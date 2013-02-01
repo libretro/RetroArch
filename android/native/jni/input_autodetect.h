@@ -61,9 +61,10 @@ enum {
 #define LAST_KEYCODE AKEYCODE_ASSIST
 
 extern uint64_t keycode_lut[LAST_KEYCODE];
-extern bool volume_enable;
+extern int zeus_id;
+extern int zeus_second_id;
 
 void input_autodetect_init (void);
-void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source);
+bool input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, int *port, unsigned id, int source);
 
 #endif

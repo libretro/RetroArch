@@ -20,7 +20,8 @@
 
 uint64_t keycode_lut[LAST_KEYCODE];
 
-bool volume_enable;
+int zeus_id = -1;
+int zeus_second_id = -1;
 
 static void input_autodetect_get_device_name(void *data, char *buf, size_t size, int id)
 {
@@ -76,8 +77,6 @@ void input_autodetect_init (void)
    int j, k;
    for(j = 0; j < LAST_KEYCODE; j++)
       keycode_lut[j] = 0;
-
-   volume_enable = true;
    
    if (g_settings.input.autodetect_enable)
       return;
@@ -96,8 +95,9 @@ void input_autodetect_init (void)
    }
 }
 
-void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source)
+bool input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, int *port, unsigned id, int source)
 {
+   bool ret = false;
    struct android_app *android_app = (struct android_app*)data;
    // Hack - we have to add '1' to the bit mask here because
    // RETRO_DEVICE_ID_JOYPAD_B is 0
@@ -105,17 +105,17 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
    char name_buf[256];
    name_buf[0] = 0;
 
-   if (port > MAX_PADS)
+   if (*port > MAX_PADS)
    {
       snprintf(msg, sizeof_msg, "Max number of pads reached.\n");
-      return;
+      return ret;
    }
 
    /* eight 8-bit values are packed into one uint64_t
     * one for each of the 8 pads */
-   uint8_t shift = 8 + (port * 8);
+   uint8_t shift = 8 + (*port * 8);
 
-   g_settings.input.dpad_emulation[port] = DPAD_EMULATION_LSTICK;
+   g_settings.input.dpad_emulation[*port] = DPAD_EMULATION_LSTICK;
 
    char *current_ime = android_app->current_ime;
 
@@ -267,7 +267,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          bool do_invert = (strstr(name_buf, "Gamepad 0") || strstr(name_buf, "Gamepad 1") || 
                strstr(name_buf, "Gamepad 2") || strstr(name_buf, "Gamepad 3"));
 
-         g_settings.input.dpad_emulation[port] = DPAD_EMULATION_NONE;
+         g_settings.input.dpad_emulation[*port] = DPAD_EMULATION_NONE;
          keycode_lut[AKEYCODE_DPAD_UP] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
          keycode_lut[AKEYCODE_DPAD_DOWN] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
          keycode_lut[AKEYCODE_DPAD_LEFT] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
@@ -305,7 +305,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "MOGA"))
       {
-         g_settings.input.dpad_emulation[port] = DPAD_EMULATION_NONE;
+         g_settings.input.dpad_emulation[*port] = DPAD_EMULATION_NONE;
          keycode_lut[AKEYCODE_DPAD_UP] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
          keycode_lut[AKEYCODE_DPAD_DOWN] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
          keycode_lut[AKEYCODE_DPAD_LEFT] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
@@ -410,7 +410,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       else if (strstr(name_buf, "Mayflash Wii Classic") ||
             strstr(name_buf, "SZMy-power LTD CO.  Dual Box WII"))
       {
-         g_settings.input.dpad_emulation[port] = DPAD_EMULATION_NONE;
+         g_settings.input.dpad_emulation[*port] = DPAD_EMULATION_NONE;
 
          if (strstr(name_buf, "Mayflash Wii Classic"))
          {
@@ -491,8 +491,17 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "keypad-game-zeus") || strstr(name_buf, "keypad-zeus"))
       {
-         volume_enable = false;
-         
+         if (zeus_id < 0)
+         {
+            zeus_id = *port;
+         }
+         else
+         {
+            ret = true;
+            zeus_second_id = *port;
+            *port = zeus_id;
+            shift = 8 + (*port * 8);
+         }
          /* Xperia Play */
          /* TODO: menu button */
          /* Menu : 82 */
@@ -576,7 +585,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          
          /* Wiimote (IME) */
          snprintf(name_buf, sizeof(name_buf), "ccpcreations WiiUse");
-         g_settings.input.dpad_emulation[port] = DPAD_EMULATION_NONE;
+         g_settings.input.dpad_emulation[*port] = DPAD_EMULATION_NONE;
          keycode_lut[AKEYCODE_DPAD_UP]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)    << shift);
          keycode_lut[AKEYCODE_DPAD_DOWN] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
          keycode_lut[AKEYCODE_DPAD_LEFT] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)    << shift);
@@ -607,7 +616,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
 
          //player 2
          shift += 8;
-         volume_enable = false;
          keycode_lut[AKEYCODE_I]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)    << shift);
          keycode_lut[AKEYCODE_K] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
          keycode_lut[AKEYCODE_J] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)    << shift);
@@ -713,5 +721,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
    }
 
    if (name_buf[0] != 0)
-      snprintf(msg, sizeof_msg, "HID %d: %s, p: %d.\n", id, name_buf, port);
+      snprintf(msg, sizeof_msg, "HID %d: %s, p: %d.\n", id, name_buf, *port);
+
+   return ret;
 }
