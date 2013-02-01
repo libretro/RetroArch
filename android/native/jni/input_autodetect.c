@@ -22,6 +22,7 @@ uint64_t keycode_lut[LAST_KEYCODE];
 
 int zeus_id = -1;
 int zeus_second_id = -1;
+static unsigned zeus_port;
 
 static void input_autodetect_get_device_name(void *data, char *buf, size_t size, int id)
 {
@@ -118,11 +119,26 @@ bool input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, int *port
    g_settings.input.dpad_emulation[*port] = DPAD_EMULATION_LSTICK;
 
    char *current_ime = android_app->current_ime;
+   input_autodetect_get_device_name(android_app, name_buf, sizeof(name_buf), id);
+
+   if (strstr(name_buf, "keypad-game-zeus") || strstr(name_buf, "keypad-zeus"))
+   {
+      if (zeus_id < 0)
+      {
+         zeus_id = id;
+         zeus_port = *port;
+      }
+      else
+      {
+         ret = true;
+         zeus_second_id = id;
+         *port = zeus_port;
+         shift = 8 + (*port * 8);
+      }
+   }
 
    if (g_settings.input.autodetect_enable)
    {
-      input_autodetect_get_device_name(android_app, name_buf, sizeof(name_buf), id);
-
       if (strstr(name_buf, "Logitech"))
       {
          if (strstr(name_buf, "RumblePad 2"))
@@ -491,17 +507,6 @@ bool input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, int *port
       }
       else if (strstr(name_buf, "keypad-game-zeus") || strstr(name_buf, "keypad-zeus"))
       {
-         if (zeus_id < 0)
-         {
-            zeus_id = *port;
-         }
-         else
-         {
-            ret = true;
-            zeus_second_id = *port;
-            *port = zeus_id;
-            shift = 8 + (*port * 8);
-         }
          /* Xperia Play */
          /* TODO: menu button */
          /* Menu : 82 */
