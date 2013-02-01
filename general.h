@@ -568,6 +568,7 @@ struct global
 #endif
 #ifdef HAVE_RMENU
       struct texture_image menu_texture;
+      char menu_texture_path[PATH_MAX];
       struct texture_image menu_panel;
 #endif
    } console;

@@ -161,6 +161,12 @@ static void populate_setting_item(void *data, unsigned input)
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a shader as [Shader #2]. NOTE: Some shaders might be\ntoo slow at 1080p. If you experience any slowdown, try another shader.");
          break;
 #endif
+      case SETTING_EMU_SKIN:
+         fill_pathname_base(fname, g_extern.console.menu_texture_path, sizeof(fname));
+         snprintf(current_item->text, sizeof(current_item->text), "Menu Skin");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", fname);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a skin for the menu.");
+         break;
       case SETTING_FONT_SIZE:
          snprintf(current_item->text, sizeof(current_item->text), "Font Size");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_settings.video.font_size);
@@ -701,6 +707,11 @@ int select_file(void *data, void *state)
                config_read_keybinds(path);
                break;
             case BORDER_CHOICE:
+#ifdef __CELLOS_LV2__
+               texture_image_border_load(path);
+               snprintf(g_extern.console.menu_texture_path, sizeof(g_extern.console.menu_texture_path),
+                     "%s", path);
+#endif
                break;
             case LIBRETRO_CHOICE:
                strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
@@ -1063,6 +1074,21 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             }
             else
                RARCH_ERR("Shaders are unsupported on this platform.\n");
+         }
+         break;
+      case SETTING_EMU_SKIN:
+         if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         {
+            menu_stack_push(BORDER_CHOICE);
+            filebrowser_set_root_and_ext(filebrowser, EXT_IMAGES, default_paths.border_dir);
+         }
+         if(input & (1ULL << RMENU_DEVICE_NAV_START))
+         {
+            if (!texture_image_load(default_paths.menu_border_file, &g_extern.console.menu_texture))
+            {
+               RARCH_ERR("Failed to load texture image for menu.\n");
+               return false;
+            }
          }
          break;
 #endif
