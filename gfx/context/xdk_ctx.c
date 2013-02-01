@@ -82,10 +82,7 @@ unsigned char drive_mapping_idx = 2;
 
 int xpos, ypos;
 #ifdef _XBOX1
-texture_image m_menuMainRomSelectPanel;
-texture_image m_menuMainBG;
-
-// Rom list coords
+// Rom list coordinates
 unsigned m_menuMainRomListPos_x;
 unsigned m_menuMainRomListPos_y;
 #endif
@@ -144,19 +141,19 @@ static bool gfx_ctx_xdk_menu_init(void)
    // Load background image
    if(width == 640)
    {
-      texture_image_load("D:\\Media\\main-menu_480p.png", &m_menuMainBG);
+      texture_image_load("D:\\Media\\main-menu_480p.png", &g_extern.console.menu_texture);
       m_menuMainRomListPos_x = 60;
       m_menuMainRomListPos_y = 80;
    }
    else if(width == 1280)
    {
-      texture_image_load("D:\\Media\\main-menu_720p.png", &m_menuMainBG);
+      texture_image_load("D:\\Media\\main-menu_720p.png", &g_extern.console.menu_texture);
       m_menuMainRomListPos_x = 360;
       m_menuMainRomListPos_y = 130;
    }
 
    // Load rom selector panel
-   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &m_menuMainRomSelectPanel);
+   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &g_extern.console.menu_panel);
    
    //Display some text
    //Center the text (hardcoded)
@@ -175,8 +172,8 @@ static void gfx_ctx_xdk_menu_frame(void* data)
 static void gfx_ctx_xdk_menu_free(void)
 {
 #ifdef _XBOX1
-   texture_image_free(&m_menuMainBG);
-   texture_image_free(&m_menuMainRomSelectPanel);
+   texture_image_free(&g_extern.console.menu_texture);
+   texture_image_free(&g_extern.console.menu_panel);
 #endif
 }
 
@@ -198,20 +195,20 @@ static bool gfx_ctx_xdk_window_has_focus(void)
 static void gfx_ctx_xdk_menu_draw_bg(rarch_position_t *position)
 {
 #ifdef _XBOX1
-   m_menuMainBG.x = 0;
-   m_menuMainBG.y = 0;
-   texture_image_render(&m_menuMainBG);
+   g_extern.console.menu_texture.x = 0;
+   g_extern.console.menu_texture.y = 0;
+   texture_image_render(&g_extern.console.menu_texture);
 #endif
 }
 
 static void gfx_ctx_xdk_menu_draw_panel(rarch_position_t *position)
 {
 #ifdef _XBOX1
-   m_menuMainRomSelectPanel.x = position->x;
-   m_menuMainRomSelectPanel.y = position->y;
-   m_menuMainRomSelectPanel.width = ROM_PANEL_WIDTH;
-   m_menuMainRomSelectPanel.height = ROM_PANEL_HEIGHT;
-   texture_image_render(&m_menuMainRomSelectPanel);
+   g_extern.console.menu_panel.x = position->x;
+   g_extern.console.menu_panel.y = position->y;
+   g_extern.console.menu_panel.width = ROM_PANEL_WIDTH;
+   g_extern.console.menu_panel.height = ROM_PANEL_HEIGHT;
+   texture_image_render(&g_extern.console.menu_panel);
 #endif
 }
 

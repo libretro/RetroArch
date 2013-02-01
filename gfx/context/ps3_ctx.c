@@ -44,7 +44,6 @@
 
 #if defined(HAVE_RMENU)
 GLuint menu_texture_id;
-static struct texture_image menu_texture;
 #endif
 
 #if defined(HAVE_PSGL)
@@ -311,7 +310,7 @@ static bool gfx_ctx_rmenu_init(void)
    glGenTextures(1, &menu_texture_id);
 
    RARCH_LOG("Loading texture image for menu...\n");
-   if (!texture_image_load(default_paths.menu_border_file, &menu_texture))
+   if (!texture_image_load(default_paths.menu_border_file, &g_extern.console.menu_texture))
    {
       RARCH_ERR("Failed to load texture image for menu.\n");
       return false;
@@ -324,12 +323,12 @@ static bool gfx_ctx_rmenu_init(void)
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
    glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
-         menu_texture.width, menu_texture.height, 0,
-         RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, menu_texture.pixels);
+         g_extern.console.menu_texture.width, g_extern.console.menu_texture.height, 0,
+         RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, g_extern.console.menu_texture.pixels);
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
-   free(menu_texture.pixels);
+   free(g_extern.console.menu_texture.pixels);
 
    menu_bg_inited = true;
 #endif

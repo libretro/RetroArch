@@ -36,6 +36,10 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_RMENU
+#include "gfx/image.h"
+#endif
+
 // Platform-specific headers
 // PS3
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
@@ -561,6 +565,10 @@ struct global
       {
          oskutil_params oskutil_handle;
       } misc;
+#endif
+#ifdef HAVE_RMENU
+      struct texture_image menu_texture;
+      struct texture_image menu_panel;
 #endif
    } console;
 
