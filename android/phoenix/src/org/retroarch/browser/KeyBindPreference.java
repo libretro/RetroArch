@@ -85,6 +85,7 @@ class KeyBindPreference extends DialogPreference implements View.OnKeyListener, 
             public void onClick(View v) {
             	grabKeyCode = true;
     			keyText.setText("Press key to use");
+    			keyText.requestFocus();
             }
         });
 		InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
