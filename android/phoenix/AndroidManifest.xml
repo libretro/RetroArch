@@ -3,9 +3,10 @@
     android:versionCode="8"
     android:versionName="0.9.8.1" >
 	<uses-feature android:glEsVersion="0x00020000" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
     <uses-sdk
         android:minSdkVersion="9"
-        android:targetSdkVersion="16" />
+        android:targetSdkVersion="17" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     

@@ -75,6 +75,7 @@ static void *android_input_init(void)
       g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
       g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
    }
+   g_settings.input.dpad_emulation[0] = DPAD_EMULATION_LSTICK;
    return (void*)-1;
 }
 
@@ -133,7 +134,7 @@ static void android_input_poll(void *data)
             long_msg_enable = true;
       }
 
-      if (keycode == AKEYCODE_BACK)
+      if (type_event == AINPUT_EVENT_TYPE_KEY && keycode == AKEYCODE_BACK)
       {
          int meta = AKeyEvent_getMetaState(event);
          if (meta == AMETA_NONE)
@@ -169,7 +170,8 @@ static void android_input_poll(void *data)
                   action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP) ||
                (source == AINPUT_SOURCE_MOUSE && action != AMOTION_EVENT_ACTION_DOWN);
 
-            if (motion_pointer < MAX_TOUCH)
+            int max = min(AMotionEvent_getPointerCount(event), MAX_TOUCH);
+            for (motion_pointer = 0; motion_pointer < max; motion_pointer++)
             {
                if (!keyup)
                {
@@ -189,8 +191,6 @@ static void android_input_poll(void *data)
                      pointer_count--;
                }
             }
-            else
-               RARCH_WARN("Got motion pointer out of range (index: %u).\n", motion_pointer);
          }
 
          if (debug_enable)
