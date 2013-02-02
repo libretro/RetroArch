@@ -386,6 +386,7 @@ static void render_text(rgui_handle_t *rgui)
    blit_line(rgui, TERM_START_X + 15, 15, title, true);
 
    blit_line(rgui, TERM_START_X + 15, (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, g_extern.title_buf, true);
+   blit_line(rgui, TERM_HEIGHT - 80, (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, PACKAGE_VERSION, true);
 
    unsigned x = TERM_START_X;
    unsigned y = TERM_START_Y;
@@ -1214,7 +1215,13 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
                rgui->directory_ptr = directory_ptr;
                rgui->need_refresh = true;
                rgui_list_pop(rgui->path_stack);
-               msg_queue_push(g_extern.msg_queue, "Change requires restart to take effect", 1, S_DELAY_90);
+
+#ifdef GEKKO
+               snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s/boot.dol", default_paths.core_dir);
+#endif
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
             }
             else
             {
@@ -1226,8 +1233,9 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
                rmenu_settings_msg(S_MSG_LOADING_ROM, S_DELAY_1);
                rgui->need_refresh = true; // in case of zip extract
                rgui->msg_force = true;
-               ret = -1;
             }
+
+            ret = -1;
          }
          break;
       }
