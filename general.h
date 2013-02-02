@@ -240,6 +240,7 @@ struct settings
       unsigned turbo_duty_cycle;
 
       char overlay[PATH_MAX];
+      float overlay_opacity;
    } input;
 
    char libretro[PATH_MAX];

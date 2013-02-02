@@ -188,6 +188,10 @@
                     android:targetClass="org.retroarch.browser.OverlayActivity"
                     android:targetPackage="org.retroarch" />
             </Preference>
+            <org.retroarch.browser.SeekbarPreference
+                android:summary="Set the opacity of the touch overlay."
+                android:title="Overlay opacity"
+                android:key="input_overlay_opacity" />
         </PreferenceCategory>
         <PreferenceCategory android:title="Custom Binds">
 	        <PreferenceScreen

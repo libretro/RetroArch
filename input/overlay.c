@@ -285,7 +285,7 @@ input_overlay_t *input_overlay_new(const char *overlay)
    ol->iface->enable(ol->iface_data, true);
    ol->enable = true;
 
-   input_overlay_set_alpha_mod(ol, 1.0f);
+   input_overlay_set_alpha_mod(ol, g_settings.input.overlay_opacity);
 
    return ol;
 

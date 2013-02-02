@@ -342,6 +342,7 @@ public class RetroArch extends Activity implements
 		if (useOverlay) {
 			String overlayPath = prefs.getString("input_overlay", getCacheDir() + "/Overlays/snes-landscape.cfg");
 			config.setString("input_overlay", overlayPath);
+			config.setDouble("input_overlay_opacity", prefs.getFloat("input_overlay_opacity", 1.0f));
 		} else {
 			config.setString("input_overlay", "");
 		}
