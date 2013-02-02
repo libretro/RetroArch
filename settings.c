@@ -243,8 +243,6 @@ void config_set_defaults(void)
       g_settings.input.joypad_map[i] = i;
 
 #ifdef RARCH_CONSOLE
-   /* TODO - will be refactored - I'm aware this is messy right now */
-   g_extern.lifecycle_mode_state = 0;
    g_extern.lifecycle_mode_state |= ((1ULL << MODE_INFO_DRAW) | (1ULL << MODE_MENU));
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
