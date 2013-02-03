@@ -96,6 +96,10 @@ void input_autodetect_init (void)
    }
 }
 
+static int zeus_id = -1;
+static int zeus_second_id = -1;
+static unsigned zeus_port;
+
 void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source)
 {
    struct android_app *android_app = (struct android_app*)data;
@@ -118,10 +122,25 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
    g_settings.input.dpad_emulation[port] = DPAD_EMULATION_LSTICK;
 
    char *current_ime = android_app->current_ime;
+   input_autodetect_get_device_name(android_app, name_buf, sizeof(name_buf), id);
+
+   if (strstr(name_buf, "keypad-game-zeus") || strstr(name_buf, "game-zeus"))
+   {
+      if (zeus_id < 0)
+      {
+         zeus_id = id;
+         zeus_port = port;
+      }
+      else
+      {
+         zeus_second_id = id;
+         port = zeus_port;
+         shift = 8 + (port * 8);
+      }
+   }
 
    if (g_settings.input.autodetect_enable)
    {
-      input_autodetect_get_device_name(android_app, name_buf, sizeof(name_buf), id);
 
       if (strstr(name_buf, "Logitech"))
       {
@@ -489,13 +508,10 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          keycode_lut[AKEYCODE_BUTTON_L1] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
          keycode_lut[AKEYCODE_BUTTON_R1] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
       }
-      else if (strstr(name_buf, "keypad-game-zeus") || strstr(name_buf, "keypad-zeus"))
+      else if (strstr(name_buf, "game-zeus"))
       {
-         volume_enable = false;
-         
          /* Xperia Play */
-         /* TODO: menu button */
-         /* Menu : 82 */
+         /* X/o/square/triangle/R1/L1/D-pad */
          keycode_lut[AKEYCODE_DPAD_CENTER] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
          keycode_lut[AKEYCODE_BACK] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
          keycode_lut[AKEYCODE_BUTTON_X] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
@@ -504,10 +520,20 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          keycode_lut[AKEYCODE_DPAD_DOWN] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1) << shift);
          keycode_lut[AKEYCODE_DPAD_LEFT] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1) << shift);
          keycode_lut[AKEYCODE_DPAD_RIGHT] |= ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1) << shift);
-         keycode_lut[AKEYCODE_BUTTON_SELECT] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
-         keycode_lut[AKEYCODE_BUTTON_START] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_L1] |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_R1] |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift);
+      }
+      else if (strstr(name_buf, "keypad-game-zeus"))
+      {
+         /* Xperia Play */
+         /* Start/select */
+         volume_enable = false;
+         
+         /* TODO: menu button */
+         /* Menu : 82 */
+         keycode_lut[AKEYCODE_BUTTON_SELECT] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
+         keycode_lut[AKEYCODE_BUTTON_START] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
+         keycode_lut[AKEYCODE_BACK] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
       }
       else if (strstr(name_buf, "Broadcom Bluetooth HID"))
       {
