@@ -300,6 +300,8 @@ static void setup_video_mode(void)
 
 static void init_texture(unsigned width, unsigned height)
 {
+   width &= ~3;
+   height &= ~3;
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    unsigned g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
 
@@ -474,7 +476,7 @@ static void gx_start(void)
    gx_old_width = gx_old_height = 0;
 }
 
-#define ASM_BLITTER
+//#define ASM_BLITTER
 
 #ifdef ASM_BLITTER
 
@@ -616,7 +618,7 @@ static void convert_texture16(const uint32_t *_src, uint32_t *_dst,
    height &= ~3;
    update_texture_asm(_src, _dst, width, height, pitch);
 #else
-   width &= ~15;
+   width &= ~3;
    height &= ~3;
    unsigned tmp_pitch = pitch >> 2;
    unsigned width2 = width >> 1;
@@ -640,7 +642,7 @@ static void convert_texture16(const uint32_t *_src, uint32_t *_dst,
 static void convert_texture16_conv(const uint32_t *_src, uint32_t *_dst,
       unsigned width, unsigned height, unsigned pitch)
 {
-   width &= ~15;
+   width &= ~3;
    height &= ~3;
    unsigned tmp_pitch = pitch >> 2;
    unsigned width2 = width >> 1;
@@ -661,7 +663,7 @@ static void convert_texture16_conv(const uint32_t *_src, uint32_t *_dst,
 static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
       unsigned width, unsigned height, unsigned pitch)
 {
-   width &= ~15;
+   width &= ~3;
    height &= ~3;
    unsigned tmp_pitch = pitch >> 1;
    unsigned width2 = width << 1;
