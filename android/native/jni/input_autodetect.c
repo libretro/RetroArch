@@ -125,7 +125,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
    input_autodetect_get_device_name(android_app, name_buf, sizeof(name_buf), id);
    RARCH_LOG("device name: %s\n", name_buf);
 
-   if (strstr(name_buf, "keypad-game-zeus") || strstr(name_buf, "game-zeus"))
+   if (strstr(name_buf, "keypad-game-zeus") || strstr(name_buf, "keypad-zeus"))
    {
       if (zeus_id < 0)
       {
@@ -530,7 +530,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          keycode_lut[AKEYCODE_BUTTON_L1] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
          keycode_lut[AKEYCODE_BUTTON_R1] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
       }
-      else if (strstr(name_buf, "game-zeus") || (strstr(name_buf, "keypad-game-zeus")))
+      else if (strstr(name_buf, "keypad-zeus") || (strstr(name_buf, "keypad-game-zeus")))
       {
          /* Xperia Play */
          /* X/o/square/triangle/R1/L1/D-pad */
