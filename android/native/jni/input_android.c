@@ -113,9 +113,14 @@ static void android_input_poll(void *data)
       int type_event = AInputEvent_getType(event);
       int state_id = -1;
 
-      for (unsigned i = 0; i < pads_connected; i++)
-         if (state_device_ids[i] == id)
-            state_id = i;
+      if (source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE | AINPUT_SOURCE_TOUCHPAD))
+         state_id = 0; // touch overlay is always player 1
+      else
+      {
+         for (unsigned i = 0; i < pads_connected; i++)
+            if (state_device_ids[i] == id)
+               state_id = i;
+      }
 
       if (state_id < 0)
       {
@@ -214,7 +219,7 @@ static void android_input_poll(void *data)
                *key |= input_state;
          }
 
-         if(volume_enable && (keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
+         if((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN) && keycode_lut[keycode] == 0)
             handled = 0;
       }
 
