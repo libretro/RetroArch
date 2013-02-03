@@ -508,7 +508,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          keycode_lut[AKEYCODE_BUTTON_L1] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
          keycode_lut[AKEYCODE_BUTTON_R1] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
       }
-      else if (strstr(name_buf, "game-zeus"))
+      else if (strstr(name_buf, "game-zeus") || (strstr(name_buf, "keypad-game-zeus")))
       {
          /* Xperia Play */
          /* X/o/square/triangle/R1/L1/D-pad */
@@ -522,9 +522,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          keycode_lut[AKEYCODE_DPAD_RIGHT] |= ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_L1] |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_R1] |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift);
-      }
-      else if (strstr(name_buf, "keypad-game-zeus"))
-      {
+
          /* Xperia Play */
          /* Start/select */
          volume_enable = false;
@@ -533,7 +531,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          /* Menu : 82 */
          keycode_lut[AKEYCODE_BUTTON_SELECT] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_START] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
-         keycode_lut[AKEYCODE_BACK] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
       }
       else if (strstr(name_buf, "Broadcom Bluetooth HID"))
       {
