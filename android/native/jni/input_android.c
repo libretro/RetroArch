@@ -142,7 +142,8 @@ static void android_input_poll(void *data)
             break;
          }
       }
-      else if(type_event == AINPUT_EVENT_TYPE_MOTION && (g_settings.input.dpad_emulation[state_id] != DPAD_EMULATION_NONE))
+
+      if(type_event == AINPUT_EVENT_TYPE_MOTION && (g_settings.input.dpad_emulation[state_id] != DPAD_EMULATION_NONE))
       {
          float x = 0.0f;
          float y = 0.0f;
