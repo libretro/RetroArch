@@ -168,7 +168,7 @@ public class RetroArch extends Activity implements
 			    
 				if (curretnCacheVersion == version)
 				{
-					Log.i(TAG, "assets already extracted, skipping");
+					Log.i(TAG, "assets already extracted, skipping...");
 					return;
 				}
 			}
@@ -465,7 +465,6 @@ public class RetroArch extends Activity implements
 		switch (aItem.getItemId()) {
 		case R.id.settings:
 			showPopup(findViewById(R.id.settings));
-			Log.i(TAG, "Got settings ...");
 			return true;
 
 		default:
@@ -481,8 +480,7 @@ public class RetroArch extends Activity implements
 			imm.showInputMethodPicker();
 			return true;
 			
-		case R.id.rarch_settings:
-			Log.i(TAG, "Rarch settings clicked!");			
+		case R.id.rarch_settings:		
 			Intent rset = new Intent(this, SettingsActivity.class);
 			startActivity(rset);
 			return true;
