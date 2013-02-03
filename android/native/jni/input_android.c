@@ -33,7 +33,6 @@
 static unsigned pads_connected;
 static int state_device_ids[MAX_PADS];
 static uint64_t state[MAX_PADS];
-static bool ignore_p1_back;
 
 struct input_pointer
 {
@@ -131,16 +130,17 @@ static void android_input_poll(void *data)
 
          input_autodetect_setup(android_app, msg, sizeof(msg), state_id, id, source);
          long_msg_enable = true;
-
-         if (state_id == 0)
-            ignore_p1_back = (keycode_lut[AKEYCODE_BACK] != 0);
       }
 
-      if (keycode == AKEYCODE_BACK && (!ignore_p1_back || state_id != 0))
+      if (keycode == AKEYCODE_BACK )
       {
-         *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
-         AInputQueue_finishEvent(android_app->inputQueue, event, handled);
-         break;
+         int meta = AKeyEvent_getMetaState(event);
+         if (!(meta & AMETA_ALT_ON))
+         {
+            *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+            AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+            break;
+         }
       }
       else if(type_event == AINPUT_EVENT_TYPE_MOTION && (g_settings.input.dpad_emulation[state_id] != DPAD_EMULATION_NONE))
       {
