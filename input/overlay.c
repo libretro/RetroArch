@@ -51,7 +51,12 @@ struct overlay
    unsigned width;
    unsigned height;
 
+   bool block_scale;
+   float mod_x, mod_y, mod_w, mod_h;
    float x, y, w, h;
+   float scale;
+   float center_x, center_y;
+
    bool full_screen;
 };
 
@@ -66,6 +71,34 @@ struct input_overlay
    size_t index;
    size_t size;
 };
+
+static void input_overlay_scale(struct overlay *overlay, float scale)
+{
+   if (overlay->block_scale)
+   {
+      overlay->mod_x = overlay->x;
+      overlay->mod_y = overlay->y;
+      overlay->mod_w = overlay->w;
+      overlay->mod_h = overlay->h;
+   }
+   else
+   {
+      overlay->scale = scale;
+      overlay->mod_w = overlay->w * scale;
+      overlay->mod_h = overlay->h * scale;
+      overlay->mod_x = overlay->center_x + (overlay->x - overlay->center_x) * scale;
+      overlay->mod_y = overlay->center_y + (overlay->y - overlay->center_y) * scale;
+   }
+}
+
+void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
+{
+   for (size_t i = 0; i < ol->size; i++)
+      input_overlay_scale(&ol->overlays[i], scale);
+
+   ol->iface->vertex_geom(ol->iface_data,
+         ol->active->mod_x, ol->active->mod_y, ol->active->mod_w, ol->active->mod_h);
+}
 
 static void input_overlay_free_overlay(struct overlay *overlay)
 {
@@ -204,6 +237,13 @@ static bool input_overlay_load_overlay(config_file_t *conf, const char *config_p
          return false;
    }
 
+
+   // Assume for now that scaling center is in the middle.
+   // TODO: Make this configurable.
+   overlay->block_scale = false;
+   overlay->center_x = overlay->x + 0.5f * overlay->w;
+   overlay->center_y = overlay->y + 0.5f * overlay->h;
+
    return true;
 }
 
@@ -279,13 +319,14 @@ input_overlay_t *input_overlay_new(const char *overlay)
    ol->active = &ol->overlays[0];
    ol->iface->load(ol->iface_data, ol->active->image, ol->active->width, ol->active->height);
    ol->iface->vertex_geom(ol->iface_data,
-         ol->active->x, ol->active->y, ol->active->w, ol->active->h);
+         ol->active->mod_x, ol->active->mod_y, ol->active->mod_w, ol->active->mod_h);
    ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
 
    ol->iface->enable(ol->iface_data, true);
    ol->enable = true;
 
    input_overlay_set_alpha_mod(ol, g_settings.input.overlay_opacity);
+   input_overlay_set_scale_factor(ol, 1.0f);
 
    return ol;
 
@@ -353,7 +394,7 @@ void input_overlay_next(input_overlay_t *ol)
 
    ol->iface->load(ol->iface_data, ol->active->image, ol->active->width, ol->active->height);
    ol->iface->vertex_geom(ol->iface_data,
-         ol->active->x, ol->active->y, ol->active->w, ol->active->h);
+         ol->active->mod_x, ol->active->mod_y, ol->active->mod_w, ol->active->mod_h);
    ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
 }
 

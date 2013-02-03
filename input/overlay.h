@@ -41,6 +41,9 @@ uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
 // The alpha factor is applied for all overlays.
 void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
 
+// Scales the overlay by a factor of scale.
+void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
+
 void input_overlay_next(input_overlay_t *ol);
 
 #endif
