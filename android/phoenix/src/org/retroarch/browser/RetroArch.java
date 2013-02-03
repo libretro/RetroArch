@@ -147,9 +147,9 @@ public class RetroArch extends Activity implements
 	}
 	
 	private void extractAssets() {
-		int version = 0;
+		long version = 0;
 		try {
-			version = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+			version = getPackageManager().getPackageInfo(getPackageName(), 0).lastUpdateTime;
 		} catch(NameNotFoundException e) {
 			// weird exception, shouldn't happen
 		}
@@ -162,10 +162,13 @@ public class RetroArch extends Activity implements
 			{
 				DataInputStream cacheStream = new DataInputStream(new FileInputStream(cacheVersion));
 
-				int curretnCacheVersion = cacheStream.readInt();
+				long currentCacheVersion = 0;
+				try {
+					currentCacheVersion = cacheStream.readLong();
+				} catch (IOException e) {}
 			    cacheStream.close();
 			    
-				if (curretnCacheVersion == version)
+				if (currentCacheVersion == version)
 				{
 					Log.i(TAG, "assets already extracted, skipping");
 					return;
@@ -175,8 +178,8 @@ public class RetroArch extends Activity implements
 			//extractAssets(assets, cacheDir, "Shaders", 1);
 			extractAssets(assets, cacheDir, "Overlays", 1);
 			
-			DataOutputStream outputCacheVersion = new DataOutputStream(new FileOutputStream(cacheVersion));
-			outputCacheVersion.writeInt(version);
+			DataOutputStream outputCacheVersion = new DataOutputStream(new FileOutputStream(cacheVersion, false));
+			outputCacheVersion.writeLong(version);
 			outputCacheVersion.close();
 		} catch (IOException e) {
 			Log.e(TAG, "Failed to extract assets to cache.");			
