@@ -476,7 +476,7 @@ static void gx_start(void)
    gx_old_width = gx_old_height = 0;
 }
 
-//#define ASM_BLITTER
+#define ASM_BLITTER
 
 #ifdef ASM_BLITTER
 
