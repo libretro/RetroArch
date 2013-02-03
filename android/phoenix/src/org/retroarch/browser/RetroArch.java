@@ -204,7 +204,7 @@ public class RetroArch extends Activity implements
 		
 		String cpuInfo = readCPUInfo();
 		boolean cpuIsNeon = cpuInfoIsNeon(cpuInfo);
-		report_refreshrate = getRefreshRate();
+		report_refreshrate = getDisplayRefreshRate();
 		
 		// Extracting assets appears to take considerable amount of time, so
 		// move extraction to a thread.
