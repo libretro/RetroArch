@@ -123,16 +123,19 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
 
    char *current_ime = android_app->current_ime;
    input_autodetect_get_device_name(android_app, name_buf, sizeof(name_buf), id);
+   RARCH_LOG("device name: %s\n", name_buf);
 
    if (strstr(name_buf, "keypad-game-zeus") || strstr(name_buf, "game-zeus"))
    {
       if (zeus_id < 0)
       {
+         RARCH_LOG("zeus_pad 1 detected: %d\n", id);
          zeus_id = id;
          zeus_port = port;
       }
       else
       {
+         RARCH_LOG("zeus_pad 2 detected: %d\n", id);
          zeus_second_id = id;
          port = zeus_port;
          shift = 8 + (port * 8);
