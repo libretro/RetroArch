@@ -5,6 +5,7 @@ import org.retroarch.R;
 import java.io.*;
 
 import android.content.*;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.AssetManager;
 import android.annotation.TargetApi;
 import android.app.*;
@@ -146,12 +147,37 @@ public class RetroArch extends Activity implements
 	}
 	
 	private void extractAssets() {
+		int version = 0;
+		try {
+			version = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+		} catch(NameNotFoundException e) {
+			// weird exception, shouldn't happen
+		}
+		
 		try {
 			AssetManager assets = getAssets();
 			String cacheDir = getCacheDir().getAbsolutePath();
+			File cacheVersion = new File(cacheDir, ".cacheversion");
+			if (cacheVersion != null && cacheVersion.isFile() && cacheVersion.canRead() && cacheVersion.canWrite())
+			{
+				DataInputStream cacheStream = new DataInputStream(new FileInputStream(cacheVersion));
+
+				int curretnCacheVersion = cacheStream.readInt();
+			    cacheStream.close();
+			    
+				if (curretnCacheVersion == version)
+				{
+					Log.i(TAG, "assets already extracted, skipping");
+					return;
+				}
+			}
 			//extractAssets(assets, cacheDir, "", 0);
 			//extractAssets(assets, cacheDir, "Shaders", 1);
 			extractAssets(assets, cacheDir, "Overlays", 1);
+			
+			DataOutputStream outputCacheVersion = new DataOutputStream(new FileOutputStream(cacheVersion));
+			outputCacheVersion.writeInt(version);
+			outputCacheVersion.close();
 		} catch (IOException e) {
 			Log.e(TAG, "Failed to extract assets to cache.");			
 		}
