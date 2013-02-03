@@ -60,6 +60,7 @@ public class RetroArch extends Activity implements
 	private IconAdapter<ModuleWrapper> adapter;
 	static private final int ACTIVITY_LOAD_ROM = 0;
 	static private String libretro_path;
+	static private Double report_refreshrate;
 	static private final String TAG = "RetroArch-Phoenix";
 	private ConfigFile config;
 	private ConfigFile core_config;
@@ -147,9 +148,9 @@ public class RetroArch extends Activity implements
 	}
 	
 	private void extractAssets() {
-		long version = 0;
+		int version = 0;
 		try {
-			version = getPackageManager().getPackageInfo(getPackageName(), 0).lastUpdateTime;
+			version = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
 		} catch(NameNotFoundException e) {
 			// weird exception, shouldn't happen
 		}
@@ -162,13 +163,10 @@ public class RetroArch extends Activity implements
 			{
 				DataInputStream cacheStream = new DataInputStream(new FileInputStream(cacheVersion));
 
-				long currentCacheVersion = 0;
-				try {
-					currentCacheVersion = cacheStream.readLong();
-				} catch (IOException e) {}
+				int curretnCacheVersion = cacheStream.readInt();
 			    cacheStream.close();
 			    
-				if (currentCacheVersion == version)
+				if (curretnCacheVersion == version)
 				{
 					Log.i(TAG, "assets already extracted, skipping");
 					return;
@@ -178,8 +176,8 @@ public class RetroArch extends Activity implements
 			//extractAssets(assets, cacheDir, "Shaders", 1);
 			extractAssets(assets, cacheDir, "Overlays", 1);
 			
-			DataOutputStream outputCacheVersion = new DataOutputStream(new FileOutputStream(cacheVersion, false));
-			outputCacheVersion.writeLong(version);
+			DataOutputStream outputCacheVersion = new DataOutputStream(new FileOutputStream(cacheVersion));
+			outputCacheVersion.writeInt(version);
 			outputCacheVersion.close();
 		} catch (IOException e) {
 			Log.e(TAG, "Failed to extract assets to cache.");			
@@ -206,6 +204,7 @@ public class RetroArch extends Activity implements
 		
 		String cpuInfo = readCPUInfo();
 		boolean cpuIsNeon = cpuInfoIsNeon(cpuInfo);
+		report_refreshrate = getRefreshRate();
 		
 		// Extracting assets appears to take considerable amount of time, so
 		// move extraction to a thread.
@@ -491,6 +490,10 @@ public class RetroArch extends Activity implements
 		case R.id.report_ime:
 			String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
 			new AlertDialog.Builder(this).setMessage(current_ime).setNeutralButton("Close", null).show();
+			return true;
+		case R.id.report_refreshrate:
+			String current_rate = "Screen Refresh Rate: " + new Double(report_refreshrate).toString();
+			new AlertDialog.Builder(this).setMessage(current_rate).setNeutralButton("Close", null).show();
 			return true;
 
 		case R.id.retroarch_guide:

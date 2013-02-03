@@ -16,6 +16,7 @@
     <string name="key_bind_title">Select the button to use</string>
     <string name="key_bind_clear">Unbind</string>
     <string name="report_ime">Report IME</string>
+    <string name="report_refreshrate">Report Refresh Rate</string>
     <string name="key_bind_detect">Detect</string>
 
 </resources>
