@@ -96,8 +96,8 @@ void input_autodetect_init (void)
    }
 }
 
-static int zeus_id = -1;
-static int zeus_second_id = -1;
+int zeus_id = -1;
+int zeus_second_id = -1;
 static unsigned zeus_port;
 
 void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source)

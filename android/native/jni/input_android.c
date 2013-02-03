@@ -108,6 +108,8 @@ static void android_input_poll(void *data)
 
       int source = AInputEvent_getSource(event);
       int id = AInputEvent_getDeviceId(event);
+      if (id == zeus_second_id)
+         id = zeus_id;
       int keycode = AKeyEvent_getKeyCode(event);
 
       int type_event = AInputEvent_getType(event);
