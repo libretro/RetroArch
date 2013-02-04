@@ -95,12 +95,13 @@
                 android:summary="Applies Bilinear filtering, smooths out edges (settings still apply even if no shader is selected)."
                 android:title="Bilinear filter" />
             <CheckBoxPreference
+               android:summary="Enable first pass shader (WARNING: recommended system requirements for these shaders is a Tegra 4/Exynos5 class GPU and/or higher)."
                 android:defaultValue="false"
                 android:key="video_shader_enable"
                 android:title="Enable" />
 
             <Preference
-                android:summary="Sets GLES2 style XML shader."
+               android:summary="Sets GLES2 style XML shader."
                 android:title="XML shader" >
                 <intent
                     android:targetClass="org.retroarch.browser.ShaderActivity"
@@ -116,7 +117,7 @@
             <CheckBoxPreference
                 android:defaultValue="false"
                 android:key="video_second_pass_shader_enable"
-                android:summary="Enable custom shader for use after rendering to FBO."
+               android:summary="Enable custom shader for use after rendering to FBO (WARNING: recommended system requirements for these shaders is a Tegra 4/Exynos5 class GPU and/or higher)."
                 android:title="Enable shader #2" />
 
             <Preference
