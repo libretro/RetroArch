@@ -176,7 +176,7 @@ public class RetroArch extends Activity implements
 				}
 			}
 			//extractAssets(assets, cacheDir, "", 0);
-			//extractAssets(assets, cacheDir, "Shaders", 1);
+			extractAssets(assets, cacheDir, "Shaders", 1);
 			extractAssets(assets, cacheDir, "Overlays", 1);
 			
 			DataOutputStream outputCacheVersion = new DataOutputStream(new FileOutputStream(cacheVersion, false));
