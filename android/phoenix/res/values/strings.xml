@@ -12,7 +12,6 @@
     <string name="retroarch_guide">RetroArch Guide</string>
     <string name="cores_guide">Cores Guide</string>
     <string name="overlay_guide">Overlay How-to Guide</string>
-    <string name="shader_pack">Shader Pack</string>
     <string name="key_bind_title">Select the button to use</string>
     <string name="key_bind_clear">Unbind</string>
     <string name="report_ime">Report IME</string>
