@@ -90,7 +90,7 @@ public class RetroArch extends Activity implements
 		Log.i(TAG, "Using refresh rate: " + rate + " Hz.");
 		return rate;
 	}
-	
+	 
 	private String readCPUInfo() {
 		String result = "";
 
