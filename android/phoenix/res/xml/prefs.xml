@@ -180,6 +180,7 @@
             <CheckBoxPreference
                 android:defaultValue="true"
                 android:key="input_overlay_enable"
+                android:summary="Enable touchscreen overlays (WARNING: Lower-resolution overlays might be more suitable for less powerful devices)."
                 android:title="Enable" />
 
             <Preference
