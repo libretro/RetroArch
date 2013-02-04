@@ -20,6 +20,7 @@
 #include "../boolean.h"
 
 #ifdef _XBOX1
+#include <xtl.h>
 #include "../xdk/xdk_defines.h"
 #endif
 
