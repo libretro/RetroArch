@@ -54,7 +54,7 @@
             <CheckBoxPreference
                 android:defaultValue="false"
                 android:key="rewind_enable"
-                android:summary="WARNING - very CPU intensive - will decrease ingame performance."
+                android:summary="Enable real-time rewinding of gameplay. (WARNING: Very CPU intensive - will decrease ingame performance by a lot - only use this option on a powerful device)."
                 android:title="Enable" />
         </PreferenceCategory>
     </PreferenceScreen>
