@@ -438,25 +438,25 @@ void init_audio(void)
    init_dsp_plugin();
 #endif
 
-   g_extern.audio_data.buffer_free_samples_count = 0;
+   g_extern.measure_data.buffer_free_samples_count = 0;
 }
 
 static void compute_audio_buffer_statistics(void)
 {
-   unsigned samples = min(g_extern.audio_data.buffer_free_samples_count, AUDIO_BUFFER_FREE_SAMPLES_COUNT);
+   unsigned samples = min(g_extern.measure_data.buffer_free_samples_count, AUDIO_BUFFER_FREE_SAMPLES_COUNT);
    if (!samples)
       return;
 
    uint64_t accum = 0;
    for (unsigned i = 0; i < samples; i++)
-      accum += g_extern.audio_data.buffer_free_samples[i];
+      accum += g_extern.measure_data.buffer_free_samples[i];
 
    int avg = accum / samples;
 
    uint64_t accum_var = 0;
    for (unsigned i = 0; i < samples; i++)
    {
-      int diff = avg - g_extern.audio_data.buffer_free_samples[i];
+      int diff = avg - g_extern.measure_data.buffer_free_samples[i];
       accum_var += diff * diff;
    }
 
@@ -472,9 +472,9 @@ static void compute_audio_buffer_statistics(void)
    unsigned high_water_count = 0;
    for (unsigned i = 0; i < samples; i++)
    {
-      if (g_extern.audio_data.buffer_free_samples[i] >= low_water_size)
+      if (g_extern.measure_data.buffer_free_samples[i] >= low_water_size)
          low_water_count++;
-      else if (g_extern.audio_data.buffer_free_samples[i] <= high_water_size)
+      else if (g_extern.measure_data.buffer_free_samples[i] <= high_water_size)
          high_water_count++;
    }
 
@@ -483,6 +483,31 @@ static void compute_audio_buffer_statistics(void)
    RARCH_LOG("Amount of time spent close to underrun: %.2f %%. Close to blocking: %.2f %%.\n",
          (100.0 * low_water_count) / samples,
          (100.0 * high_water_count) / samples);
+}
+
+static void compute_monitor_fps_statistics(void)
+{
+   unsigned samples = min(g_extern.measure_data.fps_samples_count, MEASURE_FPS_SAMPLES_COUNT);
+   if (!samples)
+      return;
+
+   // Measure statistics on frame time, *not* FPS.
+   double accum = 0.0;
+   for (unsigned i = 0; i < samples; i++)
+      accum += 1.0 / g_extern.measure_data.fps_samples[i];
+
+   double avg = accum / samples;
+   double accum_var = 0.0;
+   for (unsigned i = 0; i < samples; i++)
+   {
+      double diff = avg - 1.0 / g_extern.measure_data.fps_samples[i];
+      accum_var += diff * diff;
+   }
+
+   double stddev = sqrt(accum_var / samples);
+
+   RARCH_LOG("Average monitor FPS: %.6f FPS. Standard deviation: %.6f FPS.\n",
+         1.0 / avg, 1.0 / (avg - stddev) - 1.0 / avg);
 }
 
 void uninit_audio(void)
@@ -811,6 +836,8 @@ void init_video_input(void)
          RARCH_ERR("Failed to load overlay.\n");
    }
 #endif
+
+   g_extern.measure_data.fps_samples_count = 0;
 }
 
 void uninit_video_input(void)
@@ -837,6 +864,7 @@ void uninit_video_input(void)
 #endif
 
    deinit_shader_dir();
+   compute_monitor_fps_statistics();
 }
 
 driver_t driver;

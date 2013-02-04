@@ -404,10 +404,18 @@ struct global
       float volume_db;
       float volume_gain;
 
+   } audio_data;
+
+   struct
+   {
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
       unsigned buffer_free_samples[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
       uint64_t buffer_free_samples_count;
-   } audio_data;
+
+#define MEASURE_FPS_SAMPLES_COUNT (8 * 1024)
+      float fps_samples[MEASURE_FPS_SAMPLES_COUNT];
+      uint64_t fps_samples_count;
+   } measure_data;
 
    struct
    {

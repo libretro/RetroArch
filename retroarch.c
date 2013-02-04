@@ -182,8 +182,8 @@ static void readjust_audio_input_rate(void)
    //RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",
    //      (unsigned)(100 - (avail * 100) / g_extern.audio_data.driver_buffer_size));
 
-   unsigned write_index = (g_extern.audio_data.buffer_free_samples_count++) & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
-   g_extern.audio_data.buffer_free_samples[write_index] = avail;
+   unsigned write_index = g_extern.measure_data.buffer_free_samples_count++ & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
+   g_extern.measure_data.buffer_free_samples[write_index] = avail;
 
    int half_size = g_extern.audio_data.driver_buffer_size / 2;
    int delta_mid = avail - half_size;

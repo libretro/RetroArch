@@ -100,6 +100,9 @@ bool gfx_get_fps(char *buf, size_t size, bool always_write)
 
       last_fps = tv_to_fps(&tmp_tv, &new_tv, 180);
 
+      unsigned write_index = g_extern.measure_data.fps_samples_count++ & (MEASURE_FPS_SAMPLES_COUNT - 1);
+      g_extern.measure_data.fps_samples[write_index] = last_fps;
+
 #ifdef RARCH_CONSOLE
       snprintf(buf, size, "FPS: %6.1f || Frames: %d", last_fps, g_extern.frame_count);
 #else
