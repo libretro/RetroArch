@@ -124,16 +124,15 @@ public class RetroArch extends Activity implements
 	private void extractAssets(AssetManager manager, String cacheDir, String relativePath, int level) throws IOException {
 		final String[] paths = manager.list(relativePath);
 		if (paths != null && paths.length > 0) { // Directory
-			Log.d(TAG, "Extracting assets directory: " + relativePath);
+			//Log.d(TAG, "Extracting assets directory: " + relativePath);
 			for (final String path : paths)
 				extractAssets(manager, cacheDir, relativePath + (level > 0 ? File.separator : "") + path, level + 1);	
 		} else { // File, extract.
-			Log.d(TAG, "Extracting assets file: " + relativePath);
+			//Log.d(TAG, "Extracting assets file: " + relativePath);
 			
 			String parentPath = new File(relativePath).getParent();
 			if (parentPath != null) {
 				File parentFile = new File(cacheDir, parentPath);
-				Log.d(TAG, "Creating folder: " + parentFile.getAbsolutePath());
 				parentFile.mkdirs(); // Doesn't throw.
 			}
 			
@@ -171,12 +170,15 @@ public class RetroArch extends Activity implements
 			    
 				if (currentCacheVersion == version)
 				{
-					Log.i(TAG, "assets already extracted, skipping...");
+					Log.i("ASSETS", "Assets already extracted, skipping...");
 					return;
 				}
 			}
+			
 			//extractAssets(assets, cacheDir, "", 0);
+			Log.i("ASSETS", "Extracting shader assets now...");
 			extractAssets(assets, cacheDir, "Shaders", 1);
+			Log.i("ASSETS", "Extracting overlay assets now...");
 			extractAssets(assets, cacheDir, "Overlays", 1);
 			
 			DataOutputStream outputCacheVersion = new DataOutputStream(new FileOutputStream(cacheVersion, false));
