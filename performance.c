@@ -137,12 +137,12 @@ rarch_time_t rarch_get_time_usec(void)
    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
    clock_get_time(cclock, &mts);
    mach_port_deallocate(mach_task_self(), cclock);
-   return mts.tv_sec * INT64_C(1000000) + mts.tv_nsec / 1000;
+   return mts.tv_sec * INT64_C(1000000) + (mts.tv_nsec + 500) / 1000;
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(ANDROID)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
-   return tv.tv_sec * INT64_C(1000000) + tv.tv_nsec / 1000;
+   return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
 #else
 #error "Your platform does not have a timer function implemented in rarch_get_time_usec(). Cannot continue."
 #endif
