@@ -444,7 +444,7 @@ void init_audio(void)
 static void compute_audio_buffer_statistics(void)
 {
    unsigned samples = min(g_extern.measure_data.buffer_free_samples_count, AUDIO_BUFFER_FREE_SAMPLES_COUNT);
-   if (!samples)
+   if (samples < 2)
       return;
 
    uint64_t accum = 0;
@@ -460,7 +460,7 @@ static void compute_audio_buffer_statistics(void)
       accum_var += diff * diff;
    }
 
-   unsigned stddev = (unsigned)sqrtf((float)accum_var / samples);
+   unsigned stddev = (unsigned)sqrt((double)accum_var / (samples - 1));
 
    float avg_filled = 1.0f - (float)avg / g_extern.audio_data.driver_buffer_size;
    float deviation = (float)stddev / g_extern.audio_data.driver_buffer_size;
@@ -487,27 +487,35 @@ static void compute_audio_buffer_statistics(void)
 
 static void compute_monitor_fps_statistics(void)
 {
-   unsigned samples = min(g_extern.measure_data.fps_samples_count, MEASURE_FPS_SAMPLES_COUNT);
-   if (!samples)
+   unsigned samples = min(g_extern.measure_data.frame_time_samples_count,
+         MEASURE_FRAME_TIME_SAMPLES_COUNT);
+
+   if (samples < 2)
       return;
 
-   // Measure statistics on frame time, *not* FPS.
-   double accum = 0.0;
+   // Measure statistics on frame time (microsecs), *not* FPS.
+   rarch_time_t accum = 0;
    for (unsigned i = 0; i < samples; i++)
-      accum += 1.0 / g_extern.measure_data.fps_samples[i];
+      accum += g_extern.measure_data.frame_time_samples[i];
 
-   double avg = accum / samples;
-   double accum_var = 0.0;
+   rarch_time_t avg = accum / samples;
+   rarch_time_t accum_var = 0;
    for (unsigned i = 0; i < samples; i++)
    {
-      double diff = avg - 1.0 / g_extern.measure_data.fps_samples[i];
+      rarch_time_t diff = avg - g_extern.measure_data.frame_time_samples[i];
       accum_var += diff * diff;
    }
 
-   double stddev = sqrt(accum_var / samples);
+   double stddev = sqrt((double)accum_var / (samples - 1));
+   double avg_fps = 1000000.0 / avg;
+   double max_stddev_fps = 1000000.0 / (avg - stddev);
+   double stddev_fps = max_stddev_fps - avg_fps;
+   double sigma_deviation = (g_settings.video.refresh_rate - avg_fps) / stddev_fps;
 
-   RARCH_LOG("Average monitor FPS: %.6f FPS. Standard deviation: %.6f FPS.\n",
-         1.0 / avg, 1.0 / (avg - stddev) - 1.0 / avg);
+   RARCH_LOG("Average monitor Hz: %.6f Hz. Standard deviation: %.6f Hz (%.3f %% deviation, based on %u last samples).\n",
+         avg_fps, stddev_fps, 100.0 * stddev_fps / avg_fps, samples);
+   RARCH_LOG("Configured monitor FPS %.6f Hz deviates %.3f sigma from average.\n",
+         g_settings.video.refresh_rate, sigma_deviation);
 }
 
 void uninit_audio(void)
@@ -837,7 +845,7 @@ void init_video_input(void)
    }
 #endif
 
-   g_extern.measure_data.fps_samples_count = 0;
+   g_extern.measure_data.frame_time_samples_count = 0;
 }
 
 void uninit_video_input(void)

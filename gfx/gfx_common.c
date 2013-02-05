@@ -14,94 +14,37 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined(_MSC_VER) && !defined(_XBOX)
-#pragma comment(lib, "winmm")
-#endif
-
 #include "gfx_common.h"
 #include "../general.h"
+#include "../performance.h"
 
-#ifndef _MSC_VER
-#include <sys/time.h>
-#else
-#ifndef _XBOX
-#include <winsock2.h>
-#include <mmsystem.h>
-#endif
-#endif
-
-#if defined(__PSL1GHT__)
-#include <sys/time.h>
-#elif defined(__CELLOS_LV2__)
-#include <sys/sys_time.h>
-#endif
-
-#ifdef GEKKO
-#include <ogc/lwp_watchdog.h>
-#endif
-
-#ifdef __linux__
-#include <unistd.h>
-#include <errno.h>
-#include <sys/wait.h>
-#endif
-
-#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(_MSC_VER) || defined(GEKKO)
-static int gettimeofday2(struct timeval *val, void *dummy)
+static float time_to_fps(rarch_time_t last_time, rarch_time_t new_time, int frames)
 {
-   (void)dummy;
-#if defined(_MSC_VER) && !defined(_XBOX360)
-   DWORD msec = timeGetTime();
-#elif defined(_XBOX360)
-   DWORD msec = GetTickCount();
-#endif
-
-#if defined(__CELLOS_LV2__)
-   uint64_t usec = sys_time_get_system_time();
-#elif defined(GEKKO)
-   uint64_t usec = ticks_to_microsecs(gettime());
-#else
-   uint64_t usec = msec * 1000;
-#endif
-
-   val->tv_sec  = usec / 1000000;
-   val->tv_usec = usec % 1000000;
-   return 0;
-}
-
-// GEKKO has gettimeofday, but it's not accurate enough for calculating FPS, so hack around it
-#define gettimeofday gettimeofday2
-#endif
-
-static float tv_to_fps(const struct timeval *tv, const struct timeval *new_tv, int frames)
-{
-   float time = new_tv->tv_sec - tv->tv_sec + (new_tv->tv_usec - tv->tv_usec) / 1000000.0;
-   return frames/time;
+   return (1000000.0f * frames) / (new_time - last_time);
 }
 
 bool gfx_get_fps(char *buf, size_t size, bool always_write)
 {
-   static struct timeval tv;
+   static rarch_time_t time;
    static float last_fps;
-   struct timeval new_tv;
    bool ret = false;
 
    if (g_extern.frame_count == 0)
    {
-      gettimeofday(&tv, NULL);
+      time = rarch_get_time_usec();
       snprintf(buf, size, "%s", g_extern.title_buf);
       ret = true;
    }
    else if ((g_extern.frame_count % 180) == 0)
    {
-      gettimeofday(&new_tv, NULL);
-      struct timeval tmp_tv = tv;
-      tv = new_tv;
+      rarch_time_t new_time = rarch_get_time_usec();
+      last_fps = time_to_fps(time, new_time, 180);
 
-      last_fps = tv_to_fps(&tmp_tv, &new_tv, 180);
+      unsigned write_index = g_extern.measure_data.frame_time_samples_count++ &
+         (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
+      g_extern.measure_data.frame_time_samples[write_index] = (new_time - time) / 180;
 
-      unsigned write_index = g_extern.measure_data.fps_samples_count++ & (MEASURE_FPS_SAMPLES_COUNT - 1);
-      g_extern.measure_data.fps_samples[write_index] = last_fps;
+      time = new_time;
 
 #ifdef RARCH_CONSOLE
       snprintf(buf, size, "FPS: %6.1f || Frames: %d", last_fps, g_extern.frame_count);
@@ -138,7 +81,10 @@ static dylib_t dwmlib = NULL;
 static void gfx_dwm_shutdown(void)
 {
    if (dwmlib)
+   {
       dylib_close(dwmlib);
+      dwmlib = NULL;
+   }
 }
 
 void gfx_set_dwm(void)

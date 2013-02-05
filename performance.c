@@ -15,24 +15,50 @@
  */
 
 #include "performance.h"
+#include "general.h"
+
+#if defined(_MSC_VER) && !defined(_XBOX)
+#pragma comment(lib, "winmm")
+#endif
 
 #ifdef ANDROID
 #include "android/native/jni/cpufeatures.h"
 #endif
 
-#ifdef PERF_TEST
+#if !defined(_WIN32) && !defined(RARCH_CONSOLE)
+#include <unistd.h>
+#endif
 
 #if defined(__CELLOS_LV2__) || defined(GEKKO)
 #ifndef _PPU_INTRINSICS_H
 #include <ppu_intrinsics.h>
 #endif
+#elif defined(_WIN32) && !defined(_XBOX)
+#include <mmsystem.h>
 #elif defined(_XBOX360)
 #include <PPCIntrinsics.h>
-#elif defined(__linux__)
-#include <sys/time.h>
+#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(ANDROID)
+// POSIX_MONOTONIC_CLOCK is not being defined in Android headers despite support being present.
+#include <time.h>
 #endif
 
+#if defined(__PSL1GHT__)
+#include <sys/time.h>
+#elif defined(__CELLOS_LV2__)
+#include <sys/sys_time.h>
+#endif
 
+#ifdef GEKKO
+#include <ogc/lwp_watchdog.h>
+#endif
+
+// OSX specific. OSX lacks clock_gettime().
+#ifdef __MACH__
+#include <mach/clock.h>
+#include <mach/mach.h>
+#endif
+
+#ifdef PERF_TEST
 #define MAX_COUNTERS 64
 static struct rarch_perf_counter *perf_counters[MAX_COUNTERS];
 static unsigned perf_ptr;
@@ -82,7 +108,7 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
    time = (rarch_perf_tick_t)a | ((rarch_perf_tick_t)d << 32);
 #endif
 
-#elif defined(__ARM_ARCH_6__) || defined(ANDROID)
+#elif defined(__ARM_ARCH_6__)
     asm volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time) );
 #elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360)
    time = __mftb();
@@ -91,6 +117,33 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
    return time;
 }
 #endif
+
+rarch_time_t rarch_get_time_usec(void)
+{
+#if defined(_WIN32) && !defined(_XBOX360)
+   return timeGetTime() * INT64_C(1000); // FIXME: Need more accurate measurement, i.e. QueryPerformanceCounter.
+#elif defined(_XBOX360)
+   return GetTickCount() * INT64_C(1000); // FIXME: Need more accurate measurement.
+#elif defined(__CELLOS_LV2__)
+   return sys_time_get_system_time();
+#elif defined(GEKKO)
+   return ticks_to_microsecs(gettime());
+#elif defined(__MACH__) // OSX doesn't have clock_gettime ...
+   clock_serv_t cclock;
+   mach_timespec_t mts;
+   host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+   clock_get_time(cclock, &mts);
+   mach_port_deallocate(mach_task_self(), cclock);
+   return mts.tv_sec * INT64_C(1000000) + mts.tv_nsec / 1000;
+#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(ANDROID)
+   struct timespec tv;
+   if (clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
+      return 0;
+   return tv.tv_sec * INT64_C(1000000) + tv.tv_nsec / 1000;
+#else
+#error "Your platform does not have a timer function implemented in rarch_get_time_usec(). Cannot continue."
+#endif
+}
 
 #if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__)
 #define CPU_X86

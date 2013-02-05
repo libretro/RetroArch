@@ -17,14 +17,14 @@
 #ifndef _RARCH_PERF_H
 #define _RARCH_PERF_H
 
-#include "general.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
+#include "boolean.h"
 #include <stdint.h>
 typedef unsigned long long rarch_perf_tick_t;
+typedef int64_t rarch_time_t;
 
 typedef struct rarch_perf_counter
 {
@@ -37,6 +37,7 @@ typedef struct rarch_perf_counter
 } rarch_perf_counter_t;
 
 rarch_perf_tick_t rarch_get_perf_counter(void);
+rarch_time_t rarch_get_time_usec(void);
 void rarch_perf_register(struct rarch_perf_counter *perf);
 void rarch_perf_log(void);
 

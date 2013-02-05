@@ -31,6 +31,7 @@
 #include "cheats.h"
 #include "audio/ext/rarch_dsp.h"
 #include "compat/strl.h"
+#include "performance.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -412,9 +413,9 @@ struct global
       unsigned buffer_free_samples[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
       uint64_t buffer_free_samples_count;
 
-#define MEASURE_FPS_SAMPLES_COUNT (8 * 1024)
-      float fps_samples[MEASURE_FPS_SAMPLES_COUNT];
-      uint64_t fps_samples_count;
+#define MEASURE_FRAME_TIME_SAMPLES_COUNT 256
+      rarch_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
+      uint64_t frame_time_samples_count;
    } measure_data;
 
    struct
