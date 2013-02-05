@@ -143,7 +143,7 @@ static void android_input_poll(void *data)
          }
       }
 
-      if(type_event == AINPUT_EVENT_TYPE_MOTION && (g_settings.input.dpad_emulation[state_id] != DPAD_EMULATION_NONE))
+      if (type_event == AINPUT_EVENT_TYPE_MOTION)
       {
          float x = 0.0f;
          float y = 0.0f;
@@ -151,7 +151,7 @@ static void android_input_poll(void *data)
          size_t motion_pointer = action >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
          action &= AMOTION_EVENT_ACTION_MASK;
 
-         if(source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
+         if(source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE) && (g_settings.input.dpad_emulation[state_id] != DPAD_EMULATION_NONE))
          {
             uint64_t *state_cur = &state[state_id];
             x = AMotionEvent_getX(event, motion_pointer);
