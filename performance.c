@@ -17,10 +17,6 @@
 #include "performance.h"
 #include "general.h"
 
-#if defined(_MSC_VER) && !defined(_XBOX)
-#pragma comment(lib, "winmm")
-#endif
-
 #ifdef ANDROID
 #include "android/native/jni/cpufeatures.h"
 #endif
@@ -33,8 +29,6 @@
 #ifndef _PPU_INTRINSICS_H
 #include <ppu_intrinsics.h>
 #endif
-#elif defined(_WIN32) && !defined(_XBOX)
-#include <mmsystem.h>
 #elif defined(_XBOX360)
 #include <PPCIntrinsics.h>
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(ANDROID)
@@ -120,10 +114,19 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
 
 rarch_time_t rarch_get_time_usec(void)
 {
-#if defined(_WIN32) && !defined(_XBOX360)
-   return timeGetTime() * INT64_C(1000); // FIXME: Need more accurate measurement, i.e. QueryPerformanceCounter.
+#if defined(_WIN32) && !defined(_XBOX)
+   static LARGE_INTEGER freq;
+   if (!freq.QuadPart && !QueryPerformanceFrequency(&freq)) // Frequency is guaranteed to not change.
+      return 0;
+
+   LARGE_INTEGER count;
+   if (!QueryPerformanceCounter(&count))
+      return 0;
+   return count.QuadPart * 1000000 / freq.QuadPart;
 #elif defined(_XBOX360)
    return GetTickCount() * INT64_C(1000); // FIXME: Need more accurate measurement.
+#elif defined(_XBOX)
+   return timeGetTime() * INT64_C(1000); // FIXME: Need more accurate measurement, i.e. QueryPerformanceCounter.
 #elif defined(__CELLOS_LV2__)
    return sys_time_get_system_time();
 #elif defined(GEKKO)
