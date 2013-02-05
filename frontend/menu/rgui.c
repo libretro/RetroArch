@@ -71,6 +71,7 @@ enum
    GX_RESOLUTIONS_640_288,
    GX_RESOLUTIONS_640_448,
    GX_RESOLUTIONS_640_480,
+   GX_RESOLUTIONS_640_576,
    GX_RESOLUTIONS_DEFAULT,
    GX_RESOLUTIONS_LAST,
 };
@@ -114,6 +115,7 @@ unsigned rgui_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
    { 640, 288 },
    { 640, 448 },
    { 640, 480 },
+   { 640, 576 },
    { 0, 0 }
 };
 
@@ -662,6 +664,10 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          {
             if(rgui_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
             {
+               if ((rgui_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
+                  if (CONF_GetVideo() != CONF_VIDEO_PAL)
+                     return 0;
+
                rgui_current_gx_resolution++;
                gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution][0], rgui_gx_resolutions[rgui_current_gx_resolution][1]);
             }
