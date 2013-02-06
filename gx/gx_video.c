@@ -168,11 +168,7 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
 
    gx_mode.viTVMode = VI_TVMODE(tvmode, modetype);
    gx_mode.fbWidth = fbWidth;
-
-   if (lines > 528)
-      gx_mode.efbHeight = 528;
-   else
-      gx_mode.efbHeight = lines;
+   gx_mode.efbHeight = min(lines, 528);
 
    if (modetype == VI_NON_INTERLACE && lines > max_xfb_height / 2)
       gx_mode.xfbHeight = max_xfb_height / 2;
