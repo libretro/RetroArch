@@ -8,6 +8,7 @@ HAVE_LOGGER		= 0
 HAVE_FILE_LOGGER	= 0
 PERF_TEST		= 0
 HAVE_WIIUSE_MOD = 0
+WHOLE_ARCHIVE_LINK = 0
 
 PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.100"
 PC_DEVELOPMENT_UDP_PORT		= 3490
@@ -42,8 +43,12 @@ LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
+ifeq ($(WHOLE_ARCHIVE_LINK), 1)
+WHOLE_START := -Wl,--whole-archive
+WHOLE_END := -Wl,--no-whole-archive
+endif
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size -T gx/ld/rvl.ld
-LIBS := -lfat -lretro_wii -logc $(LDFLAGS_WIIUSE) -lbte 
+LIBS := -lfat $(WHOLE_START) -lretro_wii $(WHOLE_END) -logc $(LDFLAGS_WIIUSE) -lbte 
 APP_BOOTER_DIR = wii/app_booter
 
 OBJ = console/griffin/griffin.o $(APP_BOOTER_DIR)/app_booter.binobj
