@@ -15,29 +15,41 @@
 
 - (void)runMain:(id)sender
 {
-    const char* filename = [[[NSBundle mainBundle] pathForResource:@"test" ofType:@"img"] UTF8String];
+   const char* filename = [[[NSBundle mainBundle] pathForResource:@"test" ofType:@"img"] UTF8String];
+   const char* libretro = [[[NSBundle mainBundle] pathForResource:@"libretro" ofType:@"dylib"] UTF8String];
 
-    const char* argv[] = {"retroarch", filename, 0};
-    if(rarch_main_init(2, argv) == 0)
-    {
-        while(rarch_main_iterate());
-    }
+   printf("%s\n", libretro);
+
+   const char* argv[] = {"retroarch", "-L", libretro, filename, 0};
+   if (rarch_main_init(4, (char**)argv) == 0)
+   {
+      rarch_init_msg_queue();
+      while (rarch_main_iterate());
+      rarch_main_deinit();
+      rarch_deinit_msg_queue();
+      
+#ifdef PERF_TEST
+      rarch_perf_log();
+#endif
+      
+      rarch_main_clear_state();
+   }
 }
-
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
-    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    // Override point for customization after application launch.
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
-        self.viewController = [[ViewController alloc] initWithNibName:@"ViewController_iPhone" bundle:nil];
-    } else {
-        self.viewController = [[ViewController alloc] initWithNibName:@"ViewController_iPad" bundle:nil];
-    }
-    self.window.rootViewController = self.viewController;
-    [self.window makeKeyAndVisible];
+   self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
 
-    [self performSelector:@selector(runMain:) withObject:nil afterDelay:0.2f];
+   // Override point for customization after application launch.
+   if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+      self.viewController = [[ViewController alloc] initWithNibName:@"ViewController_iPhone" bundle:nil];
+   else
+      self.viewController = [[ViewController alloc] initWithNibName:@"ViewController_iPad" bundle:nil];
+
+   self.window.rootViewController = self.viewController;
+   [self.window makeKeyAndVisible];
+
+   [self performSelector:@selector(runMain:) withObject:nil afterDelay:0.2f];
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application

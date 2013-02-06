@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		968A572A16C2A06800BE12F8 /* test.img in Resources */ = {isa = PBXBuildFile; fileRef = 968A572816C2A06800BE12F8 /* test.img */; };
-		968A572B16C2A06800BE12F8 /* libretro.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 968A572916C2A06800BE12F8 /* libretro.a */; };
 		96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
 		96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
 		96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
@@ -71,11 +70,11 @@
 		96AFAFD416C1FBC0009DE44C /* input_common.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFC916C1FBC0009DE44C /* input_common.c */; };
 		96AFAFD716C1FBC0009DE44C /* null.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFCD16C1FBC0009DE44C /* null.c */; };
 		96AFAFDD16C2149A009DE44C /* ioseagl_ctx.m in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFDC16C2149A009DE44C /* ioseagl_ctx.m */; };
+		96CF014F16C2BB9E00ABF9C9 /* libretro.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 96CF014A16C2BA1900ABF9C9 /* libretro.dylib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		968A572816C2A06800BE12F8 /* test.img */ = {isa = PBXFileReference; lastKnownFileType = file; path = test.img; sourceTree = "<group>"; };
-		968A572916C2A06800BE12F8 /* libretro.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libretro.a; sourceTree = "<group>"; };
 		96AFAE2516C1D4EA009DE44C /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96AFAE2916C1D4EA009DE44C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		96AFAE2B16C1D4EA009DE44C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -262,6 +261,7 @@
 		96AFAFD116C1FBC0009DE44C /* sdl_joypad.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sdl_joypad.c; sourceTree = "<group>"; };
 		96AFAFD216C1FBC0009DE44C /* x11_input.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = x11_input.c; sourceTree = "<group>"; };
 		96AFAFDC16C2149A009DE44C /* ioseagl_ctx.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ioseagl_ctx.m; sourceTree = "<group>"; };
+		96CF014A16C2BA1900ABF9C9 /* libretro.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libretro.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -276,7 +276,6 @@
 				96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */,
 				96AFAE3016C1D4EA009DE44C /* GLKit.framework in Frameworks */,
 				96AFAE3216C1D4EA009DE44C /* OpenGLES.framework in Frameworks */,
-				968A572B16C2A06800BE12F8 /* libretro.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -286,8 +285,8 @@
 		96AFAE1A16C1D4EA009DE44C = {
 			isa = PBXGroup;
 			children = (
+				96CF014A16C2BA1900ABF9C9 /* libretro.dylib */,
 				968A572816C2A06800BE12F8 /* test.img */,
-				968A572916C2A06800BE12F8 /* libretro.a */,
 				96AFAF2116C1DF88009DE44C /* libz.dylib */,
 				96AFAF1E16C1DF0A009DE44C /* OpenAL.framework */,
 				96AFAE9C16C1D976009DE44C /* core */,
@@ -708,6 +707,7 @@
 				96AFAE4E16C1D4EA009DE44C /* ViewController_iPhone.xib in Resources */,
 				96AFAE5116C1D4EA009DE44C /* ViewController_iPad.xib in Resources */,
 				968A572A16C2A06800BE12F8 /* test.img in Resources */,
+				96CF014F16C2BB9E00ABF9C9 /* libretro.dylib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -919,6 +919,7 @@
 					"-DPACKAGE_VERSION=\\\"1.0\\\"",
 					"-DHAVE_AL",
 					"-DHAVE_NULLINPUT",
+					"-DHAVE_DYNAMIC",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
@@ -954,6 +955,7 @@
 					"-DPACKAGE_VERSION=\\\"1.0\\\"",
 					"-DHAVE_AL",
 					"-DHAVE_NULLINPUT",
+					"-DHAVE_DYNAMIC",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
