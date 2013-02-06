@@ -168,7 +168,7 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
 
    gx_mode.viTVMode = VI_TVMODE(tvmode, modetype);
    gx_mode.fbWidth = fbWidth;
-   gx_mode.efbHeight = min(lines, 528);
+   gx_mode.efbHeight = min(lines, 480);
 
    if (modetype == VI_NON_INTERLACE && lines > max_xfb_height / 2)
       gx_mode.xfbHeight = max_xfb_height / 2;
@@ -212,7 +212,7 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    RARCH_LOG("GX Resolution: %dx%d (%s)\n", gx_mode.fbWidth, gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE ? "interlaced" : "progressive");
 
    gx->win_width = gx_mode.fbWidth;
-   gx->win_height = gx_mode.efbHeight;
+   gx->win_height = gx_mode.xfbHeight;
    gx->double_strike = (modetype == VI_NON_INTERLACE);
    gx->should_resize = true;
 
@@ -481,7 +481,7 @@ static void gx_start(void)
 
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    gx->win_width = gx_mode.fbWidth;
-   gx->win_height = gx_mode.efbHeight;
+   gx->win_height = gx_mode.xfbHeight;
    gx->should_resize = true;
    gx_old_width = gx_old_height = 0;
 }
