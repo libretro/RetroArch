@@ -71,6 +71,7 @@
 		96AFAFD716C1FBC0009DE44C /* null.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFCD16C1FBC0009DE44C /* null.c */; };
 		96AFAFDD16C2149A009DE44C /* ioseagl_ctx.m in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFDC16C2149A009DE44C /* ioseagl_ctx.m */; };
 		96CF014F16C2BB9E00ABF9C9 /* libretro.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 96CF014A16C2BA1900ABF9C9 /* libretro.dylib */; };
+		96CF015016C2C0B700ABF9C9 /* overlay.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFCE16C1FBC0009DE44C /* overlay.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -635,8 +636,8 @@
 			children = (
 				96AFAFC816C1FBC0009DE44C /* dinput.c */,
 				96AFAFC916C1FBC0009DE44C /* input_common.c */,
-				96AFAFCA16C1FBC0009DE44C /* input_common.h */,
 				96AFAFCB16C1FBC0009DE44C /* linuxraw_input.c */,
+				96AFAFCA16C1FBC0009DE44C /* input_common.h */,
 				96AFAFCC16C1FBC0009DE44C /* linuxraw_joypad.c */,
 				96AFAFCD16C1FBC0009DE44C /* null.c */,
 				96AFAFCE16C1FBC0009DE44C /* overlay.c */,
@@ -767,6 +768,7 @@
 				96AFAFD416C1FBC0009DE44C /* input_common.c in Sources */,
 				96AFAFD716C1FBC0009DE44C /* null.c in Sources */,
 				96AFAFDD16C2149A009DE44C /* ioseagl_ctx.m in Sources */,
+				96CF015016C2C0B700ABF9C9 /* overlay.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -920,6 +922,8 @@
 					"-DHAVE_AL",
 					"-DHAVE_NULLINPUT",
 					"-DHAVE_DYNAMIC",
+					"-DHAVE_OVERLAY",
+					"-DHAVE_ZLIB",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
@@ -956,6 +960,8 @@
 					"-DHAVE_AL",
 					"-DHAVE_NULLINPUT",
 					"-DHAVE_DYNAMIC",
+					"-DHAVE_OVERLAY",
+					"-DHAVE_ZLIB",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;

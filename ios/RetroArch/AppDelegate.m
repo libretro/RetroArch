@@ -13,15 +13,33 @@
 
 @implementation AppDelegate
 
+- (const char*)generate_config
+{
+   const char* overlay = [[[NSBundle mainBundle] pathForResource:@"overlay" ofType:@"cfg"] UTF8String];
+   const char* config = [[NSTemporaryDirectory() stringByAppendingPathComponent: @"retroarch.cfg"] UTF8String];
+
+   FILE* config_file = fopen(config, "wb");
+   
+   if (config_file)
+   {
+      if (overlay) fprintf(config_file, "input_overlay = \"%s\"\n", overlay);
+      fclose(config_file);
+      return config;
+   }
+   
+   return 0;
+}
+
 - (void)runMain:(id)sender
 {
    const char* filename = [[[NSBundle mainBundle] pathForResource:@"test" ofType:@"img"] UTF8String];
    const char* libretro = [[[NSBundle mainBundle] pathForResource:@"libretro" ofType:@"dylib"] UTF8String];
+   const char* config_file = [self generate_config];
 
-   printf("%s\n", libretro);
+   if (!config_file) return;
 
-   const char* argv[] = {"retroarch", "-L", libretro, filename, 0};
-   if (rarch_main_init(4, (char**)argv) == 0)
+   const char* argv[] = {"retroarch", "-L", libretro, "-c", config_file, filename, 0};
+   if (rarch_main_init(6, (char**)argv) == 0)
    {
       rarch_init_msg_queue();
       while (rarch_main_iterate());
