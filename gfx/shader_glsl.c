@@ -27,7 +27,10 @@
 #include "../config.h"
 #endif
 
-#if defined(__APPLE__) // Because they like to be "oh, so, special".
+#if defined(IOS)
+#include <OpenGLES/ES2/gl.h>
+#include <OpenGLES/ES2/glext.h>
+#elif defined(__APPLE__) // Because they like to be "oh, so, special".
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
 #elif defined(HAVE_PSGL)

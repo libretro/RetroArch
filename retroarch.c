@@ -45,7 +45,7 @@
 #include "msvc/msvc_compat.h"
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(IOS)
 #include "SDL.h" 
 // OSX seems to really need -lSDLmain, 
 // so we include SDL.h here so it can hack our main.

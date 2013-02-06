@@ -48,6 +48,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(ANDROID)
    &gfx_ctx_android,
 #endif
+#if defined(IOS)
+   &gfx_ctx_ios,
+#endif
 };
 
 const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident)

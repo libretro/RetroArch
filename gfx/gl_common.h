@@ -34,7 +34,10 @@
 #include <EGL/eglext.h>
 #endif
 
-#if defined(__APPLE__)
+#if defined(IOS)
+#include <OpenGLES/ES2/gl.h>
+#include <OpenGLES/ES2/glext.h>
+#elif defined(__APPLE__)
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
 #elif defined(HAVE_PSGL)
@@ -324,7 +327,11 @@ extern PFNGLACTIVETEXTUREPROC pglActiveTexture;
 #ifndef GL_BGRA_EXT
 #define GL_BGRA_EXT 0x80E1
 #endif
+#ifdef IOS
+#define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA // Stupid Apple
+#else
 #define RARCH_GL_INTERNAL_FORMAT32 GL_BGRA_EXT
+#endif
 #define RARCH_GL_INTERNAL_FORMAT16 GL_RGB
 #define RARCH_GL_TEXTURE_TYPE32 GL_BGRA_EXT
 #define RARCH_GL_TEXTURE_TYPE16 GL_RGB
