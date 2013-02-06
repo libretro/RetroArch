@@ -1,7 +1,5 @@
 #!/bin/sh
 
-ip='192.168.1.10'
-
 #make -C ../ -f Makefile.wii.salamander clean || exit 1
 #make -C ../ -f Makefile.wii clean || exit 1
 
