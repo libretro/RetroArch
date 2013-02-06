@@ -116,25 +116,29 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    bool progressive = VIDEO_HaveComponentCable();
    unsigned tvmode = VIDEO_GetCurrentTvMode();
 #endif
-   unsigned max_width, max_height;
+   unsigned max_width, max_height, max_xfb_height;
    switch (tvmode)
    {
       case VI_PAL:
          max_width = VI_MAX_WIDTH_PAL;
          max_height = VI_MAX_HEIGHT_PAL;
+         max_xfb_height = 574;
          break;
       case VI_MPAL:
          max_width = VI_MAX_WIDTH_MPAL;
          max_height = VI_MAX_HEIGHT_MPAL;
+         max_xfb_height = 574;
          break;
       case VI_EURGB60:
          max_width = VI_MAX_WIDTH_NTSC;
          max_height = VI_MAX_HEIGHT_NTSC;
+         max_xfb_height = 480;
          break;
       default:
          tvmode = VI_NTSC;
          max_width = VI_MAX_WIDTH_EURGB60;
          max_height = VI_MAX_HEIGHT_EURGB60;
+         max_xfb_height = 480;
          break;
    }
 
@@ -164,17 +168,23 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
 
    gx_mode.viTVMode = VI_TVMODE(tvmode, modetype);
    gx_mode.fbWidth = fbWidth;
-   gx_mode.efbHeight = lines;
-   gx_mode.xfbHeight = lines;
-   gx_mode.viWidth = viWidth;
-   gx_mode.viHeight = lines * viHeightMultiplier;
-   gx_mode.viXOrigin = (max_width - gx_mode.viWidth) / 2;
 
-   if (viHeightMultiplier == 2)
-      gx_mode.viYOrigin = (max_height / 2 - gx_mode.viHeight / 2) / 2;
+   if (lines > 528)
+      gx_mode.efbHeight = 528;
    else
-      gx_mode.viYOrigin = (max_height - gx_mode.viHeight) / 2;
+      gx_mode.efbHeight = lines;
 
+   if (modetype == VI_NON_INTERLACE && lines > max_xfb_height / 2)
+      gx_mode.xfbHeight = max_xfb_height / 2;
+   else if (modetype != VI_NON_INTERLACE && lines > max_xfb_height)
+      gx_mode.xfbHeight = max_xfb_height;
+   else
+      gx_mode.xfbHeight = lines;
+
+   gx_mode.viWidth = viWidth;
+   gx_mode.viHeight = gx_mode.xfbHeight * viHeightMultiplier;
+   gx_mode.viXOrigin = (max_width - gx_mode.viWidth) / 2;
+   gx_mode.viYOrigin = (max_height - gx_mode.viHeight) / (2 * viHeightMultiplier);
    gx_mode.xfbMode = modetype == VI_INTERLACE ? VI_XFBMODE_DF : VI_XFBMODE_SF;
    gx_mode.field_rendering = GX_FALSE;
    gx_mode.aa = GX_FALSE;
@@ -232,10 +242,14 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    //   VIDEO_WaitVSync();
 
    GX_SetViewport(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1);
-   GX_SetDispCopyYScale(GX_GetYScaleFactor(gx_mode.efbHeight, gx_mode.xfbHeight));
    //GX_SetScissor(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
    GX_SetDispCopySrc(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
-   GX_SetDispCopyDst(gx_mode.fbWidth, gx_mode.xfbHeight);
+
+   f32 y_scale = GX_GetYScaleFactor(gx_mode.efbHeight, gx_mode.xfbHeight);
+   u16 xfbWidth = VIDEO_PadFramebufferWidth(gx_mode.fbWidth);
+   u16 xfbHeight = GX_SetDispCopyYScale(y_scale);
+   GX_SetDispCopyDst(xfbWidth, xfbHeight);
+
    GX_SetCopyFilter(gx_mode.aa, gx_mode.sample_pattern, (gx_mode.xfbMode == VI_XFBMODE_SF) ? GX_FALSE : GX_TRUE,
          gx_mode.vfilter);
    GX_SetCopyClear((GXColor) { 0, 0, 0, 0xff }, GX_MAX_Z24);
