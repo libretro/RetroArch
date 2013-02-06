@@ -13,8 +13,13 @@ MAKE_PACKAGE_NPDRM=$EXE_PATH/make_package_npdrm.exe
 
 for f in *_ps3.a ; do
    name=`echo "$f" | sed 's/\(_libretro\|\)_ps3.a$//'`
+   whole_archive=
+   if [ $name = "nxengine" ] ; then
+      whole_archive="WHOLE_ARCHIVE_LINK=1"
+      echo $name yes
+   fi
    cp -f "$f" ../libretro_ps3.a
-   make -C ../ -f Makefile.ps3 -j3 || exit 1
+   make -C ../ -f Makefile.ps3 $whole_archive -j3 || exit 1
    $MAKE_FSELF_NPDRM ../retroarch_ps3.elf ../CORE.SELF
    mv -f ../CORE.SELF ../ps3/pkg/USRDIR/cores/"$name.SELF"
    rm -f ../retroarch_ps3.elf ../retroarch_ps3.self ../CORE.SELF
