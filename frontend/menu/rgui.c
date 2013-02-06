@@ -71,8 +71,6 @@ enum
    GX_RESOLUTIONS_640_288,
    GX_RESOLUTIONS_640_448,
    GX_RESOLUTIONS_640_480,
-   GX_RESOLUTIONS_640_576,
-   GX_RESOLUTIONS_DEFAULT,
    GX_RESOLUTIONS_LAST,
 };
 
@@ -115,11 +113,9 @@ unsigned rgui_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
    { 640, 288 },
    { 640, 448 },
    { 640, 480 },
-   { 640, 576 },
-   { 0, 0 }
 };
 
-unsigned rgui_current_gx_resolution = GX_RESOLUTIONS_DEFAULT;
+unsigned rgui_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
 unsigned RGUI_WIDTH = 320;
