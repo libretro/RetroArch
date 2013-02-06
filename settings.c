@@ -130,6 +130,8 @@ const char *config_get_default_input(void)
          return "gx";
       case INPUT_LINUXRAW:
          return "linuxraw";
+      case INPUT_IOS:
+         return "ios_input";
       case INPUT_NULL:
          return "null";
       default:

@@ -72,6 +72,7 @@
 		96AFAFDD16C2149A009DE44C /* ioseagl_ctx.m in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFDC16C2149A009DE44C /* ioseagl_ctx.m */; };
 		96CF014F16C2BB9E00ABF9C9 /* libretro.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 96CF014A16C2BA1900ABF9C9 /* libretro.dylib */; };
 		96CF015016C2C0B700ABF9C9 /* overlay.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFCE16C1FBC0009DE44C /* overlay.c */; };
+		96CF015C16C2F72900ABF9C9 /* ios_input.c in Sources */ = {isa = PBXBuildFile; fileRef = 96CF015B16C2F72900ABF9C9 /* ios_input.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -263,6 +264,7 @@
 		96AFAFD216C1FBC0009DE44C /* x11_input.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = x11_input.c; sourceTree = "<group>"; };
 		96AFAFDC16C2149A009DE44C /* ioseagl_ctx.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ioseagl_ctx.m; sourceTree = "<group>"; };
 		96CF014A16C2BA1900ABF9C9 /* libretro.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libretro.dylib; sourceTree = "<group>"; };
+		96CF015B16C2F72900ABF9C9 /* ios_input.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ios_input.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -326,6 +328,7 @@
 				96AFAE4C16C1D4EA009DE44C /* ViewController_iPhone.xib */,
 				96AFAE4F16C1D4EA009DE44C /* ViewController_iPad.xib */,
 				96AFAE3416C1D4EA009DE44C /* Supporting Files */,
+				96CF015B16C2F72900ABF9C9 /* ios_input.c */,
 			);
 			path = RetroArch;
 			sourceTree = "<group>";
@@ -769,6 +772,7 @@
 				96AFAFD716C1FBC0009DE44C /* null.c in Sources */,
 				96AFAFDD16C2149A009DE44C /* ioseagl_ctx.m in Sources */,
 				96CF015016C2C0B700ABF9C9 /* overlay.c in Sources */,
+				96CF015C16C2F72900ABF9C9 /* ios_input.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -920,7 +924,6 @@
 					"-DRARCH_PERFORMANCE_MODE",
 					"-DPACKAGE_VERSION=\\\"1.0\\\"",
 					"-DHAVE_AL",
-					"-DHAVE_NULLINPUT",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
@@ -958,7 +961,6 @@
 					"-DRARCH_PERFORMANCE_MODE",
 					"-DPACKAGE_VERSION=\\\"1.0\\\"",
 					"-DHAVE_AL",
-					"-DHAVE_NULLINPUT",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",

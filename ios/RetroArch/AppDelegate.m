@@ -11,6 +11,13 @@
 
 #include "general.h"
 
+
+extern bool IOS_is_down;
+extern int16_t IOS_touch_x, IOS_fix_x;
+extern int16_t IOS_touch_y, IOS_fix_y;
+extern int16_t IOS_full_x, IOS_full_y;
+
+
 @implementation AppDelegate
 
 - (const char*)generate_config
@@ -70,6 +77,36 @@
    [self performSelector:@selector(runMain:) withObject:nil afterDelay:0.2f];
 }
 
+- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
+{
+   UITouch *touch = [[event allTouches] anyObject];
+   CGPoint coord = [touch locationInView:self.viewController.view];
+   
+   IOS_is_down = true;
+   IOS_touch_x = coord.x;
+   IOS_touch_y = coord.y;
+}
+
+- (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
+{
+   UITouch *touch = [[event allTouches] anyObject];
+   CGPoint coord = [touch locationInView:self.viewController.view];
+   
+   IOS_is_down = true;
+   IOS_touch_x = coord.x;
+   IOS_touch_y = coord.y;
+}
+
+- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
+{
+   IOS_is_down = false;
+}
+
+- (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
+{
+   IOS_is_down = false;
+}
+
 - (void)applicationWillResignActive:(UIApplication *)application
 {
     // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
@@ -98,3 +135,4 @@
 }
 
 @end
+
