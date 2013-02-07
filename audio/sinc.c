@@ -223,6 +223,11 @@ static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
    _mm_store_ss(out_buffer + 1, _mm_movehl_ps(sum, sum));
 }
 #elif defined(HAVE_NEON)
+
+#if TAPS != 16
+#error "NEON sinc is for now only implemented with 16 taps. Cannot continue."
+#endif
+
 // Need to make this function pointer as Android doesn't have built-in targets
 // for NEON and plain ARMv7a.
 static void (*process_sinc_func)(rarch_resampler_t *resamp, float *out_buffer);
