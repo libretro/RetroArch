@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9629797716C3CD2400E6DCE0 /* dirlist.m in Sources */ = {isa = PBXBuildFile; fileRef = 9629797616C3CD2400E6DCE0 /* dirlist.m */; };
 		968A572A16C2A06800BE12F8 /* test.img in Resources */ = {isa = PBXBuildFile; fileRef = 968A572816C2A06800BE12F8 /* test.img */; };
 		96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
 		96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
@@ -76,6 +77,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		9629797516C3CD2400E6DCE0 /* dirlist.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dirlist.h; sourceTree = "<group>"; };
+		9629797616C3CD2400E6DCE0 /* dirlist.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = dirlist.m; sourceTree = "<group>"; };
 		968A572816C2A06800BE12F8 /* test.img */ = {isa = PBXFileReference; lastKnownFileType = file; path = test.img; sourceTree = "<group>"; };
 		96AFAE2516C1D4EA009DE44C /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96AFAE2916C1D4EA009DE44C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
@@ -329,6 +332,8 @@
 				96AFAE4F16C1D4EA009DE44C /* ViewController_iPad.xib */,
 				96AFAE3416C1D4EA009DE44C /* Supporting Files */,
 				96CF015B16C2F72900ABF9C9 /* ios_input.c */,
+				9629797516C3CD2400E6DCE0 /* dirlist.h */,
+				9629797616C3CD2400E6DCE0 /* dirlist.m */,
 			);
 			path = RetroArch;
 			sourceTree = "<group>";
@@ -773,6 +778,7 @@
 				96AFAFDD16C2149A009DE44C /* ioseagl_ctx.m in Sources */,
 				96CF015016C2C0B700ABF9C9 /* overlay.c in Sources */,
 				96CF015C16C2F72900ABF9C9 /* ios_input.c in Sources */,
+				9629797716C3CD2400E6DCE0 /* dirlist.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
