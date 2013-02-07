@@ -17,20 +17,21 @@
 #import "gameview.h"
 #include "general.h"
 
+static game_view *current_view;
 static GLKView *gl_view;
 static float screen_scale;
+static bool ra_initialized = false;
+static bool ra_done = false;
 
 @implementation game_view
 {
    EAGLContext *gl_context;
-
-   BOOL ra_initialized;
-   BOOL ra_done;
 }
 
 - (void)schedule_iterate
 {
-   if (ra_initialized && !ra_done) [self performSelector:@selector(rarch_iterate:) withObject:nil afterDelay:0.002f];
+   if (ra_initialized && !ra_done)
+      [self performSelector:@selector(rarch_iterate:) withObject:nil afterDelay:0.002f];
 }
 
 - (void)rarch_iterate:(id)sender
@@ -41,49 +42,9 @@ static float screen_scale;
    [self schedule_iterate];
 }
 
-- (void)load_game:(const char*)file_name
-{
-   if(!ra_initialized && file_name)
-   {
-      const char* libretro = [[[NSBundle mainBundle] pathForResource:@"libretro" ofType:@"dylib"] UTF8String];
-      const char* overlay = [[[NSBundle mainBundle] pathForResource:@"overlay" ofType:@"cfg"] UTF8String];
-
-      strcpy(g_settings.input.overlay, overlay ? overlay : "");
-
-      const char* argv[] = {"retroarch", "-L", libretro, file_name, 0};
-      if (rarch_main_init(6, (char**)argv) == 0)
-      {
-         rarch_init_msg_queue();
-         ra_initialized = TRUE;
-         [self schedule_iterate];
-      }
-   }
-}
-
-- (void)close_game
-{
-   if (ra_initialized)
-   {
-      rarch_main_deinit();
-      rarch_deinit_msg_queue();
-      
-#ifdef PERF_TEST
-      rarch_perf_log();
-#endif
-      
-      rarch_main_clear_state();
-   }
-   
-   ra_initialized = FALSE;
-}
-
-
 - (void)viewDidLoad
 {
    [super viewDidLoad];
-
-   ra_done = NO;
-   ra_initialized = NO;
 
    gl_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
    [EAGLContext setCurrentContext:gl_context];
@@ -92,10 +53,11 @@ static float screen_scale;
    self.view = gl_view;
 
    screen_scale = [[UIScreen mainScreen] scale];
+   current_view = self;
 }
 
 - (void)dealloc
-{    
+{
    if ([EAGLContext currentContext] == gl_context) [EAGLContext setCurrentContext:nil];
    gl_context = nil;
    gl_view = nil;
@@ -121,3 +83,41 @@ void get_game_view_size(unsigned *width, unsigned *height)
    }
 }
 
+void ios_close_game()
+{
+   if (ra_initialized)
+   {
+      rarch_main_deinit();
+      rarch_deinit_msg_queue();
+      
+#ifdef PERF_TEST
+      rarch_perf_log();
+#endif
+      
+      rarch_main_clear_state();
+      
+      ra_done = true;
+   }
+   
+   ra_initialized = false;
+}
+
+void ios_load_game(const char* file_name)
+{
+   if(!ra_initialized && file_name)
+   {
+      const char* libretro = [[[NSBundle mainBundle] pathForResource:@"libretro" ofType:@"dylib"] UTF8String];
+      const char* overlay = [[[NSBundle mainBundle] pathForResource:@"overlay" ofType:@"cfg"] UTF8String];
+
+      strcpy(g_settings.input.overlay, overlay ? overlay : "");
+
+      const char* argv[] = {"retroarch", "-L", libretro, file_name, 0};
+      if (rarch_main_init(6, (char**)argv) == 0)
+      {
+         rarch_init_msg_queue();
+         ra_initialized = TRUE;
+
+         if (current_view) [current_view schedule_iterate];
+      }
+   }
+}

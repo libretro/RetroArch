@@ -56,5 +56,11 @@ extern int16_t IOS_touch_x, IOS_touch_y;
    IOS_is_down = false;
 }
 
+- (void)applicationWillTerminate:(UIApplication *)application
+{
+   extern void ios_close_game();
+   ios_close_game();
+}
+
 @end
 
