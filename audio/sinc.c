@@ -33,21 +33,32 @@
 #include <xmmintrin.h>
 #endif
 
+#ifdef SINC_LOWER_QUALITY
+#define PHASE_BITS 12
+#define SIDELOBES 4
+#define ENABLE_AVX 0
+#elif defined(SINC_HIGHER_QUALITY)
+#define PHASE_BITS 16
+#define SIDELOBES 32
+#define ENABLE_AVX 1
+#else
+#define PHASE_BITS 16
+#define SIDELOBES 8
+#define ENABLE_AVX 0
+#endif
+
 // For the little amount of taps we're using,
 // SSE1 is faster than AVX for some reason.
 // AVX code is kept here though as by increasing number
 // of sinc taps, the AVX code is clearly faster than SSE1.
-#define ENABLE_AVX 0
 
 #if defined(__AVX__) && ENABLE_AVX
 #include <immintrin.h>
 #endif
 
-#define PHASE_BITS 16
 #define SUBPHASE_BITS 10
 #define PHASES (1 << (PHASE_BITS + SUBPHASE_BITS))
 
-#define SIDELOBES 8
 #define TAPS (SIDELOBES * 2)
 #define CUTOFF 0.98
 
