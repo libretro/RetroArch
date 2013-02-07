@@ -12,74 +12,74 @@
 
 struct dirent_list
 {
-   struct dirent_list* next;
-   struct dirent entry;
+   size_t count;
+   struct dirent* entries;
 };
 
 const struct dirent* get_dirent_at_index(struct dirent_list* list, unsigned index)
 {
-   while (list && index)
-   {
-      list = list->next;
-      index --;
-   }
-   
-   return list ? &list->entry : 0;
+   if (!list) return 0;
+   return (index < list->count) ? &list->entries[index] : 0;
 }
 
 unsigned get_dirent_list_count(struct dirent_list* list)
 {
-   unsigned result = 0;
-   
-   while (list)
-   {
-      result ++;
-      list = list->next;
-   }
-   
-   return result;
+   return list ? list->count : 0;
 }
 
 void free_dirent_list(struct dirent_list* list)
 {
-   struct dirent_list* next = list ? list : 0;
+   if (list) free(list->entries);
+   free(list);
+}
+
+static int compare_dirent(const void *left, const void *right)
+{
+   const struct dirent* l = (const struct dirent*) left;
+   const struct dirent* r = (const struct dirent*) right;
    
-   while (next)
+   // Directories first
+   if ((l->d_type & DT_DIR) != (r->d_type & DT_DIR))
    {
-      struct dirent_list* me = next;
-      next = next->next;
-      free(me);
+      return (l->d_type & DT_DIR) ? -1 : 1;
    }
+   
+   // Name
+   return strcmp(l->d_name, r->d_name);
 }
 
 struct dirent_list* build_dirent_list(const char* path)
 {
    struct dirent_list* result = 0;
-   struct dirent_list* iterate = 0;
 
    DIR* dir = opendir(path);
    if (dir)
-   {   
+   {
       struct dirent* ent = 0;
+   
+      // Count the number of items
+      size_t count = 0;
       while ((ent = readdir(dir)))
       {
-         if (!iterate)
-         {
-            iterate = malloc(sizeof(struct dirent_list));
-            iterate->next = 0;
-            result = iterate;
-         }
-         else
-         {
-            iterate->next = malloc(sizeof(struct dirent_list));
-            iterate = iterate->next;
-            iterate->next = 0;
-         }
-      
-         memcpy(&iterate->entry, ent, sizeof(struct dirent));
+         count += (strcmp(ent->d_name, ".") ? 1 : 0);
       }
+      rewinddir(dir);
+     
+      // Build and fill the result
+      result = malloc(sizeof(struct dirent_list));
+      result->count = count;
+      result->entries = malloc(sizeof(struct dirent) * count);
       
+      size_t index = 0;
+      while ((ent = readdir(dir)))
+      {
+         if (strcmp(ent->d_name, ".") == 0) continue;
+         memcpy(&result->entries[index ++], ent, sizeof(struct dirent));
+      }
+            
       closedir(dir);
+
+      qsort(result->entries, result->count, sizeof(struct dirent), &compare_dirent);
    }
    
    return result;
@@ -90,6 +90,9 @@ struct dirent_list* build_dirent_list(const char* path)
    char path[4096];
    UITableView* table;
    struct dirent_list* files;
+   
+   UIImage* file_icon;
+   UIImage* folder_icon;
 };
 
 -(void)dealloc
@@ -100,6 +103,9 @@ struct dirent_list* build_dirent_list(const char* path)
 
 - (void)viewDidLoad
 {
+   file_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_file" ofType:@"png"]];
+   folder_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_dir" ofType:@"png"]];
+
    [super viewDidLoad];
    
    strcpy(path, "/");
@@ -158,7 +164,19 @@ struct dirent_list* build_dirent_list(const char* path)
    if (item)
    {
       cell.textLabel.text = [[NSString string] initWithUTF8String:item->d_name];
-      cell.accessoryType = (item->d_type & DT_DIR) ? UITableViewCellAccessoryDisclosureIndicator : UITableViewCellAccessoryNone;
+      
+      if (item->d_type & DT_DIR)
+      {
+         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+         cell.imageView.image = folder_icon;
+      }
+      else
+      {
+         cell.accessoryType = UITableViewCellAccessoryNone;
+         cell.imageView.image = file_icon;
+      }
+      
+      [cell.imageView sizeToFit];
    }
 
    return cell;
