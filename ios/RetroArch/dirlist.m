@@ -96,8 +96,6 @@ struct dirent_list* build_dirent_list(const char* path)
 {
    free_dirent_list(files);
    files = 0;
-   
-   // Do I need to kill table here?
 }
 
 - (void)viewDidLoad
@@ -120,11 +118,11 @@ struct dirent_list* build_dirent_list(const char* path)
 
    if (!item) return;
 
-   strcat(path, "/");
    strcat(path, item->d_name);
 
    if (item->d_type & DT_DIR)
    {
+      strcat(path, "/");
       free_dirent_list(files);
       files = build_dirent_list(path);
       [table reloadData];
