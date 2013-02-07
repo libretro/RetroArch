@@ -23,37 +23,45 @@
 
 #define MAX_TOUCH 16
 
-bool IOS_is_down;
-int16_t IOS_touch_x, IOS_fix_x;
-int16_t IOS_touch_y, IOS_fix_y;
-int16_t IOS_full_x, IOS_full_y;
+struct
+{
+   bool is_down;
+   int16_t screen_x, screen_y;
+   int16_t fixed_x, fixed_y;
+   int16_t full_x, full_y;
+} ios_touches[MAX_TOUCH];
+
+uint32_t ios_current_touch_count = 0;
 
 static void *ios_input_init(void)
 {
+   memset(ios_touches, 0, sizeof(ios_touches));
    return (void*)-1;
 }
 
 static void ios_input_poll(void *data)
 {
-   input_translate_coord_viewport(IOS_touch_x, IOS_touch_y,
-      &IOS_fix_x, &IOS_fix_y,
-      &IOS_full_x, &IOS_full_y);
+   for (int i = 0; i != ios_current_touch_count; i ++)
+   {
+      input_translate_coord_viewport(ios_touches[i].screen_x, ios_touches[i].screen_y,
+         &ios_touches[i].fixed_x, &ios_touches[i].fixed_y,
+         &ios_touches[i].full_x, &ios_touches[i].full_y);
+   }
 }
 
 static int16_t ios_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
-   if (index != 0) return 0;
    switch (device)
    {
       case RARCH_DEVICE_POINTER_SCREEN:
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
-               return IOS_full_x;
+               return (index < ios_current_touch_count) ? ios_touches[index].full_x : 0;
             case RETRO_DEVICE_ID_POINTER_Y:
-               return IOS_full_y;
+               return (index < ios_current_touch_count) ? ios_touches[index].full_y : 0;
             case RETRO_DEVICE_ID_POINTER_PRESSED:
-               return IOS_is_down;
+               return (index < ios_current_touch_count) ? ios_touches[index].is_down : 0;
             default:
                return 0;
          }

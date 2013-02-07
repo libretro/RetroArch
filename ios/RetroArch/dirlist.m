@@ -142,8 +142,6 @@ struct dirent_list* build_dirent_list(const char* path)
       else
          window.rootViewController = [[game_view alloc] initWithNibName:@"ViewController_iPad" bundle:nil];
     
-      game_view* game = (game_view*)window.rootViewController;
-      
       extern void ios_load_game(const char*);
       ios_load_game(path);
    }

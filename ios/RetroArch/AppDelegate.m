@@ -8,8 +8,16 @@
 #import "AppDelegate.h"
 #import "dirlist.h"
 
-extern bool IOS_is_down;
-extern int16_t IOS_touch_x, IOS_touch_y;
+#define MAX_TOUCH 16
+extern struct
+{
+   bool is_down;
+   int16_t screen_x, screen_y;
+   int16_t fixed_x, fixed_y;
+   int16_t full_x, full_y;
+} ios_touches[MAX_TOUCH];
+
+extern uint32_t ios_current_touch_count ;
 
 @implementation AppDelegate
 
@@ -26,34 +34,45 @@ extern int16_t IOS_touch_x, IOS_touch_y;
    [self.window makeKeyAndVisible];
 }
 
+- (void)processTouches:(NSArray*)touches
+{
+   ios_current_touch_count = [touches count];
+   
+   for(int i = 0; i != [touches count]; i ++)
+   {
+      UITouch *touch = [touches objectAtIndex:i];
+      CGPoint coord = [touch locationInView:self.window.rootViewController.view];
+      float scale = [[UIScreen mainScreen] scale];
+      
+      ios_touches[i].is_down = (touch.phase != UITouchPhaseEnded) && (touch.phase != UITouchPhaseCancelled);
+
+      ios_touches[i].screen_x = coord.x * scale;
+      ios_touches[i].screen_y = coord.y * scale;
+   }
+}
+
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
-   UITouch *touch = [[event allTouches] anyObject];
-   CGPoint coord = [touch locationInView:self.window.rootViewController.view];
-   float scale = [[UIScreen mainScreen] scale];
-   
-   IOS_is_down = true;
-   IOS_touch_x = coord.x * scale;
-   IOS_touch_y = coord.y * scale;
+   [super touchesBegan:touches withEvent:event];
+   [self processTouches:[[event allTouches] allObjects]];
 }
 
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
 {
-   UITouch *touch = [[event allTouches] anyObject];
-   CGPoint coord = [touch locationInView:self.window.rootViewController.view];
-   IOS_is_down = true;
-   IOS_touch_x = coord.x;
-   IOS_touch_y = coord.y;
+   [super touchesMoved:touches withEvent:event];
+   [self processTouches:[[event allTouches] allObjects]];
 }
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
-   IOS_is_down = false;
+   [super touchesEnded:touches withEvent:event];
+   [self processTouches:[[event allTouches] allObjects]];
 }
 
 - (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
 {
-   IOS_is_down = false;
+   [super touchesCancelled:touches withEvent:event];
+   [self processTouches:[[event allTouches] allObjects]];
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application

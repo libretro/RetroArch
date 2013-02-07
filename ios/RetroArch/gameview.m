@@ -50,6 +50,7 @@ static bool ra_done = false;
    [EAGLContext setCurrentContext:gl_context];
    
    gl_view = [[GLKView alloc] initWithFrame:CGRectMake(0, 0, 640, 480) context:gl_context];
+   gl_view.multipleTouchEnabled = YES;
    self.view = gl_view;
 
    screen_scale = [[UIScreen mainScreen] scale];
