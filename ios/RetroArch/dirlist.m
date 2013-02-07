@@ -8,6 +8,7 @@
 
 #include <dirent.h>
 #import "dirlist.h"
+#import "gameview.h"
 
 struct dirent_list
 {
@@ -41,14 +42,14 @@ unsigned get_dirent_list_count(struct dirent_list* list)
 
 void free_dirent_list(struct dirent_list* list)
 {
-   struct dirent_list* next = 0;
-   if (list)
-   {
-      next = list->next;
-      free(list);
-   }
+   struct dirent_list* next = list ? list : 0;
    
-   free_dirent_list(next);
+   while (next)
+   {
+      struct dirent_list* me = next;
+      next = next->next;
+      free(me);
+   }
 }
 
 struct dirent_list* build_dirent_list(const char* path)
@@ -84,8 +85,9 @@ struct dirent_list* build_dirent_list(const char* path)
    return result;
 }
 
-@implementation DirectoryView
+@implementation dirlist_view
 {
+   char path[4096];
    UITableView* table;
    struct dirent_list* files;
 };
@@ -102,7 +104,8 @@ struct dirent_list* build_dirent_list(const char* path)
 {
    [super viewDidLoad];
    
-   files = build_dirent_list([NSTemporaryDirectory() UTF8String]);
+   strcpy(path, "/");
+   files = build_dirent_list(path);
    
    table = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, 640, 480) style:UITableViewStylePlain];
    table.dataSource = self;
@@ -114,6 +117,30 @@ struct dirent_list* build_dirent_list(const char* path)
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
    const struct dirent* item = get_dirent_at_index(files, indexPath.row);
+
+   if (!item) return;
+
+   strcat(path, "/");
+   strcat(path, item->d_name);
+
+   if (item->d_type & DT_DIR)
+   {
+      free_dirent_list(files);
+      files = build_dirent_list(path);
+      [table reloadData];
+   }
+   else
+   {
+      UIWindow *window = [UIApplication sharedApplication].keyWindow;
+
+      if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+         window.rootViewController = [[game_view alloc] initWithNibName:@"ViewController_iPhone" bundle:nil];
+      else
+         window.rootViewController = [[game_view alloc] initWithNibName:@"ViewController_iPad" bundle:nil];
+    
+      game_view* game = (game_view*)window.rootViewController;
+      [game load_game:path];
+   }
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section

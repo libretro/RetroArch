@@ -7,6 +7,6 @@
 
 #import <UIKit/UIKit.h>
 
-@interface DirectoryView : UIViewController <UITableViewDelegate, UITableViewDataSource>
+@interface dirlist_view : UIViewController <UITableViewDelegate, UITableViewDataSource>
 
 @end

@@ -9,5 +9,5 @@
 #import <GLKit/GLKit.h>
 
 @interface game_view : UIViewController
-
+- (void)load_game:(const char*)file_name;
 @end
