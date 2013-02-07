@@ -26,42 +26,6 @@
 #include "../shader_glsl.h"
 #endif
 
-#import "../../ios/RetroArch/ViewController.h"
-
-static GLKView *gl_view;
-static float screen_scale;
-
-// Objective-C interface used to interact with the GLES context and display.
-@interface ViewController ()
-
-@property (strong, nonatomic) EAGLContext *context;
-@property (strong, nonatomic) GLKView *view;
-
-@end
-
-@implementation ViewController
-
-- (void)viewDidLoad
-{
-   [super viewDidLoad];
-
-   self.context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-   self.view = [[GLKView alloc] initWithFrame:CGRectMake(0, 0, 640, 480) context:self.context];
-
-   [EAGLContext setCurrentContext:self.context];
-
-   gl_view = self.view;
-   screen_scale = [[UIScreen mainScreen] scale];
-}
-
-- (void)dealloc
-{    
-   if ([EAGLContext currentContext] == self.context) [EAGLContext setCurrentContext:nil];
-}
-
-@end
-
-
 // C interface
 static void gfx_ctx_set_swap_interval(unsigned interval)
 {
@@ -75,8 +39,8 @@ static void gfx_ctx_destroy(void)
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
-   *width  = gl_view.bounds.size.width * screen_scale;
-   *height = gl_view.bounds.size.height * screen_scale;
+   extern void get_game_view_size(unsigned *, unsigned *);
+   get_game_view_size(width, height);
 }
 
 static bool gfx_ctx_init(void)
@@ -86,8 +50,8 @@ static bool gfx_ctx_init(void)
 
 static void gfx_ctx_swap_buffers(void)
 {
-   [gl_view setNeedsDisplay];
-   [gl_view bindDrawable];
+   extern void flip_game_view();
+   flip_game_view();
 }
 
 static void gfx_ctx_check_window(bool *quit,

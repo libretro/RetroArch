@@ -7,7 +7,7 @@
 
 #import "AppDelegate.h"
 
-#import "ViewController.h"
+#import "gameview.h"
 
 #include "general.h"
 
@@ -101,9 +101,9 @@ extern int16_t IOS_full_x, IOS_full_y;
 
    // Override point for customization after application launch.
    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-      self.viewController = [[ViewController alloc] initWithNibName:@"ViewController_iPhone" bundle:nil];
+      self.viewController = [[game_view alloc] initWithNibName:@"ViewController_iPhone" bundle:nil];
    else
-      self.viewController = [[ViewController alloc] initWithNibName:@"ViewController_iPad" bundle:nil];
+      self.viewController = [[game_view alloc] initWithNibName:@"ViewController_iPad" bundle:nil];
 
    self.window.rootViewController = self.viewController;
    [self.window makeKeyAndVisible];
