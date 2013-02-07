@@ -29,6 +29,7 @@
 #import "../../ios/RetroArch/ViewController.h"
 
 static GLKView *gl_view;
+static float screen_scale;
 
 // Objective-C interface used to interact with the GLES context and display.
 @interface ViewController ()
@@ -50,6 +51,7 @@ static GLKView *gl_view;
    [EAGLContext setCurrentContext:self.context];
 
    gl_view = self.view;
+   screen_scale = [[UIScreen mainScreen] scale];
 }
 
 - (void)dealloc
@@ -73,8 +75,8 @@ static void gfx_ctx_destroy(void)
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
-   *width  = gl_view.bounds.size.width;
-   *height = gl_view.bounds.size.height;
+   *width  = gl_view.bounds.size.width * screen_scale;
+   *height = gl_view.bounds.size.height * screen_scale;
 }
 
 static bool gfx_ctx_init(void)
@@ -94,8 +96,6 @@ static void gfx_ctx_check_window(bool *quit,
    (void)frame_count;
 
    *quit = false;
-
-   while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, TRUE) == kCFRunLoopRunHandledSource);
 
    unsigned new_width, new_height;
    gfx_ctx_get_video_size(&new_width, &new_height);
