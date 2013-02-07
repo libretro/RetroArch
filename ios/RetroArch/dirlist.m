@@ -6,6 +6,7 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
+#include <sys/stat.h>
 #include <dirent.h>
 #import "dirlist.h"
 #import "gameview.h"
@@ -39,10 +40,8 @@ static int compare_dirent(const void *left, const void *right)
    const struct dirent* r = (const struct dirent*) right;
    
    // Directories first
-   if ((l->d_type & DT_DIR) != (r->d_type & DT_DIR))
-   {
-      return (l->d_type & DT_DIR) ? -1 : 1;
-   }
+   if (l->d_type != r->d_type)
+      return (l->d_type) ? -1 : 1;
    
    // Name
    return strcmp(l->d_name, r->d_name);
@@ -56,7 +55,7 @@ struct dirent_list* build_dirent_list(const char* path)
    if (dir)
    {
       struct dirent* ent = 0;
-   
+
       // Count the number of items
       size_t count = 0;
       while ((ent = readdir(dir)))
@@ -64,6 +63,11 @@ struct dirent_list* build_dirent_list(const char* path)
          count += (strcmp(ent->d_name, ".") ? 1 : 0);
       }
       rewinddir(dir);
+
+      // String buffer for 'stat'ing
+      char* stat_path = malloc(strlen(path) + sizeof(ent->d_name));
+      strcpy(stat_path, path);
+      uint32_t last_index = strlen(stat_path);
      
       // Build and fill the result
       result = malloc(sizeof(struct dirent_list));
@@ -74,10 +78,21 @@ struct dirent_list* build_dirent_list(const char* path)
       while ((ent = readdir(dir)))
       {
          if (strcmp(ent->d_name, ".") == 0) continue;
-         memcpy(&result->entries[index ++], ent, sizeof(struct dirent));
+         memcpy(&result->entries[index], ent, sizeof(struct dirent));
+         
+         // Chage dirent.d_type to a boolean indication if it is a directory
+         struct stat stat_buf;
+         strcat(stat_path, "/");
+         strcat(stat_path, ent->d_name);
+         stat(stat_path, &stat_buf);
+         result->entries[index].d_type = S_ISDIR(stat_buf.st_mode) ? 1 : 0;
+         stat_path[last_index] = 0;
+         
+         index ++;
       }
             
       closedir(dir);
+      free(stat_path);
 
       qsort(result->entries, result->count, sizeof(struct dirent), &compare_dirent);
    }
@@ -124,11 +139,21 @@ struct dirent_list* build_dirent_list(const char* path)
 
    if (!item) return;
 
-   strcat(path, item->d_name);
-
-   if (item->d_type & DT_DIR)
+   if (item->d_type)
    {
-      strcat(path, "/");
+      if (strcmp(item->d_name, "..") == 0)
+      {
+         char* last_slash = strrchr(path, '/');
+         if (last_slash) *last_slash = 0;
+         path[0] = (path[0] == 0) ? '/' : path[0];
+         printf("%s\n", path);
+      }
+      else
+      {
+         strcat(path, "/");
+         strcat(path, item->d_name);
+      }
+      
       free_dirent_list(files);
       files = build_dirent_list(path);
       [table reloadData];
@@ -141,7 +166,10 @@ struct dirent_list* build_dirent_list(const char* path)
          window.rootViewController = [[game_view alloc] initWithNibName:@"ViewController_iPhone" bundle:nil];
       else
          window.rootViewController = [[game_view alloc] initWithNibName:@"ViewController_iPad" bundle:nil];
-    
+       
+      strcat(path, "/");
+      strcat(path, item->d_name);
+      
       extern void ios_load_game(const char*);
       ios_load_game(path);
    }
@@ -163,7 +191,7 @@ struct dirent_list* build_dirent_list(const char* path)
    {
       cell.textLabel.text = [[NSString string] initWithUTF8String:item->d_name];
       
-      if (item->d_type & DT_DIR)
+      if (item->d_type)
       {
          cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
          cell.imageView.image = folder_icon;
