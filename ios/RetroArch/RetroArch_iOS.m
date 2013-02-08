@@ -5,9 +5,6 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
-#import "dirlist.h"
-#import "module_list.h"
-
 #define MAX_TOUCH 16
 extern struct
 {

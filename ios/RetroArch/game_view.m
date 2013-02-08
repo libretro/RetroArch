@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import "gameview.h"
 #include "general.h"
 
 static game_view *current_view;

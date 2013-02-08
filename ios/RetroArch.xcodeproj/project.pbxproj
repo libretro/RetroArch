@@ -7,21 +7,21 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		9629797716C3CD2400E6DCE0 /* dirlist.m in Sources */ = {isa = PBXBuildFile; fileRef = 9629797616C3CD2400E6DCE0 /* dirlist.m */; };
-		962979ED16C3E86F00E6DCE0 /* gameview.m in Sources */ = {isa = PBXBuildFile; fileRef = 962979EB16C3E86F00E6DCE0 /* gameview.m */; };
 		962979EF16C3EA3E00E6DCE0 /* ioseagl_ctx.c in Sources */ = {isa = PBXBuildFile; fileRef = 962979EE16C3EA3E00E6DCE0 /* ioseagl_ctx.c */; };
 		962979F616C43B9500E6DCE0 /* ic_dir.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F416C43B9500E6DCE0 /* ic_dir.png */; };
 		962979F716C43B9500E6DCE0 /* ic_file.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F516C43B9500E6DCE0 /* ic_file.png */; };
 		96297A0116C4767F00E6DCE0 /* dirent_list.c in Sources */ = {isa = PBXBuildFile; fileRef = 962979FF16C4767F00E6DCE0 /* dirent_list.c */; };
 		96297A0916C59EC000E6DCE0 /* module_list.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0816C59EC000E6DCE0 /* module_list.m */; };
 		96297A0C16C5AD8D00E6DCE0 /* RetroArch_iOS.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0B16C5AD8D00E6DCE0 /* RetroArch_iOS.m */; };
+		96297A0F16C5AEA100E6DCE0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0E16C5AEA100E6DCE0 /* main.m */; };
+		96297A1116C5AEDE00E6DCE0 /* game_view.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A1016C5AEDE00E6DCE0 /* game_view.m */; };
+		96297A1316C5AEFD00E6DCE0 /* directory_list.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A1216C5AEFD00E6DCE0 /* directory_list.m */; };
 		96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
 		96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
 		96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
 		96AFAE3016C1D4EA009DE44C /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; };
 		96AFAE3216C1D4EA009DE44C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 		96AFAE3816C1D4EA009DE44C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */; };
-		96AFAE3A16C1D4EA009DE44C /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAE3916C1D4EA009DE44C /* main.mm */; };
 		96AFAE4016C1D4EA009DE44C /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3F16C1D4EA009DE44C /* Default.png */; };
 		96AFAE4216C1D4EA009DE44C /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE4116C1D4EA009DE44C /* Default@2x.png */; };
 		96AFAE4416C1D4EA009DE44C /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE4316C1D4EA009DE44C /* Default-568h@2x.png */; };
@@ -80,19 +80,18 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		9629797516C3CD2400E6DCE0 /* dirlist.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dirlist.h; sourceTree = "<group>"; };
-		9629797616C3CD2400E6DCE0 /* dirlist.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = dirlist.m; sourceTree = "<group>"; };
-		962979EB16C3E86F00E6DCE0 /* gameview.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = gameview.m; sourceTree = "<group>"; };
-		962979EC16C3E86F00E6DCE0 /* gameview.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gameview.h; sourceTree = "<group>"; };
 		962979EE16C3EA3E00E6DCE0 /* ioseagl_ctx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ioseagl_ctx.c; sourceTree = "<group>"; };
 		962979F416C43B9500E6DCE0 /* ic_dir.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_dir.png; path = "../android/phoenix/res/drawable-xhdpi/ic_dir.png"; sourceTree = "<group>"; };
 		962979F516C43B9500E6DCE0 /* ic_file.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_file.png; path = "../android/phoenix/res/drawable-xhdpi/ic_file.png"; sourceTree = "<group>"; };
 		962979FF16C4767F00E6DCE0 /* dirent_list.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dirent_list.c; sourceTree = "<group>"; };
 		96297A0016C4767F00E6DCE0 /* dirent_list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dirent_list.h; sourceTree = "<group>"; };
-		96297A0716C59EC000E6DCE0 /* module_list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = module_list.h; sourceTree = "<group>"; };
 		96297A0816C59EC000E6DCE0 /* module_list.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = module_list.m; sourceTree = "<group>"; };
 		96297A0A16C5AD8D00E6DCE0 /* RetroArch_iOS.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RetroArch_iOS.h; sourceTree = "<group>"; };
 		96297A0B16C5AD8D00E6DCE0 /* RetroArch_iOS.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RetroArch_iOS.m; sourceTree = "<group>"; };
+		96297A0D16C5ADDA00E6DCE0 /* views.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = views.h; sourceTree = "<group>"; };
+		96297A0E16C5AEA100E6DCE0 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		96297A1016C5AEDE00E6DCE0 /* game_view.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = game_view.m; sourceTree = "<group>"; };
+		96297A1216C5AEFD00E6DCE0 /* directory_list.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = directory_list.m; sourceTree = "<group>"; };
 		96AFAE2516C1D4EA009DE44C /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96AFAE2916C1D4EA009DE44C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		96AFAE2B16C1D4EA009DE44C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -101,7 +100,6 @@
 		96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
 		96AFAE3516C1D4EA009DE44C /* RetroArch-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "RetroArch-Info.plist"; sourceTree = "<group>"; };
 		96AFAE3716C1D4EA009DE44C /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		96AFAE3916C1D4EA009DE44C /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
 		96AFAE3B16C1D4EA009DE44C /* RetroArch-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "RetroArch-Prefix.pch"; sourceTree = "<group>"; };
 		96AFAE3F16C1D4EA009DE44C /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
 		96AFAE4116C1D4EA009DE44C /* Default@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default@2x.png"; sourceTree = "<group>"; };
@@ -333,19 +331,17 @@
 		96AFAE3316C1D4EA009DE44C /* RetroArch */ = {
 			isa = PBXGroup;
 			children = (
+				96297A1216C5AEFD00E6DCE0 /* directory_list.m */,
+				96297A1016C5AEDE00E6DCE0 /* game_view.m */,
+				96297A0D16C5ADDA00E6DCE0 /* views.h */,
 				96297A0A16C5AD8D00E6DCE0 /* RetroArch_iOS.h */,
 				96297A0B16C5AD8D00E6DCE0 /* RetroArch_iOS.m */,
 				962979FF16C4767F00E6DCE0 /* dirent_list.c */,
 				96297A0016C4767F00E6DCE0 /* dirent_list.h */,
-				962979EB16C3E86F00E6DCE0 /* gameview.m */,
-				962979EC16C3E86F00E6DCE0 /* gameview.h */,
 				96AFAE4C16C1D4EA009DE44C /* ViewController_iPhone.xib */,
 				96AFAE4F16C1D4EA009DE44C /* ViewController_iPad.xib */,
 				96AFAE3416C1D4EA009DE44C /* Supporting Files */,
 				96CF015B16C2F72900ABF9C9 /* ios_input.c */,
-				9629797516C3CD2400E6DCE0 /* dirlist.h */,
-				9629797616C3CD2400E6DCE0 /* dirlist.m */,
-				96297A0716C59EC000E6DCE0 /* module_list.h */,
 				96297A0816C59EC000E6DCE0 /* module_list.m */,
 			);
 			path = RetroArch;
@@ -354,9 +350,9 @@
 		96AFAE3416C1D4EA009DE44C /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				96297A0E16C5AEA100E6DCE0 /* main.m */,
 				96AFAE3516C1D4EA009DE44C /* RetroArch-Info.plist */,
 				96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */,
-				96AFAE3916C1D4EA009DE44C /* main.mm */,
 				96AFAE3B16C1D4EA009DE44C /* RetroArch-Prefix.pch */,
 				96AFAE3F16C1D4EA009DE44C /* Default.png */,
 				96AFAE4116C1D4EA009DE44C /* Default@2x.png */,
@@ -740,7 +736,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				96AFAE3A16C1D4EA009DE44C /* main.mm in Sources */,
 				96AFAECA16C1D9A9009DE44C /* autosave.c in Sources */,
 				96AFAECB16C1D9A9009DE44C /* cheats.c in Sources */,
 				96AFAECC16C1D9A9009DE44C /* command.c in Sources */,
@@ -789,12 +784,13 @@
 				96AFAFD716C1FBC0009DE44C /* null.c in Sources */,
 				96CF015016C2C0B700ABF9C9 /* overlay.c in Sources */,
 				96CF015C16C2F72900ABF9C9 /* ios_input.c in Sources */,
-				9629797716C3CD2400E6DCE0 /* dirlist.m in Sources */,
-				962979ED16C3E86F00E6DCE0 /* gameview.m in Sources */,
 				962979EF16C3EA3E00E6DCE0 /* ioseagl_ctx.c in Sources */,
 				96297A0116C4767F00E6DCE0 /* dirent_list.c in Sources */,
 				96297A0916C59EC000E6DCE0 /* module_list.m in Sources */,
 				96297A0C16C5AD8D00E6DCE0 /* RetroArch_iOS.m in Sources */,
+				96297A0F16C5AEA100E6DCE0 /* main.m in Sources */,
+				96297A1116C5AEDE00E6DCE0 /* game_view.m in Sources */,
+				96297A1316C5AEFD00E6DCE0 /* directory_list.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

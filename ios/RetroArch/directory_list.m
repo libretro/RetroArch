@@ -7,10 +7,8 @@
 //
 
 #include "dirent_list.h"
-#import "dirlist.h"
-#import "gameview.h"
 
-@implementation dirlist_view
+@implementation directory_list
 {
    char* path;
 
@@ -75,7 +73,7 @@
    {
       strcat(new_path, "/");
       
-      [[RetroArch_iOS get].navigator pushViewController:[[[dirlist_view alloc] init] load_path: new_path] animated:YES];
+      [[RetroArch_iOS get].navigator pushViewController:[[[directory_list alloc] init] load_path: new_path] animated:YES];
    }
    else
    {

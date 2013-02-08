@@ -6,13 +6,6 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
-#import "module_list.h"
-#import "dirlist.h"
-
-@interface module_list ()
-
-@end
-
 @implementation module_list
 {
    UITableView* table;
@@ -66,7 +59,7 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
    [RetroArch_iOS get].module_path = [NSString stringWithFormat:@"%@/%@", module_dir, [modules objectAtIndex:indexPath.row]];
-   [[RetroArch_iOS get].navigator pushViewController:[[[dirlist_view alloc] init] load_path:"/"] animated:YES];
+   [[RetroArch_iOS get].navigator pushViewController:[[[directory_list alloc] init] load_path:"/"] animated:YES];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
