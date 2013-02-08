@@ -7,6 +7,7 @@
 
 #import "AppDelegate.h"
 #import "dirlist.h"
+#import "browser.h"
 
 #define MAX_TOUCH 16
 extern struct
@@ -27,9 +28,9 @@ extern uint32_t ios_current_touch_count ;
 
    // Override point for customization after application launch.
    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-      self.window.rootViewController = [[dirlist_view alloc] initWithNibName:@"ViewController_iPhone" bundle:nil];
+      self.window.rootViewController = [[browser alloc] initWithNibName:@"ViewController_iPhone" bundle:nil];
    else
-      self.window.rootViewController = [[dirlist_view alloc] initWithNibName:@"ViewController_iPad" bundle:nil];
+      self.window.rootViewController = [[browser alloc] initWithNibName:@"ViewController_iPad" bundle:nil];
     
    [self.window makeKeyAndVisible];
 }

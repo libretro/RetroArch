@@ -8,5 +8,5 @@
 #import <UIKit/UIKit.h>
 
 @interface dirlist_view : UIViewController <UITableViewDelegate, UITableViewDataSource>
-
+- (id)load_path:(const char*)directory;
 @end

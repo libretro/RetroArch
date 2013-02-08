@@ -22,7 +22,7 @@ static bool is_dirent_verboten(const struct dirent* entry)
 {
    if (!entry) return true;
    if (strcmp(entry->d_name, ".") == 0) return true;
-   //if (strcmp(entry->d_name, "..") == 0) return true;
+   if (strcmp(entry->d_name, "..") == 0) return true;
    return false;
 }
 

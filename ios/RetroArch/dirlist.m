@@ -12,7 +12,8 @@
 
 @implementation dirlist_view
 {
-   char path[4096];
+   char* path;
+
    UITableView* table;
    struct dirent_list* files;
    
@@ -20,25 +21,42 @@
    UIImage* folder_icon;
 };
 
--(void)dealloc
+- (id)load_path:(const char*)directory
 {
    free_dirent_list(files);
-   files = 0;
+   files = build_dirent_list(directory);
+   [table reloadData];
+   
+   free(path);
+   path = strdup(directory);
+   
+   [self setTitle: [[NSString alloc] initWithUTF8String:directory]];
+   
+   return self;
+}
+
+- (void)dealloc
+{
+   free_dirent_list(files);
+   free(path);
 }
 
 - (void)viewDidLoad
 {
+   [super viewDidLoad];
+
    file_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_file" ofType:@"png"]];
    folder_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_dir" ofType:@"png"]];
 
-   [super viewDidLoad];
-   
-   strcpy(path, "/");
-   files = build_dirent_list(path);
-   
    table = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, 640, 480) style:UITableViewStylePlain];
    table.dataSource = self;
    table.delegate = self;
+
+   self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc]
+                                            initWithTitle:@"Parent"
+                                            style:UIBarButtonItemStyleBordered
+                                            target:nil action:nil];
+
 
    self.view = table;
 }
@@ -49,38 +67,27 @@
 
    if (!item) return;
 
+   char new_path[4096];
+   strcpy(new_path, path);
+   strcat(new_path, item->d_name);
+
    if (item->d_type)
    {
-      if (strcmp(item->d_name, "..") == 0)
-      {
-         char* last_slash = strrchr(path, '/');
-         if (last_slash) *last_slash = 0;
-         path[0] = (path[0] == 0) ? '/' : path[0];
-      }
-      else
-      {
-         strcat(path, "/");
-         strcat(path, item->d_name);
-      }
+      strcat(new_path, "/");
       
-      free_dirent_list(files);
-      files = build_dirent_list(path);
-      [table reloadData];
+      UINavigationController *pvc = (UINavigationController*)self.parentViewController;
+      [pvc pushViewController:[[[dirlist_view alloc] init] load_path: new_path] animated:YES];
    }
    else
    {
       UIWindow *window = [UIApplication sharedApplication].keyWindow;
-
-      if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-         window.rootViewController = [[game_view alloc] initWithNibName:@"ViewController_iPhone" bundle:nil];
-      else
-         window.rootViewController = [[game_view alloc] initWithNibName:@"ViewController_iPad" bundle:nil];
-       
-      strcat(path, "/");
-      strcat(path, item->d_name);
+      
+      bool is_phone = ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone);
+      window.rootViewController = [[game_view alloc] initWithNibName:
+         (is_phone ? @"ViewController_iPhone" : @"ViewController_iPad") bundle:nil];
       
       extern void ios_load_game(const char*);
-      ios_load_game(path);
+      ios_load_game(new_path);
    }
 }
 
@@ -99,18 +106,8 @@
    if (item)
    {
       cell.textLabel.text = [[NSString string] initWithUTF8String:item->d_name];
-      
-      if (item->d_type)
-      {
-         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-         cell.imageView.image = folder_icon;
-      }
-      else
-      {
-         cell.accessoryType = UITableViewCellAccessoryNone;
-         cell.imageView.image = file_icon;
-      }
-      
+      cell.accessoryType = (item->d_type) ? UITableViewCellAccessoryDisclosureIndicator : UITableViewCellAccessoryNone;
+      cell.imageView.image = (item->d_type) ? folder_icon : file_icon;
       [cell.imageView sizeToFit];
    }
 
