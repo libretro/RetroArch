@@ -5,9 +5,8 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
-#import "AppDelegate.h"
 #import "dirlist.h"
-#import "browser.h"
+#import "module_list.h"
 
 #define MAX_TOUCH 16
 extern struct
@@ -20,18 +19,23 @@ extern struct
 
 extern uint32_t ios_current_touch_count ;
 
-@implementation AppDelegate
+@implementation RetroArch_iOS
+
++ (RetroArch_iOS*)get
+{
+   return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
+}
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
-   self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+   bool is_iphone = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone;
+   self.nib_name = is_iphone ? @"ViewController_iPhone" : @"ViewController_iPad";
 
-   // Override point for customization after application launch.
-   if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-      self.window.rootViewController = [[browser alloc] initWithNibName:@"ViewController_iPhone" bundle:nil];
-   else
-      self.window.rootViewController = [[browser alloc] initWithNibName:@"ViewController_iPad" bundle:nil];
-    
+   self.navigator = [[UINavigationController alloc] initWithNibName:self.nib_name bundle:nil];
+   [self.navigator pushViewController: [[module_list alloc] initWithNibName:self.nib_name bundle:nil] animated:YES];
+
+   self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+   self.window.rootViewController = self.navigator;
    [self.window makeKeyAndVisible];
 }
 

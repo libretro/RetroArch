@@ -75,16 +75,13 @@
    {
       strcat(new_path, "/");
       
-      UINavigationController *pvc = (UINavigationController*)self.parentViewController;
-      [pvc pushViewController:[[[dirlist_view alloc] init] load_path: new_path] animated:YES];
+      [[RetroArch_iOS get].navigator pushViewController:[[[dirlist_view alloc] init] load_path: new_path] animated:YES];
    }
    else
    {
-      UIWindow *window = [UIApplication sharedApplication].keyWindow;
-      
-      bool is_phone = ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone);
-      window.rootViewController = [[game_view alloc] initWithNibName:
-         (is_phone ? @"ViewController_iPhone" : @"ViewController_iPad") bundle:nil];
+      [RetroArch_iOS get].window.rootViewController = [[game_view alloc]
+         initWithNibName: [RetroArch_iOS get].nib_name
+         bundle:nil];
       
       extern void ios_load_game(const char*);
       ios_load_game(new_path);

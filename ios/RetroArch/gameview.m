@@ -27,8 +27,10 @@ void ios_load_game(const char* file_name)
 {
    if(!ra_initialized && file_name)
    {
-      const char* libretro = [[[NSBundle mainBundle] pathForResource:@"libretro" ofType:@"dylib"] UTF8String];
+      const char* libretro = [[RetroArch_iOS get].module_path UTF8String];
       const char* overlay = [[[NSBundle mainBundle] pathForResource:@"overlay" ofType:@"cfg"] UTF8String];
+      
+      printf("%s\n", overlay);
 
       strcpy(g_settings.input.overlay, overlay ? overlay : "");
 
