@@ -287,7 +287,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
             keycode_lut[AKEYCODE_BUTTON_9] |= ((RETRO_DEVICE_ID_JOYPAD_L2) << shift);
          }
          else if (strstr(name_buf, "SideWinder") || strstr(name_buf, "X-Box") ||
-               strstr("Xbox 360 Wireless Receiver"))
+               strstr(name_buf, "Xbox 360 Wireless Receiver"))
          {
             if (strstr(name_buf, "SideWinder"))
             {
@@ -299,7 +299,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
                keycode_lut[AKEYCODE_BUTTON_C]  |= ((RETRO_DEVICE_ID_JOYPAD_R2+1) << shift);
             }
             else if (strstr(name_buf, "X-Box 360") || strstr(name_buf, "X-Box")
-               || strstr("Xbox 360 Wireless Receiver"))
+               || strstr(name_buf, "Xbox 360 Wireless Receiver"))
             {
                /* TODO: left and right triggers for Xbox 1*/
                keycode_lut[AKEYCODE_BUTTON_SELECT] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
