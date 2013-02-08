@@ -867,7 +867,13 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
    set_texture_coords(fbo_tex_coords, xamt, yamt);
 
    // Render our FBO texture to back buffer.
+#ifdef IOS
+   // There is no default frame buffer on IOS.
+   extern void ios_bind_game_view_fbo();
+   ios_bind_game_view_fbo();
+#else
    pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+#endif
    gl_shader_use_func(gl, gl->fbo_pass + 1);
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);

@@ -874,6 +874,7 @@
 					"-DRARCH_PERFORMANCE_MODE",
 					"-DPACKAGE_VERSION=\\\"1.0\\\"",
 					"-std=gnu99",
+					"-DHAVE_FBO",
 				);
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -916,6 +917,7 @@
 					"-DRARCH_PERFORMANCE_MODE",
 					"-DPACKAGE_VERSION=\\\"1.0\\\"",
 					"-std=gnu99",
+					"-DHAVE_FBO",
 				);
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";

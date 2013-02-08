@@ -106,7 +106,7 @@ void ios_close_game()
 
 @end
 
-void flip_game_view()
+void ios_flip_game_view()
 {
    if (gl_view)
    {
@@ -115,11 +115,19 @@ void flip_game_view()
    }
 }
 
-void get_game_view_size(unsigned *width, unsigned *height)
+void ios_get_game_view_size(unsigned *width, unsigned *height)
 {
    if (gl_view)
    {
       *width  = gl_view.bounds.size.width * screen_scale;
       *height = gl_view.bounds.size.height * screen_scale;
+   }
+}
+
+void ios_bind_game_view_fbo()
+{
+   if (gl_view)
+   {
+      [gl_view bindDrawable];
    }
 }

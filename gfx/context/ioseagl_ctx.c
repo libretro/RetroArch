@@ -39,8 +39,8 @@ static void gfx_ctx_destroy(void)
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
-   extern void get_game_view_size(unsigned *, unsigned *);
-   get_game_view_size(width, height);
+   extern void ios_get_game_view_size(unsigned *, unsigned *);
+   ios_get_game_view_size(width, height);
 }
 
 static bool gfx_ctx_init(void)
@@ -50,8 +50,8 @@ static bool gfx_ctx_init(void)
 
 static void gfx_ctx_swap_buffers(void)
 {
-   extern void flip_game_view();
-   flip_game_view();
+   extern void ios_flip_game_view();
+   ios_flip_game_view();
 }
 
 static void gfx_ctx_check_window(bool *quit,
