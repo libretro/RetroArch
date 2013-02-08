@@ -79,7 +79,7 @@
       strcat(path, "/");
       strcat(path, item->d_name);
       
-      extern void ios_run_game(const char*);
+      extern void ios_load_game(const char*);
       ios_load_game(path);
    }
 }
