@@ -396,6 +396,7 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_EMU_SHOW_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? L"Info messages: ON" : L"Info messages: OFF");
    m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
+   m_settingslist.SetText(SETTING_AUDIO_RESAMPLER_TYPE, strstr(g_settings.audio.resampler, "sinc") ? L"Audio Resampler: Sinc" : L"Audio Resampler: Hermite");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
@@ -466,6 +467,24 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             else
                g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
             m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
+            break;
+         case SETTING_AUDIO_RESAMPLER_TYPE:
+#ifdef HAVE_SINC
+            if( strstr(g_settings.audio.resampler, "hermite"))
+               snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "sinc");
+            else
+#endif
+               snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+
+            if (g_extern.main_is_init)
+            {
+               if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
+                        g_settings.audio.resampler))
+               {
+                  RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
+                  g_extern.audio_active = false;
+               }
+            }
             break;
          case SETTING_GAMMA_CORRECTION_ENABLED:
             g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
@@ -577,6 +596,24 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                   g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
                m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
                break;
+            case SETTING_AUDIO_RESAMPLER_TYPE:
+#ifdef HAVE_SINC
+               if( strstr(g_settings.audio.resampler, "hermite"))
+                  snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "sinc");
+               else
+#endif
+                  snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+
+               if (g_extern.main_is_init)
+               {
+                  if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
+                           g_settings.audio.resampler))
+                  {
+                     RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
+                     g_extern.audio_active = false;
+                  }
+               }
+               break;
             case SETTING_GAMMA_CORRECTION_ENABLED:
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
                driver.video->restart();
@@ -630,6 +667,24 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                else
                   g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
                m_settingslist.SetText(SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? L"Debug Info messages: ON" : L"Debug Info messages: OFF");
+               break;
+            case SETTING_AUDIO_RESAMPLER_TYPE:
+#ifdef HAVE_SINC
+               if( strstr(g_settings.audio.resampler, "hermite"))
+                  snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "sinc");
+               else
+#endif
+                  snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+
+               if (g_extern.main_is_init)
+               {
+                  if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
+                           g_settings.audio.resampler))
+                  {
+                     RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
+                     g_extern.audio_active = false;
+                  }
+               }
                break;
             case SETTING_GAMMA_CORRECTION_ENABLED:
                g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
