@@ -296,13 +296,13 @@ static void populate_setting_item(void *data, unsigned input)
          if (strstr(g_settings.audio.resampler, "sinc"))
          {
             snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Sinc");
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Sinc resampler] - slower but moreaccurate sound.");
+            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Sinc resampler] - slightly slower but better sound quality at high frequencies.");
          }
          else
 #endif
          {
             snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Hermite");
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Hermite resampler] - faster but less accurate with high sampling rates (such as 44KHz/48KHz).");
+            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Hermite resampler] - faster but less accurate at high frequencies.");
          }
          break;
       case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
@@ -1452,24 +1452,30 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
 
             if (g_extern.main_is_init)
             {
-               if (rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
+               if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
                         g_settings.audio.resampler))
                {
-                  /* TODO */
+                  RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
+                  g_extern.audio_active = false;
                }
             }
 
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
+#ifdef HAVE_SINC
+            snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "sinc");
+#else
             snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+#endif
             
             if (g_extern.main_is_init)
             {
-               if (rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
+               if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
                         g_settings.audio.resampler))
                {
-                  /* TODO */
+                  RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
+                  g_extern.audio_active = false;
                }
             }
          }
