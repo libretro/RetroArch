@@ -314,6 +314,13 @@ static const int out_latency = 64;
 // Will sync audio. (recommended) 
 static const bool audio_sync = true;
 
+// Default resampler
+#ifdef HAVE_SINC
+static const char *audio_resampler = "sinc";
+#else
+static const char *audio_resampler = "hermite";
+#endif
+
 // Experimental rate control
 #if defined(GEKKO) || !defined(RARCH_CONSOLE)
 static const bool rate_control = true;

@@ -201,6 +201,7 @@ void config_set_defaults(void)
    g_settings.audio.rate_control = rate_control;
    g_settings.audio.rate_control_delta = rate_control_delta;
    g_settings.audio.volume = audio_volume;
+   strlcpy(g_settings.audio.resampler, audio_resampler, sizeof(g_settings.audio.resampler));
 
    g_settings.rewind_enable = rewind_enable;
    g_settings.rewind_buffer_size = rewind_buffer_size;
