@@ -99,7 +99,9 @@ struct ff_audio_info
    // Most lossy audio codecs only support certain sampling rates.
    // Could use libswresample, but it doesn't support floating point ratios. :(
    // Use either S16 or (planar) float for simplicity.
-   rarch_resampler_t *resampler;
+   const rarch_resampler_t *resampler;
+   void *resampler_data;
+
    bool use_float;
    bool is_planar;
    unsigned sample_size;
@@ -277,7 +279,9 @@ static bool ffemu_init_audio(ffemu_t *handle)
       audio->codec->sample_rate = params->sample_rate;
       audio->codec->time_base = av_d2q(1.0 / params->sample_rate, 1000000);
 
-      audio->resampler = resampler_new();
+      rarch_resampler_realloc(&audio->resampler_data,
+            &audio->resampler,
+            *g_settings.audio.resampler ? g_settings.audio.resampler : NULL);
    }
    else
    {
@@ -683,8 +687,8 @@ void ffemu_free(ffemu_t *handle)
    if (handle->config.audio_opts)
       av_dict_free(&handle->config.audio_opts);
 
-   if (handle->audio.resampler)
-      resampler_free(handle->audio.resampler);
+   rarch_resampler_freep(&handle->audio.resampler,
+         &handle->audio.resampler_data);
 
    av_free(handle->audio.float_conv);
    av_free(handle->audio.resample_out);
@@ -1023,7 +1027,7 @@ static void ffemu_audio_resample(ffemu_t *handle, struct ffemu_audio_data *data)
       info.input_frames = data->frames;
       info.ratio        = handle->audio.ratio;
 
-      resampler_process(handle->audio.resampler, &info);
+      rarch_resampler_process(handle->audio.resampler, handle->audio.resampler_data, &info);
       data->data   = handle->audio.resample_out;
       data->frames = info.output_frames;
 

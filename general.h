@@ -217,6 +217,8 @@ struct settings
       bool rate_control;
       float rate_control_delta;
       float volume; // dB scale
+
+      char resampler[32];
    } audio;
 
    struct
@@ -373,7 +375,8 @@ struct global
 
    struct
    {
-      rarch_resampler_t *source;
+      void *resampler_data;
+      const rarch_resampler_t *resampler;
 
       float *data;
 

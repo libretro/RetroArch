@@ -30,6 +30,8 @@ OBJ = retroarch.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
 		gfx/image.o \
+		audio/hermite.o \
+		audio/resampler.o \
 		performance.o
 
 JOBJ := conf/config_file.o \
@@ -208,8 +210,7 @@ endif
 
 ifeq ($(HAVE_SINC), 1)
    OBJ += audio/sinc.o
-else
-   OBJ += audio/hermite.o
+   DEFINES += -DHAVE_SINC
 endif
 
 ifneq ($(V), 1)

@@ -22,6 +22,7 @@
 #include <math.h>
 #include "compat/posix_string.h"
 #include "audio/utils.h"
+#include "audio/resampler.h"
 
 #ifdef HAVE_X11
 #include "gfx/context/x11_common.h"
@@ -405,9 +406,13 @@ void init_audio(void)
       g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
    }
 
-   g_extern.audio_data.source = resampler_new();
-   if (!g_extern.audio_data.source)
+   const char *resampler = *g_settings.audio.resampler ? g_settings.audio.resampler : NULL;
+   if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
+         resampler))
+   {
+      RARCH_ERR("Failed to initialize resampler \"%s\".\n", resampler ? resampler : "(default)");
       g_extern.audio_active = false;
+   }
 
    rarch_assert(g_extern.audio_data.data = (float*)malloc(max_bufsamples * sizeof(float)));
 
@@ -536,8 +541,7 @@ void uninit_audio(void)
    if (driver.audio_data && driver.audio)
       driver.audio->free(driver.audio_data);
 
-   if (g_extern.audio_data.source)
-      resampler_free(g_extern.audio_data.source);
+   rarch_resampler_freep(&g_extern.audio_data.resampler, &g_extern.audio_data.resampler_data);
 
    free(g_extern.audio_data.data);
    g_extern.audio_data.data = NULL;

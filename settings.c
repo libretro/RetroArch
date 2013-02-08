@@ -641,6 +641,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(audio.rate_control, "audio_rate_control");
    CONFIG_GET_FLOAT(audio.rate_control_delta, "audio_rate_control_delta");
    CONFIG_GET_FLOAT(audio.volume, "audio_volume");
+   CONFIG_GET_STRING(audio.resampler, "audio_resampler");
 
    CONFIG_GET_STRING(video.driver, "video_driver");
    CONFIG_GET_STRING(audio.driver, "audio_driver");

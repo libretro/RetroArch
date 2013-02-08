@@ -275,13 +275,13 @@ FIFO BUFFER
 #include "../../fifo_buffer.c"
 
 /*============================================================
-AUDIO HERMITE
+AUDIO RESAMPLER
 ============================================================ */
+#include "../../audio/resampler.c"
 #ifdef HAVE_SINC
 #include "../../audio/sinc.c"
-#else
-#include "../../audio/hermite.c"
 #endif
+#include "../../audio/hermite.c"
 
 /*============================================================
 RSOUND

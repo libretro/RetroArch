@@ -27,6 +27,8 @@ OBJ = retroarch.o \
 		gfx/image.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
+		audio/hermite.o \
+		audio/resampler.o \
 		performance.o
 
 JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
@@ -298,8 +300,6 @@ ifeq ($(HAVE_SINC), 1)
    ifeq ($(HAVE_NEON),1)
       OBJ += audio/sinc_neon.o
    endif
-else
-   OBJ += audio/hermite.o
 endif
 OBJ += audio/utils.o
 ifeq ($(HAVE_NEON),1)

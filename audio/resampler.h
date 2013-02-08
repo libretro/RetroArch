@@ -24,13 +24,13 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <math.h>
+#include "../boolean.h"
 
 // M_PI is left out of ISO C99 :(
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327
 #endif
 
-typedef struct rarch_resampler rarch_resampler_t;
 typedef float sample_t;
 
 struct resampler_data
@@ -44,9 +44,33 @@ struct resampler_data
    double ratio;
 };
 
-rarch_resampler_t *resampler_new(void);
-void resampler_process(rarch_resampler_t *re, struct resampler_data *data);
-void resampler_free(rarch_resampler_t *re);
+typedef struct rarch_resampler
+{
+   void *(*init)(void);
+   void (*process)(void *re, struct resampler_data *data);
+   void (*free)(void *re);
+   const char *ident;
+} rarch_resampler_t;
+
+extern const rarch_resampler_t hermite_resampler;
+extern const rarch_resampler_t sinc_resampler;
+
+// Reallocs resampler. Will free previous handle before allocating a new one.
+// If ident is NULL, first resampler will be used.
+bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const char *ident);
+
+// Convenience macros.
+// freep makes sure to set handles to NULL to avoid double-free in rarch_resampler_realloc.
+#define rarch_resampler_freep(backend, handle) do { \
+   if (*(backend) && *(handle)) \
+      (*backend)->free(*handle); \
+   *backend = NULL; \
+   *handle = NULL; \
+} while(0)
+
+#define rarch_resampler_process(backend, handle, data) do { \
+   (backend)->process(handle, data); \
+} while(0)
 
 #endif
 
