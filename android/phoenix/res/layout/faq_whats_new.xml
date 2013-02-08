@@ -1,0 +1,79 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="40px"
+        android:text="
+        r10 (Feb 5, 2013)\n\n
+        * [NXEngine / Cave Story] Fixed bug where moving blocks would not move in Labyrinth levels\n
+        * Add new psx and GBA overlays by user boxs.\n
+        * Should fix some touchscreen control issues.\n
+        \n
+        r9 (Feb 4, 2013)\n\n
+        * Better multi-touch controls.\n
+        * Ability to set opacity of overlays.\n
+        * Shaders bundled (NOTE: need Tegra 4/Exynos5-class GPU for good results).\n
+        * Input autodetection expanded -\n
+        - Xperia Play (now properly tested on an r800i)\n
+        - Madcatz PS3 fighting stick\n
+        - Moga IME app (previously would work only on rooted devices with gamepad mode)\n
+        * Doesn't extract the assets everytime you go to the menu but only when you first install the new APK - was causing lots of  garbage collector overhead.\n
+        * FBA core - fixed a serious bug causing graphic glitches.\n
+        * Nestopia core - use mono sound like the real NES.\n
+        * Genesis Plus GX - Lunar Eternal Blue (JP) works again.\n
+        \n
+        r8 (Jan 30, 2013) - VERSION 0.9.8.1\n\n
+        * Is now compatible with Android version 2.3 and up.\n
+        * Back button issues with certain gamepads should now be fixed.\n
+        * Wonderswan core was broken (Mednafen Wonderswan) - is now fixed.\n
+        * 'Detect' button for manual input binding for touchless devices.\n
+        * Old overlays are back and put into a directory called 'Low-resolution' for devices with slower CPUs - the higher-resolution ones are somewhat more demanding than the original 256x256 ones.\n
+        * Input autodetection expanded -\n
+        - DragonRise USB Gamepad\n
+        \n
+        r6 (Jan 29, 2013)\n\n
+        * PlayStation1 [PCSX ReARMed] core fixes (from notaz)\n
+        - Fixes 50Hz PAL games (were running with sound being too fast and other irregularities before)\n
+        - Should fix emu crashing on some devices due to memory mapping issues.\n
+        * New system-specific overlays added - on new installs only these new ones will be there and the old bad ones will no longer be there. On pre-existing installs - just use the new ones - they should be much better. If you're still unsatisfied, nothing is stopping you from editing these files yourself with a text editor and an image editor - it's really simple to do.\n
+        * New 'custom binding' when you turn off 'Configuration Autodetect Enable' - allows you to manually put in button mapping in case we don't support your pad. Note - it's probably more reliable right now to select the 'keycode' from the dropdown list instead of pressing the button on the pad.\n
+        - Input autodetection expanded -\n
+        - Trust Raptor\n
+        - Should fix Logitech F710/Elecom/RetroUSB NES/etc\n
+        \n
+        r5 (Jan 28, 2013)\n\n
+        * Input autodetection expanded\n
+        - Archos gamepad\n
+        - Xperia Play\n
+        - Xbox 1 (Titanium X-JoyConverter)\n
+        - Xbox 360 (wired)\n
+        - Red Samurai Bluetooth\n
+        - Another variant of Mayflash Wii Classic\n
+        - RetroUSB SNES RetroPort\n
+        - RetroUSB NES RetroPad\n
+        - Buffalo SNES Pad\n
+        - Logicool F710 (Japanese Logitech F710)\n
+        - Elecom PS1/PS2 to USB\n
+        \n
+        r4 (Jan 27, 2013)\n\n
+        * Input autodetection expanded\n
+        - Nyko Playpad Pro\n
+        * Fixed bug where device name would not be onscreen for long enough - useful for reporting input name\n
+        \n
+        r3 (Jan 26, 2013)\n\n
+        * More user-friendly core selection names\n
+        * Input autodetection expanded\n
+        - Added Mayflash Super Joy Box 3 Pro\n
+        - Added JXD S5110\n
+        - Added Logitech Dual Action\n
+        - Added Snakebyte idroid\n
+        \n
+        r2\n\n
+        * Initial release." />
+</LinearLayout>

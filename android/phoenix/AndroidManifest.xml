@@ -22,6 +22,7 @@
         </activity>
         
         <activity android:name="org.retroarch.browser.SettingsActivity"></activity>
+        <activity android:name="org.retroarch.browser.HelpActivity"></activity>
         <activity android:name="org.retroarch.browser.DirectoryActivity"></activity>
         <activity android:name="org.retroarch.browser.ROMActivity"></activity>
         

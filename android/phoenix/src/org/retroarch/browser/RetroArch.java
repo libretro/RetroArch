@@ -489,6 +489,10 @@ public class RetroArch extends Activity implements
 			Intent rset = new Intent(this, SettingsActivity.class);
 			startActivity(rset);
 			return true;
+		case R.id.help:		
+			Intent help = new Intent(this, HelpActivity.class);
+			startActivity(help);
+			return true;
 			
 		case R.id.report_ime:
 			String current_ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
