@@ -49,6 +49,10 @@
        <PreferenceCategory android:title="Why doesn't my PS1 game work?" android:layout="@layout/faq_neo_geo_game_doesnt_work" >
         </PreferenceCategory>
     </PreferenceScreen>
+    <PreferenceScreen android:title="Neo Geo game in FBA shows Video RAM error. Why?" >
+       <PreferenceCategory android:title="Neo Geo game in FBA shows Video RAM error. Why?" android:layout="@layout/faq_neo_geo_game_in_fba_shows_video_ram_err_why" >
+        </PreferenceCategory>
+    </PreferenceScreen>
     <PreferenceScreen android:title="Why doesn't the PS1 core [PCSX ReARMed] show up in the list?" >
        <PreferenceCategory android:title="Why doesn't the PS1 core [PCSX ReARMed] show up in the list?" android:layout="@layout/faq_why_doesnt_the_ps1_core_show_up_in_the_list" >
         </PreferenceCategory>

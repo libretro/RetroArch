@@ -9,7 +9,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="40px"
-        android:text="NOTE: Prboom only supports MP3 soundtracks right now. To have the game use MP3 files, the files must be correctly named and should be placed in the same directry as the WAD file.\n\nHere is a listing of the files that are looked for by Prboom when trying to playback music in-game.\n\n== FOR DOOM 1/ULTIMATE DOOM ==\n\ne1m1.mp3\n\ne1m2.mp3\n\ne1m3.mp\n\ne1m4.mp3\n\ne1m5.mp3\n\ne1m6.zip\n\ne1m7.mp3\n\ne1m8.mp3\n\ne1m9.mp3\n\n
+        android:text="NOTE: Prboom only supports MP3 soundtracks right now. To have the game use MP3 files, the files must be correctly named and should be placed in the same directry as the WAD file.\n\nHere is a listing of the files that are looked for by Prboom when trying to playback music in-game.\n\n== FOR DOOM 1/ULTIMATE DOOM ==\n\ne1m1.mp3\n\ne1m2.mp3\n\ne1m3.mp3\n\ne1m4.mp3\n\ne1m5.mp3\n\ne1m6.mp3\n\ne1m7.mp3\n\ne1m8.mp3\n\ne1m9.mp3\n\n
 e2m1.mp3\n\n
 e2m2.mp3\n\n
 e2m3.mp3\n\n
