@@ -45,8 +45,9 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   rarch_resampler_t *resamp = resampler_new();
-   if (!resamp)
+   const rarch_resampler_t *resampler = NULL;
+   void *re = NULL;
+   if (!rarch_resampler_realloc(&re, &resampler, NULL))
    {
       fprintf(stderr, "Failed to allocate resampler ...\n");
       return 1;
@@ -66,7 +67,7 @@ int main(int argc, char *argv[])
          .ratio = ratio,
       };
 
-      resampler_process(resamp, &data);
+      rarch_resampler_process(resampler, re, &data);
 
       size_t output_samples = data.output_frames * 2;
 
@@ -76,6 +77,6 @@ int main(int argc, char *argv[])
          break;
    }
 
-   resampler_free(resamp);
+   rarch_resampler_freep(&resampler, &re);
 }
 
