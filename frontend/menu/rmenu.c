@@ -290,6 +290,21 @@ static void populate_setting_item(void *data, unsigned input)
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [General Audio Settings] back to their 'DEFAULT' values.");
          break;
+      case SETTING_RESAMPLER_TYPE:
+         snprintf(current_item->text, sizeof(current_item->text), "Sound resampler");
+#ifdef HAVE_SINC
+         if (strstr(g_settings.audio.resampler, "sinc"))
+         {
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Sinc");
+            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Sinc resampler] - slower but moreaccurate sound.");
+         }
+         else
+#endif
+         {
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Hermite");
+            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Hermite resampler] - faster but less accurate with high sampling rates (such as 44KHz/48KHz).");
+         }
+         break;
       case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
          snprintf(current_item->text, sizeof(current_item->text), "Current save state slot");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.state_slot);
@@ -1423,6 +1438,40 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             g_extern.lifecycle_mode_state &= ~((1ULL << MODE_GAME));
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             return -1;
+         }
+         break;
+      case SETTING_RESAMPLER_TYPE:
+         if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         {
+#ifdef HAVE_SINC
+            if( strstr(g_settings.audio.resampler, "hermite"))
+               snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "sinc");
+            else
+#endif
+               snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+
+            if (g_extern.main_is_init)
+            {
+               if (rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
+                        g_settings.audio.resampler))
+               {
+                  /* TODO */
+               }
+            }
+
+         }
+         if(input & (1ULL << RMENU_DEVICE_NAV_START))
+         {
+            snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+            
+            if (g_extern.main_is_init)
+            {
+               if (rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
+                        g_settings.audio.resampler))
+               {
+                  /* TODO */
+               }
+            }
          }
          break;
       case SETTING_EMU_AUDIO_MUTE:
