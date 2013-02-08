@@ -6,99 +6,9 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
-#include <sys/stat.h>
-#include <dirent.h>
+#include "dirent_list.h"
 #import "dirlist.h"
 #import "gameview.h"
-
-struct dirent_list
-{
-   size_t count;
-   struct dirent* entries;
-};
-
-const struct dirent* get_dirent_at_index(struct dirent_list* list, unsigned index)
-{
-   if (!list) return 0;
-   return (index < list->count) ? &list->entries[index] : 0;
-}
-
-unsigned get_dirent_list_count(struct dirent_list* list)
-{
-   return list ? list->count : 0;
-}
-
-void free_dirent_list(struct dirent_list* list)
-{
-   if (list) free(list->entries);
-   free(list);
-}
-
-static int compare_dirent(const void *left, const void *right)
-{
-   const struct dirent* l = (const struct dirent*) left;
-   const struct dirent* r = (const struct dirent*) right;
-   
-   // Directories first
-   if (l->d_type != r->d_type)
-      return (l->d_type) ? -1 : 1;
-   
-   // Name
-   return strcmp(l->d_name, r->d_name);
-}
-
-struct dirent_list* build_dirent_list(const char* path)
-{
-   struct dirent_list* result = 0;
-
-   DIR* dir = opendir(path);
-   if (dir)
-   {
-      struct dirent* ent = 0;
-
-      // Count the number of items
-      size_t count = 0;
-      while ((ent = readdir(dir)))
-      {
-         count += (strcmp(ent->d_name, ".") ? 1 : 0);
-      }
-      rewinddir(dir);
-
-      // String buffer for 'stat'ing
-      char* stat_path = malloc(strlen(path) + sizeof(ent->d_name));
-      strcpy(stat_path, path);
-      uint32_t last_index = strlen(stat_path);
-     
-      // Build and fill the result
-      result = malloc(sizeof(struct dirent_list));
-      result->count = count;
-      result->entries = malloc(sizeof(struct dirent) * count);
-      
-      size_t index = 0;
-      while ((ent = readdir(dir)))
-      {
-         if (strcmp(ent->d_name, ".") == 0) continue;
-         memcpy(&result->entries[index], ent, sizeof(struct dirent));
-         
-         // Chage dirent.d_type to a boolean indication if it is a directory
-         struct stat stat_buf;
-         strcat(stat_path, "/");
-         strcat(stat_path, ent->d_name);
-         stat(stat_path, &stat_buf);
-         result->entries[index].d_type = S_ISDIR(stat_buf.st_mode) ? 1 : 0;
-         stat_path[last_index] = 0;
-         
-         index ++;
-      }
-            
-      closedir(dir);
-      free(stat_path);
-
-      qsort(result->entries, result->count, sizeof(struct dirent), &compare_dirent);
-   }
-   
-   return result;
-}
 
 @implementation dirlist_view
 {
@@ -146,7 +56,6 @@ struct dirent_list* build_dirent_list(const char* path)
          char* last_slash = strrchr(path, '/');
          if (last_slash) *last_slash = 0;
          path[0] = (path[0] == 0) ? '/' : path[0];
-         printf("%s\n", path);
       }
       else
       {
@@ -170,7 +79,7 @@ struct dirent_list* build_dirent_list(const char* path)
       strcat(path, "/");
       strcat(path, item->d_name);
       
-      extern void ios_load_game(const char*);
+      extern void ios_run_game(const char*);
       ios_load_game(path);
    }
 }
