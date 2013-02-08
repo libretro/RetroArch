@@ -499,7 +499,7 @@ public class RetroArch extends Activity implements
 			new AlertDialog.Builder(this).setMessage(current_ime).setNeutralButton("Close", null).show();
 			return true;
 		case R.id.report_refreshrate:
-			String current_rate = "Screen Refresh Rate: " + new Double(report_refreshrate).toString();
+			String current_rate = "Screen Refresh Rate: " + Double.valueOf(report_refreshrate).toString();
 			new AlertDialog.Builder(this).setMessage(current_rate).setNeutralButton("Close", null).show();
 			return true;
 
