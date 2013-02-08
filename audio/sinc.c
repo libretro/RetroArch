@@ -224,15 +224,13 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 }
 #elif defined(HAVE_NEON)
 
-#if TAPS != 16
-#error "NEON sinc is for now only implemented with 16 taps. Cannot continue."
-#endif
-
 // Need to make this function pointer as Android doesn't have built-in targets
 // for NEON and plain ARMv7a.
 static void (*process_sinc_func)(rarch_sinc_resampler_t *resamp, float *out_buffer);
 
-void process_sinc_neon_asm(float *out, const float *left, const float *right, const float *coeff);
+// Assumes that taps >= 8, and that taps is a multiple of 8.
+void process_sinc_neon_asm(float *out, const float *left, const float *right, const float *coeff, unsigned taps);
+
 static void process_sinc_neon(rarch_sinc_resampler_t *resamp, float *out_buffer)
 {
    const float *buffer_l = resamp->buffer_l + resamp->ptr;
@@ -241,7 +239,7 @@ static void process_sinc_neon(rarch_sinc_resampler_t *resamp, float *out_buffer)
    unsigned phase = resamp->time >> SUBPHASE_BITS;
    const float *phase_table = resamp->phase_table[phase];
 
-   process_sinc_neon_asm(out_buffer, buffer_l, buffer_r, phase_table);
+   process_sinc_neon_asm(out_buffer, buffer_l, buffer_r, phase_table, TAPS);
 }
 #else // Plain ol' C99
 #define process_sinc_func process_sinc_C
