@@ -1,8 +1,4 @@
-###
-##
-# Makefile for RetroArch PSL1GHT.
-##
-RARCH_VERSION		= "0.9.8"
+RARCH_VERSION		= "0.9.8.3"
 
 DEBUG			= 0
 HAVE_LOGGER		= 0
