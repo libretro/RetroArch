@@ -468,7 +468,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT(video.aspect_ratio_idx, "aspect_ratio_index");
    CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
 
-   for (unsigned i = 0; i < 8; i++)
+   for (unsigned i = 0; i < MAX_PLAYERS; i++)
    {
       char cfg[64];
       snprintf(cfg, sizeof(cfg), "input_dpad_emulation_p%u", i + 1);
@@ -477,6 +477,12 @@ bool config_load_file(const char *path)
       CONFIG_GET_INT(input.device[i], cfg);
    }
 
+#ifdef ANDROID
+   CONFIG_GET_INT(input.icade_profile[0], "input_autodetect_icade_profile_pad1");
+   CONFIG_GET_INT(input.icade_profile[1], "input_autodetect_icade_profile_pad2");
+   CONFIG_GET_INT(input.icade_profile[2], "input_autodetect_icade_profile_pad3");
+   CONFIG_GET_INT(input.icade_profile[3], "input_autodetect_icade_profile_pad4");
+#endif
 
    CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
 
@@ -1180,6 +1186,13 @@ bool config_save_file(const char *path)
    config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
    config_set_string(conf, "system_directory", g_settings.system_directory);
    config_set_string(conf, "audio_resampler", g_settings.audio.resampler);
+
+#ifdef ANDROID
+   config_set_int(conf, "input_autodetect_icade_profile_pad1", input.icade_profile[0]);
+   config_set_int(conf, "input_autodetect_icade_profile_pad2", input.icade_profile[1]);
+   config_set_int(conf, "input_autodetect_icade_profile_pad3", input.icade_profile[2]);
+   config_set_int(conf, "input_autodetect_icade_profile_pad4", input.icade_profile[3]);
+#endif
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_OVERSCAN_ENABLE))
       config_set_bool(conf, "overscan_enable", true);

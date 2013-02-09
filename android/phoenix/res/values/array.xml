@@ -19,6 +19,14 @@
         <item>1.60000</item>
         <item>1.14286</item>
     </string-array>
+
+    <string-array name="icade_profiles">
+        <item>Red Samurai</item>
+    </string-array>
+
+    <string-array name="icade_profiles_values">
+        <item>0</item>
+    </string-array>
     
     <string-array name="fbo_scales">
         <item>1.0x</item>
