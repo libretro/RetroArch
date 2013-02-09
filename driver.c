@@ -449,23 +449,23 @@ void init_audio(void)
 static void compute_audio_buffer_statistics(void)
 {
    unsigned samples = min(g_extern.measure_data.buffer_free_samples_count, AUDIO_BUFFER_FREE_SAMPLES_COUNT);
-   if (samples < 2)
+   if (samples < 3)
       return;
 
    uint64_t accum = 0;
-   for (unsigned i = 0; i < samples; i++)
+   for (unsigned i = 1; i < samples; i++)
       accum += g_extern.measure_data.buffer_free_samples[i];
 
-   int avg = accum / samples;
+   int avg = accum / (samples - 1);
 
    uint64_t accum_var = 0;
-   for (unsigned i = 0; i < samples; i++)
+   for (unsigned i = 1; i < samples; i++)
    {
       int diff = avg - g_extern.measure_data.buffer_free_samples[i];
       accum_var += diff * diff;
    }
 
-   unsigned stddev = (unsigned)sqrt((double)accum_var / (samples - 1));
+   unsigned stddev = (unsigned)sqrt((double)accum_var / (samples - 2));
 
    float avg_filled = 1.0f - (float)avg / g_extern.audio_data.driver_buffer_size;
    float deviation = (float)stddev / g_extern.audio_data.driver_buffer_size;
@@ -475,7 +475,7 @@ static void compute_audio_buffer_statistics(void)
 
    unsigned low_water_count = 0;
    unsigned high_water_count = 0;
-   for (unsigned i = 0; i < samples; i++)
+   for (unsigned i = 1; i < samples; i++)
    {
       if (g_extern.measure_data.buffer_free_samples[i] >= low_water_size)
          low_water_count++;
@@ -486,8 +486,8 @@ static void compute_audio_buffer_statistics(void)
    RARCH_LOG("Average audio buffer saturation: %.2f %%, standard deviation (percentage points): %.2f %%.\n",
          avg_filled * 100.0, deviation * 100.0);
    RARCH_LOG("Amount of time spent close to underrun: %.2f %%. Close to blocking: %.2f %%.\n",
-         (100.0 * low_water_count) / samples,
-         (100.0 * high_water_count) / samples);
+         (100.0 * low_water_count) / (samples - 1),
+         (100.0 * high_water_count) / (samples - 1));
 }
 
 static void compute_monitor_fps_statistics(void)
@@ -495,23 +495,25 @@ static void compute_monitor_fps_statistics(void)
    unsigned samples = min(g_extern.measure_data.frame_time_samples_count,
          MEASURE_FRAME_TIME_SAMPLES_COUNT);
 
-   if (samples < 2)
+   if (samples < 3)
       return;
 
    // Measure statistics on frame time (microsecs), *not* FPS.
    rarch_time_t accum = 0;
-   for (unsigned i = 0; i < samples; i++)
+   for (unsigned i = 1; i < samples; i++)
       accum += g_extern.measure_data.frame_time_samples[i];
 
-   rarch_time_t avg = accum / samples;
+   rarch_time_t avg = accum / (samples - 1);
    rarch_time_t accum_var = 0;
-   for (unsigned i = 0; i < samples; i++)
+
+   // Drop first measurement. It is likely to be bad.
+   for (unsigned i = 1; i < samples; i++)
    {
       rarch_time_t diff = avg - g_extern.measure_data.frame_time_samples[i];
       accum_var += diff * diff;
    }
 
-   double stddev = sqrt((double)accum_var / (samples - 1));
+   double stddev = sqrt((double)accum_var / (samples - 2));
    double avg_fps = 1000000.0 / avg;
    double max_stddev_fps = 1000000.0 / (avg - stddev);
    double stddev_fps = max_stddev_fps - avg_fps;
