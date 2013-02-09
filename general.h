@@ -95,6 +95,10 @@
 
 #include "audio/resampler.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MAX_PLAYERS 8
 
 enum dpad_emu_enums
@@ -651,6 +655,10 @@ void rarch_state_slot_decrease(void);
 extern struct settings g_settings;
 extern struct global g_extern;
 /////////
+
+#ifdef __cplusplus
+}
+#endif
 
 #include "retroarch_logger.h"
 

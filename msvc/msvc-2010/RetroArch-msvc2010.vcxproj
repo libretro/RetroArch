@@ -64,23 +64,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(DXSDK_DIR)Include;$(CG_INC_PATH);$(IncludePath)</IncludePath>
+    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(DXSDK_DIR)Include;$(CG_INC_PATH);$(IncludePath)</IncludePath>
+    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(DXSDK_DIR)Include;$(CG_INC_PATH);$(IncludePath)</IncludePath>
+    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(DXSDK_DIR)Include;$(CG_INC_PATH);$(IncludePath)</IncludePath>
+    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -88,10 +88,11 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS;CPU_X86</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_ZLIB;WANT_RZLIB;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_SINC;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS;CPU_X86</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\;$(CG_INC_PATH);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -106,10 +107,11 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_ZLIB;WANT_RZLIB;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_SINC;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\;$(CG_INC_PATH);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -126,10 +128,11 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS;CPU_X86</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_ZLIB;WANT_RZLIB;HAVE_SINC;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS;CPU_X86</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\;$(CG_INC_PATH);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -148,10 +151,11 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_SINC;HAVE_ZLIB;WANT_RZLIB;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\;$(CG_INC_PATH);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -165,30 +169,29 @@
   <ItemGroup>
     <ClCompile Include="..\..\audio\dsound.c">
     </ClCompile>
-    <ClCompile Include="..\..\audio\ext_audio.c">
-    </ClCompile>
-    <ClCompile Include="..\..\audio\null.c">
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\nullaudio.obj</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)\nullaudio.obj</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\nullaudio.obj</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)\nullaudio.obj</ObjectFileName>
-    </ClCompile>
+    <ClCompile Include="..\..\audio\hermite.c" />
+    <ClCompile Include="..\..\audio\resampler.c" />
     <ClCompile Include="..\..\audio\sinc.c" />
     <ClCompile Include="..\..\audio\utils.c">
     </ClCompile>
-    <ClCompile Include="..\..\audio\xaudio-c\xaudio-c.c">
-    </ClCompile>
+    <ClCompile Include="..\..\audio\xaudio-c\xaudio-c.cpp" />
     <ClCompile Include="..\..\audio\xaudio.c">
     </ClCompile>
     <ClCompile Include="..\..\autosave.c">
     </ClCompile>
+    <ClCompile Include="..\..\cheats.c" />
+    <ClCompile Include="..\..\compat\rxml\rxml.c" />
+    <ClCompile Include="..\..\deps\rzlib\rzlib.c" />
+    <ClCompile Include="..\..\file_extract.c" />
     <ClCompile Include="..\..\gfx\d3d9\d3d9.cpp" />
     <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp" />
     <ClCompile Include="..\..\gfx\fonts\bitmapfont.c" />
     <ClCompile Include="..\..\gfx\fonts\fonts.c" />
     <ClCompile Include="..\..\gfx\fonts\gl_font.c" />
     <ClCompile Include="..\..\gfx\fonts\gl_raster_font.c" />
+    <ClCompile Include="..\..\gfx\rpng\rpng.c" />
     <ClCompile Include="..\..\gfx\shader_cg.c" />
+    <ClCompile Include="..\..\gfx\shader_glsl.c" />
     <ClCompile Include="..\..\performance.c">
     </ClCompile>
     <ClCompile Include="..\..\command.c">
@@ -209,8 +212,6 @@
     </ClCompile>
     <ClCompile Include="..\..\gfx\context\wgl_ctx.c">
     </ClCompile>
-    <ClCompile Include="..\..\gfx\ext_gfx.c">
-    </ClCompile>
     <ClCompile Include="..\..\gfx\gfx_common.c">
     </ClCompile>
     <ClCompile Include="..\..\gfx\gfx_context.c">
@@ -222,8 +223,6 @@
     <ClCompile Include="..\..\gfx\math\matrix.c">
     </ClCompile>
     <ClCompile Include="..\..\gfx\math\matrix_3x3.c">
-    </ClCompile>
-    <ClCompile Include="..\..\gfx\null.c">
     </ClCompile>
     <ClCompile Include="..\..\gfx\scaler\filter.c">
     </ClCompile>
@@ -240,12 +239,6 @@
     <ClCompile Include="..\..\input\dinput.c">
     </ClCompile>
     <ClCompile Include="..\..\input\input_common.c">
-    </ClCompile>
-    <ClCompile Include="..\..\input\null.c">
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\nullinput.obj</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)\nullinput.obj</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\nullinput.obj</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)\nullinput.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\..\message.c">
     </ClCompile>

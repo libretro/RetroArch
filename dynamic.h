@@ -29,6 +29,10 @@
 #undef NEED_DYNAMIC
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void init_libretro_sym(void);
 void uninit_libretro_sym(void);
 
@@ -77,6 +81,10 @@ extern unsigned (*pretro_get_region)(void);
 
 extern void *(*pretro_get_memory_data)(unsigned);
 extern size_t (*pretro_get_memory_size)(unsigned);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

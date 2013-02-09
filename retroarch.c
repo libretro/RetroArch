@@ -33,6 +33,7 @@
 #include "screenshot.h"
 #include "cheats.h"
 #include "compat/getopt_rarch.h"
+#include "compat/posix_string.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN

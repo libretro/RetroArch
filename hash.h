@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "msvc/msvc_compat.h"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
