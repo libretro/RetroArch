@@ -1,0 +1,27 @@
+The following instructions will only work if building from OS X.
+
+In general, to build for iOS devices, copy the configuration for OSX, then at the end add the lines:
+   sysroot = -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS6.0.sdk/
+   CC   = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc -arch armv7 $(sysroot)
+   CXX  = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/g++ -arch armv7 $(sysroot)
+
+Here is how it would look in Makefile.libretro for vba-next:
+   ...
+   else ifeq ($(platform), osx)
+      TARGET := vba_next_libretro.dylib
+      fpic := -fPIC
+      SHARED := -dynamiclib
+      ENDIANNESS_DEFINES = -DLSB_FIRST
+   else ifeq ($(platform), ios)
+      TARGET := vba_next_libretro.dylib
+      fpic := -fPIC
+      SHARED := -dynamiclib
+      ENDIANNESS_DEFINES = -DLSB_FIRST
+    
+      sysroot = -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS6.0.sdk/
+      CC   = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc -arch armv7 $(sysroot)
+      CXX  = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/g++ -arch armv7 $(sysroot)
+   else ifeq ($(platform), ps3)
+   ...
+
+Other arm specific flags can be added if needed.
