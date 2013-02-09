@@ -5,10 +5,10 @@
 
 @end
 
-@interface module_list : UIViewController<UITableViewDelegate, UITableViewDataSource>
+@interface module_list : UITableViewController
 
 @end
 
-@interface directory_list : UIViewController <UITableViewDelegate, UITableViewDataSource>
-- (id)load_path:(const char*)directory;
+@interface directory_list : UITableViewController
+- (id)initWithPath:(const char*)path;
 @end

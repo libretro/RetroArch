@@ -14,7 +14,6 @@
 @property (strong, nonatomic) UIWindow *window;
 @property (strong, nonatomic) NSString *module_path;
 @property (strong, nonatomic) UINavigationController *navigator;
-@property (strong, nonatomic) NSString *nib_name;
 @property (strong, nonatomic) UIImage* file_icon;
 @property (strong, nonatomic) UIImage* folder_icon;
 @property (strong, nonatomic) UIBarButtonItem* settings_button;

@@ -71,6 +71,31 @@ void ios_close_game()
    EAGLContext *gl_context;
 }
 
+- (id)init
+{
+   self = [super init];
+   
+   gl_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+   [EAGLContext setCurrentContext:gl_context];
+   
+   gl_view = [[GLKView alloc] initWithFrame:CGRectMake(0, 0, 640, 480) context:gl_context];
+   gl_view.multipleTouchEnabled = YES;
+   self.view = gl_view;
+
+   screen_scale = [[UIScreen mainScreen] scale];
+   current_view = self;
+
+   return self;
+}
+
+- (void)dealloc
+{
+   if ([EAGLContext currentContext] == gl_context) [EAGLContext setCurrentContext:nil];
+   gl_context = nil;
+   gl_view = nil;
+}
+
+
 - (void)rarch_iterate:(id)sender
 {
    if (ra_initialized && !ra_done)
@@ -84,28 +109,6 @@ void ios_close_game()
       
       ra_done = true;
    }
-}
-
-- (void)viewDidLoad
-{
-   [super viewDidLoad];
-
-   gl_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-   [EAGLContext setCurrentContext:gl_context];
-   
-   gl_view = [[GLKView alloc] initWithFrame:CGRectMake(0, 0, 640, 480) context:gl_context];
-   gl_view.multipleTouchEnabled = YES;
-   self.view = gl_view;
-
-   screen_scale = [[UIScreen mainScreen] scale];
-   current_view = self;
-}
-
-- (void)dealloc
-{
-   if ([EAGLContext currentContext] == gl_context) [EAGLContext setCurrentContext:nil];
-   gl_context = nil;
-   gl_view = nil;
 }
 
 @end

@@ -10,21 +10,18 @@
 
 @implementation directory_list
 {
-   char* path;
-
-   UITableView* table;
+   char* directory;
    struct dirent_list* files;
 };
 
-- (id)load_path:(const char*)directory
+- (id)initWithPath:(const char*)path
 {
-   free_dirent_list(files);
+   self = [super initWithStyle:UITableViewStylePlain];
+
+   directory = strdup(path);
    files = build_dirent_list(directory);
-   [table reloadData];
-   
-   free(path);
-   path = strdup(directory);
-   
+
+   self.navigationItem.rightBarButtonItem = [RetroArch_iOS get].settings_button;
    [self setTitle: [[[NSString alloc] initWithUTF8String:directory] lastPathComponent]];
    
    return self;
@@ -33,20 +30,7 @@
 - (void)dealloc
 {
    free_dirent_list(files);
-   free(path);
-}
-
-- (void)viewDidLoad
-{
-   [super viewDidLoad];
-
-   table = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, 640, 480) style:UITableViewStylePlain];
-   table.dataSource = self;
-   table.delegate = self;
-
-   self.navigationItem.rightBarButtonItem = [RetroArch_iOS get].settings_button;
-
-   self.view = table;
+   free(directory);
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
@@ -56,20 +40,18 @@
    if (!item) return;
 
    char new_path[4096];
-   strcpy(new_path, path);
-   strcat(new_path, item->d_name);
+   snprintf(new_path, 4096, "%s/%s", directory, item->d_name);
+   new_path[4095] = 0;
 
    if (item->d_type)
-   {
-      strcat(new_path, "/");
-      
-      [[RetroArch_iOS get].navigator pushViewController:[[[directory_list alloc] init] load_path: new_path] animated:YES];
+   {      
+      [[RetroArch_iOS get].navigator
+         pushViewController:[[directory_list alloc] initWithPath:new_path]
+         animated:YES];
    }
    else
    {
-      [RetroArch_iOS get].window.rootViewController = [[game_view alloc]
-         initWithNibName: [RetroArch_iOS get].nib_name
-         bundle:nil];
+      [RetroArch_iOS get].window.rootViewController = [[game_view alloc] init];
       
       extern void ios_load_game(const char*);
       ios_load_game(new_path);
@@ -83,7 +65,7 @@
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   UITableViewCell* cell = [table dequeueReusableCellWithIdentifier:@"path"];
+   UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"path"];
    cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"path"];
    
    const struct dirent* item = get_dirent_at_index(files, indexPath.row);

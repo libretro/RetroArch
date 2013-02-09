@@ -30,9 +30,6 @@ extern uint32_t ios_current_touch_count ;
    // TODO: Relocate this!
    self.system_directory = "/var/mobile/Library/RetroArch/";
    mkdir(self.system_directory, 0755);
-
-   bool is_iphone = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone;
-   self.nib_name = is_iphone ? @"ViewController_iPhone" : @"ViewController_iPad";
    
    // Load icons
    self.file_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_file" ofType:@"png"]];
@@ -44,9 +41,9 @@ extern uint32_t ios_current_touch_count ;
                           style:UIBarButtonItemStyleBordered
                           target:nil action:nil];
 
-
-   self.navigator = [[UINavigationController alloc] initWithNibName:self.nib_name bundle:nil];
-   [self.navigator pushViewController: [[module_list alloc] initWithNibName:self.nib_name bundle:nil] animated:YES];
+   // Setup window
+   self.navigator = [[UINavigationController alloc] init];
+   [self.navigator pushViewController: [[module_list alloc] init] animated:YES];
 
    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    self.window.rootViewController = self.navigator;
