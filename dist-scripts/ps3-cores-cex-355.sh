@@ -1,4 +1,5 @@
 #!/bin/sh
+RARCH_VERSION=0.9.8.3
 
 make -C ../ -f Makefile.ps3.salamander clean || exit 1
 make -C ../ -f Makefile.ps3.rgl clean || exit 1
@@ -29,4 +30,4 @@ make -C ../ -f Makefile.shaders deploy-ps3
 
 make_self_wc ../retroarch-salamander_ps3.elf ../ps3/pkg/USRDIR/EBOOT.BIN
 rm -rf ../retroarch-salamander_ps3.elf
-python2 ../ps3/ps3py/pkg.py --contentid UP0001-SSNE10000_00-0000000000000001 ../ps3/pkg/ retroarch-ps3-cfw-0.9.8.1.pkg
+python2 ../ps3/ps3py/pkg.py --contentid UP0001-SSNE10000_00-0000000000000001 ../ps3/pkg/ retroarch-ps3-cfw-$RARCH_VERSION.pkg
