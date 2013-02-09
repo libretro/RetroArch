@@ -475,6 +475,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             else
 #endif
                snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+	    m_settingslist.SetText(SETTING_AUDIO_RESAMPLER_TYPE, strstr(g_settings.audio.resampler, "sinc") ? L"Audio Resampler: Sinc" : L"Audio Resampler: Hermite");
 
             if (g_extern.main_is_init)
             {
@@ -603,6 +604,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                else
 #endif
                   snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+	       m_settingslist.SetText(SETTING_AUDIO_RESAMPLER_TYPE, strstr(g_settings.audio.resampler, "sinc") ? L"Audio Resampler: Sinc" : L"Audio Resampler: Hermite");
 
                if (g_extern.main_is_init)
                {
@@ -675,6 +677,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                else
 #endif
                   snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+	       m_settingslist.SetText(SETTING_AUDIO_RESAMPLER_TYPE, strstr(g_settings.audio.resampler, "sinc") ? L"Audio Resampler: Sinc" : L"Audio Resampler: Hermite");
 
                if (g_extern.main_is_init)
                {
