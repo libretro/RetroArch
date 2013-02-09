@@ -316,9 +316,9 @@ static void init_texture(unsigned width, unsigned height)
    unsigned g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
 
    GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW)) ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-   GX_InitTexObjLOD(&g_tex.obj, g_filter, GX_NEAR_MIP_NEAR, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
+   GX_InitTexObjLOD(&g_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_InitTexObj(&menu_tex.obj, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
-   GX_InitTexObjLOD(&menu_tex.obj, g_filter, GX_NEAR_MIP_NEAR, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
+   GX_InitTexObjLOD(&menu_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_InvalidateTexAll();
 }
 
