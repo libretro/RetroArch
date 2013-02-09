@@ -25,7 +25,7 @@
    free(path);
    path = strdup(directory);
    
-   [self setTitle: [[NSString alloc] initWithUTF8String:directory]];
+   [self setTitle: [[[NSString alloc] initWithUTF8String:directory] lastPathComponent]];
    
    return self;
 }
@@ -44,11 +44,7 @@
    table.dataSource = self;
    table.delegate = self;
 
-   self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc]
-                                            initWithTitle:@"Parent"
-                                            style:UIBarButtonItemStyleBordered
-                                            target:nil action:nil];
-
+   self.navigationItem.rightBarButtonItem = [RetroArch_iOS get].settings_button;
 
    self.view = table;
 }

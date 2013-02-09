@@ -34,8 +34,15 @@ extern uint32_t ios_current_touch_count ;
    bool is_iphone = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone;
    self.nib_name = is_iphone ? @"ViewController_iPhone" : @"ViewController_iPad";
    
+   // Load icons
    self.file_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_file" ofType:@"png"]];
    self.folder_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_dir" ofType:@"png"]];
+
+   // Load buttons
+   self.settings_button = [[UIBarButtonItem alloc]
+                          initWithTitle:@"Settings"
+                          style:UIBarButtonItemStyleBordered
+                          target:nil action:nil];
 
 
    self.navigator = [[UINavigationController alloc] initWithNibName:self.nib_name bundle:nil];

@@ -50,10 +50,7 @@
    table.delegate = self;
    self.view = table;
 
-   self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc]
-                                            initWithTitle:@"Parent"
-                                            style:UIBarButtonItemStyleBordered
-                                            target:nil action:nil];
+   self.navigationItem.rightBarButtonItem = [RetroArch_iOS get].settings_button;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath

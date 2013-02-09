@@ -17,6 +17,7 @@
 @property (strong, nonatomic) NSString *nib_name;
 @property (strong, nonatomic) UIImage* file_icon;
 @property (strong, nonatomic) UIImage* folder_icon;
+@property (strong, nonatomic) UIBarButtonItem* settings_button;
 
 @property const char* system_directory;
 
