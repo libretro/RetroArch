@@ -29,7 +29,8 @@
 // C interface
 static void gfx_ctx_set_swap_interval(unsigned interval)
 {
-   RARCH_LOG("gfx_ctx_set_swap_interval not supported.\n");
+   extern void ios_set_game_view_sync(bool on);
+   ios_set_game_view_sync(interval ? true : false);
 }
 
 static void gfx_ctx_destroy(void)

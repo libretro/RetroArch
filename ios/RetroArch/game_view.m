@@ -21,6 +21,8 @@ static GLKView *gl_view;
 static float screen_scale;
 static bool ra_initialized = false;
 static bool ra_done = false;
+static int frame_skips = 4;
+static bool is_syncing = true;
 
 void ios_load_game(const char* file_name)
 {
@@ -112,9 +114,19 @@ void ios_flip_game_view()
 {
    if (gl_view)
    {
-      [gl_view setNeedsDisplay];
-      [gl_view bindDrawable];
+      if (--frame_skips < 0)
+      {
+         [gl_view setNeedsDisplay];
+         [gl_view bindDrawable];
+         frame_skips = is_syncing ? 0 : 3;
+      }
    }
+}
+
+void ios_set_game_view_sync(bool on)
+{
+   is_syncing = on;
+   frame_skips = on ? 0 : 3;
 }
 
 void ios_get_game_view_size(unsigned *width, unsigned *height)
