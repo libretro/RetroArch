@@ -116,29 +116,25 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    bool progressive = VIDEO_HaveComponentCable();
    unsigned tvmode = VIDEO_GetCurrentTvMode();
 #endif
-   unsigned max_width, max_height, max_xfb_height;
+   unsigned max_width, max_height;
    switch (tvmode)
    {
       case VI_PAL:
          max_width = VI_MAX_WIDTH_PAL;
          max_height = VI_MAX_HEIGHT_PAL;
-         max_xfb_height = 574;
          break;
       case VI_MPAL:
          max_width = VI_MAX_WIDTH_MPAL;
          max_height = VI_MAX_HEIGHT_MPAL;
-         max_xfb_height = 574;
          break;
       case VI_EURGB60:
          max_width = VI_MAX_WIDTH_NTSC;
          max_height = VI_MAX_HEIGHT_NTSC;
-         max_xfb_height = 480;
          break;
       default:
          tvmode = VI_NTSC;
          max_width = VI_MAX_WIDTH_EURGB60;
          max_height = VI_MAX_HEIGHT_EURGB60;
-         max_xfb_height = 480;
          break;
    }
 
@@ -170,10 +166,10 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    gx_mode.fbWidth = fbWidth;
    gx_mode.efbHeight = min(lines, 480);
 
-   if (modetype == VI_NON_INTERLACE && lines > max_xfb_height / 2)
-      gx_mode.xfbHeight = max_xfb_height / 2;
-   else if (modetype != VI_NON_INTERLACE && lines > max_xfb_height)
-      gx_mode.xfbHeight = max_xfb_height;
+   if (modetype == VI_NON_INTERLACE && lines > max_height / 2)
+      gx_mode.xfbHeight = max_height / 2;
+   else if (modetype != VI_NON_INTERLACE && lines > max_height)
+      gx_mode.xfbHeight = max_height;
    else
       gx_mode.xfbHeight = lines;
 
