@@ -5,6 +5,8 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
+#include <sys/stat.h>
+
 #define MAX_TOUCH 16
 extern struct
 {
@@ -25,8 +27,16 @@ extern uint32_t ios_current_touch_count ;
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
+   // TODO: Relocate this!
+   self.system_directory = "/var/mobile/Library/RetroArch/";
+   mkdir(self.system_directory, 0755);
+
    bool is_iphone = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone;
    self.nib_name = is_iphone ? @"ViewController_iPhone" : @"ViewController_iPad";
+   
+   self.file_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_file" ofType:@"png"]];
+   self.folder_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_dir" ofType:@"png"]];
+
 
    self.navigator = [[UINavigationController alloc] initWithNibName:self.nib_name bundle:nil];
    [self.navigator pushViewController: [[module_list alloc] initWithNibName:self.nib_name bundle:nil] animated:YES];

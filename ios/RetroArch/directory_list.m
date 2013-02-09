@@ -14,9 +14,6 @@
 
    UITableView* table;
    struct dirent_list* files;
-   
-   UIImage* file_icon;
-   UIImage* folder_icon;
 };
 
 - (id)load_path:(const char*)directory
@@ -42,9 +39,6 @@
 - (void)viewDidLoad
 {
    [super viewDidLoad];
-
-   file_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_file" ofType:@"png"]];
-   folder_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_dir" ofType:@"png"]];
 
    table = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, 640, 480) style:UITableViewStylePlain];
    table.dataSource = self;
@@ -102,7 +96,7 @@
    {
       cell.textLabel.text = [[NSString string] initWithUTF8String:item->d_name];
       cell.accessoryType = (item->d_type) ? UITableViewCellAccessoryDisclosureIndicator : UITableViewCellAccessoryNone;
-      cell.imageView.image = (item->d_type) ? folder_icon : file_icon;
+      cell.imageView.image = (item->d_type) ? [RetroArch_iOS get].folder_icon : [RetroArch_iOS get].file_icon;
       [cell.imageView sizeToFit];
    }
 

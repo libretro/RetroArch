@@ -26,15 +26,16 @@ void ios_load_game(const char* file_name)
 {
    if(!ra_initialized && file_name)
    {
+      const char* const sd = [RetroArch_iOS get].system_directory;
       const char* libretro = [[RetroArch_iOS get].module_path UTF8String];
-      const char* overlay = [[[NSBundle mainBundle] pathForResource:@"overlay" ofType:@"cfg"] UTF8String];
-      
-      printf("%s\n", overlay);
 
-      strcpy(g_settings.input.overlay, overlay ? overlay : "");
+      char config_path[PATH_MAX];
+      snprintf(config_path, PATH_MAX, "%s/retroarch.cfg", sd);
+      config_path[PATH_MAX - 1] = 0;
+      bool have_config = 0 == access(config_path, R_OK);
 
-      const char* argv[] = {"retroarch", "-L", libretro, file_name, 0};
-      if (rarch_main_init(6, (char**)argv) == 0)
+      struct rarch_main_wrap main_wrapper = {file_name, sd, sd, have_config ? config_path : 0, libretro};
+      if (rarch_main_init_wrap(&main_wrapper) == 0)
       {
          rarch_init_msg_queue();
          ra_initialized = TRUE;
