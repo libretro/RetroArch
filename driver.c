@@ -503,6 +503,12 @@ static void compute_monitor_fps_statistics(void)
    for (unsigned i = 1; i < samples; i++)
       accum += g_extern.measure_data.frame_time_samples[i];
 
+#if 0
+   for (unsigned i = 1; i < samples; i++)
+      RARCH_LOG("Interval #%u: %d usec / frame.\n",
+            i, (int)g_extern.measure_data.frame_time_samples[i]);
+#endif
+
    rarch_time_t avg = accum / (samples - 1);
    rarch_time_t accum_var = 0;
 
