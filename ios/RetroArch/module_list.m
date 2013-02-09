@@ -33,7 +33,7 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
    [RetroArch_iOS get].module_path = [modules objectAtIndex:indexPath.row];
-   [[RetroArch_iOS get].navigator pushViewController:[[directory_list alloc] initWithPath:"/"] animated:YES];
+   [[RetroArch_iOS get].navigator pushViewController:[[directory_list alloc] initWithPath:@"/"] animated:YES];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
@@ -46,7 +46,7 @@
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"module"];
    cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"module"];
    
-   cell.textLabel.text = [[modules objectAtIndex:indexPath.row] lastPathComponent];
+   cell.textLabel.text = [[[modules objectAtIndex:indexPath.row] lastPathComponent] stringByDeletingPathExtension];
 
    return cell;
 }

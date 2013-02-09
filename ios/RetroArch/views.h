@@ -10,5 +10,5 @@
 @end
 
 @interface directory_list : UITableViewController
-- (id)initWithPath:(const char*)path;
+- (id)initWithPath:(NSString*)path;
 @end

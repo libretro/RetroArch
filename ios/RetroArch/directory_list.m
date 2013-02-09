@@ -6,76 +6,78 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
-#include "dirent_list.h"
-
 @implementation directory_list
 {
-   char* directory;
-   struct dirent_list* files;
+   NSString* directory;
+   NSArray* list;
 };
 
-- (id)initWithPath:(const char*)path
+- (id)initWithPath:(NSString*)path
 {
    self = [super initWithStyle:UITableViewStylePlain];
 
-   directory = strdup(path);
-   files = build_dirent_list(directory);
+   directory = path;
+
+   list = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:directory error:nil];
+   list = [directory stringsByAppendingPaths:list];
+   
+   list = [list sortedArrayUsingComparator:^(id left, id right)
+   {
+      BOOL left_is_dir;
+      BOOL right_is_dir;
+      
+      [[NSFileManager defaultManager] fileExistsAtPath:left isDirectory:&left_is_dir];
+      [[NSFileManager defaultManager] fileExistsAtPath:right isDirectory:&right_is_dir];
+      
+      return (left_is_dir != right_is_dir) ? (left_is_dir < right_is_dir) : ([left caseInsensitiveCompare:right]);
+   }];
 
    self.navigationItem.rightBarButtonItem = [RetroArch_iOS get].settings_button;
-   [self setTitle: [[[NSString alloc] initWithUTF8String:directory] lastPathComponent]];
+   [self setTitle: [directory lastPathComponent]];
    
    return self;
 }
 
-- (void)dealloc
-{
-   free_dirent_list(files);
-   free(directory);
-}
-
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   const struct dirent* item = get_dirent_at_index(files, indexPath.row);
-
-   if (!item) return;
-
-   char new_path[4096];
-   snprintf(new_path, 4096, "%s/%s", directory, item->d_name);
-   new_path[4095] = 0;
-
-   if (item->d_type)
-   {      
-      [[RetroArch_iOS get].navigator
-         pushViewController:[[directory_list alloc] initWithPath:new_path]
-         animated:YES];
-   }
-   else
+   NSString* path = [list objectAtIndex: indexPath.row];
+   BOOL isdir;
+   
+   if([[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isdir])
    {
-      [RetroArch_iOS get].window.rootViewController = [[game_view alloc] init];
+      if (isdir)
+      {
+         [[RetroArch_iOS get].navigator
+            pushViewController:[[directory_list alloc] initWithPath:path]
+            animated:YES];
+      }
+      else
+      {
+         [RetroArch_iOS get].window.rootViewController = [[game_view alloc] init];
       
-      extern void ios_load_game(const char*);
-      ios_load_game(new_path);
+         extern void ios_load_game(const char*);
+         ios_load_game([path UTF8String]);
+      }
    }
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-   return get_dirent_list_count(files);
+   return [list count];
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"path"];
    cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"path"];
-   
-   const struct dirent* item = get_dirent_at_index(files, indexPath.row);
-   
-   if (item)
+
+   NSString* path = [list objectAtIndex: indexPath.row];
+   BOOL isdir;
+   if([[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isdir])
    {
-      cell.textLabel.text = [[NSString string] initWithUTF8String:item->d_name];
-      cell.accessoryType = (item->d_type) ? UITableViewCellAccessoryDisclosureIndicator : UITableViewCellAccessoryNone;
-      cell.imageView.image = (item->d_type) ? [RetroArch_iOS get].folder_icon : [RetroArch_iOS get].file_icon;
-      [cell.imageView sizeToFit];
+      cell.textLabel.text = [path lastPathComponent];
+      cell.accessoryType = (isdir) ? UITableViewCellAccessoryDisclosureIndicator : UITableViewCellAccessoryNone;
+      cell.imageView.image = (isdir) ? [RetroArch_iOS get].folder_icon : [RetroArch_iOS get].file_icon;
    }
 
    return cell;
