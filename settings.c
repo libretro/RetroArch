@@ -276,6 +276,8 @@ void config_set_defaults(void)
 
 #if defined(__CELLOS_LV2) || defined(_XBOX360)
    g_settings.video.aspect_ratio_idx = ASPECT_RATIO_16_9;
+#elif defined(GEKKO) || defined(_XBOX1)
+   g_settings.video.aspect_ratio_idx = ASPECT_RATIO_4_3;
 #else
    g_settings.video.aspect_ratio_idx = 0;
 #endif
