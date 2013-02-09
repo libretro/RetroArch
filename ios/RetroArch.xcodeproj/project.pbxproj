@@ -15,6 +15,7 @@
 		96297A0F16C5AEA100E6DCE0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0E16C5AEA100E6DCE0 /* main.m */; };
 		96297A1116C5AEDE00E6DCE0 /* game_view.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A1016C5AEDE00E6DCE0 /* game_view.m */; };
 		96297A1316C5AEFD00E6DCE0 /* directory_list.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A1216C5AEFD00E6DCE0 /* directory_list.m */; };
+		96297A1D16C6D20900E6DCE0 /* settings_list.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A1C16C6D20900E6DCE0 /* settings_list.m */; };
 		96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
 		96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
 		96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
@@ -89,6 +90,7 @@
 		96297A0E16C5AEA100E6DCE0 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		96297A1016C5AEDE00E6DCE0 /* game_view.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = game_view.m; sourceTree = "<group>"; };
 		96297A1216C5AEFD00E6DCE0 /* directory_list.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = directory_list.m; sourceTree = "<group>"; };
+		96297A1C16C6D20900E6DCE0 /* settings_list.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settings_list.m; sourceTree = "<group>"; };
 		96AFAE2516C1D4EA009DE44C /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96AFAE2916C1D4EA009DE44C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		96AFAE2B16C1D4EA009DE44C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -338,6 +340,7 @@
 				96AFAE3416C1D4EA009DE44C /* Supporting Files */,
 				96CF015B16C2F72900ABF9C9 /* ios_input.c */,
 				96297A0816C59EC000E6DCE0 /* module_list.m */,
+				96297A1C16C6D20900E6DCE0 /* settings_list.m */,
 			);
 			path = RetroArch;
 			sourceTree = "<group>";
@@ -785,6 +788,7 @@
 				96297A0F16C5AEA100E6DCE0 /* main.m in Sources */,
 				96297A1116C5AEDE00E6DCE0 /* game_view.m in Sources */,
 				96297A1316C5AEFD00E6DCE0 /* directory_list.m in Sources */,
+				96297A1D16C6D20900E6DCE0 /* settings_list.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

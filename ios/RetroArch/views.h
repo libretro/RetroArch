@@ -12,3 +12,6 @@
 @interface directory_list : UITableViewController
 - (id)initWithPath:(NSString*)path;
 @end
+
+@interface settings_list : UITableViewController
+@end

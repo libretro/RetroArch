@@ -40,6 +40,8 @@ extern uint32_t ios_current_touch_count ;
                           initWithTitle:@"Settings"
                           style:UIBarButtonItemStyleBordered
                           target:nil action:nil];
+   self.settings_button.target = self;
+   self.settings_button.action = @selector(show_settings);
 
    // Setup window
    self.navigator = [[UINavigationController alloc] init];
@@ -48,6 +50,11 @@ extern uint32_t ios_current_touch_count ;
    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    self.window.rootViewController = self.navigator;
    [self.window makeKeyAndVisible];
+}
+
+- (void)show_settings
+{
+   [self.navigator pushViewController: [[settings_list alloc] init] animated:YES];
 }
 
 - (void)processTouches:(NSArray*)touches
