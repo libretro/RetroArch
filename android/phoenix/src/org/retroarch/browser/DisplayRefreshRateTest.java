@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 public class DisplayRefreshRateTest extends Activity {
 
@@ -112,5 +113,13 @@ public class DisplayRefreshRateTest extends Activity {
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		setTitle("Refresh rate calibration");
 		setContentView(surfaceView);
+	}
+	
+	@Override
+	protected void onDestroy() {
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+		String fps = prefs.getString("video_refresh_rate", "ERROR");
+		Toast.makeText(this, "Refresh Rate: " + fps, Toast.LENGTH_LONG).show();
+		super.onDestroy();
 	}
 }
