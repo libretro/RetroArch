@@ -30,6 +30,7 @@ bool gfx_get_fps(char *buf, size_t size, bool always_write)
    static rarch_time_t fps_time;
    static float last_fps;
    bool ret = false;
+   *buf = '\0';
 
    rarch_time_t new_time = rarch_get_time_usec();
    if (g_extern.frame_count)
