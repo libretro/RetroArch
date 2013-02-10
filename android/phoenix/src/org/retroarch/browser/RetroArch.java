@@ -176,10 +176,19 @@ public class RetroArch extends Activity implements
 			}
 			
 			//extractAssets(assets, cacheDir, "", 0);
-			Log.i("ASSETS", "Extracting shader assets now...");
-			extractAssets(assets, cacheDir, "Shaders", 1);
-			Log.i("ASSETS", "Extracting overlay assets now...");
-			extractAssets(assets, cacheDir, "Overlays", 1);
+			Log.i("ASSETS", "Extracting shader assets now ...");
+			try {
+				extractAssets(assets, cacheDir, "Shaders", 1);
+			} catch (IOException e) {
+				Log.i("ASSETS", "Failed to extract shaders ...");
+			}
+			
+			Log.i("ASSETS", "Extracting overlay assets now ...");
+			try {
+				extractAssets(assets, cacheDir, "Overlays", 1);
+			} catch (IOException e) {
+				Log.i("ASSETS", "Failed to extract overlays ...");
+			}
 			
 			DataOutputStream outputCacheVersion = new DataOutputStream(new FileOutputStream(cacheVersion, false));
 			outputCacheVersion.writeInt(version);
