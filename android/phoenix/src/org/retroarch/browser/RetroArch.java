@@ -337,11 +337,11 @@ public class RetroArch extends Activity implements
 		config.setInt("input_autodetect_icade_profile_pad3", prefs.getInt("input_autodetect_icade_profile_pad3", 0));
 		config.setInt("input_autodetect_icade_profile_pad4", prefs.getInt("input_autodetect_icade_profile_pad4", 0));
 		
-		if (prefs.getBoolean("video_sync_refreshrate_to_screen", true)
-				&& (getRefreshRate() < 59.95)) {
-			Log.i(TAG,
-					"Refresh rate of screen lower than 59.95Hz, adjusting to screen.");
+		if (prefs.getBoolean("video_sync_refreshrate_to_screen", true)) {
 			config.setDouble("video_refresh_rate", getRefreshRate());
+		} else {
+			Log.i(TAG, "Refresh rate set to 59.95Hz (default).");
+			config.setDouble("video_refresh_rate", 59.95);
 		}
 		
 		String aspect = prefs.getString("video_aspect_ratio", "auto");
