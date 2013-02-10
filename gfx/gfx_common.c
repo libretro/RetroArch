@@ -38,33 +38,33 @@ bool gfx_get_fps(char *buf, size_t size, bool always_write)
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
       g_extern.measure_data.frame_time_samples[write_index] = new_time - fps_time;
       fps_time = new_time;
+
+      if ((g_extern.frame_count % FPS_UPDATE_INTERVAL) == 0)
+      {
+         last_fps = time_to_fps(time, new_time, FPS_UPDATE_INTERVAL);
+         time = new_time;
+
+#ifdef RARCH_CONSOLE
+         snprintf(buf, size, "FPS: %6.1f || Frames: %d", last_fps, g_extern.frame_count);
+#else
+         snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, last_fps, g_extern.frame_count);
+#endif
+         ret = true;
+      }
+      else if (always_write)
+      {
+#ifdef RARCH_CONSOLE
+         snprintf(buf, size, "FPS: %6.1f || Frames: %d", last_fps, g_extern.frame_count);
+#else
+         snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, last_fps, g_extern.frame_count);
+#endif
+      }
    }
    else
    {
       time = fps_time = new_time;
       snprintf(buf, size, "%s", g_extern.title_buf);
       ret = true;
-   }
-
-   if ((g_extern.frame_count % FPS_UPDATE_INTERVAL) == 0)
-   {
-      last_fps = time_to_fps(time, new_time, FPS_UPDATE_INTERVAL);
-      time = new_time;
-
-#ifdef RARCH_CONSOLE
-      snprintf(buf, size, "FPS: %6.1f || Frames: %d", last_fps, g_extern.frame_count);
-#else
-      snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, last_fps, g_extern.frame_count);
-#endif
-      ret = true;
-   }
-   else if (always_write)
-   {
-#ifdef RARCH_CONSOLE
-      snprintf(buf, size, "FPS: %6.1f || Frames: %d", last_fps, g_extern.frame_count);
-#else
-      snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, last_fps, g_extern.frame_count);
-#endif
    }
 
    return ret;
