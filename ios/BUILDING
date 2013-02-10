@@ -1,27 +1,55 @@
-The following instructions will only work if building from OS X.
+The following instructions will only work if building from OS X, using latest XCode with fake signing enabled.
 
-In general, to build for iOS devices, copy the configuration for OSX, then at the end add the lines:
-   sysroot = -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS6.0.sdk/
-   CC   = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc -arch armv7 $(sysroot)
-   CXX  = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/g++ -arch armv7 $(sysroot)
+To build RetroArch:
+    Open $(root)/ios/RetroArch.xcodeproj, change build type to iOSDevice then choose Product->Build For->Archiving.
+    After compilation finishes goto Window->Organizer->Projects->RetroArch then click the small arrow beside
+    the Derived Data field, this will open a finder window with the projects build files directory highlighted.
+    The app bundle can be found at Build/Products/* in that folder. Use scp to copy the .app bundle to the appropriate place
+    on your device.
 
-Here is how it would look in Makefile.libretro for vba-next:
-   ...
-   else ifeq ($(platform), osx)
-      TARGET := vba_next_libretro.dylib
-      fpic := -fPIC
-      SHARED := -dynamiclib
-      ENDIANNESS_DEFINES = -DLSB_FIRST
-   else ifeq ($(platform), ios)
-      TARGET := vba_next_libretro.dylib
-      fpic := -fPIC
-      SHARED := -dynamiclib
-      ENDIANNESS_DEFINES = -DLSB_FIRST
+
+To build libretro cores:
+    In general, to build for iOS devices, copy the configuration for OSX, then at the end add the lines:
+       sysroot = -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS6.0.sdk/
+       CC   = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc -arch armv7 $(sysroot)
+       CXX  = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/g++ -arch armv7 $(sysroot)
     
-      sysroot = -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS6.0.sdk/
-      CC   = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc -arch armv7 $(sysroot)
-      CXX  = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/g++ -arch armv7 $(sysroot)
-   else ifeq ($(platform), ps3)
-   ...
+    Here is how it would look in Makefile.libretro for vba-next:
+       ...
+       else ifeq ($(platform), osx)
+          TARGET := vba_next_libretro.dylib
+          fpic := -fPIC
+          SHARED := -dynamiclib
+          ENDIANNESS_DEFINES = -DLSB_FIRST
+       else ifeq ($(platform), ios)
+          TARGET := vba_next_libretro.dylib
+          fpic := -fPIC
+          SHARED := -dynamiclib
+          ENDIANNESS_DEFINES = -DLSB_FIRST
+        
+          sysroot = -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS6.0.sdk/
+          CC   = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc -arch armv7 $(sysroot)
+          CXX  = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/g++ -arch armv7 $(sysroot)
+       else ifeq ($(platform), ps3)
+       ...
+    
+    Other arm specific flags can be added if needed.
 
-Other arm specific flags can be added if needed.
+    Finally issue the make command for the module adding 'platform=ios' at the of the command.
+    (e.g. 'make -f Makefile.libretro platform=ios'). Then copy the resulting .dylib file into a sub-directory of the app
+    bundle named modules. (e.g. RetroArch.app/modules/vba_next_libretro.dylib).
+
+Paths:
+    /var/mobile/Library/RetroArch: Will be created to store both saved games and the retroarch.cfg.
+    /var/mobile/RetroArchGames:    If this exists and is a directory it will be used as the root for game browsing.
+    /var/mobile:                   If RetroArchGames does not exist this will be used as the root for game browsing,
+                                   if another browser root is desired make RetroArchGames a symlink to the preferred path.
+    RetroArch.app/shaders:         Contains .shader format shaders, sub-directories are supported.
+    RetroArch.app/overlays:        Contains input overlay definitions, sub-directories are supported.
+    RetroArch.app/modules:         Contains .dylib files for the libretro modules. The only constraint on the file name
+                                   is that it must end in .dylib, sub-directories are not supported.
+
+Simulator:
+    To test in iOS Simulator you will need to create the '/var/mobile' directory on you computer, and give yourself full
+    access to it.
+
