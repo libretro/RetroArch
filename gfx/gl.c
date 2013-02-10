@@ -566,16 +566,22 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
    gl_t *gl = (gl_t*)data;
 
    // No need to use FBOs.
+#ifndef RARCH_CONSOLE
+   /* we always want FBO to be at least initialized on startup for consoles */
    if (!g_settings.video.render_to_texture && gl_shader_num_func(gl) == 0)
       return;
+#endif
 
    struct gl_fbo_scale scale, scale_last;
    gl_shader_scale(gl, 1, &scale);
    gl_shader_scale(gl, gl_shader_num_func(gl), &scale_last);
 
    // No need to use FBOs.
+#ifndef RARCH_CONSOLE
+   /* we always want FBO to be at least initialized on startup for consoles */
    if (gl_shader_num_func(gl) == 1 && !scale.valid && !g_settings.video.render_to_texture)
       return;
+#endif
 
    if (!load_fbo_proc(gl))
    {
@@ -1920,6 +1926,9 @@ static void gl_start(void)
 #ifdef RARCH_CONSOLE
    // Comes too early for console - moved to gl_start
    gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
+
+   if (!g_settings.video.render_to_texture)
+      gl_deinit_fbo(gl);
 #endif
 
    context_get_available_resolutions_func();
