@@ -1325,9 +1325,12 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
 #ifdef HAVE_OSKUTIL
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            rmenu_state.osk_param = SHADER_PRESET_FILE;
-            rmenu_state.osk_init = osk_callback_enter_filename_init;
-            rmenu_state.osk_callback = osk_callback_enter_filename;
+            if(g_extern.main_is_init)
+            {
+               rmenu_state.osk_param = SHADER_PRESET_FILE;
+               rmenu_state.osk_init = osk_callback_enter_filename_init;
+               rmenu_state.osk_callback = osk_callback_enter_filename;
+            }
          }
 #endif
          break;
@@ -1335,6 +1338,11 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          break;
 #endif
       case SETTING_DEFAULT_VIDEO_ALL:
+         if(input & (1ULL << RMENU_DEVICE_NAV_START))
+         {
+            set_setting_action(NULL, SETTING_SHADER, 1ULL << RMENU_DEVICE_NAV_START);
+            set_setting_action(NULL, SETTING_SHADER_2, 1ULL << RMENU_DEVICE_NAV_START);
+         }
          break;
       case SETTING_SOUND_MODE:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))

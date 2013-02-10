@@ -1363,16 +1363,20 @@ bool gl_cg_save_cgp(const char *path, const struct gl_cg_cgp_info *info)
       fprintf(file, "scale0 = %.1f\n", info->fbo_scale);
    }
 
+#ifndef __CELLOS_LV2__
    if (info->lut_texture_path && info->lut_texture_id)
    {
       fprintf(file, "textures = %s\n", info->lut_texture_id);
       fprintf(file, "%s = \"%s\"\n",
             info->lut_texture_id, info->lut_texture_path);
 
+      /* something is breaking in here right now - don't know what it is, but don't bother with it for now */
+
       fprintf(file, "%s_absolute = %s\n",
             info->lut_texture_id,
             info->lut_texture_absolute ? "true" : "false");
    }
+#endif
 
    fclose(file);
    return true;
