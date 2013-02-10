@@ -6,7 +6,10 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
+#import <objc/runtime.h>
 #include "config_file.h"
+
+static const char* const SETTINGID = "SETTING";
 
 static NSString* get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue)
 {
@@ -165,6 +168,11 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
    return self;
 }
 
+- (void)dealloc
+{
+   [self write_to_file];
+}
+
 - (void)write_to_file
 {
    for (int i = 0; i != [settings count]; i ++)
@@ -207,7 +215,6 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
-   [self write_to_file];
    return [settings count];
 }
 
@@ -219,6 +226,12 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section
 {
    return [[settings objectAtIndex:section] objectAtIndex:0];
+}
+
+- (void)handle_boolean_switch:(UISwitch*)swt
+{
+   NSDictionary* setting = objc_getAssociatedObject(swt, SETTINGID);
+   [setting setValue: (swt.on ? @"true" : @"false") forKey:@"VALUE"];
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -235,12 +248,18 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
       if (cell == nil)
       {
          cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"boolean"];
-         cell.accessoryView = [[UISwitch alloc] init];
+         
+         UISwitch* accessory = [[UISwitch alloc] init];
+         [accessory addTarget:self action:@selector(handle_boolean_switch:) forControlEvents:UIControlEventValueChanged];
+         
+         cell.accessoryView = accessory;
          [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
       }
       
       UISwitch* swt = (UISwitch*)cell.accessoryView;
       swt.on = [[setting valueForKey:@"VALUE"] isEqualToString:@"true"];
+      
+      objc_setAssociatedObject(swt, SETTINGID, setting, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
    }
    else if ([type isEqualToString:@"E"] || [type isEqualToString:@"F"])
    {
