@@ -484,7 +484,11 @@ static bool load_plain(const char *path)
       if (!load_program(1, path, true))
          return false;
 
-      if (*g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
+      if (*g_settings.video.second_pass_shader
+#ifndef RARCH_CONSOLE
+            && g_settings.video.render_to_texture
+#endif
+         )
       {
          if (!load_program(2, g_settings.video.second_pass_shader, true))
             return false;
