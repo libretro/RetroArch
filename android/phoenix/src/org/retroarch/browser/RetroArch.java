@@ -342,9 +342,6 @@ public class RetroArch extends Activity implements
 			Log.i(TAG,
 					"Refresh rate of screen lower than 59.95Hz, adjusting to screen.");
 			config.setDouble("video_refresh_rate", getRefreshRate());
-		} else {
-			Log.i(TAG, "Refresh rate set to 59.95Hz (default).");
-			config.setDouble("video_refresh_rate", 59.95);
 		}
 		
 		String aspect = prefs.getString("video_aspect_ratio", "auto");
