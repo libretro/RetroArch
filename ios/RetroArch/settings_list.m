@@ -137,12 +137,7 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
 {
    self = [super initWithStyle:UITableViewStyleGrouped];
 
-   const char* const sd = [RetroArch_iOS get].system_directory;
-   char config_path[PATH_MAX];
-   snprintf(config_path, PATH_MAX, "%s/retroarch.cfg", sd);
-   config_path[PATH_MAX - 1] = 0;
-   
-   config = config_file_new(config_path);
+   config = config_file_new([[RetroArch_iOS get].config_file_path UTF8String]);
    if (!config) config = config_file_new(0);
 
    NSString* overlay_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/overlays/"];
@@ -183,8 +178,15 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
    [self write_to_file];
 }
 
++ (void)refresh_config_file
+{
+   [[[settings_list alloc] init] write_to_file];
+}
+
 - (void)write_to_file
 {
+   config_set_string(config, "system_directory", [[RetroArch_iOS get].system_directory UTF8String]);
+
    for (int i = 0; i != [settings count]; i ++)
    {
       NSArray* group = [settings objectAtIndex:i];
@@ -203,11 +205,7 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
       }
    }
 
-   const char* const sd = [RetroArch_iOS get].system_directory;
-   char config_path[PATH_MAX];
-   snprintf(config_path, PATH_MAX, "%s/retroarch.cfg", sd);
-   config_path[PATH_MAX - 1] = 0;
-   config_file_write(config, config_path);
+   config_file_write(config, [[RetroArch_iOS get].config_file_path UTF8String]);
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath

@@ -14,4 +14,5 @@
 @end
 
 @interface settings_list : UITableViewController
++ (void)refresh_config_file;
 @end

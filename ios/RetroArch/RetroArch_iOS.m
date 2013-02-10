@@ -28,8 +28,10 @@ extern uint32_t ios_current_touch_count ;
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
    // TODO: Relocate this!
-   self.system_directory = "/var/mobile/Library/RetroArch/";
-   mkdir(self.system_directory, 0755);
+   self.system_directory = @"/var/mobile/Library/RetroArch/";
+   mkdir([self.system_directory UTF8String], 0755);
+   
+   self.config_file_path = [self.system_directory stringByAppendingPathComponent:@"retroarch.cfg"];
       
    // Load icons
    self.file_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_file" ofType:@"png"]];
