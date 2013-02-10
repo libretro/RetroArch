@@ -121,7 +121,7 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    {
       case VI_PAL:
          max_width = VI_MAX_WIDTH_PAL;
-         max_height = VI_MAX_HEIGHT_PAL;
+         max_height = /* VI_MAX_HEIGHT_PAL */ 574;
          break;
       case VI_MPAL:
          max_width = VI_MAX_WIDTH_MPAL;
