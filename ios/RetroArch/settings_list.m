@@ -59,7 +59,7 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
    NSString* value = get_value_from_config(config, name, defaultValue);
    value = [value stringByReplacingOccurrencesOfString:path withString:@""];
 
-   NSArray* values = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:[RetroArch_iOS get].overlay_path error:nil];
+   NSArray* values = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:path error:nil];
    values = [values pathsMatchingExtensions:[NSArray arrayWithObject:extension]];
 
    return [[NSMutableDictionary alloc] initWithObjectsAndKeys:
@@ -93,12 +93,12 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
-   return 1;
+   return 2;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-   return [[value objectForKey:@"VALUES"] count];
+   return (section == 1) ? [[value objectForKey:@"VALUES"] count] : 1;
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -106,14 +106,20 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"option"];
    cell = cell ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"option"];
    
-   cell.textLabel.text = [[value objectForKey:@"VALUES"] objectAtIndex:indexPath.row];
+   if (indexPath.section == 1)
+      cell.textLabel.text = [[value objectForKey:@"VALUES"] objectAtIndex:indexPath.row];
+   else
+      cell.textLabel.text = @"None";
 
    return cell;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   [value setObject:[[value objectForKey:@"VALUES"] objectAtIndex:indexPath.row] forKey:@"VALUE"];
+   if (indexPath.section == 1)
+      [value setObject:[[value objectForKey:@"VALUES"] objectAtIndex:indexPath.row] forKey:@"VALUE"];
+   else
+      [value setObject:@"" forKey:@"VALUE"];
 
    [view reloadData];
    [[RetroArch_iOS get].navigator popViewControllerAnimated:YES];
@@ -139,10 +145,14 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
    config = config_file_new(config_path);
    if (!config) config = config_file_new(0);
 
+   NSString* overlay_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/overlays/"];
+   NSString* shader_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/shaders/"];
+
    settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Video",
          boolean_setting(config, @"video_smooth", @"Smooth Video", @"true"),
          boolean_setting(config, @"video_crop_overscan", @"Crop Overscan", @"false"),
+         subpath_setting(config, @"video_bsnes_shader", @"Shader", @"", shader_path, @"shader"),
          nil],
 
       [NSArray arrayWithObjects:@"Audio",
@@ -152,7 +162,7 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
          nil],
 
       [NSArray arrayWithObjects:@"Input",
-         subpath_setting(config, @"input_overlay", @"Input Overlay", @"", [RetroArch_iOS get].overlay_path, @"cfg"),
+         subpath_setting(config, @"input_overlay", @"Input Overlay", @"", overlay_path, @"cfg"),
          nil],
          
       [NSArray arrayWithObjects:@"Save States",
@@ -186,7 +196,7 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
          NSString* name = [setting objectForKey:@"NAME"];
          NSString* value = [setting objectForKey:@"VALUE"];
 
-         if ([[setting objectForKey:@"TYPE"] isEqualToString:@"F"])
+         if ([[setting objectForKey:@"TYPE"] isEqualToString:@"F"] && [value length] > 0)
             value = [[setting objectForKey:@"PATH"] stringByAppendingPathComponent:value];
 
          config_set_string(config, [name UTF8String], [value UTF8String]);

@@ -30,9 +30,7 @@ extern uint32_t ios_current_touch_count ;
    // TODO: Relocate this!
    self.system_directory = "/var/mobile/Library/RetroArch/";
    mkdir(self.system_directory, 0755);
-   
-   self.overlay_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/overlays"];
-   
+      
    // Load icons
    self.file_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_file" ofType:@"png"]];
    self.folder_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_dir" ofType:@"png"]];
