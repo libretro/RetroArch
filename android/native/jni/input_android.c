@@ -172,7 +172,7 @@ static void android_input_poll(void *data)
                   action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP) ||
                (source == AINPUT_SOURCE_MOUSE && action != AMOTION_EVENT_ACTION_DOWN);
 
-            if (keyup)
+            if (keyup && motion_pointer < MAX_TOUCH)
             {
                memmove(pointer + motion_pointer, pointer + motion_pointer + 1, (MAX_TOUCH - motion_pointer - 1) * sizeof(struct input_pointer));
                if (pointer_count > 0)
