@@ -492,11 +492,13 @@ static void compute_audio_buffer_statistics(void)
 
 static void compute_monitor_fps_statistics(void)
 {
-   unsigned samples = min(g_extern.measure_data.frame_time_samples_count,
-         MEASURE_FRAME_TIME_SAMPLES_COUNT);
-
-   if (samples < 3)
+   if (g_extern.measure_data.frame_time_samples_count < 2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
+   {
+      RARCH_LOG("Does not have enough samples for monitor refresh rate estimation.\n");
       return;
+   }
+
+   unsigned samples = MEASURE_FRAME_TIME_SAMPLES_COUNT;
 
    // Measure statistics on frame time (microsecs), *not* FPS.
    rarch_time_t accum = 0;
@@ -515,20 +517,15 @@ static void compute_monitor_fps_statistics(void)
    // Drop first measurement. It is likely to be bad.
    for (unsigned i = 1; i < samples; i++)
    {
-      rarch_time_t diff = avg - g_extern.measure_data.frame_time_samples[i];
+      rarch_time_t diff = g_extern.measure_data.frame_time_samples[i] - avg;
       accum_var += diff * diff;
    }
 
    double stddev = sqrt((double)accum_var / (samples - 2));
    double avg_fps = 1000000.0 / avg;
-   double max_stddev_fps = 1000000.0 / (avg - stddev);
-   double stddev_fps = max_stddev_fps - avg_fps;
-   double sigma_deviation = (g_settings.video.refresh_rate - avg_fps) / stddev_fps;
 
-   RARCH_LOG("Average monitor Hz: %.6f Hz. Standard deviation: %.6f Hz (%.3f %% deviation, based on %u last samples).\n",
-         avg_fps, stddev_fps, 100.0 * stddev_fps / avg_fps, samples);
-   RARCH_LOG("Configured monitor FPS %.6f Hz deviates %.3f sigma from average.\n",
-         g_settings.video.refresh_rate, sigma_deviation);
+   RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
+         avg_fps, 100.0 * stddev / avg, samples - 1);
 }
 
 void uninit_audio(void)

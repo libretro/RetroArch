@@ -23,27 +23,32 @@ static float time_to_fps(rarch_time_t last_time, rarch_time_t new_time, int fram
    return (1000000.0f * frames) / (new_time - last_time);
 }
 
+#define FPS_UPDATE_INTERVAL 256
 bool gfx_get_fps(char *buf, size_t size, bool always_write)
 {
    static rarch_time_t time;
+   static rarch_time_t fps_time;
    static float last_fps;
    bool ret = false;
 
-   if (g_extern.frame_count == 0)
+   rarch_time_t new_time = rarch_get_time_usec();
+   if (g_extern.frame_count)
    {
-      time = rarch_get_time_usec();
+      unsigned write_index = g_extern.measure_data.frame_time_samples_count++ &
+         (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
+      g_extern.measure_data.frame_time_samples[write_index] = new_time - fps_time;
+      fps_time = new_time;
+   }
+   else
+   {
+      time = fps_time = new_time;
       snprintf(buf, size, "%s", g_extern.title_buf);
       ret = true;
    }
-   else if ((g_extern.frame_count % 180) == 0)
+
+   if ((g_extern.frame_count % FPS_UPDATE_INTERVAL) == 0)
    {
-      rarch_time_t new_time = rarch_get_time_usec();
-      last_fps = time_to_fps(time, new_time, 180);
-
-      unsigned write_index = g_extern.measure_data.frame_time_samples_count++ &
-         (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
-      g_extern.measure_data.frame_time_samples[write_index] = (new_time - time) / 180;
-
+      last_fps = time_to_fps(time, new_time, FPS_UPDATE_INTERVAL);
       time = new_time;
 
 #ifdef RARCH_CONSOLE
