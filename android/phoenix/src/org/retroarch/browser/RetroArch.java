@@ -201,7 +201,6 @@ public class RetroArch extends Activity implements
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
 		
 		try {
 			config = new ConfigFile(new File(getDefaultConfigPath()));
