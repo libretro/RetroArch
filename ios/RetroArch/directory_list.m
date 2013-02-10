@@ -23,6 +23,13 @@ static BOOL is_directory(NSString* path)
 {
    self = [super initWithStyle:UITableViewStylePlain];
 
+   if (path == nil)
+   {
+      if (is_directory(@"/var/mobile/RetroArchGames"))    path = @"/var/mobile/RetroArchGames";
+      else if (is_directory(@"/var/mobile"))              path = @"/var/mobile";
+      else                                                path = @"/";
+   }
+
    directory = path;
 
    list = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:directory error:nil];

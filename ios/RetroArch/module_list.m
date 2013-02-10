@@ -33,7 +33,7 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
    [RetroArch_iOS get].module_path = [modules objectAtIndex:indexPath.row];
-   [[RetroArch_iOS get].navigator pushViewController:[[directory_list alloc] initWithPath:@"/"] animated:YES];
+   [[RetroArch_iOS get].navigator pushViewController:[[directory_list alloc] initWithPath:nil] animated:YES];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
