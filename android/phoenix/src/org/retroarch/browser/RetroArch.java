@@ -277,9 +277,35 @@ public class RetroArch extends Activity implements
 		
 		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
 		
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB)
-		{
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
 			this.registerForContextMenu(findViewById(android.R.id.content));
+		}
+	}
+	
+	@Override
+	protected void onStart() {
+		super.onStart();
+		
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+		
+		if (!prefs.getBoolean("first_time_refreshrate_calculate", false)) {
+			prefs.edit().putBoolean("first_time_refreshrate_calculate", true).commit();
+			AlertDialog.Builder alert = new AlertDialog.Builder(this)
+				.setTitle("Calculate Refresh Rate")
+				.setMessage("It is highly recommended you run the refresh rate calibration test before you use RetroArch. Do you want to run it now?\n\nIf you choose No, you can run it at any time in the video preferences.")
+				.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						Intent i = new Intent(getBaseContext(), DisplayRefreshRateTest.class);
+						startActivity(i);
+					}
+				})
+				.setNegativeButton("No", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+					}
+				});
+			alert.show();
 		}
 	}
 
