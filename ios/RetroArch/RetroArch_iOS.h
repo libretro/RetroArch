@@ -10,6 +10,7 @@
 @interface RetroArch_iOS : UIResponder <UIApplicationDelegate>
 
 + (RetroArch_iOS*)get;
+- (void)game_has_started;
 
 @property (strong, nonatomic) UIWindow *window;
 @property (strong, nonatomic) NSString *module_path;

@@ -59,6 +59,11 @@ extern uint32_t ios_current_touch_count ;
    [self.navigator pushViewController: [[settings_list alloc] init] animated:YES];
 }
 
+- (void)game_has_started
+{
+   self.navigator = nil;
+}
+
 - (void)processTouches:(NSArray*)touches
 {
    ios_current_touch_count = [touches count];

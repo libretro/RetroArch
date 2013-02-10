@@ -42,6 +42,7 @@ void ios_load_game(const char* file_name)
          rarch_init_msg_queue();
          ra_initialized = TRUE;
 
+         [[RetroArch_iOS get ]game_has_started];
          [current_view performSelector:@selector(rarch_iterate:) withObject:nil afterDelay:0.2f];
       }
    }
