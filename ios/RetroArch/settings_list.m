@@ -6,15 +6,90 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
-static NSDictionary* boolean_setting(NSString* name, NSString* label, NSString* value)
+static NSMutableDictionary* boolean_setting(NSString* name, NSString* label, NSString* value)
 {
-   return [[NSDictionary alloc] initWithObjectsAndKeys:
+   return [[NSMutableDictionary alloc] initWithObjectsAndKeys:
             @"B", @"TYPE",
             name, @"NAME",
             label, @"LABEL",
             value, @"VALUE",
             nil];
 }
+
+static NSMutableDictionary* enumeration_setting(NSString* name, NSString* label, NSString* value, NSArray* values)
+{
+   return [[NSMutableDictionary alloc] initWithObjectsAndKeys:
+            @"E", @"TYPE",
+            name, @"NAME",
+            label, @"LABEL",
+            value, @"VALUE",
+            values, @"VALUES",
+            nil];
+}
+
+static NSMutableDictionary* subpath_setting(NSString* name, NSString* label, NSString* value, NSString* path, NSString* extension)
+{
+   NSArray* values = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:[RetroArch_iOS get].overlay_path error:nil];
+   values = [values pathsMatchingExtensions:[NSArray arrayWithObject:extension]];
+
+   return [[NSMutableDictionary alloc] initWithObjectsAndKeys:
+            @"F", @"TYPE",
+            name, @"NAME",
+            label, @"LABEL",
+            value, @"VALUE",
+            values, @"VALUES",
+            path, @"PATH",
+            nil];
+}
+
+@interface enumeration_list : UITableViewController
+@end
+
+@implementation enumeration_list
+{
+   NSMutableDictionary* value;
+   UITableView* view;
+};
+
+- (id)initWithSetting:(NSMutableDictionary*)setting fromTable:(UITableView*)table
+{
+   self = [super initWithStyle:UITableViewStyleGrouped];
+   
+   value = setting;
+   view = table;
+   [self setTitle: [value objectForKey:@"LABEL"]];
+   return self;
+}
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
+{
+   return 1;
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+   return [[value objectForKey:@"VALUES"] count];
+}
+
+- (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+   UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"option"];
+   cell = cell ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"option"];
+   
+   cell.textLabel.text = [[value objectForKey:@"VALUES"] objectAtIndex:indexPath.row];
+
+   return cell;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+   [value setObject:[[value objectForKey:@"VALUES"] objectAtIndex:indexPath.row] forKey:@"VALUE"];
+
+   [view reloadData];
+   [[RetroArch_iOS get].navigator popViewControllerAnimated:YES];
+}
+
+@end
 
 @implementation settings_list
 {
@@ -24,6 +99,7 @@ static NSDictionary* boolean_setting(NSString* name, NSString* label, NSString* 
 - (id)init
 {
    self = [super initWithStyle:UITableViewStyleGrouped];
+
 
    settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Video",
@@ -35,6 +111,10 @@ static NSDictionary* boolean_setting(NSString* name, NSString* label, NSString* 
          boolean_setting(@"audio_enable", @"Enable Output", @"true"),
          boolean_setting(@"audio_sync", @"Sync on Audio Stream", @"true"),
          boolean_setting(@"audio_rate_control", @"Adjust for Better Sync", @"true"),
+         nil],
+
+      [NSArray arrayWithObjects:@"Input",
+         subpath_setting(@"input_overlay", @"Input Overlay", @"", [RetroArch_iOS get].overlay_path, @"cfg"),
          nil],
          
       [NSArray arrayWithObjects:@"Save States",
@@ -65,9 +145,12 @@ static NSDictionary* boolean_setting(NSString* name, NSString* label, NSString* 
    
       for (int j = 1; j < [group count]; j ++)
       {
-         NSDictionary* setting = [group objectAtIndex:j];
+         NSMutableDictionary* setting = [group objectAtIndex:j];
          
-         fprintf(output, "%s = %s\n", [[setting objectForKey:@"NAME"] UTF8String], [[setting objectForKey:@"VALUE"] UTF8String]);
+         if ([[setting objectForKey:@"TYPE"] isEqualToString:@"F"])
+            fprintf(output, "%s = \"%s/%s\"\n", [[setting objectForKey:@"NAME"] UTF8String], [[setting objectForKey:@"PATH"] UTF8String], [[setting objectForKey:@"VALUE"] UTF8String]);
+         else
+            fprintf(output, "%s = %s\n", [[setting objectForKey:@"NAME"] UTF8String], [[setting objectForKey:@"VALUE"] UTF8String]);
       }
    }
    
@@ -76,10 +159,20 @@ static NSDictionary* boolean_setting(NSString* name, NSString* label, NSString* 
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
+   NSMutableDictionary* setting = [[settings objectAtIndex:indexPath.section] objectAtIndex:indexPath.row + 1];
+   NSString* type = [setting valueForKey:@"TYPE"];
+   
+   if ([type isEqualToString:@"E"] || [type isEqualToString:@"F"])
+   {
+      [[RetroArch_iOS get].navigator
+         pushViewController:[[enumeration_list alloc] initWithSetting:setting fromTable:(UITableView*)self.view]
+         animated:YES];
+   }
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
+   [self write_to_file];
    return [settings count];
 }
 
@@ -95,10 +188,12 @@ static NSDictionary* boolean_setting(NSString* name, NSString* label, NSString* 
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   NSDictionary* setting = [[settings objectAtIndex:indexPath.section] objectAtIndex:indexPath.row + 1];
+   NSMutableDictionary* setting = [[settings objectAtIndex:indexPath.section] objectAtIndex:indexPath.row + 1];
    UITableViewCell* cell = nil;
    
-   if ([[setting valueForKey:@"TYPE"] isEqualToString:@"B"])
+   NSString* type = [setting valueForKey:@"TYPE"];
+   
+   if ([type isEqualToString:@"B"])
    {
       cell = [self.tableView dequeueReusableCellWithIdentifier:@"boolean"];
    
@@ -112,8 +207,18 @@ static NSDictionary* boolean_setting(NSString* name, NSString* label, NSString* 
       UISwitch* swt = (UISwitch*)cell.accessoryView;
       swt.on = [[setting valueForKey:@"VALUE"] isEqualToString:@"true"];
    }
+   else if ([type isEqualToString:@"E"] || [type isEqualToString:@"F"])
+   {
+      cell = [self.tableView dequeueReusableCellWithIdentifier:@"enumeration"];
+   
+      if (cell == nil)
+      {
+         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"enumeration"];
+      }
+   }
 
    cell.textLabel.text = [setting valueForKey:@"LABEL"];
+   cell.detailTextLabel.text = [setting valueForKey:@"VALUE"];
 
    return cell;
 }
