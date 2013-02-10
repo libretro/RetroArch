@@ -797,6 +797,22 @@ static bool load_shader(const char *cgp_path, unsigned i, config_file_t *conf)
    if (!load_program(i + 1, path_buf, true))
       return false;
 
+#ifdef HAVE_RMENU
+   // In RMenu, need to display shaders in menu.
+   switch (i)
+   {
+      case 0:
+         strlcpy(g_settings.video.cg_shader_path,
+               path_buf, sizeof(g_settings.video.cg_shader_path));
+         break;
+
+      case 1:
+         strlcpy(g_settings.video.second_pass_shader,
+               path_buf, sizeof(g_settings.video.second_pass_shader));
+         break;
+   }
+#endif
+
    return true;
 }
 
@@ -930,6 +946,16 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
       }
    }
 
+#ifdef HAVE_RMENU
+   // In RMenu, need to set FBO scaling factors for first pass.
+   if (i == 0 && scale->type_x == RARCH_SCALE_INPUT && scale->type_y && RARCH_SCALE_INPUT
+         && scale->scale_x == scale->scale_y)
+   {
+      g_settings.video.fbo.scale_x = scale->scale_x;
+      g_settings.video.fbo.scale_y = scale->scale_y;
+   }
+#endif
+
 end:
    free(scale_type);
    free(scale_type_x);
@@ -989,6 +1015,20 @@ static bool load_preset(const char *path)
       print_buf(filter_name_buf, "filter_linear%u", i);
       if (config_get_bool(conf, filter_name_buf, &smooth))
          fbo_smooth[i + 1] = smooth ? FILTER_LINEAR : FILTER_NEAREST;
+
+#ifdef HAVE_RMENU
+      // In RMenu, need to set smoothing for first and second passes.
+      switch (i)
+      {
+         case 0:
+            g_settings.video.smooth = fbo_smooth[1];
+            break;
+
+         case 1:
+            g_settings.video.second_pass_smooth = fbo_smooth[2];
+            break;
+      }
+#endif
    }
 
    for (int i = 0; i < shaders; i++)
