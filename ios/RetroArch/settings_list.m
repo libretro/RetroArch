@@ -6,8 +6,30 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
-static NSMutableDictionary* boolean_setting(NSString* name, NSString* label, NSString* value)
+#include "config_file.h"
+
+static NSString* get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue)
 {
+   NSString* value = nil;
+
+   char* v = 0;
+   if (config_get_string(config, [name UTF8String], &v))
+   {
+      value = [[NSString alloc] initWithUTF8String:v];
+      free(v);
+   }
+   else
+   {
+      value = defaultValue;
+   }
+
+   return value;
+}
+
+static NSMutableDictionary* boolean_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue)
+{
+   NSString* value = get_value_from_config(config, name, defaultValue);
+
    return [[NSMutableDictionary alloc] initWithObjectsAndKeys:
             @"B", @"TYPE",
             name, @"NAME",
@@ -16,8 +38,10 @@ static NSMutableDictionary* boolean_setting(NSString* name, NSString* label, NSS
             nil];
 }
 
-static NSMutableDictionary* enumeration_setting(NSString* name, NSString* label, NSString* value, NSArray* values)
+static NSMutableDictionary* enumeration_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, NSArray* values)
 {
+   NSString* value = get_value_from_config(config, name, defaultValue);
+
    return [[NSMutableDictionary alloc] initWithObjectsAndKeys:
             @"E", @"TYPE",
             name, @"NAME",
@@ -27,8 +51,11 @@ static NSMutableDictionary* enumeration_setting(NSString* name, NSString* label,
             nil];
 }
 
-static NSMutableDictionary* subpath_setting(NSString* name, NSString* label, NSString* value, NSString* path, NSString* extension)
+static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, NSString* path, NSString* extension)
 {
+   NSString* value = get_value_from_config(config, name, defaultValue);
+   value = [value stringByReplacingOccurrencesOfString:path withString:@""];
+
    NSArray* values = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:[RetroArch_iOS get].overlay_path error:nil];
    values = [values pathsMatchingExtensions:[NSArray arrayWithObject:extension]];
 
@@ -94,34 +121,42 @@ static NSMutableDictionary* subpath_setting(NSString* name, NSString* label, NSS
 @implementation settings_list
 {
    NSArray* settings;
+   config_file_t* config;
 };
 
 - (id)init
 {
    self = [super initWithStyle:UITableViewStyleGrouped];
 
+   const char* const sd = [RetroArch_iOS get].system_directory;
+   char config_path[PATH_MAX];
+   snprintf(config_path, PATH_MAX, "%s/retroarch.cfg", sd);
+   config_path[PATH_MAX - 1] = 0;
+   
+   config = config_file_new(config_path);
+   if (!config) config = config_file_new(0);
 
    settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Video",
-         boolean_setting(@"video_smooth", @"Smooth Video", @"true"),
-         boolean_setting(@"video_crop_overscan", @"Crop Overscan", @"false"),
+         boolean_setting(config, @"video_smooth", @"Smooth Video", @"true"),
+         boolean_setting(config, @"video_crop_overscan", @"Crop Overscan", @"false"),
          nil],
 
       [NSArray arrayWithObjects:@"Audio",
-         boolean_setting(@"audio_enable", @"Enable Output", @"true"),
-         boolean_setting(@"audio_sync", @"Sync on Audio Stream", @"true"),
-         boolean_setting(@"audio_rate_control", @"Adjust for Better Sync", @"true"),
+         boolean_setting(config, @"audio_enable", @"Enable Output", @"true"),
+         boolean_setting(config, @"audio_sync", @"Sync on Audio Stream", @"true"),
+         boolean_setting(config, @"audio_rate_control", @"Adjust for Better Sync", @"true"),
          nil],
 
       [NSArray arrayWithObjects:@"Input",
-         subpath_setting(@"input_overlay", @"Input Overlay", @"", [RetroArch_iOS get].overlay_path, @"cfg"),
+         subpath_setting(config, @"input_overlay", @"Input Overlay", @"", [RetroArch_iOS get].overlay_path, @"cfg"),
          nil],
          
       [NSArray arrayWithObjects:@"Save States",
-         boolean_setting(@"rewind_enable", @"Enable Rewinding", @"false"),
-         boolean_setting(@"block_sram_overwrite", @"Disable SRAM on Load", @"false"),
-         boolean_setting(@"savestate_auto_save", @"Auto Save on Exit", @"false"),
-         boolean_setting(@"savestate_auto_load", @"Auto Load on Startup", @"true"),
+         boolean_setting(config, @"rewind_enable", @"Enable Rewinding", @"false"),
+         boolean_setting(config, @"block_sram_overwrite", @"Disable SRAM on Load", @"false"),
+         boolean_setting(config, @"savestate_auto_save", @"Auto Save on Exit", @"false"),
+         boolean_setting(config, @"savestate_auto_load", @"Auto Load on Startup", @"true"),
          nil],
       nil
    ];
@@ -132,13 +167,6 @@ static NSMutableDictionary* subpath_setting(NSString* name, NSString* label, NSS
 
 - (void)write_to_file
 {
-   const char* const sd = [RetroArch_iOS get].system_directory;
-   char config_path[PATH_MAX];
-   snprintf(config_path, PATH_MAX, "%s/retroarch.cfg", sd);
-   config_path[PATH_MAX - 1] = 0;
-
-   FILE* output = fopen(config_path, "w");
-
    for (int i = 0; i != [settings count]; i ++)
    {
       NSArray* group = [settings objectAtIndex:i];
@@ -146,15 +174,22 @@ static NSMutableDictionary* subpath_setting(NSString* name, NSString* label, NSS
       for (int j = 1; j < [group count]; j ++)
       {
          NSMutableDictionary* setting = [group objectAtIndex:j];
-         
+      
+         NSString* name = [setting objectForKey:@"NAME"];
+         NSString* value = [setting objectForKey:@"VALUE"];
+
          if ([[setting objectForKey:@"TYPE"] isEqualToString:@"F"])
-            fprintf(output, "%s = \"%s/%s\"\n", [[setting objectForKey:@"NAME"] UTF8String], [[setting objectForKey:@"PATH"] UTF8String], [[setting objectForKey:@"VALUE"] UTF8String]);
-         else
-            fprintf(output, "%s = %s\n", [[setting objectForKey:@"NAME"] UTF8String], [[setting objectForKey:@"VALUE"] UTF8String]);
+            value = [[setting objectForKey:@"PATH"] stringByAppendingPathComponent:value];
+
+         config_set_string(config, [name UTF8String], [value UTF8String]);
       }
    }
-   
-   fclose(output);
+
+   const char* const sd = [RetroArch_iOS get].system_directory;
+   char config_path[PATH_MAX];
+   snprintf(config_path, PATH_MAX, "%s/retroarch.cfg", sd);
+   config_path[PATH_MAX - 1] = 0;
+   config_file_write(config, config_path);
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
