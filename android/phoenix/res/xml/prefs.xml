@@ -18,7 +18,8 @@
                 android:key="savefile_directory_enable"
                 android:defaultValue="false"/>
             <Preference android:title="Savefile directory"
-                android:summary="Sets directory where to save and load game save files.">
+                android:summary="Sets directory where to save and load game save files."
+                android:dependency="savefile_directory_enable">
                 <intent
                     android:targetClass="org.retroarch.browser.SRMDirActivity"
                     android:targetPackage="org.retroarch" />
@@ -30,7 +31,8 @@
                 android:key="savestate_directory_enable"
                 android:defaultValue="false"/>
             <Preference android:title="Save state directory"
-                android:summary="Sets directory where to save and load game save states.">
+                android:summary="Sets directory where to save and load game save states."
+                android:dependency="savestate_directory_enable">
                 <intent
                     android:targetClass="org.retroarch.browser.StateDirActivity"
                     android:targetPackage="org.retroarch" />
@@ -74,10 +76,12 @@
                 android:key="video_refresh_rate"
                 android:summary="Force a specific refresh rate to be detected. Only use if auto-detection of refresh rate reports wrong refresh rate."
                 android:title="Forced refresh rate (Hz)"
-                android:numeric="decimal" />
+                android:numeric="decimal"
+                android:dependency="video_sync_refreshrate_to_screen" />
             <Preference
-               android:summary="Attempts to find the true refresh rate of monitor. Updates value in 'Force refresh rate (Hz)' option. To help ensure accuracy, make sure no intense background services are running, and avoid triggering screensaver."
-                android:title="Calibrate refresh rate" >
+                android:summary="Attempts to find the true refresh rate of monitor. Updates value in 'Force refresh rate (Hz)' option. To help ensure accuracy, make sure no intense background services are running, and avoid triggering screensaver."
+                android:title="Calibrate refresh rate"
+                android:dependency="video_sync_refreshrate_to_screen" >
                 <intent
                     android:targetClass="org.retroarch.browser.DisplayRefreshRateTest"
                     android:targetPackage="org.retroarch" />
@@ -102,14 +106,15 @@
                 android:summary="Applies Bilinear filtering, smooths out edges (settings still apply even if no shader is selected)."
                 android:title="Bilinear filter" />
             <CheckBoxPreference
-               android:summary="Enable first pass shader (WARNING: recommended system requirements for these shaders is a Tegra 4/Exynos5 class GPU and/or higher)."
+                android:summary="Enable first pass shader (WARNING: recommended system requirements for these shaders is a Tegra 4/Exynos5 class GPU and/or higher)."
                 android:defaultValue="false"
                 android:key="video_shader_enable"
                 android:title="Enable" />
 
             <Preference
-               android:summary="Sets GLES2 style XML shader."
-                android:title="XML shader" >
+                android:summary="Sets GLES2 style XML shader."
+                android:title="XML shader"
+                android:dependency="video_shader_enable" >
                 <intent
                     android:targetClass="org.retroarch.browser.ShaderActivity"
                     android:targetPackage="org.retroarch" />
@@ -124,12 +129,13 @@
             <CheckBoxPreference
                 android:defaultValue="false"
                 android:key="video_second_pass_shader_enable"
-               android:summary="Enable custom shader for use after rendering to FBO (WARNING: recommended system requirements for these shaders is a Tegra 4/Exynos5 class GPU and/or higher)."
+                android:summary="Enable custom shader for use after rendering to FBO (WARNING: recommended system requirements for these shaders is a Tegra 4/Exynos5 class GPU and/or higher)."
                 android:title="Enable shader #2" />
 
             <Preference
                 android:summary="Sets shader to use for second pass."
-                android:title="XML shader (2nd pass)" >
+                android:title="XML shader (2nd pass)"
+                android:dependency="video_second_pass_shader_enable" >
                 <intent
                     android:targetClass="org.retroarch.browser.Shader2Activity"
                     android:targetPackage="org.retroarch" />
@@ -164,7 +170,8 @@
                 android:defaultValue="true"
                 android:key="audio_rate_control"
                 android:summary="Enable dynamic rate control (recommended)."
-                android:title="Dynamic Rate Control" />
+                android:title="Dynamic Rate Control"
+                android:dependency="audio_enable" />
         </PreferenceCategory>
     </PreferenceScreen>
     <PreferenceScreen android:title="Input Settings" >
@@ -216,7 +223,8 @@
 
             <Preference
                 android:summary="Sets touchscreen overlay config."
-                android:title="Input overlay" >
+                android:title="Input overlay"
+                android:dependency="input_overlay_enable" >
                 <intent
                     android:targetClass="org.retroarch.browser.OverlayActivity"
                     android:targetPackage="org.retroarch" />
@@ -224,7 +232,8 @@
             <org.retroarch.browser.SeekbarPreference
                 android:summary="Set the opacity of the touch overlay."
                 android:title="Overlay opacity"
-                android:key="input_overlay_opacity" />
+                android:key="input_overlay_opacity"
+                android:dependency="input_overlay_enable" />
         </PreferenceCategory>
         <PreferenceCategory android:title="Custom Binds">
 	        <PreferenceScreen
