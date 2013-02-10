@@ -6,6 +6,16 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
+static void display_error_alert(NSString* message)
+{
+   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
+                                             message:message
+                                             delegate:nil
+                                             cancelButtonTitle:@"OK"
+                                             otherButtonTitles:nil];
+   [alert show];
+}
+
 @implementation module_list
 {
    NSArray* modules;
@@ -21,8 +31,17 @@
                           @"modules"];
    
    modules = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:module_dir error:nil];
-   modules = [module_dir stringsByAppendingPaths:modules];
-   modules = [modules pathsMatchingExtensions:[NSArray arrayWithObject:@"dylib"]];
+   
+   if (modules != nil)
+   {
+      modules = [module_dir stringsByAppendingPaths:modules];
+      modules = [modules pathsMatchingExtensions:[NSArray arrayWithObject:@"dylib"]];
+   }
+   
+   if (modules == nil || [modules count] == 0)
+   {
+      display_error_alert(@"No libretro cores were found.");
+   }
    
    [self setTitle:@"Choose Emulator"];
    self.navigationItem.rightBarButtonItem = [RetroArch_iOS get].settings_button;
