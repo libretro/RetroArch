@@ -66,9 +66,16 @@ public class RetroArch extends Activity implements
 	private ConfigFile core_config;
 	
 	private final double getDisplayRefreshRate() {
+		// Android is *very* likely to screw this up.
+		// It is rarely a good value to use, so make sure it's not
+		// completely wrong. Some phones return refresh rates that are completely bogus
+		// (like 0.3 Hz, etc), so try to be very conservative here.
 		final WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
 		final Display display = wm.getDefaultDisplay();
-		return display.getRefreshRate();
+		double rate = display.getRefreshRate();
+		if (rate > 61.0 || rate < 58.0)
+			rate = 59.95;
+		return rate;
 	}
 
 	private final double getRefreshRate() {
@@ -363,12 +370,7 @@ public class RetroArch extends Activity implements
 		config.setInt("input_autodetect_icade_profile_pad3", prefs.getInt("input_autodetect_icade_profile_pad3", 0));
 		config.setInt("input_autodetect_icade_profile_pad4", prefs.getInt("input_autodetect_icade_profile_pad4", 0));
 		
-		if (prefs.getBoolean("video_sync_refreshrate_to_screen", true)) {
-			config.setDouble("video_refresh_rate", getRefreshRate());
-		} else {
-			Log.i(TAG, "Refresh rate set to 59.95Hz (default).");
-			config.setDouble("video_refresh_rate", 59.95);
-		}
+		config.setDouble("video_refresh_rate", getRefreshRate());
 		
 		String aspect = prefs.getString("video_aspect_ratio", "auto");
 		if (aspect.equals("full")) {
