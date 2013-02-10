@@ -10,6 +10,7 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.WindowManager;
 
 public class DisplayRefreshRateTest extends Activity {
 
@@ -108,6 +109,7 @@ public class DisplayRefreshRateTest extends Activity {
 		surfaceView.setEGLConfigChooser(false);
 		surfaceView.setEGLContextClientVersion(2);
 		surfaceView.setRenderer(new Renderer(this));
+		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		setTitle("Refresh rate calibration");
 		setContentView(surfaceView);
 	}
