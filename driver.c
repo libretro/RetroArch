@@ -494,7 +494,8 @@ static void compute_monitor_fps_statistics(void)
 {
    if (g_extern.measure_data.frame_time_samples_count < 2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
    {
-      RARCH_LOG("Does not have enough samples for monitor refresh rate estimation.\n");
+      RARCH_LOG("Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
+            2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
       return;
    }
 
@@ -502,30 +503,30 @@ static void compute_monitor_fps_statistics(void)
 
    // Measure statistics on frame time (microsecs), *not* FPS.
    rarch_time_t accum = 0;
-   for (unsigned i = 1; i < samples; i++)
+   for (unsigned i = 0; i < samples; i++)
       accum += g_extern.measure_data.frame_time_samples[i];
 
 #if 0
-   for (unsigned i = 1; i < samples; i++)
+   for (unsigned i = 0; i < samples; i++)
       RARCH_LOG("Interval #%u: %d usec / frame.\n",
             i, (int)g_extern.measure_data.frame_time_samples[i]);
 #endif
 
-   rarch_time_t avg = accum / (samples - 1);
+   rarch_time_t avg = accum / samples;
    rarch_time_t accum_var = 0;
 
    // Drop first measurement. It is likely to be bad.
-   for (unsigned i = 1; i < samples; i++)
+   for (unsigned i = 0; i < samples; i++)
    {
       rarch_time_t diff = g_extern.measure_data.frame_time_samples[i] - avg;
       accum_var += diff * diff;
    }
 
-   double stddev = sqrt((double)accum_var / (samples - 2));
+   double stddev = sqrt((double)accum_var / (samples - 1));
    double avg_fps = 1000000.0 / avg;
 
    RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
-         avg_fps, 100.0 * stddev / avg, samples - 1);
+         avg_fps, 100.0 * stddev / avg, samples);
 }
 
 void uninit_audio(void)
