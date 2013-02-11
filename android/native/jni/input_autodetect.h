@@ -23,6 +23,7 @@
 
 enum {
    ICADE_PROFILE_RED_SAMURAI = 0,
+   ICADE_PROFILE_IPEGA_PG9017,
 } icade_profile_enums;
 
 enum {

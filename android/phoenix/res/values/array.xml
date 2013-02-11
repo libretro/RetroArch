@@ -22,10 +22,12 @@
 
     <string-array name="icade_profiles">
         <item>Red Samurai</item>
+        <item>iPega PG-9017</item>
     </string-array>
 
     <string-array name="icade_profiles_values">
         <item>0</item>
+        <item>1</item>
     </string-array>
     
     <string-array name="fbo_scales">
