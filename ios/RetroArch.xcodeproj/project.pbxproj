@@ -21,6 +21,9 @@
 		96297A2716C82FF100E6DCE0 /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2616C82FF100E6DCE0 /* overlays */; };
 		96366C5016C9A4E100D64A22 /* resampler.c in Sources */ = {isa = PBXBuildFile; fileRef = 96366C4F16C9A4E100D64A22 /* resampler.c */; };
 		96366C5216C9A4E600D64A22 /* hermite.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEEC16C1DC73009DE44C /* hermite.c */; };
+		96366C5316C9A7C100D64A22 /* coreaudio.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEE816C1DC73009DE44C /* coreaudio.c */; };
+		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
+		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
 		96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
 		96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
 		96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
@@ -54,8 +57,6 @@
 		96AFAEE416C1DBDB009DE44C /* config_file.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEE116C1DBDB009DE44C /* config_file.c */; };
 		96AFAF0B16C1DC73009DE44C /* null.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEEE16C1DC73009DE44C /* null.c */; };
 		96AFAF1816C1DC73009DE44C /* utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEFD16C1DC73009DE44C /* utils.c */; };
-		96AFAF1F16C1DF0A009DE44C /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAF1E16C1DF0A009DE44C /* OpenAL.framework */; };
-		96AFAF2016C1DF3A009DE44C /* openal.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEEF16C1DC73009DE44C /* openal.c */; };
 		96AFAF2216C1DF88009DE44C /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAF2116C1DF88009DE44C /* libz.dylib */; };
 		96AFAF2D16C1DFC8009DE44C /* compat.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF2416C1DFC8009DE44C /* compat.c */; };
 		96AFAF2F16C1DFC8009DE44C /* rxml.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF2916C1DFC8009DE44C /* rxml.c */; };
@@ -100,6 +101,8 @@
 		96297A2316C818FF00E6DCE0 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon.png; path = RetroArch/Icon.png; sourceTree = "<group>"; };
 		96297A2616C82FF100E6DCE0 /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../media/overlays; sourceTree = "<group>"; };
 		96366C4F16C9A4E100D64A22 /* resampler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = resampler.c; sourceTree = "<group>"; };
+		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
+		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		96AFAE2516C1D4EA009DE44C /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96AFAE2916C1D4EA009DE44C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		96AFAE2B16C1D4EA009DE44C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -190,7 +193,6 @@
 		96AFAF0216C1DC73009DE44C /* xaudio-c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "xaudio-c.h"; sourceTree = "<group>"; };
 		96AFAF0316C1DC73009DE44C /* xaudio.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xaudio.h; sourceTree = "<group>"; };
 		96AFAF0416C1DC73009DE44C /* xaudio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = xaudio.c; sourceTree = "<group>"; };
-		96AFAF1E16C1DF0A009DE44C /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
 		96AFAF2116C1DF88009DE44C /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		96AFAF2416C1DFC8009DE44C /* compat.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = compat.c; sourceTree = "<group>"; };
 		96AFAF2516C1DFC8009DE44C /* getopt_rarch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = getopt_rarch.h; sourceTree = "<group>"; };
@@ -289,8 +291,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */,
+				96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */,
 				96AFAF2216C1DF88009DE44C /* libz.dylib in Frameworks */,
-				96AFAF1F16C1DF0A009DE44C /* OpenAL.framework in Frameworks */,
 				96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */,
 				96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */,
 				96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */,
@@ -311,7 +314,6 @@
 				962979F416C43B9500E6DCE0 /* ic_dir.png */,
 				962979F516C43B9500E6DCE0 /* ic_file.png */,
 				96AFAF2116C1DF88009DE44C /* libz.dylib */,
-				96AFAF1E16C1DF0A009DE44C /* OpenAL.framework */,
 				96AFAE9C16C1D976009DE44C /* core */,
 				96AFAE3316C1D4EA009DE44C /* RetroArch */,
 				96AFAE2816C1D4EA009DE44C /* Frameworks */,
@@ -330,6 +332,8 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				96366C5816C9ACF500D64A22 /* AudioToolbox.framework */,
+				96366C5416C9AC3300D64A22 /* CoreAudio.framework */,
 				96AFAE2916C1D4EA009DE44C /* UIKit.framework */,
 				96AFAE2B16C1D4EA009DE44C /* Foundation.framework */,
 				96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */,
@@ -772,7 +776,6 @@
 				96AFAEE416C1DBDB009DE44C /* config_file.c in Sources */,
 				96AFAF0B16C1DC73009DE44C /* null.c in Sources */,
 				96AFAF1816C1DC73009DE44C /* utils.c in Sources */,
-				96AFAF2016C1DF3A009DE44C /* openal.c in Sources */,
 				96AFAF2D16C1DFC8009DE44C /* compat.c in Sources */,
 				96AFAF2F16C1DFC8009DE44C /* rxml.c in Sources */,
 				96AFAF8D16C1E00A009DE44C /* bitmapfont.c in Sources */,
@@ -807,6 +810,7 @@
 				96297A1D16C6D20900E6DCE0 /* settings_list.m in Sources */,
 				96366C5016C9A4E100D64A22 /* resampler.c in Sources */,
 				96366C5216C9A4E600D64A22 /* hermite.c in Sources */,
+				96366C5316C9A7C100D64A22 /* coreaudio.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -959,7 +963,7 @@
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
 					"-DPACKAGE_VERSION=\\\"1.0\\\"",
-					"-DHAVE_AL",
+					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
@@ -996,7 +1000,7 @@
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
 					"-DPACKAGE_VERSION=\\\"1.0\\\"",
-					"-DHAVE_AL",
+					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
