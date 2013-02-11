@@ -31,11 +31,14 @@ struct
    int16_t full_x, full_y;
 } ios_touches[MAX_TOUCH];
 
+bool ios_keys[256];
+
 uint32_t ios_current_touch_count = 0;
 
 static void *ios_input_init(void)
 {
    memset(ios_touches, 0, sizeof(ios_touches));
+   memset(ios_keys, 0, sizeof(ios_keys));
    return (void*)-1;
 }
 
@@ -53,6 +56,17 @@ static int16_t ios_input_state(void *data, const struct retro_keybind **binds, u
 {
    switch (device)
    {
+      case RETRO_DEVICE_JOYPAD:
+         switch (id)
+         {
+            case RETRO_DEVICE_ID_JOYPAD_UP: return ios_keys[82];
+            case RETRO_DEVICE_ID_JOYPAD_DOWN: return ios_keys[81];
+            case RETRO_DEVICE_ID_JOYPAD_LEFT: return ios_keys[80];
+            case RETRO_DEVICE_ID_JOYPAD_RIGHT: return ios_keys[79];
+            default: return 0;
+         }
+         return 0;
+   
       case RARCH_DEVICE_POINTER_SCREEN:
          switch (id)
          {

@@ -16,7 +16,9 @@ extern struct
    int16_t full_x, full_y;
 } ios_touches[MAX_TOUCH];
 
-extern uint32_t ios_current_touch_count ;
+extern bool ios_keys[256];
+
+extern uint32_t ios_current_touch_count;
 
 @implementation RetroArch_iOS
 
@@ -52,6 +54,22 @@ extern uint32_t ios_current_touch_count ;
    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    self.window.rootViewController = self.navigator;
    [self.window makeKeyAndVisible];
+   
+   // Setup keyboard hack
+   [[NSNotificationCenter defaultCenter] addObserver: self selector: @selector(keyPressed:) name: GSEventKeyDownNotification object: nil];
+   [[NSNotificationCenter defaultCenter] addObserver: self selector: @selector(keyReleased:) name: GSEventKeyUpNotification object: nil];
+}
+
+-(void) keyPressed: (NSNotification*) notification
+{
+   int keycode = [[notification.userInfo objectForKey:@"keycode"] intValue];
+   if (keycode < 256) ios_keys[keycode] = true;
+}
+
+-(void) keyReleased: (NSNotification*) notification
+{
+   int keycode = [[notification.userInfo objectForKey:@"keycode"] intValue];
+   if (keycode < 256) ios_keys[keycode] = false;
 }
 
 - (void)show_settings

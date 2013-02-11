@@ -7,6 +7,9 @@
 
 #import <UIKit/UIKit.h>
 
+extern NSString *const GSEventKeyDownNotification;
+extern NSString *const GSEventKeyUpNotification;
+
 @interface RetroArch_iOS : UIResponder <UIApplicationDelegate>
 
 + (RetroArch_iOS*)get;
