@@ -67,20 +67,6 @@
                 android:key="video_vsync"
                 android:summary="When set to enabled, prevents screen tearing."
                 android:title="VSync" />
-        </PreferenceCategory>
-        <PreferenceCategory android:title="Synchronization">
-            <EditTextPreference
-                android:key="video_refresh_rate"
-                android:summary="Force a specific refresh rate to be detected. Only set manually if calibration reports wrong refresh rate."
-                android:title="Forced refresh rate (Hz)"
-                android:numeric="decimal" />
-            <Preference
-                android:summary="Attempts to find the true refresh rate of monitor. Updates value in 'Force refresh rate (Hz)' option. To help ensure accuracy, make sure no intense background services are running, and avoid triggering screensaver."
-                android:title="Calibrate refresh rate">
-                <intent
-                    android:targetClass="org.retroarch.browser.DisplayRefreshRateTest"
-                    android:targetPackage="org.retroarch" />
-            </Preference>
             <CheckBoxPreference
                 android:defaultValue="true"
                 android:key="video_allow_rotate"
@@ -93,7 +79,22 @@
                 android:key="video_aspect_ratio"
                 android:summary="Aspect ratio to enforce."
                 android:title="Aspect ratio" />
-		</PreferenceCategory>
+        </PreferenceCategory>
+        <PreferenceCategory android:title="Synchronization" >
+            <EditTextPreference
+                android:key="video_refresh_rate"
+                android:numeric="decimal"
+                android:summary="Force a specific refresh rate to be detected. Only set manually if calibration reports wrong refresh rate."
+                android:title="Forced refresh rate (Hz)" />
+
+            <Preference
+                android:summary="Attempts to find the true refresh rate of monitor. Updates value in &apos;Force refresh rate (Hz)&apos; option. To help ensure accuracy, make sure no intense background services are running, and avoid triggering screensaver."
+                android:title="Calibrate refresh rate" >
+                <intent
+                    android:targetClass="org.retroarch.browser.DisplayRefreshRateTest"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+        </PreferenceCategory>
         <PreferenceCategory android:title="Shaders (1st pass)" >
             <CheckBoxPreference
                 android:defaultValue="true"
