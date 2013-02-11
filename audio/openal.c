@@ -67,8 +67,11 @@ static void al_free(void *data)
    free(al->buffers);
    free(al->res_buf);
    alcMakeContextCurrent(NULL);
-   alcDestroyContext(al->ctx);
-   alcCloseDevice(al->handle);
+
+   if (al->ctx)
+      alcDestroyContext(al->ctx);
+   if (al->handle)
+      alcCloseDevice(al->handle);
    free(al);
 }
 
