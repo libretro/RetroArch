@@ -19,6 +19,8 @@
 		96297A2416C818FF00E6DCE0 /* Icon-72.png in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2216C818FF00E6DCE0 /* Icon-72.png */; };
 		96297A2516C818FF00E6DCE0 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2316C818FF00E6DCE0 /* Icon.png */; };
 		96297A2716C82FF100E6DCE0 /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2616C82FF100E6DCE0 /* overlays */; };
+		96366C5016C9A4E100D64A22 /* resampler.c in Sources */ = {isa = PBXBuildFile; fileRef = 96366C4F16C9A4E100D64A22 /* resampler.c */; };
+		96366C5216C9A4E600D64A22 /* hermite.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEEC16C1DC73009DE44C /* hermite.c */; };
 		96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
 		96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
 		96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
@@ -97,6 +99,7 @@
 		96297A2216C818FF00E6DCE0 /* Icon-72.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon-72.png"; path = "RetroArch/Icon-72.png"; sourceTree = "<group>"; };
 		96297A2316C818FF00E6DCE0 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon.png; path = RetroArch/Icon.png; sourceTree = "<group>"; };
 		96297A2616C82FF100E6DCE0 /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../media/overlays; sourceTree = "<group>"; };
+		96366C4F16C9A4E100D64A22 /* resampler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = resampler.c; sourceTree = "<group>"; };
 		96AFAE2516C1D4EA009DE44C /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96AFAE2916C1D4EA009DE44C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		96AFAE2B16C1D4EA009DE44C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -439,6 +442,7 @@
 		96AFAEE516C1DC73009DE44C /* audio */ = {
 			isa = PBXGroup;
 			children = (
+				96366C4F16C9A4E100D64A22 /* resampler.c */,
 				96AFAEE616C1DC73009DE44C /* alsa.c */,
 				96AFAEE716C1DC73009DE44C /* alsathread.c */,
 				96AFAEE816C1DC73009DE44C /* coreaudio.c */,
@@ -801,6 +805,8 @@
 				96297A1116C5AEDE00E6DCE0 /* game_view.m in Sources */,
 				96297A1316C5AEFD00E6DCE0 /* directory_list.m in Sources */,
 				96297A1D16C6D20900E6DCE0 /* settings_list.m in Sources */,
+				96366C5016C9A4E100D64A22 /* resampler.c in Sources */,
+				96366C5216C9A4E600D64A22 /* hermite.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
