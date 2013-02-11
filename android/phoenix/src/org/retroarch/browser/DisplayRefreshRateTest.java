@@ -33,6 +33,7 @@ public class DisplayRefreshRateTest extends Activity {
 		
 		public Renderer(Activity activity) {
 			this.activity = activity;
+			Toast.makeText(this.activity, "Touch the screen with your fingers for more accurate measurements.", Toast.LENGTH_LONG).show();
 		}
 		
 		private void setFPSSetting(double fps) {
