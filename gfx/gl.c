@@ -1254,6 +1254,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       RARCH_PERFORMANCE_START(copy_frame);
       gl_copy_frame(gl, frame, width, height, pitch);
       RARCH_PERFORMANCE_STOP(copy_frame);
+
+#ifdef IOS // Apparently the viewport is lost each frame, thanks apple.
+      gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+#endif
    }
    else
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
