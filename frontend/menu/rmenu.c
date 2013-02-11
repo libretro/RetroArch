@@ -937,6 +937,7 @@ static bool osk_callback_enter_filename(void *data)
             RARCH_LOG("[osk_callback_enter_filename]: filepath is: %s.\n", filepath);
 
             struct gl_cg_cgp_info current_settings;
+            memset(&current_settings, 0, sizeof(current_settings));
             current_settings.shader[0] = g_settings.video.cg_shader_path;
             current_settings.shader[1] = g_settings.video.second_pass_shader;
             current_settings.filter_linear[0] = g_settings.video.smooth;
