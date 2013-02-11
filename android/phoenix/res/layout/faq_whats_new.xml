@@ -10,6 +10,31 @@
         android:layout_height="wrap_content"
         android:layout_margin="40px"
         android:text="
+        r11 (Feb 11, 2013)\n\n
+        * [FBA core] Various changes/fixes\n
+        - Hook up Armed Police Batrider controls\n
+        - Afterburner - make fire buttons work\n
+        - Hook up Bad Dudes controls\n
+        - Hook up Cyberbots controls\n
+        - Hook up 1942 controls\n
+        - Add missing Chase HQ controls\n
+        - Add missing WWF Wrestlefest controls\n
+        - EEPROM save should now work (tested with EEPROM-based system such as Capcom CPS2)\n
+        - Samples are now looked for - should be in 'samples' subdirectory\n
+        - Hiscore files should now be read from/written to.\n
+        * [SNES9x Next] Added big speed hack for Star Fox 1 - makes it fast enough for it to run at fullspeed on the Wii.\n
+        * New 'Calibrate Refresh Rate' option - use this to get an accurate estimation of your screen refresh rate. NOTE: Touch the screen at all times during calibration for more accurate measurements. You might have to slightly tweak the value later on for the best results.\n
+        * Added a 'Set OS-reported refresh rate' which should do the same as what 'Sync refreshrate to Screen' previously did. Note 2 users might get better results with this than they will with 'Calibrate refresh rate'.\n
+        * Added a built-in help system that should answer a lot of the frequently asked questions.\n
+        * Add iCade profiles - two added for now - iPega and Red Samurai\n
+        * [Android] Audio resampler now faster\n
+        * Input autodetection expanded -\n
+        - PC2JAMMA-USB (needs to be tested)\n
+        - Genius MaxFire G-08XU\n
+        - Zeemote Steelseries\n
+        - Saitek Rumblepad\n
+        - Super Smart Joy\n
+        \n
         r10 (Feb 5, 2013)\n\n
         * [NXEngine / Cave Story] Fixed bug where moving blocks would not move in Labyrinth levels\n
         * Add new psx and GBA overlays by user boxs.\n
