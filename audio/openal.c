@@ -14,6 +14,7 @@
  */
 
 #include "../driver.h"
+#include "../general.h"
 
 #ifdef __APPLE__
 #include <OpenAL/al.h>
@@ -30,28 +31,46 @@
 #include <windows.h>
 #endif
 
-#define BUFSIZE 128
+#define BUFSIZE 1024
 
 typedef struct al
 {
    ALuint source;
    ALuint *buffers;
    ALuint *res_buf;
-   int res_ptr;
+   size_t res_ptr;
    ALenum format;
-   int num_buffers;
+   size_t num_buffers;
    int rate;
-   int queue;
 
    uint8_t tmpbuf[BUFSIZE];
-   int tmpbuf_ptr;
+   size_t tmpbuf_ptr;
 
    ALCdevice *handle;
    ALCcontext *ctx;
 
    bool nonblock;
-
 } al_t;
+
+static void al_free(void *data)
+{
+   al_t *al = (al_t*)data;
+   if (!al)
+      return;
+
+   alSourceStop(al->source);
+   alDeleteSources(1, &al->source);
+
+   if (al->buffers)
+      alDeleteBuffers(al->num_buffers, al->buffers);
+
+   free(al->buffers);
+   free(al->res_buf);
+   alcMakeContextCurrent(NULL);
+   alcDestroyContext(al->ctx);
+   alcCloseDevice(al->handle);
+   free(al);
+}
 
 static void *al_init(const char *device, unsigned rate, unsigned latency)
 {
@@ -72,7 +91,13 @@ static void *al_init(const char *device, unsigned rate, unsigned latency)
 
    al->rate = rate;
 
-   al->num_buffers = (latency * rate * 2 * 2) / (1000 * BUFSIZE);
+   // We already use one buffer for tmpbuf.
+   al->num_buffers = (latency * rate * 2 * sizeof(int16_t)) / (1000 * BUFSIZE) - 1;
+   if (al->num_buffers < 2)
+      al->num_buffers = 2;
+
+   RARCH_LOG("[OpenAL]: Using %u buffers of %u bytes.\n", (unsigned)al->num_buffers, BUFSIZE);
+
    al->buffers = (ALuint*)calloc(al->num_buffers, sizeof(ALuint));
    al->res_buf = (ALuint*)calloc(al->num_buffers, sizeof(ALuint));
    if (al->buffers == NULL || al->res_buf == NULL)
@@ -87,19 +112,7 @@ static void *al_init(const char *device, unsigned rate, unsigned latency)
    return al;
 
 error:
-   if (al)
-   {
-      alcMakeContextCurrent(NULL);
-      if (al->ctx)
-         alcDestroyContext(al->ctx);
-      if (al->handle)
-         alcCloseDevice(al->handle);
-      if (al->buffers)
-         free(al->buffers);
-      if (al->res_buf)
-         free(al->res_buf);
-      free(al);
-   }
+   al_free(al);
    return NULL;
 }
 
@@ -121,14 +134,8 @@ static bool al_unqueue_buffers(al_t *al)
 
 static bool al_get_buffer(al_t *al, ALuint *buffer)
 {
-   if (al->res_ptr == 0)
+   if (!al->res_ptr)
    {
-#ifndef _WIN32
-      struct timespec tv = {0};
-      tv.tv_sec = 0;
-      tv.tv_nsec = 1000000;
-#endif
-
       for (;;)
       {
          if (al_unqueue_buffers(al))
@@ -137,11 +144,8 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
          if (al->nonblock)
             return false;
 
-#ifdef _WIN32
-         Sleep(1);
-#else
-         nanosleep(&tv, NULL);
-#endif
+         // Must sleep as there is no proper blocking method. :(
+         rarch_sleep(1);
       }
    }
 
@@ -151,28 +155,31 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
 
 static size_t al_fill_internal_buf(al_t *al, const void *buf, size_t size)
 {
-   size_t read_size = (BUFSIZE - al->tmpbuf_ptr > (ssize_t)size) ? size : (BUFSIZE - al->tmpbuf_ptr);
+   size_t read_size = min(BUFSIZE - al->tmpbuf_ptr, size);
    memcpy(al->tmpbuf + al->tmpbuf_ptr, buf, read_size);
    al->tmpbuf_ptr += read_size;
    return read_size;
 }
 
-static ssize_t al_write(void *data, const void *buf, size_t size)
+static ssize_t al_write(void *data, const void *buf_, size_t size)
 {
    al_t *al = (al_t*)data;
+   const uint8_t *buf = (const uint8_t*)buf_;
 
    size_t written = 0;
-   while (written < size)
+   while (size)
    {
-      size_t rc = al_fill_internal_buf(al, (const char*)buf + written, size - written);
+      size_t rc = al_fill_internal_buf(al, buf, size);
       written += rc;
+      buf     += rc;
+      size    -= rc;
 
       if (al->tmpbuf_ptr != BUFSIZE)
          break;
 
       ALuint buffer;
       if (!al_get_buffer(al, &buffer))
-         return 0;
+         break;
 
       alBufferData(buffer, AL_FORMAT_STEREO16, al->tmpbuf, BUFSIZE, al->rate);
       al->tmpbuf_ptr = 0;
@@ -189,7 +196,7 @@ static ssize_t al_write(void *data, const void *buf, size_t size)
          return -1;
    }
 
-   return size;
+   return written;
 }
 
 static bool al_stop(void *data)
@@ -210,24 +217,17 @@ static bool al_start(void *data)
    return true;
 }
 
-static void al_free(void *data)
+static size_t al_write_avail(void *data)
 {
    al_t *al = (al_t*)data;
-   if (al)
-   {
-      alSourceStop(al->source);
-      alDeleteSources(1, &al->source);
-      if (al->buffers)
-      {
-         alDeleteBuffers(al->num_buffers, al->buffers);
-         free(al->buffers);
-         free(al->res_buf);
-      }
-   }
-   alcMakeContextCurrent(NULL);
-   alcDestroyContext(al->ctx);
-   alcCloseDevice(al->handle);
-   free(al);
+   al_unqueue_buffers(al);
+   return al->res_ptr * BUFSIZE + (BUFSIZE - al->tmpbuf_ptr);
+}
+
+static size_t al_buffer_size(void *data)
+{
+   al_t *al = (al_t*)data;
+   return (al->num_buffers + 1) * BUFSIZE; // Also got tmpbuf.
 }
 
 const audio_driver_t audio_openal = {
@@ -238,6 +238,8 @@ const audio_driver_t audio_openal = {
    al_set_nonblock_state,
    al_free,
    NULL,
-   "openal"
+   "openal",
+   al_write_avail,
+   al_buffer_size,
 };
 
