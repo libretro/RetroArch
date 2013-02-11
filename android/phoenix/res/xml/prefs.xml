@@ -94,6 +94,13 @@
                     android:targetClass="org.retroarch.browser.DisplayRefreshRateTest"
                     android:targetPackage="org.retroarch" />
             </Preference>
+            <Preference
+                android:summary="Sets refresh rate equal to OS-reported value. This might not be accurate for your phone."
+                android:title="Set OS-reported refresh rate" >
+                <intent
+                    android:targetClass="org.retroarch.browser.RefreshRateSetOS"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
         </PreferenceCategory>
         <PreferenceCategory android:title="Shaders (1st pass)" >
             <CheckBoxPreference
