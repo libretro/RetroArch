@@ -95,6 +95,10 @@
 
 #include "audio/resampler.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MAX_PLAYERS 8
 
 enum dpad_emu_enums
@@ -217,6 +221,8 @@ struct settings
       bool rate_control;
       float rate_control_delta;
       float volume; // dB scale
+
+      char resampler[32];
    } audio;
 
    struct
@@ -229,6 +235,8 @@ struct settings
       bool debug_enable;
 #ifdef ANDROID
       bool autodetect_enable;
+      unsigned icade_profile[MAX_PLAYERS];
+      unsigned icade_count;
 #endif
 #ifdef RARCH_CONSOLE
       uint64_t default_binds[RARCH_CUSTOM_BIND_LIST_END];
@@ -373,7 +381,8 @@ struct global
 
    struct
    {
-      rarch_resampler_t *source;
+      void *resampler_data;
+      const rarch_resampler_t *resampler;
 
       float *data;
 
@@ -413,7 +422,7 @@ struct global
       unsigned buffer_free_samples[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
       uint64_t buffer_free_samples_count;
 
-#define MEASURE_FRAME_TIME_SAMPLES_COUNT 256
+#define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
       rarch_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
       uint64_t frame_time_samples_count;
    } measure_data;
@@ -648,6 +657,10 @@ void rarch_state_slot_decrease(void);
 extern struct settings g_settings;
 extern struct global g_extern;
 /////////
+
+#ifdef __cplusplus
+}
+#endif
 
 #include "retroarch_logger.h"
 

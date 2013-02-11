@@ -22,6 +22,11 @@
 #define AKEY_EVENT_NO_ACTION 255
 
 enum {
+   ICADE_PROFILE_RED_SAMURAI = 0,
+   ICADE_PROFILE_IPEGA_PG9017,
+} icade_profile_enums;
+
+enum {
    AKEYCODE_META_FUNCTION_ON = 8,
    AKEYCODE_ESCAPE          = 111,
    AKEYCODE_CAPS_LOCK       = 115,

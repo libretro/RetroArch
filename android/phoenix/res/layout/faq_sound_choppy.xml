@@ -1,0 +1,13 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="40px"
+        android:text="There can be two reasons for this:\n\na) Either your device is not powerful enough to run the core you've selected at fullspeed.\n\nb) The refresh rate of the screen that your device reports is wrong. More on b) below.\n\n== REFRESH RATES AND RETROARCH ==\n\nUnlike other emulators, RetroArch does not use frameskipping. To get smooth gameplay and sound that are remotely close to the original hardware, RetroArch Android uses static synchronization. If you notice any skipping music or 'jerkiness' - rest assured it's not our code - it's likely that your device reports a wrong refreshrate to the OS (Android in this case). For instance, certain devices like the Note 2 have refresh rates below 60Hz.\n\nTo get any decent audio and video out of any application, you will have to synchronize the game's refresh rate with that of your screen - if the refresh rate cannot be properly synchronized, you will get bad audio pops and video glitchiness.\n\nThe problem is that a good many Android devices 'report' the wrong refresh rate to Android. The Samsung Galaxy S3 is known for doing this - it reports a 60Hz refresh rate when it isn't (the Note 2 for instance has a 58Hz screen but at least reports it correctly). So, because it 'reports' a wrong refresh rate, RetroArch will not yield good results.\n\nIf you experience any audio pops on cores that should be running fullspeed on your device, you should go with manual synchronization. To do this, you can start by calcuating your screens refresh rate with the 'Calibrate refresh rate' setting. This option can give a good guess, but for best results you should edit the value it returns in the 'Forced refresh rate (Hz)' option and set it manually - start at the value it returns and if it still audio pops/crackles, raise or lower the value (0.01 intervals is a good place to start) until you hit a sweet spot.\n\nIf you think  your device reports the correct value, you can use that instead by selecting the 'Set OS-reported refresh rate' option instead.\n\nWith a bit of experimentation you can get this right easily - I am running games on a single-core Cortex A8 device (1.2GHz - Allwinner A10) and I get no sound pops or any video glitchiness at all in most cores. So this is entirely a refresh rate issue that you can overcome easily on most devices by doing what I state above." />
+</LinearLayout>

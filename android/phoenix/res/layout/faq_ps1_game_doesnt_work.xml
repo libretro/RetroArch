@@ -1,0 +1,13 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="40px"
+android:text="If a game doesn't work with the PS1 emulator (PCSX ReARMed), you should be aware that there are two modes of operation -\n\n* HLE BIOS - If you do NOT have any BIOS files placed in the same directory as the game you're trying to load, then PCSX ReARMed will be in this mode. In this mode, you don't need a BIOS but game compatibility will be lower and some games will simply not play.\n\n* REAL BIOS - If you have BIOS files placed in the same directory as the game you're trying to load, then PCSX ReARMed will be in this mode. With a real BIOS, most games that previously didn't work before or had problems should work properly.\n\nNOTE: The BIOS files that it looks for are:\n\nscph1001.bin\n\nscph5500.bin\n\nscph5501.bin\n\nscph5502.bin\n\nscph7502.bin" />
+</LinearLayout>

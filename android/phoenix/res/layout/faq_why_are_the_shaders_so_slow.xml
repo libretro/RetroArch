@@ -1,0 +1,13 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="40px"
+        android:text="All these shaders came from the RetroArch versions on PlayStation3, Xbox 360 and PC. Compared to those systems, the GPUs in Android devices are very, very weak.\n\nThis problem will solve itself as Android devices will start getting more powerful GPUs. An example of a SoC that might handle most shaders at fullspeed would be the Tegra 4 with its 72-core GPU."/>
+</LinearLayout>

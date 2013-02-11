@@ -463,6 +463,14 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
             snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
             break;
+         case RGUI_SETTINGS_RESAMPLER_TYPE:
+#ifdef HAVE_SINC
+            if (strstr(g_settings.audio.resampler, "sinc"))
+               snprintf(type_str, sizeof(type_str), "Sinc");
+            else
+#endif
+               snprintf(type_str, sizeof(type_str), "Hermite");
+            break;
          case RGUI_SETTINGS_SRAM_DIR:
             snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
             break;
@@ -750,6 +758,40 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          else if (action == RGUI_ACTION_RIGHT)
             rmenu_settings_set(S_AUDIO_CONTROL_RATE_INCREMENT);
          break;
+      case RGUI_SETTINGS_RESAMPLER_TYPE:
+         {
+            bool changed = false;
+            if (action == RGUI_ACTION_START)
+            {
+#ifdef HAVE_SINC
+               snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "sinc");
+#else
+               snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+#endif
+               changed = true;
+            }
+            else if (action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+            {
+#ifdef HAVE_SINC
+               if( strstr(g_settings.audio.resampler, "hermite"))
+                  snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "sinc");
+               else
+#endif
+                  snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+               changed = true;
+            }
+
+            if (g_extern.main_is_init && changed)
+            {
+               if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
+                        g_settings.audio.resampler))
+               {
+                  RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
+                  g_extern.audio_active = false;
+               }
+            }
+         }
+         break;
       case RGUI_SETTINGS_SRAM_DIR:
          if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
@@ -879,6 +921,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("Rotation", RGUI_SETTINGS_VIDEO_ROTATION);
    RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
    RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);
+   RGUI_MENU_ITEM("Audio Resampler", RGUI_SETTINGS_RESAMPLER_TYPE);
    RGUI_MENU_ITEM("SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR);
    RGUI_MENU_ITEM("State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR);
    RGUI_MENU_ITEM("Core", RGUI_SETTINGS_CORE);

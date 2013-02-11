@@ -33,6 +33,7 @@
 #include "screenshot.h"
 #include "cheats.h"
 #include "compat/getopt_rarch.h"
+#include "compat/posix_string.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
@@ -402,7 +403,8 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
    RARCH_PERFORMANCE_INIT(resampler_proc);
    RARCH_PERFORMANCE_START(resampler_proc);
-   resampler_process(g_extern.audio_data.source, &src_data);
+   rarch_resampler_process(g_extern.audio_data.resampler,
+         g_extern.audio_data.resampler_data, &src_data);
    RARCH_PERFORMANCE_STOP(resampler_proc);
 
    output_data   = g_extern.audio_data.outsamples;

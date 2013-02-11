@@ -21,6 +21,9 @@
 
 #if defined(__SSE2__)
 #include <emmintrin.h>
+#ifdef _WIN32
+#include <intrin.h>
+#endif
 #endif
 
 static inline uint64_t build_argb64(uint16_t a, uint16_t r, uint16_t g, uint16_t b)

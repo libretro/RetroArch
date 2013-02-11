@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="Help" >
+    <PreferenceScreen android:title="What's New?" >
+       <PreferenceCategory android:title="What's New?" android:layout="@layout/faq_whats_new" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Where are the games?" >
+       <PreferenceCategory android:title="Where are the games?" android:layout="@layout/faq_where_are_the_games" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="What is a 'Libretro core'?" >
+       <PreferenceCategory android:title="What is a 'Libretro core'?" android:layout="@layout/faq_what_is_a_libretro_core" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Libretro core system requirements" >
+       <PreferenceCategory android:title="Libretro core system requirements" android:layout="@layout/faq_system_requirements" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Why do games sound choppy on my device?" >
+       <PreferenceCategory android:title="Games sound choppy on my device?" android:layout="@layout/faq_sound_choppy" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Why are the shaders so slow on my device?" >
+       <PreferenceCategory android:title="Why are the shader so slow on my device?" android:layout="@layout/faq_why_are_the_shaders_so_slow" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Games are slow with rewind. Why?" >
+       <PreferenceCategory android:title="With rewind enabled, games are slow. Why?" android:layout="@layout/faq_games_are_slow_with_rewind_why" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Why doesn't it autodetect my gamepad?" >
+       <PreferenceCategory android:title="Why doesn't it autodetect my gamepad?" android:layout="@layout/faq_why_doesnt_it_autodetect_my_gamepad" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="How do I run Prboom/DOOM?" >
+       <PreferenceCategory android:title="How do I run Prboom/DOOM?" android:layout="@layout/faq_how_do_i_run_prboom" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="How do I run NXEngine/Cave Story?" >
+       <PreferenceCategory android:title="How do I run NXEngine/Cave Story?" android:layout="@layout/faq_how_do_i_run_cave_story" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Why does DOOM have no music?" >
+       <PreferenceCategory android:title="Why does DOOM have no music?" android:layout="@layout/faq_why_does_prboom_have_no_music" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Why doesn't my Neo Geo game work in Final Burn Alpha?" >
+       <PreferenceCategory android:title="Why doesn't my PS1 game work?" android:layout="@layout/faq_neo_geo_game_doesnt_work" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Neo Geo game in FBA shows Video RAM error. Why?" >
+       <PreferenceCategory android:title="Neo Geo game in FBA shows Video RAM error. Why?" android:layout="@layout/faq_neo_geo_game_in_fba_shows_video_ram_err_why" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Why doesn't the PS1 core [PCSX ReARMed] show up in the list?" >
+       <PreferenceCategory android:title="Why doesn't the PS1 core [PCSX ReARMed] show up in the list?" android:layout="@layout/faq_why_doesnt_the_ps1_core_show_up_in_the_list" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="PS1 core looks bad on my Tegra 2, why?" >
+       <PreferenceCategory android:title="PS1 core looks bad on my Tegra 2, why?" android:layout="@layout/faq_ps1_core_looks_bad_on_my_tegra_2_why" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Why doesn't my PS1 game work?" >
+       <PreferenceCategory android:title="Why doesn't my PS1 game work?" android:layout="@layout/faq_ps1_game_doesnt_work" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Why doesn't my Sega CD game work?" >
+       <PreferenceCategory android:title="Why doesn't my Sega CD game work?" android:layout="@layout/faq_sega_cd_game_doesnt_work" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+    <PreferenceScreen android:title="Why is VBA Next/Game Boy Advance so slow compared to other emus ?" >
+       <PreferenceCategory android:title="Why is VBA Next/Game Boy Advance so slow compared to other emus?" android:layout="@layout/faq_why_is_gba_so_slow" >
+        </PreferenceCategory>
+    </PreferenceScreen>
+</PreferenceScreen>

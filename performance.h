@@ -21,6 +21,10 @@
 #include "config.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "boolean.h"
 #include <stdint.h>
 typedef unsigned long long rarch_perf_tick_t;
@@ -92,6 +96,10 @@ void rarch_get_cpu_features(struct rarch_cpu_features *cpu);
 #define RARCH_PERFORMANCE_STOP(X)
 #define RARCH_PERFORMANCE_LOG(functionname, X)
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

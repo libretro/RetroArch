@@ -1,0 +1,13 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="40px"
+android:text="Enabling rewind will double the system requirements of a core (conservative ballpark figure here). It is NOT recommended that you turn on rewind with any core unless you know your device is capable of running said core at twice (or more) its full (realtime) speed.\n\n " />
+</LinearLayout>

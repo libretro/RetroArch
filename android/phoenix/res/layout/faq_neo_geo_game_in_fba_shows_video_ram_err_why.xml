@@ -1,0 +1,13 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="40px"
+android:text="If Neo Geo games start up with a 'VIDEO RAM ERROR', then this indicates that rewind is enabled. Neo Geo games with the Final Burn Alpha core can't currently be played with rewind enabled. If you have the Rewinding option enabled, disable it in the Settings menu and then try the game again." />
+</LinearLayout>

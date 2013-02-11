@@ -116,29 +116,25 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    bool progressive = VIDEO_HaveComponentCable();
    unsigned tvmode = VIDEO_GetCurrentTvMode();
 #endif
-   unsigned max_width, max_height, max_xfb_height;
+   unsigned max_width, max_height;
    switch (tvmode)
    {
       case VI_PAL:
          max_width = VI_MAX_WIDTH_PAL;
-         max_height = VI_MAX_HEIGHT_PAL;
-         max_xfb_height = 574;
+         max_height = /* VI_MAX_HEIGHT_PAL */ 574;
          break;
       case VI_MPAL:
          max_width = VI_MAX_WIDTH_MPAL;
          max_height = VI_MAX_HEIGHT_MPAL;
-         max_xfb_height = 574;
          break;
       case VI_EURGB60:
          max_width = VI_MAX_WIDTH_NTSC;
          max_height = VI_MAX_HEIGHT_NTSC;
-         max_xfb_height = 480;
          break;
       default:
          tvmode = VI_NTSC;
          max_width = VI_MAX_WIDTH_EURGB60;
          max_height = VI_MAX_HEIGHT_EURGB60;
-         max_xfb_height = 480;
          break;
    }
 
@@ -170,10 +166,10 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    gx_mode.fbWidth = fbWidth;
    gx_mode.efbHeight = min(lines, 480);
 
-   if (modetype == VI_NON_INTERLACE && lines > max_xfb_height / 2)
-      gx_mode.xfbHeight = max_xfb_height / 2;
-   else if (modetype != VI_NON_INTERLACE && lines > max_xfb_height)
-      gx_mode.xfbHeight = max_xfb_height;
+   if (modetype == VI_NON_INTERLACE && lines > max_height / 2)
+      gx_mode.xfbHeight = max_height / 2;
+   else if (modetype != VI_NON_INTERLACE && lines > max_height)
+      gx_mode.xfbHeight = max_height;
    else
       gx_mode.xfbHeight = lines;
 
@@ -316,9 +312,9 @@ static void init_texture(unsigned width, unsigned height)
    unsigned g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
 
    GX_InitTexObj(&g_tex.obj, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW)) ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-   GX_InitTexObjLOD(&g_tex.obj, g_filter, GX_NEAR_MIP_NEAR, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
+   GX_InitTexObjLOD(&g_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_InitTexObj(&menu_tex.obj, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
-   GX_InitTexObjLOD(&menu_tex.obj, g_filter, GX_NEAR_MIP_NEAR, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
+   GX_InitTexObjLOD(&menu_tex.obj, g_filter, g_filter, 0, 0, 0, GX_TRUE, GX_FALSE, GX_ANISO_1);
    GX_InvalidateTexAll();
 }
 

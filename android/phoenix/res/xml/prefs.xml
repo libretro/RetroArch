@@ -18,7 +18,8 @@
                 android:key="savefile_directory_enable"
                 android:defaultValue="false"/>
             <Preference android:title="Savefile directory"
-                android:summary="Sets directory where to save and load game save files.">
+                android:summary="Sets directory where to save and load game save files."
+                android:dependency="savefile_directory_enable">
                 <intent
                     android:targetClass="org.retroarch.browser.SRMDirActivity"
                     android:targetPackage="org.retroarch" />
@@ -30,7 +31,8 @@
                 android:key="savestate_directory_enable"
                 android:defaultValue="false"/>
             <Preference android:title="Save state directory"
-                android:summary="Sets directory where to save and load game save states.">
+                android:summary="Sets directory where to save and load game save states."
+                android:dependency="savestate_directory_enable">
                 <intent
                     android:targetClass="org.retroarch.browser.StateDirActivity"
                     android:targetPackage="org.retroarch" />
@@ -67,16 +69,6 @@
                 android:title="VSync" />
             <CheckBoxPreference
                 android:defaultValue="true"
-                android:key="video_sync_refreshrate_to_screen"
-                android:summary="Synchronize RetroArch's refresh rate to the screen's refresh rate (recommended - some screens have refresh rates below 59.95Hz and need this enabled to get good audio/video sync)."
-                android:title="Sync refreshrate to screen" />
-            <EditTextPreference
-                android:key="video_refresh_rate"
-                android:summary="Force a specific refresh rate to be detected. Only use if auto-detection of refresh rate reports wrong refresh rate."
-                android:title="Forced refresh rate (Hz)"
-                android:numeric="decimal" />
-            <CheckBoxPreference
-                android:defaultValue="true"
                 android:key="video_allow_rotate"
                 android:summary="Will auto-rotate the screen for vertically oriented games."
                 android:title="Auto-rotate" />
@@ -88,6 +80,28 @@
                 android:summary="Aspect ratio to enforce."
                 android:title="Aspect ratio" />
         </PreferenceCategory>
+        <PreferenceCategory android:title="Synchronization" >
+            <EditTextPreference
+                android:key="video_refresh_rate"
+                android:numeric="decimal"
+                android:summary="Force a specific refresh rate to be detected. Only set manually if calibration reports wrong refresh rate."
+                android:title="Forced refresh rate (Hz)" />
+
+            <Preference
+                android:summary="Attempts to find the true refresh rate of monitor. Updates value in &apos;Force refresh rate (Hz)&apos; option. To help ensure accuracy, make sure no intense background services are running, and avoid triggering screensaver."
+                android:title="Calibrate refresh rate" >
+                <intent
+                    android:targetClass="org.retroarch.browser.DisplayRefreshRateTest"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+            <Preference
+                android:summary="Sets refresh rate equal to OS-reported value. This might not be accurate for your phone."
+                android:title="Set OS-reported refresh rate" >
+                <intent
+                    android:targetClass="org.retroarch.browser.RefreshRateSetOS"
+                    android:targetPackage="org.retroarch" />
+            </Preference>
+        </PreferenceCategory>
         <PreferenceCategory android:title="Shaders (1st pass)" >
             <CheckBoxPreference
                 android:defaultValue="true"
@@ -95,14 +109,15 @@
                 android:summary="Applies Bilinear filtering, smooths out edges (settings still apply even if no shader is selected)."
                 android:title="Bilinear filter" />
             <CheckBoxPreference
-               android:summary="Enable first pass shader (WARNING: recommended system requirements for these shaders is a Tegra 4/Exynos5 class GPU and/or higher)."
+                android:summary="Enable first pass shader (WARNING: recommended system requirements for these shaders is a Tegra 4/Exynos5 class GPU and/or higher)."
                 android:defaultValue="false"
                 android:key="video_shader_enable"
                 android:title="Enable" />
 
             <Preference
-               android:summary="Sets GLES2 style XML shader."
-                android:title="XML shader" >
+                android:summary="Sets GLES2 style XML shader."
+                android:title="XML shader"
+                android:dependency="video_shader_enable" >
                 <intent
                     android:targetClass="org.retroarch.browser.ShaderActivity"
                     android:targetPackage="org.retroarch" />
@@ -117,12 +132,13 @@
             <CheckBoxPreference
                 android:defaultValue="false"
                 android:key="video_second_pass_shader_enable"
-               android:summary="Enable custom shader for use after rendering to FBO (WARNING: recommended system requirements for these shaders is a Tegra 4/Exynos5 class GPU and/or higher)."
+                android:summary="Enable custom shader for use after rendering to FBO (WARNING: recommended system requirements for these shaders is a Tegra 4/Exynos5 class GPU and/or higher)."
                 android:title="Enable shader #2" />
 
             <Preference
                 android:summary="Sets shader to use for second pass."
-                android:title="XML shader (2nd pass)" >
+                android:title="XML shader (2nd pass)"
+                android:dependency="video_second_pass_shader_enable" >
                 <intent
                     android:targetClass="org.retroarch.browser.Shader2Activity"
                     android:targetPackage="org.retroarch" />
@@ -157,7 +173,8 @@
                 android:defaultValue="true"
                 android:key="audio_rate_control"
                 android:summary="Enable dynamic rate control (recommended)."
-                android:title="Dynamic Rate Control" />
+                android:title="Dynamic Rate Control"
+                android:dependency="audio_enable" />
         </PreferenceCategory>
     </PreferenceScreen>
     <PreferenceScreen android:title="Input Settings" >
@@ -168,6 +185,34 @@
                 android:summary="This will attempt to preconfigure various gamepads and/or IME apps that you connect."
                 android:title="Enable"
                 android:disableDependentsState="true" />
+        <PreferenceScreen android:title="List of autodetected devices" >
+       <PreferenceCategory android:title="Configuration Autodetect - Supported Pads" android:layout="@layout/faq_supported_pads" >
+        </PreferenceCategory>
+     </PreferenceScreen>
+            <ListPreference
+                android:entries="@array/icade_profiles"
+                android:entryValues="@array/icade_profiles_values"
+                android:key="input_autodetect_icade_profile_pad0"
+                android:summary="Select the iCade profile to use for controller 1."
+                android:title="iCade profile Pad 1" />
+            <ListPreference
+                android:entries="@array/icade_profiles"
+                android:entryValues="@array/icade_profiles_values"
+                android:key="input_autodetect_icade_profile_pad1"
+                android:summary="Select the iCade profile to use for controller 2."
+                android:title="iCade profile Pad 2" />
+            <ListPreference
+                android:entries="@array/icade_profiles"
+                android:entryValues="@array/icade_profiles_values"
+                android:key="input_autodetect_icade_profile_pad2"
+                android:summary="Select the iCade profile to use for controller 3."
+                android:title="iCade profile Pad 3" />
+            <ListPreference
+                android:entries="@array/icade_profiles"
+                android:entryValues="@array/icade_profiles_values"
+                android:key="input_autodetect_icade_profile_pad3"
+                android:summary="Select the iCade profile to use for controller 4."
+                android:title="iCade profile Pad 4" />
         </PreferenceCategory>
         <PreferenceCategory android:title="Debug input reporting" >
             <CheckBoxPreference
@@ -185,7 +230,8 @@
 
             <Preference
                 android:summary="Sets touchscreen overlay config."
-                android:title="Input overlay" >
+                android:title="Input overlay"
+                android:dependency="input_overlay_enable" >
                 <intent
                     android:targetClass="org.retroarch.browser.OverlayActivity"
                     android:targetPackage="org.retroarch" />
@@ -193,7 +239,8 @@
             <org.retroarch.browser.SeekbarPreference
                 android:summary="Set the opacity of the touch overlay."
                 android:title="Overlay opacity"
-                android:key="input_overlay_opacity" />
+                android:key="input_overlay_opacity"
+                android:dependency="input_overlay_enable" />
         </PreferenceCategory>
         <PreferenceCategory android:title="Custom Binds">
 	        <PreferenceScreen

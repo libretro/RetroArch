@@ -33,25 +33,36 @@
 #include <xmmintrin.h>
 #endif
 
+#ifdef SINC_LOWER_QUALITY
+#define PHASE_BITS 12
+#define SIDELOBES 4
+#define ENABLE_AVX 0
+#elif defined(SINC_HIGHER_QUALITY)
+#define PHASE_BITS 16
+#define SIDELOBES 32
+#define ENABLE_AVX 1
+#else
+#define PHASE_BITS 16
+#define SIDELOBES 8
+#define ENABLE_AVX 0
+#endif
+
 // For the little amount of taps we're using,
 // SSE1 is faster than AVX for some reason.
 // AVX code is kept here though as by increasing number
 // of sinc taps, the AVX code is clearly faster than SSE1.
-#define ENABLE_AVX 0
 
 #if defined(__AVX__) && ENABLE_AVX
 #include <immintrin.h>
 #endif
 
-#define PHASE_BITS 16
 #define SUBPHASE_BITS 10
 #define PHASES (1 << (PHASE_BITS + SUBPHASE_BITS))
 
-#define SIDELOBES 8
 #define TAPS (SIDELOBES * 2)
 #define CUTOFF 0.98
 
-struct rarch_resampler
+typedef struct rarch_sinc_resampler
 {
    sample_t phase_table[1 << PHASE_BITS][TAPS];
    sample_t buffer_l[2 * TAPS];
@@ -59,7 +70,7 @@ struct rarch_resampler
 
    unsigned ptr;
    uint32_t time;
-};
+} rarch_sinc_resampler_t;
 
 static inline double sinc(double val)
 {
@@ -74,7 +85,7 @@ static inline double lanzcos(double index)
    return sinc(index);
 }
 
-static void init_sinc_table(rarch_resampler_t *resamp)
+static void init_sinc_table(rarch_sinc_resampler_t *resamp)
 {
    // Sinc phases: [..., p + 3, p + 2, p + 1, p + 0, p - 1, p - 2, p - 3, p - 4, ...]
    for (int i = 0; i < (1 << PHASE_BITS); i++)
@@ -110,7 +121,7 @@ static void aligned_free__(void *ptr)
    free(p[-1]);
 }
 
-static inline void process_sinc_C(rarch_resampler_t *resamp, float *out_buffer)
+static inline void process_sinc_C(rarch_sinc_resampler_t *resamp, float *out_buffer)
 {
    float sum_l = 0.0f;
    float sum_r = 0.0f;
@@ -133,7 +144,7 @@ static inline void process_sinc_C(rarch_resampler_t *resamp, float *out_buffer)
 
 #if defined(__AVX__) && ENABLE_AVX
 #define process_sinc_func process_sinc
-static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
+static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 {
    __m256 sum_l = _mm256_setzero_ps();
    __m256 sum_r = _mm256_setzero_ps();
@@ -169,7 +180,7 @@ static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
 }
 #elif defined(__SSE__)
 #define process_sinc_func process_sinc
-static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
+static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 {
    __m128 sum_l = _mm_setzero_ps();
    __m128 sum_r = _mm_setzero_ps();
@@ -212,12 +223,15 @@ static void process_sinc(rarch_resampler_t *resamp, float *out_buffer)
    _mm_store_ss(out_buffer + 1, _mm_movehl_ps(sum, sum));
 }
 #elif defined(HAVE_NEON)
+
 // Need to make this function pointer as Android doesn't have built-in targets
 // for NEON and plain ARMv7a.
-static void (*process_sinc_func)(rarch_resampler_t *resamp, float *out_buffer);
+static void (*process_sinc_func)(rarch_sinc_resampler_t *resamp, float *out_buffer);
 
-void process_sinc_neon_asm(float *out, const float *left, const float *right, const float *coeff);
-static void process_sinc_neon(rarch_resampler_t *resamp, float *out_buffer)
+// Assumes that taps >= 8, and that taps is a multiple of 8.
+void process_sinc_neon_asm(float *out, const float *left, const float *right, const float *coeff, unsigned taps);
+
+static void process_sinc_neon(rarch_sinc_resampler_t *resamp, float *out_buffer)
 {
    const float *buffer_l = resamp->buffer_l + resamp->ptr;
    const float *buffer_r = resamp->buffer_r + resamp->ptr;
@@ -225,14 +239,16 @@ static void process_sinc_neon(rarch_resampler_t *resamp, float *out_buffer)
    unsigned phase = resamp->time >> SUBPHASE_BITS;
    const float *phase_table = resamp->phase_table[phase];
 
-   process_sinc_neon_asm(out_buffer, buffer_l, buffer_r, phase_table);
+   process_sinc_neon_asm(out_buffer, buffer_l, buffer_r, phase_table, TAPS);
 }
 #else // Plain ol' C99
 #define process_sinc_func process_sinc_C
 #endif
 
-void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
+static void resampler_sinc_process(void *re_, struct resampler_data *data)
 {
+   rarch_sinc_resampler_t *re = (rarch_sinc_resampler_t*)re_;
+
    // If data->ratio is < 1, we are downsampling.
    // The sinc table is not set up for this, as it always assumes upsampling.
    // Downsampling will work, but with some added noise due to aliasing might be present.
@@ -267,14 +283,14 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
    data->output_frames = out_frames;
 }
 
-void resampler_free(rarch_resampler_t *re)
+static void resampler_sinc_free(void *re)
 {
    aligned_free__(re);
 }
 
-rarch_resampler_t *resampler_new(void)
+static void *resampler_sinc_new(void)
 {
-   rarch_resampler_t *re = (rarch_resampler_t*)aligned_alloc__(1024, sizeof(*re));
+   rarch_sinc_resampler_t *re = (rarch_sinc_resampler_t*)aligned_alloc__(128, sizeof(*re));
    if (!re)
       return NULL;
 
@@ -295,6 +311,15 @@ rarch_resampler_t *resampler_new(void)
    RARCH_LOG("Sinc resampler [C]\n");
 #endif
 
+   RARCH_LOG("SINC params (%u phase bits, %u taps).\n", PHASE_BITS, TAPS);
+
    return re;
 }
+
+const rarch_resampler_t sinc_resampler = {
+   resampler_sinc_new,
+   resampler_sinc_process,
+   resampler_sinc_free,
+   "sinc",
+};
 

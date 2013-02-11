@@ -1,0 +1,13 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="40px"
+        android:text="RetroArch Android is not a 'game'. What it is, however, is an 'engine' that allows you to run emulators and game engines.\n\nEmulators can play games that were made for the systems the emulator tries to simulate. For example, a SNES emulator can play SNES games in the form of files that are commonly referred to as 'ROM images'.\n\nDue to legalese, RetroArch Android does NOT come with ROMs or copyrighted material of any kind. Said material must be provided by yourself. DO NOT REQUEST WHERE TO GET ROMS. ANY E-MAILS RE: ROM REQUESTS WILL BE IGNORED.\n\nGame engine ports allow you to play specific games - for instance, prBoom is a game engine for the DOOM games, while NX-Engine is a game engine that can play Cave Story. To play these games, you must often provide the original datafiles of the game or else they will not work. The instructions as to how to play these 'game engines' differ per core." />
+</LinearLayout>

@@ -27,11 +27,11 @@
 
 #define CHANNELS 2
 
-struct rarch_resampler
+typedef struct rarch_hermite_resampler
 {
    float chan_data[CHANNELS][4];
    double r_frac;
-};
+} rarch_hermite_resampler_t;
 
 static inline float hermite_kernel(float mu1, float a, float b, float c, float d)
 {
@@ -51,14 +51,17 @@ static inline float hermite_kernel(float mu1, float a, float b, float c, float d
    return (a0 * b) + (a1 * m0) + (a2 * m1) + (a3 * c);
 }
 
-rarch_resampler_t *resampler_new(void)
+void *resampler_hermite_new(void)
 {
+#ifndef RESAMPLER_TEST
    RARCH_LOG("Hermite resampler [C]\n");
-   return (rarch_resampler_t*)calloc(1, sizeof(rarch_resampler_t));
+#endif
+   return calloc(1, sizeof(rarch_hermite_resampler_t));
 }
 
-void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
+static void resampler_hermite_process(void *re_, struct resampler_data *data)
 {
+   rarch_hermite_resampler_t *re = (rarch_hermite_resampler_t*)re_;
    double r_step = 1.0 / data->ratio;
    size_t processed_out = 0;
 
@@ -99,8 +102,15 @@ void resampler_process(rarch_resampler_t *re, struct resampler_data *data)
    data->output_frames = processed_out;
 }
 
-void resampler_free(rarch_resampler_t *re)
+static void resampler_hermite_free(void *re)
 {
    free(re);
 }
+
+const rarch_resampler_t hermite_resampler = {
+   resampler_hermite_new,
+   resampler_hermite_process,
+   resampler_hermite_free,
+   "hermite",
+};
 

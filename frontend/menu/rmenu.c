@@ -290,6 +290,21 @@ static void populate_setting_item(void *data, unsigned input)
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [General Audio Settings] back to their 'DEFAULT' values.");
          break;
+      case SETTING_RESAMPLER_TYPE:
+         snprintf(current_item->text, sizeof(current_item->text), "Sound resampler");
+#ifdef HAVE_SINC
+         if (strstr(g_settings.audio.resampler, "sinc"))
+         {
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Sinc");
+            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Sinc resampler] - slightly slower but better sound quality at high frequencies.");
+         }
+         else
+#endif
+         {
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Hermite");
+            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Hermite resampler] - faster but less accurate at high frequencies.");
+         }
+         break;
       case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
          snprintf(current_item->text, sizeof(current_item->text), "Current save state slot");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.state_slot);
@@ -922,6 +937,7 @@ static bool osk_callback_enter_filename(void *data)
             RARCH_LOG("[osk_callback_enter_filename]: filepath is: %s.\n", filepath);
 
             struct gl_cg_cgp_info current_settings;
+            memset(&current_settings, 0, sizeof(current_settings));
             current_settings.shader[0] = g_settings.video.cg_shader_path;
             current_settings.shader[1] = g_settings.video.second_pass_shader;
             current_settings.filter_linear[0] = g_settings.video.smooth;
@@ -1310,9 +1326,12 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
 #ifdef HAVE_OSKUTIL
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            rmenu_state.osk_param = SHADER_PRESET_FILE;
-            rmenu_state.osk_init = osk_callback_enter_filename_init;
-            rmenu_state.osk_callback = osk_callback_enter_filename;
+            if(g_extern.main_is_init)
+            {
+               rmenu_state.osk_param = SHADER_PRESET_FILE;
+               rmenu_state.osk_init = osk_callback_enter_filename_init;
+               rmenu_state.osk_callback = osk_callback_enter_filename;
+            }
          }
 #endif
          break;
@@ -1320,6 +1339,11 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          break;
 #endif
       case SETTING_DEFAULT_VIDEO_ALL:
+         if(input & (1ULL << RMENU_DEVICE_NAV_START))
+         {
+            set_setting_action(NULL, SETTING_SHADER, 1ULL << RMENU_DEVICE_NAV_START);
+            set_setting_action(NULL, SETTING_SHADER_2, 1ULL << RMENU_DEVICE_NAV_START);
+         }
          break;
       case SETTING_SOUND_MODE:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
@@ -1423,6 +1447,46 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             g_extern.lifecycle_mode_state &= ~((1ULL << MODE_GAME));
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             return -1;
+         }
+         break;
+      case SETTING_RESAMPLER_TYPE:
+         if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         {
+#ifdef HAVE_SINC
+            if( strstr(g_settings.audio.resampler, "hermite"))
+               snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "sinc");
+            else
+#endif
+               snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+
+            if (g_extern.main_is_init)
+            {
+               if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
+                        g_settings.audio.resampler))
+               {
+                  RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
+                  g_extern.audio_active = false;
+               }
+            }
+
+         }
+         if(input & (1ULL << RMENU_DEVICE_NAV_START))
+         {
+#ifdef HAVE_SINC
+            snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "sinc");
+#else
+            snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+#endif
+            
+            if (g_extern.main_is_init)
+            {
+               if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
+                        g_settings.audio.resampler))
+               {
+                  RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
+                  g_extern.audio_active = false;
+               }
+            }
          }
          break;
       case SETTING_EMU_AUDIO_MUTE:

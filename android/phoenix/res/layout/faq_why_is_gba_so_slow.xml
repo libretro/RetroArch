@@ -1,0 +1,13 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="40px"
+        android:text="VBA Next is an emulator that is based on VBA-M. This is a more accurate emulator than most, but it's also much slower. Unfortunately, while VBA Next seems to run very well even on a Nintendo Wii, it seems that as of this minute even medium heavyweight Android devices can't compete with a Nintendo Wii in terms of runtime performance.\n\nThere will be another Game Boy Advance core added shortly that will be a lot faster than VBA Next and will compete directly with Gameboid and other emus of this ilk. NOTE - Gameboid and those 'other emus' are based on the open-source emulator gpSP - which is also the emulator we will be basing this new faster core on." />
+</LinearLayout>

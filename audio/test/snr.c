@@ -270,8 +270,10 @@ int main(int argc, char *argv[])
    assert(input);
    assert(output);
 
-   rarch_resampler_t *re = resampler_new();
-   assert(re);
+   void *re = NULL;
+   const rarch_resampler_t *resampler = NULL;
+   if (!rarch_resampler_realloc(&re, &resampler, NULL))
+      return 1;
 
    test_fft();
 
@@ -289,7 +291,7 @@ int main(int argc, char *argv[])
          .ratio = ratio,
       };
 
-      resampler_process(re, &data);
+      rarch_resampler_process(resampler, re, &data);
 
       unsigned out_samples = data.output_frames * 2;
       assert(out_samples >= fft_samples * 2);
@@ -307,7 +309,7 @@ int main(int argc, char *argv[])
             res.alias_freq[2] / (float)in_rate, res.alias_power[2]);
    }
 
-   resampler_free(re);
+   rarch_resampler_freep(&resampler, &re);
    free(input);
    free(output);
    free(butterfly_buf);
