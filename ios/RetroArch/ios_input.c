@@ -57,12 +57,21 @@ static int16_t ios_input_state(void *data, const struct retro_keybind **binds, u
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
+         if (port != 0) return 0;
          switch (id)
          {
             case RETRO_DEVICE_ID_JOYPAD_UP: return ios_keys[82];
             case RETRO_DEVICE_ID_JOYPAD_DOWN: return ios_keys[81];
             case RETRO_DEVICE_ID_JOYPAD_LEFT: return ios_keys[80];
             case RETRO_DEVICE_ID_JOYPAD_RIGHT: return ios_keys[79];
+            case RETRO_DEVICE_ID_JOYPAD_B: return ios_keys[0x1D];
+            case RETRO_DEVICE_ID_JOYPAD_A: return ios_keys[0x1B];
+            case RETRO_DEVICE_ID_JOYPAD_Y: return ios_keys[0x04];
+            case RETRO_DEVICE_ID_JOYPAD_X: return ios_keys[0x1D];
+            case RETRO_DEVICE_ID_JOYPAD_START: return ios_keys[0x1A];
+            case RETRO_DEVICE_ID_JOYPAD_SELECT: return ios_keys[0x14];
+            case RETRO_DEVICE_ID_JOYPAD_L: return ios_keys[0x07];
+            case RETRO_DEVICE_ID_JOYPAD_R: return ios_keys[0x06];
             default: return 0;
          }
          return 0;
@@ -86,6 +95,20 @@ static int16_t ios_input_state(void *data, const struct retro_keybind **binds, u
 
 static bool ios_input_key_pressed(void *data, int key)
 {
+   switch (key)
+   {
+      case RARCH_FAST_FORWARD_KEY: return ios_keys[0x2C];
+      case RARCH_FAST_FORWARD_HOLD_KEY: return ios_keys[0x0F];
+      case RARCH_LOAD_STATE_KEY: return ios_keys[0x03D];
+      case RARCH_SAVE_STATE_KEY: return ios_keys[0x03B];
+      case RARCH_STATE_SLOT_PLUS: return ios_keys[0x40];
+      case RARCH_STATE_SLOT_MINUS: return ios_keys[0x3F];
+      case RARCH_REWIND: return ios_keys[0x15];
+      case RARCH_PAUSE_TOGGLE: return ios_keys[0x13];
+      case RARCH_FRAMEADVANCE: return ios_keys[0x0E];
+      case RARCH_RESET: return ios_keys[0x0B];
+   }
+
    return false;
 }
 

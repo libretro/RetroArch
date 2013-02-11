@@ -21,6 +21,7 @@ NSString *const GSEventKeyUpNotification = @"GSEventKeyUpHackNotification";
 
 @implementation RApplication
 
+#define HWKB_HACK
 #ifdef HWKB_HACK // Disabled pending further testing
 // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
 - (void)sendEvent:(UIEvent *)event
