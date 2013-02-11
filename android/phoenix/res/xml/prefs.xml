@@ -185,6 +185,10 @@
                 android:summary="This will attempt to preconfigure various gamepads and/or IME apps that you connect."
                 android:title="Enable"
                 android:disableDependentsState="true" />
+        <PreferenceScreen android:title="List of autodetected devices" >
+       <PreferenceCategory android:title="Configuration Autodetect - Supported Pads" android:layout="@layout/faq_supported_pads" >
+        </PreferenceCategory>
+     </PreferenceScreen>
             <ListPreference
                 android:entries="@array/icade_profiles"
                 android:entryValues="@array/icade_profiles_values"

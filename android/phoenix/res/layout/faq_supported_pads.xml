@@ -1,0 +1,13 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="40px"
+        android:text="The following pads have been added to the autodetection list:\n\n* Logitech/Logicool Rumblepad 2\n* Microsoft Sidewinder USB (ISSUE - diagonals not working).\n* Microsoft Xbox 360 Wired/Wireless (ISSUE - diagonals not working).\n* PS3 Sixaxis/DualShock 3 (using either USB or Dancingpixelstudios' IME app)\n* MOGA (using either 'root' gamepad mode or official IME app)\n* JXD S5110\n* Snakebyte idroid\n* Logitech Dual Action\n* Mayflash SUper Joy Bx 3 Pro\n*RetroUSB SNES RetroPort\n*RetroUSB NES RetroPad\n*Buffalo SNES Pad\n* Elecom PS1/PS2 to USB\n* Archos gamepad\n* Xbox 1 (Titanium X-Joy Converter) (ISSUE - diagonals not working).\n* Red Samurai (IME app Bluetooth or gamepad mode\n* Xperia Play\n* Trust Raptor\n* Logitech F710\n* DragonRise USB\n* Madcatz PS3 fighting stick (TODO - TEST)\n* iPega (iCade profile)\n* PC2JAMMA-USB (TODO - TEST)\n* Genius MaxFire G-08XU\n* Zeemote Steelseries\n* Saitek Rumblepad\n* Super Smart Joy\n* Groupwise PS2 to USB converter" />
+</LinearLayout>
