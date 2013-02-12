@@ -118,7 +118,29 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
       [NSArray arrayWithObjects:@"Input",
          subpath_setting(config, @"input_overlay", @"Input Overlay", @"", overlay_path, @"cfg"),
          nil],
-         
+      
+      [NSArray arrayWithObjects:@"Player 1",
+         button_setting(config, @"input_player1_up", @"Up", @"up"),
+         button_setting(config, @"input_player1_down", @"Down", @"down"),
+         button_setting(config, @"input_player1_left", @"Left", @"left"),
+         button_setting(config, @"input_player1_right", @"Right", @"right"),
+
+         button_setting(config, @"input_player1_start", @"Start", @"enter"),
+         button_setting(config, @"input_player1_select", @"Select", @"rshift"),
+
+         button_setting(config, @"input_player1_b", @"B", @"z"),
+         button_setting(config, @"input_player1_a", @"A", @"x"),
+         button_setting(config, @"input_player1_x", @"X", @"s"),
+         button_setting(config, @"input_player1_y", @"Y", @"a"),
+
+         button_setting(config, @"input_player1_l", @"L", @"q"),
+         button_setting(config, @"input_player1_r", @"R", @"w"),
+         button_setting(config, @"input_player1_l2", @"L2", @""),
+         button_setting(config, @"input_player1_r2", @"R2", @""),
+         button_setting(config, @"input_player1_l3", @"L3", @""),
+         button_setting(config, @"input_player1_r3", @"R3", @""),
+         nil],
+       
       [NSArray arrayWithObjects:@"System Keys",
          button_setting(config, @"input_save_state", @"Save State", @"f2"),
          button_setting(config, @"input_load_state", @"Load State", @"f4"),
