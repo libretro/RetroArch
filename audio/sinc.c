@@ -291,6 +291,10 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 }
 #elif defined(HAVE_NEON)
 
+#if TAPS < 8
+#error "NEON asm requires at least 8 taps (for now)."
+#endif
+
 // Need to make this function pointer as Android doesn't have built-in targets
 // for NEON and plain ARMv7a.
 static void (*process_sinc_func)(rarch_sinc_resampler_t *resamp, float *out_buffer);
