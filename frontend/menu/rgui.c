@@ -668,9 +668,11 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          {
             if(rgui_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
             {
+#ifdef HW_RVL
                if ((rgui_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
                   if (CONF_GetVideo() != CONF_VIDEO_PAL)
                      return 0;
+#endif
 
                rgui_current_gx_resolution++;
                gx_set_video_mode(rgui_gx_resolutions[rgui_current_gx_resolution][0], rgui_gx_resolutions[rgui_current_gx_resolution][1]);
