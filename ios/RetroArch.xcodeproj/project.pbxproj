@@ -990,6 +990,7 @@
 					"-DHAVE_RARCH_MAIN_WRAP",
 					"-DIOS",
 					"-DHAVE_OPENGL",
+					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_VID_CONTEXT",
 					"-DHAVE_OPENGLES2",
