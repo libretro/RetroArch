@@ -15,7 +15,6 @@
 		96297A0F16C5AEA100E6DCE0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0E16C5AEA100E6DCE0 /* main.m */; };
 		96297A1116C5AEDE00E6DCE0 /* game_view.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A1016C5AEDE00E6DCE0 /* game_view.m */; };
 		96297A1316C5AEFD00E6DCE0 /* directory_list.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A1216C5AEFD00E6DCE0 /* directory_list.m */; };
-		96297A1D16C6D20900E6DCE0 /* settings_list.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A1C16C6D20900E6DCE0 /* settings_list.m */; };
 		96297A2416C818FF00E6DCE0 /* Icon-72.png in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2216C818FF00E6DCE0 /* Icon-72.png */; };
 		96297A2516C818FF00E6DCE0 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2316C818FF00E6DCE0 /* Icon.png */; };
 		96297A2716C82FF100E6DCE0 /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2616C82FF100E6DCE0 /* overlays */; };
@@ -24,6 +23,9 @@
 		96366C5316C9A7C100D64A22 /* coreaudio.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEE816C1DC73009DE44C /* coreaudio.c */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
+		96366C7416CAF62200D64A22 /* button_getter.m in Sources */ = {isa = PBXBuildFile; fileRef = 96366C7016CAF62200D64A22 /* button_getter.m */; };
+		96366C7516CAF62200D64A22 /* enumeration_list.m in Sources */ = {isa = PBXBuildFile; fileRef = 96366C7116CAF62200D64A22 /* enumeration_list.m */; };
+		96366C7616CAF62200D64A22 /* settings_list.m in Sources */ = {isa = PBXBuildFile; fileRef = 96366C7316CAF62200D64A22 /* settings_list.m */; };
 		96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
 		96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
 		96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
@@ -96,13 +98,16 @@
 		96297A0E16C5AEA100E6DCE0 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		96297A1016C5AEDE00E6DCE0 /* game_view.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = game_view.m; sourceTree = "<group>"; };
 		96297A1216C5AEFD00E6DCE0 /* directory_list.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = directory_list.m; sourceTree = "<group>"; };
-		96297A1C16C6D20900E6DCE0 /* settings_list.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settings_list.m; sourceTree = "<group>"; };
 		96297A2216C818FF00E6DCE0 /* Icon-72.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon-72.png"; path = "RetroArch/Icon-72.png"; sourceTree = "<group>"; };
 		96297A2316C818FF00E6DCE0 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon.png; path = RetroArch/Icon.png; sourceTree = "<group>"; };
 		96297A2616C82FF100E6DCE0 /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../media/overlays; sourceTree = "<group>"; };
 		96366C4F16C9A4E100D64A22 /* resampler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = resampler.c; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		96366C7016CAF62200D64A22 /* button_getter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = button_getter.m; sourceTree = "<group>"; };
+		96366C7116CAF62200D64A22 /* enumeration_list.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = enumeration_list.m; sourceTree = "<group>"; };
+		96366C7216CAF62200D64A22 /* settings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settings.h; sourceTree = "<group>"; };
+		96366C7316CAF62200D64A22 /* settings_list.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settings_list.m; sourceTree = "<group>"; };
 		96AFAE2516C1D4EA009DE44C /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96AFAE2916C1D4EA009DE44C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		96AFAE2B16C1D4EA009DE44C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -305,6 +310,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		96366C6F16CAF62200D64A22 /* settings */ = {
+			isa = PBXGroup;
+			children = (
+				96366C7016CAF62200D64A22 /* button_getter.m */,
+				96366C7116CAF62200D64A22 /* enumeration_list.m */,
+				96366C7216CAF62200D64A22 /* settings.h */,
+				96366C7316CAF62200D64A22 /* settings_list.m */,
+			);
+			path = settings;
+			sourceTree = "<group>";
+		};
 		96AFAE1A16C1D4EA009DE44C = {
 			isa = PBXGroup;
 			children = (
@@ -346,6 +362,7 @@
 		96AFAE3316C1D4EA009DE44C /* RetroArch */ = {
 			isa = PBXGroup;
 			children = (
+				96366C6F16CAF62200D64A22 /* settings */,
 				96297A1216C5AEFD00E6DCE0 /* directory_list.m */,
 				96297A1016C5AEDE00E6DCE0 /* game_view.m */,
 				96297A0D16C5ADDA00E6DCE0 /* views.h */,
@@ -356,7 +373,6 @@
 				96AFAE3416C1D4EA009DE44C /* Supporting Files */,
 				96CF015B16C2F72900ABF9C9 /* ios_input.c */,
 				96297A0816C59EC000E6DCE0 /* module_list.m */,
-				96297A1C16C6D20900E6DCE0 /* settings_list.m */,
 			);
 			path = RetroArch;
 			sourceTree = "<group>";
@@ -807,10 +823,12 @@
 				96297A0F16C5AEA100E6DCE0 /* main.m in Sources */,
 				96297A1116C5AEDE00E6DCE0 /* game_view.m in Sources */,
 				96297A1316C5AEFD00E6DCE0 /* directory_list.m in Sources */,
-				96297A1D16C6D20900E6DCE0 /* settings_list.m in Sources */,
 				96366C5016C9A4E100D64A22 /* resampler.c in Sources */,
 				96366C5216C9A4E600D64A22 /* hermite.c in Sources */,
 				96366C5316C9A7C100D64A22 /* coreaudio.c in Sources */,
+				96366C7416CAF62200D64A22 /* button_getter.m in Sources */,
+				96366C7516CAF62200D64A22 /* enumeration_list.m in Sources */,
+				96366C7616CAF62200D64A22 /* settings_list.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

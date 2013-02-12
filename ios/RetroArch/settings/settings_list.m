@@ -7,6 +7,7 @@
 //
 
 #import <objc/runtime.h>
+#import "settings.h"
 #include "config_file.h"
 
 static const char* const SETTINGID = "SETTING";
@@ -84,101 +85,6 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
             nil];
 }
 
-@interface button_getter : NSObject<UIAlertViewDelegate>
-@end
-
-@implementation button_getter
-{
-   button_getter* me;
-   NSMutableDictionary* value;
-   UIAlertView* alert;
-}
-
-- (id)initWithSetting:(NSMutableDictionary*)setting
-{
-   value = setting;
-
-   alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
-                                message:[value objectForKey:@"LABEL"]
-                                delegate:self
-                                cancelButtonTitle:@"Cancel"
-                                otherButtonTitles:nil];
-   [alert show];
-   
-   [[NSNotificationCenter defaultCenter] addObserver: self selector: @selector(keyReleased:) name: GSEventKeyUpNotification object: nil];
-   
-   me = self;
-   return self;
-}
-
-- (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex
-{
-   [[NSNotificationCenter defaultCenter] removeObserver:self];
-   me = nil;
-}
-
-- (void)keyReleased:(NSNotification*) notification
-{
-   [alert dismissWithClickedButtonIndex:0 animated:YES];
-}
-
-@end
-
-
-@interface enumeration_list : UITableViewController
-@end
-
-@implementation enumeration_list
-{
-   NSMutableDictionary* value;
-   UITableView* view;
-};
-
-- (id)initWithSetting:(NSMutableDictionary*)setting fromTable:(UITableView*)table
-{
-   self = [super initWithStyle:UITableViewStyleGrouped];
-   
-   value = setting;
-   view = table;
-   [self setTitle: [value objectForKey:@"LABEL"]];
-   return self;
-}
-
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
-{
-   return 2;
-}
-
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
-{
-   return (section == 1) ? [[value objectForKey:@"VALUES"] count] : 1;
-}
-
-- (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
-{
-   UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"option"];
-   cell = cell ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"option"];
-   
-   if (indexPath.section == 1)
-      cell.textLabel.text = [[value objectForKey:@"VALUES"] objectAtIndex:indexPath.row];
-   else
-      cell.textLabel.text = @"None";
-
-   return cell;
-}
-
-- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
-{
-   if (indexPath.section == 1)
-      [value setObject:[[value objectForKey:@"VALUES"] objectAtIndex:indexPath.row] forKey:@"VALUE"];
-   else
-      [value setObject:@"" forKey:@"VALUE"];
-
-   [view reloadData];
-   [[RetroArch_iOS get].navigator popViewControllerAnimated:YES];
-}
-
-@end
 
 @implementation settings_list
 {
@@ -289,7 +195,7 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
    }
    else if([type isEqualToString:@"C"])
    {
-      [[button_getter alloc] initWithSetting:setting];
+      (void)[[button_getter alloc] initWithSetting:setting fromTable:(UITableView*)self.view];
    }
 }
 
