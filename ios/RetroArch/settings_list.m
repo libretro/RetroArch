@@ -41,6 +41,18 @@ static NSMutableDictionary* boolean_setting(config_file_t* config, NSString* nam
             nil];
 }
 
+static NSMutableDictionary* button_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue)
+{
+   NSString* value = get_value_from_config(config, name, defaultValue);
+
+   return [[NSMutableDictionary alloc] initWithObjectsAndKeys:
+            @"C", @"TYPE",
+            name, @"NAME",
+            label, @"LABEL",
+            value, @"VALUE",
+            nil];
+}
+
 static NSMutableDictionary* enumeration_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, NSArray* values)
 {
    NSString* value = get_value_from_config(config, name, defaultValue);
@@ -71,6 +83,47 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
             path, @"PATH",
             nil];
 }
+
+@interface button_getter : NSObject<UIAlertViewDelegate>
+@end
+
+@implementation button_getter
+{
+   button_getter* me;
+   NSMutableDictionary* value;
+   UIAlertView* alert;
+}
+
+- (id)initWithSetting:(NSMutableDictionary*)setting
+{
+   value = setting;
+
+   alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
+                                message:[value objectForKey:@"LABEL"]
+                                delegate:self
+                                cancelButtonTitle:@"Cancel"
+                                otherButtonTitles:nil];
+   [alert show];
+   
+   [[NSNotificationCenter defaultCenter] addObserver: self selector: @selector(keyReleased:) name: GSEventKeyUpNotification object: nil];
+   
+   me = self;
+   return self;
+}
+
+- (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex
+{
+   [[NSNotificationCenter defaultCenter] removeObserver:self];
+   me = nil;
+}
+
+- (void)keyReleased:(NSNotification*) notification
+{
+   [alert dismissWithClickedButtonIndex:0 animated:YES];
+}
+
+@end
+
 
 @interface enumeration_list : UITableViewController
 @end
@@ -160,6 +213,21 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
          subpath_setting(config, @"input_overlay", @"Input Overlay", @"", overlay_path, @"cfg"),
          nil],
          
+      [NSArray arrayWithObjects:@"System Keys",
+         button_setting(config, @"input_save_state", @"Save State", @"f2"),
+         button_setting(config, @"input_load_state", @"Load State", @"f4"),
+         button_setting(config, @"input_state_slot_increase", @"Next State Slot", @"f7"),
+         button_setting(config, @"input_state_slot_decrease", @"Previous State Slot", @"f6"),
+         button_setting(config, @"input_toggle_fast_forward", @"Toggle Fast Forward", @"space"),
+         button_setting(config, @"input_hold_fast_forward", @"Hold Fast Forward", @"l"),
+         button_setting(config, @"input_rewind", @"Rewind", @"r"),
+         button_setting(config, @"input_slowmotion", @"Slow Motion", @"e"),
+         button_setting(config, @"input_pause_toogle", @"Pause", @"p"),
+         button_setting(config, @"input_frame_advance", @"Advance Frame", @"k"),
+         button_setting(config, @"input_reset", @"Reset", @"h"),
+         button_setting(config, @"input_exit_emulator", @"Close Game", @"escape"),
+         nil],
+         
       [NSArray arrayWithObjects:@"Save States",
          boolean_setting(config, @"rewind_enable", @"Enable Rewinding", @"false"),
          boolean_setting(config, @"block_sram_overwrite", @"Disable SRAM on Load", @"false"),
@@ -219,6 +287,10 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
          pushViewController:[[enumeration_list alloc] initWithSetting:setting fromTable:(UITableView*)self.view]
          animated:YES];
    }
+   else if([type isEqualToString:@"C"])
+   {
+      [[button_getter alloc] initWithSetting:setting];
+   }
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -269,7 +341,7 @@ static NSMutableDictionary* subpath_setting(config_file_t* config, NSString* nam
       
       objc_setAssociatedObject(swt, SETTINGID, setting, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
    }
-   else if ([type isEqualToString:@"E"] || [type isEqualToString:@"F"])
+   else if ([type isEqualToString:@"E"] || [type isEqualToString:@"F"] || [type isEqualToString:@"C"])
    {
       cell = [self.tableView dequeueReusableCellWithIdentifier:@"enumeration"];
    
