@@ -22,11 +22,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #ifndef RESAMPLER_TEST
 #include "../general.h"
 #else
-#define RARCH_LOG(...)
+#define RARCH_LOG(...) fprintf(stderr, __VA_ARGS__)
 #endif
 
 #ifdef __SSE__
@@ -45,33 +46,43 @@
 #define SINC_WINDOW_LANCZOS
 #define CUTOFF 0.98
 #define PHASE_BITS 11
+#define SINC_COEFF_LERP 0
+#define SUBPHASE_BITS 10
 #define SIDELOBES 2
 #define ENABLE_AVX 0
 #elif defined(SINC_LOWER_QUALITY)
 #define SINC_WINDOW_LANCZOS
 #define CUTOFF 0.98
 #define PHASE_BITS 12
+#define SUBPHASE_BITS 10
+#define SINC_COEFF_LERP 0
 #define SIDELOBES 4
 #define ENABLE_AVX 0
 #elif defined(SINC_HIGHER_QUALITY)
 #define SINC_WINDOW_KAISER
 #define SINC_WINDOW_KAISER_BETA 10.5
 #define CUTOFF 0.90
-#define PHASE_BITS 16
+#define PHASE_BITS 10
+#define SUBPHASE_BITS 14
+#define SINC_COEFF_LERP 1
 #define SIDELOBES 32
 #define ENABLE_AVX 1
 #elif defined(SINC_HIGHEST_QUALITY)
 #define SINC_WINDOW_KAISER
 #define SINC_WINDOW_KAISER_BETA 14.5
 #define CUTOFF 0.95
-#define PHASE_BITS 16
+#define PHASE_BITS 10
+#define SUBPHASE_BITS 14
+#define SINC_COEFF_LERP 1
 #define SIDELOBES 128
 #define ENABLE_AVX 1
 #else
 #define SINC_WINDOW_KAISER
 #define SINC_WINDOW_KAISER_BETA 5.5
 #define CUTOFF 0.825
-#define PHASE_BITS 14
+#define PHASE_BITS 8
+#define SUBPHASE_BITS 16
+#define SINC_COEFF_LERP 1
 #define SIDELOBES 8
 #define ENABLE_AVX 0
 #endif
@@ -85,14 +96,19 @@
 #include <immintrin.h>
 #endif
 
-#define SUBPHASE_BITS 10
 #define PHASES (1 << (PHASE_BITS + SUBPHASE_BITS))
 
 #define TAPS (SIDELOBES * 2)
+#define SUBPHASE_MASK ((1 << SUBPHASE_BITS) - 1)
+#define SUBPHASE_MOD (1.0f / (1 << SUBPHASE_BITS))
 
 typedef struct rarch_sinc_resampler
 {
+#if SINC_COEFF_LERP
+   sample_t phase_table[1 << PHASE_BITS][TAPS * 2];
+#else
    sample_t phase_table[1 << PHASE_BITS][TAPS];
+#endif
    sample_t buffer_l[2 * TAPS];
    sample_t buffer_r[2 * TAPS];
 
@@ -124,6 +140,7 @@ static inline double besseli0(double x)
    double factorial_mult = 0.0;
    double x_pow = 1.0;
    double two_div_pow = 1.0;
+   double x_sqr = x * x;
 
    // Approximate. This is an infinite sum.
    // Luckily, it converges rather fast.
@@ -132,7 +149,7 @@ static inline double besseli0(double x)
       sum += x_pow * two_div_pow / (factorial * factorial);
 
       factorial_mult += 1.0;
-      x_pow *= x * x;
+      x_pow *= x_sqr;
       two_div_pow *= 0.25;
       factorial *= factorial_mult;
    }
@@ -149,21 +166,47 @@ static inline double window_function(double index)
 #endif
 
 static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
-      float *phase_table, int phases, int taps)
+      float *phase_table, int phases, int taps, bool calculate_delta)
 {
    double window_mod = window_function(0.0); // Need to normalize w(0) to 1.0.
+   int stride = calculate_delta ? 2 : 1;
 
    for (int i = 0; i < phases; i++)
    {
       for (int j = 0; j < taps; j++)
       {
          int n = j * phases + i;
-         double window_phase = (double)n / (((1 << PHASE_BITS) * TAPS) - 1.0); // [0, 1].
-         window_phase = 2.0 * window_phase - 1.0; // [-1, 1]
+         double window_phase = (double)n / (phases * taps); // [0, 1).
+         window_phase = 2.0 * window_phase - 1.0; // [-1, 1)
          double sinc_phase = SIDELOBES * window_phase;
 
          float val = cutoff * sinc(M_PI * sinc_phase * cutoff) * window_function(window_phase) / window_mod;
-         phase_table[i * taps + j] = val;
+         phase_table[i * stride * taps + j] = val;
+      }
+   }
+
+   if (calculate_delta)
+   {
+      for (int i = 0; i < phases - 1; i++)
+      {
+         for (int j = 0; j < taps; j++)
+         {
+            float delta = phase_table[(i + 1) * stride * taps + j] - phase_table[i * stride * taps + j];
+            phase_table[(i * stride + 1) * taps + j] = delta;
+         }
+      }
+
+      int i = phases - 1;
+      for (int j = 0; j < taps; j++)
+      {
+         int n = j * phases + (i + 1);
+         double window_phase = (double)n / (phases * taps); // [0, 1).
+         window_phase = 2.0 * window_phase - 1.0; // [-1, 1)
+         double sinc_phase = SIDELOBES * window_phase;
+
+         float val = cutoff * sinc(M_PI * sinc_phase * cutoff) * window_function(window_phase) / window_mod;
+         float delta = (val - phase_table[i * stride * taps + j]);
+         phase_table[(i * stride + 1) * taps + j] = delta;
       }
    }
 }
@@ -197,10 +240,18 @@ static inline void process_sinc_C(rarch_sinc_resampler_t *resamp, float *out_buf
 
    unsigned phase = resamp->time >> SUBPHASE_BITS;
    const float *phase_table = resamp->phase_table[phase];
+#if SINC_COEFF_LERP
+   const float *delta_table = phase_table + TAPS;
+   float delta = (float)(resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD;
+#endif
 
    for (unsigned i = 0; i < TAPS; i++)
    {
+#if SINC_COEFF_LERP
+      float sinc_val = phase_table[i] + delta_table[i] * delta;
+#else
       float sinc_val = phase_table[i];
+#endif
       sum_l         += buffer_l[i] * sinc_val;
       sum_r         += buffer_r[i] * sinc_val;
    }
@@ -221,13 +272,22 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 
    unsigned phase = resamp->time >> SUBPHASE_BITS;
    const float *phase_table = resamp->phase_table[phase];
+#if SINC_COEFF_LERP
+   const float *delta_table = phase_table + TAPS;
+   __m256 delta = _mm256_set1_ps((float)(resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD);
+#endif
 
    for (unsigned i = 0; i < TAPS; i += 8)
    {
       __m256 buf_l = _mm256_loadu_ps(buffer_l + i);
       __m256 buf_r = _mm256_loadu_ps(buffer_r + i);
 
+#if SINC_COEFF_LERP
+      __m256 deltas = _mm256_load_ps(delta_table + i);
+      __m256 sinc = _mm256_add_ps(_mm256_load_ps(phase_table + i), _mm256_mul_ps(deltas, delta));
+#else
       __m256 sinc = _mm256_load_ps(phase_table + i);
+#endif
       sum_l       = _mm256_add_ps(sum_l, _mm256_mul_ps(buf_l, sinc));
       sum_r       = _mm256_add_ps(sum_r, _mm256_mul_ps(buf_r, sinc));
    }
@@ -257,13 +317,22 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 
    unsigned phase = resamp->time >> SUBPHASE_BITS;
    const float *phase_table = resamp->phase_table[phase];
+#if SINC_COEFF_LERP
+   const float *delta_table = phase_table + TAPS;
+   __m128 delta = _mm_set1_ps((float)(resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD);
+#endif
 
    for (unsigned i = 0; i < TAPS; i += 4)
    {
       __m128 buf_l = _mm_loadu_ps(buffer_l + i);
       __m128 buf_r = _mm_loadu_ps(buffer_r + i);
 
+#if SINC_COEFF_LERP
+      __m128 deltas = _mm_load_ps(delta_table + i);
+      __m128 sinc = _mm_add_ps(_mm_load_ps(phase_table + i), _mm_mul_ps(deltas, delta));
+#else
       __m128 sinc = _mm_load_ps(phase_table + i);
+#endif
       sum_l       = _mm_add_ps(sum_l, _mm_mul_ps(buf_l, sinc));
       sum_r       = _mm_add_ps(sum_r, _mm_mul_ps(buf_r, sinc));
    }
@@ -293,6 +362,10 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 
 #if TAPS < 8
 #error "NEON asm requires at least 8 taps (for now)."
+#endif
+
+#if SINC_COEFF_LERP
+#error "NEON asm does not support SINC lerp."
 #endif
 
 // Need to make this function pointer as Android doesn't have built-in targets
@@ -367,7 +440,7 @@ static void *resampler_sinc_new(void)
 
    memset(re, 0, sizeof(*re));
 
-   init_sinc_table(re, CUTOFF, &re->phase_table[0][0], 1 << PHASE_BITS, TAPS);
+   init_sinc_table(re, CUTOFF, &re->phase_table[0][0], 1 << PHASE_BITS, TAPS, SINC_COEFF_LERP);
 
 #if defined(__AVX__) && ENABLE_AVX
    RARCH_LOG("Sinc resampler [AVX]\n");

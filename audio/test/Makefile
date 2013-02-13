@@ -11,7 +11,7 @@ TESTS := test-hermite \
 	test-sinc-highest \
 	test-snr-sinc-highest
 
-CFLAGS += -O3 -g -Wall -pedantic -std=gnu99 -DRESAMPLER_TEST
+CFLAGS += -O3 -g -Wall -pedantic -march=native -std=gnu99 -DRESAMPLER_TEST
 LDFLAGS += -lm
 
 all: $(TESTS)
