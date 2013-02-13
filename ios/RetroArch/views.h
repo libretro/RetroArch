@@ -4,7 +4,10 @@
 #include "conf/config_file.h"
 
 @interface game_view : UIViewController
-- (id)initWithGame:(NSString*)path;
+- (id)initWithGame:(NSString*)path;\
+- (void)pause;
+- (void)resume;
+- (void)exit;
 @end
 
 @interface module_list : UITableViewController

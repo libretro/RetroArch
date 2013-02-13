@@ -21,10 +21,24 @@ static float screen_scale;
 static int frame_skips = 4;
 static bool is_syncing = true;
 
+static bool active_iterate()
+{
+   while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true) == kCFRunLoopRunHandledSource);
+   return rarch_main_iterate();
+}
+
+static bool idle_iterate()
+{
+   CFRunLoopRunInMode(kCFRunLoopDefaultMode, .5, false);
+   return true;
+}
+
 @implementation game_view
 {
    EAGLContext *gl_context;
    NSString* game;
+   bool paused;
+   bool exiting;
 }
 
 - (id)initWithGame:(NSString*)path
@@ -34,6 +48,21 @@ static bool is_syncing = true;
    screen_scale = [[UIScreen mainScreen] scale];
    
    return self;
+}
+
+- (void)pause
+{
+   paused = true;
+}
+
+- (void)resume
+{
+   paused = false;
+}
+
+- (void)exit
+{
+   exiting = true;
 }
 
 - (void)dealloc
@@ -67,8 +96,7 @@ static bool is_syncing = true;
    if (rarch_main_init_wrap(&main_wrapper) == 0)
    {
       rarch_init_msg_queue();
-      while (rarch_main_iterate())
-         while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true) == kCFRunLoopRunHandledSource);
+      while (!exiting && (paused ? idle_iterate() : active_iterate()));
       rarch_main_deinit();
       rarch_deinit_msg_queue();
       

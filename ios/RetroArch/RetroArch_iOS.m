@@ -21,6 +21,9 @@ extern bool ios_keys[256];
 extern uint32_t ios_current_touch_count;
 
 @implementation RetroArch_iOS
+{
+   game_view* game;
+}
 
 + (RetroArch_iOS*)get
 {
@@ -29,12 +32,15 @@ extern uint32_t ios_current_touch_count;
 
 - (void)runGame:(NSString*)path
 {
-   self.window.rootViewController = [[game_view alloc] initWithGame:path];
+   game = [[game_view alloc] initWithGame:path];
+   self.window.rootViewController = game;
    self.navigator = nil;
 }
 
 - (void)gameHasExited
 {
+   game = nil;
+
    self.navigator = [[UINavigationController alloc] init];
    [self.navigator pushViewController: [[module_list alloc] init] animated:YES];
 
@@ -74,6 +80,22 @@ extern uint32_t ios_current_touch_count;
    [[NSNotificationCenter defaultCenter] addObserver: self selector: @selector(keyReleased:) name: GSEventKeyUpNotification object: nil];
 }
 
+- (void)applicationWillEnterForeground:(UIApplication *)application
+{
+   if (game)
+   {
+      [game resume];
+   }
+}
+
+- (void)applicationDidEnterBackground:(UIApplication *)application
+{
+   if (game)
+   {
+      [game pause];
+   }
+}
+
 -(void) keyPressed: (NSNotification*) notification
 {
    int keycode = [[notification.userInfo objectForKey:@"keycode"] intValue];
@@ -93,18 +115,34 @@ extern uint32_t ios_current_touch_count;
 
 - (void)processTouches:(NSArray*)touches
 {
-   ios_current_touch_count = [touches count];
-   
-   for(int i = 0; i != [touches count]; i ++)
+   if (game)
    {
-      UITouch *touch = [touches objectAtIndex:i];
-      CGPoint coord = [touch locationInView:self.window.rootViewController.view];
-      float scale = [[UIScreen mainScreen] scale];
+      ios_current_touch_count = [touches count];
+   
+      for(int i = 0; i != [touches count]; i ++)
+      {
+         UITouch *touch = [touches objectAtIndex:i];
+         CGPoint coord = [touch locationInView:game.view];
+         float scale = [[UIScreen mainScreen] scale];
       
-      ios_touches[i].is_down = (touch.phase != UITouchPhaseEnded) && (touch.phase != UITouchPhaseCancelled);
+         // Exit hack!
+         if (touch.tapCount == 3)
+         {
+            if (coord.y < game.view.bounds.size.height / 10.0f)
+            {
+               float tenpct = game.view.bounds.size.width / 10.0f;
+               if (coord.x >= tenpct * 4 && coord.x <= tenpct * 6)
+               {
+                  [game exit];
+               }
+            }
+         }
 
-      ios_touches[i].screen_x = coord.x * scale;
-      ios_touches[i].screen_y = coord.y * scale;
+         ios_touches[i].is_down = (touch.phase != UITouchPhaseEnded) && (touch.phase != UITouchPhaseCancelled);
+
+         ios_touches[i].screen_x = coord.x * scale;
+         ios_touches[i].screen_y = coord.y * scale;
+      }
    }
 }
 
