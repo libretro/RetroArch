@@ -112,6 +112,8 @@ typedef struct rarch_sinc_resampler
    sample_t buffer_l[2 * TAPS];
    sample_t buffer_r[2 * TAPS];
 
+   unsigned taps;
+
    unsigned ptr;
    uint32_t time;
 } rarch_sinc_resampler_t;
@@ -245,7 +247,8 @@ static inline void process_sinc_C(rarch_sinc_resampler_t *resamp, float *out_buf
    float delta = (float)(resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD;
 #endif
 
-   for (unsigned i = 0; i < TAPS; i++)
+   unsigned taps = resamp->taps;
+   for (unsigned i = 0; i < taps; i++)
    {
 #if SINC_COEFF_LERP
       float sinc_val = phase_table[i] + delta_table[i] * delta;
@@ -277,7 +280,8 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
    __m256 delta = _mm256_set1_ps((float)(resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD);
 #endif
 
-   for (unsigned i = 0; i < TAPS; i += 8)
+   unsigned taps = resamp->taps;
+   for (unsigned i = 0; i < taps; i += 8)
    {
       __m256 buf_l = _mm256_loadu_ps(buffer_l + i);
       __m256 buf_r = _mm256_loadu_ps(buffer_r + i);
@@ -315,14 +319,15 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
    const float *buffer_l = resamp->buffer_l + resamp->ptr;
    const float *buffer_r = resamp->buffer_r + resamp->ptr;
 
+   unsigned taps = resamp->taps;
    unsigned phase = resamp->time >> SUBPHASE_BITS;
    const float *phase_table = resamp->phase_table[phase];
 #if SINC_COEFF_LERP
-   const float *delta_table = phase_table + TAPS;
+   const float *delta_table = phase_table + taps;
    __m128 delta = _mm_set1_ps((float)(resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD);
 #endif
 
-   for (unsigned i = 0; i < TAPS; i += 4)
+   for (unsigned i = 0; i < taps; i += 4)
    {
       __m128 buf_l = _mm_loadu_ps(buffer_l + i);
       __m128 buf_r = _mm_loadu_ps(buffer_r + i);
@@ -383,7 +388,7 @@ static void process_sinc_neon(rarch_sinc_resampler_t *resamp, float *out_buffer)
    unsigned phase = resamp->time >> SUBPHASE_BITS;
    const float *phase_table = resamp->phase_table[phase];
 
-   process_sinc_neon_asm(out_buffer, buffer_l, buffer_r, phase_table, TAPS);
+   process_sinc_neon_asm(out_buffer, buffer_l, buffer_r, phase_table, resamp->taps);
 }
 #else // Plain ol' C99
 #define process_sinc_func process_sinc_C
@@ -440,7 +445,8 @@ static void *resampler_sinc_new(void)
 
    memset(re, 0, sizeof(*re));
 
-   init_sinc_table(re, CUTOFF, &re->phase_table[0][0], 1 << PHASE_BITS, TAPS, SINC_COEFF_LERP);
+   re->taps = TAPS;
+   init_sinc_table(re, CUTOFF, &re->phase_table[0][0], 1 << PHASE_BITS, re->taps, SINC_COEFF_LERP);
 
 #if defined(__AVX__) && ENABLE_AVX
    RARCH_LOG("Sinc resampler [AVX]\n");
@@ -455,7 +461,7 @@ static void *resampler_sinc_new(void)
    RARCH_LOG("Sinc resampler [C]\n");
 #endif
 
-   RARCH_LOG("SINC params (%u phase bits, %u taps).\n", PHASE_BITS, TAPS);
+   RARCH_LOG("SINC params (%u phase bits, %u taps).\n", PHASE_BITS, re->taps);
 
    return re;
 }
