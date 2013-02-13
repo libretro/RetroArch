@@ -16,16 +16,19 @@ LDFLAGS += -lm
 
 all: $(TESTS)
 
-test-hermite: ../hermite.o ../utils.o main.o resampler-hermite.o
+test-hermite: hermite.o ../utils.o main.o resampler-hermite.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-test-snr-hermite: ../hermite.o ../utils.o snr.o resampler-hermite.o
+test-snr-hermite: hermite.o ../utils.o snr.o resampler-hermite.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 resampler-sinc.o: ../resampler.c
 	$(CC) -c -o $@ $< $(CFLAGS) -DHAVE_SINC
 
 resampler-hermite.o: ../resampler.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+hermite.o: ../hermite.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 sinc-lowest.o: ../sinc.c

@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 
    const rarch_resampler_t *resampler = NULL;
    void *re = NULL;
-   if (!rarch_resampler_realloc(&re, &resampler, NULL))
+   if (!rarch_resampler_realloc(&re, &resampler, NULL, out_rate / in_rate))
    {
       fprintf(stderr, "Failed to allocate resampler ...\n");
       return 1;

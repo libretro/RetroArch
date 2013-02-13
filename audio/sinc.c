@@ -45,7 +45,7 @@
 #if defined(SINC_LOWEST_QUALITY)
 #define SINC_WINDOW_LANCZOS
 #define CUTOFF 0.98
-#define PHASE_BITS 11
+#define PHASE_BITS 12
 #define SINC_COEFF_LERP 0
 #define SUBPHASE_BITS 10
 #define SIDELOBES 2
@@ -104,18 +104,18 @@
 
 typedef struct rarch_sinc_resampler
 {
-#if SINC_COEFF_LERP
-   sample_t phase_table[1 << PHASE_BITS][TAPS * 2];
-#else
-   sample_t phase_table[1 << PHASE_BITS][TAPS];
-#endif
-   sample_t buffer_l[2 * TAPS];
-   sample_t buffer_r[2 * TAPS];
+   sample_t *phase_table;
+   sample_t *buffer_l;
+   sample_t *buffer_r;
 
    unsigned taps;
 
    unsigned ptr;
    uint32_t time;
+
+   // A buffer for phase_table, buffer_l and buffer_r are created in a single calloc().
+   // Ensure that we get as good cache locality as we can hope for.
+   sample_t *main_buffer;
 } rarch_sinc_resampler_t;
 
 static inline double sinc(double val)
@@ -173,6 +173,7 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
    double window_mod = window_function(0.0); // Need to normalize w(0) to 1.0.
    int stride = calculate_delta ? 2 : 1;
 
+   double sidelobes = taps / 2.0;
    for (int i = 0; i < phases; i++)
    {
       for (int j = 0; j < taps; j++)
@@ -180,7 +181,7 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
          int n = j * phases + i;
          double window_phase = (double)n / (phases * taps); // [0, 1).
          window_phase = 2.0 * window_phase - 1.0; // [-1, 1)
-         double sinc_phase = SIDELOBES * window_phase;
+         double sinc_phase = sidelobes * window_phase;
 
          float val = cutoff * sinc(M_PI * sinc_phase * cutoff) * window_function(window_phase) / window_mod;
          phase_table[i * stride * taps + j] = val;
@@ -189,26 +190,26 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
 
    if (calculate_delta)
    {
-      for (int i = 0; i < phases - 1; i++)
+      for (int p = 0; p < phases - 1; p++)
       {
          for (int j = 0; j < taps; j++)
          {
-            float delta = phase_table[(i + 1) * stride * taps + j] - phase_table[i * stride * taps + j];
-            phase_table[(i * stride + 1) * taps + j] = delta;
+            float delta = phase_table[(p + 1) * stride * taps + j] - phase_table[p * stride * taps + j];
+            phase_table[(p * stride + 1) * taps + j] = delta;
          }
       }
 
-      int i = phases - 1;
+      int phase = phases - 1;
       for (int j = 0; j < taps; j++)
       {
-         int n = j * phases + (i + 1);
-         double window_phase = (double)n / (phases * taps); // [0, 1).
-         window_phase = 2.0 * window_phase - 1.0; // [-1, 1)
-         double sinc_phase = SIDELOBES * window_phase;
+         int n = j * phases + (phase + 1);
+         double window_phase = (double)n / (phases * taps); // (0, 1].
+         window_phase = 2.0 * window_phase - 1.0; // (-1, 1]
+         double sinc_phase = sidelobes * window_phase;
 
          float val = cutoff * sinc(M_PI * sinc_phase * cutoff) * window_function(window_phase) / window_mod;
-         float delta = (val - phase_table[i * stride * taps + j]);
-         phase_table[(i * stride + 1) * taps + j] = delta;
+         float delta = (val - phase_table[phase * stride * taps + j]);
+         phase_table[(phase * stride + 1) * taps + j] = delta;
       }
    }
 }
@@ -240,14 +241,16 @@ static inline void process_sinc_C(rarch_sinc_resampler_t *resamp, float *out_buf
    const float *buffer_l = resamp->buffer_l + resamp->ptr;
    const float *buffer_r = resamp->buffer_r + resamp->ptr;
 
+   unsigned taps  = resamp->taps;
    unsigned phase = resamp->time >> SUBPHASE_BITS;
-   const float *phase_table = resamp->phase_table[phase];
 #if SINC_COEFF_LERP
-   const float *delta_table = phase_table + TAPS;
+   const float *phase_table = resamp->phase_table + phase * taps * 2;
+   const float *delta_table = phase_table + taps;
    float delta = (float)(resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD;
+#else
+   const float *phase_table = resamp->phase_table + phase * taps;
 #endif
 
-   unsigned taps = resamp->taps;
    for (unsigned i = 0; i < taps; i++)
    {
 #if SINC_COEFF_LERP
@@ -273,14 +276,16 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
    const float *buffer_l = resamp->buffer_l + resamp->ptr;
    const float *buffer_r = resamp->buffer_r + resamp->ptr;
 
+   unsigned taps = resamp->taps;
    unsigned phase = resamp->time >> SUBPHASE_BITS;
-   const float *phase_table = resamp->phase_table[phase];
 #if SINC_COEFF_LERP
-   const float *delta_table = phase_table + TAPS;
+   const float *phase_table = resamp->phase_table + phase * taps * 2;
+   const float *delta_table = phase_table + taps;
    __m256 delta = _mm256_set1_ps((float)(resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD);
+#else
+   const float *phase_table = resamp->phase_table + phase * taps;
 #endif
 
-   unsigned taps = resamp->taps;
    for (unsigned i = 0; i < taps; i += 8)
    {
       __m256 buf_l = _mm256_loadu_ps(buffer_l + i);
@@ -321,10 +326,12 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 
    unsigned taps = resamp->taps;
    unsigned phase = resamp->time >> SUBPHASE_BITS;
-   const float *phase_table = resamp->phase_table[phase];
 #if SINC_COEFF_LERP
+   const float *phase_table = resamp->phase_table + phase * taps * 2;
    const float *delta_table = phase_table + taps;
    __m128 delta = _mm_set1_ps((float)(resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD);
+#else
+   const float *phase_table = resamp->phase_table + phase * taps;
 #endif
 
    for (unsigned i = 0; i < taps; i += 4)
@@ -365,10 +372,6 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 }
 #elif defined(HAVE_NEON)
 
-#if TAPS < 8
-#error "NEON asm requires at least 8 taps (for now)."
-#endif
-
 #if SINC_COEFF_LERP
 #error "NEON asm does not support SINC lerp."
 #endif
@@ -398,9 +401,6 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
 {
    rarch_sinc_resampler_t *re = (rarch_sinc_resampler_t*)re_;
 
-   // If data->ratio is < 1, we are downsampling.
-   // The sinc table is not set up for this, as it always assumes upsampling.
-   // Downsampling will work, but with some added noise due to aliasing might be present.
    uint32_t ratio = PHASES / data->ratio;
 
    const sample_t *input = data->data_in;
@@ -412,9 +412,13 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
    {
       while (frames && re->time >= PHASES)
       {
-         re->ptr = (re->ptr - 1) & (TAPS - 1);
-         re->buffer_l[re->ptr + TAPS] = re->buffer_l[re->ptr] = *input++;
-         re->buffer_r[re->ptr + TAPS] = re->buffer_r[re->ptr] = *input++;
+         // Push in reverse to make filter more obvious.
+         if (!re->ptr)
+            re->ptr = re->taps;
+         re->ptr--;
+
+         re->buffer_l[re->ptr + re->taps] = re->buffer_l[re->ptr] = *input++;
+         re->buffer_r[re->ptr + re->taps] = re->buffer_r[re->ptr] = *input++;
 
          re->time -= PHASES;
          frames--;
@@ -434,19 +438,52 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
 
 static void resampler_sinc_free(void *re)
 {
-   aligned_free__(re);
+   rarch_sinc_resampler_t *resampler = (rarch_sinc_resampler_t*)re;
+   if (resampler)
+      aligned_free__(resampler->main_buffer);
+   free(resampler);
 }
 
-static void *resampler_sinc_new(void)
+static void *resampler_sinc_new(double bandwidth_mod)
 {
-   rarch_sinc_resampler_t *re = (rarch_sinc_resampler_t*)aligned_alloc__(128, sizeof(*re));
+   rarch_sinc_resampler_t *re = (rarch_sinc_resampler_t*)calloc(1, sizeof(*re));
    if (!re)
       return NULL;
 
    memset(re, 0, sizeof(*re));
 
    re->taps = TAPS;
-   init_sinc_table(re, CUTOFF, &re->phase_table[0][0], 1 << PHASE_BITS, re->taps, SINC_COEFF_LERP);
+   double cutoff = CUTOFF;
+
+   // Downsampling, must lower cutoff, and extend number of taps accordingly to keep same stopband attenuation.
+   if (bandwidth_mod < 1.0)
+   {
+      cutoff *= bandwidth_mod;
+      re->taps = (unsigned)ceil(re->taps / bandwidth_mod);
+   }
+
+   // Be SIMD-friendly.
+#if (defined(__AVX__) && ENABLE_AVX) || defined(HAVE_NEON)
+   re->taps = (re->taps + 7) & ~7;
+#else
+   re->taps = (re->taps + 3) & ~3;
+#endif
+
+   size_t phase_elems = (1 << PHASE_BITS) * re->taps;
+#if SINC_COEFF_LERP
+   phase_elems *= 2;
+#endif
+   size_t elems = phase_elems + 4 * re->taps;
+
+   re->main_buffer = (sample_t*)aligned_alloc__(128, sizeof(sample_t) * elems);
+   if (!re->main_buffer)
+      goto error;
+
+   re->phase_table = re->main_buffer;
+   re->buffer_l = re->main_buffer + phase_elems;
+   re->buffer_r = re->buffer_l + 2 * re->taps;
+
+   init_sinc_table(re, cutoff, re->phase_table, 1 << PHASE_BITS, re->taps, SINC_COEFF_LERP);
 
 #if defined(__AVX__) && ENABLE_AVX
    RARCH_LOG("Sinc resampler [AVX]\n");
@@ -462,8 +499,11 @@ static void *resampler_sinc_new(void)
 #endif
 
    RARCH_LOG("SINC params (%u phase bits, %u taps).\n", PHASE_BITS, re->taps);
-
    return re;
+
+error:
+   resampler_sinc_free(re);
+   return NULL;
 }
 
 const rarch_resampler_t sinc_resampler = {

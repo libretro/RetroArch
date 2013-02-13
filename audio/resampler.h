@@ -46,7 +46,7 @@ struct resampler_data
 
 typedef struct rarch_resampler
 {
-   void *(*init)(void);
+   void *(*init)(double bandwidth_mod); // Bandwidth factor. Will be < 1.0 for downsampling, > 1.0 for upsamling. Corresponds to expected resampling ratio.
    void (*process)(void *re, struct resampler_data *data);
    void (*free)(void *re);
    const char *ident;
@@ -57,7 +57,7 @@ extern const rarch_resampler_t sinc_resampler;
 
 // Reallocs resampler. Will free previous handle before allocating a new one.
 // If ident is NULL, first resampler will be used.
-bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const char *ident);
+bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const char *ident, double bw_ratio);
 
 // Convenience macros.
 // freep makes sure to set handles to NULL to avoid double-free in rarch_resampler_realloc.
