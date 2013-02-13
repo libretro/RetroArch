@@ -57,9 +57,7 @@ static BOOL is_directory(NSString* path)
 
    if(is_directory(path))
    {
-      [[RetroArch_iOS get].navigator
-         pushViewController:[[directory_list alloc] initWithPath:path]
-         animated:YES];
+      [[RetroArch_iOS get] pushViewController:[[directory_list alloc] initWithPath:path]];
    }
    else
    {

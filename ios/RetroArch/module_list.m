@@ -52,7 +52,7 @@ static void display_error_alert(NSString* message)
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
    [RetroArch_iOS get].module_path = [modules objectAtIndex:indexPath.row];
-   [[RetroArch_iOS get].navigator pushViewController:[[directory_list alloc] initWithPath:nil] animated:YES];
+   [[RetroArch_iOS get] pushViewController:[[directory_list alloc] initWithPath:nil]];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section

@@ -23,6 +23,9 @@ extern uint32_t ios_current_touch_count;
 @implementation RetroArch_iOS
 {
    game_view* game;
+   
+   UIWindow* window;
+   UINavigationController* navigator;
 }
 
 + (RetroArch_iOS*)get
@@ -33,18 +36,34 @@ extern uint32_t ios_current_touch_count;
 - (void)runGame:(NSString*)path
 {
    game = [[game_view alloc] initWithGame:path];
-   self.window.rootViewController = game;
-   self.navigator = nil;
+   window.rootViewController = game;
+   navigator = nil;
 }
 
 - (void)gameHasExited
 {
    game = nil;
 
-   self.navigator = [[UINavigationController alloc] init];
-   [self.navigator pushViewController: [[module_list alloc] init] animated:YES];
+   navigator = [[UINavigationController alloc] init];
+   [navigator pushViewController: [[module_list alloc] init] animated:YES];
 
-   self.window.rootViewController = self.navigator;
+   window.rootViewController = navigator;
+}
+
+- (void)pushViewController:(UIViewController*)theView
+{
+   if (navigator != nil)
+   {
+      [navigator pushViewController:theView animated:YES];
+   }
+}
+
+- (void)popViewController
+{
+   if (navigator != nil)
+   {
+      [navigator popViewControllerAnimated:YES];
+   }
 }
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
@@ -68,12 +87,12 @@ extern uint32_t ios_current_touch_count;
    self.settings_button.action = @selector(show_settings);
 
    // Setup window
-   self.navigator = [[UINavigationController alloc] init];
-   [self.navigator pushViewController: [[module_list alloc] init] animated:YES];
+   navigator = [[UINavigationController alloc] init];
+   [navigator pushViewController: [[module_list alloc] init] animated:YES];
 
-   self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-   self.window.rootViewController = self.navigator;
-   [self.window makeKeyAndVisible];
+   window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+   window.rootViewController = navigator;
+   [window makeKeyAndVisible];
    
    // Setup keyboard hack
    [[NSNotificationCenter defaultCenter] addObserver: self selector: @selector(keyPressed:) name: GSEventKeyDownNotification object: nil];
@@ -110,7 +129,7 @@ extern uint32_t ios_current_touch_count;
 
 - (void)show_settings
 {
-   [self.navigator pushViewController: [[SettingsList alloc] init] animated:YES];
+   [self pushViewController:[SettingsList new]];
 }
 
 - (void)processTouches:(NSArray*)touches

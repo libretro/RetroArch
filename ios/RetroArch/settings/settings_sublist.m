@@ -66,9 +66,7 @@ static const char* const SETTINGID = "SETTING";
    {
       case EnumerationSetting:
       case FileListSetting:
-         [[RetroArch_iOS get].navigator
-            pushViewController:[[SettingEnumerationList alloc] initWithSetting:setting fromTable:(UITableView*)self.view]
-            animated:YES];
+         [[RetroArch_iOS get] pushViewController:[[SettingEnumerationList alloc] initWithSetting:setting fromTable:(UITableView*)self.view]];
          break;
          
       case ButtonSetting:
@@ -76,9 +74,7 @@ static const char* const SETTINGID = "SETTING";
          break;
          
       case GroupSetting:
-         [[RetroArch_iOS get].navigator
-            pushViewController:[[SettingsSubList alloc] initWithSettings:setting.subValues title:setting.label]
-            animated:YES];
+         [[RetroArch_iOS get] pushViewController:[[SettingsSubList alloc] initWithSettings:setting.subValues title:setting.label]];
          break;
          
       default:

@@ -55,7 +55,7 @@
       value.value = @"";
 
    [view reloadData];
-   [[RetroArch_iOS get].navigator popViewControllerAnimated:YES];
+   [[RetroArch_iOS get] popViewController];
 }
 
 @end
