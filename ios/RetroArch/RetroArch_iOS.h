@@ -13,7 +13,8 @@ extern NSString *const GSEventKeyUpNotification;
 @interface RetroArch_iOS : UIResponder <UIApplicationDelegate>
 
 + (RetroArch_iOS*)get;
-- (void)game_has_started;
+- (void)runGame:(NSString*)path;
+- (void)gameHasExited;
 
 @property (strong, nonatomic) NSString* system_directory;
 @property (strong, nonatomic) NSString* config_file_path;

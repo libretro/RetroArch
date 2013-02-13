@@ -2,7 +2,7 @@
 #import <GLKit/GLKit.h>
 
 @interface game_view : UIViewController
-
+- (id)initWithGame:(NSString*)path;
 @end
 
 @interface module_list : UITableViewController

@@ -16,76 +16,23 @@
 
 #include "general.h"
 
-static game_view *current_view;
 static GLKView *gl_view;
 static float screen_scale;
-static bool ra_initialized = false;
-static bool ra_done = false;
 static int frame_skips = 4;
 static bool is_syncing = true;
-
-void ios_load_game(const char* file_name)
-{
-   if(!ra_initialized && file_name)
-   {
-      [settings_list refresh_config_file];
-   
-      const char* const sd = [[RetroArch_iOS get].system_directory UTF8String];
-      const char* const cf =[[RetroArch_iOS get].config_file_path UTF8String];
-      const char* const libretro = [[RetroArch_iOS get].module_path UTF8String];
-
-      bool have_config = 0 == access(cf, R_OK);
-
-      struct rarch_main_wrap main_wrapper = {file_name, sd, sd, have_config ? cf : 0, libretro};
-      if (rarch_main_init_wrap(&main_wrapper) == 0)
-      {
-         rarch_init_msg_queue();
-         ra_initialized = TRUE;
-
-         [[RetroArch_iOS get ]game_has_started];
-         [current_view performSelector:@selector(rarch_iterate:) withObject:nil afterDelay:0.2f];
-      }
-   }
-}
-
-void ios_close_game()
-{
-   if (ra_initialized)
-   {
-      rarch_main_deinit();
-      rarch_deinit_msg_queue();
-      
-#ifdef PERF_TEST
-      rarch_perf_log();
-#endif
-      
-      rarch_main_clear_state();
-      
-      ra_done = true;
-   }
-   
-   ra_initialized = false;
-}
 
 @implementation game_view
 {
    EAGLContext *gl_context;
+   NSString* game;
 }
 
-- (id)init
+- (id)initWithGame:(NSString*)path
 {
    self = [super init];
-   
-   gl_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-   [EAGLContext setCurrentContext:gl_context];
-   
-   gl_view = [[GLKView alloc] initWithFrame:CGRectMake(0, 0, 640, 480) context:gl_context];
-   gl_view.multipleTouchEnabled = YES;
-   self.view = gl_view;
-
+   game = path;
    screen_scale = [[UIScreen mainScreen] scale];
-   current_view = self;
-
+   
    return self;
 }
 
@@ -96,20 +43,43 @@ void ios_close_game()
    gl_view = nil;
 }
 
-
-- (void)rarch_iterate:(id)sender
+- (void)loadView
 {
-   if (ra_initialized && !ra_done)
-   {
-      while (!ra_done && rarch_main_iterate())
-      {
-         while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true) == kCFRunLoopRunHandledSource);
-      }
+   gl_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+   [EAGLContext setCurrentContext:gl_context];
+   
+   gl_view = [[GLKView alloc] initWithFrame:CGRectMake(0, 0, 640, 480) context:gl_context];
+   gl_view.multipleTouchEnabled = YES;
+   self.view = gl_view;
+   
+   [self performSelector:@selector(runGame) withObject:nil afterDelay:0.2f];
+}
 
-      ios_close_game();
+- (void)runGame
+{
+   [settings_list refresh_config_file];
+   
+   const char* const sd = [[RetroArch_iOS get].system_directory UTF8String];
+   const char* const cf =[[RetroArch_iOS get].config_file_path UTF8String];
+   const char* const libretro = [[RetroArch_iOS get].module_path UTF8String];
+
+   struct rarch_main_wrap main_wrapper = {[game UTF8String], sd, sd, cf, libretro};
+   if (rarch_main_init_wrap(&main_wrapper) == 0)
+   {
+      rarch_init_msg_queue();
+      while (rarch_main_iterate())
+         while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true) == kCFRunLoopRunHandledSource);
+      rarch_main_deinit();
+      rarch_deinit_msg_queue();
       
-      ra_done = true;
+#ifdef PERF_TEST
+      rarch_perf_log();
+#endif
+      
+      rarch_main_clear_state();
    }
+   
+   [[RetroArch_iOS get] gameHasExited];
 }
 
 @end

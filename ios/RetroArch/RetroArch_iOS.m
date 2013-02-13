@@ -27,6 +27,20 @@ extern uint32_t ios_current_touch_count;
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
 }
 
+- (void)runGame:(NSString*)path
+{
+   self.window.rootViewController = [[game_view alloc] initWithGame:path];
+   self.navigator = nil;
+}
+
+- (void)gameHasExited
+{
+   self.navigator = [[UINavigationController alloc] init];
+   [self.navigator pushViewController: [[module_list alloc] init] animated:YES];
+
+   self.window.rootViewController = self.navigator;
+}
+
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
    // TODO: Relocate this!
@@ -77,11 +91,6 @@ extern uint32_t ios_current_touch_count;
    [self.navigator pushViewController: [[settings_list alloc] init] animated:YES];
 }
 
-- (void)game_has_started
-{
-   self.navigator = nil;
-}
-
 - (void)processTouches:(NSArray*)touches
 {
    ios_current_touch_count = [touches count];
@@ -121,12 +130,6 @@ extern uint32_t ios_current_touch_count;
 {
    [super touchesCancelled:touches withEvent:event];
    [self processTouches:[[event allTouches] allObjects]];
-}
-
-- (void)applicationWillTerminate:(UIApplication *)application
-{
-   extern void ios_close_game();
-   ios_close_game();
 }
 
 @end

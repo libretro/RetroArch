@@ -63,10 +63,7 @@ static BOOL is_directory(NSString* path)
    }
    else
    {
-      [RetroArch_iOS get].window.rootViewController = [[game_view alloc] init];
-      
-      extern void ios_load_game(const char*);
-      ios_load_game([path UTF8String]);
+      [[RetroArch_iOS get] runGame:path];
    }
 }
 
