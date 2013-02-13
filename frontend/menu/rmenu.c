@@ -1341,8 +1341,10 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_DEFAULT_VIDEO_ALL:
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
             set_setting_action(NULL, SETTING_SHADER, 1ULL << RMENU_DEVICE_NAV_START);
             set_setting_action(NULL, SETTING_SHADER_2, 1ULL << RMENU_DEVICE_NAV_START);
+#endif
          }
          break;
       case SETTING_SOUND_MODE:
