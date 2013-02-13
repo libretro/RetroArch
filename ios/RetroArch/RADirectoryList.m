@@ -13,11 +13,11 @@ static BOOL is_directory(NSString* path)
    return result;
 }
 
-@implementation directory_list
+@implementation RADirectoryList
 {
-   NSString* directory;
-   NSArray* list;
-};
+   NSString* _path;
+   NSArray* _list;
+}
 
 - (id)initWithPath:(NSString*)path
 {
@@ -30,12 +30,12 @@ static BOOL is_directory(NSString* path)
       else                                                path = @"/";
    }
 
-   directory = path;
+   _path = path;
 
-   list = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:directory error:nil];
-   list = [directory stringsByAppendingPaths:list];
+   _list = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:_path error:nil];
+   _list = [_path stringsByAppendingPaths:_list];
    
-   list = [list sortedArrayUsingComparator:^(id left, id right)
+   _list = [_list sortedArrayUsingComparator:^(id left, id right)
    {
       const BOOL left_is_dir = is_directory((NSString*)left);
       const BOOL right_is_dir = is_directory((NSString*)right);
@@ -46,18 +46,18 @@ static BOOL is_directory(NSString* path)
    }];
 
    self.navigationItem.rightBarButtonItem = [RetroArch_iOS get].settings_button;
-   [self setTitle: [directory lastPathComponent]];
+   [self setTitle: [_path lastPathComponent]];
    
    return self;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   NSString* path = [list objectAtIndex: indexPath.row];
+   NSString* path = [_list objectAtIndex: indexPath.row];
 
    if(is_directory(path))
    {
-      [[RetroArch_iOS get] pushViewController:[[directory_list alloc] initWithPath:path]];
+      [[RetroArch_iOS get] pushViewController:[[RADirectoryList alloc] initWithPath:path]];
    }
    else
    {
@@ -67,12 +67,12 @@ static BOOL is_directory(NSString* path)
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-   return [list count];
+   return [_list count];
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   NSString* path = [list objectAtIndex: indexPath.row];
+   NSString* path = [_list objectAtIndex: indexPath.row];
    BOOL isdir = is_directory(path);
 
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"path"];

@@ -11,7 +11,7 @@
 
 static const char* const SETTINGID = "SETTING";
 
-@implementation SettingsSubList
+@implementation RASettingsSubList
 {
    NSArray* settings;
 };
@@ -35,7 +35,7 @@ static const char* const SETTINGID = "SETTING";
    
       for (int j = 1; j < [group count]; j ++)
       {
-         SettingData* setting = [group objectAtIndex:j];
+         RASettingData* setting = [group objectAtIndex:j];
          
          switch (setting.type)
          {
@@ -60,21 +60,21 @@ static const char* const SETTINGID = "SETTING";
 
 - (void)tableView:(UITableView*)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   SettingData* setting = [[settings objectAtIndex:indexPath.section] objectAtIndex:indexPath.row + 1];
+   RASettingData* setting = [[settings objectAtIndex:indexPath.section] objectAtIndex:indexPath.row + 1];
    
    switch (setting.type)
    {
       case EnumerationSetting:
       case FileListSetting:
-         [[RetroArch_iOS get] pushViewController:[[SettingEnumerationList alloc] initWithSetting:setting fromTable:(UITableView*)self.view]];
+         [[RetroArch_iOS get] pushViewController:[[RASettingEnumerationList alloc] initWithSetting:setting fromTable:(UITableView*)self.view]];
          break;
          
       case ButtonSetting:
-         (void)[[ButtonGetter alloc] initWithSetting:setting fromTable:(UITableView*)self.view];
+         (void)[[RAButtonGetter alloc] initWithSetting:setting fromTable:(UITableView*)self.view];
          break;
          
       case GroupSetting:
-         [[RetroArch_iOS get] pushViewController:[[SettingsSubList alloc] initWithSettings:setting.subValues title:setting.label]];
+         [[RetroArch_iOS get] pushViewController:[[RASettingsSubList alloc] initWithSettings:setting.subValues title:setting.label]];
          break;
          
       default:
@@ -84,13 +84,13 @@ static const char* const SETTINGID = "SETTING";
 
 - (void)handle_boolean_switch:(UISwitch*)swt
 {
-   SettingData* setting = objc_getAssociatedObject(swt, SETTINGID);
+   RASettingData* setting = objc_getAssociatedObject(swt, SETTINGID);
    setting.value = (swt.on ? @"true" : @"false");
 }
 
 - (UITableViewCell*)tableView:(UITableView*)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   SettingData* setting = [[settings objectAtIndex:indexPath.section] objectAtIndex:indexPath.row + 1];
+   RASettingData* setting = [[settings objectAtIndex:indexPath.section] objectAtIndex:indexPath.row + 1];
   
    UITableViewCell* cell = nil;
 

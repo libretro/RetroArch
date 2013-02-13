@@ -22,10 +22,10 @@ extern uint32_t ios_current_touch_count;
 
 @implementation RetroArch_iOS
 {
-   game_view* game;
+   RAGameView* _game;
    
-   UIWindow* window;
-   UINavigationController* navigator;
+   UIWindow* _window;
+   UINavigationController* _navigator;
 }
 
 + (RetroArch_iOS*)get
@@ -35,34 +35,34 @@ extern uint32_t ios_current_touch_count;
 
 - (void)runGame:(NSString*)path
 {
-   game = [[game_view alloc] initWithGame:path];
-   window.rootViewController = game;
-   navigator = nil;
+   _game = [[RAGameView alloc] initWithGame:path];
+   _window.rootViewController = _game;
+   _navigator = nil;
 }
 
 - (void)gameHasExited
 {
-   game = nil;
+   _game = nil;
 
-   navigator = [[UINavigationController alloc] init];
-   [navigator pushViewController: [[module_list alloc] init] animated:YES];
+   _navigator = [[UINavigationController alloc] init];
+   [_navigator pushViewController: [[RAModuleList alloc] init] animated:YES];
 
-   window.rootViewController = navigator;
+   _window.rootViewController = _navigator;
 }
 
 - (void)pushViewController:(UIViewController*)theView
 {
-   if (navigator != nil)
+   if (_navigator != nil)
    {
-      [navigator pushViewController:theView animated:YES];
+      [_navigator pushViewController:theView animated:YES];
    }
 }
 
 - (void)popViewController
 {
-   if (navigator != nil)
+   if (_navigator != nil)
    {
-      [navigator popViewControllerAnimated:YES];
+      [_navigator popViewControllerAnimated:YES];
    }
 }
 
@@ -87,12 +87,12 @@ extern uint32_t ios_current_touch_count;
    self.settings_button.action = @selector(show_settings);
 
    // Setup window
-   navigator = [[UINavigationController alloc] init];
-   [navigator pushViewController: [[module_list alloc] init] animated:YES];
+   _navigator = [[UINavigationController alloc] init];
+   [_navigator pushViewController: [[RAModuleList alloc] init] animated:YES];
 
-   window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-   window.rootViewController = navigator;
-   [window makeKeyAndVisible];
+   _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+   _window.rootViewController = _navigator;
+   [_window makeKeyAndVisible];
    
    // Setup keyboard hack
    [[NSNotificationCenter defaultCenter] addObserver: self selector: @selector(keyPressed:) name: GSEventKeyDownNotification object: nil];
@@ -101,18 +101,14 @@ extern uint32_t ios_current_touch_count;
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
 {
-   if (game)
-   {
-      [game resume];
-   }
+   if (_game)
+      [_game resume];
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
-   if (game)
-   {
-      [game pause];
-   }
+   if (_game)
+      [_game pause];
 }
 
 -(void) keyPressed: (NSNotification*) notification
@@ -129,30 +125,30 @@ extern uint32_t ios_current_touch_count;
 
 - (void)show_settings
 {
-   [self pushViewController:[SettingsList new]];
+   [self pushViewController:[RASettingsList new]];
 }
 
 - (void)processTouches:(NSArray*)touches
 {
-   if (game)
+   if (_game)
    {
       ios_current_touch_count = [touches count];
    
       for(int i = 0; i != [touches count]; i ++)
       {
          UITouch *touch = [touches objectAtIndex:i];
-         CGPoint coord = [touch locationInView:game.view];
+         CGPoint coord = [touch locationInView:_game.view];
          float scale = [[UIScreen mainScreen] scale];
       
          // Exit hack!
          if (touch.tapCount == 3)
          {
-            if (coord.y < game.view.bounds.size.height / 10.0f)
+            if (coord.y < _game.view.bounds.size.height / 10.0f)
             {
-               float tenpct = game.view.bounds.size.width / 10.0f;
+               float tenpct = _game.view.bounds.size.width / 10.0f;
                if (coord.x >= tenpct * 4 && coord.x <= tenpct * 6)
                {
-                  [game exit];
+                  [_game exit];
                }
             }
          }

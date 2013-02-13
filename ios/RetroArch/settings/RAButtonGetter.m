@@ -78,15 +78,15 @@ static NSString* get_key_config_name(uint32_t hid_id)
    return @"nul";
 }
 
-@implementation ButtonGetter
+@implementation RAButtonGetter
 {
-   ButtonGetter* me;
-   SettingData* value;
+   RAButtonGetter* me;
+   RASettingData* value;
    UIAlertView* alert;
    UITableView* view;
 }
 
-- (id)initWithSetting:(SettingData*)setting fromTable:(UITableView*)table
+- (id)initWithSetting:(RASettingData*)setting fromTable:(UITableView*)table
 {
    self = [super init];
 

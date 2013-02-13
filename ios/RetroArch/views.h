@@ -3,27 +3,27 @@
 
 #include "conf/config_file.h"
 
-@interface game_view : UIViewController
+@interface RAGameView : UIViewController
 - (id)initWithGame:(NSString*)path;\
 - (void)pause;
 - (void)resume;
 - (void)exit;
 @end
 
-@interface module_list : UITableViewController
+@interface RAModuleList : UITableViewController
 
 @end
 
-@interface directory_list : UITableViewController
+@interface RADirectoryList : UITableViewController
 - (id)initWithPath:(NSString*)path;
 @end
 
 
-@interface SettingsSubList : UITableViewController
+@interface RASettingsSubList : UITableViewController
 - (id)initWithSettings:(NSArray*)values title:(NSString*)title;
 - (void)writeSettings:(NSArray*)settingList toConfig:(config_file_t*)config;
 @end
 
-@interface SettingsList : SettingsSubList
+@interface RASettingsList : RASettingsSubList
 + (void)refreshConfigFile;
 @end

@@ -13,7 +13,7 @@ enum SettingTypes
    BooleanSetting, ButtonSetting, EnumerationSetting, FileListSetting, GroupSetting
 };
 
-@interface SettingData : NSObject
+@interface RASettingData : NSObject
 @property enum SettingTypes type;
 
 @property (strong) NSString* label;
@@ -24,10 +24,10 @@ enum SettingTypes
 @property (strong) NSArray* subValues;
 @end
 
-@interface ButtonGetter : NSObject<UIAlertViewDelegate>
-- (id)initWithSetting:(SettingData*)setting fromTable:(UITableView*)table;
+@interface RAButtonGetter : NSObject<UIAlertViewDelegate>
+- (id)initWithSetting:(RASettingData*)setting fromTable:(UITableView*)table;
 @end
 
-@interface SettingEnumerationList : UITableViewController
-- (id)initWithSetting:(SettingData*)setting fromTable:(UITableView*)table;
+@interface RASettingEnumerationList : UITableViewController
+- (id)initWithSetting:(RASettingData*)setting fromTable:(UITableView*)table;
 @end

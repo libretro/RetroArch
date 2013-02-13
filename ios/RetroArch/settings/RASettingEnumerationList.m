@@ -8,13 +8,13 @@
 
 #import "settings.h"
 
-@implementation SettingEnumerationList
+@implementation RASettingEnumerationList
 {
-   SettingData* value;
+   RASettingData* value;
    UITableView* view;
 };
 
-- (id)initWithSetting:(SettingData*)setting fromTable:(UITableView*)table
+- (id)initWithSetting:(RASettingData*)setting fromTable:(UITableView*)table
 {
    self = [super initWithStyle:UITableViewStyleGrouped];
    

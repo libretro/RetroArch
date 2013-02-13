@@ -10,7 +10,7 @@
 #import "settings.h"
 #include "config_file.h"
 
-@implementation SettingData
+@implementation RASettingData
 @end
 
 
@@ -32,9 +32,9 @@ static NSString* get_value_from_config(config_file_t* config, NSString* name, NS
    return value;
 }
 
-static SettingData* boolean_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue)
+static RASettingData* boolean_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue)
 {
-   SettingData* result = [[SettingData alloc] init];
+   RASettingData* result = [[RASettingData alloc] init];
    result.type = BooleanSetting;
    result.label = label;
    result.name = name;
@@ -42,9 +42,9 @@ static SettingData* boolean_setting(config_file_t* config, NSString* name, NSStr
    return result;
 }
 
-static SettingData* button_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue)
+static RASettingData* button_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue)
 {
-   SettingData* result = [[SettingData alloc] init];
+   RASettingData* result = [[RASettingData alloc] init];
    result.type = ButtonSetting;
    result.label = label;
    result.name = name;
@@ -52,18 +52,18 @@ static SettingData* button_setting(config_file_t* config, NSString* name, NSStri
    return result;
 }
 
-static SettingData* group_setting(NSString* label, NSArray* settings)
+static RASettingData* group_setting(NSString* label, NSArray* settings)
 {
-   SettingData* result = [[SettingData alloc] init];
+   RASettingData* result = [[RASettingData alloc] init];
    result.type = GroupSetting;
    result.label = label;
    result.subValues = settings;
    return result;
 }
 
-static SettingData* enumeration_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, NSArray* values)
+static RASettingData* enumeration_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, NSArray* values)
 {
-   SettingData* result = [[SettingData alloc] init];
+   RASettingData* result = [[RASettingData alloc] init];
    result.type = EnumerationSetting;
    result.label = label;
    result.name = name;
@@ -72,7 +72,7 @@ static SettingData* enumeration_setting(config_file_t* config, NSString* name, N
    return result;
 }
 
-static SettingData* subpath_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, NSString* path, NSString* extension)
+static RASettingData* subpath_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, NSString* path, NSString* extension)
 {
    NSString* value = get_value_from_config(config, name, defaultValue);
    value = [value stringByReplacingOccurrencesOfString:path withString:@""];
@@ -80,7 +80,7 @@ static SettingData* subpath_setting(config_file_t* config, NSString* name, NSStr
    NSArray* values = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:path error:nil];
    values = [values pathsMatchingExtensions:[NSArray arrayWithObject:extension]];
 
-   SettingData* result = [[SettingData alloc] init];
+   RASettingData* result = [[RASettingData alloc] init];
    result.type = FileListSetting;
    result.label = label;
    result.name = name;
@@ -90,7 +90,7 @@ static SettingData* subpath_setting(config_file_t* config, NSString* name, NSStr
    return result;
 }
 
-@implementation SettingsList
+@implementation RASettingsList
 - (id)init
 {
    config_file_t* config = config_file_new([[RetroArch_iOS get].config_file_path UTF8String]);
@@ -176,7 +176,7 @@ static SettingData* subpath_setting(config_file_t* config, NSString* name, NSStr
 
 + (void)refreshConfigFile
 {
-   [[[SettingsList alloc] init] writeToDisk];
+   [[[RASettingsList alloc] init] writeToDisk];
 }
 
 - (void)writeToDisk

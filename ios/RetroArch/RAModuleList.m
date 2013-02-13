@@ -16,29 +16,27 @@ static void display_error_alert(NSString* message)
    [alert show];
 }
 
-@implementation module_list
+@implementation RAModuleList
 {
-   NSArray* modules;
-};
+   NSArray* _modules;
+}
 
 - (id)init
 {
    self = [super initWithStyle:UITableViewStylePlain];
 
    // Get the contents of the modules directory of the bundle.
-   NSString* module_dir = [NSString stringWithFormat:@"%@/%@",
-                          [[NSBundle mainBundle] bundlePath],
-                          @"modules"];
+   NSString* module_dir = [NSString stringWithFormat:@"%@/modules", [[NSBundle mainBundle] bundlePath]];
    
-   modules = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:module_dir error:nil];
+   _modules = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:module_dir error:nil];
    
-   if (modules != nil)
+   if (_modules != nil)
    {
-      modules = [module_dir stringsByAppendingPaths:modules];
-      modules = [modules pathsMatchingExtensions:[NSArray arrayWithObject:@"dylib"]];
+      _modules = [module_dir stringsByAppendingPaths:_modules];
+      _modules = [_modules pathsMatchingExtensions:[NSArray arrayWithObject:@"dylib"]];
    }
    
-   if (modules == nil || [modules count] == 0)
+   if (_modules == nil || [_modules count] == 0)
    {
       display_error_alert(@"No libretro cores were found.");
    }
@@ -51,13 +49,13 @@ static void display_error_alert(NSString* message)
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   [RetroArch_iOS get].module_path = [modules objectAtIndex:indexPath.row];
-   [[RetroArch_iOS get] pushViewController:[[directory_list alloc] initWithPath:nil]];
+   [RetroArch_iOS get].module_path = [_modules objectAtIndex:indexPath.row];
+   [[RetroArch_iOS get] pushViewController:[[RADirectoryList alloc] initWithPath:nil]];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-   return modules ? [modules count] : 0;
+   return _modules ? [_modules count] : 0;
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -65,7 +63,7 @@ static void display_error_alert(NSString* message)
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"module"];
    cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"module"];
    
-   cell.textLabel.text = [[[modules objectAtIndex:indexPath.row] lastPathComponent] stringByDeletingPathExtension];
+   cell.textLabel.text = [[[_modules objectAtIndex:indexPath.row] lastPathComponent] stringByDeletingPathExtension];
 
    return cell;
 }

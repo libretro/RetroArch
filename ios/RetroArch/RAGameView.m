@@ -33,7 +33,7 @@ static bool idle_iterate()
    return true;
 }
 
-@implementation game_view
+@implementation RAGameView
 {
    EAGLContext *gl_context;
    NSString* game;
@@ -86,7 +86,7 @@ static bool idle_iterate()
 
 - (void)runGame
 {
-   [SettingsList refreshConfigFile];
+   [RASettingsList refreshConfigFile];
    
    const char* const sd = [[RetroArch_iOS get].system_directory UTF8String];
    const char* const cf =[[RetroArch_iOS get].config_file_path UTF8String];
