@@ -88,7 +88,7 @@ extern uint32_t ios_current_touch_count;
 
 - (void)show_settings
 {
-   [self.navigator pushViewController: [[settings_list alloc] init] animated:YES];
+   [self.navigator pushViewController: [[SettingsList alloc] init] animated:YES];
 }
 
 - (void)processTouches:(NSArray*)touches

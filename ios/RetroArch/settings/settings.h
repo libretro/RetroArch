@@ -6,10 +6,28 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
-@interface button_getter : NSObject<UIAlertViewDelegate>
-- (id)initWithSetting:(NSMutableDictionary*)setting fromTable:(UITableView*)table;
+#include "conf/config_file.h"
+
+enum SettingTypes
+{
+   BooleanSetting, ButtonSetting, EnumerationSetting, FileListSetting, GroupSetting
+};
+
+@interface SettingData : NSObject
+@property enum SettingTypes type;
+
+@property (strong) NSString* label;
+@property (strong) NSString* name;
+@property (strong) NSString* value;
+
+@property (strong) NSString* path;
+@property (strong) NSArray* subValues;
 @end
 
-@interface enumeration_list : UITableViewController
-- (id)initWithSetting:(NSMutableDictionary*)setting fromTable:(UITableView*)table;
+@interface ButtonGetter : NSObject<UIAlertViewDelegate>
+- (id)initWithSetting:(SettingData*)setting fromTable:(UITableView*)table;
+@end
+
+@interface SettingEnumerationList : UITableViewController
+- (id)initWithSetting:(SettingData*)setting fromTable:(UITableView*)table;
 @end

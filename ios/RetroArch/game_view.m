@@ -57,7 +57,7 @@ static bool is_syncing = true;
 
 - (void)runGame
 {
-   [settings_list refresh_config_file];
+   [SettingsList refreshConfigFile];
    
    const char* const sd = [[RetroArch_iOS get].system_directory UTF8String];
    const char* const cf =[[RetroArch_iOS get].config_file_path UTF8String];

@@ -65,7 +65,7 @@ static const struct
    { "nul", 0x00},
 };
 
-static const NSString* get_key_config_name(uint32_t hid_id)
+static NSString* get_key_config_name(uint32_t hid_id)
 {
    for (int i = 0; ios_key_name_map[i].hid_id; i ++)
    {
@@ -78,15 +78,15 @@ static const NSString* get_key_config_name(uint32_t hid_id)
    return @"nul";
 }
 
-@implementation button_getter
+@implementation ButtonGetter
 {
-   button_getter* me;
-   NSMutableDictionary* value;
+   ButtonGetter* me;
+   SettingData* value;
    UIAlertView* alert;
    UITableView* view;
 }
 
-- (id)initWithSetting:(NSMutableDictionary*)setting fromTable:(UITableView*)table
+- (id)initWithSetting:(SettingData*)setting fromTable:(UITableView*)table
 {
    self = [super init];
 
@@ -95,7 +95,7 @@ static const NSString* get_key_config_name(uint32_t hid_id)
    me = self;
 
    alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
-                                message:[value objectForKey:@"LABEL"]
+                                message:value.label
                                 delegate:self
                                 cancelButtonTitle:@"Cancel"
                                 otherButtonTitles:nil];
@@ -106,7 +106,7 @@ static const NSString* get_key_config_name(uint32_t hid_id)
    return self;
 }
 
-- (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex
+- (void)alertView:(UIAlertView*)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex
 {
    [[NSNotificationCenter defaultCenter] removeObserver:self];
    me = nil;
@@ -116,7 +116,7 @@ static const NSString* get_key_config_name(uint32_t hid_id)
 {
    int keycode = [[notification.userInfo objectForKey:@"keycode"] intValue];
 
-   [value setObject:get_key_config_name(keycode) forKey:@"VALUE"];
+   value.value = get_key_config_name(keycode);
 
    [alert dismissWithClickedButtonIndex:0 animated:YES];
    [view reloadData];

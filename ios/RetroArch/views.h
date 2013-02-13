@@ -1,6 +1,8 @@
 #import <UIKit/UIKit.h>
 #import <GLKit/GLKit.h>
 
+#include "conf/config_file.h"
+
 @interface game_view : UIViewController
 - (id)initWithGame:(NSString*)path;
 @end
@@ -13,6 +15,12 @@
 - (id)initWithPath:(NSString*)path;
 @end
 
-@interface settings_list : UITableViewController
-+ (void)refresh_config_file;
+
+@interface SettingsSubList : UITableViewController
+- (id)initWithSettings:(NSArray*)values title:(NSString*)title;
+- (void)writeSettings:(NSArray*)settingList toConfig:(config_file_t*)config;
+@end
+
+@interface SettingsList : SettingsSubList
++ (void)refreshConfigFile;
 @end

@@ -26,6 +26,7 @@
 		96366C7416CAF62200D64A22 /* button_getter.m in Sources */ = {isa = PBXBuildFile; fileRef = 96366C7016CAF62200D64A22 /* button_getter.m */; };
 		96366C7516CAF62200D64A22 /* enumeration_list.m in Sources */ = {isa = PBXBuildFile; fileRef = 96366C7116CAF62200D64A22 /* enumeration_list.m */; };
 		96366C7616CAF62200D64A22 /* settings_list.m in Sources */ = {isa = PBXBuildFile; fileRef = 96366C7316CAF62200D64A22 /* settings_list.m */; };
+		963F5AB216CC14C4009BBD19 /* settings_sublist.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AB116CC14C4009BBD19 /* settings_sublist.m */; };
 		96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
 		96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
 		96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
@@ -108,6 +109,7 @@
 		96366C7116CAF62200D64A22 /* enumeration_list.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = enumeration_list.m; sourceTree = "<group>"; };
 		96366C7216CAF62200D64A22 /* settings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settings.h; sourceTree = "<group>"; };
 		96366C7316CAF62200D64A22 /* settings_list.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settings_list.m; sourceTree = "<group>"; };
+		963F5AB116CC14C4009BBD19 /* settings_sublist.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settings_sublist.m; sourceTree = "<group>"; };
 		96AFAE2516C1D4EA009DE44C /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96AFAE2916C1D4EA009DE44C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		96AFAE2B16C1D4EA009DE44C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -317,6 +319,7 @@
 				96366C7116CAF62200D64A22 /* enumeration_list.m */,
 				96366C7216CAF62200D64A22 /* settings.h */,
 				96366C7316CAF62200D64A22 /* settings_list.m */,
+				963F5AB116CC14C4009BBD19 /* settings_sublist.m */,
 			);
 			path = settings;
 			sourceTree = "<group>";
@@ -829,6 +832,7 @@
 				96366C7416CAF62200D64A22 /* button_getter.m in Sources */,
 				96366C7516CAF62200D64A22 /* enumeration_list.m in Sources */,
 				96366C7616CAF62200D64A22 /* settings_list.m in Sources */,
+				963F5AB216CC14C4009BBD19 /* settings_sublist.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
