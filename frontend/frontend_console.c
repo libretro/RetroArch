@@ -113,8 +113,6 @@ static void verbose_log_init(void)
    RARCH_LOG("Turning on verbose logging...\n");
 }
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-
 // Transforms a library id to a name suitable as a pathname.
 static void get_libretro_core_name(char *name, size_t size)
 {
@@ -142,6 +140,8 @@ static void get_libretro_core_name(char *name, size_t size)
          name[i] = tolower(c);
    }
 }
+
+#ifdef HAVE_LIBRETRO_MANAGEMENT
 
 // If a CORE executable of name CORE.extension exists, rename filename
 // to a more sane name.

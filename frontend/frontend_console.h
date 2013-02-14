@@ -30,8 +30,6 @@ static void find_first_libretro_core(char *first_file,
    const char * ext);
 #endif
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
 static void get_libretro_core_name(char *name, size_t size);
-#endif
 
 #endif

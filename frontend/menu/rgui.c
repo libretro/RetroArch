@@ -380,9 +380,12 @@ static void render_text(rgui_handle_t *rgui)
    rgui_file_type_t menu_type = 0;
    rgui_list_back(rgui->path_stack, &dir, &menu_type, NULL);
 
+#ifdef HAVE_LIBRETRO_MANAGEMENT
    if (menu_type == RGUI_SETTINGS_CORE)
       snprintf(title, sizeof(title), "CORE SELECTION");
-   else if (rgui_is_controller_menu(menu_type) || rgui_is_viewport_menu(menu_type) || menu_type == RGUI_SETTINGS)
+   else
+#endif
+   if (rgui_is_controller_menu(menu_type) || rgui_is_viewport_menu(menu_type) || menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "SETTINGS: %s", dir);
    else
       snprintf(title, sizeof(title), "FILE BROWSER: %s", dir);
@@ -481,7 +484,9 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
             break;
          case RGUI_SETTINGS_CUSTOM_VIEWPORT:
+#ifdef HAVE_LIBRETRO_MANAGEMENT
          case RGUI_SETTINGS_CORE:
+#endif
          case RGUI_SETTINGS_CONTROLLER_1:
          case RGUI_SETTINGS_CONTROLLER_2:
          case RGUI_SETTINGS_CONTROLLER_3:
@@ -926,7 +931,9 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("Audio Resampler", RGUI_SETTINGS_RESAMPLER_TYPE);
    RGUI_MENU_ITEM("SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR);
    RGUI_MENU_ITEM("State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR);
+#ifdef HAVE_LIBRETRO_MANAGEMENT
    RGUI_MENU_ITEM("Core", RGUI_SETTINGS_CORE);
+#endif
    RGUI_MENU_ITEM("Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1);
    RGUI_MENU_ITEM("Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2);
    RGUI_MENU_ITEM("Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3);
@@ -1087,8 +1094,10 @@ int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    rgui_file_type_t type = 0;
    const char *label = 0;
    rgui_list_at(rgui->folder_buf, rgui->directory_ptr, &label, &type, NULL);
+#ifdef HAVE_LIBRETRO_MANAGEMENT
    if (type == RGUI_SETTINGS_CORE)
       label = default_paths.core_dir;
+#endif
    const char *dir = 0;
    rgui_file_type_t menu_type = 0;
    size_t directory_ptr = 0;
@@ -1124,7 +1133,12 @@ int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_RIGHT:
       case RGUI_ACTION_OK:
       case RGUI_ACTION_START:
-         if ((rgui_is_controller_menu(type) || type == RGUI_SETTINGS_CORE) && action == RGUI_ACTION_OK)
+         if ((rgui_is_controller_menu(type)
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+                  || type == RGUI_SETTINGS_CORE
+#endif
+            )
+               && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->path_stack, label, type, rgui->directory_ptr);
             rgui->directory_ptr = 0;
@@ -1160,7 +1174,11 @@ int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
    rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
-   if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE))
+   if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+            || menu_type == RGUI_SETTINGS_CORE
+#endif
+            ))
    {
       rgui->need_refresh = false;
       if (rgui_is_controller_menu(menu_type))
@@ -1262,6 +1280,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else
          {
+#ifdef HAVE_LIBRETRO_MANAGEMENT
             if (menu_type == RGUI_SETTINGS_CORE)
             {
                strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
@@ -1277,6 +1296,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
                g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
             }
             else
+#endif
             {
                snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s", dir, path);
 
@@ -1299,6 +1319,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
 
       case RGUI_ACTION_SETTINGS:
+#ifdef HAVE_LIBRETRO_MANAGEMENT
          if (menu_type == RGUI_SETTINGS_CORE)
          {
             rgui->directory_ptr = directory_ptr;
@@ -1306,6 +1327,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui_list_pop(rgui->path_stack);
          }
          else
+#endif
          {
             rgui_list_push(rgui->path_stack, "", RGUI_SETTINGS, rgui->directory_ptr);
             rgui->directory_ptr = 0;
@@ -1323,7 +1345,11 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    // refresh values in case the stack changed
    rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
-   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE))
+   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+            || menu_type == RGUI_SETTINGS_CORE
+#endif
+            ))
    {
       rgui->need_refresh = false;
       rgui_list_clear(rgui->folder_buf);
