@@ -1,10 +1,6 @@
 #!/bin/sh
 
-make -C ../ -f Makefile.ngc.salamander clean || exit 1
 make -C ../ -f Makefile.ngc clean || exit 1
-
-make -C ../ -f Makefile.ngc.salamander || exit 1
-make -C ../ -f Makefile.ngc.salamander pkg || exit 1
 
 for f in *_ngc.a ; do
    name=`echo "$f" | sed 's/\(_libretro\|\)_ngc.a$//'`

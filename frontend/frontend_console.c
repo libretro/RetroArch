@@ -28,7 +28,9 @@
 #include "platform/platform_ps3_exec.c"
 #elif defined(GEKKO)
 #include "platform/platform_gx.c"
+#ifdef HW_RVL
 #include "platform/platform_gx_exec.c"
+#endif
 #elif defined(_XBOX)
 #include "platform/platform_xdk.c"
 #include "platform/platform_xdk_exec.c"

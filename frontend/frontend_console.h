@@ -18,7 +18,9 @@
 #define _FRONTEND_CONSOLE_H
 
 //optional RetroArch forward declarations
+#ifdef HAVE_RARCH_EXEC
 static void rarch_console_exec(const char *path);
+#endif
 static void verbose_log_init(void);
 
 #ifdef IS_SALAMANDER
