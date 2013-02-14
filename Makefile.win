@@ -221,8 +221,8 @@ ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
    CXXFLAGS += -O0 -g
 else
-   CFLAGS += -O3
-   CXXFLAGS += -O3
+   CFLAGS += -O3 -ffast-math
+   CXXFLAGS += -O3 -ffast-math
    LDCXXFLAGS += -s
 endif
 
