@@ -1,6 +1,15 @@
 % MATLAB test case for RetroArch SINC upsampler.
 close all;
 
+%%
+% Test RetroArch's kaiser function.
+real_kaiser = kaiser(1024, 10.0)';
+rarch_kaiser = kaiser_window(1024, 10.0);
+figure('name', 'Bessel function test');
+subplot(2, 1, 1), plot(rarch_kaiser), title('RetroArch kaiser');
+subplot(2, 1, 2), plot(rarch_kaiser - real_kaiser), title('Error');
+
+%%
 % 4-tap and 8-tap are Lanczos windowed, but include here for completeness.
 phases = 256;
 bw = 0.375;

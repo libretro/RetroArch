@@ -146,7 +146,7 @@ static inline double besseli0(double x)
 
    // Approximate. This is an infinite sum.
    // Luckily, it converges rather fast.
-   for (unsigned i = 0; i < 12; i++)
+   for (unsigned i = 0; i < 18; i++)
    {
       sum += x_pow * two_div_pow / (factorial * factorial);
 
