@@ -1,5 +1,14 @@
 RETROARCH CONSOLE
 ------------------------------------------------------------------------------
+v0.9.8.4
+------------------------------------------------------------------------------
+* [FBA core] [For Wii/Gamecube only] The main FBA version now has CPS1/CPS2/Neogeo
+ and Mega Drive/PC Engine drivers removed. To play CPS1, use FBA Cores CPS1. 
+ To play CPS2, use FBA Cores CPS2. To play NeoGoe, use FBA Cores Neo.
+* [FBA core] Made FBA Cores CPS1 - use this to play CPS1 games (all CPS1 ROMs
+fit into memory on Gamecube).
+* [Gamecube] Made RetroArch cores 'standalone' - ie. no core switching.
+------------------------------------------------------------------------------
 v0.9.8.3
 ------------------------------------------------------------------------------
 * [FBA core] Various changes/fixes

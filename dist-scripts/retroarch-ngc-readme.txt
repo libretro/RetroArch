@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
-RETROARCH GX - GAMECUBE - 0.9.8.3
+RETROARCH GX - GAMECUBE - 0.9.8.4
 ------------------------------------------------------------------------------
 RetroConsole Level: 0
 Author: Themaister, Toad King, Squarepusher/Twin Aphex
