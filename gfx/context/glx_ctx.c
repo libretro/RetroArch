@@ -30,6 +30,7 @@
 
 static Display *g_dpy;
 static Window   g_win;
+static GLXWindow g_glx_win;
 static Colormap g_cmap;
 static Atom g_quit_atom;
 static bool g_has_focus;
@@ -229,7 +230,7 @@ static void gfx_ctx_check_window(bool *quit,
 static void gfx_ctx_swap_buffers(void)
 {
    if (g_is_double)
-      glXSwapBuffers(g_dpy, g_win);
+      glXSwapBuffers(g_dpy, g_glx_win);
 }
 
 static void gfx_ctx_set_resize(unsigned width, unsigned height)
@@ -280,6 +281,8 @@ static bool gfx_ctx_init(void)
 {
    if (g_inited)
       return false;
+
+   XInitThreads();
 
    static const int visual_attribs[] = {
       GLX_X_RENDERABLE     , True,
@@ -402,6 +405,8 @@ static bool gfx_ctx_set_video_mode(
          CWBorderPixel | CWColormap | CWEventMask | (true_full ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_dpy, g_win, 0);
 
+   g_glx_win = glXCreateWindow(g_dpy, g_fbc, g_win, 0);
+
    gfx_ctx_update_window_title(true);
    x11_set_window_attr(g_dpy, g_win);
 
@@ -444,7 +449,7 @@ static bool gfx_ctx_set_video_mode(
       goto error;
    }
 
-   glXMakeCurrent(g_dpy, g_win, g_ctx);
+   glXMakeContextCurrent(g_dpy, g_glx_win, g_glx_win, g_ctx);
    XSync(g_dpy, False);
 
    g_quit_atom = XInternAtom(g_dpy, "WM_DELETE_WINDOW", False);
@@ -493,13 +498,16 @@ static void gfx_ctx_destroy(void)
 {
    if (g_dpy && g_ctx)
    {
-      glXMakeCurrent(g_dpy, None, NULL);
+      glXMakeContextCurrent(g_dpy, None, None, NULL);
       glXDestroyContext(g_dpy, g_ctx);
       g_ctx = NULL;
    }
 
    if (g_win)
    {
+      glXDestroyWindow(g_dpy, g_glx_win);
+      g_glx_win = 0;
+
       // Save last used monitor for later.
 #ifdef HAVE_XINERAMA
       XWindowAttributes target;
