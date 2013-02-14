@@ -786,7 +786,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
             if (g_extern.main_is_init && changed)
             {
                if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
-                        g_settings.audio.resampler))
+                        g_settings.audio.resampler, g_extern.audio_data.orig_src_ratio == 0.0 ? 1.0 : g_extern.audio_data.orig_src_ratio))
                {
                   RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
                   g_extern.audio_active = false;
