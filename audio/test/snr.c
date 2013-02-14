@@ -24,7 +24,7 @@
 #include <stdbool.h>
 
 #undef min
-#define min(a, b) ((a) < (b)) ? (a) : (b)
+#define min(a, b) (((a) < (b)) ? (a) : (b))
 
 static void gen_signal(float *out, double omega, double bias_samples, size_t samples)
 {
@@ -290,7 +290,7 @@ int main(int argc, char *argv[])
       rarch_resampler_process(resampler, re, &data);
 
       // We generate 2 seconds worth of audio, however, only the last second is considered so phase has stabilized.
-      struct snr_result res;
+      struct snr_result res = {0};
       unsigned max_freq = min(in_rate, out_rate) / 2;
       if (freq > max_freq)
          continue;
