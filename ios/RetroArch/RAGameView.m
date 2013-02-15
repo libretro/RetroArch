@@ -133,25 +133,25 @@ void ios_close_game()
 
 void ios_pause_emulator()
 {
-   if (gameViewer)
+   if (_isRunning)
       [gameViewer pause];
 }
 
 void ios_resume_emulator()
 {
-   if (gameViewer)
+   if (_isRunning)
       [gameViewer resume];
 }
 
 void ios_suspend_emulator()
 {
-   if (gameViewer)
+   if (_isRunning)
       uninit_drivers();
 }
 
 void ios_activate_emulator()
 {
-   if (!gameViewer)
+   if (_isRunning)
       init_drivers();
 }
 
