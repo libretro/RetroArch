@@ -288,7 +288,7 @@ static bool gfx_ctx_init(void)
       g_connector = NULL;
    }
 
-   // TODO: Figure out what index for crtcs to use ...
+   // TODO: Figure out what index for crtcs to use for orig_crtc ...
    g_orig_crtc = drmModeGetCrtc(g_drm_fd, g_resources->crtcs[0]);
    if (!g_orig_crtc)
       RARCH_WARN("[KMS/EGL]: Cannot find original CRTC.\n");
@@ -302,6 +302,7 @@ static bool gfx_ctx_init(void)
    for (int i = 0, area = 0; i < g_connector->count_modes; i++)
    {
       drmModeModeInfo *current_mode = &g_connector->modes[i];
+      //RARCH_ERR("[KMS/EGL]: Found mode: \"%s\".\n", current_mode->name);
       int current_area = current_mode->hdisplay * current_mode->vdisplay;
       if (current_area > area)
       {
@@ -309,6 +310,7 @@ static bool gfx_ctx_init(void)
          area       = current_area;
       }
    }
+
 
    if (!g_drm_mode)
    {
@@ -380,6 +382,8 @@ static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
    unsigned height = gbm_bo_get_height(bo);
    unsigned stride = gbm_bo_get_stride(bo);
    unsigned handle = gbm_bo_get_handle(bo).u32;
+
+   RARCH_LOG("[KMS/EGL]: New FB: %ux%u (stride: %u).\n", width, height, stride);
 
    int ret = drmModeAddFB(g_drm_fd, width, height, 24, 32, stride, handle, &fb->fb_id);
    if (ret < 0)
