@@ -26,29 +26,31 @@ NSString *const GSEventKeyUpNotification = @"GSEventKeyUpHackNotification";
 // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
 - (void)sendEvent:(UIEvent *)event
 {
-    [super sendEvent:event];
+   [super sendEvent:event];
 
-    if ([event respondsToSelector:@selector(_gsEvent)])
-    {
-        int* eventMem = (int *)(void*)CFBridgingRetain([event performSelector:@selector(_gsEvent)]);
-        int eventType = eventMem ? eventMem[GSEVENT_TYPE] : 0;
+   if ([event respondsToSelector:@selector(_gsEvent)])
+   {
+      int* eventMem = (int *)(void*)CFBridgingRetain([event performSelector:@selector(_gsEvent)]);
+      int eventType = eventMem ? eventMem[GSEVENT_TYPE] : 0;
        
-        if (eventMem && (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP))
-        {
-             // Read keycode from GSEventKey
-             int tmp = eventMem[GSEVENTKEY_KEYCODE];
-             UniChar *keycode = (UniChar *)&tmp;
+      if (eventMem && (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP))
+      {
+         // Read keycode from GSEventKey
+         int tmp = eventMem[GSEVENTKEY_KEYCODE];
+         UniChar *keycode = (UniChar *)&tmp;
 
-             // Post notification
-             NSDictionary *inf = [[NSDictionary alloc] initWithObjectsAndKeys:
-                                 [NSNumber numberWithShort:keycode[0]], @"keycode",
-                                 nil];
+         // Post notification
+         NSDictionary *inf = [[NSDictionary alloc] initWithObjectsAndKeys:
+                             [NSNumber numberWithShort:keycode[0]], @"keycode",
+                             nil];
                    
-             [[NSNotificationCenter defaultCenter]
-                 postNotificationName:(eventType == GSEVENT_TYPE_KEYDOWN) ? GSEventKeyDownNotification : GSEventKeyUpNotification
-                 object:nil userInfo:inf];
-        }
-    }
+         [[NSNotificationCenter defaultCenter]
+             postNotificationName:(eventType == GSEVENT_TYPE_KEYDOWN) ? GSEventKeyDownNotification : GSEventKeyUpNotification
+             object:nil userInfo:inf];
+      }
+       
+      CFBridgingRelease(eventMem);
+   }
 }
 #endif
 

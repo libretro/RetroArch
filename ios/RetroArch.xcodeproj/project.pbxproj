@@ -84,6 +84,7 @@
 		96AFAFAD16C1EEE9009DE44C /* sinc.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEF716C1DC73009DE44C /* sinc.c */; };
 		96AFAFD416C1FBC0009DE44C /* input_common.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFC916C1FBC0009DE44C /* input_common.c */; };
 		96AFAFD716C1FBC0009DE44C /* null.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFCD16C1FBC0009DE44C /* null.c */; };
+		96C6A5D216CDB384009E3280 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96C6A5D116CDB384009E3280 /* QuartzCore.framework */; };
 		96CF015016C2C0B700ABF9C9 /* overlay.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFCE16C1FBC0009DE44C /* overlay.c */; };
 		96CF015C16C2F72900ABF9C9 /* ios_input.c in Sources */ = {isa = PBXBuildFile; fileRef = 96CF015B16C2F72900ABF9C9 /* ios_input.c */; };
 /* End PBXBuildFile section */
@@ -290,6 +291,7 @@
 		96AFAFD016C1FBC0009DE44C /* sdl_input.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sdl_input.c; sourceTree = "<group>"; };
 		96AFAFD116C1FBC0009DE44C /* sdl_joypad.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sdl_joypad.c; sourceTree = "<group>"; };
 		96AFAFD216C1FBC0009DE44C /* x11_input.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = x11_input.c; sourceTree = "<group>"; };
+		96C6A5D116CDB384009E3280 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		96CF015B16C2F72900ABF9C9 /* ios_input.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ios_input.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -298,6 +300,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				96C6A5D216CDB384009E3280 /* QuartzCore.framework in Frameworks */,
 				96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */,
 				96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */,
 				96AFAF2216C1DF88009DE44C /* libz.dylib in Frameworks */,
@@ -351,6 +354,7 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				96C6A5D116CDB384009E3280 /* QuartzCore.framework */,
 				96366C5816C9ACF500D64A22 /* AudioToolbox.framework */,
 				96366C5416C9AC3300D64A22 /* CoreAudio.framework */,
 				96AFAE2916C1D4EA009DE44C /* UIKit.framework */,
@@ -981,7 +985,6 @@
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-DLSB_FIRST",
-					"-DHAVE_THREAD",
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
 					"-DPACKAGE_VERSION=\\\"1.0\\\"",
@@ -1019,7 +1022,6 @@
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-DLSB_FIRST",
-					"-DHAVE_THREAD",
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
 					"-DPACKAGE_VERSION=\\\"1.0\\\"",

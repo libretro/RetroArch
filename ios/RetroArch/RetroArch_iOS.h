@@ -19,6 +19,8 @@ extern NSString* const GSEventKeyUpNotification;
 - (void)pushViewController:(UIViewController*)theView;
 - (void)popViewController;
 
+- (void)setViewer:(UIViewController*)theView;
+
 @property (strong, nonatomic) NSString* system_directory;
 @property (strong, nonatomic) NSString* config_file_path;
 

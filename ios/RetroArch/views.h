@@ -4,10 +4,6 @@
 #include "conf/config_file.h"
 
 @interface RAGameView : UIViewController
-- (id)initWithGame:(NSString*)path;\
-- (void)pause;
-- (void)resume;
-- (void)exit;
 @end
 
 @interface RAModuleList : UITableViewController

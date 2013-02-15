@@ -14,77 +14,71 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#import <QuartzCore/QuartzCore.h>
 #include "general.h"
 
-static GLKView *gl_view;
+static bool _isRunning;
+
 static float screen_scale;
 static int frame_skips = 4;
 static bool is_syncing = true;
 
-static bool active_iterate()
-{
-   while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true) == kCFRunLoopRunHandledSource);
-   return rarch_main_iterate();
-}
-
-static bool idle_iterate()
-{
-   CFRunLoopRunInMode(kCFRunLoopDefaultMode, .5, false);
-   return true;
-}
-
 @implementation RAGameView
 {
-   EAGLContext *gl_context;
-   NSString* game;
-   bool paused;
-   bool exiting;
+   EAGLContext* _glContext;
+   CADisplayLink* _timer;
 }
 
-- (id)initWithGame:(NSString*)path
+- (id)init
 {
    self = [super init];
-   game = path;
    screen_scale = [[UIScreen mainScreen] scale];
    
+   _glContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+   [EAGLContext setCurrentContext:_glContext];
+   
+   self.view = [[GLKView alloc] initWithFrame:CGRectMake(0, 0, 640, 480) context:_glContext];
+   self.view.multipleTouchEnabled = YES;
+   
+   _timer = [CADisplayLink displayLinkWithTarget:self selector:@selector(iterate)];
+   [_timer addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+
    return self;
+}
+
+- (void)iterate
+{
+   if (_isRunning) rarch_main_iterate();
+}
+
+- (void)needsToDie
+{
+   [_timer invalidate];
+   _timer = nil;
+
+   glFinish();
+
+   GLKView* glview = (GLKView*)self.view;
+   glview.context = nil;
+   _glContext = nil;
+   [EAGLContext setCurrentContext:nil];
 }
 
 - (void)pause
 {
-   paused = true;
+   _timer.paused = true;
 }
 
 - (void)resume
 {
-   paused = false;
+   if (_isRunning) _timer.paused = false;
 }
 
-- (void)exit
-{
-   exiting = true;
-}
+@end
 
-- (void)dealloc
-{
-   if ([EAGLContext currentContext] == gl_context) [EAGLContext setCurrentContext:nil];
-   gl_context = nil;
-   gl_view = nil;
-}
+static RAGameView* gameViewer;
 
-- (void)loadView
-{
-   gl_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-   [EAGLContext setCurrentContext:gl_context];
-   
-   gl_view = [[GLKView alloc] initWithFrame:CGRectMake(0, 0, 640, 480) context:gl_context];
-   gl_view.multipleTouchEnabled = YES;
-   self.view = gl_view;
-   
-   [self performSelector:@selector(runGame) withObject:nil afterDelay:0.2f];
-}
-
-- (void)runGame
+void ios_load_game(const char* path)
 {
    [RASettingsList refreshConfigFile];
    
@@ -92,30 +86,86 @@ static bool idle_iterate()
    const char* const cf =[[RetroArch_iOS get].config_file_path UTF8String];
    const char* const libretro = [[RetroArch_iOS get].module_path UTF8String];
 
-   struct rarch_main_wrap main_wrapper = {[game UTF8String], sd, sd, cf, libretro};
+   struct rarch_main_wrap main_wrapper = {path, sd, sd, cf, libretro};
    if (rarch_main_init_wrap(&main_wrapper) == 0)
    {
       rarch_init_msg_queue();
-      while (!exiting && (paused ? idle_iterate() : active_iterate()));
+      _isRunning = true;
+   }
+   else
+      _isRunning = false;
+}
+
+void ios_close_game()
+{
+   if (_isRunning)
+   {
       rarch_main_deinit();
       rarch_deinit_msg_queue();
-      
+
 #ifdef PERF_TEST
       rarch_perf_log();
 #endif
-      
+
       rarch_main_clear_state();
+      
+      _isRunning = false;
    }
    
    [[RetroArch_iOS get] gameHasExited];
 }
 
-@end
+void ios_pause_emulator()
+{
+   if (gameViewer)
+      [gameViewer pause];
+}
+
+void ios_resume_emulator()
+{
+   if (gameViewer)
+      [gameViewer resume];
+}
+
+void ios_suspend_emulator()
+{
+   if (gameViewer)
+      uninit_drivers();
+}
+
+void ios_activate_emulator()
+{
+   if (!gameViewer)
+      init_drivers();
+}
+
+bool ios_init_game_view()
+{
+   if (!gameViewer)
+   {
+      gameViewer = [RAGameView new];
+      [[RetroArch_iOS get] setViewer:gameViewer];
+   }
+   
+   return true;
+}
+
+void ios_destroy_game_view()
+{
+   if (gameViewer)
+   {
+      [gameViewer needsToDie];
+      [[RetroArch_iOS get] setViewer:nil];
+      gameViewer = nil;
+   }
+}
 
 void ios_flip_game_view()
 {
-   if (gl_view)
+   if (gameViewer)
    {
+      GLKView* gl_view = (GLKView*)gameViewer.view;
+   
       if (--frame_skips < 0)
       {
          [gl_view setNeedsDisplay];
@@ -133,8 +183,10 @@ void ios_set_game_view_sync(bool on)
 
 void ios_get_game_view_size(unsigned *width, unsigned *height)
 {
-   if (gl_view)
+   if (gameViewer)
    {
+      GLKView* gl_view = (GLKView*)gameViewer.view;
+   
       *width  = gl_view.bounds.size.width * screen_scale;
       *height = gl_view.bounds.size.height * screen_scale;
    }
@@ -142,8 +194,9 @@ void ios_get_game_view_size(unsigned *width, unsigned *height)
 
 void ios_bind_game_view_fbo()
 {
-   if (gl_view)
+   if (gameViewer)
    {
+      GLKView* gl_view = (GLKView*)gameViewer.view;
       [gl_view bindDrawable];
    }
 }

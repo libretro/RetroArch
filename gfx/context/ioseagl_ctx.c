@@ -35,7 +35,8 @@ static void gfx_ctx_set_swap_interval(unsigned interval)
 
 static void gfx_ctx_destroy(void)
 {
-   RARCH_LOG("gfx_ctx_destroy().\n");
+   extern void ios_destroy_game_view();
+   ios_destroy_game_view();
 }
 
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
@@ -46,7 +47,8 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 
 static bool gfx_ctx_init(void)
 {
-   return true;
+   extern bool ios_init_game_view();
+   return ios_init_game_view();
 }
 
 static void gfx_ctx_swap_buffers(void)
