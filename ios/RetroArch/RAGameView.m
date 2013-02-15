@@ -16,8 +16,10 @@
 
 #import <QuartzCore/QuartzCore.h>
 #include "general.h"
+#include "rarch_wrapper.h"
 
 static bool _isRunning;
+static bool _isPaused;
 
 static float screen_scale;
 static int frame_skips = 4;
@@ -40,15 +42,23 @@ static bool is_syncing = true;
    self.view = [[GLKView alloc] initWithFrame:CGRectMake(0, 0, 640, 480) context:_glContext];
    self.view.multipleTouchEnabled = YES;
    
-   _timer = [CADisplayLink displayLinkWithTarget:self selector:@selector(iterate)];
-   [_timer addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
-
    return self;
 }
 
 - (void)iterate
 {
-   if (_isRunning) rarch_main_iterate();
+   while (_isRunning && !_isPaused)
+   {
+      _isRunning = rarch_main_iterate();
+
+      if (!_isRunning)
+      {
+         ios_close_game();
+         return;
+      }
+      else
+         while(!_isPaused && _isRunning && CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true) == kCFRunLoopRunHandledSource);
+   }
 }
 
 - (void)needsToDie
@@ -66,19 +76,23 @@ static bool is_syncing = true;
 
 - (void)pause
 {
-   _timer.paused = true;
+   _isPaused = true;
 }
 
 - (void)resume
 {
-   if (_isRunning) _timer.paused = false;
+   if (_isPaused)
+   {
+      _isPaused = false;
+      [self performSelector:@selector(iterate) withObject:nil afterDelay:.02f];
+   }
 }
 
 @end
 
 static RAGameView* gameViewer;
 
-void ios_load_game(const char* path)
+bool ios_load_game(const char* path)
 {
    [RASettingsList refreshConfigFile];
    
@@ -94,6 +108,8 @@ void ios_load_game(const char* path)
    }
    else
       _isRunning = false;
+   
+   return _isRunning;
 }
 
 void ios_close_game()
@@ -145,6 +161,7 @@ bool ios_init_game_view()
    {
       gameViewer = [RAGameView new];
       [[RetroArch_iOS get] setViewer:gameViewer];
+      [gameViewer performSelector:@selector(iterate) withObject:nil afterDelay:.02f];
    }
    
    return true;
