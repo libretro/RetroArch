@@ -180,6 +180,8 @@ static bool gfx_ctx_init(void)
    if (g_inited)
       return false;
 
+   XInitThreads();
+
 #define EGL_ATTRIBS_BASE \
    EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
    EGL_RED_SIZE,        0, \
