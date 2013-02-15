@@ -390,11 +390,11 @@ static bool gfx_ctx_set_video_mode(
 
 #define EGL_ATTRIBS_BASE \
    EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
-   EGL_RED_SIZE,        0, \
-   EGL_GREEN_SIZE,      0, \
-   EGL_BLUE_SIZE,       0, \
-   EGL_DEPTH_SIZE,      0, \
-   EGL_STENCIL_SIZE,    0
+   EGL_RED_SIZE,        1, \
+   EGL_GREEN_SIZE,      1, \
+   EGL_BLUE_SIZE,       1, \
+   EGL_ALPHA_SIZE,      0, \
+   EGL_DEPTH_SIZE,      0
 
    static const EGLint egl_attribs_gl[] = {
       EGL_ATTRIBS_BASE,
