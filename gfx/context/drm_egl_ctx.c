@@ -250,21 +250,7 @@ static bool gfx_ctx_init(void)
    if (g_inited)
       return false;
 
-   static const char *modules[] = {
-      "i915", "radeon", "nouveau", "vmwgfx", "omapdrm", "exynos", NULL
-   };
-
-   for (int i = 0; modules[i]; i++)
-   {
-      RARCH_LOG("[KMS/EGL]: Trying to load module %s ...\n", modules[i]);
-      g_drm_fd = drmOpen(modules[i], NULL);
-      if (g_drm_fd >= 0)
-      {
-         RARCH_LOG("[KMS/EGL]: Found module %s.\n", modules[i]);
-         break;
-      }
-   }
-
+   g_drm_fd = open("/dev/dri/card0", O_RDWR);
    if (g_drm_fd < 0)
    {
       RARCH_ERR("[KMS/EGL]: Couldn't open DRM device.\n");
@@ -281,17 +267,15 @@ static bool gfx_ctx_init(void)
    for (int i = 0; i < g_resources->count_connectors; i++)
    {
       g_connector = drmModeGetConnector(g_drm_fd, g_resources->connectors[i]);
-      if (g_connector->connection == DRM_MODE_CONNECTED)
+
+      if (!g_connector)
+         continue;
+      if (g_connector->connection == DRM_MODE_CONNECTED && g_connector->count_modes > 0)
          break;
 
       drmModeFreeConnector(g_connector);
       g_connector = NULL;
    }
-
-   // TODO: Figure out what index for crtcs to use for orig_crtc ...
-   g_orig_crtc = drmModeGetCrtc(g_drm_fd, g_resources->crtcs[0]);
-   if (!g_orig_crtc)
-      RARCH_WARN("[KMS/EGL]: Cannot find original CRTC.\n");
 
    if (!g_connector)
    {
@@ -299,42 +283,32 @@ static bool gfx_ctx_init(void)
       goto error;
    }
 
-   for (int i = 0, area = 0; i < g_connector->count_modes; i++)
+   for (int i = 0; i < g_resources->count_encoders; i++)
    {
-      drmModeModeInfo *current_mode = &g_connector->modes[i];
-      //RARCH_ERR("[KMS/EGL]: Found mode: \"%s\".\n", current_mode->name);
-      int current_area = current_mode->hdisplay * current_mode->vdisplay;
-      if (current_area > area)
-      {
-         g_drm_mode = current_mode;
-         area       = current_area;
-      }
+      g_encoder = drmModeGetEncoder(g_drm_fd, g_resources->encoders[i]);
+
+      if (!g_encoder)
+         continue;
+      if (g_encoder->encoder_id == g_connector->encoder_id)
+         break;
+
+      drmModeFreeEncoder(g_encoder);
+      g_encoder = NULL;
    }
 
-
-   if (!g_drm_mode)
-   {
-      RARCH_ERR("[KMS/EGL]: Couldn't find DRM mode.\n");
-      goto error;
-   }
-
-	for (int i = 0; i < g_resources->count_encoders; i++)
-   {
-		g_encoder = drmModeGetEncoder(g_drm_fd, g_resources->encoders[i]);
-		if (g_encoder->encoder_id == g_connector->encoder_id)
-			break;
-
-		drmModeFreeEncoder(g_encoder);
-		g_encoder = NULL;
-	}
-
-	if (!g_encoder)
+   if (!g_encoder)
    {
       RARCH_ERR("[KMS/EGL]: Couldn't find DRM encoder.\n");
       goto error;
    }
 
-   g_crtc_id      = g_encoder->crtc_id;
+   g_drm_mode = &g_connector->modes[0];
+
+   g_crtc_id   = g_encoder->crtc_id;
+   g_orig_crtc = drmModeGetCrtc(g_drm_fd, g_crtc_id);
+   if (!g_orig_crtc)
+      RARCH_WARN("[KMS/EGL]: Cannot find original CRTC.\n");
+
    g_connector_id = g_connector->connector_id;
 
    g_fb_width  = g_drm_mode->hdisplay;
@@ -579,7 +553,7 @@ void gfx_ctx_destroy(void)
    g_next_bo = NULL;
 
    if (g_drm_fd >= 0)
-      drmClose(g_drm_fd);
+      close(g_drm_fd);
    g_drm_fd = -1;
 
    unsigned frames = last_page_flip - first_page_flip;
