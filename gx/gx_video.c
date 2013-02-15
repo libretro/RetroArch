@@ -229,12 +229,8 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    VIDEO_SetPostRetraceCallback(retrace_callback);
    VIDEO_SetBlack(false);
    VIDEO_Flush();
-   //VIDEO_WaitVSync();
-   //if (gx_mode.viTVMode & VI_NON_INTERLACE)
-   //   VIDEO_WaitVSync();
 
    GX_SetViewport(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1);
-   //GX_SetScissor(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
    GX_SetDispCopySrc(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
 
    f32 y_scale = GX_GetYScaleFactor(gx_mode.efbHeight, gx_mode.xfbHeight);

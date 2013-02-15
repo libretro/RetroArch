@@ -228,22 +228,6 @@ INPUT
 #include "../../input/overlay.c"
 #endif
 
-#ifdef HAVE_WIIUSE
-#include "../../wii/wiiuse/classic.c"
-#include "../../wii/wiiuse/dynamics.c"
-#include "../../wii/wiiuse/events.c"
-#include "../../wii/wiiuse/io.c"
-#include "../../wii/wiiuse/io_wii.c"
-#include "../../wii/wiiuse/ir.c"
-#include "../../wii/wiiuse/motion_plus.c"
-#include "../../wii/wiiuse/nunchuk.c"
-#ifdef HAVE_WIIUSE_SPEAKER
-#include "../../wii/wiiuse/speaker.c"
-#endif
-#include "../../wii/wiiuse/wiiuse.c"
-#include "../../wii/wiiuse/wpad.c"
-#endif
-
 #if defined(__CELLOS_LV2__)
 #include "../../ps3/ps3_input.c"
 #elif defined(SN_TARGET_PSP2) || defined(PSP)
