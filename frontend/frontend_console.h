@@ -18,7 +18,9 @@
 #define _FRONTEND_CONSOLE_H
 
 //optional RetroArch forward declarations
+#ifdef HAVE_RARCH_EXEC
 static void rarch_console_exec(const char *path);
+#endif
 static void verbose_log_init(void);
 
 #ifdef IS_SALAMANDER
@@ -28,8 +30,6 @@ static void find_first_libretro_core(char *first_file,
    const char * ext);
 #endif
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
 static void get_libretro_core_name(char *name, size_t size);
-#endif
 
 #endif

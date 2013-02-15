@@ -334,9 +334,9 @@ static void system_init(void)
 
 static void system_exitspawn(void)
 {
-#ifdef IS_SALAMANDER
+#if defined(IS_SALAMANDER)
    rarch_console_exec(default_paths.libretro_path);
-#else
+#elif defined(HW_RVL)
    // try to launch the core directly first, then fallback to salamander
    rarch_console_exec(g_settings.libretro);
    rarch_console_exec(g_extern.fullpath);

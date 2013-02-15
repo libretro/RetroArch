@@ -1,10 +1,9 @@
-RARCH_VERSION		= "0.9.8.3"
+RARCH_VERSION		= "0.9.8.4"
 
 DEBUG			= 0
 HAVE_LOGGER		= 0
 HAVE_FILE_LOGGER	= 0
 PERF_TEST		= 0
-HAVE_WIIUSE_MOD = 0
 WHOLE_ARCHIVE_LINK = 0
 
 PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.100"
@@ -21,11 +20,7 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
-ifeq ($(HAVE_WIIUSE_MOD), 1)
-CFLAGS += -DHAVE_WIIUSE
-else
 LDFLAGS_WIIUSE := -lwiiuse
-endif
 
 CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)

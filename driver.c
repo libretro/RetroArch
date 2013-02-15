@@ -409,9 +409,13 @@ void init_audio(void)
       g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
    }
 
+   g_extern.audio_data.orig_src_ratio =
+      g_extern.audio_data.src_ratio =
+      (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
+
    const char *resampler = *g_settings.audio.resampler ? g_settings.audio.resampler : NULL;
    if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
-         resampler))
+         resampler, g_extern.audio_data.orig_src_ratio))
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n", resampler ? resampler : "(default)");
       g_extern.audio_active = false;
@@ -423,10 +427,6 @@ void init_audio(void)
 
    rarch_assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
    rarch_assert(g_extern.audio_data.outsamples = (sample_t*)malloc(outsamples_max * sizeof(sample_t)));
-
-   g_extern.audio_data.orig_src_ratio =
-      g_extern.audio_data.src_ratio =
-      (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
 
    if (g_extern.audio_active && g_settings.audio.rate_control)
    {

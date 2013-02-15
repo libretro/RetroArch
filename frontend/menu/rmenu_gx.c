@@ -68,7 +68,11 @@ enum
 static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       void *userdata, void *ctx)
 {
+#ifdef HAVE_LIBRETRO_MANAGEMENT
    bool core_chooser = (userdata) ? *(rgui_file_type_t *)userdata == RGUI_SETTINGS_CORE : false;
+#else
+   bool core_chooser = false;
+#endif
 
    if (!*directory)
    {

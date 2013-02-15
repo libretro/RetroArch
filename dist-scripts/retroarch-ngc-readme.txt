@@ -1,17 +1,20 @@
 ------------------------------------------------------------------------------
-RETROARCH XBOX 1 - 0.9.8.4
+RETROARCH GX - GAMECUBE - 0.9.8.4
 ------------------------------------------------------------------------------
-RetroConsole Level: 1
-Author: Themaister, Squarepusher/Twin Aphex, Freakdave
+RetroConsole Level: 0
+Author: Themaister, Toad King, Squarepusher/Twin Aphex
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
 HOW TO INSTALL THIS
 ------------------------------------------------------------------------------
-Copy the entire folder ('RetroArch-XB1') to your harddrive.
+Copy the entire directory (retroarch-ngc) to your SD card in your 'apps' 
+directory. Start up something like SDLOAD (or whatever you're using for
+loading DOL files) and load any of the cores.
 
-ROMs go into the 'roms' directory, or some subdirectory in the 'RetroArch-XB1'
-directory.
+
+On first startup, RetroArch will create a folder in the root of your storage
+device called 'retroarch'. All RetroArch configuration files are stored here.
 
 ------------------------------------------------------------------------------
 HOW TO USE THIS
@@ -22,53 +25,52 @@ shown at the bottom side of the screen.
 
 You can now select a ROM that this core supports and load it in the Filebrowser.
 
-There are two ways of selecting a different core:
+To select a different core - go to the Settings menu (see 'Ingame controls'). 
+Select the option 'Core' and hit the A button. A filebrowser will appear
+where you can select a different core. Press A  to switch to the 
+emulator/game core.
 
-1) 'Change Libretro core' in the Main Menu
+After doing so, select 'Restart RetroArch' to load the newly selected core.
 
-Go to the Settings menu by pressing [Select], go forwards two pages by pressing
-he [R Trigger] until you come across 'Default libretro core'. Press A to go to 
-a filebrowser where you can select a different core. Press [A button] to switch 
-to the  emulator/game core.
+------------------------------------------------------------------------------
+CONTROLS
+------------------------------------------------------------------------------
+RetroArch  will create a new input config file for each core you load.
+All input settings will be saved when RetroArch exits.
 
-2) From the Ingame Menu
+NOTE: When starting up a new core for the first time, you might have to first
+initialize the input settings. Go to the Settings menu (see 'Ingame controls') 
+and go to 'Controller #number config'. Re-set the 'Device' by going back and
+forth between a previous device. The controls will be automatically applied.
 
-While playing a game, press the [Right Thumb] button. Select 'Change libretro core'
-with the [A button] and select a different core.
+This only has to be done once per core.
 
 ------------------------------------------------------------------------------
 INGAME CONTROLS
 ------------------------------------------------------------------------------
 During ingame operation you can do some extra actions:
 
-Right Thumb Stick - Down         - Fast-forwards the game
-Right Thumb Stick - Up           - Rewinds the game in real-time 
-                                   ('Rewind' has to be enabled in the 'Settings' 
-                                   screen - warning - comes at a slight 
-                                   performance decrease but will be worth it 
-                                   if you love this feature)
-RStick Left + RT                 - Decrease save state slot
-Rtick Right + RT                 - Increase save state slot
-RStick Up + RT                   - Load selected save state slot
-RStick Down + RT                 - Save selected save state slot
-Right Thumb + Left Thumb         - Go back to 'Menu'/'Quick Menu'
 
-------------------------------------------------------------------------------
-FILE BROWSER EXTRA CONTROLS
-------------------------------------------------------------------------------
+Gamecube pad Z                                 - Go to Settings
+Gamecube pad L + R + LStick Up + Rstick Up     - Go back to 'Menu'
+Gamecube pad L + R + LStick Down + Rstick Down - Quit RetroArch
 
-Left Trigger                     - Go to previous drive mapping
-Right Trigger                    - Go to next drive mapping
-
-White                            - Scroll list up
-Black                            - Scroll list down
+Right Thumb Stick - Down       - Fast-forwards the game
+Right Thumb Stick - Up         - Rewinds the game in real-time 
+                                 ('Rewind' has to be enabled in the 
+                                'Settings' menu - warning - comes at a 
+                                 performance decrease but will be worth it
+                                 if you love this feature)
+RStick Left + Z               - Decrease save state slot
+Rtick Right + Z               - Increase save state slot
+RStick Up + Z                 - Load selected save state slot
+RStick Down + Z               - Save selected save state slot
 
 ------------------------------------------------------------------------------
 WHAT IS RETROARCH?
 ------------------------------------------------------------------------------
 RetroArch is a modular multi-system emulator system that is designed to 
-be fast, lightweight and portable. It has features few other emulator 
-frontends have, such as real-time rewinding and game-aware shading.
+be fast, lightweight and portable.
 
 ------------------------------------------------------------------------------
 WHAT IS LIBRETRO?
@@ -85,7 +87,8 @@ the emulator/porting the emulator/game.
 WHAT'S THE BIG DEAL?
 ------------------------------------------------------------------------------
 Right now it's unique in that it runs the same emulator cores on 
-multiple systems (such as Xbox 360, Xbox 1, PS3, PC, Wii, etc). 
+multiple systems (such as Xbox 360, Xbox 1, PS3, PC, Wii, Android,
+etc). 
 
 For each emulator 'core', RetroArch makes use of a library API that we 
 like to call 'libretro'.
@@ -104,49 +107,45 @@ RetroArch. All he has to do is to have the emulator port hook into the
 libretro API and that's it - we take care of the rest.
 
 ------------------------------------------------------------------------------
-XBOX 1 PORT
+WII PORT
 ------------------------------------------------------------------------------
-The Xbox 1 port of RetroArch has the following features:
+The Gamecube port of RetroArch has the following features:
 
-- Real-time rewinding.
+- Real-time rewinding (probably too slow for most cores)
 - Switching between emulator cores seamlessly, and ability to install 
 new libretro cores
 
 ------------------------------------------------------------------------------
-EMULATOR/GAME CORES BUNDLED WITH XBOX 1 PORT
+EMULATOR/GAME CORES BUNDLED WITH WII PORT
 ------------------------------------------------------------------------------
 The following emulators/games have been ported to RetroArch and are included in 
-the Xbox 1 release of RetroArch.
+the Gamecube release of RetroArch.
 
 For more information about them, see the included 
 'retroarch-libretro-README.txt' file.
 
-- Final Burn Alpha (Arcade - various) [version 0.2.97.28]
-- Final Burn Alpha Cores (CPS1 - CPS2 - Neo - more) [version 0.2.97.28] (***)
+- Final Burn Alpha [version 0.2.97.28]
+- Final Burn Alpha Cores (CPS1 - CPS2 - NeoGeo) [version 0.2.97.28] (**)
 - FCEUmm (Nintendo Entertainment System) [recent SVN version]
 - NEStopia (Nintendo Entertainment System) [1.44]
 - Gambatte (Game Boy | Super Game Boy | Game Boy Color) [version 0.5.0 WIP]
 - Genesis Plus GX (Sega SG-1000 | Master System | Game Gear | Genesis/Mega Drive |
   Sega CD) [version 1.7.3]
-- SNES9x Next (Super Nintendo/Super Famicom) (v1.52.3) (**)
+- SNES9x Next (Super Nintendo/Super Famicom)
 - VBA Next (Game Boy Advance) (*)
 - Prboom (for playing Doom 1/Doom 2/Ultimate Doom/Final Doom)
 - Mednafen PCE Fast (PC Engine/PC Engine CD/Turbografx 16)
 - Mednafen Wonderswan (WonderSwan/WonderSwan Color/WonderSwan Crystal)
 - Mednafen NGP (Neo Geo Pocket Color)
+- Mednafen VB (Virtual Boy)
 
 All of the emulators listed above are the latest versions currently 
 available. Most of them have been specifically optimized so that 
-they will run better on Xbox 1 (some games would not reach fullspeed 
+they will run better on Gamecube (some games would not reach fullspeed 
 without these optimizations).
 
-*   - VBA Next doesn't run at fullspeed on Wii (VBA Next is a RetroConsole
-Level 2 emulator port). It will be replaced by a port of gpSP in the near 
-future.
-**  - SuperFX games will not run at fullspeed - a special version of SNES9x 
-will be developed for Retro Console Level 1 systems.
-*** The biggest Neo-Geo ROMs that can be loaded are around 23+MB in 
-size, such as Real Bout Fatal Fury 1 and King of Fighters '96.
+* Most (all) games don't run at fullspeed on Gamecube (VBA Next is a 
+RetroConsole Level 2 emulator port).
 
 ------------------------------------------------------------------------------
 WHAT EXTENSIONS ARE SUPPORTED BY EACH CORE
@@ -163,12 +162,11 @@ WHAT EXTENSIONS ARE SUPPORTED BY EACH CORE
 - Final Burn Alpha     zip|ZIP
 - Mednafen PCE         pce|PCE|cue|CUE
 - Mednafen Wonderswan  ws|WS|wsc|WSC
-- Mednafen PCE         pce|PCE|cue|CUE
-- Mednafen Wonderswan  ws|WS|wsc|WSC
 - Mednafen NGP         ngp|NGP
+- Mednafen VB          vb|VB
 
 ------------------------------------------------------------------------------
-ZIP SUPPORT
+ZIP SUPPORT (IN GENERAL)
 ------------------------------------------------------------------------------
 Selecting a ZIP file will temporarily unzip that file to the harddrive. The
 temporary file will be deleted as soon as the game gets unloaded and/or when
@@ -185,9 +183,9 @@ Troubleshooting
 If you find that RetroArch no longer works for whatever reason, there is
 a way to get it back to work -
 
-- Remove retroarch.cfg from the 'Retroarch-XB1' folder, then start up again.
-The Libretro management service in RetroArch should automatically pick a 
-random libretro core and write this to the config file.
+- Remove retroarch.cfg from the 'retroarch' folder on your storage device,
+then start up again. The Libretro management service in RetroArch should
+automatically pick a random libretro core and write this to the config file.
 
 ------------------------------------------------------------------------------
 What can you expect in the future?
@@ -207,10 +205,10 @@ way to do core switching, etc)
 ------------------------------------------------------------------------------
 Credits
 ------------------------------------------------------------------------------
-- Mudlord for his Waterpaint/Noise shaders.
-- Hyllian for the xBR shader.
+- Hyllian for the xBR shader family.
 - Opium2k for the nice manual shaders (bundled with PS3 release).
 - Deank for assistance with RetroArch Salamander on CFW PS3s and 
+- Mudlord for his Waterpaint/Noise shaders.
   Multiman interoperability.
 - FBA devs for adopting the libretro port.
 - Ekeeke for help with the Genesis Plus GX port.
@@ -226,4 +224,3 @@ Homepage:                  http://www.libretro.org
 IRC:                       #retroarch (freenode)
 
 ------------------------------------------------------------------------------
-

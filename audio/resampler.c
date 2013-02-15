@@ -29,7 +29,7 @@ static const rarch_resampler_t *backends[] = {
    &hermite_resampler,
 };
 
-bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const char *ident)
+bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const char *ident, double bw_ratio)
 {
    if (*re && *backend)
       (*backend)->free(*re);
@@ -54,7 +54,7 @@ bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const
    if (!*backend)
       return false;
 
-   *re = (*backend)->init();
+   *re = (*backend)->init(bw_ratio);
    if (!*re)
    {
       *backend = NULL;

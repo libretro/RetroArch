@@ -229,12 +229,8 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
    VIDEO_SetPostRetraceCallback(retrace_callback);
    VIDEO_SetBlack(false);
    VIDEO_Flush();
-   //VIDEO_WaitVSync();
-   //if (gx_mode.viTVMode & VI_NON_INTERLACE)
-   //   VIDEO_WaitVSync();
 
    GX_SetViewport(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1);
-   //GX_SetScissor(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
    GX_SetDispCopySrc(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
 
    f32 y_scale = GX_GetYScaleFactor(gx_mode.efbHeight, gx_mode.xfbHeight);
@@ -692,6 +688,8 @@ static void gx_resize(void *data)
    int x = 0, y = 0;
    unsigned width = gx->win_width, height = gx->win_height;
    uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
+
+   (void)lifecycle_mode_state;
 
 #ifdef HW_RVL
    VIDEO_SetTrapFilter(lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));

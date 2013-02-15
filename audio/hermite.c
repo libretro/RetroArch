@@ -18,11 +18,18 @@
 #include "resampler.h"
 #include <stdlib.h>
 #include <math.h>
+#include <stdio.h>
 #include "../boolean.h"
-#include "../general.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
+#endif
+
+#ifndef RESAMPLER_TEST
+#include "../general.h"
+#else
+#define RARCH_LOG(...) fprintf(stderr, __VA_ARGS__)
+#define RARCH_WARN(...) fprintf(stderr, __VA_ARGS__)
 #endif
 
 #define CHANNELS 2
@@ -51,8 +58,11 @@ static inline float hermite_kernel(float mu1, float a, float b, float c, float d
    return (a0 * b) + (a1 * m0) + (a2 * m1) + (a3 * c);
 }
 
-void *resampler_hermite_new(void)
+void *resampler_hermite_new(double bandwidth_mod)
 {
+   if (bandwidth_mod < 1.0)
+      RARCH_WARN("Hermite resampler is likely to sound absolutely terrible when downsampling.\n");
+
 #ifndef RESAMPLER_TEST
    RARCH_LOG("Hermite resampler [C]\n");
 #endif

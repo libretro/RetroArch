@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
-RETROARCH WII - 0.9.8.3
+RETROARCH GX - WII - 0.9.8.4
 ------------------------------------------------------------------------------
 RetroConsole Level: 1
 Author: Themaister, Toad King, Squarepusher/Twin Aphex

@@ -23,6 +23,9 @@
 #include <assert.h>
 #include <stdbool.h>
 
+#undef min
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+
 static void gen_signal(float *out, double omega, double bias_samples, size_t samples)
 {
    for (size_t i = 0; i < samples; i += 2)
@@ -244,14 +247,8 @@ int main(int argc, char *argv[])
 
    const unsigned fft_samples = 1024 * 128;
    unsigned out_rate = fft_samples / 2;
-   unsigned in_rate = out_rate / ratio;
+   unsigned in_rate = round(out_rate / ratio);
    ratio = (double)out_rate / in_rate;
-
-   if (ratio <= 1.0)
-   {
-      fprintf(stderr, "Ratio too low ...\n");
-      return 1;
-   }
 
    static const float freq_list[] = {
       0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009,
@@ -265,19 +262,18 @@ int main(int argc, char *argv[])
 
    unsigned samples = in_rate * 4;
    float *input = calloc(sizeof(float), samples);
-   float *output = calloc(sizeof(float), (fft_samples + 1) * 2);
+   float *output = calloc(sizeof(float), (fft_samples + 16) * 2);
    complex double *butterfly_buf = calloc(sizeof(complex double), fft_samples / 2);
    assert(input);
    assert(output);
 
    void *re = NULL;
    const rarch_resampler_t *resampler = NULL;
-   if (!rarch_resampler_realloc(&re, &resampler, NULL))
+   if (!rarch_resampler_realloc(&re, &resampler, NULL, ratio))
       return 1;
 
    test_fft();
 
-   printf("Omega,SNR,Gain\n");
    for (unsigned i = 0; i < sizeof(freq_list) / sizeof(freq_list[0]); i++)
    {
       unsigned freq = freq_list[i] * in_rate;
@@ -293,12 +289,13 @@ int main(int argc, char *argv[])
 
       rarch_resampler_process(resampler, re, &data);
 
-      unsigned out_samples = data.output_frames * 2;
-      assert(out_samples >= fft_samples * 2);
-
       // We generate 2 seconds worth of audio, however, only the last second is considered so phase has stabilized.
-      struct snr_result res;
-      calculate_snr(&res, freq, in_rate / 2, output + fft_samples, butterfly_buf, fft_samples);
+      struct snr_result res = {0};
+      unsigned max_freq = min(in_rate, out_rate) / 2;
+      if (freq > max_freq)
+         continue;
+
+      calculate_snr(&res, freq, max_freq, output + fft_samples - 2048, butterfly_buf, fft_samples);
 
       printf("SNR @ w = %5.3f : %6.2lf dB, Gain: %6.1lf dB\n",
             freq_list[i], res.snr, res.gain);
