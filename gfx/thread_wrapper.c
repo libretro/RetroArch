@@ -27,6 +27,7 @@ enum thread_cmd
    CMD_INIT,
    CMD_SET_SHADER,
    CMD_FREE,
+   CMD_ALIVE, // Blocking alive check. Used when paused.
    CMD_SET_ROTATION,
    CMD_READ_VIEWPORT,
    CMD_SET_NONBLOCK,
@@ -172,6 +173,11 @@ static void thread_loop(void *data)
             break;
          }
 
+         case CMD_ALIVE:
+            thr->cmd_data.b = thr->driver->alive(thr->driver_data);
+            thread_reply(thr, CMD_ALIVE);
+            break;
+
          default:
             thread_reply(thr, thr->send_cmd);
             break;
@@ -221,10 +227,19 @@ static void thread_wait_reply(thread_video_t *thr, enum thread_cmd cmd)
 static bool thread_alive(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   slock_lock(thr->lock);
-   bool ret = thr->alive;
-   slock_unlock(thr->lock);
-   return ret;
+   if (g_extern.is_paused)
+   {
+      thread_send_cmd(thr, CMD_ALIVE);
+      thread_wait_reply(thr, CMD_ALIVE);
+      return thr->cmd_data.b;
+   }
+   else
+   {
+      slock_lock(thr->lock);
+      bool ret = thr->alive;
+      slock_unlock(thr->lock);
+      return ret;
+   }
 }
 
 static bool thread_focus(void *data)
@@ -372,6 +387,68 @@ static void thread_free(void *data)
    free(thr);
 }
 
+#ifdef HAVE_OVERLAY
+static void thread_overlay_enable(void *data, bool state)
+{
+   (void)data;
+   (void)state;
+}
+
+static bool thread_overlay_load(void *data, const uint32_t *image, unsigned width, unsigned height)
+{
+   (void)data;
+   (void)image;
+   (void)width;
+   (void)height;
+   return false;
+}
+
+static void thread_overlay_tex_geom(void *data, float x, float y, float w, float h)
+{
+   (void)data;
+   (void)x;
+   (void)y;
+   (void)w;
+   (void)h;
+}
+
+static void thread_overlay_vertex_geom(void *data, float x, float y, float w, float h)
+{
+   (void)data;
+   (void)x;
+   (void)y;
+   (void)w;
+   (void)h;
+}
+
+static void thread_overlay_full_screen(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+}
+
+static void thread_overlay_set_alpha(void *data, float mod)
+{
+   (void)data;
+   (void)mod;
+}
+
+static const video_overlay_interface_t thread_overlay = {
+   thread_overlay_enable,
+   thread_overlay_load,
+   thread_overlay_tex_geom,
+   thread_overlay_vertex_geom,
+   thread_overlay_full_screen,
+   thread_overlay_set_alpha,
+};
+
+static void thread_get_overlay_interface(void *data, const video_overlay_interface_t **iface)
+{
+   (void)data;
+   *iface = &thread_overlay;
+}
+#endif
+
 static const video_driver_t video_thread = {
    thread_init_never_call, // Should never be called directly.
    thread_frame,
@@ -385,7 +462,7 @@ static const video_driver_t video_thread = {
    thread_viewport_info,
    thread_read_viewport,
 #ifdef HAVE_OVERLAY
-   NULL, // get_overlay_interface
+   thread_get_overlay_interface, // get_overlay_interface
 #endif
 };
 
