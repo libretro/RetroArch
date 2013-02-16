@@ -69,7 +69,7 @@ typedef voidp unzFile;
 #define UNZ_END_OF_LIST_OF_FILE         (-100)
 #define UNZ_ERRNO                       (Z_ERRNO)
 #define UNZ_EOF                         (0)
-#define UNZ_PARAMERROR                  (-102)
+#define UNZ_PARAMERROR                  (-102UL)
 #define UNZ_BADZIPFILE                  (-103)
 #define UNZ_INTERNALERROR               (-104)
 #define UNZ_CRCERROR                    (-105)

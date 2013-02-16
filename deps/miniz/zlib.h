@@ -394,7 +394,7 @@ const char *mz_error(int err);
   #define Z_DEFLATED            MZ_DEFLATED
   #define Z_DEFAULT_WINDOW_BITS MZ_DEFAULT_WINDOW_BITS
   #define alloc_func            mz_alloc_func
-  #define free_func             mz_free_func
+  //#define free_func             mz_free_func
   #define internal_state        mz_internal_state
   #define z_stream              mz_stream
   #define deflateInit           mz_deflateInit
