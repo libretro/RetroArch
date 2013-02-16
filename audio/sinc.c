@@ -389,9 +389,10 @@ static void process_sinc_neon(rarch_sinc_resampler_t *resamp, float *out_buffer)
    const float *buffer_r = resamp->buffer_r + resamp->ptr;
 
    unsigned phase = resamp->time >> SUBPHASE_BITS;
-   const float *phase_table = resamp->phase_table[phase];
+   unsigned taps = resamp->taps;
+   const float *phase_table = resamp->phase_table + phase * taps;
 
-   process_sinc_neon_asm(out_buffer, buffer_l, buffer_r, phase_table, resamp->taps);
+   process_sinc_neon_asm(out_buffer, buffer_l, buffer_r, phase_table, taps);
 }
 #else // Plain ol' C99
 #define process_sinc_func process_sinc_C
