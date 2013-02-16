@@ -397,7 +397,7 @@ struct global
       bool use_float;
       bool mute;
 
-      sample_t *outsamples;
+      float *outsamples;
       int16_t *conv_outsamples;
 
       int16_t *rewind_buf;

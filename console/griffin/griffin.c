@@ -377,14 +377,17 @@ RETROARCH
 /*============================================================
 THREAD
 ============================================================ */
+// This is supposed to be HAVE_THREADS.
 #if defined(HAVE_THREAD) && defined(XENON)
 #include "../../thread/xenon_sdl_threads.c"
-#elif defined(HAVE_THREAD)
+#elif defined(HAVE_THREADS)
 #include "../../thread.c"
+#include "../../gfx/thread_wrapper.c"
 #ifdef ANDROID
 #include "../../autosave.c"
 #endif
 #endif
+
 
 /*============================================================
 NETPLAY

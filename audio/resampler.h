@@ -31,12 +31,10 @@
 #define M_PI 3.14159265358979323846264338327
 #endif
 
-typedef float sample_t;
-
 struct resampler_data
 {
-   const sample_t *data_in;
-   sample_t *data_out;
+   const float *data_in;
+   float *data_out;
 
    size_t input_frames;
    size_t output_frames;

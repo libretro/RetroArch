@@ -18,7 +18,7 @@
 #ifndef _RARCH_DRIVER_FUNCS_H
 #define _RARCH_DRIVER_FUNCS_H
 
-#if !defined(HAVE_GRIFFIN) /* Normal */
+#if !defined(HAVE_GRIFFIN) || defined(ANDROID) /* Normal */
 
 #define audio_init_func(device, rate, latency) driver.audio->init(device, rate, latency)
 #define audio_write_func(buf, size) driver.audio->write(driver.audio_data, buf, size)

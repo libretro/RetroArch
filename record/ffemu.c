@@ -1023,7 +1023,7 @@ static void ffemu_audio_resample(ffemu_t *handle, struct ffemu_audio_data *data)
    {
       // It's always two channels ...
       struct resampler_data info = {0};
-      info.data_in      = (const sample_t*)data->data;
+      info.data_in      = (const float*)data->data;
       info.data_out     = handle->audio.resample_out;
       info.input_frames = data->frames;
       info.ratio        = handle->audio.ratio;

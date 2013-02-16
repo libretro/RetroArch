@@ -340,7 +340,6 @@ static bool thread_frame(void *data, const void *frame_,
       for (unsigned h = 0; h < height; h++, src += pitch, dst += copy_stride)
          memcpy(dst, src, copy_stride);
       thr->frame.updated = true;
-      scond_signal(thr->cond_thread);
       thr->frame.width  = width;
       thr->frame.height = height;
       thr->frame.pitch  = copy_stride;
@@ -350,6 +349,7 @@ static bool thread_frame(void *data, const void *frame_,
       else
          *thr->frame.msg = '\0';
 
+      scond_signal(thr->cond_thread);
       slock_unlock(thr->frame.lock);
    }
    slock_unlock(thr->lock);
@@ -380,16 +380,21 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info, const inp
    thr->alive = true;
    thr->focus = true;
 
-   thr->frame.buffer = (uint8_t*)malloc((info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)) * 
-         info->input_scale * info->input_scale * RARCH_SCALE_BASE * RARCH_SCALE_BASE);
+   size_t max_size = info->input_scale * RARCH_SCALE_BASE;
+   max_size *= max_size;
+   max_size *= info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   thr->frame.buffer = (uint8_t*)malloc(max_size);
    if (!thr->frame.buffer)
       return false;
+
+   memset(thr->frame.buffer, 0x80, max_size);
 
    thr->thread = sthread_create(thread_loop, thr);
    if (!thr->thread)
       return false;
    thread_send_cmd(thr, CMD_INIT);
    thread_wait_reply(thr, CMD_INIT);
+
    return thr->cmd_data.b;
 }
 
