@@ -1464,7 +1464,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             if (g_extern.main_is_init)
             {
                if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
-                        g_settings.audio.resampler))
+                        g_settings.audio.resampler, g_extern.audio_data.orig_src_ratio == 0.0 ? 1.0 : g_extern.audio_data.orig_src_ratio))
                {
                   RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
                   g_extern.audio_active = false;
@@ -1483,7 +1483,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             if (g_extern.main_is_init)
             {
                if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
-                        g_settings.audio.resampler))
+                        g_settings.audio.resampler, g_extern.audio_data.orig_src_ratio == 0.0 ? 1.0 : g_extern.audio_data.orig_src_ratio))
                {
                   RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
                   g_extern.audio_active = false;
