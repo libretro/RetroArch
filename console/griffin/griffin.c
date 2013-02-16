@@ -432,7 +432,9 @@ extern "C" {
 RZLIB
 ============================================================ */
 #ifdef WANT_RZLIB
-#include "../../deps/rzlib/rzlib.c"
+#include "../../deps/miniz/miniz.c"
+#include "../../deps/minizip/ioapi.c"
+#include "../../deps/minizip/unzip.c"
 #endif
 
 /*============================================================
