@@ -10,6 +10,32 @@
         android:layout_height="wrap_content"
         android:layout_margin="40px"
         android:text="
+        r12 (Feb 16, 2013)\n\n
+* [NEStopia] Famicom Disk System support. For Android users - put disksys.rom
+into the same folder as the FDS ROM you're trying to load. For everyone else -
+put disksys.rom into your system directory.\n
+  - Y Button will switch sides of a disk.\n
+  - If you get any problems of the sort DISK A / B ERR 07' - pressing Y button again or letting it run its course should do it.\n
+  - NOTE - Famicom Disk System loading is slow, so you might be tempted to fast forward through most of it. However, I'd advise caution when doing so and to savestate regularly in case 'fast forwarding' can negatively affect disk loading.\n
+* [FBA core] Various changes/fixes\n
+- Hooked up Eco Fighters controls (Turn 1/Turn 2 bound to L and R buttons)\n
+- Hooked up Pnickie controls (Turn 1/Turn 2 bound to L and R buttons - press
+one of the buttons to progress beyond start screen)\n
+- Hooked up Continental Circus controls - Brake 2/Brake 3 (L1/L2 buttons)
+and Accelerate 2/Accelerate 3 (R1/R2 buttons)\n
+- Hooked up Gun Smoke controls - Start button (needed to progress beyond
+title screen)\n
+- Fixed Varia Metal palette\n
+- Fixed Fairyland Story palette\n
+- Fixed Return of the Invaders palette\n
+- Fixed Act-Fancer palette issue\n
+- Fixes pitch issue in Gals Hustle (will possibly fix more games as well)\n
+* [Android] Fixed regression where a button bound to AKEYCODE_BACK would 'exit out'
+of RetroArch.\n
+* [Android] Fixes Madcatz fighting stick being autodetected properly.\n
+* [Unzipping [All consoles/Android]] Moved from rzlib to miniz/minizip -should increase compatibility
+with ZIP archives.\n
+\n
         r11 (Feb 11, 2013)\n\n
         * [FBA core] Various changes/fixes\n
         - Hook up Armed Police Batrider controls\n

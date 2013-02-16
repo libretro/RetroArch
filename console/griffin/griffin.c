@@ -377,8 +377,7 @@ RETROARCH
 /*============================================================
 THREAD
 ============================================================ */
-// This is supposed to be HAVE_THREADS.
-#if defined(HAVE_THREAD) && defined(XENON)
+#if defined(HAVE_THREADS) && defined(XENON)
 #include "../../thread/xenon_sdl_threads.c"
 #elif defined(HAVE_THREADS)
 #include "../../thread.c"
@@ -434,8 +433,10 @@ extern "C" {
 /*============================================================
 RZLIB
 ============================================================ */
-#ifdef WANT_RZLIB
-#include "../../deps/rzlib/rzlib.c"
+#ifdef WANT_MINIZ
+#include "../../deps/miniz/miniz.c"
+#include "../../deps/minizip/ioapi.c"
+#include "../../deps/minizip/unzip.c"
 #endif
 
 /*============================================================
