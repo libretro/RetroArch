@@ -299,7 +299,7 @@ public class RetroArch extends Activity implements
 			prefs.edit().putBoolean("first_time_refreshrate_calculate", true).commit();
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 				.setTitle("Calculate Refresh Rate")
-				.setMessage("It is highly recommended you run the refresh rate calibration test before you use RetroArch. Do you want to run it now?\n\nIf you choose No, you can run it at any time in the video preferences.")
+				.setMessage("It is highly recommended you run the refresh rate calibration test before you use RetroArch. Do you want to run it now?\n\nIf you choose No, you can run it at any time in the video preferences.\n\nIf you get performance problems even after calibration, please try threaded video driver in video preferences.")
 				.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
