@@ -32,6 +32,15 @@ enum thread_cmd
    CMD_READ_VIEWPORT,
    CMD_SET_NONBLOCK,
 
+#ifdef HAVE_OVERLAY
+   CMD_OVERLAY_ENABLE,
+   CMD_OVERLAY_LOAD,
+   CMD_OVERLAY_TEX_GEOM,
+   CMD_OVERLAY_VERTEX_GEOM,
+   CMD_OVERLAY_FULL_SCREEN,
+   CMD_OVERLAY_SET_ALPHA,
+#endif
+
    CMD_DUMMY = INT_MAX
 };
 
@@ -44,6 +53,7 @@ typedef struct thread_video
 
    video_info_t info;
    const video_driver_t *driver;
+   const video_overlay_interface_t *overlay;
    void *driver_data;
    const input_driver_t **input;
    void **input_data;
@@ -57,6 +67,7 @@ typedef struct thread_video
    {
       bool b;
       int i;
+      float f;
       const char *str;
       void *v;
 
@@ -66,6 +77,18 @@ typedef struct thread_video
          const char *path;
          unsigned index;
       } set_shader;
+
+      struct
+      {
+         float x, y, w, h;
+      } rect;
+
+      struct
+      {
+         const uint32_t *data;
+         unsigned width;
+         unsigned height;
+      } image;
    } cmd_data;
 
    struct rarch_viewport vp;
@@ -177,6 +200,49 @@ static void thread_loop(void *data)
             thr->cmd_data.b = thr->driver->alive(thr->driver_data);
             thread_reply(thr, CMD_ALIVE);
             break;
+
+#ifdef HAVE_OVERLAY
+         case CMD_OVERLAY_ENABLE:
+            thr->overlay->enable(thr->driver_data, thr->cmd_data.b);
+            thread_reply(thr, CMD_OVERLAY_ENABLE);
+            break;
+
+         case CMD_OVERLAY_LOAD:
+            thr->cmd_data.b = thr->overlay->load(thr->driver_data,
+                  thr->cmd_data.image.data,
+                  thr->cmd_data.image.width,
+                  thr->cmd_data.image.height);
+            thread_reply(thr, CMD_OVERLAY_LOAD);
+            break;
+
+         case CMD_OVERLAY_TEX_GEOM:
+            thr->overlay->tex_geom(thr->driver_data,
+                  thr->cmd_data.rect.x,
+                  thr->cmd_data.rect.y,
+                  thr->cmd_data.rect.w,
+                  thr->cmd_data.rect.h);
+            thread_reply(thr, CMD_OVERLAY_TEX_GEOM);
+            break;
+
+         case CMD_OVERLAY_VERTEX_GEOM:
+            thr->overlay->vertex_geom(thr->driver_data,
+                  thr->cmd_data.rect.x,
+                  thr->cmd_data.rect.y,
+                  thr->cmd_data.rect.w,
+                  thr->cmd_data.rect.h);
+            thread_reply(thr, CMD_OVERLAY_VERTEX_GEOM);
+            break;
+
+         case CMD_OVERLAY_FULL_SCREEN:
+            thr->overlay->full_screen(thr->driver_data, thr->cmd_data.b);
+            thread_reply(thr, CMD_OVERLAY_FULL_SCREEN);
+            break;
+
+         case CMD_OVERLAY_SET_ALPHA:
+            thr->overlay->set_alpha(thr->driver_data, thr->cmd_data.f);
+            thread_reply(thr, CMD_OVERLAY_SET_ALPHA);
+            break;
+#endif
 
          default:
             thread_reply(thr, thr->send_cmd);
@@ -390,47 +456,59 @@ static void thread_free(void *data)
 #ifdef HAVE_OVERLAY
 static void thread_overlay_enable(void *data, bool state)
 {
-   (void)data;
-   (void)state;
+   thread_video_t *thr = (thread_video_t*)data;
+   thr->cmd_data.b = state;
+   thread_send_cmd(thr, CMD_OVERLAY_ENABLE);
+   thread_wait_reply(thr, CMD_OVERLAY_ENABLE);
 }
 
 static bool thread_overlay_load(void *data, const uint32_t *image, unsigned width, unsigned height)
 {
-   (void)data;
-   (void)image;
-   (void)width;
-   (void)height;
-   return false;
+   thread_video_t *thr = (thread_video_t*)data;
+   thr->cmd_data.image.data = image;
+   thr->cmd_data.image.width = width;
+   thr->cmd_data.image.height = height;
+   thread_send_cmd(thr, CMD_OVERLAY_LOAD);
+   thread_wait_reply(thr, CMD_OVERLAY_LOAD);
+   return thr->cmd_data.b;
 }
 
 static void thread_overlay_tex_geom(void *data, float x, float y, float w, float h)
 {
-   (void)data;
-   (void)x;
-   (void)y;
-   (void)w;
-   (void)h;
+   thread_video_t *thr = (thread_video_t*)data;
+   thr->cmd_data.rect.x = x;
+   thr->cmd_data.rect.y = y;
+   thr->cmd_data.rect.w = w;
+   thr->cmd_data.rect.h = h;
+   thread_send_cmd(thr, CMD_OVERLAY_TEX_GEOM);
+   thread_wait_reply(thr, CMD_OVERLAY_TEX_GEOM);
 }
 
 static void thread_overlay_vertex_geom(void *data, float x, float y, float w, float h)
 {
-   (void)data;
-   (void)x;
-   (void)y;
-   (void)w;
-   (void)h;
+   thread_video_t *thr = (thread_video_t*)data;
+   thr->cmd_data.rect.x = x;
+   thr->cmd_data.rect.y = y;
+   thr->cmd_data.rect.w = w;
+   thr->cmd_data.rect.h = h;
+   thread_send_cmd(thr, CMD_OVERLAY_VERTEX_GEOM);
+   thread_wait_reply(thr, CMD_OVERLAY_VERTEX_GEOM);
 }
 
 static void thread_overlay_full_screen(void *data, bool enable)
 {
-   (void)data;
-   (void)enable;
+   thread_video_t *thr = (thread_video_t*)data;
+   thr->cmd_data.b = enable;
+   thread_send_cmd(thr, CMD_OVERLAY_FULL_SCREEN);
+   thread_wait_reply(thr, CMD_OVERLAY_FULL_SCREEN);
 }
 
 static void thread_overlay_set_alpha(void *data, float mod)
 {
-   (void)data;
-   (void)mod;
+   thread_video_t *thr = (thread_video_t*)data;
+   thr->cmd_data.f = mod;
+   thread_send_cmd(thr, CMD_OVERLAY_SET_ALPHA);
+   thread_wait_reply(thr, CMD_OVERLAY_SET_ALPHA);
 }
 
 static const video_overlay_interface_t thread_overlay = {
@@ -444,8 +522,9 @@ static const video_overlay_interface_t thread_overlay = {
 
 static void thread_get_overlay_interface(void *data, const video_overlay_interface_t **iface)
 {
-   (void)data;
+   thread_video_t *thr = (thread_video_t*)data;
    *iface = &thread_overlay;
+   thr->driver->overlay_interface(thr->driver_data, &thr->overlay);
 }
 #endif
 
