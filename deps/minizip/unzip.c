@@ -180,10 +180,8 @@ static int unzlocal_getByte (
 /* ===========================================================================
    Reads a long in LSB order from the given gz_stream. Sets
 */
-static int unzlocal_getShort (pzlib_filefunc_def,filestream,pX)
-    const zlib_filefunc_def* pzlib_filefunc_def;
-    voidpf filestream;
-    uLong *pX;
+static int unzlocal_getShort (const zlib_filefunc_def *pzlib_filefunc_def,
+voidpf filestream, uLong *pX)
 {
     uLong x ;
     int i = 0;
@@ -203,10 +201,8 @@ static int unzlocal_getShort (pzlib_filefunc_def,filestream,pX)
     return err;
 }
 
-static int unzlocal_getLong (pzlib_filefunc_def,filestream,pX)
-    const zlib_filefunc_def* pzlib_filefunc_def;
-    voidpf filestream;
-    uLong *pX;
+static int unzlocal_getLong (const zlib_filefunc_def *pzlib_filefunc_def,
+voidpf filestream, uLong *pX)
 {
     uLong x ;
     int i = 0;
@@ -236,9 +232,7 @@ static int unzlocal_getLong (pzlib_filefunc_def,filestream,pX)
 
 
 /* My own strcmpi / strcasecmp */
-static  int strcmpcasenosensitive_internal (fileName1,fileName2)
-    const char* fileName1;
-    const char* fileName2;
+static  int strcmpcasenosensitive_internal (const char *fileName1, const char *fileName2)
 {
     for (;;)
     {
@@ -279,10 +273,7 @@ static  int strcmpcasenosensitive_internal (fileName1,fileName2)
         (like 1 on Unix, 2 on Windows)
 
 */
-extern int unzStringFileNameCompare (fileName1,fileName2,iCaseSensitivity)
-    const char* fileName1;
-    const char* fileName2;
-    int iCaseSensitivity;
+int unzStringFileNameCompare (const char *fileName1, const char *fileName2, int iCaseSensitivity)
 {
     if (iCaseSensitivity==0)
         iCaseSensitivity=CASESENSITIVITYDEFAULTVALUE;
@@ -301,9 +292,8 @@ extern int unzStringFileNameCompare (fileName1,fileName2,iCaseSensitivity)
   Locate the Central directory of a zipfile (at the end, just before
     the global comment)
 */
-static uLong unzlocal_SearchCentralDir(pzlib_filefunc_def,filestream)
-    const zlib_filefunc_def* pzlib_filefunc_def;
-    voidpf filestream;
+static uLong unzlocal_SearchCentralDir(const zlib_filefunc_def *pzlib_filefunc_def,
+voidpf filestream)
 {
     unsigned char* buf;
     uLong uSizeFile;
@@ -712,19 +702,10 @@ int unzGetGlobalInfo (unzFile file, unz_global_info *pglobal_info)
   No preparation of the structure is needed
   return UNZ_OK if there is no problem.
 */
-extern int unzGetCurrentFileInfo (file,
-                                          pfile_info,
-                                          szFileName, fileNameBufferSize,
-                                          extraField, extraFieldBufferSize,
-                                          szComment,  commentBufferSize)
-    unzFile file;
-    unz_file_info *pfile_info;
-    char *szFileName;
-    uLong fileNameBufferSize;
-    void *extraField;
-    uLong extraFieldBufferSize;
-    char *szComment;
-    uLong commentBufferSize;
+int unzGetCurrentFileInfo (unzFile file, unz_file_info * pfile_info,
+char * szFileName, uLong fileNameBufferSize,
+void *extraField, uLong extraFieldBufferSize,
+char *szComment,  uLong commentBufferSize)
 {
     return unzlocal_GetCurrentFileInfoInternal(file,pfile_info,NULL,
                                                 szFileName,fileNameBufferSize,
@@ -895,13 +876,8 @@ int unzGoToFilePos(unzFile file, unz_file_pos *file_pos)
   store in *piSizeVar the size of extra info in local header
         (filename and size of extra field data)
 */
-static int unzlocal_CheckCurrentFileCoherencyHeader (s,piSizeVar,
-                                                    poffset_local_extrafield,
-                                                    psize_local_extrafield)
-    unz_s* s;
-    uInt* piSizeVar;
-    uLong *poffset_local_extrafield;
-    uInt  *psize_local_extrafield;
+static int unzlocal_CheckCurrentFileCoherencyHeader (unz_s *s,
+uInt *piSizeVar, uLong *poffset_local_extrafield, uInt *psize_local_extrafield)
 {
     uLong uMagic,uData,uFlags;
     uLong size_filename;
@@ -1063,7 +1039,7 @@ int unzOpenCurrentFile3 (unzFile file, int *method, int *level, int raw, const c
       pfile_in_zip_read_info->stream.zalloc = (alloc_func)0;
       pfile_in_zip_read_info->stream.zfree = (free_func)0;
       pfile_in_zip_read_info->stream.opaque = (voidpf)0;
-      pfile_in_zip_read_info->stream.next_in = (voidpf)0;
+      pfile_in_zip_read_info->stream.next_in = (const unsigned char*)0;
       pfile_in_zip_read_info->stream.avail_in = 0;
 
       err=inflateInit2(&pfile_in_zip_read_info->stream, -MAX_WBITS);
