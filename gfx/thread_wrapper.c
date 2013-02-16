@@ -16,6 +16,7 @@
 #include "thread_wrapper.h"
 #include "../thread.h"
 #include "../general.h"
+#include "../performance.h"
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
@@ -27,7 +28,6 @@ enum thread_cmd
    CMD_SET_SHADER,
    CMD_FREE,
    CMD_SET_ROTATION,
-   CMD_VIEWPORT_INFO,
    CMD_READ_VIEWPORT,
    CMD_SET_NONBLOCK,
 
@@ -58,7 +58,17 @@ typedef struct thread_video
       int i;
       const char *str;
       void *v;
+
+      struct
+      {
+         enum rarch_shader_type type;
+         const char *path;
+         unsigned index;
+      } set_shader;
    } cmd_data;
+
+   struct rarch_viewport vp;
+   struct rarch_viewport read_vp; // Last viewport reported to caller.
 
    struct
    {
@@ -70,6 +80,8 @@ typedef struct thread_video
       bool updated;
       char msg[1024];
    } frame;
+
+   video_driver_t video_thread;
 
 } thread_video_t;
 
@@ -109,14 +121,13 @@ static void thread_loop(void *data)
       switch (thr->send_cmd)
       {
          case CMD_INIT:
-            //fprintf(stderr, "CMD_INIT\n");
             thr->driver_data = thr->driver->init(&thr->info, thr->input, thr->input_data);
             thr->cmd_data.b = thr->driver_data;
+            thr->driver->viewport_info(thr->driver_data, &thr->vp);
             thread_reply(thr, CMD_INIT);
             break;
 
          case CMD_FREE:
-            //fprintf(stderr, "CMD_FREE\n");
             if (thr->driver_data)
                thr->driver->free(thr->driver_data);
             thr->driver_data = NULL;
@@ -124,20 +135,50 @@ static void thread_loop(void *data)
             return;
 
          case CMD_SET_NONBLOCK:
-            //fprintf(stderr, "CMD_SET_NONBLOCK\n");
             thr->driver->set_nonblock_state(thr->driver_data, thr->cmd_data.b);
             thread_reply(thr, CMD_SET_NONBLOCK);
             break;
 
+         case CMD_SET_ROTATION:
+            thr->driver->set_rotation(thr->driver_data, thr->cmd_data.i);
+            thread_reply(thr, CMD_SET_ROTATION);
+            break;
+
+         case CMD_READ_VIEWPORT:
+         {
+            struct rarch_viewport vp = {0};
+            thr->driver->viewport_info(thr->driver_data, &vp);
+            if (memcmp(&vp, &thr->read_vp, sizeof(vp)) == 0) // We can read safely
+            {
+               thr->cmd_data.b = thr->driver->read_viewport(thr->driver_data, (uint8_t*)thr->cmd_data.v);
+               thread_reply(thr, CMD_READ_VIEWPORT);
+            }
+            else // Viewport dimensions changed right after main thread read the async value. Cannot read safely.
+            {
+               thr->cmd_data.b = false;
+               thread_reply(thr, CMD_READ_VIEWPORT);
+            }
+            break;
+         }
+            
+         case CMD_SET_SHADER:
+         {
+            bool ret = thr->driver->set_shader(thr->driver_data,
+                  thr->cmd_data.set_shader.type,
+                  thr->cmd_data.set_shader.path,
+                  thr->cmd_data.set_shader.index);
+            thr->cmd_data.b = ret;
+            thread_reply(thr, CMD_SET_SHADER);
+            break;
+         }
+
          default:
-            //fprintf(stderr, "CMD unknown ...\n");
             thread_reply(thr, thr->send_cmd);
             break;
       }
 
       if (updated)
       {
-         //fprintf(stderr, "RUN FRAME\n");
          slock_lock(thr->frame.lock);
          bool ret = thr->driver->frame(thr->driver_data,
                thr->frame.buffer, thr->frame.width, thr->frame.height,
@@ -146,12 +187,15 @@ static void thread_loop(void *data)
 
          bool alive = ret && thr->driver->alive(thr->driver_data);
          bool focus = ret && thr->driver->focus(thr->driver_data);
-         //fprintf(stderr, "Alive: %d, Focus: %d.\n", alive, focus);
+
+         struct rarch_viewport vp = {0};
+         thr->driver->viewport_info(thr->driver_data, &vp);
 
          slock_lock(thr->lock);
          thr->alive = alive;
          thr->focus = focus;
          thr->frame.updated = false;
+         thr->vp = vp;
          slock_unlock(thr->lock);
       }
    }
@@ -198,6 +242,9 @@ static bool thread_frame(void *data, const void *frame_,
    if (!frame_)
       return true;
 
+   RARCH_PERFORMANCE_INIT(thread_frame);
+   RARCH_PERFORMANCE_START(thread_frame);
+
    thread_video_t *thr = (thread_video_t*)data;
    unsigned copy_stride = width * (thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
 
@@ -225,6 +272,8 @@ static bool thread_frame(void *data, const void *frame_,
       slock_unlock(thr->frame.lock);
    }
    slock_unlock(thr->lock);
+
+   RARCH_PERFORMANCE_STOP(thread_frame);
 
    return true;
 }
@@ -263,6 +312,47 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info, const inp
    return thr->cmd_data.b;
 }
 
+static bool thread_set_shader(void *data, enum rarch_shader_type type, const char *path, unsigned index)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   thr->cmd_data.set_shader.type = type;
+   thr->cmd_data.set_shader.path = path;
+   thr->cmd_data.set_shader.index = index;
+   thread_send_cmd(thr, CMD_SET_SHADER);
+   thread_wait_reply(thr, CMD_SET_SHADER);
+   return thr->cmd_data.b;
+}
+
+static void thread_set_rotation(void *data, unsigned rotation)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   thr->cmd_data.i = rotation;
+   thread_send_cmd(thr, CMD_SET_ROTATION);
+   thread_wait_reply(thr, CMD_SET_ROTATION);
+}
+
+// This value is set async as stalling on the video driver for every query is too slow.
+// This means this value might not be correct, so viewport reads are not supported for now.
+static void thread_viewport_info(void *data, struct rarch_viewport *vp)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   slock_lock(thr->lock);
+   *vp = thr->vp;
+
+   // Explicitly mem-copied so we can use memcmp correctly later.
+   memcpy(&thr->read_vp, &thr->vp, sizeof(thr->vp));
+   slock_unlock(thr->lock);
+}
+
+static bool thread_read_viewport(void *data, uint8_t *buffer)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   thr->cmd_data.v = buffer;
+   thread_send_cmd(thr, CMD_READ_VIEWPORT);
+   thread_wait_reply(thr, CMD_READ_VIEWPORT);
+   return thr->cmd_data.b;
+}
+
 static void thread_free(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -288,16 +378,32 @@ static const video_driver_t video_thread = {
    thread_set_nonblock_state,
    thread_alive,
    thread_focus,
-   NULL, // set_shader
+   thread_set_shader,
    thread_free,
    "Thread wrapper",
-   NULL, // set_rotation
-   NULL, // viewport_info
-   NULL, // read_viewport
+   thread_set_rotation,
+   thread_viewport_info,
+   thread_read_viewport,
 #ifdef HAVE_OVERLAY
    NULL, // get_overlay_interface
 #endif
 };
+
+static void thread_set_callbacks(thread_video_t *thr, const video_driver_t *driver)
+{
+   thr->video_thread = video_thread;
+   // Disable optional features if not present.
+   if (!driver->read_viewport)
+      thr->video_thread.read_viewport = NULL;
+   if (!driver->set_rotation)
+      thr->video_thread.set_rotation = NULL;
+   if (!driver->set_shader)
+      thr->video_thread.set_shader = NULL;
+#ifdef HAVE_OVERLAY
+   if (!driver->overlay_interface)
+      thr->video_thread.overlay_interface = NULL;
+#endif
+}
 
 bool rarch_threaded_video_init(const video_driver_t **out_driver, void **out_data,
       const input_driver_t **input, void **input_data,
@@ -307,8 +413,10 @@ bool rarch_threaded_video_init(const video_driver_t **out_driver, void **out_dat
    if (!thr)
       return false;
 
+   thread_set_callbacks(thr, driver);
+
    thr->driver = driver;
-   *out_driver = &video_thread;
+   *out_driver = &thr->video_thread;
    *out_data   = thr;
    return thread_init(thr, info, input, input_data);
 }
