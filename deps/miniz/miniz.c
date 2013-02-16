@@ -254,7 +254,7 @@ int mz_inflate(mz_streamp pStream, int flush)
   return ((status == TINFL_STATUS_DONE) && (!pState->m_dict_avail)) ? MZ_STREAM_END : MZ_OK;
 }
 
-int inflateEnd(mz_streamp pStream)
+int mz_inflateEnd(mz_streamp pStream)
 {
   if (!pStream)
     return MZ_STREAM_ERROR;
@@ -287,12 +287,12 @@ int mz_uncompress(unsigned char *pDest, mz_ulong *pDest_len, const unsigned char
   status = mz_inflate(&stream, MZ_FINISH);
   if (status != MZ_STREAM_END)
   {
-    inflateEnd(&stream);
+    mz_inflateEnd(&stream);
     return ((status == MZ_BUF_ERROR) && (!stream.avail_in)) ? MZ_DATA_ERROR : status;
   }
   *pDest_len = stream.total_out;
 
-  return inflateEnd(&stream);
+  return mz_inflateEnd(&stream);
 }
 
 const char *mz_error(int err)

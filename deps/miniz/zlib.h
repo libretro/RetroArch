@@ -342,7 +342,7 @@ int mz_inflateInit2(mz_streamp pStream, int window_bits);
 int mz_inflate(mz_streamp pStream, int flush);
 
 // Deinitializes a decompressor.
-int inflateEnd(mz_streamp pStream);
+int mz_inflateEnd(mz_streamp pStream);
 
 // Single-call decompression.
 // Returns MZ_OK on success, or one of the error codes from mz_inflate() on failure.
@@ -409,6 +409,7 @@ const char *mz_error(int err);
   #define inflateInit           mz_inflateInit
   #define inflateInit2          mz_inflateInit2
   #define inflate               mz_inflate
+  #define inflateEnd		mz_inflateEnd
   #define uncompress            mz_uncompress
   #define crc32                 crc32
   #define adler32               mz_adler32
