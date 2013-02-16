@@ -1160,9 +1160,12 @@ static void *d3d9_init(const video_info_t *info, const input_driver_t **input,
      if (!vid)
         return nullptr;
 
-     void *dinput = input_dinput.init();
-     *input       = dinput ? &input_dinput : nullptr;
-     *input_data  = dinput;
+     if (input && input_data)
+     {
+        void *dinput = input_dinput.init();
+        *input       = dinput ? &input_dinput : nullptr;
+        *input_data  = dinput;
+     }
 
      return vid;
    }

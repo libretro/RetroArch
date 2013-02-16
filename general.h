@@ -173,6 +173,7 @@ struct settings
       char filter_path[PATH_MAX];
       enum rarch_shader_type shader_type;
       float refresh_rate;
+      bool threaded;
 
       bool render_to_texture;
 

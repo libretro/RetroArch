@@ -23,6 +23,7 @@
 #include "compat/posix_string.h"
 #include "audio/utils.h"
 #include "audio/resampler.h"
+#include "gfx/thread_wrapper.h"
 
 #ifdef HAVE_X11
 #include "gfx/context/x11_common.h"
@@ -492,6 +493,12 @@ static void compute_audio_buffer_statistics(void)
 
 static void compute_monitor_fps_statistics(void)
 {
+   if (g_settings.video.threaded)
+   {
+      RARCH_LOG("Monitor FPS estimation is disabled for threaded video.\n");
+      return;
+   }
+
    if (g_extern.measure_data.frame_time_samples_count < 2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
    {
       RARCH_LOG("Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
@@ -800,7 +807,22 @@ void init_video_input(void)
    video.rgb32 = g_extern.filter.active || (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
    const input_driver_t *tmp = driver.input;
-   driver.video_data = video_init_func(&video, &driver.input, &driver.input_data);
+#ifdef HAVE_THREADS
+   if (g_settings.video.threaded)
+   {
+      find_video_driver(); // Need to grab the "real" video driver interface on a reinit.
+      RARCH_LOG("Starting threaded video driver ...\n");
+      if (!rarch_threaded_video_init(&driver.video, &driver.video_data,
+               &driver.input, &driver.input_data,
+               driver.video, &video))
+      {
+         RARCH_ERR("Cannot open threaded video driver ... Exiting ...\n");
+         rarch_fail(1, "init_video_input()");
+      }
+   }
+   else
+#endif
+      driver.video_data = video_init_func(&video, &driver.input, &driver.input_data);
 
    if (driver.video_data == NULL)
    {
