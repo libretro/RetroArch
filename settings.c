@@ -477,13 +477,6 @@ bool config_load_file(const char *path)
       CONFIG_GET_INT(input.device[i], cfg);
    }
 
-#ifdef ANDROID
-   CONFIG_GET_INT(input.icade_profile[0], "input_autodetect_icade_profile_pad1");
-   CONFIG_GET_INT(input.icade_profile[1], "input_autodetect_icade_profile_pad2");
-   CONFIG_GET_INT(input.icade_profile[2], "input_autodetect_icade_profile_pad3");
-   CONFIG_GET_INT(input.icade_profile[3], "input_autodetect_icade_profile_pad4");
-#endif
-
    CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
 
    bool msg_enable = false;
@@ -699,8 +692,13 @@ bool config_load_file(const char *path)
    CONFIG_GET_PATH(input.overlay, "input_overlay");
    CONFIG_GET_FLOAT(input.overlay_opacity, "input_overlay_opacity");
    CONFIG_GET_BOOL(input.debug_enable, "input_debug_enable");
+
 #ifdef ANDROID
    CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
+   CONFIG_GET_INT(input.icade_profile[0], "input_autodetect_icade_profile_pad1");
+   CONFIG_GET_INT(input.icade_profile[1], "input_autodetect_icade_profile_pad2");
+   CONFIG_GET_INT(input.icade_profile[2], "input_autodetect_icade_profile_pad3");
+   CONFIG_GET_INT(input.icade_profile[3], "input_autodetect_icade_profile_pad4");
 #endif
 
    int low_ram_mode = 0;
