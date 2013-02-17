@@ -381,7 +381,7 @@ THREAD
 #include "../../thread/xenon_sdl_threads.c"
 #elif defined(HAVE_THREADS)
 #include "../../thread.c"
-#ifdef ANDROID
+#ifndef RARCH_CONSOLE
 #include "../../autosave.c"
 #endif
 #endif
