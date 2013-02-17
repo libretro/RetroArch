@@ -42,6 +42,7 @@ typedef int ssize_t;
 #pragma warning(disable : 4305)
 #pragma warning(disable : 4146)
 #pragma warning(disable : 4267)
+#pragma warning(disable : 4723)
 
 #define roundf(in) (in >= 0.0f ? floorf(in + 0.5f) : ceilf(in - 0.5f))
 
