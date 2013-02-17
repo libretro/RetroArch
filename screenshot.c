@@ -151,7 +151,13 @@ bool screenshot_dump(const char *folder, const void *frame,
    char filename[PATH_MAX];
    char shotname[PATH_MAX];
 
-   fill_dated_filename(shotname, sizeof(shotname));
+#ifdef HAVE_ZLIB_DEFLATE
+#define IMG_EXT "png"
+#else
+#define IMG_EXT "bmp"
+#endif
+
+   fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
    fill_pathname_join(filename, folder, shotname, sizeof(filename));
 
 #ifdef HAVE_ZLIB_DEFLATE

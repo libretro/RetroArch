@@ -97,7 +97,7 @@ bool path_is_absolute(const char *path);
 // E.g.: in_path = "/foo/bar/baz/boo.c", replace = ""     => out_path = "/foo/bar/baz/boo" 
 void fill_pathname(char *out_path, const char *in_path, const char *replace, size_t size);
 
-void fill_dated_filename(char *out_filename, size_t size);
+void fill_dated_filename(char *out_filename, const char *ext, size_t size);
 
 // Appends a filename extension 'replace' to 'in_path', and outputs result in 'out_path'.
 // Assumes in_path has no extension. If an extension is still present in 'in_path', it will be ignored.
