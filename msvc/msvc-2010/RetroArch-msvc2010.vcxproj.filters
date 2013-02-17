@@ -204,14 +204,14 @@
     <ClCompile Include="..\..\gfx\shader_glsl.c">
       <Filter>Source Files\gfx</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\deps\rzlib\rzlib.c">
-      <Filter>Source Files\deps</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\file_extract.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\gfx\rpng\rpng.c">
       <Filter>Source Files\gfx\rpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\miniz\miniz.c">
+      <Filter>Source Files\deps</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
