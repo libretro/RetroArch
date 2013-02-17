@@ -39,6 +39,8 @@ fit into memory on Gamecube).
 * [Android] Fixed regression where a button bound to AKEYCODE_BACK would 'exit out'
 of RetroArch.
 * [Android] Fixes Madcatz fighting stick being autodetected properly.
+* [Android] Input autodetection expanded -
+  - iControlpad
 * [Gamecube] Made RetroArch cores 'standalone' - ie. no core switching.
 * [Xbox 1] Add Low RAM mode - this needs to be used to play games that won't otherwise fit into RAM,
 such as Street Fighter Alpha 3/Vampire Savior and other big ROMs in FBA Cores CPS2/NeoGeo/FBA.

@@ -18,14 +18,14 @@ put disksys.rom into your system directory.\n
   - If you get any problems of the sort DISK A / B ERR 07' - pressing Y button again or letting it run its course should do it.\n
   - NOTE - Famicom Disk System loading is slow, so you might be tempted to fast forward through most of it. However, I'd advise caution when doing so and to savestate regularly in case 'fast forwarding' can negatively affect disk loading.\n
 * [FBA core] Various changes/fixes\n
-- Hooked up Eco Fighters controls (Turn 1/Turn 2 bound to L and R buttons)\n
-- Hooked up Pnickie controls (Turn 1/Turn 2 bound to L and R buttons - press
+- Hook up Eco Fighters controls (Turn 1/Turn 2 bound to L and R buttons)\n
+- Hook up Pnickie controls (Turn 1/Turn 2 bound to L and R buttons - press
 one of the buttons to progress beyond start screen)\n
-- Hooked up Continental Circus controls - Brake 2/Brake 3 (L1/L2 buttons)
+- Hook up Continental Circus controls - Brake 2/Brake 3 (L1/L2 buttons)
 and Accelerate 2/Accelerate 3 (R1/R2 buttons)\n
-- Hooked up Gun Smoke controls - Start button (needed to progress beyond
+- Hook up Gun Smoke controls - Start button (needed to progress beyond
 title screen)\n
-- Hooked up Mighty Pang controls (P1 Shot1/P1 Shot2/P2 Shot1/P2 Shot2)\n
+- Hook up Mighty Pang controls (P1 Shot1/P1 Shot2/P2 Shot1/P2 Shot2)\n
 - Fixed Varia Metal palette\n
 - Fixed Fairyland Story palette\n
 - Fixed Return of the Invaders palette\n
@@ -34,6 +34,8 @@ title screen)\n
 * [Android] Fixed regression where a button bound to AKEYCODE_BACK would 'exit out'
 of RetroArch.\n
 * [Android] Fixes Madcatz fighting stick being autodetected properly.\n
+* [Android] Input autodetection expanded -\n
+  - iControlpad (needs to be tested)\n
 * [Unzipping [All consoles/Android]] Moved from rzlib to miniz/minizip -should increase compatibility
 with ZIP archives.\n
 \n
