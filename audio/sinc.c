@@ -30,6 +30,10 @@
 #define RARCH_LOG(...) fprintf(stderr, __VA_ARGS__)
 #endif
 
+#ifdef _XBOX1
+#pragma warning(disable : 4723)
+#endif
+
 #ifdef __SSE__
 #include <xmmintrin.h>
 #endif
