@@ -188,14 +188,20 @@ VIDEO DRIVER
 FONTS
 ============================================================ */
 
+#ifdef _XBOX
+#define DONT_HAVE_BITMAPFONTS
+#endif
+
 #if defined(HAVE_OPENGL) || defined(HAVE_D3D8) || defined(HAVE_D3D9)
 
 #ifdef HAVE_FREETYPE
 #include "../../gfx/fonts/freetype.c"
 #endif
 
+#ifndef DONT_HAVE_BITMAPFONTS
 #include "../../gfx/fonts/fonts.c"
 #include "../../gfx/fonts/bitmapfont.c"
+#endif
 
 #ifdef HAVE_OPENGL
 #include "../../gfx/fonts/gl_font.c"
@@ -250,7 +256,13 @@ INPUT
 /*============================================================
 STATE TRACKER
 ============================================================ */
+#ifndef _XBOX
+#define DONT_HAVE_STATE_TRACKER
+#endif
+
+#ifndef DONT_HAVE_STATE_TRACKER
 #include "../../gfx/state_tracker.c"
+#endif
 
 /*============================================================
 FIFO BUFFER
