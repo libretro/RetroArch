@@ -9,14 +9,14 @@ put disksys.rom into your system directory.
   - If you get any problems of the sort DISK A / B ERR 07' - pressing Y button again or letting it run its course should do it.
   - NOTE - Famicom Disk System loading is slow, so you might be tempted to fast forward through most of it. However, I'd advise caution when doing so and to savestate regularly in case 'fast forwarding' can negatively affect disk loading. 
 * [FBA core] Various changes/fixes
-- Hooked up Eco Fighters controls (Turn 1/Turn 2 bound to L and R buttons)
-- Hooked up Pnickie controls (Turn 1/Turn 2 bound to L and R buttons - press
+- Hook up Eco Fighters controls (Turn 1/Turn 2 bound to L and R buttons)
+- Hook up Pnickie controls (Turn 1/Turn 2 bound to L and R buttons - press
 one of the buttons to progress beyond start screen)
-- Hooked up Continental Circus controls - Brake 2/Brake 3 (L1/L2 buttons)
+- Hook up Continental Circus controls - Brake 2/Brake 3 (L1/L2 buttons)
 and Accelerate 2/Accelerate 3 (R1/R2 buttons)
-- Hooked up Gun Smoke controls - Start button (needed to progress beyond
+- Hook up Gun Smoke controls - Start button (needed to progress beyond
 title screen)
-- Hooked up Mighty Pang controls (P1 Shot1/P1 Shot2/P2 Shot1/P2 Shot2)
+- Hook up Mighty Pang controls (P1 Shot1/P1 Shot2/P2 Shot1/P2 Shot2)
 - Fixed Varia Metal palette
 - Fixed Fairyland Story palette
 - Fixed Return of the Invaders palette
@@ -40,6 +40,8 @@ fit into memory on Gamecube).
 of RetroArch.
 * [Android] Fixes Madcatz fighting stick being autodetected properly.
 * [Gamecube] Made RetroArch cores 'standalone' - ie. no core switching.
+* [Xbox 1] Add Low RAM mode - this needs to be used to play games that won't otherwise fit into RAM,
+such as Street Fighter Alpha 3/Vampire Savior and other big ROMs in FBA Cores CPS2/NeoGeo/FBA.
 * [Unzipping [All consoles/Android]] Moved from rzlib to miniz/minizip -should increase compatibility
 with ZIP archives
 ------------------------------------------------------------------------------
