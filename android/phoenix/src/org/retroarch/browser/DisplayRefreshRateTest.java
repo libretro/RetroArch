@@ -108,7 +108,6 @@ public class DisplayRefreshRateTest extends Activity {
 		super.onCreate(savedInstanceState);
 		Toast.makeText(this, "Touch the screen with your fingers for more accurate measurements.", Toast.LENGTH_LONG).show();
 		surfaceView = new GLSurfaceView(this);
-		surfaceView.setEGLConfigChooser(false);
 		surfaceView.setEGLContextClientVersion(2);
 		surfaceView.setRenderer(new Renderer(this));
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
