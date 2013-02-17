@@ -371,7 +371,7 @@ public class RetroArch extends Activity implements
 		config.setInt("input_autodetect_icade_profile_pad4", prefs.getInt("input_autodetect_icade_profile_pad4", 0));
 		
 		config.setDouble("video_refresh_rate", getRefreshRate());
-		config.setBoolean("video_threaded", prefs.getBoolean("video_threaded", true));
+		config.setBoolean("video_threaded", prefs.getBoolean("video_threaded", false));
 		
 		String aspect = prefs.getString("video_aspect_ratio", "auto");
 		if (aspect.equals("full")) {
