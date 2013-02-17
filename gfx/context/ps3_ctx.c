@@ -478,21 +478,23 @@ static void gfx_ctx_set_filtering(unsigned index, bool set_smooth)
    if (!gl)
       return;
 
+   GLuint filter = set_smooth ? GL_LINEAR : GL_NEAREST;
    if (index == 1)
    {
+      gl->tex_filter = filter;
       // Apply to all PREV textures.
       for (unsigned i = 0; i < TEXTURES; i++)
       {
          glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
       }
    }
    else if (index >= 2 && gl->fbo_inited)
    {
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index - 2]);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, set_smooth ? GL_LINEAR : GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
    }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
