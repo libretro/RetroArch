@@ -56,7 +56,7 @@
 				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="262144"
+				StackSize="131072"
 				IncludeDebugInfo="TRUE"
 				NoLibWarn="TRUE"/>
 		</Configuration>
@@ -110,7 +110,7 @@
 				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="262144"
+				StackSize="131072"
 				IncludeDebugInfo="TRUE"
 				LimitAvailableMemoryTo64MB="FALSE"
 				NoLibWarn="TRUE"/>
@@ -166,7 +166,7 @@
 				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="262144"
+				StackSize="131072"
 				IncludeDebugInfo="TRUE"
 				NoLibWarn="TRUE"/>
 		</Configuration>
@@ -226,7 +226,7 @@
 				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="262144"/>
+				StackSize="131072"/>
 		</Configuration>
 		<Configuration
 			Name="Release_LTCG|Xbox"
@@ -279,7 +279,8 @@
 				ForceCopy="TRUE"/>
 			<Tool
 				Name="XboxImageTool"
-				StackSize="262144"/>
+				StackSize="131072"
+				IncludeDebugInfo="FALSE"/>
 		</Configuration>
 	</Configurations>
 	<References>
