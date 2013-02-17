@@ -252,7 +252,7 @@ static void gfx_ctx_xdk_menu_screenshot_dump(void *data)
    char filename[PATH_MAX];
    char shotname[PATH_MAX];
 
-   screenshot_generate_filename(shotname, sizeof(shotname));
+   fill_dated_filename(shotname, "bmp", sizeof(shotname));
    snprintf(filename, sizeof(filename), "%s\\%s", default_paths.screenshots_dir, shotname);
    
 #if defined(_XBOX1)

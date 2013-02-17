@@ -144,20 +144,6 @@ end:
 }
 #endif
 
-void screenshot_generate_filename(char *filename, size_t size)
-{
-   time_t cur_time;
-   time(&cur_time);
-
-#ifdef HAVE_ZLIB_DEFLATE
-#define IMG_EXT "png"
-#else
-#define IMG_EXT "bmp"
-#endif
-
-   strftime(filename, size, "RetroArch-%m%d-%H%M%S." IMG_EXT, localtime(&cur_time));
-}
-
 // Take frame bottom-up.
 bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
@@ -165,7 +151,13 @@ bool screenshot_dump(const char *folder, const void *frame,
    char filename[PATH_MAX];
    char shotname[PATH_MAX];
 
-   screenshot_generate_filename(shotname, sizeof(shotname));
+#ifdef HAVE_ZLIB_DEFLATE
+#define IMG_EXT "png"
+#else
+#define IMG_EXT "bmp"
+#endif
+
+   fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
    fill_pathname_join(filename, folder, shotname, sizeof(filename));
 
 #ifdef HAVE_ZLIB_DEFLATE

@@ -1640,7 +1640,7 @@ static void init_libretro_cbs(void)
 #endif
 }
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
 static void init_autosave(void)
 {
    int ram_types[2] = {-1, -1};
@@ -2748,7 +2748,7 @@ int rarch_main_init(int argc, char *argv[])
    if (!g_extern.use_sram)
       RARCH_LOG("SRAM will not be saved.\n");
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    if (g_extern.use_sram)
       init_autosave();
 #endif
@@ -2828,7 +2828,7 @@ bool rarch_main_iterate(void)
    do_state_checks();
 
    // Run libretro for one frame.
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    lock_autosave();
 #endif
 
@@ -2855,7 +2855,7 @@ bool rarch_main_iterate(void)
       netplay_post_frame(g_extern.netplay);
 #endif
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    unlock_autosave();
 #endif
 
@@ -2881,7 +2881,7 @@ void rarch_main_deinit(void)
    deinit_command();
 #endif
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    if (g_extern.use_sram)
       deinit_autosave();
 #endif

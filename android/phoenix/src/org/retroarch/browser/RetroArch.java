@@ -390,6 +390,8 @@ public class RetroArch extends Activity implements
 			config.setDouble("video_aspect_ratio", aspect_ratio);
 		}
 		
+		config.setBoolean("video_scale_integer", prefs.getBoolean("video_scale_integer", false));
+		
 		String shaderPath = prefs.getString("video_bsnes_shader", "");
 		if (prefs.getBoolean("video_shader_enable", false) && new File(shaderPath).exists()) {
 			config.setString("video_shader_type", "bsnes");
