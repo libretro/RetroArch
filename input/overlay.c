@@ -123,15 +123,22 @@ static bool input_overlay_load_desc(config_file_t *conf, struct overlay_desc *de
 
    char overlay[256];
    if (!config_get_array(conf, overlay_desc_key, overlay, sizeof(overlay)))
+   {
+      RARCH_ERR("[Overlay]: Didn't find key: %s.\n", overlay_desc_key);
       return false;
+   }
 
    struct string_list *list = string_split(overlay, ", ");
    if (!list)
+   {
+      RARCH_ERR("[Overlay]: Failed to split overlay desc.\n");
       return false;
+   }
 
    if (list->size < 6)
    {
       string_list_free(list);
+      RARCH_ERR("[Overlay]: Overlay desc is invalid. Requires at least 6 tokens.\n");
       return false;
    }
 
@@ -154,6 +161,7 @@ static bool input_overlay_load_desc(config_file_t *conf, struct overlay_desc *de
       desc->hitbox = OVERLAY_HITBOX_RECT;
    else
    {
+      RARCH_ERR("[Overlay]: Hitbox type (%s) is invalid. Use \"radial\" or \"rect\".\n", box);
       ret = false;
       goto end;
    }
@@ -176,7 +184,10 @@ static bool input_overlay_load_overlay(config_file_t *conf, const char *config_p
 
    snprintf(overlay_path_key, sizeof(overlay_path_key), "overlay%u_overlay", index);
    if (!config_get_path(conf, overlay_path_key, overlay_path, sizeof(overlay_path)))
+   {
+      RARCH_ERR("[Overlay]: Config key: %s is not set.\n", overlay_path_key);
       return false;
+   }
 
    fill_pathname_resolve_relative(overlay_resolved_path, config_path,
          overlay_path, sizeof(overlay_resolved_path));
@@ -203,7 +214,10 @@ static bool input_overlay_load_overlay(config_file_t *conf, const char *config_p
    {
       struct string_list *list = string_split(overlay_rect, ", ");
       if (list->size < 4)
+      {
+         RARCH_ERR("[Overlay]: Failed to split rect \"%s\" into at least four tokens.\n", overlay_rect);
          return false;
+      }
 
       overlay->x = strtod(list->elems[0].data, NULL);
       overlay->y = strtod(list->elems[1].data, NULL);
@@ -223,18 +237,27 @@ static bool input_overlay_load_overlay(config_file_t *conf, const char *config_p
 
    unsigned descs = 0;
    if (!config_get_uint(conf, overlay_descs_key, &descs))
+   {
+      RARCH_ERR("[Overlay]: Failed to read number of descs from config key: %s.\n", overlay_descs_key);
       return false;
+   }
 
    overlay->descs = (struct overlay_desc*)calloc(descs, sizeof(*overlay->descs));
    if (!overlay->descs)
+   {
+      RARCH_ERR("[Overlay]: Failed to allocate descs.\n");
       return false;
+   }
 
    overlay->size = descs;
 
    for (size_t i = 0; i < overlay->size; i++)
    {
       if (!input_overlay_load_desc(conf, &overlay->descs[i], index, i, img.width, img.height))
+      {
+         RARCH_ERR("[Overlay]: Failed to load overlay descs for overlay #%u.\n", (unsigned)i);
          return false;
+      }
    }
 
 
@@ -284,6 +307,7 @@ static bool input_overlay_load_overlays(input_overlay_t *ol, const char *path)
    {
       if (!input_overlay_load_overlay(conf, path, &ol->overlays[i], i))
       {
+         RARCH_ERR("[Overlay]: Failed to load overlay #%u.\n", (unsigned)i);
          ret = false;
          goto end;
       }
