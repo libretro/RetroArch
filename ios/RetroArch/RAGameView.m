@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import <QuartzCore/QuartzCore.h>
 #include "general.h"
 #include "rarch_wrapper.h"
 
@@ -28,7 +27,8 @@ static bool is_syncing = true;
 @implementation RAGameView
 {
    EAGLContext* _glContext;
-   CADisplayLink* _timer;
+   UIButton* _notifyButton;
+   UILabel* _notifyLabel;
 }
 
 - (id)init
@@ -39,10 +39,46 @@ static bool is_syncing = true;
    _glContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
    [EAGLContext setCurrentContext:_glContext];
    
-   self.view = [[GLKView alloc] initWithFrame:CGRectMake(0, 0, 640, 480) context:_glContext];
+   self.view = [GLKView new];
+   ((GLKView*)self.view).context = _glContext;
    self.view.multipleTouchEnabled = YES;
-   
+
    return self;
+}
+
+- (void)viewDidAppear:(BOOL)animated
+{
+   CGSize size = self.view.bounds.size;
+   float tenpct = size.width / 10.0f;
+   
+   _notifyButton = [[UIButton alloc] initWithFrame:CGRectMake(tenpct * 4.0f, 0, tenpct * 2.0f, size.height / 10.0f)];
+   _notifyButton.backgroundColor = [UIColor redColor];
+   _notifyButton.opaque = NO;
+
+   _notifyLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, size.width, size.height / 10.0f)];
+   _notifyLabel.backgroundColor = [UIColor colorWithRed:0.2f green:0.2f blue: 0.5f alpha:0.5f];
+   _notifyLabel.text = @"Triple tap to exit.";
+   _notifyLabel.textAlignment = NSTextAlignmentCenter;
+   _notifyLabel.opaque = NO;
+  
+   [self.view addSubview:_notifyButton];
+   [self.view addSubview:_notifyLabel];
+   [self performSelector:@selector(hideNotify) withObject:nil afterDelay:3.0f];
+}
+
+- (void)hideNotify
+{
+   if (_notifyLabel && _notifyButton)
+   {
+      // TODO: Actually removing these views will cause an ugly flash in the game window...
+      [UIView animateWithDuration:0.2
+         animations:^{_notifyButton.alpha = 0.0;}
+         completion:^(BOOL finished){ _notifyButton.hidden = YES; _notifyButton = nil; }];
+
+      [UIView animateWithDuration:0.2
+         animations:^{_notifyLabel.alpha = 0.0;}
+         completion:^(BOOL finished){ _notifyLabel.hidden = YES; _notifyLabel = nil; }];
+   }
 }
 
 - (void)iterate
@@ -63,9 +99,6 @@ static bool is_syncing = true;
 
 - (void)needsToDie
 {
-   [_timer invalidate];
-   _timer = nil;
-
    glFinish();
 
    GLKView* glview = (GLKView*)self.view;
