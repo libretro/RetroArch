@@ -312,7 +312,13 @@ end:
 void D3DVideo::calculate_rect(unsigned width, unsigned height,
    bool keep, float desired_aspect)
 {
-   if (!keep)
+   if (g_settings.video.scale_integer)
+   {
+      struct rarch_viewport vp = {0};
+      gfx_scale_integer(&vp, width, height, desired_aspect, keep);
+      set_viewport(vp.x, vp.y, vp.width, vp.height);
+   }
+   else if (!keep)
       set_viewport(0, 0, width, height);
    else
    {
