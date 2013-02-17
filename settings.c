@@ -703,6 +703,10 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
 #endif
 
+   int low_ram_mode = 0;
+   if (config_get_int(conf, "rmenu_low_ram_mode_enable", &low_ram_mode))
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE);
+
    if (config_get_string(conf, "environment_variables",
             &g_extern.system.environment))
    {
@@ -1192,6 +1196,13 @@ bool config_save_file(const char *path)
    config_set_int(conf, "input_autodetect_icade_profile_pad2", input.icade_profile[1]);
    config_set_int(conf, "input_autodetect_icade_profile_pad3", input.icade_profile[2]);
    config_set_int(conf, "input_autodetect_icade_profile_pad4", input.icade_profile[3]);
+#endif
+
+#ifdef HAVE_RMENU
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
+      config_set_int(conf, "rmenu_low_ram_mode_enable", 1);
+   else
+      config_set_int(conf, "rmenu_low_ram_mode_enable", 0);
 #endif
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_OVERSCAN_ENABLE))

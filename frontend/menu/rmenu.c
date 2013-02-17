@@ -167,6 +167,12 @@ static void populate_setting_item(void *data, unsigned input)
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", fname);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a skin for the menu.");
          break;
+      case SETTING_EMU_LOW_RAM_MODE_ENABLE:
+         fill_pathname_base(fname, g_extern.console.menu_texture_path, sizeof(fname));
+         snprintf(current_item->text, sizeof(current_item->text), "Low RAM Mode");
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE)) ? "ON" : "OFF");
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Will not load skin at startup to save up on RAM.");
+         break;
       case SETTING_FONT_SIZE:
          snprintf(current_item->text, sizeof(current_item->text), "Font Size");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_settings.video.font_size);
@@ -1090,6 +1096,26 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             }
             else
                RARCH_ERR("Shaders are unsupported on this platform.\n");
+         }
+         break;
+      case SETTING_EMU_LOW_RAM_MODE_ENABLE:
+         if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         {
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE);
+            else
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE);
+
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+               rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+
+         }
+         if(input & (1ULL << RMENU_DEVICE_NAV_START))
+         {
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE);
+
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+               rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
          }
          break;
       case SETTING_EMU_SKIN:

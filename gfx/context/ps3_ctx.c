@@ -329,6 +329,9 @@ void texture_image_border_load(const char *path)
 
 static bool gfx_ctx_rmenu_init(void)
 {
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
+      return true;
+
    texture_image_border_load(g_extern.console.menu_texture_path);
 
    return true;

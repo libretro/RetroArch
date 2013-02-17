@@ -154,7 +154,9 @@ static bool gfx_ctx_xdk_menu_init(void)
       m_menuMainRomListPos_y = 130;
    }
 
-   texture_image_load(g_extern.console.menu_texture_path, &g_extern.console.menu_texture);
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE)) { }
+   else
+      texture_image_load(g_extern.console.menu_texture_path, &g_extern.console.menu_texture);
 
    // Load rom selector panel
    texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &g_extern.console.menu_panel);
