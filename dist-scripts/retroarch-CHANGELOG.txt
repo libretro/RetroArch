@@ -16,6 +16,7 @@ one of the buttons to progress beyond start screen)
 and Accelerate 2/Accelerate 3 (R1/R2 buttons)
 - Hooked up Gun Smoke controls - Start button (needed to progress beyond
 title screen)
+- Hooked up Mighty Pang controls (P1 Shot1/P1 Shot2/P2 Shot1/P2 Shot2)
 - Fixed Varia Metal palette
 - Fixed Fairyland Story palette
 - Fixed Return of the Invaders palette
