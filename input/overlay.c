@@ -66,6 +66,8 @@ struct input_overlay
    const video_overlay_interface_t *iface;
    bool enable;
 
+   bool blocked;
+
    struct overlay *overlays;
    const struct overlay *active;
    size_t index;
@@ -390,7 +392,10 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
 uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
 {
    if (!ol->enable)
+   {
+      ol->blocked = false;
       return 0;
+   }
 
    // norm_x and norm_y is in [-0x7fff, 0x7fff] range, like RETRO_DEVICE_POINTER.
    float x = (float)(norm_x + 0x7fff) / 0xffff;
@@ -408,7 +413,17 @@ uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
          state |= ol->active->descs[i].key_mask;
    }
 
+   if (!state)
+      ol->blocked = false;
+   else if (ol->blocked)
+      state = 0;
+
    return state;
+}
+
+void input_overlay_poll_clear(input_overlay_t *ol)
+{
+   ol->blocked = false;
 }
 
 void input_overlay_next(input_overlay_t *ol)
@@ -420,6 +435,7 @@ void input_overlay_next(input_overlay_t *ol)
    ol->iface->vertex_geom(ol->iface_data,
          ol->active->mod_x, ol->active->mod_y, ol->active->mod_w, ol->active->mod_h);
    ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
+   ol->blocked = true;
 }
 
 bool input_overlay_full_screen(input_overlay_t *ol)
