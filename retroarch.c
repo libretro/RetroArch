@@ -482,6 +482,7 @@ static inline void input_poll_overlay(void)
    unsigned device = input_overlay_full_screen(driver.overlay) ?
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
+   bool polled = false;
    for (unsigned i = 0;
          input_input_state_func(NULL, 0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
@@ -492,7 +493,11 @@ static inline void input_poll_overlay(void)
             device, i, RETRO_DEVICE_ID_POINTER_Y);
 
       driver.overlay_state |= input_overlay_poll(driver.overlay, x, y);
+      polled = true;
    }
+
+   if (!polled)
+      input_overlay_poll_clear(driver.overlay);
 }
 #endif
 

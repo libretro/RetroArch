@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "../msvc/msvc_compat.h"
 
 #ifndef RESAMPLER_TEST
 #include "../general.h"

@@ -185,7 +185,7 @@
     </ClCompile>
     <ClCompile Include="..\..\cheats.c" />
     <ClCompile Include="..\..\compat\rxml\rxml.c" />
-    <ClCompile Include="..\..\deps\rzlib\rzlib.c" />
+    <ClCompile Include="..\..\deps\miniz\miniz.c" />
     <ClCompile Include="..\..\file_extract.c" />
     <ClCompile Include="..\..\gfx\d3d9\d3d9.cpp" />
     <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp" />
