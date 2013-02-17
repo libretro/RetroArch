@@ -256,7 +256,7 @@ INPUT
 /*============================================================
 STATE TRACKER
 ============================================================ */
-#ifndef _XBOX
+#ifdef _XBOX
 #define DONT_HAVE_STATE_TRACKER
 #endif
 
