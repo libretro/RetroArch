@@ -460,6 +460,20 @@ void fill_pathname_parent_dir(char *out_dir, const char *in_dir, size_t size)
    path_parent_dir(out_dir);
 }
 
+void fill_dated_filename(char *out_filename, size_t size)
+{
+   time_t cur_time;
+   time(&cur_time);
+
+#ifdef HAVE_ZLIB_DEFLATE
+#define IMG_EXT "png"
+#else
+#define IMG_EXT "bmp"
+#endif
+
+   strftime(out_filename, size, "RetroArch-%m%d-%H%M%S." IMG_EXT, localtime(&cur_time));
+}
+
 void path_basedir(char *path)
 {
    if (strlen(path) < 2)
