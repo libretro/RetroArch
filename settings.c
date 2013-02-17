@@ -705,7 +705,10 @@ bool config_load_file(const char *path)
 
    int low_ram_mode = 0;
    if (config_get_int(conf, "rmenu_low_ram_mode_enable", &low_ram_mode))
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE);
+   {
+      if (low_ram_mode == 1)
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE);
+   }
 
    if (config_get_string(conf, "environment_variables",
             &g_extern.system.environment))
@@ -1200,6 +1203,8 @@ bool config_save_file(const char *path)
 
 #ifdef HAVE_RMENU
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
+      config_set_int(conf, "rmenu_low_ram_mode_enable", 1);
+   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING))
       config_set_int(conf, "rmenu_low_ram_mode_enable", 1);
    else
       config_set_int(conf, "rmenu_low_ram_mode_enable", 0);
