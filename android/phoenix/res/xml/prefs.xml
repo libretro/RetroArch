@@ -72,6 +72,11 @@
                 android:key="video_allow_rotate"
                 android:summary="Will auto-rotate the screen for vertically oriented games."
                 android:title="Auto-rotate" />
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="video_scale_integer"
+                android:summary="Scales video only in whole steps of game resolution. Useful when playing without bilinear filtering."
+                android:title="Scale integer" />
 
             <ListPreference
                 android:entries="@array/aspect_ratios"
