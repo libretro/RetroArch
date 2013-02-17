@@ -53,7 +53,9 @@ typedef struct thread_video
 
    video_info_t info;
    const video_driver_t *driver;
+#ifdef HAVE_OVERLAY
    const video_overlay_interface_t *overlay;
+#endif
    void *driver_data;
    const input_driver_t **input;
    void **input_data;
