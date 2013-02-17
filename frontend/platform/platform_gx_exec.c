@@ -16,7 +16,6 @@
 
 #include <stdio.h>
 
-#if defined(HW_RVL)
 #include <string.h>
 #include <fat.h>
 #include <gctypes.h>
@@ -35,13 +34,8 @@ extern uint8_t _binary_wii_app_booter_app_booter_bin_end[];
 #define booter_start _binary_wii_app_booter_app_booter_bin_start
 #define booter_end _binary_wii_app_booter_app_booter_bin_end
 
-#elif defined(HW_DOL)
-#include "../../ngc/sidestep.h"
-#endif
-
 #include "../../retroarch_logger.h"
 
-#ifdef HW_RVL
 // NOTE: this does not update the path to point to the new loading .dol file.
 // we only need it for keeping the current directory anyway.
 void dol_copy_argv_path(void)
@@ -58,14 +52,13 @@ void dol_copy_argv_path(void)
    argv->length = len;
    DCFlushRange(ARGS_ADDR, sizeof(struct __argv) + argv->length);
 }
-#endif
 
 // WARNING: after we move any data into EXECUTE_ADDR, we can no longer use any
 // heap memory and are restricted to the stack only
 static void rarch_console_exec(const char *path)
 {
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
-#if defined(HW_RVL)
+
    FILE * fp = fopen(path, "rb");
    if (fp == NULL)
    {
@@ -109,7 +102,4 @@ static void rarch_console_exec(const char *path)
    RARCH_LOG("jumping to %08x\n", (unsigned) BOOTER_ADDR);
    SYS_ResetSystem(SYS_SHUTDOWN,0,0);
    __lwp_thread_stopmultitasking((void (*)(void)) BOOTER_ADDR);
-#elif defined(HW_DOL)
-   DOLtoARAM(path);
-#endif
 }
