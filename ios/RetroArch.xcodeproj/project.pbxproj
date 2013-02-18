@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		96096DD816D1ABAF00BF4499 /* RAModuleInfoList.m in Sources */ = {isa = PBXBuildFile; fileRef = 96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */; };
 		962979EF16C3EA3E00E6DCE0 /* ioseagl_ctx.c in Sources */ = {isa = PBXBuildFile; fileRef = 962979EE16C3EA3E00E6DCE0 /* ioseagl_ctx.c */; };
 		962979F616C43B9500E6DCE0 /* ic_dir.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F416C43B9500E6DCE0 /* ic_dir.png */; };
 		962979F716C43B9500E6DCE0 /* ic_file.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F516C43B9500E6DCE0 /* ic_file.png */; };
@@ -89,6 +90,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleInfoList.m; sourceTree = "<group>"; };
 		962979EE16C3EA3E00E6DCE0 /* ioseagl_ctx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ioseagl_ctx.c; sourceTree = "<group>"; };
 		962979F416C43B9500E6DCE0 /* ic_dir.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_dir.png; path = "../android/phoenix/res/drawable-xhdpi/ic_dir.png"; sourceTree = "<group>"; };
 		962979F516C43B9500E6DCE0 /* ic_file.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_file.png; path = "../android/phoenix/res/drawable-xhdpi/ic_file.png"; sourceTree = "<group>"; };
@@ -365,6 +367,7 @@
 		96AFAE3316C1D4EA009DE44C /* RetroArch */ = {
 			isa = PBXGroup;
 			children = (
+				96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */,
 				963F5AC416CC523B009BBD19 /* RADirectoryList.m */,
 				963F5AC516CC523B009BBD19 /* RAGameView.m */,
 				963F5AC616CC523B009BBD19 /* RAModuleList.m */,
@@ -833,6 +836,7 @@
 				963F5AC716CC523B009BBD19 /* RADirectoryList.m in Sources */,
 				963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */,
 				963F5AC916CC523B009BBD19 /* RAModuleList.m in Sources */,
+				96096DD816D1ABAF00BF4499 /* RAModuleInfoList.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

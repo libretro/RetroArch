@@ -6,14 +6,23 @@
 @interface RAGameView : UIViewController
 @end
 
-@interface RAModuleList : UITableViewController
+@interface RAModuleInfo : NSObject
+@property (strong) NSString* path;
+@property config_file_t* data;
 
++ (RAModuleInfo*)moduleWithPath:(NSString*)thePath data:(config_file_t*)theData;
+@end
+
+@interface RAModuleInfoList : UITableViewController
+- (id)initWithModuleInfo:(RAModuleInfo*)info;
+@end
+
+@interface RAModuleList : UITableViewController
 @end
 
 @interface RADirectoryList : UITableViewController
 - (id)initWithPath:(NSString*)path;
 @end
-
 
 @interface RASettingsSubList : UITableViewController
 - (id)initWithSettings:(NSArray*)values title:(NSString*)title;

@@ -18,7 +18,7 @@ static void display_error_alert(NSString* message)
 
 @implementation RAModuleList
 {
-   NSArray* _modules;
+   NSMutableArray* _modules;
 }
 
 - (id)init
@@ -28,17 +28,28 @@ static void display_error_alert(NSString* message)
    // Get the contents of the modules directory of the bundle.
    NSString* module_dir = [NSString stringWithFormat:@"%@/modules", [[NSBundle mainBundle] bundlePath]];
    
-   _modules = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:module_dir error:nil];
+   NSArray* moduleList = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:module_dir error:nil];
    
-   if (_modules != nil)
+   if (moduleList != nil)
    {
-      _modules = [module_dir stringsByAppendingPaths:_modules];
-      _modules = [_modules pathsMatchingExtensions:[NSArray arrayWithObject:@"dylib"]];
+      moduleList = [module_dir stringsByAppendingPaths:moduleList];
+      moduleList = [moduleList pathsMatchingExtensions:[NSArray arrayWithObject:@"dylib"]];
    }
    
-   if (_modules == nil || [_modules count] == 0)
+   if (moduleList == nil || [moduleList count] == 0)
    {
       display_error_alert(@"No libretro cores were found.");
+   }
+   
+   // Load the modules with their data
+   _modules = [NSMutableArray arrayWithCapacity:[moduleList count]];
+   
+   for (int i = 0; i != [moduleList count]; i ++)
+   {
+      NSString* modulePath = [moduleList objectAtIndex:i];
+
+      NSString* baseName = [[modulePath stringByDeletingPathExtension] stringByAppendingPathExtension:@"info"];
+      [_modules addObject:[RAModuleInfo moduleWithPath:modulePath data:config_file_new([baseName UTF8String])]];
    }
    
    [self setTitle:@"Choose Emulator"];
@@ -49,8 +60,16 @@ static void display_error_alert(NSString* message)
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   [RetroArch_iOS get].module_path = [_modules objectAtIndex:indexPath.row];
+   RAModuleInfo* info = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];
+   [RetroArch_iOS get].module_path = info.path;
+   
    [[RetroArch_iOS get] pushViewController:[[RADirectoryList alloc] initWithPath:nil]];
+}
+
+- (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath
+{
+   RAModuleInfo* info = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];
+   [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:info]];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
@@ -63,7 +82,10 @@ static void display_error_alert(NSString* message)
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"module"];
    cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"module"];
    
-   cell.textLabel.text = [[[_modules objectAtIndex:indexPath.row] lastPathComponent] stringByDeletingPathExtension];
+   RAModuleInfo* info = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];
+   cell.textLabel.text = [[info.path lastPathComponent] stringByDeletingPathExtension];
+   cell.accessoryType = (info.data) ? UITableViewCellAccessoryDetailDisclosureButton : UITableViewCellAccessoryNone;
+
 
    return cell;
 }
