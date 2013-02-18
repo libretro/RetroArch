@@ -53,7 +53,6 @@ static void display_error_alert(NSString* message)
    }
    
    [self setTitle:@"Choose Emulator"];
-   self.navigationItem.rightBarButtonItem = [RetroArch_iOS get].settings_button;
 
    return self;
 }

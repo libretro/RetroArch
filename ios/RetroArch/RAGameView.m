@@ -132,7 +132,7 @@ bool ios_load_game(const char* path)
    [RASettingsList refreshConfigFile];
    
    const char* const sd = [[RetroArch_iOS get].system_directory UTF8String];
-   const char* const cf =[[RetroArch_iOS get].config_file_path UTF8String];
+   const char* const cf =[[RetroArch_iOS get].configFilePath UTF8String];
    const char* const libretro = [[RetroArch_iOS get].module_path UTF8String];
 
    struct rarch_main_wrap main_wrapper = {path, sd, sd, cf, libretro};

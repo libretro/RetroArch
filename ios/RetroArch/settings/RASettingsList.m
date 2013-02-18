@@ -93,7 +93,7 @@ static RASettingData* subpath_setting(config_file_t* config, NSString* name, NSS
 @implementation RASettingsList
 - (id)init
 {
-   config_file_t* config = config_file_new([[RetroArch_iOS get].config_file_path UTF8String]);
+   config_file_t* config = config_file_new([[RetroArch_iOS get].configFilePath UTF8String]);
 
    NSString* overlay_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/overlays/"];
    NSString* shader_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/shaders/"];
@@ -181,14 +181,14 @@ static RASettingData* subpath_setting(config_file_t* config, NSString* name, NSS
 
 - (void)writeToDisk
 {
-   config_file_t* config = config_file_new([[RetroArch_iOS get].config_file_path UTF8String]);
+   config_file_t* config = config_file_new([[RetroArch_iOS get].configFilePath UTF8String]);
    config = config ? config : config_file_new(0);
 
    config_set_string(config, "system_directory", [[RetroArch_iOS get].system_directory UTF8String]);
 
    [self writeSettings:nil toConfig:config];
 
-   config_file_write(config, [[RetroArch_iOS get].config_file_path UTF8String]);
+   config_file_write(config, [[RetroArch_iOS get].configFilePath UTF8String]);
    config_file_free(config);
 }
 

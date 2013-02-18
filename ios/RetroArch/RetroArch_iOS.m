@@ -63,21 +63,29 @@ extern uint32_t ios_current_touch_count;
    _window.rootViewController = theView;
 }
 
+- (NSString*)configFilePath
+{
+   if (self.module_path)
+   {
+      return [NSString stringWithFormat:@"%@/%@.cfg", self.system_directory, [[self.module_path lastPathComponent] stringByDeletingPathExtension]];
+   }
+   
+   return nil;
+}
+
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
    // TODO: Relocate this!
    self.system_directory = @"/var/mobile/Library/RetroArch/";
    mkdir([self.system_directory UTF8String], 0755);
-   
-   self.config_file_path = [self.system_directory stringByAppendingPathComponent:@"retroarch.cfg"];
-      
+         
    // Load icons
    self.file_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_file" ofType:@"png"]];
    self.folder_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_dir" ofType:@"png"]];
 
    // Load buttons
    self.settings_button = [[UIBarButtonItem alloc]
-                          initWithTitle:@"Settings"
+                          initWithTitle:@"Module Settings"
                           style:UIBarButtonItemStyleBordered
                           target:nil action:nil];
    self.settings_button.target = self;
