@@ -140,7 +140,7 @@ For more information about them, see the included
 - Gambatte (Game Boy | Super Game Boy | Game Boy Color) [version 0.5.0 WIP]
 - Genesis Plus GX (Sega SG-1000 | Master System | Game Gear | Genesis/Mega Drive |
   Sega CD) [version 1.7.3]
-- SNES9x Next (Super Nintendo/Super Famicom)
+- SNES9x Next (Super Nintendo/Super Famicom) (v1.52.4)
 - VBA Next (Game Boy Advance) (*)
 - Prboom (for playing Doom 1/Doom 2/Ultimate Doom/Final Doom)
 - Mednafen PCE Fast (PC Engine/PC Engine CD/Turbografx 16)
