@@ -54,12 +54,14 @@ static bool is_syncing = true;
    _notifyButton = [[UIButton alloc] initWithFrame:CGRectMake(tenpct * 4.0f, 0, tenpct * 2.0f, size.height / 10.0f)];
    _notifyButton.backgroundColor = [UIColor redColor];
    _notifyButton.opaque = NO;
+   _notifyButton.userInteractionEnabled = NO;
 
    _notifyLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, size.width, size.height / 10.0f)];
    _notifyLabel.backgroundColor = [UIColor colorWithRed:0.2f green:0.2f blue: 0.5f alpha:0.5f];
    _notifyLabel.text = @"Triple tap to exit.";
    _notifyLabel.textAlignment = NSTextAlignmentCenter;
    _notifyLabel.opaque = NO;
+   _notifyLabel.userInteractionEnabled = NO;
   
    [self.view addSubview:_notifyButton];
    [self.view addSubview:_notifyLabel];
