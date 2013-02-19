@@ -366,7 +366,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
    if (!g_extern.audio_active)
       return false;
 
-   const sample_t *output_data = NULL;
+   const float *output_data = NULL;
    unsigned output_frames      = 0;
 
    struct resampler_data src_data = {0};

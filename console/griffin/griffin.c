@@ -393,10 +393,12 @@ THREAD
 #include "../../thread/xenon_sdl_threads.c"
 #elif defined(HAVE_THREADS)
 #include "../../thread.c"
+#include "../../gfx/thread_wrapper.c"
 #ifndef RARCH_CONSOLE
 #include "../../autosave.c"
 #endif
 #endif
+
 
 /*============================================================
 NETPLAY

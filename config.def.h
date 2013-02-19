@@ -218,6 +218,9 @@ static const bool disable_composition = false;
 // Video VSYNC (recommended)
 static const bool vsync = true;
 
+// Threaded video. Will possibly increase performance significantly at cost of worse synchronization and latency.
+static const bool video_threaded = false;
+
 // Smooths picture
 static const bool video_smooth = true;
 
