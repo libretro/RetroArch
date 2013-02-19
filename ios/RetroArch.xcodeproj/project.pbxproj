@@ -80,6 +80,7 @@
 		96AFAFAC16C1E279009DE44C /* state_tracker.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF7B16C1E00A009DE44C /* state_tracker.c */; };
 		96AFAFAD16C1EEE9009DE44C /* sinc.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEF716C1DC73009DE44C /* sinc.c */; };
 		96AFAFD416C1FBC0009DE44C /* input_common.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFC916C1FBC0009DE44C /* input_common.c */; };
+		96C19C2216D2F3BA00FE8D5A /* RADirectoryFilterList.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2116D2F3BA00FE8D5A /* RADirectoryFilterList.m */; };
 		96CF015016C2C0B700ABF9C9 /* overlay.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFCE16C1FBC0009DE44C /* overlay.c */; };
 		96CF015C16C2F72900ABF9C9 /* ios_input.c in Sources */ = {isa = PBXBuildFile; fileRef = 96CF015B16C2F72900ABF9C9 /* ios_input.c */; };
 /* End PBXBuildFile section */
@@ -223,6 +224,7 @@
 		96AFAFCA16C1FBC0009DE44C /* input_common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = input_common.h; sourceTree = "<group>"; };
 		96AFAFCE16C1FBC0009DE44C /* overlay.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = overlay.c; sourceTree = "<group>"; };
 		96AFAFCF16C1FBC0009DE44C /* overlay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = overlay.h; sourceTree = "<group>"; };
+		96C19C2116D2F3BA00FE8D5A /* RADirectoryFilterList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RADirectoryFilterList.m; sourceTree = "<group>"; };
 		96CF015B16C2F72900ABF9C9 /* ios_input.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ios_input.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -301,6 +303,7 @@
 				96366C6F16CAF62200D64A22 /* settings */,
 				96AFAE3416C1D4EA009DE44C /* Supporting Files */,
 				96CF015B16C2F72900ABF9C9 /* ios_input.c */,
+				96C19C2116D2F3BA00FE8D5A /* RADirectoryFilterList.m */,
 				963F5AC416CC523B009BBD19 /* RADirectoryList.m */,
 				963F5AC516CC523B009BBD19 /* RAGameView.m */,
 				96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */,
@@ -667,6 +670,7 @@
 				963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */,
 				963F5AC916CC523B009BBD19 /* RAModuleList.m in Sources */,
 				96096DD816D1ABAF00BF4499 /* RAModuleInfoList.m in Sources */,
+				96C19C2216D2F3BA00FE8D5A /* RADirectoryFilterList.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

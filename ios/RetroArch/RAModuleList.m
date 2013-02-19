@@ -6,16 +6,6 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
-static void display_error_alert(NSString* message)
-{
-   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
-                                             message:message
-                                             delegate:nil
-                                             cancelButtonTitle:@"OK"
-                                             otherButtonTitles:nil];
-   [alert show];
-}
-
 @implementation RAModuleList
 {
    NSMutableArray* _modules;
@@ -38,7 +28,7 @@ static void display_error_alert(NSString* message)
    
    if (moduleList == nil || [moduleList count] == 0)
    {
-      display_error_alert(@"No libretro cores were found.");
+      [RetroArch_iOS displayErrorMessage:@"No libretro cores were found."];
    }
    
    // Load the modules with their data
@@ -62,7 +52,7 @@ static void display_error_alert(NSString* message)
    RAModuleInfo* info = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];
    [RetroArch_iOS get].module_path = info.path;
    
-   [[RetroArch_iOS get] pushViewController:[[RADirectoryList alloc] initWithPath:nil]];
+   [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:nil]];
 }
 
 - (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath

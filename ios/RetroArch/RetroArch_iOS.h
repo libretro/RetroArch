@@ -12,6 +12,8 @@ extern NSString* const GSEventKeyUpNotification;
 
 @interface RetroArch_iOS : UIResponder <UIApplicationDelegate>
 
++ (void)displayErrorMessage:(NSString*)message;
+
 + (RetroArch_iOS*)get;
 - (void)runGame:(NSString*)path;
 - (void)gameHasExited;

@@ -27,6 +27,16 @@ extern uint32_t ios_current_touch_count;
    UINavigationController* _navigator;
 }
 
++ (void)displayErrorMessage:(NSString*)message
+{
+   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
+                                             message:message
+                                             delegate:nil
+                                             cancelButtonTitle:@"OK"
+                                             otherButtonTitles:nil];
+   [alert show];
+}
+
 + (RetroArch_iOS*)get
 {
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];

@@ -6,6 +6,11 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
+static BOOL is_file(NSString* path)
+{
+   return [[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:nil];
+}
+
 static BOOL is_directory(NSString* path)
 {
    BOOL result = NO;
@@ -19,7 +24,22 @@ static BOOL is_directory(NSString* path)
    NSArray* _list;
 }
 
-- (id)initWithPath:(NSString*)path
++ (id)directoryListWithPath:(NSString*)path
+{
+   if (path && !is_directory(path))
+   {
+      [RetroArch_iOS displayErrorMessage:@"Browsed path is not a directory."];
+      path = nil;
+   }
+   
+   if (path && is_file([path stringByAppendingPathComponent:@".rafilter"]))
+      return [[RADirectoryFilterList alloc] initWithPath:path];
+   else
+      return [[RADirectoryList alloc] initWithPath:path filter:nil];
+   
+}
+
+- (id)initWithPath:(NSString*)path filter:(NSRegularExpression*)regex
 {
    self = [super initWithStyle:UITableViewStylePlain];
 
@@ -34,6 +54,17 @@ static BOOL is_directory(NSString* path)
 
    _list = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:_path error:nil];
    _list = [_path stringsByAppendingPaths:_list];
+   
+   if (regex)
+   {
+      _list = [_list filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^(id object, NSDictionary* bindings)
+      {
+         if (is_directory(object))
+            return YES;
+         
+         return (BOOL)([regex numberOfMatchesInString:[object lastPathComponent] options:0 range:NSMakeRange(0, [[object lastPathComponent] length])] != 0);
+      }]];
+   }
    
    _list = [_list sortedArrayUsingComparator:^(id left, id right)
    {
@@ -57,7 +88,7 @@ static BOOL is_directory(NSString* path)
 
    if(is_directory(path))
    {
-      [[RetroArch_iOS get] pushViewController:[[RADirectoryList alloc] initWithPath:path]];
+      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:path]];
    }
    else
    {
