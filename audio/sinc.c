@@ -105,9 +105,9 @@
 
 typedef struct rarch_sinc_resampler
 {
-   sample_t *phase_table;
-   sample_t *buffer_l;
-   sample_t *buffer_r;
+   float *phase_table;
+   float *buffer_l;
+   float *buffer_r;
 
    unsigned taps;
 
@@ -116,7 +116,7 @@ typedef struct rarch_sinc_resampler
 
    // A buffer for phase_table, buffer_l and buffer_r are created in a single calloc().
    // Ensure that we get as good cache locality as we can hope for.
-   sample_t *main_buffer;
+   float *main_buffer;
 } rarch_sinc_resampler_t;
 
 static inline double sinc(double val)
@@ -405,8 +405,8 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
 
    uint32_t ratio = PHASES / data->ratio;
 
-   const sample_t *input = data->data_in;
-   sample_t *output      = data->data_out;
+   const float *input = data->data_in;
+   float *output      = data->data_out;
    size_t frames         = data->input_frames;
    size_t out_frames     = 0;
 
@@ -477,7 +477,7 @@ static void *resampler_sinc_new(double bandwidth_mod)
 #endif
    size_t elems = phase_elems + 4 * re->taps;
 
-   re->main_buffer = (sample_t*)aligned_alloc__(128, sizeof(sample_t) * elems);
+   re->main_buffer = (float*)aligned_alloc__(128, sizeof(float) * elems);
    if (!re->main_buffer)
       goto error;
 

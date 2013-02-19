@@ -1717,7 +1717,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_init_textures(gl, video);
    gl_init_textures_data(gl);
 
-   context_input_driver_func(input, input_data);
+   if (input && input_data)
+      context_input_driver_func(input, input_data);
    
 #ifndef HAVE_RMENU
    // Comes too early for console - moved to gl_start
