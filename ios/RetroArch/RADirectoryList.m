@@ -41,10 +41,10 @@ static NSString* check_path(NSString* path)
 {
    path = check_path(path);
    
-   if (path && ra_ios_is_file([path stringByAppendingPathComponent:@".rafilter"]))
-      return [[RADirectoryFilterList alloc] initWithPath:path];
-   else
-      return [RADirectoryList directoryListWithPath:path filter:nil];
+   NSRegularExpression* expr = nil;
+   RADirectoryFilterList* filterList = [RADirectoryFilterList directoryFilterListAtPath:path useExpression:&expr];
+
+   return filterList ? filterList : [RADirectoryList directoryListWithPath:path filter:expr];
 }
 
 + (id)directoryListWithPath:(NSString*)path filter:(NSRegularExpression*)regex
