@@ -20,12 +20,9 @@
 @interface RAModuleList : UITableViewController
 @end
 
-@interface RADirectoryFilterList : UITableViewController
-- (id)initWithPath:(NSString*)path;
-@end
-
 @interface RADirectoryList : UITableViewController
 + (id)directoryListWithPath:(NSString*)path;
++ (id)directoryListWithPath:(NSString*)path filter:(NSRegularExpression*)regex;
 - (id)initWithPath:(NSString*)path filter:(NSRegularExpression*)regex;
 @end
 

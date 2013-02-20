@@ -6,16 +6,29 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
-static BOOL is_file(NSString* path)
+#import "browser.h"
+
+BOOL ra_ios_is_file(NSString* path)
 {
    return [[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:nil];
 }
 
-static BOOL is_directory(NSString* path)
+BOOL ra_ios_is_directory(NSString* path)
 {
    BOOL result = NO;
    [[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&result];
    return result;
+}
+
+static NSString* check_path(NSString* path)
+{
+   if (path && !ra_ios_is_directory(path))
+   {
+      [RetroArch_iOS displayErrorMessage:@"Browsed path is not a directory."];
+      return nil;
+   }
+   else
+      return path;
 }
 
 @implementation RADirectoryList
@@ -26,17 +39,23 @@ static BOOL is_directory(NSString* path)
 
 + (id)directoryListWithPath:(NSString*)path
 {
-   if (path && !is_directory(path))
-   {
-      [RetroArch_iOS displayErrorMessage:@"Browsed path is not a directory."];
-      path = nil;
-   }
+   path = check_path(path);
    
-   if (path && is_file([path stringByAppendingPathComponent:@".rafilter"]))
+   if (path && ra_ios_is_file([path stringByAppendingPathComponent:@".rafilter"]))
       return [[RADirectoryFilterList alloc] initWithPath:path];
    else
-      return [[RADirectoryList alloc] initWithPath:path filter:nil];
-   
+      return [RADirectoryList directoryListWithPath:path filter:nil];
+}
+
++ (id)directoryListWithPath:(NSString*)path filter:(NSRegularExpression*)regex
+{
+   path = check_path(path);
+
+   NSString* coverDir = path ? [path stringByAppendingPathComponent:@".coverart"] : nil;
+   if (coverDir && ra_ios_is_directory(coverDir) && ra_ios_is_file([coverDir stringByAppendingPathComponent:@"template.png"]))
+      return [[RADirectoryGrid alloc] initWithPath:path filter:regex];
+   else
+      return [[RADirectoryList alloc] initWithPath:path filter:regex];
 }
 
 - (id)initWithPath:(NSString*)path filter:(NSRegularExpression*)regex
@@ -45,9 +64,9 @@ static BOOL is_directory(NSString* path)
 
    if (path == nil)
    {
-      if (is_directory(@"/var/mobile/RetroArchGames"))    path = @"/var/mobile/RetroArchGames";
-      else if (is_directory(@"/var/mobile"))              path = @"/var/mobile";
-      else                                                path = @"/";
+      if (ra_ios_is_directory(@"/var/mobile/RetroArchGames"))  path = @"/var/mobile/RetroArchGames";
+      else if (ra_ios_is_directory(@"/var/mobile"))            path = @"/var/mobile";
+      else                                                     path = @"/";
    }
 
    _path = path;
@@ -59,7 +78,7 @@ static BOOL is_directory(NSString* path)
    {
       _list = [_list filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^(id object, NSDictionary* bindings)
       {
-         if (is_directory(object))
+         if (ra_ios_is_directory(object))
             return YES;
          
          return (BOOL)([regex numberOfMatchesInString:[object lastPathComponent] options:0 range:NSMakeRange(0, [[object lastPathComponent] length])] != 0);
@@ -68,8 +87,8 @@ static BOOL is_directory(NSString* path)
    
    _list = [_list sortedArrayUsingComparator:^(id left, id right)
    {
-      const BOOL left_is_dir = is_directory((NSString*)left);
-      const BOOL right_is_dir = is_directory((NSString*)right);
+      const BOOL left_is_dir = ra_ios_is_directory((NSString*)left);
+      const BOOL right_is_dir = ra_ios_is_directory((NSString*)right);
       
       return (left_is_dir != right_is_dir) ?
                (left_is_dir ? -1 : 1) :
@@ -86,14 +105,10 @@ static BOOL is_directory(NSString* path)
 {
    NSString* path = [_list objectAtIndex: indexPath.row];
 
-   if(is_directory(path))
-   {
+   if(ra_ios_is_directory(path))
       [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:path]];
-   }
    else
-   {
       [[RetroArch_iOS get] runGame:path];
-   }
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
@@ -104,7 +119,7 @@ static BOOL is_directory(NSString* path)
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
    NSString* path = [_list objectAtIndex: indexPath.row];
-   BOOL isdir = is_directory(path);
+   BOOL isdir = ra_ios_is_directory(path);
 
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"path"];
    cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"path"];

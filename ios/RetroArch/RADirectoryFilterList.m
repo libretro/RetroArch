@@ -6,6 +6,8 @@
 //  Copyright (c) 2013 RetroArch. All rights reserved.
 //
 
+#import "browser.h"
+
 @implementation RADirectoryFilterList
 {
    NSString* _path;
@@ -49,7 +51,7 @@
          NSRegularExpression* expr = [NSRegularExpression regularExpressionWithPattern:[NSString stringWithUTF8String:regex] options:0 error:nil];
          free(regex);
       
-         [[RetroArch_iOS get] pushViewController:[[RADirectoryList alloc] initWithPath:_path filter:expr]];
+         [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:_path filter:expr]];
       }
    }
 }
