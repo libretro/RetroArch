@@ -515,6 +515,8 @@ static const bool input_autodetect_enable = true;
 #define RETRO_LBL_VOLUME_UP "Volume Up"
 #define RETRO_LBL_VOLUME_DOWN "Volume Down"
 #define RETRO_LBL_OVERLAY_NEXT "Next Overlay"
+#define RETRO_LBL_DISK_EJECT_TOGGLE "Disk Eject Toggle"
+#define RETRO_LBL_DISK_NEXT "Disk Swap Next"
 
 // Player 1
 static const struct retro_keybind retro_keybinds_1[] = {
@@ -583,6 +585,8 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_VOLUME_UP,                RETRO_LBL_VOLUME_UP,            RETROK_KP_PLUS, NO_BTN,      AXIS_NONE },
    { true, RARCH_VOLUME_DOWN,              RETRO_LBL_VOLUME_DOWN,          RETROK_KP_MINUS,NO_BTN,      AXIS_NONE },
    { true, RARCH_OVERLAY_NEXT,             RETRO_LBL_OVERLAY_NEXT,         RETROK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_DISK_EJECT_TOGGLE,        RETRO_LBL_DISK_EJECT_TOGGLE,    RETROK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_DISK_NEXT,                RETRO_LBL_DISK_NEXT,            RETROK_UNKNOWN, NO_BTN,      AXIS_NONE },
 };
 
 // Player 2-5

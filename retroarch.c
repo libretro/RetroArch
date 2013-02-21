@@ -2390,6 +2390,77 @@ static void check_cheats(void)
    old_pressed_toggle = pressed_toggle;
 }
 
+static void check_disk(void)
+{
+   const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
+   if (!control->get_num_images)
+      return;
+
+   static bool old_pressed_eject;
+   static bool old_pressed_next;
+
+   bool pressed_eject = input_key_pressed_func(RARCH_DISK_EJECT_TOGGLE);
+   bool pressed_next  = input_key_pressed_func(RARCH_DISK_NEXT);
+   bool error = false;
+   char msg[256];
+   *msg = '\0';
+
+   if (pressed_eject && !old_pressed_eject)
+   {
+      bool new_state = !control->get_eject_state();
+      if (control->set_eject_state(new_state))
+         snprintf(msg, sizeof(msg), "%s virtual disk tray.", new_state ? "Ejected" : "Closed");
+      else
+      {
+         error = true;
+         snprintf(msg, sizeof(msg), "Failed to %s virtual disk tray.", new_state ? "eject" : "close");
+      }
+   }
+   else if (pressed_next && !old_pressed_next)
+   {
+      unsigned num_disks = control->get_num_images();
+      unsigned current   = control->get_image_index();
+      if (num_disks && num_disks != UINT_MAX)
+      {
+         // Use "no disk" state when index == num_disks.
+         unsigned next_index = current >= num_disks ? 0 : ((current + 1) % (num_disks + 1));
+         if (control->set_image_index(next_index))
+         {
+            if (next_index < num_disks)
+               snprintf(msg, sizeof(msg), "Setting disk %u of %u in tray.", next_index + 1, num_disks);
+            else
+               snprintf(msg, sizeof(msg), "Removed disk from tray.");
+         }
+         else
+         {
+            if (next_index < num_disks)
+               snprintf(msg, sizeof(msg), "Failed to set disk %u of %u.", next_index + 1, num_disks);
+            else
+               snprintf(msg, sizeof(msg), "Failed to remove disk from tray.");
+            error = true;
+         }
+      }
+      else
+      {
+         snprintf(msg, sizeof(msg), "Got invalid disk index from libretro.");
+         error = true;
+      }
+   }
+
+   if (*msg)
+   {
+      if (error)
+         RARCH_ERR("%s\n", msg);
+      else
+         RARCH_LOG("%s\n", msg);
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   }
+
+   old_pressed_eject = pressed_eject;
+   old_pressed_next  = pressed_next;
+}
+
 #if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
 static void check_screenshot(void)
 {
@@ -2562,6 +2633,7 @@ static void do_state_checks(void)
      
       check_shader_dir();
       check_cheats();
+      check_disk();
 
 #ifdef HAVE_DYLIB
       check_dsp_config();
