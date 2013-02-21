@@ -32,15 +32,21 @@
    {
       config_file_t* configFile = config_file_new([[path stringByAppendingPathComponent:@".rafilter"] UTF8String]);
       
-      unsigned filterCount = 0;
-      char* regexValue= 0;
-      
-      if (configFile && config_get_uint(configFile, "filter_count", &filterCount) && filterCount > 1)
-         return [[RADirectoryFilterList alloc] initWithPath:path config:configFile];
-      else if (regex && filterCount == 1 && config_get_string(configFile, "filter_1_regex", &regexValue))
-         *regex = [NSRegularExpression regularExpressionWithPattern:[NSString stringWithUTF8String:regexValue] options:0 error:nil];
-      
-      free(regexValue);
+      if (configFile)
+      {
+         unsigned filterCount = 0;
+         if (configFile && config_get_uint(configFile, "filter_count", &filterCount) && filterCount > 1)
+            return [[RADirectoryFilterList alloc] initWithPath:path config:configFile];
+
+         char* regexValue = 0;
+         if (regex && filterCount == 1 && config_get_string(configFile, "filter_1_regex", &regexValue))
+         {
+            *regex = [NSRegularExpression regularExpressionWithPattern:[NSString stringWithUTF8String:regexValue] options:0 error:nil];
+            free(regexValue);
+         }
+         
+         config_file_free(configFile);
+      }
    }
 
    return nil;
