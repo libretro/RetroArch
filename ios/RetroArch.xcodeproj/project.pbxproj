@@ -82,6 +82,7 @@
 		96AFAFD416C1FBC0009DE44C /* input_common.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFC916C1FBC0009DE44C /* input_common.c */; };
 		96C19C2216D2F3BA00FE8D5A /* RADirectoryFilterList.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2116D2F3BA00FE8D5A /* RADirectoryFilterList.m */; };
 		96C19C2416D453BA00FE8D5A /* RADirectoryGrid.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2316D453BA00FE8D5A /* RADirectoryGrid.m */; };
+		96C19C2916D5A56500FE8D5A /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2816D5A56400FE8D5A /* browser.m */; };
 		96CF015016C2C0B700ABF9C9 /* overlay.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFCE16C1FBC0009DE44C /* overlay.c */; };
 		96CF015C16C2F72900ABF9C9 /* ios_input.c in Sources */ = {isa = PBXBuildFile; fileRef = 96CF015B16C2F72900ABF9C9 /* ios_input.c */; };
 /* End PBXBuildFile section */
@@ -229,6 +230,7 @@
 		96C19C2316D453BA00FE8D5A /* RADirectoryGrid.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RADirectoryGrid.m; sourceTree = "<group>"; };
 		96C19C2516D455BE00FE8D5A /* browser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = browser.h; sourceTree = "<group>"; };
 		96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rarch_wrapper.h; sourceTree = "<group>"; };
+		96C19C2816D5A56400FE8D5A /* browser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = browser.m; sourceTree = "<group>"; };
 		96CF015B16C2F72900ABF9C9 /* ios_input.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ios_input.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -550,6 +552,7 @@
 			isa = PBXGroup;
 			children = (
 				96C19C2516D455BE00FE8D5A /* browser.h */,
+				96C19C2816D5A56400FE8D5A /* browser.m */,
 				96C19C2116D2F3BA00FE8D5A /* RADirectoryFilterList.m */,
 				96C19C2316D453BA00FE8D5A /* RADirectoryGrid.m */,
 				963F5AC416CC523B009BBD19 /* RADirectoryList.m */,
@@ -687,6 +690,7 @@
 				96096DD816D1ABAF00BF4499 /* RAModuleInfoList.m in Sources */,
 				96C19C2216D2F3BA00FE8D5A /* RADirectoryFilterList.m in Sources */,
 				96C19C2416D453BA00FE8D5A /* RADirectoryGrid.m in Sources */,
+				96C19C2916D5A56500FE8D5A /* browser.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

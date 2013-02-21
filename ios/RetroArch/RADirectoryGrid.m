@@ -18,19 +18,9 @@
 
 - (id)initWithPath:(NSString*)path filter:(NSRegularExpression*)regex
 {
-   UICollectionViewFlowLayout* layout = [UICollectionViewFlowLayout new];
-   layout.itemSize = CGSizeMake(175, 248);
-   self = [super initWithCollectionViewLayout:layout];
+   _path = path ? path : ra_ios_get_browser_root();
 
-   if (path == nil)
-   {
-      if (ra_ios_is_directory(@"/var/mobile/RetroArchGames"))  path = @"/var/mobile/RetroArchGames";
-      else if (ra_ios_is_directory(@"/var/mobile"))            path = @"/var/mobile";
-      else                                                     path = @"/";
-   }
-
-   _path = path;
-
+   // Load template image
    NSString* templateName = [NSString stringWithFormat:@"%@/.coverart/template.png", _path];
    _templateImage = [UIImage imageWithContentsOfFile:templateName];
    
@@ -40,29 +30,12 @@
       _templateImage = [RetroArch_iOS get].file_icon;
    }
 
-   _list = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:_path error:nil];
-   _list = [_path stringsByAppendingPaths:_list];
-   
-   if (regex)
-   {
-      _list = [_list filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^(id object, NSDictionary* bindings)
-      {
-         if (ra_ios_is_directory(object))
-            return YES;
-         
-         return (BOOL)([regex numberOfMatchesInString:[object lastPathComponent] options:0 range:NSMakeRange(0, [[object lastPathComponent] length])] != 0);
-      }]];
-   }
-   
-   _list = [_list sortedArrayUsingComparator:^(id left, id right)
-   {
-      const BOOL left_is_dir = ra_ios_is_directory((NSString*)left);
-      const BOOL right_is_dir = ra_ios_is_directory((NSString*)right);
-      
-      return (left_is_dir != right_is_dir) ?
-               (left_is_dir ? -1 : 1) :
-               ([left caseInsensitiveCompare:right]);
-   }];
+   //
+   UICollectionViewFlowLayout* layout = [UICollectionViewFlowLayout new];
+   layout.itemSize = _templateImage.size;
+   self = [super initWithCollectionViewLayout:layout];
+
+   _list = ra_ios_list_directory(_path, regex);
 
    self.navigationItem.rightBarButtonItem = [RetroArch_iOS get].settings_button;
    [self setTitle: [_path lastPathComponent]];
@@ -88,13 +61,9 @@
    NSString* path = [_list objectAtIndex: indexPath.row];
 
    if(ra_ios_is_directory(path))
-   {
       [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:path]];
-   }
    else
-   {
       [[RetroArch_iOS get] runGame:path];
-   }
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
