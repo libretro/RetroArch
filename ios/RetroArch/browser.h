@@ -20,6 +20,7 @@ extern NSString* ra_ios_get_browser_root();
 
 @interface RADirectoryItem : NSObject
 @property (strong) NSString* path;
+@property (strong) NSString* coverPath;
 @property bool isDirectory;
 @end
 

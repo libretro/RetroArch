@@ -18,7 +18,7 @@
 #import "browser.h"
 
 @implementation RADirectoryItem
-+ (RADirectoryItem*)directoryItemFromPath:(const char*)thePath
++ (RADirectoryItem*)directoryItemFromPath:(const char*)thePath checkForCovers:(BOOL)checkCovers
 {
    RADirectoryItem* result = [RADirectoryItem new];
    result.path = [NSString stringWithUTF8String:thePath];
@@ -26,6 +26,14 @@
    struct stat statbuf;
    if (stat(thePath, &statbuf) == 0)
       result.isDirectory = S_ISDIR(statbuf.st_mode);
+
+   if (checkCovers && !result.isDirectory)
+   {
+      result.coverPath = [NSString stringWithFormat:@"%@/.coverart/%@.png", [result.path stringByDeletingLastPathComponent], [[result.path lastPathComponent] stringByDeletingPathExtension]];
+      
+      if (!ra_ios_is_file(result.coverPath))
+         result.coverPath = nil;
+   }
    
    return result;
 }
@@ -65,7 +73,7 @@ NSArray* ra_ios_list_directory(NSString* path, NSRegularExpression* regex)
       cpath[cpath_end] = 0;
       strcat(cpath, item->d_name);
       
-      [result addObject:[RADirectoryItem directoryItemFromPath:cpath]];
+      [result addObject:[RADirectoryItem directoryItemFromPath:cpath checkForCovers:YES]];
    }
    
    closedir(dir);

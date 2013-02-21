@@ -39,8 +39,10 @@
 
    self.navigationItem.rightBarButtonItem = [RetroArch_iOS get].settings_button;
    [self setTitle: [_path lastPathComponent]];
-   
-   [self.collectionView registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:@"filecell"];
+
+   [self.collectionView registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:@"dircell"];
+   [self.collectionView registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:@"textcell"];
+   [self.collectionView registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:@"imagecell"];
    
    return self;
 }
@@ -55,7 +57,6 @@
    return [_list count];
 }
 
-
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
    RADirectoryItem* path = [_list objectAtIndex: indexPath.row];
@@ -69,17 +70,42 @@
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
    RADirectoryItem* path = [_list objectAtIndex: indexPath.row];
+   UICollectionViewCell* cell = nil;
    
-   UICollectionViewCell* cell = [self.collectionView dequeueReusableCellWithReuseIdentifier:@"filecell" forIndexPath:indexPath];
    if (path.isDirectory)
-      cell.backgroundView = [[UIImageView alloc] initWithImage:[RetroArch_iOS get].folder_icon];
+   {
+      cell = [self.collectionView dequeueReusableCellWithReuseIdentifier:@"dircell" forIndexPath:indexPath];
+
+      if (!cell.backgroundView)
+      {
+         cell.backgroundView = [[UIImageView alloc] initWithImage:[RetroArch_iOS get].folder_icon];
+         ((UIImageView*)cell.backgroundView).contentMode = UIViewContentModeScaleAspectFit;
+      }
+   }
+   else if (path.coverPath)
+   {
+      cell = [self.collectionView dequeueReusableCellWithReuseIdentifier:@"imagecell" forIndexPath:indexPath];
+      
+      if (!cell.backgroundView)
+      {
+         cell.backgroundView = [UIImageView new];
+         ((UIImageView*)cell.backgroundView).contentMode = UIViewContentModeScaleAspectFit;         
+      }
+      
+      ((UIImageView*)cell.backgroundView).image = [UIImage imageWithContentsOfFile:path.coverPath];
+   }
    else
    {
-      NSString* img = [NSString stringWithFormat:@"%@/.coverart/%@.png", _path, [[path.path lastPathComponent] stringByDeletingPathExtension]];
-      if (ra_ios_is_file(img))
-         cell.backgroundView = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:img]];
-      else
-         cell.backgroundView = [[UIImageView alloc] initWithImage:_templateImage];
+      cell = [self.collectionView dequeueReusableCellWithReuseIdentifier:@"textcell" forIndexPath:indexPath];
+      
+      if (!cell.backgroundView)
+      {
+         cell.backgroundView = [UILabel new];
+         ((UILabel*)cell.backgroundView).numberOfLines = 0;
+         ((UILabel*)cell.backgroundView).textAlignment = NSTextAlignmentCenter;
+      }
+      
+      ((UILabel*)cell.backgroundView).text = [path.path lastPathComponent];
    }
    
    return cell;
