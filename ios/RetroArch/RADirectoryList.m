@@ -46,11 +46,14 @@ static NSString* check_path(NSString* path)
 {
    path = check_path(path);
 
-   NSString* coverDir = path ? [path stringByAppendingPathComponent:@".coverart"] : nil;
-   if (coverDir && ra_ios_is_directory(coverDir) && ra_ios_is_file([coverDir stringByAppendingPathComponent:@"template.png"]))
-      return [[RADirectoryGrid alloc] initWithPath:path filter:regex];
-   else
-      return [[RADirectoryList alloc] initWithPath:path filter:regex];
+   if ([UICollectionViewController instancesRespondToSelector:@selector(initWithCollectionViewLayout:)])
+   {
+      NSString* coverDir = path ? [path stringByAppendingPathComponent:@".coverart"] : nil;
+      if (coverDir && ra_ios_is_directory(coverDir) && ra_ios_is_file([coverDir stringByAppendingPathComponent:@"template.png"]))
+         return [[RADirectoryGrid alloc] initWithPath:path filter:regex];
+   }
+
+   return [[RADirectoryList alloc] initWithPath:path filter:regex];
 }
 
 - (id)initWithPath:(NSString*)path filter:(NSRegularExpression*)regex
