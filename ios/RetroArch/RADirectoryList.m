@@ -71,12 +71,12 @@ static NSString* check_path(NSString* path)
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   NSString* path = [_list objectAtIndex: indexPath.row];
+   RADirectoryItem* path = [_list objectAtIndex: indexPath.row];
 
-   if(ra_ios_is_directory(path))
-      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:path]];
+   if(path.isDirectory)
+      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:path.path]];
    else
-      [[RetroArch_iOS get] runGame:path];
+      [[RetroArch_iOS get] runGame:path.path];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
@@ -86,14 +86,13 @@ static NSString* check_path(NSString* path)
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   NSString* path = [_list objectAtIndex: indexPath.row];
-   BOOL isdir = ra_ios_is_directory(path);
+   RADirectoryItem* path = [_list objectAtIndex: indexPath.row];
 
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"path"];
    cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"path"];
-   cell.textLabel.text = [path lastPathComponent];
-   cell.accessoryType = (isdir) ? UITableViewCellAccessoryDisclosureIndicator : UITableViewCellAccessoryNone;
-   cell.imageView.image = (isdir) ? [RetroArch_iOS get].folder_icon : [RetroArch_iOS get].file_icon;
+   cell.textLabel.text = [path.path lastPathComponent];
+   cell.accessoryType = (path.isDirectory) ? UITableViewCellAccessoryDisclosureIndicator : UITableViewCellAccessoryNone;
+   cell.imageView.image = (path.isDirectory) ? [RetroArch_iOS get].folder_icon : [RetroArch_iOS get].file_icon;
    return cell;
 }
 

@@ -13,6 +13,25 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <dirent.h>
+#include <sys/stat.h>
+#import "browser.h"
+
+@implementation RADirectoryItem
++ (RADirectoryItem*)directoryItemFromPath:(const char*)thePath
+{
+   RADirectoryItem* result = [RADirectoryItem new];
+   result.path = [NSString stringWithUTF8String:thePath];
+
+   struct stat statbuf;
+   if (stat(thePath, &statbuf) == 0)
+      result.isDirectory = S_ISDIR(statbuf.st_mode);
+   
+   return result;
+}
+@end
+
+
 BOOL ra_ios_is_file(NSString* path)
 {
    return [[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:nil];
@@ -27,30 +46,50 @@ BOOL ra_ios_is_directory(NSString* path)
 
 NSArray* ra_ios_list_directory(NSString* path, NSRegularExpression* regex)
 {
-   NSArray* result = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:path error:nil];
-   result = [path stringsByAppendingPaths:result];
+   NSMutableArray* result = [NSMutableArray array];
+
+   // Build list
+   char* cpath = malloc([path length] + sizeof(struct dirent));
+   sprintf(cpath, "%s/", [path UTF8String]);
+   size_t cpath_end = strlen(cpath);
+
+   DIR* dir = opendir(cpath);
+   if (!dir)
+      return result;
    
-   if (regex)
+   for(struct dirent* item = readdir(dir); item; item = readdir(dir))
    {
-      result = [result filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^(id object, NSDictionary* bindings)
-      {
-         if (ra_ios_is_directory(object))
-            return YES;
-         
-         return (BOOL)([regex numberOfMatchesInString:[object lastPathComponent] options:0 range:NSMakeRange(0, [[object lastPathComponent] length])] != 0);
-      }]];
+      if (strcmp(item->d_name, ".") == 0 || strcmp(item->d_name, "..") == 0)
+         continue;
+      
+      cpath[cpath_end] = 0;
+      strcat(cpath, item->d_name);
+      
+      [result addObject:[RADirectoryItem directoryItemFromPath:cpath]];
    }
    
-   result = [result sortedArrayUsingComparator:^(id left, id right)
-   {
-      const BOOL left_is_dir = ra_ios_is_directory((NSString*)left);
-      const BOOL right_is_dir = ra_ios_is_directory((NSString*)right);
-      
-      return (left_is_dir != right_is_dir) ?
-               (left_is_dir ? -1 : 1) :
-               ([left caseInsensitiveCompare:right]);
-   }];
+   closedir(dir);
+   free(cpath);
    
+   // Filter and sort
+   if (regex)
+   {
+      [result filterUsingPredicate:[NSPredicate predicateWithBlock:^(RADirectoryItem* object, NSDictionary* bindings)
+      {
+         if (object.isDirectory)
+            return YES;
+         
+         return (BOOL)([regex numberOfMatchesInString:[object.path lastPathComponent] options:0 range:NSMakeRange(0, [[object.path lastPathComponent] length])] != 0);
+      }]];
+   }
+
+   [result sortUsingComparator:^(RADirectoryItem* left, RADirectoryItem* right)
+   {
+      return (left.isDirectory != right.isDirectory) ?
+               (left.isDirectory ? -1 : 1) :
+               ([left.path caseInsensitiveCompare:right.path]);
+   }];
+     
    return result;
 }
 

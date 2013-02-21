@@ -58,25 +58,24 @@
 
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
-   NSString* path = [_list objectAtIndex: indexPath.row];
+   RADirectoryItem* path = [_list objectAtIndex: indexPath.row];
 
-   if(ra_ios_is_directory(path))
-      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:path]];
+   if(path.isDirectory)
+      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:path.path]];
    else
-      [[RetroArch_iOS get] runGame:path];
+      [[RetroArch_iOS get] runGame:path.path];
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
-   NSString* path = [_list objectAtIndex: indexPath.row];
-   BOOL isdir = ra_ios_is_directory(path);
+   RADirectoryItem* path = [_list objectAtIndex: indexPath.row];
    
    UICollectionViewCell* cell = [self.collectionView dequeueReusableCellWithReuseIdentifier:@"filecell" forIndexPath:indexPath];
-   if (isdir)
+   if (path.isDirectory)
       cell.backgroundView = [[UIImageView alloc] initWithImage:[RetroArch_iOS get].folder_icon];
    else
    {
-      NSString* img = [NSString stringWithFormat:@"%@/.coverart/%@.png", _path, [[path lastPathComponent] stringByDeletingPathExtension]];
+      NSString* img = [NSString stringWithFormat:@"%@/.coverart/%@.png", _path, [[path.path lastPathComponent] stringByDeletingPathExtension]];
       if (ra_ios_is_file(img))
          cell.backgroundView = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:img]];
       else

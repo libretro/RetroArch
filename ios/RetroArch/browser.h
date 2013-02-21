@@ -18,6 +18,11 @@ extern BOOL ra_ios_is_file(NSString* path);
 extern NSArray* ra_ios_list_directory(NSString* path, NSRegularExpression* regex);
 extern NSString* ra_ios_get_browser_root();
 
+@interface RADirectoryItem : NSObject
+@property (strong) NSString* path;
+@property bool isDirectory;
+@end
+
 @interface RADirectoryGrid : UICollectionViewController
 - (id)initWithPath:(NSString*)path filter:(NSRegularExpression*)regex;
 @end
