@@ -78,6 +78,7 @@ extern uint32_t ios_current_touch_count;
 - (void)setViewer:(UIViewController*)theView
 {
    _navigator = nil;
+   [[UIApplication sharedApplication] setStatusBarHidden:theView ? YES : NO withAnimation:UIStatusBarAnimationSlide];
    _window.rootViewController = theView;
 }
 
