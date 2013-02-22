@@ -13,33 +13,24 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#import "RAConfig.h"
 #import "browser.h"
 
 @implementation RADirectoryGrid
 {
    NSString* _path;
    NSArray* _list;
-   
-   UIImage* _templateImage;
 }
 
 - (id)initWithPath:(NSString*)path filter:(NSRegularExpression*)regex
 {
    _path = path ? path : ra_ios_get_browser_root();
 
-   // Load template image
-   NSString* templateName = [NSString stringWithFormat:@"%@/.coverart/template.png", _path];
-   _templateImage = [UIImage imageWithContentsOfFile:templateName];
-   
-   if (!_templateImage)
-   {
-      [RetroArch_iOS displayErrorMessage:@"Coverart template.png is missing."];
-      _templateImage = [RetroArch_iOS get].file_icon;
-   }
-
    //
+   RAConfig* config = [[RAConfig alloc] initWithPath:[NSString stringWithFormat:@"%@/.coverart/.config", _path]];
+   
    UICollectionViewFlowLayout* layout = [UICollectionViewFlowLayout new];
-   layout.itemSize = _templateImage.size;
+   layout.itemSize = CGSizeMake([config getUintNamed:@"item_width" withDefault:100], [config getUintNamed:@"item_height" withDefault:100]);
    self = [super initWithCollectionViewLayout:layout];
 
    _list = ra_ios_list_directory(_path, regex);

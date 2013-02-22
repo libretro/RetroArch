@@ -49,7 +49,7 @@ static NSString* check_path(NSString* path)
    if ([UICollectionViewController instancesRespondToSelector:@selector(initWithCollectionViewLayout:)])
    {
       NSString* coverDir = path ? [path stringByAppendingPathComponent:@".coverart"] : nil;
-      if (coverDir && ra_ios_is_directory(coverDir) && ra_ios_is_file([coverDir stringByAppendingPathComponent:@"template.png"]))
+      if (coverDir && ra_ios_is_directory(coverDir))
          return [[RADirectoryGrid alloc] initWithPath:path filter:regex];
    }
 

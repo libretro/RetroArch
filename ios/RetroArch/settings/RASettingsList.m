@@ -15,31 +15,16 @@
 
 #import <objc/runtime.h>
 #import "settings.h"
-#include "config_file.h"
 
 @implementation RASettingData
 @end
 
-
-static NSString* get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue)
+static NSString* get_value_from_config(RAConfig* config, NSString* name, NSString* defaultValue)
 {
-   NSString* value = nil;
-
-   char* v = 0;
-   if (config && config_get_string(config, [name UTF8String], &v))
-   {
-      value = [[NSString alloc] initWithUTF8String:v];
-      free(v);
-   }
-   else
-   {
-      value = defaultValue;
-   }
-
-   return value;
+   return [config getStringNamed:name withDefault:defaultValue];
 }
 
-static RASettingData* boolean_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue)
+static RASettingData* boolean_setting(RAConfig* config, NSString* name, NSString* label, NSString* defaultValue)
 {
    RASettingData* result = [[RASettingData alloc] init];
    result.type = BooleanSetting;
@@ -49,7 +34,7 @@ static RASettingData* boolean_setting(config_file_t* config, NSString* name, NSS
    return result;
 }
 
-static RASettingData* button_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue)
+static RASettingData* button_setting(RAConfig* config, NSString* name, NSString* label, NSString* defaultValue)
 {
    RASettingData* result = [[RASettingData alloc] init];
    result.type = ButtonSetting;
@@ -68,7 +53,7 @@ static RASettingData* group_setting(NSString* label, NSArray* settings)
    return result;
 }
 
-static RASettingData* enumeration_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, NSArray* values)
+static RASettingData* enumeration_setting(RAConfig* config, NSString* name, NSString* label, NSString* defaultValue, NSArray* values)
 {
    RASettingData* result = [[RASettingData alloc] init];
    result.type = EnumerationSetting;
@@ -79,7 +64,7 @@ static RASettingData* enumeration_setting(config_file_t* config, NSString* name,
    return result;
 }
 
-static RASettingData* subpath_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, NSString* path, NSString* extension)
+static RASettingData* subpath_setting(RAConfig* config, NSString* name, NSString* label, NSString* defaultValue, NSString* path, NSString* extension)
 {
    NSString* value = get_value_from_config(config, name, defaultValue);
    value = [value stringByReplacingOccurrencesOfString:path withString:@""];
@@ -100,7 +85,7 @@ static RASettingData* subpath_setting(config_file_t* config, NSString* name, NSS
 @implementation RASettingsList
 - (id)init
 {
-   config_file_t* config = config_file_new([[RetroArch_iOS get].configFilePath UTF8String]);
+   RAConfig* config = [[RAConfig alloc] initWithPath:[RetroArch_iOS get].configFilePath];
 
    NSString* overlay_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/overlays/"];
    NSString* shader_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/shaders/"];
@@ -168,9 +153,6 @@ static RASettingData* subpath_setting(config_file_t* config, NSString* name, NSS
          nil],
       nil
    ];
-   
-   if (config)
-      config_file_free(config);
 
    self = [super initWithSettings:settings title:@"RetroArch Settings"];
    return self;
@@ -188,15 +170,12 @@ static RASettingData* subpath_setting(config_file_t* config, NSString* name, NSS
 
 - (void)writeToDisk
 {
-   config_file_t* config = config_file_new([[RetroArch_iOS get].configFilePath UTF8String]);
-   config = config ? config : config_file_new(0);
-
-   config_set_string(config, "system_directory", [[RetroArch_iOS get].system_directory UTF8String]);
+   RAConfig* config = [[RAConfig alloc] initWithPath:[RetroArch_iOS get].configFilePath];
+   [config putStringNamed:@"system_directory" value:[RetroArch_iOS get].system_directory];
 
    [self writeSettings:nil toConfig:config];
 
-   config_file_write(config, [[RetroArch_iOS get].configFilePath UTF8String]);
-   config_file_free(config);
+   [config writeToFile:[RetroArch_iOS get].configFilePath];
 }
 
 @end

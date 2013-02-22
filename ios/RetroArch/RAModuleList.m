@@ -46,7 +46,7 @@
       NSString* modulePath = [moduleList objectAtIndex:i];
 
       NSString* baseName = [[modulePath stringByDeletingPathExtension] stringByAppendingPathExtension:@"info"];
-      [_modules addObject:[RAModuleInfo moduleWithPath:modulePath data:config_file_new([baseName UTF8String])]];
+      [_modules addObject:[RAModuleInfo moduleWithPath:modulePath data:[[RAConfig alloc] initWithPath:baseName]]];
    }
    
    [self setTitle:@"Choose Emulator"];

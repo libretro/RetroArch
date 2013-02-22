@@ -14,7 +14,7 @@
  */
 
 @implementation RAModuleInfo
-+ (RAModuleInfo*)moduleWithPath:(NSString*)thePath data:(config_file_t*)theData
++ (RAModuleInfo*)moduleWithPath:(NSString*)thePath data:(RAConfig*)theData
 {
    RAModuleInfo* new = [RAModuleInfo new];
 
@@ -22,22 +22,12 @@
    new.data = theData;
    return new;
 }
-
-- (void)dealloc
-{
-   if (self.data)
-   {
-      config_file_free(self.data);
-   }
-}
-
 @end
 
 static NSString* const labels[3] = {@"Emulator Name", @"Manufacturer", @"Name"};
-static const char* const keys[3] = {"emuname", "manufacturer", "systemname"};
-
-static const uint32_t sectionSizes[2] = {1, 2};
+static NSString* const keys[3] = {@"emuname", @"manufacturer", @"systemname"};
 static NSString* const sectionNames[2] = {@"Emulator", @"Hardware"};
+static const uint32_t sectionSizes[2] = {1, 2};
 
 @implementation RAModuleInfoList
 {
@@ -79,14 +69,7 @@ static NSString* const sectionNames[2] = {@"Emulator", @"Hardware"};
    }
 
    cell.textLabel.text = labels[sectionBase + indexPath.row];
-   
-   char* text = 0;
-   if (config_get_string(_data.data, keys[sectionBase + indexPath.row], &text))
-      cell.detailTextLabel.text = [NSString stringWithUTF8String:text];
-   else
-      cell.detailTextLabel.text = @"Unspecified";
-   
-   free(text);
+   cell.detailTextLabel.text = [_data.data getStringNamed:keys[sectionBase + indexPath.row] withDefault:@"Unspecified"];
 
    return cell;
 }

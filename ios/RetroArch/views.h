@@ -16,16 +16,16 @@
 #import <UIKit/UIKit.h>
 #import <GLKit/GLKit.h>
 
-#include "conf/config_file.h"
+#import "RAConfig.h"
 
 @interface RAGameView : UIViewController
 @end
 
 @interface RAModuleInfo : NSObject
 @property (strong) NSString* path;
-@property config_file_t* data;
+@property (strong) RAConfig* data;
 
-+ (RAModuleInfo*)moduleWithPath:(NSString*)thePath data:(config_file_t*)theData;
++ (RAModuleInfo*)moduleWithPath:(NSString*)thePath data:(RAConfig*)theData;
 @end
 
 @interface RAModuleInfoList : UITableViewController
@@ -43,7 +43,7 @@
 
 @interface RASettingsSubList : UITableViewController
 - (id)initWithSettings:(NSArray*)values title:(NSString*)title;
-- (void)writeSettings:(NSArray*)settingList toConfig:(config_file_t*)config;
+- (void)writeSettings:(NSArray*)settingList toConfig:(RAConfig*)config;
 @end
 
 @interface RASettingsList : RASettingsSubList

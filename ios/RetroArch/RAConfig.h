@@ -13,26 +13,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum SettingTypes
-{
-   BooleanSetting, ButtonSetting, EnumerationSetting, FileListSetting, GroupSetting
-};
+@interface RAConfig : NSObject
+- (id)initWithPath:(NSString*)path;
+- (void)writeToFile:(NSString*)path;
 
-@interface RASettingData : NSObject
-@property enum SettingTypes type;
+- (int)getIntNamed:(NSString*)name withDefault:(int)def;
+- (unsigned)getUintNamed:(NSString*)name withDefault:(unsigned)def;
+- (NSString*)getStringNamed:(NSString*)name withDefault:(NSString*)def;
 
-@property (strong) NSString* label;
-@property (strong) NSString* name;
-@property (strong) NSString* value;
-
-@property (strong) NSString* path;
-@property (strong) NSArray* subValues;
-@end
-
-@interface RAButtonGetter : NSObject<UIAlertViewDelegate>
-- (id)initWithSetting:(RASettingData*)setting fromTable:(UITableView*)table;
-@end
-
-@interface RASettingEnumerationList : UITableViewController
-- (id)initWithSetting:(RASettingData*)setting fromTable:(UITableView*)table;
+- (void)putIntNamed:(NSString*)name value:(int)value;
+- (void)putStringNamed:(NSString*)name value:(NSString*)value;
 @end

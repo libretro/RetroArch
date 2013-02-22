@@ -13,13 +13,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#import "RAConfig.h"
 #import "browser.h"
 
 @implementation RADirectoryFilterList
 {
    NSString* _path;
 
-   config_file_t* _filterList;
+   RAConfig* _filterList;
    unsigned _filterCount;
 }
 
@@ -30,92 +31,60 @@
 
    if (path && ra_ios_is_file([path stringByAppendingPathComponent:@".rafilter"]))
    {
-      config_file_t* configFile = config_file_new([[path stringByAppendingPathComponent:@".rafilter"] UTF8String]);
+      RAConfig* configFile = [[RAConfig alloc] initWithPath:[path stringByAppendingPathComponent:@".rafilter"]];
+      unsigned filterCount = [configFile getUintNamed:@"filter_count" withDefault:0];
       
-      if (configFile)
+      if (filterCount > 1)
+         return [[RADirectoryFilterList alloc] initWithPath:path config:configFile];
+      
+      if (regex && filterCount == 1)
       {
-         unsigned filterCount = 0;
-         if (configFile && config_get_uint(configFile, "filter_count", &filterCount) && filterCount > 1)
-            return [[RADirectoryFilterList alloc] initWithPath:path config:configFile];
-
-         char* regexValue = 0;
-         if (regex && filterCount == 1 && config_get_string(configFile, "filter_1_regex", &regexValue))
-         {
-            *regex = [NSRegularExpression regularExpressionWithPattern:[NSString stringWithUTF8String:regexValue] options:0 error:nil];
-            free(regexValue);
-         }
-         
-         config_file_free(configFile);
+         NSString* expr = [configFile getStringNamed:@"filter_1_regex" withDefault:@".*"];
+         *regex = [NSRegularExpression regularExpressionWithPattern:expr options:0 error:nil];
       }
    }
 
    return nil;
 }
 
-- (id)initWithPath:(NSString*)path config:(config_file_t*)config
+- (id)initWithPath:(NSString*)path config:(RAConfig*)config
 {
    self = [super initWithStyle:UITableViewStylePlain];
 
    _path = path;
    _filterList = config;
+   _filterCount = [_filterList getUintNamed:@"filter_count" withDefault:0];
 
-   if (!_filterList || !config_get_uint(_filterList, "filter_count", &_filterCount) || _filterCount == 0)
-   {
+   if (_filterCount == 0)
       [RetroArch_iOS displayErrorMessage:@"No valid filters were found."];
-   }
 
    [self setTitle: [path lastPathComponent]];
-   
    return self;
-}
-
-- (id)initWithPath:(NSString*)path
-{
-   return [self initWithPath:path config:config_file_new([[path stringByAppendingPathComponent:@".rafilter"] UTF8String])];
-}
-
-- (void)dealloc
-{
-   if (_filterList)
-      config_file_free(_filterList);
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   if (_filterList)
-   {
-      NSString* regexKey = [NSString stringWithFormat:@"filter_%d_regex", indexPath.row + 1];
-   
-      char* regex = 0;
-      if (config_get_string(_filterList, [regexKey UTF8String], &regex))
-      {
-         NSRegularExpression* expr = [NSRegularExpression regularExpressionWithPattern:[NSString stringWithUTF8String:regex] options:0 error:nil];
-         free(regex);
-      
-         [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:_path filter:expr]];
-      }
-   }
+   NSString* regex = [NSString stringWithFormat:@"filter_%d_regex", indexPath.row + 1];
+   regex = [_filterList getStringNamed:regex withDefault:@".*"];
+
+   NSRegularExpression* expr = [NSRegularExpression regularExpressionWithPattern:regex options:0 error:nil];
+
+   [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:_path filter:expr]];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-   return _filterCount;
+   return _filterCount ? _filterCount : 1;
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   NSString* nameKey = [NSString stringWithFormat:@"filter_%d_name", indexPath.row + 1];
-   
-   char* nameString = 0;
-   if (_filterList && config_get_string(_filterList, [nameKey UTF8String], &nameString))
-   {
-      nameKey = [NSString stringWithUTF8String:nameString];
-      free(nameString);
-   }
+   NSString* name = [NSString stringWithFormat:@"filter_%d_name", indexPath.row + 1];
+   name = [_filterList getStringNamed:name withDefault:@"BAD NAME"];
    
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"filter"];
    cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"filter"];
-   cell.textLabel.text = nameKey;
+   cell.textLabel.text = name;
    
    return cell;
 }

@@ -32,6 +32,4 @@ extern NSString* ra_ios_get_browser_root();
 // Check path to see if a directory filter list is needed.
 // If one is not needed useExpression will be set to a default expression to use.
 + (RADirectoryFilterList*) directoryFilterListAtPath:(NSString*)path useExpression:(NSRegularExpression**)regex;
-
-- (id)initWithPath:(NSString*)path;
 @end

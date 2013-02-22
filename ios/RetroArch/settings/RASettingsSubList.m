@@ -32,7 +32,7 @@ static const char* const SETTINGID = "SETTING";
    return self;
 }
 
-- (void)writeSettings:(NSArray*)settingList toConfig:(config_file_t *)config
+- (void)writeSettings:(NSArray*)settingList toConfig:(RAConfig*)config
 {
    NSArray* list = settingList ? settingList : settings;
 
@@ -52,13 +52,13 @@ static const char* const SETTINGID = "SETTING";
                
             case FileListSetting:
                if ([setting.value length] > 0)
-                  config_set_string(config, [setting.name UTF8String], [[setting.path stringByAppendingPathComponent:setting.value] UTF8String]);
+                  [config putStringNamed:setting.name value:[setting.path stringByAppendingPathComponent:setting.value]];
                else
-                  config_set_string(config, [setting.name UTF8String], "");
+                  [config putStringNamed:setting.name value:@""];
                break;
                
             default:
-               config_set_string(config, [setting.name UTF8String], [setting.value UTF8String]);
+               [config putStringNamed:setting.name value:setting.value];
                break;
          }
       }
