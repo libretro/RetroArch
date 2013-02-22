@@ -78,7 +78,7 @@ extern uint32_t ios_current_touch_count;
 - (void)setViewer:(UIViewController*)theView
 {
    _navigator = nil;
-   [[UIApplication sharedApplication] setStatusBarHidden:theView ? YES : NO withAnimation:UIStatusBarAnimationSlide];
+   [[UIApplication sharedApplication] setStatusBarHidden:theView ? YES : NO withAnimation:UIStatusBarAnimationNone];
    _window.rootViewController = theView;
 }
 
@@ -109,6 +109,8 @@ extern uint32_t ios_current_touch_count;
                           target:nil action:nil];
    self.settings_button.target = self;
    self.settings_button.action = @selector(show_settings);
+
+   [[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationNone];
 
    // Setup window
    _navigator = [[UINavigationController alloc] init];

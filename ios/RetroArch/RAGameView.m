@@ -82,6 +82,12 @@ static bool is_syncing = true;
    }
 }
 
+- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
+{
+   _notifyButton.alpha = 0.0f;
+   _notifyLabel.alpha = 0.0f;
+}
+
 - (void)iterate
 {
    while (_isRunning && !_isPaused)
