@@ -99,8 +99,8 @@ extern uint32_t ios_current_touch_count;
    mkdir([self.system_directory UTF8String], 0755);
          
    // Load icons
-   self.file_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_file" ofType:@"png"]];
-   self.folder_icon = [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ic_dir" ofType:@"png"]];
+   self.file_icon = [UIImage imageNamed:@"ic_file"];
+   self.folder_icon = [UIImage imageNamed:@"ic_dir"];
 
    // Load buttons
    self.settings_button = [[UIBarButtonItem alloc]
