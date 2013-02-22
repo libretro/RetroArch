@@ -161,6 +161,7 @@ void config_set_defaults(void)
    g_settings.video.fullscreen_y = fullscreen_y;
    g_settings.video.disable_composition = disable_composition;
    g_settings.video.vsync = vsync;
+   g_settings.video.threaded = video_threaded;
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
    g_settings.video.scale_integer = scale_integer;
@@ -440,6 +441,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT(video.monitor_index, "video_monitor_index");
    CONFIG_GET_BOOL(video.disable_composition, "video_disable_composition");
    CONFIG_GET_BOOL(video.vsync, "video_vsync");
+   CONFIG_GET_BOOL(video.threaded, "video_threaded");
    CONFIG_GET_BOOL(video.smooth, "video_smooth");
    CONFIG_GET_BOOL(video.force_aspect, "video_force_aspect");
    CONFIG_GET_BOOL(video.scale_integer, "video_scale_integer");
@@ -478,13 +480,6 @@ bool config_load_file(const char *path)
       snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
       CONFIG_GET_INT(input.device[i], cfg);
    }
-
-#ifdef ANDROID
-   CONFIG_GET_INT(input.icade_profile[0], "input_autodetect_icade_profile_pad1");
-   CONFIG_GET_INT(input.icade_profile[1], "input_autodetect_icade_profile_pad2");
-   CONFIG_GET_INT(input.icade_profile[2], "input_autodetect_icade_profile_pad3");
-   CONFIG_GET_INT(input.icade_profile[3], "input_autodetect_icade_profile_pad4");
-#endif
 
    CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
 
@@ -701,9 +696,21 @@ bool config_load_file(const char *path)
    CONFIG_GET_PATH(input.overlay, "input_overlay");
    CONFIG_GET_FLOAT(input.overlay_opacity, "input_overlay_opacity");
    CONFIG_GET_BOOL(input.debug_enable, "input_debug_enable");
+
 #ifdef ANDROID
    CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
+   CONFIG_GET_INT(input.icade_profile[0], "input_autodetect_icade_profile_pad1");
+   CONFIG_GET_INT(input.icade_profile[1], "input_autodetect_icade_profile_pad2");
+   CONFIG_GET_INT(input.icade_profile[2], "input_autodetect_icade_profile_pad3");
+   CONFIG_GET_INT(input.icade_profile[3], "input_autodetect_icade_profile_pad4");
 #endif
+
+   int low_ram_mode = 0;
+   if (config_get_int(conf, "rmenu_low_ram_mode_enable", &low_ram_mode))
+   {
+      if (low_ram_mode == 1)
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE);
+   }
 
    if (config_get_string(conf, "environment_variables",
             &g_extern.system.environment))
@@ -1194,6 +1201,15 @@ bool config_save_file(const char *path)
    config_set_int(conf, "input_autodetect_icade_profile_pad2", input.icade_profile[1]);
    config_set_int(conf, "input_autodetect_icade_profile_pad3", input.icade_profile[2]);
    config_set_int(conf, "input_autodetect_icade_profile_pad4", input.icade_profile[3]);
+#endif
+
+#ifdef HAVE_RMENU
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
+      config_set_int(conf, "rmenu_low_ram_mode_enable", 1);
+   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING))
+      config_set_int(conf, "rmenu_low_ram_mode_enable", 1);
+   else
+      config_set_int(conf, "rmenu_low_ram_mode_enable", 0);
 #endif
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_OVERSCAN_ENABLE))

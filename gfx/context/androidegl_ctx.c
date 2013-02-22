@@ -15,10 +15,12 @@
  */
 
 #include "../../driver.h"
+#include "../../general.h"
 #include "../gfx_common.h"
 #include "../gl_common.h"
 
 #include <EGL/egl.h> /* Requires NDK r5 or newer */
+#include <android/looper.h>
 
 #include "../../frontend/frontend_android.h"
 #include "../image.h"
@@ -147,6 +149,10 @@ static bool gfx_ctx_init(void)
       RARCH_ERR("eglMakeCurrent failed.\n");
       goto error;
    }
+
+   ALooper *looper = ALooper_forThread();
+   if (!looper)
+      ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
 
    return true;
 

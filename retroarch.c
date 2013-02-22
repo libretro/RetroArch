@@ -366,7 +366,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
    if (!g_extern.audio_active)
       return false;
 
-   const sample_t *output_data = NULL;
+   const float *output_data = NULL;
    unsigned output_frames      = 0;
 
    struct resampler_data src_data = {0};
@@ -482,6 +482,7 @@ static inline void input_poll_overlay(void)
    unsigned device = input_overlay_full_screen(driver.overlay) ?
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
+   bool polled = false;
    for (unsigned i = 0;
          input_input_state_func(NULL, 0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
@@ -492,7 +493,11 @@ static inline void input_poll_overlay(void)
             device, i, RETRO_DEVICE_ID_POINTER_Y);
 
       driver.overlay_state |= input_overlay_poll(driver.overlay, x, y);
+      polled = true;
    }
+
+   if (!polled)
+      input_overlay_poll_clear(driver.overlay);
 }
 #endif
 
@@ -1640,7 +1645,7 @@ static void init_libretro_cbs(void)
 #endif
 }
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
 static void init_autosave(void)
 {
    int ram_types[2] = {-1, -1};
@@ -2748,7 +2753,7 @@ int rarch_main_init(int argc, char *argv[])
    if (!g_extern.use_sram)
       RARCH_LOG("SRAM will not be saved.\n");
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    if (g_extern.use_sram)
       init_autosave();
 #endif
@@ -2828,7 +2833,7 @@ bool rarch_main_iterate(void)
    do_state_checks();
 
    // Run libretro for one frame.
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    lock_autosave();
 #endif
 
@@ -2855,7 +2860,7 @@ bool rarch_main_iterate(void)
       netplay_post_frame(g_extern.netplay);
 #endif
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    unlock_autosave();
 #endif
 
@@ -2881,7 +2886,7 @@ void rarch_main_deinit(void)
    deinit_command();
 #endif
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    if (g_extern.use_sram)
       deinit_autosave();
 #endif

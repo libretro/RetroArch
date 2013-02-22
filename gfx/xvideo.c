@@ -464,14 +464,17 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    driver.video_display = (uintptr_t)xv->display;
    driver.video_window  = (Window)xv->window;
 
-   xinput = input_x.init();
-   if (xinput)
+   if (input && input_data)
    {
-      *input = &input_x;
-      *input_data = xinput;
+      xinput = input_x.init();
+      if (xinput)
+      {
+         *input = &input_x;
+         *input_data = xinput;
+      }
+      else
+         *input = NULL;
    }
-   else
-      *input = NULL;
 
    init_yuv_tables(xv);
    xv_init_font(xv, g_settings.video.font_path, g_settings.video.font_size);

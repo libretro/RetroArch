@@ -77,9 +77,8 @@ ifneq ($(findstring Linux,$(OS)),)
    JOYCONFIG_OBJ += input/linuxraw_joypad.o
 endif
 
-OBJ += autosave.o thread.o
-
 ifeq ($(HAVE_THREADS), 1)
+   OBJ += autosave.o thread.o gfx/thread_wrapper.o
    ifeq ($(findstring Haiku,$(OS)),)
       LIBS += -lpthread
    endif

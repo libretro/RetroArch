@@ -542,6 +542,12 @@ static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
    {
       RARCH_LOG("Loading ROM file: %s.\n", rom_paths[0]);
       rom_file = fopen(rom_paths[0], "rb");
+      if (!rom_file)
+      {
+         RARCH_ERR("Failed to load ROM file: %s.\n", rom_paths[0]);
+         ret = false;
+         goto end;
+      }
    }
 
    if (!g_extern.system.info.need_fullpath)

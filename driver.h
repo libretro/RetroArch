@@ -280,6 +280,8 @@ typedef struct driver
    void *video_data;
    void *input_data;
 
+   bool threaded_video;
+
    // Set if the respective handles are owned by RetroArch driver core.
    // Consoles upper logic will generally intialize the drivers before
    // the driver core initializes. It will then be up to upper logic

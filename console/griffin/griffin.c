@@ -188,14 +188,20 @@ VIDEO DRIVER
 FONTS
 ============================================================ */
 
+#ifdef _XBOX
+#define DONT_HAVE_BITMAPFONTS
+#endif
+
 #if defined(HAVE_OPENGL) || defined(HAVE_D3D8) || defined(HAVE_D3D9)
 
 #ifdef HAVE_FREETYPE
 #include "../../gfx/fonts/freetype.c"
 #endif
 
+#ifndef DONT_HAVE_BITMAPFONTS
 #include "../../gfx/fonts/fonts.c"
 #include "../../gfx/fonts/bitmapfont.c"
+#endif
 
 #ifdef HAVE_OPENGL
 #include "../../gfx/fonts/gl_font.c"
@@ -250,7 +256,13 @@ INPUT
 /*============================================================
 STATE TRACKER
 ============================================================ */
+#ifdef _XBOX
+#define DONT_HAVE_STATE_TRACKER
+#endif
+
+#ifndef DONT_HAVE_STATE_TRACKER
 #include "../../gfx/state_tracker.c"
+#endif
 
 /*============================================================
 FIFO BUFFER
@@ -377,14 +389,16 @@ RETROARCH
 /*============================================================
 THREAD
 ============================================================ */
-#if defined(HAVE_THREAD) && defined(XENON)
+#if defined(HAVE_THREADS) && defined(XENON)
 #include "../../thread/xenon_sdl_threads.c"
-#elif defined(HAVE_THREAD)
+#elif defined(HAVE_THREADS)
 #include "../../thread.c"
-#ifdef ANDROID
+#include "../../gfx/thread_wrapper.c"
+#ifndef RARCH_CONSOLE
 #include "../../autosave.c"
 #endif
 #endif
+
 
 /*============================================================
 NETPLAY
@@ -431,8 +445,10 @@ extern "C" {
 /*============================================================
 RZLIB
 ============================================================ */
-#ifdef WANT_RZLIB
-#include "../../deps/rzlib/rzlib.c"
+#ifdef WANT_MINIZ
+#include "../../deps/miniz/miniz.c"
+#include "../../deps/minizip/ioapi.c"
+#include "../../deps/minizip/unzip.c"
 #endif
 
 /*============================================================

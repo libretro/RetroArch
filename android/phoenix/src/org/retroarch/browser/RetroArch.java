@@ -299,7 +299,7 @@ public class RetroArch extends Activity implements
 			prefs.edit().putBoolean("first_time_refreshrate_calculate", true).commit();
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 				.setTitle("Calculate Refresh Rate")
-				.setMessage("It is highly recommended you run the refresh rate calibration test before you use RetroArch. Do you want to run it now?\n\nIf you choose No, you can run it at any time in the video preferences.")
+				.setMessage("It is highly recommended you run the refresh rate calibration test before you use RetroArch. Do you want to run it now?\n\nIf you choose No, you can run it at any time in the video preferences.\n\nIf you get performance problems even after calibration, please try threaded video driver in video preferences.")
 				.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
@@ -371,6 +371,7 @@ public class RetroArch extends Activity implements
 		config.setInt("input_autodetect_icade_profile_pad4", prefs.getInt("input_autodetect_icade_profile_pad4", 0));
 		
 		config.setDouble("video_refresh_rate", getRefreshRate());
+		config.setBoolean("video_threaded", prefs.getBoolean("video_threaded", false));
 		
 		String aspect = prefs.getString("video_aspect_ratio", "auto");
 		if (aspect.equals("full")) {
@@ -388,6 +389,8 @@ public class RetroArch extends Activity implements
 			config.setBoolean("video_force_aspect", true);
 			config.setDouble("video_aspect_ratio", aspect_ratio);
 		}
+		
+		config.setBoolean("video_scale_integer", prefs.getBoolean("video_scale_integer", false));
 		
 		String shaderPath = prefs.getString("video_bsnes_shader", "");
 		if (prefs.getBoolean("video_shader_enable", false) && new File(shaderPath).exists()) {

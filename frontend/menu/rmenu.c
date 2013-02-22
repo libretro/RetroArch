@@ -111,8 +111,8 @@ enum
 };
 
 /*============================================================
-EVENT CALLBACKS (AND RELATED)
-============================================================ */
+  EVENT CALLBACKS (AND RELATED)
+  ============================================================ */
 
 static void populate_setting_item(void *data, unsigned input)
 {
@@ -136,7 +136,7 @@ static void populate_setting_item(void *data, unsigned input)
          }
          break;
       case SETTING_PAL60_MODE:
-            snprintf(current_item->text, sizeof(current_item->text), "PAL60 Mode");
+         snprintf(current_item->text, sizeof(current_item->text), "PAL60 Mode");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE)) ? "INFO - [PAL60 Mode] is set to 'ON'.\nconverts frames from 60Hz to 50Hz." : "INFO - [PAL60 Mode is set to 'OFF'.\nframes are not converted.");
          break;
@@ -166,6 +166,20 @@ static void populate_setting_item(void *data, unsigned input)
          snprintf(current_item->text, sizeof(current_item->text), "Menu Skin");
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", fname);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a skin for the menu.");
+         break;
+      case SETTING_EMU_LOW_RAM_MODE_ENABLE:
+         snprintf(current_item->text, sizeof(current_item->text), "Low RAM Mode");
+         if (g_extern.lifecycle_mode_state & (1ULL <<MODE_MENU_LOW_RAM_MODE_ENABLE) ||
+               g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING))
+         {
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "ON");
+            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Will load skin at startup.");
+         }
+         else
+         {
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "OFF");
+            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Will not load skin at startup to save up on RAM.");
+         }
          break;
       case SETTING_FONT_SIZE:
          snprintf(current_item->text, sizeof(current_item->text), "Font Size");
@@ -982,7 +996,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
    (void)data;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    filebrowser_t *filebrowser = tmpBrowser;
-   
+
    switch(switchvalue)
    {
 #ifdef __CELLOS_LV2__
@@ -1033,7 +1047,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
             {
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK);
+               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK);
                driver.video->restart();
             }
          }
@@ -1108,6 +1122,35 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          }
          break;
 #endif
+      case SETTING_EMU_LOW_RAM_MODE_ENABLE:
+         if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         {
+            if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING)))
+            {
+               if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
+                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE);
+               else
+                  g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING);
+
+               if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+                  rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+            }
+         }
+         if(input & (1ULL << RMENU_DEVICE_NAV_START))
+         {
+            if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE)))
+            {
+               if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING)))
+               {
+                  g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE);
+                  g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING);
+
+                  if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+                     rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+               }
+            }
+         }
+         break;
       case SETTING_FONT_SIZE:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
@@ -1464,7 +1507,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             if (g_extern.main_is_init)
             {
                if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
-                        g_settings.audio.resampler))
+                        g_settings.audio.resampler, g_extern.audio_data.orig_src_ratio == 0.0 ? 1.0 : g_extern.audio_data.orig_src_ratio))
                {
                   RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
                   g_extern.audio_active = false;
@@ -1479,11 +1522,11 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
 #else
             snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
 #endif
-            
+
             if (g_extern.main_is_init)
             {
                if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
-                        g_settings.audio.resampler))
+                        g_settings.audio.resampler, g_extern.audio_data.orig_src_ratio == 0.0 ? 1.0 : g_extern.audio_data.orig_src_ratio))
                {
                   RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
                   g_extern.audio_active = false;
@@ -2121,7 +2164,7 @@ int ingame_menu_screenshot(void *data, void *state)
    rmenu_state_t *rstate = (rmenu_state_t*)state;
 
    uint64_t input = rstate->input;
-   
+
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    filebrowser_t *filebrowser = NULL;
 
@@ -2415,8 +2458,8 @@ int ingame_menu(void *data, void *state)
 }
 
 /*============================================================
-INPUT POLL CALLBACK
-============================================================ */
+  INPUT POLL CALLBACK
+  ============================================================ */
 
 void rmenu_input_poll(void *data, void *state)
 {
@@ -2471,8 +2514,8 @@ void rmenu_input_poll(void *data, void *state)
 }
 
 /*============================================================
-INPUT PROCESS CALLBACK
-============================================================ */
+  INPUT PROCESS CALLBACK
+  ============================================================ */
 
 int rmenu_input_process(void *data, void *state)
 {
@@ -2519,8 +2562,8 @@ int rmenu_input_process(void *data, void *state)
 }
 
 /*============================================================
-RESOURCE CALLBACKS
-============================================================ */
+  RESOURCE CALLBACKS
+  ============================================================ */
 
 void init_filebrowser(void *data)
 {
@@ -2543,8 +2586,8 @@ void free_filebrowser(void *data)
 }
 
 /*============================================================
-RMENU API
-============================================================ */
+  RMENU API
+  ============================================================ */
 
 
 void menu_init(void)
@@ -2597,10 +2640,23 @@ bool rmenu_iterate(void)
    rmenu_default_positions_t default_pos;
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
-      device_ptr->ctx_driver->set_blend(true);
+   if ((g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE)))
+   {
+#if defined(HAVE_OPENGL)
+      glClear(GL_COLOR_BUFFER_BIT);
+#elif defined(HAVE_D3D8) || defined(HAVE_D3D9)
+      xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+      LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
+      d3dr->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
+#endif
+   }
+   else
+   {
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
+         device_ptr->ctx_driver->set_blend(true);
 
-   rarch_render_cached_frame();
+      rarch_render_cached_frame();
+   }
 
    if(current_menu.input_poll)
       rmenu_input_poll(&current_menu, &rmenu_state);

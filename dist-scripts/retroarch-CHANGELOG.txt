@@ -2,12 +2,50 @@ RETROARCH CONSOLE
 ------------------------------------------------------------------------------
 v0.9.8.4
 ------------------------------------------------------------------------------
+* [NEStopia] Famicom Disk System support. For Android users - put disksys.rom
+into the same folder as the FDS ROM you're trying to load. For everyone else -
+put disksys.rom into your system directory.
+  - Y Button will switch sides of a disk. 
+  - If you get any problems of the sort DISK A / B ERR 07' - pressing Y button again or letting it run its course should do it.
+  - NOTE - Famicom Disk System loading is slow, so you might be tempted to fast forward through most of it. However, I'd advise caution when doing so and to savestate regularly in case 'fast forwarding' can negatively affect disk loading. 
+* [FBA core] Various changes/fixes
+- Hook up Eco Fighters controls (Turn 1/Turn 2 bound to L and R buttons)
+- Hook up Pnickie controls (Turn 1/Turn 2 bound to L and R buttons - press
+one of the buttons to progress beyond start screen)
+- Hook up Continental Circus controls - Brake 2/Brake 3 (L1/L2 buttons)
+and Accelerate 2/Accelerate 3 (R1/R2 buttons)
+- Hook up Gun Smoke controls - Start button (needed to progress beyond
+title screen)
+- Hook up Mighty Pang controls (P1 Shot1/P1 Shot2/P2 Shot1/P2 Shot2)
+- Fixed Varia Metal palette
+- Fixed Fairyland Story palette
+- Fixed Return of the Invaders palette
+- Fixed Act-Fancer palette issue
+- Endian fixes in the following games (PS3/360/Wii/Gamecube) -
+  - Surprise Attack
+  - Rollergames
+  - Ultra Man
+  - Oh My Gods
+  - Moonwalker (Sega System 18 bootleg) [magicseb]
+  - Hyper Pac
+  - Snow Bros 1
+  - Honey Dolls
+- Fixes pitch issue in Gals Hustle (will possibly fix more games as well)
 * [FBA core] [For Wii/Gamecube/Xbox 1 only] The main FBA version now has CPS1/CPS2/
 Neogeo and Mega Drive/PC Engine drivers removed. To play CPS1, use FBA Cores CPS1. 
- To play CPS2, use FBA Cores CPS2. To play NeoGoe, use FBA Cores Neo.
+ To play CPS2, use FBA Cores CPS2. To play NeoGeo, use FBA Cores Neo.
 * [FBA core] Made FBA Cores CPS1 - use this to play CPS1 games (all CPS1 ROMs
 fit into memory on Gamecube).
+* [Android] Fixed regression where a button bound to AKEYCODE_BACK would 'exit out'
+of RetroArch.
+* [Android] Fixes Madcatz fighting stick being autodetected properly.
+* [Android] Input autodetection expanded -
+  - iControlpad
 * [Gamecube] Made RetroArch cores 'standalone' - ie. no core switching.
+* [Xbox 1] Add Low RAM mode - this needs to be used to play games that won't otherwise fit into RAM,
+such as Street Fighter Alpha 3/Vampire Savior and other big ROMs in FBA Cores CPS2/NeoGeo/FBA.
+* [Unzipping [All consoles/Android]] Moved from rzlib to miniz/minizip -should increase compatibility
+with ZIP archives
 ------------------------------------------------------------------------------
 v0.9.8.3
 ------------------------------------------------------------------------------

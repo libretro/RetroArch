@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "../msvc/msvc_compat.h"
 
 #ifndef RESAMPLER_TEST
 #include "../general.h"
@@ -104,9 +105,9 @@
 
 typedef struct rarch_sinc_resampler
 {
-   sample_t *phase_table;
-   sample_t *buffer_l;
-   sample_t *buffer_r;
+   float *phase_table;
+   float *buffer_l;
+   float *buffer_r;
 
    unsigned taps;
 
@@ -115,7 +116,7 @@ typedef struct rarch_sinc_resampler
 
    // A buffer for phase_table, buffer_l and buffer_r are created in a single calloc().
    // Ensure that we get as good cache locality as we can hope for.
-   sample_t *main_buffer;
+   float *main_buffer;
 } rarch_sinc_resampler_t;
 
 static inline double sinc(double val)
@@ -389,9 +390,10 @@ static void process_sinc_neon(rarch_sinc_resampler_t *resamp, float *out_buffer)
    const float *buffer_r = resamp->buffer_r + resamp->ptr;
 
    unsigned phase = resamp->time >> SUBPHASE_BITS;
-   const float *phase_table = resamp->phase_table[phase];
+   unsigned taps = resamp->taps;
+   const float *phase_table = resamp->phase_table + phase * taps;
 
-   process_sinc_neon_asm(out_buffer, buffer_l, buffer_r, phase_table, resamp->taps);
+   process_sinc_neon_asm(out_buffer, buffer_l, buffer_r, phase_table, taps);
 }
 #else // Plain ol' C99
 #define process_sinc_func process_sinc_C
@@ -403,8 +405,8 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
 
    uint32_t ratio = PHASES / data->ratio;
 
-   const sample_t *input = data->data_in;
-   sample_t *output      = data->data_out;
+   const float *input = data->data_in;
+   float *output      = data->data_out;
    size_t frames         = data->input_frames;
    size_t out_frames     = 0;
 
@@ -475,7 +477,7 @@ static void *resampler_sinc_new(double bandwidth_mod)
 #endif
    size_t elems = phase_elems + 4 * re->taps;
 
-   re->main_buffer = (sample_t*)aligned_alloc__(128, sizeof(sample_t) * elems);
+   re->main_buffer = (float*)aligned_alloc__(128, sizeof(float) * elems);
    if (!re->main_buffer)
       goto error;
 

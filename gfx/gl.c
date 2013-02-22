@@ -561,9 +561,35 @@ void gl_deinit_fbo(void *data)
    }
 }
 
+static void gl_update_tex_filter_frame(gl_t *gl)
+{
+   bool smooth = false;
+   if (!gl_shader_filter_type(gl, 1, &smooth))
+      return;
+
+   GLuint new_filt = smooth ? GL_LINEAR : GL_NEAREST;
+   if (new_filt == gl->tex_filter)
+      return;
+
+   gl->tex_filter = new_filt;
+   for (unsigned i = 0; i < TEXTURES; i++)
+   {
+      if (gl->texture[i])
+      {
+         glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
+      }
+   }
+
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+}
+
 void gl_init_fbo(void *data, unsigned width, unsigned height)
 {
    gl_t *gl = (gl_t*)data;
+
+   gl_update_tex_filter_frame(gl);
 
    // No need to use FBOs.
 #ifndef RARCH_CONSOLE
@@ -1701,7 +1727,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_init_textures(gl, video);
    gl_init_textures_data(gl);
 
-   context_input_driver_func(input, input_data);
+   if (input && input_data)
+      context_input_driver_func(input, input_data);
    
 #ifndef HAVE_RMENU
    // Comes too early for console - moved to gl_start

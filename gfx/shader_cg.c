@@ -1025,11 +1025,11 @@ static bool load_preset(const char *path)
       switch (i)
       {
          case 0:
-            g_settings.video.smooth = fbo_smooth[1];
+            g_settings.video.smooth = fbo_smooth[1] == FILTER_LINEAR;
             break;
 
          case 1:
-            g_settings.video.second_pass_smooth = fbo_smooth[2];
+            g_settings.video.second_pass_smooth = fbo_smooth[2] == FILTER_LINEAR;
             break;
       }
 #endif

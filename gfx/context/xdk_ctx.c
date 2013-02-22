@@ -154,7 +154,9 @@ static bool gfx_ctx_xdk_menu_init(void)
       m_menuMainRomListPos_y = 130;
    }
 
-   texture_image_load(g_extern.console.menu_texture_path, &g_extern.console.menu_texture);
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE)) { }
+   else
+      texture_image_load(g_extern.console.menu_texture_path, &g_extern.console.menu_texture);
 
    // Load rom selector panel
    texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &g_extern.console.menu_panel);
@@ -252,7 +254,7 @@ static void gfx_ctx_xdk_menu_screenshot_dump(void *data)
    char filename[PATH_MAX];
    char shotname[PATH_MAX];
 
-   screenshot_generate_filename(shotname, sizeof(shotname));
+   fill_dated_filename(shotname, "bmp", sizeof(shotname));
    snprintf(filename, sizeof(filename), "%s\\%s", default_paths.screenshots_dir, shotname);
    
 #if defined(_XBOX1)
