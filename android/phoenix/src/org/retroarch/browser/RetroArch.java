@@ -349,8 +349,10 @@ public class RetroArch extends Activity implements
 			return internal + File.separator + "retroarch.cfg";
 		else if (external != null && new File(internal + File.separator + "retroarch.cfg").canWrite())
 			return external + File.separator + "retroarch.cfg";
-		else
+		else if (getCacheDir() != null && getCacheDir().getAbsolutePath() != null)
 			return getCacheDir().getAbsolutePath() + File.separator + "retroarch.cfg";
+		else // emergency fallback, all else failed
+			return "/mnt/sd/retroarch.cfg";
 	}
 	
 	private void updateConfigFile() {
@@ -365,10 +367,10 @@ public class RetroArch extends Activity implements
 		config.setBoolean("video_vsync", prefs.getBoolean("video_vsync", true));
 		config.setBoolean("input_autodetect_enable", prefs.getBoolean("input_autodetect_enable", true));
 		config.setBoolean("input_debug_enable", prefs.getBoolean("input_debug_enable", false));
-		config.setInt("input_autodetect_icade_profile_pad1", prefs.getInt("input_autodetect_icade_profile_pad1", 0));
-		config.setInt("input_autodetect_icade_profile_pad2", prefs.getInt("input_autodetect_icade_profile_pad2", 0));
-		config.setInt("input_autodetect_icade_profile_pad3", prefs.getInt("input_autodetect_icade_profile_pad3", 0));
-		config.setInt("input_autodetect_icade_profile_pad4", prefs.getInt("input_autodetect_icade_profile_pad4", 0));
+		config.setInt("input_autodetect_icade_profile_pad1", Integer.valueOf(prefs.getString("input_autodetect_icade_profile_pad1", "0")));
+		config.setInt("input_autodetect_icade_profile_pad2", Integer.valueOf(prefs.getString("input_autodetect_icade_profile_pad2", "0")));
+		config.setInt("input_autodetect_icade_profile_pad3", Integer.valueOf(prefs.getString("input_autodetect_icade_profile_pad3", "0")));
+		config.setInt("input_autodetect_icade_profile_pad4", Integer.valueOf(prefs.getString("input_autodetect_icade_profile_pad4", "0")));
 		
 		config.setDouble("video_refresh_rate", getRefreshRate());
 		config.setBoolean("video_threaded", prefs.getBoolean("video_threaded", false));
