@@ -369,7 +369,7 @@ static bool gfx_ctx_set_video_mode(
 
    if (true_full)
    {
-      RARCH_LOG("[GLX]: Using true fullscreen.\n");
+      RARCH_LOG("[X/EGL]: Using true fullscreen.\n");
       XMapRaised(g_dpy, g_win);
    }
    else if (fullscreen) // We attempted true fullscreen, but failed. Attempt using windowed fullscreen.
@@ -455,7 +455,7 @@ static void gfx_ctx_destroy(void)
       g_screen = x11_get_xinerama_monitor(g_dpy, x, y,
             target.width, target.height);
 
-      RARCH_LOG("[GLX]: Saved monitor #%u.\n", g_screen);
+      RARCH_LOG("[X/EGL]: Saved monitor #%u.\n", g_screen);
 #endif
 
       XUnmapWindow(g_dpy, g_win);

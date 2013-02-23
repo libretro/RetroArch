@@ -648,6 +648,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_STRING(audio.resampler, "audio_resampler");
 
    CONFIG_GET_STRING(video.driver, "video_driver");
+   CONFIG_GET_STRING(video.gl_context, "video_gl_context");
    CONFIG_GET_STRING(audio.driver, "audio_driver");
    CONFIG_GET_PATH(audio.dsp_plugin, "audio_dsp_plugin");
    CONFIG_GET_STRING(input.driver, "input_driver");

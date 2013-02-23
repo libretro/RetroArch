@@ -1569,6 +1569,45 @@ static void gl_init_pbo_readback(void *data)
 #endif
 }
 
+static const gfx_ctx_driver_t *gl_get_context(void)
+{
+#ifdef HAVE_OPENGLES
+   enum gfx_ctx_api api = GFX_CTX_OPENGL_ES_API;
+   const char *api_name = "OpenGL ES";
+#else
+   enum gfx_ctx_api api = GFX_CTX_OPENGL_API;
+   const char *api_name = "OpenGL";
+#endif
+
+   if (*g_settings.video.gl_context)
+   {
+      const gfx_ctx_driver_t *ctx = gfx_ctx_find_driver(g_settings.video.gl_context);
+      if (ctx)
+      {
+         if (!ctx->bind_api(api))
+         {
+            RARCH_ERR("Failed to bind API %s to context %s.\n", api_name, g_settings.video.gl_context);
+            return NULL;
+         }
+
+         if (!ctx->init())
+         {
+            RARCH_ERR("Failed to init GL context: %s.\n", ctx->ident);
+            return NULL;
+         }
+      }
+      else
+      {
+         RARCH_ERR("Didn't find GL context: %s.\n", g_settings.video.gl_context);
+         return NULL;
+      }
+
+      return ctx;
+   }
+   else
+      return gfx_ctx_init_first(api);
+}
+
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
 #ifdef _WIN32
@@ -1589,11 +1628,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!gl)
       return NULL;
 
-#ifdef HAVE_OPENGLES
-   gl->ctx_driver = gfx_ctx_init_first(GFX_CTX_OPENGL_ES_API);
-#else
-   gl->ctx_driver = gfx_ctx_init_first(GFX_CTX_OPENGL_API);
-#endif
+   gl->ctx_driver = gl_get_context();
    if (!gl->ctx_driver)
    {
       free(gl);
