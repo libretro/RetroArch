@@ -165,6 +165,13 @@ static Bool glx_wait_notify(Display *d, XEvent *e, char *arg)
    return e->type == MapNotify && e->xmap.window == g_win;
 }
 
+static int nul_handler(Display *dpy, XErrorEvent *event)
+{
+   (void)dpy;
+   (void)event;
+   return 0;
+}
+
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 static void gfx_ctx_destroy(void);
 
@@ -440,8 +447,6 @@ static bool gfx_ctx_set_video_mode(
    XEvent event;
    XIfEvent(g_dpy, &event, glx_wait_notify, NULL);
 
-   XSetInputFocus(g_dpy, g_win, RevertToNone, CurrentTime);
-
    g_ctx = glXCreateNewContext(g_dpy, g_fbc, GLX_RGBA_TYPE, 0, True);
    if (!g_ctx)
    {
@@ -474,6 +479,11 @@ static bool gfx_ctx_set_video_mode(
       RARCH_WARN("[GLX]: Context is not double buffered!.\n");
 
    gfx_ctx_swap_interval(g_interval);
+
+   // This can blow up on some drivers. It's not fatal, so override errors for this call.
+   int (*old_handler)(Display*, XErrorEvent*) = XSetErrorHandler(nul_handler);
+   XSetInputFocus(g_dpy, g_win, RevertToNone, CurrentTime);
+   XSetErrorHandler(old_handler);
 
    XFree(vi);
    g_has_focus = true;
