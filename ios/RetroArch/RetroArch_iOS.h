@@ -24,12 +24,9 @@ extern NSString* const GSEventKeyUpNotification;
 
 + (RetroArch_iOS*)get;
 - (void)runGame:(NSString*)path;
-- (void)gameHasExited;
 
-- (void)pushViewController:(UIViewController*)theView;
+- (void)pushViewController:(UIViewController*)theView isGame:(BOOL)game;
 - (void)popViewController;
-
-- (void)setViewer:(UIViewController*)theView;
 
 - (NSString*)configFilePath;
 

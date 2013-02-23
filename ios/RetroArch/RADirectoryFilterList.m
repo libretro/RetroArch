@@ -69,7 +69,7 @@
 
    NSRegularExpression* expr = [NSRegularExpression regularExpressionWithPattern:regex options:0 error:nil];
 
-   [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:_path filter:expr]];
+   [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:_path filter:expr] isGame:NO];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section

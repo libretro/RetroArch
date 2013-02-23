@@ -93,7 +93,7 @@ static RASettingData* subpath_setting(RAConfig* config, NSString* name, NSString
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Video",
          boolean_setting(config, @"video_smooth", @"Smooth Video", @"true"),
-         boolean_setting(config, @"video_crop_overscan", @"Crop Overscan", @"false"),
+         boolean_setting(config, @"video_crop_overscan", @"Crop Overscan", @"true"),
          subpath_setting(config, @"video_bsnes_shader", @"Shader", @"", shader_path, @"shader"),
          nil],
 

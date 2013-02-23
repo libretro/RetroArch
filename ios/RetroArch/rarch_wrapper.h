@@ -16,12 +16,8 @@
 #ifndef __IOS_RARCH_WRAPPER_H__
 #define __IOS_RARCH_WRAPPER_H__
 
-bool ios_load_game(const char* path);
-void ios_close_game();
-void ios_pause_emulator();
-void ios_resume_emulator();
-void ios_suspend_emulator();
-void ios_activate_emulator();
+// These functions must only be called in gfx/context/ioseagl_ctx.c
+
 bool ios_init_game_view();
 void ios_destroy_game_view();
 void ios_flip_game_view();

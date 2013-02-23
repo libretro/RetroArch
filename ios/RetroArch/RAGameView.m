@@ -16,9 +16,6 @@
 #include "general.h"
 #include "rarch_wrapper.h"
 
-static bool _isRunning;
-static bool _isPaused;
-
 static float screen_scale;
 static int frame_skips = 4;
 static bool is_syncing = true;
@@ -88,22 +85,6 @@ static bool is_syncing = true;
    _notifyLabel.alpha = 0.0f;
 }
 
-- (void)iterate
-{
-   while (_isRunning && !_isPaused)
-   {
-      _isRunning = rarch_main_iterate();
-
-      if (!_isRunning)
-      {
-         ios_close_game();
-         return;
-      }
-      else
-         while(!_isPaused && _isRunning && CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true) == kCFRunLoopRunHandledSource);
-   }
-}
-
 - (void)needsToDie
 {
    glFinish();
@@ -114,94 +95,16 @@ static bool is_syncing = true;
    [EAGLContext setCurrentContext:nil];
 }
 
-- (void)pause
-{
-   _isPaused = true;
-}
-
-- (void)resume
-{
-   if (_isPaused)
-   {
-      _isPaused = false;
-      [self performSelector:@selector(iterate) withObject:nil afterDelay:.02f];
-   }
-}
-
 @end
 
 static RAGameView* gameViewer;
-
-bool ios_load_game(const char* path)
-{
-   [RASettingsList refreshConfigFile];
-   
-   const char* const sd = [[RetroArch_iOS get].system_directory UTF8String];
-   const char* const cf =[[RetroArch_iOS get].configFilePath UTF8String];
-   const char* const libretro = [[RetroArch_iOS get].module_path UTF8String];
-
-   struct rarch_main_wrap main_wrapper = {path, sd, sd, cf, libretro};
-   if (rarch_main_init_wrap(&main_wrapper) == 0)
-   {
-      rarch_init_msg_queue();
-      _isRunning = true;
-   }
-   else
-      _isRunning = false;
-   
-   return _isRunning;
-}
-
-void ios_close_game()
-{
-   if (_isRunning)
-   {
-      rarch_main_deinit();
-      rarch_deinit_msg_queue();
-
-#ifdef PERF_TEST
-      rarch_perf_log();
-#endif
-
-      rarch_main_clear_state();
-      
-      _isRunning = false;
-   }
-   
-   [[RetroArch_iOS get] gameHasExited];
-}
-
-void ios_pause_emulator()
-{
-   if (_isRunning)
-      [gameViewer pause];
-}
-
-void ios_resume_emulator()
-{
-   if (_isRunning)
-      [gameViewer resume];
-}
-
-void ios_suspend_emulator()
-{
-   if (_isRunning)
-      uninit_drivers();
-}
-
-void ios_activate_emulator()
-{
-   if (_isRunning)
-      init_drivers();
-}
 
 bool ios_init_game_view()
 {
    if (!gameViewer)
    {
       gameViewer = [RAGameView new];
-      [[RetroArch_iOS get] setViewer:gameViewer];
-      [gameViewer performSelector:@selector(iterate) withObject:nil afterDelay:.02f];
+      [[RetroArch_iOS get] pushViewController:gameViewer isGame:YES];
    }
    
    return true;
@@ -212,7 +115,7 @@ void ios_destroy_game_view()
    if (gameViewer)
    {
       [gameViewer needsToDie];
-      [[RetroArch_iOS get] setViewer:nil];
+      [[RetroArch_iOS get] popViewController];
       gameViewer = nil;
    }
 }

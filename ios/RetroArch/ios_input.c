@@ -244,6 +244,7 @@ static void *ios_input_init(void)
 {
    input_init_keyboard_lut(rarch_key_map_hidusage);
 
+   ios_current_touch_count = 0;
    memset(ios_touches, 0, sizeof(ios_touches));
    memset(ios_keys, 0, sizeof(ios_keys));
    return (void*)-1;

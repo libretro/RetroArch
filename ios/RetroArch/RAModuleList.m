@@ -59,13 +59,13 @@
    RAModuleInfo* info = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];
    [RetroArch_iOS get].module_path = info.path;
    
-   [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:nil]];
+   [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:nil] isGame:NO];
 }
 
 - (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath
 {
    RAModuleInfo* info = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];
-   [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:info]];
+   [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:info] isGame:NO];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section

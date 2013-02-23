@@ -60,7 +60,7 @@
    RADirectoryItem* path = [_list objectAtIndex: indexPath.row];
 
    if(path.isDirectory)
-      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:path.path]];
+      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:path.path] isGame:NO];
    else
       [[RetroArch_iOS get] runGame:path.path];
 }

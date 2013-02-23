@@ -15,6 +15,7 @@
 
 #include <sys/stat.h>
 #include "rarch_wrapper.h"
+#include "general.h"
 
 #define MAX_TOUCH 16
 extern struct
@@ -29,10 +30,49 @@ extern bool ios_keys[256];
 
 extern uint32_t ios_current_touch_count;
 
+@interface RANavigator : UINavigationController
+// 0 if no RAGameView is in the navigator
+// 1 if a RAGameView is the top
+// 2+ if there are views pushed ontop of the RAGameView
+@property unsigned gameAndAbove;
+
+- (void)pushViewController:(UIViewController*)theView isGame:(BOOL)game;
+@end
+
+@implementation RANavigator
+- (void)pushViewController:(UIViewController*)theView isGame:(BOOL)game
+{
+   assert(!game || self.gameAndAbove == 0);
+
+   if (game || self.gameAndAbove) self.gameAndAbove ++;
+   
+   [[UIApplication sharedApplication] setStatusBarHidden:game withAnimation:UIStatusBarAnimationNone];
+   self.navigationBarHidden = game;
+   [self pushViewController:theView animated:!(self.gameAndAbove == 1 || self.gameAndAbove == 2)];
+}
+
+- (UIViewController *)popViewControllerAnimated:(BOOL)animated
+{
+   const bool poppingFromGame = self.gameAndAbove == 1;
+   const bool poppingToGame = self.gameAndAbove == 2;
+   if (self.gameAndAbove) self.gameAndAbove --;
+   
+   if (self.gameAndAbove == 1)
+      [[RetroArch_iOS get] performSelector:@selector(startTimer)];
+
+   [[UIApplication sharedApplication] setStatusBarHidden:poppingToGame withAnimation:UIStatusBarAnimationNone];
+   self.navigationBarHidden = poppingToGame;
+   return [super popViewControllerAnimated:!poppingToGame && !poppingFromGame];
+}
+@end
+
 @implementation RetroArch_iOS
 {
    UIWindow* _window;
-   UINavigationController* _navigator;
+   RANavigator* _navigator;
+   NSTimer* _gameTimer;
+   
+   bool _isRunning;
 }
 
 + (void)displayErrorMessage:(NSString*)message
@@ -50,36 +90,9 @@ extern uint32_t ios_current_touch_count;
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
 }
 
-- (void)runGame:(NSString*)path
+- (void)showSettings
 {
-   ios_load_game([path UTF8String]);
-}
-
-- (void)gameHasExited
-{
-   _navigator = [[UINavigationController alloc] init];
-   [_navigator pushViewController: [[RAModuleList alloc] init] animated:YES];
-
-   _window.rootViewController = _navigator;
-}
-
-- (void)pushViewController:(UIViewController*)theView
-{
-   if (_navigator != nil)
-      [_navigator pushViewController:theView animated:YES];
-}
-
-- (void)popViewController
-{
-   if (_navigator != nil)
-      [_navigator popViewControllerAnimated:YES];
-}
-
-- (void)setViewer:(UIViewController*)theView
-{
-   _navigator = nil;
-   [[UIApplication sharedApplication] setStatusBarHidden:theView ? YES : NO withAnimation:UIStatusBarAnimationNone];
-   _window.rootViewController = theView;
+   [self pushViewController:[RASettingsList new] isGame:NO];
 }
 
 - (NSString*)configFilePath
@@ -108,13 +121,13 @@ extern uint32_t ios_current_touch_count;
                           style:UIBarButtonItemStyleBordered
                           target:nil action:nil];
    self.settings_button.target = self;
-   self.settings_button.action = @selector(show_settings);
+   self.settings_button.action = @selector(showSettings);
 
    [[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationNone];
 
    // Setup window
-   _navigator = [[UINavigationController alloc] init];
-   [_navigator pushViewController: [[RAModuleList alloc] init] animated:YES];
+   _navigator = [RANavigator new];
+   [_navigator pushViewController: [RAModuleList new] animated:YES];
 
    _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    _window.rootViewController = _navigator;
@@ -125,26 +138,106 @@ extern uint32_t ios_current_touch_count;
    [[NSNotificationCenter defaultCenter] addObserver: self selector: @selector(keyReleased:) name: GSEventKeyUpNotification object: nil];
 }
 
+#pragma mark VIEW MANAGEMENT
+- (void)pushViewController:(UIViewController*)theView isGame:(BOOL)game
+{
+   [_navigator pushViewController:theView isGame:game];
+   [self startTimer];
+}
+
+- (void)popViewController
+{
+   [_navigator popViewControllerAnimated:YES];
+   [self startTimer];
+}
+
+#pragma mark EMULATION
+- (void)runGame:(NSString*)path
+{
+   [RASettingsList refreshConfigFile];
+   
+   const char* const sd = [[RetroArch_iOS get].system_directory UTF8String];
+   const char* const cf =[[RetroArch_iOS get].configFilePath UTF8String];
+   const char* const libretro = [[RetroArch_iOS get].module_path UTF8String];
+
+   struct rarch_main_wrap main_wrapper = {[path UTF8String], sd, sd, cf, libretro};
+   if (rarch_main_init_wrap(&main_wrapper) == 0)
+   {
+      _isRunning = true;
+      rarch_init_msg_queue();
+      [self startTimer];
+   }
+   else
+   {
+      _isRunning = false;
+      [RetroArch_iOS displayErrorMessage:@"Failed to load game."];
+   }
+}
+
+- (void)closeGame
+{
+   if (_isRunning)
+   {
+      rarch_main_deinit();
+      rarch_deinit_msg_queue();
+
+#ifdef PERF_TEST
+      rarch_perf_log();
+#endif
+
+      rarch_main_clear_state();
+   }
+   
+   [self stopTimer];
+   _isRunning = false;
+}
+
+- (void)iterate
+{
+   if (!_isRunning || _navigator.gameAndAbove != 1)
+      [self stopTimer];
+   else if (_isRunning && !rarch_main_iterate())
+      [self closeGame];
+}
+
+- (void)startTimer
+{
+   if (!_gameTimer)
+      _gameTimer = [NSTimer scheduledTimerWithTimeInterval:0.001f target:self selector:@selector(iterate) userInfo:nil repeats:YES];
+}
+
+- (void)stopTimer
+{
+   if (_gameTimer)
+      [_gameTimer invalidate];
+   
+   _gameTimer = nil;
+}
+
+#pragma mark LIFE CYCLE
 - (void)applicationDidBecomeActive:(UIApplication*)application
 {
-   ios_resume_emulator();
+   [self startTimer];
 }
 
 - (void)applicationWillResignActive:(UIApplication*)application
 {
-   ios_pause_emulator();
+   [self stopTimer];
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
 {
-   ios_activate_emulator();
+   if (_isRunning)
+      init_drivers();
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
-   ios_suspend_emulator();
+   if (_isRunning)
+      uninit_drivers();
 }
 
+#pragma mark INPUT
 -(void) keyPressed: (NSNotification*) notification
 {
    int keycode = [[notification.userInfo objectForKey:@"keycode"] intValue];
@@ -155,11 +248,6 @@ extern uint32_t ios_current_touch_count;
 {
    int keycode = [[notification.userInfo objectForKey:@"keycode"] intValue];
    if (keycode < 256) ios_keys[keycode] = false;
-}
-
-- (void)show_settings
-{
-   [self pushViewController:[RASettingsList new]];
 }
 
 - (void)processTouches:(NSArray*)touches
@@ -180,9 +268,10 @@ extern uint32_t ios_current_touch_count;
          if (coord.y < view.bounds.size.height / 10.0f)
          {
             float tenpct = view.bounds.size.width / 10.0f;
+            if (_navigator.gameAndAbove == 1)
             if (coord.x >= tenpct * 4 && coord.x <= tenpct * 6)
             {
-               ios_close_game();
+               [self closeGame];
             }
          }
       }
