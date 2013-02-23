@@ -155,6 +155,7 @@ struct settings
    struct 
    {
       char driver[32];
+      char gl_context[32];
       float xscale;
       float yscale;
       bool fullscreen;
