@@ -378,6 +378,7 @@ static bool gfx_ctx_set_video_mode(
    // This can blow up on some drivers. It's not fatal, so override errors for this call.
    int (*old_handler)(Display*, XErrorEvent*) = XSetErrorHandler(nul_handler);
    XSetInputFocus(g_dpy, g_win, RevertToNone, CurrentTime);
+   XSync(g_dpy, False);
    XSetErrorHandler(old_handler);
 
    XFree(vi);
