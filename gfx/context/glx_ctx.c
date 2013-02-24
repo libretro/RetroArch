@@ -361,14 +361,22 @@ static bool gfx_ctx_set_video_mode(
    g_is_double = val;
    if (g_is_double)
    {
+      const char *swap_func = NULL;
+      g_pglSwapInterval = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalMESA");
+      if (g_pglSwapInterval)
+         swap_func = "glXSwapIntervalMESA";
+
       if (!g_pglSwapInterval)
-         g_pglSwapInterval = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapInterval");
-      if (!g_pglSwapInterval)
-         g_pglSwapInterval = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalMESA");
-      if (!g_pglSwapInterval)
+      {
          g_pglSwapInterval = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalSGI");
+         if (g_pglSwapInterval)
+            swap_func = "glXSwapIntervalSGI";
+      }
+
       if (!g_pglSwapInterval)
          RARCH_WARN("[GLX]: Cannot find swap interval call.\n");
+      else
+         RARCH_LOG("[GLX]: Found swap function: %s.\n", swap_func);
    }
    else
       RARCH_WARN("[GLX]: Context is not double buffered!.\n");
@@ -454,6 +462,7 @@ static void gfx_ctx_destroy(void)
    }
 
    g_inited = false;
+   g_pglSwapInterval = NULL;
 }
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
