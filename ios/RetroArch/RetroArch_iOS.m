@@ -17,19 +17,6 @@
 #include "rarch_wrapper.h"
 #include "general.h"
 
-#define MAX_TOUCH 16
-extern struct
-{
-   bool is_down;
-   int16_t screen_x, screen_y;
-   int16_t fixed_x, fixed_y;
-   int16_t full_x, full_y;
-} ios_touches[MAX_TOUCH];
-
-extern bool ios_keys[256];
-
-extern uint32_t ios_current_touch_count;
-
 @interface RANavigator : UINavigationController
 // 0 if no RAGameView is in the navigator
 // 1 if a RAGameView is the top
@@ -71,7 +58,9 @@ extern uint32_t ios_current_touch_count;
    UIWindow* _window;
    RANavigator* _navigator;
    NSTimer* _gameTimer;
+   UIView* _pauseView;
    
+   bool _isPaused;
    bool _isRunning;
 }
 
@@ -123,6 +112,12 @@ extern uint32_t ios_current_touch_count;
    self.settings_button.target = self;
    self.settings_button.action = @selector(showSettings);
 
+   // Load pause menu
+   UINib* xib = [UINib nibWithNibName:@"PauseView" bundle:nil];
+   _pauseView = [[xib instantiateWithOwner:self options:nil] lastObject];
+   _pauseView.opaque = NO;
+   _pauseView.alpha = 0.0f;
+
    [[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationNone];
 
    // Setup window
@@ -134,21 +129,24 @@ extern uint32_t ios_current_touch_count;
    [_window makeKeyAndVisible];
    
    // Setup keyboard hack
-   [[NSNotificationCenter defaultCenter] addObserver: self selector: @selector(keyPressed:) name: GSEventKeyDownNotification object: nil];
-   [[NSNotificationCenter defaultCenter] addObserver: self selector: @selector(keyReleased:) name: GSEventKeyUpNotification object: nil];
 }
 
 #pragma mark VIEW MANAGEMENT
 - (void)pushViewController:(UIViewController*)theView isGame:(BOOL)game
 {
+   if (game)
+      [theView.view addSubview:_pauseView];
+
    [_navigator pushViewController:theView isGame:game];
    [self startTimer];
 }
 
 - (void)popViewController
 {
+   if (_navigator.gameAndAbove == 1)
+      [_pauseView removeFromSuperview];
+
    [_navigator popViewControllerAnimated:YES];
-   [self startTimer];
 }
 
 #pragma mark EMULATION
@@ -194,7 +192,7 @@ extern uint32_t ios_current_touch_count;
 
 - (void)iterate
 {
-   if (!_isRunning || _navigator.gameAndAbove != 1)
+   if (_isPaused || !_isRunning || _navigator.gameAndAbove != 1)
       [self stopTimer];
    else if (_isRunning && !rarch_main_iterate())
       [self closeGame];
@@ -238,72 +236,55 @@ extern uint32_t ios_current_touch_count;
 }
 
 #pragma mark INPUT
--(void) keyPressed: (NSNotification*) notification
+- (void)touchesBegan:(NSSet*)theTouches withEvent:(UIEvent *)event
 {
-   int keycode = [[notification.userInfo objectForKey:@"keycode"] intValue];
-   if (keycode < 256) ios_keys[keycode] = true;
-}
-
--(void) keyReleased: (NSNotification*) notification
-{
-   int keycode = [[notification.userInfo objectForKey:@"keycode"] intValue];
-   if (keycode < 256) ios_keys[keycode] = false;
-}
-
-- (void)processTouches:(NSArray*)touches
-{
-   ios_current_touch_count = [touches count];
-   
+   NSArray* touches = [theTouches allObjects];
    UIView* view = _window.rootViewController.view;
    
-   for(int i = 0; i != [touches count]; i ++)
+   const int count = [touches count];
+   for(int i = 0; i != count; i ++)
    {
-      UITouch *touch = [touches objectAtIndex:i];
+      UITouch* touch = [touches objectAtIndex:i];
       CGPoint coord = [touch locationInView:view];
-      float scale = [[UIScreen mainScreen] scale];
       
       // Exit hack!
-      if (touch.tapCount == 3)
+      if (!_isPaused && _navigator.gameAndAbove == 1 && touch.tapCount == 3)
       {
          if (coord.y < view.bounds.size.height / 10.0f)
          {
             float tenpct = view.bounds.size.width / 10.0f;
-            if (_navigator.gameAndAbove == 1)
             if (coord.x >= tenpct * 4 && coord.x <= tenpct * 6)
             {
-               [self closeGame];
+               _isPaused = true;
+               _pauseView.frame = CGRectMake(view.bounds.size.width / 2.0f - 100.0f, view.bounds.size.height / 2.0f - 100.0f, 200.0f, 200.0f);
+               
+               [UIView animateWithDuration:0.2
+                  animations:^{_pauseView.alpha = 1.0f;}
+                  completion:^(BOOL finished){}];
             }
          }
       }
-
-      ios_touches[i].is_down = (touch.phase != UITouchPhaseEnded) && (touch.phase != UITouchPhaseCancelled);
-      ios_touches[i].screen_x = coord.x * scale;
-      ios_touches[i].screen_y = coord.y * scale;
    }
 }
 
-- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
+#pragma mark PAUSE MENU
+- (IBAction)closeGamePressed:(id)sender
 {
-   [super touchesBegan:touches withEvent:event];
-   [self processTouches:[[event allTouches] allObjects]];
+   [self closeGame];
+   _pauseView = nil;
 }
 
-- (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
+- (IBAction)resumeGamePressed:(id)sender
 {
-   [super touchesMoved:touches withEvent:event];
-   [self processTouches:[[event allTouches] allObjects]];
-}
-
-- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
-{
-   [super touchesEnded:touches withEvent:event];
-   [self processTouches:[[event allTouches] allObjects]];
-}
-
-- (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
-{
-   [super touchesCancelled:touches withEvent:event];
-   [self processTouches:[[event allTouches] allObjects]];
+   if (_isPaused)
+      [UIView animateWithDuration:0.2
+         animations:^{_pauseView.alpha = 0.0;}
+         completion:^(BOOL finished)
+         {
+            _isPaused = false;
+            [self startTimer];
+         }
+      ];
 }
 
 @end

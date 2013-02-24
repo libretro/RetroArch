@@ -23,6 +23,7 @@
 
 NSString *const GSEventKeyDownNotification = @"GSEventKeyDownHackNotification";
 NSString *const GSEventKeyUpNotification = @"GSEventKeyUpHackNotification";
+NSString *const RATouchNotification = @"RATouchNotification";
 
 @interface RApplication : UIApplication
 @end
@@ -36,11 +37,17 @@ NSString *const GSEventKeyUpNotification = @"GSEventKeyUpHackNotification";
 {
    [super sendEvent:event];
 
-   if ([event respondsToSelector:@selector(_gsEvent)])
+   if ([[event allTouches] count])
+   {
+      NSDictionary* inf = [[NSDictionary alloc] initWithObjectsAndKeys:
+                           event, @"event", nil];
+      [[NSNotificationCenter defaultCenter] postNotificationName:RATouchNotification object:nil userInfo:inf];
+   }
+   else if ([event respondsToSelector:@selector(_gsEvent)])
    {
       int* eventMem = (int *)(void*)CFBridgingRetain([event performSelector:@selector(_gsEvent)]);
       int eventType = eventMem ? eventMem[GSEVENT_TYPE] : 0;
-       
+      
       if (eventMem && (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP))
       {
          // Read keycode from GSEventKey

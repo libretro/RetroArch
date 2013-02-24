@@ -15,6 +15,8 @@
 
 #import "settings.h"
 
+extern NSString* const GSEventKeyUpNotification;
+
 static const struct
 {
    const char* const keyname;
