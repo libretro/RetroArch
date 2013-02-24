@@ -26,14 +26,7 @@
 
 #include "bbutil.h"
 
-#ifdef USING_GL11
-#include <GLES/gl.h>
-#include <GLES/glext.h>
-#elif defined(USING_GL20)
 #include <GLES2/gl2.h>
-#else
-#error bbutil must be compiled with either USING_GL11 or USING_GL20 flags
-#endif
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -120,17 +113,9 @@ bbutil_init_egl(screen_context_t ctx) {
                             EGL_RENDERABLE_TYPE, 0,
                             EGL_NONE};
 
-#ifdef USING_GL11
-    usage = SCREEN_USAGE_OPENGL_ES1 | SCREEN_USAGE_ROTATION;
-    attrib_list[9] = EGL_OPENGL_ES_BIT;
-#elif defined(USING_GL20)
     usage = SCREEN_USAGE_OPENGL_ES2 | SCREEN_USAGE_ROTATION;
     attrib_list[9] = EGL_OPENGL_ES2_BIT;
     EGLint attributes[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
-#else
-    fprintf(stderr, "bbutil should be compiled with either USING_GL11 or USING_GL20 -D flags\n");
-    return EXIT_FAILURE;
-#endif
 
     //Simple egl initialization
     screen_ctx = ctx;
@@ -162,11 +147,7 @@ bbutil_init_egl(screen_context_t ctx) {
         return EXIT_FAILURE;
     }
 
-#ifdef USING_GL20
-        egl_ctx = eglCreateContext(egl_disp, egl_conf, EGL_NO_CONTEXT, attributes);
-#elif defined(USING_GL11)
-        egl_ctx = eglCreateContext(egl_disp, egl_conf, EGL_NO_CONTEXT, NULL);
-#endif
+    egl_ctx = eglCreateContext(egl_disp, egl_conf, EGL_NO_CONTEXT, attributes);
 
     if (egl_ctx == EGL_NO_CONTEXT) {
         bbutil_egl_perror("eglCreateContext");
@@ -539,28 +520,7 @@ void bbutil_render_text(font_t* font, const char* msg, float x, float y, float r
         //Assume we are only working with typewriter fonts
         pen_x += font->advance[c];
     }
-#ifdef USING_GL11
-    glEnable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
 
-    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
-    glColor4f(r, g, b, a);
-
-    glVertexPointer(2, GL_FLOAT, 0, vertices);
-    glTexCoordPointer(2, GL_FLOAT, 0, texture_coords);
-    glBindTexture(GL_TEXTURE_2D, font->font_texture);
-
-    glDrawElements(GL_TRIANGLES, 6 * msg_len, GL_UNSIGNED_SHORT, indices);
-
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisable(GL_TEXTURE_2D);
-    glDisable(GL_BLEND);
-#elif defined USING_GL20
     if (!text_program_initialized) {
         GLint status;
 
@@ -711,9 +671,6 @@ void bbutil_render_text(font_t* font, const char* msg, float x, float y, float r
 
     glDisableVertexAttribArray(positionLoc);
     glDisableVertexAttribArray(texcoordLoc);
-#else
-    fprintf(stderr, "bbutil should be compiled with either USING_GL11 or USING_GL20 -D flags\n");
-#endif
 
     free(vertices);
     free(texture_coords);
