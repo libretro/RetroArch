@@ -3009,9 +3009,12 @@ static bool rarch_main_idle_iterate(void)
    return true;
 }
 
-
-int rarch_main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
+#ifdef HAVE_RARCH_MAIN_IMPLEMENTATION
+   // Consoles use the higher level API.
+   return rarch_main(argc, argv);
+#else
    int init_ret;
    if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
    rarch_init_msg_queue();
@@ -3025,11 +3028,6 @@ int rarch_main(int argc, char *argv[])
 
    rarch_main_clear_state();
    return 0;
-}
-
-// Consoles use the higher level API.
-int main(int argc, char *argv[])
-{
-   return rarch_main(argc, argv);
+#endif
 }
 #endif
