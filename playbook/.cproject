@@ -164,7 +164,6 @@
 									<listOptionValue builtIn="false" value="EGL"/>
 									<listOptionValue builtIn="false" value="GLESv2"/>
 									<listOptionValue builtIn="false" value="freetype"/>
-									<listOptionValue builtIn="false" value="png"/>
 									<listOptionValue builtIn="false" value="m"/>
 								</option>
 								<option id="com.qnx.qcc.option.linker.libraryPaths.1833953103" name="Library Paths (-L)" superClass="com.qnx.qcc.option.linker.libraryPaths" valueType="libPaths">

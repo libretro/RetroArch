@@ -134,7 +134,7 @@ VIDEO IMAGE
 #include "../../ps3/image.c"
 #elif defined(_XBOX1)
 #include "../../xdk/image.c"
-#elif defined(ANDROID)
+#elif defined(ANDROID) || defined(__BLACKBERRY_QNX__)
 #include "../../gfx/image.c"
 #include "../../gfx/rpng/rpng.c"
 #endif
