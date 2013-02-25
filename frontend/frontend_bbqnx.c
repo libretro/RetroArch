@@ -45,31 +45,45 @@ void handle_screen_event(bps_event_t *event)
 
 int rarch_main(int argc, char *argv[])
 {
-   bps_initialize();   //Initialize BPS library
+   rarch_main_clear_state();
+
+   g_extern.verbose = true;
+
+   RARCH_LOG("Step 0.9\n");
 
    int init_ret;
    struct rarch_main_wrap args = {0};
 
-   args.verbose = true;
+   args.verbose = g_extern.verbose;
    args.sram_path = NULL;
    args.state_path = NULL;
-   args.rom_path = "/sdcard/dkc.sfc";
-   args.libretro_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/lib/libsnes9x-next.so";
-   args.config_path = NULL;
+   args.rom_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/advancewars.gba";
+   args.libretro_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/lib/libvba-next.so";
+   args.config_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/retroarch.cfg";
 
-   if ((init_ret = rarch_main_init_wrap(&args))) return init_ret;
+   if ((init_ret = rarch_main_init_wrap(&args)))
+   {
+      RARCH_LOG("Step 1.0a\n");
+      return init_ret;
+   }
+   RARCH_LOG("Step 1.0\n");
    rarch_init_msg_queue();
+   RARCH_LOG("Step 1.1\n");
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
+   RARCH_LOG("Step 1.2\n");
    rarch_main_deinit();
+   RARCH_LOG("Step 1.3\n");
    rarch_deinit_msg_queue();
+   RARCH_LOG("Step 1.4\n");
 
 #ifdef PERF_TEST
    rarch_perf_log();
 #endif
 
    rarch_main_clear_state();
+   RARCH_LOG("Step 1.5\n");
 
-   bps_shutdown();     //Shut down BPS library
+   RARCH_LOG("Step 1.6\n");
 
    return 0;
 }
