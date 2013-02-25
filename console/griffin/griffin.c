@@ -383,9 +383,14 @@ MAIN
 #include "../../frontend/frontend_xenon.c"
 #elif defined(RARCH_CONSOLE) || defined(PSP)
 #include "../../frontend/frontend_console.c"
-#include "../../frontend/frontend.c"
+#elif defined(__BLACKBERRY_QNX__)
+#include "../../frontend/frontend_bbqnx.c"
 #elif defined(ANDROID)
 #include "../../frontend/frontend_android.c"
+#endif
+
+#ifdef HAVE_RARCH_MAIN_IMPLEMENTATION
+#include "../../frontend/frontend.c"
 #endif
 
 /*============================================================
