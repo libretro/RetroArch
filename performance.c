@@ -36,6 +36,10 @@
 #include <time.h>
 #endif
 
+#ifdef __BLACKBERRY_QNX__
+#define CLOCK_MONOTONIC 2
+#endif
+
 #if defined(__PSL1GHT__)
 #include <sys/time.h>
 #elif defined(__CELLOS_LV2__)
