@@ -23,7 +23,7 @@
 - (void)runGame:(NSString*)path;
 
 - (void)pushViewController:(UIViewController*)theView isGame:(BOOL)game;
-- (void)popViewController;
+- (UIViewController*)popViewController;
 
 - (NSString*)configFilePath;
 

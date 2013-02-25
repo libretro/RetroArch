@@ -20,12 +20,6 @@
 #define ALMOST_INVISIBLE .021f
 
 @interface RANavigator : UINavigationController
-// 0 if no RAGameView is in the navigator
-// 1 if a RAGameView is the top
-// 2+ if there are views pushed ontop of the RAGameView
-@property unsigned gameAndAbove;
-
-- (void)pushViewController:(UIViewController*)theView isGame:(BOOL)game;
 @end
 
 @implementation RANavigator
@@ -43,29 +37,14 @@
    return self;
 }
 
-- (void)pushViewController:(UIViewController*)theView isGame:(BOOL)game
-{
-   assert(!game || self.gameAndAbove == 0);
-
-   if (game || self.gameAndAbove) self.gameAndAbove ++;
-   
-   [[UIApplication sharedApplication] setStatusBarHidden:game withAnimation:UIStatusBarAnimationNone];
-   self.navigationBarHidden = game;
-   [self pushViewController:theView animated:!(self.gameAndAbove == 1 || self.gameAndAbove == 2)];
-}
-
 - (UIViewController *)popViewControllerAnimated:(BOOL)animated
 {
-   const bool poppingFromGame = self.gameAndAbove == 1;
-   const bool poppingToGame = self.gameAndAbove == 2;
-   if (self.gameAndAbove) self.gameAndAbove --;
-   
-   if (self.gameAndAbove == 1)
-      [[RetroArch_iOS get] performSelector:@selector(startTimer)];
+   return [_delegate popViewController];
+}
 
-   [[UIApplication sharedApplication] setStatusBarHidden:poppingToGame withAnimation:UIStatusBarAnimationNone];
-   self.navigationBarHidden = poppingToGame;
-   return [super popViewControllerAnimated:!poppingToGame && !poppingFromGame];
+- (UIViewController*)reallyPopViewControllerAnimated:(BOOL)animated
+{
+   return [super popViewControllerAnimated:animated];
 }
 
 - (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
@@ -83,9 +62,16 @@
 
    UIView* _pauseView;
    UIView* _pauseIndicatorView;
+   RAGameView* _game;
    
    bool _isPaused;
    bool _isRunning;
+   
+   // 0 if no RAGameView is in the navigator
+   // 1 if a RAGameView is the top
+   // 2+ if there are views pushed ontop of the RAGameView
+   unsigned _gameAndAbove;
+
 }
 
 + (void)displayErrorMessage:(NSString*)message
@@ -106,9 +92,7 @@
 - (NSString*)configFilePath
 {
    if (self.module_path)
-   {
       return [NSString stringWithFormat:@"%@/%@.cfg", self.system_directory, [[self.module_path lastPathComponent] stringByDeletingPathExtension]];
-   }
    
    return nil;
 }
@@ -168,30 +152,54 @@
 
 - (void)pushViewController:(UIViewController*)theView isGame:(BOOL)game
 {
-   [_navigator pushViewController:theView isGame:game];
+   assert(!game || _gameAndAbove == 0);
+
+   _gameAndAbove += (game || _gameAndAbove) ? 1 : 0;
+
+   // Update status and navigation bars
+   [[UIApplication sharedApplication] setStatusBarHidden:game withAnimation:UIStatusBarAnimationNone];
+   _navigator.navigationBarHidden = game;
+   
+   //
+   [_navigator pushViewController:theView animated:!(_gameAndAbove == 1 || _gameAndAbove == 2)];
    
    if (game)
    {
+      _game = (RAGameView*)theView;
+   
       _pauseIndicatorView.alpha = ALMOST_INVISIBLE;
       _pauseIndicatorView.userInteractionEnabled = YES;
 
       [theView.view addSubview:_pauseView];
       [theView.view addSubview:_pauseIndicatorView];
+
+      [self startTimer];
+      [self performSelector:@selector(screenDidRotate) withObject:nil afterDelay:.01f];
    }
-   
-   [self startTimer];
-   [self performSelector:@selector(screenDidRotate) withObject:nil afterDelay:.01f];
 }
 
-- (void)popViewController
+- (UIViewController*)popViewController
 {
-   if (_navigator.gameAndAbove == 1)
+   const bool poppingFromGame = _gameAndAbove == 1;
+   const bool poppingToGame = _gameAndAbove == 2;
+   
+   _gameAndAbove -= (_gameAndAbove) ? 1 : 0;
+   
+   if (poppingToGame)
+      [self startTimer];
+
+   // Update status and navigation bar
+   [[UIApplication sharedApplication] setStatusBarHidden:poppingToGame withAnimation:UIStatusBarAnimationNone];
+   _navigator.navigationBarHidden = poppingToGame;
+   
+   //
+   if (poppingFromGame)
    {
       [_pauseView removeFromSuperview];
       [_pauseIndicatorView removeFromSuperview];
    }
-
-   [_navigator popViewControllerAnimated:YES];
+   
+   return [_navigator reallyPopViewControllerAnimated:!poppingToGame && !poppingFromGame];
 }
 
 #pragma mark EMULATION
@@ -237,7 +245,7 @@
 
 - (void)iterate
 {
-   if (_isPaused || !_isRunning || _navigator.gameAndAbove != 1)
+   if (_isPaused || !_isRunning || _gameAndAbove != 1)
       [self stopTimer];
    else if (_isRunning && !rarch_main_iterate())
       [self closeGame];
@@ -306,7 +314,7 @@
 
 - (IBAction)pauseGamePressed:(id)sender
 {
-   if (_isRunning && !_isPaused && _navigator.gameAndAbove == 1)
+   if (_isRunning && !_isPaused && _gameAndAbove == 1)
    {
       _isPaused = true;
       
