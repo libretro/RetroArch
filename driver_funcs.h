@@ -18,7 +18,17 @@
 #ifndef _RARCH_DRIVER_FUNCS_H
 #define _RARCH_DRIVER_FUNCS_H
 
-#if !defined(HAVE_GRIFFIN) || defined(ANDROID) /* Normal */
+#define audio_init_func(device, rate, latency)  driver.audio->init(device, rate, latency)
+#define audio_write_func(buf, size)             driver.audio->write(driver.audio_data, buf, size)
+#define audio_stop_func()                       driver.audio->stop(driver.audio_data)
+#define audio_start_func()                      driver.audio->start(driver.audio_data)
+#define audio_set_nonblock_state_func(state)    driver.audio->set_nonblock_state(driver.audio_data, state)
+#define audio_free_func()                       driver.audio->free(driver.audio_data)
+#define audio_use_float_func()                  driver.audio->use_float(driver.audio_data)
+#define audio_write_avail_func()                driver.audio->write_avail(driver.audio_data)
+#define audio_buffer_size_func()                driver.audio->buffer_size(driver.audio_data)
+
+#if !defined(RARCH_CONSOLE) /* Normal */
 
 #define audio_init_func(device, rate, latency) driver.audio->init(device, rate, latency)
 #define audio_write_func(buf, size) driver.audio->write(driver.audio_data, buf, size)
@@ -69,33 +79,7 @@ static inline bool input_key_pressed_func(int key)
    return ret;
 }
 
-#else /* for Griffin */
-
-#if !defined(HAVE_RSOUND) && defined(HAVE_SL)
-
-#define audio_init_func(device, rate, latency)  sl_init(device, rate, latency)
-#define audio_write_func(buf, size)             sl_write(driver.audio_data, buf, size)
-#define audio_stop_func()                       sl_stop(driver.audio_data)
-#define audio_start_func()                      sl_start(driver.audio_data)
-#define audio_set_nonblock_state_func(state)    sl_set_nonblock_state(driver.audio_data, state)
-#define audio_free_func()                       sl_free(driver.audio_data)
-#define audio_use_float_func()                  driver.audio->use_float(driver.audio_data)
-#define audio_write_avail_func()                sl_write_avail(driver.audio_data)
-#define audio_buffer_size_func()                (BUFFER_SIZE * ((sl_t*)driver.audio_data)->buf_count)
-
 #else
-
-#define audio_init_func(device, rate, latency)  driver.audio->init(device, rate, latency)
-#define audio_write_func(buf, size)             driver.audio->write(driver.audio_data, buf, size)
-#define audio_stop_func()                       driver.audio->stop(driver.audio_data)
-#define audio_start_func()                      driver.audio->start(driver.audio_data)
-#define audio_set_nonblock_state_func(state)    driver.audio->set_nonblock_state(driver.audio_data, state)
-#define audio_free_func()                       driver.audio->free(driver.audio_data)
-#define audio_use_float_func()                  driver.audio->use_float(driver.audio_data)
-#define audio_write_avail_func()                driver.audio->write_avail(driver.audio_data)
-#define audio_buffer_size_func()                driver.audio->buffer_size(driver.audio_data)
-
-#endif
 
 /*============================================================
   VIDEO
