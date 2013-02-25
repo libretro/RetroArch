@@ -646,7 +646,10 @@ static void print_compiler(FILE *file)
 static void print_help(void)
 {
    puts("===================================================================");
+#ifndef __BLACKBERRY_QNX__
+   /* To get around error 'too many decimal points in number - expected ')' before numeric constant */
    puts("RetroArch: Frontend for libretro -- v" PACKAGE_VERSION " --");
+#endif
    print_compiler(stdout);
    puts("===================================================================");
    puts("Usage: retroarch [rom file] [options...]");
