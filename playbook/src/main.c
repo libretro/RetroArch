@@ -242,7 +242,6 @@ int initialize() {
 void render() {
     // Increment the angle by 0.5 degrees
     static float angle = 0.0f;
-    angle += 0.5f * M_PI / 180.0f;
 
     //Typical render pass
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

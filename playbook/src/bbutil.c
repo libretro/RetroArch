@@ -45,14 +45,12 @@ static screen_display_t screen_disp;
 static int nbuffers = 2;
 static int initialized = 0;
 
-#ifdef USING_GL20
 static GLuint text_rendering_program;
 static int text_program_initialized = 0;
 static GLint positionLoc;
 static GLint texcoordLoc;
 static GLint textureLoc;
 static GLint colorLoc;
-#endif
 
 struct font_t {
     unsigned int font_texture;

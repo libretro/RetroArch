@@ -194,11 +194,9 @@ FONTS
 
 #if defined(HAVE_OPENGL) || defined(HAVE_D3D8) || defined(HAVE_D3D9)
 
-#ifdef HAVE_FREETYPE
+#if defined(HAVE_FREETYPE)
 #include "../../gfx/fonts/freetype.c"
-#endif
-
-#ifndef DONT_HAVE_BITMAPFONTS
+#elif !defined(DONT_HAVE_BITMAPFONTS)
 #include "../../gfx/fonts/fonts.c"
 #include "../../gfx/fonts/bitmapfont.c"
 #endif
@@ -313,6 +311,10 @@ AUDIO
 
 #ifdef HAVE_SL
 #include "../../audio/opensl.c"
+#endif
+
+#ifdef HAVE_AL
+#include "../../audio/openal.c"
 #endif
 
 #if defined(HAVE_NULLAUDIO)

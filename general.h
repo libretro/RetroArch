@@ -67,7 +67,7 @@
 #endif
 
 // Wii and PSL1GHT - for usleep (among others)
-#if defined(GEKKO) || defined(__PSL1GHT__)
+#if defined(GEKKO) || defined(__PSL1GHT__) || defined(__BLACKBERRY_QNX__)
 #include <unistd.h>
 #endif
 
@@ -760,7 +760,7 @@ static inline void rarch_sleep(unsigned msec)
    Sleep(msec);
 #elif defined(XENON)
    udelay(1000 * msec);
-#elif defined(GEKKO) || defined(__PSL1GHT__)
+#elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__BLACKBERRY_QNX__)
    usleep(1000 * msec);
 #else
    struct timespec tv = {0};

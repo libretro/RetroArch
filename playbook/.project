@@ -27,7 +27,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.buildLocation</key>
-					<value>${workspace_loc:/CubeRotate/Device-Debug}</value>
+					<value>${workspace_loc:/CubeRotate/Device-Release}</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.contents</key>
@@ -73,4 +73,11 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 		<nature>com.qnx.tools.ide.bbt.core.bbtnature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>src/griffin.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/console/griffin/griffin.c</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>

@@ -20,7 +20,7 @@
 							<option id="com.qnx.qcc.option.cpu.2049874529" name="Target CPU:" superClass="com.qnx.qcc.option.cpu" value="com.qnx.qcc.option.gen.cpu.armle-v7" valueType="enumerated"/>
 							<targetPlatform archList="all" binaryParser="com.qnx.tools.ide.qde.core.QDEBynaryParser" id="com.qnx.qcc.targetPlatform.1371677239" osList="all" superClass="com.qnx.qcc.targetPlatform"/>
 							<builder buildPath="${workspace_loc:/CubeRotate/Device-Debug}" id="com.qnx.nto.51011824" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" superClass="com.qnx.nto"/>
-							<tool id="com.qnx.qcc.tool.compiler.312527984" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
+							<tool commandLinePattern="${COMMAND} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS} ${FLAGS}" id="com.qnx.qcc.tool.compiler.312527984" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
 								<option id="com.qnx.qcc.option.compiler.optlevel.1343943391" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.0" valueType="enumerated"/>
 								<option id="com.qnx.qcc.option.compile.debug.1008704037" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.includePath.1389175009" name="Include Directories (-I)" superClass="com.qnx.qcc.option.compiler.includePath" valueType="includePath">
@@ -30,7 +30,27 @@
 								<option id="com.qnx.qcc.option.compiler.security.209097800" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1775248205" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="__BLACKBERRY_QNX__"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
+									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
+									<listOptionValue builtIn="false" value="PACKAGE_VERSION=&quot;0.9.8.4&quot;"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
+									<listOptionValue builtIn="false" value="HAVE_SINC"/>
+									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
+									<listOptionValue builtIn="false" value="HAVE_AL"/>
+									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
+									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
+									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
+									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="USING_GL20"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
+									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.qccoptions.227922712" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.ccoptions.926195316" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-std=c99"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.compiler.827203004" superClass="com.qnx.qcc.inputType.compiler"/>
 							</tool>
@@ -42,6 +62,8 @@
 								<option id="com.qnx.qcc.option.linker.debug.1757561643" name="Debug (-g)" superClass="com.qnx.qcc.option.linker.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.linker.libraries.825393804" name="Libraries (-l)" superClass="com.qnx.qcc.option.linker.libraries" valueType="libs">
 									<listOptionValue builtIn="false" value="bps"/>
+									<listOptionValue builtIn="false" value="c"/>
+									<listOptionValue builtIn="false" value="pthread"/>
 									<listOptionValue builtIn="false" value="screen"/>
 									<listOptionValue builtIn="false" value="EGL"/>
 									<listOptionValue builtIn="false" value="GLESv2"/>
@@ -86,7 +108,7 @@
 							<option id="com.qnx.qcc.option.cpu.1345690239" name="Target CPU:" superClass="com.qnx.qcc.option.cpu" value="com.qnx.qcc.option.gen.cpu.armle-v7" valueType="enumerated"/>
 							<targetPlatform archList="all" binaryParser="com.qnx.tools.ide.qde.core.QDEBynaryParser" id="com.qnx.qcc.targetPlatform.1497663639" osList="all" superClass="com.qnx.qcc.targetPlatform"/>
 							<builder buildPath="${workspace_loc:/CubeRotate/Device-Release}" id="com.qnx.nto.379146748" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" superClass="com.qnx.nto"/>
-							<tool id="com.qnx.qcc.tool.compiler.521537247" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
+							<tool command="qcc" commandLinePattern="${COMMAND} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS} ${FLAGS}" id="com.qnx.qcc.tool.compiler.521537247" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
 								<option id="com.qnx.qcc.option.compiler.optlevel.1293497463" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.2" valueType="enumerated"/>
 								<option id="com.qnx.qcc.option.compiler.includePath.1333983864" name="Include Directories (-I)" superClass="com.qnx.qcc.option.compiler.includePath" valueType="includePath">
 									<listOptionValue builtIn="false" value="${QNX_TARGET}/usr/include/freetype2"/>
@@ -95,11 +117,28 @@
 								<option id="com.qnx.qcc.option.compiler.security.421937377" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.426935293" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="__BLACKBERRY_QNX__"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
+									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
+									<listOptionValue builtIn="false" value="PACKAGE_VERSION=&quot;0.9.8.4&quot;"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
+									<listOptionValue builtIn="false" value="HAVE_SINC"/>
+									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
+									<listOptionValue builtIn="false" value="HAVE_AL"/>
+									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
+									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
+									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
+									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="USING_GL20"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
+									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.pie.145409477" name="Position Independent Executable (-fPIE)" superClass="com.qnx.qcc.option.compiler.pie" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.qccoptions.1285267130" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
 									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.ccoptions.1831340856" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-std=c99"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.compiler.472778173" superClass="com.qnx.qcc.inputType.compiler"/>
 							</tool>
@@ -109,6 +148,8 @@
 							<tool id="com.qnx.qcc.tool.linker.939866545" name="QCC Linker" superClass="com.qnx.qcc.tool.linker">
 								<option id="com.qnx.qcc.option.linker.libraries.1258752690" name="Libraries (-l)" superClass="com.qnx.qcc.option.linker.libraries" valueType="libs">
 									<listOptionValue builtIn="false" value="bps"/>
+									<listOptionValue builtIn="false" value="c"/>
+									<listOptionValue builtIn="false" value="pthread"/>
 									<listOptionValue builtIn="false" value="screen"/>
 									<listOptionValue builtIn="false" value="EGL"/>
 									<listOptionValue builtIn="false" value="GLESv2"/>
@@ -154,7 +195,7 @@
 							<option id="com.qnx.qcc.option.cpu.810106304" name="Target CPU:" superClass="com.qnx.qcc.option.cpu" value="com.qnx.qcc.option.gen.cpu.armle-v7" valueType="enumerated"/>
 							<targetPlatform archList="all" binaryParser="com.qnx.tools.ide.qde.core.QDEBynaryParser" id="com.qnx.qcc.targetPlatform.1744556277" osList="all" superClass="com.qnx.qcc.targetPlatform"/>
 							<builder buildPath="${workspace_loc:/CubeRotate/Device-Profile}" id="com.qnx.nto.220354791" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" superClass="com.qnx.nto"/>
-							<tool id="com.qnx.qcc.tool.compiler.578454843" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
+							<tool commandLinePattern="${COMMAND} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS} ${FLAGS}" id="com.qnx.qcc.tool.compiler.578454843" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
 								<option id="com.qnx.qcc.option.compiler.optlevel.1421628131" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.0" valueType="enumerated"/>
 								<option id="com.qnx.qcc.option.compile.debug.995395785" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.profile2.1637519834" name="Build for Profiling (Function Instrumentation) (-finstrument-functions)" superClass="com.qnx.qcc.option.compiler.profile2" value="true" valueType="boolean"/>
@@ -165,7 +206,27 @@
 								<option id="com.qnx.qcc.option.compiler.security.1305803908" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.213513124" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="__BLACKBERRY_QNX__"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
+									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
+									<listOptionValue builtIn="false" value="PACKAGE_VERSION=&quot;0.9.8.4&quot;"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
+									<listOptionValue builtIn="false" value="HAVE_SINC"/>
+									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
+									<listOptionValue builtIn="false" value="HAVE_AL"/>
+									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
+									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
+									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
+									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="USING_GL20"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
+									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.qccoptions.1710818030" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.ccoptions.814347242" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-std=c99"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.compiler.1632181586" superClass="com.qnx.qcc.inputType.compiler"/>
 							</tool>
@@ -178,6 +239,8 @@
 								<option id="com.qnx.qcc.option.linker.profile2.317116750" name="Build for Profiling (Function Instrumentation) (-lprofiling)" superClass="com.qnx.qcc.option.linker.profile2" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.linker.libraries.2133360025" name="Libraries (-l)" superClass="com.qnx.qcc.option.linker.libraries" valueType="libs">
 									<listOptionValue builtIn="false" value="bps"/>
+									<listOptionValue builtIn="false" value="c"/>
+									<listOptionValue builtIn="false" value="pthread"/>
 									<listOptionValue builtIn="false" value="screen"/>
 									<listOptionValue builtIn="false" value="EGL"/>
 									<listOptionValue builtIn="false" value="GLESv2"/>
@@ -222,7 +285,7 @@
 							<option id="com.qnx.qcc.option.cpu.775910002" name="Target CPU:" superClass="com.qnx.qcc.option.cpu" value="com.qnx.qcc.option.gen.cpu.armle-v7" valueType="enumerated"/>
 							<targetPlatform archList="all" binaryParser="com.qnx.tools.ide.qde.core.QDEBynaryParser" id="com.qnx.qcc.targetPlatform.264464274" osList="all" superClass="com.qnx.qcc.targetPlatform"/>
 							<builder buildPath="${workspace_loc:/CubeRotate/Device-Coverage}" id="com.qnx.nto.1360968012" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" superClass="com.qnx.nto"/>
-							<tool id="com.qnx.qcc.tool.compiler.1699204352" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
+							<tool commandLinePattern="${COMMAND} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS} ${FLAGS}" id="com.qnx.qcc.tool.compiler.1699204352" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
 								<option id="com.qnx.qcc.option.compiler.optlevel.692343476" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.0" valueType="enumerated"/>
 								<option id="com.qnx.qcc.option.compile.debug.1061058825" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.coverage.457849293" name="Build for Code Coverage (-Wc,-ftest-coverage -Wc,-fprofile-arcs)" superClass="com.qnx.qcc.option.compiler.coverage" value="true" valueType="boolean"/>
@@ -233,7 +296,27 @@
 								<option id="com.qnx.qcc.option.compiler.security.521807592" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1725725626" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
-									<listOptionValue builtIn="false" value="USING_GL11"/>
+									<listOptionValue builtIn="false" value="__BLACKBERRY_QNX__"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
+									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
+									<listOptionValue builtIn="false" value="PACKAGE_VERSION=&quot;0.9.8.4&quot;"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
+									<listOptionValue builtIn="false" value="HAVE_SINC"/>
+									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
+									<listOptionValue builtIn="false" value="HAVE_AL"/>
+									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
+									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
+									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
+									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
+									<listOptionValue builtIn="false" value="USING_GL20"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
+									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.qccoptions.793787827" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.ccoptions.1878529766" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-std=c99"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.compiler.1469526261" superClass="com.qnx.qcc.inputType.compiler"/>
 							</tool>
@@ -246,9 +329,11 @@
 								<option id="com.qnx.qcc.option.linker.coverage.73478781" name="Build for Code Coverage (-ftest-coverage -fprofile-arcs -p)" superClass="com.qnx.qcc.option.linker.coverage" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.linker.libraries.1198094350" name="Libraries (-l)" superClass="com.qnx.qcc.option.linker.libraries" valueType="libs">
 									<listOptionValue builtIn="false" value="bps"/>
+									<listOptionValue builtIn="false" value="c"/>
+									<listOptionValue builtIn="false" value="pthread"/>
 									<listOptionValue builtIn="false" value="screen"/>
 									<listOptionValue builtIn="false" value="EGL"/>
-									<listOptionValue builtIn="false" value="GLESv1_CM"/>
+									<listOptionValue builtIn="false" value="GLESv2"/>
 									<listOptionValue builtIn="false" value="freetype"/>
 									<listOptionValue builtIn="false" value="png"/>
 									<listOptionValue builtIn="false" value="m"/>
@@ -289,7 +374,7 @@
 						<toolChain id="com.qnx.qcc.toolChain.exe.debug.76634438" name="QNX QCC" superClass="com.qnx.qcc.toolChain">
 							<targetPlatform archList="all" binaryParser="com.qnx.tools.ide.qde.core.QDEBynaryParser" id="com.qnx.qcc.targetPlatform.2126292613" osList="all" superClass="com.qnx.qcc.targetPlatform"/>
 							<builder buildPath="${workspace_loc:/CubeRotate/Simulator-Debug}" id="com.qnx.nto.1609605066" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" superClass="com.qnx.nto"/>
-							<tool id="com.qnx.qcc.tool.compiler.1279842281" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
+							<tool commandLinePattern="${COMMAND} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS} ${FLAGS}" id="com.qnx.qcc.tool.compiler.1279842281" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
 								<option id="com.qnx.qcc.option.compiler.optlevel.685085389" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.0" valueType="enumerated"/>
 								<option id="com.qnx.qcc.option.compile.debug.1031247323" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.includePath.414786601" name="Include Directories (-I)" superClass="com.qnx.qcc.option.compiler.includePath" valueType="includePath">
@@ -299,7 +384,27 @@
 								<option id="com.qnx.qcc.option.compiler.security.157472670" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1166581028" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
-									<listOptionValue builtIn="false" value="USING_GL11"/>
+									<listOptionValue builtIn="false" value="__BLACKBERRY_QNX__"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
+									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
+									<listOptionValue builtIn="false" value="PACKAGE_VERSION=&quot;0.9.8.4&quot;"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
+									<listOptionValue builtIn="false" value="HAVE_SINC"/>
+									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
+									<listOptionValue builtIn="false" value="HAVE_AL"/>
+									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
+									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
+									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
+									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
+									<listOptionValue builtIn="false" value="USING_GL20"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
+									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.qccoptions.1114196710" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.ccoptions.1913206296" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-std=c99"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.compiler.479331921" superClass="com.qnx.qcc.inputType.compiler"/>
 							</tool>
@@ -311,9 +416,11 @@
 								<option id="com.qnx.qcc.option.linker.debug.60846036" name="Debug (-g)" superClass="com.qnx.qcc.option.linker.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.linker.libraries.456416978" name="Libraries (-l)" superClass="com.qnx.qcc.option.linker.libraries" valueType="libs">
 									<listOptionValue builtIn="false" value="bps"/>
+									<listOptionValue builtIn="false" value="c"/>
+									<listOptionValue builtIn="false" value="pthread"/>
 									<listOptionValue builtIn="false" value="screen"/>
 									<listOptionValue builtIn="false" value="EGL"/>
-									<listOptionValue builtIn="false" value="GLESv1_CM"/>
+									<listOptionValue builtIn="false" value="GLESv2"/>
 									<listOptionValue builtIn="false" value="freetype"/>
 									<listOptionValue builtIn="false" value="png"/>
 									<listOptionValue builtIn="false" value="m"/>
@@ -354,7 +461,7 @@
 						<toolChain id="com.qnx.qcc.toolChain.exe.profile.644425262" name="QNX QCC" superClass="com.qnx.qcc.toolChain">
 							<targetPlatform archList="all" binaryParser="com.qnx.tools.ide.qde.core.QDEBynaryParser" id="com.qnx.qcc.targetPlatform.1501332643" osList="all" superClass="com.qnx.qcc.targetPlatform"/>
 							<builder buildPath="${workspace_loc:/CubeRotate/Simulator-Profile}" id="com.qnx.nto.1697233247" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" superClass="com.qnx.nto"/>
-							<tool id="com.qnx.qcc.tool.compiler.2084544149" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
+							<tool commandLinePattern="${COMMAND} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS} ${FLAGS}" id="com.qnx.qcc.tool.compiler.2084544149" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
 								<option id="com.qnx.qcc.option.compiler.optlevel.1872714412" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.0" valueType="enumerated"/>
 								<option id="com.qnx.qcc.option.compile.debug.1567415109" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.profile2.762240993" name="Build for Profiling (Function Instrumentation) (-finstrument-functions)" superClass="com.qnx.qcc.option.compiler.profile2" value="true" valueType="boolean"/>
@@ -365,7 +472,27 @@
 								<option id="com.qnx.qcc.option.compiler.security.817746405" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.431450507" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
-									<listOptionValue builtIn="false" value="USING_GL11"/>
+									<listOptionValue builtIn="false" value="__BLACKBERRY_QNX__"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
+									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
+									<listOptionValue builtIn="false" value="PACKAGE_VERSION=&quot;0.9.8.4&quot;"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
+									<listOptionValue builtIn="false" value="HAVE_SINC"/>
+									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
+									<listOptionValue builtIn="false" value="HAVE_AL"/>
+									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
+									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
+									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
+									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
+									<listOptionValue builtIn="false" value="USING_GL20"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
+									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.qccoptions.222033491" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.ccoptions.597075648" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-std=c99"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.compiler.1830961908" superClass="com.qnx.qcc.inputType.compiler"/>
 							</tool>
@@ -378,9 +505,11 @@
 								<option id="com.qnx.qcc.option.linker.profile2.234673702" name="Build for Profiling (Function Instrumentation) (-lprofiling)" superClass="com.qnx.qcc.option.linker.profile2" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.linker.libraries.1482926481" name="Libraries (-l)" superClass="com.qnx.qcc.option.linker.libraries" valueType="libs">
 									<listOptionValue builtIn="false" value="bps"/>
+									<listOptionValue builtIn="false" value="c"/>
+									<listOptionValue builtIn="false" value="pthread"/>
 									<listOptionValue builtIn="false" value="screen"/>
 									<listOptionValue builtIn="false" value="EGL"/>
-									<listOptionValue builtIn="false" value="GLESv1_CM"/>
+									<listOptionValue builtIn="false" value="GLESv2"/>
 									<listOptionValue builtIn="false" value="freetype"/>
 									<listOptionValue builtIn="false" value="png"/>
 									<listOptionValue builtIn="false" value="m"/>
@@ -421,7 +550,7 @@
 						<toolChain id="com.qnx.qcc.toolChain.exe.coverage.1041575864" name="QNX QCC" superClass="com.qnx.qcc.toolChain">
 							<targetPlatform archList="all" binaryParser="com.qnx.tools.ide.qde.core.QDEBynaryParser" id="com.qnx.qcc.targetPlatform.687107132" osList="all" superClass="com.qnx.qcc.targetPlatform"/>
 							<builder buildPath="${workspace_loc:/CubeRotate/Simulator-Coverage}" id="com.qnx.nto.622179974" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" superClass="com.qnx.nto"/>
-							<tool id="com.qnx.qcc.tool.compiler.1804299414" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
+							<tool commandLinePattern="${COMMAND} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS} ${FLAGS}" id="com.qnx.qcc.tool.compiler.1804299414" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
 								<option id="com.qnx.qcc.option.compiler.optlevel.1547874153" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.0" valueType="enumerated"/>
 								<option id="com.qnx.qcc.option.compile.debug.506984407" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.coverage.940712331" name="Build for Code Coverage (-Wc,-ftest-coverage -Wc,-fprofile-arcs)" superClass="com.qnx.qcc.option.compiler.coverage" value="true" valueType="boolean"/>
@@ -432,7 +561,27 @@
 								<option id="com.qnx.qcc.option.compiler.security.733048683" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.252268326" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
-									<listOptionValue builtIn="false" value="USING_GL11"/>
+									<listOptionValue builtIn="false" value="__BLACKBERRY_QNX__"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
+									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
+									<listOptionValue builtIn="false" value="PACKAGE_VERSION=&quot;0.9.8.4&quot;"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
+									<listOptionValue builtIn="false" value="HAVE_SINC"/>
+									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
+									<listOptionValue builtIn="false" value="HAVE_AL"/>
+									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
+									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
+									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
+									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
+									<listOptionValue builtIn="false" value="USING_GL20"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
+									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.qccoptions.443449954" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.ccoptions.333531926" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-std=c99"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.compiler.1800311584" superClass="com.qnx.qcc.inputType.compiler"/>
 							</tool>
@@ -445,9 +594,11 @@
 								<option id="com.qnx.qcc.option.linker.coverage.1717304216" name="Build for Code Coverage (-ftest-coverage -fprofile-arcs -p)" superClass="com.qnx.qcc.option.linker.coverage" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.linker.libraries.1222510627" name="Libraries (-l)" superClass="com.qnx.qcc.option.linker.libraries" valueType="libs">
 									<listOptionValue builtIn="false" value="bps"/>
+									<listOptionValue builtIn="false" value="c"/>
+									<listOptionValue builtIn="false" value="pthread"/>
 									<listOptionValue builtIn="false" value="screen"/>
 									<listOptionValue builtIn="false" value="EGL"/>
-									<listOptionValue builtIn="false" value="GLESv1_CM"/>
+									<listOptionValue builtIn="false" value="GLESv2"/>
 									<listOptionValue builtIn="false" value="freetype"/>
 									<listOptionValue builtIn="false" value="png"/>
 									<listOptionValue builtIn="false" value="m"/>
