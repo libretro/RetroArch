@@ -645,6 +645,7 @@ void rarch_init_system_info(void);
 int rarch_main(int argc, char *argv[]);
 int rarch_main_init_wrap(const struct rarch_main_wrap *args);
 int rarch_main_init(int argc, char *argv[]);
+bool rarch_main_idle_iterate(void);
 bool rarch_main_iterate(void);
 void rarch_main_deinit(void);
 void rarch_render_cached_frame(void);

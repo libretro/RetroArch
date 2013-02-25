@@ -383,6 +383,7 @@ MAIN
 #include "../../frontend/frontend_xenon.c"
 #elif defined(RARCH_CONSOLE) || defined(PSP)
 #include "../../frontend/frontend_console.c"
+#include "../../frontend/frontend.c"
 #elif defined(ANDROID)
 #include "../../frontend/frontend_android.c"
 #endif

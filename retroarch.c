@@ -2784,12 +2784,6 @@ error:
    return 1;
 }
 
-static inline bool rarch_main_paused(void)
-{
-   return g_extern.is_paused && !g_extern.is_oneshot;
-}
-
-
 bool rarch_main_iterate(void)
 {
 #ifdef HAVE_DYLIB
@@ -2931,6 +2925,7 @@ void rarch_main_deinit(void)
 }
 
 #define MAX_ARGS 32
+
 int rarch_main_init_wrap(const struct rarch_main_wrap *args)
 {
    if (g_extern.main_is_init)
@@ -2990,44 +2985,18 @@ int rarch_main_init_wrap(const struct rarch_main_wrap *args)
    return ret;
 }
 
-#ifndef HAVE_RARCH_MAIN_WRAP
-static bool rarch_main_idle_iterate(void)
+bool rarch_main_idle_iterate(void)
 {
 #ifdef HAVE_COMMAND
    if (driver.command)
       rarch_cmd_pre_frame(driver.command);
 #endif
 
-   if (input_key_pressed_func(RARCH_QUIT_KEY) ||
-         !video_alive_func())
+   if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
       return false;
 
    do_state_checks();
-
    input_poll();
    rarch_sleep(10);
    return true;
 }
-
-int main(int argc, char *argv[])
-{
-#ifdef HAVE_RARCH_MAIN_IMPLEMENTATION
-   // Consoles use the higher level API.
-   return rarch_main(argc, argv);
-#else
-   int init_ret;
-   if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
-   rarch_init_msg_queue();
-   while (rarch_main_paused() ? rarch_main_idle_iterate() : rarch_main_iterate());
-   rarch_main_deinit();
-   rarch_deinit_msg_queue();
-
-#ifdef PERF_TEST
-   rarch_perf_log();
-#endif
-
-   rarch_main_clear_state();
-   return 0;
-#endif
-}
-#endif

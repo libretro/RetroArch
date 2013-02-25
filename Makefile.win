@@ -1,7 +1,8 @@
 TARGET = retroarch.exe
 JTARGET = tools/retroarch-joyconfig.exe
 
-OBJ = retroarch.o \
+OBJ = frontend/frontend.o \
+		retroarch.o \
 		file.o \
 		file_path.o \
 		driver.o \
