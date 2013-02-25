@@ -47,7 +47,6 @@
     
     <!--  The category where the application appears. Either core.games or core.media. -->
     <category>core.games</category>
-    <asset path="${QNX_TARGET}/../target-override/${CPUVARDIR}/usr/lib/libOpenAL.so.1" type="Qnx/Elf">lib/libOpenAL.so.1</asset>
     <asset path="icon.png">icon.png</asset>
     <!-- <asset path="LICENSE">LICENSE</asset> -->
     <!-- <asset path="NOTICE">NOTICE</asset> -->
