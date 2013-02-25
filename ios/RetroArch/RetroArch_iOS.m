@@ -289,6 +289,48 @@
 }
 
 #pragma mark PAUSE MENU
+- (IBAction)showPauseMenu:(id)sender
+{
+   if (_isRunning && !_isPaused && _gameAndAbove == 1)
+   {
+      _isPaused = true;
+
+      UISegmentedControl* stateSelect = (UISegmentedControl*)[_pauseView viewWithTag:1];
+      stateSelect.selectedSegmentIndex = (g_extern.state_slot < 10) ? g_extern.state_slot : -1;
+      
+      [UIView animateWithDuration:0.2
+         animations:^
+         {
+            _pauseIndicatorView.alpha = ALMOST_INVISIBLE;
+            _pauseView.alpha = 1.0f;
+         }
+         completion:^(BOOL finished){}];
+   }
+}
+
+- (IBAction)resetGame:(id)sender
+{
+   if (_isRunning) rarch_game_reset();
+   [self closePauseMenu:sender];
+}
+
+- (IBAction)loadState:(id)sender
+{
+   if (_isRunning) rarch_load_state();
+   [self closePauseMenu:sender];
+}
+
+- (IBAction)saveState:(id)sender
+{
+   if (_isRunning) rarch_save_state();
+   [self closePauseMenu:sender];
+}
+
+- (IBAction)chooseState:(id)sender
+{
+   g_extern.state_slot = ((UISegmentedControl*)sender).selectedSegmentIndex;
+}
+
 - (IBAction)closePauseMenu:(id)sender
 {
    if (_isPaused)
@@ -310,22 +352,6 @@
 {
    [self closePauseMenu:sender];
    [self closeGame];
-}
-
-- (IBAction)pauseGamePressed:(id)sender
-{
-   if (_isRunning && !_isPaused && _gameAndAbove == 1)
-   {
-      _isPaused = true;
-      
-      [UIView animateWithDuration:0.2
-         animations:^
-         {
-            _pauseIndicatorView.alpha = ALMOST_INVISIBLE;
-            _pauseView.alpha = 1.0f;
-         }
-         completion:^(BOOL finished){}];
-   }
 }
 
 - (IBAction)showSettings
