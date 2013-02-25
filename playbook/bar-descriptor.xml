@@ -48,6 +48,7 @@
     <!--  The category where the application appears. Either core.games or core.media. -->
     <category>core.games</category>
     <asset path="icon.png">icon.png</asset>
+    <asset path="/home/twinaphex/local-repos/RetroArch/playbook/libsnes9x-next.so">lib/libsnes9x-next.so</asset>
     <!-- <asset path="LICENSE">LICENSE</asset> -->
     <!-- <asset path="NOTICE">NOTICE</asset> -->
     <configuration id="com.qnx.qcc.configuration.exe.debug.507133694" name="Device-Debug">

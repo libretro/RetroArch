@@ -48,7 +48,16 @@ int rarch_main(int argc, char *argv[])
    bps_initialize();   //Initialize BPS library
 
    int init_ret;
-   if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
+   struct rarch_main_wrap args = {0};
+
+   args.verbose = true;
+   args.sram_path = NULL;
+   args.state_path = NULL;
+   args.rom_path = "/sdcard/dkc.sfc";
+   args.libretro_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/lib/libsnes9x-next.so";
+   args.config_path = NULL;
+
+   if ((init_ret = rarch_main_init_wrap(&args))) return init_ret;
    rarch_init_msg_queue();
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
    rarch_main_deinit();
