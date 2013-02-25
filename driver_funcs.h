@@ -30,16 +30,6 @@
 
 #if !defined(RARCH_CONSOLE) /* Normal */
 
-#define audio_init_func(device, rate, latency) driver.audio->init(device, rate, latency)
-#define audio_write_func(buf, size) driver.audio->write(driver.audio_data, buf, size)
-#define audio_stop_func() driver.audio->stop(driver.audio_data)
-#define audio_start_func() driver.audio->start(driver.audio_data)
-#define audio_set_nonblock_state_func(state) driver.audio->set_nonblock_state(driver.audio_data, state)
-#define audio_free_func() driver.audio->free(driver.audio_data)
-#define audio_use_float_func() driver.audio->use_float(driver.audio_data)
-#define audio_write_avail_func() driver.audio->write_avail(driver.audio_data)
-#define audio_buffer_size_func() driver.audio->buffer_size(driver.audio_data)
-
 #define video_init_func(video_info, input, input_data) \
    driver.video->init(video_info, input, input_data)
 #define video_frame_func(data, width, height, pitch, msg) \
