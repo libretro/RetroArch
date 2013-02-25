@@ -55,7 +55,7 @@
 									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.ccoptions.926195316" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-std=c99"/>
+									<listOptionValue builtIn="false" value="-std=gnu99"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.compiler.827203004" superClass="com.qnx.qcc.inputType.compiler"/>
 							</tool>
@@ -148,7 +148,7 @@
 									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.ccoptions.1831340856" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-std=c99"/>
+									<listOptionValue builtIn="false" value="-std=gnu99"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.compiler.472778173" superClass="com.qnx.qcc.inputType.compiler"/>
 							</tool>
@@ -240,7 +240,7 @@
 									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.ccoptions.814347242" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-std=c99"/>
+									<listOptionValue builtIn="false" value="-std=gnu99"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.compiler.1632181586" superClass="com.qnx.qcc.inputType.compiler"/>
 							</tool>
@@ -335,7 +335,7 @@
 									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.ccoptions.1878529766" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-std=c99"/>
+									<listOptionValue builtIn="false" value="-std=gnu99"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.compiler.1469526261" superClass="com.qnx.qcc.inputType.compiler"/>
 							</tool>
@@ -428,7 +428,7 @@
 									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.ccoptions.1913206296" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-std=c99"/>
+									<listOptionValue builtIn="false" value="-std=gnu99"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.compiler.479331921" superClass="com.qnx.qcc.inputType.compiler"/>
 							</tool>
@@ -521,7 +521,7 @@
 									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.ccoptions.597075648" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-std=c99"/>
+									<listOptionValue builtIn="false" value="-std=gnu99"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.compiler.1830961908" superClass="com.qnx.qcc.inputType.compiler"/>
 							</tool>
@@ -615,7 +615,7 @@
 									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.ccoptions.333531926" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-std=c99"/>
+									<listOptionValue builtIn="false" value="-std=gnu99"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.compiler.1800311584" superClass="com.qnx.qcc.inputType.compiler"/>
 							</tool>
