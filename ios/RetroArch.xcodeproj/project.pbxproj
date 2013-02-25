@@ -29,6 +29,7 @@
 		963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC516CC523B009BBD19 /* RAGameView.m */; };
 		963F5AC916CC523B009BBD19 /* RAModuleList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC616CC523B009BBD19 /* RAModuleList.m */; };
 		965AE29E16D9BF94001D7667 /* ios_input.m in Sources */ = {isa = PBXBuildFile; fileRef = 965AE29D16D9BF94001D7667 /* ios_input.m */; };
+		965AE2A016DA83C1001D7667 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 965AE29F16DA83C1001D7667 /* PauseIndicatorView.xib */; };
 		969EBF6A16D95746003787A2 /* PauseView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 969EBF6916D95746003787A2 /* PauseView.xib */; };
 		96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
 		96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
@@ -113,6 +114,7 @@
 		963F5AC516CC523B009BBD19 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAGameView.m; sourceTree = "<group>"; };
 		963F5AC616CC523B009BBD19 /* RAModuleList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleList.m; sourceTree = "<group>"; };
 		965AE29D16D9BF94001D7667 /* ios_input.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ios_input.m; sourceTree = "<group>"; };
+		965AE29F16DA83C1001D7667 /* PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PauseIndicatorView.xib; sourceTree = "<group>"; };
 		969EBF6916D95746003787A2 /* PauseView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PauseView.xib; sourceTree = "<group>"; };
 		96AFAE2516C1D4EA009DE44C /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96AFAE2916C1D4EA009DE44C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
@@ -325,6 +327,7 @@
 				965AE29D16D9BF94001D7667 /* ios_input.m */,
 				96297A0D16C5ADDA00E6DCE0 /* views.h */,
 				969EBF6916D95746003787A2 /* PauseView.xib */,
+				965AE29F16DA83C1001D7667 /* PauseIndicatorView.xib */,
 			);
 			path = RetroArch;
 			sourceTree = "<group>";
@@ -629,6 +632,7 @@
 				96297A2416C818FF00E6DCE0 /* Icon-72.png in Resources */,
 				96297A2516C818FF00E6DCE0 /* Icon.png in Resources */,
 				969EBF6A16D95746003787A2 /* PauseView.xib in Resources */,
+				965AE2A016DA83C1001D7667 /* PauseIndicatorView.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

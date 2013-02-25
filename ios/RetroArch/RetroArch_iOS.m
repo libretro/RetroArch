@@ -17,6 +17,8 @@
 #include "rarch_wrapper.h"
 #include "general.h"
 
+#define ALMOST_INVISIBLE .021f
+
 @interface RANavigator : UINavigationController
 // 0 if no RAGameView is in the navigator
 // 1 if a RAGameView is the top
@@ -27,6 +29,20 @@
 @end
 
 @implementation RANavigator
+{
+   RetroArch_iOS* _delegate;
+}
+
+- (id)initWithAppDelegate:(RetroArch_iOS*)delegate
+{
+   self = [super init];
+
+   assert(delegate);
+   _delegate = delegate;
+   
+   return self;
+}
+
 - (void)pushViewController:(UIViewController*)theView isGame:(BOOL)game
 {
    assert(!game || self.gameAndAbove == 0);
@@ -51,6 +67,12 @@
    self.navigationBarHidden = poppingToGame;
    return [super popViewControllerAnimated:!poppingToGame && !poppingFromGame];
 }
+
+- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
+{
+   [_delegate performSelector:@selector(screenDidRotate) withObject:nil afterDelay:.01f];
+}
+
 @end
 
 @implementation RetroArch_iOS
@@ -58,7 +80,9 @@
    UIWindow* _window;
    RANavigator* _navigator;
    NSTimer* _gameTimer;
+
    UIView* _pauseView;
+   UIView* _pauseIndicatorView;
    
    bool _isPaused;
    bool _isRunning;
@@ -77,11 +101,6 @@
 + (RetroArch_iOS*)get
 {
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
-}
-
-- (void)showSettings
-{
-   [self pushViewController:[RASettingsList new] isGame:NO];
 }
 
 - (NSString*)configFilePath
@@ -115,36 +134,62 @@
    // Load pause menu
    UINib* xib = [UINib nibWithNibName:@"PauseView" bundle:nil];
    _pauseView = [[xib instantiateWithOwner:self options:nil] lastObject];
-   _pauseView.opaque = NO;
-   _pauseView.alpha = 0.0f;
+   
+   xib = [UINib nibWithNibName:@"PauseIndicatorView" bundle:nil];
+   _pauseIndicatorView = [[xib instantiateWithOwner:self options:nil] lastObject];
 
+   // Show status bar
    [[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationNone];
 
    // Setup window
-   _navigator = [RANavigator new];
+   _navigator = [[RANavigator alloc] initWithAppDelegate:self];
    [_navigator pushViewController: [RAModuleList new] animated:YES];
 
    _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    _window.rootViewController = _navigator;
    [_window makeKeyAndVisible];
-   
-   // Setup keyboard hack
 }
 
 #pragma mark VIEW MANAGEMENT
+- (void)screenDidRotate
+{
+   UIInterfaceOrientation orientation = _navigator.interfaceOrientation;
+   CGRect screenSize = [[UIScreen mainScreen] bounds];
+   
+   const float width = ((int)orientation < 3) ? CGRectGetWidth(screenSize) : CGRectGetHeight(screenSize);
+   const float height = ((int)orientation < 3) ? CGRectGetHeight(screenSize) : CGRectGetWidth(screenSize);
+
+   float tenpctw = width / 10.0f;
+   float tenpcth = height / 10.0f;
+   
+   _pauseView.frame = CGRectMake(width / 2.0f - 150.0f, height / 2.0f - 150.0f, 300.0f, 300.0f);
+   _pauseIndicatorView.frame = CGRectMake(tenpctw * 4.0f, 0.0f, tenpctw * 2.0f, tenpcth);
+}
+
 - (void)pushViewController:(UIViewController*)theView isGame:(BOOL)game
 {
-   if (game)
-      [theView.view addSubview:_pauseView];
-
    [_navigator pushViewController:theView isGame:game];
+   
+   if (game)
+   {
+      _pauseIndicatorView.alpha = ALMOST_INVISIBLE;
+      _pauseIndicatorView.userInteractionEnabled = YES;
+
+      [theView.view addSubview:_pauseView];
+      [theView.view addSubview:_pauseIndicatorView];
+   }
+   
    [self startTimer];
+   [self performSelector:@selector(screenDidRotate) withObject:nil afterDelay:.01f];
 }
 
 - (void)popViewController
 {
    if (_navigator.gameAndAbove == 1)
+   {
       [_pauseView removeFromSuperview];
+      [_pauseIndicatorView removeFromSuperview];
+   }
 
    [_navigator popViewControllerAnimated:YES];
 }
@@ -235,56 +280,49 @@
       uninit_drivers();
 }
 
-#pragma mark INPUT
-- (void)touchesBegan:(NSSet*)theTouches withEvent:(UIEvent *)event
-{
-   NSArray* touches = [theTouches allObjects];
-   UIView* view = _window.rootViewController.view;
-   
-   const int count = [touches count];
-   for(int i = 0; i != count; i ++)
-   {
-      UITouch* touch = [touches objectAtIndex:i];
-      CGPoint coord = [touch locationInView:view];
-      
-      // Exit hack!
-      if (!_isPaused && _navigator.gameAndAbove == 1 && touch.tapCount == 3)
-      {
-         if (coord.y < view.bounds.size.height / 10.0f)
-         {
-            float tenpct = view.bounds.size.width / 10.0f;
-            if (coord.x >= tenpct * 4 && coord.x <= tenpct * 6)
-            {
-               _isPaused = true;
-               _pauseView.frame = CGRectMake(view.bounds.size.width / 2.0f - 100.0f, view.bounds.size.height / 2.0f - 100.0f, 200.0f, 200.0f);
-               
-               [UIView animateWithDuration:0.2
-                  animations:^{_pauseView.alpha = 1.0f;}
-                  completion:^(BOOL finished){}];
-            }
-         }
-      }
-   }
-}
-
 #pragma mark PAUSE MENU
-- (IBAction)closeGamePressed:(id)sender
-{
-   [self closeGame];
-   _pauseView = nil;
-}
-
-- (IBAction)resumeGamePressed:(id)sender
+- (IBAction)closePauseMenu:(id)sender
 {
    if (_isPaused)
       [UIView animateWithDuration:0.2
-         animations:^{_pauseView.alpha = 0.0;}
+         animations:^
+         {
+            _pauseView.alpha = 0.0f;
+            _pauseIndicatorView.alpha = ALMOST_INVISIBLE;
+         }
          completion:^(BOOL finished)
          {
             _isPaused = false;
             [self startTimer];
          }
       ];
+}
+
+- (IBAction)closeGamePressed:(id)sender
+{
+   [self closePauseMenu:sender];
+   [self closeGame];
+}
+
+- (IBAction)pauseGamePressed:(id)sender
+{
+   if (_isRunning && !_isPaused && _navigator.gameAndAbove == 1)
+   {
+      _isPaused = true;
+      
+      [UIView animateWithDuration:0.2
+         animations:^
+         {
+            _pauseIndicatorView.alpha = ALMOST_INVISIBLE;
+            _pauseView.alpha = 1.0f;
+         }
+         completion:^(BOOL finished){}];
+   }
+}
+
+- (IBAction)showSettings
+{
+   [self pushViewController:[RASettingsList new] isGame:NO];
 }
 
 @end
