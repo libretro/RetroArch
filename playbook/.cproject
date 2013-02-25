@@ -30,6 +30,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.209097800" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1775248205" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
@@ -49,7 +50,6 @@
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="USING_GL20"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
-									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.qccoptions.227922712" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
 									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
@@ -122,6 +122,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.421937377" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.426935293" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
@@ -141,7 +142,6 @@
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="USING_GL20"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
-									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.pie.145409477" name="Position Independent Executable (-fPIE)" superClass="com.qnx.qcc.option.compiler.pie" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.qccoptions.1285267130" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
@@ -216,6 +216,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.1305803908" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.213513124" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
@@ -235,7 +236,6 @@
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="USING_GL20"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
-									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.qccoptions.1710818030" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
 									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
@@ -311,6 +311,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.521807592" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1725725626" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
@@ -330,7 +331,6 @@
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="USING_GL20"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
-									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.qccoptions.793787827" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
 									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
@@ -404,6 +404,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.157472670" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1166581028" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
@@ -423,7 +424,6 @@
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="USING_GL20"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
-									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.qccoptions.1114196710" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
 									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
@@ -497,6 +497,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.817746405" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.431450507" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
@@ -516,7 +517,6 @@
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="USING_GL20"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
-									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.qccoptions.222033491" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
 									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
@@ -591,6 +591,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.733048683" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.252268326" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
@@ -610,7 +611,6 @@
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="USING_GL20"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
-									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.qccoptions.443449954" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
 									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
@@ -683,10 +683,10 @@
 		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.profile.coverage.1511241566">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.qnx.tools.ide.qde.managedbuilder.core.qccScannerInfo"/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.profile.coverage.511003583">
+		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.release.237026123">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.qnx.tools.ide.qde.managedbuilder.core.qccScannerInfo"/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.release.237026123">
+		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.profile.coverage.511003583">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.qnx.tools.ide.qde.managedbuilder.core.qccScannerInfo"/>
 		</scannerConfigBuildInfo>
 	</storageModule>

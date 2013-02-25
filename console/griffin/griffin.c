@@ -106,6 +106,8 @@ VIDEO CONTEXT
 #include "../../gfx/context/xdk_ctx.c"
 #elif defined(ANDROID)
 #include "../../gfx/context/androidegl_ctx.c"
+#elif defined(__BLACKBERRY_QNX__)
+#include "../../gfx/context/bbqnx_ctx.c"
 #endif
 
 #endif
@@ -196,7 +198,9 @@ FONTS
 
 #if defined(HAVE_FREETYPE)
 #include "../../gfx/fonts/freetype.c"
-#elif !defined(DONT_HAVE_BITMAPFONTS)
+#endif
+
+#if !defined(DONT_HAVE_BITMAPFONTS)
 #include "../../gfx/fonts/fonts.c"
 #include "../../gfx/fonts/bitmapfont.c"
 #endif
