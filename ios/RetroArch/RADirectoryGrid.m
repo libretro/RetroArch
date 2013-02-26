@@ -20,23 +20,22 @@
 {
    NSString* _path;
    NSArray* _list;
+   RAConfig* _config;
 }
 
-- (id)initWithPath:(NSString*)path filter:(NSRegularExpression*)regex
+- (id)initWithPath:(NSString*)path config:(RAConfig*)config
 {
-   _path = path ? path : ra_ios_get_browser_root();
-
-   //
-   RAConfig* config = [[RAConfig alloc] initWithPath:[NSString stringWithFormat:@"%@/.coverart/.config", _path]];
+   _path = path;
+   _config = config;
+   _list = ra_ios_list_directory(_path);
    
-   UICollectionViewFlowLayout* layout = [UICollectionViewFlowLayout new];
-   layout.itemSize = CGSizeMake([config getUintNamed:@"item_width" withDefault:100], [config getUintNamed:@"item_height" withDefault:100]);
-   self = [super initWithCollectionViewLayout:layout];
-
-   _list = ra_ios_list_directory(_path, regex);
-
    self.navigationItem.rightBarButtonItem = [RetroArch_iOS get].settings_button;
    [self setTitle: [_path lastPathComponent]];
+
+   // Init collection view
+   UICollectionViewFlowLayout* layout = [UICollectionViewFlowLayout new];
+   layout.itemSize = CGSizeMake([config getUintNamed:@"cover_width" withDefault:100], [config getUintNamed:@"cover_height" withDefault:100]);
+   self = [super initWithCollectionViewLayout:layout];
 
    [self.collectionView registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:@"dircell"];
    [self.collectionView registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:@"textcell"];
@@ -60,7 +59,7 @@
    RADirectoryItem* path = [_list objectAtIndex: indexPath.row];
 
    if(path.isDirectory)
-      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:path.path] isGame:NO];
+      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListOrGridWithPath:path.path] isGame:NO];
    else
       [[RetroArch_iOS get] runGame:path.path];
 }

@@ -35,12 +35,6 @@
 @interface RAModuleList : UITableViewController
 @end
 
-@interface RADirectoryList : UITableViewController
-+ (id)directoryListWithPath:(NSString*)path;
-+ (id)directoryListWithPath:(NSString*)path filter:(NSRegularExpression*)regex;
-- (id)initWithPath:(NSString*)path filter:(NSRegularExpression*)regex;
-@end
-
 @interface RASettingsSubList : UITableViewController
 - (id)initWithSettings:(NSArray*)values title:(NSString*)title;
 - (void)writeSettings:(NSArray*)settingList toConfig:(RAConfig*)config;

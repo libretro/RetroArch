@@ -15,8 +15,8 @@
 
 extern BOOL ra_ios_is_directory(NSString* path);
 extern BOOL ra_ios_is_file(NSString* path);
-extern NSArray* ra_ios_list_directory(NSString* path, NSRegularExpression* regex);
-extern NSString* ra_ios_get_browser_root();
+extern NSArray* ra_ios_list_directory(NSString* path);
+extern NSString* ra_ios_check_path(NSString* path);
 
 @interface RADirectoryItem : NSObject
 @property (strong) NSString* path;
@@ -25,11 +25,10 @@ extern NSString* ra_ios_get_browser_root();
 @end
 
 @interface RADirectoryGrid : UICollectionViewController
-- (id)initWithPath:(NSString*)path filter:(NSRegularExpression*)regex;
+- (id)initWithPath:(NSString*)path config:(RAConfig*)config;
 @end
 
-@interface RADirectoryFilterList : UITableViewController
-// Check path to see if a directory filter list is needed.
-// If one is not needed useExpression will be set to a default expression to use.
-+ (RADirectoryFilterList*) directoryFilterListAtPath:(NSString*)path useExpression:(NSRegularExpression**)regex;
+@interface RADirectoryList : UITableViewController
++ (id)directoryListOrGridWithPath:(NSString*)path;
+- (id)initWithPath:(NSString*)path config:(RAConfig*)config;
 @end

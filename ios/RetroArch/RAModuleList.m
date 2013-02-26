@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#import "browser.h"
+
 @implementation RAModuleList
 {
    NSMutableArray* _modules;
@@ -59,7 +61,7 @@
    RAModuleInfo* info = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];
    [RetroArch_iOS get].module_path = info.path;
    
-   [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:nil] isGame:NO];
+   [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListOrGridWithPath:nil] isGame:NO];
 }
 
 - (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath

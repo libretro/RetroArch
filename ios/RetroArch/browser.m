@@ -52,7 +52,7 @@ BOOL ra_ios_is_directory(NSString* path)
    return result;
 }
 
-NSArray* ra_ios_list_directory(NSString* path, NSRegularExpression* regex)
+NSArray* ra_ios_list_directory(NSString* path)
 {
    NSMutableArray* result = [NSMutableArray array];
 
@@ -79,18 +79,7 @@ NSArray* ra_ios_list_directory(NSString* path, NSRegularExpression* regex)
    closedir(dir);
    free(cpath);
    
-   // Filter and sort
-   if (regex)
-   {
-      [result filterUsingPredicate:[NSPredicate predicateWithBlock:^(RADirectoryItem* object, NSDictionary* bindings)
-      {
-         if (object.isDirectory)
-            return YES;
-         
-         return (BOOL)([regex numberOfMatchesInString:[object.path lastPathComponent] options:0 range:NSMakeRange(0, [[object.path lastPathComponent] length])] != 0);
-      }]];
-   }
-
+   // Sort
    [result sortUsingComparator:^(RADirectoryItem* left, RADirectoryItem* right)
    {
       return (left.isDirectory != right.isDirectory) ?
@@ -101,8 +90,14 @@ NSArray* ra_ios_list_directory(NSString* path, NSRegularExpression* regex)
    return result;
 }
 
-NSString* ra_ios_get_browser_root()
+NSString* ra_ios_check_path(NSString* path)
 {
+   if (path && ra_ios_is_directory(path))
+      return path;
+
+   if (path)
+      [RetroArch_iOS displayErrorMessage:@"Browsed path is not a directory."];
+
    if (ra_ios_is_directory(@"/var/mobile/RetroArchGames"))  return @"/var/mobile/RetroArchGames";
    else if (ra_ios_is_directory(@"/var/mobile"))            return @"/var/mobile";
    else                                                     return @"/";

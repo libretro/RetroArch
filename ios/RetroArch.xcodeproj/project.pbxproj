@@ -83,7 +83,6 @@
 		96AFAFAC16C1E279009DE44C /* state_tracker.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF7B16C1E00A009DE44C /* state_tracker.c */; };
 		96AFAFAD16C1EEE9009DE44C /* sinc.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEF716C1DC73009DE44C /* sinc.c */; };
 		96AFAFD416C1FBC0009DE44C /* input_common.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFC916C1FBC0009DE44C /* input_common.c */; };
-		96C19C2216D2F3BA00FE8D5A /* RADirectoryFilterList.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2116D2F3BA00FE8D5A /* RADirectoryFilterList.m */; };
 		96C19C2416D453BA00FE8D5A /* RADirectoryGrid.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2316D453BA00FE8D5A /* RADirectoryGrid.m */; };
 		96C19C2916D5A56500FE8D5A /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2816D5A56400FE8D5A /* browser.m */; };
 		96C19C3016D7045700FE8D5A /* RAConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2F16D7045700FE8D5A /* RAConfig.m */; };
@@ -232,7 +231,6 @@
 		96AFAFCA16C1FBC0009DE44C /* input_common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = input_common.h; sourceTree = "<group>"; };
 		96AFAFCE16C1FBC0009DE44C /* overlay.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = overlay.c; sourceTree = "<group>"; };
 		96AFAFCF16C1FBC0009DE44C /* overlay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = overlay.h; sourceTree = "<group>"; };
-		96C19C2116D2F3BA00FE8D5A /* RADirectoryFilterList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RADirectoryFilterList.m; sourceTree = "<group>"; };
 		96C19C2316D453BA00FE8D5A /* RADirectoryGrid.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RADirectoryGrid.m; sourceTree = "<group>"; };
 		96C19C2516D455BE00FE8D5A /* browser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = browser.h; sourceTree = "<group>"; };
 		96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rarch_wrapper.h; sourceTree = "<group>"; };
@@ -564,7 +562,6 @@
 			children = (
 				96C19C2516D455BE00FE8D5A /* browser.h */,
 				96C19C2816D5A56400FE8D5A /* browser.m */,
-				96C19C2116D2F3BA00FE8D5A /* RADirectoryFilterList.m */,
 				96C19C2316D453BA00FE8D5A /* RADirectoryGrid.m */,
 				963F5AC416CC523B009BBD19 /* RADirectoryList.m */,
 			);
@@ -700,7 +697,6 @@
 				963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */,
 				963F5AC916CC523B009BBD19 /* RAModuleList.m in Sources */,
 				96096DD816D1ABAF00BF4499 /* RAModuleInfoList.m in Sources */,
-				96C19C2216D2F3BA00FE8D5A /* RADirectoryFilterList.m in Sources */,
 				96C19C2416D453BA00FE8D5A /* RADirectoryGrid.m in Sources */,
 				96C19C2916D5A56500FE8D5A /* browser.m in Sources */,
 				96C19C3016D7045700FE8D5A /* RAConfig.m in Sources */,

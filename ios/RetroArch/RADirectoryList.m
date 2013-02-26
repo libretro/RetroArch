@@ -15,53 +15,35 @@
 
 #import "browser.h"
 
-static NSString* check_path(NSString* path)
-{
-   if (path && !ra_ios_is_directory(path))
-   {
-      [RetroArch_iOS displayErrorMessage:@"Browsed path is not a directory."];
-      return nil;
-   }
-   else
-      return path;
-}
-
 @implementation RADirectoryList
 {
    NSString* _path;
    NSArray* _list;
+   RAConfig* _config;
 }
 
-+ (id)directoryListWithPath:(NSString*)path
++ (id)directoryListOrGridWithPath:(NSString*)path
 {
-   path = check_path(path);
-   
-   NSRegularExpression* expr = nil;
-   RADirectoryFilterList* filterList = [RADirectoryFilterList directoryFilterListAtPath:path useExpression:&expr];
-
-   return filterList ? filterList : [RADirectoryList directoryListWithPath:path filter:expr];
-}
-
-+ (id)directoryListWithPath:(NSString*)path filter:(NSRegularExpression*)regex
-{
-   path = check_path(path);
+   path = ra_ios_check_path(path);
+   RAConfig* config = [[RAConfig alloc] initWithPath:[path stringByAppendingPathComponent:@".raconfig"]];
 
    if ([UICollectionViewController instancesRespondToSelector:@selector(initWithCollectionViewLayout:)])
    {
-      NSString* coverDir = path ? [path stringByAppendingPathComponent:@".coverart"] : nil;
-      if (coverDir && ra_ios_is_directory(coverDir))
-         return [[RADirectoryGrid alloc] initWithPath:path filter:regex];
+      NSString* coverDir = [path stringByAppendingPathComponent:@".coverart"];
+      if (ra_ios_is_directory(coverDir))
+         return [[RADirectoryGrid alloc] initWithPath:path config:config];
    }
 
-   return [[RADirectoryList alloc] initWithPath:path filter:regex];
+   return [[RADirectoryList alloc] initWithPath:path config:config];
 }
 
-- (id)initWithPath:(NSString*)path filter:(NSRegularExpression*)regex
+- (id)initWithPath:(NSString*)path config:(RAConfig*)config
 {
    self = [super initWithStyle:UITableViewStylePlain];
 
-   _path = path ? path : ra_ios_get_browser_root();
-   _list = ra_ios_list_directory(_path, regex);
+   _path = path;
+   _config = config;
+   _list = ra_ios_list_directory(_path);
 
    self.navigationItem.rightBarButtonItem = [RetroArch_iOS get].settings_button;
    [self setTitle: [_path lastPathComponent]];
@@ -74,7 +56,7 @@ static NSString* check_path(NSString* path)
    RADirectoryItem* path = [_list objectAtIndex: indexPath.row];
 
    if(path.isDirectory)
-      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListWithPath:path.path] isGame:NO];
+      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListOrGridWithPath:path.path] isGame:NO];
    else
       [[RetroArch_iOS get] runGame:path.path];
 }
