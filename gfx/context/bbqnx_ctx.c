@@ -62,6 +62,7 @@ static void gfx_ctx_destroy(void)
    eglDestroyContext(g_egl_dpy, g_egl_ctx);
    eglDestroySurface(g_egl_dpy, g_egl_surf);
    screen_destroy_window(screen_win);
+   screen_destroy_context(screen_ctx);
    eglTerminate(g_egl_dpy);
    eglReleaseThread();
 
@@ -110,6 +111,11 @@ static bool gfx_ctx_init(void)
    int usage;
 
    usage = SCREEN_USAGE_OPENGL_ES2 | SCREEN_USAGE_ROTATION;
+
+   RARCH_LOG("Initializing screen context\n");
+
+   // Create a screen context that will be used to create an EGL surface to receive libscreen events
+   screen_create_context(&screen_ctx, 0);
 
    RARCH_LOG("Initializing context\n");
 
