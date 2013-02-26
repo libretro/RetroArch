@@ -16,6 +16,13 @@
 
 #include "../general.h"
 
+#ifdef __APPLE__
+#include "SDL.h" 
+// OSX seems to really need -lSDLmain, 
+// so we include SDL.h here so it can hack our main.
+// We want to use -mconsole in Win32, so we need main().
+#endif
+
 int main(int argc, char *argv[])
 {
 #ifdef HAVE_RARCH_MAIN_IMPLEMENTATION
