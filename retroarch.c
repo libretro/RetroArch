@@ -569,10 +569,8 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
 
 #ifdef _WIN32
 #define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe."
-#elif defined(__APPLE__)
-#define RARCH_DEFAULT_CONF_PATH_STR " Defaults to $HOME/.retroarch.cfg."
 #else
-#define RARCH_DEFAULT_CONF_PATH_STR " Defaults to $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n\t\tor $HOME/.retroarch.cfg, if $XDG_CONFIG_HOME is not defined."
+#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\tand $HOME/.retroarch.cfg."
 #endif
 
 #include "config.features.h"

@@ -329,36 +329,37 @@ static config_file_t *open_default_config_file(void)
          conf = config_file_new(conf_path);
       }
    }
-#elif defined(__APPLE__)
-   char conf_path[PATH_MAX];
-   const char *home = getenv("HOME");
-   if (home)
-   {
-      snprintf(conf_path, sizeof(conf_path), "%s/.retroarch.cfg", home);
-      conf = config_file_new(conf_path);
-   }
-   if (!conf)
-      conf = config_file_new("/etc/retroarch.cfg");
 #elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
    char conf_path[PATH_MAX];
-   const char *xdg = getenv("XDG_CONFIG_HOME");
-   if (!xdg)
-      RARCH_WARN("XDG_CONFIG_HOME is not defined. Will look for config in $HOME/.retroarch.cfg ...\n");
-
+   const char *xdg  = getenv("XDG_CONFIG_HOME");
    const char *home = getenv("HOME");
+
+   // XDG_CONFIG_HOME falls back to $HOME/.config.
    if (xdg)
-   {
       snprintf(conf_path, sizeof(conf_path), "%s/retroarch/retroarch.cfg", xdg);
+   else if (home)
+      snprintf(conf_path, sizeof(conf_path), "%s/.config/retroarch/retroarch.cfg", home);
+
+   if (xdg || home)
+   {
+      RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new(conf_path);
    }
-   else if (home)
+
+   // Fallback to $HOME/.retroarch.cfg.
+   if (!conf && home)
    {
       snprintf(conf_path, sizeof(conf_path), "%s/.retroarch.cfg", home);
+      RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new(conf_path);
    }
-   // Try this as a last chance...
+
+   // Try this as a last chance ...
    if (!conf)
+   {
       conf = config_file_new("/etc/retroarch.cfg");
+      RARCH_LOG("Looking for config in: \"/etc/retroarch.cfg\".\n");
+   }
 #endif
 
    return conf;

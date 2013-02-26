@@ -73,7 +73,7 @@ When loading a rom from stdin, the path must be a full path, however.
 If a config cannot be found when using directory path, the default config path will be used instead.
 
 .IP
-Unix-like systems will look in $XDG_CONFIG_HOME/retroarch/retroarch.cfg first. Then it will try $HOME/.retroarch.cfg. Last, it will try /etc/retroarch.cfg. If no configuration is found, default settings will be assumed. A configuration file does not need to define every possible option, only those that should be overridden.
+Unix-like systems will look in $XDG_CONFIG_HOME/retroarch/retroarch.cfg first. If $XDG_CONFIG_HOME is not defined, it is assumed to be $HOME/.config as per specification. Then it will try $HOME/.retroarch.cfg. Last, it will try /etc/retroarch.cfg. If no configuration is found, default settings will be assumed. A configuration file does not need to define every possible option, only those that should be overridden.
 
 .IP
 Windows will look in retroarch.cfg in same folder where retroarch.exe resides.
