@@ -61,8 +61,6 @@ int rarch_main(int argc, char *argv[])
 
    g_extern.verbose = true;
 
-   RARCH_LOG("Step 0.9\n");
-
    int init_ret;
    struct rarch_main_wrap args = {0};
 
@@ -75,30 +73,20 @@ int rarch_main(int argc, char *argv[])
 
    if ((init_ret = rarch_main_init_wrap(&args)))
    {
-      RARCH_LOG("Step 1.0a\n");
       return init_ret;
    }
-   RARCH_LOG("Step 1.0\n");
    rarch_init_msg_queue();
-   RARCH_LOG("Step 1.1\n");
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
-   RARCH_LOG("Step 1.2\n");
    rarch_main_deinit();
-   RARCH_LOG("Step 1.3\n");
    rarch_deinit_msg_queue();
-   RARCH_LOG("Step 1.4\n");
 
 #ifdef PERF_TEST
    rarch_perf_log();
 #endif
 
-   RARCH_LOG("Step 1.5\n");
-
 error:
    screen_stop_events(screen_ctx);
    bps_shutdown();
-
-   RARCH_LOG("Step 1.6\n");
 
    return 0;
 }
