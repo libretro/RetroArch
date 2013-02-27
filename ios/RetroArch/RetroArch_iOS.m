@@ -17,6 +17,9 @@
 #include "rarch_wrapper.h"
 #include "general.h"
 
+#include "BTStack/wiimote.h"
+#import "BTStack/WiiMoteHelper.h"
+
 #define ALMOST_INVISIBLE .021f
 
 @interface RANavigator : UINavigationController
@@ -358,6 +361,12 @@
 {
    [self pushViewController:[RASettingsList new] isGame:NO];
 }
+
+- (IBAction)conntectWiimotes:(id)sender
+{
+   [WiiMoteHelper startwiimote:_navigator];
+}
+
 
 @end
 
