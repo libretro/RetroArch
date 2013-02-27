@@ -30,6 +30,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.209097800" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1775248205" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
 									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
@@ -122,6 +123,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.421937377" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.426935293" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
 									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
@@ -216,6 +218,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.1305803908" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.213513124" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
 									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
@@ -311,6 +314,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.521807592" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1725725626" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
 									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
@@ -404,6 +408,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.157472670" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1166581028" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
 									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
@@ -497,6 +502,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.817746405" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.431450507" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
 									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
@@ -591,6 +597,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.733048683" name="Enhanced Security (-fstack-protector-all)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.252268326" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
 									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
