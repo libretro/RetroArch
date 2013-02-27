@@ -49,7 +49,6 @@ struct android_app
    AInputQueue* pendingInputQueue;
    ANativeWindow* pendingWindow;
    char current_ime[PATH_MAX];
-   char return_file[PATH_MAX];
 };
 
 enum {

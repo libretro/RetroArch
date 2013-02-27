@@ -19,7 +19,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/resource.h>
-#include <byteswap.h>
 
 #include "frontend_android.h"
 #include "../android/native/jni/jni_macros.h"
@@ -281,12 +280,6 @@ static bool android_app_start_main(struct android_app *android_app, int *init_re
    strlcpy(out_args.in, "IME", sizeof(out_args.in));
    jni_get(&in_params, &out_args);
 
-   // Return value file
-   out_args.out = android_app->return_file;
-   out_args.out_sizeof = sizeof(android_app->return_file);
-   strlcpy(out_args.in, "RETURN", sizeof(out_args.in));
-   jni_get(&in_params, &out_args);
-
    (*in_params.java_vm)->DetachCurrentThread(in_params.java_vm);
 
    RARCH_LOG("Checking arguments passed ...\n");
@@ -294,9 +287,6 @@ static bool android_app_start_main(struct android_app *android_app, int *init_re
    RARCH_LOG("Libretro path: [%s].\n", libretro_path);
    RARCH_LOG("Config file: [%s].\n", config_file);
    RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
-   RARCH_LOG("Return file: [%s].\n", android_app->return_file);
-
-   unlink(android_app->return_file);
 
    struct rarch_main_wrap args = {0};
 
@@ -380,19 +370,6 @@ exit:
    rarch_perf_log();
 #endif
    rarch_main_clear_state();
-
-   int bs_return = bswap_32(init_ret);
-   FILE *return_file = fopen(android_app->return_file, "w");
-   if (return_file)
-   {
-      fwrite(&bs_return, 4, 1, return_file);
-      fclose(return_file);
-   }
-
-   // returning from the native activity too fast can make the Java frontend not reappear
-   // work around it only if we fail to load the ROM
-   if (init_ret != 0)
-      usleep(1000000);
 
    RARCH_LOG("android_app_destroy!");
    if (android_app->inputQueue != NULL)
