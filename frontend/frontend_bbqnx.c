@@ -27,24 +27,36 @@
 
 #include "../playbook/src/bbutil.h"
 
-void handle_screen_event(bps_event_t *event)
-{
-   screen_event_t screen_event = screen_event_get_event(event);
-
-   int screen_val;
-   screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_TYPE, &screen_val);
-
-   switch (screen_val)
-   {
-      case SCREEN_EVENT_MTOUCH_TOUCH:
-      case SCREEN_EVENT_MTOUCH_MOVE:
-      case SCREEN_EVENT_MTOUCH_RELEASE:
-         break;
-   }
-}
+screen_context_t screen_ctx;
 
 int rarch_main(int argc, char *argv[])
 {
+   //Initialize bps
+   bps_initialize();
+
+   RARCH_LOG("Initializing screen context\n");
+
+   // Create a screen context that will be used to create an EGL surface to receive libscreen events
+   screen_create_context(&screen_ctx, 0);
+
+   if (screen_request_events(screen_ctx) != BPS_SUCCESS)
+   {
+      RARCH_ERR("screen_request_events failed.\n");
+      goto error;
+   }
+
+   if (navigator_request_events(0) != BPS_SUCCESS)
+   {
+      RARCH_ERR("navigator_request_events failed.\n");
+      goto error;
+   }
+
+   if (navigator_rotation_lock(false) != BPS_SUCCESS)
+   {
+      RARCH_ERR("navigator_location_lock failed.\n");
+      goto error;
+   }
+
    rarch_main_clear_state();
 
    g_extern.verbose = true;
@@ -80,8 +92,11 @@ int rarch_main(int argc, char *argv[])
    rarch_perf_log();
 #endif
 
-   rarch_main_clear_state();
    RARCH_LOG("Step 1.5\n");
+
+error:
+   screen_stop_events(screen_ctx);
+   bps_shutdown();
 
    RARCH_LOG("Step 1.6\n");
 

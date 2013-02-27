@@ -20,6 +20,8 @@
 #include "../gl_common.h"
 
 #include <EGL/egl.h>
+#include <bps/screen.h>
+#include <bps/navigator.h>
 #include <screen/screen.h>
 #include <sys/platform.h>
 #include <GLES2/gl2.h>
@@ -41,7 +43,7 @@ static EGLDisplay g_egl_dpy;
 static EGLConfig g_config;
 static bool g_resize;
 
-static screen_context_t screen_ctx;
+extern screen_context_t screen_ctx;
 static screen_window_t screen_win;
 static screen_display_t screen_disp;
 
@@ -111,11 +113,6 @@ static bool gfx_ctx_init(void)
    int usage;
 
    usage = SCREEN_USAGE_OPENGL_ES2 | SCREEN_USAGE_ROTATION;
-
-   RARCH_LOG("Initializing screen context\n");
-
-   // Create a screen context that will be used to create an EGL surface to receive libscreen events
-   screen_create_context(&screen_ctx, 0);
 
    RARCH_LOG("Initializing context\n");
 
@@ -273,6 +270,10 @@ static void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)frame_count;
+   //Request and process all available BPS events
+   bps_event_t *event = NULL;
+
+   bps_get_event(&event, 0);
 
    *quit = false;
 
@@ -283,6 +284,28 @@ static void gfx_ctx_check_window(bool *quit,
       *width  = new_width;
       *height = new_height;
       *resize = true;
+   }
+
+   if (event)
+   {
+      int domain = bps_event_get_domain(event);
+
+      if (domain == screen_get_domain())
+      {
+         screen_event_t screen_event = screen_event_get_event(event);
+         int screen_val;
+         screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_TYPE, &screen_val);
+         switch (screen_val) {
+
+            case SCREEN_EVENT_MTOUCH_TOUCH:
+            case SCREEN_EVENT_MTOUCH_MOVE:
+            case SCREEN_EVENT_MTOUCH_RELEASE:
+
+               break;
+         }
+      }
+      else if ((domain == navigator_get_domain()) && (NAVIGATOR_EXIT == bps_event_get_code(event)))
+         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
    }
 
    // Check if we are exiting.
