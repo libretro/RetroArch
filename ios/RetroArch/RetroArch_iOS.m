@@ -17,8 +17,10 @@
 #include "rarch_wrapper.h"
 #include "general.h"
 
+#ifdef WIIMOTE
 #include "BTStack/wiimote.h"
 #import "BTStack/WiiMoteHelper.h"
+#endif
 
 #define ALMOST_INVISIBLE .021f
 
@@ -364,7 +366,9 @@
 
 - (IBAction)conntectWiimotes:(id)sender
 {
+#ifdef WIIMOTE
    [WiiMoteHelper startwiimote:_navigator];
+#endif
 }
 
 

@@ -18,7 +18,10 @@
 #include "../../performance.h"
 #include "../../general.h"
 #include "../../driver.h"
+
+#ifdef WIIMOTE
 #include "BTStack/wiimote.h"
+#endif
 
 #define MAX_TOUCH 16
 #define MAX_KEYS 256
@@ -151,6 +154,7 @@ static int16_t ios_input_state(void *data, const struct retro_keybind **binds, u
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
+#ifdef WIIMOTE
          if (myosd_num_of_joys > 0)
          {
             struct wiimote_t* wm = &joys[0];
@@ -167,6 +171,7 @@ static int16_t ios_input_state(void *data, const struct retro_keybind **binds, u
                case RETRO_DEVICE_ID_JOYPAD_RIGHT: return IS_PRESSED(wm, WIIMOTE_BUTTON_RIGHT);
             }
          }
+#endif
       
          return l_ios_joypad_device_state(binds, port, id);
       case RETRO_DEVICE_ANALOG:
