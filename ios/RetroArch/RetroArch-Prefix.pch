@@ -26,6 +26,6 @@
 #ifdef __OBJC__
     #import <UIKit/UIKit.h>
     #import <Foundation/Foundation.h>
-    #import "RetroArch_iOS.h"
     #import "views.h"
+    #import "RetroArch_iOS.h"
 #endif

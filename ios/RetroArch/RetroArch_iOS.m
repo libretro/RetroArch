@@ -17,11 +17,6 @@
 #include "rarch_wrapper.h"
 #include "general.h"
 
-#ifdef WIIMOTE
-#include "BTStack/wiimote.h"
-#import "BTStack/WiiMoteHelper.h"
-#endif
-
 #define ALMOST_INVISIBLE .021f
 
 @interface RANavigator : UINavigationController
@@ -92,14 +87,6 @@
 + (RetroArch_iOS*)get
 {
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
-}
-
-- (NSString*)configFilePath
-{
-   if (self.module_path)
-      return [NSString stringWithFormat:@"%@/%@.cfg", self.system_directory, [[self.module_path lastPathComponent] stringByDeletingPathExtension]];
-   
-   return nil;
 }
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
@@ -213,8 +200,8 @@
    [RASettingsList refreshConfigFile];
    
    const char* const sd = [[RetroArch_iOS get].system_directory UTF8String];
-   const char* const cf =[[RetroArch_iOS get].configFilePath UTF8String];
-   const char* const libretro = [[RetroArch_iOS get].module_path UTF8String];
+   const char* const cf =[[RetroArch_iOS get].moduleInfo.configPath UTF8String];
+   const char* const libretro = [[RetroArch_iOS get].moduleInfo.path UTF8String];
 
    struct rarch_main_wrap main_wrapper = {[path UTF8String], sd, sd, cf, libretro};
    if (rarch_main_init_wrap(&main_wrapper) == 0)
@@ -339,7 +326,7 @@
 - (IBAction)closePauseMenu:(id)sender
 {
    if (_isPaused)
-      [UIView animateWithDuration:0.2
+      [UIView animateWithDuration:0.2 
          animations:^
          {
             _pauseView.alpha = 0.0f;
@@ -362,13 +349,6 @@
 - (IBAction)showSettings
 {
    [self pushViewController:[RASettingsList new] isGame:NO];
-}
-
-- (IBAction)conntectWiimotes:(id)sender
-{
-#ifdef WIIMOTE
-   [WiiMoteHelper startwiimote:_navigator];
-#endif
 }
 
 

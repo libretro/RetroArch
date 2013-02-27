@@ -16,6 +16,11 @@
 #import <objc/runtime.h>
 #import "settings.h"
 
+#ifdef WIIMOTE
+#include "BTStack/wiimote.h"
+#import "BTStack/WiiMoteHelper.h"
+#endif
+
 @implementation RASettingData
 @end
 
@@ -83,9 +88,14 @@ static RASettingData* subpath_setting(RAConfig* config, NSString* name, NSString
 }
 
 @implementation RASettingsList
++ (void)refreshConfigFile
+{
+   [[[RASettingsList alloc] init] writeToDisk];
+}
+
 - (id)init
 {
-   RAConfig* config = [[RAConfig alloc] initWithPath:[RetroArch_iOS get].configFilePath];
+   RAConfig* config = [[RAConfig alloc] initWithPath:[RetroArch_iOS get].moduleInfo.configPath];
 
    NSString* overlay_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/overlays/"];
    NSString* shader_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/shaders/"];
@@ -163,19 +173,69 @@ static RASettingData* subpath_setting(RAConfig* config, NSString* name, NSString
    [self writeToDisk];
 }
 
-+ (void)refreshConfigFile
-{
-   [[[RASettingsList alloc] init] writeToDisk];
-}
-
 - (void)writeToDisk
 {
-   RAConfig* config = [[RAConfig alloc] initWithPath:[RetroArch_iOS get].configFilePath];
+   RAConfig* config = [[RAConfig alloc] initWithPath:[RetroArch_iOS get].moduleInfo.configPath];
    [config putStringNamed:@"system_directory" value:[RetroArch_iOS get].system_directory];
 
    [self writeSettings:nil toConfig:config];
 
-   [config writeToFile:[RetroArch_iOS get].configFilePath];
+   [config writeToFile:[RetroArch_iOS get].moduleInfo.configPath];
+}
+
+// Override tableView methods to add General section at top.
+- (void)tableView:(UITableView*)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+   if (indexPath.section == 0)
+   {
+      if (indexPath.row == 0)
+         [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:[RetroArch_iOS get].moduleInfo] isGame:NO];
+#ifdef WIIMOTE
+      else if(indexPath.row == 1)
+         [WiiMoteHelper startwiimote:_navigator];
+#endif
+   }
+   else
+      [super tableView:tableView didSelectRowAtIndexPath:[NSIndexPath indexPathForRow:indexPath.row inSection:indexPath.section - 1]];
+}
+
+- (UITableViewCell*)tableView:(UITableView*)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+   if (indexPath.section == 0)
+   {
+      UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"general"];
+      cell = cell ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"general"];
+      
+      cell.textLabel.text = (indexPath.row == 0) ? @"Module Info" : @"Connect WiiMotes";
+      return cell;
+   }
+   else
+      return [super tableView:tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:indexPath.row inSection:indexPath.section - 1]];
+}
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView*)tableView
+{
+   return [super numberOfSectionsInTableView:tableView] + 1;
+}
+
+- (NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section
+{
+   if (section == 0)
+#ifdef WIIMOTE
+      return 2;
+#else
+      return 1;
+#endif
+   
+   return [super tableView:tableView numberOfRowsInSection:section - 1] ;
+}
+
+- (NSString*)tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section
+{
+   if (section == 0)
+      return @"General";
+   
+   return [super tableView:tableView titleForHeaderInSection:section - 1];
 }
 
 @end

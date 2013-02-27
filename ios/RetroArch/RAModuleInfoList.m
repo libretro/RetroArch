@@ -19,6 +19,7 @@
    RAModuleInfo* new = [RAModuleInfo new];
 
    new.path = thePath;
+   new.configPath = [NSString stringWithFormat:@"%@/%@.cfg", [RetroArch_iOS get].system_directory, [[thePath lastPathComponent] stringByDeletingPathExtension]];
    new.data = theData;
    return new;
 }

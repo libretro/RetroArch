@@ -59,7 +59,7 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
    RAModuleInfo* info = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];
-   [RetroArch_iOS get].module_path = info.path;
+   [RetroArch_iOS get].moduleInfo = info;
    
    [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListOrGridWithPath:nil] isGame:NO];
 }

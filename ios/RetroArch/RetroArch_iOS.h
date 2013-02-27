@@ -25,11 +25,9 @@
 - (void)pushViewController:(UIViewController*)theView isGame:(BOOL)game;
 - (UIViewController*)popViewController;
 
-- (NSString*)configFilePath;
+@property (strong, nonatomic) RAModuleInfo* moduleInfo;
 
 @property (strong, nonatomic) NSString* system_directory;
-
-@property (strong, nonatomic) NSString* module_path;
 @property (strong, nonatomic) UIImage* file_icon;
 @property (strong, nonatomic) UIImage* folder_icon;
 @property (strong, nonatomic) UIBarButtonItem* settings_button;
