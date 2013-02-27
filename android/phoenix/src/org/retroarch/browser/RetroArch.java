@@ -474,18 +474,21 @@ public class RetroArch extends Activity implements
 			}
 			break;
 		case ACTIVITY_NATIVE_ACTIVITY:
+			Log.i(TAG, "native return");
 			AlertDialog.Builder builder = new AlertDialog.Builder(this).setNeutralButton("OK", null);
 			try {
 				DataInputStream cacheStream = new DataInputStream(new FileInputStream(return_file));
 				int value = cacheStream.readInt();
 				cacheStream.close();
+				Log.i(TAG, "native return value");
+				Log.i(TAG, "native return value:" + value);
 				if (value != 0) {
-					throw new IOException();
+					builder.setTitle("Error").setMessage("RetroArch Could not load the chosen ROM").show();
 				}
 			} catch (FileNotFoundException e) {
 				builder.setTitle("Crash").setMessage("RetroArch Crashed").show();
 			} catch (IOException e) {
-				builder.setTitle("Error").setMessage("RetroArch Could not load the chosen ROM.\n\nCheck the Cores Guide for details on valid ROMs for this emulator.").show();
+				builder.setTitle("Error").setMessage("RetroArch Could not load the chosen ROM").show();
 			}
 			new File(return_file).delete();
 			break;
