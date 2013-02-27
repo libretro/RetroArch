@@ -36,8 +36,10 @@
 #include <time.h>
 #endif
 
-#ifdef __BLACKBERRY_QNX__
+#ifdef __QNX__
+#ifndef CLOCK_MONOTONIC
 #define CLOCK_MONOTONIC 2
+#endif
 #endif
 
 #if defined(__PSL1GHT__)
