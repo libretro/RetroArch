@@ -49,10 +49,8 @@
     <category>core.games</category>
     <asset path="icon.png">icon.png</asset>
     <asset path="retroarch.cfg">retroarch.cfg</asset>
-    <asset path="dkc.sfc">dkc.sfc</asset>
-    <asset path="advancewars.gba">advancewars.gba</asset>
-    <asset path="/home/twinaphex/local-repos/RetroArch/playbook/libsnes9x-next.so">lib/libsnes9x-next.so</asset>
-    <asset path="/home/twinaphex/local-repos/RetroArch/playbook/libvba-next.so">lib/libvba-next.so</asset>
+    <asset path="test.rom">test.rom</asset>
+    <asset path="test.so">lib/test.so</asset>
     <!-- <asset path="LICENSE">LICENSE</asset> -->
     <!-- <asset path="NOTICE">NOTICE</asset> -->
     <configuration id="com.qnx.qcc.configuration.exe.debug.507133694" name="Device-Debug">

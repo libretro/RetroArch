@@ -67,8 +67,8 @@ int rarch_main(int argc, char *argv[])
    args.verbose = g_extern.verbose;
    args.sram_path = NULL;
    args.state_path = NULL;
-   args.rom_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/advancewars.gba";
-   args.libretro_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/lib/libvba-next.so";
+   args.rom_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/test.rom";
+   args.libretro_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/lib/test.so";
    args.config_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/retroarch.cfg";
 
    if ((init_ret = rarch_main_init_wrap(&args)))
