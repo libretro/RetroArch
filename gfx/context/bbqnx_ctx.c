@@ -142,16 +142,6 @@ static bool gfx_ctx_init(void)
       goto error;
    }
 
-#if 0
-   int var = eglGetConfigAttrib(g_egl_dpy, egl_config, EGL_NATIVE_VISUAL_ID, &format);
-
-   if (!var)
-   {
-      RARCH_ERR("eglGetConfigAttrib failed: %d.\n", var);
-      goto error;
-   }
-#endif
-
    if ((g_egl_ctx = eglCreateContext(g_egl_dpy, egl_config, 0, context_attributes)) == EGL_NO_CONTEXT)
    {
       RARCH_ERR("eglCreateContext failed.\n");
