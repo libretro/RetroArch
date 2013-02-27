@@ -45,7 +45,6 @@
    _config = config;
    _list = ra_ios_list_directory(_path);
 
-   self.navigationItem.rightBarButtonItem = [RetroArch_iOS get].settings_button;
    [self setTitle: [_path lastPathComponent]];
    
    return self;
@@ -58,7 +57,7 @@
    if(path.isDirectory)
       [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListOrGridWithPath:path.path] isGame:NO];
    else
-      [[RetroArch_iOS get] runGame:path.path];
+      [[RetroArch_iOS get] pushViewController:[[RAModuleList alloc] initWithGame:path.path] isGame:NO];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section

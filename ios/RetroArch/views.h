@@ -34,6 +34,7 @@
 @end
 
 @interface RAModuleList : UITableViewController
+- (id)initWithGame:(NSString*)path;
 @end
 
 @interface RASettingsSubList : UITableViewController

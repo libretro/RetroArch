@@ -18,11 +18,13 @@
 @implementation RAModuleList
 {
    NSMutableArray* _modules;
+   NSString* _game;
 }
 
-- (id)init
+- (id)initWithGame:(NSString*)path
 {
-   self = [super initWithStyle:UITableViewStylePlain];
+   self = [super initWithStyle:UITableViewStyleGrouped];
+   _game = path;
 
    // Get the contents of the modules directory of the bundle.
    NSString* module_dir = [NSString stringWithFormat:@"%@/modules", [[NSBundle mainBundle] bundlePath]];
@@ -58,16 +60,14 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   RAModuleInfo* info = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];
-   [RetroArch_iOS get].moduleInfo = info;
-   
-   [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListOrGridWithPath:nil] isGame:NO];
+   [RetroArch_iOS get].moduleInfo = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];;
+   [[RetroArch_iOS get] runGame:_game];
 }
 
 - (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath
 {
-   RAModuleInfo* info = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];
-   [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:info] isGame:NO];
+   [RetroArch_iOS get].moduleInfo = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];
+   [[RetroArch_iOS get] showSettings];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
@@ -83,7 +83,6 @@
    RAModuleInfo* info = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];
    cell.textLabel.text = [[info.path lastPathComponent] stringByDeletingPathExtension];
    cell.accessoryType = (info.data) ? UITableViewCellAccessoryDetailDisclosureButton : UITableViewCellAccessoryNone;
-
 
    return cell;
 }

@@ -16,6 +16,13 @@
 #include <sys/stat.h>
 #include "rarch_wrapper.h"
 #include "general.h"
+#import "browser.h"
+
+#ifdef WIIMOTE
+#include "BTStack/wiimote.h"
+#import "BTStack/WiiMoteHelper.h"
+#endif
+
 
 #define ALMOST_INVISIBLE .021f
 
@@ -99,14 +106,6 @@
    self.file_icon = [UIImage imageNamed:@"ic_file"];
    self.folder_icon = [UIImage imageNamed:@"ic_dir"];
 
-   // Load buttons
-   self.settings_button = [[UIBarButtonItem alloc]
-                          initWithTitle:@"Module Settings"
-                          style:UIBarButtonItemStyleBordered
-                          target:nil action:nil];
-   self.settings_button.target = self;
-   self.settings_button.action = @selector(showSettings);
-
    // Load pause menu
    UINib* xib = [UINib nibWithNibName:@"PauseView" bundle:nil];
    _pauseView = [[xib instantiateWithOwner:self options:nil] lastObject];
@@ -119,7 +118,7 @@
 
    // Setup window
    _navigator = [[RANavigator alloc] initWithAppDelegate:self];
-   [_navigator pushViewController: [RAModuleList new] animated:YES];
+   [_navigator pushViewController: [RADirectoryList directoryListOrGridWithPath:nil] animated:YES];
 
    _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    _window.rootViewController = _navigator;
@@ -351,6 +350,12 @@
    [self pushViewController:[RASettingsList new] isGame:NO];
 }
 
+- (IBAction)showWiiRemoteConfig
+{
+#ifdef WIIMOTE
+   [WiiMoteHelper startwiimote:_navigator];
+#endif
+}
 
 @end
 

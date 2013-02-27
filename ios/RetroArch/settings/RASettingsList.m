@@ -16,11 +16,6 @@
 #import <objc/runtime.h>
 #import "settings.h"
 
-#ifdef WIIMOTE
-#include "BTStack/wiimote.h"
-#import "BTStack/WiiMoteHelper.h"
-#endif
-
 @implementation RASettingData
 @end
 
@@ -190,10 +185,8 @@ static RASettingData* subpath_setting(RAConfig* config, NSString* name, NSString
    {
       if (indexPath.row == 0)
          [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:[RetroArch_iOS get].moduleInfo] isGame:NO];
-#ifdef WIIMOTE
       else if(indexPath.row == 1)
-         [WiiMoteHelper startwiimote:_navigator];
-#endif
+         [[RetroArch_iOS get] showWiiRemoteConfig];
    }
    else
       [super tableView:tableView didSelectRowAtIndexPath:[NSIndexPath indexPathForRow:indexPath.row inSection:indexPath.section - 1]];
