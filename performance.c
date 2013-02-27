@@ -31,7 +31,7 @@
 #endif
 #elif defined(_XBOX360)
 #include <PPCIntrinsics.h>
-#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(ANDROID)
+#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(ANDROID) || defined(__QNX__)
 // POSIX_MONOTONIC_CLOCK is not being defined in Android headers despite support being present.
 #include <time.h>
 #endif
@@ -91,7 +91,7 @@ rarch_perf_tick_t rarch_get_perf_counter(void)
    __asm	mov	time_tmp.HighPart, edx;
    time = time_tmp.QuadPart;
 
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__QNX__)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
       time = (rarch_perf_tick_t)tv.tv_sec * 1000000000 + (rarch_perf_tick_t)tv.tv_nsec;
@@ -140,7 +140,7 @@ rarch_time_t rarch_get_time_usec(void)
    clock_get_time(cclock, &mts);
    mach_port_deallocate(mach_task_self(), cclock);
    return mts.tv_sec * INT64_C(1000000) + (mts.tv_nsec + 500) / 1000;
-#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(ANDROID)
+#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;

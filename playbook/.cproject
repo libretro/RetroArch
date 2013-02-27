@@ -32,7 +32,6 @@
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
-									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="__LIBRETRO__"/>
@@ -125,7 +124,6 @@
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
-									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="__LIBRETRO__"/>
@@ -220,7 +218,6 @@
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
-									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="__LIBRETRO__"/>
@@ -316,7 +313,6 @@
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
-									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="__LIBRETRO__"/>
@@ -410,7 +406,6 @@
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
-									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="__LIBRETRO__"/>
@@ -504,7 +499,6 @@
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
-									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="__LIBRETRO__"/>
@@ -599,7 +593,6 @@
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 									<listOptionValue builtIn="false" value="HAVE_RARCH_MAIN_IMPLEMENTATION"/>
 									<listOptionValue builtIn="false" value="HAVE_VID_CONTEXT"/>
-									<listOptionValue builtIn="false" value="_POSIX_MONOTONIC_CLOCK"/>
 									<listOptionValue builtIn="false" value="HAVE_FBO"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="__LIBRETRO__"/>
@@ -690,10 +683,10 @@
 		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.profile.coverage.1511241566">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.qnx.tools.ide.qde.managedbuilder.core.qccScannerInfo"/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.release.237026123">
+		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.profile.coverage.511003583">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.qnx.tools.ide.qde.managedbuilder.core.qccScannerInfo"/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.profile.coverage.511003583">
+		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.release.237026123">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.qnx.tools.ide.qde.managedbuilder.core.qccScannerInfo"/>
 		</scannerConfigBuildInfo>
 	</storageModule>
