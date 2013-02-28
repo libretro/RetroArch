@@ -49,12 +49,20 @@
 
 #include "shader_common.h"
 
+#ifdef HAVE_RMENU
+#include "../console/rarch_console_video.h"
+#endif
+
 #ifdef __CELLOS_LV2__
 #define FPS_COUNTER
 #endif
 
 #ifdef ANDROID
 #include "../frontend/frontend_android.h"
+#endif
+
+#ifdef HAVE_RGUI
+#include "../frontend/menu/rgui.h"
 #endif
 
 // Used for the last pass when rendering to the back buffer.
@@ -668,14 +676,12 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
 {
    gl_t *gl = (gl_t*)data;
-#ifdef RARCH_CONSOLE
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_OVERSCAN_ENABLE))
    {
       ortho->left = -g_extern.console.screen.overscan_amount / 2;
       ortho->right = 1 + g_extern.console.screen.overscan_amount / 2;
       ortho->bottom = -g_extern.console.screen.overscan_amount / 2;
    }
-#endif
 
    // Calculate projection.
    matrix_ortho(&gl->mvp_no_rot, ortho->left, ortho->right,
@@ -715,7 +721,7 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
       float desired_aspect = g_settings.video.aspect_ratio;
       float delta;
 
-#ifdef RARCH_CONSOLE
+#ifdef HAVE_RGUI
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          x      = g_extern.console.screen.viewports.custom_vp.x;
@@ -1070,6 +1076,10 @@ static void gl_init_textures(void *data, const video_info_t *video)
 
    glGenTextures(TEXTURES, gl->texture);
 
+#ifdef RGUI
+   glGenTextures(1, &gl->rgui_texture);
+#endif
+
    for (unsigned i = 0; i < TEXTURES; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
@@ -1178,6 +1188,11 @@ static void gl_init_textures(void *data, const video_info_t *video)
 #endif
 
    glGenTextures(TEXTURES, gl->texture);
+
+#ifdef RGUI
+   glGenTextures(1, &gl->rgui_texture);
+#endif
+
    for (unsigned i = 0; i < TEXTURES; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
@@ -1235,6 +1250,39 @@ static void gl_pbo_async_readback(void *data)
 
    pglBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
+#endif
+
+#ifdef HAVE_RGUI
+
+static inline void gl_draw_rgui(void *data)
+{
+   static const GLfloat white_color_rgui[16] = {
+      1.0f, 1.0f, 1.0f, 0.25f,
+      1.0f, 1.0f, 1.0f, 0.25f,
+      1.0f, 1.0f, 1.0f, 0.25f,
+      1.0f, 1.0f, 1.0f, 0.25f,
+   };
+
+   gl_t *gl = (gl_t*)data;
+
+   glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
+
+   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(RGUI_WIDTH * 2));
+   // RGUI is always packed so pitch = width * bpp
+   glTexImage2D(GL_TEXTURE_2D,
+         0, GL_RGB, RGUI_WIDTH, RGUI_HEIGHT, 0, GL_RGB,
+         GL_UNSIGNED_SHORT_5_6_5, gl->menu_data);
+
+   gl_shader_use_func(gl, 0);
+
+   glEnable(GL_BLEND);
+   gl->coords.color = white_color_rgui;
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glDisable(GL_BLEND);
+
+   gl->coords.color = white_color;
+}
+
 #endif
 
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
@@ -1310,6 +1358,14 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    gl_set_prev_texture(gl, &tex_info);
 
+#ifdef HAVE_RGUI
+   if(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
+   {
+      RARCH_LOG("rgui draw\n");
+      gl_draw_rgui(gl);
+   }
+#endif
+
 #ifdef FPS_COUNTER
    if (lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
    {
@@ -1337,7 +1393,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    RARCH_PERFORMANCE_STOP(frame_run);
 
-#ifdef HAVE_RMENU
+#if defined(HAVE_RMENU) && !defined(HAVE_RGUI)
    if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
       context_rmenu_frame_func(gl);
    else
@@ -1384,6 +1440,10 @@ static void gl_free(void *data)
 #endif
 
    glDeleteTextures(TEXTURES, gl->texture);
+
+#ifdef RGUI
+   glDeleteTextures(1, &gl->rgui_texture);
+#endif
 
 #ifdef HAVE_OVERLAY
    if (gl->tex_overlay)
@@ -1506,6 +1566,10 @@ static inline void gl_reinit_textures(void *data, const video_info_t *video)
 
       glBindTexture(GL_TEXTURE_2D, 0);
       glDeleteTextures(TEXTURES, gl->texture);
+
+#ifdef RGUI
+      glDeleteTextures(1, &gl->rgui_texture);
+#endif
 
       gl_init_textures(gl, video);
       gl_init_textures_data(gl);
@@ -2041,6 +2105,7 @@ static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
    g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
    g_settings.video.force_aspect = false;
    gl->keep_aspect = true;
+
    gl->should_resize = true;
 }
 #endif

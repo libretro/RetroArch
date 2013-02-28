@@ -90,7 +90,7 @@ static void android_input_poll(void *data)
    struct android_app* android_app = (struct android_app*)g_android;
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
 
-   *lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS));
+   *lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_QUIT_KEY));
 
    // Read all pending events.
    while (AInputQueue_hasEvents(android_app->inputQueue) > 0)
@@ -254,6 +254,11 @@ static void android_input_poll(void *data)
    }
 #endif
 
+   if (!(g_extern.frame_count < g_extern.delay_timer[0]) && g_extern.lifecycle_state & (1ULL << RARCH_RMENU_TOGGLE))
+   {
+      g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+   }
+
    RARCH_PERFORMANCE_STOP(input_poll);
 }
 
@@ -262,7 +267,7 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return ((state[port] & binds[port][id].joykey) && (port < pads_connected));
+         return ((port < pads_connected) && (state[port] & binds[port][id].joykey));
       case RETRO_DEVICE_POINTER:
          switch(id)
          {

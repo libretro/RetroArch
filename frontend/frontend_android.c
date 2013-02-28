@@ -25,6 +25,7 @@
 #include "../general.h"
 #include "../performance.h"
 #include "../driver.h"
+#include "menu/rmenu.h"
 
 #include "../config.def.h"
 
@@ -347,20 +348,42 @@ static void *android_app_entry(void *data)
    if (!android_app_start_main(android_app, &init_ret))
       goto exit;
 
-   if (g_extern.main_is_init)
+   menu_init();
+
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+begin_loop:
+   if(g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
    {
-      RARCH_LOG("RetroArch started.\n");
+      driver.input->poll(NULL);
+      driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
+         audio_start_func();
 
       while ((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ?
             android_run_events(android_app) :
             rarch_main_iterate());
 
-      RARCH_LOG("RetroArch stopped.\n");
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
+         audio_stop_func();
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
    }
+   else if(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
+   {
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_PREINIT);
+      while(rmenu_iterate());
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
+   }
+   else
+      goto exit;
+
+   goto begin_loop;
 
 exit:
    android_app->activityState = APP_CMD_DEAD;
    RARCH_LOG("Deinitializing RetroArch...\n");
+
+   menu_free();
 
    if (g_extern.main_is_init)
       rarch_main_deinit();

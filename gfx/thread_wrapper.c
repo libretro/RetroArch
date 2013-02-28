@@ -535,6 +535,17 @@ static void thread_get_overlay_interface(void *data, const video_overlay_interfa
 }
 #endif
 
+#if defined(HAVE_RMENU)
+
+// all stubs for now, might not have to implement them unless we want to port this to consoles
+static void thread_start(void) {}
+static void thread_stop(void) {}
+static void thread_restart(void) {}
+static void thread_apply_state_changes(void) {}
+static void thread_set_aspect_ratio(void *data, unsigned aspectratio_index) {}
+
+#endif
+
 static const video_driver_t video_thread = {
    thread_init_never_call, // Should never be called directly.
    thread_frame,
@@ -544,6 +555,13 @@ static const video_driver_t video_thread = {
    thread_set_shader,
    thread_free,
    "Thread wrapper",
+#if defined(HAVE_RMENU)
+   thread_start,
+   thread_stop,
+   thread_restart,
+   thread_apply_state_changes,
+   thread_set_aspect_ratio,
+#endif
    thread_set_rotation,
    thread_viewport_info,
    thread_read_viewport,
