@@ -39,12 +39,13 @@
 
 #pragma once
 
-#include <stdint.h>
 
 #if defined __cplusplus
 extern "C" {
 #endif
-	
+
+#include <stdint.h>
+
 /**
  * @brief hci connection handle type
  */
@@ -62,6 +63,13 @@ typedef uint8_t bd_addr_t[BD_ADDR_LEN];
 #define LINK_KEY_LEN 16
 typedef uint8_t link_key_t[LINK_KEY_LEN]; 
 
+/**
+ * @brief The device name type
+ */
+#define DEVICE_NAME_LEN 248
+typedef uint8_t device_name_t[DEVICE_NAME_LEN+1]; 
+	
+	
 // helper for BT little endian format
 #define READ_BT_16( buffer, pos) ( ((uint16_t) buffer[pos]) | (((uint16_t)buffer[pos+1]) << 8))
 #define READ_BT_24( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[pos+1]) << 8) | (((uint32_t)buffer[pos+2]) << 16))
@@ -77,6 +85,10 @@ typedef uint8_t link_key_t[LINK_KEY_LEN];
 
 // check if command complete event for given command
 #define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && READ_BT_16(event,3) == cmd.opcode)
+#define COMMAND_STATUS_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_STATUS && READ_BT_16(event,4) == cmd.opcode)
+
+// Code+Len=2, Pkts+Opcode=3; total=5
+#define OFFSET_OF_DATA_IN_COMMAND_COMPLETE 5
 
 // ACL Packet
 #define READ_ACL_CONNECTION_HANDLE( buffer ) ( READ_BT_16(buffer,0) & 0x0fff)
@@ -96,19 +108,19 @@ void net_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 
 void hexdump(void *data, int size);
 void printUUID(uint8_t *uuid);
-void print_bd_addr(bd_addr_t addr);
-int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr);
 
+// @deprecated please use more convenient bd_addr_to_str
+void print_bd_addr( bd_addr_t addr);
+char * bd_addr_to_str(bd_addr_t addr);
+
+int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr);
+    
 uint8_t crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum);
 uint8_t crc8_calc(uint8_t *data, uint16_t len);
 
 #define BD_ADDR_CMP(a,b) memcmp(a,b, BD_ADDR_LEN)
 #define BD_ADDR_COPY(dest,src) memcpy(dest,src,BD_ADDR_LEN)
 
-#ifdef EMBEDDED
-void bzero(void *s, uint32_t n);
-#endif
-	
 #if defined __cplusplus
 }
 #endif

@@ -353,7 +353,7 @@
 - (IBAction)showWiiRemoteConfig
 {
 #ifdef WIIMOTE
-   [WiiMoteHelper startwiimote:_navigator];
+   [[WiiMoteHelper get] showDiscovery];
 #endif
 }
 

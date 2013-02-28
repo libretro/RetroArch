@@ -54,8 +54,9 @@ int  linked_list_empty(linked_list_t * list);
 void linked_list_add(linked_list_t * list, linked_item_t *item);        // <-- add item to list as first element
 void linked_list_add_tail(linked_list_t * list, linked_item_t *item);   // <-- add item to list as last element
 int  linked_list_remove(linked_list_t * list, linked_item_t *item);     // <-- remove item from list
+linked_item_t * linked_list_get_last_item(linked_list_t * list);        // <-- find the last item in the list
 
-void test_linked_list();
+void test_linked_list(void);
 
 #if defined __cplusplus
 }

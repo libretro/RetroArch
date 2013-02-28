@@ -37,391 +37,241 @@
 #import "WiiMoteHelper.h"
 
 #import "BTDevice.h"
-#import "BTInquiryViewController.h"
+#import "BTstackManager.h"
+#import "BTDiscoveryViewController.h"
 
 #import "btstack/btstack.h"
 #import "btstack/run_loop.h"
 #import "btstack/hci_cmds.h"
 
-bool btOK = false;
-bool initLoop = false;
-BTDevice *device;
-uint16_t wiiMoteConHandle = 0;
-bool conected = false;
-bool activated = false;
-
-BTInquiryViewController *inqViewControl;
-  
-void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-        bd_addr_t event_addr;
-        
-
-        switch (packet_type) {
-
-                case L2CAP_DATA_PACKET://0x06
-                {
-                        struct wiimote_t *wm = NULL; 
-                        
-                        wm = wiimote_get_by_source_cid(channel);
-                        
-                        if(wm!=NULL)
-                        {
-                            
-                            byte* msg = packet + 2;
-                            byte event = packet[1];
-                        
-                            	switch (event) {
-									case WM_RPT_BTN:
-									{
-										/* button */
-										wiimote_pressed_buttons(wm, msg);
-										break;
-									}
-									case WM_RPT_READ:
-									{
-										/* data read */
-																
-										if(WIIMOTE_DBG)printf("WM_RPT_READ data arrive!\n");
-										
-										wiimote_pressed_buttons(wm, msg);
-																				
-									    byte err = msg[2] & 0x0F;
-									
-										if (err == 0x08)
-											printf("Unable to read data - address does not exist.\n");
-										else if (err == 0x07)
-											printf("Unable to read data - address is for write-only registers.\n");
-										else if (err)
-											printf("Unable to read data - unknown error code %x.\n", err);
-											
-										unsigned short offset = BIG_ENDIAN_SHORT(*(unsigned short*)(msg + 3));
-											
-										byte len = ((msg[2] & 0xF0) >> 4) + 1;
-										
-										byte *data = (msg + 5);
-										
-										if(WIIMOTE_DBG)
-										{
-											int i = 0;
-											printf("Read: 0x%04x ; ",offset);
-											for (; i < len; ++i)
-												printf("%x ", data[i]);
-											printf("\n");
-										}
-										
-										if(wiimote_handshake(wm,WM_RPT_READ,data,len))
-										{
-										   //btUsed = 1;                                                    
-                                           [inqViewControl showConnected:nil];
-                                           [inqViewControl showConnecting:nil];
-                                           //Create UIAlertView alert
-                                           [inqViewControl showConnecting:nil];
-                                           
-                                           UIAlertView* alert = 
-                                           [[UIAlertView alloc] initWithTitle:@"Connection detected!"
-                                                                message: [NSString stringWithFormat:@"%@ '%@' connection sucessfully completed!",
-                                                                   (wm->exp.type != EXP_NONE ? @"Classic Controller" : @"WiiMote"),
-                                                                  [NSNumber numberWithInt:(wm->unid)+1]]        
-                                                                delegate:nil cancelButtonTitle:@"Dismiss" otherButtonTitles: nil];
-                                           [alert show];                                           
-                                           //[alert dismissWithClickedButtonIndex:0 animated:TRUE];                                           
-                                           [alert release];
-                                           
-                                           if(device!=nil)
-                                           {
-                                              [device setConnectionState:kBluetoothConnectionConnected];
-                                              device = nil;
-                                           }
-                                           
-										}										
-
-										return;
-									}
-									case WM_RPT_CTRL_STATUS:
-									{
-                                        wiimote_pressed_buttons(wm, msg);
-                                        
-                                        /* find the battery level and normalize between 0 and 1 */
-                                        if(WIIMOTE_DBG)
-                                        {
-	                                       wm->battery_level = (msg[5] / (float)WM_MAX_BATTERY_CODE);
-	                                    
-	                                       printf("BATTERY LEVEL %f\n", wm->battery_level);
-	                                    }
-	                                    
-	                                    //handshake stuff!
-	                                    if(wiimote_handshake(wm,WM_RPT_CTRL_STATUS,msg,-1))
-	                                    {
-	                                       //btUsed = 1;                                                    
-                                           [inqViewControl showConnected:nil];
-                                           [inqViewControl showConnecting:nil];
-                                                                                      UIAlertView* alert = 
-                                           [[UIAlertView alloc] initWithTitle:@"Connection detected!"
-                                                                message: [NSString stringWithFormat:@"WiiMote '%@' connection sucessfully completed!",[NSNumber numberWithInt:(wm->unid)+1]]        
-                                                                delegate:nil cancelButtonTitle:@"Dismiss" otherButtonTitles: nil];
-                                           [alert show];                                           
-                                           //[alert dismissWithClickedButtonIndex:0 animated:TRUE];                                           
-                                           [alert release];
-                                           [device setConnectionState:kBluetoothConnectionConnected];
-                                           
-                                           if(device!=nil)
-                                           {
-                                              [device setConnectionState:kBluetoothConnectionConnected];
-                                              device = nil;
-                                           }
-	                                    }
-                                           																	                                        
-										return;
-									}
-									case WM_RPT_BTN_EXP:
-									{
-										/* button - expansion */
-										wiimote_pressed_buttons(wm, msg);
-										wiimote_handle_expansion(wm, msg+2);
-							
-										break;
-									}
-									case WM_RPT_WRITE:
-									{
-										/* write feedback - safe to skip */
-										break;
-									}
-									default:
-									{
-										printf("Unknown event, can not handle it [Code 0x%x].", event);
-										return;
-									}
-								}                   
-                        }                                                                 
-                        break;
-                }
-                case HCI_EVENT_PACKET://0x04
-                {
-                        switch (packet[0]){
-
-                                case L2CAP_EVENT_CHANNEL_OPENED:
-                                        
-                                        // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16)                                         
-                                        if (packet[2] == 0) {
-                                               
-                                                // inform about new l2cap connection
-                                                bt_flip_addr(event_addr, &packet[3]);
-                                                uint16_t psm = READ_BT_16(packet, 11);
-                                                uint16_t source_cid = READ_BT_16(packet, 13);
-                                                wiiMoteConHandle = READ_BT_16(packet, 9);
-                                                NSLog(@"Channel successfully opened: handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x",
-                                                           wiiMoteConHandle, psm, source_cid,  READ_BT_16(packet, 15));
-                                                                                                                                                                                                                  
-                                                if (psm == 0x13) {
-                                                
-                                                        // interupt channel openedn succesfully, now open control channel, too.
-                                                        if(WIIMOTE_DBG)printf("open control channel\n");
-                                                        bt_send_cmd(&l2cap_create_channel, event_addr, 0x11);
-                                                        struct wiimote_t *wm = NULL;  
-                                                        wm = &joys[myosd_num_of_joys];
-                                                        memset(wm, 0, sizeof(struct wiimote_t));
-                                                        wm->unid = myosd_num_of_joys;                                                        
-                                                        wm->i_source_cid = source_cid;
-                                                        memcpy(&wm->addr,&event_addr,BD_ADDR_LEN);
-                                                        if(WIIMOTE_DBG)printf("addr %02x:%02x:%02x:%02x:%02x:%02x\n", wm->addr[0], wm->addr[1], wm->addr[2],wm->addr[3], wm->addr[4], wm->addr[5]);                                                    
-                                                        if(WIIMOTE_DBG)printf("saved 0x%02x  0x%02x\n",source_cid,wm->i_source_cid);
-                                                        wm->exp.type = EXP_NONE;
-                                                        
-                                                } else {
-                                                                                                        
-                                                        //inicializamos el wiimote!   
-                                                        struct wiimote_t *wm = NULL;  
-                                                        wm = &joys[myosd_num_of_joys];                                                                                                                                                                  
-                                                        wm->wiiMoteConHandle = wiiMoteConHandle; 
-                                                        wm->c_source_cid = source_cid;                                                           
-                                                        wm->state = WIIMOTE_STATE_CONNECTED;
-                                                        myosd_num_of_joys++;
-                                                        if(WIIMOTE_DBG)printf("Devices Number: %d\n",myosd_num_of_joys);
-                                                        wiimote_handshake(wm,-1,NULL,-1);                                                                                                                                                                                                                                                                      
-                                                }
-                                        }
-                                        break;
-                                case L2CAP_EVENT_CHANNEL_CLOSED:
-                                       {                                
-	                                        // data: event (8), len(8), channel (16)                                                                                       
-	                                        uint16_t  source_cid = READ_BT_16(packet, 2);                                              
-	                                        NSLog(@"Channel successfully closed: cid 0x%02x",source_cid);
-	                                        
-	                                        bd_addr_t addr;
-	                                        int unid = wiimote_remove(source_cid,&addr);
-	                                        if(unid!=-1)
-	                                        {
-	                                           [inqViewControl removeDeviceForAddress:&addr];
-	                                           UIAlertView* alert = 
-                                               [[UIAlertView alloc] initWithTitle:@"Disconnection!"
-                                                                     message:[NSString stringWithFormat:@"WiiMote '%@' disconnection detected.\nIs battery drainned?",[NSNumber numberWithInt:(unid+1)]] 
-                                                                     delegate:nil cancelButtonTitle:@"Dismiss" otherButtonTitles: nil];
-                                               [alert show];                                           
-                                                                                      
-                                               [alert release];
-	                                        }
-                                                                                                                                                                                                                                                 
-                                        }
-                                        break;                                        
-
-                                default:
-                                        break;
-                        }
-                        break;
-                }
-                default:
-                        break;
-        }
-}
+static BTDevice *device;
+static uint16_t wiiMoteConHandle = 0;
+static bool btOK;
+static WiiMoteHelper* instance;
 
 @implementation WiiMoteHelper
- 
-+(void) startwiimote:(UIViewController *)controller{
-
-  if(!initLoop)
-  {
-     run_loop_init(RUN_LOOP_COCOA);
-     initLoop = true;
-  }   
-  if(!btOK )
-  {
-	  if (bt_open() ){
-	      // Alert user?
-	  } else {
-	      bt_register_packet_handler(packet_handler);
-	      btOK = true;
-	  }
-  }
-  
-  if (btOK) 
-  {
-    // create inq controller
-    if(inqViewControl==nil)
-    {
-      inqViewControl = [[BTInquiryViewController alloc] init];
-    
-      struct CGRect rect = controller.view.frame;
-
-	  CGFloat navBarWidht =  rect.size.width;
-	  CGFloat navBarHeight = 45;
-        
-	  UINavigationBar *navBar = [ [ UINavigationBar alloc ] initWithFrame: CGRectMake(0, 0, navBarWidht , navBarHeight)];
-	  [navBar autorelease];
-	  [navBar setDelegate: inqViewControl ];
-	  
-	  UIButton *button = [UIButton buttonWithType:UIButtonTypeRoundedRect];
-      [button setFrame:CGRectMake(rect.size.width-70,5,60,35)];
-      [button setTitle:@"Done" forState:UIControlStateNormal];
-      button.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin;
-      [button addTarget:self action:@selector(cancelWiiMoteSearch) forControlEvents:UIControlEventTouchUpInside];
-      
-      [navBar addSubview:button];
-      	   	   
-      UILabel *navLabel = [[UILabel alloc] initWithFrame:CGRectMake(40,0,300, navBarHeight)];
-	  navLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-	  navLabel.text = @"WiiMote Sync";
-	  navLabel.backgroundColor = [UIColor clearColor];
-	  navLabel.textColor = [UIColor blackColor];
-	  navLabel.font = [UIFont systemFontOfSize: 18];
-	  navLabel.textAlignment = UITextAlignmentLeft;
-	  [navBar addSubview:navLabel];
-	  [navLabel release];
-	   	   
-	  [[inqViewControl tableView] setTableHeaderView:navBar];
-	  [navBar release];
-	    	    
-    }
-    
-    if(!activated)
-    {
-
-	    
-	        UIAlertView* alertView=[[UIAlertView alloc] initWithTitle:nil
-	                     message:@"are you sure you to activate BTstack?"
-					     delegate:self cancelButtonTitle:nil
-	                     otherButtonTitles:@"Yes",@"No",nil];
-	                      
-	        [alertView show];
-            [alertView release];
-    }
-       
-    [controller presentModalViewController:inqViewControl animated:YES];
-    
-  }
-
-}
-
-+ (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
++ (WiiMoteHelper*)get
 {
-
-  if(buttonIndex == 0 )
-  {
-     [inqViewControl setDelegate:self];
-     [inqViewControl setAllowSelection:true];
-     activated = true;
-     [inqViewControl startInquiry];
-  }
-  else
-  {
-     [inqViewControl dismissModalViewControllerAnimated:YES];
-  }
+   if (!instance)
+   {
+      instance = [WiiMoteHelper new];
+   }
+   
+   return instance;
 }
 
-+(void) cancelWiiMoteSearch {        
-    [inqViewControl stopInquiry];
-    [inqViewControl dismissModalViewControllerAnimated:YES];
-}
-
-
-+(void) deviceChoosen:(BTInquiryViewController *) inqView device:(BTDevice*) deviceChoosen;
+- (id)init
 {
-        NSLog(@"deviceChoosen %@", [device toString]);
+   if (!btOK)
+   {
+      BTstackManager* bt = [BTstackManager sharedInstance];
+      [bt setDelegate:self];
+      [bt addListener:self];
+
+      btOK = [bt activate] == 0;
+   }
+   
+   return self;
 }
 
-+ (void) deviceDetected:(BTInquiryViewController *) inqView device:(BTDevice*) selectedDevice {
+- (void)dealloc
+{
+   // TODO: Any other cleanup needed
+   [[BTstackManager sharedInstance] deactivate];
+}
 
-        NSLog(@"deviceDetected %@", [device toString]);
-        if ([selectedDevice name] && [[selectedDevice name] caseInsensitiveCompare:@"Nintendo RVL-CNT-01"] == NSOrderedSame){
-                NSLog(@"WiiMote found with address %@", [BTDevice stringForAddress:[selectedDevice address]]);
-                device = selectedDevice;
-                
+- (void)showDiscovery
+{
+   BTDiscoveryViewController* vc = [BTDiscoveryViewController new];
+   [vc setDelegate:self];
+   
+   [[BTstackManager sharedInstance] addListener:vc];
+   
+   [[RetroArch_iOS get] pushViewController:vc isGame:NO];
+}
+
+// BTStackManagerListener
+-(void) activatedBTstackManager:(BTstackManager*) manager
+{
+	[[BTstackManager sharedInstance] startDiscovery];
+}
+
+-(void) btstackManager:(BTstackManager*)manager deviceInfo:(BTDevice*)newDevice
+{
+	if ([newDevice name] && [[newDevice name] hasPrefix:@"Nintendo RVL-CNT-01"])
+   {
+		device = newDevice;
+		[[BTstackManager sharedInstance] stopDiscovery];
+	}
+}
+
+-(void) discoveryStoppedBTstackManager:(BTstackManager*) manager
+{
+	bt_send_cmd(&hci_write_authentication_enable, 0);
+}
+
+// BTStackManagerDelegate
+-(void) btstackManager:(BTstackManager*) manager
+  handlePacketWithType:(uint8_t) packet_type
+			forChannel:(uint16_t) channel
+			   andData:(uint8_t *)packet
+			   withLen:(uint16_t) size
+{
+   bd_addr_t event_addr;
+
+   switch (packet_type)
+   {
+      case L2CAP_DATA_PACKET://0x06
+      {
+         struct wiimote_t *wm = wiimote_get_by_source_cid(channel);
          
-                [inqViewControl stopInquiry];
+         if (wm != NULL)
+         {
+            byte* msg = packet + 2;
+            byte event = packet[1];
+                        
+            switch (event)
+            {
+               case WM_RPT_BTN:
+               {
+                  wiimote_pressed_buttons(wm, msg);
+                  break;
+               }
+
+               case WM_RPT_READ:
+               {
+                  /* data read */
+                  wiimote_pressed_buttons(wm, msg);
+											
+                  byte len = ((msg[2] & 0xF0) >> 4) + 1;
+                  byte *data = (msg + 5);
+										
+                  if(wiimote_handshake(wm, WM_RPT_READ, data, len))
+                  {
+                     if (device != nil)
+                     {
+                        [device setConnectionState:kBluetoothConnectionConnected];
+                        device = nil;
+                     }
+                  }
+
+                  return;
+               }
+					
+               case WM_RPT_CTRL_STATUS:
+               {
+                  wiimote_pressed_buttons(wm, msg);
+          
+                  //handshake stuff!
+                  if(wiimote_handshake(wm,WM_RPT_CTRL_STATUS,msg,-1))
+                  {
+                     [device setConnectionState:kBluetoothConnectionConnected];
+
+                     if (device != nil)
+                     {
+                        [device setConnectionState:kBluetoothConnectionConnected];
+                        device = nil;
+                     }
+                  }
+
+                  return;
+               }
+
+               case WM_RPT_BTN_EXP:
+               {
+                  /* button - expansion */
+                  wiimote_pressed_buttons(wm, msg);
+                  wiimote_handle_expansion(wm, msg+2);
+
+                  break;
+               }
                
-                [inqViewControl showConnecting:device];
+               case WM_RPT_WRITE:
+               {
+                  /* write feedback - safe to skip */
+                  break;
+               }
 
-                // connect to device
-                [device setConnectionState:kBluetoothConnectionConnecting];
-                [[inqViewControl tableView] reloadData];
-                bt_send_cmd(&l2cap_create_channel, [device address], 0x13);
-                
-           
-        }
+               default:
+               {
+                  printf("Unknown event, can not handle it [Code 0x%x].", event);
+                  return;
+               }
+            }
+         }
+         break;
+      }
+      
+      case HCI_EVENT_PACKET://0x04
+      {
+         switch (packet[0])
+         {
+            case HCI_EVENT_COMMAND_COMPLETE:
+            {
+               if (COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable))
+                  bt_send_cmd(&l2cap_create_channel, [device address], PSM_HID_INTERRUPT);
+               break;
+            }
+         
+            case HCI_EVENT_PIN_CODE_REQUEST:
+            {
+               bt_flip_addr(event_addr, &packet[2]);
+               if (BD_ADDR_CMP([device address], event_addr)) break;
+                    
+               // inform about pin code request
+               NSLog(@"HCI_EVENT_PIN_CODE_REQUEST\n");
+               bt_send_cmd(&hci_pin_code_request_reply, event_addr, 6,  &packet[2]); // use inverse bd_addr as PIN
+               break;
+            }
+            
+            case L2CAP_EVENT_CHANNEL_OPENED:
+            {
+               // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16)
+               if (packet[2] == 0)
+               {
+                  // inform about new l2cap connection
+                  bt_flip_addr(event_addr, &packet[3]);
+                  uint16_t psm = READ_BT_16(packet, 11);
+                  uint16_t source_cid = READ_BT_16(packet, 13);
+                  wiiMoteConHandle = READ_BT_16(packet, 9);
+
+                  if (psm == 0x13)
+                  {
+                     // interupt channel openedn succesfully, now open control channel, too.
+                     bt_send_cmd(&l2cap_create_channel, event_addr, 0x11);
+                     struct wiimote_t *wm = &joys[myosd_num_of_joys];
+                     memset(wm, 0, sizeof(struct wiimote_t));
+                     wm->unid = myosd_num_of_joys;
+                     wm->i_source_cid = source_cid;
+                     memcpy(&wm->addr,&event_addr,BD_ADDR_LEN);
+                     wm->exp.type = EXP_NONE;
+                  }
+                  else
+                  {
+                     //inicializamos el wiimote!
+                     struct wiimote_t *wm = &joys[myosd_num_of_joys];
+                     wm->wiiMoteConHandle = wiiMoteConHandle;
+                     wm->c_source_cid = source_cid;
+                     wm->state = WIIMOTE_STATE_CONNECTED;
+                     myosd_num_of_joys++;
+                     wiimote_handshake(wm,-1,NULL,-1);
+                  }
+               }
+ 
+               break;
+            }
+
+            case L2CAP_EVENT_CHANNEL_CLOSED:
+            {
+               // data: event (8), len(8), channel (16)
+               uint16_t  source_cid = READ_BT_16(packet, 2);
+
+               bd_addr_t addr;
+               wiimote_remove(source_cid,&addr);
+               break;
+            }
+         }
+      }
+   }
 }
-
-+ (void) inquiryStopped{
-}
-
-+ (void) disconnectDevice:(BTInquiryViewController *) inqView device:(BTDevice*) selectedDevice {
-}
-
-+ (void)endwiimote {
-
-    if(btOK)
-    {
-		int i=0;
-		while(i!=myosd_num_of_joys){
-			[inqViewControl removeDeviceForAddress:&joys[i].addr];
-			i++;
-		}
-			
-		myosd_num_of_joys=0;
-	    bt_send_cmd(&btstack_set_power_mode, HCI_POWER_OFF );
-	    bt_close();
-	    activated= false;
-		btOK = false;	
-    }
-}
-
 @end
-

@@ -165,10 +165,10 @@ static int16_t ios_input_state(void *data, const struct retro_keybind **binds, u
                case RETRO_DEVICE_ID_JOYPAD_B: return IS_PRESSED(wm, WIIMOTE_BUTTON_ONE);
                case RETRO_DEVICE_ID_JOYPAD_START: return IS_PRESSED(wm, WIIMOTE_BUTTON_PLUS);
                case RETRO_DEVICE_ID_JOYPAD_SELECT: return IS_PRESSED(wm, WIIMOTE_BUTTON_MINUS);
-               case RETRO_DEVICE_ID_JOYPAD_UP: return IS_PRESSED(wm, WIIMOTE_BUTTON_UP);
-               case RETRO_DEVICE_ID_JOYPAD_DOWN: return IS_PRESSED(wm, WIIMOTE_BUTTON_DOWN);
-               case RETRO_DEVICE_ID_JOYPAD_LEFT: return IS_PRESSED(wm, WIIMOTE_BUTTON_LEFT);
-               case RETRO_DEVICE_ID_JOYPAD_RIGHT: return IS_PRESSED(wm, WIIMOTE_BUTTON_RIGHT);
+               case RETRO_DEVICE_ID_JOYPAD_UP: return IS_PRESSED(wm, WIIMOTE_BUTTON_RIGHT);
+               case RETRO_DEVICE_ID_JOYPAD_DOWN: return IS_PRESSED(wm, WIIMOTE_BUTTON_LEFT);
+               case RETRO_DEVICE_ID_JOYPAD_LEFT: return IS_PRESSED(wm, WIIMOTE_BUTTON_UP);
+               case RETRO_DEVICE_ID_JOYPAD_RIGHT: return IS_PRESSED(wm, WIIMOTE_BUTTON_DOWN);
             }
          }
 #endif

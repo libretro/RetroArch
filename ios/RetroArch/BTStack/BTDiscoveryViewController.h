@@ -28,20 +28,11 @@
  * SUCH DAMAGE.
  *
  */
-
-//
-//  BTInquiryViewController.h
-//
-//  Created by Matthias Ringwald on 10/8/09.
-//
-
 #import <UIKit/UIKit.h>
+#import "BTstackManager.h"
 
-#include "btstack/hci_cmds.h" // for HCI_STATE
-#include "btstack/utils.h"
-
-@class BTDevice;
-@protocol BTInquiryDelegate;
+@class BTstackManager;
+@protocol BTDiscoveryDelegate;
 
 typedef enum {
 	kInquiryInactive,
@@ -49,46 +40,28 @@ typedef enum {
 	kInquiryRemoteName
 } InquiryState;
 
-@interface BTInquiryViewController : UITableViewController 
+@interface BTDiscoveryViewController : UITableViewController<BTstackManagerListener>
 {
-	NSMutableArray *devices; 
-	HCI_STATE bluetoothState;
-	InquiryState   inquiryState;
+	BTstackManager *bt;
+	NSObject<BTDiscoveryDelegate> * _delegate;
 	UIActivityIndicatorView *deviceActivity;
 	UIActivityIndicatorView *bluetoothActivity;
 	UIFont * deviceNameFont;
 	UIFont * macAddressFont;
-	id<BTInquiryDelegate> delegate;
-	bool allowSelection;
-	bool showIcons;
-	
-	// hacks
-	bool stopRemoteNameGathering;
-	bool restartInquiry;
-	BTDevice *remoteNameDevice; // device for which remote name request is pending
-	BTDevice *remoteDevice;     // device for which connection is pending
-	BTDevice *connectedDevice;  // device to which we're connected
-	bool notifyDelegateOnInquiryStopped;
-
+	InquiryState inquiryState;
+	int remoteNameIndex;
+	BOOL showIcons;
+	int connectingIndex;
+	NSString *customActivityText;
 }
-
-- (void) startInquiry;
-- (void) stopInquiry;
-
-- (void) showConnecting:(BTDevice *) device;
-- (void) showConnected:(BTDevice *) device;
-
-- (void) removeDeviceForAddress:(bd_addr_t *)addr;
-
-@property (nonatomic, assign) bool allowSelection;
-@property (nonatomic, assign) bool showIcons;
-@property (nonatomic, retain) NSMutableArray *devices;
-@property (nonatomic, retain) id<BTInquiryDelegate> delegate;
+-(void) markConnecting:(int)index; // use -1 for no connection active
+@property (nonatomic, assign) NSObject<BTDiscoveryDelegate> * delegate;
+@property (nonatomic, assign) BOOL showIcons;
+@property (nonatomic, retain) NSString *customActivityText;
 @end
 
-@protocol BTInquiryDelegate
-+ (void) deviceChoosen:(BTInquiryViewController *) inqView device:(BTDevice*) device;
-+ (void) deviceDetected:(BTInquiryViewController *) inqView device:(BTDevice*) device;
-+ (void) disconnectDevice:(BTInquiryViewController *) inqView device:(BTDevice*) device;
-+ (void) inquiryStopped;
+@protocol BTDiscoveryDelegate
+@optional
+-(BOOL) discoveryView:(BTDiscoveryViewController*)discoveryView willSelectDeviceAtIndex:(int)deviceIndex; // returns NO to ignore selection
+-(void) statusCellSelectedDiscoveryView:(BTDiscoveryViewController*)discoveryView;
 @end

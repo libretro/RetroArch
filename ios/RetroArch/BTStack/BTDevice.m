@@ -44,32 +44,67 @@
 @synthesize connectionState;
 @synthesize pageScanRepetitionMode;
 @synthesize clockOffset;
+@synthesize rssi;
 
 - (BTDevice *)init {
 	name = NULL;
-	bzero(&address, 6);
+	memset(&_address, 0, 6);
 	classOfDevice = kCODInvalid;
 	connectionState = kBluetoothConnectionNotConnected;
 	return self;
 }
 
-- (void) setAddress:(bd_addr_t *)newAddr{
-	BD_ADDR_COPY( &address, newAddr);
+- (void) setAddress:(bd_addr_t*)newAddr{
+	BD_ADDR_COPY( &_address, newAddr);
 }
 
-- (bd_addr_t *) address{
-	return &address;
+- (BOOL) setAddressFromString:(NSString *) addressString{
+	return [BTDevice address:&_address fromString:addressString];
 }
 
-+ (NSString *) stringForAddress:(bd_addr_t *) address {
-	uint8_t * addr = (uint8_t*) address;
+- (bd_addr_t*) address{
+	return &_address;
+}
+
++ (NSString *) stringForAddress:(bd_addr_t*) address {
+	uint8_t *addr = (uint8_t*) *address;
 	return [NSString stringWithFormat:@"%02x:%02x:%02x:%02x:%02x:%02x", addr[0], addr[1], addr[2],
 			addr[3], addr[4], addr[5]];
 }
 
++ (BOOL) address:(bd_addr_t *)address fromString:(NSString *) addressString{
+	// support both : and - or NOTHING as separator
+	addressString = [addressString stringByReplacingOccurrencesOfString:@":" withString:@""];
+	addressString = [addressString stringByReplacingOccurrencesOfString:@"-" withString:@""];
+	if ([addressString length] != 12) return NO;
+	
+	unsigned int bd_addr_buffer[BD_ADDR_LEN];  //for sscanf, integer needed
+	// reset result buffer
+	int i;
+    for (i = 0; i < BD_ADDR_LEN; i++) {
+        bd_addr_buffer[i] = 0;
+    }
+    
+	// parse
+    int result = sscanf([addressString UTF8String], "%2x%2x%2x%2x%2x%2x", &bd_addr_buffer[0], &bd_addr_buffer[1], &bd_addr_buffer[2],
+						&bd_addr_buffer[3], &bd_addr_buffer[4], &bd_addr_buffer[5]);
+	// store
+	if (result == 6){
+		for (i = 0; i < BD_ADDR_LEN; i++) {
+			(*address)[i] = (uint8_t) bd_addr_buffer[i];
+		}
+		return YES;
+	}
+	return NO;
+}
+
 - (NSString *) nameOrAddress{
 	if (name) return name;
-	return [BTDevice stringForAddress:&address];
+	return [self addressString];
+}
+
+- (NSString *) addressString{
+	return [BTDevice stringForAddress:&_address];
 }
 
 - (BluetoothDeviceType) deviceType{
@@ -83,7 +118,7 @@
 	}
 }
 - (NSString *) toString{
-	return [NSString stringWithFormat:@"Device addr %@ name %@ COD %x", [BTDevice stringForAddress:&address], name, classOfDevice];
+	return [NSString stringWithFormat:@"Device addr %@ name %@ COD %x", [BTDevice stringForAddress:&_address], name, classOfDevice];
 }
 
 - (void)dealloc {

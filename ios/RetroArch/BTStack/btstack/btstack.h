@@ -64,10 +64,10 @@ typedef void (*btstack_packet_handler_t) (uint8_t packet_type, uint16_t channel,
 void bt_use_tcp(const char * address, uint16_t port); 
 
 // init BTstack library
-int bt_open();
+int bt_open(void);
 
 // stop using BTstack library
-int bt_close();
+int bt_close(void);
 
 // send hci cmd packet
 int bt_send_cmd(const hci_cmd_t *cmd, ...);
@@ -79,6 +79,7 @@ btstack_packet_handler_t bt_register_packet_handler(btstack_packet_handler_t han
 void bt_send_acl(uint8_t * data, uint16_t len);
 
 void bt_send_l2cap(uint16_t local_cid, uint8_t *data, uint16_t len);
+void bt_send_rfcomm(uint16_t rfcom_cid, uint8_t *data, uint16_t len);
 
 #if defined __cplusplus
 }

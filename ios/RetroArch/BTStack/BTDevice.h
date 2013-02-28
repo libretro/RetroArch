@@ -31,7 +31,6 @@
 
 //
 //  BTDevice.h
-//  BT-Keyboard
 //
 //  Created by Matthias Ringwald on 3/30/09.
 //
@@ -59,25 +58,35 @@ typedef enum {
 } BluetoothConnectionState;
 
 @interface BTDevice : NSObject {
-	bd_addr_t address;
+
+	bd_addr_t  _address;
+	
 	NSString * name;
+	uint32_t   classOfDevice;
+	
 	uint8_t    pageScanRepetitionMode;
 	uint16_t   clockOffset;
-	uint32_t   classOfDevice;
-	BluetoothConnectionState  connectionState;
+
+	uint8_t    rssi;
+	
+	// deprecated
+	BluetoothConnectionState  connectionState; 
 }
 
-- (void) setAddress:(bd_addr_t *)addr;
-- (bd_addr_t *) address;
+- (void) setAddress:(bd_addr_t*)addr;
+- (BOOL) setAddressFromString:(NSString *) addressString;
+- (bd_addr_t*) address;
 - (NSString *) toString;
-+ (NSString *) stringForAddress:(bd_addr_t *) address;
-
+- (NSString *) addressString;
++ (NSString *) stringForAddress:(bd_addr_t*) address;
++ (BOOL)       address:(bd_addr_t *) address fromString:(NSString *) addressString;
 @property (readonly)          BluetoothDeviceType deviceType;
 @property (readonly)          NSString *          nameOrAddress;
 @property (nonatomic, copy)   NSString *          name;
 @property (nonatomic, assign) uint32_t            classOfDevice;
 @property (nonatomic, assign) uint16_t            clockOffset;
 @property (nonatomic, assign) uint8_t             pageScanRepetitionMode;
+@property (nonatomic, assign) uint8_t             rssi;
 @property (nonatomic, assign) BluetoothConnectionState connectionState;
 
 @end

@@ -8,10 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		96096DD816D1ABAF00BF4499 /* RAModuleInfoList.m in Sources */ = {isa = PBXBuildFile; fileRef = 96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */; };
+		960DB2C416E0193D00F977E3 /* BTstackManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 960DB2C216E0193D00F977E3 /* BTstackManager.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		960DB2C716E0197600F977E3 /* BTDiscoveryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 960DB2C616E0197600F977E3 /* BTDiscoveryViewController.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		9614C6BB16DD7C00000B36EF /* BTDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = 9614C6AE16DD7C00000B36EF /* BTDevice.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		9614C6BC16DD7C00000B36EF /* BTInquiryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9614C6B016DD7C00000B36EF /* BTInquiryViewController.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		9614C6BD16DD7C00000B36EF /* libBTstack.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9614C6B816DD7C00000B36EF /* libBTstack.dylib */; };
-		9614C6BE16DD7C00000B36EF /* WiiMoteHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = 9614C6BA16DD7C00000B36EF /* WiiMoteHelper.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		9614C6BE16DD7C00000B36EF /* WiiMoteHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = 9614C6BA16DD7C00000B36EF /* WiiMoteHelper.m */; };
 		9614C6C116DD7D54000B36EF /* wiimote.c in Sources */ = {isa = PBXBuildFile; fileRef = 9614C6BF16DD7D54000B36EF /* wiimote.c */; };
 		9614C6C416DDC018000B36EF /* autosave.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAE9D16C1D9A9009DE44C /* autosave.c */; };
 		9614C6C516DDC018000B36EF /* cheats.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEA016C1D9A9009DE44C /* cheats.c */; };
@@ -176,10 +177,12 @@
 
 /* Begin PBXFileReference section */
 		96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleInfoList.m; sourceTree = "<group>"; };
+		960DB2C216E0193D00F977E3 /* BTstackManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BTstackManager.m; sourceTree = "<group>"; };
+		960DB2C316E0193D00F977E3 /* BTstackManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BTstackManager.h; sourceTree = "<group>"; };
+		960DB2C516E0197500F977E3 /* BTDiscoveryViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BTDiscoveryViewController.h; sourceTree = "<group>"; };
+		960DB2C616E0197600F977E3 /* BTDiscoveryViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BTDiscoveryViewController.m; sourceTree = "<group>"; };
 		9614C6AD16DD7C00000B36EF /* BTDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BTDevice.h; sourceTree = "<group>"; };
 		9614C6AE16DD7C00000B36EF /* BTDevice.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BTDevice.m; sourceTree = "<group>"; };
-		9614C6AF16DD7C00000B36EF /* BTInquiryViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BTInquiryViewController.h; sourceTree = "<group>"; };
-		9614C6B016DD7C00000B36EF /* BTInquiryViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BTInquiryViewController.m; sourceTree = "<group>"; };
 		9614C6B216DD7C00000B36EF /* btstack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btstack.h; sourceTree = "<group>"; };
 		9614C6B316DD7C00000B36EF /* hci_cmds.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hci_cmds.h; sourceTree = "<group>"; };
 		9614C6B416DD7C00000B36EF /* linked_list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = linked_list.h; sourceTree = "<group>"; };
@@ -382,8 +385,10 @@
 				9614C6B116DD7C00000B36EF /* btstack */,
 				9614C6AD16DD7C00000B36EF /* BTDevice.h */,
 				9614C6AE16DD7C00000B36EF /* BTDevice.m */,
-				9614C6AF16DD7C00000B36EF /* BTInquiryViewController.h */,
-				9614C6B016DD7C00000B36EF /* BTInquiryViewController.m */,
+				960DB2C516E0197500F977E3 /* BTDiscoveryViewController.h */,
+				960DB2C616E0197600F977E3 /* BTDiscoveryViewController.m */,
+				960DB2C216E0193D00F977E3 /* BTstackManager.m */,
+				960DB2C316E0193D00F977E3 /* BTstackManager.h */,
 				9614C6B816DD7C00000B36EF /* libBTstack.dylib */,
 				9614C6B916DD7C00000B36EF /* WiiMoteHelper.h */,
 				9614C6BA16DD7C00000B36EF /* WiiMoteHelper.m */,
@@ -957,9 +962,10 @@
 				96C19C3016D7045700FE8D5A /* RAConfig.m in Sources */,
 				965AE29E16D9BF94001D7667 /* ios_input.m in Sources */,
 				9614C6BB16DD7C00000B36EF /* BTDevice.m in Sources */,
-				9614C6BC16DD7C00000B36EF /* BTInquiryViewController.m in Sources */,
 				9614C6BE16DD7C00000B36EF /* WiiMoteHelper.m in Sources */,
 				9614C6C116DD7D54000B36EF /* wiimote.c in Sources */,
+				960DB2C416E0193D00F977E3 /* BTstackManager.m in Sources */,
+				960DB2C716E0197600F977E3 /* BTDiscoveryViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

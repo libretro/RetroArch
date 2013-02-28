@@ -31,19 +31,10 @@
 
 #import <UIKit/UIKit.h>
 
-#import "BTInquiryViewController.h"
+#import "BTDiscoveryViewController.h"
 
-@interface WiiMoteHelper : NSObject<BTInquiryDelegate>
-{
-}
-
-+ (void)startwiimote:(UIViewController *)controller;
-+ (void)endwiimote;
-+ (void)cancelWiiMoteSearch;
-
+@interface WiiMoteHelper : NSObject<BTDiscoveryDelegate, BTstackManagerDelegate, BTstackManagerListener>
++ (WiiMoteHelper*)get;
+- (void)showDiscovery;
 @end
-
-
-
-
 

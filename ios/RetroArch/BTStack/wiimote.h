@@ -276,8 +276,6 @@ extern "C" {
 	extern int myosd_num_of_joys;
 
 
-//devuelve un int haciendo polling de lo guardado en el wiimote
-int iOS_wiimote_check (struct  wiimote_t  *wm);
 int wiimote_remove(uint16_t source_cid, bd_addr_t *addr);
 struct wiimote_t* wiimote_get_by_source_cid(uint16_t source_cid);
 int  wiimote_handshake(struct wiimote_t* wm,  byte event, byte* data, unsigned short len);

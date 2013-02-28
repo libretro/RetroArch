@@ -47,7 +47,7 @@
 #include "btstack/btstack.h"
 #include "wiimote.h"
 
-//int num_of_joys = 0;
+int myosd_num_of_joys = 0;
 struct wiimote_t joys[4];
 extern int g_pref_wii_DZ_value;
 #define STICK4WAY (myosd_waysStick == 4 && myosd_inGame)
@@ -506,7 +506,6 @@ void calc_joystick_state(struct joystick_t* js, float x, float y);
  *	@return	Returns 1 if handshake was successful, 0 if not.
  */
 int classic_ctrl_handshake(struct wiimote_t* wm, struct classic_ctrl_t* cc, byte* data, unsigned short len) {
-	int i;
 	int offset = 0;
 
 	cc->btns = 0;
@@ -581,7 +580,7 @@ int classic_ctrl_handshake(struct wiimote_t* wm, struct classic_ctrl_t* cc, byte
  *	@param msg		The message specified in the event packet.
  */
 void classic_ctrl_event(struct classic_ctrl_t* cc, byte* msg) {
-	int i, lx, ly, rx, ry;
+	int lx, ly, rx, ry;
 	byte l, r;
 
 	/* decrypt data */
@@ -691,200 +690,3 @@ void calc_joystick_state(struct joystick_t* js, float x, float y) {
 	js->ry = ry;
 
 }
-
-////////////////////////////////////////////////////////////
-
-extern float joy_analog_x[4];
-extern float joy_analog_y[4];
-
-int iOS_wiimote_check (struct  wiimote_t  *wm)
-{
-   return wm->btns;
-}
-#if 0
-   joy_analog_x[wm->unid]=0.0f;
-   joy_analog_y[wm->unid]=0.0f;
-	 if (1) {
-			 if (wm->exp.type == EXP_CLASSIC) {
-
-				    float deadZone;
-
-				    switch(g_pref_wii_DZ_value)
-				    {
-				      case 0: deadZone = 0.12f;break;
-				      case 1: deadZone = 0.15f;break;
-				      case 2: deadZone = 0.17f;break;
-				      case 3: deadZone = 0.2f;break;
-				      case 4: deadZone = 0.3f;break;
-				      case 5: deadZone = 0.4f;break;
-				    }
-
-				    //printf("deadzone %f\n",deadZone);
-
-					struct classic_ctrl_t* cc = (classic_ctrl_t*)&wm->exp.classic;
-
-					if (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_ZL))			joyExKey |= MYOSD_R1;
-					if (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_B))			joyExKey |= MYOSD_X;
-					if (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_Y))			joyExKey |= MYOSD_A;
-					if (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_A))			joyExKey |= MYOSD_B;
-					if (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_X))			joyExKey |= MYOSD_Y;
-					if (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_ZR))			joyExKey |= MYOSD_L1;
-
-
-					if (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_UP)){
-						if(!STICK2WAY &&
-								!(STICK4WAY && (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_LEFT) ||
-										       (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_RIGHT)))))
-						  joyExKey |= MYOSD_UP;
-					}
-					if (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_DOWN)){
-						if(!STICK2WAY &&
-								!(STICK4WAY && (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_LEFT) ||
-										       (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_RIGHT)))))
-						joyExKey |= MYOSD_DOWN;
-			        }
-					if (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_LEFT))		joyExKey |= MYOSD_LEFT;
-					if (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_RIGHT))		joyExKey |= MYOSD_RIGHT;
-
-
-					if (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_FULL_L))		joyExKey |= MYOSD_L1;
-					if (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_MINUS))		joyExKey |= MYOSD_SELECT;
-					if (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_HOME))		{//myosd_exitGame = 0;usleep(50000);
-					                                                     myosd_exitGame = 1;}
-					if (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_PLUS))		joyExKey |= MYOSD_START;
-					if (IS_PRESSED(cc, CLASSIC_CTRL_BUTTON_FULL_R))		joyExKey |= MYOSD_R1;
-
-					if(cc->ljs.mag >= deadZone)
-					{
-						joy_analog_x[wm->unid] =  (  cc->ljs.rx > 1.0 ) ? 1.0 : (  cc->ljs.rx < -1.0 ) ? -1.0 :  cc->ljs.rx;
-						joy_analog_y[wm->unid] =  (  cc->ljs.ry > 1.0 ) ? 1.0 : (  cc->ljs.ry < -1.0 ) ? -1.0 :  cc->ljs.ry;
-
-						float v = cc->ljs.ang;
-
-						if(STICK2WAY)
-						{
-							if( v < 180){
-								joyExKey |= MYOSD_RIGHT;
-								//printf("Right\n");
-							}
-							else if ( v >= 180){
-								joyExKey |= MYOSD_LEFT;
-								//printf("Left\n");
-							}
-						}
-						else if(STICK4WAY)
-						{
-							if(v >= 315 || v < 45){
-								joyExKey |= MYOSD_UP;
-								//printf("Up\n");
-							}
-							else if (v >= 45 && v < 135){
-								joyExKey |= MYOSD_RIGHT;
-								//printf("Right\n");
-							}
-							else if (v >= 135 && v < 225){
-								joyExKey |= MYOSD_DOWN;
-								//printf("Down\n");
-							}
-							else if (v >= 225 && v < 315){
-								joyExKey |= MYOSD_LEFT;
-								//printf("Left\n");
-							}
-						}
-						else
-						{
-							if( v >= 330 || v < 30){
-								joyExKey |= MYOSD_UP;
-								//printf("Up\n");
-							}
-							else if ( v >= 30 && v <60  )  {
-								joyExKey |= MYOSD_UP;joyExKey |= MYOSD_RIGHT;
-								//printf("UpRight\n");
-							}
-							else if ( v >= 60 && v < 120  ){
-								joyExKey |= MYOSD_RIGHT;
-								//printf("Right\n");
-							}
-							else if ( v >= 120 && v < 150  ){
-								joyExKey |= MYOSD_RIGHT;joyExKey |= MYOSD_DOWN;
-								//printf("RightDown\n");
-							}
-							else if ( v >= 150 && v < 210  ){
-								joyExKey |= MYOSD_DOWN;
-								//printf("Down\n");
-							}
-							else if ( v >= 210 && v < 240  ){
-								joyExKey |= MYOSD_DOWN;joyExKey |= MYOSD_LEFT;
-								//printf("DownLeft\n");
-							}
-							else if ( v >= 240 && v < 300  ){
-								joyExKey |= MYOSD_LEFT;
-								//printf("Left\n");
-							}
-							else if ( v >= 300 && v < 330  ){
-								joyExKey |= MYOSD_LEFT;
-								joyExKey |= MYOSD_UP;
-								//printf("LeftUp\n");
-							}
-						}
-					}
-
-					if(cc->rjs.mag >= deadZone)
-					{
-						float v = cc->rjs.ang;
-
-						if( v >= 330 || v < 30){
-						   joyExKey |= MYOSD_Y;
-						   //printf("Y\n");
-						}
-						else if ( v >= 30 && v <60  )  {
-						   joyExKey |= MYOSD_Y;joyExKey |= MYOSD_B;
-						   //printf("Y B\n");
-						}
-						else if ( v >= 60 && v < 120  ){
-							joyExKey |= MYOSD_B;
-							//printf("B\n");
-						}
-						else if ( v >= 120 && v < 150  ){
-							joyExKey |= MYOSD_B;joyExKey |= MYOSD_X;
-							//printf("B X\n");
-						}
-						else if ( v >= 150 && v < 210  ){
-							joyExKey |= MYOSD_X;
-							//printf("X\n");
-						}
-						else if ( v >= 210 && v < 240  ){
-							joyExKey |= MYOSD_X;joyExKey |= MYOSD_A;
-							//printf("X A\n");
-						}
-						else if ( v >= 240 && v < 300  ){
-							joyExKey |= MYOSD_A;
-							//printf("A\n");
-						}
-						else if ( v >= 300 && v < 330  ){
-							joyExKey |= MYOSD_A;joyExKey |= MYOSD_Y;
-							//printf("A Y\n");
-						}
-					}
-/*
-					printf("classic L button pressed:         %f\n", cc->l_shoulder);
-					printf("classic R button pressed:         %f\n", cc->r_shoulder);
-
-					printf("classic left joystick angle:      %f\n", cc->ljs.ang);
-					printf("classic left joystick magnitude:  %f\n", cc->ljs.mag);
-					printf("classic left joystick rx:         %f\n", cc->ljs.rx);
-					printf("classic left joystick ry:         %f\n", cc->ljs.ry);
-
-					printf("classic right joystick angle:     %f\n", cc->rjs.ang);
-					printf("classic right joystick magnitude: %f\n", cc->rjs.mag);
-					printf("classic right rx:                 %f\n", cc->rjs.rx);
-					printf("classic right ry:                 %f\n", cc->rjs.ry);
-*/
-				}
-		return joyExKey;
-	 } else {
-		joyExKey = 0;
-		return joyExKey;
-	 }
-}
-#endif
