@@ -1257,10 +1257,10 @@ static void gl_pbo_async_readback(void *data)
 static inline void gl_draw_rgui(void *data)
 {
    static const GLfloat white_color_rgui[16] = {
-      1.0f, 1.0f, 1.0f, 0.5f,
-      1.0f, 1.0f, 1.0f, 0.5f,
-      1.0f, 1.0f, 1.0f, 0.5f,
-      1.0f, 1.0f, 1.0f, 0.5f,
+      1.0f, 1.0f, 1.0f, 0.75f,
+      1.0f, 1.0f, 1.0f, 0.75f,
+      1.0f, 1.0f, 1.0f, 0.75f,
+      1.0f, 1.0f, 1.0f, 0.75f,
    };
 
    gl_t *gl = (gl_t*)data;
@@ -1361,10 +1361,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 #ifdef HAVE_RGUI
    if(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
-   {
-      RARCH_LOG("rgui draw\n");
       gl_draw_rgui(gl);
-   }
 #endif
 
 #ifdef FPS_COUNTER
