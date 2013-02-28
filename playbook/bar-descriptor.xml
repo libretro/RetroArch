@@ -25,7 +25,7 @@
     <buildId>1</buildId>
                  
     <!-- A string value (such as "v1", "2.5", or "Alpha 1") that represents the version of the application, as it should be shown to users. Optional. -->
-    <!-- <versionLabel></versionLabel> -->
+    <versionLabel>"v0.9.8.4"</versionLabel>
 
     <!-- Description, displayed in the BlackBerry Tablet OS application installer.
          May have multiple values for each language. See samples or xsd schema file. Optional. -->
@@ -51,6 +51,7 @@
     <asset path="retroarch.cfg">retroarch.cfg</asset>
     <asset path="test.rom">test.rom</asset>
     <asset path="test.so">lib/test.so</asset>
+
     <!-- <asset path="LICENSE">LICENSE</asset> -->
     <!-- <asset path="NOTICE">NOTICE</asset> -->
     <configuration id="com.qnx.qcc.configuration.exe.debug.507133694" name="Device-Debug">

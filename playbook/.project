@@ -79,5 +79,15 @@
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/console/griffin/griffin.c</locationURI>
 		</link>
+		<link>
+			<name>src/sinc_neon.S</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/audio/sinc_neon.S</locationURI>
+		</link>
+		<link>
+			<name>src/utils_neon.S</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/audio/utils_neon.S</locationURI>
+		</link>
 	</linkedResources>
 </projectDescription>
