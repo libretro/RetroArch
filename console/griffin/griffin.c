@@ -389,7 +389,7 @@ MAIN
 #include "../../frontend/frontend_android.c"
 #endif
 
-#ifdef HAVE_RARCH_MAIN_IMPLEMENTATION
+#ifndef ANDROID
 #include "../../frontend/frontend.c"
 #endif
 
