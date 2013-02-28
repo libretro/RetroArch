@@ -1257,13 +1257,14 @@ static void gl_pbo_async_readback(void *data)
 static inline void gl_draw_rgui(void *data)
 {
    static const GLfloat white_color_rgui[16] = {
-      1.0f, 1.0f, 1.0f, 0.25f,
-      1.0f, 1.0f, 1.0f, 0.25f,
-      1.0f, 1.0f, 1.0f, 0.25f,
-      1.0f, 1.0f, 1.0f, 0.25f,
+      1.0f, 1.0f, 1.0f, 0.5f,
+      1.0f, 1.0f, 1.0f, 0.5f,
+      1.0f, 1.0f, 1.0f, 0.5f,
+      1.0f, 1.0f, 1.0f, 0.5f,
    };
 
    gl_t *gl = (gl_t*)data;
+   gl->coords.color = white_color_rgui;
 
    glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
 
@@ -1274,9 +1275,9 @@ static inline void gl_draw_rgui(void *data)
          GL_UNSIGNED_SHORT_5_6_5, gl->menu_data);
 
    gl_shader_use_func(gl, 0);
+   gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
-   gl->coords.color = white_color_rgui;
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);
 
