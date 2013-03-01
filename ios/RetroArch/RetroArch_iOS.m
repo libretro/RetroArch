@@ -26,7 +26,7 @@
 
 #define ALMOST_INVISIBLE .021f
 
-@interface RANavigator : UINavigationController
+@interface RANavigator : UINavigationController<UINavigationControllerDelegate>
 @end
 
 @implementation RANavigator
@@ -37,6 +37,7 @@
 - (id)initWithAppDelegate:(RetroArch_iOS*)delegate
 {
    self = [super init];
+   self.delegate = self;
 
    assert(delegate);
    _delegate = delegate;
@@ -57,6 +58,18 @@
 - (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
 {
    [_delegate performSelector:@selector(screenDidRotate) withObject:nil afterDelay:.01f];
+}
+
+- (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
+{
+#ifdef WIIMOTE
+   UIBarButtonItem* bbi = [[UIBarButtonItem alloc]
+                          initWithTitle:@"Stop Bluetooth"
+                          style:UIBarButtonItemStyleBordered
+                          target:[RetroArch_iOS get]
+                          action:@selector(stopBluetooth)];
+   navigationController.topViewController.navigationItem.rightBarButtonItem = bbi;
+#endif
 }
 
 @end
@@ -354,6 +367,13 @@
 {
 #ifdef WIIMOTE
    [[WiiMoteHelper get] showDiscovery];
+#endif
+}
+
+- (IBAction)stopBluetooth
+{
+#ifdef WIIMOTE
+   [WiiMoteHelper stopBluetooth];
 #endif
 }
 

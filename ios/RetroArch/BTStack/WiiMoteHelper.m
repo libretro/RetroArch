@@ -44,10 +44,11 @@
 #import "btstack/run_loop.h"
 #import "btstack/hci_cmds.h"
 
-static BTDevice *device;
-static uint16_t wiiMoteConHandle = 0;
-static bool btOK;
+static BTDiscoveryViewController* discoveryView;
 static WiiMoteHelper* instance;
+static BTDevice *device;
+static bool btOK;
+
 
 @implementation WiiMoteHelper
 + (WiiMoteHelper*)get
@@ -58,6 +59,23 @@ static WiiMoteHelper* instance;
    }
    
    return instance;
+}
+
++ (void)stopBluetooth
+{
+   instance = nil;
+   myosd_num_of_joys = 0;
+
+   if (btOK)
+   {
+      BTstackManager* bt = [BTstackManager sharedInstance];
+
+      [bt removeListener:discoveryView];
+      discoveryView = nil;
+      
+      [[BTstackManager sharedInstance] deactivate];
+      btOK = false;
+   }
 }
 
 - (id)init
@@ -74,20 +92,17 @@ static WiiMoteHelper* instance;
    return self;
 }
 
-- (void)dealloc
-{
-   // TODO: Any other cleanup needed
-   [[BTstackManager sharedInstance] deactivate];
-}
-
 - (void)showDiscovery
 {
-   BTDiscoveryViewController* vc = [BTDiscoveryViewController new];
-   [vc setDelegate:self];
+   if (!discoveryView)
+   {
+      discoveryView = [BTDiscoveryViewController new];
+      [discoveryView setDelegate:self];
    
-   [[BTstackManager sharedInstance] addListener:vc];
+      [[BTstackManager sharedInstance] addListener:discoveryView];
+   }
    
-   [[RetroArch_iOS get] pushViewController:vc isGame:NO];
+   [[RetroArch_iOS get] pushViewController:discoveryView isGame:NO];
 }
 
 // BTStackManagerListener
@@ -233,7 +248,7 @@ static WiiMoteHelper* instance;
                   bt_flip_addr(event_addr, &packet[3]);
                   uint16_t psm = READ_BT_16(packet, 11);
                   uint16_t source_cid = READ_BT_16(packet, 13);
-                  wiiMoteConHandle = READ_BT_16(packet, 9);
+                  uint16_t wiiMoteConHandle = READ_BT_16(packet, 9);
 
                   if (psm == 0x13)
                   {
