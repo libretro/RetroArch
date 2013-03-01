@@ -49,7 +49,6 @@
     <category>core.games</category>
     <asset path="icon.png">icon.png</asset>
     <asset path="retroarch.cfg">retroarch.cfg</asset>
-    <asset path="test.rom">test.rom</asset>
     <asset path="test.so">lib/test.so</asset>
 
     <!-- <asset path="LICENSE">LICENSE</asset> -->
@@ -95,7 +94,7 @@
     <action system="true">run_native</action>
     
     <!--  The permissions requested by your application. -->
-    <!--  <action>access_shared</action> -->
+    <action>access_shared</action>
     <!--  <action>record_audio</action> -->
     <!--  <action>read_geolocation</action> -->
     <!--  <action>use_camera</action> -->
