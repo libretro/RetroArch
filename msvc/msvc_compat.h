@@ -35,6 +35,8 @@ typedef int ssize_t;
 #define strtoull _strtoui64
 #undef strcasecmp
 #define strcasecmp _stricmp
+#undef strncasecmp
+#define strncasecmp _strnicmp
 
 // Disable some of the annoying warnings.
 #pragma warning(disable : 4800)
