@@ -56,7 +56,14 @@ static const char* const SETTINGID = "SETTING";
                else
                   [config putStringNamed:setting.name value:@""];
                break;
-               
+
+            case ButtonSetting:
+               if (setting.msubValues[0] && [setting.msubValues[0] length])
+                  [config putStringNamed:setting.name value:setting.msubValues[0]];
+               if (setting.msubValues[1] && [setting.msubValues[1] length])
+                  [config putStringNamed:[setting.name stringByAppendingString:@"_btn"] value:setting.msubValues[1]];
+               break;
+
             default:
                [config putStringNamed:setting.name value:setting.value];
                break;
@@ -129,11 +136,7 @@ static const char* const SETTINGID = "SETTING";
       case ButtonSetting:
       {
          cell = [self.tableView dequeueReusableCellWithIdentifier:@"enumeration"];
-   
-         if (cell == nil)
-         {
-            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"enumeration"];
-         }
+         cell = cell ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"enumeration"];
       }
       break;
       
@@ -151,7 +154,13 @@ static const char* const SETTINGID = "SETTING";
    }
 
    cell.textLabel.text = setting.label;
-   cell.detailTextLabel.text = setting.value;
+   
+   if (setting.type != ButtonSetting)
+      cell.detailTextLabel.text = setting.value;
+   else
+      cell.detailTextLabel.text = [NSString stringWithFormat:@"[KB:%@] [JS:%@]",
+            [setting.msubValues[0] length] ? setting.msubValues[0] : @"N/A",
+            [setting.msubValues[1] length] ? setting.msubValues[1] : @"N/A"];
 
    return cell;
 }

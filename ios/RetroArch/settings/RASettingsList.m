@@ -40,7 +40,10 @@ static RASettingData* button_setting(RAConfig* config, NSString* name, NSString*
    result.type = ButtonSetting;
    result.label = label;
    result.name = name;
-   result.value = get_value_from_config(config, name, defaultValue);
+   result.msubValues = [NSMutableArray arrayWithObjects:
+                        get_value_from_config(config, name, defaultValue),
+                        get_value_from_config(config, [name stringByAppendingString:@"_btn"], @""),
+                        nil];
    return result;
 }
 

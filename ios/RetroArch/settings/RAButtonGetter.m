@@ -15,6 +15,10 @@
 
 #import "settings.h"
 
+#ifdef WIIMOTE
+# include "../BTStack/wiimote.h"
+#endif
+
 extern NSString* const GSEventKeyUpNotification;
 
 static const struct
@@ -89,46 +93,87 @@ static NSString* get_key_config_name(uint32_t hid_id)
 
 @implementation RAButtonGetter
 {
-   RAButtonGetter* me;
-   RASettingData* value;
-   UIAlertView* alert;
-   UITableView* view;
+   RAButtonGetter* _me;
+   RASettingData* _value;
+   UIAlertView* _alert;
+   UITableView* _view;
+   bool _finished;
+#ifdef WIIMOTE
+   NSTimer* _btTimer;
+#endif
 }
 
 - (id)initWithSetting:(RASettingData*)setting fromTable:(UITableView*)table
 {
    self = [super init];
 
-   value = setting;
-   view = table;
-   me = self;
+   _value = setting;
+   _view = table;
+   _me = self;
 
-   alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
-                                message:value.label
+   _alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
+                                message:_value.label
                                 delegate:self
                                 cancelButtonTitle:@"Cancel"
                                 otherButtonTitles:nil];
-   [alert show];
+   [_alert show];
    
-   [[NSNotificationCenter defaultCenter] addObserver: self selector: @selector(keyReleased:) name: GSEventKeyUpNotification object: nil];
+   [[NSNotificationCenter defaultCenter] addObserver:self selector: @selector(keyReleased:) name: GSEventKeyUpNotification object: nil];
+
+#ifdef WIIMOTE
+   _btTimer = [NSTimer scheduledTimerWithTimeInterval:.05f target:self selector:@selector(checkWiiMote) userInfo:nil repeats:YES];
+#endif
 
    return self;
 }
 
-- (void)alertView:(UIAlertView*)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex
+- (void)finish
 {
-   [[NSNotificationCenter defaultCenter] removeObserver:self];
-   me = nil;
+   if (!_finished)
+   {
+      _finished = true;
+   
+#ifdef WIIMOTE
+      [_btTimer invalidate];
+#endif
+
+      [[NSNotificationCenter defaultCenter] removeObserver:self];
+      [_alert dismissWithClickedButtonIndex:0 animated:YES];
+      [_view reloadData];
+   
+      _me = nil;
+   }
 }
+
+- (void)alertView:(UIAlertView*)alertView willDismissWithButtonIndex:(NSInteger)buttonIndex
+{
+   [self finish];
+}
+
+#ifdef WIIMOTE
+- (void)checkWiiMote
+{
+   for (int i = 0; i != myosd_num_of_joys; i ++)
+   {
+      for (int j = 0; j != sizeof(joys[i].btns) * 8; j ++)
+      {
+         if (joys[i].btns & (1 << j))
+         {
+            _value.msubValues[1] = [NSString stringWithFormat:@"%d", j];
+            [self finish];
+            return;
+         }
+      }
+   }
+}
+#endif
 
 - (void)keyReleased:(NSNotification*) notification
 {
    int keycode = [[notification.userInfo objectForKey:@"keycode"] intValue];
-
-   value.value = get_key_config_name(keycode);
-
-   [alert dismissWithClickedButtonIndex:0 animated:YES];
-   [view reloadData];
+   _value.msubValues[0] = get_key_config_name(keycode);
+   
+   [self finish];
 }
 
 @end
