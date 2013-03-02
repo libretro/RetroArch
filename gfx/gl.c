@@ -1076,8 +1076,13 @@ static void gl_init_textures(void *data, const video_info_t *video)
 
    glGenTextures(TEXTURES, gl->texture);
 
-#ifdef RGUI
+#ifdef HAVE_RGUI
    glGenTextures(1, &gl->rgui_texture);
+   glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 #endif
 
    for (unsigned i = 0; i < TEXTURES; i++)
@@ -1189,8 +1194,13 @@ static void gl_init_textures(void *data, const video_info_t *video)
 
    glGenTextures(TEXTURES, gl->texture);
 
-#ifdef RGUI
+#ifdef HAVE_RGUI
    glGenTextures(1, &gl->rgui_texture);
+   glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 #endif
 
    for (unsigned i = 0; i < TEXTURES; i++)
@@ -1253,7 +1263,6 @@ static void gl_pbo_async_readback(void *data)
 #endif
 
 #ifdef HAVE_RGUI
-
 static inline void gl_draw_rgui(void *data)
 {
    static const GLfloat white_color_rgui[16] = {
@@ -1264,7 +1273,8 @@ static inline void gl_draw_rgui(void *data)
    };
 
    gl_t *gl = (gl_t*)data;
-   gl->coords.color = white_color_rgui;
+   gl->coords.tex_coord = tex_coords;
+   gl->coords.color     = white_color_rgui;
 
    glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
 
@@ -1281,9 +1291,9 @@ static inline void gl_draw_rgui(void *data)
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);
 
-   gl->coords.color = white_color;
+   gl->coords.tex_coord = gl->tex_coords;
+   gl->coords.color     = white_color;
 }
-
 #endif
 
 static bool gl_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
@@ -1360,7 +1370,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_set_prev_texture(gl, &tex_info);
 
 #ifdef HAVE_RGUI
-   if(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
+   if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
       gl_draw_rgui(gl);
 #endif
 
@@ -1439,7 +1449,7 @@ static void gl_free(void *data)
 
    glDeleteTextures(TEXTURES, gl->texture);
 
-#ifdef RGUI
+#ifdef HAVE_RGUI
    glDeleteTextures(1, &gl->rgui_texture);
 #endif
 
@@ -1565,7 +1575,7 @@ static inline void gl_reinit_textures(void *data, const video_info_t *video)
       glBindTexture(GL_TEXTURE_2D, 0);
       glDeleteTextures(TEXTURES, gl->texture);
 
-#ifdef RGUI
+#ifdef HAVE_RGUI
       glDeleteTextures(1, &gl->rgui_texture);
 #endif
 
