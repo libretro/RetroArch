@@ -1046,9 +1046,6 @@ static inline void gl_copy_frame(void *data, const void *frame, unsigned width, 
 {
    gl_t *gl = (gl_t*)data;
 
-   if (!gl->fbo_inited)
-      gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-
    size_t buffer_addr        = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
    size_t buffer_stride      = gl->tex_w * gl->base_size;
    const uint8_t *frame_copy = frame;
