@@ -2792,6 +2792,34 @@ bool rarch_main_iterate(void)
       return false;
    }
 
+#ifdef ANDROID
+   struct android_app *android_app = (struct android_app*)g_android;
+   int ident;
+
+   while ((ident = ALooper_pollAll( (input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ? -1 : 0, NULL, NULL, NULL)) >= 0)
+   {
+      if (ident == LOOPER_ID_MAIN)
+      {
+         int8_t cmd;
+
+         if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
+            cmd = -1;
+
+         engine_handle_cmd(android_app, cmd);
+
+         if (cmd == APP_CMD_INIT_WINDOW)
+         {
+            if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
+               init_drivers();
+         }
+      }
+      else if (!input_key_pressed_func(RARCH_PAUSE_TOGGLE))
+         engine_handle_input(android_app, 0);
+      else
+         return true;
+   }
+#endif
+
    // Time to drop?
    if (input_key_pressed_func(RARCH_QUIT_KEY) ||
          !video_alive_func())

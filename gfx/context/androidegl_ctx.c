@@ -172,8 +172,6 @@ static void gfx_ctx_check_window(bool *quit,
 {
    (void)frame_count;
 
-   struct android_app *android_app = (struct android_app*)g_android;
-
    *quit = false;
 
    unsigned new_width, new_height;
@@ -184,21 +182,6 @@ static void gfx_ctx_check_window(bool *quit,
       *height = new_height;
       *resize = true;
    }
-
-   RARCH_PERFORMANCE_INIT(alooper_pollonce);
-   RARCH_PERFORMANCE_START(alooper_pollonce);
-   
-   while (ALooper_pollOnce(0, NULL, NULL, NULL) == LOOPER_ID_MAIN)
-   {
-      int8_t cmd;
-
-      if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
-         cmd = -1;
-
-      engine_handle_cmd(android_app, cmd);
-   }
-
-   RARCH_PERFORMANCE_STOP(alooper_pollonce);
 
    // Check if we are exiting.
    if (g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY))

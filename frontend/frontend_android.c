@@ -230,9 +230,7 @@ static void *android_app_entry(void *data)
    {
       RARCH_LOG("RetroArch started.\n");
 
-      while ((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ?
-            android_run_events(android_app) :
-            rarch_main_iterate());
+      while (rarch_main_iterate());
 
       RARCH_LOG("RetroArch stopped.\n");
    }

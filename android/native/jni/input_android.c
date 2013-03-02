@@ -378,24 +378,6 @@ static void *android_input_init(void)
 
 static void android_input_poll(void *data)
 {
-   (void)data;
-
-   RARCH_PERFORMANCE_INIT(input_poll);
-   RARCH_PERFORMANCE_START(input_poll);
-
-   struct android_app* android_app = (struct android_app*)g_android;
-
-   engine_handle_input(android_app, 0);
-#if 0
-   {
-      char msg[64];
-      snprintf(msg, sizeof(msg), "Pointers: %u", pointer_count);
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, msg, 0, 30);
-   }
-#endif
-
-   RARCH_PERFORMANCE_STOP(input_poll);
 }
 
 static int16_t android_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
