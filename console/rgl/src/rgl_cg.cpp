@@ -7049,9 +7049,7 @@ static unsigned int stringTableAddUnique( std::vector<char> &stringTable, const 
    return ret;
 }
 
-template<class Type> static size_t array_size(std::vector<Type> &array);
 template<class Type> static void array_push(char* &parameterOffset, std::vector<Type> &array);
-inline static uint32_t swap16(const uint32_t v);
 static unsigned short getFlags(CGenum var, CGenum dir, int no,	bool is_referenced, bool is_shared, int paramIndex);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -7089,6 +7087,11 @@ int convertNvToElfFromFile(const char *sourceFile, int endianness, int constTabl
    }
    //RGL_ASSERT2(0,("couldn't open source file %s\n",sourceFile));
    return -1;
+}
+
+static inline uint32_t swap16(const uint32_t v)
+{
+   return (v>>16) | (v<<16);
 }
 
 int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness, int constTableOffset, void **binaryShader, int *binarySize,
@@ -7201,7 +7204,8 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
    {
       int size = (int)nvbr->ucode_size()/sizeof(uint32_t);
       buffer = new uint32_t[size];
-      for (int i=0;i<size;i++)
+
+      for (int i = 0; i < size; i++)
       {
          uint32_t val = ENDSWAP(tmp[i]);
          if (!bIsVertexProgram)
@@ -7217,10 +7221,9 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
       // that manifests as a memory overwrite in properly allocated memory during a std::vector resize
       int size = (int)nvbr->ucode_size()/sizeof(uint32_t);
       buffer = new uint32_t[size];
-      for (int i=0;i<size;i++)
-      {
+
+      for (int i = 0; i < size; i++)
          buffer[i] = tmp[i];
-      }
       ucode = (const char*)buffer;
       // end workaround
    }
@@ -7785,12 +7788,12 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
 
    //fill the parameter section
    size_t parameterTableSize = sizeof(CgParameterTableHeader);
-   parameterTableSize += array_size(parameterEntries);
-   parameterTableSize += array_size(parameterResources);
-   parameterTableSize += array_size(containers._resources);
-   //parameterTableSize += array_size(containers._defaultValuesIndices);
-   parameterTableSize += array_size(containers._elfDefaultsIndices);
-   parameterTableSize += array_size(containers._semanticIndices);
+   parameterTableSize += (unsigned int)parameterEntries.size() * sizeof(parameterEntries[0]);
+   parameterTableSize += (unsigned int)parameterResources.size() * sizeof(parameterResources[0]);
+   parameterTableSize += (unsigned int)containers._resources.size() * sizeof(containers._resources[0]);
+   //parameterTableSize += (unsigned int)containers._defaultValuesIndices.size() * sizeof(containers._defaultValuesIndices[0]);
+   parameterTableSize += (unsigned int)containers._elfDefaultsIndices.size() * sizeof(containers._elfDefaultsIndices[0]);
+   parameterTableSize += (unsigned int)containers._semanticIndices.size() * sizeof(containers._semanticIndices[0]);
 
    //Allocate the binary file
    int ucodeOffset = (((sizeof(CgProgramHeader)-1)/16)+1)*16;
@@ -8185,10 +8188,8 @@ static int getSizeofSubArray(_CGNVCONTAINERS &containers, int dimensionIndex, in
    unsigned char elfEndianness = endianness; //used in the macro CNVEND
    int res = 1;
    int i;
-   for (i=0;i<dimensionCount;i++)
-   {
+   for ( i=0; i < dimensionCount; i++)
       res *= (int)CNV2END(containers._dimensions[dimensionIndex + i]);
-   }
    return res;
 }
 
@@ -8209,11 +8210,6 @@ _constTable.push_back(*(_float4*)value);
 return constTableSize;
 }*/
 
-template<class Type> static size_t array_size(std::vector<Type> &array)
-{
-   return (unsigned int)array.size()*sizeof(array[0]);
-}
-
 template<class Type> static void array_push(char* &parameterOffset, std::vector<Type> &array)
 {
    size_t dataSize = array.size()*sizeof(array[0]);
@@ -8221,10 +8217,6 @@ template<class Type> static void array_push(char* &parameterOffset, std::vector<
    parameterOffset += dataSize;
 }
 
-uint32_t inline static swap16(const uint32_t v)
-{
-   return (v>>16) | (v<<16);
-}
 
 unsigned short getFlags(CGenum var, CGenum dir, int no,	bool is_referenced, bool is_shared, int paramIndex)
 {
