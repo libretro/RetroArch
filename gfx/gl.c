@@ -1045,16 +1045,25 @@ static void gl_init_textures_data(void *data)
 static inline void gl_copy_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
    gl_t *gl = (gl_t*)data;
+
+   if (!gl->fbo_inited)
+      gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+
    size_t buffer_addr        = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
    size_t buffer_stride      = gl->tex_w * gl->base_size;
    const uint8_t *frame_copy = frame;
    size_t frame_copy_size    = width * gl->base_size;
 
-   uint8_t *buffer = (uint8_t*)glMapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, GL_WRITE_ONLY) + buffer_addr;
-   for (unsigned h = 0; h < height; h++, buffer += buffer_stride, frame_copy += pitch)
-      memcpy(buffer, frame_copy, frame_copy_size);
+   for (unsigned h = 0; h < height; h++)
+   {
+      glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE, 
+            buffer_addr,
+            frame_copy_size,
+            frame_copy);
 
-   glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
+      frame_copy += pitch;
+      buffer_addr += buffer_stride;
+   }
 }
 
 static void gl_init_textures(void *data, const video_info_t *video)
