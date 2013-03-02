@@ -142,28 +142,25 @@ static void android_input_poll(void *data)
             uint8_t unpacked = (keycode_lut[AKEYCODE_BACK] >> ((state_id+1) << 3)) - 1;
             uint64_t input_state = (1ULL << unpacked);
 
-            if (type_event == AINPUT_EVENT_TYPE_KEY && input_state < (1ULL << RARCH_FIRST_META_KEY)
-                  && input_state > 0)
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INPUT_XPERIA_PLAY_HACK))
             {
-            }
-            else
-            {
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_INPUT_XPERIA_PLAY_HACK))
-               {
-                  int meta = AKeyEvent_getMetaState(event);
-                  if (!(meta & AMETA_ALT_ON))
-                  {
-                     *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
-                     AInputQueue_finishEvent(android_app->inputQueue, event, handled);
-                     break;
-                  }
-               }
-               else
+               int meta = AKeyEvent_getMetaState(event);
+               if (!(meta & AMETA_ALT_ON))
                {
                   *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
                   AInputQueue_finishEvent(android_app->inputQueue, event, handled);
                   break;
                }
+            }
+            else if (type_event == AINPUT_EVENT_TYPE_KEY && input_state < (1ULL << RARCH_FIRST_META_KEY)
+                  && input_state > 0)
+            {
+            }
+            else
+            {
+               *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+               AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+               break;
             }
          }
 
