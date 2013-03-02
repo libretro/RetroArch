@@ -21,8 +21,24 @@
    new.path = thePath;
    new.configPath = [NSString stringWithFormat:@"%@/%@.cfg", [RetroArch_iOS get].system_directory, [[thePath lastPathComponent] stringByDeletingPathExtension]];
    new.data = theData;
+   
+   new.recommendedExtensions = [[theData getStringNamed:@"recommended_extensions" withDefault:@""] componentsSeparatedByString:@"|"];
+   new.suggestedExtensions = [[theData getStringNamed:@"suggested_extensions" withDefault:@""] componentsSeparatedByString:@"|"];
    return new;
 }
+
+- (unsigned)supportLevelOfPath:(NSString*)thePath
+{
+   NSString* ext = [thePath pathExtension];
+   
+   if ([self.recommendedExtensions containsObject:ext])
+      return 0;
+   else if([self.suggestedExtensions containsObject:ext])
+      return 1;
+   
+   return 2;
+}
+
 @end
 
 static NSString* const labels[3] = {@"Emulator Name", @"Manufacturer", @"Name"};

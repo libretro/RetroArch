@@ -17,7 +17,11 @@
 
 @implementation RAModuleList
 {
-   NSMutableArray* _modules;
+   NSMutableArray* _modules[3];
+
+   unsigned _sectionCount;
+   unsigned _sectionMap[3];
+
    NSString* _game;
 }
 
@@ -43,48 +47,71 @@
    }
    
    // Load the modules with their data
-   _modules = [NSMutableArray arrayWithCapacity:[moduleList count]];
+   _modules[0] = [NSMutableArray array];
+   _modules[1] = [NSMutableArray array];
+   _modules[2] = [NSMutableArray array];
    
    for (int i = 0; i != [moduleList count]; i ++)
    {
       NSString* modulePath = [moduleList objectAtIndex:i];
-
       NSString* baseName = [[modulePath stringByDeletingPathExtension] stringByAppendingPathExtension:@"info"];
-      [_modules addObject:[RAModuleInfo moduleWithPath:modulePath data:[[RAConfig alloc] initWithPath:baseName]]];
+
+      RAModuleInfo* module = [RAModuleInfo moduleWithPath:modulePath data:[[RAConfig alloc] initWithPath:baseName]];
+      [_modules[[module supportLevelOfPath:_game]] addObject:module];
    }
+   
+   for (int i = 0; i != 3; i ++)
+      if ([_modules[i] count])
+      {
+         _sectionMap[_sectionCount] = i;
+         _sectionCount ++;
+      }
    
    [self setTitle:[_game lastPathComponent]];
    return self;
 }
 
+- (NSInteger)numberOfSectionsInTableView:(UITableView*)tableView
+{
+   return _sectionCount;
+}
+
+- (NSString*)tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section
+{
+   switch (_sectionMap[section])
+   {
+      case 0: return @"Recommended Emulators";
+      case 1: return @"Suggested Emulators";
+      default: return @"Other Emulators";
+   }
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+   return _modules[section] ? [_modules[_sectionMap[section]] count] : 0;
+}
+
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   [RetroArch_iOS get].moduleInfo = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];;
+   unsigned section = _sectionMap[indexPath.section];
+   [RetroArch_iOS get].moduleInfo = (RAModuleInfo*)[_modules[section] objectAtIndex:indexPath.row];;
    [[RetroArch_iOS get] runGame:_game];
 }
 
 - (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath
 {
-   [RetroArch_iOS get].moduleInfo = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];
+   unsigned section = _sectionMap[indexPath.section];
+   [RetroArch_iOS get].moduleInfo = (RAModuleInfo*)[_modules[section] objectAtIndex:indexPath.row];
    [[RetroArch_iOS get] showSettings];
-}
-
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
-{
-   return _modules ? [_modules count] : 0;
-}
-
-- (NSString*)tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section
-{
-   return @"Choose Emulator";
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"module"];
    cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"module"];
-   
-   RAModuleInfo* info = (RAModuleInfo*)[_modules objectAtIndex:indexPath.row];
+
+   unsigned section = _sectionMap[indexPath.section];   
+   RAModuleInfo* info = (RAModuleInfo*)[_modules[section] objectAtIndex:indexPath.row];
    cell.textLabel.text = [[info.path lastPathComponent] stringByDeletingPathExtension];
    cell.accessoryType = (info.data) ? UITableViewCellAccessoryDetailDisclosureButton : UITableViewCellAccessoryNone;
 
