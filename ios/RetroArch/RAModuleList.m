@@ -53,8 +53,7 @@
       [_modules addObject:[RAModuleInfo moduleWithPath:modulePath data:[[RAConfig alloc] initWithPath:baseName]]];
    }
    
-   [self setTitle:@"Choose Emulator"];
-
+   [self setTitle:[_game lastPathComponent]];
    return self;
 }
 
@@ -73,6 +72,11 @@
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
    return _modules ? [_modules count] : 0;
+}
+
+- (NSString*)tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section
+{
+   return @"Choose Emulator";
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
