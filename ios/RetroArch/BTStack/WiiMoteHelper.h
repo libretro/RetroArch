@@ -35,6 +35,7 @@
 
 @interface WiiMoteHelper : NSObject<BTDiscoveryDelegate, BTstackManagerDelegate, BTstackManagerListener>
 + (WiiMoteHelper*)get;
++ (BOOL)isBluetoothRunning;
 + (void)stopBluetooth;
 - (void)showDiscovery;
 @end

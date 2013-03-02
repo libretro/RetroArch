@@ -61,6 +61,11 @@ static bool btOK;
    return instance;
 }
 
++ (BOOL)isBluetoothRunning
+{
+   return btOK;
+}
+
 + (void)stopBluetooth
 {
    instance = nil;

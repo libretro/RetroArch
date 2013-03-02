@@ -63,12 +63,12 @@
 - (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
 {
 #ifdef WIIMOTE
-   UIBarButtonItem* bbi = [[UIBarButtonItem alloc]
-                          initWithTitle:@"Stop Bluetooth"
-                          style:UIBarButtonItemStyleBordered
-                          target:[RetroArch_iOS get]
-                          action:@selector(stopBluetooth)];
-   navigationController.topViewController.navigationItem.rightBarButtonItem = bbi;
+   navigationController.topViewController.navigationItem.rightBarButtonItem = (![WiiMoteHelper isBluetoothRunning]) ? nil :
+                           [[UIBarButtonItem alloc]
+                           initWithTitle:@"Stop Bluetooth"
+                           style:UIBarButtonItemStyleBordered
+                           target:[RetroArch_iOS get]
+                           action:@selector(stopBluetooth)];
 #endif
 }
 
@@ -374,6 +374,7 @@
 {
 #ifdef WIIMOTE
    [WiiMoteHelper stopBluetooth];
+   [_navigator.topViewController.navigationItem setRightBarButtonItem:nil animated:YES];
 #endif
 }
 
