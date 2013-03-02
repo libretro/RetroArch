@@ -143,8 +143,17 @@ static void android_input_poll(void *data)
          }
          else
          {
-            int meta = AKeyEvent_getMetaState(event);
-            if (!(meta & AMETA_ALT_ON))
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INPUT_XPERIA_PLAY_HACK))
+            {
+               int meta = AKeyEvent_getMetaState(event);
+               if (!(meta & AMETA_ALT_ON))
+               {
+                  *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+                  AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+                  break;
+               }
+            }
+            else
             {
                *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
                AInputQueue_finishEvent(android_app->inputQueue, event, handled);

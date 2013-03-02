@@ -664,6 +664,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "keypad-zeus") || (strstr(name_buf, "keypad-game-zeus")))
       {
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_INPUT_XPERIA_PLAY_HACK);
          /* Xperia Play */
          /* X/o/square/triangle/R1/L1/D-pad */
          keycode_lut[AKEYCODE_DPAD_CENTER] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
