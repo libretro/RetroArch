@@ -43,51 +43,131 @@ struct input_pointer
 static struct input_pointer pointer[MAX_TOUCH];
 static unsigned pointer_count;
 
-static void *android_input_init(void)
+/**
+ * Process the next main command.
+ */
+void engine_handle_cmd (void *data, int32_t cmd)
 {
-   pads_connected = 0;
+   struct android_app *android_app = (struct android_app*)data;
 
-   input_autodetect_init();
-
-   for(unsigned player = 0; player < 4; player++)
-      for(unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
-      {
-         g_settings.input.binds[player][i].id = i;
-         g_settings.input.binds[player][i].joykey = 0;
-      }
-
-   for(int player = 0; player < 4; player++)
+   switch (cmd)
    {
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_B].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_B);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_Y].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_Y);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_START].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_START);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_UP].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_UP);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_A].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_A);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_X].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_X);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L2);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R2);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
+      case APP_CMD_INPUT_CHANGED:
+         RARCH_LOG("APP_CMD_INPUT_CHANGED\n");
+         
+         pthread_mutex_lock(&android_app->mutex);
+
+         if (android_app->inputQueue != NULL)
+            AInputQueue_detachLooper(android_app->inputQueue);
+
+         android_app->inputQueue = android_app->pendingInputQueue;
+
+         if (android_app->inputQueue != NULL)
+         {
+            RARCH_LOG("Attaching input queue to looper");
+            AInputQueue_attachLooper(android_app->inputQueue,
+                  android_app->looper, LOOPER_ID_INPUT, NULL,
+                  NULL);
+         }
+
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         
+         break;
+
+      case APP_CMD_INIT_WINDOW:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_INIT_WINDOW.\n");
+
+         pthread_mutex_lock(&android_app->mutex);
+         android_app->window = android_app->pendingWindow;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         break;
+
+      case APP_CMD_RESUME:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_RESUME.\n");
+
+         pthread_mutex_lock(&android_app->mutex);
+         android_app->activityState = cmd;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         break;
+
+      case APP_CMD_START:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_START.\n");
+
+         pthread_mutex_lock(&android_app->mutex);
+         android_app->activityState = cmd;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         break;
+
+      case APP_CMD_PAUSE:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_PAUSE.\n");
+
+         pthread_mutex_lock(&android_app->mutex);
+         android_app->activityState = cmd;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+
+         if (!(g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY)))
+         {
+            RARCH_LOG("Pausing RetroArch.\n");
+            g_extern.lifecycle_state |= (1ULL << RARCH_PAUSE_TOGGLE);
+         }
+         break;
+
+      case APP_CMD_STOP:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_STOP.\n");
+
+         pthread_mutex_lock(&android_app->mutex);
+         android_app->activityState = cmd;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         break;
+
+      case APP_CMD_CONFIG_CHANGED:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_CONFIG_CHANGED.\n");
+         break;
+
+      case APP_CMD_TERM_WINDOW:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_TERM_WINDOW.\n");
+
+         pthread_mutex_lock(&android_app->mutex);
+
+         /* The window is being hidden or closed, clean it up. */
+         /* terminate display/EGL context here */
+         if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
+            uninit_drivers();
+         else
+            RARCH_WARN("Window is terminated outside PAUSED state.\n");
+
+         android_app->window = NULL;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         break;
+
+      case APP_CMD_GAINED_FOCUS:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_GAINED_FOCUS.\n");
+
+         g_extern.lifecycle_state &= ~(1ULL << RARCH_PAUSE_TOGGLE);
+         break;
+
+      case APP_CMD_LOST_FOCUS:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_LOST_FOCUS.\n");
+         break;
+
+      case APP_CMD_DESTROY:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_DESTROY\n");
+         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+         break;
    }
-   g_settings.input.dpad_emulation[0] = DPAD_EMULATION_LSTICK;
-   return (void*)-1;
 }
 
-static void android_input_poll(void *data)
+void engine_handle_input (void *data, int32_t cmd)
 {
-   (void)data;
-
-   RARCH_PERFORMANCE_INIT(input_poll);
-   RARCH_PERFORMANCE_START(input_poll);
-
    bool debug_enable = g_settings.input.debug_enable;
-   struct android_app* android_app = (struct android_app*)g_android;
+   struct android_app *android_app = (struct android_app*)data;
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
 
    *lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS));
@@ -111,7 +191,7 @@ static void android_input_poll(void *data)
       //predispatched =AInputQueue_preDispatchEvent(android_app->inputQueue,event);
 
       //if (predispatched)
-         //continue;
+      //continue;
 
       source = AInputEvent_getSource(event);
       id = AInputEvent_getDeviceId(event);
@@ -258,7 +338,54 @@ static void android_input_poll(void *data)
 
       AInputQueue_finishEvent(android_app->inputQueue, event, handled);
    }
+}
 
+static void *android_input_init(void)
+{
+   pads_connected = 0;
+
+   input_autodetect_init();
+
+   for(unsigned player = 0; player < 4; player++)
+      for(unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
+      {
+         g_settings.input.binds[player][i].id = i;
+         g_settings.input.binds[player][i].joykey = 0;
+      }
+
+   for(int player = 0; player < 4; player++)
+   {
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_B].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_B);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_Y].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_Y);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_START].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_START);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_UP].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_UP);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_A].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_A);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_X].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_X);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L2);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R2);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
+      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
+   }
+   g_settings.input.dpad_emulation[0] = DPAD_EMULATION_LSTICK;
+   return (void*)-1;
+}
+
+static void android_input_poll(void *data)
+{
+   (void)data;
+
+   RARCH_PERFORMANCE_INIT(input_poll);
+   RARCH_PERFORMANCE_START(input_poll);
+
+   struct android_app* android_app = (struct android_app*)g_android;
+
+   engine_handle_input(android_app, 0);
 #if 0
    {
       char msg[64];
