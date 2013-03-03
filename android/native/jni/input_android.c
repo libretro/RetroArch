@@ -171,7 +171,7 @@ void engine_handle_cmd(void)
    }
 }
 
-void engine_handle_input(void)
+static inline void engine_handle_input(void)
 {
    bool debug_enable = g_settings.input.debug_enable;
    struct android_app *android_app = (struct android_app*)g_android;
