@@ -16,6 +16,7 @@
 
 #include <android/keycodes.h>
 #include <unistd.h>
+#include <dlfcn.h>
 #include "input_autodetect.h"
 #include "../../../frontend/frontend_android.h"
 #include "../../../input/input_common.h"
@@ -42,6 +43,21 @@ struct input_pointer
 
 static struct input_pointer pointer[MAX_TOUCH];
 static unsigned pointer_count;
+
+
+enum {AXIS_X = 0, AXIS_Y = 1, AXIS_Z = 11, AXIS_RZ = 14};
+extern float AMotionEvent_getAxisValue(
+    const AInputEvent* motion_event, int32_t axis, size_t pointer_index);
+
+static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
+
+#define AMotionEvent_getAxisValue (*p_AMotionEvent_getAxisValue)
+
+float getAxis(AInputEvent *event, int stick, int axis, int pointer)
+{
+   int axis_arg[2][2] = {{AXIS_X, AXIS_Y}, {AXIS_Z, AXIS_RZ}};
+   return AMotionEvent_getAxisValue(event, axis_arg[stick][axis], pointer);
+}
 
 /**
  * Process the next main command.
@@ -267,6 +283,8 @@ static inline void engine_handle_input(void)
                   uint64_t *state_cur = &state[state_id];
                   x = AMotionEvent_getX(event, motion_pointer);
                   y = AMotionEvent_getY(event, motion_pointer);
+                  //float axis = AMotionEvent_getAxisValue(event, AXIS_Z, motion_pointer);
+                  //RARCH_LOG("axis: %.2f\n", axis);
                   *state_cur &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
                         (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
                   *state_cur |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
@@ -393,6 +411,9 @@ static void *android_input_init(void)
       g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
    }
    g_settings.input.dpad_emulation[0] = DPAD_EMULATION_LSTICK;
+
+   //p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT, "AMotionEvent_getAxisValue");
+
    return (void*)-1;
 }
 
