@@ -86,6 +86,9 @@ void engine_handle_cmd(void)
          android_app->window = android_app->pendingWindow;
          pthread_cond_broadcast(&android_app->cond);
          pthread_mutex_unlock(&android_app->mutex);
+
+         if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
+            init_drivers();
          break;
 
       case APP_CMD_RESUME:
@@ -165,12 +168,6 @@ void engine_handle_cmd(void)
          RARCH_LOG("engine_handle_cmd: APP_CMD_DESTROY\n");
          g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
          break;
-   }
-
-   if (cmd == APP_CMD_INIT_WINDOW)
-   {
-      if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
-         init_drivers();
    }
 }
 
