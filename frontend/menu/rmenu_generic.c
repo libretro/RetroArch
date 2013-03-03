@@ -131,13 +131,6 @@ bool rmenu_iterate(void)
    static bool initial_held = true;
    static bool first_held = false;
 
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
-   driver.video->apply_state_changes();
-
-   g_extern.frame_count++;
-
-   uint16_t input_state = 0;
-
    driver.input->poll(NULL);
 
 #ifdef HAVE_OVERLAY
@@ -166,6 +159,20 @@ bool rmenu_iterate(void)
          input_overlay_poll_clear(driver.overlay);
    }
 #endif
+
+   if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
+   {
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+      goto deinit;
+   }
+
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
+
+   driver.video->apply_state_changes();
+
+   g_extern.frame_count++;
+
+   uint16_t input_state = 0;
 
    for (unsigned i = 0; i < 16; i++)
    {
