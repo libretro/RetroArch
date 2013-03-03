@@ -26,10 +26,10 @@
 
 #define MAX_TOUCH 16
 
-#define PRESSED_UP(x, y)   ((-0.80f > y) && (x >= -1.00f))
-#define PRESSED_DOWN(x, y) ((0.80f  < y) && (y <= 1.00f))
-#define PRESSED_LEFT(x, y) ((-0.80f > x) && (x >= -1.00f))
-#define PRESSED_RIGHT(x, y) ((0.80f  < x) && (x <= 1.00f))
+#define PRESSED_UP(x, y)   ((y <= -0.99f))
+#define PRESSED_DOWN(x, y) ((y >= 0.99f))
+#define PRESSED_LEFT(x, y) ((x <= -0.99f))
+#define PRESSED_RIGHT(x, y) ((x >= 0.99f))
 
 static unsigned pads_connected;
 static int state_device_ids[MAX_PADS];
