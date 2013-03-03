@@ -23,6 +23,7 @@
 
 int main(int argc, char *argv[])
 {
+   srand(time(NULL));
    int16_t input_i[1024];
    int16_t output_i[1024 * 8];
 
