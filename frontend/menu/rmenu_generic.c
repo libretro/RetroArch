@@ -140,8 +140,40 @@ bool rmenu_iterate(void)
 
    driver.input->poll(NULL);
 
+#ifdef HAVE_OVERLAY
+   if (driver.overlay)
+   {
+      driver.overlay_state = 0;
+
+      unsigned device = input_overlay_full_screen(driver.overlay) ?
+         RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
+
+      bool polled = false;
+      for (unsigned i = 0;
+            input_input_state_func(NULL, 0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
+            i++)
+      {
+         int16_t x = input_input_state_func(NULL, 0,
+               device, i, RETRO_DEVICE_ID_POINTER_X);
+         int16_t y = input_input_state_func(NULL, 0,
+               device, i, RETRO_DEVICE_ID_POINTER_Y);
+
+         driver.overlay_state |= input_overlay_poll(driver.overlay, x, y);
+         polled = true;
+      }
+
+      if (!polled)
+         input_overlay_poll_clear(driver.overlay);
+   }
+#endif
+
    for (unsigned i = 0; i < 16; i++)
+   {
       input_state |= driver.input->input_state(NULL, binds, 0, RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
+#ifdef HAVE_OVERLAY
+      input_state |= driver.overlay_state & (1ULL << i) ? (1ULL << i) : 0;
+#endif
+   }
 
    trigger_state = input_state & ~old_input_state;
    bool do_held = input_state & ((1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) | (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT));

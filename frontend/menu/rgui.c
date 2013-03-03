@@ -261,7 +261,11 @@ static uint16_t gray_filler(unsigned x, unsigned y)
    x >>= 1;
    y >>= 1;
    unsigned col = ((x + y) & 1) + 1;
+#ifdef GEKKO
    return (6 << 12) | (col << 8) | (col << 4) | (col << 0);
+#else
+   return (col << 13) | (col << 9) | (col << 5) | (12 << 0);
+#endif
 }
 
 static uint16_t green_filler(unsigned x, unsigned y)
@@ -269,7 +273,11 @@ static uint16_t green_filler(unsigned x, unsigned y)
    x >>= 1;
    y >>= 1;
    unsigned col = ((x + y) & 1) + 1;
+#ifdef GEKKO
    return (6 << 12) | (col << 8) | (col << 5) | (col << 0);
+#else
+   return (col << 13) | (col << 10) | (col << 5) | (12 << 0);
+#endif
 }
 
 static void fill_rect(uint16_t *buf, unsigned pitch,
@@ -297,7 +305,11 @@ static void blit_line(rgui_handle_t *rgui,
 
             if (col)
                rgui->frame_buf[(y + j) * (rgui->frame_buf_pitch >> 1) + (x + i)] = green ?
+#ifdef GEKKO
                (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
+#else
+               (15 << 0) | (7 << 4) | (15 << 8) | (7 << 12) : 0xFFFF;
+#endif
          }
       }
 
@@ -927,6 +939,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->folder_buf);
 
+#ifdef RARCH_CONSOLE
    RGUI_MENU_ITEM("Rewind", RGUI_SETTINGS_REWIND_ENABLE);
    RGUI_MENU_ITEM("Rewind granularity", RGUI_SETTINGS_REWIND_GRANULARITY);
    if (g_extern.main_is_init)
@@ -956,15 +969,26 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    RGUI_MENU_ITEM("Core", RGUI_SETTINGS_CORE);
 #endif
-#ifdef RARCH_CONSOLE
    RGUI_MENU_ITEM("Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1);
    RGUI_MENU_ITEM("Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2);
    RGUI_MENU_ITEM("Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3);
    RGUI_MENU_ITEM("Controller #4 Config", RGUI_SETTINGS_CONTROLLER_4);
-#endif
    RGUI_MENU_ITEM("Debug Text", RGUI_SETTINGS_DEBUG_TEXT);
    RGUI_MENU_ITEM("Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR);
    RGUI_MENU_ITEM("Exit RetroArch", RGUI_SETTINGS_QUIT_EMULATOR);
+#else
+   RGUI_MENU_ITEM("Save State", RGUI_SETTINGS_SAVESTATE_SAVE);
+   RGUI_MENU_ITEM("Load State", RGUI_SETTINGS_SAVESTATE_LOAD);
+   RGUI_MENU_ITEM("Take Screenshot", RGUI_SETTINGS_SCREENSHOT);
+   RGUI_MENU_ITEM("Restart Game", RGUI_SETTINGS_RESTART_GAME);
+   RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
+   RGUI_MENU_ITEM("Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO);
+   RGUI_MENU_ITEM("Rotation", RGUI_SETTINGS_VIDEO_ROTATION);
+   RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
+   RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);
+   RGUI_MENU_ITEM("Audio Resampler", RGUI_SETTINGS_RESAMPLER_TYPE);
+   RGUI_MENU_ITEM("Exit RetroArch", RGUI_SETTINGS_QUIT_EMULATOR);
+#endif
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)

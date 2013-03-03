@@ -1265,24 +1265,16 @@ static void gl_pbo_async_readback(void *data)
 #ifdef HAVE_RGUI
 static inline void gl_draw_rgui(void *data)
 {
-   static const GLfloat white_color_rgui[16] = {
-      1.0f, 1.0f, 1.0f, 0.75f,
-      1.0f, 1.0f, 1.0f, 0.75f,
-      1.0f, 1.0f, 1.0f, 0.75f,
-      1.0f, 1.0f, 1.0f, 0.75f,
-   };
-
    gl_t *gl = (gl_t*)data;
    gl->coords.tex_coord = tex_coords;
-   gl->coords.color     = white_color_rgui;
 
    glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(RGUI_WIDTH * 2));
    // RGUI is always packed so pitch = width * bpp
    glTexImage2D(GL_TEXTURE_2D,
-         0, GL_RGB, RGUI_WIDTH, RGUI_HEIGHT, 0, GL_RGB,
-         GL_UNSIGNED_SHORT_5_6_5, gl->menu_data);
+         0, GL_RGBA, RGUI_WIDTH, RGUI_HEIGHT, 0, GL_RGBA,
+         GL_UNSIGNED_SHORT_4_4_4_4, gl->menu_data);
 
    gl_shader_use_func(gl, 0);
    gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp_no_rot);
@@ -1292,7 +1284,6 @@ static inline void gl_draw_rgui(void *data)
    glDisable(GL_BLEND);
 
    gl->coords.tex_coord = gl->tex_coords;
-   gl->coords.color     = white_color;
 }
 #endif
 
