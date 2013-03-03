@@ -61,24 +61,10 @@ static void print_cur_config (void *data)
 
 static bool android_run_events (void *data)
 {
-   struct android_app *android_app = (struct android_app*)data;
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
 
    if (id == LOOPER_ID_MAIN)
-   {
-      int8_t cmd;
-
-      if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
-         cmd = -1;
-
-      engine_handle_cmd(android_app, cmd);
-
-      if (cmd == APP_CMD_INIT_WINDOW)
-      {
-         if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
-            init_drivers();
-      }
-   }
+      engine_handle_cmd();
 
    // Check if we are exiting.
    if (g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY))

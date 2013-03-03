@@ -46,9 +46,13 @@ static unsigned pointer_count;
 /**
  * Process the next main command.
  */
-void engine_handle_cmd (void *data, int32_t cmd)
+void engine_handle_cmd(void)
 {
-   struct android_app *android_app = (struct android_app*)data;
+   struct android_app *android_app = (struct android_app*)g_android;
+   int8_t cmd;
+
+   if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
+      cmd = -1;
 
    switch (cmd)
    {
@@ -162,12 +166,18 @@ void engine_handle_cmd (void *data, int32_t cmd)
          g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
          break;
    }
+
+   if (cmd == APP_CMD_INIT_WINDOW)
+   {
+      if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
+         init_drivers();
+   }
 }
 
-void engine_handle_input (void *data, int32_t cmd)
+void engine_handle_input(void)
 {
    bool debug_enable = g_settings.input.debug_enable;
-   struct android_app *android_app = (struct android_app*)data;
+   struct android_app *android_app = (struct android_app*)g_android;
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
 
    *lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS));
