@@ -347,6 +347,20 @@ void engine_handle_input(void)
    }
 }
 
+// Handle all events. If our activity is in pause state, block until we're unpaused.
+void android_handle_events(void)
+{
+   int ident;
+   while ((ident = ALooper_pollAll((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ? -1 : 0,
+               NULL, NULL, NULL)) >= 0)
+   {
+      if (ident == LOOPER_ID_MAIN)
+         engine_handle_cmd();
+      else if (!input_key_pressed_func(RARCH_PAUSE_TOGGLE))
+         engine_handle_input();
+   }
+}
+
 static void *android_input_init(void)
 {
    pads_connected = 0;
