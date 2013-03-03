@@ -176,6 +176,20 @@ static bool android_app_start_main(struct android_app *android_app, int *init_re
    }
 }
 
+// Handle all events. If our activity is in pause state, block until we're unpaused.
+static void android_handle_events(void)
+{
+   int ident;
+   while ((ident = ALooper_pollAll((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ? -1 : 0,
+               NULL, NULL, NULL)) >= 0)
+   {
+      if (ident == LOOPER_ID_MAIN)
+         engine_handle_cmd();
+      else if (!input_key_pressed_func(RARCH_PAUSE_TOGGLE))
+         engine_handle_input();
+   }
+}
+
 static void *android_app_entry(void *data)
 {
    struct android_app* android_app = (struct android_app*)data;
@@ -216,7 +230,11 @@ static void *android_app_entry(void *data)
    {
       RARCH_LOG("RetroArch started.\n");
 
-      while (rarch_main_iterate());
+      // Main loop
+      do
+      {
+         android_handle_events();
+      } while (rarch_main_iterate());
 
       RARCH_LOG("RetroArch stopped.\n");
    }
