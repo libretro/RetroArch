@@ -19,8 +19,7 @@
 #import "browser.h"
 
 #ifdef WIIMOTE
-#include "BTStack/wiimote.h"
-#import "BTStack/WiiMoteHelper.h"
+#import "input/BTStack/WiiMoteHelper.h"
 #endif
 
 

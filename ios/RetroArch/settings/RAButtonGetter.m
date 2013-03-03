@@ -16,7 +16,7 @@
 #import "settings.h"
 
 #ifdef WIIMOTE
-# include "../BTStack/wiimote.h"
+# include "../input/BTStack/wiimote.h"
 #endif
 
 extern NSString* const GSEventKeyUpNotification;
