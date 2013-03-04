@@ -496,9 +496,7 @@ static inline void input_poll_overlay(void)
 
 static void input_poll(void)
 {
-#ifndef HAVE_ASYNC_POLL
    input_poll_func();
-#endif
 
 #ifdef HAVE_OVERLAY
    if (driver.overlay) // Poll overlay state
@@ -1955,11 +1953,9 @@ static bool check_fullscreen(void)
       uninit_drivers();
       init_drivers();
 
-#ifndef HAVE_ASYNC_POLL
       // Poll input to avoid possibly stale data to corrupt things.
       if (driver.input)
          input_poll_func();
-#endif
    }
 
    was_pressed = pressed;

@@ -45,7 +45,11 @@
 #define video_overlay_interface_func(iface) driver.video->overlay_interface(driver.video_data, iface)
 #define video_free_func() driver.video->free(driver.video_data)
 #define input_init_func() driver.input->init()
+#ifdef HAVE_ASYNC_POLL
+#define input_poll_func()
+#else
 #define input_poll_func() driver.input->poll(driver.input_data)
+#endif
 #define input_input_state_func(retro_keybinds, port, device, index, id) \
    driver.input->input_state(driver.input_data, retro_keybinds, port, device, index, id)
 #define input_free_func() driver.input->free(driver.input_data)
