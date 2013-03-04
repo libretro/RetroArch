@@ -26,14 +26,16 @@
 
 #define MAX_TOUCH 16
 
-#define PRESSED_UP(x, y)   ((y <= -0.99f))
-#define PRESSED_DOWN(x, y) ((y >= 0.99f))
-#define PRESSED_LEFT(x, y) ((x <= -0.99f))
-#define PRESSED_RIGHT(x, y) ((x >= 0.99f))
+#define PRESSED_UP(x, y)    ((y <= dzone_min))
+#define PRESSED_DOWN(x, y)  ((y >= dzone_max))
+#define PRESSED_LEFT(x, y)  ((x <= dzone_min))
+#define PRESSED_RIGHT(x, y) ((x >= dzone_max))
 
 static unsigned pads_connected;
 static int state_device_ids[MAX_PADS];
 static uint64_t state[MAX_PADS];
+uint64_t keycode_lut[LAST_KEYCODE];
+dpad_values_t dpad_state[MAX_PADS]; 
 
 struct input_pointer
 {
@@ -44,8 +46,14 @@ struct input_pointer
 static struct input_pointer pointer[MAX_TOUCH];
 static unsigned pointer_count;
 
+enum
+{
+   AXIS_X = 0,
+   AXIS_Y = 1,
+   AXIS_Z = 11,
+   AXIS_RZ = 14
+};
 
-enum {AXIS_X = 0, AXIS_Y = 1, AXIS_Z = 11, AXIS_RZ = 14};
 extern float AMotionEvent_getAxisValue(
     const AInputEvent* motion_event, int32_t axis, size_t pointer_index);
 
@@ -281,6 +289,8 @@ static inline void engine_handle_input(void)
                if (g_settings.input.dpad_emulation[state_id] != DPAD_EMULATION_NONE)
                {
                   uint64_t *state_cur = &state[state_id];
+                  float dzone_min = dpad_state[state_id].dzone_min;
+                  float dzone_max = dpad_state[state_id].dzone_max;
                   x = AMotionEvent_getX(event, motion_pointer);
                   y = AMotionEvent_getY(event, motion_pointer);
                   //float axis = AMotionEvent_getAxisValue(event, AXIS_Z, motion_pointer);
@@ -380,35 +390,38 @@ void android_handle_events(void)
 
 static void *android_input_init(void)
 {
+   unsigned i, j;
    pads_connected = 0;
 
    input_autodetect_init();
 
-   for(unsigned player = 0; player < 4; player++)
-      for(unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
+   for(i = 0; i < MAX_PADS; i++)
+   {
+      for(j = 0; j < RARCH_FIRST_META_KEY; j++)
       {
-         g_settings.input.binds[player][i].id = i;
-         g_settings.input.binds[player][i].joykey = 0;
+         g_settings.input.binds[i][j].id = i;
+         g_settings.input.binds[i][j].joykey = 0;
       }
 
-   for(int player = 0; player < 4; player++)
-   {
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_B].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_B);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_Y].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_Y);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_START].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_START);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_UP].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_UP);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_A].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_A);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_X].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_X);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L2);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R2);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_B].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_B);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_Y].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_Y);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_START].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_START);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_UP].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_UP);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_A].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_A);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_X].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_X);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_L].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_R].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_L2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L2);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_R2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R2);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_L3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
+
+      dpad_state[i].dzone_min = -0.99f;
+      dpad_state[i].dzone_max = 0.99f;
    }
    g_settings.input.dpad_emulation[0] = DPAD_EMULATION_LSTICK;
 

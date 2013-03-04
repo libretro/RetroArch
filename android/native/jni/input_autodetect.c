@@ -18,9 +18,7 @@
 #include "jni_macros.h"
 #include "input_autodetect.h"
 
-uint64_t keycode_lut[LAST_KEYCODE];
-
-bool volume_enable;
+extern dpad_values_t dpad_state[MAX_PADS]; 
 
 static void input_autodetect_get_device_name(void *data, char *buf, size_t size, int id)
 {
@@ -77,7 +75,6 @@ void input_autodetect_init (void)
    for(j = 0; j < LAST_KEYCODE; j++)
       keycode_lut[j] = 0;
 
-   volume_enable = true;
    
    if (g_settings.input.autodetect_enable)
       return;
@@ -210,6 +207,9 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
       else if (strstr(name_buf, "TTT THT Arcade console 2P USB Play"))
       {
+         dpad_state[id].dzone_min = -2.00f;
+         dpad_state[id].dzone_max = 1.00f;
+
          /* same as Rumblepad 2 - merge? */
          keycode_lut[AKEYCODE_BUTTON_1]  |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
          keycode_lut[AKEYCODE_BUTTON_2]  |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
@@ -316,6 +316,9 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       else if (strstr(name_buf, "HuiJia  USB GamePad") ||
             strstr(name_buf, "Smartjoy Family Super Smartjoy 2"))
       {
+         dpad_state[id].dzone_min = -1.00f;
+         dpad_state[id].dzone_max = 1.00f;
+
          keycode_lut[AKEYCODE_BUTTON_3]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_4]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
 
@@ -683,7 +686,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
 
          /* Xperia Play */
          /* Start/select */
-         volume_enable = false;
          
          /* TODO: menu button */
          /* Menu : 82 */
@@ -833,7 +835,6 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
 
          //player 2
          shift += 8;
-         volume_enable = false;
          keycode_lut[AKEYCODE_I]   |= ((RETRO_DEVICE_ID_JOYPAD_UP+1)    << shift);
          keycode_lut[AKEYCODE_K] |= ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
          keycode_lut[AKEYCODE_J] |= ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)    << shift);
