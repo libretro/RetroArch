@@ -219,7 +219,9 @@ static void *android_app_entry(void *data)
       // Main loop
       do
       {
+#ifdef HAVE_ASYNC_POLL
          input_async_poll_func();
+#endif
       } while (rarch_main_iterate());
 
       RARCH_LOG("RetroArch stopped.\n");
