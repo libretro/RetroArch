@@ -83,8 +83,6 @@ void engine_handle_cmd(void)
    switch (cmd)
    {
       case APP_CMD_INPUT_CHANGED:
-         RARCH_LOG("APP_CMD_INPUT_CHANGED\n");
-         
          pthread_mutex_lock(&android_app->mutex);
 
          if (android_app->inputQueue != NULL)
@@ -106,8 +104,6 @@ void engine_handle_cmd(void)
          break;
 
       case APP_CMD_INIT_WINDOW:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_INIT_WINDOW.\n");
-
          pthread_mutex_lock(&android_app->mutex);
          android_app->window = android_app->pendingWindow;
          pthread_cond_broadcast(&android_app->cond);
@@ -118,8 +114,6 @@ void engine_handle_cmd(void)
          break;
 
       case APP_CMD_RESUME:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_RESUME.\n");
-
          pthread_mutex_lock(&android_app->mutex);
          android_app->activityState = cmd;
          pthread_cond_broadcast(&android_app->cond);
@@ -127,8 +121,6 @@ void engine_handle_cmd(void)
          break;
 
       case APP_CMD_START:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_START.\n");
-
          pthread_mutex_lock(&android_app->mutex);
          android_app->activityState = cmd;
          pthread_cond_broadcast(&android_app->cond);
@@ -136,8 +128,6 @@ void engine_handle_cmd(void)
          break;
 
       case APP_CMD_PAUSE:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_PAUSE.\n");
-
          pthread_mutex_lock(&android_app->mutex);
          android_app->activityState = cmd;
          pthread_cond_broadcast(&android_app->cond);
@@ -151,8 +141,6 @@ void engine_handle_cmd(void)
          break;
 
       case APP_CMD_STOP:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_STOP.\n");
-
          pthread_mutex_lock(&android_app->mutex);
          android_app->activityState = cmd;
          pthread_cond_broadcast(&android_app->cond);
@@ -160,12 +148,8 @@ void engine_handle_cmd(void)
          break;
 
       case APP_CMD_CONFIG_CHANGED:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_CONFIG_CHANGED.\n");
          break;
-
       case APP_CMD_TERM_WINDOW:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_TERM_WINDOW.\n");
-
          pthread_mutex_lock(&android_app->mutex);
 
          /* The window is being hidden or closed, clean it up. */
@@ -181,17 +165,13 @@ void engine_handle_cmd(void)
          break;
 
       case APP_CMD_GAINED_FOCUS:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_GAINED_FOCUS.\n");
-
          g_extern.lifecycle_state &= ~(1ULL << RARCH_PAUSE_TOGGLE);
          break;
 
       case APP_CMD_LOST_FOCUS:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_LOST_FOCUS.\n");
          break;
 
       case APP_CMD_DESTROY:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_DESTROY\n");
          g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
          break;
    }
@@ -410,19 +390,6 @@ static inline void engine_handle_input(void)
    }
 }
 
-// Handle all events. If our activity is in pause state, block until we're unpaused.
-void android_handle_events(void)
-{
-   int ident;
-   while ((ident = ALooper_pollAll((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ? -1 : 0,
-               NULL, NULL, NULL)) >= 0)
-   {
-      if (ident == LOOPER_ID_MAIN)
-         engine_handle_cmd();
-      else if (!input_key_pressed_func(RARCH_PAUSE_TOGGLE))
-         engine_handle_input();
-   }
-}
 
 static void *android_input_init(void)
 {
@@ -485,8 +452,19 @@ static void *android_input_init(void)
    return (void*)-1;
 }
 
+// Handle all events. If our activity is in pause state, block until we're unpaused.
+
 static void android_input_poll(void *data)
 {
+   int ident;
+   while ((ident = ALooper_pollAll((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ? -1 : 0,
+               NULL, NULL, NULL)) >= 0)
+   {
+      if (ident == LOOPER_ID_MAIN)
+         engine_handle_cmd();
+      else if (!input_key_pressed_func(RARCH_PAUSE_TOGGLE))
+         engine_handle_input();
+   }
 }
 
 static int16_t android_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
