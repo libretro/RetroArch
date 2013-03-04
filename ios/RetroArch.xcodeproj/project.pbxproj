@@ -199,6 +199,7 @@
 		963F5ABE16CC522F009BBD19 /* RASettingsSubList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RASettingsSubList.m; sourceTree = "<group>"; };
 		963F5ABF16CC522F009BBD19 /* RASettingsList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RASettingsList.m; sourceTree = "<group>"; };
 		963F5AC516CC523B009BBD19 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAGameView.m; sourceTree = "<group>"; };
+		9664F4A116E4409100FB28F9 /* keycode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = keycode.h; sourceTree = "<group>"; };
 		966B9C8616E40D44005B61E1 /* ios_input.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ios_input.m; sourceTree = "<group>"; };
 		966B9C8716E40D44005B61E1 /* ios_joypad.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ios_joypad.m; sourceTree = "<group>"; };
 		966B9C8816E40D44005B61E1 /* RAInputResponder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAInputResponder.h; sourceTree = "<group>"; };
@@ -403,6 +404,7 @@
 				966B9C8F16E418B7005B61E1 /* BTStack */,
 				966B9C8616E40D44005B61E1 /* ios_input.m */,
 				966B9C8716E40D44005B61E1 /* ios_joypad.m */,
+				9664F4A116E4409100FB28F9 /* keycode.h */,
 				966B9C8816E40D44005B61E1 /* RAInputResponder.h */,
 				966B9C8916E40D44005B61E1 /* RAInputResponder.m */,
 			);

@@ -30,9 +30,6 @@ NSString *const RATouchNotification = @"RATouchNotification";
 
 @implementation RApplication
 
-#define HWKB_HACK
-#ifdef HWKB_HACK // Disabled pending further testing
-// Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
 - (void)sendEvent:(UIEvent *)event
 {
    [super sendEvent:event];
@@ -43,6 +40,7 @@ NSString *const RATouchNotification = @"RATouchNotification";
                            event, @"event", nil];
       [[NSNotificationCenter defaultCenter] postNotificationName:RATouchNotification object:nil userInfo:inf];
    }
+   // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
    else if ([event respondsToSelector:@selector(_gsEvent)])
    {
       int* eventMem = (int *)(void*)CFBridgingRetain([event performSelector:@selector(_gsEvent)]);
@@ -67,7 +65,6 @@ NSString *const RATouchNotification = @"RATouchNotification";
       CFBridgingRelease(eventMem);
    }
 }
-#endif
 
 @end
 
