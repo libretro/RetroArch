@@ -194,5 +194,4 @@ static const char* const SETTINGID = "SETTING";
    return [[settings objectAtIndex:section] objectAtIndex:0];
 }
 
-
 @end

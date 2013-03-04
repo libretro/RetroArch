@@ -28,6 +28,8 @@ enum SettingTypes
 @property (strong) NSString* path;
 @property (strong) NSArray* subValues;
 @property (strong) NSMutableArray* msubValues;
+
+- (id)initWithType:(enum SettingTypes)aType label:(NSString*)aLabel name:(NSString*)aName;
 @end
 
 @interface RAButtonGetter : NSObject<UIAlertViewDelegate>

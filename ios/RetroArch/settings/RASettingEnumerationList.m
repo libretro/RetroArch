@@ -17,17 +17,18 @@
 
 @implementation RASettingEnumerationList
 {
-   RASettingData* value;
-   UITableView* view;
+   RASettingData* _value;
+   UITableView* _view;
 };
 
 - (id)initWithSetting:(RASettingData*)setting fromTable:(UITableView*)table
 {
    self = [super initWithStyle:UITableViewStyleGrouped];
    
-   value = setting;
-   view = table;
-   [self setTitle: value.label];
+   _value = setting;
+   _view = table;
+   
+   [self setTitle: _value.label];
    return self;
 }
 
@@ -38,30 +39,24 @@
 
 - (NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section
 {
-   return (section == 1) ? [value.subValues count] : 1;
+   return (section == 1) ? [_value.subValues count] : 1;
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"option"];
    cell = cell ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"option"];
-   
-   if (indexPath.section == 1)
-      cell.textLabel.text = [value.subValues objectAtIndex:indexPath.row];
-   else
-      cell.textLabel.text = @"None";
+
+   cell.textLabel.text = (indexPath.section == 1) ? [_value.subValues objectAtIndex:indexPath.row] : @"None";
 
    return cell;
 }
 
 - (void)tableView:(UITableView*)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   if (indexPath.section == 1)
-      value.value = [value.subValues objectAtIndex:indexPath.row];
-   else
-      value.value = @"";
+   _value.value = (indexPath.section == 1) ? [_value.subValues objectAtIndex:indexPath.row] : @"";
 
-   [view reloadData];
+   [_view reloadData];
    [[RetroArch_iOS get] popViewController];
 }
 

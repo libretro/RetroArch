@@ -17,6 +17,13 @@
 #import "settings.h"
 
 @implementation RASettingData
+- (id)initWithType:(enum SettingTypes)aType label:(NSString*)aLabel name:(NSString*)aName
+{
+   self.type = aType;
+   self.label = aLabel;
+   self.name = aName;
+   return self;
+}
 @end
 
 static NSString* get_value_from_config(RAConfig* config, NSString* name, NSString* defaultValue)
@@ -26,20 +33,14 @@ static NSString* get_value_from_config(RAConfig* config, NSString* name, NSStrin
 
 static RASettingData* boolean_setting(RAConfig* config, NSString* name, NSString* label, NSString* defaultValue)
 {
-   RASettingData* result = [RASettingData new];
-   result.type = BooleanSetting;
-   result.label = label;
-   result.name = name;
+   RASettingData* result = [[RASettingData alloc] initWithType:BooleanSetting label:label name:name];
    result.value = get_value_from_config(config, name, defaultValue);
    return result;
 }
 
 static RASettingData* button_setting(RAConfig* config, NSString* name, NSString* label, NSString* defaultValue)
 {
-   RASettingData* result = [RASettingData new];
-   result.type = ButtonSetting;
-   result.label = label;
-   result.name = name;
+   RASettingData* result = [[RASettingData alloc] initWithType:ButtonSetting label:label name:name];
    result.msubValues = [NSMutableArray arrayWithObjects:
                         get_value_from_config(config, name, defaultValue),
                         get_value_from_config(config, [name stringByAppendingString:@"_btn"], @""),
@@ -49,19 +50,14 @@ static RASettingData* button_setting(RAConfig* config, NSString* name, NSString*
 
 static RASettingData* group_setting(NSString* label, NSArray* settings)
 {
-   RASettingData* result = [RASettingData new];
-   result.type = GroupSetting;
-   result.label = label;
+   RASettingData* result = [[RASettingData alloc] initWithType:GroupSetting label:label name:nil];
    result.subValues = settings;
    return result;
 }
 
 static RASettingData* enumeration_setting(RAConfig* config, NSString* name, NSString* label, NSString* defaultValue, NSArray* values)
 {
-   RASettingData* result = [RASettingData new];
-   result.type = EnumerationSetting;
-   result.label = label;
-   result.name = name;
+   RASettingData* result = [[RASettingData alloc] initWithType:EnumerationSetting label:label name:name];
    result.value = get_value_from_config(config, name, defaultValue);
    result.subValues = values;
    return result;
@@ -75,10 +71,7 @@ static RASettingData* subpath_setting(RAConfig* config, NSString* name, NSString
    NSArray* values = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:path error:nil];
    values = [values pathsMatchingExtensions:[NSArray arrayWithObject:extension]];
 
-   RASettingData* result = [RASettingData new];
-   result.type = FileListSetting;
-   result.label = label;
-   result.name = name;
+   RASettingData* result = [[RASettingData alloc] initWithType:FileListSetting label:label name:name];
    result.value = value;
    result.subValues = values;
    result.path = path;
@@ -87,10 +80,7 @@ static RASettingData* subpath_setting(RAConfig* config, NSString* name, NSString
 
 static RASettingData* custom_action(NSString* action)
 {
-   RASettingData* result = [RASettingData new];
-   result.type = CustomAction;
-   result.label = action;
-   return result;
+   return [[RASettingData alloc] initWithType:CustomAction label:action name:nil];
 }
 
 @implementation RASettingsList

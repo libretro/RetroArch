@@ -79,12 +79,8 @@ static const struct
 static NSString* get_key_config_name(uint32_t hid_id)
 {
    for (int i = 0; ios_key_name_map[i].hid_id; i ++)
-   {
       if (hid_id == ios_key_name_map[i].hid_id)
-      {
          return [NSString stringWithUTF8String:ios_key_name_map[i].keyname];
-      }
-   }
    
    return @"nul";
 }
