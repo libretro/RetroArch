@@ -15,7 +15,7 @@
 
 enum SettingTypes
 {
-   BooleanSetting, ButtonSetting, EnumerationSetting, FileListSetting, GroupSetting
+   BooleanSetting, ButtonSetting, EnumerationSetting, FileListSetting, GroupSetting, CustomAction
 };
 
 @interface RASettingData : NSObject
@@ -40,6 +40,7 @@ enum SettingTypes
 
 @interface RASettingsSubList : UITableViewController
 - (id)initWithSettings:(NSArray*)values title:(NSString*)title;
+- (void)handleCustomAction:(NSString*)action;
 - (void)writeSettings:(NSArray*)settingList toConfig:(RAConfig*)config;
 @end
 

@@ -32,6 +32,11 @@ static const char* const SETTINGID = "SETTING";
    return self;
 }
 
+- (void)handleCustomAction:(NSString*)action
+{
+
+}
+
 - (void)writeSettings:(NSArray*)settingList toConfig:(RAConfig*)config
 {
    NSArray* list = settingList ? settingList : settings;
@@ -45,7 +50,7 @@ static const char* const SETTINGID = "SETTING";
          RASettingData* setting = [group objectAtIndex:j];
          
          switch (setting.type)
-         {
+         {         
             case GroupSetting:
                [self writeSettings:setting.subValues toConfig:config];
                break;
@@ -62,6 +67,9 @@ static const char* const SETTINGID = "SETTING";
                   [config putStringNamed:setting.name value:setting.msubValues[0]];
                if (setting.msubValues[1] && [setting.msubValues[1] length])
                   [config putStringNamed:[setting.name stringByAppendingString:@"_btn"] value:setting.msubValues[1]];
+               break;
+
+            case CustomAction:
                break;
 
             default:
@@ -91,12 +99,16 @@ static const char* const SETTINGID = "SETTING";
          [[RetroArch_iOS get] pushViewController:[[RASettingsSubList alloc] initWithSettings:setting.subValues title:setting.label] isGame:NO];
          break;
          
+      case CustomAction:
+         [self handleCustomAction:setting.label];
+         break;
+         
       default:
          break;
    }
 }
 
-- (void)handle_boolean_switch:(UISwitch*)swt
+- (void)handleBooleanSwitch:(UISwitch*)swt
 {
    RASettingData* setting = objc_getAssociatedObject(swt, SETTINGID);
    setting.value = (swt.on ? @"true" : @"false");
@@ -119,7 +131,7 @@ static const char* const SETTINGID = "SETTING";
             cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"boolean"];
          
             UISwitch* accessory = [[UISwitch alloc] init];
-            [accessory addTarget:self action:@selector(handle_boolean_switch:) forControlEvents:UIControlEventValueChanged];
+            [accessory addTarget:self action:@selector(handleBooleanSwitch:) forControlEvents:UIControlEventValueChanged];
             cell.accessoryView = accessory;
             
             [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
@@ -134,6 +146,7 @@ static const char* const SETTINGID = "SETTING";
       case EnumerationSetting:
       case FileListSetting:
       case ButtonSetting:
+      case CustomAction:
       {
          cell = [self.tableView dequeueReusableCellWithIdentifier:@"enumeration"];
          cell = cell ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"enumeration"];
