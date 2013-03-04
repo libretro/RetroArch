@@ -294,9 +294,7 @@ static void android_input_poll(void *data)
    while ((ident = ALooper_pollAll((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ? -1 : 0,
                NULL, NULL, NULL)) >= 0)
    {
-      if (ident == LOOPER_ID_MAIN)
-         engine_handle_cmd();
-      else if (!input_key_pressed_func(RARCH_PAUSE_TOGGLE))
+      if (ident == LOOPER_ID_INPUT)
       {
          bool debug_enable = g_settings.input.debug_enable;
          struct android_app *android_app = (struct android_app*)g_android;
@@ -460,6 +458,8 @@ static void android_input_poll(void *data)
             }
          }
       }
+      else if (ident == LOOPER_ID_MAIN)
+         engine_handle_cmd();
    }
 }
 
