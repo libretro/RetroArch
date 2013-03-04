@@ -547,6 +547,11 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       else if (strstr(name_buf, "USB,2-axis 8-button gamepad") || 
             strstr(name_buf, "BUFFALO BGC-FC801"))
       {
+         if (strstr(name_buf, "BUFFALO BGC-FC801"))
+         {
+            dpad_state[id].dzone_min = -1.00f;
+            dpad_state[id].dzone_max = 1.00f;
+         }
          keycode_lut[AKEYCODE_BUTTON_1]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_2]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_3]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
