@@ -136,6 +136,7 @@ extern const gfx_ctx_driver_t gfx_ctx_ps3;
 extern const gfx_ctx_driver_t gfx_ctx_xdk;
 extern const gfx_ctx_driver_t gfx_ctx_wgl;
 extern const gfx_ctx_driver_t gfx_ctx_videocore;
+extern const gfx_ctx_driver_t gfx_ctx_bbqnx;
 extern const gfx_ctx_driver_t gfx_ctx_ios;
 
 const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.

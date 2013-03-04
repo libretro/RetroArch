@@ -36,20 +36,20 @@
                 <intent
                     android:targetClass="org.retroarch.browser.StateDirActivity"
                     android:targetPackage="org.retroarch" />
-            </Preference>            
+            </Preference>
         </PreferenceCategory>
     </PreferenceScreen>
     <PreferenceScreen android:title="System Settings" >
         <PreferenceCategory android:title="General" >
             <CheckBoxPreference
-                android:defaultValue="false"
+                android:defaultValue="true"
                 android:key="savestate_auto_load"
-                android:summary="Loads an automatically created savestate at startup."
+                android:summary="Loads an automatically created savestate (*.state.auto) at startup."
                 android:title="Auto load state" />
             <CheckBoxPreference
                 android:defaultValue="false"
                 android:key="savestate_auto_save"
-                android:summary="Automatically saves state when exiting game."
+                android:summary="Automatically saves state (*.state.auto) when exiting game."
                 android:title="Auto save state" />
         </PreferenceCategory>
         <PreferenceCategory android:title="Rewinding" >

@@ -16,6 +16,7 @@
 
 #include <android/keycodes.h>
 #include <unistd.h>
+#include <dlfcn.h>
 #include "input_autodetect.h"
 #include "../../../frontend/frontend_android.h"
 #include "../../../input/input_common.h"
@@ -25,14 +26,16 @@
 
 #define MAX_TOUCH 16
 
-#define PRESSED_UP(x, y)   ((-0.80f > y) && (x >= -1.00f))
-#define PRESSED_DOWN(x, y) ((0.80f  < y) && (y <= 1.00f))
-#define PRESSED_LEFT(x, y) ((-0.80f > x) && (x >= -1.00f))
-#define PRESSED_RIGHT(x, y) ((0.80f  < x) && (x <= 1.00f))
+#define PRESSED_UP(x, y)    ((y <= dzone_min))
+#define PRESSED_DOWN(x, y)  ((y >= dzone_max))
+#define PRESSED_LEFT(x, y)  ((x <= dzone_min))
+#define PRESSED_RIGHT(x, y) ((x >= dzone_max))
 
 static unsigned pads_connected;
 static int state_device_ids[MAX_PADS];
 static uint64_t state[MAX_PADS];
+uint64_t keycode_lut[LAST_KEYCODE];
+dpad_values_t dpad_state[MAX_PADS]; 
 
 struct input_pointer
 {
@@ -43,218 +46,392 @@ struct input_pointer
 static struct input_pointer pointer[MAX_TOUCH];
 static unsigned pointer_count;
 
-static void *android_input_init(void)
+enum
 {
-   pads_connected = 0;
+   AXIS_X = 0,
+   AXIS_Y = 1,
+   AXIS_Z = 11,
+   AXIS_RZ = 14
+};
 
-   input_autodetect_init();
+extern float AMotionEvent_getAxisValue(
+    const AInputEvent* motion_event, int32_t axis, size_t pointer_index);
 
-   for(unsigned player = 0; player < 4; player++)
-      for(unsigned i = 0; i < RARCH_FIRST_META_KEY; i++)
-      {
-         g_settings.input.binds[player][i].id = i;
-         g_settings.input.binds[player][i].joykey = 0;
-      }
+static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 
-   for(int player = 0; player < 4; player++)
-   {
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_B].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_B);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_Y].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_Y);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_START].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_START);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_UP].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_UP);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_A].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_A);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_X].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_X);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L2);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R2);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_L3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
-      g_settings.input.binds[player][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
-   }
-   g_settings.input.dpad_emulation[0] = DPAD_EMULATION_LSTICK;
-   return (void*)-1;
+#define AMotionEvent_getAxisValue (*p_AMotionEvent_getAxisValue)
+
+float getAxis(AInputEvent *event, int stick, int axis, int pointer)
+{
+   int axis_arg[2][2] = {{AXIS_X, AXIS_Y}, {AXIS_Z, AXIS_RZ}};
+   return AMotionEvent_getAxisValue(event, axis_arg[stick][axis], pointer);
 }
 
-static void android_input_poll(void *data)
+/**
+ * Process the next main command.
+ */
+void engine_handle_cmd(void)
 {
-   (void)data;
+   struct android_app *android_app = (struct android_app*)g_android;
+   int8_t cmd;
 
-   RARCH_PERFORMANCE_INIT(input_poll);
-   RARCH_PERFORMANCE_START(input_poll);
+   if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
+      cmd = -1;
 
+   switch (cmd)
+   {
+      case APP_CMD_INPUT_CHANGED:
+         RARCH_LOG("APP_CMD_INPUT_CHANGED\n");
+         
+         pthread_mutex_lock(&android_app->mutex);
+
+         if (android_app->inputQueue != NULL)
+            AInputQueue_detachLooper(android_app->inputQueue);
+
+         android_app->inputQueue = android_app->pendingInputQueue;
+
+         if (android_app->inputQueue != NULL)
+         {
+            RARCH_LOG("Attaching input queue to looper");
+            AInputQueue_attachLooper(android_app->inputQueue,
+                  android_app->looper, LOOPER_ID_INPUT, NULL,
+                  NULL);
+         }
+
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         
+         break;
+
+      case APP_CMD_INIT_WINDOW:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_INIT_WINDOW.\n");
+
+         pthread_mutex_lock(&android_app->mutex);
+         android_app->window = android_app->pendingWindow;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+
+         if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
+            init_drivers();
+         break;
+
+      case APP_CMD_RESUME:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_RESUME.\n");
+
+         pthread_mutex_lock(&android_app->mutex);
+         android_app->activityState = cmd;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         break;
+
+      case APP_CMD_START:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_START.\n");
+
+         pthread_mutex_lock(&android_app->mutex);
+         android_app->activityState = cmd;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         break;
+
+      case APP_CMD_PAUSE:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_PAUSE.\n");
+
+         pthread_mutex_lock(&android_app->mutex);
+         android_app->activityState = cmd;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+
+         if (!(g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY)))
+         {
+            RARCH_LOG("Pausing RetroArch.\n");
+            g_extern.lifecycle_state |= (1ULL << RARCH_PAUSE_TOGGLE);
+         }
+         break;
+
+      case APP_CMD_STOP:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_STOP.\n");
+
+         pthread_mutex_lock(&android_app->mutex);
+         android_app->activityState = cmd;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         break;
+
+      case APP_CMD_CONFIG_CHANGED:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_CONFIG_CHANGED.\n");
+         break;
+
+      case APP_CMD_TERM_WINDOW:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_TERM_WINDOW.\n");
+
+         pthread_mutex_lock(&android_app->mutex);
+
+         /* The window is being hidden or closed, clean it up. */
+         /* terminate display/EGL context here */
+         if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
+            uninit_drivers();
+         else
+            RARCH_WARN("Window is terminated outside PAUSED state.\n");
+
+         android_app->window = NULL;
+         pthread_cond_broadcast(&android_app->cond);
+         pthread_mutex_unlock(&android_app->mutex);
+         break;
+
+      case APP_CMD_GAINED_FOCUS:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_GAINED_FOCUS.\n");
+
+         g_extern.lifecycle_state &= ~(1ULL << RARCH_PAUSE_TOGGLE);
+         break;
+
+      case APP_CMD_LOST_FOCUS:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_LOST_FOCUS.\n");
+         break;
+
+      case APP_CMD_DESTROY:
+         RARCH_LOG("engine_handle_cmd: APP_CMD_DESTROY\n");
+         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+         break;
+   }
+}
+
+static inline void engine_handle_input(void)
+{
    bool debug_enable = g_settings.input.debug_enable;
-   struct android_app* android_app = (struct android_app*)g_android;
+   struct android_app *android_app = (struct android_app*)g_android;
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
+   AInputEvent* event = NULL;
 
    *lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS));
 
    // Read all pending events.
-   while (AInputQueue_hasEvents(android_app->inputQueue) > 0)
+   while (AInputQueue_hasEvents(android_app->inputQueue))
    {
-      AInputEvent* event = NULL;
-      if (AInputQueue_getEvent(android_app->inputQueue, &event) < 0)
-         break;
-
-      bool long_msg_enable = false;
-      int32_t handled = 1;
-      int action = 0;
-      char msg[128];
-      msg[0] = 0;
-
-      int source = AInputEvent_getSource(event);
-      int id = AInputEvent_getDeviceId(event);
-      if (id == zeus_second_id)
-         id = zeus_id;
-      int keycode = AKeyEvent_getKeyCode(event);
-
-      int type_event = AInputEvent_getType(event);
-      int state_id = -1;
-
-      if (source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE | AINPUT_SOURCE_TOUCHPAD))
-         state_id = 0; // touch overlay is always player 1
-      else
+      if (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
       {
-         for (unsigned i = 0; i < pads_connected; i++)
-            if (state_device_ids[i] == id)
-               state_id = i;
-      }
+         bool long_msg_enable = false;
+         int32_t handled = 1;
+         int action = 0;
+         char msg[128];
+         int source, id, keycode, type_event, state_id;
+         //int predispatched;
 
-      if (state_id < 0)
-      {
-         state_id = pads_connected;
-         state_device_ids[pads_connected++] = id;
+         msg[0] = 0;
+         //predispatched =AInputQueue_preDispatchEvent(android_app->inputQueue,event);
 
-         input_autodetect_setup(android_app, msg, sizeof(msg), state_id, id, source);
-         long_msg_enable = true;
-      }
+         //if (predispatched)
+         //continue;
 
-      if (keycode == AKEYCODE_BACK)
-      {
-         uint8_t unpacked = (keycode_lut[AKEYCODE_BACK] >> ((state_id+1) << 3)) - 1;
-         uint64_t input_state = (1ULL << unpacked);
+         source = AInputEvent_getSource(event);
+         id = AInputEvent_getDeviceId(event);
+         if (id == zeus_second_id)
+            id = zeus_id;
+         keycode = AKeyEvent_getKeyCode(event);
 
-         if (type_event == AINPUT_EVENT_TYPE_KEY && input_state < (1ULL << RARCH_FIRST_META_KEY)
-               && input_state > 0)
-         {
-         }
+         type_event = AInputEvent_getType(event);
+         state_id = -1;
+
+         if (source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE | AINPUT_SOURCE_TOUCHPAD))
+            state_id = 0; // touch overlay is always player 1
          else
          {
-            int meta = AKeyEvent_getMetaState(event);
-            if (!(meta & AMETA_ALT_ON))
+            for (unsigned i = 0; i < pads_connected; i++)
+               if (state_device_ids[i] == id)
+                  state_id = i;
+         }
+
+         if (state_id < 0)
+         {
+            state_id = pads_connected;
+            state_device_ids[pads_connected++] = id;
+
+            input_autodetect_setup(android_app, msg, sizeof(msg), state_id, id, source);
+            long_msg_enable = true;
+         }
+
+         if (keycode == AKEYCODE_BACK)
+         {
+            uint8_t unpacked = (keycode_lut[AKEYCODE_BACK] >> ((state_id+1) << 3)) - 1;
+            uint64_t input_state = (1ULL << unpacked);
+
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INPUT_XPERIA_PLAY_HACK))
+            {
+               int meta = AKeyEvent_getMetaState(event);
+               if (!(meta & AMETA_ALT_ON))
+               {
+                  *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+                  AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+                  break;
+               }
+            }
+            else if (type_event == AINPUT_EVENT_TYPE_KEY && input_state < (1ULL << RARCH_FIRST_META_KEY)
+                  && input_state > 0)
+            {
+            }
+            else
             {
                *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
                AInputQueue_finishEvent(android_app->inputQueue, event, handled);
                break;
             }
          }
-      }
 
-      if (type_event == AINPUT_EVENT_TYPE_MOTION)
-      {
-         float x = 0.0f;
-         float y = 0.0f;
-         action = AMotionEvent_getAction(event);
-         size_t motion_pointer = action >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-         action &= AMOTION_EVENT_ACTION_MASK;
-
-         if (source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
+         if (type_event == AINPUT_EVENT_TYPE_MOTION)
          {
-            if (g_settings.input.dpad_emulation[state_id] != DPAD_EMULATION_NONE)
-            {
-               uint64_t *state_cur = &state[state_id];
-               x = AMotionEvent_getX(event, motion_pointer);
-               y = AMotionEvent_getY(event, motion_pointer);
-               *state_cur &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
-                     (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
-               *state_cur |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
-               *state_cur |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-               *state_cur |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
-               *state_cur |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
-            }
-         }
-         else
-         {
-            bool keyup = (action == AMOTION_EVENT_ACTION_UP ||
-                  action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP) ||
-               (source == AINPUT_SOURCE_MOUSE && action != AMOTION_EVENT_ACTION_DOWN);
+            float x = 0.0f;
+            float y = 0.0f;
+            action = AMotionEvent_getAction(event);
+            size_t motion_pointer = action >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+            action &= AMOTION_EVENT_ACTION_MASK;
 
-            if (keyup && motion_pointer < MAX_TOUCH)
+            if (source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
             {
-               memmove(pointer + motion_pointer, pointer + motion_pointer + 1, (MAX_TOUCH - motion_pointer - 1) * sizeof(struct input_pointer));
-               if (pointer_count > 0)
-                  pointer_count--;
+               if (g_settings.input.dpad_emulation[state_id] != DPAD_EMULATION_NONE)
+               {
+                  uint64_t *state_cur = &state[state_id];
+                  float dzone_min = dpad_state[state_id].dzone_min;
+                  float dzone_max = dpad_state[state_id].dzone_max;
+                  x = AMotionEvent_getX(event, motion_pointer);
+                  y = AMotionEvent_getY(event, motion_pointer);
+                  //float axis = AMotionEvent_getAxisValue(event, AXIS_Z, motion_pointer);
+                  //RARCH_LOG("axis: %.2f\n", axis);
+                  *state_cur &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
+                        (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
+                  *state_cur |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
+                  *state_cur |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+                  *state_cur |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
+                  *state_cur |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+               }
             }
             else
             {
-               int pointer_max = min(AMotionEvent_getPointerCount(event), MAX_TOUCH);
-               for (motion_pointer = 0; motion_pointer < pointer_max; motion_pointer++)
+               bool keyup = (action == AMOTION_EVENT_ACTION_UP ||
+                     action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP) ||
+                  (source == AINPUT_SOURCE_MOUSE && action != AMOTION_EVENT_ACTION_DOWN);
+
+               if (keyup && motion_pointer < MAX_TOUCH)
                {
-                  x = AMotionEvent_getX(event, motion_pointer);
-                  y = AMotionEvent_getY(event, motion_pointer);
+                  memmove(pointer + motion_pointer, pointer + motion_pointer + 1, (MAX_TOUCH - motion_pointer - 1) * sizeof(struct input_pointer));
+                  if (pointer_count > 0)
+                     pointer_count--;
+               }
+               else
+               {
+                  int pointer_max = min(AMotionEvent_getPointerCount(event), MAX_TOUCH);
+                  for (motion_pointer = 0; motion_pointer < pointer_max; motion_pointer++)
+                  {
+                     x = AMotionEvent_getX(event, motion_pointer);
+                     y = AMotionEvent_getY(event, motion_pointer);
 
-                  input_translate_coord_viewport(x, y,
-                        &pointer[motion_pointer].x, &pointer[motion_pointer].y,
-                        &pointer[motion_pointer].full_x, &pointer[motion_pointer].full_y);
+                     input_translate_coord_viewport(x, y,
+                           &pointer[motion_pointer].x, &pointer[motion_pointer].y,
+                           &pointer[motion_pointer].full_x, &pointer[motion_pointer].full_y);
 
-                  pointer_count = max(pointer_count, motion_pointer + 1);
+                     pointer_count = max(pointer_count, motion_pointer + 1);
+                  }
                }
             }
+
+            if (debug_enable)
+               snprintf(msg, sizeof(msg), "Pad %d : x = %.2f, y = %.2f, src %d.\n", state_id, x, y, source);
          }
-
-         if (debug_enable)
-            snprintf(msg, sizeof(msg), "Pad %d : x = %.2f, y = %.2f, src %d.\n", state_id, x, y, source);
-      }
-      else if (type_event == AINPUT_EVENT_TYPE_KEY)
-      {
-         if (debug_enable)
-            snprintf(msg, sizeof(msg), "Pad %d : %d, ac = %d, src = %d.\n", state_id, keycode, action, source);
-
-         /* Hack - we have to decrease the unpacked value by 1
-          * because we 'added' 1 to each entry in the LUT -
-          * RETRO_DEVICE_ID_JOYPAD_B is 0
-          */
-         uint8_t unpacked = (keycode_lut[keycode] >> ((state_id+1) << 3)) - 1;
-         uint64_t input_state = (1ULL << unpacked);
-         int action  = AKeyEvent_getAction(event);
-         uint64_t *key = NULL;
-
-         if(input_state < (1ULL << RARCH_FIRST_META_KEY))
-            key = &state[state_id];
-         else if(input_state)
-            key = &g_extern.lifecycle_state;
-
-         if(key != NULL)
+         else if (type_event == AINPUT_EVENT_TYPE_KEY)
          {
-            if (action == AKEY_EVENT_ACTION_UP)
-               *key &= ~(input_state);
-            else if (action == AKEY_EVENT_ACTION_DOWN)
-               *key |= input_state;
+            if (debug_enable)
+               snprintf(msg, sizeof(msg), "Pad %d : %d, ac = %d, src = %d.\n", state_id, keycode, action, source);
+
+            /* Hack - we have to decrease the unpacked value by 1
+             * because we 'added' 1 to each entry in the LUT -
+             * RETRO_DEVICE_ID_JOYPAD_B is 0
+             */
+            uint8_t unpacked = (keycode_lut[keycode] >> ((state_id+1) << 3)) - 1;
+            uint64_t input_state = (1ULL << unpacked);
+            int action  = AKeyEvent_getAction(event);
+            uint64_t *key = NULL;
+
+            if(input_state < (1ULL << RARCH_FIRST_META_KEY))
+               key = &state[state_id];
+            else if(input_state)
+               key = &g_extern.lifecycle_state;
+
+            if(key != NULL)
+            {
+               if (action == AKEY_EVENT_ACTION_UP)
+                  *key &= ~(input_state);
+               else if (action == AKEY_EVENT_ACTION_DOWN)
+                  *key |= input_state;
+            }
+
+            if((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN) && keycode_lut[keycode] == 0)
+               handled = 0;
          }
 
-         if((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN) && keycode_lut[keycode] == 0)
-            handled = 0;
+         if (msg[0] != 0)
+            msg_queue_push(g_extern.msg_queue, msg, 0, long_msg_enable ? 180 : 30);
+
+         AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+      }
+   }
+}
+
+// Handle all events. If our activity is in pause state, block until we're unpaused.
+void android_handle_events(void)
+{
+   int ident;
+   while ((ident = ALooper_pollAll((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ? -1 : 0,
+               NULL, NULL, NULL)) >= 0)
+   {
+      if (ident == LOOPER_ID_MAIN)
+         engine_handle_cmd();
+      else if (!input_key_pressed_func(RARCH_PAUSE_TOGGLE))
+         engine_handle_input();
+   }
+}
+
+static void *android_input_init(void)
+{
+   unsigned i, j;
+   pads_connected = 0;
+
+   input_autodetect_init();
+
+   for(i = 0; i < MAX_PADS; i++)
+   {
+      for(j = 0; j < RARCH_FIRST_META_KEY; j++)
+      {
+         g_settings.input.binds[i][j].id = i;
+         g_settings.input.binds[i][j].joykey = 0;
       }
 
-      if (msg[0] != 0)
-         msg_queue_push(g_extern.msg_queue, msg, 0, long_msg_enable ? 180 : 30);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_B].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_B);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_Y].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_Y);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_START].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_START);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_UP].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_UP);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_A].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_A);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_X].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_X);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_L].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_R].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_L2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L2);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_R2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R2);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_L3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
+      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
 
-      AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+      dpad_state[i].dzone_min = -0.99f;
+      dpad_state[i].dzone_max = 0.99f;
    }
+   g_settings.input.dpad_emulation[0] = DPAD_EMULATION_LSTICK;
 
-#if 0
-   {
-      char msg[64];
-      snprintf(msg, sizeof(msg), "Pointers: %u", pointer_count);
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, msg, 0, 30);
-   }
-#endif
+   //p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT, "AMotionEvent_getAxisValue");
 
-   RARCH_PERFORMANCE_STOP(input_poll);
+   return (void*)-1;
+}
+
+static void android_input_poll(void *data)
+{
 }
 
 static int16_t android_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)

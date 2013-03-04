@@ -166,7 +166,7 @@ enum
 
 #if defined(XENON) || defined(_XBOX360) || defined(__CELLOS_LV2__)
 #define DEFAULT_ASPECT_RATIO 1.7778f
-#elif defined(_XBOX1) || defined(GEKKO) || defined(ANDROID)
+#elif defined(_XBOX1) || defined(GEKKO) || defined(ANDROID) || defined(__BLACKBERRY_QNX__)
 #define DEFAULT_ASPECT_RATIO 1.3333f
 #else
 #define DEFAULT_ASPECT_RATIO -1.0f

@@ -10,26 +10,16 @@ extern "C" {
 #endif
 
 #ifndef MSVC
-   // MAX that works with side effects. Just in case.
-#define MAX(A,B) ({				\
-      __typeof__(A) At=(A);	\
-      __typeof__(B) Bt=(B);	\
-      At>Bt?At:Bt; })
-
-#define MIN(A,B) ({				\
-      __typeof__(A) At=(A);	\
-      __typeof__(B) Bt=(B);	\
-      At<Bt?At:Bt; })
-
 #define RGL_LIKELY(COND) __builtin_expect((COND),1)
 #define RGL_UNLIKELY(COND) __builtin_expect((COND),0)
 
 #else
-#define MAX(A,B) ((A)>(B)?(A):(B))
-#define MIN(A,B) ((A)<(B)?(A):(B))
 #define RGL_LIKELY(COND) (COND)
 #define RGL_UNLIKELY(COND) (COND)
 #endif
+
+#define MAX(A,B) ((A)>(B)?(A):(B))
+#define MIN(A,B) ((A)<(B)?(A):(B))
 
 #define _RGL_FLOAT_AS_UINT(x) ({union {float f; unsigned int i;} u; u.f=(x); u.i;})
 

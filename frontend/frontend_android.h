@@ -154,8 +154,9 @@ enum {
 };
 
 int8_t android_app_read_cmd (void *data);
-extern void engine_app_read_cmd (void *data);
-extern void engine_handle_cmd (void *data, int32_t cmd);
+extern void engine_app_read_cmd(void);
+extern void engine_handle_cmd(void);
+extern void android_handle_events(void);
 
 extern struct android_app *g_android;
 

@@ -40,6 +40,9 @@ struct overlay_desc
    float range_x, range_y;
 
    uint64_t key_mask;
+
+   unsigned next_index;
+   char next_index_name[64];
 };
 
 struct overlay
@@ -58,6 +61,8 @@ struct overlay
    float center_x, center_y;
 
    bool full_screen;
+
+   char name[64];
 };
 
 struct input_overlay
@@ -72,6 +77,8 @@ struct input_overlay
    const struct overlay *active;
    size_t index;
    size_t size;
+
+   unsigned next_index;
 };
 
 static void input_overlay_scale(struct overlay *overlay, float scale)
@@ -154,6 +161,13 @@ static bool input_overlay_load_desc(config_file_t *conf, struct overlay_desc *de
    for (const char *tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
       desc->key_mask |= UINT64_C(1) << input_str_to_bind(tmp);
 
+   if (desc->key_mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
+   {
+      char overlay_target_key[64];
+      snprintf(overlay_target_key, sizeof(overlay_target_key), "overlay%u_desc%u_next_target", ol_index, desc_index);
+      config_get_array(conf, overlay_target_key, desc->next_index_name, sizeof(desc->next_index_name));
+   }
+
    desc->x        = strtod(x, NULL) / width;
    desc->y        = strtod(y, NULL) / height;
 
@@ -181,6 +195,7 @@ static bool input_overlay_load_overlay(config_file_t *conf, const char *config_p
       struct overlay *overlay, unsigned index)
 {
    char overlay_path_key[64];
+   char overlay_name_key[64];
    char overlay_path[PATH_MAX];
    char overlay_resolved_path[PATH_MAX];
 
@@ -190,6 +205,9 @@ static bool input_overlay_load_overlay(config_file_t *conf, const char *config_p
       RARCH_ERR("[Overlay]: Config key: %s is not set.\n", overlay_path_key);
       return false;
    }
+
+   snprintf(overlay_name_key, sizeof(overlay_name_key), "overlay%u_name", index);
+   config_get_array(conf, overlay_name_key, overlay->name, sizeof(overlay->name));
 
    fill_pathname_resolve_relative(overlay_resolved_path, config_path,
          overlay_path, sizeof(overlay_resolved_path));
@@ -272,6 +290,42 @@ static bool input_overlay_load_overlay(config_file_t *conf, const char *config_p
    return true;
 }
 
+static ssize_t input_overlay_find_index(const struct overlay *ol, const char *name, size_t size)
+{
+   for (size_t i = 0; i < size; i++)
+   {
+      if (strcmp(ol[i].name, name) == 0)
+         return i;
+   }
+
+   return -1;
+}
+
+static bool input_overlay_resolve_targets(struct overlay *ol, size_t index, size_t size)
+{
+   struct overlay *current = &ol[index];
+
+   for (size_t i = 0; i < current->size; i++)
+   {
+      const char *next = current->descs[i].next_index_name;
+      if (*next)
+      {
+         ssize_t index = input_overlay_find_index(ol, next, size);
+         if (index < 0)
+         {
+            RARCH_ERR("[Overlay]: Couldn't find overlay called: \"%s\".\n", next);
+            return false;
+         }
+
+         current->descs[i].next_index = index;
+      }
+      else
+         current->descs[i].next_index = (index + 1) % size;
+   }
+
+   return true;
+}
+
 static bool input_overlay_load_overlays(input_overlay_t *ol, const char *path)
 {
    bool ret = true;
@@ -315,6 +369,16 @@ static bool input_overlay_load_overlays(input_overlay_t *ol, const char *path)
       }
    }
 
+   for (size_t i = 0; i < ol->size; i++)
+   {
+      if (!input_overlay_resolve_targets(ol->overlays, i, ol->size))
+      {
+         RARCH_ERR("[Overlay]: Failed to resolve next targets.\n");
+         ret = false;
+         goto end;
+      }
+   }
+
 end:
    config_file_free(conf);
    return ret;
@@ -353,6 +417,7 @@ input_overlay_t *input_overlay_new(const char *overlay)
 
    input_overlay_set_alpha_mod(ol, g_settings.input.overlay_opacity);
    input_overlay_set_scale_factor(ol, 1.0f);
+   ol->next_index = (ol->index + 1) % ol->size;
 
    return ol;
 
@@ -410,7 +475,13 @@ uint64_t input_overlay_poll(input_overlay_t *ol, int16_t norm_x, int16_t norm_y)
    for (size_t i = 0; i < ol->active->size; i++)
    {
       if (inside_hitbox(&ol->active->descs[i], x, y))
-         state |= ol->active->descs[i].key_mask;
+      {
+         uint64_t mask = ol->active->descs[i].key_mask;
+         state |= mask;
+
+         if (mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
+            ol->next_index = ol->active->descs[i].next_index;
+      }
    }
 
    if (!state)
@@ -428,7 +499,7 @@ void input_overlay_poll_clear(input_overlay_t *ol)
 
 void input_overlay_next(input_overlay_t *ol)
 {
-   ol->index = (ol->index + 1) % ol->size;
+   ol->index = ol->next_index;
    ol->active = &ol->overlays[ol->index];
 
    ol->iface->load(ol->iface_data, ol->active->image, ol->active->width, ol->active->height);
@@ -436,6 +507,7 @@ void input_overlay_next(input_overlay_t *ol)
          ol->active->mod_x, ol->active->mod_y, ol->active->mod_w, ol->active->mod_h);
    ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
    ol->blocked = true;
+   ol->next_index = (ol->index + 1) % ol->size;
 }
 
 bool input_overlay_full_screen(input_overlay_t *ol)

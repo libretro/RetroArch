@@ -64,6 +64,13 @@ static Bool egl_wait_notify(Display *d, XEvent *e, char *arg)
    return e->type == MapNotify && e->xmap.window == g_win;
 }
 
+static int nul_handler(Display *dpy, XErrorEvent *event)
+{
+   (void)dpy;
+   (void)event;
+   return 0;
+}
+
 static void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 static void gfx_ctx_destroy(void);
 
@@ -369,7 +376,7 @@ static bool gfx_ctx_set_video_mode(
 
    if (true_full)
    {
-      RARCH_LOG("[GLX]: Using true fullscreen.\n");
+      RARCH_LOG("[X/EGL]: Using true fullscreen.\n");
       XMapRaised(g_dpy, g_win);
    }
    else if (fullscreen) // We attempted true fullscreen, but failed. Attempt using windowed fullscreen.
@@ -393,13 +400,18 @@ static bool gfx_ctx_set_video_mode(
 
    XEvent event;
    XIfEvent(g_dpy, &event, egl_wait_notify, NULL);
-   XSetInputFocus(g_dpy, g_win, RevertToNone, CurrentTime);
 
    g_quit_atom = XInternAtom(g_dpy, "WM_DELETE_WINDOW", False);
    if (g_quit_atom)
       XSetWMProtocols(g_dpy, g_win, &g_quit_atom, 1);
 
    gfx_ctx_swap_interval(g_interval);
+
+   // This can blow up on some drivers. It's not fatal, so override errors for this call.
+   int (*old_handler)(Display*, XErrorEvent*) = XSetErrorHandler(nul_handler);
+   XSetInputFocus(g_dpy, g_win, RevertToNone, CurrentTime);
+   XSync(g_dpy, False);
+   XSetErrorHandler(old_handler);
 
    XFree(vi);
    g_has_focus = true;
@@ -455,7 +467,7 @@ static void gfx_ctx_destroy(void)
       g_screen = x11_get_xinerama_monitor(g_dpy, x, y,
             target.width, target.height);
 
-      RARCH_LOG("[GLX]: Saved monitor #%u.\n", g_screen);
+      RARCH_LOG("[X/EGL]: Saved monitor #%u.\n", g_screen);
 #endif
 
       XUnmapWindow(g_dpy, g_win);

@@ -106,6 +106,8 @@ VIDEO CONTEXT
 #include "../../gfx/context/xdk_ctx.c"
 #elif defined(ANDROID)
 #include "../../gfx/context/androidegl_ctx.c"
+#elif defined(__BLACKBERRY_QNX__)
+#include "../../gfx/context/bbqnx_ctx.c"
 #endif
 
 #endif
@@ -134,7 +136,7 @@ VIDEO IMAGE
 #include "../../ps3/image.c"
 #elif defined(_XBOX1)
 #include "../../xdk/image.c"
-#elif defined(ANDROID)
+#elif defined(ANDROID) || defined(__BLACKBERRY_QNX__)
 #include "../../gfx/image.c"
 #include "../../gfx/rpng/rpng.c"
 #endif
@@ -194,11 +196,11 @@ FONTS
 
 #if defined(HAVE_OPENGL) || defined(HAVE_D3D8) || defined(HAVE_D3D9)
 
-#ifdef HAVE_FREETYPE
+#if defined(HAVE_FREETYPE)
 #include "../../gfx/fonts/freetype.c"
 #endif
 
-#ifndef DONT_HAVE_BITMAPFONTS
+#if !defined(DONT_HAVE_BITMAPFONTS)
 #include "../../gfx/fonts/fonts.c"
 #include "../../gfx/fonts/bitmapfont.c"
 #endif
@@ -315,6 +317,10 @@ AUDIO
 #include "../../audio/opensl.c"
 #endif
 
+#ifdef HAVE_AL
+#include "../../audio/openal.c"
+#endif
+
 #if defined(HAVE_NULLAUDIO)
 #include "../../audio/null.c"
 #endif
@@ -377,8 +383,14 @@ MAIN
 #include "../../frontend/frontend_xenon.c"
 #elif defined(RARCH_CONSOLE) || defined(PSP)
 #include "../../frontend/frontend_console.c"
+#elif defined(__BLACKBERRY_QNX__)
+#include "../../frontend/frontend_bbqnx.c"
 #elif defined(ANDROID)
 #include "../../frontend/frontend_android.c"
+#endif
+
+#ifndef ANDROID
+#include "../../frontend/frontend.c"
 #endif
 
 /*============================================================

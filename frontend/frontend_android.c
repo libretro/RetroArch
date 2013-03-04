@@ -57,149 +57,14 @@ static void print_cur_config (void *data)
          AConfiguration_getUiModeNight(android_app->config));
 }
 
-/**
- * Process the next main command.
- */
-void engine_handle_cmd (void *data, int32_t cmd)
-{
-   struct android_app *android_app = (struct android_app*)data;
-
-   switch (cmd)
-   {
-      case APP_CMD_INPUT_CHANGED:
-         RARCH_LOG("APP_CMD_INPUT_CHANGED\n");
-         
-         pthread_mutex_lock(&android_app->mutex);
-
-         if (android_app->inputQueue != NULL)
-            AInputQueue_detachLooper(android_app->inputQueue);
-
-         android_app->inputQueue = android_app->pendingInputQueue;
-
-         if (android_app->inputQueue != NULL)
-         {
-            RARCH_LOG("Attaching input queue to looper");
-            AInputQueue_attachLooper(android_app->inputQueue,
-                  android_app->looper, LOOPER_ID_INPUT, NULL,
-                  NULL);
-         }
-
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
-         
-         break;
-
-      case APP_CMD_INIT_WINDOW:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_INIT_WINDOW.\n");
-
-         pthread_mutex_lock(&android_app->mutex);
-         android_app->window = android_app->pendingWindow;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
-         break;
-
-      case APP_CMD_RESUME:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_RESUME.\n");
-
-         pthread_mutex_lock(&android_app->mutex);
-         android_app->activityState = cmd;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
-         break;
-
-      case APP_CMD_START:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_START.\n");
-
-         pthread_mutex_lock(&android_app->mutex);
-         android_app->activityState = cmd;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
-         break;
-
-      case APP_CMD_PAUSE:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_PAUSE.\n");
-
-         pthread_mutex_lock(&android_app->mutex);
-         android_app->activityState = cmd;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
-
-         if (!(g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY)))
-         {
-            RARCH_LOG("Pausing RetroArch.\n");
-            g_extern.lifecycle_state |= (1ULL << RARCH_PAUSE_TOGGLE);
-         }
-         break;
-
-      case APP_CMD_STOP:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_STOP.\n");
-
-         pthread_mutex_lock(&android_app->mutex);
-         android_app->activityState = cmd;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
-         break;
-
-      case APP_CMD_CONFIG_CHANGED:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_CONFIG_CHANGED.\n");
-         break;
-
-      case APP_CMD_TERM_WINDOW:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_TERM_WINDOW.\n");
-
-         pthread_mutex_lock(&android_app->mutex);
-
-         /* The window is being hidden or closed, clean it up. */
-         /* terminate display/EGL context here */
-         if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
-            uninit_drivers();
-         else
-            RARCH_WARN("Window is terminated outside PAUSED state.\n");
-
-         android_app->window = NULL;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
-         break;
-
-      case APP_CMD_GAINED_FOCUS:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_GAINED_FOCUS.\n");
-
-         g_extern.lifecycle_state &= ~(1ULL << RARCH_PAUSE_TOGGLE);
-         break;
-
-      case APP_CMD_LOST_FOCUS:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_LOST_FOCUS.\n");
-         break;
-
-      case APP_CMD_DESTROY:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_DESTROY\n");
-         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
-         break;
-   }
-}
-
 #define MAX_ARGS 32
 
 static bool android_run_events (void *data)
 {
-   struct android_app *android_app = (struct android_app*)data;
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
 
    if (id == LOOPER_ID_MAIN)
-   {
-      int8_t cmd;
-
-      if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
-         cmd = -1;
-
-      engine_handle_cmd(android_app, cmd);
-
-      if (cmd == APP_CMD_INIT_WINDOW)
-      {
-         if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
-            init_drivers();
-      }
-   }
+      engine_handle_cmd();
 
    // Check if we are exiting.
    if (g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY))
@@ -351,9 +216,11 @@ static void *android_app_entry(void *data)
    {
       RARCH_LOG("RetroArch started.\n");
 
-      while ((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ?
-            android_run_events(android_app) :
-            rarch_main_iterate());
+      // Main loop
+      do
+      {
+         android_handle_events();
+      } while (rarch_main_iterate());
 
       RARCH_LOG("RetroArch stopped.\n");
    }

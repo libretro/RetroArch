@@ -4,7 +4,8 @@ DEBUG			= 0
 HAVE_LOGGER		= 0
 HAVE_FILE_LOGGER	= 0
 PERF_TEST		= 0
-WHOLE_ARCHIVE_LINK = 0
+WHOLE_ARCHIVE_LINK	= 0
+BIG_STACK		= 0
 
 PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.100"
 PC_DEVELOPMENT_UDP_PORT		= 3490
@@ -36,10 +37,13 @@ LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 ifeq ($(WHOLE_ARCHIVE_LINK), 1)
-WHOLE_START := -Wl,--whole-archive
-WHOLE_END := -Wl,--no-whole-archive
+   WHOLE_START := -Wl,--whole-archive
+   WHOLE_END := -Wl,--no-whole-archive
 endif
-LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size -T gx/ld/rvl.ld
+LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size
+ifeq ($(BIG_STACK), 1)
+   LDFLAGS += -T gx/ld/rvl.ld
+endif
 LIBS := -lfat $(WHOLE_START) -lretro_wii $(WHOLE_END) -logc $(LDFLAGS_WIIUSE) -lbte 
 APP_BOOTER_DIR = wii/app_booter
 
@@ -61,7 +65,7 @@ CFLAGS          += -Iconsole/logger
 endif
 
 
-CFLAGS += -std=gnu99 -DHAVE_SINC -DSINC_LOWER_QUALITY -DHAVE_DEFAULT_RETROPAD_INPUT -DHAVE_RGUI -DRARCH_CONSOLE -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_RARCH_EXEC -DHAVE_RMENU -DGEKKO -DHAVE_ZLIB -DWANT_MINIZ -DHAVE_RARCH_MAIN_WRAP -DHAVE_GRIFFIN=1 -DHAVE_SCREENSHOTS -DPACKAGE_VERSION=\"$(RARCH_VERSION)\" -Dmain=rarch_main -Wno-char-subscripts 
+CFLAGS += -std=gnu99 -DHAVE_SINC -DSINC_LOWER_QUALITY -DHAVE_DEFAULT_RETROPAD_INPUT -DHAVE_RGUI -DRARCH_CONSOLE -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_RARCH_EXEC -DHAVE_RMENU -DGEKKO -DHAVE_ZLIB -DWANT_MINIZ -DHAVE_RARCH_MAIN_WRAP -DHAVE_RARCH_MAIN_IMPLEMENTATION -DHAVE_GRIFFIN=1 -DHAVE_SCREENSHOTS -DPACKAGE_VERSION=\"$(RARCH_VERSION)\" -Wno-char-subscripts 
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g -DDEBUG

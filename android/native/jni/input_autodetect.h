@@ -65,6 +65,12 @@ enum {
 
 #define LAST_KEYCODE AKEYCODE_ASSIST
 
+typedef struct
+{
+   float dzone_min;
+   float dzone_max;
+} dpad_values_t;
+
 extern uint64_t keycode_lut[LAST_KEYCODE];
 extern bool volume_enable;
 extern int zeus_id;
