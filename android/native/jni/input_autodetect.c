@@ -139,6 +139,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
    }
 
+   keycode_lut[AKEYCODE_MENU] |= ((RARCH_RMENU_TOGGLE + 1) << shift);
+
    if (g_settings.input.autodetect_enable)
    {
 

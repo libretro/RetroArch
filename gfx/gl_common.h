@@ -301,6 +301,11 @@ typedef struct gl
    struct scaler_ctx pbo_readback_scaler;
 #endif
 
+#ifdef HAVE_RGUI
+   GLuint rgui_texture;
+   uint32_t *menu_data;
+#endif
+
 } gl_t;
 
 // Windows ... <_<
