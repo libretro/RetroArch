@@ -54,8 +54,10 @@ enum
    AXIS_RZ = 14
 };
 
-extern float AMotionEvent_getAxisValue(
-    const AInputEvent* motion_event, int32_t axis, size_t pointer_index);
+void (*engine_handle_dpad)(AInputEvent*, size_t, int, char*, size_t, int, bool);
+
+extern float AMotionEvent_getAxisValue(const AInputEvent* motion_event,
+      int32_t axis, size_t pointer_index);
 
 static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 
@@ -195,6 +197,54 @@ void engine_handle_cmd(void)
    }
 }
 
+static void engine_handle_dpad_default(AInputEvent *event,
+      size_t motion_pointer, int state_id, char *msg, size_t msg_sizeof,
+      int source, bool debug_enable)
+{
+   uint64_t *state_cur = &state[state_id];
+   float dzone_min = dpad_state[state_id].dzone_min;
+   float dzone_max = dpad_state[state_id].dzone_max;
+   float x = AMotionEvent_getX(event, motion_pointer);
+   float y = AMotionEvent_getY(event, motion_pointer);
+
+   *state_cur &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | 
+         (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) |
+         (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
+   *state_cur |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
+   *state_cur |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+   *state_cur |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
+   *state_cur |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+
+   if (debug_enable)
+      snprintf(msg, msg_sizeof, "Pad %d : x = %.2f, y = %.2f, src %d.\n",
+            state_id, x, y, source);
+}
+
+static void engine_handle_dpad_getaxisvalue(AInputEvent *event,
+      size_t motion_pointer, int state_id, char *msg, size_t msg_sizeof, int source,
+      bool debug_enable)
+{
+   uint64_t *state_cur = &state[state_id];
+   float dzone_min = dpad_state[state_id].dzone_min;
+   float dzone_max = dpad_state[state_id].dzone_max;
+   float x = AMotionEvent_getAxisValue(event, AXIS_X, motion_pointer);
+   float y = AMotionEvent_getAxisValue(event, AXIS_Y, motion_pointer);
+   float z = AMotionEvent_getAxisValue(event, AXIS_Z, motion_pointer);
+   float rz = AMotionEvent_getAxisValue(event, AXIS_RZ, motion_pointer);
+
+   *state_cur &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | 
+         (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) |
+         (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
+   *state_cur |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
+   *state_cur |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+   *state_cur |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
+   *state_cur |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+
+   if (debug_enable)
+      snprintf(msg, msg_sizeof, "Pad %d : x %.2f, y %.2f, z %.2f, rz %.2f, src %d.\n", 
+            state_id, x, y, z, rz, source);
+}
+
 static inline void engine_handle_input(void)
 {
    bool debug_enable = g_settings.input.debug_enable;
@@ -278,8 +328,6 @@ static inline void engine_handle_input(void)
 
          if (type_event == AINPUT_EVENT_TYPE_MOTION)
          {
-            float x = 0.0f;
-            float y = 0.0f;
             action = AMotionEvent_getAction(event);
             size_t motion_pointer = action >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
             action &= AMOTION_EVENT_ACTION_MASK;
@@ -287,24 +335,12 @@ static inline void engine_handle_input(void)
             if (source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
             {
                if (g_settings.input.dpad_emulation[state_id] != DPAD_EMULATION_NONE)
-               {
-                  uint64_t *state_cur = &state[state_id];
-                  float dzone_min = dpad_state[state_id].dzone_min;
-                  float dzone_max = dpad_state[state_id].dzone_max;
-                  x = AMotionEvent_getX(event, motion_pointer);
-                  y = AMotionEvent_getY(event, motion_pointer);
-                  //float axis = AMotionEvent_getAxisValue(event, AXIS_Z, motion_pointer);
-                  //RARCH_LOG("axis: %.2f\n", axis);
-                  *state_cur &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) |
-                        (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
-                  *state_cur |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
-                  *state_cur |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-                  *state_cur |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
-                  *state_cur |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
-               }
+                  engine_handle_dpad(event, motion_pointer, state_id, msg, sizeof(msg), source, debug_enable);
             }
             else
             {
+               float x = 0.0f;
+               float y = 0.0f;
                bool keyup = (action == AMOTION_EVENT_ACTION_UP ||
                      action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP) ||
                   (source == AINPUT_SOURCE_MOUSE && action != AMOTION_EVENT_ACTION_DOWN);
@@ -330,10 +366,10 @@ static inline void engine_handle_input(void)
                      pointer_count = max(pointer_count, motion_pointer + 1);
                   }
                }
+               if (debug_enable)
+                  snprintf(msg, sizeof(msg), "Pad %d : x = %.2f, y = %.2f, src %d.\n", state_id, x, y, source);
             }
 
-            if (debug_enable)
-               snprintf(msg, sizeof(msg), "Pad %d : x = %.2f, y = %.2f, src %d.\n", state_id, x, y, source);
          }
          else if (type_event == AINPUT_EVENT_TYPE_KEY)
          {
@@ -422,10 +458,29 @@ static void *android_input_init(void)
 
       dpad_state[i].dzone_min = -0.99f;
       dpad_state[i].dzone_max = 0.99f;
+      g_settings.input.dpad_emulation[i] = DPAD_EMULATION_LSTICK;
    }
-   g_settings.input.dpad_emulation[0] = DPAD_EMULATION_LSTICK;
 
-   //p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT, "AMotionEvent_getAxisValue");
+   if ((dlopen("/system/lib/libandroid.so", RTLD_LOCAL | RTLD_LAZY)) == 0)
+   {
+      RARCH_WARN("Unable to open libandroid.so\n");
+      return (void*)-1;
+   }
+   else
+   {
+      p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT, "AMotionEvent_getAxisValue");
+
+      if (p_AMotionEvent_getAxisValue != NULL)
+      {
+         RARCH_LOG("Setting engine_handle_dpad to 'Get Axis Value' (for reading extra analog sticks)");
+         engine_handle_dpad = engine_handle_dpad_getaxisvalue;
+      }
+      else
+      {
+         RARCH_LOG("Setting engine_handle_dpad to 'Default'");
+         engine_handle_dpad = engine_handle_dpad_default;
+      }
+   }
 
    return (void*)-1;
 }
