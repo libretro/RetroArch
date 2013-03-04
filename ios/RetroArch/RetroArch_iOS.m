@@ -152,6 +152,17 @@
    
    _pauseView.frame = CGRectMake(width / 2.0f - 150.0f, height / 2.0f - 150.0f, 300.0f, 300.0f);
    _pauseIndicatorView.frame = CGRectMake(tenpctw * 4.0f, 0.0f, tenpctw * 2.0f, tenpcth);
+   _pauseIndicatorView.hidden = NO;
+   
+   [self performSelector:@selector(hidePauseButton) withObject:self afterDelay:3.0f];
+}
+
+- (void)hidePauseButton
+{
+   [UIView animateWithDuration:0.2
+      animations:^ { _pauseIndicatorView.alpha = ALMOST_INVISIBLE; }
+         completion:^(BOOL finished) { }
+      ];
 }
 
 - (void)pushViewController:(UIViewController*)theView isGame:(BOOL)game
@@ -171,8 +182,8 @@
    {
       _game = (RAGameView*)theView;
    
-      _pauseIndicatorView.alpha = ALMOST_INVISIBLE;
-      _pauseIndicatorView.userInteractionEnabled = YES;
+      _pauseIndicatorView.alpha = 1.0f;
+      _pauseIndicatorView.hidden = YES;
 
       [theView.view addSubview:_pauseView];
       [theView.view addSubview:_pauseIndicatorView];
@@ -303,11 +314,7 @@
       stateSelect.selectedSegmentIndex = (g_extern.state_slot < 10) ? g_extern.state_slot : -1;
       
       [UIView animateWithDuration:0.2
-         animations:^
-         {
-            _pauseIndicatorView.alpha = ALMOST_INVISIBLE;
-            _pauseView.alpha = 1.0f;
-         }
+         animations:^ { _pauseView.alpha = 1.0f; }
          completion:^(BOOL finished){}];
    }
 }
@@ -339,11 +346,7 @@
 {
    if (_isPaused)
       [UIView animateWithDuration:0.2 
-         animations:^
-         {
-            _pauseView.alpha = 0.0f;
-            _pauseIndicatorView.alpha = ALMOST_INVISIBLE;
-         }
+         animations:^ { _pauseView.alpha = 0.0f; }
          completion:^(BOOL finished)
          {
             _isPaused = false;
