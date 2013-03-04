@@ -367,12 +367,14 @@ static void android_input_poll(void *data)
                         && input_state > 0)
                   {
                   }
+#if 0
                   else
                   {
                      *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
                      AInputQueue_finishEvent(android_app->inputQueue, event, handled);
                      break;
                   }
+#endif
                }
 
                if (type_event == AINPUT_EVENT_TYPE_MOTION)
@@ -460,6 +462,11 @@ static void android_input_poll(void *data)
       }
       else if (ident == LOOPER_ID_MAIN)
          engine_handle_cmd();
+   }
+
+   if (!(g_extern.frame_count < g_extern.delay_timer[0]) && g_extern.lifecycle_state & (1ULL << RARCH_RMENU_TOGGLE))
+   {
+      g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
    }
 }
 
