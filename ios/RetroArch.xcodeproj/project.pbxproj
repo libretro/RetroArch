@@ -61,12 +61,8 @@
 		9614C6F616DDC018000B36EF /* RASettingEnumerationList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABD16CC522F009BBD19 /* RASettingEnumerationList.m */; };
 		9614C6F716DDC018000B36EF /* RASettingsSubList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABE16CC522F009BBD19 /* RASettingsSubList.m */; };
 		9614C6F816DDC018000B36EF /* RASettingsList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABF16CC522F009BBD19 /* RASettingsList.m */; };
-		9614C6F916DDC018000B36EF /* RADirectoryList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC416CC523B009BBD19 /* RADirectoryList.m */; };
 		9614C6FA16DDC018000B36EF /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC516CC523B009BBD19 /* RAGameView.m */; };
-		9614C6FB16DDC018000B36EF /* RAModuleList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC616CC523B009BBD19 /* RAModuleList.m */; };
 		9614C6FC16DDC018000B36EF /* RAModuleInfoList.m in Sources */ = {isa = PBXBuildFile; fileRef = 96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */; };
-		9614C6FD16DDC018000B36EF /* RADirectoryGrid.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2316D453BA00FE8D5A /* RADirectoryGrid.m */; };
-		9614C6FE16DDC018000B36EF /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2816D5A56400FE8D5A /* browser.m */; };
 		9614C6FF16DDC018000B36EF /* RAConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2F16D7045700FE8D5A /* RAConfig.m */; };
 		9614C70616DDC018000B36EF /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
 		9614C70716DDC018000B36EF /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
@@ -78,22 +74,13 @@
 		9614C70D16DDC018000B36EF /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 		9614C71016DDC018000B36EF /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2616C82FF100E6DCE0 /* overlays */; };
 		9614C71116DDC018000B36EF /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */; };
-		9614C71216DDC018000B36EF /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3F16C1D4EA009DE44C /* Default.png */; };
-		9614C71316DDC018000B36EF /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE4116C1D4EA009DE44C /* Default@2x.png */; };
-		9614C71416DDC018000B36EF /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE4316C1D4EA009DE44C /* Default-568h@2x.png */; };
 		9614C71516DDC018000B36EF /* ic_dir.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F416C43B9500E6DCE0 /* ic_dir.png */; };
 		9614C71616DDC018000B36EF /* ic_file.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F516C43B9500E6DCE0 /* ic_file.png */; };
-		9614C71716DDC018000B36EF /* Icon-72.png in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2216C818FF00E6DCE0 /* Icon-72.png */; };
-		9614C71816DDC018000B36EF /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2316C818FF00E6DCE0 /* Icon.png */; };
-		9614C71916DDC018000B36EF /* PauseView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 969EBF6916D95746003787A2 /* PauseView.xib */; };
-		9614C71A16DDC018000B36EF /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 965AE29F16DA83C1001D7667 /* PauseIndicatorView.xib */; };
 		962979EF16C3EA3E00E6DCE0 /* ioseagl_ctx.c in Sources */ = {isa = PBXBuildFile; fileRef = 962979EE16C3EA3E00E6DCE0 /* ioseagl_ctx.c */; };
 		962979F616C43B9500E6DCE0 /* ic_dir.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F416C43B9500E6DCE0 /* ic_dir.png */; };
 		962979F716C43B9500E6DCE0 /* ic_file.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F516C43B9500E6DCE0 /* ic_file.png */; };
 		96297A0C16C5AD8D00E6DCE0 /* RetroArch_iOS.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0B16C5AD8D00E6DCE0 /* RetroArch_iOS.m */; };
 		96297A0F16C5AEA100E6DCE0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0E16C5AEA100E6DCE0 /* main.m */; };
-		96297A2416C818FF00E6DCE0 /* Icon-72.png in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2216C818FF00E6DCE0 /* Icon-72.png */; };
-		96297A2516C818FF00E6DCE0 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2316C818FF00E6DCE0 /* Icon.png */; };
 		96297A2716C82FF100E6DCE0 /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2616C82FF100E6DCE0 /* overlays */; };
 		96366C5016C9A4E100D64A22 /* resampler.c in Sources */ = {isa = PBXBuildFile; fileRef = 96366C4F16C9A4E100D64A22 /* resampler.c */; };
 		96366C5216C9A4E600D64A22 /* hermite.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEEC16C1DC73009DE44C /* hermite.c */; };
@@ -104,10 +91,7 @@
 		963F5AC116CC522F009BBD19 /* RASettingEnumerationList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABD16CC522F009BBD19 /* RASettingEnumerationList.m */; };
 		963F5AC216CC522F009BBD19 /* RASettingsSubList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABE16CC522F009BBD19 /* RASettingsSubList.m */; };
 		963F5AC316CC522F009BBD19 /* RASettingsList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABF16CC522F009BBD19 /* RASettingsList.m */; };
-		963F5AC716CC523B009BBD19 /* RADirectoryList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC416CC523B009BBD19 /* RADirectoryList.m */; };
 		963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC516CC523B009BBD19 /* RAGameView.m */; };
-		963F5AC916CC523B009BBD19 /* RAModuleList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC616CC523B009BBD19 /* RAModuleList.m */; };
-		965AE2A016DA83C1001D7667 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 965AE29F16DA83C1001D7667 /* PauseIndicatorView.xib */; };
 		966B9C8A16E40D44005B61E1 /* ios_input.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8616E40D44005B61E1 /* ios_input.m */; };
 		966B9C8B16E40D44005B61E1 /* ios_joypad.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8716E40D44005B61E1 /* ios_joypad.m */; };
 		966B9C8C16E40D44005B61E1 /* RAInputResponder.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8916E40D44005B61E1 /* RAInputResponder.m */; };
@@ -119,16 +103,34 @@
 		966B9CA516E418B7005B61E1 /* libBTstack.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 966B9C9D16E418B7005B61E1 /* libBTstack.dylib */; };
 		966B9CA616E418B7005B61E1 /* wiimote.c in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C9E16E418B7005B61E1 /* wiimote.c */; };
 		966B9CA716E418B7005B61E1 /* WiiMoteHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CA116E418B7005B61E1 /* WiiMoteHelper.m */; };
-		969EBF6A16D95746003787A2 /* PauseView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 969EBF6916D95746003787A2 /* PauseView.xib */; };
+		966B9CAE16E41C07005B61E1 /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAA16E41C07005B61E1 /* browser.m */; };
+		966B9CAF16E41C07005B61E1 /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAA16E41C07005B61E1 /* browser.m */; };
+		966B9CB016E41C07005B61E1 /* RADirectoryGrid.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAB16E41C07005B61E1 /* RADirectoryGrid.m */; };
+		966B9CB116E41C07005B61E1 /* RADirectoryGrid.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAB16E41C07005B61E1 /* RADirectoryGrid.m */; };
+		966B9CB216E41C07005B61E1 /* RADirectoryList.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAC16E41C07005B61E1 /* RADirectoryList.m */; };
+		966B9CB316E41C07005B61E1 /* RADirectoryList.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAC16E41C07005B61E1 /* RADirectoryList.m */; };
+		966B9CB416E41C07005B61E1 /* RAModuleList.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAD16E41C07005B61E1 /* RAModuleList.m */; };
+		966B9CB516E41C07005B61E1 /* RAModuleList.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAD16E41C07005B61E1 /* RAModuleList.m */; };
+		966B9CBD16E41E7A005B61E1 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */; };
+		966B9CBE16E41E7A005B61E1 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */; };
+		966B9CBF16E41E7A005B61E1 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CB916E41E7A005B61E1 /* Default.png */; };
+		966B9CC016E41E7A005B61E1 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CB916E41E7A005B61E1 /* Default.png */; };
+		966B9CC116E41E7A005B61E1 /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBA16E41E7A005B61E1 /* Default@2x.png */; };
+		966B9CC216E41E7A005B61E1 /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBA16E41E7A005B61E1 /* Default@2x.png */; };
+		966B9CC316E41E7A005B61E1 /* Icon-72.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBB16E41E7A005B61E1 /* Icon-72.png */; };
+		966B9CC416E41E7A005B61E1 /* Icon-72.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBB16E41E7A005B61E1 /* Icon-72.png */; };
+		966B9CC516E41E7A005B61E1 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBC16E41E7A005B61E1 /* Icon.png */; };
+		966B9CC616E41E7A005B61E1 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBC16E41E7A005B61E1 /* Icon.png */; };
+		966B9CC916E41EC1005B61E1 /* PauseView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CC716E41EC1005B61E1 /* PauseView.xib */; };
+		966B9CCA16E41EC1005B61E1 /* PauseView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CC716E41EC1005B61E1 /* PauseView.xib */; };
+		966B9CCB16E41EC1005B61E1 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CC816E41EC1005B61E1 /* PauseIndicatorView.xib */; };
+		966B9CCC16E41EC1005B61E1 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CC816E41EC1005B61E1 /* PauseIndicatorView.xib */; };
 		96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
 		96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
 		96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
 		96AFAE3016C1D4EA009DE44C /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; };
 		96AFAE3216C1D4EA009DE44C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 		96AFAE3816C1D4EA009DE44C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */; };
-		96AFAE4016C1D4EA009DE44C /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3F16C1D4EA009DE44C /* Default.png */; };
-		96AFAE4216C1D4EA009DE44C /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE4116C1D4EA009DE44C /* Default@2x.png */; };
-		96AFAE4416C1D4EA009DE44C /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE4316C1D4EA009DE44C /* Default-568h@2x.png */; };
 		96AFAECA16C1D9A9009DE44C /* autosave.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAE9D16C1D9A9009DE44C /* autosave.c */; };
 		96AFAECB16C1D9A9009DE44C /* cheats.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEA016C1D9A9009DE44C /* cheats.c */; };
 		96AFAECC16C1D9A9009DE44C /* command.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEA216C1D9A9009DE44C /* command.c */; };
@@ -172,8 +174,6 @@
 		96AFAFAC16C1E279009DE44C /* state_tracker.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF7B16C1E00A009DE44C /* state_tracker.c */; };
 		96AFAFAD16C1EEE9009DE44C /* sinc.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEF716C1DC73009DE44C /* sinc.c */; };
 		96AFAFD416C1FBC0009DE44C /* input_common.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFC916C1FBC0009DE44C /* input_common.c */; };
-		96C19C2416D453BA00FE8D5A /* RADirectoryGrid.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2316D453BA00FE8D5A /* RADirectoryGrid.m */; };
-		96C19C2916D5A56500FE8D5A /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2816D5A56400FE8D5A /* browser.m */; };
 		96C19C3016D7045700FE8D5A /* RAConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2F16D7045700FE8D5A /* RAConfig.m */; };
 		96CF015016C2C0B700ABF9C9 /* overlay.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFCE16C1FBC0009DE44C /* overlay.c */; };
 /* End PBXBuildFile section */
@@ -183,15 +183,13 @@
 		9614C71E16DDC018000B36EF /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9614C71F16DDC018000B36EF /* RetroArch copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch copy-Info.plist"; path = "/Users/jason/Documents/Projects/ios/RetroArch/ios/RetroArch copy-Info.plist"; sourceTree = "<absolute>"; };
 		962979EE16C3EA3E00E6DCE0 /* ioseagl_ctx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ioseagl_ctx.c; sourceTree = "<group>"; };
-		962979F416C43B9500E6DCE0 /* ic_dir.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_dir.png; path = "../android/phoenix/res/drawable-xhdpi/ic_dir.png"; sourceTree = "<group>"; };
-		962979F516C43B9500E6DCE0 /* ic_file.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_file.png; path = "../android/phoenix/res/drawable-xhdpi/ic_file.png"; sourceTree = "<group>"; };
+		962979F416C43B9500E6DCE0 /* ic_dir.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_dir.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_dir.png"; sourceTree = "<group>"; };
+		962979F516C43B9500E6DCE0 /* ic_file.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_file.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_file.png"; sourceTree = "<group>"; };
 		96297A0A16C5AD8D00E6DCE0 /* RetroArch_iOS.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RetroArch_iOS.h; sourceTree = "<group>"; };
 		96297A0B16C5AD8D00E6DCE0 /* RetroArch_iOS.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RetroArch_iOS.m; sourceTree = "<group>"; };
 		96297A0D16C5ADDA00E6DCE0 /* views.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = views.h; sourceTree = "<group>"; };
 		96297A0E16C5AEA100E6DCE0 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		96297A2216C818FF00E6DCE0 /* Icon-72.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon-72.png"; path = "RetroArch/Icon-72.png"; sourceTree = "<group>"; };
-		96297A2316C818FF00E6DCE0 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon.png; path = RetroArch/Icon.png; sourceTree = "<group>"; };
-		96297A2616C82FF100E6DCE0 /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../media/overlays; sourceTree = "<group>"; };
+		96297A2616C82FF100E6DCE0 /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../media/overlays; sourceTree = "<group>"; };
 		96366C4F16C9A4E100D64A22 /* resampler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = resampler.c; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -200,10 +198,7 @@
 		963F5ABD16CC522F009BBD19 /* RASettingEnumerationList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RASettingEnumerationList.m; sourceTree = "<group>"; };
 		963F5ABE16CC522F009BBD19 /* RASettingsSubList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RASettingsSubList.m; sourceTree = "<group>"; };
 		963F5ABF16CC522F009BBD19 /* RASettingsList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RASettingsList.m; sourceTree = "<group>"; };
-		963F5AC416CC523B009BBD19 /* RADirectoryList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RADirectoryList.m; sourceTree = "<group>"; };
 		963F5AC516CC523B009BBD19 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAGameView.m; sourceTree = "<group>"; };
-		963F5AC616CC523B009BBD19 /* RAModuleList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleList.m; sourceTree = "<group>"; };
-		965AE29F16DA83C1001D7667 /* PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PauseIndicatorView.xib; sourceTree = "<group>"; };
 		966B9C8616E40D44005B61E1 /* ios_input.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ios_input.m; sourceTree = "<group>"; };
 		966B9C8716E40D44005B61E1 /* ios_joypad.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ios_joypad.m; sourceTree = "<group>"; };
 		966B9C8816E40D44005B61E1 /* RAInputResponder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAInputResponder.h; sourceTree = "<group>"; };
@@ -225,7 +220,18 @@
 		966B9C9F16E418B7005B61E1 /* wiimote.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wiimote.h; sourceTree = "<group>"; };
 		966B9CA016E418B7005B61E1 /* WiiMoteHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WiiMoteHelper.h; sourceTree = "<group>"; };
 		966B9CA116E418B7005B61E1 /* WiiMoteHelper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WiiMoteHelper.m; sourceTree = "<group>"; };
-		969EBF6916D95746003787A2 /* PauseView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PauseView.xib; sourceTree = "<group>"; };
+		966B9CA916E41C07005B61E1 /* browser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = browser.h; sourceTree = "<group>"; };
+		966B9CAA16E41C07005B61E1 /* browser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = browser.m; sourceTree = "<group>"; };
+		966B9CAB16E41C07005B61E1 /* RADirectoryGrid.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RADirectoryGrid.m; sourceTree = "<group>"; };
+		966B9CAC16E41C07005B61E1 /* RADirectoryList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RADirectoryList.m; sourceTree = "<group>"; };
+		966B9CAD16E41C07005B61E1 /* RAModuleList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleList.m; sourceTree = "<group>"; };
+		966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
+		966B9CB916E41E7A005B61E1 /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
+		966B9CBA16E41E7A005B61E1 /* Default@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default@2x.png"; sourceTree = "<group>"; };
+		966B9CBB16E41E7A005B61E1 /* Icon-72.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-72.png"; sourceTree = "<group>"; };
+		966B9CBC16E41E7A005B61E1 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
+		966B9CC716E41EC1005B61E1 /* PauseView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PauseView.xib; sourceTree = "<group>"; };
+		966B9CC816E41EC1005B61E1 /* PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PauseIndicatorView.xib; sourceTree = "<group>"; };
 		96AFAE2516C1D4EA009DE44C /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96AFAE2916C1D4EA009DE44C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		96AFAE2B16C1D4EA009DE44C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -235,9 +241,6 @@
 		96AFAE3516C1D4EA009DE44C /* RetroArch-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "RetroArch-Info.plist"; sourceTree = "<group>"; };
 		96AFAE3716C1D4EA009DE44C /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		96AFAE3B16C1D4EA009DE44C /* RetroArch-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "RetroArch-Prefix.pch"; sourceTree = "<group>"; };
-		96AFAE3F16C1D4EA009DE44C /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
-		96AFAE4116C1D4EA009DE44C /* Default@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default@2x.png"; sourceTree = "<group>"; };
-		96AFAE4316C1D4EA009DE44C /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
 		96AFAE9D16C1D9A9009DE44C /* autosave.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = autosave.c; path = ../autosave.c; sourceTree = "<group>"; };
 		96AFAE9E16C1D9A9009DE44C /* autosave.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = autosave.h; path = ../autosave.h; sourceTree = "<group>"; };
 		96AFAE9F16C1D9A9009DE44C /* boolean.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = boolean.h; path = ../boolean.h; sourceTree = "<group>"; };
@@ -342,10 +345,7 @@
 		96AFAFCA16C1FBC0009DE44C /* input_common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = input_common.h; sourceTree = "<group>"; };
 		96AFAFCE16C1FBC0009DE44C /* overlay.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = overlay.c; sourceTree = "<group>"; };
 		96AFAFCF16C1FBC0009DE44C /* overlay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = overlay.h; sourceTree = "<group>"; };
-		96C19C2316D453BA00FE8D5A /* RADirectoryGrid.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RADirectoryGrid.m; sourceTree = "<group>"; };
-		96C19C2516D455BE00FE8D5A /* browser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = browser.h; sourceTree = "<group>"; };
 		96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rarch_wrapper.h; sourceTree = "<group>"; };
-		96C19C2816D5A56400FE8D5A /* browser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = browser.m; sourceTree = "<group>"; };
 		96C19C2E16D7045600FE8D5A /* RAConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAConfig.h; sourceTree = "<group>"; };
 		96C19C2F16D7045700FE8D5A /* RAConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAConfig.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -441,20 +441,44 @@
 			path = btstack;
 			sourceTree = "<group>";
 		};
-		96AFAE1A16C1D4EA009DE44C = {
+		966B9CA816E41C07005B61E1 /* browser */ = {
+			isa = PBXGroup;
+			children = (
+				966B9CA916E41C07005B61E1 /* browser.h */,
+				966B9CAA16E41C07005B61E1 /* browser.m */,
+				966B9CAB16E41C07005B61E1 /* RADirectoryGrid.m */,
+				966B9CAC16E41C07005B61E1 /* RADirectoryList.m */,
+				966B9CAD16E41C07005B61E1 /* RAModuleList.m */,
+			);
+			path = browser;
+			sourceTree = "<group>";
+		};
+		966B9CB716E41E7A005B61E1 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
 				96297A2616C82FF100E6DCE0 /* overlays */,
-				96297A2216C818FF00E6DCE0 /* Icon-72.png */,
-				96297A2316C818FF00E6DCE0 /* Icon.png */,
+				966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */,
+				966B9CB916E41E7A005B61E1 /* Default.png */,
+				966B9CBA16E41E7A005B61E1 /* Default@2x.png */,
 				962979F416C43B9500E6DCE0 /* ic_dir.png */,
 				962979F516C43B9500E6DCE0 /* ic_file.png */,
-				96AFAF2116C1DF88009DE44C /* libz.dylib */,
-				96AFAE9C16C1D976009DE44C /* core */,
+				966B9CBB16E41E7A005B61E1 /* Icon-72.png */,
+				966B9CBC16E41E7A005B61E1 /* Icon.png */,
+				966B9CC716E41EC1005B61E1 /* PauseView.xib */,
+				966B9CC816E41EC1005B61E1 /* PauseIndicatorView.xib */,
+			);
+			path = Assets;
+			sourceTree = "<group>";
+		};
+		96AFAE1A16C1D4EA009DE44C = {
+			isa = PBXGroup;
+			children = (
 				96AFAE3316C1D4EA009DE44C /* RetroArch */,
+				96AFAE9C16C1D976009DE44C /* core */,
+				966B9CB716E41E7A005B61E1 /* Assets */,
 				96AFAE2816C1D4EA009DE44C /* Frameworks */,
 				96AFAE2616C1D4EA009DE44C /* Products */,
-				9614C71F16DDC018000B36EF /* RetroArch copy-Info.plist */,
+				96AFAE3416C1D4EA009DE44C /* Supporting Files */,
 			);
 			sourceTree = "<group>";
 		};
@@ -470,6 +494,7 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				96AFAF2116C1DF88009DE44C /* libz.dylib */,
 				96366C5816C9ACF500D64A22 /* AudioToolbox.framework */,
 				96366C5416C9AC3300D64A22 /* CoreAudio.framework */,
 				96AFAE2916C1D4EA009DE44C /* UIKit.framework */,
@@ -484,21 +509,18 @@
 		96AFAE3316C1D4EA009DE44C /* RetroArch */ = {
 			isa = PBXGroup;
 			children = (
+				966B9CA816E41C07005B61E1 /* browser */,
 				966B9C8516E40D44005B61E1 /* input */,
-				96C19C2716D455C600FE8D5A /* Browser */,
 				96366C6F16CAF62200D64A22 /* settings */,
-				96AFAE3416C1D4EA009DE44C /* Supporting Files */,
+				96297A0E16C5AEA100E6DCE0 /* main.m */,
 				96C19C2E16D7045600FE8D5A /* RAConfig.h */,
 				96C19C2F16D7045700FE8D5A /* RAConfig.m */,
 				963F5AC516CC523B009BBD19 /* RAGameView.m */,
 				96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */,
-				963F5AC616CC523B009BBD19 /* RAModuleList.m */,
 				96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */,
 				96297A0A16C5AD8D00E6DCE0 /* RetroArch_iOS.h */,
 				96297A0B16C5AD8D00E6DCE0 /* RetroArch_iOS.m */,
 				96297A0D16C5ADDA00E6DCE0 /* views.h */,
-				969EBF6916D95746003787A2 /* PauseView.xib */,
-				965AE29F16DA83C1001D7667 /* PauseIndicatorView.xib */,
 			);
 			path = RetroArch;
 			sourceTree = "<group>";
@@ -506,15 +528,13 @@
 		96AFAE3416C1D4EA009DE44C /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
-				96AFAE4316C1D4EA009DE44C /* Default-568h@2x.png */,
-				96AFAE3F16C1D4EA009DE44C /* Default.png */,
-				96AFAE4116C1D4EA009DE44C /* Default@2x.png */,
+				9614C71F16DDC018000B36EF /* RetroArch copy-Info.plist */,
 				96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */,
-				96297A0E16C5AEA100E6DCE0 /* main.m */,
 				96AFAE3516C1D4EA009DE44C /* RetroArch-Info.plist */,
 				96AFAE3B16C1D4EA009DE44C /* RetroArch-Prefix.pch */,
 			);
 			name = "Supporting Files";
+			path = RetroArch;
 			sourceTree = "<group>";
 		};
 		96AFAE9C16C1D976009DE44C /* core */ = {
@@ -730,17 +750,6 @@
 			path = ../input;
 			sourceTree = "<group>";
 		};
-		96C19C2716D455C600FE8D5A /* Browser */ = {
-			isa = PBXGroup;
-			children = (
-				96C19C2516D455BE00FE8D5A /* browser.h */,
-				96C19C2816D5A56400FE8D5A /* browser.m */,
-				96C19C2316D453BA00FE8D5A /* RADirectoryGrid.m */,
-				963F5AC416CC523B009BBD19 /* RADirectoryList.m */,
-			);
-			name = Browser;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -812,15 +821,15 @@
 			files = (
 				9614C71016DDC018000B36EF /* overlays in Resources */,
 				9614C71116DDC018000B36EF /* InfoPlist.strings in Resources */,
-				9614C71216DDC018000B36EF /* Default.png in Resources */,
-				9614C71316DDC018000B36EF /* Default@2x.png in Resources */,
-				9614C71416DDC018000B36EF /* Default-568h@2x.png in Resources */,
 				9614C71516DDC018000B36EF /* ic_dir.png in Resources */,
 				9614C71616DDC018000B36EF /* ic_file.png in Resources */,
-				9614C71716DDC018000B36EF /* Icon-72.png in Resources */,
-				9614C71816DDC018000B36EF /* Icon.png in Resources */,
-				9614C71916DDC018000B36EF /* PauseView.xib in Resources */,
-				9614C71A16DDC018000B36EF /* PauseIndicatorView.xib in Resources */,
+				966B9CBE16E41E7A005B61E1 /* Default-568h@2x.png in Resources */,
+				966B9CC016E41E7A005B61E1 /* Default.png in Resources */,
+				966B9CC216E41E7A005B61E1 /* Default@2x.png in Resources */,
+				966B9CC416E41E7A005B61E1 /* Icon-72.png in Resources */,
+				966B9CC616E41E7A005B61E1 /* Icon.png in Resources */,
+				966B9CCA16E41EC1005B61E1 /* PauseView.xib in Resources */,
+				966B9CCC16E41EC1005B61E1 /* PauseIndicatorView.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -830,15 +839,15 @@
 			files = (
 				96297A2716C82FF100E6DCE0 /* overlays in Resources */,
 				96AFAE3816C1D4EA009DE44C /* InfoPlist.strings in Resources */,
-				96AFAE4016C1D4EA009DE44C /* Default.png in Resources */,
-				96AFAE4216C1D4EA009DE44C /* Default@2x.png in Resources */,
-				96AFAE4416C1D4EA009DE44C /* Default-568h@2x.png in Resources */,
 				962979F616C43B9500E6DCE0 /* ic_dir.png in Resources */,
 				962979F716C43B9500E6DCE0 /* ic_file.png in Resources */,
-				96297A2416C818FF00E6DCE0 /* Icon-72.png in Resources */,
-				96297A2516C818FF00E6DCE0 /* Icon.png in Resources */,
-				969EBF6A16D95746003787A2 /* PauseView.xib in Resources */,
-				965AE2A016DA83C1001D7667 /* PauseIndicatorView.xib in Resources */,
+				966B9CBD16E41E7A005B61E1 /* Default-568h@2x.png in Resources */,
+				966B9CBF16E41E7A005B61E1 /* Default.png in Resources */,
+				966B9CC116E41E7A005B61E1 /* Default@2x.png in Resources */,
+				966B9CC316E41E7A005B61E1 /* Icon-72.png in Resources */,
+				966B9CC516E41E7A005B61E1 /* Icon.png in Resources */,
+				966B9CC916E41EC1005B61E1 /* PauseView.xib in Resources */,
+				966B9CCB16E41EC1005B61E1 /* PauseIndicatorView.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -902,15 +911,15 @@
 				9614C6F616DDC018000B36EF /* RASettingEnumerationList.m in Sources */,
 				9614C6F716DDC018000B36EF /* RASettingsSubList.m in Sources */,
 				9614C6F816DDC018000B36EF /* RASettingsList.m in Sources */,
-				9614C6F916DDC018000B36EF /* RADirectoryList.m in Sources */,
 				9614C6FA16DDC018000B36EF /* RAGameView.m in Sources */,
-				9614C6FB16DDC018000B36EF /* RAModuleList.m in Sources */,
 				9614C6FC16DDC018000B36EF /* RAModuleInfoList.m in Sources */,
-				9614C6FD16DDC018000B36EF /* RADirectoryGrid.m in Sources */,
-				9614C6FE16DDC018000B36EF /* browser.m in Sources */,
 				9614C6FF16DDC018000B36EF /* RAConfig.m in Sources */,
 				966B9C8D16E40EFC005B61E1 /* RAInputResponder.m in Sources */,
 				966B9C8E16E40F00005B61E1 /* ios_input.m in Sources */,
+				966B9CAF16E41C07005B61E1 /* browser.m in Sources */,
+				966B9CB116E41C07005B61E1 /* RADirectoryGrid.m in Sources */,
+				966B9CB316E41C07005B61E1 /* RADirectoryList.m in Sources */,
+				966B9CB516E41C07005B61E1 /* RAModuleList.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -971,12 +980,8 @@
 				963F5AC116CC522F009BBD19 /* RASettingEnumerationList.m in Sources */,
 				963F5AC216CC522F009BBD19 /* RASettingsSubList.m in Sources */,
 				963F5AC316CC522F009BBD19 /* RASettingsList.m in Sources */,
-				963F5AC716CC523B009BBD19 /* RADirectoryList.m in Sources */,
 				963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */,
-				963F5AC916CC523B009BBD19 /* RAModuleList.m in Sources */,
 				96096DD816D1ABAF00BF4499 /* RAModuleInfoList.m in Sources */,
-				96C19C2416D453BA00FE8D5A /* RADirectoryGrid.m in Sources */,
-				96C19C2916D5A56500FE8D5A /* browser.m in Sources */,
 				96C19C3016D7045700FE8D5A /* RAConfig.m in Sources */,
 				966B9C8A16E40D44005B61E1 /* ios_input.m in Sources */,
 				966B9C8B16E40D44005B61E1 /* ios_joypad.m in Sources */,
@@ -986,6 +991,10 @@
 				966B9CA416E418B7005B61E1 /* BTstackManager.m in Sources */,
 				966B9CA616E418B7005B61E1 /* wiimote.c in Sources */,
 				966B9CA716E418B7005B61E1 /* WiiMoteHelper.m in Sources */,
+				966B9CAE16E41C07005B61E1 /* browser.m in Sources */,
+				966B9CB016E41C07005B61E1 /* RADirectoryGrid.m in Sources */,
+				966B9CB216E41C07005B61E1 /* RADirectoryList.m in Sources */,
+				966B9CB416E41C07005B61E1 /* RAModuleList.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1014,7 +1023,6 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)\"",
-					"\"$(SRCROOT)/RetroArch/BTStack\"",
 				);
 				OTHER_CFLAGS = (
 					"-DHAVE_RARCH_MAIN_WRAP",
@@ -1051,7 +1059,6 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)\"",
-					"\"$(SRCROOT)/RetroArch/BTStack\"",
 				);
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",

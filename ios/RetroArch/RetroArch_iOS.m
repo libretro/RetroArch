@@ -16,7 +16,8 @@
 #include <sys/stat.h>
 #include "rarch_wrapper.h"
 #include "general.h"
-#import "browser.h"
+#import "browser/browser.h"
+#import "settings/settings.h"
 
 #ifdef WIIMOTE
 #import "input/BTStack/WiiMoteHelper.h"

@@ -32,3 +32,7 @@ extern NSString* ra_ios_check_path(NSString* path);
 + (id)directoryListOrGridWithPath:(NSString*)path;
 - (id)initWithPath:(NSString*)path config:(RAConfig*)config;
 @end
+
+@interface RAModuleList : UITableViewController
+- (id)initWithGame:(NSString*)path;
+@end

@@ -37,3 +37,12 @@ enum SettingTypes
 @interface RASettingEnumerationList : UITableViewController
 - (id)initWithSetting:(RASettingData*)setting fromTable:(UITableView*)table;
 @end
+
+@interface RASettingsSubList : UITableViewController
+- (id)initWithSettings:(NSArray*)values title:(NSString*)title;
+- (void)writeSettings:(NSArray*)settingList toConfig:(RAConfig*)config;
+@end
+
+@interface RASettingsList : RASettingsSubList
++ (void)refreshConfigFile;
+@end

@@ -35,16 +35,3 @@
 @interface RAModuleInfoList : UITableViewController
 - (id)initWithModuleInfo:(RAModuleInfo*)info;
 @end
-
-@interface RAModuleList : UITableViewController
-- (id)initWithGame:(NSString*)path;
-@end
-
-@interface RASettingsSubList : UITableViewController
-- (id)initWithSettings:(NSArray*)values title:(NSString*)title;
-- (void)writeSettings:(NSArray*)settingList toConfig:(RAConfig*)config;
-@end
-
-@interface RASettingsList : RASettingsSubList
-+ (void)refreshConfigFile;
-@end
