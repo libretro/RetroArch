@@ -26,11 +26,10 @@
 @property (strong) NSString* path;
 @property (strong) NSString* configPath;
 @property (strong) RAConfig* data;
-@property (strong) NSArray* recommendedExtensions;
-@property (strong) NSArray* suggestedExtensions;
+@property (strong) NSArray* supportedExtensions;
 
 + (RAModuleInfo*)moduleWithPath:(NSString*)thePath data:(RAConfig*)theData;
-- (unsigned)supportLevelOfPath:(NSString*)thePath;
+- (bool)supportsFileAtPath:(NSString*)path;
 @end
 
 @interface RAModuleInfoList : UITableViewController
