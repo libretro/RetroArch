@@ -22,6 +22,7 @@
 @end
 
 @interface RAModuleInfo : NSObject
+@property (strong) NSString* displayName;
 @property (strong) NSString* path;
 @property (strong) NSString* configPath;
 @property (strong) RAConfig* data;

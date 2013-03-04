@@ -112,7 +112,7 @@
 
    unsigned section = _sectionMap[indexPath.section];   
    RAModuleInfo* info = (RAModuleInfo*)[_modules[section] objectAtIndex:indexPath.row];
-   cell.textLabel.text = [[info.path lastPathComponent] stringByDeletingPathExtension];
+   cell.textLabel.text = info.displayName;
    cell.accessoryType = (info.data) ? UITableViewCellAccessoryDetailDisclosureButton : UITableViewCellAccessoryNone;
 
    return cell;

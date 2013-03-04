@@ -18,6 +18,7 @@
 {
    RAModuleInfo* new = [RAModuleInfo new];
 
+   new.displayName = [theData getStringNamed:@"display_name" withDefault:[[thePath lastPathComponent] stringByDeletingPathExtension]];
    new.path = thePath;
    new.configPath = [NSString stringWithFormat:@"%@/%@.cfg", [RetroArch_iOS get].system_directory, [[thePath lastPathComponent] stringByDeletingPathExtension]];
    new.data = theData;
