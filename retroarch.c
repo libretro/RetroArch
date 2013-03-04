@@ -2991,9 +2991,7 @@ bool rarch_main_idle_iterate(void)
       return false;
 
    do_state_checks();
-#ifndef HAVE_ASYNC_POLL
    input_poll();
-#endif
    rarch_sleep(10);
    return true;
 }
