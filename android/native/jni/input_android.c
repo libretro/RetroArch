@@ -367,14 +367,12 @@ static void android_input_poll(void *data)
                         && input_state > 0)
                   {
                   }
-#if 0
                   else
                   {
                      *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
                      AInputQueue_finishEvent(android_app->inputQueue, event, handled);
                      break;
                   }
-#endif
                }
 
                if (type_event == AINPUT_EVENT_TYPE_MOTION)
