@@ -15,15 +15,12 @@
 
 #import <UIKit/UIKit.h>
 
-@interface RetroArch_iOS : UIResponder <UIApplicationDelegate>
+@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate>
 
 + (void)displayErrorMessage:(NSString*)message;
 
 + (RetroArch_iOS*)get;
 - (void)runGame:(NSString*)path;
-
-- (void)pushViewController:(UIViewController*)theView isGame:(BOOL)game;
-- (UIViewController*)popViewController;
 
 - (IBAction)showSettings;
 - (IBAction)showWiiRemoteConfig;
@@ -31,7 +28,5 @@
 @property (strong, nonatomic) RAModuleInfo* moduleInfo;
 
 @property (strong, nonatomic) NSString* system_directory;
-@property (strong, nonatomic) UIImage* file_icon;
-@property (strong, nonatomic) UIImage* folder_icon;
 
 @end

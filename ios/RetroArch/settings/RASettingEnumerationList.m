@@ -57,7 +57,7 @@
    _value.value = (indexPath.section == 1) ? [_value.subValues objectAtIndex:indexPath.row] : @"";
 
    [_view reloadData];
-   [[RetroArch_iOS get] popViewController];
+   [[RetroArch_iOS get] popViewControllerAnimated:YES];
 }
 
 @end

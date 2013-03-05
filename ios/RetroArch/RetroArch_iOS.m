@@ -23,75 +23,14 @@
 #import "input/BTStack/WiiMoteHelper.h"
 #endif
 
-
-#define ALMOST_INVISIBLE .021f
-
-@interface RANavigator : UINavigationController<UINavigationControllerDelegate>
-@end
-
-@implementation RANavigator
-{
-   RetroArch_iOS* _delegate;
-}
-
-- (id)initWithAppDelegate:(RetroArch_iOS*)delegate
-{
-   self = [super init];
-   self.delegate = self;
-
-   assert(delegate);
-   _delegate = delegate;
-   
-   return self;
-}
-
-- (UIViewController *)popViewControllerAnimated:(BOOL)animated
-{
-   return [_delegate popViewController];
-}
-
-- (UIViewController*)reallyPopViewControllerAnimated:(BOOL)animated
-{
-   return [super popViewControllerAnimated:animated];
-}
-
-- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
-{
-   [_delegate performSelector:@selector(screenDidRotate) withObject:nil afterDelay:.01f];
-}
-
-- (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
-{
-#ifdef WIIMOTE
-   navigationController.topViewController.navigationItem.rightBarButtonItem = (![WiiMoteHelper isBluetoothRunning]) ? nil :
-                           [[UIBarButtonItem alloc]
-                           initWithTitle:@"Stop Bluetooth"
-                           style:UIBarButtonItemStyleBordered
-                           target:[RetroArch_iOS get]
-                           action:@selector(stopBluetooth)];
-#endif
-}
-
-@end
-
 @implementation RetroArch_iOS
 {
    UIWindow* _window;
-   RANavigator* _navigator;
    NSTimer* _gameTimer;
-
-   UIView* _pauseView;
-   UIView* _pauseIndicatorView;
-   RAGameView* _game;
    
+   bool _isGameTop;
    bool _isPaused;
    bool _isRunning;
-   
-   // 0 if no RAGameView is in the navigator
-   // 1 if a RAGameView is the top
-   // 2+ if there are views pushed ontop of the RAGameView
-   unsigned _gameAndAbove;
-
 }
 
 + (void)displayErrorMessage:(NSString*)message
@@ -109,178 +48,22 @@
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
 }
 
+// UIApplicationDelegate
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
    // TODO: Relocate this!
    self.system_directory = @"/var/mobile/Library/RetroArch/";
    mkdir([self.system_directory UTF8String], 0755);
          
-   // Load icons
-   self.file_icon = [UIImage imageNamed:@"ic_file"];
-   self.folder_icon = [UIImage imageNamed:@"ic_dir"];
-
-   // Load pause menu
-   UINib* xib = [UINib nibWithNibName:@"PauseView" bundle:nil];
-   _pauseView = [[xib instantiateWithOwner:self options:nil] lastObject];
-   
-   xib = [UINib nibWithNibName:@"PauseIndicatorView" bundle:nil];
-   _pauseIndicatorView = [[xib instantiateWithOwner:self options:nil] lastObject];
-
-   // Show status bar
-   [[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationNone];
-
    // Setup window
-   _navigator = [[RANavigator alloc] initWithAppDelegate:self];
-   [_navigator pushViewController: [RADirectoryList directoryListOrGridWithPath:nil] animated:YES];
+   self.delegate = self;
+   [self pushViewController:[RADirectoryList directoryListOrGridWithPath:nil] animated:YES];
 
    _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-   _window.rootViewController = _navigator;
+   _window.rootViewController = self;
    [_window makeKeyAndVisible];
 }
 
-#pragma mark VIEW MANAGEMENT
-- (void)screenDidRotate
-{
-   UIInterfaceOrientation orientation = _navigator.interfaceOrientation;
-   CGRect screenSize = [[UIScreen mainScreen] bounds];
-   
-   const float width = ((int)orientation < 3) ? CGRectGetWidth(screenSize) : CGRectGetHeight(screenSize);
-   const float height = ((int)orientation < 3) ? CGRectGetHeight(screenSize) : CGRectGetWidth(screenSize);
-
-   float tenpctw = width / 10.0f;
-   float tenpcth = height / 10.0f;
-   
-   _pauseView.frame = CGRectMake(width / 2.0f - 150.0f, height / 2.0f - 150.0f, 300.0f, 300.0f);
-   _pauseIndicatorView.frame = CGRectMake(tenpctw * 4.0f, 0.0f, tenpctw * 2.0f, tenpcth);
-   _pauseIndicatorView.hidden = NO;
-   
-   [self performSelector:@selector(hidePauseButton) withObject:self afterDelay:3.0f];
-}
-
-- (void)hidePauseButton
-{
-   [UIView animateWithDuration:0.2
-      animations:^ { _pauseIndicatorView.alpha = ALMOST_INVISIBLE; }
-         completion:^(BOOL finished) { }
-      ];
-}
-
-- (void)pushViewController:(UIViewController*)theView isGame:(BOOL)game
-{
-   assert(!game || _gameAndAbove == 0);
-
-   _gameAndAbove += (game || _gameAndAbove) ? 1 : 0;
-
-   // Update status and navigation bars
-   [[UIApplication sharedApplication] setStatusBarHidden:game withAnimation:UIStatusBarAnimationNone];
-   _navigator.navigationBarHidden = game;
-   
-   //
-   [_navigator pushViewController:theView animated:!(_gameAndAbove == 1 || _gameAndAbove == 2)];
-   
-   if (game)
-   {
-      _game = (RAGameView*)theView;
-   
-      _pauseIndicatorView.alpha = 1.0f;
-      _pauseIndicatorView.hidden = YES;
-
-      [theView.view addSubview:_pauseView];
-      [theView.view addSubview:_pauseIndicatorView];
-
-      [self startTimer];
-      [self performSelector:@selector(screenDidRotate) withObject:nil afterDelay:.01f];
-   }
-}
-
-- (UIViewController*)popViewController
-{
-   const bool poppingFromGame = _gameAndAbove == 1;
-   const bool poppingToGame = _gameAndAbove == 2;
-   
-   _gameAndAbove -= (_gameAndAbove) ? 1 : 0;
-   
-   if (poppingToGame)
-      [self startTimer];
-
-   // Update status and navigation bar
-   [[UIApplication sharedApplication] setStatusBarHidden:poppingToGame withAnimation:UIStatusBarAnimationNone];
-   _navigator.navigationBarHidden = poppingToGame;
-   
-   //
-   if (poppingFromGame)
-   {
-      [_pauseView removeFromSuperview];
-      [_pauseIndicatorView removeFromSuperview];
-   }
-   
-   return [_navigator reallyPopViewControllerAnimated:!poppingToGame && !poppingFromGame];
-}
-
-#pragma mark EMULATION
-- (void)runGame:(NSString*)path
-{
-   [RASettingsList refreshConfigFile];
-   
-   const char* const sd = [[RetroArch_iOS get].system_directory UTF8String];
-   const char* const cf =[[RetroArch_iOS get].moduleInfo.configPath UTF8String];
-   const char* const libretro = [[RetroArch_iOS get].moduleInfo.path UTF8String];
-
-   struct rarch_main_wrap main_wrapper = {[path UTF8String], sd, sd, cf, libretro};
-   if (rarch_main_init_wrap(&main_wrapper) == 0)
-   {
-      _isRunning = true;
-      rarch_init_msg_queue();
-      [self startTimer];
-   }
-   else
-   {
-      _isRunning = false;
-      [RetroArch_iOS displayErrorMessage:@"Failed to load game."];
-   }
-}
-
-- (void)closeGame
-{
-   if (_isRunning)
-   {
-      rarch_main_deinit();
-      rarch_deinit_msg_queue();
-
-#ifdef PERF_TEST
-      rarch_perf_log();
-#endif
-
-      rarch_main_clear_state();
-   }
-   
-   [self stopTimer];
-   _isRunning = false;
-}
-
-- (void)iterate
-{
-   if (_isPaused || !_isRunning || _gameAndAbove != 1)
-      [self stopTimer];
-   else if (_isRunning && !rarch_main_iterate())
-      [self closeGame];
-}
-
-- (void)startTimer
-{
-   if (!_gameTimer)
-      _gameTimer = [NSTimer scheduledTimerWithTimeInterval:0.001f target:self selector:@selector(iterate) userInfo:nil repeats:YES];
-}
-
-- (void)stopTimer
-{
-   if (_gameTimer)
-      [_gameTimer invalidate];
-   
-   _gameTimer = nil;
-}
-
-#pragma mark LIFE CYCLE
 - (void)applicationDidBecomeActive:(UIApplication*)application
 {
    [self startTimer];
@@ -303,19 +86,105 @@
       uninit_drivers();
 }
 
+// UINavigationControllerDelegate
+- (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
+{
+   _isGameTop = [viewController isKindOfClass:[RAGameView class]];
+   [[UIApplication sharedApplication] setStatusBarHidden:_isGameTop withAnimation:UIStatusBarAnimationNone];
+   self.navigationBarHidden = _isGameTop;
+   
+   if (_isGameTop)
+      [self startTimer];
+
+#ifdef WIIMOTE
+   navigationController.topViewController.navigationItem.rightBarButtonItem = (![WiiMoteHelper isBluetoothRunning]) ? nil :
+                           [[UIBarButtonItem alloc]
+                           initWithTitle:@"Stop Bluetooth"
+                           style:UIBarButtonItemStyleBordered
+                           target:[RetroArch_iOS get]
+                           action:@selector(stopBluetooth)];
+#endif
+}
+
+// UINavigationController: Never animate when pushing onto, or popping, an RAGameView
+- (void)pushViewController:(UIViewController*)theView animated:(BOOL)animated
+{
+   [super pushViewController:theView animated:animated && !_isGameTop];
+}
+
+- (UIViewController*)popViewControllerAnimated:(BOOL)animated
+{
+   return [super popViewControllerAnimated:animated && !_isGameTop];
+}
+
+#pragma mark EMULATION
+- (void)runGame:(NSString*)path
+{
+   [RASettingsList refreshConfigFile];
+   
+   const char* const sd = [[RetroArch_iOS get].system_directory UTF8String];
+   const char* const cf =[[RetroArch_iOS get].moduleInfo.configPath UTF8String];
+   const char* const libretro = [[RetroArch_iOS get].moduleInfo.path UTF8String];
+
+   struct rarch_main_wrap main_wrapper = {[path UTF8String], sd, sd, cf, libretro};
+   if (rarch_main_init_wrap(&main_wrapper) == 0)
+   {
+      rarch_init_msg_queue();
+
+      [self pushViewController:RAGameView.get animated:NO];
+      _isRunning = true;
+   }
+   else
+   {
+      _isRunning = false;
+      [RetroArch_iOS displayErrorMessage:@"Failed to load game."];
+   }
+}
+
+- (void)closeGame
+{
+   if (_isRunning)
+   {
+      _isRunning = false;
+   
+      rarch_main_deinit();
+      rarch_deinit_msg_queue();
+      rarch_main_clear_state();
+      
+      [self popToViewController:[RAGameView get] animated:NO];
+      [self popViewControllerAnimated:NO];
+   }
+}
+
+- (void)iterate
+{
+   if (_isPaused || !_isRunning || !_isGameTop)
+      [self stopTimer];
+   else if (_isRunning && !rarch_main_iterate())
+      [self closeGame];
+}
+
+- (void)startTimer
+{
+   if (!_gameTimer)
+      _gameTimer = [NSTimer scheduledTimerWithTimeInterval:0.001f target:self selector:@selector(iterate) userInfo:nil repeats:YES];
+}
+
+- (void)stopTimer
+{
+   if (_gameTimer)
+      [_gameTimer invalidate];
+   
+   _gameTimer = nil;
+}
+
 #pragma mark PAUSE MENU
 - (IBAction)showPauseMenu:(id)sender
 {
-   if (_isRunning && !_isPaused && _gameAndAbove == 1)
+   if (_isRunning && !_isPaused && _isGameTop)
    {
       _isPaused = true;
-
-      UISegmentedControl* stateSelect = (UISegmentedControl*)[_pauseView viewWithTag:1];
-      stateSelect.selectedSegmentIndex = (g_extern.state_slot < 10) ? g_extern.state_slot : -1;
-      
-      [UIView animateWithDuration:0.2
-         animations:^ { _pauseView.alpha = 1.0f; }
-         completion:^(BOOL finished){}];
+      [[RAGameView get] openPauseMenu];
    }
 }
 
@@ -344,15 +213,13 @@
 
 - (IBAction)closePauseMenu:(id)sender
 {
+   [[RAGameView get] closePauseMenu];
+
    if (_isPaused)
-      [UIView animateWithDuration:0.2 
-         animations:^ { _pauseView.alpha = 0.0f; }
-         completion:^(BOOL finished)
-         {
-            _isPaused = false;
-            [self startTimer];
-         }
-      ];
+   {
+      _isPaused = false;
+      [self startTimer];
+   }
 }
 
 - (IBAction)closeGamePressed:(id)sender
@@ -363,7 +230,7 @@
 
 - (IBAction)showSettings
 {
-   [self pushViewController:[RASettingsList new] isGame:NO];
+   [self pushViewController:[RASettingsList new] animated:YES];
 }
 
 - (IBAction)showWiiRemoteConfig
@@ -377,7 +244,7 @@
 {
 #ifdef WIIMOTE
    [WiiMoteHelper stopBluetooth];
-   [_navigator.topViewController.navigationItem setRightBarButtonItem:nil animated:YES];
+   [self.topViewController.navigationItem setRightBarButtonItem:nil animated:YES];
 #endif
 }
 

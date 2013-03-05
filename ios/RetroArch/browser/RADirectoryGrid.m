@@ -58,9 +58,9 @@
    RADirectoryItem* path = [_list objectAtIndex: indexPath.row];
 
    if(path.isDirectory)
-      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListOrGridWithPath:path.path] isGame:NO];
+      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListOrGridWithPath:path.path] animated:YES];
    else
-      [[RetroArch_iOS get] pushViewController:[[RAModuleList alloc] initWithGame:path.path] isGame:NO];
+      [[RetroArch_iOS get] pushViewController:[[RAModuleList alloc] initWithGame:path.path] animated:YES];
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
@@ -74,7 +74,7 @@
 
       if (!cell.backgroundView)
       {
-         cell.backgroundView = [[UIImageView alloc] initWithImage:[RetroArch_iOS get].folder_icon];
+         cell.backgroundView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ic_dir"]];
          ((UIImageView*)cell.backgroundView).contentMode = UIViewContentModeScaleAspectFit;
       }
    }

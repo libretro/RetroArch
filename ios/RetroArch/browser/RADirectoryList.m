@@ -55,9 +55,9 @@
    RADirectoryItem* path = [_list objectAtIndex: indexPath.row];
 
    if(path.isDirectory)
-      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListOrGridWithPath:path.path] isGame:NO];
+      [[RetroArch_iOS get] pushViewController:[RADirectoryList directoryListOrGridWithPath:path.path] animated:YES];
    else
-      [[RetroArch_iOS get] pushViewController:[[RAModuleList alloc] initWithGame:path.path] isGame:NO];
+      [[RetroArch_iOS get] pushViewController:[[RAModuleList alloc] initWithGame:path.path] animated:YES];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
@@ -73,7 +73,7 @@
    cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"path"];
    cell.textLabel.text = [path.path lastPathComponent];
    cell.accessoryType = (path.isDirectory) ? UITableViewCellAccessoryDisclosureIndicator : UITableViewCellAccessoryNone;
-   cell.imageView.image = (path.isDirectory) ? [RetroArch_iOS get].folder_icon : [RetroArch_iOS get].file_icon;
+   cell.imageView.image = [UIImage imageNamed:(path.isDirectory) ? @"ic_dir" : @"ic_file"];
    return cell;
 }
 

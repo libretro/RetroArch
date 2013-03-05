@@ -100,7 +100,7 @@ static RASettingData* custom_action(NSString* action)
       [NSArray arrayWithObjects:@"General",
          custom_action(@"Module Info"),
 #ifdef WIIMOTE
-         custom_action(@"Connect WiiMotes");
+         custom_action(@"Connect WiiMotes"),
 #endif
          nil],
 
@@ -157,7 +157,6 @@ static RASettingData* custom_action(NSString* action)
             nil]),
          nil],
       
-        
       [NSArray arrayWithObjects:@"Save States",
          boolean_setting(config, @"rewind_enable", @"Enable Rewinding", @"false"),
          boolean_setting(config, @"block_sram_overwrite", @"Disable SRAM on Load", @"false"),
@@ -179,7 +178,7 @@ static RASettingData* custom_action(NSString* action)
 - (void)handleCustomAction:(NSString*)action
 {
    if ([@"Module Info" isEqualToString:action])
-      [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:[RetroArch_iOS get].moduleInfo] isGame:NO];
+      [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:[RetroArch_iOS get].moduleInfo] animated:YES];
    else if([@"Connect WiiMotes" isEqualToString:action])
       [[RetroArch_iOS get] showWiiRemoteConfig];
 }

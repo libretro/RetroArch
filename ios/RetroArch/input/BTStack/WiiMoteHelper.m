@@ -107,7 +107,7 @@ static bool btOK;
       [[BTstackManager sharedInstance] addListener:discoveryView];
    }
    
-   [[RetroArch_iOS get] pushViewController:discoveryView isGame:NO];
+   [[RetroArch_iOS get] pushViewController:discoveryView animated:YES];
 }
 
 // BTStackManagerListener

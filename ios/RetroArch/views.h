@@ -19,6 +19,9 @@
 #import "RAConfig.h"
 
 @interface RAGameView : UIViewController
++ (RAGameView*)get;
+- (void)openPauseMenu;
+- (void)closePauseMenu;
 @end
 
 @interface RAModuleInfo : NSObject
