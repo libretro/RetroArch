@@ -486,6 +486,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          }
          else
          {
+            //PS button will be used for RGUI toggle
+            //keycode_lut[AKEYCODE_BUTTON_1] |= ((RETRO_DEVICE_ID_JOYPAD_B+1)     << shift);
             keycode_lut[AKEYCODE_BUTTON_X] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_A] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
          }
