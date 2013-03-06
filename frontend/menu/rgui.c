@@ -1416,7 +1416,6 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
       rgui->folder_cb(dir, (rgui_file_enum_cb_t)rgui_list_push,
          &menu_type, rgui->folder_buf);
 
-#ifdef
       if (*dir)
          rgui_list_sort(rgui->folder_buf);
    }
