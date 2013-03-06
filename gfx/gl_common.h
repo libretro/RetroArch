@@ -56,6 +56,7 @@
 #include <GL/glext.h>
 #endif
 
+
 #if defined(ANDROID) && defined(HAVE_GRIFFIN)
 #include "../console/griffin/hook_context.h"
 #else
@@ -162,6 +163,15 @@ enum gl_scale_type
    RARCH_SCALE_INPUT,
    RARCH_SCALE_VIEWPORT
 };
+
+#ifdef HAVE_FBO
+enum fbo_option
+{
+   FBO_DEINIT = 0,
+   FBO_INIT,
+   FBO_REINIT
+};
+#endif
 
 struct gl_fbo_scale
 {

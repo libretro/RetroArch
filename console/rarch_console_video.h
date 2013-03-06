@@ -25,12 +25,6 @@
 #define MAX_SCALING_FACTOR (2.0f)
 #endif
 
-enum
-{
-   FBO_DEINIT = 0,
-   FBO_INIT,
-   FBO_REINIT
-};
 
 enum aspect_ratio
 {
