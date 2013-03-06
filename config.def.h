@@ -240,7 +240,8 @@ static const bool aspect_ratio_auto = false; // 1:1 PAR
 static const bool crop_overscan = true;
 
 // Font size for on-screen messages.
-#ifdef HAVE_RMENU
+// TODO: use RARCH_CONSOLE instead? need to test
+#if defined(HAVE_RMENU) && !defined(HAVE_RGUI)
 static const float font_size = 1.0f;
 #else
 static const float font_size = 48;
