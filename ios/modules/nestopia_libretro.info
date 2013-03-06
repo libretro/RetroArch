@@ -1,0 +1,6 @@
+display_name = "NES / Famicom"
+supported_extensions = "nes|fds"
+emuname = "Nestopia"
+manufacturer = "Nintendo"
+systemname = "Nintendo Entertainment System"
+
