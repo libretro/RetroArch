@@ -143,6 +143,7 @@ struct rgui_handle
    bool msg_force;
 
    char path_buf[PATH_MAX];
+   char base_path[PATH_MAX];
 
    const uint8_t *font;
    bool alloc_font;
@@ -221,9 +222,9 @@ rgui_handle_t *rgui_init(const char *base_path,
 
    rgui->frame_buf = framebuf;
    rgui->frame_buf_pitch = framebuf_pitch;
-
    rgui->folder_cb = folder_cb;
    rgui->userdata = userdata;
+   strlcpy(rgui->base_path, base_path, sizeof(rgui->base_path));
 
    rgui->path_stack = rgui_list_new();
    rgui->folder_buf = rgui_list_new();
@@ -501,6 +502,7 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_DEBUG_TEXT:
             snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
             break;
+         case RGUI_SETTINGS_OPEN_FILEBROWSER:
          case RGUI_SETTINGS_CUSTOM_VIEWPORT:
 #ifdef HAVE_LIBRETRO_MANAGEMENT
          case RGUI_SETTINGS_CORE:
@@ -975,6 +977,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR);
    RGUI_MENU_ITEM("Exit RetroArch", RGUI_SETTINGS_QUIT_EMULATOR);
 #else
+   //RGUI_MENU_ITEM("Filebrowser", RGUI_SETTINGS_OPEN_FILEBROWSER);
    RGUI_MENU_ITEM("Save State", RGUI_SETTINGS_SAVESTATE_SAVE);
    RGUI_MENU_ITEM("Load State", RGUI_SETTINGS_SAVESTATE_LOAD);
    RGUI_MENU_ITEM("Take Screenshot", RGUI_SETTINGS_SCREENSHOT);
@@ -1201,6 +1204,11 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
             video_set_aspect_ratio_func(g_settings.video.aspect_ratio_idx);
          }
+         else if (type == RGUI_SETTINGS_OPEN_FILEBROWSER && action == RGUI_ACTION_OK)
+         {
+            rgui_list_push(rgui->path_stack, rgui->base_path, RGUI_FILE_DIRECTORY, rgui->directory_ptr);
+            rgui->need_refresh = true;
+         }
          else
          {
             int ret = rgui_settings_toggle_setting(type, action, menu_type);
@@ -1408,6 +1416,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
       rgui->folder_cb(dir, (rgui_file_enum_cb_t)rgui_list_push,
          &menu_type, rgui->folder_buf);
 
+#ifdef
       if (*dir)
          rgui_list_sort(rgui->folder_buf);
    }
