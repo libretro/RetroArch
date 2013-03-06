@@ -84,11 +84,6 @@ static RASettingData* custom_action(NSString* action)
 }
 
 @implementation RASettingsList
-+ (void)refreshConfigFile
-{
-   (void)[[RASettingsList alloc] init];
-}
-
 - (id)init
 {
    RAConfig* config = [[RAConfig alloc] initWithPath:[RetroArch_iOS get].moduleInfo.configPath];
@@ -172,7 +167,9 @@ static RASettingData* custom_action(NSString* action)
 
 - (void)dealloc
 {
-   [self writeToDisk];
+   RAConfig* config = [[RAConfig alloc] initWithPath:[RetroArch_iOS get].moduleInfo.configPath];
+   [self writeSettings:nil toConfig:config];
+   [config writeToFile:[RetroArch_iOS get].moduleInfo.configPath];
 }
 
 - (void)handleCustomAction:(NSString*)action
@@ -181,17 +178,6 @@ static RASettingData* custom_action(NSString* action)
       [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:[RetroArch_iOS get].moduleInfo] animated:YES];
    else if([@"Connect WiiMotes" isEqualToString:action])
       [[RetroArch_iOS get] showWiiRemoteConfig];
-}
-
-
-- (void)writeToDisk
-{
-   RAConfig* config = [[RAConfig alloc] initWithPath:[RetroArch_iOS get].moduleInfo.configPath];
-   [config putStringNamed:@"system_directory" value:[RetroArch_iOS get].system_directory];
-
-   [self writeSettings:nil toConfig:config];
-
-   [config writeToFile:[RetroArch_iOS get].moduleInfo.configPath];
 }
 
 @end

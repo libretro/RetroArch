@@ -47,5 +47,4 @@ enum SettingTypes
 @end
 
 @interface RASettingsList : RASettingsSubList
-+ (void)refreshConfigFile;
 @end

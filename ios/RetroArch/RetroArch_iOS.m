@@ -120,11 +120,11 @@
 #pragma mark EMULATION
 - (void)runGame:(NSString*)path
 {
-   [RASettingsList refreshConfigFile];
-   
+   assert(self.moduleInfo);
+
    const char* const sd = [[RetroArch_iOS get].system_directory UTF8String];
-   const char* const cf =[[RetroArch_iOS get].moduleInfo.configPath UTF8String];
-   const char* const libretro = [[RetroArch_iOS get].moduleInfo.path UTF8String];
+   const char* const cf = (ra_ios_is_file(self.moduleInfo.configPath)) ? [self.moduleInfo.configPath UTF8String] : 0;
+   const char* const libretro = [self.moduleInfo.path UTF8String];
 
    struct rarch_main_wrap main_wrapper = {[path UTF8String], sd, sd, cf, libretro};
    if (rarch_main_init_wrap(&main_wrapper) == 0)
