@@ -31,12 +31,11 @@
 
 #import <UIKit/UIKit.h>
 
-#import "BTDiscoveryViewController.h"
+#import "BTstackManager.h"
 
-@interface WiiMoteHelper : NSObject<BTDiscoveryDelegate, BTstackManagerDelegate, BTstackManagerListener>
-+ (WiiMoteHelper*)get;
+@interface WiiMoteHelper : NSObject<BTstackManagerDelegate, BTstackManagerListener>
++ (void)startBluetooth;
 + (BOOL)isBluetoothRunning;
 + (void)stopBluetooth;
-- (void)showDiscovery;
 @end
 

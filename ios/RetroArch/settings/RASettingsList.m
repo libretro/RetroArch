@@ -92,10 +92,10 @@ static RASettingData* custom_action(NSString* action)
    NSString* shader_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/shaders/"];
 
    NSArray* settings = [NSArray arrayWithObjects:
-      [NSArray arrayWithObjects:@"General",
+      [NSArray arrayWithObjects:@"Frontend",
          custom_action(@"Module Info"),
 #ifdef WIIMOTE
-         custom_action(@"Connect WiiMotes"),
+         boolean_setting(config, @"ios_auto_bluetooth", @"Auto Enable Bluetooth", @"false"),
 #endif
          nil],
 
@@ -176,8 +176,6 @@ static RASettingData* custom_action(NSString* action)
 {
    if ([@"Module Info" isEqualToString:action])
       [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:[RetroArch_iOS get].moduleInfo] animated:YES];
-   else if([@"Connect WiiMotes" isEqualToString:action])
-      [[RetroArch_iOS get] showWiiRemoteConfig];
 }
 
 @end

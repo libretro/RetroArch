@@ -40,6 +40,16 @@
       config_file_write(_config, [path UTF8String]);
 }
 
+- (bool)getBoolNamed:(NSString*)name withDefault:(bool)def
+{
+   bool result = def;
+   
+   if (_config)
+      config_get_bool(_config, [name UTF8String], &result);
+   
+   return result;
+}
+
 - (int)getIntNamed:(NSString*)name withDefault:(int)def
 {
    int result = def;

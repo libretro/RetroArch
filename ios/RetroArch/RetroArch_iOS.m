@@ -96,14 +96,7 @@
    if (_isGameTop)
       [self startTimer];
 
-#ifdef WIIMOTE
-   navigationController.topViewController.navigationItem.rightBarButtonItem = (![WiiMoteHelper isBluetoothRunning]) ? nil :
-                           [[UIBarButtonItem alloc]
-                           initWithTitle:@"Stop Bluetooth"
-                           style:UIBarButtonItemStyleBordered
-                           target:[RetroArch_iOS get]
-                           action:@selector(stopBluetooth)];
-#endif
+   self.topViewController.navigationItem.rightBarButtonItem = [self createBluetoothButton];
 }
 
 // UINavigationController: Never animate when pushing onto, or popping, an RAGameView
@@ -131,6 +124,12 @@
    {
       rarch_init_msg_queue();
 
+      // Read load time settings
+      RAConfig* conf = [[RAConfig alloc] initWithPath:self.moduleInfo.configPath];
+      if ([conf getBoolNamed:@"ios_auto_bluetooth" withDefault:false])
+         [self startBluetooth];
+
+      //
       [self pushViewController:RAGameView.get animated:NO];
       _isRunning = true;
    }
@@ -151,6 +150,10 @@
       rarch_deinit_msg_queue();
       rarch_main_clear_state();
       
+      // Stop bluetooth (might be annoying but forgetting could eat battery of device AND wiimote)
+      [self stopBluetooth];
+      
+      //
       [self popToViewController:[RAGameView get] animated:NO];
       [self popViewControllerAnimated:NO];
    }
@@ -233,10 +236,26 @@
    [self pushViewController:[RASettingsList new] animated:YES];
 }
 
-- (IBAction)showWiiRemoteConfig
+#pragma MARK Bluetooth Helpers
+- (UIBarButtonItem*)createBluetoothButton
 {
 #ifdef WIIMOTE
-   [[WiiMoteHelper get] showDiscovery];
+   const bool isBTOn = [WiiMoteHelper isBluetoothRunning];
+   return [[UIBarButtonItem alloc]
+            initWithTitle:isBTOn ? @"Stop Bluetooth" : @"Start Bluetooth"
+            style:UIBarButtonItemStyleBordered
+            target:[RetroArch_iOS get]
+            action:isBTOn ? @selector(stopBluetooth) : @selector(startBluetooth)];
+#else
+   return nil;
+#endif
+}
+
+- (IBAction)startBluetooth
+{
+#ifdef WIIMOTE
+   [WiiMoteHelper startBluetooth];
+   [self.topViewController.navigationItem setRightBarButtonItem:[self createBluetoothButton] animated:YES];
 #endif
 }
 
@@ -244,7 +263,7 @@
 {
 #ifdef WIIMOTE
    [WiiMoteHelper stopBluetooth];
-   [self.topViewController.navigationItem setRightBarButtonItem:nil animated:YES];
+   [self.topViewController.navigationItem setRightBarButtonItem:[self createBluetoothButton] animated:YES];
 #endif
 }
 

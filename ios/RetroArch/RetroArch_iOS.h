@@ -23,7 +23,6 @@
 - (void)runGame:(NSString*)path;
 
 - (IBAction)showSettings;
-- (IBAction)showWiiRemoteConfig;
 
 @property (strong, nonatomic) RAModuleInfo* moduleInfo;
 

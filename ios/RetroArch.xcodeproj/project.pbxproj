@@ -98,7 +98,6 @@
 		966B9C8D16E40EFC005B61E1 /* RAInputResponder.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8916E40D44005B61E1 /* RAInputResponder.m */; };
 		966B9C8E16E40F00005B61E1 /* ios_input.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8616E40D44005B61E1 /* ios_input.m */; };
 		966B9CA216E418B7005B61E1 /* BTDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C9116E418B7005B61E1 /* BTDevice.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		966B9CA316E418B7005B61E1 /* BTDiscoveryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C9316E418B7005B61E1 /* BTDiscoveryViewController.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		966B9CA416E418B7005B61E1 /* BTstackManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C9C16E418B7005B61E1 /* BTstackManager.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		966B9CA516E418B7005B61E1 /* libBTstack.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 966B9C9D16E418B7005B61E1 /* libBTstack.dylib */; };
 		966B9CA616E418B7005B61E1 /* wiimote.c in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C9E16E418B7005B61E1 /* wiimote.c */; };
@@ -210,8 +209,6 @@
 		966B9C8916E40D44005B61E1 /* RAInputResponder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAInputResponder.m; sourceTree = "<group>"; };
 		966B9C9016E418B7005B61E1 /* BTDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BTDevice.h; sourceTree = "<group>"; };
 		966B9C9116E418B7005B61E1 /* BTDevice.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BTDevice.m; sourceTree = "<group>"; };
-		966B9C9216E418B7005B61E1 /* BTDiscoveryViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BTDiscoveryViewController.h; sourceTree = "<group>"; };
-		966B9C9316E418B7005B61E1 /* BTDiscoveryViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BTDiscoveryViewController.m; sourceTree = "<group>"; };
 		966B9C9516E418B7005B61E1 /* btstack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btstack.h; sourceTree = "<group>"; };
 		966B9C9616E418B7005B61E1 /* hci_cmds.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hci_cmds.h; sourceTree = "<group>"; };
 		966B9C9716E418B7005B61E1 /* linked_list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = linked_list.h; sourceTree = "<group>"; };
@@ -422,8 +419,6 @@
 			children = (
 				966B9C9016E418B7005B61E1 /* BTDevice.h */,
 				966B9C9116E418B7005B61E1 /* BTDevice.m */,
-				966B9C9216E418B7005B61E1 /* BTDiscoveryViewController.h */,
-				966B9C9316E418B7005B61E1 /* BTDiscoveryViewController.m */,
 				966B9C9416E418B7005B61E1 /* btstack */,
 				966B9C9B16E418B7005B61E1 /* BTstackManager.h */,
 				966B9C9C16E418B7005B61E1 /* BTstackManager.m */,
@@ -1001,7 +996,6 @@
 				966B9C8B16E40D44005B61E1 /* ios_joypad.m in Sources */,
 				966B9C8C16E40D44005B61E1 /* RAInputResponder.m in Sources */,
 				966B9CA216E418B7005B61E1 /* BTDevice.m in Sources */,
-				966B9CA316E418B7005B61E1 /* BTDiscoveryViewController.m in Sources */,
 				966B9CA416E418B7005B61E1 /* BTstackManager.m in Sources */,
 				966B9CA616E418B7005B61E1 /* wiimote.c in Sources */,
 				966B9CA716E418B7005B61E1 /* WiiMoteHelper.m in Sources */,

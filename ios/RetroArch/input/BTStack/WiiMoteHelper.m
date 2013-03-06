@@ -38,27 +38,24 @@
 
 #import "BTDevice.h"
 #import "BTstackManager.h"
-#import "BTDiscoveryViewController.h"
 
-#import "btstack/btstack.h"
-#import "btstack/run_loop.h"
-#import "btstack/hci_cmds.h"
-
-static BTDiscoveryViewController* discoveryView;
 static WiiMoteHelper* instance;
 static BTDevice *device;
 static bool btOK;
 
-
 @implementation WiiMoteHelper
-+ (WiiMoteHelper*)get
++ (void)startBluetooth
 {
-   if (!instance)
-   {
-      instance = [WiiMoteHelper new];
-   }
+   instance = instance ? instance : [WiiMoteHelper new];
    
-   return instance;
+   if (!btOK)
+   {
+      BTstackManager* bt = [BTstackManager sharedInstance];
+      [bt setDelegate:instance];
+      [bt addListener:instance];
+
+      btOK = [bt activate] == 0;
+   }
 }
 
 + (BOOL)isBluetoothRunning
@@ -68,46 +65,19 @@ static bool btOK;
 
 + (void)stopBluetooth
 {
-   instance = nil;
    myosd_num_of_joys = 0;
 
    if (btOK)
    {
       BTstackManager* bt = [BTstackManager sharedInstance];
-
-      [bt removeListener:discoveryView];
-      discoveryView = nil;
-      
-      [[BTstackManager sharedInstance] deactivate];
+   
+      [bt deactivate];
+      [bt setDelegate:nil];
+      [bt removeListener:instance];
       btOK = false;
    }
-}
-
-- (id)init
-{
-   if (!btOK)
-   {
-      BTstackManager* bt = [BTstackManager sharedInstance];
-      [bt setDelegate:self];
-      [bt addListener:self];
-
-      btOK = [bt activate] == 0;
-   }
    
-   return self;
-}
-
-- (void)showDiscovery
-{
-   if (!discoveryView)
-   {
-      discoveryView = [BTDiscoveryViewController new];
-      [discoveryView setDelegate:self];
-   
-      [[BTstackManager sharedInstance] addListener:discoveryView];
-   }
-   
-   [[RetroArch_iOS get] pushViewController:discoveryView animated:YES];
+   instance = nil;
 }
 
 // BTStackManagerListener
@@ -132,10 +102,10 @@ static bool btOK;
 
 // BTStackManagerDelegate
 -(void) btstackManager:(BTstackManager*) manager
-  handlePacketWithType:(uint8_t) packet_type
-			forChannel:(uint16_t) channel
-			   andData:(uint8_t *)packet
-			   withLen:(uint16_t) size
+  handlePacketWithType:(uint8_t)packet_type
+			   forChannel:(uint16_t)channel
+			      andData:(uint8_t*)packet
+			      withLen:(uint16_t)size
 {
    bd_addr_t event_addr;
 

@@ -17,6 +17,7 @@
 - (id)initWithPath:(NSString*)path;
 - (void)writeToFile:(NSString*)path;
 
+- (bool)getBoolNamed:(NSString*)name withDefault:(bool)def;
 - (int)getIntNamed:(NSString*)name withDefault:(int)def;
 - (unsigned)getUintNamed:(NSString*)name withDefault:(unsigned)def;
 - (NSString*)getStringNamed:(NSString*)name withDefault:(NSString*)def;
