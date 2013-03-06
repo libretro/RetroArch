@@ -1174,9 +1174,12 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
       case RGUI_ACTION_CANCEL:
       case RGUI_ACTION_SETTINGS:
-         rgui_list_pop(rgui->path_stack);
-         rgui->directory_ptr = directory_ptr;
-         rgui->need_refresh = true;
+         if (rgui_list_size(rgui->path_stack) > 1)
+         {
+            rgui_list_pop(rgui->path_stack);
+            rgui->directory_ptr = directory_ptr;
+            rgui->need_refresh = true;
+         }
          break;
 
       case RGUI_ACTION_LEFT:
