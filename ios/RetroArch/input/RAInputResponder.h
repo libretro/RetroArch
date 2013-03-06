@@ -19,7 +19,6 @@
 
 typedef struct touch_data
 {
-   bool is_down;
    int16_t screen_x, screen_y;
    int16_t fixed_x, fixed_y;
    int16_t full_x, full_y;

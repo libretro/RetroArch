@@ -57,7 +57,7 @@ extern NSString* const RATouchNotification;
 
 - (const touch_data_t*)getTouchDataAtIndex:(unsigned)index
 {
-   return (index < MAX_TOUCHES && _touches[index].is_down) ? &_touches[index] : 0;
+   return (index < _touchCount) ? &_touches[index] : 0;
 }
 
 // Response handlers
@@ -77,18 +77,21 @@ extern NSString* const RATouchNotification;
 {
    UIEvent* event = [notification.userInfo objectForKey:@"event"];
    NSArray* touches = [[event allTouches] allObjects];
+   const int numTouches = [touches count];
 
-   _touchCount = [touches count];
+   _touchCount = 0;
    
-   for(int i = 0; i != _touchCount; i ++)
+   for(int i = 0; i != numTouches && _touchCount != MAX_TOUCHES; i ++)
    {
       UITouch *touch = [touches objectAtIndex:i];
       CGPoint coord = [touch locationInView:touch.view];
       float scale = [[UIScreen mainScreen] scale];
 
-      _touches[i].is_down = (touch.phase != UITouchPhaseEnded) && (touch.phase != UITouchPhaseCancelled);
-      _touches[i].screen_x = coord.x * scale;
-      _touches[i].screen_y = coord.y * scale;
+      if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
+      {
+         _touches[_touchCount   ].screen_x = coord.x * scale;
+         _touches[_touchCount ++].screen_y = coord.y * scale;
+      }
    }
 }
 @end
