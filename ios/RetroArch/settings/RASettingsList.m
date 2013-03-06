@@ -86,7 +86,7 @@ static RASettingData* custom_action(NSString* action)
 @implementation RASettingsList
 + (void)refreshConfigFile
 {
-   [[[RASettingsList alloc] init] writeToDisk];
+   (void)[[RASettingsList alloc] init];
 }
 
 - (id)init

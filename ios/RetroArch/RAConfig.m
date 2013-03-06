@@ -24,6 +24,7 @@
 - (id)initWithPath:(NSString*)path
 {
    _config = config_file_new([path UTF8String]);
+   _config = _config ? _config : config_file_new(0);
    return self;
 }
 
