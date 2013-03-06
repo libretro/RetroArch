@@ -569,8 +569,8 @@ static void render_text(rgui_handle_t *rgui)
       blit_line(rgui, x, y, message, i == rgui->directory_ptr);
    }
 
-   const char *message_queue;
 #ifdef GEKKO
+   const char *message_queue;
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    if (rgui->msg_force)
    {
@@ -581,10 +581,8 @@ static void render_text(rgui_handle_t *rgui)
    {
       message_queue = gx->msg;
    }
-#else
-   message_queue = msg_queue_pull(g_extern.msg_queue);
-#endif
    render_messagebox(rgui, message_queue);
+#endif
 }
 
 #ifdef GEKKO

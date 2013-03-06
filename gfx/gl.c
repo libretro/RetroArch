@@ -1824,7 +1824,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (input && input_data)
       context_input_driver_func(input, input_data);
    
-#ifndef HAVE_RMENU
+#if !defined(HAVE_RMENU) || !defined(RARCH_CONSOLE)
    // Comes too early for console - moved to gl_start
    if (g_settings.video.font_enable)
       gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
