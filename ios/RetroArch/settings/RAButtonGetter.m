@@ -149,9 +149,12 @@ static NSString* get_key_config_name(uint32_t hid_id)
 {
    for (int i = 0; i != myosd_num_of_joys; i ++)
    {
-      for (int j = 0; j != sizeof(joys[i].btns) * 8; j ++)
+      uint32_t buttons = joys[i].btns;
+      buttons |= (joys[i].exp.type == EXP_CLASSIC) ? (joys[i].exp.classic.btns << 16) : 0;
+
+      for (int j = 0; j != sizeof(buttons) * 8; j ++)
       {
-         if (joys[i].btns & (1 << j))
+         if (buttons & (1 << j))
          {
             _value.msubValues[1] = [NSString stringWithFormat:@"%d", j];
             [self finish];

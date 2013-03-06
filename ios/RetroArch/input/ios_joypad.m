@@ -53,7 +53,14 @@ static int16_t ios_joypad_axis(unsigned port, uint32_t joyaxis)
 static void ios_joypad_poll(void)
 {
    for (int i = 0; i != MAX_PLAYERS; i ++)
-      g_buttons[i] = (i < myosd_num_of_joys) ? joys[i].btns : 0;
+   {
+      g_buttons[i] = 0;
+      if (i < myosd_num_of_joys)
+      {
+         g_buttons[i] = joys[i].btns;
+         g_buttons[i] |= (joys[i].exp.type == EXP_CLASSIC) ? (joys[i].exp.classic.btns << 16) : 0;
+      }
+   }
 }
 
 const rarch_joypad_driver_t ios_joypad = {
