@@ -242,6 +242,7 @@ struct settings
       bool debug_enable;
 #ifdef ANDROID
       bool autodetect_enable;
+      unsigned back_behavior;
       unsigned icade_profile[MAX_PLAYERS];
       unsigned icade_count;
 #endif

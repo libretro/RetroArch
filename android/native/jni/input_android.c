@@ -367,6 +367,12 @@ static void android_input_poll(void *data)
                         && input_state > 0)
                   {
                   }
+                  else if (g_settings.input.back_behavior == BACK_BUTTON_MENU_TOGGLE)
+                  {
+                     *lifecycle_state |= (1ULL << RARCH_RMENU_TOGGLE);
+                     AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+                     break;
+                  }
                   else
                   {
                      *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);

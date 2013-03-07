@@ -239,6 +239,7 @@ void config_set_defaults(void)
    g_settings.input.debug_enable = input_debug_enable;
 #ifdef ANDROID
    g_settings.input.autodetect_enable = input_autodetect_enable;
+   g_settings.input.back_behavior = BACK_BUTTON_QUIT;
 #endif
 
    for (int i = 0; i < MAX_PLAYERS; i++)
@@ -699,6 +700,7 @@ bool config_load_file(const char *path)
 
 #ifdef ANDROID
    CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
+   CONFIG_GET_INT(input.back_behavior, "input_back_behavior");
    CONFIG_GET_INT(input.icade_profile[0], "input_autodetect_icade_profile_pad1");
    CONFIG_GET_INT(input.icade_profile[1], "input_autodetect_icade_profile_pad2");
    CONFIG_GET_INT(input.icade_profile[2], "input_autodetect_icade_profile_pad3");
@@ -1197,6 +1199,7 @@ bool config_save_file(const char *path)
    config_set_string(conf, "audio_resampler", g_settings.audio.resampler);
 
 #ifdef ANDROID
+   config_set_int(conf, "input_back_behavior", input.back_behavior);
    config_set_int(conf, "input_autodetect_icade_profile_pad1", input.icade_profile[0]);
    config_set_int(conf, "input_autodetect_icade_profile_pad2", input.icade_profile[1]);
    config_set_int(conf, "input_autodetect_icade_profile_pad3", input.icade_profile[2]);
