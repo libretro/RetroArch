@@ -83,8 +83,6 @@ enum
 };
 
 #ifdef GEKKO
-
-
 static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       void *userdata, void *ctx)
 {
@@ -120,6 +118,7 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       strlcpy(exts, "dol|DOL", sizeof(exts));
    else
       strlcpy(exts, g_extern.system.valid_extensions, sizeof(exts));
+
    struct string_list *ext_list = string_split(exts, "|");
 
    char _dir[PATH_MAX];
@@ -269,7 +268,6 @@ int rmenu_input_process(void *data, void *state)
    return 0;
 }
 
-#ifdef GEKKO
 bool rmenu_iterate(void)
 {
    static uint16_t old_input_state = 0;
@@ -282,97 +280,6 @@ bool rmenu_iterate(void)
    g_extern.frame_count++;
 
    uint16_t input_state = 0;
-
-   driver.input->poll(NULL);
-
-   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
-      input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
-            RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
-
-   trigger_state = input_state & ~old_input_state;
-   bool do_held = (input_state & ((1ULL << GX_DEVICE_NAV_UP) | (1ULL << GX_DEVICE_NAV_DOWN) | (1ULL << GX_DEVICE_NAV_LEFT) | (1ULL << GX_DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << GX_DEVICE_NAV_MENU) | (1ULL << GX_DEVICE_NAV_QUIT)));
-
-   if(do_held)
-   {
-      if(!first_held)
-      {
-         first_held = true;
-         g_extern.delay_timer[1] = g_extern.frame_count + (initial_held ? 15 : 7);
-      }
-
-      if (!(g_extern.frame_count < g_extern.delay_timer[1]))
-      {
-         first_held = false;
-         trigger_state = input_state; //second input frame set as current frame
-      }
-
-      initial_held = false;
-   }
-   else
-   {
-      first_held = false;
-      initial_held = true;
-   }
-
-   old_input_state = input_state;
-
-   rgui_action_t action = RGUI_ACTION_NOOP;
-
-   // don't run anything first frame, only capture held inputs for old_input_state
-   if (trigger_state & (1ULL << GX_DEVICE_NAV_UP))
-      action = RGUI_ACTION_UP;
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_DOWN))
-      action = RGUI_ACTION_DOWN;
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_LEFT))
-      action = RGUI_ACTION_LEFT;
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_RIGHT))
-      action = RGUI_ACTION_RIGHT;
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_B))
-      action = RGUI_ACTION_CANCEL;
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_A))
-      action = RGUI_ACTION_OK;
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_START))
-      action = RGUI_ACTION_START;
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_SELECT))
-      action = RGUI_ACTION_SETTINGS;
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_QUIT))
-   {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
-      goto deinit;
-   }
-
-   int input_entry_ret = 0;
-   int input_process_ret = 0;
-
-   input_entry_ret = rgui_iterate(rgui, action);
-
-   // draw last frame for loading messages
-   rarch_render_cached_frame();
-
-   input_process_ret = rmenu_input_process(NULL, NULL);
-
-   if (input_entry_ret != 0 || input_process_ret != 0)
-      goto deinit;
-
-   return true;
-
-deinit:
-   // set a timer delay so that we don't instantly switch back to the menu when
-   // press and holding QUIT in the emulation loop (lasts for 30 frame ticks)
-   if (!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
-      g_extern.delay_timer[0] = g_extern.frame_count + 30;
-
-   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
-   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME);
-
-   return false;
-}
-#else
-bool rmenu_iterate(void)
-{
-   static uint16_t old_input_state = 0;
-   static bool initial_held = true;
-   static bool first_held = false;
 
    driver.input->poll(NULL);
 
@@ -403,19 +310,14 @@ bool rmenu_iterate(void)
    }
 #endif
 
+#ifndef GEKKO
+   /* TODO - not sure if correct regarding RARCH_QUIT_KEY */
    if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
       goto deinit;
    }
-
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
-
-   driver.video->apply_state_changes();
-
-   g_extern.frame_count++;
-
-   uint16_t input_state = 0;
+#endif
 
    for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
       input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
@@ -423,9 +325,7 @@ bool rmenu_iterate(void)
 
 #ifdef HAVE_OVERLAY
    for (unsigned i = 0; i < 16; i++)
-   {
       input_state |= driver.overlay_state & (1ULL << i) ? (1ULL << i) : 0;
-   }
 #endif
 
    trigger_state = input_state & ~old_input_state;
@@ -474,7 +374,7 @@ bool rmenu_iterate(void)
       action = RGUI_ACTION_START;
    else if (trigger_state & (1ULL << GX_DEVICE_NAV_SELECT))
       action = RGUI_ACTION_SETTINGS;
-#if 0
+#ifdef GEKKO
    else if (trigger_state & (1ULL << GX_DEVICE_NAV_QUIT))
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
@@ -508,4 +408,3 @@ deinit:
 
    return false;
 }
-#endif
