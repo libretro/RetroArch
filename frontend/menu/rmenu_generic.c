@@ -54,8 +54,8 @@ static const struct retro_keybind _rmenu_nav_binds[] = {
    { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN), 0 },
    { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT), 0 },
    { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT), 0 },
-   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_B), 0 },
    { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_A), 0 },
+   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_B), 0 },
    { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_START), 0 },
    { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT), 0 },
    { 0, 0, NULL, 0, (1ULL << RARCH_RMENU_TOGGLE), 0 },
@@ -323,9 +323,12 @@ bool rmenu_iterate(void)
       input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
+   input_state |= driver.input->key_pressed(driver.input_data, RARCH_RMENU_TOGGLE) ? (1ULL << GX_DEVICE_NAV_MENU) : 0;
+   input_state |= driver.input->key_pressed(driver.input_data, RARCH_QUIT_KEY) ? (1ULL << GX_DEVICE_NAV_QUIT) : 0;
+
 #ifdef HAVE_OVERLAY
-   for (unsigned i = 0; i < 16; i++)
-      input_state |= driver.overlay_state & (1ULL << i) ? (1ULL << i) : 0;
+   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
+      input_state |= driver.overlay_state & rmenu_nav_binds[0][i].joykey ? (1ULL << i) : 0;
 #endif
 
    trigger_state = input_state & ~old_input_state;
