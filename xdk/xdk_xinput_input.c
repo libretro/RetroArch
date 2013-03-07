@@ -231,14 +231,11 @@ static void xdk_input_poll(void *data)
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
       if((*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
-      {
          *lifecycle_state |= (1ULL << RARCH_RMENU_TOGGLE);
-         *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
-      }
       if(!(*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
       {
+         *lifecycle_state |= (1ULL << RARCH_RMENU_TOGGLE);
          *lifecycle_state |= (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE);
-         *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
       }
    }
 }

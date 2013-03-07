@@ -2793,24 +2793,25 @@ bool rarch_main_iterate(void)
    }
 
    // Time to drop?
-   if (input_key_pressed_func(RARCH_QUIT_KEY) ||
-         !video_alive_func())
+   if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
    {
 #ifdef HAVE_RMENU
-      bool rmenu_enable = input_key_pressed_func(RARCH_RMENU_TOGGLE);
-      if (input_key_pressed_func(RARCH_RMENU_QUICKMENU_TOGGLE))
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
-
-      if (rmenu_enable || ((g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME)) && !rmenu_enable))
-      {
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-         g_extern.delay_timer[0] = g_extern.frame_count + 30;
-      }
-      else
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
 #endif
       return false;
    }
+
+#ifdef HAVE_RMENU
+   if (input_key_pressed_func(RARCH_RMENU_TOGGLE))
+   {
+      if (input_key_pressed_func(RARCH_RMENU_QUICKMENU_TOGGLE))
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
+
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+      g_extern.delay_timer[0] = g_extern.frame_count + 30;
+      return false;
+   }
+#endif
 
 #ifdef HAVE_COMMAND
    if (driver.command)
