@@ -63,12 +63,6 @@ static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 
 #define AMotionEvent_getAxisValue (*p_AMotionEvent_getAxisValue)
 
-float getAxis(AInputEvent *event, int stick, int axis, int pointer)
-{
-   int axis_arg[2][2] = {{AXIS_X, AXIS_Y}, {AXIS_Z, AXIS_RZ}};
-   return AMotionEvent_getAxisValue(event, axis_arg[stick][axis], pointer);
-}
-
 /**
  * Process the next main command.
  */
