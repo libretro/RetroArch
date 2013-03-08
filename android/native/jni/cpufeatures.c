@@ -69,10 +69,6 @@ static  int                g_cpuCount;
 #  define DEFAULT_CPU_FAMILY  ANDROID_CPU_FAMILY_UNKNOWN
 #endif
 
-#define  D(...) \
-    do { \
-    } while (0)
-
 #ifdef __i386__
 static __inline__ void cpu_x86_cpuid(int func, int values[4])
 {
@@ -126,55 +122,52 @@ cpu_read_file(const char*  pathname, char*  buffer, size_t  buffsize)
 static char*
 extract_cpuinfo_field(char* buffer, int buflen, const char* field)
 {
-    int  fieldlen = strlen(field);
-    char* bufend = buffer + buflen;
-    char* result = NULL;
-    int len;
-    const char *p, *q;
+   int  fieldlen = strlen(field);
+   char* bufend = buffer + buflen;
+   char* result = NULL;
+   int len;
+   const char *p, *q;
 
-    /* Look for first field occurence, and ensures it starts the line.
-     */
-    p = buffer;
-    bufend = buffer + buflen;
-    for (;;) {
-        p = memmem(p, bufend-p, field, fieldlen);
-        if (p == NULL)
-            goto EXIT;
+   /* Look for first field occurence, and ensures it starts the line.
+   */
+   p = buffer;
+   bufend = buffer + buflen;
+   for (;;)
+   {
+      p = memmem(p, bufend-p, field, fieldlen);
+      if (p == NULL)
+         goto EXIT;
 
-        if (p == buffer || p[-1] == '\n')
-            break;
+      if (p == buffer || p[-1] == '\n')
+         break;
 
-        p += fieldlen;
-    }
+      p += fieldlen;
+   }
 
-    /* Skip to the first column followed by a space */
-    p += fieldlen;
-    p  = memchr(p, ':', bufend-p);
-    if (p == NULL || p[1] != ' ')
-        goto EXIT;
+   /* Skip to the first column followed by a space */
+   p += fieldlen;
+   p  = memchr(p, ':', bufend-p);
+   if (p == NULL || p[1] != ' ')
+      goto EXIT;
 
-    /* Find the end of the line */
-    p += 2;
-    q = memchr(p, '\n', bufend-p);
-    if (q == NULL)
-        q = bufend;
+   /* Find the end of the line */
+   p += 2;
+   q = memchr(p, '\n', bufend-p);
+   if (q == NULL)
+      q = bufend;
 
-    /* Copy the line into a heap-allocated buffer */
-    len = q-p;
-    result = malloc(len+1);
-    if (result == NULL)
-        goto EXIT;
+   /* Copy the line into a heap-allocated buffer */
+   len = q-p;
+   result = malloc(len+1);
+   if (result == NULL)
+      goto EXIT;
 
-    memcpy(result, p, len);
-    result[len] = '\0';
+   memcpy(result, p, len);
+   result[len] = '\0';
 
 EXIT:
-    return result;
+   return result;
 }
-
-/* Like strlen(), but for constant string literals */
-#define STRLEN_CONST(x)  ((sizeof(x)-1)
-
 
 /* Checks that a space-separated list of items contains one given 'item'.
  * Returns 1 if found, 0 otherwise.
@@ -188,7 +181,8 @@ has_list_item(const char* list, const char* item)
     if (list == NULL)
         return 0;
 
-    while (*p) {
+    while (*p)
+    {
         const char*  q;
 
         /* skip spaces */
@@ -224,7 +218,8 @@ parse_decimal(const char* input, const char* limit, int* result)
 {
     const char* p = input;
     int val = 0;
-    while (p < limit) {
+    while (p < limit)
+    {
         int d = (*p - '0');
         if ((unsigned)d >= 10U)
             break;
@@ -248,28 +243,6 @@ typedef struct {
     uint32_t mask;
 } CpuList;
 
-static __inline__ void
-cpulist_init(CpuList* list) {
-    list->mask = 0;
-}
-
-static __inline__ void
-cpulist_and(CpuList* list1, CpuList* list2) {
-    list1->mask &= list2->mask;
-}
-
-static __inline__ void
-cpulist_set(CpuList* list, int index) {
-    if ((unsigned)index < 32) {
-        list->mask |= (uint32_t)(1U << index);
-    }
-}
-
-static __inline__ int
-cpulist_count(CpuList* list) {
-    return __builtin_popcount(list->mask);
-}
-
 /* Parse a textual list of cpus and store the result inside a CpuList object.
  * Input format is the following:
  * - comma-separated list of items (no spaces)
@@ -280,73 +253,76 @@ cpulist_count(CpuList* list) {
  *             2,4-127,128-143
  *             0-1
  */
-static void
-cpulist_parse(CpuList* list, const char* line, int line_len)
+static void cpulist_parse(CpuList* list, const char* line, int line_len)
 {
-    const char* p = line;
-    const char* end = p + line_len;
-    const char* q;
+   const char* p = line;
+   const char* end = p + line_len;
+   const char* q;
 
-    /* NOTE: the input line coming from sysfs typically contains a
-     * trailing newline, so take care of it in the code below
-     */
-    while (p < end && *p != '\n')
-    {
-        int val, start_value, end_value;
+   /* NOTE: the input line coming from sysfs typically contains a
+    * trailing newline, so take care of it in the code below
+    */
+   while (p < end && *p != '\n')
+   {
+      int val, start_value, end_value;
 
-        /* Find the end of current item, and put it into 'q' */
-        q = memchr(p, ',', end-p);
-        if (q == NULL) {
-            q = end;
-        }
+      /* Find the end of current item, and put it into 'q' */
+      q = memchr(p, ',', end-p);
+      if (q == NULL)
+         q = end;
 
-        /* Get first value */
-        p = parse_decimal(p, q, &start_value);
-        if (p == NULL)
+      /* Get first value */
+      p = parse_decimal(p, q, &start_value);
+      if (p == NULL)
+         goto BAD_FORMAT;
+
+      end_value = start_value;
+
+      /* If we're not at the end of the item, expect a dash and
+       * and integer; extract end value.
+       */
+      if (p < q && *p == '-')
+      {
+         p = parse_decimal(p+1, q, &end_value);
+         if (p == NULL)
             goto BAD_FORMAT;
+      }
 
-        end_value = start_value;
+      /* Set bits CPU list bits */
+      for (val = start_value; val <= end_value; val++)
+      {
+         if ((unsigned)val < 32)
+            list->mask |= (uint32_t)(1U << val);
+      }
 
-        /* If we're not at the end of the item, expect a dash and
-         * and integer; extract end value.
-         */
-        if (p < q && *p == '-') {
-            p = parse_decimal(p+1, q, &end_value);
-            if (p == NULL)
-                goto BAD_FORMAT;
-        }
-
-        /* Set bits CPU list bits */
-        for (val = start_value; val <= end_value; val++) {
-            cpulist_set(list, val);
-        }
-
-        /* Jump to next item */
-        p = q;
-        if (p < end)
-            p++;
-    }
+      /* Jump to next item */
+      p = q;
+      if (p < end)
+         p++;
+   }
 
 BAD_FORMAT:
-    ;
+   ;
 }
 
 /* Read a CPU list from one sysfs file */
 static void
 cpulist_read_from(CpuList* list, const char* filename)
 {
-    char   file[64];
-    int    filelen;
+   char   file[64];
+   int    filelen;
 
-    cpulist_init(list);
+   list->mask = 0;
 
-    filelen = cpu_read_file(filename, file, sizeof file);
-    if (filelen < 0) {
-        D("Could not read %s: %s\n", filename, strerror(errno));
-        return;
-    }
+   filelen = cpu_read_file(filename, file, sizeof file);
 
-    cpulist_parse(list, file, filelen);
+   if (filelen < 0)
+   {
+      RARCH_ERR("Could not read %s: %s\n", filename, strerror(errno));
+      return;
+   }
+
+   cpulist_parse(list, file, filelen);
 }
 
 /* Return the number of cpus present on a given device.
@@ -355,192 +331,179 @@ cpulist_read_from(CpuList* list, const char* filename)
  * intersection of the 'present' and 'possible' CPU lists and count
  * the result.
  */
-static int
-get_cpu_count(void)
+static int get_cpu_count(void)
 {
-    CpuList cpus_present[1];
-    CpuList cpus_possible[1];
+   CpuList cpus_present[1];
+   CpuList cpus_possible[1];
 
-    cpulist_read_from(cpus_present, "/sys/devices/system/cpu/present");
-    cpulist_read_from(cpus_possible, "/sys/devices/system/cpu/possible");
+   cpulist_read_from(cpus_present, "/sys/devices/system/cpu/present");
+   cpulist_read_from(cpus_possible, "/sys/devices/system/cpu/possible");
 
-    /* Compute the intersection of both sets to get the actual number of
-     * CPU cores that can be used on this device by the kernel.
-     */
-    cpulist_and(cpus_present, cpus_possible);
+   /* Compute the intersection of both sets to get the actual number of
+    * CPU cores that can be used on this device by the kernel.
+    */
+   cpus_present->mask &= cpus_possible->mask;
 
-    return cpulist_count(cpus_present);
+   return __builtin_popcount(cpus_present->mask);
 }
 
-static void
-android_cpuInit(void)
+static void android_cpuInit(void)
 {
-    char cpuinfo[4096];
-    int  cpuinfo_len;
+   char cpuinfo[4096];
+   int  cpuinfo_len;
 
-    g_cpuFamily   = DEFAULT_CPU_FAMILY;
-    g_cpuFeatures = 0;
-    g_cpuCount    = 1;
+   g_cpuFamily   = DEFAULT_CPU_FAMILY;
+   g_cpuFeatures = 0;
+   g_cpuCount    = 1;
 
-    cpuinfo_len = cpu_read_file("/proc/cpuinfo", cpuinfo, sizeof cpuinfo);
-    D("cpuinfo_len is (%d):\n%.*s\n", cpuinfo_len,
-      cpuinfo_len >= 0 ? cpuinfo_len : 0, cpuinfo);
+   cpuinfo_len = cpu_read_file("/proc/cpuinfo", cpuinfo, sizeof cpuinfo);
+   RARCH_LOG("cpuinfo_len is (%d):\n%.*s\n", cpuinfo_len,
+         cpuinfo_len >= 0 ? cpuinfo_len : 0, cpuinfo);
 
-    if (cpuinfo_len < 0)  /* should not happen */ {
-        return;
-    }
+   if (cpuinfo_len < 0)
+      return;
 
-    /* Count the CPU cores, the value may be 0 for single-core CPUs */
-    g_cpuCount = get_cpu_count();
-    if (g_cpuCount == 0) {
-        g_cpuCount = 1;
-    }
+   /* Count the CPU cores, the value may be 0 for single-core CPUs */
+   g_cpuCount = get_cpu_count();
+   if (g_cpuCount == 0)
+      g_cpuCount = 1;
 
-    D("found cpuCount = %d\n", g_cpuCount);
+   RARCH_LOG("found cpuCount = %d\n", g_cpuCount);
 
 #ifdef __ARM_ARCH__
-    {
-        /* Extract architecture from the "CPU Architecture" field.
-         * The list is well-known, unlike the the output of
-         * the 'Processor' field which can vary greatly.
-         *
-         * See the definition of the 'proc_arch' array in
-         * $KERNEL/arch/arm/kernel/setup.c and the 'c_show' function in
-         * same file.
-         */
-        char* cpuArch = extract_cpuinfo_field(cpuinfo, cpuinfo_len, "CPU architecture");
+   /* Extract architecture from the "CPU Architecture" field.
+    * The list is well-known, unlike the the output of
+    * the 'Processor' field which can vary greatly.
+    *
+    * See the definition of the 'proc_arch' array in
+    * $KERNEL/arch/arm/kernel/setup.c and the 'c_show' function in
+    * same file.
+    */
+   char* cpuArch = extract_cpuinfo_field(cpuinfo, cpuinfo_len, "CPU architecture");
 
-        if (cpuArch != NULL) {
-            char*  end;
-            long   archNumber;
-            int    hasARMv7 = 0;
+   if (cpuArch != NULL)
+   {
+      char*  end;
+      long   archNumber;
+      int    hasARMv7 = 0;
 
-            D("found cpuArch = '%s'\n", cpuArch);
+      RARCH_LOG("found cpuArch = '%s'\n", cpuArch);
 
-            /* read the initial decimal number, ignore the rest */
-            archNumber = strtol(cpuArch, &end, 10);
+      /* read the initial decimal number, ignore the rest */
+      archNumber = strtol(cpuArch, &end, 10);
 
-            /* Here we assume that ARMv8 will be upwards compatible with v7
-                * in the future. Unfortunately, there is no 'Features' field to
-                * indicate that Thumb-2 is supported.
-                */
-            if (end > cpuArch && archNumber >= 7) {
-                hasARMv7 = 1;
+      /* Here we assume that ARMv8 will be upwards compatible with v7
+       * in the future. Unfortunately, there is no 'Features' field to
+       * indicate that Thumb-2 is supported.
+       */
+      if (end > cpuArch && archNumber >= 7)
+         hasARMv7 = 1;
+
+      /* Unfortunately, it seems that certain ARMv6-based CPUs
+       * report an incorrect architecture number of 7!
+       *
+       * See http://code.google.com/p/android/issues/detail?id=10812
+       *
+       * We try to correct this by looking at the 'elf_format'
+       * field reported by the 'Processor' field, which is of the
+       * form of "(v7l)" for an ARMv7-based CPU, and "(v6l)" for
+       * an ARMv6-one.
+       */
+      if (hasARMv7)
+      {
+         char* cpuProc = extract_cpuinfo_field(cpuinfo, cpuinfo_len,
+               "Processor");
+         if (cpuProc != NULL)
+         {
+            RARCH_LOG("found cpuProc = '%s'\n", cpuProc);
+            if (has_list_item(cpuProc, "(v6l)"))
+            {
+               RARCH_ERR("CPU processor and architecture mismatch!!\n");
+               hasARMv7 = 0;
             }
+            free(cpuProc);
+         }
+      }
 
-            /* Unfortunately, it seems that certain ARMv6-based CPUs
-             * report an incorrect architecture number of 7!
-             *
-             * See http://code.google.com/p/android/issues/detail?id=10812
-             *
-             * We try to correct this by looking at the 'elf_format'
-             * field reported by the 'Processor' field, which is of the
-             * form of "(v7l)" for an ARMv7-based CPU, and "(v6l)" for
-             * an ARMv6-one.
-             */
-            if (hasARMv7) {
-                char* cpuProc = extract_cpuinfo_field(cpuinfo, cpuinfo_len,
-                                                      "Processor");
-                if (cpuProc != NULL) {
-                    D("found cpuProc = '%s'\n", cpuProc);
-                    if (has_list_item(cpuProc, "(v6l)")) {
-                        D("CPU processor and architecture mismatch!!\n");
-                        hasARMv7 = 0;
-                    }
-                    free(cpuProc);
-                }
-            }
+      if (hasARMv7)
+         g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_ARMv7;
 
-            if (hasARMv7) {
-                g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_ARMv7;
-            }
+      /* The LDREX / STREX instructions are available from ARMv6 */
+      if (archNumber >= 6)
+         g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_LDREX_STREX;
 
-            /* The LDREX / STREX instructions are available from ARMv6 */
-            if (archNumber >= 6) {
-                g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_LDREX_STREX;
-            }
+      free(cpuArch);
+   }
 
-            free(cpuArch);
-        }
+   /* Extract the list of CPU features from 'Features' field */
+   char* cpuFeatures = extract_cpuinfo_field(cpuinfo, cpuinfo_len, "Features");
 
-        /* Extract the list of CPU features from 'Features' field */
-        char* cpuFeatures = extract_cpuinfo_field(cpuinfo, cpuinfo_len, "Features");
+   if (cpuFeatures != NULL)
+   {
+      RARCH_LOG("found cpuFeatures = '%s'\n", cpuFeatures);
 
-        if (cpuFeatures != NULL) {
+      if (has_list_item(cpuFeatures, "vfpv3"))
+         g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_VFPv3;
 
-            D("found cpuFeatures = '%s'\n", cpuFeatures);
+      else if (has_list_item(cpuFeatures, "vfpv3d16"))
+         g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_VFPv3;
 
-            if (has_list_item(cpuFeatures, "vfpv3"))
-                g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_VFPv3;
-
-            else if (has_list_item(cpuFeatures, "vfpv3d16"))
-                g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_VFPv3;
-
-            if (has_list_item(cpuFeatures, "neon")) {
-                /* Note: Certain kernels only report neon but not vfpv3
-                    *       in their features list. However, ARM mandates
-                    *       that if Neon is implemented, so must be VFPv3
-                    *       so always set the flag.
-                    */
-                g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_NEON |
-                                 ANDROID_CPU_ARM_FEATURE_VFPv3;
-            }
-            free(cpuFeatures);
-        }
-    }
+      if (has_list_item(cpuFeatures, "neon"))
+      {
+         /* Note: Certain kernels only report neon but not vfpv3
+          *       in their features list. However, ARM mandates
+          *       that if Neon is implemented, so must be VFPv3
+          *       so always set the flag.
+          */
+         g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_NEON |
+            ANDROID_CPU_ARM_FEATURE_VFPv3;
+      }
+      free(cpuFeatures);
+   }
 #endif /* __ARM_ARCH__ */
 
 #ifdef __i386__
-    g_cpuFamily = ANDROID_CPU_FAMILY_X86;
+   g_cpuFamily = ANDROID_CPU_FAMILY_X86;
 
-    int regs[4];
+   int regs[4];
 
-/* According to http://en.wikipedia.org/wiki/CPUID */
+   /* According to http://en.wikipedia.org/wiki/CPUID */
 #define VENDOR_INTEL_b  0x756e6547
 #define VENDOR_INTEL_c  0x6c65746e
 #define VENDOR_INTEL_d  0x49656e69
 
-    cpu_x86_cpuid(0, regs);
-    int vendorIsIntel = (regs[1] == VENDOR_INTEL_b &&
-                         regs[2] == VENDOR_INTEL_c &&
-                         regs[3] == VENDOR_INTEL_d);
+   cpu_x86_cpuid(0, regs);
+   int vendorIsIntel = (regs[1] == VENDOR_INTEL_b &&
+         regs[2] == VENDOR_INTEL_c &&
+         regs[3] == VENDOR_INTEL_d);
 
-    cpu_x86_cpuid(1, regs);
-    if ((regs[2] & (1 << 9)) != 0) {
-        g_cpuFeatures |= ANDROID_CPU_X86_FEATURE_SSSE3;
-    }
-    if ((regs[2] & (1 << 23)) != 0) {
-        g_cpuFeatures |= ANDROID_CPU_X86_FEATURE_POPCNT;
-    }
-    if (vendorIsIntel && (regs[2] & (1 << 22)) != 0) {
-        g_cpuFeatures |= ANDROID_CPU_X86_FEATURE_MOVBE;
-    }
+   cpu_x86_cpuid(1, regs);
+   if ((regs[2] & (1 << 9)) != 0)
+      g_cpuFeatures |= ANDROID_CPU_X86_FEATURE_SSSE3;
+   if ((regs[2] & (1 << 23)) != 0)
+      g_cpuFeatures |= ANDROID_CPU_X86_FEATURE_POPCNT;
+   if (vendorIsIntel && (regs[2] & (1 << 22)) != 0)
+      g_cpuFeatures |= ANDROID_CPU_X86_FEATURE_MOVBE;
 #endif
 
 #ifdef _MIPS_ARCH
-    g_cpuFamily = ANDROID_CPU_FAMILY_MIPS;
+   g_cpuFamily = ANDROID_CPU_FAMILY_MIPS;
 #endif /* _MIPS_ARCH */
 }
 
-
-AndroidCpuFamily
-android_getCpuFamily(void)
+AndroidCpuFamily android_getCpuFamily(void)
 {
     pthread_once(&g_once, android_cpuInit);
     return g_cpuFamily;
 }
 
-
-uint64_t
-android_getCpuFeatures(void)
+uint64_t android_getCpuFeatures(void)
 {
     pthread_once(&g_once, android_cpuInit);
     return g_cpuFeatures;
 }
 
-
-int
-android_getCpuCount(void)
+int android_getCpuCount(void)
 {
     pthread_once(&g_once, android_cpuInit);
     return g_cpuCount;
