@@ -291,6 +291,9 @@ static void *android_input_init(void)
 static void android_input_poll(void *data)
 {
    int ident;
+   uint64_t *lifecycle_state = &g_extern.lifecycle_state;
+   *lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_QUIT_KEY) | (1ULL << RARCH_RMENU_TOGGLE));
+
    while ((ident = ALooper_pollAll((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ? -1 : 0,
                NULL, NULL, NULL)) >= 0)
    {
@@ -298,10 +301,7 @@ static void android_input_poll(void *data)
       {
          bool debug_enable = g_settings.input.debug_enable;
          struct android_app *android_app = (struct android_app*)g_android;
-         uint64_t *lifecycle_state = &g_extern.lifecycle_state;
          AInputEvent* event = NULL;
-
-         *lifecycle_state &= ~((1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_QUIT_KEY) | (1ULL << RARCH_RMENU_TOGGLE));
 
          // Read all pending events.
          while (AInputQueue_hasEvents(android_app->inputQueue))
