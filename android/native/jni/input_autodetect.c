@@ -565,8 +565,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          keycode_lut[AKEYCODE_BUTTON_L2]  |= ((RETRO_DEVICE_ID_JOYPAD_L2+1) << shift);
          keycode_lut[AKEYCODE_BUTTON_R2]  |= ((RETRO_DEVICE_ID_JOYPAD_R2+1) << shift);
          
-         keycode_lut[AKEYCODE_BUTTON_ENTER]  |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
-         keycode_lut[AKEYCODE_BUTTON_SPACE]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
+         keycode_lut[AKEYCODE_ENTER]  |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
+         keycode_lut[AKEYCODE_SPACE]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
 
          //keycode_lut[AKEYCODE_VOLUME_UP]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
          //keycode_lut[AKEYCODE_VOLUME_DOWN]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
