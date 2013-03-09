@@ -2869,7 +2869,6 @@ bool rarch_main_iterate(void)
       return false;
    }
 
-#ifdef HAVE_RMENU
    if (input_key_pressed_func(RARCH_MENU_TOGGLE) && g_extern.frame_count >= g_extern.delay_timer[0])
    {
       if (input_key_pressed_func(RARCH_MENU_QUICKMENU_TOGGLE))
@@ -2879,7 +2878,6 @@ bool rarch_main_iterate(void)
       g_extern.delay_timer[0] = g_extern.frame_count + 30;
       return false;
    }
-#endif
 
 #ifdef HAVE_COMMAND
    if (driver.command)
