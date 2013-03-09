@@ -683,6 +683,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
             msg_queue_push(g_extern.msg_queue, r ? "Screenshot saved" : "Screenshot failed to save", 1, S_DELAY_90);
          }
          break;
+#ifndef HAVE_DYNAMIC
       case RGUI_SETTINGS_RESTART_GAME:
          if (action == RGUI_ACTION_OK)
          {
@@ -691,6 +692,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
             return -1;
          }
          break;
+#endif
       case RGUI_SETTINGS_VIDEO_FILTER:
          if (action == RGUI_ACTION_START)
             rmenu_settings_set_default(S_DEF_HW_TEXTURE_FILTER);
@@ -866,6 +868,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          else if (action == RGUI_ACTION_RIGHT)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
          break;
+#ifndef HAVE_DYNAMIC
       case RGUI_SETTINGS_RESTART_EMULATOR:
          if (action == RGUI_ACTION_OK)
          {
@@ -878,6 +881,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
             return -1;
          }
          break;
+#endif
       case RGUI_SETTINGS_QUIT_EMULATOR:
          if (action == RGUI_ACTION_OK)
          {
@@ -993,7 +997,9 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3);
    RGUI_MENU_ITEM("Controller #4 Config", RGUI_SETTINGS_CONTROLLER_4);
    RGUI_MENU_ITEM("Debug Text", RGUI_SETTINGS_DEBUG_TEXT);
+#ifndef HAVE_DYNAMIC
    RGUI_MENU_ITEM("Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR);
+#endif
    RGUI_MENU_ITEM("Exit RetroArch", RGUI_SETTINGS_QUIT_EMULATOR);
 #else
    //RGUI_MENU_ITEM("Filebrowser", RGUI_SETTINGS_OPEN_FILEBROWSER);
@@ -1497,7 +1503,6 @@ enum
    RMENU_DEVICE_NAV_LAST
 };
 
-#ifdef GEKKO
 static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       void *userdata, void *ctx)
 {
@@ -1509,6 +1514,7 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
 
    if (!*directory)
    {
+#ifdef GEKKO
 #ifdef HW_RVL
       file_cb(ctx, "sd:", RGUI_FILE_DEVICE, 0);
       file_cb(ctx, "usb:", RGUI_FILE_DEVICE, 0);
@@ -1516,9 +1522,10 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       file_cb(ctx, "carda:", RGUI_FILE_DEVICE, 0);
       file_cb(ctx, "cardb:", RGUI_FILE_DEVICE, 0);
       return true;
+#endif
    }
 
-#ifdef HW_RVL
+#if defined(GEKKO) && defined(HW_RVL)
    LWP_MutexLock(gx_device_mutex);
    int dev = gx_get_device_from_path(directory);
 
@@ -1530,7 +1537,7 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
 
    char exts[256];
    if (core_chooser)
-      strlcpy(exts, "dol|DOL", sizeof(exts));
+      strlcpy(exts, EXT_EXECUTABLES, sizeof(exts));
    else
       strlcpy(exts, g_extern.system.valid_extensions, sizeof(exts));
 
@@ -1564,53 +1571,9 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
          continue;
 #endif
 
+#ifdef HAVE_LIBRETRO_MANAGEMENT
       if (core_chooser && (is_dir || strcasecmp(entry->d_name, default_paths.salamander_file) == 0))
          continue;
-
-      if (!is_dir && ext_list && !string_list_find_elem_prefix(ext_list, ".", file_ext))
-         continue;
-
-      file_cb(ctx,
-            entry->d_name,
-            is_dir ? RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
-   }
-
-   closedir(dir);
-   string_list_free(ext_list);
-   return true;
-}
-#else
-static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
-      void *userdata, void *ctx)
-{
-   struct string_list *ext_list = string_split(g_extern.system.valid_extensions, "|");
-
-   char _dir[PATH_MAX];
-   snprintf(_dir, sizeof(_dir), "%s/", directory);
-   DIR *dir = opendir(_dir);
-   if (!dir)
-      return false;
-
-   struct dirent *entry;
-   while ((entry = readdir(dir)))
-   {
-      char stat_path[PATH_MAX];
-      const char *file_ext = path_get_extension(entry->d_name);
-      snprintf(stat_path, sizeof(stat_path), "%s/%s", directory, entry->d_name);
-      bool is_dir;
-
-#ifdef _DIRENT_HAVE_D_TYPE
-      is_dir = (entry->d_type == DT_DIR);
-      if (entry->d_type != DT_REG && !is_dir)
-         continue;
-#else
-      struct stat st;
-      if (stat(stat_path, &st) < 0)
-         continue;
-
-      is_dir = S_ISDIR(st.st_mode);
-      if (!S_ISREG(st.st_mode) && !is_dir)
-         continue;
 #endif
 
       if (!is_dir && ext_list && !string_list_find_elem_prefix(ext_list, ".", file_ext))
@@ -1625,7 +1588,6 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
    string_list_free(ext_list);
    return true;
 }
-#endif
 
 /*============================================================
 RMENU API

@@ -181,6 +181,15 @@ enum
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_AUTO
 #endif
 
+#ifdef HAVE_DYNAMIC
+#ifdef _WIN32
+#define EXT_EXECUTABLES "dll|DLL"
+#elif defined(__APPLE__)
+#define EXT_EXECUTABLES "dylib"
+#else
+#define EXT_EXECUTABLES "so|SO"
+#endif
+#else
 #if defined(__CELLOS_LV2__)
 #define EXT_EXECUTABLES "self|SELF|bin|BIN"
 #elif defined(_XBOX1)
@@ -189,6 +198,7 @@ enum
 #define EXT_EXECUTABLES "xex|XEX"
 #elif defined(GEKKO)
 #define EXT_EXECUTABLES "dol|DOL"
+#endif
 #endif
 
 ////////////////
