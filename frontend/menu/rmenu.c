@@ -625,7 +625,7 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
       ret = filebrowser_iterate(b, action);
 
    if(!ret)
-      menu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
+      menu_settings_msg(S_MSG_DIR_LOADING_ERROR, 180);
 }
 
 void browser_render(void *data)
@@ -724,7 +724,7 @@ int select_file(void *data, void *state)
                   {
                      driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS0);
                      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                        menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+                        menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, 180);
                   }
                   else
                      RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -740,7 +740,7 @@ int select_file(void *data, void *state)
                   {
                      driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS1);
                      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                        menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+                        menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, 180);
                   }
                   else
                      RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -782,7 +782,7 @@ int select_file(void *data, void *state)
                else
                {
                   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+                     menu_settings_msg(S_MSG_RESTART_RARCH, 180);
                }
                break;
          }
@@ -791,7 +791,7 @@ int select_file(void *data, void *state)
       }
 
       if(!ret)
-         menu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
+         menu_settings_msg(S_MSG_DIR_LOADING_ERROR, 180);
    }
    else if (input & (1ULL << RMENU_DEVICE_NAV_X))
       menu_stack_pop();
@@ -889,7 +889,7 @@ int select_directory(void *data, void *state)
    }
 
    if(!ret)
-      menu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
+      menu_settings_msg(S_MSG_DIR_LOADING_ERROR, 180);
 
    display_menubar(current_menu);
 
@@ -1106,7 +1106,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             {
                driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, NULL, RARCH_SHADER_INDEX_PASS0);
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+                  menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, 180);
             }
             else
                RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -1126,7 +1126,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             {
                driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, NULL, RARCH_SHADER_INDEX_PASS1);
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+                  menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, 180);
             }
             else
                RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -1159,7 +1159,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
                   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING);
 
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+                  menu_settings_msg(S_MSG_RESTART_RARCH, 180);
             }
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1172,7 +1172,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
                   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING);
 
                   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+                     menu_settings_msg(S_MSG_RESTART_RARCH, 180);
                }
             }
          }
@@ -1485,7 +1485,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             menu_settings_set(S_REWIND);
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+               menu_settings_msg(S_MSG_RESTART_RARCH, 180);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
             g_settings.rewind_enable = false;
@@ -1573,14 +1573,14 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             g_extern.console.sound.volume_level = !g_extern.console.sound.volume_level;
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+               menu_settings_msg(S_MSG_RESTART_RARCH, 180);
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             g_extern.console.sound.volume_level = 0;
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+               menu_settings_msg(S_MSG_RESTART_RARCH, 180);
          }
          break;
 #endif
@@ -1961,7 +1961,7 @@ int select_rom(void *data, void *state)
          bool ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
 
          if(!ret)
-            menu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
+            menu_settings_msg(S_MSG_DIR_LOADING_ERROR, 180);
       }
       else
       {

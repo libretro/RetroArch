@@ -626,7 +626,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
             menu_settings_set(S_REWIND);
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+               menu_settings_msg(S_MSG_RESTART_RARCH, 180);
          }
          else if (action == RGUI_ACTION_START)
             g_settings.rewind_enable = false;
@@ -680,7 +680,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
                   data + (height - 1) * (pitch >> 1), 
                   width, height, -pitch, false);
 
-            msg_queue_push(g_extern.msg_queue, r ? "Screenshot saved" : "Screenshot failed to save", 1, S_DELAY_90);
+            msg_queue_push(g_extern.msg_queue, r ? "Screenshot saved" : "Screenshot failed to save", 1, 90);
          }
          break;
 #ifndef HAVE_DYNAMIC
@@ -1385,7 +1385,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
                strlcpy(g_extern.fullpath, rgui->path_buf, sizeof(g_extern.fullpath));
                g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 
-               menu_settings_msg(S_MSG_LOADING_ROM, S_DELAY_1);
+               menu_settings_msg(S_MSG_LOADING_ROM, 1);
                rgui->need_refresh = true; // in case of zip extract
                rgui->msg_force = true;
             }

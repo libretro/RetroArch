@@ -171,7 +171,7 @@ static void browser_update(filebrowser_t * b, uint64_t input, const char *extens
       ret = filebrowser_iterate(b, action);
 
    if(!ret)
-      menu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
+      menu_settings_msg(S_MSG_DIR_LOADING_ERROR, 180);
 }
 
 HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
@@ -432,7 +432,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+               menu_settings_msg(S_MSG_RESTART_RARCH, 180);
             break;
 	 case SETTING_EMU_REWIND_GRANULARITY:
 	    g_settings.rewind_granularity++;
@@ -502,7 +502,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             hCur = app.hShaderBrowser;
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
+               menu_settings_msg(S_MSG_SELECT_SHADER, 180);
 
             NavigateForward(app.hShaderBrowser);
             break;
@@ -515,7 +515,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             hCur = app.hShaderBrowser;
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_SELECT_SHADER, S_DELAY_180);
+               menu_settings_msg(S_MSG_SELECT_SHADER, 180);
 
             NavigateForward(app.hShaderBrowser);
             break;
@@ -560,7 +560,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+                  menu_settings_msg(S_MSG_RESTART_RARCH, 180);
                break;
 	    case SETTING_EMU_REWIND_GRANULARITY:
 	       if (g_settings.rewind_granularity > 1)
@@ -699,7 +699,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+                  menu_settings_msg(S_MSG_RESTART_RARCH, 180);
                break;
 	    case SETTING_EMU_REWIND_GRANULARITY:
 	       g_settings.rewind_granularity++;
@@ -931,7 +931,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             m_quickmenulist.SetText(MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_RESIZE_SCREEN, S_DELAY_270);
+               menu_settings_msg(S_MSG_RESIZE_SCREEN, 270);
             break;
          case MENU_XUI_ITEM_FRAME_ADVANCE:
             if (g_extern.main_is_init)
@@ -1005,7 +1005,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.cg_shader_path, RARCH_SHADER_INDEX_PASS0);
                   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+                     menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, 180);
                   XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
                }
                else
@@ -1020,7 +1020,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.second_pass_shader, RARCH_SHADER_INDEX_PASS1);
                   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+                     menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, 180);
                }
                else
                   RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -1144,7 +1144,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hCur = app.hControlsMenu;
 
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         menu_settings_msg(S_MSG_CHANGE_CONTROLS, S_DELAY_180);
+         menu_settings_msg(S_MSG_CHANGE_CONTROLS, 180);
 
       NavigateForward(app.hControlsMenu);
    }
@@ -1157,7 +1157,7 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hCur = app.hCoreBrowser;
 
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         menu_settings_msg(S_MSG_SELECT_LIBRETRO_CORE, S_DELAY_180);
+         menu_settings_msg(S_MSG_SELECT_LIBRETRO_CORE, 180);
 
       NavigateForward(app.hCoreBrowser);
    }

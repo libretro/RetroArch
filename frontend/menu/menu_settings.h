@@ -19,16 +19,6 @@
 
 enum
 {
-   S_DELAY_0 = 0,
-   S_DELAY_1 = 1,
-   S_DELAY_45 = 45,
-   S_DELAY_90  = 90,
-   S_DELAY_180 = 180,
-   S_DELAY_270 = 270
-};
-
-enum
-{
    S_ASPECT_RATIO_DECREMENT = 0,
    S_ASPECT_RATIO_INCREMENT,
    S_AUDIO_MUTE,
