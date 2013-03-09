@@ -123,6 +123,8 @@ static struct bind binds[] = {
    MISC_BIND("Volume up", volume_up),
    MISC_BIND("Volume down", volume_down),
    MISC_BIND("Next overlay", overlay_next),
+   MISC_BIND("Disk eject toggle", disk_eject_toggle),
+   MISC_BIND("Disk next cycle", disk_next),
 };
 
 #define MAX_BUTTONS 32

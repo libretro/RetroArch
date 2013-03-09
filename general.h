@@ -385,6 +385,8 @@ struct global
       char valid_extensions[PATH_MAX];
       
       retro_keyboard_event_t key_event;
+
+      struct retro_disk_control_callback disk_control; 
    } system;
 
    struct
