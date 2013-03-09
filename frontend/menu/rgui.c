@@ -21,7 +21,7 @@
 
 #include "rgui.h"
 #include "utils/file_list.h"
-#include "rmenu_settings.h"
+#include "menu_settings.h"
 #include "../../general.h"
 #include "../../gfx/gfx_common.h"
 
@@ -492,7 +492,7 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_VIDEO_ROTATION:
             {
                char rotate_msg[64];
-               rmenu_settings_create_menu_item_label(rotate_msg, S_LBL_ROTATION, sizeof(rotate_msg));
+               menu_settings_create_menu_item_label(rotate_msg, S_LBL_ROTATION, sizeof(rotate_msg));
                snprintf(type_str, sizeof(type_str), rotate_msg);
             }
             break;
@@ -623,10 +623,10 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
       case RGUI_SETTINGS_REWIND_ENABLE:
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
          {
-            rmenu_settings_set(S_REWIND);
+            menu_settings_set(S_REWIND);
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+               menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
          }
          else if (action == RGUI_ACTION_START)
             g_settings.rewind_enable = false;
@@ -654,11 +654,11 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
             return -1;
          }
          else if (action == RGUI_ACTION_START)
-            rmenu_settings_set_default(S_DEF_SAVE_STATE);
+            menu_settings_set_default(S_DEF_SAVE_STATE);
          else if (action == RGUI_ACTION_LEFT)
-            rmenu_settings_set(S_SAVESTATE_DECREMENT);
+            menu_settings_set(S_SAVESTATE_DECREMENT);
          else if (action == RGUI_ACTION_RIGHT)
-            rmenu_settings_set(S_SAVESTATE_INCREMENT);
+            menu_settings_set(S_SAVESTATE_INCREMENT);
          break;
       case RGUI_SETTINGS_SCREENSHOT:
          if (action == RGUI_ACTION_OK)
@@ -695,9 +695,9 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
 #endif
       case RGUI_SETTINGS_VIDEO_FILTER:
          if (action == RGUI_ACTION_START)
-            rmenu_settings_set_default(S_DEF_HW_TEXTURE_FILTER);
+            menu_settings_set_default(S_DEF_HW_TEXTURE_FILTER);
          else
-            rmenu_settings_set(S_HW_TEXTURE_FILTER);
+            menu_settings_set(S_HW_TEXTURE_FILTER);
          break;
 #ifdef HW_RVL
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
@@ -761,60 +761,60 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          break;
       case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
          if (action == RGUI_ACTION_START)
-            rmenu_settings_set_default(S_DEF_ASPECT_RATIO);
+            menu_settings_set_default(S_DEF_ASPECT_RATIO);
          else if (action == RGUI_ACTION_LEFT)
-            rmenu_settings_set(S_ASPECT_RATIO_DECREMENT);
+            menu_settings_set(S_ASPECT_RATIO_DECREMENT);
          else if (action == RGUI_ACTION_RIGHT)
-            rmenu_settings_set(S_ASPECT_RATIO_INCREMENT);
+            menu_settings_set(S_ASPECT_RATIO_INCREMENT);
          video_set_aspect_ratio_func(g_settings.video.aspect_ratio_idx);
          break;
       case RGUI_SETTINGS_VIDEO_ROTATION:
          if (action == RGUI_ACTION_START)
          {
-            rmenu_settings_set_default(S_DEF_AUDIO_CONTROL_RATE);
+            menu_settings_set_default(S_DEF_AUDIO_CONTROL_RATE);
             video_set_rotation_func(g_extern.console.screen.orientation);
          }
          else if (action == RGUI_ACTION_LEFT)
          {
-            rmenu_settings_set(S_ROTATION_DECREMENT);
+            menu_settings_set(S_ROTATION_DECREMENT);
             video_set_rotation_func(g_extern.console.screen.orientation);
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
-            rmenu_settings_set(S_ROTATION_INCREMENT);
+            menu_settings_set(S_ROTATION_INCREMENT);
             video_set_rotation_func(g_extern.console.screen.orientation);
          }
          break;
       case RGUI_SETTINGS_VIDEO_OVERSCAN:
          if (action == RGUI_ACTION_START)
          {
-            rmenu_settings_set_default(S_DEF_OVERSCAN);
+            menu_settings_set_default(S_DEF_OVERSCAN);
             device_ptr->should_resize = true;
          }
          else if (action == RGUI_ACTION_LEFT)
          {
-            rmenu_settings_set(S_OVERSCAN_DECREMENT);
+            menu_settings_set(S_OVERSCAN_DECREMENT);
             device_ptr->should_resize = true;
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
-            rmenu_settings_set(S_OVERSCAN_INCREMENT);
+            menu_settings_set(S_OVERSCAN_INCREMENT);
             device_ptr->should_resize = true;
          }
          break;
       case RGUI_SETTINGS_AUDIO_MUTE:
          if (action == RGUI_ACTION_START)
-            rmenu_settings_set_default(S_DEF_AUDIO_MUTE);
+            menu_settings_set_default(S_DEF_AUDIO_MUTE);
          else
-            rmenu_settings_set(S_AUDIO_MUTE);
+            menu_settings_set(S_AUDIO_MUTE);
          break;
       case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
          if (action == RGUI_ACTION_START)
-            rmenu_settings_set_default(S_DEF_AUDIO_CONTROL_RATE);
+            menu_settings_set_default(S_DEF_AUDIO_CONTROL_RATE);
          else if (action == RGUI_ACTION_LEFT)
-            rmenu_settings_set(S_AUDIO_CONTROL_RATE_DECREMENT);
+            menu_settings_set(S_AUDIO_CONTROL_RATE_DECREMENT);
          else if (action == RGUI_ACTION_RIGHT)
-            rmenu_settings_set(S_AUDIO_CONTROL_RATE_INCREMENT);
+            menu_settings_set(S_AUDIO_CONTROL_RATE_INCREMENT);
          break;
       case RGUI_SETTINGS_RESAMPLER_TYPE:
          {
@@ -1385,7 +1385,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
                strlcpy(g_extern.fullpath, rgui->path_buf, sizeof(g_extern.fullpath));
                g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 
-               rmenu_settings_msg(S_MSG_LOADING_ROM, S_DELAY_1);
+               menu_settings_msg(S_MSG_LOADING_ROM, S_DELAY_1);
                rgui->need_refresh = true; // in case of zip extract
                rgui->msg_force = true;
             }
@@ -1618,7 +1618,7 @@ static int menu_input_process(void *data, void *state)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
    {
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         rmenu_settings_msg(S_MSG_LOADING_ROM, 100);
+         menu_settings_msg(S_MSG_LOADING_ROM, 100);
 
       if (g_extern.fullpath)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);

@@ -29,7 +29,7 @@
 
 #include "../../console/rarch_console.h"
 #include "../../console/rarch_console_input.h"
-#include "rmenu_settings.h"
+#include "menu_settings.h"
 
 #include "../../gfx/image.h"
 
@@ -625,7 +625,7 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
       ret = filebrowser_iterate(b, action);
 
    if(!ret)
-      rmenu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
+      menu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
 }
 
 void browser_render(void *data)
@@ -724,7 +724,7 @@ int select_file(void *data, void *state)
                   {
                      driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS0);
                      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                        rmenu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+                        menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                   }
                   else
                      RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -740,7 +740,7 @@ int select_file(void *data, void *state)
                   {
                      driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS1);
                      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                        rmenu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+                        menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
                   }
                   else
                      RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -782,7 +782,7 @@ int select_file(void *data, void *state)
                else
                {
                   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+                     menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                }
                break;
          }
@@ -791,7 +791,7 @@ int select_file(void *data, void *state)
       }
 
       if(!ret)
-         rmenu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
+         menu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
    }
    else if (input & (1ULL << RMENU_DEVICE_NAV_X))
       menu_stack_pop();
@@ -889,7 +889,7 @@ int select_directory(void *data, void *state)
    }
 
    if(!ret)
-      rmenu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
+      menu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
 
    display_menubar(current_menu);
 
@@ -1028,9 +1028,9 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
 #ifdef __CELLOS_LV2__
       case SETTING_CHANGE_RESOLUTION:
          if(input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
-            rmenu_settings_set(S_RESOLUTION_NEXT);
+            menu_settings_set(S_RESOLUTION_NEXT);
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
-            rmenu_settings_set(S_RESOLUTION_PREVIOUS);
+            menu_settings_set(S_RESOLUTION_PREVIOUS);
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
@@ -1106,7 +1106,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             {
                driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, NULL, RARCH_SHADER_INDEX_PASS0);
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  rmenu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+                  menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
             }
             else
                RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -1126,7 +1126,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             {
                driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, NULL, RARCH_SHADER_INDEX_PASS1);
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  rmenu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
+                  menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, S_DELAY_180);
             }
             else
                RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -1159,7 +1159,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
                   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING);
 
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+                  menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
             }
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1172,7 +1172,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
                   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING);
 
                   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+                     menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
                }
             }
          }
@@ -1194,29 +1194,29 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_KEEP_ASPECT_RATIO:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
-            rmenu_settings_set(S_ASPECT_RATIO_DECREMENT);
+            menu_settings_set(S_ASPECT_RATIO_DECREMENT);
             driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
          {
-            rmenu_settings_set(S_ASPECT_RATIO_INCREMENT);
+            menu_settings_set(S_ASPECT_RATIO_INCREMENT);
             driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            rmenu_settings_set_default(S_DEF_ASPECT_RATIO);
+            menu_settings_set_default(S_DEF_ASPECT_RATIO);
             driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          }
          break;
       case SETTING_HW_TEXTURE_FILTER:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            rmenu_settings_set(S_HW_TEXTURE_FILTER);
+            menu_settings_set(S_HW_TEXTURE_FILTER);
             device_ptr->ctx_driver->set_filtering(1, g_settings.video.smooth);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            rmenu_settings_set(S_DEF_HW_TEXTURE_FILTER);
+            menu_settings_set(S_DEF_HW_TEXTURE_FILTER);
             device_ptr->ctx_driver->set_filtering(1, g_settings.video.smooth);
          }
          break;
@@ -1224,19 +1224,19 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_HW_TEXTURE_FILTER_2:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            rmenu_settings_set(S_HW_TEXTURE_FILTER_2);
+            menu_settings_set(S_HW_TEXTURE_FILTER_2);
             device_ptr->ctx_driver->set_filtering(2, g_settings.video.second_pass_smooth);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            rmenu_settings_set(S_DEF_HW_TEXTURE_FILTER_2);
+            menu_settings_set(S_DEF_HW_TEXTURE_FILTER_2);
             device_ptr->ctx_driver->set_filtering(2, g_settings.video.second_pass_smooth);
          }
          break;
       case SETTING_SCALE_ENABLED:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            rmenu_settings_set(S_SCALE_ENABLED);
+            menu_settings_set(S_SCALE_ENABLED);
 
             if(g_settings.video.render_to_texture)
                device_ptr->ctx_driver->set_fbo(FBO_INIT);
@@ -1245,7 +1245,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            rmenu_settings_set_default(S_DEF_SCALE_ENABLED);
+            menu_settings_set_default(S_DEF_SCALE_ENABLED);
             device_ptr->ctx_driver->set_fbo(FBO_REINIT);
          }
          break;
@@ -1258,7 +1258,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
 
                if(should_decrement)
                {
-                  rmenu_settings_set(S_SCALE_FACTOR_DECREMENT);
+                  menu_settings_set(S_SCALE_FACTOR_DECREMENT);
                   device_ptr->ctx_driver->set_fbo(FBO_REINIT);
                }
             }
@@ -1270,14 +1270,14 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
                bool should_increment = g_settings.video.fbo.scale_x < MAX_SCALING_FACTOR;
                if(should_increment)
                {
-                  rmenu_settings_set(S_SCALE_FACTOR_INCREMENT);
+                  menu_settings_set(S_SCALE_FACTOR_INCREMENT);
                   device_ptr->ctx_driver->set_fbo(FBO_REINIT);
                }
             }
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            rmenu_settings_set_default(S_DEF_SCALE_FACTOR);
+            menu_settings_set_default(S_DEF_SCALE_FACTOR);
             device_ptr->ctx_driver->set_fbo(FBO_REINIT);
          }
          break;
@@ -1312,34 +1312,34 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_HW_OVERSCAN_AMOUNT:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
-            rmenu_settings_set(S_OVERSCAN_DECREMENT);
+            menu_settings_set(S_OVERSCAN_DECREMENT);
             gfx_ctx_set_overscan();
          }
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            rmenu_settings_set(S_OVERSCAN_INCREMENT);
+            menu_settings_set(S_OVERSCAN_INCREMENT);
             gfx_ctx_set_overscan();
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            rmenu_settings_set_default(S_DEF_OVERSCAN);
+            menu_settings_set_default(S_DEF_OVERSCAN);
             gfx_ctx_set_overscan();
          }
          break;
       case SETTING_REFRESH_RATE:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
-            rmenu_settings_set(S_REFRESH_RATE_DECREMENT);
+            menu_settings_set(S_REFRESH_RATE_DECREMENT);
             driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
          }
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            rmenu_settings_set(S_REFRESH_RATE_INCREMENT);
+            menu_settings_set(S_REFRESH_RATE_INCREMENT);
             driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            rmenu_settings_set_default(S_DEF_REFRESH_RATE);
+            menu_settings_set_default(S_DEF_REFRESH_RATE);
             driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
          }
          break;
@@ -1348,7 +1348,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK)))
             {
-               rmenu_settings_set(S_THROTTLE);
+               menu_settings_set(S_THROTTLE);
                device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? true : false);
             }
          }
@@ -1356,7 +1356,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK)))
             {
-               rmenu_settings_set_default(S_DEF_THROTTLE);
+               menu_settings_set_default(S_DEF_THROTTLE);
                device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? true : false);
             }
          }
@@ -1364,12 +1364,12 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_TRIPLE_BUFFERING:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            rmenu_settings_set(S_TRIPLE_BUFFERING);
+            menu_settings_set(S_TRIPLE_BUFFERING);
             driver.video->restart();
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            rmenu_settings_set_default(S_DEF_TRIPLE_BUFFERING);
+            menu_settings_set_default(S_DEF_TRIPLE_BUFFERING);
 
             if(!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)))
                driver.video->restart();
@@ -1461,31 +1461,31 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          break;
       case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
-            rmenu_settings_set(S_SAVESTATE_DECREMENT);
+            menu_settings_set(S_SAVESTATE_DECREMENT);
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-            rmenu_settings_set(S_SAVESTATE_INCREMENT);
+            menu_settings_set(S_SAVESTATE_INCREMENT);
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            rmenu_settings_set_default(S_DEF_SAVE_STATE);
+            menu_settings_set_default(S_DEF_SAVE_STATE);
          break;
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-            rmenu_settings_set(S_INFO_DEBUG_MSG_TOGGLE);
+            menu_settings_set(S_INFO_DEBUG_MSG_TOGGLE);
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            rmenu_settings_set_default(S_DEF_INFO_DEBUG_MSG);
+            menu_settings_set_default(S_DEF_INFO_DEBUG_MSG);
          break;
       case SETTING_EMU_SHOW_INFO_MSG:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-            rmenu_settings_set(S_INFO_MSG_TOGGLE);
+            menu_settings_set(S_INFO_MSG_TOGGLE);
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            rmenu_settings_set_default(S_DEF_INFO_MSG);
+            menu_settings_set_default(S_DEF_INFO_MSG);
          break;
       case SETTING_EMU_REWIND_ENABLED:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            rmenu_settings_set(S_REWIND);
+            menu_settings_set(S_REWIND);
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+               menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
             g_settings.rewind_enable = false;
@@ -1562,10 +1562,10 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          break;
       case SETTING_EMU_AUDIO_MUTE:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-            rmenu_settings_set(S_AUDIO_MUTE);
+            menu_settings_set(S_AUDIO_MUTE);
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            rmenu_settings_set_default(S_DEF_AUDIO_MUTE);
+            menu_settings_set_default(S_DEF_AUDIO_MUTE);
          break;
 #ifdef _XBOX1
       case SETTING_EMU_AUDIO_SOUND_VOLUME_LEVEL:
@@ -1573,14 +1573,14 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             g_extern.console.sound.volume_level = !g_extern.console.sound.volume_level;
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+               menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             g_extern.console.sound.volume_level = 0;
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               rmenu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
+               menu_settings_msg(S_MSG_RESTART_RARCH, S_DELAY_180);
          }
          break;
 #endif
@@ -1961,7 +1961,7 @@ int select_rom(void *data, void *state)
          bool ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
 
          if(!ret)
-            rmenu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
+            menu_settings_msg(S_MSG_DIR_LOADING_ERROR, S_DELAY_180);
       }
       else
       {
@@ -2297,19 +2297,19 @@ int ingame_menu(void *data, void *state)
       case MENU_ITEM_ORIENTATION:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
-            rmenu_settings_set(S_ROTATION_DECREMENT);
+            menu_settings_set(S_ROTATION_DECREMENT);
             driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
          }
 
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            rmenu_settings_set(S_ROTATION_INCREMENT);
+            menu_settings_set(S_ROTATION_INCREMENT);
             driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            rmenu_settings_set_default(S_DEF_ROTATION);
+            menu_settings_set_default(S_DEF_ROTATION);
             driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
          }
          snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
@@ -2329,7 +2329,7 @@ int ingame_menu(void *data, void *state)
          {
             g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            rmenu_settings_set(S_FRAME_ADVANCE);
+            menu_settings_set(S_FRAME_ADVANCE);
             menu_idx = MENU_ITEM_FRAME_ADVANCE;
             return -1;
          }
@@ -2432,23 +2432,23 @@ int ingame_menu(void *data, void *state)
 
    device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, strw_buffer);
 
-   rmenu_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
+   menu_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
    device_ptr->font_ctx->render_msg_place(device_ptr, default_pos.x_position, default_pos.y_position, default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), strw_buffer);
 
-   rmenu_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
+   menu_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
    device_ptr->font_ctx->render_msg_place(device_ptr, default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_SAVE_STATE), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), strw_buffer);
 
-   rmenu_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
+   menu_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
    device_ptr->font_ctx->render_msg_place(device_ptr, default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), strw_buffer);
 
    snprintf(strw_buffer, sizeof(strw_buffer), "Overscan: %f", g_extern.console.screen.overscan_amount);
    device_ptr->font_ctx->render_msg_place(device_ptr, default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_OVERSCAN_AMOUNT)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), strw_buffer);
 
-   rmenu_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+   menu_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
    device_ptr->font_ctx->render_msg_place(device_ptr, default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_ORIENTATION)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), strw_buffer);
 
 #ifdef HAVE_FBO
-   rmenu_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
+   menu_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
    device_ptr->font_ctx->render_msg_place(device_ptr, default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_SCALE_FACTOR)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), strw_buffer);
 #endif
 
@@ -2552,7 +2552,7 @@ int menu_input_process(void *data, void *state)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
    {
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         rmenu_settings_msg(S_MSG_LOADING_ROM, 100);
+         menu_settings_msg(S_MSG_LOADING_ROM, 100);
 
       g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);
