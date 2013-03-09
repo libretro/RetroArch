@@ -1675,7 +1675,7 @@ int rmenu_input_process(void *data, void *state)
    return 0;
 }
 
-bool rmenu_iterate(void)
+bool menu_iterate(void)
 {
    static uint16_t old_input_state = 0;
    static bool initial_held = true;

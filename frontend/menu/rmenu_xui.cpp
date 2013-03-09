@@ -1291,7 +1291,7 @@ static void ingame_menu_resize (void)
       input_loop = INPUT_LOOP_MENU;
 }
 
-bool rmenu_iterate(void)
+bool menu_iterate(void)
 {
    const char *msg;
 

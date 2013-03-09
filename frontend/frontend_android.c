@@ -239,8 +239,7 @@ begin_loop:
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_PREINIT);
       while((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ?
-            android_run_events(android_app) :
-            rmenu_iterate());
+            android_run_events(android_app) : menu_iterate());
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
    }
    else

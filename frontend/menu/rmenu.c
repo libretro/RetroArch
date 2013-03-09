@@ -2637,7 +2637,7 @@ void menu_free(void)
       rmenu_state.free_resources(&rmenu_state);
 }
 
-bool rmenu_iterate(void)
+bool menu_iterate(void)
 {
    const char *msg;
 
