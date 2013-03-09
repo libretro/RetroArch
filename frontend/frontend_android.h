@@ -49,7 +49,6 @@ struct android_app
    AInputQueue* pendingInputQueue;
    ANativeWindow* pendingWindow;
    char current_ime[PATH_MAX];
-   char return_file[PATH_MAX];
 };
 
 enum {
@@ -155,8 +154,8 @@ enum {
 };
 
 int8_t android_app_read_cmd (void *data);
-extern void engine_app_read_cmd (void *data);
-extern void engine_handle_cmd (void *data, int32_t cmd);
+extern void engine_app_read_cmd(void);
+extern void engine_handle_cmd(void);
 
 extern struct android_app *g_android;
 

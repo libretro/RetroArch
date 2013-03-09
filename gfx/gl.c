@@ -57,6 +57,10 @@
 #include "../frontend/frontend_android.h"
 #endif
 
+#ifdef HAVE_RGUI
+#include "../frontend/menu/rgui.h"
+#endif
+
 // Used for the last pass when rendering to the back buffer.
 const GLfloat vertexes_flipped[] = {
    0, 1,
@@ -668,14 +672,12 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
 {
    gl_t *gl = (gl_t*)data;
-#ifdef RARCH_CONSOLE
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_OVERSCAN_ENABLE))
    {
       ortho->left = -g_extern.console.screen.overscan_amount / 2;
       ortho->right = 1 + g_extern.console.screen.overscan_amount / 2;
       ortho->bottom = -g_extern.console.screen.overscan_amount / 2;
    }
-#endif
 
    // Calculate projection.
    matrix_ortho(&gl->mvp_no_rot, ortho->left, ortho->right,
@@ -715,7 +717,7 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
       float desired_aspect = g_settings.video.aspect_ratio;
       float delta;
 
-#ifdef RARCH_CONSOLE
+#ifdef HAVE_RGUI
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          x      = g_extern.console.screen.viewports.custom_vp.x;
@@ -1044,13 +1046,13 @@ static void gl_init_textures_data(void *data)
 #if defined(HAVE_PSGL)
 static inline void gl_copy_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
-   gl_t *gl = (gl_t*)data;
+      gl_t *gl = (gl_t*)data;
    size_t buffer_addr        = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
    size_t buffer_stride      = gl->tex_w * gl->base_size;
    const uint8_t *frame_copy = frame;
    size_t frame_copy_size    = width * gl->base_size;
 
-   uint8_t *buffer = (uint8_t*)glMapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, GL_WRITE_ONLY) + buffer_addr;
+   uint8_t *buffer = (uint8_t*)glMapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, GL_READ_WRITE) + buffer_addr;
    for (unsigned h = 0; h < height; h++, buffer += buffer_stride, frame_copy += pitch)
       memcpy(buffer, frame_copy, frame_copy_size);
 
@@ -1069,6 +1071,15 @@ static void gl_init_textures(void *data, const video_info_t *video)
          gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
 
    glGenTextures(TEXTURES, gl->texture);
+
+#ifdef HAVE_RGUI
+   glGenTextures(1, &gl->rgui_texture);
+   glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+#endif
 
    for (unsigned i = 0; i < TEXTURES; i++)
    {
@@ -1178,6 +1189,16 @@ static void gl_init_textures(void *data, const video_info_t *video)
 #endif
 
    glGenTextures(TEXTURES, gl->texture);
+
+#ifdef HAVE_RGUI
+   glGenTextures(1, &gl->rgui_texture);
+   glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+#endif
+
    for (unsigned i = 0; i < TEXTURES; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
@@ -1234,6 +1255,31 @@ static void gl_pbo_async_readback(void *data)
    RARCH_PERFORMANCE_STOP(async_readback);
 
    pglBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+}
+#endif
+
+#ifdef HAVE_RGUI
+static inline void gl_draw_rgui(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+   gl->coords.tex_coord = tex_coords;
+
+   glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
+
+   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(RGUI_WIDTH * 2));
+   // RGUI is always packed so pitch = width * bpp
+   glTexImage2D(GL_TEXTURE_2D,
+         0, GL_RGBA, RGUI_WIDTH, RGUI_HEIGHT, 0, GL_RGBA,
+         GL_UNSIGNED_SHORT_4_4_4_4, gl->menu_data);
+
+   gl_shader_use_func(gl, 0);
+   gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp_no_rot);
+
+   glEnable(GL_BLEND);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glDisable(GL_BLEND);
+
+   gl->coords.tex_coord = gl->tex_coords;
 }
 #endif
 
@@ -1310,6 +1356,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    gl_set_prev_texture(gl, &tex_info);
 
+#ifdef HAVE_RGUI
+   if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
+      gl_draw_rgui(gl);
+#endif
+
 #ifdef FPS_COUNTER
    if (lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
    {
@@ -1337,7 +1388,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    RARCH_PERFORMANCE_STOP(frame_run);
 
-#ifdef HAVE_RMENU
+#if defined(HAVE_RMENU) && !defined(HAVE_RGUI)
    if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
       context_rmenu_frame_func(gl);
    else
@@ -1384,6 +1435,10 @@ static void gl_free(void *data)
 #endif
 
    glDeleteTextures(TEXTURES, gl->texture);
+
+#ifdef HAVE_RGUI
+   glDeleteTextures(1, &gl->rgui_texture);
+#endif
 
 #ifdef HAVE_OVERLAY
    if (gl->tex_overlay)
@@ -1506,6 +1561,10 @@ static inline void gl_reinit_textures(void *data, const video_info_t *video)
 
       glBindTexture(GL_TEXTURE_2D, 0);
       glDeleteTextures(TEXTURES, gl->texture);
+
+#ifdef HAVE_RGUI
+      glDeleteTextures(1, &gl->rgui_texture);
+#endif
 
       gl_init_textures(gl, video);
       gl_init_textures_data(gl);
@@ -1755,7 +1814,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (input && input_data)
       context_input_driver_func(input, input_data);
    
-#ifndef HAVE_RMENU
+#if !defined(HAVE_RMENU) || !defined(RARCH_CONSOLE)
    // Comes too early for console - moved to gl_start
    if (g_settings.video.font_enable)
       gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
@@ -2034,13 +2093,14 @@ static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
    gl_t *gl = driver.video_data;
 
    if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
-      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+      gfx_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
    else if(g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
-      rarch_set_core_viewport();
+      gfx_set_core_viewport();
 
    g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
    g_settings.video.force_aspect = false;
    gl->keep_aspect = true;
+
    gl->should_resize = true;
 }
 #endif

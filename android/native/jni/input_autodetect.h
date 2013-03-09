@@ -29,11 +29,17 @@ enum {
 enum {
    AKEYCODE_META_FUNCTION_ON = 8,
    AKEYCODE_ESCAPE          = 111,
+   AKEYCODE_FORWARD_DEL     = 112,
+   AKEYCODE_CTRL_LEFT       = 113,
+   AKEYCODE_CTRL_RIGHT      = 114,
    AKEYCODE_CAPS_LOCK       = 115,
    AKEYCODE_SCROLL_LOCK     = 116,
    AKEYCODE_SYSRQ           = 120,
    AKEYCODE_BREAK           = 121,
    AKEYCODE_MOVE_HOME       = 122,
+   AKEYCODE_MOVE_END        = 123,
+   AKEYCODE_INSERT          = 124,
+   AKEYCODE_FORWARD         = 125,
    AKEYCODE_MEDIA_PLAY      = 126,
    AKEYCODE_MEDIA_PAUSE     = 127,
    AKEYCODE_F2              = 132,
@@ -44,6 +50,15 @@ enum {
    AKEYCODE_F7              = 137,
    AKEYCODE_F8              = 138,
    AKEYCODE_F9              = 139,
+   AKEYCODE_NUMPAD_1        = 145,
+   AKEYCODE_NUMPAD_2        = 146,
+   AKEYCODE_NUMPAD_3        = 147,
+   AKEYCODE_NUMPAD_4        = 148,
+   AKEYCODE_NUMPAD_5        = 149,
+   AKEYCODE_NUMPAD_6        = 150,
+   AKEYCODE_NUMPAD_7        = 151,
+   AKEYCODE_NUMPAD_8        = 152,
+   AKEYCODE_NUMPAD_9        = 153,
    AKEYCODE_BUTTON_1        = 188,
    AKEYCODE_BUTTON_2        = 189,
    AKEYCODE_BUTTON_3        = 190,
@@ -64,6 +79,12 @@ enum {
 };
 
 #define LAST_KEYCODE AKEYCODE_ASSIST
+
+typedef struct
+{
+   float dzone_min;
+   float dzone_max;
+} dpad_values_t;
 
 extern uint64_t keycode_lut[LAST_KEYCODE];
 extern bool volume_enable;

@@ -33,14 +33,40 @@
 
 #include "../../gfx/image.h"
 
-#include "../../console/rarch_console_video.h"
-
+#include "../../gfx/gfx_common.h"
 #include "../../gfx/gfx_context.h"
 
 #include "../../file.h"
 #include "../../driver.h"
 #include "../../general.h"
 
+#define EXT_IMAGES "png|PNG|jpg|JPG|JPEG|jpeg"
+#define EXT_SHADERS "cg|CG"
+#define EXT_CGP_PRESETS "cgp|CGP"
+#define EXT_INPUT_PRESETS "cfg|CFG"
+
+enum {
+   MENU_ITEM_LOAD_STATE = 0,
+   MENU_ITEM_SAVE_STATE,
+   MENU_ITEM_KEEP_ASPECT_RATIO,
+   MENU_ITEM_OVERSCAN_AMOUNT,
+   MENU_ITEM_ORIENTATION,
+#ifdef HAVE_FBO
+   MENU_ITEM_SCALE_FACTOR,
+#endif
+   MENU_ITEM_RESIZE_MODE,
+   MENU_ITEM_FRAME_ADVANCE,
+   MENU_ITEM_SCREENSHOT_MODE,
+   MENU_ITEM_RESET,
+   MENU_ITEM_RETURN_TO_GAME,
+   MENU_ITEM_RETURN_TO_MENU,
+   MENU_ITEM_CHANGE_LIBRETRO,
+#ifdef HAVE_MULTIMAN
+   MENU_ITEM_RETURN_TO_MULTIMAN,
+#endif
+   MENU_ITEM_QUIT_RARCH,
+   MENU_ITEM_LAST
+};
 
 static rmenu_state_t rmenu_state;
 

@@ -16,13 +16,19 @@
 
 #include "rmenu.h"
 #include "rgui.h"
+#include "../../general.h"
+
+#ifdef HAVE_OPENGL
+#include "../../gfx/gl_common.h"
+#endif
 
 #include "../../gfx/fonts/bitmap.h"
 
 uint16_t menu_framebuf[400 * 240];
+rgui_handle_t *rgui;
 
 static const struct retro_keybind _rmenu_nav_binds[] = {
-#ifdef HW_RVL
+#if defined(HW_RVL)
    { 0, 0, NULL, 0, GX_GC_UP | GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_CLASSIC_UP | GX_CLASSIC_LSTICK_UP | GX_CLASSIC_RSTICK_UP | GX_WIIMOTE_UP | GX_NUNCHUK_UP, 0 },
    { 0, 0, NULL, 0, GX_GC_DOWN | GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_CLASSIC_DOWN | GX_CLASSIC_LSTICK_DOWN | GX_CLASSIC_RSTICK_DOWN | GX_WIIMOTE_DOWN | GX_NUNCHUK_DOWN, 0 },
    { 0, 0, NULL, 0, GX_GC_LEFT | GX_GC_LSTICK_LEFT | GX_GC_RSTICK_LEFT | GX_CLASSIC_LEFT | GX_CLASSIC_LSTICK_LEFT | GX_CLASSIC_RSTICK_LEFT | GX_WIIMOTE_LEFT | GX_NUNCHUK_LEFT, 0 },
@@ -32,7 +38,7 @@ static const struct retro_keybind _rmenu_nav_binds[] = {
    { 0, 0, NULL, 0, GX_GC_START | GX_CLASSIC_PLUS | GX_WIIMOTE_PLUS, 0 },
    { 0, 0, NULL, 0, GX_GC_Z_TRIGGER | GX_CLASSIC_MINUS | GX_WIIMOTE_MINUS, 0 },
    { 0, 0, NULL, 0, GX_WIIMOTE_HOME | GX_CLASSIC_HOME, 0 },
-#else
+#elif defined(HW_DOL)
    { 0, 0, NULL, 0, GX_GC_UP | GX_GC_LSTICK_UP | GX_GC_RSTICK_UP, 0 },
    { 0, 0, NULL, 0, GX_GC_DOWN | GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN, 0 },
    { 0, 0, NULL, 0, GX_GC_LEFT | GX_GC_LSTICK_LEFT | GX_GC_RSTICK_LEFT, 0 },
@@ -42,8 +48,19 @@ static const struct retro_keybind _rmenu_nav_binds[] = {
    { 0, 0, NULL, 0, GX_GC_START, 0 },
    { 0, 0, NULL, 0, GX_GC_Z_TRIGGER, 0 },
    { 0, 0, NULL, 0, GX_WIIMOTE_HOME, 0 },
-#endif
    { 0, 0, NULL, 0, GX_QUIT_KEY, 0 },
+#else
+   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_UP), 0 },
+   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN), 0 },
+   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT), 0 },
+   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT), 0 },
+   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_A), 0 },
+   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_B), 0 },
+   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_START), 0 },
+   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT), 0 },
+   { 0, 0, NULL, 0, (1ULL << RARCH_RMENU_TOGGLE), 0 },
+   { 0, 0, NULL, 0, (1ULL << RARCH_QUIT_KEY), 0 },
+#endif
 };
 
 static const struct retro_keybind *rmenu_nav_binds[] = {
@@ -65,6 +82,7 @@ enum
    RMENU_DEVICE_NAV_LAST
 };
 
+#ifdef GEKKO
 static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       void *userdata, void *ctx)
 {
@@ -100,6 +118,7 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       strlcpy(exts, "dol|DOL", sizeof(exts));
    else
       strlcpy(exts, g_extern.system.valid_extensions, sizeof(exts));
+
    struct string_list *ext_list = string_split(exts, "|");
 
    char _dir[PATH_MAX];
@@ -145,6 +164,53 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
    string_list_free(ext_list);
    return true;
 }
+#else
+static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
+      void *userdata, void *ctx)
+{
+   struct string_list *ext_list = string_split(g_extern.system.valid_extensions, "|");
+
+   char _dir[PATH_MAX];
+   snprintf(_dir, sizeof(_dir), "%s/", directory);
+   DIR *dir = opendir(_dir);
+   if (!dir)
+      return false;
+
+   struct dirent *entry;
+   while ((entry = readdir(dir)))
+   {
+      char stat_path[PATH_MAX];
+      const char *file_ext = path_get_extension(entry->d_name);
+      snprintf(stat_path, sizeof(stat_path), "%s/%s", directory, entry->d_name);
+      bool is_dir;
+
+#ifdef _DIRENT_HAVE_D_TYPE
+      is_dir = (entry->d_type == DT_DIR);
+      if (entry->d_type != DT_REG && !is_dir)
+         continue;
+#else
+      struct stat st;
+      if (stat(stat_path, &st) < 0)
+         continue;
+
+      is_dir = S_ISDIR(st.st_mode);
+      if (!S_ISREG(st.st_mode) && !is_dir)
+         continue;
+#endif
+
+      if (!is_dir && ext_list && !string_list_find_elem_prefix(ext_list, ".", file_ext))
+         continue;
+
+      file_cb(ctx,
+            entry->d_name,
+            is_dir ? RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
+   }
+
+   closedir(dir);
+   string_list_free(ext_list);
+   return true;
+}
+#endif
 
 /*============================================================
 RMENU API
@@ -152,13 +218,17 @@ RMENU API
 
 void menu_init(void)
 {
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
+#if defined(HAVE_OPENGL)
+   gl_t *device_ptr = (gl_t*)driver.video_data;
+#elif defined(GEKKO)
+   gx_video_t *device_ptr = (gx_video_t*)driver.video_data;
+#endif
 
-   gx->menu_data = (uint32_t *) menu_framebuf;
+   device_ptr->menu_data = (uint32_t *) menu_framebuf;
 
    rgui = rgui_init("",
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
-         NULL /* _binary_console_font_bmp_start */, bitmap_bin, folder_cb, NULL);
+         NULL, bitmap_bin, folder_cb, NULL);
 
    rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 }
@@ -213,9 +283,53 @@ bool rmenu_iterate(void)
 
    driver.input->poll(NULL);
 
+#ifdef HAVE_OVERLAY
+   if (driver.overlay)
+   {
+      driver.overlay_state = 0;
+
+      unsigned device = input_overlay_full_screen(driver.overlay) ?
+         RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
+
+      bool polled = false;
+      for (unsigned i = 0;
+            input_input_state_func(NULL, 0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
+            i++)
+      {
+         int16_t x = input_input_state_func(NULL, 0,
+               device, i, RETRO_DEVICE_ID_POINTER_X);
+         int16_t y = input_input_state_func(NULL, 0,
+               device, i, RETRO_DEVICE_ID_POINTER_Y);
+
+         driver.overlay_state |= input_overlay_poll(driver.overlay, x, y);
+         polled = true;
+      }
+
+      if (!polled)
+         input_overlay_poll_clear(driver.overlay);
+   }
+#endif
+
+#ifndef GEKKO
+   /* TODO - not sure if correct regarding RARCH_QUIT_KEY */
+   if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
+   {
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+      goto deinit;
+   }
+#endif
+
    for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
       input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
+
+   input_state |= driver.input->key_pressed(driver.input_data, RARCH_RMENU_TOGGLE) ? (1ULL << GX_DEVICE_NAV_MENU) : 0;
+   input_state |= driver.input->key_pressed(driver.input_data, RARCH_QUIT_KEY) ? (1ULL << GX_DEVICE_NAV_QUIT) : 0;
+
+#ifdef HAVE_OVERLAY
+   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
+      input_state |= driver.overlay_state & rmenu_nav_binds[0][i].joykey ? (1ULL << i) : 0;
+#endif
 
    trigger_state = input_state & ~old_input_state;
    bool do_held = (input_state & ((1ULL << GX_DEVICE_NAV_UP) | (1ULL << GX_DEVICE_NAV_DOWN) | (1ULL << GX_DEVICE_NAV_LEFT) | (1ULL << GX_DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << GX_DEVICE_NAV_MENU) | (1ULL << GX_DEVICE_NAV_QUIT)));
@@ -263,11 +377,13 @@ bool rmenu_iterate(void)
       action = RGUI_ACTION_START;
    else if (trigger_state & (1ULL << GX_DEVICE_NAV_SELECT))
       action = RGUI_ACTION_SETTINGS;
+#ifdef GEKKO
    else if (trigger_state & (1ULL << GX_DEVICE_NAV_QUIT))
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
       goto deinit;
    }
+#endif
 
    int input_entry_ret = 0;
    int input_process_ret = 0;

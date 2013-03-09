@@ -417,6 +417,7 @@ input_overlay_t *input_overlay_new(const char *overlay)
 
    input_overlay_set_alpha_mod(ol, g_settings.input.overlay_opacity);
    input_overlay_set_scale_factor(ol, 1.0f);
+   ol->next_index = (ol->index + 1) % ol->size;
 
    return ol;
 
@@ -506,6 +507,7 @@ void input_overlay_next(input_overlay_t *ol)
          ol->active->mod_x, ol->active->mod_y, ol->active->mod_w, ol->active->mod_h);
    ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
    ol->blocked = true;
+   ol->next_index = (ol->index + 1) % ol->size;
 }
 
 bool input_overlay_full_screen(input_overlay_t *ol)

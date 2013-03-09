@@ -20,6 +20,7 @@
 #include <string.h>
 #include "../boolean.h"
 
+#include "../general.h"
 #include "rarch_console_input.h"
 
 struct platform_bind

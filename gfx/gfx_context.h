@@ -29,6 +29,15 @@
 
 #define MAX_EGLIMAGE_TEXTURES 32
 
+#ifdef HAVE_FBO
+enum fbo_option
+{
+   FBO_DEINIT = 0,
+   FBO_INIT,
+   FBO_REINIT
+};
+#endif
+
 enum gfx_ctx_api
 {
    GFX_CTX_OPENGL_API,
@@ -136,6 +145,7 @@ extern const gfx_ctx_driver_t gfx_ctx_ps3;
 extern const gfx_ctx_driver_t gfx_ctx_xdk;
 extern const gfx_ctx_driver_t gfx_ctx_wgl;
 extern const gfx_ctx_driver_t gfx_ctx_videocore;
+extern const gfx_ctx_driver_t gfx_ctx_bbqnx;
 
 const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
 const gfx_ctx_driver_t *gfx_ctx_init_first(enum gfx_ctx_api api); // Finds first suitable driver and initializes.

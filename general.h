@@ -67,7 +67,7 @@
 #endif
 
 // Wii and PSL1GHT - for usleep (among others)
-#if defined(GEKKO) || defined(__PSL1GHT__)
+#if defined(GEKKO) || defined(__PSL1GHT__) || defined(__BLACKBERRY_QNX__)
 #include <unistd.h>
 #endif
 
@@ -134,6 +134,9 @@ enum menu_enums
    MODE_EXTLAUNCH_MULTIMAN,
    MODE_EXIT,
    MODE_EXITSPAWN,
+#ifdef ANDROID
+   MODE_INPUT_XPERIA_PLAY_HACK,
+#endif
    MODE_VIDEO_TRIPLE_BUFFERING_ENABLE,
    MODE_VIDEO_FLICKER_FILTER_ENABLE,
    MODE_VIDEO_SOFT_FILTER_ENABLE,
@@ -239,6 +242,7 @@ struct settings
       bool debug_enable;
 #ifdef ANDROID
       bool autodetect_enable;
+      unsigned back_behavior;
       unsigned icade_profile[MAX_PLAYERS];
       unsigned icade_count;
 #endif
@@ -647,6 +651,7 @@ void rarch_init_system_info(void);
 int rarch_main(int argc, char *argv[]);
 int rarch_main_init_wrap(const struct rarch_main_wrap *args);
 int rarch_main_init(int argc, char *argv[]);
+bool rarch_main_idle_iterate(void);
 bool rarch_main_iterate(void);
 void rarch_main_deinit(void);
 void rarch_render_cached_frame(void);
@@ -762,7 +767,7 @@ static inline void rarch_sleep(unsigned msec)
    Sleep(msec);
 #elif defined(XENON)
    udelay(1000 * msec);
-#elif defined(GEKKO) || defined(__PSL1GHT__)
+#elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__BLACKBERRY_QNX__)
    usleep(1000 * msec);
 #else
    struct timespec tv = {0};

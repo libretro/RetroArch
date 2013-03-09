@@ -19,13 +19,13 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/resource.h>
-#include <byteswap.h>
 
 #include "frontend_android.h"
 #include "../android/native/jni/jni_macros.h"
 #include "../general.h"
 #include "../performance.h"
 #include "../driver.h"
+#include "menu/rmenu.h"
 
 #include "../config.def.h"
 
@@ -58,149 +58,14 @@ static void print_cur_config (void *data)
          AConfiguration_getUiModeNight(android_app->config));
 }
 
-/**
- * Process the next main command.
- */
-void engine_handle_cmd (void *data, int32_t cmd)
-{
-   struct android_app *android_app = (struct android_app*)data;
-
-   switch (cmd)
-   {
-      case APP_CMD_INPUT_CHANGED:
-         RARCH_LOG("APP_CMD_INPUT_CHANGED\n");
-         
-         pthread_mutex_lock(&android_app->mutex);
-
-         if (android_app->inputQueue != NULL)
-            AInputQueue_detachLooper(android_app->inputQueue);
-
-         android_app->inputQueue = android_app->pendingInputQueue;
-
-         if (android_app->inputQueue != NULL)
-         {
-            RARCH_LOG("Attaching input queue to looper");
-            AInputQueue_attachLooper(android_app->inputQueue,
-                  android_app->looper, LOOPER_ID_INPUT, NULL,
-                  NULL);
-         }
-
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
-         
-         break;
-
-      case APP_CMD_INIT_WINDOW:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_INIT_WINDOW.\n");
-
-         pthread_mutex_lock(&android_app->mutex);
-         android_app->window = android_app->pendingWindow;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
-         break;
-
-      case APP_CMD_RESUME:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_RESUME.\n");
-
-         pthread_mutex_lock(&android_app->mutex);
-         android_app->activityState = cmd;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
-         break;
-
-      case APP_CMD_START:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_START.\n");
-
-         pthread_mutex_lock(&android_app->mutex);
-         android_app->activityState = cmd;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
-         break;
-
-      case APP_CMD_PAUSE:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_PAUSE.\n");
-
-         pthread_mutex_lock(&android_app->mutex);
-         android_app->activityState = cmd;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
-
-         if (!(g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY)))
-         {
-            RARCH_LOG("Pausing RetroArch.\n");
-            g_extern.lifecycle_state |= (1ULL << RARCH_PAUSE_TOGGLE);
-         }
-         break;
-
-      case APP_CMD_STOP:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_STOP.\n");
-
-         pthread_mutex_lock(&android_app->mutex);
-         android_app->activityState = cmd;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
-         break;
-
-      case APP_CMD_CONFIG_CHANGED:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_CONFIG_CHANGED.\n");
-         break;
-
-      case APP_CMD_TERM_WINDOW:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_TERM_WINDOW.\n");
-
-         pthread_mutex_lock(&android_app->mutex);
-
-         /* The window is being hidden or closed, clean it up. */
-         /* terminate display/EGL context here */
-         if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
-            uninit_drivers();
-         else
-            RARCH_WARN("Window is terminated outside PAUSED state.\n");
-
-         android_app->window = NULL;
-         pthread_cond_broadcast(&android_app->cond);
-         pthread_mutex_unlock(&android_app->mutex);
-         break;
-
-      case APP_CMD_GAINED_FOCUS:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_GAINED_FOCUS.\n");
-
-         g_extern.lifecycle_state &= ~(1ULL << RARCH_PAUSE_TOGGLE);
-         break;
-
-      case APP_CMD_LOST_FOCUS:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_LOST_FOCUS.\n");
-         break;
-
-      case APP_CMD_DESTROY:
-         RARCH_LOG("engine_handle_cmd: APP_CMD_DESTROY\n");
-         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
-         break;
-   }
-}
-
 #define MAX_ARGS 32
 
 static bool android_run_events (void *data)
 {
-   struct android_app *android_app = (struct android_app*)data;
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
 
    if (id == LOOPER_ID_MAIN)
-   {
-      int8_t cmd;
-
-      if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
-         cmd = -1;
-
-      engine_handle_cmd(android_app, cmd);
-
-      if (cmd == APP_CMD_INIT_WINDOW)
-      {
-         if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
-            init_drivers();
-      }
-   }
+      engine_handle_cmd();
 
    // Check if we are exiting.
    if (g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY))
@@ -281,12 +146,6 @@ static bool android_app_start_main(struct android_app *android_app, int *init_re
    strlcpy(out_args.in, "IME", sizeof(out_args.in));
    jni_get(&in_params, &out_args);
 
-   // Return value file
-   out_args.out = android_app->return_file;
-   out_args.out_sizeof = sizeof(android_app->return_file);
-   strlcpy(out_args.in, "RETURN", sizeof(out_args.in));
-   jni_get(&in_params, &out_args);
-
    (*in_params.java_vm)->DetachCurrentThread(in_params.java_vm);
 
    RARCH_LOG("Checking arguments passed ...\n");
@@ -294,9 +153,6 @@ static bool android_app_start_main(struct android_app *android_app, int *init_re
    RARCH_LOG("Libretro path: [%s].\n", libretro_path);
    RARCH_LOG("Config file: [%s].\n", config_file);
    RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
-   RARCH_LOG("Return file: [%s].\n", android_app->return_file);
-
-   unlink(android_app->return_file);
 
    struct rarch_main_wrap args = {0};
 
@@ -357,20 +213,46 @@ static void *android_app_entry(void *data)
    if (!android_app_start_main(android_app, &init_ret))
       goto exit;
 
-   if (g_extern.main_is_init)
+   menu_init();
+
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+begin_loop:
+   if(g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
    {
-      RARCH_LOG("RetroArch started.\n");
+      driver.input->poll(NULL);
+      driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
-      while ((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ?
-            android_run_events(android_app) :
-            rarch_main_iterate());
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
+         audio_start_func();
 
-      RARCH_LOG("RetroArch stopped.\n");
+      // Main loop
+      do
+      {
+         input_async_poll_func();
+      } while (rarch_main_iterate());
+
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
+         audio_stop_func();
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
    }
+   else if(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
+   {
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_PREINIT);
+      while((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ?
+            android_run_events(android_app) :
+            rmenu_iterate());
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
+   }
+   else
+      goto exit;
+
+   goto begin_loop;
 
 exit:
    android_app->activityState = APP_CMD_DEAD;
    RARCH_LOG("Deinitializing RetroArch...\n");
+
+   menu_free();
 
    if (g_extern.main_is_init)
       rarch_main_deinit();
@@ -380,19 +262,6 @@ exit:
    rarch_perf_log();
 #endif
    rarch_main_clear_state();
-
-   int bs_return = bswap_32(init_ret);
-   FILE *return_file = fopen(android_app->return_file, "w");
-   if (return_file)
-   {
-      fwrite(&bs_return, 4, 1, return_file);
-      fclose(return_file);
-   }
-
-   // returning from the native activity too fast can make the Java frontend not reappear
-   // work around it only if we fail to load the ROM
-   if (init_ret != 0)
-      usleep(1000000);
 
    RARCH_LOG("android_app_destroy!");
    if (android_app->inputQueue != NULL)

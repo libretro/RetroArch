@@ -23,16 +23,24 @@
 
 int main(int argc, char *argv[])
 {
+   srand(time(NULL));
    int16_t input_i[1024];
    int16_t output_i[1024 * 8];
 
    float input_f[1024];
    float output_f[1024 * 8];
 
-   if (argc != 3)
+   double ratio_max_deviation = 0.0;
+
+   if (argc < 3 || argc > 4)
    {
-      fprintf(stderr, "Usage: %s <in-rate> <out-rate> (max ratio: 8.0)\n", argv[0]);
+      fprintf(stderr, "Usage: %s <in-rate> <out-rate> [ratio deviation] (max ratio: 8.0)\n", argv[0]);
       return 1;
+   }
+   else if (argc == 4)
+   {
+      ratio_max_deviation = fabs(strtod(argv[3], NULL));
+      fprintf(stderr, "Ratio deviation: %.4f.\n", ratio_max_deviation);
    }
 
    double in_rate = strtod(argv[1], NULL);
@@ -58,13 +66,16 @@ int main(int argc, char *argv[])
       if (fread(input_i, sizeof(int16_t), 1024, stdin) != 1024)
          break;
 
+      double uniform = (2.0 * rand()) / RAND_MAX - 1.0;
+      double rate_mod = 1.0 + ratio_max_deviation * uniform;
+
       audio_convert_s16_to_float(input_f, input_i, 1024, 1.0f);
 
       struct resampler_data data = {
          .data_in = input_f,
          .data_out = output_f,
          .input_frames = sizeof(input_f) / (2 * sizeof(float)),
-         .ratio = ratio,
+         .ratio = ratio * rate_mod,
       };
 
       rarch_resampler_process(resampler, re, &data);

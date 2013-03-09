@@ -219,7 +219,7 @@ static void uninit_console_drivers(void)
    }
 }
 
-int main(int argc, char *argv[])
+int rarch_main(int argc, char *argv[])
 {
    system_init();
 

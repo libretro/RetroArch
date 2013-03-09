@@ -59,13 +59,11 @@ public class RetroArch extends Activity implements
 		AdapterView.OnItemClickListener {
 	private IconAdapter<ModuleWrapper> adapter;
 	static private final int ACTIVITY_LOAD_ROM = 0;
-	static private final int ACTIVITY_NATIVE_ACTIVITY = 1;
 	static private String libretro_path;
 	static private Double report_refreshrate;
 	static private final String TAG = "RetroArch-Phoenix";
 	private ConfigFile config;
 	private ConfigFile core_config;
-	private String return_file;
 	
 	private final double getDisplayRefreshRate() {
 		// Android is *very* likely to screw this up.
@@ -284,12 +282,6 @@ public class RetroArch extends Activity implements
 			}
 		}
 		
-		if (getCacheDir() != null && getCacheDir().getAbsolutePath() != null) {
-			return_file = getCacheDir().getAbsolutePath() + File.pathSeparator + ".return";
-		} else {
-			return_file = getDefaultConfigPath() + ".ret";
-		}
-		
 		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
 		
 		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
@@ -356,7 +348,7 @@ public class RetroArch extends Activity implements
 		else if (getCacheDir() != null && getCacheDir().getAbsolutePath() != null)
 			return getCacheDir().getAbsolutePath() + File.separator + "retroarch.cfg";
 		else // emergency fallback, all else failed
-			return "/mnt/sdcard/retroarch.cfg";
+			return "/mnt/sd/retroarch.cfg";
 	}
 	
 	private void updateConfigFile() {
@@ -371,6 +363,7 @@ public class RetroArch extends Activity implements
 		config.setBoolean("video_vsync", prefs.getBoolean("video_vsync", true));
 		config.setBoolean("input_autodetect_enable", prefs.getBoolean("input_autodetect_enable", true));
 		config.setBoolean("input_debug_enable", prefs.getBoolean("input_debug_enable", false));
+		config.setInt("input_back_behavior", Integer.valueOf(prefs.getString("input_back_behavior", "0")));
 		config.setInt("input_autodetect_icade_profile_pad1", Integer.valueOf(prefs.getString("input_autodetect_icade_profile_pad1", "0")));
 		config.setInt("input_autodetect_icade_profile_pad2", Integer.valueOf(prefs.getString("input_autodetect_icade_profile_pad2", "0")));
 		config.setInt("input_autodetect_icade_profile_pad3", Integer.valueOf(prefs.getString("input_autodetect_icade_profile_pad3", "0")));
@@ -460,7 +453,6 @@ public class RetroArch extends Activity implements
 		switch (requestCode) {
 		case ACTIVITY_LOAD_ROM:
 			if (data.getStringExtra("PATH") != null) {
-				new File(return_file).delete();
 				Toast.makeText(this,
 						"Loading: [" + data.getStringExtra("PATH") + "]...",
 						Toast.LENGTH_SHORT).show();
@@ -468,26 +460,9 @@ public class RetroArch extends Activity implements
 				myIntent.putExtra("ROM", data.getStringExtra("PATH"));
 				myIntent.putExtra("LIBRETRO", libretro_path);
 				myIntent.putExtra("CONFIGFILE", getDefaultConfigPath());
-				myIntent.putExtra("RETURN", return_file);
 				myIntent.putExtra("IME", current_ime);
-				startActivityForResult(myIntent, ACTIVITY_NATIVE_ACTIVITY);
+				startActivity(myIntent);
 			}
-			break;
-		case ACTIVITY_NATIVE_ACTIVITY:
-			AlertDialog.Builder builder = new AlertDialog.Builder(this).setNeutralButton("OK", null);
-			try {
-				DataInputStream cacheStream = new DataInputStream(new FileInputStream(return_file));
-				int value = cacheStream.readInt();
-				cacheStream.close();
-				if (value != 0) {
-					throw new IOException();
-				}
-			} catch (FileNotFoundException e) {
-				builder.setTitle("Crash").setMessage("RetroArch Crashed").show();
-			} catch (IOException e) {
-				builder.setTitle("Error").setMessage("RetroArch Could not load the chosen ROM.\n\nCheck the Cores Guide for details on valid ROMs for this emulator.").show();
-			}
-			new File(return_file).delete();
 			break;
 		}
 	}

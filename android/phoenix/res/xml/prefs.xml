@@ -187,6 +187,14 @@
         </PreferenceCategory>
     </PreferenceScreen>
     <PreferenceScreen android:title="Input Settings" >
+       <PreferenceCategory android:title="General" >
+            <ListPreference
+                android:entries="@array/back_options"
+                android:entryValues="@array/back_options_values"
+                android:key="input_back_behavior"
+                android:summary="Select how you want the Back button to behave."
+                android:title="Back behavior" />
+       </PreferenceCategory>
         <PreferenceCategory android:title="Configuration Autodetect" >
             <CheckBoxPreference
                 android:defaultValue="true"

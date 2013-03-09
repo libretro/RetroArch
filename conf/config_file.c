@@ -110,12 +110,13 @@ static char *extract_value(char *line, bool is_value)
       line++;
 
    char *save;
+   char *tok;
 
    // We have a full string. Read until next ".
    if (*line == '"')
    {
       line++;
-      char *tok = strtok_r(line, "\"", &save);
+      tok = strtok_r(line, "\"", &save);
       if (!tok)
          return NULL;
       return strdup(tok);
@@ -124,7 +125,7 @@ static char *extract_value(char *line, bool is_value)
       return NULL;
    else // We don't have that... Read till next space.
    {
-      char *tok = strtok_r(line, " \n\t\f\r\v", &save);
+      tok = strtok_r(line, " \n\t\f\r\v", &save);
       if (tok)
          return strdup(tok);
       else

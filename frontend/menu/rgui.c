@@ -22,7 +22,7 @@
 #include "rgui.h"
 #include "utils/file_list.h"
 #include "rmenu_settings.h"
-#include "../../console/rarch_console_video.h"
+#include "../../gfx/gfx_common.h"
 #include "../../screenshot.h"
 
 #define TERM_START_X 15
@@ -116,6 +116,13 @@ unsigned rgui_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 };
 
 unsigned rgui_current_gx_resolution = GX_RESOLUTIONS_640_480;
+
+static const char *rgui_device_labels[] = {
+   "GameCube Controller",
+   "Wiimote",
+   "Wiimote + Nunchuk",
+   "Classic Controller",
+};
 #endif
 
 unsigned RGUI_WIDTH = 320;
@@ -136,16 +143,10 @@ struct rgui_handle
    bool msg_force;
 
    char path_buf[PATH_MAX];
+   char base_path[PATH_MAX];
 
    const uint8_t *font;
    bool alloc_font;
-};
-
-static const char *rgui_device_labels[] = {
-   "GameCube Controller",
-   "Wiimote",
-   "Wiimote + Nunchuk",
-   "Classic Controller",
 };
 
 static const unsigned rgui_controller_lut[] = {
@@ -177,7 +178,7 @@ static inline bool rgui_is_viewport_menu(rgui_file_type_t menu_type)
    return (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2);
 }
 
-static void copy_glyph(uint8_t *glyph, const uint8_t *buf)
+static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 {
    for (int y = 0; y < FONT_HEIGHT; y++)
    {
@@ -205,7 +206,7 @@ static void init_font(rgui_handle_t *rgui, const uint8_t *font_bmp_buf)
    {
       unsigned y = i / 16;
       unsigned x = i % 16;
-      copy_glyph(&font[FONT_OFFSET(i)],
+      rgui_copy_glyph(&font[FONT_OFFSET(i)],
             font_bmp_buf + 54 + 3 * (256 * (255 - 16 * y) + 16 * x));
    }
 
@@ -221,13 +222,17 @@ rgui_handle_t *rgui_init(const char *base_path,
 
    rgui->frame_buf = framebuf;
    rgui->frame_buf_pitch = framebuf_pitch;
-
    rgui->folder_cb = folder_cb;
    rgui->userdata = userdata;
+   strlcpy(rgui->base_path, base_path, sizeof(rgui->base_path));
 
    rgui->path_stack = rgui_list_new();
    rgui->folder_buf = rgui_list_new();
+#ifdef RARCH_CONSOLE
    rgui_list_push(rgui->path_stack, base_path, RGUI_FILE_DIRECTORY, 0);
+#else
+   rgui_list_push(rgui->path_stack, base_path, RGUI_SETTINGS, 0);
+#endif
 
    if (font_bmp_buf)
       init_font(rgui, font_bmp_buf);
@@ -257,7 +262,11 @@ static uint16_t gray_filler(unsigned x, unsigned y)
    x >>= 1;
    y >>= 1;
    unsigned col = ((x + y) & 1) + 1;
+#ifdef GEKKO
    return (6 << 12) | (col << 8) | (col << 4) | (col << 0);
+#else
+   return (col << 13) | (col << 9) | (col << 5) | (12 << 0);
+#endif
 }
 
 static uint16_t green_filler(unsigned x, unsigned y)
@@ -265,7 +274,11 @@ static uint16_t green_filler(unsigned x, unsigned y)
    x >>= 1;
    y >>= 1;
    unsigned col = ((x + y) & 1) + 1;
+#ifdef GEKKO
    return (6 << 12) | (col << 8) | (col << 5) | (col << 0);
+#else
+   return (col << 13) | (col << 10) | (col << 5) | (12 << 0);
+#endif
 }
 
 static void fill_rect(uint16_t *buf, unsigned pitch,
@@ -293,7 +306,11 @@ static void blit_line(rgui_handle_t *rgui,
 
             if (col)
                rgui->frame_buf[(y + j) * (rgui->frame_buf_pitch >> 1) + (x + i)] = green ?
+#ifdef GEKKO
                (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
+#else
+               (15 << 0) | (7 << 4) | (15 << 8) | (7 << 12) : 0xFFFF;
+#endif
          }
       }
 
@@ -406,7 +423,9 @@ static void render_text(rgui_handle_t *rgui)
       char message[TERM_WIDTH + 1];
       char type_str[TERM_WIDTH + 1];
       int w = rgui_is_controller_menu(menu_type) ? 26 : 19;
+#ifdef RARCH_CONSOLE
       unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
+#endif
       switch (type)
       {
          case RGUI_FILE_PLAIN:
@@ -483,6 +502,7 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_DEBUG_TEXT:
             snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
             break;
+         case RGUI_SETTINGS_OPEN_FILEBROWSER:
          case RGUI_SETTINGS_CUSTOM_VIEWPORT:
 #ifdef HAVE_LIBRETRO_MANAGEMENT
          case RGUI_SETTINGS_CORE:
@@ -493,9 +513,12 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_CONTROLLER_4:
             snprintf(type_str, sizeof(type_str), "...");
             break;
+#ifdef GEKKO
          case RGUI_SETTINGS_BIND_DEVICE:
             snprintf(type_str, sizeof(type_str), "%s", rgui_device_labels[g_settings.input.device[port]]);
             break;
+#endif
+#ifdef RARCH_CONSOLE
          case RGUI_SETTINGS_BIND_DPAD_EMULATION:
             snprintf(type_str, sizeof(type_str), "%s", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[port]]);
             break;
@@ -517,6 +540,7 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_BIND_R3:
             snprintf(type_str, sizeof(type_str), "%s", rarch_input_find_platform_key_label(g_settings.input.binds[port][rgui_controller_lut[type - RGUI_SETTINGS_BIND_UP]].joykey));
             break;
+#endif
          default:
             type_str[0] = 0;
             w = 0;
@@ -547,8 +571,8 @@ static void render_text(rgui_handle_t *rgui)
       blit_line(rgui, x, y, message, i == rgui->directory_ptr);
    }
 
-   const char *message_queue;
 #ifdef GEKKO
+   const char *message_queue;
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    if (rgui->msg_force)
    {
@@ -559,10 +583,8 @@ static void render_text(rgui_handle_t *rgui)
    {
       message_queue = gx->msg;
    }
-#else
-   message_queue = msg_queue_pull(g_extern.msg_queue);
-#endif
    render_messagebox(rgui, message_queue);
+#endif
 }
 
 #ifdef GEKKO
@@ -573,7 +595,9 @@ static void render_text(rgui_handle_t *rgui)
 
 static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t action, rgui_file_type_t menu_type)
 {
-   unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
+#ifdef RARCH_CONSOLE
+      unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
+#endif
 
    switch (setting)
    {
@@ -625,9 +649,15 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
             unsigned height      = g_extern.frame_cache.height;
             int pitch            = g_extern.frame_cache.pitch;
 
+#ifdef RARCH_CONSOLE
+            const char *screenshot_dir = default_paths.port_dir;
+#else
+            const char *screenshot_dir = g_settings.screenshot_directory;
+#endif
+
             // Negative pitch is needed as screenshot takes bottom-up,
             // but we use top-down.
-            bool r = screenshot_dump(default_paths.port_dir,
+            bool r = screenshot_dump(screenshot_dir,
                   data + (height - 1) * (pitch >> 1), 
                   width, height, -pitch, false);
 
@@ -838,6 +868,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          }
          break;
       // controllers
+#ifdef GEKKO
       case RGUI_SETTINGS_BIND_DEVICE:
          g_settings.input.device[port] += RARCH_DEVICE_LAST;
          if (action == RGUI_ACTION_START)
@@ -851,6 +882,8 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          rarch_input_set_default_keybinds(port);
          driver.input->set_analog_dpad_mapping(g_settings.input.device[port], g_settings.input.dpad_emulation[port], port);
          break;
+#endif
+#ifdef RARCH_CONSOLE
       case RGUI_SETTINGS_BIND_DPAD_EMULATION:
          g_settings.input.dpad_emulation[port] += DPAD_EMULATION_LAST;
          if (action == RGUI_ACTION_START)
@@ -892,6 +925,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
 
          rarch_input_set_keybind(port, keybind_action, rgui_controller_lut[setting - RGUI_SETTINGS_BIND_UP]);
       }
+#endif
       default:
          break;
    }
@@ -905,6 +939,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->folder_buf);
 
+#ifdef RARCH_CONSOLE
    RGUI_MENU_ITEM("Rewind", RGUI_SETTINGS_REWIND_ENABLE);
    RGUI_MENU_ITEM("Rewind granularity", RGUI_SETTINGS_REWIND_GRANULARITY);
    if (g_extern.main_is_init)
@@ -941,10 +976,25 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("Debug Text", RGUI_SETTINGS_DEBUG_TEXT);
    RGUI_MENU_ITEM("Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR);
    RGUI_MENU_ITEM("Exit RetroArch", RGUI_SETTINGS_QUIT_EMULATOR);
+#else
+   //RGUI_MENU_ITEM("Filebrowser", RGUI_SETTINGS_OPEN_FILEBROWSER);
+   RGUI_MENU_ITEM("Save State", RGUI_SETTINGS_SAVESTATE_SAVE);
+   RGUI_MENU_ITEM("Load State", RGUI_SETTINGS_SAVESTATE_LOAD);
+   RGUI_MENU_ITEM("Take Screenshot", RGUI_SETTINGS_SCREENSHOT);
+   RGUI_MENU_ITEM("Restart Game", RGUI_SETTINGS_RESTART_GAME);
+   RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
+   RGUI_MENU_ITEM("Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO);
+   RGUI_MENU_ITEM("Rotation", RGUI_SETTINGS_VIDEO_ROTATION);
+   RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
+   RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);
+   RGUI_MENU_ITEM("Audio Resampler", RGUI_SETTINGS_RESAMPLER_TYPE);
+   RGUI_MENU_ITEM("Exit RetroArch", RGUI_SETTINGS_QUIT_EMULATOR);
+#endif
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 {
+#ifdef RARCH_CONSOLE
    rgui_list_clear(rgui->folder_buf);
 
    RGUI_MENU_ITEM("Device", RGUI_SETTINGS_BIND_DEVICE);
@@ -965,10 +1015,10 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("R2", RGUI_SETTINGS_BIND_R2);
    RGUI_MENU_ITEM("L3", RGUI_SETTINGS_BIND_L3);
    RGUI_MENU_ITEM("R3", RGUI_SETTINGS_BIND_R3);
+#endif
 }
 
-
-int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
+static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
 #ifdef GEKKO
    gx_video_t *gx = (gx_video_t*)driver.video_data;
@@ -1088,12 +1138,13 @@ int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
    return 0;
 }
 
-int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
+static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
    rgui->frame_buf_pitch = RGUI_WIDTH * 2;
    rgui_file_type_t type = 0;
    const char *label = 0;
-   rgui_list_at(rgui->folder_buf, rgui->directory_ptr, &label, &type, NULL);
+   if (action != RGUI_ACTION_REFRESH)
+      rgui_list_at(rgui->folder_buf, rgui->directory_ptr, &label, &type, NULL);
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    if (type == RGUI_SETTINGS_CORE)
       label = default_paths.core_dir;
@@ -1124,9 +1175,12 @@ int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
       case RGUI_ACTION_CANCEL:
       case RGUI_ACTION_SETTINGS:
-         rgui_list_pop(rgui->path_stack);
-         rgui->directory_ptr = directory_ptr;
-         rgui->need_refresh = true;
+         if (rgui_list_size(rgui->path_stack) > 1)
+         {
+            rgui_list_pop(rgui->path_stack);
+            rgui->directory_ptr = directory_ptr;
+            rgui->need_refresh = true;
+         }
          break;
 
       case RGUI_ACTION_LEFT:
@@ -1149,6 +1203,11 @@ int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui_list_push(rgui->path_stack, "", type, rgui->directory_ptr);
             g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
             video_set_aspect_ratio_func(g_settings.video.aspect_ratio_idx);
+         }
+         else if (type == RGUI_SETTINGS_OPEN_FILEBROWSER && action == RGUI_ACTION_OK)
+         {
+            rgui_list_push(rgui->path_stack, rgui->base_path, RGUI_FILE_DIRECTORY, rgui->directory_ptr);
+            rgui->need_refresh = true;
          }
          else
          {

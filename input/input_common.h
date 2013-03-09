@@ -49,6 +49,14 @@ static inline void input_conv_analog_id_to_bind_id(unsigned index, unsigned id,
 bool input_translate_coord_viewport(int mouse_x, int mouse_y,
       int16_t *res_x, int16_t *res_y, int16_t *res_screen_x, int16_t *res_screen_y);
 
+#ifdef ANDROID
+enum back_button_enums
+{
+   BACK_BUTTON_QUIT = 0,
+   BACK_BUTTON_MENU_TOGGLE,
+};
+#endif
+
 typedef struct rarch_joypad_driver
 {
    bool (*init)(void);

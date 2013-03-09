@@ -46,13 +46,6 @@
 #include "msvc/msvc_compat.h"
 #endif
 
-#ifdef __APPLE__
-#include "SDL.h" 
-// OSX seems to really need -lSDLmain, 
-// so we include SDL.h here so it can hack our main.
-// We want to use -mconsole in Win32, so we need main().
-#endif
-
 #if defined(RARCH_CONSOLE) && !defined(RARCH_PERFORMANCE_MODE)
 #define RARCH_PERFORMANCE_MODE
 #endif
@@ -576,10 +569,8 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
 
 #ifdef _WIN32
 #define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe."
-#elif defined(__APPLE__)
-#define RARCH_DEFAULT_CONF_PATH_STR " Defaults to $HOME/.retroarch.cfg."
 #else
-#define RARCH_DEFAULT_CONF_PATH_STR " Defaults to $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n\t\tor $HOME/.retroarch.cfg, if $XDG_CONFIG_HOME is not defined."
+#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\tand $HOME/.retroarch.cfg."
 #endif
 
 #include "config.features.h"
@@ -646,7 +637,10 @@ static void print_compiler(FILE *file)
 static void print_help(void)
 {
    puts("===================================================================");
+#ifndef __BLACKBERRY_QNX__
+   /* To get around error 'too many decimal points in number - expected ')' before numeric constant */
    puts("RetroArch: Frontend for libretro -- v" PACKAGE_VERSION " --");
+#endif
    print_compiler(stdout);
    puts("===================================================================");
    puts("Usage: retroarch [rom file] [options...]");
@@ -2853,12 +2847,6 @@ error:
    return 1;
 }
 
-static inline bool rarch_main_paused(void)
-{
-   return g_extern.is_paused && !g_extern.is_oneshot;
-}
-
-
 bool rarch_main_iterate(void)
 {
 #ifdef HAVE_DYLIB
@@ -2877,24 +2865,25 @@ bool rarch_main_iterate(void)
    }
 
    // Time to drop?
-   if (input_key_pressed_func(RARCH_QUIT_KEY) ||
-         !video_alive_func())
+   if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
    {
 #ifdef HAVE_RMENU
-      bool rmenu_enable = input_key_pressed_func(RARCH_RMENU_TOGGLE);
-      if (input_key_pressed_func(RARCH_RMENU_QUICKMENU_TOGGLE))
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
-
-      if (rmenu_enable || ((g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME)) && !rmenu_enable))
-      {
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-         g_extern.delay_timer[0] = g_extern.frame_count + 30;
-      }
-      else
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
 #endif
       return false;
    }
+
+#ifdef HAVE_RMENU
+   if (input_key_pressed_func(RARCH_RMENU_TOGGLE) && !(g_extern.frame_count < g_extern.delay_timer[0]))
+   {
+      if (input_key_pressed_func(RARCH_RMENU_QUICKMENU_TOGGLE))
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
+
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+      g_extern.delay_timer[0] = g_extern.frame_count + 30;
+      return false;
+   }
+#endif
 
 #ifdef HAVE_COMMAND
    if (driver.command)
@@ -3000,6 +2989,7 @@ void rarch_main_deinit(void)
 }
 
 #define MAX_ARGS 32
+
 int rarch_main_init_wrap(const struct rarch_main_wrap *args)
 {
    if (g_extern.main_is_init)
@@ -3059,46 +3049,18 @@ int rarch_main_init_wrap(const struct rarch_main_wrap *args)
    return ret;
 }
 
-#ifndef HAVE_RARCH_MAIN_WRAP
-static bool rarch_main_idle_iterate(void)
+bool rarch_main_idle_iterate(void)
 {
 #ifdef HAVE_COMMAND
    if (driver.command)
       rarch_cmd_pre_frame(driver.command);
 #endif
 
-   if (input_key_pressed_func(RARCH_QUIT_KEY) ||
-         !video_alive_func())
+   if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
       return false;
 
    do_state_checks();
-
    input_poll();
    rarch_sleep(10);
    return true;
 }
-
-
-int rarch_main(int argc, char *argv[])
-{
-   int init_ret;
-   if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
-   rarch_init_msg_queue();
-   while (rarch_main_paused() ? rarch_main_idle_iterate() : rarch_main_iterate());
-   rarch_main_deinit();
-   rarch_deinit_msg_queue();
-
-#ifdef PERF_TEST
-   rarch_perf_log();
-#endif
-
-   rarch_main_clear_state();
-   return 0;
-}
-
-// Consoles use the higher level API.
-int main(int argc, char *argv[])
-{
-   return rarch_main(argc, argv);
-}
-#endif

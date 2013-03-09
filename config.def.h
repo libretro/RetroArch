@@ -163,7 +163,7 @@ enum
 
 #if defined(XENON) || defined(_XBOX360) || defined(__CELLOS_LV2__)
 #define DEFAULT_ASPECT_RATIO 1.7778f
-#elif defined(_XBOX1) || defined(GEKKO) || defined(ANDROID)
+#elif defined(_XBOX1) || defined(GEKKO) || defined(ANDROID) || defined(__BLACKBERRY_QNX__)
 #define DEFAULT_ASPECT_RATIO 1.3333f
 #else
 #define DEFAULT_ASPECT_RATIO -1.0f
@@ -240,7 +240,8 @@ static const bool aspect_ratio_auto = false; // 1:1 PAR
 static const bool crop_overscan = true;
 
 // Font size for on-screen messages.
-#ifdef HAVE_RMENU
+// TODO: use RARCH_CONSOLE instead? need to test
+#if defined(HAVE_RMENU) && !defined(HAVE_RGUI)
 static const float font_size = 1.0f;
 #else
 static const float font_size = 48;

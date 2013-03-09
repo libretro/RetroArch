@@ -19,10 +19,13 @@
 #include "../gfx_common.h"
 #include "../gl_common.h"
 
-#include <EGL/egl.h> /* Requires NDK r5 or newer */
-#include <android/looper.h>
+#include <EGL/egl.h>
+#include <bps/screen.h>
+#include <bps/navigator.h>
+#include <screen/screen.h>
+#include <sys/platform.h>
+#include <GLES2/gl2.h>
 
-#include "../../frontend/frontend_android.h"
 #include "../image.h"
 
 #include "../fonts/gl_font.h"
@@ -32,11 +35,17 @@
 #include "../shader_glsl.h"
 #endif
 
+#define WINDOW_BUFFERS 2
+
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
-static EGLConfig g_config;
+static EGLConfig egl_config;
 static bool g_resize;
+
+extern screen_context_t screen_ctx;
+static screen_window_t screen_win;
+static screen_display_t screen_disp;
 
 GLfloat _angle;
 
@@ -54,12 +63,15 @@ static void gfx_ctx_destroy(void)
    eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
    eglDestroyContext(g_egl_dpy, g_egl_ctx);
    eglDestroySurface(g_egl_dpy, g_egl_surf);
+   screen_destroy_window(screen_win);
+   screen_destroy_context(screen_ctx);
    eglTerminate(g_egl_dpy);
+   eglReleaseThread();
 
    g_egl_dpy = EGL_NO_DISPLAY;
    g_egl_surf = EGL_NO_SURFACE;
    g_egl_ctx = EGL_NO_CONTEXT;
-   g_config   = 0;
+   egl_config   = 0;
    g_resize   = false;
 }
 
@@ -82,7 +94,6 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 
 static bool gfx_ctx_init(void)
 {
-   struct android_app *android_app = (struct android_app*)g_android;
    const EGLint attribs[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -93,12 +104,15 @@ static bool gfx_ctx_init(void)
    };
    EGLint num_config;
    EGLint egl_version_major, egl_version_minor;
-   EGLint format;
+   int format = SCREEN_FORMAT_RGBX8888;
 
    EGLint context_attributes[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2,
       EGL_NONE
    };
+   int usage;
+
+   usage = SCREEN_USAGE_OPENGL_ES2 | SCREEN_USAGE_ROTATION;
 
    RARCH_LOG("Initializing context\n");
 
@@ -114,45 +128,122 @@ static bool gfx_ctx_init(void)
       goto error;
    }
 
-   RARCH_LOG("[ANDROID/EGL]: EGL version: %d.%d\n", egl_version_major, egl_version_minor);
+   if (!eglBindAPI(EGL_OPENGL_ES_API))
+   {
+      RARCH_ERR("eglBindAPI failed.\n");
+      goto error;
+   }
 
-   if (!eglChooseConfig(g_egl_dpy, attribs, &g_config, 1, &num_config))
+   RARCH_LOG("[BLACKBERRY QNX/EGL]: EGL version: %d.%d\n", egl_version_major, egl_version_minor);
+
+   if (!eglChooseConfig(g_egl_dpy, attribs, &egl_config, 1, &num_config))
    {
       RARCH_ERR("eglChooseConfig failed.\n");
       goto error;
    }
 
-   int var = eglGetConfigAttrib(g_egl_dpy, g_config, EGL_NATIVE_VISUAL_ID, &format);
-
-   if (!var)
+   if ((g_egl_ctx = eglCreateContext(g_egl_dpy, egl_config, 0, context_attributes)) == EGL_NO_CONTEXT)
    {
-      RARCH_ERR("eglGetConfigAttrib failed: %d.\n", var);
+      RARCH_ERR("eglCreateContext failed.\n");
       goto error;
    }
 
-   ANativeWindow_setBuffersGeometry(android_app->window, 0, 0, format);
+   if (screen_create_window(&screen_win, screen_ctx))
+   {
+      RARCH_ERR("screen_create_window failed:.\n");
+      goto error;
+   }
 
-   if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, android_app->window, 0)))
+   if (screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_FORMAT, &format))
+   {
+      RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_FORMAT] failed.\n");
+      goto error;
+   }
+
+   if (screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_USAGE, &usage))
+   {
+      RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_USAGE] failed.\n");
+      goto error;
+   }
+
+   if (screen_get_window_property_pv(screen_win, SCREEN_PROPERTY_DISPLAY, (void **)&screen_disp))
+   {
+      RARCH_ERR("screen_get_window_property_pv [SCREEN_PROPERTY_DISPLAY] failed.\n");
+      goto error;
+   }
+
+   int screen_resolution[2];
+
+   if (screen_get_display_property_iv(screen_disp, SCREEN_PROPERTY_SIZE, screen_resolution))
+   {
+      RARCH_ERR("screen_get_window_property_iv [SCREEN_PROPERTY_SIZE] failed.\n");
+      goto error;
+   }
+
+   int angle = atoi(getenv("ORIENTATION"));
+
+   screen_display_mode_t screen_mode;
+   if (screen_get_display_property_pv(screen_disp, SCREEN_PROPERTY_MODE, (void**)&screen_mode))
+   {
+      RARCH_ERR("screen_get_display_property_pv [SCREEN_PROPERTY_MODE] failed.\n");
+      goto error;
+   }
+
+   int size[2];
+   if (screen_get_window_property_iv(screen_win, SCREEN_PROPERTY_BUFFER_SIZE, size)) {
+      RARCH_ERR("screen_get_window_property_iv [SCREEN_PROPERTY_BUFFER_SIZE] failed.\n");
+      goto error;
+   }
+
+   int buffer_size[2] = {size[0], size[1]};
+
+   if ((angle == 0) || (angle == 180)) {
+      if (((screen_mode.width > screen_mode.height) && (size[0] < size[1])) ||
+            ((screen_mode.width < screen_mode.height) && (size[0] > size[1]))) {
+         buffer_size[1] = size[0];
+         buffer_size[0] = size[1];
+      }
+   } else if ((angle == 90) || (angle == 270)){
+      if (((screen_mode.width > screen_mode.height) && (size[0] > size[1])) ||
+            ((screen_mode.width < screen_mode.height && size[0] < size[1]))) {
+         buffer_size[1] = size[0];
+         buffer_size[0] = size[1];
+      }
+   } else {
+      RARCH_ERR("Navigator returned an unexpected orientation angle.\n");
+      goto error;
+   }
+
+   if (screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_BUFFER_SIZE, buffer_size))
+   {
+      RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_BUFFER_SIZE] failed.\n");
+      goto error;
+   }
+
+   if (screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_ROTATION, &angle))
+   {
+      RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_ROTATION] failed.\n");
+      goto error;
+   }
+
+   if (screen_create_window_buffers(screen_win, WINDOW_BUFFERS))
+   {
+      RARCH_ERR("screen_create_window_buffers failed.\n");
+      goto error;
+   }
+
+   if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, egl_config, screen_win, 0)))
    {
       RARCH_ERR("eglCreateWindowSurface failed.\n");
       goto error;
    }
 
-   if (!(g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, 0, context_attributes)))
-   {
-      RARCH_ERR("eglCreateContext failed.\n");
-      goto error;
-   }
 
    if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
    {
       RARCH_ERR("eglMakeCurrent failed.\n");
       goto error;
    }
-
-   ALooper *looper = ALooper_forThread();
-   if (!looper)
-      ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
 
    return true;
 
@@ -171,6 +262,10 @@ static void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)frame_count;
+   //Request and process all available BPS events
+   bps_event_t *event = NULL;
+
+   bps_get_event(&event, 0);
 
    *quit = false;
 
@@ -181,6 +276,28 @@ static void gfx_ctx_check_window(bool *quit,
       *width  = new_width;
       *height = new_height;
       *resize = true;
+   }
+
+   if (event)
+   {
+      int domain = bps_event_get_domain(event);
+
+      if (domain == screen_get_domain())
+      {
+         screen_event_t screen_event = screen_event_get_event(event);
+         int screen_val;
+         screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_TYPE, &screen_val);
+         switch (screen_val) {
+
+            case SCREEN_EVENT_MTOUCH_TOUCH:
+            case SCREEN_EVENT_MTOUCH_MOVE:
+            case SCREEN_EVENT_MTOUCH_RELEASE:
+
+               break;
+         }
+      }
+      else if ((domain == navigator_get_domain()) && (NAVIGATOR_EXIT == bps_event_get_code(event)))
+         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
    }
 
    // Check if we are exiting.
@@ -265,7 +382,7 @@ static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned 
    return false;
 }
 
-const gfx_ctx_driver_t gfx_ctx_android = {
+const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    gfx_ctx_init,
    gfx_ctx_destroy,
    gfx_ctx_bind_api,
@@ -283,5 +400,5 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    gfx_ctx_init_egl_image_buffer,
    gfx_ctx_write_egl_image,
    NULL,
-   "android",
+   "blackberry_qnx",
 };

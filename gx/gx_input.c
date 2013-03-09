@@ -528,10 +528,7 @@ static void gx_input_poll(void *data)
                | GX_CLASSIC_HOME
 #endif
                ))
-      {
          *lifecycle_state |= (1ULL << RARCH_RMENU_TOGGLE);
-         *lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
-      }
    }
 }
 

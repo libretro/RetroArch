@@ -56,6 +56,7 @@
 #include <GL/glext.h>
 #endif
 
+
 #if defined(ANDROID) && defined(HAVE_GRIFFIN)
 #include "../console/griffin/hook_context.h"
 #else
@@ -299,6 +300,11 @@ typedef struct gl
    bool pbo_readback_valid;
    unsigned pbo_readback_index;
    struct scaler_ctx pbo_readback_scaler;
+#endif
+
+#ifdef HAVE_RGUI
+   GLuint rgui_texture;
+   uint32_t *menu_data;
 #endif
 
 } gl_t;
