@@ -116,6 +116,14 @@ HRESULT CRetroArch::UnregisterXuiClasses (void)
    return 0;
 }
 
+static void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size)
+{
+   char str[PATH_MAX];
+
+   menu_settings_create_menu_item_label(str, setting, sizeof(str));
+   convert_char_to_wchar(strwbuf, str, size);
+}
+
 static void browser_update(filebrowser_t * b, uint64_t input, const char *extensions);
 
 static void filebrowser_fetch_directory_entries(filebrowser_t * browser, uint64_t action)

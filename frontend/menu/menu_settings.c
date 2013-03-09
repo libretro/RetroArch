@@ -269,14 +269,6 @@ void menu_settings_msg(unsigned setting, unsigned delay)
    msg_queue_push(g_extern.msg_queue, str, 1, delay);
 }
 
-void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size)
-{
-   char str[PATH_MAX];
-
-   menu_settings_create_menu_item_label(str, setting, sizeof(str));
-   convert_char_to_wchar(strwbuf, str, size);
-}
-
 void menu_settings_create_menu_item_label(char * str, unsigned setting, size_t size)
 {
    switch (setting)

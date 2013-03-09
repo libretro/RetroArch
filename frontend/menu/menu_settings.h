@@ -99,6 +99,5 @@ void menu_settings_set_default(unsigned setting);
 void menu_settings_msg(unsigned setting, unsigned delay);
 
 void menu_settings_create_menu_item_label(char * str, unsigned setting, size_t size);
-void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size);
 
 #endif
