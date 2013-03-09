@@ -270,7 +270,7 @@ const char *gx_get_video_mode(void)
    return format;
 }
 
-void gx_set_aspect_ratio(void *data, unsigned aspectratio_idx)
+static void gx_set_aspect_ratio(void *data, unsigned aspectratio_idx)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
 

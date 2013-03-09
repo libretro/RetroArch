@@ -32,8 +32,7 @@ typedef struct gx_video
 } gx_video_t;
 
 void gx_set_video_mode(unsigned fbWidth, unsigned lines);
-const char *gx_get_video_mode();
-void gx_set_aspect_ratio(void *data, unsigned aspectratio_idx);
+const char *gx_get_video_mode(void);
 
 #endif
 
