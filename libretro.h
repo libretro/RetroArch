@@ -460,6 +460,11 @@ typedef unsigned (*retro_get_num_images_t)(void);
 // Replaces the disk image associated with index.
 // Arguments to pass in info have same requirements as retro_load_game().
 // Virtual disk tray must be ejected when calling this.
+// Replacing a disk image with info = NULL will remove the disk image from the internal list.
+// As a result, calls to get_image_index() can change.
+//
+// E.g. replace_image_index(1, NULL), and previous get_image_index() returned 4 before.
+// Index 1 will be removed, and the new index is 3.
 struct retro_game_info;
 typedef bool (*retro_replace_image_index_t)(unsigned index, const struct retro_game_info *info);
 // Adds a new valid index (get_num_images()) to the internal disk list.
