@@ -438,7 +438,6 @@ MENU
 #endif
 
 #ifdef HAVE_RMENU
-#include "../rarch_console_video.c"
 #include "../../frontend/menu/rmenu_settings.c"
 
 #if defined(_XBOX360)

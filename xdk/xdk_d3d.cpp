@@ -994,9 +994,9 @@ static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspectratio_index)
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
-      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+      gfx_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
    else if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
-      rarch_set_core_viewport();
+      gfx_set_core_viewport();
 
    g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
    g_settings.video.force_aspect = false;

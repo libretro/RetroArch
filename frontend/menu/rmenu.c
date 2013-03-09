@@ -33,8 +33,7 @@
 
 #include "../../gfx/image.h"
 
-#include "../../console/rarch_console_video.h"
-
+#include "../../gfx/gfx_common.h"
 #include "../../gfx/gfx_context.h"
 
 #include "../../file.h"

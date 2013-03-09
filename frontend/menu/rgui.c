@@ -22,7 +22,7 @@
 #include "rgui.h"
 #include "utils/file_list.h"
 #include "rmenu_settings.h"
-#include "../../console/rarch_console_video.h"
+#include "../../gfx/gfx_common.h"
 #include "../../screenshot.h"
 
 #define TERM_START_X 15

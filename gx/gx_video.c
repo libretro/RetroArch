@@ -17,7 +17,6 @@
 
 #include "../driver.h"
 #include "../general.h"
-#include "../console/rarch_console_video.h"
 #include "../gfx/fonts/bitmap.h"
 #include "../frontend/menu/rgui.h"
 #include "../gfx/gfx_common.h"
@@ -276,9 +275,9 @@ void gx_set_aspect_ratio(void *data, unsigned aspectratio_idx)
    gx_video_t *gx = (gx_video_t*)driver.video_data;
 
    if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
-      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+      gfx_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
    else if(g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
-      rarch_set_core_viewport();
+      gfx_set_core_viewport();
 
    g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
    g_settings.video.force_aspect = false;

@@ -49,10 +49,6 @@
 
 #include "shader_common.h"
 
-#ifdef HAVE_RMENU
-#include "../console/rarch_console_video.h"
-#endif
-
 #ifdef __CELLOS_LV2__
 #define FPS_COUNTER
 #endif
@@ -2097,9 +2093,9 @@ static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
    gl_t *gl = driver.video_data;
 
    if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
-      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+      gfx_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
    else if(g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
-      rarch_set_core_viewport();
+      gfx_set_core_viewport();
 
    g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
    g_settings.video.force_aspect = false;
