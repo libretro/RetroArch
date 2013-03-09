@@ -442,8 +442,6 @@ MENU
 
 #if defined(_XBOX360)
 #include "../../frontend/menu/rmenu_xui.cpp"
-#elif defined(HAVE_RGUI)
-#include "../../frontend/menu/rmenu_generic.c"
 #endif
 
 #endif
