@@ -2874,7 +2874,7 @@ bool rarch_main_iterate(void)
    }
 
 #ifdef HAVE_RMENU
-   if (input_key_pressed_func(RARCH_RMENU_TOGGLE) && !(g_extern.frame_count < g_extern.delay_timer[0]))
+   if (input_key_pressed_func(RARCH_RMENU_TOGGLE) && g_extern.frame_count >= g_extern.delay_timer[0])
    {
       if (input_key_pressed_func(RARCH_RMENU_QUICKMENU_TOGGLE))
          g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
