@@ -245,11 +245,7 @@ rgui_handle_t *rgui_init(const char *base_path,
 
    rgui->path_stack = rgui_list_new();
    rgui->folder_buf = rgui_list_new();
-#ifdef RARCH_CONSOLE
    rgui_list_push(rgui->path_stack, base_path, RGUI_FILE_DIRECTORY, 0);
-#else
-   rgui_list_push(rgui->path_stack, base_path, RGUI_SETTINGS, 0);
-#endif
 
    if (font_bmp_buf)
       init_font(rgui, font_bmp_buf);

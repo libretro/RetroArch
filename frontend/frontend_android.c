@@ -107,12 +107,10 @@ static void jni_get (void *data_in, void *data_out)
 
 static bool android_app_start_main(struct android_app *android_app, int *init_ret)
 {
-   char rom_path[PATH_MAX];
-   char libretro_path[PATH_MAX];
-   char config_file[PATH_MAX];
-
    struct jni_params in_params;
    struct jni_out_params_char out_args;
+   struct rarch_main_wrap args = {0};
+   bool ret = false;
 
    in_params.java_vm = android_app->activity->vm;
    in_params.class_obj = android_app->activity->clazz;
@@ -123,20 +121,20 @@ static bool android_app_start_main(struct android_app *android_app, int *init_re
    (*in_params.java_vm)->AttachCurrentThread(in_params.java_vm, &in_params.env, 0);
 
    // ROM
-   out_args.out = rom_path;
-   out_args.out_sizeof = sizeof(rom_path);
+   out_args.out = g_extern.fullpath;
+   out_args.out_sizeof = sizeof(g_extern.fullpath);
    strlcpy(out_args.in, "ROM", sizeof(out_args.in));
    jni_get(&in_params, &out_args);
 
    // libretro
-   out_args.out = libretro_path;
-   out_args.out_sizeof = sizeof(libretro_path);
+   out_args.out = g_settings.libretro;
+   out_args.out_sizeof = sizeof(g_settings.libretro);
    strlcpy(out_args.in, "LIBRETRO", sizeof(out_args.in));
    jni_get(&in_params, &out_args);
 
    // Config file
-   out_args.out = config_file;
-   out_args.out_sizeof = sizeof(config_file);
+   out_args.out = g_extern.config_path;
+   out_args.out_sizeof = sizeof(g_extern.config_path);
    strlcpy(out_args.in, "CONFIGFILE", sizeof(out_args.in));
    jni_get(&in_params, &out_args);
 
@@ -149,32 +147,36 @@ static bool android_app_start_main(struct android_app *android_app, int *init_re
    (*in_params.java_vm)->DetachCurrentThread(in_params.java_vm);
 
    RARCH_LOG("Checking arguments passed ...\n");
-   RARCH_LOG("ROM Filename: [%s].\n", rom_path);
-   RARCH_LOG("Libretro path: [%s].\n", libretro_path);
-   RARCH_LOG("Config file: [%s].\n", config_file);
+   RARCH_LOG("ROM Filename: [%s].\n", g_extern.fullpath);
+   RARCH_LOG("Libretro path: [%s].\n", g_settings.libretro);
+   RARCH_LOG("Config file: [%s].\n", g_extern.config_path);
    RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
 
-   struct rarch_main_wrap args = {0};
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
 
    args.verbose = true;
-   args.config_path = config_file;
+   args.config_path = g_extern.config_path;
    args.sram_path = NULL;
    args.state_path = NULL;
-   args.rom_path = rom_path;
-   args.libretro_path = libretro_path;
+   args.rom_path = g_extern.fullpath;
+   args.libretro_path = g_settings.libretro;
 
-   *init_ret = rarch_main_init_wrap(&args);
+   ret = rarch_main_init_wrap(&args);
 
-   if (*init_ret == 0)
+   if (ret == 0)
    {
       RARCH_LOG("rarch_main_init succeeded.\n");
-      return true;
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
    }
    else
-   {
       RARCH_ERR("rarch_main_init failed.\n");
+
+   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
+
+   if (ret == 0)
+      return true;
+   else
       return false;
-   }
 }
 
 static void *android_app_entry(void *data)
@@ -215,7 +217,6 @@ static void *android_app_entry(void *data)
 
    menu_init();
 
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
 begin_loop:
    if(g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
    {
@@ -235,11 +236,41 @@ begin_loop:
          audio_stop_func();
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
    }
+   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_INIT))
+   {
+      if (g_extern.main_is_init)
+         rarch_main_deinit();
+
+      struct rarch_main_wrap args = {0};
+
+      args.verbose = true;
+      args.config_path = g_extern.config_path;
+      args.sram_path = NULL;
+      args.state_path = NULL;
+      args.rom_path = g_extern.fullpath;
+      args.libretro_path = g_settings.libretro;
+
+      init_ret = rarch_main_init_wrap(&args);
+
+      if (init_ret == 0)
+      {
+         RARCH_LOG("rarch_main_init succeeded.\n");
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+      }
+      else
+      {
+         RARCH_ERR("rarch_main_init failed.\n");
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+      }
+
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
+   }
    else if(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_PREINIT);
       while((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ?
             android_run_events(android_app) : menu_iterate());
+
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
    }
    else
