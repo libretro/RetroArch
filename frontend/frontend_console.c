@@ -21,7 +21,6 @@
 
 #include "frontend_console.h"
 #include "menu/rmenu.h"
-#include "menu/rmenu_settings.h"
 
 #if defined(__CELLOS_LV2__)
 #include "platform/platform_ps3.c"
@@ -312,7 +311,7 @@ begin_loop:
       {
          RARCH_ERR("rarch_main_init failed.\n");
          g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-         rmenu_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
+         rarch_settings_msg(S_MSG_ROM_LOADING_ERROR, 180);
       }
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
    }

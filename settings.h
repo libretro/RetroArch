@@ -14,18 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CONSOLE_SETTINGS_H
-#define CONSOLE_SETTINGS_H
-
-enum
-{
-   S_DELAY_0 = 0,
-   S_DELAY_1 = 1,
-   S_DELAY_45 = 45,
-   S_DELAY_90  = 90,
-   S_DELAY_180 = 180,
-   S_DELAY_270 = 270
-};
+#ifndef __RARCH_SETTINGS_H
+#define __RARCH_SETTINGS_H
 
 enum
 {
@@ -104,11 +94,10 @@ enum
    S_LBL_REWIND_GRANULARITY,
 };
 
-void rmenu_settings_set(unsigned setting);
-void rmenu_settings_set_default(unsigned setting);
-void rmenu_settings_msg(unsigned setting, unsigned delay);
+void rarch_settings_set(unsigned setting);
+void rarch_settings_set_default(unsigned setting);
+void rarch_settings_msg(unsigned setting, unsigned delay);
 
-void rmenu_settings_create_menu_item_label(char * str, unsigned setting, size_t size);
-void rmenu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size);
+void menu_settings_create_menu_item_label(char * str, unsigned setting, size_t size);
 
 #endif

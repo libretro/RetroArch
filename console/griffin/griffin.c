@@ -438,7 +438,6 @@ MENU
 #endif
 
 #ifdef HAVE_RMENU
-#include "../../frontend/menu/rmenu_settings.c"
 
 #if defined(_XBOX360)
 #include "../../frontend/menu/rmenu_xui.cpp"
