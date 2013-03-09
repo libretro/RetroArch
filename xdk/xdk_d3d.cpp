@@ -26,7 +26,6 @@
 #include "../gfx/shader_hlsl.h"
 #endif
 
-#include "../console/rarch_console_video.h"
 #include "./../gfx/gfx_context.h"
 #include "../general.h"
 #include "../message.h"
