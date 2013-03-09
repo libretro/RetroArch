@@ -139,7 +139,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       }
    }
 
-   keycode_lut[AKEYCODE_MENU] |= ((RARCH_RMENU_TOGGLE + 1) << shift);
+   keycode_lut[AKEYCODE_MENU] |= ((RARCH_MENU_TOGGLE + 1) << shift);
 
    if (g_settings.input.autodetect_enable)
    {
@@ -319,7 +319,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          keycode_lut[AKEYCODE_EQUALS] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
 
          // use this for the RGUI toggle
-         keycode_lut[AKEYCODE_MENU] |=  ((RARCH_RMENU_TOGGLE+1)      << shift);
+         keycode_lut[AKEYCODE_MENU] |=  ((RARCH_MENU_TOGGLE+1)      << shift);
 
          // Left Analog Up: 152
          // Left Analog Down: 146
@@ -492,7 +492,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          else
          {
             //PS button will be used for RGUI toggle
-            keycode_lut[AKEYCODE_BUTTON_1] |= ((RARCH_RMENU_TOGGLE+1)     << shift);
+            keycode_lut[AKEYCODE_BUTTON_1] |= ((RARCH_MENU_TOGGLE+1)     << shift);
             keycode_lut[AKEYCODE_BUTTON_X] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_A] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
          }

@@ -1465,7 +1465,7 @@ static const struct retro_keybind _rmenu_nav_binds[] = {
    { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_B), 0 },
    { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_START), 0 },
    { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT), 0 },
-   { 0, 0, NULL, 0, (1ULL << RARCH_RMENU_TOGGLE), 0 },
+   { 0, 0, NULL, 0, (1ULL << RARCH_MENU_TOGGLE), 0 },
    { 0, 0, NULL, 0, (1ULL << RARCH_QUIT_KEY), 0 },
 #endif
 };
@@ -1730,7 +1730,7 @@ bool rmenu_iterate(void)
       input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
-   input_state |= driver.input->key_pressed(driver.input_data, RARCH_RMENU_TOGGLE) ? (1ULL << GX_DEVICE_NAV_MENU) : 0;
+   input_state |= driver.input->key_pressed(driver.input_data, RARCH_MENU_TOGGLE) ? (1ULL << GX_DEVICE_NAV_MENU) : 0;
    input_state |= driver.input->key_pressed(driver.input_data, RARCH_QUIT_KEY) ? (1ULL << GX_DEVICE_NAV_QUIT) : 0;
 
 #ifdef HAVE_OVERLAY

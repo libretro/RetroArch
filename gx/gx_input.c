@@ -460,8 +460,8 @@ static void gx_input_poll(void *data)
          (1ULL << RARCH_STATE_SLOT_MINUS) | 
          (1ULL << RARCH_REWIND) |
          (1ULL << RARCH_QUIT_KEY) |
-         (1ULL << RARCH_RMENU_TOGGLE) |
-         (1ULL << RARCH_RMENU_QUICKMENU_TOGGLE));
+         (1ULL << RARCH_MENU_TOGGLE) |
+         (1ULL << RARCH_MENU_QUICKMENU_TOGGLE));
 
    if (
 #ifdef HW_RVL
@@ -528,7 +528,7 @@ static void gx_input_poll(void *data)
                | GX_CLASSIC_HOME
 #endif
                ))
-         *lifecycle_state |= (1ULL << RARCH_RMENU_TOGGLE);
+         *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
    }
 }
 
