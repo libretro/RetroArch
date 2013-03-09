@@ -41,6 +41,8 @@
 #define DECLARE_DEVICE_PTR() gl_t *device_ptr = (gl_t*)driver.video_data
 #elif defined(GEKKO)
 #define DECLARE_DEVICE_PTR() gx_video_t *device_ptr = (gx_video_t*)driver.video_data
+#elif defined(HAVE_D3D8) || defined(HAVE_D3D9)
+#define DECLARE_DEVICE_PTR() xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data
 #endif
 
 #ifdef GEKKO
