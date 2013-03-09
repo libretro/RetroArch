@@ -24,16 +24,16 @@
 #include "menu/menu_settings.h"
 
 #if defined(__CELLOS_LV2__)
-#include "platform/platform_ps3.c"
 #include "platform/platform_ps3_exec.c"
+#include "platform/platform_ps3.c"
 #elif defined(GEKKO)
-#include "platform/platform_gx.c"
 #ifdef HW_RVL
 #include "platform/platform_gx_exec.c"
 #endif
+#include "platform/platform_gx.c"
 #elif defined(_XBOX)
-#include "platform/platform_xdk.c"
 #include "platform/platform_xdk_exec.c"
+#include "platform/platform_xdk.c"
 #elif defined(PSP)
 #include "platform/platform_psp.c"
 #endif
