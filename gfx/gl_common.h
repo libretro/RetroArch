@@ -164,15 +164,6 @@ enum gl_scale_type
    RARCH_SCALE_VIEWPORT
 };
 
-#ifdef HAVE_FBO
-enum fbo_option
-{
-   FBO_DEINIT = 0,
-   FBO_INIT,
-   FBO_REINIT
-};
-#endif
-
 struct gl_fbo_scale
 {
    enum gl_scale_type type_x;
