@@ -40,7 +40,6 @@
 unsigned font_x, font_y;
 #elif defined(_XBOX360)
 #include "../frontend/menu/rmenu_xui.h"
-extern CRetroArch app;
 const DWORD g_MapLinearToSrgbGpuFormat[] = 
 {
    GPUTEXTUREFORMAT_1_REVERSE,
@@ -892,8 +891,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
    {
 #ifdef _XBOX360
-      app.Render();
-      XuiTimersRun();
+      menu_iterate_xui();
 #endif
    }
    else

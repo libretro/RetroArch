@@ -18,6 +18,8 @@
 #include <crtdefs.h>
 #include <tchar.h>
 #include <xtl.h>
+#include <xui.h>
+#include <xuiapp.h>
 
 #include "rmenu_xui.h"
 
@@ -44,6 +46,152 @@ enum {
    MENU_XUI_ITEM_RESET,
    MENU_XUI_ITEM_RETURN_TO_GAME,
    MENU_XUI_ITEM_QUIT_RARCH,
+};
+
+class CRetroArch : public CXuiModule
+{
+   public:
+      HXUIOBJ hMainScene;
+      HXUIOBJ hControlsMenu;
+      HXUIOBJ hFileBrowser;
+      HXUIOBJ hCoreBrowser;
+      HXUIOBJ hShaderBrowser;
+      HXUIOBJ hQuickMenu;
+      HXUIOBJ hRetroArchSettings;
+   protected:
+      virtual HRESULT RegisterXuiClasses();
+      virtual HRESULT UnregisterXuiClasses();
+};
+
+class CRetroArchMain: public CXuiSceneImpl
+{
+   protected:
+      CXuiControl m_filebrowser;
+      CXuiControl m_quick_menu;
+      CXuiControl m_controls;
+      CXuiControl m_settings;
+      CXuiControl m_change_libretro_core;
+      CXuiControl m_quit;
+      CXuiTextElement m_title;
+      CXuiTextElement m_core;
+      CXuiControl m_logoimage;
+   public:
+      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+
+      XUI_BEGIN_MSG_MAP()
+         XUI_ON_XM_INIT( OnInit)
+         XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+         XUI_END_MSG_MAP();
+
+      XUI_IMPLEMENT_CLASS(CRetroArchMain, L"RetroArchMain", XUI_CLASS_SCENE)
+};
+
+class CRetroArchFileBrowser: public CXuiSceneImpl
+{
+   protected:
+      CXuiControl m_back;
+      CXuiControl m_dir_game;
+   public:
+      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+
+      XUI_BEGIN_MSG_MAP()
+         XUI_ON_XM_INIT( OnInit)
+         XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+         XUI_END_MSG_MAP();
+
+      XUI_IMPLEMENT_CLASS(CRetroArchFileBrowser, L"RetroArchFileBrowser", XUI_CLASS_SCENE)
+};
+
+class CRetroArchCoreBrowser: public CXuiSceneImpl
+{
+   protected:
+      CXuiControl m_back;
+   public:
+      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+
+      XUI_BEGIN_MSG_MAP()
+         XUI_ON_XM_INIT( OnInit)
+         XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+         XUI_END_MSG_MAP();
+
+      XUI_IMPLEMENT_CLASS(CRetroArchCoreBrowser, L"RetroArchCoreBrowser", XUI_CLASS_SCENE)
+};
+
+class CRetroArchShaderBrowser: public CXuiSceneImpl
+{
+   protected:
+      CXuiControl m_back;
+   public:
+      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+
+      XUI_BEGIN_MSG_MAP()
+         XUI_ON_XM_INIT( OnInit)
+         XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+         XUI_END_MSG_MAP();
+
+      XUI_IMPLEMENT_CLASS(CRetroArchShaderBrowser, L"RetroArchShaderBrowser", XUI_CLASS_SCENE)
+};
+
+class CRetroArchQuickMenu: public CXuiSceneImpl
+{
+   protected:
+      CXuiList m_quickmenulist;
+      CXuiControl m_back;
+   public:
+      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+      HRESULT OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled);
+
+      XUI_BEGIN_MSG_MAP()
+         XUI_ON_XM_INIT( OnInit)
+         XUI_ON_XM_CONTROL_NAVIGATE( OnControlNavigate )
+         XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+         XUI_END_MSG_MAP();
+
+      XUI_IMPLEMENT_CLASS(CRetroArchQuickMenu, L"RetroArchQuickMenu", XUI_CLASS_SCENE)
+};
+
+class CRetroArchSettings: public CXuiSceneImpl
+{
+   protected:
+      CXuiList m_settingslist;
+      CXuiControl m_back;
+   public:
+      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+      HRESULT OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled);
+
+      XUI_BEGIN_MSG_MAP()
+         XUI_ON_XM_INIT( OnInit)
+         XUI_ON_XM_CONTROL_NAVIGATE( OnControlNavigate )
+         XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+         XUI_END_MSG_MAP();
+
+      XUI_IMPLEMENT_CLASS(CRetroArchSettings, L"RetroArchSettings", XUI_CLASS_SCENE)
+};
+
+class CRetroArchControls: public CXuiSceneImpl
+{
+   protected:
+      CXuiList m_controlslist;
+      CXuiControl m_back;
+      CXuiSlider m_controlnoslider;
+   public:
+      HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled );
+      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled );
+      HRESULT OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled);
+
+      XUI_BEGIN_MSG_MAP()
+         XUI_ON_XM_INIT( OnInit)
+         XUI_ON_XM_CONTROL_NAVIGATE( OnControlNavigate )
+         XUI_ON_XM_NOTIFY_PRESS( OnNotifyPress )
+         XUI_END_MSG_MAP();
+
+      XUI_IMPLEMENT_CLASS(CRetroArchControls, L"RetroArchControls", XUI_CLASS_SCENE)
 };
 
 CRetroArch app;
@@ -1382,4 +1530,11 @@ deinit:
    process_input_ret = 0;
 
    return false;
+}
+
+bool menu_iterate_xui(void)
+{
+   app.Render();
+   XuiTimersRun();
+   return true;
 }
