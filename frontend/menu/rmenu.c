@@ -2487,7 +2487,7 @@ int ingame_menu(void *data, void *state)
   INPUT POLL CALLBACK
   ============================================================ */
 
-void rmenu_input_poll(void *data, void *state)
+void menu_input_poll(void *data, void *state)
 {
    menu *current_menu    = (menu*)data;
 
@@ -2543,7 +2543,7 @@ void rmenu_input_poll(void *data, void *state)
   INPUT PROCESS CALLBACK
   ============================================================ */
 
-int rmenu_input_process(void *data, void *state)
+int menu_input_process(void *data, void *state)
 {
    (void)data;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
@@ -2685,7 +2685,7 @@ bool menu_iterate(void)
    }
 
    if(current_menu.input_poll)
-      rmenu_input_poll(&current_menu, &rmenu_state);
+      menu_input_poll(&current_menu, &rmenu_state);
 
 #ifdef HAVE_OSKUTIL
    if(rmenu_state.osk_init != NULL)

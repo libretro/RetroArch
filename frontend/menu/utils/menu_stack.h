@@ -54,11 +54,8 @@ int ingame_menu_resize(void *data, void *state);
 int ingame_menu_screenshot(void *data, void *state);
 int ingame_menu(void *data, void *state);
 
-// input poll forward declarations
-void rmenu_input_poll(void *data, void *state);
-
-// input process forward declarations
-int rmenu_input_process(void *data, void *state);
+void menu_input_poll(void *data, void *state);
+int menu_input_process(void *data, void *state);
 
 // browser_draw forward declarations
 void browser_render(void *data);

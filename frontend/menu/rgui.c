@@ -1448,7 +1448,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    return ret;
 }
 
-static const struct retro_keybind _rmenu_nav_binds[] = {
+static const struct retro_keybind _menu_nav_binds[] = {
 #if defined(HW_RVL)
    { 0, 0, NULL, 0, GX_GC_UP | GX_GC_LSTICK_UP | GX_GC_RSTICK_UP | GX_CLASSIC_UP | GX_CLASSIC_LSTICK_UP | GX_CLASSIC_RSTICK_UP | GX_WIIMOTE_UP | GX_NUNCHUK_UP, 0 },
    { 0, 0, NULL, 0, GX_GC_DOWN | GX_GC_LSTICK_DOWN | GX_GC_RSTICK_DOWN | GX_CLASSIC_DOWN | GX_CLASSIC_LSTICK_DOWN | GX_CLASSIC_RSTICK_DOWN | GX_WIIMOTE_DOWN | GX_NUNCHUK_DOWN, 0 },
@@ -1484,8 +1484,8 @@ static const struct retro_keybind _rmenu_nav_binds[] = {
 #endif
 };
 
-static const struct retro_keybind *rmenu_nav_binds[] = {
-   _rmenu_nav_binds
+static const struct retro_keybind *menu_nav_binds[] = {
+   _menu_nav_binds
 };
 
 enum
@@ -1613,7 +1613,7 @@ void menu_free(void)
 
 static uint16_t trigger_state = 0;
 
-int rmenu_input_process(void *data, void *state)
+static int menu_input_process(void *data, void *state)
 {
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
    {
@@ -1694,7 +1694,7 @@ bool menu_iterate(void)
 #endif
 
    for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
-      input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
+      input_state |= driver.input->input_state(NULL, menu_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
    input_state |= driver.input->key_pressed(driver.input_data, RARCH_MENU_TOGGLE) ? (1ULL << GX_DEVICE_NAV_MENU) : 0;
@@ -1702,7 +1702,7 @@ bool menu_iterate(void)
 
 #ifdef HAVE_OVERLAY
    for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
-      input_state |= driver.overlay_state & rmenu_nav_binds[0][i].joykey ? (1ULL << i) : 0;
+      input_state |= driver.overlay_state & menu_nav_binds[0][i].joykey ? (1ULL << i) : 0;
 #endif
 
    trigger_state = input_state & ~old_input_state;
@@ -1767,7 +1767,7 @@ bool menu_iterate(void)
    // draw last frame for loading messages
    rarch_render_cached_frame();
 
-   input_process_ret = rmenu_input_process(NULL, NULL);
+   input_process_ret = menu_input_process(NULL, NULL);
 
    if (input_entry_ret != 0 || input_process_ret != 0)
       goto deinit;
