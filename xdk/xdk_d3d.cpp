@@ -982,12 +982,6 @@ static void xdk_d3d_restart(void)
    d3dr->Reset(&d3dpp);
 }
 
-static void xdk_d3d_apply_state_changes(void)
-{
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   d3d->should_resize = true;
-}
-
 static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
    (void)data;
@@ -1015,7 +1009,6 @@ const video_driver_t video_xdk_d3d = {
    xdk_d3d_start,
    xdk_d3d_stop,
    xdk_d3d_restart,
-   xdk_d3d_apply_state_changes,
    xdk_d3d_set_aspect_ratio,
    xdk_d3d_set_rotation,
 };

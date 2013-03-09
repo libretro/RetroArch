@@ -169,7 +169,7 @@ void gfx_scale_integer(struct rarch_viewport *vp, unsigned width, unsigned heigh
    vp->y      = padding_y >> 1;
 }
 
-#ifdef HAVE_RMENU
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
 
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "1:1",           1.0f },

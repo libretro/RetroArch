@@ -1289,9 +1289,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    RARCH_PERFORMANCE_START(frame_run);
 
    gl_t *gl = (gl_t*)data;
-#ifdef HAVE_RMENU
    uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
-#endif
+   (void)lifecycle_mode_state;
 
    gl_shader_use_func(gl, 1);
 
@@ -1388,7 +1387,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    RARCH_PERFORMANCE_STOP(frame_run);
 
-#if defined(HAVE_RMENU) && !defined(HAVE_RGUI)
+#if defined(HAVE_RMENU)
    if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
       context_rmenu_frame_func(gl);
    else
@@ -1814,7 +1813,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (input && input_data)
       context_input_driver_func(input, input_data);
    
-#if !defined(HAVE_RMENU) || !defined(RARCH_CONSOLE)
+#if !defined(HAVE_RMENU)
    // Comes too early for console - moved to gl_start
    if (g_settings.video.font_enable)
       gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
@@ -2080,13 +2079,9 @@ static void gl_restart(void)
 #endif
    gl_start();
 }
+#endif
 
-static void gl_apply_state_changes(void)
-{
-   gl_t *gl = (gl_t*)driver.video_data;
-   gl->should_resize = true;
-}
-
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
 static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
    (void)data;
@@ -2249,10 +2244,10 @@ const video_driver_t video_gl = {
    gl_start,
    gl_stop,
    gl_restart,
-   gl_apply_state_changes,
+#endif
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
    gl_set_aspect_ratio,
 #endif
-
    gl_set_rotation,
 
 #ifndef NO_GL_READ_VIEWPORT

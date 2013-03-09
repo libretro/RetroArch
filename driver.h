@@ -240,11 +240,12 @@ typedef struct video_driver
    const char *ident;
 
    // Callbacks essentially useless on PC, but useful on consoles where the drivers are used for more stuff.
-#if defined(HAVE_RMENU)
+#if defined(RARCH_CONSOLE)
    void (*start)(void);
    void (*stop)(void);
    void (*restart)(void);
-   void (*apply_state_changes)(void);
+#endif
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
    void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
 #endif
 

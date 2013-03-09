@@ -437,14 +437,11 @@ MENU
 #include "../../frontend/menu/rgui.c"
 #endif
 
-#ifdef HAVE_RMENU
-#include "../../frontend/menu/rmenu_settings.c"
-
 #if defined(_XBOX360)
 #include "../../frontend/menu/rmenu_xui.cpp"
 #endif
 
-#endif
+#include "../../frontend/menu/rmenu_settings.c"
 
 #ifdef __cplusplus
 extern "C" {

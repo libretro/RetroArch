@@ -1012,12 +1012,6 @@ static void gx_set_rotation(void *data, unsigned orientation)
    gx->should_resize = true;
 }
 
-static void gx_apply_state_changes(void)
-{
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
-   gx->should_resize = true;
-}
-
 static bool gx_set_shader(void *data, enum rarch_shader_type type, const char *path, unsigned index)
 {
    (void)data;
@@ -1041,6 +1035,5 @@ const video_driver_t video_gx = {
    .start = gx_start,
    .stop = gx_stop,
    .restart = gx_restart,
-   .apply_state_changes = gx_apply_state_changes,
    .set_aspect_ratio = gx_set_aspect_ratio
 };

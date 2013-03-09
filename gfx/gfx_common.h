@@ -40,7 +40,7 @@ void gfx_set_dwm(void);
 void gfx_scale_integer(struct rarch_viewport *vp, unsigned win_width, unsigned win_height,
       float aspect_ratio, bool keep_aspect);
 
-#ifdef HAVE_RMENU
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
 
 #define MIN_SCALING_FACTOR (1.0f)
 

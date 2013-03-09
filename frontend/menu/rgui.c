@@ -37,6 +37,12 @@
 #define TERM_WIDTH (((RGUI_WIDTH - TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
 #define TERM_HEIGHT (((RGUI_HEIGHT - TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
 
+#if defined(HAVE_OPENGL)
+#define DECLARE_DEVICE_PTR() gl_t *device_ptr = (gl_t*)driver.video_data
+#elif defined(GEKKO)
+#define DECLARE_DEVICE_PTR() gx_video_t *device_ptr = (gx_video_t*)driver.video_data
+#endif
+
 #ifdef GEKKO
 enum
 {
@@ -582,7 +588,8 @@ static void render_text(rgui_handle_t *rgui)
 
 #ifdef GEKKO
    const char *message_queue;
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
+   DECLARE_DEVICE_PTR();
+
    if (rgui->msg_force)
    {
       message_queue = msg_queue_pull(g_extern.msg_queue);
@@ -590,7 +597,7 @@ static void render_text(rgui_handle_t *rgui)
    }
    else
    {
-      message_queue = gx->msg;
+      message_queue = device_ptr->msg;
    }
    render_messagebox(rgui, message_queue);
 #endif
@@ -604,6 +611,7 @@ static void render_text(rgui_handle_t *rgui)
 
 static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t action, rgui_file_type_t menu_type)
 {
+   DECLARE_DEVICE_PTR();
 #ifdef RARCH_CONSOLE
       unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
 #endif
@@ -694,7 +702,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
             else
                g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-            driver.video->apply_state_changes();
+            device_ptr->should_resize = true;
          }
          break;
 #endif
@@ -728,14 +736,14 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          if (action == RGUI_ACTION_START)
          {
             g_extern.console.screen.gamma_correction = 0;
-            driver.video->apply_state_changes();
+            device_ptr->should_resize = true;
          }
          else if (action == RGUI_ACTION_LEFT)
          {
             if(g_extern.console.screen.gamma_correction > 0)
             {
                g_extern.console.screen.gamma_correction--;
-               driver.video->apply_state_changes();
+               device_ptr->should_resize = true;
             }
          }
          else if (action == RGUI_ACTION_RIGHT)
@@ -743,7 +751,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
             if(g_extern.console.screen.gamma_correction < MAX_GAMMA_SETTING)
             {
                g_extern.console.screen.gamma_correction++;
-               driver.video->apply_state_changes();
+               device_ptr->should_resize = true;
             }
          }
          break;
@@ -777,17 +785,17 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
          if (action == RGUI_ACTION_START)
          {
             rmenu_settings_set_default(S_DEF_OVERSCAN);
-            driver.video->apply_state_changes();
+            device_ptr->should_resize = true;
          }
          else if (action == RGUI_ACTION_LEFT)
          {
             rmenu_settings_set(S_OVERSCAN_DECREMENT);
-            driver.video->apply_state_changes();
+            device_ptr->should_resize = true;
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
             rmenu_settings_set(S_OVERSCAN_INCREMENT);
-            driver.video->apply_state_changes();
+            device_ptr->should_resize = true;
          }
          break;
       case RGUI_SETTINGS_AUDIO_MUTE:
@@ -1029,9 +1037,7 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 
 static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
-#ifdef GEKKO
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
-#endif
+   DECLARE_DEVICE_PTR();
    rgui_file_type_t menu_type = 0;
    rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
 
@@ -1045,7 +1051,7 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else
             g_extern.console.screen.viewports.custom_vp.height -= 1;
-         driver.video->apply_state_changes();
+         device_ptr->should_resize = true;
          break;
 
       case RGUI_ACTION_DOWN:
@@ -1056,7 +1062,7 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else
             g_extern.console.screen.viewports.custom_vp.height += 1;
-         driver.video->apply_state_changes();
+         device_ptr->should_resize = true;
          break;
 
       case RGUI_ACTION_LEFT:
@@ -1067,7 +1073,7 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else
             g_extern.console.screen.viewports.custom_vp.width -= 1;
-         driver.video->apply_state_changes();
+         device_ptr->should_resize = true;
          break;
 
       case RGUI_ACTION_RIGHT:
@@ -1078,7 +1084,7 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else
             g_extern.console.screen.viewports.custom_vp.width += 1;
-         driver.video->apply_state_changes();
+         device_ptr->should_resize = true;
          break;
 
       case RGUI_ACTION_CANCEL:
@@ -1116,11 +1122,11 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else
          {
-            g_extern.console.screen.viewports.custom_vp.width = gx->win_width - g_extern.console.screen.viewports.custom_vp.x;
-            g_extern.console.screen.viewports.custom_vp.height = gx->win_height - g_extern.console.screen.viewports.custom_vp.y;
+            g_extern.console.screen.viewports.custom_vp.width = device_ptr->win_width - g_extern.console.screen.viewports.custom_vp.x;
+            g_extern.console.screen.viewports.custom_vp.height = device_ptr->win_height - g_extern.console.screen.viewports.custom_vp.y;
          }
 #endif
-         driver.video->apply_state_changes();
+         device_ptr->should_resize = true;
          break;
 
       case RGUI_ACTION_SETTINGS:
@@ -1625,11 +1631,7 @@ RMENU API
 
 void menu_init(void)
 {
-#if defined(HAVE_OPENGL)
-   gl_t *device_ptr = (gl_t*)driver.video_data;
-#elif defined(GEKKO)
-   gx_video_t *device_ptr = (gx_video_t*)driver.video_data;
-#endif
+   DECLARE_DEVICE_PTR();
 
    device_ptr->menu_data = (uint32_t *) menu_framebuf;
 
@@ -1677,12 +1679,13 @@ int rmenu_input_process(void *data, void *state)
 
 bool menu_iterate(void)
 {
+   DECLARE_DEVICE_PTR();
    static uint16_t old_input_state = 0;
    static bool initial_held = true;
    static bool first_held = false;
 
    g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
-   driver.video->apply_state_changes();
+   device_ptr->should_resize = true;
 
    g_extern.frame_count++;
 
