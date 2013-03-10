@@ -560,9 +560,6 @@ static const video_driver_t video_thread = {
    thread_stop,
    thread_restart,
 #endif
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
-   thread_set_aspect_ratio,
-#endif
    thread_set_rotation,
    thread_viewport_info,
    thread_read_viewport,

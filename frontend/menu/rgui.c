@@ -694,6 +694,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
             menu_settings_set_default(S_DEF_HW_TEXTURE_FILTER);
          else
             menu_settings_set(S_HW_TEXTURE_FILTER);
+         driver.video_poke->set_filtering(driver.video_data, 0, g_settings.video.smooth);
          break;
 #ifdef HW_RVL
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
@@ -762,7 +763,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
             menu_settings_set(S_ASPECT_RATIO_DECREMENT);
          else if (action == RGUI_ACTION_RIGHT)
             menu_settings_set(S_ASPECT_RATIO_INCREMENT);
-         video_set_aspect_ratio_func(g_settings.video.aspect_ratio_idx);
+         driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          break;
       case RGUI_SETTINGS_VIDEO_ROTATION:
          if (action == RGUI_ACTION_START)
@@ -1210,7 +1211,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          {
             rgui_list_push(rgui->path_stack, "", type, rgui->directory_ptr);
             g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
-            video_set_aspect_ratio_func(g_settings.video.aspect_ratio_idx);
+            driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          }
          else if (type == RGUI_SETTINGS_OPEN_FILEBROWSER && action == RGUI_ACTION_OK)
          {
