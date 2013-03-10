@@ -791,6 +791,18 @@ static inline void rarch_fail(int error_code, const char *error)
    longjmp(g_extern.error_sjlj_context, error_code);
 }
 
+// Helper macros and struct to keep track of many booleans.
+// To check for multiple bits, use &&, not &.
+// For OR, | can be used.
+typedef struct
+{
+   uint32_t data[8];
+} rarch_bits_t;
+#define BIT_SET(a, bit)   ((a).data[(bit) >> 5] |= 1 << ((bit) & 31))
+#define BIT_CLEAR(a, bit) ((a).data[(bit) >> 5] &= ~(1 << ((bit) & 31)))
+#define BIT_GET(a, bit)   ((a).data[(bit) >> 5] & (1 << ((bit) & 31)))
+#define BIT_CLEAR_ALL(a)  memset(&(a), 0, sizeof(a));
+
 #endif
 
 
