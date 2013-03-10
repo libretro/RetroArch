@@ -1544,6 +1544,12 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       file_cb(ctx, "F:", RGUI_FILE_DEVICE, 0);
       file_cb(ctx, "G:", RGUI_FILE_DEVICE, 0);
       return true;
+#elif defined(__CELLOS_LV2__)
+      file_cb(ctx, "app_home", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "dev_hdd0", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "dev_hdd1", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "host_root", RGUI_FILE_DEVICE, 0);
+      return true;
 #endif
    }
 
