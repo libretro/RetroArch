@@ -169,8 +169,6 @@ void gfx_scale_integer(struct rarch_viewport *vp, unsigned width, unsigned heigh
    vp->y      = padding_y >> 1;
 }
 
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
-
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "1:1",           1.0f },
    { "2:1",           2.0f },
@@ -206,7 +204,7 @@ char rotation_lut[ASPECT_RATIO_END][32] =
 
 void gfx_set_auto_viewport(unsigned width, unsigned height)
 {
-   if(width == 0 || height == 0)
+   if (width == 0 || height == 0)
       return;
 
    unsigned aspect_x, aspect_y, len, highest, i;
@@ -222,8 +220,11 @@ void gfx_set_auto_viewport(unsigned width, unsigned height)
    aspect_x = width / highest;
    aspect_y = height / highest;
 
-   snprintf(aspectratio_lut[ASPECT_RATIO_AUTO].name, sizeof(aspectratio_lut[ASPECT_RATIO_AUTO].name), "%d:%d (Auto)", aspect_x, aspect_y);
-   aspectratio_lut[ASPECT_RATIO_AUTO].value = (float) aspect_x / aspect_y;
+   snprintf(aspectratio_lut[ASPECT_RATIO_AUTO].name,
+         sizeof(aspectratio_lut[ASPECT_RATIO_AUTO].name),
+         "%d:%d (Auto)", aspect_x, aspect_y);
+
+   aspectratio_lut[ASPECT_RATIO_AUTO].value = (float)aspect_x / aspect_y;
 }
 
 void gfx_set_core_viewport(void)
@@ -233,9 +234,8 @@ void gfx_set_core_viewport(void)
 
    // fallback to 1:1 pixel ratio if none provided
    if (g_extern.system.av_info.geometry.aspect_ratio == 0.0)
-      aspectratio_lut[ASPECT_RATIO_CORE].value = (float) g_extern.system.av_info.geometry.base_width / g_extern.system.av_info.geometry.base_height;
+      aspectratio_lut[ASPECT_RATIO_CORE].value = (float)g_extern.system.av_info.geometry.base_width / g_extern.system.av_info.geometry.base_height;
    else
       aspectratio_lut[ASPECT_RATIO_CORE].value = g_extern.system.av_info.geometry.aspect_ratio;
 }
 
-#endif

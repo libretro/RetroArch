@@ -2081,25 +2081,6 @@ static void gl_restart(void)
 }
 #endif
 
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
-static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
-{
-   (void)data;
-   gl_t *gl = driver.video_data;
-
-   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
-      gfx_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
-   else if(g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
-      gfx_set_core_viewport();
-
-   g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
-   g_settings.video.force_aspect = false;
-   gl->keep_aspect = true;
-
-   gl->should_resize = true;
-}
-#endif
-
 #ifdef HAVE_OVERLAY
 static bool gl_overlay_load(void *data, const uint32_t *image, unsigned width, unsigned height)
 {
@@ -2224,6 +2205,78 @@ static void gl_get_overlay_interface(void *data, const video_overlay_interface_t
 }
 #endif
 
+static void gl_set_filtering(void *data, unsigned index, bool smooth)
+{
+   gl_t *gl = (gl_t*)data;
+
+   GLuint filter = smooth ? GL_LINEAR : GL_NEAREST;
+   if (index == 1)
+   {
+      gl->tex_filter = filter;
+      // Apply to all PREV textures.
+      for (unsigned i = 0; i < TEXTURES; i++)
+      {
+         glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+      }
+   }
+   else if (index >= 2 && gl->fbo_inited)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index - 2]);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+   }
+
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+}
+
+static void gl_set_fbo_state(void *data, unsigned mode)
+{
+   gl_t *gl = (gl_t*)data;
+
+   switch (mode)
+   {
+      case FBO_DEINIT:
+         gl_deinit_fbo(gl);
+         break;
+      case FBO_REINIT:
+         gl_deinit_fbo(gl);
+         // Fallthrough
+      case FBO_INIT:
+         gl_init_fbo(gl, gl->tex_w, gl->tex_h);
+         break;
+   }
+}
+
+static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
+{
+   gl_t *gl = (gl_t*)data;
+
+   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
+      gfx_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+   else if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
+      gfx_set_core_viewport();
+
+   g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
+   g_settings.video.force_aspect = false;
+   gl->keep_aspect = true;
+
+   gl->should_resize = true;
+}
+
+static const video_poke_interface_t gl_poke_interface = {
+   gl_set_filtering,
+   gl_set_fbo_state,
+   gl_set_aspect_ratio,
+};
+
+static void gl_get_poke_interface(void *data, const video_poke_interface_t **iface)
+{
+   (void)data;
+   *iface = &gl_poke_interface;
+}
+
 const video_driver_t video_gl = {
    gl_init,
    gl_frame,
@@ -2245,9 +2298,6 @@ const video_driver_t video_gl = {
    gl_stop,
    gl_restart,
 #endif
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
-   gl_set_aspect_ratio,
-#endif
    gl_set_rotation,
 
 #ifndef NO_GL_READ_VIEWPORT
@@ -2261,6 +2311,7 @@ const video_driver_t video_gl = {
 #ifdef HAVE_OVERLAY
    gl_get_overlay_interface,
 #endif
+   gl_get_poke_interface,
 };
 
 

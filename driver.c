@@ -830,6 +830,9 @@ void init_video_input(void)
       rarch_fail(1, "init_video_input()");
    }
 
+   if (driver.video->poke_interface)
+      driver.video->poke_interface(driver.video_data, &driver.video_poke);
+
    if (driver.video->set_rotation && g_extern.system.rotation)
       video_set_rotation_func(g_extern.system.rotation);
 

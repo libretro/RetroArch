@@ -226,6 +226,15 @@ typedef struct video_overlay_interface
 } video_overlay_interface_t;
 #endif
 
+// Optionally implemented interface to poke more deeply into video driver.
+// Only used by RGUI atm.
+typedef struct video_poke_interface
+{
+   void (*set_filtering)(void *data, unsigned index, bool smooth);
+   void (*set_fbo_state)(void *data, unsigned state);
+   void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
+} video_poke_interface_t;
+
 typedef struct video_driver
 {
    void *(*init)(const video_info_t *video, const input_driver_t **input, void **input_data); 
@@ -245,9 +254,6 @@ typedef struct video_driver
    void (*stop)(void);
    void (*restart)(void);
 #endif
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
-   void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
-#endif
 
    void (*set_rotation)(void *data, unsigned rotation);
    void (*viewport_info)(void *data, struct rarch_viewport *vp);
@@ -258,6 +264,7 @@ typedef struct video_driver
 #ifdef HAVE_OVERLAY
    void (*overlay_interface)(void *data, const video_overlay_interface_t **iface);
 #endif
+   void (*poke_interface)(void *data, const video_poke_interface_t **iface);
 } video_driver_t;
 
 enum rarch_display_type
@@ -318,6 +325,9 @@ typedef struct driver
    input_overlay_t *overlay;
    uint64_t overlay_state;
 #endif
+
+   // Interface for "poking".
+   const video_poke_interface_t *video_poke;
 } driver_t;
 
 void init_drivers(void);

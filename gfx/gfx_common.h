@@ -40,8 +40,6 @@ void gfx_set_dwm(void);
 void gfx_scale_integer(struct rarch_viewport *vp, unsigned win_width, unsigned win_height,
       float aspect_ratio, bool keep_aspect);
 
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
-
 #define MIN_SCALING_FACTOR (1.0f)
 
 #if defined(__CELLOS_LV2__)
@@ -90,7 +88,7 @@ enum rotation
    ORIENTATION_END
 };
 
-#define LAST_ORIENTATION (ORIENTATION_END-1)
+#define LAST_ORIENTATION (ORIENTATION_END - 1)
 
 extern char rotation_lut[ASPECT_RATIO_END][32];
 
@@ -118,8 +116,6 @@ extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
 extern void gfx_set_auto_viewport(unsigned width, unsigned height);
 extern void gfx_set_core_viewport(void);
-
-#endif
 
 #ifdef __cplusplus
 }
