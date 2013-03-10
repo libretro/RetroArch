@@ -114,6 +114,8 @@
 - (void)runGame:(NSString*)path
 {
    assert(self.moduleInfo);
+   
+   [RASettingsList refreshConfigFile];
 
    const char* const sd = [[RetroArch_iOS get].system_directory UTF8String];
    const char* const cf = (ra_ios_is_file(self.moduleInfo.configPath)) ? [self.moduleInfo.configPath UTF8String] : 0;

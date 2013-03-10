@@ -60,7 +60,18 @@
       else
          [_other addObject:module];
    }
-  
+
+   // Sort
+   [_supported sortUsingComparator:^(RAModuleInfo* left, RAModuleInfo* right)
+   {
+      return [left.displayName caseInsensitiveCompare:right.displayName];
+   }];
+
+   [_other sortUsingComparator:^(RAModuleInfo* left, RAModuleInfo* right)
+   {
+      return [left.displayName caseInsensitiveCompare:right.displayName];
+   }];
+
    [self setTitle:[_game lastPathComponent]];
    return self;
 }

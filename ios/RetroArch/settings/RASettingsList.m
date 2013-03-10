@@ -105,6 +105,11 @@ static RASettingData* custom_action(NSString* action)
 }
 
 @implementation RASettingsList
++ (void)refreshConfigFile
+{
+   (void)[[RASettingsList alloc] init];
+}
+
 - (id)init
 {
    RAConfig* config = [[RAConfig alloc] initWithPath:[RetroArch_iOS get].moduleInfo.configPath];
@@ -123,9 +128,9 @@ static RASettingData* custom_action(NSString* action)
       [NSArray arrayWithObjects:@"Video",
          boolean_setting(config, @"video_smooth", @"Smooth Video", @"true"),
          boolean_setting(config, @"video_crop_overscan", @"Crop Overscan", @"true"),
-         subpath_setting(config, @"video_bsnes_shader", @"Shader", @"", shader_path, @"shader"),
-         aspect_setting(config, @"Aspect Ratio"),
          boolean_setting(config, @"video_scale_integer", @"Integer Scaling", @"false"),
+         aspect_setting(config, @"Aspect Ratio"),
+         subpath_setting(config, @"video_bsnes_shader", @"Shader", @"", shader_path, @"shader"),
          nil],
 
       [NSArray arrayWithObjects:@"Audio",
@@ -191,6 +196,7 @@ static RASettingData* custom_action(NSString* action)
 - (void)dealloc
 {
    RAConfig* config = [[RAConfig alloc] initWithPath:[RetroArch_iOS get].moduleInfo.configPath];
+   [config putStringNamed:@"system_directory" value:[RetroArch_iOS get].system_directory];
    [self writeSettings:nil toConfig:config];
    [config writeToFile:[RetroArch_iOS get].moduleInfo.configPath];
    [[RetroArch_iOS get] refreshConfig];

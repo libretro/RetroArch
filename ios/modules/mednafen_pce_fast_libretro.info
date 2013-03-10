@@ -1,0 +1,6 @@
+display_name = "PC Engine/TurboGrafx-16"
+supported_extensions = "pce|sgx|cue"
+emuname = "Mednafen PCE Fast"
+manufacturer = "NEC"
+systemname = "PC Engine/TurboGrafx-16"
+

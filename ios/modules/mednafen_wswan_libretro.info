@@ -1,0 +1,6 @@
+display_name = "WonderSwan (Color)"
+supported_extensions = "ws|wsc"
+emuname = "Mednafen WonderSwan"
+manufacturer = "Bandai"
+systemname = "WonderSwan (Color)"
+

@@ -162,6 +162,7 @@ static const char* const SETTINGID = "SETTING";
       {
          cell = [self.tableView dequeueReusableCellWithIdentifier:@"enumeration"];
          cell = cell ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"enumeration"];
+         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
       }
       break;
       
