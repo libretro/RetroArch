@@ -1031,11 +1031,18 @@ static void gx_set_rgui_texture(void *data, const void *frame)
    gx->menu_data = (uint32_t*)frame;
 }
 
+static void gx_apply_state_changes(void *data)
+{
+   gx_video_t *gx = (gx_video_t*)data;
+   gx->should_resize = true;
+}
+
 static const video_poke_interface_t gx_poke_interface = {
    NULL,
    NULL,
    NULL,
    gx_set_aspect_ratio,
+   gx_apply_state_changes,
    gx_set_rgui_texture,
 };
 

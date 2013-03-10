@@ -234,6 +234,7 @@ typedef struct video_poke_interface
    void (*set_filtering)(void *data, unsigned index, bool smooth);
    void (*set_fbo_state)(void *data, unsigned state);
    void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
+   void (*apply_state_changes)(void *data);
 
    // Set to NULL if RGUI texture is not supposed to be rendered.
    void (*set_rgui_texture)(void *data, const void *frame);

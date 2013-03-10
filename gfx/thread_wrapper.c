@@ -71,6 +71,7 @@ typedef struct thread_video
 #ifdef HAVE_RGUI
    const void *rgui_texture;
 #endif
+   bool apply_state_changes;
 
    bool alive;
    bool focus;
@@ -300,6 +301,11 @@ static void thread_loop(void *data)
 #ifdef HAVE_RGUI
          thr->poke->set_rgui_texture(thr->driver_data, thr->rgui_texture);
 #endif
+         if (thr->apply_state_changes)
+         {
+            thr->poke->apply_state_changes(thr->driver_data);
+            thr->apply_state_changes = false;
+         }
 
          bool ret = thr->driver->frame(thr->driver_data,
                thr->frame.buffer, thr->frame.width, thr->frame.height,
@@ -638,11 +644,20 @@ static void thread_set_rgui_texture(void *data, const void *frame)
 }
 #endif
 
+static void thread_apply_state_changes(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   slock_lock(thr->frame.lock);
+   thr->apply_state_changes = true;
+   slock_unlock(thr->frame.lock);
+}
+
 static const video_poke_interface_t thread_poke = {
    thread_set_blend,
    thread_set_filtering,
    thread_set_fbo_state,
    thread_set_aspect_ratio,
+   thread_apply_state_changes,
 #ifdef HAVE_RGUI
    thread_set_rgui_texture,
 #endif
