@@ -1517,18 +1517,18 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
    {
 #if defined(GEKKO)
 #ifdef HW_RVL
-      file_cb(ctx, "sd:", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "usb:", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "sd:/", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "usb:/", RGUI_FILE_DEVICE, 0);
 #endif
-      file_cb(ctx, "carda:", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "cardb:", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "carda:/", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "cardb:/", RGUI_FILE_DEVICE, 0);
       return true;
 #elif defined(_XBOX1)
-      file_cb(ctx, "C:", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "D:", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "E:", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "F:", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "G:", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "C:\\", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "D:\\", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "E:\\", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "F:\\", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "G:\\", RGUI_FILE_DEVICE, 0);
       return true;
 #endif
    }
@@ -1543,57 +1543,32 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
    LWP_MutexUnlock(gx_device_mutex);
 #endif
 
-   char exts[256];
-   if (core_chooser)
-      strlcpy(exts, EXT_EXECUTABLES, sizeof(exts));
+   const char *exts = core_chooser ? EXT_EXECUTABLES : g_extern.system.valid_extensions;
+   char dir[PATH_MAX];
+   if (*directory)
+      strlcpy(dir, directory, sizeof(dir));
    else
-      strlcpy(exts, g_extern.system.valid_extensions, sizeof(exts));
+      strlcpy(dir, "/", sizeof(dir));
 
-   struct string_list *ext_list = string_split(exts, "|");
-
-   char _dir[PATH_MAX];
-   snprintf(_dir, sizeof(_dir), "%s/", directory);
-   DIR *dir = opendir(_dir);
-   if (!dir)
+   struct string_list *list = dir_list_new(dir, exts, true);
+   if (!list)
       return false;
 
-   struct dirent *entry;
-   while ((entry = readdir(dir)))
+   for (size_t i = 0; i < list->size; i++)
    {
-      char stat_path[PATH_MAX];
-      const char *file_ext = path_get_extension(entry->d_name);
-      snprintf(stat_path, sizeof(stat_path), "%s/%s", directory, entry->d_name);
-      bool is_dir;
-
-#ifdef _DIRENT_HAVE_D_TYPE
-      is_dir = (entry->d_type == DT_DIR);
-      if (entry->d_type != DT_REG && !is_dir)
-         continue;
-#else
-      struct stat st;
-      if (stat(stat_path, &st) < 0)
-         continue;
-
-      is_dir = S_ISDIR(st.st_mode);
-      if (!S_ISREG(st.st_mode) && !is_dir)
-         continue;
-#endif
-
+      bool is_dir = list->elems[i].attr.b;
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-      if (core_chooser && (is_dir || strcasecmp(entry->d_name, default_paths.salamander_file) == 0))
+      if (core_chooser && (is_dir ||
+               strcasecmp(list->elems[i].data, default_paths.salamander_file) == 0))
          continue;
 #endif
-
-      if (!is_dir && ext_list && !string_list_find_elem_prefix(ext_list, ".", file_ext))
-         continue;
 
       file_cb(ctx,
-            entry->d_name,
+            path_basename(list->elems[i].data),
             is_dir ? RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
    }
 
-   closedir(dir);
-   string_list_free(ext_list);
+   string_list_free(list);
    return true;
 }
 
