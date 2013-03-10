@@ -1646,13 +1646,17 @@ bool menu_iterate(void)
    static uint16_t old_input_state = 0;
    static bool initial_held = true;
    static bool first_held = false;
+   bool do_held;
+   int input_entry_ret, input_process_ret;
+   rgui_action_t action;
+   uint16_t input_state;
 
    g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
    device_ptr->should_resize = true;
 
    g_extern.frame_count++;
 
-   uint16_t input_state = 0;
+   input_state = 0;
 
    driver.input->poll(NULL);
 
@@ -1705,7 +1709,7 @@ bool menu_iterate(void)
 #endif
 
    trigger_state = input_state & ~old_input_state;
-   bool do_held = (input_state & ((1ULL << GX_DEVICE_NAV_UP) | (1ULL << GX_DEVICE_NAV_DOWN) | (1ULL << GX_DEVICE_NAV_LEFT) | (1ULL << GX_DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << GX_DEVICE_NAV_MENU) | (1ULL << GX_DEVICE_NAV_QUIT)));
+   do_held = (input_state & ((1ULL << GX_DEVICE_NAV_UP) | (1ULL << GX_DEVICE_NAV_DOWN) | (1ULL << GX_DEVICE_NAV_LEFT) | (1ULL << GX_DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << GX_DEVICE_NAV_MENU) | (1ULL << GX_DEVICE_NAV_QUIT)));
 
    if(do_held)
    {
@@ -1730,8 +1734,7 @@ bool menu_iterate(void)
    }
 
    old_input_state = input_state;
-
-   rgui_action_t action = RGUI_ACTION_NOOP;
+   action = RGUI_ACTION_NOOP;
 
    // don't run anything first frame, only capture held inputs for old_input_state
    if (trigger_state & (1ULL << GX_DEVICE_NAV_UP))
@@ -1758,8 +1761,8 @@ bool menu_iterate(void)
    }
 #endif
 
-   int input_entry_ret = 0;
-   int input_process_ret = 0;
+   input_entry_ret = 0;
+   input_process_ret = 0;
 
    input_entry_ret = rgui_iterate(rgui, action);
 

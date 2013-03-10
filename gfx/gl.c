@@ -2021,7 +2021,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 }
 #endif
 
-#ifdef HAVE_RMENU
+#ifdef RARCH_CONSOLE
 static void gl_get_poke_interface(void *data, const video_poke_interface_t **iface);
 
 static void gl_start(void)
@@ -2046,17 +2046,17 @@ static void gl_start(void)
    gl_t *gl = (gl_t*)driver.video_data;
    gl_get_poke_interface(gl, &driver.video_poke);
 
-#ifdef RARCH_CONSOLE
    // Comes too early for console - moved to gl_start
    gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
 
+#ifdef HAVE_FBO
    if (!g_settings.video.render_to_texture)
       gl_deinit_fbo(gl);
 #endif
 
+#ifdef HAVE_RMENU
    context_get_available_resolutions_func();
 
-#ifdef HAVE_RMENU
    if (gl->ctx_driver->rmenu_init)
       context_rmenu_init_func();
 #endif
@@ -2315,7 +2315,7 @@ const video_driver_t video_gl = {
    gl_free,
    "gl",
 
-#ifdef HAVE_RMENU
+#ifdef RARCH_CONSOLE
    gl_start,
    gl_stop,
    gl_restart,

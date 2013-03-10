@@ -250,7 +250,7 @@ typedef struct video_driver
    const char *ident;
 
    // Callbacks essentially useless on PC, but useful on consoles where the drivers are used for more stuff.
-#if defined(RARCH_CONSOLE)
+#ifdef RARCH_CONSOLE
    void (*start)(void);
    void (*stop)(void);
    void (*restart)(void);
