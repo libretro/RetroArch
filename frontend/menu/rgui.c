@@ -1040,6 +1040,9 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
    unsigned menu_type = 0;
    rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
 
+   (void)win_width;
+   (void)win_height;
+
    switch (action)
    {
       case RGUI_ACTION_UP:
