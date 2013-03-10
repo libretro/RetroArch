@@ -971,11 +971,18 @@ static void xdk_d3d_set_blend(void *data, bool enable)
    d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, enable);
 }
 
+static void xdk_d3d_apply_state_changes(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+   gl->should_resize = true;
+}
+
 static const video_poke_interface_t d3d_poke_interface = {
    xdk_d3d_set_blend,
    xdk_d3d_set_filtering,
    xdk_d3d_set_fbo_state,
    xdk_d3d_set_aspect_ratio,
+   xdk_d3d_apply_state_changes,
 };
 
 static void d3d_get_poke_interface(void *data, const video_poke_interface_t **iface)
