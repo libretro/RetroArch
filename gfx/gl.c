@@ -2221,12 +2221,14 @@ static void gl_set_filtering(void *data, unsigned index, bool smooth)
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
       }
    }
+#ifdef HAVE_FBO
    else if (index >= 2 && gl->fbo_inited)
    {
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index - 2]);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
    }
+#endif
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
