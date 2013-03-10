@@ -410,11 +410,8 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    "xdk",
 
    // RARCH_CONSOLE stuff.
-   NULL,
-   NULL,
    gfx_ctx_xdk_get_available_resolutions,
    gfx_ctx_xdk_check_resolution,
-   NULL,
 
 #if defined(HAVE_RMENU)
    gfx_ctx_xdk_menu_init,
