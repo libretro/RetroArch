@@ -230,6 +230,7 @@ typedef struct video_overlay_interface
 // Only used by RGUI atm.
 typedef struct video_poke_interface
 {
+   void (*set_blend)(void *data, bool enable);
    void (*set_filtering)(void *data, unsigned index, bool smooth);
    void (*set_fbo_state)(void *data, unsigned state);
    void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);

@@ -2275,7 +2275,19 @@ static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
    gl->should_resize = true;
 }
 
+static void gl_set_blend(void *data, bool enable)
+{
+   if (enable)
+   {
+      glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+      glEnable(GL_BLEND);
+   }
+   else
+      glDisable(GL_BLEND);
+}
+
 static const video_poke_interface_t gl_poke_interface = {
+   gl_set_blend,
    gl_set_filtering,
    gl_set_fbo_state,
    gl_set_aspect_ratio,

@@ -959,7 +959,20 @@ static void xdk_d3d_set_fbo_state(void *data, unsigned mode)
 
 static void xdk_d3d_set_filtering(void *data, unsigned index, bool set_smooth) { }
 
+static void xdk_d3d_set_blend(void *data, bool enable)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+
+   if(enable)
+   {
+      d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+      d3d->d3d_render_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   }
+   d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, enable);
+}
+
 static const video_poke_interface_t d3d_poke_interface = {
+   xdk_d3d_set_blend,
    xdk_d3d_set_filtering,
    xdk_d3d_set_fbo_state,
    xdk_d3d_set_aspect_ratio,

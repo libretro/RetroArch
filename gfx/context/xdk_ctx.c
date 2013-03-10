@@ -87,18 +87,6 @@ unsigned m_menuMainRomListPos_x;
 unsigned m_menuMainRomListPos_y;
 #endif
 
-static void gfx_ctx_xdk_set_blend(bool enable)
-{
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-
-   if(enable)
-   {
-      d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-      d3d->d3d_render_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-   }
-   d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, enable);
-}
-
 static void gfx_ctx_xdk_set_swap_interval(unsigned interval)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;

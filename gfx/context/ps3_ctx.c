@@ -281,17 +281,6 @@ static void gfx_ctx_swap_buffers(void)
 #endif
 }
 
-static void gfx_ctx_set_blend(bool enable)
-{
-   if(enable)
-   {
-      glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-      glEnable(GL_BLEND);
-   }
-   else
-      glDisable(GL_BLEND);
-}
-
 static void gfx_ctx_set_resize(unsigned width, unsigned height) { }
 
 void texture_image_border_load(const char *path)
@@ -518,7 +507,7 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    NULL,
    "ps3",
 #ifdef HAVE_RMENU
-   gfx_ctx_set_blend,
+   NULL,
    NULL,
    gfx_ctx_get_available_resolutions,
    gfx_ctx_check_resolution,

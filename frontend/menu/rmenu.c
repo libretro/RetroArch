@@ -2710,7 +2710,10 @@ bool menu_iterate(void)
    else
    {
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
-         device_ptr->ctx_driver->set_blend(true);
+      {
+         if (driver.video_poke->set_blend)
+            driver.video_poke->set_blend(driver.video_data, true);
+      }
 
       rarch_render_cached_frame();
    }
@@ -2749,7 +2752,10 @@ bool menu_iterate(void)
    device_ptr->ctx_driver->swap_buffers();
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
-      device_ptr->ctx_driver->set_blend(false);
+   {
+      if (driver.video_poke->set_blend)
+         driver.video_poke->set_blend(driver.video_data, false);
+   }
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT) &&
          g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
