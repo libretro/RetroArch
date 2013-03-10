@@ -51,24 +51,6 @@ static PSGLdevice* gl_device;
 static PSGLcontext* gl_context;
 #endif
 
-#define HARDCODE_FONT_SIZE 0.91f
-#define POSITION_X 0.09f
-#define POSITION_X_CENTER 0.5f
-#define POSITION_Y_START 0.17f
-#define POSITION_Y_INCREMENT 0.035f
-#define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
-#define COMMENT_TWO_Y_POSITION 0.91f
-#define COMMENT_Y_POSITION 0.82f
-
-#define MSG_QUEUE_X_POSITION g_settings.video.msg_pos_x
-#define MSG_QUEUE_Y_POSITION 0.76f
-#define MSG_QUEUE_FONT_SIZE 1.03f
-
-#define MSG_PREV_NEXT_Y_POSITION 0.03f
-#define CURRENT_PATH_Y_POSITION 0.15f
-
-#define NUM_ENTRY_PER_PAGE 15
-
 static int gfx_ctx_check_resolution(unsigned resolution_id)
 {
    return cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, resolution_id, CELL_VIDEO_OUT_ASPECT_AUTO, 0);
@@ -104,29 +86,6 @@ static float gfx_ctx_get_aspect_ratio(void)
    }
 
    return 16.0f/9.0f;
-}
-
-static void gfx_ctx_ps3_set_default_pos(rmenu_default_positions_t *position)
-{
-   position->x_position = POSITION_X;
-   position->x_position_center = POSITION_X_CENTER;
-   position->y_position = POSITION_Y_BEGIN;
-   position->comment_y_position = COMMENT_Y_POSITION;
-   position->y_position_increment = POSITION_Y_INCREMENT;
-   position->starting_y_position = POSITION_Y_START;
-   position->comment_two_y_position = COMMENT_TWO_Y_POSITION;
-   position->font_size = HARDCODE_FONT_SIZE;
-   position->msg_queue_x_position = MSG_QUEUE_X_POSITION;
-   position->msg_queue_y_position = MSG_QUEUE_Y_POSITION;
-   position->msg_queue_font_size= MSG_QUEUE_FONT_SIZE;
-   position->msg_prev_next_y_position = MSG_PREV_NEXT_Y_POSITION;
-   position->current_path_font_size = g_settings.video.font_size;
-   position->current_path_y_position = CURRENT_PATH_Y_POSITION;
-   position->variable_font_size = g_settings.video.font_size;
-   position->entries_per_page = NUM_ENTRY_PER_PAGE;
-   position->core_msg_x_position = 0.3f;
-   position->core_msg_y_position = 0.06f;
-   position->core_msg_font_size = COMMENT_Y_POSITION;
 }
 
 static void rmenu_ctx_ps3_screenshot_enable(bool enable)
@@ -488,7 +447,6 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_rmenu_free,
    gfx_ctx_menu_draw_bg,
    gfx_ctx_menu_draw_panel,
-   gfx_ctx_ps3_set_default_pos,
    rmenu_ctx_ps3_screenshot_enable,
    rmenu_ctx_ps3_screenshot_dump,
 #endif

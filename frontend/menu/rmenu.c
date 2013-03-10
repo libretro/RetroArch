@@ -174,6 +174,76 @@ static const char *menu_drive_mapping_next(void)
    return drive_mappings[drive_mapping_idx];
 }
 
+#if defined(_XBOX1)
+#define HARDCODE_FONT_SIZE 21
+
+#define POSITION_X m_menuMainRomListPos_x
+#define POSITION_X_CENTER (m_menuMainRomListPos_x + 350)
+#define POSITION_Y_START m_menuMainRomListPos_y
+#define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
+#define POSITION_Y_INCREMENT 20
+#define COMMENT_Y_POSITION (ypos - ((POSITION_Y_INCREMENT/2) * 3))
+#define COMMENT_TWO_Y_POSITION (ypos - ((POSITION_Y_INCREMENT/2) * 1))
+
+#define MSG_QUEUE_X_POSITION POSITION_X
+#define MSG_QUEUE_Y_POSITION (ypos - ((POSITION_Y_INCREMENT/2) * 7) + 5)
+#define MSG_QUEUE_FONT_SIZE HARDCODE_FONT_SIZE
+
+#define MSG_PREV_NEXT_Y_POSITION 24
+
+#define CURRENT_PATH_Y_POSITION (m_menuMainRomListPos_y - ((POSITION_Y_INCREMENT/2)))
+#define CURRENT_PATH_FONT_SIZE 21
+#elif defined(__CELLOS_LV2__)
+#define HARDCODE_FONT_SIZE 0.91f
+#define POSITION_X 0.09f
+#define POSITION_X_CENTER 0.5f
+#define POSITION_Y_START 0.17f
+#define POSITION_Y_INCREMENT 0.035f
+#define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
+#define COMMENT_TWO_Y_POSITION 0.91f
+#define COMMENT_Y_POSITION 0.82f
+
+#define MSG_QUEUE_X_POSITION g_settings.video.msg_pos_x
+#define MSG_QUEUE_Y_POSITION 0.76f
+#define MSG_QUEUE_FONT_SIZE 1.03f
+
+#define MSG_PREV_NEXT_Y_POSITION 0.03f
+#define CURRENT_PATH_Y_POSITION 0.15f
+
+#define NUM_ENTRY_PER_PAGE 15
+#endif
+
+static void menu_set_default_pos(rmenu_default_positions_t *position)
+{
+   position->x_position = POSITION_X;
+   position->x_position_center = POSITION_X_CENTER;
+   position->y_position = POSITION_Y_BEGIN;
+   position->comment_y_position = COMMENT_Y_POSITION;
+   position->y_position_increment = POSITION_Y_INCREMENT;
+   position->starting_y_position = POSITION_Y_START;
+   position->comment_two_y_position = COMMENT_TWO_Y_POSITION;
+   position->font_size = HARDCODE_FONT_SIZE;
+   position->msg_queue_x_position = MSG_QUEUE_X_POSITION;
+   position->msg_queue_y_position = MSG_QUEUE_Y_POSITION;
+   position->msg_queue_font_size= MSG_QUEUE_FONT_SIZE;
+   position->msg_prev_next_y_position = MSG_PREV_NEXT_Y_POSITION;
+   position->current_path_y_position = CURRENT_PATH_Y_POSITION;
+   position->entries_per_page = NUM_ENTRY_PER_PAGE;
+#if defined(_XBOX1)
+   position->current_path_font_size = CURRENT_PATH_FONT_SIZE;
+   position->variable_font_size = FONT_SIZE;
+   position->core_msg_x_position = position->x_position;
+   position->core_msg_y_position = position->msg_prev_next_y_position + 0.01f;
+   position->core_msg_font_size = position->font_size;
+#elif defined(__CELLOS_LV2__)
+   position->current_path_font_size = g_settings.video.font_size;
+   position->variable_font_size = g_settings.video.font_size;
+   position->core_msg_x_position = 0.3f;
+   position->core_msg_y_position = 0.06f;
+   position->core_msg_font_size = COMMENT_Y_POSITION;
+#endif
+}
+
 /*============================================================
   EVENT CALLBACKS (AND RELATED)
   ============================================================ */
@@ -572,7 +642,7 @@ static void display_menubar(void *data)
    char current_path[256], rarch_version[128], msg[128];
 
    rmenu_default_positions_t default_pos;
-   device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
+   menu_set_default_pos(&default_pos);
 
    snprintf(rarch_version, sizeof(rarch_version), "v%s", PACKAGE_VERSION);
 
@@ -674,7 +744,7 @@ void browser_render(void *data)
    unsigned int current_index, page_number, page_base, i;
 
    rmenu_default_positions_t default_pos;
-   device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
+   menu_set_default_pos(&default_pos);
 
    current_index = b->current_dir.ptr;
    page_number = current_index / default_pos.entries_per_page;
@@ -713,7 +783,7 @@ int select_file(void *data, void *state)
 
    filebrowser_t *filebrowser = tmpBrowser;
    rmenu_default_positions_t default_pos;
-   device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
+   menu_set_default_pos(&default_pos);
 
    switch(current_menu->enum_id)
    {
@@ -864,7 +934,7 @@ int select_directory(void *data, void *state)
    filebrowser_t *filebrowser = tmpBrowser;
    rmenu_default_positions_t default_pos;
 
-   device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
+   menu_set_default_pos(&default_pos);
 
    bool is_dir = filebrowser_get_current_path_isdir(filebrowser);
    browser_update(filebrowser, input, "empty");
@@ -1905,7 +1975,7 @@ static int select_setting(void *data, void *state)
    filebrowser_t *filebrowser = NULL;
    rmenu_default_positions_t default_pos;
 
-   device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
+   menu_set_default_pos(&default_pos);
 
    unsigned j = 0;
    int page = 0;
@@ -2016,7 +2086,7 @@ int select_rom(void *data, void *state)
    rmenu_default_positions_t default_pos;
    filebrowser_t *filebrowser = browser;
 
-   device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
+   menu_set_default_pos(&default_pos);
 
    browser_update(filebrowser, input, g_extern.system.valid_extensions);
 
@@ -2092,7 +2162,7 @@ int ingame_menu_resize(void *data, void *state)
 
    filebrowser_t *filebrowser = NULL;
    rmenu_default_positions_t default_pos;
-   device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
+   menu_set_default_pos(&default_pos);
 
    g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
    
@@ -2301,7 +2371,7 @@ int ingame_menu(void *data, void *state)
 
    filebrowser_t *filebrowser = tmpBrowser;
    rmenu_default_positions_t default_pos;
-   device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
+   menu_set_default_pos(&default_pos);
 
    for(int i = 0; i < MENU_ITEM_LAST; i++)
       menuitem_colors[i] = WHITE;
@@ -2734,7 +2804,7 @@ bool menu_iterate(void)
    menu_stack_get_current_ptr(&current_menu);
 
    rmenu_default_positions_t default_pos;
-   device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
+   menu_set_default_pos(&default_pos);
 
    if ((g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE)))
    {

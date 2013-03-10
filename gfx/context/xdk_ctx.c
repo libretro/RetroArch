@@ -45,25 +45,6 @@
 #define ROM_PANEL_WIDTH 510
 #define ROM_PANEL_HEIGHT 20
 
-#define HARDCODE_FONT_SIZE 21
-
-#define POSITION_X m_menuMainRomListPos_x
-#define POSITION_X_CENTER (m_menuMainRomListPos_x + 350)
-#define POSITION_Y_START m_menuMainRomListPos_y
-#define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
-#define POSITION_Y_INCREMENT 20
-#define COMMENT_Y_POSITION (ypos - ((POSITION_Y_INCREMENT/2) * 3))
-#define COMMENT_TWO_Y_POSITION (ypos - ((POSITION_Y_INCREMENT/2) * 1))
-
-#define MSG_QUEUE_X_POSITION POSITION_X
-#define MSG_QUEUE_Y_POSITION (ypos - ((POSITION_Y_INCREMENT/2) * 7) + 5)
-#define MSG_QUEUE_FONT_SIZE HARDCODE_FONT_SIZE
-
-#define MSG_PREV_NEXT_Y_POSITION 24
-
-#define CURRENT_PATH_Y_POSITION (m_menuMainRomListPos_y - ((POSITION_Y_INCREMENT/2)))
-#define CURRENT_PATH_FONT_SIZE 21
-
 #define FONT_SIZE 21 
 
 #define NUM_ENTRY_PER_PAGE 12
@@ -191,31 +172,6 @@ static void gfx_ctx_xdk_menu_draw_panel(rarch_position_t *position)
    g_extern.console.menu_panel.width = ROM_PANEL_WIDTH;
    g_extern.console.menu_panel.height = ROM_PANEL_HEIGHT;
    texture_image_render(&g_extern.console.menu_panel);
-#endif
-}
-
-static void gfx_ctx_xdk_menu_set_default_pos(rmenu_default_positions_t *position)
-{
-#ifdef _XBOX1
-   position->x_position = POSITION_X;
-   position->x_position_center = POSITION_X_CENTER;
-   position->y_position = POSITION_Y_BEGIN;
-   position->comment_y_position = COMMENT_Y_POSITION;
-   position->y_position_increment = POSITION_Y_INCREMENT;
-   position->starting_y_position = POSITION_Y_START;
-   position->comment_two_y_position = COMMENT_TWO_Y_POSITION;
-   position->font_size = HARDCODE_FONT_SIZE;
-   position->msg_queue_x_position = MSG_QUEUE_X_POSITION;
-   position->msg_queue_y_position = MSG_QUEUE_Y_POSITION;
-   position->msg_queue_font_size= MSG_QUEUE_FONT_SIZE;
-   position->msg_prev_next_y_position = MSG_PREV_NEXT_Y_POSITION;
-   position->current_path_font_size = CURRENT_PATH_FONT_SIZE;
-   position->current_path_y_position = CURRENT_PATH_Y_POSITION;
-   position->variable_font_size = FONT_SIZE;
-   position->entries_per_page = NUM_ENTRY_PER_PAGE;
-   position->core_msg_x_position = position->x_position;
-   position->core_msg_y_position = position->msg_prev_next_y_position + 0.01f;
-   position->core_msg_font_size = position->font_size;
 #endif
 }
 
@@ -466,7 +422,6 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    gfx_ctx_xdk_menu_free,
    gfx_ctx_xdk_menu_draw_bg,
    gfx_ctx_xdk_menu_draw_panel,
-   gfx_ctx_xdk_menu_set_default_pos,
    gfx_ctx_xdk_menu_screenshot_enable,
    gfx_ctx_xdk_menu_screenshot_dump,
 #endif

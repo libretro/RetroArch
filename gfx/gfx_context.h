@@ -125,7 +125,6 @@ typedef struct gfx_ctx_driver
    void (*rmenu_free)(void);
    void (*rmenu_draw_bg)(rarch_position_t *position);
    void (*rmenu_draw_panel)(rarch_position_t *position);
-   void (*rmenu_set_default_pos)(rmenu_default_positions_t *position);
    void (*rmenu_screenshot_enable)(bool enable);
    void (*rmenu_screenshot_dump)(void *data);
 #endif
