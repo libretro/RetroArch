@@ -696,7 +696,7 @@ static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t 
             menu_settings_set(S_HW_TEXTURE_FILTER);
 
          if (driver.video_poke->set_filtering)
-            driver.video_poke->set_filtering(driver.video_data, 0, g_settings.video.smooth);
+            driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
          break;
 #ifdef HW_RVL
       case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
