@@ -78,6 +78,27 @@ static RASettingData* subpath_setting(RAConfig* config, NSString* name, NSString
    return result;
 }
 
+static RASettingData* aspect_setting(RAConfig* config, NSString* label)
+{
+   // Why does this need to be so difficult?
+
+   RASettingData* result = [[RASettingData alloc] initWithType:AspectSetting label:label name:@"fram"];
+   result.subValues = [NSArray arrayWithObjects:@"Fill Screen", @"Game Aspect", @"Pixel Aspect", @"4:3", @"16:9", nil];
+
+   bool videoForceAspect = [config getBoolNamed:@"video_force_aspect" withDefault:true];
+   bool videoAspectAuto = [config getBoolNamed:@"video_aspect_ratio_auto" withDefault:false];
+   double videoAspect = [config getDoubleNamed:@"video_aspect_ratio" withDefault:0.0];
+   
+   if (!videoForceAspect)
+      result.value = @"Fill Screen";
+   else if (videoAspect < 0.0)
+      result.value = videoAspectAuto ? @"Game Aspect" : @"Pixel Aspect";
+   else
+      result.value = (videoAspect < 1.5) ? @"4:3" : @"16:9";
+   
+   return result;
+}
+
 static RASettingData* custom_action(NSString* action)
 {
    return [[RASettingData alloc] initWithType:CustomAction label:action name:nil];
@@ -103,6 +124,8 @@ static RASettingData* custom_action(NSString* action)
          boolean_setting(config, @"video_smooth", @"Smooth Video", @"true"),
          boolean_setting(config, @"video_crop_overscan", @"Crop Overscan", @"true"),
          subpath_setting(config, @"video_bsnes_shader", @"Shader", @"", shader_path, @"shader"),
+         aspect_setting(config, @"Aspect Ratio"),
+         boolean_setting(config, @"video_scale_integer", @"Integer Scaling", @"false"),
          nil],
 
       [NSArray arrayWithObjects:@"Audio",

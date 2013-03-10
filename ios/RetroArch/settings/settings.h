@@ -15,7 +15,8 @@
 
 enum SettingTypes
 {
-   BooleanSetting, ButtonSetting, EnumerationSetting, FileListSetting, GroupSetting, CustomAction
+   BooleanSetting, ButtonSetting, EnumerationSetting, FileListSetting,
+   GroupSetting, AspectSetting, CustomAction
 };
 
 @interface RASettingData : NSObject

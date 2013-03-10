@@ -20,6 +20,7 @@
 - (bool)getBoolNamed:(NSString*)name withDefault:(bool)def;
 - (int)getIntNamed:(NSString*)name withDefault:(int)def;
 - (unsigned)getUintNamed:(NSString*)name withDefault:(unsigned)def;
+- (double)getDoubleNamed:(NSString*)name withDefault:(double)def;
 - (NSString*)getStringNamed:(NSString*)name withDefault:(NSString*)def;
 
 - (void)putIntNamed:(NSString*)name value:(int)value;

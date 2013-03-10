@@ -69,6 +69,16 @@ static const char* const SETTINGID = "SETTING";
                   [config putStringNamed:[setting.name stringByAppendingString:@"_btn"] value:setting.msubValues[1]];
                break;
 
+            case AspectSetting:
+               [config putStringNamed:@"video_force_aspect" value:[@"Fill Screen" isEqualToString:setting.value] ? @"false" : @"true"];
+               [config putStringNamed:@"video_aspect_ratio_auto" value:[@"Game Aspect" isEqualToString:setting.value] ? @"true" : @"false"];
+               [config putStringNamed:@"video_aspect_ratio" value:@"-1.0"];
+               if([@"4:3" isEqualToString:setting.value])
+                  [config putStringNamed:@"video_aspect_ratio" value:@"1.33333333"];
+               else if([@"16:9" isEqualToString:setting.value])
+                  [config putStringNamed:@"video_aspect_ratio" value:@"1.777777777"];
+               break;
+
             case CustomAction:
                break;
 
@@ -88,6 +98,7 @@ static const char* const SETTINGID = "SETTING";
    {
       case EnumerationSetting:
       case FileListSetting:
+      case AspectSetting:
          [[RetroArch_iOS get] pushViewController:[[RASettingEnumerationList alloc] initWithSetting:setting fromTable:(UITableView*)self.view] animated:YES];
          break;
          
@@ -147,6 +158,7 @@ static const char* const SETTINGID = "SETTING";
       case FileListSetting:
       case ButtonSetting:
       case CustomAction:
+      case AspectSetting:
       {
          cell = [self.tableView dequeueReusableCellWithIdentifier:@"enumeration"];
          cell = cell ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"enumeration"];

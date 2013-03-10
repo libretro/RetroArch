@@ -30,43 +30,39 @@
 
 - (void)dealloc
 {
-   if (_config)
-      config_file_free(_config);
+   config_file_free(_config);
 }
 
 - (void)writeToFile:(NSString*)path
 {
-   if (_config)
-      config_file_write(_config, [path UTF8String]);
+   config_file_write(_config, [path UTF8String]);
 }
 
 - (bool)getBoolNamed:(NSString*)name withDefault:(bool)def
 {
    bool result = def;
-   
-   if (_config)
-      config_get_bool(_config, [name UTF8String], &result);
-   
+   config_get_bool(_config, [name UTF8String], &result);
    return result;
 }
 
 - (int)getIntNamed:(NSString*)name withDefault:(int)def
 {
    int result = def;
-   
-   if (_config)
-      config_get_int(_config, [name UTF8String], &result);
-   
+   config_get_int(_config, [name UTF8String], &result);
    return result;
 }
 
 - (unsigned)getUintNamed:(NSString*)name withDefault:(unsigned)def
 {
    unsigned result = def;
-   
-   if (_config)
-      config_get_uint(_config, [name UTF8String], &result);
-   
+   config_get_uint(_config, [name UTF8String], &result);
+   return result;
+}
+
+- (double)getDoubleNamed:(NSString*)name withDefault:(double)def
+{
+   double result = def;
+   config_get_double(_config, [name UTF8String], &result);
    return result;
 }
 
@@ -74,27 +70,22 @@
 {
    NSString* result = def;
    
-   if (_config)
-   {
-      char* data = 0;
-      if (config_get_string(_config, [name UTF8String], &data))
-         result = [NSString stringWithUTF8String:data];
-      free(data);
-   }
-   
+   char* data = 0;
+   if (config_get_string(_config, [name UTF8String], &data))
+      result = [NSString stringWithUTF8String:data];
+   free(data);
+  
    return result;
 }
 
 - (void)putIntNamed:(NSString*)name value:(int)value
 {
-   if (_config)
-      config_set_int(_config, [name UTF8String], value);
+   config_set_int(_config, [name UTF8String], value);
 }
 
 - (void)putStringNamed:(NSString*)name value:(NSString*)value
 {
-   if (_config)
-      config_set_string(_config, [name UTF8String], [value UTF8String]);
+   config_set_string(_config, [name UTF8String], [value UTF8String]);
 }
 
 @end
