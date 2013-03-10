@@ -136,6 +136,44 @@ enum
    RMENU_DEVICE_NAV_LAST
 };
 
+const char drive_mappings[][32] = {
+#if defined(_XBOX1)
+   "C:",
+   "D:",
+   "E:",
+   "F:",
+   "G:"
+#elif defined(__CELLOS_LV2__)
+   "/app_home/",
+   "/dev_hdd0/",
+   "/dev_hdd1/",
+   "/host_root/"
+#endif
+};
+
+#if defined__CELLOS_LV2__
+unsigned char drive_mapping_idx = 1;
+#elif defined(_XBOX1)
+unsigned char drive_mapping_idx = 2;
+#else
+unsigned char drive_mapping_idx = 0;
+#endif
+
+static const char *menu_drive_mapping_previous(void)
+{
+   if(drive_mapping_idx > 0)
+      drive_mapping_idx--;
+   return drive_mappings[drive_mapping_idx];
+}
+
+static const char *menu_drive_mapping_next(void)
+{
+   size_t arr_size = sizeof(drive_mappings) / sizeof(drive_mappings[0]);
+   if((drive_mapping_idx + 1) < arr_size)
+      drive_mapping_idx++;
+   return drive_mappings[drive_mapping_idx];
+}
+
 /*============================================================
   EVENT CALLBACKS (AND RELATED)
   ============================================================ */
@@ -1965,6 +2003,7 @@ static int select_setting(void *data, void *state)
    return 0;
 }
 
+
 int select_rom(void *data, void *state)
 {
    menu *current_menu = (menu*)data;
@@ -2000,7 +2039,7 @@ int select_rom(void *data, void *state)
    }
    else if (input & (1ULL << RMENU_DEVICE_NAV_L1))
    {
-      const char * drive_map = device_ptr->ctx_driver->drive_mapping_previous();
+      const char * drive_map = menu_drive_mapping_previous();
       if(drive_map != NULL)
       {
          filebrowser_set_root_and_ext(filebrowser, g_extern.system.valid_extensions, drive_map);
@@ -2009,7 +2048,7 @@ int select_rom(void *data, void *state)
    }
    else if (input & (1ULL << RMENU_DEVICE_NAV_R1))
    {
-      const char * drive_map = device_ptr->ctx_driver->drive_mapping_next();
+      const char * drive_map = menu_drive_mapping_next();
       if(drive_map != NULL)
       {
          filebrowser_set_root_and_ext(filebrowser, g_extern.system.valid_extensions, drive_map);

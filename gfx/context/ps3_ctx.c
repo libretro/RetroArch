@@ -51,7 +51,6 @@ static PSGLdevice* gl_device;
 static PSGLcontext* gl_context;
 #endif
 
-
 #define HARDCODE_FONT_SIZE 0.91f
 #define POSITION_X 0.09f
 #define POSITION_X_CENTER 0.5f
@@ -69,17 +68,6 @@ static PSGLcontext* gl_context;
 #define CURRENT_PATH_Y_POSITION 0.15f
 
 #define NUM_ENTRY_PER_PAGE 15
-
-#define DRIVE_MAPPING_SIZE 4
-
-const char drive_mappings[DRIVE_MAPPING_SIZE][32] = {
-   "/app_home/",
-   "/dev_hdd0/",
-   "/dev_hdd1/",
-   "/host_root/"
-};
-
-unsigned char drive_mapping_idx = 1;
 
 static int gfx_ctx_check_resolution(unsigned resolution_id)
 {
@@ -165,20 +153,6 @@ static void rmenu_ctx_ps3_screenshot_enable(bool enable)
 static void rmenu_ctx_ps3_screenshot_dump(void *data)
 {
    (void)data;
-}
-
-static const char * rmenu_ctx_ps3_drive_mapping_previous(void)
-{
-   if(drive_mapping_idx > 0)
-      drive_mapping_idx--;
-   return drive_mappings[drive_mapping_idx];
-}
-
-static const char * rmenu_ctx_ps3_drive_mapping_next(void)
-{
-   if((drive_mapping_idx + 1) < DRIVE_MAPPING_SIZE)
-      drive_mapping_idx++;
-   return drive_mappings[drive_mapping_idx];
 }
 
 static void gfx_ctx_get_available_resolutions (void)
@@ -520,8 +494,8 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_set_default_pos,
    rmenu_ctx_ps3_screenshot_enable,
    rmenu_ctx_ps3_screenshot_dump,
-   rmenu_ctx_ps3_drive_mapping_previous,
-   rmenu_ctx_ps3_drive_mapping_next,
+   NULL,
+   NULL,
 #endif
 };
 

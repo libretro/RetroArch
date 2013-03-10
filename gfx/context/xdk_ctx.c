@@ -68,18 +68,6 @@
 
 #define NUM_ENTRY_PER_PAGE 12
 
-#define DRIVE_MAPPING_SIZE 5
-
-const char drive_mappings[DRIVE_MAPPING_SIZE][32] = {
-   "C:",
-   "D:",
-   "E:",
-   "F:",
-   "G:"
-};
-
-unsigned char drive_mapping_idx = 2;
-
 int xpos, ypos;
 #ifdef _XBOX1
 // Rom list coordinates
@@ -260,20 +248,6 @@ static void gfx_ctx_xdk_menu_screenshot_dump(void *data)
       RARCH_LOG("Screenshot saved: %s.\n", filename);
       msg_queue_push(g_extern.msg_queue, "Screenshot saved.", 1, 30);
    }
-}
-
-static const char *gfx_ctx_xdk_menu_drive_mapping_previous(void)
-{
-   if(drive_mapping_idx > 0)
-      drive_mapping_idx--;
-   return drive_mappings[drive_mapping_idx];
-}
-
-static const char *gfx_ctx_xdk_menu_drive_mapping_next(void)
-{
-   if((drive_mapping_idx + 1) < DRIVE_MAPPING_SIZE)
-      drive_mapping_idx++;
-   return drive_mappings[drive_mapping_idx];
 }
 
 static void gfx_ctx_xdk_update_window_title(bool reset) { }
@@ -495,7 +469,7 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    gfx_ctx_xdk_menu_set_default_pos,
    gfx_ctx_xdk_menu_screenshot_enable,
    gfx_ctx_xdk_menu_screenshot_dump,
-   gfx_ctx_xdk_menu_drive_mapping_previous,
-   gfx_ctx_xdk_menu_drive_mapping_next
+   NULL,
+   NULL,
 #endif
 };
