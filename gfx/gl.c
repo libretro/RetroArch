@@ -2022,6 +2022,8 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 #endif
 
 #ifdef HAVE_RMENU
+static void gl_get_poke_interface(void *data, const video_poke_interface **iface);
+
 static void gl_start(void)
 {
    video_info_t video_info = {0};
@@ -2042,6 +2044,7 @@ static void gl_start(void)
    driver.video_data = gl_init(&video_info, NULL, NULL);
 
    gl_t *gl = (gl_t*)driver.video_data;
+   gl_get_poke_interface(gl, &driver.video_poke);
 
 #ifdef RARCH_CONSOLE
    // Comes too early for console - moved to gl_start
