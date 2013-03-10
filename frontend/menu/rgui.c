@@ -1344,8 +1344,13 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
          if (type == RGUI_FILE_DIRECTORY)
          {
+#ifdef _WIN32
+            char slash = '\\';
+#else
+            char slash = '/';
+#endif
             char cat_path[PATH_MAX];
-            snprintf(cat_path, sizeof(cat_path), "%s/%s", dir, path);
+            snprintf(cat_path, sizeof(cat_path), "%s%c%s", dir, slash, path);
 
             if (strcmp(path, "..") == 0)
             {
@@ -1385,7 +1390,12 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             else
 #endif
             {
-               snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s", dir, path);
+#ifdef _WIN32
+            char slash = '\\';
+#else
+            char slash = '/';
+#endif
+               snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s%c%s", dir, slash, path);
 
                strlcpy(g_extern.fullpath, rgui->path_buf, sizeof(g_extern.fullpath));
                g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
