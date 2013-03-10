@@ -924,6 +924,53 @@ static bool xdk_d3d_focus(void *data)
    return gfx_ctx_window_has_focus();
 }
 
+static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspectratio_index)
+{
+   (void)data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
+   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
+      gfx_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+   else if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
+      gfx_set_core_viewport();
+
+   g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
+   g_settings.video.force_aspect = false;
+   d3d->should_resize = true;
+}
+
+static void xdk_d3d_set_fbo_state(void *data, unsigned mode)
+{
+#ifdef HAVE_FBO
+   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)data;
+
+   switch(mode)
+   {
+      case FBO_DEINIT:
+         xdk_d3d_deinit_fbo(device_ptr);
+         break;
+      case FBO_REINIT:
+      case FBO_INIT:
+         xdk_d3d_init_fbo(device_ptr);
+         break;
+   }
+#endif
+}
+
+static void xdk_d3d_set_filtering(unsigned index, bool set_smooth) { }
+
+static const video_poke_interface_t d3d_poke_interface = {
+   xdk_d3d_set_filtering,
+   xdk_d3d_set_fbo_state,
+   xdk_d3d_set_aspect_ratio,
+};
+
+static void d3d_get_poke_interface(void *data, const video_poke_interface_t **iface)
+{
+   (void)data;
+   *iface = &d3d_poke_interface;
+}
+
 static void xdk_d3d_start(void)
 {
    video_info_t video_info = {0};
@@ -938,6 +985,7 @@ static void xdk_d3d_start(void)
    driver.video_data = xdk_d3d_init(&video_info, NULL, NULL);
 
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   d3d_get_poke_interface(d3d, &driver.video_poke);
 
 #if defined(_XBOX1)
    font_x = 0;
@@ -979,21 +1027,6 @@ static void xdk_d3d_restart(void)
    d3dr->Reset(&d3dpp);
 }
 
-static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspectratio_index)
-{
-   (void)data;
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-
-   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
-      gfx_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
-   else if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
-      gfx_set_core_viewport();
-
-   g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
-   g_settings.video.force_aspect = false;
-   d3d->should_resize = true;
-}
-
 const video_driver_t video_xdk_d3d = {
    xdk_d3d_init,
    xdk_d3d_frame,
@@ -1006,6 +1039,11 @@ const video_driver_t video_xdk_d3d = {
    xdk_d3d_start,
    xdk_d3d_stop,
    xdk_d3d_restart,
-   xdk_d3d_set_aspect_ratio,
    xdk_d3d_set_rotation,
+   NULL, /* viewport_info */
+   NULL, /* read_viewport */
+#ifdef HAVE_OVERLAY
+   NULL, /* overlay_interface */
+#endif
+   d3d_get_poke_interface,
 };

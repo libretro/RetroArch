@@ -429,26 +429,7 @@ static void gfx_ctx_xdk_destroy(void)
 
 static void gfx_ctx_xdk_input_driver(const input_driver_t **input, void **input_data) { }
 
-static void gfx_ctx_xdk_set_filtering(unsigned index, bool set_smooth) { }
 
-static void gfx_ctx_xdk_set_fbo(unsigned mode)
-{
-#ifdef HAVE_FBO
-   /* TODO: implement properly */
-   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
-
-   switch(mode)
-   {
-      case FBO_DEINIT:
-         xdk_d3d_deinit_fbo(device_ptr);
-         break;
-      case FBO_REINIT:
-      case FBO_INIT:
-         xdk_d3d_init_fbo(device_ptr);
-         break;
-   }
-#endif
-}
 
 static bool gfx_ctx_xdk_bind_api(enum gfx_ctx_api api)
 {
@@ -512,10 +493,10 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
 
    // RARCH_CONSOLE stuff.
    gfx_ctx_xdk_set_blend,
-   gfx_ctx_xdk_set_filtering,
+   NULL,
    gfx_ctx_xdk_get_available_resolutions,
    gfx_ctx_xdk_check_resolution,
-   gfx_ctx_xdk_set_fbo,
+   NULL,
 
 #if defined(HAVE_RMENU)
    gfx_ctx_xdk_menu_init,

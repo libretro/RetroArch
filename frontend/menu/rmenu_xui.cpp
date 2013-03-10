@@ -687,10 +687,13 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
             m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
 
-            if(g_settings.video.render_to_texture)
-               device_ptr->ctx_driver->set_fbo(FBO_INIT);
-            else
-               device_ptr->ctx_driver->set_fbo(FBO_DEINIT);
+            if (driver.video_poke->set_fbo_state)
+            {
+               if(g_settings.video.render_to_texture)
+                  driver.video_poke->set_fbo_state(driver.video_data, FBO_INIT);
+               else
+                  driver.video_poke->set_fbo_state(driver.video_data, FBO_DEINIT);
+            }
             break;
       }
    }
@@ -783,7 +786,13 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                   if((g_settings.video.fbo.scale_x > MIN_SCALING_FACTOR))
                   {
                      menu_settings_set(S_SCALE_FACTOR_DECREMENT);
-                     device_ptr->ctx_driver->set_fbo(FBO_REINIT);
+
+                     if (driver.video_poke->set_fbo_state)
+                     {
+                        if(g_settings.video.render_to_texture)
+                           driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
+                     }
+
                      menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
                      m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
                   }
@@ -800,10 +809,13 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
             case SETTING_SCALE_ENABLED:
                g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
                m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
-               if(g_settings.video.render_to_texture)
-                  device_ptr->ctx_driver->set_fbo(FBO_INIT);
-               else
-                  device_ptr->ctx_driver->set_fbo(FBO_DEINIT);
+               if (driver.video_poke->set_fbo_state)
+               {
+                  if(g_settings.video.render_to_texture)
+                     driver.video_poke->set_fbo_state(driver.video_data, FBO_INIT);
+                  else
+                     driver.video_poke->set_fbo_state(driver.video_data, FBO_DEINIT);
+               }
                break;
             default:
                break;
@@ -883,7 +895,9 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                   if((g_settings.video.fbo.scale_x < MAX_SCALING_FACTOR))
                   {
                      menu_settings_set(S_SCALE_FACTOR_INCREMENT);
-                     device_ptr->ctx_driver->set_fbo(FBO_REINIT);
+
+                     if (driver.video_poke->set_fbo_state)
+                        driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
                      menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
                      m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
                   }
@@ -901,10 +915,13 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
                m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
 
-               if(g_settings.video.render_to_texture)
-                  device_ptr->ctx_driver->set_fbo(FBO_INIT);
-               else
-                  device_ptr->ctx_driver->set_fbo(FBO_DEINIT);
+               if (driver.video_poke->set_fbo_state)
+               {
+                  if(g_settings.video.render_to_texture)
+                     driver.video_poke->set_fbo_state(FBO_INIT);
+                  else
+                     driver.video_poke->set_fbo_state(FBO_DEINIT);
+               }
                break;
             default:
                break;
@@ -1018,7 +1035,8 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
 
    if(aspectratio_changed)
    {
-      driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+      if (driver.video_poke->set_aspect_ratio)
+         driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
       menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
       m_quickmenulist.SetText(MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
    }
@@ -1070,7 +1088,8 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             break;
          case MENU_XUI_ITEM_ASPECT_RATIO:
             menu_settings_set_default(S_DEF_ASPECT_RATIO);
-            driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+            if (driver.video_poke->set_aspect_ratio)
+               driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
             menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
             m_quickmenulist.SetText(MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
             break;
