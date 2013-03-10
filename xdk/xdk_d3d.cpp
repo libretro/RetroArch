@@ -36,6 +36,10 @@
 
 #include "../xdk/xdk_resources.h"
 
+#ifdef HAVE_RGUI
+#include "../frontend/menu/rgui.h"
+#endif
+
 #if defined(_XBOX1)
 unsigned font_x, font_y;
 #elif defined(_XBOX360)
@@ -983,6 +987,14 @@ static void xdk_d3d_set_fbo_state(void *data, unsigned mode)
 }
 #endif
 
+#ifdef HAVE_RGUI
+static void xdk_d3d_set_rgui_texture(void *data, const void *frame)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d->rgui_data = frame;
+}
+#endif
+
 static const video_poke_interface_t d3d_poke_interface = {
    xdk_d3d_set_blend,
    xdk_d3d_set_filtering,
@@ -992,6 +1004,9 @@ static const video_poke_interface_t d3d_poke_interface = {
 #endif
    xdk_d3d_set_aspect_ratio,
    xdk_d3d_apply_state_changes,
+#ifdef HAVE_RGUI
+   xdk_d3d_set_rgui_texture,
+#endif
 };
 
 static void d3d_get_poke_interface(void *data, const video_poke_interface_t **iface)
