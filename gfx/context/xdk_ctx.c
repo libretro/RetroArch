@@ -42,12 +42,11 @@
 #define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
 #endif
 
+#if defined(_XBOX1) && defined(HAVE_RMENU)
 #define ROM_PANEL_WIDTH 510
 #define ROM_PANEL_HEIGHT 20
-
-int xpos, ypos;
-#ifdef _XBOX1
 // Rom list coordinates
+int xpos, ypos;
 unsigned m_menuMainRomListPos_x;
 unsigned m_menuMainRomListPos_y;
 #endif
