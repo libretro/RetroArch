@@ -359,16 +359,6 @@ static bool gfx_ctx_xdk_bind_api(enum gfx_ctx_api api)
         TODO: Refactor
 ============================================================ */
 
-void gfx_ctx_set_overscan(void)
-{
-   /* TODO: implement */
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   if (!d3d)
-      return;
-
-   d3d->should_resize = true;
-}
-
 int gfx_ctx_xdk_check_resolution(unsigned resolution_id)
 {
    /* TODO: implement */

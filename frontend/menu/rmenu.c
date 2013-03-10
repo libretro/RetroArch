@@ -1454,17 +1454,23 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
             menu_settings_set(S_OVERSCAN_DECREMENT);
-            gfx_ctx_set_overscan();
+
+            if (driver.video_poke->apply_state_changes)
+               driver.video_poke->apply_state_changes(driver.video_data);
          }
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_settings_set(S_OVERSCAN_INCREMENT);
-            gfx_ctx_set_overscan();
+
+            if (driver.video_poke->apply_state_changes)
+               driver.video_poke->apply_state_changes(driver.video_data);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             menu_settings_set_default(S_DEF_OVERSCAN);
-            gfx_ctx_set_overscan();
+
+            if (driver.video_poke->apply_state_changes)
+               driver.video_poke->apply_state_changes(driver.video_data);
          }
          break;
       case SETTING_REFRESH_RATE:

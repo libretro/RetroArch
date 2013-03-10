@@ -398,15 +398,6 @@ static void gfx_ctx_destroy(void)
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data) { }
 
-static void gfx_ctx_set_overscan(void)
-{
-   gl_t *gl = driver.video_data;
-   if (!gl)
-      return;
-
-   gl->should_resize = true;
-}
-
 static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
 {
    return api == GFX_CTX_OPENGL_API || GFX_CTX_OPENGL_ES_API;
