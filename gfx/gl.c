@@ -2259,6 +2259,12 @@ static void gl_set_fbo_state(void *data, unsigned mode)
 #endif
 }
 
+static unsigned gl_get_fbo_state(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+   return gl->fbo_inited ? FBO_INIT : FBO_DEINIT;
+}
+
 static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
    gl_t *gl = (gl_t*)data;
@@ -2304,6 +2310,7 @@ static const video_poke_interface_t gl_poke_interface = {
    gl_set_blend,
    gl_set_filtering,
    gl_set_fbo_state,
+   gl_get_fbo_state,
    gl_set_aspect_ratio,
    gl_apply_state_changes,
 #ifdef HAVE_RGUI

@@ -44,6 +44,7 @@ enum thread_cmd
    CMD_POKE_SET_BLEND,
    CMD_POKE_SET_FILTERING,
    CMD_POKE_SET_FBO_STATE,
+   CMD_POKE_GET_FBO_STATE,
    CMD_POKE_SET_ASPECT_RATIO,
 
    CMD_DUMMY = INT_MAX
@@ -281,6 +282,11 @@ static void thread_loop(void *data)
             thr->poke->set_fbo_state(thr->driver_data,
                   thr->cmd_data.i);
             thread_reply(thr, CMD_POKE_SET_FBO_STATE);
+            break;
+
+         case CMD_POKE_GET_FBO_STATE:
+            thr->cmd_data.i = thr->poke->get_fbo_state(thr->driver_data);
+            thread_reply(thr, CMD_POKE_GET_FBO_STATE);
             break;
 
          case CMD_POKE_SET_ASPECT_RATIO:
@@ -625,6 +631,14 @@ static void thread_set_fbo_state(void *data, unsigned state)
    thread_wait_reply(thr, CMD_POKE_SET_FBO_STATE);
 }
 
+static unsigned thread_get_fbo_state(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   thread_send_cmd(thr, CMD_POKE_GET_FBO_STATE);
+   thread_wait_reply(thr, CMD_POKE_GET_FBO_STATE);
+   return thr->cmd_data.i;
+}
+
 static void thread_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -656,6 +670,7 @@ static const video_poke_interface_t thread_poke = {
    thread_set_blend,
    thread_set_filtering,
    thread_set_fbo_state,
+   thread_get_fbo_state,
    thread_set_aspect_ratio,
    thread_apply_state_changes,
 #ifdef HAVE_RGUI

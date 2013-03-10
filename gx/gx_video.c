@@ -1041,6 +1041,7 @@ static const video_poke_interface_t gx_poke_interface = {
    NULL,
    NULL,
    NULL,
+   NULL,
    gx_set_aspect_ratio,
    gx_apply_state_changes,
    gx_set_rgui_texture,

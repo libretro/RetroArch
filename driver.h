@@ -233,6 +233,7 @@ typedef struct video_poke_interface
    void (*set_blend)(void *data, bool enable);
    void (*set_filtering)(void *data, unsigned index, bool smooth);
    void (*set_fbo_state)(void *data, unsigned state);
+   unsigned (*get_fbo_state)(void *data);
    void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
    void (*apply_state_changes)(void *data);
 
