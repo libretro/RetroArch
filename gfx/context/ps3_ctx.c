@@ -474,53 +474,6 @@ static void gfx_ctx_destroy(void)
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data) { }
 
-static void gfx_ctx_set_filtering(unsigned index, bool set_smooth)
-{
-   gl_t *gl = driver.video_data;
-
-   if (!gl)
-      return;
-
-   GLuint filter = set_smooth ? GL_LINEAR : GL_NEAREST;
-   if (index == 1)
-   {
-      gl->tex_filter = filter;
-      // Apply to all PREV textures.
-      for (unsigned i = 0; i < TEXTURES; i++)
-      {
-         glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
-      }
-   }
-   else if (index >= 2 && gl->fbo_inited)
-   {
-      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[index - 2]);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
-   }
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-}
-
-static void gfx_ctx_set_fbo(unsigned mode)
-{
-   gl_t *gl = driver.video_data;
-
-   switch(mode)
-   {
-      case FBO_DEINIT:
-         gl_deinit_fbo(gl);
-         break;
-      case FBO_REINIT:
-         gl_deinit_fbo(gl);
-         /* fall-through */
-      case FBO_INIT:
-         gl_init_fbo(gl, gl->tex_w, gl->tex_h);
-         break;
-   }
-}
-
 static void gfx_ctx_set_overscan(void)
 {
    gl_t *gl = driver.video_data;
@@ -566,10 +519,10 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    "ps3",
 #ifdef HAVE_RMENU
    gfx_ctx_set_blend,
-   gfx_ctx_set_filtering,
+   NULL,
    gfx_ctx_get_available_resolutions,
    gfx_ctx_check_resolution,
-   gfx_ctx_set_fbo,
+   NULL,
    gfx_ctx_rmenu_init,
    gfx_ctx_rmenu_frame,
    gfx_ctx_rmenu_free,

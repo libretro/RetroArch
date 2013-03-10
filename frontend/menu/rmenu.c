@@ -750,11 +750,15 @@ int select_file(void *data, void *state)
                break;
             case PRESET_CHOICE:
                strlcpy(g_extern.file_state.cgp_path, path, sizeof(g_extern.file_state.cgp_path));
-               device_ptr->ctx_driver->set_fbo(FBO_DEINIT);
+
+               if (driver.video_poke->set_fbo_state)
+                  driver.video_poke->set_fbo_state(driver.video_data, FBO_DEINIT);
 #ifdef HAVE_OPENGL
                gl_cg_reinit(path);
 #endif
-               device_ptr->ctx_driver->set_fbo(FBO_INIT);
+
+               if (driver.video_poke->set_fbo_state)
+                  driver.video_poke->set_fbo_state(driver.video_data, FBO_INIT);
                break;
 #endif
             case INPUT_PRESET_CHOICE:
@@ -1195,29 +1199,39 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
             menu_settings_set(S_ASPECT_RATIO_DECREMENT);
-            driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+
+            if (driver.video_poke->set_aspect_ratio)
+               driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
          {
             menu_settings_set(S_ASPECT_RATIO_INCREMENT);
-            driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+
+            if (driver.video_poke->set_aspect_ratio)
+               driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             menu_settings_set_default(S_DEF_ASPECT_RATIO);
-            driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+
+            if (driver.video_poke->set_aspect_ratio)
+               driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          }
          break;
       case SETTING_HW_TEXTURE_FILTER:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_settings_set(S_HW_TEXTURE_FILTER);
-            device_ptr->ctx_driver->set_filtering(1, g_settings.video.smooth);
+
+            if (driver.video_poke->set_filtering)
+               driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             menu_settings_set(S_DEF_HW_TEXTURE_FILTER);
-            device_ptr->ctx_driver->set_filtering(1, g_settings.video.smooth);
+
+            if (driver.video_poke->set_filtering)
+               driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
          }
          break;
 #ifdef HAVE_FBO
@@ -1225,12 +1239,16 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_settings_set(S_HW_TEXTURE_FILTER_2);
-            device_ptr->ctx_driver->set_filtering(2, g_settings.video.second_pass_smooth);
+
+            if (driver.video_poke->set_filtering)
+               driver.video_poke->set_filtering(driver.video_data, 2, g_settings.video.second_pass_smooth);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             menu_settings_set(S_DEF_HW_TEXTURE_FILTER_2);
-            device_ptr->ctx_driver->set_filtering(2, g_settings.video.second_pass_smooth);
+
+            if (driver.video_poke->set_filtering)
+               driver.video_poke->set_filtering(driver.video_data, 2, g_settings.video.second_pass_smooth);
          }
          break;
       case SETTING_SCALE_ENABLED:
@@ -1238,15 +1256,20 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             menu_settings_set(S_SCALE_ENABLED);
 
-            if(g_settings.video.render_to_texture)
-               device_ptr->ctx_driver->set_fbo(FBO_INIT);
-            else
-               device_ptr->ctx_driver->set_fbo(FBO_DEINIT);
+            if (driver.video_poke->set_fbo_state)
+            {
+               if (g_settings.video.render_to_texture)
+                  driver.video_poke->set_fbo_state(driver.video_data, FBO_INIT);
+               else
+                  driver.video_poke->set_fbo_state(driver.video_data, FBO_DEINIT);
+            }
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             menu_settings_set_default(S_DEF_SCALE_ENABLED);
-            device_ptr->ctx_driver->set_fbo(FBO_REINIT);
+
+            if (driver.video_poke->set_fbo_state)
+               driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
          }
          break;
       case SETTING_SCALE_FACTOR:
@@ -1259,7 +1282,9 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
                if(should_decrement)
                {
                   menu_settings_set(S_SCALE_FACTOR_DECREMENT);
-                  device_ptr->ctx_driver->set_fbo(FBO_REINIT);
+
+                  if (driver.video_poke->set_fbo_state)
+                     driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
                }
             }
          }
@@ -1271,14 +1296,18 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
                if(should_increment)
                {
                   menu_settings_set(S_SCALE_FACTOR_INCREMENT);
-                  device_ptr->ctx_driver->set_fbo(FBO_REINIT);
+
+                  if (driver.video_poke->set_fbo_state)
+                     driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
                }
             }
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             menu_settings_set_default(S_DEF_SCALE_FACTOR);
-            device_ptr->ctx_driver->set_fbo(FBO_REINIT);
+
+            if (driver.video_poke->set_fbo_state)
+               driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
          }
          break;
 #endif
@@ -2027,7 +2056,9 @@ int ingame_menu_resize(void *data, void *state)
    device_ptr->ctx_driver->rmenu_set_default_pos(&default_pos);
 
    g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
-   driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+   
+   if (driver.video_poke->set_aspect_ratio)
+      driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
    if(input & (1ULL << RMENU_DEVICE_NAV_LEFT_ANALOG_L))
    {
