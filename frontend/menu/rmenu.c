@@ -193,6 +193,10 @@ static const char *menu_drive_mapping_next(void)
 
 #define CURRENT_PATH_Y_POSITION (m_menuMainRomListPos_y - ((POSITION_Y_INCREMENT/2)))
 #define CURRENT_PATH_FONT_SIZE 21
+
+#define FONT_SIZE 21 
+
+#define NUM_ENTRY_PER_PAGE 12
 #elif defined(__CELLOS_LV2__)
 #define HARDCODE_FONT_SIZE 0.91f
 #define POSITION_X 0.09f

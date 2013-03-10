@@ -45,10 +45,6 @@
 #define ROM_PANEL_WIDTH 510
 #define ROM_PANEL_HEIGHT 20
 
-#define FONT_SIZE 21 
-
-#define NUM_ENTRY_PER_PAGE 12
-
 int xpos, ypos;
 #ifdef _XBOX1
 // Rom list coordinates
@@ -90,7 +86,7 @@ static void gfx_ctx_xdk_set_resize(unsigned width, unsigned height) { }
 
 static bool gfx_ctx_xdk_menu_init(void)
 {
-#ifdef _XBOX1
+#if defined(_XBOX1) && defined(HAVE_RMENU)
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
 
    int width  = d3d->win_width;
@@ -134,7 +130,7 @@ static void gfx_ctx_xdk_menu_frame(void* data)
 
 static void gfx_ctx_xdk_menu_free(void)
 {
-#ifdef _XBOX1
+#if defined(_XBOX1) && defined(HAVE_RMENU)
    texture_image_free(&g_extern.console.menu_texture);
    texture_image_free(&g_extern.console.menu_panel);
 #endif
@@ -157,7 +153,7 @@ static bool gfx_ctx_xdk_window_has_focus(void)
 
 static void gfx_ctx_xdk_menu_draw_bg(rarch_position_t *position)
 {
-#ifdef _XBOX1
+#if defined(_XBOX1) && defined(HAVE_RMENU)
    g_extern.console.menu_texture.x = 0;
    g_extern.console.menu_texture.y = 0;
    texture_image_render(&g_extern.console.menu_texture);
@@ -166,7 +162,7 @@ static void gfx_ctx_xdk_menu_draw_bg(rarch_position_t *position)
 
 static void gfx_ctx_xdk_menu_draw_panel(rarch_position_t *position)
 {
-#ifdef _XBOX1
+#if defined(_XBOX1) && defined(HAVE_RMENU)
    g_extern.console.menu_panel.x = position->x;
    g_extern.console.menu_panel.y = position->y;
    g_extern.console.menu_panel.width = ROM_PANEL_WIDTH;
