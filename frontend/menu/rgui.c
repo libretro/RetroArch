@@ -1594,10 +1594,6 @@ RMENU API
 
 void menu_init(void)
 {
-   DECLARE_DEVICE_PTR();
-
-   device_ptr->menu_data = (uint32_t *) menu_framebuf;
-
    rgui = rgui_init("",
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
          NULL, bitmap_bin, folder_cb, NULL);
@@ -1767,7 +1763,9 @@ bool menu_iterate(void)
    input_entry_ret = rgui_iterate(rgui, action);
 
    // draw last frame for loading messages
+   driver.video_poke->set_rgui_texture(driver.video_data, menu_framebuf);
    rarch_render_cached_frame();
+   driver.video_poke->set_rgui_texture(driver.video_data, NULL);
 
    input_process_ret = menu_input_process(NULL, NULL);
 

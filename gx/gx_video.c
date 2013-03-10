@@ -920,7 +920,7 @@ static bool gx_frame(void *data, const void *frame,
       DCFlushRange(g_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
    }
 
-   if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
+   if (gx->menu_data)
    {
       convert_texture16(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2);
       DCFlushRange(menu_tex.data, RGUI_WIDTH * RGUI_HEIGHT * 2);
@@ -1009,8 +1009,7 @@ static void gx_free(void *data)
 
 static void gx_set_rotation(void *data, unsigned orientation)
 {
-   (void)data;
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
+   gx_video_t *gx = (gx_video_t*)data;
    g_orientation = orientation;
    gx->should_resize = true;
 }
@@ -1026,11 +1025,18 @@ static bool gx_set_shader(void *data, enum rarch_shader_type type, const char *p
    return false;
 }
 
+static void gx_set_rgui_texture(void *data, const void *frame)
+{
+   gx_video_t *gx = (gx_video_t*)data;
+   gx->menu_data = (uint32_t*)frame;
+}
+
 static const video_poke_interface_t gx_poke_interface = {
    NULL,
    NULL,
    NULL,
    gx_set_aspect_ratio,
+   gx_set_rgui_texture,
 };
 
 static void gx_get_poke_interface(void *data, const video_poke_interface_t **iface)

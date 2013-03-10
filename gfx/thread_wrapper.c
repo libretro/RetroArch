@@ -68,6 +68,10 @@ typedef struct thread_video
    const input_driver_t **input;
    void **input_data;
 
+#ifdef HAVE_RGUI
+   const void *rgui_texture;
+#endif
+
    bool alive;
    bool focus;
 
@@ -292,6 +296,11 @@ static void thread_loop(void *data)
       if (updated)
       {
          slock_lock(thr->frame.lock);
+
+#ifdef HAVE_RGUI
+         thr->poke->set_rgui_texture(thr->driver_data, thr->rgui_texture);
+#endif
+
          bool ret = thr->driver->frame(thr->driver_data,
                thr->frame.buffer, thr->frame.width, thr->frame.height,
                thr->frame.pitch, *thr->frame.msg ? thr->frame.msg : NULL);
@@ -397,8 +406,7 @@ static bool thread_frame(void *data, const void *frame_,
       // we'll want to block to avoid stepping menu
       // at crazy speeds.
 #ifdef HAVE_RGUI
-      uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
-      if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
+      if (thr->rgui_texture)
       {
          while (thr->frame.updated)
             scond_wait(thr->cond_cmd, thr->lock);
@@ -619,11 +627,25 @@ static void thread_set_aspect_ratio(void *data, unsigned aspectratio_index)
    thread_wait_reply(thr, CMD_POKE_SET_ASPECT_RATIO);
 }
 
+#ifdef HAVE_RGUI
+static void thread_set_rgui_texture(void *data, const void *frame)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   slock_lock(thr->frame.lock);
+   thr->rgui_texture = frame;
+   slock_unlock(thr->frame.lock);
+}
+#endif
+
 static const video_poke_interface_t thread_poke = {
    thread_set_blend,
    thread_set_filtering,
    thread_set_fbo_state,
    thread_set_aspect_ratio,
+#ifdef HAVE_RGUI
+   thread_set_rgui_texture,
+#endif
 };
 
 static void thread_get_poke_interface(void *data, const video_poke_interface_t **iface)

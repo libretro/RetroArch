@@ -1270,7 +1270,7 @@ static inline void gl_draw_rgui(void *data)
    // RGUI is always packed so pitch = width * bpp
    glTexImage2D(GL_TEXTURE_2D,
          0, GL_RGBA, RGUI_WIDTH, RGUI_HEIGHT, 0, GL_RGBA,
-         GL_UNSIGNED_SHORT_4_4_4_4, gl->menu_data);
+         GL_UNSIGNED_SHORT_4_4_4_4, gl->rgui_data);
 
    gl_shader_use_func(gl, 0);
    gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp_no_rot);
@@ -1356,7 +1356,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_set_prev_texture(gl, &tex_info);
 
 #ifdef HAVE_RGUI
-   if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
+   if (gl->rgui_data)
       gl_draw_rgui(gl);
 #endif
 
@@ -2286,11 +2286,22 @@ static void gl_set_blend(void *data, bool enable)
       glDisable(GL_BLEND);
 }
 
+#ifdef HAVE_RGUI
+static void gl_set_rgui_texture(void *data, const void *frame)
+{
+   gl_t *gl = (gl_t*)data;
+   gl->rgui_data = frame;
+}
+#endif
+
 static const video_poke_interface_t gl_poke_interface = {
    gl_set_blend,
    gl_set_filtering,
    gl_set_fbo_state,
    gl_set_aspect_ratio,
+#ifdef HAVE_RGUI
+   gl_set_rgui_texture,
+#endif
 };
 
 static void gl_get_poke_interface(void *data, const video_poke_interface_t **iface)

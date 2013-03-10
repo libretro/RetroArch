@@ -304,7 +304,7 @@ typedef struct gl
 
 #ifdef HAVE_RGUI
    GLuint rgui_texture;
-   uint32_t *menu_data;
+   const void *rgui_data;
 #endif
 
 } gl_t;

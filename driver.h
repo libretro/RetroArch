@@ -234,12 +234,16 @@ typedef struct video_poke_interface
    void (*set_filtering)(void *data, unsigned index, bool smooth);
    void (*set_fbo_state)(void *data, unsigned state);
    void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
+
+   // Set to NULL if RGUI texture is not supposed to be rendered.
+   void (*set_rgui_texture)(void *data, const void *frame);
 } video_poke_interface_t;
 
 typedef struct video_driver
 {
    void *(*init)(const video_info_t *video, const input_driver_t **input, void **input_data); 
-   // Should the video driver act as an input driver as well? :) The video init might preinitialize an input driver to override the settings in case the video driver relies on input driver for event handling, e.g.
+   // Should the video driver act as an input driver as well? :)
+   // The video init might preinitialize an input driver to override the settings in case the video driver relies on input driver for event handling, e.g.
    bool (*frame)(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg); // msg is for showing a message on the screen along with the video frame.
    void (*set_nonblock_state)(void *data, bool toggle); // Should we care about syncing to vblank? Fast forwarding.
    // Is the window still active?
