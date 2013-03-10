@@ -2235,6 +2235,7 @@ static void gl_set_filtering(void *data, unsigned index, bool smooth)
 
 static void gl_set_fbo_state(void *data, unsigned mode)
 {
+#ifdef HAVE_FBO
    gl_t *gl = (gl_t*)data;
 
    switch (mode)
@@ -2249,6 +2250,10 @@ static void gl_set_fbo_state(void *data, unsigned mode)
          gl_init_fbo(gl, gl->tex_w, gl->tex_h);
          break;
    }
+#else
+   (void)data;
+   (void)mode;
+#endif
 }
 
 static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
