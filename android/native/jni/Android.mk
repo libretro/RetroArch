@@ -1,4 +1,4 @@
-RARCH_VERSION		= "0.9.8.3"
+RARCH_VERSION		= "0.9.8.4"
 LOCAL_PATH := $(call my-dir)
 PERF_TEST := 0
 HAVE_NEON := 1
