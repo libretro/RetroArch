@@ -1023,6 +1023,18 @@ static bool gx_set_shader(void *data, enum rarch_shader_type type, const char *p
    return false;
 }
 
+static const video_poke_interface_t gx_poke_interface = {
+   NULL,
+   NULL,
+   gx_set_aspect_ratio,
+};
+
+static void gx_get_poke_interface(void *data, const video_poke_interface_t **iface)
+{
+   (void)data;
+   *iface = &gx_poke_interface;
+}
+
 const video_driver_t video_gx = {
    .init = gx_init,
    .frame = gx_frame,
@@ -1035,5 +1047,5 @@ const video_driver_t video_gx = {
    .start = gx_start,
    .stop = gx_stop,
    .restart = gx_restart,
-   .set_aspect_ratio = gx_set_aspect_ratio
+   .poke_interface = gx_get_poke_interface,
 };

@@ -272,7 +272,7 @@ begin_loop:
    if(g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
    {
       driver.input->poll(NULL);
-      driver.video->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+      driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
 
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
          audio_start_func();
