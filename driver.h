@@ -337,6 +337,9 @@ typedef struct driver
 
    // Interface for "poking".
    const video_poke_interface_t *video_poke;
+
+   // last message given to the video driver
+   const char *current_msg;
 } driver_t;
 
 void init_drivers(void);

@@ -37,14 +37,6 @@
 #define TERM_WIDTH (((RGUI_WIDTH - TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
 #define TERM_HEIGHT (((RGUI_HEIGHT - TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
 
-#if defined(HAVE_OPENGL)
-#define DECLARE_DEVICE_PTR() gl_t *device_ptr = (gl_t*)driver.video_data
-#elif defined(GEKKO)
-#define DECLARE_DEVICE_PTR() gx_video_t *device_ptr = (gx_video_t*)driver.video_data
-#elif defined(HAVE_D3D8) || defined(HAVE_D3D9)
-#define DECLARE_DEVICE_PTR() xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data
-#endif
-
 #ifdef GEKKO
 enum
 {
@@ -586,7 +578,6 @@ static void render_text(rgui_handle_t *rgui)
 
 #ifdef GEKKO
    const char *message_queue;
-   DECLARE_DEVICE_PTR();
 
    if (rgui->msg_force)
    {
@@ -595,7 +586,7 @@ static void render_text(rgui_handle_t *rgui)
    }
    else
    {
-      message_queue = device_ptr->msg;
+      message_queue = driver.current_msg;
    }
    render_messagebox(rgui, message_queue);
 #endif
@@ -1042,9 +1033,10 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 
 static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
-#ifdef GEKKO
-   DECLARE_DEVICE_PTR();
-#endif
+   rarch_viewport_t vp;
+   driver.video->viewport_info(driver.video_data, &vp);
+   unsigned win_width = vp.full_width;
+   unsigned win_height = vp.full_height;
    unsigned menu_type = 0;
    rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
 
@@ -1133,8 +1125,8 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else
          {
-            g_extern.console.screen.viewports.custom_vp.width = device_ptr->win_width - g_extern.console.screen.viewports.custom_vp.x;
-            g_extern.console.screen.viewports.custom_vp.height = device_ptr->win_height - g_extern.console.screen.viewports.custom_vp.y;
+            g_extern.console.screen.viewports.custom_vp.width = win_width - g_extern.console.screen.viewports.custom_vp.x;
+            g_extern.console.screen.viewports.custom_vp.height = win_height - g_extern.console.screen.viewports.custom_vp.y;
          }
 #endif
          if (driver.video_poke->apply_state_changes)

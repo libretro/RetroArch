@@ -27,7 +27,6 @@ typedef struct gx_video
    uint32_t *menu_data; // FIXME: Should be const uint16_t*.
    rarch_viewport_t vp;
    unsigned scale;
-   char msg[128];
 } gx_video_t;
 
 void gx_set_video_mode(unsigned fbWidth, unsigned lines);

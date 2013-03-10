@@ -976,10 +976,6 @@ static bool gx_frame(void *data, const void *frame,
       gx_blit_line(x, y, msg);
       clear_efb = GX_TRUE;
    }
-   else if (msg)
-      snprintf(gx->msg, sizeof(gx->msg), "%s", msg);
-   else
-      gx->msg[0] = 0;
 
    GX_CopyDisp(g_framebuf[g_current_framebuf], clear_efb);
    GX_Flush();

@@ -281,6 +281,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 #endif
 
    const char *msg = msg_queue_pull(g_extern.msg_queue);
+   driver.current_msg = msg;
 
 #ifdef HAVE_DYLIB
    if (g_extern.filter.active && data)
