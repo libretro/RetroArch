@@ -830,6 +830,7 @@ void init_video_input(void)
       rarch_fail(1, "init_video_input()");
    }
 
+   driver.video_poke = NULL;
    if (driver.video->poke_interface)
       driver.video->poke_interface(driver.video_data, &driver.video_poke);
 
