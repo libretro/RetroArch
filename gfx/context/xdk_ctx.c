@@ -480,7 +480,7 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    "xdk",
 
    // RARCH_CONSOLE stuff.
-   gfx_ctx_xdk_set_blend,
+   NULL,
    NULL,
    gfx_ctx_xdk_get_available_resolutions,
    gfx_ctx_xdk_check_resolution,
