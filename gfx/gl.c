@@ -2309,8 +2309,10 @@ static void gl_apply_state_changes(void *data)
 static const video_poke_interface_t gl_poke_interface = {
    gl_set_blend,
    gl_set_filtering,
+#ifdef HAVE_FBO
    gl_set_fbo_state,
    gl_get_fbo_state,
+#endif
    gl_set_aspect_ratio,
    gl_apply_state_changes,
 #ifdef HAVE_RGUI
