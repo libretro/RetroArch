@@ -646,6 +646,7 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
          else if (action == RGUI_ACTION_RIGHT)
             menu_settings_set(S_SAVESTATE_INCREMENT);
          break;
+#ifdef HAVE_SCREENSHOTS
       case RGUI_SETTINGS_SCREENSHOT:
          if (action == RGUI_ACTION_OK)
          {
@@ -669,6 +670,7 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
             msg_queue_push(g_extern.msg_queue, r ? "Screenshot saved" : "Screenshot failed to save", 1, 90);
          }
          break;
+#endif
 #ifndef HAVE_DYNAMIC
       case RGUI_SETTINGS_RESTART_GAME:
          if (action == RGUI_ACTION_OK)
@@ -967,7 +969,9 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    {
       RGUI_MENU_ITEM("Save State", RGUI_SETTINGS_SAVESTATE_SAVE);
       RGUI_MENU_ITEM("Load State", RGUI_SETTINGS_SAVESTATE_LOAD);
+#ifdef HAVE_SCREENSHOTS
       RGUI_MENU_ITEM("Take Screenshot", RGUI_SETTINGS_SCREENSHOT);
+#endif
       RGUI_MENU_ITEM("Restart Game", RGUI_SETTINGS_RESTART_GAME);
    }
    RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
