@@ -1463,16 +1463,16 @@ static const struct retro_keybind _menu_nav_binds[] = {
    { 0, 0, NULL, 0, GX_WIIMOTE_HOME, 0 },
    { 0, 0, NULL, 0, GX_QUIT_KEY, 0 },
 #else
-   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_UP), 0 },
-   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN), 0 },
-   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT), 0 },
-   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT), 0 },
-   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_A), 0 },
-   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_B), 0 },
-   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_START), 0 },
-   { 0, 0, NULL, 0, (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT), 0 },
-   { 0, 0, NULL, 0, (1ULL << RARCH_MENU_TOGGLE), 0 },
-   { 0, 0, NULL, 0, (1ULL << RARCH_QUIT_KEY), 0 },
+   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_UP), 0 },
+   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN), 0 },
+   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT), 0 },
+   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT), 0 },
+   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_A), 0 },
+   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_B), 0 },
+   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_START), 0 },
+   { 0, 0, NULL, (enum retro_key)0, (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT), 0 },
+   { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_MENU_TOGGLE), 0 },
+   { 0, 0, NULL, (enum retro_key)0, (1ULL << RARCH_QUIT_KEY), 0 },
 #endif
 };
 
@@ -1506,13 +1506,20 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
 
    if (!*directory)
    {
-#ifdef GEKKO
+#if defined(GEKKO)
 #ifdef HW_RVL
       file_cb(ctx, "sd:", RGUI_FILE_DEVICE, 0);
       file_cb(ctx, "usb:", RGUI_FILE_DEVICE, 0);
 #endif
       file_cb(ctx, "carda:", RGUI_FILE_DEVICE, 0);
       file_cb(ctx, "cardb:", RGUI_FILE_DEVICE, 0);
+      return true;
+#elif defined(_XBOX1)
+      file_cb(ctx, "C:", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "D:", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "E:", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "F:", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "G:", RGUI_FILE_DEVICE, 0);
       return true;
 #endif
    }
