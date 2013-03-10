@@ -206,8 +206,8 @@ void gx_set_video_mode(unsigned fbWidth, unsigned lines)
 
    RARCH_LOG("GX Resolution: %dx%d (%s)\n", gx_mode.fbWidth, gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE ? "interlaced" : "progressive");
 
-   gx->win_width = gx_mode.fbWidth;
-   gx->win_height = gx_mode.xfbHeight;
+   gx->vp.full_width = gx_mode.fbWidth;
+   gx->vp.full_height = gx_mode.xfbHeight;
    gx->double_strike = (modetype == VI_NON_INTERLACE);
    gx->should_resize = true;
 
@@ -474,8 +474,8 @@ static void gx_start(void)
 
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    gx_get_poke_interface(gx, &driver.video_poke);
-   gx->win_width = gx_mode.fbWidth;
-   gx->win_height = gx_mode.xfbHeight;
+   gx->vp.full_width = gx_mode.fbWidth;
+   gx->vp.full_height = gx_mode.xfbHeight;
    gx->should_resize = true;
    gx_old_width = gx_old_height = 0;
 }
@@ -688,7 +688,7 @@ static void gx_resize(void *data)
    gx_video_t *gx = (gx_video_t*)data;
 
    int x = 0, y = 0;
-   unsigned width = gx->win_width, height = gx->win_height;
+   unsigned width = gx->vp.full_width, height = gx->vp.full_height;
    uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
 
    (void)lifecycle_mode_state;
@@ -719,8 +719,8 @@ static void gx_resize(void *data)
          {
             g_extern.console.screen.viewports.custom_vp.x = 0;
             g_extern.console.screen.viewports.custom_vp.y = 0;
-            g_extern.console.screen.viewports.custom_vp.width = gx->win_width;
-            g_extern.console.screen.viewports.custom_vp.height = gx->win_height;
+            g_extern.console.screen.viewports.custom_vp.width = gx->vp.full_width;
+            g_extern.console.screen.viewports.custom_vp.height = gx->vp.full_height;
          }
 
          x      = g_extern.console.screen.viewports.custom_vp.x;
@@ -750,6 +750,11 @@ static void gx_resize(void *data)
          }
       }
    }
+
+   gx->vp.x      = x;
+   gx->vp.y      = y;
+   gx->vp.width  = width;
+   gx->vp.height = height;
 
    GX_SetViewport(x, y, width, height, 0, 1);
 
@@ -967,7 +972,7 @@ static bool gx_frame(void *data, const void *frame,
    if (msg && !(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW)))
    {
       unsigned x = 7 * (gx->double_strike ? 1 : 2);
-      unsigned y = gx->win_height - (35 * (gx->double_strike ? 1 : 2));
+      unsigned y = gx->vp.full_height - (35 * (gx->double_strike ? 1 : 2));
       gx_blit_line(x, y, msg);
       clear_efb = GX_TRUE;
    }
@@ -1037,6 +1042,12 @@ static void gx_apply_state_changes(void *data)
    gx->should_resize = true;
 }
 
+static void gx_viewport_info(void *data, struct rarch_viewport *vp)
+{
+   gx_video_t *gx = (gx_video_t*)data;
+   *vp = gx->vp;
+}
+
 static const video_poke_interface_t gx_poke_interface = {
    NULL,
    NULL,
@@ -1060,6 +1071,7 @@ const video_driver_t video_gx = {
    .free = gx_free,
    .ident = "gx",
    .set_rotation = gx_set_rotation,
+   .viewport_info = gx_viewport_info,
    .start = gx_start,
    .stop = gx_stop,
    .restart = gx_restart,
