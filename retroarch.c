@@ -2848,6 +2848,27 @@ error:
    return 1;
 }
 
+static inline bool check_enter_rgui(void)
+{
+   static bool old_rmenu_toggle = true;
+   bool rmenu_toggle = input_key_pressed_func(RARCH_MENU_TOGGLE);
+   if (rmenu_toggle && !old_rmenu_toggle)
+   {
+      if (input_key_pressed_func(RARCH_MENU_QUICKMENU_TOGGLE))
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
+
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+      g_extern.delay_timer[0] = g_extern.frame_count + 30; // FIXME: Purge. Should do something similar in RGUI as well.
+      old_rmenu_toggle = true;
+      return true;
+   }
+   else
+   {
+      old_rmenu_toggle = rmenu_toggle;
+      return false;
+   }
+}
+
 bool rarch_main_iterate(void)
 {
 #ifdef HAVE_DYLIB
@@ -2870,15 +2891,8 @@ bool rarch_main_iterate(void)
       return false;
    }
 
-   if (input_key_pressed_func(RARCH_MENU_TOGGLE) && g_extern.frame_count >= g_extern.delay_timer[0])
-   {
-      if (input_key_pressed_func(RARCH_MENU_QUICKMENU_TOGGLE))
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
-
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-      g_extern.delay_timer[0] = g_extern.frame_count + 30;
-      return false;
-   }
+   if (check_enter_rgui())
+      return false; // Enter menu, don't exit.
 
 #ifdef HAVE_COMMAND
    if (driver.command)
