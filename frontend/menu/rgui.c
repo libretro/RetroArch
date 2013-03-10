@@ -405,7 +405,7 @@ static void render_text(rgui_handle_t *rgui)
 
    render_background(rgui);
 
-   char title[TERM_WIDTH];
+   char title[256];
    const char *dir = 0;
    rgui_file_type_t menu_type = 0;
    rgui_list_back(rgui->path_stack, &dir, &menu_type, NULL);
@@ -433,8 +433,8 @@ static void render_text(rgui_handle_t *rgui)
       const char *path = 0;
       rgui_file_type_t type = 0;
       rgui_list_at(rgui->folder_buf, i, &path, &type, NULL);
-      char message[TERM_WIDTH + 1];
-      char type_str[TERM_WIDTH + 1];
+      char message[256];
+      char type_str[256];
       int w = rgui_is_controller_menu(menu_type) ? 26 : 19;
 #ifdef RARCH_CONSOLE
       unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
@@ -561,7 +561,7 @@ static void render_text(rgui_handle_t *rgui)
       }
 
       const char *entry_title;
-      char tmp[TERM_WIDTH];
+      char tmp[256];
       size_t path_len = strlen(path);
       // trim long filenames
       if ((type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY) && path_len > TERM_WIDTH - (w + 1 + 2))

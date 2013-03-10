@@ -404,12 +404,9 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    gfx_ctx_write_egl_image,
    NULL,
    "xdk",
-
-   // RARCH_CONSOLE stuff.
+#if defined(HAVE_RMENU)
    gfx_ctx_xdk_get_available_resolutions,
    gfx_ctx_xdk_check_resolution,
-
-#if defined(HAVE_RMENU)
    gfx_ctx_xdk_menu_init,
    gfx_ctx_xdk_menu_frame,
    gfx_ctx_xdk_menu_free,
