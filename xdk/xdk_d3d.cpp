@@ -939,24 +939,6 @@ static void xdk_d3d_set_aspect_ratio(void *data, unsigned aspectratio_index)
    d3d->should_resize = true;
 }
 
-static void xdk_d3d_set_fbo_state(void *data, unsigned mode)
-{
-#ifdef HAVE_FBO
-   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)data;
-
-   switch(mode)
-   {
-      case FBO_DEINIT:
-         xdk_d3d_deinit_fbo(device_ptr);
-         break;
-      case FBO_REINIT:
-      case FBO_INIT:
-         xdk_d3d_init_fbo(device_ptr);
-         break;
-   }
-#endif
-}
-
 static void xdk_d3d_set_filtering(void *data, unsigned index, bool set_smooth) { }
 
 static void xdk_d3d_set_blend(void *data, bool enable)
@@ -977,10 +959,35 @@ static void xdk_d3d_apply_state_changes(void *data)
    d3d->should_resize = true;
 }
 
+#ifdef HAVE_FBO
+static unsigned xdk_d3d_get_fbo_state(void *data)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   return d3d->fbo_inited = FB_INIT ? FBO_DEINIT;
+}
+
+static void xdk_d3d_set_fbo_state(void *data, unsigned mode)
+{
+   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)data;
+
+   switch(mode)
+   {
+      case FBO_DEINIT:
+         xdk_d3d_deinit_fbo(device_ptr);
+         break;
+      case FBO_REINIT:
+      case FBO_INIT:
+         xdk_d3d_init_fbo(device_ptr);
+         break;
+   }
+}
+#endif
+
 static const video_poke_interface_t d3d_poke_interface = {
    xdk_d3d_set_blend,
    xdk_d3d_set_filtering,
 #ifdef HAVE_FBO
+   xdk_d3d_get_fbo_state,
    xdk_d3d_set_fbo_state,
 #endif
    xdk_d3d_set_aspect_ratio,
