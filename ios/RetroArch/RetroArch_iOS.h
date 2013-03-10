@@ -21,6 +21,7 @@
 
 + (RetroArch_iOS*)get;
 - (void)runGame:(NSString*)path;
+- (void)refreshConfig;
 
 - (IBAction)showSettings;
 

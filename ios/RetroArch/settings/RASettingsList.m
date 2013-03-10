@@ -170,6 +170,7 @@ static RASettingData* custom_action(NSString* action)
    RAConfig* config = [[RAConfig alloc] initWithPath:[RetroArch_iOS get].moduleInfo.configPath];
    [self writeSettings:nil toConfig:config];
    [config writeToFile:[RetroArch_iOS get].moduleInfo.configPath];
+   [[RetroArch_iOS get] refreshConfig];
 }
 
 - (void)handleCustomAction:(NSString*)action

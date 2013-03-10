@@ -159,6 +159,20 @@
    }
 }
 
+- (void)refreshConfig
+{
+   // Need to clear these otherwise stale versions may be used!
+   memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
+   memset(g_settings.video.bsnes_shader_path, 0, sizeof(g_settings.video.bsnes_shader_path));
+
+   if (_isRunning)
+   {
+      uninit_drivers();
+      config_load();
+      init_drivers();
+   }
+}
+
 - (void)iterate
 {
    if (_isPaused || !_isRunning || !_isGameTop)
@@ -236,7 +250,7 @@
    [self pushViewController:[RASettingsList new] animated:YES];
 }
 
-#pragma MARK Bluetooth Helpers
+#pragma mark Bluetooth Helpers
 - (UIBarButtonItem*)createBluetoothButton
 {
 #ifdef WIIMOTE
