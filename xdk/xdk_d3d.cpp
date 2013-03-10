@@ -957,7 +957,7 @@ static void xdk_d3d_set_fbo_state(void *data, unsigned mode)
 #endif
 }
 
-static void xdk_d3d_set_filtering(unsigned index, bool set_smooth) { }
+static void xdk_d3d_set_filtering(void *data, unsigned index, bool set_smooth) { }
 
 static const video_poke_interface_t d3d_poke_interface = {
    xdk_d3d_set_filtering,
