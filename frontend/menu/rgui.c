@@ -1528,11 +1528,11 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       file_cb(ctx, "cardb:/", RGUI_FILE_DEVICE, 0);
       return true;
 #elif defined(_XBOX1)
-      file_cb(ctx, "C:\\", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "D:\\", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "E:\\", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "F:\\", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "G:\\", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "C:", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "D:", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "E:", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "F:", RGUI_FILE_DEVICE, 0);
+      file_cb(ctx, "G:", RGUI_FILE_DEVICE, 0);
       return true;
 #endif
    }
@@ -1549,10 +1549,15 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
 
    const char *exts = core_chooser ? EXT_EXECUTABLES : g_extern.system.valid_extensions;
    char dir[PATH_MAX];
+#ifdef _WIN32
+   char slash = '\\';
+#else
+   char slash = '/';
+#endif
    if (*directory)
       strlcpy(dir, directory, sizeof(dir));
    else
-      strlcpy(dir, "/", sizeof(dir));
+      snprintf(dir, sizeof(dir), "%s%c", dir, slash);
 
    struct string_list *list = dir_list_new(dir, exts, true);
    if (!list)
