@@ -41,6 +41,11 @@ enum thread_cmd
    CMD_OVERLAY_SET_ALPHA,
 #endif
 
+   CMD_POKE_SET_BLEND,
+   CMD_POKE_SET_FILTERING,
+   CMD_POKE_SET_FBO_STATE,
+   CMD_POKE_SET_ASPECT_RATIO,
+
    CMD_DUMMY = INT_MAX
 };
 
@@ -53,9 +58,12 @@ typedef struct thread_video
 
    video_info_t info;
    const video_driver_t *driver;
+
 #ifdef HAVE_OVERLAY
    const video_overlay_interface_t *overlay;
 #endif
+   const video_poke_interface_t *poke;
+
    void *driver_data;
    const input_driver_t **input;
    void **input_data;
@@ -91,6 +99,12 @@ typedef struct thread_video
          unsigned width;
          unsigned height;
       } image;
+
+      struct
+      {
+         unsigned index;
+         bool smooth;
+      } filtering;
    } cmd_data;
 
    struct rarch_viewport vp;
@@ -246,6 +260,30 @@ static void thread_loop(void *data)
             break;
 #endif
 
+         case CMD_POKE_SET_BLEND:
+            thr->poke->set_blend(thr->driver_data, thr->cmd_data.b);
+            thread_reply(thr, CMD_POKE_SET_BLEND);
+            break;
+
+         case CMD_POKE_SET_FILTERING:
+            thr->poke->set_filtering(thr->driver_data,
+                  thr->cmd_data.filtering.index,
+                  thr->cmd_data.filtering.smooth);
+            thread_reply(thr, CMD_POKE_SET_FILTERING);
+            break;
+
+         case CMD_POKE_SET_FBO_STATE:
+            thr->poke->set_fbo_state(thr->driver_data,
+                  thr->cmd_data.i);
+            thread_reply(thr, CMD_POKE_SET_FBO_STATE);
+            break;
+
+         case CMD_POKE_SET_ASPECT_RATIO:
+            thr->poke->set_aspect_ratio(thr->driver_data,
+                  thr->cmd_data.i);
+            thread_reply(thr, CMD_POKE_SET_ASPECT_RATIO);
+            break;
+
          default:
             thread_reply(thr, thr->send_cmd);
             break;
@@ -270,6 +308,7 @@ static void thread_loop(void *data)
          thr->focus = focus;
          thr->frame.updated = false;
          thr->vp = vp;
+         scond_signal(thr->cond_cmd);
          slock_unlock(thr->lock);
       }
    }
@@ -353,6 +392,18 @@ static bool thread_frame(void *data, const void *frame_,
 
       scond_signal(thr->cond_thread);
       slock_unlock(thr->frame.lock);
+
+      // If we are going to render menu,
+      // we'll want to block to avoid stepping menu
+      // at crazy speeds.
+#ifdef HAVE_RGUI
+      uint64_t lifecycle_mode_state = g_extern.lifecycle_mode_state;
+      if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
+      {
+         while (thr->frame.updated)
+            scond_wait(thr->cond_cmd, thr->lock);
+      }
+#endif
    }
    slock_unlock(thr->lock);
 
@@ -535,15 +586,58 @@ static void thread_get_overlay_interface(void *data, const video_overlay_interfa
 }
 #endif
 
+static void thread_set_blend(void *data, bool enable)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   thr->cmd_data.b = enable;
+   thread_send_cmd(thr, CMD_POKE_SET_BLEND);
+   thread_wait_reply(thr, CMD_POKE_SET_BLEND);
+}
+
+static void thread_set_filtering(void *data, unsigned index, bool smooth)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   thr->cmd_data.filtering.index = index;
+   thr->cmd_data.filtering.smooth = smooth;
+   thread_send_cmd(thr, CMD_POKE_SET_FILTERING);
+   thread_wait_reply(thr, CMD_POKE_SET_FILTERING);
+}
+
+static void thread_set_fbo_state(void *data, unsigned state)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   thr->cmd_data.i = state;
+   thread_send_cmd(thr, CMD_POKE_SET_FBO_STATE);
+   thread_wait_reply(thr, CMD_POKE_SET_FBO_STATE);
+}
+
+static void thread_set_aspect_ratio(void *data, unsigned aspectratio_index)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   thr->cmd_data.i = aspectratio_index;
+   thread_send_cmd(thr, CMD_POKE_SET_ASPECT_RATIO);
+   thread_wait_reply(thr, CMD_POKE_SET_ASPECT_RATIO);
+}
+
+static const video_poke_interface_t thread_poke = {
+   thread_set_blend,
+   thread_set_filtering,
+   thread_set_fbo_state,
+   thread_set_aspect_ratio,
+};
+
+static void thread_get_poke_interface(void *data, const video_poke_interface_t **iface)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   *iface = &thread_poke;
+   thr->driver->poke_interface(thr->driver_data, &thr->poke);
+}
+
 #if defined(HAVE_RMENU)
 // all stubs for now, might not have to implement them unless we want to port this to consoles
 static void thread_start(void) {}
 static void thread_stop(void) {}
 static void thread_restart(void) {}
-#endif
-
-#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
-static void thread_set_aspect_ratio(void *data, unsigned aspectratio_index) {}
 #endif
 
 static const video_driver_t video_thread = {
@@ -566,6 +660,7 @@ static const video_driver_t video_thread = {
 #ifdef HAVE_OVERLAY
    thread_get_overlay_interface, // get_overlay_interface
 #endif
+   thread_get_poke_interface,
 };
 
 static void thread_set_callbacks(thread_video_t *thr, const video_driver_t *driver)
@@ -582,6 +677,10 @@ static void thread_set_callbacks(thread_video_t *thr, const video_driver_t *driv
    if (!driver->overlay_interface)
       thr->video_thread.overlay_interface = NULL;
 #endif
+
+   // Might have to optionally disable poke_interface features as well.
+   if (!thr->video_thread.poke_interface)
+      thr->video_thread.poke_interface = NULL;
 }
 
 bool rarch_threaded_video_init(const video_driver_t **out_driver, void **out_data,
