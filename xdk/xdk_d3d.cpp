@@ -973,14 +973,16 @@ static void xdk_d3d_set_blend(void *data, bool enable)
 
 static void xdk_d3d_apply_state_changes(void *data)
 {
-   gl_t *gl = (gl_t*)data;
-   gl->should_resize = true;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d->should_resize = true;
 }
 
 static const video_poke_interface_t d3d_poke_interface = {
    xdk_d3d_set_blend,
    xdk_d3d_set_filtering,
+#ifdef HAVE_FBO
    xdk_d3d_set_fbo_state,
+#endif
    xdk_d3d_set_aspect_ratio,
    xdk_d3d_apply_state_changes,
 };
