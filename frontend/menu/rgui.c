@@ -185,12 +185,12 @@ static const unsigned rgui_controller_lut[] = {
    RETRO_DEVICE_ID_JOYPAD_R3,
 };
 
-static inline bool rgui_is_controller_menu(rgui_file_type_t menu_type)
+static inline bool rgui_is_controller_menu(unsigned menu_type)
 {
    return (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4);
 }
 
-static inline bool rgui_is_viewport_menu(rgui_file_type_t menu_type)
+static inline bool rgui_is_viewport_menu(unsigned menu_type)
 {
    return (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2);
 }
@@ -407,7 +407,7 @@ static void render_text(rgui_handle_t *rgui)
 
    char title[256];
    const char *dir = 0;
-   rgui_file_type_t menu_type = 0;
+   unsigned menu_type = 0;
    rgui_list_back(rgui->path_stack, &dir, &menu_type, NULL);
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
@@ -431,7 +431,7 @@ static void render_text(rgui_handle_t *rgui)
    for (size_t i = begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
       const char *path = 0;
-      rgui_file_type_t type = 0;
+      unsigned type = 0;
       rgui_list_at(rgui->folder_buf, i, &path, &type, NULL);
       char message[256];
       char type_str[256];
@@ -607,7 +607,7 @@ static void render_text(rgui_handle_t *rgui)
 #define MAX_GAMMA_SETTING 1
 #endif
 
-static int rgui_settings_toggle_setting(rgui_file_type_t setting, rgui_action_t action, rgui_file_type_t menu_type)
+static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, unsigned menu_type)
 {
    DECLARE_DEVICE_PTR();
 #ifdef RARCH_CONSOLE
@@ -1036,7 +1036,7 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
    DECLARE_DEVICE_PTR();
-   rgui_file_type_t menu_type = 0;
+   unsigned menu_type = 0;
    rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
 
    switch (action)
@@ -1154,7 +1154,7 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
 static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
    rgui->frame_buf_pitch = RGUI_WIDTH * 2;
-   rgui_file_type_t type = 0;
+   unsigned type = 0;
    const char *label = 0;
    if (action != RGUI_ACTION_REFRESH)
       rgui_list_at(rgui->folder_buf, rgui->directory_ptr, &label, &type, NULL);
@@ -1163,7 +1163,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
       label = default_paths.core_dir;
 #endif
    const char *dir = 0;
-   rgui_file_type_t menu_type = 0;
+   unsigned menu_type = 0;
    size_t directory_ptr = 0;
    rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
@@ -1269,7 +1269,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
    const char *dir = 0;
-   rgui_file_type_t menu_type = 0;
+   unsigned menu_type = 0;
    size_t directory_ptr = 0;
    rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
    int ret = 0;
@@ -1326,7 +1326,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             return 0;
 
          const char *path = 0;
-         rgui_file_type_t type = 0;
+         unsigned type = 0;
          rgui_list_at(rgui->folder_buf, rgui->directory_ptr, &path, &type, NULL);
 
          if (type == RGUI_FILE_DIRECTORY)
@@ -1499,7 +1499,7 @@ static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
       void *userdata, void *ctx)
 {
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-   bool core_chooser = (userdata) ? *(rgui_file_type_t *)userdata == RGUI_SETTINGS_CORE : false;
+   bool core_chooser = (userdata) ? *(unsigned*)userdata == RGUI_SETTINGS_CORE : false;
 #else
    bool core_chooser = false;
 #endif
