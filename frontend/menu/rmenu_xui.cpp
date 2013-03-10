@@ -918,9 +918,9 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                if (driver.video_poke->set_fbo_state)
                {
                   if(g_settings.video.render_to_texture)
-                     driver.video_poke->set_fbo_state(FBO_INIT);
+                     driver.video_poke->set_fbo_state(driver.video_data, FBO_INIT);
                   else
-                     driver.video_poke->set_fbo_state(FBO_DEINIT);
+                     driver.video_poke->set_fbo_state(driver.video_data, FBO_DEINIT);
                }
                break;
             default:
