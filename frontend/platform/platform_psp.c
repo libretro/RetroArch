@@ -94,7 +94,7 @@ static int setup_callback(void)
 
 void menu_init (void) {}
 
-bool rmenu_iterate(void)
+bool menu_iterate(void)
 {
    char path[256];
    snprintf(path, sizeof(path), "%s%s", default_paths.port_dir, "dkc.sfc");

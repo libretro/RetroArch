@@ -241,6 +241,7 @@ void config_set_defaults(void)
    g_settings.input.debug_enable = input_debug_enable;
 #ifdef ANDROID
    g_settings.input.autodetect_enable = input_autodetect_enable;
+   g_settings.input.back_behavior = BACK_BUTTON_QUIT;
 #endif
 
    for (int i = 0; i < MAX_PLAYERS; i++)
@@ -275,7 +276,9 @@ void config_set_defaults(void)
    g_extern.console.screen.resolutions.current.id = 0;
    strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, default_paths.filebrowser_startup_dir, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
    strlcpy(g_extern.console.main_wrap.default_savestate_dir, default_paths.savestate_dir, sizeof(g_extern.console.main_wrap.default_savestate_dir));
+#ifdef HAVE_RMENU
    strlcpy(g_extern.console.menu_texture_path, default_paths.menu_border_file, sizeof(g_extern.console.menu_texture_path));
+#endif
 
 #if defined(__CELLOS_LV2) || defined(_XBOX360)
    g_settings.video.aspect_ratio_idx = ASPECT_RATIO_16_9;
@@ -498,8 +501,10 @@ bool config_load_file(const char *path)
    if (config_get_path(conf, "default_rom_startup_dir", tmp_str, sizeof(tmp_str)))
       strlcpy(g_extern.console.main_wrap.default_rom_startup_dir, tmp_str, sizeof(g_extern.console.main_wrap.default_rom_startup_dir));
 
+#ifdef HAVE_RMENU
    if (config_get_path(conf, "menu_texture_path", tmp_str, sizeof(tmp_str)))
       strlcpy(g_extern.console.menu_texture_path, tmp_str, sizeof(g_extern.console.menu_texture_path));
+#endif
 
    if (config_get_bool(conf, "info_msg_enable", &msg_enable))
    {
@@ -701,6 +706,7 @@ bool config_load_file(const char *path)
 
 #ifdef ANDROID
    CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
+   CONFIG_GET_INT(input.back_behavior, "input_back_behavior");
    CONFIG_GET_INT(input.icade_profile[0], "input_autodetect_icade_profile_pad1");
    CONFIG_GET_INT(input.icade_profile[1], "input_autodetect_icade_profile_pad2");
    CONFIG_GET_INT(input.icade_profile[2], "input_autodetect_icade_profile_pad3");
@@ -829,6 +835,8 @@ static const struct bind_map bind_maps[MAX_PLAYERS][RARCH_BIND_LIST_END_NULL] = 
       DECLARE_BIND(volume_up,             RARCH_VOLUME_UP),
       DECLARE_BIND(volume_down,           RARCH_VOLUME_DOWN),
       DECLARE_BIND(overlay_next,          RARCH_OVERLAY_NEXT),
+      DECLARE_BIND(disk_eject_toggle,     RARCH_DISK_EJECT_TOGGLE),
+      DECLARE_BIND(disk_next,             RARCH_DISK_NEXT),
    },
 
    { DECL_PLAYER(2) },
@@ -1199,6 +1207,7 @@ bool config_save_file(const char *path)
    config_set_string(conf, "audio_resampler", g_settings.audio.resampler);
 
 #ifdef ANDROID
+   config_set_int(conf, "input_back_behavior", input.back_behavior);
    config_set_int(conf, "input_autodetect_icade_profile_pad1", input.icade_profile[0]);
    config_set_int(conf, "input_autodetect_icade_profile_pad2", input.icade_profile[1]);
    config_set_int(conf, "input_autodetect_icade_profile_pad3", input.icade_profile[2]);
@@ -1261,7 +1270,9 @@ bool config_save_file(const char *path)
    config_set_int(conf, "custom_viewport_x", g_extern.console.screen.viewports.custom_vp.x);
    config_set_int(conf, "custom_viewport_y", g_extern.console.screen.viewports.custom_vp.y);
    config_set_string(conf, "default_rom_startup_dir", g_extern.console.main_wrap.default_rom_startup_dir);
+#ifdef HAVE_RMENU
    config_set_string(conf, "menu_texture_path", g_extern.console.menu_texture_path);
+#endif
    config_set_float(conf, "overscan_amount", g_extern.console.screen.overscan_amount);
    config_set_float(conf, "video_font_size", g_settings.video.font_size);
 

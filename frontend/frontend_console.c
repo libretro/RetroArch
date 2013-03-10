@@ -21,19 +21,19 @@
 
 #include "frontend_console.h"
 #include "menu/rmenu.h"
-#include "menu/rmenu_settings.h"
+#include "menu/menu_settings.h"
 
 #if defined(__CELLOS_LV2__)
-#include "platform/platform_ps3.c"
 #include "platform/platform_ps3_exec.c"
+#include "platform/platform_ps3.c"
 #elif defined(GEKKO)
-#include "platform/platform_gx.c"
 #ifdef HW_RVL
 #include "platform/platform_gx_exec.c"
 #endif
+#include "platform/platform_gx.c"
 #elif defined(_XBOX)
-#include "platform/platform_xdk.c"
 #include "platform/platform_xdk_exec.c"
+#include "platform/platform_xdk.c"
 #elif defined(PSP)
 #include "platform/platform_psp.c"
 #endif
@@ -312,14 +312,14 @@ begin_loop:
       {
          RARCH_ERR("rarch_main_init failed.\n");
          g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-         rmenu_settings_msg(S_MSG_ROM_LOADING_ERROR, S_DELAY_180);
+         menu_settings_msg(S_MSG_ROM_LOADING_ERROR, 180);
       }
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
    }
    else if(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_PREINIT);
-      while(rmenu_iterate());
+      while (menu_iterate());
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
    }
    else

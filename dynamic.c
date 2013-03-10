@@ -485,12 +485,16 @@ static bool environment_cb(unsigned cmd, void *data)
       
       case RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
       {
+         RARCH_LOG("Environ SET_KEYBOARD_CALLBACK.\n");
          const struct retro_keyboard_callback *info = (const struct retro_keyboard_callback*)data;
-      
          g_extern.system.key_event = info->callback;
-      
          break;
       }
+
+      case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE:
+         RARCH_LOG("Environ SET_DISK_CONTROL_INTERFACE.\n");
+         g_extern.system.disk_control = *(const struct retro_disk_control_callback*)data;
+         break;
 
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
@@ -505,7 +509,6 @@ static void set_environment(void)
    pretro_set_environment(environment_cb);
 }
 
-// Assume SNES as defaults.
 static void set_environment_defaults(void)
 {
    char *save;

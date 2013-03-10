@@ -415,6 +415,12 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK 12
                                            // const struct retro_keyboard_callback * --
                                            // Sets a callback function used to notify core about keyboard events.
+                                           //
+#define RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE 13
+                                           // const struct retro_disk_control_callback * --
+                                           // Sets an interface which frontend can use to eject and insert disk images.
+                                           // This is used for games which consist of multiple images and must be manually
+                                           // swapped out by the user (e.g. PSX).
 
 
 // Callback type passed in RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK. Called by the frontend in response to keyboard events.
@@ -427,6 +433,56 @@ typedef void (*retro_keyboard_event_t)(bool down, unsigned keycode, uint32_t cha
 struct retro_keyboard_callback
 {
     retro_keyboard_event_t callback;
+};
+
+// Callbacks for RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE.
+// Should be set for implementations which can swap out multiple disk images in runtime.
+// If the implementation can do this automatically, it should strive to do so.
+// However, there are cases where the user must manually do so.
+//
+// Overview: To swap a disk image, eject the disk image with set_eject_state(true).
+// Set the disk index with set_image_index(index). Insert the disk again with set_eject_state(false).
+
+// If ejected is true, "ejects" the virtual disk tray.
+// When ejected, the disk image index can be set.
+typedef bool (*retro_set_eject_state_t)(bool ejected);
+// Gets current eject state. The initial state is 'not ejected'.
+typedef bool (*retro_get_eject_state_t)(void);
+// Gets current disk index. First disk is index 0.
+// If return value is >= get_num_images(), no disk is currently inserted.
+typedef unsigned (*retro_get_image_index_t)(void);
+// Sets image index. Can only be called when disk is ejected.
+// The implementation supports setting "no disk" by using an index >= get_num_images().
+typedef bool (*retro_set_image_index_t)(unsigned index);
+// Gets total number of images which are available to use.
+typedef unsigned (*retro_get_num_images_t)(void);
+//
+// Replaces the disk image associated with index.
+// Arguments to pass in info have same requirements as retro_load_game().
+// Virtual disk tray must be ejected when calling this.
+// Replacing a disk image with info = NULL will remove the disk image from the internal list.
+// As a result, calls to get_image_index() can change.
+//
+// E.g. replace_image_index(1, NULL), and previous get_image_index() returned 4 before.
+// Index 1 will be removed, and the new index is 3.
+struct retro_game_info;
+typedef bool (*retro_replace_image_index_t)(unsigned index, const struct retro_game_info *info);
+// Adds a new valid index (get_num_images()) to the internal disk list.
+// This will increment subsequent return values from get_num_images() by 1.
+// This image index cannot be used until a disk image has been set with replace_image_index.
+typedef bool (*retro_add_image_index_t)(void);
+
+struct retro_disk_control_callback
+{
+   retro_set_eject_state_t set_eject_state;
+   retro_get_eject_state_t get_eject_state;
+
+   retro_get_image_index_t get_image_index;
+   retro_set_image_index_t set_image_index;
+   retro_get_num_images_t  get_num_images;
+
+   retro_replace_image_index_t replace_image_index;
+   retro_add_image_index_t add_image_index;
 };
 
 enum retro_pixel_format

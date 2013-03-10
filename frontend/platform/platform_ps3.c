@@ -194,7 +194,7 @@ void menu_init (void)
 {
 }
 
-bool rmenu_iterate(void)
+bool menu_iterate(void)
 {
    strlcpy(g_extern.fullpath, "/dev_hdd0/game/SSNE10000/USRDIR/mm3.nes", sizeof(g_extern.fullpath));
    g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);

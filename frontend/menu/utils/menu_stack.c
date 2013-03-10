@@ -53,8 +53,8 @@ static void menu_stack_get_current_ptr(menu *current_menu)
 
    current_menu->browser_draw  = NULL;
    current_menu->input_process = NULL;
-   current_menu->input_poll    = rmenu_input_poll;
-   current_menu->input_process = rmenu_input_process;
+   current_menu->input_poll    = menu_input_poll;
+   current_menu->input_process = menu_input_process;
 
    switch(menu_id)
    {

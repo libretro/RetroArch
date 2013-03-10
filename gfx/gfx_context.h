@@ -23,11 +23,20 @@
 #include "../config.h"
 #endif
 
-#if defined(RARCH_CONSOLE) || defined(HAVE_RMENU)
+#if defined(HAVE_RMENU)
 #include "../frontend/menu/rmenu.h"
 #endif
 
 #define MAX_EGLIMAGE_TEXTURES 32
+
+#ifdef HAVE_FBO
+enum fbo_option
+{
+   FBO_DEINIT = 0,
+   FBO_INIT,
+   FBO_REINIT
+};
+#endif
 
 enum gfx_ctx_api
 {
@@ -108,7 +117,7 @@ typedef struct gfx_ctx_driver
    // Human readable string.
    const char *ident;
 
-#if defined(HAVE_RMENU) || defined(_XBOX360)
+#if defined(HAVE_RMENU)
    void (*set_blend)(bool enable);
    void (*set_filtering)(unsigned index, bool set_smooth);
    void (*get_available_resolutions)(void);

@@ -105,15 +105,11 @@ enum // RetroArch specific bind IDs.
    RARCH_VOLUME_UP,
    RARCH_VOLUME_DOWN,
    RARCH_OVERLAY_NEXT,
+   RARCH_DISK_EJECT_TOGGLE,
+   RARCH_DISK_NEXT,
 
-#ifdef RARCH_CONSOLE
-   RARCH_CHEAT_INPUT,
-   RARCH_SRAM_WRITE_PROTECT,
-#endif
-#ifdef HAVE_RMENU
-   RARCH_RMENU_TOGGLE,
-   RARCH_RMENU_QUICKMENU_TOGGLE,
-#endif
+   RARCH_MENU_TOGGLE,
+   RARCH_MENU_QUICKMENU_TOGGLE,
 
    RARCH_BIND_LIST_END,
    RARCH_BIND_LIST_END_NULL
@@ -230,6 +226,15 @@ typedef struct video_overlay_interface
 } video_overlay_interface_t;
 #endif
 
+// Optionally implemented interface to poke more deeply into video driver.
+// Only used by RGUI atm.
+typedef struct video_poke_interface
+{
+   void (*set_filtering)(void *data, unsigned index, bool smooth);
+   void (*set_fbo_state)(void *data, unsigned state);
+   void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
+} video_poke_interface_t;
+
 typedef struct video_driver
 {
    void *(*init)(const video_info_t *video, const input_driver_t **input, void **input_data); 
@@ -244,12 +249,10 @@ typedef struct video_driver
    const char *ident;
 
    // Callbacks essentially useless on PC, but useful on consoles where the drivers are used for more stuff.
-#if defined(HAVE_RMENU)
+#if defined(RARCH_CONSOLE)
    void (*start)(void);
    void (*stop)(void);
    void (*restart)(void);
-   void (*apply_state_changes)(void);
-   void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
 #endif
 
    void (*set_rotation)(void *data, unsigned rotation);
@@ -261,6 +264,7 @@ typedef struct video_driver
 #ifdef HAVE_OVERLAY
    void (*overlay_interface)(void *data, const video_overlay_interface_t **iface);
 #endif
+   void (*poke_interface)(void *data, const video_poke_interface_t **iface);
 } video_driver_t;
 
 enum rarch_display_type
@@ -321,6 +325,9 @@ typedef struct driver
    input_overlay_t *overlay;
    uint64_t overlay_state;
 #endif
+
+   // Interface for "poking".
+   const video_poke_interface_t *video_poke;
 } driver_t;
 
 void init_drivers(void);

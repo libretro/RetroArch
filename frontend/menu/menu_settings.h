@@ -19,16 +19,6 @@
 
 enum
 {
-   S_DELAY_0 = 0,
-   S_DELAY_1 = 1,
-   S_DELAY_45 = 45,
-   S_DELAY_90  = 90,
-   S_DELAY_180 = 180,
-   S_DELAY_270 = 270
-};
-
-enum
-{
    S_ASPECT_RATIO_DECREMENT = 0,
    S_ASPECT_RATIO_INCREMENT,
    S_AUDIO_MUTE,
@@ -104,11 +94,10 @@ enum
    S_LBL_REWIND_GRANULARITY,
 };
 
-void rmenu_settings_set(unsigned setting);
-void rmenu_settings_set_default(unsigned setting);
-void rmenu_settings_msg(unsigned setting, unsigned delay);
+void menu_settings_set(unsigned setting);
+void menu_settings_set_default(unsigned setting);
+void menu_settings_msg(unsigned setting, unsigned delay);
 
-void rmenu_settings_create_menu_item_label(char * str, unsigned setting, size_t size);
-void rmenu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size);
+void menu_settings_create_menu_item_label(char * str, unsigned setting, size_t size);
 
 #endif

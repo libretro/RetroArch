@@ -33,8 +33,6 @@ CONSOLE EXTENSIONS
 ============================================================ */
 #ifdef RARCH_CONSOLE
 
-#include "../rarch_console_video.c"
-
 #ifdef HW_DOL
 #include "../../ngc/ssaram.c"
 #endif
@@ -439,16 +437,11 @@ MENU
 #include "../../frontend/menu/rgui.c"
 #endif
 
-#ifdef HAVE_RMENU
-#include "../../frontend/menu/rmenu_settings.c"
-
 #if defined(_XBOX360)
 #include "../../frontend/menu/rmenu_xui.cpp"
-#elif defined(GEKKO)
-#include "../../frontend/menu/rmenu_gx.c"
 #endif
 
-#endif
+#include "../../frontend/menu/menu_settings.c"
 
 #ifdef __cplusplus
 extern "C" {

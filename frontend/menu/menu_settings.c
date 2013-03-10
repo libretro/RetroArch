@@ -19,9 +19,9 @@
 #include <string.h>
 
 #include "../../general.h"
-#include "rmenu_settings.h"
+#include "menu_settings.h"
 
-void rmenu_settings_set(unsigned setting)
+void menu_settings_set(unsigned setting)
 {
    switch(setting)
    {
@@ -148,11 +148,11 @@ void rmenu_settings_set(unsigned setting)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
          break;
       default:
-         RARCH_WARN("rmenu_settings_set - unhandled action.\n");
+         RARCH_WARN("menu_settings_set - unhandled action.\n");
    }
 }
 
-void rmenu_settings_set_default(unsigned setting)
+void menu_settings_set_default(unsigned setting)
 {
    switch(setting)
    {
@@ -217,11 +217,11 @@ void rmenu_settings_set_default(unsigned setting)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
          break;
       default:
-         RARCH_WARN("rmenu_settings_set_default: unhandled action.\n");
+         RARCH_WARN("menu_settings_set_default: unhandled action.\n");
    }
 }
 
-void rmenu_settings_msg(unsigned setting, unsigned delay)
+void menu_settings_msg(unsigned setting, unsigned delay)
 {
    char str[PATH_MAX], tmp[PATH_MAX];
    msg_queue_clear(g_extern.msg_queue);
@@ -269,15 +269,7 @@ void rmenu_settings_msg(unsigned setting, unsigned delay)
    msg_queue_push(g_extern.msg_queue, str, 1, delay);
 }
 
-void rmenu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size)
-{
-   char str[PATH_MAX];
-
-   rmenu_settings_create_menu_item_label(str, setting, sizeof(str));
-   convert_char_to_wchar(strwbuf, str, size);
-}
-
-void rmenu_settings_create_menu_item_label(char * str, unsigned setting, size_t size)
+void menu_settings_create_menu_item_label(char * str, unsigned setting, size_t size)
 {
    switch (setting)
    {

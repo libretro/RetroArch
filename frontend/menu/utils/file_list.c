@@ -16,7 +16,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #include "file_list.h"
 #include "../rgui.h"
@@ -24,7 +23,7 @@
 struct rgui_file
 {
    char *path;
-   rgui_file_type_t type;
+   unsigned type;
    size_t directory_ptr;
 };
 
@@ -47,7 +46,7 @@ bool rgui_list_empty(const rgui_list_t *list)
 }
 
 void rgui_list_push(rgui_list_t *list,
-      const char *path, rgui_file_type_t type, size_t directory_ptr)
+      const char *path, unsigned type, size_t directory_ptr)
 {
    if (list->ptr >= list->capacity)
    {
@@ -84,7 +83,7 @@ void rgui_list_clear(rgui_list_t *list)
 }
 
 void rgui_list_back(const rgui_list_t *list,
-      const char **path, rgui_file_type_t *file_type, size_t *directory_ptr)
+      const char **path, unsigned *file_type, size_t *directory_ptr)
 {
    if (rgui_list_size(list) > 0)
       rgui_list_at(list, rgui_list_size(list) - 1, path, file_type, directory_ptr);
@@ -96,7 +95,7 @@ size_t rgui_list_size(const rgui_list_t *list)
 }
 
 void rgui_list_at(const rgui_list_t *list, size_t index,
-      const char **path, rgui_file_type_t *file_type, size_t *directory_ptr)
+      const char **path, unsigned *file_type, size_t *directory_ptr)
 {
    if (path)
       *path = list->list[index].path;

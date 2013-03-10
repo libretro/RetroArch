@@ -17,7 +17,6 @@
 
 #include "../driver.h"
 #include "../general.h"
-#include "../console/rarch_console_video.h"
 #include "../gfx/fonts/bitmap.h"
 #include "../frontend/menu/rgui.h"
 #include "../gfx/gfx_common.h"
@@ -271,14 +270,14 @@ const char *gx_get_video_mode(void)
    return format;
 }
 
-void gx_set_aspect_ratio(void *data, unsigned aspectratio_idx)
+static void gx_set_aspect_ratio(void *data, unsigned aspectratio_idx)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
 
    if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_AUTO)
-      rarch_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
+      gfx_set_auto_viewport(g_extern.frame_cache.width, g_extern.frame_cache.height);
    else if(g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
-      rarch_set_core_viewport();
+      gfx_set_core_viewport();
 
    g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
    g_settings.video.force_aspect = false;
@@ -1013,12 +1012,6 @@ static void gx_set_rotation(void *data, unsigned orientation)
    gx->should_resize = true;
 }
 
-static void gx_apply_state_changes(void)
-{
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
-   gx->should_resize = true;
-}
-
 static bool gx_set_shader(void *data, enum rarch_shader_type type, const char *path, unsigned index)
 {
    (void)data;
@@ -1042,6 +1035,5 @@ const video_driver_t video_gx = {
    .start = gx_start,
    .stop = gx_stop,
    .restart = gx_restart,
-   .apply_state_changes = gx_apply_state_changes,
    .set_aspect_ratio = gx_set_aspect_ratio
 };

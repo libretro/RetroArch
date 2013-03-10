@@ -184,6 +184,15 @@ enum
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_AUTO
 #endif
 
+#ifdef HAVE_DYNAMIC
+#ifdef _WIN32
+#define EXT_EXECUTABLES "dll|DLL"
+#elif defined(__APPLE__)
+#define EXT_EXECUTABLES "dylib"
+#else
+#define EXT_EXECUTABLES "so|SO"
+#endif
+#else
 #if defined(__CELLOS_LV2__)
 #define EXT_EXECUTABLES "self|SELF|bin|BIN"
 #elif defined(_XBOX1)
@@ -192,6 +201,7 @@ enum
 #define EXT_EXECUTABLES "xex|XEX"
 #elif defined(GEKKO)
 #define EXT_EXECUTABLES "dol|DOL"
+#endif
 #endif
 
 ////////////////
@@ -243,7 +253,7 @@ static const bool aspect_ratio_auto = false; // 1:1 PAR
 static const bool crop_overscan = true;
 
 // Font size for on-screen messages.
-#ifdef HAVE_RMENU
+#if defined(HAVE_RMENU)
 static const float font_size = 1.0f;
 #else
 static const float font_size = 48;
@@ -518,6 +528,8 @@ static const bool input_autodetect_enable = true;
 #define RETRO_LBL_VOLUME_UP "Volume Up"
 #define RETRO_LBL_VOLUME_DOWN "Volume Down"
 #define RETRO_LBL_OVERLAY_NEXT "Next Overlay"
+#define RETRO_LBL_DISK_EJECT_TOGGLE "Disk Eject Toggle"
+#define RETRO_LBL_DISK_NEXT "Disk Swap Next"
 
 // Player 1
 static const struct retro_keybind retro_keybinds_1[] = {
@@ -586,6 +598,8 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_VOLUME_UP,                RETRO_LBL_VOLUME_UP,            RETROK_KP_PLUS, NO_BTN,      AXIS_NONE },
    { true, RARCH_VOLUME_DOWN,              RETRO_LBL_VOLUME_DOWN,          RETROK_KP_MINUS,NO_BTN,      AXIS_NONE },
    { true, RARCH_OVERLAY_NEXT,             RETRO_LBL_OVERLAY_NEXT,         RETROK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_DISK_EJECT_TOGGLE,        RETRO_LBL_DISK_EJECT_TOGGLE,    RETROK_UNKNOWN, NO_BTN,      AXIS_NONE },
+   { true, RARCH_DISK_NEXT,                RETRO_LBL_DISK_NEXT,            RETROK_UNKNOWN, NO_BTN,      AXIS_NONE },
 };
 
 // Player 2-5
