@@ -609,7 +609,6 @@ static void render_text(rgui_handle_t *rgui)
 
 static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, unsigned menu_type)
 {
-   DECLARE_DEVICE_PTR();
 #ifdef RARCH_CONSOLE
       unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
 #endif
@@ -705,7 +704,9 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
             else
                g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-            device_ptr->should_resize = true;
+
+            if (driver.video_poke->apply_state_changes)
+               driver.video_poke->apply_state_changes(driver.video_data);
          }
          break;
 #endif
@@ -739,14 +740,16 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
          if (action == RGUI_ACTION_START)
          {
             g_extern.console.screen.gamma_correction = 0;
-            device_ptr->should_resize = true;
+            if (driver.video_poke->apply_state_changes)
+               driver.video_poke->apply_state_changes(driver.video_data);
          }
          else if (action == RGUI_ACTION_LEFT)
          {
             if(g_extern.console.screen.gamma_correction > 0)
             {
                g_extern.console.screen.gamma_correction--;
-               device_ptr->should_resize = true;
+            if (driver.video_poke->apply_state_changes)
+               driver.video_poke->apply_state_changes(driver.video_data);
             }
          }
          else if (action == RGUI_ACTION_RIGHT)
@@ -754,7 +757,8 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
             if(g_extern.console.screen.gamma_correction < MAX_GAMMA_SETTING)
             {
                g_extern.console.screen.gamma_correction++;
-               device_ptr->should_resize = true;
+               if (driver.video_poke->apply_state_changes)
+                  driver.video_poke->apply_state_changes(driver.video_data);
             }
          }
          break;
@@ -790,17 +794,20 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
          if (action == RGUI_ACTION_START)
          {
             menu_settings_set_default(S_DEF_OVERSCAN);
-            device_ptr->should_resize = true;
+            if (driver.video_poke->apply_state_changes)
+               driver.video_poke->apply_state_changes(driver.video_data);
          }
          else if (action == RGUI_ACTION_LEFT)
          {
             menu_settings_set(S_OVERSCAN_DECREMENT);
-            device_ptr->should_resize = true;
+            if (driver.video_poke->apply_state_changes)
+               driver.video_poke->apply_state_changes(driver.video_data);
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
             menu_settings_set(S_OVERSCAN_INCREMENT);
-            device_ptr->should_resize = true;
+            if (driver.video_poke->apply_state_changes)
+               driver.video_poke->apply_state_changes(driver.video_data);
          }
          break;
       case RGUI_SETTINGS_AUDIO_MUTE:
@@ -1035,7 +1042,9 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 
 static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
+#ifdef GEKKO
    DECLARE_DEVICE_PTR();
+#endif
    unsigned menu_type = 0;
    rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
 
@@ -1049,7 +1058,8 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else
             g_extern.console.screen.viewports.custom_vp.height -= 1;
-         device_ptr->should_resize = true;
+         if (driver.video_poke->apply_state_changes)
+            driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
       case RGUI_ACTION_DOWN:
@@ -1060,7 +1070,8 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else
             g_extern.console.screen.viewports.custom_vp.height += 1;
-         device_ptr->should_resize = true;
+         if (driver.video_poke->apply_state_changes)
+            driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
       case RGUI_ACTION_LEFT:
@@ -1071,7 +1082,8 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else
             g_extern.console.screen.viewports.custom_vp.width -= 1;
-         device_ptr->should_resize = true;
+         if (driver.video_poke->apply_state_changes)
+            driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
       case RGUI_ACTION_RIGHT:
@@ -1082,7 +1094,8 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else
             g_extern.console.screen.viewports.custom_vp.width += 1;
-         device_ptr->should_resize = true;
+         if (driver.video_poke->apply_state_changes)
+            driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
       case RGUI_ACTION_CANCEL:
@@ -1124,7 +1137,8 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
             g_extern.console.screen.viewports.custom_vp.height = device_ptr->win_height - g_extern.console.screen.viewports.custom_vp.y;
          }
 #endif
-         device_ptr->should_resize = true;
+         if (driver.video_poke->apply_state_changes)
+            driver.video_poke->apply_state_changes(driver.video_data);
          break;
 
       case RGUI_ACTION_SETTINGS:
@@ -1638,7 +1652,6 @@ static int menu_input_process(void *data, void *state)
 
 bool menu_iterate(void)
 {
-   DECLARE_DEVICE_PTR();
    static uint16_t old_input_state = 0;
    static bool initial_held = true;
    static bool first_held = false;
@@ -1648,7 +1661,8 @@ bool menu_iterate(void)
    uint16_t input_state;
 
    g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
-   device_ptr->should_resize = true;
+   if (driver.video_poke->apply_state_changes)
+      driver.video_poke->apply_state_changes(driver.video_data);
 
    g_extern.frame_count++;
 
