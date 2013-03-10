@@ -958,7 +958,6 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->folder_buf);
 
-#ifdef RARCH_CONSOLE
    RGUI_MENU_ITEM("Rewind", RGUI_SETTINGS_REWIND_ENABLE);
    RGUI_MENU_ITEM("Rewind granularity", RGUI_SETTINGS_REWIND_GRANULARITY);
    if (g_extern.main_is_init)
@@ -974,8 +973,8 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #endif
 #ifdef GEKKO
    RGUI_MENU_ITEM("Screen Resolution", RGUI_SETTINGS_VIDEO_RESOLUTION);
-#endif
    RGUI_MENU_ITEM("Gamma", RGUI_SETTINGS_VIDEO_GAMMA);
+#endif
    RGUI_MENU_ITEM("Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO);
    RGUI_MENU_ITEM("Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT);
    RGUI_MENU_ITEM("Overscan", RGUI_SETTINGS_VIDEO_OVERSCAN);
@@ -983,34 +982,24 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
    RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);
    RGUI_MENU_ITEM("Audio Resampler", RGUI_SETTINGS_RESAMPLER_TYPE);
+#ifdef GEKKO
    RGUI_MENU_ITEM("SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR);
    RGUI_MENU_ITEM("State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR);
+#endif
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    RGUI_MENU_ITEM("Core", RGUI_SETTINGS_CORE);
 #endif
+#ifdef GEKKO
    RGUI_MENU_ITEM("Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1);
    RGUI_MENU_ITEM("Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2);
    RGUI_MENU_ITEM("Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3);
    RGUI_MENU_ITEM("Controller #4 Config", RGUI_SETTINGS_CONTROLLER_4);
+#endif
    RGUI_MENU_ITEM("Debug Text", RGUI_SETTINGS_DEBUG_TEXT);
 #ifndef HAVE_DYNAMIC
    RGUI_MENU_ITEM("Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR);
 #endif
    RGUI_MENU_ITEM("Exit RetroArch", RGUI_SETTINGS_QUIT_EMULATOR);
-#else
-   //RGUI_MENU_ITEM("Filebrowser", RGUI_SETTINGS_OPEN_FILEBROWSER);
-   RGUI_MENU_ITEM("Save State", RGUI_SETTINGS_SAVESTATE_SAVE);
-   RGUI_MENU_ITEM("Load State", RGUI_SETTINGS_SAVESTATE_LOAD);
-   RGUI_MENU_ITEM("Take Screenshot", RGUI_SETTINGS_SCREENSHOT);
-   RGUI_MENU_ITEM("Restart Game", RGUI_SETTINGS_RESTART_GAME);
-   RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
-   RGUI_MENU_ITEM("Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO);
-   RGUI_MENU_ITEM("Rotation", RGUI_SETTINGS_VIDEO_ROTATION);
-   RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
-   RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);
-   RGUI_MENU_ITEM("Audio Resampler", RGUI_SETTINGS_RESAMPLER_TYPE);
-   RGUI_MENU_ITEM("Exit RetroArch", RGUI_SETTINGS_QUIT_EMULATOR);
-#endif
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
