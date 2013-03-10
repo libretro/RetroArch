@@ -118,11 +118,8 @@ typedef struct gfx_ctx_driver
    const char *ident;
 
 #if defined(HAVE_RMENU)
-   void (*set_blend)(bool enable);
-   void (*set_filtering)(unsigned index, bool set_smooth);
    void (*get_available_resolutions)(void);
    int  (*check_resolution)(unsigned resolution_id);
-   void (*set_fbo)(unsigned);
    bool (*rmenu_init)(void);
    void (*rmenu_frame)(void *data);
    void (*rmenu_free)(void);
@@ -131,8 +128,6 @@ typedef struct gfx_ctx_driver
    void (*rmenu_set_default_pos)(rmenu_default_positions_t *position);
    void (*rmenu_screenshot_enable)(bool enable);
    void (*rmenu_screenshot_dump)(void *data);
-   const char *(*drive_mapping_previous)(void);
-   const char *(*drive_mapping_next)(void);
 #endif
 } gfx_ctx_driver_t;
 

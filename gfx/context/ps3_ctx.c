@@ -481,11 +481,8 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    NULL,
    "ps3",
 #ifdef HAVE_RMENU
-   NULL,
-   NULL,
    gfx_ctx_get_available_resolutions,
    gfx_ctx_check_resolution,
-   NULL,
    gfx_ctx_rmenu_init,
    gfx_ctx_rmenu_frame,
    gfx_ctx_rmenu_free,
@@ -494,8 +491,6 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_set_default_pos,
    rmenu_ctx_ps3_screenshot_enable,
    rmenu_ctx_ps3_screenshot_dump,
-   NULL,
-   NULL,
 #endif
 };
 

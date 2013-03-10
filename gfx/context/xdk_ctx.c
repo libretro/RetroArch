@@ -469,7 +469,5 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    gfx_ctx_xdk_menu_set_default_pos,
    gfx_ctx_xdk_menu_screenshot_enable,
    gfx_ctx_xdk_menu_screenshot_dump,
-   NULL,
-   NULL,
 #endif
 };
