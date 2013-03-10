@@ -572,7 +572,6 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
 HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
 {
-   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
    int current_index;
    HRESULT hr;
    process_input_ret = 0;
@@ -781,20 +780,23 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
                break;
             case SETTING_SCALE_FACTOR:
-               if(device_ptr->fbo_inited)
+               if (driver.video_poke->get_fbo_state)
                {
-                  if((g_settings.video.fbo.scale_x > MIN_SCALING_FACTOR))
+                  if(driver.video_poke->get_fbo_state(driver.video_data))
                   {
-                     menu_settings_set(S_SCALE_FACTOR_DECREMENT);
-
-                     if (driver.video_poke->set_fbo_state)
+                     if((g_settings.video.fbo.scale_x > MIN_SCALING_FACTOR))
                      {
-                        if(g_settings.video.render_to_texture)
-                           driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
-                     }
+                        menu_settings_set(S_SCALE_FACTOR_DECREMENT);
 
-                     menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
-                     m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
+                        if (driver.video_poke->set_fbo_state)
+                        {
+                           if(g_settings.video.render_to_texture)
+                              driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
+                        }
+
+                        menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
+                        m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
+                     }
                   }
                }
                break;
@@ -890,16 +892,19 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
 	    m_settingslist.SetText(SETTING_ENABLE_STATE_PATH, (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? L"Savestate Path Enable: ON" : L"Savestate Path Enable: OFF");
         break;
             case SETTING_SCALE_FACTOR:
-               if(device_ptr->fbo_inited)
+               if (driver.video_poke->get_fbo_state)
                {
-                  if((g_settings.video.fbo.scale_x < MAX_SCALING_FACTOR))
+                  if(driver.video_poke->get_fbo_state(driver.video_data))
                   {
-                     menu_settings_set(S_SCALE_FACTOR_INCREMENT);
+                     if((g_settings.video.fbo.scale_x < MAX_SCALING_FACTOR))
+                     {
+                        menu_settings_set(S_SCALE_FACTOR_INCREMENT);
 
-                     if (driver.video_poke->set_fbo_state)
-                        driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
-                     menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
-                     m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
+                        if (driver.video_poke->set_fbo_state)
+                           driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
+                        menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
+                        m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
+                     }
                   }
                }
                break;
