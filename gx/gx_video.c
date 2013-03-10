@@ -455,6 +455,8 @@ static void *gx_init(const video_info_t *video,
    return gx;
 }
 
+static void gx_get_poke_interface(void *data, const video_poke_interface_t **iface);
+
 static void gx_start(void)
 {
    video_info_t video_info = {0};
@@ -471,6 +473,7 @@ static void gx_start(void)
    build_disp_list();
 
    gx_video_t *gx = (gx_video_t*)driver.video_data;
+   gx_get_poke_interface(gx, &driver.video_poke);
    gx->win_width = gx_mode.fbWidth;
    gx->win_height = gx_mode.xfbHeight;
    gx->should_resize = true;
