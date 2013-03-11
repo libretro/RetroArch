@@ -308,7 +308,6 @@ static void get_environment_settings(int argc, char *argv[])
 #else
       snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
 #endif
-      snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "EBOOT.BIN");
    }
 }
 

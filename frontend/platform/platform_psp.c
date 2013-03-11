@@ -70,7 +70,6 @@ static void get_environment_settings(int argc, char *argv[])
    snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.cgp_dir);
    snprintf(default_paths.border_dir, sizeof(default_paths.border_dir), "%s/borders", default_paths.core_dir);
    snprintf(g_extern.config_path, sizeof(g_extern.config_path), "%s/retroarch.cfg", default_paths.port_dir);
-   snprintf(default_paths.salamander_file, sizeof(default_paths.salamander_file), "EBOOT.BIN");
 }
 
 int callback_thread(SceSize args, void *argp)

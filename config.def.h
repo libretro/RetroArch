@@ -201,6 +201,17 @@ enum
 #endif
 #endif
 
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+#ifdef GEKKO
+#define SALAMANDER_FILE "boot.dol"
+#elif defined(__CELLOS_LV2__)
+#define SALAMANDER_FILE "EBOOT.BIN"
+#elif defined(_XBOX1)
+#define SALAMANDER_FILE "default.xbe"
+#elif defined(_XBOX360)
+#define SALAMANDER_FILE "default.xex"
+#endif
+
 ////////////////
 // Video
 ////////////////

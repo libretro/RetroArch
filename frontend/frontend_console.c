@@ -71,7 +71,7 @@ static void find_first_libretro_core(char *first_file,
          char fname[PATH_MAX];
          fill_pathname_base(fname, libretro_elem, sizeof(fname));
 
-         if (strncmp(fname, default_paths.salamander_file, sizeof(fname)) == 0)
+         if (strncmp(fname, SALAMANDER_FILE, sizeof(fname)) == 0)
          {
             if ((i + 1) == list->size)
             {

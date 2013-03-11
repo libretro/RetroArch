@@ -59,7 +59,6 @@ typedef struct
    char shader_file[MAXIMUM_PATH];
    char shader_dir[MAXIMUM_PATH];
 #endif
-   char salamander_file[MAXIMUM_PATH];
    char sram_dir[MAXIMUM_PATH];
    char system_dir[MAXIMUM_PATH];
 } default_paths_t;

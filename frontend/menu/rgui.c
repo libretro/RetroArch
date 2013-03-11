@@ -858,7 +858,8 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
          if (action == RGUI_ACTION_OK)
          {
 #ifdef GEKKO
-            fill_pathname_join(g_extern.fullpath, default_paths.core_dir, "boot.dol", sizeof(g_extern.fullpath));
+            fill_pathname_join(g_extern.fullpath, default_paths.core_dir, SALAMANDER_FILE,
+                  sizeof(g_extern.fullpath));
 #endif
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
@@ -1299,7 +1300,7 @@ static bool directory_parse(const char *directory, void *userdata, void *ctx)
       bool is_dir = list->elems[i].attr.b;
       if (core_chooser && (is_dir
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-               || strcasecmp(list->elems[i].data, default_paths.salamander_file) == 0
+               || strcasecmp(list->elems[i].data, SALAMANDER_FILE) == 0
 #endif
          ))
          continue;
@@ -1401,7 +1402,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
 #if defined(HAVE_DYNAMIC)
 #elif defined(GEKKO)
-               fill_pathname_join(g_extern.fullpath, default_paths.core_dir, "boot.dol", sizeof(g_extern.fullpath));
+               fill_pathname_join(g_extern.fullpath, default_paths.core_dir, SALAMANDER_FILE, sizeof(g_extern.fullpath));
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
                g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
                g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
