@@ -82,19 +82,7 @@ void rgui_list_clear(rgui_list_t *list)
    list->ptr = 0;
 }
 
-void rgui_list_back(const rgui_list_t *list,
-      const char **path, unsigned *file_type, size_t *directory_ptr)
-{
-   if (rgui_list_size(list) > 0)
-      rgui_list_at(list, rgui_list_size(list) - 1, path, file_type, directory_ptr);
-}
-
-size_t rgui_list_size(const rgui_list_t *list)
-{
-   return list->ptr;
-}
-
-void rgui_list_at(const rgui_list_t *list, size_t index,
+void rgui_list_get_at_offset(const rgui_list_t *list, size_t index,
       const char **path, unsigned *file_type, size_t *directory_ptr)
 {
    if (path)
@@ -103,6 +91,18 @@ void rgui_list_at(const rgui_list_t *list, size_t index,
       *file_type = list->list[index].type;
    if (directory_ptr)
       *directory_ptr = list->list[index].directory_ptr;
+}
+
+void rgui_list_get_last(const rgui_list_t *list,
+      const char **path, unsigned *file_type, size_t *directory_ptr)
+{
+   if (rgui_list_size(list) > 0)
+      rgui_list_get_at_offset(list, rgui_list_size(list) - 1, path, file_type, directory_ptr);
+}
+
+size_t rgui_list_size(const rgui_list_t *list)
+{
+   return list->ptr;
 }
 
 static int list_comp(const void *a_, const void *b_)
@@ -120,4 +120,3 @@ void rgui_list_sort(rgui_list_t *list)
 {
    qsort(list->list, list->ptr, sizeof(struct rgui_file), list_comp);
 }
-

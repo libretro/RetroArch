@@ -400,7 +400,7 @@ static void render_text(rgui_handle_t *rgui)
    char title[256];
    const char *dir = 0;
    unsigned menu_type = 0;
-   rgui_list_back(rgui->path_stack, &dir, &menu_type, NULL);
+   rgui_list_get_last(rgui->path_stack, &dir, &menu_type, NULL);
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    if (menu_type == RGUI_SETTINGS_CORE)
@@ -424,7 +424,7 @@ static void render_text(rgui_handle_t *rgui)
    {
       const char *path = 0;
       unsigned type = 0;
-      rgui_list_at(rgui->folder_buf, i, &path, &type, NULL);
+      rgui_list_get_at_offset(rgui->folder_buf, i, &path, &type, NULL);
       char message[256];
       char type_str[256];
       int w = rgui_is_controller_menu(menu_type) ? 26 : 19;
@@ -1040,7 +1040,7 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
    unsigned win_width = vp.full_width;
    unsigned win_height = vp.full_height;
    unsigned menu_type = 0;
-   rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
+   rgui_list_get_last(rgui->path_stack, NULL, &menu_type, NULL);
 
    (void)win_width;
    (void)win_height;
@@ -1150,7 +1150,7 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
    }
 
-   rgui_list_back(rgui->path_stack, NULL, &menu_type, NULL);
+   rgui_list_get_last(rgui->path_stack, NULL, &menu_type, NULL);
 
    render_text(rgui);
 
@@ -1168,7 +1168,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    unsigned type = 0;
    const char *label = 0;
    if (action != RGUI_ACTION_REFRESH)
-      rgui_list_at(rgui->folder_buf, rgui->directory_ptr, &label, &type, NULL);
+      rgui_list_get_at_offset(rgui->folder_buf, rgui->directory_ptr, &label, &type, NULL);
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    if (type == RGUI_SETTINGS_CORE)
       label = default_paths.core_dir;
@@ -1176,7 +1176,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    const char *dir = 0;
    unsigned menu_type = 0;
    size_t directory_ptr = 0;
-   rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
+   rgui_list_get_last(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
    if (rgui->need_refresh)
       action = RGUI_ACTION_NOOP;
@@ -1257,7 +1257,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
    }
 
-   rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
+   rgui_list_get_last(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
    if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE
 #ifdef HAVE_LIBRETRO_MANAGEMENT
@@ -1282,7 +1282,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    const char *dir = 0;
    unsigned menu_type = 0;
    size_t directory_ptr = 0;
-   rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
+   rgui_list_get_last(rgui->path_stack, &dir, &menu_type, &directory_ptr);
    int ret = 0;
 
    if (menu_type == RGUI_SETTINGS || rgui_is_controller_menu(menu_type))
@@ -1338,7 +1338,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
          const char *path = 0;
          unsigned type = 0;
-         rgui_list_at(rgui->folder_buf, rgui->directory_ptr, &path, &type, NULL);
+         rgui_list_get_at_offset(rgui->folder_buf, rgui->directory_ptr, &path, &type, NULL);
 
          if (type == RGUI_FILE_DIRECTORY)
          {
@@ -1428,7 +1428,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    }
 
    // refresh values in case the stack changed
-   rgui_list_back(rgui->path_stack, &dir, &menu_type, &directory_ptr);
+   rgui_list_get_last(rgui->path_stack, &dir, &menu_type, &directory_ptr);
 
    if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE
 #ifdef HAVE_LIBRETRO_MANAGEMENT
