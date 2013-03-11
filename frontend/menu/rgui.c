@@ -145,8 +145,8 @@ struct rgui_handle
    rgui_folder_enum_cb_t folder_cb;
    void *userdata;
 
-   rgui_list_t *path_stack;
-   rgui_list_t *folder_buf;
+   rgui_list_t *menu_stack;
+   rgui_list_t *selection_buf;
    int selection_ptr;
    bool need_refresh;
    bool msg_force;
@@ -234,9 +234,9 @@ rgui_handle_t *rgui_init(const char *base_path,
    rgui->userdata = userdata;
    strlcpy(rgui->base_path, base_path, sizeof(rgui->base_path));
 
-   rgui->path_stack = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
-   rgui->folder_buf = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
-   rgui_list_push(rgui->path_stack, base_path, RGUI_FILE_DIRECTORY, 0);
+   rgui->menu_stack = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
+   rgui->selection_buf = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
+   rgui_list_push(rgui->menu_stack, base_path, RGUI_FILE_DIRECTORY, 0);
 
    if (font_bmp_buf)
       init_font(rgui, font_bmp_buf);
@@ -254,8 +254,8 @@ rgui_handle_t *rgui_init(const char *base_path,
 
 void rgui_free(rgui_handle_t *rgui)
 {
-   rgui_list_free(rgui->path_stack);
-   rgui_list_free(rgui->folder_buf);
+   rgui_list_free(rgui->menu_stack);
+   rgui_list_free(rgui->selection_buf);
    if (rgui->alloc_font)
       free((uint8_t *) rgui->font);
    free(rgui);
@@ -388,8 +388,8 @@ static void render_text(rgui_handle_t *rgui)
 
    size_t begin = rgui->selection_ptr >= TERM_HEIGHT / 2 ?
       rgui->selection_ptr - TERM_HEIGHT / 2 : 0;
-   size_t end = rgui->selection_ptr + TERM_HEIGHT <= rgui->folder_buf->size ?
-      rgui->selection_ptr + TERM_HEIGHT : rgui->folder_buf->size;
+   size_t end = rgui->selection_ptr + TERM_HEIGHT <= rgui->selection_buf->size ?
+      rgui->selection_ptr + TERM_HEIGHT : rgui->selection_buf->size;
 
    if (end - begin > TERM_HEIGHT)
       end = begin + TERM_HEIGHT;
@@ -399,7 +399,7 @@ static void render_text(rgui_handle_t *rgui)
    char title[256];
    const char *dir = 0;
    unsigned menu_type = 0;
-   rgui_list_get_last(rgui->path_stack, &dir, &menu_type, NULL);
+   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, NULL);
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    if (menu_type == RGUI_SETTINGS_CORE)
@@ -423,7 +423,7 @@ static void render_text(rgui_handle_t *rgui)
    {
       const char *path = 0;
       unsigned type = 0;
-      rgui_list_get_at_offset(rgui->folder_buf, i, &path, &type, NULL);
+      rgui_list_get_at_offset(rgui->selection_buf, i, &path, &type, NULL);
       char message[256];
       char type_str[256];
       int w = rgui_is_controller_menu(menu_type) ? 26 : 19;
@@ -958,77 +958,77 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
 
 static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
-   rgui_list_clear(rgui->folder_buf);
+   rgui_list_clear(rgui->selection_buf);
 
-   rgui_list_push(rgui->folder_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
-   rgui_list_push(rgui->folder_buf, "Rewind granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
+   rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
+   rgui_list_push(rgui->selection_buf, "Rewind granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
    if (g_extern.main_is_init)
    {
-      rgui_list_push(rgui->folder_buf, "Save State", RGUI_SETTINGS_SAVESTATE_SAVE, 0);
-      rgui_list_push(rgui->folder_buf, "Load State", RGUI_SETTINGS_SAVESTATE_LOAD, 0);
+      rgui_list_push(rgui->selection_buf, "Save State", RGUI_SETTINGS_SAVESTATE_SAVE, 0);
+      rgui_list_push(rgui->selection_buf, "Load State", RGUI_SETTINGS_SAVESTATE_LOAD, 0);
 #ifdef HAVE_SCREENSHOTS
-      rgui_list_push(rgui->folder_buf, "Take Screenshot", RGUI_SETTINGS_SCREENSHOT, 0);
+      rgui_list_push(rgui->selection_buf, "Take Screenshot", RGUI_SETTINGS_SCREENSHOT, 0);
 #endif
-      rgui_list_push(rgui->folder_buf, "Restart Game", RGUI_SETTINGS_RESTART_GAME, 0);
+      rgui_list_push(rgui->selection_buf, "Restart Game", RGUI_SETTINGS_RESTART_GAME, 0);
    }
-   rgui_list_push(rgui->folder_buf, "Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER, 0);
+   rgui_list_push(rgui->selection_buf, "Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER, 0);
 #ifdef HW_RVL
-   rgui_list_push(rgui->folder_buf, "VI Trap filtering", RGUI_SETTINGS_VIDEO_SOFT_FILTER, 0);
+   rgui_list_push(rgui->selection_buf, "VI Trap filtering", RGUI_SETTINGS_VIDEO_SOFT_FILTER, 0);
 #endif
 #ifdef GEKKO
-   rgui_list_push(rgui->folder_buf, "Screen Resolution", RGUI_SETTINGS_VIDEO_RESOLUTION, 0);
-   rgui_list_push(rgui->folder_buf, "Gamma", RGUI_SETTINGS_VIDEO_GAMMA, 0);
+   rgui_list_push(rgui->selection_buf, "Screen Resolution", RGUI_SETTINGS_VIDEO_RESOLUTION, 0);
+   rgui_list_push(rgui->selection_buf, "Gamma", RGUI_SETTINGS_VIDEO_GAMMA, 0);
 #endif
-   rgui_list_push(rgui->folder_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
-   rgui_list_push(rgui->folder_buf, "Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
-   rgui_list_push(rgui->folder_buf, "Overscan", RGUI_SETTINGS_VIDEO_OVERSCAN, 0);
-   rgui_list_push(rgui->folder_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
-   rgui_list_push(rgui->folder_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
-   rgui_list_push(rgui->folder_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
-   rgui_list_push(rgui->folder_buf, "Audio Resampler", RGUI_SETTINGS_RESAMPLER_TYPE, 0);
+   rgui_list_push(rgui->selection_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
+   rgui_list_push(rgui->selection_buf, "Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
+   rgui_list_push(rgui->selection_buf, "Overscan", RGUI_SETTINGS_VIDEO_OVERSCAN, 0);
+   rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
+   rgui_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
+   rgui_list_push(rgui->selection_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
+   rgui_list_push(rgui->selection_buf, "Audio Resampler", RGUI_SETTINGS_RESAMPLER_TYPE, 0);
 #ifdef GEKKO
-   rgui_list_push(rgui->folder_buf, "SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR, 0);
-   rgui_list_push(rgui->folder_buf, "State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR, 0);
+   rgui_list_push(rgui->selection_buf, "SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR, 0);
+   rgui_list_push(rgui->selection_buf, "State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR, 0);
 #endif
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-   rgui_list_push(rgui->folder_buf, "Core", RGUI_SETTINGS_CORE, 0);
+   rgui_list_push(rgui->selection_buf, "Core", RGUI_SETTINGS_CORE, 0);
 #endif
 #ifdef GEKKO
-   rgui_list_push(rgui->folder_buf, "Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1, 0);
-   rgui_list_push(rgui->folder_buf, "Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2, 0);
-   rgui_list_push(rgui->folder_buf, "Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3, 0);
-   rgui_list_push(rgui->folder_buf, "Controller #4 Config", RGUI_SETTINGS_CONTROLLER_4, 0);
+   rgui_list_push(rgui->selection_buf, "Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1, 0);
+   rgui_list_push(rgui->selection_buf, "Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2, 0);
+   rgui_list_push(rgui->selection_buf, "Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3, 0);
+   rgui_list_push(rgui->selection_buf, "Controller #4 Config", RGUI_SETTINGS_CONTROLLER_4, 0);
 #endif
-   rgui_list_push(rgui->folder_buf, "Debug Text", RGUI_SETTINGS_DEBUG_TEXT, 0);
+   rgui_list_push(rgui->selection_buf, "Debug Text", RGUI_SETTINGS_DEBUG_TEXT, 0);
 #ifndef HAVE_DYNAMIC
-   rgui_list_push(rgui->folder_buf, "Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR, 0);
+   rgui_list_push(rgui->selection_buf, "Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR, 0);
 #endif
-   rgui_list_push(rgui->folder_buf, "Exit RetroArch", RGUI_SETTINGS_QUIT_EMULATOR, 0);
+   rgui_list_push(rgui->selection_buf, "Exit RetroArch", RGUI_SETTINGS_QUIT_EMULATOR, 0);
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 {
 #ifdef RARCH_CONSOLE
-   rgui_list_clear(rgui->folder_buf);
+   rgui_list_clear(rgui->selection_buf);
 
-   rgui_list_push(rgui->folder_buf, "Device", RGUI_SETTINGS_BIND_DEVICE, 0);
-   rgui_list_push(rgui->folder_buf, "DPad Emulation", RGUI_SETTINGS_BIND_DPAD_EMULATION, 0);
-   rgui_list_push(rgui->folder_buf, "Up", RGUI_SETTINGS_BIND_UP, 0);
-   rgui_list_push(rgui->folder_buf, "Down", RGUI_SETTINGS_BIND_DOWN, 0);
-   rgui_list_push(rgui->folder_buf, "Left", RGUI_SETTINGS_BIND_LEFT, 0);
-   rgui_list_push(rgui->folder_buf, "Right", RGUI_SETTINGS_BIND_RIGHT, 0);
-   rgui_list_push(rgui->folder_buf, "A", RGUI_SETTINGS_BIND_A, 0);
-   rgui_list_push(rgui->folder_buf, "B", RGUI_SETTINGS_BIND_B, 0);
-   rgui_list_push(rgui->folder_buf, "X", RGUI_SETTINGS_BIND_X, 0);
-   rgui_list_push(rgui->folder_buf, "Y", RGUI_SETTINGS_BIND_Y, 0);
-   rgui_list_push(rgui->folder_buf, "Start", RGUI_SETTINGS_BIND_START, 0);
-   rgui_list_push(rgui->folder_buf, "Select", RGUI_SETTINGS_BIND_SELECT, 0);
-   rgui_list_push(rgui->folder_buf, "L", RGUI_SETTINGS_BIND_L, 0);
-   rgui_list_push(rgui->folder_buf, "R", RGUI_SETTINGS_BIND_R, 0);
-   rgui_list_push(rgui->folder_buf, "L2", RGUI_SETTINGS_BIND_L2, 0);
-   rgui_list_push(rgui->folder_buf, "R2", RGUI_SETTINGS_BIND_R2, 0);
-   rgui_list_push(rgui->folder_buf, "L3", RGUI_SETTINGS_BIND_L3, 0);
-   rgui_list_push(rgui->folder_buf, "R3", RGUI_SETTINGS_BIND_R3, 0);
+   rgui_list_push(rgui->selection_buf, "Device", RGUI_SETTINGS_BIND_DEVICE, 0);
+   rgui_list_push(rgui->selection_buf, "DPad Emulation", RGUI_SETTINGS_BIND_DPAD_EMULATION, 0);
+   rgui_list_push(rgui->selection_buf, "Up", RGUI_SETTINGS_BIND_UP, 0);
+   rgui_list_push(rgui->selection_buf, "Down", RGUI_SETTINGS_BIND_DOWN, 0);
+   rgui_list_push(rgui->selection_buf, "Left", RGUI_SETTINGS_BIND_LEFT, 0);
+   rgui_list_push(rgui->selection_buf, "Right", RGUI_SETTINGS_BIND_RIGHT, 0);
+   rgui_list_push(rgui->selection_buf, "A", RGUI_SETTINGS_BIND_A, 0);
+   rgui_list_push(rgui->selection_buf, "B", RGUI_SETTINGS_BIND_B, 0);
+   rgui_list_push(rgui->selection_buf, "X", RGUI_SETTINGS_BIND_X, 0);
+   rgui_list_push(rgui->selection_buf, "Y", RGUI_SETTINGS_BIND_Y, 0);
+   rgui_list_push(rgui->selection_buf, "Start", RGUI_SETTINGS_BIND_START, 0);
+   rgui_list_push(rgui->selection_buf, "Select", RGUI_SETTINGS_BIND_SELECT, 0);
+   rgui_list_push(rgui->selection_buf, "L", RGUI_SETTINGS_BIND_L, 0);
+   rgui_list_push(rgui->selection_buf, "R", RGUI_SETTINGS_BIND_R, 0);
+   rgui_list_push(rgui->selection_buf, "L2", RGUI_SETTINGS_BIND_L2, 0);
+   rgui_list_push(rgui->selection_buf, "R2", RGUI_SETTINGS_BIND_R2, 0);
+   rgui_list_push(rgui->selection_buf, "L3", RGUI_SETTINGS_BIND_L3, 0);
+   rgui_list_push(rgui->selection_buf, "R3", RGUI_SETTINGS_BIND_R3, 0);
 #endif
 }
 
@@ -1039,7 +1039,7 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
    unsigned win_width = vp.full_width;
    unsigned win_height = vp.full_height;
    unsigned menu_type = 0;
-   rgui_list_get_last(rgui->path_stack, NULL, &menu_type, NULL);
+   rgui_list_get_last(rgui->menu_stack, NULL, &menu_type, NULL);
 
    (void)win_width;
    (void)win_height;
@@ -1097,24 +1097,24 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_CANCEL:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
          {
-            rgui_list_pop(rgui->path_stack);
-            rgui_list_push(rgui->path_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
+            rgui_list_pop(rgui->menu_stack);
+            rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
          }
          else
          {
-            rgui_list_pop(rgui->path_stack);
+            rgui_list_pop(rgui->menu_stack);
          }
          break;
 
       case RGUI_ACTION_OK:
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
          {
-            rgui_list_pop(rgui->path_stack);
-            rgui_list_push(rgui->path_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT_2, 0);
+            rgui_list_pop(rgui->menu_stack);
+            rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT_2, 0);
          }
          else
          {
-            rgui_list_pop(rgui->path_stack);
+            rgui_list_pop(rgui->menu_stack);
          }
          break;
 
@@ -1138,7 +1138,7 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
 
       case RGUI_ACTION_SETTINGS:
-         rgui_list_pop(rgui->path_stack);
+         rgui_list_pop(rgui->menu_stack);
          break;
 
       case RGUI_ACTION_MESSAGE:
@@ -1149,7 +1149,7 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
    }
 
-   rgui_list_get_last(rgui->path_stack, NULL, &menu_type, NULL);
+   rgui_list_get_last(rgui->menu_stack, NULL, &menu_type, NULL);
 
    render_text(rgui);
 
@@ -1167,7 +1167,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    unsigned type = 0;
    const char *label = 0;
    if (action != RGUI_ACTION_REFRESH)
-      rgui_list_get_at_offset(rgui->folder_buf, rgui->selection_ptr, &label, &type, NULL);
+      rgui_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &label, &type, NULL);
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    if (type == RGUI_SETTINGS_CORE)
       label = default_paths.core_dir;
@@ -1175,7 +1175,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    const char *dir = 0;
    unsigned menu_type = 0;
    size_t directory_ptr = 0;
-   rgui_list_get_last(rgui->path_stack, &dir, &menu_type, &directory_ptr);
+   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
 
    if (rgui->need_refresh)
       action = RGUI_ACTION_NOOP;
@@ -1186,11 +1186,11 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          if (rgui->selection_ptr > 0)
             rgui->selection_ptr--;
          else
-            rgui->selection_ptr = rgui->folder_buf->size - 1;
+            rgui->selection_ptr = rgui->selection_buf->size - 1;
          break;
 
       case RGUI_ACTION_DOWN:
-         if (rgui->selection_ptr + 1 < rgui->folder_buf->size)
+         if (rgui->selection_ptr + 1 < rgui->selection_buf->size)
             rgui->selection_ptr++;
          else
             rgui->selection_ptr = 0;
@@ -1198,9 +1198,9 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
       case RGUI_ACTION_CANCEL:
       case RGUI_ACTION_SETTINGS:
-         if (rgui->path_stack->size > 1)
+         if (rgui->menu_stack->size > 1)
          {
-            rgui_list_pop(rgui->path_stack);
+            rgui_list_pop(rgui->menu_stack);
             rgui->selection_ptr = directory_ptr;
             rgui->need_refresh = true;
          }
@@ -1217,13 +1217,13 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             )
                && action == RGUI_ACTION_OK)
          {
-            rgui_list_push(rgui->path_stack, label, type, rgui->selection_ptr);
+            rgui_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
             rgui->selection_ptr = 0;
             rgui->need_refresh = true;
          }
          else if (type == RGUI_SETTINGS_CUSTOM_VIEWPORT && action == RGUI_ACTION_OK)
          {
-            rgui_list_push(rgui->path_stack, "", type, rgui->selection_ptr);
+            rgui_list_push(rgui->menu_stack, "", type, rgui->selection_ptr);
             g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
 
             if (driver.video_poke->set_aspect_ratio)
@@ -1231,7 +1231,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else if (type == RGUI_SETTINGS_OPEN_FILEBROWSER && action == RGUI_ACTION_OK)
          {
-            rgui_list_push(rgui->path_stack, rgui->base_path, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
+            rgui_list_push(rgui->menu_stack, rgui->base_path, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
             rgui->need_refresh = true;
          }
          else
@@ -1256,7 +1256,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
    }
 
-   rgui_list_get_last(rgui->path_stack, &dir, &menu_type, &directory_ptr);
+   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
 
    if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE
 #ifdef HAVE_LIBRETRO_MANAGEMENT
@@ -1281,7 +1281,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    const char *dir = 0;
    unsigned menu_type = 0;
    size_t directory_ptr = 0;
-   rgui_list_get_last(rgui->path_stack, &dir, &menu_type, &directory_ptr);
+   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
    int ret = 0;
 
    if (menu_type == RGUI_SETTINGS || rgui_is_controller_menu(menu_type))
@@ -1297,11 +1297,11 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          if (rgui->selection_ptr > 0)
             rgui->selection_ptr--;
          else
-            rgui->selection_ptr = rgui->folder_buf->size - 1;
+            rgui->selection_ptr = rgui->selection_buf->size - 1;
          break;
 
       case RGUI_ACTION_DOWN:
-         if (rgui->selection_ptr + 1 < rgui->folder_buf->size)
+         if (rgui->selection_ptr + 1 < rgui->selection_buf->size)
             rgui->selection_ptr++;
          else
             rgui->selection_ptr = 0;
@@ -1315,29 +1315,29 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
 
       case RGUI_ACTION_RIGHT:
-         if (rgui->selection_ptr + 8 < rgui->folder_buf->size)
+         if (rgui->selection_ptr + 8 < rgui->selection_buf->size)
             rgui->selection_ptr += 8;
          else
-            rgui->selection_ptr = rgui->folder_buf->size - 1;
+            rgui->selection_ptr = rgui->selection_buf->size - 1;
          break;
       
       case RGUI_ACTION_CANCEL:
-         if (rgui->path_stack->size > 1)
+         if (rgui->menu_stack->size > 1)
          {
             rgui->need_refresh = true;
             rgui->selection_ptr = directory_ptr;
-            rgui_list_pop(rgui->path_stack);
+            rgui_list_pop(rgui->menu_stack);
          }
          break;
 
       case RGUI_ACTION_OK:
       {
-         if (rgui->folder_buf->size == 0)
+         if (rgui->selection_buf->size == 0)
             return 0;
 
          const char *path = 0;
          unsigned type = 0;
-         rgui_list_get_at_offset(rgui->folder_buf, rgui->selection_ptr, &path, &type, NULL);
+         rgui_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &path, &type, NULL);
 
          if (type == RGUI_FILE_DIRECTORY)
          {
@@ -1347,18 +1347,18 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             if (strcmp(path, "..") == 0)
             {
                rgui->selection_ptr = directory_ptr;
-               rgui_list_pop(rgui->path_stack);
+               rgui_list_pop(rgui->menu_stack);
             }
             else if (strcmp(path, ".") != 0)
             {
-               rgui_list_push(rgui->path_stack, cat_path, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
+               rgui_list_push(rgui->menu_stack, cat_path, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
                rgui->selection_ptr = 0;
             }
             rgui->need_refresh = true;
          }
          else if (type == RGUI_FILE_DEVICE)
          {
-            rgui_list_push(rgui->path_stack, path, RGUI_FILE_DEVICE, rgui->selection_ptr);
+            rgui_list_push(rgui->menu_stack, path, RGUI_FILE_DEVICE, rgui->selection_ptr);
             rgui->selection_ptr = 0;
             rgui->need_refresh = true;
          }
@@ -1370,7 +1370,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
                strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
                rgui->selection_ptr = directory_ptr;
                rgui->need_refresh = true;
-               rgui_list_pop(rgui->path_stack);
+               rgui_list_pop(rgui->menu_stack);
 
 #ifdef GEKKO
                snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s/boot.dol", default_paths.core_dir);
@@ -1406,12 +1406,12 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          {
             rgui->selection_ptr = directory_ptr;
             rgui->need_refresh = true;
-            rgui_list_pop(rgui->path_stack);
+            rgui_list_pop(rgui->menu_stack);
          }
          else
 #endif
          {
-            rgui_list_push(rgui->path_stack, "", RGUI_SETTINGS, rgui->selection_ptr);
+            rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, rgui->selection_ptr);
             rgui->selection_ptr = 0;
          }
          return rgui_settings_iterate(rgui, RGUI_ACTION_REFRESH);
@@ -1425,7 +1425,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    }
 
    // refresh values in case the stack changed
-   rgui_list_get_last(rgui->path_stack, &dir, &menu_type, &directory_ptr);
+   rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
 
    if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE
 #ifdef HAVE_LIBRETRO_MANAGEMENT
@@ -1434,13 +1434,13 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             ))
    {
       rgui->need_refresh = false;
-      rgui_list_clear(rgui->folder_buf);
+      rgui_list_clear(rgui->selection_buf);
 
       rgui->folder_cb(dir, (rgui_file_enum_cb_t)rgui_list_push,
-         &menu_type, rgui->folder_buf);
+         &menu_type, rgui->selection_buf);
 
       if (*dir)
-         rgui_list_sort(rgui->folder_buf);
+         rgui_list_sort(rgui->selection_buf);
    }
 
    render_text(rgui);
