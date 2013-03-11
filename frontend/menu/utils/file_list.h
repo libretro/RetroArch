@@ -35,8 +35,6 @@ void rgui_list_get_last(const rgui_list_t *list,
 void rgui_list_get_at_offset(const rgui_list_t *list, size_t index,
       const char **path, unsigned *type, size_t *directory_ptr);
 
-void rgui_list_sort(rgui_list_t *list);
-
 #ifdef __cplusplus
 }
 #endif

@@ -1304,6 +1304,8 @@ static bool directory_parse(const char *directory, void *userdata, void *ctx)
    if (!list)
       return false;
 
+   dir_list_sort(list, true);
+
    for (size_t i = 0; i < list->size; i++)
    {
       bool is_dir = list->elems[i].attr.b;
@@ -1480,9 +1482,6 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
       rgui_list_clear(rgui->selection_buf);
 
       directory_parse(dir, &menu_type, rgui->selection_buf);
-
-      if (*dir)
-         rgui_list_sort(rgui->selection_buf);
    }
 
    render_text(rgui);

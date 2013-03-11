@@ -19,7 +19,7 @@
 #include "../../../file.h"
 #include "file_browser.h"
 
-static bool filebrowser_parse_directory(void *data, unsigned stack_size, 
+static bool directory_parse(void *data, unsigned stack_size, 
 const char *path, const char * extensions)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)data;
@@ -49,14 +49,14 @@ const char *path, const char * extensions)
 filebrowser_t *filebrowser_init(const char *start_dir, const char *extensions)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)calloc(1, sizeof(*filebrowser));
-   filebrowser_parse_directory(filebrowser, 0, start_dir, extensions);
+   directory_parse(filebrowser, 0, start_dir, extensions);
    return filebrowser;
 }
 
 static bool filebrowser_reset(void *data, const char *start_dir, const char *extensions)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)data;
-   bool ret = filebrowser_parse_directory(filebrowser, 0, start_dir, extensions);
+   bool ret = directory_parse(filebrowser, 0, start_dir, extensions);
    return ret;
 }
 
@@ -97,7 +97,7 @@ bool with_extension)
    else
       snprintf(extensions, sizeof(extensions), "empty");
 
-   ret = filebrowser_parse_directory(filebrowser, push_dir, path, extensions);
+   ret = directory_parse(filebrowser, push_dir, path, extensions);
 
    return ret;
 }
@@ -116,14 +116,14 @@ static bool filebrowser_pop_directory (void *data)
    strlcpy(directory_path_tmp, filebrowser->directory_path, sizeof(directory_path_tmp));
 
    //test first if previous directory can be accessed
-   ret = filebrowser_parse_directory(filebrowser, pop_dir, previous_dir,
+   ret = directory_parse(filebrowser, pop_dir, previous_dir,
    filebrowser->extensions);
 
    if(!ret)
    {
       //revert to previous directory
       strlcpy(filebrowser->directory_path, directory_path_tmp, sizeof(filebrowser->directory_path));
-      ret = filebrowser_parse_directory(filebrowser, pop_dir, filebrowser->directory_path,
+      ret = directory_parse(filebrowser, pop_dir, filebrowser->directory_path,
       filebrowser->extensions);
    }
 

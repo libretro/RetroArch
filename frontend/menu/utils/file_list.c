@@ -89,19 +89,3 @@ void rgui_list_get_last(const rgui_list_t *list,
    if (list->size > 0)
       rgui_list_get_at_offset(list, list->size - 1, path, file_type, directory_ptr);
 }
-
-static int list_comp(const void *a_, const void *b_)
-{
-   const struct rgui_file *a = (const struct rgui_file*)a_;
-   const struct rgui_file *b = (const struct rgui_file*)b_;
-
-   if (a->type != b->type)
-      return a->type == RGUI_FILE_DIRECTORY ? -1 : 1;
-
-   return strcasecmp(a->path, b->path);
-}
-
-void rgui_list_sort(rgui_list_t *list)
-{
-   qsort(list->list, list->size, sizeof(struct rgui_file), list_comp);
-}
