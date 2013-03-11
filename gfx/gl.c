@@ -789,7 +789,6 @@ static void gl_set_rotation(void *data, unsigned rotation)
 }
 
 #ifdef HAVE_FBO
-
 static inline void gl_start_frame_fbo(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -2245,9 +2244,9 @@ static void gl_set_filtering(void *data, unsigned index, bool smooth)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
+#ifdef HAVE_FBO
 static void gl_set_fbo_state(void *data, unsigned mode)
 {
-#ifdef HAVE_FBO
    gl_t *gl = (gl_t*)data;
 
    switch (mode)
@@ -2262,10 +2261,6 @@ static void gl_set_fbo_state(void *data, unsigned mode)
          gl_init_fbo(gl, gl->tex_w, gl->tex_h);
          break;
    }
-#else
-   (void)data;
-   (void)mode;
-#endif
 }
 
 static unsigned gl_get_fbo_state(void *data)
@@ -2273,6 +2268,7 @@ static unsigned gl_get_fbo_state(void *data)
    gl_t *gl = (gl_t*)data;
    return gl->fbo_inited ? FBO_INIT : FBO_DEINIT;
 }
+#endif
 
 static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
