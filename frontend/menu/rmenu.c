@@ -2709,18 +2709,19 @@ int menu_input_process(void *data, void *state)
       return -1;
    }
 
-   static bool old_rmenu_toggle = true;
-   bool rmenu_toggle =  (((rstate->old_state & (1ULL << RMENU_DEVICE_NAV_L3))
-            && (rstate->old_state & (1ULL << RMENU_DEVICE_NAV_R3))
-            && g_extern.main_is_init));
-   if (rmenu_toggle && !old_rmenu_toggle)
+   if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-      old_rmenu_toggle = true;
-      return -1;
+      bool return_to_game_enable = (((rstate->old_state & (1ULL << RMENU_DEVICE_NAV_L3)) && (rstate->old_state & (1ULL << RMENU_DEVICE_NAV_R3)) && g_extern.main_is_init));
+
+      if (return_to_game_enable)
+      {
+         if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME)))
+         {
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            return -1;
+         }
+      }
    }
-   else
-      old_rmenu_toggle = rmenu_toggle;
 
    bool quit, resize;
    unsigned width, height, frame_count;
@@ -2888,6 +2889,11 @@ bool menu_iterate(void)
    return true;
 
 deinit:
+   // set a timer delay so that we don't instantly switch back to the menu when
+   // press and holding L3 + R3 in the emulation loop (lasts for 30 frame ticks)
+   if (!(g_extern.lifecycle_state & (1ULL << RARCH_FRAMEADVANCE)))
+      g_extern.delay_timer[0] = g_extern.frame_count + 30;
+
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
 
 #ifndef __CELLOS_LV2__
