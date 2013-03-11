@@ -871,12 +871,12 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    float msg_width  = mem_width;
    float msg_height = mem_height + 50;
 #endif
+   font_params_t font_parms = {0};
 
    if (lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
    {
       MEMORYSTATUS stat;
       char buf[128];
-      font_params_t font_parms = {0};
 
       GlobalMemoryStatus(&stat);
 
@@ -1013,7 +1013,7 @@ static void xdk_d3d_set_osd_msg(void *data, const char *msg, void *userdata)
    font_params_t *params = (font_params_t*)userdata;
 
    if (d3d->font_ctx)
-      d3d->font_ctx->render_msg(gl, msg, params);
+      d3d->font_ctx->render_msg(d3d, msg, params);
 }
 
 static const video_poke_interface_t d3d_poke_interface = {
