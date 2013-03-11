@@ -2858,7 +2858,6 @@ static inline bool check_enter_rgui(void)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
 
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-      g_extern.delay_timer[0] = g_extern.frame_count + 30; // FIXME: Purge. Should do something similar in RGUI as well.
       old_rmenu_toggle = true;
       return true;
    }
