@@ -1533,7 +1533,10 @@ bool menu_iterate(void)
    msg = msg_queue_pull(g_extern.msg_queue);
 
    if (msg)
-      device_ptr->font_ctx->render_msg(device_ptr, msg);
+   {
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, NULL);
+   }
 
    device_ptr->ctx_driver->swap_buffers();
 
