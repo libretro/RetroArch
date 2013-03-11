@@ -441,7 +441,7 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    d3dr->EndVertices();
 }
 
-static void xdk_render_msg(void *driver, const char *msg, void *params)
+static void xdk_render_msg(void *driver, const char *str_msg, void *parms)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver;
    xdk360_video_font_t *font = &m_Font;
