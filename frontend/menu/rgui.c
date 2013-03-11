@@ -1263,10 +1263,10 @@ static bool directory_parse(const char *directory, void *userdata, void *ctx)
       rgui_list_push(ctx, "G:\\", RGUI_FILE_DEVICE, 0);
       return true;
 #elif defined(__CELLOS_LV2__)
-      rgui_list_push(ctx, "app_home", RGUI_FILE_DEVICE, 0);
-      rgui_list_push(ctx, "dev_hdd0", RGUI_FILE_DEVICE, 0);
-      rgui_list_push(ctx, "dev_hdd1", RGUI_FILE_DEVICE, 0);
-      rgui_list_push(ctx, "host_root", RGUI_FILE_DEVICE, 0);
+      rgui_list_push(ctx, "app_home:/", RGUI_FILE_DEVICE, 0);
+      rgui_list_push(ctx, "dev_hdd0:/", RGUI_FILE_DEVICE, 0);
+      rgui_list_push(ctx, "dev_hdd1:/", RGUI_FILE_DEVICE, 0);
+      rgui_list_push(ctx, "host_root:/", RGUI_FILE_DEVICE, 0);
       return true;
 #endif
    }
@@ -1378,7 +1378,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          if (type == RGUI_FILE_DIRECTORY)
          {
             char cat_path[PATH_MAX];
-            snprintf(cat_path, sizeof(cat_path), "%s/%s", dir, path);
+            fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
 
             rgui_list_push(rgui->menu_stack, cat_path, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
             rgui->selection_ptr = 0;
@@ -1409,7 +1409,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             }
             else
             {
-               snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s/%s", dir, path);
+               fill_pathname_join(g_extern.fullpath, dir, path, sizeof(g_extern.fullpath));
                g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 
                menu_settings_msg(S_MSG_LOADING_ROM, 1);
