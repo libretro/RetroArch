@@ -32,7 +32,7 @@ struct rgui_list
    struct rgui_file *list;
 
    size_t capacity;
-   size_t ptr;
+   size_t size;
 };
 
 rgui_list_t *rgui_list_new(void)
@@ -42,34 +42,34 @@ rgui_list_t *rgui_list_new(void)
 
 bool rgui_list_empty(const rgui_list_t *list)
 {
-   return list->ptr == 0;
+   return list->size == 0;
 }
 
 void rgui_list_push(rgui_list_t *list,
       const char *path, unsigned type, size_t directory_ptr)
 {
-   if (list->ptr >= list->capacity)
+   if (list->size >= list->capacity)
    {
       list->capacity++;
       list->capacity *= 2;
       list->list = (struct rgui_file*)realloc(list->list, list->capacity * sizeof(struct rgui_file));
    }
 
-   list->list[list->ptr].path = strdup(path);
-   list->list[list->ptr].type = type;
-   list->list[list->ptr].directory_ptr = directory_ptr;
-   list->ptr++;
+   list->list[list->size].path = strdup(path);
+   list->list[list->size].type = type;
+   list->list[list->size].directory_ptr = directory_ptr;
+   list->size++;
 }
 
 void rgui_list_pop(rgui_list_t *list)
 {
    if (!rgui_list_empty(list))
-      free(list->list[--list->ptr].path);
+      free(list->list[--list->size].path);
 }
 
 void rgui_list_free(rgui_list_t *list)
 {
-   for (size_t i = 0; i < list->ptr; i++)
+   for (size_t i = 0; i < list->size; i++)
       free(list->list[i].path);
    free(list->list);
    free(list);
@@ -77,9 +77,9 @@ void rgui_list_free(rgui_list_t *list)
 
 void rgui_list_clear(rgui_list_t *list)
 {
-   for (size_t i = 0; i < list->ptr; i++)
+   for (size_t i = 0; i < list->size; i++)
       free(list->list[i].path);
-   list->ptr = 0;
+   list->size = 0;
 }
 
 void rgui_list_get_at_offset(const rgui_list_t *list, size_t index,
@@ -96,13 +96,8 @@ void rgui_list_get_at_offset(const rgui_list_t *list, size_t index,
 void rgui_list_get_last(const rgui_list_t *list,
       const char **path, unsigned *file_type, size_t *directory_ptr)
 {
-   if (rgui_list_size(list) > 0)
-      rgui_list_get_at_offset(list, rgui_list_size(list) - 1, path, file_type, directory_ptr);
-}
-
-size_t rgui_list_size(const rgui_list_t *list)
-{
-   return list->ptr;
+   if (list->size > 0)
+      rgui_list_get_at_offset(list, list->size - 1, path, file_type, directory_ptr);
 }
 
 static int list_comp(const void *a_, const void *b_)
@@ -118,5 +113,5 @@ static int list_comp(const void *a_, const void *b_)
 
 void rgui_list_sort(rgui_list_t *list)
 {
-   qsort(list->list, list->ptr, sizeof(struct rgui_file), list_comp);
+   qsort(list->list, list->size, sizeof(struct rgui_file), list_comp);
 }

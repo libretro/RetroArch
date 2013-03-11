@@ -389,8 +389,8 @@ static void render_text(rgui_handle_t *rgui)
 
    size_t begin = rgui->directory_ptr >= TERM_HEIGHT / 2 ?
       rgui->directory_ptr - TERM_HEIGHT / 2 : 0;
-   size_t end = rgui->directory_ptr + TERM_HEIGHT <= rgui_list_size(rgui->folder_buf) ?
-      rgui->directory_ptr + TERM_HEIGHT : rgui_list_size(rgui->folder_buf);
+   size_t end = rgui->directory_ptr + TERM_HEIGHT <= rgui->folder_buf->size ?
+      rgui->directory_ptr + TERM_HEIGHT : rgui->folder_buf->size;
 
    if (end - begin > TERM_HEIGHT)
       end = begin + TERM_HEIGHT;
@@ -1187,11 +1187,11 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          if (rgui->directory_ptr > 0)
             rgui->directory_ptr--;
          else
-            rgui->directory_ptr = rgui_list_size(rgui->folder_buf) - 1;
+            rgui->directory_ptr = rgui->folder_buf->size - 1;
          break;
 
       case RGUI_ACTION_DOWN:
-         if (rgui->directory_ptr + 1 < rgui_list_size(rgui->folder_buf))
+         if (rgui->directory_ptr + 1 < rgui->folder_buf->size)
             rgui->directory_ptr++;
          else
             rgui->directory_ptr = 0;
@@ -1199,7 +1199,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
       case RGUI_ACTION_CANCEL:
       case RGUI_ACTION_SETTINGS:
-         if (rgui_list_size(rgui->path_stack) > 1)
+         if (rgui->path_stack->size > 1)
          {
             rgui_list_pop(rgui->path_stack);
             rgui->directory_ptr = directory_ptr;
@@ -1298,11 +1298,11 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          if (rgui->directory_ptr > 0)
             rgui->directory_ptr--;
          else
-            rgui->directory_ptr = rgui_list_size(rgui->folder_buf) - 1;
+            rgui->directory_ptr = rgui->folder_buf->size - 1;
          break;
 
       case RGUI_ACTION_DOWN:
-         if (rgui->directory_ptr + 1 < rgui_list_size(rgui->folder_buf))
+         if (rgui->directory_ptr + 1 < rgui->folder_buf->size)
             rgui->directory_ptr++;
          else
             rgui->directory_ptr = 0;
@@ -1316,14 +1316,14 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
 
       case RGUI_ACTION_RIGHT:
-         if (rgui->directory_ptr + 8 < rgui_list_size(rgui->folder_buf))
+         if (rgui->directory_ptr + 8 < rgui->folder_buf->size)
             rgui->directory_ptr += 8;
          else
-            rgui->directory_ptr = rgui_list_size(rgui->folder_buf) - 1;
+            rgui->directory_ptr = rgui->folder_buf->size - 1;
          break;
       
       case RGUI_ACTION_CANCEL:
-         if (rgui_list_size(rgui->path_stack) > 1)
+         if (rgui->path_stack->size > 1)
          {
             rgui->need_refresh = true;
             rgui->directory_ptr = directory_ptr;
@@ -1333,7 +1333,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
       case RGUI_ACTION_OK:
       {
-         if (rgui_list_size(rgui->folder_buf) == 0)
+         if (rgui->folder_buf->size == 0)
             return 0;
 
          const char *path = 0;
