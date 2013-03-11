@@ -1380,16 +1380,8 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             char cat_path[PATH_MAX];
             snprintf(cat_path, sizeof(cat_path), "%s/%s", dir, path);
 
-            if (strcmp(path, "..") == 0)
-            {
-               rgui->selection_ptr = directory_ptr;
-               rgui_list_pop(rgui->menu_stack);
-            }
-            else if (strcmp(path, ".") != 0)
-            {
-               rgui_list_push(rgui->menu_stack, cat_path, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
-               rgui->selection_ptr = 0;
-            }
+            rgui_list_push(rgui->menu_stack, cat_path, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
+            rgui->selection_ptr = 0;
             rgui->need_refresh = true;
          }
          else if (type == RGUI_FILE_DEVICE)
