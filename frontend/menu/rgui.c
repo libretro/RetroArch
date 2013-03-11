@@ -1615,7 +1615,7 @@ void menu_free(void)
    rgui_free(rgui);
 }
 
-static uint16_t trigger_state = 0;
+static uint16_t trigger_state;
 
 static int menu_input_process(void *data, void *state)
 {
@@ -1647,7 +1647,7 @@ static int menu_input_process(void *data, void *state)
 
 bool menu_iterate(void)
 {
-   static uint16_t old_input_state = 0;
+   static uint16_t old_input_state = (1ULL << GX_DEVICE_NAV_MENU);
    static bool initial_held = true;
    static bool first_held = false;
    bool do_held;
@@ -1788,6 +1788,9 @@ bool menu_iterate(void)
    return true;
 
 deinit:
+   // so we don't immediately exit when we re-open the menu
+   old_input_state |= (1ULL << GX_DEVICE_NAV_MENU);
+
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME);
 
