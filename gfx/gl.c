@@ -2315,6 +2315,15 @@ static void gl_apply_state_changes(void *data)
    gl->should_resize = true;
 }
 
+static void gl_set_osd_msg(void *data, const char *msg, void *userdata)
+{
+   gl_t *gl = (gl_t*)data;
+   font_params_t *params = (font_params_t*)userdata;
+
+   if (gl->font_ctx)
+      gl->font_ctx->render_msg(gl, msg, params);
+}
+
 static const video_poke_interface_t gl_poke_interface = {
    gl_set_blend,
    gl_set_filtering,
@@ -2327,6 +2336,7 @@ static const video_poke_interface_t gl_poke_interface = {
 #ifdef HAVE_RGUI
    gl_set_rgui_texture,
 #endif
+   gl_set_osd_msg,
 };
 
 static void gl_get_poke_interface(void *data, const video_poke_interface_t **iface)

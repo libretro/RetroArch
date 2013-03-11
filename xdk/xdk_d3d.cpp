@@ -1007,6 +1007,15 @@ static void xdk_d3d_set_rgui_texture(void *data, const void *frame)
 }
 #endif
 
+static void xdk_d3d_set_osd_msg(void *data, const char *msg, void *userdata)
+{
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   font_params_t *params = (font_params_t*)userdata;
+
+   if (d3d->font_ctx)
+      d3d->font_ctx->render_msg(gl, msg, params);
+}
+
 static const video_poke_interface_t d3d_poke_interface = {
    xdk_d3d_set_blend,
    xdk_d3d_set_filtering,
@@ -1019,6 +1028,7 @@ static const video_poke_interface_t d3d_poke_interface = {
 #ifdef HAVE_RGUI
    xdk_d3d_set_rgui_texture,
 #endif
+   xdk_d3d_set_osd_msg,
 };
 
 static void d3d_get_poke_interface(void *data, const video_poke_interface_t **iface)

@@ -659,7 +659,8 @@ static void display_menubar(void *data)
    {
       case GENERAL_VIDEO_MENU:
          snprintf(msg, sizeof(msg), "NEXT -> [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R));
-         device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+         if (driver.video_poke->set_osd_msg)
+            driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
          break;
       case GENERAL_AUDIO_MENU:
       case EMU_GENERAL_MENU:
@@ -667,12 +668,15 @@ static void display_menubar(void *data)
       case EMU_AUDIO_MENU:
       case PATH_MENU:
          snprintf(msg, sizeof(msg), "[%s] <- PREV | NEXT -> [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R));
-         device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+         if (driver.video_poke->set_osd_msg)
+            driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
          break;
       case CONTROLS_MENU:
       case INGAME_MENU_RESIZE:
          snprintf(msg, sizeof(msg), "[%s] <- PREV", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L));
-         device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+         if (driver.video_poke->set_osd_msg)
+            driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
          break;
       default:
          break;
@@ -695,7 +699,9 @@ static void display_menubar(void *data)
          fb = tmpBrowser;
       case FILE_BROWSER_MENU:
          snprintf(msg, sizeof(msg), "PATH: %s", filebrowser_get_current_dir(fb));
-         device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+         if (driver.video_poke->set_osd_msg)
+            driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
          break;
       default:
          break;
@@ -709,21 +715,26 @@ static void display_menubar(void *data)
    font_parms.scale = default_pos.core_msg_font_size;
    font_parms.color = WHITE;
 
-   device_ptr->font_ctx->render_msg(device_ptr, g_extern.title_buf, &font_parms);
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, g_extern.title_buf, &font_parms);
 #ifdef __CELLOS_LV2__
 
    font_parms.x = default_pos.x_position;
    font_parms.y = 0.05f;
    font_parms.scale = 1.4f;
    font_parms.color = WHITE;
-   device_ptr->font_ctx->render_msg(device_ptr, current_menu->title, &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, current_menu->title, &font_parms);
 
    font_parms.x = 0.80f;
    font_parms.y = 0.015f;
    font_parms.scale = 0.82f;
    font_parms.color = WHITE;
    snprintf(msg, sizeof(msg), "v%s", PACKAGE_VERSION);
-   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 #endif
 }
 
@@ -798,7 +809,8 @@ void browser_render(void *data)
       font_parms.y = default_pos.starting_y_position;
       font_parms.color = i == current_index ? RED : b->current_dir.list->elems[i].attr.b ? GREEN : WHITE;
 
-      device_ptr->font_ctx->render_msg(device_ptr, fname_tmp, &font_parms);
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, fname_tmp, &font_parms);
    }
 }
 
@@ -810,7 +822,6 @@ int select_file(void *data, void *state)
 
    uint64_t input = rstate->input;
 
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    char extensions[256], comment[256], path[PATH_MAX];
    bool ret = true;
 
@@ -948,11 +959,15 @@ int select_file(void *data, void *state)
    font_parms.scale = default_pos.font_size;
    font_parms.color = WHITE;
 
-   device_ptr->font_ctx->render_msg(device_ptr, comment, &font_parms);
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, comment, &font_parms);
+
    snprintf(comment, sizeof(comment), "[%s] - return to settings [%s] - Reset Startdir", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
    font_parms.y = default_pos.comment_two_y_position;
    font_parms.color = YELLOW;
-   device_ptr->font_ctx->render_msg(device_ptr, comment, &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, comment, &font_parms);
 
    if(current_menu->browser_draw)
       current_menu->browser_draw(filebrowser);
@@ -968,7 +983,6 @@ int select_directory(void *data, void *state)
 
    uint64_t input = rstate->input;
 
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    char path[PATH_MAX], msg[256];
    bool ret = true;
 
@@ -1053,18 +1067,23 @@ int select_directory(void *data, void *state)
    font_parms.scale = default_pos.font_size;
    font_parms.color = YELLOW;
 
-   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
    snprintf(msg, sizeof(msg), "[%s] - Reset to startdir", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
 
    font_parms.y = default_pos.comment_two_y_position + (default_pos.y_position_increment * 1);
-   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
    snprintf(msg, sizeof(msg), "INFO - Browse to a directory and assign it as the path by\npressing [%s].", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_Y));
 
    font_parms.y = default_pos.comment_y_position;
    font_parms.color = WHITE;
-   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
    if(current_menu->browser_draw)
       current_menu->browser_draw(filebrowser);
@@ -2109,11 +2128,15 @@ static int select_setting(void *data, void *state)
          font_parms.y = default_pos.starting_y_position;
          font_parms.scale = default_pos.variable_font_size;
          font_parms.color = current_menu->selected == items[i].enum_id ? YELLOW : WHITE;
-         device_ptr->font_ctx->render_msg(device_ptr, items[i].text, &font_parms);
+
+         if (driver.video_poke->set_osd_msg)
+            driver.video_poke->set_osd_msg(driver.video_data, items[i].text, &font_parms);
 
          font_parms.x = default_pos.x_position_center;
          font_parms.color = WHITE;
-         device_ptr->font_ctx->render_msg(device_ptr, items[i].setting_text, &font_parms);
+
+         if (driver.video_poke->set_osd_msg)
+            driver.video_poke->set_osd_msg(driver.video_data, items[i].setting_text, &font_parms);
 
          if(current_menu->selected == items[i].enum_id)
          {
@@ -2127,7 +2150,9 @@ static int select_setting(void *data, void *state)
             font_parms.y = default_pos.comment_y_position;
             font_parms.scale = default_pos.font_size;
             font_parms.color = WHITE;
-            device_ptr->font_ctx->render_msg(device_ptr, items[i].comment, &font_parms);
+
+            if (driver.video_poke->set_osd_msg)
+               driver.video_poke->set_osd_msg(driver.video_data, items[i].comment, &font_parms);
          }
       }
    }
@@ -2140,11 +2165,15 @@ static int select_setting(void *data, void *state)
    font_parms.y = default_pos.comment_two_y_position;
    font_parms.scale = default_pos.font_size;
    font_parms.color = YELLOW;
-   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
    snprintf(msg, sizeof(msg), "[%s] - Reset to default", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
    font_parms.y = default_pos.comment_two_y_position + (default_pos.y_position_increment * 1);
-   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
    if(current_menu->browser_draw)
       current_menu->browser_draw(filebrowser);
@@ -2161,7 +2190,6 @@ int select_rom(void *data, void *state)
 
    uint64_t input = rstate->input;
 
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    char msg[128];
    rmenu_default_positions_t default_pos;
    filebrowser_t *filebrowser = browser;
@@ -2221,7 +2249,8 @@ int select_rom(void *data, void *state)
    font_parms.scale = default_pos.font_size;
    font_parms.color = WHITE;
 
-   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
    display_menubar(current_menu);
 
@@ -2229,12 +2258,16 @@ int select_rom(void *data, void *state)
 
    font_parms.y = default_pos.comment_two_y_position;
    font_parms.color = YELLOW;
-   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
    snprintf(msg, sizeof(msg), "[%s] - Settings", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT));
 
    font_parms.y = default_pos.comment_two_y_position + (default_pos.y_position_increment * 1);
-   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
    if(current_menu->browser_draw)
       current_menu->browser_draw(filebrowser);
@@ -2358,122 +2391,177 @@ int ingame_menu_resize(void *data, void *state)
       font_parms.scale = default_pos.font_size;
       font_parms.color = GREEN;
 
-      device_ptr->font_ctx->render_msg(device_ptr, viewport_x, &font_parms);
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, viewport_x, &font_parms);
 
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 1);
-      device_ptr->font_ctx->render_msg(device_ptr, viewport_y, &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, viewport_y, &font_parms);
 
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 2);
-      device_ptr->font_ctx->render_msg(device_ptr, viewport_w, &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, viewport_w, &font_parms);
 
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 3);
-      device_ptr->font_ctx->render_msg(device_ptr, viewport_h, &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, viewport_h, &font_parms);
 
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 4);
-      device_ptr->font_ctx->render_msg(device_ptr, "CONTROLS:", &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "CONTROLS:", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT));
 
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 5);
       font_parms.color = WHITE;
-      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
       font_parms.x = default_pos.x_position_center;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 5);
-      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport X--", &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport X--", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT));
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 6);
-      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
       font_parms.x = default_pos.x_position_center;
-      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport X++", &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport X++", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_UP), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP));
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 7);
-      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
       font_parms.x = default_pos.x_position_center;
-      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport Y++", &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport Y++", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN));
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 8);
-      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
       font_parms.x = default_pos.x_position_center;
-      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport Y--", &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport Y--", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT));
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 9);
-      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
       font_parms.x = default_pos.x_position_center;
-      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport W--", &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport W--", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT));
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 10);
-      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
       font_parms.x = default_pos.x_position_center;
-      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport W++", &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport W++", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L2), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP));
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 11);
-      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
       font_parms.x = default_pos.x_position_center;
-      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport H++", &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport H++", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R2), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN));
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 12);
-      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
       font_parms.x = default_pos.x_position_center;
-      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport H--", &font_parms);
+      
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Viewport H--", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_X));
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 13);
-      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
       font_parms.x = default_pos.x_position_center;
-      device_ptr->font_ctx->render_msg(device_ptr, "- Reset To Defaults", &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Reset To Defaults", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_Y));
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 14);
-      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
       font_parms.x = default_pos.x_position_center;
-      device_ptr->font_ctx->render_msg(device_ptr, "- Show Game", &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, "- Show Game", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_A));
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 15);
-      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(device_ptr, msg, &font_parms);
 
       font_parms.x = default_pos.x_position_center;
-      device_ptr->font_ctx->render_msg(device_ptr, "- Go back", &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(device_ptr, "- Go back", &font_parms);
 
       snprintf(msg, sizeof(msg), "Press [%s] to reset to defaults.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_X));
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.comment_y_position;
-      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
    }
 
    if(current_menu->browser_draw)
@@ -2734,83 +2822,114 @@ int ingame_menu(void *data, void *state)
    font_parms.scale = default_pos.font_size;
    font_parms.color = WHITE;
 
-   device_ptr->font_ctx->render_msg(device_ptr, strw_buffer, &font_parms);
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
 
    menu_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
 
    font_parms.y = default_pos.y_position;
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE);
-   device_ptr->font_ctx->render_msg(device_ptr, strw_buffer, &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
 
    menu_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_SAVE_STATE);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE);
-   device_ptr->font_ctx->render_msg(device_ptr, strw_buffer, &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
 
    menu_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_KEEP_ASPECT_RATIO);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO);
-   device_ptr->font_ctx->render_msg(device_ptr, strw_buffer, &font_parms);
+   
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
 
    snprintf(strw_buffer, sizeof(strw_buffer), "Overscan: %f", g_extern.console.screen.overscan_amount);
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_OVERSCAN_AMOUNT);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT);
-   device_ptr->font_ctx->render_msg(device_ptr, strw_buffer, &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
 
    menu_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_ORIENTATION);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION);
-   device_ptr->font_ctx->render_msg(device_ptr, strw_buffer, &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
 
 #ifdef HAVE_FBO
    menu_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_SCALE_FACTOR);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR);
-   device_ptr->font_ctx->render_msg(device_ptr, strw_buffer, &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
 #endif
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RESIZE_MODE);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE);
-   device_ptr->font_ctx->render_msg(device_ptr, "Resize Mode", &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, "Resize Mode", &font_parms);
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_FRAME_ADVANCE);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_FRAME_ADVANCE);
-   device_ptr->font_ctx->render_msg(device_ptr, "Frame Advance", &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, "Frame Advance", &font_parms);
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_SCREENSHOT_MODE);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_SCREENSHOT_MODE);
-   device_ptr->font_ctx->render_msg(device_ptr, "Screenshot Mode", &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, "Screenshot Mode", &font_parms);
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RESET);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RESET);
-   device_ptr->font_ctx->render_msg(device_ptr, "Reset", &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, "Reset", &font_parms);
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RETURN_TO_GAME);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME);
-   device_ptr->font_ctx->render_msg(device_ptr, "Return To Game", &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, "Return To Game", &font_parms);
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RETURN_TO_MENU);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU);
-   device_ptr->font_ctx->render_msg(device_ptr, "Return To Menu", &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, "Return To Menu", &font_parms);
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_CHANGE_LIBRETRO);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBRETRO);
-   device_ptr->font_ctx->render_msg(device_ptr, "Change libretro core", &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, "Change libretro core", &font_parms);
 
 #ifdef HAVE_MULTIMAN
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RETURN_TO_MULTIMAN);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN);
-   device_ptr->font_ctx->render_msg(device_ptr, "Return to multiMAN", &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, "Return to multiMAN", &font_parms);
 #endif
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_QUIT_RARCH);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_QUIT_RARCH);
-   device_ptr->font_ctx->render_msg(device_ptr, "Quit RetroArch", &font_parms);
+
+   if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, "Quit RetroArch", &font_parms);
 
    rarch_position_t position = {0};
    position.x = default_pos.x_position;
@@ -3061,7 +3180,10 @@ bool menu_iterate(void)
    font_parms.color = WHITE;
 
    if (msg && (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)))
-      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+   {
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+   }
 
    device_ptr->ctx_driver->swap_buffers();
 

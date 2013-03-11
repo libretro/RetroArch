@@ -240,7 +240,10 @@ typedef struct video_poke_interface
    void (*apply_state_changes)(void *data);
 
    // Set to NULL if RGUI texture is not supposed to be rendered.
+#ifdef HAVE_RGUI
    void (*set_rgui_texture)(void *data, const void *frame);
+#endif
+   void (*set_osd_msg)(void *data, const char *msg, void *userdata);
 } video_poke_interface_t;
 
 typedef struct video_driver
