@@ -875,22 +875,34 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    if (lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
    {
       MEMORYSTATUS stat;
+      char buf[128];
+      font_params_t font_parms = {0};
+
       GlobalMemoryStatus(&stat);
 
-      char fps_txt[128];
-      char buf[128];
+      font_parms.x = mem_width;
+      font_parms.y = mem_height;
+      font_parms.scale = 0;
+      font_parms.color = 0;
 
       snprintf(buf, sizeof(buf), "%.2f MB free / %.2f MB total", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
       if (d3d->font_ctx)
-         d3d->font_ctx->render_msg_place(d3d, mem_width, mem_height, 0, 0, buf);
+         d3d->font_ctx->render_msg(d3d, buf, &font_parms);
 
-      gfx_get_fps(fps_txt, sizeof(fps_txt), true);
+      gfx_get_fps(buf, sizeof(buf), true);
       if (d3d->font_ctx)
-         d3d->font_ctx->render_msg_place(d3d, mem_width, mem_height + 30, 0, 0, fps_txt);
+      {
+         font_parms.y = mem_height + 30;
+         d3d->font_ctx->render_msg(d3d, buf, &font_parms);
+      }
    }
 
    if (msg)
-      d3d->font_ctx->render_msg_place(d3d, msg_width, msg_height, 0.0f, 0, msg);
+   {
+      font_parms.x = msg_width;
+      font_parms.y = msg_height;
+      d3d->font_ctx->render_msg(d3d, msg, &font_parms);
+   }
 
    if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
    {

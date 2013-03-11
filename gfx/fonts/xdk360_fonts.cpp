@@ -16,6 +16,7 @@
 
 #include <xtl.h>
 #include "d3d_font.h"
+#include "../gfx_common.h"
 #include "../../general.h"
 #include "../../xdk/xdk_resources.h"
 
@@ -440,11 +441,24 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font,
    d3dr->EndVertices();
 }
 
-static void xdk_render_msg_place(void *data, float x, float y, float scale, uint32_t color, const char *str_msg)
+static void xdk_render_msg(void *driver, const char *msg, void *params)
 {
-	(void)data;
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver;
    xdk360_video_font_t *font = &m_Font;
+   font_params_t *params = (font_params_t*)parms;
    wchar_t msg[PATH_MAX];
+   float x, y;
+
+   if (params)
+   {
+      x = params->x;
+      y = params->y;
+   }
+   else
+   {
+      x = (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
+      y = 120;
+   }
 
    convert_char_to_wchar(msg, str_msg, sizeof(msg));
 
@@ -456,20 +470,9 @@ static void xdk_render_msg_place(void *data, float x, float y, float scale, uint
    }
 }
 
-static void xdk_render_msg(void *driver, const char *msg)
-{
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver;
-
-   float x = (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
-   float y = 120;
-
-   xdk_render_msg_place(d3d, x, y, 0, 0, msg);
-}
-
 const d3d_font_renderer_t d3d_xbox360_font = {
    xdk_init_font,
    xdk_deinit_font,
    xdk_render_msg,
-   xdk_render_msg_place,
    "Xbox 360 fonts",
 };

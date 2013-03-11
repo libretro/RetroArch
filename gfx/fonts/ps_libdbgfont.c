@@ -15,6 +15,7 @@
  */
 
 #include "fonts.h"
+#include "../gfx_common.h"
 
 #if defined(SN_TARGET_PSP2)
 #include <libdbgfont.h>
@@ -66,22 +67,33 @@ static void gl_deinit_font(void *data)
    DbgFontExit();
 }
 
-static void gl_render_msg(void *data, const char *msg)
+static void gl_render_msg(void *data, const char *msg, void *parms)
 {
    (void)data;
-   float x = g_settings.video.msg_pos_x;
-   float y = 0.76f;
-   float scale = 1.04f;
-   unsigned color = SILVER;
+   float x, y, scale;
+   unsigned color;
+   font_params_t *params = (font_params_t*)parms;
+
+   if (params)
+   {
+      x = params->x;
+      y = params->y;
+      scale = params->scale;
+      color = params->color;
+   }
+   else
+   {
+      x = g_settings.video.msg_pos_x;
+      y = 0.76f;
+      scale = 1.04f;
+      color = SILVER;
+   }
 
    DbgFontPrint(x, y, scale, color, msg);
-   DbgFontPrint(x, y, scale - 0.01f, WHITE, msg);
-   DbgFontDraw();
-}
 
-static void gl_render_msg_place(void *data, float x, float y, float scale, uint32_t color, const char *msg)
-{
-   DbgFontPrint(x, y, scale, color, msg);
+   if (!params)
+      DbgFontPrint(x, y, scale - 0.01f, WHITE, msg);
+
    DbgFontDraw();
 }
 
@@ -89,6 +101,5 @@ const gl_font_renderer_t libdbg_font = {
    gl_init_font,
    gl_deinit_font,
    gl_render_msg,
-   gl_render_msg_place,
    "GL raster",
 };

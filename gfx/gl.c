@@ -1365,15 +1365,23 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
    {
       char fps_txt[128];
+      font_params_t params = {0};
+
       gfx_get_fps(fps_txt, sizeof(fps_txt), true);
 
       if (gl->font_ctx)
-         gl->font_ctx->render_msg_place(gl, g_settings.video.msg_pos_x, 0.56f, 1.04f, WHITE, fps_txt);
+      {
+         params.x = g_settings.video.msg_pos_x;
+         params.y = 0.56f;
+         params.scale = 1.04f;
+         params.color = WHITE;
+         gl->font_ctx->render_msg(gl, fps_txt, &params);
+      }
    }
 #endif
 
    if (msg && gl->font_ctx)
-      gl->font_ctx->render_msg(gl, msg);
+      gl->font_ctx->render_msg(gl, msg, NULL);
 
    if (gl->ctx_driver->post_render)
       context_post_render_func(gl);

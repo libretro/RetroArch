@@ -643,18 +643,23 @@ static void display_menubar(void *data)
    menu *current_menu = (menu*)data;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    filebrowser_t *fb = browser;
-   char current_path[256], rarch_version[128], msg[128];
+   char msg[128];
+   font_params_t font_parms = {0};
 
    rmenu_default_positions_t default_pos;
    menu_set_default_pos(&default_pos);
 
-   snprintf(rarch_version, sizeof(rarch_version), "v%s", PACKAGE_VERSION);
+   font_parms.x = default_pos.x_position;
+   font_parms.y = default_pos.current_path_y_position;
+   font_parms.scale = default_pos.current_path_font_size;
+   font_parms.color = WHITE;
+
 
    switch(current_menu->enum_id)
    {
       case GENERAL_VIDEO_MENU:
          snprintf(msg, sizeof(msg), "NEXT -> [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R));
-         device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.current_path_y_position, default_pos.current_path_font_size, WHITE, msg);
+         device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
          break;
       case GENERAL_AUDIO_MENU:
       case EMU_GENERAL_MENU:
@@ -662,12 +667,12 @@ static void display_menubar(void *data)
       case EMU_AUDIO_MENU:
       case PATH_MENU:
          snprintf(msg, sizeof(msg), "[%s] <- PREV | NEXT -> [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R));
-         device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.current_path_y_position, default_pos.current_path_font_size, WHITE, msg);
+         device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
          break;
       case CONTROLS_MENU:
       case INGAME_MENU_RESIZE:
          snprintf(msg, sizeof(msg), "[%s] <- PREV", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L));
-         device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.current_path_y_position, default_pos.current_path_font_size, WHITE, msg);
+         device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
          break;
       default:
          break;
@@ -689,8 +694,8 @@ static void display_menubar(void *data)
       case PATH_SYSTEM_DIR_CHOICE:
          fb = tmpBrowser;
       case FILE_BROWSER_MENU:
-         snprintf(current_path, sizeof(current_path), "PATH: %s", filebrowser_get_current_dir(fb));
-         device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.current_path_y_position, default_pos.current_path_font_size, WHITE, current_path);
+         snprintf(msg, sizeof(msg), "PATH: %s", filebrowser_get_current_dir(fb));
+         device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
          break;
       default:
          break;
@@ -698,11 +703,27 @@ static void display_menubar(void *data)
 
    rarch_position_t position = {0};
    device_ptr->ctx_driver->rmenu_draw_bg(&position);
+   
+   font_parms.x = default_pos.core_msg_x_position;
+   font_parms.y = default_pos.core_msg_y_position;
+   font_parms.scale = default_pos.core_msg_font_size;
+   font_parms.color = WHITE;
 
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.core_msg_x_position, default_pos.core_msg_y_position, default_pos.core_msg_font_size, WHITE, g_extern.title_buf);
+   device_ptr->font_ctx->render_msg(device_ptr, g_extern.title_buf, &font_parms);
 #ifdef __CELLOS_LV2__
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, 0.05f, 1.4f, WHITE, current_menu->title);
-   device_ptr->font_ctx->render_msg_place(device_ptr,0.80f, 0.015f, 0.82f, WHITE, rarch_version);
+
+   font_parms.x = default_pos.x_position;
+   font_parms.y = 0.05f;
+   font_parms.scale = 1.4f;
+   font_parms.color = WHITE;
+   device_ptr->font_ctx->render_msg(device_ptr, current_menu->title, &font_parms);
+
+   font_parms.x = 0.80f;
+   font_parms.y = 0.015f;
+   font_parms.scale = 0.82f;
+   font_parms.color = WHITE;
+   snprintf(msg, sizeof(msg), "v%s", PACKAGE_VERSION);
+   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
 #endif
 }
 
@@ -746,13 +767,16 @@ void browser_render(void *data)
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    unsigned file_count = b->current_dir.list->size;
    unsigned int current_index, page_number, page_base, i;
+   font_params_t font_parms = {0};
+   rmenu_default_positions_t default_pos = {0};
 
-   rmenu_default_positions_t default_pos;
    menu_set_default_pos(&default_pos);
 
    current_index = b->current_dir.ptr;
    page_number = current_index / default_pos.entries_per_page;
    page_base = page_number * default_pos.entries_per_page;
+
+   font_parms.scale = default_pos.variable_font_size;
 
    for (i = page_base; i < file_count && i < page_base + default_pos.entries_per_page; ++i)
    {
@@ -770,7 +794,11 @@ void browser_render(void *data)
          device_ptr->ctx_driver->rmenu_draw_panel(&position);
       }
 
-      device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.starting_y_position, default_pos.variable_font_size, i == current_index ? RED : b->current_dir.list->elems[i].attr.b ? GREEN : WHITE, fname_tmp);
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.starting_y_position;
+      font_parms.color = i == current_index ? RED : b->current_dir.list->elems[i].attr.b ? GREEN : WHITE;
+
+      device_ptr->font_ctx->render_msg(device_ptr, fname_tmp, &font_parms);
    }
 }
 
@@ -778,6 +806,7 @@ int select_file(void *data, void *state)
 {
    menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
+   font_params_t font_parms = {0};
 
    uint64_t input = rstate->input;
 
@@ -914,9 +943,16 @@ int select_file(void *data, void *state)
 
    display_menubar(current_menu);
 
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, comment);
+   font_parms.x = default_pos.x_position;
+   font_parms.y = default_pos.comment_y_position;
+   font_parms.scale = default_pos.font_size;
+   font_parms.color = WHITE;
+
+   device_ptr->font_ctx->render_msg(device_ptr, comment, &font_parms);
    snprintf(comment, sizeof(comment), "[%s] - return to settings [%s] - Reset Startdir", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, comment);
+   font_parms.y = default_pos.comment_two_y_position;
+   font_parms.color = YELLOW;
+   device_ptr->font_ctx->render_msg(device_ptr, comment, &font_parms);
 
    if(current_menu->browser_draw)
       current_menu->browser_draw(filebrowser);
@@ -928,6 +964,7 @@ int select_directory(void *data, void *state)
 {
    menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
+   font_params_t font_parms = {0};
 
    uint64_t input = rstate->input;
 
@@ -1010,13 +1047,24 @@ int select_directory(void *data, void *state)
    display_menubar(current_menu);
 
    snprintf(msg, sizeof(msg), "[%s] - Enter dir | [%s] - Go back", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B), rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_X));
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, msg);
+
+   font_parms.x = default_pos.x_position;
+   font_parms.y = default_pos.comment_two_y_position;
+   font_parms.scale = default_pos.font_size;
+   font_parms.color = YELLOW;
+
+   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
 
    snprintf(msg, sizeof(msg), "[%s] - Reset to startdir", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), default_pos.font_size, YELLOW, msg);
+
+   font_parms.y = default_pos.comment_two_y_position + (default_pos.y_position_increment * 1);
+   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
 
    snprintf(msg, sizeof(msg), "INFO - Browse to a directory and assign it as the path by\npressing [%s].", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_Y));
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, msg);
+
+   font_parms.y = default_pos.comment_y_position;
+   font_parms.color = WHITE;
+   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
 
    if(current_menu->browser_draw)
       current_menu->browser_draw(filebrowser);
@@ -1973,6 +2021,7 @@ static int select_setting(void *data, void *state)
 {
    menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
+   font_params_t font_parms = {0};
 
    uint64_t input = rstate->input;
    int ret = 0;
@@ -2055,8 +2104,16 @@ static int select_setting(void *data, void *state)
       if(items[i].page == current_menu->page)
       {
          default_pos.starting_y_position += default_pos.y_position_increment;
-         device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.starting_y_position, default_pos.variable_font_size, current_menu->selected == items[i].enum_id ? YELLOW : WHITE, items[i].text);
-         device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position_center, default_pos.starting_y_position, default_pos.variable_font_size, WHITE, items[i].setting_text);
+
+         font_parms.x = default_pos.x_position;
+         font_parms.y = default_pos.starting_y_position;
+         font_parms.scale = default_pos.variable_font_size;
+         font_parms.color = current_menu->selected == items[i].enum_id ? YELLOW : WHITE;
+         device_ptr->font_ctx->render_msg(device_ptr, items[i].text, &font_parms);
+
+         font_parms.x = default_pos.x_position_center;
+         font_parms.color = WHITE;
+         device_ptr->font_ctx->render_msg(device_ptr, items[i].setting_text, &font_parms);
 
          if(current_menu->selected == items[i].enum_id)
          {
@@ -2065,7 +2122,12 @@ static int select_setting(void *data, void *state)
             position.y = default_pos.starting_y_position;
 
             device_ptr->ctx_driver->rmenu_draw_panel(&position);
-            device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, items[i].comment);
+
+            font_parms.x = default_pos.x_position;
+            font_parms.y = default_pos.comment_y_position;
+            font_parms.scale = default_pos.font_size;
+            font_parms.color = WHITE;
+            device_ptr->font_ctx->render_msg(device_ptr, items[i].comment, &font_parms);
          }
       }
    }
@@ -2073,9 +2135,16 @@ static int select_setting(void *data, void *state)
    free(items);
 
    snprintf(msg, sizeof(msg), "[%s] + [%s] - Resume game", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R3));
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, msg);
+
+   font_parms.x = default_pos.x_position;
+   font_parms.y = default_pos.comment_two_y_position;
+   font_parms.scale = default_pos.font_size;
+   font_parms.color = YELLOW;
+   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
    snprintf(msg, sizeof(msg), "[%s] - Reset to default", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), default_pos.font_size, YELLOW, msg);
+   font_parms.y = default_pos.comment_two_y_position + (default_pos.y_position_increment * 1);
+   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
 
    if(current_menu->browser_draw)
       current_menu->browser_draw(filebrowser);
@@ -2088,6 +2157,7 @@ int select_rom(void *data, void *state)
 {
    menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
+   font_params_t font_parms = {0};
 
    uint64_t input = rstate->input;
 
@@ -2146,15 +2216,25 @@ int select_rom(void *data, void *state)
    else
       snprintf(msg, sizeof(msg), "INFO - Press [%s] to load the game.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
 
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, msg);
+   font_parms.x = default_pos.x_position;
+   font_parms.y = default_pos.comment_y_position;
+   font_parms.scale = default_pos.font_size;
+   font_parms.color = WHITE;
+
+   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
 
    display_menubar(current_menu);
 
    snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R3));
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_two_y_position, default_pos.font_size, YELLOW, msg);
+
+   font_parms.y = default_pos.comment_two_y_position;
+   font_parms.color = YELLOW;
+   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
 
    snprintf(msg, sizeof(msg), "[%s] - Settings", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT));
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_two_y_position + (default_pos.y_position_increment * 1), default_pos.font_size, YELLOW, msg);
+
+   font_parms.y = default_pos.comment_two_y_position + (default_pos.y_position_increment * 1);
+   device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
 
    if(current_menu->browser_draw)
       current_menu->browser_draw(filebrowser);
@@ -2166,6 +2246,7 @@ int ingame_menu_resize(void *data, void *state)
 {
    menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
+   font_params_t font_parms = {0};
 
    uint64_t input = rstate->input;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
@@ -2272,60 +2353,127 @@ int ingame_menu_resize(void *data, void *state)
       snprintf(viewport_w, sizeof(viewport_w), "Viewport W: #%d", g_extern.console.screen.viewports.custom_vp.width);
       snprintf(viewport_h, sizeof(viewport_h), "Viewport H: #%d", g_extern.console.screen.viewports.custom_vp.height);
 
-      device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.y_position, default_pos.font_size, GREEN, viewport_x);
-      device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*1), default_pos.font_size, GREEN, viewport_y);
-      device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*2), default_pos.font_size, GREEN, viewport_w);
-      device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*3), default_pos.font_size, GREEN, viewport_h);
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.y_position;
+      font_parms.scale = default_pos.font_size;
+      font_parms.color = GREEN;
 
-      device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*4), default_pos.font_size, WHITE, "CONTROLS:");
+      device_ptr->font_ctx->render_msg(device_ptr, viewport_x, &font_parms);
+
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 1);
+      device_ptr->font_ctx->render_msg(device_ptr, viewport_y, &font_parms);
+
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 2);
+      device_ptr->font_ctx->render_msg(device_ptr, viewport_w, &font_parms);
+
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 3);
+      device_ptr->font_ctx->render_msg(device_ptr, viewport_h, &font_parms);
+
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 4);
+      device_ptr->font_ctx->render_msg(device_ptr, "CONTROLS:", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT));
-      device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*5), default_pos.font_size,  WHITE, msg);
-      device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*5), default_pos.font_size, WHITE, "- Viewport X --");
+
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 5);
+      font_parms.color = WHITE;
+      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      font_parms.x = default_pos.x_position_center;
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 5);
+      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport X--", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT));
-      device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*6), default_pos.font_size, WHITE, msg);
-      device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*6), default_pos.font_size, WHITE, "- Viewport X ++");
+
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 6);
+      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      font_parms.x = default_pos.x_position_center;
+      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport X++", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_UP), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP));
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*7), default_pos.font_size, WHITE, msg);
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*7), default_pos.font_size, WHITE, "- Viewport Y ++");
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 7);
+      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      font_parms.x = default_pos.x_position_center;
+      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport Y++", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN));
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*8), default_pos.font_size, WHITE, msg);
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*8), default_pos.font_size, WHITE, "- Viewport Y --");
+
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 8);
+      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      font_parms.x = default_pos.x_position_center;
+      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport Y--", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT));
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*9), default_pos.font_size, WHITE, msg);
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*9), default_pos.font_size, WHITE, "- Viewport W --");
+
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 9);
+      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      font_parms.x = default_pos.x_position_center;
+      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport W--", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT));
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*10), default_pos.font_size, WHITE, msg);
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*10), default_pos.font_size, WHITE, "- Viewport W ++");
+
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 10);
+      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      font_parms.x = default_pos.x_position_center;
+      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport W++", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L2), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP));
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*11), default_pos.font_size, WHITE, msg);
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*11), default_pos.font_size, WHITE, "- Viewport H ++");
 
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 11);
+      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      font_parms.x = default_pos.x_position_center;
+      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport H++", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R2), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN));
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*12), default_pos.font_size, WHITE, msg);
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*12), default_pos.font_size, WHITE, "- Viewport H --");
+
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 12);
+      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      font_parms.x = default_pos.x_position_center;
+      device_ptr->font_ctx->render_msg(device_ptr, "- Viewport H--", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_X));
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*13), default_pos.font_size, WHITE, msg);
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*13), default_pos.font_size, WHITE, "- Reset To Defaults");
+
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 13);
+      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      font_parms.x = default_pos.x_position_center;
+      device_ptr->font_ctx->render_msg(device_ptr, "- Reset To Defaults", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_Y));
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*14), default_pos.font_size, WHITE, msg);
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*14), default_pos.font_size, WHITE, "- Show Game");
+
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 14);
+      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      font_parms.x = default_pos.x_position_center;
+      device_ptr->font_ctx->render_msg(device_ptr, "- Show Game", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_A));
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*15), default_pos.font_size, WHITE, msg);
-      device_ptr->font_ctx->render_msg_place (device_ptr, default_pos.x_position_center, default_pos.y_position+(default_pos.y_position_increment*15), default_pos.font_size, WHITE, "- Go back");
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 15);
+      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
+
+      font_parms.x = default_pos.x_position_center;
+      device_ptr->font_ctx->render_msg(device_ptr, "- Go back", &font_parms);
 
       snprintf(msg, sizeof(msg), "Press [%s] to reset to defaults.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_X));
-      device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, msg);
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.comment_y_position;
+      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
    }
 
    if(current_menu->browser_draw)
@@ -2378,6 +2526,7 @@ int ingame_menu(void *data, void *state)
    char strw_buffer[256];
    unsigned menuitem_colors[MENU_ITEM_LAST];
    static unsigned menu_idx = 0;
+   font_params_t font_parms = {0};
 
    filebrowser_t *filebrowser = tmpBrowser;
    rmenu_default_positions_t default_pos;
@@ -2580,47 +2729,88 @@ int ingame_menu(void *data, void *state)
 
    display_menubar(current_menu);
 
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, default_pos.comment_y_position, default_pos.font_size, WHITE, strw_buffer);
+   font_parms.x = default_pos.x_position;
+   font_parms.y = default_pos.comment_y_position;
+   font_parms.scale = default_pos.font_size;
+   font_parms.color = WHITE;
+
+   device_ptr->font_ctx->render_msg(device_ptr, strw_buffer, &font_parms);
 
    menu_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
-   device_ptr->font_ctx->render_msg_place(device_ptr, default_pos.x_position, default_pos.y_position, default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE), strw_buffer);
+
+   font_parms.y = default_pos.y_position;
+   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE);
+   device_ptr->font_ctx->render_msg(device_ptr, strw_buffer, &font_parms);
 
    menu_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
-   device_ptr->font_ctx->render_msg_place(device_ptr, default_pos.x_position, default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_SAVE_STATE), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE), strw_buffer);
+
+   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_SAVE_STATE);
+   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE);
+   device_ptr->font_ctx->render_msg(device_ptr, strw_buffer, &font_parms);
 
    menu_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
-   device_ptr->font_ctx->render_msg_place(device_ptr, default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_KEEP_ASPECT_RATIO)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO), strw_buffer);
+
+   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_KEEP_ASPECT_RATIO);
+   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO);
+   device_ptr->font_ctx->render_msg(device_ptr, strw_buffer, &font_parms);
 
    snprintf(strw_buffer, sizeof(strw_buffer), "Overscan: %f", g_extern.console.screen.overscan_amount);
-   device_ptr->font_ctx->render_msg_place(device_ptr, default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_OVERSCAN_AMOUNT)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT), strw_buffer);
+
+   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_OVERSCAN_AMOUNT);
+   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT);
+   device_ptr->font_ctx->render_msg(device_ptr, strw_buffer, &font_parms);
 
    menu_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
-   device_ptr->font_ctx->render_msg_place(device_ptr, default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_ORIENTATION)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION), strw_buffer);
+
+   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_ORIENTATION);
+   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION);
+   device_ptr->font_ctx->render_msg(device_ptr, strw_buffer, &font_parms);
 
 #ifdef HAVE_FBO
    menu_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
-   device_ptr->font_ctx->render_msg_place(device_ptr, default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_SCALE_FACTOR)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR), strw_buffer);
+
+   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_SCALE_FACTOR);
+   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR);
+   device_ptr->font_ctx->render_msg(device_ptr, strw_buffer, &font_parms);
 #endif
 
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_RESIZE_MODE)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE), "Resize Mode");
+   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RESIZE_MODE);
+   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE);
+   device_ptr->font_ctx->render_msg(device_ptr, "Resize Mode", &font_parms);
 
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_FRAME_ADVANCE)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_FRAME_ADVANCE), "Frame Advance");
+   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_FRAME_ADVANCE);
+   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_FRAME_ADVANCE);
+   device_ptr->font_ctx->render_msg(device_ptr, "Frame Advance", &font_parms);
 
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_SCREENSHOT_MODE)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_SCREENSHOT_MODE), "Screenshot Mode");
+   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_SCREENSHOT_MODE);
+   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_SCREENSHOT_MODE);
+   device_ptr->font_ctx->render_msg(device_ptr, "Screenshot Mode", &font_parms);
 
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_RESET)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_RESET), "Reset");
+   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RESET);
+   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RESET);
+   device_ptr->font_ctx->render_msg(device_ptr, "Reset", &font_parms);
 
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_RETURN_TO_GAME)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME), "Return to Game");
+   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RETURN_TO_GAME);
+   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME);
+   device_ptr->font_ctx->render_msg(device_ptr, "Return To Game", &font_parms);
 
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_RETURN_TO_MENU)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU), "Return to Menu");
+   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RETURN_TO_MENU);
+   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU);
+   device_ptr->font_ctx->render_msg(device_ptr, "Return To Menu", &font_parms);
 
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_CHANGE_LIBRETRO)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBRETRO), "Change libretro core");
+   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_CHANGE_LIBRETRO);
+   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBRETRO);
+   device_ptr->font_ctx->render_msg(device_ptr, "Change libretro core", &font_parms);
 
 #ifdef HAVE_MULTIMAN
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_RETURN_TO_MULTIMAN)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN), "Return to multiMAN");
+   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RETURN_TO_MULTIMAN);
+   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN);
+   device_ptr->font_ctx->render_msg(device_ptr, "Return to multiMAN", &font_parms);
 #endif
 
-   device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.x_position, (default_pos.y_position+(default_pos.y_position_increment*MENU_ITEM_QUIT_RARCH)), default_pos.font_size, MENU_ITEM_SELECTED(MENU_ITEM_QUIT_RARCH), "Quit RetroArch");
+   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_QUIT_RARCH);
+   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_QUIT_RARCH);
+   device_ptr->font_ctx->render_msg(device_ptr, "Quit RetroArch", &font_parms);
 
    rarch_position_t position = {0};
    position.x = default_pos.x_position;
@@ -2790,7 +2980,7 @@ void menu_free(void)
 bool menu_iterate(void)
 {
    const char *msg;
-
+   font_params_t font_parms = {0};
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    static menu current_menu;
 
@@ -2865,8 +3055,13 @@ bool menu_iterate(void)
 
    msg = msg_queue_pull(g_extern.msg_queue);
 
+   font_parms.x = default_pos.msg_queue_x_position;
+   font_parms.y = default_pos.msg_queue_y_position;
+   font_parms.scale = default_pos.msg_queue_font_size;
+   font_parms.color = WHITE;
+
    if (msg && (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)))
-      device_ptr->font_ctx->render_msg_place(device_ptr,default_pos.msg_queue_x_position, default_pos.msg_queue_y_position, default_pos.msg_queue_font_size, WHITE, msg);
+      device_ptr->font_ctx->render_msg(device_ptr, msg, &font_parms);
 
    device_ptr->ctx_driver->swap_buffers();
 

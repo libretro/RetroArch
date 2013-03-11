@@ -23,9 +23,7 @@ typedef struct d3d_font_renderer
 {
    bool (*init)(void *data, const char *font_path, unsigned font_size);
    void (*deinit)(void *data);
-   void (*render_msg)(void *data, const char *msg);
-   void (*render_msg_place)(void *data, float x, float y,
-         float scale, uint32_t color, const char *str_msg);
+   void (*render_msg)(void *data, const char *msg, void *parms);
    const char *ident;
 } d3d_font_renderer_t;
 

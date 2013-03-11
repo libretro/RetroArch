@@ -16,6 +16,7 @@
 
 #include <xtl.h>
 #include "d3d_font.h"
+#include "../gfx_common.h"
 #include "../../general.h"
 
 static XFONT *debug_font;
@@ -42,28 +43,35 @@ static void xfonts_deinit_font(void *data)
    (void)data;
 }
 
-static void xfonts_render_msg_place(void *data, float x, float y, float scale, uint32_t color, const char *msg)
+static void xfonts_render_msg(void *data, const char *msg, void *parms)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   font_params_t *params = (font_params_t*)parms;
+   wchar_t str[PATH_MAX];
+   float x, y;
+
+   if (params)
+   {
+      x = params->x;
+      y = params->y;
+   }
+   else
+   {
+      x = g_settings.video.msg_pos_x;
+      y = g_settings.video.msg_pos_y;
+   }
 
    d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &pFrontBuffer);
 
-   wchar_t str[256];
    convert_char_to_wchar(str, msg, sizeof(str));
    debug_font->TextOut(pFrontBuffer, str, (unsigned)-1, x, y);
 
    pFrontBuffer->Release();
 }
 
-static void xfonts_render_msg(void *data, const char *msg)
-{
-   xfonts_render_msg_place(data, g_settings.video.msg_pos_x, g_settings.video.msg_pos_y, 0, 0, msg);
-}
-
 const d3d_font_renderer_t d3d_xdk1_font = {
    xfonts_init_font,
    xfonts_deinit_font,
    xfonts_render_msg,
-   xfonts_render_msg_place,
    "XDK1 Xfonts",
 };

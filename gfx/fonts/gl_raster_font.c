@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../gfx_common.h"
 #include "../gl_common.h"
 
 static bool gl_init_font(void *data, const char *font_path, float font_size)
@@ -297,33 +298,35 @@ static void setup_font(void *data, const char *msg, GLfloat scale, GLfloat pos_x
    gl_set_projection(gl, &ortho, true);
 }
 
-static void gl_render_msg(void *data, const char *msg)
+static void gl_render_msg(void *data, const char *msg, void *parms)
 {
    (void)data;
    (void)msg;
-
+   GLfloat x, y, scale;
+   
    gl_t *gl = (gl_t*)data;
-   setup_font(data, msg,
-         g_settings.video.font_scale ? (GLfloat)gl->vp.width / (GLfloat)gl->full_x : 1.0f,
-         g_settings.video.msg_pos_x, g_settings.video.msg_pos_y);
-}
+   font_params_t *params = (font_params_t*)parms;
 
-static void gl_render_msg_place(void *data, float pos_x, float pos_y, float scale, uint32_t color, const char *msg)
-{
-   (void)data;
-   (void)msg;
-   (void)color;
+   if (params)
+   {
+      x = params->x;
+      y = params->y;
+      scale = params->scale;
+   }
+   else
+   {
+      x = g_settings.video.msg_pos_x;
+      y = g_settings.video.msg_pos_y;
+      scale = g_settings.video.font_scale ? (GLfloat)gl->vp.width / (GLfloat)gl->full_x : 1.0f;
+   }
 
-#ifdef HAVE_FREETYPE
-   setup_font(data, msg, scale, pos_x, pos_y);
-#endif
+   setup_font(data, msg, scale, x, y);
 }
 
 const gl_font_renderer_t gl_raster_font = {
    gl_init_font,
    gl_deinit_font,
    gl_render_msg,
-   gl_render_msg_place,
    "GL raster",
 };
 

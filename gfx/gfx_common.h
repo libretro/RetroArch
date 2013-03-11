@@ -40,6 +40,14 @@ void gfx_set_dwm(void);
 void gfx_scale_integer(struct rarch_viewport *vp, unsigned win_width, unsigned win_height,
       float aspect_ratio, bool keep_aspect);
 
+typedef struct
+{
+   float x;
+   float y;
+   float scale;
+   unsigned color;
+} font_params_t;
+
 #define MIN_SCALING_FACTOR (1.0f)
 
 #if defined(__CELLOS_LV2__)
@@ -47,7 +55,6 @@ void gfx_scale_integer(struct rarch_viewport *vp, unsigned win_width, unsigned w
 #else
 #define MAX_SCALING_FACTOR (2.0f)
 #endif
-
 
 enum aspect_ratio
 {
