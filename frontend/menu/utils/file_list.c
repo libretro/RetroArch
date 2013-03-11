@@ -35,16 +35,6 @@ struct rgui_list
    size_t size;
 };
 
-rgui_list_t *rgui_list_new(void)
-{
-   return (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
-}
-
-bool rgui_list_empty(const rgui_list_t *list)
-{
-   return list->size == 0;
-}
-
 void rgui_list_push(rgui_list_t *list,
       const char *path, unsigned type, size_t directory_ptr)
 {
@@ -63,7 +53,7 @@ void rgui_list_push(rgui_list_t *list,
 
 void rgui_list_pop(rgui_list_t *list)
 {
-   if (!rgui_list_empty(list))
+   if (!(list->size == 0))
       free(list->list[--list->size].path);
 }
 

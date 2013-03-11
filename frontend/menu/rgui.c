@@ -235,8 +235,8 @@ rgui_handle_t *rgui_init(const char *base_path,
    rgui->userdata = userdata;
    strlcpy(rgui->base_path, base_path, sizeof(rgui->base_path));
 
-   rgui->path_stack = rgui_list_new();
-   rgui->folder_buf = rgui_list_new();
+   rgui->path_stack = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
+   rgui->folder_buf = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
    rgui_list_push(rgui->path_stack, base_path, RGUI_FILE_DIRECTORY, 0);
 
    if (font_bmp_buf)
