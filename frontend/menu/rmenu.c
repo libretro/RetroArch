@@ -2771,7 +2771,8 @@ void menu_init(void)
 
    rmenu_state.init_resources = init_filebrowser;
    rmenu_state.free_resources = free_filebrowser;
-   rmenu_state.old_state      = (1ULL << RARCH_MENU_TOGGLE);
+   rmenu_state.input          = 0;
+   rmenu_state.old_state      = 0;
 
    if(rmenu_state.init_resources)
       rmenu_state.init_resources(&rmenu_state);
@@ -2887,8 +2888,6 @@ bool menu_iterate(void)
    return true;
 
 deinit:
-   // so we don't immediately exit when we re-open the menu
-   rmenu_state.old_state  |= (1ULL << RARCH_MENU_TOGGLE);
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
 
 #ifndef __CELLOS_LV2__
