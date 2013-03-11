@@ -222,14 +222,12 @@ static void init_font(rgui_handle_t *rgui, const uint8_t *font_bmp_buf)
 
 rgui_handle_t *rgui_init(const char *base_path,
       uint16_t *framebuf, size_t framebuf_pitch,
-      const uint8_t *font_bmp_buf, const uint8_t *font_bin_buf,
-      void *userdata)
+      const uint8_t *font_bmp_buf, const uint8_t *font_bin_buf) 
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
    rgui->frame_buf = framebuf;
    rgui->frame_buf_pitch = framebuf_pitch;
-   rgui->userdata = userdata;
    strlcpy(rgui->base_path, base_path, sizeof(rgui->base_path));
 
    rgui->menu_stack = (rgui_list_t*)calloc(1, sizeof(rgui_list_t));
@@ -399,11 +397,9 @@ static void render_text(rgui_handle_t *rgui)
    unsigned menu_type = 0;
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, NULL);
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
    if (menu_type == RGUI_SETTINGS_CORE)
       snprintf(title, sizeof(title), "CORE SELECTION");
    else
-#endif
    if (rgui_is_controller_menu(menu_type) || rgui_is_viewport_menu(menu_type) || menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "SETTINGS: %s", dir);
    else
@@ -455,11 +451,9 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_VIDEO_FILTER:
             snprintf(type_str, sizeof(type_str), g_settings.video.smooth ? "Bilinear filtering" : "Point filtering");
             break;
-#ifdef HW_RVL
          case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
             snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
             break;
-#endif
 #ifdef GEKKO
          case RGUI_SETTINGS_VIDEO_RESOLUTION:
             snprintf(type_str, sizeof(type_str), "%s", gx_get_video_mode());
@@ -488,11 +482,9 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
             break;
          case RGUI_SETTINGS_RESAMPLER_TYPE:
-#ifdef HAVE_SINC
             if (strstr(g_settings.audio.resampler, "sinc"))
                snprintf(type_str, sizeof(type_str), "Sinc");
             else
-#endif
                snprintf(type_str, sizeof(type_str), "Hermite");
             break;
          case RGUI_SETTINGS_SRAM_DIR:
@@ -506,9 +498,7 @@ static void render_text(rgui_handle_t *rgui)
             break;
          case RGUI_SETTINGS_OPEN_FILEBROWSER:
          case RGUI_SETTINGS_CUSTOM_VIEWPORT:
-#ifdef HAVE_LIBRETRO_MANAGEMENT
          case RGUI_SETTINGS_CORE:
-#endif
          case RGUI_SETTINGS_CONTROLLER_1:
          case RGUI_SETTINGS_CONTROLLER_2:
          case RGUI_SETTINGS_CONTROLLER_3:
@@ -668,7 +658,6 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
          }
          break;
 #endif
-#ifndef HAVE_DYNAMIC
       case RGUI_SETTINGS_RESTART_GAME:
          if (action == RGUI_ACTION_OK)
          {
@@ -677,7 +666,6 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
             return -1;
          }
          break;
-#endif
       case RGUI_SETTINGS_VIDEO_FILTER:
          if (action == RGUI_ACTION_START)
             menu_settings_set_default(S_DEF_HW_TEXTURE_FILTER);
@@ -866,7 +854,6 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
          else if (action == RGUI_ACTION_RIGHT)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
          break;
-#ifndef HAVE_DYNAMIC
       case RGUI_SETTINGS_RESTART_EMULATOR:
          if (action == RGUI_ACTION_OK)
          {
@@ -879,7 +866,6 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
             return -1;
          }
          break;
-#endif
       case RGUI_SETTINGS_QUIT_EMULATOR:
          if (action == RGUI_ACTION_OK)
          {
@@ -1208,11 +1194,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_RIGHT:
       case RGUI_ACTION_OK:
       case RGUI_ACTION_START:
-         if ((rgui_is_controller_menu(type)
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-                  || type == RGUI_SETTINGS_CORE
-#endif
-            )
+         if ((rgui_is_controller_menu(type) || type == RGUI_SETTINGS_CORE) 
                && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
@@ -1256,11 +1238,8 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
 
-   if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-            || menu_type == RGUI_SETTINGS_CORE
-#endif
-            ))
+   if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY || 
+            menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE))
    {
       rgui->need_refresh = false;
       if (rgui_is_controller_menu(menu_type))
@@ -1276,11 +1255,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
 static bool directory_parse(const char *directory, void *userdata, void *ctx)
 {
-#ifdef HAVE_LIBRETRO_MANAGEMENT
    bool core_chooser = (userdata) ? *(unsigned*)userdata == RGUI_SETTINGS_CORE : false;
-#else
-   bool core_chooser = false;
-#endif
 
    if (!*directory)
    {
@@ -1332,11 +1307,12 @@ static bool directory_parse(const char *directory, void *userdata, void *ctx)
    for (size_t i = 0; i < list->size; i++)
    {
       bool is_dir = list->elems[i].attr.b;
+      if (core_chooser && (is_dir
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-      if (core_chooser && (is_dir ||
-               strcasecmp(list->elems[i].data, default_paths.salamander_file) == 0))
-         continue;
+               || strcasecmp(list->elems[i].data, default_paths.salamander_file) == 0
 #endif
+         ))
+         continue;
 
       rgui_list_push(ctx, path_basename(list->elems[i].data),
             is_dir ? RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
@@ -1497,11 +1473,8 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    // refresh values in case the stack changed
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
 
-   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type == RGUI_FILE_DEVICE
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-            || menu_type == RGUI_SETTINGS_CORE
-#endif
-            ))
+   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || 
+            menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE))
    {
       rgui->need_refresh = false;
       rgui_list_clear(rgui->selection_buf);
@@ -1581,7 +1554,7 @@ void menu_init(void)
 {
    rgui = rgui_init("",
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
-         NULL, bitmap_bin, NULL);
+         NULL, bitmap_bin);
 
    rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 }

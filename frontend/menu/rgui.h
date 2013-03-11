@@ -43,9 +43,7 @@ typedef enum
 #endif
    RGUI_SETTINGS_RESTART_GAME,
    RGUI_SETTINGS_VIDEO_FILTER,
-#ifdef HW_RVL
    RGUI_SETTINGS_VIDEO_SOFT_FILTER,
-#endif
 #ifdef GEKKO
    RGUI_SETTINGS_VIDEO_RESOLUTION,
 #endif
@@ -61,9 +59,7 @@ typedef enum
    RGUI_SETTINGS_ZIP_EXTRACT,
    RGUI_SETTINGS_SRAM_DIR,
    RGUI_SETTINGS_STATE_DIR,
-#ifdef HAVE_LIBRETRO_MANAGEMENT
    RGUI_SETTINGS_CORE,
-#endif
    RGUI_SETTINGS_CONTROLLER_1,
    RGUI_SETTINGS_CONTROLLER_2,
    RGUI_SETTINGS_CONTROLLER_3,
@@ -119,8 +115,7 @@ extern unsigned RGUI_HEIGHT;
 
 rgui_handle_t *rgui_init(const char *base_path,
       uint16_t *framebuf, size_t framebuf_pitch,
-      const uint8_t *font_bmp_buf, const uint8_t *font_bin_buf,
-      void *userdata);
+      const uint8_t *font_bmp_buf, const uint8_t *font_bin_buf);
 
 int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action);
 
