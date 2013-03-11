@@ -283,7 +283,6 @@ static void get_environment_settings(int argc, char *argv[])
       }
 
       snprintf(default_paths.core_dir, sizeof(default_paths.core_dir), "%s/cores", default_paths.port_dir);
-      snprintf(default_paths.executable_extension, sizeof(default_paths.executable_extension), ".SELF");
       snprintf(default_paths.savestate_dir, sizeof(default_paths.savestate_dir), "%s/savestates", default_paths.core_dir);
       snprintf(default_paths.filesystem_root_dir, sizeof(default_paths.filesystem_root_dir), "/");
       snprintf(default_paths.filebrowser_startup_dir, sizeof(default_paths.filebrowser_startup_dir), default_paths.filesystem_root_dir);

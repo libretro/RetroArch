@@ -44,7 +44,6 @@ typedef struct
    char core_dir[MAXIMUM_PATH];
    char config_path[MAXIMUM_PATH];
    char libretro_path[MAXIMUM_PATH];
-   char executable_extension[MAXIMUM_PATH];
    char filebrowser_startup_dir[MAXIMUM_PATH];
    char filesystem_root_dir[MAXIMUM_PATH];
    char input_presets_dir[MAXIMUM_PATH];

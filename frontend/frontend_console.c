@@ -19,6 +19,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "../config.def.h"
 #include "frontend_console.h"
 #include "menu/rmenu.h"
 #include "menu/menu_settings.h"
@@ -238,7 +239,7 @@ int rarch_main(int argc, char *argv[])
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    char core_exe_path[PATH_MAX];
    char path_prefix[PATH_MAX];
-   const char *extension = default_paths.executable_extension;
+   const char *extension = DEFAULT_EXE_EXT;
    char slash;
 #if defined(_WIN32)
    slash = '\\';

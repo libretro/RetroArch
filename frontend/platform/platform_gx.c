@@ -273,7 +273,6 @@ static void get_environment_settings(int argc, char *argv[])
    snprintf(default_paths.filebrowser_startup_dir, sizeof(default_paths.filebrowser_startup_dir), default_paths.filesystem_root_dir);
    snprintf(default_paths.sram_dir, sizeof(default_paths.sram_dir), "%s/sram", default_paths.port_dir);
    snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.port_dir);
-   strlcpy(default_paths.executable_extension, ".dol", sizeof(default_paths.executable_extension));
 
 #ifndef IS_SALAMANDER
    MAKE_DIR(default_paths.port_dir);

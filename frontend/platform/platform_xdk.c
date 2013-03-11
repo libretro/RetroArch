@@ -306,7 +306,6 @@ static void get_environment_settings(int argc, char *argv[])
    strlcpy(default_paths.sram_dir, "D:\\sram", sizeof(default_paths.sram_dir));
    strlcpy(default_paths.system_dir, "D:\\system", sizeof(default_paths.system_dir));
    strlcpy(default_paths.filesystem_root_dir, "D:", sizeof(default_paths.filesystem_root_dir));
-   strlcpy(default_paths.executable_extension, ".xbe", sizeof(default_paths.executable_extension));
    strlcpy(default_paths.filebrowser_startup_dir, "D:", sizeof(default_paths.filebrowser_startup_dir));
    strlcpy(default_paths.screenshots_dir, "D:\\screenshots", sizeof(default_paths.screenshots_dir));
 #elif defined(_XBOX360)
@@ -322,7 +321,6 @@ static void get_environment_settings(int argc, char *argv[])
    strlcpy(default_paths.savestate_dir, "game:\\savestates", sizeof(default_paths.savestate_dir));
    strlcpy(default_paths.sram_dir, "game:\\sram", sizeof(default_paths.sram_dir));
    strlcpy(default_paths.system_dir, "game:\\system", sizeof(default_paths.system_dir));
-   strlcpy(default_paths.executable_extension, ".xex", sizeof(default_paths.executable_extension));
    strlcpy(default_paths.filebrowser_startup_dir, "game:", sizeof(default_paths.filebrowser_startup_dir));
 #endif
 }
