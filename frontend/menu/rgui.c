@@ -151,7 +151,6 @@ struct rgui_handle
    bool need_refresh;
    bool msg_force;
 
-   char path_buf[PATH_MAX];
    char base_path[PATH_MAX];
 
    const uint8_t *font;
@@ -1383,9 +1382,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             else
 #endif
             {
-               snprintf(rgui->path_buf, sizeof(rgui->path_buf), "%s/%s", dir, path);
-
-               strlcpy(g_extern.fullpath, rgui->path_buf, sizeof(g_extern.fullpath));
+               snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s/%s", dir, path);
                g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 
                menu_settings_msg(S_MSG_LOADING_ROM, 1);
