@@ -726,8 +726,8 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
             if(g_extern.console.screen.gamma_correction > 0)
             {
                g_extern.console.screen.gamma_correction--;
-            if (driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(driver.video_data);
+               if (driver.video_poke->apply_state_changes)
+                  driver.video_poke->apply_state_changes(driver.video_data);
             }
          }
          else if (action == RGUI_ACTION_RIGHT)
@@ -1079,27 +1079,15 @@ static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
 
       case RGUI_ACTION_CANCEL:
+         rgui_list_pop(rgui->menu_stack);
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
-         {
-            rgui_list_pop(rgui->menu_stack);
             rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
-         }
-         else
-         {
-            rgui_list_pop(rgui->menu_stack);
-         }
          break;
 
       case RGUI_ACTION_OK:
+         rgui_list_pop(rgui->menu_stack);
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT)
-         {
-            rgui_list_pop(rgui->menu_stack);
             rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_VIEWPORT_2, 0);
-         }
-         else
-         {
-            rgui_list_pop(rgui->menu_stack);
-         }
          break;
 
       case RGUI_ACTION_START:
@@ -1412,7 +1400,6 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else
          {
-#ifdef HAVE_LIBRETRO_MANAGEMENT
             if (menu_type == RGUI_SETTINGS_CORE)
             {
                strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
@@ -1420,15 +1407,15 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
                rgui->need_refresh = true;
                rgui_list_pop(rgui->menu_stack);
 
-#ifdef GEKKO
+#if defined(HAVE_DYNAMIC)
+#elif defined(GEKKO)
                snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s/boot.dol", default_paths.core_dir);
-#endif
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
                g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
                g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+#endif
             }
             else
-#endif
             {
                snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s/%s", dir, path);
                g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
@@ -1449,7 +1436,6 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
 
       case RGUI_ACTION_SETTINGS:
-#ifdef HAVE_LIBRETRO_MANAGEMENT
          if (menu_type == RGUI_SETTINGS_CORE)
          {
             rgui->selection_ptr = directory_ptr;
@@ -1457,7 +1443,6 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui_list_pop(rgui->menu_stack);
          }
          else
-#endif
          {
             rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, rgui->selection_ptr);
             rgui->selection_ptr = 0;
