@@ -858,7 +858,7 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
          if (action == RGUI_ACTION_OK)
          {
 #ifdef GEKKO
-            snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s/boot.dol", default_paths.core_dir);
+            fill_pathname_join(g_extern.fullpath, default_paths.core_dir, "boot.dol", sizeof(g_extern.fullpath));
 #endif
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
@@ -1401,7 +1401,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
 #if defined(HAVE_DYNAMIC)
 #elif defined(GEKKO)
-               snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s/boot.dol", default_paths.core_dir);
+               fill_pathname_join(g_extern.fullpath, default_paths.core_dir, "boot.dol", sizeof(g_extern.fullpath));
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
                g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
                g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
