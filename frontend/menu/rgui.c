@@ -957,56 +957,54 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
    return 0;
 }
 
-#define RGUI_MENU_ITEM(x, y) rgui_list_push(rgui->folder_buf, x, y, 0)
-
 static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->folder_buf);
 
-   RGUI_MENU_ITEM("Rewind", RGUI_SETTINGS_REWIND_ENABLE);
-   RGUI_MENU_ITEM("Rewind granularity", RGUI_SETTINGS_REWIND_GRANULARITY);
+   rgui_list_push(rgui->folder_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
+   rgui_list_push(rgui->folder_buf, "Rewind granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
    if (g_extern.main_is_init)
    {
-      RGUI_MENU_ITEM("Save State", RGUI_SETTINGS_SAVESTATE_SAVE);
-      RGUI_MENU_ITEM("Load State", RGUI_SETTINGS_SAVESTATE_LOAD);
+      rgui_list_push(rgui->folder_buf, "Save State", RGUI_SETTINGS_SAVESTATE_SAVE, 0);
+      rgui_list_push(rgui->folder_buf, "Load State", RGUI_SETTINGS_SAVESTATE_LOAD, 0);
 #ifdef HAVE_SCREENSHOTS
-      RGUI_MENU_ITEM("Take Screenshot", RGUI_SETTINGS_SCREENSHOT);
+      rgui_list_push(rgui->folder_buf, "Take Screenshot", RGUI_SETTINGS_SCREENSHOT, 0);
 #endif
-      RGUI_MENU_ITEM("Restart Game", RGUI_SETTINGS_RESTART_GAME);
+      rgui_list_push(rgui->folder_buf, "Restart Game", RGUI_SETTINGS_RESTART_GAME, 0);
    }
-   RGUI_MENU_ITEM("Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER);
+   rgui_list_push(rgui->folder_buf, "Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER, 0);
 #ifdef HW_RVL
-   RGUI_MENU_ITEM("VI Trap filtering", RGUI_SETTINGS_VIDEO_SOFT_FILTER);
+   rgui_list_push(rgui->folder_buf, "VI Trap filtering", RGUI_SETTINGS_VIDEO_SOFT_FILTER, 0);
 #endif
 #ifdef GEKKO
-   RGUI_MENU_ITEM("Screen Resolution", RGUI_SETTINGS_VIDEO_RESOLUTION);
-   RGUI_MENU_ITEM("Gamma", RGUI_SETTINGS_VIDEO_GAMMA);
+   rgui_list_push(rgui->folder_buf, "Screen Resolution", RGUI_SETTINGS_VIDEO_RESOLUTION, 0);
+   rgui_list_push(rgui->folder_buf, "Gamma", RGUI_SETTINGS_VIDEO_GAMMA, 0);
 #endif
-   RGUI_MENU_ITEM("Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO);
-   RGUI_MENU_ITEM("Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT);
-   RGUI_MENU_ITEM("Overscan", RGUI_SETTINGS_VIDEO_OVERSCAN);
-   RGUI_MENU_ITEM("Rotation", RGUI_SETTINGS_VIDEO_ROTATION);
-   RGUI_MENU_ITEM("Mute Audio", RGUI_SETTINGS_AUDIO_MUTE);
-   RGUI_MENU_ITEM("Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE);
-   RGUI_MENU_ITEM("Audio Resampler", RGUI_SETTINGS_RESAMPLER_TYPE);
+   rgui_list_push(rgui->folder_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
+   rgui_list_push(rgui->folder_buf, "Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
+   rgui_list_push(rgui->folder_buf, "Overscan", RGUI_SETTINGS_VIDEO_OVERSCAN, 0);
+   rgui_list_push(rgui->folder_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
+   rgui_list_push(rgui->folder_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
+   rgui_list_push(rgui->folder_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
+   rgui_list_push(rgui->folder_buf, "Audio Resampler", RGUI_SETTINGS_RESAMPLER_TYPE, 0);
 #ifdef GEKKO
-   RGUI_MENU_ITEM("SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR);
-   RGUI_MENU_ITEM("State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR);
+   rgui_list_push(rgui->folder_buf, "SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR, 0);
+   rgui_list_push(rgui->folder_buf, "State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR, 0);
 #endif
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-   RGUI_MENU_ITEM("Core", RGUI_SETTINGS_CORE);
+   rgui_list_push(rgui->folder_buf, "Core", RGUI_SETTINGS_CORE, 0);
 #endif
 #ifdef GEKKO
-   RGUI_MENU_ITEM("Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1);
-   RGUI_MENU_ITEM("Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2);
-   RGUI_MENU_ITEM("Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3);
-   RGUI_MENU_ITEM("Controller #4 Config", RGUI_SETTINGS_CONTROLLER_4);
+   rgui_list_push(rgui->folder_buf, "Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1, 0);
+   rgui_list_push(rgui->folder_buf, "Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2, 0);
+   rgui_list_push(rgui->folder_buf, "Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3, 0);
+   rgui_list_push(rgui->folder_buf, "Controller #4 Config", RGUI_SETTINGS_CONTROLLER_4, 0);
 #endif
-   RGUI_MENU_ITEM("Debug Text", RGUI_SETTINGS_DEBUG_TEXT);
+   rgui_list_push(rgui->folder_buf, "Debug Text", RGUI_SETTINGS_DEBUG_TEXT, 0);
 #ifndef HAVE_DYNAMIC
-   RGUI_MENU_ITEM("Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR);
+   rgui_list_push(rgui->folder_buf, "Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR, 0);
 #endif
-   RGUI_MENU_ITEM("Exit RetroArch", RGUI_SETTINGS_QUIT_EMULATOR);
+   rgui_list_push(rgui->folder_buf, "Exit RetroArch", RGUI_SETTINGS_QUIT_EMULATOR, 0);
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
@@ -1014,24 +1012,24 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 #ifdef RARCH_CONSOLE
    rgui_list_clear(rgui->folder_buf);
 
-   RGUI_MENU_ITEM("Device", RGUI_SETTINGS_BIND_DEVICE);
-   RGUI_MENU_ITEM("DPad Emulation", RGUI_SETTINGS_BIND_DPAD_EMULATION);
-   RGUI_MENU_ITEM("Up", RGUI_SETTINGS_BIND_UP);
-   RGUI_MENU_ITEM("Down", RGUI_SETTINGS_BIND_DOWN);
-   RGUI_MENU_ITEM("Left", RGUI_SETTINGS_BIND_LEFT);
-   RGUI_MENU_ITEM("Right", RGUI_SETTINGS_BIND_RIGHT);
-   RGUI_MENU_ITEM("A", RGUI_SETTINGS_BIND_A);
-   RGUI_MENU_ITEM("B", RGUI_SETTINGS_BIND_B);
-   RGUI_MENU_ITEM("X", RGUI_SETTINGS_BIND_X);
-   RGUI_MENU_ITEM("Y", RGUI_SETTINGS_BIND_Y);
-   RGUI_MENU_ITEM("Start", RGUI_SETTINGS_BIND_START);
-   RGUI_MENU_ITEM("Select", RGUI_SETTINGS_BIND_SELECT);
-   RGUI_MENU_ITEM("L", RGUI_SETTINGS_BIND_L);
-   RGUI_MENU_ITEM("R", RGUI_SETTINGS_BIND_R);
-   RGUI_MENU_ITEM("L2", RGUI_SETTINGS_BIND_L2);
-   RGUI_MENU_ITEM("R2", RGUI_SETTINGS_BIND_R2);
-   RGUI_MENU_ITEM("L3", RGUI_SETTINGS_BIND_L3);
-   RGUI_MENU_ITEM("R3", RGUI_SETTINGS_BIND_R3);
+   rgui_list_push(rgui->folder_buf, "Device", RGUI_SETTINGS_BIND_DEVICE, 0);
+   rgui_list_push(rgui->folder_buf, "DPad Emulation", RGUI_SETTINGS_BIND_DPAD_EMULATION, 0);
+   rgui_list_push(rgui->folder_buf, "Up", RGUI_SETTINGS_BIND_UP, 0);
+   rgui_list_push(rgui->folder_buf, "Down", RGUI_SETTINGS_BIND_DOWN, 0);
+   rgui_list_push(rgui->folder_buf, "Left", RGUI_SETTINGS_BIND_LEFT, 0);
+   rgui_list_push(rgui->folder_buf, "Right", RGUI_SETTINGS_BIND_RIGHT, 0);
+   rgui_list_push(rgui->folder_buf, "A", RGUI_SETTINGS_BIND_A, 0);
+   rgui_list_push(rgui->folder_buf, "B", RGUI_SETTINGS_BIND_B, 0);
+   rgui_list_push(rgui->folder_buf, "X", RGUI_SETTINGS_BIND_X, 0);
+   rgui_list_push(rgui->folder_buf, "Y", RGUI_SETTINGS_BIND_Y, 0);
+   rgui_list_push(rgui->folder_buf, "Start", RGUI_SETTINGS_BIND_START, 0);
+   rgui_list_push(rgui->folder_buf, "Select", RGUI_SETTINGS_BIND_SELECT, 0);
+   rgui_list_push(rgui->folder_buf, "L", RGUI_SETTINGS_BIND_L, 0);
+   rgui_list_push(rgui->folder_buf, "R", RGUI_SETTINGS_BIND_R, 0);
+   rgui_list_push(rgui->folder_buf, "L2", RGUI_SETTINGS_BIND_L2, 0);
+   rgui_list_push(rgui->folder_buf, "R2", RGUI_SETTINGS_BIND_R2, 0);
+   rgui_list_push(rgui->folder_buf, "L3", RGUI_SETTINGS_BIND_L3, 0);
+   rgui_list_push(rgui->folder_buf, "R3", RGUI_SETTINGS_BIND_R3, 0);
 #endif
 }
 
