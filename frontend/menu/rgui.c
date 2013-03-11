@@ -142,7 +142,6 @@ struct rgui_handle
    uint16_t *frame_buf;
    size_t frame_buf_pitch;
 
-   rgui_folder_enum_cb_t folder_cb;
    void *userdata;
 
    rgui_list_t *menu_stack;
@@ -224,13 +223,12 @@ static void init_font(rgui_handle_t *rgui, const uint8_t *font_bmp_buf)
 rgui_handle_t *rgui_init(const char *base_path,
       uint16_t *framebuf, size_t framebuf_pitch,
       const uint8_t *font_bmp_buf, const uint8_t *font_bin_buf,
-      rgui_folder_enum_cb_t folder_cb, void *userdata)
+      void *userdata)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
    rgui->frame_buf = framebuf;
    rgui->frame_buf_pitch = framebuf_pitch;
-   rgui->folder_cb = folder_cb;
    rgui->userdata = userdata;
    strlcpy(rgui->base_path, base_path, sizeof(rgui->base_path));
 
@@ -1276,6 +1274,78 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    return 0;
 }
 
+static bool directory_parse(const char *directory, void *userdata, void *ctx)
+{
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+   bool core_chooser = (userdata) ? *(unsigned*)userdata == RGUI_SETTINGS_CORE : false;
+#else
+   bool core_chooser = false;
+#endif
+
+   if (!*directory)
+   {
+#if defined(GEKKO)
+#ifdef HW_RVL
+      rgui_list_push(ctx, "sd:/", RGUI_FILE_DEVICE, 0);
+      rgui_list_push(ctx, "usb:/", RGUI_FILE_DEVICE, 0);
+#endif
+      rgui_list_push(ctx, "carda:/", RGUI_FILE_DEVICE, 0);
+      rgui_list_push(ctx, "cardb:/", RGUI_FILE_DEVICE, 0);
+      return true;
+#elif defined(_XBOX1)
+      rgui_list_push(ctx, "C:\\", RGUI_FILE_DEVICE, 0);
+      rgui_list_push(ctx, "D:\\", RGUI_FILE_DEVICE, 0);
+      rgui_list_push(ctx, "E:\\", RGUI_FILE_DEVICE, 0);
+      rgui_list_push(ctx, "F:\\", RGUI_FILE_DEVICE, 0);
+      rgui_list_push(ctx, "G:\\", RGUI_FILE_DEVICE, 0);
+      return true;
+#elif defined(__CELLOS_LV2__)
+      rgui_list_push(ctx, "app_home", RGUI_FILE_DEVICE, 0);
+      rgui_list_push(ctx, "dev_hdd0", RGUI_FILE_DEVICE, 0);
+      rgui_list_push(ctx, "dev_hdd1", RGUI_FILE_DEVICE, 0);
+      rgui_list_push(ctx, "host_root", RGUI_FILE_DEVICE, 0);
+      return true;
+#endif
+   }
+
+#if defined(GEKKO) && defined(HW_RVL)
+   LWP_MutexLock(gx_device_mutex);
+   int dev = gx_get_device_from_path(directory);
+
+   if (dev != -1 && !gx_devices[dev].mounted && gx_devices[dev].interface->isInserted())
+      fatMountSimple(gx_devices[dev].name, gx_devices[dev].interface);
+
+   LWP_MutexUnlock(gx_device_mutex);
+#endif
+
+   const char *exts = core_chooser ? EXT_EXECUTABLES : g_extern.system.valid_extensions;
+   char dir[PATH_MAX];
+   if (*directory)
+      strlcpy(dir, directory, sizeof(dir));
+   else
+      strlcpy(dir, "/", sizeof(dir));
+
+   struct string_list *list = dir_list_new(dir, exts, true);
+   if (!list)
+      return false;
+
+   for (size_t i = 0; i < list->size; i++)
+   {
+      bool is_dir = list->elems[i].attr.b;
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+      if (core_chooser && (is_dir ||
+               strcasecmp(list->elems[i].data, default_paths.salamander_file) == 0))
+         continue;
+#endif
+
+      rgui_list_push(ctx, path_basename(list->elems[i].data),
+            is_dir ? RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
+   }
+
+   string_list_free(list);
+   return true;
+}
+
 int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
    const char *dir = 0;
@@ -1436,8 +1506,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
       rgui->need_refresh = false;
       rgui_list_clear(rgui->selection_buf);
 
-      rgui->folder_cb(dir, (rgui_file_enum_cb_t)rgui_list_push,
-         &menu_type, rgui->selection_buf);
+      directory_parse(dir, &menu_type, rgui->selection_buf);
 
       if (*dir)
          rgui_list_sort(rgui->selection_buf);
@@ -1503,79 +1572,6 @@ enum
    RMENU_DEVICE_NAV_LAST
 };
 
-static bool folder_cb(const char *directory, rgui_file_enum_cb_t file_cb,
-      void *userdata, void *ctx)
-{
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-   bool core_chooser = (userdata) ? *(unsigned*)userdata == RGUI_SETTINGS_CORE : false;
-#else
-   bool core_chooser = false;
-#endif
-
-   if (!*directory)
-   {
-#if defined(GEKKO)
-#ifdef HW_RVL
-      file_cb(ctx, "sd:/", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "usb:/", RGUI_FILE_DEVICE, 0);
-#endif
-      file_cb(ctx, "carda:/", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "cardb:/", RGUI_FILE_DEVICE, 0);
-      return true;
-#elif defined(_XBOX1)
-      file_cb(ctx, "C:\\", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "D:\\", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "E:\\", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "F:\\", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "G:\\", RGUI_FILE_DEVICE, 0);
-      return true;
-#elif defined(__CELLOS_LV2__)
-      file_cb(ctx, "app_home", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "dev_hdd0", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "dev_hdd1", RGUI_FILE_DEVICE, 0);
-      file_cb(ctx, "host_root", RGUI_FILE_DEVICE, 0);
-      return true;
-#endif
-   }
-
-#if defined(GEKKO) && defined(HW_RVL)
-   LWP_MutexLock(gx_device_mutex);
-   int dev = gx_get_device_from_path(directory);
-
-   if (dev != -1 && !gx_devices[dev].mounted && gx_devices[dev].interface->isInserted())
-      fatMountSimple(gx_devices[dev].name, gx_devices[dev].interface);
-
-   LWP_MutexUnlock(gx_device_mutex);
-#endif
-
-   const char *exts = core_chooser ? EXT_EXECUTABLES : g_extern.system.valid_extensions;
-   char dir[PATH_MAX];
-   if (*directory)
-      strlcpy(dir, directory, sizeof(dir));
-   else
-      strlcpy(dir, "/", sizeof(dir));
-
-   struct string_list *list = dir_list_new(dir, exts, true);
-   if (!list)
-      return false;
-
-   for (size_t i = 0; i < list->size; i++)
-   {
-      bool is_dir = list->elems[i].attr.b;
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-      if (core_chooser && (is_dir ||
-               strcasecmp(list->elems[i].data, default_paths.salamander_file) == 0))
-         continue;
-#endif
-
-      file_cb(ctx,
-            path_basename(list->elems[i].data),
-            is_dir ? RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
-   }
-
-   string_list_free(list);
-   return true;
-}
 
 /*============================================================
 RMENU API
@@ -1585,7 +1581,7 @@ void menu_init(void)
 {
    rgui = rgui_init("",
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
-         NULL, bitmap_bin, folder_cb, NULL);
+         NULL, bitmap_bin, NULL);
 
    rgui_iterate(rgui, RGUI_ACTION_REFRESH);
 }
