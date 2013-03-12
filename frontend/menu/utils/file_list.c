@@ -36,9 +36,14 @@ struct rgui_list
    size_t size;
 };
 
-void rgui_list_push(rgui_list_t *list,
+void rgui_list_push(void *userdata,
       const char *path, unsigned type, size_t directory_ptr)
 {
+   rgui_list_t *list = (rgui_list_t*)userdata;
+
+   if (!list)
+      return;
+
    if (list->size >= list->capacity)
    {
       list->capacity++;

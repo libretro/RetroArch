@@ -25,8 +25,8 @@ typedef struct rgui_list rgui_list_t;
 
 void rgui_list_free(rgui_list_t *list);
 
-void rgui_list_push(rgui_list_t *list,
-      const char *path, unsigned type, size_t directory_ptr);
+void rgui_list_push(void *userdata, const char *path,
+      unsigned type, size_t directory_ptr);
 void rgui_list_pop(rgui_list_t *list);
 void rgui_list_clear(rgui_list_t *list);
 
