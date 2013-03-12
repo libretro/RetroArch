@@ -21,6 +21,7 @@
 #ifdef _XBOX1
 #include <xfont.h>
 #endif
+#include "../gfx/image.h"
 #include "../gfx/fonts/d3d_font.h"
 
 #include "../gfx/gfx_context.h"
@@ -74,6 +75,7 @@ typedef struct xdk_d3d_video
    IDirect3DVertexDeclaration9* v_decl;
 #endif
 #ifdef HAVE_RGUI
+   texture_image rgui_texture;
    const void *rgui_data;
 #endif
    const d3d_font_renderer_t *font_ctx;
