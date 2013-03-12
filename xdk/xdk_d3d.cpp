@@ -740,9 +740,10 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 static inline void xdk_d3d_draw_rgui(void *data)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+   texture_image *out_img = (texture_image*)&d3d->rgui_texture;
 
    if (out_img->pixels == NULL || out_img->vertex_buf == NULL)
-      return false;
+      return;
 
    int x = out_img->x;
    int y = out_img->y;
@@ -977,7 +978,7 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 
 #ifdef HAVE_RGUI
    if (d3d->rgui_data)
-      xd_d3d_draw_rgui(d3d);
+      xdk_d3d_draw_rgui(d3d);
 #endif
    font_params_t font_parms = {0};
 
