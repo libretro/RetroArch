@@ -248,7 +248,6 @@ struct settings
 #endif
 #ifdef RARCH_CONSOLE
       uint64_t default_binds[RARCH_CUSTOM_BIND_LIST_END];
-      unsigned map_dpad_to_stick;
       unsigned device[MAX_PLAYERS];
 #endif
       bool netplay_client_swap_input;
