@@ -64,8 +64,6 @@ static void nullinput_set_analog_dpad_mapping(unsigned device, unsigned map_dpad
    (void)map_dpad_enum;
    (void)controller_id;
 }
-
-static void nullinput_input_post_init(void) {}
 #endif
 
 const input_driver_t input_null = {
@@ -77,7 +75,6 @@ const input_driver_t input_null = {
 #ifdef RARCH_CONSOLE
    nullinput_set_default_keybind_lut,
    nullinput_set_analog_dpad_mapping,
-   nullinput_input_post_init,
    2,
 #endif
    "null",

@@ -329,11 +329,6 @@ static void *xdk_input_init(void)
    while(XGetDeviceEnumerationStatus() == XDEVICE_ENUMERATION_BUSY) {}
 #endif
 
-   return (void*)-1;
-}
-
-static void xdk_input_post_init(void)
-{
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
    {
       xdk_set_default_keybind_lut(0, i);
@@ -342,6 +337,8 @@ static void xdk_input_post_init(void)
 
    for(unsigned i = 0; i < MAX_PADS; i++)
       xdk_input_set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[i], i);
+
+   return (void*)-1;
 }
 
 static bool xdk_input_key_pressed(void *data, int key)
@@ -358,7 +355,6 @@ const input_driver_t input_xinput =
    xdk_input_free_input,
    xdk_set_default_keybind_lut,
    xdk_input_set_analog_dpad_mapping,
-   xdk_input_post_init,
    MAX_PADS,
    "xinput"
 };

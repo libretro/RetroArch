@@ -199,7 +199,6 @@ static void init_console_drivers(void)
    init_drivers_pre(); // Set driver.* function callbacks.
    driver.video->start(); // Statically starts video driver. Sets driver.video_data.
    driver.input_data = driver.input->init();
-   driver.input->post_init();
 
    // Core handles audio.
 }

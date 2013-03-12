@@ -242,19 +242,6 @@ static void gx_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_
    }
 }
 
-static void *gx_input_init(void)
-{
-   PAD_Init();
-#ifdef HW_RVL
-   WPAD_Init();
-#endif
-   SYS_SetResetCallback(reset_callback);
-#ifdef HW_RVL
-   SYS_SetPowerCallback(power_callback);
-#endif
-   return (void*)-1;
-}
-
 static void gx_set_default_keybind_lut(unsigned device, unsigned port)
 {
    (void)port;
@@ -340,8 +327,17 @@ static void gx_set_default_keybind_lut(unsigned device, unsigned port)
    }
 }
 
-static void gx_input_post_init(void)
+static void *gx_input_init(void)
 {
+   PAD_Init();
+#ifdef HW_RVL
+   WPAD_Init();
+#endif
+   SYS_SetResetCallback(reset_callback);
+#ifdef HW_RVL
+   SYS_SetPowerCallback(power_callback);
+#endif
+
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
    {
       gx_set_default_keybind_lut(0, i);
@@ -350,6 +346,8 @@ static void gx_input_post_init(void)
 
    for(unsigned i = 0; i < MAX_PADS; i++)
       gx_input_set_analog_dpad_mapping(g_settings.input.device[i], g_settings.input.dpad_emulation[i], i);
+
+   return (void*)-1;
 }
 
 static void gx_input_poll(void *data)
@@ -645,7 +643,6 @@ const input_driver_t input_gx = {
    .free = gx_input_free_input,
    .set_default_keybind_lut = gx_set_default_keybind_lut,
    .set_analog_dpad_mapping = gx_input_set_analog_dpad_mapping,
-   .post_init = gx_input_post_init,
    .max_pads = MAX_PADS,
    .ident = "gx",
 };

@@ -151,22 +151,25 @@ static void psp_free_input(void *data)
    (void)data;
 }
 
+static void psp_set_default_keybind_lut(unsigned device, unsigned port)
+{
+   (void)device;
+   (void)port;
+}
+
 static void* psp_input_initialize(void)
 {
 #ifdef PSP
    sceCtrlSetSamplingCycle(0);
 #endif
    sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
-   return (void*)-1;
-}
 
-static void psp_input_post_init(void)
-{
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
    {
       psp_set_default_keybind_lut(0, i);
       rarch_input_set_default_keybinds(i);
    }
+   return (void*)-1;
 }
 
 static bool psp_key_pressed(void *data, int key)
@@ -183,12 +186,6 @@ static bool psp_key_pressed(void *data, int key)
    }
 }
 
-static void psp_set_default_keybind_lut(unsigned device, unsigned port)
-{
-   (void)device;
-   (void)port;
-}
-
 const input_driver_t input_psp = {
    .init = psp_input_initialize,
    .poll = psp_input_poll,
@@ -197,7 +194,6 @@ const input_driver_t input_psp = {
    .free = psp_free_input,
    .set_default_keybind_lut = psp_set_default_keybind_lut,
    .set_analog_dpad_mapping = psp_input_set_analog_dpad_mapping,
-   .post_init = psp_input_post_init,
    .max_pads = MAX_PADS,
    .ident = "psp",
 };
