@@ -1043,10 +1043,24 @@ static void gl_init_textures_data(void *data)
    }
 }
 
+#ifdef HAVE_RGUI
+static void gl_init_rgui_texture(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+
+   glGenTextures(1, &gl->rgui_texture);
+   glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+}
+#endif
+
 #if defined(HAVE_PSGL)
 static inline void gl_copy_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
-      gl_t *gl = (gl_t*)data;
+   gl_t *gl = (gl_t*)data;
    size_t buffer_addr        = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
    size_t buffer_stride      = gl->tex_w * gl->base_size;
    const uint8_t *frame_copy = frame;
@@ -1073,12 +1087,7 @@ static void gl_init_textures(void *data, const video_info_t *video)
    glGenTextures(TEXTURES, gl->texture);
 
 #ifdef HAVE_RGUI
-   glGenTextures(1, &gl->rgui_texture);
-   glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   gl_init_rgui_texture(gl);
 #endif
 
    for (unsigned i = 0; i < TEXTURES; i++)
@@ -1191,12 +1200,7 @@ static void gl_init_textures(void *data, const video_info_t *video)
    glGenTextures(TEXTURES, gl->texture);
 
 #ifdef HAVE_RGUI
-   glGenTextures(1, &gl->rgui_texture);
-   glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   gl_init_rgui_texture(gl);
 #endif
 
    for (unsigned i = 0; i < TEXTURES; i++)
