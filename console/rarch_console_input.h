@@ -31,12 +31,8 @@ extern char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][32];
 extern char rarch_dpad_emulation_name_lut[KEYBIND_DEFAULT][32];
 
 const char *rarch_input_find_platform_key_label(uint64_t joykey);
-
 void rarch_input_set_default_keybinds(unsigned player);
-
 void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
-
-void rarch_input_set_controls_default (const void *data);
 const char *rarch_input_get_default_keybind_name (unsigned id);
 
 #endif

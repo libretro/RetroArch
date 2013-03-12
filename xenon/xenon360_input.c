@@ -107,6 +107,12 @@ static void xenon360_input_set_analog_dpad_mapping(unsigned device, unsigned map
 
 static void xenon360_input_post_init(void)
 {
+   for(unsigned i = 0; i < MAX_PLAYERS; i++)
+   {
+      xenon360_input_set_default_keybind_lut(0, i);
+      rarch_input_set_default_keybinds(i);
+   }
+
    for(unsigned i = 0; i < MAX_PADS; i++)
       xenon360_input_set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[i], i);
 }

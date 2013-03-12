@@ -436,19 +436,6 @@ static void* ps3_input_init(void)
    return (void*)-1;
 }
 
-#define STUB_DEVICE 0
-
-static void ps3_input_post_init(void)
-{
-   for (unsigned i = 0; i < MAX_PADS; i++)
-      ps3_input_set_analog_dpad_mapping(STUB_DEVICE, g_settings.input.dpad_emulation[i], i);
-}
-
-static bool ps3_input_key_pressed(void *data, int key)
-{
-   return (g_extern.lifecycle_state & (1ULL << key));
-}
-
 static void ps3_set_default_keybind_lut(unsigned device, unsigned port)
 {
    (void)device;
@@ -456,6 +443,23 @@ static void ps3_set_default_keybind_lut(unsigned device, unsigned port)
 
    for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
       g_settings.input.default_binds[i] = platform_keys[i].joykey;
+}
+
+static void ps3_input_post_init(void)
+{
+   for(unsigned i = 0; i < MAX_PLAYERS; i++)
+   {
+      ps3_set_default_keybind_lut(0, i);
+      rarch_input_set_default_keybinds(i);
+   }
+
+   for (unsigned i = 0; i < MAX_PADS; i++)
+      ps3_input_set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[i], i);
+}
+
+static bool ps3_input_key_pressed(void *data, int key)
+{
+   return (g_extern.lifecycle_state & (1ULL << key));
 }
 
 const input_driver_t input_ps3 = {

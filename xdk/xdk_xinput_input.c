@@ -332,12 +332,16 @@ static void *xdk_input_init(void)
    return (void*)-1;
 }
 
-#define STUB_DEVICE 0
-
 static void xdk_input_post_init(void)
 {
+   for(unsigned i = 0; i < MAX_PLAYERS; i++)
+   {
+      xdk_set_default_keybind_lut(0, i);
+      rarch_input_set_default_keybinds(i);
+   }
+
    for(unsigned i = 0; i < MAX_PADS; i++)
-      xdk_input_set_analog_dpad_mapping(STUB_DEVICE, g_settings.input.dpad_emulation[i], i);
+      xdk_input_set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[i], i);
 }
 
 static bool xdk_input_key_pressed(void *data, int key)

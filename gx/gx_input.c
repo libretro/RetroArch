@@ -257,6 +257,12 @@ static void *gx_input_init(void)
 
 static void gx_input_post_init(void)
 {
+   for(unsigned i = 0; i < MAX_PLAYERS; i++)
+   {
+      gx_set_default_keybind_lut(0, i):
+      rarch_input_set_default_keybinds(i);
+   }
+
    for(unsigned i = 0; i < MAX_PADS; i++)
       gx_input_set_analog_dpad_mapping(g_settings.input.device[i], g_settings.input.dpad_emulation[i], i);
 }

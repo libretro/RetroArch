@@ -162,6 +162,11 @@ static void* psp_input_initialize(void)
 
 static void psp_input_post_init(void)
 {
+   for(unsigned i = 0; i < MAX_PLAYERS; i++)
+   {
+      psp_set_default_keybind_lut(0, i);
+      rarch_input_set_default_keybinds(i);
+   }
 }
 
 static bool psp_key_pressed(void *data, int key)
