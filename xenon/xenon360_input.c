@@ -123,6 +123,5 @@ const input_driver_t input_xenon360 = {
    .free = xenon360_input_free_input,
    .set_default_keybind_lut = xenon360_input_set_default_keybind_lut,
    .set_analog_dpad_mapping = xenon360_input_set_analog_dpad_mapping,
-   .max_pads = MAX_PADS,
    .ident = "xenon360",
 };

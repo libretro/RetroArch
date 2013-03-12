@@ -194,6 +194,5 @@ const input_driver_t input_psp = {
    .free = psp_free_input,
    .set_default_keybind_lut = psp_set_default_keybind_lut,
    .set_analog_dpad_mapping = psp_input_set_analog_dpad_mapping,
-   .max_pads = MAX_PADS,
    .ident = "psp",
 };

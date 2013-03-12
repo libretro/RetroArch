@@ -643,6 +643,5 @@ const input_driver_t input_gx = {
    .free = gx_input_free_input,
    .set_default_keybind_lut = gx_set_default_keybind_lut,
    .set_analog_dpad_mapping = gx_input_set_analog_dpad_mapping,
-   .max_pads = MAX_PADS,
    .ident = "gx",
 };

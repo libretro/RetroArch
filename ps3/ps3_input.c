@@ -468,7 +468,6 @@ const input_driver_t input_ps3 = {
    .free = ps3_input_free_input,
    .set_default_keybind_lut = ps3_set_default_keybind_lut,
    .set_analog_dpad_mapping = ps3_input_set_analog_dpad_mapping,
-   .max_pads = MAX_PADS,
    .ident = "ps3",
 };
 
