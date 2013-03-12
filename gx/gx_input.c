@@ -255,11 +255,96 @@ static void *gx_input_init(void)
    return (void*)-1;
 }
 
+static void gx_set_default_keybind_lut(unsigned device, unsigned port)
+{
+   (void)port;
+
+   switch (device)
+   {
+#ifdef HW_RVL
+      case GX_DEVICE_WIIMOTE:
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_1].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_A].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_MINUS].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_PLUS].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_UP].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_DOWN].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_LEFT].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_RIGHT].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_2].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_B].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L]      = NO_BTN;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R]      = NO_BTN;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L2]     = NO_BTN;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R2]     = NO_BTN;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L3]     = NO_BTN;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R3]     = NO_BTN;
+         break;
+      case GX_DEVICE_NUNCHUK:
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_B].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_2].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_MINUS].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_PLUS].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_UP].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_DOWN].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_LEFT].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_RIGHT].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_A].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_1].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_Z].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_C].joykey;;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L2]     = NO_BTN;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R2]     = NO_BTN;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L3]     = NO_BTN;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R3]     = NO_BTN;
+         break;
+      case GX_DEVICE_CLASSIC:
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_B].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_Y].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_MINUS].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_PLUS].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_UP].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_DOWN].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_LEFT].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_RIGHT].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_A].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_X].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_L_TRIGGER].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_R_TRIGGER].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L2]     = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_ZL_TRIGGER].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R2]     = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_ZR_TRIGGER].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L3]     = NO_BTN;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R3]     = NO_BTN;
+         break;
+#endif
+      case GX_DEVICE_GAMECUBE:
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[GX_DEVICE_GC_ID_JOYPAD_B].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[GX_DEVICE_GC_ID_JOYPAD_Y].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[GX_DEVICE_GC_ID_JOYPAD_Z_TRIGGER].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[GX_DEVICE_GC_ID_JOYPAD_START].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[GX_DEVICE_GC_ID_JOYPAD_UP].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[GX_DEVICE_GC_ID_JOYPAD_DOWN].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[GX_DEVICE_GC_ID_JOYPAD_LEFT].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[GX_DEVICE_GC_ID_JOYPAD_RIGHT].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[GX_DEVICE_GC_ID_JOYPAD_A].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[GX_DEVICE_GC_ID_JOYPAD_X].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[GX_DEVICE_GC_ID_JOYPAD_L_TRIGGER].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[GX_DEVICE_GC_ID_JOYPAD_R_TRIGGER].joykey;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L2]     = NO_BTN;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R2]     = NO_BTN;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L3]     = NO_BTN;
+         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R3]     = NO_BTN;
+         break;
+      default:
+         break;
+   }
+}
+
 static void gx_input_post_init(void)
 {
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
    {
-      gx_set_default_keybind_lut(0, i):
+      gx_set_default_keybind_lut(0, i);
       rarch_input_set_default_keybinds(i);
    }
 
@@ -286,7 +371,7 @@ static void gx_input_poll(void *data)
    {
       uint32_t down = 0;
       uint64_t *state_cur = &pad_state[port];
-      bool dpad_emulation = (g_settings.input.dpad_emulation[i] != DPAD_EMULATION_NONE);
+      bool dpad_emulation = (g_settings.input.dpad_emulation[port] != DPAD_EMULATION_NONE);
 
 #ifdef HW_RVL
       uint32_t type = 0;
@@ -551,90 +636,6 @@ static bool gx_input_key_pressed(void *data, int key)
    return (g_extern.lifecycle_state & (1ULL << key));
 }
 
-static void gx_set_default_keybind_lut(unsigned device, unsigned port)
-{
-   (void)port;
-
-   switch (device)
-   {
-#ifdef HW_RVL
-      case GX_DEVICE_WIIMOTE:
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_1].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_A].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_MINUS].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_PLUS].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_UP].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_DOWN].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_LEFT].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_RIGHT].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_2].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_B].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L]      = NO_BTN;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R]      = NO_BTN;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L2]     = NO_BTN;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R2]     = NO_BTN;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L3]     = NO_BTN;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R3]     = NO_BTN;
-         break;
-      case GX_DEVICE_NUNCHUK:
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_B].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_2].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_MINUS].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_PLUS].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_UP].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_DOWN].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_LEFT].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_RIGHT].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_A].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_1].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_Z].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[GX_DEVICE_WIIMOTE_ID_JOYPAD_C].joykey;;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L2]     = NO_BTN;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R2]     = NO_BTN;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L3]     = NO_BTN;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R3]     = NO_BTN;
-         break;
-      case GX_DEVICE_CLASSIC:
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_B].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_Y].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_MINUS].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_PLUS].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_UP].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_DOWN].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_LEFT].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_RIGHT].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_A].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_X].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_L_TRIGGER].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_R_TRIGGER].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L2]     = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_ZL_TRIGGER].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R2]     = platform_keys[GX_DEVICE_CLASSIC_ID_JOYPAD_ZR_TRIGGER].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L3]     = NO_BTN;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R3]     = NO_BTN;
-         break;
-#endif
-      case GX_DEVICE_GAMECUBE:
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_B]      = platform_keys[GX_DEVICE_GC_ID_JOYPAD_B].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_Y]      = platform_keys[GX_DEVICE_GC_ID_JOYPAD_Y].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_SELECT] = platform_keys[GX_DEVICE_GC_ID_JOYPAD_Z_TRIGGER].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_START]  = platform_keys[GX_DEVICE_GC_ID_JOYPAD_START].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_UP]     = platform_keys[GX_DEVICE_GC_ID_JOYPAD_UP].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_DOWN]   = platform_keys[GX_DEVICE_GC_ID_JOYPAD_DOWN].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_LEFT]   = platform_keys[GX_DEVICE_GC_ID_JOYPAD_LEFT].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_RIGHT]  = platform_keys[GX_DEVICE_GC_ID_JOYPAD_RIGHT].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_A]      = platform_keys[GX_DEVICE_GC_ID_JOYPAD_A].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_X]      = platform_keys[GX_DEVICE_GC_ID_JOYPAD_X].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L]      = platform_keys[GX_DEVICE_GC_ID_JOYPAD_L_TRIGGER].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R]      = platform_keys[GX_DEVICE_GC_ID_JOYPAD_R_TRIGGER].joykey;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L2]     = NO_BTN;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R2]     = NO_BTN;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_L3]     = NO_BTN;
-         g_settings.input.default_binds[RETRO_DEVICE_ID_JOYPAD_R3]     = NO_BTN;
-         break;
-      default:
-         break;
-   }
-}
 
 const input_driver_t input_gx = {
    .init = gx_input_init,
