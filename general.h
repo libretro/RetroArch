@@ -247,7 +247,6 @@ struct settings
       unsigned icade_count;
 #endif
 #ifdef RARCH_CONSOLE
-      uint64_t default_binds[RARCH_CUSTOM_BIND_LIST_END];
       unsigned device[MAX_PLAYERS];
 #endif
       bool netplay_client_swap_input;

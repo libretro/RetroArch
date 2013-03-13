@@ -100,7 +100,7 @@ void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t 
          break;
 
       case KEYBIND_DEFAULT:
-         *key = g_settings.input.default_binds[default_retro_joypad_id];
+         *key = g_settings.input.binds[default_retro_joypad_id]->def_joykey;
          break;
 
       default:
@@ -113,7 +113,7 @@ void rarch_input_set_default_keybinds(unsigned player)
    for (unsigned i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
    {
       g_settings.input.binds[player][i].id = i;
-      g_settings.input.binds[player][i].joykey = g_settings.input.default_binds[i];
+      g_settings.input.binds[player][i].joykey = g_settings.input.binds[i]->def_joykey;
    }
    g_settings.input.dpad_emulation[player] = DPAD_EMULATION_LSTICK;
 }
