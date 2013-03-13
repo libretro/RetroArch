@@ -355,6 +355,5 @@ const input_driver_t input_xinput =
    xdk_input_free_input,
    xdk_set_default_keybind_lut,
    xdk_input_set_analog_dpad_mapping,
-   MAX_PADS,
    "xinput"
 };
