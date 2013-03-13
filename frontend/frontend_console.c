@@ -114,6 +114,8 @@ static void verbose_log_init(void)
    RARCH_LOG("Turning on verbose logging...\n");
 }
 
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+
 // Transforms a library id to a name suitable as a pathname.
 static void get_libretro_core_name(char *name, size_t size)
 {
@@ -141,8 +143,6 @@ static void get_libretro_core_name(char *name, size_t size)
          name[i] = tolower(c);
    }
 }
-
-#ifdef HAVE_LIBRETRO_MANAGEMENT
 
 // If a CORE executable of name CORE.extension exists, rename filename
 // to a more sane name.
@@ -274,9 +274,7 @@ begin_loop:
       else
          args.config_path = NULL;
 
-      int init_ret = rarch_main_init_wrap(&args);
-
-      if (init_ret == 0)
+      if (rarch_main_init_wrap(&args) == 0)
       {
          RARCH_LOG("rarch_main_init succeeded.\n");
          g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
