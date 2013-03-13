@@ -30,8 +30,6 @@ struct XPR_HEADER
 #define XPR1_MAGIC_VALUE 0x31525058
 #define XPR2_MAGIC_VALUE 0x58505232
 
-const DWORD eXALLOCAllocatorId_AtgResource = eXALLOCAllocatorId_GameMax;
-
 PackedResource::PackedResource()
 {
    m_pSysMemData = NULL;
@@ -49,44 +47,40 @@ PackedResource::~PackedResource()
    Destroy();
 }
 
-void *PackedResource::GetData( const CHAR* strName ) const
+void *PackedResource::GetData( const char *strName ) const
 {
-   if( NULL == m_pResourceTags || NULL == strName )
+   if (m_pResourceTags == NULL || strName == NULL)
       return NULL;
 
 #if defined(_XBOX1)
-   for( DWORD i=0; m_pResourceTags[i].strName; i++ )
+   for (DWORD i=0; m_pResourceTags[i].strName; i++ )
 #elif defined(_XBOX360)
-      for( DWORD i = 0; i < m_dwNumResourceTags; i++ )
+      for (DWORD i = 0; i < m_dwNumResourceTags; i++ )
 #endif
       {
-         if( !_stricmp( strName, m_pResourceTags[i].strName ) )
-         {
+         if (!strcasecmp( strName, m_pResourceTags[i].strName))
             return &m_pSysMemData[m_pResourceTags[i].dwOffset];
-         }
       }
 
    return NULL;
 }
 
-static __forceinline void* AllocateContiguousMemory( DWORD Size, DWORD Alignment,
-      DWORD Protection = XALLOC_MEMPROTECT_WRITECOMBINE )
+static inline void* AllocateContiguousMemory( DWORD Size, DWORD Alignment)
 {
 #if defined(_XBOX1)
    return D3D_AllocContiguousMemory(Size, Alignment);
 #elif defined(_XBOX360)
-   return XMemAlloc( Size, MAKE_XALLOC_ATTRIBUTES( 0, 0, 0, 0, eXALLOCAllocatorId_AtgResource,
-            Alignment, Protection, 0,
-            XALLOC_MEMTYPE_PHYSICAL ) );
+   return XMemAlloc( Size, MAKE_XALLOC_ATTRIBUTES( 0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
+            Alignment, XALLOC_MEMPROTECT_WRITECOMBINE, 0, XALLOC_MEMTYPE_PHYSICAL ) );
 #endif
 }
 
-static __forceinline void FreeContiguousMemory( void* pData )
+static inline void FreeContiguousMemory( void* pData )
 {
 #if defined(_XBOX1)
    return D3D_FreeContiguousMemory(pData);
 #elif defined(_XBOX360)
-   return XMemFree( pData, MAKE_XALLOC_ATTRIBUTES( 0, 0, 0, 0, eXALLOCAllocatorId_AtgResource,
+   return XMemFree( pData, MAKE_XALLOC_ATTRIBUTES( 0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
             0, 0, 0, XALLOC_MEMTYPE_PHYSICAL ) );
 #endif
 }
@@ -164,13 +158,9 @@ HRESULT PackedResource::Create( const char *strFilename )
 
 #if defined(_XBOX1)
    if( xprh.dwMagic == XPR0_MAGIC_VALUE )
-   {
       bHasResourceOffsetsTable = FALSE;
-   }
    else if( xprh.dwMagic == XPR1_MAGIC_VALUE )
-   {
       bHasResourceOffsetsTable = TRUE;
-   }
    else
 #elif defined(_XBOX360)
       if(!retval)
@@ -199,7 +189,7 @@ HRESULT PackedResource::Create( const char *strFilename )
 
    // Allocate memory
    m_pSysMemData = (BYTE*)malloc(m_dwSysMemDataSize);
-   if( m_pSysMemData == NULL )
+   if (m_pSysMemData == NULL)
    {
       RARCH_ERR( "Could not allocate system memory.\n" );
       m_dwSysMemDataSize = 0;
@@ -283,11 +273,11 @@ HRESULT PackedResource::Create( const char *strFilename )
 void PackedResource::GetResourceTags( DWORD* pdwNumResourceTags,
       XBRESOURCE** ppResourceTags )
 {
-   if( pdwNumResourceTags )
-      ( *pdwNumResourceTags ) = m_dwNumResourceTags;
+   if (pdwNumResourceTags)
+      (*pdwNumResourceTags) = m_dwNumResourceTags;
 
-   if( ppResourceTags )
-      ( *ppResourceTags ) = m_pResourceTags;
+   if (ppResourceTags )
+      (*ppResourceTags) = m_pResourceTags;
 }
 #endif
 
@@ -297,8 +287,9 @@ void PackedResource::Destroy()
    m_pSysMemData = NULL;
    m_dwSysMemDataSize = 0L;
 
-   if( m_pVidMemData != NULL )
-      FreeContiguousMemory( m_pVidMemData );
+   if (m_pVidMemData != NULL)
+      FreeContiguousMemory(m_pVidMemData);
+
    m_pVidMemData = NULL;
    m_dwVidMemDataSize = 0L;
 

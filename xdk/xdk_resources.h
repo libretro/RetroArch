@@ -39,8 +39,6 @@ enum
 {
    RESOURCETYPE_USERDATA       = ( ( 'U' << 24 ) | ( 'S' << 16 ) | ( 'E' << 8 ) | ( 'R' ) ),
    RESOURCETYPE_TEXTURE        = ( ( 'T' << 24 ) | ( 'X' << 16 ) | ( '2' << 8 ) | ( 'D' ) ),
-   RESOURCETYPE_CUBEMAP        = ( ( 'T' << 24 ) | ( 'X' << 16 ) | ( 'C' << 8 ) | ( 'M' ) ),
-   RESOURCETYPE_VOLUMETEXTURE  = ( ( 'T' << 24 ) | ( 'X' << 16 ) | ( '3' << 8 ) | ( 'D' ) ),
    RESOURCETYPE_VERTEXBUFFER   = ( ( 'V' << 24 ) | ( 'B' << 16 ) | ( 'U' << 8 ) | ( 'F' ) ),
    RESOURCETYPE_INDEXBUFFER    = ( ( 'I' << 24 ) | ( 'B' << 16 ) | ( 'U' << 8 ) | ( 'F' ) ),
    RESOURCETYPE_EOF            = 0xffffffff
@@ -108,19 +106,8 @@ class PackedResource
       LPDIRECT3DTEXTURE GetTexture( DWORD dwOffset ) const
       { return (LPDIRECT3DTEXTURE)GetResource( dwOffset ); }
 
-      LPDIRECT3DCUBETEXTURE GetCubemap( DWORD dwOffset ) const
-      { return (LPDIRECT3DCUBETEXTURE)GetResource( dwOffset ); }
-
-      LPDIRECT3DVOLUMETEXTURE GetVolumeTexture( DWORD dwOffset ) const
-      { return (LPDIRECT3DVOLUMETEXTURE)GetResource( dwOffset ); }
-
       LPDIRECT3DVERTEXBUFFER GetVertexBuffer( DWORD dwOffset ) const
       { return (LPDIRECT3DVERTEXBUFFER)GetResource( dwOffset ); }
-
-#ifdef _XBOX1
-      LPDIRECT3DPUSHBUFFER8 GetPushBuffer( DWORD dwOffset ) const
-      { return (LPDIRECT3DPUSHBUFFER8)GetResource( dwOffset ); }
-#endif
 
       // Functions to retrieve resources by their name
       void *GetData( const CHAR* strName ) const;
@@ -131,19 +118,8 @@ class PackedResource
       LPDIRECT3DTEXTURE GetTexture( const CHAR* strName ) const
       { return (LPDIRECT3DTEXTURE)GetResource( strName ); }
 
-      LPDIRECT3DCUBETEXTURE GetCubemap( const CHAR* strName ) const
-      { return (LPDIRECT3DCUBETEXTURE)GetResource( strName ); }
-
-      LPDIRECT3DVOLUMETEXTURE GetVolumeTexture( const CHAR* strName ) const
-      { return (LPDIRECT3DVOLUMETEXTURE)GetResource( strName ); }
-
       LPDIRECT3DVERTEXBUFFER GetVertexBuffer( const CHAR* strName ) const
       { return (LPDIRECT3DVERTEXBUFFER)GetResource( strName ); }
-
-#ifdef _XBOX1
-      LPDIRECT3DPUSHBUFFER8 GetPushBuffer( const CHAR* strName ) const
-      { return (LPDIRECT3DPUSHBUFFER8)GetResource( strName ); }
-#endif
 
       // Constructor/destructor
       PackedResource();

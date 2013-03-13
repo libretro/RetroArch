@@ -551,7 +551,7 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
       }
    }
 
-   set_dpad_emulation_label(controlno, buttons[current_index], sizeof(buttons[curent_index]));
+   set_dpad_emulation_label(controlno, buttons[current_index], sizeof(buttons[current_index]));
 
    convert_char_to_wchar(strw_buffer, buttons[current_index], sizeof(strw_buffer));
    m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
