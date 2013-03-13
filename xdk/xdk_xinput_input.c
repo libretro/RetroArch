@@ -272,10 +272,15 @@ static void xdk_input_free_input(void *data)
 static void xdk_set_default_keybind_lut(unsigned device, unsigned port)
 {
    (void)device;
-   (void)port;
 
    for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
-      g_settings.input.binds[i]->def_joykey = platform_keys[i].joykey;
+   {
+      g_settings.input.binds[port][i].id = i;
+      g_settings.input.binds[port][i].def_joykey = platform_keys[i].joykey;
+      g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
+   }
+
+   g_settings.input.dpad_emulation[port] = DPAD_EMULATION_LSTICK;
 }
 
 static void xdk_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
@@ -330,10 +335,7 @@ static void *xdk_input_init(void)
 #endif
 
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
-   {
       xdk_set_default_keybind_lut(0, i);
-      rarch_input_set_default_keybinds(i);
-   }
 
    for(unsigned i = 0; i < MAX_PADS; i++)
       xdk_input_set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[i], i);

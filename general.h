@@ -238,6 +238,7 @@ struct settings
       struct retro_keybind binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
       float axis_threshold;
       int joypad_map[MAX_PLAYERS];
+      unsigned device[MAX_PLAYERS];
       unsigned dpad_emulation[MAX_PLAYERS];
       bool debug_enable;
 #ifdef ANDROID
@@ -245,9 +246,6 @@ struct settings
       unsigned back_behavior;
       unsigned icade_profile[MAX_PLAYERS];
       unsigned icade_count;
-#endif
-#ifdef RARCH_CONSOLE
-      unsigned device[MAX_PLAYERS];
 #endif
       bool netplay_client_swap_input;
 
