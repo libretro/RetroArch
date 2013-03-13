@@ -514,7 +514,18 @@ static void render_text(rgui_handle_t *rgui)
 #endif
 #ifdef RARCH_CONSOLE
          case RGUI_SETTINGS_BIND_DPAD_EMULATION:
-            snprintf(type_str, sizeof(type_str), "%s", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[port]]);
+            switch(g_settings.input.dpad_emulation[port])
+            {
+               case DPAD_EMULATION_NONE:
+                  snprintf(type_str, sizeof(type_str), "None");
+                  break;
+               case DPAD_EMULATION_LSTICK:
+                  snprintf(type_str, sizeof(type_str), "Left Stick");
+                  break;
+               case DPAD_EMULATION_RSTICK:
+                  snprintf(type_str, sizeof(type_str), "Right Stick");
+                  break;
+            }
             break;
          case RGUI_SETTINGS_BIND_UP:
          case RGUI_SETTINGS_BIND_DOWN:

@@ -381,6 +381,22 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
    return 0;
 }
 
+static void set_dpad_emulation_label(unsigned port, char *str, size_t sizeof_str)
+{
+   switch(g_settings.input.dpad_emulation[port])
+   {
+      case DPAD_EMULATION_NONE:
+         snprintf(str, sizeof_str, "D-Pad Emulation: None");
+         break;
+      case DPAD_EMULATION_LSTICK:
+         snprintf(str, sizeof_str, "D-Pad Emulation: Left Stick");
+         break;
+      case DPAD_EMULATION_RSTICK:
+         snprintf(str, sizeof_str, "D-Pad Emulation: Right Stick");
+         break;
+   }
+}
+
 HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
    unsigned i;
@@ -403,7 +419,7 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
       m_controlslist.SetText(i, strw_buffer);
    }
 
-   snprintf(buttons[0], sizeof(buttons[0]), "D-Pad Emulation: %s", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[controlno]]);
+   set_dpad_emulation_label(controlno, buttons[0], sizeof(buttons[0]));
    convert_char_to_wchar(strw_buffer, buttons[0], sizeof(strw_buffer));
    m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
    m_controlslist.SetText(SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
@@ -489,7 +505,8 @@ HRESULT CRetroArchControls::OnControlNavigate(
          break;
    }
 
-   snprintf(button, sizeof(button), "D-Pad Emulation: %s", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[controlno]]);
+   set_dpad_emulation_label(controlno, button, sizeof(button));
+
    convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
    m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
    m_controlslist.SetText(SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
@@ -534,7 +551,8 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
       }
    }
 
-   snprintf(buttons[current_index], sizeof(buttons[current_index]), "D-Pad Emulation: %s", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[controlno]]);
+   set_dpad_emulation_label(controlno, buttons[current_index], sizeof(buttons[curent_index]));
+
    convert_char_to_wchar(strw_buffer, buttons[current_index], sizeof(strw_buffer));
    m_controlslist.SetText(SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
    m_controlslist.SetText(SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");

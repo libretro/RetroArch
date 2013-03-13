@@ -48,12 +48,6 @@ char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][32] = {
    "RetroPad Button R3",         /* RETRO_DEVICE_ID_JOYPAD_R3     */
 };
 
-char rarch_dpad_emulation_name_lut[KEYBIND_DEFAULT][32] = {
-   "None",           /* DPAD_EMULATION_NONE   */
-   "Left Stick",     /* DPAD_EMULATION_LSTICK */
-   "Right Stick",    /* DPAD_EMULATION_RSTICK */
-};
-
 extern const struct platform_bind platform_keys[];
 extern const unsigned int platform_keys_size;
 

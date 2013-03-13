@@ -299,6 +299,6 @@ void menu_settings_create_menu_item_label(char * str, unsigned setting, size_t s
          break;
       case S_LBL_REWIND_GRANULARITY:
          snprintf(str, size, "Rewind granularity: %d", g_settings.rewind_granularity);
-	 break;
+         break;
    }
 }

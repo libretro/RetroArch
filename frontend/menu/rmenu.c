@@ -569,8 +569,21 @@ static void populate_setting_item(void *data, unsigned input)
          break;
       case SETTING_DPAD_EMULATION:
          snprintf(current_item->text, sizeof(current_item->text), "D-Pad Emulation");
-         snprintf(current_item->comment, sizeof(current_item->comment), "[%s] from Controller %d is mapped to D-pad.", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[currently_selected_controller_menu]], currently_selected_controller_menu+1);
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", rarch_dpad_emulation_name_lut[g_settings.input.dpad_emulation[currently_selected_controller_menu]]);
+         switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
+         {
+            case DPAD_EMULATION_NONE:
+               snprintf(current_item->comment, sizeof(current_item->comment), "[%s] from Controller %d is mapped to D-pad.", "None", currently_selected_controller_menu+1);
+               snprintf(current_item->setting_text, sizeof(current_item->setting_text), "None");
+               break;
+            case DPAD_EMULATION_LSTICK:
+               snprintf(current_item->comment, sizeof(current_item->comment), "[%s] from Controller %d is mapped to D-pad.", "Left Stick", currently_selected_controller_menu+1);
+               snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Left Stick");
+               break;
+            case DPAD_EMULATION_RSTICK:
+               snprintf(current_item->comment, sizeof(current_item->comment), "[%s] from Controller %d is mapped to D-pad.", "Right Stick", currently_selected_controller_menu+1);
+               snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Right Stick");
+               break;
+         }
          break;
       case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B:
       case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y:
