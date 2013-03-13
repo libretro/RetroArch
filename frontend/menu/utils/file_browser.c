@@ -46,32 +46,11 @@ const char *path, const char * extensions)
       return false;
 }
 
-filebrowser_t *filebrowser_init(const char *start_dir, const char *extensions)
+void *filebrowser_init(const char *start_dir, const char *extensions)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)calloc(1, sizeof(*filebrowser));
    directory_parse(filebrowser, 0, start_dir, extensions);
    return filebrowser;
-}
-
-static bool filebrowser_reset(void *data, const char *start_dir, const char *extensions)
-{
-   filebrowser_t *filebrowser = (filebrowser_t*)data;
-   bool ret = directory_parse(filebrowser, 0, start_dir, extensions);
-   return ret;
-}
-
-void filebrowser_set_root(void *data, const char *root_dir)
-{
-   filebrowser_t *filebrowser = (filebrowser_t*)data;
-   strlcpy(filebrowser->root_dir, root_dir, sizeof(filebrowser->root_dir));
-}
-
-void filebrowser_set_root_and_ext(void *data, const char *ext, const char *root_dir)
-{
-   filebrowser_t *browser = (filebrowser_t*)data;
-   strlcpy(browser->extensions, ext, sizeof(browser->extensions));
-   filebrowser_set_root(browser, root_dir);
-   filebrowser_iterate(browser, FILEBROWSER_ACTION_RESET);
 }
 
 void filebrowser_free(void *data)
@@ -84,23 +63,17 @@ void filebrowser_free(void *data)
    free(filebrowser);
 }
 
-static bool filebrowser_push_directory(void *data, const char * path,
-bool with_extension)
+void filebrowser_set_root_and_ext(void *data, const char *ext, const char *root_dir)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)data;
-   bool ret = true;
-   char extensions[256];
-   unsigned push_dir = filebrowser->directory_stack_size + 1;
+   
+   if (ext)
+      strlcpy(filebrowser->extensions, ext, sizeof(filebrowser->extensions));
 
-   if(with_extension)
-      snprintf(extensions, sizeof(extensions), filebrowser->extensions);
-   else
-      snprintf(extensions, sizeof(extensions), "empty");
-
-   ret = directory_parse(filebrowser, push_dir, path, extensions);
-
-   return ret;
+   strlcpy(filebrowser->root_dir, root_dir, sizeof(filebrowser->root_dir));
+   filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_RESET);
 }
+
 
 static bool filebrowser_pop_directory (void *data)
 {
@@ -142,40 +115,6 @@ const char *filebrowser_get_current_path (void *data)
    return filebrowser->current_dir.list->elems[filebrowser->current_dir.ptr].data;
 }
 
-bool filebrowser_get_current_path_isdir (void *data)
-{
-   filebrowser_t *filebrowser = (filebrowser_t*)data;
-   return filebrowser->current_dir.list->elems[filebrowser->current_dir.ptr].attr.b;
-}
-
-size_t filebrowser_get_current_index (void *data)
-{
-   filebrowser_t *filebrowser = (filebrowser_t*)data;
-   return filebrowser->current_dir.ptr;
-}
-
-void filebrowser_set_current_at (void *data, size_t pos)
-{
-   filebrowser_t *filebrowser = (filebrowser_t*)data;
-   filebrowser->current_dir.ptr = pos;
-}
-
-static void filebrowser_set_current_increment (void *data)
-{
-   filebrowser_t *filebrowser = (filebrowser_t*)data;
-   filebrowser->current_dir.ptr++;
-   if (filebrowser->current_dir.ptr >= filebrowser->current_dir.list->size)
-      filebrowser->current_dir.ptr = 0;
-}
-
-static void filebrowser_set_current_decrement (void *data)
-{
-   filebrowser_t *filebrowser = (filebrowser_t*)data;
-   filebrowser->current_dir.ptr--;
-   if (filebrowser->current_dir.ptr >= filebrowser->current_dir.list->size)
-      filebrowser->current_dir.ptr = filebrowser->current_dir.list->size - 1;
-}
-
 bool filebrowser_iterate(void *data, unsigned action)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)data;
@@ -185,10 +124,14 @@ bool filebrowser_iterate(void *data, unsigned action)
    switch(action)
    {
       case FILEBROWSER_ACTION_UP:
-         filebrowser_set_current_decrement(filebrowser);
+         filebrowser->current_dir.ptr--;
+         if (filebrowser->current_dir.ptr >= filebrowser->current_dir.list->size)
+            filebrowser->current_dir.ptr = filebrowser->current_dir.list->size - 1;
          break;
       case FILEBROWSER_ACTION_DOWN:
-         filebrowser_set_current_increment(filebrowser);
+         filebrowser->current_dir.ptr++;
+         if (filebrowser->current_dir.ptr >= filebrowser->current_dir.list->size)
+            filebrowser->current_dir.ptr = 0;
          break;
       case FILEBROWSER_ACTION_LEFT:
          if (filebrowser->current_dir.ptr <= 5)
@@ -211,13 +154,17 @@ bool filebrowser_iterate(void *data, unsigned action)
          entries_to_scroll, filebrowser->current_dir.list->size-1));
          break;
       case FILEBROWSER_ACTION_OK:
-         ret = filebrowser_push_directory(filebrowser, filebrowser_get_current_path(filebrowser), true);
+         ret = directory_parse(filebrowser, filebrowser->directory_stack_size + 1,
+               filebrowser_get_current_path(filebrowser), filebrowser->extensions);
          break;
       case FILEBROWSER_ACTION_CANCEL:
          ret = filebrowser_pop_directory(filebrowser);
          break;
       case FILEBROWSER_ACTION_RESET:
-         ret = filebrowser_reset(filebrowser, filebrowser->root_dir, filebrowser->extensions);
+         ret = directory_parse(filebrowser, 0, filebrowser->root_dir, filebrowser->extensions);
+         break;
+      case FILEBROWSER_ACTION_PATH_ISDIR:
+         ret = filebrowser->current_dir.list->elems[filebrowser->current_dir.ptr].attr.b;
          break;
       case FILEBROWSER_ACTION_NOOP:
       default:

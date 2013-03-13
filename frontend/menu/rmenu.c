@@ -774,7 +774,7 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
    else if (input & (1ULL << RMENU_DEVICE_NAV_START))
    {
       action = FILEBROWSER_ACTION_RESET;
-      filebrowser_set_root(b, default_paths.filesystem_root_dir);
+      filebrowser_set_root_and_ext(b, NULL, default_paths.filesystem_root_dir);
       strlcpy(b->extensions, extensions, sizeof(b->extensions));
    }
 
@@ -870,8 +870,7 @@ int select_file(void *data, void *state)
 
    if (input & (1ULL << RMENU_DEVICE_NAV_B))
    {
-      bool is_dir = filebrowser_get_current_path_isdir(filebrowser);
-      if(is_dir)
+      if (filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_PATH_ISDIR))
          ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
       else
       {
@@ -1004,7 +1003,7 @@ int select_directory(void *data, void *state)
 
    menu_set_default_pos(&default_pos);
 
-   bool is_dir = filebrowser_get_current_path_isdir(filebrowser);
+   bool is_dir = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_PATH_ISDIR);
    browser_update(filebrowser, input, "empty");
 
    if (input & (1ULL << RMENU_DEVICE_NAV_Y))
@@ -2215,7 +2214,7 @@ int select_rom(void *data, void *state)
       menu_stack_push(GENERAL_VIDEO_MENU);
    else if (input & (1ULL << RMENU_DEVICE_NAV_B))
    {
-      if(filebrowser_get_current_path_isdir(filebrowser))
+      if (filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_PATH_ISDIR))
       {
          bool ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
 
@@ -2247,9 +2246,7 @@ int select_rom(void *data, void *state)
       }
    }
 
-   bool is_dir = filebrowser_get_current_path_isdir(filebrowser);
-
-   if (is_dir)
+   if (filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_PATH_ISDIR))
    {
       const char *current_path = filebrowser_get_current_path(filebrowser);
       snprintf(msg, sizeof(msg), "INFO - Press [%s] to enter the directory.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
@@ -3067,12 +3064,12 @@ void init_filebrowser(void *data)
 {
    (void)data;
 
-   browser    = filebrowser_init(g_extern.console.main_wrap.default_rom_startup_dir, g_extern.system.valid_extensions);
-   tmpBrowser = filebrowser_init(default_paths.filesystem_root_dir, "");
+   browser    = (filebrowser_t*)filebrowser_init(g_extern.console.main_wrap.default_rom_startup_dir, g_extern.system.valid_extensions);
+   tmpBrowser = (filebrowser_t*)filebrowser_init(default_paths.filesystem_root_dir, "");
 
    menu_stack_push(FILE_BROWSER_MENU);
    filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, g_extern.console.main_wrap.default_rom_startup_dir);
-   filebrowser_set_root(tmpBrowser, default_paths.filesystem_root_dir);
+   filebrowser_set_root_and_ext(tmpBrowser, NULL, default_paths.filesystem_root_dir);
 }
 
 void free_filebrowser(void *data)

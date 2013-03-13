@@ -42,19 +42,16 @@ typedef enum
    FILEBROWSER_ACTION_SCROLL_UP,
    FILEBROWSER_ACTION_SCROLL_DOWN,
    FILEBROWSER_ACTION_RESET,
+   FILEBROWSER_ACTION_PATH_ISDIR,
    FILEBROWSER_ACTION_NOOP
 } filebrowser_action_t;
 
 const char * filebrowser_get_current_dir (void *data);
 const char * filebrowser_get_current_path (void *data);
-bool filebrowser_get_current_path_isdir (void *data);
-size_t filebrowser_get_current_index (void *data);
-void filebrowser_set_root(void *data, const char *root_dir);
 void filebrowser_set_root_and_ext(void *data, const char *ext, const char *root_dir);
 void filebrowser_free(void *data);
-void filebrowser_set_current_at (void *dat, size_t pos);
 bool filebrowser_iterate(void *data, unsigned action);
 
-filebrowser_t *filebrowser_init(const char *start_dir, const char *extensions);
+void *filebrowser_init(const char *start_dir, const char *extensions);
 
 #endif /* FILEBROWSER_H_ */
