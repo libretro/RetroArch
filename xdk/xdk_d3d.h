@@ -87,9 +87,4 @@ typedef struct xdk_d3d_video
 
 extern void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video);
 
-#ifdef HAVE_FBO
-extern void xdk_d3d_deinit_fbo(void *data);
-extern void xdk_d3d_init_fbo(void *data);
-#endif
-
 #endif
