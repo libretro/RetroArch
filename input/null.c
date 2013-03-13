@@ -52,7 +52,7 @@ static void nullinput_input_free_input(void *data)
 }
 
 #ifdef RARCH_CONSOLE
-static void nullinput_set_default_keybind_lut(unsigned device, unsigned port)
+static void nullinput_set_default_keybinds(unsigned device, unsigned port)
 {
    (void)device;
    (void)port;
@@ -73,9 +73,8 @@ const input_driver_t input_null = {
    nullinput_input_key_pressed,
    nullinput_input_free_input,
 #ifdef RARCH_CONSOLE
-   nullinput_set_default_keybind_lut,
+   nullinput_set_default_keybinds,
    nullinput_set_analog_dpad_mapping,
-   2,
 #endif
    "null",
 };

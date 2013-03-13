@@ -534,7 +534,8 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
          case SETTING_CONTROLS_DPAD_EMULATION:
             break;
          case SETTING_CONTROLS_DEFAULT_ALL:
-            driver.input->set_default_keybind_lut(g_settings.input.device[controlno], controlno);
+            if (driver.input->set_default_keybinds)
+               driver.input->set_default_keybinds(g_settings.input.device[controlno], controlno);
 
             for(i = 0; i < RARCH_FIRST_META_KEY; i++)
             {

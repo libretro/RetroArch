@@ -82,7 +82,7 @@ static void xenon360_input_free_input(void *data)
    (void)data;
 }
 
-static void xenon360_input_set_default_keybind_lut(unsigned device, unsigned port)
+static void xenon360_input_set_default_keybinds(unsigned device, unsigned port)
 {
    (void)device;
 
@@ -105,7 +105,7 @@ static void xenon360_input_set_analog_dpad_mapping(unsigned device, unsigned map
 static void* xenon360_input_init(void)
 {
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
-      xenon360_input_set_default_keybind_lut(0, i);
+      xenon360_input_set_default_keybinds(0, i);
 
    for(unsigned i = 0; i < MAX_PADS; i++)
       xenon360_input_set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[i], i);
@@ -125,7 +125,7 @@ const input_driver_t input_xenon360 = {
    .input_state = xenon360_input_state,
    .key_pressed = xenon360_input_key_pressed,
    .free = xenon360_input_free_input,
-   .set_default_keybind_lut = xenon360_input_set_default_keybind_lut,
+   .set_default_keybinds = xenon360_input_set_default_keybinds,
    .set_analog_dpad_mapping = xenon360_input_set_analog_dpad_mapping,
    .ident = "xenon360",
 };

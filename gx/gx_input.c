@@ -242,7 +242,7 @@ static void gx_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_
    }
 }
 
-static void gx_set_default_keybind_lut(unsigned device, unsigned port)
+static void gx_set_default_keybinds(unsigned device, unsigned port)
 {
    switch (device)
    {
@@ -343,7 +343,7 @@ static void *gx_input_init(void)
 #endif
 
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
-      gx_set_default_keybind_lut(0, i);
+      gx_set_default_keybinds(0, i);
 
    for(unsigned i = 0; i < MAX_PADS; i++)
       gx_input_set_analog_dpad_mapping(g_settings.input.device[i], g_settings.input.dpad_emulation[i], i);
@@ -642,7 +642,7 @@ const input_driver_t input_gx = {
    .input_state = gx_input_state,
    .key_pressed = gx_input_key_pressed,
    .free = gx_input_free_input,
-   .set_default_keybind_lut = gx_set_default_keybind_lut,
+   .set_default_keybinds = gx_set_default_keybinds,
    .set_analog_dpad_mapping = gx_input_set_analog_dpad_mapping,
    .ident = "gx",
 };

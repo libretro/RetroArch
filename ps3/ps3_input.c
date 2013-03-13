@@ -427,7 +427,7 @@ static void ps3_input_free_input(void *data)
    //cellPadEnd();
 }
 
-static void ps3_set_default_keybind_lut(unsigned device, unsigned port)
+static void ps3_set_default_keybinds(unsigned device, unsigned port)
 {
    (void)device;
 
@@ -449,7 +449,7 @@ static void* ps3_input_init(void)
 #endif
 
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
-      ps3_set_default_keybind_lut(0, i);
+      ps3_set_default_keybinds(0, i);
 
    for (unsigned i = 0; i < MAX_PADS; i++)
       ps3_input_set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[i], i);
@@ -468,7 +468,7 @@ const input_driver_t input_ps3 = {
    .input_state = ps3_input_state,
    .key_pressed = ps3_input_key_pressed,
    .free = ps3_input_free_input,
-   .set_default_keybind_lut = ps3_set_default_keybind_lut,
+   .set_default_keybinds = ps3_set_default_keybinds,
    .set_analog_dpad_mapping = ps3_input_set_analog_dpad_mapping,
    .ident = "ps3",
 };

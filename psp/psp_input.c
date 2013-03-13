@@ -151,7 +151,7 @@ static void psp_free_input(void *data)
    (void)data;
 }
 
-static void psp_set_default_keybind_lut(unsigned device, unsigned port)
+static void psp_set_default_keybinds(unsigned device, unsigned port)
 {
    (void)device;
 
@@ -171,7 +171,7 @@ static void* psp_input_initialize(void)
    sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
 
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
-      psp_set_default_keybind_lut(0, i);
+      psp_set_default_keybinds(0, i);
 
    return (void*)-1;
 }
@@ -196,7 +196,7 @@ const input_driver_t input_psp = {
    .input_state = psp_input_state,
    .key_pressed = psp_key_pressed,
    .free = psp_free_input,
-   .set_default_keybind_lut = psp_set_default_keybind_lut,
+   .set_default_keybinds = psp_set_default_keybinds,
    .set_analog_dpad_mapping = psp_input_set_analog_dpad_mapping,
    .ident = "psp",
 };

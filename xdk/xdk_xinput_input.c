@@ -269,7 +269,7 @@ static void xdk_input_free_input(void *data)
    (void)data;
 }
 
-static void xdk_set_default_keybind_lut(unsigned device, unsigned port)
+static void xdk_set_default_keybinds(unsigned device, unsigned port)
 {
    (void)device;
 
@@ -335,7 +335,7 @@ static void *xdk_input_init(void)
 #endif
 
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
-      xdk_set_default_keybind_lut(0, i);
+      xdk_set_default_keybinds(0, i);
 
    for(unsigned i = 0; i < MAX_PADS; i++)
       xdk_input_set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[i], i);
@@ -355,7 +355,7 @@ const input_driver_t input_xinput =
    xdk_input_state,
    xdk_input_key_pressed,
    xdk_input_free_input,
-   xdk_set_default_keybind_lut,
+   xdk_set_default_keybinds,
    xdk_input_set_analog_dpad_mapping,
    "xinput"
 };
