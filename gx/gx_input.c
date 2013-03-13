@@ -242,8 +242,10 @@ static void gx_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_
    }
 }
 
-static void gx_set_default_keybinds(unsigned device, unsigned port)
+static void gx_set_default_keybinds(unsigned device, unsigned port, unsigned id)
 {
+   (void)id;
+
    switch (device)
    {
 #ifdef HW_RVL
@@ -343,7 +345,7 @@ static void *gx_input_init(void)
 #endif
 
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
-      gx_set_default_keybinds(0, i);
+      gx_set_default_keybinds(0, i, 0);
 
    for(unsigned i = 0; i < MAX_PADS; i++)
       gx_input_set_analog_dpad_mapping(g_settings.input.device[i], g_settings.input.dpad_emulation[i], i);

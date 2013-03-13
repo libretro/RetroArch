@@ -900,7 +900,7 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
             g_settings.input.device[port]++;
          g_settings.input.device[port] %= RARCH_DEVICE_LAST;
          if (driver.input->set_default_keybinds)
-            driver.input->set_default_keybinds(g_settings.input.device[port], port);
+            driver.input->set_default_keybinds(g_settings.input.device[port], port, 0);
          driver.input->set_analog_dpad_mapping(g_settings.input.device[port], g_settings.input.dpad_emulation[port], port);
          break;
 #endif

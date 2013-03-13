@@ -206,7 +206,7 @@ typedef struct input_driver
    int16_t (*input_state)(void *data, const struct retro_keybind **retro_keybinds, unsigned port, unsigned device, unsigned index, unsigned id);
    bool (*key_pressed)(void *data, int key);
    void (*free)(void *data);
-   void (*set_default_keybinds)(unsigned device, unsigned port);
+   void (*set_default_keybinds)(unsigned device, unsigned port, unsigned id);
 #ifdef RARCH_CONSOLE
    void (*set_analog_dpad_mapping)(unsigned device, unsigned map_dpad_enum, unsigned controller_id);
 #endif

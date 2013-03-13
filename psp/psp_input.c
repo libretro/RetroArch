@@ -151,9 +151,10 @@ static void psp_free_input(void *data)
    (void)data;
 }
 
-static void psp_set_default_keybinds(unsigned device, unsigned port)
+static void psp_set_default_keybinds(unsigned device, unsigned port, unsigned id)
 {
    (void)device;
+   (void)id;
 
    for (unsigned i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
    {
@@ -171,7 +172,7 @@ static void* psp_input_initialize(void)
    sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
 
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
-      psp_set_default_keybinds(0, i);
+      psp_set_default_keybinds(0, i, 0);
 
    return (void*)-1;
 }

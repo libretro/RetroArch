@@ -82,9 +82,10 @@ static void xenon360_input_free_input(void *data)
    (void)data;
 }
 
-static void xenon360_input_set_default_keybinds(unsigned device, unsigned port)
+static void xenon360_input_set_default_keybinds(unsigned device, unsigned port, unsigned id)
 {
    (void)device;
+   (void)id;
 
    for (unsigned i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
    {
@@ -105,7 +106,7 @@ static void xenon360_input_set_analog_dpad_mapping(unsigned device, unsigned map
 static void* xenon360_input_init(void)
 {
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
-      xenon360_input_set_default_keybinds(0, i);
+      xenon360_input_set_default_keybinds(0, i, 0);
 
    for(unsigned i = 0; i < MAX_PADS; i++)
       xenon360_input_set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[i], i);

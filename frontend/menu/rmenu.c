@@ -2042,7 +2042,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_CONTROLS_DEFAULT_ALL:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_START)))
             if (driver.input->set_default_keybinds)
-               driver.input->set_default_keybinds(g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu);
+               driver.input->set_default_keybinds(g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu, 0);
          break;
    }
 

@@ -52,10 +52,11 @@ static void nullinput_input_free_input(void *data)
 }
 
 #ifdef RARCH_CONSOLE
-static void nullinput_set_default_keybinds(unsigned device, unsigned port)
+static void nullinput_set_default_keybinds(unsigned device, unsigned port, unsigned id)
 {
    (void)device;
    (void)port;
+   (void)id;
 }
 
 static void nullinput_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
