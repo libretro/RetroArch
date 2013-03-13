@@ -741,12 +741,26 @@ static inline void xdk_d3d_draw_rgui(void *data)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    texture_image *out_img = (texture_image*)&d3d->rgui_texture;
+   D3DLOCKED_RECT d3dlr;
+   unsigned pitch = RGUI_WIDTH * 2;
+   unsigned base_size = RGUI_WIDTH * RGUI_HEIGHT * 2;
+   unsigned y;
+
+   out_img->pixels->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+
+   for (y = 0; y < RGUI_HEIGHT; y++)
+   {
+         const uint8_t *in = (const uint8_t*)d3d->rgui_data + y * pitch;
+         uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
+         memcpy(out, in, base_size);
+   }
+   out_img->pixels->UnlockRect(0);
 
    if (out_img->pixels == NULL || out_img->vertex_buf == NULL)
       return;
 
    int x = out_img->x;
-   int y = out_img->y;
+   y = out_img->y;
    int w = out_img->width;
    int h = out_img->height;
 
