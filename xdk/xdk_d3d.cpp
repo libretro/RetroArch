@@ -743,7 +743,7 @@ static inline void xdk_d3d_draw_rgui(void *data)
    texture_image *out_img = (texture_image*)&d3d->rgui_texture;
    D3DLOCKED_RECT d3dlr;
    unsigned pitch = RGUI_WIDTH * 2;
-   unsigned base_size = RGUI_WIDTH * RGUI_HEIGHT * 2;
+   unsigned base_size = RGUI_WIDTH * 2;
    unsigned y;
 
    out_img->pixels->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
@@ -761,8 +761,8 @@ static inline void xdk_d3d_draw_rgui(void *data)
 
    int x = out_img->x;
    y = out_img->y;
-   int w = out_img->width;
-   int h = out_img->height;
+   int w = RGUI_WIDTH;
+   int h = RGUI_HEIGHT;
 
    float fX = static_cast<float>(x);
    float fY = static_cast<float>(y);
