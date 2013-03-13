@@ -452,7 +452,6 @@ RZLIB
 ============================================================ */
 #ifdef WANT_MINIZ
 #include "../../deps/miniz/miniz.c"
-#include "../../deps/minizip/ioapi.c"
 #include "../../deps/minizip/unzip.c"
 #endif
 

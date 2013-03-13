@@ -269,10 +269,15 @@ void driver_set_monitor_refresh_rate(float hz)
 // before retroarch core starts.
 // Core handles audio.
 
+// FIXME - start() and stop() can't be ifdeffable with
+// RARCH_CONSOLE since more systems now need similar functionality
+
 void global_init_drivers(void)
 {
    init_drivers_pre(); // Set driver.* function callbacks.
+#ifdef RARCH_CONSOLE
    driver.video->start(); // Statically starts video driver. Sets driver.video_data.
+#endif
    driver.input_data = driver.input->init();
 }
 
@@ -280,7 +285,9 @@ void global_uninit_drivers(void)
 {
    if (driver.video_data)
    {
+#ifdef RARCH_CONSOLE
       driver.video->stop();
+#endif
       driver.video_data = NULL;
    }
 

@@ -96,6 +96,51 @@ typedef struct unz_file_info_internal_s
     uLong offset_curfile;/* relative offset of local header 4 bytes */
 } unz_file_info_internal;
 
+/* IOAPI START - stub funtion pointers */
+typedef voidpf (*open_file_func) (voidpf opaque, const char* filename, int mode);
+typedef uLong (*read_file_func) (voidpf opaque, voidpf stream, void* buf, uLong size);
+typedef uLong (*write_file_func) (voidpf opaque, voidpf stream, const void* buf, uLong size);
+typedef long (*tell_file_func) (voidpf opaque, voidpf stream);
+typedef long (*seek_file_func) (voidpf opaque, voidpf stream, uLong offset, int origin);
+typedef int (*close_file_func) (voidpf opaque, voidpf stream);
+typedef int (*testerror_file_func) (voidpf opaque, voidpf stream);
+
+#define ZLIB_FILEFUNC_SEEK_CUR (1)
+#define ZLIB_FILEFUNC_SEEK_END (2)
+#define ZLIB_FILEFUNC_SEEK_SET (0)
+
+#define ZLIB_FILEFUNC_MODE_READ      (1)
+#define ZLIB_FILEFUNC_MODE_WRITE     (2)
+#define ZLIB_FILEFUNC_MODE_READWRITEFILTER (3)
+
+#define ZLIB_FILEFUNC_MODE_EXISTING (4)
+#define ZLIB_FILEFUNC_MODE_CREATE   (8)
+
+#ifndef SEEK_CUR
+#define SEEK_CUR    1
+#endif
+
+#ifndef SEEK_END
+#define SEEK_END    2
+#endif
+
+#ifndef SEEK_SET
+#define SEEK_SET    0
+#endif
+
+typedef struct zlib_filefunc_def_s
+{
+    open_file_func zopen_file;
+    read_file_func zread_file;
+    write_file_func zwrite_file;
+    tell_file_func ztell_file;
+    seek_file_func zseek_file;
+    close_file_func zclose_file;
+    testerror_file_func zerror_file;
+    voidpf opaque;
+} zlib_filefunc_def;
+
+/* IOAPI END */
 
 /* file_in_zip_read_info_s contain internal information about a file in zipfile,
     when reading and decompress it */
@@ -147,6 +192,55 @@ typedef struct
     int encrypted;
 } unz_s;
 
+/* IOAPI START - functions */
+
+static void *miniz_fopen(const char *filename, int mode)
+{
+    FILE* file = NULL;
+    const char* mode_fopen = NULL;
+    if ((mode & ZLIB_FILEFUNC_MODE_READWRITEFILTER)==ZLIB_FILEFUNC_MODE_READ)
+        mode_fopen = "rb";
+    else
+    if (mode & ZLIB_FILEFUNC_MODE_EXISTING)
+        mode_fopen = "r+b";
+    else
+    if (mode & ZLIB_FILEFUNC_MODE_CREATE)
+        mode_fopen = "wb";
+
+    if ((filename!=NULL) && (mode_fopen != NULL))
+        file = fopen(filename, mode_fopen);
+    return file;
+}
+
+static inline uLong miniz_fread (voidpf stream, void *buf, uLong size)
+{
+    return (uLong)fread(buf, 1, (size_t)size, (FILE *)stream);
+}
+
+
+static long miniz_fseek(voidpf stream, uLong offset, int origin)
+{
+    int fseek_origin=0;
+    long ret;
+    switch (origin)
+    {
+    case ZLIB_FILEFUNC_SEEK_CUR :
+        fseek_origin = SEEK_CUR;
+        break;
+    case ZLIB_FILEFUNC_SEEK_END :
+        fseek_origin = SEEK_END;
+        break;
+    case ZLIB_FILEFUNC_SEEK_SET :
+        fseek_origin = SEEK_SET;
+        break;
+    default: return -1;
+    }
+    ret = 0;
+    fseek((FILE *)stream, offset, fseek_origin);
+    return ret;
+}
+
+/* IOAPI END - functions */
 
 /* ===========================================================================
      Read a byte from a gz_stream; update next_in and avail_in. Return EOF
@@ -155,13 +249,10 @@ typedef struct
 */
 
 
-static int unzlocal_getByte (
-    const zlib_filefunc_def* pzlib_filefunc_def,
-    voidpf filestream,
-    int *pi)
+static int unzlocal_getByte (voidpf filestream, int *pi)
 {
     unsigned char c;
-    int err = (int)ZREAD(*pzlib_filefunc_def,filestream,&c,1);
+    int err = (int)miniz_fread(filestream,&c,1);
     if (err==1)
     {
         *pi = (int)c;
@@ -169,7 +260,7 @@ static int unzlocal_getByte (
     }
     else
     {
-        if (ZERROR(*pzlib_filefunc_def,filestream))
+        if (ferror((FILE *)filestream))
             return UNZ_ERRNO;
         else
             return UNZ_EOF;
@@ -180,18 +271,17 @@ static int unzlocal_getByte (
 /* ===========================================================================
    Reads a long in LSB order from the given gz_stream. Sets
 */
-static int unzlocal_getShort (const zlib_filefunc_def *pzlib_filefunc_def,
-voidpf filestream, uLong *pX)
+static int unzlocal_getShort (voidpf filestream, uLong *pX)
 {
     uLong x ;
     int i = 0;
     int err;
 
-    err = unzlocal_getByte(pzlib_filefunc_def,filestream,&i);
+    err = unzlocal_getByte(filestream,&i);
     x = (uLong)i;
 
     if (err==UNZ_OK)
-        err = unzlocal_getByte(pzlib_filefunc_def,filestream,&i);
+        err = unzlocal_getByte(filestream,&i);
     x += ((uLong)i)<<8;
 
     if (err==UNZ_OK)
@@ -201,26 +291,25 @@ voidpf filestream, uLong *pX)
     return err;
 }
 
-static int unzlocal_getLong (const zlib_filefunc_def *pzlib_filefunc_def,
-voidpf filestream, uLong *pX)
+static int unzlocal_getLong (voidpf filestream, uLong *pX)
 {
     uLong x ;
     int i = 0;
     int err;
 
-    err = unzlocal_getByte(pzlib_filefunc_def,filestream,&i);
+    err = unzlocal_getByte(filestream,&i);
     x = (uLong)i;
 
     if (err==UNZ_OK)
-        err = unzlocal_getByte(pzlib_filefunc_def,filestream,&i);
+        err = unzlocal_getByte(filestream,&i);
     x += ((uLong)i)<<8;
 
     if (err==UNZ_OK)
-        err = unzlocal_getByte(pzlib_filefunc_def,filestream,&i);
+        err = unzlocal_getByte(filestream,&i);
     x += ((uLong)i)<<16;
 
     if (err==UNZ_OK)
-        err = unzlocal_getByte(pzlib_filefunc_def,filestream,&i);
+        err = unzlocal_getByte(filestream,&i);
     x += ((uLong)i)<<24;
 
     if (err==UNZ_OK)
@@ -292,8 +381,7 @@ int unzStringFileNameCompare (const char *fileName1, const char *fileName2, int 
   Locate the Central directory of a zipfile (at the end, just before
     the global comment)
 */
-static uLong unzlocal_SearchCentralDir(const zlib_filefunc_def *pzlib_filefunc_def,
-voidpf filestream)
+static uLong unzlocal_SearchCentralDir(voidpf filestream)
 {
     unsigned char* buf;
     uLong uSizeFile;
@@ -301,11 +389,11 @@ voidpf filestream)
     uLong uMaxBack=0xffff; /* maximum size of global comment */
     uLong uPosFound=0;
 
-    if (ZSEEK(*pzlib_filefunc_def,filestream,0,ZLIB_FILEFUNC_SEEK_END) != 0)
+    if (miniz_fseek(filestream,0,ZLIB_FILEFUNC_SEEK_END) != 0)
         return 0;
 
 
-    uSizeFile = ZTELL(*pzlib_filefunc_def,filestream);
+    uSizeFile = ftell((FILE*)filestream);
 
     if (uMaxBack>uSizeFile)
         uMaxBack = uSizeFile;
@@ -327,10 +415,10 @@ voidpf filestream)
 
         uReadSize = ((BUFREADCOMMENT+4) < (uSizeFile-uReadPos)) ?
                      (BUFREADCOMMENT+4) : (uSizeFile-uReadPos);
-        if (ZSEEK(*pzlib_filefunc_def,filestream,uReadPos,ZLIB_FILEFUNC_SEEK_SET)!=0)
+        if (miniz_fseek(filestream,uReadPos,ZLIB_FILEFUNC_SEEK_SET) != 0)
             break;
 
-        if (ZREAD(*pzlib_filefunc_def,filestream,buf,uReadSize)!=uReadSize)
+        if (miniz_fread(filestream,buf,uReadSize) != uReadSize)
             break;
 
         for (i=(int)uReadSize-3; (i--)>0;)
@@ -387,65 +475,65 @@ static int unzlocal_GetCurrentFileInfoInternal (unzFile file,
     if (file==NULL)
         return UNZ_PARAMERROR;
     s=(unz_s*)file;
-    if (ZSEEK(s->z_filefunc, s->filestream,
+    if (miniz_fseek(s->filestream,
               s->pos_in_central_dir+s->byte_before_the_zipfile,
-              ZLIB_FILEFUNC_SEEK_SET)!=0)
+              ZLIB_FILEFUNC_SEEK_SET) != 0)
         err=UNZ_ERRNO;
 
 
     /* we check the magic */
     if (err==UNZ_OK) {
-        if (unzlocal_getLong(&s->z_filefunc, s->filestream,&uMagic) != UNZ_OK)
+        if (unzlocal_getLong(s->filestream,&uMagic) != UNZ_OK)
             err=UNZ_ERRNO;
         else if (uMagic!=0x02014b50)
             err=UNZ_BADZIPFILE;
     }
 
-    if (unzlocal_getShort(&s->z_filefunc, s->filestream,&file_info.version) != UNZ_OK)
+    if (unzlocal_getShort(s->filestream,&file_info.version) != UNZ_OK)
         err=UNZ_ERRNO;
 
-    if (unzlocal_getShort(&s->z_filefunc, s->filestream,&file_info.version_needed) != UNZ_OK)
+    if (unzlocal_getShort(s->filestream,&file_info.version_needed) != UNZ_OK)
         err=UNZ_ERRNO;
 
-    if (unzlocal_getShort(&s->z_filefunc, s->filestream,&file_info.flag) != UNZ_OK)
+    if (unzlocal_getShort(s->filestream,&file_info.flag) != UNZ_OK)
         err=UNZ_ERRNO;
 
-    if (unzlocal_getShort(&s->z_filefunc, s->filestream,&file_info.compression_method) != UNZ_OK)
+    if (unzlocal_getShort(s->filestream,&file_info.compression_method) != UNZ_OK)
         err=UNZ_ERRNO;
 
-    if (unzlocal_getLong(&s->z_filefunc, s->filestream,&file_info.dosDate) != UNZ_OK)
+    if (unzlocal_getLong(s->filestream,&file_info.dosDate) != UNZ_OK)
         err=UNZ_ERRNO;
 
     unzlocal_DosDateToTmuDate(file_info.dosDate,&file_info.tmu_date);
 
-    if (unzlocal_getLong(&s->z_filefunc, s->filestream,&file_info.crc) != UNZ_OK)
+    if (unzlocal_getLong(s->filestream,&file_info.crc) != UNZ_OK)
         err=UNZ_ERRNO;
 
-    if (unzlocal_getLong(&s->z_filefunc, s->filestream,&file_info.compressed_size) != UNZ_OK)
+    if (unzlocal_getLong(s->filestream,&file_info.compressed_size) != UNZ_OK)
         err=UNZ_ERRNO;
 
-    if (unzlocal_getLong(&s->z_filefunc, s->filestream,&file_info.uncompressed_size) != UNZ_OK)
+    if (unzlocal_getLong(s->filestream,&file_info.uncompressed_size) != UNZ_OK)
         err=UNZ_ERRNO;
 
-    if (unzlocal_getShort(&s->z_filefunc, s->filestream,&file_info.size_filename) != UNZ_OK)
+    if (unzlocal_getShort(s->filestream,&file_info.size_filename) != UNZ_OK)
         err=UNZ_ERRNO;
 
-    if (unzlocal_getShort(&s->z_filefunc, s->filestream,&file_info.size_file_extra) != UNZ_OK)
+    if (unzlocal_getShort(s->filestream,&file_info.size_file_extra) != UNZ_OK)
         err=UNZ_ERRNO;
 
-    if (unzlocal_getShort(&s->z_filefunc, s->filestream,&file_info.size_file_comment) != UNZ_OK)
+    if (unzlocal_getShort(s->filestream,&file_info.size_file_comment) != UNZ_OK)
         err=UNZ_ERRNO;
 
-    if (unzlocal_getShort(&s->z_filefunc, s->filestream,&file_info.disk_num_start) != UNZ_OK)
+    if (unzlocal_getShort(s->filestream,&file_info.disk_num_start) != UNZ_OK)
         err=UNZ_ERRNO;
 
-    if (unzlocal_getShort(&s->z_filefunc, s->filestream,&file_info.internal_fa) != UNZ_OK)
+    if (unzlocal_getShort(s->filestream,&file_info.internal_fa) != UNZ_OK)
         err=UNZ_ERRNO;
 
-    if (unzlocal_getLong(&s->z_filefunc, s->filestream,&file_info.external_fa) != UNZ_OK)
+    if (unzlocal_getLong(s->filestream,&file_info.external_fa) != UNZ_OK)
         err=UNZ_ERRNO;
 
-    if (unzlocal_getLong(&s->z_filefunc, s->filestream,&file_info_internal.offset_curfile) != UNZ_OK)
+    if (unzlocal_getLong(s->filestream,&file_info_internal.offset_curfile) != UNZ_OK)
         err=UNZ_ERRNO;
 
     lSeek+=file_info.size_filename;
@@ -461,7 +549,7 @@ static int unzlocal_GetCurrentFileInfoInternal (unzFile file,
             uSizeRead = fileNameBufferSize;
 
         if ((file_info.size_filename>0) && (fileNameBufferSize>0))
-            if (ZREAD(s->z_filefunc, s->filestream,szFileName,uSizeRead)!=uSizeRead)
+            if (miniz_fread(s->filestream,szFileName,uSizeRead) != uSizeRead)
                 err=UNZ_ERRNO;
         lSeek -= uSizeRead;
     }
@@ -476,14 +564,14 @@ static int unzlocal_GetCurrentFileInfoInternal (unzFile file,
             uSizeRead = extraFieldBufferSize;
 
         if (lSeek!=0) {
-            if (ZSEEK(s->z_filefunc, s->filestream,lSeek,ZLIB_FILEFUNC_SEEK_CUR)==0)
+            if (miniz_fseek(s->filestream,lSeek,ZLIB_FILEFUNC_SEEK_CUR) == 0)
                 lSeek=0;
             else
                 err=UNZ_ERRNO;
         }
 
         if ((file_info.size_file_extra>0) && (extraFieldBufferSize>0))
-            if (ZREAD(s->z_filefunc, s->filestream,extraField,uSizeRead)!=uSizeRead)
+            if (miniz_fread(s->filestream,extraField,uSizeRead) != uSizeRead)
                 err=UNZ_ERRNO;
         lSeek += file_info.size_file_extra - uSizeRead;
     }
@@ -503,13 +591,13 @@ static int unzlocal_GetCurrentFileInfoInternal (unzFile file,
             uSizeRead = commentBufferSize;
 
         if (lSeek!=0) {
-            if (ZSEEK(s->z_filefunc, s->filestream,lSeek,ZLIB_FILEFUNC_SEEK_CUR)==0)
+            if (miniz_fseek(s->filestream,lSeek,ZLIB_FILEFUNC_SEEK_CUR)==0)
                 lSeek=0;
             else
                 err=UNZ_ERRNO;
 	}
         if ((file_info.size_file_comment>0) && (commentBufferSize>0))
-            if (ZREAD(s->z_filefunc, s->filestream,szComment,uSizeRead)!=uSizeRead)
+            if (miniz_fread(s->filestream,szComment,uSizeRead) != uSizeRead)
                 err=UNZ_ERRNO;
         lSeek+=file_info.size_file_comment - uSizeRead;
     }
@@ -545,6 +633,7 @@ int unzGoToFirstFile (unzFile file)
     return err;
 }
 
+
 /*
   Open a Zip file. path contain the full pathname (by example,
      on a Windows NT computer "c:\\test\\zlib114.zip" or on an Unix computer
@@ -573,44 +662,36 @@ unzFile unzOpen2 (const char *path, zlib_filefunc_def *pzlib_filefunc_def)
     if (unz_copyright[0]!=' ')
         return NULL;
 
-    if (pzlib_filefunc_def==NULL)
-        fill_fopen_filefunc(&us.z_filefunc);
-    else
-        us.z_filefunc = *pzlib_filefunc_def;
+    us.filestream= miniz_fopen(path, ZLIB_FILEFUNC_MODE_READ | ZLIB_FILEFUNC_MODE_EXISTING);
 
-    us.filestream= (*(us.z_filefunc.zopen_file))(us.z_filefunc.opaque,
-                                                 path,
-                                                 ZLIB_FILEFUNC_MODE_READ |
-                                                 ZLIB_FILEFUNC_MODE_EXISTING);
     if (us.filestream==NULL)
         return NULL;
 
-    central_pos = unzlocal_SearchCentralDir(&us.z_filefunc,us.filestream);
+    central_pos = unzlocal_SearchCentralDir(us.filestream);
     if (central_pos==0)
         err=UNZ_ERRNO;
 
-    if (ZSEEK(us.z_filefunc, us.filestream,
-                                      central_pos,ZLIB_FILEFUNC_SEEK_SET)!=0)
+    if (miniz_fseek(us.filestream, central_pos,ZLIB_FILEFUNC_SEEK_SET) != 0)
         err=UNZ_ERRNO;
 
     /* the signature, already checked */
-    if (unzlocal_getLong(&us.z_filefunc, us.filestream,&uL)!=UNZ_OK)
+    if (unzlocal_getLong(us.filestream,&uL)!=UNZ_OK)
         err=UNZ_ERRNO;
 
     /* number of this disk */
-    if (unzlocal_getShort(&us.z_filefunc, us.filestream,&number_disk)!=UNZ_OK)
+    if (unzlocal_getShort(us.filestream,&number_disk)!=UNZ_OK)
         err=UNZ_ERRNO;
 
     /* number of the disk with the start of the central directory */
-    if (unzlocal_getShort(&us.z_filefunc, us.filestream,&number_disk_with_CD)!=UNZ_OK)
+    if (unzlocal_getShort(us.filestream,&number_disk_with_CD)!=UNZ_OK)
         err=UNZ_ERRNO;
 
     /* total number of entries in the central dir on this disk */
-    if (unzlocal_getShort(&us.z_filefunc, us.filestream,&us.gi.number_entry)!=UNZ_OK)
+    if (unzlocal_getShort(us.filestream,&us.gi.number_entry)!=UNZ_OK)
         err=UNZ_ERRNO;
 
     /* total number of entries in the central dir */
-    if (unzlocal_getShort(&us.z_filefunc, us.filestream,&number_entry_CD)!=UNZ_OK)
+    if (unzlocal_getShort(us.filestream,&number_entry_CD)!=UNZ_OK)
         err=UNZ_ERRNO;
 
     if ((number_entry_CD!=us.gi.number_entry) ||
@@ -619,16 +700,16 @@ unzFile unzOpen2 (const char *path, zlib_filefunc_def *pzlib_filefunc_def)
         err=UNZ_BADZIPFILE;
 
     /* size of the central directory */
-    if (unzlocal_getLong(&us.z_filefunc, us.filestream,&us.size_central_dir)!=UNZ_OK)
+    if (unzlocal_getLong(us.filestream,&us.size_central_dir)!=UNZ_OK)
         err=UNZ_ERRNO;
 
     /* offset of start of central directory with respect to the
           starting disk number */
-    if (unzlocal_getLong(&us.z_filefunc, us.filestream,&us.offset_central_dir)!=UNZ_OK)
+    if (unzlocal_getLong(us.filestream,&us.offset_central_dir)!=UNZ_OK)
         err=UNZ_ERRNO;
 
     /* zipfile comment length */
-    if (unzlocal_getShort(&us.z_filefunc, us.filestream,&us.gi.size_comment)!=UNZ_OK)
+    if (unzlocal_getShort(us.filestream,&us.gi.size_comment)!=UNZ_OK)
         err=UNZ_ERRNO;
 
     if ((central_pos<us.offset_central_dir+us.size_central_dir) &&
@@ -637,7 +718,7 @@ unzFile unzOpen2 (const char *path, zlib_filefunc_def *pzlib_filefunc_def)
 
     if (err!=UNZ_OK)
     {
-        ZCLOSE(us.z_filefunc, us.filestream);
+        fclose((FILE*)us.filestream);
         return NULL;
     }
 
@@ -675,7 +756,7 @@ int unzClose (unzFile file)
     if (s->pfile_in_zip_read!=NULL)
         unzCloseCurrentFile(file);
 
-    ZCLOSE(s->z_filefunc, s->filestream);
+    fclose((FILE*)s->filestream);
     TRYFREE(s);
     return UNZ_OK;
 }
@@ -888,28 +969,28 @@ uInt *piSizeVar, uLong *poffset_local_extrafield, uInt *psize_local_extrafield)
     *poffset_local_extrafield = 0;
     *psize_local_extrafield = 0;
 
-    if (ZSEEK(s->z_filefunc, s->filestream,s->cur_file_info_internal.offset_curfile +
-                                s->byte_before_the_zipfile,ZLIB_FILEFUNC_SEEK_SET)!=0)
+    if (miniz_fseek(s->filestream,s->cur_file_info_internal.offset_curfile +
+                                s->byte_before_the_zipfile,ZLIB_FILEFUNC_SEEK_SET) != 0)
         return UNZ_ERRNO;
 
 
     if (err==UNZ_OK) {
-        if (unzlocal_getLong(&s->z_filefunc, s->filestream,&uMagic) != UNZ_OK)
+        if (unzlocal_getLong(s->filestream,&uMagic) != UNZ_OK)
             err=UNZ_ERRNO;
         else if (uMagic!=0x04034b50)
             err=UNZ_BADZIPFILE;
     }
 
-    if (unzlocal_getShort(&s->z_filefunc, s->filestream,&uData) != UNZ_OK)
+    if (unzlocal_getShort(s->filestream,&uData) != UNZ_OK)
         err=UNZ_ERRNO;
 /*
     else if ((err==UNZ_OK) && (uData!=s->cur_file_info.wVersion))
         err=UNZ_BADZIPFILE;
 */
-    if (unzlocal_getShort(&s->z_filefunc, s->filestream,&uFlags) != UNZ_OK)
+    if (unzlocal_getShort(s->filestream,&uFlags) != UNZ_OK)
         err=UNZ_ERRNO;
 
-    if (unzlocal_getShort(&s->z_filefunc, s->filestream,&uData) != UNZ_OK)
+    if (unzlocal_getShort(s->filestream,&uData) != UNZ_OK)
         err=UNZ_ERRNO;
     else if ((err==UNZ_OK) && (uData!=s->cur_file_info.compression_method))
         err=UNZ_BADZIPFILE;
@@ -918,36 +999,36 @@ uInt *piSizeVar, uLong *poffset_local_extrafield, uInt *psize_local_extrafield)
                          (s->cur_file_info.compression_method!=Z_DEFLATED))
         err=UNZ_BADZIPFILE;
 
-    if (unzlocal_getLong(&s->z_filefunc, s->filestream,&uData) != UNZ_OK) /* date/time */
+    if (unzlocal_getLong(s->filestream,&uData) != UNZ_OK) /* date/time */
         err=UNZ_ERRNO;
 
-    if (unzlocal_getLong(&s->z_filefunc, s->filestream,&uData) != UNZ_OK) /* crc */
+    if (unzlocal_getLong(s->filestream,&uData) != UNZ_OK) /* crc */
         err=UNZ_ERRNO;
     else if ((err==UNZ_OK) && (uData!=s->cur_file_info.crc) &&
                               ((uFlags & 8)==0))
         err=UNZ_BADZIPFILE;
 
-    if (unzlocal_getLong(&s->z_filefunc, s->filestream,&uData) != UNZ_OK) /* size compr */
+    if (unzlocal_getLong(s->filestream,&uData) != UNZ_OK) /* size compr */
         err=UNZ_ERRNO;
     else if ((err==UNZ_OK) && (uData!=s->cur_file_info.compressed_size) &&
                               ((uFlags & 8)==0))
         err=UNZ_BADZIPFILE;
 
-    if (unzlocal_getLong(&s->z_filefunc, s->filestream,&uData) != UNZ_OK) /* size uncompr */
+    if (unzlocal_getLong(s->filestream,&uData) != UNZ_OK) /* size uncompr */
         err=UNZ_ERRNO;
     else if ((err==UNZ_OK) && (uData!=s->cur_file_info.uncompressed_size) &&
                               ((uFlags & 8)==0))
         err=UNZ_BADZIPFILE;
 
 
-    if (unzlocal_getShort(&s->z_filefunc, s->filestream,&size_filename) != UNZ_OK)
+    if (unzlocal_getShort(s->filestream,&size_filename) != UNZ_OK)
         err=UNZ_ERRNO;
     else if ((err==UNZ_OK) && (size_filename!=s->cur_file_info.size_filename))
         err=UNZ_BADZIPFILE;
 
     *piSizeVar += (uInt)size_filename;
 
-    if (unzlocal_getShort(&s->z_filefunc, s->filestream,&size_extra_field) != UNZ_OK)
+    if (unzlocal_getShort(s->filestream,&size_extra_field) != UNZ_OK)
         err=UNZ_ERRNO;
     *poffset_local_extrafield= s->cur_file_info_internal.offset_curfile +
                                     SIZEZIPLOCALHEADER + size_filename;
@@ -1146,16 +1227,14 @@ int unzReadCurrentFile  (unzFile file, voidpf buf, unsigned len)
                 uReadThis = (uInt)pfile_in_zip_read_info->rest_read_compressed;
             if (uReadThis == 0)
                 return UNZ_EOF;
-            if (ZSEEK(pfile_in_zip_read_info->z_filefunc,
-                      pfile_in_zip_read_info->filestream,
+            if (miniz_fseek(pfile_in_zip_read_info->filestream,
                       pfile_in_zip_read_info->pos_in_zipfile +
                          pfile_in_zip_read_info->byte_before_the_zipfile,
-                         ZLIB_FILEFUNC_SEEK_SET)!=0)
+                         ZLIB_FILEFUNC_SEEK_SET) != 0)
                 return UNZ_ERRNO;
-            if (ZREAD(pfile_in_zip_read_info->z_filefunc,
-                      pfile_in_zip_read_info->filestream,
+            if (miniz_fread(pfile_in_zip_read_info->filestream,
                       pfile_in_zip_read_info->read_buffer,
-                      uReadThis)!=uReadThis)
+                      uReadThis) != uReadThis)
                 return UNZ_ERRNO;
 
 
@@ -1326,16 +1405,14 @@ int unzGetLocalExtrafield (unzFile file, voidpf buf, unsigned len)
     if (read_now==0)
         return 0;
 
-    if (ZSEEK(pfile_in_zip_read_info->z_filefunc,
-              pfile_in_zip_read_info->filestream,
+    if (miniz_fseek(pfile_in_zip_read_info->filestream,
               pfile_in_zip_read_info->offset_local_extrafield +
               pfile_in_zip_read_info->pos_local_extrafield,
-              ZLIB_FILEFUNC_SEEK_SET)!=0)
+              ZLIB_FILEFUNC_SEEK_SET) != 0)
         return UNZ_ERRNO;
 
-    if (ZREAD(pfile_in_zip_read_info->z_filefunc,
-              pfile_in_zip_read_info->filestream,
-              buf,read_now)!=read_now)
+    if (miniz_fread(pfile_in_zip_read_info->filestream,
+              buf,read_now) != read_now)
         return UNZ_ERRNO;
 
     return (int)read_now;
@@ -1399,13 +1476,13 @@ int unzGetGlobalComment (unzFile file, char *szComment, uLong uSizeBuf)
     if (uReadThis>s->gi.size_comment)
         uReadThis = s->gi.size_comment;
 
-    if (ZSEEK(s->z_filefunc,s->filestream,s->central_pos+22,ZLIB_FILEFUNC_SEEK_SET)!=0)
+    if (miniz_fseek(s->filestream,s->central_pos+22,ZLIB_FILEFUNC_SEEK_SET)!=0)
         return UNZ_ERRNO;
 
     if (uReadThis>0)
     {
       *szComment='\0';
-      if (ZREAD(s->z_filefunc,s->filestream,szComment,uReadThis)!=uReadThis)
+      if (miniz_fread(s->filestream,szComment,uReadThis) != uReadThis)
         return UNZ_ERRNO;
     }
 
