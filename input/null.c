@@ -72,8 +72,8 @@ const input_driver_t input_null = {
    nullinput_input_state,
    nullinput_input_key_pressed,
    nullinput_input_free_input,
-#ifdef RARCH_CONSOLE
    nullinput_set_default_keybinds,
+#ifdef RARCH_CONSOLE
    nullinput_set_analog_dpad_mapping,
 #endif
    "null",

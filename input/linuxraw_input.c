@@ -315,5 +315,6 @@ const input_driver_t input_linuxraw = {
    linuxraw_input_state,
    linuxraw_bind_button_pressed,
    linuxraw_input_free,
+   NULL,
    "linuxraw"
 };

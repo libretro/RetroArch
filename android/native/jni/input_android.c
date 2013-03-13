@@ -520,5 +520,6 @@ const input_driver_t input_android = {
    android_input_state,
    android_input_key_pressed,
    android_input_free_input,
+   NULL,
    "android_input",
 };

@@ -250,6 +250,7 @@ const input_driver_t input_x = {
    x_input_state,
    x_bind_button_pressed,
    x_input_free,
+   NULL,
    "x"
 };
 
