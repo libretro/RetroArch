@@ -29,25 +29,6 @@ struct platform_bind
    const char *label;
 };
 
-char rarch_default_libretro_keybind_name_lut[RARCH_FIRST_META_KEY][32] = {
-   "RetroPad Button B",          /* RETRO_DEVICE_ID_JOYPAD_B      */
-   "RetroPad Button Y",          /* RETRO_DEVICE_ID_JOYPAD_Y      */
-   "RetroPad Button Select",     /* RETRO_DEVICE_ID_JOYPAD_SELECT */
-   "RetroPad Button Start",      /* RETRO_DEVICE_ID_JOYPAD_START  */
-   "RetroPad D-Pad Up",          /* RETRO_DEVICE_ID_JOYPAD_UP     */
-   "RetroPad D-Pad Down",        /* RETRO_DEVICE_ID_JOYPAD_DOWN   */
-   "RetroPad D-Pad Left",        /* RETRO_DEVICE_ID_JOYPAD_LEFT   */
-   "RetroPad D-Pad Right",       /* RETRO_DEVICE_ID_JOYPAD_RIGHT  */
-   "RetroPad Button A",          /* RETRO_DEVICE_ID_JOYPAD_A      */
-   "RetroPad Button X",          /* RETRO_DEVICE_ID_JOYPAD_X      */
-   "RetroPad Button L1",         /* RETRO_DEVICE_ID_JOYPAD_L      */
-   "RetroPad Button R1",         /* RETRO_DEVICE_ID_JOYPAD_R      */
-   "RetroPad Button L2",         /* RETRO_DEVICE_ID_JOYPAD_L2     */
-   "RetroPad Button R2",         /* RETRO_DEVICE_ID_JOYPAD_R2     */
-   "RetroPad Button L3",         /* RETRO_DEVICE_ID_JOYPAD_L3     */
-   "RetroPad Button R3",         /* RETRO_DEVICE_ID_JOYPAD_R3     */
-};
-
 extern const struct platform_bind platform_keys[];
 extern const unsigned int platform_keys_size;
 
@@ -104,7 +85,6 @@ const char *rarch_input_find_platform_key_label(uint64_t joykey)
    return "Unknown";
 }
 
-
 void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id)
 {
    uint64_t *key = &g_settings.input.binds[player][default_retro_joypad_id].joykey;
@@ -136,9 +116,4 @@ void rarch_input_set_default_keybinds(unsigned player)
       g_settings.input.binds[player][i].joykey = g_settings.input.default_binds[i];
    }
    g_settings.input.dpad_emulation[player] = DPAD_EMULATION_LSTICK;
-}
-
-const char *rarch_input_get_default_keybind_name(unsigned id)
-{
-   return rarch_default_libretro_keybind_name_lut[id];
 }

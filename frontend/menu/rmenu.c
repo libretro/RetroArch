@@ -602,9 +602,9 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3:
       case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
          {
-            const char * value = rarch_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)].joykey);
             unsigned id = currentsetting - FIRST_CONTROL_BIND;
-            snprintf(current_item->text, sizeof(current_item->text), rarch_input_get_default_keybind_name(id));
+            const char * value = rarch_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][id].joykey);
+            snprintf(current_item->text, sizeof(current_item->text), g_settings.input.binds[currently_selected_controller_menu][id].desc);
             snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [%s] is mapped to action:\n[%s].", current_item->text, value);
             snprintf(current_item->setting_text, sizeof(current_item->setting_text), value);
          }
