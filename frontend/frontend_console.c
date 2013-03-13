@@ -188,35 +188,7 @@ static bool install_libretro_core(const char *core_exe_path, const char *tmp_pat
    return true;
 }
 
-
 #endif
-
-// Only called once on init and deinit.
-// Video and input drivers need to be active (owned)
-// before retroarch core starts.
-static void init_console_drivers(void)
-{
-   init_drivers_pre(); // Set driver.* function callbacks.
-   driver.video->start(); // Statically starts video driver. Sets driver.video_data.
-   driver.input_data = driver.input->init();
-
-   // Core handles audio.
-}
-
-static void uninit_console_drivers(void)
-{
-   if (driver.video_data)
-   {
-      driver.video->stop();
-      driver.video_data = NULL;
-   }
-
-   if (driver.input_data)
-   {
-      driver.input->free(NULL);
-      driver.input_data = NULL;
-   }
-}
 
 int rarch_main(int argc, char *argv[])
 {
@@ -232,7 +204,7 @@ int rarch_main(int argc, char *argv[])
    init_libretro_sym();
    rarch_init_system_info();
 
-   init_console_drivers();
+   global_init_drivers();
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    char core_exe_path[PATH_MAX];
@@ -337,7 +309,7 @@ begin_shutdown:
       rarch_main_deinit();
 
    menu_free();
-   uninit_console_drivers();
+   global_uninit_drivers();
 
 #ifdef PERF_TEST
    rarch_perf_log();

@@ -264,6 +264,33 @@ void driver_set_monitor_refresh_rate(float hz)
 
 }
 
+// Only called once on init and deinit.
+// Video and input drivers need to be active (owned)
+// before retroarch core starts.
+// Core handles audio.
+
+void global_init_drivers(void)
+{
+   init_drivers_pre(); // Set driver.* function callbacks.
+   driver.video->start(); // Statically starts video driver. Sets driver.video_data.
+   driver.input_data = driver.input->init();
+}
+
+void global_uninit_drivers(void)
+{
+   if (driver.video_data)
+   {
+      driver.video->stop();
+      driver.video_data = NULL;
+   }
+
+   if (driver.input_data)
+   {
+      driver.input->free(NULL);
+      driver.input_data = NULL;
+   }
+}
+
 void init_drivers(void)
 {
    driver.video_data_own = !driver.video_data;
