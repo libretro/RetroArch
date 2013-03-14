@@ -419,7 +419,7 @@ static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
       {
          for (size_t i = 0; i < arr_size; i++)
          {
-            if (platform_keys[i].joykey == joykey)
+            if (platform_keys[i].joykey == ret->joykey)
             {
                strlcpy(ret->desc, platform_keys[i].desc, sizeof(ret->desc));
                return;
