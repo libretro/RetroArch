@@ -475,7 +475,7 @@ HRESULT CRetroArchControls::OnControlNavigate(
             case SETTING_CONTROLS_DEFAULT_ALL:
                break;
             default:
-               rarch_input_set_keybind(controlno, KEYBIND_DECREMENT, current_index);
+               rarch_input_set_keybind(controlno, KEYBINDS_ACTION_DECREMENT_BIND, current_index);
                snprintf(button, sizeof(button), "%s #%d: %s",
                      g_settings.input.binds[controlno][current_index].desc, controlno, 
                      rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
@@ -505,7 +505,8 @@ HRESULT CRetroArchControls::OnControlNavigate(
                   }
 
                   if (keybind_action)
-                     driver.input->set_keybinds(driver.input_data, g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu, 0, keybind_action);
+                     driver.input->set_keybinds(driver.input_data, g_settings.input.device[controlno], controlno,
+0, keybind_action);
                }
                break;
             case SETTING_CONTROLS_DEFAULT_ALL:
@@ -566,7 +567,7 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             }
             break;
          default:
-            rarch_input_set_keybind(controlno, KEYBIND_DEFAULT, current_index);
+            rarch_input_set_keybind(controlno, KEYBINDS_ACTION_SET_DEFAULT_BIND, current_index);
             snprintf(buttons[current_index], sizeof(buttons[current_index]), "%s #%d: %s",
                   g_settings.input.binds[controlno][current_index].desc, controlno, 
                   rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
