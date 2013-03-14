@@ -82,34 +82,51 @@ static void xenon360_input_free_input(void *data)
    (void)data;
 }
 
-static void xenon360_input_set_default_keybinds(unsigned device, unsigned port, unsigned id)
+static void xenon360_input_set_keybinds(void *data, unsigned device,
+      unsigned port, unsigned id, unsigned keybind_action)
 {
+   (void)data;
    (void)device;
    (void)id;
 
-   for (unsigned i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS))
    {
-      g_settings.input.binds[port][i].id = i;
-      g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
+      for (unsigned i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+      {
+         g_settings.input.binds[port][i].id = i;
+         g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
+      }
+      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_LSTICK;
    }
-
-   g_settings.input.dpad_emulation[port] = DPAD_EMULATION_LSTICK;
-}
-
-static void xenon360_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
-{
-   (void)device;
-   (void)map_dpad_enum;
-   (void)controller_id;
 }
 
 static void* xenon360_input_init(void)
 {
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
-      xenon360_input_set_default_keybinds(0, i, 0);
+      xenon360_input_set_keybinds(driver.input_data, 0, i,
+            (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
 
    for(unsigned i = 0; i < MAX_PADS; i++)
-      xenon360_input_set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[i], i);
+   {
+      unsigned keybind_action = 0;
+
+      switch (g_settings.input.dpad_emulation[i])
+      {
+         case ANALOG_DPAD_LSTICK:
+            keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
+            break;
+         case ANALOG_DPAD_RSTICK:
+            keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK);
+            break;
+         case ANALOG_DPAD_NONE:
+            keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE);
+         default:
+            break;
+      }
+
+      if (keybind_action)
+         xenon360_input_set_keybinds(driver.input_data, 0, i, keybind_action);
+   }
 
    return (void*)-1;
 }
@@ -126,7 +143,6 @@ const input_driver_t input_xenon360 = {
    .input_state = xenon360_input_state,
    .key_pressed = xenon360_input_key_pressed,
    .free = xenon360_input_free_input,
-   .set_default_keybinds = xenon360_input_set_default_keybinds,
-   .set_analog_dpad_mapping = xenon360_input_set_analog_dpad_mapping,
+   .set_keybinds = xenon360_input_set_keybinds,
    .ident = "xenon360",
 };

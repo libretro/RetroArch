@@ -137,7 +137,7 @@ static void xdk_input_poll(void *data)
             continue;
 
          uint64_t *state_cur = &state[i];
-         bool dpad_emulation = (g_settings.input.dpad_emulation[i] != DPAD_EMULATION_NONE);
+         bool dpad_emulation = (g_settings.input.dpad_emulation[i] != ANALOG_DPAD_NONE);
 
          *state_cur = 0;
          *state_cur |= ((state_tmp.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_B]) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0);
@@ -176,7 +176,7 @@ static void xdk_input_poll(void *data)
       pads_connected += (XInputGetState(i, &state_tmp) == ERROR_DEVICE_NOT_CONNECTED) ? 0 : 1;
 
       uint64_t *state_cur = &state[i];
-      bool dpad_emulation = (g_settings.input.dpad_emulation[i] != DPAD_EMULATION_NONE);
+      bool dpad_emulation = (g_settings.input.dpad_emulation[i] != ANALOG_DPAD_NONE);
 
       *state_cur = 0;
       *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_B) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0);
@@ -212,7 +212,7 @@ static void xdk_input_poll(void *data)
 
    uint64_t *state_p1 = &state[0];
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
-   bool dpad_emulation = (g_settings.input.dpad_emulation[0] != DPAD_EMULATION_NONE);
+   bool dpad_emulation = (g_settings.input.dpad_emulation[0] != ANALOG_DPAD_NONE);
 
    *lifecycle_state &= ~(
          (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | 
@@ -269,48 +269,49 @@ static void xdk_input_free_input(void *data)
    (void)data;
 }
 
-static void xdk_set_default_keybinds(unsigned device, unsigned port, unsigned id)
+static void xdk_input_set_keybinds(void *data, unsigned device,
+      unsigned port, unsigned id, unsigned keybind_action)
 {
    (void)device;
    (void)id;
 
-   for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS))
    {
-      g_settings.input.binds[port][i].id = i;
-      g_settings.input.binds[port][i].def_joykey = platform_keys[i].joykey;
-      g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
+      for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+      {
+         g_settings.input.binds[port][i].id = i;
+         g_settings.input.binds[port][i].def_joykey = platform_keys[i].joykey;
+         g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
+      }
+
+      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_LSTICK;
    }
 
-   g_settings.input.dpad_emulation[port] = DPAD_EMULATION_LSTICK;
-}
-
-static void xdk_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
-{
-   (void)device;
-
-   switch(map_dpad_enum)
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE))
    {
-      case DPAD_EMULATION_NONE:
-         g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_NONE;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_UP].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_DOWN].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_LEFT].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey;
-         break;
-      case DPAD_EMULATION_LSTICK:
-         g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_LSTICK;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RARCH_ANALOG_LEFT_Y_DPAD_UP].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RARCH_ANALOG_LEFT_Y_DPAD_DOWN].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RARCH_ANALOG_LEFT_X_DPAD_LEFT].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RARCH_ANALOG_LEFT_X_DPAD_RIGHT].joykey;
-         break;
-      case DPAD_EMULATION_RSTICK:
-         g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_RSTICK;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RARCH_ANALOG_RIGHT_Y_DPAD_UP].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RARCH_ANALOG_RIGHT_Y_DPAD_DOWN].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RARCH_ANALOG_RIGHT_X_DPAD_LEFT].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RARCH_ANALOG_RIGHT_X_DPAD_RIGHT].joykey;
-         break;
+      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_UP].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_DOWN].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_LEFT].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey;
+   }
+
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK))
+   {
+      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_LSTICK;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RARCH_ANALOG_LEFT_Y_DPAD_UP].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RARCH_ANALOG_LEFT_Y_DPAD_DOWN].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RARCH_ANALOG_LEFT_X_DPAD_LEFT].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RARCH_ANALOG_LEFT_X_DPAD_RIGHT].joykey;
+   }
+
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK))
+   {
+      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_RSTICK;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RARCH_ANALOG_RIGHT_Y_DPAD_UP].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RARCH_ANALOG_RIGHT_Y_DPAD_DOWN].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RARCH_ANALOG_RIGHT_X_DPAD_LEFT].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RARCH_ANALOG_RIGHT_X_DPAD_RIGHT].joykey;
    }
 }
 
@@ -336,10 +337,34 @@ static void *xdk_input_init(void)
 #endif
 
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
-      xdk_set_default_keybinds(0, i, 0);
+      if (driver.input->set_keybinds)
+         driver.input->set_keybinds(driver.input_data, 0, i, 0,
+               (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
 
    for(unsigned i = 0; i < MAX_PADS; i++)
-      xdk_input_set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[i], i);
+   {
+      unsigned keybind_action = 0;
+
+      switch (g_settings.input.dpad_emulation[i])
+      {
+         case ANALOG_DPAD_LSTICK:
+            keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
+            break;
+         case ANALOG_DPAD_RSTICK:
+            keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK);
+            break;
+         case ANALOG_DPAD_NONE:
+            keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE);
+            break;
+         default:
+            break;
+      }
+
+      if (keybind_action)
+         if (driver.input->set_keybinds)
+            driver.input->set_keybinds(driver.input_data, 0, i, 0,
+                  action);
+   }
 
    return (void*)-1;
 }
@@ -356,7 +381,6 @@ const input_driver_t input_xinput =
    xdk_input_state,
    xdk_input_key_pressed,
    xdk_input_free_input,
-   xdk_set_default_keybinds,
-   xdk_input_set_analog_dpad_mapping,
+   xdk_input_set_keybinds,
    "xinput"
 };

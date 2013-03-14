@@ -19,14 +19,6 @@
 
 #include "../driver.h"
 
-enum keybind_set_id
-{
-   KEYBIND_NOACTION = 0,
-   KEYBIND_DECREMENT,
-   KEYBIND_INCREMENT,
-   KEYBIND_DEFAULT
-};
-
 const char *rarch_input_find_platform_key_label(uint64_t joykey);
 void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
 

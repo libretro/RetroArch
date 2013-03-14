@@ -85,22 +85,22 @@ const char *rarch_input_find_platform_key_label(uint64_t joykey)
    return "Unknown";
 }
 
-void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id)
+void rarch_input_set_keybind(unsigned port, unsigned keybind_action, uint64_t id)
 {
-   uint64_t *key = &g_settings.input.binds[player][default_retro_joypad_id].joykey;
+   uint64_t *key = &g_settings.input.binds[port][id].joykey;
 
    switch (keybind_action)
    {
-      case KEYBIND_DECREMENT:
+      case KEYBINDS_ACTION_DECREMENT_BIND:
          *key = rarch_input_find_previous_platform_key(*key);
          break;
 
-      case KEYBIND_INCREMENT:
+      case KEYBINDS_ACTION_INCREMENT_BIND:
          *key = rarch_input_find_next_platform_key(*key);
          break;
 
-      case KEYBIND_DEFAULT:
-         *key = g_settings.input.binds[player][default_retro_joypad_id].def_joykey;
+      case KEYBINDS_ACTION_SET_DEFAULT_BIND:
+         *key = g_settings.input.binds[port][id].def_joykey;
          break;
 
       default:

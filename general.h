@@ -101,14 +101,6 @@ extern "C" {
 
 #define MAX_PLAYERS 8
 
-enum dpad_emu_enums
-{
-   DPAD_EMULATION_NONE = 0,
-   DPAD_EMULATION_LSTICK,
-   DPAD_EMULATION_RSTICK,
-   DPAD_EMULATION_LAST
-};
-
 enum menu_enums
 {
    MODE_GAME = 0,

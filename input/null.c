@@ -51,21 +51,15 @@ static void nullinput_input_free_input(void *data)
    (void)data;
 }
 
-#ifdef RARCH_CONSOLE
-static void nullinput_set_default_keybinds(unsigned device, unsigned port, unsigned id)
+static void nullinput_set_keybinds(void *data, unsigned device,
+      unsigned port, unsigned id, unsigned keybind_action)
 {
+   (void)data;
    (void)device;
    (void)port;
    (void)id;
+   (void)keybind_action;
 }
-
-static void nullinput_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
-{
-   (void)device;
-   (void)map_dpad_enum;
-   (void)controller_id;
-}
-#endif
 
 const input_driver_t input_null = {
    nullinput_input_init,
@@ -73,10 +67,7 @@ const input_driver_t input_null = {
    nullinput_input_state,
    nullinput_input_key_pressed,
    nullinput_input_free_input,
-   nullinput_set_default_keybinds,
-#ifdef RARCH_CONSOLE
-   nullinput_set_analog_dpad_mapping,
-#endif
+   nullinput_set_keybinds,
    "null",
 };
 

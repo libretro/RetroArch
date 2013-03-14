@@ -516,13 +516,13 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_BIND_DPAD_EMULATION:
             switch(g_settings.input.dpad_emulation[port])
             {
-               case DPAD_EMULATION_NONE:
+               case ANALOG_DPAD_NONE:
                   snprintf(type_str, sizeof(type_str), "None");
                   break;
-               case DPAD_EMULATION_LSTICK:
+               case ANALOG_DPAD_LSTICK:
                   snprintf(type_str, sizeof(type_str), "Left Stick");
                   break;
-               case DPAD_EMULATION_RSTICK:
+               case ANALOG_DPAD_RSTICK:
                   snprintf(type_str, sizeof(type_str), "Right Stick");
                   break;
             }
@@ -899,22 +899,64 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
          else if (action == RGUI_ACTION_RIGHT)
             g_settings.input.device[port]++;
          g_settings.input.device[port] %= RARCH_DEVICE_LAST;
-         if (driver.input->set_default_keybinds)
-            driver.input->set_default_keybinds(g_settings.input.device[port], port, 0);
-         driver.input->set_analog_dpad_mapping(g_settings.input.device[port], g_settings.input.dpad_emulation[port], port);
+         if (driver.input->set_keybinds)
+         {
+            unsigned keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS);
+
+            switch (g_settings.input.dpad_emulation[port])
+            {
+               case ANALOG_DPAD_LSTICK:
+                  keybind_action |= (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
+                  break;
+               case ANALOG_DPAD_RSTICK:
+                  keybind_action |= (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK);
+                  break;
+               case ANALOG_DPAD_NONE:
+                  keybind_action |= (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE);
+                  break;
+               default:
+                  break;
+            }
+
+            driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port, 0,
+                  keybind_action);
+         }
          break;
 #endif
 #ifdef RARCH_CONSOLE
       case RGUI_SETTINGS_BIND_DPAD_EMULATION:
-         g_settings.input.dpad_emulation[port] += DPAD_EMULATION_LAST;
+         g_settings.input.dpad_emulation[port] += ANALOG_DPAD_LAST;
          if (action == RGUI_ACTION_START)
-            g_settings.input.dpad_emulation[port] = DPAD_EMULATION_LSTICK;
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_LSTICK;
          else if (action == RGUI_ACTION_LEFT)
             g_settings.input.dpad_emulation[port]--;
          else if (action == RGUI_ACTION_RIGHT)
             g_settings.input.dpad_emulation[port]++;
-         g_settings.input.dpad_emulation[port] %= DPAD_EMULATION_LAST;
-         driver.input->set_analog_dpad_mapping(g_settings.input.device[port], g_settings.input.dpad_emulation[port], port);
+         g_settings.input.dpad_emulation[port] %= ANALOG_DPAD_LAST;
+
+         if (driver.input->set_keybinds)
+         {
+            unsigned keybind_action = 0;
+
+            switch (g_settings.input.dpad_emulation[port])
+            {
+               case ANALOG_DPAD_LSTICK:
+                  keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
+                  break;
+               case ANALOG_DPAD_RSTICK:
+                  keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK);
+                  break;
+               case ANALOG_DPAD_NONE:
+                  keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE);
+                  break;
+               default:
+                  break;
+            }
+
+            if (keybind_action)
+               driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port, 0,
+                     keybind_action);
+         }
          break;
       case RGUI_SETTINGS_BIND_UP:
       case RGUI_SETTINGS_BIND_DOWN:
@@ -933,14 +975,14 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
       case RGUI_SETTINGS_BIND_L3:
       case RGUI_SETTINGS_BIND_R3:
       {
-         unsigned keybind_action;
+         unsigned keybind_action = KEYBINDS_ACTION_NONE;
 
          if (action == RGUI_ACTION_START)
-            keybind_action = KEYBIND_DEFAULT;
+            keybind_action = KEYBINDS_ACTION_SET_DEFAULT_BIND;
          else if (action == RGUI_ACTION_LEFT)
-            keybind_action = KEYBIND_DECREMENT;
+            keybind_action = KEYBINDS_ACTION_DECREMENT_BIND;
          else if (action == RGUI_ACTION_RIGHT)
-            keybind_action = KEYBIND_INCREMENT;
+            keybind_action = KEYBINDS_ACTION_INCREMENT_BIND;
          else
             break;
 

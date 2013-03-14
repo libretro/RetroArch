@@ -202,8 +202,9 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
       if (source == AINPUT_SOURCE_KEYBOARD)
          device = DEVICE_KEYBOARD_RETROPAD;
 
-      if (driver.input->set_default_keybinds)
-         driver.input->set_default_keybinds(device, port, id);
+      if (driver.input->set_keybinds)
+         driver.input->set_keybinds(driver.input_data, device, port, id,
+               (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
    }
 
    if (name_buf[0] != 0)

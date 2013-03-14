@@ -125,7 +125,7 @@ static void ps3_input_poll(void *data)
       if (state_tmp.len != 0)
       {
          uint64_t *state_cur = &state[i];
-         bool dpad_emulation = (g_settings.input.dpad_emulation[i] != DPAD_EMULATION_NONE);
+         bool dpad_emulation = (g_settings.input.dpad_emulation[i] != ANALOG_DPAD_NONE);
          *state_cur = 0;
 #ifdef __PSL1GHT__
          *state_cur |= (state_tmp.BTN_LEFT)     ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
@@ -190,7 +190,7 @@ static void ps3_input_poll(void *data)
 
    uint64_t *state_p1 = &state[0];
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
-   bool dpad_emulation = (g_settings.input.dpad_emulation[0] != DPAD_EMULATION_NONE);
+   bool dpad_emulation = (g_settings.input.dpad_emulation[0] != ANALOG_DPAD_NONE);
 
    *lifecycle_state &= ~(
          (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | 
@@ -391,55 +391,55 @@ do_deinit:
   RetroArch PS3 INPUT DRIVER 
   ============================================================ */
 
-static void ps3_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
-{
-   (void)device;
-
-   switch(map_dpad_enum)
-   {
-      case DPAD_EMULATION_NONE:
-         g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_NONE;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_UP].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_DOWN].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_LEFT].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey;
-         break;
-      case DPAD_EMULATION_LSTICK:
-         g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_LSTICK;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RARCH_ANALOG_LEFT_Y_DPAD_UP].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RARCH_ANALOG_LEFT_Y_DPAD_DOWN].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RARCH_ANALOG_LEFT_X_DPAD_LEFT].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RARCH_ANALOG_LEFT_X_DPAD_RIGHT].joykey;
-         break;
-      case DPAD_EMULATION_RSTICK:
-         g_settings.input.dpad_emulation[controller_id] = DPAD_EMULATION_RSTICK;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RARCH_ANALOG_RIGHT_Y_DPAD_UP].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RARCH_ANALOG_RIGHT_Y_DPAD_DOWN].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RARCH_ANALOG_RIGHT_X_DPAD_LEFT].joykey;
-         g_settings.input.binds[controller_id][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RARCH_ANALOG_RIGHT_X_DPAD_RIGHT].joykey;
-         break;
-   }
-}
-
 static void ps3_input_free_input(void *data)
 {
    (void)data;
    //cellPadEnd();
 }
 
-static void ps3_set_default_keybinds(unsigned device, unsigned port, unsigned id)
+static void ps3_input_set_keybinds(void *data, unsigned device,
+      unsigned port, unsigned id, unsigned keybind_action)
 {
    (void)device;
    (void)id;
 
-   for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS))
    {
-      g_settings.input.binds[port][i].id = i;
-      g_settings.input.binds[port][i].def_joykey = platform_keys[i].joykey;
-      g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
+      for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+      {
+         g_settings.input.binds[port][i].id = i;
+         g_settings.input.binds[port][i].def_joykey = platform_keys[i].joykey;
+         g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
+      }
+      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_LSTICK;
+   }
+   
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE))
+   {
+      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_UP].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_DOWN].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_LEFT].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey;
    }
 
-   g_settings.input.dpad_emulation[port] = DPAD_EMULATION_LSTICK;
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK))
+   {
+      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_LSTICK;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RARCH_ANALOG_LEFT_Y_DPAD_UP].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RARCH_ANALOG_LEFT_Y_DPAD_DOWN].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RARCH_ANALOG_LEFT_X_DPAD_LEFT].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RARCH_ANALOG_LEFT_X_DPAD_RIGHT].joykey;
+   }
+
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK))
+   {
+      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_RSTICK;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].joykey	= platform_keys[RARCH_ANALOG_RIGHT_Y_DPAD_UP].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey	= platform_keys[RARCH_ANALOG_RIGHT_Y_DPAD_DOWN].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey	= platform_keys[RARCH_ANALOG_RIGHT_X_DPAD_LEFT].joykey;
+      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey	= platform_keys[RARCH_ANALOG_RIGHT_X_DPAD_RIGHT].joykey;
+   }
 }
 
 static void* ps3_input_init(void)
@@ -450,10 +450,34 @@ static void* ps3_input_init(void)
 #endif
 
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
-      ps3_set_default_keybinds(0, i, 0);
+      if (driver.input->set_keybinds)
+         driver.input->set_keybinds(driver.input_data, 0, i, 0,
+               (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
 
-   for (unsigned i = 0; i < MAX_PADS; i++)
-      ps3_input_set_analog_dpad_mapping(0, g_settings.input.dpad_emulation[i], i);
+   for(unsigned i = 0; i < MAX_PADS; i++)
+   {
+      unsigned keybind_action = 0;
+
+      switch (g_settings.input.dpad_emulation[i])
+      {
+         case ANALOG_DPAD_LSTICK:
+            keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
+            break;
+         case ANALOG_DPAD_RSTICK:
+            keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK);
+            break;
+         case ANALOG_DPAD_NONE:
+            keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE);
+            break;
+         default:
+            break;
+      }
+
+      if (keybind_action)
+         if (driver.input->set_keybinds)
+            driver.input->set_keybinds(driver.input_data, 0, i, 0,
+                  keybind_action);
+   }
 
    return (void*)-1;
 }
@@ -469,8 +493,7 @@ const input_driver_t input_ps3 = {
    .input_state = ps3_input_state,
    .key_pressed = ps3_input_key_pressed,
    .free = ps3_input_free_input,
-   .set_default_keybinds = ps3_set_default_keybinds,
-   .set_analog_dpad_mapping = ps3_input_set_analog_dpad_mapping,
+   .set_keybinds = ps3_input_set_keybinds,
    .ident = "ps3",
 };
 

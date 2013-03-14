@@ -141,27 +141,27 @@ static int16_t psp_input_state(void *data, const struct retro_keybind **binds,
    return retval;
 }
 
-static void psp_input_set_analog_dpad_mapping(unsigned device, unsigned map_dpad_enum, unsigned controller_id)
-{
-   (void)device;
-}
-
-static void psp_free_input(void *data)
+static void psp_input_free_input(void *data)
 {
    (void)data;
 }
 
-static void psp_set_default_keybinds(unsigned device, unsigned port, unsigned id)
+static void psp_input_set_keybinds(void *data, unsigned device, unsigned port,
+      unsigned id, unsigned keybind_action)
 {
    (void)device;
    (void)id;
 
-   for (unsigned i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS))
    {
-      g_settings.input.binds[port][i].id = i;
-      g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
+      for (unsigned i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+      {
+         g_settings.input.binds[port][i].id = i;
+         g_settings.input.binds[port][i].def_joykey = platform_keys[i].joykey;
+         g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
+      }
+      g_settings.input.dpad_emulation[port] = ANALOG_DPAD_LSTICK;
    }
-   g_settings.input.dpad_emulation[port] = DPAD_EMULATION_LSTICK;
 }
 
 static void* psp_input_initialize(void)
@@ -172,12 +172,39 @@ static void* psp_input_initialize(void)
    sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
 
    for(unsigned i = 0; i < MAX_PLAYERS; i++)
-      psp_set_default_keybinds(0, i, 0);
+      if (driver.input->set_keybinds)
+         driver.input->set_keybinds(driver.input_data, 0, i, 0,
+               (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+
+   for(unsigned i = 0; i < MAX_PADS; i++)
+   {
+      unsigned keybind_action = 0;
+
+      switch (g_settings.input.dpad_emulation[i])
+      {
+         case ANALOG_DPAD_LSTICK:
+            keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
+            break;
+         case ANALOG_DPAD_RSTICK:
+            keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK);
+            break;
+         case ANALOG_DPAD_NONE:
+            keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE);
+            break;
+         default:
+            break;
+      }
+
+      if (keybind_action)
+         if (driver.input->set_keybinds)
+            driver.input->set_keybinds(driver.input_data, 0, i, 0,
+                  action);
+   }
 
    return (void*)-1;
 }
 
-static bool psp_key_pressed(void *data, int key)
+static bool psp_input_key_pressed(void *data, int key)
 {
    (void)data;
 
@@ -195,9 +222,8 @@ const input_driver_t input_psp = {
    .init = psp_input_initialize,
    .poll = psp_input_poll,
    .input_state = psp_input_state,
-   .key_pressed = psp_key_pressed,
-   .free = psp_free_input,
-   .set_default_keybinds = psp_set_default_keybinds,
-   .set_analog_dpad_mapping = psp_input_set_analog_dpad_mapping,
+   .key_pressed = psp_input_key_pressed,
+   .free = psp_input_free_input,
+   .set_keybinds = psp_input_set_keybinds,
    .ident = "psp",
 };

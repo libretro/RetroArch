@@ -571,15 +571,15 @@ static void populate_setting_item(void *data, unsigned input)
          snprintf(current_item->text, sizeof(current_item->text), "D-Pad Emulation");
          switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
          {
-            case DPAD_EMULATION_NONE:
+            case ANALOG_DPAD_NONE:
                snprintf(current_item->comment, sizeof(current_item->comment), "[%s] from Controller %d is mapped to D-pad.", "None", currently_selected_controller_menu+1);
                snprintf(current_item->setting_text, sizeof(current_item->setting_text), "None");
                break;
-            case DPAD_EMULATION_LSTICK:
+            case ANALOG_DPAD_LSTICK:
                snprintf(current_item->comment, sizeof(current_item->comment), "[%s] from Controller %d is mapped to D-pad.", "Left Stick", currently_selected_controller_menu+1);
                snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Left Stick");
                break;
-            case DPAD_EMULATION_RSTICK:
+            case ANALOG_DPAD_RSTICK:
                snprintf(current_item->comment, sizeof(current_item->comment), "[%s] from Controller %d is mapped to D-pad.", "Right Stick", currently_selected_controller_menu+1);
                snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Right Stick");
                break;
@@ -1105,16 +1105,16 @@ int select_directory(void *data, void *state)
 
 static void set_keybind_digital(uint64_t default_retro_joypad_id, uint64_t input)
 {
-   unsigned keybind_action = KEYBIND_NOACTION;
+   unsigned keybind_action = KEYBINDS_ACTION_NONE;
 
    if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
-      keybind_action = KEYBIND_DECREMENT;
+      keybind_action = KEYBINDS_ACTION_DECREMENT_BIND;
 
    if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-      keybind_action = KEYBIND_INCREMENT;
+      keybind_action = KEYBINDS_ACTION_INCREMENT_BIND;
 
    if(input & (1ULL << RMENU_DEVICE_NAV_START))
-      keybind_action = KEYBIND_DEFAULT;
+      keybind_action = KEYBINDS_ACTION_SET_DEFAULT_BIND;
 
    rarch_input_set_keybind(currently_selected_controller_menu, keybind_action, default_retro_joypad_id);
 }
@@ -1949,36 +1949,55 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_DPAD_EMULATION:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
-            switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
+            if (driver.input->set_keybinds)
             {
-               case DPAD_EMULATION_NONE:
-                  break;
-               case DPAD_EMULATION_LSTICK:
-                  driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_NONE, currently_selected_controller_menu);
-                  break;
-               case DPAD_EMULATION_RSTICK:
-                  driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
-                  break;
+               unsigned keybind_action = 0;
+
+               switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
+               {
+                  case ANALOG_DPAD_NONE:
+                     break;
+                  case ANALOG_DPAD_LSTICK:
+                     keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE);
+                     break;
+                  case ANALOG_DPAD_RSTICK:
+                     keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
+                     break;
+                  default:
+                     break;
+               }
+
+               if (keybind_action)
+                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu, 0, keybind_action);
             }
          }
 
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
+            if (driver.input->set_keybinds)
             {
-               case DPAD_EMULATION_NONE:
-                  driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
-                  break;
-               case DPAD_EMULATION_LSTICK:
-                  driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_RSTICK, currently_selected_controller_menu);
-                  break;
-               case DPAD_EMULATION_RSTICK:
-                  break;
+               unsigned keybind_action = 0;
+
+               switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
+               {
+                  case ANALOG_DPAD_NONE:
+                     keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
+                     break;
+                  case ANALOG_DPAD_LSTICK:
+                     keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK);
+                     break;
+                  case ANALOG_DPAD_RSTICK:
+                     break;
+               }
+
+               if (keybind_action)
+                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu, 0, keybind_action);
             }
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, currently_selected_controller_menu);
+            if (driver.input->set_keybinds)
+                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu, 0, (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK));
          break;
       case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP:
          set_keybind_digital(RETRO_DEVICE_ID_JOYPAD_UP, input);
@@ -2041,8 +2060,9 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
 #endif
       case SETTING_CONTROLS_DEFAULT_ALL:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_START)))
-            if (driver.input->set_default_keybinds)
-               driver.input->set_default_keybinds(g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu, 0);
+            if (driver.input->set_keybinds)
+               driver.input->set_keybinds(driver.input_data, g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu, 0,
+                     (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
          break;
    }
 

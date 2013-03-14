@@ -385,13 +385,13 @@ static void set_dpad_emulation_label(unsigned port, char *str, size_t sizeof_str
 {
    switch(g_settings.input.dpad_emulation[port])
    {
-      case DPAD_EMULATION_NONE:
+      case ANALOG_DPAD_NONE:
          snprintf(str, sizeof_str, "D-Pad Emulation: None");
          break;
-      case DPAD_EMULATION_LSTICK:
+      case ANALOG_DPAD_LSTICK:
          snprintf(str, sizeof_str, "D-Pad Emulation: Left Stick");
          break;
-      case DPAD_EMULATION_RSTICK:
+      case ANALOG_DPAD_RSTICK:
          snprintf(str, sizeof_str, "D-Pad Emulation: Right Stick");
          break;
    }
@@ -452,16 +452,24 @@ HRESULT CRetroArchControls::OnControlNavigate(
          switch(current_index)
          {
             case SETTING_CONTROLS_DPAD_EMULATION:
-               switch(g_settings.input.dpad_emulation[controlno])
+               if (driver.input->set_keybinds)
                {
-                  case DPAD_EMULATION_NONE:
-                     break;
-                  case DPAD_EMULATION_LSTICK:
-                     driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_NONE, controlno);
-                     break;
-                  case DPAD_EMULATION_RSTICK:
-                     driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, controlno);
-                     break;
+                  unsigned keybind_action = 0;
+
+                  switch(g_settings.input.dpad_emulation[controlno])
+                  {
+                     case ANALOG_DPAD_NONE:
+                        break;
+                     case ANALOG_DPAD_LSTICK:
+                        keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE);
+                        break;
+                     case ANALOG_DPAD_RSTICK:
+                        keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
+                        break;
+                  }
+
+                  if (keybind_action)
+                     driver.input->set_keybinds(driver.input_data, g_settings.input.device[controlno], controlno, 0, keybind_action);
                }
                break;
             case SETTING_CONTROLS_DEFAULT_ALL:
@@ -480,22 +488,30 @@ HRESULT CRetroArchControls::OnControlNavigate(
          switch(current_index)
          {
             case SETTING_CONTROLS_DPAD_EMULATION:
-               switch(g_settings.input.dpad_emulation[controlno])
+               if (driver.input->set_keybinds)
                {
-                  case DPAD_EMULATION_NONE:
-                     driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_LSTICK, controlno);
-                     break;
-                  case DPAD_EMULATION_LSTICK:
-                     driver.input->set_analog_dpad_mapping(0, DPAD_EMULATION_RSTICK, controlno);
-                     break;
-                  case DPAD_EMULATION_RSTICK:
-                     break;
+                  unsigned keybind_action = 0;
+
+                  switch(g_settings.input.dpad_emulation[controlno])
+                  {
+                     case ANALOG_DPAD_NONE:
+                        keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
+                        break;
+                     case ANALOG_DPAD_LSTICK:
+                        keybind_action = (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK);
+                        break;
+                     case ANALOG_DPAD_RSTICK:
+                        break;
+                  }
+
+                  if (keybind_action)
+                     driver.input->set_keybinds(driver.input_data, g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu, 0, keybind_action);
                }
                break;
             case SETTING_CONTROLS_DEFAULT_ALL:
                break;
             default:
-               rarch_input_set_keybind(controlno, KEYBIND_INCREMENT, current_index);
+               rarch_input_set_keybind(controlno, KEYBINDS_ACTION_INCREMENT_BIND, current_index);
                snprintf(button, sizeof(button), "%s #%d: %s",
                      g_settings.input.binds[controlno][current_index].desc, controlno, 
                      rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
@@ -534,8 +550,10 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
          case SETTING_CONTROLS_DPAD_EMULATION:
             break;
          case SETTING_CONTROLS_DEFAULT_ALL:
-            if (driver.input->set_default_keybinds)
-               driver.input->set_default_keybinds(g_settings.input.device[controlno], controlno, 0);
+            if (driver.input->set_keybinds)
+               driver.input->set_keybinds(driver.input_data,
+                     g_settings.input.device[controlno], controlno, 0,
+                     (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
 
             for(i = 0; i < RARCH_FIRST_META_KEY; i++)
             {

@@ -199,6 +199,27 @@ typedef struct audio_driver
 #define GET_HAT_DIR(x) (x & HAT_MASK)
 #define GET_HAT(x) (x & (~HAT_MASK))
 
+enum analog_dpad_bind_enums
+{
+   ANALOG_DPAD_NONE = 0,
+   ANALOG_DPAD_LSTICK,
+   ANALOG_DPAD_RSTICK,
+   ANALOG_DPAD_LAST
+};
+
+enum keybind_set_id
+{
+   KEYBINDS_ACTION_NONE = 0,
+   KEYBINDS_ACTION_DECREMENT_BIND,
+   KEYBINDS_ACTION_INCREMENT_BIND,
+   KEYBINDS_ACTION_SET_DEFAULT_BIND,
+   KEYBINDS_ACTION_SET_DEFAULT_BINDS,
+   KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE,
+   KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK,
+   KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK,
+   KEYBINDS_ACTION_LAST
+};
+
 typedef struct input_driver
 {
    void *(*init)(void);
@@ -206,10 +227,7 @@ typedef struct input_driver
    int16_t (*input_state)(void *data, const struct retro_keybind **retro_keybinds, unsigned port, unsigned device, unsigned index, unsigned id);
    bool (*key_pressed)(void *data, int key);
    void (*free)(void *data);
-   void (*set_default_keybinds)(unsigned device, unsigned port, unsigned id);
-#ifdef RARCH_CONSOLE
-   void (*set_analog_dpad_mapping)(unsigned device, unsigned map_dpad_enum, unsigned controller_id);
-#endif
+   void (*set_keybinds)(void *data, unsigned device, unsigned port, unsigned id, unsigned keybind_action);
    const char *ident;
 } input_driver_t;
 
