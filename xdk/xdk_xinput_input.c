@@ -272,8 +272,58 @@ static void xdk_input_free_input(void *data)
 static void xdk_input_set_keybinds(void *data, unsigned device,
       unsigned port, unsigned id, unsigned keybind_action)
 {
+   uint64_t *key = &g_settings.input.binds[port][id].joykey;
+   uint64_t joykey = *key;
+   size_t arr_size;
+
    (void)device;
-   (void)id;
+
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_DECREMENT_BIND))
+   {
+      arr_size = platform_keys_size / sizeof(platform_keys[0]);
+
+      if (joykey == NO_BTN)
+         *key = platform_keys[arr_size - 1].joykey;
+      else if (platform_keys[0].joykey == joykey)
+         *key = NO_BTN;
+      else
+      {
+         *key = NO_BTN;
+         for (size_t i = 1; i < arr_size; i++)
+         {
+            if (platform_keys[i].joykey == joykey)
+            {
+               *key = platform_keys[i - 1].joykey;
+               break;
+            }
+         }
+      }
+   }
+
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_INCREMENT_BIND))
+   {
+      arr_size = platform_keys_size / sizeof(platform_keys[0]);
+
+      if (joykey == NO_BTN)
+         *key = platform_keys[0].joykey;
+      else if (platform_keys[arr_size - 1].joykey == joykey)
+         *key = NO_BTN;
+      else
+      {
+         *key = NO_BTN;
+         for (size_t i = 0; i < arr_size - 1; i++)
+         {
+            if (platform_keys[i].joykey == joykey)
+            {
+               *key = platform_keys[i + 1].joykey;
+               break;
+            }
+         }
+      }
+   }
+
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND))
+      *key = g_settings.input.binds[port][id].def_joykey;
 
    if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS))
    {

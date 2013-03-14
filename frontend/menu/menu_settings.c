@@ -283,7 +283,9 @@ void menu_settings_create_menu_item_label(char * str, unsigned setting, size_t s
          snprintf(str, size, "Shader #2: %s", g_settings.video.second_pass_shader);
          break;
       case S_LBL_RARCH_VERSION:
+#ifndef __BLACKBERRY_QNX__
          snprintf(str, size, "RetroArch %s", PACKAGE_VERSION);
+#endif
          break;
       case S_LBL_SCALE_FACTOR:
          snprintf(str, size, "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);

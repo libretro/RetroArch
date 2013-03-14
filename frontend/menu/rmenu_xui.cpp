@@ -475,7 +475,10 @@ HRESULT CRetroArchControls::OnControlNavigate(
             case SETTING_CONTROLS_DEFAULT_ALL:
                break;
             default:
-               rarch_input_set_keybind(controlno, KEYBINDS_ACTION_DECREMENT_BIND, current_index);
+               if (driver.input->set_keybinds)
+                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[controlno],
+                        controlno, current_index, (1ULL << KEYBINDS_ACTION_DECREMENT_BIND));
+
                snprintf(button, sizeof(button), "%s #%d: %s",
                      g_settings.input.binds[controlno][current_index].desc, controlno, 
                      rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
@@ -512,7 +515,10 @@ HRESULT CRetroArchControls::OnControlNavigate(
             case SETTING_CONTROLS_DEFAULT_ALL:
                break;
             default:
-               rarch_input_set_keybind(controlno, KEYBINDS_ACTION_INCREMENT_BIND, current_index);
+               if (driver.input->set_keybinds)
+                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[controlno],
+                        controlno, current_index, (1ULL << KEYBINDS_ACTION_INCREMENT_BIND));
+
                snprintf(button, sizeof(button), "%s #%d: %s",
                      g_settings.input.binds[controlno][current_index].desc, controlno, 
                      rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
@@ -567,7 +573,10 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             }
             break;
          default:
-            rarch_input_set_keybind(controlno, KEYBINDS_ACTION_SET_DEFAULT_BIND, current_index);
+            if (driver.input->set_keybinds)
+               driver.input->set_keybinds(driver.input_data, g_settings.input.device[controlno],
+                     controlno, current_index, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND));
+
             snprintf(buttons[current_index], sizeof(buttons[current_index]), "%s #%d: %s",
                   g_settings.input.binds[controlno][current_index].desc, controlno, 
                   rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));

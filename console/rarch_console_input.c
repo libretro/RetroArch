@@ -20,14 +20,9 @@
 #include <string.h>
 #include "../boolean.h"
 
+#include "../driver.h"
 #include "../general.h"
 #include "rarch_console_input.h"
-
-struct platform_bind
-{
-   uint64_t joykey;
-   const char *label;
-};
 
 extern const struct platform_bind platform_keys[];
 extern const unsigned int platform_keys_size;
@@ -41,66 +36,8 @@ const char *rarch_input_find_platform_key_label(uint64_t joykey)
    for (size_t i = 0; i < arr_size; i++)
    {
       if (platform_keys[i].joykey == joykey)
-         return platform_keys[i].label;
+         return platform_keys[i].desc;
    }
 
    return "Unknown";
-}
-
-void rarch_input_set_keybind(unsigned port, unsigned keybind_action, uint64_t id)
-{
-   uint64_t *key = &g_settings.input.binds[port][id].joykey;
-   uint64_t joykey = *key;
-   size_t arr_size;
-
-   switch (keybind_action)
-   {
-      case KEYBINDS_ACTION_DECREMENT_BIND:
-         arr_size = platform_keys_size / sizeof(platform_keys[0]);
-
-         if (joykey == NO_BTN)
-            *key = platform_keys[arr_size - 1].joykey;
-         else if (platform_keys[0].joykey == joykey)
-            *key = NO_BTN;
-         else
-         {
-            *key = NO_BTN;
-            for (size_t i = 1; i < arr_size; i++)
-            {
-               if (platform_keys[i].joykey == joykey)
-               {
-                  *key = platform_keys[i - 1].joykey;
-                  break;
-               }
-            }
-         }
-         break;
-      case KEYBINDS_ACTION_INCREMENT_BIND:
-         arr_size = platform_keys_size / sizeof(platform_keys[0]);
-
-         if (joykey == NO_BTN)
-            *key = platform_keys[0].joykey;
-         else if (platform_keys[arr_size - 1].joykey == joykey)
-            *key = NO_BTN;
-         else
-         {
-            *key = NO_BTN;
-            for (size_t i = 0; i < arr_size - 1; i++)
-            {
-               if (platform_keys[i].joykey == joykey)
-               {
-                  *key = platform_keys[i + 1].joykey;
-                  break;
-               }
-            }
-         }
-         break;
-
-      case KEYBINDS_ACTION_SET_DEFAULT_BIND:
-         *key = g_settings.input.binds[port][id].def_joykey;
-         break;
-
-      default:
-         break;
-   }
 }

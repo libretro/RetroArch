@@ -1103,20 +1103,26 @@ int select_directory(void *data, void *state)
    return 0;
 }
 
-static void set_keybind_digital(uint64_t default_retro_joypad_id, uint64_t input)
+static void set_keybind_digital(unsigned default_retro_joypad_id, uint64_t input)
 {
+   if (!driver.input->set_keybinds)
+      return;
+
    unsigned keybind_action = KEYBINDS_ACTION_NONE;
 
    if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
-      keybind_action = KEYBINDS_ACTION_DECREMENT_BIND;
+      keybind_action = (1ULL << KEYBINDS_ACTION_DECREMENT_BIND);
 
    if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-      keybind_action = KEYBINDS_ACTION_INCREMENT_BIND;
+      keybind_action = (1ULL << KEYBINDS_ACTION_INCREMENT_BIND);
 
    if(input & (1ULL << RMENU_DEVICE_NAV_START))
-      keybind_action = KEYBINDS_ACTION_SET_DEFAULT_BIND;
+      keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND);
 
-   rarch_input_set_keybind(currently_selected_controller_menu, keybind_action, default_retro_joypad_id);
+
+   if (keybind_action)
+      driver.input->set_keybinds(driver.input_data, NULL, currently_selected_controller_menu,
+            default_retro_joypad_id, keybind_action);
 }
 
 #if defined(HAVE_OSKUTIL)

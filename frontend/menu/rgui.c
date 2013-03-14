@@ -974,20 +974,21 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
       case RGUI_SETTINGS_BIND_R2:
       case RGUI_SETTINGS_BIND_L3:
       case RGUI_SETTINGS_BIND_R3:
-      {
-         unsigned keybind_action = KEYBINDS_ACTION_NONE;
+         if (driver.input->set_keybinds)
+         {
+            unsigned keybind_action = KEYBINDS_ACTION_NONE;
 
-         if (action == RGUI_ACTION_START)
-            keybind_action = KEYBINDS_ACTION_SET_DEFAULT_BIND;
-         else if (action == RGUI_ACTION_LEFT)
-            keybind_action = KEYBINDS_ACTION_DECREMENT_BIND;
-         else if (action == RGUI_ACTION_RIGHT)
-            keybind_action = KEYBINDS_ACTION_INCREMENT_BIND;
-         else
-            break;
+            if (action == RGUI_ACTION_START)
+               keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND);
+            else if (action == RGUI_ACTION_LEFT)
+               keybind_action = (1ULL << KEYBINDS_ACTION_DECREMENT_BIND);
+            else if (action == RGUI_ACTION_RIGHT)
+               keybind_action = (1ULL << KEYBINDS_ACTION_INCREMENT_BIND);
 
-         rarch_input_set_keybind(port, keybind_action, rgui_controller_lut[setting - RGUI_SETTINGS_BIND_UP]);
-      }
+            if (keybind_action != KEYBINDS_ACTION_NONE)
+               driver.input->set_keybinds(driver.input_data, g_settings.input.device[setting - RGUI_SETTINGS_BIND_UP], port,
+                     rgui_controller_lut[setting - RGUI_SETTINGS_BIND_UP], keybind_action); 
+         }
 #endif
       default:
          break;

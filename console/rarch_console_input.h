@@ -17,9 +17,6 @@
 #ifndef CONSOLE_EXT_INPUT_H__
 #define CONSOLE_EXT_INPUT_H__
 
-#include "../driver.h"
-
 const char *rarch_input_find_platform_key_label(uint64_t joykey);
-void rarch_input_set_keybind(unsigned player, unsigned keybind_action, uint64_t default_retro_joypad_id);
 
 #endif

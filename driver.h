@@ -132,6 +132,12 @@ struct retro_keybind
    uint32_t joyaxis;
 };
 
+struct platform_bind
+{
+   uint64_t joykey;
+   const char *desc;
+};
+
 enum rarch_shader_type
 {
    RARCH_SHADER_CG,
