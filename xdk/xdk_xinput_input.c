@@ -363,7 +363,7 @@ static void *xdk_input_init(void)
       if (keybind_action)
          if (driver.input->set_keybinds)
             driver.input->set_keybinds(driver.input_data, 0, i, 0,
-                  action);
+                  keybind_action);
    }
 
    return (void*)-1;
