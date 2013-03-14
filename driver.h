@@ -135,7 +135,7 @@ struct retro_keybind
 struct platform_bind
 {
    uint64_t joykey;
-   const char *desc;
+   char *desc;
 };
 
 enum rarch_shader_type
@@ -223,6 +223,7 @@ enum keybind_set_id
    KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE,
    KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK,
    KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK,
+   KEYBINDS_ACTION_GET_BIND_LABEL,
    KEYBINDS_ACTION_LAST
 };
 

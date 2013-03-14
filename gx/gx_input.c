@@ -168,14 +168,12 @@ static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
 {
    uint64_t *key = &g_settings.input.binds[port][id].joykey;
    uint64_t joykey = *key;
-   size_t arr_size;
+   size_t arr_size = platform_keys_size / sizeof(platform_keys[0]);
 
    (void)device;
 
    if (keybind_action & (1ULL << KEYBINDS_ACTION_DECREMENT_BIND))
    {
-      arr_size = platform_keys_size / sizeof(platform_keys[0]);
-
       if (joykey == NO_BTN)
          *key = platform_keys[arr_size - 1].joykey;
       else if (platform_keys[0].joykey == joykey)
@@ -196,8 +194,6 @@ static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
 
    if (keybind_action & (1ULL << KEYBINDS_ACTION_INCREMENT_BIND))
    {
-      arr_size = platform_keys_size / sizeof(platform_keys[0]);
-
       if (joykey == NO_BTN)
          *key = platform_keys[0].joykey;
       else if (platform_keys[arr_size - 1].joykey == joykey)
@@ -410,6 +406,26 @@ static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
             break;
          default:
             break;
+      }
+   }
+
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL))
+   {
+      struct platform_bind *ret = (struct platform_bind*)data;
+
+      if (ret->joykey == NO_BTN)
+         strlcpy(ret->desc, "No button", sizeof(ret->desc));
+      else
+      {
+         for (size_t i = 0; i < arr_size; i++)
+         {
+            if (platform_keys[i].joykey == joykey)
+            {
+               strlcpy(ret->desc, platform_keys[i].desc, sizeof(ret->desc));
+               return;
+            }
+         }
+         strlcpy(ret->desc, "Unknown", sizeof(ret->desc));
       }
    }
 }
