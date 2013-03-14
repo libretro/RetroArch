@@ -543,7 +543,17 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_BIND_R2:
          case RGUI_SETTINGS_BIND_L3:
          case RGUI_SETTINGS_BIND_R3:
-            snprintf(type_str, sizeof(type_str), "%s", rarch_input_find_platform_key_label(g_settings.input.binds[port][rgui_controller_lut[type - RGUI_SETTINGS_BIND_UP]].joykey));
+            {
+               unsigned id = rgui_controller_lut[type - RGUI_SETTINGS_BIND_UP];
+               struct platform_bind key_label;
+               strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+               key_label.joykey = g_settings.input.binds[port][id].joykey;
+
+               if (driver.input->set_keybinds)
+                  driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+
+               strlcpy(type_str, key_label.desc, sizeof(type_str));
+            }
             break;
 #endif
          default:

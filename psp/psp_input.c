@@ -83,8 +83,6 @@ const struct platform_bind platform_keys[] = {
 #endif
 };
 
-const unsigned platform_keys_size = sizeof(platform_keys);
-
 static uint64_t state;
 
 static void psp_input_poll(void *data)

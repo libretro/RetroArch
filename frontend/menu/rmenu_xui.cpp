@@ -412,9 +412,15 @@ HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
+      struct platform_bind key_label;
+      strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+      key_label.joykey = g_settings.input.binds[controlno][i].joykey;
+
+      if (driver.input->set_keybinds)
+         driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+
       snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
-            g_settings.input.binds[controlno][i].desc, controlno, 
-            rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+            g_settings.input.binds[controlno][i].desc, controlno, key_label.desc);
       convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer)); 
       m_controlslist.SetText(i, strw_buffer);
    }
@@ -439,9 +445,16 @@ HRESULT CRetroArchControls::OnControlNavigate(
 
    for(i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
+      struct platform_bind key_label;
+      strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+      key_label.joykey = g_settings.input.binds[controlno][i].joykey;
+
+      if (driver.input->set_keybinds)
+         driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+
       snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
             g_settings.input.binds[controlno][i].desc, controlno, 
-            rarch_input_find_platform_key_label(g_settings.input.binds[controlno][i].joykey));
+            key_label.desc);
       convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
       m_controlslist.SetText(i, strw_buffer);
    }
@@ -475,15 +488,23 @@ HRESULT CRetroArchControls::OnControlNavigate(
             case SETTING_CONTROLS_DEFAULT_ALL:
                break;
             default:
-               if (driver.input->set_keybinds)
-                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[controlno],
-                        controlno, current_index, (1ULL << KEYBINDS_ACTION_DECREMENT_BIND));
+               {
+                  struct platform_bind key_label;
+                  strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+                  key_label.joykey = g_settings.input.binds[controlno][current_index].joykey;
 
-               snprintf(button, sizeof(button), "%s #%d: %s",
-                     g_settings.input.binds[controlno][current_index].desc, controlno, 
-                     rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
-               convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
-               m_controlslist.SetText(current_index, strw_buffer);
+                  if (driver.input->set_keybinds)
+                     driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+
+                  if (driver.input->set_keybinds)
+                     driver.input->set_keybinds(driver.input_data, g_settings.input.device[controlno],
+                           controlno, current_index, (1ULL << KEYBINDS_ACTION_DECREMENT_BIND));
+
+                  snprintf(button, sizeof(button), "%s #%d: %s",
+                        g_settings.input.binds[controlno][current_index].desc, controlno, key_label.desc);
+                  convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
+                  m_controlslist.SetText(current_index, strw_buffer);
+               }
                break;
          }
          break;
@@ -515,15 +536,23 @@ HRESULT CRetroArchControls::OnControlNavigate(
             case SETTING_CONTROLS_DEFAULT_ALL:
                break;
             default:
-               if (driver.input->set_keybinds)
-                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[controlno],
-                        controlno, current_index, (1ULL << KEYBINDS_ACTION_INCREMENT_BIND));
+               {
+                  struct platform_bind key_label;
+                  strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+                  key_label.joykey = g_settings.input.binds[controlno][current_index].joykey;
 
-               snprintf(button, sizeof(button), "%s #%d: %s",
-                     g_settings.input.binds[controlno][current_index].desc, controlno, 
-                     rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
-               convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
-               m_controlslist.SetText(current_index, strw_buffer);
+                  if (driver.input->set_keybinds)
+                     driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+                  if (driver.input->set_keybinds)
+                     driver.input->set_keybinds(driver.input_data, g_settings.input.device[controlno],
+                           controlno, current_index, (1ULL << KEYBINDS_ACTION_INCREMENT_BIND));
+
+                  snprintf(button, sizeof(button), "%s #%d: %s",
+                        g_settings.input.binds[controlno][current_index].desc, controlno, 
+                        key_label.desc);
+                  convert_char_to_wchar(strw_buffer, button, sizeof(strw_buffer));
+                  m_controlslist.SetText(current_index, strw_buffer);
+               }
                break;
          }
          break;
@@ -564,24 +593,38 @@ HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
             for(i = 0; i < RARCH_FIRST_META_KEY; i++)
             {
+               struct platform_bind key_label;
+               strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+               key_label.joykey = g_settings.input.binds[controlno][i].joykey;
+
+               if (driver.input->set_keybinds)
+                  driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+
                snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
-                  g_settings.input.binds[controlno][i].desc, controlno, 
-                     rarch_input_find_platform_key_label(
-                        g_settings.input.binds[controlno][i].joykey));
+                     g_settings.input.binds[controlno][i].desc, controlno,  key_label.desc);
                convert_char_to_wchar(strw_buffer, buttons[i], sizeof(strw_buffer));
                m_controlslist.SetText(i, strw_buffer);
             }
             break;
          default:
-            if (driver.input->set_keybinds)
-               driver.input->set_keybinds(driver.input_data, g_settings.input.device[controlno],
-                     controlno, current_index, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND));
+            {
+               if (driver.input->set_keybinds)
+                  driver.input->set_keybinds(driver.input_data, g_settings.input.device[controlno],
+                        controlno, current_index, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND));
+               
+               struct platform_bind key_label;
+               strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+               key_label.joykey = g_settings.input.binds[controlno][current_index].joykey;
 
-            snprintf(buttons[current_index], sizeof(buttons[current_index]), "%s #%d: %s",
-                  g_settings.input.binds[controlno][current_index].desc, controlno, 
-                  rarch_input_find_platform_key_label(g_settings.input.binds[controlno][current_index].joykey));
-            convert_char_to_wchar(strw_buffer, buttons[current_index], sizeof(strw_buffer));
-            m_controlslist.SetText(current_index, strw_buffer);
+               if (driver.input->set_keybinds)
+                  driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+
+               snprintf(buttons[current_index], sizeof(buttons[current_index]), "%s #%d: %s",
+                     g_settings.input.binds[controlno][current_index].desc, controlno, 
+                     key_label.desc);
+               convert_char_to_wchar(strw_buffer, buttons[current_index], sizeof(strw_buffer));
+               m_controlslist.SetText(current_index, strw_buffer);
+            }
             break;
       }
    }

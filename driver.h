@@ -135,7 +135,7 @@ struct retro_keybind
 struct platform_bind
 {
    uint64_t joykey;
-   char *desc;
+   char desc[64];
 };
 
 enum rarch_shader_type

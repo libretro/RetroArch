@@ -80,8 +80,6 @@ const struct platform_bind platform_keys[] = {
    { (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) | (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN), "RStick D-Pad Down" },
 };
 
-const unsigned int platform_keys_size = sizeof(platform_keys);
-
 static void xdk_input_poll(void *data)
 {
    (void)data;
@@ -274,7 +272,7 @@ static void xdk_input_set_keybinds(void *data, unsigned device,
 {
    uint64_t *key = &g_settings.input.binds[port][id].joykey;
    uint64_t joykey = *key;
-   size_t arr_size = platform_keys_size / sizeof(platform_keys[0]);
+   size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
 
    (void)device;
 

@@ -28,7 +28,6 @@
 #endif
 
 #include "../../console/rarch_console.h"
-#include "../../console/rarch_console_input.h"
 #include "menu_settings.h"
 
 #include "../../gfx/image.h"
@@ -603,10 +602,15 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3:
          {
             unsigned id = currentsetting - FIRST_CONTROL_BIND;
-            const char * value = rarch_input_find_platform_key_label(g_settings.input.binds[currently_selected_controller_menu][id].joykey);
+            struct platform_bind key_label;
+            strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+            key_label.joykey = g_settings.input.binds[currently_selected_controller_menu][id].joykey;
+
+            if (driver.input->set_keybinds)
+               driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
             snprintf(current_item->text, sizeof(current_item->text), g_settings.input.binds[currently_selected_controller_menu][id].desc);
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [%s] is mapped to action:\n[%s].", current_item->text, value);
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), value);
+            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [%s] is mapped to action:\n[%s].", current_item->text, key_label.desc);
+            snprintf(current_item->setting_text, sizeof(current_item->setting_text), key_label.desc);
          }
          break;
       case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
@@ -667,11 +671,21 @@ static void display_menubar(void *data)
    font_parms.scale = default_pos.current_path_font_size;
    font_parms.color = WHITE;
 
+   struct platform_bind key_label_r, key_label_l;
+   strlcpy(key_label_r.desc, "Unknown", sizeof(key_label_r.desc));
+   key_label_r.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_R;
+
+   strlcpy(key_label_l.desc, "Unknown", sizeof(key_label_l.desc));
+   key_label_l.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_L;
 
    switch(current_menu->enum_id)
    {
       case GENERAL_VIDEO_MENU:
-         snprintf(msg, sizeof(msg), "NEXT -> [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R));
+         if (driver.input->set_keybinds)
+            driver.input->set_keybinds(&key_label_r, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+
+         snprintf(msg, sizeof(msg), "NEXT -> [%s]", key_label_r.desc);
+
          if (driver.video_poke->set_osd_msg)
             driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
          break;
@@ -680,14 +694,23 @@ static void display_menubar(void *data)
       case EMU_VIDEO_MENU:
       case EMU_AUDIO_MENU:
       case PATH_MENU:
-         snprintf(msg, sizeof(msg), "[%s] <- PREV | NEXT -> [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R));
+         if (driver.input->set_keybinds)
+         {
+            driver.input->set_keybinds(&key_label_r, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+            driver.input->set_keybinds(&key_label_l, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         }
+         snprintf(msg, sizeof(msg), "[%s] <- PREV | NEXT -> [%s]", key_label_l.desc, key_label_r.desc);
 
          if (driver.video_poke->set_osd_msg)
             driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
          break;
       case CONTROLS_MENU:
       case INGAME_MENU_RESIZE:
-         snprintf(msg, sizeof(msg), "[%s] <- PREV", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L));
+         if (driver.input->set_keybinds)
+            driver.input->set_keybinds(&key_label_l, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+
+         snprintf(msg, sizeof(msg), "[%s] <- PREV", key_label_l.desc);
+
          if (driver.video_poke->set_osd_msg)
             driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
          break;
@@ -842,27 +865,34 @@ int select_file(void *data, void *state)
    rmenu_default_positions_t default_pos;
    menu_set_default_pos(&default_pos);
 
+   struct platform_bind key_label_b;
+   strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
+   key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
+
+   if (driver.input->set_keybinds)
+      driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+
    switch(current_menu->enum_id)
    {
       case SHADER_CHOICE:
          strlcpy(extensions, EXT_SHADERS, sizeof(extensions));
-         snprintf(comment, sizeof(comment), "INFO - Select a shader by pressing [%s].", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(comment, sizeof(comment), "INFO - Select a shader by pressing [%s].", key_label_b.desc);
          break;
       case PRESET_CHOICE:
          strlcpy(extensions, EXT_CGP_PRESETS, sizeof(extensions));
-         snprintf(comment, sizeof(comment), "INFO - Select a shader preset by pressing [%s].", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(comment, sizeof(comment), "INFO - Select a shader preset by pressing [%s].", key_label_b.desc);
          break;
       case INPUT_PRESET_CHOICE:
          strlcpy(extensions, EXT_INPUT_PRESETS, sizeof(extensions));
-         snprintf(comment, sizeof(comment), "INFO - Select an input preset by pressing [%s].", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(comment, sizeof(comment), "INFO - Select an input preset by pressing [%s].", key_label_b.desc);
          break;
       case BORDER_CHOICE:
          strlcpy(extensions, EXT_IMAGES, sizeof(extensions));
-         snprintf(comment, sizeof(comment), "INFO - Select a border image file by pressing [%s].", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(comment, sizeof(comment), "INFO - Select a border image file by pressing [%s].", key_label_b.desc);
          break;
       case LIBRETRO_CHOICE:
          strlcpy(extensions, EXT_EXECUTABLES, sizeof(extensions));
-         snprintf(comment, sizeof(comment), "INFO - Select a Libretro core by pressing [%s].", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(comment, sizeof(comment), "INFO - Select a Libretro core by pressing [%s].", key_label_b.desc);
          break;
    }
 
@@ -974,7 +1004,20 @@ int select_file(void *data, void *state)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, comment, &font_parms);
 
-   snprintf(comment, sizeof(comment), "[%s] - return to settings [%s] - Reset Startdir", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_X), rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
+   struct platform_bind key_label_x, key_label_start;
+   strlcpy(key_label_x.desc, "Unknown", sizeof(key_label_x.desc));
+   key_label_x.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_X;
+
+   strlcpy(key_label_start.desc, "Unknown", sizeof(key_label_start.desc));
+   key_label_start.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_START;
+
+   if (driver.input->set_keybinds)
+   {
+      driver.input->set_keybinds(&key_label_x, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+      driver.input->set_keybinds(&key_label_start, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+   }
+
+   snprintf(comment, sizeof(comment), "[%s] - return to settings [%s] - Reset Startdir", key_label_x.desc, key_label_start.desc);
    font_parms.y = default_pos.comment_two_y_position;
    font_parms.color = YELLOW;
 
@@ -1072,7 +1115,25 @@ int select_directory(void *data, void *state)
 
    display_menubar(current_menu);
 
-   snprintf(msg, sizeof(msg), "[%s] - Enter dir | [%s] - Go back", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B), rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_X));
+   struct platform_bind key_label_b, key_label_x, key_label_y, key_label_start;
+   strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
+   key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
+   strlcpy(key_label_x.desc, "Unknown", sizeof(key_label_x.desc));
+   key_label_x.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_X;
+   strlcpy(key_label_y.desc, "Unknown", sizeof(key_label_y.desc));
+   key_label_y.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_Y;
+   strlcpy(key_label_start.desc, "Unknown", sizeof(key_label_start.desc));
+   key_label_start.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_START;
+
+   if (driver.input->set_keybinds)
+   {
+      driver.input->set_keybinds(&key_label_x, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+      driver.input->set_keybinds(&key_label_y, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+      driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+      driver.input->set_keybinds(&key_label_start, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+   }
+
+   snprintf(msg, sizeof(msg), "[%s] - Enter dir | [%s] - Go back", key_label_b.desc, key_label_x.desc);
 
    font_parms.x = default_pos.x_position;
    font_parms.y = default_pos.comment_two_y_position;
@@ -1082,14 +1143,14 @@ int select_directory(void *data, void *state)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-   snprintf(msg, sizeof(msg), "[%s] - Reset to startdir", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
+   snprintf(msg, sizeof(msg), "[%s] - Reset to startdir", key_label_start.desc);
 
    font_parms.y = default_pos.comment_two_y_position + (default_pos.y_position_increment * 1);
 
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-   snprintf(msg, sizeof(msg), "INFO - Browse to a directory and assign it as the path by\npressing [%s].", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_Y));
+   snprintf(msg, sizeof(msg), "INFO - Browse to a directory and assign it as the path by\npressing [%s].", key_label_y.desc);
 
    font_parms.y = default_pos.comment_y_position;
    font_parms.color = WHITE;
@@ -2198,7 +2259,22 @@ static int select_setting(void *data, void *state)
 
    free(items);
 
-   snprintf(msg, sizeof(msg), "[%s] + [%s] - Resume game", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R3));
+   struct platform_bind key_label_l3, key_label_r3, key_label_start;
+   strlcpy(key_label_l3.desc, "Unknown", sizeof(key_label_l3.desc));
+   key_label_l3.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_L3;
+   strlcpy(key_label_r3.desc, "Unknown", sizeof(key_label_r3.desc));
+   key_label_r3.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_R3;
+   strlcpy(key_label_start.desc, "Unknown", sizeof(key_label_start.desc));
+   key_label_start.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_START;
+
+   if (driver.input->set_keybinds)
+   {
+      driver.input->set_keybinds(&key_label_l3, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+      driver.input->set_keybinds(&key_label_r3, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+      driver.input->set_keybinds(&key_label_start, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+   }
+
+   snprintf(msg, sizeof(msg), "[%s] + [%s] - Resume game", key_label_l3.desc, key_label_r3.desc);
 
    font_parms.x = default_pos.x_position;
    font_parms.y = default_pos.comment_two_y_position;
@@ -2208,7 +2284,7 @@ static int select_setting(void *data, void *state)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-   snprintf(msg, sizeof(msg), "[%s] - Reset to default", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
+   snprintf(msg, sizeof(msg), "[%s] - Reset to default", key_label_start.desc);
    font_parms.y = default_pos.comment_two_y_position + (default_pos.y_position_increment * 1);
 
    if (driver.video_poke->set_osd_msg)
@@ -2232,6 +2308,24 @@ int select_rom(void *data, void *state)
    char msg[128];
    rmenu_default_positions_t default_pos;
    filebrowser_t *filebrowser = browser;
+
+   struct platform_bind key_label_b, key_label_l3, key_label_r3, key_label_select;
+   strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
+   key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
+   strlcpy(key_label_l3.desc, "Unknown", sizeof(key_label_l3.desc));
+   key_label_l3.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_L3;
+   strlcpy(key_label_r3.desc, "Unknown", sizeof(key_label_r3.desc));
+   key_label_r3.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_R3;
+   strlcpy(key_label_select.desc, "Unknown", sizeof(key_label_select.desc));
+   key_label_select.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT;
+
+   if (driver.input->set_keybinds)
+   {
+      driver.input->set_keybinds(&key_label_l3, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+      driver.input->set_keybinds(&key_label_r3, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+      driver.input->set_keybinds(&key_label_select, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+      driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+   }
 
    menu_set_default_pos(&default_pos);
 
@@ -2276,10 +2370,10 @@ int select_rom(void *data, void *state)
    if (filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_PATH_ISDIR))
    {
       const char *current_path = filebrowser_get_current_path(filebrowser);
-      snprintf(msg, sizeof(msg), "INFO - Press [%s] to enter the directory.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+      snprintf(msg, sizeof(msg), "INFO - Press [%s] to enter the directory.", key_label_b.desc);
    }
    else
-      snprintf(msg, sizeof(msg), "INFO - Press [%s] to load the game.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+      snprintf(msg, sizeof(msg), "INFO - Press [%s] to load the game.", key_label_b.desc);
 
    font_parms.x = default_pos.x_position;
    font_parms.y = default_pos.comment_y_position;
@@ -2291,7 +2385,7 @@ int select_rom(void *data, void *state)
 
    display_menubar(current_menu);
 
-   snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L3), rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R3));
+   snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game", key_label_l3.desc, key_label_r3.desc);
 
    font_parms.y = default_pos.comment_two_y_position;
    font_parms.color = YELLOW;
@@ -2299,7 +2393,7 @@ int select_rom(void *data, void *state)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-   snprintf(msg, sizeof(msg), "[%s] - Settings", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT));
+   snprintf(msg, sizeof(msg), "[%s] - Settings", key_label_select.desc);
 
    font_parms.y = default_pos.comment_two_y_position + (default_pos.y_position_increment * 1);
 
@@ -2416,6 +2510,56 @@ int ingame_menu_resize(void *data, void *state)
    {
       char viewport_x[32], viewport_y[32], viewport_w[32], viewport_h[32];
       char msg[256];
+      struct platform_bind key_label_b, key_label_a,
+                           key_label_y, key_label_x,
+                           key_label_l1, key_label_l2,
+                           key_label_r1, key_label_r2, key_label_select,
+                           key_label_dpad_left, key_label_dpad_right,
+                           key_label_dpad_up, key_label_dpad_down;
+      strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
+      key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
+      strlcpy(key_label_a.desc, "Unknown", sizeof(key_label_a.desc));
+      key_label_a.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_A;
+      strlcpy(key_label_x.desc, "Unknown", sizeof(key_label_x.desc));
+      key_label_x.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_X;
+      strlcpy(key_label_y.desc, "Unknown", sizeof(key_label_y.desc));
+      key_label_y.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_Y;
+      strlcpy(key_label_l1.desc, "Unknown", sizeof(key_label_l1.desc));
+      key_label_l1.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_L;
+      strlcpy(key_label_r1.desc, "Unknown", sizeof(key_label_r1.desc));
+      key_label_r1.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_R;
+      strlcpy(key_label_l2.desc, "Unknown", sizeof(key_label_l2.desc));
+      key_label_l2.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_L2;
+      strlcpy(key_label_r2.desc, "Unknown", sizeof(key_label_r2.desc));
+      key_label_r2.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_R2;
+      strlcpy(key_label_select.desc, "Unknown", sizeof(key_label_select.desc));
+      key_label_select.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT;
+      strlcpy(key_label_dpad_left.desc, "Unknown", sizeof(key_label_dpad_left.desc));
+      key_label_dpad_left.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT;
+      strlcpy(key_label_dpad_right.desc, "Unknown", sizeof(key_label_dpad_left.desc));
+      key_label_dpad_right.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT;
+      strlcpy(key_label_dpad_up.desc, "Unknown", sizeof(key_label_dpad_up.desc));
+      key_label_dpad_up.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_UP;
+      strlcpy(key_label_dpad_down.desc, "Unknown", sizeof(key_label_dpad_down.desc));
+      key_label_dpad_down.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN;
+
+      if (driver.input->set_keybinds)
+      {
+         driver.input->set_keybinds(&key_label_l1, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_r1, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_l2, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_r2, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_select, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_a, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_y, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_x, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_dpad_left, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_dpad_right, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_dpad_up, 0 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_dpad_down, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+      }
+
       display_menubar(current_menu);
 
       snprintf(viewport_x, sizeof(viewport_x), "Viewport X: #%d", g_extern.console.screen.viewports.custom_vp.x);
@@ -2451,7 +2595,7 @@ int ingame_menu_resize(void *data, void *state)
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "CONTROLS:", &font_parms);
 
-      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_LEFT_X_DPAD_LEFT));
+      snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_left.desc);
 
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 5);
       font_parms.color = WHITE;
@@ -2465,7 +2609,7 @@ int ingame_menu_resize(void *data, void *state)
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport X--", &font_parms);
 
-      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_LEFT_X_DPAD_RIGHT));
+      snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_right.desc);
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 6);
@@ -2478,7 +2622,7 @@ int ingame_menu_resize(void *data, void *state)
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport X++", &font_parms);
 
-      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_UP), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_LEFT_Y_DPAD_UP));
+      snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_up.desc);
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 7);
 
@@ -2490,7 +2634,7 @@ int ingame_menu_resize(void *data, void *state)
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport Y++", &font_parms);
 
-      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_LEFT_Y_DPAD_DOWN));
+      snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_down.desc);
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 8);
@@ -2503,7 +2647,7 @@ int ingame_menu_resize(void *data, void *state)
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport Y--", &font_parms);
 
-      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_RIGHT_X_DPAD_LEFT));
+      snprintf(msg, sizeof(msg), "[%s]", key_label_l1.desc);
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 9);
@@ -2516,7 +2660,7 @@ int ingame_menu_resize(void *data, void *state)
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport W--", &font_parms);
 
-      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_RIGHT_X_DPAD_RIGHT));
+      snprintf(msg, sizeof(msg), "[%s]", key_label_r1.desc);
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 10);
@@ -2529,7 +2673,7 @@ int ingame_menu_resize(void *data, void *state)
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport W++", &font_parms);
 
-      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_L2), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_UP));
+      snprintf(msg, sizeof(msg), "[%s]", key_label_l2.desc);
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 11);
@@ -2542,7 +2686,7 @@ int ingame_menu_resize(void *data, void *state)
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport H++", &font_parms);
 
-      snprintf(msg, sizeof(msg), "[%s] or [%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_R2), rarch_input_find_platform_key_label(1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN));
+      snprintf(msg, sizeof(msg), "[%s]", key_label_r2.desc);
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 12);
@@ -2555,7 +2699,7 @@ int ingame_menu_resize(void *data, void *state)
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport H--", &font_parms);
 
-      snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_X));
+      snprintf(msg, sizeof(msg), "[%s]", key_label_x.desc);
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 13);
@@ -2568,7 +2712,7 @@ int ingame_menu_resize(void *data, void *state)
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Reset To Defaults", &font_parms);
 
-      snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_Y));
+      snprintf(msg, sizeof(msg), "[%s]", key_label_y.desc);
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 14);
@@ -2581,7 +2725,7 @@ int ingame_menu_resize(void *data, void *state)
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Show Game", &font_parms);
 
-      snprintf(msg, sizeof(msg), "[%s]", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_A));
+      snprintf(msg, sizeof(msg), "[%s]", key_label_a.desc);
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 15);
 
@@ -2593,7 +2737,7 @@ int ingame_menu_resize(void *data, void *state)
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(device_ptr, "- Go back", &font_parms);
 
-      snprintf(msg, sizeof(msg), "Press [%s] to reset to defaults.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_X));
+      snprintf(msg, sizeof(msg), "Press [%s] to reset to defaults.", key_label_x.desc);
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.comment_y_position;
 
@@ -2669,6 +2813,22 @@ int ingame_menu(void *data, void *state)
       return -1;
    }
 
+   struct platform_bind key_label_b, key_label_a,
+                        key_label_start;
+   strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
+   key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
+   strlcpy(key_label_a.desc, "Unknown", sizeof(key_label_a.desc));
+   key_label_a.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_A;
+   strlcpy(key_label_start.desc, "Unknown", sizeof(key_label_start.desc));
+   key_label_start.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_START;
+
+   if (driver.input->set_keybinds)
+   {
+      driver.input->set_keybinds(&key_label_start, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+      driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+      driver.input->set_keybinds(&key_label_a, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+   }
+
    switch(menu_idx)
    {
       case MENU_ITEM_LOAD_STATE:
@@ -2684,7 +2844,7 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
             rarch_state_slot_increase();
 
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to load the current state.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to load the current state.", key_label_b.desc);
          break;
       case MENU_ITEM_SAVE_STATE:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -2700,7 +2860,7 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
             rarch_state_slot_increase();
 
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to save the current state.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to save the current state.", key_label_b.desc);
          break;
       case MENU_ITEM_KEEP_ASPECT_RATIO:
          ret = set_setting_action(current_menu, SETTING_KEEP_ASPECT_RATIO, input);
@@ -2708,7 +2868,7 @@ int ingame_menu(void *data, void *state)
          if (ret != 0)
             return ret;
 
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
+         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", key_label_start.desc);
          break;
       case MENU_ITEM_OVERSCAN_AMOUNT:
          ret = set_setting_action(current_menu, SETTING_HW_OVERSCAN_AMOUNT, input);
@@ -2716,7 +2876,7 @@ int ingame_menu(void *data, void *state)
          if (ret != 0)
             return ret;
 
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
+         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", key_label_start.desc);
          break;
       case MENU_ITEM_ORIENTATION:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
@@ -2736,7 +2896,7 @@ int ingame_menu(void *data, void *state)
             menu_settings_set_default(S_DEF_ROTATION);
             driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
          }
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
+         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", key_label_start.desc);
          break;
 #ifdef HAVE_FBO
       case MENU_ITEM_SCALE_FACTOR:
@@ -2745,7 +2905,7 @@ int ingame_menu(void *data, void *state)
          if (ret != 0)
             return ret;
 
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_START));
+         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", key_label_start.desc);
          break;
 #endif
       case MENU_ITEM_FRAME_ADVANCE:
@@ -2757,7 +2917,7 @@ int ingame_menu(void *data, void *state)
             menu_idx = MENU_ITEM_FRAME_ADVANCE;
             return -1;
          }
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to step one frame.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to step one frame.", key_label_b.desc);
          break;
       case MENU_ITEM_RESIZE_MODE:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -2767,7 +2927,7 @@ int ingame_menu(void *data, void *state)
       case MENU_ITEM_SCREENSHOT_MODE:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_SCREENSHOT);
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to go back to the in-game menu.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_A));
+         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to go back to the in-game menu.", key_label_a.desc);
          break;
       case MENU_ITEM_RETURN_TO_GAME:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -2777,7 +2937,7 @@ int ingame_menu(void *data, void *state)
             return -1;
          }
 
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to return to the game.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to return to the game.", key_label_b.desc);
          break;
       case MENU_ITEM_RESET:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -2787,7 +2947,7 @@ int ingame_menu(void *data, void *state)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
          }
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset the game.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset the game.", key_label_b.desc);
          break;
       case MENU_ITEM_RETURN_TO_MENU:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -2797,7 +2957,7 @@ int ingame_menu(void *data, void *state)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return 0;
          }
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to return to the ROM Browser.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to return to the ROM Browser.", key_label_b.desc);
          break;
       case MENU_ITEM_CHANGE_LIBRETRO:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -2806,7 +2966,7 @@ int ingame_menu(void *data, void *state)
             filebrowser_set_root_and_ext(filebrowser, EXT_EXECUTABLES, default_paths.core_dir);
             set_libretro_core_as_launch = true;
          }
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to choose another core.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to choose another core.", key_label_b.desc);
          break;
 #ifdef HAVE_MULTIMAN
       case MENU_ITEM_RETURN_TO_MULTIMAN:
@@ -2820,7 +2980,7 @@ int ingame_menu(void *data, void *state)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
             return -1;
          }
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to quit RetroArch and return to multiMAN.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to quit RetroArch and return to multiMAN.", key_label_b.desc);
          break;
 #endif
       case MENU_ITEM_QUIT_RARCH:
@@ -2832,7 +2992,7 @@ int ingame_menu(void *data, void *state)
             return -1;
          }
 
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to quit RetroArch.", rarch_input_find_platform_key_label(1ULL << RETRO_DEVICE_ID_JOYPAD_B));
+         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to quit RetroArch.", key_label_b.desc);
          break;
    }
 

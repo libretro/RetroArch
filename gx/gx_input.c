@@ -129,7 +129,6 @@ const struct platform_bind platform_keys[] = {
 #endif
 };
 
-const unsigned int platform_keys_size = sizeof(platform_keys);
 static bool g_menu;
 static bool g_quit;
 
@@ -168,7 +167,7 @@ static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
 {
    uint64_t *key = &g_settings.input.binds[port][id].joykey;
    uint64_t joykey = *key;
-   size_t arr_size = platform_keys_size / sizeof(platform_keys[0]);
+   size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
 
    (void)device;
 

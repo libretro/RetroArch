@@ -37,10 +37,6 @@ CONSOLE EXTENSIONS
 #include "../../ngc/ssaram.c"
 #endif
 
-#ifdef HAVE_DEFAULT_RETROPAD_INPUT
-#include "../rarch_console_input.c"
-#endif
-
 #endif
 
 #ifdef HAVE_ZLIB
