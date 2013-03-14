@@ -32,44 +32,6 @@ struct platform_bind
 extern const struct platform_bind platform_keys[];
 extern const unsigned int platform_keys_size;
 
-static uint64_t rarch_input_find_previous_platform_key(uint64_t joykey)
-{
-   size_t arr_size = platform_keys_size / sizeof(platform_keys[0]);
-
-   if (joykey == NO_BTN)
-      return platform_keys[arr_size - 1].joykey;
-
-   if (platform_keys[0].joykey == joykey)
-      return NO_BTN;
-
-   for (size_t i = 1; i < arr_size; i++)
-   {
-      if (platform_keys[i].joykey == joykey)
-         return platform_keys[i - 1].joykey;
-   }
-
-   return NO_BTN;
-}
-
-static uint64_t rarch_input_find_next_platform_key(uint64_t joykey)
-{
-   size_t arr_size = platform_keys_size / sizeof(platform_keys[0]);
-
-   if (joykey == NO_BTN)
-      return platform_keys[0].joykey;
-
-   if (platform_keys[arr_size - 1].joykey == joykey)
-      return NO_BTN;
-
-   for (size_t i = 0; i < arr_size - 1; i++)
-   {
-      if (platform_keys[i].joykey == joykey)
-         return platform_keys[i + 1].joykey;
-   }
-
-   return NO_BTN;
-}
-
 const char *rarch_input_find_platform_key_label(uint64_t joykey)
 {
    if (joykey == NO_BTN)
@@ -88,15 +50,50 @@ const char *rarch_input_find_platform_key_label(uint64_t joykey)
 void rarch_input_set_keybind(unsigned port, unsigned keybind_action, uint64_t id)
 {
    uint64_t *key = &g_settings.input.binds[port][id].joykey;
+   uint64_t joykey = *key;
+   size_t arr_size;
 
    switch (keybind_action)
    {
       case KEYBINDS_ACTION_DECREMENT_BIND:
-         *key = rarch_input_find_previous_platform_key(*key);
-         break;
+         arr_size = platform_keys_size / sizeof(platform_keys[0]);
 
+         if (joykey == NO_BTN)
+            *key = platform_keys[arr_size - 1].joykey;
+         else if (platform_keys[0].joykey == joykey)
+            *key = NO_BTN;
+         else
+         {
+            *key = NO_BTN;
+            for (size_t i = 1; i < arr_size; i++)
+            {
+               if (platform_keys[i].joykey == joykey)
+               {
+                  *key = platform_keys[i - 1].joykey;
+                  break;
+               }
+            }
+         }
+         break;
       case KEYBINDS_ACTION_INCREMENT_BIND:
-         *key = rarch_input_find_next_platform_key(*key);
+         arr_size = platform_keys_size / sizeof(platform_keys[0]);
+
+         if (joykey == NO_BTN)
+            *key = platform_keys[0].joykey;
+         else if (platform_keys[arr_size - 1].joykey == joykey)
+            *key = NO_BTN;
+         else
+         {
+            *key = NO_BTN;
+            for (size_t i = 0; i < arr_size - 1; i++)
+            {
+               if (platform_keys[i].joykey == joykey)
+               {
+                  *key = platform_keys[i + 1].joykey;
+                  break;
+               }
+            }
+         }
          break;
 
       case KEYBINDS_ACTION_SET_DEFAULT_BIND:
