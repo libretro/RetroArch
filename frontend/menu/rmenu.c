@@ -2556,7 +2556,7 @@ int ingame_menu_resize(void *data, void *state)
          driver.input->set_keybinds(&key_label_x, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
          driver.input->set_keybinds(&key_label_dpad_left, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
          driver.input->set_keybinds(&key_label_dpad_right, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-         driver.input->set_keybinds(&key_label_dpad_up, 0 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+         driver.input->set_keybinds(&key_label_dpad_up, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
          driver.input->set_keybinds(&key_label_dpad_down, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
       }
 
