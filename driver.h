@@ -205,7 +205,8 @@ typedef struct audio_driver
 #define GET_HAT_DIR(x) (x & HAT_MASK)
 #define GET_HAT(x) (x & (~HAT_MASK))
 
-enum {
+enum input_devices
+{
 #if defined(ANDROID)
    DEVICE_NONE = 0,
    DEVICE_LOGITECH_RUMBLEPAD2,
@@ -264,7 +265,7 @@ enum {
    DEVICE_SIXAXIS = 0,
 #endif
    DEVICE_LAST
-} device_enums;
+};
 
 enum analog_dpad_bind_enums
 {
