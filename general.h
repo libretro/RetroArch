@@ -231,10 +231,11 @@ struct settings
       float axis_threshold;
       int joypad_map[MAX_PLAYERS];
       unsigned device[MAX_PLAYERS];
+      char device_names[MAX_PLAYERS][64];
       unsigned dpad_emulation[MAX_PLAYERS];
       bool debug_enable;
-#ifdef ANDROID
       bool autodetect_enable;
+#ifdef ANDROID
       unsigned back_behavior;
       unsigned icade_profile[MAX_PLAYERS];
       unsigned icade_count;

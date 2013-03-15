@@ -125,13 +125,6 @@ unsigned rgui_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 };
 
 unsigned rgui_current_gx_resolution = GX_RESOLUTIONS_640_480;
-
-static const char *rgui_device_labels[] = {
-   "GameCube Controller",
-   "Wiimote",
-   "Wiimote + Nunchuk",
-   "Classic Controller",
-};
 #endif
 
 unsigned RGUI_WIDTH = 320;
@@ -423,9 +416,7 @@ static void render_text(rgui_handle_t *rgui)
       char message[256];
       char type_str[256];
       int w = rgui_is_controller_menu(menu_type) ? 26 : 19;
-#ifdef RARCH_CONSOLE
       unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
-#endif
       switch (type)
       {
          case RGUI_FILE_PLAIN:
@@ -507,12 +498,9 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_CONTROLLER_4:
             snprintf(type_str, sizeof(type_str), "...");
             break;
-#ifdef GEKKO
          case RGUI_SETTINGS_BIND_DEVICE:
-            snprintf(type_str, sizeof(type_str), "%s", rgui_device_labels[g_settings.input.device[port]]);
+            snprintf(type_str, sizeof(type_str), g_settings.input.device_names[port]);
             break;
-#endif
-#ifdef RARCH_CONSOLE
          case RGUI_SETTINGS_BIND_DPAD_EMULATION:
             switch(g_settings.input.dpad_emulation[port])
             {
@@ -555,7 +543,6 @@ static void render_text(rgui_handle_t *rgui)
                strlcpy(type_str, key_label.desc, sizeof(type_str));
             }
             break;
-#endif
          default:
             type_str[0] = 0;
             w = 0;
@@ -610,9 +597,7 @@ static void render_text(rgui_handle_t *rgui)
 
 static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, unsigned menu_type)
 {
-#ifdef RARCH_CONSOLE
-      unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
-#endif
+   unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
 
    switch (setting)
    {
@@ -899,16 +884,15 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
          }
          break;
       // controllers
-#ifdef GEKKO
       case RGUI_SETTINGS_BIND_DEVICE:
-         g_settings.input.device[port] += RARCH_DEVICE_LAST;
+         g_settings.input.device[port] += DEVICE_LAST;
          if (action == RGUI_ACTION_START)
             g_settings.input.device[port] = 0;
          else if (action == RGUI_ACTION_LEFT)
             g_settings.input.device[port]--;
          else if (action == RGUI_ACTION_RIGHT)
             g_settings.input.device[port]++;
-         g_settings.input.device[port] %= RARCH_DEVICE_LAST;
+         g_settings.input.device[port] %= DEVICE_LAST;
          if (driver.input->set_keybinds)
          {
             unsigned keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS);
@@ -932,8 +916,6 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
                   keybind_action);
          }
          break;
-#endif
-#ifdef RARCH_CONSOLE
       case RGUI_SETTINGS_BIND_DPAD_EMULATION:
          g_settings.input.dpad_emulation[port] += ANALOG_DPAD_LAST;
          if (action == RGUI_ACTION_START)
@@ -999,7 +981,6 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
                driver.input->set_keybinds(driver.input_data, g_settings.input.device[setting - RGUI_SETTINGS_BIND_UP], port,
                      rgui_controller_lut[setting - RGUI_SETTINGS_BIND_UP], keybind_action); 
          }
-#endif
       default:
          break;
    }
@@ -1044,12 +1025,10 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    rgui_list_push(rgui->selection_buf, "Core", RGUI_SETTINGS_CORE, 0);
 #endif
-#ifdef GEKKO
    rgui_list_push(rgui->selection_buf, "Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1, 0);
    rgui_list_push(rgui->selection_buf, "Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2, 0);
    rgui_list_push(rgui->selection_buf, "Controller #3 Config", RGUI_SETTINGS_CONTROLLER_3, 0);
    rgui_list_push(rgui->selection_buf, "Controller #4 Config", RGUI_SETTINGS_CONTROLLER_4, 0);
-#endif
    rgui_list_push(rgui->selection_buf, "Debug Text", RGUI_SETTINGS_DEBUG_TEXT, 0);
 #ifndef HAVE_DYNAMIC
    rgui_list_push(rgui->selection_buf, "Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR, 0);
@@ -1059,7 +1038,6 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 {
-#ifdef RARCH_CONSOLE
    rgui_list_clear(rgui->selection_buf);
 
    rgui_list_push(rgui->selection_buf, "Device", RGUI_SETTINGS_BIND_DEVICE, 0);
@@ -1080,7 +1058,6 @@ static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "R2", RGUI_SETTINGS_BIND_R2, 0);
    rgui_list_push(rgui->selection_buf, "L3", RGUI_SETTINGS_BIND_L3, 0);
    rgui_list_push(rgui->selection_buf, "R3", RGUI_SETTINGS_BIND_R3, 0);
-#endif
 }
 
 static int rgui_viewport_iterate(rgui_handle_t *rgui, rgui_action_t action)

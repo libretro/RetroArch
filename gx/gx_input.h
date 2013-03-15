@@ -178,16 +178,4 @@ enum gx_device_id
    RARCH_LAST_PLATFORM_KEY
 };
 
-enum
-{
-   GX_DEVICE_GAMECUBE = 0,
-#ifdef HW_RVL
-   GX_DEVICE_WIIMOTE,
-   GX_DEVICE_NUNCHUK,
-   GX_DEVICE_CLASSIC,
-#endif
-
-   RARCH_DEVICE_LAST
-};
-
 #endif
