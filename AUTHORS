@@ -17,9 +17,10 @@ Daniel De Matteis - <autechre1024@hotmail.com>
    - OpenSL ES audio driver
    - Gamecube/Wii libogc port
 
-Meancoot - <TBA>
+Jason Fetters - <TBA>
    - Phoenix Java frontend
    - Android port patches
+   - iOS port
 
 David Reichelt - <freakdave@hotmail.com>
    - XBox 1 port
