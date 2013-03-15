@@ -292,6 +292,8 @@ static bool gfx_ctx_set_video_mode(
    int x_off = 0;
    int y_off = 0;
 
+   int (*old_handler)(Display*, XErrorEvent*) = NULL;
+
    EGLint vid;
    if (!eglGetConfigAttrib(g_egl_dpy, g_config, EGL_NATIVE_VISUAL_ID, &vid))
       goto error;
@@ -408,7 +410,7 @@ static bool gfx_ctx_set_video_mode(
    gfx_ctx_swap_interval(g_interval);
 
    // This can blow up on some drivers. It's not fatal, so override errors for this call.
-   int (*old_handler)(Display*, XErrorEvent*) = XSetErrorHandler(nul_handler);
+   old_handler = XSetErrorHandler(nul_handler);
    XSetInputFocus(g_dpy, g_win, RevertToNone, CurrentTime);
    XSync(g_dpy, False);
    XSetErrorHandler(old_handler);
