@@ -22,8 +22,7 @@
 #include "../boolean.h"
 #include <pthread.h>
 
-#include <CoreAudio/CoreAudio.h>
-#include <CoreServices/CoreServices.h>
+#include <CoreAudio/CoreAudioTypes.h>
 #include <AudioUnit/AudioUnit.h>
 #include <AudioUnit/AUComponent.h>
 
@@ -32,7 +31,7 @@ typedef struct coreaudio
    pthread_mutex_t lock;
    pthread_cond_t cond;
 
-   ComponentInstance dev;
+   AudioComponentInstance dev;
    bool dev_alive;
 
    fifo_buffer_t *buffer;
@@ -49,7 +48,7 @@ static void coreaudio_free(void *data)
    if (dev->dev_alive)
    {
       AudioOutputUnitStop(dev->dev);
-      CloseComponent(dev->dev);
+      AudioComponentInstanceDispose(dev->dev);
    }
 
    if (dev->buffer)
@@ -102,43 +101,32 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
    if (!dev)
       return NULL;
 
-   CFRunLoopRef run_loop = NULL;
-   AudioObjectPropertyAddress addr = {
-      kAudioHardwarePropertyRunLoop,
-      kAudioObjectPropertyScopeGlobal,
-      kAudioObjectPropertyElementMaster
-   };
-
    pthread_mutex_init(&dev->lock, NULL);
    pthread_cond_init(&dev->cond, NULL);
-   AudioObjectSetPropertyData(kAudioObjectSystemObject, &addr, 0, NULL,
-         sizeof(CFRunLoopRef), &run_loop);
 
-   ComponentDescription desc = {0};
+   // Create AudioComponent
+   AudioComponentDescription desc = {0};
    desc.componentType = kAudioUnitType_Output;
+#ifdef IOS
+   desc.componentSubType = kAudioUnitSubType_RemoteIO;
+#else
    desc.componentSubType = kAudioUnitSubType_HALOutput;
+#endif
    desc.componentManufacturer = kAudioUnitManufacturer_Apple;
 
-   AudioStreamBasicDescription stream_desc = {0};
-   AudioStreamBasicDescription real_desc;
-   AudioChannelLayout layout = {0};
-   AURenderCallbackStruct cb = {0};
-
-   Component comp = NULL;
-   OSStatus res = noErr;
-   UInt32 i_size = 0;
-   size_t fifo_size;
-
-   comp = FindNextComponent(NULL, &desc);
+   AudioComponent comp = AudioComponentFindNext(NULL, &desc);
    if (comp == NULL)
       goto error;
-
-   res = OpenAComponent(comp, &dev->dev);
-   if (res != noErr)
+   
+   if (AudioComponentInstanceNew(comp, &dev->dev) != noErr)
       goto error;
 
    dev->dev_alive = true;
 
+   // Set audio format
+   AudioStreamBasicDescription stream_desc = {0};
+   AudioStreamBasicDescription real_desc;
+   
    stream_desc.mSampleRate = rate;
    stream_desc.mBitsPerChannel = sizeof(float) * CHAR_BIT;
    stream_desc.mChannelsPerFrame = 2;
@@ -147,19 +135,15 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
    stream_desc.mFramesPerPacket = 1;
    stream_desc.mFormatID = kAudioFormatLinearPCM;
    stream_desc.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked | (is_little_endian() ? 0 : kAudioFormatFlagIsBigEndian);
-
-   res = AudioUnitSetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
-         kAudioUnitScope_Input, 0, &stream_desc, sizeof(stream_desc));
-   if (res != noErr)
+   
+   if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
+         kAudioUnitScope_Input, 0, &stream_desc, sizeof(stream_desc)) != noErr)
       goto error;
-
-   i_size = sizeof(real_desc);
-   res = AudioUnitGetProperty(dev->dev, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &real_desc, &i_size);
-   if (res != noErr)
+   
+   // Check returned audio format
+   UInt32 i_size = sizeof(real_desc);;
+   if (AudioUnitGetProperty(dev->dev, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &real_desc, &i_size) != noErr)
       goto error;
-
-   RARCH_LOG("[CoreAudio]: Using output sample rate of %.1f Hz\n", (float)real_desc.mSampleRate);
-   g_settings.audio.out_rate = real_desc.mSampleRate;
 
    if (real_desc.mChannelsPerFrame != stream_desc.mChannelsPerFrame)
       goto error;
@@ -170,25 +154,33 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
    if (real_desc.mFormatID != stream_desc.mFormatID)
       goto error;
 
-   layout.mChannelLayoutTag = kAudioChannelLayoutTag_UseChannelBitmap;
-   layout.mChannelBitmap = 0x03;
+   RARCH_LOG("[CoreAudio]: Using output sample rate of %.1f Hz\n", (float)real_desc.mSampleRate);
+   g_settings.audio.out_rate = real_desc.mSampleRate;
 
-   res = AudioUnitSetProperty(dev->dev, kAudioUnitProperty_AudioChannelLayout,
-         kAudioUnitScope_Input, 0, &layout, sizeof(layout));
-   if (res != noErr)
+
+   // Set channel layout (fails on iOS)
+#ifndef IOS
+   AudioChannelLayout layout = {0};
+
+   layout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
+   if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_AudioChannelLayout,
+         kAudioUnitScope_Input, 0, &layout, sizeof(layout)) != noErr)
       goto error;
+#endif
 
+   // Set callbacks and finish up
+   AURenderCallbackStruct cb = {0};
    cb.inputProc = audio_cb;
    cb.inputProcRefCon = dev;
 
-   res = AudioUnitSetProperty(dev->dev, kAudioUnitProperty_SetRenderCallback,
-         kAudioUnitScope_Input, 0, &cb, sizeof(cb));
-   if (res != noErr)
+   if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_SetRenderCallback,
+         kAudioUnitScope_Input, 0, &cb, sizeof(cb)) != noErr)
       goto error;
 
-   res = AudioUnitInitialize(dev->dev);
-   if (res != noErr)
+   if (AudioUnitInitialize(dev->dev) != noErr)
       goto error;
+
+   size_t fifo_size;
 
    fifo_size = (latency * g_settings.audio.out_rate) / 1000;
    fifo_size *= 2 * sizeof(float);
@@ -200,8 +192,7 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
 
    RARCH_LOG("[CoreAudio]: Using buffer size of %u bytes: (latency = %u ms)\n", (unsigned)fifo_size, latency);
 
-   res = AudioOutputUnitStart(dev->dev);
-   if (res != noErr)
+   if (AudioOutputUnitStart(dev->dev) != noErr)
       goto error;
 
    return dev;

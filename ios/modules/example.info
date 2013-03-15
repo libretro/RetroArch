@@ -1,0 +1,17 @@
+## All data is optional, but helps improve user experience.
+
+# Name displayed when the user is selecting an emulator.
+# display_name = "NES / Famicom"
+
+# List of supported extensions.
+# supported_extensions = "nes|fds"
+
+# Name the emulator core.
+# emuname = "Nestopia"
+
+# The developer of the emulated device.
+# manufacturer = "Nintendo"
+
+# The name of the emulated device.
+# systemname = "Nintendo Entertainment System"
+

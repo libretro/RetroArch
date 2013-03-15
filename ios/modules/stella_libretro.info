@@ -1,0 +1,6 @@
+display_name = "Atari 2600"
+supported_extensions = "a26|bin"
+emuname = "Stella"
+manufacturer = "Atari"
+systemname = "Atari 2600"
+

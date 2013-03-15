@@ -760,7 +760,7 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
       gl->vp.height = height;
    }
 
-#ifdef ANDROID
+#if defined(ANDROID) || defined(IOS)
    // In portrait mode, we want viewport to gravitate to top of screen.
    if (device_aspect < 1.0f)
       gl->vp.y *= 2;
@@ -901,7 +901,13 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
    set_texture_coords(fbo_tex_coords, xamt, yamt);
 
    // Render our FBO texture to back buffer.
+#ifdef IOS
+   // There is no default frame buffer on IOS.
+   extern void ios_bind_game_view_fbo();
+   ios_bind_game_view_fbo();
+#else
    pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+#endif
    gl_shader_use_func(gl, gl->fbo_pass + 1);
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
@@ -1329,6 +1335,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       RARCH_PERFORMANCE_START(copy_frame);
       gl_copy_frame(gl, frame, width, height, pitch);
       RARCH_PERFORMANCE_STOP(copy_frame);
+
+#ifdef IOS // Apparently the viewport is lost each frame, thanks apple.
+      gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+#endif
    }
    else
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);

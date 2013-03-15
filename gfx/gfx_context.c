@@ -51,6 +51,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(__BLACKBERRY_QNX__)
    &gfx_ctx_bbqnx,
 #endif
+#if defined(IOS)
+   &gfx_ctx_ios,
+#endif
 };
 
 const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident)

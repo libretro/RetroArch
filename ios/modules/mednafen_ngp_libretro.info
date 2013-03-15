@@ -1,0 +1,6 @@
+display_name = "Neo Geo Pocket (Color)"
+supported_extensions = "ngp|ngc"
+emuname = "Mednafen Neopop"
+manufacturer = "SNK"
+systemname = "Neo Geo Pocket (Color)"
+

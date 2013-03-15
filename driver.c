@@ -152,6 +152,9 @@ static const input_driver_t *input_drivers[] = {
 #if defined(__linux__) && !defined(ANDROID)
    &input_linuxraw,
 #endif
+#ifdef IOS
+   &input_ios,
+#endif
 #ifdef HAVE_NULLINPUT
    &input_null,
 #endif
