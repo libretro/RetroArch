@@ -1658,6 +1658,9 @@ static uint64_t menu_input_state(void)
    {
       input_state |= input_input_state_func(binds,
             0, RETRO_DEVICE_JOYPAD, 0, maps[i + 0]) ? (1ULL << maps[i + 1]) : 0;
+#ifdef HAVE_OVERLAY
+      input_state |= (driver.overlay_state & (UINT64_C(1) << maps[i + 0])) ? (1ULL << maps[i + 1]) : 0;
+#endif
    }
 
    input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << GX_DEVICE_NAV_MENU) : 0;
