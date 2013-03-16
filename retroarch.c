@@ -2848,7 +2848,6 @@ error:
    return 1;
 }
 
-#ifdef HAVE_RGUI
 static inline bool check_enter_rgui(void)
 {
    static bool old_rmenu_toggle = true;
@@ -2869,7 +2868,6 @@ static inline bool check_enter_rgui(void)
       return false;
    }
 }
-#endif
 
 bool rarch_main_iterate(void)
 {
@@ -2893,10 +2891,8 @@ bool rarch_main_iterate(void)
       return false;
    }
 
-#ifdef HAVE_RGUI
    if (check_enter_rgui())
       return false; // Enter menu, don't exit.
-#endif
 
 #ifdef HAVE_COMMAND
    if (driver.command)

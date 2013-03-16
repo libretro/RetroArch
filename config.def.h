@@ -618,8 +618,9 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_OVERLAY_NEXT,             RETRO_LBL_OVERLAY_NEXT,         RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_DISK_EJECT_TOGGLE,        RETRO_LBL_DISK_EJECT_TOGGLE,    RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_DISK_NEXT,                RETRO_LBL_DISK_NEXT,            RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
+#ifdef HAVE_RGUI
    { true, RARCH_MENU_TOGGLE,              RETRO_LBL_MENU_TOGGLE,          RETROK_F1,      NO_BTN, 0, AXIS_NONE },
-   { true, RARCH_MENU_QUICKMENU_TOGGLE,    RETRO_LBL_MENU_QUICKMENU_TOGGLE,RETROK_F1,      NO_BTN, 0, AXIS_NONE },
+#endif
 };
 
 // Player 2-5
