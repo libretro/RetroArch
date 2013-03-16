@@ -30,16 +30,6 @@
 #define DFONT_MAX	4096
 #define D3DFVF_CUSTOMVERTEX	(D3DFVF_XYZRHW | D3DFVF_TEX1)
 
-typedef struct
-{
-   float x;
-   float y;
-   float z;
-   float rhw;
-   float u;
-   float v;
-} primitive_t;
-
 typedef struct DrawVerticeFormats
 {
 #if defined(_XBOX1)
