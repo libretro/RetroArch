@@ -469,7 +469,7 @@ static void render_text(rgui_handle_t *rgui)
             {
                char rotate_msg[64];
                menu_settings_create_menu_item_label(rotate_msg, S_LBL_ROTATION, sizeof(rotate_msg));
-               snprintf(type_str, sizeof(type_str), rotate_msg);
+               strlcpy(type_str, rotate_msg, sizeof(type_str));
             }
             break;
          case RGUI_SETTINGS_AUDIO_MUTE:
@@ -503,7 +503,7 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), "...");
             break;
          case RGUI_SETTINGS_BIND_DEVICE:
-            snprintf(type_str, sizeof(type_str), g_settings.input.device_names[port]);
+            strlcpy(type_str, g_settings.input.device_names[port], sizeof(type_str));
             break;
          case RGUI_SETTINGS_BIND_DPAD_EMULATION:
             switch(g_settings.input.dpad_emulation[port])
