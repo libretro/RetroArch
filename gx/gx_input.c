@@ -36,9 +36,7 @@
 #define GC_JOYSTICK_THRESHOLD 48
 #define WII_JOYSTICK_THRESHOLD 40
 
-#define MAX_PADS 4
-
-static uint64_t pad_state[MAX_PADS];
+static uint64_t pad_state[MAX_PLAYERS];
 
 const struct platform_bind platform_keys[] = {
    { GX_GC_A, "GC A button" },
@@ -139,7 +137,7 @@ static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
    (void)data;
    (void)index;
 
-   if (port >= MAX_PADS || device != RETRO_DEVICE_JOYPAD)
+   if (port >= MAX_PLAYERS || device != RETRO_DEVICE_JOYPAD)
       return 0;
 
    return (binds[port][id].joykey & pad_state[port]) ? 1 : 0;
@@ -453,7 +451,7 @@ static void *gx_input_init(void)
          driver.input->set_keybinds(driver.input_data, 0, i, 0,
                (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
 
-   for(unsigned i = 0; i < MAX_PADS; i++)
+   for(unsigned i = 0; i < MAX_PLAYERS; i++)
    {
       unsigned keybind_action = 0;
 
@@ -497,7 +495,7 @@ static void gx_input_poll(void *data)
    WPAD_ReadPending(WPAD_CHAN_ALL, NULL);
 #endif
 
-   for (unsigned port = 0; port < MAX_PADS; port++)
+   for (unsigned port = 0; port < MAX_PLAYERS; port++)
    {
       uint32_t down = 0;
       uint64_t *state_cur = &pad_state[port];

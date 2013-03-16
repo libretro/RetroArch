@@ -99,7 +99,13 @@
 extern "C" {
 #endif
 
+#if defined(_XBOX) || defined(GEKKO)
+#define MAX_PLAYERS 4
+#elif defined(PSP)
+#define MAX_PLAYERS 1
+#else
 #define MAX_PLAYERS 8
+#endif
 
 enum menu_enums
 {

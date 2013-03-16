@@ -75,7 +75,7 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
    char name_buf[256];
    name_buf[0] = 0;
 
-   if (port > MAX_PADS)
+   if (port > MAX_PLAYERS)
    {
       snprintf(msg, sizeof_msg, "Max number of pads reached.\n");
       return;

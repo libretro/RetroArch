@@ -39,10 +39,10 @@ typedef struct
 #define PRESSED_RIGHT(x, y) ((x >= dzone_max))
 
 static unsigned pads_connected;
-static int state_device_ids[MAX_PADS];
-static uint64_t state[MAX_PADS];
+static int state_device_ids[MAX_PLAYERS];
+static uint64_t state[MAX_PLAYERS];
 static uint64_t keycode_lut[LAST_KEYCODE];
-dpad_values_t dpad_state[MAX_PADS]; 
+dpad_values_t dpad_state[MAX_PLAYERS]; 
 
 
 struct input_pointer
@@ -237,7 +237,7 @@ static void *android_input_init(void)
 
    if (!g_settings.input.autodetect_enable)
    {
-      for (j = 0; j < MAX_PADS; j++)
+      for (j = 0; j < MAX_PLAYERS; j++)
       {
          uint8_t shift = 8 + (j * 8);
          for (k = 0; k < RARCH_FIRST_CUSTOM_BIND; k++)
@@ -251,7 +251,7 @@ static void *android_input_init(void)
       }
    }
 
-   for(i = 0; i < MAX_PADS; i++)
+   for(i = 0; i < MAX_PLAYERS; i++)
    {
       for(j = 0; j < RARCH_FIRST_META_KEY; j++)
       {
