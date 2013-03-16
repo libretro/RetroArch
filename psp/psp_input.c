@@ -35,6 +35,8 @@
 #define ANALOGSTICK_DEADZONE_LOW  (0x40)
 #define ANALOGSTICK_DEADZONE_HIGH (0xc0)
 
+#define MAX_PADS 1
+
 const struct platform_bind platform_keys[] = {
    { PSP_GAMEPAD_CIRCLE, "Circle button" },
    { PSP_GAMEPAD_CROSS, "Cross button" },
@@ -172,7 +174,7 @@ static void* psp_input_initialize(void)
          driver.input->set_keybinds(driver.input_data, 0, i, 0,
                (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
 
-   for(unsigned i = 0; i < MAX_PLAYERS; i++)
+   for(unsigned i = 0; i < MAX_PADS; i++)
    {
       unsigned keybind_action = 0;
 

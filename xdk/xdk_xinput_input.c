@@ -21,6 +21,7 @@
 #include <xtl.h>
 #endif
 
+#define MAX_PADS 4
 #define DEADZONE (16000)
 
 #include "../driver.h"
@@ -28,14 +29,14 @@
 #include "../libretro.h"
 
 
-static uint64_t state[MAX_PLAYERS];
+static uint64_t state[MAX_PADS];
 unsigned pads_connected;
 
 #ifdef _XBOX1
-static HANDLE gamepads[MAX_PLAYERS];
+static HANDLE gamepads[MAX_PADS];
 static DWORD dwDeviceMask;
-static bool bInserted[MAX_PLAYERS];
-static bool bRemoved[MAX_PLAYERS];
+static bool bInserted[MAX_PADS];
+static bool bRemoved[MAX_PADS];
 #endif
 
 const struct platform_bind platform_keys[] = {
@@ -88,9 +89,9 @@ static void xdk_input_poll(void *data)
 
    XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD, reinterpret_cast<PDWORD>(&dwInsertions), reinterpret_cast<PDWORD>(&dwRemovals));
 
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   for (unsigned i = 0; i < MAX_PADS; i++)
    {
-      XINPUT_CAPABILITIES caps[MAX_PLAYERS];
+      XINPUT_CAPABILITIES caps[MAX_PADS];
       (void)caps;
       // handle removed devices
       bRemoved[i] = (dwRemovals & (1<<i)) ? true : false;
@@ -167,7 +168,7 @@ static void xdk_input_poll(void *data)
       }
    }
 #elif defined(_XBOX360)
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   for (unsigned i = 0; i < MAX_PADS; i++)
    {
       XINPUT_STATE state_tmp;
       pads_connected += (XInputGetState(i, &state_tmp) == ERROR_DEVICE_NOT_CONNECTED) ? 0 : 1;
@@ -404,7 +405,7 @@ static void *xdk_input_init(void)
          driver.input->set_keybinds(driver.input_data, 0, i, 0,
                (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
 
-   for(unsigned i = 0; i < MAX_PLAYERS; i++)
+   for(unsigned i = 0; i < MAX_PADS; i++)
    {
       unsigned keybind_action = 0;
 

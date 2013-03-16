@@ -104,7 +104,7 @@ const struct platform_bind platform_keys[] = {
    { (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) | (1ULL << RARCH_ANALOG_RIGHT_Y_DPAD_DOWN), "RStick D-Pad Down" },
 };
 
-static uint64_t state[MAX_PLAYERS];
+static uint64_t state[MAX_PADS];
 static unsigned pads_connected;
 #ifdef HAVE_MOUSE
 static unsigned mice_connected;
@@ -115,7 +115,7 @@ static void ps3_input_poll(void *data)
    CellPadInfo2 pad_info;
    (void)data;
 
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   for (unsigned i = 0; i < MAX_PADS; i++)
    {
       static CellPadData state_tmp;
       cellPadGetData(i, &state_tmp);
@@ -508,7 +508,7 @@ static void ps3_input_set_keybinds(void *data, unsigned device,
 
 static void* ps3_input_init(void)
 {
-   cellPadInit(MAX_PLAYERS);
+   cellPadInit(MAX_PADS);
 #ifdef HAVE_MOUSE
    cellMouseInit(MAX_MICE);
 #endif
@@ -518,7 +518,7 @@ static void* ps3_input_init(void)
          driver.input->set_keybinds(driver.input_data, 0, i, 0,
                (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
 
-   for(unsigned i = 0; i < MAX_PLAYERS; i++)
+   for(unsigned i = 0; i < MAX_PADS; i++)
    {
       unsigned keybind_action = 0;
 

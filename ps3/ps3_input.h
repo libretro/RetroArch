@@ -22,6 +22,10 @@
 
 #include "sdk_defines.h"
 
+#ifndef __PSL1GHT__
+#define MAX_PADS 7
+#endif
+
 #define DEADZONE_LOW 55
 #define DEADZONE_HIGH 210
 

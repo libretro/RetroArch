@@ -17,6 +17,8 @@
 #ifndef _ANDROID_INPUT_AUTODETECT_H
 #define _ANDROID_INPUT_AUTODETECT_H
 
+#define MAX_PADS 8
+
 #define AKEY_EVENT_NO_ACTION 255
 
 enum {

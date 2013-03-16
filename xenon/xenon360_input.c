@@ -24,12 +24,14 @@
 #include <input/input.h>
 #include <usb/usbmain.h>
 
-static uint64_t state[MAX_PLAYERS];
+#define MAX_PADS 4
+
+static uint64_t state[MAX_PADS];
 
 static void xenon360_input_poll(void *data)
 {
    (void)data;
-   for (unsigned i = 0; i < MAX_PLAYERS; i++)
+   for (unsigned i = 0; i < MAX_PADS; i++)
    {
       struct controller_data_s pad;
       usb_do_poll();
@@ -62,7 +64,7 @@ static int16_t xenon360_input_state(void *data, const struct retro_keybind **bin
    uint64_t button = binds[player][id].joykey;
    int16_t retval = 0;
 
-   if(player < MAX_PLAYERS)
+   if(player < MAX_PADS)
    {
       switch (device)
       {
@@ -104,7 +106,7 @@ static void* xenon360_input_init(void)
       xenon360_input_set_keybinds(driver.input_data, 0, i,
             (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
 
-   for(unsigned i = 0; i < MAX_PLAYERS; i++)
+   for(unsigned i = 0; i < MAX_PADS; i++)
    {
       unsigned keybind_action = 0;
 
