@@ -551,6 +551,7 @@ static const struct str_to_bind_map str_to_bind[] = {
    { "overlay_next",          RARCH_OVERLAY_NEXT },
    { "disk_eject_toggle",     RARCH_DISK_EJECT_TOGGLE },
    { "disk_next",             RARCH_DISK_NEXT },
+   { "menu_toggle",           RARCH_MENU_TOGGLE },
 };
 
 unsigned input_str_to_bind(const char *str)
