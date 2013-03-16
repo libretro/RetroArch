@@ -839,27 +839,14 @@ static const struct bind_map bind_maps[MAX_PLAYERS][RARCH_BIND_LIST_END_NULL] = 
       DECLARE_BIND(disk_next,             RARCH_DISK_NEXT),
       DECLARE_BIND(menu_toggle,           RARCH_MENU_TOGGLE),
    },
-#if MAX_PADS > 1
+
    { DECL_PLAYER(2) },
-#endif
-#if MAX_PADS > 2
    { DECL_PLAYER(3) },
-#endif
-#if MAX_PADS > 3
    { DECL_PLAYER(4) },
-#endif
-#if MAX_PADS > 4
    { DECL_PLAYER(5) },
-#endif
-#if MAX_PADS > 5
    { DECL_PLAYER(6) },
-#endif
-#if MAX_PADS > 6
    { DECL_PLAYER(7) },
-#endif
-#if MAX_PADS > 7
    { DECL_PLAYER(8) },
-#endif
 };
 
 struct key_map
