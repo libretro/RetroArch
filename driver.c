@@ -281,39 +281,7 @@ void global_init_drivers(void)
 #ifdef RARCH_CONSOLE
    driver.video->start(); // Statically starts video driver. Sets driver.video_data.
 #endif
-   if (driver.input && driver.input->init)
-      driver.input_data = driver.input->init();
-
-   if (driver.input)
-   {
-      for(unsigned i = 0; i < MAX_PLAYERS; i++)
-      {
-         unsigned action = 0;
-
-         if (driver.input->set_keybinds)
-            action |= (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS);
-
-         switch (g_settings.input.dpad_emulation[i])
-         {
-            case ANALOG_DPAD_LSTICK:
-               action |= (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
-               break;
-            case ANALOG_DPAD_RSTICK:
-               action |= (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK);
-               break;
-            case ANALOG_DPAD_NONE:
-               action |= (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE);
-               break;
-            default:
-               break;
-         }
-
-         if (action)
-            if (driver.input->set_keybinds)
-               driver.input->set_keybinds(driver.input_data, 0, i, 0,
-                     action);
-      }
-   }
+   driver.input_data = driver.input->init();
 }
 
 void global_uninit_drivers(void)
@@ -935,6 +903,36 @@ void init_video_input(void)
          rarch_fail(1, "init_video_input()");
       }
 
+      if (driver.input != NULL)
+      {
+         for(unsigned i = 0; i < MAX_PLAYERS; i++)
+         {
+            unsigned action = 0;
+
+            if (driver.input->set_keybinds)
+               action |= (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS);
+
+            switch (g_settings.input.dpad_emulation[i])
+            {
+               case ANALOG_DPAD_LSTICK:
+                  action |= (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK);
+                  break;
+               case ANALOG_DPAD_RSTICK:
+                  action |= (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK);
+                  break;
+               case ANALOG_DPAD_NONE:
+                  action |= (1ULL << KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE);
+                  break;
+               default:
+                  break;
+            }
+
+            if (action)
+               if (driver.input->set_keybinds)
+                  driver.input->set_keybinds(driver.input_data, 0, i, 0,
+                        action);
+         }
+      }
    }
 
 #ifdef HAVE_OVERLAY
