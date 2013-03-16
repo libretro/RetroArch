@@ -1432,9 +1432,9 @@ static void deinit_cheats(void)
       cheat_manager_free(g_extern.cheat);
 }
 
-static void init_rewind(void)
+void rarch_init_rewind(void)
 {
-   if (!g_settings.rewind_enable)
+   if (!g_settings.rewind_enable || g_extern.state_manager)
       return;
 
    g_extern.state_size = pretro_serialize_size();
@@ -1469,7 +1469,7 @@ static void init_rewind(void)
       RARCH_WARN("Failed to init rewind buffer. Rewinding will be disabled.\n");
 }
 
-static void deinit_rewind(void)
+void rarch_deinit_rewind(void)
 {
    if (g_extern.state_manager)
       state_manager_free(g_extern.state_manager);
@@ -2802,7 +2802,7 @@ int rarch_main_init(int argc, char *argv[])
 #ifdef HAVE_NETPLAY
    if (!g_extern.netplay)
 #endif
-      init_rewind();
+      rarch_init_rewind();
       
    init_libretro_cbs();
    init_controllers();
@@ -2971,7 +2971,7 @@ void rarch_main_deinit(void)
 #ifdef HAVE_NETPLAY
    if (!g_extern.netplay)
 #endif
-      deinit_rewind();
+      rarch_deinit_rewind();
 
    deinit_cheats();
 

@@ -606,15 +606,19 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
    switch (setting)
    {
       case RGUI_SETTINGS_REWIND_ENABLE:
-         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+         if (action == RGUI_ACTION_OK ||
+               action == RGUI_ACTION_LEFT ||
+               action == RGUI_ACTION_RIGHT)
          {
             menu_settings_set(S_REWIND);
-
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_RESTART_RARCH, 180);
+            if (g_settings.rewind_enable)
+               rarch_init_rewind();
          }
          else if (action == RGUI_ACTION_START)
+         {
             g_settings.rewind_enable = false;
+            rarch_deinit_rewind();
+         }
          break;
       case RGUI_SETTINGS_REWIND_GRANULARITY:
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT)
