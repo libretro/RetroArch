@@ -2,6 +2,8 @@ check_switch_c C99 -std=gnu99  "Cannot find C99 compatible compiler."
 
 check_switch_c NOUNUSED -Wno-unused-result
 add_define_make NOUNUSED "$HAVE_NOUNUSED"
+check_switch_c NOUNUSED_VARIABLE -Wno-unused-variable
+add_define_make NOUNUSED_VARIABLE "$HAVE_NOUNUSED_VARIABLE"
 
 # There are still broken 64-bit Linux distros out there. :)
 [ -z "$CROSS_COMPILE" ] && [ -d /usr/lib64 ] && add_library_dirs /usr/lib64

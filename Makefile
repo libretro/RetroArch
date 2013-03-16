@@ -335,6 +335,9 @@ endif
 ifeq ($(NOUNUSED), yes)
    CFLAGS += -Wno-unused-result
 endif
+ifeq ($(NOUNUSED_VARIABLE), yes)
+   CFLAGS += -Wno-unused-variable
+endif
 
 all: $(TARGET) config.mk
 
