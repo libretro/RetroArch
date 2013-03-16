@@ -538,13 +538,27 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
 
    static const struct retro_keybind *binds[MAX_PLAYERS] = {
       g_settings.input.binds[0],
+#if MAX_PADS > 1
       g_settings.input.binds[1],
+#endif
+#if MAX_PADS > 2
       g_settings.input.binds[2],
+#endif
+#if MAX_PADS > 3
       g_settings.input.binds[3],
+#endif
+#if MAX_PADS > 4
       g_settings.input.binds[4],
+#endif
+#if MAX_PADS > 5
       g_settings.input.binds[5],
+#endif
+#if MAX_PADS > 6
       g_settings.input.binds[6],
+#endif
+#if MAX_PADS > 7
       g_settings.input.binds[7],
+#endif
    };
 
    int16_t res = 0;
@@ -2289,13 +2303,27 @@ static void check_turbo(void)
 
    static const struct retro_keybind *binds[MAX_PLAYERS] = {
       g_settings.input.binds[0],
+#if MAX_PADS > 1
       g_settings.input.binds[1],
+#endif
+#if MAX_PADS > 2
       g_settings.input.binds[2],
+#endif
+#if MAX_PADS > 3
       g_settings.input.binds[3],
+#endif
+#if MAX_PADS > 4
       g_settings.input.binds[4],
+#endif
+#if MAX_PADS > 5
       g_settings.input.binds[5],
+#endif
+#if MAX_PADS > 6
       g_settings.input.binds[6],
+#endif
+#if MAX_PADS > 7
       g_settings.input.binds[7],
+#endif
    };
 
    for (unsigned i = 0; i < MAX_PLAYERS; i++)
