@@ -19,6 +19,8 @@
 #include <string.h>
 
 #include "../../general.h"
+#include "../../gfx/gfx_common.h"
+#include "../../file.h"
 #include "menu_settings.h"
 
 void menu_settings_set(unsigned setting)

@@ -21,7 +21,14 @@
 extern "C" {
 #endif
 
-typedef struct rgui_list rgui_list_t;
+struct rgui_file;
+typedef struct rgui_list
+{
+   struct rgui_file *list;
+
+   size_t capacity;
+   size_t size;
+} rgui_list_t;
 
 void rgui_list_free(rgui_list_t *list);
 

@@ -78,6 +78,10 @@ ifneq ($(findstring Linux,$(OS)),)
    JOYCONFIG_OBJ += input/linuxraw_joypad.o
 endif
 
+ifeq ($(HAVE_RGUI), 1)
+   OBJ += frontend/menu/rgui.o frontend/menu/utils/file_list.o frontend/menu/menu_settings.o
+endif
+
 ifeq ($(HAVE_THREADS), 1)
    OBJ += autosave.o thread.o gfx/thread_wrapper.o
    ifeq ($(findstring Haiku,$(OS)),)
@@ -386,6 +390,8 @@ uninstall:
 
 clean:
 	rm -f *.o 
+	rm -f frontend/menu/*.o
+	rm -f frontend/menu/utils/*.o
 	rm -f audio/*.o
 	rm -f conf/*.o
 	rm -f gfx/*.o

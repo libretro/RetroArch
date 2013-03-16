@@ -26,6 +26,8 @@
 #include "menu_settings.h"
 #include "../../general.h"
 #include "../../gfx/gfx_common.h"
+#include "../../config.def.h"
+#include "../../file.h"
 
 #ifdef HAVE_OPENGL
 #include "../../gfx/gl_common.h"
@@ -892,7 +894,11 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
             g_settings.input.device[port]--;
          else if (action == RGUI_ACTION_RIGHT)
             g_settings.input.device[port]++;
-         g_settings.input.device[port] %= DEVICE_LAST;
+
+         // DEVICE_LAST can be 0, avoid modulo.
+         if (g_settings.input.device[port] >= DEVICE_LAST)
+            g_settings.input.device[port] -= DEVICE_LAST;
+
          if (driver.input->set_keybinds)
          {
             unsigned keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS);

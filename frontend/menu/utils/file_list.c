@@ -28,14 +28,6 @@ struct rgui_file
    size_t directory_ptr;
 };
 
-struct rgui_list
-{
-   struct rgui_file *list;
-
-   size_t capacity;
-   size_t size;
-};
-
 void rgui_list_push(void *userdata,
       const char *path, unsigned type, size_t directory_ptr)
 {
