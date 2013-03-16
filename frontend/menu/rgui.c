@@ -1356,7 +1356,12 @@ static bool directory_parse(const char *directory, void *userdata, void *ctx)
          ))
          continue;
 
-      rgui_list_push(ctx, path_basename(list->elems[i].data),
+      // Need to preserve slash first time.
+      const char *path = list->elems[i].data;
+      if (*directory)
+         path = path_basename(path);
+
+      rgui_list_push(ctx, path,
             is_dir ? RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
    }
 
