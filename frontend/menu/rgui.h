@@ -123,6 +123,10 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action);
 
 void rgui_free(rgui_handle_t *rgui);
 
+void menu_init(void);
+bool menu_iterate(void);
+void menu_free(void);
+
 #ifdef __cplusplus
 }
 #endif

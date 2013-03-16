@@ -495,7 +495,7 @@ static inline void input_poll_overlay(void)
 }
 #endif
 
-static void input_poll(void)
+void rarch_input_poll(void)
 {
    input_poll_func();
 
@@ -1615,7 +1615,7 @@ static void init_libretro_cbs_plain(void)
    pretro_set_audio_sample(audio_sample);
    pretro_set_audio_sample_batch(audio_sample_batch);
    pretro_set_input_state(input_state);
-   pretro_set_input_poll(input_poll);
+   pretro_set_input_poll(rarch_input_poll);
 }
 
 static void init_libretro_cbs(void)
@@ -2848,6 +2848,7 @@ error:
    return 1;
 }
 
+#ifdef HAVE_RGUI
 static inline bool check_enter_rgui(void)
 {
    static bool old_rmenu_toggle = true;
@@ -2868,6 +2869,7 @@ static inline bool check_enter_rgui(void)
       return false;
    }
 }
+#endif
 
 bool rarch_main_iterate(void)
 {
@@ -2891,8 +2893,10 @@ bool rarch_main_iterate(void)
       return false;
    }
 
+#ifdef HAVE_RGUI
    if (check_enter_rgui())
       return false; // Enter menu, don't exit.
+#endif
 
 #ifdef HAVE_COMMAND
    if (driver.command)
@@ -3069,7 +3073,7 @@ bool rarch_main_idle_iterate(void)
       return false;
 
    do_state_checks();
-   input_poll();
+   rarch_input_poll();
    rarch_sleep(10);
    return true;
 }

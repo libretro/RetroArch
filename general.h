@@ -646,6 +646,7 @@ void rarch_main_deinit(void);
 void rarch_render_cached_frame(void);
 void rarch_init_msg_queue(void);
 void rarch_deinit_msg_queue(void);
+void rarch_input_poll(void);
 
 void rarch_load_state(void);
 void rarch_save_state(void);

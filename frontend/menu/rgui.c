@@ -289,25 +289,27 @@ static void fill_rect(uint16_t *buf, unsigned pitch,
 }
 
 static void blit_line(rgui_handle_t *rgui,
-      unsigned x, unsigned y, const char *message, bool green)
+      int x, int y, const char *message, bool green)
 {
    while (*message)
    {
-      for (unsigned j = 0; j < FONT_HEIGHT; j++)
+      for (int j = 0; j < FONT_HEIGHT; j++)
       {
-         for (unsigned i = 0; i < FONT_WIDTH; i++)
+         for (int i = 0; i < FONT_WIDTH; i++)
          {
             uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
-            unsigned offset = (i + j * FONT_WIDTH) >> 3;
+            int offset = (i + j * FONT_WIDTH) >> 3;
             bool col = (rgui->font[FONT_OFFSET((unsigned char)*message) + offset] & rem);
 
             if (col)
+            {
                rgui->frame_buf[(y + j) * (rgui->frame_buf_pitch >> 1) + (x + i)] = green ?
 #ifdef GEKKO
                (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
 #else
                (15 << 0) | (7 << 4) | (15 << 8) | (7 << 12) : 0xFFFF;
 #endif
+            }
          }
       }
 
@@ -350,8 +352,8 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
 
    unsigned width = strlen(msg) * FONT_WIDTH_STRIDE - 1 + 6 + 10;
    unsigned height = FONT_HEIGHT + 6 + 10;
-   unsigned x = (RGUI_WIDTH - width) / 2;
-   unsigned y = (RGUI_HEIGHT - height) / 2;
+   int x = (RGUI_WIDTH - width) / 2;
+   int y = (RGUI_HEIGHT - height) / 2;
    
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          x + 5, y + 5, width - 10, height - 10, gray_filler);
@@ -1637,35 +1639,7 @@ bool menu_iterate(void)
    g_extern.frame_count++;
 
    input_state = 0;
-
-   driver.input->poll(NULL);
-
-#ifdef HAVE_OVERLAY
-   if (driver.overlay)
-   {
-      driver.overlay_state = 0;
-
-      unsigned device = input_overlay_full_screen(driver.overlay) ?
-         RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
-
-      bool polled = false;
-      for (unsigned i = 0;
-            input_input_state_func(NULL, 0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
-            i++)
-      {
-         int16_t x = input_input_state_func(NULL, 0,
-               device, i, RETRO_DEVICE_ID_POINTER_X);
-         int16_t y = input_input_state_func(NULL, 0,
-               device, i, RETRO_DEVICE_ID_POINTER_Y);
-
-         driver.overlay_state |= input_overlay_poll(driver.overlay, x, y);
-         polled = true;
-      }
-
-      if (!polled)
-         input_overlay_poll_clear(driver.overlay);
-   }
-#endif
+   rarch_input_poll();
 
 #ifndef GEKKO
    /* TODO - not sure if correct regarding RARCH_QUIT_KEY */
@@ -1676,8 +1650,9 @@ bool menu_iterate(void)
    }
 #endif
 
+   // FIXME: Broken for PC atm.
    for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
-      input_state |= driver.input->input_state(NULL, menu_nav_binds, 0,
+      input_state |= driver.input->input_state(driver.input_data, menu_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
    input_state |= driver.input->key_pressed(driver.input_data, RARCH_MENU_TOGGLE) ? (1ULL << GX_DEVICE_NAV_MENU) : 0;
