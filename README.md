@@ -35,21 +35,26 @@ RetroArch has been ported to the following platforms outside PC:
 
    - PlayStation3
    - Xbox 360 (Libxenon/XeXDK)
-   - Wii (Libogc)
+   - Xbox 1
+   - Wii, Gamecube (Libogc)
    - Raspberry Pi
+   - Android
+   - iOS
 
 # Dependencies (PC)
 
-RetroArch requires these libraries to build:
+On Windows, RetroArch can run with only Win32 as dependency. On Linux, you need:
 
-   - SDL
+   - GL headers
+   - X11 headers and libs, or EGL/KMS/GBM
+
+OSX port of RetroArch still requires SDL 1.2 libraries.
 
 RetroArch can utilize these libraries if enabled:
 
    - nvidia-cg-toolkit
    - libxml2 (GLSL XML shaders)
    - libfreetype2 (TTF font rendering on screen)
-   - libsamplerate
 
 RetroArch needs at least one of these audio driver libraries:
 
@@ -60,13 +65,15 @@ RetroArch needs at least one of these audio driver libraries:
    - OpenAL
    - JACK
    - SDL
-   - XAudio2 (Win32)
    - PulseAudio
+   - XAudio2 (Win32)
+   - DirectSound (Win32)
+   - CoreAudio (OSX, iOS)
 
 To run properly, RetroArch requires a libretro implementation present, however, as it's typically loaded
 dynamically, it's not required at build time.
 
-# Dependencies (Console ports)
+# Dependencies (Console ports, mobile)
 
 Console ports have their own dependencies, but generally do not require
 anything other than what the respective SDKs provide.
