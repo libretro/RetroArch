@@ -1563,19 +1563,18 @@ static const struct retro_keybind *menu_nav_binds[] = {
    _menu_nav_binds
 };
 
-// FIXME: Drop GX-specific naming convention.
 enum
 {
-   GX_DEVICE_NAV_UP = 0,
-   GX_DEVICE_NAV_DOWN,
-   GX_DEVICE_NAV_LEFT,
-   GX_DEVICE_NAV_RIGHT,
-   GX_DEVICE_NAV_A,
-   GX_DEVICE_NAV_B,
-   GX_DEVICE_NAV_START,
-   GX_DEVICE_NAV_SELECT,
-   GX_DEVICE_NAV_MENU,
-   GX_DEVICE_NAV_QUIT,
+   DEVICE_NAV_UP = 0,
+   DEVICE_NAV_DOWN,
+   DEVICE_NAV_LEFT,
+   DEVICE_NAV_RIGHT,
+   DEVICE_NAV_A,
+   DEVICE_NAV_B,
+   DEVICE_NAV_START,
+   DEVICE_NAV_SELECT,
+   DEVICE_NAV_MENU,
+   DEVICE_NAV_QUIT,
    RMENU_DEVICE_NAV_LAST
 };
 
@@ -1616,7 +1615,7 @@ static int menu_input_process(void *data, void *state)
 
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
-      bool return_to_game_enable = ((trigger_state & (1ULL << GX_DEVICE_NAV_MENU)) && g_extern.main_is_init);
+      bool return_to_game_enable = ((trigger_state & (1ULL << DEVICE_NAV_MENU)) && g_extern.main_is_init);
 
       if (return_to_game_enable)
       {
@@ -1638,8 +1637,8 @@ static uint64_t menu_input_state(void)
       input_state |= driver.input->input_state(driver.input_data, menu_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
-   input_state |= driver.input->key_pressed(driver.input_data, RARCH_MENU_TOGGLE) ? (1ULL << GX_DEVICE_NAV_MENU) : 0;
-   input_state |= driver.input->key_pressed(driver.input_data, RARCH_QUIT_KEY) ? (1ULL << GX_DEVICE_NAV_QUIT) : 0;
+   input_state |= driver.input->key_pressed(driver.input_data, RARCH_MENU_TOGGLE) ? (1ULL << DEVICE_NAV_MENU) : 0;
+   input_state |= driver.input->key_pressed(driver.input_data, RARCH_QUIT_KEY) ? (1ULL << DEVICE_NAV_QUIT) : 0;
 
 #ifdef HAVE_OVERLAY
    for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
@@ -1647,14 +1646,14 @@ static uint64_t menu_input_state(void)
 #endif
 #else
    static const int maps[] = {
-      RETRO_DEVICE_ID_JOYPAD_UP,     GX_DEVICE_NAV_UP,
-      RETRO_DEVICE_ID_JOYPAD_DOWN,   GX_DEVICE_NAV_DOWN,
-      RETRO_DEVICE_ID_JOYPAD_LEFT,   GX_DEVICE_NAV_LEFT,
-      RETRO_DEVICE_ID_JOYPAD_RIGHT,  GX_DEVICE_NAV_RIGHT,
-      RETRO_DEVICE_ID_JOYPAD_A,      GX_DEVICE_NAV_A,
-      RETRO_DEVICE_ID_JOYPAD_B,      GX_DEVICE_NAV_B,
-      RETRO_DEVICE_ID_JOYPAD_START,  GX_DEVICE_NAV_START,
-      RETRO_DEVICE_ID_JOYPAD_SELECT, GX_DEVICE_NAV_SELECT,
+      RETRO_DEVICE_ID_JOYPAD_UP,     DEVICE_NAV_UP,
+      RETRO_DEVICE_ID_JOYPAD_DOWN,   DEVICE_NAV_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_LEFT,   DEVICE_NAV_LEFT,
+      RETRO_DEVICE_ID_JOYPAD_RIGHT,  DEVICE_NAV_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_A,      DEVICE_NAV_A,
+      RETRO_DEVICE_ID_JOYPAD_B,      DEVICE_NAV_B,
+      RETRO_DEVICE_ID_JOYPAD_START,  DEVICE_NAV_START,
+      RETRO_DEVICE_ID_JOYPAD_SELECT, DEVICE_NAV_SELECT,
    };
 
    static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
@@ -1668,8 +1667,8 @@ static uint64_t menu_input_state(void)
 #endif
    }
 
-   input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << GX_DEVICE_NAV_MENU) : 0;
-   input_state |= input_key_pressed_func(RARCH_QUIT_KEY) ? (1ULL << GX_DEVICE_NAV_QUIT) : 0;
+   input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << DEVICE_NAV_MENU) : 0;
+   input_state |= input_key_pressed_func(RARCH_QUIT_KEY) ? (1ULL << DEVICE_NAV_QUIT) : 0;
 #endif
 
    return input_state;
@@ -1704,7 +1703,7 @@ bool menu_iterate(void)
    input_state = menu_input_state();
 
    trigger_state = input_state & ~old_input_state;
-   do_held = (input_state & ((1ULL << GX_DEVICE_NAV_UP) | (1ULL << GX_DEVICE_NAV_DOWN) | (1ULL << GX_DEVICE_NAV_LEFT) | (1ULL << GX_DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << GX_DEVICE_NAV_MENU) | (1ULL << GX_DEVICE_NAV_QUIT)));
+   do_held = (input_state & ((1ULL << DEVICE_NAV_UP) | (1ULL << DEVICE_NAV_DOWN) | (1ULL << DEVICE_NAV_LEFT) | (1ULL << DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << DEVICE_NAV_MENU) | (1ULL << DEVICE_NAV_QUIT)));
 
    if(do_held)
    {
@@ -1732,24 +1731,24 @@ bool menu_iterate(void)
    action = RGUI_ACTION_NOOP;
 
    // don't run anything first frame, only capture held inputs for old_input_state
-   if (trigger_state & (1ULL << GX_DEVICE_NAV_UP))
+   if (trigger_state & (1ULL << DEVICE_NAV_UP))
       action = RGUI_ACTION_UP;
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_DOWN))
+   else if (trigger_state & (1ULL << DEVICE_NAV_DOWN))
       action = RGUI_ACTION_DOWN;
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_LEFT))
+   else if (trigger_state & (1ULL << DEVICE_NAV_LEFT))
       action = RGUI_ACTION_LEFT;
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_RIGHT))
+   else if (trigger_state & (1ULL << DEVICE_NAV_RIGHT))
       action = RGUI_ACTION_RIGHT;
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_B))
+   else if (trigger_state & (1ULL << DEVICE_NAV_B))
       action = RGUI_ACTION_CANCEL;
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_A))
+   else if (trigger_state & (1ULL << DEVICE_NAV_A))
       action = RGUI_ACTION_OK;
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_START))
+   else if (trigger_state & (1ULL << DEVICE_NAV_START))
       action = RGUI_ACTION_START;
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_SELECT))
+   else if (trigger_state & (1ULL << DEVICE_NAV_SELECT))
       action = RGUI_ACTION_SETTINGS;
 #ifdef GEKKO
-   else if (trigger_state & (1ULL << GX_DEVICE_NAV_QUIT))
+   else if (trigger_state & (1ULL << DEVICE_NAV_QUIT))
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
       goto deinit;
