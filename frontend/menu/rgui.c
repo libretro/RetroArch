@@ -1558,6 +1558,7 @@ static const struct retro_keybind *menu_nav_binds[] = {
    _menu_nav_binds
 };
 
+// FIXME: Drop GX-specific naming convention.
 enum
 {
    GX_DEVICE_NAV_UP = 0,
@@ -1622,35 +1623,12 @@ static int menu_input_process(void *data, void *state)
    return 0;
 }
 
-bool menu_iterate(void)
+static uint64_t menu_input_state(void)
 {
-   static uint16_t old_input_state = 0;
-   static bool initial_held = true;
-   static bool first_held = false;
-   bool do_held;
-   int input_entry_ret, input_process_ret;
-   rgui_action_t action;
-   uint16_t input_state;
+   uint64_t input_state = 0;
 
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
-   if (driver.video_poke->apply_state_changes)
-      driver.video_poke->apply_state_changes(driver.video_data);
-
-   g_extern.frame_count++;
-
-   input_state = 0;
-   rarch_input_poll();
-
-#ifndef GEKKO
-   /* TODO - not sure if correct regarding RARCH_QUIT_KEY */
-   if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
-   {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-      goto deinit;
-   }
-#endif
-
-   // FIXME: Broken for PC atm.
+   // FIXME: Very ugly. Should do something more uniform.
+#if defined(RARCH_CONSOLE) || defined(ANDROID)
    for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
       input_state |= driver.input->input_state(driver.input_data, menu_nav_binds, 0,
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
@@ -1662,6 +1640,60 @@ bool menu_iterate(void)
    for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
       input_state |= driver.overlay_state & menu_nav_binds[0][i].joykey ? (1ULL << i) : 0;
 #endif
+#else
+   static const int maps[] = {
+      RETRO_DEVICE_ID_JOYPAD_UP,     GX_DEVICE_NAV_UP,
+      RETRO_DEVICE_ID_JOYPAD_DOWN,   GX_DEVICE_NAV_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_LEFT,   GX_DEVICE_NAV_LEFT,
+      RETRO_DEVICE_ID_JOYPAD_RIGHT,  GX_DEVICE_NAV_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_A,      GX_DEVICE_NAV_A,
+      RETRO_DEVICE_ID_JOYPAD_B,      GX_DEVICE_NAV_B,
+      RETRO_DEVICE_ID_JOYPAD_START,  GX_DEVICE_NAV_START,
+      RETRO_DEVICE_ID_JOYPAD_SELECT, GX_DEVICE_NAV_SELECT,
+   };
+
+   static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
+
+   for (unsigned i = 0; i < ARRAY_SIZE(maps); i += 2)
+   {
+      input_state |= input_input_state_func(binds,
+            0, RETRO_DEVICE_JOYPAD, 0, maps[i + 0]) ? (1ULL << maps[i + 1]) : 0;
+   }
+
+   input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << GX_DEVICE_NAV_MENU) : 0;
+   input_state |= input_key_pressed_func(RARCH_QUIT_KEY) ? (1ULL << GX_DEVICE_NAV_QUIT) : 0;
+#endif
+
+   return input_state;
+}
+
+bool menu_iterate(void)
+{
+   static uint64_t old_input_state = 0;
+   static bool initial_held = true;
+   static bool first_held = false;
+   bool do_held;
+   int input_entry_ret, input_process_ret;
+   rgui_action_t action;
+   uint64_t input_state = 0;
+
+   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
+   if (driver.video_poke->apply_state_changes)
+      driver.video_poke->apply_state_changes(driver.video_data);
+
+   g_extern.frame_count++;
+   rarch_input_poll();
+
+#ifndef GEKKO
+   /* TODO - not sure if correct regarding RARCH_QUIT_KEY */
+   if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
+   {
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+      goto deinit;
+   }
+#endif
+
+   input_state = menu_input_state();
 
    trigger_state = input_state & ~old_input_state;
    do_held = (input_state & ((1ULL << GX_DEVICE_NAV_UP) | (1ULL << GX_DEVICE_NAV_DOWN) | (1ULL << GX_DEVICE_NAV_LEFT) | (1ULL << GX_DEVICE_NAV_RIGHT))) && !(input_state & ((1ULL << GX_DEVICE_NAV_MENU) | (1ULL << GX_DEVICE_NAV_QUIT)));
