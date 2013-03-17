@@ -105,6 +105,7 @@ const input_driver_t input_ios = {
    ios_input_state,
    ios_bind_button_pressed,
    ios_input_free_input,
+   NULL,
    "ios_input",
 };
 
