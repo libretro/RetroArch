@@ -940,16 +940,13 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    d3dr->SetStreamSource(0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
    d3dr->Clear(0, NULL, D3DCLEAR_TARGET, 0xff000000, 1.0f, 0);
 
-   d3dr->BeginScene();
    d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
    d3dr->SetSoftDisplayFilter(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
-   d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-   d3dr->EndScene();
 #elif defined(_XBOX360)
    d3dr->SetVertexDeclaration(d3d->v_decl);
    d3dr->SetStreamSource(0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
-   d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
 #endif
+   d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
 
 #ifdef HAVE_FBO
    if (d3d->fbo_inited)
