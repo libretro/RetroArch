@@ -45,6 +45,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <unistd.h>
 #endif
 
 void string_list_free(struct string_list *list)
@@ -535,6 +536,37 @@ void fill_pathname_join(char *out_path, const char *dir, const char *path, size_
 
    rarch_assert(strlcat(out_path, path, size) < size);
 }
+
+#ifndef RARCH_CONSOLE
+void fill_pathname_application_path(char *buf, size_t size)
+{
+   if (!size)
+      return;
+
+#ifdef _WIN32
+   DWORD ret = GetModuleFileName(GetModuleHandle(NULL), buf, size - 1);
+   buf[ret] = '\0';
+#else
+
+   *buf = '\0';
+   pid_t pid = getpid(); 
+   char link_path[PATH_MAX];
+   static const char *exts[] = { "exe", "file", "path/a.out" }; // Linux, BSD and Solaris paths. Not standardized.
+   for (unsigned i = 0; i < ARRAY_SIZE(exts); i++)
+   {
+      snprintf(link_path, sizeof(link_path), "/proc/%u/%s", (unsigned)pid, exts[i]);
+      ssize_t ret = readlink(link_path, buf, size - 1);
+      if (ret >= 0)
+      {
+         buf[ret] = '\0';
+         return;
+      }
+   }
+   
+   RARCH_ERR("Cannot resolve application path! This should not happen.\n");
+#endif
+}
+#endif
 
 size_t convert_char_to_wchar(wchar_t *out_wchar, const char *in_char, size_t size)
 {

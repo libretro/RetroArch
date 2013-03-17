@@ -131,6 +131,10 @@ void fill_pathname_resolve_relative(char *out_path, const char *in_refpath, cons
 // Joins a directory and path together. Makes sure not to get two consecutive slashes between dir and path.
 void fill_pathname_join(char *out_path, const char *dir, const char *path, size_t size);
 
+#ifndef RARCH_CONSOLE
+void fill_pathname_application_path(char *buf, size_t size);
+#endif
+
 size_t convert_char_to_wchar(wchar_t *out_wchar, const char *in_char, size_t size);
 size_t convert_wchar_to_char(char *out_char, const wchar_t *in_wchar, size_t size);
 

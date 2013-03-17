@@ -15,6 +15,8 @@
  */
 
 #include "../general.h"
+#include "conf/config_file.h"
+#include "../file.h"
 
 #ifdef HAVE_RGUI
 #include "../frontend/menu/rgui.h"
@@ -33,6 +35,7 @@ int main(int argc, char *argv[])
    // Consoles use the higher level API.
    return rarch_main(argc, argv);
 #else
+
    rarch_init_msg_queue();
 
    int init_ret;

@@ -563,7 +563,7 @@ bool config_get_array(config_file_t *conf, const char *key, char *buf, size_t si
 
 bool config_get_path(config_file_t *conf, const char *key, char *buf, size_t size)
 {
-#if defined(_WIN32) || defined(RARCH_CONSOLE)
+#if defined(RARCH_CONSOLE)
    return config_get_array(conf, key, buf, size);
 #else
    struct config_entry_list *list = conf->entries;
@@ -573,6 +573,7 @@ bool config_get_path(config_file_t *conf, const char *key, char *buf, size_t siz
       if (strcmp(key, list->key) == 0)
       {
          const char *value = list->value;
+
          if (*value == '~')
          {
             const char *home = getenv("HOME");
@@ -586,6 +587,27 @@ bool config_get_path(config_file_t *conf, const char *key, char *buf, size_t siz
                size -= src_size;
                value++;
             }
+         }
+         else if ((*value == ':') &&
+#ifdef _WIN32
+               ((value[1] == '/') || (value[1] == '\\'))
+#else
+               (value[1] == '/'))
+#endif
+         {
+            char application_dir[PATH_MAX];
+            fill_pathname_application_path(application_dir, sizeof(application_dir));
+
+            RARCH_LOG("[Config]: Querying application path: %s.\n", application_dir);
+            path_basedir(application_dir);
+
+            size_t src_size = strlcpy(buf, application_dir, size);
+            if (src_size >= size)
+               return false;
+
+            buf  += src_size;
+            size -= src_size;
+            value += 2;
          }
 
          return strlcpy(buf, value, size) < size;
