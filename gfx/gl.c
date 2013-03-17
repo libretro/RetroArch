@@ -711,11 +711,11 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
 
    if (g_settings.video.scale_integer && !force_full)
    {
-      gfx_scale_integer(&gl->vp, width, height, g_settings.video.aspect_ratio, gl->keep_aspect);
+      gfx_scale_integer(&gl->vp, width, height, g_extern.system.aspect_ratio, gl->keep_aspect);
    }
    else if (gl->keep_aspect && !force_full)
    {
-      float desired_aspect = g_settings.video.aspect_ratio;
+      float desired_aspect = g_extern.system.aspect_ratio;
       float delta;
 
 #ifdef HAVE_RGUI
@@ -2293,7 +2293,7 @@ static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
    else if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CORE)
       gfx_set_core_viewport();
 
-   g_settings.video.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
+   g_extern.system.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
    g_settings.video.force_aspect = false;
    gl->keep_aspect = true;
 

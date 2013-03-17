@@ -787,14 +787,16 @@ void init_video_input(void)
    if (g_extern.filter.active)
       scale = g_extern.filter.scale;
 
-   if (g_settings.video.aspect_ratio < 0.0f)
+   g_extern.system.aspect_ratio = g_settings.video.aspect_ratio;
+
+   if (g_extern.system.aspect_ratio < 0.0f)
    {
       if (geom->aspect_ratio > 0.0f && g_settings.video.aspect_ratio_auto)
-         g_settings.video.aspect_ratio = geom->aspect_ratio;
+         g_extern.system.aspect_ratio = geom->aspect_ratio;
       else
-         g_settings.video.aspect_ratio = (float)geom->base_width / geom->base_height; // 1:1 PAR.
+         g_extern.system.aspect_ratio = (float)geom->base_width / geom->base_height; // 1:1 PAR.
 
-      RARCH_LOG("Adjusting aspect ratio to %.2f\n", g_settings.video.aspect_ratio);
+      RARCH_LOG("Adjusting aspect ratio to %.2f\n", g_extern.system.aspect_ratio);
    }
 
    unsigned width;
@@ -808,7 +810,7 @@ void init_video_input(void)
    {
       if (g_settings.video.force_aspect)
       {
-         width = roundf(geom->base_height * g_settings.video.xscale * g_settings.video.aspect_ratio);
+         width = roundf(geom->base_height * g_settings.video.xscale * g_extern.system.aspect_ratio);
          height = roundf(geom->base_height * g_settings.video.yscale);
       }
       else

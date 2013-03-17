@@ -193,7 +193,7 @@ void D3DVideo::init(const video_info_t &info)
       }
    }
 
-   calculate_rect(screen_width, screen_height, info.force_aspect, g_settings.video.aspect_ratio);
+   calculate_rect(screen_width, screen_height, info.force_aspect, g_extern.system.aspect_ratio);
 
 #ifdef HAVE_CG
    if (!init_cg())

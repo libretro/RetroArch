@@ -1326,8 +1326,8 @@ static void init_recording(void)
       params.fb_width            = next_pow2(vp.width);
       params.fb_height           = next_pow2(vp.height);
 
-      if (g_settings.video.force_aspect && (g_settings.video.aspect_ratio > 0.0f))
-         params.aspect_ratio  = g_settings.video.aspect_ratio;
+      if (g_settings.video.force_aspect && (g_extern.system.aspect_ratio > 0.0f))
+         params.aspect_ratio  = g_extern.system.aspect_ratio;
       else
          params.aspect_ratio  = (float)vp.width / vp.height;
 
@@ -1354,8 +1354,8 @@ static void init_recording(void)
          params.out_height = g_extern.record_height;
       }
 
-      if (g_settings.video.force_aspect && (g_settings.video.aspect_ratio > 0.0f))
-         params.aspect_ratio = g_settings.video.aspect_ratio;
+      if (g_settings.video.force_aspect && (g_extern.system.aspect_ratio > 0.0f))
+         params.aspect_ratio = g_extern.system.aspect_ratio;
       else
          params.aspect_ratio = (float)params.out_width / params.out_height;
 

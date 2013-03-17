@@ -1196,7 +1196,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "rewind_enable", g_settings.rewind_enable);
    config_set_int(conf, "rewind_granularity", g_settings.rewind_granularity);
    config_set_string(conf, "video_cg_shader", g_settings.video.cg_shader_path);
-   config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
+   config_set_float(conf, "video_aspect_ratio", g_extern.system.aspect_ratio);
 #ifdef HAVE_FBO
    config_set_float(conf, "video_fbo_scale_x", g_settings.video.fbo.scale_x);
    config_set_float(conf, "video_fbo_scale_y", g_settings.video.fbo.scale_y);

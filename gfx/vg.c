@@ -279,7 +279,7 @@ static void vg_calculate_quad(vg_t *vg)
    // set viewport for aspect ratio, taken from the OpenGL driver
    if (vg->mKeepAspect)
    {
-      float desired_aspect = g_settings.video.aspect_ratio;
+      float desired_aspect = g_extern.system.aspect_ratio;
 
       // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff),
       // assume they are actually equal.

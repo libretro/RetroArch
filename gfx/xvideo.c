@@ -538,7 +538,7 @@ static void calc_out_rect(bool keep_aspect, struct rarch_viewport *vp, unsigned 
 
    if (g_settings.video.scale_integer)
    {
-      gfx_scale_integer(vp, vp_width, vp_height, g_settings.video.aspect_ratio, keep_aspect);
+      gfx_scale_integer(vp, vp_width, vp_height, g_extern.system.aspect_ratio, keep_aspect);
    }
    else if (!keep_aspect)
    {
@@ -548,7 +548,7 @@ static void calc_out_rect(bool keep_aspect, struct rarch_viewport *vp, unsigned 
    }
    else
    {
-      float desired_aspect = g_settings.video.aspect_ratio;
+      float desired_aspect = g_extern.system.aspect_ratio;
       float device_aspect = (float)vp_width / vp_height;
 
       // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff),
