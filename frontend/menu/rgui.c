@@ -1015,6 +1015,9 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
 
+#ifdef HAVE_DYNAMIC
+   rgui_list_push(rgui->selection_buf, "Core", RGUI_SETTINGS_CORE, 0);
+#endif
    rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
    rgui_list_push(rgui->selection_buf, "Rewind granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
    if (g_extern.main_is_init)
@@ -1045,7 +1048,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR, 0);
    rgui_list_push(rgui->selection_buf, "State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR, 0);
 #endif
-#if defined(HAVE_LIBRETRO_MANAGEMENT) || defined(HAVE_DYNAMIC)
+#ifdef HAVE_LIBRETRO_MANAGEMENT
    rgui_list_push(rgui->selection_buf, "Core", RGUI_SETTINGS_CORE, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1, 0);
