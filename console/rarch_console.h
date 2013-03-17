@@ -17,18 +17,6 @@
 #ifndef CONSOLE_EXT_H__
 #define CONSOLE_EXT_H__
 
-enum
-{
-   SOUND_MODE_NORMAL,
-#ifdef HAVE_RSOUND
-   SOUND_MODE_RSOUND,
-#endif
-#ifdef HAVE_HEADSET
-   SOUND_MODE_HEADSET,
-#endif
-   SOUND_MODE_LAST
-};
-
 #ifdef _WIN32
 #define MAXIMUM_PATH 260
 #else

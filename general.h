@@ -144,6 +144,18 @@ enum menu_enums
    MODE_OSK_ENTRY_FAIL,
 };
 
+enum sound_mode_enums
+{
+   SOUND_MODE_NORMAL = 0,
+#ifdef HAVE_RSOUND
+   SOUND_MODE_RSOUND,
+#endif
+#ifdef HAVE_HEADSET
+   SOUND_MODE_HEADSET,
+#endif
+   SOUND_MODE_LAST
+};
+
 // All config related settings go here.
 struct settings
 {
