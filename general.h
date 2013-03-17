@@ -285,6 +285,10 @@ struct settings
    bool network_cmd_enable;
    uint16_t network_cmd_port;
    bool stdin_cmd_enable;
+
+#ifdef HAVE_RGUI
+   char rgui_browser_directory[PATH_MAX];
+#endif
 };
 
 enum rarch_game_type

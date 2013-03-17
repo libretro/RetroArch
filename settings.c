@@ -504,6 +504,13 @@ bool config_load_file(const char *path)
 #ifdef HAVE_RMENU
    if (config_get_path(conf, "menu_texture_path", tmp_str, sizeof(tmp_str)))
       strlcpy(g_extern.console.menu_texture_path, tmp_str, sizeof(g_extern.console.menu_texture_path));
+
+   int low_ram_mode = 0;
+   if (config_get_int(conf, "rmenu_low_ram_mode_enable", &low_ram_mode))
+   {
+      if (low_ram_mode == 1)
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE);
+   }
 #endif
 
    if (config_get_bool(conf, "info_msg_enable", &msg_enable))
@@ -671,6 +678,10 @@ bool config_load_file(const char *path)
       *g_settings.screenshot_directory = '\0';
    }
 
+#ifdef HAVE_RGUI
+   CONFIG_GET_PATH(rgui_browser_directory, "rgui_browser_directory");
+#endif
+
    CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
 
    int buffer_size = 0;
@@ -712,13 +723,6 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT(input.icade_profile[2], "input_autodetect_icade_profile_pad3");
    CONFIG_GET_INT(input.icade_profile[3], "input_autodetect_icade_profile_pad4");
 #endif
-
-   int low_ram_mode = 0;
-   if (config_get_int(conf, "rmenu_low_ram_mode_enable", &low_ram_mode))
-   {
-      if (low_ram_mode == 1)
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE);
-   }
 
    if (config_get_string(conf, "environment_variables",
             &g_extern.system.environment))

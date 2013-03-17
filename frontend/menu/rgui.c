@@ -1627,7 +1627,7 @@ RMENU API
 
 void menu_init(void)
 {
-   rgui = rgui_init("",
+   rgui = rgui_init(g_settings.rgui_browser_directory,
          menu_framebuf, RGUI_WIDTH * sizeof(uint16_t),
          NULL, bitmap_bin);
 
