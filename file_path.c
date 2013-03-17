@@ -349,6 +349,25 @@ void dir_list_free(struct string_list *list)
    string_list_free(list);
 }
 
+static bool path_char_is_slash(char c)
+{
+#ifdef _WIN32
+   return (c == '/') || (c == '\\');
+#else
+   return c == '/';
+#endif
+}
+
+static const char *path_default_slash(void)
+{
+#ifdef _WIN32
+   return "\\";
+#else
+   return "/";
+#endif
+}
+
+
 bool path_is_directory(const char *path)
 {
 #ifdef _WIN32
@@ -419,14 +438,7 @@ static void fill_pathname_slash(char *path, size_t size)
       rarch_assert(strlcat(path, join_str, size) < size);
    }
    else if (!last_slash)
-   {
-#ifdef _WIN32
-      const char join_str[] = "\\";
-#else
-      const char join_str[] = "/";
-#endif
-      rarch_assert(strlcat(path, join_str, size) < size);
-   }
+      rarch_assert(strlcat(path, path_default_slash(), size) < size);
 }
 
 void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replace, size_t size)
@@ -480,17 +492,13 @@ void path_basedir(char *path)
    if (last)
       last[1] = '\0';
    else
-   {
-      path[0] = '.';
-      path[1] = '/';
-      path[2] = '\0';
-   }
+      snprintf(path, 3, ".%s", path_default_slash());
 }
 
 void path_parent_dir(char *path)
 {
    size_t len = strlen(path);
-   if (len && ((path[len - 1] == '/') || (path[len - 1] == '\\')))
+   if (len && path_char_is_slash(path[len - 1]))
       path[len - 1] = '\0';
    path_basedir(path);
 }
