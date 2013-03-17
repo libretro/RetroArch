@@ -100,6 +100,48 @@ static void set_environment_defaults(void);
 #define DYNAMIC_EXT "so"
 #endif
 
+static dylib_t libretro_get_system_info_lib(const char *path, struct retro_system_info *info)
+{
+   dylib_t lib = dylib_load(path);
+   if (!lib)
+      return NULL;
+
+   void (*proc)(struct retro_system_info*) = 
+      (void (*)(struct retro_system_info*))dylib_proc(lib, "retro_get_system_info");
+
+   if (!proc)
+   {
+      dylib_close(lib);
+      return NULL;
+   }
+
+   proc(info);
+   return lib;
+}
+
+bool libretro_get_system_info(const char *path, struct retro_system_info *info)
+{
+   struct retro_system_info dummy_info = {0};
+   dylib_t lib = libretro_get_system_info_lib(path, &dummy_info);
+   if (!lib)
+      return false;
+
+   memcpy(info, &dummy_info, sizeof(*info));
+   info->library_name     = strdup(dummy_info.library_name);
+   info->library_version  = strdup(dummy_info.library_version);
+   info->valid_extensions = strdup(dummy_info.valid_extensions);
+   dylib_close(lib);
+   return true;
+}
+
+void libretro_free_system_info(struct retro_system_info *info)
+{
+   free((void*)info->library_name);
+   free((void*)info->library_version);
+   free((void*)info->valid_extensions);
+   memset(info, 0, sizeof(*info));
+}
+
 static bool find_first_libretro(char *path, size_t size,
       const char *dir, const char *rom_path)
 {
@@ -123,21 +165,11 @@ static bool find_first_libretro(char *path, size_t size,
    for (size_t i = 0; i < list->size && !ret; i++)
    {
       RARCH_LOG("Checking library: \"%s\".\n", list->elems[i].data);
-      dylib_t lib = dylib_load(list->elems[i].data);
-      if (!lib)
-         continue;
-
-      void (*proc)(struct retro_system_info*) = 
-         (void (*)(struct retro_system_info*))dylib_proc(lib, "retro_get_system_info");
-
-      if (!proc)
-      {
-         dylib_close(lib);
-         continue;
-      }
 
       struct retro_system_info info = {0};
-      proc(&info);
+      dylib_t lib = libretro_get_system_info_lib(list->elems[i].data, &info);
+      if (!lib)
+         continue;
 
       if (!info.valid_extensions)
       {
