@@ -56,6 +56,7 @@ HAVE_NETPLAY = 1
 HAVE_STDIN_CMD = 1
 HAVE_THREADS = 1
 HAVE_SINC = 1
+HAVE_RGUI = 1
 DYNAMIC = 1
 
 ifeq ($(SLIM),)
@@ -90,6 +91,11 @@ ifeq ($(PERF_TEST), 1)
 endif
 
 JLIBS =
+
+ifeq ($(HAVE_RGUI), 1)
+   DEFINES += -DHAVE_RGUI
+   OBJ += frontend/menu/rgui.o frontend/menu/utils/file_list.o frontend/menu/menu_settings.o
+endif
 
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl_gfx.o gfx/context/sdl_ctx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
@@ -227,8 +233,8 @@ else
    LDCXXFLAGS += -s
 endif
 
-CFLAGS += -Wall -Wno-unused-result -I.
-CXXFLAGS += -Wall -Wno-unused-result -I. -std=c++0x -D__STDC_CONSTANT_MACROS
+CFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I.
+CXXFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I. -std=c++0x -D__STDC_CONSTANT_MACROS
 ifeq ($(CXX_BUILD), 1)
    CFLAGS += -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS
 else
@@ -263,6 +269,8 @@ endif
 
 clean:
 	rm -f *.o 
+	rm -f frontend/menu/*.o
+	rm -f frontend/menu/utils/*.o
 	rm -f audio/*.o
 	rm -f audio/xaudio-c/*.o
 	rm -f compat/*.o
