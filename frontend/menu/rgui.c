@@ -28,6 +28,7 @@
 #include "../../gfx/gfx_common.h"
 #include "../../config.def.h"
 #include "../../file.h"
+#include "../../dynamic.h"
 
 #ifdef HAVE_OPENGL
 #include "../../gfx/gl_common.h"
@@ -151,6 +152,11 @@ struct rgui_handle
 
    const uint8_t *font;
    bool alloc_font;
+
+#ifdef HAVE_DYNAMIC
+   char libretro_dir[PATH_MAX];
+   struct retro_system_info info;
+#endif
 };
 
 static const unsigned rgui_controller_lut[] = {
@@ -251,6 +257,11 @@ void rgui_free(rgui_handle_t *rgui)
    rgui_list_free(rgui->selection_buf);
    if (rgui->alloc_font)
       free((uint8_t *) rgui->font);
+
+#ifdef HAVE_DYNAMIC
+   libretro_free_system_info(&rgui->info);
+#endif
+
    free(rgui);
 }
 
@@ -1034,7 +1045,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR, 0);
    rgui_list_push(rgui->selection_buf, "State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR, 0);
 #endif
-#ifdef HAVE_LIBRETRO_MANAGEMENT
+#if defined(HAVE_LIBRETRO_MANAGEMENT) || defined(HAVE_DYNAMIC)
    rgui_list_push(rgui->selection_buf, "Core", RGUI_SETTINGS_CORE, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1, 0);
@@ -1193,14 +1204,25 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 {
    rgui->frame_buf_pitch = RGUI_WIDTH * 2;
    unsigned type = 0;
-   const char *label = 0;
+   const char *label = NULL;
    if (action != RGUI_ACTION_REFRESH)
       rgui_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &label, &type, NULL);
-#ifdef HAVE_LIBRETRO_MANAGEMENT
+
+#if defined(HAVE_DYNAMIC)
+   if (type == RGUI_SETTINGS_CORE)
+   {
+      if (path_is_directory(g_settings.libretro))
+         strlcpy(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
+      else
+         fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
+      label = rgui->libretro_dir;
+   }
+#elif defined(HAVE_LIBRETRO_MANAGEMENT)
    if (type == RGUI_SETTINGS_CORE)
       label = default_paths.core_dir;
 #endif
-   const char *dir = 0;
+
+   const char *dir = NULL;
    unsigned menu_type = 0;
    size_t directory_ptr = 0;
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
@@ -1297,7 +1319,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    return 0;
 }
 
-static bool directory_parse(const char *directory, void *userdata, void *ctx)
+static bool directory_parse(rgui_handle_t *rgui, const char *directory, void *userdata, void *ctx)
 {
    bool core_chooser = (userdata) ? *(unsigned*)userdata == RGUI_SETTINGS_CORE : false;
 
@@ -1337,7 +1359,14 @@ static bool directory_parse(const char *directory, void *userdata, void *ctx)
    LWP_MutexUnlock(gx_device_mutex);
 #endif
 
-   const char *exts = core_chooser ? EXT_EXECUTABLES : g_extern.system.valid_extensions;
+   const char *exts;
+   if (core_chooser)
+      exts = EXT_EXECUTABLES;
+   else if (rgui->info.valid_extensions)
+      exts = rgui->info.valid_extensions;
+   else
+      exts = g_extern.system.valid_extensions;
+
    char dir[PATH_MAX];
    if (*directory)
       strlcpy(dir, directory, sizeof(dir));
@@ -1455,17 +1484,24 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          {
             if (menu_type == RGUI_SETTINGS_CORE)
             {
-               strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
                rgui->selection_ptr = directory_ptr;
                rgui->need_refresh = true;
                rgui_list_pop(rgui->menu_stack);
 
 #if defined(HAVE_DYNAMIC)
+               fill_pathname_join(g_settings.libretro, rgui->libretro_dir, path, sizeof(g_settings.libretro));
+               libretro_free_system_info(&rgui->info);
+               libretro_get_system_info(g_settings.libretro, &rgui->info);
+               // Core selection on non-console just updates directory listing.
+               // Will take affect on new ROM load.
 #elif defined(GEKKO)
-               fill_pathname_join(g_extern.fullpath, default_paths.core_dir, SALAMANDER_FILE, sizeof(g_extern.fullpath));
+               strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro)); // Is this supposed to be here?
+               fill_pathname_join(g_extern.fullpath, default_paths.core_dir,
+                     SALAMANDER_FILE, sizeof(g_extern.fullpath));
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
                g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
                g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+               ret = -1;
 #endif
             }
             else
@@ -1476,9 +1512,8 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
                menu_settings_msg(S_MSG_LOADING_ROM, 1);
                rgui->need_refresh = true; // in case of zip extract
                rgui->msg_force = true;
+               ret = -1;
             }
-
-            ret = -1;
          }
          break;
       }
@@ -1519,7 +1554,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
       rgui->need_refresh = false;
       rgui_list_clear(rgui->selection_buf);
 
-      directory_parse(dir, &menu_type, rgui->selection_buf);
+      directory_parse(rgui, dir, &menu_type, rgui->selection_buf);
    }
 
    render_text(rgui);
