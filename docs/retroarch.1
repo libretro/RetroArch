@@ -199,8 +199,8 @@ For spectating mode to work, both host and clients will need to use this flag.
 .TP
 \fB--command CMD\fR
 Sends a command over UDP to an already running RetroArch application, and exit.
-The command is formatted as "COMMAND:HOST:PORT".
-HOST and PORT are both optional. "COMMAND:HOST" will set PORT to
+The command is formatted as "COMMAND;HOST;PORT".
+HOST and PORT are both optional. "COMMAND;HOST" will set PORT to
 "network_cmd_port" default setting.
 If only "COMMAND" is used, HOST and PORT will be assumed to be "localhost" and "network_cmd_port" respectively.
 

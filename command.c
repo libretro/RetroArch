@@ -201,6 +201,10 @@ static const struct cmd_map map[] = {
    { "SLOWMOTION",             RARCH_SLOWMOTION },
    { "VOLUME_UP",              RARCH_VOLUME_UP },
    { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
+   { "OVERLAY_NEXT",           RARCH_OVERLAY_NEXT },
+   { "DISK_EJECT_TOGGLE",      RARCH_DISK_EJECT_TOGGLE },
+   { "DISK_NEXT",              RARCH_DISK_NEXT },
+   { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
 };
 
 static bool cmd_set_shader(const char *arg)
@@ -224,7 +228,7 @@ static bool cmd_set_shader(const char *arg)
 
    msg_queue_clear(g_extern.msg_queue);
 
-   char msg[512];
+   char msg[PATH_MAX];
    snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
    msg_queue_push(g_extern.msg_queue, msg, 1, 120);
    RARCH_LOG("Applying shader \"%s\".\n", arg);
@@ -238,7 +242,7 @@ static const struct cmd_action_map action_map[] = {
 
 static bool command_get_arg(const char *tok, const char **arg, unsigned *index)
 {
-   for (unsigned i = 0; i < sizeof(map) / sizeof(map[0]); i++)
+   for (unsigned i = 0; i < ARRAY_SIZE(map); i++)
    {
       if (strcmp(tok, map[i].str) == 0)
       {
@@ -252,7 +256,7 @@ static bool command_get_arg(const char *tok, const char **arg, unsigned *index)
       }
    }
 
-   for (unsigned i = 0; i < sizeof(action_map) / sizeof(action_map[0]); i++)
+   for (unsigned i = 0; i < ARRAY_SIZE(action_map); i++)
    {
       const char *str = strstr(tok, action_map[i].str);
       if (str == tok)
@@ -581,11 +585,11 @@ bool network_cmd_send(const char *cmd_)
    uint16_t port = DEFAULT_NETWORK_CMD_PORT;
 
    char *save;
-   cmd = strtok_r(command, ":", &save);
+   cmd = strtok_r(command, ";", &save);
    if (cmd)
-      host = strtok_r(NULL, ":", &save);
+      host = strtok_r(NULL, ";", &save);
    if (host)
-      port_ = strtok_r(NULL, ":", &save);
+      port_ = strtok_r(NULL, ";", &save);
 
    if (!host)
    {
