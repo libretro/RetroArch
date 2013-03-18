@@ -37,10 +37,9 @@
 
 #pragma once
 
-//#include "config.h"
-#define HAVE_TIME
+#include "config.h"
 
-#include "linked_list.h"
+#include <btstack/linked_list.h>
 
 #include <stdint.h>
 
@@ -76,44 +75,30 @@ typedef struct timer {
 } timer_source_t;
 
 
-// Set timer based on current time in milliseconds.
+// set timer based on current time
 void run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms);
 
-// Set callback that will be executed when timer expires.
-void run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts));
-
-// Add/Remove timer source.
+// add/remove timer_source
 void run_loop_add_timer(timer_source_t *timer); 
 int  run_loop_remove_timer(timer_source_t *timer);
 
-// Init must be called before any other run_loop call. 
-// Use RUN_LOOP_EMBEDDED for embedded devices.
+// init must be called before any other run_loop call
 void run_loop_init(RUN_LOOP_TYPE type);
 
-// Set data source callback.
-void run_loop_set_data_source_handler(data_source_t *ds, int (*process)(data_source_t *_ds));
-
-
-// Add/Remove data source.
+// add/remove data_source
 void run_loop_add_data_source(data_source_t *dataSource);
 int  run_loop_remove_data_source(data_source_t *dataSource);
 
 
-// Execute configured run loop. This function does not return.
+// execute configured run_loop
 void run_loop_execute(void);
 
 // hack to fix HCI timer handling
 #ifdef HAVE_TICK
-// Sets how many miliseconds has one tick.
-uint32_t embedded_ticks_for_ms(uint32_t time_in_ms);
-// Queries the current time in ticks.
 uint32_t embedded_get_ticks(void);
+uint32_t embedded_ticks_for_ms(uint32_t time_in_ms);
 #endif
 #ifdef EMBEDDED
-// Sets an internal flag that is checked in the critical section
-// just before entering sleep mode. Has to be called by the interupt
-// handler of a data source to signal the run loop that a new data 
-// is available.
 void     embedded_trigger(void);    
 #endif
 #if defined __cplusplus

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 by Matthias Ringwald
+ * Copyright (C) 2011 by Matthias Ringwald
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,57 +30,23 @@
  */
 
 /*
- *  btstack.h
+ *  hal_uart_dma.h
  *
- *  Created by Matthias Ringwald on 7/1/09.
+ *  Hardware abstraction layer that provides
+ *  - blockwise IRQ-driven read/write
+ *  - CSR IRQs
  *
- *  BTstack client API
- *  
  */
 
 #pragma once
 
-#include <btstack/hci_cmds.h>
-#include <btstack/run_loop.h>
-#include <btstack/utils.h>
-
 #include <stdint.h>
 
-#if defined __cplusplus
-extern "C" {
-#endif
-	
-// Default TCP port for BTstack daemon
-#define BTSTACK_PORT            13333
-
-// UNIX domain socket for BTstack */
-#define BTSTACK_UNIX            "/tmp/BTstack"
-
-// packet handler
-typedef void (*btstack_packet_handler_t) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
-// optional: if called before bt_open, TCP socket is used instead of local unix socket
-//           note: address is not copied and must be valid during bt_open
-void bt_use_tcp(const char * address, uint16_t port); 
-
-// init BTstack library
-int bt_open(void);
-
-// stop using BTstack library
-int bt_close(void);
-
-// send hci cmd packet
-int bt_send_cmd(const hci_cmd_t *cmd, ...);
-
-// register packet handler -- channel only valid for l2cap and rfcomm packets
-// @returns old packet handler
-btstack_packet_handler_t bt_register_packet_handler(btstack_packet_handler_t handler);
-
-void bt_send_acl(uint8_t * data, uint16_t len);
-
-void bt_send_l2cap(uint16_t local_cid, uint8_t *data, uint16_t len);
-void bt_send_rfcomm(uint16_t rfcom_cid, uint8_t *data, uint16_t len);
-
-#if defined __cplusplus
-}
-#endif
+void hal_uart_dma_init(void);
+void hal_uart_dma_set_block_received( void (*block_handler)(void));
+void hal_uart_dma_set_block_sent( void (*block_handler)(void));
+void hal_uart_dma_set_csr_irq_handler( void (*csr_irq_handler)(void));
+int  hal_uart_dma_set_baud(uint32_t baud);
+void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t length);
+void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len);
+void hal_uart_dma_set_sleep(uint8_t sleep);
