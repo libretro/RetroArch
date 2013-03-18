@@ -52,7 +52,7 @@ extern "C" {
 
 	#define WIIMOTE_PI			3.14159265
 
-    #define WIIMOTE_DBG			0
+    //#define WIIMOTE_DBG			0
 
 	/* Convert between radians and degrees */
 	#define RAD_TO_DEGREE(r)	((r * 180.0f) / WIIMOTE_PI)

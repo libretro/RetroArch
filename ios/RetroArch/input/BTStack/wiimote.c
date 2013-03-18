@@ -72,7 +72,9 @@ int wiimote_remove(uint16_t source_cid, bd_addr_t *addr){
           found=1;
            struct wiimote_t *wm = NULL;
            wm = &joys[i];
-           if(WIIMOTE_DBG)printf("%02x:%02x:%02x:%02x:%02x:%02x\n",wm->addr[0], wm->addr[1], wm->addr[2],wm->addr[3], wm->addr[4], wm->addr[5]);
+#ifdef WIIMOTE_DBG
+           printf("%02x:%02x:%02x:%02x:%02x:%02x\n",wm->addr[0], wm->addr[1], wm->addr[2],wm->addr[3], wm->addr[4], wm->addr[5]);
+#endif
            memcpy(addr,&(wm->addr),BD_ADDR_LEN);
            unid = wm->unid;
           continue;
@@ -96,7 +98,9 @@ int wiimote_remove(uint16_t source_cid, bd_addr_t *addr){
     if(found)
     {
       myosd_num_of_joys--;
-      if(WIIMOTE_DBG)printf("NUM JOYS %d\n",myosd_num_of_joys);
+#ifdef WIIMOTE_DBG
+      printf("NUM JOYS %d\n",myosd_num_of_joys);
+#endif
       return unid;
     }
     return unid;
@@ -117,7 +121,9 @@ struct wiimote_t* wiimote_get_by_source_cid(uint16_t source_cid){
 	int i = 0;
 
 	for (; i < myosd_num_of_joys; ++i) {
-		if(WIIMOTE_DBG)printf("0x%02x 0x%02x\n",joys[i].i_source_cid,source_cid);
+#ifdef WIIMOTE_DBG
+		printf("0x%02x 0x%02x\n",joys[i].i_source_cid,source_cid);
+#endif
 		if (joys[i].i_source_cid == source_cid)
 			return &joys[i];
 	}
@@ -132,15 +138,18 @@ struct wiimote_t* wiimote_get_by_source_cid(uint16_t source_cid){
  *
  *	Controller status includes: battery level, LED status, expansions
  */
-void wiimote_status(struct wiimote_t* wm) {
-	byte buf = 0;
+void wiimote_status(struct wiimote_t* wm)
+{
+   byte buf = 0;
 
-	if (!wm || !WIIMOTE_IS_CONNECTED(wm))
-		return;
+   if (!wm || !WIIMOTE_IS_CONNECTED(wm))
+      return;
 
-	if(WIIMOTE_DBG)printf("Requested wiimote status.\n");
+#ifdef WIIMOTE_DBG
+   printf("Requested wiimote status.\n");
+#endif
 
-	wiimote_send(wm, WM_CMD_CTRL_STATUS, &buf, 1);
+   wiimote_send(wm, WM_CMD_CTRL_STATUS, &buf, 1);
 }
 
 void wiimote_data_report(struct wiimote_t* wm, byte type) {
@@ -228,157 +237,173 @@ int wiimote_handshake(struct wiimote_t* wm,  byte event, byte* data, unsigned sh
 
 	while(1)
 	{
-		if(WIIMOTE_DBG)printf("Handshake %d\n",wm->handshake_state);
-		switch (wm->handshake_state) {
-		   case 0://no ha habido nunca handshake, debemos forzar un mensaje de staus para ver que pasa.
-		   {
-				WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE);
-				wiimote_set_leds(wm, WIIMOTE_LED_NONE);
+#ifdef WIIMOTE_DBG
+		printf("Handshake %d\n",wm->handshake_state);
+#endif
+		switch (wm->handshake_state)
+      {
+         case 0://no ha habido nunca handshake, debemos forzar un mensaje de staus para ver que pasa.
+            {
+               WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE);
+               wiimote_set_leds(wm, WIIMOTE_LED_NONE);
 
-				/* request the status of the wiimote to see if there is an expansion */
-				wiimote_status(wm);
+               /* request the status of the wiimote to see if there is an expansion */
+               wiimote_status(wm);
 
-				wm->handshake_state=1;
-				return 0;
-			}
-			case 1://estamos haciendo handshake o bien se necesita iniciar un nuevo handshake ya que se inserta(quita una expansion.
-			{
-				 int attachment = 0;
+               wm->handshake_state=1;
+               return 0;
+            }
+         case 1://estamos haciendo handshake o bien se necesita iniciar un nuevo handshake ya que se inserta(quita una expansion.
+            {
+               int attachment = 0;
 
-				 if(event != WM_RPT_CTRL_STATUS)
-				   return 0;
+               if(event != WM_RPT_CTRL_STATUS)
+                  return 0;
 
-				/* is an attachment connected to the expansion port? */
-				 if ((data[2] & WM_CTRL_STATUS_BYTE1_ATTACHMENT) == WM_CTRL_STATUS_BYTE1_ATTACHMENT)
-				 {
-					attachment = 1;
-				 }
+               /* is an attachment connected to the expansion port? */
+               if ((data[2] & WM_CTRL_STATUS_BYTE1_ATTACHMENT) == WM_CTRL_STATUS_BYTE1_ATTACHMENT)
+                  attachment = 1;
 
-				 if(WIIMOTE_DBG)printf("attachment %d %d\n",attachment,WIIMOTE_IS_SET(wm, WIIMOTE_STATE_EXP));
+#ifdef WIIMOTE_DBG
+               printf("attachment %d %d\n",attachment,WIIMOTE_IS_SET(wm, WIIMOTE_STATE_EXP));
+#endif
 
-				/* expansion port */
-				if (attachment && !WIIMOTE_IS_SET(wm, WIIMOTE_STATE_EXP)) {
-					WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_EXP);
+               /* expansion port */
+               if (attachment && !WIIMOTE_IS_SET(wm, WIIMOTE_STATE_EXP))
+               {
+                  WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_EXP);
 
-				    /* send the initialization code for the attachment */
-					if(WIIMOTE_DBG)printf("haciendo el handshake de la expansion\n");
+                  /* send the initialization code for the attachment */
+#ifdef WIIMOTE_DBG
+                  printf("haciendo el handshake de la expansion\n");
+#endif
 
-					if(WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE_COMPLETE))
-					{
-						if(WIIMOTE_DBG)printf("rehandshake\n");
-						WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE_COMPLETE);
-						WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE);//forzamos un handshake por si venimos de un hanshake completo
-					}
+                  if(WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE_COMPLETE))
+                  {
+#ifdef WIIMOTE_DBG
+                     printf("rehandshake\n");
+#endif
+                     WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE_COMPLETE);
+                     WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE);//forzamos un handshake por si venimos de un hanshake completo
+                  }
 
-					byte buf;
-					//Old way. initialize the extension was by writing the single encryption byte 0x00 to 0x(4)A40040
-					//buf = 0x00;
-					//wiimote_write_data(wm, WM_EXP_MEM_ENABLE, &buf, 1);
+                  byte buf;
+                  //Old way. initialize the extension was by writing the single encryption byte 0x00 to 0x(4)A40040
+                  //buf = 0x00;
+                  //wiimote_write_data(wm, WM_EXP_MEM_ENABLE, &buf, 1);
 
-					//NEW WAY 0x55 to 0x(4)A400F0, then writing 0x00 to 0x(4)A400FB. (support clones)
-					buf = 0x55;
-					wiimote_write_data(wm, 0x04A400F0, &buf, 1);
-					usleep(100000);
-					buf = 0x00;
-					wiimote_write_data(wm, 0x04A400FB, &buf, 1);
+                  //NEW WAY 0x55 to 0x(4)A400F0, then writing 0x00 to 0x(4)A400FB. (support clones)
+                  buf = 0x55;
+                  wiimote_write_data(wm, 0x04A400F0, &buf, 1);
+                  usleep(100000);
+                  buf = 0x00;
+                  wiimote_write_data(wm, 0x04A400FB, &buf, 1);
 
-					//check extension type!
-					usleep(100000);
-					wiimote_read_data(wm, WM_EXP_MEM_CALIBR+220, 4);
-					//wiimote_read_data(wm, WM_EXP_MEM_CALIBR, EXP_HANDSHAKE_LEN);
+                  //check extension type!
+                  usleep(100000);
+                  wiimote_read_data(wm, WM_EXP_MEM_CALIBR+220, 4);
+                  //wiimote_read_data(wm, WM_EXP_MEM_CALIBR, EXP_HANDSHAKE_LEN);
 
-					wm->handshake_state = 4;
-					return 0;
+                  wm->handshake_state = 4;
+                  return 0;
 
-			    } else if (!attachment && WIIMOTE_IS_SET(wm, WIIMOTE_STATE_EXP)) {
-				    /* attachment removed */
-					WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_EXP);
-				    wm->exp.type = EXP_NONE;
+               } else if (!attachment && WIIMOTE_IS_SET(wm, WIIMOTE_STATE_EXP)) {
+                  /* attachment removed */
+                  WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_EXP);
+                  wm->exp.type = EXP_NONE;
 
-					if(WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE_COMPLETE))
-					{
-						if(WIIMOTE_DBG)printf("rehandshake\n");
-						WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE_COMPLETE);
-						WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE);//forzamos un handshake por si venimos de un hanshake completo
-					}
-				}
+                  if(WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE_COMPLETE))
+                  {
+#ifdef WIIMOTE_DBG
+                     printf("rehandshake\n");
+#endif
+                     WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE_COMPLETE);
+                     WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE);//forzamos un handshake por si venimos de un hanshake completo
+                  }
+               }
 
-				if(!attachment &&  WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE))
-				{
-					wm->handshake_state = 2;
-					continue;
-				}
+               if(!attachment &&  WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE))
+               {
+                  wm->handshake_state = 2;
+                  continue;
+               }
 
-				return 0;
-			}
-			case 2://find handshake no expansion
-			{
-				if(WIIMOTE_DBG)printf("Finalizado HANDSHAKE SIN EXPANSION\n");
-				wiimote_data_report(wm,WM_RPT_BTN);
-				wm->handshake_state = 6;
-				continue;
-			}
-			case 3://find handshake expansion
-			{
-				if(WIIMOTE_DBG)printf("Finalizado HANDSHAKE CON EXPANSION\n");
-				wiimote_data_report(wm,WM_RPT_BTN_EXP);
-				wm->handshake_state = 6;
-				continue;
-			}
-			case 4:
-			{
-				if(event !=  WM_RPT_READ)
-				   return 0;
+               return 0;
+            }
+         case 2://find handshake no expansion
+            {
+#ifdef WIIMOTE_DBG
+               printf("Finalizado HANDSHAKE SIN EXPANSION\n");
+#endif
+               wiimote_data_report(wm,WM_RPT_BTN);
+               wm->handshake_state = 6;
+               continue;
+            }
+         case 3://find handshake expansion
+            {
+#ifdef WIIMOTE_DBG
+               printf("Finalizado HANDSHAKE CON EXPANSION\n");
+#endif
+               wiimote_data_report(wm,WM_RPT_BTN_EXP);
+               wm->handshake_state = 6;
+               continue;
+            }
+         case 4:
+            {
+               if(event !=  WM_RPT_READ)
+                  return 0;
 
-				int id = BIG_ENDIAN_LONG(*(int*)(data));
+               int id = BIG_ENDIAN_LONG(*(int*)(data));
 
-				if(WIIMOTE_DBG)printf("Expansion id=0x%04x\n",id);
+#ifdef WIIMOTE_DBG
+               printf("Expansion id=0x%04x\n",id);
+#endif
 
-				if(id!=/*EXP_ID_CODE_CLASSIC_CONTROLLER*/0xa4200101)
-				{
-					wm->handshake_state = 2;
-					//WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_EXP);
-					continue;
-				}
-				else
-				{
-					usleep(100000);
-					wiimote_read_data(wm, WM_EXP_MEM_CALIBR, 16);//pedimos datos de calibracion del JOY!
-					wm->handshake_state = 5;
-				}
+               if(id!=/*EXP_ID_CODE_CLASSIC_CONTROLLER*/0xa4200101)
+               {
+                  wm->handshake_state = 2;
+                  //WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_EXP);
+                  continue;
+               }
+               else
+               {
+                  usleep(100000);
+                  wiimote_read_data(wm, WM_EXP_MEM_CALIBR, 16);//pedimos datos de calibracion del JOY!
+                  wm->handshake_state = 5;
+               }
 
-				return 0;
-			}
-			case 5:
-			{
-				if(event !=  WM_RPT_READ)
-				   return 0;
+               return 0;
+            }
+         case 5:
+            {
+               if(event !=  WM_RPT_READ)
+                  return 0;
 
-				classic_ctrl_handshake(wm, &wm->exp.classic, data,len);
-				wm->handshake_state = 3;
-				continue;
+               classic_ctrl_handshake(wm, &wm->exp.classic, data,len);
+               wm->handshake_state = 3;
+               continue;
 
-			}
-			case 6:
-			{
-				WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE);
-				WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE_COMPLETE);
-				wm->handshake_state = 1;
-				if(wm->unid==0)
-				  wiimote_set_leds(wm, WIIMOTE_LED_1);
-				else if(wm->unid==1)
-				  wiimote_set_leds(wm, WIIMOTE_LED_2);
-				else if(wm->unid==2)
-				  wiimote_set_leds(wm, WIIMOTE_LED_3);
-				else if(wm->unid==3)
-				  wiimote_set_leds(wm, WIIMOTE_LED_4);
-				return 1;
-			}
-			default:
-			{
-				break;
-			}
-	    }
+            }
+         case 6:
+            {
+               WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE);
+               WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE_COMPLETE);
+               wm->handshake_state = 1;
+               if(wm->unid==0)
+                  wiimote_set_leds(wm, WIIMOTE_LED_1);
+               else if(wm->unid==1)
+                  wiimote_set_leds(wm, WIIMOTE_LED_2);
+               else if(wm->unid==2)
+                  wiimote_set_leds(wm, WIIMOTE_LED_3);
+               else if(wm->unid==3)
+                  wiimote_set_leds(wm, WIIMOTE_LED_4);
+               return 1;
+            }
+         default:
+            {
+               break;
+            }
+      }
 	}
 }
 
@@ -393,25 +418,25 @@ int wiimote_handshake(struct wiimote_t* wm,  byte event, byte* data, unsigned sh
  *
  *	This function should replace any write()s directly to the wiimote device.
  */
-int wiimote_send(struct wiimote_t* wm, byte report_type, byte* msg, int len) {
-	byte buf[32];
+int wiimote_send(struct wiimote_t* wm, byte report_type, byte* msg, int len)
+{
+   byte buf[32];
 
-    buf[0] = WM_SET_REPORT | WM_BT_OUTPUT;
-	buf[1] = report_type;
+   buf[0] = WM_SET_REPORT | WM_BT_OUTPUT;
+   buf[1] = report_type;
 
-	memcpy(buf+2, msg, len);
+   memcpy(buf+2, msg, len);
 
-	if(WIIMOTE_DBG)
-	{
-		int x = 2;
-		printf("[DEBUG] (id %i) SEND: (%x) %.2x ", wm->unid, buf[0], buf[1]);
-		for (; x < len+2; ++x)
-			printf("%.2x ", buf[x]);
-		printf("\n");
-	}
+#ifdef WIIMOTE_DBG
+   int x = 2;
+   printf("[DEBUG] (id %i) SEND: (%x) %.2x ", wm->unid, buf[0], buf[1]);
+   for (; x < len+2; ++x)
+      printf("%.2x ", buf[x]);
+   printf("\n");
+#endif
 
-	bt_send_l2cap( wm->c_source_cid, buf, len+2);
-	return 1;
+   bt_send_l2cap( wm->c_source_cid, buf, len+2);
+   return 1;
 }
 
 /**
@@ -444,7 +469,9 @@ int wiimote_read_data(struct wiimote_t* wm, unsigned int addr, unsigned short le
 	/* the length is in big endian */
 	*(short*)(buf + 4) = BIG_ENDIAN_SHORT(len);
 
-	if(WIIMOTE_DBG)printf("Request read at address: 0x%x  length: %i", addr, len);
+#ifdef WIIMOTE_DBG
+	printf("Request read at address: 0x%x  length: %i", addr, len);
+#endif
 	wiimote_send(wm, WM_CMD_READ_DATA, buf, 6);
 
 	return 1;
@@ -466,16 +493,15 @@ int wiimote_write_data(struct wiimote_t* wm, unsigned int addr, byte* data, byte
 	if (!data || !len)
 		return 0;
 
-	if(WIIMOTE_DBG)printf("Writing %i bytes to memory location 0x%x...\n", len, addr);
+#ifdef WIIMOTE_DBG
+	printf("Writing %i bytes to memory location 0x%x...\n", len, addr);
 
-	if(WIIMOTE_DBG)
-	{
-		int i = 0;
-		printf("Write data is: ");
-		for (; i < len; ++i)
-			printf("%x ", data[i]);
-		printf("\n");
-	}
+   int i = 0;
+   printf("Write data is: ");
+   for (; i < len; ++i)
+      printf("%x ", data[i]);
+   printf("\n");
+#endif
 
 	/* the offset is in big endian */
 	*(int*)(buf) = BIG_ENDIAN_LONG(addr);
@@ -505,7 +531,8 @@ void calc_joystick_state(struct joystick_t* js, float x, float y);
  *
  *	@return	Returns 1 if handshake was successful, 0 if not.
  */
-int classic_ctrl_handshake(struct wiimote_t* wm, struct classic_ctrl_t* cc, byte* data, unsigned short len) {
+int classic_ctrl_handshake(struct wiimote_t* wm, struct classic_ctrl_t* cc, byte* data, unsigned short len)
+{
 	int offset = 0;
 
 	cc->btns = 0;
@@ -517,15 +544,14 @@ int classic_ctrl_handshake(struct wiimote_t* wm, struct classic_ctrl_t* cc, byte
 	for (i = 0; i < len; ++i)
 		data[i] = (data[i] ^ 0x17) + 0x17;
 	*/
-
-	if(WIIMOTE_DBG)
-	{
-		int x = 0;
-		printf("[DECRIPTED]");
-		for (; x < len; x++)
-			printf("%.2x ", data[x]);
-		printf("\n");
-	}
+ 
+#ifdef WIIMOTE_DBG
+   int x = 0;
+   printf("[DECRIPTED]");
+   for (; x < len; x++)
+      printf("%.2x ", data[x]);
+   printf("\n");
+#endif
 
 /*
 	if (data[offset] == 0xFF)
@@ -608,8 +634,9 @@ void classic_ctrl_event(struct classic_ctrl_t* cc, byte* msg) {
 	rx = ((msg[0] & 0xC0) >> 3) | ((msg[1] & 0xC0) >> 5) | ((msg[2] & 0x80) >> 7);
 	ry = (msg[2] & 0x1F);
 
-	if(WIIMOTE_DBG)
-		printf("lx ly rx ry %d %d %d %d\n",lx,ly,rx,ry);
+#ifdef WIIMOTE_DBG
+   printf("lx ly rx ry %d %d %d %d\n",lx,ly,rx,ry);
+#endif
 
 	calc_joystick_state(&cc->ljs, lx, ly);
 	calc_joystick_state(&cc->rjs, rx, ry);
