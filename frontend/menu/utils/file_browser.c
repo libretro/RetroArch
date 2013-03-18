@@ -103,12 +103,6 @@ static bool filebrowser_pop_directory (void *data)
    return ret;
 }
 
-const char *filebrowser_get_current_dir (void *data)
-{
-   filebrowser_t *filebrowser = (filebrowser_t*)data;
-   return filebrowser->directory_path;
-}
-
 const char *filebrowser_get_current_path (void *data)
 {
    filebrowser_t *filebrowser = (filebrowser_t*)data;

@@ -280,7 +280,7 @@ static void filebrowser_fetch_directory_entries(filebrowser_t * browser, uint64_
    CXuiTextElement *rompath_title = &m_list_path;
    browser_update(browser, action, browser->extensions); 
 
-   convert_char_to_wchar(strw_buffer, filebrowser_get_current_dir(browser), sizeof(strw_buffer));
+   convert_char_to_wchar(strw_buffer, browser->directory_path, sizeof(strw_buffer));
    rompath_title->SetText(strw_buffer);
 
    romlist->DeleteItems(0, romlist->GetItemCount());
@@ -356,13 +356,13 @@ HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       convert_wchar_to_char(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
       if(path_file_exists(browser->current_dir.list->elems[index].data))
       {
-         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), str_buffer);
+         snprintf(path, sizeof(path), "%s\\%s", browser->directory_path, str_buffer);
          strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
          g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
       }
       else if(browser->current_dir.list->elems[index].attr.b)
       {
-         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(browser), str_buffer);
+         snprintf(path, sizeof(path), "%s\\%s", browser->directory_path, str_buffer);
          uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
          filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, path);
          filebrowser_fetch_directory_entries(browser, action);
@@ -1276,7 +1276,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
 
          if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_FIRST_SHADER))
          {
-               snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
+               snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", tmp_browser->directory_path, str_buffer);
                if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.cg_shader_path, RARCH_SHADER_INDEX_PASS0);
@@ -1291,7 +1291,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
 
          if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_SECOND_SHADER))
          {
-               snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
+               snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", tmp_browser->directory_path, str_buffer);
                if (g_settings.video.shader_type != RARCH_SHADER_NONE)
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.second_pass_shader, RARCH_SHADER_INDEX_PASS1);
@@ -1306,7 +1306,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
       else if(tmp_browser->current_dir.list->elems[index].attr.b)
       {
          convert_wchar_to_char(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
-         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
+         snprintf(path, sizeof(path), "%s\\%s", tmp_browser->directory_path, str_buffer);
          filebrowser_set_root_and_ext(tmp_browser, "cg|CG", path);
          uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
          filebrowser_fetch_directory_entries(tmp_browser, action);
@@ -1343,14 +1343,14 @@ HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandle
       convert_wchar_to_char(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
       if(path_file_exists(tmp_browser->current_dir.list->elems[index].data))
       {
-         snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
+         snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s\\%s", tmp_browser->directory_path, str_buffer);
          g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
          g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
          process_input_ret = -1;
       }
       else if(tmp_browser->current_dir.list->elems[index].attr.b)
       {
-         snprintf(path, sizeof(path), "%s\\%s", filebrowser_get_current_dir(tmp_browser), str_buffer);
+         snprintf(path, sizeof(path), "%s\\%s", tmp_browser->directory_path, str_buffer);
          filebrowser_set_root_and_ext(tmp_browser, "xex|XEX", path);
          uint64_t action = (1ULL << RMENU_DEVICE_NAV_B);
          filebrowser_fetch_directory_entries(tmp_browser, action);

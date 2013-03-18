@@ -46,7 +46,6 @@ typedef enum
    FILEBROWSER_ACTION_NOOP
 } filebrowser_action_t;
 
-const char * filebrowser_get_current_dir (void *data);
 const char * filebrowser_get_current_path (void *data);
 void filebrowser_set_root_and_ext(void *data, const char *ext, const char *root_dir);
 void filebrowser_free(void *data);

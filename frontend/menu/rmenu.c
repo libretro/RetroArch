@@ -741,7 +741,7 @@ static void display_menubar(void *data)
       case PATH_SYSTEM_DIR_CHOICE:
          fb = tmpBrowser;
       case FILE_BROWSER_MENU:
-         snprintf(msg, sizeof(msg), "PATH: %s", filebrowser_get_current_dir(fb));
+         snprintf(msg, sizeof(msg), "PATH: %s", fb->directory_path);
 
          if (driver.video_poke->set_osd_msg)
             driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
