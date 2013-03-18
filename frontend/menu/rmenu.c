@@ -267,66 +267,66 @@ static void populate_setting_item(void *data, unsigned input)
          {
             unsigned width = gfx_ctx_get_resolution_width(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
             unsigned height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
-            snprintf(current_item->text, sizeof(current_item->text), "Resolution");
+            strlcpy(current_item->text, "Resolution", sizeof(current_item->text));
+            strlcpy(current_item->comment, "INFO - Change the display resolution.", sizeof(current_item->comment));
             snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%dx%d", width, height);
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Change the display resolution.");
          }
          break;
       case SETTING_PAL60_MODE:
-         snprintf(current_item->text, sizeof(current_item->text), "PAL60 Mode");
+         strlcpy(current_item->text, "PAL60 Mode", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE)) ? "INFO - [PAL60 Mode] is set to 'ON'.\nconverts frames from 60Hz to 50Hz." : "INFO - [PAL60 Mode is set to 'OFF'.\nframes are not converted.");
          break;
 #endif
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_SHADER_PRESETS:
-         snprintf(current_item->text, sizeof(current_item->text), "Shader Presets (CGP)");
+         strlcpy(current_item->text, "Shader Presets (CGP)", sizeof(current_item->text));
          fill_pathname_base(fname, g_extern.file_state.cgp_path, sizeof(fname));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), fname);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a [CG Preset] script.");
+         strlcpy(current_item->comment, "INFO - Select a [CG Preset] script.", sizeof(current_item->comment));
+         strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
          break;
       case SETTING_SHADER:
          fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
-         snprintf(current_item->text, sizeof(current_item->text), "Shader #1");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", fname);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a shader as [Shader #1]. NOTE: Some shaders might be\ntoo slow at 1080p. If you experience any slowdown, try another shader.");
+         strlcpy(current_item->text, "Shader #1", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Select a shader as [Shader #1].", sizeof(current_item->comment));
          break;
       case SETTING_SHADER_2:
          fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
-         snprintf(current_item->text, sizeof(current_item->text), "Shader #2");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", fname);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a shader as [Shader #2]. NOTE: Some shaders might be\ntoo slow at 1080p. If you experience any slowdown, try another shader.");
+         strlcpy(current_item->text, "Shader #2", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Select a shader as [Shader #2].", sizeof(current_item->comment));
          break;
 #endif
       case SETTING_EMU_SKIN:
          fill_pathname_base(fname, g_extern.console.menu_texture_path, sizeof(fname));
-         snprintf(current_item->text, sizeof(current_item->text), "Menu Skin");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", fname);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a skin for the menu.");
+         strlcpy(current_item->text, "Menu Skin", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Select a skin for the menu.", sizeof(current_item->comment));
          break;
       case SETTING_EMU_LOW_RAM_MODE_ENABLE:
-         snprintf(current_item->text, sizeof(current_item->text), "Low RAM Mode");
+         strlcpy(current_item->text, "Low RAM Mode", sizeof(current_item->text));
          if (g_extern.lifecycle_mode_state & (1ULL <<MODE_MENU_LOW_RAM_MODE_ENABLE) ||
                g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING))
          {
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "ON");
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Will load skin at startup.");
+            strlcpy(current_item->setting_text, "ON", sizeof(current_item->setting_text));
+            strlcpy(current_item->comment, "INFO - Will load skin at startup.", sizeof(current_item->comment));
          }
          else
          {
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "OFF");
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Will not load skin at startup to save up on RAM.");
+            strlcpy(current_item->setting_text, "OFF", sizeof(current_item->setting_text));
+            strlcpy(current_item->comment, "INFO - Will not load skin at startup to save up on RAM.", sizeof(current_item->comment));
          }
          break;
       case SETTING_FONT_SIZE:
-         snprintf(current_item->text, sizeof(current_item->text), "Font Size");
+         strlcpy(current_item->text, "Font Size", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_settings.video.font_size);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Increase or decrease the [Font Size].");
+         strlcpy(current_item->comment, "INFO - Increase or decrease the [Font Size].", sizeof(current_item->comment));
          break;
       case SETTING_KEEP_ASPECT_RATIO:
-         snprintf(current_item->text, sizeof(current_item->text), "Aspect Ratio");
+         strlcpy(current_item->text, "Aspect Ratio", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), aspectratio_lut[g_settings.video.aspect_ratio_idx].name);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select an [Aspect Ratio].");
+         strlcpy(current_item->comment, "INFO - Select an [Aspect Ratio].", sizeof(current_item->comment));
          break;
       case SETTING_HW_TEXTURE_FILTER:
          snprintf(current_item->text, sizeof(current_item->text), "Hardware filtering #1");
@@ -338,11 +338,11 @@ static void populate_setting_item(void *data, unsigned input)
          break;
 #ifdef HAVE_FBO
       case SETTING_HW_TEXTURE_FILTER_2:
-         snprintf(current_item->text, sizeof(current_item->text), "Hardware filtering #2");
+         strlcpy(current_item->text, "Hardware filtering #2", sizeof(current_item->text));
          if(g_settings.video.second_pass_smooth)
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Bilinear");
+            strlcpy(current_item->setting_text, "Bilinear", sizeof(current_item->setting_text));
          else
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Point");
+            strlcpy(current_item->setting_text, "Point", sizeof(current_item->setting_text));
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Hardware filtering #2 is set to [%s].", current_item->setting_text);
          break;
       case SETTING_SCALE_ENABLED:
@@ -351,67 +351,67 @@ static void populate_setting_item(void *data, unsigned input)
          snprintf(current_item->comment, sizeof(current_item->comment), g_settings.video.render_to_texture ? "INFO - [Custom Scaling] is set to 'ON' - 2x shaders will look much\nbetter, and you can select a shader for [Shader #2]." : "INFO - [Custom Scaling] is set to 'OFF'.");
          break;
       case SETTING_SCALE_FACTOR:
-         snprintf(current_item->text, sizeof(current_item->text), "Custom Scaling Factor");
+         strlcpy(current_item->text, "Scaling Factor", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom Scaling Factor] is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
          break;
 #endif
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
-         snprintf(current_item->text, sizeof(current_item->text), "Flicker Filter");
+         strlcpy(current_item->text, "Flicker Filter", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.console.screen.flicker_filter_index);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Flicker Filter].");
          break;
       case SETTING_SOFT_DISPLAY_FILTER:
-         snprintf(current_item->text, sizeof(current_item->text), "Soft Display Filter");
+         strlcpy(current_item->text, "Soft Display Filter", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Soft Display Filter].");
          break;
 #endif
       case SETTING_HW_OVERSCAN_AMOUNT:
-         snprintf(current_item->text, sizeof(current_item->text), "Overscan");
+         strlcpy(current_item->text, "Overscan", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_extern.console.screen.overscan_amount);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Adjust or decrease [Overscan]. Set this to higher than 0.000\nif the screen doesn't fit on your TV/monitor.");
          break;
       case SETTING_REFRESH_RATE:
-         snprintf(current_item->text, sizeof(current_item->text), "Refresh rate");
+         strlcpy(current_item->text, "Refresh rate", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fHz", g_settings.video.refresh_rate);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Adjust or decrease [Refresh Rate].");
          break;
       case SETTING_THROTTLE_MODE:
-         snprintf(current_item->text, sizeof(current_item->text), "Throttle Mode");
+         strlcpy(current_item->text, "Throttle Mode", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? "INFO - [Throttle Mode] is 'ON' - Vsync is enabled." : "INFO - [Throttle Mode] is 'OFF' - Vsync is disabled.");
          break;
       case SETTING_TRIPLE_BUFFERING:
-         snprintf(current_item->text, sizeof(current_item->text), "Triple Buffering");
+         strlcpy(current_item->text, "Triple Buffering", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)) ? "INFO - [Triple Buffering] is set to 'ON'." : "INFO - [Triple Buffering] is set to 'OFF'.");
          break;
       case SETTING_ENABLE_SCREENSHOTS:
-         snprintf(current_item->text, sizeof(current_item->text), "Screenshot Option");
+         strlcpy(current_item->text, "Screenshot Option", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Screenshots feature is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? "ON" : "OFF");
          break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
-         snprintf(current_item->text, sizeof(current_item->text), "APPLY SHADER PRESET ON STARTUP");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Automatically load the currently selected [CG Preset] file on startup.");
+         strlcpy(current_item->text, "APPLY SHADER PRESET ON STARTUP", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Automatically load the currently selected [CG Preset] file on startup.", sizeof(current_item->comment));
          break;
 #endif
       case SETTING_DEFAULT_VIDEO_ALL:
-         snprintf(current_item->text, sizeof(current_item->text), "DEFAULTS");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [General Video Settings] back to their 'DEFAULT' values.");
+         strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Set all [General Video Settings] back to their 'DEFAULT' values.", sizeof(current_item->comment));
          break;
       case SETTING_SOUND_MODE:
-         snprintf(current_item->text, sizeof(current_item->text), "Sound Output");
+         strlcpy(current_item->text, "Sound Output", sizeof(current_item->text));
          switch(g_extern.console.sound.mode)
          {
             case SOUND_MODE_NORMAL:
                snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Sound Output] is set to 'Normal'.");
-               snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Normal");
+               strlcpy(current_item->setting_text, "Normal", sizeof(current_item->setting_text));
                break;
 #ifdef HAVE_RSOUND
             case SOUND_MODE_RSOUND:
@@ -442,53 +442,60 @@ static void populate_setting_item(void *data, unsigned input)
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [General Audio Settings] back to their 'DEFAULT' values.");
          break;
       case SETTING_RESAMPLER_TYPE:
-         snprintf(current_item->text, sizeof(current_item->text), "Sound resampler");
+         strlcpy(current_item->text, "Sound resampler", sizeof(current_item->text));
 #ifdef HAVE_SINC
          if (strstr(g_settings.audio.resampler, "sinc"))
          {
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Sinc");
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Sinc resampler] - slightly slower but better sound quality at high frequencies.");
+            strlcpy(current_item->setting_text, "Sinc", sizeof(current_item->setting_text));
+            strlcpy(current_item->comment, "INFO - [Sinc resampler] - slightly slower but better sound quality at high frequencies.", sizeof(current_item->comment));
          }
          else
 #endif
          {
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Hermite");
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Hermite resampler] - faster but less accurate at high frequencies.");
+            strlcpy(current_item->setting_text, "Hermite", sizeof(current_item->setting_text));
+            strlcpy(current_item->comment, "INFO - [Hermite resampler] - faster but less accurate at high frequencies.", sizeof(current_item->comment));
          }
          break;
       case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-         snprintf(current_item->text, sizeof(current_item->text), "Current save state slot");
+         strlcpy(current_item->text, "Current save state slot", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.state_slot);
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the currently selected savestate slot.");
          break;
          /* emu-specific */
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-         snprintf(current_item->text, sizeof(current_item->text), "Debug info messages");
+         strlcpy(current_item->text, "Debug info messages", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen debug messages.");
          break;
       case SETTING_EMU_SHOW_INFO_MSG:
-         snprintf(current_item->text, sizeof(current_item->text), "Info messages");
+         strlcpy(current_item->text, "Info messages", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen info messages in the menu.");
          break;
       case SETTING_EMU_REWIND_ENABLED:
-         snprintf(current_item->text, sizeof(current_item->text), "Rewind option");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_settings.rewind_enable ? "ON" : "OFF");
+         strlcpy(current_item->text, "Rewind option", sizeof(current_item->text));
          if(g_settings.rewind_enable)
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Rewind] feature is set to 'ON'.");
+         {
+            strlcpy(current_item->setting_text, "ON", sizeof(current_item->setting_text));
+            strlcpy(current_item->comment, "INFO - [Rewind] feature is set to 'ON'.",
+                  sizeof(current_item->comment));
+         }
          else
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Rewind] feature is set to 'OFF'.");
+         {
+            strlcpy(current_item->setting_text, "OFF", sizeof(current_item->setting_text));
+            strlcpy(current_item->comment, "INFO - [Rewind] feature is set to 'OFF'.",
+                  sizeof(current_item->comment));
+         }
          break;
       case SETTING_EMU_REWIND_GRANULARITY:
-         snprintf(current_item->text, sizeof(current_item->text), "Rewind granularity");
+         strlcpy(current_item->text, "Rewind granularity", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_settings.rewind_granularity);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the amount of frames to 'rewind'.\nIncrease this to lower CPU usage.");
+         strlcpy(current_item->comment, "INFO - Set the amount of frames to 'rewind'.\nIncrease this to lower CPU usage.", sizeof(current_item->comment));
          break;
       case SETTING_RARCH_DEFAULT_EMU:
          snprintf(current_item->text, sizeof(current_item->text), "Default libretro core");
          fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%s", fname);
+         strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a default libretro core to launch at start-up.");
          break;
       case SETTING_QUIT_RARCH:
@@ -608,24 +615,24 @@ static void populate_setting_item(void *data, unsigned input)
 
             if (driver.input->set_keybinds)
                driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-            snprintf(current_item->text, sizeof(current_item->text), g_settings.input.binds[currently_selected_controller_menu][id].desc);
+            strlcpy(current_item->text, g_settings.input.binds[currently_selected_controller_menu][id].desc, sizeof(current_item->text));
             snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [%s] is mapped to action:\n[%s].", current_item->text, key_label.desc);
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), key_label.desc);
+            strlcpy(current_item->setting_text, key_label.desc, sizeof(current_item->setting_text));
          }
          break;
       case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-         snprintf(current_item->text, sizeof(current_item->text), "SAVE CUSTOM CONTROLS");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Save the [Custom Controls] settings to file.");
+         strlcpy(current_item->text, "SAVE CUSTOM CONTROLS", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Save the [Custom Controls] settings to file.",  sizeof(current_item->comment));
          break;
       case SETTING_CONTROLS_DEFAULT_ALL:
-         snprintf(current_item->text, sizeof(current_item->text), "DEFAULTS");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
-         snprintf(current_item->comment, sizeof(current_item->comment), "IFNO - Set all [Controls] back to their 'DEFAULT' values.");
+         strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [Controls] back to their 'DEFAULT' values.");
          break;
       case SETTING_EMU_VIDEO_DEFAULT_ALL:
-         snprintf(current_item->text, sizeof(current_item->text), "DEFAULTS");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
+         strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set [all RetroArch Video settings] back to their 'DEFAULT' values.");
          break;
       case SETTING_EMU_AUDIO_DEFAULT_ALL:
@@ -639,15 +646,15 @@ static void populate_setting_item(void *data, unsigned input)
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [Path settings] back to their 'DEFAULT' values.");
          break;
       case SETTING_EMU_DEFAULT_ALL:
-         snprintf(current_item->text, sizeof(current_item->text), "DEFAULTS");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
+         strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set [all RetroArch settings] back to their 'DEFAULT' values.");
          break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_SAVE_SHADER_PRESET:
-         snprintf(current_item->text, sizeof(current_item->text), "SAVE SETTINGS AS CGP PRESET");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Save the current video settings to a [CG Preset] (CGP) file.");
+         strlcpy(current_item->text, "SAVE SETTINGS AS CGP PRESET", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Save the current video settings to a [CG Preset] (CGP) file.", sizeof(current_item->comment));
          break;
 #endif
       default:
@@ -904,7 +911,7 @@ int select_file(void *data, void *state)
          ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
       else
       {
-         snprintf(path, sizeof(path), filebrowser_get_current_path(filebrowser));
+         strlcpy(path, filebrowser_get_current_path(filebrowser), sizeof(path));
 
          switch(current_menu->enum_id)
          {
@@ -962,8 +969,7 @@ int select_file(void *data, void *state)
             case BORDER_CHOICE:
 #ifdef __CELLOS_LV2__
                texture_image_border_load(path);
-               snprintf(g_extern.console.menu_texture_path, sizeof(g_extern.console.menu_texture_path),
-                     "%s", path);
+               strlcpy(g_extern.console.menu_texture_path, path, sizeof(g_extern.console.menu_texture_path));
 #endif
                break;
             case LIBRETRO_CHOICE:
@@ -1053,7 +1059,7 @@ int select_directory(void *data, void *state)
    {
       if(is_dir)
       {
-         snprintf(path, sizeof(path), filebrowser_get_current_path(filebrowser));
+         strlcpy(path, filebrowser_get_current_path(filebrowser), sizeof(path));
 
          switch(current_menu->enum_id)
          {
@@ -1197,7 +1203,7 @@ static bool osk_callback_enter_rsound(void *data)
       char tmp_str[256];
       int num = wcstombs(tmp_str, g_extern.console.misc.oskutil_handle.text_buf, sizeof(tmp_str));
       tmp_str[num] = 0;
-      snprintf(g_settings.audio.device, sizeof(g_settings.audio.device), "%s", tmp_str);
+      strlcpy(g_settings.audio.device, tmp_str, sizeof(g_settings.audio.device));
       goto do_exit;
    }
    else if (g_extern.lifecycle_mode_state & (1ULL << MODE_OSK_ENTRY_FAIL))
@@ -1777,11 +1783,20 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             menu_settings_set(S_REWIND);
 
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_RESTART_RARCH, 180);
+            if (g_settings.rewind_enable)
+               rarch_init_rewind();
+            else
+               rarch_deinit_rewind();
          }
+
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            g_settings.rewind_enable = false;
+         {
+            if (g_settings.rewind_enable)
+            {
+               g_settings.rewind_enable = false;
+               rarch_deinit_rewind();
+            }
+         }
          break;
       case SETTING_EMU_REWIND_GRANULARITY:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
@@ -1818,10 +1833,10 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
 #ifdef HAVE_SINC
             if( strstr(g_settings.audio.resampler, "hermite"))
-               snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "sinc");
+               strlcpy(g_settings.audio.resampler, "sinc", sizeof(g_settings.audio.resampler));
             else
 #endif
-               snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+               strlcpy(g_settings.audio.resampler, "hermite", sizeof(g_settings.audio.resampler));
 
             if (g_extern.main_is_init)
             {
@@ -1837,9 +1852,9 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
 #ifdef HAVE_SINC
-            snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "sinc");
+            strlcpy(g_settings.audio.resampler, "sinc", sizeof(g_settings.audio.resampler));
 #else
-            snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+            strlcpy(g_settings.audio.resampler, "hermite", sizeof(g_settings.audio.resampler));
 #endif
 
             if (g_extern.main_is_init)
@@ -2922,7 +2937,7 @@ int ingame_menu(void *data, void *state)
       case MENU_ITEM_RESIZE_MODE:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_RESIZE);
-         snprintf(strw_buffer, sizeof(strw_buffer), "Allows you to resize the screen.");
+         strlcpy(strw_buffer, "Allows you to resize the screen.", sizeof(strw_buffer));
          break;
       case MENU_ITEM_SCREENSHOT_MODE:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
