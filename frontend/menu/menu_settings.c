@@ -232,9 +232,6 @@ void menu_settings_msg(unsigned setting, unsigned delay)
 
    switch(setting)
    {
-      case S_MSG_CACHE_PARTITION:
-         snprintf(str, sizeof(str), "INFO - All the contents of the ZIP files you have selected\nare extracted to this partition.");
-         break;
       case S_MSG_CHANGE_CONTROLS:
          snprintf(str, sizeof(str), "INFO - Press LEFT/RIGHT to change the controls, and press\n[RetroPad Start] to reset a button to default values.");
          break;
@@ -243,28 +240,28 @@ void menu_settings_msg(unsigned setting, unsigned delay)
          snprintf(str, sizeof(str), "INFO - Loading %s...", tmp);
          break;
       case S_MSG_DIR_LOADING_ERROR:
-         snprintf(str, sizeof(str), "ERROR - Failed to open selected directory.");
+         strlcpy(str, "ERROR - Failed to open directory.", sizeof(str));
          break;
       case S_MSG_ROM_LOADING_ERROR:
-         snprintf(str, sizeof(str), "ERROR - An error occurred during ROM loading.");
+         strlcpy(str, "ERROR - An error occurred during ROM loading.", sizeof(str));
          break;
       case S_MSG_NOT_IMPLEMENTED:
-         snprintf(str, sizeof(str), "TODO - Not yet implemented.");
+         strlcpy(str, "TODO - Not yet implemented.", sizeof(str));
          break;
       case S_MSG_RESIZE_SCREEN:
          snprintf(str, sizeof(str), "INFO - Resize the screen by moving around the two analog sticks.\nPress [RetroPad X] to reset to default values, and [RetroPad A] to go back.\nTo select the resized screen mode, set Aspect Ratio to: 'Custom'.");
          break;
       case S_MSG_RESTART_RARCH:
-         snprintf(str, sizeof(str), "INFO - You need to restart RetroArch.");
+         strlcpy(str, "INFO - You need to restart RetroArch.", sizeof(str));
          break;
       case S_MSG_SELECT_LIBRETRO_CORE:
-         snprintf(str, sizeof(str), "INFO - Select a Libretro core from the menu.");
+         strlcpy(str, "INFO - Select a Libretro core from the menu.", sizeof(str));
          break;
       case S_MSG_SELECT_SHADER:
-         snprintf(str, sizeof(str), "INFO - Select a shader from the menu.");
+         strlcpy(str, "INFO - Select a shader from the menu.", sizeof(str));
          break;
       case S_MSG_SHADER_LOADING_SUCCEEDED:
-         snprintf(str, sizeof(str), "INFO - Shader successfully loaded.");
+         strlcpy(str, "INFO - Shader successfully loaded.", sizeof(str));
          break;
    }
 

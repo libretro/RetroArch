@@ -912,34 +912,27 @@ int select_file(void *data, void *state)
    rmenu_default_positions_t default_pos;
    menu_set_default_pos(&default_pos);
 
-   struct platform_bind key_label_b;
-   strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
-   key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
-
-   if (driver.input->set_keybinds)
-      driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-
    switch(current_menu->enum_id)
    {
       case SHADER_CHOICE:
          strlcpy(extensions, EXT_SHADERS, sizeof(extensions));
-         snprintf(comment, sizeof(comment), "INFO - Select a shader by pressing [%s].", key_label_b.desc);
+         strlcpy(comment, "INFO - Select a shader.", sizeof(comment));
          break;
       case PRESET_CHOICE:
          strlcpy(extensions, EXT_CGP_PRESETS, sizeof(extensions));
-         snprintf(comment, sizeof(comment), "INFO - Select a shader preset by pressing [%s].", key_label_b.desc);
+         strlcpy(comment, "INFO - Select a shader preset.", sizeof(comment));
          break;
       case INPUT_PRESET_CHOICE:
          strlcpy(extensions, EXT_INPUT_PRESETS, sizeof(extensions));
-         snprintf(comment, sizeof(comment), "INFO - Select an input preset by pressing [%s].", key_label_b.desc);
+         strlcpy(comment, "INFO - Select an input preset.", sizeof(comment));
          break;
       case BORDER_CHOICE:
          strlcpy(extensions, EXT_IMAGES, sizeof(extensions));
-         snprintf(comment, sizeof(comment), "INFO - Select a border image file by pressing [%s].", key_label_b.desc);
+         strlcpy(comment, "INFO - Select a border image file.", sizeof(comment));
          break;
       case LIBRETRO_CHOICE:
          strlcpy(extensions, EXT_EXECUTABLES, sizeof(extensions));
-         snprintf(comment, sizeof(comment), "INFO - Select a Libretro core by pressing [%s].", key_label_b.desc);
+         strlcpy(comment, "INFO - Select a Libretro core.", sizeof(comment));
          break;
    }
 
@@ -2872,9 +2865,6 @@ int ingame_menu(void *data, void *state)
    unsigned menuitem_colors[MENU_ITEM_LAST];
    static unsigned menu_idx = 0;
    font_params_t font_parms = {0};
-   struct platform_bind key_label_b = {0};
-   struct platform_bind key_label_a = {0};
-   struct platform_bind key_label_start = {0};
 
    filebrowser_t *filebrowser = tmpBrowser;
    rmenu_default_positions_t default_pos;
@@ -2890,21 +2880,6 @@ int ingame_menu(void *data, void *state)
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
       g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
       return -1;
-   }
-
-
-   strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
-   key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
-   strlcpy(key_label_a.desc, "Unknown", sizeof(key_label_a.desc));
-   key_label_a.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_A;
-   strlcpy(key_label_start.desc, "Unknown", sizeof(key_label_start.desc));
-   key_label_start.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_START;
-
-   if (driver.input->set_keybinds)
-   {
-      driver.input->set_keybinds(&key_label_start, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-      driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-      driver.input->set_keybinds(&key_label_a, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
    }
 
    switch(menu_idx)
