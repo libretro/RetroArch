@@ -155,6 +155,9 @@ static const input_driver_t *input_drivers[] = {
 #ifdef IOS
    &input_ios,
 #endif
+#ifdef __BLACKBERRY_QNX__
+   &input_qnx,
+#endif
 #ifdef HAVE_NULLINPUT
    &input_null,
 #endif
