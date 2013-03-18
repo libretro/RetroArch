@@ -16,9 +16,9 @@ include $(CELL_MK_DIR)/sdk.makedef.mk
 PPU_LIB_TARGET		= librgl_ps3.a
 
 LDDIRS = -L.
-INCDIRS = -I. -Iconsole/rgl/include
+INCDIRS = -I. -Ips3/rgl/include
 
-RGL_DIR = console/rgl/src
+RGL_DIR = ps3/rgl/src
 
 PPU_SRCS		=  $(RGL_DIR)/Utils/NameSpace.cpp \
 			  $(RGL_DIR)/Utils/TexNameSpace.cpp \
