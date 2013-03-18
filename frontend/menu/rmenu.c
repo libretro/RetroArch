@@ -325,15 +325,15 @@ static void populate_setting_item(void *data, unsigned input)
          break;
       case SETTING_KEEP_ASPECT_RATIO:
          strlcpy(current_item->text, "Aspect Ratio", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), aspectratio_lut[g_settings.video.aspect_ratio_idx].name);
+         strlcpy(current_item->setting_text, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "INFO - Select an [Aspect Ratio].", sizeof(current_item->comment));
          break;
       case SETTING_HW_TEXTURE_FILTER:
-         snprintf(current_item->text, sizeof(current_item->text), "Hardware filtering #1");
+         strlcpy(current_item->text, "Hardware filtering #1", sizeof(current_item->text));
          if(g_settings.video.smooth)
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Bilinear");
+            strlcpy(current_item->setting_text, "Bilinear", sizeof(current_item->setting_text));
          else
-            snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Point");
+            strlcpy(current_item->setting_text, "Point", sizeof(current_item->setting_text));
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Hardware filtering #1 is set to [%s].", current_item->setting_text);
          break;
 #ifdef HAVE_FBO
@@ -346,7 +346,7 @@ static void populate_setting_item(void *data, unsigned input)
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Hardware filtering #2 is set to [%s].", current_item->setting_text);
          break;
       case SETTING_SCALE_ENABLED:
-         snprintf(current_item->text, sizeof(current_item->text), "Custom Scaling/Dual Shaders");
+         strlcpy(current_item->text, "Custom Scaling/Dual Shaders", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_settings.video.render_to_texture ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), g_settings.video.render_to_texture ? "INFO - [Custom Scaling] is set to 'ON' - 2x shaders will look much\nbetter, and you can select a shader for [Shader #2]." : "INFO - [Custom Scaling] is set to 'OFF'.");
          break;
@@ -360,23 +360,23 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_FLICKER_FILTER:
          strlcpy(current_item->text, "Flicker Filter", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.console.screen.flicker_filter_index);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Flicker Filter].");
+         strlcpy(current_item->comment, "INFO - Toggle the [Flicker Filter].", sizeof(current_item->comment));
          break;
       case SETTING_SOFT_DISPLAY_FILTER:
          strlcpy(current_item->text, "Soft Display Filter", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Toggle the [Soft Display Filter].");
+         strlcpy(current_item->comment, "INFO - Toggle the [Soft Display Filter].", sizeof(current_item->comment));
          break;
 #endif
       case SETTING_HW_OVERSCAN_AMOUNT:
          strlcpy(current_item->text, "Overscan", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_extern.console.screen.overscan_amount);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Adjust or decrease [Overscan]. Set this to higher than 0.000\nif the screen doesn't fit on your TV/monitor.");
+         strlcpy(current_item->comment, "INFO - Adjust or decrease [Overscan]. Set this to higher than 0.000\nif the screen doesn't fit on your TV/monitor.", sizeof(current_item->comment));
          break;
       case SETTING_REFRESH_RATE:
          strlcpy(current_item->text, "Refresh rate", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fHz", g_settings.video.refresh_rate);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Adjust or decrease [Refresh Rate].");
+         strlcpy(current_item->comment, "INFO - Adjust or decrease [Refresh Rate].", sizeof(current_item->comment));
          break;
       case SETTING_THROTTLE_MODE:
          strlcpy(current_item->text, "Throttle Mode", sizeof(current_item->text));
@@ -410,13 +410,13 @@ static void populate_setting_item(void *data, unsigned input)
          switch(g_extern.console.sound.mode)
          {
             case SOUND_MODE_NORMAL:
-               snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Sound Output] is set to 'Normal'.");
+               strlcpy(current_item->comment, "INFO - [Sound Output] is set to 'Normal'.", sizeof(current_item->comment));
                strlcpy(current_item->setting_text, "Normal", sizeof(current_item->setting_text));
                break;
 #ifdef HAVE_RSOUND
             case SOUND_MODE_RSOUND:
-               snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Sound Output] is set to 'RSound'." );
-               snprintf(current_item->setting_text, sizeof(current_item->setting_text), "RSound");
+               strlcpy(current_item->comment, "INFO - [Sound Output] is set to 'RSound'.", sizeof(current_item->comment));
+               strlcpy(current_item->setting_text, "RSound", sizeof(current_item->setting_text));
                break;
 #endif
 #ifdef HAVE_HEADSET
@@ -431,15 +431,15 @@ static void populate_setting_item(void *data, unsigned input)
          break;
 #ifdef HAVE_RSOUND
       case SETTING_RSOUND_SERVER_IP_ADDRESS:
-         snprintf(current_item->text, sizeof(current_item->text), "RSound Server IP Address");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_settings.audio.device);
+         strlcpy(current_item->text, "RSound Server IP Address", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, g_settings.audio.device, sizeof(current_item->setting_text));
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Enter the IP Address of the [RSound Audio Server]. IP address\nmust be an IPv4 32-bits address, eg: '192.168.1.7'.");
          break;
 #endif
       case SETTING_DEFAULT_AUDIO_ALL:
-         snprintf(current_item->text, sizeof(current_item->text), "DEFAULTS");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [General Audio Settings] back to their 'DEFAULT' values.");
+         strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Set all [General Audio Settings] back to their 'DEFAULT' values.", sizeof(current_item->comment));
          break;
       case SETTING_RESAMPLER_TYPE:
          strlcpy(current_item->text, "Sound resampler", sizeof(current_item->text));
@@ -493,15 +493,15 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->comment, "INFO - Set the amount of frames to 'rewind'.\nIncrease this to lower CPU usage.", sizeof(current_item->comment));
          break;
       case SETTING_RARCH_DEFAULT_EMU:
-         snprintf(current_item->text, sizeof(current_item->text), "Default libretro core");
+         strlcpy(current_item->text, "Default libretro core", sizeof(current_item->text));
          fill_pathname_base(fname, g_settings.libretro, sizeof(fname));
          strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Select a default libretro core to launch at start-up.");
+         strlcpy(current_item->comment, "INFO - Select a default libretro core to launch at start-up.", sizeof(current_item->comment));
          break;
       case SETTING_QUIT_RARCH:
-         snprintf(current_item->text, sizeof(current_item->text), "Quit RetroArch and save settings ");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Quits RetroArch and saves the settings.");
+         strlcpy(current_item->text, "Quit RetroArch and save settings ", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Quits RetroArch and saves the settings.", sizeof(current_item->comment));
          break;
       case SETTING_EMU_AUDIO_MUTE:
          snprintf(current_item->text, sizeof(current_item->text), "Mute Audio");
@@ -543,14 +543,14 @@ static void populate_setting_item(void *data, unsigned input)
          break;
 #ifdef HAVE_XML
       case SETTING_PATH_CHEATS:
-         snprintf(current_item->text, sizeof(current_item->text), "Cheatfile Directory");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_settings.cheat_database);
+         strlcpy(current_item->text, "Cheatfile Directory", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, g_settings.cheat_database, sizeof(current_item->setting_text));
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default [Cheatfile directory] path. All CHT (cheat) files\nwill be stored here.");
          break;
 #endif
       case SETTING_PATH_SYSTEM:
-         snprintf(current_item->text, sizeof(current_item->text), "System Directory");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_settings.system_directory);
+         strlcpy(current_item->text, "System Directory", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, g_settings.system_directory, sizeof(current_item->setting_text));
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default [System directory] path. System files like\nBIOS files, etc. will be stored here.");
          break;
       case SETTING_ENABLE_SRAM_PATH:
@@ -564,30 +564,30 @@ static void populate_setting_item(void *data, unsigned input)
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom Savestate Dir Path] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? "ON" : "OFF");
          break;
       case SETTING_CONTROLS_SCHEME:
-         snprintf(current_item->text, sizeof(current_item->text), "Control Scheme Preset");
+         strlcpy(current_item->text, "Control Scheme Preset", sizeof(current_item->text));
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Input scheme preset [%s] is selected.", g_extern.file_state.input_cfg_path);
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.file_state.input_cfg_path);
+         strlcpy(current_item->setting_text, g_extern.file_state.input_cfg_path, sizeof(current_item->setting_text));
          break;
       case SETTING_CONTROLS_NUMBER:
-         snprintf(current_item->text, sizeof(current_item->text), "Controller No");
+         strlcpy(current_item->text, "Controller No", sizeof(current_item->text));
          snprintf(current_item->comment, sizeof(current_item->comment), "Controller %d is currently selected.", currently_selected_controller_menu+1);
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", currently_selected_controller_menu+1);
          break;
       case SETTING_DPAD_EMULATION:
-         snprintf(current_item->text, sizeof(current_item->text), "D-Pad Emulation");
+         strlcpy(current_item->text, "D-Pad Emulation", sizeof(current_item->text));
          switch(g_settings.input.dpad_emulation[currently_selected_controller_menu])
          {
             case ANALOG_DPAD_NONE:
                snprintf(current_item->comment, sizeof(current_item->comment), "[%s] from Controller %d is mapped to D-pad.", "None", currently_selected_controller_menu+1);
-               snprintf(current_item->setting_text, sizeof(current_item->setting_text), "None");
+               strlcpy(current_item->setting_text, "None", sizeof(current_item->setting_text));
                break;
             case ANALOG_DPAD_LSTICK:
                snprintf(current_item->comment, sizeof(current_item->comment), "[%s] from Controller %d is mapped to D-pad.", "Left Stick", currently_selected_controller_menu+1);
-               snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Left Stick");
+               strlcpy(current_item->setting_text, "Left Stick", sizeof(current_item->setting_text));
                break;
             case ANALOG_DPAD_RSTICK:
                snprintf(current_item->comment, sizeof(current_item->comment), "[%s] from Controller %d is mapped to D-pad.", "Right Stick", currently_selected_controller_menu+1);
-               snprintf(current_item->setting_text, sizeof(current_item->setting_text), "Right Stick");
+               strlcpy(current_item->setting_text, "Right Stick", sizeof(current_item->setting_text));
                break;
          }
          break;
@@ -628,27 +628,27 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_CONTROLS_DEFAULT_ALL:
          strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [Controls] back to their 'DEFAULT' values.");
+         strlcpy(current_item->comment, "INFO - Set all [Controls] back to their 'DEFAULT' values.", sizeof(current_item->comment));
          break;
       case SETTING_EMU_VIDEO_DEFAULT_ALL:
          strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set [all RetroArch Video settings] back to their 'DEFAULT' values.");
+         strlcpy(current_item->comment, "INFO - Set [all RetroArch Video settings] back to their 'DEFAULT' values.", sizeof(current_item->comment));
          break;
       case SETTING_EMU_AUDIO_DEFAULT_ALL:
-         snprintf(current_item->text, sizeof(current_item->text), "DEFAULTS");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [RetroArch Audio settings] back to their 'DEFAULT' values.");
+         strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Set all [RetroArch Audio settings] back to their 'DEFAULT' values.", sizeof(current_item->comment));
          break;
       case SETTING_PATH_DEFAULT_ALL:
-         snprintf(current_item->text, sizeof(current_item->text), "DEFAULTS");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set all [Path settings] back to their 'DEFAULT' values.");
+         strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Set all [Path settings] back to their 'DEFAULT' values.", sizeof(current_item->comment));
          break;
       case SETTING_EMU_DEFAULT_ALL:
          strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set [all RetroArch settings] back to their 'DEFAULT' values.");
+         strlcpy(current_item->comment, "INFO - Set [all RetroArch settings] back to their 'DEFAULT' values.", sizeof(current_item->comment));
          break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_SAVE_SHADER_PRESET:
