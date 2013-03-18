@@ -178,16 +178,6 @@ static const unsigned rgui_controller_lut[] = {
    RETRO_DEVICE_ID_JOYPAD_R3,
 };
 
-static inline bool rgui_is_controller_menu(unsigned menu_type)
-{
-   return (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4);
-}
-
-static inline bool rgui_is_viewport_menu(unsigned menu_type)
-{
-   return (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2);
-}
-
 static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 {
    for (int y = 0; y < FONT_HEIGHT; y++)
@@ -408,9 +398,11 @@ static void render_text(rgui_handle_t *rgui)
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, NULL);
 
    if (menu_type == RGUI_SETTINGS_CORE)
-      snprintf(title, sizeof(title), "CORE SELECTION");
+      strlcpy(title, "CORE SELECTION", sizeof(title));
    else
-   if (rgui_is_controller_menu(menu_type) || rgui_is_viewport_menu(menu_type) || menu_type == RGUI_SETTINGS)
+   if ((menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ||
+         (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
+         menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "SETTINGS: %s", dir);
    else
       snprintf(title, sizeof(title), "FILE BROWSER: %s", dir);
@@ -430,24 +422,27 @@ static void render_text(rgui_handle_t *rgui)
       rgui_list_get_at_offset(rgui->selection_buf, i, &path, &type, NULL);
       char message[256];
       char type_str[256];
-      int w = rgui_is_controller_menu(menu_type) ? 26 : 19;
+      int w = (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ? 26 : 19;
       unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
       switch (type)
       {
          case RGUI_FILE_PLAIN:
-            snprintf(type_str, sizeof(type_str), "(FILE)");
+            strlcpy(type_str, "(FILE)", sizeof(type_str));
             w = 6;
             break;
          case RGUI_FILE_DIRECTORY:
-            snprintf(type_str, sizeof(type_str), "(DIR)");
+            strlcpy(type_str, "(DIR)", sizeof(type_str));
             w = 5;
             break;
          case RGUI_FILE_DEVICE:
-            snprintf(type_str, sizeof(type_str), "(DEV)");
+            strlcpy(type_str, "(DEV)", sizeof(type_str));
             w = 5;
             break;
          case RGUI_SETTINGS_REWIND_ENABLE:
-            snprintf(type_str, sizeof(type_str), g_settings.rewind_enable ? "ON" : "OFF");
+            if (g_settings.rewind_enable)
+               strlcpy(type_str, "ON", sizeof(type_str));
+            else
+               strlcpy(type_str, "OFF", sizeof(type_str));
             break;
          case RGUI_SETTINGS_REWIND_GRANULARITY:
             snprintf(type_str, sizeof(type_str), "%d", g_settings.rewind_granularity);
@@ -457,21 +452,24 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), "%d", g_extern.state_slot);
             break;
          case RGUI_SETTINGS_VIDEO_FILTER:
-            snprintf(type_str, sizeof(type_str), g_settings.video.smooth ? "Bilinear filtering" : "Point filtering");
+            if (g_settings.video.smooth)
+               strlcpy(type_str, "Bilinear filtering", sizeof(type_str));
+            else
+               strlcpy(type_str, "Point filtering", sizeof(type_str));
             break;
          case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
             snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
             break;
 #ifdef GEKKO
          case RGUI_SETTINGS_VIDEO_RESOLUTION:
-            snprintf(type_str, sizeof(type_str), "%s", gx_get_video_mode());
+            strlcpy(type_str, gx_get_video_mode(), sizeof(type_str));
             break;
 #endif
          case RGUI_SETTINGS_VIDEO_GAMMA:
             snprintf(type_str, sizeof(type_str), "%d", g_extern.console.screen.gamma_correction);
             break;
          case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
-            snprintf(type_str, sizeof(type_str), "%s", aspectratio_lut[g_settings.video.aspect_ratio_idx].name);
+            strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(type_str));
             break;
          case RGUI_SETTINGS_VIDEO_OVERSCAN:
             snprintf(type_str, sizeof(type_str), "%.2f", g_extern.console.screen.overscan_amount);
@@ -484,16 +482,19 @@ static void render_text(rgui_handle_t *rgui)
             }
             break;
          case RGUI_SETTINGS_AUDIO_MUTE:
-            snprintf(type_str, sizeof(type_str), g_extern.audio_data.mute ? "ON" : "OFF");
+            if (g_extern.audio_data.mute)
+               strlcpy(type_str, "ON", sizeof(type_str));
+            else
+               strlcpy(type_str, "OFF", sizeof(type_str));
             break;
          case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
             snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
             break;
          case RGUI_SETTINGS_RESAMPLER_TYPE:
             if (strstr(g_settings.audio.resampler, "sinc"))
-               snprintf(type_str, sizeof(type_str), "Sinc");
+               strlcpy(type_str, "Sinc", sizeof(type_str));
             else
-               snprintf(type_str, sizeof(type_str), "Hermite");
+               strlcpy(type_str, "Hermite", sizeof(type_str));
             break;
          case RGUI_SETTINGS_SRAM_DIR:
             snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
@@ -511,7 +512,7 @@ static void render_text(rgui_handle_t *rgui)
          case RGUI_SETTINGS_CONTROLLER_2:
          case RGUI_SETTINGS_CONTROLLER_3:
          case RGUI_SETTINGS_CONTROLLER_4:
-            snprintf(type_str, sizeof(type_str), "...");
+            strlcpy(type_str, "...", sizeof(type_str));
             break;
          case RGUI_SETTINGS_BIND_DEVICE:
             strlcpy(type_str, g_settings.input.device_names[port], sizeof(type_str));
@@ -520,13 +521,13 @@ static void render_text(rgui_handle_t *rgui)
             switch(g_settings.input.dpad_emulation[port])
             {
                case ANALOG_DPAD_NONE:
-                  snprintf(type_str, sizeof(type_str), "None");
+                  strlcpy(type_str, "None", sizeof(type_str));
                   break;
                case ANALOG_DPAD_LSTICK:
-                  snprintf(type_str, sizeof(type_str), "Left Stick");
+                  strlcpy(type_str, "Left Stick", sizeof(type_str));
                   break;
                case ANALOG_DPAD_RSTICK:
-                  snprintf(type_str, sizeof(type_str), "Right Stick");
+                  strlcpy(type_str, "Right Stick", sizeof(type_str));
                   break;
             }
             break;
@@ -574,9 +575,7 @@ static void render_text(rgui_handle_t *rgui)
          entry_title = tmp;
       }
       else
-      {
          entry_title = path;
-      }
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s\n",
             i == rgui->selection_ptr ? '>' : ' ',
@@ -597,9 +596,8 @@ static void render_text(rgui_handle_t *rgui)
       rgui->msg_force = false;
    }
    else
-   {
       message_queue = driver.current_msg;
-   }
+
    render_messagebox(rgui, message_queue);
 #endif
 }
@@ -835,9 +833,9 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
             if (action == RGUI_ACTION_START)
             {
 #ifdef HAVE_SINC
-               snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "sinc");
+               strlcpy(g_settings.audio.resampler, "sinc", sizeof(g_settings.audio.resampler));
 #else
-               snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+               strlcpy(g_settings.audio.resampler, "hermite", sizeof(g_settings.audio.resampler));
 #endif
                changed = true;
             }
@@ -845,10 +843,10 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
             {
 #ifdef HAVE_SINC
                if( strstr(g_settings.audio.resampler, "hermite"))
-                  snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "sinc");
+                  strlcpy(g_settings.audio.resampler, "sinc", sizeof(g_settings.audio.resampler));
                else
 #endif
-                  snprintf(g_settings.audio.resampler, sizeof(g_settings.audio.resampler), "hermite");
+                  strlcpy(g_settings.audio.resampler, "hermite", sizeof(g_settings.audio.resampler));
                changed = true;
             }
 
@@ -1263,8 +1261,8 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_RIGHT:
       case RGUI_ACTION_OK:
       case RGUI_ACTION_START:
-         if ((rgui_is_controller_menu(type) || type == RGUI_SETTINGS_CORE) 
-               && action == RGUI_ACTION_OK)
+         if (((type >= RGUI_SETTINGS_CONTROLLER_1 && type <= RGUI_SETTINGS_CONTROLLER_4) ||
+                  type == RGUI_SETTINGS_CORE) && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
             rgui->selection_ptr = 0;
@@ -1311,7 +1309,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE))
    {
       rgui->need_refresh = false;
-      if (rgui_is_controller_menu(menu_type))
+      if ((menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4))
          rgui_settings_controller_populate_entries(rgui);
       else
          rgui_settings_populate_entries(rgui);
@@ -1413,9 +1411,9 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
    int ret = 0;
 
-   if (menu_type == RGUI_SETTINGS || rgui_is_controller_menu(menu_type))
+   if (menu_type == RGUI_SETTINGS || (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4))
       return rgui_settings_iterate(rgui, action);
-   else if (rgui_is_viewport_menu(menu_type))
+   else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
       return rgui_viewport_iterate(rgui, action);
    if (rgui->need_refresh && action != RGUI_ACTION_MESSAGE)
       action = RGUI_ACTION_NOOP;
