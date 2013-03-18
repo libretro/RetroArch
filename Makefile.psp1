@@ -23,7 +23,7 @@ LIBS = -lretro_psp1 -lstdc++ -lpspgu -lpspgum -lm
 EXTRA_TARGETS = EBOOT.PBP
 PSP_EBOOT_TITLE = RetroArch PSP1
 
-PSP_OBJECTS = console/griffin/griffin.o
+PSP_OBJECTS = griffin/griffin.o
 
 OBJS = $(PSP_OBJECTS)
 

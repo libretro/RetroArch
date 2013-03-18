@@ -40,7 +40,7 @@ endif
 LOCAL_MODULE    := retroarch-activity
 
 RARCH_PATH  := ../../..
-LOCAL_SRC_FILES  +=	$(RARCH_PATH)/console/griffin/griffin.c
+LOCAL_SRC_FILES  +=	$(RARCH_PATH)/griffin/griffin.c
 
 ifeq ($(HAVE_LOGGER), 1)
 LOCAL_CFLAGS += -DHAVE_LOGGER

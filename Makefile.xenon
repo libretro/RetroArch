@@ -13,7 +13,7 @@ PPU_TARGET_ADJUSTED := retroarch-libxenon.elf32
 LDDIRS = -L. -L$(DEVKITXENON)/usr/lib -L$(DEVKITXENON)/xenon/lib/32
 INCDIRS = -I. -I$(DEVKITXENON)/usr/include
 
-OBJ = console/griffin/griffin.o
+OBJ = griffin/griffin.o
 
 LIBS = -lretro_xenon360 -lxenon -lm -lc
 DEFINES = -std=gnu99 -DPACKAGE_VERSION=\"$(RARCH_VERSION)\" -DRARCH_CONSOLE -DHAVE_THREADS -DHAVE_GETOPT_LONG=1 -DHAVE_GRIFFIN

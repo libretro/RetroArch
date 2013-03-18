@@ -15,17 +15,7 @@
 */
 
 #if defined(_XBOX)
-#include "../../msvc/msvc_compat.h"
-#endif
-
-/*============================================================
-LOGGERS
-============================================================ */
-
-#if defined(HAVE_LOGGER) && defined(__PSL1GHT__)
-#include "../logger/psl1ght_logger.c"
-#elif defined(HAVE_LOGGER) && !defined(ANDROID)
-#include "../logger/logger.c"
+#include "../msvc/msvc_compat.h"
 #endif
 
 /*============================================================
@@ -33,14 +23,20 @@ CONSOLE EXTENSIONS
 ============================================================ */
 #ifdef RARCH_CONSOLE
 
+#if defined(HAVE_LOGGER) && defined(__PSL1GHT__)
+#include "../console/logger/psl1ght_logger.c"
+#elif defined(HAVE_LOGGER) && !defined(ANDROID)
+#include "../console/logger/logger.c"
+#endif
+
 #ifdef HW_DOL
-#include "../../ngc/ssaram.c"
+#include "../ngc/ssaram.c"
 #endif
 
 #endif
 
 #ifdef HAVE_ZLIB
-#include "../../file_extract.c"
+#include "../file_extract.c"
 #endif
 
 /*============================================================
@@ -48,11 +44,11 @@ RLAUNCH
 ============================================================ */
 
 #ifdef HAVE_RLAUNCH
-#include "../../tools/retrolaunch/rl_fnmatch.c"
-#include "../../tools/retrolaunch/sha1.c"
-#include "../../tools/retrolaunch/cd_detect.c"
-#include "../../tools/retrolaunch/parser.c"
-#include "../../tools/retrolaunch/main.c"
+#include "../tools/retrolaunch/rl_fnmatch.c"
+#include "../tools/retrolaunch/sha1.c"
+#include "../tools/retrolaunch/cd_detect.c"
+#include "../tools/retrolaunch/parser.c"
+#include "../tools/retrolaunch/main.c"
 #endif
 
 /*============================================================
@@ -60,15 +56,15 @@ PERFORMANCE
 ============================================================ */
 
 #ifdef ANDROID
-#include "../../android/native/jni/cpufeatures.c"
+#include "../android/native/jni/cpufeatures.c"
 #endif
 
-#include "../../performance.c"
+#include "../performance.c"
 
 /*============================================================
 COMPATIBILITY
 ============================================================ */
-#include "../../compat/compat.c"
+#include "../compat/compat.c"
 
 /*============================================================
 CONFIG FILE
@@ -79,29 +75,29 @@ CONFIG FILE
 #undef strcasecmp
 #endif
 
-#include "../../conf/config_file.c"
+#include "../conf/config_file.c"
 
 /*============================================================
 CHEATS
 ============================================================ */
-#include "../../cheats.c"
-#include "../../hash.c"
+#include "../cheats.c"
+#include "../hash.c"
 
 /*============================================================
 VIDEO CONTEXT
 ============================================================ */
 
 #ifdef HAVE_VID_CONTEXT
-#include "../../gfx/gfx_context.c"
+#include "../gfx/gfx_context.c"
 
 #if defined(__CELLOS_LV2__)
-#include "../../gfx/context/ps3_ctx.c"
+#include "../gfx/context/ps3_ctx.c"
 #elif defined(_XBOX)
-#include "../../gfx/context/xdk_ctx.c"
+#include "../gfx/context/xdk_ctx.c"
 #elif defined(ANDROID)
-#include "../../gfx/context/androidegl_ctx.c"
+#include "../gfx/context/androidegl_ctx.c"
 #elif defined(__BLACKBERRY_QNX__)
-#include "../../gfx/context/bbqnx_ctx.c"
+#include "../gfx/context/bbqnx_ctx.c"
 #endif
 
 #endif
@@ -111,15 +107,15 @@ VIDEO SHADERS
 ============================================================ */
 
 #ifdef HAVE_CG
-#include "../../gfx/shader_cg.c"
+#include "../gfx/shader_cg.c"
 #endif
 
 #ifdef HAVE_HLSL
-#include "../../gfx/shader_hlsl.c"
+#include "../gfx/shader_hlsl.c"
 #endif
 
 #ifdef HAVE_GLSL
-#include "../../gfx/shader_glsl.c"
+#include "../gfx/shader_glsl.c"
 #endif
 
 /*============================================================
@@ -127,12 +123,12 @@ VIDEO IMAGE
 ============================================================ */
 
 #if defined(__CELLOS_LV2__)
-#include "../../ps3/image.c"
+#include "../ps3/image.c"
 #elif defined(_XBOX1)
-#include "../../xdk/image.c"
+#include "../xdk/image.c"
 #elif defined(ANDROID) || defined(__BLACKBERRY_QNX__)
-#include "../../gfx/image.c"
-#include "../../gfx/rpng/rpng.c"
+#include "../gfx/image.c"
+#include "../gfx/rpng/rpng.c"
 #endif
 
 /*============================================================
@@ -140,44 +136,44 @@ VIDEO DRIVER
 ============================================================ */
 
 #if defined(HAVE_OPENGL)
-#include "../../gfx/math/matrix.c"
+#include "../gfx/math/matrix.c"
 #elif defined(GEKKO)
 #ifdef HW_RVL
-#include "../../wii/vi_encoder.c"
-#include "../../wii/mem2_manager.c"
+#include "../wii/vi_encoder.c"
+#include "../wii/mem2_manager.c"
 #endif
 #endif
 
 #ifdef HAVE_DYLIB
-#include "../../gfx/ext_gfx.c"
+#include "../gfx/ext_gfx.c"
 #endif
 
-#include "../../gfx/gfx_common.c"
+#include "../gfx/gfx_common.c"
 
 #ifdef _XBOX
-#include "../../xdk/xdk_resources.cpp"
+#include "../xdk/xdk_resources.cpp"
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../../gfx/gl.c"
+#include "../gfx/gl.c"
 #endif
 
 #ifdef _XBOX
-#include "../../xdk/xdk_d3d.cpp"
+#include "../xdk/xdk_d3d.cpp"
 #endif
 
 #if defined(GEKKO)
-#include "../../gx/gx_video.c"
+#include "../gx/gx_video.c"
 #elif defined(SN_TARGET_PSP2)
-#include "../../vita/vita_video.c"
+#include "../vita/vita_video.c"
 //#elif defined(PSP)
-//#include "../../psp1/psp1_video.c"
+//#include "../psp1/psp1_video.c"
 #elif defined(XENON)
-#include "../../xenon/xenon360_video.c"
+#include "../xenon/xenon360_video.c"
 #endif
 
 #if defined(HAVE_NULLVIDEO)
-#include "../../gfx/null.c"
+#include "../gfx/null.c"
 #endif
 
 /*============================================================
@@ -191,30 +187,30 @@ FONTS
 #if defined(HAVE_OPENGL) || defined(HAVE_D3D8) || defined(HAVE_D3D9)
 
 #if defined(HAVE_FREETYPE)
-#include "../../gfx/fonts/freetype.c"
+#include "../gfx/fonts/freetype.c"
 #endif
 
 #if !defined(DONT_HAVE_BITMAPFONTS)
-#include "../../gfx/fonts/fonts.c"
-#include "../../gfx/fonts/bitmapfont.c"
+#include "../gfx/fonts/fonts.c"
+#include "../gfx/fonts/bitmapfont.c"
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../../gfx/fonts/gl_font.c"
+#include "../gfx/fonts/gl_font.c"
 #endif
 
 #ifdef _XBOX
-#include "../../gfx/fonts/d3d_font.c"
+#include "../gfx/fonts/d3d_font.c"
 #endif
 
 #if defined(HAVE_LIBDBGFONT)
-#include "../../gfx/fonts/ps_libdbgfont.c"
+#include "../gfx/fonts/ps_libdbgfont.c"
 #elif defined(HAVE_OPENGL)
-#include "../../gfx/fonts/gl_raster_font.c"
+#include "../gfx/fonts/gl_raster_font.c"
 #elif defined(_XBOX1)
-#include "../../gfx/fonts/xdk1_xfonts.c"
+#include "../gfx/fonts/xdk1_xfonts.c"
 #elif defined(_XBOX360)
-#include "../../gfx/fonts/xdk360_fonts.cpp"
+#include "../gfx/fonts/xdk360_fonts.cpp"
 #endif
 
 #endif
@@ -223,30 +219,30 @@ FONTS
 INPUT
 ============================================================ */
 #ifndef RARCH_CONSOLE
-#include "../../input/input_common.c"
+#include "../input/input_common.c"
 #endif
 
 #ifdef HAVE_OVERLAY
-#include "../../input/overlay.c"
+#include "../input/overlay.c"
 #endif
 
 #if defined(__CELLOS_LV2__)
-#include "../../ps3/ps3_input.c"
+#include "../ps3/ps3_input.c"
 #elif defined(SN_TARGET_PSP2) || defined(PSP)
-#include "../../psp/psp_input.c"
+#include "../psp/psp_input.c"
 #elif defined(GEKKO)
-#include "../../gx/gx_input.c"
+#include "../gx/gx_input.c"
 #elif defined(_XBOX)
-#include "../../xdk/xdk_xinput_input.c"
+#include "../xdk/xdk_xinput_input.c"
 #elif defined(XENON)
-#include "../../xenon/xenon360_input.c"
+#include "../xenon/xenon360_input.c"
 #elif defined(ANDROID)
-#include "../../android/native/jni/input_autodetect.c"
-#include "../../android/native/jni/input_android.c"
+#include "../android/native/jni/input_autodetect.c"
+#include "../android/native/jni/input_android.c"
 #endif
 
 #if defined(HAVE_NULLINPUT)
-#include "../../input/null.c"
+#include "../input/null.c"
 #endif
 
 /*============================================================
@@ -257,151 +253,151 @@ STATE TRACKER
 #endif
 
 #ifndef DONT_HAVE_STATE_TRACKER
-#include "../../gfx/state_tracker.c"
+#include "../gfx/state_tracker.c"
 #endif
 
 /*============================================================
 FIFO BUFFER
 ============================================================ */
-#include "../../fifo_buffer.c"
+#include "../fifo_buffer.c"
 
 /*============================================================
 AUDIO RESAMPLER
 ============================================================ */
-#include "../../audio/resampler.c"
+#include "../audio/resampler.c"
 #ifdef HAVE_SINC
-#include "../../audio/sinc.c"
+#include "../audio/sinc.c"
 #endif
-#include "../../audio/hermite.c"
+#include "../audio/hermite.c"
 
 /*============================================================
 RSOUND
 ============================================================ */
 #ifdef HAVE_RSOUND
-#include "../../deps/librsound/librsound.c"
-#include "../../audio/rsound.c"
+#include "../deps/librsound/librsound.c"
+#include "../audio/rsound.c"
 #endif
 
 /*============================================================
 AUDIO UTILS
 ============================================================ */
-#include "../../audio/utils.c"
+#include "../audio/utils.c"
 
 /*============================================================
 AUDIO
 ============================================================ */
 #if defined(__CELLOS_LV2__)
-#include "../../ps3/ps3_audio.c"
+#include "../ps3/ps3_audio.c"
 #elif defined(XENON)
-#include "../../xenon/xenon360_audio.c"
+#include "../xenon/xenon360_audio.c"
 #elif defined(GEKKO)
-#include "../../gx/gx_audio.c"
+#include "../gx/gx_audio.c"
 #endif
 
 #ifdef HAVE_XAUDIO
-#include "../../audio/xaudio.c"
-#include "../../audio/xaudio-c/xaudio-c.cpp"
+#include "../audio/xaudio.c"
+#include "../audio/xaudio-c/xaudio-c.cpp"
 #endif
 
 #ifdef HAVE_DSOUND
-#include "../../audio/dsound.c"
+#include "../audio/dsound.c"
 #endif
 
 #ifdef HAVE_SL
-#include "../../audio/opensl.c"
+#include "../audio/opensl.c"
 #endif
 
 #ifdef HAVE_AL
-#include "../../audio/openal.c"
+#include "../audio/openal.c"
 #endif
 
 #if defined(HAVE_NULLAUDIO)
-#include "../../audio/null.c"
+#include "../audio/null.c"
 #endif
 
 #ifdef HAVE_DYLIB
-#include "../../audio/ext_audio.c"
+#include "../audio/ext_audio.c"
 #endif
 
 /*============================================================
 DRIVERS
 ============================================================ */
-#include "../../driver.c"
+#include "../driver.c"
 
 /*============================================================
 SCALERS
 ============================================================ */
-#include "../../gfx/scaler/filter.c"
-#include "../../gfx/scaler/pixconv.c"
-#include "../../gfx/scaler/scaler.c"
-#include "../../gfx/scaler/scaler_int.c"
+#include "../gfx/scaler/filter.c"
+#include "../gfx/scaler/pixconv.c"
+#include "../gfx/scaler/scaler.c"
+#include "../gfx/scaler/scaler_int.c"
 
 /*============================================================
 DYNAMIC
 ============================================================ */
-#include "../../dynamic.c"
+#include "../dynamic.c"
 
 /*============================================================
 FILE
 ============================================================ */
 #ifdef HAVE_FILEBROWSER
-#include "../../frontend/menu/utils/file_browser.c"
+#include "../frontend/menu/utils/file_browser.c"
 #endif
-#include "../../file.c"
-#include "../../file_path.c"
+#include "../file.c"
+#include "../file_path.c"
 
 /*============================================================
 MESSAGE
 ============================================================ */
-#include "../../message.c"
+#include "../message.c"
 
 /*============================================================
 PATCH
 ============================================================ */
-#include "../../patch.c"
+#include "../patch.c"
 
 /*============================================================
 SETTINGS
 ============================================================ */
-#include "../../settings.c"
+#include "../settings.c"
 
 /*============================================================
 REWIND
 ============================================================ */
-#include "../../rewind.c"
+#include "../rewind.c"
 
 /*============================================================
 MAIN
 ============================================================ */
 #if defined(XENON)
-#include "../../frontend/frontend_xenon.c"
+#include "../frontend/frontend_xenon.c"
 #elif defined(RARCH_CONSOLE) || defined(PSP)
-#include "../../frontend/frontend_console.c"
+#include "../frontend/frontend_console.c"
 #elif defined(__BLACKBERRY_QNX__)
-#include "../../frontend/frontend_bbqnx.c"
+#include "../frontend/frontend_bbqnx.c"
 #elif defined(ANDROID)
-#include "../../frontend/frontend_android.c"
+#include "../frontend/frontend_android.c"
 #endif
 
 #ifndef ANDROID
-#include "../../frontend/frontend.c"
+#include "../frontend/frontend.c"
 #endif
 
 /*============================================================
 RETROARCH
 ============================================================ */
-#include "../../retroarch.c"
+#include "../retroarch.c"
 
 /*============================================================
 THREAD
 ============================================================ */
 #if defined(HAVE_THREADS) && defined(XENON)
-#include "../../thread/xenon_sdl_threads.c"
+#include "../thread/xenon_sdl_threads.c"
 #elif defined(HAVE_THREADS)
-#include "../../thread.c"
-#include "../../gfx/thread_wrapper.c"
+#include "../thread.c"
+#include "../gfx/thread_wrapper.c"
 #ifndef RARCH_CONSOLE
-#include "../../autosave.c"
+#include "../autosave.c"
 #endif
 #endif
 
@@ -410,34 +406,34 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETPLAY
-#include "../../netplay.c"
+#include "../netplay.c"
 #endif
 
 /*============================================================
 SCREENSHOTS
 ============================================================ */
 #ifdef HAVE_SCREENSHOTS
-#include "../../screenshot.c"
+#include "../screenshot.c"
 #endif
 
 /*============================================================
 MENU
 ============================================================ */
 #if defined(HAVE_RMENU_GUI)
-#include "../../frontend/menu/utils/menu_stack.c"
-#include "../../frontend/menu/rmenu.c"
+#include "../frontend/menu/utils/menu_stack.c"
+#include "../frontend/menu/rmenu.c"
 #endif
 
 #ifdef HAVE_RGUI
-#include "../../frontend/menu/utils/file_list.c"
-#include "../../frontend/menu/rgui.c"
+#include "../frontend/menu/utils/file_list.c"
+#include "../frontend/menu/rgui.c"
 #endif
 
 #if defined(_XBOX360)
-#include "../../frontend/menu/rmenu_xui.cpp"
+#include "../frontend/menu/rmenu_xui.cpp"
 #endif
 
-#include "../../frontend/menu/menu_settings.c"
+#include "../frontend/menu/menu_settings.c"
 
 #ifdef __cplusplus
 extern "C" {
@@ -447,15 +443,15 @@ extern "C" {
 RZLIB
 ============================================================ */
 #ifdef WANT_MINIZ
-#include "../../deps/miniz/miniz.c"
-#include "../../deps/minizip/unzip.c"
+#include "../deps/miniz/miniz.c"
+#include "../deps/minizip/unzip.c"
 #endif
 
 /*============================================================
 XML
 ============================================================ */
 #define RXML_LIBXML2_COMPAT
-#include "../../compat/rxml/rxml.c"
+#include "../compat/rxml/rxml.c"
 
 #ifdef __cplusplus
 }

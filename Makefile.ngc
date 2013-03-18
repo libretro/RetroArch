@@ -44,7 +44,7 @@ ifeq ($(BIG_STACK), 1)
 endif
 LIBS := -lfat $(WHOLE_START) -lretro_ngc $(WHOLE_END) -logc
 
-OBJ = console/griffin/griffin.o
+OBJ = griffin/griffin.o
 
 ifeq ($(PERF_TEST), 1)
    CFLAGS += -DPERF_TEST

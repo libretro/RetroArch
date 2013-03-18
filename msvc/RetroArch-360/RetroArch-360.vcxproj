@@ -348,7 +348,7 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\console\griffin\griffin.c" />
+    <ClCompile Include="..\..\griffin\griffin.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\360\menu.h" />

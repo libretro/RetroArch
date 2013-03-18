@@ -61,7 +61,7 @@
 
 
 #if defined(ANDROID) && defined(HAVE_GRIFFIN)
-#include "../console/griffin/hook_context.h"
+#include "../griffin/hook_context.h"
 #else
 #define gl_shader_use_func(vid, num)                 gl_shader_use(vid, num)
 #define gl_shader_num_func(vid)                      gl_shader_num(vid)

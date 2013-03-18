@@ -47,7 +47,7 @@ endif
 LIBS := -lfat $(WHOLE_START) -lretro_wii $(WHOLE_END) -logc $(LDFLAGS_WIIUSE) -lbte 
 APP_BOOTER_DIR = wii/app_booter
 
-OBJ = console/griffin/griffin.o $(APP_BOOTER_DIR)/app_booter.binobj
+OBJ = griffin/griffin.o $(APP_BOOTER_DIR)/app_booter.binobj
 
 ifeq ($(PERF_TEST), 1)
    CFLAGS += -DPERF_TEST

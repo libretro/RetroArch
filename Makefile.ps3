@@ -64,7 +64,7 @@ PYTHON2			= python2.exe
 GIT			= git.exe
 endif
 
-PPU_SRCS		= console/griffin/griffin.c
+PPU_SRCS		= griffin/griffin.c
 
 ifeq ($(PERF_TEST), 1)
    DEFINES += -DPERF_TEST
