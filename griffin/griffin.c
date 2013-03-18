@@ -98,6 +98,8 @@ VIDEO CONTEXT
 #include "../gfx/context/androidegl_ctx.c"
 #elif defined(__BLACKBERRY_QNX__)
 #include "../gfx/context/bbqnx_ctx.c"
+#elif defined(IOS)
+#include "../gfx/context/ioseagl_ctx.c"
 #endif
 
 #endif
@@ -309,6 +311,10 @@ AUDIO
 
 #ifdef HAVE_AL
 #include "../audio/openal.c"
+#endif
+
+#ifdef HAVE_COREAUDIO
+#include "../audio/coreaudio.c"
 #endif
 
 #if defined(HAVE_NULLAUDIO)
