@@ -274,8 +274,16 @@ static void populate_setting_item(void *data, unsigned input)
          break;
       case SETTING_PAL60_MODE:
          strlcpy(current_item->text, "PAL60 Mode", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE)) ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE)) ? "INFO - [PAL60 Mode] is set to 'ON'.\nconverts frames from 60Hz to 50Hz." : "INFO - [PAL60 Mode is set to 'OFF'.\nframes are not converted.");
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
+         {
+            strlcpy(current_item->setting_text, "ON", sizeof(current_item->setting_text));
+            strlcpy(current_item->comment, "INFO - [PAL60 Mode is set to 'ON'.\nconverts frames from 60Hz to 50Hz.", sizeof(current_item->comment));
+         }
+         else
+         {
+            strlcpy(current_item->setting_text, "OFF", sizeof(current_item->setting_text));
+            strlcpy(current_item->comment, "INFO - [PAL60 Mode is set to 'OFF'.\nframes are not converted.", sizeof(current_item->comment));
+         }
          break;
 #endif
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
@@ -331,29 +339,51 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_HW_TEXTURE_FILTER:
          strlcpy(current_item->text, "Hardware filtering #1", sizeof(current_item->text));
          if(g_settings.video.smooth)
+         {
             strlcpy(current_item->setting_text, "Bilinear", sizeof(current_item->setting_text));
+            strlcpy(current_item->comment, "INFO - Hardware filtering #1 is set to Bilinear.",
+                  sizeof(current_item->comment));
+         }
          else
+         {
             strlcpy(current_item->setting_text, "Point", sizeof(current_item->setting_text));
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Hardware filtering #1 is set to [%s].", current_item->setting_text);
+            strlcpy(current_item->comment, "INFO - Hardware filtering #1 is set to Point.",
+                  sizeof(current_item->comment));
+         }
          break;
 #ifdef HAVE_FBO
       case SETTING_HW_TEXTURE_FILTER_2:
          strlcpy(current_item->text, "Hardware filtering #2", sizeof(current_item->text));
          if(g_settings.video.second_pass_smooth)
+         {
             strlcpy(current_item->setting_text, "Bilinear", sizeof(current_item->setting_text));
+            strlcpy(current_item->comment, "INFO - Hardware filtering #2 is set to Bilinear.",
+                  sizeof(current_item->comment));
+         }
          else
+         {
             strlcpy(current_item->setting_text, "Point", sizeof(current_item->setting_text));
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Hardware filtering #2 is set to [%s].", current_item->setting_text);
+            strlcpy(current_item->comment, "INFO - Hardware filtering #2 is set to Point.",
+                  sizeof(current_item->comment));
+         }
          break;
       case SETTING_SCALE_ENABLED:
-         strlcpy(current_item->text, "Custom Scaling/Dual Shaders", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_settings.video.render_to_texture ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), g_settings.video.render_to_texture ? "INFO - [Custom Scaling] is set to 'ON' - 2x shaders will look much\nbetter, and you can select a shader for [Shader #2]." : "INFO - [Custom Scaling] is set to 'OFF'.");
+         strlcpy(current_item->text, "FBO Mode", sizeof(current_item->text));
+         if (g_settings.video.render_to_texture)
+         {
+            strlcpy(current_item->setting_text, "ON", sizeof(current_item->setting_text));
+            strlcpy(current_item->comment, "INFO - FBO Mode is set to 'ON' - 2x shaders will look much\nbetter, and you can select a shader for [Shader #2].", sizeof(current_item->comment));
+         }
+         else
+         {
+            strlcpy(current_item->setting_text, "OFF", sizeof(current_item->setting_text));
+            strlcpy(current_item->comment, "INFO - FBO Mode is set to 'OFF'.", sizeof(current_item->comment));
+         }
          break;
       case SETTING_SCALE_FACTOR:
          strlcpy(current_item->text, "Scaling Factor", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom Scaling Factor] is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
+         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Scaling Factor is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
          break;
 #endif
 #ifdef _XBOX1
@@ -421,8 +451,8 @@ static void populate_setting_item(void *data, unsigned input)
 #endif
 #ifdef HAVE_HEADSET
             case SOUND_MODE_HEADSET:
-               snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Sound Output] is set to 'USB/Bluetooth Headset'.");
-               snprintf(current_item->setting_text, sizeof(current_item->setting_text), "USB/Bluetooth Headset");
+               strlcpy(current_item->comment, "INFO - [Sound Output] is set to USB/Bluetooth Headset.", sizeof(current_item->comment));
+               strlcpy(current_item->setting_text, "USB/Bluetooth Headset", sizeof(current_item->setting_text));
                break;
 #endif
             default:
@@ -433,7 +463,7 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_RSOUND_SERVER_IP_ADDRESS:
          strlcpy(current_item->text, "RSound Server IP Address", sizeof(current_item->text));
          strlcpy(current_item->setting_text, g_settings.audio.device, sizeof(current_item->setting_text));
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Enter the IP Address of the [RSound Audio Server]. IP address\nmust be an IPv4 32-bits address, eg: '192.168.1.7'.");
+         strlcpy(current_item->comment, "INFO - Enter the IP Address of the [RSound Audio Server]. IP address\nmust be an IPv4 32-bits address, eg: '192.168.1.7'.", sizeof(current_item->comment));
          break;
 #endif
       case SETTING_DEFAULT_AUDIO_ALL:
@@ -459,18 +489,18 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
          strlcpy(current_item->text, "Current save state slot", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.state_slot);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the currently selected savestate slot.");
+         strlcpy(current_item->comment, "INFO - Set the currently selected savestate slot.", sizeof(current_item->comment));
          break;
          /* emu-specific */
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
          strlcpy(current_item->text, "Debug info messages", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen debug messages.");
+         strlcpy(current_item->comment, "INFO - Show onscreen debug messages.", sizeof(current_item->comment));
          break;
       case SETTING_EMU_SHOW_INFO_MSG:
          strlcpy(current_item->text, "Info messages", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)) ? "ON" : "OFF");
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Show onscreen info messages in the menu.");
+         strlcpy(current_item->comment, "INFO - Show onscreen info messages in the menu.", sizeof(current_item->comment));
          break;
       case SETTING_EMU_REWIND_ENABLED:
          strlcpy(current_item->text, "Rewind option", sizeof(current_item->text));
@@ -504,54 +534,59 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->comment, "INFO - Quits RetroArch and saves the settings.", sizeof(current_item->comment));
          break;
       case SETTING_EMU_AUDIO_MUTE:
-         snprintf(current_item->text, sizeof(current_item->text), "Mute Audio");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.audio_data.mute ? "ON" : "OFF");
+         strlcpy(current_item->text, "Mute Audio", sizeof(current_item->text));
          if(g_extern.audio_data.mute)
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Audio Mute] is set to 'ON'. The game audio will be muted.");
+         {
+            strlcpy(current_item->comment, "INFO - [Audio Mute] is set to 'ON'. The game audio will be muted.", sizeof(current_item->comment));
+            strlcpy(current_item->setting_text, "ON", sizeof(current_item->setting_text));
+         }
          else
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Audio Mute] is set to 'OFF'.");
+         {
+            strlcpy(current_item->comment, "INFO - [Audio Mute] is set to 'OFF'.", sizeof(current_item->comment));
+            strlcpy(current_item->setting_text, "OFF", sizeof(current_item->setting_text));
+         }
          break;
 #ifdef _XBOX1
       case SETTING_EMU_AUDIO_SOUND_VOLUME_LEVEL:
-         snprintf(current_item->text, sizeof(current_item->text), "Volume Level");
+         strlcpy(current_item->text, "Volume Level", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.sound.volume_level ? "Loud" : "Normal");
          if(g_extern.audio_data.mute)
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Volume Level] is set to 'Loud'");
+            strlcpy(current_item->comment, "INFO - Volume level is set to Loud.", sizeof(current_item->comment));
          else
-            snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Volume Level' is set to 'Normal'.");
+            strlcpy(current_item->comment, "INFO - Volume level is set to Normal.", sizeof(current_item->comment));
          break;
 #endif
       case SETTING_ENABLE_CUSTOM_BGM:
-         snprintf(current_item->text, sizeof(current_item->text), "Custom BGM Option");
+         strlcpy(current_item->text, "Custom BGM Option", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - [Custom BGM] is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF");
          break;
       case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-         snprintf(current_item->text, sizeof(current_item->text), "Startup ROM Directory");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.default_rom_startup_dir);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default [Startup ROM directory]. NOTE: You will have to\nrestart the emulator for this change to have any effect.");
+         strlcpy(current_item->text, "Startup ROM Directory", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, g_extern.console.main_wrap.default_rom_startup_dir, sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Set the default Startup ROM directory path.", sizeof(current_item->comment));
          break;
       case SETTING_PATH_SAVESTATES_DIRECTORY:
-         snprintf(current_item->text, sizeof(current_item->text), "Savestate Directory");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.default_savestate_dir);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default path where all the savestate files will be saved to.");
+         strlcpy(current_item->text, "Savestate Directory", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, g_extern.console.main_wrap.default_savestate_dir, sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Set the default path where all the savestate files will be saved to.", sizeof(current_item->comment));
          break;
       case SETTING_PATH_SRAM_DIRECTORY:
-         snprintf(current_item->text, sizeof(current_item->text), "SRAM Directory");
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), g_extern.console.main_wrap.default_sram_dir);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default SRAM (SaveRAM) directory path. All the\nbattery backup saves will be stored in this directory.");
+         strlcpy(current_item->text, "SRAM Directory", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, g_extern.console.main_wrap.default_sram_dir, sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Set the default SaveRAM directory path.", sizeof(current_item->comment));
          break;
 #ifdef HAVE_XML
       case SETTING_PATH_CHEATS:
          strlcpy(current_item->text, "Cheatfile Directory", sizeof(current_item->text));
          strlcpy(current_item->setting_text, g_settings.cheat_database, sizeof(current_item->setting_text));
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default [Cheatfile directory] path. All CHT (cheat) files\nwill be stored here.");
+         strlcpy(current_item->comment, "INFO - Set the default Cheatfile directory path.", sizeof(current_item->comment));
          break;
 #endif
       case SETTING_PATH_SYSTEM:
          strlcpy(current_item->text, "System Directory", sizeof(current_item->text));
          strlcpy(current_item->setting_text, g_settings.system_directory, sizeof(current_item->setting_text));
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Set the default [System directory] path. System files like\nBIOS files, etc. will be stored here.");
+         strlcpy(current_item->comment, "INFO - Set the default [System directory] path. System files like\nBIOS files, etc. will be stored here.", sizeof(current_item->comment));
          break;
       case SETTING_ENABLE_SRAM_PATH:
          snprintf(current_item->text, sizeof(current_item->text), "Custom SRAM Dir Enable");
@@ -628,27 +663,27 @@ static void populate_setting_item(void *data, unsigned input)
       case SETTING_CONTROLS_DEFAULT_ALL:
          strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set all [Controls] back to their 'DEFAULT' values.", sizeof(current_item->comment));
+         strlcpy(current_item->comment, "INFO - Set all Controls settings to defaults.", sizeof(current_item->comment));
          break;
       case SETTING_EMU_VIDEO_DEFAULT_ALL:
          strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set [all RetroArch Video settings] back to their 'DEFAULT' values.", sizeof(current_item->comment));
+         strlcpy(current_item->comment, "INFO - Set all Video settings to defaults.", sizeof(current_item->comment));
          break;
       case SETTING_EMU_AUDIO_DEFAULT_ALL:
          strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set all [RetroArch Audio settings] back to their 'DEFAULT' values.", sizeof(current_item->comment));
+         strlcpy(current_item->comment, "INFO - Set all Audio settings to defaults.", sizeof(current_item->comment));
          break;
       case SETTING_PATH_DEFAULT_ALL:
          strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set all [Path settings] back to their 'DEFAULT' values.", sizeof(current_item->comment));
+         strlcpy(current_item->comment, "INFO - Set all Path settings to defaults.", sizeof(current_item->comment));
          break;
       case SETTING_EMU_DEFAULT_ALL:
          strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Set [all RetroArch settings] back to their 'DEFAULT' values.", sizeof(current_item->comment));
+         strlcpy(current_item->comment, "INFO - Set all RetroArch settings to defaults.", sizeof(current_item->comment));
          break;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
       case SETTING_SAVE_SHADER_PRESET:
@@ -678,7 +713,8 @@ static void display_menubar(void *data)
    font_parms.scale = default_pos.current_path_font_size;
    font_parms.color = WHITE;
 
-   struct platform_bind key_label_r, key_label_l;
+   struct platform_bind key_label_r = {0};
+   struct platform_bind key_label_l = {0};
    strlcpy(key_label_r.desc, "Unknown", sizeof(key_label_r.desc));
    key_label_r.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_R;
 
@@ -820,7 +856,10 @@ void browser_render(void *data)
    filebrowser_t *b = (filebrowser_t*)data;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    unsigned file_count = b->current_dir.list->size;
-   unsigned int current_index, page_number, page_base, i;
+   unsigned current_index = 0;
+   unsigned page_number = 0;
+   unsigned page_base = 0;
+   unsigned i;
    font_params_t font_parms = {0};
    rmenu_default_positions_t default_pos = {0};
 
@@ -834,7 +873,7 @@ void browser_render(void *data)
 
    for (i = page_base; i < file_count && i < page_base + default_pos.entries_per_page; ++i)
    {
-      char fname_tmp[256];
+      char fname_tmp[128];
       fill_pathname_base(fname_tmp, b->current_dir.list->elems[i].data, sizeof(fname_tmp));
       default_pos.starting_y_position += default_pos.y_position_increment;
 
@@ -859,14 +898,15 @@ void browser_render(void *data)
 
 int select_file(void *data, void *state)
 {
+   char extensions[128];
+   char comment[128];
+   char path[PATH_MAX];
+   bool ret = true;
    menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
    font_params_t font_parms = {0};
 
    uint64_t input = rstate->input;
-
-   char extensions[256], comment[256], path[PATH_MAX];
-   bool ret = true;
 
    filebrowser_t *filebrowser = tmpBrowser;
    rmenu_default_positions_t default_pos;
@@ -1010,7 +1050,8 @@ int select_file(void *data, void *state)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, comment, &font_parms);
 
-   struct platform_bind key_label_x, key_label_start;
+   struct platform_bind key_label_x = {0};
+   struct platform_bind key_label_start = {0};
    strlcpy(key_label_x.desc, "Unknown", sizeof(key_label_x.desc));
    key_label_x.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_X;
 
@@ -1044,7 +1085,8 @@ int select_directory(void *data, void *state)
 
    uint64_t input = rstate->input;
 
-   char path[PATH_MAX], msg[256];
+   char path[PATH_MAX];
+   char msg[256];
    bool ret = true;
 
    filebrowser_t *filebrowser = tmpBrowser;
@@ -1121,7 +1163,11 @@ int select_directory(void *data, void *state)
 
    display_menubar(current_menu);
 
-   struct platform_bind key_label_b, key_label_x, key_label_y, key_label_start;
+   struct platform_bind key_label_b = {0};
+   struct platform_bind key_label_x = {0};
+   struct platform_bind key_label_y = {0};
+   struct platform_bind key_label_start = {0};
+
    strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
    key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
    strlcpy(key_label_x.desc, "Unknown", sizeof(key_label_x.desc));
@@ -2274,7 +2320,10 @@ static int select_setting(void *data, void *state)
 
    free(items);
 
-   struct platform_bind key_label_l3, key_label_r3, key_label_start;
+   struct platform_bind key_label_l3 = {0};
+   struct platform_bind key_label_r3 = {0};
+   struct platform_bind key_label_start = {0};
+
    strlcpy(key_label_l3.desc, "Unknown", sizeof(key_label_l3.desc));
    key_label_l3.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_L3;
    strlcpy(key_label_r3.desc, "Unknown", sizeof(key_label_r3.desc));
@@ -2324,7 +2373,11 @@ int select_rom(void *data, void *state)
    rmenu_default_positions_t default_pos;
    filebrowser_t *filebrowser = browser;
 
-   struct platform_bind key_label_b, key_label_l3, key_label_r3, key_label_select;
+   struct platform_bind key_label_b = {0};
+   struct platform_bind key_label_l3 = {0};
+   struct platform_bind key_label_r3 = {0};
+   struct platform_bind key_label_select = {0};
+
    strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
    key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
    strlcpy(key_label_l3.desc, "Unknown", sizeof(key_label_l3.desc));
@@ -2383,10 +2436,7 @@ int select_rom(void *data, void *state)
    }
 
    if (filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_PATH_ISDIR))
-   {
-      const char *current_path = filebrowser_get_current_path(filebrowser);
       snprintf(msg, sizeof(msg), "INFO - Press [%s] to enter the directory.", key_label_b.desc);
-   }
    else
       snprintf(msg, sizeof(msg), "INFO - Press [%s] to load the game.", key_label_b.desc);
 
@@ -2523,14 +2573,25 @@ int ingame_menu_resize(void *data, void *state)
 
    if(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
    {
-      char viewport_x[32], viewport_y[32], viewport_w[32], viewport_h[32];
-      char msg[256];
-      struct platform_bind key_label_b, key_label_a,
-                           key_label_y, key_label_x,
-                           key_label_l1, key_label_l2,
-                           key_label_r1, key_label_r2, key_label_select,
-                           key_label_dpad_left, key_label_dpad_right,
-                           key_label_dpad_up, key_label_dpad_down;
+      char viewport_x[32];
+      char viewport_y[32];
+      char viewport_w[32];
+      char viewport_h[32];
+      char msg[128];
+      struct platform_bind key_label_b = {0};
+      struct platform_bind key_label_a = {0};
+      struct platform_bind key_label_y = {0};
+      struct platform_bind key_label_x = {0};
+      struct platform_bind key_label_l1 = {0};
+      struct platform_bind key_label_l2 = {0};
+      struct platform_bind key_label_r1 = {0};
+      struct platform_bind key_label_r2 = {0};
+      struct platform_bind key_label_select = {0};
+      struct platform_bind key_label_dpad_left = {0};
+      struct platform_bind key_label_dpad_right = {0};
+      struct platform_bind key_label_dpad_up = {0};
+      struct platform_bind key_label_dpad_down = {0};
+      
       strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
       key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
       strlcpy(key_label_a.desc, "Unknown", sizeof(key_label_a.desc));
@@ -2811,6 +2872,9 @@ int ingame_menu(void *data, void *state)
    unsigned menuitem_colors[MENU_ITEM_LAST];
    static unsigned menu_idx = 0;
    font_params_t font_parms = {0};
+   struct platform_bind key_label_b = {0};
+   struct platform_bind key_label_a = {0};
+   struct platform_bind key_label_start = {0};
 
    filebrowser_t *filebrowser = tmpBrowser;
    rmenu_default_positions_t default_pos;
@@ -2828,8 +2892,7 @@ int ingame_menu(void *data, void *state)
       return -1;
    }
 
-   struct platform_bind key_label_b, key_label_a,
-                        key_label_start;
+
    strlcpy(key_label_b.desc, "Unknown", sizeof(key_label_b.desc));
    key_label_b.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_B;
    strlcpy(key_label_a.desc, "Unknown", sizeof(key_label_a.desc));
@@ -2859,7 +2922,7 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
             rarch_state_slot_increase();
 
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to load the current state.", key_label_b.desc);
+         strlcpy(strw_buffer, "Load from current state slot.", sizeof(strw_buffer));
          break;
       case MENU_ITEM_SAVE_STATE:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -2875,7 +2938,7 @@ int ingame_menu(void *data, void *state)
          if(input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
             rarch_state_slot_increase();
 
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to save the current state.", key_label_b.desc);
+         strlcpy(strw_buffer, "Save to current state slot.", sizeof(strw_buffer));
          break;
       case MENU_ITEM_KEEP_ASPECT_RATIO:
          ret = set_setting_action(current_menu, SETTING_KEEP_ASPECT_RATIO, input);
@@ -2883,7 +2946,7 @@ int ingame_menu(void *data, void *state)
          if (ret != 0)
             return ret;
 
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", key_label_start.desc);
+         strlcpy(strw_buffer, "Change the aspect ratio of the screen.", sizeof(strw_buffer));
          break;
       case MENU_ITEM_OVERSCAN_AMOUNT:
          ret = set_setting_action(current_menu, SETTING_HW_OVERSCAN_AMOUNT, input);
@@ -2891,7 +2954,7 @@ int ingame_menu(void *data, void *state)
          if (ret != 0)
             return ret;
 
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", key_label_start.desc);
+         strlcpy(strw_buffer, "Change overscan correction.", sizeof(strw_buffer));
          break;
       case MENU_ITEM_ORIENTATION:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
@@ -2911,7 +2974,7 @@ int ingame_menu(void *data, void *state)
             menu_settings_set_default(S_DEF_ROTATION);
             driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
          }
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", key_label_start.desc);
+         strlcpy(strw_buffer, "Change orientation of the screen.", sizeof(strw_buffer));
          break;
 #ifdef HAVE_FBO
       case MENU_ITEM_SCALE_FACTOR:
@@ -2920,7 +2983,7 @@ int ingame_menu(void *data, void *state)
          if (ret != 0)
             return ret;
 
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset back to default values.", key_label_start.desc);
+         strlcpy(strw_buffer, "Change scaling of the screen.", sizeof(strw_buffer));
          break;
 #endif
       case MENU_ITEM_FRAME_ADVANCE:
@@ -2932,7 +2995,7 @@ int ingame_menu(void *data, void *state)
             menu_idx = MENU_ITEM_FRAME_ADVANCE;
             return -1;
          }
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to step one frame.", key_label_b.desc);
+         strlcpy(strw_buffer, "Press a button to step one frame.", sizeof(strw_buffer));
          break;
       case MENU_ITEM_RESIZE_MODE:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -2942,7 +3005,7 @@ int ingame_menu(void *data, void *state)
       case MENU_ITEM_SCREENSHOT_MODE:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_SCREENSHOT);
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to go back to the in-game menu.", key_label_a.desc);
+         strlcpy(strw_buffer, "Take a screenshot.", sizeof(strw_buffer));
          break;
       case MENU_ITEM_RETURN_TO_GAME:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -2952,7 +3015,7 @@ int ingame_menu(void *data, void *state)
             return -1;
          }
 
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to return to the game.", key_label_b.desc);
+         strlcpy(strw_buffer, "Return to the game.", sizeof(strw_buffer));
          break;
       case MENU_ITEM_RESET:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -2962,7 +3025,7 @@ int ingame_menu(void *data, void *state)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
          }
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to reset the game.", key_label_b.desc);
+         strlcpy(strw_buffer, "Reset the game.", sizeof(strw_buffer));
          break;
       case MENU_ITEM_RETURN_TO_MENU:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -2972,7 +3035,7 @@ int ingame_menu(void *data, void *state)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return 0;
          }
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to return to the ROM Browser.", key_label_b.desc);
+         strlcpy(strw_buffer, "Return to the menu.", sizeof(strw_buffer));
          break;
       case MENU_ITEM_CHANGE_LIBRETRO:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -2981,7 +3044,7 @@ int ingame_menu(void *data, void *state)
             filebrowser_set_root_and_ext(filebrowser, EXT_EXECUTABLES, default_paths.core_dir);
             set_libretro_core_as_launch = true;
          }
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to choose another core.", key_label_b.desc);
+         strlcpy(strw_buffer, "Choose another libretro core.", sizeof(strw_buffer));
          break;
 #ifdef HAVE_MULTIMAN
       case MENU_ITEM_RETURN_TO_MULTIMAN:
@@ -2995,7 +3058,7 @@ int ingame_menu(void *data, void *state)
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
             return -1;
          }
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to quit RetroArch and return to multiMAN.", key_label_b.desc);
+         strlcpy(strw_buffer, "Quit RetroArch and return to multiMAN.", sizeof(strw_buffer));
          break;
 #endif
       case MENU_ITEM_QUIT_RARCH:
@@ -3007,7 +3070,7 @@ int ingame_menu(void *data, void *state)
             return -1;
          }
 
-         snprintf(strw_buffer, sizeof(strw_buffer), "Press [%s] to quit RetroArch.", key_label_b.desc);
+         strlcpy(strw_buffer, "Quit RetroArch.", sizeof(strw_buffer));
          break;
    }
 
@@ -3217,6 +3280,12 @@ void menu_input_poll(void *data, void *state)
 int menu_input_process(void *data, void *state)
 {
    (void)data;
+   bool quit = false;
+   bool resize = false;
+   unsigned width;
+   unsigned height;
+   unsigned frame_count;
+
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
 
@@ -3244,8 +3313,6 @@ int menu_input_process(void *data, void *state)
       }
    }
 
-   bool quit, resize;
-   unsigned width, height, frame_count;
    frame_count = 0;
    device_ptr->ctx_driver->check_window(&quit, &resize, &width, &height, frame_count);
 
