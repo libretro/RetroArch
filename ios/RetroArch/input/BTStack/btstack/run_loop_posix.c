@@ -40,8 +40,8 @@
  *  Created by Matthias Ringwald on 6/6/09.
  */
 
-#include <btstack/run_loop.h>
-#include <btstack/linked_list.h>
+#include "run_loop.h"
+#include "linked_list.h"
 
 #include "debug.h"
 #include "run_loop_private.h"

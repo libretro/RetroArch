@@ -39,7 +39,7 @@
 
 #include "config.h"
 
-#include <btstack/linked_list.h>
+#include "linked_list.h"
 
 #include <stdint.h>
 

@@ -40,7 +40,7 @@
  *  Created by Matthias Ringwald on 7/13/09.
  */
 
-#include <btstack/linked_list.h>
+#include "linked_list.h"
 #include <stdlib.h>
 /**
  * tests if list is empty

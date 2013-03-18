@@ -43,7 +43,7 @@
  */
 
 #include "config.h"
-#include <btstack/utils.h>
+#include "utils.h"
 #include <stdio.h>
 #include "debug.h"
 
