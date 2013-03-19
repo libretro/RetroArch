@@ -73,6 +73,7 @@ enum
    INPUT_XINPUT,
    INPUT_LINUXRAW,
    INPUT_IOS,
+   INPUT_QNX,
    INPUT_NULL
 };
 
@@ -160,6 +161,8 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_X
 #elif defined(IOS)
 #define INPUT_DEFAULT_DRIVER INPUT_IOS
+#elif defined(__BLACKBERRY_QNX__)
+#define INPUT_DEFAULT_DRIVER INPUT_QNX
 #else
 #define INPUT_DEFAULT_DRIVER INPUT_NULL
 #endif
