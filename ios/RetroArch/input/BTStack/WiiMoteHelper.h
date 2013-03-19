@@ -34,6 +34,7 @@
 #import "BTstackManager.h"
 
 @interface WiiMoteHelper : NSObject<BTstackManagerDelegate, BTstackManagerListener>
++ (BOOL)haveBluetooth;
 + (void)startBluetooth;
 + (BOOL)isBluetoothRunning;
 + (void)stopBluetooth;

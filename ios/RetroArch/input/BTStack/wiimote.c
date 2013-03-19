@@ -43,7 +43,9 @@
 #include <string.h>
 #include <math.h>
 #include <unistd.h>
+#include "boolean.h"
 
+#include "btdynamic.h"
 #include "btstack/btstack.h"
 #include "wiimote.h"
 
@@ -435,7 +437,7 @@ int wiimote_send(struct wiimote_t* wm, byte report_type, byte* msg, int len)
    printf("\n");
 #endif
 
-   bt_send_l2cap( wm->c_source_cid, buf, len+2);
+   bt_send_l2cap_ptr( wm->c_source_cid, buf, len+2);
    return 1;
 }
 

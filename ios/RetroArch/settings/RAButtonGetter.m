@@ -15,10 +15,8 @@
 
 #import "settings.h"
 #include "../input/keycode.h"
-
-#ifdef WIIMOTE
-# include "../input/BTStack/wiimote.h"
-#endif
+#include "../input/BTStack/wiimote.h"
+#include "../input/BTStack/WiiMoteHelper.h"
 
 extern NSString* const GSEventKeyUpNotification;
 
@@ -92,9 +90,7 @@ static NSString* get_key_config_name(uint32_t hid_id)
    UIAlertView* _alert;
    UITableView* _view;
    bool _finished;
-#ifdef WIIMOTE
    NSTimer* _btTimer;
-#endif
 }
 
 - (id)initWithSetting:(RASettingData*)setting fromTable:(UITableView*)table
@@ -114,9 +110,8 @@ static NSString* get_key_config_name(uint32_t hid_id)
    
    [[NSNotificationCenter defaultCenter] addObserver:self selector: @selector(keyReleased:) name: GSEventKeyUpNotification object: nil];
 
-#ifdef WIIMOTE
-   _btTimer = [NSTimer scheduledTimerWithTimeInterval:.05f target:self selector:@selector(checkWiiMote) userInfo:nil repeats:YES];
-#endif
+   if ([WiiMoteHelper haveBluetooth])
+      _btTimer = [NSTimer scheduledTimerWithTimeInterval:.05f target:self selector:@selector(checkWiiMote) userInfo:nil repeats:YES];
 
    return self;
 }
@@ -127,9 +122,11 @@ static NSString* get_key_config_name(uint32_t hid_id)
    {
       _finished = true;
    
-#ifdef WIIMOTE
-      [_btTimer invalidate];
-#endif
+      if (_btTimer)
+      {
+         [_btTimer invalidate];
+         _btTimer = nil;
+      }
 
       [[NSNotificationCenter defaultCenter] removeObserver:self];
       [_alert dismissWithClickedButtonIndex:0 animated:YES];
@@ -144,7 +141,6 @@ static NSString* get_key_config_name(uint32_t hid_id)
    [self finish];
 }
 
-#ifdef WIIMOTE
 - (void)checkWiiMote
 {
    for (int i = 0; i != myosd_num_of_joys; i ++)
@@ -163,7 +159,6 @@ static NSString* get_key_config_name(uint32_t hid_id)
       }
    }
 }
-#endif
 
 - (void)keyReleased:(NSNotification*) notification
 {

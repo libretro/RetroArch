@@ -8,74 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		96096DD816D1ABAF00BF4499 /* RAModuleInfoList.m in Sources */ = {isa = PBXBuildFile; fileRef = 96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */; };
-		9614C6C416DDC018000B36EF /* autosave.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAE9D16C1D9A9009DE44C /* autosave.c */; };
-		9614C6C516DDC018000B36EF /* cheats.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEA016C1D9A9009DE44C /* cheats.c */; };
-		9614C6C616DDC018000B36EF /* command.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEA216C1D9A9009DE44C /* command.c */; };
-		9614C6C716DDC018000B36EF /* driver.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEA716C1D9A9009DE44C /* driver.c */; };
-		9614C6C816DDC018000B36EF /* dynamic.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEA916C1D9A9009DE44C /* dynamic.c */; };
-		9614C6C916DDC018000B36EF /* fifo_buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEAB16C1D9A9009DE44C /* fifo_buffer.c */; };
-		9614C6CA16DDC018000B36EF /* file_extract.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEAD16C1D9A9009DE44C /* file_extract.c */; };
-		9614C6CB16DDC018000B36EF /* file_path.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEAF16C1D9A9009DE44C /* file_path.c */; };
-		9614C6CC16DDC018000B36EF /* file.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEB016C1D9A9009DE44C /* file.c */; };
-		9614C6CD16DDC018000B36EF /* hash.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEB316C1D9A9009DE44C /* hash.c */; };
-		9614C6CE16DDC018000B36EF /* message.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEB616C1D9A9009DE44C /* message.c */; };
-		9614C6CF16DDC018000B36EF /* movie.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEB816C1D9A9009DE44C /* movie.c */; };
-		9614C6D016DDC018000B36EF /* patch.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEBD16C1D9A9009DE44C /* patch.c */; };
-		9614C6D116DDC018000B36EF /* performance.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEBF16C1D9A9009DE44C /* performance.c */; };
-		9614C6D216DDC018000B36EF /* retroarch.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEC216C1D9A9009DE44C /* retroarch.c */; };
-		9614C6D316DDC018000B36EF /* rewind.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEC316C1D9A9009DE44C /* rewind.c */; };
-		9614C6D416DDC018000B36EF /* screenshot.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEC516C1D9A9009DE44C /* screenshot.c */; };
-		9614C6D516DDC018000B36EF /* settings.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEC716C1D9A9009DE44C /* settings.c */; };
-		9614C6D616DDC018000B36EF /* thread.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEC816C1D9A9009DE44C /* thread.c */; };
-		9614C6D716DDC018000B36EF /* config_file.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEE116C1DBDB009DE44C /* config_file.c */; };
-		9614C6D816DDC018000B36EF /* utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEFD16C1DC73009DE44C /* utils.c */; };
-		9614C6D916DDC018000B36EF /* compat.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF2416C1DFC8009DE44C /* compat.c */; };
-		9614C6DA16DDC018000B36EF /* rxml.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF2916C1DFC8009DE44C /* rxml.c */; };
-		9614C6DB16DDC018000B36EF /* bitmapfont.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF4816C1E00A009DE44C /* bitmapfont.c */; };
-		9614C6DC16DDC018000B36EF /* fonts.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF4B16C1E00A009DE44C /* fonts.c */; };
-		9614C6DD16DDC018000B36EF /* gl_font.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF4E16C1E00A009DE44C /* gl_font.c */; };
-		9614C6DE16DDC018000B36EF /* gl_raster_font.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF5016C1E00A009DE44C /* gl_raster_font.c */; };
-		9614C6DF16DDC018000B36EF /* gfx_common.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF5416C1E00A009DE44C /* gfx_common.c */; };
-		9614C6E016DDC018000B36EF /* gfx_context.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF5616C1E00A009DE44C /* gfx_context.c */; };
-		9614C6E116DDC018000B36EF /* gl.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF5816C1E00A009DE44C /* gl.c */; };
-		9614C6E216DDC018000B36EF /* image.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF5A16C1E00A009DE44C /* image.c */; };
-		9614C6E316DDC018000B36EF /* matrix.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF5D16C1E00A009DE44C /* matrix.c */; };
-		9614C6E416DDC018000B36EF /* matrix_3x3.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF5F16C1E00A009DE44C /* matrix_3x3.c */; };
-		9614C6E516DDC018000B36EF /* rpng.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF6716C1E00A009DE44C /* rpng.c */; };
-		9614C6E616DDC018000B36EF /* filter.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF6B16C1E00A009DE44C /* filter.c */; };
-		9614C6E716DDC018000B36EF /* pixconv.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF6D16C1E00A009DE44C /* pixconv.c */; };
-		9614C6E816DDC018000B36EF /* scaler.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF6F16C1E00A009DE44C /* scaler.c */; };
-		9614C6E916DDC018000B36EF /* scaler_int.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF7116C1E00A009DE44C /* scaler_int.c */; };
-		9614C6EA16DDC018000B36EF /* shader_glsl.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF7716C1E00A009DE44C /* shader_glsl.c */; };
-		9614C6EB16DDC018000B36EF /* state_tracker.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAF7B16C1E00A009DE44C /* state_tracker.c */; };
-		9614C6EC16DDC018000B36EF /* sinc.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEF716C1DC73009DE44C /* sinc.c */; };
-		9614C6ED16DDC018000B36EF /* input_common.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFC916C1FBC0009DE44C /* input_common.c */; };
-		9614C6EE16DDC018000B36EF /* overlay.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFCE16C1FBC0009DE44C /* overlay.c */; };
-		9614C6EF16DDC018000B36EF /* ioseagl_ctx.c in Sources */ = {isa = PBXBuildFile; fileRef = 962979EE16C3EA3E00E6DCE0 /* ioseagl_ctx.c */; };
-		9614C6F016DDC018000B36EF /* RetroArch_iOS.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0B16C5AD8D00E6DCE0 /* RetroArch_iOS.m */; };
-		9614C6F116DDC018000B36EF /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0E16C5AEA100E6DCE0 /* main.m */; };
-		9614C6F216DDC018000B36EF /* resampler.c in Sources */ = {isa = PBXBuildFile; fileRef = 96366C4F16C9A4E100D64A22 /* resampler.c */; };
-		9614C6F316DDC018000B36EF /* hermite.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEEC16C1DC73009DE44C /* hermite.c */; };
-		9614C6F416DDC018000B36EF /* coreaudio.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAEE816C1DC73009DE44C /* coreaudio.c */; };
-		9614C6F516DDC018000B36EF /* RAButtonGetter.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABC16CC522F009BBD19 /* RAButtonGetter.m */; };
-		9614C6F616DDC018000B36EF /* RASettingEnumerationList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABD16CC522F009BBD19 /* RASettingEnumerationList.m */; };
-		9614C6F716DDC018000B36EF /* RASettingsSubList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABE16CC522F009BBD19 /* RASettingsSubList.m */; };
-		9614C6F816DDC018000B36EF /* RASettingsList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABF16CC522F009BBD19 /* RASettingsList.m */; };
-		9614C6FA16DDC018000B36EF /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC516CC523B009BBD19 /* RAGameView.m */; };
-		9614C6FC16DDC018000B36EF /* RAModuleInfoList.m in Sources */ = {isa = PBXBuildFile; fileRef = 96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */; };
-		9614C6FF16DDC018000B36EF /* RAConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2F16D7045700FE8D5A /* RAConfig.m */; };
-		9614C70616DDC018000B36EF /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
-		9614C70716DDC018000B36EF /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
-		9614C70816DDC018000B36EF /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAF2116C1DF88009DE44C /* libz.dylib */; };
-		9614C70916DDC018000B36EF /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
-		9614C70A16DDC018000B36EF /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
-		9614C70B16DDC018000B36EF /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
-		9614C70C16DDC018000B36EF /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; };
-		9614C70D16DDC018000B36EF /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
-		9614C71016DDC018000B36EF /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2616C82FF100E6DCE0 /* overlays */; };
-		9614C71116DDC018000B36EF /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */; };
-		9614C71516DDC018000B36EF /* ic_dir.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F416C43B9500E6DCE0 /* ic_dir.png */; };
-		9614C71616DDC018000B36EF /* ic_file.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F516C43B9500E6DCE0 /* ic_file.png */; };
 		962979EF16C3EA3E00E6DCE0 /* ioseagl_ctx.c in Sources */ = {isa = PBXBuildFile; fileRef = 962979EE16C3EA3E00E6DCE0 /* ioseagl_ctx.c */; };
 		962979F616C43B9500E6DCE0 /* ic_dir.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F416C43B9500E6DCE0 /* ic_dir.png */; };
 		962979F716C43B9500E6DCE0 /* ic_file.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F516C43B9500E6DCE0 /* ic_file.png */; };
@@ -95,39 +27,23 @@
 		966B9C8A16E40D44005B61E1 /* ios_input.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8616E40D44005B61E1 /* ios_input.m */; };
 		966B9C8B16E40D44005B61E1 /* ios_joypad.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8716E40D44005B61E1 /* ios_joypad.m */; };
 		966B9C8C16E40D44005B61E1 /* RAInputResponder.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8916E40D44005B61E1 /* RAInputResponder.m */; };
-		966B9C8D16E40EFC005B61E1 /* RAInputResponder.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8916E40D44005B61E1 /* RAInputResponder.m */; };
-		966B9C8E16E40F00005B61E1 /* ios_input.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8616E40D44005B61E1 /* ios_input.m */; };
 		966B9CA216E418B7005B61E1 /* BTDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C9116E418B7005B61E1 /* BTDevice.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		966B9CA416E418B7005B61E1 /* BTstackManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C9C16E418B7005B61E1 /* BTstackManager.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		966B9CA516E418B7005B61E1 /* libBTstack.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 966B9C9D16E418B7005B61E1 /* libBTstack.dylib */; };
 		966B9CA616E418B7005B61E1 /* wiimote.c in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C9E16E418B7005B61E1 /* wiimote.c */; };
 		966B9CA716E418B7005B61E1 /* WiiMoteHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CA116E418B7005B61E1 /* WiiMoteHelper.m */; };
 		966B9CAE16E41C07005B61E1 /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAA16E41C07005B61E1 /* browser.m */; };
-		966B9CAF16E41C07005B61E1 /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAA16E41C07005B61E1 /* browser.m */; };
 		966B9CB016E41C07005B61E1 /* RADirectoryGrid.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAB16E41C07005B61E1 /* RADirectoryGrid.m */; };
-		966B9CB116E41C07005B61E1 /* RADirectoryGrid.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAB16E41C07005B61E1 /* RADirectoryGrid.m */; };
 		966B9CB216E41C07005B61E1 /* RADirectoryList.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAC16E41C07005B61E1 /* RADirectoryList.m */; };
-		966B9CB316E41C07005B61E1 /* RADirectoryList.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAC16E41C07005B61E1 /* RADirectoryList.m */; };
 		966B9CB416E41C07005B61E1 /* RAModuleList.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAD16E41C07005B61E1 /* RAModuleList.m */; };
-		966B9CB516E41C07005B61E1 /* RAModuleList.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAD16E41C07005B61E1 /* RAModuleList.m */; };
 		966B9CBD16E41E7A005B61E1 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */; };
-		966B9CBE16E41E7A005B61E1 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */; };
 		966B9CBF16E41E7A005B61E1 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CB916E41E7A005B61E1 /* Default.png */; };
-		966B9CC016E41E7A005B61E1 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CB916E41E7A005B61E1 /* Default.png */; };
 		966B9CC116E41E7A005B61E1 /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBA16E41E7A005B61E1 /* Default@2x.png */; };
-		966B9CC216E41E7A005B61E1 /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBA16E41E7A005B61E1 /* Default@2x.png */; };
 		966B9CC316E41E7A005B61E1 /* Icon-72.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBB16E41E7A005B61E1 /* Icon-72.png */; };
-		966B9CC416E41E7A005B61E1 /* Icon-72.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBB16E41E7A005B61E1 /* Icon-72.png */; };
 		966B9CC516E41E7A005B61E1 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBC16E41E7A005B61E1 /* Icon.png */; };
-		966B9CC616E41E7A005B61E1 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CBC16E41E7A005B61E1 /* Icon.png */; };
 		966B9CC916E41EC1005B61E1 /* PauseView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CC716E41EC1005B61E1 /* PauseView.xib */; };
-		966B9CCA16E41EC1005B61E1 /* PauseView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CC716E41EC1005B61E1 /* PauseView.xib */; };
 		966B9CCB16E41EC1005B61E1 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CC816E41EC1005B61E1 /* PauseIndicatorView.xib */; };
-		966B9CCC16E41EC1005B61E1 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CC816E41EC1005B61E1 /* PauseIndicatorView.xib */; };
 		967D646F16E45428006BA1F2 /* ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 967D646E16E45428006BA1F2 /* ic_pause.png */; };
-		967D647016E45428006BA1F2 /* ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 967D646E16E45428006BA1F2 /* ic_pause.png */; };
 		967D647516E6EA04006BA1F2 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 967D647416E6EA04006BA1F2 /* modules */; };
-		967D647616E6EA04006BA1F2 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 967D647416E6EA04006BA1F2 /* modules */; };
 		96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
 		96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
 		96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
@@ -179,11 +95,11 @@
 		96AFAFD416C1FBC0009DE44C /* input_common.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFC916C1FBC0009DE44C /* input_common.c */; };
 		96C19C3016D7045700FE8D5A /* RAConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2F16D7045700FE8D5A /* RAConfig.m */; };
 		96CF015016C2C0B700ABF9C9 /* overlay.c in Sources */ = {isa = PBXBuildFile; fileRef = 96AFAFCE16C1FBC0009DE44C /* overlay.c */; };
+		96F9C26A16F7D9E2002455B3 /* btdynamic.c in Sources */ = {isa = PBXBuildFile; fileRef = 96F9C26816F7D9E2002455B3 /* btdynamic.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleInfoList.m; sourceTree = "<group>"; };
-		9614C71E16DDC018000B36EF /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9614C71F16DDC018000B36EF /* RetroArch copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch copy-Info.plist"; path = "/Users/jason/Documents/Projects/ios/RetroArch/ios/RetroArch copy-Info.plist"; sourceTree = "<absolute>"; };
 		962979EE16C3EA3E00E6DCE0 /* ioseagl_ctx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ioseagl_ctx.c; sourceTree = "<group>"; };
 		962979F416C43B9500E6DCE0 /* ic_dir.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_dir.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_dir.png"; sourceTree = "<group>"; };
@@ -217,7 +133,6 @@
 		966B9C9A16E418B7005B61E1 /* utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utils.h; sourceTree = "<group>"; };
 		966B9C9B16E418B7005B61E1 /* BTstackManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BTstackManager.h; sourceTree = "<group>"; };
 		966B9C9C16E418B7005B61E1 /* BTstackManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BTstackManager.m; sourceTree = "<group>"; };
-		966B9C9D16E418B7005B61E1 /* libBTstack.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libBTstack.dylib; sourceTree = "<group>"; };
 		966B9C9E16E418B7005B61E1 /* wiimote.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = wiimote.c; sourceTree = "<group>"; };
 		966B9C9F16E418B7005B61E1 /* wiimote.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wiimote.h; sourceTree = "<group>"; };
 		966B9CA016E418B7005B61E1 /* WiiMoteHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WiiMoteHelper.h; sourceTree = "<group>"; };
@@ -352,24 +267,11 @@
 		96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rarch_wrapper.h; sourceTree = "<group>"; };
 		96C19C2E16D7045600FE8D5A /* RAConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAConfig.h; sourceTree = "<group>"; };
 		96C19C2F16D7045700FE8D5A /* RAConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAConfig.m; sourceTree = "<group>"; };
+		96F9C26816F7D9E2002455B3 /* btdynamic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = btdynamic.c; sourceTree = "<group>"; };
+		96F9C26916F7D9E2002455B3 /* btdynamic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btdynamic.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		9614C70516DDC018000B36EF /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				9614C70616DDC018000B36EF /* AudioToolbox.framework in Frameworks */,
-				9614C70716DDC018000B36EF /* CoreAudio.framework in Frameworks */,
-				9614C70816DDC018000B36EF /* libz.dylib in Frameworks */,
-				9614C70916DDC018000B36EF /* UIKit.framework in Frameworks */,
-				9614C70A16DDC018000B36EF /* Foundation.framework in Frameworks */,
-				9614C70B16DDC018000B36EF /* CoreGraphics.framework in Frameworks */,
-				9614C70C16DDC018000B36EF /* GLKit.framework in Frameworks */,
-				9614C70D16DDC018000B36EF /* OpenGLES.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		96AFAE2216C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -382,7 +284,6 @@
 				96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */,
 				96AFAE3016C1D4EA009DE44C /* GLKit.framework in Frameworks */,
 				96AFAE3216C1D4EA009DE44C /* OpenGLES.framework in Frameworks */,
-				966B9CA516E418B7005B61E1 /* libBTstack.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -417,12 +318,13 @@
 		966B9C8F16E418B7005B61E1 /* BTStack */ = {
 			isa = PBXGroup;
 			children = (
+				96F9C26816F7D9E2002455B3 /* btdynamic.c */,
+				96F9C26916F7D9E2002455B3 /* btdynamic.h */,
 				966B9C9016E418B7005B61E1 /* BTDevice.h */,
 				966B9C9116E418B7005B61E1 /* BTDevice.m */,
 				966B9C9416E418B7005B61E1 /* btstack */,
 				966B9C9B16E418B7005B61E1 /* BTstackManager.h */,
 				966B9C9C16E418B7005B61E1 /* BTstackManager.m */,
-				966B9C9D16E418B7005B61E1 /* libBTstack.dylib */,
 				966B9C9E16E418B7005B61E1 /* wiimote.c */,
 				966B9C9F16E418B7005B61E1 /* wiimote.h */,
 				966B9CA016E418B7005B61E1 /* WiiMoteHelper.h */,
@@ -491,7 +393,6 @@
 			isa = PBXGroup;
 			children = (
 				96AFAE2516C1D4EA009DE44C /* RetroArch.app */,
-				9614C71E16DDC018000B36EF /* RetroArch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -758,23 +659,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		9614C6C216DDC018000B36EF /* RetroArch-nobtstack */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 9614C71B16DDC018000B36EF /* Build configuration list for PBXNativeTarget "RetroArch-nobtstack" */;
-			buildPhases = (
-				9614C6C316DDC018000B36EF /* Sources */,
-				9614C70516DDC018000B36EF /* Frameworks */,
-				9614C70F16DDC018000B36EF /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = "RetroArch-nobtstack";
-			productName = RetroArch;
-			productReference = 9614C71E16DDC018000B36EF /* RetroArch.app */;
-			productType = "com.apple.product-type.application";
-		};
 		96AFAE2416C1D4EA009DE44C /* RetroArch */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 96AFAE5416C1D4EA009DE44C /* Build configuration list for PBXNativeTarget "RetroArch" */;
@@ -814,32 +698,11 @@
 			projectRoot = "";
 			targets = (
 				96AFAE2416C1D4EA009DE44C /* RetroArch */,
-				9614C6C216DDC018000B36EF /* RetroArch-nobtstack */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		9614C70F16DDC018000B36EF /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				9614C71016DDC018000B36EF /* overlays in Resources */,
-				9614C71116DDC018000B36EF /* InfoPlist.strings in Resources */,
-				9614C71516DDC018000B36EF /* ic_dir.png in Resources */,
-				9614C71616DDC018000B36EF /* ic_file.png in Resources */,
-				966B9CBE16E41E7A005B61E1 /* Default-568h@2x.png in Resources */,
-				966B9CC016E41E7A005B61E1 /* Default.png in Resources */,
-				966B9CC216E41E7A005B61E1 /* Default@2x.png in Resources */,
-				966B9CC416E41E7A005B61E1 /* Icon-72.png in Resources */,
-				966B9CC616E41E7A005B61E1 /* Icon.png in Resources */,
-				966B9CCA16E41EC1005B61E1 /* PauseView.xib in Resources */,
-				966B9CCC16E41EC1005B61E1 /* PauseIndicatorView.xib in Resources */,
-				967D647016E45428006BA1F2 /* ic_pause.png in Resources */,
-				967D647616E6EA04006BA1F2 /* modules in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		96AFAE2316C1D4EA009DE44C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -863,75 +726,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		9614C6C316DDC018000B36EF /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				9614C6C416DDC018000B36EF /* autosave.c in Sources */,
-				9614C6C516DDC018000B36EF /* cheats.c in Sources */,
-				9614C6C616DDC018000B36EF /* command.c in Sources */,
-				9614C6C716DDC018000B36EF /* driver.c in Sources */,
-				9614C6C816DDC018000B36EF /* dynamic.c in Sources */,
-				9614C6C916DDC018000B36EF /* fifo_buffer.c in Sources */,
-				9614C6CA16DDC018000B36EF /* file_extract.c in Sources */,
-				9614C6CB16DDC018000B36EF /* file_path.c in Sources */,
-				9614C6CC16DDC018000B36EF /* file.c in Sources */,
-				9614C6CD16DDC018000B36EF /* hash.c in Sources */,
-				9614C6CE16DDC018000B36EF /* message.c in Sources */,
-				9614C6CF16DDC018000B36EF /* movie.c in Sources */,
-				9614C6D016DDC018000B36EF /* patch.c in Sources */,
-				9614C6D116DDC018000B36EF /* performance.c in Sources */,
-				9614C6D216DDC018000B36EF /* retroarch.c in Sources */,
-				9614C6D316DDC018000B36EF /* rewind.c in Sources */,
-				9614C6D416DDC018000B36EF /* screenshot.c in Sources */,
-				9614C6D516DDC018000B36EF /* settings.c in Sources */,
-				9614C6D616DDC018000B36EF /* thread.c in Sources */,
-				9614C6D716DDC018000B36EF /* config_file.c in Sources */,
-				9614C6D816DDC018000B36EF /* utils.c in Sources */,
-				9614C6D916DDC018000B36EF /* compat.c in Sources */,
-				9614C6DA16DDC018000B36EF /* rxml.c in Sources */,
-				9614C6DB16DDC018000B36EF /* bitmapfont.c in Sources */,
-				9614C6DC16DDC018000B36EF /* fonts.c in Sources */,
-				9614C6DD16DDC018000B36EF /* gl_font.c in Sources */,
-				9614C6DE16DDC018000B36EF /* gl_raster_font.c in Sources */,
-				9614C6DF16DDC018000B36EF /* gfx_common.c in Sources */,
-				9614C6E016DDC018000B36EF /* gfx_context.c in Sources */,
-				9614C6E116DDC018000B36EF /* gl.c in Sources */,
-				9614C6E216DDC018000B36EF /* image.c in Sources */,
-				9614C6E316DDC018000B36EF /* matrix.c in Sources */,
-				9614C6E416DDC018000B36EF /* matrix_3x3.c in Sources */,
-				9614C6E516DDC018000B36EF /* rpng.c in Sources */,
-				9614C6E616DDC018000B36EF /* filter.c in Sources */,
-				9614C6E716DDC018000B36EF /* pixconv.c in Sources */,
-				9614C6E816DDC018000B36EF /* scaler.c in Sources */,
-				9614C6E916DDC018000B36EF /* scaler_int.c in Sources */,
-				9614C6EA16DDC018000B36EF /* shader_glsl.c in Sources */,
-				9614C6EB16DDC018000B36EF /* state_tracker.c in Sources */,
-				9614C6EC16DDC018000B36EF /* sinc.c in Sources */,
-				9614C6ED16DDC018000B36EF /* input_common.c in Sources */,
-				9614C6EE16DDC018000B36EF /* overlay.c in Sources */,
-				9614C6EF16DDC018000B36EF /* ioseagl_ctx.c in Sources */,
-				9614C6F016DDC018000B36EF /* RetroArch_iOS.m in Sources */,
-				9614C6F116DDC018000B36EF /* main.m in Sources */,
-				9614C6F216DDC018000B36EF /* resampler.c in Sources */,
-				9614C6F316DDC018000B36EF /* hermite.c in Sources */,
-				9614C6F416DDC018000B36EF /* coreaudio.c in Sources */,
-				9614C6F516DDC018000B36EF /* RAButtonGetter.m in Sources */,
-				9614C6F616DDC018000B36EF /* RASettingEnumerationList.m in Sources */,
-				9614C6F716DDC018000B36EF /* RASettingsSubList.m in Sources */,
-				9614C6F816DDC018000B36EF /* RASettingsList.m in Sources */,
-				9614C6FA16DDC018000B36EF /* RAGameView.m in Sources */,
-				9614C6FC16DDC018000B36EF /* RAModuleInfoList.m in Sources */,
-				9614C6FF16DDC018000B36EF /* RAConfig.m in Sources */,
-				966B9C8D16E40EFC005B61E1 /* RAInputResponder.m in Sources */,
-				966B9C8E16E40F00005B61E1 /* ios_input.m in Sources */,
-				966B9CAF16E41C07005B61E1 /* browser.m in Sources */,
-				966B9CB116E41C07005B61E1 /* RADirectoryGrid.m in Sources */,
-				966B9CB316E41C07005B61E1 /* RADirectoryList.m in Sources */,
-				966B9CB516E41C07005B61E1 /* RAModuleList.m in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		96AFAE2116C1D4EA009DE44C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1003,6 +797,7 @@
 				966B9CB016E41C07005B61E1 /* RADirectoryGrid.m in Sources */,
 				966B9CB216E41C07005B61E1 /* RADirectoryList.m in Sources */,
 				966B9CB416E41C07005B61E1 /* RAModuleList.m in Sources */,
+				96F9C26A16F7D9E2002455B3 /* btdynamic.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1020,80 +815,6 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		9614C71C16DDC018000B36EF /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_CXX_LIBRARY = "libstdc++";
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "RetroArch/RetroArch-Prefix.pch";
-				INFOPLIST_FILE = "RetroArch copy-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SRCROOT)\"",
-				);
-				OTHER_CFLAGS = (
-					"-DHAVE_RARCH_MAIN_WRAP",
-					"-DIOS",
-					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
-					"-DHAVE_OPENGLES",
-					"-DHAVE_VID_CONTEXT",
-					"-DHAVE_OPENGLES2",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-DLSB_FIRST",
-					"-D__LIBRETRO__",
-					"-DRARCH_PERFORMANCE_MODE",
-					"-DPACKAGE_VERSION=\\\"1.0\\\"",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
-				);
-				PRODUCT_NAME = RetroArch;
-				WRAPPER_EXTENSION = app;
-			};
-			name = Debug;
-		};
-		9614C71D16DDC018000B36EF /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_CXX_LIBRARY = "libstdc++";
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "RetroArch/RetroArch-Prefix.pch";
-				INFOPLIST_FILE = "RetroArch copy-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SRCROOT)\"",
-				);
-				OTHER_CFLAGS = (
-					"-DNS_BLOCK_ASSERTIONS=1",
-					"-DNDEBUG",
-					"-DHAVE_RARCH_MAIN_WRAP",
-					"-DIOS",
-					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
-					"-DHAVE_OPENGLES",
-					"-DHAVE_VID_CONTEXT",
-					"-DHAVE_OPENGLES2",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-DLSB_FIRST",
-					"-D__LIBRETRO__",
-					"-DRARCH_PERFORMANCE_MODE",
-					"-DPACKAGE_VERSION=\\\"1.0\\\"",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
-				);
-				PRODUCT_NAME = RetroArch;
-				WRAPPER_EXTENSION = app;
-			};
-			name = Release;
-		};
 		96AFAE5216C1D4EA009DE44C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1213,12 +934,10 @@
 					"-DLSB_FIRST",
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
-					"-DPACKAGE_VERSION=\\\"1.0\\\"",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
-					"-DWIIMOTE",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
@@ -1253,12 +972,10 @@
 					"-DLSB_FIRST",
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
-					"-DPACKAGE_VERSION=\\\"1.0\\\"",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
-					"-DWIIMOTE",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
@@ -1268,15 +985,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		9614C71B16DDC018000B36EF /* Build configuration list for PBXNativeTarget "RetroArch-nobtstack" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				9614C71C16DDC018000B36EF /* Debug */,
-				9614C71D16DDC018000B36EF /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

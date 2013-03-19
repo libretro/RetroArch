@@ -32,6 +32,7 @@
 #include <sys/sysctl.h>
 #include <stdio.h>
 
+#include "btdynamic.h"
 #include "wiimote.h"
 
 #import "WiiMoteHelper.h"
@@ -41,43 +42,58 @@
 
 static WiiMoteHelper* instance;
 static BTDevice *device;
+static bool btstackOpen;
 static bool btOK;
 
 @implementation WiiMoteHelper
++ (BOOL)haveBluetooth
+{
+   if (!btstackOpen)
+      btstackOpen = load_btstack();
+   
+   return btstackOpen;
+}
+
 + (void)startBluetooth
 {
-   instance = instance ? instance : [WiiMoteHelper new];
-   
-   if (!btOK)
+   if (btstackOpen)
    {
-      BTstackManager* bt = [BTstackManager sharedInstance];
-      [bt setDelegate:instance];
-      [bt addListener:instance];
+      instance = instance ? instance : [WiiMoteHelper new];
+   
+      if (!btOK)
+      {
+         BTstackManager* bt = [BTstackManager sharedInstance];
+         [bt setDelegate:instance];
+         [bt addListener:instance];
 
-      btOK = [bt activate] == 0;
+         btOK = [bt activate] == 0;
+      }
    }
 }
 
 + (BOOL)isBluetoothRunning
 {
-   return btOK;
+   return btstackOpen && btOK;
 }
 
 + (void)stopBluetooth
 {
-   myosd_num_of_joys = 0;
-
-   if (btOK)
+   if (btstackOpen)
    {
-      BTstackManager* bt = [BTstackManager sharedInstance];
+      myosd_num_of_joys = 0;
+
+      if (btOK)
+      {
+         BTstackManager* bt = [BTstackManager sharedInstance];
    
-      [bt deactivate];
-      [bt setDelegate:nil];
-      [bt removeListener:instance];
-      btOK = false;
+         [bt deactivate];
+         [bt setDelegate:nil];
+         [bt removeListener:instance];
+         btOK = false;
+      }
+   
+      instance = nil;
    }
-   
-   instance = nil;
 }
 
 // BTStackManagerListener
@@ -97,7 +113,7 @@ static bool btOK;
 
 -(void) discoveryStoppedBTstackManager:(BTstackManager*) manager
 {
-	bt_send_cmd(&hci_write_authentication_enable, 0);
+	bt_send_cmd_ptr(hci_write_authentication_enable_ptr, 0);
 }
 
 // BTStackManagerDelegate
@@ -198,19 +214,19 @@ static bool btOK;
          {
             case HCI_EVENT_COMMAND_COMPLETE:
             {
-               if (COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable))
-                  bt_send_cmd(&l2cap_create_channel, [device address], PSM_HID_INTERRUPT);
+               if (COMMAND_COMPLETE_EVENT(packet, (*hci_write_authentication_enable_ptr)))
+                  bt_send_cmd_ptr(l2cap_create_channel_ptr, [device address], PSM_HID_INTERRUPT);
                break;
             }
          
             case HCI_EVENT_PIN_CODE_REQUEST:
             {
-               bt_flip_addr(event_addr, &packet[2]);
+               bt_flip_addr_ptr(event_addr, &packet[2]);
                if (BD_ADDR_CMP([device address], event_addr)) break;
                     
                // inform about pin code request
                NSLog(@"HCI_EVENT_PIN_CODE_REQUEST\n");
-               bt_send_cmd(&hci_pin_code_request_reply, event_addr, 6,  &packet[2]); // use inverse bd_addr as PIN
+               bt_send_cmd_ptr(hci_pin_code_request_reply_ptr, event_addr, 6,  &packet[2]); // use inverse bd_addr as PIN
                break;
             }
             
@@ -220,7 +236,7 @@ static bool btOK;
                if (packet[2] == 0)
                {
                   // inform about new l2cap connection
-                  bt_flip_addr(event_addr, &packet[3]);
+                  bt_flip_addr_ptr(event_addr, &packet[3]);
                   uint16_t psm = READ_BT_16(packet, 11);
                   uint16_t source_cid = READ_BT_16(packet, 13);
                   uint16_t wiiMoteConHandle = READ_BT_16(packet, 9);
@@ -228,7 +244,7 @@ static bool btOK;
                   if (psm == 0x13)
                   {
                      // interupt channel openedn succesfully, now open control channel, too.
-                     bt_send_cmd(&l2cap_create_channel, event_addr, 0x11);
+                     bt_send_cmd_ptr(l2cap_create_channel_ptr, event_addr, 0x11);
                      struct wiimote_t *wm = &joys[myosd_num_of_joys];
                      memset(wm, 0, sizeof(struct wiimote_t));
                      wm->unid = myosd_num_of_joys;

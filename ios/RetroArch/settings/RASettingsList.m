@@ -120,9 +120,7 @@ static RASettingData* custom_action(NSString* action)
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Frontend",
          custom_action(@"Module Info"),
-#ifdef WIIMOTE
          boolean_setting(config, @"ios_auto_bluetooth", @"Auto Enable Bluetooth", @"false"),
-#endif
          nil],
 
       [NSArray arrayWithObjects:@"Video",

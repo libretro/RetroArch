@@ -29,6 +29,8 @@
  *
  */
 
+#include "btdynamic.h"
+
 #import "BTstackManager.h"
 
 #import "btstack/btstack.h"
@@ -69,10 +71,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	[self setListeners:[[NSMutableSet alloc] init]];
 	
 	// Use Cocoa run loop
-	run_loop_init(RUN_LOOP_COCOA);
+	run_loop_init_ptr(RUN_LOOP_COCOA);
 	
 	// our packet handler
-	bt_register_packet_handler(packet_handler);
+	bt_register_packet_handler_ptr(packet_handler);
 	
 	return self;
 }
@@ -164,14 +166,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	
 	BTstackError err = 0;
 	if (!connectedToDaemon) {
-		err = bt_open();
+		err = bt_open_ptr();
 		if (err) return BTSTACK_CONNECTION_TO_BTDAEMON_FAILED;
 	}
 	connectedToDaemon = YES;
 	
 	// check system BT
 	state = kW4SysBTState;
-	bt_send_cmd(&btstack_get_system_bluetooth_enabled);
+	bt_send_cmd_ptr(btstack_get_system_bluetooth_enabled_ptr);
 	
 	return err;
 }
@@ -179,7 +181,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 -(BTstackError) deactivate {
 	if (!connectedToDaemon) return BTSTACK_CONNECTION_TO_BTDAEMON_FAILED;
 	state = kW4Deactivated;
-	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_OFF);
+	bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_OFF);
 	return 0;
 }
 
@@ -206,7 +208,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	if (state < kActivated) return BTSTACK_NOT_ACTIVATED;
 	
 	discoveryState = kW4InquiryMode;
-	bt_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
+	bt_send_cmd_ptr(hci_write_inquiry_mode_ptr, 0x01); // with RSSI
 	return 0;
 };
 
@@ -221,12 +223,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			break;
 		case kInquiry:
 			discoveryState = kW4InquiryStop;
-			bt_send_cmd(&hci_inquiry_cancel);
+			bt_send_cmd_ptr(hci_inquiry_cancel_ptr);
 			break;
 		case kRemoteName: {
 			discoveryState = kW4RemoteNameBeforeStop;
 			BTDevice *device = [discoveredDevices objectAtIndex:discoveryDeviceIndex];
-			bt_send_cmd(&hci_remote_name_request_cancel, [device address]);
+			bt_send_cmd_ptr(hci_remote_name_request_cancel_ptr, [device address]);
 			break;
 		}
 		default:
@@ -270,7 +272,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 							|| ![_delegate respondsToSelector:@selector(disableSystemBluetoothBTstackManager:)]
 							|| [_delegate disableSystemBluetoothBTstackManager:self]){
 							state = kW4SysBTDisabled;
-							bt_send_cmd(&btstack_set_system_bluetooth_enabled, 0);
+							bt_send_cmd_ptr(btstack_set_system_bluetooth_enabled_ptr, 0);
 						} else {
 							state = kDeactivated;
 							[self sendActivationFailed:BTSTACK_ACTIVATION_FAILED_SYSTEM_BLUETOOTH];
@@ -281,7 +283,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					}
 				} else {
 					state = kW4Activated;
-					bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON);
+					bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_ON);
 				}
 			}
 			break;
@@ -338,7 +340,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			discoveryDeviceIndex ++;
 			continue;
 		}
-		bt_send_cmd(&hci_remote_name_request, [device address], device.pageScanRepetitionMode,
+		bt_send_cmd_ptr(hci_remote_name_request_ptr, [device address], device.pageScanRepetitionMode,
 					0, device.clockOffset | 0x8000);
 		[self sendDiscoveryQueryRemoteName:discoveryDeviceIndex];
 		found = YES;
@@ -347,7 +349,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	if (!found) {
 		// printf("Queried all devices, restart.\n");
 		discoveryState = kInquiry;
-		bt_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
+		bt_send_cmd_ptr(hci_inquiry_ptr, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
 		[self sendDiscoveryInquiry];
 	}
 }
@@ -367,7 +369,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 - (void) handleRemoteNameCached: (uint8_t *) packet {
 	bd_addr_t addr;
-	bt_flip_addr(addr, &packet[3]);
+	bt_flip_addr_ptr(addr, &packet[3]);
 	// NSLog(@"Get remote name done for %@", [BTDevice stringForAddress:&addr]);
 	BTDevice* device = [self deviceForAddress:&addr];
     if (!device) return;
@@ -378,7 +380,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 - (void) handleRemoteName: (uint8_t *) packet {
 	bd_addr_t addr;
-	bt_flip_addr(addr, &packet[3]);
+	bt_flip_addr_ptr(addr, &packet[3]);
 	// NSLog(@"Get remote name done for %@", [BTDevice stringForAddress:&addr]);
 	BTDevice* device = [self deviceForAddress:&addr];
     if (!device) return;
@@ -401,9 +403,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			break;
 			
 		case kW4InquiryMode:
-			if (packet[0] == HCI_EVENT_COMMAND_COMPLETE && COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
+			if (packet[0] == HCI_EVENT_COMMAND_COMPLETE && COMMAND_COMPLETE_EVENT(packet, (*hci_write_inquiry_mode_ptr)) ) {
 				discoveryState = kInquiry;
-				bt_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
+				bt_send_cmd_ptr(hci_inquiry_ptr, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
 				[self sendDiscoveryInquiry];
 			}
 			break;
@@ -414,7 +416,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 				case HCI_EVENT_INQUIRY_RESULT:
 					numResponses = packet[2];
 					for (i=0; i<numResponses ; i++){
-						bt_flip_addr(addr, &packet[3+i*6]);
+						bt_flip_addr_ptr(addr, &packet[3+i*6]);
 						// NSLog(@"found %@", [BTDevice stringForAddress:&addr]);
 						BTDevice* device = [self deviceForAddress:&addr];
 						if (!device) {
@@ -434,7 +436,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 				case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
 					numResponses = packet[2];
 					for (i=0; i<numResponses ;i++){
-						bt_flip_addr(addr, &packet[3+i*6]);
+						bt_flip_addr_ptr(addr, &packet[3+i*6]);
 						// NSLog(@"found %@", [BTDevice stringForAddress:&addr]);
 						BTDevice* device = [self deviceForAddress:&addr];
 						if (!device) {
@@ -470,7 +472,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			break;
 
 		case kW4InquiryModeBeforeStop:
-			if (packet[0] == HCI_EVENT_COMMAND_COMPLETE && COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
+			if (packet[0] == HCI_EVENT_COMMAND_COMPLETE && COMMAND_COMPLETE_EVENT(packet, (*hci_write_inquiry_mode_ptr)) ) {
 				discoveryState = kInactive;
 				[self sendDiscoveryStoppedEvent];
 			}
@@ -478,7 +480,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			
 		case kW4InquiryStop:
 			if (packet[0] == HCI_EVENT_INQUIRY_COMPLETE
-			||	COMMAND_COMPLETE_EVENT(packet, hci_inquiry_cancel)) {
+			||	COMMAND_COMPLETE_EVENT(packet, (*hci_inquiry_cancel_ptr))) {
 				discoveryState = kInactive;
 				[self sendDiscoveryStoppedEvent];
 			}
@@ -486,7 +488,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			
 		case kW4RemoteNameBeforeStop:
 			if (packet[0] == HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
-			||  COMMAND_COMPLETE_EVENT(packet, hci_remote_name_request_cancel)){
+			||  COMMAND_COMPLETE_EVENT(packet, (*hci_remote_name_request_cancel_ptr))){
 				discoveryState = kInactive;
 				[self sendDiscoveryStoppedEvent];
 			}
@@ -498,7 +500,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 
 -(void) dropLinkKeyForAddress:(bd_addr_t*) address {
-    bt_send_cmd(&hci_delete_stored_link_key, address, 0);
+    bt_send_cmd_ptr(hci_delete_stored_link_key_ptr, address, 0);
 	// NSLog(@"Removing link key for %@", devAddress);
 }
 
@@ -552,7 +554,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	connAuth = authentication;
 	
 	// send write authentication enabled
-	bt_send_cmd(&hci_write_authentication_enable, authentication);	
+	bt_send_cmd_ptr(&hci_write_authentication_enable, authentication);	
 	state = kW4AuthenticationEnableCommand;
 #endif
 	return 0;

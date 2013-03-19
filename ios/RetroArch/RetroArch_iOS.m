@@ -19,9 +19,7 @@
 #import "browser/browser.h"
 #import "settings/settings.h"
 
-#ifdef WIIMOTE
 #import "input/BTStack/WiiMoteHelper.h"
-#endif
 
 @implementation RetroArch_iOS
 {
@@ -255,32 +253,35 @@
 #pragma mark Bluetooth Helpers
 - (UIBarButtonItem*)createBluetoothButton
 {
-#ifdef WIIMOTE
-   const bool isBTOn = [WiiMoteHelper isBluetoothRunning];
-   return [[UIBarButtonItem alloc]
-            initWithTitle:isBTOn ? @"Stop Bluetooth" : @"Start Bluetooth"
-            style:UIBarButtonItemStyleBordered
-            target:[RetroArch_iOS get]
-            action:isBTOn ? @selector(stopBluetooth) : @selector(startBluetooth)];
-#else
-   return nil;
-#endif
+   if ([WiiMoteHelper haveBluetooth])
+   {
+      const bool isBTOn = [WiiMoteHelper isBluetoothRunning];
+      return [[UIBarButtonItem alloc]
+               initWithTitle:isBTOn ? @"Stop Bluetooth" : @"Start Bluetooth"
+               style:UIBarButtonItemStyleBordered
+               target:[RetroArch_iOS get]
+               action:isBTOn ? @selector(stopBluetooth) : @selector(startBluetooth)];
+   }
+   else
+      return nil;
 }
 
 - (IBAction)startBluetooth
 {
-#ifdef WIIMOTE
-   [WiiMoteHelper startBluetooth];
-   [self.topViewController.navigationItem setRightBarButtonItem:[self createBluetoothButton] animated:YES];
-#endif
+   if ([WiiMoteHelper haveBluetooth])
+   {
+      [WiiMoteHelper startBluetooth];
+      [self.topViewController.navigationItem setRightBarButtonItem:[self createBluetoothButton] animated:YES];
+   }
 }
 
 - (IBAction)stopBluetooth
 {
-#ifdef WIIMOTE
-   [WiiMoteHelper stopBluetooth];
-   [self.topViewController.navigationItem setRightBarButtonItem:[self createBluetoothButton] animated:YES];
-#endif
+   if ([WiiMoteHelper haveBluetooth])
+   {
+      [WiiMoteHelper stopBluetooth];
+      [self.topViewController.navigationItem setRightBarButtonItem:[self createBluetoothButton] animated:YES];
+   }
 }
 
 @end

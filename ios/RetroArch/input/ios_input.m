@@ -20,12 +20,8 @@
 #include "general.h"
 #include "driver.h"
 
-#ifdef WIIMOTE
 extern const rarch_joypad_driver_t ios_joypad;
 static const rarch_joypad_driver_t* const g_joydriver = &ios_joypad;
-#else
-static const rarch_joypad_driver_t* const g_joydriver = 0;
-#endif
 
 static const struct rarch_key_map rarch_key_map_hidusage[];
 
