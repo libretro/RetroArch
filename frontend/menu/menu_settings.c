@@ -282,7 +282,7 @@ void menu_settings_create_menu_item_label(char * str, unsigned setting, size_t s
          snprintf(str, size, "Shader #2: %s", g_settings.video.second_pass_shader);
          break;
       case S_LBL_RARCH_VERSION:
-#ifndef __BLACKBERRY_QNX__
+#if !defined(__BLACKBERRY_QNX__) && !defined(IOS)
          snprintf(str, size, "RetroArch %s", PACKAGE_VERSION);
 #endif
          break;

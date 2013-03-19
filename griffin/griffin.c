@@ -128,7 +128,7 @@ VIDEO IMAGE
 #include "../ps3/image.c"
 #elif defined(_XBOX1)
 #include "../xdk/image.c"
-#elif defined(ANDROID) || defined(__BLACKBERRY_QNX__)
+#elif defined(ANDROID) || defined(__BLACKBERRY_QNX__) || defined(IOS)
 #include "../gfx/image.c"
 #include "../gfx/rpng/rpng.c"
 #endif
@@ -385,7 +385,7 @@ MAIN
 #include "../frontend/frontend_android.c"
 #endif
 
-#ifndef ANDROID
+#if !defined(ANDROID) && !defined(IOS)
 #include "../frontend/frontend.c"
 #endif
 
