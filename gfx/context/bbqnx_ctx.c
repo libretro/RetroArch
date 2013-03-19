@@ -262,10 +262,6 @@ static void gfx_ctx_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)frame_count;
-   //Request and process all available BPS events
-   bps_event_t *event = NULL;
-
-   bps_get_event(&event, 0);
 
    *quit = false;
 
@@ -276,28 +272,6 @@ static void gfx_ctx_check_window(bool *quit,
       *width  = new_width;
       *height = new_height;
       *resize = true;
-   }
-
-   if (event)
-   {
-      int domain = bps_event_get_domain(event);
-
-      if (domain == screen_get_domain())
-      {
-         screen_event_t screen_event = screen_event_get_event(event);
-         int screen_val;
-         screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_TYPE, &screen_val);
-         switch (screen_val) {
-
-            case SCREEN_EVENT_MTOUCH_TOUCH:
-            case SCREEN_EVENT_MTOUCH_MOVE:
-            case SCREEN_EVENT_MTOUCH_RELEASE:
-
-               break;
-         }
-      }
-      else if ((domain == navigator_get_domain()) && (NAVIGATOR_EXIT == bps_event_get_code(event)))
-         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
    }
 
    // Check if we are exiting.
