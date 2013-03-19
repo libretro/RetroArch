@@ -24,14 +24,7 @@ typedef struct touch_data
    int16_t full_x, full_y;
 } touch_data_t;
 
-@interface RAInputResponder : NSObject
-+ (RAInputResponder*)sharedInstance;
-
-- (void)reset;
-
-- (void)handleTouches:(NSArray*)touches;
-
-- (void)poll;
-- (bool)isKeyPressed:(unsigned)index;
-- (const touch_data_t*)getTouchDataAtIndex:(unsigned)index;
-@end
+// Defined in main.m, lists are filled by the sendEvent selector
+extern uint32_t ios_key_list[MAX_KEYS];
+extern uint32_t ios_touch_count;
+extern touch_data_t ios_touch_list[MAX_TOUCHES];

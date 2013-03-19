@@ -14,11 +14,10 @@
  */
 
 #import "settings.h"
+#include "../input/ios_input.h"
 #include "../input/keycode.h"
 #include "../input/BTStack/wiimote.h"
 #include "../input/BTStack/WiiMoteHelper.h"
-
-extern NSString* const GSEventKeyUpNotification;
 
 static const struct
 {
@@ -74,15 +73,6 @@ static const struct
    { "nul", 0x00},
 };
 
-static NSString* get_key_config_name(uint32_t hid_id)
-{
-   for (int i = 0; ios_key_name_map[i].hid_id; i ++)
-      if (hid_id == ios_key_name_map[i].hid_id)
-         return [NSString stringWithUTF8String:ios_key_name_map[i].keyname];
-   
-   return @"nul";
-}
-
 @implementation RAButtonGetter
 {
    RAButtonGetter* _me;
@@ -102,17 +92,13 @@ static NSString* get_key_config_name(uint32_t hid_id)
    _me = self;
 
    _alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
-                                message:_value.label
-                                delegate:self
-                                cancelButtonTitle:@"Cancel"
-                                otherButtonTitles:nil];
+                                 message:_value.label
+                                 delegate:self
+                                 cancelButtonTitle:@"Cancel"
+                                 otherButtonTitles:nil];
    [_alert show];
    
-   [[NSNotificationCenter defaultCenter] addObserver:self selector: @selector(keyReleased:) name: GSEventKeyUpNotification object: nil];
-
-   if ([WiiMoteHelper haveBluetooth])
-      _btTimer = [NSTimer scheduledTimerWithTimeInterval:.05f target:self selector:@selector(checkWiiMote) userInfo:nil repeats:YES];
-
+   _btTimer = [NSTimer scheduledTimerWithTimeInterval:.05f target:self selector:@selector(checkInput) userInfo:nil repeats:YES];
    return self;
 }
 
@@ -122,13 +108,8 @@ static NSString* get_key_config_name(uint32_t hid_id)
    {
       _finished = true;
    
-      if (_btTimer)
-      {
-         [_btTimer invalidate];
-         _btTimer = nil;
-      }
+      [_btTimer invalidate];
 
-      [[NSNotificationCenter defaultCenter] removeObserver:self];
       [_alert dismissWithClickedButtonIndex:0 animated:YES];
       [_view reloadData];
    
@@ -141,8 +122,20 @@ static NSString* get_key_config_name(uint32_t hid_id)
    [self finish];
 }
 
-- (void)checkWiiMote
+- (void)checkInput
 {
+   // Keyboard
+   for (int i = 0; ios_key_name_map[i].hid_id; i ++)
+   {
+      if (ios_key_list[ios_key_name_map[i].hid_id])
+      {
+         _value.msubValues[0] = [NSString stringWithUTF8String:ios_key_name_map[i].keyname];
+         [self finish];
+         return;
+      }
+   }
+
+   // WiiMote
    for (int i = 0; i != myosd_num_of_joys; i ++)
    {
       uint32_t buttons = joys[i].btns;
@@ -158,14 +151,6 @@ static NSString* get_key_config_name(uint32_t hid_id)
          }
       }
    }
-}
-
-- (void)keyReleased:(NSNotification*) notification
-{
-   int keycode = [[notification.userInfo objectForKey:@"keycode"] intValue];
-   _value.msubValues[0] = get_key_config_name(keycode);
-   
-   [self finish];
 }
 
 @end

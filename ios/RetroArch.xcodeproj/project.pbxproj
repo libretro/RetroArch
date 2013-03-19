@@ -20,9 +20,7 @@
 		963F5AC216CC522F009BBD19 /* RASettingsSubList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABE16CC522F009BBD19 /* RASettingsSubList.m */; };
 		963F5AC316CC522F009BBD19 /* RASettingsList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABF16CC522F009BBD19 /* RASettingsList.m */; };
 		963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC516CC523B009BBD19 /* RAGameView.m */; };
-		966B9C8A16E40D44005B61E1 /* ios_input.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8616E40D44005B61E1 /* ios_input.m */; };
 		966B9C8B16E40D44005B61E1 /* ios_joypad.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8716E40D44005B61E1 /* ios_joypad.m */; };
-		966B9C8C16E40D44005B61E1 /* RAInputResponder.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8916E40D44005B61E1 /* RAInputResponder.m */; };
 		966B9CA216E418B7005B61E1 /* BTDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C9116E418B7005B61E1 /* BTDevice.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		966B9CA416E418B7005B61E1 /* BTstackManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C9C16E418B7005B61E1 /* BTstackManager.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		966B9CA616E418B7005B61E1 /* wiimote.c in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C9E16E418B7005B61E1 /* wiimote.c */; };
@@ -48,6 +46,7 @@
 		96AFAE3816C1D4EA009DE44C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */; };
 		96C19C3016D7045700FE8D5A /* RAConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2F16D7045700FE8D5A /* RAConfig.m */; };
 		96F9C26A16F7D9E2002455B3 /* btdynamic.c in Sources */ = {isa = PBXBuildFile; fileRef = 96F9C26816F7D9E2002455B3 /* btdynamic.c */; };
+		96F9C26F16F91A64002455B3 /* ios_input.c in Sources */ = {isa = PBXBuildFile; fileRef = 96F9C26E16F91A64002455B3 /* ios_input.c */; };
 		D48581DE16F823F9004BEB17 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = D48581DD16F823F9004BEB17 /* griffin.c */; };
 /* End PBXBuildFile section */
 
@@ -70,10 +69,7 @@
 		963F5ABF16CC522F009BBD19 /* RASettingsList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RASettingsList.m; sourceTree = "<group>"; };
 		963F5AC516CC523B009BBD19 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAGameView.m; sourceTree = "<group>"; };
 		9664F4A116E4409100FB28F9 /* keycode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = keycode.h; sourceTree = "<group>"; };
-		966B9C8616E40D44005B61E1 /* ios_input.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ios_input.m; sourceTree = "<group>"; };
 		966B9C8716E40D44005B61E1 /* ios_joypad.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ios_joypad.m; sourceTree = "<group>"; };
-		966B9C8816E40D44005B61E1 /* RAInputResponder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAInputResponder.h; sourceTree = "<group>"; };
-		966B9C8916E40D44005B61E1 /* RAInputResponder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAInputResponder.m; sourceTree = "<group>"; };
 		966B9C9016E418B7005B61E1 /* BTDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BTDevice.h; sourceTree = "<group>"; };
 		966B9C9116E418B7005B61E1 /* BTDevice.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BTDevice.m; sourceTree = "<group>"; };
 		966B9C9516E418B7005B61E1 /* btstack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btstack.h; sourceTree = "<group>"; };
@@ -120,6 +116,8 @@
 		96C19C2F16D7045700FE8D5A /* RAConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAConfig.m; sourceTree = "<group>"; };
 		96F9C26816F7D9E2002455B3 /* btdynamic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = btdynamic.c; sourceTree = "<group>"; };
 		96F9C26916F7D9E2002455B3 /* btdynamic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btdynamic.h; sourceTree = "<group>"; };
+		96F9C26B16F919CC002455B3 /* ios_input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ios_input.h; sourceTree = "<group>"; };
+		96F9C26E16F91A64002455B3 /* ios_input.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ios_input.c; sourceTree = "<group>"; };
 		D48581DD16F823F9004BEB17 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../griffin/griffin.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -157,11 +155,10 @@
 			isa = PBXGroup;
 			children = (
 				966B9C8F16E418B7005B61E1 /* BTStack */,
-				966B9C8616E40D44005B61E1 /* ios_input.m */,
+				96F9C26E16F91A64002455B3 /* ios_input.c */,
+				96F9C26B16F919CC002455B3 /* ios_input.h */,
 				966B9C8716E40D44005B61E1 /* ios_joypad.m */,
 				9664F4A116E4409100FB28F9 /* keycode.h */,
-				966B9C8816E40D44005B61E1 /* RAInputResponder.h */,
-				966B9C8916E40D44005B61E1 /* RAInputResponder.m */,
 			);
 			path = input;
 			sourceTree = "<group>";
@@ -422,9 +419,7 @@
 				963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */,
 				96096DD816D1ABAF00BF4499 /* RAModuleInfoList.m in Sources */,
 				96C19C3016D7045700FE8D5A /* RAConfig.m in Sources */,
-				966B9C8A16E40D44005B61E1 /* ios_input.m in Sources */,
 				966B9C8B16E40D44005B61E1 /* ios_joypad.m in Sources */,
-				966B9C8C16E40D44005B61E1 /* RAInputResponder.m in Sources */,
 				966B9CA216E418B7005B61E1 /* BTDevice.m in Sources */,
 				966B9CA416E418B7005B61E1 /* BTstackManager.m in Sources */,
 				966B9CA616E418B7005B61E1 /* wiimote.c in Sources */,
@@ -435,6 +430,7 @@
 				966B9CB416E41C07005B61E1 /* RAModuleList.m in Sources */,
 				96F9C26A16F7D9E2002455B3 /* btdynamic.c in Sources */,
 				D48581DE16F823F9004BEB17 /* griffin.c in Sources */,
+				96F9C26F16F91A64002455B3 /* ios_input.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

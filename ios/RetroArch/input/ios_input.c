@@ -13,10 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import "RAInputResponder.h"
-
 #include <unistd.h>
 #include "input/input_common.h"
+#include "ios_input.h"
 #include "general.h"
 #include "driver.h"
 
@@ -25,13 +24,11 @@ static const rarch_joypad_driver_t* const g_joydriver = &ios_joypad;
 
 static const struct rarch_key_map rarch_key_map_hidusage[];
 
-static RAInputResponder* g_input_driver;
-
 // Non-exported helpers
 static bool ios_key_pressed(enum retro_key key)
 {
    if ((int)key >= 0 && key < RETROK_LAST)
-      return [g_input_driver isKeyPressed:input_translate_rk_to_keysym(key)];
+      return ios_key_list[input_translate_rk_to_keysym(key)];
    
    return false;
 }
@@ -44,16 +41,19 @@ static bool ios_is_pressed(unsigned port_num, const struct retro_keybind *key)
 // Exported input driver
 static void *ios_input_init(void)
 {
-   g_input_driver = [RAInputResponder sharedInstance];
-   [g_input_driver reset];
-
    input_init_keyboard_lut(rarch_key_map_hidusage);
    return (void*)-1;
 }
 
 static void ios_input_poll(void *data)
 {
-   [g_input_driver poll];
+   for (int i = 0; i != ios_touch_count; i ++)
+   {
+      input_translate_coord_viewport(ios_touch_list[i].screen_x, ios_touch_list[i].screen_y,
+         &ios_touch_list[i].fixed_x, &ios_touch_list[i].fixed_y,
+         &ios_touch_list[i].full_x, &ios_touch_list[i].full_y);
+   }
+
    input_joypad_poll(g_joydriver);
 }
 
@@ -66,13 +66,16 @@ static int16_t ios_input_state(void *data, const struct retro_keybind **binds, u
 
       case RARCH_DEVICE_POINTER_SCREEN:
       {
-         const touch_data_t* touch = [g_input_driver getTouchDataAtIndex:index];
-
-         switch (id)
+         if (index < ios_touch_count && index < MAX_TOUCHES)
          {
-            case RETRO_DEVICE_ID_POINTER_X: return touch ? touch->full_x : 0;
-            case RETRO_DEVICE_ID_POINTER_Y: return touch ? touch->full_y : 0;
-            case RETRO_DEVICE_ID_POINTER_PRESSED: return touch ? 1 : 0;
+            const touch_data_t* touch = &ios_touch_list[index];
+
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_POINTER_PRESSED: return 1;
+               case RETRO_DEVICE_ID_POINTER_X: return touch->full_x;
+               case RETRO_DEVICE_ID_POINTER_Y: return touch->full_y;
+            }
          }
          
          return 0;
@@ -92,7 +95,6 @@ static bool ios_bind_button_pressed(void *data, int key)
 static void ios_input_free_input(void *data)
 {
    (void)data;
-   g_input_driver = nil;
 }
 
 const input_driver_t input_ios = {

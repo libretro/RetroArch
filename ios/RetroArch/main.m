@@ -14,7 +14,7 @@
  */
 
 #import <UIKit/UIKit.h>
-#include "input/RAInputResponder.h"
+#include "input/ios_input.h"
 
 #define GSEVENT_TYPE 2
 #define GSEVENT_FLAGS 12
@@ -22,22 +22,14 @@
 #define GSEVENT_TYPE_KEYDOWN 10
 #define GSEVENT_TYPE_KEYUP 11
 
-NSString *const GSEventKeyDownNotification = @"GSEventKeyDownHackNotification";
-NSString *const GSEventKeyUpNotification = @"GSEventKeyUpHackNotification";
-
-static RAInputResponder* inputResponder;
+uint32_t ios_key_list[MAX_KEYS];
+uint32_t ios_touch_count;
+touch_data_t ios_touch_list[MAX_TOUCHES];
 
 @interface RApplication : UIApplication
 @end
 
 @implementation RApplication
-
-- (RApplication*)init
-{
-   self = [super init];
-   inputResponder = [RAInputResponder sharedInstance];
-   return self;
-}
 
 - (void)sendEvent:(UIEvent *)event
 {
@@ -45,7 +37,23 @@ static RAInputResponder* inputResponder;
    
    if ([[event allTouches] count])
    {
-      [inputResponder handleTouches:[[event allTouches] allObjects]];
+      NSArray* touches = [[event allTouches] allObjects];
+      const int numTouches = [touches count];
+      const float scale = [[UIScreen mainScreen] scale];
+
+      ios_touch_count = 0;
+   
+      for(int i = 0; i != numTouches && ios_touch_count < MAX_TOUCHES; i ++)
+      {
+         UITouch* touch = [touches objectAtIndex:i];
+         const CGPoint coord = [touch locationInView:touch.view];
+
+         if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
+         {
+            ios_touch_list[ios_touch_count   ].screen_x = coord.x * scale;
+            ios_touch_list[ios_touch_count ++].screen_y = coord.y * scale;
+         }
+      }
    }
    // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
    else if ([event respondsToSelector:@selector(_gsEvent)])
@@ -58,15 +66,9 @@ static RAInputResponder* inputResponder;
          // Read keycode from GSEventKey
          int tmp = eventMem[GSEVENTKEY_KEYCODE];
          UniChar *keycode = (UniChar *)&tmp;
-
-         // Post notification
-         NSDictionary *inf = [[NSDictionary alloc] initWithObjectsAndKeys:
-                             [NSNumber numberWithShort:keycode[0]], @"keycode",
-                             nil];
-                   
-         [[NSNotificationCenter defaultCenter]
-             postNotificationName:(eventType == GSEVENT_TYPE_KEYDOWN) ? GSEventKeyDownNotification : GSEventKeyUpNotification
-             object:nil userInfo:inf];
+         
+         if (keycode[0] < MAX_KEYS)
+            ios_key_list[keycode[0]] = (eventType == GSEVENT_TYPE_KEYDOWN) ? 1 : 0;
       }
        
       CFBridgingRelease(eventMem);
