@@ -483,6 +483,8 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_NEON",
+               "-DHAVE_RGUI",
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OPENGL",
@@ -496,9 +498,13 @@
 					"-DHAVE_THREAD",
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
-					"-DPACKAGE_VERSION=\\\"1.0\\\"",
+					"-DPACKAGE_VERSION=\\\"0.9.8.4\\\"",
 					"-std=gnu99",
+					"-DHAVE_COREAUDIO",
 					"-DHAVE_FBO",
+               "-DHAVE_OVERLAY",
+               "-DHAVE_ZLIB",
+               "-DWANT_MINIZ",
 				);
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -526,6 +532,8 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_NEON",
+               "-DHAVE_RGUI",
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OPENGL",
@@ -539,9 +547,13 @@
 					"-DHAVE_THREAD",
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
-					"-DPACKAGE_VERSION=\\\"1.0\\\"",
+					"-DPACKAGE_VERSION=\\\"0.9.8.4\\\"",
 					"-std=gnu99",
+					"-DHAVE_COREAUDIO",
 					"-DHAVE_FBO",
+               "-DHAVE_OVERLAY",
+					"-DHAVE_ZLIB",
+               "-DWANT_MINIZ",
 				);
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -564,6 +576,9 @@
 				);
 				OTHER_CFLAGS = (
 					"-DHAVE_RARCH_MAIN_WRAP",
+					"-DHAVE_GRIFFIN",
+               "-DHAVE_NEON",
+               "-DHAVE_RGUI",
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_FBO",
@@ -575,10 +590,12 @@
 					"-DLSB_FIRST",
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
+					"-DPACKAGE_VERSION=\\\"0.9.8.4\\\"",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
+               "-DWANT_MINIZ",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
@@ -602,6 +619,9 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_RARCH_MAIN_WRAP",
+					"-DHAVE_GRIFFIN",
+               "-DHAVE_NEON",
+               "-DHAVE_RGUI",
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_FBO",
@@ -613,10 +633,12 @@
 					"-DLSB_FIRST",
 					"-D__LIBRETRO__",
 					"-DRARCH_PERFORMANCE_MODE",
+					"-DPACKAGE_VERSION=\\\"0.9.8.4\\\"",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
+               "-DWANT_MINIZ",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
