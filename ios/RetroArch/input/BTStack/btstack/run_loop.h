@@ -37,7 +37,7 @@
 
 #pragma once
 
-#include <btstack/linked_list.h>
+#include "linked_list.h"
 #define HAVE_TIME
 
 #include <stdint.h>
