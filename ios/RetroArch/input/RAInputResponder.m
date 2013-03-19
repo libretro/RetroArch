@@ -18,7 +18,8 @@
 
 extern NSString* const GSEventKeyDownNotification;
 extern NSString* const GSEventKeyUpNotification;
-extern NSString* const RATouchNotification;
+
+static RAInputResponder* g_inputInstance;
 
 @implementation RAInputResponder
 {
@@ -27,17 +28,31 @@ extern NSString* const RATouchNotification;
    bool _keys[MAX_KEYS];
 }
 
++ (RAInputResponder*)sharedInstance
+{
+    if (!g_inputInstance)
+        g_inputInstance = [RAInputResponder new];
+
+    return g_inputInstance;
+}
+
 -(id)init
 {
    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyPressed:) name: GSEventKeyDownNotification object:nil];
    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyReleased:) name: GSEventKeyUpNotification object:nil];
-   [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleTouches:) name: RATouchNotification object:nil];
    return self;
 }
 
 -(void)dealloc
 {
    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (void)reset
+{
+   _touchCount = 0;
+   memset(_touches, 0, sizeof(_touches));
+   memset(_keys, 0, sizeof(_keys));
 }
 
 - (void)poll
@@ -73,10 +88,8 @@ extern NSString* const RATouchNotification;
    if (keycode < MAX_KEYS) _keys[keycode] = false;
 }
 
-- (void)handleTouches:(NSNotification*)notification
+- (void)handleTouches:(NSArray*)touches
 {
-   UIEvent* event = [notification.userInfo objectForKey:@"event"];
-   NSArray* touches = [[event allTouches] allObjects];
    const int numTouches = [touches count];
 
    _touchCount = 0;

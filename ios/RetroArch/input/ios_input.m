@@ -31,9 +31,7 @@ static RAInputResponder* g_input_driver;
 static bool ios_key_pressed(enum retro_key key)
 {
    if ((int)key >= 0 && key < RETROK_LAST)
-   {
       return [g_input_driver isKeyPressed:input_translate_rk_to_keysym(key)];
-   }
    
    return false;
 }
@@ -46,8 +44,10 @@ static bool ios_is_pressed(unsigned port_num, const struct retro_keybind *key)
 // Exported input driver
 static void *ios_input_init(void)
 {
+   g_input_driver = [RAInputResponder sharedInstance];
+   [g_input_driver reset];
+
    input_init_keyboard_lut(rarch_key_map_hidusage);
-   g_input_driver = [RAInputResponder new];
    return (void*)-1;
 }
 

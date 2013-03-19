@@ -25,6 +25,12 @@ typedef struct touch_data
 } touch_data_t;
 
 @interface RAInputResponder : NSObject
++ (RAInputResponder*)sharedInstance;
+
+- (void)reset;
+
+- (void)handleTouches:(NSArray*)touches;
+
 - (void)poll;
 - (bool)isKeyPressed:(unsigned)index;
 - (const touch_data_t*)getTouchDataAtIndex:(unsigned)index;

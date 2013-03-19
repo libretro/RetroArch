@@ -14,6 +14,7 @@
  */
 
 #import <UIKit/UIKit.h>
+#include "input/RAInputResponder.h"
 
 #define GSEVENT_TYPE 2
 #define GSEVENT_FLAGS 12
@@ -23,22 +24,28 @@
 
 NSString *const GSEventKeyDownNotification = @"GSEventKeyDownHackNotification";
 NSString *const GSEventKeyUpNotification = @"GSEventKeyUpHackNotification";
-NSString *const RATouchNotification = @"RATouchNotification";
+
+static RAInputResponder* inputResponder;
 
 @interface RApplication : UIApplication
 @end
 
 @implementation RApplication
 
+- (RApplication*)init
+{
+   self = [super init];
+   inputResponder = [RAInputResponder sharedInstance];
+   return self;
+}
+
 - (void)sendEvent:(UIEvent *)event
 {
    [super sendEvent:event];
-
+   
    if ([[event allTouches] count])
    {
-      NSDictionary* inf = [[NSDictionary alloc] initWithObjectsAndKeys:
-                           event, @"event", nil];
-      [[NSNotificationCenter defaultCenter] postNotificationName:RATouchNotification object:nil userInfo:inf];
+      [inputResponder handleTouches:[[event allTouches] allObjects]];
    }
    // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
    else if ([event respondsToSelector:@selector(_gsEvent)])
