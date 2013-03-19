@@ -46,7 +46,6 @@
 		96AFAE3016C1D4EA009DE44C /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; };
 		96AFAE3216C1D4EA009DE44C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 		96AFAE3816C1D4EA009DE44C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */; };
-		96AFAF2216C1DF88009DE44C /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAF2116C1DF88009DE44C /* libz.dylib */; };
 		96C19C3016D7045700FE8D5A /* RAConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2F16D7045700FE8D5A /* RAConfig.m */; };
 		96F9C26A16F7D9E2002455B3 /* btdynamic.c in Sources */ = {isa = PBXBuildFile; fileRef = 96F9C26816F7D9E2002455B3 /* btdynamic.c */; };
 		D48581DE16F823F9004BEB17 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = D48581DD16F823F9004BEB17 /* griffin.c */; };
@@ -114,7 +113,6 @@
 		96AFAE3B16C1D4EA009DE44C /* RetroArch-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "RetroArch-Prefix.pch"; sourceTree = "<group>"; };
 		96AFAEF816C1DC73009DE44C /* sinc_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = sinc_neon.S; sourceTree = "<group>"; };
 		96AFAEFF16C1DC73009DE44C /* utils_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = utils_neon.S; sourceTree = "<group>"; };
-		96AFAF2116C1DF88009DE44C /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		96AFAF4516C1E00A009DE44C /* bitmap.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = bitmap.bin; sourceTree = "<group>"; };
 		96AFAF4616C1E00A009DE44C /* bitmap.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; path = bitmap.bmp; sourceTree = "<group>"; };
 		96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rarch_wrapper.h; sourceTree = "<group>"; };
@@ -132,7 +130,6 @@
 			files = (
 				96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */,
 				96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */,
-				96AFAF2216C1DF88009DE44C /* libz.dylib in Frameworks */,
 				96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */,
 				96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */,
 				96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */,
@@ -254,7 +251,6 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				96AFAF2116C1DF88009DE44C /* libz.dylib */,
 				96366C5816C9ACF500D64A22 /* AudioToolbox.framework */,
 				96366C5416C9AC3300D64A22 /* CoreAudio.framework */,
 				96AFAE2916C1D4EA009DE44C /* UIKit.framework */,
