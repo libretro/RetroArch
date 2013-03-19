@@ -52,10 +52,10 @@
  */
 
 
-#include "run_loop.h"
-#include "linked_list.h"
-#include "hal_tick.h"
-#include "hal_cpu.h"
+#include <btstack/run_loop.h>
+#include <btstack/linked_list.h>
+#include <btstack/hal_tick.h>
+#include <btstack/hal_cpu.h>
 
 #include "run_loop_private.h"
 #include "debug.h"

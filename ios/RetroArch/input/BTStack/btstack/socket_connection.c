@@ -50,7 +50,7 @@
 
 #include "config.h"
 
-#include "btstack.h"
+#include <btstack/btstack.h>
 
 #include <arpa/inet.h>
 #include <errno.h>

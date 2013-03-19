@@ -51,14 +51,14 @@
 
 #ifndef EMBEDDED
 #include <unistd.h> // gethostbyname
-#include "version.h"
+#include <btstack/version.h>
 #endif
 
 #include "btstack_memory.h"
 #include "debug.h"
 #include "hci_dump.h"
 
-#include "hci_cmds.h"
+#include <btstack/hci_cmds.h>
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 

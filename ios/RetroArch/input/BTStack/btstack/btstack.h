@@ -40,9 +40,9 @@
 
 #pragma once
 
-#include "hci_cmds.h"
-#include "run_loop.h"
-#include "utils.h"
+#include <btstack/hci_cmds.h>
+#include <btstack/run_loop.h>
+#include <btstack/utils.h>
 
 #include <stdint.h>
 

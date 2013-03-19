@@ -43,7 +43,7 @@
  *
  */
 
-#include "memory_pool.h"
+#include <btstack/memory_pool.h>
 #include <stddef.h>
 
 typedef struct node {

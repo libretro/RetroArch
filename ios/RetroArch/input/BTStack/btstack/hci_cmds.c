@@ -40,11 +40,11 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-#include "hci_cmds.h"
+#include <btstack/hci_cmds.h>
 
 #include <string.h>
 
-#include "sdp_util.h"
+#include <btstack/sdp_util.h>
 #include "config.h"
 #include "hci.h"
 

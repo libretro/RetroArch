@@ -54,9 +54,11 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "hci_transport.h"
-#include "run_loop.h"
+#include <btstack/run_loop.h>
 
-#include "hal_uart_dma.h"
+#include <btstack/hal_uart_dma.h>
+
+// #define DUMP
 
 // eHCILL commands (+interal CTS signal)
 #define EHCILL_GO_TO_SLEEP_IND 0x030
@@ -314,6 +316,17 @@ static void h4_block_sent(void){
     }
 }
 
+#ifdef DUMP
+static void dump(uint8_t *data, uint16_t len){
+    int i;
+    if (len > 5) len = 8;
+    for (i=0; i<len;i++){
+        printf("%02X ", ((uint8_t *)data)[i]);
+    }
+    printf("\n\r");
+}
+#endif
+
 static int h4_process(struct data_source *ds) {
     
     // notify about packet sent
@@ -326,6 +339,12 @@ static int h4_process(struct data_source *ds) {
 
     if (h4_state != H4_PACKET_RECEIVED) return 0;
         
+    // log packet
+#ifdef DUMP
+    printf("RX: ");
+    dump(hci_packet, read_pos);
+#endif
+    
     packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
 
     h4_rx_init_sm();
@@ -435,6 +454,11 @@ static int ehcill_send_packet(uint8_t packet_type, uint8_t *packet, int size){
         log_error("h4_send_packet with tx_state = %u, type %u, data %02x %02x %02x\n", tx_state, packet_type, packet[0], packet[1], packet[2]);
         return -1;
     }
+    
+#ifdef DUMP
+    printf("TX: %02x ", packet_type);
+    dump(packet, size);
+#endif
     
     tx_packet_type = packet_type;
     tx_data = packet;

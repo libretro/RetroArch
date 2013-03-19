@@ -38,8 +38,8 @@
  *  sdp_util.c
  */
 
-#include "sdp_util.h"
-#include "utils.h"
+#include <btstack/sdp_util.h>
+#include <btstack/utils.h>
 
 #include <stdio.h>
 #include <stdlib.h>
