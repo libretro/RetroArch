@@ -497,9 +497,11 @@
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_FBO",
-               "-DHAVE_OVERLAY",
-               "-DHAVE_ZLIB",
-               "-DWANT_MINIZ",
+					"-DHAVE_OVERLAY",
+					"-DHAVE_ZLIB",
+					"-DWANT_MINIZ",
+					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_SINC",
 				);
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -545,9 +547,11 @@
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_FBO",
-               "-DHAVE_OVERLAY",
+					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
-               "-DWANT_MINIZ",
+					"-DWANT_MINIZ",
+					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_SINC",
 				);
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -588,7 +592,9 @@
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
-               "-DWANT_MINIZ",
+					"-DWANT_MINIZ",
+					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_SINC",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
@@ -630,7 +636,9 @@
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
-               "-DWANT_MINIZ",
+					"-DWANT_MINIZ",
+					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_SINC",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
