@@ -15,34 +15,38 @@
 #include <stdio.h>
 #include <assert.h>
 #include <dlfcn.h>
+
+#define BUILDING_BTDYNAMIC
 #include "btdynamic.h"
 
+static bool bt_tested;
 static bool bt_is_loaded;
 
+#define GRAB(A) {#A, (void**)&A##_ptr}
 static struct
 {
    const char* name;
    void** target;
 }  grabbers[] =
 {
-   {"bt_open", (void**)&bt_open_ptr},
-   {"bt_flip_addr", (void**)&bt_flip_addr_ptr},
-   {"bt_register_packet_handler", (void**)&bt_register_packet_handler_ptr},
-   {"bt_send_cmd", (void**)&bt_send_cmd_ptr},
-   {"bt_send_l2cap", (void**)&bt_send_l2cap_ptr},
-   {"run_loop_init", (void**)&run_loop_init_ptr},
-   {"btstack_get_system_bluetooth_enabled", (void**)&btstack_get_system_bluetooth_enabled_ptr},
-   {"btstack_set_power_mode", (void**)&btstack_set_power_mode_ptr},
-   {"btstack_set_system_bluetooth_enabled", (void**)&btstack_set_system_bluetooth_enabled_ptr},
-   {"hci_delete_stored_link_key", (void**)&hci_delete_stored_link_key_ptr},
-   {"hci_inquiry", (void**)&hci_inquiry_ptr},
-   {"hci_inquiry_cancel", (void**)&hci_inquiry_cancel_ptr},
-   {"hci_pin_code_request_reply", (void**)&hci_pin_code_request_reply_ptr},
-   {"hci_remote_name_request", (void**)&hci_remote_name_request_ptr},
-   {"hci_remote_name_request_cancel", (void**)&hci_remote_name_request_cancel_ptr},
-   {"hci_write_authentication_enable", (void**)&hci_write_authentication_enable_ptr},
-   {"hci_write_inquiry_mode", (void**)&hci_write_inquiry_mode_ptr},
-   {"l2cap_create_channel", (void**)&l2cap_create_channel_ptr},
+   GRAB(bt_open),
+   GRAB(bt_flip_addr),
+   GRAB(bt_register_packet_handler),
+   GRAB(bt_send_cmd),
+   GRAB(bt_send_l2cap),
+   GRAB(run_loop_init),
+   GRAB(btstack_get_system_bluetooth_enabled),
+   GRAB(btstack_set_power_mode),
+   GRAB(btstack_set_system_bluetooth_enabled),
+   GRAB(hci_delete_stored_link_key),
+   GRAB(hci_inquiry),
+   GRAB(hci_inquiry_cancel),
+   GRAB(hci_pin_code_request_reply),
+   GRAB(hci_remote_name_request),
+   GRAB(hci_remote_name_request_cancel),
+   GRAB(hci_write_authentication_enable),
+   GRAB(hci_write_inquiry_mode),
+   GRAB(l2cap_create_channel),
    {0, 0}
 };
 
@@ -50,9 +54,10 @@ bool load_btstack()
 {
    assert(sizeof(void**) == sizeof(void(*)));
 
-   if (bt_is_loaded)
-      return true;
+   if (bt_tested)
+      return bt_is_loaded;
 
+   bt_tested = true;
    void* btstack = dlopen("/usr/lib/libBTstack.dylib", RTLD_LAZY);
 
    if (!btstack)
