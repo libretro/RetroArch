@@ -18,18 +18,24 @@
 {
    RAModuleInfo* new = [RAModuleInfo new];
 
-   char* dispname = ios_config_get_string(theData, "display_name", [[[thePath lastPathComponent] stringByDeletingPathExtension] UTF8String]);
-   char* confpath = ios_config_get_string(theData, "supported_extensions", "");
+   char* dispname = 0;
+   char* extensions = 0;
+   
+   if (theData)
+   {
+      config_get_string(theData, "display_name", &dispname);
+      config_get_string(theData, "supported_extensions", &extensions);
+   }
 
-   new.displayName = [NSString stringWithUTF8String:dispname];
+   new.displayName = dispname ? [NSString stringWithUTF8String:dispname] : [[thePath lastPathComponent] stringByDeletingPathExtension];
    new.path = thePath;
    new.configPath = [NSString stringWithFormat:@"%@/%@.cfg", [RetroArch_iOS get].system_directory, [[thePath lastPathComponent] stringByDeletingPathExtension]];
    new.data = theData;
    
-   new.supportedExtensions = [[NSString stringWithUTF8String:confpath] componentsSeparatedByString:@"|"];
+   new.supportedExtensions = extensions ? [[NSString stringWithUTF8String:extensions] componentsSeparatedByString:@"|"] : [NSArray array];
    
    free(dispname);
-   free(confpath);
+   free(extensions);
    
    return new;
 }
@@ -47,7 +53,7 @@
 @end
 
 static NSString* const labels[3] = {@"Emulator Name", @"Manufacturer", @"Name"};
-static NSString* const keys[3] = {@"emuname", @"manufacturer", @"systemname"};
+static const char* const keys[3] = {"emuname", "manufacturer", "systemname"};
 static NSString* const sectionNames[2] = {@"Emulator", @"Hardware"};
 static const uint32_t sectionSizes[2] = {1, 2};
 
@@ -92,8 +98,11 @@ static const uint32_t sectionSizes[2] = {1, 2};
 
    cell.textLabel.text = labels[sectionBase + indexPath.row];
    
-   char* val = ios_config_get_string(_data.data, [keys[sectionBase + indexPath.row] UTF8String], "Unspecified");
-   cell.detailTextLabel.text = [NSString stringWithUTF8String:val];
+   char* val = 0;
+   if (_data.data)
+      config_get_string(_data.data, keys[sectionBase + indexPath.row], &val);
+   
+   cell.detailTextLabel.text = val ? [NSString stringWithUTF8String:val] : @"Unspecified";
    free(val);
 
    return cell;

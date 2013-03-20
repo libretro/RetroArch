@@ -126,7 +126,8 @@
 
       // Read load time settings
       config_file_t* conf = config_file_new([self.moduleInfo.configPath UTF8String]);
-      if (ios_config_get_bool(conf, "ios_auto_bluetooth", false))
+      bool autoStartBluetooth = false;
+      if (conf && config_get_bool(conf, "ios_auto_bluetooth", &autoStartBluetooth) && autoStartBluetooth)
          [self startBluetooth];
       config_file_free(conf);
 

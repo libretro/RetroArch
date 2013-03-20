@@ -28,8 +28,11 @@
 
 static NSString* get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue)
 {
-   char* data = ios_config_get_string(config, [name UTF8String], [defaultValue UTF8String]);
-   NSString* result = [NSString stringWithUTF8String:data];
+   char* data = 0;
+   if (config)
+      config_get_string(config, [name UTF8String], &data);
+   
+   NSString* result = data ? [NSString stringWithUTF8String:data] : defaultValue;
    free(data);
    return result;
 }
@@ -88,9 +91,16 @@ static RASettingData* aspect_setting(config_file_t* config, NSString* label)
    RASettingData* result = [[RASettingData alloc] initWithType:AspectSetting label:label name:@"fram"];
    result.subValues = [NSArray arrayWithObjects:@"Fill Screen", @"Game Aspect", @"Pixel Aspect", @"4:3", @"16:9", nil];
 
-   bool videoForceAspect = ios_config_get_bool(config, "video_force_aspect", true);
-   bool videoAspectAuto = ios_config_get_bool(config, "video_aspect_ratio_auto", false);
-   double videoAspect = ios_config_get_double(config, "video_aspect_ratio", 0.0);
+   bool videoForceAspect = true;
+   bool videoAspectAuto = false;
+   double videoAspect = -1.0;
+
+   if (config)
+   {
+      config_get_bool(config, "video_force_aspect", &videoForceAspect);
+      config_get_bool(config, "video_aspect_auto", &videoAspectAuto);
+      config_get_double(config, "video_aspect_ratio", &videoAspect);
+   }
    
    if (!videoForceAspect)
       result.value = @"Fill Screen";
@@ -200,7 +210,8 @@ static RASettingData* custom_action(NSString* action)
     
     if (!config)
         config = config_file_new(0);
-   ios_config_set_string(config, "system_directory", [[RetroArch_iOS get].system_directory UTF8String]);
+   
+   config_set_string(config, "system_directory", [[RetroArch_iOS get].system_directory UTF8String]);
    [self writeSettings:nil toConfig:config];
     if (config)
         config_file_write(config, [[RetroArch_iOS get].moduleInfo.configPath UTF8String]);

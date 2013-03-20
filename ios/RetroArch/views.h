@@ -16,7 +16,7 @@
 #import <UIKit/UIKit.h>
 #import <GLKit/GLKit.h>
 
-#import "config_file_helper.h"
+#include "conf/config_file.h"
 
 @interface RAGameView : UIViewController
 + (RAGameView*)get;

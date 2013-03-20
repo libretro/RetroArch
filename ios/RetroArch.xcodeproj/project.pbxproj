@@ -43,7 +43,6 @@
 		96AFAE3016C1D4EA009DE44C /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; };
 		96AFAE3216C1D4EA009DE44C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 		96AFAE3816C1D4EA009DE44C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */; };
-		96C19C3016D7045700FE8D5A /* config_file_helper.c in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2F16D7045700FE8D5A /* config_file_helper.c */; };
 		96F9C26A16F7D9E2002455B3 /* btdynamic.c in Sources */ = {isa = PBXBuildFile; fileRef = 96F9C26816F7D9E2002455B3 /* btdynamic.c */; };
 		D48581DE16F823F9004BEB17 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = D48581DD16F823F9004BEB17 /* griffin.c */; };
 /* End PBXBuildFile section */
@@ -108,8 +107,6 @@
 		96AFAF4516C1E00A009DE44C /* bitmap.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = bitmap.bin; sourceTree = "<group>"; };
 		96AFAF4616C1E00A009DE44C /* bitmap.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; path = bitmap.bmp; sourceTree = "<group>"; };
 		96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rarch_wrapper.h; sourceTree = "<group>"; };
-		96C19C2E16D7045600FE8D5A /* config_file_helper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = config_file_helper.h; sourceTree = "<group>"; };
-		96C19C2F16D7045700FE8D5A /* config_file_helper.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = config_file_helper.c; sourceTree = "<group>"; };
 		96F9C26816F7D9E2002455B3 /* btdynamic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = btdynamic.c; sourceTree = "<group>"; };
 		96F9C26916F7D9E2002455B3 /* btdynamic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btdynamic.h; sourceTree = "<group>"; };
 		D48581DD16F823F9004BEB17 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../griffin/griffin.c; sourceTree = "<group>"; };
@@ -256,8 +253,6 @@
 				966B9C8516E40D44005B61E1 /* input */,
 				96366C6F16CAF62200D64A22 /* settings */,
 				96297A0E16C5AEA100E6DCE0 /* main.m */,
-				96C19C2E16D7045600FE8D5A /* config_file_helper.h */,
-				96C19C2F16D7045700FE8D5A /* config_file_helper.c */,
 				963F5AC516CC523B009BBD19 /* RAGameView.m */,
 				96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */,
 				96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */,
@@ -408,7 +403,6 @@
 				963F5AC316CC522F009BBD19 /* RASettingsList.m in Sources */,
 				963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */,
 				96096DD816D1ABAF00BF4499 /* RAModuleInfoList.m in Sources */,
-				96C19C3016D7045700FE8D5A /* config_file_helper.c in Sources */,
 				966B9CA216E418B7005B61E1 /* BTDevice.m in Sources */,
 				966B9CA416E418B7005B61E1 /* BTstackManager.m in Sources */,
 				966B9CA616E418B7005B61E1 /* wiimote.c in Sources */,
