@@ -16,33 +16,12 @@
 #include <string.h>
 #import "config_file_helper.h"
 
-config_file_t* ios_config_open_or_new(const char* path)
-{
-   config_file_t* result = config_file_new(path);
-   return result ? result : config_file_new(0);
-}
-
-void ios_config_file_write(config_file_t* config, const char* path)
-{
-   if (config)
-      config_file_write(config, path);
-}
-
 bool ios_config_get_bool(config_file_t* config, const char* name, bool default_)
 {
    if (!config) return default_;
    
    bool result = default_;
    config_get_bool(config, name, &result);
-   return result;
-}
-
-int ios_config_get_int(config_file_t* config, const char* name, int default_)
-{
-   if (!config) return default_;
-   
-   int result = default_;
-   config_get_int(config, name, &result);
    return result;
 }
 

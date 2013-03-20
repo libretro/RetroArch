@@ -196,10 +196,14 @@ static RASettingData* custom_action(NSString* action)
 
 - (void)dealloc
 {
-   config_file_t* config = ios_config_open_or_new([[RetroArch_iOS get].moduleInfo.configPath UTF8String]);
+   config_file_t* config = config_file_new([[RetroArch_iOS get].moduleInfo.configPath UTF8String]);
+    
+    if (!config)
+        config = config_file_new(0);
    ios_config_set_string(config, "system_directory", [[RetroArch_iOS get].system_directory UTF8String]);
    [self writeSettings:nil toConfig:config];
-   ios_config_file_write(config, [[RetroArch_iOS get].moduleInfo.configPath UTF8String]);
+    if (config)
+        config_file_write(config, [[RetroArch_iOS get].moduleInfo.configPath UTF8String]);
    config_file_free(config);
    
    [[RetroArch_iOS get] refreshConfig];

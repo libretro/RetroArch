@@ -18,11 +18,7 @@
 
 #include "conf/config_file.h"
 
-config_file_t* ios_config_open_or_new(const char* path);
-void ios_config_file_write(config_file_t* config, const char* path);
-
 bool ios_config_get_bool(config_file_t* config, const char* name, bool default_);
-int ios_config_get_int(config_file_t* config, const char* name, int default_);
 unsigned ios_config_get_uint(config_file_t* config, const char* name, unsigned default_);
 double ios_config_get_double(config_file_t* config, const char* name, double default_);
 
