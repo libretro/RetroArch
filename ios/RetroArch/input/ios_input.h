@@ -13,6 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef __IOS_RARCH_INPUT_H__
+#define __IOS_RARCH_INPUT_H__
+
 // Input responder
 #define MAX_TOUCHES 16
 #define MAX_KEYS 256
@@ -28,3 +31,5 @@ typedef struct touch_data
 extern uint32_t ios_key_list[MAX_KEYS];
 extern uint32_t ios_touch_count;
 extern touch_data_t ios_touch_list[MAX_TOUCHES];
+
+#endif

@@ -14,17 +14,29 @@
  */
 
 @implementation RAModuleInfo
-+ (RAModuleInfo*)moduleWithPath:(NSString*)thePath data:(RAConfig*)theData
++ (RAModuleInfo*)moduleWithPath:(NSString*)thePath data:(config_file_t*)theData
 {
    RAModuleInfo* new = [RAModuleInfo new];
 
-   new.displayName = [theData getStringNamed:@"display_name" withDefault:[[thePath lastPathComponent] stringByDeletingPathExtension]];
+   char* dispname = ios_config_get_string(theData, "display_name", [[[thePath lastPathComponent] stringByDeletingPathExtension] UTF8String]);
+   char* confpath = ios_config_get_string(theData, "supported_extensions", "");
+
+   new.displayName = [NSString stringWithUTF8String:dispname];
    new.path = thePath;
    new.configPath = [NSString stringWithFormat:@"%@/%@.cfg", [RetroArch_iOS get].system_directory, [[thePath lastPathComponent] stringByDeletingPathExtension]];
    new.data = theData;
    
-   new.supportedExtensions = [[theData getStringNamed:@"supported_extensions" withDefault:@""] componentsSeparatedByString:@"|"];
+   new.supportedExtensions = [[NSString stringWithUTF8String:confpath] componentsSeparatedByString:@"|"];
+   
+   free(dispname);
+   free(confpath);
+   
    return new;
+}
+
+- (void)dealloc
+{
+   config_file_free(self.data);
 }
 
 - (bool)supportsFileAtPath:(NSString*)path
@@ -79,7 +91,10 @@ static const uint32_t sectionSizes[2] = {1, 2};
    }
 
    cell.textLabel.text = labels[sectionBase + indexPath.row];
-   cell.detailTextLabel.text = [_data.data getStringNamed:keys[sectionBase + indexPath.row] withDefault:@"Unspecified"];
+   
+   char* val = ios_config_get_string(_data.data, [keys[sectionBase + indexPath.row] UTF8String], "Unspecified");
+   cell.detailTextLabel.text = [NSString stringWithUTF8String:val];
+   free(val);
 
    return cell;
 }

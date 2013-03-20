@@ -13,27 +13,27 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import "RAConfig.h"
+#import "config_file_helper.h"
 #import "browser.h"
 
 @implementation RADirectoryGrid
 {
    NSString* _path;
    NSArray* _list;
-   RAConfig* _config;
+   config_file_t* _config;
 }
 
-- (id)initWithPath:(NSString*)path config:(RAConfig*)config
+- (id)initWithPath:(NSString*)path
 {
    _path = path;
-   _config = config;
+   _config = config_file_new([[path stringByAppendingPathComponent:@".raconfig"] UTF8String]);
    _list = ra_ios_list_directory(_path);
    
    [self setTitle: [_path lastPathComponent]];
 
    // Init collection view
    UICollectionViewFlowLayout* layout = [UICollectionViewFlowLayout new];
-   layout.itemSize = CGSizeMake([config getUintNamed:@"cover_width" withDefault:100], [config getUintNamed:@"cover_height" withDefault:100]);
+   layout.itemSize = CGSizeMake(ios_config_get_uint(_config, "cover_width", 100), ios_config_get_uint(_config, "cover_height", 100));
    self = [super initWithCollectionViewLayout:layout];
 
    [self.collectionView registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:@"dircell"];
@@ -41,6 +41,11 @@
    [self.collectionView registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:@"imagecell"];
    
    return self;
+}
+
+- (void)dealloc
+{
+   config_file_free(_config);
 }
 
 - (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView

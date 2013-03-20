@@ -37,7 +37,7 @@ static const char* const SETTINGID = "SETTING";
 
 }
 
-- (void)writeSettings:(NSArray*)settingList toConfig:(RAConfig*)config
+- (void)writeSettings:(NSArray*)settingList toConfig:(config_file_t*)config
 {
    NSArray* list = settingList ? settingList : settings;
 
@@ -57,33 +57,33 @@ static const char* const SETTINGID = "SETTING";
                
             case FileListSetting:
                if ([setting.value length] > 0)
-                  [config putStringNamed:setting.name value:[setting.path stringByAppendingPathComponent:setting.value]];
+                  ios_config_set_string(config, [setting.name UTF8String], [[setting.path stringByAppendingPathComponent:setting.value] UTF8String]);
                else
-                  [config putStringNamed:setting.name value:@""];
+                  ios_config_set_string(config, [setting.name UTF8String], "");
                break;
 
             case ButtonSetting:
                if (setting.msubValues[0] && [setting.msubValues[0] length])
-                  [config putStringNamed:setting.name value:setting.msubValues[0]];
+                  ios_config_set_string(config, [setting.name UTF8String], [setting.msubValues[0] UTF8String]);
                if (setting.msubValues[1] && [setting.msubValues[1] length])
-                  [config putStringNamed:[setting.name stringByAppendingString:@"_btn"] value:setting.msubValues[1]];
+                  ios_config_set_string(config, [[setting.name stringByAppendingString:@"_btn"] UTF8String], [setting.msubValues[1] UTF8String]);
                break;
 
             case AspectSetting:
-               [config putStringNamed:@"video_force_aspect" value:[@"Fill Screen" isEqualToString:setting.value] ? @"false" : @"true"];
-               [config putStringNamed:@"video_aspect_ratio_auto" value:[@"Game Aspect" isEqualToString:setting.value] ? @"true" : @"false"];
-               [config putStringNamed:@"video_aspect_ratio" value:@"-1.0"];
+               ios_config_set_string(config, "video_force_aspect", [@"Fill Screen" isEqualToString:setting.value] ? "false" : "true");
+               ios_config_set_string(config, "video_aspect_ratio_auto", [@"Game Aspect" isEqualToString:setting.value] ? "true" : "false");
+               ios_config_set_string(config, "video_aspect_ratio", "-1.0");
                if([@"4:3" isEqualToString:setting.value])
-                  [config putStringNamed:@"video_aspect_ratio" value:@"1.33333333"];
+                  ios_config_set_string(config, "video_aspect_ratio", "1.33333333");
                else if([@"16:9" isEqualToString:setting.value])
-                  [config putStringNamed:@"video_aspect_ratio" value:@"1.777777777"];
+                  ios_config_set_string(config, "video_aspect_ratio", "1.77777777");
                break;
 
             case CustomAction:
                break;
 
             default:
-               [config putStringNamed:setting.name value:setting.value];
+               ios_config_set_string(config, [setting.name UTF8String], [setting.value UTF8String]);
                break;
          }
       }

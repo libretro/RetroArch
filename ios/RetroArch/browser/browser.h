@@ -25,12 +25,12 @@ extern NSString* ra_ios_check_path(NSString* path);
 @end
 
 @interface RADirectoryGrid : UICollectionViewController
-- (id)initWithPath:(NSString*)path config:(RAConfig*)config;
+- (id)initWithPath:(NSString*)path;
 @end
 
 @interface RADirectoryList : UITableViewController
 + (id)directoryListOrGridWithPath:(NSString*)path;
-- (id)initWithPath:(NSString*)path config:(RAConfig*)config;
+- (id)initWithPath:(NSString*)path;
 @end
 
 @interface RAModuleList : UITableViewController

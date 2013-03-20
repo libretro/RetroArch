@@ -53,7 +53,7 @@
       NSString* modulePath = [moduleList objectAtIndex:i];
       NSString* baseName = [[modulePath stringByDeletingPathExtension] stringByAppendingPathExtension:@"info"];
 
-      RAModuleInfo* module = [RAModuleInfo moduleWithPath:modulePath data:[[RAConfig alloc] initWithPath:baseName]];
+      RAModuleInfo* module = [RAModuleInfo moduleWithPath:modulePath data:config_file_new([baseName UTF8String])];
       
       if ([module supportsFileAtPath:_game])
          [_supported addObject:module];
@@ -120,7 +120,7 @@
    RAModuleInfo* info = (RAModuleInfo*)sectionData[indexPath.row];
 
    cell.textLabel.text = info.displayName;
-   cell.accessoryType = (info.data) ? UITableViewCellAccessoryDetailDisclosureButton : UITableViewCellAccessoryNone;
+   cell.accessoryType = UITableViewCellAccessoryDetailDisclosureButton;
 
    return cell;
 }

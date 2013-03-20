@@ -26,19 +26,22 @@
 }
 @end
 
-static NSString* get_value_from_config(RAConfig* config, NSString* name, NSString* defaultValue)
+static NSString* get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue)
 {
-   return [config getStringNamed:name withDefault:defaultValue];
+   char* data = ios_config_get_string(config, [name UTF8String], [defaultValue UTF8String]);
+   NSString* result = [NSString stringWithUTF8String:data];
+   free(data);
+   return result;
 }
 
-static RASettingData* boolean_setting(RAConfig* config, NSString* name, NSString* label, NSString* defaultValue)
+static RASettingData* boolean_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue)
 {
    RASettingData* result = [[RASettingData alloc] initWithType:BooleanSetting label:label name:name];
    result.value = get_value_from_config(config, name, defaultValue);
    return result;
 }
 
-static RASettingData* button_setting(RAConfig* config, NSString* name, NSString* label, NSString* defaultValue)
+static RASettingData* button_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue)
 {
    RASettingData* result = [[RASettingData alloc] initWithType:ButtonSetting label:label name:name];
    result.msubValues = [NSMutableArray arrayWithObjects:
@@ -55,7 +58,7 @@ static RASettingData* group_setting(NSString* label, NSArray* settings)
    return result;
 }
 
-static RASettingData* enumeration_setting(RAConfig* config, NSString* name, NSString* label, NSString* defaultValue, NSArray* values)
+static RASettingData* enumeration_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, NSArray* values)
 {
    RASettingData* result = [[RASettingData alloc] initWithType:EnumerationSetting label:label name:name];
    result.value = get_value_from_config(config, name, defaultValue);
@@ -63,7 +66,7 @@ static RASettingData* enumeration_setting(RAConfig* config, NSString* name, NSSt
    return result;
 }
 
-static RASettingData* subpath_setting(RAConfig* config, NSString* name, NSString* label, NSString* defaultValue, NSString* path, NSString* extension)
+static RASettingData* subpath_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, NSString* path, NSString* extension)
 {
    NSString* value = get_value_from_config(config, name, defaultValue);
    value = [value stringByReplacingOccurrencesOfString:path withString:@""];
@@ -78,16 +81,16 @@ static RASettingData* subpath_setting(RAConfig* config, NSString* name, NSString
    return result;
 }
 
-static RASettingData* aspect_setting(RAConfig* config, NSString* label)
+static RASettingData* aspect_setting(config_file_t* config, NSString* label)
 {
    // Why does this need to be so difficult?
 
    RASettingData* result = [[RASettingData alloc] initWithType:AspectSetting label:label name:@"fram"];
    result.subValues = [NSArray arrayWithObjects:@"Fill Screen", @"Game Aspect", @"Pixel Aspect", @"4:3", @"16:9", nil];
 
-   bool videoForceAspect = [config getBoolNamed:@"video_force_aspect" withDefault:true];
-   bool videoAspectAuto = [config getBoolNamed:@"video_aspect_ratio_auto" withDefault:false];
-   double videoAspect = [config getDoubleNamed:@"video_aspect_ratio" withDefault:0.0];
+   bool videoForceAspect = ios_config_get_bool(config, "video_force_aspect", true);
+   bool videoAspectAuto = ios_config_get_bool(config, "video_aspect_ratio_auto", false);
+   double videoAspect = ios_config_get_double(config, "video_aspect_ratio", 0.0);
    
    if (!videoForceAspect)
       result.value = @"Fill Screen";
@@ -112,7 +115,7 @@ static RASettingData* custom_action(NSString* action)
 
 - (id)init
 {
-   RAConfig* config = [[RAConfig alloc] initWithPath:[RetroArch_iOS get].moduleInfo.configPath];
+   config_file_t* config = config_file_new([[RetroArch_iOS get].moduleInfo.configPath UTF8String]);
 
    NSString* overlay_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/overlays/"];
    NSString* shader_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/shaders/"];
@@ -193,10 +196,12 @@ static RASettingData* custom_action(NSString* action)
 
 - (void)dealloc
 {
-   RAConfig* config = [[RAConfig alloc] initWithPath:[RetroArch_iOS get].moduleInfo.configPath];
-   [config putStringNamed:@"system_directory" value:[RetroArch_iOS get].system_directory];
+   config_file_t* config = ios_config_open_or_new([[RetroArch_iOS get].moduleInfo.configPath UTF8String]);
+   ios_config_set_string(config, "system_directory", [[RetroArch_iOS get].system_directory UTF8String]);
    [self writeSettings:nil toConfig:config];
-   [config writeToFile:[RetroArch_iOS get].moduleInfo.configPath];
+   ios_config_file_write(config, [[RetroArch_iOS get].moduleInfo.configPath UTF8String]);
+   config_file_free(config);
+   
    [[RetroArch_iOS get] refreshConfig];
 }
 

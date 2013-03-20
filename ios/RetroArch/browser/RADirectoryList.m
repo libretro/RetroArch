@@ -19,30 +19,27 @@
 {
    NSString* _path;
    NSArray* _list;
-   RAConfig* _config;
 }
 
 + (id)directoryListOrGridWithPath:(NSString*)path
 {
    path = ra_ios_check_path(path);
-   RAConfig* config = [[RAConfig alloc] initWithPath:[path stringByAppendingPathComponent:@".raconfig"]];
 
    if ([UICollectionViewController instancesRespondToSelector:@selector(initWithCollectionViewLayout:)])
    {
       NSString* coverDir = [path stringByAppendingPathComponent:@".coverart"];
       if (ra_ios_is_directory(coverDir))
-         return [[RADirectoryGrid alloc] initWithPath:path config:config];
+         return [[RADirectoryGrid alloc] initWithPath:path];
    }
 
-   return [[RADirectoryList alloc] initWithPath:path config:config];
+   return [[RADirectoryList alloc] initWithPath:path];
 }
 
-- (id)initWithPath:(NSString*)path config:(RAConfig*)config
+- (id)initWithPath:(NSString*)path
 {
    self = [super initWithStyle:UITableViewStylePlain];
 
    _path = path;
-   _config = config;
    _list = ra_ios_list_directory(_path);
 
    [self setTitle: [_path lastPathComponent]];

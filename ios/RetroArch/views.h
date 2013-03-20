@@ -16,7 +16,7 @@
 #import <UIKit/UIKit.h>
 #import <GLKit/GLKit.h>
 
-#import "RAConfig.h"
+#import "config_file_helper.h"
 
 @interface RAGameView : UIViewController
 + (RAGameView*)get;
@@ -28,10 +28,10 @@
 @property (strong) NSString* displayName;
 @property (strong) NSString* path;
 @property (strong) NSString* configPath;
-@property (strong) RAConfig* data;
+@property config_file_t* data;
 @property (strong) NSArray* supportedExtensions;
 
-+ (RAModuleInfo*)moduleWithPath:(NSString*)thePath data:(RAConfig*)theData;
++ (RAModuleInfo*)moduleWithPath:(NSString*)thePath data:(config_file_t*)theData;
 - (bool)supportsFileAtPath:(NSString*)path;
 @end
 

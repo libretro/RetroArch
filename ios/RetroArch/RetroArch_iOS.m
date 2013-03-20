@@ -125,9 +125,10 @@
       rarch_init_msg_queue();
 
       // Read load time settings
-      RAConfig* conf = [[RAConfig alloc] initWithPath:self.moduleInfo.configPath];
-      if ([conf getBoolNamed:@"ios_auto_bluetooth" withDefault:false])
+      config_file_t* conf = config_file_new([self.moduleInfo.configPath UTF8String]);
+      if (ios_config_get_bool(conf, "ios_auto_bluetooth", false))
          [self startBluetooth];
+      config_file_free(conf);
 
       //
       [self pushViewController:RAGameView.get animated:NO];
