@@ -15,7 +15,7 @@
  */
 
 #include "../general.h"
-#include "conf/config_file.h"
+#include "../conf/config_file.h"
 #include "../file.h"
 
 #ifdef HAVE_RGUI
