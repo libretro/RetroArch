@@ -242,7 +242,7 @@ INPUT
 #include "../android/native/jni/input_autodetect.c"
 #include "../android/native/jni/input_android.c"
 #elif defined(__BLACKBERRY_QNX__)
-#include "../playbook/src/qnx_input.c"
+#include "../playbook/qnx_input.c"
 #endif
 
 #if defined(HAVE_NULLINPUT)
