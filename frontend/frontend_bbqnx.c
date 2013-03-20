@@ -25,8 +25,6 @@
 #include <bps/bps.h>
 #include <bps/event.h>
 
-#include "../playbook/src/bbutil.h"
-
 screen_context_t screen_ctx;
 
 int rarch_main(int argc, char *argv[])
