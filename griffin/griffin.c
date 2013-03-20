@@ -241,6 +241,9 @@ INPUT
 #elif defined(ANDROID)
 #include "../android/native/jni/input_autodetect.c"
 #include "../android/native/jni/input_android.c"
+#elif defined(IOS)
+#include "../ios/RetroArch/input/ios_input.c"
+#include "../ios/RetroArch/input/ios_joypad.c"
 #elif defined(__BLACKBERRY_QNX__)
 #include "../playbook/qnx_input.c"
 #endif
