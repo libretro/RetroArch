@@ -27,8 +27,9 @@
 @implementation RetroArch_iOS
 {
    UIWindow* _window;
-   NSTimer* _gameTimer;
    
+   bool _isIterating;
+   bool _isScheduled;
    bool _isGameTop;
    bool _isPaused;
    bool _isRunning;
@@ -66,13 +67,14 @@
 
 - (void)applicationDidBecomeActive:(UIApplication*)application
 {
-   [self startTimer];
+   [self schedule];
 }
 
 - (void)applicationWillResignActive:(UIApplication*)application
 {
-   [self stopTimer];
+   [self lapse];
 }
+
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
 {
@@ -94,7 +96,7 @@
    self.navigationBarHidden = _isGameTop;
    
    if (_isGameTop)
-      [self startTimer];
+      [self schedule];
 
    self.topViewController.navigationItem.rightBarButtonItem = [self createBluetoothButton];
 }
@@ -179,24 +181,43 @@
 
 - (void)iterate
 {
-   if (_isPaused || !_isRunning || !_isGameTop)
-      [self stopTimer];
-   else if (_isRunning && !rarch_main_iterate())
-      [self closeGame];
-}
+   RARCH_LOG("Iterate Began\n");
 
-- (void)startTimer
-{
-   if (!_gameTimer)
-      _gameTimer = [NSTimer scheduledTimerWithTimeInterval:0.001f target:self selector:@selector(iterate) userInfo:nil repeats:YES];
-}
+   if (_isIterating)
+   {
+      RARCH_LOG("Recursive Iterate");
+      return;
+   }
 
-- (void)stopTimer
-{
-   if (_gameTimer)
-      [_gameTimer invalidate];
+   _isIterating = true;
+   SInt32 runLoopResult = kCFRunLoopRunTimedOut;
+
+   while (!_isPaused && _isRunning && _isGameTop && _isScheduled && runLoopResult == kCFRunLoopRunTimedOut)
+   {
+      if (!rarch_main_iterate())
+         [self closeGame];
+      
+      // Here's a construct you don't see every day
+      for (
+         runLoopResult = kCFRunLoopRunHandledSource;
+         runLoopResult == kCFRunLoopRunHandledSource;
+         runLoopResult = CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true)
+      );
+   }
    
-   _gameTimer = nil;
+   RARCH_LOG("Iterate Ended\n");
+   _isIterating = false;
+}
+
+- (void)schedule
+{
+   _isScheduled = true;
+   [self performSelector:@selector(iterate) withObject:self afterDelay:.01f];
+}
+
+- (void)lapse
+{
+   _isScheduled = false;
 }
 
 #pragma mark PAUSE MENU
@@ -235,12 +256,8 @@
 - (IBAction)closePauseMenu:(id)sender
 {
    [[RAGameView get] closePauseMenu];
-
-   if (_isPaused)
-   {
-      _isPaused = false;
-      [self startTimer];
-   }
+   _isPaused = false;
+   [self schedule];
 }
 
 - (IBAction)closeGamePressed:(id)sender
