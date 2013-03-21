@@ -21,6 +21,9 @@
 
 #import "input/BTStack/WiiMoteHelper.h"
 
+#define kDOCSFOLDER [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"]
+
+
 @implementation RetroArch_iOS
 {
    UIWindow* _window;
@@ -49,13 +52,12 @@
 // UIApplicationDelegate
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
-   // TODO: Relocate this!
-   self.system_directory = @"/var/mobile/Library/RetroArch/";
+   self.system_directory = [NSString stringWithFormat:@"%@/.RetroArch", kDOCSFOLDER];
    mkdir([self.system_directory UTF8String], 0755);
          
    // Setup window
    self.delegate = self;
-   [self pushViewController:[RADirectoryList directoryListOrGridWithPath:nil] animated:YES];
+   [self pushViewController:[RADirectoryList directoryListOrGridWithPath:kDOCSFOLDER] animated:YES];
 
    _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    _window.rootViewController = self;

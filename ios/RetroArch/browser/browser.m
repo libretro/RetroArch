@@ -67,7 +67,7 @@ NSArray* ra_ios_list_directory(NSString* path)
    
    for(struct dirent* item = readdir(dir); item; item = readdir(dir))
    {
-      if (strcmp(item->d_name, ".") == 0 || strcmp(item->d_name, "..") == 0)
+      if (strncmp(item->d_name, ".", 1) == 0)
          continue;
       
       cpath[cpath_end] = 0;
