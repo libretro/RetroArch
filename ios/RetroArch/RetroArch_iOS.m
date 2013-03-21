@@ -57,7 +57,7 @@
          
    // Setup window
    self.delegate = self;
-   [self pushViewController:[RADirectoryList directoryListOrGridWithPath:nil] animated:YES];
+   [self pushViewController:[RADirectoryList directoryListOrGridWithPath:kDOCSFOLDER] animated:YES];
 
    _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    _window.rootViewController = self;
