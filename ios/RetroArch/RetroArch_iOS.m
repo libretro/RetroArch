@@ -53,7 +53,7 @@
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
    // TODO: Relocate this!
-   self.system_directory = [NSString stringWithFormat:@"%@/RetroArch", kDOCSFOLDER];
+   self.system_directory = [NSString stringWithFormat:@"%@/.RetroArch", kDOCSFOLDER];
    mkdir([self.system_directory UTF8String], 0755);
          
    // Setup window
