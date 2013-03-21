@@ -26,6 +26,8 @@
 	<true/>
 	<key>UIApplicationExitsOnSuspend</key>
 	<false/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>armv7</string>
