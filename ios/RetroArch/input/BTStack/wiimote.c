@@ -640,8 +640,8 @@ void classic_ctrl_event(struct classic_ctrl_t* cc, byte* msg) {
    printf("lx ly rx ry %d %d %d %d\n",lx,ly,rx,ry);
 #endif
 
-	calc_joystick_state(&cc->ljs, lx, ly);
-	calc_joystick_state(&cc->rjs, rx, ry);
+//	calc_joystick_state(&cc->ljs, lx, ly);
+//	calc_joystick_state(&cc->rjs, rx, ry);
 
 	/*
 	printf("classic L button pressed:         %f\n", cc->l_shoulder);
