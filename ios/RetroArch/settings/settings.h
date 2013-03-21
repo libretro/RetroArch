@@ -16,7 +16,7 @@
 enum SettingTypes
 {
    BooleanSetting, ButtonSetting, EnumerationSetting, FileListSetting,
-   GroupSetting, AspectSetting, CustomAction
+   GroupSetting, AspectSetting, RangeSetting, CustomAction
 };
 
 @interface RASettingData : NSObject
@@ -29,6 +29,9 @@ enum SettingTypes
 @property (strong) NSString* path;
 @property (strong) NSArray* subValues;
 @property (strong) NSMutableArray* msubValues;
+
+@property double rangeMin;
+@property double rangeMax;
 
 - (id)initWithType:(enum SettingTypes)aType label:(NSString*)aLabel name:(NSString*)aName;
 @end

@@ -84,6 +84,15 @@ static RASettingData* subpath_setting(config_file_t* config, NSString* name, NSS
    return result;
 }
 
+static RASettingData* range_setting(config_file_t* config, NSString* name, NSString* label, NSString* defaultValue, double minValue, double maxValue)
+{
+   RASettingData* result = [[RASettingData alloc] initWithType:RangeSetting label:label name:name];
+   result.value = get_value_from_config(config, name, defaultValue);
+   result.rangeMin = minValue;
+   result.rangeMax = maxValue;
+   return result;
+}
+
 static RASettingData* aspect_setting(config_file_t* config, NSString* label)
 {
    // Why does this need to be so difficult?
@@ -152,6 +161,7 @@ static RASettingData* custom_action(NSString* action)
 
       [NSArray arrayWithObjects:@"Input",
          subpath_setting(config, @"input_overlay", @"Input Overlay", @"", overlay_path, @"cfg"),
+         range_setting(config, @"input_overlay_opacity", @"Overlay Opacity", @"1.0", 0.0, 1.0),
          group_setting(@"Player 1 Keys", [NSArray arrayWithObjects:
             [NSArray arrayWithObjects:@"Player 1",
                button_setting(config, @"input_player1_up", @"Up", @"up"),

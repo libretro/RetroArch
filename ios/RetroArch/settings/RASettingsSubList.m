@@ -128,6 +128,12 @@ static const char* const SETTINGID = "SETTING";
    setting.value = (swt.on ? @"true" : @"false");
 }
 
+- (void)handleSlider:(UISlider*)sld
+{
+   RASettingData* setting = objc_getAssociatedObject(sld, SETTINGID);
+   setting.value = [NSString stringWithFormat:@"%f", sld.value];
+}
+
 - (UITableViewCell*)tableView:(UITableView*)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
    RASettingData* setting = [[settings objectAtIndex:indexPath.section] objectAtIndex:indexPath.row + 1];
@@ -156,6 +162,30 @@ static const char* const SETTINGID = "SETTING";
          objc_setAssociatedObject(swt, SETTINGID, setting, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
       }
       break;
+
+      case RangeSetting:
+      {
+         cell = [self.tableView dequeueReusableCellWithIdentifier:@"range"];
+         
+         if (cell == nil)
+         {
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"range"];
+
+            UISlider* accessory = [UISlider new];
+            [accessory addTarget:self action:@selector(handleSlider:) forControlEvents:UIControlEventValueChanged];
+            accessory.continuous = NO;
+            cell.accessoryView = accessory;
+
+            [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
+         }
+         
+         UISlider* sld = (UISlider*)cell.accessoryView;
+         sld.minimumValue = setting.rangeMin;
+         sld.maximumValue = setting.rangeMax;
+         sld.value = [setting.value doubleValue];
+         objc_setAssociatedObject(sld, SETTINGID, setting, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+      }
+      break;
          
       case EnumerationSetting:
       case FileListSetting:
@@ -168,7 +198,7 @@ static const char* const SETTINGID = "SETTING";
          cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
       }
       break;
-      
+
       case GroupSetting:
       {
          cell = [self.tableView dequeueReusableCellWithIdentifier:@"group"];
