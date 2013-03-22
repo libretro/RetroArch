@@ -67,7 +67,7 @@ RetroArch needs at least one of these audio driver libraries:
    - JACK
    - SDL
    - PulseAudio
-   - XAudio2 (Win32, Xbox 36)
+   - XAudio2 (Win32, Xbox 360)
    - DirectSound (Win32, Xbox 1)
    - CoreAudio (OSX, iOS)
 
