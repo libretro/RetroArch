@@ -115,39 +115,11 @@ static void verbose_log_init(void)
 }
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-
-// Transforms a library id to a name suitable as a pathname.
-static void get_libretro_core_name(char *name, size_t size)
-{
-   if (size == 0)
-      return;
-
-   struct retro_system_info info;
-   retro_get_system_info(&info);
-   const char *id = info.library_name ? info.library_name : "Unknown";
-
-   if (!id || strlen(id) >= size)
-   {
-      name[0] = '\0';
-      return;
-   }
-
-   name[strlen(id)] = '\0';
-
-   for (size_t i = 0; id[i] != '\0'; i++)
-   {
-      char c = id[i];
-      if (isspace(c) || isblank(c))
-         name[i] = '_';
-      else
-         name[i] = tolower(c);
-   }
-}
-
-// If a CORE executable of name CORE.extension exists, rename filename
-// to a more sane name.
 static bool install_libretro_core(const char *core_exe_path, const char *tmp_path, const char *extension)
 {
+   // If a CORE executable of name CORE.extension exists, rename filename
+   // to a more sane name.
+
    int ret = 0;
    char tmp_path2[PATH_MAX], tmp_pathnewfile[PATH_MAX];
 

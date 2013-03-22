@@ -256,6 +256,33 @@ static void load_symbols(void)
    SYM(retro_get_memory_size);
 }
 
+void get_libretro_core_name(char *name, size_t size)
+{
+   if (size == 0)
+      return;
+
+   struct retro_system_info info;
+   retro_get_system_info(&info);
+   const char *id = info.library_name ? info.library_name : "Unknown";
+
+   if (!id || strlen(id) >= size)
+   {
+      name[0] = '\0';
+      return;
+   }
+
+   name[strlen(id)] = '\0';
+
+   for (size_t i = 0; id[i] != '\0'; i++)
+   {
+      char c = id[i];
+      if (isspace(c) || isblank(c))
+         name[i] = '_';
+      else
+         name[i] = tolower(c);
+   }
+}
+
 void init_libretro_sym(void)
 {
    // Guarantee that we can do "dirty" casting.

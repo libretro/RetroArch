@@ -27,6 +27,4 @@ static void find_first_libretro_core(char *first_file,
    const char * ext);
 #endif
 
-static void get_libretro_core_name(char *name, size_t size);
-
 #endif

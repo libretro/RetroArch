@@ -52,6 +52,9 @@ bool libretro_get_system_info(const char *path, struct retro_system_info *info);
 void libretro_free_system_info(struct retro_system_info *info);
 #endif
 
+// Transforms a library id to a name suitable as a pathname.
+void get_libretro_core_name(char *name, size_t size);
+
 extern void (*pretro_init)(void);
 extern void (*pretro_deinit)(void);
 
