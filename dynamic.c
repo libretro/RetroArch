@@ -257,12 +257,12 @@ static void load_symbols(void)
    SYM(retro_get_memory_size);
 }
 
-void get_libretro_core_name(char *name, size_t size)
+void libretro_get_current_core_pathname(char *name, size_t size)
 {
    if (size == 0)
       return;
 
-   struct retro_system_info info;
+   struct retro_system_info info = {0};
    pretro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
 

@@ -354,7 +354,7 @@ static void system_post_init(void)
 {
    char core_name[64];
 
-   get_libretro_core_name(core_name, sizeof(core_name));
+   libretro_get_current_core_pathname(core_name, sizeof(core_name));
    snprintf(input_path, sizeof(input_path), "%s/%s.cfg", default_paths.input_presets_dir, core_name);
    config_read_keybinds(input_path);
 }

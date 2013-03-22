@@ -61,7 +61,7 @@ static bool install_libretro_core(const char *core_exe_path, const char *tmp_pat
    int ret = 0;
    char tmp_path2[PATH_MAX], tmp_pathnewfile[PATH_MAX];
 
-   get_libretro_core_name(tmp_path2, sizeof(tmp_path2));
+   libretro_get_current_core_pathname(tmp_path2, sizeof(tmp_path2));
 
    strlcat(tmp_path2, extension, sizeof(tmp_path2));
    snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", tmp_path, tmp_path2);
