@@ -31,9 +31,7 @@
 
 #import <UIKit/UIKit.h>
 
-#import "BTstackManager.h"
-
-@interface WiiMoteHelper : NSObject<BTstackManagerDelegate, BTstackManagerListener>
+@interface WiiMoteHelper : NSObject
 + (BOOL)haveBluetooth;
 + (void)startBluetooth;
 + (BOOL)isBluetoothRunning;

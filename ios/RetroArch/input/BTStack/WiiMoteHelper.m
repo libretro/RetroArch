@@ -38,198 +38,105 @@
 #import "WiiMoteHelper.h"
 
 #import "BTDevice.h"
-#import "BTstackManager.h"
 
 static WiiMoteHelper* instance;
-static BTDevice *device;
 static bool btstackOpen;
 static bool btOK;
 
-@implementation WiiMoteHelper
-+ (BOOL)haveBluetooth
-{
-   if (!btstackOpen)
-      btstackOpen = load_btstack();
-   
-   return btstackOpen;
-}
+static BTDevice* discoveredDevice;
 
-+ (void)startBluetooth
-{
-   if (btstackOpen)
-   {
-      instance = instance ? instance : [WiiMoteHelper new];
-   
-      if (!btOK)
-      {
-         BTstackManager* bt = [BTstackManager sharedInstance];
-         [bt setDelegate:instance];
-         [bt addListener:instance];
-
-         btOK = [bt activate] == 0;
-      }
-   }
-}
-
-+ (BOOL)isBluetoothRunning
-{
-   return btstackOpen && btOK;
-}
-
-+ (void)stopBluetooth
-{
-   if (btstackOpen)
-   {
-      myosd_num_of_joys = 0;
-
-      if (btOK)
-      {
-         BTstackManager* bt = [BTstackManager sharedInstance];
-   
-         [bt deactivate];
-         [bt setDelegate:nil];
-         [bt removeListener:instance];
-         btOK = false;
-      }
-   
-      instance = nil;
-   }
-}
-
-// BTStackManagerListener
--(void) activatedBTstackManager:(BTstackManager*) manager
-{
-	[[BTstackManager sharedInstance] startDiscovery];
-}
-
--(void) btstackManager:(BTstackManager*)manager deviceInfo:(BTDevice*)newDevice
-{
-	if ([newDevice name] && [[newDevice name] hasPrefix:@"Nintendo RVL-CNT-01"])
-   {
-		device = newDevice;
-		[[BTstackManager sharedInstance] stopDiscovery];
-	}
-}
-
--(void) discoveryStoppedBTstackManager:(BTstackManager*) manager
-{
-	bt_send_cmd_ptr(hci_write_authentication_enable_ptr, 0);
-}
-
-// BTStackManagerDelegate
--(void) btstackManager:(BTstackManager*) manager
-  handlePacketWithType:(uint8_t)packet_type
-			   forChannel:(uint16_t)channel
-			      andData:(uint8_t*)packet
-			      withLen:(uint16_t)size
+void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
    bd_addr_t event_addr;
 
    switch (packet_type)
    {
-      case L2CAP_DATA_PACKET://0x06
-      {
-         struct wiimote_t *wm = wiimote_get_by_source_cid(channel);
-         
-         if (wm != NULL)
-         {
-            byte* msg = packet + 2;
-            byte event = packet[1];
-                        
-            switch (event)
-            {
-               case WM_RPT_BTN:
-               {
-                  wiimote_pressed_buttons(wm, msg);
-                  break;
-               }
-
-               case WM_RPT_READ:
-               {
-                  /* data read */
-                  wiimote_pressed_buttons(wm, msg);
-											
-                  byte len = ((msg[2] & 0xF0) >> 4) + 1;
-                  byte *data = (msg + 5);
-										
-                  if(wiimote_handshake(wm, WM_RPT_READ, data, len))
-                  {
-                     if (device != nil)
-                     {
-                        [device setConnectionState:kBluetoothConnectionConnected];
-                        device = nil;
-                     }
-                  }
-
-                  return;
-               }
-					
-               case WM_RPT_CTRL_STATUS:
-               {
-                  wiimote_pressed_buttons(wm, msg);
-          
-                  //handshake stuff!
-                  if(wiimote_handshake(wm,WM_RPT_CTRL_STATUS,msg,-1))
-                  {
-                     [device setConnectionState:kBluetoothConnectionConnected];
-
-                     if (device != nil)
-                     {
-                        [device setConnectionState:kBluetoothConnectionConnected];
-                        device = nil;
-                     }
-                  }
-
-                  return;
-               }
-
-               case WM_RPT_BTN_EXP:
-               {
-                  /* button - expansion */
-                  wiimote_pressed_buttons(wm, msg);
-                  wiimote_handle_expansion(wm, msg+2);
-
-                  break;
-               }
-               
-               case WM_RPT_WRITE:
-               {
-                  /* write feedback - safe to skip */
-                  break;
-               }
-
-               default:
-               {
-                  printf("Unknown event, can not handle it [Code 0x%x].", event);
-                  return;
-               }
-            }
-         }
-         break;
-      }
-      
-      case HCI_EVENT_PACKET://0x04
+      // Connection
+      case HCI_EVENT_PACKET:
       {
          switch (packet[0])
          {
-            case HCI_EVENT_COMMAND_COMPLETE:
+            // Bluetooth is active, search for remote         
+            case BTSTACK_EVENT_STATE:
             {
-               if (COMMAND_COMPLETE_EVENT(packet, (*hci_write_authentication_enable_ptr)))
-                  bt_send_cmd_ptr(l2cap_create_channel_ptr, [device address], PSM_HID_INTERRUPT);
-               break;
+               if (packet[2] == HCI_STATE_WORKING)
+                  bt_send_cmd_ptr(hci_inquiry_ptr, HCI_INQUIRY_LAP, 3, 0);
+					break;
             }
          
-            case HCI_EVENT_PIN_CODE_REQUEST:
+            // Identifies devices found during inquiry, does not signal the end of the inquiry.
+				case HCI_EVENT_INQUIRY_RESULT:
             {
-               bt_flip_addr_ptr(event_addr, &packet[2]);
-               if (BD_ADDR_CMP([device address], event_addr)) break;
-                    
-               // inform about pin code request
-               NSLog(@"HCI_EVENT_PIN_CODE_REQUEST\n");
-               bt_send_cmd_ptr(hci_pin_code_request_reply_ptr, event_addr, 6,  &packet[2]); // use inverse bd_addr as PIN
+					for (int i = 0; i != packet[2]; i ++)
+               {
+                  if (!discoveredDevice)
+                  {
+                     bt_flip_addr_ptr(event_addr, &packet[3 + i * 6]);
+                     discoveredDevice = [[BTDevice alloc] init];
+                     [discoveredDevice setAddress:&event_addr];
+                  }
+
+						// update
+						discoveredDevice.pageScanRepetitionMode =   packet [3 + packet[2] * (6)         + i*1];
+						discoveredDevice.classOfDevice = READ_BT_24(packet, 3 + packet[2] * (6+1+1+1)   + i*3);
+						discoveredDevice.clockOffset =   READ_BT_16(packet, 3 + packet[2] * (6+1+1+1+3) + i*2) & 0x7fff;
+						discoveredDevice.rssi  = 0;
+					}
+               
+					break;
+            }
+            
+            // The inquiry has ended
+            case HCI_EVENT_INQUIRY_COMPLETE:
+            {
+               // If we a device, ask for its name
+               if (discoveredDevice)
+                  bt_send_cmd_ptr(hci_remote_name_request_ptr, [discoveredDevice address], discoveredDevice.pageScanRepetitionMode,
+                                     0, discoveredDevice.clockOffset | 0x8000);
+               // Keep looking
+               else
+                  bt_send_cmd_ptr(hci_inquiry_ptr, HCI_INQUIRY_LAP, 3, 0);
+
                break;
             }
             
+            // Received the name of a device
+            case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+            {
+               bt_flip_addr_ptr(event_addr, &packet[3]);
+               
+               if (discoveredDevice && BD_ADDR_CMP(event_addr, discoveredDevice.address) == 0)
+               {
+                  char cname[249];
+                  strncpy(cname, (const char*)&packet[9], 248);
+                  cname[248] = 0;
+
+                  NSString* name = [NSString stringWithUTF8String:cname];
+                  [discoveredDevice setName:name];
+                  
+                  // We found a WiiMote, pair with it
+                  if ([name hasPrefix:@"Nintendo RVL-CNT-01"])
+                     bt_send_cmd_ptr(l2cap_create_channel_ptr, [discoveredDevice address], PSM_HID_INTERRUPT);
+               }
+               
+               break;
+            }
+
+            // Send PIN for pairing
+            case HCI_EVENT_PIN_CODE_REQUEST:
+            {
+               bt_flip_addr_ptr(event_addr, &packet[2]);
+               
+               if (discoveredDevice && BD_ADDR_CMP(event_addr, discoveredDevice.address) == 0)
+               {
+                  // WiiMote: Use inverse bd_addr as PIN
+                  if (discoveredDevice.name && [discoveredDevice.name hasPrefix:@"Nintendo RVL-CNT-01"])
+                     bt_send_cmd_ptr(hci_pin_code_request_reply_ptr, event_addr, 6, &packet[2]);
+               }
+               break;
+            }
+
+            // WiiMote connections
             case L2CAP_EVENT_CHANNEL_OPENED:
             {
                // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16)
@@ -273,11 +180,117 @@ static bool btOK;
                uint16_t  source_cid = READ_BT_16(packet, 2);
 
                bd_addr_t addr;
-               wiimote_remove(source_cid,&addr);
+               wiimote_remove(source_cid, &addr);
                break;
             }
          }
       }
+      
+      // WiiMote handling
+      case L2CAP_DATA_PACKET:
+      {
+         struct wiimote_t *wm = wiimote_get_by_source_cid(channel);
+         if (wm)
+         {
+            byte* msg = packet + 2;
+         
+            switch (packet[1])
+            {
+               case WM_RPT_BTN:
+               {
+                  wiimote_pressed_buttons(wm, msg);
+                  break;
+               }
+
+               case WM_RPT_READ:
+               {
+                  wiimote_pressed_buttons(wm, msg);
+
+                  byte len = ((msg[2] & 0xF0) >> 4) + 1;
+                  byte *data = (msg + 5);
+										
+                  wiimote_handshake(wm, WM_RPT_READ, data, len);
+                  return;
+               }
+					
+               case WM_RPT_CTRL_STATUS:
+               {
+                  wiimote_pressed_buttons(wm, msg);
+                  wiimote_handshake(wm,WM_RPT_CTRL_STATUS,msg,-1);
+
+                  return;
+               }
+
+               case WM_RPT_BTN_EXP:
+               {
+                  wiimote_pressed_buttons(wm, msg);
+                  wiimote_handle_expansion(wm, msg+2);
+                  break;
+               }
+            }
+         }
+         break;
+      }
    }
 }
+
+
+
+@implementation WiiMoteHelper
++ (BOOL)haveBluetooth
+{
+   if (!btstackOpen)
+   {
+      btstackOpen = load_btstack();
+      
+      if (btstackOpen)
+      {         
+         run_loop_init_ptr(RUN_LOOP_COCOA);
+         bt_register_packet_handler_ptr(packet_handler);
+      }
+   }
+
+   return btstackOpen;
+}
+
++ (void)startBluetooth
+{
+   if (btstackOpen)
+   {
+      instance = instance ? instance : [WiiMoteHelper new];
+
+      if (!btOK)
+      {
+         if (bt_open_ptr())
+         {
+            btOK = false;
+            return;
+         }
+
+         bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_ON);
+
+         btOK = true;
+      }
+   }
+}
+
++ (BOOL)isBluetoothRunning
+{
+   return btstackOpen && btOK;
+}
+
++ (void)stopBluetooth
+{
+   if (btstackOpen)
+   {
+      myosd_num_of_joys = 0;
+
+      if (btOK)
+         bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_OFF);
+
+      btOK = false;
+      instance = nil;
+   }
+}
+
 @end
