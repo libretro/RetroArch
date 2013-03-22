@@ -19,41 +19,12 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include <screen/screen.h>
-#include <bps/navigator.h>
-#include <bps/screen.h>
 #include <bps/bps.h>
-#include <bps/event.h>
-
-screen_context_t screen_ctx;
 
 int rarch_main(int argc, char *argv[])
 {
    //Initialize bps
    bps_initialize();
-
-   RARCH_LOG("Initializing screen context\n");
-
-   // Create a screen context that will be used to create an EGL surface to receive libscreen events
-   screen_create_context(&screen_ctx, 0);
-
-   if (screen_request_events(screen_ctx) != BPS_SUCCESS)
-   {
-      RARCH_ERR("screen_request_events failed.\n");
-      goto error;
-   }
-
-   if (navigator_request_events(0) != BPS_SUCCESS)
-   {
-      RARCH_ERR("navigator_request_events failed.\n");
-      goto error;
-   }
-
-   if (navigator_rotation_lock(false) != BPS_SUCCESS)
-   {
-      RARCH_ERR("navigator_location_lock failed.\n");
-      goto error;
-   }
 
    rarch_main_clear_state();
 
@@ -83,7 +54,6 @@ int rarch_main(int argc, char *argv[])
 #endif
 
 error:
-   screen_stop_events(screen_ctx);
    bps_shutdown();
 
    return 0;

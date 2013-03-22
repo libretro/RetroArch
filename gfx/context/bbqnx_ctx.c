@@ -22,6 +22,7 @@
 #include <EGL/egl.h>
 #include <bps/screen.h>
 #include <bps/navigator.h>
+#include <bps/event.h>
 #include <screen/screen.h>
 #include <sys/platform.h>
 #include <GLES2/gl2.h>
@@ -43,7 +44,7 @@ static EGLDisplay g_egl_dpy;
 static EGLConfig egl_config;
 static bool g_resize;
 
-extern screen_context_t screen_ctx;
+static screen_context_t screen_ctx;
 static screen_window_t screen_win;
 static screen_display_t screen_disp;
 
@@ -94,6 +95,30 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 
 static bool gfx_ctx_init(void)
 {
+   /* Create a screen context that will be used to 
+    * create an EGL surface to receive libscreen events */
+
+   RARCH_LOG("Initializing screen context...\n");
+   screen_create_context(&screen_ctx, 0);
+
+   if (screen_request_events(screen_ctx) != BPS_SUCCESS)
+   {
+      RARCH_ERR("screen_request_events failed.\n");
+      goto screen_error;
+   }
+
+   if (navigator_request_events(0) != BPS_SUCCESS)
+   {
+      RARCH_ERR("navigator_request_events failed.\n");
+      goto screen_error;
+   }
+
+   if (navigator_rotation_lock(false) != BPS_SUCCESS)
+   {
+      RARCH_ERR("navigator_location_lock failed.\n");
+      goto screen_error;
+   }
+
    const EGLint attribs[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -250,6 +275,8 @@ static bool gfx_ctx_init(void)
 error:
    RARCH_ERR("EGL error: %d.\n", eglGetError());
    gfx_ctx_destroy();
+screen_error:
+   screen_stop_events(screen_ctx);
    return false;
 }
 
