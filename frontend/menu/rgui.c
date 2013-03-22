@@ -155,8 +155,8 @@ struct rgui_handle
 
 #ifdef HAVE_DYNAMIC
    char libretro_dir[PATH_MAX];
-   struct retro_system_info info;
 #endif
+   struct retro_system_info info;
 };
 
 static const unsigned rgui_controller_lut[] = {
