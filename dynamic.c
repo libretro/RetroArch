@@ -19,6 +19,7 @@
 #include "compat/posix_string.h"
 #include "file.h"
 #include <string.h>
+#include <ctype.h>
 
 #ifdef RARCH_CONSOLE
 #include "console/rarch_console.h"
@@ -262,7 +263,7 @@ void get_libretro_core_name(char *name, size_t size)
       return;
 
    struct retro_system_info info;
-   retro_get_system_info(&info);
+   pretro_get_system_info(&info);
    const char *id = info.library_name ? info.library_name : "Unknown";
 
    if (!id || strlen(id) >= size)
