@@ -209,7 +209,6 @@ int rarch_main(int argc, char *argv[])
 #ifdef HAVE_LIBRETRO_MANAGEMENT
    char core_exe_path[PATH_MAX];
    char path_prefix[PATH_MAX];
-   const char *extension = DEFAULT_EXE_EXT;
    char slash;
 #if defined(_WIN32)
    slash = '\\';
@@ -218,14 +217,14 @@ int rarch_main(int argc, char *argv[])
 #endif
 
    snprintf(path_prefix, sizeof(path_prefix), "%s%c", default_paths.core_dir, slash);
-   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
+   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, DEFAULT_EXE_EXT);
 
    if (path_file_exists(core_exe_path))
    {
-      RARCH_LOG("core_exe_path: %s\n", core_exe_path);
-      if (install_libretro_core(core_exe_path, path_prefix, extension))
+      if (install_libretro_core(core_exe_path, path_prefix, DEFAULT_EXE_EXT))
       {
-         RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
+         RARCH_LOG("New default libretro core [%s] saved to config file: %s.\n", core_exe_path,
+               g_settings.libretro);
          config_save_file(g_extern.config_path);
       }
    }

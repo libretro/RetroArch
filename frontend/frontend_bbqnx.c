@@ -30,7 +30,6 @@ int rarch_main(int argc, char *argv[])
 
    g_extern.verbose = true;
 
-   int init_ret;
    struct rarch_main_wrap args = {0};
 
    args.verbose = g_extern.verbose;
@@ -40,13 +39,14 @@ int rarch_main(int argc, char *argv[])
    args.libretro_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/lib/test.so";
    args.config_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/retroarch.cfg";
 
-   if ((init_ret = rarch_main_init_wrap(&args)))
-   {
-      return init_ret;
-   }
    rarch_init_msg_queue();
+
+   int init_ret;
+   if ((init_ret = rarch_main_init_wrap(&args))) return init_ret;
+
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
    rarch_main_deinit();
+
    rarch_deinit_msg_queue();
 
 #ifdef PERF_TEST

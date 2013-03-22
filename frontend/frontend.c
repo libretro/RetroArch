@@ -41,9 +41,6 @@ int main(int argc, char *argv[])
    int init_ret;
    if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
 
-   // Avoid reloading config on every ROM load.
-   g_extern.block_config_read = true;
-
 #ifdef HAVE_RGUI
    menu_init();
    g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;

@@ -301,7 +301,10 @@ void config_set_defaults(void)
 #ifdef _XBOX1
    g_extern.console.sound.volume_level = 0;
 #endif
+#endif
 
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
+   /* Avoid reloading config on every ROM load */
    g_extern.block_config_read = true;
 #endif
 
