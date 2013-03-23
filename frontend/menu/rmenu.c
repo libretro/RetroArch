@@ -3074,7 +3074,7 @@ int ingame_menu(void *data, void *state)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
 
-   menu_settings_create_menu_item_label(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
+   snprintf(strw_buffer, sizeof(strw_buffer), "Load State #%d", g_extern.state_slot);
 
    font_parms.y = default_pos.y_position;
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE);
@@ -3082,7 +3082,7 @@ int ingame_menu(void *data, void *state)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
 
-   menu_settings_create_menu_item_label(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
+   snprintf(strw_buffer, sizeof(strw_buffer), "Save State #%d", g_extern.state_slot);
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_SAVE_STATE);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE);
@@ -3090,7 +3090,8 @@ int ingame_menu(void *data, void *state)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
 
-   menu_settings_create_menu_item_label(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
+   snprintf(strw_buffer, sizeof(strw_buffer), "Aspect Ratio: %s",
+         aspectratio_lut[g_settings.video.aspect_ratio_idx].name);
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_KEEP_ASPECT_RATIO);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO);
@@ -3106,7 +3107,7 @@ int ingame_menu(void *data, void *state)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
 
-   menu_settings_create_menu_item_label(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
+   snprintf(strw_buffer, sizeof(strw_buffer), "Rotation: %s", rotation_lut[g_extern.console.screen.orientation]);
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_ORIENTATION);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION);
@@ -3115,7 +3116,8 @@ int ingame_menu(void *data, void *state)
       driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
 
 #ifdef HAVE_FBO
-   menu_settings_create_menu_item_label(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
+   snprintf(strw_buffer, sizeof(strw_buffer), "Scale Factor: %f (X) / %f (Y)",
+         g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_SCALE_FACTOR);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR);

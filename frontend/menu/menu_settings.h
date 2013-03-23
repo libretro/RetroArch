@@ -31,20 +31,6 @@ enum
    S_MSG_SHADER_LOADING_SUCCEEDED
 };
 
-enum
-{
-   S_LBL_ASPECT_RATIO = 0,
-   S_LBL_RARCH_VERSION,
-   S_LBL_ROTATION,
-   S_LBL_SHADER,
-   S_LBL_SHADER_2,
-   S_LBL_SCALE_FACTOR,
-   S_LBL_LOAD_STATE_SLOT,
-   S_LBL_SAVE_STATE_SLOT,
-   S_LBL_REWIND_GRANULARITY,
-};
-
 void menu_settings_msg(unsigned setting, unsigned delay);
-void menu_settings_create_menu_item_label(char * str, unsigned setting, size_t size);
 
 #endif

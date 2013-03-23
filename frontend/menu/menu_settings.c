@@ -68,39 +68,3 @@ void menu_settings_msg(unsigned setting, unsigned delay)
 
    msg_queue_push(g_extern.msg_queue, str, 1, delay);
 }
-
-void menu_settings_create_menu_item_label(char * str, unsigned setting, size_t size)
-{
-   switch (setting)
-   {
-      case S_LBL_ASPECT_RATIO:
-         snprintf(str, size, "Aspect Ratio: %s", aspectratio_lut[g_settings.video.aspect_ratio_idx].name);
-         break;
-      case S_LBL_SHADER:
-         snprintf(str, size, "Shader #1: %s", g_settings.video.cg_shader_path);
-         break;
-      case S_LBL_SHADER_2:
-         snprintf(str, size, "Shader #2: %s", g_settings.video.second_pass_shader);
-         break;
-      case S_LBL_RARCH_VERSION:
-#if !defined(__BLACKBERRY_QNX__) && !defined(IOS)
-         snprintf(str, size, "RetroArch %s", PACKAGE_VERSION);
-#endif
-         break;
-      case S_LBL_SCALE_FACTOR:
-         snprintf(str, size, "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
-         break;
-      case S_LBL_ROTATION:
-         snprintf(str, size, "Rotation: %s", rotation_lut[g_extern.console.screen.orientation]);
-         break;
-      case S_LBL_LOAD_STATE_SLOT:
-         snprintf(str, size, "Load State #%d", g_extern.state_slot);
-         break;
-      case S_LBL_SAVE_STATE_SLOT:
-         snprintf(str, size, "Save State #%d", g_extern.state_slot);
-         break;
-      case S_LBL_REWIND_GRANULARITY:
-         snprintf(str, size, "Rewind granularity: %d", g_settings.rewind_granularity);
-         break;
-   }
-}

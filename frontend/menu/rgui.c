@@ -477,11 +477,8 @@ static void render_text(rgui_handle_t *rgui)
             snprintf(type_str, sizeof(type_str), "%.2f", g_extern.console.screen.overscan_amount);
             break;
          case RGUI_SETTINGS_VIDEO_ROTATION:
-            {
-               char rotate_msg[64];
-               menu_settings_create_menu_item_label(rotate_msg, S_LBL_ROTATION, sizeof(rotate_msg));
-               strlcpy(type_str, rotate_msg, sizeof(type_str));
-            }
+            snprintf(type_str, sizeof(type_str), "Rotation: %s",
+                  rotation_lut[g_extern.console.screen.orientation]);
             break;
          case RGUI_SETTINGS_AUDIO_MUTE:
             if (g_extern.audio_data.mute)
