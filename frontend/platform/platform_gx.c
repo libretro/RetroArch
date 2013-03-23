@@ -20,8 +20,6 @@
 #include "../../general.h"
 #include "../../libretro.h"
 
-#include "platform_inl.h"
-
 #include "../../console/rarch_console.h"
 #include "../../file.h"
 

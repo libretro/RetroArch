@@ -52,6 +52,28 @@ static void verbose_log_init(void)
    RARCH_LOG("Turning on verbose logging...\n");
 }
 
+static inline void inl_logger_init(void)
+{
+#if defined(HAVE_LOGGER)
+   verbose_log_init();
+   logger_init();
+#elif defined(HAVE_FILE_LOGGER)
+   verbose_log_init();
+   g_extern.log_file = fopen("/retroarch-log.txt", "w");
+#endif
+}
+
+static inline void inl_logger_deinit(void)
+{
+#if defined(HAVE_LOGGER)
+   logger_shutdown();
+#elif defined(HAVE_FILE_LOGGER)
+   if (g_extern.log_file)
+      fclose(g_extern.log_file);
+   g_extern.log_file = NULL;
+#endif
+}
+
 #ifdef HAVE_LIBRETRO_MANAGEMENT
 static bool install_libretro_core(const char *core_exe_path, const char *tmp_path, const char *extension)
 {

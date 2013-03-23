@@ -16,8 +16,6 @@
 
 #include <sys/process.h>
 
-#include "platform_inl.h"
-
 #include "../../ps3/sdk_defines.h"
 #include "../../ps3/ps3_input.h"
 

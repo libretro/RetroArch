@@ -21,7 +21,6 @@
 #include <string>
 
 #include "platform_xdk.h"
-#include "platform_inl.h"
 
 #if defined(_XBOX360)
 #include <xfilecache.h>
