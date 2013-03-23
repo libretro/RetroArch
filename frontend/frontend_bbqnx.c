@@ -30,14 +30,67 @@ int rarch_main(int argc, char *argv[])
 
    g_extern.verbose = true;
 
+#ifdef HAVE_RGUI
+   menu_init();
+   g_extern.lifecycle_mode_state |= 1ULL << MODE_INIT;
+
+   for (;;)
+   {
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
+      {
+	     while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
+	        g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+      }
+      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_INIT))
+      {
+	     if (g_extern.main_is_init)
+	        rarch_main_deinit();
+
+	     struct rarch_main_wrap args = {0};
+
+	     args.verbose = g_extern.verbose;
+	     args.sram_path = NULL;
+	     args.state_path = NULL;
+	     args.rom_path = "shared/documents/roms/snes9x-next/ChronoTrigger.smc";
+	     args.libretro_path = "app/native/lib/test.so";
+	     args.config_path = "app/native/retroarch.cfg";
+
+	     int init_ret = rarch_main_init_wrap(&args);
+	     if (init_ret == 0)
+	     {
+	        RARCH_LOG("rarch_main_init() succeeded.\n");
+	        g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+	     }
+	     else
+	     {
+	        RARCH_ERR("rarch_main_init() failed.\n");
+	        g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+	     }
+
+	     g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
+      }
+      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
+      {
+         g_extern.lifecycle_mode_state |= 1ULL << MODE_MENU_PREINIT;
+         while (menu_iterate());
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
+      }
+      else
+         break;
+   }
+
+   menu_free();
+   if (g_extern.main_is_init)
+      rarch_main_deinit();
+#else
    struct rarch_main_wrap args = {0};
 
    args.verbose = g_extern.verbose;
    args.sram_path = NULL;
    args.state_path = NULL;
-   args.rom_path = "/accounts/1000/shared/documents/roms/quake/pak0.pak";
-   args.libretro_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/lib/test.so";
-   args.config_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/retroarch.cfg";
+   args.rom_path = "shared/documents/roms/snes9x-next/ChronoTrigger.smc";
+   args.libretro_path = "app/native/lib/test.so";
+   args.config_path = "app/native/retroarch.cfg";
 
    rarch_init_msg_queue();
 
@@ -46,6 +99,7 @@ int rarch_main(int argc, char *argv[])
 
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
    rarch_main_deinit();
+#endif
 
    rarch_deinit_msg_queue();
 

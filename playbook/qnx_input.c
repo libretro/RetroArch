@@ -16,6 +16,8 @@
 #include "../general.h"
 #include "../driver.h"
 #include <screen/screen.h>
+#include <bps/event.h>
+#include <bps/navigator.h>
 
 #define MAX_TOUCH 16
 
@@ -136,6 +138,7 @@ static void handle_navigator_event(bps_event_t *event)
    switch (bps_event_get_code(event))
    {
       case NAVIGATOR_SWIPE_DOWN:
+    	  g_extern.lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
          break;
       case NAVIGATOR_EXIT:
          //Catch this in thumbnail loop
@@ -192,6 +195,8 @@ static void qnx_input_poll(void *data)
    //Request and process all available BPS events
 
    int rc, domain;
+
+   g_extern.lifecycle_state &= ~(1ULL << RARCH_MENU_TOGGLE);
 
    while(true)
    {

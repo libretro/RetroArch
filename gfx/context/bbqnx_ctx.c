@@ -64,8 +64,6 @@ static void gfx_ctx_destroy(void)
    eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
    eglDestroyContext(g_egl_dpy, g_egl_ctx);
    eglDestroySurface(g_egl_dpy, g_egl_surf);
-   screen_destroy_window(screen_win);
-   screen_destroy_context(screen_ctx);
    eglTerminate(g_egl_dpy);
    eglReleaseThread();
 
@@ -99,24 +97,27 @@ static bool gfx_ctx_init(void)
     * create an EGL surface to receive libscreen events */
 
    RARCH_LOG("Initializing screen context...\n");
-   screen_create_context(&screen_ctx, 0);
-
-   if (screen_request_events(screen_ctx) != BPS_SUCCESS)
+   if (!screen_ctx)
    {
-      RARCH_ERR("screen_request_events failed.\n");
-      goto screen_error;
-   }
+      screen_create_context(&screen_ctx, 0);
 
-   if (navigator_request_events(0) != BPS_SUCCESS)
-   {
-      RARCH_ERR("navigator_request_events failed.\n");
-      goto screen_error;
-   }
+      if (screen_request_events(screen_ctx) != BPS_SUCCESS)
+      {
+         RARCH_ERR("screen_request_events failed.\n");
+         goto screen_error;
+      }
 
-   if (navigator_rotation_lock(false) != BPS_SUCCESS)
-   {
-      RARCH_ERR("navigator_location_lock failed.\n");
-      goto screen_error;
+      if (navigator_request_events(0) != BPS_SUCCESS)
+      {
+         RARCH_ERR("navigator_request_events failed.\n");
+         goto screen_error;
+      }
+
+      if (navigator_rotation_lock(false) != BPS_SUCCESS)
+      {
+         RARCH_ERR("navigator_location_lock failed.\n");
+         goto screen_error;
+      }
    }
 
    const EGLint attribs[] = {
@@ -173,10 +174,13 @@ static bool gfx_ctx_init(void)
       goto error;
    }
 
-   if (screen_create_window(&screen_win, screen_ctx))
+   if(!screen_win)
    {
-      RARCH_ERR("screen_create_window failed:.\n");
-      goto error;
+      if (screen_create_window(&screen_win, screen_ctx))
+      {
+	     RARCH_ERR("screen_create_window failed:.\n");
+	     goto error;
+      }
    }
 
    if (screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_FORMAT, &format))
