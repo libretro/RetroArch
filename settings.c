@@ -282,13 +282,7 @@ void config_set_defaults(void)
    strlcpy(g_extern.console.menu_texture_path, default_paths.menu_border_file, sizeof(g_extern.console.menu_texture_path));
 #endif
 
-#if defined(__CELLOS_LV2) || defined(_XBOX360)
-   g_settings.video.aspect_ratio_idx = ASPECT_RATIO_16_9;
-#elif defined(GEKKO) || defined(_XBOX1)
-   g_settings.video.aspect_ratio_idx = ASPECT_RATIO_4_3;
-#else
-   g_settings.video.aspect_ratio_idx = 0;
-#endif
+   g_settings.video.aspect_ratio_idx = aspect_ratio_idx;
    g_extern.state_slot = 0;
    g_extern.audio_data.mute = 0;
    g_extern.verbose = true;
@@ -1341,3 +1335,227 @@ bool config_save_keybinds(const char *path)
    return true;
 }
 
+void settings_set(uint64_t settings)
+{
+   if (settings & (1ULL << S_ASPECT_RATIO_DECREMENT))
+   {
+      if(g_settings.video.aspect_ratio_idx > 0)
+         g_settings.video.aspect_ratio_idx--;
+   }
+
+   if (settings & (1ULL << S_ASPECT_RATIO_INCREMENT))
+   {
+      if(g_settings.video.aspect_ratio_idx < LAST_ASPECT_RATIO)
+         g_settings.video.aspect_ratio_idx++;
+   }
+
+   if (settings & (1ULL << S_AUDIO_MUTE))
+      g_extern.audio_data.mute = !g_extern.audio_data.mute;
+
+   if (settings & (1ULL << S_AUDIO_CONTROL_RATE_DECREMENT))
+   {
+      if (g_settings.audio.rate_control_delta > 0.0)
+         g_settings.audio.rate_control_delta -= 0.001;
+      if (g_settings.audio.rate_control_delta == 0.0)
+         g_settings.audio.rate_control = false;
+      else
+         g_settings.audio.rate_control = true;
+   }
+
+   if (settings & (1ULL << S_AUDIO_CONTROL_RATE_INCREMENT))
+   {
+      if (g_settings.audio.rate_control_delta < 0.2)
+         g_settings.audio.rate_control_delta += 0.001;
+      g_settings.audio.rate_control = true;
+   }
+
+   if (settings & (1ULL << S_FRAME_ADVANCE))
+   {
+      g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+   }
+
+   if (settings & (1ULL << S_HW_TEXTURE_FILTER))
+      g_settings.video.smooth = !g_settings.video.smooth;
+
+   if (settings & (1ULL << S_HW_TEXTURE_FILTER_2))
+      g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
+
+   if (settings & (1ULL << S_OVERSCAN_DECREMENT))
+   {
+      g_extern.console.screen.overscan_amount -= 0.01f;
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
+      if(g_extern.console.screen.overscan_amount == 0.0f)
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
+   }
+
+   if (settings & (1ULL << S_OVERSCAN_INCREMENT))
+   {
+      g_extern.console.screen.overscan_amount += 0.01f;
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
+      if(g_extern.console.screen.overscan_amount == 0.0f)
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
+   }
+
+   if (settings & (1ULL << S_RESOLUTION_PREVIOUS))
+   {
+      if (g_extern.console.screen.resolutions.current.idx)
+      {
+         g_extern.console.screen.resolutions.current.idx--;
+         g_extern.console.screen.resolutions.current.id = 
+            g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
+      }
+   }
+
+   if (settings & (1ULL << S_RESOLUTION_NEXT))
+   {
+      if (g_extern.console.screen.resolutions.current.idx + 1 < 
+            g_extern.console.screen.resolutions.count)
+      {
+         g_extern.console.screen.resolutions.current.idx++;
+         g_extern.console.screen.resolutions.current.id = 
+            g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
+      }
+   }
+
+   if (settings & (1ULL << S_ROTATION_DECREMENT))
+   {
+      if(g_extern.console.screen.orientation > 0)
+         g_extern.console.screen.orientation--;
+   }
+
+   if (settings & (1ULL << S_ROTATION_INCREMENT))
+   {
+      if(g_extern.console.screen.orientation < LAST_ORIENTATION)
+         g_extern.console.screen.orientation++;
+   }
+
+   if (settings & (1ULL << S_REWIND))
+      g_settings.rewind_enable = !g_settings.rewind_enable;
+
+   if (settings & (1ULL << S_SAVESTATE_DECREMENT))
+   {
+      if(g_extern.state_slot != 0)
+         g_extern.state_slot--;
+   }
+
+   if (settings & (1ULL << S_SAVESTATE_INCREMENT))
+      g_extern.state_slot++;
+
+   if (settings & (1ULL << S_SCALE_ENABLED))
+      g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
+
+   if (settings & (1ULL << S_SCALE_FACTOR_DECREMENT))
+   {
+      g_settings.video.fbo.scale_x -= 1.0f;
+      g_settings.video.fbo.scale_y -= 1.0f;
+   }
+
+   if (settings & (1ULL << S_SCALE_FACTOR_INCREMENT))
+   {
+      g_settings.video.fbo.scale_x += 1.0f;
+      g_settings.video.fbo.scale_y += 1.0f;
+   }
+
+   if (settings & (1ULL << S_THROTTLE))
+   {
+      if(!g_extern.system.force_nonblock)
+      {
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_THROTTLE_ENABLE);
+         else
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_THROTTLE_ENABLE);
+      }
+   }
+
+   if (settings & (1ULL << S_TRIPLE_BUFFERING))
+   {
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+      else
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+   }
+
+   if (settings & (1ULL << S_REFRESH_RATE_DECREMENT))
+      g_settings.video.refresh_rate -= 0.01f;
+
+   if (settings & (1ULL << S_REFRESH_RATE_INCREMENT))
+      g_settings.video.refresh_rate += 0.01f;
+
+   if (settings & (1ULL << S_INFO_DEBUG_MSG_TOGGLE))
+   {
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
+      else
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_FPS_DRAW);
+   }
+
+   if (settings & (1ULL << S_INFO_MSG_TOGGLE))
+   {
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INFO_DRAW);
+      else
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
+   }
+
+   if (settings & (1ULL << S_DEF_ASPECT_RATIO))
+      g_settings.video.aspect_ratio_idx = aspect_ratio_idx;
+
+   if (settings & (1ULL << S_DEF_AUDIO_MUTE))
+      g_extern.audio_data.mute = false;
+
+   if (settings & (1ULL << S_DEF_AUDIO_CONTROL_RATE))
+   {
+      g_settings.audio.rate_control_delta = rate_control_delta;
+      g_settings.audio.rate_control = rate_control;
+   }
+
+   if (settings & (1ULL << S_DEF_HW_TEXTURE_FILTER))
+      g_settings.video.smooth = video_smooth;
+
+   if (settings & (1ULL << S_DEF_HW_TEXTURE_FILTER_2))
+      g_settings.video.second_pass_smooth = second_pass_smooth;
+
+   if (settings & (1ULL << S_DEF_OVERSCAN))
+   {
+      g_extern.console.screen.overscan_amount = 0.0f;
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
+   }
+
+   if (settings & (1ULL << S_DEF_ROTATION))
+      g_extern.console.screen.orientation = ORIENTATION_NORMAL;
+
+   if (settings & (1ULL << S_DEF_THROTTLE))
+   {
+      if(!g_extern.system.force_nonblock)
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_THROTTLE_ENABLE);
+   }
+
+   if (settings & (1ULL << S_DEF_TRIPLE_BUFFERING))
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
+
+   if (settings & (1ULL << S_DEF_SAVE_STATE))
+      g_extern.state_slot = 0;
+
+   if (settings & (1ULL << S_DEF_SCALE_ENABLED))
+   {
+      g_settings.video.render_to_texture = render_to_texture;
+      g_settings.video.fbo.scale_x = fbo_scale_x;
+      g_settings.video.fbo.scale_y = fbo_scale_y;
+   }
+
+   if (settings & (1ULL << S_DEF_SCALE_FACTOR))
+   {
+      g_settings.video.fbo.scale_x = fbo_scale_x;
+      g_settings.video.fbo.scale_y = fbo_scale_y;
+   }
+
+   if (settings & (1ULL << S_DEF_REFRESH_RATE))
+      g_settings.video.refresh_rate = refresh_rate;
+
+   if (settings & (1ULL << S_DEF_INFO_DEBUG_MSG))
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_FPS_DRAW);
+
+   if (settings & (1ULL << S_DEF_INFO_MSG))
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_INFO_DRAW);
+}

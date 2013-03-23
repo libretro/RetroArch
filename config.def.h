@@ -23,6 +23,7 @@
 #include "boolean.h"
 #include "libretro.h"
 #include "driver.h"
+#include "gfx/gfx_common.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -267,6 +268,12 @@ static const bool scale_integer = false;
 // Controls aspect ratio handling.
 static const float aspect_ratio = DEFAULT_ASPECT_RATIO; // Automatic
 static const bool aspect_ratio_auto = false; // 1:1 PAR
+
+#if defined(__CELLOS_LV2) || defined(_XBOX360)
+static unsigned aspect_ratio_idx = ASPECT_RATIO_16_9;
+#else
+static unsigned aspect_ratio_idx = ASPECT_RATIO_4_3;
+#endif
 
 // Crop overscanned frames (7/8 or 15/15 for interlaced frames).
 static const bool crop_overscan = true;

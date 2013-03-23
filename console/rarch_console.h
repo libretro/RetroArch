@@ -26,7 +26,6 @@
 typedef struct
 {
    char menu_border_file[MAXIMUM_PATH];
-   char border_file[MAXIMUM_PATH];
    char border_dir[MAXIMUM_PATH];
    char cgp_dir[MAXIMUM_PATH];
    char core_dir[MAXIMUM_PATH];

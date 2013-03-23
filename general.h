@@ -635,12 +635,58 @@ struct rarch_main_wrap
    bool verbose;
 };
 
+enum
+{
+   S_ASPECT_RATIO_DECREMENT = 0,
+   S_ASPECT_RATIO_INCREMENT,
+   S_AUDIO_MUTE,
+   S_AUDIO_CONTROL_RATE_DECREMENT,
+   S_AUDIO_CONTROL_RATE_INCREMENT,
+   S_FRAME_ADVANCE,
+   S_HW_TEXTURE_FILTER,
+   S_HW_TEXTURE_FILTER_2,
+   S_OVERSCAN_DECREMENT,
+   S_OVERSCAN_INCREMENT,
+   S_RESOLUTION_PREVIOUS,
+   S_RESOLUTION_NEXT,
+   S_ROTATION_DECREMENT,
+   S_ROTATION_INCREMENT,
+   S_REWIND,
+   S_SAVESTATE_DECREMENT,
+   S_SAVESTATE_INCREMENT,
+   S_SCALE_ENABLED,
+   S_SCALE_FACTOR_DECREMENT,
+   S_SCALE_FACTOR_INCREMENT,
+   S_THROTTLE,
+   S_TRIPLE_BUFFERING,
+   S_REFRESH_RATE_DECREMENT,
+   S_REFRESH_RATE_INCREMENT,
+   S_INFO_DEBUG_MSG_TOGGLE,
+   S_INFO_MSG_TOGGLE,
+   S_DEF_ASPECT_RATIO,
+   S_DEF_AUDIO_MUTE,
+   S_DEF_AUDIO_CONTROL_RATE,
+   S_DEF_HW_TEXTURE_FILTER,
+   S_DEF_HW_TEXTURE_FILTER_2,
+   S_DEF_OVERSCAN,
+   S_DEF_ROTATION,
+   S_DEF_THROTTLE,
+   S_DEF_TRIPLE_BUFFERING,
+   S_DEF_SAVE_STATE,
+   S_DEF_SCALE_ENABLED,
+   S_DEF_SCALE_FACTOR,
+   S_DEF_REFRESH_RATE,
+   S_DEF_INFO_DEBUG_MSG,
+   S_DEF_INFO_MSG,
+};
+
 // Public functions
 void config_load(void);
 void config_set_defaults(void);
 const char *config_get_default_video(void);
 const char *config_get_default_audio(void);
 const char *config_get_default_input(void);
+void settings_set(uint64_t settings);
 
 #include "conf/config_file.h"
 bool config_load_file(const char *path);

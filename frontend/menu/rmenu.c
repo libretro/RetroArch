@@ -1335,9 +1335,9 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
 #ifdef __CELLOS_LV2__
       case SETTING_CHANGE_RESOLUTION:
          if(input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
-            menu_settings_set(S_RESOLUTION_NEXT);
+            settings_set(1ULL << S_RESOLUTION_NEXT);
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
-            menu_settings_set(S_RESOLUTION_PREVIOUS);
+            settings_set(1ULL << S_RESOLUTION_PREVIOUS);
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
@@ -1501,21 +1501,21 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_KEEP_ASPECT_RATIO:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
-            menu_settings_set(S_ASPECT_RATIO_DECREMENT);
+            settings_set(1ULL << S_ASPECT_RATIO_DECREMENT);
 
             if (driver.video_poke->set_aspect_ratio)
                driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
          {
-            menu_settings_set(S_ASPECT_RATIO_INCREMENT);
+            settings_set(1ULL << S_ASPECT_RATIO_INCREMENT);
 
             if (driver.video_poke->set_aspect_ratio)
                driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            menu_settings_set_default(S_DEF_ASPECT_RATIO);
+            settings_set(1ULL << S_DEF_ASPECT_RATIO);
 
             if (driver.video_poke->set_aspect_ratio)
                driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
@@ -1524,14 +1524,14 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_HW_TEXTURE_FILTER:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            menu_settings_set(S_HW_TEXTURE_FILTER);
+            settings_set(1ULL << S_HW_TEXTURE_FILTER);
 
             if (driver.video_poke->set_filtering)
                driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            menu_settings_set(S_DEF_HW_TEXTURE_FILTER);
+            settings_set(1ULL << S_DEF_HW_TEXTURE_FILTER);
 
             if (driver.video_poke->set_filtering)
                driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
@@ -1541,14 +1541,14 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_HW_TEXTURE_FILTER_2:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            menu_settings_set(S_HW_TEXTURE_FILTER_2);
+            settings_set(1ULL << S_HW_TEXTURE_FILTER_2);
 
             if (driver.video_poke->set_filtering)
                driver.video_poke->set_filtering(driver.video_data, 2, g_settings.video.second_pass_smooth);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            menu_settings_set(S_DEF_HW_TEXTURE_FILTER_2);
+            settings_set(1ULL << S_DEF_HW_TEXTURE_FILTER_2);
 
             if (driver.video_poke->set_filtering)
                driver.video_poke->set_filtering(driver.video_data, 2, g_settings.video.second_pass_smooth);
@@ -1557,7 +1557,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_SCALE_ENABLED:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            menu_settings_set(S_SCALE_ENABLED);
+            settings_set(1ULL << S_SCALE_ENABLED);
 
             if (driver.video_poke->set_fbo_state)
             {
@@ -1569,7 +1569,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            menu_settings_set_default(S_DEF_SCALE_ENABLED);
+            settings_set(1ULL << S_DEF_SCALE_ENABLED);
 
             if (driver.video_poke->set_fbo_state)
                driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
@@ -1584,7 +1584,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
 
                if(should_decrement)
                {
-                  menu_settings_set(S_SCALE_FACTOR_DECREMENT);
+                  settings_set(1ULL << S_SCALE_FACTOR_DECREMENT);
 
                   if (driver.video_poke->set_fbo_state)
                      driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
@@ -1598,7 +1598,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
                bool should_increment = g_settings.video.fbo.scale_x < MAX_SCALING_FACTOR;
                if(should_increment)
                {
-                  menu_settings_set(S_SCALE_FACTOR_INCREMENT);
+                  settings_set(1ULL << S_SCALE_FACTOR_INCREMENT);
 
                   if (driver.video_poke->set_fbo_state)
                      driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
@@ -1607,7 +1607,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            menu_settings_set_default(S_DEF_SCALE_FACTOR);
+            settings_set(1ULL << S_DEF_SCALE_FACTOR);
 
             if (driver.video_poke->set_fbo_state)
                driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
@@ -1644,21 +1644,21 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_HW_OVERSCAN_AMOUNT:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
-            menu_settings_set(S_OVERSCAN_DECREMENT);
+            settings_set(1ULL << S_OVERSCAN_DECREMENT);
 
             if (driver.video_poke->apply_state_changes)
                driver.video_poke->apply_state_changes(driver.video_data);
          }
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            menu_settings_set(S_OVERSCAN_INCREMENT);
+            settings_set(1ULL << S_OVERSCAN_INCREMENT);
 
             if (driver.video_poke->apply_state_changes)
                driver.video_poke->apply_state_changes(driver.video_data);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            menu_settings_set_default(S_DEF_OVERSCAN);
+            settings_set(1ULL << S_DEF_OVERSCAN);
 
             if (driver.video_poke->apply_state_changes)
                driver.video_poke->apply_state_changes(driver.video_data);
@@ -1667,17 +1667,17 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_REFRESH_RATE:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
-            menu_settings_set(S_REFRESH_RATE_DECREMENT);
+            settings_set(1ULL << S_REFRESH_RATE_DECREMENT);
             driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
          }
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            menu_settings_set(S_REFRESH_RATE_INCREMENT);
+            settings_set(1ULL << S_REFRESH_RATE_INCREMENT);
             driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            menu_settings_set_default(S_DEF_REFRESH_RATE);
+            settings_set(1ULL << S_DEF_REFRESH_RATE);
             driver_set_monitor_refresh_rate(g_settings.video.refresh_rate);
          }
          break;
@@ -1686,7 +1686,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK)))
             {
-               menu_settings_set(S_THROTTLE);
+               settings_set(1ULL << S_THROTTLE);
                device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? true : false);
             }
          }
@@ -1694,7 +1694,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_PAL_VSYNC_BLOCK)))
             {
-               menu_settings_set_default(S_DEF_THROTTLE);
+               settings_set(1ULL << S_DEF_THROTTLE);
                device_ptr->ctx_driver->swap_interval((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE)) ? true : false);
             }
          }
@@ -1702,12 +1702,12 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
       case SETTING_TRIPLE_BUFFERING:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            menu_settings_set(S_TRIPLE_BUFFERING);
+            settings_set(1ULL << S_TRIPLE_BUFFERING);
             driver.video->restart();
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            menu_settings_set_default(S_DEF_TRIPLE_BUFFERING);
+            settings_set(1ULL << S_DEF_TRIPLE_BUFFERING);
 
             if(!(g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE)))
                driver.video->restart();
@@ -1799,28 +1799,28 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          break;
       case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
-            menu_settings_set(S_SAVESTATE_DECREMENT);
+            settings_set(1ULL << S_SAVESTATE_DECREMENT);
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-            menu_settings_set(S_SAVESTATE_INCREMENT);
+            settings_set(1ULL << S_SAVESTATE_INCREMENT);
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            menu_settings_set_default(S_DEF_SAVE_STATE);
+            settings_set(1ULL << S_DEF_SAVE_STATE);
          break;
       case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-            menu_settings_set(S_INFO_DEBUG_MSG_TOGGLE);
+            settings_set(1ULL << S_INFO_DEBUG_MSG_TOGGLE);
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            menu_settings_set_default(S_DEF_INFO_DEBUG_MSG);
+            settings_set(1ULL << S_DEF_INFO_DEBUG_MSG);
          break;
       case SETTING_EMU_SHOW_INFO_MSG:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-            menu_settings_set(S_INFO_MSG_TOGGLE);
+            settings_set(1ULL << S_INFO_MSG_TOGGLE);
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            menu_settings_set_default(S_DEF_INFO_MSG);
+            settings_set(1ULL << S_DEF_INFO_MSG);
          break;
       case SETTING_EMU_REWIND_ENABLED:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            menu_settings_set(S_REWIND);
+            settings_set(1ULL << S_REWIND);
 
             if (g_settings.rewind_enable)
                rarch_init_rewind();
@@ -1909,10 +1909,10 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          break;
       case SETTING_EMU_AUDIO_MUTE:
          if((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-            menu_settings_set(S_AUDIO_MUTE);
+            settings_set(1ULL << S_AUDIO_MUTE);
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
-            menu_settings_set_default(S_DEF_AUDIO_MUTE);
+            settings_set(1ULL << S_DEF_AUDIO_MUTE);
          break;
 #ifdef _XBOX1
       case SETTING_EMU_AUDIO_SOUND_VOLUME_LEVEL:
@@ -2934,19 +2934,19 @@ int ingame_menu(void *data, void *state)
       case MENU_ITEM_ORIENTATION:
          if(input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
-            menu_settings_set(S_ROTATION_DECREMENT);
+            settings_set(1ULL << S_ROTATION_DECREMENT);
             driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
          }
 
          if((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            menu_settings_set(S_ROTATION_INCREMENT);
+            settings_set(1ULL << S_ROTATION_INCREMENT);
             driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            menu_settings_set_default(S_DEF_ROTATION);
+            settings_set(1ULL << S_DEF_ROTATION);
             driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
          }
          strlcpy(strw_buffer, "Change orientation of the screen.", sizeof(strw_buffer));
@@ -2966,7 +2966,7 @@ int ingame_menu(void *data, void *state)
          {
             g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            menu_settings_set(S_FRAME_ADVANCE);
+            settings_set(1ULL << S_FRAME_ADVANCE);
             menu_idx = MENU_ITEM_FRAME_ADVANCE;
             return -1;
          }

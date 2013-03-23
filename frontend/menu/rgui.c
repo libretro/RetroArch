@@ -619,7 +619,7 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
                action == RGUI_ACTION_LEFT ||
                action == RGUI_ACTION_RIGHT)
          {
-            menu_settings_set(S_REWIND);
+            settings_set(1ULL < S_REWIND);
             if (g_settings.rewind_enable)
                rarch_init_rewind();
          }
@@ -652,11 +652,11 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
             return -1;
          }
          else if (action == RGUI_ACTION_START)
-            menu_settings_set_default(S_DEF_SAVE_STATE);
+            settings_set(1ULL << S_DEF_SAVE_STATE);
          else if (action == RGUI_ACTION_LEFT)
-            menu_settings_set(S_SAVESTATE_DECREMENT);
+            settings_set(1ULL << S_SAVESTATE_DECREMENT);
          else if (action == RGUI_ACTION_RIGHT)
-            menu_settings_set(S_SAVESTATE_INCREMENT);
+            settings_set(1ULL << S_SAVESTATE_INCREMENT);
          break;
 #ifdef HAVE_SCREENSHOTS
       case RGUI_SETTINGS_SCREENSHOT:
@@ -693,9 +693,9 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
          break;
       case RGUI_SETTINGS_VIDEO_FILTER:
          if (action == RGUI_ACTION_START)
-            menu_settings_set_default(S_DEF_HW_TEXTURE_FILTER);
+            settings_set(1ULL << S_DEF_HW_TEXTURE_FILTER);
          else
-            menu_settings_set(S_HW_TEXTURE_FILTER);
+            settings_set(1ULL << S_HW_TEXTURE_FILTER);
 
          if (driver.video_poke->set_filtering)
             driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
@@ -767,11 +767,11 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
          break;
       case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
          if (action == RGUI_ACTION_START)
-            menu_settings_set_default(S_DEF_ASPECT_RATIO);
+            settings_set(1ULL << S_DEF_ASPECT_RATIO);
          else if (action == RGUI_ACTION_LEFT)
-            menu_settings_set(S_ASPECT_RATIO_DECREMENT);
+            settings_set(1ULL << S_ASPECT_RATIO_DECREMENT);
          else if (action == RGUI_ACTION_RIGHT)
-            menu_settings_set(S_ASPECT_RATIO_INCREMENT);
+            settings_set(1ULL << S_ASPECT_RATIO_INCREMENT);
 
          if (driver.video_poke->set_aspect_ratio)
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
@@ -779,53 +779,53 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
       case RGUI_SETTINGS_VIDEO_ROTATION:
          if (action == RGUI_ACTION_START)
          {
-            menu_settings_set_default(S_DEF_AUDIO_CONTROL_RATE);
+            settings_set(1ULL << S_DEF_AUDIO_CONTROL_RATE);
             video_set_rotation_func(g_extern.console.screen.orientation);
          }
          else if (action == RGUI_ACTION_LEFT)
          {
-            menu_settings_set(S_ROTATION_DECREMENT);
+            settings_set(1ULL << S_ROTATION_DECREMENT);
             video_set_rotation_func(g_extern.console.screen.orientation);
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
-            menu_settings_set(S_ROTATION_INCREMENT);
+            settings_set(1ULL << S_ROTATION_INCREMENT);
             video_set_rotation_func(g_extern.console.screen.orientation);
          }
          break;
       case RGUI_SETTINGS_VIDEO_OVERSCAN:
          if (action == RGUI_ACTION_START)
          {
-            menu_settings_set_default(S_DEF_OVERSCAN);
+            settings_set(1ULL << S_DEF_OVERSCAN);
             if (driver.video_poke->apply_state_changes)
                driver.video_poke->apply_state_changes(driver.video_data);
          }
          else if (action == RGUI_ACTION_LEFT)
          {
-            menu_settings_set(S_OVERSCAN_DECREMENT);
+            settings_set(1ULL << S_OVERSCAN_DECREMENT);
             if (driver.video_poke->apply_state_changes)
                driver.video_poke->apply_state_changes(driver.video_data);
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
-            menu_settings_set(S_OVERSCAN_INCREMENT);
+            settings_set(1ULL << S_OVERSCAN_INCREMENT);
             if (driver.video_poke->apply_state_changes)
                driver.video_poke->apply_state_changes(driver.video_data);
          }
          break;
       case RGUI_SETTINGS_AUDIO_MUTE:
          if (action == RGUI_ACTION_START)
-            menu_settings_set_default(S_DEF_AUDIO_MUTE);
+            settings_set(1ULL << S_DEF_AUDIO_MUTE);
          else
-            menu_settings_set(S_AUDIO_MUTE);
+            settings_set(1ULL << S_AUDIO_MUTE);
          break;
       case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
          if (action == RGUI_ACTION_START)
-            menu_settings_set_default(S_DEF_AUDIO_CONTROL_RATE);
+            settings_set(1ULL << S_DEF_AUDIO_CONTROL_RATE);
          else if (action == RGUI_ACTION_LEFT)
-            menu_settings_set(S_AUDIO_CONTROL_RATE_DECREMENT);
+            settings_set(1ULL << S_AUDIO_CONTROL_RATE_DECREMENT);
          else if (action == RGUI_ACTION_RIGHT)
-            menu_settings_set(S_AUDIO_CONTROL_RATE_INCREMENT);
+            settings_set(1ULL << S_AUDIO_CONTROL_RATE_INCREMENT);
          break;
       case RGUI_SETTINGS_RESAMPLER_TYPE:
          {
