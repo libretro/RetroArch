@@ -36,9 +36,6 @@ typedef struct
    char filesystem_root_dir[MAXIMUM_PATH];
    char input_presets_dir[MAXIMUM_PATH];
    char screenshots_dir[MAXIMUM_PATH];
-#ifdef HAVE_MULTIMAN
-   char multiman_self_file[MAXIMUM_PATH];
-#endif
    char port_dir[MAXIMUM_PATH];
    char savestate_dir[MAXIMUM_PATH];
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)

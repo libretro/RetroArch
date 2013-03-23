@@ -39,6 +39,10 @@ SYS_PROCESS_PARAM(1001, 0x100000)
 #else
 SYS_PROCESS_PARAM(1001, 0x200000)
 #endif
+   
+#ifdef HAVE_MULTIMAN
+#define MULTIMAN_SELF_FILE "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF"
+#endif
 
 #ifdef IS_SALAMANDER
 #include <netex/net.h>
@@ -216,10 +220,7 @@ static void get_environment_settings(int argc, char *argv[])
 
 #ifdef HAVE_MULTIMAN
    /* not launched from external launcher, set default path */
-   strlcpy(default_paths.multiman_self_file, "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF",
-         sizeof(default_paths.multiman_self_file));
-
-   if(path_file_exists(default_paths.multiman_self_file) && argc > 1 &&  path_file_exists(argv[1]))
+   if(path_file_exists(MULTIMAN_SELF_FILE) && argc > 1 &&  path_file_exists(argv[1]))
    {
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EXTLAUNCH_MULTIMAN);
       RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
@@ -438,6 +439,13 @@ static void system_deinit_save(void)
 static void system_exitspawn(void)
 {
 #ifdef HAVE_RARCH_EXEC
+#ifdef HAVE_MULTIMAN 
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN_MULTIMAN))
+   {
+      RARCH_LOG("Boot Multiman: %s.\n", MULTIMAN_SELF_FILE);
+      strlcpy(g_extern.fullpath, MULTIMAN_SELF_FILE, sizeof(g_extern.fullpath));
+   }
+#endif
 
 #ifdef IS_SALAMANDER
    rarch_console_exec(default_paths.libretro_path);

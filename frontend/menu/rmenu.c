@@ -3025,12 +3025,11 @@ int ingame_menu(void *data, void *state)
       case MENU_ITEM_RETURN_TO_MULTIMAN:
          if(input & (1ULL << RMENU_DEVICE_NAV_B))
          {
-            RARCH_LOG("Boot Multiman: %s.\n", default_paths.multiman_self_file);
-            strlcpy(g_extern.fullpath, default_paths.multiman_self_file, sizeof(g_extern.fullpath));
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN_MULTIMAN);
             return -1;
          }
          strlcpy(strw_buffer, "Quit RetroArch and return to multiMAN.", sizeof(strw_buffer));
