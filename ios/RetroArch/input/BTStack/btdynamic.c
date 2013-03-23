@@ -47,6 +47,8 @@ static struct
    GRAB(hci_write_authentication_enable),
    GRAB(hci_write_inquiry_mode),
    GRAB(l2cap_create_channel),
+   GRAB(l2cap_register_service),
+   GRAB(l2cap_accept_connection),
    {0, 0}
 };
 

@@ -46,5 +46,7 @@ BTDIMPORT const hci_cmd_t* hci_remote_name_request_cancel_ptr;
 BTDIMPORT const hci_cmd_t* hci_write_authentication_enable_ptr;
 BTDIMPORT const hci_cmd_t* hci_write_inquiry_mode_ptr;
 BTDIMPORT const hci_cmd_t* l2cap_create_channel_ptr;
+BTDIMPORT const hci_cmd_t* l2cap_register_service_ptr;
+BTDIMPORT const hci_cmd_t* l2cap_accept_connection_ptr;
 
 #endif

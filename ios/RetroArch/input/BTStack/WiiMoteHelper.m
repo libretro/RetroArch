@@ -44,9 +44,15 @@ static bool btstackOpen;
 static bool btOK;
 
 static BTDevice* discoveredDevice;
+static bd_addr_t address;
+static uint32_t handle[2];
+static uint32_t remote_cid[2];
+static uint32_t local_cid[2];
+uint8_t psdata_buffer[512];
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
+#if 1 // WiiMote
    bd_addr_t event_addr;
 
    switch (packet_type)
@@ -232,9 +238,71 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
          break;
       }
    }
+#else // SixAxis
+   switch (packet_type)
+   {
+      // Connection
+      case HCI_EVENT_PACKET:
+      {
+         switch (packet[0])
+         {
+            // Bluetooth is active, search for remote         
+            case BTSTACK_EVENT_STATE:
+            {
+               if (packet[2] == HCI_STATE_WORKING)
+                  bt_send_cmd_ptr(l2cap_register_service_ptr, 0x11, 672);
+					break;
+            }
+            
+            case L2CAP_EVENT_SERVICE_REGISTERED:
+            {
+               if (READ_BT_16(packet, 3) == 0x11)
+                  bt_send_cmd_ptr(l2cap_register_service_ptr, 0x13, 672);
+               break;
+            }
+            
+            case L2CAP_EVENT_INCOMING_CONNECTION:
+            {
+               const uint32_t psm = READ_BT_16(packet, 10);
+               const bool second = (psm == 0x11) ? 0 : 1;
+
+               handle[second] = READ_BT_16(packet, 8);
+               local_cid[second] = READ_BT_16(packet, 12);
+               remote_cid[second] = READ_BT_16(packet, 14);
+           
+               bt_flip_addr_ptr(address, &packet[2]);
+               bt_send_cmd_ptr(l2cap_accept_connection_ptr, local_cid[second]);
+               
+               break;
+            }
+
+            case L2CAP_EVENT_CHANNEL_OPENED:
+            {
+               if (READ_BT_16(packet, 11) == PSM_HID_INTERRUPT)
+               {
+                  uint8_t data[] = {0x53, 0xF4, 0x42, 0x03, 0x00, 0x00};
+                  bt_send_l2cap_ptr(local_cid[0], data, 6);
+                  set_ps3_data(0);
+               }
+            
+               break;
+            }
+            
+            break;
+         }
+
+         break;
+      }
+         
+      case L2CAP_DATA_PACKET:
+      {
+         if (packet[0] == 0xA1)
+            memcpy(psdata_buffer, packet, size);
+         break;
+      }
+   }
+#endif
 }
-
-
 
 @implementation WiiMoteHelper
 + (BOOL)haveBluetooth

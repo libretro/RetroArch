@@ -151,6 +151,19 @@ static const struct
          }
       }
    }
+   
+   // SixAxis
+   extern uint8_t psdata_buffer[512];
+   uint32_t buttons = psdata_buffer[3] | (psdata_buffer[4] << 8);
+   for (int i = 0; i != 32; i ++)
+   {
+      if (buttons & (1 << i))
+      {
+         _value.msubValues[1] = [NSString stringWithFormat:@"%d", i];
+         [self finish];
+         return;
+      }
+   }
 }
 
 @end

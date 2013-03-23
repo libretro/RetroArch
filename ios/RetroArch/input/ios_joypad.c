@@ -61,6 +61,11 @@ static void ios_joypad_poll(void)
          g_buttons[i] |= (joys[i].exp.type == EXP_CLASSIC) ? (joys[i].exp.classic.btns << 16) : 0;
       }
    }
+
+   // HACK: SixAxis
+   extern uint8_t psdata_buffer[512];
+   if (myosd_num_of_joys == 0)
+      g_buttons[0] = psdata_buffer[3] | (psdata_buffer[4] << 8);
 }
 
 const rarch_joypad_driver_t ios_joypad = {
