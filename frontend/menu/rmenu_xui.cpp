@@ -26,7 +26,6 @@
 #include "utils/file_browser.h"
 
 #include "../../console/rarch_console.h"
-#include "menu_settings.h"
 
 #include "../../gfx/gfx_common.h"
 #include "../../gfx/gfx_context.h"
@@ -359,7 +358,7 @@ static void browser_update(filebrowser_t * b, uint64_t input, const char *extens
       ret = filebrowser_iterate(b, action);
 
    if(!ret)
-      menu_settings_msg(S_MSG_DIR_LOADING_ERROR, 180);
+      msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
 }
 
 HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
@@ -715,7 +714,7 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_RESTART_RARCH, 180);
+               msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
             break;
 	 case SETTING_EMU_REWIND_GRANULARITY:
 	    g_settings.rewind_granularity++;
@@ -785,7 +784,8 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             hCur = app.hShaderBrowser;
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_SELECT_SHADER, 180);
+               msg_queue_push(g_extern.msg_queue,
+                     "INFO - Select a shader from the menu.", 1, 180);
 
             NavigateForward(app.hShaderBrowser);
             break;
@@ -798,7 +798,8 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             hCur = app.hShaderBrowser;
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_SELECT_SHADER, 180);
+               msg_queue_push(g_extern.msg_queue,
+                     "INFO - Select a shader from the menu.", 1, 180);
 
             NavigateForward(app.hShaderBrowser);
             break;
@@ -846,7 +847,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  menu_settings_msg(S_MSG_RESTART_RARCH, 180);
+                  msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
                break;
 	    case SETTING_EMU_REWIND_GRANULARITY:
 	       if (g_settings.rewind_granularity > 1)
@@ -997,7 +998,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  menu_settings_msg(S_MSG_RESTART_RARCH, 180);
+                  msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
                break;
 	    case SETTING_EMU_REWIND_GRANULARITY:
 	       g_settings.rewind_granularity++;
@@ -1239,7 +1240,7 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             m_quickmenulist.SetText(MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_RESIZE_SCREEN, 270);
+               msg_queue_push(g_extern.msg_queue, "INFO - Resize the screen by moving around the two analog sticks.\n", 1, 270);
             break;
          case MENU_XUI_ITEM_FRAME_ADVANCE:
             if (g_extern.main_is_init)
@@ -1313,7 +1314,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.cg_shader_path, RARCH_SHADER_INDEX_PASS0);
                   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, 180);
+                     msg_queue_push(G_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
                   XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
                }
                else
@@ -1328,7 +1329,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.second_pass_shader, RARCH_SHADER_INDEX_PASS1);
                   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, 180);
+                     msg_queue_push(G_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
                }
                else
                   RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -1452,7 +1453,8 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hCur = app.hControlsMenu;
 
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         menu_settings_msg(S_MSG_CHANGE_CONTROLS, 180);
+         msg_queue_push(g_extern.msg_queue,
+               "INFO - Press LEFT/RIGHT to change the controls, and press\n[RetroPad Start] to reset a button to default values.", 1, 180);
 
       NavigateForward(app.hControlsMenu);
    }
@@ -1465,7 +1467,8 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hCur = app.hCoreBrowser;
 
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         menu_settings_msg(S_MSG_SELECT_LIBRETRO_CORE, 180);
+         msg_queue_push(g_extern.msg_queue,
+               "INFO - Select a Libretro core from the menu.", 1, 180);
 
       NavigateForward(app.hCoreBrowser);
    }
@@ -1620,7 +1623,14 @@ bool menu_iterate(void)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
    {
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         menu_settings_msg(S_MSG_LOADING_ROM, 100);
+      {
+         char tmp[PATH_MAX];
+         char str[PATH_MAX];
+
+         fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
+         snprintf(str, sizeof(str), "INFO - Loading %s...", tmp);
+         msg_queue_push(g_extern.msg_queue, str, 1, 1);
+      }
 
       g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);

@@ -28,7 +28,6 @@
 #endif
 
 #include "../../console/rarch_console.h"
-#include "menu_settings.h"
 
 #include "../../gfx/image.h"
 
@@ -848,7 +847,7 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
       ret = filebrowser_iterate(b, action);
 
    if(!ret)
-      menu_settings_msg(S_MSG_DIR_LOADING_ERROR, 180);
+      msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
 }
 
 void browser_render(void *data)
@@ -958,7 +957,7 @@ int select_file(void *data, void *state)
                   {
                      driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS0);
                      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                        menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, 180);
+                        msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
                   }
                   else
                      RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -974,7 +973,7 @@ int select_file(void *data, void *state)
                   {
                      driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS1);
                      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                        menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, 180);
+                        msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
                   }
                   else
                      RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -1019,7 +1018,7 @@ int select_file(void *data, void *state)
                else
                {
                   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     menu_settings_msg(S_MSG_RESTART_RARCH, 180);
+                     msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
                }
                break;
          }
@@ -1028,7 +1027,7 @@ int select_file(void *data, void *state)
       }
 
       if(!ret)
-         menu_settings_msg(S_MSG_DIR_LOADING_ERROR, 180);
+         msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
    }
    else if (input & (1ULL << RMENU_DEVICE_NAV_X))
       menu_stack_pop();
@@ -1152,7 +1151,7 @@ int select_directory(void *data, void *state)
    }
 
    if(!ret)
-      menu_settings_msg(S_MSG_DIR_LOADING_ERROR, 180);
+      msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
 
    display_menubar(current_menu);
 
@@ -1413,7 +1412,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             {
                driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, NULL, RARCH_SHADER_INDEX_PASS0);
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, 180);
+                  msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
             }
             else
                RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -1433,7 +1432,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
             {
                driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, NULL, RARCH_SHADER_INDEX_PASS1);
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, 180);
+                  msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
             }
             else
                RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -1466,7 +1465,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
                   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING);
 
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  menu_settings_msg(S_MSG_RESTART_RARCH, 180);
+                  msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
             }
          }
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
@@ -1479,7 +1478,7 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
                   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE_PENDING);
 
                   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     menu_settings_msg(S_MSG_RESTART_RARCH, 180);
+                     msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
                }
             }
          }
@@ -1920,14 +1919,14 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
          {
             g_extern.console.sound.volume_level = !g_extern.console.sound.volume_level;
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_RESTART_RARCH, 180);
+               msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
          }
 
          if(input & (1ULL << RMENU_DEVICE_NAV_START))
          {
             g_extern.console.sound.volume_level = 0;
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_RESTART_RARCH, 180);
+               msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
          }
          break;
 #endif
@@ -2401,7 +2400,7 @@ int select_rom(void *data, void *state)
          bool ret = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_OK);
 
          if(!ret)
-            menu_settings_msg(S_MSG_DIR_LOADING_ERROR, 180);
+            msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
       }
       else
       {
@@ -3268,7 +3267,14 @@ int menu_input_process(void *data, void *state)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
    {
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         menu_settings_msg(S_MSG_LOADING_ROM, 100);
+      {
+         char tmp[PATH_MAX];
+         char str[PATH_MAX];
+
+         fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
+         snprintf(str, sizeof(str), "INFO - Loading %s...", tmp);
+         msg_queue_push(g_extern.msg_queue, str, 1, 1);
+      }
 
       g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);

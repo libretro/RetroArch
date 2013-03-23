@@ -23,7 +23,6 @@
 
 #include "rgui.h"
 #include "utils/file_list.h"
-#include "menu_settings.h"
 #include "../../general.h"
 #include "../../gfx/gfx_common.h"
 #include "../../config.def.h"
@@ -1507,9 +1506,19 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
             else
             {
                fill_pathname_join(g_extern.fullpath, dir, path, sizeof(g_extern.fullpath));
+
                g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME);
 
-               menu_settings_msg(S_MSG_LOADING_ROM, 1);
+               if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
+               {
+                  char tmp[PATH_MAX];
+                  char str[PATH_MAX];
+
+                  fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
+                  snprintf(str, sizeof(str), "INFO - Loading %s...", tmp);
+                  msg_queue_push(g_extern.msg_queue, str, 1, 1);
+               }
+
                rgui->need_refresh = true; // in case of zip extract
                rgui->msg_force = true;
                ret = -1;
@@ -1642,9 +1651,6 @@ static int menu_input_process(void *data, void *state)
 {
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
    {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         menu_settings_msg(S_MSG_LOADING_ROM, 100);
-
       if (g_extern.fullpath)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
 

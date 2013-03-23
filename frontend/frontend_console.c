@@ -22,7 +22,6 @@
 #include "../config.def.h"
 #include "frontend_console.h"
 #include "menu/rmenu.h"
-#include "menu/menu_settings.h"
 
 #if defined(__CELLOS_LV2__)
 #include "platform/platform_ps3_exec.c"
@@ -214,7 +213,7 @@ begin_loop:
       {
          RARCH_ERR("rarch_main_init failed.\n");
          g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-         menu_settings_msg(S_MSG_ROM_LOADING_ERROR, 180);
+         msg_queue_push(g_extern.msg_queue, "ERROR - An error occurred during ROM loading.", 1, 180);
       }
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
    }

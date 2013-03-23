@@ -444,8 +444,6 @@ MENU
 #include "../frontend/menu/rmenu_xui.cpp"
 #endif
 
-#include "../frontend/menu/menu_settings.c"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
