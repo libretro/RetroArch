@@ -20,7 +20,6 @@
 #include <string.h>
 
 #include "../config.def.h"
-#include "frontend_console.h"
 #include "menu/rmenu.h"
 
 #if defined(__CELLOS_LV2__)
@@ -42,22 +41,13 @@
 
 default_paths_t default_paths;
 
-static void verbose_log_init(void)
-{
-   if (g_extern.verbose)
-      return;
-
-   g_extern.verbose = true;
-   RARCH_LOG("Turning on verbose logging...\n");
-}
-
 static inline void inl_logger_init(void)
 {
 #if defined(HAVE_LOGGER)
-   verbose_log_init();
+   g_extern.verbose = true;
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
-   verbose_log_init();
+   g_extern.verbose = true;
    g_extern.log_file = fopen("/retroarch-log.txt", "w");
 #endif
 }
@@ -127,7 +117,7 @@ int rarch_main(int argc, char *argv[])
 
    rarch_main_clear_state();
 
-   verbose_log_init();
+   g_extern.verbose = true;
 
    get_environment_settings(argc, argv);
    config_load();
