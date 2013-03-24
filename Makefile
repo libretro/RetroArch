@@ -79,7 +79,7 @@ ifneq ($(findstring Linux,$(OS)),)
 endif
 
 ifeq ($(HAVE_RGUI), 1)
-   OBJ += frontend/menu/rgui.o frontend/menu/utils/file_list.o frontend/menu/menu_settings.o
+   OBJ += frontend/menu/rgui.o frontend/menu/utils/file_list.o
 endif
 
 ifeq ($(HAVE_THREADS), 1)

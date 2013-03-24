@@ -1796,9 +1796,9 @@ bool menu_iterate(void)
       action = RGUI_ACTION_CANCEL;
    else if (trigger_state & (1ULL << DEVICE_NAV_A))
       action = RGUI_ACTION_OK;
-   else if (trigger_state & (1ULL << DEVICE_NAV_START))
-      action = RGUI_ACTION_START;
    else if (trigger_state & (1ULL << DEVICE_NAV_SELECT))
+      action = RGUI_ACTION_START;
+   else if (trigger_state & (1ULL << DEVICE_NAV_START))
       action = RGUI_ACTION_SETTINGS;
 #ifdef GEKKO
    else if (trigger_state & (1ULL << DEVICE_NAV_QUIT))
