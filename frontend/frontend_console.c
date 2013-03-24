@@ -63,61 +63,47 @@ static inline void inl_logger_deinit(void)
 #endif
 }
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
+/* If a CORE executable of name CORE.extension exists, rename filename
+ * to a more sane name. */
 static bool libretro_install_core(const char *path_prefix, const char *extension)
 {
    char core_exe_path[256];
    char tmp_path[PATH_MAX], tmp_pathnewfile[PATH_MAX];
-   int ret;
 
-   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, DEFAULT_EXE_EXT);
+   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
 
    if (!path_file_exists(core_exe_path))
       return false;
-
-   /* If a CORE executable of name CORE.extension exists, rename filename
-    * to a more sane name. */
-
-   ret = 0;
 
    libretro_get_current_core_pathname(tmp_path, sizeof(tmp_path));
 
    strlcat(tmp_path, extension, sizeof(tmp_path));
    snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", path_prefix, tmp_path);
 
+   /* If core already exists, we are upgrading the core - 
+    * delete existing file first. */
    if (path_file_exists(tmp_pathnewfile))
    {
-      // If core already exists, we are upgrading the core -
-      // delete existing file first.
-
-      RARCH_LOG("Upgrading emulator core...\n");
-      ret = remove(tmp_pathnewfile);
-
-      if (ret == 0)
-         RARCH_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+      if (remove(tmp_pathnewfile) == 0)
+         RARCH_LOG("Upgrading, succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
       else
-         RARCH_ERR("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+         RARCH_ERR("Upgrading, failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
    }
 
-   // Now attempt the renaming of the core.
-   ret = rename(core_exe_path, tmp_pathnewfile);
-
-   if (ret == 0)
+   /* Now attempt the renaming of the core. */
+   if (rename(core_exe_path, tmp_pathnewfile) == 0)
    {
       RARCH_LOG("Libretro core [%s] successfully renamed to: [%s].\n", core_exe_path, tmp_pathnewfile);
       strlcpy(g_settings.libretro, tmp_pathnewfile, sizeof(g_settings.libretro));
    }
    else
    {
-      RARCH_ERR("Failed to rename CORE executable.\n");
-      RARCH_WARN("CORE executable was not found, or some other error occurred. Will attempt to load libretro core path from config file.\n");
+      RARCH_ERR("Failed to rename CORE executable. Will attempt to load libretro core path from config file.\n");
       return false;
    }
 
    return true;
 }
-
-#endif
 
 int rarch_main(int argc, char *argv[])
 {
