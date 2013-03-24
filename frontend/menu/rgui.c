@@ -890,7 +890,14 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
             return -1;
          }
          break;
-      case RGUI_SETTINGS_QUIT_EMULATOR:
+      case RGUI_SETTINGS_RESUME_GAME:
+         if (action == RGUI_ACTION_OK && (g_extern.main_is_init))
+         {
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            return -1;
+         }
+         break;
+      case RGUI_SETTINGS_QUIT_RARCH:
          if (action == RGUI_ACTION_OK)
          {
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
@@ -1055,7 +1062,8 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #ifndef HAVE_DYNAMIC
    rgui_list_push(rgui->selection_buf, "Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR, 0);
 #endif
-   rgui_list_push(rgui->selection_buf, "Exit RetroArch", RGUI_SETTINGS_QUIT_EMULATOR, 0);
+   rgui_list_push(rgui->selection_buf, "Resume Game", RGUI_SETTINGS_RESUME_GAME, 0);
+   rgui_list_push(rgui->selection_buf, "Quit RetroArch", RGUI_SETTINGS_QUIT_RARCH, 0);
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
