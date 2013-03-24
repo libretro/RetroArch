@@ -281,7 +281,7 @@ void driver_set_monitor_refresh_rate(float hz)
 void global_init_drivers(void)
 {
    init_drivers_pre(); // Set driver.* function callbacks.
-#ifdef RARCH_CONSOLE
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    driver.video->start(); // Statically starts video driver. Sets driver.video_data.
 #endif
    driver.input_data = driver.input->init();

@@ -28,11 +28,13 @@ int rarch_main(int argc, char *argv[])
 
    rarch_main_clear_state();
 
+   config_load();
+   global_init_drivers();
+
    g_extern.verbose = true;
 
-#ifdef HAVE_RGUI
    menu_init();
-   g_extern.lifecycle_mode_state |= 1ULL << MODE_INIT;
+   g_extern.lifecycle_mode_state |= 1ULL << MODE_MENU;
 
    for (;;)
    {
@@ -48,12 +50,16 @@ int rarch_main(int argc, char *argv[])
 
 	     struct rarch_main_wrap args = {0};
 
-	     args.verbose = g_extern.verbose;
-	     args.sram_path = NULL;
-	     args.state_path = NULL;
-	     args.rom_path = "shared/documents/roms/snes9x-next/ChronoTrigger.smc";
-	     args.libretro_path = "app/native/lib/test.so";
-	     args.config_path = "app/native/retroarch.cfg";
+        args.verbose = g_extern.verbose;
+        args.sram_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? g_extern.console.main_wrap.default_sram_dir : NULL;
+        args.state_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? g_extern.console.main_wrap.default_savestate_dir : NULL;
+        args.rom_path = g_extern.fullpath;
+        args.libretro_path = g_settings.libretro;
+
+        if (path_file_exists(g_extern.config_path))
+           args.config_path = g_extern.config_path;
+        else
+           args.config_path = NULL;
 
 	     int init_ret = rarch_main_init_wrap(&args);
 	     if (init_ret == 0)
@@ -82,24 +88,6 @@ int rarch_main(int argc, char *argv[])
    menu_free();
    if (g_extern.main_is_init)
       rarch_main_deinit();
-#else
-   struct rarch_main_wrap args = {0};
-
-   args.verbose = g_extern.verbose;
-   args.sram_path = NULL;
-   args.state_path = NULL;
-   args.rom_path = "shared/documents/roms/snes9x-next/ChronoTrigger.smc";
-   args.libretro_path = "app/native/lib/test.so";
-   args.config_path = "app/native/retroarch.cfg";
-
-   rarch_init_msg_queue();
-
-   int init_ret;
-   if ((init_ret = rarch_main_init_wrap(&args))) return init_ret;
-
-   while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
-   rarch_main_deinit();
-#endif
 
    rarch_deinit_msg_queue();
 

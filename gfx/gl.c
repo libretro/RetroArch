@@ -2043,7 +2043,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 }
 #endif
 
-#ifdef RARCH_CONSOLE
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
 static void gl_get_poke_interface(void *data, const video_poke_interface_t **iface);
 
 static void gl_start(void)
@@ -2371,7 +2371,7 @@ const video_driver_t video_gl = {
    gl_free,
    "gl",
 
-#ifdef RARCH_CONSOLE
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    gl_start,
    gl_stop,
    gl_restart,
