@@ -42,6 +42,7 @@ static struct
    GRAB(hci_inquiry),
    GRAB(hci_inquiry_cancel),
    GRAB(hci_pin_code_request_reply),
+   GRAB(hci_pin_code_request_negative_reply),
    GRAB(hci_remote_name_request),
    GRAB(hci_remote_name_request_cancel),
    GRAB(hci_write_authentication_enable),
@@ -49,6 +50,7 @@ static struct
    GRAB(l2cap_create_channel),
    GRAB(l2cap_register_service),
    GRAB(l2cap_accept_connection),
+   GRAB(l2cap_decline_connection),
    {0, 0}
 };
 
