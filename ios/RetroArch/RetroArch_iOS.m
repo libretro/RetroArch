@@ -19,7 +19,7 @@
 #import "browser/browser.h"
 #import "settings/settings.h"
 
-#import "input/BTStack/WiiMoteHelper.h"
+#include "input/BTstack/btdynamic.h"
 
 #define kDOCSFOLDER [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"]
 
@@ -274,9 +274,9 @@
 #pragma mark Bluetooth Helpers
 - (UIBarButtonItem*)createBluetoothButton
 {
-   if ([WiiMoteHelper haveBluetooth])
+   if (btstack_is_loaded())
    {
-      const bool isBTOn = [WiiMoteHelper isBluetoothRunning];
+      const bool isBTOn = btstack_is_running();
       return [[UIBarButtonItem alloc]
                initWithTitle:isBTOn ? @"Stop Bluetooth" : @"Start Bluetooth"
                style:UIBarButtonItemStyleBordered
@@ -289,18 +289,18 @@
 
 - (IBAction)startBluetooth
 {
-   if ([WiiMoteHelper haveBluetooth])
+   if (btstack_is_loaded())
    {
-      [WiiMoteHelper startBluetooth];
+      btstack_start();
       [self.topViewController.navigationItem setRightBarButtonItem:[self createBluetoothButton] animated:YES];
    }
 }
 
 - (IBAction)stopBluetooth
 {
-   if ([WiiMoteHelper haveBluetooth])
+   if (btstack_is_loaded())
    {
-      [WiiMoteHelper stopBluetooth];
+      btstack_stop();
       [self.topViewController.navigationItem setRightBarButtonItem:[self createBluetoothButton] animated:YES];
    }
 }

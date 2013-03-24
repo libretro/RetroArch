@@ -15,12 +15,11 @@
 #include <stdio.h>
 #include <assert.h>
 #include <dlfcn.h>
+#include <pthread.h>
+#include <CoreFoundation/CFRunLoop.h>
 
 #define BUILDING_BTDYNAMIC
 #include "btdynamic.h"
-
-static bool bt_tested;
-static bool bt_is_loaded;
 
 #define GRAB(A) {#A, (void**)&A##_ptr}
 static struct
@@ -35,6 +34,7 @@ static struct
    GRAB(bt_send_cmd),
    GRAB(bt_send_l2cap),
    GRAB(run_loop_init),
+   GRAB(run_loop_execute),
    GRAB(btstack_get_system_bluetooth_enabled),
    GRAB(btstack_set_power_mode),
    GRAB(btstack_set_system_bluetooth_enabled),
@@ -52,14 +52,47 @@ static struct
    {0, 0}
 };
 
-bool load_btstack()
+extern void btstack_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+static pthread_t btstack_thread;
+static bool btstack_tested;
+static bool btstack_loaded;
+
+// TODO: This may need to be synchronized, but an extra iterate on the bluetooth thread won't kill anybody.
+static volatile bool btstack_terminate = true;
+
+static void* btstack_thread_function(void* data)
+{   
+   bt_register_packet_handler_ptr(btstack_packet_handler);
+
+   static bool btstack_running = false;
+   if (!btstack_running)
+      btstack_running = bt_open_ptr() ? false : true;
+   
+   if (btstack_running)
+   {
+      bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_ON);
+
+      // Loop
+      while (!btstack_terminate && kCFRunLoopRunTimedOut == CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1, false));
+      
+      bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_OFF);
+   }
+   
+   return 0;
+}
+
+
+bool btstack_load()
 {
-   assert(sizeof(void**) == sizeof(void(*)));
+   assert(sizeof(void**) == sizeof(void(*)()));
 
-   if (bt_tested)
-      return bt_is_loaded;
+   if (btstack_tested)
+      return btstack_loaded;
+   
+   btstack_tested = true;
+   btstack_loaded = false;
 
-   bt_tested = true;
    void* btstack = dlopen("/usr/lib/libBTstack.dylib", RTLD_LAZY);
 
    if (!btstack)
@@ -76,5 +109,38 @@ bool load_btstack()
       }
    }
 
+   run_loop_init_ptr(RUN_LOOP_COCOA);
+
+   btstack_loaded = true;
+
    return true;
 }
+
+void btstack_start()
+{
+   if (btstack_terminate)
+   {
+      btstack_terminate = false;
+      pthread_create(&btstack_thread, NULL, btstack_thread_function, 0);
+   }
+}
+
+void btstack_stop()
+{
+   if (!btstack_terminate)
+   {
+      btstack_terminate = true;
+      pthread_join(btstack_thread, 0);
+   }
+}
+
+bool btstack_is_loaded()
+{
+   return btstack_load();
+}
+
+bool btstack_is_running()
+{
+   return !btstack_terminate;
+}
+

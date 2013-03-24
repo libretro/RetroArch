@@ -39,10 +39,6 @@
 
 #import "BTDevice.h"
 
-static WiiMoteHelper* instance;
-static bool btstackOpen;
-static bool btOK;
-
 static BTDevice* discoveredDevice;
 static bd_addr_t address;
 static uint32_t handle[2];
@@ -50,7 +46,27 @@ static uint32_t remote_cid[2];
 static uint32_t local_cid[2];
 uint8_t psdata_buffer[512];
 
-void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
+static void set_ps3_data(unsigned leds)
+{
+   // TODO: LEDS
+
+   static uint8_t report_buffer[] = {
+      0x52, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00,
+      0xff, 0x27, 0x10, 0x00, 0x32,
+      0xff, 0x27, 0x10, 0x00, 0x32,
+      0xff, 0x27, 0x10, 0x00, 0x32,
+      0xff, 0x27, 0x10, 0x00, 0x32,
+      0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+   };
+   
+   bt_send_l2cap_ptr(local_cid[0], report_buffer, sizeof(report_buffer));
+}
+
+
+void btstack_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
 #if 1 // WiiMote
    bd_addr_t event_addr;
@@ -303,62 +319,3 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
    }
 #endif
 }
-
-@implementation WiiMoteHelper
-+ (BOOL)haveBluetooth
-{
-   if (!btstackOpen)
-   {
-      btstackOpen = load_btstack();
-      
-      if (btstackOpen)
-      {         
-         run_loop_init_ptr(RUN_LOOP_COCOA);
-         bt_register_packet_handler_ptr(packet_handler);
-      }
-   }
-
-   return btstackOpen;
-}
-
-+ (void)startBluetooth
-{
-   if (btstackOpen)
-   {
-      instance = instance ? instance : [WiiMoteHelper new];
-
-      if (!btOK)
-      {
-         if (bt_open_ptr())
-         {
-            btOK = false;
-            return;
-         }
-
-         bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_ON);
-
-         btOK = true;
-      }
-   }
-}
-
-+ (BOOL)isBluetoothRunning
-{
-   return btstackOpen && btOK;
-}
-
-+ (void)stopBluetooth
-{
-   if (btstackOpen)
-   {
-      myosd_num_of_joys = 0;
-
-      if (btOK)
-         bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_OFF);
-
-      btOK = false;
-      instance = nil;
-   }
-}
-
-@end

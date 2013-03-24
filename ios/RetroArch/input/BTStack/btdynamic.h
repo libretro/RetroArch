@@ -19,13 +19,17 @@
 #include "btstack/utils.h"
 #include "btstack/btstack.h"
 
+bool btstack_load();
+void btstack_start();
+void btstack_stop();
+bool btstack_is_loaded();
+bool btstack_is_running();
+
 #ifndef BUILDING_BTDYNAMIC
 #define BTDIMPORT extern
 #else
 #define BTDIMPORT
 #endif
-
-bool load_btstack();
 
 BTDIMPORT int (*bt_open_ptr)(void);
 BTDIMPORT void (*bt_flip_addr_ptr)(bd_addr_t dest, bd_addr_t src);
@@ -33,6 +37,7 @@ BTDIMPORT btstack_packet_handler_t (*bt_register_packet_handler_ptr)(btstack_pac
 BTDIMPORT int (*bt_send_cmd_ptr)(const hci_cmd_t *cmd, ...);
 BTDIMPORT void (*bt_send_l2cap_ptr)(uint16_t local_cid, uint8_t *data, uint16_t len);
 BTDIMPORT void (*run_loop_init_ptr)(RUN_LOOP_TYPE type);
+BTDIMPORT void (*run_loop_execute_ptr)();
 
 BTDIMPORT const hci_cmd_t* btstack_get_system_bluetooth_enabled_ptr;
 BTDIMPORT const hci_cmd_t* btstack_set_power_mode_ptr;
