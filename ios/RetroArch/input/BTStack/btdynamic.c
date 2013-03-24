@@ -58,27 +58,30 @@ static pthread_t btstack_thread;
 static bool btstack_tested;
 static bool btstack_loaded;
 
-// TODO: This may need to be synchronized, but an extra iterate on the bluetooth thread won't kill anybody.
-static volatile bool btstack_terminate = true;
+// TODO: This may need to be synchronized
+static volatile bool btstack_poweron;
 
 static void* btstack_thread_function(void* data)
-{   
+{
+   run_loop_init_ptr(RUN_LOOP_COCOA);
    bt_register_packet_handler_ptr(btstack_packet_handler);
 
-   static bool btstack_running = false;
-   if (!btstack_running)
-      btstack_running = bt_open_ptr() ? false : true;
-   
-   if (btstack_running)
-   {
-      bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_ON);
+   if (bt_open_ptr())
+      return 0;
 
-      // Loop
-      while (!btstack_terminate && kCFRunLoopRunTimedOut == CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1, false));
+   while (1)
+   {
+      static bool poweron = false;
       
-      bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_OFF);
+      CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1, false);
+      
+      if (poweron != btstack_poweron)
+      {
+         poweron = btstack_poweron;
+         bt_send_cmd_ptr(btstack_set_power_mode_ptr, poweron ? HCI_POWER_ON : HCI_POWER_OFF);
+      }
    }
-   
+
    return 0;
 }
 
@@ -109,8 +112,6 @@ bool btstack_load()
       }
    }
 
-   run_loop_init_ptr(RUN_LOOP_COCOA);
-
    btstack_loaded = true;
 
    return true;
@@ -118,20 +119,17 @@ bool btstack_load()
 
 void btstack_start()
 {
-   if (btstack_terminate)
-   {
-      btstack_terminate = false;
+   static bool thread_started = false;
+   if (!thread_started)
       pthread_create(&btstack_thread, NULL, btstack_thread_function, 0);
-   }
+   thread_started = true;
+   
+   btstack_poweron = true;
 }
 
 void btstack_stop()
 {
-   if (!btstack_terminate)
-   {
-      btstack_terminate = true;
-      pthread_join(btstack_thread, 0);
-   }
+   btstack_poweron = false;
 }
 
 bool btstack_is_loaded()
@@ -141,6 +139,6 @@ bool btstack_is_loaded()
 
 bool btstack_is_running()
 {
-   return !btstack_terminate;
+   return btstack_poweron;
 }
 

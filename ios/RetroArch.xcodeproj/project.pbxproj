@@ -99,6 +99,8 @@
 		96AFAF4516C1E00A009DE44C /* bitmap.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = bitmap.bin; sourceTree = "<group>"; };
 		96AFAF4616C1E00A009DE44C /* bitmap.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; path = bitmap.bmp; sourceTree = "<group>"; };
 		96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rarch_wrapper.h; sourceTree = "<group>"; };
+		96F9C27516FF5E97002455B3 /* btdynamic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = btdynamic.c; sourceTree = "<group>"; };
+		96F9C27616FF5E97002455B3 /* btdynamic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btdynamic.h; sourceTree = "<group>"; };
 		D48581DD16F823F9004BEB17 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../griffin/griffin.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -143,6 +145,8 @@
 		966B9C8F16E418B7005B61E1 /* BTStack */ = {
 			isa = PBXGroup;
 			children = (
+				96F9C27516FF5E97002455B3 /* btdynamic.c */,
+				96F9C27616FF5E97002455B3 /* btdynamic.h */,
 				966B9C9016E418B7005B61E1 /* BTDevice.h */,
 				966B9C9116E418B7005B61E1 /* BTDevice.m */,
 				966B9C9416E418B7005B61E1 /* btstack */,
