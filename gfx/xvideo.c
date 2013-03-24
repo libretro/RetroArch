@@ -789,6 +789,12 @@ const video_driver_t video_xvideo = {
    xv_free,
    "xvideo",
 
+#ifdef HAVE_RGUI
+   NULL,
+   NULL,
+   NULL,
+#endif
+
    NULL,
    xv_viewport_info,
 };

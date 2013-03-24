@@ -1251,6 +1251,11 @@ const video_driver_t video_d3d9 = {
    d3d9_set_shader,
    d3d9_free,
    "d3d9",
+#ifdef HAVE_RGUI
+   NULL,
+   NULL,
+   NULL,
+#endif
    d3d9_set_rotation,
    d3d9_viewport_info,
    d3d9_read_viewport,

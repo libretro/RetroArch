@@ -355,6 +355,12 @@ const video_driver_t video_sdl = {
    sdl_gfx_free,
    "sdl",
 
+#ifdef HAVE_RGUI
+   NULL,
+   NULL,
+   NULL,
+#endif
+
    NULL,
    sdl_gfx_viewport_info,
 };
