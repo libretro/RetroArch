@@ -64,18 +64,26 @@ static inline void inl_logger_deinit(void)
 }
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-static bool install_libretro_core(const char *core_exe_path, const char *tmp_path, const char *extension)
+static bool libretro_install_core(const char *path_prefix, const char *extension)
 {
-   // If a CORE executable of name CORE.extension exists, rename filename
-   // to a more sane name.
+   char core_exe_path[256];
+   char tmp_path[PATH_MAX], tmp_pathnewfile[PATH_MAX];
+   int ret;
 
-   int ret = 0;
-   char tmp_path2[PATH_MAX], tmp_pathnewfile[PATH_MAX];
+   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, DEFAULT_EXE_EXT);
 
-   libretro_get_current_core_pathname(tmp_path2, sizeof(tmp_path2));
+   if (!path_file_exists(core_exe_path))
+      return false;
 
-   strlcat(tmp_path2, extension, sizeof(tmp_path2));
-   snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", tmp_path, tmp_path2);
+   /* If a CORE executable of name CORE.extension exists, rename filename
+    * to a more sane name. */
+
+   ret = 0;
+
+   libretro_get_current_core_pathname(tmp_path, sizeof(tmp_path));
+
+   strlcat(tmp_path, extension, sizeof(tmp_path));
+   snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", path_prefix, tmp_path);
 
    if (path_file_exists(tmp_pathnewfile))
    {
@@ -128,27 +136,18 @@ int rarch_main(int argc, char *argv[])
    global_init_drivers();
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-   char core_exe_path[PATH_MAX];
    char path_prefix[PATH_MAX];
-   char slash;
 #if defined(_WIN32)
-   slash = '\\';
+   char slash = '\\';
 #else
-   slash = '/';
+   char slash = '/';
 #endif
 
    snprintf(path_prefix, sizeof(path_prefix), "%s%c", default_paths.core_dir, slash);
-   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, DEFAULT_EXE_EXT);
 
-   if (path_file_exists(core_exe_path))
-   {
-      if (install_libretro_core(core_exe_path, path_prefix, DEFAULT_EXE_EXT))
-      {
-         RARCH_LOG("New default libretro core [%s] saved to config file: %s.\n", core_exe_path,
-               g_settings.libretro);
-         config_save_file(g_extern.config_path);
-      }
-   }
+   // Save new libretro core path to config file
+   if (libretro_install_core(path_prefix, DEFAULT_EXE_EXT))
+      config_save_file(g_extern.config_path);
 #endif
 
    init_libretro_sym();
