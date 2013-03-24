@@ -24,6 +24,9 @@
 - (void)closePauseMenu;
 @end
 
+@interface RALogView : UITableViewController
+@end
+
 @interface RAModuleInfo : NSObject
 @property (strong) NSString* displayName;
 @property (strong) NSString* path;

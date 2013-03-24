@@ -25,4 +25,6 @@ void ios_set_game_view_sync(bool on);
 void ios_get_game_view_size(unsigned *width, unsigned *height);
 void ios_bind_game_view_fbo();
 
+// Thread safe
+void ios_add_log_message(const char* format, ...);
 #endif

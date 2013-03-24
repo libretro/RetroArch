@@ -18,6 +18,8 @@
 #include <pthread.h>
 #include <CoreFoundation/CFRunLoop.h>
 
+#include "../../rarch_wrapper.h"
+
 #define BUILDING_BTDYNAMIC
 #include "btdynamic.h"
 
@@ -65,11 +67,16 @@ static volatile bool btstack_poweron;
 
 static void* btstack_thread_function(void* data)
 {
+   ios_add_log_message("BTstack: Thread Initializing");
+
    run_loop_init_ptr(RUN_LOOP_COCOA);
    bt_register_packet_handler_ptr(btstack_packet_handler);
 
    if (bt_open_ptr())
+   {
+      ios_add_log_message("BTstack: Failed to open, exiting thread.");
       return 0;
+   }
 
    while (1)
    {
@@ -81,6 +88,8 @@ static void* btstack_thread_function(void* data)
       {
          poweron = btstack_poweron;
          bt_send_cmd_ptr(btstack_set_power_mode_ptr, poweron ? HCI_POWER_ON : HCI_POWER_OFF);
+      
+         ios_add_log_message("BTstack: Responding to power switch (now %s)", poweron ? "ON" : "OFF");
       }
    }
 
@@ -94,6 +103,8 @@ bool btstack_load()
 
    if (btstack_tested)
       return btstack_loaded;
+
+   ios_add_log_message("BTstack: Attempting to load");
    
    btstack_tested = true;
    btstack_loaded = false;
@@ -101,7 +112,11 @@ bool btstack_load()
    void* btstack = dlopen("/usr/lib/libBTstack.dylib", RTLD_LAZY);
 
    if (!btstack)
+   {
+      ios_add_log_message("BTstack: /usr/lib/libBTstack.dylib not loadable");
+      ios_add_log_message("BTstack: Not loaded");
       return false;
+   }
 
    for (int i = 0; grabbers[i].name; i ++)
    {
@@ -109,11 +124,15 @@ bool btstack_load()
 
       if (!*grabbers[i].target)
       {
+         ios_add_log_message("BTstack: Symbol %s not found in /usr/lib/libBTstack.dylib", grabbers[i].name);
+         ios_add_log_message("BTstack: Not loaded");
+      
          dlclose(btstack);
          return false;
       }
    }
 
+   ios_add_log_message("BTstack: Loaded");
    btstack_loaded = true;
 
    return true;
@@ -123,15 +142,26 @@ void btstack_start()
 {
    static bool thread_started = false;
    if (!thread_started)
+   {
+      ios_add_log_message("BTstack: Starting thread");
       pthread_create(&btstack_thread, NULL, btstack_thread_function, 0);
-   thread_started = true;
+      thread_started = true;
+   }
    
-   btstack_poweron = true;
+   if (!btstack_poweron)
+   {
+      ios_add_log_message("BTstack: Setting poweron flag");
+      btstack_poweron = true;
+   }
 }
 
 void btstack_stop()
 {
-   btstack_poweron = false;
+   if (btstack_poweron)
+   {
+      ios_add_log_message("BTstack: Clearing poweron flag");
+      btstack_poweron = false;
+   }
 }
 
 bool btstack_is_loaded()

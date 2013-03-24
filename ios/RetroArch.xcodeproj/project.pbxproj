@@ -39,6 +39,7 @@
 		96AFAE3016C1D4EA009DE44C /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; };
 		96AFAE3216C1D4EA009DE44C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 		96AFAE3816C1D4EA009DE44C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */; };
+		96F9C28316FFA55F002455B3 /* RALogView.m in Sources */ = {isa = PBXBuildFile; fileRef = 96F9C28216FFA55F002455B3 /* RALogView.m */; };
 		D48581DE16F823F9004BEB17 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = D48581DD16F823F9004BEB17 /* griffin.c */; };
 /* End PBXBuildFile section */
 
@@ -104,6 +105,7 @@
 		96F9C27D16FF6892002455B3 /* ios_input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ios_input.h; sourceTree = "<group>"; };
 		96F9C27E16FF6892002455B3 /* ios_input.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ios_input.c; sourceTree = "<group>"; };
 		96F9C27F16FF6892002455B3 /* keycode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = keycode.h; sourceTree = "<group>"; };
+		96F9C28216FFA55F002455B3 /* RALogView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RALogView.m; sourceTree = "<group>"; };
 		D48581DD16F823F9004BEB17 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../griffin/griffin.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -249,6 +251,7 @@
 				96366C6F16CAF62200D64A22 /* settings */,
 				96297A0E16C5AEA100E6DCE0 /* main.m */,
 				963F5AC516CC523B009BBD19 /* RAGameView.m */,
+				96F9C28216FFA55F002455B3 /* RALogView.m */,
 				96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */,
 				96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */,
 				96297A0A16C5AD8D00E6DCE0 /* RetroArch_iOS.h */,
@@ -403,6 +406,7 @@
 				966B9CB216E41C07005B61E1 /* RADirectoryList.m in Sources */,
 				966B9CB416E41C07005B61E1 /* RAModuleList.m in Sources */,
 				D48581DE16F823F9004BEB17 /* griffin.c in Sources */,
+				96F9C28316FFA55F002455B3 /* RALogView.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

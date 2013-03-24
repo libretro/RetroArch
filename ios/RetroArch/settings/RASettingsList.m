@@ -142,6 +142,7 @@ static RASettingData* custom_action(NSString* action)
    NSArray* settings = [NSArray arrayWithObjects:
       [NSArray arrayWithObjects:@"Frontend",
          custom_action(@"Module Info"),
+         custom_action(@"Diagnostic Log"),
          boolean_setting(config, @"ios_auto_bluetooth", @"Auto Enable Bluetooth", @"false"),
          nil],
 
@@ -234,6 +235,8 @@ static RASettingData* custom_action(NSString* action)
 {
    if ([@"Module Info" isEqualToString:action])
       [[RetroArch_iOS get] pushViewController:[[RAModuleInfoList alloc] initWithModuleInfo:[RetroArch_iOS get].moduleInfo] animated:YES];
+   else if ([@"Diagnostic Log" isEqualToString:action])
+      [[RetroArch_iOS get] pushViewController:[RALogView new] animated:YES];
 }
 
 @end
