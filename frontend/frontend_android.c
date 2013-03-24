@@ -66,7 +66,7 @@ static bool android_run_events (void *data)
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
 
    if (id == LOOPER_ID_MAIN)
-      engine_handle_cmd(NULL);
+      engine_handle_cmd(driver.input_data);
 
    // Check if we are exiting.
    if (g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY))
