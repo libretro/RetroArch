@@ -14,7 +14,7 @@
  */
 
 #include "input/input_common.h"
-#include "BTStack/wiimote.h"
+#include "BTStack/btpad.h"
 #include "general.h"
 
 static uint32_t g_buttons[MAX_PLAYERS];
@@ -52,20 +52,7 @@ static int16_t ios_joypad_axis(unsigned port, uint32_t joyaxis)
 
 static void ios_joypad_poll(void)
 {
-   for (int i = 0; i != MAX_PLAYERS; i ++)
-   {
-      g_buttons[i] = 0;
-      if (i < myosd_num_of_joys)
-      {
-         g_buttons[i] = joys[i].btns;
-         g_buttons[i] |= (joys[i].exp.type == EXP_CLASSIC) ? (joys[i].exp.classic.btns << 16) : 0;
-      }
-   }
-
-   // HACK: SixAxis
-   extern uint8_t psdata_buffer[512];
-   if (myosd_num_of_joys == 0)
-      g_buttons[0] = psdata_buffer[3] | (psdata_buffer[4] << 8);
+   g_buttons[0] = btpad_get_buttons();
 }
 
 const rarch_joypad_driver_t ios_joypad = {

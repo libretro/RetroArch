@@ -16,7 +16,7 @@
 #import "settings.h"
 #include "../input/ios_input.h"
 #include "../input/keycode.h"
-#include "../input/BTStack/wiimote.h"
+#include "../input/BTStack/btpad.h"
 
 static const struct
 {
@@ -135,26 +135,9 @@ static const struct
    }
 
    // WiiMote
-   for (int i = 0; i != myosd_num_of_joys; i ++)
-   {
-      uint32_t buttons = joys[i].btns;
-      buttons |= (joys[i].exp.type == EXP_CLASSIC) ? (joys[i].exp.classic.btns << 16) : 0;
+   uint32_t buttons = btpad_get_buttons();
 
-      for (int j = 0; j != sizeof(buttons) * 8; j ++)
-      {
-         if (buttons & (1 << j))
-         {
-            _value.msubValues[1] = [NSString stringWithFormat:@"%d", j];
-            [self finish];
-            return;
-         }
-      }
-   }
-   
-   // SixAxis
-   extern uint8_t psdata_buffer[512];
-   uint32_t buttons = psdata_buffer[3] | (psdata_buffer[4] << 8);
-   for (int i = 0; i != 32; i ++)
+   for (int i = 0; buttons && i != sizeof(buttons) * 8; i ++)
    {
       if (buttons & (1 << i))
       {

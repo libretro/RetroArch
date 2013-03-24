@@ -16,6 +16,7 @@
 #ifndef __IOS_RARCH_BTDYNAMIC_H__
 #define __IOS_RARCH_BTDYNAMIC_H__
 
+#include "boolean.h"
 #include "btstack/utils.h"
 #include "btstack/btstack.h"
 

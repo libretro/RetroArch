@@ -31,19 +31,50 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "btdynamic.h"
+#include "btpad.h"
 #include "wiimote.h"
 
-#import "BTDevice.h"
+static enum btpad_device_type_t device_type;
+static bd_addr_t device_address;
+static char device_name[256];
 
-static BTDevice* discoveredDevice;
-static bd_addr_t address;
-static uint32_t handle[2];
-static uint32_t remote_cid[2];
-static uint32_t local_cid[2];
-uint8_t psdata_buffer[512];
+// Connection data
+static uint32_t device_handle[2];
+static uint32_t device_remote_cid[2];
+static uint32_t device_local_cid[2];
 
+// Inquiry data
+static uint32_t device_page_scan_repetition_mode;
+static uint32_t device_class;
+static uint32_t device_clock_offset;
+
+// Buffers
+static struct wiimote_t wiimote_buffer;
+static uint8_t psdata_buffer[512];
+
+// MAIN THREAD ONLY
+enum btpad_device_type_t btpad_get_connected_type()
+{
+   return device_type;
+}
+
+uint32_t btpad_get_buttons()
+{
+   switch (device_type)
+   {
+      case BTPAD_WIIMOTE:
+         return wiimote_buffer.btns | (wiimote_buffer.exp.classic.btns << 16);
+      case BTPAD_PS3:
+         return psdata_buffer[3] | (psdata_buffer[4] << 8);
+      default:
+         return 0;
+   }
+}
+
+// BT THREAD ONLY
 static void set_ps3_data(unsigned leds)
 {
    // TODO: LEDS
@@ -60,9 +91,8 @@ static void set_ps3_data(unsigned leds)
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
    };
    
-   bt_send_l2cap_ptr(local_cid[0], report_buffer, sizeof(report_buffer));
+   bt_send_l2cap_ptr(device_local_cid[0], report_buffer, sizeof(report_buffer));
 }
-
 
 void btstack_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
@@ -81,40 +111,36 @@ void btstack_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pack
             {
                if (packet[2] == HCI_STATE_WORKING)
                   bt_send_cmd_ptr(hci_inquiry_ptr, HCI_INQUIRY_LAP, 3, 0);
-					break;
+               break;
             }
          
             // Identifies devices found during inquiry, does not signal the end of the inquiry.
-				case HCI_EVENT_INQUIRY_RESULT:
+            case HCI_EVENT_INQUIRY_RESULT:
             {
-					for (int i = 0; i != packet[2]; i ++)
+               for (int i = 0; i != packet[2]; i ++)
                {
-                  if (!discoveredDevice)
+                  if (device_type == BTPAD_NONE)
                   {
-                     bt_flip_addr_ptr(event_addr, &packet[3 + i * 6]);
-                     discoveredDevice = [[BTDevice alloc] init];
-                     [discoveredDevice setAddress:&event_addr];
-                  }
+                     bt_flip_addr_ptr(device_address, &packet[3 + i * 6]);
 
-						// update
-						discoveredDevice.pageScanRepetitionMode =   packet [3 + packet[2] * (6)         + i*1];
-						discoveredDevice.classOfDevice = READ_BT_24(packet, 3 + packet[2] * (6+1+1+1)   + i*3);
-						discoveredDevice.clockOffset =   READ_BT_16(packet, 3 + packet[2] * (6+1+1+1+3) + i*2) & 0x7fff;
-						discoveredDevice.rssi  = 0;
-					}
+                     device_page_scan_repetition_mode =   packet [3 + packet[2] * (6)         + i*1];
+                     device_class = READ_BT_24(packet, 3 + packet[2] * (6+1+1+1)   + i*3);
+                     device_clock_offset =   READ_BT_16(packet, 3 + packet[2] * (6+1+1+1+3) + i*2) & 0x7fff;
+                     
+                     device_type = BTPAD_PENDING;
+                  }
+               }
                
-					break;
+               break;
             }
             
             // The inquiry has ended
             case HCI_EVENT_INQUIRY_COMPLETE:
             {
-               // If we a device, ask for its name
-               if (discoveredDevice)
-                  bt_send_cmd_ptr(hci_remote_name_request_ptr, [discoveredDevice address], discoveredDevice.pageScanRepetitionMode,
-                                     0, discoveredDevice.clockOffset | 0x8000);
-               // Keep looking
-               else
+               if (device_type == BTPAD_PENDING)
+                  bt_send_cmd_ptr(hci_remote_name_request_ptr, device_address, device_page_scan_repetition_mode,
+                                     0, device_clock_offset | 0x8000);
+               else if(device_type == BTPAD_NONE)
                   bt_send_cmd_ptr(hci_inquiry_ptr, HCI_INQUIRY_LAP, 3, 0);
 
                break;
@@ -125,18 +151,16 @@ void btstack_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pack
             {
                bt_flip_addr_ptr(event_addr, &packet[3]);
                
-               if (discoveredDevice && BD_ADDR_CMP(event_addr, discoveredDevice.address) == 0)
+               if (device_type == BTPAD_PENDING && BD_ADDR_CMP(event_addr, device_address) == 0)
                {
-                  char cname[249];
-                  strncpy(cname, (const char*)&packet[9], 248);
-                  cname[248] = 0;
+                  strncpy(device_name, (const char*)&packet[9], 248);
+                  device_name[248] = 0;
 
-                  NSString* name = [NSString stringWithUTF8String:cname];
-                  [discoveredDevice setName:name];
-                  
-                  // We found a WiiMote, pair with it
-                  if ([name hasPrefix:@"Nintendo RVL-CNT-01"])
-                     bt_send_cmd_ptr(l2cap_create_channel_ptr, [discoveredDevice address], PSM_HID_INTERRUPT);
+                  if (strncmp(device_name, "Nintendo RVL-CNT-01", 19) == 0)
+                  {
+                     device_type = BTPAD_WIIMOTE;
+                     bt_send_cmd_ptr(l2cap_create_channel_ptr, device_address, PSM_HID_CONTROL);
+                  }
                }
                
                break;
@@ -147,47 +171,41 @@ void btstack_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pack
             {
                bt_flip_addr_ptr(event_addr, &packet[2]);
                
-               if (discoveredDevice && BD_ADDR_CMP(event_addr, discoveredDevice.address) == 0)
-               {
-                  // WiiMote: Use inverse bd_addr as PIN
-                  if (discoveredDevice.name && [discoveredDevice.name hasPrefix:@"Nintendo RVL-CNT-01"])
-                     bt_send_cmd_ptr(hci_pin_code_request_reply_ptr, event_addr, 6, &packet[2]);
-               }
+               if (device_type == BTPAD_WIIMOTE && BD_ADDR_CMP(event_addr, device_address) == 0)
+                  bt_send_cmd_ptr(hci_pin_code_request_reply_ptr, device_address, 6, &packet[2]);
                break;
             }
 
             // WiiMote connections
             case L2CAP_EVENT_CHANNEL_OPENED:
             {
-               // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16)
-               if (packet[2] == 0)
+               bt_flip_addr_ptr(event_addr, &packet[3]);
+            
+               if (packet[2] == 0 && device_type > BTPAD_PENDING && BD_ADDR_CMP(event_addr, device_address) == 0)
                {
-                  // inform about new l2cap connection
-                  bt_flip_addr_ptr(event_addr, &packet[3]);
-                  uint16_t psm = READ_BT_16(packet, 11);
-                  uint16_t source_cid = READ_BT_16(packet, 13);
-                  uint16_t wiiMoteConHandle = READ_BT_16(packet, 9);
+                  const uint16_t psm = READ_BT_16(packet, 11);
+                  const unsigned interrupt = (psm == PSM_HID_INTERRUPT) ? 1 : 0;
+                  
+                  device_local_cid[interrupt] = READ_BT_16(packet, 13);
+                  device_remote_cid[interrupt] = READ_BT_16(packet, 15);
+                  device_handle[interrupt] = READ_BT_16(packet, 9);
 
-                  if (psm == 0x13)
+                  if (device_type == BTPAD_WIIMOTE && psm == PSM_HID_CONTROL)
                   {
-                     // interupt channel openedn succesfully, now open control channel, too.
-                     bt_send_cmd_ptr(l2cap_create_channel_ptr, event_addr, 0x11);
-                     struct wiimote_t *wm = &joys[myosd_num_of_joys];
-                     memset(wm, 0, sizeof(struct wiimote_t));
-                     wm->unid = myosd_num_of_joys;
-                     wm->i_source_cid = source_cid;
-                     memcpy(&wm->addr,&event_addr,BD_ADDR_LEN);
-                     wm->exp.type = EXP_NONE;
+                     bt_send_cmd_ptr(l2cap_create_channel_ptr, device_address, PSM_HID_INTERRUPT);
+
+                     memset(&wiimote_buffer, 0, sizeof(struct wiimote_t));
+                     wiimote_buffer.unid = 0;
+                     wiimote_buffer.c_source_cid = device_local_cid[0];
+                     wiimote_buffer.exp.type = EXP_NONE;
+                     wiimote_buffer.wiiMoteConHandle = device_handle[0];
+                     memcpy(&wiimote_buffer.addr, &device_address, BD_ADDR_LEN);
                   }
-                  else
+                  else if (device_type == BTPAD_WIIMOTE && psm == PSM_HID_INTERRUPT)
                   {
-                     //inicializamos el wiimote!
-                     struct wiimote_t *wm = &joys[myosd_num_of_joys];
-                     wm->wiiMoteConHandle = wiiMoteConHandle;
-                     wm->c_source_cid = source_cid;
-                     wm->state = WIIMOTE_STATE_CONNECTED;
-                     myosd_num_of_joys++;
-                     wiimote_handshake(wm,-1,NULL,-1);
+                     wiimote_buffer.i_source_cid = device_local_cid[1];
+                     wiimote_buffer.state = WIIMOTE_STATE_CONNECTED;
+                     wiimote_handshake(&wiimote_buffer, -1, NULL, -1);
                   }
                }
  
@@ -196,11 +214,7 @@ void btstack_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pack
 
             case L2CAP_EVENT_CHANNEL_CLOSED:
             {
-               // data: event (8), len(8), channel (16)
-               uint16_t  source_cid = READ_BT_16(packet, 2);
-
-               bd_addr_t addr;
-               wiimote_remove(source_cid, &addr);
+               device_type = BTPAD_NONE;
                break;
             }
          }
@@ -209,8 +223,7 @@ void btstack_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pack
       // WiiMote handling
       case L2CAP_DATA_PACKET:
       {
-         struct wiimote_t *wm = wiimote_get_by_source_cid(channel);
-         if (wm)
+         if (device_type == BTPAD_WIIMOTE)
          {
             byte* msg = packet + 2;
          
@@ -218,33 +231,33 @@ void btstack_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pack
             {
                case WM_RPT_BTN:
                {
-                  wiimote_pressed_buttons(wm, msg);
+                  wiimote_pressed_buttons(&wiimote_buffer, msg);
                   break;
                }
 
                case WM_RPT_READ:
                {
-                  wiimote_pressed_buttons(wm, msg);
+                  wiimote_pressed_buttons(&wiimote_buffer, msg);
 
                   byte len = ((msg[2] & 0xF0) >> 4) + 1;
                   byte *data = (msg + 5);
-										
-                  wiimote_handshake(wm, WM_RPT_READ, data, len);
+
+                  wiimote_handshake(&wiimote_buffer, WM_RPT_READ, data, len);
                   return;
                }
-					
+
                case WM_RPT_CTRL_STATUS:
                {
-                  wiimote_pressed_buttons(wm, msg);
-                  wiimote_handshake(wm,WM_RPT_CTRL_STATUS,msg,-1);
+                  wiimote_pressed_buttons(&wiimote_buffer, msg);
+                  wiimote_handshake(&wiimote_buffer,WM_RPT_CTRL_STATUS,msg,-1);
 
                   return;
                }
 
                case WM_RPT_BTN_EXP:
                {
-                  wiimote_pressed_buttons(wm, msg);
-                  wiimote_handle_expansion(wm, msg+2);
+                  wiimote_pressed_buttons(&wiimote_buffer, msg);
+                  wiimote_handle_expansion(&wiimote_buffer, msg+2);
                   break;
                }
             }
@@ -265,7 +278,7 @@ void btstack_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pack
             {
                if (packet[2] == HCI_STATE_WORKING)
                   bt_send_cmd_ptr(l2cap_register_service_ptr, 0x11, 672);
-					break;
+               break;
             }
             
             case L2CAP_EVENT_SERVICE_REGISTERED:

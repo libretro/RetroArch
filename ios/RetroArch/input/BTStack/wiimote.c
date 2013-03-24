@@ -49,89 +49,12 @@
 #include "btstack/btstack.h"
 #include "wiimote.h"
 
-int myosd_num_of_joys = 0;
-struct wiimote_t joys[4];
-extern int g_pref_wii_DZ_value;
-#define STICK4WAY (myosd_waysStick == 4 && myosd_inGame)
-#define STICK2WAY (myosd_waysStick == 2 && myosd_inGame)
-
 int wiimote_send(struct wiimote_t* wm, byte report_type, byte* msg, int len);
 int wiimote_read_data(struct wiimote_t* wm, unsigned int addr, unsigned short len);
 int wiimote_write_data(struct wiimote_t* wm, unsigned int addr, byte* data, byte len);
 void wiimote_set_leds(struct wiimote_t* wm, int leds);
 int classic_ctrl_handshake(struct wiimote_t* wm, struct classic_ctrl_t* cc, byte* data, unsigned short len);
 void classic_ctrl_event(struct classic_ctrl_t* cc, byte* msg);
-
-int wiimote_remove(uint16_t source_cid, bd_addr_t *addr){
-
-    int i = 0;
-    int unid = -1;
-    int found = 0;
-    for(;i<myosd_num_of_joys;i++)
-    {
-       if(joys[i].c_source_cid==source_cid && !found)
-       {
-          found=1;
-           struct wiimote_t *wm = NULL;
-           wm = &joys[i];
-#ifdef WIIMOTE_DBG
-           printf("%02x:%02x:%02x:%02x:%02x:%02x\n",wm->addr[0], wm->addr[1], wm->addr[2],wm->addr[3], wm->addr[4], wm->addr[5]);
-#endif
-           memcpy(addr,&(wm->addr),BD_ADDR_LEN);
-           unid = wm->unid;
-          continue;
-       }
-       if(found)
-       {
-          memcpy(&joys[i-1],&joys[i],sizeof(struct wiimote_t ));
-          joys[i-1].unid = i-1;
-          struct wiimote_t *wm = NULL;
-          wm = &joys[i-1];
-		  if(wm->unid==0)
-			  wiimote_set_leds(wm, WIIMOTE_LED_1);
-		  else if(wm->unid==1)
-			  wiimote_set_leds(wm, WIIMOTE_LED_2);
-		  else if(wm->unid==2)
-			  wiimote_set_leds(wm, WIIMOTE_LED_3);
-		  else if(wm->unid==3)
-			  wiimote_set_leds(wm, WIIMOTE_LED_4);
-       }
-    }
-    if(found)
-    {
-      myosd_num_of_joys--;
-#ifdef WIIMOTE_DBG
-      printf("NUM JOYS %d\n",myosd_num_of_joys);
-#endif
-      return unid;
-    }
-    return unid;
-}
-
-/**
- *	@brief Find a wiimote_t structure by its source_cid.
- *
- *	@param wm		Pointer to a wiimote_t structure.
- *	@param wiimotes	The number of wiimote_t structures in \a wm.
- *	@param unid		The unique identifier to search for.
- *
- *	@return Pointer to a wiimote_t structure, or NULL if not found.
- */
-
-struct wiimote_t* wiimote_get_by_source_cid(uint16_t source_cid){
-
-	int i = 0;
-
-	for (; i < myosd_num_of_joys; ++i) {
-#ifdef WIIMOTE_DBG
-		printf("0x%02x 0x%02x\n",joys[i].i_source_cid,source_cid);
-#endif
-		if (joys[i].i_source_cid == source_cid)
-			return &joys[i];
-	}
-
-	return NULL;
-}
 
 /**
  *	@brief Request the wiimote controller status.
@@ -676,46 +599,16 @@ static void classic_ctrl_pressed_buttons(struct classic_ctrl_t* cc, short now) {
  *	@param y	The raw y-axis value.
  */
 void calc_joystick_state(struct joystick_t* js, float x, float y) {
-	float rx, ry, ang;
+   js->rx = 0;
+   js->ry = 0;
 
-	/*
-	 *	Since the joystick center may not be exactly:
-	 *		(min + max) / 2
-	 *	Then the range from the min to the center and the center to the max
-	 *	may be different.
-	 *	Because of this, depending on if the current x or y value is greater
-	 *	or less than the assoicated axis center value, it needs to be interpolated
-	 *	between the center and the minimum or maxmimum rather than between
-	 *	the minimum and maximum.
-	 *
-	 *	So we have something like this:
-	 *		(x min) [-1] ---------*------ [0] (x center) [0] -------- [1] (x max)
-	 *	Where the * is the current x value.
-	 *	The range is therefore -1 to 1, 0 being the exact center rather than
-	 *	the middle of min and max.
-	 */
-	if (x == js->center.x)
-		rx = 0;
-	else if (x >= js->center.x)
-		rx = ((float)(x - js->center.x) / (float)(js->max.x - js->center.x));
-	else
-		rx = ((float)(x - js->min.x) / (float)(js->center.x - js->min.x)) - 1.0f;
+	if (x > js->center.x)
+		js->rx = ((float)(x - js->center.x) / (float)(js->max.x - js->center.x));
+	else if (x < js->center.x)
+		js->rx = ((float)(x - js->min.x) / (float)(js->center.x - js->min.x)) - 1.0f;
 
-	if (y == js->center.y)
-		ry = 0;
-	else if (y >= js->center.y)
-		ry = ((float)(y - js->center.y) / (float)(js->max.y - js->center.y));
-	else
-		ry = ((float)(y - js->min.y) / (float)(js->center.y - js->min.y)) - 1.0f;
-
-	/* calculate the joystick angle and magnitude */
-	ang = RAD_TO_DEGREE(atanf(ry / rx));
-	ang -= 90.0f;
-	if (rx < 0.0f)
-		ang -= 180.0f;
-	js->ang = absf(ang);
-	js->mag = (float) sqrt((rx * rx) + (ry * ry));
-	js->rx = rx;
-	js->ry = ry;
-
+	if (y > js->center.y)
+		js->ry = ((float)(y - js->center.y) / (float)(js->max.y - js->center.y));
+	else if (js->ry < js->center.y)
+		js->ry = ((float)(y - js->min.y) / (float)(js->center.y - js->min.y)) - 1.0f;
 }

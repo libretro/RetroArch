@@ -50,13 +50,7 @@ extern "C" {
 	typedef unsigned char byte;
 	typedef char sbyte;
 
-	#define WIIMOTE_PI			3.14159265
-
     //#define WIIMOTE_DBG			0
-
-	/* Convert between radians and degrees */
-	#define RAD_TO_DEGREE(r)	((r * 180.0f) / WIIMOTE_PI)
-	#define DEGREE_TO_RAD(d)	(d * (WIIMOTE_PI / 180.0f))
 
 	/* Convert to big endian */
 	#define BIG_ENDIAN_LONG(i)				(htonl(i))
@@ -202,8 +196,6 @@ extern "C" {
 		struct vec2b_t min;				/**< minimum joystick values	*/
 		struct vec2b_t center;		    /**< center joystick values		*/
 
-		float ang;						/**< angle the joystick is being held		*/
-		float mag;						/**< magnitude of the joystick (range 0-1)	*/
 		float rx, ry;
 	} joystick_t;
 
@@ -272,12 +264,6 @@ extern "C" {
 
     #define WIIMOTE_IS_CONNECTED(wm)		(WIIMOTE_IS_SET(wm, WIIMOTE_STATE_CONNECTED))
 
-	extern struct wiimote_t joys[4];
-	extern int myosd_num_of_joys;
-
-
-int wiimote_remove(uint16_t source_cid, bd_addr_t *addr);
-struct wiimote_t* wiimote_get_by_source_cid(uint16_t source_cid);
 int  wiimote_handshake(struct wiimote_t* wm,  byte event, byte* data, unsigned short len);
 void wiimote_status(struct wiimote_t* wm);
 void wiimote_data_report(struct wiimote_t* wm, byte type);
