@@ -35,8 +35,6 @@
 #include "btdynamic.h"
 #include "wiimote.h"
 
-#import "WiiMoteHelper.h"
-
 #import "BTDevice.h"
 
 static BTDevice* discoveredDevice;

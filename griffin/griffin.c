@@ -244,6 +244,8 @@ INPUT
 #elif defined(IOS)
 #include "../ios/RetroArch/input/ios_input.c"
 #include "../ios/RetroArch/input/ios_joypad.c"
+#include "../ios/RetroArch/input/BTStack/btdynamic.c"
+#include "../ios/RetroArch/input/BTStack/wiimote.c"
 #elif defined(__BLACKBERRY_QNX__)
 #include "../playbook/qnx_input.c"
 #endif

@@ -17,7 +17,6 @@
 #include "../input/ios_input.h"
 #include "../input/keycode.h"
 #include "../input/BTStack/wiimote.h"
-#include "../input/BTStack/WiiMoteHelper.h"
 
 static const struct
 {
