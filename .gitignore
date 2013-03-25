@@ -46,3 +46,4 @@ DerivedData
 .idea/
 *.hmap
 ios/tmp
+ios/modules/*.dylib
