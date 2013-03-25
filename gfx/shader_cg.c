@@ -123,6 +123,8 @@ struct cg_program
    CGparameter frame_dir_v;
    CGparameter mvp;
 
+   unsigned frame_count_mod;
+
    struct cg_fbo_params fbo[RARCH_CG_MAX_SHADERS];
    struct cg_fbo_params orig;
    struct cg_fbo_params prev[PREV_TEXTURES];
@@ -211,14 +213,21 @@ void gl_cg_set_params(unsigned width, unsigned height,
    set_param_2f(prg[active_index].vid_size_f, width, height);
    set_param_2f(prg[active_index].tex_size_f, tex_width, tex_height);
    set_param_2f(prg[active_index].out_size_f, out_width, out_height);
-   set_param_1f(prg[active_index].frame_cnt_f, (float)frame_count);
    set_param_1f(prg[active_index].frame_dir_f, g_extern.frame_is_reverse ? -1.0 : 1.0);
 
    set_param_2f(prg[active_index].vid_size_v, width, height);
    set_param_2f(prg[active_index].tex_size_v, tex_width, tex_height);
    set_param_2f(prg[active_index].out_size_v, out_width, out_height);
-   set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count);
    set_param_1f(prg[active_index].frame_dir_v, g_extern.frame_is_reverse ? -1.0 : 1.0);
+
+   if (prg[active_index].frame_cnt_f || prg[active_index].frame_cnt_v)
+   {
+      if (prg[active_index].frame_count_mod)
+         frame_count %= prg[active_index].frame_count_mod;
+
+      set_param_1f(prg[active_index].frame_cnt_f, (float)frame_count);
+      set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count);
+   }
 
    if (active_index == RARCH_CG_MENU_SHADER_INDEX)
       return;
@@ -823,34 +832,35 @@ static bool load_shader(const char *cgp_path, unsigned i, config_file_t *conf)
 static bool load_shader_params(unsigned i, config_file_t *conf)
 {
    bool ret = true;
-   char *scale_type = NULL;
-   char *scale_type_x = NULL;
-   char *scale_type_y = NULL;
-   bool has_scale_type;
-   bool has_scale_type_x;
-   bool has_scale_type_y;
+   char scale_type[64] = {0};
+   char scale_type_x[64] = {0};
+   char scale_type_y[64] = {0};
+
+   prg[i + 1].frame_count_mod = 0;
+   char frame_count_mod[64] = {0};
+   char frame_count_mod_buf[64];
+   print_buf(frame_count_mod_buf, "frame_count_mod%u", i);
+   if (config_get_array(conf, frame_count_mod_buf, frame_count_mod, sizeof(frame_count_mod)))
+      prg[i + 1].frame_count_mod = strtoul(frame_count_mod, NULL, 0);
 
    char scale_name_buf[64];
-   print_buf(scale_name_buf, "scale_type%u", i);
-   has_scale_type = config_get_string(conf, scale_name_buf, &scale_type);
-   print_buf(scale_name_buf, "scale_type_x%u", i);
-   has_scale_type_x = config_get_string(conf, scale_name_buf, &scale_type_x);
-   print_buf(scale_name_buf, "scale_type_y%u", i);
-   has_scale_type_y = config_get_string(conf, scale_name_buf, &scale_type_y);
 
-   if (!has_scale_type && !has_scale_type_x && !has_scale_type_y)
+   print_buf(scale_name_buf, "scale_type%u", i);
+   config_get_array(conf, scale_name_buf, scale_type, sizeof(scale_type));
+
+   print_buf(scale_name_buf, "scale_type_x%u", i);
+   config_get_array(conf, scale_name_buf, scale_type_x, sizeof(scale_type_x));
+
+   print_buf(scale_name_buf, "scale_type_y%u", i);
+   config_get_array(conf, scale_name_buf, scale_type_y, sizeof(scale_type_y));
+
+   if (!*scale_type && !*scale_type_x && !*scale_type_y)
       return true;
 
-   if (has_scale_type)
+   if (*scale_type)
    {
-      free(scale_type_x);
-      free(scale_type_y);
-
-      scale_type_x = strdup(scale_type);
-      scale_type_y = strdup(scale_type);
-
-      free(scale_type);
-      scale_type = NULL;
+      strlcpy(scale_type_x, scale_type, sizeof(scale_type_x));
+      strlcpy(scale_type_y, scale_type, sizeof(scale_type_y));
    }
 
    char attr_name_buf[64];
@@ -868,7 +878,7 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
    scale->abs_x = geom->base_width;
    scale->abs_y = geom->base_height;
 
-   if (scale_type_x)
+   if (*scale_type_x)
    {
       if (strcmp(scale_type_x, "source") == 0)
          scale->type_x = RARCH_SCALE_INPUT;
@@ -879,12 +889,11 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
       else
       {
          RARCH_ERR("Invalid attribute.\n");
-         ret = false;
-         goto end;
+         return false;
       }
    }
 
-   if (scale_type_y)
+   if (*scale_type_y)
    {
       if (strcmp(scale_type_y, "source") == 0)
          scale->type_y = RARCH_SCALE_INPUT;
@@ -895,8 +904,7 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
       else
       {
          RARCH_ERR("Invalid attribute.\n");
-         ret = false;
-         goto end;
+         return false;
       }
    }
 
@@ -960,11 +968,7 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
    }
 #endif
 
-end:
-   free(scale_type);
-   free(scale_type_x);
-   free(scale_type_y);
-   return ret;
+   return true;
 }
 
 static bool load_preset(const char *path)

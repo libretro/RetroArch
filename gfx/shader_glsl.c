@@ -173,6 +173,7 @@ struct shader_program
    unsigned abs_y;
    enum gl_scale_type type_x;
    enum gl_scale_type type_y;
+   unsigned frame_count_mod;
 
    bool valid_scale;
 };
@@ -198,6 +199,7 @@ struct shader_uniforms
    int texture_size;
 
    int frame_count;
+   unsigned frame_count_mod;
    int frame_direction;
 
    int lut_texture[MAX_TEXTURES];
@@ -300,6 +302,7 @@ static char *xml_replace_if_file(char *content, const char *path, xmlNodePtr nod
 
 static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
 {
+   prog->frame_count_mod = 0;
    prog->scale_x = 1.0;
    prog->scale_y = 1.0;
    prog->type_x = prog->type_y = RARCH_SCALE_INPUT;
@@ -329,6 +332,7 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
    char attr_scale[64], attr_scale_x[64], attr_scale_y[64];
    char attr_size[64], attr_size_x[64], attr_size_y[64];
    char attr_outscale[64], attr_outscale_x[64], attr_outscale_y[64];
+   char frame_count_mod[64];
 
    xml_get_prop(attr_scale, sizeof(attr_scale), ptr, "scale");
    xml_get_prop(attr_scale_x, sizeof(attr_scale_x), ptr, "scale_x");
@@ -339,8 +343,15 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
    xml_get_prop(attr_outscale, sizeof(attr_outscale), ptr, "outscale");
    xml_get_prop(attr_outscale_x, sizeof(attr_outscale_x), ptr, "outscale_x");
    xml_get_prop(attr_outscale_y, sizeof(attr_outscale_y), ptr, "outscale_y");
+   xml_get_prop(frame_count_mod, sizeof(frame_count_mod), ptr, "frame_count_mod");
 
    unsigned x_attr_cnt = 0, y_attr_cnt = 0;
+
+   if (*frame_count_mod)
+   {
+      prog->frame_count_mod = strtoul(frame_count_mod, NULL, 0);
+      RARCH_LOG("Got frame count mod attr: %u\n", prog->frame_count_mod);
+   }
 
    if (*attr_scale)
    {
@@ -1069,6 +1080,7 @@ static bool gl_glsl_load_shader(unsigned index, const char *path)
       }
 
       find_uniforms(gl_program[index], &gl_uniforms[index]);
+      gl_uniforms[index].frame_count_mod = prog.frame_count_mod;
    }
    else
    {
@@ -1192,10 +1204,10 @@ bool gl_glsl_init(const char *path)
    // RetroArch custom two-pass with two different files.
    if (num_progs == 1 && *g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
    {
-      unsigned secondary_progs = get_xml_shaders(g_settings.video.second_pass_shader, progs, 1);
+      unsigned secondary_progs = get_xml_shaders(g_settings.video.second_pass_shader, progs + 1, 1);
       if (secondary_progs == 1)
       {
-         if (!compile_programs(&gl_program[2], progs, 1))
+         if (!compile_programs(&gl_program[2], progs + 1, 1))
          {
             RARCH_ERR("Failed to compile second pass shader.\n");
             return false;
@@ -1212,6 +1224,9 @@ bool gl_glsl_init(const char *path)
 
    for (unsigned i = 0; i <= num_progs; i++)
       find_uniforms(gl_program[i], &gl_uniforms[i]);
+
+   for (unsigned i = 1; i <= num_progs; i++)
+      gl_uniforms[i].frame_count_mod = progs[i - 1].frame_count_mod;
 
 #ifdef GLSL_DEBUG
    if (!gl_check_error())
@@ -1318,7 +1333,13 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       pglUniform2fv(uni->texture_size, 1, texture_size);
 
    if (uni->frame_count >= 0)
-      pglUniform1i(uni->frame_count, frame_count);
+   {
+      unsigned count = frame_count;
+      if (uni->frame_count_mod)
+         count %= uni->frame_count_mod;
+      fprintf(stderr, "Count: %u\n", count);
+      pglUniform1i(uni->frame_count, count);
+   }
 
    if (uni->frame_direction >= 0)
       pglUniform1i(uni->frame_direction, g_extern.frame_is_reverse ? -1 : 1);
