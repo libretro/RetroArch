@@ -47,3 +47,4 @@ DerivedData
 *.hmap
 ios/tmp
 ios/modules/*.dylib
+ios/*.mobileprovision
