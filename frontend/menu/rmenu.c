@@ -251,8 +251,6 @@ static void menu_set_default_pos(rmenu_default_positions_t *position)
 typedef struct
 {
    unsigned char enum_id;
-   unsigned char category_id;
-   int (*entry)(void *data, void *state);
 } menu;
 
 typedef struct
@@ -270,22 +268,17 @@ static rmenu_state_t rmenu_state;
 
 static unsigned char menu_stack_enum_array[10];
 static unsigned stack_idx = 0;
-static bool need_refresh = false;
 
 static void menu_stack_pop(void)
 {
    if(stack_idx > 1)
-   {
       stack_idx--;
-      need_refresh = true;
-   }
 }
 
 static void menu_stack_push(unsigned menu_id)
 {
    menu_stack_enum_array[stack_idx] = menu_id;
    stack_idx++;
-   need_refresh = true;
 }
 
 /*============================================================
@@ -3352,58 +3345,6 @@ static int ingame_menu(void *data, void *state)
    return 0;
 }
 
-static void menu_input_poll(void *data, void *state)
-{
-   menu *current_menu    = (menu*)data;
-
-   //first button input frame
-   uint64_t input_state_first_frame = 0;
-   uint64_t input_state = 0;
-   static bool first_held = false;
-
-   driver.input->poll(NULL);
-
-   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
-      input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
-            RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
-
-   //set first button input frame as trigger
-   rmenu_state.input = input_state & ~(rmenu_state.old_state);
-   //hold onto first button input frame
-   input_state_first_frame = input_state;          
-
-   //second button input frame
-   input_state = 0;
-   driver.input->poll(NULL);
-
-   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
-   {
-      input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
-            RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
-   }
-
-   bool analog_sticks_pressed = (input_state & (1ULL << RMENU_DEVICE_NAV_LEFT_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_RIGHT_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_UP_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_DOWN_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_LEFT_ANALOG_R)) || (input_state & (1ULL << RMENU_DEVICE_NAV_RIGHT_ANALOG_R)) || (input_state & (1ULL << RMENU_DEVICE_NAV_UP_ANALOG_R)) || (input_state & (1ULL << RMENU_DEVICE_NAV_DOWN_ANALOG_R));
-   bool shoulder_buttons_pressed = ((input_state & (1ULL << RMENU_DEVICE_NAV_L2)) || (input_state & (1ULL << RMENU_DEVICE_NAV_R2))) && current_menu->category_id != CATEGORY_SETTINGS;
-   bool do_held = analog_sticks_pressed || shoulder_buttons_pressed;
-
-   if(do_held)
-   {
-      if(!first_held)
-      {
-         first_held = true;
-         g_extern.delay_timer[1] = g_extern.frame_count + 7;
-      }
-
-      if(!(g_extern.frame_count < g_extern.delay_timer[1]))
-      {
-         first_held = false;
-         rmenu_state.input = input_state; //second input frame set as current frame
-      }
-   }
-
-   rmenu_state.old_state = input_state_first_frame;
-}
-
 static int menu_input_process(void *data, void *state)
 {
    (void)data;
@@ -3499,7 +3440,6 @@ bool menu_iterate(void)
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
          menu_stack_push(INGAME_MENU);
 
-      need_refresh = true;
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
 
 #ifndef __CELLOS_LV2__
@@ -3511,107 +3451,6 @@ bool menu_iterate(void)
 
    g_extern.frame_count++;
 
-   if (need_refresh)
-   {
-      unsigned menu_id = menu_stack_enum_array[stack_idx - 1];
-
-      switch(menu_id)
-      {
-         case INGAME_MENU:
-            current_menu.enum_id = menu_id;
-            current_menu.category_id = CATEGORY_INGAME_MENU;
-            current_menu.entry = ingame_menu;
-            break;
-         case INGAME_MENU_RESIZE:
-            current_menu.enum_id = INGAME_MENU_RESIZE;
-            current_menu.category_id = CATEGORY_INGAME_MENU;
-            current_menu.entry = ingame_menu_resize;
-            break;
-         case INGAME_MENU_SCREENSHOT:
-            current_menu.enum_id = menu_id;
-            current_menu.category_id = CATEGORY_INGAME_MENU;
-            current_menu.entry = ingame_menu_screenshot;
-            break;
-         case FILE_BROWSER_MENU:
-            current_menu.enum_id = menu_id;
-            current_menu.category_id = CATEGORY_FILEBROWSER;
-            current_menu.entry = select_rom;
-            break;
-         case LIBRETRO_CHOICE:
-            current_menu.enum_id = menu_id;
-            current_menu.category_id = CATEGORY_FILEBROWSER;
-            current_menu.entry = select_file;
-            break;
-         case PRESET_CHOICE:
-            current_menu.enum_id = menu_id;
-            current_menu.category_id = CATEGORY_FILEBROWSER;
-            current_menu.entry = select_file;
-            break;
-         case INPUT_PRESET_CHOICE:
-            current_menu.enum_id = menu_id;
-            current_menu.category_id = CATEGORY_FILEBROWSER;
-            current_menu.entry = select_file;
-            break;
-         case SHADER_CHOICE:
-            current_menu.enum_id = menu_id;
-            current_menu.category_id = CATEGORY_FILEBROWSER;
-            current_menu.entry = select_file;
-            break;
-         case BORDER_CHOICE:
-            current_menu.enum_id = menu_id;
-            current_menu.category_id = CATEGORY_FILEBROWSER;
-            current_menu.entry = select_file;
-            break;
-         case PATH_DEFAULT_ROM_DIR_CHOICE:
-         case PATH_SAVESTATES_DIR_CHOICE:
-         case PATH_SRAM_DIR_CHOICE:
-#ifdef HAVE_XML
-         case PATH_CHEATS_DIR_CHOICE:
-#endif
-         case PATH_SYSTEM_DIR_CHOICE:
-            current_menu.enum_id = menu_id;
-            current_menu.category_id = CATEGORY_FILEBROWSER;
-            current_menu.entry = select_directory;
-            break;
-         case GENERAL_VIDEO_MENU:
-            current_menu.enum_id = GENERAL_VIDEO_MENU;
-            current_menu.category_id = CATEGORY_SETTINGS;
-            current_menu.entry = select_setting;
-            break;
-         case GENERAL_AUDIO_MENU:
-            current_menu.enum_id = GENERAL_AUDIO_MENU;
-            current_menu.category_id = CATEGORY_SETTINGS;
-            current_menu.entry = select_setting;
-            break;
-         case EMU_GENERAL_MENU:
-            current_menu.enum_id = EMU_GENERAL_MENU;
-            current_menu.category_id = CATEGORY_SETTINGS;
-            current_menu.entry = select_setting;
-            break;
-         case EMU_VIDEO_MENU:
-            current_menu.enum_id = EMU_VIDEO_MENU;
-            current_menu.category_id = CATEGORY_SETTINGS;
-            current_menu.entry = select_setting;
-            break;
-         case EMU_AUDIO_MENU:
-            current_menu.enum_id = EMU_AUDIO_MENU;
-            current_menu.category_id = CATEGORY_SETTINGS;
-            current_menu.entry = select_setting;
-            break;
-         case PATH_MENU:
-            current_menu.enum_id = PATH_MENU;
-            current_menu.category_id = CATEGORY_SETTINGS;
-            current_menu.entry = select_setting;
-            break;
-         case CONTROLS_MENU:
-            current_menu.enum_id = CONTROLS_MENU;
-            current_menu.category_id = CATEGORY_SETTINGS;
-            current_menu.entry = select_setting;
-            break;
-      }
-
-      need_refresh = false;
-   }
 
    rmenu_default_positions_t default_pos;
    menu_set_default_pos(&default_pos);
@@ -3637,7 +3476,52 @@ bool menu_iterate(void)
       rarch_render_cached_frame();
    }
 
-   menu_input_poll(&current_menu, &rmenu_state);
+   //first button input frame
+   uint64_t input_state_first_frame = 0;
+   uint64_t input_state = 0;
+   static bool first_held = false;
+
+   driver.input->poll(NULL);
+
+   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
+      input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
+            RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
+
+   //set first button input frame as trigger
+   rmenu_state.input = input_state & ~(rmenu_state.old_state);
+   //hold onto first button input frame
+   input_state_first_frame = input_state;          
+
+   //second button input frame
+   input_state = 0;
+   driver.input->poll(NULL);
+
+   for (unsigned i = 0; i < RMENU_DEVICE_NAV_LAST; i++)
+   {
+      input_state |= driver.input->input_state(NULL, rmenu_nav_binds, 0,
+            RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
+   }
+
+   bool analog_sticks_pressed = (input_state & (1ULL << RMENU_DEVICE_NAV_LEFT_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_RIGHT_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_UP_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_DOWN_ANALOG_L)) || (input_state & (1ULL << RMENU_DEVICE_NAV_LEFT_ANALOG_R)) || (input_state & (1ULL << RMENU_DEVICE_NAV_RIGHT_ANALOG_R)) || (input_state & (1ULL << RMENU_DEVICE_NAV_UP_ANALOG_R)) || (input_state & (1ULL << RMENU_DEVICE_NAV_DOWN_ANALOG_R));
+   bool shoulder_buttons_pressed = ((input_state & (1ULL << RMENU_DEVICE_NAV_L2)) || (input_state & (1ULL << RMENU_DEVICE_NAV_R2)));
+   bool do_held = analog_sticks_pressed || shoulder_buttons_pressed;
+
+   if(do_held)
+   {
+      if(!first_held)
+      {
+         first_held = true;
+         g_extern.delay_timer[1] = g_extern.frame_count + 7;
+      }
+
+      if(!(g_extern.frame_count < g_extern.delay_timer[1]))
+      {
+         first_held = false;
+         rmenu_state.input = input_state; //second input frame set as current frame
+      }
+   }
+
+   rmenu_state.old_state = input_state_first_frame;
 
 #ifdef HAVE_OSKUTIL
    if(rmenu_state.osk_init != NULL)
@@ -3656,8 +3540,85 @@ bool menu_iterate(void)
    int input_entry_ret = 0;
    int input_process_ret = 0;
 
-   if(current_menu.entry)
-      input_entry_ret = current_menu.entry(&current_menu, &rmenu_state);
+   unsigned menu_id = menu_stack_enum_array[stack_idx - 1];
+
+   switch(menu_id)
+   {
+      case INGAME_MENU:
+         current_menu.enum_id = menu_id;
+         input_entry_ret = ingame_menu(&current_menu, &rmenu_state);
+         break;
+      case INGAME_MENU_RESIZE:
+         current_menu.enum_id = INGAME_MENU_RESIZE;
+         input_entry_ret = ingame_menu_resize(&current_menu, &rmenu_state);
+         break;
+      case INGAME_MENU_SCREENSHOT:
+         current_menu.enum_id = menu_id;
+         input_entry_ret = ingame_menu_screenshot(&current_menu, &rmenu_state);
+         break;
+      case FILE_BROWSER_MENU:
+         current_menu.enum_id = menu_id;
+         input_entry_ret = select_rom(&current_menu, &rmenu_state);
+         break;
+      case LIBRETRO_CHOICE:
+         current_menu.enum_id = menu_id;
+         input_entry_ret = select_file(&current_menu, &rmenu_state);
+         break;
+      case PRESET_CHOICE:
+         current_menu.enum_id = menu_id;
+         input_entry_ret = select_file(&current_menu, &rmenu_state);
+         break;
+      case INPUT_PRESET_CHOICE:
+         current_menu.enum_id = menu_id;
+         input_entry_ret = select_file(&current_menu, &rmenu_state);
+         break;
+      case SHADER_CHOICE:
+         current_menu.enum_id = menu_id;
+         input_entry_ret = select_file(&current_menu, &rmenu_state);
+         break;
+      case BORDER_CHOICE:
+         current_menu.enum_id = menu_id;
+         input_entry_ret = select_file(&current_menu, &rmenu_state);
+         break;
+      case PATH_DEFAULT_ROM_DIR_CHOICE:
+      case PATH_SAVESTATES_DIR_CHOICE:
+      case PATH_SRAM_DIR_CHOICE:
+#ifdef HAVE_XML
+      case PATH_CHEATS_DIR_CHOICE:
+#endif
+      case PATH_SYSTEM_DIR_CHOICE:
+         current_menu.enum_id = menu_id;
+         input_entry_ret = select_directory(&current_menu, &rmenu_state);
+         break;
+      case GENERAL_VIDEO_MENU:
+         current_menu.enum_id = GENERAL_VIDEO_MENU;
+         input_entry_ret = select_setting(&current_menu, &rmenu_state);
+         break;
+      case GENERAL_AUDIO_MENU:
+         current_menu.enum_id = GENERAL_AUDIO_MENU;
+         input_entry_ret = select_setting(&current_menu, &rmenu_state);
+         break;
+      case EMU_GENERAL_MENU:
+         current_menu.enum_id = EMU_GENERAL_MENU;
+         input_entry_ret = select_setting(&current_menu, &rmenu_state);
+         break;
+      case EMU_VIDEO_MENU:
+         current_menu.enum_id = EMU_VIDEO_MENU;
+         input_entry_ret = select_setting(&current_menu, &rmenu_state);
+         break;
+      case EMU_AUDIO_MENU:
+         current_menu.enum_id = EMU_AUDIO_MENU;
+         input_entry_ret = select_setting(&current_menu, &rmenu_state);
+         break;
+      case PATH_MENU:
+         current_menu.enum_id = PATH_MENU;
+         input_entry_ret = select_setting(&current_menu, &rmenu_state);
+         break;
+      case CONTROLS_MENU:
+         current_menu.enum_id = CONTROLS_MENU;
+         input_entry_ret = select_setting(&current_menu, &rmenu_state);
+         break;
+   }
 
    input_process_ret = menu_input_process(&current_menu, &rmenu_state);
 
