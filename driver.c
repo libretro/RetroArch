@@ -285,6 +285,15 @@ void global_init_drivers(void)
    driver.video->start(); // Statically starts video driver. Sets driver.video_data.
 #endif
    driver.input_data = driver.input->init();
+
+#ifdef HAVE_OVERLAY
+   if (*g_settings.input.overlay)
+   {
+      driver.overlay = input_overlay_new(g_settings.input.overlay);
+      if (!driver.overlay)
+	     RARCH_ERR("Failed to load overlay.\n");
+   }
+#endif
 }
 
 void global_uninit_drivers(void)
