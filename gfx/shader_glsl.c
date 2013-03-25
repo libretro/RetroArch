@@ -1337,7 +1337,6 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       unsigned count = frame_count;
       if (uni->frame_count_mod)
          count %= uni->frame_count_mod;
-      fprintf(stderr, "Count: %u\n", count);
       pglUniform1i(uni->frame_count, count);
    }
 
