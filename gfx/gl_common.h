@@ -169,6 +169,7 @@ enum gl_scale_type
 
 struct gl_fbo_scale
 {
+   bool fp_fbo;
    enum gl_scale_type type_x;
    enum gl_scale_type type_y;
    float scale_x;

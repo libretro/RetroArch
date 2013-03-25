@@ -518,10 +518,29 @@ static void gl_create_fbo_textures(void *data)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_type);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_type);
 
-      glTexImage2D(GL_TEXTURE_2D,
-            0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32, gl->fbo_rect[i].width, gl->fbo_rect[i].height,
-            0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-            RARCH_GL_FORMAT32, NULL);
+#if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
+      bool fp_fbo = gl->fbo_scale[i].valid && gl->fbo_scale[i].fp_fbo;
+
+      if (fp_fbo)
+      {
+         bool has_fp_fbo = gl_query_extension("ARB_texture_float");
+         if (!has_fp_fbo)
+            RARCH_ERR("ARB_texture_float extension was not found.\n");
+
+         RARCH_LOG("FBO pass #%d is floating-point.\n", i);
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 
+               gl->fbo_rect[i].width, gl->fbo_rect[i].height,
+               0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+      }
+      else
+#endif
+      {
+         glTexImage2D(GL_TEXTURE_2D,
+               0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
+               gl->fbo_rect[i].width, gl->fbo_rect[i].height,
+               0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
+               RARCH_GL_FORMAT32, NULL);
+      }
    }
 
    glBindTexture(GL_TEXTURE_2D, 0);

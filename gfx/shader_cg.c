@@ -844,7 +844,6 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
       prg[i + 1].frame_count_mod = strtoul(frame_count_mod, NULL, 0);
 
    char scale_name_buf[64];
-
    print_buf(scale_name_buf, "scale_type%u", i);
    config_get_array(conf, scale_name_buf, scale_type, sizeof(scale_type));
 
@@ -873,6 +872,11 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
    scale->type_y = RARCH_SCALE_INPUT;
    scale->scale_x = 1.0;
    scale->scale_y = 1.0;
+
+   char fp_fbo_buf[64];
+   print_buf(fp_fbo_buf, "float_framebuffer%u", i);
+   scale->fp_fbo = false;
+   config_get_bool(conf, fp_fbo_buf, &scale->fp_fbo);
 
    const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
    scale->abs_x = geom->base_width;

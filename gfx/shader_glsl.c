@@ -167,6 +167,7 @@ struct shader_program
    char *fragment;
    enum filter_type filter;
 
+   bool fp_fbo;
    float scale_x;
    float scale_y;
    unsigned abs_x;
@@ -303,6 +304,7 @@ static char *xml_replace_if_file(char *content, const char *path, xmlNodePtr nod
 static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
 {
    prog->frame_count_mod = 0;
+   prog->fp_fbo = false;
    prog->scale_x = 1.0;
    prog->scale_y = 1.0;
    prog->type_x = prog->type_y = RARCH_SCALE_INPUT;
@@ -332,7 +334,7 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
    char attr_scale[64], attr_scale_x[64], attr_scale_y[64];
    char attr_size[64], attr_size_x[64], attr_size_y[64];
    char attr_outscale[64], attr_outscale_x[64], attr_outscale_y[64];
-   char frame_count_mod[64];
+   char frame_count_mod[64], fp_fbo[64];
 
    xml_get_prop(attr_scale, sizeof(attr_scale), ptr, "scale");
    xml_get_prop(attr_scale_x, sizeof(attr_scale_x), ptr, "scale_x");
@@ -344,6 +346,9 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
    xml_get_prop(attr_outscale_x, sizeof(attr_outscale_x), ptr, "outscale_x");
    xml_get_prop(attr_outscale_y, sizeof(attr_outscale_y), ptr, "outscale_y");
    xml_get_prop(frame_count_mod, sizeof(frame_count_mod), ptr, "frame_count_mod");
+   xml_get_prop(fp_fbo, sizeof(fp_fbo), ptr, "float_framebuffer");
+
+   prog->fp_fbo = strcmp(fp_fbo, "true") == 0;
 
    unsigned x_attr_cnt = 0, y_attr_cnt = 0;
 
@@ -1189,6 +1194,7 @@ bool gl_glsl_init(const char *path)
    for (unsigned i = 0; i < num_progs; i++)
    {
       gl_filter_type[i + 1]   = progs[i].filter;
+      gl_scale[i + 1].fp_fbo  = progs[i].fp_fbo;
       gl_scale[i + 1].type_x  = progs[i].type_x;
       gl_scale[i + 1].type_y  = progs[i].type_y;
       gl_scale[i + 1].scale_x = progs[i].scale_x;
