@@ -434,7 +434,6 @@ SCREENSHOTS
 MENU
 ============================================================ */
 #if defined(HAVE_RMENU_GUI)
-#include "../frontend/menu/utils/menu_stack.c"
 #include "../frontend/menu/rmenu.c"
 #endif
 

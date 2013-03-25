@@ -16,7 +16,6 @@
 
 #include "rmenu.h"
 #include "utils/file_browser.h"
-#include "utils/menu_stack.h"
 
 #if defined(__CELLOS_LV2__)
 #include <sdk_version.h>
@@ -66,7 +65,6 @@ enum {
    MENU_ITEM_LAST
 };
 
-static rmenu_state_t rmenu_state;
 
 static bool set_libretro_core_as_launch;
 
@@ -244,6 +242,50 @@ static void menu_set_default_pos(rmenu_default_positions_t *position)
    position->core_msg_y_position = 0.06f;
    position->core_msg_font_size = COMMENT_Y_POSITION;
 #endif
+}
+
+typedef struct
+{
+   uint64_t input;
+   uint64_t old_state;
+#ifdef HAVE_OSKUTIL
+   unsigned osk_param;
+   bool (*osk_init)(void *data);
+   bool (*osk_callback)(void *data);
+#endif
+} rmenu_state_t;
+
+static rmenu_state_t rmenu_state;
+
+/*============================================================
+  MENU STACK
+  ============================================================ */
+
+static uint8_t menu_stack_enum_array[10];
+static uint8_t stack_idx = 0;
+static bool need_refresh = false;
+
+typedef struct
+{
+   unsigned char enum_id;
+   unsigned char category_id;
+   int (*entry)(void *data, void *state);
+} menu;
+
+
+static void menu_stack_pop(void)
+{
+   if(stack_idx > 1)
+   {
+      stack_idx--;
+      need_refresh = true;
+   }
+}
+
+static void menu_stack_push(unsigned menu_id)
+{
+   menu_stack_enum_array[++stack_idx] = menu_id;
+   need_refresh = true;
 }
 
 /*============================================================
@@ -955,7 +997,7 @@ static void browser_render(void *data)
    }
 }
 
-int select_file(void *data, void *state)
+static int select_file(void *data, void *state)
 {
    char extensions[128];
    char comment[128];
@@ -1128,7 +1170,7 @@ int select_file(void *data, void *state)
    return 0;
 }
 
-int select_directory(void *data, void *state)
+static int select_directory(void *data, void *state)
 {
    menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
@@ -2484,7 +2526,7 @@ static int select_setting(void *data, void *state)
    return 0;
 }
 
-int select_rom(void *data, void *state)
+static int select_rom(void *data, void *state)
 {
    menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
@@ -2593,7 +2635,7 @@ int select_rom(void *data, void *state)
    return 0;
 }
 
-int ingame_menu_resize(void *data, void *state)
+static int ingame_menu_resize(void *data, void *state)
 {
    menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
@@ -2945,7 +2987,7 @@ int ingame_menu_resize(void *data, void *state)
    return 0;
 }
 
-int ingame_menu_screenshot(void *data, void *state)
+static int ingame_menu_screenshot(void *data, void *state)
 {
    rmenu_state_t *rstate = (rmenu_state_t*)state;
 
@@ -2973,7 +3015,7 @@ int ingame_menu_screenshot(void *data, void *state)
 
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
-int ingame_menu(void *data, void *state)
+static int ingame_menu(void *data, void *state)
 {
    menu *current_menu    = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
@@ -3314,7 +3356,7 @@ int ingame_menu(void *data, void *state)
   INPUT POLL CALLBACK
   ============================================================ */
 
-void menu_input_poll(void *data, void *state)
+static void menu_input_poll(void *data, void *state)
 {
    menu *current_menu    = (menu*)data;
 
@@ -3370,7 +3412,7 @@ void menu_input_poll(void *data, void *state)
   INPUT PROCESS CALLBACK
   ============================================================ */
 
-int menu_input_process(void *data, void *state)
+static int menu_input_process(void *data, void *state)
 {
    (void)data;
    bool quit = false;
@@ -3426,33 +3468,8 @@ int menu_input_process(void *data, void *state)
 }
 
 /*============================================================
-  RESOURCE CALLBACKS
-  ============================================================ */
-
-void init_filebrowser(void *data)
-{
-   (void)data;
-
-   browser    = (filebrowser_t*)filebrowser_init(g_extern.console.main_wrap.default_rom_startup_dir, g_extern.system.valid_extensions);
-   tmpBrowser = (filebrowser_t*)filebrowser_init(default_paths.filesystem_root_dir, "");
-
-   menu_stack_push(FILE_BROWSER_MENU);
-   filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, g_extern.console.main_wrap.default_rom_startup_dir);
-   filebrowser_set_root_and_ext(tmpBrowser, NULL, default_paths.filesystem_root_dir);
-}
-
-void free_filebrowser(void *data)
-{
-   (void)data;
-
-   filebrowser_free(browser);
-   filebrowser_free(tmpBrowser);
-}
-
-/*============================================================
   RMENU API
   ============================================================ */
-
 
 void menu_init(void)
 {
@@ -3461,14 +3478,20 @@ void menu_init(void)
    rmenu_state.input          = 0;
    rmenu_state.old_state      = 0;
 
-   init_filebrowser(&rmenu_state);
+   browser    = (filebrowser_t*)filebrowser_init(g_extern.console.main_wrap.default_rom_startup_dir, g_extern.system.valid_extensions);
+   tmpBrowser = (filebrowser_t*)filebrowser_init(default_paths.filesystem_root_dir, "");
+
+   menu_stack_push(FILE_BROWSER_MENU);
+   filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, g_extern.console.main_wrap.default_rom_startup_dir);
+   filebrowser_set_root_and_ext(tmpBrowser, NULL, default_paths.filesystem_root_dir);
 
    device_ptr->ctx_driver->rmenu_init();
 }
 
 void menu_free(void)
 {
-   free_filebrowser(&rmenu_state);
+   filebrowser_free(browser);
+   filebrowser_free(tmpBrowser);
 }
 
 bool menu_iterate(void)
@@ -3483,7 +3506,7 @@ bool menu_iterate(void)
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
          menu_stack_push(INGAME_MENU);
 
-      menu_stack_force_refresh();
+      need_refresh = true;
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
 
 #ifndef __CELLOS_LV2__
@@ -3495,7 +3518,108 @@ bool menu_iterate(void)
 
    g_extern.frame_count++;
 
-   menu_stack_get_current_ptr(&current_menu);
+   if(need_refresh)
+   {
+      unsigned menu_id = menu_stack_enum_array[stack_idx];
+
+      switch(menu_id)
+      {
+         case INGAME_MENU:
+            current_menu.enum_id = menu_id;
+            current_menu.category_id = CATEGORY_INGAME_MENU;
+            current_menu.entry = ingame_menu;
+            break;
+         case INGAME_MENU_RESIZE:
+            current_menu.enum_id = INGAME_MENU_RESIZE;
+            current_menu.category_id = CATEGORY_INGAME_MENU;
+            current_menu.entry = ingame_menu_resize;
+            break;
+         case INGAME_MENU_SCREENSHOT:
+            current_menu.enum_id = menu_id;
+            current_menu.category_id = CATEGORY_INGAME_MENU;
+            current_menu.entry = ingame_menu_screenshot;
+            break;
+         case FILE_BROWSER_MENU:
+            current_menu.enum_id = menu_id;
+            current_menu.category_id = CATEGORY_FILEBROWSER;
+            current_menu.entry = select_rom;
+            break;
+         case LIBRETRO_CHOICE:
+            current_menu.enum_id = menu_id;
+            current_menu.category_id = CATEGORY_FILEBROWSER;
+            current_menu.entry = select_file;
+            break;
+         case PRESET_CHOICE:
+            current_menu.enum_id = menu_id;
+            current_menu.category_id = CATEGORY_FILEBROWSER;
+            current_menu.entry = select_file;
+            break;
+         case INPUT_PRESET_CHOICE:
+            current_menu.enum_id = menu_id;
+            current_menu.category_id = CATEGORY_FILEBROWSER;
+            current_menu.entry = select_file;
+            break;
+         case SHADER_CHOICE:
+            current_menu.enum_id = menu_id;
+            current_menu.category_id = CATEGORY_FILEBROWSER;
+            current_menu.entry = select_file;
+            break;
+         case BORDER_CHOICE:
+            current_menu.enum_id = menu_id;
+            current_menu.category_id = CATEGORY_FILEBROWSER;
+            current_menu.entry = select_file;
+            break;
+         case PATH_DEFAULT_ROM_DIR_CHOICE:
+         case PATH_SAVESTATES_DIR_CHOICE:
+         case PATH_SRAM_DIR_CHOICE:
+#ifdef HAVE_XML
+         case PATH_CHEATS_DIR_CHOICE:
+#endif
+         case PATH_SYSTEM_DIR_CHOICE:
+            current_menu.enum_id = menu_id;
+            current_menu.category_id = CATEGORY_FILEBROWSER;
+            current_menu.entry = select_directory;
+            break;
+         case GENERAL_VIDEO_MENU:
+            current_menu.enum_id = GENERAL_VIDEO_MENU;
+            current_menu.category_id = CATEGORY_SETTINGS;
+            current_menu.entry = select_setting;
+            break;
+         case GENERAL_AUDIO_MENU:
+            current_menu.enum_id = GENERAL_AUDIO_MENU;
+            current_menu.category_id = CATEGORY_SETTINGS;
+            current_menu.entry = select_setting;
+            break;
+         case EMU_GENERAL_MENU:
+            current_menu.enum_id = EMU_GENERAL_MENU;
+            current_menu.category_id = CATEGORY_SETTINGS;
+            current_menu.entry = select_setting;
+            break;
+         case EMU_VIDEO_MENU:
+            current_menu.enum_id = EMU_VIDEO_MENU;
+            current_menu.category_id = CATEGORY_SETTINGS;
+            current_menu.entry = select_setting;
+            break;
+         case EMU_AUDIO_MENU:
+            current_menu.enum_id = EMU_AUDIO_MENU;
+            current_menu.category_id = CATEGORY_SETTINGS;
+            current_menu.entry = select_setting;
+            break;
+         case PATH_MENU:
+            current_menu.enum_id = PATH_MENU;
+            current_menu.category_id = CATEGORY_SETTINGS;
+            current_menu.entry = select_setting;
+            break;
+         case CONTROLS_MENU:
+            current_menu.enum_id = CONTROLS_MENU;
+            current_menu.category_id = CATEGORY_SETTINGS;
+            current_menu.entry = select_setting;
+            break;
+         default:
+            break;
+      }
+      need_refresh = false;
+   }
 
    rmenu_default_positions_t default_pos;
    menu_set_default_pos(&default_pos);
