@@ -9,7 +9,9 @@ rm -rf build
 
 xcodebuild -verbose -sdk iphoneos -configuration Release
 
-codesign -fs "$CODE_SIGN_IDENTITY" "$BUILD_PATH/RetroArch.app/modules/snes9x_next_libretro.dylib"
-codesign -fs "$CODE_SIGN_IDENTITY" "$BUILD_PATH/RetroArch.app/modules/nestopia_libretro.dylib"
+if ! $nocodesign ; then
+  codesign -fs "$CODE_SIGN_IDENTITY" "$BUILD_PATH/RetroArch.app/modules/snes9x_next_libretro.dylib"
+  codesign -fs "$CODE_SIGN_IDENTITY" "$BUILD_PATH/RetroArch.app/modules/nestopia_libretro.dylib"
 
-xcrun -sdk iphoneos PackageApplication "$BUILD_PATH/RetroArch.app" -o "$BUILD_PATH/RetroArch.ipa" --sign "$CODE_SIGN_IDENTITY" --embed "$PROVISIONING"
+  xcrun -sdk iphoneos PackageApplication "$BUILD_PATH/RetroArch.app" -o "$BUILD_PATH/RetroArch.ipa" --sign "$CODE_SIGN_IDENTITY" --embed "$PROVISIONING"
+fi
