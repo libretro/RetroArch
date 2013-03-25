@@ -54,73 +54,55 @@ static void menu_stack_get_current_ptr(menu *current_menu)
    switch(menu_id)
    {
       case INGAME_MENU:
-         strlcpy(current_menu->title, "Ingame Menu", sizeof(current_menu->title));
          current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_INGAME_MENU;
          current_menu->entry = ingame_menu;
          break;
       case INGAME_MENU_RESIZE:
-         strlcpy(current_menu->title, "Resize Menu", sizeof(current_menu->title));
          current_menu->enum_id = INGAME_MENU_RESIZE;
-         current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_INGAME_MENU;
          current_menu->entry = ingame_menu_resize;
          break;
       case INGAME_MENU_SCREENSHOT:
-         strlcpy(current_menu->title, "Ingame Menu", sizeof(current_menu->title));
          current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_INGAME_MENU;
          current_menu->entry = ingame_menu_screenshot;
          break;
       case FILE_BROWSER_MENU:
-         strlcpy(current_menu->title, "Filebrowser", sizeof(current_menu->title));
          current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          current_menu->entry = select_rom;
          break;
       case LIBRETRO_CHOICE:
-         strlcpy(current_menu->title, "Libretro", sizeof(current_menu->title));
          current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          current_menu->entry = select_file;
          break;
       case PRESET_CHOICE:
-         strlcpy(current_menu->title, "Shader", sizeof(current_menu->title));
          current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          current_menu->entry = select_file;
          break;
       case INPUT_PRESET_CHOICE:
-         strlcpy(current_menu->title, "Input", sizeof(current_menu->title));
          current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          current_menu->entry = select_file;
          break;
       case SHADER_CHOICE:
-         strlcpy(current_menu->title, "Shaders", sizeof(current_menu->title));
          current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          current_menu->entry = select_file;
          break;
       case BORDER_CHOICE:
-         strlcpy(current_menu->title, "Borders", sizeof(current_menu->title));
          current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          current_menu->entry = select_file;
@@ -132,80 +114,50 @@ static void menu_stack_get_current_ptr(menu *current_menu)
       case PATH_CHEATS_DIR_CHOICE:
 #endif
       case PATH_SYSTEM_DIR_CHOICE:
-         strlcpy(current_menu->title, "Path", sizeof(current_menu->title));
          current_menu->enum_id = menu_id;
-         current_menu->selected = 0;
          current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          current_menu->entry = select_directory;
          break;
       case GENERAL_VIDEO_MENU:
-         strlcpy(current_menu->title, "Video", sizeof(current_menu->title));
          current_menu->enum_id = GENERAL_VIDEO_MENU;
-         current_menu->selected = FIRST_VIDEO_SETTING;
          current_menu->page = 0;
-         current_menu->first_setting = FIRST_VIDEO_SETTING;
-         current_menu->max_settings = MAX_NO_OF_VIDEO_SETTINGS;
          current_menu->category_id = CATEGORY_SETTINGS;
          current_menu->entry = select_setting;
          break;
       case GENERAL_AUDIO_MENU:
-         strlcpy(current_menu->title, "Audio", sizeof(current_menu->title));
          current_menu->enum_id = GENERAL_AUDIO_MENU;
-         current_menu->selected = FIRST_AUDIO_SETTING;
          current_menu->page = 0;
-         current_menu->first_setting = FIRST_AUDIO_SETTING;
-         current_menu->max_settings = MAX_NO_OF_AUDIO_SETTINGS;
          current_menu->category_id = CATEGORY_SETTINGS;
          current_menu->entry = select_setting;
          break;
       case EMU_GENERAL_MENU:
-         strlcpy(current_menu->title, "Retro", sizeof(current_menu->title));
          current_menu->enum_id = EMU_GENERAL_MENU;
-         current_menu->selected = FIRST_EMU_SETTING;
          current_menu->page = 0;
-         current_menu->first_setting = FIRST_EMU_SETTING;
-         current_menu->max_settings = MAX_NO_OF_EMU_SETTINGS;
          current_menu->category_id = CATEGORY_SETTINGS;
          current_menu->entry = select_setting;
          break;
       case EMU_VIDEO_MENU:
-         strlcpy(current_menu->title, "Retro Video", sizeof(current_menu->title));
          current_menu->enum_id = EMU_VIDEO_MENU;
-         current_menu->selected = FIRST_EMU_VIDEO_SETTING;
          current_menu->page = 0;
-         current_menu->first_setting = FIRST_EMU_VIDEO_SETTING;
-         current_menu->max_settings = MAX_NO_OF_EMU_VIDEO_SETTINGS;
          current_menu->category_id = CATEGORY_SETTINGS;
          current_menu->entry = select_setting;
          break;
       case EMU_AUDIO_MENU:
-         strlcpy(current_menu->title, "Retro Audio", sizeof(current_menu->title));
          current_menu->enum_id = EMU_AUDIO_MENU;
-         current_menu->selected = FIRST_EMU_AUDIO_SETTING;
          current_menu->page = 0;
-         current_menu->first_setting = FIRST_EMU_AUDIO_SETTING;
-         current_menu->max_settings = MAX_NO_OF_EMU_AUDIO_SETTINGS;
          current_menu->category_id = CATEGORY_SETTINGS;
          current_menu->entry = select_setting;
          break;
       case PATH_MENU:
-         strlcpy(current_menu->title, "Path", sizeof(current_menu->title));
          current_menu->enum_id = PATH_MENU;
-         current_menu->selected = FIRST_PATH_SETTING;
          current_menu->page = 0;
-         current_menu->first_setting = FIRST_PATH_SETTING;
-         current_menu->max_settings = MAX_NO_OF_PATH_SETTINGS;
          current_menu->category_id = CATEGORY_SETTINGS;
          current_menu->entry = select_setting;
          break;
       case CONTROLS_MENU:
-         strlcpy(current_menu->title, "Controls", sizeof(current_menu->title));
          current_menu->enum_id = CONTROLS_MENU;
-         current_menu->selected = FIRST_CONTROLS_SETTING_PAGE_1;
          current_menu->page = 0;
-         current_menu->first_setting = FIRST_CONTROLS_SETTING_PAGE_1;
-         current_menu->max_settings = MAX_NO_OF_CONTROLS_SETTINGS;
          current_menu->category_id = CATEGORY_SETTINGS;
          current_menu->entry = select_setting;
          break;

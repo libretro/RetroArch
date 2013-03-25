@@ -698,6 +698,7 @@ static void populate_setting_item(void *data, unsigned input)
 
 static void display_menubar(void *data)
 {
+   char title[32];
    menu *current_menu = (menu*)data;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    filebrowser_t *fb = browser;
@@ -763,6 +764,67 @@ static void display_menubar(void *data)
    switch(current_menu->enum_id)
    {
       case SHADER_CHOICE:
+         strlcpy(title, "Shaders", sizeof(title));
+         break;
+      case PRESET_CHOICE:
+         strlcpy(title, "Shader", sizeof(title));
+         break;
+      case BORDER_CHOICE:
+         strlcpy(title, "Borders", sizeof(title));
+         break;
+      case LIBRETRO_CHOICE:
+         strlcpy(title, "Libretro", sizeof(title));
+         break;
+      case INPUT_PRESET_CHOICE:
+         strlcpy(title, "Input", sizeof(title));
+         break;
+      case PATH_SAVESTATES_DIR_CHOICE:
+      case PATH_DEFAULT_ROM_DIR_CHOICE:
+#ifdef HAVE_XML
+      case PATH_CHEATS_DIR_CHOICE:
+#endif
+      case PATH_SRAM_DIR_CHOICE:
+      case PATH_SYSTEM_DIR_CHOICE:
+         strlcpy(title, "Path", sizeof(title));
+         break;
+      case INGAME_MENU:
+         strlcpy(title, "Ingame Menu", sizeof(title));
+         break;
+      case INGAME_MENU_RESIZE:
+         strlcpy(title, "Resize Menu", sizeof(title));
+         break;
+      case INGAME_MENU_SCREENSHOT:
+         strlcpy(title, "Ingame Menu", sizeof(title));
+         break;
+      case FILE_BROWSER_MENU:
+         strlcpy(title, "Filebrowser", sizeof(title));
+         break;
+      case GENERAL_VIDEO_MENU:
+         strlcpy(title, "Video", sizeof(title));
+         break;
+      case GENERAL_AUDIO_MENU:
+         strlcpy(title, "Audio", sizeof(title));
+         break;
+      case EMU_GENERAL_MENU:
+         strlcpy(title, "Retro", sizeof(title));
+         break;
+      case EMU_VIDEO_MENU:
+         strlcpy(title, "Retro Video", sizeof(title));
+         break;
+      case EMU_AUDIO_MENU:
+         strlcpy(title, "Retro Audio", sizeof(title));
+         break;
+      case PATH_MENU:
+         strlcpy(title, "Path", sizeof(title));
+         break;
+      case CONTROLS_MENU:
+         strlcpy(title, "Controls", sizeof(title));
+         break;
+   }
+
+   switch(current_menu->enum_id)
+   {
+      case SHADER_CHOICE:
       case PRESET_CHOICE:
       case BORDER_CHOICE:
       case LIBRETRO_CHOICE:
@@ -780,8 +842,6 @@ static void display_menubar(void *data)
 
          if (driver.video_poke->set_osd_msg)
             driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
-         break;
-      default:
          break;
    }
 
@@ -803,7 +863,7 @@ static void display_menubar(void *data)
    font_parms.color = WHITE;
 
    if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, current_menu->title, &font_parms);
+      driver.video_poke->set_osd_msg(driver.video_data, title, &font_parms);
 
    font_parms.x = 0.80f;
    font_parms.y = 0.015f;
@@ -2189,6 +2249,10 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
 
 static int select_setting(void *data, void *state)
 {
+   static unsigned first_setting = FIRST_VIDEO_SETTING;
+   static unsigned selected = 0;
+   unsigned max_settings = 0;
+
    menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
    font_params_t font_parms = {0};
@@ -2197,9 +2261,43 @@ static int select_setting(void *data, void *state)
    int ret = 0;
 
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-   item *items = (item*)malloc(current_menu->max_settings * sizeof(*items));
+
+   switch (current_menu->enum_id)
+   {
+      case GENERAL_VIDEO_MENU:
+         first_setting = FIRST_VIDEO_SETTING;
+         max_settings = MAX_NO_OF_VIDEO_SETTINGS;
+         break;
+      case GENERAL_AUDIO_MENU:
+         first_setting = FIRST_AUDIO_SETTING;
+         max_settings = MAX_NO_OF_AUDIO_SETTINGS;
+         break;
+      case EMU_GENERAL_MENU:
+         first_setting = FIRST_EMU_SETTING;
+         max_settings = MAX_NO_OF_EMU_SETTINGS;
+         break;
+      case EMU_VIDEO_MENU:
+         first_setting = FIRST_EMU_VIDEO_SETTING;
+         max_settings = MAX_NO_OF_EMU_VIDEO_SETTINGS;
+         break;
+      case EMU_AUDIO_MENU:
+         first_setting = FIRST_EMU_AUDIO_SETTING;
+         max_settings = MAX_NO_OF_EMU_AUDIO_SETTINGS;
+         break;
+      case PATH_MENU:
+         first_setting = FIRST_PATH_SETTING;
+         max_settings = MAX_NO_OF_PATH_SETTINGS;
+         break;
+      case CONTROLS_MENU:
+         first_setting = FIRST_CONTROLS_SETTING_PAGE_1;
+         max_settings = MAX_NO_OF_CONTROLS_SETTINGS;
+         break;
+   }
+
+   item *items = (item*)malloc(max_settings * sizeof(*items));
    unsigned i;
    char msg[256];
+
 
    rmenu_default_positions_t default_pos;
 
@@ -2207,7 +2305,7 @@ static int select_setting(void *data, void *state)
 
    unsigned j = 0;
    int page = 0;
-   for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
+   for(i = first_setting; i < max_settings; i++)
    {
       populate_setting_item(&items[i], i);
 
@@ -2223,17 +2321,57 @@ static int select_setting(void *data, void *state)
 
    /* back to ROM menu if CIRCLE is pressed */
    if ((input & (1ULL << RMENU_DEVICE_NAV_L1)) || (input & (1ULL << RMENU_DEVICE_NAV_A)))
+   {
+      switch(current_menu->enum_id)
+      {
+         case GENERAL_VIDEO_MENU:
+            break;
+         case GENERAL_AUDIO_MENU:
+            selected = FIRST_VIDEO_SETTING;
+            break;
+         case EMU_GENERAL_MENU:
+            selected = FIRST_AUDIO_SETTING;
+            break;
+         case EMU_VIDEO_MENU:
+            selected = FIRST_EMU_SETTING;
+            break;
+         case EMU_AUDIO_MENU:
+            selected = FIRST_EMU_VIDEO_SETTING;
+            break;
+         case PATH_MENU:
+            selected = FIRST_EMU_AUDIO_SETTING;
+            break;
+         case CONTROLS_MENU:
+            selected = FIRST_PATH_SETTING;
+            break;
+         default:
+            break;
+      }
       menu_stack_pop();
+   }
    else if (input & (1ULL << RMENU_DEVICE_NAV_R1))
    {
       switch(current_menu->enum_id)
       {
          case GENERAL_VIDEO_MENU:
+            if (current_menu->enum_id == GENERAL_VIDEO_MENU)
+               selected = FIRST_AUDIO_SETTING;
          case GENERAL_AUDIO_MENU:
+            if (current_menu->enum_id == GENERAL_AUDIO_MENU)
+               selected = FIRST_EMU_SETTING;
          case EMU_GENERAL_MENU:
+            if (current_menu->enum_id == EMU_GENERAL_MENU)
+               selected = FIRST_EMU_VIDEO_SETTING;
          case EMU_VIDEO_MENU:
+            if (current_menu->enum_id == EMU_VIDEO_MENU)
+               selected = FIRST_EMU_AUDIO_SETTING;
          case EMU_AUDIO_MENU:
+            if (current_menu->enum_id == EMU_AUDIO_MENU)
+               selected = FIRST_PATH_SETTING;
          case PATH_MENU:
+            if (current_menu->enum_id == PATH_MENU)
+               selected = FIRST_CONTROLS_SETTING_PAGE_1;
+
             menu_stack_push(current_menu->enum_id + 1);
             break;
          case CONTROLS_MENU:
@@ -2243,32 +2381,32 @@ static int select_setting(void *data, void *state)
    }
    else if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
    {
-      current_menu->selected++;
+      selected++;
 
-      if (current_menu->selected >= current_menu->max_settings)
-         current_menu->selected = current_menu->first_setting; 
-      if (items[current_menu->selected].page != current_menu->page)
-         current_menu->page = items[current_menu->selected].page;
+      if (selected >= max_settings)
+         selected = first_setting; 
+      if (items[selected].page != current_menu->page)
+         current_menu->page = items[selected].page;
    }
    else if (input & (1ULL << RMENU_DEVICE_NAV_UP))
    {
-      if (current_menu->selected == current_menu->first_setting)
-         current_menu->selected = current_menu->max_settings-1;
+      if (selected == first_setting)
+         selected = max_settings-1;
       else
-         current_menu->selected--;
+         selected--;
 
-      if (items[current_menu->selected].page != current_menu->page)
-         current_menu->page = items[current_menu->selected].page;
+      if (items[selected].page != current_menu->page)
+         current_menu->page = items[selected].page;
    }
 
-   ret = set_setting_action(current_menu, current_menu->selected, input);
+   ret = set_setting_action(current_menu, selected, input);
 
    if (ret != 0)
       return ret;
 
    display_menubar(current_menu);
 
-   for(i = current_menu->first_setting; i < current_menu->max_settings; i++)
+   for(i = first_setting; i < max_settings; i++)
    {
       if(items[i].page == current_menu->page)
       {
@@ -2277,7 +2415,7 @@ static int select_setting(void *data, void *state)
          font_parms.x = default_pos.x_position;
          font_parms.y = default_pos.starting_y_position;
          font_parms.scale = default_pos.variable_font_size;
-         font_parms.color = current_menu->selected == items[i].enum_id ? YELLOW : WHITE;
+         font_parms.color = selected == items[i].enum_id ? YELLOW : WHITE;
 
          if (driver.video_poke->set_osd_msg)
             driver.video_poke->set_osd_msg(driver.video_data, items[i].text, &font_parms);
@@ -2288,7 +2426,7 @@ static int select_setting(void *data, void *state)
          if (driver.video_poke->set_osd_msg)
             driver.video_poke->set_osd_msg(driver.video_data, items[i].setting_text, &font_parms);
 
-         if(current_menu->selected == items[i].enum_id)
+         if(selected == items[i].enum_id)
          {
             rarch_position_t position = {0};
             position.x = default_pos.x_position;

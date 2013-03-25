@@ -19,12 +19,8 @@
 
 typedef struct
 {
-   char title[32];
    unsigned char enum_id;
-   unsigned char selected;
    unsigned char page;
-   unsigned char first_setting;
-   unsigned char max_settings;
    unsigned char category_id;
    int (*entry)(void *data, void *state);
 } menu;
