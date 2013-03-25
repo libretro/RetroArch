@@ -3460,33 +3460,8 @@ static int menu_input_process(void *data, void *state)
 }
 
 /*============================================================
-  RESOURCE CALLBACKS
-  ============================================================ */
-
-void init_filebrowser(void *data)
-{
-   (void)data;
-
-   browser    = (filebrowser_t*)filebrowser_init(g_extern.console.main_wrap.default_rom_startup_dir, g_extern.system.valid_extensions);
-   tmpBrowser = (filebrowser_t*)filebrowser_init(default_paths.filesystem_root_dir, "");
-
-   menu_stack_push(FILE_BROWSER_MENU);
-   filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, g_extern.console.main_wrap.default_rom_startup_dir);
-   filebrowser_set_root_and_ext(tmpBrowser, NULL, default_paths.filesystem_root_dir);
-}
-
-void free_filebrowser(void *data)
-{
-   (void)data;
-
-   filebrowser_free(browser);
-   filebrowser_free(tmpBrowser);
-}
-
-/*============================================================
   RMENU API
   ============================================================ */
-
 
 void menu_init(void)
 {
@@ -3495,14 +3470,21 @@ void menu_init(void)
    rmenu_state.input          = 0;
    rmenu_state.old_state      = 0;
 
-   init_filebrowser(&rmenu_state);
+   browser    = (filebrowser_t*)filebrowser_init(g_extern.console.main_wrap.default_rom_startup_dir, g_extern.system.valid_extensions);
+   tmpBrowser = (filebrowser_t*)filebrowser_init(default_paths.filesystem_root_dir, "");
+
+   filebrowser_set_root_and_ext(browser, g_extern.system.valid_extensions, g_extern.console.main_wrap.default_rom_startup_dir);
+   filebrowser_set_root_and_ext(tmpBrowser, NULL, default_paths.filesystem_root_dir);
+
+   menu_stack_push(FILE_BROWSER_MENU);
 
    device_ptr->ctx_driver->rmenu_init();
 }
 
 void menu_free(void)
 {
-   free_filebrowser(&rmenu_state);
+   filebrowser_free(browser);
+   filebrowser_free(tmpBrowser);
 }
 
 bool menu_iterate(void)
