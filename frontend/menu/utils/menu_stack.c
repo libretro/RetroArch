@@ -55,55 +55,46 @@ static void menu_stack_get_current_ptr(menu *current_menu)
    {
       case INGAME_MENU:
          current_menu->enum_id = menu_id;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_INGAME_MENU;
          current_menu->entry = ingame_menu;
          break;
       case INGAME_MENU_RESIZE:
          current_menu->enum_id = INGAME_MENU_RESIZE;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_INGAME_MENU;
          current_menu->entry = ingame_menu_resize;
          break;
       case INGAME_MENU_SCREENSHOT:
          current_menu->enum_id = menu_id;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_INGAME_MENU;
          current_menu->entry = ingame_menu_screenshot;
          break;
       case FILE_BROWSER_MENU:
          current_menu->enum_id = menu_id;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          current_menu->entry = select_rom;
          break;
       case LIBRETRO_CHOICE:
          current_menu->enum_id = menu_id;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          current_menu->entry = select_file;
          break;
       case PRESET_CHOICE:
          current_menu->enum_id = menu_id;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          current_menu->entry = select_file;
          break;
       case INPUT_PRESET_CHOICE:
          current_menu->enum_id = menu_id;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          current_menu->entry = select_file;
          break;
       case SHADER_CHOICE:
          current_menu->enum_id = menu_id;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          current_menu->entry = select_file;
          break;
       case BORDER_CHOICE:
          current_menu->enum_id = menu_id;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          current_menu->entry = select_file;
          break;
@@ -115,49 +106,41 @@ static void menu_stack_get_current_ptr(menu *current_menu)
 #endif
       case PATH_SYSTEM_DIR_CHOICE:
          current_menu->enum_id = menu_id;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_FILEBROWSER;
          current_menu->entry = select_directory;
          break;
       case GENERAL_VIDEO_MENU:
          current_menu->enum_id = GENERAL_VIDEO_MENU;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_SETTINGS;
          current_menu->entry = select_setting;
          break;
       case GENERAL_AUDIO_MENU:
          current_menu->enum_id = GENERAL_AUDIO_MENU;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_SETTINGS;
          current_menu->entry = select_setting;
          break;
       case EMU_GENERAL_MENU:
          current_menu->enum_id = EMU_GENERAL_MENU;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_SETTINGS;
          current_menu->entry = select_setting;
          break;
       case EMU_VIDEO_MENU:
          current_menu->enum_id = EMU_VIDEO_MENU;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_SETTINGS;
          current_menu->entry = select_setting;
          break;
       case EMU_AUDIO_MENU:
          current_menu->enum_id = EMU_AUDIO_MENU;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_SETTINGS;
          current_menu->entry = select_setting;
          break;
       case PATH_MENU:
          current_menu->enum_id = PATH_MENU;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_SETTINGS;
          current_menu->entry = select_setting;
          break;
       case CONTROLS_MENU:
          current_menu->enum_id = CONTROLS_MENU;
-         current_menu->page = 0;
          current_menu->category_id = CATEGORY_SETTINGS;
          current_menu->entry = select_setting;
          break;

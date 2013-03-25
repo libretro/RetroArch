@@ -2249,9 +2249,10 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
 
 static int select_setting(void *data, void *state)
 {
-   static unsigned first_setting = FIRST_VIDEO_SETTING;
-   static unsigned selected = 0;
-   unsigned max_settings = 0;
+   static uint8_t first_setting = FIRST_VIDEO_SETTING;
+   static uint8_t selected = 0;
+   static uint8_t page_number = 0;
+   uint8_t max_settings = 0;
 
    menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
@@ -2295,16 +2296,15 @@ static int select_setting(void *data, void *state)
    }
 
    item *items = (item*)malloc(max_settings * sizeof(*items));
-   unsigned i;
-   char msg[256];
-
 
    rmenu_default_positions_t default_pos;
 
    menu_set_default_pos(&default_pos);
 
-   unsigned j = 0;
-   int page = 0;
+   char msg[256];
+   uint8_t i = 0;
+   uint8_t j = 0;
+   uint8_t item_page = 0;
    for(i = first_setting; i < max_settings; i++)
    {
       populate_setting_item(&items[i], i);
@@ -2312,10 +2312,10 @@ static int select_setting(void *data, void *state)
       if(!(j < default_pos.entries_per_page))
       {
          j = 0;
-         page++;
+         item_page++;
       }
 
-      items[i].page = page;
+      items[i].page = item_page;
       j++;
    }
 
@@ -2385,8 +2385,8 @@ static int select_setting(void *data, void *state)
 
       if (selected >= max_settings)
          selected = first_setting; 
-      if (items[selected].page != current_menu->page)
-         current_menu->page = items[selected].page;
+      if (items[selected].page != page_number)
+         page_number = items[selected].page;
    }
    else if (input & (1ULL << RMENU_DEVICE_NAV_UP))
    {
@@ -2395,8 +2395,8 @@ static int select_setting(void *data, void *state)
       else
          selected--;
 
-      if (items[selected].page != current_menu->page)
-         current_menu->page = items[selected].page;
+      if (items[selected].page != page_number)
+         page_number = items[selected].page;
    }
 
    ret = set_setting_action(current_menu, selected, input);
@@ -2408,7 +2408,7 @@ static int select_setting(void *data, void *state)
 
    for(i = first_setting; i < max_settings; i++)
    {
-      if(items[i].page == current_menu->page)
+      if(items[i].page == page_number)
       {
          default_pos.starting_y_position += default_pos.y_position_increment;
 

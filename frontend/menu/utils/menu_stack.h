@@ -20,7 +20,6 @@
 typedef struct
 {
    unsigned char enum_id;
-   unsigned char page;
    unsigned char category_id;
    int (*entry)(void *data, void *state);
 } menu;

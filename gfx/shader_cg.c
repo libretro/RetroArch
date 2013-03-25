@@ -831,7 +831,6 @@ static bool load_shader(const char *cgp_path, unsigned i, config_file_t *conf)
 
 static bool load_shader_params(unsigned i, config_file_t *conf)
 {
-   bool ret = true;
    char scale_type[64] = {0};
    char scale_type_x[64] = {0};
    char scale_type_y[64] = {0};
