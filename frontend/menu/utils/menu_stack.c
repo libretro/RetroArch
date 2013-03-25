@@ -218,8 +218,5 @@ static void menu_stack_get_current_ptr(menu *current_menu)
          break;
    }
 
-   if(current_menu->category_id == CATEGORY_FILEBROWSER)
-      current_menu->browser_draw = browser_render;
-
    need_refresh = false;
 }

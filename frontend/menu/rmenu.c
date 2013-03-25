@@ -850,7 +850,7 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
       msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
 }
 
-void browser_render(void *data)
+static void browser_render(void *data)
 {
    filebrowser_t *b = (filebrowser_t*)data;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
@@ -1063,8 +1063,7 @@ int select_file(void *data, void *state)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, comment, &font_parms);
 
-   if(current_menu->browser_draw)
-      current_menu->browser_draw(filebrowser);
+   browser_render(filebrowser);
 
    return 0;
 }
@@ -1202,8 +1201,7 @@ int select_directory(void *data, void *state)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-   if(current_menu->browser_draw)
-      current_menu->browser_draw(filebrowser);
+   browser_render(filebrowser);
 
    return 0;
 }
@@ -2346,12 +2344,8 @@ static int select_setting(void *data, void *state)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-   if(current_menu->browser_draw)
-      current_menu->browser_draw(filebrowser);
-
    return 0;
 }
-
 
 int select_rom(void *data, void *state)
 {
@@ -2457,8 +2451,7 @@ int select_rom(void *data, void *state)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-   if(current_menu->browser_draw)
-      current_menu->browser_draw(filebrowser);
+   browser_render(filebrowser);
 
    return 0;
 }
@@ -2813,9 +2806,6 @@ int ingame_menu_resize(void *data, void *state)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
    }
 
-   if(current_menu->browser_draw)
-      current_menu->browser_draw(filebrowser);
-
    return 0;
 }
 
@@ -2843,9 +2833,6 @@ int ingame_menu_screenshot(void *data, void *state)
          if(device_ptr->ctx_driver->rmenu_screenshot_dump)
             device_ptr->ctx_driver->rmenu_screenshot_dump(NULL);
    }
-
-   if(current_menu->browser_draw)
-      current_menu->browser_draw(filebrowser);
 
    return 0;
 }
@@ -3186,9 +3173,6 @@ int ingame_menu(void *data, void *state)
    position.y = (default_pos.y_position+(default_pos.y_position_increment * menu_idx));
    device_ptr->ctx_driver->rmenu_draw_panel(&position);
 
-   if(current_menu->browser_draw)
-      current_menu->browser_draw(filebrowser);
-
    return 0;
 }
 
@@ -3340,21 +3324,17 @@ void menu_init(void)
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   rmenu_state.init_resources = init_filebrowser;
-   rmenu_state.free_resources = free_filebrowser;
    rmenu_state.input          = 0;
    rmenu_state.old_state      = 0;
 
-   if(rmenu_state.init_resources)
-      rmenu_state.init_resources(&rmenu_state);
+   init_filebrowser(&rmenu_state);
 
    device_ptr->ctx_driver->rmenu_init();
 }
 
 void menu_free(void)
 {
-   if(rmenu_state.free_resources)
-      rmenu_state.free_resources(&rmenu_state);
+   free_filebrowser(&rmenu_state);
 }
 
 bool menu_iterate(void)
@@ -3407,8 +3387,7 @@ bool menu_iterate(void)
       rarch_render_cached_frame();
    }
 
-   if(current_menu.input_poll)
-      menu_input_poll(&current_menu, &rmenu_state);
+   menu_input_poll(&current_menu, &rmenu_state);
 
 #ifdef HAVE_OSKUTIL
    if(rmenu_state.osk_init != NULL)
@@ -3430,8 +3409,7 @@ bool menu_iterate(void)
    if(current_menu.entry)
       input_entry_ret = current_menu.entry(&current_menu, &rmenu_state);
 
-   if(current_menu.input_process)
-      input_process_ret = current_menu.input_process(&current_menu, &rmenu_state);
+   input_process_ret = menu_input_process(&current_menu, &rmenu_state);
 
    msg = msg_queue_pull(g_extern.msg_queue);
 

@@ -27,9 +27,6 @@ typedef struct
    unsigned char max_settings;
    unsigned char category_id;
    int (*entry)(void *data, void *state);
-   int (*input_process)(void *data, void *state);
-   void (*input_poll)(void *data, void *state);
-   void (*browser_draw)(void *data);
 } menu;
 
 typedef struct
@@ -41,8 +38,6 @@ typedef struct
    bool (*osk_init)(void *data);
    bool (*osk_callback)(void *data);
 #endif
-   void (*init_resources)(void *data);
-   void (*free_resources)(void *data);
 } rmenu_state_t;
 
 // iterate forward declarations
@@ -53,17 +48,5 @@ int select_rom(void *data, void *state);
 int ingame_menu_resize(void *data, void *state);
 int ingame_menu_screenshot(void *data, void *state);
 int ingame_menu(void *data, void *state);
-
-void menu_input_poll(void *data, void *state);
-int menu_input_process(void *data, void *state);
-
-// browser_draw forward declarations
-void browser_render(void *data);
-
-// init resources forward declarations
-void init_filebrowser(void *data);
-
-// free resources forward declarations
-void free_filebrowser(void *data);
 
 #endif
