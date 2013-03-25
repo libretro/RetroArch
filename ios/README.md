@@ -64,6 +64,8 @@ script/build_app
 
 This will build the iOS app, codesign everything that needs to, and package it into a distributable IPA.
 
+Once completed, you can find the IPA inside the `ios/build/Release-iphoneos` directory.
+
 ## Cleaning
 
 If you want to wipe everything out and start from scratch, run:
