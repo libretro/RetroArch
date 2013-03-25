@@ -252,8 +252,6 @@ static void menu_set_default_pos(rmenu_default_positions_t *position)
 
 typedef struct
 {
-   uint64_t input;
-   uint64_t old_state;
 #ifdef HAVE_OSKUTIL
    unsigned osk_param;
    bool (*osk_init)(void *data);
@@ -3375,9 +3373,6 @@ void menu_init(void)
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   rmenu_state.input          = 0;
-   rmenu_state.old_state      = 0;
-
    browser    = (filebrowser_t*)filebrowser_init(g_extern.console.main_wrap.default_rom_startup_dir, g_extern.system.valid_extensions);
    tmpBrowser = (filebrowser_t*)filebrowser_init(default_paths.filesystem_root_dir, "");
 
@@ -3398,6 +3393,8 @@ void menu_free(void)
 bool menu_iterate(void)
 {
    const char *msg;
+   static uint64_t input = 0;
+   static uint64_t old_state = 0;
    font_params_t font_parms = {0};
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
@@ -3454,7 +3451,7 @@ bool menu_iterate(void)
             RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 
    //set first button input frame as trigger
-   rmenu_state.input = input_state & ~(rmenu_state.old_state);
+   input = input_state & ~(old_state);
    //hold onto first button input frame
    input_state_first_frame = input_state;          
 
@@ -3483,11 +3480,11 @@ bool menu_iterate(void)
       if (!(g_extern.frame_count < g_extern.delay_timer[1]))
       {
          first_held = false;
-         rmenu_state.input = input_state; //second input frame set as current frame
+         input = input_state; //second input frame set as current frame
       }
    }
 
-   rmenu_state.old_state = input_state_first_frame;
+   old_state = input_state_first_frame;
 
 #ifdef HAVE_OSKUTIL
    if (rmenu_state.osk_init != NULL)
@@ -3511,28 +3508,28 @@ bool menu_iterate(void)
    switch(menu_id)
    {
       case INGAME_MENU:
-         input_entry_ret = ingame_menu(menu_id, rmenu_state.input);
-         input_process_ret = menu_input_process(menu_id, rmenu_state.old_state);
+         input_entry_ret = ingame_menu(menu_id, input);
+         input_process_ret = menu_input_process(menu_id, old_state);
          break;
       case INGAME_MENU_RESIZE:
-         input_entry_ret = ingame_menu_resize(menu_id, rmenu_state.input);
-         input_process_ret = menu_input_process(menu_id, rmenu_state.old_state);
+         input_entry_ret = ingame_menu_resize(menu_id, input);
+         input_process_ret = menu_input_process(menu_id, old_state);
          break;
       case INGAME_MENU_SCREENSHOT:
-         input_entry_ret = ingame_menu_screenshot(menu_id, rmenu_state.input);
-         input_process_ret = menu_input_process(menu_id, rmenu_state.old_state);
+         input_entry_ret = ingame_menu_screenshot(menu_id, input);
+         input_process_ret = menu_input_process(menu_id, old_state);
          break;
       case FILE_BROWSER_MENU:
-         input_entry_ret = select_rom(menu_id, rmenu_state.input);
-         input_process_ret = menu_input_process(menu_id, rmenu_state.old_state);
+         input_entry_ret = select_rom(menu_id, input);
+         input_process_ret = menu_input_process(menu_id, old_state);
          break;
       case LIBRETRO_CHOICE:
       case PRESET_CHOICE:
       case INPUT_PRESET_CHOICE:
       case SHADER_CHOICE:
       case BORDER_CHOICE:
-         input_entry_ret = select_file(menu_id, rmenu_state.input);
-         input_process_ret = menu_input_process(menu_id, rmenu_state.old_state);
+         input_entry_ret = select_file(menu_id, input);
+         input_process_ret = menu_input_process(menu_id, old_state);
          break;
       case PATH_DEFAULT_ROM_DIR_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
@@ -3541,8 +3538,8 @@ bool menu_iterate(void)
       case PATH_CHEATS_DIR_CHOICE:
 #endif
       case PATH_SYSTEM_DIR_CHOICE:
-         input_entry_ret = select_directory(menu_id, rmenu_state.input);
-         input_process_ret = menu_input_process(menu_id, rmenu_state.old_state);
+         input_entry_ret = select_directory(menu_id, input);
+         input_process_ret = menu_input_process(menu_id, old_state);
          break;
       case GENERAL_VIDEO_MENU:
       case GENERAL_AUDIO_MENU:
@@ -3551,8 +3548,8 @@ bool menu_iterate(void)
       case EMU_AUDIO_MENU:
       case PATH_MENU:
       case CONTROLS_MENU:
-         input_entry_ret = select_setting(menu_id, rmenu_state.input);
-         input_process_ret = menu_input_process(menu_id, rmenu_state.old_state);
+         input_entry_ret = select_setting(menu_id, input);
+         input_process_ret = menu_input_process(menu_id, old_state);
          break;
    }
 
