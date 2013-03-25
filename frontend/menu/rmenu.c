@@ -2396,25 +2396,6 @@ static int select_setting(uint8_t menu_type, uint64_t input)
             break;
       }
    }
-   else if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
-   {
-      selected++;
-
-      if (selected >= max_settings)
-         selected = first_setting; 
-      if (items[selected].page != page_number)
-         page_number = items[selected].page;
-   }
-   else if (input & (1ULL << RMENU_DEVICE_NAV_UP))
-   {
-      if (selected == first_setting)
-         selected = max_settings-1;
-      else
-         selected--;
-
-      if (items[selected].page != page_number)
-         page_number = items[selected].page;
-   }
 
    ret = set_setting_action(menu_type, selected, input);
 
@@ -2423,8 +2404,44 @@ static int select_setting(uint8_t menu_type, uint64_t input)
 
    display_menubar(menu_type);
 
+   bool pressed_up = false;
+   bool pressed_down = false;
+
    for(i = first_setting; i < max_settings; i++)
    {
+      if (!pressed_up)
+      {
+         if (input & (1ULL << RMENU_DEVICE_NAV_UP))
+         {
+            pressed_up = true;
+            if (selected == first_setting)
+               selected = max_settings-1;
+            else
+               selected--;
+
+            if (items[selected].page != page_number)
+               page_number = items[selected].page;
+
+            set_setting_action(menu_type, selected, input);
+         }
+      }
+      
+      if (!pressed_down)
+      {
+         if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
+         {
+            pressed_down = true;
+            selected++;
+
+            if (selected >= max_settings)
+               selected = first_setting; 
+            if (items[selected].page != page_number)
+               page_number = items[selected].page;
+
+            set_setting_action(menu_type, selected, input);
+         }
+      }
+
       if (items[i].page == page_number)
       {
          default_pos.starting_y_position += default_pos.y_position_increment;
