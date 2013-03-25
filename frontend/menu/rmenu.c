@@ -2201,7 +2201,6 @@ static int select_setting(void *data, void *state)
    unsigned i;
    char msg[256];
 
-   filebrowser_t *filebrowser = NULL;
    rmenu_default_positions_t default_pos;
 
    menu_set_default_pos(&default_pos);
@@ -2465,7 +2464,6 @@ int ingame_menu_resize(void *data, void *state)
    uint64_t input = rstate->input;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   filebrowser_t *filebrowser = NULL;
    rmenu_default_positions_t default_pos;
    menu_set_default_pos(&default_pos);
 
@@ -2811,13 +2809,11 @@ int ingame_menu_resize(void *data, void *state)
 
 int ingame_menu_screenshot(void *data, void *state)
 {
-   menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
 
    uint64_t input = rstate->input;
 
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-   filebrowser_t *filebrowser = NULL;
 
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
 

@@ -51,11 +51,6 @@ static void menu_stack_get_current_ptr(menu *current_menu)
 
    unsigned menu_id = menu_stack_enum_array[stack_idx];
 
-   current_menu->browser_draw  = NULL;
-   current_menu->input_process = NULL;
-   current_menu->input_poll    = menu_input_poll;
-   current_menu->input_process = menu_input_process;
-
    switch(menu_id)
    {
       case INGAME_MENU:
