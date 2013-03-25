@@ -250,11 +250,6 @@ static void menu_set_default_pos(rmenu_default_positions_t *position)
 
 typedef struct
 {
-   unsigned char enum_id;
-} menu;
-
-typedef struct
-{
    uint64_t input;
    uint64_t old_state;
 #ifdef HAVE_OSKUTIL
@@ -731,10 +726,9 @@ static void populate_setting_item(void *data, unsigned input)
    }
 }
 
-static void display_menubar(void *data)
+static void display_menubar(uint8_t menu_type)
 {
    char title[32];
-   menu *current_menu = (menu*)data;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    filebrowser_t *fb = browser;
    char msg[128];
@@ -756,7 +750,7 @@ static void display_menubar(void *data)
    strlcpy(key_label_l.desc, "Unknown", sizeof(key_label_l.desc));
    key_label_l.joykey = 1ULL << RETRO_DEVICE_ID_JOYPAD_L;
 
-   switch(current_menu->enum_id)
+   switch(menu_type)
    {
       case GENERAL_VIDEO_MENU:
          if (driver.input->set_keybinds)
@@ -796,7 +790,7 @@ static void display_menubar(void *data)
          break;
    }
 
-   switch(current_menu->enum_id)
+   switch(menu_type)
    {
       case SHADER_CHOICE:
          strlcpy(title, "Shaders", sizeof(title));
@@ -857,7 +851,7 @@ static void display_menubar(void *data)
          break;
    }
 
-   switch(current_menu->enum_id)
+   switch(menu_type)
    {
       case SHADER_CHOICE:
       case PRESET_CHOICE:
@@ -990,13 +984,12 @@ static void browser_render(void *data)
    }
 }
 
-static int select_file(void *data, void *state)
+static int select_file(uint8_t menu_type, void *state)
 {
    char extensions[128];
    char comment[128];
    char path[PATH_MAX];
    bool ret = true;
-   menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
    font_params_t font_parms = {0};
 
@@ -1006,7 +999,7 @@ static int select_file(void *data, void *state)
    rmenu_default_positions_t default_pos;
    menu_set_default_pos(&default_pos);
 
-   switch(current_menu->enum_id)
+   switch(menu_type)
    {
       case SHADER_CHOICE:
          strlcpy(extensions, EXT_SHADERS, sizeof(extensions));
@@ -1040,7 +1033,7 @@ static int select_file(void *data, void *state)
       {
          strlcpy(path, filebrowser_get_current_path(filebrowser), sizeof(path));
 
-         switch(current_menu->enum_id)
+         switch(menu_type)
          {
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
             case SHADER_CHOICE:
@@ -1127,7 +1120,7 @@ static int select_file(void *data, void *state)
    else if (input & (1ULL << RMENU_DEVICE_NAV_X))
       menu_stack_pop();
 
-   display_menubar(current_menu);
+   display_menubar(menu_type);
 
    font_parms.x = default_pos.x_position;
    font_parms.y = default_pos.comment_y_position;
@@ -1163,9 +1156,8 @@ static int select_file(void *data, void *state)
    return 0;
 }
 
-static int select_directory(void *data, void *state)
+static int select_directory(uint8_t menu_type, void *state)
 {
-   menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
    font_params_t font_parms = {0};
 
@@ -1189,7 +1181,7 @@ static int select_directory(void *data, void *state)
       {
          strlcpy(path, filebrowser_get_current_path(filebrowser), sizeof(path));
 
-         switch(current_menu->enum_id)
+         switch(menu_type)
          {
             case PATH_SAVESTATES_DIR_CHOICE:
                strlcpy(g_extern.console.main_wrap.default_savestate_dir, path, sizeof(g_extern.console.main_wrap.default_savestate_dir));
@@ -1215,7 +1207,7 @@ static int select_directory(void *data, void *state)
    else if (input & (1ULL << RMENU_DEVICE_NAV_X))
    {
       strlcpy(path, default_paths.port_dir, sizeof(path));
-      switch(current_menu->enum_id)
+      switch(menu_type)
       {
          case PATH_SAVESTATES_DIR_CHOICE:
             strlcpy(g_extern.console.main_wrap.default_savestate_dir, path, sizeof(g_extern.console.main_wrap.default_savestate_dir));
@@ -1247,7 +1239,7 @@ static int select_directory(void *data, void *state)
    if(!ret)
       msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
 
-   display_menubar(current_menu);
+   display_menubar(menu_type);
 
    struct platform_bind key_label_b = {0};
    struct platform_bind key_label_x = {0};
@@ -1416,9 +1408,8 @@ static bool osk_callback_enter_filename_init(void *data)
 #endif
 #endif
 
-static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
+static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t input)
 {
-   (void)data;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    filebrowser_t *filebrowser = tmpBrowser;
 
@@ -2282,14 +2273,13 @@ static int set_setting_action(void *data, unsigned switchvalue, uint64_t input)
    return 0;
 }
 
-static int select_setting(void *data, void *state)
+static int select_setting(uint8_t menu_type, void *state)
 {
    static uint8_t first_setting = FIRST_VIDEO_SETTING;
    static uint8_t selected = 0;
    static uint8_t page_number = 0;
    uint8_t max_settings = 0;
 
-   menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
    font_params_t font_parms = {0};
 
@@ -2298,7 +2288,7 @@ static int select_setting(void *data, void *state)
 
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
 
-   switch (current_menu->enum_id)
+   switch (menu_type)
    {
       case GENERAL_VIDEO_MENU:
          first_setting = FIRST_VIDEO_SETTING;
@@ -2357,7 +2347,7 @@ static int select_setting(void *data, void *state)
    /* back to ROM menu if CIRCLE is pressed */
    if ((input & (1ULL << RMENU_DEVICE_NAV_L1)) || (input & (1ULL << RMENU_DEVICE_NAV_A)))
    {
-      switch(current_menu->enum_id)
+      switch(menu_type)
       {
          case GENERAL_VIDEO_MENU:
             break;
@@ -2386,28 +2376,28 @@ static int select_setting(void *data, void *state)
    }
    else if (input & (1ULL << RMENU_DEVICE_NAV_R1))
    {
-      switch(current_menu->enum_id)
+      switch(menu_type)
       {
          case GENERAL_VIDEO_MENU:
-            if (current_menu->enum_id == GENERAL_VIDEO_MENU)
+            if (menu_type == GENERAL_VIDEO_MENU)
                selected = FIRST_AUDIO_SETTING;
          case GENERAL_AUDIO_MENU:
-            if (current_menu->enum_id == GENERAL_AUDIO_MENU)
+            if (menu_type == GENERAL_AUDIO_MENU)
                selected = FIRST_EMU_SETTING;
          case EMU_GENERAL_MENU:
-            if (current_menu->enum_id == EMU_GENERAL_MENU)
+            if (menu_type == EMU_GENERAL_MENU)
                selected = FIRST_EMU_VIDEO_SETTING;
          case EMU_VIDEO_MENU:
-            if (current_menu->enum_id == EMU_VIDEO_MENU)
+            if (menu_type == EMU_VIDEO_MENU)
                selected = FIRST_EMU_AUDIO_SETTING;
          case EMU_AUDIO_MENU:
-            if (current_menu->enum_id == EMU_AUDIO_MENU)
+            if (menu_type == EMU_AUDIO_MENU)
                selected = FIRST_PATH_SETTING;
          case PATH_MENU:
-            if (current_menu->enum_id == PATH_MENU)
+            if (menu_type == PATH_MENU)
                selected = FIRST_CONTROLS_SETTING_PAGE_1;
 
-            menu_stack_push(current_menu->enum_id + 1);
+            menu_stack_push(menu_type + 1);
             break;
          case CONTROLS_MENU:
          default:
@@ -2434,12 +2424,12 @@ static int select_setting(void *data, void *state)
          page_number = items[selected].page;
    }
 
-   ret = set_setting_action(current_menu, selected, input);
+   ret = set_setting_action(menu_type, selected, input);
 
    if (ret != 0)
       return ret;
 
-   display_menubar(current_menu);
+   display_menubar(menu_type);
 
    for(i = first_setting; i < max_settings; i++)
    {
@@ -2519,9 +2509,8 @@ static int select_setting(void *data, void *state)
    return 0;
 }
 
-static int select_rom(void *data, void *state)
+static int select_rom(uint8_t menu_type, void *state)
 {
-   menu *current_menu = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
    font_params_t font_parms = {0};
 
@@ -2606,7 +2595,7 @@ static int select_rom(void *data, void *state)
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-   display_menubar(current_menu);
+   display_menubar(menu_type);
 
    snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game", key_label_l3.desc, key_label_r3.desc);
 
@@ -2628,9 +2617,9 @@ static int select_rom(void *data, void *state)
    return 0;
 }
 
-static int ingame_menu_resize(void *data, void *state)
+static int ingame_menu_resize(uint8_t menu_type, void *state)
 {
-   menu *current_menu = (menu*)data;
+   (void)menu_type;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
    font_params_t font_parms = {0};
 
@@ -2792,7 +2781,7 @@ static int ingame_menu_resize(void *data, void *state)
          driver.input->set_keybinds(&key_label_dpad_down, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
       }
 
-      display_menubar(current_menu);
+      display_menubar(menu_type);
 
       snprintf(viewport_x, sizeof(viewport_x), "Viewport X: #%d", g_extern.console.screen.viewports.custom_vp.x);
       snprintf(viewport_y, sizeof(viewport_y), "Viewport Y: #%d", g_extern.console.screen.viewports.custom_vp.y);
@@ -2980,7 +2969,7 @@ static int ingame_menu_resize(void *data, void *state)
    return 0;
 }
 
-static int ingame_menu_screenshot(void *data, void *state)
+static int ingame_menu_screenshot(uint8_t menu_type, void *state)
 {
    rmenu_state_t *rstate = (rmenu_state_t*)state;
 
@@ -3008,9 +2997,8 @@ static int ingame_menu_screenshot(void *data, void *state)
 
 #define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
 
-static int ingame_menu(void *data, void *state)
+static int ingame_menu(uint8_t menu_type, void *state)
 {
-   menu *current_menu    = (menu*)data;
    rmenu_state_t *rstate = (rmenu_state_t*)state;
 
    int ret = 0;
@@ -3071,7 +3059,7 @@ static int ingame_menu(void *data, void *state)
          strlcpy(strw_buffer, "Save to current state slot.", sizeof(strw_buffer));
          break;
       case MENU_ITEM_KEEP_ASPECT_RATIO:
-         ret = set_setting_action(current_menu, SETTING_KEEP_ASPECT_RATIO, input);
+         ret = set_setting_action(menu_type, SETTING_KEEP_ASPECT_RATIO, input);
 
          if (ret != 0)
             return ret;
@@ -3079,7 +3067,7 @@ static int ingame_menu(void *data, void *state)
          strlcpy(strw_buffer, "Change the aspect ratio of the screen.", sizeof(strw_buffer));
          break;
       case MENU_ITEM_OVERSCAN_AMOUNT:
-         ret = set_setting_action(current_menu, SETTING_HW_OVERSCAN_AMOUNT, input);
+         ret = set_setting_action(menu_type, SETTING_HW_OVERSCAN_AMOUNT, input);
 
          if (ret != 0)
             return ret;
@@ -3108,7 +3096,7 @@ static int ingame_menu(void *data, void *state)
          break;
 #ifdef HAVE_FBO
       case MENU_ITEM_SCALE_FACTOR:
-         ret = set_setting_action(current_menu, SETTING_SCALE_FACTOR, input);
+         ret = set_setting_action(menu_type, SETTING_SCALE_FACTOR, input);
 
          if (ret != 0)
             return ret;
@@ -3219,7 +3207,7 @@ static int ingame_menu(void *data, void *state)
          menu_idx = 0;
    }
 
-   display_menubar(current_menu);
+   display_menubar(menu_type);
 
    font_parms.x = default_pos.x_position;
    font_parms.y = default_pos.comment_y_position;
@@ -3345,9 +3333,8 @@ static int ingame_menu(void *data, void *state)
    return 0;
 }
 
-static int menu_input_process(void *data, void *state)
+static int menu_input_process(uint8_t menu_type, void *state)
 {
-   (void)data;
    bool quit = false;
    bool resize = false;
    unsigned width;
@@ -3433,7 +3420,6 @@ bool menu_iterate(void)
    const char *msg;
    font_params_t font_parms = {0};
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-   static menu current_menu;
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
    {
@@ -3545,40 +3531,28 @@ bool menu_iterate(void)
    switch(menu_id)
    {
       case INGAME_MENU:
-         current_menu.enum_id = menu_id;
-         input_entry_ret = ingame_menu(&current_menu, &rmenu_state);
+         input_entry_ret = ingame_menu(menu_id, &rmenu_state);
+         input_process_ret = menu_input_process(menu_id, &rmenu_state);
          break;
       case INGAME_MENU_RESIZE:
-         current_menu.enum_id = INGAME_MENU_RESIZE;
-         input_entry_ret = ingame_menu_resize(&current_menu, &rmenu_state);
+         input_entry_ret = ingame_menu_resize(menu_id, &rmenu_state);
+         input_process_ret = menu_input_process(menu_id, &rmenu_state);
          break;
       case INGAME_MENU_SCREENSHOT:
-         current_menu.enum_id = menu_id;
-         input_entry_ret = ingame_menu_screenshot(&current_menu, &rmenu_state);
+         input_entry_ret = ingame_menu_screenshot(menu_id, &rmenu_state);
+         input_process_ret = menu_input_process(menu_id, &rmenu_state);
          break;
       case FILE_BROWSER_MENU:
-         current_menu.enum_id = menu_id;
-         input_entry_ret = select_rom(&current_menu, &rmenu_state);
+         input_entry_ret = select_rom(menu_id, &rmenu_state);
+         input_process_ret = menu_input_process(menu_id, &rmenu_state);
          break;
       case LIBRETRO_CHOICE:
-         current_menu.enum_id = menu_id;
-         input_entry_ret = select_file(&current_menu, &rmenu_state);
-         break;
       case PRESET_CHOICE:
-         current_menu.enum_id = menu_id;
-         input_entry_ret = select_file(&current_menu, &rmenu_state);
-         break;
       case INPUT_PRESET_CHOICE:
-         current_menu.enum_id = menu_id;
-         input_entry_ret = select_file(&current_menu, &rmenu_state);
-         break;
       case SHADER_CHOICE:
-         current_menu.enum_id = menu_id;
-         input_entry_ret = select_file(&current_menu, &rmenu_state);
-         break;
       case BORDER_CHOICE:
-         current_menu.enum_id = menu_id;
-         input_entry_ret = select_file(&current_menu, &rmenu_state);
+         input_entry_ret = select_file(menu_id, &rmenu_state);
+         input_process_ret = menu_input_process(menu_id, &rmenu_state);
          break;
       case PATH_DEFAULT_ROM_DIR_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
@@ -3587,40 +3561,20 @@ bool menu_iterate(void)
       case PATH_CHEATS_DIR_CHOICE:
 #endif
       case PATH_SYSTEM_DIR_CHOICE:
-         current_menu.enum_id = menu_id;
-         input_entry_ret = select_directory(&current_menu, &rmenu_state);
+         input_entry_ret = select_directory(menu_id, &rmenu_state);
+         input_process_ret = menu_input_process(menu_id, &rmenu_state);
          break;
       case GENERAL_VIDEO_MENU:
-         current_menu.enum_id = GENERAL_VIDEO_MENU;
-         input_entry_ret = select_setting(&current_menu, &rmenu_state);
-         break;
       case GENERAL_AUDIO_MENU:
-         current_menu.enum_id = GENERAL_AUDIO_MENU;
-         input_entry_ret = select_setting(&current_menu, &rmenu_state);
-         break;
       case EMU_GENERAL_MENU:
-         current_menu.enum_id = EMU_GENERAL_MENU;
-         input_entry_ret = select_setting(&current_menu, &rmenu_state);
-         break;
       case EMU_VIDEO_MENU:
-         current_menu.enum_id = EMU_VIDEO_MENU;
-         input_entry_ret = select_setting(&current_menu, &rmenu_state);
-         break;
       case EMU_AUDIO_MENU:
-         current_menu.enum_id = EMU_AUDIO_MENU;
-         input_entry_ret = select_setting(&current_menu, &rmenu_state);
-         break;
       case PATH_MENU:
-         current_menu.enum_id = PATH_MENU;
-         input_entry_ret = select_setting(&current_menu, &rmenu_state);
-         break;
       case CONTROLS_MENU:
-         current_menu.enum_id = CONTROLS_MENU;
-         input_entry_ret = select_setting(&current_menu, &rmenu_state);
+         input_entry_ret = select_setting(menu_id, &rmenu_state);
+         input_process_ret = menu_input_process(menu_id, &rmenu_state);
          break;
    }
-
-   input_process_ret = menu_input_process(&current_menu, &rmenu_state);
 
    msg = msg_queue_pull(g_extern.msg_queue);
 
