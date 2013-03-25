@@ -45,3 +45,4 @@ profile
 DerivedData
 .idea/
 *.hmap
+ios/tmp
