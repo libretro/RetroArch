@@ -28,6 +28,9 @@ int rarch_main(int argc, char *argv[])
 
    rarch_main_clear_state();
 
+   strcpy(g_extern.config_path,"app/native/retroarch.cfg");
+   strcpy(g_settings.libretro,"app/native/lib");
+
    config_load();
    global_init_drivers();
 
