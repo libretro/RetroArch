@@ -19,7 +19,8 @@
 #import "browser/browser.h"
 #import "settings/settings.h"
 
-#include "input/BTstack/btdynamic.h"
+#include "input/BTStack/btdynamic.h"
+#include "input/BTStack/btpad.h"
 
 #define kDOCSFOLDER [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"]
 
@@ -291,6 +292,21 @@
 {
    if (btstack_is_loaded())
    {
+      UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
+                                                message:@"Choose Pad Type"
+                                                delegate:self
+                                                cancelButtonTitle:nil
+                                                otherButtonTitles:@"Wii", @"PS3", nil];
+      [alert show];
+   }
+}
+
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+   if (btstack_is_loaded())
+   {
+      btpad_set_pad_type(buttonIndex == 0);
+
       btstack_start();
       [self.topViewController.navigationItem setRightBarButtonItem:[self createBluetoothButton] animated:YES];
    }

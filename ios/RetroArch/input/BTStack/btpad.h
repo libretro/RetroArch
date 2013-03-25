@@ -16,9 +16,22 @@
 #ifndef __IOS_RARCH_BTPAD_H__
 #define __IOS_RARCH_BTPAD_H__
 
-enum btpad_device_type_t { BTPAD_NONE, BTPAD_PENDING, BTPAD_WIIMOTE, BTPAD_PS3 };
-
-enum btpad_device_type_t btpad_get_connected_type();
 uint32_t btpad_get_buttons();
+void btpad_set_pad_type(bool wiimote);
+
+// Private interface
+struct btpad_interface
+{
+   void* (*connect)();
+   void (*disconnect)(void* device);
+   void (*set_leds)(void* device, unsigned leds);
+
+   uint32_t (*get_buttons)(void* device);
+
+   void (*packet_handler)(void* device, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+};
+
+extern struct btpad_interface btpad_ps3;
+extern struct btpad_interface btpad_wii;
 
 #endif

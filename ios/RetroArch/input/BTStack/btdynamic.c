@@ -41,6 +41,7 @@ static struct
    GRAB(btstack_set_power_mode),
    GRAB(btstack_set_system_bluetooth_enabled),
    GRAB(hci_delete_stored_link_key),
+   GRAB(hci_disconnect),
    GRAB(hci_inquiry),
    GRAB(hci_inquiry_cancel),
    GRAB(hci_pin_code_request_reply),
@@ -56,7 +57,7 @@ static struct
    {0, 0}
 };
 
-extern void btstack_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+extern void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static pthread_t btstack_thread;
 static bool btstack_tested;
@@ -70,7 +71,7 @@ static void* btstack_thread_function(void* data)
    ios_add_log_message("BTstack: Thread Initializing");
 
    run_loop_init_ptr(RUN_LOOP_COCOA);
-   bt_register_packet_handler_ptr(btstack_packet_handler);
+   bt_register_packet_handler_ptr(btpad_packet_handler);
 
    if (bt_open_ptr())
    {
@@ -140,6 +141,9 @@ bool btstack_load()
 
 void btstack_start()
 {
+   if (!btstack_load())
+      return;
+
    static bool thread_started = false;
    if (!thread_started)
    {
@@ -157,6 +161,9 @@ void btstack_start()
 
 void btstack_stop()
 {
+   if (!btstack_load())
+      return;
+
    if (btstack_poweron)
    {
       ios_add_log_message("BTstack: Clearing poweron flag");

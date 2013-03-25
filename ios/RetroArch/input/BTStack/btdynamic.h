@@ -44,6 +44,7 @@ BTDIMPORT const hci_cmd_t* btstack_get_system_bluetooth_enabled_ptr;
 BTDIMPORT const hci_cmd_t* btstack_set_power_mode_ptr;
 BTDIMPORT const hci_cmd_t* btstack_set_system_bluetooth_enabled_ptr;
 BTDIMPORT const hci_cmd_t* hci_delete_stored_link_key_ptr;
+BTDIMPORT const hci_cmd_t* hci_disconnect_ptr;
 BTDIMPORT const hci_cmd_t* hci_inquiry_ptr;
 BTDIMPORT const hci_cmd_t* hci_inquiry_cancel_ptr;
 BTDIMPORT const hci_cmd_t* hci_pin_code_request_reply_ptr;

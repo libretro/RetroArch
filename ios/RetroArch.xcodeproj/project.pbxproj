@@ -44,6 +44,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		960356BC1700652C008F55DA /* btpad_ps3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = btpad_ps3.c; sourceTree = "<group>"; };
+		960356BD1700652C008F55DA /* btpad_wii.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = btpad_wii.c; sourceTree = "<group>"; };
 		96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleInfoList.m; sourceTree = "<group>"; };
 		9614C71F16DDC018000B36EF /* RetroArch copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch copy-Info.plist"; path = "/Users/jason/Documents/Projects/ios/RetroArch/ios/RetroArch copy-Info.plist"; sourceTree = "<absolute>"; };
 		962979F416C43B9500E6DCE0 /* ic_dir.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_dir.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_dir.png"; sourceTree = "<group>"; };
@@ -156,6 +158,8 @@
 			children = (
 				966B9C9416E418B7005B61E1 /* btstack */,
 				966B9CA116E418B7005B61E1 /* btpad.c */,
+				960356BC1700652C008F55DA /* btpad_ps3.c */,
+				960356BD1700652C008F55DA /* btpad_wii.c */,
 				96F9C27B16FF66BC002455B3 /* btpad.h */,
 				96F9C27516FF5E97002455B3 /* btdynamic.c */,
 				96F9C27616FF5E97002455B3 /* btdynamic.h */,

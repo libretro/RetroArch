@@ -247,6 +247,8 @@ INPUT
 #include "../ios/RetroArch/input/BTStack/btdynamic.c"
 #include "../ios/RetroArch/input/BTStack/wiimote.c"
 #include "../ios/RetroArch/input/BTStack/btpad.c"
+#include "../ios/RetroArch/input/BTStack/btpad_ps3.c"
+#include "../ios/RetroArch/input/BTStack/btpad_wii.c"
 #elif defined(__BLACKBERRY_QNX__)
 #include "../playbook/qnx_input.c"
 #endif

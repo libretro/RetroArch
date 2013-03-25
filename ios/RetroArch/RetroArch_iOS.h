@@ -15,7 +15,7 @@
 
 #import <UIKit/UIKit.h>
 
-@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate>
+@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, UIAlertViewDelegate>
 
 + (void)displayErrorMessage:(NSString*)message;
 
