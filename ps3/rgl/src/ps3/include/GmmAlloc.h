@@ -154,9 +154,4 @@ void gmmSetTileAttrib(
 
 void *gmmGetTileData (const uint32_t id);
 
-static inline uint8_t gmmIdIsMain (const uint32_t id)
-{
-   return false; 
-}
-
 #endif

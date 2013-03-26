@@ -2209,17 +2209,8 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
       GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
    }
 
-   // if fpLoadProgramId is in main memory need set the CELL_GCM_LOCATION_MAIN
-   if ( gmmIdIsMain(driver->fpLoadProgramId) )
-   {
-      GCM_FUNC( cellGcmSetUpdateFragmentProgramParameterLocation, 
-            gmmIdToOffset( driver->fpLoadProgramId ) + driver->fpLoadProgramOffset, CELL_GCM_LOCATION_MAIN );
-   }
-   else
-   {
-      GCM_FUNC( cellGcmSetUpdateFragmentProgramParameter, 
-            gmmIdToOffset( driver->fpLoadProgramId ) + driver->fpLoadProgramOffset );
-   }
+   GCM_FUNC( cellGcmSetUpdateFragmentProgramParameter, 
+         gmmIdToOffset( driver->fpLoadProgramId ) + driver->fpLoadProgramOffset );
 
    rglGcmFifoGlDrawArrays(( rglGcmEnum )dparams->mode, dparams->firstVertex, dparams->vertexCount );
 }
