@@ -2338,75 +2338,74 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       items[i].page = item_page;
       j++;
 
-      if (!pressed_up)
+      if (items[i].page != page_number)
+         continue;
+
+      default_pos.starting_y_position += default_pos.y_position_increment;
+
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.starting_y_position;
+      font_parms.scale = default_pos.variable_font_size;
+      font_parms.color = selected == items[i].enum_id ? YELLOW : WHITE;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, items[i].text, &font_parms);
+
+      font_parms.x = default_pos.x_position_center;
+      font_parms.color = WHITE;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, items[i].setting_text, &font_parms);
+
+      if (items[i].enum_id != selected)
+         continue;
+
+      rarch_position_t position = {0};
+      position.x = default_pos.x_position;
+      position.y = default_pos.starting_y_position;
+
+      device_ptr->ctx_driver->rmenu_draw_panel(&position);
+
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.comment_y_position;
+      font_parms.scale = default_pos.font_size;
+      font_parms.color = WHITE;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, items[i].comment, &font_parms);
+   }
+
+   if (!pressed_up)
+   {
+      if (input & (1ULL << RMENU_DEVICE_NAV_UP))
       {
-         if (input & (1ULL << RMENU_DEVICE_NAV_UP))
-         {
-            pressed_up = true;
-            if (selected == first_setting)
-               selected = max_settings-1;
-            else
-               selected--;
+         pressed_up = true;
+         if (selected == first_setting)
+            selected = max_settings-1;
+         else
+            selected--;
 
-            if (items[selected].page != page_number)
-               page_number = items[selected].page;
+         if (items[selected].page != page_number)
+            page_number = items[selected].page;
 
-            set_setting_action(menu_type, selected, input);
-         }
+         set_setting_action(menu_type, selected, input);
       }
+   }
       
-      if (!pressed_down)
+   if (!pressed_down)
+   {
+      if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
       {
-         if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
-         {
-            pressed_down = true;
-            selected++;
+         pressed_down = true;
+         selected++;
 
-            if (selected >= max_settings)
-               selected = first_setting; 
-            if (items[selected].page != page_number)
-               page_number = items[selected].page;
+         if (selected >= max_settings)
+            selected = first_setting; 
+         if (items[selected].page != page_number)
+            page_number = items[selected].page;
 
-            set_setting_action(menu_type, selected, input);
-         }
+         set_setting_action(menu_type, selected, input);
       }
-
-      if (items[i].page == page_number)
-      {
-         default_pos.starting_y_position += default_pos.y_position_increment;
-
-         font_parms.x = default_pos.x_position;
-         font_parms.y = default_pos.starting_y_position;
-         font_parms.scale = default_pos.variable_font_size;
-         font_parms.color = selected == items[i].enum_id ? YELLOW : WHITE;
-
-         if (driver.video_poke->set_osd_msg)
-            driver.video_poke->set_osd_msg(driver.video_data, items[i].text, &font_parms);
-
-         font_parms.x = default_pos.x_position_center;
-         font_parms.color = WHITE;
-
-         if (driver.video_poke->set_osd_msg)
-            driver.video_poke->set_osd_msg(driver.video_data, items[i].setting_text, &font_parms);
-
-         if (selected == items[i].enum_id)
-         {
-            rarch_position_t position = {0};
-            position.x = default_pos.x_position;
-            position.y = default_pos.starting_y_position;
-
-            device_ptr->ctx_driver->rmenu_draw_panel(&position);
-
-            font_parms.x = default_pos.x_position;
-            font_parms.y = default_pos.comment_y_position;
-            font_parms.scale = default_pos.font_size;
-            font_parms.color = WHITE;
-
-            if (driver.video_poke->set_osd_msg)
-               driver.video_poke->set_osd_msg(driver.video_data, items[i].comment, &font_parms);
-         }
-      }
-
    }
 
    /* back to ROM menu if CIRCLE is pressed */
