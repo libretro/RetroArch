@@ -215,51 +215,6 @@ GLAPI void APIENTRY glBufferData( GLenum target, GLsizeiptr size, const GLvoid *
    }
 }
 
-GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data )
-{
-   RGLcontext *LContext = _CurrentContext;
-   GLuint name = 0;
-
-   switch ( target )
-   {
-      case GL_ARRAY_BUFFER:
-         name = LContext->ArrayBuffer;
-         break;
-      case GL_PIXEL_UNPACK_BUFFER_ARB:
-         name = LContext->PixelUnpackBuffer;
-         break;
-      case GL_TEXTURE_REFERENCE_BUFFER_SCE:
-         name = LContext->TextureBuffer;
-         break;
-      default:
-         rglSetError( GL_INVALID_ENUM );
-         return;
-   }
-
-   rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
-
-   if ( bufferObject->refCount > 1 )
-   {
-      rglBufferObject* oldBufferObject = bufferObject;
-
-      rglTexNameSpaceDeleteNames( &LContext->bufferObjectNameSpace, 1, &name );
-      rglTexNameSpaceCreateNameLazy( &LContext->bufferObjectNameSpace, name );
-
-      bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
-      bufferObject->size = oldBufferObject->size;
-
-      GLboolean created = rglpCreateBufferObject(bufferObject);
-      if ( !created )
-      {
-         rglSetError( GL_OUT_OF_MEMORY );
-         return;
-      }
-      rglPlatformBufferObjectCopyData( bufferObject, oldBufferObject );
-   }
-
-   rglPlatformBufferObjectSetData( bufferObject, offset, size, data, GL_FALSE );
-}
-
 /*============================================================
   FRAMEBUFFER
   ============================================================ */

@@ -1289,19 +1289,7 @@ void rglPlatformBufferObjectSetData(void *buf_data, GLintptr offset, GLsizeiptr 
       // copy directly to newly allocated memory
       //  TODO: For GPU destination, should we copy to system memory and
       //  pull from GPU?
-#ifndef HAVE_RGL_2D
-      switch ( rglBuffer->pool )
-      {
-         case RGLGCM_SURFACE_POOL_NONE:
-            rglSetError( GL_OUT_OF_MEMORY );
-            return;
-         default:
-            __builtin_memcpy( gmmIdToAddress( rglBuffer->bufferId ), data, size );
-            break;
-      }
-#else
       __builtin_memcpy( gmmIdToAddress( rglBuffer->bufferId ), data, size );
-#endif
    }
       else
       {
@@ -1320,19 +1308,59 @@ void rglPlatformBufferObjectSetData(void *buf_data, GLintptr offset, GLsizeiptr 
    driver->invalidateVertexCache = GL_TRUE;
 }
 
-GLvoid rglPlatformBufferObjectCopyData(void *bufferObjectDst, void *bufferObjectSrc)
+GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data )
 {
-   rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
+   RGLcontext *LContext = _CurrentContext;
+   GLuint name = 0;
 
-   rglBufferObject *in_dst = (rglBufferObject*)bufferObjectDst;
-   rglBufferObject *in_src = (rglBufferObject*)bufferObjectSrc;
-   rglGcmBufferObject* dst = (rglGcmBufferObject*)in_dst->platformBufferObject;
-   rglGcmBufferObject* src = (rglGcmBufferObject*)in_src->platformBufferObject;
+   switch ( target )
+   {
+      case GL_ARRAY_BUFFER:
+         name = LContext->ArrayBuffer;
+         break;
+      case GL_PIXEL_UNPACK_BUFFER_ARB:
+         name = LContext->PixelUnpackBuffer;
+         break;
+      case GL_TEXTURE_REFERENCE_BUFFER_SCE:
+         name = LContext->TextureBuffer;
+         break;
+      default:
+         rglSetError( GL_INVALID_ENUM );
+         return;
+   }
 
-   rglGcmMemcpy( dst->bufferId, 0, dst->pitch, src->bufferId, 0, src->bufferSize );
+   rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
 
-   // be conservative here. Whenever we write to any Buffer Object, invalidate the vertex cache
-   driver->invalidateVertexCache = GL_TRUE;
+   if ( bufferObject->refCount > 1 )
+   {
+      rglBufferObject* oldBufferObject = bufferObject;
+
+      rglTexNameSpaceDeleteNames( &LContext->bufferObjectNameSpace, 1, &name );
+      rglTexNameSpaceCreateNameLazy( &LContext->bufferObjectNameSpace, name );
+
+      bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
+      bufferObject->size = oldBufferObject->size;
+
+      GLboolean created = rglpCreateBufferObject(bufferObject);
+      if ( !created )
+      {
+         rglSetError( GL_OUT_OF_MEMORY );
+         return;
+      }
+      rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
+
+      rglBufferObject *in_dst = (rglBufferObject*)bufferObject;
+      rglBufferObject *in_src = (rglBufferObject*)oldBufferObject;
+      rglGcmBufferObject* dst = (rglGcmBufferObject*)in_dst->platformBufferObject;
+      rglGcmBufferObject* src = (rglGcmBufferObject*)in_src->platformBufferObject;
+
+      rglGcmMemcpy( dst->bufferId, 0, dst->pitch, src->bufferId, 0, src->bufferSize );
+
+      // be conservative here. Whenever we write to any Buffer Object, invalidate the vertex cache
+      driver->invalidateVertexCache = GL_TRUE;
+   }
+
+   rglPlatformBufferObjectSetData( bufferObject, offset, size, data, GL_FALSE );
 }
 
 char *rglPlatformBufferObjectMap (void *data, GLenum access)
@@ -1556,26 +1584,6 @@ GLenum rglPlatformFramebufferCheckStatus (void *data)
       }
    }
 
-#ifndef HAVE_RGL_2D
-   // check for supported color format
-   if (nBuffers)
-   {
-      if ( !rglIsDrawableColorFormat(colorFormat))
-         return GL_FRAMEBUFFER_UNSUPPORTED_OES;
-
-      switch ( colorFormat )
-      {
-         case RGLGCM_ARGB8:
-         case RGLGCM_RGB5_A1_SCE:
-         case RGLGCM_RGB565_SCE:
-         case RGLGCM_FLOAT_R32:
-            break;
-         default:
-            return GL_FRAMEBUFFER_UNSUPPORTED_OES;
-      }
-   }
-#endif
-
    // at least once attachment is required
    if ( nBuffers == 0 )
       return GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_OES;
@@ -1629,6 +1637,8 @@ static GLuint rglGetGcmImageOffset (void *data, GLuint face, GLuint level)
    }
    return 0;
 }
+
+static void rglPlatformValidateTextureResources (void *data);
 
 void rglPlatformFramebuffer::validate (void *data)
 {
@@ -1789,6 +1799,11 @@ void rglPlatformRasterExit (void *data)
 
 void rglDumpFifo (char *name);
 
+// [YLIN] We are going to use gcm macro directly!
+#include <cell/gcm/gcm_method_data.h>
+
+#undef RGLGCM_REMAP_MODES
+
 static GLuint rglValidateStates (GLuint mask)
 {
    RGLcontext* LContext = _CurrentContext;
@@ -1814,7 +1829,88 @@ static GLuint rglValidateStates (GLuint mask)
          rglTexture* texture = LContext->TextureImageUnits[unit].currentTexture;
 
          if (texture)
-            rglPlatformValidateTextureStage( unit, texture );
+         {
+            // Validate resources of a texture and set it to a unit
+           
+            if (RGL_UNLIKELY( texture->revalidate))
+               rglPlatformValidateTextureResources(texture); // this updates the isComplete bit.
+
+            GLboolean isCompleteCache = texture->isComplete;
+
+            if (RGL_LIKELY(isCompleteCache))
+            {
+               // Set a texture to a gcm texture unit
+
+               rglGcmTexture *platformTexture = ( rglGcmTexture * )texture->platformTexture;
+               const GLuint imageOffset = gmmIdToOffset(platformTexture->gpuAddressId) +
+                  platformTexture->gpuAddressIdOffset;
+               platformTexture->gcmTexture.offset = imageOffset; 
+
+               // set up the texture unit with the info for the current texture
+               // bind texture , control 1,3,format and remap
+               // [YLIN] Contiguous GCM calls in fact will cause LHSs between them
+               //  There is no walkaround for this but not to use GCM functions
+
+               GCM_FUNC_SAFE( cellGcmSetTexture, unit, &platformTexture->gcmTexture );
+               CellGcmContextData *gcm_context = (CellGcmContextData*)&rglGcmState_i.fifo;
+               cellGcmReserveMethodSizeInline(gcm_context, 11);
+               uint32_t *current = gcm_context->current;
+               current[0] = CELL_GCM_METHOD_HEADER_TEXTURE_OFFSET(unit, 8);
+               current[1] = CELL_GCM_METHOD_DATA_TEXTURE_OFFSET(platformTexture->gcmTexture.offset);
+               current[2] = CELL_GCM_METHOD_DATA_TEXTURE_FORMAT(platformTexture->gcmTexture.location,
+                     platformTexture->gcmTexture.cubemap, 
+                     platformTexture->gcmTexture.dimension,
+                     platformTexture->gcmTexture.format,
+                     platformTexture->gcmTexture.mipmap);
+               current[3] = CELL_GCM_METHOD_DATA_TEXTURE_ADDRESS( platformTexture->gcmMethods.address.wrapS,
+                     platformTexture->gcmMethods.address.wrapT,
+                     platformTexture->gcmMethods.address.wrapR,
+                     platformTexture->gcmMethods.address.unsignedRemap,
+                     platformTexture->gcmMethods.address.zfunc,
+                     platformTexture->gcmMethods.address.gamma,
+                     0);
+               current[4] = CELL_GCM_METHOD_DATA_TEXTURE_CONTROL0(CELL_GCM_TRUE,
+                     platformTexture->gcmMethods.control0.minLOD,
+                     platformTexture->gcmMethods.control0.maxLOD,
+                     platformTexture->gcmMethods.control0.maxAniso);
+               current[5] = platformTexture->gcmTexture.remap;
+               current[6] = CELL_GCM_METHOD_DATA_TEXTURE_FILTER(
+                     (platformTexture->gcmMethods.filter.bias & 0x1fff),
+                     platformTexture->gcmMethods.filter.min,
+                     platformTexture->gcmMethods.filter.mag,
+                     platformTexture->gcmMethods.filter.conv);
+               current[7] = CELL_GCM_METHOD_DATA_TEXTURE_IMAGE_RECT(
+                     platformTexture->gcmTexture.height,
+                     platformTexture->gcmTexture.width);
+               current[8] = CELL_GCM_METHOD_DATA_TEXTURE_BORDER_COLOR(
+                     platformTexture->gcmMethods.borderColor);
+               current[9] = CELL_GCM_METHOD_HEADER_TEXTURE_CONTROL3(unit,1);
+               current[10] = CELL_GCM_METHOD_DATA_TEXTURE_CONTROL3(
+                     platformTexture->gcmTexture.pitch,
+                     platformTexture->gcmTexture.depth);
+               gcm_context->current = &current[11];
+            }
+            else
+            {
+               // Validate incomplete texture by remapping
+               //RGL_REPORT_EXTRA( RGL_REPORT_TEXTURE_INCOMPLETE, "Texture %d bound to unit %d(%s) is incomplete.", texture->name, unit, rglGetGLEnumName( texture->target ) );
+               GLuint remap = CELL_GCM_REMAP_MODE(
+                     CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
+                     CELL_GCM_TEXTURE_REMAP_FROM_A,
+                     CELL_GCM_TEXTURE_REMAP_FROM_R,
+                     CELL_GCM_TEXTURE_REMAP_FROM_G,
+                     CELL_GCM_TEXTURE_REMAP_FROM_B,
+                     CELL_GCM_TEXTURE_REMAP_ONE,
+                     CELL_GCM_TEXTURE_REMAP_ZERO,
+                     CELL_GCM_TEXTURE_REMAP_ZERO,
+                     CELL_GCM_TEXTURE_REMAP_ZERO );
+
+               // disable control 0
+               GCM_FUNC( cellGcmSetTextureControl, unit, CELL_GCM_FALSE, 0, 0, 0 );
+               // set texture remap only
+               GCM_FUNC( cellGcmSetTextureRemap, unit, remap );
+            }
+         }
       }
    }
 
@@ -2214,14 +2310,6 @@ void rglPlatformDestroyTexture (void *data)
    rglTextureTouchFBOs(texture);
 }
 
-// Get size of texture in GPU layout
-static inline GLuint rglPlatformTextureGetGPUSize(const void *data)
-{
-   const rglTexture *texture = (const rglTexture*)data;
-   rglGcmTexture *gcmTexture = ( rglGcmTexture * )texture->platformTexture;
-   return rglGetGcmTextureSize( &gcmTexture->gpuLayout );
-}
-
 // Drop a texture from the GPU memory by detaching it from a PBO
 void rglPlatformDropTexture (void *data)
 {
@@ -2310,17 +2398,7 @@ void rglPlatformChooseGPUFormatAndLayout(
    const rglTexture *texture = (const rglTexture*)data;
    rglImage *image = texture->image + texture->baseLevel;
 
-#ifndef HAVE_RGL_2D
-   GLuint levels = rglLog2( MAX( MAX( image->width, image->height ), image->depth ) ) + 1;
-   levels = MIN( levels, texture->maxLevel + 1 );
-
-   // if we don't want mipmapping, but still have valid mipmaps, load all the mipmaps.
-   // This is to avoid a big cost when switching from mipmaps to non-mipmaps.
-   if (( texture->minFilter == GL_LINEAR ) || ( texture->minFilter == GL_NEAREST ) )
-      levels = 1;
-#else
    GLuint levels = 1;
-#endif
 
    newLayout->levels = levels;
    newLayout->faces = texture->faceCount;
@@ -2518,20 +2596,36 @@ void rglPlatformFreeGcmTexture (void *data)
    gcmTexture->gpuSize = 0;
 }
 
-// Upload texure from host memory to GPU memory
-void rglPlatformUploadTexture (void *data)
+// Validate texture resources
+static void rglPlatformValidateTextureResources (void *data)
 {
    rglTexture *texture = (rglTexture*)data;
-   rglGcmTexture *gcmTexture = ( rglGcmTexture * )texture->platformTexture;
-   rglGcmTextureLayout *layout = &gcmTexture->gpuLayout;
+   texture->isComplete = GL_TRUE;
 
-   const GLuint pixelBytes = layout->pixelBits / 8;
+   //  We may need to reallocate the texture when the parameters are changed
+   //  from non-mipmap to mipmap filtering, even though the images have not
+   //  changed.
+   //
+   //  NOTE: If we ever support accessing mipmaps from a PBO, this code
+   //  must be changed.  As it is, if the texture has a shared PBO and the
+   //  mipmap flag then the slow path (copy back to host) is invoked.
+   if ( texture->revalidate & RGL_TEXTURE_REVALIDATE_IMAGES || texture->revalidate & RGL_TEXTURE_REVALIDATE_LAYOUT )
+   {
+      // upload images
+      rglPlatformReallocateGcmTexture( texture );
 
-   // host texture requires sync
+      // Upload texure from host memory to GPU memory
+      //
+      rglGcmTexture *gcmTexture = ( rglGcmTexture * )texture->platformTexture;
+      rglGcmTextureLayout *layout = &gcmTexture->gpuLayout;
 
-   // create surface descriptors for image transfer
-   rglGcmSurface src = {
-            source:		RGLGCM_SURFACE_SOURCE_TEMPORARY,
+      const GLuint pixelBytes = layout->pixelBits / 8;
+
+      // host texture requires sync
+
+      // create surface descriptors for image transfer
+      rglGcmSurface src = {
+source:		RGLGCM_SURFACE_SOURCE_TEMPORARY,
             width:		0,		// replaced per image
             height:		0,		// replaced per image
             bpp:		pixelBytes,
@@ -2541,10 +2635,10 @@ void rglPlatformUploadTexture (void *data)
             ppuData:     NULL,   // replaced per image
             dataId:      GMM_ERROR,
             dataIdOffset:0,
-   };
+      };
 
-   rglGcmSurface dst = {
-            source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
+      rglGcmSurface dst = {
+source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
             width:		0,		// replaced per image
             height:		0,		// replaced per image
             bpp:		pixelBytes,
@@ -2554,127 +2648,83 @@ void rglPlatformUploadTexture (void *data)
             ppuData:     NULL,   // replaced per image
             dataId:      GMM_ERROR,
             dataIdOffset:0,
-   };
+      };
 
-   // use a bounce buffer to transfer to GPU
-   GLuint bounceBufferId = GMM_ERROR;
+      // use a bounce buffer to transfer to GPU
+      GLuint bounceBufferId = GMM_ERROR;
 
-   // check if upload is needed for this image
-   rglImage *image = texture->image;
+      // check if upload is needed for this image
+      rglImage *image = texture->image;
 
-   if ( image->dataState == RGL_IMAGE_DATASTATE_HOST )
-   {
-      // determine image offset from base address
-      // TODO: compute all offsets at once for efficiency
-      //  This is the offset in bytes for this face/image from the
-      //  texture base address.
-      const GLuint dataOffset = rglGetGcmImageOffset( layout, 0, 0 );
+      if ( image->dataState == RGL_IMAGE_DATASTATE_HOST )
+      {
+         // determine image offset from base address
+         // TODO: compute all offsets at once for efficiency
+         //  This is the offset in bytes for this face/image from the
+         //  texture base address.
+         const GLuint dataOffset = rglGetGcmImageOffset( layout, 0, 0 );
 
-      // set source pixel buffer
-      src.ppuData = image->data;
+         // set source pixel buffer
+         src.ppuData = image->data;
 
-      // lazy allocation of bounce buffer
-      if ( bounceBufferId == GMM_ERROR && layout->baseDepth == 1 )
-         bounceBufferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-               CELL_GCM_LOCATION_LOCAL, 0, gcmTexture->gpuSize);
+         // lazy allocation of bounce buffer
+         if ( bounceBufferId == GMM_ERROR && layout->baseDepth == 1 )
+            bounceBufferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
+                  CELL_GCM_LOCATION_LOCAL, 0, gcmTexture->gpuSize);
+
+         if ( bounceBufferId != GMM_ERROR )
+         {
+            // copy image to bounce buffer
+            src.dataId = bounceBufferId;
+            src.dataIdOffset = dataOffset;
+
+            // NPOT DXT
+            __builtin_memcpy( gmmIdToAddress( src.dataId ) + dataOffset, 
+                  image->data, image->storageSize );
+         }
+
+         // use surface copy functions
+         src.width = image->width;
+         src.height = image->height;
+         src.pitch = pixelBytes * src.width;
+
+         dst.width = src.width;
+         dst.height = image->height;
+         dst.dataId = gcmTexture->gpuAddressId;
+         dst.dataIdOffset = gcmTexture->gpuAddressIdOffset + dataOffset;
+
+         GLuint offsetHeight = 0;
+
+         if(dst.pitch)
+         {
+            // linear (not swizzled)
+            //  The tiled linear format requires that render
+            //  targets be aligned to 8*pitch from the start of
+            //  the tiled region.
+            offsetHeight = ( dataOffset / dst.pitch ) % 8;
+            dst.height += offsetHeight;
+            dst.dataIdOffset -= offsetHeight * dst.pitch;
+         }
+
+         rglGcmCopySurface(
+               &src, 0, 0,
+               &dst, 0, offsetHeight,
+               src.width, src.height,
+               GL_TRUE );	// don't bypass GPU pipeline
+
+         // free CPU copy of data
+         rglImageFreeCPUStorage( image );
+         image->dataState |= RGL_IMAGE_DATASTATE_GPU;
+      } // newer data on host
 
       if ( bounceBufferId != GMM_ERROR )
-      {
-         // copy image to bounce buffer
-         src.dataId = bounceBufferId;
-         src.dataIdOffset = dataOffset;
+         gmmFree( bounceBufferId );
 
-         // NPOT DXT
-         __builtin_memcpy( gmmIdToAddress( src.dataId ) + dataOffset, 
-               image->data, image->storageSize );
-      }
-
-      // use surface copy functions
-      src.width = image->width;
-      src.height = image->height;
-      src.pitch = pixelBytes * src.width;
-
-      dst.width = src.width;
-      dst.height = image->height;
-      dst.dataId = gcmTexture->gpuAddressId;
-      dst.dataIdOffset = gcmTexture->gpuAddressIdOffset + dataOffset;
-
-      GLuint offsetHeight = 0;
-
-      if(dst.pitch)
-      {
-         // linear (not swizzled)
-         //  The tiled linear format requires that render
-         //  targets be aligned to 8*pitch from the start of
-         //  the tiled region.
-         offsetHeight = ( dataOffset / dst.pitch ) % 8;
-         dst.height += offsetHeight;
-         dst.dataIdOffset -= offsetHeight * dst.pitch;
-      }
-
-      rglGcmCopySurface(
-            &src, 0, 0,
-            &dst, 0, offsetHeight,
-            src.width, src.height,
-            GL_TRUE );	// don't bypass GPU pipeline
-
-      // free CPU copy of data
-      rglImageFreeCPUStorage( image );
-      image->dataState |= RGL_IMAGE_DATASTATE_GPU;
-   } // newer data on host
-
-   if ( bounceBufferId != GMM_ERROR )
-      gmmFree( bounceBufferId );
-
-   GCM_FUNC( cellGcmSetInvalidateTextureCache, CELL_GCM_INVALIDATE_TEXTURE );
-}
-
-// map RGL internal types to GCM
-static inline void rglGcmUpdateGcmTexture (void *data_tex, void *data_layout, void *data_plattex)
-{
-   rglTexture *texture = (rglTexture*)data_tex;
-   rglGcmTexture *platformTexture = (rglGcmTexture*)data_plattex;
-   rglGcmTextureLayout *layout = (rglGcmTextureLayout*)data_layout;
-
-   // use color format for depth with no compare mode
-   //  This hack is needed because the hardware will not read depth
-   //  textures without performing a compare.  The depth value will need to
-   //  be reconstructed in the shader from the color components.
-   GLuint internalFormat = layout->internalFormat;
-
-   // set the format and remap( control 1)
-   rglGcmMapTextureFormat( internalFormat,
-         &platformTexture->gcmTexture.format, &platformTexture->gcmTexture.remap );
-
-   // This is just to cover the conversion from swizzled to linear
-   if(layout->pitch)
-      platformTexture->gcmTexture.format += 0x20; // see class doc definitions for SZ_NR vs LN_NR...
-
-   platformTexture->gcmTexture.width = layout->baseWidth;
-   platformTexture->gcmTexture.height = layout->baseHeight;
-   platformTexture->gcmTexture.depth = layout->baseDepth;
-   platformTexture->gcmTexture.pitch = layout->pitch;
-   platformTexture->gcmTexture.mipmap = layout->levels;
-   platformTexture->gcmTexture.cubemap = CELL_GCM_FALSE;
-#ifndef HAVE_RGL_2D
-   // set dimension, swizzled implies P2 width/height/depth
-   switch ( texture->target )
-   {
-      case 0:
-      case RGLGCM_TEXTURE_2D:
-         platformTexture->gcmTexture.dimension = CELL_GCM_TEXTURE_DIMENSION_2;
-         break;
+      GCM_FUNC( cellGcmSetInvalidateTextureCache, CELL_GCM_INVALIDATE_TEXTURE );
    }
-#else
-   platformTexture->gcmTexture.dimension = CELL_GCM_TEXTURE_DIMENSION_2;
-#endif
-   platformTexture->gcmTexture.location = CELL_GCM_LOCATION_LOCAL;
-}
 
-// map RGL internal types to GCM
-void rglGcmUpdateMethods (void *data)
-{
-   rglTexture *texture = (rglTexture*)data;
+   // gcmTexture method command
+   // map RGL internal types to GCM
    rglGcmTexture *platformTexture = ( rglGcmTexture * )texture->platformTexture;
    rglGcmTextureLayout *layout = &platformTexture->gpuLayout;
 
@@ -2687,19 +2737,6 @@ void rglGcmUpdateMethods (void *data)
    // XXX make sure that REVALIDATE_PARAMETERS is set if the format of the texture changes
    // revalidate the texture registers cache just to ensure we are in the correct filtering mode
    // based on the internal format.
-#ifndef HAVE_RGL_2D
-   switch ( layout->internalFormat )
-   {
-      case RGLGCM_FLOAT_R32:
-         // float 32 doesn't support filtering
-         minFilter = unFilter( minFilter );
-         magFilter = unFilter( magFilter );
-         maxAniso = 1;
-         break;
-      default:
-         break;
-   }
-#endif
 
    // -----------------------------------------------------------------------
    // map the SET_TEXTURE_FILTER method.
@@ -2742,133 +2779,34 @@ void rglGcmUpdateMethods (void *data)
    // -----------------------------------------------------------------------
    // setup the GcmTexture
    // format, control1, control3, imagerect; setup for cellGcmSetTexture later
-   rglGcmUpdateGcmTexture( texture, layout, platformTexture );
-}
 
-// Validate texture resources
-void rglPlatformValidateTextureResources (void *data)
-{
-   rglTexture *texture = (rglTexture*)data;
-   texture->isComplete = GL_TRUE;
+   // map RGL internal types to GCM
+   // use color format for depth with no compare mode
+   //  This hack is needed because the hardware will not read depth
+   //  textures without performing a compare.  The depth value will need to
+   //  be reconstructed in the shader from the color components.
+   GLuint internalFormat = layout->internalFormat;
 
-   //  We may need to reallocate the texture when the parameters are changed
-   //  from non-mipmap to mipmap filtering, even though the images have not
-   //  changed.
-   //
-   //  NOTE: If we ever support accessing mipmaps from a PBO, this code
-   //  must be changed.  As it is, if the texture has a shared PBO and the
-   //  mipmap flag then the slow path (copy back to host) is invoked.
-   if ( texture->revalidate & RGL_TEXTURE_REVALIDATE_IMAGES || texture->revalidate & RGL_TEXTURE_REVALIDATE_LAYOUT )
-   {
-      // upload images
-      rglPlatformReallocateGcmTexture( texture );
-      rglPlatformUploadTexture( texture );
-   }
+   // set the format and remap( control 1)
+   rglGcmMapTextureFormat( internalFormat,
+         &platformTexture->gcmTexture.format, &platformTexture->gcmTexture.remap );
 
-   // gcmTexture method command
-   rglGcmUpdateMethods( texture );
+   // This is just to cover the conversion from swizzled to linear
+   if(layout->pitch)
+      platformTexture->gcmTexture.format += 0x20; // see class doc definitions for SZ_NR vs LN_NR...
+
+   platformTexture->gcmTexture.width = layout->baseWidth;
+   platformTexture->gcmTexture.height = layout->baseHeight;
+   platformTexture->gcmTexture.depth = layout->baseDepth;
+   platformTexture->gcmTexture.pitch = layout->pitch;
+   platformTexture->gcmTexture.mipmap = layout->levels;
+   platformTexture->gcmTexture.cubemap = CELL_GCM_FALSE;
+   platformTexture->gcmTexture.dimension = CELL_GCM_TEXTURE_DIMENSION_2;
+   platformTexture->gcmTexture.location = CELL_GCM_LOCATION_LOCAL;
 
    texture->revalidate = 0;
 }
 
-// [YLIN] We are going to use gcm macro directly!
-#include <cell/gcm/gcm_method_data.h>
-
-// Set a texture to a gcm texture unit
-static inline void rglGcmSetTextureUnit (GLuint unit, void *data)
-{
-   rglGcmTexture *platformTexture = (rglGcmTexture*)data;
-   const GLuint imageOffset = gmmIdToOffset(platformTexture->gpuAddressId) + platformTexture->gpuAddressIdOffset;
-   platformTexture->gcmTexture.offset = imageOffset; 
-
-   // set up the texture unit with the info for the current texture
-   // bind texture , control 1,3,format and remap
-   // [YLIN] Contiguous GCM calls in fact will cause LHSs between them
-   //  There is no walkaround for this but not to use GCM functions
-
-   GCM_FUNC_SAFE( cellGcmSetTexture, unit, &platformTexture->gcmTexture );
-   CellGcmContextData *gcm_context = (CellGcmContextData*)&rglGcmState_i.fifo;
-   cellGcmReserveMethodSizeInline(gcm_context, 11);
-   uint32_t *current = gcm_context->current;
-   current[0] = CELL_GCM_METHOD_HEADER_TEXTURE_OFFSET(unit, 8);
-   current[1] = CELL_GCM_METHOD_DATA_TEXTURE_OFFSET(platformTexture->gcmTexture.offset);
-   current[2] = CELL_GCM_METHOD_DATA_TEXTURE_FORMAT(platformTexture->gcmTexture.location,
-         platformTexture->gcmTexture.cubemap, 
-         platformTexture->gcmTexture.dimension,
-         platformTexture->gcmTexture.format,
-         platformTexture->gcmTexture.mipmap);
-   current[3] = CELL_GCM_METHOD_DATA_TEXTURE_ADDRESS( platformTexture->gcmMethods.address.wrapS,
-         platformTexture->gcmMethods.address.wrapT,
-         platformTexture->gcmMethods.address.wrapR,
-         platformTexture->gcmMethods.address.unsignedRemap,
-         platformTexture->gcmMethods.address.zfunc,
-         platformTexture->gcmMethods.address.gamma,
-         0);
-   current[4] = CELL_GCM_METHOD_DATA_TEXTURE_CONTROL0(CELL_GCM_TRUE,
-         platformTexture->gcmMethods.control0.minLOD,
-         platformTexture->gcmMethods.control0.maxLOD,
-         platformTexture->gcmMethods.control0.maxAniso);
-   current[5] = platformTexture->gcmTexture.remap;
-   current[6] = CELL_GCM_METHOD_DATA_TEXTURE_FILTER(
-         (platformTexture->gcmMethods.filter.bias & 0x1fff),
-         platformTexture->gcmMethods.filter.min,
-         platformTexture->gcmMethods.filter.mag,
-         platformTexture->gcmMethods.filter.conv);
-   current[7] = CELL_GCM_METHOD_DATA_TEXTURE_IMAGE_RECT(
-         platformTexture->gcmTexture.height,
-         platformTexture->gcmTexture.width);
-   current[8] = CELL_GCM_METHOD_DATA_TEXTURE_BORDER_COLOR(
-         platformTexture->gcmMethods.borderColor);
-   current[9] = CELL_GCM_METHOD_HEADER_TEXTURE_CONTROL3(unit,1);
-   current[10] = CELL_GCM_METHOD_DATA_TEXTURE_CONTROL3(
-         platformTexture->gcmTexture.pitch,
-         platformTexture->gcmTexture.depth);
-   gcm_context->current = &current[11];
-}
-
-// Validate incomplete texture by remapping
-inline static void rglPlatformValidateIncompleteTexture( GLuint unit )
-{
-   GLuint remap = CELL_GCM_REMAP_MODE(
-         CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
-         CELL_GCM_TEXTURE_REMAP_FROM_A,
-         CELL_GCM_TEXTURE_REMAP_FROM_R,
-         CELL_GCM_TEXTURE_REMAP_FROM_G,
-         CELL_GCM_TEXTURE_REMAP_FROM_B,
-         CELL_GCM_TEXTURE_REMAP_ONE,
-         CELL_GCM_TEXTURE_REMAP_ZERO,
-         CELL_GCM_TEXTURE_REMAP_ZERO,
-         CELL_GCM_TEXTURE_REMAP_ZERO );
-
-   // disable control 0
-   GCM_FUNC( cellGcmSetTextureControl, unit, CELL_GCM_FALSE, 0, 0, 0 );
-   // set texture remap only
-   GCM_FUNC( cellGcmSetTextureRemap, unit, remap );
-}
-
-#undef RGLGCM_REMAP_MODES
-
-// Valiate resources of a texture and set it to a unit
-void rglPlatformValidateTextureStage( int unit, void *data)
-{
-   rglTexture *texture = (rglTexture*)data;
-
-   if (RGL_UNLIKELY( texture->revalidate))
-      rglPlatformValidateTextureResources(texture); // this updates the isComplete bit.
-
-   GLboolean isCompleteCache = texture->isComplete;
-
-   if (RGL_LIKELY(isCompleteCache))
-   {
-      rglGcmTexture *platformTexture = ( rglGcmTexture * )texture->platformTexture;
-      rglGcmSetTextureUnit( unit, platformTexture );
-   }
-   else
-   {
-      //RGL_REPORT_EXTRA( RGL_REPORT_TEXTURE_INCOMPLETE, "Texture %d bound to unit %d(%s) is incomplete.", texture->name, unit, rglGetGLEnumName( texture->target ) );
-      rglPlatformValidateIncompleteTexture( unit );
-   }
-}
 
 // Choose internal format closest to given format
 GLenum rglPlatformChooseInternalFormat (GLenum internalFormat)
@@ -3247,40 +3185,4 @@ void rglGcmFifoGlSetRenderTarget (const void *data)
       grt->width = 1; 
 
    GCM_FUNC( cellGcmSetSurface, grt );
-}
-
-/*============================================================
-  UTILS
-  ============================================================ */
-
-void rglDrawUtilQuad( GLboolean useFixedVP, GLboolean useFixedFP, GLuint x, GLuint y, GLuint width, GLuint height )
-{
-   (void)useFixedVP;
-   (void)useFixedFP;
-
-   RGLcontext*	LContext = _CurrentContext;
-
-   rglGcmFifoGlDisable( RGLGCM_BLEND );
-
-   GCM_FUNC( cellGcmSetFrontPolygonMode, CELL_GCM_POLYGON_MODE_FILL );
-   GCM_FUNC( cellGcmSetBackPolygonMode, CELL_GCM_POLYGON_MODE_FILL );
-   GCM_FUNC( cellGcmSetUserClipPlaneControl,
-         CELL_GCM_USER_CLIP_PLANE_DISABLE,
-         CELL_GCM_USER_CLIP_PLANE_DISABLE,
-         CELL_GCM_USER_CLIP_PLANE_DISABLE,
-         CELL_GCM_USER_CLIP_PLANE_DISABLE,
-         CELL_GCM_USER_CLIP_PLANE_DISABLE,
-         CELL_GCM_USER_CLIP_PLANE_DISABLE );
-
-   rglGcmViewportState *v = &rglGcmState_i.state.viewport;
-   v->x = x;
-   v->y = y;
-   v->w = width;
-   v->h = height;
-   rglGcmFifoGlViewport(v, 0.0f, 1.0f);
-
-   GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
-   rglGcmFifoGlDrawArrays( RGLGCM_TRIANGLE_STRIP, 0, 4 );
-
-   LContext->needValidate |= RGL_VALIDATE_BLENDING | RGL_VALIDATE_VIEWPORT;
 }
