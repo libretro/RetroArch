@@ -2322,6 +2322,9 @@ static int select_setting(uint8_t menu_type, uint64_t input)
    uint8_t i = 0;
    uint8_t j = 0;
    uint8_t item_page = 0;
+   bool pressed_up = false;
+   bool pressed_down = false;
+
    for(i = first_setting; i < max_settings; i++)
    {
       populate_setting_item(&items[i], i);
@@ -2334,81 +2337,7 @@ static int select_setting(uint8_t menu_type, uint64_t input)
 
       items[i].page = item_page;
       j++;
-   }
 
-   /* back to ROM menu if CIRCLE is pressed */
-   if ((input & (1ULL << RMENU_DEVICE_NAV_L1)) || (input & (1ULL << RMENU_DEVICE_NAV_A)))
-   {
-      switch(menu_type)
-      {
-         case GENERAL_VIDEO_MENU:
-            break;
-         case GENERAL_AUDIO_MENU:
-            selected = FIRST_VIDEO_SETTING;
-            break;
-         case EMU_GENERAL_MENU:
-            selected = FIRST_AUDIO_SETTING;
-            break;
-         case EMU_VIDEO_MENU:
-            selected = FIRST_EMU_SETTING;
-            break;
-         case EMU_AUDIO_MENU:
-            selected = FIRST_EMU_VIDEO_SETTING;
-            break;
-         case PATH_MENU:
-            selected = FIRST_EMU_AUDIO_SETTING;
-            break;
-         case CONTROLS_MENU:
-            selected = FIRST_PATH_SETTING;
-            break;
-         default:
-            break;
-      }
-      menu_stack_pop();
-   }
-   else if (input & (1ULL << RMENU_DEVICE_NAV_R1))
-   {
-      switch(menu_type)
-      {
-         case GENERAL_VIDEO_MENU:
-            if (menu_type == GENERAL_VIDEO_MENU)
-               selected = FIRST_AUDIO_SETTING;
-         case GENERAL_AUDIO_MENU:
-            if (menu_type == GENERAL_AUDIO_MENU)
-               selected = FIRST_EMU_SETTING;
-         case EMU_GENERAL_MENU:
-            if (menu_type == EMU_GENERAL_MENU)
-               selected = FIRST_EMU_VIDEO_SETTING;
-         case EMU_VIDEO_MENU:
-            if (menu_type == EMU_VIDEO_MENU)
-               selected = FIRST_EMU_AUDIO_SETTING;
-         case EMU_AUDIO_MENU:
-            if (menu_type == EMU_AUDIO_MENU)
-               selected = FIRST_PATH_SETTING;
-         case PATH_MENU:
-            if (menu_type == PATH_MENU)
-               selected = FIRST_CONTROLS_SETTING_PAGE_1;
-
-            menu_stack_push(menu_type + 1);
-            break;
-         case CONTROLS_MENU:
-         default:
-            break;
-      }
-   }
-
-   ret = set_setting_action(menu_type, selected, input);
-
-   if (ret != 0)
-      return ret;
-
-   display_menubar(menu_type);
-
-   bool pressed_up = false;
-   bool pressed_down = false;
-
-   for(i = first_setting; i < max_settings; i++)
-   {
       if (!pressed_up)
       {
          if (input & (1ULL << RMENU_DEVICE_NAV_UP))
@@ -2477,7 +2406,79 @@ static int select_setting(uint8_t menu_type, uint64_t input)
                driver.video_poke->set_osd_msg(driver.video_data, items[i].comment, &font_parms);
          }
       }
+
    }
+
+   /* back to ROM menu if CIRCLE is pressed */
+   if ((input & (1ULL << RMENU_DEVICE_NAV_L1)) || (input & (1ULL << RMENU_DEVICE_NAV_A)))
+   {
+      switch(menu_type)
+      {
+         case GENERAL_VIDEO_MENU:
+            break;
+         case GENERAL_AUDIO_MENU:
+            selected = FIRST_VIDEO_SETTING;
+            break;
+         case EMU_GENERAL_MENU:
+            selected = FIRST_AUDIO_SETTING;
+            break;
+         case EMU_VIDEO_MENU:
+            selected = FIRST_EMU_SETTING;
+            break;
+         case EMU_AUDIO_MENU:
+            selected = FIRST_EMU_VIDEO_SETTING;
+            break;
+         case PATH_MENU:
+            selected = FIRST_EMU_AUDIO_SETTING;
+            break;
+         case CONTROLS_MENU:
+            selected = FIRST_PATH_SETTING;
+            break;
+         default:
+            break;
+      }
+      menu_stack_pop();
+      page_number = 0;
+   }
+   else if (input & (1ULL << RMENU_DEVICE_NAV_R1))
+   {
+      switch(menu_type)
+      {
+         case GENERAL_VIDEO_MENU:
+            if (menu_type == GENERAL_VIDEO_MENU)
+               selected = FIRST_AUDIO_SETTING;
+         case GENERAL_AUDIO_MENU:
+            if (menu_type == GENERAL_AUDIO_MENU)
+               selected = FIRST_EMU_SETTING;
+         case EMU_GENERAL_MENU:
+            if (menu_type == EMU_GENERAL_MENU)
+               selected = FIRST_EMU_VIDEO_SETTING;
+         case EMU_VIDEO_MENU:
+            if (menu_type == EMU_VIDEO_MENU)
+               selected = FIRST_EMU_AUDIO_SETTING;
+         case EMU_AUDIO_MENU:
+            if (menu_type == EMU_AUDIO_MENU)
+               selected = FIRST_PATH_SETTING;
+         case PATH_MENU:
+            if (menu_type == PATH_MENU)
+               selected = FIRST_CONTROLS_SETTING_PAGE_1;
+
+            menu_stack_push(menu_type + 1);
+            page_number = 0;
+            break;
+         case CONTROLS_MENU:
+         default:
+            break;
+      }
+   }
+
+   ret = set_setting_action(menu_type, selected, input);
+
+   if (ret != 0)
+      return ret;
+
+   display_menubar(menu_type);
+
 
    free(items);
 
