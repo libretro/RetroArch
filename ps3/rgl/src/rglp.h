@@ -22,10 +22,6 @@
 #include "ps3/include/rgl-constants.h"
 #endif
 
-extern void rglpValidateViewport(void);
-extern void rglpValidateBlending(void);
-extern void rglpValidateShaderSRGBRemap(void);
-
 extern int rglpBufferObjectSize(void);
 extern GLboolean rglpCreateBufferObject (void *data);
 

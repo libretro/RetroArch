@@ -37,7 +37,6 @@ extern RGL_EXPORT RGLcontextHookFunction rglContextDestroyHook;
 extern RGLcontext*	rglContextCreate();
 extern void		rglContextFree( RGLcontext* LContext );
 extern void		rglSetError( GLenum error );
-extern GLuint	rglValidateStates( GLuint mask );
 void rglAttachContext( RGLdevice *device, RGLcontext* context );
 void rglDetachContext( RGLdevice *device, RGLcontext* context );
 void rglInvalidateAllStates (void *data);
@@ -193,17 +192,12 @@ extern const GLvoid*	rglPlatformGetProcAddress (const char *funcName);
 void*	rglPlatformRasterInit (void);
 void	rglPlatformRasterExit (void* data);
 void	rglPlatformRasterDestroyResources (void);
-void	rglPlatformDraw (void *data);
 GLboolean rglPlatformNeedsConversion (const rglAttributeState* as, GLuint index);
 // [YLIN] Try to avoid LHS inside this function.
 //   In oringinal implementation, indexType and indexCount will be stored right before this function
 //   and since we will load them right after enter this function, there are LHS.
 GLboolean rglPlatformRequiresSlowPath (void *data, const GLenum indexType, uint32_t indexCount);
 void rglPlatformRasterGetIntegerv( GLenum pname, GLint* params );
-void	rglPlatformRasterFlush (void);
-void	rglPlatformRasterFinish (void);
-void	rglValidateFragmentProgram (void);
-void	rglValidateFragmentProgramSharedConstants (void);
 void	rglValidateClipPlanes (void);
 void	rglInvalidateAttributes (void);
 GLuint	rglValidateAttributes (const void* indices, GLboolean *isMain);
@@ -224,23 +218,15 @@ extern void rglPlatformCopyTexSubImage3D( GLenum target, GLint level, GLint xoff
 GLenum rglPlatformChooseInternalFormat( GLenum internalformat );
 void rglPlatformExpandInternalFormat( GLenum internalformat, GLenum *format, GLenum *type );
 void rglPlatformGetImageData( GLenum target, GLint level, rglTexture *texture, rglImage *image );
-GLboolean rglPlatformTextureReference (void *data, GLuint pitch, void *data_buf, GLintptr offset);
 
 //----------------------------------------
 // Raster/.../PlatformFBops.c
 //----------------------------------------
-extern void rglFBClear( GLbitfield mask );
 extern void rglValidateFramebuffer( void );
 extern void rglValidateFFXVertexProgram (void);
 extern void rglValidateFFXFragmentProgram (void);
 extern void rglPlatformReadPixels( GLint x, GLint y, GLsizei width, GLsizei height, GLboolean flip, GLenum format, GLenum type, GLvoid *pixels );
 extern GLboolean rglPlatformReadPBOPixels( GLint x, GLint y, GLsizei width, GLsizei height, GLboolean flip, GLenum format, GLenum type, GLvoid *pixels );
-
-//----------------------------------------
-// Raster/.../PlatformTNL.c
-//----------------------------------------
-void rglValidateVertexProgram (void);
-void rglValidateVertexConstants (void);
 
 //----------------------------------------
 // Raster/.../PlatformBuffer.c

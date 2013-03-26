@@ -1404,12 +1404,16 @@ GLboolean rglPlatformBufferObjectUnmap (void *data)
 }
 
 /*============================================================
-  PLATFORM FRAME BUFFER OPERATIONS
+  PLATFORM FRAMEBUFFER
   ============================================================ */
 
-void rglFBClear( GLbitfield mask )
+GLAPI void APIENTRY glClear( GLbitfield mask )
 {
    RGLcontext*	LContext = _CurrentContext;
+
+   if ( LContext->needValidate & RGL_VALIDATE_FRAMEBUFFER )
+      rglValidateFramebuffer();
+
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
 
    if (!driver->rtValid)
@@ -1486,10 +1490,6 @@ void rglFBClear( GLbitfield mask )
 
    rglGcmFifoGlFlush();
 }
-
-/*============================================================
-  PLATFORM FRAMEBUFFER
-  ============================================================ */
 
 rglFramebuffer* rglCreateFramebuffer (void)
 {
@@ -1789,13 +1789,160 @@ void rglPlatformRasterExit (void *data)
 
 void rglDumpFifo (char *name);
 
+static GLuint rglValidateStates (GLuint mask)
+{
+   RGLcontext* LContext = _CurrentContext;
+
+   GLuint  dirty = LContext->needValidate & ~mask;
+   LContext->needValidate &= mask;
+
+   GLuint  needValidate = LContext->needValidate;
+
+   if (RGL_UNLIKELY( needValidate & RGL_VALIDATE_FRAMEBUFFER))
+   {
+      rglValidateFramebuffer();
+      needValidate = LContext->needValidate;
+   }
+
+   if (RGL_UNLIKELY( needValidate & RGL_VALIDATE_TEXTURES_USED))
+   {
+      long unitInUseCount = LContext->BoundFragmentProgram->samplerCount;
+      const GLuint* unitsInUse = LContext->BoundFragmentProgram->samplerUnits;
+      for ( long i = 0; i < unitInUseCount; ++i )
+      {
+         long unit = unitsInUse[i];
+         rglTexture* texture = LContext->TextureImageUnits[unit].currentTexture;
+
+         if (texture)
+            rglPlatformValidateTextureStage( unit, texture );
+      }
+   }
+
+   bool validate_vertex_consts = false;
+
+   if (RGL_UNLIKELY(needValidate & RGL_VALIDATE_VERTEX_PROGRAM))
+   {
+      rglSetNativeCgVertexProgram(LContext->BoundVertexProgram);
+
+      // Set all uniforms.
+      if(!(LContext->needValidate & RGL_VALIDATE_VERTEX_CONSTANTS) && LContext->BoundVertexProgram->parentContext)
+         validate_vertex_consts = true;
+   }
+
+   if (RGL_LIKELY(needValidate & RGL_VALIDATE_VERTEX_CONSTANTS) || validate_vertex_consts)
+   {
+      _CGprogram *cgprog = LContext->BoundVertexProgram;
+
+      // Push a CG program onto the current command buffer
+
+      // make sure there is space for the pushbuffer + any nops we need to add for alignment  
+      rglGcmFifoWaitForFreeSpace( &rglGcmState_i.fifo,  cgprog->constantPushBufferWordSize + 4 + 32); 
+
+      // first add nops to get us the next alligned position in the fifo 
+      // [YLIN] Use VMX register to copy
+      uint32_t padding_in_word = ( ( 0x10-(((uint32_t)rglGcmState_i.fifo.current)&0xf))&0xf )>>2;
+      uint32_t padded_size = ( ((cgprog->constantPushBufferWordSize)<<2) + 0xf )&~0xf;
+
+      GCM_FUNC( cellGcmSetNopCommandUnsafe, padding_in_word );
+      memcpy16(rglGcmState_i.fifo.current, cgprog->constantPushBuffer, padded_size);
+      rglGcmState_i.fifo.current+=cgprog->constantPushBufferWordSize;
+   }
+
+   if (RGL_UNLIKELY(needValidate & RGL_VALIDATE_FRAGMENT_PROGRAM))
+   {
+      // Set up the current fragment program on hardware
+
+      rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
+      _CGprogram *program = LContext->BoundFragmentProgram;
+
+      // params are set directly in the GPU memory, so there is nothing to be done here.
+      rglSetNativeCgFragmentProgram( program );
+      driver->fpLoadProgramId = program->loadProgramId;
+      driver->fpLoadProgramOffset = program->loadProgramOffset;
+   }
+
+   if ( RGL_LIKELY(( needValidate & ~( RGL_VALIDATE_TEXTURES_USED |
+                  RGL_VALIDATE_VERTEX_PROGRAM |
+                  RGL_VALIDATE_VERTEX_CONSTANTS |
+                  RGL_VALIDATE_FRAGMENT_PROGRAM ) ) == 0 ) )
+   {
+      LContext->needValidate = 0;
+      return dirty;
+   }
+
+   if ( RGL_UNLIKELY( needValidate & RGL_VALIDATE_VIEWPORT ) )
+   {
+      rglGcmViewportState *v = &rglGcmState_i.state.viewport;
+      v->x = LContext->ViewPort.X;
+      v->y = LContext->ViewPort.Y;
+      v->w = LContext->ViewPort.XSize;
+      v->h = LContext->ViewPort.YSize;
+
+      rglGcmFifoGlViewport(v, LContext->DepthNear, LContext->DepthFar);
+   }
+
+
+   if (RGL_UNLIKELY(needValidate & RGL_VALIDATE_BLENDING ))
+   {
+      if ((LContext->Blending))
+      {
+         GCM_FUNC( cellGcmSetBlendEnable, LContext->Blending );
+
+         rglGcmFifoGlBlendColor(
+               LContext->BlendColor.R,
+               LContext->BlendColor.G,
+               LContext->BlendColor.B,
+               LContext->BlendColor.A);
+         rglGcmFifoGlBlendEquation(
+               (rglGcmEnum)LContext->BlendEquationRGB,
+               (rglGcmEnum)LContext->BlendEquationAlpha);
+         rglGcmFifoGlBlendFunc((rglGcmEnum)LContext->BlendFactorSrcRGB,(rglGcmEnum)LContext->BlendFactorDestRGB,(rglGcmEnum)LContext->BlendFactorSrcAlpha,(rglGcmEnum)LContext->BlendFactorDestAlpha);
+      }
+   }
+
+   if ( RGL_UNLIKELY( needValidate & RGL_VALIDATE_SHADER_SRGB_REMAP ) )
+   {
+      GCM_FUNC( cellGcmSetFragmentProgramGammaEnable, LContext->ShaderSRGBRemap ? CELL_GCM_TRUE : CELL_GCM_FALSE); 
+      LContext->needValidate &= ~RGL_VALIDATE_SHADER_SRGB_REMAP;
+   }
+
+   LContext->needValidate = 0;
+   return dirty;
+}
+
+#include <ppu_intrinsics.h> /* TODO: move to platform-specific code */
+
+const uint32_t c_rounded_size_ofrglDrawParams = (sizeof(rglDrawParams)+0x7f)&~0x7f;
+static uint8_t s_dparams_buff[ c_rounded_size_ofrglDrawParams ] __attribute__((aligned(128)));
+
 // Fast rendering path called by several glDraw calls:
 //   glDrawElements, glDrawRangeElements, glDrawArrays
 // Slow rendering calls this function also, though it must also perform various
 // memory setup operations first
-void rglPlatformDraw (void *data)
+GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
 {
-   rglDrawParams *dparams = (rglDrawParams*)data;
+   RGLcontext*	LContext = _CurrentContext;
+
+   if (RGL_UNLIKELY(!RGLBIT_GET(LContext->attribs->EnabledMask, RGL_ATTRIB_POSITION_INDEX)))
+      return;
+
+   uint32_t _tmp_clear_loop = c_rounded_size_ofrglDrawParams>>7;
+   do{
+      --_tmp_clear_loop;
+      __dcbz(s_dparams_buff+(_tmp_clear_loop<<7));
+   }while(_tmp_clear_loop);
+
+   rglDrawParams *dparams = (rglDrawParams *)s_dparams_buff;
+   dparams->mode = mode;
+   dparams->firstVertex = first;
+   dparams->vertexCount = count;
+
+   if ( LContext->needValidate )
+      rglValidateStates( RGL_VALIDATE_ALL );
+
+   GLboolean slowPath = rglPlatformRequiresSlowPath( dparams, 0, 0);
+   (void)slowPath;
+
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
 
    if (RGL_UNLIKELY(!driver->rtValid))
@@ -1833,20 +1980,6 @@ void rglPlatformDraw (void *data)
    }
 
    rglGcmFifoGlDrawArrays(( rglGcmEnum )dparams->mode, dparams->firstVertex, dparams->vertexCount );
-}
-
-
-// Set up the current fragment program on hardware
-void rglValidateFragmentProgram (void)
-{
-   RGLcontext*	LContext = _CurrentContext;
-   rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
-   _CGprogram *program = LContext->BoundFragmentProgram;
-
-   // params are set directly in the GPU memory, so there is nothing to be done here.
-   rglSetNativeCgFragmentProgram( program );
-   driver->fpLoadProgramId = program->loadProgramId;
-   driver->fpLoadProgramOffset = program->loadProgramOffset;
 }
 
 // must always call this before rglPlatformDraw() to setup rglDrawParams
@@ -1888,8 +2021,13 @@ GLboolean rglPlatformRequiresSlowPath (void *data, const GLenum indexType, uint3
    return GL_FALSE;	// we are finally qualified for the fast path
 }
 
-void rglPlatformRasterFlush (void)
+GLAPI void APIENTRY glFlush(void)
 {
+   RGLcontext * LContext = _CurrentContext;
+
+   if (RGL_UNLIKELY(LContext->needValidate))
+      rglValidateStates( RGL_VALIDATE_ALL );
+
    rglGcmFifoGlFlush();
 }
 
@@ -2851,7 +2989,7 @@ GLenum rglPlatformTranslateTextureFormat( GLenum internalFormat )
 
 // Implementation of texture reference
 // Associate bufferObject to texture by assigning buffer's gpu address to the gcm texture 
-GLboolean rglPlatformTextureReference (void *data, GLuint pitch, void *data_buf, GLintptr offset )
+static inline GLboolean rglPlatformTextureReference (void *data, GLuint pitch, void *data_buf, GLintptr offset )
 {
    rglBufferObject *bufferObject = (rglBufferObject*)data_buf;
    rglTexture *texture = (rglTexture*)data;
@@ -2864,21 +3002,6 @@ GLboolean rglPlatformTextureReference (void *data, GLuint pitch, void *data_buf,
 
    GLboolean isRenderTarget = GL_FALSE;
    GLboolean vertexEnable = GL_FALSE;
-#ifndef HAVE_RGL_2D
-   // can usually be a render target, except for restrictions below
-   if (rglIsDrawableColorFormat( newLayout.internalFormat))
-      isRenderTarget = GL_TRUE;
-
-   switch (newLayout.internalFormat)
-   {
-      case GL_FLOAT_RGBA32:
-      case GL_RGBA32F_ARB:
-         vertexEnable = GL_TRUE;
-         break;
-      default:
-         break;
-   }
-#endif
 
    texture->isRenderTarget = isRenderTarget;
    texture->vertexEnable = vertexEnable;
@@ -2898,6 +3021,72 @@ GLboolean rglPlatformTextureReference (void *data, GLuint pitch, void *data_buf,
    texture->revalidate |= RGL_TEXTURE_REVALIDATE_PARAMETERS;
    rglTextureTouchFBOs( texture );
    return GL_TRUE;
+}
+
+static inline void rglSetImageTexRef(void *data, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment)
+{
+   rglImage *image = (rglImage*)data;
+
+   image->width = width;
+   image->height = height;
+   image->depth = depth;
+   image->alignment = alignment;
+
+   image->xblk = 0;
+   image->yblk = 0;
+
+   image->xstride = 0;
+   image->ystride = 0;
+   image->zstride = 0;
+
+   image->format = 0;
+   image->type = 0;
+   image->internalFormat = 0;
+   const GLenum status = rglPlatformChooseInternalStorage( image, internalFormat );
+   (( void )status );
+
+   image->data = NULL;
+   image->mallocData = NULL;
+   image->mallocStorageSize = 0;
+
+   image->isSet = GL_TRUE;
+
+   if ( image->xstride == 0 )
+      image->xstride = rglGetPixelSize( image->format, image->type );
+   if ( image->ystride == 0 )
+      image->ystride = image->width * image->xstride;
+   if ( image->zstride == 0 )
+      image->zstride = image->height * image->ystride;
+
+   image->dataState = RGL_IMAGE_DATASTATE_UNSET;
+}
+
+GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
+      GLuint baseWidth, GLuint baseHeight, GLuint baseDepth, GLenum internalFormat, GLuint pitch, GLintptr offset )
+{
+   RGLcontext*	LContext = _CurrentContext;
+
+   rglTexture *texture = rglGetCurrentTexture( LContext->CurrentImageUnit, target );
+   rglBufferObject *bufferObject = 
+      (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
+   rglReallocateImages( texture, 0, MAX( baseWidth, MAX( baseHeight, baseDepth ) ) );
+
+   rglSetImageTexRef(texture->image, internalFormat, baseWidth, baseHeight,
+         baseDepth, LContext->unpackAlignment);
+
+   texture->maxLevel = 0;
+   texture->usage = GL_TEXTURE_LINEAR_GPU_SCE;
+
+   GLboolean r = rglPlatformTextureReference( texture, pitch, bufferObject, offset );
+   
+   if ( !r )
+      return;
+
+   bufferObject->textureReferences.pushBack( texture );
+   texture->referenceBuffer = bufferObject;
+   texture->offset = offset;
+   rglTextureTouchFBOs( texture );
+   LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
 }
 
 // GlSetRenderTarget implementation starts here
@@ -3058,42 +3247,6 @@ void rglGcmFifoGlSetRenderTarget (const void *data)
       grt->width = 1; 
 
    GCM_FUNC( cellGcmSetSurface, grt );
-}
-
-/*============================================================
-  PLATFORM TNL
-  ============================================================ */
-
-void rglValidateVertexProgram (void)
-{
-   // if validation is required, it means the program  has to be downloaded.
-   RGLcontext*	LContext = _CurrentContext;
-
-   rglSetNativeCgVertexProgram(LContext->BoundVertexProgram);
-
-   // Set all uniforms.
-   if(!(LContext->needValidate & RGL_VALIDATE_VERTEX_CONSTANTS) && LContext->BoundVertexProgram->parentContext)
-      rglValidateVertexConstants();
-}
-
-void rglValidateVertexConstants (void)
-{
-   RGLcontext*	LContext = _CurrentContext;
-   _CGprogram *cgprog = LContext->BoundVertexProgram;
-
-   // Push a CG program onto the current command buffer
-
-   // make sure there is space for the pushbuffer + any nops we need to add for alignment  
-   rglGcmFifoWaitForFreeSpace( &rglGcmState_i.fifo,  cgprog->constantPushBufferWordSize + 4 + 32); 
-
-   // first add nops to get us the next alligned position in the fifo 
-   // [YLIN] Use VMX register to copy
-   uint32_t padding_in_word = ( ( 0x10-(((uint32_t)rglGcmState_i.fifo.current)&0xf))&0xf )>>2;
-   uint32_t padded_size = ( ((cgprog->constantPushBufferWordSize)<<2) + 0xf )&~0xf;
-
-   GCM_FUNC( cellGcmSetNopCommandUnsafe, padding_in_word );
-   memcpy16(rglGcmState_i.fifo.current, cgprog->constantPushBuffer, padded_size);
-   rglGcmState_i.fifo.current+=cgprog->constantPushBufferWordSize;
 }
 
 /*============================================================

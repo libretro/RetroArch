@@ -3248,11 +3248,11 @@ void rglPlatformDestroyDevice (void *data)
    rglDuringDestroyDevice = GL_FALSE;
 }
 
-void rglPlatformSwapBuffers (void *data)
+GLAPI void RGL_EXPORT psglSwap (void)
 {
    gmmUpdateFreeList(CELL_GCM_LOCATION_LOCAL);
 
-   RGLdevice *device = (RGLdevice*)data;
+   RGLdevice *device = (RGLdevice*)_CurrentDevice;
    rglGcmDevice *gcmDevice = (rglGcmDevice *)device->platformDevice;
 
    const GLuint drawBuffer = gcmDevice->drawBuffer;
@@ -3332,19 +3332,6 @@ void rglPlatformSwapBuffers (void *data)
    }
 }
 
-void rglpValidateViewport (void)
-{
-   RGLcontext*	LContext = _CurrentContext;
-
-   rglGcmViewportState *v = &rglGcmState_i.state.viewport;
-   v->x = LContext->ViewPort.X;
-   v->y = LContext->ViewPort.Y;
-   v->w = LContext->ViewPort.XSize;
-   v->h = LContext->ViewPort.YSize;
-
-   rglGcmFifoGlViewport(v, LContext->DepthNear, LContext->DepthFar);
-}
-
 void rglpValidateBlending(void)
 {
    RGLcontext* LContext = _CurrentContext;
@@ -3363,13 +3350,6 @@ void rglpValidateBlending(void)
             (rglGcmEnum)LContext->BlendEquationAlpha);
       rglGcmFifoGlBlendFunc((rglGcmEnum)LContext->BlendFactorSrcRGB,(rglGcmEnum)LContext->BlendFactorDestRGB,(rglGcmEnum)LContext->BlendFactorSrcAlpha,(rglGcmEnum)LContext->BlendFactorDestAlpha);
    }
-}
-
-void rglpValidateShaderSRGBRemap(void)
-{
-   RGLcontext* LContext = _CurrentContext;
-   GCM_FUNC( cellGcmSetFragmentProgramGammaEnable, LContext->ShaderSRGBRemap ? CELL_GCM_TRUE : CELL_GCM_FALSE); 
-   LContext->needValidate &= ~RGL_VALIDATE_SHADER_SRGB_REMAP;
 }
 
 #include "rgl_ps3_cg.cpp"

@@ -30,7 +30,7 @@ static rglBufferObject *rglCreateBufferObject (void)
    if(!buffer )
       return NULL;
 
-   memset( buffer, 0, size ); 
+   memset(buffer, 0, size); 
    buffer->refCount = 1;
    new( &buffer->textureReferences ) RGL::Vector<rglTexture *>();
 
@@ -111,27 +111,11 @@ GLAPI GLvoid* APIENTRY glMapBuffer( GLenum target, GLenum access )
          rglSetError( GL_INVALID_ENUM );
          return NULL;
    }
+
    rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
-
-#ifndef HAVE_RGL_2D
-   switch ( access )
-   {
-      case GL_READ_ONLY:
-      case GL_WRITE_ONLY:
-      case GL_READ_WRITE:
-         break;
-      default:
-         rglSetError( GL_INVALID_ENUM );
-         return NULL;
-   }
-#else
-   (void)0;
-#endif
-
    bufferObject->mapped = GL_TRUE;
-   void *result = rglPlatformBufferObjectMap( bufferObject, access );
 
-   return result;
+   return rglPlatformBufferObjectMap( bufferObject, access );
 }
 
 GLAPI GLboolean APIENTRY glUnmapBuffer( GLenum target )
@@ -279,15 +263,6 @@ GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr 
 /*============================================================
   FRAMEBUFFER
   ============================================================ */
-
-GLAPI void APIENTRY glClear( GLbitfield mask )
-{
-   RGLcontext*	LContext = _CurrentContext;
-
-   if ( LContext->needValidate & RGL_VALIDATE_FRAMEBUFFER )
-      rglValidateFramebuffer();
-   rglFBClear( mask );
-}
 
 GLAPI void APIENTRY glClearColor( GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha )
 {
@@ -759,44 +734,6 @@ void rglImageFreeCPUStorage(void *data)
    image->dataState &= ~RGL_IMAGE_DATASTATE_HOST;
 }
 
-static inline void rglSetImageTexRef(void *data, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment)
-{
-   rglImage *image = (rglImage*)data;
-
-   image->width = width;
-   image->height = height;
-   image->depth = depth;
-   image->alignment = alignment;
-
-   image->xblk = 0;
-   image->yblk = 0;
-
-   image->xstride = 0;
-   image->ystride = 0;
-   image->zstride = 0;
-
-   image->format = 0;
-   image->type = 0;
-   image->internalFormat = 0;
-   const GLenum status = rglPlatformChooseInternalStorage( image, internalFormat );
-   (( void )status );
-
-   image->data = NULL;
-   image->mallocData = NULL;
-   image->mallocStorageSize = 0;
-
-   image->isSet = GL_TRUE;
-
-   if ( image->xstride == 0 )
-      image->xstride = rglGetPixelSize( image->format, image->type );
-   if ( image->ystride == 0 )
-      image->ystride = image->width * image->xstride;
-   if ( image->zstride == 0 )
-      image->zstride = image->height * image->ystride;
-
-   image->dataState = RGL_IMAGE_DATASTATE_UNSET;
-}
-
 void rglSetImage(void *data, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment, GLenum format, GLenum type, const void *pixels )
 {
    rglImage *image = (rglImage*)data;
@@ -917,72 +854,6 @@ GLAPI void APIENTRY glGetIntegerv(GLenum pname, GLint* params)
          fprintf(stderr, "glGetIntegerv: enum not supported.\n");
          break;
    }
-}
-
-GLuint rglValidateStates (GLuint mask)
-{
-   RGLcontext* LContext = _CurrentContext;
-
-   GLuint  dirty = LContext->needValidate & ~mask;
-   LContext->needValidate &= mask;
-
-   GLuint  needValidate = LContext->needValidate;
-
-   if (RGL_UNLIKELY( needValidate & RGL_VALIDATE_FRAMEBUFFER))
-   {
-      rglValidateFramebuffer();
-      needValidate = LContext->needValidate;
-   }
-
-   if (RGL_UNLIKELY( needValidate & RGL_VALIDATE_TEXTURES_USED))
-   {
-      long unitInUseCount = LContext->BoundFragmentProgram->samplerCount;
-      const GLuint* unitsInUse = LContext->BoundFragmentProgram->samplerUnits;
-      for ( long i = 0; i < unitInUseCount; ++i )
-      {
-         long unit = unitsInUse[i];
-         rglTexture* texture = LContext->TextureImageUnits[unit].currentTexture;
-
-         if (texture)
-            rglPlatformValidateTextureStage( unit, texture );
-      }
-   }
-
-   if (RGL_UNLIKELY(needValidate & RGL_VALIDATE_VERTEX_PROGRAM))
-   {
-      rglValidateVertexProgram();
-   }
-
-   if (RGL_LIKELY(needValidate & RGL_VALIDATE_VERTEX_CONSTANTS))
-   {
-      rglValidateVertexConstants();
-   }
-
-   if (RGL_UNLIKELY(needValidate & RGL_VALIDATE_FRAGMENT_PROGRAM))
-   {
-      rglValidateFragmentProgram();
-   }
-
-   if ( RGL_LIKELY(( needValidate & ~( RGL_VALIDATE_TEXTURES_USED |
-                  RGL_VALIDATE_VERTEX_PROGRAM |
-                  RGL_VALIDATE_VERTEX_CONSTANTS |
-                  RGL_VALIDATE_FRAGMENT_PROGRAM ) ) == 0 ) )
-   {
-      LContext->needValidate = 0;
-      return dirty;
-   }
-
-   if ( RGL_UNLIKELY( needValidate & RGL_VALIDATE_VIEWPORT ) )
-      rglpValidateViewport();
-
-   if ( RGL_UNLIKELY( needValidate & RGL_VALIDATE_BLENDING ) )
-      rglpValidateBlending();
-
-   if ( RGL_UNLIKELY( needValidate & RGL_VALIDATE_SHADER_SRGB_REMAP ) )
-      rglpValidateShaderSRGBRemap();
-
-   LContext->needValidate = 0;
-   return dirty;
 }
 
 void rglResetAttributeState(void *data)
@@ -1322,16 +1193,6 @@ GLAPI void APIENTRY glDisableClientState( GLenum array )
    }
 }
 
-GLAPI void APIENTRY glFlush(void)
-{
-   RGLcontext * LContext = _CurrentContext;
-
-   if (RGL_UNLIKELY(LContext->needValidate))
-      rglValidateStates( RGL_VALIDATE_ALL );
-
-   rglPlatformRasterFlush();
-}
-
 GLAPI const GLubyte* APIENTRY glGetString( GLenum name )
 {
    switch ( name )
@@ -1589,18 +1450,7 @@ void rglBindTextureInternal (void *data, GLuint name, GLenum target )
       }
    }
 
-#ifndef HAVE_RGL_2D
-   switch ( target )
-   {
-      case GL_TEXTURE_2D:
-         unit->bound2D = name;
-         break;
-      default:
-         break;
-   }
-#else
    unit->bound2D = name;
-#endif
 
    rglUpdateCurrentTextureCache( unit );
    LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
@@ -1752,38 +1602,9 @@ GLAPI void APIENTRY glActiveTexture( GLenum texture )
       LContext->CurrentImageUnit = NULL;
 }
 
-GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
-      GLuint baseWidth, GLuint baseHeight, GLuint baseDepth, GLenum internalFormat, GLuint pitch, GLintptr offset )
-{
-   RGLcontext*	LContext = _CurrentContext;
-
-   rglTexture *texture = rglGetCurrentTexture( LContext->CurrentImageUnit, target );
-   rglBufferObject *bufferObject = 
-      (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
-   rglReallocateImages( texture, 0, MAX( baseWidth, MAX( baseHeight, baseDepth ) ) );
-
-   rglSetImageTexRef(texture->image, internalFormat, baseWidth, baseHeight,
-         baseDepth, LContext->unpackAlignment);
-   texture->maxLevel = 0;
-   texture->usage = GL_TEXTURE_LINEAR_GPU_SCE;
-
-   GLboolean r = rglPlatformTextureReference( texture, pitch, bufferObject, offset );
-   if ( !r ) return;
-   bufferObject->textureReferences.pushBack( texture );
-   texture->referenceBuffer = bufferObject;
-   texture->offset = offset;
-   rglTextureTouchFBOs( texture );
-   LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
-}
-
 /*============================================================
   VERTEX ARRAYS
   ============================================================ */
-
-#include <ppu_intrinsics.h> /* TODO: move to platform-specific code */
-
-const uint32_t c_rounded_size_ofrglDrawParams = (sizeof(rglDrawParams)+0x7f)&~0x7f;
-static uint8_t s_dparams_buff[ c_rounded_size_ofrglDrawParams ] __attribute__((aligned(128)));
 
 GLAPI void APIENTRY glVertexPointer( GLint size, GLenum type, GLsizei stride, const GLvoid* pointer )
 {
@@ -1938,32 +1759,6 @@ void rglVertexAttrib4fvNV( GLuint index, const GLfloat* v )
    rglVertexAttrib4fNV( index, v[0], v[1], v[2], v[3] );
 }
 
-GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
-{
-   RGLcontext*	LContext = _CurrentContext;
-
-   if (RGL_UNLIKELY(!RGLBIT_GET(LContext->attribs->EnabledMask, RGL_ATTRIB_POSITION_INDEX)))
-      return;
-
-   uint32_t _tmp_clear_loop = c_rounded_size_ofrglDrawParams>>7;
-   do{
-      --_tmp_clear_loop;
-      __dcbz(s_dparams_buff+(_tmp_clear_loop<<7));
-   }while(_tmp_clear_loop);
-
-   rglDrawParams *dparams = (rglDrawParams *)s_dparams_buff;
-   dparams->mode = mode;
-   dparams->firstVertex = first;
-   dparams->vertexCount = count;
-
-   if ( LContext->needValidate ) rglValidateStates( RGL_VALIDATE_ALL );
-
-   GLboolean slowPath = rglPlatformRequiresSlowPath( dparams, 0, 0);
-   (void)slowPath;
-
-   rglPlatformDraw( dparams );
-}
-
 /*============================================================
   DEVICE CONTEXT CREATION
   ============================================================ */
@@ -2048,12 +1843,4 @@ void RGL_EXPORT psglMakeCurrent (RGLcontext *context, RGLdevice *device)
 RGLdevice *psglGetCurrentDevice (void)
 {
    return _CurrentDevice;
-}
-
-GLAPI void RGL_EXPORT psglSwap (void)
-{
-#ifndef HAVE_RGL_2D
-   if ( _CurrentDevice != NULL)
-#endif
-      rglPlatformSwapBuffers( _CurrentDevice );
 }
