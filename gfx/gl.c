@@ -518,11 +518,22 @@ static void gl_create_fbo_textures(void *data)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_type);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_type);
 
-#if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
+#ifndef HAVE_PSGL
       bool fp_fbo = gl->fbo_scale[i].valid && gl->fbo_scale[i].fp_fbo;
 
       if (fp_fbo)
       {
+         // GLES and GL are inconsistent in which arguments to pass.
+#ifdef HAVE_OPENGLES2
+         bool has_fp_fbo = gl_query_extension("OES_texture_float_linear");
+         if (!has_fp_fbo)
+            RARCH_ERR("OES_texture_float_linear extension not found.\n");
+
+         RARCH_LOG("FBO pass #%d is floating-point.\n", i);
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
+               gl->fbo_rect[i].width, gl->fbo_rect[i].height,
+               0, GL_RGBA, GL_FLOAT, NULL);
+#else
          bool has_fp_fbo = gl_query_extension("ARB_texture_float");
          if (!has_fp_fbo)
             RARCH_ERR("ARB_texture_float extension was not found.\n");
@@ -531,6 +542,7 @@ static void gl_create_fbo_textures(void *data)
          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 
                gl->fbo_rect[i].width, gl->fbo_rect[i].height,
                0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+#endif
       }
       else
 #endif
