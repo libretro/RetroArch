@@ -16,7 +16,7 @@
 .arm
 
 .align 4
-.global audio_convert_s16_float_asm
+.globl audio_convert_s16_float_asm
 # audio_convert_s16_float_asm(float *out, const int16_t *in, size_t samples)
 audio_convert_s16_float_asm:
    # Hacky way to get a constant of 2^-15.
@@ -52,7 +52,7 @@ audio_convert_s16_float_asm:
    bx lr
 
 .align 4
-.global audio_convert_float_s16_asm
+.globl audio_convert_float_s16_asm
 # audio_convert_float_s16_asm(int16_t *out, const float *in, size_t samples)
 audio_convert_float_s16_asm:
    # Hacky way to get a constant of 2^15.
