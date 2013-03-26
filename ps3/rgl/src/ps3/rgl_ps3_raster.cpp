@@ -1486,45 +1486,6 @@ GLenum rglPlatformFramebufferCheckStatus (void *data)
    return GL_FRAMEBUFFER_COMPLETE_OES;
 }
 
-// Calculate byte offset for given texture layout, number of faces, and levels
-static GLuint rglGetGcmImageOffset (void *data, GLuint face, GLuint level)
-{
-   rglGcmTextureLayout *layout = (rglGcmTextureLayout*)data;
-   GLuint bytes = 0;
-   GLuint faceAlign = layout->pitch ? 1 : 128;
-
-   GLuint minWidth = 1;
-   GLuint minHeight = 1;
-
-   for (GLuint f = 0; f < layout->faces; ++f)
-   {
-      GLuint width = layout->baseWidth;
-      GLuint height = layout->baseHeight;
-      GLuint depth = layout->baseDepth;
-      for ( GLuint i = 0;i < layout->levels; ++i )
-      {
-         if ((level == i) && (face == f))
-            return bytes;
-
-         width = MAX( minWidth, width );
-         height = MAX( minHeight, height );
-         depth = MAX( 1U, depth );
-
-         if ( !layout->pitch ) 
-            bytes += layout->pixelBits * width * height * depth / 8;
-         else 
-            bytes += height * depth * layout->pitch;
-
-         width >>= 1;
-         height >>= 1;
-         depth >>= 1;
-      }
-
-      bytes = rglPad( bytes, faceAlign );
-   }
-   return 0;
-}
-
 static void rglPlatformValidateTextureResources (void *data);
 
 void rglPlatformFramebuffer::validate (void *data)
@@ -1581,7 +1542,7 @@ void rglPlatformFramebuffer::validate (void *data)
 
       // set the render target
       rt.colorId[i] = nvTexture->gpuAddressId;
-      rt.colorIdOffset[i] = nvTexture->gpuAddressIdOffset + rglGetGcmImageOffset( &nvTexture->gpuLayout, face, 0 );
+      rt.colorIdOffset[i] = nvTexture->gpuAddressIdOffset;
       rt.colorPitch[i] = nvTexture->gpuLayout.pitch ? nvTexture->gpuLayout.pitch : nvTexture->gpuLayout.pixelBits * nvTexture->gpuLayout.baseWidth / 8;
 
       width = MIN( width, nvTexture->gpuLayout.baseWidth );
@@ -2141,47 +2102,23 @@ static GLuint rglGetGcmTextureSize (void *data)
    GLuint bytesNeeded = 0;
    GLuint faceAlign = layout->pitch ? 1 : 128;
 
-   GLuint minWidth = 1;
-   GLuint minHeight = 1;
-   for ( GLuint face = 0;face < layout->faces;++face )
-   {
-      GLuint width = layout->baseWidth;
-      GLuint height = layout->baseHeight;
-      GLuint depth = layout->baseDepth;
-      for ( GLuint i = 0;i < layout->levels; ++i )
-      {
-         width = MAX( minWidth, width );
-         height = MAX( minHeight, height );
-         depth = MAX( 1U, depth );
+   GLuint width = layout->baseWidth;
+   GLuint height = layout->baseHeight;
 
-         if ( !layout->pitch )
-            bytesNeeded += layout->pixelBits * width * height * depth / 8;
-         else
-            bytesNeeded += height * depth * layout->pitch;
+   width = MAX(1U, width );
+   height = MAX(1U, height );
 
-         width >>= 1;
-         height >>= 1;
-         depth >>= 1;
-      }
+   if ( !layout->pitch )
+      bytesNeeded += layout->pixelBits * width * height / 8;
+   else
+      bytesNeeded += height * layout->pitch;
 
-      bytesNeeded = rglPad( bytesNeeded, faceAlign );
-   }
-
-   return bytesNeeded;
+   return rglPad( bytesNeeded, faceAlign );
 }
 
 // Calculate pitch for a texture
-static GLuint _getTexturePitch (const void *data)
-{
-   const rglTexture *texture = (const rglTexture*)data;
-   return rglPad( rglGetStorageSize( texture->image->format, texture->image->type, texture->image->width, 1, 1 ), 64 ); // TransferVid2Vid needs 64byte pitch alignment
-}
-
-// Return maximum number of texture image units
-int rglPlatformTextureMaxUnits (void)
-{
-   return RGLGCM_MAX_TEXIMAGE_COUNT;
-}
+// TransferVid2Vid needs 64byte pitch alignment
+#define GET_TEXTURE_PITCH(texture) (rglPad( rglGetStorageSize( texture->image->format, texture->image->type, texture->image->width, 1, 1 ), 64 ))
 
 // Create a gcm texture by initializing memory to 0
 void rglPlatformCreateTexture (void *data)
@@ -2286,26 +2223,6 @@ static inline GLenum unFilter( GLenum filter )
    return newFilter;
 }
 
-// Choose a texture layout and store it to newLayout, based on texture's filtering mode, swizzling, and size
-void rglPlatformChooseGPUFormatAndLayout(
-      const void *data, GLboolean forceLinear,
-      GLuint pitch, rglGcmTextureLayout* newLayout )
-{
-   const rglTexture *texture = (const rglTexture*)data;
-   rglImage *image = texture->image + texture->baseLevel;
-
-   GLuint levels = 1;
-
-   newLayout->levels = levels;
-   newLayout->faces = texture->faceCount;
-   newLayout->baseWidth = image->width;
-   newLayout->baseHeight = image->height;
-   newLayout->baseDepth = image->depth;
-   newLayout->internalFormat = ( rglGcmEnum )image->internalFormat;
-   newLayout->pixelBits = rglPlatformGetBitsPerPixel( newLayout->internalFormat );
-   newLayout->pitch = pitch ? pitch : _getTexturePitch(texture);
-}
-
 // texture strategy actions
 //  A texture strategy is a sequence of actions represented by these tokens.
 //  RGL_TEXTURE_STRATEGY_END must be the last token in any strategy.
@@ -2408,47 +2325,59 @@ void rglPlatformReallocateGcmTexture (void *data)
             forceLinear = GL_TRUE;
             break;
          case RGL_TEXTURE_STRATEGY_UNTILED_ALLOC:
-            // get layout and size compatible with this pool
-            rglPlatformChooseGPUFormatAndLayout( texture, forceLinear, 0, &newLayout );
-            size = rglGetGcmTextureSize( &newLayout );
-
-            // determine if current allocation already works
-            //  If the current allocation has the right size and pool, we
-            //  don't have to do anything.  If not, we only drop from the
-            //  target pool because we may reuse the allocation from a
-            //  different pool in a later step.
-            if ( gcmTexture->pool == RGLGCM_SURFACE_POOL_LINEAR )
             {
-               if ( currentSize >= size && newLayout.pitch == currentLayout.pitch )
-               {
-                  gcmTexture->gpuLayout = newLayout;
-                  done = GL_TRUE;
-               }
-               else
-                  rglPlatformDropTexture( texture );
-            }
+               // get layout and size compatible with this pool
+               rglImage *image = texture->image + texture->baseLevel;
 
-            if ( !done )
-            {
-               // allocate in the specified pool
-               id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 
-                     CELL_GCM_LOCATION_LOCAL,
-                     0,
-                     size);
-               if ( id != GMM_ERROR )
+               newLayout.levels = 1;
+               newLayout.faces = texture->faceCount;
+               newLayout.baseWidth = image->width;
+               newLayout.baseHeight = image->height;
+               newLayout.baseDepth = image->depth;
+               newLayout.internalFormat = ( rglGcmEnum )image->internalFormat;
+               newLayout.pixelBits = rglPlatformGetBitsPerPixel( newLayout.internalFormat );
+               newLayout.pitch = GET_TEXTURE_PITCH(texture);
+
+               size = rglGetGcmTextureSize( &newLayout );
+
+               // determine if current allocation already works
+               //  If the current allocation has the right size and pool, we
+               //  don't have to do anything.  If not, we only drop from the
+               //  target pool because we may reuse the allocation from a
+               //  different pool in a later step.
+               if ( gcmTexture->pool == RGLGCM_SURFACE_POOL_LINEAR )
                {
-                  // drop old allocation
-                  if ( gcmTexture->pool != RGLGCM_SURFACE_POOL_NONE )
+                  if ( currentSize >= size && newLayout.pitch == currentLayout.pitch )
+                  {
+                     gcmTexture->gpuLayout = newLayout;
+                     done = GL_TRUE;
+                  }
+                  else
                      rglPlatformDropTexture( texture );
+               }
 
-                  // set new
-                  gcmTexture->pool = RGLGCM_SURFACE_POOL_LINEAR;
-                  gcmTexture->gpuAddressId = id;
-                  gcmTexture->gpuAddressIdOffset = 0;
-                  gcmTexture->gpuSize = size;
-                  gcmTexture->gpuLayout = newLayout;
+               if ( !done )
+               {
+                  // allocate in the specified pool
+                  id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 
+                        CELL_GCM_LOCATION_LOCAL,
+                        0,
+                        size);
+                  if ( id != GMM_ERROR )
+                  {
+                     // drop old allocation
+                     if ( gcmTexture->pool != RGLGCM_SURFACE_POOL_NONE )
+                        rglPlatformDropTexture( texture );
 
-                  done = GL_TRUE;
+                     // set new
+                     gcmTexture->pool = RGLGCM_SURFACE_POOL_LINEAR;
+                     gcmTexture->gpuAddressId = id;
+                     gcmTexture->gpuAddressIdOffset = 0;
+                     gcmTexture->gpuSize = size;
+                     gcmTexture->gpuLayout = newLayout;
+
+                     done = GL_TRUE;
+                  }
                }
             }
             break;
@@ -2554,12 +2483,6 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
 
       if ( image->dataState == RGL_IMAGE_DATASTATE_HOST )
       {
-         // determine image offset from base address
-         // TODO: compute all offsets at once for efficiency
-         //  This is the offset in bytes for this face/image from the
-         //  texture base address.
-         const GLuint dataOffset = rglGetGcmImageOffset( layout, 0, 0 );
-
          // set source pixel buffer
          src.ppuData = image->data;
 
@@ -2572,10 +2495,10 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
          {
             // copy image to bounce buffer
             src.dataId = bounceBufferId;
-            src.dataIdOffset = dataOffset;
+            src.dataIdOffset = 0;
 
             // NPOT DXT
-            __builtin_memcpy( gmmIdToAddress( src.dataId ) + dataOffset, 
+            __builtin_memcpy( gmmIdToAddress( src.dataId ), 
                   image->data, image->storageSize );
          }
 
@@ -2587,24 +2510,11 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
          dst.width = src.width;
          dst.height = image->height;
          dst.dataId = gcmTexture->gpuAddressId;
-         dst.dataIdOffset = gcmTexture->gpuAddressIdOffset + dataOffset;
-
-         GLuint offsetHeight = 0;
-
-         if(dst.pitch)
-         {
-            // linear (not swizzled)
-            //  The tiled linear format requires that render
-            //  targets be aligned to 8*pitch from the start of
-            //  the tiled region.
-            offsetHeight = ( dataOffset / dst.pitch ) % 8;
-            dst.height += offsetHeight;
-            dst.dataIdOffset -= offsetHeight * dst.pitch;
-         }
+         dst.dataIdOffset = gcmTexture->gpuAddressIdOffset;
 
          rglGcmCopySurface(
                &src, 0, 0,
-               &dst, 0, offsetHeight,
+               &dst, 0, 0,
                src.width, src.height,
                GL_TRUE );	// don't bypass GPU pipeline
 
@@ -2882,7 +2792,16 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
    // XXX check pitch restrictions ?
 
    rglGcmTextureLayout newLayout;
-   rglPlatformChooseGPUFormatAndLayout( texture, true, pitch, &newLayout );
+   rglImage *image = texture->image + texture->baseLevel;
+
+   newLayout.levels = 1;
+   newLayout.faces = texture->faceCount;
+   newLayout.baseWidth = image->width;
+   newLayout.baseHeight = image->height;
+   newLayout.baseDepth = image->depth;
+   newLayout.internalFormat = ( rglGcmEnum )image->internalFormat;
+   newLayout.pixelBits = rglPlatformGetBitsPerPixel( newLayout.internalFormat );
+   newLayout.pitch = pitch ? pitch : GET_TEXTURE_PITCH(texture);
 
    GLboolean isRenderTarget = GL_FALSE;
    GLboolean vertexEnable = GL_FALSE;
