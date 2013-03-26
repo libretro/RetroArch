@@ -2322,8 +2322,6 @@ static int select_setting(uint8_t menu_type, uint64_t input)
    uint8_t i = 0;
    uint8_t j = 0;
    uint8_t item_page = 0;
-   bool pressed_up = false;
-   bool pressed_down = false;
 
    for(i = first_setting; i < max_settings; i++)
    {
@@ -2377,37 +2375,29 @@ static int select_setting(uint8_t menu_type, uint64_t input)
          driver.video_poke->set_osd_msg(driver.video_data, item.comment, &font_parms);
    }
 
-   if (!pressed_up)
+   if (input & (1ULL << RMENU_DEVICE_NAV_UP))
    {
-      if (input & (1ULL << RMENU_DEVICE_NAV_UP))
-      {
-         pressed_up = true;
-         if (selected == first_setting)
-            selected = max_settings-1;
-         else
-            selected--;
+      if (selected == first_setting)
+         selected = max_settings-1;
+      else
+         selected--;
 
-         if (items_pages[selected] != page_number)
-            page_number = items_pages[selected];
+      if (items_pages[selected] != page_number)
+         page_number = items_pages[selected];
 
-         set_setting_action(menu_type, selected, input);
-      }
+      set_setting_action(menu_type, selected, input);
    }
       
-   if (!pressed_down)
+   if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
    {
-      if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
-      {
-         pressed_down = true;
-         selected++;
+      selected++;
 
-         if (selected >= max_settings)
-            selected = first_setting; 
-         if (items_pages[selected] != page_number)
-            page_number = items_pages[selected];
+      if (selected >= max_settings)
+         selected = first_setting; 
+      if (items_pages[selected] != page_number)
+         page_number = items_pages[selected];
 
-         set_setting_action(menu_type, selected, input);
-      }
+      set_setting_action(menu_type, selected, input);
    }
 
    /* back to ROM menu if CIRCLE is pressed */
