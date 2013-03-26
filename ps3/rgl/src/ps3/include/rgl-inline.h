@@ -6,22 +6,6 @@
 //   incorrect in the case of NaN.
 #define RGLGCM_CLAMPF_01(x) ((x) >= 0.0f ? ((x) > 1.0f ? 1.0f : (x)) : 0.0f)
 
-static inline GLboolean rglIsDrawableColorFormat (GLenum colorFormat)
-{
-#ifndef HAVE_RGL_2D
-   switch (colorFormat)
-   {
-      case RGLGCM_ARGB8:
-      case RGLGCM_FLOAT_R32:
-         return GL_TRUE;
-      default:
-         return GL_FALSE;
-   }
-#else
-   return GL_TRUE;
-#endif
-}
-
 static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
 {
    switch (internalFormat)
@@ -120,52 +104,6 @@ static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFa
 
    GCM_FUNC( cellGcmSetViewport, clipX0, clipY0, clipX1 - clipX0,
          clipY1 - clipY0, zNear, zFar, scale, offset );
-}
-
-static inline void rglGcmFifoGlDrawArrays(rglGcmEnum mode, GLint first, GLsizei count)
-{
-   uint8_t gcmMode = 0;
-
-   switch (mode)
-   {
-      case RGLGCM_POINTS:
-         gcmMode = CELL_GCM_PRIMITIVE_POINTS;
-         break;
-      case RGLGCM_LINES:
-         gcmMode = CELL_GCM_PRIMITIVE_LINES;
-         break;
-      case RGLGCM_LINE_LOOP:
-         gcmMode = CELL_GCM_PRIMITIVE_LINE_LOOP;
-         break;
-      case RGLGCM_LINE_STRIP:
-         gcmMode = CELL_GCM_PRIMITIVE_LINE_STRIP;
-         break;
-      case RGLGCM_TRIANGLES:
-         gcmMode = CELL_GCM_PRIMITIVE_TRIANGLES;
-         break;
-      case RGLGCM_TRIANGLE_STRIP:
-         gcmMode = CELL_GCM_PRIMITIVE_TRIANGLE_STRIP;
-         break;
-      case RGLGCM_TRIANGLE_FAN:
-         gcmMode = CELL_GCM_PRIMITIVE_TRIANGLE_FAN;
-         break;
-      case RGLGCM_QUADS:
-         gcmMode = CELL_GCM_PRIMITIVE_QUADS;
-         break;
-      case RGLGCM_QUAD_STRIP:
-         gcmMode = CELL_GCM_PRIMITIVE_QUAD_STRIP;
-         break;
-      case RGLGCM_POLYGON:
-         gcmMode = CELL_GCM_PRIMITIVE_POLYGON;
-         break;
-      default:
-         break;
-   }
-
-   if ( count )
-   {
-      GCM_FUNC_SAFE( cellGcmSetDrawArrays, gcmMode, first, count );
-   }
 }
 
 static inline void rglGcmFifoGlTransferDataVidToVid

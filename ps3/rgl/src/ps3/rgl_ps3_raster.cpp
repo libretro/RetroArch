@@ -2049,7 +2049,43 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
    GCM_FUNC( cellGcmSetUpdateFragmentProgramParameter, 
          gmmIdToOffset( driver->fpLoadProgramId ) + driver->fpLoadProgramOffset );
 
-   rglGcmFifoGlDrawArrays(( rglGcmEnum )dparams->mode, dparams->firstVertex, dparams->vertexCount );
+   uint8_t gcmMode = 0;
+
+   switch (dparams->mode)
+   {
+      case RGLGCM_POINTS:
+         gcmMode = CELL_GCM_PRIMITIVE_POINTS;
+         break;
+      case RGLGCM_LINES:
+         gcmMode = CELL_GCM_PRIMITIVE_LINES;
+         break;
+      case RGLGCM_LINE_LOOP:
+         gcmMode = CELL_GCM_PRIMITIVE_LINE_LOOP;
+         break;
+      case RGLGCM_LINE_STRIP:
+         gcmMode = CELL_GCM_PRIMITIVE_LINE_STRIP;
+         break;
+      case RGLGCM_TRIANGLES:
+         gcmMode = CELL_GCM_PRIMITIVE_TRIANGLES;
+         break;
+      case RGLGCM_TRIANGLE_STRIP:
+         gcmMode = CELL_GCM_PRIMITIVE_TRIANGLE_STRIP;
+         break;
+      case RGLGCM_TRIANGLE_FAN:
+         gcmMode = CELL_GCM_PRIMITIVE_TRIANGLE_FAN;
+         break;
+      case RGLGCM_QUADS:
+         gcmMode = CELL_GCM_PRIMITIVE_QUADS;
+         break;
+      case RGLGCM_QUAD_STRIP:
+         gcmMode = CELL_GCM_PRIMITIVE_QUAD_STRIP;
+         break;
+      case RGLGCM_POLYGON:
+         gcmMode = CELL_GCM_PRIMITIVE_POLYGON;
+         break;
+   }
+
+   GCM_FUNC_SAFE( cellGcmSetDrawArrays, gcmMode, dparams->firstVertex, dparams->vertexCount );
 }
 
 // must always call this before rglPlatformDraw() to setup rglDrawParams
