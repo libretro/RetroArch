@@ -67,19 +67,12 @@ void rglPlatformSetVertexRegister4fv (unsigned int reg, const float * __restrict
 {
    // save to shared memory for context restore after flip
    rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
-   __builtin_memcpy(driver->sharedVPConstants + reg*4*sizeof( float ), v, 4*sizeof( float ) );
+
+   memcpy(driver->sharedVPConstants + reg * 4 * sizeof( float ),
+         v, 4 * sizeof(float));
 
    GCM_FUNC( cellGcmSetVertexProgramParameterBlock, reg, 1, v ); 
 }
-
-// endian swapping of the fragment uniforms, if necessary
-#if RGL_ENDIAN == RGL_BIG_ENDIAN
-#define SWAP_IF_BIG_ENDIAN(arg) endianSwapWordByHalf(arg)
-#elif RGL_ENDIAN == RGL_LITTLE_ENDIAN
-#define SWAP_IF_BIG_ENDIAN(arg) arg
-#else
-#error include missing for endianness
-#endif
 
 //here ec has been advanced and is already on top of the embedded constant count
 template<int SIZE> inline static void swapandsetfp( int ucodeSize, unsigned int loadProgramId, unsigned int loadProgramOffset, unsigned short *ec, const unsigned int   * __restrict v )
@@ -848,9 +841,7 @@ void rglCreatePushBuffer(void *data)
                   rtParameter->samplerSetter = setSamplervp;
                }
                else
-               {
                   rtParameter->samplerSetter = setSamplerfp;
-               }
                rtParameter->glType = rglCgGetSamplerGLTypeFromCgType(( CGtype )( parameterResource->type ) );
             }
             else
@@ -1014,15 +1005,12 @@ void rglCreatePushBuffer(void *data)
             {
                case CG_FLOAT:
                case CG_FLOAT1: case CG_FLOAT2: case CG_FLOAT3: case CG_FLOAT4:
-                  //rtParameter->setter = _cgIgnoreSetParam;
                   rtParameter->setterIndex = _cgIgnoreSetParamIndex;
                   break;
                case CG_FLOAT1x1: case CG_FLOAT1x2: case CG_FLOAT1x3: case CG_FLOAT1x4:
                case CG_FLOAT2x1: case CG_FLOAT2x2: case CG_FLOAT2x3: case CG_FLOAT2x4:
                case CG_FLOAT3x1: case CG_FLOAT3x2: case CG_FLOAT3x3: case CG_FLOAT3x4:
                case CG_FLOAT4x1: case CG_FLOAT4x2: case CG_FLOAT4x3: case CG_FLOAT4x4:
-                  //rtParameter->setterr = _cgIgnoreSetParam;
-                  //rtParameter->setterc = _cgIgnoreSetParam;
                   rtParameter->setterrIndex = _cgIgnoreSetParamIndex;
                   rtParameter->settercIndex = _cgIgnoreSetParamIndex;
                   break;
@@ -1039,7 +1027,6 @@ void rglCreatePushBuffer(void *data)
                case CG_BOOL1: case CG_BOOL2: case CG_BOOL3: case CG_BOOL4:
                case CG_FIXED:
                case CG_FIXED1: case CG_FIXED2: case CG_FIXED3: case CG_FIXED4:
-                  //rtParameter->setter = _cgIgnoreSetParam;
                   rtParameter->setterIndex = _cgIgnoreSetParamIndex;
                   break;
                case CG_HALF1x1: case CG_HALF1x2: case CG_HALF1x3: case CG_HALF1x4:
@@ -1058,8 +1045,6 @@ void rglCreatePushBuffer(void *data)
                case CG_FIXED2x1: case CG_FIXED2x2: case CG_FIXED2x3: case CG_FIXED2x4:
                case CG_FIXED3x1: case CG_FIXED3x2: case CG_FIXED3x3: case CG_FIXED3x4:
                case CG_FIXED4x1: case CG_FIXED4x2: case CG_FIXED4x3: case CG_FIXED4x4:
-                  //rtParameter->setterr = _cgIgnoreSetParam;
-                  //rtParameter->setterc = _cgIgnoreSetParam;
                   rtParameter->setterrIndex = _cgIgnoreSetParamIndex;
                   rtParameter->settercIndex = _cgIgnoreSetParamIndex;
                   break;
@@ -1085,105 +1070,6 @@ void rglCreatePushBuffer(void *data)
    {
       int nopCount = ( program->constantPushBuffer + bufferSize ) - ( unsigned int * )rglGcmCurrent;
       GCM_FUNC_BUFFERED( cellGcmSetNopCommand, rglGcmCurrent, nopCount ); // GCM_PORT_TESTED [KHOFF]
-   }
-}
-
-//this function sets the embedded constant to their default value in the ucode of a fragment shader
-//it's called at setup time right after loading the program. this function could be removed if the
-//default values were already in the shader code
-void rglSetDefaultValuesVP (void *data)
-{
-   _CGprogram *program = (_CGprogram*)data;
-   int count = program->defaultValuesIndexCount;
-
-   for (int i = 0; i < count; i++)
-   {
-      int index = ( int )program->defaultValuesIndices[i].entryIndex;
-      CgRuntimeParameter *rtParameter = program->runtimeParameters + index;
-
-      int arrayCount = 1;
-      const CgParameterEntry *parameterEntry = rtParameter->parameterEntry;
-      bool isArray = false;
-      if ( parameterEntry->flags & CGP_ARRAY )
-      {
-         isArray = true;
-         const CgParameterArray *parameterArray = rglGetParameterArray( program, parameterEntry );
-         arrayCount = rglGetSizeofSubArray( parameterArray->dimensions, parameterArray->dimensionCount );
-         parameterEntry++;
-         rtParameter++;
-      }
-
-      if ( rtParameter->pushBufferPointer ) //unreferenced might have default values
-      {
-         const CgParameterResource *parameterResource = rglGetParameterResource( program, parameterEntry );
-         const float *itemDefaultValues = program->defaultValues + program->defaultValuesIndices[i].defaultValueIndex;
-         int registerStride = isMatrix(( CGtype )parameterResource->type ) ? rglGetTypeRowCount(( CGtype )parameterResource->type ) : 1;
-         if ( parameterEntry->flags & CGP_CONTIGUOUS )
-            __builtin_memcpy( rtParameter->pushBufferPointer, itemDefaultValues, arrayCount * registerStride *4*sizeof( float ) );
-         else
-         {
-            unsigned int *pushBufferPointer = (( unsigned int * )rtParameter->pushBufferPointer );
-            for ( int j = 0;j < arrayCount;j++ )
-            {
-               unsigned int *pushBufferAddress = isArray ? ( *( unsigned int** )pushBufferPointer ) : pushBufferPointer;
-               __builtin_memcpy( pushBufferAddress, itemDefaultValues, registerStride*4*sizeof( float ) );
-               pushBufferPointer += isArray ? 1 : 3 + registerStride * 4;
-               itemDefaultValues += 4 * registerStride;
-            }
-         }
-      }
-   }
-}
-
-void rglSetDefaultValuesFP (void *data)
-{
-   _CGprogram *program = (_CGprogram*)data;
-   int count = program->defaultValuesIndexCount;
-
-   for ( int i = 0;i < count;i++ )
-   {
-      const void * __restrict pItemDefaultValues = program->defaultValues + program->defaultValuesIndices[i].defaultValueIndex;
-      const unsigned int * itemDefaultValues = ( const unsigned int * )pItemDefaultValues;
-      int index = ( int )program->defaultValuesIndices[i].entryIndex;
-
-      CgRuntimeParameter *rtParameter = program->runtimeParameters + index;
-      float *hostMemoryCopy = ( float * )rtParameter->pushBufferPointer;
-
-      if ( hostMemoryCopy ) //certain parameter are not referenced but still have a default value.
-      {
-         const CgParameterEntry *parameterEntry = rtParameter->parameterEntry;
-         int arrayCount = 1;
-         if ( parameterEntry->flags & CGP_ARRAY )
-         {
-            const CgParameterArray *parameterArray = rglGetParameterArray( program, parameterEntry );
-            arrayCount = rglGetSizeofSubArray( parameterArray->dimensions, parameterArray->dimensionCount );
-            i++;
-            parameterEntry++;
-         }
-         const CgParameterResource *parameterResource = rglGetParameterResource( program, parameterEntry );
-         unsigned short *resource = program->resources + parameterResource->resource + 1; //+1 to skip the register
-         int registerStride = isMatrix(( CGtype )parameterResource->type ) ? rglGetTypeRowCount(( CGtype )parameterResource->type ) : 1;
-         int registerCount = arrayCount * registerStride;
-         int j;
-         for ( j = 0;j < registerCount;j++ )
-         {
-            unsigned short embeddedConstCount = *( resource++ );
-            int k;
-            for ( k = 0;k < embeddedConstCount;k++ )
-            {
-               unsigned short ucodePatchOffset = *( resource )++;
-               unsigned int *dst = ( unsigned int* )(( char* )program->ucode + ucodePatchOffset );
-               dst[0] = SWAP_IF_BIG_ENDIAN( itemDefaultValues[0] );
-               dst[1] = SWAP_IF_BIG_ENDIAN( itemDefaultValues[1] );
-               dst[2] = SWAP_IF_BIG_ENDIAN( itemDefaultValues[2] );
-               dst[3] = SWAP_IF_BIG_ENDIAN( itemDefaultValues[3] );
-            }
-            __builtin_memcpy(( void* )hostMemoryCopy, ( void* )itemDefaultValues, sizeof( float )*4 );
-            hostMemoryCopy += 4;
-            itemDefaultValues += 4;
-            resource++; //skip the register of the next item
-         }
-      }
    }
 }
 
@@ -1242,11 +1128,6 @@ static void rglpsAllocateBuffer (void *data)
       }
       _CurrentContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
    }
-}
-
-int rglpBufferObjectSize(void)
-{
-   return sizeof(rglGcmBufferObject);
 }
 
 GLboolean rglpCreateBufferObject (void *data)
@@ -1657,9 +1538,6 @@ void rglPlatformFramebuffer::validate (void *data)
    GLuint width = RGLGCM_MAX_RT_DIMENSION;
    GLuint height = RGLGCM_MAX_RT_DIMENSION;
 
-   GLuint xscale = 1;
-   GLuint yscale = 1;
-
    // color
    rt.colorBufferCount = 0;
    rt.colorFormat = RGLGCM_NONE;
@@ -1716,8 +1594,8 @@ void rglPlatformFramebuffer::validate (void *data)
    }
 
    // framebuffer dimensions are the intersection of attachments
-   rt.width = width / xscale;
-   rt.height = height / yscale;
+   rt.width = width;
+   rt.height = height;
 
    rt.yInverted = RGLGCM_FALSE;
    rt.xOffset = 0;
@@ -1812,11 +1690,10 @@ void rglDumpFifo (char *name);
 
 #undef RGLGCM_REMAP_MODES
 
-static GLuint rglValidateStates (GLuint mask)
+static inline void rglValidateStates (GLuint mask)
 {
    RGLcontext* LContext = _CurrentContext;
 
-   GLuint  dirty = LContext->needValidate & ~mask;
    LContext->needValidate &= mask;
 
    GLuint  needValidate = LContext->needValidate;
@@ -2033,7 +1910,7 @@ static GLuint rglValidateStates (GLuint mask)
                   RGL_VALIDATE_FRAGMENT_PROGRAM ) ) == 0 ) )
    {
       LContext->needValidate = 0;
-      return dirty;
+      return;
    }
 
    if ( RGL_UNLIKELY( needValidate & RGL_VALIDATE_VIEWPORT ) )
@@ -2073,7 +1950,6 @@ static GLuint rglValidateStates (GLuint mask)
    }
 
    LContext->needValidate = 0;
-   return dirty;
 }
 
 
@@ -2254,16 +2130,6 @@ GLboolean rglPlatformRequiresSlowPath (void *data, const GLenum indexType, uint3
    return GL_FALSE;	// we are finally qualified for the fast path
 }
 
-GLAPI void APIENTRY glFlush(void)
-{
-   RGLcontext * LContext = _CurrentContext;
-
-   if (RGL_UNLIKELY(LContext->needValidate))
-      rglValidateStates( RGL_VALIDATE_ALL );
-
-   rglGcmFifoGlFlush();
-}
-
 /*============================================================
   PLATFORM TEXTURE
   ============================================================ */
@@ -2302,13 +2168,6 @@ static GLuint rglGetGcmTextureSize (void *data)
    }
 
    return bytesNeeded;
-}
-
-
-// Get size of a texture
-int rglPlatformTextureSize (void)
-{
-   return sizeof(rglGcmTexture);
 }
 
 // Calculate pitch for a texture

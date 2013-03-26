@@ -186,7 +186,6 @@ GLuint	rglValidateAttributesSlow (void *data, GLboolean *isMain);
 //----------------------------------------
 // Raster/.../PlatformTexture.c
 //----------------------------------------
-extern int	rglPlatformTextureSize (void);
 extern int	rglPlatformTextureMaxUnits (void);
 extern void	rglPlatformCreateTexture (void *data);
 extern void	rglPlatformDestroyTexture (void *data);

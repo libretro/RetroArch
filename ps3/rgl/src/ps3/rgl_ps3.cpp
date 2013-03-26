@@ -1942,7 +1942,7 @@ void rglPsglPlatformExit(void)
 
    if ( LContext )
    {
-      glFlush();
+      rglGcmFifoGlFlush();
 
       psglMakeCurrent( NULL, NULL );
       rglDeviceExit();
@@ -3236,7 +3236,7 @@ GLAPI void RGL_EXPORT psglSwap (void)
 
 static rglBufferObject *rglCreateBufferObject (void)
 {
-   GLuint size = sizeof( rglBufferObject ) + rglpBufferObjectSize();
+   GLuint size = sizeof( rglBufferObject ) + sizeof(rglGcmBufferObject);
    rglBufferObject *buffer = (rglBufferObject*)malloc(size);
 
    if(!buffer )
@@ -4321,7 +4321,7 @@ GLAPI void APIENTRY glViewport( GLint x, GLint y, GLsizei width, GLsizei height 
 
 rglTexture *rglAllocateTexture(void)
 {
-   GLuint size = sizeof(rglTexture) + rglPlatformTextureSize();
+   GLuint size = sizeof(rglTexture) + sizeof(rglGcmTexture);
    rglTexture *texture = (rglTexture*)malloc(size);
    memset( texture, 0, size );
    texture->target = 0;
