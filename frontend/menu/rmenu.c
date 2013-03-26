@@ -2272,6 +2272,7 @@ static int select_setting(uint8_t menu_type, uint64_t input)
    static uint8_t first_setting = FIRST_VIDEO_SETTING;
    static uint8_t selected = 0;
    static uint8_t page_number = 0;
+   uint8_t items_pages[SETTING_LAST] = {0};
    uint8_t max_settings = 0;
 
    font_params_t font_parms = {0};
@@ -2279,6 +2280,7 @@ static int select_setting(uint8_t menu_type, uint64_t input)
    int ret = 0;
 
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
+
 
    switch (menu_type)
    {
@@ -2312,8 +2314,6 @@ static int select_setting(uint8_t menu_type, uint64_t input)
          break;
    }
 
-   item *items = (item*)malloc(max_settings * sizeof(*items));
-
    rmenu_default_positions_t default_pos;
 
    menu_set_default_pos(&default_pos);
@@ -2327,7 +2327,8 @@ static int select_setting(uint8_t menu_type, uint64_t input)
 
    for(i = first_setting; i < max_settings; i++)
    {
-      populate_setting_item(&items[i], i);
+      item item;
+      populate_setting_item(&item, i);
 
       if (!(j < default_pos.entries_per_page))
       {
@@ -2335,10 +2336,11 @@ static int select_setting(uint8_t menu_type, uint64_t input)
          item_page++;
       }
 
-      items[i].page = item_page;
+      item.page = item_page;
+      items_pages[i] = item_page;
       j++;
 
-      if (items[i].page != page_number)
+      if (item.page != page_number)
          continue;
 
       default_pos.starting_y_position += default_pos.y_position_increment;
@@ -2346,18 +2348,18 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.starting_y_position;
       font_parms.scale = default_pos.variable_font_size;
-      font_parms.color = selected == items[i].enum_id ? YELLOW : WHITE;
+      font_parms.color = selected == item.enum_id ? YELLOW : WHITE;
 
       if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, items[i].text, &font_parms);
+         driver.video_poke->set_osd_msg(driver.video_data, item.text, &font_parms);
 
       font_parms.x = default_pos.x_position_center;
       font_parms.color = WHITE;
 
       if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, items[i].setting_text, &font_parms);
+         driver.video_poke->set_osd_msg(driver.video_data, item.setting_text, &font_parms);
 
-      if (items[i].enum_id != selected)
+      if (item.enum_id != selected)
          continue;
 
       rarch_position_t position = {0};
@@ -2372,7 +2374,7 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       font_parms.color = WHITE;
 
       if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, items[i].comment, &font_parms);
+         driver.video_poke->set_osd_msg(driver.video_data, item.comment, &font_parms);
    }
 
    if (!pressed_up)
@@ -2385,8 +2387,8 @@ static int select_setting(uint8_t menu_type, uint64_t input)
          else
             selected--;
 
-         if (items[selected].page != page_number)
-            page_number = items[selected].page;
+         if (items_pages[selected] != page_number)
+            page_number = items_pages[selected];
 
          set_setting_action(menu_type, selected, input);
       }
@@ -2401,8 +2403,8 @@ static int select_setting(uint8_t menu_type, uint64_t input)
 
          if (selected >= max_settings)
             selected = first_setting; 
-         if (items[selected].page != page_number)
-            page_number = items[selected].page;
+         if (items_pages[selected] != page_number)
+            page_number = items_pages[selected];
 
          set_setting_action(menu_type, selected, input);
       }
@@ -2477,9 +2479,6 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       return ret;
 
    display_menubar(menu_type);
-
-
-   free(items);
 
    struct platform_bind key_label_l3 = {0};
    struct platform_bind key_label_r3 = {0};
