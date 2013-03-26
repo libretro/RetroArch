@@ -3080,7 +3080,8 @@ int rglPlatformCreateDevice (void *data)
       rglSetDisplayMode( vm, gcmDevice->color[0].bpp*8, gcmDevice->color[0].pitch );
 
       cellGcmSetFlipMode( gcmDevice->vsync ? CELL_GCM_DISPLAY_VSYNC : CELL_GCM_DISPLAY_HSYNC );
-      rglpFifoGlFinish();
+      GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+      rglGcmFifoFinish( &rglGcmState_i.fifo );
 
       for ( int i = 0; i < params->bufferingMode; ++i )
       {
@@ -3106,7 +3107,8 @@ void rglPlatformDestroyDevice (void *data)
    rglGcmDevice *gcmDevice = ( rglGcmDevice * )device->platformDevice;
    RGLdeviceParameters *params = &device->deviceParameters;
 
-   rglpFifoGlFinish();
+   GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+   rglGcmFifoFinish( &rglGcmState_i.fifo );
 
    // Stop flip callback
    if ( rescIsEnabled( params ) )
@@ -4224,7 +4226,10 @@ void RGL_EXPORT psglDestroyContext (void *data)
 {
    RGLcontext *LContext = (RGLcontext*)data;
    if ( _CurrentContext == LContext )
-      rglpFifoGlFinish();
+   {
+      GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+      rglGcmFifoFinish( &rglGcmState_i.fifo );
+   }
 
    while ( LContext->RGLcgContextHead != ( CGcontext )NULL )
    {

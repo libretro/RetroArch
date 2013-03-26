@@ -1385,7 +1385,11 @@ char *rglPlatformBufferObjectMap (void *data, GLenum access)
          }
       }
       else
-         rglpFifoGlFinish(); // must wait in order to read
+      {
+         // must wait in order to read
+         GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+         rglGcmFifoFinish( &rglGcmState_i.fifo );
+      }
 
       rglBuffer->mapAccess = access;
 
@@ -1771,7 +1775,9 @@ void rglValidateFramebuffer (void)
 // shader and needed connections between GL state and the shader
 void *rglPlatformRasterInit (void)
 {
-   rglpFifoGlFinish();
+   GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+   rglGcmFifoFinish( &rglGcmState_i.fifo );
+
    rglGcmDriver *driver = (rglGcmDriver*)malloc(sizeof(rglGcmDriver));
    memset(driver, 0, sizeof(rglGcmDriver));
 
@@ -2111,14 +2117,91 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
    if ( driver->flushBufferCount != 0 )
       driver->invalidateVertexCache = GL_TRUE;
 
-   GLboolean isMain = 0;
    GLuint gpuOffset = GMM_ERROR;
 
    uint32_t totalXfer = 0;
    for ( GLuint i = 0; i < RGL_MAX_VERTEX_ATTRIBS; ++i )
       totalXfer += dparams->attribXferSize[i];
 
-   gpuOffset = rglValidateAttributesSlow( dparams, &isMain );
+   // validates attributes for specified draw paramaters
+   // gpuOffset is pointer to index buffer
+   rglAttributeState* as = LContext->attribs;
+
+   // allocate upload transfer buffer if necessary
+   //  The higher level bounce buffer allocator is used, which means that
+   //  the buffer will automatically be freed after all RGLGCM calls up to
+   //  the next allocation have finished.
+   void* xferBuffer = NULL;
+   GLuint xferId = GMM_ERROR;
+   GLuint VBOId = GMM_ERROR;
+   if ( RGL_UNLIKELY( dparams->xferTotalSize ) )
+   {
+      xferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
+            CELL_GCM_LOCATION_LOCAL, 0, dparams->xferTotalSize);
+      xferBuffer = gmmIdToAddress(xferId);
+   }
+
+
+   // which attributes are known to need updating?
+   // (due to being dirty or enabled client-side arrays)
+   unsigned int needsUpdateMask = (as->DirtyMask | (as->EnabledMask & ~as->HasVBOMask));
+
+   // for any remaining attributes that need updating, do it now.
+   if(needsUpdateMask)
+   {
+      for (GLuint i = 0; i < RGL_MAX_VERTEX_ATTRIBS; ++i)
+      {
+         // skip this attribute if not needing update
+         if (!RGLBIT_GET( needsUpdateMask, i))
+            continue;
+
+         rglAttribute* attrib = as->attrib + i;
+         if ( RGLBIT_GET( as->EnabledMask, i ) )
+         {
+            const GLsizei stride = attrib->clientStride;
+            const GLuint freq = attrib->frequency;
+
+            if ( RGL_UNLIKELY( dparams->attribXferSize[i] ) )
+            {
+               // attribute data is client side, need to transfer
+
+               // don't transfer data that is not going to be used, from 0 to first*stride
+               GLuint offset = ( dparams->firstVertex / freq ) * stride;
+
+               char * b = ( char * )xferBuffer + dparams->attribXferOffset[i];
+               __builtin_memcpy(b + offset,
+                     ( char*)attrib->clientData + offset,
+                     dparams->attribXferSize[i] - offset);
+
+               // draw directly from bounce buffer
+               gpuOffset = gmmIdToOffset(xferId) + (b - ( char * )xferBuffer);
+
+            }
+            else
+            {
+               // attribute data in VBO, clientData is offset.
+               VBOId = rglGcmGetBufferObjectOrigin( attrib->arrayBuffer );
+               gpuOffset = gmmIdToOffset(VBOId)
+                  + (( const GLubyte* )attrib->clientData - ( const GLubyte* )NULL );
+            }
+
+            rglGcmFifoGlVertexAttribPointer( i, attrib->clientSize,
+                  ( rglGcmEnum )attrib->clientType, attrib->normalized,
+                  stride, freq, 0, gpuOffset );
+         }
+         else
+         {
+            // attribute is disabled
+            rglGcmFifoGlVertexAttribPointer( i, 0, RGLGCM_FLOAT, 0, 0, 0, 0, 0 );
+            rglGcmFifoGlVertexAttrib4fv( i, attrib->value );
+         }
+      }
+      driver->invalidateVertexCache = GL_TRUE;
+   }
+   as->DirtyMask = 0;	// all attributes are now clean
+
+   if ( xferId != GMM_ERROR )
+      gmmFree( xferId );
 
    if ( driver->invalidateVertexCache )
    {
@@ -2190,112 +2273,12 @@ GLAPI void APIENTRY glFlush(void)
    rglGcmFifoGlFlush();
 }
 
-void rglpFifoGlFinish (void)
-{
-   GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
-   rglGcmFifoFinish( &rglGcmState_i.fifo );
-}
-
-// validates attributes for specified draw paramaters
-// returns pointer to index buffer
-GLuint rglValidateAttributesSlow (void *data, GLboolean *isMain)
-{
-   rglDrawParams *dparams = (rglDrawParams*)data;
-   RGLcontext*	LContext = _CurrentContext;
-   rglGcmDriver *driver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
-   rglAttributeState* as = LContext->attribs;
-
-   // allocate upload transfer buffer if necessary
-   //  The higher level bounce buffer allocator is used, which means that
-   //  the buffer will automatically be freed after all RGLGCM calls up to
-   //  the next allocation have finished.
-   void* xferBuffer = NULL;
-   GLuint xferId = GMM_ERROR;
-   GLuint VBOId = GMM_ERROR;
-   GLuint gpuOffset;
-   if ( RGL_UNLIKELY( dparams->xferTotalSize ) )
-   {
-      xferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-            CELL_GCM_LOCATION_LOCAL, 0, dparams->xferTotalSize);
-      xferBuffer = gmmIdToAddress(xferId);
-   }
-
-
-   // which attributes are known to need updating?
-   // (due to being dirty or enabled client-side arrays)
-   unsigned int needsUpdateMask = (as->DirtyMask | (as->EnabledMask & ~as->HasVBOMask));
-
-   // for any remaining attributes that need updating, do it now.
-   if(needsUpdateMask)
-   {
-      for (GLuint i = 0; i < RGL_MAX_VERTEX_ATTRIBS; ++i)
-      {
-         // skip this attribute if not needing update
-         if (!RGLBIT_GET( needsUpdateMask, i))
-            continue;
-
-         rglAttribute* attrib = as->attrib + i;
-         if ( RGLBIT_GET( as->EnabledMask, i ) )
-         {
-            const GLsizei stride = attrib->clientStride;
-            const GLuint freq = attrib->frequency;
-
-            if ( RGL_UNLIKELY( dparams->attribXferSize[i] ) )
-            {
-               // attribute data is client side, need to transfer
-
-               // don't transfer data that is not going to be used, from 0 to first*stride
-               GLuint offset = ( dparams->firstVertex / freq ) * stride;
-
-               char * b = ( char * )xferBuffer + dparams->attribXferOffset[i];
-               __builtin_memcpy(b + offset,
-                     ( char*)attrib->clientData + offset,
-                     dparams->attribXferSize[i] - offset);
-
-               // draw directly from bounce buffer
-               *isMain = gmmIdIsMain(xferId);
-               gpuOffset = gmmIdToOffset(xferId) + (b - ( char * )xferBuffer);
-
-            }
-            else
-            {
-               // attribute data in VBO, clientData is offset.
-               VBOId = rglGcmGetBufferObjectOrigin( attrib->arrayBuffer );
-               *isMain = gmmIdIsMain(VBOId);
-               gpuOffset = gmmIdToOffset(VBOId)
-                  + (( const GLubyte* )attrib->clientData - ( const GLubyte* )NULL );
-            }
-
-            rglGcmFifoGlVertexAttribPointer( i, attrib->clientSize,
-                  ( rglGcmEnum )attrib->clientType, attrib->normalized,
-                  stride, freq, *isMain, gpuOffset );
-         }
-         else
-         {
-            // attribute is disabled
-            rglGcmFifoGlVertexAttribPointer( i, 0, RGLGCM_FLOAT, 0, 0, 0, 0, 0 );
-            rglGcmFifoGlVertexAttrib4fv( i, attrib->value );
-         }
-      }
-      driver->invalidateVertexCache = GL_TRUE;
-   }
-   as->DirtyMask = 0;	// all attributes are now clean
-
-   // validate index buffer
-   GLuint indexOffset = 0;
-
-   if ( xferId != GMM_ERROR )
-      gmmFree( xferId );
-
-   return indexOffset;
-}
-
 /*============================================================
   PLATFORM TEXTURE
   ============================================================ */
 
 // Calculate required size in bytes for given texture layout
-GLuint rglGetGcmTextureSize (void *data)
+static GLuint rglGetGcmTextureSize (void *data)
 {
    rglGcmTextureLayout *layout = (rglGcmTextureLayout*)data;
    GLuint bytesNeeded = 0;
@@ -2988,42 +2971,6 @@ GLenum rglPlatformTranslateTextureFormat( GLenum internalFormat )
    }
 }
 
-// Implementation of texture reference
-// Associate bufferObject to texture by assigning buffer's gpu address to the gcm texture 
-static inline GLboolean rglPlatformTextureReference (void *data, GLuint pitch, void *data_buf, GLintptr offset )
-{
-   rglBufferObject *bufferObject = (rglBufferObject*)data_buf;
-   rglTexture *texture = (rglTexture*)data;
-   rglGcmTexture *gcmTexture = ( rglGcmTexture * )texture->platformTexture;
-
-   // XXX check pitch restrictions ?
-
-   rglGcmTextureLayout newLayout;
-   rglPlatformChooseGPUFormatAndLayout( texture, true, pitch, &newLayout );
-
-   GLboolean isRenderTarget = GL_FALSE;
-   GLboolean vertexEnable = GL_FALSE;
-
-   texture->isRenderTarget = isRenderTarget;
-   texture->vertexEnable = vertexEnable;
-
-   if ( gcmTexture->gpuAddressId != GMM_ERROR )
-      rglPlatformDestroyTexture( texture );
-
-   rglGcmBufferObject *gcmBuffer = (rglGcmBufferObject*)&bufferObject->platformBufferObject;
-
-   gcmTexture->gpuLayout = newLayout;
-   gcmTexture->pool = gcmBuffer->pool;
-   gcmTexture->gpuAddressId = gcmBuffer->bufferId;
-   gcmTexture->gpuAddressIdOffset = offset;
-   gcmTexture->gpuSize = rglGetGcmTextureSize( &newLayout );
-
-   texture->revalidate &= ~(RGL_TEXTURE_REVALIDATE_LAYOUT | RGL_TEXTURE_REVALIDATE_IMAGES);
-   texture->revalidate |= RGL_TEXTURE_REVALIDATE_PARAMETERS;
-   rglTextureTouchFBOs( texture );
-   return GL_TRUE;
-}
-
 static inline void rglSetImageTexRef(void *data, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment)
 {
    rglImage *image = (rglImage*)data;
@@ -3078,11 +3025,36 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
    texture->maxLevel = 0;
    texture->usage = GL_TEXTURE_LINEAR_GPU_SCE;
 
-   GLboolean r = rglPlatformTextureReference( texture, pitch, bufferObject, offset );
-   
-   if ( !r )
-      return;
+   // Implementation of texture reference
+   // Associate bufferObject to texture by assigning buffer's gpu address to the gcm texture 
+   rglGcmTexture *gcmTexture = ( rglGcmTexture * )texture->platformTexture;
 
+   // XXX check pitch restrictions ?
+
+   rglGcmTextureLayout newLayout;
+   rglPlatformChooseGPUFormatAndLayout( texture, true, pitch, &newLayout );
+
+   GLboolean isRenderTarget = GL_FALSE;
+   GLboolean vertexEnable = GL_FALSE;
+
+   texture->isRenderTarget = isRenderTarget;
+   texture->vertexEnable = vertexEnable;
+
+   if ( gcmTexture->gpuAddressId != GMM_ERROR )
+      rglPlatformDestroyTexture( texture );
+
+   rglGcmBufferObject *gcmBuffer = (rglGcmBufferObject*)&bufferObject->platformBufferObject;
+
+   gcmTexture->gpuLayout = newLayout;
+   gcmTexture->pool = gcmBuffer->pool;
+   gcmTexture->gpuAddressId = gcmBuffer->bufferId;
+   gcmTexture->gpuAddressIdOffset = offset;
+   gcmTexture->gpuSize = rglGetGcmTextureSize( &newLayout );
+
+   texture->revalidate &= ~(RGL_TEXTURE_REVALIDATE_LAYOUT | RGL_TEXTURE_REVALIDATE_IMAGES);
+   texture->revalidate |= RGL_TEXTURE_REVALIDATE_PARAMETERS;
+   rglTextureTouchFBOs( texture );
+   
    bufferObject->textureReferences.pushBack( texture );
    texture->referenceBuffer = bufferObject;
    texture->offset = offset;
@@ -3162,7 +3134,7 @@ void static inline rglGcmSetColorDepthBuffers(void *data, const void *data_args)
 }
 
 // Update rt's color and depth format with args
-void static inline rglGcmSetColorDepthFormats (void *data, const void *data_args)
+static inline void rglGcmSetColorDepthFormats (void *data, const void *data_args)
 {
    rglGcmRenderTarget *rt = (rglGcmRenderTarget*)data;
    CellGcmSurface *   grt = &rt->gcmRenderTarget;
@@ -3192,14 +3164,27 @@ void static inline rglGcmSetColorDepthFormats (void *data, const void *data_args
    grt->depthPitch = 64;
 }
 
-// Update rt's color targets
-static void inline rglGcmSetTarget (void *data, const void *data_args)
+// Set current render target to args
+void rglGcmFifoGlSetRenderTarget (const void *data)
 {
-   rglGcmRenderTarget *rt = (rglGcmRenderTarget*)data;
-   CellGcmSurface *   grt = &rt->gcmRenderTarget;
-   const rglGcmRenderTargetEx *args = (const rglGcmRenderTargetEx*)data_args;
+   rglGcmRenderTarget *rt = &rglGcmState_i.renderTarget;
+   CellGcmSurface *grt = &rglGcmState_i.renderTarget.gcmRenderTarget;
+   const rglGcmRenderTargetEx *args = (const rglGcmRenderTargetEx*)data;
 
-   // set target combo
+   rglGcmSetColorDepthBuffers( rt, args );
+   rglGcmSetColorDepthFormats( rt, args );
+
+   // Update rt's AA and Swizzling parameters with args
+
+   GCM_FUNC( cellGcmSetAntiAliasingControl, 
+         CELL_GCM_FALSE, 
+         CELL_GCM_FALSE,
+         CELL_GCM_FALSE, 
+         0xFFFF);
+
+   grt->type = CELL_GCM_SURFACE_PITCH;
+
+   // Update rt's color targets
    switch ( rt->colorBufferCount )
    {
       case 0:
@@ -3218,28 +3203,6 @@ static void inline rglGcmSetTarget (void *data, const void *data_args)
          grt->colorTarget = CELL_GCM_SURFACE_TARGET_MRT3;
          break;
    }
-}
-
-// Set current render target to args
-void rglGcmFifoGlSetRenderTarget (const void *data)
-{
-   rglGcmRenderTarget *rt = &rglGcmState_i.renderTarget;
-   CellGcmSurface *   grt = &rglGcmState_i.renderTarget.gcmRenderTarget;
-   const rglGcmRenderTargetEx *args = (const rglGcmRenderTargetEx*)data;
-
-   rglGcmSetColorDepthBuffers( rt, args );
-   rglGcmSetColorDepthFormats( rt, args );
-
-   // Update rt's AA and Swizzling parameters with args
-
-   GCM_FUNC( cellGcmSetAntiAliasingControl, 
-         CELL_GCM_FALSE, 
-         CELL_GCM_FALSE,
-         CELL_GCM_FALSE, 
-         0xFFFF);
-
-   grt->type = CELL_GCM_SURFACE_PITCH;
-   rglGcmSetTarget( rt, args );
 
    // ensure if either width or height is 1 the other is one as well
    if (grt->width == 1)

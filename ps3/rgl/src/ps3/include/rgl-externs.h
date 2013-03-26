@@ -12,7 +12,6 @@ void rglGcmTransferData (GLuint dstId, GLuint dstIdOffset,
 
 int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords);
 void rglGcmFifoGlSetRenderTarget (const void *args);
-void rglpFifoGlFinish (void);
 void rglCreatePushBuffer (void *data);
 void rglSetDefaultValuesFP (void *data);
 void rglSetDefaultValuesVP (void *data);

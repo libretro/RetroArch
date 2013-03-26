@@ -25,6 +25,4 @@
 extern int rglpBufferObjectSize(void);
 extern GLboolean rglpCreateBufferObject (void *data);
 
-void rglpFifoGlFinish (void);
-
 #endif
