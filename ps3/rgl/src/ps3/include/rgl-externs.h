@@ -18,10 +18,8 @@ void rglSetDefaultValuesFP (void *data);
 void rglSetDefaultValuesVP (void *data);
 void rglGcmSend( unsigned int dstId, unsigned dstOffset, unsigned int pitch, const char *src, unsigned int size );
 void rglGcmMemcpy( const GLuint dstId, unsigned dstOffset, unsigned int pitch, const GLuint srcId, GLuint srcOffset, unsigned int size );
-void rglSetNativeCgFragmentProgram(const void *data);
 void rglGcmFreeTiledSurface (GLuint bufferId);
 
 void rglGcmCopySurface(const void *data, GLuint srcX, GLuint srcY,
       const void *data_dst, GLuint dstX, GLuint dstY,
       GLuint width, GLuint height, GLboolean writeSync);
-void rglSetNativeCgVertexProgram (const void *data);

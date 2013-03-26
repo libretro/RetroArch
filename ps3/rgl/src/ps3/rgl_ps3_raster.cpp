@@ -27,6 +27,8 @@
 #include <Cg/CgCommon.h>
 #include <Cg/cgBinary.h>
 
+#include <ppu_intrinsics.h>
+
 #include <RGL/platform.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1918,7 +1920,40 @@ static GLuint rglValidateStates (GLuint mask)
 
    if (RGL_UNLIKELY(needValidate & RGL_VALIDATE_VERTEX_PROGRAM))
    {
-      rglSetNativeCgVertexProgram(LContext->BoundVertexProgram);
+      const _CGprogram *program = (const _CGprogram*)LContext->BoundVertexProgram;
+      __dcbt(program->ucode);
+      __dcbt(((uint8_t*)program->ucode)+128);
+      __dcbt(((uint8_t*)program->ucode)+256);
+      __dcbt(((uint8_t*)program->ucode)+384);
+
+      CellCgbVertexProgramConfiguration conf;
+      conf.instructionSlot = program->header.vertexProgram.instructionSlot;
+      conf.instructionCount = program->header.instructionCount;
+      conf.registerCount = program->header.vertexProgram.registerCount;
+      conf.attributeInputMask = program->header.attributeInputMask;
+
+      rglGcmFifoWaitForFreeSpace( &rglGcmState_i.fifo, 7 + 5 * conf.instructionCount );
+
+      GCM_FUNC( cellGcmSetVertexProgramLoad, &conf, program->ucode );
+      GCM_FUNC( cellGcmSetUserClipPlaneControl, 0, 0, 0, 0, 0, 0 );
+
+      rglGcmInterpolantState *s = &rglGcmState_i.state.interpolant;
+      s->vertexProgramAttribMask = program->header.vertexProgram.attributeOutputMask;
+
+      GCM_FUNC( cellGcmSetVertexAttribOutputMask, (( s->vertexProgramAttribMask) &
+               s->fragmentProgramAttribMask) );
+
+      int count = program->defaultValuesIndexCount;
+      for ( int i = 0;i < count;i++ )
+      {
+         const CgParameterEntry *parameterEntry = program->parametersEntries + program->defaultValuesIndices[i].entryIndex;
+         if (( parameterEntry->flags & CGPF_REFERENCED ) && ( parameterEntry->flags & CGPV_MASK ) == CGPV_CONSTANT )
+         {
+            const float *itemDefaultValues = program->defaultValues + 
+               program->defaultValuesIndices[i].defaultValueIndex;
+            rglFifoGlProgramParameterfvVP( program, parameterEntry, itemDefaultValues );
+         }
+      }
 
       // Set all uniforms.
       if(!(LContext->needValidate & RGL_VALIDATE_VERTEX_CONSTANTS) && LContext->BoundVertexProgram->parentContext)
@@ -1952,7 +1987,36 @@ static GLuint rglValidateStates (GLuint mask)
       _CGprogram *program = LContext->BoundFragmentProgram;
 
       // params are set directly in the GPU memory, so there is nothing to be done here.
-      rglSetNativeCgFragmentProgram( program );
+      CellCgbFragmentProgramConfiguration conf;
+
+      conf.offset = gmmIdToOffset(program->loadProgramId) + program->loadProgramOffset;
+
+      rglGcmInterpolantState *s = &rglGcmState_i.state.interpolant;
+      s->fragmentProgramAttribMask |= program->header.attributeInputMask | CELL_GCM_ATTRIB_OUTPUT_MASK_POINTSIZE;
+
+      conf.attributeInputMask = ( s->vertexProgramAttribMask) &
+         s->fragmentProgramAttribMask;
+
+      conf.texCoordsInputMask = program->header.fragmentProgram.texcoordInputMask;
+      conf.texCoords2D = program->header.fragmentProgram.texcoord2d;
+      conf.texCoordsCentroid = program->header.fragmentProgram.texcoordCentroid;
+
+      int fragmentControl = ( 1 << 15 ) | ( 1 << 10 );
+      fragmentControl |= program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ? 0xE : 0x0;
+      fragmentControl |= program->header.fragmentProgram.flags & CGF_OUTPUTFROMH0 ? 0x00 : 0x40;
+      fragmentControl |= program->header.fragmentProgram.flags & CGF_PIXELKILL ? 0x80 : 0x00;
+
+      conf.fragmentControl  = fragmentControl;
+      conf.registerCount = program->header.fragmentProgram.registerCount < 2 ? 2 : program->header.fragmentProgram.registerCount;
+
+      uint32_t controlTxp = _CurrentContext->AllowTXPDemotion; 
+      conf.fragmentControl &= ~CELL_GCM_MASK_SET_SHADER_CONTROL_CONTROL_TXP; 
+      conf.fragmentControl |= controlTxp << CELL_GCM_SHIFT_SET_SHADER_CONTROL_CONTROL_TXP; 
+
+      GCM_FUNC( cellGcmSetFragmentProgramLoad, &conf );
+
+      GCM_FUNC( cellGcmSetZMinMaxControl, ( program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? RGLGCM_FALSE : RGLGCM_TRUE, RGLGCM_FALSE, RGLGCM_FALSE );
+
       driver->fpLoadProgramId = program->loadProgramId;
       driver->fpLoadProgramOffset = program->loadProgramOffset;
    }
@@ -2006,7 +2070,6 @@ static GLuint rglValidateStates (GLuint mask)
    return dirty;
 }
 
-#include <ppu_intrinsics.h> /* TODO: move to platform-specific code */
 
 const uint32_t c_rounded_size_ofrglDrawParams = (sizeof(rglDrawParams)+0x7f)&~0x7f;
 static uint8_t s_dparams_buff[ c_rounded_size_ofrglDrawParams ] __attribute__((aligned(128)));

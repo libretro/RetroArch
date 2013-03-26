@@ -17,7 +17,7 @@
 
 #include "../rgl_cg.h"
 
-CGbool rglpSupportsVertexProgram( CGprofile p )
+static CGbool rglpSupportsVertexProgram( CGprofile p )
 {
    if ( p == CG_PROFILE_SCE_VP_TYPEB )
       return CG_TRUE;
@@ -28,7 +28,7 @@ CGbool rglpSupportsVertexProgram( CGprofile p )
    return CG_FALSE;
 }
 
-CGbool rglpSupportsFragmentProgram( CGprofile p )
+static CGbool rglpSupportsFragmentProgram( CGprofile p )
 {
    if ( p == CG_PROFILE_SCE_FP_TYPEB )
       return CG_TRUE;
@@ -37,7 +37,7 @@ CGbool rglpSupportsFragmentProgram( CGprofile p )
    return CG_FALSE;
 }
 
-CGprofile rglpGetLatestProfile( CGGLenum profile_type )
+static CGprofile rglpGetLatestProfile( CGGLenum profile_type )
 {
    switch ( profile_type )
    {
@@ -51,39 +51,7 @@ CGprofile rglpGetLatestProfile( CGGLenum profile_type )
    return CG_PROFILE_UNKNOWN;
 }
 
-// uploads the given fp shader to gpu memory. Allocates if needed.
-// This also builds the shared constants push buffer if needed, since it depends on the load address
-static int rglpsLoadFPShader (void *data)
-{
-   _CGprogram *program = (_CGprogram*)data;
-   unsigned int ucodeSize = program->header.instructionCount * 16;
-
-   if ( program->loadProgramId == GMM_ERROR )
-   {
-      program->loadProgramId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-            CELL_GCM_LOCATION_LOCAL, 0, ucodeSize);
-      program->loadProgramOffset = 0;
-   }
-
-   rglGcmSend( program->loadProgramId, program->loadProgramOffset, 0, ( char* )program->ucode, ucodeSize );
-   return GL_TRUE;
-}
-
-static void rglpsUnloadFPShader (void *data)
-{
-   _CGprogram *program = (_CGprogram*)data;
-
-   if ( program->loadProgramId != GMM_ERROR )
-   {
-      gmmFree( program->loadProgramId );
-      program->loadProgramId = GMM_ERROR;
-      program->loadProgramOffset = 0;
-   }
-}
-
-//new binary addition
-
-int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramHeader *programHeader, const void *ucode, const CgParameterTableHeader *parameterHeader,
+static int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramHeader *programHeader, const void *ucode, const CgParameterTableHeader *parameterHeader,
       const CgParameterEntry *parameterEntries, const char *stringTable, const float *defaultValues )
 {
    _CGprogram *program = (_CGprogram*)data;
@@ -184,13 +152,18 @@ int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramHeader *
    if ( profileIndex == FRAGMENT_PROFILE_INDEX )
    {
       // always load fragment shaders.
-      int loaded = rglpsLoadFPShader( program );
-      if ( ! loaded )
+      // uploads the given fp shader to gpu memory. Allocates if needed.
+      // This also builds the shared constants push buffer if needed, since it depends on the load address
+      unsigned int ucodeSize = program->header.instructionCount * 16;
+
+      if ( program->loadProgramId == GMM_ERROR )
       {
-         //TODO: what do we need to delete here ?
-         rglCgRaiseError( CG_MEMORY_ALLOC_ERROR );
-         return 0;
+         program->loadProgramId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
+               CELL_GCM_LOCATION_LOCAL, 0, ucodeSize);
+         program->loadProgramOffset = 0;
       }
+
+      rglGcmSend( program->loadProgramId, program->loadProgramOffset, 0, ( char* )program->ucode, ucodeSize );
    }
 
    program->programGroup = NULL;
@@ -231,41 +204,7 @@ CGprogram rglpCgUpdateProgramAtIndex( CGprogramGroup group, int index, int refco
       return NULL;
 }
 
-//add the group to the context:
-static void rglCgAddGroup( CGcontext ctx, CGprogramGroup group )
-{
-   _CGcontext *context = _cgGetContextPtr(ctx);
-   if ( !context->groupList )
-      context->groupList = group;
-   else
-   {
-      _CGprogramGroup *current = context->groupList;
-      while ( current->next )
-         current = current->next;
-      current->next = group;
-   }
-}
-
-static void rglCgRemoveGroup( CGcontext ctx, CGprogramGroup group )
-{
-   _CGcontext *context = _cgGetContextPtr( ctx );
-   _CGprogramGroup *current = context->groupList;
-   _CGprogramGroup *previous = NULL;
-   while ( current && current != group )
-   {
-      previous = current;
-      current = current->next;
-   }
-   if ( current )
-   {
-      if ( !previous )
-         context->groupList = current->next;
-      else
-         previous->next = current->next;
-   }
-}
-
-CGprogramGroup rglCgCreateProgramGroupFromFile( CGcontext ctx, const char *group_file )
+static CGprogramGroup rglCgCreateProgramGroupFromFile( CGcontext ctx, const char *group_file )
 {
    // check that file exists
    FILE* fp = fopen( group_file, "rb" );
@@ -362,7 +301,16 @@ CGprogramGroup rglCgCreateProgramGroup( CGcontext ctx,  const char *name, void *
          memcpy(( char* )group + nvStringTableOffset, elfBinary.strtab, elfStringTableSize );
 
       //add the group to the context:
-      rglCgAddGroup( ctx, group );
+      _CGcontext *context = _cgGetContextPtr(ctx);
+      if ( !context->groupList )
+         context->groupList = group;
+      else
+      {
+         _CGprogramGroup *current = context->groupList;
+         while ( current->next )
+            current = current->next;
+         current->next = group;
+      }
 
       //create all the shaders contained in the package and add them to the group
       for ( i = 0;i < ( int )group->programCount;i++ )
@@ -414,7 +362,21 @@ void rglCgDestroyProgramGroup( CGprogramGroup group )
       free( _group->name );
 
    //remove the group from the group list
-   rglCgRemoveGroup( group->ctx, group );
+   _CGcontext *context = _cgGetContextPtr( group->ctx );
+   _CGprogramGroup *current = context->groupList;
+   _CGprogramGroup *previous = NULL;
+   while ( current && current != group )
+   {
+      previous = current;
+      current = current->next;
+   }
+   if ( current )
+   {
+      if ( !previous )
+         context->groupList = current->next;
+      else
+         previous->next = current->next;
+   }
    free( _group );
 }
 
@@ -441,7 +403,11 @@ void rglpProgramErase (void *data)
    _CGprogram* program = (_CGprogram*)platformProgram;
 
    if ( program->loadProgramId != GMM_ERROR )
-      rglpsUnloadFPShader( program );
+   {
+      gmmFree( program->loadProgramId );
+      program->loadProgramId = GMM_ERROR;
+      program->loadProgramOffset = 0;
+   }
 
    //free the runtime parameters
    if ( program->runtimeParameters )
@@ -8700,23 +8666,6 @@ static int getSizeofSubArray(_CGNVCONTAINERS &containers, int dimensionIndex, in
       res *= (int)CNV2END(containers._dimensions[dimensionIndex + i]);
    return res;
 }
-
-/*static unsigned int constTableAddUnique( float *value )//128 bytes
-  {
-  unsigned int constTableSize = (int)_constTable.size();
-  unsigned int i;
-  for (i=0;i<constTableSize;i++)
-  {
-  if (!memcmp(value,(char*)(&_constTable[0])+i,sizeof(_float4)))
-  {
-  return i;
-  }
-  }
-//not found add it:
-_constTable.push_back(*(_float4*)value);
-
-return constTableSize;
-}*/
 
 template<class Type> static void array_push(char* &parameterOffset, std::vector<Type> &array)
 {

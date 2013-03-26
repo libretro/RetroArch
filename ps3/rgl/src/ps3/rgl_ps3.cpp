@@ -56,15 +56,8 @@ static uint32_t             cachedLockValue = 0;
 static uint8_t              pinAllocations = 0;
 static GmmFixedAllocData    *pGmmFixedAllocData = NULL;
 
-static inline uint32_t pad(uint32_t x, uint32_t pad)
-{
-   return ( x + pad - 1 ) / pad * pad;
-}
-
-static inline uint32_t gmmAddressToOffset(uint32_t address)
-{
-   return address - pGmmLocalAllocator->memoryBase;
-}
+#define PAD(x, pad) ((x + pad - 1) / pad * pad)
+#define GMM_ADDRESS_TO_OFFSET(address) (address - pGmmLocalAllocator->memoryBase)
 
 static uint32_t gmmInitFixedAllocator(void)
 {
@@ -216,10 +209,7 @@ static void gmmDestroyFixedAllocator (void)
    }
 }
 
-static GmmBlock *gmmAllocFixedBlock (void)
-{
-   return (GmmBlock *)gmmAllocFixed(0);
-}
+#define GMM_ALLOC_FIXED_BLOCK() ((GmmBlock*)gmmAllocFixed(0))
 
 static void gmmFreeFixedBlock (void *data)
 {
@@ -236,16 +226,6 @@ static void gmmFreeFixedTileBlock (void *data)
 {
    GmmTileBlock *pTileBlock = (GmmTileBlock*)data;
    gmmFreeFixed(1, pTileBlock);
-}
-
-void gmmPinAllocations (void)
-{
-   pinAllocations = 1;
-}
-
-void gmmUnpinAllocations (void)
-{
-   pinAllocations = 0;
 }
 
 uint32_t gmmInit(
@@ -375,7 +355,7 @@ uint32_t gmmIdToOffset(const uint32_t id)
       pBlock->isPinned = pinAllocations;
    }   
 
-   offset = gmmAddressToOffset(pBaseBlock->address);
+   offset = GMM_ADDRESS_TO_OFFSET(pBaseBlock->address);
 
    return offset;
 }
@@ -427,7 +407,7 @@ static GmmBlock *gmmAllocBlock(
    if (UINT_MAX - address >= size && 
          address + size <= pAllocator->startAddress + pAllocator->size)
    {
-      pNewBlock = gmmAllocFixedBlock();
+      pNewBlock = GMM_ALLOC_FIXED_BLOCK();
       if (pNewBlock == NULL)
       {
          return NULL;
@@ -608,7 +588,7 @@ uint32_t gmmAllocExtendedTileBlock(
    pAllocator = pGmmLocalAllocator;
 
 
-   newSize = pad(size, GMM_TILE_ALIGNMENT);
+   newSize = PAD(size, GMM_TILE_ALIGNMENT);
 
    GmmTileBlock    *pBlock = pAllocator->pTileTail;
 
@@ -1044,8 +1024,8 @@ static uint8_t gmmInternalSweep(void *data, const uint8_t location)
                 pBlock->pNext->base.address > pBlock->base.address + pBlock->base.size ||
                 pBlock->pNext->isPinned))
          {
-            dstOffset = gmmAddressToOffset(dstAddress);
-            srcOffset = gmmAddressToOffset(srcAddress);
+            dstOffset = GMM_ADDRESS_TO_OFFSET(dstAddress);
+            srcOffset = GMM_ADDRESS_TO_OFFSET(srcAddress);
 
             totalMoveSize += moveSize;
 
@@ -1095,8 +1075,8 @@ static uint8_t gmmInternalSweep(void *data, const uint8_t location)
                   pBlock->pPrev->base.address + pBlock->pPrev->base.size;
                uint32_t pinSrcAddress = pTempBlock->base.address;
 
-               dstOffset = gmmAddressToOffset(pinDstAddress);
-               srcOffset = gmmAddressToOffset(pinSrcAddress);
+               dstOffset = GMM_ADDRESS_TO_OFFSET(pinDstAddress);
+               srcOffset = GMM_ADDRESS_TO_OFFSET(pinSrcAddress);
 
                totalMoveSize += pTempBlock->base.size;
 
@@ -1111,13 +1091,9 @@ static uint8_t gmmInternalSweep(void *data, const uint8_t location)
                if (pTempBlock == pAllocator->pTail)
                {
                   if (pTempBlock->pNext)
-                  {
                      pAllocator->pTail = pTempBlock->pNext;
-                  }
                   else
-                  {
                      pAllocator->pTail = pTempBlock->pPrev;
-                  }
                }
 
                if (pTempBlock->pNext)
@@ -1144,7 +1120,7 @@ static uint8_t gmmInternalSweep(void *data, const uint8_t location)
 
          if (availableSize > 0)
          {
-            GmmBlock *pNewBlock = gmmAllocFixedBlock();
+            GmmBlock *pNewBlock = GMM_ALLOC_FIXED_BLOCK();
 
             if (pNewBlock)
             {
@@ -1340,7 +1316,7 @@ static uint32_t gmmFindFreeBlock(
    {
       if (pBlock->base.size != size)
       {
-         GmmBlock *pNewBlock = gmmAllocFixedBlock();
+         GmmBlock *pNewBlock = GMM_ALLOC_FIXED_BLOCK();
          if (pNewBlock == NULL)
             return GMM_ERROR;
 
@@ -1381,13 +1357,13 @@ uint32_t gmmAlloc(void *data, const uint8_t location,
 
    if (!isTile)
    {
-      newSize = pad(size, GMM_ALIGNMENT);
+      newSize = PAD(size, GMM_ALIGNMENT);
 
       retId = gmmFindFreeBlock(pAllocator, newSize);
    }
    else
    {
-      newSize = pad(size, GMM_TILE_ALIGNMENT);
+      newSize = PAD(size, GMM_TILE_ALIGNMENT);
       retId = GMM_ERROR;
    }
 
@@ -1412,90 +1388,6 @@ uint32_t gmmAlloc(void *data, const uint8_t location,
    }
 
    return retId;
-}
-
-/*============================================================
-  FRAGMENT SHADER
-  ============================================================ */
-
-void rglSetNativeCgFragmentProgram(const void *data)
-{
-   const _CGprogram *program = (const _CGprogram *)data;
-
-   CellCgbFragmentProgramConfiguration conf;
-
-   conf.offset = gmmIdToOffset(program->loadProgramId) + program->loadProgramOffset;
-
-   rglGcmInterpolantState *s = &rglGcmState_i.state.interpolant;
-   s->fragmentProgramAttribMask |= program->header.attributeInputMask | CELL_GCM_ATTRIB_OUTPUT_MASK_POINTSIZE;
-
-   conf.attributeInputMask = ( s->vertexProgramAttribMask) &
-      s->fragmentProgramAttribMask;
-
-   conf.texCoordsInputMask = program->header.fragmentProgram.texcoordInputMask;
-   conf.texCoords2D = program->header.fragmentProgram.texcoord2d;
-   conf.texCoordsCentroid = program->header.fragmentProgram.texcoordCentroid;
-
-   int fragmentControl = ( 1 << 15 ) | ( 1 << 10 );
-   fragmentControl |= program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ? 0xE : 0x0;
-   fragmentControl |= program->header.fragmentProgram.flags & CGF_OUTPUTFROMH0 ? 0x00 : 0x40;
-   fragmentControl |= program->header.fragmentProgram.flags & CGF_PIXELKILL ? 0x80 : 0x00;
-
-   conf.fragmentControl  = fragmentControl;
-   conf.registerCount = program->header.fragmentProgram.registerCount < 2 ? 2 : program->header.fragmentProgram.registerCount;
-
-   uint32_t controlTxp = _CurrentContext->AllowTXPDemotion; 
-   conf.fragmentControl &= ~CELL_GCM_MASK_SET_SHADER_CONTROL_CONTROL_TXP; 
-   conf.fragmentControl |= controlTxp << CELL_GCM_SHIFT_SET_SHADER_CONTROL_CONTROL_TXP; 
-
-   GCM_FUNC( cellGcmSetFragmentProgramLoad, &conf );
-
-   GCM_FUNC( cellGcmSetZMinMaxControl, ( program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? RGLGCM_FALSE : RGLGCM_TRUE, RGLGCM_FALSE, RGLGCM_FALSE );
-}
-
-/*============================================================
-  VERTEX SHADER
-  ============================================================ */
-
-void rglSetNativeCgVertexProgram(const void *data)
-{
-   const _CGprogram *program = (const _CGprogram*)data;
-
-   __dcbt(program->ucode);
-   __dcbt(((uint8_t*)program->ucode)+128);
-   __dcbt(((uint8_t*)program->ucode)+256);
-   __dcbt(((uint8_t*)program->ucode)+384);
-
-   CellCgbVertexProgramConfiguration conf;
-   conf.instructionSlot = program->header.vertexProgram.instructionSlot;
-   conf.instructionCount = program->header.instructionCount;
-   conf.registerCount = program->header.vertexProgram.registerCount;
-   conf.attributeInputMask = program->header.attributeInputMask;
-
-   rglGcmFifoWaitForFreeSpace( &rglGcmState_i.fifo, 7 + 5 * conf.instructionCount );
-
-   GCM_FUNC( cellGcmSetVertexProgramLoad, &conf, program->ucode );
-
-   GCM_FUNC( cellGcmSetUserClipPlaneControl, 0, 0, 0, 0, 0, 0 );
-
-   rglGcmInterpolantState *s = &rglGcmState_i.state.interpolant;
-   s->vertexProgramAttribMask = program->header.vertexProgram.attributeOutputMask;
-
-   GCM_FUNC( cellGcmSetVertexAttribOutputMask, (( s->vertexProgramAttribMask) &
-            s->fragmentProgramAttribMask) );
-
-   program = (_CGprogram*)data;
-   int count = program->defaultValuesIndexCount;
-   for ( int i = 0;i < count;i++ )
-   {
-      const CgParameterEntry *parameterEntry = program->parametersEntries + program->defaultValuesIndices[i].entryIndex;
-      if (( parameterEntry->flags & CGPF_REFERENCED ) && ( parameterEntry->flags & CGPV_MASK ) == CGPV_CONSTANT )
-      {
-         const float *itemDefaultValues = program->defaultValues + 
-            program->defaultValuesIndices[i].defaultValueIndex;
-         rglFifoGlProgramParameterfvVP( program, parameterEntry, itemDefaultValues );
-      }
-   }
 }
 
 /*============================================================
