@@ -2015,9 +2015,9 @@ static GLuint rglValidateStates (GLuint mask)
       conf.fragmentControl  = fragmentControl;
       conf.registerCount = program->header.fragmentProgram.registerCount < 2 ? 2 : program->header.fragmentProgram.registerCount;
 
-      uint32_t controlTxp = _CurrentContext->AllowTXPDemotion; 
       conf.fragmentControl &= ~CELL_GCM_MASK_SET_SHADER_CONTROL_CONTROL_TXP; 
-      conf.fragmentControl |= controlTxp << CELL_GCM_SHIFT_SET_SHADER_CONTROL_CONTROL_TXP; 
+      /* TODO - look into this */
+      conf.fragmentControl |= 0 << CELL_GCM_SHIFT_SET_SHADER_CONTROL_CONTROL_TXP; 
 
       GCM_FUNC( cellGcmSetFragmentProgramLoad, &conf );
 

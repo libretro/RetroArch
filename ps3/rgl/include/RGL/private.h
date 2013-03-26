@@ -39,8 +39,6 @@ extern void		rglContextFree( RGLcontext* LContext );
 extern void		rglSetError( GLenum error );
 void rglAttachContext( RGLdevice *device, RGLcontext* context );
 void rglDetachContext( RGLdevice *device, RGLcontext* context );
-void rglInvalidateAllStates (void *data);
-void rglResetAttributeState(void *data);
 void rglSetFlipHandler(void (*handler)(const GLuint head), RGLdevice *device);
 void rglSetVBlankHandler(void (*handler)(const GLuint head), RGLdevice *device);
 

@@ -3197,7 +3197,10 @@ GLAPI void RGL_EXPORT psglSwap (void)
    GCM_FUNC( cellGcmSetVertexProgramParameterBlock, 0, 8, ( float* )v ); // GCM_PORT_UNTESTED [KHOFF]
 
    rglGcmFifoGlEnable( RGLGCM_DITHER );
-   rglInvalidateAllStates( _CurrentContext );
+
+   RGLcontext *context = (RGLcontext*)_CurrentContext;
+   context->needValidate = RGL_VALIDATE_ALL;
+   context->attribs->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
 
    rglGcmFifoGlFlush(); 
 
@@ -3224,26 +3227,6 @@ GLAPI void RGL_EXPORT psglSwap (void)
 
       gcmDevice->rt.colorId[0] = gcmDevice->color[gcmDevice->drawBuffer].dataId;
       gcmDevice->rt.colorPitch[0] = gcmDevice->color[gcmDevice->drawBuffer].pitch;
-   }
-}
-
-void rglpValidateBlending(void)
-{
-   RGLcontext* LContext = _CurrentContext;
-
-   if ((LContext->Blending))
-   {
-      GCM_FUNC( cellGcmSetBlendEnable, LContext->Blending );
-
-      rglGcmFifoGlBlendColor(
-            LContext->BlendColor.R,
-            LContext->BlendColor.G,
-            LContext->BlendColor.B,
-            LContext->BlendColor.A);
-      rglGcmFifoGlBlendEquation(
-            (rglGcmEnum)LContext->BlendEquationRGB,
-            (rglGcmEnum)LContext->BlendEquationAlpha);
-      rglGcmFifoGlBlendFunc((rglGcmEnum)LContext->BlendFactorSrcRGB,(rglGcmEnum)LContext->BlendFactorDestRGB,(rglGcmEnum)LContext->BlendFactorSrcAlpha,(rglGcmEnum)LContext->BlendFactorDestAlpha);
    }
 }
 
@@ -3721,25 +3704,10 @@ DECLARE_C_TYPES
 typedef GLfloat type_GL_FLOAT;
 typedef GLhalfARB type_GL_HALF_FLOAT_ARB;
 
-static inline type_GL_FLOAT rglFloatTo_GL_FLOAT(float v)
-{
-   return v;
-}
-
-static inline float rglFloatFrom_GL_FLOAT(type_GL_FLOAT v)
-{
-   return v;
-}
-
-static inline type_GL_HALF_FLOAT_ARB rglFloatTo_GL_HALF_FLOAT_ARB(float x)
-{
-   return rglFloatToHalf(x);
-}
-
-static inline float rglFloatFrom_GL_HALF_FLOAT_ARB(type_GL_HALF_FLOAT_ARB x)
-{
-   return rglHalfToFloat(x);
-}
+#define rglFloatTo_GL_FLOAT(v) (v)
+#define rglFloatFrom_GL_FLOAT(v) (v)
+#define rglFloatTo_GL_HALF_FLOAT_ARB(x) (rglFloatToHalf(x))
+#define rglFloatFrom_GL_HALF_FLOAT_ARB(x) (rglHalfToFloat(x))
 
 #define DECLARE_PACKED_TYPE_AND_REV_2(REALTYPE,S1,S2) \
    DECLARE_PACKED_TYPE(GL_##REALTYPE,GL_##REALTYPE##_##S1##_##S2,2,S1,S2,0,0,) \
@@ -4014,71 +3982,17 @@ GLAPI GLenum APIENTRY glGetError(void)
    }
 }
 
-static void rglGetTextureIntegerv( GLenum pname, GLint* params )
-{
-   switch ( pname )
-   {
-      case GL_MAX_TEXTURE_SIZE:
-         params[0] = RGLP_MAX_TEXTURE_SIZE;
-         break;
-      default:
-         fprintf(stderr, "rglGetTextureIntegerv: enum not supported.\n");
-         return;
-   }
-}
-
 GLAPI void APIENTRY glGetIntegerv(GLenum pname, GLint* params)
 {
    switch (pname)
    {
       case GL_MAX_TEXTURE_SIZE:
-         rglGetTextureIntegerv(pname, params);
+         params[0] = RGLP_MAX_TEXTURE_SIZE;
          break;
       default:
          fprintf(stderr, "glGetIntegerv: enum not supported.\n");
          break;
    }
-}
-
-void rglResetAttributeState(void *data)
-{
-   rglAttributeState *as = (rglAttributeState*)data;
-
-   for ( int i = 0; i < RGL_MAX_VERTEX_ATTRIBS; ++i )
-   {
-      as->attrib[i].clientSize = 4;
-      as->attrib[i].clientType = GL_FLOAT;
-      as->attrib[i].clientStride = 16;
-      as->attrib[i].clientData = NULL;
-
-      as->attrib[i].value[0] = 0.0f;
-      as->attrib[i].value[1] = 0.0f;
-      as->attrib[i].value[2] = 0.0f;
-      as->attrib[i].value[3] = 1.0f;
-
-      as->attrib[i].normalized = GL_FALSE;
-      as->attrib[i].frequency = 1;
-
-      as->attrib[i].arrayBuffer = 0;
-   }
-
-   as->attrib[RGL_ATTRIB_PRIMARY_COLOR_INDEX].value[0] = 1.0f;
-   as->attrib[RGL_ATTRIB_PRIMARY_COLOR_INDEX].value[1] = 1.0f;
-   as->attrib[RGL_ATTRIB_PRIMARY_COLOR_INDEX].value[2] = 1.0f;
-   as->attrib[RGL_ATTRIB_PRIMARY_COLOR_INDEX].value[3] = 1.0f;
-
-   as->attrib[RGL_ATTRIB_SECONDARY_COLOR_INDEX].value[0] = 1.0f;
-   as->attrib[RGL_ATTRIB_SECONDARY_COLOR_INDEX].value[1] = 1.0f;
-   as->attrib[RGL_ATTRIB_SECONDARY_COLOR_INDEX].value[2] = 1.0f;
-   as->attrib[RGL_ATTRIB_SECONDARY_COLOR_INDEX].value[3] = 1.0f;
-
-   as->attrib[RGL_ATTRIB_NORMAL_INDEX].value[0] = 0.f;
-   as->attrib[RGL_ATTRIB_NORMAL_INDEX].value[1] = 0.f;
-   as->attrib[RGL_ATTRIB_NORMAL_INDEX].value[2] = 1.f;
-
-   as->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
-   as->EnabledMask = 0;
-   as->HasVBOMask = 0;
 }
 
 static void rglResetContext (void *data)
@@ -4094,8 +4008,6 @@ static void rglResetContext (void *data)
    LContext->ViewPort.Y = 0;
    LContext->ViewPort.XSize = 0;
    LContext->ViewPort.YSize = 0;
-
-   LContext->PerspectiveCorrectHint = GL_DONT_CARE;
 
    LContext->DepthNear = 0.f;
    LContext->DepthFar = 1.f;
@@ -4141,7 +4053,44 @@ static void rglResetContext (void *data)
    LContext->packAlignment = 4;
    LContext->unpackAlignment = 4;
 
-   rglResetAttributeState( &LContext->defaultAttribs0 );
+   rglAttributeState *as = (rglAttributeState*)&LContext->defaultAttribs0;
+
+   for ( int i = 0; i < RGL_MAX_VERTEX_ATTRIBS; ++i )
+   {
+      as->attrib[i].clientSize = 4;
+      as->attrib[i].clientType = GL_FLOAT;
+      as->attrib[i].clientStride = 16;
+      as->attrib[i].clientData = NULL;
+
+      as->attrib[i].value[0] = 0.0f;
+      as->attrib[i].value[1] = 0.0f;
+      as->attrib[i].value[2] = 0.0f;
+      as->attrib[i].value[3] = 1.0f;
+
+      as->attrib[i].normalized = GL_FALSE;
+      as->attrib[i].frequency = 1;
+
+      as->attrib[i].arrayBuffer = 0;
+   }
+
+   as->attrib[RGL_ATTRIB_PRIMARY_COLOR_INDEX].value[0] = 1.0f;
+   as->attrib[RGL_ATTRIB_PRIMARY_COLOR_INDEX].value[1] = 1.0f;
+   as->attrib[RGL_ATTRIB_PRIMARY_COLOR_INDEX].value[2] = 1.0f;
+   as->attrib[RGL_ATTRIB_PRIMARY_COLOR_INDEX].value[3] = 1.0f;
+
+   as->attrib[RGL_ATTRIB_SECONDARY_COLOR_INDEX].value[0] = 1.0f;
+   as->attrib[RGL_ATTRIB_SECONDARY_COLOR_INDEX].value[1] = 1.0f;
+   as->attrib[RGL_ATTRIB_SECONDARY_COLOR_INDEX].value[2] = 1.0f;
+   as->attrib[RGL_ATTRIB_SECONDARY_COLOR_INDEX].value[3] = 1.0f;
+
+   as->attrib[RGL_ATTRIB_NORMAL_INDEX].value[0] = 0.f;
+   as->attrib[RGL_ATTRIB_NORMAL_INDEX].value[1] = 0.f;
+   as->attrib[RGL_ATTRIB_NORMAL_INDEX].value[2] = 1.f;
+
+   as->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
+   as->EnabledMask = 0;
+   as->HasVBOMask = 0;
+
    LContext->attribs = &LContext->defaultAttribs0;
 
    LContext->framebuffer = 0;
@@ -4157,9 +4106,6 @@ static void rglResetContext (void *data)
    LContext->TextureBuffer = 0;
 
    LContext->VSync = GL_FALSE;
-
-   LContext->AllowTXPDemotion = GL_FALSE; 
-
 }
 
 RGLcontext* psglCreateContext(void)
@@ -4261,13 +4207,6 @@ void RGL_EXPORT psglDestroyContext (void *data)
    free( LContext );
 }
 
-void rglInvalidateAllStates (void *data)
-{
-   RGLcontext *context = (RGLcontext*)data;
-   context->needValidate = RGL_VALIDATE_ALL;
-   context->attribs->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
-}
-
 void rglAttachContext (RGLdevice *device, RGLcontext* context)
 {
    if (!context->everAttached)
@@ -4277,7 +4216,9 @@ void rglAttachContext (RGLdevice *device, RGLcontext* context)
       context->needValidate |= RGL_VALIDATE_VIEWPORT | RGL_VALIDATE_SCISSOR_BOX;
       context->everAttached = GL_TRUE;
    }
-   rglInvalidateAllStates( context );
+
+   context->needValidate = RGL_VALIDATE_ALL;
+   context->attribs->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
 }
 
 GLAPI void APIENTRY glEnable( GLenum cap )

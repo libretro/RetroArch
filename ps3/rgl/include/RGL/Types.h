@@ -350,8 +350,6 @@ extern "C" {
       GLclampf		DepthNear;
       GLclampf		DepthFar;
 
-      GLenum			PerspectiveCorrectHint;
-
       rglAttributeState defaultAttribs0;	// a default rglAttributeState, for bind = 0
       rglAttributeState *attribs;			// ptr to current rglAttributeState
 
@@ -404,7 +402,6 @@ extern "C" {
       struct _CGprogram*	BoundFragmentProgram;
       unsigned int	LastFPConstantModification;
 
-      GLboolean		AllowTXPDemotion;
       GLboolean		VSync;
       GLboolean       SkipFirstVSync;
 
