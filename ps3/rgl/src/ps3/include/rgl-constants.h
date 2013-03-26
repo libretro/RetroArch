@@ -1,5 +1,6 @@
-// This is used to make sure the pass the gpu the
-// right endianness.  RS
+#ifndef _RGL_CONSTANTS_H
+#define _RGL_CONSTANTS_H
+
 #define RGLGCM_BIG_ENDIAN
 
 #if RGL_ENDIAN == RGL_BIG_ENDIAN
@@ -462,3 +463,5 @@ enum {
 #define RGLGCM_MAX_TILED_REGIONS 15
 
 #define RGLP_BUFFER_OBJECT_SIZE() (sizeof(rglGcmBufferObject))
+
+#endif
