@@ -3261,25 +3261,6 @@ static void rglFreeBufferObject (void *data)
    }
 }
 
-static void rglUnbindBufferObject (void *data, GLuint name)
-{
-   RGLcontext *LContext = (RGLcontext*)data;
-
-   if (LContext->ArrayBuffer == name)
-      LContext->ArrayBuffer = 0;
-   if (LContext->PixelUnpackBuffer == name)
-      LContext->PixelUnpackBuffer = 0;
-
-   for ( int i = 0;i < RGL_MAX_VERTEX_ATTRIBS;++i )
-   {
-      if ( LContext->attribs->attrib[i].arrayBuffer == name )
-      {
-         LContext->attribs->attrib[i].arrayBuffer = 0;
-         LContext->attribs->HasVBOMask &= ~( 1 << i );
-      }
-   }
-}
-
 GLAPI void APIENTRY glBindBuffer( GLenum target, GLuint name )
 {
    RGLcontext *LContext = _CurrentContext;
@@ -3364,7 +3345,23 @@ GLAPI void APIENTRY glDeleteBuffers( GLsizei n, const GLuint *buffers )
       if(!rglTexNameSpaceIsName(&LContext->bufferObjectNameSpace, buffers[i]))
          continue;
       if (buffers[i])
-         rglUnbindBufferObject( LContext, buffers[i] );
+      {
+         GLuint name = buffers[i];
+
+         if (LContext->ArrayBuffer == name)
+            LContext->ArrayBuffer = 0;
+         if (LContext->PixelUnpackBuffer == name)
+            LContext->PixelUnpackBuffer = 0;
+
+         for ( int i = 0;i < RGL_MAX_VERTEX_ATTRIBS;++i )
+         {
+            if ( LContext->attribs->attrib[i].arrayBuffer == name )
+            {
+               LContext->attribs->attrib[i].arrayBuffer = 0;
+               LContext->attribs->HasVBOMask &= ~( 1 << i );
+            }
+         }
+      }
    }
    rglTexNameSpaceDeleteNames( &LContext->bufferObjectNameSpace, n, buffers );
 }
@@ -3509,41 +3506,6 @@ rglFramebufferAttachment* rglFramebufferGetAttachment(void *data, GLenum attachm
       default:
          rglSetError( GL_INVALID_ENUM );
          return NULL;
-   }
-}
-
-void rglGetFramebufferSize( GLuint* width, GLuint* height )
-{
-   RGLcontext*	LContext = _CurrentContext;
-
-   *width = *height = 0;
-
-   if ( LContext->framebuffer )
-   {
-      rglFramebuffer* framebuffer = rglGetFramebuffer( LContext, LContext->framebuffer );
-
-      if (rglPlatformFramebufferCheckStatus(framebuffer) != GL_FRAMEBUFFER_COMPLETE_OES)
-         return;
-
-      for ( int i = 0; i < RGL_MAX_COLOR_ATTACHMENTS; ++i )
-      {
-         rglTexture* colorTexture = NULL;
-         GLuint face = 0;
-         rglFramebufferGetAttachmentTexture( LContext, &framebuffer->color[i], &colorTexture, &face );
-         if (colorTexture == NULL)
-            continue;
-
-         unsigned texture_width = colorTexture->image->width;
-         unsigned texture_height = colorTexture->image->height;
-         *width = MIN( *width, texture_width);
-         *height = MIN( *height, texture_height);
-      }
-   }
-   else
-   {
-      RGLdevice *LDevice = _CurrentDevice;
-      *width = LDevice->deviceParameters.width;
-      *height = LDevice->deviceParameters.height;
    }
 }
 
@@ -4207,20 +4169,6 @@ void RGL_EXPORT psglDestroyContext (void *data)
    free( LContext );
 }
 
-void rglAttachContext (RGLdevice *device, RGLcontext* context)
-{
-   if (!context->everAttached)
-   {
-      context->ViewPort.XSize = device->deviceParameters.width;
-      context->ViewPort.YSize = device->deviceParameters.height;
-      context->needValidate |= RGL_VALIDATE_VIEWPORT | RGL_VALIDATE_SCISSOR_BOX;
-      context->everAttached = GL_TRUE;
-   }
-
-   context->needValidate = RGL_VALIDATE_ALL;
-   context->attribs->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
-}
-
 GLAPI void APIENTRY glEnable( GLenum cap )
 {
    RGLcontext* LContext = _CurrentContext;
@@ -4423,28 +4371,6 @@ void rglFreeTexture (void *data)
    free( texture );
 }
 
-void rglTextureUnbind (void *data, GLuint name )
-{
-   RGLcontext *context = (RGLcontext*)data;
-   int unit;
-
-   for ( unit = 0; unit < RGL_MAX_TEXTURE_IMAGE_UNITS; ++unit)
-   {
-      rglTextureImageUnit *tu = context->TextureImageUnits + unit;
-      GLboolean dirty = GL_FALSE;
-      if ( tu->bound2D == name )
-      {
-         tu->bound2D = 0;
-         dirty = GL_TRUE;
-      }
-      if ( dirty )
-      {
-         rglUpdateCurrentTextureCache( tu );
-         context->needValidate |= RGL_VALIDATE_TEXTURES_USED;
-      }
-   }
-}
-
 GLboolean rglTextureIsValid (const void *data)
 {
    const rglTexture *texture = (const rglTexture*)data;
@@ -4601,7 +4527,26 @@ GLAPI void APIENTRY glDeleteTextures( GLsizei n, const GLuint *textures )
    for ( int i = 0;i < n;++i )
    {
       if (textures[i])
-         rglTextureUnbind( LContext, textures[i] );
+      {
+         GLuint name = textures[i];
+         int unit;
+
+         for ( unit = 0; unit < RGL_MAX_TEXTURE_IMAGE_UNITS; ++unit)
+         {
+            rglTextureImageUnit *tu = LContext->TextureImageUnits + unit;
+            GLboolean dirty = GL_FALSE;
+            if ( tu->bound2D == name )
+            {
+               tu->bound2D = 0;
+               dirty = GL_TRUE;
+            }
+            if ( dirty )
+            {
+               rglUpdateCurrentTextureCache( tu );
+               LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
+            }
+         }
+      }
    }
 
    rglTexNameSpaceDeleteNames( &LContext->textureNameSpace, n, textures );
@@ -4739,27 +4684,6 @@ GLAPI void APIENTRY glVertexPointer( GLint size, GLenum type, GLsizei stride, co
    rglVertexAttribPointerNV( RGL_ATTRIB_POSITION_INDEX, size, type, GL_FALSE, stride, pointer );
 }
 
-GLAPI void APIENTRY glNormalPointer( GLenum type, GLsizei stride, const GLvoid* pointer )
-{
-   rglVertexAttribPointerNV( RGL_ATTRIB_NORMAL_INDEX, 3, type, GL_TRUE, stride, pointer );
-}
-
-GLAPI void APIENTRY glColor4f( GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha )
-{
-   rglVertexAttrib4fNV( RGL_ATTRIB_PRIMARY_COLOR_INDEX, red, green, blue, alpha );
-}
-
-GLAPI void APIENTRY glColor4ub( GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha )
-{
-   const float f = 1.f / 255.f;
-   rglVertexAttrib4fNV( RGL_ATTRIB_PRIMARY_COLOR_INDEX, f*red, f*green, f*blue, f*alpha );
-}
-
-GLAPI void APIENTRY glColor4fv( const GLfloat *v )
-{
-   rglVertexAttrib4fvNV( RGL_ATTRIB_PRIMARY_COLOR_INDEX, v );
-}
-
 void rglVertexAttribPointerNV(
       GLuint index,
       GLint fsize,
@@ -4818,43 +4742,6 @@ void rglDisableVertexAttribArrayNV (GLuint index)
    RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
 }
 
-void rglVertexAttrib1fNV (GLuint index, GLfloat x)
-{
-   RGLcontext*	LContext = _CurrentContext;
-
-   rglAttribute* attrib = LContext->attribs->attrib + index;
-   attrib->value[0] = x;
-   attrib->value[1] = 0.0f;
-   attrib->value[2] = 0.0f;
-   attrib->value[3] = 1.0f;
-   RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
-}
-
-void rglVertexAttrib2fNV (GLuint index, GLfloat x, GLfloat y)
-{
-   RGLcontext*	LContext = _CurrentContext;
-
-   rglAttribute* attrib = LContext->attribs->attrib + index;
-   attrib->value[0] = x;
-   attrib->value[1] = y;
-   attrib->value[2] = 0.0f;
-   attrib->value[3] = 1.0f;
-   RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
-}
-
-void rglVertexAttrib3fNV( GLuint index, GLfloat x, GLfloat y, GLfloat z )
-{
-   RGLcontext*	LContext = _CurrentContext;
-
-   rglAttribute* attrib = LContext->attribs->attrib + index;
-   attrib->value[0] = x;
-   attrib->value[1] = y;
-   attrib->value[2] = z;
-   attrib->value[3] = 1.0f;
-   RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
-
-}
-
 void rglVertexAttrib4fNV( GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w )
 {
    RGLcontext*	LContext = _CurrentContext;
@@ -4865,26 +4752,6 @@ void rglVertexAttrib4fNV( GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat
    attrib->value[2] = z;
    attrib->value[3] = w;
    RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
-}
-
-void rglVertexAttrib1fvNV( GLuint index, const GLfloat* v )
-{
-   rglVertexAttrib1fNV( index, v[0] );
-}
-
-void rglVertexAttrib2fvNV( GLuint index, const GLfloat* v )
-{
-   rglVertexAttrib2fNV( index, v[0], v[1] );
-}
-
-void rglVertexAttrib3fvNV( GLuint index, const GLfloat* v )
-{
-   rglVertexAttrib3fNV( index, v[0], v[1], v[2] );
-}
-
-void rglVertexAttrib4fvNV( GLuint index, const GLfloat* v )
-{
-   rglVertexAttrib4fNV( index, v[0], v[1], v[2], v[3] );
 }
 
 /*============================================================
@@ -4958,7 +4825,18 @@ void RGL_EXPORT psglMakeCurrent (RGLcontext *context, RGLdevice *device)
       {
          device->rasterDriver = rglPlatformRasterInit();
       }
-      rglAttachContext( device, context );
+
+      //attach context
+      if (!context->everAttached)
+      {
+         context->ViewPort.XSize = device->deviceParameters.width;
+         context->ViewPort.YSize = device->deviceParameters.height;
+         context->needValidate |= RGL_VALIDATE_VIEWPORT | RGL_VALIDATE_SCISSOR_BOX;
+         context->everAttached = GL_TRUE;
+      }
+
+      context->needValidate = RGL_VALIDATE_ALL;
+      context->attribs->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
    }
    else
    {

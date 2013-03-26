@@ -365,8 +365,6 @@ extern "C"
    GLAPI void APIENTRY glBlendFuncSeparate( GLenum sfactorRGB, GLenum dfactorRGB, GLenum sfactorAlpha, GLenum dfactorAlpha );
    GLAPI void APIENTRY glBlendColor( GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha );
    GLAPI void APIENTRY glNormal3fv( const GLfloat* v );
-   GLAPI void APIENTRY glColor4fv( const GLfloat* v );
-   GLAPI void APIENTRY glColor4ub( GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha );
    GLAPI void APIENTRY glGetBooleanv( GLenum pname, GLboolean* params );
    GLAPI void APIENTRY glGetFloatv( GLenum pname, GLfloat* params );
    GLAPI void APIENTRY glTexParameterfv( GLenum target, GLenum pname, const GLfloat* params );

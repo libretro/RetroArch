@@ -37,7 +37,6 @@ extern RGL_EXPORT RGLcontextHookFunction rglContextDestroyHook;
 extern RGLcontext*	rglContextCreate();
 extern void		rglContextFree( RGLcontext* LContext );
 extern void		rglSetError( GLenum error );
-void rglAttachContext( RGLdevice *device, RGLcontext* context );
 void rglDetachContext( RGLdevice *device, RGLcontext* context );
 void rglSetFlipHandler(void (*handler)(const GLuint head), RGLdevice *device);
 void rglSetVBlankHandler(void (*handler)(const GLuint head), RGLdevice *device);
@@ -47,7 +46,6 @@ void rglSetVBlankHandler(void (*handler)(const GLuint head), RGLdevice *device);
 //----------------------------------------
 rglTexture *rglAllocateTexture (void);
 void rglFreeTexture (void *data);
-void rglTextureUnbind (void *data, GLuint name );
 extern int	rglTextureInit( RGLcontext* context, GLuint name );
 extern void	rglTextureDelete( RGLcontext* context, GLuint name );
 extern GLboolean rglTextureHasValidLevels( const rglTexture *texture, int levels, int width, int height, int depth, GLenum format, GLenum type, GLenum internalFormat );
@@ -113,9 +111,6 @@ static inline int rglGetStorageSize( GLenum format, GLenum type, GLsizei width, 
 extern int rglGetTypeSize( GLenum type );
 extern int	rglGetMaxBitSize( GLenum type );
 extern int	rglGetStorageSize( GLenum format, GLenum type, GLsizei width, GLsizei height, GLsizei depth );
-extern void rglImageToRaster( const rglImage* image, rglRaster* raster, GLuint x, GLuint y, GLuint z );
-extern void rglRasterToImage( const rglRaster* raster, rglImage* image, GLuint x, GLuint y, GLuint z );
-extern void rglRawRasterToImage (const void *in_data, void *out_data, GLuint x, GLuint y, GLuint z);
 
 //----------------------------------------
 // FramebufferObject.c
@@ -136,27 +131,14 @@ static inline rglFramebuffer *rglGetFramebufferSafe( RGLcontext *LContext, GLuin
 void rglFramebufferGetAttachmentTexture( RGLcontext* LContext, const rglFramebufferAttachment* attachment, rglTexture** texture, GLuint* face );
 GLenum rglPlatformFramebufferCheckStatus (void *data);
 void rglPlatformFramebufferGetParameteriv( GLenum pname, GLint* params );
-void rglGetFramebufferSize( GLuint* width, GLuint* height );
 
 //----------------------------------------
 // VertexArray.c
 //----------------------------------------
-void rglVertexAttrib1fNV( GLuint index, GLfloat x );
-void rglVertexAttrib1fvNV( GLuint index, const GLfloat* v );
-void rglVertexAttrib2fNV( GLuint index, GLfloat x, GLfloat y );
-void rglVertexAttrib2fvNV( GLuint index, const GLfloat* v );
-void rglVertexAttrib3fNV( GLuint index, GLfloat x, GLfloat y, GLfloat z );
-void rglVertexAttrib3fvNV( GLuint index, const GLfloat* v );
 void rglVertexAttrib4fNV( GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w );
-void rglVertexAttrib4fvNV( GLuint index, const GLfloat* v );
 void rglVertexAttribPointerNV( GLuint index, GLint fsize, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid* pointer );
-void rglVertexAttribElementFunc( GLuint index, GLenum func, GLuint frequency );
 void rglEnableVertexAttribArrayNV( GLuint index );
 void rglDisableVertexAttribArrayNV( GLuint index );
-GLint rglConvertStream( rglAttributeState* asDst, const rglAttributeState* asSrc, GLuint index,
-      GLint skip, GLint first, GLint count,
-      const void* indices, GLenum indexType );
-void rglComputeMinMaxIndices( RGLcontext* LContext, GLuint* min, GLuint* max, const void* indices, GLenum indexType, GLsizei count );
 
 //----------------------------------------
 // Platform/Init.c
@@ -220,8 +202,6 @@ void rglPlatformGetImageData( GLenum target, GLint level, rglTexture *texture, r
 // Raster/.../PlatformFBops.c
 //----------------------------------------
 extern void rglValidateFramebuffer( void );
-extern void rglValidateFFXVertexProgram (void);
-extern void rglValidateFFXFragmentProgram (void);
 extern void rglPlatformReadPixels( GLint x, GLint y, GLsizei width, GLsizei height, GLboolean flip, GLenum format, GLenum type, GLvoid *pixels );
 extern GLboolean rglPlatformReadPBOPixels( GLint x, GLint y, GLsizei width, GLsizei height, GLboolean flip, GLenum format, GLenum type, GLvoid *pixels );
 
