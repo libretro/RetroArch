@@ -3476,7 +3476,7 @@ GLAPI void APIENTRY glBindFramebufferOES( GLenum target, GLuint framebuffer )
       rglTexNameSpaceCreateNameLazy( &LContext->framebufferNameSpace, framebuffer );
 
    LContext->framebuffer = framebuffer;
-   LContext->needValidate |= RGL_VALIDATE_SCISSOR_BOX | RGL_VALIDATE_FRAMEBUFFER;
+   LContext->needValidate |= RGL_VALIDATE_FRAMEBUFFER;
 }
 
 GLAPI void APIENTRY glDeleteFramebuffersOES( GLsizei n, const GLuint *framebuffers )
@@ -3541,7 +3541,7 @@ GLAPI void APIENTRY glFramebufferTexture2DOES( GLenum target, GLenum attachment,
    attach->textureTarget = textarget;
 
    framebuffer->needValidate = GL_TRUE;
-   LContext->needValidate |= RGL_VALIDATE_SCISSOR_BOX | RGL_VALIDATE_FRAMEBUFFER;
+   LContext->needValidate |= RGL_VALIDATE_FRAMEBUFFER;
 }
 
 
@@ -4776,7 +4776,7 @@ void RGL_EXPORT psglMakeCurrent (RGLcontext *context, RGLdevice *device)
       {
          context->ViewPort.XSize = device->deviceParameters.width;
          context->ViewPort.YSize = device->deviceParameters.height;
-         context->needValidate |= RGL_VALIDATE_VIEWPORT | RGL_VALIDATE_SCISSOR_BOX;
+         context->needValidate |= RGL_VALIDATE_VIEWPORT;
          context->everAttached = GL_TRUE;
       }
 

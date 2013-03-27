@@ -6437,7 +6437,19 @@ CGGL_API void cgGLEnableProfile( CGprofile profile )
 
       case CG_PROFILE_SCE_FP_TYPEB:
       case CG_PROFILE_SCE_FP_RSX:
-         rglLeaveFFXFP( LContext );
+         {
+            LContext->FragmentProgram = GL_TRUE;
+            struct _CGprogram* current = LContext->BoundFragmentProgram;
+            if ( current )
+            {
+               for ( GLuint i = 0; i < current->samplerCount; ++i )
+               {
+                  int unit = current->samplerUnits[i];
+                  rglUpdateCurrentTextureCache( &_CurrentContext->TextureImageUnits[unit] );
+               }
+            }
+            LContext->needValidate |= PSGL_VALIDATE_FRAGMENT_PROGRAM | PSGL_VALIDATE_TEXTURES_USED;
+         }
          break;
       default:
          rglCgRaiseError( CG_INVALID_PROFILE_ERROR );
@@ -6521,14 +6533,42 @@ CGGL_API void cgGLBindProgram( CGprogram program )
          //hack to counter removal of TypeC during beta
       case 7005:
       case CG_PROFILE_SCE_VP_RSX:
-         _cgGLBindVertexProgram( ptr );
+         // the program is a vertex program, just update the GL state
+         _CurrentContext->BoundVertexProgram = ptr;
+
+         // and inform the GL state to re-upload the vertex program
+         _CurrentContext->needValidate |= PSGL_VALIDATE_VERTEX_PROGRAM;
+
+         // This must happen before the sampler setters so texture parameters have the correct value in their push buffers for that routine
+         _pullConnectedParameterValues( ptr );
          break;
 
       case CG_PROFILE_SCE_FP_TYPEB:
          //hack to counter removal of TypeC during beta
       case 7006:
       case CG_PROFILE_SCE_FP_RSX:
-         _cgGLBindFragmentProgram( ptr );
+         _CurrentContext->BoundFragmentProgram = ptr;
+
+         // need to revalidate the textures in order to update which targets to fetch from
+         _CurrentContext->needValidate |= PSGL_VALIDATE_FRAGMENT_PROGRAM | PSGL_VALIDATE_TEXTURES_USED;
+
+         // This must happen before the sampler setters so texture parameters have the correct value in their push buffers for that routine
+         _pullConnectedParameterValues( ptr );
+
+         // TODO: push texture state
+         //  Needs to be done per profile. Can't use glPushAttrib.
+
+         // deal with the texture parameters now.
+         for ( GLuint index = 0; index < ptr->samplerCount; ++index )
+         {
+            // walk the array of sampler parameters
+            CgRuntimeParameter *rtParameter = ptr->runtimeParameters + ptr->samplerIndices[index];
+            CgParameterResource *parameter = ( CgParameterResource * )( ptr->parameterResources + rtParameter->parameterEntry->typeIndex );
+            // find out which texture unit this parameter has been assigned to
+            unsigned int unit = parameter->resource - CG_TEXUNIT0;
+            _CurrentContext->TextureImageUnits[unit].fragmentTarget = rtParameter->glType;
+            rglUpdateCurrentTextureCache( &_CurrentContext->TextureImageUnits[unit] );
+         }
          break;
 
       default:
@@ -6547,7 +6587,8 @@ CGGL_API void cgGLUnbindProgram( CGprofile profile )
       case CG_PROFILE_SCE_VP_RSX:
          //hack to counter removal of TypeC during beta
       case 7005:
-         _cgGLUnbindVertexProgram();
+         _CurrentContext->BoundVertexProgram = NULL;
+         _CurrentContext->needValidate |= PSGL_VALIDATE_VERTEX_PROGRAM;
          // no need to invalidate textures because they are only available on programmable pipe.
          break;
       case CG_PROFILE_SCE_FP_TYPEB:
@@ -6555,8 +6596,7 @@ CGGL_API void cgGLUnbindProgram( CGprofile profile )
       case CG_PROFILE_SCE_FP_RSX:
          //hack to counter removal of TypeC during beta
       case 7006:
-         _cgGLUnbindFragmentProgram();
-
+         _CurrentContext->BoundFragmentProgram = NULL;
          break;
       default:
          rglCgRaiseError( CG_INVALID_PROFILE_ERROR );
@@ -7367,17 +7407,6 @@ CGGL_API GLenum cgGLGetTextureEnum( CGparameter param )
    const CgParameterResource *parameterResource = rglGetParameterResource( ptr->program, ptr->parameterEntry );
    return GL_TEXTURE0 + parameterResource->resource - CG_TEXUNIT0;
 }
-
-CGGL_API void cgGLSetManageTextureParameters( CGcontext ctx, CGbool flag )
-{
-   _cgGetContextPtr( ctx )->GLmanageTextures = flag;
-}
-
-CGGL_API CGbool cgGLGetManageTextureParameters( CGcontext ctx )
-{
-   return _cgGetContextPtr( ctx )->GLmanageTextures;
-}
-
 
 void cgGLSetParameter1b( CGparameter param, CGbool v )
 {

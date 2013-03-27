@@ -149,7 +149,6 @@ typedef struct _CGcontext
    struct _CGprogram* programList;     // head of singly linked list of programs
 
    CGenum             compileType;     // compile manual, immediate or lazy (unused so far)
-   CGbool             GLmanageTextures;
 
    unsigned int         controlFlowBoolsSharedMask;
    unsigned int         controlFlowBoolsShared;
@@ -329,98 +328,6 @@ inline static void _pullConnectedParameterValues (void *data)
       connectionIter->childOnBindSetter( connectionIter->child, connectionIter->top->pushBufferPointer, 0 );
       connectionIter++;
    }
-}
-
-static inline void _cgGLBindVertexProgram (void *data)
-{
-   _CGprogram *program = (_CGprogram*)data;
-   // the program is a vertex program, just update the GL state
-   _CurrentContext->BoundVertexProgram = program;
-
-   // and inform the GL state to re-upload the vertex program
-   _CurrentContext->needValidate |= PSGL_VALIDATE_VERTEX_PROGRAM;
-
-   // This must happen before the sampler setters so texture parameters have the correct value in their push buffers for that routine
-   _pullConnectedParameterValues( program );
-
-   CGbool is_managed = program->parentContext->GLmanageTextures;
-   // enable texture parameters if the managed flag is set.
-   if ( is_managed )
-   {
-      for ( GLuint index = 0; index < program->samplerCount; ++index )
-      {
-         // walk the array of sampler parameters
-         CgRuntimeParameter *rtParameter = program->runtimeParameters + program->samplerIndices[index];
-         rtParameter->samplerSetter( rtParameter, NULL, 0 );
-      }
-   }
-}
-
-static inline void _cgGLBindFragmentProgram (void *data)
-{
-   _CGprogram *program = (_CGprogram*)data;
-   _CurrentContext->BoundFragmentProgram = program;
-
-   // need to revalidate the textures in order to update which targets to fetch from
-   _CurrentContext->needValidate |= PSGL_VALIDATE_FRAGMENT_PROGRAM | PSGL_VALIDATE_TEXTURES_USED | PSGL_VALIDATE_FRAGMENT_SHARED_CONSTANTS;
-
-   // This must happen before the sampler setters so texture parameters have the correct value in their push buffers for that routine
-   _pullConnectedParameterValues( program );
-
-   // TODO: push texture state
-   //  Needs to be done per profile. Can't use glPushAttrib.
-
-   CGbool is_managed = program->parentContext->GLmanageTextures;
-
-   // deal with the texture parameters now.
-   for ( GLuint index = 0; index < program->samplerCount; ++index )
-   {
-      // walk the array of sampler parameters
-      CgRuntimeParameter *rtParameter = program->runtimeParameters + program->samplerIndices[index];
-      CgParameterResource *parameter = ( CgParameterResource * )( program->parameterResources + rtParameter->parameterEntry->typeIndex );
-      // find out which texture unit this parameter has been assigned to
-      unsigned int unit = parameter->resource - CG_TEXUNIT0;
-
-      _CurrentContext->TextureImageUnits[unit].fragmentTarget = rtParameter->glType;
-
-      // enable texture parameters if the managed flag is set.
-      if ( is_managed )
-      {
-         //tmp
-         rtParameter->samplerSetter( rtParameter, NULL, 0 );
-      }
-      else
-      {
-         rglUpdateCurrentTextureCache( &_CurrentContext->TextureImageUnits[unit] );
-      }
-   }
-}
-
-static inline void _cgGLUnbindVertexProgram (void)
-{
-   _CurrentContext->BoundVertexProgram = NULL;
-   _CurrentContext->needValidate |= PSGL_VALIDATE_VERTEX_PROGRAM;
-}
-
-static inline void rglLeaveFFXFP (void *data)
-{
-   RGLcontext *LContext = (RGLcontext*)data;
-   LContext->FragmentProgram = GL_TRUE;
-   struct _CGprogram* current = LContext->BoundFragmentProgram;
-   if ( current )
-   {
-      for ( GLuint i = 0; i < current->samplerCount; ++i )
-      {
-         int unit = current->samplerUnits[i];
-         rglUpdateCurrentTextureCache( &_CurrentContext->TextureImageUnits[unit] );
-      }
-   }
-   LContext->needValidate |= PSGL_VALIDATE_FRAGMENT_PROGRAM | PSGL_VALIDATE_TEXTURES_USED | PSGL_VALIDATE_FRAGMENT_SHARED_CONSTANTS;
-}
-
-static inline void _cgGLUnbindFragmentProgram (void)
-{
-   _CurrentContext->BoundFragmentProgram = NULL;
 }
 
 static inline GLenum rglCgGetSamplerGLTypeFromCgType( CGtype type )

@@ -131,7 +131,6 @@ template<int SIZE> static void setVectorTypeSharedfpIndex (void *data, const voi
    values[3] = ( 3 < SIZE ) ? SWAP_IF_BIG_ENDIAN( vi[3] ) : 0;
    GCM_FUNC( cellGcmInlineTransfer, dstVidOffset, values, 4, 0 );
 
-   LContext->needValidate |= RGL_VALIDATE_FRAGMENT_SHARED_CONSTANTS;
    // XXX we don't care about 32bit wrapping, do we ?
    ++LContext->LastFPConstantModification;
 }
@@ -164,7 +163,6 @@ template<int SIZE> static void setVectorTypeSharedfpIndexArray (void *data, cons
    values[3] = ( 3 < SIZE ) ? SWAP_IF_BIG_ENDIAN( vi[3] ) : 0;
    GCM_FUNC( cellGcmInlineTransfer, dstVidOffset, values, 4, 0 ); 
 
-   LContext->needValidate |= RGL_VALIDATE_FRAGMENT_SHARED_CONSTANTS;
    // XXX we don't care about 32bit wrapping, do we ?
    ++LContext->LastFPConstantModification;
 }
@@ -359,7 +357,6 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndex (voi
    }
 
    RGLcontext * LContext = _CurrentContext;
-   LContext->needValidate |= RGL_VALIDATE_FRAGMENT_SHARED_CONSTANTS;
    ++LContext->LastFPConstantModification;
 }
 
@@ -408,7 +405,6 @@ template <int ROWS, int COLS, int ORDER> static void setMatrixSharedfpIndexArray
    }
 
    RGLcontext * LContext = _CurrentContext;
-   LContext->needValidate |= RGL_VALIDATE_FRAGMENT_SHARED_CONSTANTS;
    ++LContext->LastFPConstantModification;
 }
 
@@ -1322,6 +1318,41 @@ GLboolean rglPlatformBufferObjectUnmap (void *data)
   PLATFORM FRAMEBUFFER
   ============================================================ */
 
+// set render targets
+static void rglValidateFramebuffer (void)
+{
+   RGLdevice *LDevice = _CurrentDevice;
+   rglGcmDevice *gcmDevice = ( rglGcmDevice * )LDevice->platformDevice;
+
+   RGLcontext* LContext = _CurrentContext;
+   rglGcmDriver *gcmDriver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
+
+   // reset buffer data
+   gcmDriver->rtValid = GL_FALSE;
+   // get buffer parameters
+   //  This may come from a framebuffer_object or the default framebuffer.
+   //
+   gcmDriver->rt = gcmDevice->rt;
+
+   if (LContext->framebuffer)
+   {
+      rglPlatformFramebuffer* framebuffer = (rglPlatformFramebuffer *)rglGetFramebuffer(LContext, LContext->framebuffer);
+
+      if (framebuffer->needValidate)
+         framebuffer->validate( LContext );
+
+      gcmDriver->rt = framebuffer->rt;
+   }
+
+   gcmDriver->rtValid = GL_TRUE;
+
+   // update GPU configuration
+   rglGcmFifoGlSetRenderTarget( &gcmDriver->rt );
+
+   LContext->needValidate &= ~RGL_VALIDATE_FRAMEBUFFER;
+   LContext->needValidate |= RGL_VALIDATE_VIEWPORT;
+}
+
 GLAPI void APIENTRY glClear( GLbitfield mask )
 {
    RGLcontext*	LContext = _CurrentContext;
@@ -1404,7 +1435,7 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
       int clearcolor = 0;
       GCM_FUNC( cellGcmSetVertexData4f, RGL_ATTRIB_PRIMARY_COLOR_INDEX, ( GLfloat* )&clearcolor );
 
-      LContext->needValidate |= RGL_VALIDATE_WRITE_MASK | RGL_VALIDATE_FRAGMENT_PROGRAM;
+      LContext->needValidate |= RGL_VALIDATE_FRAGMENT_PROGRAM;
 
       gmmFree( bufferId );
    }
@@ -1570,41 +1601,6 @@ void rglPlatformFramebuffer::validate (void *data)
    needValidate = GL_FALSE;
 }
 
-// set render targets
-void rglValidateFramebuffer (void)
-{
-   RGLdevice *LDevice = _CurrentDevice;
-   rglGcmDevice *gcmDevice = ( rglGcmDevice * )LDevice->platformDevice;
-
-   RGLcontext* LContext = _CurrentContext;
-   rglGcmDriver *gcmDriver = (rglGcmDriver*)_CurrentDevice->rasterDriver;
-
-   // reset buffer data
-   gcmDriver->rtValid = GL_FALSE;
-   // get buffer parameters
-   //  This may come from a framebuffer_object or the default framebuffer.
-
-   if (LContext->framebuffer)
-   {
-      rglPlatformFramebuffer* framebuffer = (rglPlatformFramebuffer *)rglGetFramebuffer(LContext, LContext->framebuffer);
-
-      if (framebuffer->needValidate)
-         framebuffer->validate( LContext );
-
-      gcmDriver->rt = framebuffer->rt;
-   }
-   else	// use default framebuffer
-      gcmDriver->rt = gcmDevice->rt;
-
-   gcmDriver->rtValid = GL_TRUE;
-
-   // update GPU configuration
-   rglGcmFifoGlSetRenderTarget( &gcmDriver->rt );
-
-   LContext->needValidate &= ~RGL_VALIDATE_FRAMEBUFFER;
-   LContext->needValidate |= RGL_VALIDATE_VIEWPORT | RGL_VALIDATE_SCISSOR_BOX
-      | RGL_VALIDATE_WRITE_MASK;
-}
 
 /*============================================================
   PLATFORM RASTER

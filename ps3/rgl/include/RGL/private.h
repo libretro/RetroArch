@@ -86,7 +86,7 @@ static inline void rglTextureTouchFBOs (void *data)
          rglFramebuffer* framebuffer = texture->framebuffers[i];
          framebuffer->needValidate = GL_TRUE;
          if (RGL_UNLIKELY( framebuffer == contextFramebuffer))
-            LContext->needValidate |= PSGL_VALIDATE_SCISSOR_BOX | PSGL_VALIDATE_FRAMEBUFFER;
+            LContext->needValidate |= PSGL_VALIDATE_FRAMEBUFFER;
       }
    }
 }
@@ -199,7 +199,6 @@ void rglPlatformGetImageData( GLenum target, GLint level, rglTexture *texture, r
 //----------------------------------------
 // Raster/.../PlatformFBops.c
 //----------------------------------------
-extern void rglValidateFramebuffer( void );
 extern void rglPlatformReadPixels( GLint x, GLint y, GLsizei width, GLsizei height, GLboolean flip, GLenum format, GLenum type, GLvoid *pixels );
 extern GLboolean rglPlatformReadPBOPixels( GLint x, GLint y, GLsizei width, GLsizei height, GLboolean flip, GLenum format, GLenum type, GLvoid *pixels );
 
