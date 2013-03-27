@@ -998,29 +998,7 @@ void rglCgDestroyContextParam( CgRuntimeParameter* ptr )
       semanticIter++;
    }
 
-   std::vector<CgParameterConnection>::iterator paramConnectionTableIter = ptr->program->connectionTable.begin();
-   while ( paramConnectionTableIter != ptr->program->connectionTable.end() )
-   {
-      if ( paramConnectionTableIter->child == ptr )
-      {
-         ptr->program->connectionTable.erase( paramConnectionTableIter );
-         break;
-      }
-      paramConnectionTableIter++;
-   }
-
    if ( _cgParameterDestroyHook ) _cgParameterDestroyHook( ptr );
-
-   std::vector<CgRuntimeParameter*>::iterator rtCreatedIter = ptr->program->runtimeCreatedParameters.begin();
-   while ( rtCreatedIter != ptr->program->runtimeCreatedParameters.end() )
-   {
-      if ( *rtCreatedIter == ptr )
-      {
-         ptr->program->runtimeCreatedParameters.erase( rtCreatedIter );
-         break;
-      }
-      rtCreatedIter++;
-   }
 
    rglEraseName( &_CurrentContext->cgParameterNameSpace, (unsigned int)( ptr->id ) );
 
@@ -1310,29 +1288,6 @@ CG_API CGparameter cgGetNextParameter( CGparameter param )
    CgRuntimeParameter *rtParameter = ( CgRuntimeParameter* )rglCgGLTestParameter( param );
    if ( !rtParameter )
       return ( CGparameter )NULL;
-
-   // runtime created parameters are treated separately because they are in a different namespace
-   // as such, you never need to traverse from a program param to a runtime param, or visa-versa
-   if ( rtParameter->parameterEntry->flags & CGP_RTCREATED )
-   {
-      // we have a runtime created parameter
-      std::vector<CgRuntimeParameter*>::iterator rtCreatedIter = rtParameter->program->runtimeCreatedParameters.begin();
-      while ( rtCreatedIter != rtParameter->program->runtimeCreatedParameters.end() )
-      {
-         if ( *rtCreatedIter == rtParameter )
-         {
-            rtCreatedIter++;
-            if ( rtCreatedIter == rtParameter->program->runtimeCreatedParameters.end() )
-            {
-               break;
-            }
-            return ( *rtCreatedIter )->id;
-         }
-         rtCreatedIter++;
-      }
-      // no next parameter for this one
-      return ( CGparameter )NULL;
-   }
 
    // the case of the array element of a compact array is easy to solve
    int arrayIndex = -1;
@@ -2324,17 +2279,6 @@ CG_API void cgDestroyContext( CGcontext c )
 
    _CGcontext* ctx = _cgGetContextPtr( c );
 
-   // if we are really destroying the context, let's remove all the connections first.
-   // if we don't do this first, I think the clean up gets grumpy.
-   ctx->defaultProgram.connectionTable.clear();
-   struct _CGprogram* programIter = ctx->programList;
-   while ( programIter != NULL )
-   {
-      programIter->connectionTable.clear();
-      programIter = programIter->next;
-   }
-
-
    rglCgProgramErase( &ctx->defaultProgram );
 
    // destroy all programs
@@ -2505,47 +2449,9 @@ void rglCgProgramErase( _CGprogram* prog )
          break;
    }
 
-   // check to see if each effect parameter is a parent in a connection and remove that reference before deletion
-   //
-   // for every effect param, check every program in its context and every connection in each program,
-   // then remove any where the effect param is a parent
-   std::vector<CgRuntimeParameter*>::iterator effectParamIter = prog->runtimeCreatedParameters.begin();
-   while ( effectParamIter != prog->runtimeCreatedParameters.end() )
-   {
-      struct _CGprogram* programIter = prog->parentContext->programList;
-      while ( programIter != NULL )
-      {
-         // search the program's connection table to find if this is a parent param to anybody
-         std::vector<CgParameterConnection>::iterator paramConnectionTableIter = programIter->connectionTable.begin();
-         while ( paramConnectionTableIter != programIter->connectionTable.end() )
-         {
-            if ( paramConnectionTableIter->parent == *effectParamIter )
-            {
-               // Use iterator returned by erase() function as "nextParam" iterator
-               paramConnectionTableIter = programIter->connectionTable.erase( paramConnectionTableIter );
-            }
-            else
-            {
-               paramConnectionTableIter++;
-            }
-         }
-         programIter = programIter->next;
-      }
-      //rglCgDestroyContextParam(*effectParamIter);
-      effectParamIter++;
-   }
-
-   while ( prog->runtimeCreatedParameters.size() > 0 )
-   {
-      // this routine removes the parameter from the array
-      rglCgDestroyContextParam( prog->runtimeCreatedParameters[0] );
-   }
-
    // free allocated memory in these stl containers. 
    // Current clear() implementation deallocates the memory.
    // Is it better to explicitly call a "destructor" of this prog before freeing its memory?
-   prog->runtimeCreatedParameters.clear();
-   prog->connectionTable.clear();
    prog->parameterSemantics.clear();
 
    // return program and node to free store
@@ -4856,9 +4762,6 @@ CGGL_API void cgGLBindProgram( CGprogram program )
 
          // and inform the GL state to re-upload the vertex program
          _CurrentContext->needValidate |= PSGL_VALIDATE_VERTEX_PROGRAM;
-
-         // This must happen before the sampler setters so texture parameters have the correct value in their push buffers for that routine
-         _pullConnectedParameterValues( ptr );
          break;
 
       case CG_PROFILE_SCE_FP_TYPEB:
@@ -4869,9 +4772,6 @@ CGGL_API void cgGLBindProgram( CGprogram program )
 
          // need to revalidate the textures in order to update which targets to fetch from
          _CurrentContext->needValidate |= PSGL_VALIDATE_FRAGMENT_PROGRAM | PSGL_VALIDATE_TEXTURES_USED;
-
-         // This must happen before the sampler setters so texture parameters have the correct value in their push buffers for that routine
-         _pullConnectedParameterValues( ptr );
 
          // TODO: push texture state
          //  Needs to be done per profile. Can't use glPushAttrib.

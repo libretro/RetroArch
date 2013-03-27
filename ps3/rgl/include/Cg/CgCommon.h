@@ -126,12 +126,6 @@ struct _CGprogram
    _CGprogramGroup *programGroup;
    int programIndexInGroup;
 
-   // supports runtime created parameters
-   std::vector<CgRuntimeParameter*> runtimeCreatedParameters;
-
-   // supports parameter connections
-   std::vector<CgParameterConnection> connectionTable;
-
    // supports runtime allocation of semantics
    std::vector<CgRuntimeSemantic> parameterSemantics;
 
@@ -305,20 +299,6 @@ void rglPlatformSetFragmentRegisterBlock (unsigned int reg, unsigned int count, 
 void rglPlatformSetBoolVertexRegisters (unsigned int values );
 
 // names API
-
-static inline void _pullConnectedParameterValues (void *data)
-{
-   _CGprogram *ptr = (_CGprogram*)data;
-   // we now use a pull method to get the data into the children parameters
-   // when their program is bound they pull the data from their parents
-   std::vector<CgParameterConnection>::iterator connectionIter = ptr->connectionTable.begin();
-   while ( connectionIter != ptr->connectionTable.end() )
-   {
-      // pull data into connectionIter->child from connectionIter->top
-      connectionIter->childOnBindSetter( connectionIter->child, connectionIter->top->pushBufferPointer, 0 );
-      connectionIter++;
-   }
-}
 
 static inline GLenum rglCgGetSamplerGLTypeFromCgType( CGtype type )
 {
