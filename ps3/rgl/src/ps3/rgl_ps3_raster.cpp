@@ -2597,7 +2597,6 @@ source:		RGLGCM_SURFACE_SOURCE_TEMPORARY,
             pitch:		0,		// replaced per image
             format:		layout->internalFormat,
             pool:		RGLGCM_SURFACE_POOL_LINEAR,		// via bounce buffer
-            ppuData:     NULL,   // replaced per image
             dataId:      GMM_ERROR,
             dataIdOffset:0,
       };
@@ -2610,7 +2609,6 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
             pitch:		layout->pitch,
             format:		layout->internalFormat,
             pool:		gcmTexture->pool,
-            ppuData:     NULL,   // replaced per image
             dataId:      GMM_ERROR,
             dataIdOffset:0,
       };
@@ -2623,9 +2621,6 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
 
       if ( image->dataState == RGL_IMAGE_DATASTATE_HOST )
       {
-         // set source pixel buffer
-         src.ppuData = image->data;
-
          // lazy allocation of bounce buffer
          if ( bounceBufferId == GMM_ERROR && layout->baseDepth == 1 )
             bounceBufferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
