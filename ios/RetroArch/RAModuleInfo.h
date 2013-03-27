@@ -13,16 +13,19 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import <UIKit/UIKit.h>
-#import <GLKit/GLKit.h>
+#include "conf/config_file.h"
 
-#import "RAModuleInfo.h"
+@interface RAModuleInfo : NSObject
+@property (strong) NSString* path;
+@property config_file_t* data;
+@property (strong) NSString* configPath;
+@property (strong) NSString* displayName;
+@property (strong) NSArray* supportedExtensions;
 
-@interface RAGameView : UIViewController
-+ (RAGameView*)get;
-- (void)openPauseMenu;
-- (void)closePauseMenu;
++ (NSArray*)getModules;
+- (bool)supportsFileAtPath:(NSString*)path;
 @end
 
-@interface RALogView : UITableViewController
+@interface RAModuleInfoList : UITableViewController
+- (id)initWithModuleInfo:(RAModuleInfo*)info;
 @end

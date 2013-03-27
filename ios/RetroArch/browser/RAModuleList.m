@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#import "RAMOduleInfo.h"
 #import "browser.h"
 
 @implementation RAModuleList
@@ -26,54 +27,35 @@
 - (id)initWithGame:(NSString*)path
 {
    self = [super initWithStyle:UITableViewStyleGrouped];
+   [self setTitle:[path lastPathComponent]];
+   
    _game = path;
 
-   // Get the contents of the modules directory of the bundle.
-   NSString* module_dir = [NSString stringWithFormat:@"%@/modules", [[NSBundle mainBundle] bundlePath]];
+   //
+   NSArray* moduleList = [RAModuleInfo getModules];
    
-   NSArray* moduleList = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:module_dir error:nil];
-   
-   if (moduleList != nil)
-   {
-      moduleList = [module_dir stringsByAppendingPaths:moduleList];
-      moduleList = [moduleList pathsMatchingExtensions:[NSArray arrayWithObject:@"dylib"]];
-   }
-   
-   if (moduleList == nil || [moduleList count] == 0)
-   {
+   if (moduleList.count == 0)
       [RetroArch_iOS displayErrorMessage:@"No libretro cores were found."];
-   }
-   
+
    // Load the modules with their data
    _supported = [NSMutableArray array];
    _other = [NSMutableArray array];
    
-   for (int i = 0; i != [moduleList count]; i ++)
+   for (RAModuleInfo* i in moduleList)
    {
-      NSString* modulePath = [moduleList objectAtIndex:i];
-      NSString* baseName = [[modulePath stringByDeletingPathExtension] stringByAppendingPathExtension:@"info"];
-
-      RAModuleInfo* module = [RAModuleInfo moduleWithPath:modulePath data:config_file_new([baseName UTF8String])];
-      
-      if ([module supportsFileAtPath:_game])
-         [_supported addObject:module];
-      else
-         [_other addObject:module];
+      NSMutableArray* target = [i supportsFileAtPath:_game] ? _supported : _other;
+      [target addObject:i];
    }
 
-   // Sort
-   [_supported sortUsingComparator:^(RAModuleInfo* left, RAModuleInfo* right)
-   {
-      return [left.displayName caseInsensitiveCompare:right.displayName];
-   }];
+   // No sort, [RAModuleInfo getModules] is already sorted by display name
 
-   [_other sortUsingComparator:^(RAModuleInfo* left, RAModuleInfo* right)
-   {
-      return [left.displayName caseInsensitiveCompare:right.displayName];
-   }];
-
-   [self setTitle:[_game lastPathComponent]];
    return self;
+}
+
+- (RAModuleInfo*)moduleInfoForIndexPath:(NSIndexPath*)path
+{
+   NSMutableArray* sectionData = (_supported.count && path.section == 0) ? _supported : _other;
+   return (RAModuleInfo*)sectionData[path.row];
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView*)tableView
@@ -97,27 +79,22 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   NSMutableArray* sectionData = (_supported.count && indexPath.section == 0) ? _supported : _other;
-   [RetroArch_iOS get].moduleInfo = (RAModuleInfo*)sectionData[indexPath.row];
-
+   [RetroArch_iOS get].moduleInfo = [self moduleInfoForIndexPath:indexPath];
    [[RetroArch_iOS get] runGame:_game];
 }
 
 - (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath
 {
-   NSMutableArray* sectionData = (_supported.count && indexPath.section == 0) ? _supported : _other;
-   [RetroArch_iOS get].moduleInfo = (RAModuleInfo*)sectionData[indexPath.row];
-
+   [RetroArch_iOS get].moduleInfo = [self moduleInfoForIndexPath:indexPath];
    [[RetroArch_iOS get] showSettings];
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
    UITableViewCell* cell = [self.tableView dequeueReusableCellWithIdentifier:@"module"];
-   cell = (cell != nil) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"module"];
+   cell = (cell) ? cell : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"module"];
 
-   NSMutableArray* sectionData = (_supported.count && indexPath.section == 0) ? _supported : _other;
-   RAModuleInfo* info = (RAModuleInfo*)sectionData[indexPath.row];
+   RAModuleInfo* info = [self moduleInfoForIndexPath:indexPath];
 
    cell.textLabel.text = info.displayName;
    cell.accessoryType = UITableViewCellAccessoryDetailDisclosureButton;

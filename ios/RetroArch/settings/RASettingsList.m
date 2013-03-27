@@ -133,9 +133,9 @@ static RASettingData* custom_action(NSString* action)
    (void)[[RASettingsList alloc] init];
 }
 
-- (id)init
+- (RASettingsList*)initWithModule:(RAModuleInfo*)module
 {
-   config_file_t* config = config_file_new([[RetroArch_iOS get].moduleInfo.configPath UTF8String]);
+   config_file_t* config = config_file_new([module.configPath UTF8String]);
 
    NSString* overlay_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/overlays/"];
    NSString* shader_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/shaders/"];

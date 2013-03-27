@@ -13,45 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-@implementation RAModuleInfo
-+ (RAModuleInfo*)moduleWithPath:(NSString*)thePath data:(config_file_t*)theData
-{
-   RAModuleInfo* new = [RAModuleInfo new];
-
-   char* dispname = 0;
-   char* extensions = 0;
-   
-   if (theData)
-   {
-      config_get_string(theData, "display_name", &dispname);
-      config_get_string(theData, "supported_extensions", &extensions);
-   }
-
-   new.displayName = dispname ? [NSString stringWithUTF8String:dispname] : [[thePath lastPathComponent] stringByDeletingPathExtension];
-   new.path = thePath;
-   new.configPath = [NSString stringWithFormat:@"%@/%@.cfg", [RetroArch_iOS get].system_directory, [[thePath lastPathComponent] stringByDeletingPathExtension]];
-   new.data = theData;
-   
-   new.supportedExtensions = extensions ? [[NSString stringWithUTF8String:extensions] componentsSeparatedByString:@"|"] : [NSArray array];
-   
-   free(dispname);
-   free(extensions);
-   
-   return new;
-}
-
-- (void)dealloc
-{
-   config_file_free(self.data);
-}
-
-- (bool)supportsFileAtPath:(NSString*)path
-{
-   return [self.supportedExtensions containsObject:[[path pathExtension] lowercaseString]];
-}
-
-@end
-
 static NSString* const labels[3] = {@"Emulator Name", @"Manufacturer", @"Name"};
 static const char* const keys[3] = {"emuname", "manufacturer", "systemname"};
 static NSString* const sectionNames[2] = {@"Emulator", @"Hardware"};
