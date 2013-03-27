@@ -242,6 +242,9 @@ typedef struct gl
    struct gl_fbo_scale fbo_scale[MAX_SHADERS];
    int fbo_pass;
    bool fbo_inited;
+
+   GLuint hw_render_fbo[TEXTURES];
+   bool hw_render_fbo_init;
 #endif
 
    bool should_resize;

@@ -556,6 +556,15 @@ static bool environment_cb(unsigned cmd, void *data)
          g_extern.system.disk_control = *(const struct retro_disk_control_callback*)data;
          break;
 
+      case RETRO_ENVIRONMENT_SET_HW_RENDER:
+      {
+         RARCH_LOG("Environ SET_HW_RENDER.\n");
+         struct retro_hw_render_callback *cb = (struct retro_hw_render_callback*)data;
+         cb->get_current_framebuffer = driver_get_current_framebuffer;
+         memcpy(&g_extern.system.hw_render_callback, cb, sizeof(*cb));
+         break;
+      }
+
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;

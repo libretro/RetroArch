@@ -699,6 +699,27 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 
    gl->fbo_inited = true;
 }
+
+void gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
+{
+   RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
+
+   glBindTexture(GL_TEXTURE_2D, 0);
+
+   pglGenFramebuffers(TEXTURES, gl->hw_render_fbo);
+
+   for (unsigned i = 0; i < TEXTURES; i++)
+   {
+      pglBindFramebuffer(GL_FRAMEBUFFER, gl->hw_render_fbo[i]);
+      pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->texture[i], 0);
+      GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
+      if (status != GL_FRAMEBUFFER_COMPLETE)
+         RARCH_ERR("[GL]: Failed to create HW render FBO.\n");
+   }
+
+   pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+   gl->hw_render_fbo_init = true;
+}
 #endif
 
 void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
@@ -977,7 +998,7 @@ static void gl_update_resize(void *data)
 #endif
 }
 
-static void gl_update_input_size(void *data, unsigned width, unsigned height, unsigned pitch)
+static void gl_update_input_size(void *data, unsigned width, unsigned height, unsigned pitch, bool clear)
 {
    gl_t *gl = (gl_t*)data;
    // Res change. Need to clear out texture.
@@ -986,18 +1007,21 @@ static void gl_update_input_size(void *data, unsigned width, unsigned height, un
       gl->last_width[gl->tex_index] = width;
       gl->last_height[gl->tex_index] = height;
 
+      if (clear)
+      {
 #if defined(HAVE_PSGL)
-      glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
-		      gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
-		      gl->tex_w * gl->tex_h * gl->base_size,
-		      gl->empty_buf);
+         glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
+               gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
+               gl->tex_w * gl->tex_h * gl->base_size,
+               gl->empty_buf);
 #else
-      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t)));
+         glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t)));
 
-      glTexSubImage2D(GL_TEXTURE_2D,
-            0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
-            gl->texture_fmt, gl->empty_buf);
+         glTexSubImage2D(GL_TEXTURE_2D,
+               0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
+               gl->texture_fmt, gl->empty_buf);
 #endif
+      }
 
       GLfloat xamt = (GLfloat)width / gl->tex_w;
       GLfloat yamt = (GLfloat)height / gl->tex_h;
@@ -1360,16 +1384,36 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
-      gl_update_input_size(gl, width, height, pitch);
+#ifdef HAVE_FBO
+      // Data is already on GPU :) Have to reset some state however incase core changed it.
+      if (gl->hw_render_fbo_init)
+      {
+         gl_update_input_size(gl, width, height, pitch, false);
+#ifndef HAVE_OPENGLES
+         glEnable(GL_TEXTURE_2D);
+#endif
+         glDisable(GL_DEPTH_TEST);
+         glDisable(GL_DITHER);
+         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-      RARCH_PERFORMANCE_INIT(copy_frame);
-      RARCH_PERFORMANCE_START(copy_frame);
-      gl_copy_frame(gl, frame, width, height, pitch);
-      RARCH_PERFORMANCE_STOP(copy_frame);
+         if (!gl->fbo_inited)
+            pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+         gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+      }
+      else
+#endif
+      {
+         gl_update_input_size(gl, width, height, pitch, true);
+         RARCH_PERFORMANCE_INIT(copy_frame);
+         RARCH_PERFORMANCE_START(copy_frame);
+         gl_copy_frame(gl, frame, width, height, pitch);
+         RARCH_PERFORMANCE_STOP(copy_frame);
 
 #ifdef IOS // Apparently the viewport is lost each frame, thanks apple.
-      gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+         gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 #endif
+      }
    }
    else
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -1514,6 +1558,10 @@ static void gl_free(void *data)
 
 #ifdef HAVE_FBO
    gl_deinit_fbo(gl);
+
+   if (gl->hw_render_fbo_init)
+      pglDeleteFramebuffers(TEXTURES, gl->hw_render_fbo);
+   gl->hw_render_fbo_init = false;
 #endif
 
    context_destroy_func();
@@ -1814,11 +1862,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
    gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
 
-#ifdef HAVE_FBO
-   // Set up render to texture.
-   gl_init_fbo(gl, gl->tex_w, gl->tex_h);
-#endif
-
    gl->keep_aspect = video->force_aspect;
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
@@ -1863,6 +1906,14 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_init_textures(gl, video);
    gl_init_textures_data(gl);
 
+#ifdef HAVE_FBO
+   // Set up render to texture.
+   gl_init_fbo(gl, gl->tex_w, gl->tex_h);
+
+   if (g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL)
+      gl_init_hw_render(gl, gl->tex_w, gl->tex_h);
+#endif
+
    if (input && input_data)
       context_input_driver_func(input, input_data);
    
@@ -1880,6 +1931,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       free(gl);
       return NULL;
    }
+
+#ifdef HAVE_FBO
+   if (gl->hw_render_fbo_init)
+      g_extern.system.hw_render_callback.context_reset();
+#endif
 
    return gl;
 }
@@ -2313,6 +2369,12 @@ static unsigned gl_get_fbo_state(void *data)
    gl_t *gl = (gl_t*)data;
    return gl->fbo_inited ? FBO_INIT : FBO_DEINIT;
 }
+
+static uintptr_t gl_get_current_framebuffer(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+   return gl->hw_render_fbo[(gl->tex_index + 1) & TEXTURES_MASK];
+}
 #endif
 
 static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
@@ -2371,6 +2433,7 @@ static const video_poke_interface_t gl_poke_interface = {
 #ifdef HAVE_FBO
    gl_set_fbo_state,
    gl_get_fbo_state,
+   gl_get_current_framebuffer,
 #endif
    gl_set_aspect_ratio,
    gl_apply_state_changes,

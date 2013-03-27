@@ -270,6 +270,16 @@ void driver_set_monitor_refresh_rate(float hz)
 
 }
 
+uintptr_t driver_get_current_framebuffer(void)
+{
+#ifdef HAVE_FBO
+   if (driver.video_poke && driver.video_poke->get_current_framebuffer)
+      return driver.video_poke->get_current_framebuffer(driver.video_data);
+   else
+#endif
+      return 0;
+}
+
 // Only called once on init and deinit.
 // Video and input drivers need to be active (owned)
 // before retroarch core starts.

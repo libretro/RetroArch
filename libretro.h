@@ -421,7 +421,43 @@ enum retro_mod
                                            // Sets an interface which frontend can use to eject and insert disk images.
                                            // This is used for games which consist of multiple images and must be manually
                                            // swapped out by the user (e.g. PSX).
+#define RETRO_ENVIRONMENT_SET_HW_RENDER 0x10000
+                                           // struct retro_hw_render_callback * --
+                                           // NOTE: This call is currently very experimental, and should not be considered part of the public API.
+                                           // The interface could be changed or removed at any time.
+                                           // Sets an interface to let a libretro core render with hardware acceleration.
+                                           // Should be called in retro_load_game().
+                                           // If successful, libretro cores will be able to render to a frontend-provided framebuffer.
+                                           // The size of this framebuffer will be at least as large as max_width/max_height provided in get_av_info().
+                                           // If HW rendering is used, pass only RETRO_HW_FRAME_BUFFER_VALID or NULL to retro_video_refresh_t.
 
+
+// Pass this to retro_video_refresh_t if rendering to hardware.
+// Passing NULL to retro_video_refresh_t is still a frame dupe as normal.
+#define RETRO_HW_FRAME_BUFFER_VALID ((void*)-1)
+
+// Invalidates the current HW context.
+// If called, all GPU resources must be reinitialized.
+// Usually called when frontend reinits video driver.
+// Also called first time video driver is initialized, allowing libretro core to init resources.
+typedef void (*retro_hw_context_reset_t)(void);
+// Gets current framebuffer which is to be rendered to. Could change every frame potentially.
+typedef uintptr_t (*retro_hw_get_current_framebuffer_t)(void);
+
+enum retro_hw_context_type
+{
+   RETRO_HW_CONTEXT_NONE = 0,
+   RETRO_HW_CONTEXT_OPENGL,
+
+   RETRO_HW_CONTEXT_DUMMY = INT_MAX
+};
+
+struct retro_hw_render_callback
+{
+   enum retro_hw_context_type context_type; // Which API to use. Set by libretro core.
+   retro_hw_context_reset_t context_reset; // Set by libretro core.
+   retro_hw_get_current_framebuffer_t get_current_framebuffer; // Set by frontend.
+};
 
 // Callback type passed in RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK. Called by the frontend in response to keyboard events.
 // down is set if the key is being pressed, or false if it is being released.
