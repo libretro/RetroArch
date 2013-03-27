@@ -770,15 +770,12 @@ void rglCreatePushBuffer(void *data)
       if ( containerEntry == NULL )
          containerEntry = parameterEntry;
 
-      //rtParameter->setter = _cgRaiseInvalidParam;
-      //rtParameter->setterr = _cgRaiseNotMatrixParam;
-      //rtParameter->setterc = _cgRaiseNotMatrixParam;
-      rtParameter->samplerSetter = _cgRaiseInvalidParamIndex;
+      rtParameter->samplerSetter = _cgIgnoreParamIndex;
 
       //tentative
-      rtParameter->setterIndex = _cgRaiseInvalidParamIndex;
-      rtParameter->setterrIndex = _cgRaiseNotMatrixParamIndex;
-      rtParameter->settercIndex = _cgRaiseNotMatrixParamIndex;
+      rtParameter->setterIndex = _cgIgnoreParamIndex;
+      rtParameter->setterrIndex = _cgIgnoreParamIndex;
+      rtParameter->settercIndex = _cgIgnoreParamIndex;
 
       CGparameter id = ( CGparameter )rglCreateName( &_CurrentContext->cgParameterNameSpace, ( void* )rtParameter );
       if ( !id )
@@ -833,7 +830,7 @@ void rglCreatePushBuffer(void *data)
                // the parameters should have a "validate" function instead
                if ( profileIndex == VERTEX_PROFILE_INDEX )
                {
-                  rtParameter->setterIndex = _cgIgnoreSetParamIndex;
+                  rtParameter->setterIndex = _cgIgnoreParamIndex;
                   rtParameter->samplerSetter = setSamplervp;
                }
                else
@@ -1001,17 +998,17 @@ void rglCreatePushBuffer(void *data)
             {
                case CG_FLOAT:
                case CG_FLOAT1: case CG_FLOAT2: case CG_FLOAT3: case CG_FLOAT4:
-                  rtParameter->setterIndex = _cgIgnoreSetParamIndex;
+                  rtParameter->setterIndex = _cgIgnoreParamIndex;
                   break;
                case CG_FLOAT1x1: case CG_FLOAT1x2: case CG_FLOAT1x3: case CG_FLOAT1x4:
                case CG_FLOAT2x1: case CG_FLOAT2x2: case CG_FLOAT2x3: case CG_FLOAT2x4:
                case CG_FLOAT3x1: case CG_FLOAT3x2: case CG_FLOAT3x3: case CG_FLOAT3x4:
                case CG_FLOAT4x1: case CG_FLOAT4x2: case CG_FLOAT4x3: case CG_FLOAT4x4:
-                  rtParameter->setterrIndex = _cgIgnoreSetParamIndex;
-                  rtParameter->settercIndex = _cgIgnoreSetParamIndex;
+                  rtParameter->setterrIndex = _cgIgnoreParamIndex;
+                  rtParameter->settercIndex = _cgIgnoreParamIndex;
                   break;
                case CG_SAMPLER1D: case CG_SAMPLER2D: case CG_SAMPLER3D: case CG_SAMPLERRECT: case CG_SAMPLERCUBE:
-                  rtParameter->samplerSetter = _cgIgnoreSetParamIndex;
+                  rtParameter->samplerSetter = _cgIgnoreParamIndex;
                   break;
                case CGP_SCF_BOOL:
                   break;
@@ -1023,7 +1020,7 @@ void rglCreatePushBuffer(void *data)
                case CG_BOOL1: case CG_BOOL2: case CG_BOOL3: case CG_BOOL4:
                case CG_FIXED:
                case CG_FIXED1: case CG_FIXED2: case CG_FIXED3: case CG_FIXED4:
-                  rtParameter->setterIndex = _cgIgnoreSetParamIndex;
+                  rtParameter->setterIndex = _cgIgnoreParamIndex;
                   break;
                case CG_HALF1x1: case CG_HALF1x2: case CG_HALF1x3: case CG_HALF1x4:
                case CG_HALF2x1: case CG_HALF2x2: case CG_HALF2x3: case CG_HALF2x4:
@@ -1041,8 +1038,8 @@ void rglCreatePushBuffer(void *data)
                case CG_FIXED2x1: case CG_FIXED2x2: case CG_FIXED2x3: case CG_FIXED2x4:
                case CG_FIXED3x1: case CG_FIXED3x2: case CG_FIXED3x3: case CG_FIXED3x4:
                case CG_FIXED4x1: case CG_FIXED4x2: case CG_FIXED4x3: case CG_FIXED4x4:
-                  rtParameter->setterrIndex = _cgIgnoreSetParamIndex;
-                  rtParameter->settercIndex = _cgIgnoreSetParamIndex;
+                  rtParameter->setterrIndex = _cgIgnoreParamIndex;
+                  rtParameter->settercIndex = _cgIgnoreParamIndex;
                   break;
                   // addition to be compatible with cgc 2.0 
                case CG_STRING:

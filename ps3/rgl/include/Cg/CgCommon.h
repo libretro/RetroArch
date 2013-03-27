@@ -83,8 +83,6 @@ struct _CGprogram
    unsigned int *       samplerIndices;
    unsigned int *       samplerUnits;
 
-   unsigned int         controlFlowBools;
-
    //binary format additions
    //info previously contained in platformProgram ( loadAddress + nvBinary )
    CgProgramHeader header;
@@ -150,9 +148,6 @@ typedef struct _CGcontext
 
    CGenum             compileType;     // compile manual, immediate or lazy (unused so far)
 
-   unsigned int         controlFlowBoolsSharedMask;
-   unsigned int         controlFlowBoolsShared;
-
    // default program, fake owner of the context parameters
    _CGprogram        defaultProgram;
 
@@ -170,16 +165,13 @@ RGL_EXPORT void rglCgRaiseError( CGerror error );
 // interface between object types
 extern void rglCgProgramDestroyAll( _CGcontext* c );
 extern void rglCgDestroyContextParam( CgRuntimeParameter* p );
-RGL_EXPORT CgRuntimeParameter*rglCgCreateParameterInternal( _CGprogram *program, const char* name, CGtype type );
 RGL_EXPORT void rglCgProgramErase( _CGprogram* prog );
 
 // default setters
 void _cgRaiseInvalidParam( void *data, const void*v );
 void _cgRaiseNotMatrixParam( void *data, const void*v );
 void _cgIgnoreSetParam( void *dat, const void*v );
-void _cgRaiseInvalidParamIndex( void *dat, const void*v, const int index );
-void _cgRaiseNotMatrixParamIndex( void *dat, const void*v, const int index );
-void _cgIgnoreSetParamIndex( void *dat, const void*v, const int index );
+void _cgIgnoreParamIndex( void *dat, const void*v, const int index );
 
 // cg helpers
 
@@ -212,7 +204,6 @@ static inline bool isSampler (CGtype type)
 
 
 unsigned int rglCountFloatsInCgType( CGtype type );
-CGbool _cgMatrixDimensions( CGtype type, unsigned int* nrows, unsigned int* ncols );
 
 unsigned int rglGetTypeRowCount( CGtype parameterType );
 unsigned int rglGetTypeColCount( CGtype parameterType );
@@ -314,9 +305,8 @@ void rglPlatformSetFragmentRegisterBlock (unsigned int reg, unsigned int count, 
 void rglPlatformSetBoolVertexRegisters (unsigned int values );
 
 // names API
-RGL_EXPORT unsigned int _cgHashString (const char *str);
 
-inline static void _pullConnectedParameterValues (void *data)
+static inline void _pullConnectedParameterValues (void *data)
 {
    _CGprogram *ptr = (_CGprogram*)data;
    // we now use a pull method to get the data into the children parameters
