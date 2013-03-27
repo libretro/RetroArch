@@ -705,7 +705,6 @@ void gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
 
    glBindTexture(GL_TEXTURE_2D, 0);
-
    pglGenFramebuffers(TEXTURES, gl->hw_render_fbo);
 
    for (unsigned i = 0; i < TEXTURES; i++)
@@ -1397,9 +1396,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
          if (!gl->fbo_inited)
+         {
             pglBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-         gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+            gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+         }
       }
       else
 #endif
