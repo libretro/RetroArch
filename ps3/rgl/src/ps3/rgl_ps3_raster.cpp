@@ -1362,9 +1362,12 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
 
    if ( clearMask )
    {
-      rglGcmFifoGlClearColor( 0, 0, 0, 0);
+      GCM_FUNC( cellGcmSetClearColor, 0 );
 
-      rglGcmFifoGlClear( clearMask );
+      if (rglGcmState_i.renderTarget.colorFormat)
+         GCM_FUNC( cellGcmSetClearSurface, CELL_GCM_CLEAR_R | CELL_GCM_CLEAR_G | 
+               CELL_GCM_CLEAR_B | CELL_GCM_CLEAR_A );
+
       newmask &= ~clearMask;
    }
 
@@ -1387,16 +1390,19 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
             0, sizeof(rglClearVertexBuffer));
 
       __builtin_memcpy(gmmIdToAddress(bufferId), rglClearVertexBuffer, sizeof(rglClearVertexBuffer));
-      rglGcmFifoGlVertexAttribPointer( 0, 3, RGLGCM_FLOAT, RGLGCM_FALSE, 3*sizeof( GLfloat ), 1, 0, gmmIdToOffset(bufferId) );
+      
+      GCM_FUNC( cellGcmSetVertexDataArray, 0, 1, 3 * sizeof(GLfloat), 3,
+            CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, gmmIdToOffset(bufferId) );
+
       RGLBIT_TRUE( LContext->attribs->DirtyMask, 0 );
 
       for (int i = 1; i < RGL_MAX_VERTEX_ATTRIBS; ++i)
       {
-         rglGcmFifoGlVertexAttribPointer( i, 0, RGLGCM_FLOAT, 0, 0, 0, 0, 0 );
+         GCM_FUNC( cellGcmSetVertexDataArray, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
          RGLBIT_TRUE( LContext->attribs->DirtyMask, i );
       }
       int clearcolor = 0;
-      rglGcmFifoGlVertexAttrib4fv( RGL_ATTRIB_PRIMARY_COLOR_INDEX, ( GLfloat* )&clearcolor );
+      GCM_FUNC( cellGcmSetVertexData4f, RGL_ATTRIB_PRIMARY_COLOR_INDEX, ( GLfloat* )&clearcolor );
 
       LContext->needValidate |= RGL_VALIDATE_WRITE_MASK | RGL_VALIDATE_FRAGMENT_PROGRAM;
 
@@ -1793,9 +1799,108 @@ static inline void rglValidateStates (GLuint mask)
          const CgParameterEntry *parameterEntry = program->parametersEntries + program->defaultValuesIndices[i].entryIndex;
          if (( parameterEntry->flags & CGPF_REFERENCED ) && ( parameterEntry->flags & CGPV_MASK ) == CGPV_CONSTANT )
          {
-            const float *itemDefaultValues = program->defaultValues + 
+            const float *value = program->defaultValues + 
                program->defaultValuesIndices[i].defaultValueIndex;
-            rglFifoGlProgramParameterfvVP( program, parameterEntry, itemDefaultValues );
+
+            const CgParameterResource *parameterResource = rglGetParameterResource( program, parameterEntry );
+
+            if (parameterResource->resource != (unsigned short) - 1)
+            {
+               switch ( parameterResource->type )
+               {
+                  case CG_FLOAT:
+                  case CG_FLOAT1:
+                  case CG_FLOAT2:
+                  case CG_FLOAT3:
+                  case CG_FLOAT4:
+                     GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 1, value ); // GCM_PORT_TESTED [Cedric]
+                     break;
+                  case CG_FLOAT4x4:
+                     // set 4 consts
+                     {
+                        GLfloat v2[16];
+                        v2[0] = value[0];v2[1] = value[4];v2[2] = value[8];v2[3] = value[12];
+                        v2[4] = value[1];v2[5] = value[5];v2[6] = value[9];v2[7] = value[13];
+                        v2[8] = value[2];v2[9] = value[6];v2[10] = value[10];v2[11] = value[14];
+                        v2[12] = value[3];v2[13] = value[7];v2[14] = value[11];v2[15] = value[15];
+                        GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 4, v2 ); // GCM_PORT_TESTED [Cedric]
+                     }
+                     break;
+                  case CG_FLOAT3x3:
+                     // set 3 consts
+                     {
+                        GLfloat v2[12];
+                        v2[0] = value[0];v2[1] = value[3];v2[2] = value[6];v2[3] = 0;
+                        v2[4] = value[1];v2[5] = value[4];v2[6] = value[7];v2[7] = 0;
+                        v2[8] = value[2];v2[9] = value[5];v2[10] = value[8];v2[11] = 0;
+                        GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 3, v2 );
+                     }
+                     break;
+                  case CG_HALF:
+                  case CG_HALF1:
+                  case CG_HALF2:
+                  case CG_HALF3:
+                  case CG_HALF4:
+                  case CG_INT:
+                  case CG_INT1:
+                  case CG_INT2:
+                  case CG_INT3:
+                  case CG_INT4:
+                  case CG_BOOL:
+                  case CG_BOOL1:
+                  case CG_BOOL2:
+                  case CG_BOOL3:
+                  case CG_BOOL4:
+                  case CG_FIXED:
+                  case CG_FIXED1:
+                  case CG_FIXED2:
+                  case CG_FIXED3:
+                  case CG_FIXED4:
+                     GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 1, value ); // GCM_PORT_TESTED [Cedric]
+                     break;
+                  case CG_HALF4x4:
+                  case CG_INT4x4:
+                  case CG_BOOL4x4:
+                  case CG_FIXED4x4:
+                     // set 4 consts
+                     {
+                        GLfloat v2[16];
+                        v2[0] = value[0];
+                        v2[1] = value[4];
+                        v2[2] = value[8];
+                        v2[3] = value[12];
+                        v2[4] = value[1];
+                        v2[5] = value[5];
+                        v2[6] = value[9];
+                        v2[7] = value[13];
+                        v2[8] = value[2];
+                        v2[9] = value[6];
+                        v2[10] = value[10];
+                        v2[11] = value[14];
+                        v2[12] = value[3];
+                        v2[13] = value[7];
+                        v2[14] = value[11];
+                        v2[15] = value[15];
+                        GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 4, v2 ); // GCM_PORT_TESTED [Cedric]
+                     }
+                     break;
+                  case CG_HALF3x3:
+                  case CG_INT3x3:
+                  case CG_BOOL3x3:
+                  case CG_FIXED3x3:
+                     // set 3 consts
+                     {
+                        GLfloat v2[12];
+                        v2[0] = value[0];v2[1] = value[3];v2[2] = value[6];v2[3] = 0;
+                        v2[4] = value[1];v2[5] = value[4];v2[6] = value[7];v2[7] = 0;
+                        v2[8] = value[2];v2[9] = value[5];v2[10] = value[8];v2[11] = 0;
+                        GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 3, v2 );
+                     }
+                     break;
+                  default:
+                     break;
+               }
+            }
          }
       }
 
@@ -2024,13 +2129,13 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
 
             rglGcmFifoGlVertexAttribPointer( i, attrib->clientSize,
                   ( rglGcmEnum )attrib->clientType, attrib->normalized,
-                  stride, freq, 0, gpuOffset );
+                  stride, freq, gpuOffset );
          }
          else
          {
             // attribute is disabled
-            rglGcmFifoGlVertexAttribPointer( i, 0, RGLGCM_FLOAT, 0, 0, 0, 0, 0 );
-            rglGcmFifoGlVertexAttrib4fv( i, attrib->value );
+            GCM_FUNC( cellGcmSetVertexDataArray, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
+            GCM_FUNC( cellGcmSetVertexData4f, i, attrib->value );
          }
       }
       driver->invalidateVertexCache = GL_TRUE;

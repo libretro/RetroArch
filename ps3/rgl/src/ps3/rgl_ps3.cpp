@@ -1573,12 +1573,14 @@ void rglGcmSetOpenGLState (void *data)
    rglGcmFifoGlBlendColor( 0.0f, 0.0f, 0.0f, 0.0f );
    rglGcmFifoGlBlendEquation( RGLGCM_FUNC_ADD, RGLGCM_FUNC_ADD );
    rglGcmFifoGlBlendFunc( RGLGCM_ONE, RGLGCM_ZERO, RGLGCM_ONE, RGLGCM_ZERO );
-   rglGcmFifoGlClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
+   GCM_FUNC( cellGcmSetClearColor, 0 );
    rglGcmFifoGlDisable( RGLGCM_BLEND );
    rglGcmFifoGlDisable( RGLGCM_PSHADER_SRGB_REMAPPING );
 
    for ( i = 0; i < RGLGCM_ATTRIB_COUNT; i++ )
-      rglGcmFifoGlVertexAttribPointer( i, 0, RGLGCM_FLOAT, RGLGCM_FALSE, 0, 0, 0, 0 );
+   {
+      GCM_FUNC( cellGcmSetVertexDataArray, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
+   }
 
    rglGcmFifoGlEnable( RGLGCM_DITHER );
 
@@ -2891,7 +2893,7 @@ int rglPlatformCreateDevice (void *data)
    v->w = width;
    v->h = height;
    rglGcmFifoGlViewport(v, 0.0f, 1.0f);
-   rglGcmFifoGlClearColor( 0.f, 0.f, 0.f, 0.f );
+   GCM_FUNC( cellGcmSetClearColor, 0 );
 
    if ( fpColor )
    {
@@ -2906,7 +2908,10 @@ int rglPlatformCreateDevice (void *data)
          gcmDevice->rt.colorId[0] = gcmDevice->color[i].dataId;
          gcmDevice->rt.colorPitch[0] = gcmDevice->color[i].pitch;
          rglGcmFifoGlSetRenderTarget( &gcmDevice->rt );
-         rglGcmFifoGlClear( RGLGCM_COLOR_BUFFER_BIT );
+
+         if (rglGcmState_i.renderTarget.colorFormat)
+            GCM_FUNC( cellGcmSetClearSurface, CELL_GCM_CLEAR_R | CELL_GCM_CLEAR_G | 
+                  CELL_GCM_CLEAR_B | CELL_GCM_CLEAR_A );
       }
       // restore parameters
       gcmDevice->rt.width = width;
@@ -2921,7 +2926,10 @@ int rglPlatformCreateDevice (void *data)
          gcmDevice->rt.colorId[0] = gcmDevice->color[i].dataId;
          gcmDevice->rt.colorPitch[0] = gcmDevice->color[i].pitch;
          rglGcmFifoGlSetRenderTarget( &gcmDevice->rt );
-         rglGcmFifoGlClear( RGLGCM_COLOR_BUFFER_BIT );
+         
+         if (rglGcmState_i.renderTarget.colorFormat)
+            GCM_FUNC( cellGcmSetClearSurface, CELL_GCM_CLEAR_R | CELL_GCM_CLEAR_G | 
+                  CELL_GCM_CLEAR_B | CELL_GCM_CLEAR_A );
       }
    }
 
