@@ -216,51 +216,6 @@ static inline int rglGetSizeofSubArray( const unsigned short *dimensions, unsign
    return res;
 }
 
-static inline CGresource rglGetBaseResource( CGresource resource )
-{
-   switch ( resource )
-   {
-      case CG_ATTR0: case CG_ATTR1: case CG_ATTR2: case CG_ATTR3:
-      case CG_ATTR4: case CG_ATTR5: case CG_ATTR6: case CG_ATTR7:
-      case CG_ATTR8: case CG_ATTR9: case CG_ATTR10: case CG_ATTR11:
-      case CG_ATTR12: case CG_ATTR13: case CG_ATTR14: case CG_ATTR15:
-         return CG_ATTR0;
-      case CG_HPOS:
-         return CG_HPOS;
-      case CG_COL0: case CG_COL1: case CG_COL2: case CG_COL3:
-         return CG_COL0;
-      case CG_TEXCOORD0: case CG_TEXCOORD1: case CG_TEXCOORD2: case CG_TEXCOORD3:
-      case CG_TEXCOORD4: case CG_TEXCOORD5: case CG_TEXCOORD6: case CG_TEXCOORD7:
-      case CG_TEXCOORD8: case CG_TEXCOORD9:
-         return CG_TEXCOORD0;
-      case CG_TEXUNIT0: case CG_TEXUNIT1: case CG_TEXUNIT2: case CG_TEXUNIT3:
-      case CG_TEXUNIT4: case CG_TEXUNIT5: case CG_TEXUNIT6: case CG_TEXUNIT7:
-      case CG_TEXUNIT8: case CG_TEXUNIT9: case CG_TEXUNIT10: case CG_TEXUNIT11:
-      case CG_TEXUNIT12: case CG_TEXUNIT13: case CG_TEXUNIT14: case CG_TEXUNIT15:
-         return CG_TEXUNIT0;
-      case CG_FOGCOORD:
-         return CG_FOGCOORD;
-      case CG_PSIZ:
-         return CG_PSIZ;
-      case CG_WPOS:
-         return CG_WPOS;
-      case CG_COLOR0: case CG_COLOR1: case CG_COLOR2: case CG_COLOR3:
-         return CG_COLOR0;
-      case CG_DEPTH0:
-         return CG_DEPTH0;
-      case CG_C:
-         return CG_C;
-      case CG_B:
-         return CG_B;
-      case CG_CLP0: case CG_CLP1: case CG_CLP2: case CG_CLP3: case CG_CLP4: case CG_CLP5:
-         return CG_CLP0;
-      case CG_UNDEFINED:
-         return CG_UNDEFINED;
-      default:
-         return CG_UNDEFINED;
-   }
-}
-
 // platform API
 CGprofile rglPlatformGetLatestProfile( CGGLenum profile_type );
 int rglPlatformCopyProgram( _CGprogram* source, _CGprogram* destination );
@@ -299,24 +254,10 @@ static inline GLenum rglCgGetSamplerGLTypeFromCgType( CGtype type )
    }
 }
 
-static inline int is_created_param( CgRuntimeParameter* ptr )
-{
-   if ( ptr->parameterEntry->flags & CGP_RTCREATED )
-      return 1;
-   return 0;
-}
-
 struct rglNameSpace;
 
 #define VERTEX_PROFILE_INDEX 0
 #define FRAGMENT_PROFILE_INDEX 1
-
-// these functions return the statically allocated table of function pointers originally
-// written for NV unshared vertex parameter setters, but now also used by runtime
-// created parameters cause these setters just do straight copies into the pushbuffer memory
-//
-_cgSetArrayIndexFunction getVectorTypeIndexSetterFunction( unsigned short a, unsigned short b, unsigned short c, unsigned short d );
-_cgSetArrayIndexFunction getMatrixTypeIndexSetterFunction( unsigned short a, unsigned short b, unsigned short c, unsigned short d, unsigned short e, unsigned short f );
 
 // -------------------------------------------
 
@@ -342,12 +283,6 @@ extern RGL_EXPORT cgRTCgcFreeHookFunction _cgRTCgcFreeCompiledProgramHook;
 
 //-----------------------------------------------
 //inlined helper functions
-static inline int rglGetParameterType (const void *data, const CgParameterEntry *entry)
-{
-   const CGprogram *program = (const CGprogram*)data;
-   return (entry->flags & CGP_TYPE_MASK);
-}
-
 static inline const CgParameterResource *rglGetParameterResource (const void *data, const CgParameterEntry *entry )
 {
    const _CGprogram *program = (const _CGprogram*)data;

@@ -559,16 +559,6 @@ static _cgSetArrayIndexFunction setMatrixTypeIndex[2][2][2][4][4][2] =
    }
 };
 
-_cgSetArrayIndexFunction getVectorTypeIndexSetterFunction( unsigned short a, unsigned short b, unsigned short c, unsigned short d )
-{
-   return setVectorTypeIndex[a][b][c][d];
-}
-
-_cgSetArrayIndexFunction getMatrixTypeIndexSetterFunction( unsigned short a, unsigned short b, unsigned short c, unsigned short d, unsigned short e, unsigned short f )
-{
-   return setMatrixTypeIndex[a][b][c][d][e][f];
-}
-
 static void setSamplerfp (void *data, const void*v, int /* index */)
 {
    CgRuntimeParameter *ptr = (CgRuntimeParameter*)data;
