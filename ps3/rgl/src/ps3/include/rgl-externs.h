@@ -6,10 +6,6 @@ uint32_t *rglGcmFifoWaitForFreeSpace (void *data, GLuint spaceInWords);
 void rglGcmGetTileRegionInfo (void *data, GLuint *address, GLuint *size);
 GLboolean rglGcmTryResizeTileRegion( GLuint address, GLuint size, void *data);
 
-void rglGcmTransferData (GLuint dstId, GLuint dstIdOffset, 
- GLint dstPitch, GLuint srcId, GLuint srcIdOffset,
- GLint srcPitch, GLint bytesPerRow, GLint rowCount);
-
 int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords);
 void rglGcmFifoGlSetRenderTarget (const void *args);
 void rglCreatePushBuffer (void *data);

@@ -53,7 +53,6 @@ rglGcmState rglGcmState_i;
 static GmmAllocator         *pGmmLocalAllocator = NULL;
 static volatile uint32_t    *pLock = NULL;
 static uint32_t             cachedLockValue = 0;
-static uint8_t              pinAllocations = 0;
 static GmmFixedAllocData    *pGmmFixedAllocData = NULL;
 
 #define PAD(x, pad) ((x + pad - 1) / pad * pad)
@@ -347,17 +346,7 @@ void gmmSetTileAttrib(const uint32_t id, const uint32_t tag,
 uint32_t gmmIdToOffset(const uint32_t id)
 {
    GmmBaseBlock    *pBaseBlock = (GmmBaseBlock *)id;
-   uint32_t        offset;
-
-   if (!pBaseBlock->isTile && pinAllocations)
-   {
-      GmmBlock *pBlock = (GmmBlock *)id;
-      pBlock->isPinned = pinAllocations;
-   }   
-
-   offset = GMM_ADDRESS_TO_OFFSET(pBaseBlock->address);
-
-   return offset;
+   return GMM_ADDRESS_TO_OFFSET(pBaseBlock->address);
 }
 
 char *gmmIdToAddress (const uint32_t id)
@@ -1394,6 +1383,24 @@ uint32_t gmmAlloc(void *data, const uint8_t location,
   SURFACE COPYING
   ============================================================ */
 
+static inline void rglGcmTransferData
+(
+ GLuint dstId,
+ GLuint dstIdOffset, 
+ GLint dstPitch,
+ GLuint srcId,
+ GLuint srcIdOffset,
+ GLint srcPitch,
+ GLint bytesPerRow,
+ GLint rowCount
+ )
+{
+   GLuint dstOffset = gmmIdToOffset(dstId) + dstIdOffset;
+   GLuint srcOffset = gmmIdToOffset(srcId) + srcIdOffset;
+
+   GCM_FUNC( cellGcmSetTransferData, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, dstOffset, dstPitch, srcOffset, srcPitch, bytesPerRow, rowCount );
+}
+
 void rglGcmCopySurface(
       const void *data,
       GLuint srcX, GLuint srcY,
@@ -1451,23 +1458,6 @@ void rglGcmCopySurface(
   DATA TRANSFER
   ============================================================ */
 
-   void rglGcmTransferData
-(
- GLuint dstId,
- GLuint dstIdOffset, 
- GLint dstPitch,
- GLuint srcId,
- GLuint srcIdOffset,
- GLint srcPitch,
- GLint bytesPerRow,
- GLint rowCount
- )
-{
-   GLuint dstOffset = gmmIdToOffset(dstId) + dstIdOffset;
-   GLuint srcOffset = gmmIdToOffset(srcId) + srcIdOffset;
-
-   GCM_FUNC( cellGcmSetTransferData, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, dstOffset, dstPitch, srcOffset, srcPitch, bytesPerRow, rowCount );
-}
 
 /*============================================================
   FIFO BUFFER
@@ -1825,7 +1815,6 @@ void rglGcmSend( unsigned int dstId, unsigned dstOffset, unsigned int pitch,
 
    gmmFree( id );
 }
-
 
 /*============================================================
   PLATFORM INITIALIZATION
