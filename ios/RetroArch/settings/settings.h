@@ -33,6 +33,8 @@ enum SettingTypes
 @property double rangeMin;
 @property double rangeMax;
 
+@property bool haveNoneOption;
+
 - (id)initWithType:(enum SettingTypes)aType label:(NSString*)aLabel name:(NSString*)aName;
 @end
 

@@ -543,15 +543,9 @@
 				GCC_PREFIX_HEADER = "RetroArch/RetroArch-Prefix.pch";
 				INFOPLIST_FILE = "RetroArch/RetroArch-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SRCROOT)\"",
-					"\"$(SRCROOT)/RetroArch/input/BTStack\"",
-				);
 				OTHER_CFLAGS = (
 					"-DHAVE_RARCH_MAIN_WRAP",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_RGUI",
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_FBO",
@@ -585,17 +579,11 @@
 				GCC_PREFIX_HEADER = "RetroArch/RetroArch-Prefix.pch";
 				INFOPLIST_FILE = "RetroArch/RetroArch-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SRCROOT)\"",
-					"\"$(SRCROOT)/RetroArch/input/BTStack\"",
-				);
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_RARCH_MAIN_WRAP",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_RGUI",
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_FBO",

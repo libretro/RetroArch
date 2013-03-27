@@ -290,12 +290,12 @@
 
 - (IBAction)startBluetooth
 {
-   if (btstack_is_loaded())
+   if (btstack_is_loaded() && !btstack_is_running())
    {
       UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
                                                 message:@"Choose Pad Type"
                                                 delegate:self
-                                                cancelButtonTitle:nil
+                                                cancelButtonTitle:@"Cancel"
                                                 otherButtonTitles:@"Wii", @"PS3", nil];
       [alert show];
    }
@@ -305,10 +305,13 @@
 {
    if (btstack_is_loaded())
    {
-      btpad_set_pad_type(buttonIndex == 0);
+      btpad_set_pad_type(buttonIndex == alertView.firstOtherButtonIndex);
 
-      btstack_start();
-      [self.topViewController.navigationItem setRightBarButtonItem:[self createBluetoothButton] animated:YES];
+      if (buttonIndex != alertView.cancelButtonIndex)
+      {
+         btstack_start();
+         [self.topViewController.navigationItem setRightBarButtonItem:[self createBluetoothButton] animated:YES];
+      }
    }
 }
 

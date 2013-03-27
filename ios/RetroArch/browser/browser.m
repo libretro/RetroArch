@@ -98,7 +98,5 @@ NSString* ra_ios_check_path(NSString* path)
    if (path)
       [RetroArch_iOS displayErrorMessage:@"Browsed path is not a directory."];
 
-   if (ra_ios_is_directory(@"/var/mobile/RetroArchGames"))  return @"/var/mobile/RetroArchGames";
-   else if (ra_ios_is_directory(@"/var/mobile"))            return @"/var/mobile";
-   else                                                     return @"/";
+   return [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
 }

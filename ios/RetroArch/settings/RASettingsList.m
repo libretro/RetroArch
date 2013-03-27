@@ -81,6 +81,7 @@ static RASettingData* subpath_setting(config_file_t* config, NSString* name, NSS
    result.value = value;
    result.subValues = values;
    result.path = path;
+   result.haveNoneOption = true;
    return result;
 }
 
