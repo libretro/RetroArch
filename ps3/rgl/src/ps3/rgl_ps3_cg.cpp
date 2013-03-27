@@ -6074,16 +6074,7 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
             //containers._defaultValuesIndices[containers._defaultValuesIndices.size()-1] and the current parameter position in
             //the structure
             for ( int jj = 0; jj < (int)dv.size(); ++jj )
-            {
-#ifndef __CELLOS_LV2__
-               unsigned int val = *(unsigned int*)&dv[jj];
-               unsigned int tmp = CNV2END(val);
-               float tmp2 = *(float*)&tmp;
-               defaultValues.push_back(tmp2);
-#else
                defaultValues.push_back(dv[jj]);
-#endif
-            }
          }
 
          if (done)
@@ -7678,27 +7669,8 @@ namespace cgc {
          nvb_reader_impl::loadFromString( const char* source, size_t length)
          {
             if ( loaded_ )
-            {
                return CGBIO_ERROR_LOADED;
-            }
-#if defined(RGL_USE_STD_STRING) && !(defined(__CELLOS_LV2__))
-            std::ios_base::openmode mode = std::ios_base::in | std::ios_base::binary;
-            std::istringstream* iss = new std::istringstream(mode);
-            if (iss == 0)
-            {
-               return CGBIO_ERROR_MEMORY;
-            }
 
-            std::string sourceString((const char*)source,length);
-            iss->str(sourceString);
-            if ( !*iss )
-            {
-               return CGBIO_ERROR_FILEIO;
-            }
-            strStream_ = true;
-            owner_ = true;
-            CGBIO_ERROR ret = load( iss, 0 );
-#else
             CGBIO_ERROR ret = CGBIO_ERROR_NO_ERROR;
             while (1)
             {
@@ -7725,71 +7697,8 @@ namespace cgc {
                ret = CGBIO_ERROR_NO_ERROR;
                break;
             }
-#endif
             return ret;
          }
-
-#ifndef __CELLOS_LV2__
-
-      CGBIO_ERROR
-         nvb_reader_impl::load( const char* filename )
-         {
-            if ( loaded_ )
-               return CGBIO_ERROR_LOADED;
-            std::ifstream* ifs = new std::ifstream;
-            if (ifs == 0)
-               return CGBIO_ERROR_MEMORY;
-            ifs->open( filename, std::ios::in | std::ios::binary );
-            if ( !*ifs )
-            {
-               return CGBIO_ERROR_FILEIO;
-            }
-            CGBIO_ERROR ret = load( ifs, 0 );
-            strStream_ = false;
-            owner_ = true;
-            return ret;
-         }
-
-      CGBIO_ERROR
-         nvb_reader_impl::load( std::istream* stream, int start, bool owner )
-         {
-            if ( loaded_ )
-            {
-               return CGBIO_ERROR_LOADED;
-            }
-            owner_ = owner;
-            offset_ = start;
-            stream->seekg( offset_ );
-            stream->read( reinterpret_cast<char*>( &header_ ), sizeof( header_ ) );
-            if ( stream->gcount() != sizeof( header_ ) )
-            {
-               return CGBIO_ERROR_FORMAT;
-            }
-            if ( CG_BINARY_FORMAT_REVISION != header_.binaryFormatRevision )
-            {
-               endianness_ = ( CGBIODATALSB == endianness_ ) ? CGBIODATAMSB : CGBIODATALSB;
-
-               int binaryRevision = convert_endianness( header_.binaryFormatRevision, endianness_ );
-               if ( CG_BINARY_FORMAT_REVISION != binaryRevision )
-               {
-                  return CGBIO_ERROR_FORMAT;
-               }
-            }
-            unsigned int sz = size();
-            image_ = new char[sz];
-            stream->seekg( offset_ );
-            stream->read( image_, sz );
-            loaded_ = true;
-
-            if (owner_)
-            {
-               ((std::ifstream*) stream)->close();
-               delete stream;
-            }
-            return CGBIO_ERROR_NO_ERROR;
-         }
-
-#endif
 
       bool
          nvb_reader_impl::is_loaded() const
@@ -7926,20 +7835,12 @@ namespace cgc {
                char *vp = &image_[dv_offset];
                for (int ii = 0; ii < 4; ++ii)
                {
-                  /*#ifndef __CELLOS_LV2__
-                    float *fv = static_cast<float*>( vp );
-                    float f = fv[ii];
-                    unsigned int tmp = *(unsigned int*)&f;
-                    tmp = convert_endianness(tmp,endianness());
-                    default_value.push_back( *(float*)&tmp );
-#else*/
                   int tmp;
                   memcpy(&tmp,vp+4*ii,4);
                   tmp = convert_endianness(tmp,endianness());
                   float tmp2;
                   memcpy(&tmp2,&tmp,4);
                   default_value.push_back( tmp2 );
-                  //#endif
                }
             }
             if (ec_offset != 0)
