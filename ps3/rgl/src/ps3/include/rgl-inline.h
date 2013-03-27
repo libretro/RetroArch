@@ -1,11 +1,3 @@
-// Clamp a float to [0,1]:
-//   The order of clamp comparisons are arranged so that NaN maps to min
-//   when compiled with VisualC or gcc.  IEEE says comparisons with NaN
-//   should always fail (gcc implements this) but VisualC sometimes uses
-//   signed integer compares rather than floating-point compares which is
-//   incorrect in the case of NaN.
-#define RGLGCM_CLAMPF_01(x) ((x) >= 0.0f ? ((x) > 1.0f ? 1.0f : (x)) : 0.0f)
-
 static inline GLuint rglPlatformGetBitsPerPixel (GLenum internalFormat)
 {
    switch (internalFormat)
@@ -82,10 +74,6 @@ static inline void rglGcmFifoGlViewport(void *data, GLclampf zNear, GLclampf zFa
       vp->yScale = vp->h * 0.5f;
       vp->yCenter = (GLfloat)(vp->y + vp->yScale + RGLGCM_SUBPIXEL_ADJUST);
    }
-
-   // Clamp depth range to legal values
-   zNear = RGLGCM_CLAMPF_01( zNear );
-   zFar  = RGLGCM_CLAMPF_01( zFar );
 
    // compute viewport values for hw [no doubles, so we might loose a few lsb]
    GLfloat z_scale = ( GLfloat )( 0.5f * ( zFar - zNear ) );
@@ -634,10 +622,6 @@ static inline void rglGcmFifoGlBlendColor( GLfloat r, GLfloat g, GLfloat b, GLfl
    switch ( rglGcmState_i.renderTarget.colorFormat )
    {
       case RGLGCM_ARGB8:
-         r = RGLGCM_CLAMPF_01( r );
-         g = RGLGCM_CLAMPF_01( g );
-         b = RGLGCM_CLAMPF_01( b );
-         a = RGLGCM_CLAMPF_01( a );
          RGLGCM_CALC_COLOR_LE_ARGB8( &hwColor, r, g, b, a );
          GCM_FUNC( cellGcmSetBlendColor, hwColor, hwColor );
          break;
