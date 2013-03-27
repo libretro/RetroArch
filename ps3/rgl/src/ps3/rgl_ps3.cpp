@@ -230,22 +230,16 @@ static void gmmFreeFixedTileBlock (void *data)
 uint32_t gmmInit(
       const void *localMemoryBase,
       const void *localStartAddress,
-      const uint32_t localSize,
-      const void *mainMemoryBase,
-      const void *mainStartAddress,
-      const uint32_t mainSize
+      const uint32_t localSize
       )
 {
    GmmAllocator *pAllocator;
    uint32_t alignedLocalSize, alignedMainSize;
    uint32_t localEndAddress = (uint32_t)localStartAddress + localSize;
-   uint32_t mainEndAddress = (uint32_t)mainStartAddress + mainSize;
 
    localEndAddress = (localEndAddress / GMM_TILE_ALIGNMENT) * GMM_TILE_ALIGNMENT;
-   mainEndAddress = (mainEndAddress / GMM_TILE_ALIGNMENT) * GMM_TILE_ALIGNMENT;
 
    alignedLocalSize = localEndAddress - (uint32_t)localStartAddress;
-   alignedMainSize = mainEndAddress - (uint32_t)mainStartAddress;
 
    pAllocator = (GmmAllocator *)malloc(2*sizeof(GmmAllocator));
 
@@ -562,11 +556,7 @@ static void gmmFreeTileBlock (void *data)
    gmmFreeFixedTileBlock(pTileBlock);
 }
 
-uint32_t gmmAllocExtendedTileBlock(
-      const uint8_t location, 
-      const uint32_t size,
-      const uint32_t tag
-      )
+static uint32_t gmmAllocExtendedTileBlock(const uint32_t size, const uint32_t tag)
 {
    GmmAllocator    *pAllocator;
    uint32_t        retId = 0;
@@ -973,7 +963,7 @@ static inline void gmmMemcpy(void *data, const uint8_t mode,
    }
 }
 
-static uint8_t gmmInternalSweep(void *data, const uint8_t location)
+static uint8_t gmmInternalSweep(void *data)
 {
    CellGcmContextData *thisContext = (CellGcmContextData*)data;
    GmmAllocator    *pAllocator = pGmmLocalAllocator;
@@ -1168,30 +1158,7 @@ static void gmmRemovePendingFree (GmmAllocator *pAllocator,
       pBlock->pPrevFree->pNextFree = pBlock->pNextFree;
 }
 
-void gmmUpdateFreeList(const uint8_t location)
-{
-   const uint32_t  fence = rglGcmState_i.semaphores->userSemaphores[RGLGCM_SEMA_FENCE].val;
-   GmmBlock        *pBlock = NULL;
-   GmmBlock        *pTemp = NULL;
-   GmmAllocator *pAllocator =  pGmmLocalAllocator;
-
-   pBlock = pAllocator->pPendingFreeHead;
-
-   while (pBlock)
-   {
-      pTemp = pBlock->pNextFree;
-
-      if ( !(( fence - pBlock->fence ) & 0x80000000 ) )
-      {
-         gmmRemovePendingFree(pAllocator, pBlock);
-         gmmAddFree(pAllocator, pBlock);
-      }
-
-      pBlock = pTemp;
-   }
-}
-
-static void gmmFreeAll(const uint8_t location)
+static void gmmFreeAll(void)
 {
    GmmBlock        *pBlock;
    GmmBlock        *pTemp;
@@ -1221,12 +1188,12 @@ static void gmmFreeAll(const uint8_t location)
    }
 }
 
-static void gmmAllocSweep(void *data, const uint8_t location)
+static void gmmAllocSweep(void *data)
 {
    CellGcmContextData *thisContext = (CellGcmContextData*)data;
-   gmmFreeAll(location);
+   gmmFreeAll();
 
-   if (gmmInternalSweep(thisContext, location))
+   if (gmmInternalSweep(thisContext))
    {
       *pLock = 1;
       cachedLockValue = 1;
@@ -1331,7 +1298,7 @@ static uint32_t gmmFindFreeBlock(
    return retId;
 }
 
-uint32_t gmmAlloc(void *data, const uint8_t location, 
+uint32_t gmmAlloc(void *data,
       const uint8_t isTile, const uint32_t size)
 {
    CellGcmContextData *thisContext = (CellGcmContextData*)data;
@@ -1364,7 +1331,7 @@ uint32_t gmmAlloc(void *data, const uint8_t location,
 
       if (retId == GMM_ERROR)
       {
-         gmmAllocSweep(thisContext, location);
+         gmmAllocSweep(thisContext);
 
          retId = gmmInternalAlloc(pAllocator,
                isTile,
@@ -1704,10 +1671,7 @@ GLboolean rglGcmInit (void *opt_data, void *res_data)
 
    if ( gmmInit( resource->localAddress, // pass in the base address, which "could" diff from start address
             resource->localAddress,
-            resource->localSize,
-            resource->hostMemoryBase, // pass in the base address
-            resource->hostMemoryBase + resource->hostMemoryReserved,
-            resource->hostMemorySize - resource->hostMemoryReserved ) == GMM_ERROR )
+            resource->localSize) == GMM_ERROR )
    {
       fprintf( stderr, "Could not init GPU memory manager" );
       rglGcmDestroy();
@@ -1806,9 +1770,7 @@ void rglGcmSend( unsigned int dstId, unsigned dstOffset, unsigned int pitch,
 {
    // try allocating the whole block in the bounce buffer
    GLuint id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         CELL_GCM_LOCATION_LOCAL,
-         0,
-         size);
+         0, size);
 
    memcpy( gmmIdToAddress(id), src, size );
    rglGcmMemcpy( dstId, dstOffset, pitch, id, 0, size );
@@ -2256,9 +2218,7 @@ typedef struct
    GLuint offset;
    GLuint size;        // 0 size indicates an unused tile
    GLuint pitch;       // in bytes
-   GLenum compression;
    GLuint bank;
-   GLuint memory;      // 0 for GPU, 1 for host
 } rglTiledRegion;
 
 typedef struct
@@ -2395,8 +2355,6 @@ GLboolean rglGcmTryResizeTileRegion( GLuint address, GLuint size, void* data )
       region->offset = 0;
       region->size = 0;
       region->pitch = 0;
-      region->compression = CELL_GCM_COMPMODE_DISABLED;
-      region->memory = 0;
 
       if ( ! rglDuringDestroyDevice ) 
       {
@@ -2416,7 +2374,7 @@ GLboolean rglGcmTryResizeTileRegion( GLuint address, GLuint size, void* data )
 
    retVal = cellGcmSetTileInfo(
          region->id,
-         region->memory,
+         CELL_GCM_LOCATION_LOCAL,
          region->offset,
          region->size,
          region->pitch,
@@ -2442,14 +2400,11 @@ void rglGcmGetTileRegionInfo( void* data, GLuint *address, GLuint *size )
 #define RGLGCM_TILED_BUFFER_HEIGHT_ALIGNMENT 64
 
 GLuint rglGcmAllocCreateRegion(
-      uint8_t memoryLocation,
-      GLboolean isZBuffer,
       GLuint size,
       GLint tag,
       void* data )
 {
-   uint32_t id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         memoryLocation, 1, size);
+   uint32_t id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 1, size);
 
    if ( id != GMM_ERROR )
    {
@@ -2470,21 +2425,14 @@ GLuint rglGcmAllocCreateRegion(
 
 static void rglGcmAllocateTiledSurface(
       rglTiledMemoryManager* mm,
-      GLboolean isLocalMemory,
-      GLboolean isZBuffer,
       GLuint width,
       GLuint height,
       GLuint bitsPerPixel,
       GLuint antiAliasing,
-      GLenum compression,
       GLuint* id,
       GLuint* pitchAllocated,
       GLuint* bytesAllocated )
 {
-   // XXX no compression on A01 silicon
-   // also disabled it if not on local memory
-   compression = CELL_GCM_COMPMODE_DISABLED;
-
    // determine pitch (in bytes)
    const unsigned int pitch = width * bitsPerPixel / 8;
    const unsigned int tiledPitch = findValidPitch( pitch );
@@ -2514,11 +2462,9 @@ static void rglGcmAllocateTiledSurface(
 
    // attempt to extend an existing region
    //  The region tag is a hash of the pitch, compression, and isZBuffer.
-   const GLuint tag = *pitchAllocated | compression | ( isZBuffer ? 0x80000000 : 0x0 );
+   const GLuint tag = *pitchAllocated | 0;
 
-   *id = gmmAllocExtendedTileBlock(CELL_GCM_LOCATION_LOCAL,
-         *bytesAllocated,
-         tag);
+   *id = gmmAllocExtendedTileBlock(*bytesAllocated, tag);
 
    if ( *id == GMM_ERROR )
    {
@@ -2531,14 +2477,10 @@ static void rglGcmAllocateTiledSurface(
             //  Address and size will be set in the callback.
             mm->region[i].id = i;
             mm->region[i].pitch = *pitchAllocated;
-            mm->region[i].compression = compression;
-            mm->region[i].bank = isZBuffer ? 0x3 : 0x0; // XXX experiment
-            mm->region[i].memory = CELL_GCM_LOCATION_LOCAL;
+            mm->region[i].bank = 0x0; // XXX experiment
 
             // allocate space for our region
             *id = rglGcmAllocCreateRegion(
-                  mm->region[i].memory,
-                  isZBuffer,
                   *bytesAllocated,
                   tag,
                   &mm->region[i] );
@@ -2564,7 +2506,6 @@ static void rglGcmAllocateTiledSurface(
 // color surface allocation
 
 GLboolean rglGcmAllocateColorSurface(
-      GLboolean isLocalMemory,
       GLuint width,
       GLuint height,
       GLuint bitsPerPixel,
@@ -2576,16 +2517,10 @@ GLboolean rglGcmAllocateColorSurface(
 {
    rglTiledMemoryManager* mm = &rglGcmTiledMemoryManager;
 
-   // compression type depends on antialiasing
-   GLenum compression = CELL_GCM_COMPMODE_DISABLED;
-
    rglGcmAllocateTiledSurface(
          mm,
-         isLocalMemory,
-         GL_FALSE,   // not a z buffer
          width, height, bitsPerPixel,
          antiAliasing,
-         compression,
          id,
          pitchAllocated,
          bytesAllocated );
@@ -2739,7 +2674,7 @@ static void rescInit( const RGLdeviceParameters* params, rglGcmDevice *gcmDevice
    GLuint size;
    GLuint colorBuffersPitch;
    uint32_t numColorBuffers = cellRescGetNumColorBuffers( dstBufferMode, ( CellRescPalTemporalMode )conf.palTemporalMode, 0 );
-   result = rglGcmAllocateColorSurface( GL_TRUE, params->width, params->height * numColorBuffers,
+   result = rglGcmAllocateColorSurface(params->width, params->height * numColorBuffers,
          4*8, RGLGCM_TRUE, 1, &(gcmDevice->RescColorBuffersId), &colorBuffersPitch, &size );
 
    // set the destination buffer format and pitch
@@ -2753,9 +2688,9 @@ static void rescInit( const RGLdeviceParameters* params, rglGcmDevice *gcmDevice
    int32_t colorBuffersSize, vertexArraySize, fragmentShaderSize;
    cellRescGetBufferSize( &colorBuffersSize, &vertexArraySize, &fragmentShaderSize );
    gcmDevice->RescVertexArrayId    = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         CELL_GCM_LOCATION_LOCAL, 0, vertexArraySize);
+         0, vertexArraySize);
    gcmDevice->RescFragmentShaderId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         CELL_GCM_LOCATION_LOCAL, 0, fragmentShaderSize);
+         0, fragmentShaderSize);
 
 
    // tell resc how to access the destination (scanout) buffer
@@ -2773,7 +2708,7 @@ static void rescInit( const RGLdeviceParameters* params, rglGcmDevice *gcmDevice
       const unsigned int tableLength = 32; // this was based on the guidelines in the resc reference guide
       unsigned int tableSize = sizeof(uint16_t) * 4 * tableLength; // 2 bytes per FLOAT16 * 4 values per entry * length of table
       void *interlaceTable = gmmIdToAddress(gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-               CELL_GCM_LOCATION_LOCAL, 0, tableSize));
+               0, tableSize));
       int32_t errorCode = cellRescCreateInterlaceTable(interlaceTable,params->renderHeight,CELL_RESC_ELEMENT_HALF,tableLength);
       (void)errorCode;
    }
@@ -2935,7 +2870,6 @@ int rglPlatformCreateDevice (void *data)
       // allocate tiled memory
       GLuint size;
       result = rglGcmAllocateColorSurface(
-            GL_TRUE,     // create in local memory 
             width, height,           // dimensions
             gcmDevice->color[i].bpp*8,  // bits per sample
             RGLGCM_TRUE,               // scan out enable
@@ -3134,7 +3068,25 @@ void rglPlatformDestroyDevice (void *data)
 
 GLAPI void RGL_EXPORT psglSwap (void)
 {
-   gmmUpdateFreeList(CELL_GCM_LOCATION_LOCAL);
+   const uint32_t  fence = rglGcmState_i.semaphores->userSemaphores[RGLGCM_SEMA_FENCE].val;
+   GmmBlock        *pBlock = NULL;
+   GmmBlock        *pTemp = NULL;
+   GmmAllocator *pAllocator =  pGmmLocalAllocator;
+
+   pBlock = pAllocator->pPendingFreeHead;
+
+   while (pBlock)
+   {
+      pTemp = pBlock->pNextFree;
+
+      if ( !(( fence - pBlock->fence ) & 0x80000000 ) )
+      {
+         gmmRemovePendingFree(pAllocator, pBlock);
+         gmmAddFree(pAllocator, pBlock);
+      }
+
+      pBlock = pTemp;
+   }
 
    RGLdevice *device = (RGLdevice*)_CurrentDevice;
    rglGcmDevice *gcmDevice = (rglGcmDevice *)device->platformDevice;
@@ -4334,7 +4286,6 @@ rglTexture *rglAllocateTexture(void)
    texture->image = NULL;
    texture->isComplete = GL_FALSE;
    texture->imageCount = 0;
-   texture->faceCount = 1;
    texture->revalidate = 0;
    texture->referenceBuffer = NULL;
    new( &texture->framebuffers ) RGL::Vector<rglFramebuffer *>();
@@ -4487,10 +4438,7 @@ void rglBindTextureInternal (void *data, GLuint name, GLenum target )
       texture = ( rglTexture * )LContext->textureNameSpace.data[name];
 
       if (!texture->target)
-      {
          texture->target = target;
-         texture->faceCount = 1;
-      }
    }
 
    unit->bound2D = name;

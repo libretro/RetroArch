@@ -166,7 +166,6 @@ extern "C" {
       RGL::Vector<rglFramebuffer *> framebuffers;
 
       GLuint		imageCount;
-      GLuint		faceCount;
       rglImage*	image;
       void * platformTexture[]; // C99 flexible array member
    } rglTexture;

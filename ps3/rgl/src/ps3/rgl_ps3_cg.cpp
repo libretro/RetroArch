@@ -253,7 +253,7 @@ static int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramH
       if ( program->loadProgramId == GMM_ERROR )
       {
          program->loadProgramId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-               CELL_GCM_LOCATION_LOCAL, 0, ucodeSize);
+               0, ucodeSize);
          program->loadProgramOffset = 0;
       }
 

@@ -50,7 +50,6 @@ typedef struct GmmFixedAllocData{
 typedef struct GmmBaseBlock{
 
    uint8_t     isTile;
-   //uint8_t     isMain;
    uint32_t    address;
    uint32_t    size;
 }GmmBaseBlock;
@@ -110,10 +109,7 @@ typedef struct GmmAllocator{
 uint32_t gmmInit(
       const void *localMemoryBase,
       const void *localStartAddress,
-      const uint32_t localSize,
-      const void *mainMemoryBase,
-      const void *mainStartAddress,
-      const uint32_t mainSize
+      const uint32_t localSize
       );
 
 uint32_t gmmDestroy(void);
@@ -129,19 +125,11 @@ uint32_t gmmFPOffsetToId(
 void gmmPinId (const uint32_t id);
 void gmmUnpinId (const uint32_t id);
 uint32_t gmmFree (const uint32_t freeId);
-void gmmUpdateFreeList (const uint8_t location);
 
 uint32_t gmmAlloc(
       void *data,
-      const uint8_t location, 
       const uint8_t isTile,
       const uint32_t size
-      );
-
-uint32_t gmmAllocExtendedTileBlock(
-      const uint8_t location, 
-      const uint32_t size,
-      const uint32_t tag
       );
 
 uint32_t gmmGetBlockSize (const uint32_t id);

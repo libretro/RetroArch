@@ -1108,7 +1108,7 @@ static void rglpsAllocateBuffer (void *data)
    // allocate in GPU memory
    rglBuffer->pool = RGLGCM_SURFACE_POOL_LINEAR;
    rglBuffer->bufferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         CELL_GCM_LOCATION_LOCAL, 0, rglBuffer->bufferSize);
+         0, rglBuffer->bufferSize);
    rglBuffer->pitch = 0;
 
    if ( rglBuffer->bufferId == GMM_ERROR )
@@ -1384,7 +1384,7 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
       };
 
       GLuint bufferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 
-            CELL_GCM_LOCATION_LOCAL, 0, sizeof(rglClearVertexBuffer));
+            0, sizeof(rglClearVertexBuffer));
 
       __builtin_memcpy(gmmIdToAddress(bufferId), rglClearVertexBuffer, sizeof(rglClearVertexBuffer));
       rglGcmFifoGlVertexAttribPointer( 0, 3, RGLGCM_FLOAT, RGLGCM_FALSE, 3*sizeof( GLfloat ), 1, 0, gmmIdToOffset(bufferId) );
@@ -1627,7 +1627,7 @@ void *rglPlatformRasterInit (void)
    // [YLIN] Make it 16 byte align
    driver->sharedVPConstants = (char*)memalign(16, 4 * sizeof( float ) * RGL_MAX_VP_SHARED_CONSTANTS);
    driver->sharedFPConstantsId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         CELL_GCM_LOCATION_LOCAL, 0, 4 * sizeof(float) * RGL_MAX_FP_SHARED_CONSTANTS);
+         0, 4 * sizeof(float) * RGL_MAX_FP_SHARED_CONSTANTS);
 
    return driver;
 }
@@ -1974,7 +1974,7 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
    if ( RGL_UNLIKELY( dparams->xferTotalSize ) )
    {
       xferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-            CELL_GCM_LOCATION_LOCAL, 0, dparams->xferTotalSize);
+            0, dparams->xferTotalSize);
       xferBuffer = gmmIdToAddress(xferId);
    }
 
@@ -2366,7 +2366,7 @@ void rglPlatformReallocateGcmTexture (void *data)
                rglImage *image = texture->image + texture->baseLevel;
 
                newLayout.levels = 1;
-               newLayout.faces = texture->faceCount;
+               newLayout.faces = 1;
                newLayout.baseWidth = image->width;
                newLayout.baseHeight = image->height;
                newLayout.baseDepth = image->depth;
@@ -2396,9 +2396,8 @@ void rglPlatformReallocateGcmTexture (void *data)
                {
                   // allocate in the specified pool
                   id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 
-                        CELL_GCM_LOCATION_LOCAL,
-                        0,
-                        size);
+                        0, size);
+
                   if ( id != GMM_ERROR )
                   {
                      // drop old allocation
@@ -2525,7 +2524,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
          // lazy allocation of bounce buffer
          if ( bounceBufferId == GMM_ERROR && layout->baseDepth == 1 )
             bounceBufferId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-                  CELL_GCM_LOCATION_LOCAL, 0, gcmTexture->gpuSize);
+                  0, gcmTexture->gpuSize);
 
          if ( bounceBufferId != GMM_ERROR )
          {
@@ -2831,7 +2830,7 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
    rglImage *image = texture->image + texture->baseLevel;
 
    newLayout.levels = 1;
-   newLayout.faces = texture->faceCount;
+   newLayout.faces = 1;
    newLayout.baseWidth = image->width;
    newLayout.baseHeight = image->height;
    newLayout.baseDepth = image->depth;
