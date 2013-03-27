@@ -143,61 +143,7 @@ static int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramH
    rglCreatePushBuffer( program );
    int count = program->defaultValuesIndexCount;
 
-   if ( profileIndex == FRAGMENT_PROFILE_INDEX )
-   {
-      //this function sets the embedded constant to their default value in the ucode of a fragment shader
-      //it's called at setup time right after loading the program. this function could be removed if the
-      //default values were already in the shader code
-      /* modifies the ucode */
-
-      for ( int i = 0;i < count;i++ )
-      {
-         const void * __restrict pItemDefaultValues = program->defaultValues + program->defaultValuesIndices[i].defaultValueIndex;
-         const unsigned int * itemDefaultValues = ( const unsigned int * )pItemDefaultValues;
-         int index = ( int )program->defaultValuesIndices[i].entryIndex;
-
-         CgRuntimeParameter *rtParameter = program->runtimeParameters + index;
-         float *hostMemoryCopy = ( float * )rtParameter->pushBufferPointer;
-
-         if ( hostMemoryCopy ) //certain parameter are not referenced but still have a default value.
-         {
-            const CgParameterEntry *parameterEntry = rtParameter->parameterEntry;
-            int arrayCount = 1;
-            if ( parameterEntry->flags & CGP_ARRAY )
-            {
-               const CgParameterArray *parameterArray = rglGetParameterArray( program, parameterEntry );
-               arrayCount = rglGetSizeofSubArray( parameterArray->dimensions, parameterArray->dimensionCount );
-               i++;
-               parameterEntry++;
-            }
-            const CgParameterResource *parameterResource = rglGetParameterResource( program, parameterEntry );
-            unsigned short *resource = program->resources + parameterResource->resource + 1; //+1 to skip the register
-            int registerStride = isMatrix(( CGtype )parameterResource->type ) ? rglGetTypeRowCount(( CGtype )parameterResource->type ) : 1;
-            int registerCount = arrayCount * registerStride;
-            int j;
-
-            for ( j = 0;j < registerCount;j++ )
-            {
-               unsigned short embeddedConstCount = *( resource++ );
-               int k;
-               for ( k = 0;k < embeddedConstCount;k++ )
-               {
-                  unsigned short ucodePatchOffset = *( resource )++;
-                  unsigned int *dst = ( unsigned int* )(( char* )program->ucode + ucodePatchOffset );
-                  dst[0] = SWAP_IF_BIG_ENDIAN( itemDefaultValues[0] );
-                  dst[1] = SWAP_IF_BIG_ENDIAN( itemDefaultValues[1] );
-                  dst[2] = SWAP_IF_BIG_ENDIAN( itemDefaultValues[2] );
-                  dst[3] = SWAP_IF_BIG_ENDIAN( itemDefaultValues[3] );
-               }
-               __builtin_memcpy(( void* )hostMemoryCopy, ( void* )itemDefaultValues, sizeof( float )*4 );
-               hostMemoryCopy += 4;
-               itemDefaultValues += 4;
-               resource++; //skip the register of the next item
-            }
-         }
-      }
-   }
-   else
+   if ( profileIndex != FRAGMENT_PROFILE_INDEX )
    {
       /* modifies the push buffer */
 

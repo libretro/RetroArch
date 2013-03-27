@@ -43,19 +43,6 @@ typedef struct CgRuntimeParameter
    CGparameter id;
 } CgRuntimeParameter;
 
-typedef struct
-{
-   CgRuntimeParameter* child;
-   CgRuntimeParameter* parent;
-   CgRuntimeParameter* top;
-   _cgSetArrayIndexFunction childOnBindSetter;
-} CgParameterConnection;
-
-typedef struct
-{
-   CgRuntimeParameter* param;
-} CgRuntimeSemantic;
-
 struct _CGprogram
 {
    struct _CGprogram*   next;          // link to next in NULL-terminated singly linked list of programs
