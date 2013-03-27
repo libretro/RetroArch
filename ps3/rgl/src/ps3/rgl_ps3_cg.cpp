@@ -987,17 +987,6 @@ static CGparameter rglAdvanceParameter( CGparameter param, int distance )
 
 void rglCgDestroyContextParam( CgRuntimeParameter* ptr )
 {
-   std::vector<CgRuntimeSemantic>::iterator semanticIter = ptr->program->parameterSemantics.begin();
-   while ( semanticIter != ptr->program->parameterSemantics.end() )
-   {
-      if ( semanticIter->param == ptr )
-      {
-         ptr->program->parameterSemantics.erase( semanticIter );
-         break;
-      }
-      semanticIter++;
-   }
-
    if ( _cgParameterDestroyHook ) _cgParameterDestroyHook( ptr );
 
    rglEraseName( &_CurrentContext->cgParameterNameSpace, (unsigned int)( ptr->id ) );
@@ -1562,49 +1551,31 @@ CG_API const char* cgGetParameterSemantic( CGparameter param )
    CgRuntimeParameter *rtParameter = ( CgRuntimeParameter* )rglCgGLTestParameter( param );
    if ( !rtParameter )
       return NULL;
-   else
+
+   const CgParameterEntry *parameterEntry = rtParameter->parameterEntry;
+
+   unsigned short type = parameterEntry->flags & CGP_TYPE_MASK;
+   if ( type == CGP_STRUCTURE || CGP_STRUCTURE == CGP_ARRAY )
    {
-      const CgParameterEntry *parameterEntry = rtParameter->parameterEntry;
-
-      unsigned short type = parameterEntry->flags & CGP_TYPE_MASK;
-      if ( type == CGP_STRUCTURE || CGP_STRUCTURE == CGP_ARRAY )
-      {
-         rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
-         return NULL;
-      }
-
-      // this table holds semantics that were created at runtime for either program or context or effect scope parameters
-      // this search happens first because you can overwrite what was set in the binary at runtime
-      // and we won't remove the entry from the binary representation of semantics
-      // but we will add an entry into this table which should be returned here.
-      std::vector<CgRuntimeSemantic>::iterator semanticIter = rtParameter->program->parameterSemantics.begin();
-      while ( semanticIter != rtParameter->program->parameterSemantics.end() )
-      {
-         if ( semanticIter->param == rtParameter )
-         {
-            return &semanticIter->semantic[0];
-         }
-         semanticIter++;
-      }
-
-      size_t entryIndex = ( parameterEntry - rtParameter->program->parametersEntries );
-
-      //look for the parameter semantic in the semantic table for semantics set in the compiled source
-      int count = rtParameter->program->semanticCount;
-      int i;
-      for ( i = 0;i < count;i++ )
-      {
-         const CgParameterSemantic *semantic = rtParameter->program->semanticIndices + i;
-         if ( semantic->entryIndex == ( unsigned short )entryIndex )
-         {
-            //found
-            return rtParameter->program->stringTable + semantic->semanticOffset;
-         }
-      }
-
-      //not found, we don't have the semantic for this parameter, returns empty strings
-      return "";
+      rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
+      return NULL;
    }
+
+   size_t entryIndex = ( parameterEntry - rtParameter->program->parametersEntries );
+
+   //look for the parameter semantic in the semantic table for semantics set in the compiled source
+   int count = rtParameter->program->semanticCount;
+   int i;
+   for ( i = 0;i < count;i++ )
+   {
+      const CgParameterSemantic *semantic = rtParameter->program->semanticIndices + i;
+
+      if ( semantic->entryIndex == ( unsigned short )entryIndex )
+         return rtParameter->program->stringTable + semantic->semanticOffset; // found
+   }
+
+   //not found, we don't have the semantic for this parameter, returns empty strings
+   return "";
 }
 
 static bool rglPrependString( char *dst, const char *src, size_t size )
@@ -1752,71 +1723,6 @@ CG_API CGenum cgGetParameterDirection( CGparameter param )
       else
          return CG_ERROR;
    }
-}
-
-CG_API void cgSetParameterSemantic( CGparameter param, const char* semantic )
-{
-   // check parameter handle
-   if ( RGL_UNLIKELY( !CG_IS_PARAMETER( param ) ) )
-   {
-      rglCgRaiseError( CG_INVALID_PARAM_HANDLE_ERROR );
-      return;
-   }
-
-   CgRuntimeParameter* rtParameter = ( CgRuntimeParameter* )rglCgGLTestParameter( param );
-
-   unsigned short type = rtParameter->parameterEntry->flags & CGP_TYPE_MASK;
-   if ( type == CGP_STRUCTURE || CGP_STRUCTURE == CGP_ARRAY )
-   {
-      rglCgRaiseError( CG_INVALID_PARAMETER_ERROR );
-      return;
-   }
-
-   // first see if the parameter already has this semantic set from compile time, in which case, just return, it is already set
-   size_t entryIndex = ( rtParameter->parameterEntry - rtParameter->program->parametersEntries ) / sizeof( CgParameterEntry );
-   //look for the parameter semantic in the semantic table for semantics set in the compiled source
-   int count = rtParameter->program->semanticCount;
-   int i;
-   for ( i = 0;i < count;i++ )
-   {
-      const CgParameterSemantic *semanticEntry = rtParameter->program->semanticIndices + i;
-      if ( semanticEntry->entryIndex == ( unsigned short )entryIndex )
-      {
-         //found the semantic for this parameter
-         if ( strcmp( semantic, rtParameter->program->stringTable + semanticEntry->semanticOffset ) == 0 )
-         {
-            // if it already has the value we want, just return
-            return;
-         }
-         else
-         {
-            // if it has a different value, break out of this loop and give it a new one
-            break;
-         }
-      }
-   }
-
-   // this table holds semantics that were created at runtime for either program or context or effect scope parameters
-   // must check this table to see if the param already has one set, in which case the semantic should just be updated
-   std::vector<CgRuntimeSemantic>::iterator semanticIter = rtParameter->program->parameterSemantics.begin();
-   while ( semanticIter != rtParameter->program->parameterSemantics.end() )
-   {
-      if ( semanticIter->param == rtParameter )
-      {
-         // we found this parameter already has a runtime set semantic, reassign it.
-         semanticIter->semantic.clear();
-         semanticIter->semantic.insert( semanticIter->semantic.end(), semantic, semantic + strlen( semantic ) + 1 );
-         return;
-      }
-      semanticIter++;
-   }
-
-   // finally, if this parameter has no semantic yet, create an entry in the semantics table to store this semantic
-   CgRuntimeSemantic newSemanticEntry;
-   newSemanticEntry.param = rtParameter;
-   newSemanticEntry.semantic.clear();
-   newSemanticEntry.semantic.insert( newSemanticEntry.semantic.end(), semantic, semantic + strlen( semantic ) + 1 );
-   rtParameter->program->parameterSemantics.push_back( newSemanticEntry );
 }
 
 /*============================================================
@@ -2448,11 +2354,6 @@ void rglCgProgramErase( _CGprogram* prog )
          // default program
          break;
    }
-
-   // free allocated memory in these stl containers. 
-   // Current clear() implementation deallocates the memory.
-   // Is it better to explicitly call a "destructor" of this prog before freeing its memory?
-   prog->parameterSemantics.clear();
 
    // return program and node to free store
    if ( prog->id ) rglEraseName( &_CurrentContext->cgProgramNameSpace, (unsigned int)prog->id );

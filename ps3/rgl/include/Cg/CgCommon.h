@@ -6,7 +6,6 @@
 #include "../export/RGL/rgl.h"
 #include "../RGL/private.h"
 
-#include <vector>
 #include <string>
 
 #include "Cg/CgInternal.h"
@@ -55,7 +54,6 @@ typedef struct
 typedef struct
 {
    CgRuntimeParameter* param;
-   std::vector<char> semantic;
 } CgRuntimeSemantic;
 
 struct _CGprogram
@@ -125,9 +123,6 @@ struct _CGprogram
 
    _CGprogramGroup *programGroup;
    int programIndexInGroup;
-
-   // supports runtime allocation of semantics
-   std::vector<CgRuntimeSemantic> parameterSemantics;
 
    //runtime compilation / conversion
    void *runtimeElf;
