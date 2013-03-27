@@ -1236,10 +1236,16 @@ void D3DVideo::overlay_set_alpha(float mod)
 }
 
 void D3DVideo::overlay_render()
-{
+{  
+   struct overlay_vertex
+   {
+      float x,y, z;
+      float u,v;
+   } vert[4];
+
    if(!overlay.vert_buf) {
       dev->CreateVertexBuffer(
-            4 * sizeof(Vertex),
+            sizeof(vert),
             dev->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
             0,
             D3DPOOL_MANAGED,
@@ -1247,7 +1253,6 @@ void D3DVideo::overlay_render()
             nullptr);
    }
 
-   Vertex vert[4];
    for (unsigned i = 0; i < 4; i++)
       vert[i].z = 0.5f;
 
@@ -1272,16 +1277,6 @@ void D3DVideo::overlay_render()
    vert[2].v = overlay.tex_coords.y + overlay.tex_coords.h;
    vert[3].v = overlay.tex_coords.y + overlay.tex_coords.h;
 
-   // unnecessary, but just in case
-   vert[0].lut_u = 0.0f;
-   vert[1].lut_u = 1.0f;
-   vert[2].lut_u = 0.0f;
-   vert[3].lut_u = 1.0f;
-   vert[0].lut_v = 0.0f;
-   vert[1].lut_v = 0.0f;
-   vert[2].lut_v = 1.0f;
-   vert[3].lut_v = 1.0f;
-
    // Align texels and vertices.
    for (unsigned i = 0; i < 4; i++)
    {
@@ -1298,9 +1293,17 @@ void D3DVideo::overlay_render()
    dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
    dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 
-   dev->SetStreamSource(0, overlay.vert_buf, 0, sizeof(Vertex));
-   dev->SetStreamSource(1, overlay.vert_buf, 0, sizeof(Vertex));
-   dev->SetStreamSource(2, overlay.vert_buf, 0, sizeof(Vertex));
+    D3DVERTEXELEMENT9 vElems[4] = {
+      {0, 0,  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0},
+      {0, 12, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0},
+      D3DDECL_END()
+   };
+
+   IDirect3DVertexDeclaration9 * vertex_decl;
+   dev->CreateVertexDeclaration(vElems, &vertex_decl);
+   dev->SetVertexDeclaration(vertex_decl);
+
+   dev->SetStreamSource(0, overlay.vert_buf, 0, sizeof(overlay_vertex));
 
    if(overlay.overlay_fullscreen)
    {
@@ -1338,6 +1341,7 @@ void D3DVideo::overlay_render()
    }
    dev->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE);
    dev->SetViewport(&final_viewport);
+   vertex_decl->Release();
 }
 
 #endif
