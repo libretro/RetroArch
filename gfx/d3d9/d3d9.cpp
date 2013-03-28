@@ -496,6 +496,10 @@ D3DVideo::~D3DVideo()
       overlay.tex->Release();
    if(overlay.vert_buf)
       overlay.vert_buf->Release();
+   if(overlay.opacity_shader)
+      overlay.opacity_shader->Release();
+   if(overlay.opacity_shader_table)
+      overlay.opacity_shader_table->Release();
 #endif
    if (dev)
       dev->Release();
@@ -1235,12 +1239,21 @@ void D3DVideo::overlay_set_alpha(float mod)
    overlay.overlay_alpha_mod = mod;
 }
 
+static const char *opacity_fragment =
+      "uniform float opacity;\n"
+      "float4 main_fragment(uniform sampler2D samp, float2 tex : TEXCOORD0) : COLOR\n"
+      "{\n"
+      "  float4 col = tex2D(samp, tex);\n"
+      "  col.a *= opacity;\n"
+      "  return col;\n"
+      "}";
+
 void D3DVideo::overlay_render()
 {  
    struct overlay_vertex
    {
-      float x,y, z;
-      float u,v;
+      float x, y, z;
+      float u, v;
    } vert[4];
 
    if(!overlay.vert_buf) {
@@ -1289,19 +1302,21 @@ void D3DVideo::overlay_render()
    std::memcpy(verts, vert, sizeof(vert));
    overlay.vert_buf->Unlock();
 
+   // enable alpha
    dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
    dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
    dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 
-    D3DVERTEXELEMENT9 vElems[4] = {
+   // set vertex decl for overlay
+   D3DVERTEXELEMENT9 vElems[4] = {
       {0, 0,  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0},
       {0, 12, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0},
       D3DDECL_END()
    };
-
    IDirect3DVertexDeclaration9 * vertex_decl;
    dev->CreateVertexDeclaration(vElems, &vertex_decl);
    dev->SetVertexDeclaration(vertex_decl);
+   vertex_decl->Release();
 
    dev->SetStreamSource(0, overlay.vert_buf, 0, sizeof(overlay_vertex));
 
@@ -1328,7 +1343,33 @@ void D3DVideo::overlay_render()
 
       dev->Clear(2, clear_rects, D3DCLEAR_TARGET, 0, 1, 0);
    }
-   
+
+   // custom pixel shader for opacity
+   IDirect3DPixelShader9 *prev_pixel_shader = NULL;
+   if(overlay.overlay_alpha_mod != 1.0f)
+   {
+      if(!overlay.opacity_shader)
+      {
+         LPD3DXBUFFER code;
+         D3DXCompileShader(opacity_fragment,    // source
+               strlen(opacity_fragment),        // len
+               NULL,                            // macros
+               NULL,                            // includes
+               "main_fragment",                 // main function
+               "ps_2_0",                        // shader profile
+               0,                               // flags
+               &code,                           // compiled operations
+               NULL,                            // errors
+               &overlay.opacity_shader_table);  // constants
+         dev->CreatePixelShader((DWORD*)code->GetBufferPointer(), &overlay.opacity_shader);
+         code->Release();
+      }
+      overlay.opacity_shader_table->SetFloat(dev, "opacity", overlay.overlay_alpha_mod);
+      dev->GetPixelShader(&prev_pixel_shader);
+      dev->SetPixelShader(overlay.opacity_shader);
+   }
+
+   // render overlay
    dev->SetTexture(0, overlay.tex);
    dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
@@ -1339,9 +1380,12 @@ void D3DVideo::overlay_render()
       dev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
       dev->EndScene();
    }
-   dev->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE);
+
+   //restore previous state
+   dev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
    dev->SetViewport(&final_viewport);
-   vertex_decl->Release();
+   if(prev_pixel_shader)
+      dev->SetPixelShader(prev_pixel_shader);
 }
 
 #endif
