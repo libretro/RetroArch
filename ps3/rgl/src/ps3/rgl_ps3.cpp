@@ -4530,10 +4530,6 @@ GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param )
             texture->vertexEnable = GL_FALSE;
          texture->revalidate |= RGL_TEXTURE_REVALIDATE_LAYOUT;
          break;
-      case GL_TEXTURE_ALLOCATION_HINT_SCE:
-         texture->usage = param;
-         texture->revalidate |= RGL_TEXTURE_REVALIDATE_LAYOUT;
-         break;
       case GL_TEXTURE_COMPARE_MODE_ARB:
          texture->compareMode = param;
          break;

@@ -2347,177 +2347,6 @@ static inline GLenum unFilter( GLenum filter )
    return newFilter;
 }
 
-// texture strategy actions
-//  A texture strategy is a sequence of actions represented by these tokens.
-//  RGL_TEXTURE_STRATEGY_END must be the last token in any strategy.
-enum rglTextureStrategy {
-   RGL_TEXTURE_STRATEGY_END,			// allocation failed, give up
-   RGL_TEXTURE_STRATEGY_FORCE_LINEAR,
-   RGL_TEXTURE_STRATEGY_TILED_ALLOC,
-   RGL_TEXTURE_STRATEGY_TILED_CLEAR,
-   RGL_TEXTURE_STRATEGY_UNTILED_ALLOC,
-   RGL_TEXTURE_STRATEGY_UNTILED_CLEAR,
-   RGL_TEXTURE_STRATEGY_SYSTEM_ALLOC,
-   RGL_TEXTURE_STRATEGY_SYSTEM_CLEAR,	// XXX probably not useful
-};
-
-static enum rglTextureStrategy tiledGPUStrategy[] =
-{
-   RGL_TEXTURE_STRATEGY_TILED_ALLOC,	// try tiled alloction
-   RGL_TEXTURE_STRATEGY_FORCE_LINEAR,
-   RGL_TEXTURE_STRATEGY_UNTILED_ALLOC,	// if failure, try linear allocation
-   RGL_TEXTURE_STRATEGY_UNTILED_CLEAR,	// if failure, drop linear textures
-   RGL_TEXTURE_STRATEGY_UNTILED_ALLOC,	// try linear again
-   RGL_TEXTURE_STRATEGY_END,			// give up
-};
-static enum rglTextureStrategy linearGPUStrategy[] =
-{
-   RGL_TEXTURE_STRATEGY_FORCE_LINEAR,
-   RGL_TEXTURE_STRATEGY_UNTILED_ALLOC,
-   RGL_TEXTURE_STRATEGY_UNTILED_CLEAR,
-   RGL_TEXTURE_STRATEGY_UNTILED_ALLOC,
-   RGL_TEXTURE_STRATEGY_END,
-};
-static enum rglTextureStrategy swizzledGPUStrategy[] =
-{
-   RGL_TEXTURE_STRATEGY_UNTILED_ALLOC,
-   RGL_TEXTURE_STRATEGY_UNTILED_CLEAR,
-   RGL_TEXTURE_STRATEGY_UNTILED_ALLOC,
-   RGL_TEXTURE_STRATEGY_END,
-};
-static enum rglTextureStrategy linearSystemStrategy[] =
-{
-   RGL_TEXTURE_STRATEGY_FORCE_LINEAR,
-   RGL_TEXTURE_STRATEGY_SYSTEM_ALLOC,
-   RGL_TEXTURE_STRATEGY_END,
-};
-static enum rglTextureStrategy swizzledSystemStrategy[] =
-{
-   RGL_TEXTURE_STRATEGY_SYSTEM_ALLOC,
-   RGL_TEXTURE_STRATEGY_END,
-};
-
-// Reallocate texture based on usage, pool system, and strategy
-void rglPlatformReallocateGcmTexture (void *data)
-{
-   rglTexture *texture = (rglTexture*)data;
-   rglGcmTexture *gcmTexture = ( rglGcmTexture * )texture->platformTexture;
-
-   // select the allocation strategy
-   enum rglTextureStrategy *step = NULL;
-   switch ( texture->usage )
-   {
-      case GL_TEXTURE_TILED_GPU_SCE:
-         step = tiledGPUStrategy;
-         break;
-      case GL_TEXTURE_LINEAR_GPU_SCE:
-         step = linearGPUStrategy;
-         break;
-      case GL_TEXTURE_SWIZZLED_GPU_SCE:
-         step = swizzledGPUStrategy;
-         break;
-      case GL_TEXTURE_LINEAR_SYSTEM_SCE:
-         step = linearSystemStrategy;
-         break;
-      case GL_TEXTURE_SWIZZLED_SYSTEM_SCE:
-         step = swizzledSystemStrategy;
-         break;
-      default:
-         step = swizzledGPUStrategy;
-         break;
-   }
-
-   GLuint size = 0;
-   GLuint id = GMM_ERROR;
-
-   // allow swizzled format unless explicitly disallowed
-   //  PBO textures cannot be swizzled.
-   GLboolean forceLinear = GL_FALSE;
-
-   const rglGcmTextureLayout currentLayout = gcmTexture->gpuLayout;
-   const GLuint currentSize = gcmTexture->gpuSize;
-
-   // process strategy
-   GLboolean done = GL_FALSE;
-   while ( !done )
-   {
-      rglGcmTextureLayout newLayout;
-
-      switch ( *step++ )
-      {
-         case RGL_TEXTURE_STRATEGY_FORCE_LINEAR:
-            forceLinear = GL_TRUE;
-            break;
-         case RGL_TEXTURE_STRATEGY_UNTILED_ALLOC:
-            {
-               // get layout and size compatible with this pool
-               rglImage *image = texture->image + texture->baseLevel;
-
-               newLayout.levels = 1;
-               newLayout.faces = 1;
-               newLayout.baseWidth = image->width;
-               newLayout.baseHeight = image->height;
-               newLayout.baseDepth = image->depth;
-               newLayout.internalFormat = ( rglGcmEnum )image->internalFormat;
-               newLayout.pixelBits = rglPlatformGetBitsPerPixel( newLayout.internalFormat );
-               newLayout.pitch = GET_TEXTURE_PITCH(texture);
-
-               size = rglGetGcmTextureSize( &newLayout );
-
-               // determine if current allocation already works
-               //  If the current allocation has the right size and pool, we
-               //  don't have to do anything.  If not, we only drop from the
-               //  target pool because we may reuse the allocation from a
-               //  different pool in a later step.
-               if ( gcmTexture->pool == RGLGCM_SURFACE_POOL_LINEAR )
-               {
-                  if ( currentSize >= size && newLayout.pitch == currentLayout.pitch )
-                  {
-                     gcmTexture->gpuLayout = newLayout;
-                     done = GL_TRUE;
-                  }
-                  else
-                     rglPlatformDropTexture( texture );
-               }
-
-               if ( !done )
-               {
-                  // allocate in the specified pool
-                  id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 
-                        0, size);
-
-                  if ( id != GMM_ERROR )
-                  {
-                     // drop old allocation
-                     if ( gcmTexture->pool != RGLGCM_SURFACE_POOL_NONE )
-                        rglPlatformDropTexture( texture );
-
-                     // set new
-                     gcmTexture->pool = RGLGCM_SURFACE_POOL_LINEAR;
-                     gcmTexture->gpuAddressId = id;
-                     gcmTexture->gpuAddressIdOffset = 0;
-                     gcmTexture->gpuSize = size;
-                     gcmTexture->gpuLayout = newLayout;
-
-                     done = GL_TRUE;
-                  }
-               }
-            }
-            break;
-         case RGL_TEXTURE_STRATEGY_UNTILED_CLEAR:
-            rglPlatformDropUnboundTextures( RGLGCM_SURFACE_POOL_LINEAR );
-            break;
-         case RGL_TEXTURE_STRATEGY_END:
-            rglSetError( GL_OUT_OF_MEMORY );
-            done = GL_TRUE;
-            break;
-         default:
-            break;
-      }
-   } // while loop for allocation strategy steps
-   rglTextureTouchFBOs( texture );
-}
-
 // Free memory pooled by a GCM texture
 void rglPlatformFreeGcmTexture (void *data)
 {
@@ -2560,11 +2389,61 @@ static void rglPlatformValidateTextureResources (void *data)
    if ( texture->revalidate & RGL_TEXTURE_REVALIDATE_IMAGES || texture->revalidate & RGL_TEXTURE_REVALIDATE_LAYOUT )
    {
       // upload images
-      rglPlatformReallocateGcmTexture( texture );
-
-      // Upload texure from host memory to GPU memory
-      //
+      // Reallocate texture based on usage, pool system, and strategy
       rglGcmTexture *gcmTexture = ( rglGcmTexture * )texture->platformTexture;
+
+      // select the allocation strategy
+      GLboolean done = GL_FALSE;
+      GLuint size = 0;
+      GLuint id = GMM_ERROR;
+
+      if (texture->usage == GL_TEXTURE_LINEAR_SYSTEM_SCE ||
+            texture->usage == GL_TEXTURE_SWIZZLED_SYSTEM_SCE)
+         done = GL_TRUE;
+
+      const rglGcmTextureLayout currentLayout = gcmTexture->gpuLayout;
+      const GLuint currentSize = gcmTexture->gpuSize;
+
+      if (!done)
+      {
+         rglGcmTextureLayout newLayout;
+
+         // get layout and size compatible with this pool
+         rglImage *image = texture->image + texture->baseLevel;
+
+         newLayout.levels = 1;
+         newLayout.faces = 1;
+         newLayout.baseWidth = image->width;
+         newLayout.baseHeight = image->height;
+         newLayout.baseDepth = image->depth;
+         newLayout.internalFormat = ( rglGcmEnum )image->internalFormat;
+         newLayout.pixelBits = rglPlatformGetBitsPerPixel( newLayout.internalFormat );
+         newLayout.pitch = GET_TEXTURE_PITCH(texture);
+
+         size = rglGetGcmTextureSize( &newLayout );
+
+         if ( currentSize >= size && newLayout.pitch == currentLayout.pitch )
+            gcmTexture->gpuLayout = newLayout;
+         else
+         {
+            rglPlatformDropTexture( texture );
+
+            // allocate in the specified pool
+            id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 
+                  0, size);
+
+            // set new
+            gcmTexture->pool = RGLGCM_SURFACE_POOL_LINEAR;
+            gcmTexture->gpuAddressId = id;
+            gcmTexture->gpuAddressIdOffset = 0;
+            gcmTexture->gpuSize = size;
+            gcmTexture->gpuLayout = newLayout;
+
+         }
+      }
+      rglTextureTouchFBOs( texture );
+
+      // Upload texture from host memory to GPU memory
       rglGcmTextureLayout *layout = &gcmTexture->gpuLayout;
 
       const GLuint pixelBytes = layout->pixelBits / 8;
