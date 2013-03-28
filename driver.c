@@ -667,6 +667,12 @@ static void init_filter(bool rgb32)
    if (!*g_settings.video.filter_path)
       return;
 
+   if (g_extern.system.hw_render_callback.context_type)
+   {
+      RARCH_WARN("Cannot use CPU filters when hardware rendering is used.\n");
+      return;
+   }
+
    RARCH_LOG("Loading bSNES filter from \"%s\"\n", g_settings.video.filter_path);
    g_extern.filter.lib = dylib_load(g_settings.video.filter_path);
    if (!g_extern.filter.lib)
