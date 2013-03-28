@@ -4,6 +4,27 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+static struct retro_hw_render_callback hw_render;
+
+#ifdef GLES
+#include <GLES2/gl2.h>
+#define pglCreateProgram glCreateProgram
+#define pglCreateShader glCreateShader
+#define pglCompileShader glCompileShader
+#define pglUseProgram glUseProgram
+#define pglShaderSource glShaderSource
+#define pglAttachShader glAttachShader
+#define pglLinkProgram glLinkProgram
+#define pglBindFramebuffer glBindFramebuffer
+#define pglGetUniformLocation glGetUniformLocation
+#define pglUniformMatrix4fv glUniformMatrix4fv
+#define pglGetAttribLocation glGetAttribLocation
+#define pglVertexAttribPointer glVertexAttribPointer
+#define pglEnableVertexAttribArray glEnableVertexAttribArray
+#define pglDisableVertexAttribArray glEnableVertexAttribArray
+#else
 #include <GL/gl.h>
 #define GL_GLEXT_PROTOTYPES
 #include <GL/glext.h>
@@ -23,7 +44,6 @@ static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer;
 static PFNGLENABLEVERTEXATTRIBARRAYPROC pglEnableVertexAttribArray;
 static PFNGLDISABLEVERTEXATTRIBARRAYPROC pglDisableVertexAttribArray;
 
-static struct retro_hw_render_callback hw_render;
 
 struct gl_proc_map
 {
@@ -32,7 +52,6 @@ struct gl_proc_map
 };
 
 #define PROC_BIND(name) { &(pgl##name), "gl" #name }
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 static const struct gl_proc_map proc_map[] = {
    PROC_BIND(CreateProgram),
    PROC_BIND(CreateShader),
@@ -60,6 +79,7 @@ static void init_gl_proc(void)
       memcpy(proc_map[i].proc, &proc, sizeof(proc));
    }
 }
+#endif
 
 static GLuint prog;
 
@@ -237,7 +257,9 @@ void retro_run(void)
 static void context_reset(void)
 {
    fprintf(stderr, "Context reset!\n");
+#ifndef GLES
    init_gl_proc();
+#endif
    compile_program();
 }
 

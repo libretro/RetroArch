@@ -16,17 +16,17 @@ ifeq ($(platform), unix)
    TARGET := libretro.so
    fpic := -fPIC
    SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
-   LIBS := -lGL
+   GL_LIB := -lGL
 else ifeq ($(platform), osx)
    TARGET := libretro.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
-   LIBS := -framework OpenGL
+   GL_LIB := -framework OpenGL
 else
    CC = gcc
    TARGET := retro.dll
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T -Wl,--no-undefined
-   LIBS := -lopengl32
+   GL_LIB := -lopengl32
 endif
 
 ifeq ($(DEBUG), 1)
@@ -37,6 +37,13 @@ endif
 
 OBJECTS := libretro-test.o
 CFLAGS += -std=gnu99 -Wall -pedantic $(fpic)
+
+ifeq ($(GLES), 1)
+   CFLAGS += -DGLES
+   LIBS += -lGLESv2
+else
+   LIBS += $(GL_LIB)
+endif
 
 all: $(TARGET)
 
