@@ -394,7 +394,9 @@ D3DVideo::D3DVideo(const video_info_t *info) :
 {
    gfx_set_dwm();
 
+#ifdef HAVE_OVERLAY
    std::memset(&overlay,0,sizeof(overlay));
+#endif
 
    std::memset(&windowClass, 0, sizeof(windowClass));
    windowClass.cbSize        = sizeof(windowClass);
@@ -574,9 +576,11 @@ bool D3DVideo::frame(const void *frame,
       dev->EndScene();
    }
 
+#ifdef HAVE_OVERLAY
    if(overlay.overlay_enabled) {
       overlay_render();
    }
+#endif
 
    RARCH_PERFORMANCE_STOP(d3d_frame);
 
