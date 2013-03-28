@@ -1500,19 +1500,6 @@ GLboolean rglGcmFifoReferenceInUse (void *data, GLuint reference)
    return GL_TRUE;
 }
 
-// Wait until the requested space is available.
-// If not currently available, will call the out of space callback
-
-uint32_t * rglGcmFifoWaitForFreeSpace (void *data, GLuint spaceInWords)
-{
-   rglGcmFifo *fifo = (rglGcmFifo*)data;
-
-   if ( fifo->current + spaceInWords + 1024 > fifo->end )
-      rglOutOfSpaceCallback( fifo, spaceInWords );
-
-   return rglGcmState_i.fifo.current;
-}
-
 void rglGcmFifoInit (void *data, void *dmaControl, unsigned long dmaPushBufferOffset, uint32_t*dmaPushBuffer,
       GLuint dmaPushBufferSize )
 {
@@ -2065,15 +2052,10 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
    // If the current end isn't the same as the full fifo end we 
    // aren't at the end.  Just go ahead and set the next begin and end 
    if(fifo->end != fifo->dmaPushBufferEnd)
-   {
       nextbegin = (uint32_t *)fifo->end + 1; 
-      nextend = nextbegin + fifo->fifoBlockSize/sizeof(uint32_t) - 1;
-   }
    else
-   {
       nextbegin = (uint32_t *)fifo->dmaPushBufferBegin;
-      nextend = nextbegin + (fifo->fifoBlockSize)/sizeof(uint32_t) - 1;
-   }
+   nextend = nextbegin + (fifo->fifoBlockSize)/sizeof(uint32_t) - 1;
 
    cellGcmAddressToOffset(nextbegin, &nextbeginoffset);
    cellGcmAddressToOffset(nextend, &nextendoffset);
@@ -2086,8 +2068,6 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
    fifo->begin = nextbegin;
    fifo->current = nextbegin;
    fifo->end = nextend;
-
-   const GLuint nopsAtBegin = 8;
 
    //if Gpu busy with the new area, stall and flush
    uint32_t get = fifo->dmaControl->Get;
@@ -2106,17 +2086,15 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
    while(((get >= nextbeginoffset) && (get <= nextendoffset)) 
          || ((0 <= get) && (get < 0x10000))) 
    {
-      // Don't be a ppu hog ;)
-      sys_timer_usleep(30);
       get = fifo->dmaControl->Get;
       cellGcmIoOffsetToAddress( get, &getEA ); 
    }
 
    // need to add some nops here at the beginning for a issue with the get and the put being at the 
    // same position when the fifo is in GPU memory. 
-   for ( GLuint i = 0; i < nopsAtBegin; i++ )
+   for ( GLuint i = 0; i < 8; i++ )
    {
-      fifo->current[0] = RGLGCM_NOP();
+      fifo->current[0] = 0;
       fifo->current++;
    }
 

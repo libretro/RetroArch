@@ -1766,7 +1766,14 @@ static inline void rglValidateStates (GLuint mask)
       conf.registerCount = program->header.vertexProgram.registerCount;
       conf.attributeInputMask = program->header.attributeInputMask;
 
-      rglGcmFifoWaitForFreeSpace( &rglGcmState_i.fifo, 7 + 5 * conf.instructionCount );
+      rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
+      GLuint spaceInWords = 7 + 5 * conf.instructionCount;
+
+      // Push a CG program onto the current command buffer
+
+      // make sure there is space for the pushbuffer + any nops we need to add for alignment  
+      if ( fifo->current + spaceInWords + 1024 > fifo->end )
+         rglOutOfSpaceCallback( fifo, spaceInWords );
 
       GCM_FUNC( cellGcmSetVertexProgramLoad, &conf, program->ucode );
       GCM_FUNC( cellGcmSetUserClipPlaneControl, 0, 0, 0, 0, 0, 0 );
@@ -1896,11 +1903,14 @@ static inline void rglValidateStates (GLuint mask)
    if (RGL_LIKELY(needValidate & RGL_VALIDATE_VERTEX_CONSTANTS) || validate_vertex_consts)
    {
       _CGprogram *cgprog = LContext->BoundVertexProgram;
+      rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
+      GLuint spaceInWords = cgprog->constantPushBufferWordSize + 4 + 32;
 
       // Push a CG program onto the current command buffer
 
       // make sure there is space for the pushbuffer + any nops we need to add for alignment  
-      rglGcmFifoWaitForFreeSpace( &rglGcmState_i.fifo,  cgprog->constantPushBufferWordSize + 4 + 32); 
+      if ( fifo->current + spaceInWords + 1024 > fifo->end )
+         rglOutOfSpaceCallback( fifo, spaceInWords );
 
       // first add nops to get us the next alligned position in the fifo 
       // [YLIN] Use VMX register to copy
