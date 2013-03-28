@@ -1388,13 +1388,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       if (gl->hw_render_fbo_init)
       {
          gl_update_input_size(gl, width, height, pitch, false);
-#ifndef HAVE_OPENGLES
-         glEnable(GL_TEXTURE_2D);
-#endif
-         glDisable(GL_DEPTH_TEST);
-         glDisable(GL_CULL_FACE);
-         glDisable(GL_DITHER);
-         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
          if (!gl->fbo_inited)
          {
@@ -1418,6 +1411,20 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    }
    else
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+
+   // Have to reset rendering state which libretro core could easily have overridden.
+#ifdef HAVE_FBO
+   if (gl->hw_render_fbo_init)
+   {
+#ifndef HAVE_OPENGLES
+      glEnable(GL_TEXTURE_2D);
+#endif
+      glDisable(GL_DEPTH_TEST);
+      glDisable(GL_CULL_FACE);
+      glDisable(GL_DITHER);
+      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+   }
+#endif
 
    struct gl_tex_info tex_info = {0};
    tex_info.tex           = gl->texture[gl->tex_index];
@@ -1485,6 +1492,23 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    RARCH_PERFORMANCE_STOP(frame_run);
 
+#ifdef HAVE_FBO
+   // Reset state which could easily mess up libretro core.
+   if (gl->hw_render_fbo_init)
+   {
+      gl_shader_use_func(gl, 0);
+      glBindTexture(GL_TEXTURE_2D, 0);
+#ifndef NO_GL_FF_VERTEX
+      pglClientActiveTexture(GL_TEXTURE1);
+      glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+      pglClientActiveTexture(GL_TEXTURE0);
+      glDisableClientState(GL_VERTEX_ARRAY);
+      glDisableClientState(GL_COLOR_ARRAY);
+      glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+#endif
+   }
+#endif
+
 #if defined(HAVE_RMENU)
    if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
       context_rmenu_frame_func(gl);
@@ -1496,7 +1520,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (gl->pbo_readback_enable)
       gl_pbo_async_readback(gl);
 #endif
- 
+
    return true;
 }
 
