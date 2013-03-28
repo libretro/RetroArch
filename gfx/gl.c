@@ -1392,6 +1392,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          glEnable(GL_TEXTURE_2D);
 #endif
          glDisable(GL_DEPTH_TEST);
+         glDisable(GL_CULL_FACE);
          glDisable(GL_DITHER);
          glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -1881,6 +1882,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #endif
 
    glDisable(GL_DEPTH_TEST);
+   glDisable(GL_CULL_FACE);
    glDisable(GL_DITHER);
 
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));

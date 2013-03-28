@@ -64,10 +64,10 @@ static void init_gl_proc(void)
 static GLuint prog;
 
 static const GLfloat vertex[] = {
-   0.0, 0.0,
-   1.0, 0.0,
-   0.0, 1.0,
-   1.0, 1.0,
+   -0.5, -0.5,
+    0.5, -0.5,
+   -0.5,  0.5,
+    0.5,  0.5,
 };
 
 static const GLfloat color[] = {
@@ -146,10 +146,10 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    };
 
    info->geometry = (struct retro_game_geometry) {
-      .base_width   = 320,
-      .base_height  = 240,
-      .max_width    = 320,
-      .max_height   = 240,
+      .base_width   = 512,
+      .base_height  = 512,
+      .max_width    = 512,
+      .max_height   = 512,
       .aspect_ratio = 4.0 / 3.0,
    };
 }
@@ -197,20 +197,27 @@ void retro_run(void)
 
    pglBindFramebuffer(GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
    glClearColor(0.3, 0.4, 0.5, 1.0);
-   glViewport(0, 0, 320, 240);
+   glViewport(0, 0, 512, 512);
    glClear(GL_COLOR_BUFFER_BIT);
 
    pglUseProgram(prog);
 
    int loc = pglGetUniformLocation(prog, "uMVP");
-   static const GLfloat identity[] = {
-      1, 0, 0, 0,
-      0, 1, 0, 0,
+
+   static unsigned frame_count;
+   frame_count++;
+   float angle = frame_count / 100.0;
+   float cos_angle = cos(angle);
+   float sin_angle = sin(angle);
+
+   const GLfloat mvp[] = {
+      cos_angle, -sin_angle, 0, 0,
+      sin_angle, cos_angle, 0, 0,
       0, 0, 1, 0,
       0, 0, 0, 1,
    };
 
-   pglUniformMatrix4fv(loc, 1, GL_FALSE, identity);
+   pglUniformMatrix4fv(loc, 1, GL_FALSE, mvp);
 
    int vloc = pglGetAttribLocation(prog, "aVertex");
    pglVertexAttribPointer(vloc, 2, GL_FLOAT, GL_FALSE, 0, vertex);
@@ -224,7 +231,7 @@ void retro_run(void)
    pglDisableVertexAttribArray(vloc);
    pglDisableVertexAttribArray(cloc);
 
-   video_cb(RETRO_HW_FRAME_BUFFER_VALID, 320, 240, 0);
+   video_cb(RETRO_HW_FRAME_BUFFER_VALID, 512, 512, 0);
 }
 
 static void context_reset(void)
