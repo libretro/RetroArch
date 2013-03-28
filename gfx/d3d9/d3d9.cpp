@@ -577,7 +577,8 @@ bool D3DVideo::frame(const void *frame,
    }
 
 #ifdef HAVE_OVERLAY
-   if(overlay.overlay_enabled) {
+   if(overlay.overlay_enabled)
+   {
       overlay_render();
    }
 #endif
@@ -1260,7 +1261,8 @@ void D3DVideo::overlay_render()
       float u, v;
    } vert[4];
 
-   if(!overlay.vert_buf) {
+   if(!overlay.vert_buf)
+   {
       dev->CreateVertexBuffer(
             sizeof(vert),
             dev->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
