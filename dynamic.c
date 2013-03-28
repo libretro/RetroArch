@@ -561,6 +561,7 @@ static bool environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ SET_HW_RENDER.\n");
          struct retro_hw_render_callback *cb = (struct retro_hw_render_callback*)data;
          cb->get_current_framebuffer = driver_get_current_framebuffer;
+         cb->get_proc_address = driver_get_proc_address;
          memcpy(&g_extern.system.hw_render_callback, cb, sizeof(*cb));
          break;
       }

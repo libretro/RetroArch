@@ -5,20 +5,118 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <GL/gl.h>
+#define GL_GLEXT_PROTOTYPES
 #include <GL/glext.h>
 
-static uint16_t *frame_buf;
+static PFNGLCREATEPROGRAMPROC pglCreateProgram;
+static PFNGLCREATESHADERPROC pglCreateShader;
+static PFNGLCREATESHADERPROC pglCompileShader;
+static PFNGLCREATESHADERPROC pglUseProgram;
+static PFNGLSHADERSOURCEPROC pglShaderSource;
+static PFNGLATTACHSHADERPROC pglAttachShader;
+static PFNGLLINKPROGRAMPROC pglLinkProgram;
+static PFNGLBINDFRAMEBUFFERPROC pglBindFramebuffer;
+static PFNGLGETUNIFORMLOCATIONPROC pglGetUniformLocation;
+static PFNGLUNIFORMMATRIX4FVPROC pglUniformMatrix4fv;
+static PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation;
+static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer;
+static PFNGLENABLEVERTEXATTRIBARRAYPROC pglEnableVertexAttribArray;
+static PFNGLDISABLEVERTEXATTRIBARRAYPROC pglDisableVertexAttribArray;
+
+static struct retro_hw_render_callback hw_render;
+
+struct gl_proc_map
+{
+   void *proc;
+   const char *sym;
+};
+
+#define PROC_BIND(name) { &(pgl##name), "gl" #name }
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+static const struct gl_proc_map proc_map[] = {
+   PROC_BIND(CreateProgram),
+   PROC_BIND(CreateShader),
+   PROC_BIND(CompileShader),
+   PROC_BIND(UseProgram),
+   PROC_BIND(ShaderSource),
+   PROC_BIND(AttachShader),
+   PROC_BIND(LinkProgram),
+   PROC_BIND(BindFramebuffer),
+   PROC_BIND(GetUniformLocation),
+   PROC_BIND(GetAttribLocation),
+   PROC_BIND(UniformMatrix4fv),
+   PROC_BIND(VertexAttribPointer),
+   PROC_BIND(EnableVertexAttribArray),
+   PROC_BIND(DisableVertexAttribArray),
+};
+
+static void init_gl_proc(void)
+{
+   for (unsigned i = 0; i < ARRAY_SIZE(proc_map); i++)
+   {
+      retro_proc_address_t proc = hw_render.get_proc_address(proc_map[i].sym);
+      if (!proc)
+         fprintf(stderr, "Symbol %s not found!\n", proc_map[i].sym);
+      memcpy(proc_map[i].proc, &proc, sizeof(proc));
+   }
+}
+
+static GLuint prog;
+
+static const GLfloat vertex[] = {
+   0.0, 0.0,
+   1.0, 0.0,
+   0.0, 1.0,
+   1.0, 1.0,
+};
+
+static const GLfloat color[] = {
+   1.0, 1.0, 1.0, 1.0,
+   1.0, 1.0, 0.0, 1.0,
+   0.0, 1.0, 1.0, 1.0,
+   1.0, 0.0, 1.0, 1.0,
+};
+
+
+static const char *vertex_shader[] = {
+   "uniform mat4 uMVP;",
+   "attribute vec2 aVertex;",
+   "attribute vec4 aColor;",
+   "varying vec4 color;",
+   "void main() {",
+   "  gl_Position = uMVP * vec4(aVertex, 0.0, 1.0);",
+   "  color = aColor;",
+   "}",
+};
+
+static const char *fragment_shader[] = {
+   "varying vec4 color;",
+   "void main() {",
+   "  gl_FragColor = color;",
+   "}",
+};
+
+static void compile_program(void)
+{
+   prog = pglCreateProgram();
+   GLuint vert = pglCreateShader(GL_VERTEX_SHADER);
+   GLuint frag = pglCreateShader(GL_FRAGMENT_SHADER);
+
+   pglShaderSource(vert, ARRAY_SIZE(vertex_shader), vertex_shader, 0);
+   pglShaderSource(frag, ARRAY_SIZE(fragment_shader), fragment_shader, 0);
+   pglCompileShader(vert);
+   pglCompileShader(frag);
+
+   pglAttachShader(prog, vert);
+   pglAttachShader(prog, frag);
+   pglLinkProgram(prog);
+}
 
 void retro_init(void)
-{
-   frame_buf = calloc(320 * 240, sizeof(uint16_t));
-}
+{}
 
 void retro_deinit(void)
-{
-   free(frame_buf);
-   frame_buf = NULL;
-}
+{}
 
 unsigned retro_api_version(void)
 {
@@ -93,24 +191,47 @@ void retro_set_video_refresh(retro_video_refresh_t cb)
    video_cb = cb;
 }
 
-static struct retro_hw_render_callback hw_render;
-
 void retro_run(void)
 {
    input_poll_cb();
-   static unsigned frame_count = 0;
-   frame_count = (frame_count + 1) % 60;
-   glBindFramebuffer(GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
+
+   pglBindFramebuffer(GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
+   glClearColor(0.3, 0.4, 0.5, 1.0);
    glViewport(0, 0, 320, 240);
-   glClearColor(frame_count / 120.0, frame_count / 60.0, frame_count / 60.0, 1.0);
    glClear(GL_COLOR_BUFFER_BIT);
+
+   pglUseProgram(prog);
+
+   int loc = pglGetUniformLocation(prog, "uMVP");
+   static const GLfloat identity[] = {
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1,
+   };
+
+   pglUniformMatrix4fv(loc, 1, GL_FALSE, identity);
+
+   int vloc = pglGetAttribLocation(prog, "aVertex");
+   pglVertexAttribPointer(vloc, 2, GL_FLOAT, GL_FALSE, 0, vertex);
+   pglEnableVertexAttribArray(vloc);
+   int cloc = pglGetAttribLocation(prog, "aColor");
+   pglVertexAttribPointer(cloc, 4, GL_FLOAT, GL_FALSE, 0, color);
+   pglEnableVertexAttribArray(cloc);
+
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   pglUseProgram(0);
+   pglDisableVertexAttribArray(vloc);
+   pglDisableVertexAttribArray(cloc);
+
    video_cb(RETRO_HW_FRAME_BUFFER_VALID, 320, 240, 0);
 }
-
 
 static void context_reset(void)
 {
    fprintf(stderr, "Context reset!\n");
+   init_gl_proc();
+   compile_program();
 }
 
 bool retro_load_game(const struct retro_game_info *info)

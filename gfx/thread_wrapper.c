@@ -679,6 +679,7 @@ static const video_poke_interface_t thread_poke = {
    thread_set_fbo_state,
    thread_get_fbo_state,
    NULL,
+   NULL,
 #endif
    thread_set_aspect_ratio,
    thread_apply_state_changes,

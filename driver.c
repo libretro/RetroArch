@@ -280,6 +280,14 @@ uintptr_t driver_get_current_framebuffer(void)
       return 0;
 }
 
+retro_proc_address_t driver_get_proc_address(const char *sym)
+{
+   if (driver.video_poke && driver.video_poke->get_proc_address)
+      return driver.video_poke->get_proc_address(driver.video_data, sym);
+   else
+      return NULL;
+}
+
 // Only called once on init and deinit.
 // Video and input drivers need to be active (owned)
 // before retroarch core starts.
@@ -332,6 +340,10 @@ void init_drivers(void)
    adjust_system_rates();
 
    init_video_input();
+
+   if (g_extern.system.hw_render_callback.context_reset)
+      g_extern.system.hw_render_callback.context_reset();
+
    init_audio();
 }
 

@@ -444,6 +444,10 @@ typedef void (*retro_hw_context_reset_t)(void);
 // Gets current framebuffer which is to be rendered to. Could change every frame potentially.
 typedef uintptr_t (*retro_hw_get_current_framebuffer_t)(void);
 
+// Get a symbol from HW context.
+typedef void (*retro_proc_address_t)(void);
+typedef retro_proc_address_t (*retro_hw_get_proc_address_t)(const char *sym);
+
 enum retro_hw_context_type
 {
    RETRO_HW_CONTEXT_NONE = 0,
@@ -457,6 +461,7 @@ struct retro_hw_render_callback
    enum retro_hw_context_type context_type; // Which API to use. Set by libretro core.
    retro_hw_context_reset_t context_reset; // Set by libretro core.
    retro_hw_get_current_framebuffer_t get_current_framebuffer; // Set by frontend.
+   retro_hw_get_proc_address_t get_proc_address; // Set by frontend.
 };
 
 // Callback type passed in RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK. Called by the frontend in response to keyboard events.

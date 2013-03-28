@@ -1932,11 +1932,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
-#ifdef HAVE_FBO
-   if (gl->hw_render_fbo_init)
-      g_extern.system.hw_render_callback.context_reset();
-#endif
-
    return gl;
 }
 
@@ -2375,6 +2370,12 @@ static uintptr_t gl_get_current_framebuffer(void *data)
    gl_t *gl = (gl_t*)data;
    return gl->hw_render_fbo[(gl->tex_index + 1) & TEXTURES_MASK];
 }
+
+static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
+{
+   gl_t *gl = (gl_t*)data;
+   return gl->ctx_driver->get_proc_address(sym);
+}
 #endif
 
 static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
@@ -2434,6 +2435,7 @@ static const video_poke_interface_t gl_poke_interface = {
    gl_set_fbo_state,
    gl_get_fbo_state,
    gl_get_current_framebuffer,
+   gl_get_proc_address,
 #endif
    gl_set_aspect_ratio,
    gl_apply_state_changes,
