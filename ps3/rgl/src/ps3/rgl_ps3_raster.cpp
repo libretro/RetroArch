@@ -1427,7 +1427,8 @@ GLAPI void APIENTRY glClear( GLbitfield mask )
       gmmFree( bufferId );
    }
 
-   rglGcmFifoGlFlush();
+   GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+   rglGcmFifoFlush( &rglGcmState_i.fifo );
 }
 
 rglFramebuffer* rglCreateFramebuffer (void)
@@ -1980,15 +1981,23 @@ static inline void rglValidateStates (GLuint mask)
       {
          GCM_FUNC( cellGcmSetBlendEnable, LContext->Blending );
 
-         rglGcmFifoGlBlendColor(
-               LContext->BlendColor.R,
-               LContext->BlendColor.G,
-               LContext->BlendColor.B,
-               LContext->BlendColor.A);
-         rglGcmFifoGlBlendEquation(
-               (rglGcmEnum)LContext->BlendEquationRGB,
-               (rglGcmEnum)LContext->BlendEquationAlpha);
-         rglGcmFifoGlBlendFunc((rglGcmEnum)LContext->BlendFactorSrcRGB,(rglGcmEnum)LContext->BlendFactorDestRGB,(rglGcmEnum)LContext->BlendFactorSrcAlpha,(rglGcmEnum)LContext->BlendFactorDestAlpha);
+         rglGcmBlendState *blend = &rglGcmState_i.state.blend;
+         GLuint hwColor;
+
+         blend->r = LContext->BlendColor.R;
+         blend->g = LContext->BlendColor.G;
+         blend->b = LContext->BlendColor.B;
+         blend->a = LContext->BlendColor.A;
+
+         if (rglGcmState_i.renderTarget.colorFormat == RGLGCM_ARGB8)
+         {
+            RGLGCM_CALC_COLOR_LE_ARGB8( &hwColor, blend->r, blend->g, blend->b, blend->a );
+            GCM_FUNC( cellGcmSetBlendColor, hwColor, hwColor );
+         }
+
+         GCM_FUNC( cellGcmSetBlendEquation, (rglGcmEnum)LContext->BlendEquationRGB,
+               (rglGcmEnum)LContext->BlendEquationAlpha );
+         GCM_FUNC( cellGcmSetBlendFunc, (rglGcmEnum)LContext->BlendFactorSrcRGB,(rglGcmEnum)LContext->BlendFactorDestRGB,(rglGcmEnum)LContext->BlendFactorSrcAlpha,(rglGcmEnum)LContext->BlendFactorDestAlpha);
       }
    }
 
@@ -2284,69 +2293,6 @@ void rglPlatformDropTexture (void *data)
    rglTextureTouchFBOs( texture );
 }
 
-// Drop unbound textures from the GPU memory
-// This is kind of slow, but we hit a slow path anyway.
-//  If the pool argument is not RGLGCM_SURFACE_POOL_NONE, then only textures
-//  in the specified pool will be dropped.
-void rglPlatformDropUnboundTextures (GLenum pool)
-{
-   RGLcontext*	LContext = _CurrentContext;
-   GLuint i, j;
-
-   for (i = 0; i < LContext->textureNameSpace.capacity; ++i)
-   {
-      GLboolean bound = GL_FALSE;
-      rglTexture *texture = ( rglTexture * )LContext->textureNameSpace.data[i];
-
-      if (!texture || (texture->referenceBuffer != 0))
-         continue;
-
-      // check if bound
-      for ( j = 0;j < RGL_MAX_TEXTURE_IMAGE_UNITS;++j )
-      {
-         rglTextureImageUnit *tu = LContext->TextureImageUnits + j;
-         if ( tu->bound2D == i)
-         {
-            bound = GL_TRUE;
-            break;
-         }
-      }
-      if ( bound )
-         continue;
-
-      rglGcmTexture *gcmTexture = ( rglGcmTexture * )texture->platformTexture;
-
-      // check pool
-      if ( pool != RGLGCM_SURFACE_POOL_NONE &&
-            pool != gcmTexture->pool )
-         continue;
-
-      rglPlatformDropTexture( texture );
-   }
-}
-
-// Drop filitering mode for FP32 texture
-static inline GLenum unFilter( GLenum filter )
-{
-   GLenum newFilter;
-   switch ( filter )
-   {
-      case GL_NEAREST:
-      case GL_LINEAR:
-         newFilter = GL_NEAREST;
-         break;
-      case GL_NEAREST_MIPMAP_NEAREST:
-      case GL_NEAREST_MIPMAP_LINEAR:
-      case GL_LINEAR_MIPMAP_NEAREST:
-      case GL_LINEAR_MIPMAP_LINEAR:
-         newFilter = GL_NEAREST_MIPMAP_NEAREST;
-         break;
-      default:
-         newFilter = GL_NEAREST;
-   }
-   return newFilter;
-}
-
 // Free memory pooled by a GCM texture
 void rglPlatformFreeGcmTexture (void *data)
 {
@@ -2565,6 +2511,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
    platformTexture->gcmMethods.address.wrapR = rglGcmMapWrapMode( texture->wrapR );
    platformTexture->gcmMethods.address.unsignedRemap = CELL_GCM_TEXTURE_UNSIGNED_REMAP_NORMAL;
 
+#if 0
    // now for gamma remap
    GLuint gamma = 0;
    GLuint remap = texture->gammaRemap;
@@ -2574,6 +2521,9 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
    gamma |= ( remap & RGLGCM_GAMMA_REMAP_ALPHA_BIT ) 	? CELL_GCM_TEXTURE_GAMMA_A : 0;
 
    platformTexture->gcmMethods.address.gamma = gamma;
+#else
+   platformTexture->gcmMethods.address.gamma = 0;
+#endif
 
    // set border colors
    RGLGCM_CALC_COLOR_LE_ARGB8(&(platformTexture->gcmMethods.borderColor), 
@@ -2591,8 +2541,225 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
    GLuint internalFormat = layout->internalFormat;
 
    // set the format and remap( control 1)
-   rglGcmMapTextureFormat( internalFormat,
-         &platformTexture->gcmTexture.format, &platformTexture->gcmTexture.remap );
+   uint8_t *gcmFormat = &platformTexture->gcmTexture.format;
+   uint32_t *remap = &platformTexture->gcmTexture.remap;
+
+   *gcmFormat = 0;
+
+   switch (internalFormat)
+   {
+      case RGLGCM_ALPHA8:                 // in_rgba = xxAx, out_rgba = 000A
+         {
+            *gcmFormat =  CELL_GCM_TEXTURE_B8;
+            *remap = CELL_GCM_REMAP_MODE(
+                  CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_FROM_R,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_ZERO,
+                  CELL_GCM_TEXTURE_REMAP_ZERO,
+                  CELL_GCM_TEXTURE_REMAP_ZERO );
+
+         }
+         break;
+      case RGLGCM_ALPHA16:                // in_rgba = xAAx, out_rgba = 000A
+         {
+            *gcmFormat =  CELL_GCM_TEXTURE_X16;
+            *remap = CELL_GCM_REMAP_MODE(
+                  CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
+                  CELL_GCM_TEXTURE_REMAP_FROM_G,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_FROM_G,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_ZERO,
+                  CELL_GCM_TEXTURE_REMAP_ZERO,
+                  CELL_GCM_TEXTURE_REMAP_ZERO );
+
+         }
+         break;
+#if 0
+      case RGLGCM_HILO8:                  // in_rgba = HLxx, out_rgba = HL11
+         {
+            *gcmFormat =  CELL_GCM_TEXTURE_COMPRESSED_HILO8;
+            *remap = CELL_GCM_REMAP_MODE(
+                  CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
+                  CELL_GCM_TEXTURE_REMAP_FROM_A,
+                  CELL_GCM_TEXTURE_REMAP_FROM_R,
+                  CELL_GCM_TEXTURE_REMAP_FROM_G,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_ONE,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_ONE );
+
+         }
+         break;
+      case RGLGCM_HILO16:                 // in_rgba = HLxx, out_rgba = HL11
+         {
+            *gcmFormat =  CELL_GCM_TEXTURE_Y16_X16;
+            *remap = CELL_GCM_REMAP_MODE(
+                  CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
+                  CELL_GCM_TEXTURE_REMAP_FROM_A,
+                  CELL_GCM_TEXTURE_REMAP_FROM_R,
+                  CELL_GCM_TEXTURE_REMAP_FROM_G,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_ONE,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_ONE );
+
+         }
+         break;
+#endif
+      case RGLGCM_ARGB8:                  // in_rgba = RGBA, out_rgba = RGBA
+         {
+            *gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
+            *remap = CELL_GCM_REMAP_MODE(
+                  CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
+                  CELL_GCM_TEXTURE_REMAP_FROM_A,
+                  CELL_GCM_TEXTURE_REMAP_FROM_R,
+                  CELL_GCM_TEXTURE_REMAP_FROM_G,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP );
+
+         }
+         break;
+#if 0
+      case RGLGCM_BGRA8:                  // in_rgba = GRAB, out_rgba = RGBA ** NEEDS TO BE TESTED
+         {
+            *gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
+            *remap = CELL_GCM_REMAP_MODE(
+                  CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_FROM_G,
+                  CELL_GCM_TEXTURE_REMAP_FROM_R,
+                  CELL_GCM_TEXTURE_REMAP_FROM_A,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP );
+
+         }
+         break;
+      case RGLGCM_RGBA8:                  // in_rgba = GBAR, out_rgba = RGBA ** NEEDS TO BE TESTED
+         {
+            *gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
+            *remap = CELL_GCM_REMAP_MODE(
+                  CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_FROM_A,
+                  CELL_GCM_TEXTURE_REMAP_FROM_R,
+                  CELL_GCM_TEXTURE_REMAP_FROM_G,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP );
+         }
+         break;
+      case RGLGCM_ABGR8:                  // in_rgba = BGRA, out_rgba = RGBA  ** NEEDS TO BE TESTED
+         {
+            *gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
+            *remap = CELL_GCM_REMAP_MODE(
+                  CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
+                  CELL_GCM_TEXTURE_REMAP_FROM_A,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_FROM_G,
+                  CELL_GCM_TEXTURE_REMAP_FROM_R,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP );
+
+         }
+         break;
+      case RGLGCM_RGBX8:                  // in_rgba = BGRA, out_rgba = RGB1  ** NEEDS TO BE TESTED
+         {
+            *gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
+            *remap = CELL_GCM_REMAP_MODE(
+                  CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_FROM_A,
+                  CELL_GCM_TEXTURE_REMAP_FROM_R,
+                  CELL_GCM_TEXTURE_REMAP_FROM_G,
+                  CELL_GCM_TEXTURE_REMAP_ONE,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP );
+
+         }
+         break;
+      case RGLGCM_XBGR8:                  // in_rgba = BGRA, out_rgba = RGB1  ** NEEDS TO BE TESTED
+         {
+            *gcmFormat =  CELL_GCM_TEXTURE_A8R8G8B8;
+            *remap = CELL_GCM_REMAP_MODE(
+                  CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
+                  CELL_GCM_TEXTURE_REMAP_FROM_A,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_FROM_G,
+                  CELL_GCM_TEXTURE_REMAP_FROM_R,
+                  CELL_GCM_TEXTURE_REMAP_ONE,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP );
+
+         }
+         break;
+      case RGLGCM_FLOAT_R32:              // in_rgba = Rxxx, out_rgba = R001
+         {
+            *gcmFormat =  CELL_GCM_TEXTURE_X32_FLOAT;
+            *remap = CELL_GCM_REMAP_MODE(
+                  CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
+                  CELL_GCM_TEXTURE_REMAP_FROM_A,
+                  CELL_GCM_TEXTURE_REMAP_FROM_R,
+                  CELL_GCM_TEXTURE_REMAP_FROM_G,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_ONE,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_ZERO,
+                  CELL_GCM_TEXTURE_REMAP_ZERO );
+
+         }
+         break;
+      case RGLGCM_RGB5_A1_SCE:          // in_rgba = RGBA, out_rgba = RGBA
+         {
+            *gcmFormat =  CELL_GCM_TEXTURE_A1R5G5B5;
+            *remap = CELL_GCM_REMAP_MODE(
+                  CELL_GCM_TEXTURE_REMAP_ORDER_XXXY,
+                  CELL_GCM_TEXTURE_REMAP_FROM_A,
+                  CELL_GCM_TEXTURE_REMAP_FROM_R,
+                  CELL_GCM_TEXTURE_REMAP_FROM_G,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP );
+
+         }
+         break;
+#endif
+      case RGLGCM_RGB565_SCE:          // in_rgba = RGBA, out_rgba = RGBA
+         {
+            *gcmFormat =  CELL_GCM_TEXTURE_R5G6B5;
+            *remap = CELL_GCM_REMAP_MODE(
+                  CELL_GCM_TEXTURE_REMAP_ORDER_XXXY,
+                  CELL_GCM_TEXTURE_REMAP_FROM_A,
+                  CELL_GCM_TEXTURE_REMAP_FROM_R,
+                  CELL_GCM_TEXTURE_REMAP_FROM_G,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_ONE,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP,
+                  CELL_GCM_TEXTURE_REMAP_REMAP );
+
+         }
+         break;
+   }
 
    // This is just to cover the conversion from swizzled to linear
    if(layout->pitch)
@@ -2851,8 +3018,15 @@ void static inline rglGcmSetColorDepthBuffers(void *data, const void *data_args)
    {
       // ARGB8 and FP16 interpret some registers differently
       rglGcmBlendState *blend = &rglGcmState_i.state.blend;
+      GLuint hwColor;
+
       rt->colorFormat  = args->colorFormat;
-      rglGcmFifoGlBlendColor( blend->r, blend->g, blend->b, blend->a );
+
+      if (rglGcmState_i.renderTarget.colorFormat == RGLGCM_ARGB8)
+      {
+         RGLGCM_CALC_COLOR_LE_ARGB8( &hwColor, blend->r, blend->g, blend->b, blend->a );
+         GCM_FUNC( cellGcmSetBlendColor, hwColor, hwColor );
+      }
    }
 
    GLuint i = 0;

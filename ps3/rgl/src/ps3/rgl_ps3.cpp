@@ -1570,19 +1570,20 @@ void rglGcmSetOpenGLState (void *data)
    GLuint i;
 
    // initialize the default OpenGL state
-   rglGcmFifoGlBlendColor( 0.0f, 0.0f, 0.0f, 0.0f );
-   rglGcmFifoGlBlendEquation( RGLGCM_FUNC_ADD, RGLGCM_FUNC_ADD );
-   rglGcmFifoGlBlendFunc( RGLGCM_ONE, RGLGCM_ZERO, RGLGCM_ONE, RGLGCM_ZERO );
+   GCM_FUNC( cellGcmSetBlendColor, 0, 0);
+   GCM_FUNC( cellGcmSetBlendEquation, RGLGCM_FUNC_ADD, RGLGCM_FUNC_ADD );
+   GCM_FUNC( cellGcmSetBlendFunc, RGLGCM_ONE, RGLGCM_ZERO, RGLGCM_ONE, RGLGCM_ZERO );
    GCM_FUNC( cellGcmSetClearColor, 0 );
-   rglGcmFifoGlDisable( RGLGCM_BLEND );
-   rglGcmFifoGlDisable( RGLGCM_PSHADER_SRGB_REMAPPING );
+   GCM_FUNC( cellGcmSetBlendEnable, RGLGCM_FALSE );
+   GCM_FUNC( cellGcmSetBlendEnableMrt, RGLGCM_FALSE, RGLGCM_FALSE, RGLGCM_FALSE );
+   GCM_FUNC( cellGcmSetFragmentProgramGammaEnable, RGLGCM_FALSE );
 
    for ( i = 0; i < RGLGCM_ATTRIB_COUNT; i++ )
    {
       GCM_FUNC( cellGcmSetVertexDataArray, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
    }
 
-   rglGcmFifoGlEnable( RGLGCM_DITHER );
+   GCM_FUNC( cellGcmSetDitherEnable, RGLGCM_TRUE );
 
    for ( i = 0; i < RGLGCM_MAX_TEXIMAGE_COUNT; i++ )
    {
@@ -1895,7 +1896,8 @@ void rglPsglPlatformExit(void)
 
    if ( LContext )
    {
-      rglGcmFifoGlFlush();
+      GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+      rglGcmFifoFlush( &rglGcmState_i.fifo );
 
       psglMakeCurrent( NULL, NULL );
       rglDeviceExit();
@@ -3145,17 +3147,19 @@ GLAPI void RGL_EXPORT psglSwap (void)
    const char * __restrict v = driver->sharedVPConstants;
    GCM_FUNC( cellGcmSetVertexProgramParameterBlock, 0, 8, ( float* )v ); // GCM_PORT_UNTESTED [KHOFF]
 
-   rglGcmFifoGlEnable( RGLGCM_DITHER );
+   GCM_FUNC( cellGcmSetDitherEnable, RGLGCM_TRUE );
 
    RGLcontext *context = (RGLcontext*)_CurrentContext;
    context->needValidate = RGL_VALIDATE_ALL;
    context->attribs->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
 
-   rglGcmFifoGlFlush(); 
+   GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+   rglGcmFifoFlush( &rglGcmState_i.fifo );
 
    while (sys_semaphore_wait(FlipSem,1000) != CELL_OK);
 
-   rglGcmFifoGlFlush();
+   GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+   rglGcmFifoFlush( &rglGcmState_i.fifo );
 
    if ( device->deviceParameters.bufferingMode == RGL_BUFFERING_MODE_DOUBLE )
    {
