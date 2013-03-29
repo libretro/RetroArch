@@ -52,6 +52,16 @@ class D3DVideo
       void resize(unsigned new_width, unsigned new_height);
       bool set_shader(const std::string &path);
 
+#ifdef HAVE_OVERLAY
+      bool overlay_load(const uint32_t *image, unsigned width, unsigned height);
+      void overlay_tex_geom(float x, float y, float w, float h);
+      void overlay_vertex_geom(float x, float y, float w, float h);
+      void overlay_enable(bool state);
+      void overlay_full_screen(bool enable);
+      void overlay_set_alpha(float mod);
+      void overlay_render();
+#endif
+
    private:
 
       WNDCLASSEX windowClass;
@@ -102,6 +112,23 @@ class D3DVideo
       uint32_t font_color;
 
       void update_title();
+
+#ifdef HAVE_OVERLAY
+      struct
+      {
+         struct Coords
+         {
+            float x, y, w, h;
+         };
+         Coords tex_coords;
+         Coords vert_coords;
+         bool overlay_enabled;
+         bool overlay_fullscreen;
+         float overlay_alpha_mod;
+         IDirect3DTexture9 *tex;
+         IDirect3DVertexBuffer9 *vert_buf;
+      } overlay;
+#endif
 };
 
 #endif

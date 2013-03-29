@@ -155,8 +155,14 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
    OBJ += gfx/rpng/rpng.o file_extract.o
-   LIBS += -lz
-   DEFINES += -DHAVE_ZLIB_DEFLATE
+   DEFINES += -DHAVE_ZLIB
+   ifeq ($(WANT_MINIZ), 1)
+      OBJ += deps/miniz/miniz.o
+      DEFINES += -DWANT_MINIZ
+   else
+      LIBS += -lz
+      DEFINES += -DHAVE_ZLIB_DEFLATE
+   endif
 endif
 
 ifeq ($(HAVE_LIBXML2), 1)
@@ -268,7 +274,9 @@ else
 endif
 
 clean:
-	rm -f *.o 
+	rm -f *.o
+	rm -f deps/miniz/*.o
+	rm -f frontend/*.o
 	rm -f frontend/menu/*.o
 	rm -f frontend/menu/utils/*.o
 	rm -f audio/*.o
@@ -283,6 +291,7 @@ clean:
 	rm -f gfx/math/*.o
 	rm -f gfx/fonts/*.o
 	rm -f gfx/py_state/*.o
+	rm -f gfx/rpng/*.o
 	rm -f record/*.o
 	rm -f input/*.o
 	rm -f $(TARGET)

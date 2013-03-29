@@ -24,17 +24,27 @@
 namespace Global
 {
    static const char *stock_program =
-      "void main_vertex(out float4 oPos : POSITION, float4 pos : POSITION,\n"
-      "                 out float2 oTex : TEXCOORD0, float2 tex : TEXCOORD0,\n"
-      "                 uniform float4x4 modelViewProj)\n"
-      "{\n"
-      "  oPos = mul(modelViewProj, pos);\n"
-      "  oTex = tex;\n"
-      "}\n"
-
-      "float4 main_fragment(uniform sampler2D samp, float2 tex : TEXCOORD0) : COLOR\n"
-      "{\n"
-      "  return tex2D(samp, tex);\n"
+      "void main_vertex"
+      "("
+      "	float4 position : POSITION,"
+      "	float2 texCoord : TEXCOORD0,"
+      "  float4 color : COLOR,"
+      ""
+      "  uniform float4x4 modelViewProj,"
+      ""
+      "	out float4 oPosition : POSITION,"
+      "	out float2 otexCoord : TEXCOORD0,"
+      "  out float4 oColor : COLOR"
+      ")"
+      "{"
+      "	oPosition = mul(modelViewProj, position);"
+      "	otexCoord = texCoord;"
+      "  oColor = color;"
+      "}"
+      ""
+      "float4 main_fragment(in float4 color : COLOR, float2 tex : TEXCOORD0, uniform sampler2D s0 : TEXUNIT0) : COLOR"
+      "{"
+      "   return color * tex2D(s0, tex);"
       "}";
 }
 
@@ -382,7 +392,10 @@ void RenderChain::set_vertices(Pass &pass,
       float _v = static_cast<float>(height) / info.tex_h;
       Vertex vert[4];
       for (unsigned i = 0; i < 4; i++)
+      {
          vert[i].z = 0.5f;
+         vert[i].r = vert[i].g = vert[i].b = vert[i].a = 1.0f;
+      }
 
       vert[0].x = 0.0f;
       vert[1].x = out_width;
@@ -909,7 +922,7 @@ void RenderChain::init_fvf(Pass &pass)
    static const D3DVERTEXELEMENT9 position_decl = DECL_FVF_POSITION(0);
    static const D3DVERTEXELEMENT9 tex_coord0 = DECL_FVF_TEXCOORD(1, 3, 0);
    static const D3DVERTEXELEMENT9 tex_coord1 = DECL_FVF_TEXCOORD(2, 5, 1);
-   static const D3DVERTEXELEMENT9 color = DECL_FVF_COLOR(3, 3, 0);
+   static const D3DVERTEXELEMENT9 color = DECL_FVF_COLOR(3, 7, 0);
 
    D3DVERTEXELEMENT9 decl[MAXD3DDECLLENGTH] = {{0}};
    if (cgD3D9GetVertexDeclaration(pass.vPrg, decl) == CG_FALSE)
