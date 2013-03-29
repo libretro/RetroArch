@@ -286,7 +286,11 @@ bool retro_load_game(const struct retro_game_info *info)
       return false;
    }
 
+#ifdef GLES
+   hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES2;
+#else
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGL;
+#endif
    hw_render.context_reset = context_reset;
    hw_render.depth = true;
    hw_render.stencil = true;
