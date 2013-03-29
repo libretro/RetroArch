@@ -8,26 +8,13 @@
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 static struct retro_hw_render_callback hw_render;
 
-#ifdef GLES
+#define GL_GLEXT_PROTOTYPES
+#if defined(GLES) && 0
 #include <GLES2/gl2.h>
-#define pglCreateProgram glCreateProgram
-#define pglCreateShader glCreateShader
-#define pglCompileShader glCompileShader
-#define pglUseProgram glUseProgram
-#define pglShaderSource glShaderSource
-#define pglAttachShader glAttachShader
-#define pglLinkProgram glLinkProgram
-#define pglBindFramebuffer glBindFramebuffer
-#define pglGetUniformLocation glGetUniformLocation
-#define pglUniformMatrix4fv glUniformMatrix4fv
-#define pglGetAttribLocation glGetAttribLocation
-#define pglVertexAttribPointer glVertexAttribPointer
-#define pglEnableVertexAttribArray glEnableVertexAttribArray
-#define pglDisableVertexAttribArray glEnableVertexAttribArray
 #else
 #include <GL/gl.h>
-#define GL_GLEXT_PROTOTYPES
 #include <GL/glext.h>
+#endif
 
 static PFNGLCREATEPROGRAMPROC pglCreateProgram;
 static PFNGLCREATESHADERPROC pglCreateShader;
@@ -43,7 +30,12 @@ static PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation;
 static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer;
 static PFNGLENABLEVERTEXATTRIBARRAYPROC pglEnableVertexAttribArray;
 static PFNGLDISABLEVERTEXATTRIBARRAYPROC pglDisableVertexAttribArray;
-
+static PFNGLGENVERTEXARRAYSPROC pglGenVertexArrays;
+static PFNGLBINDVERTEXARRAYPROC pglBindVertexArray;
+static PFNGLDELETEVERTEXARRAYSPROC pglDeleteVertexArray;
+static PFNGLGENBUFFERSPROC pglGenBuffers;
+static PFNGLBUFFERDATAPROC pglBufferData;
+static PFNGLBINDBUFFERPROC pglBindBuffer;
 
 struct gl_proc_map
 {
@@ -67,6 +59,12 @@ static const struct gl_proc_map proc_map[] = {
    PROC_BIND(VertexAttribPointer),
    PROC_BIND(EnableVertexAttribArray),
    PROC_BIND(DisableVertexAttribArray),
+   PROC_BIND(GenVertexArrays),
+   PROC_BIND(BindVertexArray),
+   PROC_BIND(DeleteVertexArray),
+   PROC_BIND(GenBuffers),
+   PROC_BIND(BufferData),
+   PROC_BIND(BindBuffer),
 };
 
 static void init_gl_proc(void)
@@ -79,24 +77,21 @@ static void init_gl_proc(void)
       memcpy(proc_map[i].proc, &proc, sizeof(proc));
    }
 }
-#endif
 
 static GLuint prog;
+static GLuint vao;
+static GLuint vbo;
 
-static const GLfloat vertex[] = {
+static const GLfloat vertex_data[] = {
    -0.5, -0.5,
     0.5, -0.5,
    -0.5,  0.5,
     0.5,  0.5,
-};
-
-static const GLfloat color[] = {
    1.0, 1.0, 1.0, 1.0,
    1.0, 1.0, 0.0, 1.0,
    0.0, 1.0, 1.0, 1.0,
    1.0, 0.0, 1.0, 1.0,
 };
-
 
 static const char *vertex_shader[] = {
    "uniform mat4 uMVP;",
@@ -130,6 +125,29 @@ static void compile_program(void)
    pglAttachShader(prog, vert);
    pglAttachShader(prog, frag);
    pglLinkProgram(prog);
+}
+
+static void setup_vao(void)
+{
+   pglUseProgram(prog);
+
+   pglGenVertexArrays(1, &vao);
+   pglBindVertexArray(vao);
+
+   pglGenBuffers(1, &vbo);
+   pglBindBuffer(GL_ARRAY_BUFFER, vbo);
+   pglBufferData(GL_ARRAY_BUFFER, sizeof(vertex_data), vertex_data, GL_STATIC_DRAW);
+
+   int vloc = pglGetAttribLocation(prog, "aVertex");
+   pglVertexAttribPointer(vloc, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+   pglEnableVertexAttribArray(vloc);
+   int cloc = pglGetAttribLocation(prog, "aColor");
+   pglVertexAttribPointer(cloc, 4, GL_FLOAT, GL_FALSE, 0, (void*)(8 * sizeof(GLfloat)));
+   pglEnableVertexAttribArray(cloc);
+
+   pglBindBuffer(GL_ARRAY_BUFFER, 0);
+   pglBindVertexArray(0);
+   pglUseProgram(0);
 }
 
 void retro_init(void)
@@ -221,6 +239,7 @@ void retro_run(void)
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
    pglUseProgram(prog);
+   pglBindVertexArray(vao);
 
    glEnable(GL_DEPTH_TEST);
 
@@ -231,13 +250,6 @@ void retro_run(void)
    float angle = frame_count / 100.0;
    float cos_angle = cos(angle);
    float sin_angle = sin(angle);
-
-   int vloc = pglGetAttribLocation(prog, "aVertex");
-   pglVertexAttribPointer(vloc, 2, GL_FLOAT, GL_FALSE, 0, vertex);
-   pglEnableVertexAttribArray(vloc);
-   int cloc = pglGetAttribLocation(prog, "aColor");
-   pglVertexAttribPointer(cloc, 4, GL_FLOAT, GL_FALSE, 0, color);
-   pglEnableVertexAttribArray(cloc);
 
    const GLfloat mvp[] = {
       cos_angle, -sin_angle, 0, 0,
@@ -260,10 +272,8 @@ void retro_run(void)
    pglUniformMatrix4fv(loc, 1, GL_FALSE, mvp2);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-
    pglUseProgram(0);
-   pglDisableVertexAttribArray(vloc);
-   pglDisableVertexAttribArray(cloc);
+   pglBindVertexArray(0);
 
    video_cb(RETRO_HW_FRAME_BUFFER_VALID, 512, 512, 0);
 }
@@ -271,10 +281,9 @@ void retro_run(void)
 static void context_reset(void)
 {
    fprintf(stderr, "Context reset!\n");
-#ifndef GLES
    init_gl_proc();
-#endif
    compile_program();
+   setup_vao();
 }
 
 bool retro_load_game(const struct retro_game_info *info)
