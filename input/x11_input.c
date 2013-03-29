@@ -233,7 +233,7 @@ static void x_input_poll_mouse(x11_input_t *x11)
    x11->mouse_r = mask & Button3Mask; 
 
    // Somewhat hacky, but seem to do the job.
-   if (x11->grab_mouse)
+   if (x11->grab_mouse && video_focus_func())
    {
       struct rarch_viewport vp = {0};
       video_viewport_info_func(&vp);
