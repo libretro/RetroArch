@@ -883,6 +883,8 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
    std::vector<unsigned> abses_x;
    std::vector<unsigned> abses_y;
    std::vector<bool> filters;
+   std::vector<unsigned> frame_count_mods;
+   std::vector<bool> float_fbos;
 
    // Shader paths.
    for (int i = 0; i < shaders; i++)
@@ -996,6 +998,26 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
       filters.push_back(filter);
    }
 
+   // Frame counter modulo.
+   for (int i = 0; i < shaders; i++)
+   {
+      char attr_frame_count_mod[64];
+      snprintf(attr_frame_count_mod, sizeof(attr_frame_count_mod), "frame_count_mod%d", i);
+      unsigned frame_count_mod = 0;
+      conf.get(attr_frame_count_mod, frame_count_mod);
+      frame_count_mods.push_back(frame_count_mod);
+   }
+
+   // Floating point framebuffers.
+   for (int i = 0; i < shaders; i++)
+   {
+      char attr_float_framebuffer[64];
+      snprintf(attr_float_framebuffer, sizeof(attr_float_framebuffer), "float_framebuffer%d", i);
+      bool float_framebuffer = false;
+      conf.get(attr_float_framebuffer, float_framebuffer);
+      float_fbos.push_back(float_framebuffer);
+   }
+
    // Setup information for first pass.
    LinkInfo link_info = {0};
    link_info.shader_path = shader_paths[0];
@@ -1017,6 +1039,9 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
 
    link_info.filter_linear = filters[0];
    link_info.tex_w = link_info.tex_h = info.input_scale * RARCH_SCALE_BASE;
+
+   link_info.frame_count_mod = frame_count_mods[0];
+   link_info.float_framebuffer = float_fbos[0];
 
    chain = std::unique_ptr<RenderChain>(
          new RenderChain(
@@ -1045,6 +1070,8 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
       link_info.scale_type_y = scale_types_y[i];
       link_info.filter_linear = filters[i];
       link_info.shader_path = shader_paths[i];
+      link_info.frame_count_mod = frame_count_mods[i];
+      link_info.float_framebuffer = float_fbos[i];
 
       current_width = out_width;
       current_height = out_height;

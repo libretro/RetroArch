@@ -41,6 +41,9 @@ struct LinkInfo
    bool filter_linear;
    ScaleType scale_type_x, scale_type_y;
 
+   unsigned frame_count_mod;
+   bool float_framebuffer;
+
    std::string shader_path;
 };
 

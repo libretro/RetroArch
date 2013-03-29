@@ -122,7 +122,7 @@ void RenderChain::add_pass(const LinkInfo &info)
 
    if (FAILED(dev->CreateTexture(info.tex_w, info.tex_h, 1,
                D3DUSAGE_RENDERTARGET,
-               D3DFMT_X8R8G8B8,
+               info.float_framebuffer ? D3DFMT_A32B32G32R32F : D3DFMT_X8R8G8B8,
                D3DPOOL_DEFAULT,
                &pass.tex, nullptr)))
    {
@@ -501,6 +501,8 @@ void RenderChain::set_cg_params(Pass &pass,
    set_cg_param(pass.fPrg, "IN.output_size", output_size);
 
    float frame_cnt = frame_count;
+   if (pass.info.frame_count_mod)
+      frame_cnt = frame_count % pass.info.frame_count_mod;
    set_cg_param(pass.fPrg, "IN.frame_count", frame_cnt);
    set_cg_param(pass.vPrg, "IN.frame_count", frame_cnt);
 }
