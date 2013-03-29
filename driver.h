@@ -151,10 +151,7 @@ enum rarch_shader_index
 {
    RARCH_SHADER_INDEX_MULTIPASS = 0,
    RARCH_SHADER_INDEX_PASS0 = 1,
-   RARCH_SHADER_INDEX_PASS1 = 2,
-#ifdef __CELLOS_LV2__
-   RARCH_SHADER_INDEX_PASS2 = 3,
-#endif
+   RARCH_SHADER_INDEX_PASS1 = 2
 };
 
 typedef struct video_info

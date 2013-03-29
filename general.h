@@ -109,7 +109,6 @@ enum menu_enums
    MODE_LOAD_GAME_STATE_DIR_ENABLE,
    MODE_LOAD_FIRST_SHADER,
    MODE_LOAD_SECOND_SHADER,
-   MODE_LOAD_THIRD_SHADER,
    MODE_INIT,
    MODE_MENU,
    MODE_MENU_WIDESCREEN,
@@ -195,9 +194,6 @@ struct settings
 
       char second_pass_shader[PATH_MAX];
       bool second_pass_smooth;
-#ifdef __CELLOS_LV2__
-      char third_pass_shader[PATH_MAX];
-#endif
       char shader_dir[PATH_MAX];
 
       char font_path[PATH_MAX];

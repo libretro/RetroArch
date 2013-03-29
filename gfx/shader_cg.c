@@ -486,15 +486,12 @@ static bool load_plain(const char *path)
    if (!load_stock())
       return false;
 
-   cg_shader_num = 1;
-
    if (path)
    {
       RARCH_LOG("Loading Cg file: %s\n", path);
 
       if (!load_program(1, path, true))
          return false;
-
 
       if (*g_settings.video.second_pass_shader
 #ifndef RARCH_CONSOLE
@@ -505,34 +502,19 @@ static bool load_plain(const char *path)
          if (!load_program(2, g_settings.video.second_pass_shader, true))
             return false;
 
-         cg_shader_num++;
+         cg_shader_num = 2;
       }
       else
-         prg[2] = prg[0];
-
-#ifdef __CELLOS_LV2__
-      if (*g_settings.video.third_pass_shader
-#ifndef RARCH_CONSOLE
-            && g_settings.video.render_to_texture
-#endif
-         )
       {
-         if (!load_program(3, g_settings.video.third_pass_shader, true))
-            return false;
-
-         cg_shader_num++;
+         prg[2] = prg[0];
+         cg_shader_num = 1;
       }
-      else
-         prg[3] = prg[0];
-#endif
    }
    else
    {
       RARCH_LOG("Loading stock Cg file.\n");
       prg[2] = prg[1] = prg[0];
-#ifdef __CELLOS_LV2__
-      prg[3] = prg[0];
-#endif
+      cg_shader_num = 1;
    }
 
    return true;
@@ -841,12 +823,6 @@ static bool load_shader(const char *cgp_path, unsigned i, config_file_t *conf)
          strlcpy(g_settings.video.second_pass_shader,
                path_buf, sizeof(g_settings.video.second_pass_shader));
          break;
-#ifdef __CELLOS_LV2__
-      case 2:
-         strlcpy(g_settings.video.third_pass_shader,
-               path_buf, sizeof(g_settings.video.third_pass_shader));
-         break;
-#endif
    }
 #endif
 
@@ -1062,11 +1038,6 @@ static bool load_preset(const char *path)
          case 1:
             g_settings.video.second_pass_smooth = fbo_smooth[2] == FILTER_LINEAR;
             break;
-#ifdef __CELLOS_LV2__
-         case 2:
-            g_settings.video.second_pass_smooth = fbo_smooth[3] == FILTER_LINEAR;
-            break;
-#endif
       }
 #endif
    }

@@ -254,9 +254,6 @@ void config_set_defaults(void)
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
    strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
-#ifdef __CELLOS_LV2__
-   strlcpy(g_settings.video.third_pass_shader, default_paths.shader_file, sizeof(g_settings.video.third_pass_shader));
-#endif
 #endif
 
    strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
@@ -459,9 +456,6 @@ bool config_load_file(const char *path)
    CONFIG_GET_PATH(video.cg_shader_path, "video_cg_shader");
    CONFIG_GET_PATH(video.bsnes_shader_path, "video_bsnes_shader");
    CONFIG_GET_PATH(video.second_pass_shader, "video_second_pass_shader");
-#ifdef __CELLOS_LV2__
-   CONFIG_GET_PATH(video.third_pass_shader, "video_third_pass_shader");
-#endif
    CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
    CONFIG_GET_FLOAT(video.fbo.scale_x, "video_fbo_scale_x");
    CONFIG_GET_FLOAT(video.fbo.scale_y, "video_fbo_scale_y");
@@ -1206,9 +1200,6 @@ bool config_save_file(const char *path)
    config_set_float(conf, "video_fbo_scale_x", g_settings.video.fbo.scale_x);
    config_set_float(conf, "video_fbo_scale_y", g_settings.video.fbo.scale_y);
    config_set_string(conf, "video_second_pass_shader", g_settings.video.second_pass_shader);
-#ifdef __CELLOS_LV2__
-   config_set_string(conf, "video_third_pass_shader", g_settings.video.third_pass_shader);
-#endif
    config_set_bool(conf, "video_render_to_texture", g_settings.video.render_to_texture);
    config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
 #endif
