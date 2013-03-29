@@ -135,6 +135,11 @@ static PFNGLBINDFRAMEBUFFERPROC pglBindFramebuffer;
 static PFNGLFRAMEBUFFERTEXTURE2DPROC pglFramebufferTexture2D;
 static PFNGLCHECKFRAMEBUFFERSTATUSPROC pglCheckFramebufferStatus;
 static PFNGLDELETEFRAMEBUFFERSPROC pglDeleteFramebuffers;
+static PFNGLGENRENDERBUFFERSPROC pglGenRenderbuffers;
+static PFNGLBINDRENDERBUFFERPROC pglBindRenderbuffer;
+static PFNGLFRAMEBUFFERRENDERBUFFERPROC pglFramebufferRenderbuffer;
+static PFNGLRENDERBUFFERSTORAGEPROC pglRenderbufferStorage;
+static PFNGLDELETERENDERBUFFERSPROC pglDeleteRenderbuffers;
 
 static bool load_fbo_proc(gl_t *gl)
 {
@@ -143,9 +148,17 @@ static bool load_fbo_proc(gl_t *gl)
    LOAD_GL_SYM(FramebufferTexture2D);
    LOAD_GL_SYM(CheckFramebufferStatus);
    LOAD_GL_SYM(DeleteFramebuffers);
+   LOAD_GL_SYM(GenRenderbuffers);
+   LOAD_GL_SYM(BindRenderbuffer);
+   LOAD_GL_SYM(FramebufferRenderbuffer);
+   LOAD_GL_SYM(RenderbufferStorage);
+   LOAD_GL_SYM(DeleteRenderbuffers);
 
    return pglGenFramebuffers && pglBindFramebuffer && pglFramebufferTexture2D && 
-      pglCheckFramebufferStatus && pglDeleteFramebuffers;
+      pglCheckFramebufferStatus && pglDeleteFramebuffers &&
+      pglGenRenderbuffers && pglBindRenderbuffer &&
+      pglFramebufferRenderbuffer && pglRenderbufferStorage &&
+      pglDeleteRenderbuffers;
 }
 #elif defined(HAVE_OPENGLES2)
 #define pglGenFramebuffers glGenFramebuffers
@@ -153,6 +166,11 @@ static bool load_fbo_proc(gl_t *gl)
 #define pglFramebufferTexture2D glFramebufferTexture2D
 #define pglCheckFramebufferStatus glCheckFramebufferStatus
 #define pglDeleteFramebuffers glDeleteFramebuffers
+#define pglGenRenderbuffers glGenRenderbuffers
+#define pglBindRenderbuffer glBindRenderbuffer
+#define pglFramebufferRenderbuffer glFramebufferRenderbuffer
+#define pglRenderbufferStorage glRenderbufferStorage
+#define pglDeleteRenderbuffers glDeleteRenderbuffers
 #define load_fbo_proc(gl) (true)
 #elif defined(HAVE_OPENGLES)
 #define pglGenFramebuffers glGenFramebuffersOES
@@ -160,6 +178,11 @@ static bool load_fbo_proc(gl_t *gl)
 #define pglFramebufferTexture2D glFramebufferTexture2DOES
 #define pglCheckFramebufferStatus glCheckFramebufferStatusOES
 #define pglDeleteFramebuffers glDeleteFramebuffersOES
+#define pglGenRenderbuffers glGenRenderbuffersOES
+#define pglBindRenderbuffer glBindRenderbufferOES
+#define pglFramebufferRenderbuffer glFramebufferRenderbufferOES
+#define pglRenderbufferStorage glRenderbufferStorageOES
+#define pglDeleteRenderbuffers glDeleteRenderbuffersOES
 #define GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
 #define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
 #define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
@@ -170,6 +193,11 @@ static bool load_fbo_proc(gl_t *gl)
 #define pglFramebufferTexture2D glFramebufferTexture2D
 #define pglCheckFramebufferStatus glCheckFramebufferStatus
 #define pglDeleteFramebuffers glDeleteFramebuffers
+#define pglGenRenderbuffers glGenRenderbuffers
+#define pglBindRenderbuffer glBindRenderbuffer
+#define pglFramebufferRenderbuffer glFramebufferRenderbuffer
+#define pglRenderbufferStorage glRenderbufferStorage
+#define pglDeleteRenderbuffers glDeleteRenderbuffers
 #define load_fbo_proc(gl) (true)
 #endif
 #endif
@@ -710,10 +738,44 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    glBindTexture(GL_TEXTURE_2D, 0);
    pglGenFramebuffers(TEXTURES, gl->hw_render_fbo);
 
+   bool depth   = g_extern.system.hw_render_callback.depth;
+   bool stencil = g_extern.system.hw_render_callback.stencil;
+
+   if (depth)
+   {
+      pglGenRenderbuffers(TEXTURES, gl->hw_render_depth);
+      gl->hw_render_depth_init = true;
+   }
+
+   if (stencil)
+   {
+      pglGenRenderbuffers(TEXTURES, gl->hw_render_stencil);
+      gl->hw_render_stencil_init = true;
+   }
+
    for (unsigned i = 0; i < TEXTURES; i++)
    {
       pglBindFramebuffer(GL_FRAMEBUFFER, gl->hw_render_fbo[i]);
       pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->texture[i], 0);
+
+      if (depth)
+      {
+         pglBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
+         pglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
+               width, height);
+         pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+               GL_RENDERBUFFER, gl->hw_render_depth[i]);
+      }
+
+      if (stencil)
+      {
+         pglBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_stencil[i]);
+         pglRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8,
+               width, height);
+         pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+               GL_RENDERBUFFER, gl->hw_render_stencil[i]);
+      }
+
       GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
       if (status != GL_FRAMEBUFFER_COMPLETE)
       {
@@ -723,6 +785,7 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    }
 
    pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+   pglBindRenderbuffer(GL_RENDERBUFFER, 0);
    gl->hw_render_fbo_init = true;
    return true;
 }
@@ -1593,6 +1656,10 @@ static void gl_free(void *data)
 
    if (gl->hw_render_fbo_init)
       pglDeleteFramebuffers(TEXTURES, gl->hw_render_fbo);
+   if (gl->hw_render_depth)
+      pglDeleteRenderbuffers(TEXTURES, gl->hw_render_depth);
+   if (gl->hw_render_stencil)
+      pglDeleteRenderbuffers(TEXTURES, gl->hw_render_stencil);
    gl->hw_render_fbo_init = false;
 #endif
 

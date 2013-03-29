@@ -218,9 +218,11 @@ void retro_run(void)
    pglBindFramebuffer(GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
    glClearColor(0.3, 0.4, 0.5, 1.0);
    glViewport(0, 0, 512, 512);
-   glClear(GL_COLOR_BUFFER_BIT);
+   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
    pglUseProgram(prog);
+
+   glEnable(GL_DEPTH_TEST);
 
    int loc = pglGetUniformLocation(prog, "uMVP");
 
@@ -230,15 +232,6 @@ void retro_run(void)
    float cos_angle = cos(angle);
    float sin_angle = sin(angle);
 
-   const GLfloat mvp[] = {
-      cos_angle, -sin_angle, 0, 0,
-      sin_angle, cos_angle, 0, 0,
-      0, 0, 1, 0,
-      0, 0, 0, 1,
-   };
-
-   pglUniformMatrix4fv(loc, 1, GL_FALSE, mvp);
-
    int vloc = pglGetAttribLocation(prog, "aVertex");
    pglVertexAttribPointer(vloc, 2, GL_FLOAT, GL_FALSE, 0, vertex);
    pglEnableVertexAttribArray(vloc);
@@ -246,7 +239,28 @@ void retro_run(void)
    pglVertexAttribPointer(cloc, 4, GL_FLOAT, GL_FALSE, 0, color);
    pglEnableVertexAttribArray(cloc);
 
+   const GLfloat mvp[] = {
+      cos_angle, -sin_angle, 0, 0,
+      sin_angle, cos_angle, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1,
+   };
+   pglUniformMatrix4fv(loc, 1, GL_FALSE, mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+   cos_angle *= 0.5;
+   sin_angle *= 0.5;
+   const GLfloat mvp2[] = {
+      cos_angle, -sin_angle, 0, 0.0,
+      sin_angle, cos_angle, 0, 0.0,
+      0, 0, 1, 0,
+      0.4, 0.4, 0.2, 1,
+   };
+
+   pglUniformMatrix4fv(loc, 1, GL_FALSE, mvp2);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+
    pglUseProgram(0);
    pglDisableVertexAttribArray(vloc);
    pglDisableVertexAttribArray(cloc);
@@ -274,6 +288,8 @@ bool retro_load_game(const struct retro_game_info *info)
 
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGL;
    hw_render.context_reset = context_reset;
+   hw_render.depth = true;
+   hw_render.stencil = true;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
       return false;
 
