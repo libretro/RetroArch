@@ -415,7 +415,7 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    if (video->fullscreen)
    {
       x11_windowed_fullscreen(xv->display, xv->window);
-      x11_hide_mouse(xv->display, xv->window);
+      x11_show_mouse(xv->display, xv->window, false);
    }
 
    xv->gc = XCreateGC(xv->display, xv->window, 0, 0);

@@ -187,7 +187,8 @@ static bool gfx_ctx_set_video_mode(
       RARCH_WARN("GL double buffer has not been enabled.\n");
 
    // Remove that ugly mouse :D
-   SDL_ShowCursor(SDL_DISABLE);
+   if (fullscreen)
+      SDL_ShowCursor(SDL_DISABLE);
 
    sdl_set_handles();
 
@@ -354,6 +355,11 @@ static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned 
    return false;
 }
 
+static void gfx_ctx_show_mouse(bool state)
+{
+   SDL_ShowCursor(state ? SDL_ENABLE : SDL_DISABLE);
+}
+
 const gfx_ctx_driver_t gfx_ctx_sdl_gl = {
    gfx_ctx_init,
    gfx_ctx_destroy,
@@ -371,6 +377,7 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl = {
    gfx_ctx_get_proc_address,
    gfx_ctx_init_egl_image_buffer,
    gfx_ctx_write_egl_image,
+   gfx_ctx_show_mouse,
    "sdl-gl",
 };
 

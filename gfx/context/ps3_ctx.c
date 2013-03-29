@@ -430,6 +430,7 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    NULL,
    gfx_ctx_init_egl_image_buffer,
    gfx_ctx_write_egl_image,
+   NULL,
    "ps3",
 #ifdef HAVE_RMENU
    gfx_ctx_get_available_resolutions,

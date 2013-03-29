@@ -314,7 +314,7 @@ static bool gfx_ctx_set_video_mode(
    x11_set_window_attr(g_dpy, g_win);
 
    if (fullscreen)
-      x11_hide_mouse(g_dpy, g_win);
+      x11_show_mouse(g_dpy, g_win, false);
 
    if (true_full)
    {
@@ -505,6 +505,11 @@ static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned 
    return false;
 }
 
+static void gfx_ctx_show_mouse(bool state)
+{
+   x11_show_mouse(g_dpy, g_win, state);
+}
+
 const gfx_ctx_driver_t gfx_ctx_glx = {
    gfx_ctx_init,
    gfx_ctx_destroy,
@@ -522,6 +527,7 @@ const gfx_ctx_driver_t gfx_ctx_glx = {
    gfx_ctx_get_proc_address,
    gfx_ctx_init_egl_image_buffer,
    gfx_ctx_write_egl_image,
+   gfx_ctx_show_mouse,
    "glx",
 };
 

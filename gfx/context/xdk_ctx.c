@@ -395,6 +395,7 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    NULL,
    gfx_ctx_init_egl_image_buffer,
    gfx_ctx_write_egl_image,
+   NULL,
    "xdk",
 #if defined(HAVE_RMENU)
    gfx_ctx_xdk_get_available_resolutions,
