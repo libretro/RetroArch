@@ -439,6 +439,11 @@ static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned 
    return false;
 }
 
+static void gfx_ctx_show_mouse(bool state)
+{
+   show_cursor(state);
+}
+
 const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_init,
    gfx_ctx_destroy,
@@ -456,7 +461,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_get_proc_address,
    gfx_ctx_init_egl_image_buffer,
    gfx_ctx_write_egl_image,
-   NULL,
+   gfx_ctx_show_mouse,
    "wgl",
 };
 

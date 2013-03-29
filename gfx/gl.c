@@ -1553,10 +1553,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (msg && gl->font_ctx)
       gl->font_ctx->render_msg(gl, msg, NULL);
 
-   if (gl->ctx_driver->post_render)
-      context_post_render_func(gl);
 #ifdef HAVE_OVERLAY
-   else if (gl->overlay_enable)
+   if (gl->overlay_enable)
       gl_render_overlay(gl);
 #endif
 
@@ -2354,6 +2352,8 @@ static void gl_overlay_enable(void *data, bool state)
 {
    gl_t *gl = (gl_t*)data;
    gl->overlay_enable = state;
+   if (gl->ctx_driver->show_mouse && gl->fullscreen)
+      gl->ctx_driver->show_mouse(state);
 }
 
 static void gl_overlay_full_screen(void *data, bool enable)

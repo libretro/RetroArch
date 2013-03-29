@@ -110,9 +110,8 @@ typedef struct gfx_ctx_driver
    // Always returns true the first time it's called for a new index. The graphics core must handle a change in the handle correctly.
    bool (*write_egl_image)(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle);
 
-   // Called after frame is rendered, but before swap.
-   // Can be used to render context-specific overlays and stuff.
-   bool (*post_render)(void *gl);
+   // Shows or hides mouse. Can be NULL if context doesn't have a concept of mouse pointer.
+   void (*show_mouse)(bool state);
 
    // Human readable string.
    const char *ident;
