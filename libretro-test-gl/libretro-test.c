@@ -277,6 +277,7 @@ bool retro_load_game(const struct retro_game_info *info)
    if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
       return false;
 
+   fprintf(stderr, "Loaded game!\n");
    (void)info;
    return true;
 }

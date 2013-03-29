@@ -27,6 +27,7 @@ else
    TARGET := retro.dll
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T -Wl,--no-undefined
    GL_LIB := -lopengl32
+   CFLAGS += -I..
 endif
 
 ifeq ($(DEBUG), 1)
@@ -48,7 +49,7 @@ endif
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(fpic) $(SHARED) $(LIBS) $(INCLUDES) -o $@ $(OBJECTS) -lm
+	$(CC) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) $(LIBS) -lm
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<

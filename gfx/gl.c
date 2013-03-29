@@ -700,9 +700,12 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
    gl->fbo_inited = true;
 }
 
-void gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
+bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 {
    RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
+
+   if (!load_fbo_proc(gl))
+      return false;
 
    glBindTexture(GL_TEXTURE_2D, 0);
    pglGenFramebuffers(TEXTURES, gl->hw_render_fbo);
@@ -713,11 +716,15 @@ void gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
       pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->texture[i], 0);
       GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
       if (status != GL_FRAMEBUFFER_COMPLETE)
+      {
          RARCH_ERR("[GL]: Failed to create HW render FBO.\n");
+         return false;
+      }
    }
 
    pglBindFramebuffer(GL_FRAMEBUFFER, 0);
    gl->hw_render_fbo_init = true;
+   return true;
 }
 #endif
 
@@ -1936,8 +1943,13 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    // Set up render to texture.
    gl_init_fbo(gl, gl->tex_w, gl->tex_h);
 
-   if (g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL)
-      gl_init_hw_render(gl, gl->tex_w, gl->tex_h);
+   if (g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL
+         && !gl_init_hw_render(gl, gl->tex_w, gl->tex_h))
+   {
+      context_destroy_func();
+      free(gl);
+      return NULL;
+   }
 #endif
 
    if (input && input_data)
