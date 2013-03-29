@@ -211,6 +211,10 @@ static inline bool load_gl_proc_win32(gl_t *gl)
 #define pglUnmapBuffer glUnmapBuffer
 #endif
 
+#ifdef __APPLE__
+#define GL_RGBA32F GL_RGBA32F_ARB
+#endif
+
 ////////////////// Shaders
 
 #ifdef HAVE_OPENGLES2
