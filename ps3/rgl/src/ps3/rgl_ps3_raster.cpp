@@ -2767,101 +2767,78 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
    texture->revalidate = 0;
 }
 
-
-// Choose internal format closest to given format
-GLenum rglPlatformChooseInternalFormat (GLenum internalFormat)
+// Choose internal storage type and size, and set it to image, based on given format
+GLenum rglPlatformChooseInternalStorage (void *data, GLenum internalFormat )
 {
-   switch ( internalFormat )
+   rglImage *image = (rglImage*)data;
+
+   // see note at bottom concerning storageSize
+   image->storageSize = 0;
+
+   GLenum *format = &image->format;
+   GLenum *type = &image->type;
+
+   // Choose internal format closest to given format
+   // and extract right format, type
+
+   switch (internalFormat)
    {
       case GL_ALPHA12:
       case GL_ALPHA16:
-         return RGLGCM_ALPHA16;
+         internalFormat = RGLGCM_ALPHA16;
+         *format = GL_ALPHA;
+         *type = GL_UNSIGNED_SHORT;
+         break;
       case GL_ALPHA:
       case GL_ALPHA4:
-         return RGLGCM_ALPHA8;
+         internalFormat = RGLGCM_ALPHA8;
+         *format = GL_ALPHA;
+         *type = GL_UNSIGNED_BYTE;
+         break;
       case GL_R3_G3_B2:
       case GL_RGB4:
       case GL_RGB:
       case GL_RGB8:
       case RGLGCM_RGBX8:
-         return RGLGCM_RGBX8;
+         internalFormat = RGLGCM_RGBX8;
+         *format = GL_RGBA;
+         *type = GL_UNSIGNED_INT_8_8_8_8;
+         break;
       case GL_RGBA2:
       case GL_RGBA4:
       case GL_RGBA8:
       case GL_RGBA:
-         return RGLGCM_RGBA8;
+         internalFormat = RGLGCM_RGBA8;
+         *format = GL_RGBA;
+         *type = GL_UNSIGNED_INT_8_8_8_8;
+         break;
       case GL_RGB5_A1:
-         return RGLGCM_RGB5_A1_SCE;
+         internalFormat = RGLGCM_RGB5_A1_SCE;
+         *format = GL_RGBA;
+         *type = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+         break;
       case GL_RGB5:
-         return RGLGCM_RGB565_SCE;
+         internalFormat = RGLGCM_RGB565_SCE;
+         *format = GL_RGB;
+         *type = GL_UNSIGNED_SHORT_5_6_5_REV;
+         break;
       case GL_BGRA:
       case RGLGCM_BGRA8:
-         return RGLGCM_BGRA8;
+         internalFormat = RGLGCM_BGRA8;
+         *format = GL_BGRA;
+         *type = GL_UNSIGNED_INT_8_8_8_8;
+         break;
       case GL_ARGB_SCE:
-         return RGLGCM_ARGB8;
+         internalFormat = RGLGCM_ARGB8;
+         *format = GL_BGRA;
+         *type = GL_UNSIGNED_INT_8_8_8_8_REV;
+         break;
       case GL_RGBA32F_ARB:
       default:
          return GL_INVALID_ENUM;
    }
-   return GL_INVALID_ENUM;
-}
 
-// Expand internal format to format and type
-void rglPlatformExpandInternalFormat( GLenum internalFormat, GLenum *format, GLenum *type )
-{
-   switch ( internalFormat )
-   {
-      case RGLGCM_ALPHA16:
-         *format = GL_ALPHA;
-         *type = GL_UNSIGNED_SHORT;
-         break;
-      case RGLGCM_ALPHA8:
-         *format = GL_ALPHA;
-         *type = GL_UNSIGNED_BYTE;
-         break;
-      case RGLGCM_RGBX8:
-         *format = GL_RGBA;
-         *type = GL_UNSIGNED_INT_8_8_8_8;
-         break;
-      case RGLGCM_RGBA8:
-         *format = GL_RGBA;
-         *type = GL_UNSIGNED_INT_8_8_8_8;
-         break;
-      case RGLGCM_ARGB8:
-         *format = GL_BGRA;
-         *type = GL_UNSIGNED_INT_8_8_8_8_REV;
-         break;
-      case RGLGCM_BGRA8:
-         *format = GL_BGRA;
-         *type = GL_UNSIGNED_INT_8_8_8_8;
-         break;
-      case RGLGCM_RGB5_A1_SCE:
-         *format = GL_RGBA;
-         *type = GL_UNSIGNED_SHORT_1_5_5_5_REV;
-         break;
-      case RGLGCM_RGB565_SCE:
-         *format = GL_RGB;
-         *type = GL_UNSIGNED_SHORT_5_6_5_REV;
-         break;
-      default:
-         return;
-   }
-}
-
-// Choose internal storage type and size, and set it to image, based on given format
-GLenum rglPlatformChooseInternalStorage (void *data, GLenum internalFormat )
-{
-   rglImage *image = (rglImage*)data;
-   // see note at bottom concerning storageSize
-   image->storageSize = 0;
-
-   GLenum platformInternalFormat = rglPlatformChooseInternalFormat( internalFormat );
-
-   if (platformInternalFormat == GL_INVALID_ENUM)
-      return GL_INVALID_ENUM;
-
-   image->internalFormat = platformInternalFormat;
-   rglPlatformExpandInternalFormat( platformInternalFormat, &image->format, &image->type );
+   image->internalFormat = internalFormat;
 
    // Note that it is critical to get the storageSize value correct because
    // this member is used to configure texture loads and unloads.  If this
@@ -2871,18 +2848,6 @@ GLenum rglPlatformChooseInternalStorage (void *data, GLenum internalFormat )
          image->width, image->height, image->depth );
 
    return GL_NO_ERROR;
-}
-
-// Translate platform-specific format to GL enum
-GLenum rglPlatformTranslateTextureFormat( GLenum internalFormat )
-{
-   switch ( internalFormat )
-   {
-      case RGLGCM_RGBX8:
-         return GL_RGBA8;
-      default:	// same as GL
-         return internalFormat;
-   }
 }
 
 static inline void rglSetImageTexRef(void *data, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment)
@@ -2913,12 +2878,9 @@ static inline void rglSetImageTexRef(void *data, GLint internalFormat, GLsizei w
 
    image->isSet = GL_TRUE;
 
-   if ( image->xstride == 0 )
-      image->xstride = rglGetPixelSize( image->format, image->type );
-   if ( image->ystride == 0 )
-      image->ystride = image->width * image->xstride;
-   if ( image->zstride == 0 )
-      image->zstride = image->height * image->ystride;
+   image->xstride = rglGetPixelSize( image->format, image->type );
+   image->ystride = image->width * image->xstride;
+   image->zstride = image->height * image->ystride;
 
    image->dataState = RGL_IMAGE_DATASTATE_UNSET;
 }

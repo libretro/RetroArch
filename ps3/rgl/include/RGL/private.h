@@ -189,10 +189,7 @@ extern void	rglPlatformCreateTexture (void *data);
 extern void	rglPlatformDestroyTexture (void *data);
 void rglPlatformValidateVertexTextures (void);
 extern GLenum rglPlatformChooseInternalStorage (void *data, GLenum internalformat);
-extern GLenum rglPlatformTranslateTextureFormat( GLenum internalFormat );
 extern void rglPlatformCopyTexSubImage3D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height );
-GLenum rglPlatformChooseInternalFormat( GLenum internalformat );
-void rglPlatformExpandInternalFormat( GLenum internalformat, GLenum *format, GLenum *type );
 void rglPlatformGetImageData( GLenum target, GLint level, rglTexture *texture, rglImage *image );
 
 //----------------------------------------
