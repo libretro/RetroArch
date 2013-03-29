@@ -494,9 +494,9 @@ D3DVideo::~D3DVideo()
 {
    deinit();
 #ifdef HAVE_OVERLAY
-   if(overlay.tex)
+   if (overlay.tex)
       overlay.tex->Release();
-   if(overlay.vert_buf)
+   if (overlay.vert_buf)
       overlay.vert_buf->Release();
 #endif
    if (dev)
@@ -573,7 +573,7 @@ bool D3DVideo::frame(const void *frame,
    }
 
 #ifdef HAVE_OVERLAY
-   if(overlay.overlay_enabled)
+   if (overlay.overlay_enabled)
    {
       overlay_render();
    }
@@ -1181,7 +1181,7 @@ void D3DVideo::resize(unsigned new_width, unsigned new_height)
 #ifdef HAVE_OVERLAY
 bool D3DVideo::overlay_load(const uint32_t *image, unsigned width, unsigned height)
 {
-   if(overlay.tex)
+   if (overlay.tex)
       overlay.tex->Release();
    if (FAILED(dev->CreateTexture(width, height, 1,
                0,
@@ -1258,7 +1258,7 @@ void D3DVideo::overlay_render()
       float r, g, b, a;
    } vert[4];
 
-   if(!overlay.vert_buf)
+   if (!overlay.vert_buf)
    {
       dev->CreateVertexBuffer(
             sizeof(vert),
@@ -1328,7 +1328,7 @@ void D3DVideo::overlay_render()
 
    dev->SetStreamSource(0, overlay.vert_buf, 0, sizeof(overlay_vertex));
 
-   if(overlay.overlay_fullscreen)
+   if (overlay.overlay_fullscreen)
    {
       // set viewport to full window
       D3DVIEWPORT9 vp_full;
