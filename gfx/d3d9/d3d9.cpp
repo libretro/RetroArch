@@ -395,7 +395,7 @@ D3DVideo::D3DVideo(const video_info_t *info) :
    gfx_set_dwm();
 
 #ifdef HAVE_OVERLAY
-   std::memset(&overlay,0,sizeof(overlay));
+   std::memset(&overlay, 0, sizeof(overlay));
 #endif
 
    std::memset(&windowClass, 0, sizeof(windowClass));
@@ -574,9 +574,7 @@ bool D3DVideo::frame(const void *frame,
 
 #ifdef HAVE_OVERLAY
    if (overlay.overlay_enabled)
-   {
       overlay_render();
-   }
 #endif
 
    RARCH_PERFORMANCE_STOP(d3d_frame);
@@ -1239,15 +1237,6 @@ void D3DVideo::overlay_set_alpha(float mod)
 {
    overlay.overlay_alpha_mod = mod;
 }
-
-static const char *opacity_fragment =
-      "uniform float opacity;\n"
-      "float4 main_fragment(uniform sampler2D samp, float2 tex : TEXCOORD0) : COLOR\n"
-      "{\n"
-      "  float4 col = tex2D(samp, tex);\n"
-      "  col.a *= opacity;\n"
-      "  return col;\n"
-      "}";
 
 void D3DVideo::overlay_render()
 {  
