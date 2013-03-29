@@ -275,7 +275,7 @@ extern RGL_EXPORT CgprogramHookFunction _cgProgramCreateHook;
 extern RGL_EXPORT CgprogramHookFunction _cgProgramDestroyHook;
 extern RGL_EXPORT CgprogramCopyHookFunction _cgProgramCopyHook;
 
-typedef int (*cgRTCgcCompileHookFunction) (const char*, const char *, const char*, const char**, char**);
+typedef int (*cgRTCgcCompileHookFunction) (const char*, const char*, const char*, const char**, char**);
 typedef void(*cgRTCgcFreeHookFunction) (char*);
 extern RGL_EXPORT cgRTCgcCompileHookFunction _cgRTCgcCompileProgramHook;
 extern RGL_EXPORT cgRTCgcFreeHookFunction _cgRTCgcFreeCompiledProgramHook;

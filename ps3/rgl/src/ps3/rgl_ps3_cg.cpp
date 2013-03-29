@@ -1709,53 +1709,6 @@ static const RGLcgTypeMapType RGLcgTypeMap[] =
    { CGtype( 0 ), "", CG_PARAMETERCLASS_UNKNOWN }
 };
 
-static const RGLenumMap RGLcgResourceMap[] =
-{
-
-#define CG_BINDLOCATION_MACRO(name,enum_name,compiler_name,enum_int,addressable,param_type) \
-   { enum_name, compiler_name },
-#include <Cg/cg_bindlocations.h>
-
-   { CG_UNDEFINED, "undefined" },
-   { 0, "" }
-};
-
-static const RGLenumMap RGLcgEnumMap[] =
-{
-
-#define CG_ENUM_MACRO(enum_name, enum_val) \
-   { enum_val, #enum_name },
-#include <Cg/cg_enums.h>
-
-   { 0, "" }
-};
-
-static const RGLcgProfileMapType RGLcgProfileMap[] =
-{
-   {( CGprofile )6144, "CG_PROFILE_START", 1 },
-   {( CGprofile )6145, "unknown", 1 },
-
-#define CG_PROFILE_MACRO(name, compiler_id, compiler_id_caps, compiler_opt,int_id,vertex_profile) \
-   {CG_PROFILE_ ## compiler_id_caps, compiler_opt, vertex_profile},
-   //#include <Cg/cgRGL_profiles.h>
-#include <Cg/cg_profiles.h>
-
-   {( CGprofile )0, "", 0 }
-};
-
-static const RGLenumMap RGLcgErrorMap[] =
-{
-
-#define CG_ERROR_MACRO(code, enum_name, message) \
-   { enum_name, message },
-#include <Cg/cg_errors.h>
-
-   { 0, "" }
-};
-
-
-
-
 // templated map lookup functions  ---------
 
 
@@ -1858,73 +1811,7 @@ CG_API CGbool cgIsInterfaceType( CGtype type )
    return CG_FALSE;
 }
 
-
-// Resource Functions -----------------------
-
-CG_API const char* cgGetResourceString( CGresource resource )
-{
-   return _RGL_MAP_LOOKUP_ENUM( RGLcgResourceMap, resource );
-}
-
-CG_API CGresource cgGetResource( const char* resource_string )
-{
-   GLenum r = _RGL_MAP_LOOKUP_STRING( RGLcgResourceMap, resource_string );
-   return ( r == -1U ) ? CG_UNDEFINED : ( CGresource )r;
-}
-
-
-// Enum Functions ----------------------------
-
-CG_API const char* cgGetEnumString( CGenum en )
-{
-   return _RGL_MAP_LOOKUP_ENUM( RGLcgEnumMap, en );
-}
-
-CG_API CGenum cgGetEnum( const char* enum_string )
-{
-   if ( !enum_string ) { rglCgRaiseError( CG_INVALID_PARAMETER_ERROR ); return CG_UNKNOWN; }
-   GLenum r = _RGL_MAP_LOOKUP_STRING( RGLcgEnumMap, enum_string );
-   return ( r == -1U ) ? CG_UNKNOWN : ( CGenum )r;
-}
-
-
 // Profile functions -------------------------
-
-
-// profiles are the only tokens not stored in a RGLenumMap. Instead
-// they use a RGLcgProfileMap which contains extra information about
-// whether the profile is a vertex or a fragment program.
-
-CG_API const char* cgGetProfileString( CGprofile profile )
-{
-   const size_t arraysize = sizeof( RGLcgProfileMap ) / sizeof( RGLcgProfileMapType );
-   unsigned int i = 0;
-   while ( i < arraysize )
-   {
-      if ( profile == RGLcgProfileMap[i].id )
-      {
-         // id found.
-         return RGLcgProfileMap[i].string;
-      }
-      ++i;
-   }
-   // id not found, return an empty string
-   return "";
-}
-
-CG_API CGprofile cgGetProfile( const char* profile_string )
-{
-   size_t arraysize = sizeof( RGLcgProfileMap ) / sizeof( RGLcgProfileMapType );
-   unsigned int i = 0;
-   while ( i < arraysize )
-   {
-      if (strcmp( RGLcgProfileMap[i].string, profile_string) == 0)
-         return RGLcgProfileMap[i].id; // string found.
-      ++i;
-   }
-   // string not found, return fail code.
-   return CG_PROFILE_UNKNOWN;
-}
 
 
 // ErrorFunctions ----------------------------
@@ -1937,16 +1824,7 @@ CG_API CGerror cgGetError( void )
 
 CG_API const char* cgGetErrorString( CGerror error )
 {
-   return _RGL_MAP_LOOKUP_ENUM( RGLcgErrorMap, error );
-}
-
-CG_API const char* cgGetLastErrorString( CGerror* error )
-{
-   // return both the error id and string.
-   *error = _CurrentContext->RGLcgLastError;
-   _CurrentContext->RGLcgLastError = CG_NO_ERROR;
-   const char * result = _RGL_MAP_LOOKUP_ENUM( RGLcgErrorMap, *error );
-   return result;
+   return "cgGetErrorString not implemented.\n";
 }
 
 CG_API void cgSetErrorCallback( CGerrorCallbackFunc func )
@@ -1975,31 +1853,6 @@ CG_API const char* cgGetString( CGenum sname )
    rglCgRaiseError( CG_INVALID_ENUMERANT_ERROR );
    return NULL;
 }
-
-
-
-CG_API CGdomain cgGetProfileDomain( CGprofile profile )
-{
-   const size_t arraysize = sizeof( RGLcgProfileMap ) / sizeof( RGLcgProfileMapType );
-   unsigned int i = 0;
-   while ( i < arraysize )
-   {
-      if ( profile == RGLcgProfileMap[i].id )
-      {
-         // id found, check whether this is a vertex or fragment program
-         if ( RGLcgProfileMap[i].is_vertex_program )
-            return CG_VERTEX_DOMAIN;
-         else
-            return CG_FRAGMENT_DOMAIN;
-      }
-      ++i;
-   }
-   // id not found, return an unknown domain
-   rglCgRaiseError( CG_UNKNOWN_PROFILE_ERROR );
-   return CG_UNKNOWN_DOMAIN;
-}
-
-
 
 CG_API CGparameterclass cgGetTypeClass( CGtype type )
 {
@@ -3717,7 +3570,7 @@ CG_API CGprogram cgCreateProgram( CGcontext ctx,
    {
       if ( _cgRTCgcCompileProgramHook )
       {
-         _cgRTCgcCompileProgramHook( program, cgGetProfileString( profile ), entry, args, &compiled_program );
+         _cgRTCgcCompileProgramHook( program, (profile == CG_PROFILE_SCE_FP_RSX) ? "sce_fp_rsx" : "sce_vp_rsx", entry, args, &compiled_program );
          if ( !compiled_program )
          {
             rglCgRaiseError( CG_COMPILER_ERROR );
@@ -4290,63 +4143,6 @@ CG_API CGbool cgIsProgramCompiled( CGprogram program )
    // TODO ********** use this function to find out if our program has unresolved symbols?
 
    return CG_TRUE;
-}
-
-CG_API const char* cgGetProgramString( CGprogram prog, CGenum pname )
-{
-   // check the program input
-   if ( !CG_IS_PROGRAM( prog ) )
-   {
-      rglCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
-      return NULL;
-   }
-
-   //hack to counter change of defines for program_type at r5294
-   // previously CG_PROGRAM_FILENAME was defined the same as CG_COLUMN_MAJOR
-   // if those values are passed in here, move them to the new values and remove this hack after we have
-   // an sdk that incorporates these changes so that prebuild libs (aka debugfont) can be used meanwhile
-   if ( pname == CG_COLUMN_MAJOR )
-      pname = CG_PROGRAM_FILENAME;
-
-   switch ( pname )
-   {
-      case CG_PROGRAM_SOURCE:
-         // the original Cg source program is returned
-         // all programs in our API are pre-compiled and come without source.
-         return NULL;
-
-      case CG_PROGRAM_ENTRY:
-         // the main entry point for the program is returned
-         // TODO *********** return the name of the entry point
-         return NULL;
-
-      case CG_PROGRAM_PROFILE:
-         // the profile for the program is returned
-         {
-            const char *result = cgGetProfileString(( CGprofile )_cgGetProgPtr( prog )->header.profile );
-            return result;
-         }
-
-      case CG_COMPILED_PROGRAM:
-         // the string for the object program is returned
-         return NULL;
-
-      case CG_PROGRAM_FILENAME:
-         // TODO ***************
-         // Return the filename of the source ELF this program came from
-         return ( char* )_cgGetProgPtr( prog )->platformProgram;
-
-      case CG_BINARY:
-         // TODO ***************
-         // Create a whole new function for handling binaries - return charand length.
-         // we'll return an image pointer for now...
-         return ( char* )_cgGetProgPtr( prog )->platformProgram;
-
-      default:
-         rglCgRaiseError( CG_INVALID_ENUMERANT_ERROR );
-   }
-
-   return NULL;
 }
 
 CG_API void CGENTRY cgSetLastListing( CGhandle handle, const char *listing )

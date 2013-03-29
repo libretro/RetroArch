@@ -4,7 +4,6 @@
 #include "../export/RGL/rgl.h"
 #include "Types.h"
 #include "Utils.h"
-#include "ReportInternal.h"
 
 #ifndef OS_VERSION_NUMERIC
 #define OS_VERSION_NUMERIC 0x160
