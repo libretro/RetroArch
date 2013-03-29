@@ -53,6 +53,10 @@ namespace Global
 RenderChain::~RenderChain()
 {
    clear();
+   if (fStock)
+      cgDestroyProgram(fStock);
+   if (vStock)
+      cgDestroyProgram(vStock);
 }
 
 RenderChain::RenderChain(const video_info_t &video_info,
@@ -65,6 +69,7 @@ RenderChain::RenderChain(const video_info_t &video_info,
    pixel_size = fmt == RGB565 ? 2 : 4;
    create_first_pass(info, fmt);
    log_info(info);
+   compile_shaders(fStock,vStock,"");
 }
 
 void RenderChain::clear()
@@ -87,6 +92,10 @@ void RenderChain::clear()
          passes[i].vertex_buf->Release();
       if (passes[i].vertex_decl)
          passes[i].vertex_decl->Release();
+      if (passes[i].fPrg)
+         cgDestroyProgram(passes[i].fPrg);
+      if (passes[i].vPrg)
+         cgDestroyProgram(passes[i].vPrg);
    }
 
    for (unsigned i = 0; i < luts.size(); i++)
@@ -106,7 +115,7 @@ void RenderChain::add_pass(const LinkInfo &info)
    pass.last_width = 0;
    pass.last_height = 0;
 
-   compile_shaders(pass, info.shader_path);
+   compile_shaders(pass.fPrg, pass.vPrg, info.shader_path);
    init_fvf(pass);
 
    if (FAILED(dev->CreateVertexBuffer(
@@ -266,6 +275,8 @@ bool RenderChain::render(const void *data,
    back_buffer->Release();
 
    end_render();
+   set_shaders(fStock, vStock);
+   set_cg_mvp(vStock, final_viewport.Width, final_viewport.Height, rotation);
    return true;
 }
 
@@ -316,12 +327,12 @@ void RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
       dev->SetTexture(0, nullptr);
    }
 
-   compile_shaders(pass, info.shader_path);
+   compile_shaders(pass.fPrg, pass.vPrg, info.shader_path);
    init_fvf(pass);
    passes.push_back(pass);
 }
 
-void RenderChain::compile_shaders(Pass &pass, const std::string &shader)
+void RenderChain::compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::string &shader)
 {
    CGprofile vertex_profile = cgD3D9GetLatestVertexProfile();
    CGprofile fragment_profile = cgD3D9GetLatestPixelProfile();
@@ -333,13 +344,13 @@ void RenderChain::compile_shaders(Pass &pass, const std::string &shader)
    if (shader.length() > 0)
    {
       RARCH_LOG("[D3D9 Cg]: Compiling shader: %s.\n", shader.c_str());
-      pass.fPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
+      fPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
             shader.c_str(), fragment_profile, "main_fragment", fragment_opts);
 
       if (cgGetLastListing(cgCtx))
          RARCH_ERR("[D3D9 Cg]: Fragment error:\n%s\n", cgGetLastListing(cgCtx));
 
-      pass.vPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
+      vPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
             shader.c_str(), vertex_profile, "main_vertex", vertex_opts);
 
       if (cgGetLastListing(cgCtx))
@@ -349,30 +360,30 @@ void RenderChain::compile_shaders(Pass &pass, const std::string &shader)
    {
       RARCH_LOG("[D3D9 Cg]: Compiling stock shader.\n");
 
-      pass.fPrg = cgCreateProgram(cgCtx, CG_SOURCE, Global::stock_program,
+      fPrg = cgCreateProgram(cgCtx, CG_SOURCE, Global::stock_program,
             fragment_profile, "main_fragment", fragment_opts);
 
       if (cgGetLastListing(cgCtx))
          RARCH_ERR("[D3D9 Cg]: Fragment error:\n%s\n", cgGetLastListing(cgCtx));
 
-      pass.vPrg = cgCreateProgram(cgCtx, CG_SOURCE, Global::stock_program,
+      vPrg = cgCreateProgram(cgCtx, CG_SOURCE, Global::stock_program,
             vertex_profile, "main_vertex", vertex_opts);
 
       if (cgGetLastListing(cgCtx))
          RARCH_ERR("[D3D9 Cg]: Vertex error:\n%s\n", cgGetLastListing(cgCtx));
    }
 
-   if (!pass.fPrg || !pass.vPrg)
+   if (!fPrg || !vPrg)
       throw std::runtime_error("Failed to compile shaders!");
 
-   cgD3D9LoadProgram(pass.fPrg, true, 0);
-   cgD3D9LoadProgram(pass.vPrg, true, 0);
+   cgD3D9LoadProgram(fPrg, true, 0);
+   cgD3D9LoadProgram(vPrg, true, 0);
 }
 
-void RenderChain::set_shaders(Pass &pass)
+void RenderChain::set_shaders(CGprogram &fPrg, CGprogram &vPrg)
 {
-   cgD3D9BindProgram(pass.fPrg);
-   cgD3D9BindProgram(pass.vPrg);
+   cgD3D9BindProgram(fPrg);
+   cgD3D9BindProgram(vPrg);
 }
 
 void RenderChain::set_vertices(Pass &pass,
@@ -437,17 +448,7 @@ void RenderChain::set_vertices(Pass &pass,
       pass.vertex_buf->Unlock();
    }
 
-   D3DXMATRIX proj, ortho, rot;
-   D3DXMatrixOrthoOffCenterLH(&ortho, 0, vp_width, 0, vp_height, 0, 1);
-
-   if (rotation)
-      D3DXMatrixRotationZ(&rot, rotation * (M_PI / 2.0));
-   else
-      D3DXMatrixIdentity(&rot);
-
-   D3DXMatrixMultiply(&proj, &ortho, &rot);
-
-   set_cg_mvp(pass, proj);
+   set_cg_mvp(pass.vPrg, vp_width, vp_height, rotation);
 
    set_cg_params(pass,
          width, height,
@@ -460,11 +461,23 @@ void RenderChain::set_viewport(const D3DVIEWPORT9 &vp)
    dev->SetViewport(&vp);
 }
 
-void RenderChain::set_cg_mvp(Pass &pass, const D3DXMATRIX &matrix)
+void RenderChain::set_cg_mvp(CGprogram &vPrg,
+      unsigned vp_width, unsigned vp_height,
+      unsigned rotation)
 {
+   D3DXMATRIX proj, ortho, rot;
+   D3DXMatrixOrthoOffCenterLH(&ortho, 0, vp_width, 0, vp_height, 0, 1);
+
+   if (rotation)
+      D3DXMatrixRotationZ(&rot, rotation * (M_PI / 2.0));
+   else
+      D3DXMatrixIdentity(&rot);
+
+   D3DXMatrixMultiply(&proj, &ortho, &rot);
+
    D3DXMATRIX tmp;
-   D3DXMatrixTranspose(&tmp, &matrix);
-   CGparameter cgpModelViewProj = cgGetNamedParameter(pass.vPrg, "modelViewProj");
+   D3DXMatrixTranspose(&tmp, &proj);
+   CGparameter cgpModelViewProj = cgGetNamedParameter(vPrg, "modelViewProj");
    if (cgpModelViewProj)
       cgD3D9SetUniformMatrix(cgpModelViewProj, &tmp);
 }
@@ -577,7 +590,7 @@ void RenderChain::blit_to_texture(const void *frame,
 
 void RenderChain::render_pass(Pass &pass, unsigned pass_index)
 {
-   set_shaders(pass);
+   set_shaders(pass.fPrg, pass.vPrg);
    dev->SetTexture(0, pass.tex);
    dev->SetSamplerState(0, D3DSAMP_MINFILTER,
          pass.info.filter_linear ? D3DTEXF_LINEAR : D3DTEXF_POINT);
