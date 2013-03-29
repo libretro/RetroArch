@@ -1431,10 +1431,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (msg && gl->font_ctx)
       gl->font_ctx->render_msg(gl, msg, NULL);
 
-   if (gl->ctx_driver->post_render)
-      context_post_render_func(gl);
 #ifdef HAVE_OVERLAY
-   else if (gl->overlay_enable)
+   if (gl->overlay_enable)
       gl_render_overlay(gl);
 #endif
 

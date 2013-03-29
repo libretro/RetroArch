@@ -282,6 +282,5 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL,
    gfx_ctx_init_egl_image_buffer,
    gfx_ctx_write_egl_image,
-   NULL,
    "android",
 };

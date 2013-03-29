@@ -456,7 +456,6 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_get_proc_address,
    gfx_ctx_init_egl_image_buffer,
    gfx_ctx_write_egl_image,
-   NULL,
    "wgl",
 };
 
