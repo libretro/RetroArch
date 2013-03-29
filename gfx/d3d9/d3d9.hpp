@@ -127,8 +127,6 @@ class D3DVideo
          float overlay_alpha_mod;
          IDirect3DTexture9 *tex;
          IDirect3DVertexBuffer9 *vert_buf;
-         IDirect3DPixelShader9 *opacity_shader;
-         ID3DXConstantTable *opacity_shader_table;
       } overlay;
 #endif
 };

@@ -498,10 +498,6 @@ D3DVideo::~D3DVideo()
       overlay.tex->Release();
    if(overlay.vert_buf)
       overlay.vert_buf->Release();
-   if(overlay.opacity_shader)
-      overlay.opacity_shader->Release();
-   if(overlay.opacity_shader_table)
-      overlay.opacity_shader_table->Release();
 #endif
    if (dev)
       dev->Release();
@@ -1259,6 +1255,7 @@ void D3DVideo::overlay_render()
    {
       float x, y, z;
       float u, v;
+      float r, g, b, a;
    } vert[4];
 
    if(!overlay.vert_buf)
@@ -1273,7 +1270,11 @@ void D3DVideo::overlay_render()
    }
 
    for (unsigned i = 0; i < 4; i++)
+   {
       vert[i].z = 0.5f;
+      vert[i].r = vert[i].g = vert[i].b = 1.0f;
+      vert[i].a = overlay.overlay_alpha_mod;
+   }
 
    float overlay_width = final_viewport.Width;
    float overlay_height = final_viewport.Height;
@@ -1317,6 +1318,7 @@ void D3DVideo::overlay_render()
    D3DVERTEXELEMENT9 vElems[4] = {
       {0, 0,  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0},
       {0, 12, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0},
+      {0, 20, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0},
       D3DDECL_END()
    };
    IDirect3DVertexDeclaration9 * vertex_decl;
@@ -1350,31 +1352,6 @@ void D3DVideo::overlay_render()
       dev->Clear(2, clear_rects, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
-   // custom pixel shader for opacity
-   IDirect3DPixelShader9 *prev_pixel_shader = NULL;
-   if(overlay.overlay_alpha_mod != 1.0f)
-   {
-      if(!overlay.opacity_shader)
-      {
-         LPD3DXBUFFER code;
-         D3DXCompileShader(opacity_fragment,    // source
-               strlen(opacity_fragment),        // len
-               NULL,                            // macros
-               NULL,                            // includes
-               "main_fragment",                 // main function
-               "ps_2_0",                        // shader profile
-               0,                               // flags
-               &code,                           // compiled operations
-               NULL,                            // errors
-               &overlay.opacity_shader_table);  // constants
-         dev->CreatePixelShader((DWORD*)code->GetBufferPointer(), &overlay.opacity_shader);
-         code->Release();
-      }
-      overlay.opacity_shader_table->SetFloat(dev, "opacity", overlay.overlay_alpha_mod);
-      dev->GetPixelShader(&prev_pixel_shader);
-      dev->SetPixelShader(overlay.opacity_shader);
-   }
-
    // render overlay
    dev->SetTexture(0, overlay.tex);
    dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
@@ -1390,8 +1367,6 @@ void D3DVideo::overlay_render()
    //restore previous state
    dev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
    dev->SetViewport(&final_viewport);
-   if(prev_pixel_shader)
-      dev->SetPixelShader(prev_pixel_shader);
 }
 
 #endif
