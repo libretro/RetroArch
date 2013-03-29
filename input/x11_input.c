@@ -237,11 +237,15 @@ static void x_input_poll_mouse(x11_input_t *x11)
    {
       struct rarch_viewport vp = {0};
       video_viewport_info_func(&vp);
-      unsigned mid_w = vp.full_width >> 1;
-      unsigned mid_h = vp.full_height >> 1;
-      XWarpPointer(x11->display, None,
-            x11->win, 0, 0, 0, 0,
-            mid_w, mid_h);
+      int mid_w = vp.full_width >> 1;
+      int mid_h = vp.full_height >> 1;
+
+      if (x11->mouse_x != mid_w || x11->mouse_y != mid_h)
+      {
+         XWarpPointer(x11->display, None,
+               x11->win, 0, 0, 0, 0,
+               mid_w, mid_h);
+      }
       x11->mouse_last_x = mid_w;
       x11->mouse_last_y = mid_h;
    }
