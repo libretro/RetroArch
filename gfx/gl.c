@@ -1494,6 +1494,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       glEnable(GL_TEXTURE_2D);
 #endif
       glDisable(GL_DEPTH_TEST);
+      glDisable(GL_ALPHA_TEST);
+      glDisable(GL_STENCIL_TEST);
       glDisable(GL_CULL_FACE);
       glDisable(GL_DITHER);
       glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
