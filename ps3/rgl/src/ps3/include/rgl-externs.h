@@ -2,7 +2,6 @@ void rglGcmFifoFinish (void *data);
 GLboolean rglGcmFifoReferenceInUse (void *data, GLuint reference);
 GLuint rglGcmFifoPutReference (void *data);
 void rglGcmFifoFlush (void *data);
-uint32_t *rglGcmFifoWaitForFreeSpace (void *data, GLuint spaceInWords);
 void rglGcmGetTileRegionInfo (void *data, GLuint *address, GLuint *size);
 GLboolean rglGcmTryResizeTileRegion( GLuint address, GLuint size, void *data);
 

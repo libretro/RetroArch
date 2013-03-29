@@ -1664,88 +1664,86 @@ static inline void rglValidateStates (GLuint mask)
          long unit = unitsInUse[i];
          rglTexture* texture = LContext->TextureImageUnits[unit].currentTexture;
 
-         if (texture)
+         if (!texture)
+            continue;
+
+         // Validate resources of a texture and set it to a unit
+
+         if (RGL_UNLIKELY( texture->revalidate))
+            rglPlatformValidateTextureResources(texture); // this updates the isComplete bit.
+
+         GLboolean isCompleteCache = texture->isComplete;
+
+         if (RGL_LIKELY(isCompleteCache))
          {
-            // Validate resources of a texture and set it to a unit
-           
-            if (RGL_UNLIKELY( texture->revalidate))
-               rglPlatformValidateTextureResources(texture); // this updates the isComplete bit.
+            // Set a texture to a gcm texture unit
 
-            GLboolean isCompleteCache = texture->isComplete;
+            rglGcmTexture *platformTexture = ( rglGcmTexture * )texture->platformTexture;
+            const GLuint imageOffset = gmmIdToOffset(platformTexture->gpuAddressId) +
+               platformTexture->gpuAddressIdOffset;
+            platformTexture->gcmTexture.offset = imageOffset; 
 
-            if (RGL_LIKELY(isCompleteCache))
-            {
-               // Set a texture to a gcm texture unit
+            // set up the texture unit with the info for the current texture
+            // bind texture , control 1,3,format and remap
 
-               rglGcmTexture *platformTexture = ( rglGcmTexture * )texture->platformTexture;
-               const GLuint imageOffset = gmmIdToOffset(platformTexture->gpuAddressId) +
-                  platformTexture->gpuAddressIdOffset;
-               platformTexture->gcmTexture.offset = imageOffset; 
+            GCM_FUNC_SAFE( cellGcmSetTexture, unit, &platformTexture->gcmTexture );
+            CellGcmContextData *gcm_context = (CellGcmContextData*)&rglGcmState_i.fifo;
+            cellGcmReserveMethodSizeInline(gcm_context, 11);
+            uint32_t *current = gcm_context->current;
+            current[0] = CELL_GCM_METHOD_HEADER_TEXTURE_OFFSET(unit, 8);
+            current[1] = CELL_GCM_METHOD_DATA_TEXTURE_OFFSET(platformTexture->gcmTexture.offset);
+            current[2] = CELL_GCM_METHOD_DATA_TEXTURE_FORMAT(platformTexture->gcmTexture.location,
+                  platformTexture->gcmTexture.cubemap, 
+                  platformTexture->gcmTexture.dimension,
+                  platformTexture->gcmTexture.format,
+                  platformTexture->gcmTexture.mipmap);
+            current[3] = CELL_GCM_METHOD_DATA_TEXTURE_ADDRESS( platformTexture->gcmMethods.address.wrapS,
+                  platformTexture->gcmMethods.address.wrapT,
+                  platformTexture->gcmMethods.address.wrapR,
+                  platformTexture->gcmMethods.address.unsignedRemap,
+                  platformTexture->gcmMethods.address.zfunc,
+                  platformTexture->gcmMethods.address.gamma,
+                  0);
+            current[4] = CELL_GCM_METHOD_DATA_TEXTURE_CONTROL0(CELL_GCM_TRUE,
+                  platformTexture->gcmMethods.control0.minLOD,
+                  platformTexture->gcmMethods.control0.maxLOD,
+                  platformTexture->gcmMethods.control0.maxAniso);
+            current[5] = platformTexture->gcmTexture.remap;
+            current[6] = CELL_GCM_METHOD_DATA_TEXTURE_FILTER(
+                  (platformTexture->gcmMethods.filter.bias & 0x1fff),
+                  platformTexture->gcmMethods.filter.min,
+                  platformTexture->gcmMethods.filter.mag,
+                  platformTexture->gcmMethods.filter.conv);
+            current[7] = CELL_GCM_METHOD_DATA_TEXTURE_IMAGE_RECT(
+                  platformTexture->gcmTexture.height,
+                  platformTexture->gcmTexture.width);
+            current[8] = CELL_GCM_METHOD_DATA_TEXTURE_BORDER_COLOR(
+                  platformTexture->gcmMethods.borderColor);
+            current[9] = CELL_GCM_METHOD_HEADER_TEXTURE_CONTROL3(unit,1);
+            current[10] = CELL_GCM_METHOD_DATA_TEXTURE_CONTROL3(
+                  platformTexture->gcmTexture.pitch,
+                  platformTexture->gcmTexture.depth);
+            gcm_context->current = &current[11];
+         }
+         else
+         {
+            // Validate incomplete texture by remapping
+            //RGL_REPORT_EXTRA( RGL_REPORT_TEXTURE_INCOMPLETE, "Texture %d bound to unit %d(%s) is incomplete.", texture->name, unit, rglGetGLEnumName( texture->target ) );
+            GLuint remap = CELL_GCM_REMAP_MODE(
+                  CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
+                  CELL_GCM_TEXTURE_REMAP_FROM_A,
+                  CELL_GCM_TEXTURE_REMAP_FROM_R,
+                  CELL_GCM_TEXTURE_REMAP_FROM_G,
+                  CELL_GCM_TEXTURE_REMAP_FROM_B,
+                  CELL_GCM_TEXTURE_REMAP_ONE,
+                  CELL_GCM_TEXTURE_REMAP_ZERO,
+                  CELL_GCM_TEXTURE_REMAP_ZERO,
+                  CELL_GCM_TEXTURE_REMAP_ZERO );
 
-               // set up the texture unit with the info for the current texture
-               // bind texture , control 1,3,format and remap
-               // [YLIN] Contiguous GCM calls in fact will cause LHSs between them
-               //  There is no walkaround for this but not to use GCM functions
-
-               GCM_FUNC_SAFE( cellGcmSetTexture, unit, &platformTexture->gcmTexture );
-               CellGcmContextData *gcm_context = (CellGcmContextData*)&rglGcmState_i.fifo;
-               cellGcmReserveMethodSizeInline(gcm_context, 11);
-               uint32_t *current = gcm_context->current;
-               current[0] = CELL_GCM_METHOD_HEADER_TEXTURE_OFFSET(unit, 8);
-               current[1] = CELL_GCM_METHOD_DATA_TEXTURE_OFFSET(platformTexture->gcmTexture.offset);
-               current[2] = CELL_GCM_METHOD_DATA_TEXTURE_FORMAT(platformTexture->gcmTexture.location,
-                     platformTexture->gcmTexture.cubemap, 
-                     platformTexture->gcmTexture.dimension,
-                     platformTexture->gcmTexture.format,
-                     platformTexture->gcmTexture.mipmap);
-               current[3] = CELL_GCM_METHOD_DATA_TEXTURE_ADDRESS( platformTexture->gcmMethods.address.wrapS,
-                     platformTexture->gcmMethods.address.wrapT,
-                     platformTexture->gcmMethods.address.wrapR,
-                     platformTexture->gcmMethods.address.unsignedRemap,
-                     platformTexture->gcmMethods.address.zfunc,
-                     platformTexture->gcmMethods.address.gamma,
-                     0);
-               current[4] = CELL_GCM_METHOD_DATA_TEXTURE_CONTROL0(CELL_GCM_TRUE,
-                     platformTexture->gcmMethods.control0.minLOD,
-                     platformTexture->gcmMethods.control0.maxLOD,
-                     platformTexture->gcmMethods.control0.maxAniso);
-               current[5] = platformTexture->gcmTexture.remap;
-               current[6] = CELL_GCM_METHOD_DATA_TEXTURE_FILTER(
-                     (platformTexture->gcmMethods.filter.bias & 0x1fff),
-                     platformTexture->gcmMethods.filter.min,
-                     platformTexture->gcmMethods.filter.mag,
-                     platformTexture->gcmMethods.filter.conv);
-               current[7] = CELL_GCM_METHOD_DATA_TEXTURE_IMAGE_RECT(
-                     platformTexture->gcmTexture.height,
-                     platformTexture->gcmTexture.width);
-               current[8] = CELL_GCM_METHOD_DATA_TEXTURE_BORDER_COLOR(
-                     platformTexture->gcmMethods.borderColor);
-               current[9] = CELL_GCM_METHOD_HEADER_TEXTURE_CONTROL3(unit,1);
-               current[10] = CELL_GCM_METHOD_DATA_TEXTURE_CONTROL3(
-                     platformTexture->gcmTexture.pitch,
-                     platformTexture->gcmTexture.depth);
-               gcm_context->current = &current[11];
-            }
-            else
-            {
-               // Validate incomplete texture by remapping
-               //RGL_REPORT_EXTRA( RGL_REPORT_TEXTURE_INCOMPLETE, "Texture %d bound to unit %d(%s) is incomplete.", texture->name, unit, rglGetGLEnumName( texture->target ) );
-               GLuint remap = CELL_GCM_REMAP_MODE(
-                     CELL_GCM_TEXTURE_REMAP_ORDER_XYXY,
-                     CELL_GCM_TEXTURE_REMAP_FROM_A,
-                     CELL_GCM_TEXTURE_REMAP_FROM_R,
-                     CELL_GCM_TEXTURE_REMAP_FROM_G,
-                     CELL_GCM_TEXTURE_REMAP_FROM_B,
-                     CELL_GCM_TEXTURE_REMAP_ONE,
-                     CELL_GCM_TEXTURE_REMAP_ZERO,
-                     CELL_GCM_TEXTURE_REMAP_ZERO,
-                     CELL_GCM_TEXTURE_REMAP_ZERO );
-
-               // disable control 0
-               GCM_FUNC( cellGcmSetTextureControl, unit, CELL_GCM_FALSE, 0, 0, 0 );
-               // set texture remap only
-               GCM_FUNC( cellGcmSetTextureRemap, unit, remap );
-            }
+            // disable control 0
+            GCM_FUNC( cellGcmSetTextureControl, unit, CELL_GCM_FALSE, 0, 0, 0 );
+            // set texture remap only
+            GCM_FUNC( cellGcmSetTextureRemap, unit, remap );
          }
       }
    }
@@ -1766,7 +1764,14 @@ static inline void rglValidateStates (GLuint mask)
       conf.registerCount = program->header.vertexProgram.registerCount;
       conf.attributeInputMask = program->header.attributeInputMask;
 
-      rglGcmFifoWaitForFreeSpace( &rglGcmState_i.fifo, 7 + 5 * conf.instructionCount );
+      rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
+      GLuint spaceInWords = 7 + 5 * conf.instructionCount;
+
+      // Push a CG program onto the current command buffer
+
+      // make sure there is space for the pushbuffer + any nops we need to add for alignment  
+      if ( fifo->current + spaceInWords + 1024 > fifo->end )
+         rglOutOfSpaceCallback( fifo, spaceInWords );
 
       GCM_FUNC( cellGcmSetVertexProgramLoad, &conf, program->ucode );
       GCM_FUNC( cellGcmSetUserClipPlaneControl, 0, 0, 0, 0, 0, 0 );
@@ -1781,110 +1786,92 @@ static inline void rglValidateStates (GLuint mask)
       for ( int i = 0;i < count;i++ )
       {
          const CgParameterEntry *parameterEntry = program->parametersEntries + program->defaultValuesIndices[i].entryIndex;
-         if (( parameterEntry->flags & CGPF_REFERENCED ) && ( parameterEntry->flags & CGPV_MASK ) == CGPV_CONSTANT )
+         GLboolean cond = (( parameterEntry->flags & CGPF_REFERENCED )
+               && ( parameterEntry->flags & CGPV_MASK ) == CGPV_CONSTANT );
+
+         if (!cond)
+            continue;
+
+         const float *value = program->defaultValues + 
+            program->defaultValuesIndices[i].defaultValueIndex;
+
+         const CgParameterResource *parameterResource = rglGetParameterResource( program, parameterEntry );
+
+         GLboolean cond2 = parameterResource->resource != (unsigned short) - 1;
+
+         if (!cond2)
+            continue;
+
+         switch ( parameterResource->type )
          {
-            const float *value = program->defaultValues + 
-               program->defaultValuesIndices[i].defaultValueIndex;
-
-            const CgParameterResource *parameterResource = rglGetParameterResource( program, parameterEntry );
-
-            if (parameterResource->resource != (unsigned short) - 1)
-            {
-               switch ( parameterResource->type )
+            case CG_FLOAT:
+            case CG_FLOAT1:
+            case CG_FLOAT2:
+            case CG_FLOAT3:
+            case CG_FLOAT4:
+            case CG_HALF:
+            case CG_HALF1:
+            case CG_HALF2:
+            case CG_HALF3:
+            case CG_HALF4:
+            case CG_INT:
+            case CG_INT1:
+            case CG_INT2:
+            case CG_INT3:
+            case CG_INT4:
+            case CG_BOOL:
+            case CG_BOOL1:
+            case CG_BOOL2:
+            case CG_BOOL3:
+            case CG_BOOL4:
+            case CG_FIXED:
+            case CG_FIXED1:
+            case CG_FIXED2:
+            case CG_FIXED3:
+            case CG_FIXED4:
+               GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 1, value ); // GCM_PORT_TESTED [Cedric]
+               break;
+            case CG_FLOAT4x4:
+            case CG_HALF4x4:
+            case CG_INT4x4:
+            case CG_BOOL4x4:
+            case CG_FIXED4x4:
+               // set 4 consts
                {
-                  case CG_FLOAT:
-                  case CG_FLOAT1:
-                  case CG_FLOAT2:
-                  case CG_FLOAT3:
-                  case CG_FLOAT4:
-                     GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 1, value ); // GCM_PORT_TESTED [Cedric]
-                     break;
-                  case CG_FLOAT4x4:
-                     // set 4 consts
-                     {
-                        GLfloat v2[16];
-                        v2[0] = value[0];v2[1] = value[4];v2[2] = value[8];v2[3] = value[12];
-                        v2[4] = value[1];v2[5] = value[5];v2[6] = value[9];v2[7] = value[13];
-                        v2[8] = value[2];v2[9] = value[6];v2[10] = value[10];v2[11] = value[14];
-                        v2[12] = value[3];v2[13] = value[7];v2[14] = value[11];v2[15] = value[15];
-                        GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 4, v2 ); // GCM_PORT_TESTED [Cedric]
-                     }
-                     break;
-                  case CG_FLOAT3x3:
-                     // set 3 consts
-                     {
-                        GLfloat v2[12];
-                        v2[0] = value[0];v2[1] = value[3];v2[2] = value[6];v2[3] = 0;
-                        v2[4] = value[1];v2[5] = value[4];v2[6] = value[7];v2[7] = 0;
-                        v2[8] = value[2];v2[9] = value[5];v2[10] = value[8];v2[11] = 0;
-                        GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 3, v2 );
-                     }
-                     break;
-                  case CG_HALF:
-                  case CG_HALF1:
-                  case CG_HALF2:
-                  case CG_HALF3:
-                  case CG_HALF4:
-                  case CG_INT:
-                  case CG_INT1:
-                  case CG_INT2:
-                  case CG_INT3:
-                  case CG_INT4:
-                  case CG_BOOL:
-                  case CG_BOOL1:
-                  case CG_BOOL2:
-                  case CG_BOOL3:
-                  case CG_BOOL4:
-                  case CG_FIXED:
-                  case CG_FIXED1:
-                  case CG_FIXED2:
-                  case CG_FIXED3:
-                  case CG_FIXED4:
-                     GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 1, value ); // GCM_PORT_TESTED [Cedric]
-                     break;
-                  case CG_HALF4x4:
-                  case CG_INT4x4:
-                  case CG_BOOL4x4:
-                  case CG_FIXED4x4:
-                     // set 4 consts
-                     {
-                        GLfloat v2[16];
-                        v2[0] = value[0];
-                        v2[1] = value[4];
-                        v2[2] = value[8];
-                        v2[3] = value[12];
-                        v2[4] = value[1];
-                        v2[5] = value[5];
-                        v2[6] = value[9];
-                        v2[7] = value[13];
-                        v2[8] = value[2];
-                        v2[9] = value[6];
-                        v2[10] = value[10];
-                        v2[11] = value[14];
-                        v2[12] = value[3];
-                        v2[13] = value[7];
-                        v2[14] = value[11];
-                        v2[15] = value[15];
-                        GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 4, v2 ); // GCM_PORT_TESTED [Cedric]
-                     }
-                     break;
-                  case CG_HALF3x3:
-                  case CG_INT3x3:
-                  case CG_BOOL3x3:
-                  case CG_FIXED3x3:
-                     // set 3 consts
-                     {
-                        GLfloat v2[12];
-                        v2[0] = value[0];v2[1] = value[3];v2[2] = value[6];v2[3] = 0;
-                        v2[4] = value[1];v2[5] = value[4];v2[6] = value[7];v2[7] = 0;
-                        v2[8] = value[2];v2[9] = value[5];v2[10] = value[8];v2[11] = 0;
-                        GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 3, v2 );
-                     }
-                     break;
-                  default:
-                     break;
+                  GLfloat v2[16];
+                  v2[0] = value[0];
+                  v2[1] = value[4];
+                  v2[2] = value[8];
+                  v2[3] = value[12];
+                  v2[4] = value[1];
+                  v2[5] = value[5];
+                  v2[6] = value[9];
+                  v2[7] = value[13];
+                  v2[8] = value[2];
+                  v2[9] = value[6];
+                  v2[10] = value[10];
+                  v2[11] = value[14];
+                  v2[12] = value[3];
+                  v2[13] = value[7];
+                  v2[14] = value[11];
+                  v2[15] = value[15];
+                  GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 4, v2 ); // GCM_PORT_TESTED [Cedric]
                }
-            }
+               break;
+            case CG_FLOAT3x3:
+            case CG_HALF3x3:
+            case CG_INT3x3:
+            case CG_BOOL3x3:
+            case CG_FIXED3x3:
+               // set 3 consts
+               {
+                  GLfloat v2[12];
+                  v2[0] = value[0];v2[1] = value[3];v2[2] = value[6];v2[3] = 0;
+                  v2[4] = value[1];v2[5] = value[4];v2[6] = value[7];v2[7] = 0;
+                  v2[8] = value[2];v2[9] = value[5];v2[10] = value[8];v2[11] = 0;
+                  GCM_FUNC( cellGcmSetVertexProgramParameterBlock, parameterResource->resource, 3, v2 );
+               }
+               break;
          }
       }
 
@@ -1896,11 +1883,14 @@ static inline void rglValidateStates (GLuint mask)
    if (RGL_LIKELY(needValidate & RGL_VALIDATE_VERTEX_CONSTANTS) || validate_vertex_consts)
    {
       _CGprogram *cgprog = LContext->BoundVertexProgram;
+      rglGcmFifo *fifo = (rglGcmFifo*)&rglGcmState_i.fifo;
+      GLuint spaceInWords = cgprog->constantPushBufferWordSize + 4 + 32;
 
       // Push a CG program onto the current command buffer
 
       // make sure there is space for the pushbuffer + any nops we need to add for alignment  
-      rglGcmFifoWaitForFreeSpace( &rglGcmState_i.fifo,  cgprog->constantPushBufferWordSize + 4 + 32); 
+      if ( fifo->current + spaceInWords + 1024 > fifo->end )
+         rglOutOfSpaceCallback( fifo, spaceInWords );
 
       // first add nops to get us the next alligned position in the fifo 
       // [YLIN] Use VMX register to copy
