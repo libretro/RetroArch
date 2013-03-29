@@ -2577,6 +2577,29 @@ static void check_overlay(void)
 }
 #endif
 
+#ifndef RARCH_CONSOLE
+static void check_grab_mouse_toggle(void)
+{
+   static bool old_pressed;
+   bool pressed = input_key_pressed_func(RARCH_GRAB_MOUSE_TOGGLE) &&
+      driver.input->grab_mouse;
+
+   static bool grab_mouse_state;
+
+   if (pressed && !old_pressed)
+   {
+      grab_mouse_state = !grab_mouse_state;
+      RARCH_LOG("Grab mouse state: %s.\n", grab_mouse_state ? "yes" : "no");
+      driver.input->grab_mouse(driver.input_data, grab_mouse_state);
+
+      if (driver.video_poke && driver.video_poke->show_mouse)
+         driver.video_poke->show_mouse(driver.video_data, !grab_mouse_state);
+   }
+
+   old_pressed = pressed;
+}
+#endif
+
 static void do_state_checks(void)
 {
    check_block_hotkey();
@@ -2590,6 +2613,10 @@ static void do_state_checks(void)
 #endif
 
    check_turbo();
+
+#ifndef RARCH_CONSOLE
+   check_grab_mouse_toggle();
+#endif
 
 #ifdef HAVE_OVERLAY
    check_overlay();

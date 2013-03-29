@@ -840,6 +840,7 @@ static const struct bind_map bind_maps[MAX_PLAYERS][RARCH_BIND_LIST_END_NULL] = 
       DECLARE_BIND(overlay_next,          RARCH_OVERLAY_NEXT),
       DECLARE_BIND(disk_eject_toggle,     RARCH_DISK_EJECT_TOGGLE),
       DECLARE_BIND(disk_next,             RARCH_DISK_NEXT),
+      DECLARE_BIND(grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE),
 #ifdef HAVE_RGUI
       DECLARE_BIND(menu_toggle,           RARCH_MENU_TOGGLE),
 #endif

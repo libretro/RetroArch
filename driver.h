@@ -107,6 +107,7 @@ enum // RetroArch specific bind IDs.
    RARCH_OVERLAY_NEXT,
    RARCH_DISK_EJECT_TOGGLE,
    RARCH_DISK_NEXT,
+   RARCH_GRAB_MOUSE_TOGGLE,
 
    RARCH_MENU_TOGGLE,
    RARCH_MENU_QUICKMENU_TOGGLE,
@@ -298,6 +299,8 @@ typedef struct input_driver
    void (*free)(void *data);
    void (*set_keybinds)(void *data, unsigned device, unsigned port, unsigned id, unsigned keybind_action);
    const char *ident;
+
+   void (*grab_mouse)(void *data, bool state);
 } input_driver_t;
 
 struct rarch_viewport;
@@ -332,6 +335,9 @@ typedef struct video_poke_interface
    void (*set_rgui_texture)(void *data, const void *frame);
 #endif
    void (*set_osd_msg)(void *data, const char *msg, void *userdata);
+
+   void (*show_mouse)(void *data, bool state);
+   void (*grab_mouse_toggle)(void *data);
 } video_poke_interface_t;
 
 typedef struct video_driver

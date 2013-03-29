@@ -37,6 +37,8 @@ typedef struct x11_input
    bool mouse_l, mouse_r, mouse_m;
    int mouse_x, mouse_y;
    int mouse_last_x, mouse_last_y;
+
+   bool grab_mouse;
 } x11_input_t;
 
 static void *x_input_init(void)
@@ -229,6 +231,20 @@ static void x_input_poll_mouse(x11_input_t *x11)
    x11->mouse_l = mask & Button1Mask; 
    x11->mouse_m = mask & Button2Mask; 
    x11->mouse_r = mask & Button3Mask; 
+
+   // Somewhat hacky, but seem to do the job.
+   if (x11->grab_mouse)
+   {
+      struct rarch_viewport vp = {0};
+      video_viewport_info_func(&vp);
+      unsigned mid_w = vp.full_width >> 1;
+      unsigned mid_h = vp.full_height >> 1;
+      XWarpPointer(x11->display, None,
+            x11->win, 0, 0, 0, 0,
+            mid_w, mid_h);
+      x11->mouse_last_x = mid_w;
+      x11->mouse_last_y = mid_h;
+   }
 }
 
 static void x_input_poll(void *data)
@@ -244,6 +260,12 @@ static void x_input_poll(void *data)
    input_joypad_poll(x11->joypad);
 }
 
+static void x_grab_mouse(void *data, bool state)
+{
+   x11_input_t *x11 = (x11_input_t*)data;
+   x11->grab_mouse = state;
+}
+
 const input_driver_t input_x = {
    x_input_init,
    x_input_poll,
@@ -251,6 +273,7 @@ const input_driver_t input_x = {
    x_bind_button_pressed,
    x_input_free,
    NULL,
-   "x"
+   "x",
+   x_grab_mouse,
 };
 

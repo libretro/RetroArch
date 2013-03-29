@@ -2369,6 +2369,13 @@ static void gl_set_osd_msg(void *data, const char *msg, void *userdata)
       gl->font_ctx->render_msg(gl, msg, params);
 }
 
+static void gl_show_mouse(void *data, bool state)
+{
+   gl_t *gl = (gl_t*)data;
+   if (gl->ctx_driver->show_mouse)
+      gl->ctx_driver->show_mouse(state);
+}
+
 static const video_poke_interface_t gl_poke_interface = {
    gl_set_blend,
    gl_set_filtering,
@@ -2382,6 +2389,8 @@ static const video_poke_interface_t gl_poke_interface = {
    gl_set_rgui_texture,
 #endif
    gl_set_osd_msg,
+
+   gl_show_mouse,
 };
 
 static void gl_get_poke_interface(void *data, const video_poke_interface_t **iface)

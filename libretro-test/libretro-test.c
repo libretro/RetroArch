@@ -94,6 +94,8 @@ void retro_set_video_refresh(retro_video_refresh_t cb)
 static unsigned x_coord;
 static unsigned y_coord;
 static unsigned phase;
+static int mouse_rel_x;
+static int mouse_rel_y;
 
 void retro_reset(void)
 {
@@ -135,6 +137,17 @@ static void update_input(void)
    if (mouse_r)
       fprintf(stderr, "Mouse R pressed.\n");
 
+   mouse_rel_x += mouse_x;
+   mouse_rel_y += mouse_y;
+   if (mouse_rel_x >= 310)
+      mouse_rel_x = 309;
+   else if (mouse_rel_x < 10)
+      mouse_rel_x = 10;
+   if (mouse_rel_y >= 230)
+      mouse_rel_y = 229;
+   else if (mouse_rel_y < 10)
+      mouse_rel_y = 10;
+
    bool pointer_pressed = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
    int16_t pointer_x = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
    int16_t pointer_y = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
@@ -165,6 +178,10 @@ static void render_checkered(void)
          line[x] = (index_y ^ index_x) ? color_r : color_g; 
       }
    }
+
+   for (unsigned y = mouse_rel_y - 5; y <= mouse_rel_y + 5; y++)
+      for (unsigned x = mouse_rel_x - 5; x <= mouse_rel_x + 5; x++)
+         frame_buf[y * 320 + x] = 0x1f;
 
    video_cb(frame_buf, 320, 240, 320 << 1);
 }
