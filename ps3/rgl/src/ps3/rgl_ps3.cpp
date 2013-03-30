@@ -1574,60 +1574,6 @@ uint32_t gmmAlloc(void *data,
 }
 
 /*============================================================
-  SURFACE COPYING
-  ============================================================ */
-void rglGcmCopySurface(
-      const void *data,
-      GLuint srcX, GLuint srcY,
-      const void *data_dst,
-      GLuint dstX, GLuint dstY,
-      GLuint width, GLuint height,
-      GLboolean writeSync )	// don't overwrite dst directly (not used yet)
-{
-   rglGcmSurface *src = (rglGcmSurface*)data;
-   rglGcmSurface *dst = (rglGcmSurface*)data_dst;
-   const GLuint srcPitch = src->pitch ? src->pitch : src->bpp * src->width;
-   const GLuint dstPitch = dst->pitch ? dst->pitch : dst->bpp * dst->width;
-
-   bool bpp_1_transferdata = src->bpp == 1 && 
-         (!(( dstX % 2 ) == 0 && ( srcX % 2 ) == 0 && ( width % 2 ) == 0 ));
-
-   if (( srcPitch >= 0x10000 ) || ( dstPitch >= 0x10000 ) || bpp_1_transferdata )
-   {
-      rglGcmTransferData( dst->dataId, dst->dataIdOffset+(dstPitch*dstY+dstX*dst->bpp), dstPitch,
-            src->dataId, src->dataIdOffset+(srcPitch*srcY+srcX*src->bpp), srcPitch,
-            width*src->bpp, height );
-      return;
-   }
-
-   switch ( src->bpp )
-   {
-      case 1:
-         dstX /= 2;
-         width /= 2;
-         srcX /= 2;
-         src->bpp = 2;
-         break;
-      case 8:
-      case 16:
-         src->bpp /= 4;
-         width *= 4;
-         srcX *= 4;
-         dstX *= 4;
-         break;
-   }
-
-   rglGcmFifoGlTransferDataVidToVid( dst->dataId, dst->dataIdOffset, dstPitch, dstX, dstY,
-         src->dataId, src->dataIdOffset, srcPitch, srcX, srcY, 
-         width, height, src->bpp );
-}
-
-/*============================================================
-  DATA TRANSFER
-  ============================================================ */
-
-
-/*============================================================
   FIFO BUFFER
   ============================================================ */
 

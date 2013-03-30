@@ -2422,11 +2422,39 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
          dst.dataId = gcmTexture->gpuAddressId;
          dst.dataIdOffset = gcmTexture->gpuAddressIdOffset;
 
-         rglGcmCopySurface(
-               &src, 0, 0,
-               &dst, 0, 0,
-               src.width, src.height,
-               GL_TRUE );	// don't bypass GPU pipeline
+         GLuint width = src.width;
+         GLuint height = src.height;
+         const GLuint srcPitch = src.pitch ? src.pitch : src.bpp * src.width;
+         const GLuint dstPitch = dst.pitch ? dst.pitch : dst.bpp * dst.width;
+
+         bool bpp_1_transferdata = src.bpp == 1 && 
+            (!(( width % 2 ) == 0 ));
+
+         if (( srcPitch >= 0x10000 ) || ( dstPitch >= 0x10000 ) || bpp_1_transferdata )
+         {
+            rglGcmTransferData( dst.dataId, dst.dataIdOffset, dstPitch,
+                  src.dataId, src.dataIdOffset, srcPitch,
+                  width * src.bpp, height );
+         }
+         else
+         {
+            switch ( src.bpp )
+            {
+               case 1:
+                  width /= 2;
+                  src.bpp = 2;
+                  break;
+               case 8:
+               case 16:
+                  src.bpp /= 4;
+                  width *= 4;
+                  break;
+            }
+
+            rglGcmFifoGlTransferDataVidToVid( dst.dataId, dst.dataIdOffset, dstPitch, 0, 0,
+                  src.dataId, src.dataIdOffset, srcPitch, 0, 0, 
+                  width, height, src.bpp );
+         }
 
          // free CPU copy of data
          rglImageFreeCPUStorage( image );

@@ -10,7 +10,3 @@ void rglGcmFifoGlSetRenderTarget (const void *args);
 void rglCreatePushBuffer (void *data);
 void rglGcmSend( unsigned int dstId, unsigned dstOffset, unsigned int pitch, const char *src, unsigned int size );
 void rglGcmFreeTiledSurface (GLuint bufferId);
-
-void rglGcmCopySurface(const void *data, GLuint srcX, GLuint srcY,
-      const void *data_dst, GLuint dstX, GLuint dstY,
-      GLuint width, GLuint height, GLboolean writeSync);
