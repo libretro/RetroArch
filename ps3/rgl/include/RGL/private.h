@@ -123,16 +123,9 @@ void rglPlatformFramebufferGetParameteriv( GLenum pname, GLint* params );
 //----------------------------------------
 // VertexArray.c
 //----------------------------------------
-void rglVertexAttrib4fNV( GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w );
 void rglVertexAttribPointerNV( GLuint index, GLint fsize, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid* pointer );
 void rglEnableVertexAttribArrayNV( GLuint index );
 void rglDisableVertexAttribArrayNV( GLuint index );
-
-//----------------------------------------
-// Platform/Init.c
-//----------------------------------------
-extern void rglPlatformInit (void *data);
-extern void rglPlatformExit (void);
 
 //----------------------------------------
 // Device/Device.c

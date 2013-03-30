@@ -295,3 +295,21 @@ static inline GLuint rglGcmGetBufferObjectOrigin (GLuint buffer)
    rglGcmBufferObject *gcmBuffer = (rglGcmBufferObject *)bufferObject->platformBufferObject;
    return gcmBuffer->bufferId;
 }
+
+static inline void rglGcmTransferData
+(
+ GLuint dstId,
+ GLuint dstIdOffset, 
+ GLint dstPitch,
+ GLuint srcId,
+ GLuint srcIdOffset,
+ GLint srcPitch,
+ GLint bytesPerRow,
+ GLint rowCount
+ )
+{
+   GLuint dstOffset = gmmIdToOffset(dstId) + dstIdOffset;
+   GLuint srcOffset = gmmIdToOffset(srcId) + srcIdOffset;
+
+   GCM_FUNC( cellGcmSetTransferData, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, dstOffset, dstPitch, srcOffset, srcPitch, bytesPerRow, rowCount );
+}

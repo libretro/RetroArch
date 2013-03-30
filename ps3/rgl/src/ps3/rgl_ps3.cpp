@@ -1576,25 +1576,6 @@ uint32_t gmmAlloc(void *data,
 /*============================================================
   SURFACE COPYING
   ============================================================ */
-
-static inline void rglGcmTransferData
-(
- GLuint dstId,
- GLuint dstIdOffset, 
- GLint dstPitch,
- GLuint srcId,
- GLuint srcIdOffset,
- GLint srcPitch,
- GLint bytesPerRow,
- GLint rowCount
- )
-{
-   GLuint dstOffset = gmmIdToOffset(dstId) + dstIdOffset;
-   GLuint srcOffset = gmmIdToOffset(srcId) + srcIdOffset;
-
-   GCM_FUNC( cellGcmSetTransferData, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, dstOffset, dstPitch, srcOffset, srcPitch, bytesPerRow, rowCount );
-}
-
 void rglGcmCopySurface(
       const void *data,
       GLuint srcX, GLuint srcY,
@@ -1913,75 +1894,6 @@ void rglGcmAllocDestroy()
    rglGcmDestroy();
 }
 
-void rglGcmMemcpy( const GLuint dstId, unsigned dstOffset, unsigned int pitch, const GLuint srcId, GLuint srcOffset, unsigned int size )
-{
-   // check alignment
-   //  Vid to vid copy requires 64-byte aligned base address (for dst pointer).
-   if ((gmmIdToOffset(dstId) % 64 ) == 0 && ( dstOffset % 2 ) == 0 && 
-         (gmmIdToOffset(srcId) % 2 ) == 0 && ( srcOffset % 2) == 0 &&
-         ( size % 2 ) == 0 && ( pitch % 64 ) == 0 )
-   {
-      // configure a 2D transfer
-      //
-      // align destination
-      {
-         pitch = pitch ? : 64; // minimum pitch
-         // target buffer isn't tiled, we just need to align on pitch
-         const GLuint dstOffsetAlign = dstOffset % pitch;
-         if ( dstOffsetAlign )
-         {
-            const GLuint firstBytes = MIN( pitch - dstOffsetAlign, size );
-
-            rglGcmFifoGlTransferDataVidToVid(
-                  dstId,
-                  0,
-                  pitch,					// dst pitch
-                  dstOffsetAlign / 2, dstOffset / pitch,		// dst x,y start
-                  srcId,
-                  srcOffset,
-                  pitch,					// src pitch
-                  0, 0,				// src x,y start
-                  firstBytes / 2, 1,		// size in pixels
-                  2 );					// pixel size in bytes
-            dstOffset += firstBytes;
-            srcOffset += firstBytes;
-            size -= firstBytes;
-         }
-      }
-
-      const GLuint fullLines = size / pitch;
-      const GLuint extraBytes = size % pitch;
-      if ( fullLines )
-         rglGcmFifoGlTransferDataVidToVid(
-               dstId,
-               0,
-               pitch,					// dst pitch
-               0, dstOffset / pitch,				// dst x,y start
-               srcId,
-               srcOffset,
-               pitch,					// src pitch
-               0, 0,				// src x,y start
-               pitch / 2, fullLines,		// size in pixels
-               2 );					// pixel size in bytes
-      if ( extraBytes )
-         rglGcmFifoGlTransferDataVidToVid(
-               dstId,
-               0,
-               pitch,					// dst pitch
-               0, fullLines + dstOffset / pitch,		// dst x,y start
-               srcId,
-               srcOffset,
-               pitch,					// src pitch
-               0, fullLines,		// src x,y start
-               extraBytes / 2, 1,		// size in pixels
-               2 );					// pixel size in bytes
-   }
-   else
-   {
-      rglGcmTransferData( dstId, dstOffset, size, srcId, 0, size, size, 1 );
-   }
-}
-
 void rglGcmSend( unsigned int dstId, unsigned dstOffset, unsigned int pitch,
       const char *src, unsigned int size )
 {
@@ -1990,7 +1902,7 @@ void rglGcmSend( unsigned int dstId, unsigned dstOffset, unsigned int pitch,
          0, size);
 
    memcpy( gmmIdToAddress(id), src, size );
-   rglGcmMemcpy( dstId, dstOffset, pitch, id, 0, size );
+   rglGcmTransferData( dstId, dstOffset, size, id, 0, size, size, 1 );
 
    gmmFree( id );
 }
@@ -2008,32 +1920,6 @@ static inline int rescIsEnabled (void *data)
          RGL_DEVICE_PARAMETERS_RESC_PAL_TEMPORAL_MODE |
          RGL_DEVICE_PARAMETERS_RESC_INTERLACE_MODE |
          RGL_DEVICE_PARAMETERS_RESC_ADJUST_ASPECT_RATIO );
-}
-
-// Platform-specific initialization for Cell processor:
-// manage allocation/free of SPUs, and optional debugging console.
-
-void rglPlatformInit (void *data)
-{
-   (void)data;
-}
-
-
-void rglPlatformExit(void)
-{
-}
-
-/*============================================================
-  PLATFORM REPORTING
-  ============================================================ */
-
-void rglInitConsole (GLuint enable)
-{
-   (void)enable;
-}
-
-void rglExitConsole(void)
-{
 }
 
 /*============================================================
@@ -2095,7 +1981,6 @@ void rglPsglPlatformInit (void *data)
             break;
       }
 
-      rglPlatformInit( options );
       rglDeviceInit( options );
       _CurrentContext = NULL;
       _CurrentDevice = NULL;
@@ -2115,7 +2000,6 @@ void rglPsglPlatformExit(void)
 
       psglMakeCurrent( NULL, NULL );
       rglDeviceExit();
-      rglPlatformExit();
 
       _CurrentContext = NULL; 
 
@@ -4822,18 +4706,6 @@ void rglDisableVertexAttribArrayNV (GLuint index)
    RGLcontext *LContext = _CurrentContext;
 
    RGLBIT_FALSE( LContext->attribs->EnabledMask, index );
-   RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
-}
-
-void rglVertexAttrib4fNV( GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w )
-{
-   RGLcontext*	LContext = _CurrentContext;
-
-   rglAttribute* attrib = LContext->attribs->attrib + index;
-   attrib->value[0] = x;
-   attrib->value[1] = y;
-   attrib->value[2] = z;
-   attrib->value[3] = w;
    RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
 }
 

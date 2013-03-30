@@ -9,7 +9,6 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords);
 void rglGcmFifoGlSetRenderTarget (const void *args);
 void rglCreatePushBuffer (void *data);
 void rglGcmSend( unsigned int dstId, unsigned dstOffset, unsigned int pitch, const char *src, unsigned int size );
-void rglGcmMemcpy( const GLuint dstId, unsigned dstOffset, unsigned int pitch, const GLuint srcId, GLuint srcOffset, unsigned int size );
 void rglGcmFreeTiledSurface (GLuint bufferId);
 
 void rglGcmCopySurface(const void *data, GLuint srcX, GLuint srcY,

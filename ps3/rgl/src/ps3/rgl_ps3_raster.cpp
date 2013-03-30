@@ -60,7 +60,14 @@ static void setAttribConstantIndex (void *data, const void* __restrict v, const 
    const CgParameterResource *parameterResource = rglGetParameterResource( program, ptr->parameterEntry );
    GLuint index = parameterResource->resource - CG_ATTR0;
    float * f = ( float* ) v;
-   rglVertexAttrib4fNV( index, f[0], f[1], f[2], f[3] );
+   RGLcontext*	LContext = _CurrentContext;
+
+   rglAttribute* attrib = LContext->attribs->attrib + index;
+   attrib->value[0] = f[0];
+   attrib->value[1] = f[1];
+   attrib->value[2] = f[2];
+   attrib->value[3] = f[3];
+   RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
 }
 
 void rglPlatformSetVertexRegister4fv (unsigned int reg, const float * __restrict v)
@@ -1220,7 +1227,7 @@ GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr 
       rglGcmBufferObject* dst = (rglGcmBufferObject*)in_dst->platformBufferObject;
       rglGcmBufferObject* src = (rglGcmBufferObject*)in_src->platformBufferObject;
 
-      rglGcmMemcpy( dst->bufferId, 0, dst->pitch, src->bufferId, 0, src->bufferSize );
+      rglGcmTransferData( dst->bufferId, 0, src->bufferSize, src->bufferId, 0, src->bufferSize, src->bufferSize, 1 );
 
       // be conservative here. Whenever we write to any Buffer Object, invalidate the vertex cache
       driver->invalidateVertexCache = GL_TRUE;
