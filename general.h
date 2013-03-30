@@ -623,6 +623,7 @@ struct global
    bool error_in_init;
    char error_string[1024];
    jmp_buf error_sjlj_context;
+   unsigned menu_toggle_behavior;
 };
 
 struct rarch_main_wrap

@@ -2881,7 +2881,7 @@ static inline bool check_enter_rgui(void)
    bool rmenu_toggle = input_key_pressed_func(RARCH_MENU_TOGGLE);
    if (rmenu_toggle && !old_rmenu_toggle)
    {
-      if (input_key_pressed_func(RARCH_MENU_QUICKMENU_TOGGLE))
+      if (g_extern.menu_toggle_behavior == 0)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
 
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);

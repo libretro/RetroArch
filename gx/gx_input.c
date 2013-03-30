@@ -686,8 +686,7 @@ static void gx_input_poll(void *data)
          (1ULL << RARCH_STATE_SLOT_MINUS) | 
          (1ULL << RARCH_REWIND) |
          (1ULL << RARCH_QUIT_KEY) |
-         (1ULL << RARCH_MENU_TOGGLE) |
-         (1ULL << RARCH_MENU_QUICKMENU_TOGGLE));
+         (1ULL << RARCH_MENU_TOGGLE));
 
    if (dpad_emulation)
    {
