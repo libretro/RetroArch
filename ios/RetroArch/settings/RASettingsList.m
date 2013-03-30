@@ -188,7 +188,9 @@ static RASettingData* custom_action(NSString* action)
                nil],
             nil]),
          group_setting(@"System Keys", [NSArray arrayWithObjects:
+            // TODO: Many of these strings will be cut off on an iPhone
             [NSArray arrayWithObjects:@"System Keys",
+               button_setting(config, @"input_enable_hotkey", @"Hotkey Enable (Always on if not set)", @""),
                button_setting(config, @"input_save_state", @"Save State", @"f2"),
                button_setting(config, @"input_load_state", @"Load State", @"f4"),
                button_setting(config, @"input_state_slot_increase", @"Next State Slot", @"f7"),
