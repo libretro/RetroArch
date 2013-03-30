@@ -2017,14 +2017,13 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    // Set up render to texture.
    gl_init_fbo(gl, gl->tex_w, gl->tex_h);
 
+#ifndef HAVE_RGL
 #ifdef HAVE_OPENGLES2
    enum retro_hw_context_type desired = RETRO_HW_CONTEXT_OPENGLES2;
 #else
    enum retro_hw_context_type desired = RETRO_HW_CONTEXT_OPENGL;
 #endif
-   (void)desired;
 
-#ifndef HAVE_RGL
    if (g_extern.system.hw_render_callback.context_type == desired
          && !gl_init_hw_render(gl, gl->tex_w, gl->tex_h))
    {
