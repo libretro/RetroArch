@@ -69,7 +69,7 @@ RenderChain::RenderChain(const video_info_t &video_info,
    pixel_size = fmt == RGB565 ? 2 : 4;
    create_first_pass(info, fmt);
    log_info(info);
-   compile_shaders(fStock,vStock,"");
+   compile_shaders(fStock, vStock, "");
 }
 
 void RenderChain::clear()
