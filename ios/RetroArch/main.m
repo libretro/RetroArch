@@ -15,17 +15,31 @@
 
 #import <UIKit/UIKit.h>
 #include "input/ios_input.h"
+#include "input/keycode.h"
+#include "libretro.h"
 
 #define GSEVENT_TYPE_KEYDOWN 10
 #define GSEVENT_TYPE_KEYUP 11
-#define GSEVENT_MOD_SHIFT = (1 << 17)
-#define GSEVENT_MOD_CTRL = (1 << 18)
-#define GSEVENT_MOD_ALT = (1 << 19)
-#define GSEVENT_MOD_CMD = (1 << 20)
+#define GSEVENT_TYPE_MODS 12
+#define GSEVENT_MOD_CMD (1 << 16)
+#define GSEVENT_MOD_SHIFT (1 << 17)
+#define GSEVENT_MOD_ALT (1 << 19)
+#define GSEVENT_MOD_CTRL (1 << 20)
 
 uint32_t ios_key_list[MAX_KEYS];
 uint32_t ios_touch_count;
 touch_data_t ios_touch_list[MAX_TOUCHES];
+
+// Input helpers
+static uint32_t translate_mods(uint32_t flags)
+{
+   uint32_t result = 0;
+   if (flags & GSEVENT_MOD_ALT)   result |= RETROKMOD_ALT;
+   if (flags & GSEVENT_MOD_CMD)   result |= RETROKMOD_META;
+   if (flags & GSEVENT_MOD_SHIFT) result |= RETROKMOD_SHIFT;
+   if (flags & GSEVENT_MOD_CTRL)  result |= RETROKMOD_CTRL;
+   return result;
+}
 
 @interface RApplication : UIApplication
 @end
@@ -61,8 +75,6 @@ touch_data_t ios_touch_list[MAX_TOUCHES];
    {
       uint8_t* eventMem = (uint8_t*)(void*)CFBridgingRetain([event performSelector:@selector(_gsEvent)]);
       int eventType = eventMem ? *(int*)&eventMem[8] : 0;
-    
-      printf("%d\n", eventType);
       
       if (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP)
       {
@@ -71,10 +83,50 @@ touch_data_t ios_touch_list[MAX_TOUCHES];
          if (data[0] < MAX_KEYS)
             ios_key_list[data[0]] = (eventType == GSEVENT_TYPE_KEYDOWN) ? 1 : 0;
 
-         // HACK: These line up for now
-         const uint32_t mods = (*(uint32_t*)&eventMem[0x30] >> 17) & 0xF;
-         ios_add_key_event(eventType == GSEVENT_TYPE_KEYDOWN, data[0], data[1], mods);
+         // Key events
+         ios_add_key_event(eventType == GSEVENT_TYPE_KEYDOWN, data[0], data[1], translate_mods(*(uint32_t*)&eventMem[0x30]));
          // printf("%d %d %d %08X\n", data[0], data[1], data[2], *(uint32_t*)&eventMem[0x30]);
+      }
+      else if(eventType == GSEVENT_TYPE_MODS)
+      {
+         static const struct
+         {
+            unsigned key;
+            unsigned retrokey;
+            uint32_t hidid;
+         }  modmap[] =
+         {
+            { 0x37, RETROK_LMETA, KEY_LeftGUI },
+            { 0x36, RETROK_RMETA, KEY_RightGUI },
+            { 0x38, RETROK_LSHIFT, KEY_LeftShift },
+            { 0x3C, RETROK_RSHIFT, KEY_RightShift },
+            { 0x3A, RETROK_LALT, KEY_LeftAlt },
+            { 0x3D, RETROK_RALT, KEY_RightAlt },
+            { 0x3B, RETROK_LCTRL, KEY_LeftControl },
+            { 0x3E, RETROK_RCTRL, KEY_RightControl },
+//          { 0x39, RETROK_CAPSLOCK, 0 },
+            { 0, RETROK_UNKNOWN, 0}
+         };
+         
+         // TODO: Not sure how to add this.
+         //       The key value indicates the key that was pressed or released.
+         //       The flags indicates the current modifier state.
+         //       There is no way to determine if this is a keydown or a keyup event,
+         //       except to look at the flags, but the bits in flags are shared between
+         //       the left and right versions of a given key pair.
+         //       The current method assumes that all key up and down events are processed,
+         //       otherwise it may become confused.
+         const uint32_t key = *(uint32_t*)&eventMem[0x3C];
+         
+         for (int i = 0; i < 8; i ++)
+         {
+            if (key == modmap[i].key)
+            {
+               const uint32_t keyid = modmap[i].hidid;
+               ios_add_key_event(ios_key_list[keyid] ? false : true, modmap[i].retrokey, 0, translate_mods(*(uint32_t*)&eventMem[0x30]));
+               ios_key_list[keyid] = ios_key_list[keyid] ? 0 : 1;
+            }
+         }
       }
 
       CFBridgingRelease(eventMem);
