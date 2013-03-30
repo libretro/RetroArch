@@ -4260,7 +4260,6 @@ rglTexture *rglAllocateTexture(void)
    texture->magFilter = GL_LINEAR;
    texture->minLod = -1000.f;
    texture->maxLod = 1000.f;
-   texture->baseLevel = 0;
    texture->maxLevel = 1000;
    texture->wrapS = GL_REPEAT;
    texture->wrapT = GL_REPEAT;
@@ -4305,12 +4304,12 @@ GLboolean rglTextureIsValid (const void *data)
 {
    const rglTexture *texture = (const rglTexture*)data;
 
-   if (texture->imageCount < 1 + texture->baseLevel)
+   if (texture->imageCount < 1)
       return GL_FALSE;
    if ( !texture->image )
       return GL_FALSE;
 
-   const rglImage* image = texture->image + texture->baseLevel;
+   const rglImage* image = texture->image;
 
    GLenum format = image->format;
    GLenum type = image->type;

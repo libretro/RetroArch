@@ -140,7 +140,6 @@ extern "C" {
       GLuint magFilter;
       GLfloat minLod;
       GLfloat maxLod;
-      GLuint baseLevel;
       GLuint maxLevel;
       GLuint wrapS;
       GLuint wrapT;

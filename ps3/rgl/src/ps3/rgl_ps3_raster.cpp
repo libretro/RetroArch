@@ -2263,7 +2263,7 @@ static void rglPlatformValidateTextureResources (void *data)
          rglGcmTextureLayout newLayout;
 
          // get layout and size compatible with this pool
-         rglImage *image = texture->image + texture->baseLevel;
+         rglImage *image = texture->image;
 
          newLayout.levels = 1;
          newLayout.faces = 1;
@@ -2407,7 +2407,7 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
    // -----------------------------------------------------------------------
    // set the SET_TEXTURE_CONTROL0 params
    platformTexture->gcmMethods.control0.maxAniso = CELL_GCM_TEXTURE_MAX_ANISO_1;
-   const GLfloat minLOD = MAX( texture->minLod, texture->baseLevel );
+   const GLfloat minLOD = MAX( texture->minLod, 0);
    const GLfloat maxLOD = MIN( texture->maxLod, texture->maxLevel );
    platformTexture->gcmMethods.control0.minLOD = ( GLuint )( MAX( minLOD, 0 ) * 256.0f );
    platformTexture->gcmMethods.control0.maxLOD = ( GLuint )( MIN( maxLOD, layout->levels ) * 256.0f );
@@ -2768,14 +2768,23 @@ GLenum rglPlatformChooseInternalStorage (void *data, GLenum internalFormat )
    return GL_NO_ERROR;
 }
 
-static inline void rglSetImageTexRef(void *data, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment)
+GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
+      GLuint baseWidth, GLuint baseHeight, GLuint baseDepth, GLenum internalFormat, GLuint pitch, GLintptr offset )
 {
-   rglImage *image = (rglImage*)data;
+   RGLcontext*	LContext = _CurrentContext;
+   rglImage *image;
 
-   image->width = width;
-   image->height = height;
-   image->depth = depth;
-   image->alignment = alignment;
+   rglTexture *texture = rglGetCurrentTexture( LContext->CurrentImageUnit, target );
+   rglBufferObject *bufferObject = 
+      (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
+   rglReallocateImages( texture, 0, MAX( baseWidth, MAX( baseHeight, baseDepth ) ) );
+
+   image = texture->image;
+
+   image->width = baseWidth;
+   image->height = baseHeight;
+   image->depth = baseDepth;
+   image->alignment = LContext->unpackAlignment;
 
    image->xblk = 0;
    image->yblk = 0;
@@ -2801,20 +2810,6 @@ static inline void rglSetImageTexRef(void *data, GLint internalFormat, GLsizei w
    image->zstride = image->height * image->ystride;
 
    image->dataState = RGL_IMAGE_DATASTATE_UNSET;
-}
-
-GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
-      GLuint baseWidth, GLuint baseHeight, GLuint baseDepth, GLenum internalFormat, GLuint pitch, GLintptr offset )
-{
-   RGLcontext*	LContext = _CurrentContext;
-
-   rglTexture *texture = rglGetCurrentTexture( LContext->CurrentImageUnit, target );
-   rglBufferObject *bufferObject = 
-      (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->TextureBuffer];
-   rglReallocateImages( texture, 0, MAX( baseWidth, MAX( baseHeight, baseDepth ) ) );
-
-   rglSetImageTexRef(texture->image, internalFormat, baseWidth, baseHeight,
-         baseDepth, LContext->unpackAlignment);
 
    texture->maxLevel = 0;
    texture->usage = GL_TEXTURE_LINEAR_GPU_SCE;
@@ -2826,7 +2821,6 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
    // XXX check pitch restrictions ?
 
    rglGcmTextureLayout newLayout;
-   rglImage *image = texture->image + texture->baseLevel;
 
    newLayout.levels = 1;
    newLayout.faces = 1;
@@ -2865,16 +2859,17 @@ GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels,
    LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
 }
 
-// GlSetRenderTarget implementation starts here
-
-// Render target rt's color and depth buffer parameters are updated with args
-// Fifo functions are called as required
-void static inline rglGcmSetColorDepthBuffers(void *data, const void *data_args)
+// Set current render target to args
+void rglGcmFifoGlSetRenderTarget (const void *data)
 {
-   rglGcmRenderTarget *rt = (rglGcmRenderTarget*)data;
-   CellGcmSurface *grt = &rt->gcmRenderTarget;
-   const rglGcmRenderTargetEx* args = (const rglGcmRenderTargetEx*)data_args;
+   rglGcmRenderTarget *rt = &rglGcmState_i.renderTarget;
+   CellGcmSurface *grt = &rglGcmState_i.renderTarget.gcmRenderTarget;
+   const rglGcmRenderTargetEx *args = (const rglGcmRenderTargetEx*)data;
 
+   // GlSetRenderTarget implementation starts here
+
+   // Render target rt's color and depth buffer parameters are updated with args
+   // Fifo functions are called as required
    rt->colorBufferCount = args->colorBufferCount;
 
    // remember rt for swap and clip related functions
@@ -2941,15 +2936,8 @@ void static inline rglGcmSetColorDepthBuffers(void *data, const void *data_args)
       rglGcmViewportState *v = &rglGcmState_i.state.viewport;
       rglGcmFifoGlViewport(v, 0.0f, 1.0f);
    }
-}
 
-// Update rt's color and depth format with args
-static inline void rglGcmSetColorDepthFormats (void *data, const void *data_args)
-{
-   rglGcmRenderTarget *rt = (rglGcmRenderTarget*)data;
-   CellGcmSurface *   grt = &rt->gcmRenderTarget;
-   const rglGcmRenderTargetEx *args = (const rglGcmRenderTargetEx*)data_args;
-
+   // Update rt's color and depth format with args
    // set the color format
    switch ( args->colorFormat )
    {
@@ -2972,17 +2960,6 @@ static inline void rglGcmSetColorDepthFormats (void *data, const void *data_args
    grt->depthLocation = CELL_GCM_LOCATION_LOCAL;
    grt->depthOffset = 0;
    grt->depthPitch = 64;
-}
-
-// Set current render target to args
-void rglGcmFifoGlSetRenderTarget (const void *data)
-{
-   rglGcmRenderTarget *rt = &rglGcmState_i.renderTarget;
-   CellGcmSurface *grt = &rglGcmState_i.renderTarget.gcmRenderTarget;
-   const rglGcmRenderTargetEx *args = (const rglGcmRenderTargetEx*)data;
-
-   rglGcmSetColorDepthBuffers( rt, args );
-   rglGcmSetColorDepthFormats( rt, args );
 
    // Update rt's AA and Swizzling parameters with args
 
