@@ -333,6 +333,8 @@ enum retro_mod
    RETROKMOD_DUMMY = INT_MAX // Ensure sizeof(enum) == sizeof(int)
 };
 
+// If set, this call is not part of the public libretro API yet. It can change or be removed at any time.
+#define RETRO_ENVIRONMENT_EXPERIMENTAL 0x10000
 
 // Environment commands.
 #define RETRO_ENVIRONMENT_SET_ROTATION  1  // const unsigned * --
@@ -421,7 +423,7 @@ enum retro_mod
                                            // Sets an interface which frontend can use to eject and insert disk images.
                                            // This is used for games which consist of multiple images and must be manually
                                            // swapped out by the user (e.g. PSX).
-#define RETRO_ENVIRONMENT_SET_HW_RENDER 0x10000
+#define RETRO_ENVIRONMENT_SET_HW_RENDER    (14 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            // struct retro_hw_render_callback * --
                                            // NOTE: This call is currently very experimental, and should not be considered part of the public API.
                                            // The interface could be changed or removed at any time.
