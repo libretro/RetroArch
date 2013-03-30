@@ -43,22 +43,11 @@ void rglSetVBlankHandler(void (*handler)(const GLuint head), RGLdevice *device);
 //----------------------------------------
 // Texture.c
 //----------------------------------------
-rglTexture *rglAllocateTexture (void);
-void rglFreeTexture (void *data);
 extern int	rglTextureInit( RGLcontext* context, GLuint name );
 extern void	rglTextureDelete( RGLcontext* context, GLuint name );
 extern GLboolean rglTextureHasValidLevels( const rglTexture *texture, int levels, int width, int height, int depth, GLenum format, GLenum type, GLenum internalFormat );
-extern GLboolean rglTextureIsValid( const rglTexture* texture );
-GLenum rglGetEnabledTextureMode (const void *data);
 extern rglTexture *rglGetCurrentTexture (const void *data, GLenum target);
-RGL_EXPORT void rglUpdateCurrentTextureCache (void *data);
 void rglReallocateImages (void *data, GLint level, GLsizei dimension);
-extern int rglGetImage( GLenum target, GLint level, rglTexture **texture, rglImage **image, GLsizei reallocateSize );
-
-static inline rglTexture* rglGetTexture (RGLcontext *LContext, GLuint name)
-{
-   return ( rglTexture* )LContext->textureNameSpace.data[name];
-}
 
 static inline rglTexture* rglGetTextureSafe (RGLcontext *LContext, GLuint name)
 {

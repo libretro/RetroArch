@@ -4312,7 +4312,8 @@ CGGL_API void cgGLEnableProfile( CGprofile profile )
                for ( GLuint i = 0; i < current->samplerCount; ++i )
                {
                   int unit = current->samplerUnits[i];
-                  rglUpdateCurrentTextureCache( &_CurrentContext->TextureImageUnits[unit] );
+                  rglTextureImageUnit *unit_ptr = (rglTextureImageUnit*)&_CurrentContext->TextureImageUnits[unit];
+                  unit_ptr->currentTexture = rglGetCurrentTexture( unit_ptr, unit_ptr->fragmentTarget );
                }
             }
             LContext->needValidate |= PSGL_VALIDATE_FRAGMENT_PROGRAM | PSGL_VALIDATE_TEXTURES_USED;
@@ -4428,7 +4429,8 @@ CGGL_API void cgGLBindProgram( CGprogram program )
             // find out which texture unit this parameter has been assigned to
             unsigned int unit = parameter->resource - CG_TEXUNIT0;
             _CurrentContext->TextureImageUnits[unit].fragmentTarget = rtParameter->glType;
-            rglUpdateCurrentTextureCache( &_CurrentContext->TextureImageUnits[unit] );
+            rglTextureImageUnit *unit_ptr = (rglTextureImageUnit*)&_CurrentContext->TextureImageUnits[unit];
+            unit_ptr->currentTexture = rglGetCurrentTexture( unit_ptr, unit_ptr->fragmentTarget );
          }
          break;
 

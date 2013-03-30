@@ -3741,7 +3741,7 @@ GLAPI void APIENTRY glFramebufferTexture2DOES( GLenum target, GLenum attachment,
    if (texture)
    {
       attach->type = RGL_FRAMEBUFFER_ATTACHMENT_TEXTURE;
-      textureObject = rglGetTexture( LContext, texture );
+      textureObject = (rglTexture*)LContext->textureNameSpace.data[texture];
       textureObject->framebuffers.pushBack( framebuffer );
    }
    else
@@ -4228,6 +4228,56 @@ static void rglResetContext (void *data)
    LContext->VSync = GL_FALSE;
 }
 
+static rglTexture *rglAllocateTexture(void)
+{
+   GLuint size = sizeof(rglTexture) + sizeof(rglGcmTexture);
+   rglTexture *texture = (rglTexture*)malloc(size);
+   memset( texture, 0, size );
+   texture->target = 0;
+   texture->minFilter = GL_NEAREST_MIPMAP_LINEAR;
+   texture->magFilter = GL_LINEAR;
+   texture->minLod = -1000.f;
+   texture->maxLod = 1000.f;
+   texture->maxLevel = 1000;
+   texture->wrapS = GL_REPEAT;
+   texture->wrapT = GL_REPEAT;
+   texture->wrapR = GL_REPEAT;
+   texture->lodBias = 0.f;
+   texture->maxAnisotropy = 1.f;
+   texture->compareMode = GL_NONE;
+   texture->compareFunc = GL_LEQUAL;
+   texture->gammaRemap = 0;
+   texture->vertexEnable = GL_FALSE;
+   texture->usage = 0;
+   texture->isRenderTarget = GL_FALSE;
+   texture->image = NULL;
+   texture->isComplete = GL_FALSE;
+   texture->imageCount = 0;
+   texture->revalidate = 0;
+   texture->referenceBuffer = NULL;
+   new( &texture->framebuffers ) RGL::Vector<rglFramebuffer *>();
+   rglPlatformCreateTexture( texture );
+   return texture;
+}
+
+static void rglFreeTexture (void *data)
+{
+   rglTexture *texture = (rglTexture*)data;
+   rglTextureTouchFBOs(texture);
+   texture->framebuffers.~Vector<rglFramebuffer *>();
+
+   if ( texture->image )
+   {
+      rglImage *image = texture->image;
+      rglImageFreeCPUStorage( image );
+      free( texture->image );
+   }
+   if ( texture->referenceBuffer )
+      texture->referenceBuffer->textureReferences.removeElement( texture );
+   rglPlatformDestroyTexture( texture );
+   free( texture );
+}
+
 RGLcontext* psglCreateContext(void)
 {
    RGLcontext* LContext = (RGLcontext*)malloc(sizeof(RGLcontext));
@@ -4335,7 +4385,8 @@ GLAPI void APIENTRY glEnable( GLenum cap )
    {
       case GL_TEXTURE_2D:
          LContext->CurrentImageUnit->enable2D = GL_TRUE;
-         rglUpdateCurrentTextureCache( LContext->CurrentImageUnit );
+         LContext->CurrentImageUnit->currentTexture = rglGetCurrentTexture( LContext->CurrentImageUnit,
+               LContext->CurrentImageUnit->fragmentTarget );
          LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
          break;
       case GL_SHADER_SRGB_REMAP_SCE:
@@ -4366,7 +4417,8 @@ GLAPI void APIENTRY glDisable( GLenum cap )
    {
       case GL_TEXTURE_2D:
          LContext->CurrentImageUnit->enable2D = GL_FALSE;
-         rglUpdateCurrentTextureCache( LContext->CurrentImageUnit );
+         LContext->CurrentImageUnit->currentTexture = rglGetCurrentTexture( LContext->CurrentImageUnit,
+               LContext->CurrentImageUnit->fragmentTarget );
          LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
          break;
       case GL_SHADER_SRGB_REMAP_SCE:
@@ -4477,84 +4529,6 @@ GLAPI void APIENTRY glViewport( GLint x, GLint y, GLsizei width, GLsizei height 
   TEXTURES (INTERNAL)
   ============================================================ */
 
-rglTexture *rglAllocateTexture(void)
-{
-   GLuint size = sizeof(rglTexture) + sizeof(rglGcmTexture);
-   rglTexture *texture = (rglTexture*)malloc(size);
-   memset( texture, 0, size );
-   texture->target = 0;
-   texture->minFilter = GL_NEAREST_MIPMAP_LINEAR;
-   texture->magFilter = GL_LINEAR;
-   texture->minLod = -1000.f;
-   texture->maxLod = 1000.f;
-   texture->maxLevel = 1000;
-   texture->wrapS = GL_REPEAT;
-   texture->wrapT = GL_REPEAT;
-   texture->wrapR = GL_REPEAT;
-   texture->lodBias = 0.f;
-   texture->maxAnisotropy = 1.f;
-   texture->compareMode = GL_NONE;
-   texture->compareFunc = GL_LEQUAL;
-   texture->gammaRemap = 0;
-   texture->vertexEnable = GL_FALSE;
-   texture->usage = 0;
-   texture->isRenderTarget = GL_FALSE;
-   texture->image = NULL;
-   texture->isComplete = GL_FALSE;
-   texture->imageCount = 0;
-   texture->revalidate = 0;
-   texture->referenceBuffer = NULL;
-   new( &texture->framebuffers ) RGL::Vector<rglFramebuffer *>();
-   rglPlatformCreateTexture( texture );
-   return texture;
-}
-
-void rglFreeTexture (void *data)
-{
-   rglTexture *texture = (rglTexture*)data;
-   rglTextureTouchFBOs(texture);
-   texture->framebuffers.~Vector<rglFramebuffer *>();
-
-   if ( texture->image )
-   {
-      rglImage *image = texture->image;
-      rglImageFreeCPUStorage( image );
-      free( texture->image );
-   }
-   if ( texture->referenceBuffer )
-      texture->referenceBuffer->textureReferences.removeElement( texture );
-   rglPlatformDestroyTexture( texture );
-   free( texture );
-}
-
-GLboolean rglTextureIsValid (const void *data)
-{
-   const rglTexture *texture = (const rglTexture*)data;
-
-   if (texture->imageCount < 1)
-      return GL_FALSE;
-   if ( !texture->image )
-      return GL_FALSE;
-
-   const rglImage* image = texture->image;
-
-   GLenum format = image->format;
-   GLenum type = image->type;
-   GLenum internalFormat = image->internalFormat;
-
-   if (( texture->vertexEnable ) && ( internalFormat != GL_FLOAT_RGBA32 )
-         && ( internalFormat != GL_RGBA32F_ARB ))
-      return GL_FALSE;
-   if (( internalFormat == 0 ) || ( format == 0 ) || ( type == 0 ) )
-      return GL_FALSE;
-
-   // don't need more than max level
-   if ( texture->imageCount < 1 )
-      return GL_FALSE;
-
-   return GL_TRUE;
-}
-
 // Reallocate images held by a texture
 void rglReallocateImages (void *data, GLint level, GLsizei dimension )
 {
@@ -4574,63 +4548,25 @@ void rglReallocateImages (void *data, GLint level, GLsizei dimension )
    texture->imageCount = n;
 }
 
-// Get an enabled texture mode of a texture image unit
-GLenum rglGetEnabledTextureMode (const void *data)
-{
-   const rglTextureImageUnit *unit = (const rglTextureImageUnit*)data;
-   // here, if fragment program is enabled and a valid program is set, get the enabled
-   // units from the program instead of the texture units.
-   if ( _CurrentContext->BoundFragmentProgram != NULL && _CurrentContext->FragmentProgram != GL_FALSE)
-      return unit->fragmentTarget;
-   else if ( unit->enable2D )
-      return GL_TEXTURE_2D;
-
-   return 0;
-}
-
 rglTexture *rglGetCurrentTexture (const void *data, GLenum target)
 {
    const rglTextureImageUnit *unit = (const rglTextureImageUnit*)data;
    RGLcontext*	LContext = _CurrentContext;
-   GLuint name = 0;
-   rglTexture *defaultTexture = NULL;
-   switch ( target )
-   {
-      case GL_TEXTURE_2D:
-         name = unit->bound2D;
-         defaultTexture = unit->default2D;
-         break;
-      default:
-         return NULL;
-   }
+   GLuint name = unit->bound2D;
+   rglTexture *defaultTexture = unit->default2D;
+
    if (name)
       return ( rglTexture * )LContext->textureNameSpace.data[name];
    else
       return defaultTexture;
 }
 
-void rglUpdateCurrentTextureCache (void *data)
-{
-   rglTextureImageUnit *unit = (rglTextureImageUnit*)data;
-   GLenum target = rglGetEnabledTextureMode( unit );
-   unit->currentTexture = rglGetCurrentTexture( unit, target );
-}
-
-int rglGetImage( GLenum target, GLint level, rglTexture **texture, rglImage **image, GLsizei reallocateSize )
+static void rglGetImage( GLenum target, GLint level, rglTexture **texture, rglImage **image, GLsizei reallocateSize )
 {
    RGLcontext*	LContext = _CurrentContext;
    rglTextureImageUnit *unit = LContext->CurrentImageUnit;
 
-   GLenum expectedTarget = 0;
-   switch ( target )
-   {
-      case GL_TEXTURE_2D:
-         expectedTarget = GL_TEXTURE_2D;
-         break;
-      default:
-         rglSetError( GL_INVALID_ENUM );
-         return -1;
-   }
+   GLenum expectedTarget = GL_TEXTURE_2D;
 
    rglTexture *tex = rglGetCurrentTexture( unit, expectedTarget );
 
@@ -4639,7 +4575,6 @@ int rglGetImage( GLenum target, GLint level, rglTexture **texture, rglImage **im
 
    *image = tex->image + level;
    *texture = tex;
-   return 0;
 }
 
 void rglBindTextureInternal (void *data, GLuint name, GLenum target )
@@ -4658,8 +4593,8 @@ void rglBindTextureInternal (void *data, GLuint name, GLenum target )
    }
 
    unit->bound2D = name;
+   unit->currentTexture = rglGetCurrentTexture( unit, unit->fragmentTarget );
 
-   rglUpdateCurrentTextureCache( unit );
    LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
 }
 
@@ -4695,7 +4630,7 @@ GLAPI void APIENTRY glDeleteTextures( GLsizei n, const GLuint *textures )
             }
             if ( dirty )
             {
-               rglUpdateCurrentTextureCache( tu );
+               tu->currentTexture = rglGetCurrentTexture( tu, tu->fragmentTarget );
                LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
             }
          }
@@ -4778,8 +4713,7 @@ GLAPI void APIENTRY glTexImage2D( GLenum target, GLint level, GLint internalForm
 
    rglTexture *texture;
    rglImage *image;
-   if (rglGetImage(target, level, &texture, &image, MAX(width, height)))
-      return;
+   rglGetImage(target, level, &texture, &image, MAX(width, height));
 
    image->dataState = RGL_IMAGE_DATASTATE_UNSET;
 
