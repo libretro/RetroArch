@@ -88,7 +88,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_ZLIB;WANT_MINIZ;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_SINC;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_FBO;HAVE_ZLIB;WANT_MINIZ;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_SINC;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\;$(CG_INC_PATH);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -108,7 +108,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_ZLIB;WANT_MINIZ;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_SINC;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_FBO;HAVE_ZLIB;WANT_MINIZ;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_SINC;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\;$(CG_INC_PATH);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -130,7 +130,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_ZLIB;WANT_MINIZ;HAVE_SINC;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_FBO;HAVE_ZLIB;WANT_MINIZ;HAVE_SINC;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\;$(CG_INC_PATH);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -154,7 +154,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_SINC;HAVE_ZLIB;WANT_MINIZ;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_FBO;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_SINC;HAVE_ZLIB;WANT_MINIZ;PACKAGE_VERSION="0.9.8";_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\;$(CG_INC_PATH);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>

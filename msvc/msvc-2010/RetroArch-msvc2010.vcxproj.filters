@@ -219,6 +219,9 @@
     <ClCompile Include="..\..\input\overlay.c">
       <Filter>Source Files\input</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\frontend\frontend.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
