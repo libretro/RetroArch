@@ -177,10 +177,7 @@ GLboolean rglPlatformNeedsConversion (const rglAttributeState* as, GLuint index)
 //   and since we will load them right after enter this function, there are LHS.
 GLboolean rglPlatformRequiresSlowPath (void *data, const GLenum indexType, uint32_t indexCount);
 void rglPlatformRasterGetIntegerv( GLenum pname, GLint* params );
-void	rglValidateClipPlanes (void);
 void	rglInvalidateAttributes (void);
-GLuint	rglValidateAttributes (const void* indices, GLboolean *isMain);
-GLuint	rglValidateAttributesSlow (void *data, GLboolean *isMain);
 
 //----------------------------------------
 // Raster/.../PlatformTexture.c
