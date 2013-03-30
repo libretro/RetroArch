@@ -1584,12 +1584,15 @@ void rglGcmCopySurface(
       GLuint width, GLuint height,
       GLboolean writeSync )	// don't overwrite dst directly (not used yet)
 {
-   const rglGcmSurface *src = (const rglGcmSurface*)data;
-   const rglGcmSurface *dst = (const rglGcmSurface*)data_dst;
+   rglGcmSurface *src = (rglGcmSurface*)data;
+   rglGcmSurface *dst = (rglGcmSurface*)data_dst;
    const GLuint srcPitch = src->pitch ? src->pitch : src->bpp * src->width;
    const GLuint dstPitch = dst->pitch ? dst->pitch : dst->bpp * dst->width;
 
-   if (( srcPitch >= 0x10000 ) || ( dstPitch >= 0x10000 ) )
+   bool bpp_1_transferdata = src->bpp == 1 && 
+         (!(( dstX % 2 ) == 0 && ( srcX % 2 ) == 0 && ( width % 2 ) == 0 ));
+
+   if (( srcPitch >= 0x10000 ) || ( dstPitch >= 0x10000 ) || bpp_1_transferdata )
    {
       rglGcmTransferData( dst->dataId, dst->dataIdOffset+(dstPitch*dstY+dstX*dst->bpp), dstPitch,
             src->dataId, src->dataIdOffset+(srcPitch*srcY+srcX*src->bpp), srcPitch,
@@ -1600,33 +1603,23 @@ void rglGcmCopySurface(
    switch ( src->bpp )
    {
       case 1:
-         if (( dstX % 2 ) == 0 && ( srcX % 2 ) == 0 && ( width % 2 ) == 0 )
-         {
-            rglGcmFifoGlTransferDataVidToVid(
-                  dst->dataId, dst->dataIdOffset, dstPitch, dstX / 2, dstY, 
-                  src->dataId, src->dataIdOffset, srcPitch, srcX / 2, srcY, 
-                  width / 2, height, 2 );
-         }
-         else
-         {
-            rglGcmTransferData( dst->dataId, dst->dataIdOffset+(dstPitch*dstY+dstX*dst->bpp), dstPitch,
-                  src->dataId, src->dataIdOffset+(srcPitch*srcY+srcX*src->bpp), srcPitch,
-                  width*src->bpp, height );
-         }
-         break;
-      case 2:
-      case 4:
-         rglGcmFifoGlTransferDataVidToVid( dst->dataId, dst->dataIdOffset, dstPitch, dstX, dstY,
-               src->dataId, src->dataIdOffset, srcPitch, srcX, srcY, 
-               width, height, src->bpp );
+         dstX /= 2;
+         width /= 2;
+         srcX /= 2;
+         src->bpp = 2;
          break;
       case 8:
       case 16:
-         rglGcmFifoGlTransferDataVidToVid( dst->dataId, dst->dataIdOffset, dstPitch, dstX*4, dstY,
-               src->dataId, src->dataIdOffset, srcPitch, srcX*4, srcY, 
-               width*4, height, src->bpp / 4 );
+         src->bpp /= 4;
+         width *= 4;
+         srcX *= 4;
+         dstX *= 4;
          break;
    }
+
+   rglGcmFifoGlTransferDataVidToVid( dst->dataId, dst->dataIdOffset, dstPitch, dstX, dstY,
+         src->dataId, src->dataIdOffset, srcPitch, srcX, srcY, 
+         width, height, src->bpp );
 }
 
 /*============================================================
