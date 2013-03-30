@@ -47,6 +47,19 @@ enum {
    MENU_XUI_ITEM_QUIT_RARCH,
 };
 
+enum
+{
+   S_LBL_ASPECT_RATIO = 0,
+   S_LBL_SHADER,
+   S_LBL_SHADER_2,
+   S_LBL_RARCH_VERSION,
+   S_LBL_SCALE_FACTOR,
+   S_LBL_ROTATION,
+   S_LBL_LOAD_STATE_SLOT,
+   S_LBL_SAVE_STATE_SLOT,
+   S_LBL_REWIND_GRANULARITY,
+};
+
 class CRetroArch : public CXuiModule
 {
    public:
@@ -279,9 +292,7 @@ static void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned se
          snprintf(str, size, "Shader #2: %s", g_settings.video.second_pass_shader);
          break;
       case S_LBL_RARCH_VERSION:
-#if !defined(__BLACKBERRY_QNX__) && !defined(IOS)
          snprintf(str, size, "RetroArch %s", PACKAGE_VERSION);
-#endif
          break;
       case S_LBL_SCALE_FACTOR:
          snprintf(str, size, "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
@@ -1314,7 +1325,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.cg_shader_path, RARCH_SHADER_INDEX_PASS0);
                   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     msg_queue_push(G_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
+                     msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
                   XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
                }
                else
@@ -1329,7 +1340,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.second_pass_shader, RARCH_SHADER_INDEX_PASS1);
                   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     msg_queue_push(G_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
+                     msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
                }
                else
                   RARCH_ERR("Shaders are unsupported on this platform.\n");
