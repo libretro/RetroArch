@@ -141,10 +141,18 @@ static void take_screenshot(void)
 
    bool ret = false;
 
-   if (g_settings.video.gpu_screenshot && driver.video->read_viewport && driver.video->viewport_info)
-      ret = take_screenshot_viewport();
-   else if (g_extern.frame_cache.data)
-      ret = take_screenshot_raw();
+   if (g_extern.frame_cache.data)
+   {
+      if ((g_settings.video.gpu_screenshot ||
+               (g_extern.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID)) &&
+            driver.video->read_viewport &&
+            driver.video->viewport_info)
+         ret = take_screenshot_viewport();
+      else if (g_extern.frame_cache.data && (g_extern.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID))
+         ret = take_screenshot_raw();
+      else
+         RARCH_ERR("Cannot take screenshot. GPU rendering is used and read_viewport is not supported.\n");
+   }
 
    const char *msg = NULL;
    if (ret)
@@ -329,10 +337,14 @@ void rarch_render_cached_frame(void)
    g_extern.recording = false;
 #endif
 
+   const void *frame = g_extern.frame_cache.data;
+   if (frame == RETRO_HW_FRAME_BUFFER_VALID)
+      frame = NULL; // Dupe
+
    // Not 100% safe, since the library might have
    // freed the memory, but no known implementations do this :D
    // It would be really stupid at any rate ...
-   video_frame(g_extern.frame_cache.data,
+   video_frame(frame,
          g_extern.frame_cache.width,
          g_extern.frame_cache.height,
          g_extern.frame_cache.pitch);
@@ -1290,6 +1302,12 @@ static void init_recording(void)
 {
    if (!g_extern.recording)
       return;
+
+   if (!g_settings.video.gpu_record && g_extern.system.hw_render_callback.context_type)
+   {
+      RARCH_WARN("Libretro core is hardware rendered. Must use post-shaded FFmpeg recording as well.\n");
+      return;
+   }
 
    double fps = g_extern.system.av_info.timing.fps;
    double samplerate = g_extern.system.av_info.timing.sample_rate;

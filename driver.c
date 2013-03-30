@@ -270,6 +270,24 @@ void driver_set_monitor_refresh_rate(float hz)
 
 }
 
+uintptr_t driver_get_current_framebuffer(void)
+{
+#ifdef HAVE_FBO
+   if (driver.video_poke && driver.video_poke->get_current_framebuffer)
+      return driver.video_poke->get_current_framebuffer(driver.video_data);
+   else
+#endif
+      return 0;
+}
+
+retro_proc_address_t driver_get_proc_address(const char *sym)
+{
+   if (driver.video_poke && driver.video_poke->get_proc_address)
+      return driver.video_poke->get_proc_address(driver.video_data, sym);
+   else
+      return NULL;
+}
+
 // Only called once on init and deinit.
 // Video and input drivers need to be active (owned)
 // before retroarch core starts.
@@ -322,6 +340,10 @@ void init_drivers(void)
    adjust_system_rates();
 
    init_video_input();
+
+   if (g_extern.system.hw_render_callback.context_reset)
+      g_extern.system.hw_render_callback.context_reset();
+
    init_audio();
 }
 
@@ -644,6 +666,12 @@ static void init_filter(bool rgb32)
       return;
    if (!*g_settings.video.filter_path)
       return;
+
+   if (g_extern.system.hw_render_callback.context_type)
+   {
+      RARCH_WARN("Cannot use CPU filters when hardware rendering is used.\n");
+      return;
+   }
 
    RARCH_LOG("Loading bSNES filter from \"%s\"\n", g_settings.video.filter_path);
    g_extern.filter.lib = dylib_load(g_settings.video.filter_path);
