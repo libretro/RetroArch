@@ -104,9 +104,11 @@ static uint32_t translate_mods(uint32_t flags)
             { 0x3D, RETROK_RALT, KEY_RightAlt },
             { 0x3B, RETROK_LCTRL, KEY_LeftControl },
             { 0x3E, RETROK_RCTRL, KEY_RightControl },
-//          { 0x39, RETROK_CAPSLOCK, 0 },
+            { 0x39, RETROK_CAPSLOCK, KEY_CapsLock },
             { 0, RETROK_UNKNOWN, 0}
          };
+         
+         static bool keystate[9];
          
          // TODO: Not sure how to add this.
          //       The key value indicates the key that was pressed or released.
@@ -118,13 +120,13 @@ static uint32_t translate_mods(uint32_t flags)
          //       otherwise it may become confused.
          const uint32_t key = *(uint32_t*)&eventMem[0x3C];
          
-         for (int i = 0; i < 8; i ++)
+         for (int i = 0; i < 9; i ++)
          {
             if (key == modmap[i].key)
             {
-               const uint32_t keyid = modmap[i].hidid;
-               ios_add_key_event(ios_key_list[keyid] ? false : true, modmap[i].retrokey, 0, translate_mods(*(uint32_t*)&eventMem[0x30]));
-               ios_key_list[keyid] = ios_key_list[keyid] ? 0 : 1;
+               keystate[i] = !keystate[i];
+               ios_key_list[modmap[i].hidid] = keystate[i];
+               ios_add_key_event(keystate[i], modmap[i].retrokey, 0, translate_mods(*(uint32_t*)&eventMem[0x30]));
             }
          }
       }
