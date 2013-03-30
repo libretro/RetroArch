@@ -3351,11 +3351,15 @@ static int menu_input_process(uint8_t menu_type, uint64_t old_state)
 
       if (return_to_game_enable)
       {
-         if (!(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME)))
+         int ret = -1;
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
          {
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-            return -1;
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+            ret = 0;
          }
+
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+         return ret;
       }
    }
 
