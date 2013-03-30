@@ -94,7 +94,7 @@ static const struct
                                  message:_value.label
                                  delegate:self
                                  cancelButtonTitle:@"Cancel"
-                                 otherButtonTitles:nil];
+                                 otherButtonTitles:@"Clear Keyboard", @"Clear Joystick", nil];
    [_alert show];
    
    _btTimer = [NSTimer scheduledTimerWithTimeInterval:.05f target:self selector:@selector(checkInput) userInfo:nil repeats:YES];
@@ -109,7 +109,7 @@ static const struct
    
       [_btTimer invalidate];
 
-      [_alert dismissWithClickedButtonIndex:0 animated:YES];
+      [_alert dismissWithClickedButtonIndex:_alert.cancelButtonIndex animated:YES];
       [_view reloadData];
    
       _me = nil;
@@ -118,6 +118,11 @@ static const struct
 
 - (void)alertView:(UIAlertView*)alertView willDismissWithButtonIndex:(NSInteger)buttonIndex
 {
+   if (buttonIndex == _alert.firstOtherButtonIndex)
+      _value.msubValues[0] = @"";
+   else if(buttonIndex == _alert.firstOtherButtonIndex + 1)
+      _value.msubValues[1] = @"";
+
    [self finish];
 }
 

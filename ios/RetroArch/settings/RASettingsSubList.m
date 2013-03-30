@@ -66,9 +66,9 @@ static const char* const SETTINGID = "SETTING";
                break;
 
             case ButtonSetting:
-               if (setting.msubValues[0] && [setting.msubValues[0] length])
+               if (setting.msubValues[0])
                   config_set_string(config, [setting.name UTF8String], [setting.msubValues[0] UTF8String]);
-               if (setting.msubValues[1] && [setting.msubValues[1] length])
+               if (setting.msubValues[1])
                   config_set_string(config, [[setting.name stringByAppendingString:@"_btn"] UTF8String], [setting.msubValues[1] UTF8String]);
                break;
 
