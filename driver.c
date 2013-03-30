@@ -282,9 +282,11 @@ uintptr_t driver_get_current_framebuffer(void)
 
 retro_proc_address_t driver_get_proc_address(const char *sym)
 {
+#ifdef HAVE_FBO
    if (driver.video_poke && driver.video_poke->get_proc_address)
       return driver.video_poke->get_proc_address(driver.video_data, sym);
    else
+#endif
       return NULL;
 }
 
