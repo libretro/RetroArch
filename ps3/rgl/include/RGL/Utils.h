@@ -84,8 +84,7 @@ extern "C" {
 
    static inline void *rglGetNamedValue(void *data, unsigned int name )
    {
-      struct rglNameSpace *ns = (struct rglNameSpace*)data;
-      return ns->data[name - 1];
+      return ((struct rglNameSpace*)data)->data[name - 1];
    }
 
    void rglTexNameSpaceInit(void *data, rglTexNameSpaceCreateFunction create, rglTexNameSpaceDestroyFunction destroy );

@@ -2000,7 +2000,7 @@ beginning:
          rglAttribute* attrib = as->attrib + i;
          if ( RGLBIT_GET( as->EnabledMask, i ) )
          {
-            const GLsizei stride = attrib->clientStride;
+            GLsizei stride = attrib->clientStride;
             const GLuint freq = attrib->frequency;
 
             if ( RGL_UNLIKELY( dparams->attribXferSize[i] ) )
@@ -2027,9 +2027,61 @@ beginning:
                   + (( const GLubyte* )attrib->clientData - ( const GLubyte* )NULL );
             }
 
-            rglGcmFifoGlVertexAttribPointer( i, attrib->clientSize,
-                  ( rglGcmEnum )attrib->clientType, attrib->normalized,
-                  stride, freq, gpuOffset );
+            rglGcmEnum       type = (rglGcmEnum)attrib->clientType;
+            GLint           size = attrib->clientSize;
+
+            // syntax check
+            switch ( size )
+            {
+               case 0: // disable
+                  stride = 0;
+                  attrib->normalized = 0;
+                  type = RGLGCM_FLOAT;
+                  gpuOffset = 0;
+                  break;
+               case 1:
+               case 2:
+               case 3:
+               case 4:
+                  // valid
+                  break;
+               default:
+                  break;
+            }
+
+            // mapping to native types
+            uint8_t gcmType = 0;
+            switch ( type )
+            {
+               case RGLGCM_UNSIGNED_BYTE:
+                  if (attrib->normalized)
+                     gcmType = CELL_GCM_VERTEX_UB;
+                  else
+                     gcmType = CELL_GCM_VERTEX_UB256;
+                  break;
+
+               case RGLGCM_SHORT:
+                  gcmType = attrib->normalized ? CELL_GCM_VERTEX_S1 : CELL_GCM_VERTEX_S32K;
+                  break;
+
+               case RGLGCM_FLOAT:
+                  gcmType = CELL_GCM_VERTEX_F;
+                  break;
+
+               case RGLGCM_HALF_FLOAT:
+                  gcmType = CELL_GCM_VERTEX_SF;
+                  break;
+
+               case RGLGCM_CMP:
+                  size = 1;   // required for this format
+                  gcmType = CELL_GCM_VERTEX_CMP;
+                  break;
+
+               default:
+                  break;
+            }
+
+            GCM_FUNC( cellGcmSetVertexDataArray, i, freq, stride, size, gcmType, CELL_GCM_LOCATION_LOCAL, gpuOffset );
          }
          else
          {
