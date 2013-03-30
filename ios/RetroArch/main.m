@@ -16,11 +16,12 @@
 #import <UIKit/UIKit.h>
 #include "input/ios_input.h"
 
-#define GSEVENT_TYPE 2
-#define GSEVENT_FLAGS 12
-#define GSEVENTKEY_KEYCODE 15
 #define GSEVENT_TYPE_KEYDOWN 10
 #define GSEVENT_TYPE_KEYUP 11
+#define GSEVENT_MOD_SHIFT = (1 << 17)
+#define GSEVENT_MOD_CTRL = (1 << 18)
+#define GSEVENT_MOD_ALT = (1 << 19)
+#define GSEVENT_MOD_CMD = (1 << 20)
 
 uint32_t ios_key_list[MAX_KEYS];
 uint32_t ios_touch_count;
@@ -58,19 +59,24 @@ touch_data_t ios_touch_list[MAX_TOUCHES];
    // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
    else if ([event respondsToSelector:@selector(_gsEvent)])
    {
-      int* eventMem = (int *)(void*)CFBridgingRetain([event performSelector:@selector(_gsEvent)]);
-      int eventType = eventMem ? eventMem[GSEVENT_TYPE] : 0;
+      uint8_t* eventMem = (uint8_t*)(void*)CFBridgingRetain([event performSelector:@selector(_gsEvent)]);
+      int eventType = eventMem ? *(int*)&eventMem[8] : 0;
+    
+      printf("%d\n", eventType);
       
-      if (eventMem && (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP))
+      if (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP)
       {
-         // Read keycode from GSEventKey
-         int tmp = eventMem[GSEVENTKEY_KEYCODE];
-         UniChar *keycode = (UniChar *)&tmp;
-         
-         if (keycode[0] < MAX_KEYS)
-            ios_key_list[keycode[0]] = (eventType == GSEVENT_TYPE_KEYDOWN) ? 1 : 0;
+         uint16_t* data = (uint16_t*)&eventMem[0x3C];
+
+         if (data[0] < MAX_KEYS)
+            ios_key_list[data[0]] = (eventType == GSEVENT_TYPE_KEYDOWN) ? 1 : 0;
+
+         // HACK: These line up for now
+         const uint32_t mods = (*(uint32_t*)&eventMem[0x30] >> 17) & 0xF;
+         ios_add_key_event(eventType == GSEVENT_TYPE_KEYDOWN, data[0], data[1], mods);
+         // printf("%d %d %d %08X\n", data[0], data[1], data[2], *(uint32_t*)&eventMem[0x30]);
       }
-       
+
       CFBridgingRelease(eventMem);
    }
 }

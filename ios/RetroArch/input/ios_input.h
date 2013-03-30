@@ -32,4 +32,6 @@ extern uint32_t ios_key_list[MAX_KEYS];
 extern uint32_t ios_touch_count;
 extern touch_data_t ios_touch_list[MAX_TOUCHES];
 
+void ios_add_key_event(bool down, unsigned keycode, uint32_t character, uint16_t keyModifiers);
+
 #endif
