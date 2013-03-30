@@ -556,6 +556,46 @@ static bool environment_cb(unsigned cmd, void *data)
          g_extern.system.disk_control = *(const struct retro_disk_control_callback*)data;
          break;
 
+      case RETRO_ENVIRONMENT_SET_HW_RENDER:
+      {
+         RARCH_LOG("Environ SET_HW_RENDER.\n");
+         struct retro_hw_render_callback *cb = (struct retro_hw_render_callback*)data;
+         switch (cb->context_type)
+         {
+            case RETRO_HW_CONTEXT_NONE:
+               RARCH_LOG("Requesting no HW context.\n");
+               break;
+
+#if defined(HAVE_OPENGLES2)
+            case RETRO_HW_CONTEXT_OPENGLES2:
+               RARCH_LOG("Requesting OpenGLES2 context.\n");
+               driver.video = &video_gl;
+               break;
+
+            case RETRO_HW_CONTEXT_OPENGL:
+               RARCH_ERR("Requesting OpenGL context, but RetroArch is compiled against OpenGLES2. Cannot use HW context.\n");
+               return false;
+#elif defined(HAVE_OPENGL)
+            case RETRO_HW_CONTEXT_OPENGLES2:
+               RARCH_ERR("Requesting OpenGLES2 context, but RetroArch is compiled against OpenGL. Cannot use HW context.\n");
+               return false;
+
+            case RETRO_HW_CONTEXT_OPENGL:
+               RARCH_LOG("Requesting OpenGL context.\n");
+               driver.video = &video_gl;
+               break;
+#endif
+
+            default:
+               RARCH_LOG("Requesting unknown context.\n");
+               return false;
+         }
+         cb->get_current_framebuffer = driver_get_current_framebuffer;
+         cb->get_proc_address = driver_get_proc_address;
+         memcpy(&g_extern.system.hw_render_callback, cb, sizeof(*cb));
+         break;
+      }
+
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;

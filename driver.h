@@ -326,6 +326,8 @@ typedef struct video_poke_interface
 #ifdef HAVE_FBO
    void (*set_fbo_state)(void *data, unsigned state);
    unsigned (*get_fbo_state)(void *data);
+   uintptr_t (*get_current_framebuffer)(void *data);
+   retro_proc_address_t (*get_proc_address)(void *data, const char *sym);
 #endif
    void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
    void (*apply_state_changes)(void *data);
@@ -451,6 +453,10 @@ void init_audio(void);
 void uninit_audio(void);
 
 void driver_set_monitor_refresh_rate(float hz);
+
+// Used by RETRO_ENVIRONMENT_SET_HW_RENDER.
+uintptr_t driver_get_current_framebuffer(void);
+retro_proc_address_t driver_get_proc_address(const char *sym);
 
 extern driver_t driver;
 

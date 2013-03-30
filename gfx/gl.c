@@ -135,6 +135,11 @@ static PFNGLBINDFRAMEBUFFERPROC pglBindFramebuffer;
 static PFNGLFRAMEBUFFERTEXTURE2DPROC pglFramebufferTexture2D;
 static PFNGLCHECKFRAMEBUFFERSTATUSPROC pglCheckFramebufferStatus;
 static PFNGLDELETEFRAMEBUFFERSPROC pglDeleteFramebuffers;
+static PFNGLGENRENDERBUFFERSPROC pglGenRenderbuffers;
+static PFNGLBINDRENDERBUFFERPROC pglBindRenderbuffer;
+static PFNGLFRAMEBUFFERRENDERBUFFERPROC pglFramebufferRenderbuffer;
+static PFNGLRENDERBUFFERSTORAGEPROC pglRenderbufferStorage;
+static PFNGLDELETERENDERBUFFERSPROC pglDeleteRenderbuffers;
 
 static bool load_fbo_proc(gl_t *gl)
 {
@@ -143,9 +148,17 @@ static bool load_fbo_proc(gl_t *gl)
    LOAD_GL_SYM(FramebufferTexture2D);
    LOAD_GL_SYM(CheckFramebufferStatus);
    LOAD_GL_SYM(DeleteFramebuffers);
+   LOAD_GL_SYM(GenRenderbuffers);
+   LOAD_GL_SYM(BindRenderbuffer);
+   LOAD_GL_SYM(FramebufferRenderbuffer);
+   LOAD_GL_SYM(RenderbufferStorage);
+   LOAD_GL_SYM(DeleteRenderbuffers);
 
    return pglGenFramebuffers && pglBindFramebuffer && pglFramebufferTexture2D && 
-      pglCheckFramebufferStatus && pglDeleteFramebuffers;
+      pglCheckFramebufferStatus && pglDeleteFramebuffers &&
+      pglGenRenderbuffers && pglBindRenderbuffer &&
+      pglFramebufferRenderbuffer && pglRenderbufferStorage &&
+      pglDeleteRenderbuffers;
 }
 #elif defined(HAVE_OPENGLES2)
 #define pglGenFramebuffers glGenFramebuffers
@@ -153,6 +166,11 @@ static bool load_fbo_proc(gl_t *gl)
 #define pglFramebufferTexture2D glFramebufferTexture2D
 #define pglCheckFramebufferStatus glCheckFramebufferStatus
 #define pglDeleteFramebuffers glDeleteFramebuffers
+#define pglGenRenderbuffers glGenRenderbuffers
+#define pglBindRenderbuffer glBindRenderbuffer
+#define pglFramebufferRenderbuffer glFramebufferRenderbuffer
+#define pglRenderbufferStorage glRenderbufferStorage
+#define pglDeleteRenderbuffers glDeleteRenderbuffers
 #define load_fbo_proc(gl) (true)
 #elif defined(HAVE_OPENGLES)
 #define pglGenFramebuffers glGenFramebuffersOES
@@ -160,6 +178,11 @@ static bool load_fbo_proc(gl_t *gl)
 #define pglFramebufferTexture2D glFramebufferTexture2DOES
 #define pglCheckFramebufferStatus glCheckFramebufferStatusOES
 #define pglDeleteFramebuffers glDeleteFramebuffersOES
+#define pglGenRenderbuffers glGenRenderbuffersOES
+#define pglBindRenderbuffer glBindRenderbufferOES
+#define pglFramebufferRenderbuffer glFramebufferRenderbufferOES
+#define pglRenderbufferStorage glRenderbufferStorageOES
+#define pglDeleteRenderbuffers glDeleteRenderbuffersOES
 #define GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
 #define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
 #define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
@@ -170,6 +193,11 @@ static bool load_fbo_proc(gl_t *gl)
 #define pglFramebufferTexture2D glFramebufferTexture2D
 #define pglCheckFramebufferStatus glCheckFramebufferStatus
 #define pglDeleteFramebuffers glDeleteFramebuffers
+#define pglGenRenderbuffers glGenRenderbuffers
+#define pglBindRenderbuffer glBindRenderbuffer
+#define pglFramebufferRenderbuffer glFramebufferRenderbuffer
+#define pglRenderbufferStorage glRenderbufferStorage
+#define pglDeleteRenderbuffers glDeleteRenderbuffers
 #define load_fbo_proc(gl) (true)
 #endif
 #endif
@@ -703,6 +731,68 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 
    gl->fbo_inited = true;
 }
+
+bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
+{
+   RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
+
+   if (!load_fbo_proc(gl))
+      return false;
+
+   glBindTexture(GL_TEXTURE_2D, 0);
+   pglGenFramebuffers(TEXTURES, gl->hw_render_fbo);
+
+   bool depth   = g_extern.system.hw_render_callback.depth;
+   bool stencil = g_extern.system.hw_render_callback.stencil;
+
+   if (depth)
+   {
+      pglGenRenderbuffers(TEXTURES, gl->hw_render_depth);
+      gl->hw_render_depth_init = true;
+   }
+
+   if (stencil)
+   {
+      pglGenRenderbuffers(TEXTURES, gl->hw_render_stencil);
+      gl->hw_render_stencil_init = true;
+   }
+
+   for (unsigned i = 0; i < TEXTURES; i++)
+   {
+      pglBindFramebuffer(GL_FRAMEBUFFER, gl->hw_render_fbo[i]);
+      pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->texture[i], 0);
+
+      if (depth)
+      {
+         pglBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
+         pglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
+               width, height);
+         pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+               GL_RENDERBUFFER, gl->hw_render_depth[i]);
+      }
+
+      if (stencil)
+      {
+         pglBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_stencil[i]);
+         pglRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8,
+               width, height);
+         pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+               GL_RENDERBUFFER, gl->hw_render_stencil[i]);
+      }
+
+      GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
+      if (status != GL_FRAMEBUFFER_COMPLETE)
+      {
+         RARCH_ERR("[GL]: Failed to create HW render FBO.\n");
+         return false;
+      }
+   }
+
+   pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+   pglBindRenderbuffer(GL_RENDERBUFFER, 0);
+   gl->hw_render_fbo_init = true;
+   return true;
+}
 #endif
 
 void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
@@ -981,7 +1071,7 @@ static void gl_update_resize(void *data)
 #endif
 }
 
-static void gl_update_input_size(void *data, unsigned width, unsigned height, unsigned pitch)
+static void gl_update_input_size(void *data, unsigned width, unsigned height, unsigned pitch, bool clear)
 {
    gl_t *gl = (gl_t*)data;
    // Res change. Need to clear out texture.
@@ -990,18 +1080,21 @@ static void gl_update_input_size(void *data, unsigned width, unsigned height, un
       gl->last_width[gl->tex_index] = width;
       gl->last_height[gl->tex_index] = height;
 
+      if (clear)
+      {
 #if defined(HAVE_PSGL)
-      glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
-		      gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
-		      gl->tex_w * gl->tex_h * gl->base_size,
-		      gl->empty_buf);
+         glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
+               gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
+               gl->tex_w * gl->tex_h * gl->base_size,
+               gl->empty_buf);
 #else
-      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t)));
+         glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t)));
 
-      glTexSubImage2D(GL_TEXTURE_2D,
-            0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
-            gl->texture_fmt, gl->empty_buf);
+         glTexSubImage2D(GL_TEXTURE_2D,
+               0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
+               gl->texture_fmt, gl->empty_buf);
 #endif
+      }
 
       GLfloat xamt = (GLfloat)width / gl->tex_w;
       GLfloat yamt = (GLfloat)height / gl->tex_h;
@@ -1364,19 +1457,49 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
-      gl_update_input_size(gl, width, height, pitch);
+#ifdef HAVE_FBO
+      // Data is already on GPU :) Have to reset some state however incase core changed it.
+      if (gl->hw_render_fbo_init)
+      {
+         gl_update_input_size(gl, width, height, pitch, false);
 
-      RARCH_PERFORMANCE_INIT(copy_frame);
-      RARCH_PERFORMANCE_START(copy_frame);
-      gl_copy_frame(gl, frame, width, height, pitch);
-      RARCH_PERFORMANCE_STOP(copy_frame);
+         if (!gl->fbo_inited)
+         {
+            pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+            gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+         }
+      }
+      else
+#endif
+      {
+         gl_update_input_size(gl, width, height, pitch, true);
+         RARCH_PERFORMANCE_INIT(copy_frame);
+         RARCH_PERFORMANCE_START(copy_frame);
+         gl_copy_frame(gl, frame, width, height, pitch);
+         RARCH_PERFORMANCE_STOP(copy_frame);
 
 #ifdef IOS // Apparently the viewport is lost each frame, thanks apple.
-      gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+         gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 #endif
+      }
    }
    else
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+
+   // Have to reset rendering state which libretro core could easily have overridden.
+#ifdef HAVE_FBO
+   if (gl->hw_render_fbo_init)
+   {
+#ifndef HAVE_OPENGLES
+      glEnable(GL_TEXTURE_2D);
+#endif
+      glDisable(GL_DEPTH_TEST);
+      glDisable(GL_STENCIL_TEST);
+      glDisable(GL_CULL_FACE);
+      glDisable(GL_DITHER);
+      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+   }
+#endif
 
    struct gl_tex_info tex_info = {0};
    tex_info.tex           = gl->texture[gl->tex_index];
@@ -1442,6 +1565,23 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    RARCH_PERFORMANCE_STOP(frame_run);
 
+#ifdef HAVE_FBO
+   // Reset state which could easily mess up libretro core.
+   if (gl->hw_render_fbo_init)
+   {
+      gl_shader_use_func(gl, 0);
+      glBindTexture(GL_TEXTURE_2D, 0);
+#ifndef NO_GL_FF_VERTEX
+      pglClientActiveTexture(GL_TEXTURE1);
+      glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+      pglClientActiveTexture(GL_TEXTURE0);
+      glDisableClientState(GL_VERTEX_ARRAY);
+      glDisableClientState(GL_COLOR_ARRAY);
+      glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+#endif
+   }
+#endif
+
 #if defined(HAVE_RMENU)
    if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
       context_rmenu_frame_func(gl);
@@ -1453,7 +1593,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (gl->pbo_readback_enable)
       gl_pbo_async_readback(gl);
 #endif
- 
+
    return true;
 }
 
@@ -1516,6 +1656,14 @@ static void gl_free(void *data)
 
 #ifdef HAVE_FBO
    gl_deinit_fbo(gl);
+
+   if (gl->hw_render_fbo_init)
+      pglDeleteFramebuffers(TEXTURES, gl->hw_render_fbo);
+   if (gl->hw_render_depth)
+      pglDeleteRenderbuffers(TEXTURES, gl->hw_render_depth);
+   if (gl->hw_render_stencil)
+      pglDeleteRenderbuffers(TEXTURES, gl->hw_render_stencil);
+   gl->hw_render_fbo_init = false;
 #endif
 
    context_destroy_func();
@@ -1816,11 +1964,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
    gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
 
-#ifdef HAVE_FBO
-   // Set up render to texture.
-   gl_init_fbo(gl, gl->tex_w, gl->tex_h);
-#endif
-
    gl->keep_aspect = video->force_aspect;
 
    // Apparently need to set viewport for passes when we aren't using FBOs.
@@ -1840,6 +1983,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #endif
 
    glDisable(GL_DEPTH_TEST);
+   glDisable(GL_CULL_FACE);
    glDisable(GL_DITHER);
 
    memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
@@ -1864,6 +2008,25 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    gl_init_textures(gl, video);
    gl_init_textures_data(gl);
+
+#ifdef HAVE_FBO
+   // Set up render to texture.
+   gl_init_fbo(gl, gl->tex_w, gl->tex_h);
+
+#ifdef HAVE_OPENGLES2
+   enum retro_hw_context_type desired = RETRO_HW_CONTEXT_OPENGLES2;
+#else
+   enum retro_hw_context_type desired = RETRO_HW_CONTEXT_OPENGL;
+#endif
+
+   if (g_extern.system.hw_render_callback.context_type == desired
+         && !gl_init_hw_render(gl, gl->tex_w, gl->tex_h))
+   {
+      context_destroy_func();
+      free(gl);
+      return NULL;
+   }
+#endif
 
    if (input && input_data)
       context_input_driver_func(input, input_data);
@@ -2317,6 +2480,18 @@ static unsigned gl_get_fbo_state(void *data)
    gl_t *gl = (gl_t*)data;
    return gl->fbo_inited ? FBO_INIT : FBO_DEINIT;
 }
+
+static uintptr_t gl_get_current_framebuffer(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+   return gl->hw_render_fbo[(gl->tex_index + 1) & TEXTURES_MASK];
+}
+
+static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
+{
+   gl_t *gl = (gl_t*)data;
+   return gl->ctx_driver->get_proc_address(sym);
+}
 #endif
 
 static void gl_set_aspect_ratio(void *data, unsigned aspectratio_index)
@@ -2382,6 +2557,8 @@ static const video_poke_interface_t gl_poke_interface = {
 #ifdef HAVE_FBO
    gl_set_fbo_state,
    gl_get_fbo_state,
+   gl_get_current_framebuffer,
+   gl_get_proc_address,
 #endif
    gl_set_aspect_ratio,
    gl_apply_state_changes,
