@@ -95,6 +95,8 @@ void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned 
          device = DEVICE_LOGITECH_DUAL_ACTION;
       else if (strstr(name_buf, "shooter-keypad"))
          device = DEVICE_ICONTROLPAD_BLUEZ_IME;
+      else if (strstr(name_buf, "SEGA VIRTUA STICK High Grade"))
+         device = DEVICE_SEGA_VIRTUA_STICK_HIGH_GRADE;
       else if (strstr(name_buf, "TTT THT Arcade console 2P USB Play"))
          device = DEVICE_TTT_THT_ARCADE;
       else if (strstr(name_buf, "TOMMO NEOGEOX Arcade Stick"))
