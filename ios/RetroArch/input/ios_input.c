@@ -106,9 +106,12 @@ static int16_t ios_input_state(void *data, const struct retro_keybind **binds, u
    {
       case RETRO_DEVICE_JOYPAD:
          return (id < RARCH_BIND_LIST_END) ? ios_is_pressed(port, &binds[port][id]) : false;
-
+         
+      case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
       {
+         const bool want_full = device == RARCH_DEVICE_POINTER_SCREEN;
+      
          if (index < ios_touch_count && index < MAX_TOUCHES)
          {
             const touch_data_t* touch = &ios_touch_list[index];
@@ -116,8 +119,8 @@ static int16_t ios_input_state(void *data, const struct retro_keybind **binds, u
             switch (id)
             {
                case RETRO_DEVICE_ID_POINTER_PRESSED: return 1;
-               case RETRO_DEVICE_ID_POINTER_X: return touch->full_x;
-               case RETRO_DEVICE_ID_POINTER_Y: return touch->full_y;
+               case RETRO_DEVICE_ID_POINTER_X: return want_full ? touch->full_x : touch->fixed_x;
+               case RETRO_DEVICE_ID_POINTER_Y: return want_full ? touch->full_y : touch->fixed_y;
             }
          }
          
