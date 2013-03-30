@@ -732,6 +732,7 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
    gl->fbo_inited = true;
 }
 
+#ifndef HAVE_RGL
 bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 {
    RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
@@ -793,6 +794,7 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    gl->hw_render_fbo_init = true;
    return true;
 }
+#endif
 #endif
 
 void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
@@ -1657,6 +1659,7 @@ static void gl_free(void *data)
 #ifdef HAVE_FBO
    gl_deinit_fbo(gl);
 
+#ifndef HAVE_RGL
    if (gl->hw_render_fbo_init)
       pglDeleteFramebuffers(TEXTURES, gl->hw_render_fbo);
    if (gl->hw_render_depth)
@@ -1664,6 +1667,7 @@ static void gl_free(void *data)
    if (gl->hw_render_stencil)
       pglDeleteRenderbuffers(TEXTURES, gl->hw_render_stencil);
    gl->hw_render_fbo_init = false;
+#endif
 #endif
 
    context_destroy_func();
@@ -2018,7 +2022,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #else
    enum retro_hw_context_type desired = RETRO_HW_CONTEXT_OPENGL;
 #endif
+   (void)desired;
 
+#ifndef HAVE_RGL
    if (g_extern.system.hw_render_callback.context_type == desired
          && !gl_init_hw_render(gl, gl->tex_w, gl->tex_h))
    {
@@ -2026,6 +2032,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       free(gl);
       return NULL;
    }
+#endif
 #endif
 
    if (input && input_data)
