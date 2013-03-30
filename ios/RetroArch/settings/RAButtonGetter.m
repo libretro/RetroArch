@@ -58,7 +58,7 @@ static const struct
    { "keypad8", KP_8 },                { "keypad9", KP_9 },
    
    { "period", KEY_Period },           { "capslock", KEY_CapsLock },
-   { "numlock", KP_NumLock },          { "print", KEY_PrintScreen },
+   { "numlock", KP_NumLock },          { "print_screen", KEY_PrintScreen },
    { "scroll_lock", KEY_ScrollLock },
    
    { "a", KEY_A }, { "b", KEY_B }, { "c", KEY_C }, { "d", KEY_D },
