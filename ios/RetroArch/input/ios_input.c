@@ -109,7 +109,10 @@ static int16_t ios_input_state(void *data, const struct retro_keybind **binds, u
          
       case RETRO_DEVICE_ANALOG:
          return input_joypad_analog(g_joydriver, port, index, id, binds[port]);
-         
+      
+      case RETRO_DEVICE_KEYBOARD:
+         return ios_key_pressed(id);
+      
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
       {
@@ -276,16 +279,16 @@ static const struct rarch_key_map rarch_key_map_hidusage[] = {
    { KEY_F15, RETROK_F15 },
 
 //   RETROK_NUMLOCK },
-//   RETROK_CAPSLOCK },
+   { KEY_CapsLock, RETROK_CAPSLOCK },
 //   RETROK_SCROLLOCK },
-//   RETROK_RSHIFT },
-//   RETROK_LSHIFT },
-//   RETROK_RCTRL },
-//   RETROK_LCTRL },
-//   RETROK_RALT },
-//   RETROK_LALT },
-//   RETROK_RMETA },
-//   RETROK_LMETA },
+   { KEY_RightShift, RETROK_RSHIFT },
+   { KEY_LeftShift, RETROK_LSHIFT },
+   { KEY_RightControl, RETROK_RCTRL },
+   { KEY_LeftControl, RETROK_LCTRL },
+   { KEY_RightAlt, RETROK_RALT },
+   { KEY_LeftAlt, RETROK_LALT },
+   { KEY_RightGUI, RETROK_RMETA },
+   { KEY_LeftGUI, RETROK_RMETA },
 //   RETROK_LSUPER },
 //   RETROK_RSUPER },
 //   RETROK_MODE },
