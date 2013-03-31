@@ -3118,7 +3118,7 @@ static int ingame_menu(uint8_t menu_type, uint64_t input)
             return -1;
          }
 
-         strlcpy(strw_buffer, "Return to the game.", sizeof(strw_buffer));
+         strlcpy(strw_buffer, "Change the currently loaded game.", sizeof(strw_buffer));
          break;
       case MENU_ITEM_RESET:
          if (input & (1ULL << RMENU_DEVICE_NAV_B))
@@ -3282,7 +3282,7 @@ static int ingame_menu(uint8_t menu_type, uint64_t input)
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME);
 
    if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, "Return To Game", &font_parms);
+      driver.video_poke->set_osd_msg(driver.video_data, "Change Game", &font_parms);
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RETURN_TO_MENU);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU);
