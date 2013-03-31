@@ -1634,10 +1634,11 @@ static int menu_input_process(void *data, void *state)
 
    if (!(g_extern.frame_count < g_extern.delay_timer[0]))
    {
-      bool return_to_game_enable = ((trigger_state & (1ULL << DEVICE_NAV_MENU)) && g_extern.main_is_init);
-
-      if (return_to_game_enable)
+      if ((trigger_state & (1ULL << DEVICE_NAV_MENU)) && g_extern.main_is_init)
       {
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+         
          g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
          return -1;
       }
@@ -1703,7 +1704,19 @@ bool menu_iterate(void)
    rgui_action_t action;
    uint64_t input_state = 0;
 
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
+   {
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
+      {
+         rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, rgui->selection_ptr);
+         rgui->selection_ptr = 0;
+         rgui->need_refresh = true;
+      }
+
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
+      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
+   }
+
    if (driver.video_poke->apply_state_changes)
       driver.video_poke->apply_state_changes(driver.video_data);
 
@@ -1789,6 +1802,22 @@ bool menu_iterate(void)
       driver.video_poke->set_rgui_texture(driver.video_data, NULL);
 
    input_process_ret = menu_input_process(NULL, NULL);
+
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME_EXIT) &&
+         g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
+   {
+      if (rgui->menu_stack->size > 1)
+      {
+         const char *dir = NULL;
+         unsigned menu_type = 0;
+         size_t directory_ptr = 0;
+         rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
+         rgui_list_pop(rgui->menu_stack);
+         rgui->selection_ptr = directory_ptr;
+         rgui->need_refresh = true;
+      }
+      g_extern.lifecycle_mode_state &= ~((1ULL << MODE_MENU_INGAME) | (1ULL << MODE_MENU_INGAME_EXIT));
+   }
 
    if (input_entry_ret != 0 || input_process_ret != 0)
       goto deinit;
