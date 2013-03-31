@@ -77,7 +77,7 @@ static void btpad_ps3_setleds(struct btpad_ps3_data* device, unsigned leds)
 
 static uint32_t btpad_ps3_get_buttons(struct btpad_ps3_data* device)
 {
-   return (device->state == BTPAD_PS3_CONNECTED) ? device->data[3] | (device->data[4] << 8) : 0;
+   return (device->state == BTPAD_PS3_CONNECTED) ? device->data[3] | (device->data[4] << 8) | ((device->data[5] & 1) << 16): 0;
 }
 
 static int16_t btpad_ps3_get_axis(struct btpad_ps3_data* device, unsigned axis)
