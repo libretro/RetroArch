@@ -94,7 +94,7 @@ static const struct
                                  message:_value.label
                                  delegate:self
                                  cancelButtonTitle:@"Cancel"
-                                 otherButtonTitles:@"Clear Keyboard", @"Clear Joystick", nil];
+                                 otherButtonTitles:@"Clear Keyboard", @"Clear Joystick", @"Clear Axis", nil];
    [_alert show];
    
    _btTimer = [NSTimer scheduledTimerWithTimeInterval:.05f target:self selector:@selector(checkInput) userInfo:nil repeats:YES];
@@ -122,6 +122,8 @@ static const struct
       _value.msubValues[0] = @"";
    else if(buttonIndex == _alert.firstOtherButtonIndex + 1)
       _value.msubValues[1] = @"";
+   else if(buttonIndex == _alert.firstOtherButtonIndex + 2)
+      _value.msubValues[2] = @"";
 
    [self finish];
 }
@@ -139,7 +141,7 @@ static const struct
       }
    }
 
-   // WiiMote
+   // Pad Buttons
    uint32_t buttons = btpad_get_buttons();
 
    for (int i = 0; buttons && i != sizeof(buttons) * 8; i ++)
@@ -149,6 +151,19 @@ static const struct
          _value.msubValues[1] = [NSString stringWithFormat:@"%d", i];
          [self finish];
          return;
+      }
+   }
+
+   // Pad Axis
+   for (int i = 0; i != 4; i ++)
+   {
+      int16_t value = btpad_get_axis(i);
+      
+      if (abs(value) > 0x1000)
+      {
+         _value.msubValues[2] = [NSString stringWithFormat:@"%s%d", (value > 0x1000) ? "+" : "-", i];
+         [self finish];
+         break;
       }
    }
 }

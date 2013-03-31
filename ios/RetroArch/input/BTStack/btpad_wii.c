@@ -68,6 +68,25 @@ static uint32_t btpad_wii_get_buttons(struct btpad_wii_data* device)
    return (device->state == BTPAD_WII_CONNECTED) ? device->wiimote.btns | (device->wiimote.exp.classic.btns << 16) : 0;
 }
 
+static int16_t btpad_wii_get_axis(struct btpad_wii_data* device, unsigned axis)
+{
+/* TODO
+   if (device->.exp.type == EXP_CLASSIC)
+   {
+      switch (axis)
+      {
+         case 0: return device->wiimote.exp.classic.ljs.rx * 0x7FFF;
+         case 1: return device->wiimote.exp.classic.ljs.ry * 0x7FFF;
+         case 2: return device->wiimote.exp.classic.rjs.rx * 0x7FFF;
+         case 3: return device->wiimote.exp.classic.rjs.ry * 0x7FFF;
+         default: return 0;
+      }
+   }
+*/
+   
+   return 0;
+}
+
 static void btpad_wii_packet_handler(struct btpad_wii_data* device, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
    if (packet_type == HCI_EVENT_PACKET && packet[0] == HCI_EVENT_PIN_CODE_REQUEST)
@@ -241,5 +260,6 @@ struct btpad_interface btpad_wii =
    (void*)&btpad_wii_disconnect,
    (void*)&btpad_wii_setleds,
    (void*)&btpad_wii_get_buttons,
+   (void*)&btpad_wii_get_axis,
    (void*)&btpad_wii_packet_handler
 };

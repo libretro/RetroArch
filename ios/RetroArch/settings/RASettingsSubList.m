@@ -70,6 +70,8 @@ static const char* const SETTINGID = "SETTING";
                   config_set_string(config, [setting.name UTF8String], [setting.msubValues[0] UTF8String]);
                if (setting.msubValues[1])
                   config_set_string(config, [[setting.name stringByAppendingString:@"_btn"] UTF8String], [setting.msubValues[1] UTF8String]);
+               if (setting.msubValues[2])
+                  config_set_string(config, [[setting.name stringByAppendingString:@"_axis"] UTF8String], [setting.msubValues[2] UTF8String]);
                break;
 
             case AspectSetting:
@@ -217,9 +219,10 @@ static const char* const SETTINGID = "SETTING";
    if (setting.type != ButtonSetting)
       cell.detailTextLabel.text = setting.value;
    else
-      cell.detailTextLabel.text = [NSString stringWithFormat:@"[KB:%@] [JS:%@]",
+      cell.detailTextLabel.text = [NSString stringWithFormat:@"[KB:%@] [JS:%@] [AX:%@]",
             [setting.msubValues[0] length] ? setting.msubValues[0] : @"N/A",
-            [setting.msubValues[1] length] ? setting.msubValues[1] : @"N/A"];
+            [setting.msubValues[1] length] ? setting.msubValues[1] : @"N/A",
+            [setting.msubValues[2] length] ? setting.msubValues[2] : @"N/A"];
 
    return cell;
 }

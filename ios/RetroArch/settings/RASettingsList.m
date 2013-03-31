@@ -50,6 +50,7 @@ static RASettingData* button_setting(config_file_t* config, NSString* name, NSSt
    result.msubValues = [NSMutableArray arrayWithObjects:
                         get_value_from_config(config, name, defaultValue),
                         get_value_from_config(config, [name stringByAppendingString:@"_btn"], @""),
+                        get_value_from_config(config, [name stringByAppendingString:@"_axis"], @""),
                         nil];
    return result;
 }
@@ -185,6 +186,15 @@ static RASettingData* custom_action(NSString* action)
                button_setting(config, @"input_player1_r2", @"R2", @""),
                button_setting(config, @"input_player1_l3", @"L3", @""),
                button_setting(config, @"input_player1_r3", @"R3", @""),
+
+               button_setting(config, @"input_player1_l_y_minus", @"Left Stick Up", @""),
+               button_setting(config, @"input_player1_l_y_plus", @"Left Stick Down", @""),
+               button_setting(config, @"input_player1_l_x_minus", @"Left Stick Left", @""),
+               button_setting(config, @"input_player1_l_x_plus", @"Left Stick Right", @""),
+               button_setting(config, @"input_player1_r_y_minus", @"Right Stick Up", @""),
+               button_setting(config, @"input_player1_r_y_plus", @"Right Stick Down", @""),
+               button_setting(config, @"input_player1_r_x_minus", @"Right Stick Left", @""),
+               button_setting(config, @"input_player1_r_x_plus", @"Right Stick Right", @""),
                nil],
             nil]),
          group_setting(@"System Keys", [NSArray arrayWithObjects:

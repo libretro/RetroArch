@@ -107,6 +107,9 @@ static int16_t ios_input_state(void *data, const struct retro_keybind **binds, u
       case RETRO_DEVICE_JOYPAD:
          return (id < RARCH_BIND_LIST_END) ? ios_is_pressed(port, &binds[port][id]) : false;
          
+      case RETRO_DEVICE_ANALOG:
+         return input_joypad_analog(g_joydriver, port, index, id, binds[port]);
+         
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
       {

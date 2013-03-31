@@ -80,6 +80,18 @@ static uint32_t btpad_ps3_get_buttons(struct btpad_ps3_data* device)
    return (device->state == BTPAD_PS3_CONNECTED) ? device->data[3] | (device->data[4] << 8) : 0;
 }
 
+static int16_t btpad_ps3_get_axis(struct btpad_ps3_data* device, unsigned axis)
+{
+   if (axis < 4)
+   {
+      int val = device->data[7 + axis];
+      val = (val << 8) - 0x8000;
+      return (abs(val) > 0x1000) ? val : 0;
+   }
+
+   return 0;
+}
+
 static void btpad_ps3_packet_handler(struct btpad_ps3_data* device, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
    if (packet_type == HCI_EVENT_PACKET)
@@ -181,5 +193,6 @@ struct btpad_interface btpad_ps3 =
    (void*)&btpad_ps3_disconnect,
    (void*)&btpad_ps3_setleds,
    (void*)&btpad_ps3_get_buttons,
+   (void*)&btpad_ps3_get_axis,
    (void*)&btpad_ps3_packet_handler
 };

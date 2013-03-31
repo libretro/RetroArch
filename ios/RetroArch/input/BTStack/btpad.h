@@ -17,6 +17,7 @@
 #define __IOS_RARCH_BTPAD_H__
 
 uint32_t btpad_get_buttons();
+int16_t btpad_get_axis(unsigned axis);
 void btpad_set_pad_type(bool wiimote);
 
 // Private interface
@@ -27,6 +28,7 @@ struct btpad_interface
    void (*set_leds)(void* device, unsigned leds);
 
    uint32_t (*get_buttons)(void* device);
+   int16_t (*get_axis)(void* device, unsigned axis);
 
    void (*packet_handler)(void* device, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 };

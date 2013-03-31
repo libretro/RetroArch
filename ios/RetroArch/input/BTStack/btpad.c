@@ -38,6 +38,14 @@ uint32_t btpad_get_buttons()
    return result;
 }
 
+int16_t btpad_get_axis(unsigned axis)
+{
+   pthread_mutex_lock(&btpad_lock);
+   int16_t result = (btpad_device && btpad_iface) ? btpad_iface->get_axis(btpad_device, axis) : 0;
+   pthread_mutex_unlock(&btpad_lock);
+   return result;
+}
+
 void btpad_set_pad_type(bool wiimote)
 {
    pthread_mutex_lock(&btpad_lock);

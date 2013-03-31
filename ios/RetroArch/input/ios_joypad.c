@@ -47,7 +47,22 @@ static bool ios_joypad_button(unsigned port, uint16_t joykey)
 
 static int16_t ios_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   return 0;
+   if (joyaxis == AXIS_NONE)
+      return 0;
+
+   int16_t val = 0;
+   if (AXIS_NEG_GET(joyaxis) < 4)
+   {
+      val = btpad_get_axis(AXIS_NEG_GET(joyaxis));
+      val = (val < 0) ? val : 0;
+   }
+   else if(AXIS_POS_GET(joyaxis) < 4)
+   {
+      val = btpad_get_axis(AXIS_POS_GET(joyaxis));
+      val = (val > 0) ? val : 0;
+   }
+
+   return val;
 }
 
 static void ios_joypad_poll(void)
