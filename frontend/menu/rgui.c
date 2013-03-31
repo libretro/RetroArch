@@ -1227,6 +1227,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui->selection_ptr = directory_ptr;
             rgui->need_refresh = true;
          }
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_INGAME);
          break;
 
       case RGUI_ACTION_LEFT:
@@ -1517,6 +1518,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          {
             rgui_list_push(rgui->menu_stack, "", RGUI_SETTINGS, rgui->selection_ptr);
             rgui->selection_ptr = 0;
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
          }
          return rgui_settings_iterate(rgui, RGUI_ACTION_REFRESH);
 
