@@ -35,6 +35,8 @@ struct btpad_ps3_data
    bd_addr_t address;
    uint32_t handle;
    uint32_t channels[2];
+   
+   bool have_led;
 };
 
 static void* btpad_ps3_connect()
@@ -184,7 +186,15 @@ static void btpad_ps3_packet_handler(struct btpad_ps3_data* device, uint8_t pack
       }
    }
    else if (packet_type == L2CAP_DATA_PACKET && packet[0] == 0xA1)
+   {
+      if (!device->have_led)
+      {
+         btpad_ps3_setleds(device, 1);
+         device->have_led = true;
+      }
+   
       memcpy(device->data, packet, size);
+   }
 }
 
 struct btpad_interface btpad_ps3 =
