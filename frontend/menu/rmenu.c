@@ -3282,13 +3282,13 @@ static int ingame_menu(uint8_t menu_type, uint64_t input)
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME);
 
    if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, "Change Game", &font_parms);
+      driver.video_poke->set_osd_msg(driver.video_data, "Return To Game", &font_parms);
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RETURN_TO_MENU);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU);
 
    if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, "Return To Menu", &font_parms);
+      driver.video_poke->set_osd_msg(driver.video_data, "Change Game", &font_parms);
 
    font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_CHANGE_LIBRETRO);
    font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBRETRO);
