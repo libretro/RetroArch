@@ -2395,7 +2395,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case INGAME_MENU_CHANGE_GAME:
          if (input & (1ULL << RMENU_DEVICE_NAV_B))
          {
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return 0;
          }
