@@ -42,30 +42,6 @@
 #define EXT_CGP_PRESETS "cgp|CGP"
 #define EXT_INPUT_PRESETS "cfg|CFG"
 
-enum {
-   MENU_ITEM_LOAD_STATE = 0,
-   MENU_ITEM_SAVE_STATE,
-   MENU_ITEM_KEEP_ASPECT_RATIO,
-   MENU_ITEM_OVERSCAN_AMOUNT,
-   MENU_ITEM_ORIENTATION,
-#ifdef HAVE_FBO
-   MENU_ITEM_SCALE_FACTOR,
-#endif
-   MENU_ITEM_RESIZE_MODE,
-   MENU_ITEM_FRAME_ADVANCE,
-   MENU_ITEM_SCREENSHOT_MODE,
-   MENU_ITEM_RESET,
-   MENU_ITEM_RETURN_TO_GAME,
-   MENU_ITEM_RETURN_TO_MENU,
-   MENU_ITEM_CHANGE_LIBRETRO,
-#ifdef HAVE_MULTIMAN
-   MENU_ITEM_RETURN_TO_MULTIMAN,
-#endif
-   MENU_ITEM_QUIT_RARCH,
-   MENU_ITEM_LAST
-};
-
-
 static bool set_libretro_core_as_launch;
 
 filebrowser_t *browser;
@@ -721,6 +697,85 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->comment, "INFO - Save the current video settings to a [CG Preset] (CGP) file.", sizeof(current_item->comment));
          break;
 #endif
+      case INGAME_MENU_LOAD_STATE:
+         strlcpy(current_item->text, "Load State", sizeof(current_item->text));
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.state_slot);
+         strlcpy(current_item->comment, "Load from current state slot.", sizeof(current_item->comment));
+         break;
+      case INGAME_MENU_SAVE_STATE:
+         strlcpy(current_item->text, "Save State", sizeof(current_item->text));
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.state_slot);
+         strlcpy(current_item->comment, "Save to current state slot.", sizeof(current_item->comment));
+         break;
+      case INGAME_MENU_ASPECT_RATIO:
+         strlcpy(current_item->text, "Aspect Ratio", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "Change the aspect ratio of the screen.", sizeof(current_item->comment));
+         break;
+      case INGAME_MENU_OVERSCAN:
+         strlcpy(current_item->text, "Overscan", sizeof(current_item->text));
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_extern.console.screen.overscan_amount);
+         strlcpy(current_item->comment, "Change overscan correction.", sizeof(current_item->comment));
+         break;
+      case INGAME_MENU_ROTATION:
+         strlcpy(current_item->text, "Rotation", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, rotation_lut[g_extern.console.screen.orientation], sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "Change orientation of the screen.", sizeof(current_item->comment));
+         break;
+#ifdef HAVE_FBO
+      case INGAME_MENU_SCALE_FACTOR:
+         strlcpy(current_item->text, "Scaling Factor", sizeof(current_item->text));
+         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
+         strlcpy(current_item->comment, "Change scaling of the screen.", sizeof(current_item->comment));
+         break;
+#endif
+      case INGAME_MENU_RESIZE_MODE:
+         strlcpy(current_item->text, "Resize Mode", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "Allows you to resize the screen.", sizeof(current_item->comment));
+         break;
+      case INGAME_MENU_FRAME_ADVANCE:
+         strlcpy(current_item->text, "Frame Advance", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "Press a button to step one frame.", sizeof(current_item->comment));
+         break;
+      case INGAME_MENU_SCREENSHOT_MODE:
+         strlcpy(current_item->text, "Screenshot Mode", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "Take a screenshot.", sizeof(current_item->comment));
+         break;
+      case INGAME_MENU_RESET:
+         strlcpy(current_item->text, "Reset", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "Reset the game.", sizeof(current_item->comment));
+         break;
+      case INGAME_MENU_RETURN_TO_GAME:
+         strlcpy(current_item->text, "Return to Game", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "Change the currently loaded game.", sizeof(current_item->comment));
+         break;
+      case INGAME_MENU_CHANGE_GAME:
+         strlcpy(current_item->text, "Change Game", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "Select another game.", sizeof(current_item->comment));
+         break;
+      case INGAME_MENU_CHANGE_LIBRETRO_CORE:
+         strlcpy(current_item->text, "Change libretro core", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "Choose another libretro core.", sizeof(current_item->comment));
+         break;
+#ifdef HAVE_MULTIMAN
+      case INGAME_MENU_RETURN_TO_MULTIMAN:
+         strlcpy(current_item->text, "Return to multiMAN", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "Quit RetroArch and return to multiMAN.", sizeof(current_item->comment));
+         break;
+#endif
+      case INGAME_MENU_QUIT_RETROARCH:
+         strlcpy(current_item->text, "Quit RetroArch", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "Quit RetroArch.", sizeof(current_item->comment));
+         break;
       default:
          break;
    }
@@ -1575,6 +1630,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
             g_settings.video.font_size = 1.0f;
          break;
+      case INGAME_MENU_ASPECT_RATIO:
       case SETTING_KEEP_ASPECT_RATIO:
          if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
@@ -1653,6 +1709,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
       case SETTING_SCALE_FACTOR:
+      case INGAME_MENU_SCALE_FACTOR:
          if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {
             if (g_settings.video.render_to_texture)
@@ -2262,6 +2319,118 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                driver.input->set_keybinds(driver.input_data, g_settings.input.device[currently_selected_controller_menu], currently_selected_controller_menu, 0,
                      (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
          break;
+      case INGAME_MENU_LOAD_STATE:
+         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         {
+            rarch_load_state();
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+            return -1;
+         }
+         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+            rarch_state_slot_decrease();
+         if (input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
+            rarch_state_slot_increase();
+
+         break;
+      case INGAME_MENU_SAVE_STATE:
+         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         {
+            rarch_save_state();
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+            return -1;
+         }
+
+         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+            rarch_state_slot_decrease();
+         if (input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
+            rarch_state_slot_increase();
+
+         break;
+      case INGAME_MENU_ROTATION:
+         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         {
+            settings_set(1ULL << S_ROTATION_DECREMENT);
+            driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
+         }
+
+         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         {
+            settings_set(1ULL << S_ROTATION_INCREMENT);
+            driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
+         }
+
+         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         {
+            settings_set(1ULL << S_DEF_ROTATION);
+            driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
+         }
+         break;
+      case INGAME_MENU_FRAME_ADVANCE:
+         if ((input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_R2)) || (input & (1ULL << RMENU_DEVICE_NAV_L2)))
+         {
+            g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+            settings_set(1ULL << S_FRAME_ADVANCE);
+            return -1;
+         }
+         break;
+      case INGAME_MENU_RESIZE_MODE:
+         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+            menu_stack_push(INGAME_MENU_RESIZE);
+         break;
+      case INGAME_MENU_SCREENSHOT_MODE:
+         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+            menu_stack_push(INGAME_MENU_SCREENSHOT);
+         break;
+      case INGAME_MENU_CHANGE_GAME:
+         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         {
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+            return -1;
+         }
+         break;
+      case INGAME_MENU_RESET:
+         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         {
+            rarch_game_reset();
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+            return -1;
+         }
+         break;
+      case INGAME_MENU_CHANGE_LIBRETRO_CORE:
+         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         {
+            menu_stack_push(LIBRETRO_CHOICE);
+            filebrowser_set_root_and_ext(filebrowser, EXT_EXECUTABLES, default_paths.core_dir);
+            set_libretro_core_as_launch = true;
+         }
+         break;
+#ifdef HAVE_MULTIMAN
+      case INGAME_MENU_RETURN_TO_MULTIMAN:
+         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         {
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN_MULTIMAN);
+            return -1;
+         }
+         break;
+#endif
+      case INGAME_MENU_QUIT_RETROARCH:
+         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         {
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+            return -1;
+         }
+         break;
    }
 
    return 0;
@@ -2384,8 +2553,6 @@ static int select_setting(uint8_t menu_type, uint64_t input)
 
       if (items_pages[selected] != page_number)
          page_number = items_pages[selected];
-
-      set_setting_action(menu_type, selected, input);
    }
       
    if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
@@ -2396,8 +2563,6 @@ static int select_setting(uint8_t menu_type, uint64_t input)
          selected = first_setting; 
       if (items_pages[selected] != page_number)
          page_number = items_pages[selected];
-
-      set_setting_action(menu_type, selected, input);
    }
 
    /* back to ROM menu if CIRCLE is pressed */
@@ -2983,25 +3148,76 @@ static int ingame_menu_screenshot(uint8_t menu_type, uint64_t input)
    return 0;
 }
 
-#define MENU_ITEM_SELECTED(index) (menuitem_colors[index])
-
 static int ingame_menu(uint8_t menu_type, uint64_t input)
 {
+   static uint8_t first_setting = FIRST_INGAME_MENU_SETTING;
+   static uint8_t selected = FIRST_INGAME_MENU_SETTING;
+   static uint8_t page_number = 0;
+   uint8_t items_pages[SETTING_LAST] = {0};
+   uint8_t max_settings = MAX_NO_OF_INGAME_MENU_SETTINGS;
+
    int ret = 0;
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-   char strw_buffer[256];
-   unsigned menuitem_colors[MENU_ITEM_LAST];
-   static unsigned menu_idx = 0;
    font_params_t font_parms = {0};
 
-   filebrowser_t *filebrowser = tmpBrowser;
    rmenu_default_positions_t default_pos;
    menu_set_default_pos(&default_pos);
 
-   for(int i = 0; i < MENU_ITEM_LAST; i++)
-      menuitem_colors[i] = WHITE;
+   uint8_t i = 0;
+   uint8_t j = 0;
+   uint8_t item_page = 0;
 
-   menuitem_colors[menu_idx] = RED;
+   for(i = first_setting; i < max_settings; i++)
+   {
+      item item;
+      populate_setting_item(&item, i);
+
+      if (!(j < default_pos.entries_per_page))
+      {
+         j = 0;
+         item_page++;
+      }
+
+      item.page = item_page;
+      items_pages[i] = item_page;
+      j++;
+
+      if (item.page != page_number)
+         continue;
+
+      default_pos.starting_y_position += default_pos.y_position_increment;
+
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.starting_y_position;
+      font_parms.scale = default_pos.variable_font_size;
+      font_parms.color = selected == item.enum_id ? YELLOW : WHITE;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, item.text, &font_parms);
+
+      font_parms.x = default_pos.x_position_center;
+      font_parms.color = WHITE;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, item.setting_text, &font_parms);
+
+      if (item.enum_id != selected)
+         continue;
+
+      rarch_position_t position = {0};
+      position.x = default_pos.x_position;
+      position.y = default_pos.starting_y_position;
+
+      device_ptr->ctx_driver->rmenu_draw_panel(&position);
+
+      font_parms.x = default_pos.x_position;
+      font_parms.y = default_pos.comment_y_position;
+      font_parms.scale = default_pos.font_size;
+      font_parms.color = WHITE;
+
+      if (driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data, item.comment, &font_parms);
+   }
 
    if (input & (1ULL << RMENU_DEVICE_NAV_A))
    {
@@ -3010,310 +3226,33 @@ static int ingame_menu(uint8_t menu_type, uint64_t input)
       return -1;
    }
 
-   switch(menu_idx)
-   {
-      case MENU_ITEM_LOAD_STATE:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
-         {
-            rarch_load_state();
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            return -1;
-         }
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
-            rarch_state_slot_decrease();
-         if (input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
-            rarch_state_slot_increase();
-
-         strlcpy(strw_buffer, "Load from current state slot.", sizeof(strw_buffer));
-         break;
-      case MENU_ITEM_SAVE_STATE:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
-         {
-            rarch_save_state();
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            return -1;
-         }
-
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
-            rarch_state_slot_decrease();
-         if (input & (1ULL << RMENU_DEVICE_NAV_RIGHT))
-            rarch_state_slot_increase();
-
-         strlcpy(strw_buffer, "Save to current state slot.", sizeof(strw_buffer));
-         break;
-      case MENU_ITEM_KEEP_ASPECT_RATIO:
-         ret = set_setting_action(menu_type, SETTING_KEEP_ASPECT_RATIO, input);
-
-         if (ret != 0)
-            return ret;
-
-         strlcpy(strw_buffer, "Change the aspect ratio of the screen.", sizeof(strw_buffer));
-         break;
-      case MENU_ITEM_OVERSCAN_AMOUNT:
-         ret = set_setting_action(menu_type, SETTING_HW_OVERSCAN_AMOUNT, input);
-
-         if (ret != 0)
-            return ret;
-
-         strlcpy(strw_buffer, "Change overscan correction.", sizeof(strw_buffer));
-         break;
-      case MENU_ITEM_ORIENTATION:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
-         {
-            settings_set(1ULL << S_ROTATION_DECREMENT);
-            driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
-         }
-
-         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-            settings_set(1ULL << S_ROTATION_INCREMENT);
-            driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
-         }
-
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
-         {
-            settings_set(1ULL << S_DEF_ROTATION);
-            driver.video->set_rotation(NULL, g_extern.console.screen.orientation);
-         }
-         strlcpy(strw_buffer, "Change orientation of the screen.", sizeof(strw_buffer));
-         break;
-#ifdef HAVE_FBO
-      case MENU_ITEM_SCALE_FACTOR:
-         ret = set_setting_action(menu_type, SETTING_SCALE_FACTOR, input);
-
-         if (ret != 0)
-            return ret;
-
-         strlcpy(strw_buffer, "Change scaling of the screen.", sizeof(strw_buffer));
-         break;
-#endif
-      case MENU_ITEM_FRAME_ADVANCE:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_B)) || (input & (1ULL << RMENU_DEVICE_NAV_R2)) || (input & (1ULL << RMENU_DEVICE_NAV_L2)))
-         {
-            g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            settings_set(1ULL << S_FRAME_ADVANCE);
-            menu_idx = MENU_ITEM_FRAME_ADVANCE;
-            return -1;
-         }
-         strlcpy(strw_buffer, "Press a button to step one frame.", sizeof(strw_buffer));
-         break;
-      case MENU_ITEM_RESIZE_MODE:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
-            menu_stack_push(INGAME_MENU_RESIZE);
-         strlcpy(strw_buffer, "Allows you to resize the screen.", sizeof(strw_buffer));
-         break;
-      case MENU_ITEM_SCREENSHOT_MODE:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
-            menu_stack_push(INGAME_MENU_SCREENSHOT);
-         strlcpy(strw_buffer, "Take a screenshot.", sizeof(strw_buffer));
-         break;
-      case MENU_ITEM_RETURN_TO_GAME:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
-         {
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            return -1;
-         }
-
-         strlcpy(strw_buffer, "Change the currently loaded game.", sizeof(strw_buffer));
-         break;
-      case MENU_ITEM_RESET:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
-         {
-            rarch_game_reset();
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            return -1;
-         }
-         strlcpy(strw_buffer, "Reset the game.", sizeof(strw_buffer));
-         break;
-      case MENU_ITEM_RETURN_TO_MENU:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
-         {
-            menu_idx = 0;
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            return 0;
-         }
-         strlcpy(strw_buffer, "Return to the menu.", sizeof(strw_buffer));
-         break;
-      case MENU_ITEM_CHANGE_LIBRETRO:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
-         {
-            menu_stack_push(LIBRETRO_CHOICE);
-            filebrowser_set_root_and_ext(filebrowser, EXT_EXECUTABLES, default_paths.core_dir);
-            set_libretro_core_as_launch = true;
-         }
-         strlcpy(strw_buffer, "Choose another libretro core.", sizeof(strw_buffer));
-         break;
-#ifdef HAVE_MULTIMAN
-      case MENU_ITEM_RETURN_TO_MULTIMAN:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
-         {
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXITSPAWN_MULTIMAN);
-            return -1;
-         }
-         strlcpy(strw_buffer, "Quit RetroArch and return to multiMAN.", sizeof(strw_buffer));
-         break;
-#endif
-      case MENU_ITEM_QUIT_RARCH:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
-         {
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-            return -1;
-         }
-
-         strlcpy(strw_buffer, "Quit RetroArch.", sizeof(strw_buffer));
-         break;
-   }
-
    if (input & (1ULL << RMENU_DEVICE_NAV_UP))
    {
-      if (menu_idx > 0)
-         menu_idx--;
+      if (selected == first_setting)
+         selected = max_settings-1;
       else
-         menu_idx = MENU_ITEM_LAST - 1;
-   }
+         selected--;
 
+      if (items_pages[selected] != page_number)
+         page_number = items_pages[selected];
+   }
+      
    if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
    {
-      if (menu_idx < (MENU_ITEM_LAST-1))
-         menu_idx++;
-      else
-         menu_idx = 0;
+      selected++;
+
+      if (selected >= max_settings)
+         selected = first_setting; 
+      if (items_pages[selected] != page_number)
+         page_number = items_pages[selected];
    }
 
+   ret = set_setting_action(menu_type, selected, input);
+
+   if (ret != 0)
+      return ret;
+
    display_menubar(menu_type);
-
-   font_parms.x = default_pos.x_position;
-   font_parms.y = default_pos.comment_y_position;
-   font_parms.scale = default_pos.font_size;
-   font_parms.color = WHITE;
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
-
-   snprintf(strw_buffer, sizeof(strw_buffer), "Load State #%d", g_extern.state_slot);
-
-   font_parms.y = default_pos.y_position;
-   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_LOAD_STATE);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
-
-   snprintf(strw_buffer, sizeof(strw_buffer), "Save State #%d", g_extern.state_slot);
-
-   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_SAVE_STATE);
-   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_SAVE_STATE);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
-
-   snprintf(strw_buffer, sizeof(strw_buffer), "Aspect Ratio: %s",
-         aspectratio_lut[g_settings.video.aspect_ratio_idx].name);
-
-   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_KEEP_ASPECT_RATIO);
-   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_KEEP_ASPECT_RATIO);
-   
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
-
-   snprintf(strw_buffer, sizeof(strw_buffer), "Overscan: %f", g_extern.console.screen.overscan_amount);
-
-   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_OVERSCAN_AMOUNT);
-   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_OVERSCAN_AMOUNT);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
-
-   snprintf(strw_buffer, sizeof(strw_buffer), "Rotation: %s", rotation_lut[g_extern.console.screen.orientation]);
-
-   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_ORIENTATION);
-   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_ORIENTATION);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
-
-#ifdef HAVE_FBO
-   snprintf(strw_buffer, sizeof(strw_buffer), "Scale Factor: %f (X) / %f (Y)",
-         g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
-
-   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_SCALE_FACTOR);
-   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_SCALE_FACTOR);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, strw_buffer, &font_parms);
-#endif
-
-   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RESIZE_MODE);
-   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RESIZE_MODE);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, "Resize Mode", &font_parms);
-
-   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_FRAME_ADVANCE);
-   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_FRAME_ADVANCE);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, "Frame Advance", &font_parms);
-
-   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_SCREENSHOT_MODE);
-   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_SCREENSHOT_MODE);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, "Screenshot Mode", &font_parms);
-
-   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RESET);
-   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RESET);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, "Reset", &font_parms);
-
-   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RETURN_TO_GAME);
-   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_GAME);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, "Return To Game", &font_parms);
-
-   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RETURN_TO_MENU);
-   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MENU);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, "Change Game", &font_parms);
-
-   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_CHANGE_LIBRETRO);
-   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_CHANGE_LIBRETRO);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, "Change libretro core", &font_parms);
-
-#ifdef HAVE_MULTIMAN
-   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_RETURN_TO_MULTIMAN);
-   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_RETURN_TO_MULTIMAN);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, "Return to multiMAN", &font_parms);
-#endif
-
-   font_parms.y = default_pos.y_position + (default_pos.y_position_increment * MENU_ITEM_QUIT_RARCH);
-   font_parms.color = MENU_ITEM_SELECTED(MENU_ITEM_QUIT_RARCH);
-
-   if (driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, "Quit RetroArch", &font_parms);
-
-   rarch_position_t position = {0};
-   position.x = default_pos.x_position;
-   position.y = (default_pos.y_position+(default_pos.y_position_increment * menu_idx));
-   device_ptr->ctx_driver->rmenu_draw_panel(&position);
 
    return 0;
 }
