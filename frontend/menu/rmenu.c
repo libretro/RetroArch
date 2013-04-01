@@ -2384,12 +2384,20 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << RMENU_DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_SCREENSHOT);
          break;
-      case INGAME_MENU_CHANGE_GAME:
+      case INGAME_MENU_RETURN_TO_GAME:
          if (input & (1ULL << RMENU_DEVICE_NAV_B))
          {
             g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
             return -1;
+         }
+         break;
+      case INGAME_MENU_CHANGE_GAME:
+         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         {
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+            return 0;
          }
          break;
       case INGAME_MENU_RESET:
