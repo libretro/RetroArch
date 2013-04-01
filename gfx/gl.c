@@ -431,7 +431,7 @@ static bool gl_shader_filter_type(void *data, unsigned index, bool *smooth)
 }
 
 #ifdef HAVE_FBO
-static void gl_shader_scale(void *data, unsigned index, struct gl_fbo_scale *scale)
+static void gl_shader_scale(void *data, unsigned index, struct gfx_fbo_scale *scale)
 {
    gl_t *gl = (gl_t*)data;
 
@@ -666,7 +666,7 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
       return;
 #endif
 
-   struct gl_fbo_scale scale, scale_last;
+   struct gfx_fbo_scale scale, scale_last;
    gl_shader_scale(gl, 1, &scale);
    gl_shader_scale(gl, gl_shader_num_func(gl), &scale_last);
 

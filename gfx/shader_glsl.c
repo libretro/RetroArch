@@ -141,7 +141,7 @@ static bool glsl_enable;
 static bool glsl_modern;
 static GLuint gl_program[RARCH_GLSL_MAX_SHADERS];
 static enum filter_type gl_filter_type[RARCH_GLSL_MAX_SHADERS];
-static struct gl_fbo_scale gl_scale[RARCH_GLSL_MAX_SHADERS];
+static struct gfx_fbo_scale gl_scale[RARCH_GLSL_MAX_SHADERS];
 static unsigned gl_num_programs;
 static unsigned active_index;
 
@@ -172,8 +172,8 @@ struct shader_program
    float scale_y;
    unsigned abs_x;
    unsigned abs_y;
-   enum gl_scale_type type_x;
-   enum gl_scale_type type_y;
+   enum gfx_scale_type type_x;
+   enum gfx_scale_type type_y;
    unsigned frame_count_mod;
 
    bool valid_scale;
@@ -1571,7 +1571,7 @@ bool gl_glsl_filter_type(unsigned index, bool *smooth)
    }
 }
 
-void gl_glsl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
+void gl_glsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
 {
    if (glsl_enable)
       *scale = gl_scale[index];
