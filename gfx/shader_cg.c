@@ -666,6 +666,13 @@ static bool load_preset(const char *path)
 
    config_file_free(conf);
 
+#if 1
+   config_file_t *save_test = config_file_new(NULL);
+   gfx_shader_write_conf_cgp(conf, cg_shader);
+   config_file_write(save_test, "/tmp/load.cgp");
+   config_file_free(save_test);
+#endif
+
    if (cg_shader->passes > RARCH_CG_MAX_SHADERS - 3)
    {
       RARCH_WARN("Too many shaders ... Capping shader amount to %d.\n", RARCH_CG_MAX_SHADERS - 3);

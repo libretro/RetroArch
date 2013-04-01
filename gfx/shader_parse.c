@@ -455,8 +455,11 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
          config_set_bool(conf, key, pass->filter == RARCH_FILTER_LINEAR);
       }
 
-      print_buf(key, "frame_count_mod%u", i);
-      config_set_int(conf, key, pass->frame_count_mod);
+      if (pass->frame_count_mod)
+      {
+         print_buf(key, "frame_count_mod%u", i);
+         config_set_int(conf, key, pass->frame_count_mod);
+      }
 
       shader_write_fbo(conf, &pass->fbo, i);
    }
