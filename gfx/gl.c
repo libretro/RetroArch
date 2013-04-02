@@ -744,18 +744,11 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    pglGenFramebuffers(TEXTURES, gl->hw_render_fbo);
 
    bool depth   = g_extern.system.hw_render_callback.depth;
-   bool stencil = g_extern.system.hw_render_callback.stencil;
 
    if (depth)
    {
       pglGenRenderbuffers(TEXTURES, gl->hw_render_depth);
       gl->hw_render_depth_init = true;
-   }
-
-   if (stencil)
-   {
-      pglGenRenderbuffers(TEXTURES, gl->hw_render_stencil);
-      gl->hw_render_stencil_init = true;
    }
 
    for (unsigned i = 0; i < TEXTURES; i++)
@@ -770,15 +763,6 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
                width, height);
          pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                GL_RENDERBUFFER, gl->hw_render_depth[i]);
-      }
-
-      if (stencil)
-      {
-         pglBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_stencil[i]);
-         pglRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8,
-               width, height);
-         pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
-               GL_RENDERBUFFER, gl->hw_render_stencil[i]);
       }
 
       GLenum status = pglCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -1664,8 +1648,6 @@ static void gl_free(void *data)
       pglDeleteFramebuffers(TEXTURES, gl->hw_render_fbo);
    if (gl->hw_render_depth)
       pglDeleteRenderbuffers(TEXTURES, gl->hw_render_depth);
-   if (gl->hw_render_stencil)
-      pglDeleteRenderbuffers(TEXTURES, gl->hw_render_stencil);
    gl->hw_render_fbo_init = false;
 #endif
 #endif
