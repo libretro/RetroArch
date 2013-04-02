@@ -16,6 +16,8 @@
 #include <sys/stat.h>
 #include "rarch_wrapper.h"
 #include "general.h"
+#include "frontend/menu/rmenu.h"
+
 #import "browser/browser.h"
 #import "settings/settings.h"
 
@@ -64,6 +66,10 @@
    _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    _window.rootViewController = self;
    [_window makeKeyAndVisible];
+   
+   // RetroArch init
+   rarch_init_msg_queue();
+   menu_init();
 }
 
 - (void)applicationDidBecomeActive:(UIApplication*)application
@@ -139,6 +145,7 @@
       //
       [self pushViewController:RAGameView.get animated:NO];
       _isRunning = true;
+      g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
    }
    else
    {
@@ -191,21 +198,60 @@
    }
 
    _isIterating = true;
-   SInt32 runLoopResult = kCFRunLoopRunTimedOut;
-
-   while (!_isPaused && _isRunning && _isGameTop && _isScheduled && runLoopResult == kCFRunLoopRunTimedOut)
-   {
-      if (!rarch_main_iterate())
-         [self closeGame];
-      
-      // Here's a construct you don't see every day
-      for (
-         runLoopResult = kCFRunLoopRunHandledSource;
-         runLoopResult == kCFRunLoopRunHandledSource;
-         runLoopResult = CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true)
-      );
-   }
    
+   while (!_isPaused && _isRunning && _isGameTop && _isScheduled)
+   {
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
+      {
+         if (((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate()))
+            while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true) == kCFRunLoopRunHandledSource);
+         else
+         {
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+            
+            if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
+               g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_PREINIT);
+         }
+      }
+      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_INIT))
+      {
+         if (g_extern.main_is_init)
+            rarch_main_deinit();
+
+         struct rarch_main_wrap args = {0};
+
+         args.verbose       = g_extern.verbose;
+         args.config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
+         args.sram_path     = NULL;
+         args.state_path    = NULL;
+         args.rom_path      = g_extern.fullpath;
+         args.libretro_path = g_settings.libretro;
+
+         int init_ret = rarch_main_init_wrap(&args);
+         if (init_ret == 0)
+         {
+            RARCH_LOG("rarch_main_init() succeeded.\n");
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+         }
+         else
+         {
+            RARCH_ERR("rarch_main_init() failed.\n");
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+         }
+
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
+      }
+      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
+      {
+         if (menu_iterate())
+            while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true) == kCFRunLoopRunHandledSource);
+         else
+            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
+      }
+      else
+         [self closeGame];
+   }
+
    RARCH_LOG("Iterate Ended\n");
    _isIterating = false;
 }
