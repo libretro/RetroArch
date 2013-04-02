@@ -170,7 +170,7 @@
 {
    // Need to clear these otherwise stale versions may be used!
    memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
-   memset(g_settings.video.bsnes_shader_path, 0, sizeof(g_settings.video.bsnes_shader_path));
+   memset(g_settings.video.xml_shader_path, 0, sizeof(g_settings.video.xml_shader_path));
 
    if (_isRunning)
    {

@@ -153,7 +153,7 @@ static RASettingData* custom_action(NSString* action)
          boolean_setting(config, @"video_crop_overscan", @"Crop Overscan", @"true"),
          boolean_setting(config, @"video_scale_integer", @"Integer Scaling", @"false"),
          aspect_setting(config, @"Aspect Ratio"),
-         subpath_setting(config, @"video_bsnes_shader", @"Shader", @"", shader_path, @"shader"),
+         subpath_setting(config, @"video_xml_shader", @"Shader", @"", shader_path, @"shader"),
          nil],
 
       [NSArray arrayWithObjects:@"Audio",
@@ -200,7 +200,9 @@ static RASettingData* custom_action(NSString* action)
          group_setting(@"System Keys", [NSArray arrayWithObjects:
             // TODO: Many of these strings will be cut off on an iPhone
             [NSArray arrayWithObjects:@"System Keys",
-               button_setting(config, @"input_enable_hotkey", @"Hotkey Enable (Always on if not set)", @""),
+               button_setting(config, @"input_menu_toggle", @"Show Menu", @"F1"),
+               button_setting(config, @"input_disk_eject_toggle", @"Insert/Eject Disk", @""),
+               button_setting(config, @"input_disk_next", @"Cycle Disks", @""),
                button_setting(config, @"input_save_state", @"Save State", @"f2"),
                button_setting(config, @"input_load_state", @"Load State", @"f4"),
                button_setting(config, @"input_state_slot_increase", @"Next State Slot", @"f7"),
@@ -211,6 +213,7 @@ static RASettingData* custom_action(NSString* action)
                button_setting(config, @"input_slowmotion", @"Slow Motion", @"e"),
                button_setting(config, @"input_reset", @"Reset", @"h"),
                button_setting(config, @"input_exit_emulator", @"Close Game", @"escape"),
+               button_setting(config, @"input_enable_hotkey", @"Hotkey Enable (Always on if not set)", @""),             
                nil],
             nil]),
          nil],
