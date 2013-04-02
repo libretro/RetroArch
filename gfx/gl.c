@@ -251,8 +251,8 @@ static bool gl_shader_init(void *data) // We always need a shader alive in GLES2
    gl_t *gl = (gl_t*)data;
    const char *shader_path = NULL;
    if ((g_settings.video.shader_type == RARCH_SHADER_AUTO || g_settings.video.shader_type == RARCH_SHADER_GLSL)
-         && *g_settings.video.bsnes_shader_path)
-      shader_path = g_settings.video.bsnes_shader_path;
+         && *g_settings.video.xml_shader_path)
+      shader_path = g_settings.video.xml_shader_path;
 
    gl->shader = &gl_glsl_backend;
    return gl->shader->init(shader_path);
@@ -268,7 +268,7 @@ static bool gl_shader_init(void *data)
    {
       case RARCH_SHADER_AUTO:
       {
-         if (*g_settings.video.cg_shader_path && *g_settings.video.bsnes_shader_path)
+         if (*g_settings.video.cg_shader_path && *g_settings.video.xml_shader_path)
             RARCH_WARN("Both Cg and GLSL XML shader are defined in config file. Cg shader will be selected by default.\n");
 
 #ifdef HAVE_CG
@@ -280,10 +280,10 @@ static bool gl_shader_init(void *data)
 #endif
 
 #ifdef HAVE_GLSL
-         if (*g_settings.video.bsnes_shader_path)
+         if (*g_settings.video.xml_shader_path)
          {
             backend     = &gl_glsl_backend;
-            shader_path = g_settings.video.bsnes_shader_path;
+            shader_path = g_settings.video.xml_shader_path;
          }
 #endif
          break;
@@ -299,7 +299,7 @@ static bool gl_shader_init(void *data)
 #ifdef HAVE_GLSL
       case RARCH_SHADER_GLSL:
          backend     = &gl_glsl_backend;
-         shader_path = g_settings.video.bsnes_shader_path;
+         shader_path = g_settings.video.xml_shader_path;
          break;
 #endif
 

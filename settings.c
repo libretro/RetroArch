@@ -454,7 +454,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_FLOAT(video.refresh_rate, "video_refresh_rate");
 
    CONFIG_GET_PATH(video.cg_shader_path, "video_cg_shader");
-   CONFIG_GET_PATH(video.bsnes_shader_path, "video_bsnes_shader");
+   CONFIG_GET_PATH(video.xml_shader_path, "video_xml_shader");
    CONFIG_GET_PATH(video.second_pass_shader, "video_second_pass_shader");
    CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
    CONFIG_GET_FLOAT(video.fbo.scale_x, "video_fbo_scale_x");

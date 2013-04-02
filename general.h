@@ -178,7 +178,7 @@ struct settings
       bool scale_integer;
       unsigned aspect_ratio_idx;
       char cg_shader_path[PATH_MAX];
-      char bsnes_shader_path[PATH_MAX];
+      char xml_shader_path[PATH_MAX];
       char filter_path[PATH_MAX];
       enum rarch_shader_type shader_type;
       float refresh_rate;
