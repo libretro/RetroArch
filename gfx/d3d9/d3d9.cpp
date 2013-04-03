@@ -1041,7 +1041,7 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
    link_info.tex_w = link_info.tex_h = info.input_scale * RARCH_SCALE_BASE;
 
    link_info.frame_count_mod = frame_count_mods[0];
-   link_info.float_framebuffer = float_fbos[0];
+   link_info.float_framebuffer = false;
 
    chain = std::unique_ptr<RenderChain>(
          new RenderChain(
@@ -1071,7 +1071,7 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
       link_info.filter_linear = filters[i];
       link_info.shader_path = shader_paths[i];
       link_info.frame_count_mod = frame_count_mods[i];
-      link_info.float_framebuffer = float_fbos[i];
+      link_info.float_framebuffer = float_fbos[i-1];
 
       current_width = out_width;
       current_height = out_height;
