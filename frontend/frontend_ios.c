@@ -94,7 +94,11 @@ void* rarch_main_ios(void* args)
 
    for (;;)
    {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
+      if (g_extern.system.shutdown)
+      {
+         break;
+      }
+      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
       {
          while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate())
             process_events();
@@ -132,13 +136,15 @@ void* rarch_main_ios(void* args)
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
       {
          g_extern.lifecycle_mode_state |= 1ULL << MODE_MENU_PREINIT;
-         while (menu_iterate())
+         while (!g_extern.system.shutdown && menu_iterate())
             process_events();
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
       }
       else
          break;
    }
+
+   g_extern.system.shutdown = false;
 
    menu_free();
    if (g_extern.main_is_init)

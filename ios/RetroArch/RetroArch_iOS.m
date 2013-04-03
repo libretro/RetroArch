@@ -52,6 +52,11 @@ static void event_set_state_slot(void* userdata)
    g_extern.state_slot = (uint32_t)userdata;
 }
 
+static void event_quit(void* userdata)
+{
+   g_extern.system.shutdown = true;
+}
+
 static void event_reload_config(void* userdata)
 {
    // Need to clear these otherwise stale versions may be used!
@@ -255,7 +260,7 @@ static void event_reload_config(void* userdata)
 - (IBAction)closeGamePressed:(id)sender
 {
    [self closePauseMenu:sender];
-//   [self closeGame];
+   ios_frontend_post_event(event_quit, 0);
 }
 
 - (IBAction)showSettings
