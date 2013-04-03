@@ -105,6 +105,18 @@ static UIView* g_pause_indicator_view;
       ];
 }
 
+- (void)suspend
+{
+   g_view.context = nil;
+   [EAGLContext setCurrentContext:nil];
+}
+
+- (void)resume
+{
+   g_view.context = g_context;
+   [EAGLContext setCurrentContext:g_context];
+}
+
 @end
 
 bool ios_init_game_view()
@@ -169,7 +181,8 @@ void ios_get_game_view_size(unsigned *width, unsigned *height)
 void ios_bind_game_view_fbo()
 {
    dispatch_sync(dispatch_get_main_queue(), ^{
-      [g_view bindDrawable];   
+         if (g_context)
+            [g_view display];
    });
 }
 

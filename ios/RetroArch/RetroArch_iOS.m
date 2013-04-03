@@ -52,16 +52,6 @@ static void event_set_state_slot(void* userdata)
    g_extern.state_slot = (uint32_t)userdata;
 }
 
-static void event_init_drivers(void* userdata)
-{
-   init_drivers();
-}
-
-static void event_uninit_drivers(void* userdata)
-{
-   uninit_drivers();
-}
-
 static void event_reload_config(void* userdata)
 {
    // Need to clear these otherwise stale versions may be used!
@@ -114,14 +104,12 @@ static void event_reload_config(void* userdata)
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
 {
-   if (_isRunning)
-      ios_frontend_post_event(&event_init_drivers, 0);
+   [RAGameView.get resume];
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
-   if (_isRunning)
-      ios_frontend_post_event(&event_uninit_drivers, 0);
+   [RAGameView.get suspend];
 }
 
 // UINavigationControllerDelegate

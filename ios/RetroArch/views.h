@@ -22,6 +22,9 @@
 + (RAGameView*)get;
 - (void)openPauseMenu;
 - (void)closePauseMenu;
+
+- (void)suspend;
+- (void)resume;
 @end
 
 @interface RALogView : UITableViewController
