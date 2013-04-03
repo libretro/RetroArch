@@ -14,7 +14,7 @@
  */
 
 #include <sys/stat.h>
-#include <dispatch/dispatch.h>
+#include <pthread.h>
 
 #include "rarch_wrapper.h"
 #include "general.h"
@@ -29,7 +29,7 @@
 #define kDOCSFOLDER [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"]
 
 // From frontend/frontend_ios.c
-extern void rarch_main_ios(void* args);
+extern void* rarch_main_ios(void* args);
 extern void ios_frontend_post_event(void (*fn)(void*), void* userdata);
 
 static void event_game_reset(void* userdata)
@@ -66,6 +66,8 @@ static void event_reload_config(void* userdata)
 @implementation RetroArch_iOS
 {
    UIWindow* _window;
+
+   pthread_t _retroThread;
 
    bool _isGameTop;
    bool _isPaused;
@@ -157,9 +159,12 @@ static void event_reload_config(void* userdata)
    load_data->state_path = strdup(sd);
    load_data->verbose = false;
    load_data->config_path = strdup(cf);
-   dispatch_async_f(dispatch_get_global_queue(0, 0), load_data, rarch_main_ios);
-   _isRunning = true;
-
+   if (pthread_create(&_retroThread, 0, rarch_main_ios, load_data))
+   {
+      [self rarchExited:NO];
+   }
+   pthread_detach(_retroThread);
+   
    // Read load time settings
    // TODO: Do this better
    config_file_t* conf = config_file_new([self.moduleInfo.configPath UTF8String]);

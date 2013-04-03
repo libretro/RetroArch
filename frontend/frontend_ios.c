@@ -76,7 +76,7 @@ static void ios_free_main_wrap(struct rarch_main_wrap* wrap)
    free(wrap);
 }
 
-void rarch_main_ios(void* args)
+void* rarch_main_ios(void* args)
 {
    struct rarch_main_wrap* argdata = (struct rarch_main_wrap*)args;
    int init_ret = rarch_main_init_wrap(argdata);
@@ -85,7 +85,7 @@ void rarch_main_ios(void* args)
    if (init_ret)
    {
       dispatch_async_f(dispatch_get_main_queue(), (void*)1, ios_rarch_exited);
-      return;
+      return 0;
    }
 
 #ifdef HAVE_RGUI
@@ -157,4 +157,5 @@ void rarch_main_ios(void* args)
    rarch_main_clear_state();
 
    dispatch_async_f(dispatch_get_main_queue(), 0, ios_rarch_exited);
+   return 0;
 }
