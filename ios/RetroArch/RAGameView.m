@@ -79,6 +79,8 @@ static UIView* g_pause_indicator_view;
    UISegmentedControl* stateSelect = (UISegmentedControl*)[g_pause_view viewWithTag:1];
    stateSelect.selectedSegmentIndex = (g_extern.state_slot < 10) ? g_extern.state_slot : -1;
 
+   g_extern.is_paused = true;
+
    //
    [UIView animateWithDuration:0.2
       animations:^ { g_pause_view.alpha = 1.0f; }
@@ -91,6 +93,8 @@ static UIView* g_pause_indicator_view;
       animations:^ { g_pause_view.alpha = 0.0f; }
       completion:^(BOOL finished) { }
    ];
+   
+   g_extern.is_paused = false;
 }
 
 - (void)hidePauseButton
@@ -105,34 +109,44 @@ static UIView* g_pause_indicator_view;
 
 bool ios_init_game_view()
 {
-   // Make sure the view was created
-   [RAGameView get];
+   dispatch_sync(dispatch_get_main_queue(), ^{
+      // Make sure the view was created
+      [RAGameView get];
 
-   g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+      g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+      [EAGLContext setCurrentContext:g_context];
+      g_view.context = g_context;
+
+      // Show pause button for a few seconds, so people know it's there
+      g_pause_indicator_view.alpha = 1.0f;
+      [g_instance performSelector:@selector(hidePauseButton) withObject:g_instance afterDelay:3.0f];
+   });
+
    [EAGLContext setCurrentContext:g_context];
-   g_view.context = g_context;
-
-   // Show pause button for a few seconds, so people know it's there
-   g_pause_indicator_view.alpha = 1.0f;
-   [g_instance performSelector:@selector(hidePauseButton) withObject:g_instance afterDelay:3.0f];
 
    return true;
 }
 
 void ios_destroy_game_view()
 {
-   glFinish();
+   dispatch_sync(dispatch_get_main_queue(), ^{
+      glFinish();
 
-   g_view.context = nil;
+      g_view.context = nil;
+      [EAGLContext setCurrentContext:nil];
+      g_context = nil;
+   });
+   
    [EAGLContext setCurrentContext:nil];
-   g_context = nil;
 }
 
 void ios_flip_game_view()
-{   
+{
    if (--g_fast_forward_skips < 0)
    {
-      [g_view display];
+      dispatch_sync(dispatch_get_main_queue(), ^{
+         [g_view display];
+      });
       g_fast_forward_skips = g_is_syncing ? 0 : 3;
    }
 }
@@ -154,6 +168,8 @@ void ios_get_game_view_size(unsigned *width, unsigned *height)
 
 void ios_bind_game_view_fbo()
 {
-   [g_view bindDrawable];
+   dispatch_sync(dispatch_get_main_queue(), ^{
+      [g_view bindDrawable];   
+   });
 }
 

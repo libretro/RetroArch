@@ -393,6 +393,8 @@ MAIN
 #include "../frontend/frontend_bbqnx.c"
 #elif defined(ANDROID)
 #include "../frontend/frontend_android.c"
+#elif defined(IOS)
+#include "../frontend/frontend_ios.c"
 #endif
 
 #if !defined(ANDROID) && !defined(IOS)

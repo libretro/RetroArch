@@ -14,6 +14,8 @@
  */
 
 #include <sys/stat.h>
+#include <dispatch/dispatch.h>
+
 #include "rarch_wrapper.h"
 #include "general.h"
 #include "frontend/menu/rmenu.h"
@@ -26,13 +28,14 @@
 
 #define kDOCSFOLDER [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"]
 
+// From frontend/frontend_ios.c
+extern void rarch_main_ios(void* args);
+extern void ios_free_main_wrap(struct rarch_main_wrap* wrap);
 
 @implementation RetroArch_iOS
 {
    UIWindow* _window;
-   
-   bool _isIterating;
-   bool _isScheduled;
+
    bool _isGameTop;
    bool _isPaused;
    bool _isRunning;
@@ -72,17 +75,6 @@
    menu_init();
 }
 
-- (void)applicationDidBecomeActive:(UIApplication*)application
-{
-   [self schedule];
-}
-
-- (void)applicationWillResignActive:(UIApplication*)application
-{
-   [self lapse];
-}
-
-
 - (void)applicationWillEnterForeground:(UIApplication *)application
 {
    if (_isRunning)
@@ -101,9 +93,6 @@
    _isGameTop = [viewController isKindOfClass:[RAGameView class]];
    [[UIApplication sharedApplication] setStatusBarHidden:_isGameTop withAnimation:UIStatusBarAnimationNone];
    self.navigationBarHidden = _isGameTop;
-   
-   if (_isGameTop)
-      [self schedule];
 
    self.topViewController.navigationItem.rightBarButtonItem = [self createBluetoothButton];
 }
@@ -122,38 +111,40 @@
 #pragma mark EMULATION
 - (void)runGame:(NSString*)path
 {
+   if (_isRunning)
+      return;
+
    assert(self.moduleInfo);
    
    [RASettingsList refreshConfigFile];
+   
+   [self pushViewController:RAGameView.get animated:NO];
+   _isRunning = true;
 
    const char* const sd = [[RetroArch_iOS get].system_directory UTF8String];
    const char* const cf = (ra_ios_is_file(self.moduleInfo.configPath)) ? [self.moduleInfo.configPath UTF8String] : 0;
    const char* const libretro = [self.moduleInfo.path UTF8String];
 
-   struct rarch_main_wrap main_wrapper = {[path UTF8String], sd, sd, cf, libretro};
-   if (rarch_main_init_wrap(&main_wrapper) == 0)
-   {
-      rarch_init_msg_queue();
+   struct rarch_main_wrap* load_data = malloc(sizeof(struct rarch_main_wrap));
+   load_data->libretro_path = strdup(libretro);
+   load_data->rom_path = strdup([path UTF8String]);
+   load_data->sram_path = strdup(sd);
+   load_data->state_path = strdup(sd);
+   load_data->verbose = false;
+   load_data->config_path = strdup(cf);
+   dispatch_async_f(dispatch_get_global_queue(0, 0), load_data, rarch_main_ios);
+   _isRunning = true;
 
-      // Read load time settings
-      config_file_t* conf = config_file_new([self.moduleInfo.configPath UTF8String]);
-      bool autoStartBluetooth = false;
-      if (conf && config_get_bool(conf, "ios_auto_bluetooth", &autoStartBluetooth) && autoStartBluetooth)
-         [self startBluetooth];
-      config_file_free(conf);
-
-      //
-      [self pushViewController:RAGameView.get animated:NO];
-      _isRunning = true;
-      g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
-   }
-   else
-   {
-      _isRunning = false;
-      [RetroArch_iOS displayErrorMessage:@"Failed to load game."];
-   }
+   // Read load time settings
+   // TODO: Do this better
+   config_file_t* conf = config_file_new([self.moduleInfo.configPath UTF8String]);
+   bool autoStartBluetooth = false;
+   if (conf && config_get_bool(conf, "ios_auto_bluetooth", &autoStartBluetooth) && autoStartBluetooth)
+      [self startBluetooth];
+   config_file_free(conf);
 }
 
+#if 0
 - (void)closeGame
 {
    if (_isRunning)
@@ -172,6 +163,7 @@
       [self popViewControllerAnimated:NO];
    }
 }
+#endif
 
 - (void)refreshConfig
 {
@@ -179,92 +171,14 @@
    memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
    memset(g_settings.video.xml_shader_path, 0, sizeof(g_settings.video.xml_shader_path));
 
+#if 0
    if (_isRunning)
    {
       uninit_drivers();
       config_load();
       init_drivers();
    }
-}
-
-- (void)iterate
-{
-   RARCH_LOG("Iterate Began\n");
-
-   if (_isIterating)
-   {
-      RARCH_LOG("Recursive Iterate");
-      return;
-   }
-
-   _isIterating = true;
-   
-   while (!_isPaused && _isRunning && _isGameTop && _isScheduled)
-   {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
-      {
-         if (((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate()))
-            while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true) == kCFRunLoopRunHandledSource);
-         else
-         {
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-            
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
-               g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_PREINIT);
-         }
-      }
-      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_INIT))
-      {
-         if (g_extern.main_is_init)
-            rarch_main_deinit();
-
-         struct rarch_main_wrap args = {0};
-
-         args.verbose       = g_extern.verbose;
-         args.config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
-         args.sram_path     = NULL;
-         args.state_path    = NULL;
-         args.rom_path      = g_extern.fullpath;
-         args.libretro_path = g_settings.libretro;
-
-         int init_ret = rarch_main_init_wrap(&args);
-         if (init_ret == 0)
-         {
-            RARCH_LOG("rarch_main_init() succeeded.\n");
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-         }
-         else
-         {
-            RARCH_ERR("rarch_main_init() failed.\n");
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-         }
-
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
-      }
-      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
-      {
-         if (menu_iterate())
-            while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true) == kCFRunLoopRunHandledSource);
-         else
-            g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
-      }
-      else
-         [self closeGame];
-   }
-
-   RARCH_LOG("Iterate Ended\n");
-   _isIterating = false;
-}
-
-- (void)schedule
-{
-   _isScheduled = true;
-   [self performSelector:@selector(iterate) withObject:self afterDelay:.01f];
-}
-
-- (void)lapse
-{
-   _isScheduled = false;
+#endif
 }
 
 #pragma mark PAUSE MENU
@@ -304,13 +218,12 @@
 {
    [[RAGameView get] closePauseMenu];
    _isPaused = false;
-   [self schedule];
 }
 
 - (IBAction)closeGamePressed:(id)sender
 {
    [self closePauseMenu:sender];
-   [self closeGame];
+//   [self closeGame];
 }
 
 - (IBAction)showSettings
