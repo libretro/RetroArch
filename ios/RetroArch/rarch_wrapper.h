@@ -16,8 +16,10 @@
 #ifndef __IOS_RARCH_WRAPPER_H__
 #define __IOS_RARCH_WRAPPER_H__
 
-// These functions must only be called in gfx/context/ioseagl_ctx.c
+// These functions should only be called as arguments to dispatch_sync
+void ios_rarch_exited(void* result);
 
+// These functions must only be called in gfx/context/ioseagl_ctx.c
 bool ios_init_game_view();
 void ios_destroy_game_view();
 void ios_flip_game_view();

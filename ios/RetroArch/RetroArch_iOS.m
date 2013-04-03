@@ -30,7 +30,6 @@
 
 // From frontend/frontend_ios.c
 extern void rarch_main_ios(void* args);
-extern void ios_free_main_wrap(struct rarch_main_wrap* wrap);
 
 @implementation RetroArch_iOS
 {
@@ -144,17 +143,17 @@ extern void ios_free_main_wrap(struct rarch_main_wrap* wrap);
    config_file_free(conf);
 }
 
-#if 0
-- (void)closeGame
+- (void)rarchExited:(BOOL)successful
 {
+   if (!successful)
+   {
+      [RetroArch_iOS displayErrorMessage:@"Failed to load game."];
+   }
+
    if (_isRunning)
    {
       _isRunning = false;
-   
-      rarch_main_deinit();
-      rarch_deinit_msg_queue();
-      rarch_main_clear_state();
-      
+     
       // Stop bluetooth (might be annoying but forgetting could eat battery of device AND wiimote)
       [self stopBluetooth];
       
@@ -163,7 +162,6 @@ extern void ios_free_main_wrap(struct rarch_main_wrap* wrap);
       [self popViewControllerAnimated:NO];
    }
 }
-#endif
 
 - (void)refreshConfig
 {
@@ -285,3 +283,7 @@ extern void ios_free_main_wrap(struct rarch_main_wrap* wrap);
 
 @end
 
+void ios_rarch_exited(void* result)
+{
+   [[RetroArch_iOS get] rarchExited:result ? NO : YES];
+}

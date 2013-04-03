@@ -14,6 +14,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <dispatch/dispatch.h>
+
+#include "../ios/RetroArch/rarch_wrapper.h"
 #include "../general.h"
 #include "../conf/config_file.h"
 #include "../file.h"
@@ -22,7 +25,7 @@
 #include "../frontend/menu/rgui.h"
 #endif
 
-void ios_free_main_wrap(struct rarch_main_wrap* wrap)
+static void ios_free_main_wrap(struct rarch_main_wrap* wrap)
 {
    if (wrap)
    {
@@ -38,13 +41,15 @@ void ios_free_main_wrap(struct rarch_main_wrap* wrap)
 
 void rarch_main_ios(void* args)
 {
-   rarch_init_msg_queue();
-   menu_init();
+   struct rarch_main_wrap* argdata = (struct rarch_main_wrap*)args;
+   int init_ret = rarch_main_init_wrap(argdata);
+   ios_free_main_wrap(argdata);
 
-
-   int init_ret;
-   if ((init_ret = rarch_main_init_wrap((struct rarch_main_wrap*)args))) return;
-   ios_free_main_wrap(args);
+   if (init_ret)
+   {
+      dispatch_async_f(dispatch_get_main_queue(), (void*)1, ios_rarch_exited);
+      return;
+   }
 
 #ifdef HAVE_RGUI
    menu_init();
@@ -110,4 +115,6 @@ void rarch_main_ios(void* args)
 #endif
 
    rarch_main_clear_state();
+
+   dispatch_async_f(dispatch_get_main_queue(), 0, ios_rarch_exited);
 }
