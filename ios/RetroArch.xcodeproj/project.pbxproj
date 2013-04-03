@@ -45,8 +45,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		960356BC1700652C008F55DA /* btpad_ps3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = btpad_ps3.c; sourceTree = "<group>"; };
-		960356BD1700652C008F55DA /* btpad_wii.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = btpad_wii.c; sourceTree = "<group>"; };
 		9605EA99170288EA001D47B0 /* RAModuleInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAModuleInfo.h; sourceTree = "<group>"; };
 		9605EA9A170288EA001D47B0 /* RAModuleInfo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleInfo.m; sourceTree = "<group>"; };
 		96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleInfoList.m; sourceTree = "<group>"; };
@@ -66,13 +64,6 @@
 		963F5ABE16CC522F009BBD19 /* RASettingsSubList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RASettingsSubList.m; sourceTree = "<group>"; };
 		963F5ABF16CC522F009BBD19 /* RASettingsList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RASettingsList.m; sourceTree = "<group>"; };
 		963F5AC516CC523B009BBD19 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAGameView.m; sourceTree = "<group>"; };
-		966B9C9516E418B7005B61E1 /* btstack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btstack.h; sourceTree = "<group>"; };
-		966B9C9616E418B7005B61E1 /* hci_cmds.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hci_cmds.h; sourceTree = "<group>"; };
-		966B9C9716E418B7005B61E1 /* linked_list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = linked_list.h; sourceTree = "<group>"; };
-		966B9C9816E418B7005B61E1 /* run_loop.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = run_loop.h; sourceTree = "<group>"; };
-		966B9C9916E418B7005B61E1 /* sdp_util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sdp_util.h; sourceTree = "<group>"; };
-		966B9C9A16E418B7005B61E1 /* utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utils.h; sourceTree = "<group>"; };
-		966B9CA116E418B7005B61E1 /* btpad.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = btpad.c; sourceTree = "<group>"; };
 		966B9CA916E41C07005B61E1 /* browser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = browser.h; sourceTree = "<group>"; };
 		966B9CAA16E41C07005B61E1 /* browser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = browser.m; sourceTree = "<group>"; };
 		966B9CAB16E41C07005B61E1 /* RADirectoryGrid.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RADirectoryGrid.m; sourceTree = "<group>"; };
@@ -101,15 +92,6 @@
 		96AFAF4516C1E00A009DE44C /* bitmap.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = bitmap.bin; sourceTree = "<group>"; };
 		96AFAF4616C1E00A009DE44C /* bitmap.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; path = bitmap.bmp; sourceTree = "<group>"; };
 		96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rarch_wrapper.h; sourceTree = "<group>"; };
-		96F9C27516FF5E97002455B3 /* btdynamic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = btdynamic.c; sourceTree = "<group>"; };
-		96F9C27616FF5E97002455B3 /* btdynamic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btdynamic.h; sourceTree = "<group>"; };
-		96F9C27816FF6511002455B3 /* wiimote.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = wiimote.c; sourceTree = "<group>"; };
-		96F9C27916FF6511002455B3 /* wiimote.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wiimote.h; sourceTree = "<group>"; };
-		96F9C27B16FF66BC002455B3 /* btpad.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btpad.h; sourceTree = "<group>"; };
-		96F9C27C16FF6892002455B3 /* ios_joypad.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ios_joypad.c; sourceTree = "<group>"; };
-		96F9C27D16FF6892002455B3 /* ios_input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ios_input.h; sourceTree = "<group>"; };
-		96F9C27E16FF6892002455B3 /* ios_input.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ios_input.c; sourceTree = "<group>"; };
-		96F9C27F16FF6892002455B3 /* keycode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = keycode.h; sourceTree = "<group>"; };
 		96F9C28216FFA55F002455B3 /* RALogView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RALogView.m; sourceTree = "<group>"; };
 		D48581DD16F823F9004BEB17 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../griffin/griffin.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -142,47 +124,6 @@
 				96366C7216CAF62200D64A22 /* settings.h */,
 			);
 			path = settings;
-			sourceTree = "<group>";
-		};
-		966B9C8516E40D44005B61E1 /* input */ = {
-			isa = PBXGroup;
-			children = (
-				966B9C8F16E418B7005B61E1 /* BTStack */,
-				96F9C27C16FF6892002455B3 /* ios_joypad.c */,
-				96F9C27D16FF6892002455B3 /* ios_input.h */,
-				96F9C27E16FF6892002455B3 /* ios_input.c */,
-				96F9C27F16FF6892002455B3 /* keycode.h */,
-			);
-			path = input;
-			sourceTree = "<group>";
-		};
-		966B9C8F16E418B7005B61E1 /* BTStack */ = {
-			isa = PBXGroup;
-			children = (
-				966B9C9416E418B7005B61E1 /* btstack */,
-				966B9CA116E418B7005B61E1 /* btpad.c */,
-				960356BC1700652C008F55DA /* btpad_ps3.c */,
-				960356BD1700652C008F55DA /* btpad_wii.c */,
-				96F9C27B16FF66BC002455B3 /* btpad.h */,
-				96F9C27516FF5E97002455B3 /* btdynamic.c */,
-				96F9C27616FF5E97002455B3 /* btdynamic.h */,
-				96F9C27816FF6511002455B3 /* wiimote.c */,
-				96F9C27916FF6511002455B3 /* wiimote.h */,
-			);
-			path = BTStack;
-			sourceTree = "<group>";
-		};
-		966B9C9416E418B7005B61E1 /* btstack */ = {
-			isa = PBXGroup;
-			children = (
-				966B9C9516E418B7005B61E1 /* btstack.h */,
-				966B9C9616E418B7005B61E1 /* hci_cmds.h */,
-				966B9C9716E418B7005B61E1 /* linked_list.h */,
-				966B9C9816E418B7005B61E1 /* run_loop.h */,
-				966B9C9916E418B7005B61E1 /* sdp_util.h */,
-				966B9C9A16E418B7005B61E1 /* utils.h */,
-			);
-			path = btstack;
 			sourceTree = "<group>";
 		};
 		966B9CA816E41C07005B61E1 /* browser */ = {
@@ -254,7 +195,6 @@
 			isa = PBXGroup;
 			children = (
 				966B9CA816E41C07005B61E1 /* browser */,
-				966B9C8516E40D44005B61E1 /* input */,
 				96366C6F16CAF62200D64A22 /* settings */,
 				96297A0E16C5AEA100E6DCE0 /* main.m */,
 				963F5AC516CC523B009BBD19 /* RAGameView.m */,
