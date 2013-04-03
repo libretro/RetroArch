@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <pthread.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <stdio.h>

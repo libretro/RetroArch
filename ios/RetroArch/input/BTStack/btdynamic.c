@@ -15,7 +15,6 @@
 #include <stdio.h>
 #include <assert.h>
 #include <dlfcn.h>
-#include <pthread.h>
 #include <CoreFoundation/CFRunLoop.h>
 
 #include "../../rarch_wrapper.h"
@@ -59,44 +58,10 @@ static struct
 
 extern void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static pthread_t btstack_thread;
 static bool btstack_tested;
 static bool btstack_loaded;
-
-// TODO: This may need to be synchronized
-static volatile bool btstack_poweron;
-
-static void* btstack_thread_function(void* data)
-{
-   ios_add_log_message("BTstack: Thread Initializing");
-
-   run_loop_init_ptr(RUN_LOOP_COCOA);
-   bt_register_packet_handler_ptr(btpad_packet_handler);
-
-   if (bt_open_ptr())
-   {
-      ios_add_log_message("BTstack: Failed to open, exiting thread.");
-      return 0;
-   }
-
-   while (1)
-   {
-      static bool poweron = false;
-      
-      CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1, false);
-      
-      if (poweron != btstack_poweron)
-      {
-         poweron = btstack_poweron;
-         bt_send_cmd_ptr(btstack_set_power_mode_ptr, poweron ? HCI_POWER_ON : HCI_POWER_OFF);
-      
-         ios_add_log_message("BTstack: Responding to power switch (now %s)", poweron ? "ON" : "OFF");
-      }
-   }
-
-   return 0;
-}
-
+static bool btstack_open;
+static bool btstack_poweron;
 
 bool btstack_load()
 {
@@ -133,6 +98,9 @@ bool btstack_load()
       }
    }
 
+   run_loop_init_ptr(RUN_LOOP_COCOA);
+   bt_register_packet_handler_ptr(btpad_packet_handler);
+
    ios_add_log_message("BTstack: Loaded");
    btstack_loaded = true;
 
@@ -143,30 +111,32 @@ void btstack_start()
 {
    if (!btstack_load())
       return;
-
-   static bool thread_started = false;
-   if (!thread_started)
-   {
-      ios_add_log_message("BTstack: Starting thread");
-      pthread_create(&btstack_thread, NULL, btstack_thread_function, 0);
-      thread_started = true;
-   }
    
+   if (!btstack_open)
+   {
+      if (bt_open_ptr())
+      {
+         ios_add_log_message("BTstack: bt_open failed");
+         btstack_loaded = false;
+         return;
+      }
+   }
+  
+   btstack_open = true;
    if (!btstack_poweron)
    {
-      ios_add_log_message("BTstack: Setting poweron flag");
+      ios_add_log_message("BTstack: Turning on");
+      bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_ON);
       btstack_poweron = true;
    }
 }
 
 void btstack_stop()
 {
-   if (!btstack_load())
-      return;
-
-   if (btstack_poweron)
+   if (btstack_load() && btstack_open && btstack_poweron)
    {
-      ios_add_log_message("BTstack: Clearing poweron flag");
+      ios_add_log_message("BTstack: Turning off");
+      bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_OFF);
       btstack_poweron = false;
    }
 }
