@@ -30,6 +30,48 @@
 
 // From frontend/frontend_ios.c
 extern void rarch_main_ios(void* args);
+extern void ios_frontend_post_event(void (*fn)(void*), void* userdata);
+
+static void event_game_reset(void* userdata)
+{
+   rarch_game_reset();
+}
+
+static void event_load_state(void* userdata)
+{
+   rarch_load_state();
+}
+
+static void event_save_state(void* userdata)
+{
+   rarch_save_state();
+}
+
+static void event_set_state_slot(void* userdata)
+{
+   g_extern.state_slot = (uint32_t)userdata;
+}
+
+static void event_init_drivers(void* userdata)
+{
+   init_drivers();
+}
+
+static void event_uninit_drivers(void* userdata)
+{
+   uninit_drivers();
+}
+
+static void event_reload_config(void* userdata)
+{
+   // Need to clear these otherwise stale versions may be used!
+   memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
+   memset(g_settings.video.xml_shader_path, 0, sizeof(g_settings.video.xml_shader_path));
+
+   uninit_drivers();
+   config_load();
+   init_drivers();
+}
 
 @implementation RetroArch_iOS
 {
@@ -68,22 +110,18 @@ extern void rarch_main_ios(void* args);
    _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    _window.rootViewController = self;
    [_window makeKeyAndVisible];
-   
-   // RetroArch init
-   rarch_init_msg_queue();
-   menu_init();
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
 {
    if (_isRunning)
-      init_drivers();
+      ios_frontend_post_event(&event_init_drivers, 0);
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
    if (_isRunning)
-      uninit_drivers();
+      ios_frontend_post_event(&event_uninit_drivers, 0);
 }
 
 // UINavigationControllerDelegate
@@ -165,18 +203,14 @@ extern void rarch_main_ios(void* args);
 
 - (void)refreshConfig
 {
-   // Need to clear these otherwise stale versions may be used!
-   memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
-   memset(g_settings.video.xml_shader_path, 0, sizeof(g_settings.video.xml_shader_path));
-
-#if 0
    if (_isRunning)
+      ios_frontend_post_event(&event_reload_config, 0);
+   else
    {
-      uninit_drivers();
-      config_load();
-      init_drivers();
+      // Need to clear these otherwise stale versions may be used!
+      memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
+      memset(g_settings.video.xml_shader_path, 0, sizeof(g_settings.video.xml_shader_path));
    }
-#endif
 }
 
 #pragma mark PAUSE MENU
@@ -191,25 +225,32 @@ extern void rarch_main_ios(void* args);
 
 - (IBAction)resetGame:(id)sender
 {
-   if (_isRunning) rarch_game_reset();
+   if (_isRunning)
+      ios_frontend_post_event(&event_game_reset, 0);
+   
    [self closePauseMenu:sender];
 }
 
 - (IBAction)loadState:(id)sender
 {
-   if (_isRunning) rarch_load_state();
+   if (_isRunning)
+      ios_frontend_post_event(&event_load_state, 0);
+
    [self closePauseMenu:sender];
 }
 
 - (IBAction)saveState:(id)sender
 {
-   if (_isRunning) rarch_save_state();
+   if (_isRunning)
+      ios_frontend_post_event(&event_save_state, 0);
+
    [self closePauseMenu:sender];
 }
 
 - (IBAction)chooseState:(id)sender
 {
-   g_extern.state_slot = ((UISegmentedControl*)sender).selectedSegmentIndex;
+   if (_isRunning)
+      ios_frontend_post_event(event_set_state_slot, (void*)((UISegmentedControl*)sender).selectedSegmentIndex);
 }
 
 - (IBAction)closePauseMenu:(id)sender

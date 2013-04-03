@@ -15,6 +15,7 @@
  */
 
 #include <dispatch/dispatch.h>
+#include <pthread.h>
 
 #include "../ios/RetroArch/rarch_wrapper.h"
 #include "../general.h"
@@ -24,6 +25,42 @@
 #ifdef HAVE_RGUI
 #include "../frontend/menu/rgui.h"
 #endif
+
+static pthread_mutex_t ios_event_queue_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static struct
+{
+   void (*function)(void*);
+   void* userdata;
+} ios_event_queue[16];
+static uint32_t ios_event_queue_size;
+
+void ios_frontend_post_event(void (*fn)(void*), void* userdata)
+{
+   pthread_mutex_lock(&ios_event_queue_lock);
+
+   if (ios_event_queue_size < 16)
+   {
+      ios_event_queue[ios_event_queue_size].function = fn;
+      ios_event_queue[ios_event_queue_size].userdata = userdata;
+      ios_event_queue_size ++;
+   }
+
+   pthread_mutex_unlock(&ios_event_queue_lock);
+}
+
+static void process_events()
+{
+   pthread_mutex_lock(&ios_event_queue_lock);
+
+   for (int i = 0; i < ios_event_queue_size; i ++)
+      ios_event_queue[i].function(ios_event_queue[i].userdata);
+
+   ios_event_queue_size = 0;
+
+   pthread_mutex_unlock(&ios_event_queue_lock);
+}
+
 
 static void ios_free_main_wrap(struct rarch_main_wrap* wrap)
 {
@@ -59,7 +96,9 @@ void rarch_main_ios(void* args)
    {
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
       {
-         while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
+         while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate())
+            process_events();
+
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
       }
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_INIT))
@@ -93,7 +132,8 @@ void rarch_main_ios(void* args)
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
       {
          g_extern.lifecycle_mode_state |= 1ULL << MODE_MENU_PREINIT;
-         while (menu_iterate());
+         while (menu_iterate())
+            process_events();
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
       }
       else
