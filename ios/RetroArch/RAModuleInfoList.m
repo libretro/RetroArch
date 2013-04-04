@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-static NSString* const labels[3] = {@"Emulator Name", @"Manufacturer", @"Name"};
-static const char* const keys[3] = {"emuname", "manufacturer", "systemname"};
+static NSString* const labels[3] = {@"Core Name", @"Developer", @"Name"};
+static const char* const keys[3] = {"corename", "manufacturer", "systemname"};
 static NSString* const sectionNames[2] = {@"Emulator", @"Hardware"};
 static const uint32_t sectionSizes[2] = {1, 2};
 

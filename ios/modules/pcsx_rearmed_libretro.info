@@ -1,5 +1,5 @@
 display_name = "PlayStation1"
 supported_extensions = "bin|cue|img|mdf|pbp|cbn|toc"
-emuname = "PCSX ReARMed"
+corename = "PCSX ReARMed"
 manufacturer = "Sony"
 systemname = "PlayStation"
