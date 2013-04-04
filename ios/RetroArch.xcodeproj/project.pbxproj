@@ -14,10 +14,6 @@
 		96297A2716C82FF100E6DCE0 /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2616C82FF100E6DCE0 /* overlays */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
-		963F5AC016CC522F009BBD19 /* RAButtonGetter.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABC16CC522F009BBD19 /* RAButtonGetter.m */; };
-		963F5AC116CC522F009BBD19 /* RASettingEnumerationList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABD16CC522F009BBD19 /* RASettingEnumerationList.m */; };
-		963F5AC216CC522F009BBD19 /* RASettingsSubList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABE16CC522F009BBD19 /* RASettingsSubList.m */; };
-		963F5AC316CC522F009BBD19 /* RASettingsList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABF16CC522F009BBD19 /* RASettingsList.m */; };
 		963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC516CC523B009BBD19 /* RAGameView.m */; };
 		966B9CAE16E41C07005B61E1 /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAA16E41C07005B61E1 /* browser.m */; };
 		966B9CB416E41C07005B61E1 /* RAModuleList.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAD16E41C07005B61E1 /* RAModuleList.m */; };
@@ -38,6 +34,7 @@
 		96AFAE3816C1D4EA009DE44C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */; };
 		96F9C28316FFA55F002455B3 /* RALogView.m in Sources */ = {isa = PBXBuildFile; fileRef = 96F9C28216FFA55F002455B3 /* RALogView.m */; };
 		D48581DE16F823F9004BEB17 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = D48581DD16F823F9004BEB17 /* griffin.c */; };
+		D486CA88170D4EAF004DC638 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = D486CA87170D4EAF004DC638 /* settings.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -53,10 +50,6 @@
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		96366C7216CAF62200D64A22 /* settings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settings.h; sourceTree = "<group>"; };
-		963F5ABC16CC522F009BBD19 /* RAButtonGetter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAButtonGetter.m; sourceTree = "<group>"; };
-		963F5ABD16CC522F009BBD19 /* RASettingEnumerationList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RASettingEnumerationList.m; sourceTree = "<group>"; };
-		963F5ABE16CC522F009BBD19 /* RASettingsSubList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RASettingsSubList.m; sourceTree = "<group>"; };
-		963F5ABF16CC522F009BBD19 /* RASettingsList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RASettingsList.m; sourceTree = "<group>"; };
 		963F5AC516CC523B009BBD19 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAGameView.m; sourceTree = "<group>"; };
 		966B9CA916E41C07005B61E1 /* browser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = browser.h; sourceTree = "<group>"; };
 		966B9CAA16E41C07005B61E1 /* browser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = browser.m; sourceTree = "<group>"; };
@@ -86,6 +79,7 @@
 		96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rarch_wrapper.h; sourceTree = "<group>"; };
 		96F9C28216FFA55F002455B3 /* RALogView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RALogView.m; sourceTree = "<group>"; };
 		D48581DD16F823F9004BEB17 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../griffin/griffin.c; sourceTree = "<group>"; };
+		D486CA87170D4EAF004DC638 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settings.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -109,10 +103,7 @@
 		96366C6F16CAF62200D64A22 /* settings */ = {
 			isa = PBXGroup;
 			children = (
-				963F5ABC16CC522F009BBD19 /* RAButtonGetter.m */,
-				963F5ABD16CC522F009BBD19 /* RASettingEnumerationList.m */,
-				963F5ABF16CC522F009BBD19 /* RASettingsList.m */,
-				963F5ABE16CC522F009BBD19 /* RASettingsSubList.m */,
+				D486CA87170D4EAF004DC638 /* settings.m */,
 				96366C7216CAF62200D64A22 /* settings.h */,
 			);
 			path = settings;
@@ -331,16 +322,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				96297A0F16C5AEA100E6DCE0 /* main.m in Sources */,
-				963F5AC016CC522F009BBD19 /* RAButtonGetter.m in Sources */,
-				963F5AC116CC522F009BBD19 /* RASettingEnumerationList.m in Sources */,
-				963F5AC216CC522F009BBD19 /* RASettingsSubList.m in Sources */,
-				963F5AC316CC522F009BBD19 /* RASettingsList.m in Sources */,
 				963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */,
 				966B9CAE16E41C07005B61E1 /* browser.m in Sources */,
 				966B9CB416E41C07005B61E1 /* RAModuleList.m in Sources */,
 				D48581DE16F823F9004BEB17 /* griffin.c in Sources */,
 				96F9C28316FFA55F002455B3 /* RALogView.m in Sources */,
 				9605EA9B170288EA001D47B0 /* RAModuleInfo.m in Sources */,
+				D486CA88170D4EAF004DC638 /* settings.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
