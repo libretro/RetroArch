@@ -17,6 +17,7 @@ OBJ = frontend/frontend.o \
 		input/overlay.o \
 		patch.o \
 		fifo_buffer.o \
+		core_options.o \
 		compat/compat.o \
 		cheats.o \
 		conf/config_file.o \

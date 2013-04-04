@@ -15,6 +15,7 @@ OBJ = frontend/frontend.o \
 		movie.o \
 		gfx/gfx_common.o \
 		input/input_common.o \
+		core_options.o \
 		patch.o \
 		compat/compat.o \
 		screenshot.o \

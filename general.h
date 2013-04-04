@@ -32,6 +32,7 @@
 #include "audio/ext/rarch_dsp.h"
 #include "compat/strl.h"
 #include "performance.h"
+#include "core_options.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -260,6 +261,8 @@ struct settings
       float overlay_opacity;
    } input;
 
+   char core_options_path[PATH_MAX];
+
    char libretro[PATH_MAX];
    char cheat_database[PATH_MAX];
    char cheat_settings_path[PATH_MAX];
@@ -375,9 +378,6 @@ struct global
       struct retro_system_av_info av_info;
       float aspect_ratio;
 
-      char *environment;
-      char *environment_split;
-
       unsigned rotation;
       bool shutdown;
       unsigned performance_level;
@@ -393,6 +393,8 @@ struct global
 
       struct retro_disk_control_callback disk_control; 
       struct retro_hw_render_callback hw_render_callback;
+
+      core_option_manager_t *core_options;
    } system;
 
    struct

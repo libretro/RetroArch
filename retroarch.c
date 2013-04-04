@@ -2702,9 +2702,6 @@ void rarch_main_clear_state(void)
 {
    memset(&g_settings, 0, sizeof(g_settings));
 
-   free(g_extern.system.environment);
-   free(g_extern.system.environment_split);
-
    if (g_extern.log_file)
       fclose(g_extern.log_file);
 
@@ -3038,6 +3035,13 @@ void rarch_main_deinit(void)
          RARCH_ERR("Failed to remove temporary file: %s.\n", g_extern.last_rom);
       g_extern.rom_file_temporary = false;
    }
+
+   if (g_extern.system.core_options)
+   {
+      core_option_flush(g_extern.system.core_options);
+      core_option_free(g_extern.system.core_options);
+   }
+   g_extern.system.core_options = NULL;
 
    g_extern.main_is_init = false;
 }

@@ -670,6 +670,7 @@ bool config_load_file(const char *path)
    if (!*g_settings.libretro)
       CONFIG_GET_PATH(libretro, "libretro_path");
 
+   CONFIG_GET_PATH(core_options_path, "core_options_path");
    CONFIG_GET_PATH(screenshot_directory, "screenshot_directory");
    if (*g_settings.screenshot_directory && !path_is_directory(g_settings.screenshot_directory))
    {
@@ -722,18 +723,6 @@ bool config_load_file(const char *path)
    CONFIG_GET_INT(input.icade_profile[2], "input_autodetect_icade_profile_pad3");
    CONFIG_GET_INT(input.icade_profile[3], "input_autodetect_icade_profile_pad4");
 #endif
-
-   if (config_get_string(conf, "environment_variables",
-            &g_extern.system.environment))
-   {
-      g_extern.system.environment_split = strdup(g_extern.system.environment);
-      if (!g_extern.system.environment_split)
-      {
-         RARCH_ERR("Failed to allocate environment variables. Will ignore them.\n");
-         free(g_extern.system.environment);
-         g_extern.system.environment = NULL;
-      }
-   }
 
    if (!g_extern.has_set_save_path && config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {

@@ -90,7 +90,6 @@ void *(*pretro_get_memory_data)(unsigned);
 size_t (*pretro_get_memory_size)(unsigned);
 
 static void set_environment(void);
-static void set_environment_defaults(void);
 
 #ifdef HAVE_DYNAMIC
 #if defined(__APPLE__)
@@ -310,8 +309,6 @@ void init_libretro_sym(void)
 #endif
 
    load_symbols();
-
-   set_environment_defaults();
    set_environment();
 }
 
@@ -393,44 +390,34 @@ static bool environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_VARIABLE:
       {
          struct retro_variable *var = (struct retro_variable*)data;
-         if (var->key)
-         {
-            // Split string has '\0' delimiters so we have to find the position in original string,
-            // then pass the corresponding offset into the split string.
-            const char *key = strstr(g_extern.system.environment, var->key);
-            size_t key_len = strlen(var->key);
-            if (key && key[key_len] == '=')
-            {
-               ptrdiff_t offset = key - g_extern.system.environment;
-               var->value = &g_extern.system.environment_split[offset + key_len + 1];
-            }
-            else
-               var->value = NULL;
-         }
-         else
-            var->value = g_extern.system.environment;
+         RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
 
-         RARCH_LOG("Environ GET_VARIABLE: %s=%s\n",
-               var->key ? var->key : "null",
-               var->value ? var->value : "null");
+         if (g_extern.system.core_options)
+            core_option_get(g_extern.system.core_options, var);
+         else
+            var->value = NULL;
 
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
+         *(bool*)data = g_extern.system.core_options ?
+            core_option_updated(g_extern.system.core_options) : false;
+         break;
+
       case RETRO_ENVIRONMENT_SET_VARIABLES:
       {
-         RARCH_LOG("Environ SET_VARIABLES:\n");
-         RARCH_LOG("=======================\n");
-         const struct retro_variable *vars = (const struct retro_variable*)data;
-         while (vars->key)
-         {
-            RARCH_LOG("\t%s :: %s\n",
-                  vars->key,
-                  vars->value ? vars->value : "N/A");
+         RARCH_LOG("Environ SET_VARIABLES.\n");
 
-            vars++;
+         if (g_extern.system.core_options)
+         {
+            core_option_flush(g_extern.system.core_options);
+            core_option_free(g_extern.system.core_options);
          }
-         RARCH_LOG("=======================\n");
+
+         const struct retro_variable *vars = (const struct retro_variable*)data;
+         g_extern.system.core_options = core_option_new(g_settings.core_options_path, vars);
+
          break;
       }
 
@@ -607,15 +594,5 @@ static bool environment_cb(unsigned cmd, void *data)
 static void set_environment(void)
 {
    pretro_set_environment(environment_cb);
-}
-
-static void set_environment_defaults(void)
-{
-   char *save;
-
-   // Split up environment variables beforehand.
-   if (g_extern.system.environment_split &&
-         strtok_r(g_extern.system.environment_split, ";", &save))
-      while (strtok_r(NULL, ";", &save));
 }
 
