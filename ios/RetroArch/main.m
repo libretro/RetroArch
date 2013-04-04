@@ -208,6 +208,7 @@ static void event_reload_config(void* userdata)
    memset(g_settings.video.xml_shader_path, 0, sizeof(g_settings.video.xml_shader_path));
 
    uninit_drivers();
+   g_extern.block_config_read = false;
    config_load();
    init_drivers();
 }
