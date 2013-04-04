@@ -583,9 +583,37 @@ static void render_text(rgui_handle_t *rgui)
 #define MAX_GAMMA_SETTING 1
 #endif
 
+static int rgui_core_setting_toggle(unsigned setting, rgui_action_t action)
+{
+   unsigned index = setting - RGUI_SETTINGS_CORE_OPTION_START;
+   switch (action)
+   {
+      case RGUI_ACTION_LEFT:
+         core_option_prev(g_extern.system.core_options, index);
+         break;
+
+      case RGUI_ACTION_RIGHT:
+      case RGUI_ACTION_OK:
+         core_option_next(g_extern.system.core_options, index);
+         break;
+
+      case RGUI_ACTION_START:
+         core_option_set_default(g_extern.system.core_options, index);
+         break;
+
+      default:
+         break;
+   }
+
+   return 0;
+}
+
 static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, unsigned menu_type)
 {
    unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
+
+   if (setting >= RGUI_SETTINGS_CORE_OPTION_START)
+      return rgui_core_setting_toggle(setting, action);
 
    switch (setting)
    {
@@ -1049,12 +1077,15 @@ static void rgui_settings_core_options_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
 
-   if (!g_extern.system.core_options)
-      return;
-
-   size_t opts = core_option_size(g_extern.system.core_options);
-   for (size_t i = 0; i < opts; i++)
-      rgui_list_push(rgui->selection_buf, core_option_get_desc(g_extern.system.core_options, i), RGUI_SETTINGS_CORE_OPTION_START + i, 0);
+   if (g_extern.system.core_options)
+   {
+      size_t opts = core_option_size(g_extern.system.core_options);
+      for (size_t i = 0; i < opts; i++)
+         rgui_list_push(rgui->selection_buf,
+               core_option_get_desc(g_extern.system.core_options, i), RGUI_SETTINGS_CORE_OPTION_START + i, 0);
+   }
+   else
+      rgui_list_push(rgui->selection_buf, "No options available.", RGUI_SETTINGS_CORE_OPTION_NONE, 0);
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
