@@ -56,6 +56,7 @@ void core_option_free(core_option_manager_t *opt)
 
 void core_option_get(core_option_manager_t *opt, struct retro_variable *var)
 {
+   opt->updated = false;
    for (size_t i = 0; i < opt->size; i++)
    {
       if (strcmp(opt->opts[i].key, var->key) == 0)
