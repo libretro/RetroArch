@@ -261,159 +261,6 @@ static RASettingData* custom_action(NSString* action)
 
 @end
 
-static const struct
-{
-   const char* const keyname;
-   const uint32_t hid_id;
-} ios_key_name_map[] = {
-   { "left", KEY_Left },               { "right", KEY_Right },
-   { "up", KEY_Up },                   { "down", KEY_Down },
-   { "enter", KEY_Enter },             { "kp_enter", KP_Enter },
-   { "space", KEY_Space },             { "tab", KEY_Tab },
-   { "shift", KEY_LeftShift },         { "rshift", KEY_RightShift },
-   { "ctrl", KEY_LeftControl },        { "alt", KEY_LeftAlt },
-   { "escape", KEY_Escape },           { "backspace", KEY_DeleteForward },
-   { "backquote", KEY_Grave },         { "pause", KEY_Pause },
-
-   { "f1", KEY_F1 },                   { "f2", KEY_F2 },
-   { "f3", KEY_F3 },                   { "f4", KEY_F4 },
-   { "f5", KEY_F5 },                   { "f6", KEY_F6 },
-   { "f7", KEY_F7 },                   { "f8", KEY_F8 },
-   { "f9", KEY_F9 },                   { "f10", KEY_F10 },
-   { "f11", KEY_F11 },                 { "f12", KEY_F12 },
-
-   { "num0", KEY_0 },                  { "num1", KEY_1 },
-   { "num2", KEY_2 },                  { "num3", KEY_3 },
-   { "num4", KEY_4 },                  { "num5", KEY_5 },
-   { "num6", KEY_6 },                  { "num7", KEY_7 },
-   { "num8", KEY_8 },                  { "num9", KEY_9 },
-   
-   { "insert", KEY_Insert },           { "del", KEY_DeleteForward },
-   { "home", KEY_Home },               { "end", KEY_End },
-   { "pageup", KEY_PageUp },           { "pagedown", KEY_PageDown },
-   
-   { "add", KP_Add },                  { "subtract", KP_Subtract },
-   { "multiply", KP_Multiply },        { "divide", KP_Divide },
-   { "keypad0", KP_0 },                { "keypad1", KP_1 },
-   { "keypad2", KP_2 },                { "keypad3", KP_3 },
-   { "keypad4", KP_4 },                { "keypad5", KP_5 },
-   { "keypad6", KP_6 },                { "keypad7", KP_7 },
-   { "keypad8", KP_8 },                { "keypad9", KP_9 },
-   
-   { "period", KEY_Period },           { "capslock", KEY_CapsLock },
-   { "numlock", KP_NumLock },          { "print_screen", KEY_PrintScreen },
-   { "scroll_lock", KEY_ScrollLock },
-   
-   { "a", KEY_A }, { "b", KEY_B }, { "c", KEY_C }, { "d", KEY_D },
-   { "e", KEY_E }, { "f", KEY_F }, { "g", KEY_G }, { "h", KEY_H },
-   { "i", KEY_I }, { "j", KEY_J }, { "k", KEY_K }, { "l", KEY_L },
-   { "m", KEY_M }, { "n", KEY_N }, { "o", KEY_O }, { "p", KEY_P },
-   { "q", KEY_Q }, { "r", KEY_R }, { "s", KEY_S }, { "t", KEY_T },
-   { "u", KEY_U }, { "v", KEY_V }, { "w", KEY_W }, { "x", KEY_X },
-   { "y", KEY_Y }, { "z", KEY_Z },
-
-   { "nul", 0x00},
-};
-
-@implementation RAButtonGetter
-{
-   RAButtonGetter* _me;
-   RASettingData* _value;
-   UIAlertView* _alert;
-   UITableView* _view;
-   bool _finished;
-   NSTimer* _btTimer;
-}
-
-- (id)initWithSetting:(RASettingData*)setting fromTable:(UITableView*)table
-{
-   self = [super init];
-
-   _value = setting;
-   _view = table;
-   _me = self;
-
-   _alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
-                                 message:_value.label
-                                 delegate:self
-                                 cancelButtonTitle:@"Cancel"
-                                 otherButtonTitles:@"Clear Keyboard", @"Clear Joystick", @"Clear Axis", nil];
-   [_alert show];
-   
-   _btTimer = [NSTimer scheduledTimerWithTimeInterval:.05f target:self selector:@selector(checkInput) userInfo:nil repeats:YES];
-   return self;
-}
-
-- (void)finish
-{
-   if (!_finished)
-   {
-      _finished = true;
-   
-      [_btTimer invalidate];
-
-      [_alert dismissWithClickedButtonIndex:_alert.cancelButtonIndex animated:YES];
-      [_view reloadData];
-   
-      _me = nil;
-   }
-}
-
-- (void)alertView:(UIAlertView*)alertView willDismissWithButtonIndex:(NSInteger)buttonIndex
-{
-   if (buttonIndex == _alert.firstOtherButtonIndex)
-      _value.msubValues[0] = @"";
-   else if(buttonIndex == _alert.firstOtherButtonIndex + 1)
-      _value.msubValues[1] = @"";
-   else if(buttonIndex == _alert.firstOtherButtonIndex + 2)
-      _value.msubValues[2] = @"";
-
-   [self finish];
-}
-
-- (void)checkInput
-{
-   ios_input_data_t data;
-   ios_copy_input(&data);
-
-   // Keyboard
-   for (int i = 0; ios_key_name_map[i].hid_id; i++)
-   {
-      if (data.keys[ios_key_name_map[i].hid_id])
-      {
-         _value.msubValues[0] = [NSString stringWithUTF8String:ios_key_name_map[i].keyname];
-         [self finish];
-         return;
-      }
-   }
-
-   // Pad Buttons
-   for (int i = 0; data.pad_buttons && i < sizeof(data.pad_buttons) * 8; i++)
-   {
-      if (data.pad_buttons & (1 << i))
-      {
-         _value.msubValues[1] = [NSString stringWithFormat:@"%d", i];
-         [self finish];
-         return;
-      }
-   }
-
-   // Pad Axis
-   for (int i = 0; i < 4; i++)
-   {
-      int16_t value = data.pad_axis[i];
-      
-      if (abs(value) > 0x1000)
-      {
-         _value.msubValues[2] = [NSString stringWithFormat:@"%s%d", (value > 0x1000) ? "+" : "-", i];
-         [self finish];
-         break;
-      }
-   }
-}
-
-@end
-
 @implementation RASettingsSubList
 {
    NSArray* settings;
@@ -686,6 +533,160 @@ static const struct
    
    [_view reloadData];
    [[RetroArch_iOS get] popViewControllerAnimated:YES];
+}
+
+@end
+
+@implementation RAButtonGetter
+{
+   RAButtonGetter* _me;
+   RASettingData* _value;
+   UIAlertView* _alert;
+   UITableView* _view;
+   bool _finished;
+   NSTimer* _btTimer;
+}
+
+- (id)initWithSetting:(RASettingData*)setting fromTable:(UITableView*)table
+{
+   self = [super init];
+
+   _value = setting;
+   _view = table;
+   _me = self;
+
+   _alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
+                                 message:_value.label
+                                 delegate:self
+                                 cancelButtonTitle:@"Cancel"
+                                 otherButtonTitles:@"Clear Keyboard", @"Clear Joystick", @"Clear Axis", nil];
+   [_alert show];
+   
+   _btTimer = [NSTimer scheduledTimerWithTimeInterval:.05f target:self selector:@selector(checkInput) userInfo:nil repeats:YES];
+   return self;
+}
+
+- (void)finish
+{
+   if (!_finished)
+   {
+      _finished = true;
+   
+      [_btTimer invalidate];
+
+      [_alert dismissWithClickedButtonIndex:_alert.cancelButtonIndex animated:YES];
+      [_view reloadData];
+   
+      _me = nil;
+   }
+}
+
+- (void)alertView:(UIAlertView*)alertView willDismissWithButtonIndex:(NSInteger)buttonIndex
+{
+   if (buttonIndex == _alert.firstOtherButtonIndex)
+      _value.msubValues[0] = @"";
+   else if(buttonIndex == _alert.firstOtherButtonIndex + 1)
+      _value.msubValues[1] = @"";
+   else if(buttonIndex == _alert.firstOtherButtonIndex + 2)
+      _value.msubValues[2] = @"";
+
+   [self finish];
+}
+
+- (void)checkInput
+{
+   ios_input_data_t data;
+   ios_copy_input(&data);
+
+   // Keyboard
+   static const struct
+   {
+      const char* const keyname;
+      const uint32_t hid_id;
+   } ios_key_name_map[] = {
+      { "left", KEY_Left },               { "right", KEY_Right },
+      { "up", KEY_Up },                   { "down", KEY_Down },
+      { "enter", KEY_Enter },             { "kp_enter", KP_Enter },
+      { "space", KEY_Space },             { "tab", KEY_Tab },
+      { "shift", KEY_LeftShift },         { "rshift", KEY_RightShift },
+      { "ctrl", KEY_LeftControl },        { "alt", KEY_LeftAlt },
+      { "escape", KEY_Escape },           { "backspace", KEY_DeleteForward },
+      { "backquote", KEY_Grave },         { "pause", KEY_Pause },
+
+      { "f1", KEY_F1 },                   { "f2", KEY_F2 },
+      { "f3", KEY_F3 },                   { "f4", KEY_F4 },
+      { "f5", KEY_F5 },                   { "f6", KEY_F6 },
+      { "f7", KEY_F7 },                   { "f8", KEY_F8 },
+      { "f9", KEY_F9 },                   { "f10", KEY_F10 },
+      { "f11", KEY_F11 },                 { "f12", KEY_F12 },
+
+      { "num0", KEY_0 },                  { "num1", KEY_1 },
+      { "num2", KEY_2 },                  { "num3", KEY_3 },
+      { "num4", KEY_4 },                  { "num5", KEY_5 },
+      { "num6", KEY_6 },                  { "num7", KEY_7 },
+      { "num8", KEY_8 },                  { "num9", KEY_9 },
+   
+      { "insert", KEY_Insert },           { "del", KEY_DeleteForward },
+      { "home", KEY_Home },               { "end", KEY_End },
+      { "pageup", KEY_PageUp },           { "pagedown", KEY_PageDown },
+   
+      { "add", KP_Add },                  { "subtract", KP_Subtract },
+      { "multiply", KP_Multiply },        { "divide", KP_Divide },
+      { "keypad0", KP_0 },                { "keypad1", KP_1 },
+      { "keypad2", KP_2 },                { "keypad3", KP_3 },
+      { "keypad4", KP_4 },                { "keypad5", KP_5 },
+      { "keypad6", KP_6 },                { "keypad7", KP_7 },
+      { "keypad8", KP_8 },                { "keypad9", KP_9 },
+   
+      { "period", KEY_Period },           { "capslock", KEY_CapsLock },
+      { "numlock", KP_NumLock },          { "print_screen", KEY_PrintScreen },
+      { "scroll_lock", KEY_ScrollLock },
+   
+      { "a", KEY_A }, { "b", KEY_B }, { "c", KEY_C }, { "d", KEY_D },
+      { "e", KEY_E }, { "f", KEY_F }, { "g", KEY_G }, { "h", KEY_H },
+      { "i", KEY_I }, { "j", KEY_J }, { "k", KEY_K }, { "l", KEY_L },
+      { "m", KEY_M }, { "n", KEY_N }, { "o", KEY_O }, { "p", KEY_P },
+      { "q", KEY_Q }, { "r", KEY_R }, { "s", KEY_S }, { "t", KEY_T },
+      { "u", KEY_U }, { "v", KEY_V }, { "w", KEY_W }, { "x", KEY_X },
+      { "y", KEY_Y }, { "z", KEY_Z },
+
+      { "nul", 0x00},
+   };
+   
+   
+   for (int i = 0; ios_key_name_map[i].hid_id; i++)
+   {
+      if (data.keys[ios_key_name_map[i].hid_id])
+      {
+         _value.msubValues[0] = [NSString stringWithUTF8String:ios_key_name_map[i].keyname];
+         [self finish];
+         return;
+      }
+   }
+
+   // Pad Buttons
+   for (int i = 0; data.pad_buttons && i < sizeof(data.pad_buttons) * 8; i++)
+   {
+      if (data.pad_buttons & (1 << i))
+      {
+         _value.msubValues[1] = [NSString stringWithFormat:@"%d", i];
+         [self finish];
+         return;
+      }
+   }
+
+   // Pad Axis
+   for (int i = 0; i < 4; i++)
+   {
+      int16_t value = data.pad_axis[i];
+      
+      if (abs(value) > 0x1000)
+      {
+         _value.msubValues[2] = [NSString stringWithFormat:@"%s%d", (value > 0x1000) ? "+" : "-", i];
+         [self finish];
+         break;
+      }
+   }
 }
 
 @end
