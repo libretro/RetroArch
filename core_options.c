@@ -110,6 +110,15 @@ static bool parse_variable(core_option_manager_t *opt, size_t index, const struc
    }
 
    free(value);
+
+   RARCH_LOG("Core option:\n");
+   RARCH_LOG("\tDescription: %s\n", option->desc);
+   RARCH_LOG("\tKey: %s\n", option->key);
+   RARCH_LOG("\tCurrent value: %s\n", core_option_get_val(opt, index));
+   RARCH_LOG("\tPossible values:\n");
+   for (size_t i = 0; i < option->vals->size; i++)
+      RARCH_LOG("\t\t%s\n", option->vals->elems[i].data);
+
    return true;
 }
 

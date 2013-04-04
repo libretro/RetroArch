@@ -206,11 +206,29 @@ static void render_audio(void)
    phase %= 100;
 }
 
+static void check_variables(void)
+{
+   struct retro_variable var = {0};
+   var.key = "test_opt0";
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      fprintf(stderr, "Key -> Val: %s -> %s.\n", var.key, var.value);
+   var.key = "test_opt1";
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      fprintf(stderr, "Key -> Val: %s -> %s.\n", var.key, var.value);
+   var.key = "test_opt2";
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      fprintf(stderr, "Key -> Val: %s -> %s.\n", var.key, var.value);
+}
+
 void retro_run(void)
 {
    update_input();
    render_checkered();
    render_audio();
+
+   bool updated = false;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+      check_variables();
 }
 
 static void keyboard_cb(bool down, unsigned keycode,
@@ -242,16 +260,7 @@ bool retro_load_game(const struct retro_game_info *info)
    struct retro_keyboard_callback cb = { keyboard_cb };
    environ_cb(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &cb);
 
-   struct retro_variable var = {0};
-   var.key = "test_opt0";
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-      fprintf(stderr, "Key -> Val: %s -> %s.\n", var.key, var.value);
-   var.key = "test_opt1";
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-      fprintf(stderr, "Key -> Val: %s -> %s.\n", var.key, var.value);
-   var.key = "test_opt2";
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-      fprintf(stderr, "Key -> Val: %s -> %s.\n", var.key, var.value);
+   check_variables();
 
    (void)info;
    return true;
