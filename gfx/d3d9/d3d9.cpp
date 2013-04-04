@@ -1097,7 +1097,7 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
       link_info.tex_w = next_pow2(out_width);
       link_info.tex_h = next_pow2(out_height);
       link_info.shader_path = "";
-      link_info.float_framebuffer = *float_fbos.end();
+      link_info.float_framebuffer = float_fbos.back();
       chain->add_pass(link_info);
    }
 
