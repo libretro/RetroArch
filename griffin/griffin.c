@@ -76,6 +76,7 @@ CONFIG FILE
 #endif
 
 #include "../conf/config_file.c"
+#include "../core_options.c"
 
 /*============================================================
 CHEATS
