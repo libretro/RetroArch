@@ -996,6 +996,8 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #ifdef HAVE_SCREENSHOTS
       rgui_list_push(rgui->selection_buf, "Take Screenshot", RGUI_SETTINGS_SCREENSHOT, 0);
 #endif
+      rgui_list_push(rgui->selection_buf, "Resume Game", RGUI_SETTINGS_RESUME_GAME, 0);
+      rgui_list_push(rgui->selection_buf, "Change Game", RGUI_SETTINGS_OPEN_FILEBROWSER, 0);
       rgui_list_push(rgui->selection_buf, "Restart Game", RGUI_SETTINGS_RESTART_GAME, 0);
    }
    rgui_list_push(rgui->selection_buf, "Hardware filtering", RGUI_SETTINGS_VIDEO_FILTER, 0);
@@ -1028,7 +1030,6 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #ifndef HAVE_DYNAMIC
    rgui_list_push(rgui->selection_buf, "Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR, 0);
 #endif
-   rgui_list_push(rgui->selection_buf, "Resume Game", RGUI_SETTINGS_RESUME_GAME, 0);
    rgui_list_push(rgui->selection_buf, "Quit RetroArch", RGUI_SETTINGS_QUIT_RARCH, 0);
 }
 
