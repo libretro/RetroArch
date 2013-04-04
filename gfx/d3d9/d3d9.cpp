@@ -933,9 +933,9 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
       }
       else
       {
-         if (conf.get(attr_type_x, attr))
+         if (conf.get(attr_type_x, attr_x))
             has_scale = true;
-         if (conf.get(attr_type_y, attr))
+         if (conf.get(attr_type_y, attr_y))
             has_scale = true;
       }
 
