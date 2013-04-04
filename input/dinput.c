@@ -336,7 +336,7 @@ static void dinput_grab_mouse(void *data, bool state)
       (HWND)driver.video_window,
       state ?
       (DISCL_EXCLUSIVE | DISCL_FOREGROUND) :
-      (DISCL_NONEXCLUSIVE | DISCL_BACKGROUND));
+      (DISCL_NONEXCLUSIVE | DISCL_FOREGROUND));
    IDirectInputDevice8_Acquire(di->mouse);
 }
 
