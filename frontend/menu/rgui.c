@@ -1476,7 +1476,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          break;
 
       case RGUI_ACTION_LEFT:
-         if (rgui->selection_ptr - 8 > 0)
+         if (rgui->selection_ptr > 8)
             rgui->selection_ptr -= 8;
          else
             rgui->selection_ptr = 0;
