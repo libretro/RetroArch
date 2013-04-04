@@ -2277,7 +2277,7 @@ static void gl_stop(void)
 
 static void gl_restart(void)
 {
-   gl_t *gl = driver.video_data;
+   gl_t *gl = (gl_t*)driver.video_data;
 
    if (!gl)
 	   return;
