@@ -373,10 +373,13 @@ static const struct
 
 - (void)checkInput
 {
+   ios_input_data_t data;
+   ios_copy_input(&data);
+
    // Keyboard
    for (int i = 0; ios_key_name_map[i].hid_id; i++)
    {
-      if (ios_key_list[ios_key_name_map[i].hid_id])
+      if (data.keys[ios_key_name_map[i].hid_id])
       {
          _value.msubValues[0] = [NSString stringWithUTF8String:ios_key_name_map[i].keyname];
          [self finish];
@@ -385,11 +388,9 @@ static const struct
    }
 
    // Pad Buttons
-   uint32_t buttons = btpad_get_buttons();
-
-   for (int i = 0; buttons && i < sizeof(buttons) * 8; i++)
+   for (int i = 0; data.pad_buttons && i < sizeof(data.pad_buttons) * 8; i++)
    {
-      if (buttons & (1 << i))
+      if (data.pad_buttons & (1 << i))
       {
          _value.msubValues[1] = [NSString stringWithFormat:@"%d", i];
          [self finish];
@@ -400,7 +401,7 @@ static const struct
    // Pad Axis
    for (int i = 0; i < 4; i++)
    {
-      int16_t value = btpad_get_axis(i);
+      int16_t value = data.pad_axis[i];
       
       if (abs(value) > 0x1000)
       {

@@ -15,6 +15,7 @@
 
 #include "general.h"
 #include "rarch_wrapper.h"
+#include "input/ios_input.h"
 
 static const float ALMOST_INVISIBLE = .021f;
 static float g_screen_scale;
@@ -158,6 +159,9 @@ void ios_flip_game_view()
    {
       dispatch_sync(dispatch_get_main_queue(), ^{
          [g_view display];
+
+         // HACK: While here, copy input structures
+         ios_copy_input(&g_ios_input_data);
       });
       g_fast_forward_skips = g_is_syncing ? 0 : 3;
    }

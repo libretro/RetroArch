@@ -20,18 +20,30 @@
 #define MAX_TOUCHES 16
 #define MAX_KEYS 256
 
-typedef struct touch_data
+typedef struct
 {
    int16_t screen_x, screen_y;
    int16_t fixed_x, fixed_y;
    int16_t full_x, full_y;
-} touch_data_t;
+} ios_touch_data_t;
 
-// Defined in main.m, lists are filled by the sendEvent selector
-extern uint32_t ios_key_list[MAX_KEYS];
-extern uint32_t ios_touch_count;
-extern touch_data_t ios_touch_list[MAX_TOUCHES];
+typedef struct
+{
+   ios_touch_data_t touches[MAX_TOUCHES];
+   uint32_t touch_count;
 
+   uint32_t keys[MAX_KEYS];
+
+   uint32_t pad_buttons;
+   int16_t pad_axis[4];
+} ios_input_data_t;
+
+extern ios_input_data_t g_ios_input_data;
+
+// Defined in main.m, must be called on the emu thread in a dispatch_sync block
+void ios_copy_input(ios_input_data_t* data);
+
+// Called from main.m, defined in ios_input.c
 void ios_add_key_event(bool down, unsigned keycode, uint32_t character, uint16_t keyModifiers);
 
 #endif

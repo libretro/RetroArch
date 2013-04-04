@@ -24,6 +24,8 @@ static const rarch_joypad_driver_t* const g_joydriver = &ios_joypad;
 
 static const struct rarch_key_map rarch_key_map_hidusage[];
 
+ios_input_data_t g_ios_input_data;
+
 // Key event data, called in main.m
 #define MAX_KEY_EVENTS 32
 
@@ -58,7 +60,7 @@ void ios_add_key_event(bool down, unsigned keycode, uint32_t character, uint16_t
 static bool ios_key_pressed(enum retro_key key)
 {
    if ((int)key >= 0 && key < RETROK_LAST)
-      return ios_key_list[input_translate_rk_to_keysym(key)];
+      return g_ios_input_data.keys[input_translate_rk_to_keysym(key)];
    
    return false;
 }
@@ -90,11 +92,11 @@ static void ios_input_poll(void *data)
    g_pending_key_events = 0;
 
 
-   for (int i = 0; i != ios_touch_count; i ++)
+   for (int i = 0; i != g_ios_input_data.touch_count; i ++)
    {
-      input_translate_coord_viewport(ios_touch_list[i].screen_x, ios_touch_list[i].screen_y,
-         &ios_touch_list[i].fixed_x, &ios_touch_list[i].fixed_y,
-         &ios_touch_list[i].full_x, &ios_touch_list[i].full_y);
+      input_translate_coord_viewport(g_ios_input_data.touches[i].screen_x, g_ios_input_data.touches[i].screen_y,
+         &g_ios_input_data.touches[i].fixed_x, &g_ios_input_data.touches[i].fixed_y,
+         &g_ios_input_data.touches[i].full_x, &g_ios_input_data.touches[i].full_y);
    }
 
    input_joypad_poll(g_joydriver);
@@ -118,9 +120,9 @@ static int16_t ios_input_state(void *data, const struct retro_keybind **binds, u
       {
          const bool want_full = device == RARCH_DEVICE_POINTER_SCREEN;
       
-         if (index < ios_touch_count && index < MAX_TOUCHES)
+         if (index < g_ios_input_data.touch_count && index < MAX_TOUCHES)
          {
-            const touch_data_t* touch = &ios_touch_list[index];
+            const ios_touch_data_t* touch = &g_ios_input_data.touches[index];
 
             switch (id)
             {

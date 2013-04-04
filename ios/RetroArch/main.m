@@ -16,6 +16,7 @@
 #import <UIKit/UIKit.h>
 #include "input/ios_input.h"
 #include "input/keycode.h"
+#include "input/BTStack/btpad.h"
 #include "libretro.h"
 
 #include <sys/stat.h>
@@ -39,11 +40,20 @@
 #define GSEVENT_MOD_ALT (1 << 19)
 #define GSEVENT_MOD_CTRL (1 << 20)
 
-uint32_t ios_key_list[MAX_KEYS];
-uint32_t ios_touch_count;
-touch_data_t ios_touch_list[MAX_TOUCHES];
+static ios_input_data_t g_input_data;
 
 // Input helpers
+void ios_copy_input(ios_input_data_t* data)
+{
+   // Call only from main thread
+
+   memcpy(data, &g_input_data, sizeof(g_input_data));
+   data->pad_buttons = btpad_get_buttons();
+   
+   for (int i = 0; i < 4; i ++)
+      data->pad_axis[i] = btpad_get_axis(i);
+}
+
 static uint32_t translate_mods(uint32_t flags)
 {
    uint32_t result = 0;
@@ -69,21 +79,22 @@ static uint32_t translate_mods(uint32_t flags)
       const int numTouches = [touches count];
       const float scale = [[UIScreen mainScreen] scale];
 
-      ios_touch_count = 0;
+      g_input_data.touch_count = 0;
    
-      for(int i = 0; i != numTouches && ios_touch_count < MAX_TOUCHES; i ++)
+      for(int i = 0; i != numTouches && g_input_data.touch_count < MAX_TOUCHES; i ++)
       {
          UITouch* touch = [touches objectAtIndex:i];
          const CGPoint coord = [touch locationInView:touch.view];
 
          if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
          {
-            ios_touch_list[ios_touch_count   ].screen_x = coord.x * scale;
-            ios_touch_list[ios_touch_count ++].screen_y = coord.y * scale;
+            g_input_data.touches[g_input_data.touch_count   ].screen_x = coord.x * scale;
+            g_input_data.touches[g_input_data.touch_count ++].screen_y = coord.y * scale;
          }
       }
    }
    // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
+   // TODO: Key events need to be synced, I just disabled them because the data isn't available on device (only in simulator)
    else if ([event respondsToSelector:@selector(_gsEvent)])
    {
       uint8_t* eventMem = (uint8_t*)(void*)CFBridgingRetain([event performSelector:@selector(_gsEvent)]);
@@ -94,12 +105,13 @@ static uint32_t translate_mods(uint32_t flags)
          uint16_t* data = (uint16_t*)&eventMem[0x3C];
 
          if (data[0] < MAX_KEYS)
-            ios_key_list[data[0]] = (eventType == GSEVENT_TYPE_KEYDOWN) ? 1 : 0;
+            g_input_data.keys[data[0]] = (eventType == GSEVENT_TYPE_KEYDOWN) ? 1 : 0;
 
          // Key events
-         ios_add_key_event(eventType == GSEVENT_TYPE_KEYDOWN, data[0], data[1], translate_mods(*(uint32_t*)&eventMem[0x30]));
+         // ios_add_key_event(eventType == GSEVENT_TYPE_KEYDOWN, data[0], data[1], translate_mods(*(uint32_t*)&eventMem[0x30]));
          // printf("%d %d %d %08X\n", data[0], data[1], data[2], *(uint32_t*)&eventMem[0x30]);
       }
+#if 0
       else if(eventType == GSEVENT_TYPE_MODS)
       {
          static const struct
@@ -138,11 +150,12 @@ static uint32_t translate_mods(uint32_t flags)
             if (key == modmap[i].key)
             {
                keystate[i] = !keystate[i];
-               ios_key_list[modmap[i].hidid] = keystate[i];
-               ios_add_key_event(keystate[i], modmap[i].retrokey, 0, translate_mods(*(uint32_t*)&eventMem[0x30]));
+               g_input_data.keys[modmap[i].hidid] = keystate[i];
+               // ios_add_key_event(keystate[i], modmap[i].retrokey, 0, translate_mods(*(uint32_t*)&eventMem[0x30]));
             }
          }
       }
+#endif
 
       CFBridgingRelease(eventMem);
    }
