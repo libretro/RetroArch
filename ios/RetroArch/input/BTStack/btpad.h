@@ -16,14 +16,36 @@
 #ifndef __IOS_RARCH_BTPAD_H__
 #define __IOS_RARCH_BTPAD_H__
 
+#include "btstack/btstack.h"
+
 uint32_t btpad_get_buttons();
 int16_t btpad_get_axis(unsigned axis);
-void btpad_set_pad_type(bool wiimote);
 
 // Private interface
+enum btpad_state { BTPAD_EMPTY, BTPAD_WANT_INQ_COMPLETE, BTPAD_CONNECTED };
+
+typedef struct
+{
+   enum btpad_state state;
+
+   uint16_t handle;
+
+   bool has_address;
+   bd_addr_t address;
+
+   uint32_t laps;
+   uint32_t page_scan_repetition_mode;
+   uint32_t class;
+   uint32_t clock_offset;
+
+   uint16_t channels[2]; //0: Control, 1: Interrupt
+
+   bool connected;
+} btpad_connection_t;
+
 struct btpad_interface
 {
-   void* (*connect)();
+   void* (*connect)(const btpad_connection_t* connection);
    void (*disconnect)(void* device);
    void (*set_leds)(void* device, unsigned leds);
 

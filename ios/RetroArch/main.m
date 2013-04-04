@@ -433,26 +433,8 @@ static void event_reload_config(void* userdata)
 {
    if (btstack_is_loaded() && !btstack_is_running())
    {
-      UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
-                                                message:@"Choose Pad Type"
-                                                delegate:self
-                                                cancelButtonTitle:@"Cancel"
-                                                otherButtonTitles:@"Wii", @"PS3", nil];
-      [alert show];
-   }
-}
-
-- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
-{
-   if (btstack_is_loaded())
-   {
-      btpad_set_pad_type(buttonIndex == alertView.firstOtherButtonIndex);
-
-      if (buttonIndex != alertView.cancelButtonIndex)
-      {
-         btstack_start();
-         [self.topViewController.navigationItem setRightBarButtonItem:[self createBluetoothButton] animated:YES];
-      }
+      btstack_start();
+     [self.topViewController.navigationItem setRightBarButtonItem:[self createBluetoothButton] animated:YES];
    }
 }
 
