@@ -8,10 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		9605EA9B170288EA001D47B0 /* RAModuleInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = 9605EA9A170288EA001D47B0 /* RAModuleInfo.m */; };
-		96096DD816D1ABAF00BF4499 /* RAModuleInfoList.m in Sources */ = {isa = PBXBuildFile; fileRef = 96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */; };
 		962979F616C43B9500E6DCE0 /* ic_dir.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F416C43B9500E6DCE0 /* ic_dir.png */; };
 		962979F716C43B9500E6DCE0 /* ic_file.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F516C43B9500E6DCE0 /* ic_file.png */; };
-		96297A0C16C5AD8D00E6DCE0 /* RetroArch_iOS.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0B16C5AD8D00E6DCE0 /* RetroArch_iOS.m */; };
 		96297A0F16C5AEA100E6DCE0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0E16C5AEA100E6DCE0 /* main.m */; };
 		96297A2716C82FF100E6DCE0 /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2616C82FF100E6DCE0 /* overlays */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
@@ -22,8 +20,6 @@
 		963F5AC316CC522F009BBD19 /* RASettingsList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABF16CC522F009BBD19 /* RASettingsList.m */; };
 		963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC516CC523B009BBD19 /* RAGameView.m */; };
 		966B9CAE16E41C07005B61E1 /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAA16E41C07005B61E1 /* browser.m */; };
-		966B9CB016E41C07005B61E1 /* RADirectoryGrid.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAB16E41C07005B61E1 /* RADirectoryGrid.m */; };
-		966B9CB216E41C07005B61E1 /* RADirectoryList.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAC16E41C07005B61E1 /* RADirectoryList.m */; };
 		966B9CB416E41C07005B61E1 /* RAModuleList.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAD16E41C07005B61E1 /* RAModuleList.m */; };
 		966B9CBD16E41E7A005B61E1 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */; };
 		966B9CBF16E41E7A005B61E1 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CB916E41E7A005B61E1 /* Default.png */; };
@@ -47,12 +43,10 @@
 /* Begin PBXFileReference section */
 		9605EA99170288EA001D47B0 /* RAModuleInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAModuleInfo.h; sourceTree = "<group>"; };
 		9605EA9A170288EA001D47B0 /* RAModuleInfo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleInfo.m; sourceTree = "<group>"; };
-		96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleInfoList.m; sourceTree = "<group>"; };
 		9614C71F16DDC018000B36EF /* RetroArch copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch copy-Info.plist"; path = "/Users/jason/Documents/Projects/ios/RetroArch/ios/RetroArch copy-Info.plist"; sourceTree = "<absolute>"; };
 		962979F416C43B9500E6DCE0 /* ic_dir.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_dir.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_dir.png"; sourceTree = "<group>"; };
 		962979F516C43B9500E6DCE0 /* ic_file.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_file.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_file.png"; sourceTree = "<group>"; };
 		96297A0A16C5AD8D00E6DCE0 /* RetroArch_iOS.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RetroArch_iOS.h; sourceTree = "<group>"; };
-		96297A0B16C5AD8D00E6DCE0 /* RetroArch_iOS.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RetroArch_iOS.m; sourceTree = "<group>"; };
 		96297A0D16C5ADDA00E6DCE0 /* views.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = views.h; sourceTree = "<group>"; };
 		96297A0E16C5AEA100E6DCE0 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		96297A2616C82FF100E6DCE0 /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../media/overlays; sourceTree = "<group>"; };
@@ -66,8 +60,6 @@
 		963F5AC516CC523B009BBD19 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAGameView.m; sourceTree = "<group>"; };
 		966B9CA916E41C07005B61E1 /* browser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = browser.h; sourceTree = "<group>"; };
 		966B9CAA16E41C07005B61E1 /* browser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = browser.m; sourceTree = "<group>"; };
-		966B9CAB16E41C07005B61E1 /* RADirectoryGrid.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RADirectoryGrid.m; sourceTree = "<group>"; };
-		966B9CAC16E41C07005B61E1 /* RADirectoryList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RADirectoryList.m; sourceTree = "<group>"; };
 		966B9CAD16E41C07005B61E1 /* RAModuleList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleList.m; sourceTree = "<group>"; };
 		966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
 		966B9CB916E41E7A005B61E1 /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
@@ -131,8 +123,6 @@
 			children = (
 				966B9CA916E41C07005B61E1 /* browser.h */,
 				966B9CAA16E41C07005B61E1 /* browser.m */,
-				966B9CAB16E41C07005B61E1 /* RADirectoryGrid.m */,
-				966B9CAC16E41C07005B61E1 /* RADirectoryList.m */,
 				966B9CAD16E41C07005B61E1 /* RAModuleList.m */,
 			);
 			path = browser;
@@ -201,10 +191,8 @@
 				96F9C28216FFA55F002455B3 /* RALogView.m */,
 				9605EA9A170288EA001D47B0 /* RAModuleInfo.m */,
 				9605EA99170288EA001D47B0 /* RAModuleInfo.h */,
-				96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */,
 				96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */,
 				96297A0A16C5AD8D00E6DCE0 /* RetroArch_iOS.h */,
-				96297A0B16C5AD8D00E6DCE0 /* RetroArch_iOS.m */,
 				96297A0D16C5ADDA00E6DCE0 /* views.h */,
 			);
 			path = RetroArch;
@@ -342,17 +330,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				96297A0C16C5AD8D00E6DCE0 /* RetroArch_iOS.m in Sources */,
 				96297A0F16C5AEA100E6DCE0 /* main.m in Sources */,
 				963F5AC016CC522F009BBD19 /* RAButtonGetter.m in Sources */,
 				963F5AC116CC522F009BBD19 /* RASettingEnumerationList.m in Sources */,
 				963F5AC216CC522F009BBD19 /* RASettingsSubList.m in Sources */,
 				963F5AC316CC522F009BBD19 /* RASettingsList.m in Sources */,
 				963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */,
-				96096DD816D1ABAF00BF4499 /* RAModuleInfoList.m in Sources */,
 				966B9CAE16E41C07005B61E1 /* browser.m in Sources */,
-				966B9CB016E41C07005B61E1 /* RADirectoryGrid.m in Sources */,
-				966B9CB216E41C07005B61E1 /* RADirectoryList.m in Sources */,
 				966B9CB416E41C07005B61E1 /* RAModuleList.m in Sources */,
 				D48581DE16F823F9004BEB17 /* griffin.c in Sources */,
 				96F9C28316FFA55F002455B3 /* RALogView.m in Sources */,
