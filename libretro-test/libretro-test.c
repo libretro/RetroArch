@@ -64,6 +64,15 @@ static retro_input_state_t input_state_cb;
 void retro_set_environment(retro_environment_t cb)
 {
    environ_cb = cb;
+
+   static const struct retro_variable vars[] = {
+      { "test_opt0", "Test option #0; false|true" },
+      { "test_opt1", "Test option #1; 0" },
+      { "test_opt2", "Test option #2; 0|1|foo|3" },
+      { NULL, NULL },
+   };
+
+   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
 }
 
 void retro_set_audio_sample(retro_audio_sample_t cb)
@@ -232,6 +241,17 @@ bool retro_load_game(const struct retro_game_info *info)
 
    struct retro_keyboard_callback cb = { keyboard_cb };
    environ_cb(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &cb);
+
+   struct retro_variable var = {0};
+   var.key = "test_opt0";
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      fprintf(stderr, "Key -> Val: %s -> %s.\n", var.key, var.value);
+   var.key = "test_opt1";
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      fprintf(stderr, "Key -> Val: %s -> %s.\n", var.key, var.value);
+   var.key = "test_opt2";
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      fprintf(stderr, "Key -> Val: %s -> %s.\n", var.key, var.value);
 
    (void)info;
    return true;
