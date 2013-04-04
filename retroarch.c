@@ -2581,7 +2581,7 @@ static void check_block_hotkey(void)
 }
 
 #ifdef HAVE_OVERLAY
-static void check_overlay(void)
+void rarch_check_overlay(void)
 {
    if (!driver.overlay)
       return;
@@ -2637,7 +2637,7 @@ static void do_state_checks(void)
 #endif
 
 #ifdef HAVE_OVERLAY
-   check_overlay();
+   rarch_check_overlay();
 #endif
 
 #ifdef HAVE_NETPLAY

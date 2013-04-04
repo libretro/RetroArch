@@ -1792,6 +1792,9 @@ bool menu_iterate(void)
 
    g_extern.frame_count++;
    rarch_input_poll();
+#ifdef HAVE_OVERLAY
+   rarch_check_overlay();
+#endif
 
 #ifndef GEKKO
    /* TODO - not sure if correct regarding RARCH_QUIT_KEY */
