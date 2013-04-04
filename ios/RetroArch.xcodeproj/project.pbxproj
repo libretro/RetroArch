@@ -461,6 +461,7 @@
 				GCC_PREFIX_HEADER = "RetroArch/RetroArch-Prefix.pch";
 				INFOPLIST_FILE = "RetroArch/RetroArch-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				LD_NO_PIE = YES;
 				OTHER_CFLAGS = (
 					"-DHAVE_RARCH_MAIN_WRAP",
 					"-DHAVE_GRIFFIN",
@@ -498,6 +499,7 @@
 				GCC_PREFIX_HEADER = "RetroArch/RetroArch-Prefix.pch";
 				INFOPLIST_FILE = "RetroArch/RetroArch-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				LD_NO_PIE = YES;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
