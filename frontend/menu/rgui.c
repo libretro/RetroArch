@@ -365,8 +365,9 @@ static void render_text(rgui_handle_t *rgui)
 
    if (menu_type == RGUI_SETTINGS_CORE)
       strlcpy(title, "CORE SELECTION", sizeof(title));
-   else
-   if ((menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ||
+   else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
+      strlcpy(title, "CORE OPTIONS", sizeof(title));
+   else if ((menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ||
          (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
          menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "SETTINGS: %s", dir);
@@ -392,142 +393,151 @@ static void render_text(rgui_handle_t *rgui)
       char type_str[256];
       int w = (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ? 26 : 19;
       unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
-      switch (type)
+      
+      if (type >= RGUI_SETTINGS_CORE_OPTION_START)
       {
-         case RGUI_FILE_PLAIN:
-            strlcpy(type_str, "(FILE)", sizeof(type_str));
-            w = 6;
-            break;
-         case RGUI_FILE_DIRECTORY:
-            strlcpy(type_str, "(DIR)", sizeof(type_str));
-            w = 5;
-            break;
-         case RGUI_FILE_DEVICE:
-            strlcpy(type_str, "(DEV)", sizeof(type_str));
-            w = 5;
-            break;
-         case RGUI_SETTINGS_REWIND_ENABLE:
-            if (g_settings.rewind_enable)
-               strlcpy(type_str, "ON", sizeof(type_str));
-            else
-               strlcpy(type_str, "OFF", sizeof(type_str));
-            break;
-         case RGUI_SETTINGS_REWIND_GRANULARITY:
-            snprintf(type_str, sizeof(type_str), "%d", g_settings.rewind_granularity);
-            break;
-         case RGUI_SETTINGS_SAVESTATE_SAVE:
-         case RGUI_SETTINGS_SAVESTATE_LOAD:
-            snprintf(type_str, sizeof(type_str), "%d", g_extern.state_slot);
-            break;
-         case RGUI_SETTINGS_VIDEO_FILTER:
-            if (g_settings.video.smooth)
-               strlcpy(type_str, "Bilinear filtering", sizeof(type_str));
-            else
-               strlcpy(type_str, "Point filtering", sizeof(type_str));
-            break;
-         case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
-            snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
-            break;
-#ifdef GEKKO
-         case RGUI_SETTINGS_VIDEO_RESOLUTION:
-            strlcpy(type_str, gx_get_video_mode(), sizeof(type_str));
-            break;
-#endif
-         case RGUI_SETTINGS_VIDEO_GAMMA:
-            snprintf(type_str, sizeof(type_str), "%d", g_extern.console.screen.gamma_correction);
-            break;
-         case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
-            strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(type_str));
-            break;
-         case RGUI_SETTINGS_VIDEO_OVERSCAN:
-            snprintf(type_str, sizeof(type_str), "%.2f", g_extern.console.screen.overscan_amount);
-            break;
-         case RGUI_SETTINGS_VIDEO_ROTATION:
-            snprintf(type_str, sizeof(type_str), "Rotation: %s",
-                  rotation_lut[g_extern.console.screen.orientation]);
-            break;
-         case RGUI_SETTINGS_AUDIO_MUTE:
-            if (g_extern.audio_data.mute)
-               strlcpy(type_str, "ON", sizeof(type_str));
-            else
-               strlcpy(type_str, "OFF", sizeof(type_str));
-            break;
-         case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
-            snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
-            break;
-         case RGUI_SETTINGS_RESAMPLER_TYPE:
-            if (strstr(g_settings.audio.resampler, "sinc"))
-               strlcpy(type_str, "Sinc", sizeof(type_str));
-            else
-               strlcpy(type_str, "Hermite", sizeof(type_str));
-            break;
-         case RGUI_SETTINGS_SRAM_DIR:
-            snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
-            break;
-         case RGUI_SETTINGS_STATE_DIR:
-            snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? "ON" : "OFF");
-            break;
-         case RGUI_SETTINGS_DEBUG_TEXT:
-            snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
-            break;
-         case RGUI_SETTINGS_OPEN_FILEBROWSER:
-         case RGUI_SETTINGS_CUSTOM_VIEWPORT:
-         case RGUI_SETTINGS_CORE:
-         case RGUI_SETTINGS_CONTROLLER_1:
-         case RGUI_SETTINGS_CONTROLLER_2:
-         case RGUI_SETTINGS_CONTROLLER_3:
-         case RGUI_SETTINGS_CONTROLLER_4:
-            strlcpy(type_str, "...", sizeof(type_str));
-            break;
-         case RGUI_SETTINGS_BIND_DEVICE:
-            strlcpy(type_str, g_settings.input.device_names[port], sizeof(type_str));
-            break;
-         case RGUI_SETTINGS_BIND_DPAD_EMULATION:
-            switch(g_settings.input.dpad_emulation[port])
-            {
-               case ANALOG_DPAD_NONE:
-                  strlcpy(type_str, "None", sizeof(type_str));
-                  break;
-               case ANALOG_DPAD_LSTICK:
-                  strlcpy(type_str, "Left Stick", sizeof(type_str));
-                  break;
-               case ANALOG_DPAD_RSTICK:
-                  strlcpy(type_str, "Right Stick", sizeof(type_str));
-                  break;
-            }
-            break;
-         case RGUI_SETTINGS_BIND_UP:
-         case RGUI_SETTINGS_BIND_DOWN:
-         case RGUI_SETTINGS_BIND_LEFT:
-         case RGUI_SETTINGS_BIND_RIGHT:
-         case RGUI_SETTINGS_BIND_A:
-         case RGUI_SETTINGS_BIND_B:
-         case RGUI_SETTINGS_BIND_X:
-         case RGUI_SETTINGS_BIND_Y:
-         case RGUI_SETTINGS_BIND_START:
-         case RGUI_SETTINGS_BIND_SELECT:
-         case RGUI_SETTINGS_BIND_L:
-         case RGUI_SETTINGS_BIND_R:
-         case RGUI_SETTINGS_BIND_L2:
-         case RGUI_SETTINGS_BIND_R2:
-         case RGUI_SETTINGS_BIND_L3:
-         case RGUI_SETTINGS_BIND_R3:
-            {
-               unsigned id = rgui_controller_lut[type - RGUI_SETTINGS_BIND_UP];
-               struct platform_bind key_label;
-               strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-               key_label.joykey = g_settings.input.binds[port][id].joykey;
+         strlcpy(type_str, core_option_get_val(g_extern.system.core_options, type - RGUI_SETTINGS_CORE_OPTION_START), sizeof(type_str));
+      }
+      else
+      {
+         switch (type)
+         {
+            case RGUI_FILE_PLAIN:
+               strlcpy(type_str, "(FILE)", sizeof(type_str));
+               w = 6;
+               break;
+            case RGUI_FILE_DIRECTORY:
+               strlcpy(type_str, "(DIR)", sizeof(type_str));
+               w = 5;
+               break;
+            case RGUI_FILE_DEVICE:
+               strlcpy(type_str, "(DEV)", sizeof(type_str));
+               w = 5;
+               break;
+            case RGUI_SETTINGS_REWIND_ENABLE:
+               if (g_settings.rewind_enable)
+                  strlcpy(type_str, "ON", sizeof(type_str));
+               else
+                  strlcpy(type_str, "OFF", sizeof(type_str));
+               break;
+            case RGUI_SETTINGS_REWIND_GRANULARITY:
+               snprintf(type_str, sizeof(type_str), "%d", g_settings.rewind_granularity);
+               break;
+            case RGUI_SETTINGS_SAVESTATE_SAVE:
+            case RGUI_SETTINGS_SAVESTATE_LOAD:
+               snprintf(type_str, sizeof(type_str), "%d", g_extern.state_slot);
+               break;
+            case RGUI_SETTINGS_VIDEO_FILTER:
+               if (g_settings.video.smooth)
+                  strlcpy(type_str, "Bilinear filtering", sizeof(type_str));
+               else
+                  strlcpy(type_str, "Point filtering", sizeof(type_str));
+               break;
+            case RGUI_SETTINGS_VIDEO_SOFT_FILTER:
+               snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
+               break;
+   #ifdef GEKKO
+            case RGUI_SETTINGS_VIDEO_RESOLUTION:
+               strlcpy(type_str, gx_get_video_mode(), sizeof(type_str));
+               break;
+   #endif
+            case RGUI_SETTINGS_VIDEO_GAMMA:
+               snprintf(type_str, sizeof(type_str), "%d", g_extern.console.screen.gamma_correction);
+               break;
+            case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
+               strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(type_str));
+               break;
+            case RGUI_SETTINGS_VIDEO_OVERSCAN:
+               snprintf(type_str, sizeof(type_str), "%.2f", g_extern.console.screen.overscan_amount);
+               break;
+            case RGUI_SETTINGS_VIDEO_ROTATION:
+               snprintf(type_str, sizeof(type_str), "Rotation: %s",
+                     rotation_lut[g_extern.console.screen.orientation]);
+               break;
+            case RGUI_SETTINGS_AUDIO_MUTE:
+               if (g_extern.audio_data.mute)
+                  strlcpy(type_str, "ON", sizeof(type_str));
+               else
+                  strlcpy(type_str, "OFF", sizeof(type_str));
+               break;
+            case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
+               snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
+               break;
+            case RGUI_SETTINGS_RESAMPLER_TYPE:
+               if (strstr(g_settings.audio.resampler, "sinc"))
+                  strlcpy(type_str, "Sinc", sizeof(type_str));
+               else
+                  strlcpy(type_str, "Hermite", sizeof(type_str));
+               break;
+            case RGUI_SETTINGS_SRAM_DIR:
+               snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
+               break;
+            case RGUI_SETTINGS_STATE_DIR:
+               snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? "ON" : "OFF");
+               break;
+            case RGUI_SETTINGS_DEBUG_TEXT:
+               snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_FPS_DRAW)) ? "ON" : "OFF");
+               break;
+            case RGUI_SETTINGS_OPEN_FILEBROWSER:
+            case RGUI_SETTINGS_CORE_OPTIONS:
+            case RGUI_SETTINGS_CUSTOM_VIEWPORT:
+            case RGUI_SETTINGS_CORE:
+            case RGUI_SETTINGS_CONTROLLER_1:
+            case RGUI_SETTINGS_CONTROLLER_2:
+            case RGUI_SETTINGS_CONTROLLER_3:
+            case RGUI_SETTINGS_CONTROLLER_4:
+               strlcpy(type_str, "...", sizeof(type_str));
+               break;
+            case RGUI_SETTINGS_BIND_DEVICE:
+               strlcpy(type_str, g_settings.input.device_names[port], sizeof(type_str));
+               break;
+            case RGUI_SETTINGS_BIND_DPAD_EMULATION:
+               switch(g_settings.input.dpad_emulation[port])
+               {
+                  case ANALOG_DPAD_NONE:
+                     strlcpy(type_str, "None", sizeof(type_str));
+                     break;
+                  case ANALOG_DPAD_LSTICK:
+                     strlcpy(type_str, "Left Stick", sizeof(type_str));
+                     break;
+                  case ANALOG_DPAD_RSTICK:
+                     strlcpy(type_str, "Right Stick", sizeof(type_str));
+                     break;
+               }
+               break;
+            case RGUI_SETTINGS_BIND_UP:
+            case RGUI_SETTINGS_BIND_DOWN:
+            case RGUI_SETTINGS_BIND_LEFT:
+            case RGUI_SETTINGS_BIND_RIGHT:
+            case RGUI_SETTINGS_BIND_A:
+            case RGUI_SETTINGS_BIND_B:
+            case RGUI_SETTINGS_BIND_X:
+            case RGUI_SETTINGS_BIND_Y:
+            case RGUI_SETTINGS_BIND_START:
+            case RGUI_SETTINGS_BIND_SELECT:
+            case RGUI_SETTINGS_BIND_L:
+            case RGUI_SETTINGS_BIND_R:
+            case RGUI_SETTINGS_BIND_L2:
+            case RGUI_SETTINGS_BIND_R2:
+            case RGUI_SETTINGS_BIND_L3:
+            case RGUI_SETTINGS_BIND_R3:
+               {
+                  unsigned id = rgui_controller_lut[type - RGUI_SETTINGS_BIND_UP];
+                  struct platform_bind key_label;
+                  strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+                  key_label.joykey = g_settings.input.binds[port][id].joykey;
 
-               if (driver.input->set_keybinds)
-                  driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+                  if (driver.input->set_keybinds)
+                     driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
 
-               strlcpy(type_str, key_label.desc, sizeof(type_str));
-            }
-            break;
-         default:
-            type_str[0] = 0;
-            w = 0;
-            break;
+                  strlcpy(type_str, key_label.desc, sizeof(type_str));
+               }
+               break;
+            default:
+               type_str[0] = 0;
+               w = 0;
+               break;
+         }
       }
 
       const char *entry_title;
@@ -988,6 +998,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #ifdef HAVE_DYNAMIC
    rgui_list_push(rgui->selection_buf, "Core", RGUI_SETTINGS_CORE, 0);
 #endif
+   rgui_list_push(rgui->selection_buf, "Core Options", RGUI_SETTINGS_CORE_OPTIONS, 0);
    rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
    rgui_list_push(rgui->selection_buf, "Rewind granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
    if (g_extern.main_is_init)
@@ -1032,6 +1043,18 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Restart RetroArch", RGUI_SETTINGS_RESTART_EMULATOR, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Quit RetroArch", RGUI_SETTINGS_QUIT_RARCH, 0);
+}
+
+static void rgui_settings_core_options_populate_entries(rgui_handle_t *rgui)
+{
+   rgui_list_clear(rgui->selection_buf);
+
+   if (!g_extern.system.core_options)
+      return;
+
+   size_t opts = core_option_size(g_extern.system.core_options);
+   for (size_t i = 0; i < opts; i++)
+      rgui_list_push(rgui->selection_buf, core_option_get_desc(g_extern.system.core_options, i), RGUI_SETTINGS_CORE_OPTION_START + i, 0);
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
@@ -1237,7 +1260,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_OK:
       case RGUI_ACTION_START:
          if (((type >= RGUI_SETTINGS_CONTROLLER_1 && type <= RGUI_SETTINGS_CONTROLLER_4) ||
-                  type == RGUI_SETTINGS_CORE) && action == RGUI_ACTION_OK)
+                  type == RGUI_SETTINGS_CORE || type == RGUI_SETTINGS_CORE_OPTIONS) && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
             rgui->selection_ptr = 0;
@@ -1286,6 +1309,8 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
       rgui->need_refresh = false;
       if ((menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4))
          rgui_settings_controller_populate_entries(rgui);
+      else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
+         rgui_settings_core_options_populate_entries(rgui);
       else
          rgui_settings_populate_entries(rgui);
    }
@@ -1396,7 +1421,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
    int ret = 0;
 
-   if (menu_type == RGUI_SETTINGS || (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4))
+   if (menu_type == RGUI_SETTINGS || menu_type == RGUI_SETTINGS_CORE_OPTIONS || (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4))
       return rgui_settings_iterate(rgui, action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
       return rgui_viewport_iterate(rgui, action);
