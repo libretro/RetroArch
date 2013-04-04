@@ -28,6 +28,7 @@
 #include "../../config.def.h"
 #include "../../file.h"
 #include "../../dynamic.h"
+#include "../../compat/posix_string.h"
 
 #ifdef HAVE_OPENGL
 #include "../../gfx/gl_common.h"
@@ -109,7 +110,7 @@ struct rgui_handle
 
    rgui_list_t *menu_stack;
    rgui_list_t *selection_buf;
-   int selection_ptr;
+   unsigned selection_ptr;
    bool need_refresh;
    bool msg_force;
 
@@ -1314,6 +1315,16 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, void *us
       rgui_list_push(ctx, "E:\\", RGUI_FILE_DEVICE, 0);
       rgui_list_push(ctx, "F:\\", RGUI_FILE_DEVICE, 0);
       rgui_list_push(ctx, "G:\\", RGUI_FILE_DEVICE, 0);
+      return true;
+#elif defined(_WIN32)
+      unsigned drives = GetLogicalDrives();
+      char drive[] = " :\\";
+      for (unsigned i = 0; i < 32; i++)
+      {
+         drive[0] = 'A' + i;
+         if (drives & (1 << i))
+            rgui_list_push(ctx, drive, RGUI_FILE_DEVICE, 0);
+      }
       return true;
 #elif defined(__CELLOS_LV2__)
       rgui_list_push(ctx, "app_home:/", RGUI_FILE_DEVICE, 0);

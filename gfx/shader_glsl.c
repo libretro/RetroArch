@@ -1052,8 +1052,6 @@ static void find_uniforms(GLuint prog, struct shader_uniforms *uni)
 {
    pglUseProgram(prog);
 
-   char buf[64];
-
    uni->mvp           = get_uniform(prog, "MVPMatrix");
    uni->tex_coord     = get_attrib(prog, "TexCoord");
    uni->vertex_coord  = get_attrib(prog, "VertexCoord");

@@ -20,6 +20,7 @@
 
 #include "file_list.h"
 #include "../rgui.h"
+#include "../../../compat/posix_string.h"
 
 struct rgui_file
 {

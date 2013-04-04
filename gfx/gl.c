@@ -1646,7 +1646,7 @@ static void gl_free(void *data)
 #ifndef HAVE_RGL
    if (gl->hw_render_fbo_init)
       pglDeleteFramebuffers(TEXTURES, gl->hw_render_fbo);
-   if (gl->hw_render_depth)
+   if (gl->hw_render_depth_init)
       pglDeleteRenderbuffers(TEXTURES, gl->hw_render_depth);
    gl->hw_render_fbo_init = false;
 #endif
