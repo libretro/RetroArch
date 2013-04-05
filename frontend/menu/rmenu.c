@@ -350,26 +350,6 @@ static void populate_setting_item(void *data, unsigned input)
                   sizeof(current_item->comment));
          }
          break;
-#ifdef HAVE_FBO
-      case SETTING_SCALE_ENABLED:
-         strlcpy(current_item->text, "FBO Mode", sizeof(current_item->text));
-         if (g_settings.video.render_to_texture)
-         {
-            strlcpy(current_item->setting_text, "ON", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - FBO Mode is set to 'ON' - 2x shaders will look much\nbetter, and you can select a shader for [Shader #2].", sizeof(current_item->comment));
-         }
-         else
-         {
-            strlcpy(current_item->setting_text, "OFF", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - FBO Mode is set to 'OFF'.", sizeof(current_item->comment));
-         }
-         break;
-      case SETTING_SCALE_FACTOR:
-         strlcpy(current_item->text, "Scaling Factor", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Scaling Factor is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
-         break;
-#endif
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
          strlcpy(current_item->text, "Flicker Filter", sizeof(current_item->text));
@@ -702,12 +682,6 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->comment, "Change orientation of the screen.", sizeof(current_item->comment));
          break;
 #ifdef HAVE_FBO
-      case INGAME_MENU_SCALE_FACTOR:
-         strlcpy(current_item->text, "Scaling Factor", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
-         strlcpy(current_item->comment, "Change scaling of the screen.", sizeof(current_item->comment));
-         break;
-#endif
       case INGAME_MENU_RESIZE_MODE:
          strlcpy(current_item->text, "Resize Mode", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
@@ -1384,7 +1358,6 @@ static bool osk_callback_enter_filename(void *data)
             memset(&current_settings, 0, sizeof(current_settings));
             current_settings.shader[0] = g_settings.video.cg_shader_path;
             current_settings.filter_linear[0] = g_settings.video.smooth;
-            current_settings.render_to_texture = true;
             current_settings.fbo_scale = g_settings.video.fbo.scale_x; //fbo.scale_x and y are the same anyway
             gl_cg_save_cgp(filepath, &current_settings);
             */
@@ -1613,68 +1586,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
          }
          break;
-#ifdef HAVE_FBO
-      case SETTING_SCALE_ENABLED:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-            settings_set(1ULL << S_SCALE_ENABLED);
-
-            if (driver.video_poke->set_fbo_state)
-            {
-               if (g_settings.video.render_to_texture)
-                  driver.video_poke->set_fbo_state(driver.video_data, FBO_INIT);
-               else
-                  driver.video_poke->set_fbo_state(driver.video_data, FBO_DEINIT);
-            }
-         }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
-         {
-            settings_set(1ULL << S_DEF_SCALE_ENABLED);
-
-            if (driver.video_poke->set_fbo_state)
-               driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
-         }
-         break;
-      case SETTING_SCALE_FACTOR:
-      case INGAME_MENU_SCALE_FACTOR:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
-         {
-            if (g_settings.video.render_to_texture)
-            {
-               bool should_decrement = g_settings.video.fbo.scale_x > MIN_SCALING_FACTOR;
-
-               if (should_decrement)
-               {
-                  settings_set(1ULL << S_SCALE_FACTOR_DECREMENT);
-
-                  if (driver.video_poke->set_fbo_state)
-                     driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
-               }
-            }
-         }
-         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-            if (g_settings.video.render_to_texture)
-            {
-               bool should_increment = g_settings.video.fbo.scale_x < MAX_SCALING_FACTOR;
-               if (should_increment)
-               {
-                  settings_set(1ULL << S_SCALE_FACTOR_INCREMENT);
-
-                  if (driver.video_poke->set_fbo_state)
-                     driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
-               }
-            }
-         }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
-         {
-            settings_set(1ULL << S_DEF_SCALE_FACTOR);
-
-            if (driver.video_poke->set_fbo_state)
-               driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
-         }
-         break;
-#endif
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
          if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
