@@ -40,6 +40,7 @@ RetroArch has been ported to the following platforms outside PC:
    - Raspberry Pi
    - Android
    - iOS
+   - Blackberry
 
 # Dependencies (PC)
 
@@ -66,8 +67,8 @@ RetroArch needs at least one of these audio driver libraries:
    - JACK
    - SDL
    - PulseAudio
-   - XAudio2 (Win32)
-   - DirectSound (Win32)
+   - XAudio2 (Win32, Xbox 360)
+   - DirectSound (Win32, Xbox 1)
    - CoreAudio (OSX, iOS)
 
 To run properly, RetroArch requires a libretro implementation present, however, as it's typically loaded

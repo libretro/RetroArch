@@ -49,6 +49,9 @@
     <Filter Include="Source Files\gfx\rpng">
       <UniqueIdentifier>{a1302353-aa00-4f85-a62f-3c40160a5fa3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\rgui">
+      <UniqueIdentifier>{a3ec9cd6-b3f2-4711-9585-e09c8dbb63ef}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\autosave.c">
@@ -218,6 +221,21 @@
     </ClCompile>
     <ClCompile Include="..\..\input\overlay.c">
       <Filter>Source Files\input</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\frontend\frontend.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\shader_parse.c">
+      <Filter>Source Files\gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\core_options.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\frontend\menu\rgui.c">
+      <Filter>Source Files\rgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\frontend\menu\utils\file_list.c">
+      <Filter>Source Files\rgui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

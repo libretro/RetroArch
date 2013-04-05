@@ -678,6 +678,8 @@ static const video_poke_interface_t thread_poke = {
 #ifdef HAVE_FBO
    thread_set_fbo_state,
    thread_get_fbo_state,
+   NULL,
+   NULL,
 #endif
    thread_set_aspect_ratio,
    thread_apply_state_changes,
@@ -693,7 +695,7 @@ static void thread_get_poke_interface(void *data, const video_poke_interface_t *
    thr->driver->poke_interface(thr->driver_data, &thr->poke);
 }
 
-#if defined(HAVE_RMENU)
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
 // all stubs for now, might not have to implement them unless we want to port this to consoles
 static void thread_start(void) {}
 static void thread_stop(void) {}
@@ -709,7 +711,7 @@ static const video_driver_t video_thread = {
    thread_set_shader,
    thread_free,
    "Thread wrapper",
-#if defined(HAVE_RMENU)
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
    thread_start,
    thread_stop,
    thread_restart,

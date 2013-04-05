@@ -36,8 +36,6 @@ typedef struct
 
    GLenum pool;	// type of memory
 
-   char* ppuData; // generic EA that's not RSX mem
-
    GLuint dataId;		// id to get address and offset
    GLuint dataIdOffset;
 } rglGcmSurface;

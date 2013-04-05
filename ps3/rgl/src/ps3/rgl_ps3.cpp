@@ -16,6 +16,7 @@
  */
 
 #include "../rgl.h"
+#include "../rglp.h"
 
 #include <sdk_version.h>
 
@@ -45,6 +46,233 @@ static GLuint nvFenceCounter = 0;
 // the global instance of the rglGcmState_i structure
 rglGcmState rglGcmState_i;
 
+#define NAME_INCREMENT 4
+#define CAPACITY_INCREMENT 16
+
+static void rglInitNameSpace(void *data)
+{
+   rglNameSpace *name = (rglNameSpace*)data;
+   name->data = NULL;
+   name->firstFree = NULL;
+   name->capacity = 0;
+}
+
+static void rglFreeNameSpace(void *data)
+{
+   rglNameSpace *name = (rglNameSpace*)data;
+
+   if (name->data)
+      free(name->data);
+
+   name->data = NULL;
+   name->capacity = 0;
+   name->firstFree = NULL;
+}
+
+unsigned int rglCreateName(void *data, void* object)
+{
+   rglNameSpace *name = (rglNameSpace*)data;
+   // NULL is reserved for the guard of the linked list.
+   if (name->firstFree == NULL)
+   {
+      // need to allocate more pointer space
+      int newCapacity = name->capacity + NAME_INCREMENT;
+
+      // realloc the block of pointers
+      void** newData = ( void** )malloc( newCapacity * sizeof( void* ) );
+      if ( newData == NULL )
+      {
+         // XXX what should we generally do here ?
+         rglCgRaiseError( CG_MEMORY_ALLOC_ERROR );
+         return 0;
+      }
+      memcpy( newData, name->data, name->capacity * sizeof( void* ) );
+
+      if (name->data != NULL)
+         free (name->data);
+
+      name->data = newData;
+
+      // initialize the pointers to the next free elements.
+      // (effectively build a linked list of free elements in place)
+      // treat the last item differently, by linking it to NULL
+      for ( int index = name->capacity; index < newCapacity - 1; ++index )
+         name->data[index] = name->data + index + 1;
+
+      name->data[newCapacity - 1] = NULL;
+      // update the first free element to the new data pointer.
+      name->firstFree = name->data + name->capacity;
+      // update the new capacity.
+      name->capacity = newCapacity;
+   }
+   // firstFree is a pointer, compute the index of it
+   unsigned int result = name->firstFree - name->data;
+
+   // update the first free to the next free element.
+   name->firstFree = (void**)*name->firstFree;
+
+   // store the object in data.
+   name->data[result] = object;
+
+   // offset the index by 1 to avoid the name 0
+   return result + 1;
+}
+
+unsigned int rglIsName (void *data, unsigned int name )
+{
+   rglNameSpace *ns = (rglNameSpace*)data;
+   // there should always be a namespace
+   // 0 is never valid.
+   if (RGL_UNLIKELY(name == 0))
+      return 0;
+
+   // names start numbering from 1, so convert from a name to an index
+   --name;
+
+   // test whether it is in the namespace range
+   if ( RGL_UNLIKELY( name >= ns->capacity ) )
+      return 0;
+
+   // test whether the pointer is inside the data block.
+   // if so, it means it is free.
+   // if it points to NULL, it means it is the last free name in the linked list.
+   void** value = ( void** )ns->data[name];
+
+   if ( RGL_UNLIKELY(value == NULL ||
+            ( value >= ns->data && value < ns->data + ns->capacity ) ) )
+      return 0;
+
+   // The pointer is not free and allocated, so name is a real name.
+   return 1;
+}
+
+void rglEraseName(void *data, unsigned int name )
+{
+   rglNameSpace *ns = (rglNameSpace*)data;
+   if (rglIsName(ns, name))
+   {
+      --name;
+      ns->data[name] = ns->firstFree;
+      ns->firstFree = ns->data + name;
+   }
+}
+
+// Initialize texture namespace ns with creation and destruction functions
+static void rglTexNameSpaceInit(void *data,
+      rglTexNameSpaceCreateFunction create,
+      rglTexNameSpaceDestroyFunction destroy)
+{
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
+
+   ns->capacity = CAPACITY_INCREMENT;
+   ns->data = (void **)malloc( ns->capacity * sizeof( void* ) );
+   memset( ns->data, 0, ns->capacity*sizeof( void* ) );
+   ns->create = create;
+   ns->destroy = destroy;
+}
+
+// Free texture namespace ns
+static void rglTexNameSpaceFree(void *data)
+{
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
+
+   for (GLuint i = 1;i < ns->capacity; ++i)
+      if (ns->data[i])
+         ns->destroy( ns->data[i] );
+
+   free( ns->data );
+   ns->data = NULL;
+}
+
+// Reset all names in namespace ns to NULL
+void rglTexNameSpaceResetNames(void *data)
+{
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
+
+   for ( GLuint i = 1;i < ns->capacity;++i )
+   {
+      if ( ns->data[i] )
+      {
+         ns->destroy( ns->data[i] );
+         ns->data[i] = NULL;
+      }
+   }
+}
+
+// Get an index of the first free name in namespace ns
+static GLuint rglTexNameSpaceGetFree(void *data)
+{
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
+   GLuint i;
+
+   for (i = 1;i < ns->capacity;++i)
+      if (!ns->data[i])
+         break;
+   return i;
+}
+
+// Add name to namespace by increasing capacity and calling creation call back function
+// Return GL_TRUE for success, GL_FALSE for failure
+GLboolean rglTexNameSpaceCreateNameLazy(void *data, GLuint name )
+{
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
+
+   if (name >= ns->capacity)
+   {
+      int newCapacity = name >= ns->capacity + CAPACITY_INCREMENT ? name + 1 : ns->capacity + CAPACITY_INCREMENT;
+      void **newData = ( void ** )realloc( ns->data, newCapacity * sizeof( void * ) );
+      memset( newData + ns->capacity, 0, ( newCapacity - ns->capacity )*sizeof( void * ) );
+      ns->data = newData;
+      ns->capacity = newCapacity;
+   }
+   if ( !ns->data[name] )
+   {
+      ns->data[name] = ns->create();
+      if ( ns->data[name] ) return GL_TRUE;
+   }
+   return GL_FALSE;
+}
+
+// Check if name is a valid name in namespace ns
+// Return GL_TRUE if so, GL_FALSE otherwise
+GLboolean rglTexNameSpaceIsName(void *data, GLuint name )
+{
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
+   
+   if ((name > 0) && (name < ns->capacity))
+      return( ns->data[name] != 0 );
+   else return GL_FALSE;
+}
+
+// Generate new n names in namespace ns
+static void rglTexNameSpaceGenNames(void *data, GLsizei n, GLuint *names )
+{
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
+
+   for ( int i = 0;i < n;++i )
+   {
+      GLuint name = rglTexNameSpaceGetFree( ns );
+      names[i] = name;
+      if (name)
+         rglTexNameSpaceCreateNameLazy( ns, name );
+   }
+}
+
+// Delete n names from namespace ns
+void rglTexNameSpaceDeleteNames(void *data, GLsizei n, const GLuint *names )
+{
+   rglTexNameSpace *ns = (rglTexNameSpace*)data;
+
+   for ( int i = 0;i < n;++i )
+   {
+      GLuint name = names[i];
+      if (!rglTexNameSpaceIsName(ns, name))
+         continue;
+      ns->destroy( ns->data[name] );
+      ns->data[name] = NULL;
+   }
+}
+
 /*============================================================
   MEMORY MANAGER
   ============================================================ */
@@ -52,18 +280,10 @@ rglGcmState rglGcmState_i;
 static GmmAllocator         *pGmmLocalAllocator = NULL;
 static volatile uint32_t    *pLock = NULL;
 static uint32_t             cachedLockValue = 0;
-static uint8_t              pinAllocations = 0;
 static GmmFixedAllocData    *pGmmFixedAllocData = NULL;
 
-static inline uint32_t pad(uint32_t x, uint32_t pad)
-{
-   return ( x + pad - 1 ) / pad * pad;
-}
-
-static inline uint32_t gmmAddressToOffset(uint32_t address)
-{
-   return address - pGmmLocalAllocator->memoryBase;
-}
+#define PAD(x, pad) ((x + pad - 1) / pad * pad)
+#define GMM_ADDRESS_TO_OFFSET(address) (address - pGmmLocalAllocator->memoryBase)
 
 static uint32_t gmmInitFixedAllocator(void)
 {
@@ -215,10 +435,7 @@ static void gmmDestroyFixedAllocator (void)
    }
 }
 
-static GmmBlock *gmmAllocFixedBlock (void)
-{
-   return (GmmBlock *)gmmAllocFixed(0);
-}
+#define GMM_ALLOC_FIXED_BLOCK() ((GmmBlock*)gmmAllocFixed(0))
 
 static void gmmFreeFixedBlock (void *data)
 {
@@ -237,35 +454,19 @@ static void gmmFreeFixedTileBlock (void *data)
    gmmFreeFixed(1, pTileBlock);
 }
 
-void gmmPinAllocations (void)
-{
-   pinAllocations = 1;
-}
-
-void gmmUnpinAllocations (void)
-{
-   pinAllocations = 0;
-}
-
 uint32_t gmmInit(
       const void *localMemoryBase,
       const void *localStartAddress,
-      const uint32_t localSize,
-      const void *mainMemoryBase,
-      const void *mainStartAddress,
-      const uint32_t mainSize
+      const uint32_t localSize
       )
 {
    GmmAllocator *pAllocator;
    uint32_t alignedLocalSize, alignedMainSize;
    uint32_t localEndAddress = (uint32_t)localStartAddress + localSize;
-   uint32_t mainEndAddress = (uint32_t)mainStartAddress + mainSize;
 
    localEndAddress = (localEndAddress / GMM_TILE_ALIGNMENT) * GMM_TILE_ALIGNMENT;
-   mainEndAddress = (mainEndAddress / GMM_TILE_ALIGNMENT) * GMM_TILE_ALIGNMENT;
 
    alignedLocalSize = localEndAddress - (uint32_t)localStartAddress;
-   alignedMainSize = mainEndAddress - (uint32_t)mainStartAddress;
 
    pAllocator = (GmmAllocator *)malloc(2*sizeof(GmmAllocator));
 
@@ -366,17 +567,7 @@ void gmmSetTileAttrib(const uint32_t id, const uint32_t tag,
 uint32_t gmmIdToOffset(const uint32_t id)
 {
    GmmBaseBlock    *pBaseBlock = (GmmBaseBlock *)id;
-   uint32_t        offset;
-
-   if (!pBaseBlock->isTile && pinAllocations)
-   {
-      GmmBlock *pBlock = (GmmBlock *)id;
-      pBlock->isPinned = pinAllocations;
-   }   
-
-   offset = gmmAddressToOffset(pBaseBlock->address);
-
-   return offset;
+   return GMM_ADDRESS_TO_OFFSET(pBaseBlock->address);
 }
 
 char *gmmIdToAddress (const uint32_t id)
@@ -426,7 +617,7 @@ static GmmBlock *gmmAllocBlock(
    if (UINT_MAX - address >= size && 
          address + size <= pAllocator->startAddress + pAllocator->size)
    {
-      pNewBlock = gmmAllocFixedBlock();
+      pNewBlock = GMM_ALLOC_FIXED_BLOCK();
       if (pNewBlock == NULL)
       {
          return NULL;
@@ -592,11 +783,7 @@ static void gmmFreeTileBlock (void *data)
    gmmFreeFixedTileBlock(pTileBlock);
 }
 
-uint32_t gmmAllocExtendedTileBlock(
-      const uint8_t location, 
-      const uint32_t size,
-      const uint32_t tag
-      )
+static uint32_t gmmAllocExtendedTileBlock(const uint32_t size, const uint32_t tag)
 {
    GmmAllocator    *pAllocator;
    uint32_t        retId = 0;
@@ -607,7 +794,7 @@ uint32_t gmmAllocExtendedTileBlock(
    pAllocator = pGmmLocalAllocator;
 
 
-   newSize = pad(size, GMM_TILE_ALIGNMENT);
+   newSize = PAD(size, GMM_TILE_ALIGNMENT);
 
    GmmTileBlock    *pBlock = pAllocator->pTileTail;
 
@@ -1003,7 +1190,7 @@ static inline void gmmMemcpy(void *data, const uint8_t mode,
    }
 }
 
-static uint8_t gmmInternalSweep(void *data, const uint8_t location)
+static uint8_t gmmInternalSweep(void *data)
 {
    CellGcmContextData *thisContext = (CellGcmContextData*)data;
    GmmAllocator    *pAllocator = pGmmLocalAllocator;
@@ -1043,8 +1230,8 @@ static uint8_t gmmInternalSweep(void *data, const uint8_t location)
                 pBlock->pNext->base.address > pBlock->base.address + pBlock->base.size ||
                 pBlock->pNext->isPinned))
          {
-            dstOffset = gmmAddressToOffset(dstAddress);
-            srcOffset = gmmAddressToOffset(srcAddress);
+            dstOffset = GMM_ADDRESS_TO_OFFSET(dstAddress);
+            srcOffset = GMM_ADDRESS_TO_OFFSET(srcAddress);
 
             totalMoveSize += moveSize;
 
@@ -1094,8 +1281,8 @@ static uint8_t gmmInternalSweep(void *data, const uint8_t location)
                   pBlock->pPrev->base.address + pBlock->pPrev->base.size;
                uint32_t pinSrcAddress = pTempBlock->base.address;
 
-               dstOffset = gmmAddressToOffset(pinDstAddress);
-               srcOffset = gmmAddressToOffset(pinSrcAddress);
+               dstOffset = GMM_ADDRESS_TO_OFFSET(pinDstAddress);
+               srcOffset = GMM_ADDRESS_TO_OFFSET(pinSrcAddress);
 
                totalMoveSize += pTempBlock->base.size;
 
@@ -1110,13 +1297,9 @@ static uint8_t gmmInternalSweep(void *data, const uint8_t location)
                if (pTempBlock == pAllocator->pTail)
                {
                   if (pTempBlock->pNext)
-                  {
                      pAllocator->pTail = pTempBlock->pNext;
-                  }
                   else
-                  {
                      pAllocator->pTail = pTempBlock->pPrev;
-                  }
                }
 
                if (pTempBlock->pNext)
@@ -1143,7 +1326,7 @@ static uint8_t gmmInternalSweep(void *data, const uint8_t location)
 
          if (availableSize > 0)
          {
-            GmmBlock *pNewBlock = gmmAllocFixedBlock();
+            GmmBlock *pNewBlock = GMM_ALLOC_FIXED_BLOCK();
 
             if (pNewBlock)
             {
@@ -1202,30 +1385,7 @@ static void gmmRemovePendingFree (GmmAllocator *pAllocator,
       pBlock->pPrevFree->pNextFree = pBlock->pNextFree;
 }
 
-void gmmUpdateFreeList(const uint8_t location)
-{
-   const uint32_t  fence = rglGcmState_i.semaphores->userSemaphores[RGLGCM_SEMA_FENCE].val;
-   GmmBlock        *pBlock = NULL;
-   GmmBlock        *pTemp = NULL;
-   GmmAllocator *pAllocator =  pGmmLocalAllocator;
-
-   pBlock = pAllocator->pPendingFreeHead;
-
-   while (pBlock)
-   {
-      pTemp = pBlock->pNextFree;
-
-      if ( !(( fence - pBlock->fence ) & 0x80000000 ) )
-      {
-         gmmRemovePendingFree(pAllocator, pBlock);
-         gmmAddFree(pAllocator, pBlock);
-      }
-
-      pBlock = pTemp;
-   }
-}
-
-static void gmmFreeAll(const uint8_t location)
+static void gmmFreeAll(void)
 {
    GmmBlock        *pBlock;
    GmmBlock        *pTemp;
@@ -1255,12 +1415,12 @@ static void gmmFreeAll(const uint8_t location)
    }
 }
 
-static void gmmAllocSweep(void *data, const uint8_t location)
+static void gmmAllocSweep(void *data)
 {
    CellGcmContextData *thisContext = (CellGcmContextData*)data;
-   gmmFreeAll(location);
+   gmmFreeAll();
 
-   if (gmmInternalSweep(thisContext, location))
+   if (gmmInternalSweep(thisContext))
    {
       *pLock = 1;
       cachedLockValue = 1;
@@ -1339,7 +1499,7 @@ static uint32_t gmmFindFreeBlock(
    {
       if (pBlock->base.size != size)
       {
-         GmmBlock *pNewBlock = gmmAllocFixedBlock();
+         GmmBlock *pNewBlock = GMM_ALLOC_FIXED_BLOCK();
          if (pNewBlock == NULL)
             return GMM_ERROR;
 
@@ -1365,7 +1525,7 @@ static uint32_t gmmFindFreeBlock(
    return retId;
 }
 
-uint32_t gmmAlloc(void *data, const uint8_t location, 
+uint32_t gmmAlloc(void *data,
       const uint8_t isTile, const uint32_t size)
 {
    CellGcmContextData *thisContext = (CellGcmContextData*)data;
@@ -1380,13 +1540,13 @@ uint32_t gmmAlloc(void *data, const uint8_t location,
 
    if (!isTile)
    {
-      newSize = pad(size, GMM_ALIGNMENT);
+      newSize = PAD(size, GMM_ALIGNMENT);
 
       retId = gmmFindFreeBlock(pAllocator, newSize);
    }
    else
    {
-      newSize = pad(size, GMM_TILE_ALIGNMENT);
+      newSize = PAD(size, GMM_TILE_ALIGNMENT);
       retId = GMM_ERROR;
    }
 
@@ -1398,7 +1558,7 @@ uint32_t gmmAlloc(void *data, const uint8_t location,
 
       if (retId == GMM_ERROR)
       {
-         gmmAllocSweep(thisContext, location);
+         gmmAllocSweep(thisContext);
 
          retId = gmmInternalAlloc(pAllocator,
                isTile,
@@ -1411,169 +1571,6 @@ uint32_t gmmAlloc(void *data, const uint8_t location,
    }
 
    return retId;
-}
-
-/*============================================================
-  FRAGMENT SHADER
-  ============================================================ */
-
-void rglSetNativeCgFragmentProgram(const void *data)
-{
-   const _CGprogram *program = (const _CGprogram *)data;
-
-   CellCgbFragmentProgramConfiguration conf;
-
-   conf.offset = gmmIdToOffset(program->loadProgramId) + program->loadProgramOffset;
-
-   rglGcmInterpolantState *s = &rglGcmState_i.state.interpolant;
-   s->fragmentProgramAttribMask |= program->header.attributeInputMask | CELL_GCM_ATTRIB_OUTPUT_MASK_POINTSIZE;
-
-   conf.attributeInputMask = ( s->vertexProgramAttribMask) &
-      s->fragmentProgramAttribMask;
-
-   conf.texCoordsInputMask = program->header.fragmentProgram.texcoordInputMask;
-   conf.texCoords2D = program->header.fragmentProgram.texcoord2d;
-   conf.texCoordsCentroid = program->header.fragmentProgram.texcoordCentroid;
-
-   int fragmentControl = ( 1 << 15 ) | ( 1 << 10 );
-   fragmentControl |= program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ? 0xE : 0x0;
-   fragmentControl |= program->header.fragmentProgram.flags & CGF_OUTPUTFROMH0 ? 0x00 : 0x40;
-   fragmentControl |= program->header.fragmentProgram.flags & CGF_PIXELKILL ? 0x80 : 0x00;
-
-   conf.fragmentControl  = fragmentControl;
-   conf.registerCount = program->header.fragmentProgram.registerCount < 2 ? 2 : program->header.fragmentProgram.registerCount;
-
-   uint32_t controlTxp = _CurrentContext->AllowTXPDemotion; 
-   conf.fragmentControl &= ~CELL_GCM_MASK_SET_SHADER_CONTROL_CONTROL_TXP; 
-   conf.fragmentControl |= controlTxp << CELL_GCM_SHIFT_SET_SHADER_CONTROL_CONTROL_TXP; 
-
-   GCM_FUNC( cellGcmSetFragmentProgramLoad, &conf );
-
-   GCM_FUNC( cellGcmSetZMinMaxControl, ( program->header.fragmentProgram.flags & CGF_DEPTHREPLACE ) ? RGLGCM_FALSE : RGLGCM_TRUE, RGLGCM_FALSE, RGLGCM_FALSE );
-}
-
-/*============================================================
-  VERTEX SHADER
-  ============================================================ */
-
-void rglSetNativeCgVertexProgram(const void *data)
-{
-   const _CGprogram *program = (const _CGprogram*)data;
-
-   __dcbt(program->ucode);
-   __dcbt(((uint8_t*)program->ucode)+128);
-   __dcbt(((uint8_t*)program->ucode)+256);
-   __dcbt(((uint8_t*)program->ucode)+384);
-
-   CellCgbVertexProgramConfiguration conf;
-   conf.instructionSlot = program->header.vertexProgram.instructionSlot;
-   conf.instructionCount = program->header.instructionCount;
-   conf.registerCount = program->header.vertexProgram.registerCount;
-   conf.attributeInputMask = program->header.attributeInputMask;
-
-   rglGcmFifoWaitForFreeSpace( &rglGcmState_i.fifo, 7 + 5 * conf.instructionCount );
-
-   GCM_FUNC( cellGcmSetVertexProgramLoad, &conf, program->ucode );
-
-   GCM_FUNC( cellGcmSetUserClipPlaneControl, 0, 0, 0, 0, 0, 0 );
-
-   rglGcmInterpolantState *s = &rglGcmState_i.state.interpolant;
-   s->vertexProgramAttribMask = program->header.vertexProgram.attributeOutputMask;
-
-   GCM_FUNC( cellGcmSetVertexAttribOutputMask, (( s->vertexProgramAttribMask) &
-            s->fragmentProgramAttribMask) );
-
-   program = (_CGprogram*)data;
-   int count = program->defaultValuesIndexCount;
-   for ( int i = 0;i < count;i++ )
-   {
-      const CgParameterEntry *parameterEntry = program->parametersEntries + program->defaultValuesIndices[i].entryIndex;
-      if (( parameterEntry->flags & CGPF_REFERENCED ) && ( parameterEntry->flags & CGPV_MASK ) == CGPV_CONSTANT )
-      {
-         const float *itemDefaultValues = program->defaultValues + 
-            program->defaultValuesIndices[i].defaultValueIndex;
-         rglFifoGlProgramParameterfvVP( program, parameterEntry, itemDefaultValues );
-      }
-   }
-}
-
-/*============================================================
-  SURFACE COPYING
-  ============================================================ */
-
-void rglGcmCopySurface(
-      const void *data,
-      GLuint srcX, GLuint srcY,
-      const void *data_dst,
-      GLuint dstX, GLuint dstY,
-      GLuint width, GLuint height,
-      GLboolean writeSync )	// don't overwrite dst directly (not used yet)
-{
-   const rglGcmSurface *src = (const rglGcmSurface*)data;
-   const rglGcmSurface *dst = (const rglGcmSurface*)data_dst;
-   const GLuint srcPitch = src->pitch ? src->pitch : src->bpp * src->width;
-   const GLuint dstPitch = dst->pitch ? dst->pitch : dst->bpp * dst->width;
-
-   if (( srcPitch >= 0x10000 ) || ( dstPitch >= 0x10000 ) )
-   {
-      rglGcmTransferData( dst->dataId, dst->dataIdOffset+(dstPitch*dstY+dstX*dst->bpp), dstPitch,
-            src->dataId, src->dataIdOffset+(srcPitch*srcY+srcX*src->bpp), srcPitch,
-            width*src->bpp, height );
-      return;
-   }
-
-   switch ( src->bpp )
-   {
-      case 1:
-         if (( dstX % 2 ) == 0 && ( srcX % 2 ) == 0 && ( width % 2 ) == 0 )
-         {
-            rglGcmFifoGlTransferDataVidToVid(
-                  dst->dataId, dst->dataIdOffset, dstPitch, dstX / 2, dstY, 
-                  src->dataId, src->dataIdOffset, srcPitch, srcX / 2, srcY, 
-                  width / 2, height, 2 );
-         }
-         else
-         {
-            rglGcmTransferData( dst->dataId, dst->dataIdOffset+(dstPitch*dstY+dstX*dst->bpp), dstPitch,
-                  src->dataId, src->dataIdOffset+(srcPitch*srcY+srcX*src->bpp), srcPitch,
-                  width*src->bpp, height );
-         }
-         break;
-      case 2:
-      case 4:
-         rglGcmFifoGlTransferDataVidToVid( dst->dataId, dst->dataIdOffset, dstPitch, dstX, dstY,
-               src->dataId, src->dataIdOffset, srcPitch, srcX, srcY, 
-               width, height, src->bpp );
-         break;
-      case 8:
-      case 16:
-         rglGcmFifoGlTransferDataVidToVid( dst->dataId, dst->dataIdOffset, dstPitch, dstX*4, dstY,
-               src->dataId, src->dataIdOffset, srcPitch, srcX*4, srcY, 
-               width*4, height, src->bpp / 4 );
-         break;
-   }
-}
-
-/*============================================================
-  DATA TRANSFER
-  ============================================================ */
-
-   void rglGcmTransferData
-(
- GLuint dstId,
- GLuint dstIdOffset, 
- GLint dstPitch,
- GLuint srcId,
- GLuint srcIdOffset,
- GLint srcPitch,
- GLint bytesPerRow,
- GLint rowCount
- )
-{
-   GLuint dstOffset = gmmIdToOffset(dstId) + dstIdOffset;
-   GLuint srcOffset = gmmIdToOffset(srcId) + srcIdOffset;
-
-   GCM_FUNC( cellGcmSetTransferData, CELL_GCM_TRANSFER_LOCAL_TO_LOCAL, dstOffset, dstPitch, srcOffset, srcPitch, bytesPerRow, rowCount );
 }
 
 /*============================================================
@@ -1650,19 +1647,6 @@ GLboolean rglGcmFifoReferenceInUse (void *data, GLuint reference)
    return GL_TRUE;
 }
 
-// Wait until the requested space is available.
-// If not currently available, will call the out of space callback
-
-uint32_t * rglGcmFifoWaitForFreeSpace (void *data, GLuint spaceInWords)
-{
-   rglGcmFifo *fifo = (rglGcmFifo*)data;
-
-   if ( fifo->current + spaceInWords + 1024 > fifo->end )
-      rglOutOfSpaceCallback( fifo, spaceInWords );
-
-   return rglGcmState_i.fifo.current;
-}
-
 void rglGcmFifoInit (void *data, void *dmaControl, unsigned long dmaPushBufferOffset, uint32_t*dmaPushBuffer,
       GLuint dmaPushBufferSize )
 {
@@ -1720,17 +1704,20 @@ void rglGcmSetOpenGLState (void *data)
    GLuint i;
 
    // initialize the default OpenGL state
-   rglGcmFifoGlBlendColor( 0.0f, 0.0f, 0.0f, 0.0f );
-   rglGcmFifoGlBlendEquation( RGLGCM_FUNC_ADD, RGLGCM_FUNC_ADD );
-   rglGcmFifoGlBlendFunc( RGLGCM_ONE, RGLGCM_ZERO, RGLGCM_ONE, RGLGCM_ZERO );
-   rglGcmFifoGlClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
-   rglGcmFifoGlDisable( RGLGCM_BLEND );
-   rglGcmFifoGlDisable( RGLGCM_PSHADER_SRGB_REMAPPING );
+   GCM_FUNC( cellGcmSetBlendColor, 0, 0);
+   GCM_FUNC( cellGcmSetBlendEquation, RGLGCM_FUNC_ADD, RGLGCM_FUNC_ADD );
+   GCM_FUNC( cellGcmSetBlendFunc, RGLGCM_ONE, RGLGCM_ZERO, RGLGCM_ONE, RGLGCM_ZERO );
+   GCM_FUNC( cellGcmSetClearColor, 0 );
+   GCM_FUNC( cellGcmSetBlendEnable, RGLGCM_FALSE );
+   GCM_FUNC( cellGcmSetBlendEnableMrt, RGLGCM_FALSE, RGLGCM_FALSE, RGLGCM_FALSE );
+   GCM_FUNC( cellGcmSetFragmentProgramGammaEnable, RGLGCM_FALSE );
 
    for ( i = 0; i < RGLGCM_ATTRIB_COUNT; i++ )
-      rglGcmFifoGlVertexAttribPointer( i, 0, RGLGCM_FLOAT, RGLGCM_FALSE, 0, 0, 0, 0 );
+   {
+      GCM_FUNC( cellGcmSetVertexDataArray, i, 0, 0, 0, CELL_GCM_VERTEX_F, CELL_GCM_LOCATION_LOCAL, 0);
+   }
 
-   rglGcmFifoGlEnable( RGLGCM_DITHER );
+   GCM_FUNC( cellGcmSetDitherEnable, RGLGCM_TRUE );
 
    for ( i = 0; i < RGLGCM_MAX_TEXIMAGE_COUNT; i++ )
    {
@@ -1821,10 +1808,7 @@ GLboolean rglGcmInit (void *opt_data, void *res_data)
 
    if ( gmmInit( resource->localAddress, // pass in the base address, which "could" diff from start address
             resource->localAddress,
-            resource->localSize,
-            resource->hostMemoryBase, // pass in the base address
-            resource->hostMemoryBase + resource->hostMemoryReserved,
-            resource->hostMemorySize - resource->hostMemoryReserved ) == GMM_ERROR )
+            resource->localSize) == GMM_ERROR )
    {
       fprintf( stderr, "Could not init GPU memory manager" );
       rglGcmDestroy();
@@ -1849,90 +1833,18 @@ void rglGcmAllocDestroy()
    rglGcmDestroy();
 }
 
-void rglGcmMemcpy( const GLuint dstId, unsigned dstOffset, unsigned int pitch, const GLuint srcId, GLuint srcOffset, unsigned int size )
-{
-   // check alignment
-   //  Vid to vid copy requires 64-byte aligned base address (for dst pointer).
-   if ((gmmIdToOffset(dstId) % 64 ) == 0 && ( dstOffset % 2 ) == 0 && 
-         (gmmIdToOffset(srcId) % 2 ) == 0 && ( srcOffset % 2) == 0 &&
-         ( size % 2 ) == 0 && ( pitch % 64 ) == 0 )
-   {
-      // configure a 2D transfer
-      //
-      // align destination
-      {
-         pitch = pitch ? : 64; // minimum pitch
-         // target buffer isn't tiled, we just need to align on pitch
-         const GLuint dstOffsetAlign = dstOffset % pitch;
-         if ( dstOffsetAlign )
-         {
-            const GLuint firstBytes = MIN( pitch - dstOffsetAlign, size );
-
-            rglGcmFifoGlTransferDataVidToVid(
-                  dstId,
-                  0,
-                  pitch,					// dst pitch
-                  dstOffsetAlign / 2, dstOffset / pitch,		// dst x,y start
-                  srcId,
-                  srcOffset,
-                  pitch,					// src pitch
-                  0, 0,				// src x,y start
-                  firstBytes / 2, 1,		// size in pixels
-                  2 );					// pixel size in bytes
-            dstOffset += firstBytes;
-            srcOffset += firstBytes;
-            size -= firstBytes;
-         }
-      }
-
-      const GLuint fullLines = size / pitch;
-      const GLuint extraBytes = size % pitch;
-      if ( fullLines )
-         rglGcmFifoGlTransferDataVidToVid(
-               dstId,
-               0,
-               pitch,					// dst pitch
-               0, dstOffset / pitch,				// dst x,y start
-               srcId,
-               srcOffset,
-               pitch,					// src pitch
-               0, 0,				// src x,y start
-               pitch / 2, fullLines,		// size in pixels
-               2 );					// pixel size in bytes
-      if ( extraBytes )
-         rglGcmFifoGlTransferDataVidToVid(
-               dstId,
-               0,
-               pitch,					// dst pitch
-               0, fullLines + dstOffset / pitch,		// dst x,y start
-               srcId,
-               srcOffset,
-               pitch,					// src pitch
-               0, fullLines,		// src x,y start
-               extraBytes / 2, 1,		// size in pixels
-               2 );					// pixel size in bytes
-   }
-   else
-   {
-      rglGcmTransferData( dstId, dstOffset, size, srcId, 0, size, size, 1 );
-   }
-}
-
 void rglGcmSend( unsigned int dstId, unsigned dstOffset, unsigned int pitch,
       const char *src, unsigned int size )
 {
    // try allocating the whole block in the bounce buffer
    GLuint id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         CELL_GCM_LOCATION_LOCAL,
-         0,
-         size);
+         0, size);
 
    memcpy( gmmIdToAddress(id), src, size );
-   rglGcmMemcpy( dstId, dstOffset, pitch, id, 0, size );
+   rglGcmTransferData( dstId, dstOffset, size, id, 0, size, size, 1 );
 
    gmmFree( id );
 }
-
 
 /*============================================================
   PLATFORM INITIALIZATION
@@ -1947,32 +1859,6 @@ static inline int rescIsEnabled (void *data)
          RGL_DEVICE_PARAMETERS_RESC_PAL_TEMPORAL_MODE |
          RGL_DEVICE_PARAMETERS_RESC_INTERLACE_MODE |
          RGL_DEVICE_PARAMETERS_RESC_ADJUST_ASPECT_RATIO );
-}
-
-// Platform-specific initialization for Cell processor:
-// manage allocation/free of SPUs, and optional debugging console.
-
-void rglPlatformInit (void *data)
-{
-   (void)data;
-}
-
-
-void rglPlatformExit(void)
-{
-}
-
-/*============================================================
-  PLATFORM REPORTING
-  ============================================================ */
-
-void rglInitConsole (GLuint enable)
-{
-   (void)enable;
-}
-
-void rglExitConsole(void)
-{
 }
 
 /*============================================================
@@ -2034,7 +1920,6 @@ void rglPsglPlatformInit (void *data)
             break;
       }
 
-      rglPlatformInit( options );
       rglDeviceInit( options );
       _CurrentContext = NULL;
       _CurrentDevice = NULL;
@@ -2049,11 +1934,11 @@ void rglPsglPlatformExit(void)
 
    if ( LContext )
    {
-      glFlush();
+      GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+      rglGcmFifoFlush( &rglGcmState_i.fifo );
 
       psglMakeCurrent( NULL, NULL );
       rglDeviceExit();
-      rglPlatformExit();
 
       _CurrentContext = NULL; 
 
@@ -2217,15 +2102,10 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
    // If the current end isn't the same as the full fifo end we 
    // aren't at the end.  Just go ahead and set the next begin and end 
    if(fifo->end != fifo->dmaPushBufferEnd)
-   {
       nextbegin = (uint32_t *)fifo->end + 1; 
-      nextend = nextbegin + fifo->fifoBlockSize/sizeof(uint32_t) - 1;
-   }
    else
-   {
       nextbegin = (uint32_t *)fifo->dmaPushBufferBegin;
-      nextend = nextbegin + (fifo->fifoBlockSize)/sizeof(uint32_t) - 1;
-   }
+   nextend = nextbegin + (fifo->fifoBlockSize)/sizeof(uint32_t) - 1;
 
    cellGcmAddressToOffset(nextbegin, &nextbeginoffset);
    cellGcmAddressToOffset(nextend, &nextendoffset);
@@ -2238,8 +2118,6 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
    fifo->begin = nextbegin;
    fifo->current = nextbegin;
    fifo->end = nextend;
-
-   const GLuint nopsAtBegin = 8;
 
    //if Gpu busy with the new area, stall and flush
    uint32_t get = fifo->dmaControl->Get;
@@ -2258,17 +2136,15 @@ int32_t rglOutOfSpaceCallback (void *data, uint32_t spaceInWords)
    while(((get >= nextbeginoffset) && (get <= nextendoffset)) 
          || ((0 <= get) && (get < 0x10000))) 
    {
-      // Don't be a ppu hog ;)
-      sys_timer_usleep(30);
       get = fifo->dmaControl->Get;
       cellGcmIoOffsetToAddress( get, &getEA ); 
    }
 
    // need to add some nops here at the beginning for a issue with the get and the put being at the 
    // same position when the fifo is in GPU memory. 
-   for ( GLuint i = 0; i < nopsAtBegin; i++ )
+   for ( GLuint i = 0; i < 8; i++ )
    {
-      fifo->current[0] = RGLGCM_NOP();
+      fifo->current[0] = 0;
       fifo->current++;
    }
 
@@ -2374,9 +2250,7 @@ typedef struct
    GLuint offset;
    GLuint size;        // 0 size indicates an unused tile
    GLuint pitch;       // in bytes
-   GLenum compression;
    GLuint bank;
-   GLuint memory;      // 0 for GPU, 1 for host
 } rglTiledRegion;
 
 typedef struct
@@ -2513,8 +2387,6 @@ GLboolean rglGcmTryResizeTileRegion( GLuint address, GLuint size, void* data )
       region->offset = 0;
       region->size = 0;
       region->pitch = 0;
-      region->compression = CELL_GCM_COMPMODE_DISABLED;
-      region->memory = 0;
 
       if ( ! rglDuringDestroyDevice ) 
       {
@@ -2534,7 +2406,7 @@ GLboolean rglGcmTryResizeTileRegion( GLuint address, GLuint size, void* data )
 
    retVal = cellGcmSetTileInfo(
          region->id,
-         region->memory,
+         CELL_GCM_LOCATION_LOCAL,
          region->offset,
          region->size,
          region->pitch,
@@ -2560,14 +2432,11 @@ void rglGcmGetTileRegionInfo( void* data, GLuint *address, GLuint *size )
 #define RGLGCM_TILED_BUFFER_HEIGHT_ALIGNMENT 64
 
 GLuint rglGcmAllocCreateRegion(
-      uint8_t memoryLocation,
-      GLboolean isZBuffer,
       GLuint size,
       GLint tag,
       void* data )
 {
-   uint32_t id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         memoryLocation, 1, size);
+   uint32_t id = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo, 1, size);
 
    if ( id != GMM_ERROR )
    {
@@ -2588,21 +2457,14 @@ GLuint rglGcmAllocCreateRegion(
 
 static void rglGcmAllocateTiledSurface(
       rglTiledMemoryManager* mm,
-      GLboolean isLocalMemory,
-      GLboolean isZBuffer,
       GLuint width,
       GLuint height,
       GLuint bitsPerPixel,
       GLuint antiAliasing,
-      GLenum compression,
       GLuint* id,
       GLuint* pitchAllocated,
       GLuint* bytesAllocated )
 {
-   // XXX no compression on A01 silicon
-   // also disabled it if not on local memory
-   compression = CELL_GCM_COMPMODE_DISABLED;
-
    // determine pitch (in bytes)
    const unsigned int pitch = width * bitsPerPixel / 8;
    const unsigned int tiledPitch = findValidPitch( pitch );
@@ -2632,11 +2494,9 @@ static void rglGcmAllocateTiledSurface(
 
    // attempt to extend an existing region
    //  The region tag is a hash of the pitch, compression, and isZBuffer.
-   const GLuint tag = *pitchAllocated | compression | ( isZBuffer ? 0x80000000 : 0x0 );
+   const GLuint tag = *pitchAllocated | 0;
 
-   *id = gmmAllocExtendedTileBlock(CELL_GCM_LOCATION_LOCAL,
-         *bytesAllocated,
-         tag);
+   *id = gmmAllocExtendedTileBlock(*bytesAllocated, tag);
 
    if ( *id == GMM_ERROR )
    {
@@ -2649,14 +2509,10 @@ static void rglGcmAllocateTiledSurface(
             //  Address and size will be set in the callback.
             mm->region[i].id = i;
             mm->region[i].pitch = *pitchAllocated;
-            mm->region[i].compression = compression;
-            mm->region[i].bank = isZBuffer ? 0x3 : 0x0; // XXX experiment
-            mm->region[i].memory = CELL_GCM_LOCATION_LOCAL;
+            mm->region[i].bank = 0x0; // XXX experiment
 
             // allocate space for our region
             *id = rglGcmAllocCreateRegion(
-                  mm->region[i].memory,
-                  isZBuffer,
                   *bytesAllocated,
                   tag,
                   &mm->region[i] );
@@ -2682,7 +2538,6 @@ static void rglGcmAllocateTiledSurface(
 // color surface allocation
 
 GLboolean rglGcmAllocateColorSurface(
-      GLboolean isLocalMemory,
       GLuint width,
       GLuint height,
       GLuint bitsPerPixel,
@@ -2694,16 +2549,10 @@ GLboolean rglGcmAllocateColorSurface(
 {
    rglTiledMemoryManager* mm = &rglGcmTiledMemoryManager;
 
-   // compression type depends on antialiasing
-   GLenum compression = CELL_GCM_COMPMODE_DISABLED;
-
    rglGcmAllocateTiledSurface(
          mm,
-         isLocalMemory,
-         GL_FALSE,   // not a z buffer
          width, height, bitsPerPixel,
          antiAliasing,
-         compression,
          id,
          pitchAllocated,
          bytesAllocated );
@@ -2857,7 +2706,7 @@ static void rescInit( const RGLdeviceParameters* params, rglGcmDevice *gcmDevice
    GLuint size;
    GLuint colorBuffersPitch;
    uint32_t numColorBuffers = cellRescGetNumColorBuffers( dstBufferMode, ( CellRescPalTemporalMode )conf.palTemporalMode, 0 );
-   result = rglGcmAllocateColorSurface( GL_TRUE, params->width, params->height * numColorBuffers,
+   result = rglGcmAllocateColorSurface(params->width, params->height * numColorBuffers,
          4*8, RGLGCM_TRUE, 1, &(gcmDevice->RescColorBuffersId), &colorBuffersPitch, &size );
 
    // set the destination buffer format and pitch
@@ -2871,9 +2720,9 @@ static void rescInit( const RGLdeviceParameters* params, rglGcmDevice *gcmDevice
    int32_t colorBuffersSize, vertexArraySize, fragmentShaderSize;
    cellRescGetBufferSize( &colorBuffersSize, &vertexArraySize, &fragmentShaderSize );
    gcmDevice->RescVertexArrayId    = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         CELL_GCM_LOCATION_LOCAL, 0, vertexArraySize);
+         0, vertexArraySize);
    gcmDevice->RescFragmentShaderId = gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-         CELL_GCM_LOCATION_LOCAL, 0, fragmentShaderSize);
+         0, fragmentShaderSize);
 
 
    // tell resc how to access the destination (scanout) buffer
@@ -2891,7 +2740,7 @@ static void rescInit( const RGLdeviceParameters* params, rglGcmDevice *gcmDevice
       const unsigned int tableLength = 32; // this was based on the guidelines in the resc reference guide
       unsigned int tableSize = sizeof(uint16_t) * 4 * tableLength; // 2 bytes per FLOAT16 * 4 values per entry * length of table
       void *interlaceTable = gmmIdToAddress(gmmAlloc((CellGcmContextData*)&rglGcmState_i.fifo,
-               CELL_GCM_LOCATION_LOCAL, 0, tableSize));
+               0, tableSize));
       int32_t errorCode = cellRescCreateInterlaceTable(interlaceTable,params->renderHeight,CELL_RESC_ELEMENT_HALF,tableLength);
       (void)errorCode;
    }
@@ -3053,7 +2902,6 @@ int rglPlatformCreateDevice (void *data)
       // allocate tiled memory
       GLuint size;
       result = rglGcmAllocateColorSurface(
-            GL_TRUE,     // create in local memory 
             width, height,           // dimensions
             gcmDevice->color[i].bpp*8,  // bits per sample
             RGLGCM_TRUE,               // scan out enable
@@ -3075,7 +2923,7 @@ int rglPlatformCreateDevice (void *data)
    v->w = width;
    v->h = height;
    rglGcmFifoGlViewport(v, 0.0f, 1.0f);
-   rglGcmFifoGlClearColor( 0.f, 0.f, 0.f, 0.f );
+   GCM_FUNC( cellGcmSetClearColor, 0 );
 
    if ( fpColor )
    {
@@ -3090,7 +2938,10 @@ int rglPlatformCreateDevice (void *data)
          gcmDevice->rt.colorId[0] = gcmDevice->color[i].dataId;
          gcmDevice->rt.colorPitch[0] = gcmDevice->color[i].pitch;
          rglGcmFifoGlSetRenderTarget( &gcmDevice->rt );
-         rglGcmFifoGlClear( RGLGCM_COLOR_BUFFER_BIT );
+
+         if (rglGcmState_i.renderTarget.colorFormat)
+            GCM_FUNC( cellGcmSetClearSurface, CELL_GCM_CLEAR_R | CELL_GCM_CLEAR_G | 
+                  CELL_GCM_CLEAR_B | CELL_GCM_CLEAR_A );
       }
       // restore parameters
       gcmDevice->rt.width = width;
@@ -3105,7 +2956,10 @@ int rglPlatformCreateDevice (void *data)
          gcmDevice->rt.colorId[0] = gcmDevice->color[i].dataId;
          gcmDevice->rt.colorPitch[0] = gcmDevice->color[i].pitch;
          rglGcmFifoGlSetRenderTarget( &gcmDevice->rt );
-         rglGcmFifoGlClear( RGLGCM_COLOR_BUFFER_BIT );
+         
+         if (rglGcmState_i.renderTarget.colorFormat)
+            GCM_FUNC( cellGcmSetClearSurface, CELL_GCM_CLEAR_R | CELL_GCM_CLEAR_G | 
+                  CELL_GCM_CLEAR_B | CELL_GCM_CLEAR_A );
       }
    }
 
@@ -3187,7 +3041,8 @@ int rglPlatformCreateDevice (void *data)
       rglSetDisplayMode( vm, gcmDevice->color[0].bpp*8, gcmDevice->color[0].pitch );
 
       cellGcmSetFlipMode( gcmDevice->vsync ? CELL_GCM_DISPLAY_VSYNC : CELL_GCM_DISPLAY_HSYNC );
-      rglpFifoGlFinish();
+      GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+      rglGcmFifoFinish( &rglGcmState_i.fifo );
 
       for ( int i = 0; i < params->bufferingMode; ++i )
       {
@@ -3213,7 +3068,8 @@ void rglPlatformDestroyDevice (void *data)
    rglGcmDevice *gcmDevice = ( rglGcmDevice * )device->platformDevice;
    RGLdeviceParameters *params = &device->deviceParameters;
 
-   rglpFifoGlFinish();
+   GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+   rglGcmFifoFinish( &rglGcmState_i.fifo );
 
    // Stop flip callback
    if ( rescIsEnabled( params ) )
@@ -3248,11 +3104,29 @@ void rglPlatformDestroyDevice (void *data)
    rglDuringDestroyDevice = GL_FALSE;
 }
 
-void rglPlatformSwapBuffers (void *data)
+GLAPI void RGL_EXPORT psglSwap (void)
 {
-   gmmUpdateFreeList(CELL_GCM_LOCATION_LOCAL);
+   const uint32_t  fence = rglGcmState_i.semaphores->userSemaphores[RGLGCM_SEMA_FENCE].val;
+   GmmBlock        *pBlock = NULL;
+   GmmBlock        *pTemp = NULL;
+   GmmAllocator *pAllocator =  pGmmLocalAllocator;
 
-   RGLdevice *device = (RGLdevice*)data;
+   pBlock = pAllocator->pPendingFreeHead;
+
+   while (pBlock)
+   {
+      pTemp = pBlock->pNextFree;
+
+      if ( !(( fence - pBlock->fence ) & 0x80000000 ) )
+      {
+         gmmRemovePendingFree(pAllocator, pBlock);
+         gmmAddFree(pAllocator, pBlock);
+      }
+
+      pBlock = pTemp;
+   }
+
+   RGLdevice *device = (RGLdevice*)_CurrentDevice;
    rglGcmDevice *gcmDevice = (rglGcmDevice *)device->platformDevice;
 
    const GLuint drawBuffer = gcmDevice->drawBuffer;
@@ -3301,14 +3175,19 @@ void rglPlatformSwapBuffers (void *data)
    const char * __restrict v = driver->sharedVPConstants;
    GCM_FUNC( cellGcmSetVertexProgramParameterBlock, 0, 8, ( float* )v ); // GCM_PORT_UNTESTED [KHOFF]
 
-   rglGcmFifoGlEnable( RGLGCM_DITHER );
-   rglInvalidateAllStates( _CurrentContext );
+   GCM_FUNC( cellGcmSetDitherEnable, RGLGCM_TRUE );
 
-   rglGcmFifoGlFlush(); 
+   RGLcontext *context = (RGLcontext*)_CurrentContext;
+   context->needValidate = RGL_VALIDATE_ALL;
+   context->attribs->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
+
+   GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+   rglGcmFifoFlush( &rglGcmState_i.fifo );
 
    while (sys_semaphore_wait(FlipSem,1000) != CELL_OK);
 
-   rglGcmFifoGlFlush();
+   GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+   rglGcmFifoFlush( &rglGcmState_i.fifo );
 
    if ( device->deviceParameters.bufferingMode == RGL_BUFFERING_MODE_DOUBLE )
    {
@@ -3332,44 +3211,1538 @@ void rglPlatformSwapBuffers (void *data)
    }
 }
 
-void rglpValidateViewport (void)
+/*============================================================
+  BUFFERS
+  ============================================================ */
+
+static rglBufferObject *rglCreateBufferObject (void)
 {
-   RGLcontext*	LContext = _CurrentContext;
+   GLuint size = sizeof( rglBufferObject ) + sizeof(rglGcmBufferObject);
+   rglBufferObject *buffer = (rglBufferObject*)malloc(size);
 
-   rglGcmViewportState *v = &rglGcmState_i.state.viewport;
-   v->x = LContext->ViewPort.X;
-   v->y = LContext->ViewPort.Y;
-   v->w = LContext->ViewPort.XSize;
-   v->h = LContext->ViewPort.YSize;
+   if(!buffer )
+      return NULL;
 
-   rglGcmFifoGlViewport(v, LContext->DepthNear, LContext->DepthFar);
+   memset(buffer, 0, size); 
+   buffer->refCount = 1;
+   new( &buffer->textureReferences ) RGL::Vector<rglTexture *>();
+
+   return buffer;
 }
 
-void rglpValidateBlending(void)
+static void rglFreeBufferObject (void *data)
 {
-   RGLcontext* LContext = _CurrentContext;
+   rglBufferObject *buffer = (rglBufferObject*)data;
 
-   if ((LContext->Blending))
+   if ( --buffer->refCount == 0 )
    {
-      GCM_FUNC( cellGcmSetBlendEnable, LContext->Blending );
-
-      rglGcmFifoGlBlendColor(
-            LContext->BlendColor.R,
-            LContext->BlendColor.G,
-            LContext->BlendColor.B,
-            LContext->BlendColor.A);
-      rglGcmFifoGlBlendEquation(
-            (rglGcmEnum)LContext->BlendEquationRGB,
-            (rglGcmEnum)LContext->BlendEquationAlpha);
-      rglGcmFifoGlBlendFunc((rglGcmEnum)LContext->BlendFactorSrcRGB,(rglGcmEnum)LContext->BlendFactorDestRGB,(rglGcmEnum)LContext->BlendFactorSrcAlpha,(rglGcmEnum)LContext->BlendFactorDestAlpha);
+      rglPlatformDestroyBufferObject( buffer );
+      buffer->textureReferences.~Vector<rglTexture *>();
+      free( buffer );
    }
 }
 
-void rglpValidateShaderSRGBRemap(void)
+GLAPI void APIENTRY glBindBuffer( GLenum target, GLuint name )
+{
+   RGLcontext *LContext = _CurrentContext;
+
+   if (name)
+      rglTexNameSpaceCreateNameLazy( &LContext->bufferObjectNameSpace, name );
+
+   switch ( target )
+   {
+      case GL_ARRAY_BUFFER:
+         LContext->ArrayBuffer = name;
+         break;
+      case GL_PIXEL_UNPACK_BUFFER_ARB:
+         LContext->PixelUnpackBuffer = name;
+         break;
+      case GL_TEXTURE_REFERENCE_BUFFER_SCE:
+         LContext->TextureBuffer = name;
+         break;
+      default:
+         break;
+   }
+}
+
+GLAPI GLvoid* APIENTRY glMapBuffer( GLenum target, GLenum access )
+{
+   RGLcontext *LContext = _CurrentContext;
+   GLuint name = 0;
+
+   switch ( target )
+   {
+      case GL_ARRAY_BUFFER:
+         name = LContext->ArrayBuffer;
+         break;
+      case GL_PIXEL_UNPACK_BUFFER_ARB:
+         name = LContext->PixelUnpackBuffer;
+         break;
+      case GL_TEXTURE_REFERENCE_BUFFER_SCE:
+         name = LContext->TextureBuffer;
+         break;
+      default:
+         rglSetError( GL_INVALID_ENUM );
+         return NULL;
+   }
+
+   rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
+   bufferObject->mapped = GL_TRUE;
+
+   return rglPlatformBufferObjectMap( bufferObject, access );
+}
+
+GLAPI GLboolean APIENTRY glUnmapBuffer( GLenum target )
+{
+   RGLcontext *LContext = _CurrentContext;
+   GLuint name = 0;
+
+   switch ( target )
+   {
+      case GL_ARRAY_BUFFER:
+         name = LContext->ArrayBuffer;
+         break;
+      case GL_TEXTURE_REFERENCE_BUFFER_SCE:
+         name = LContext->TextureBuffer;
+         break;
+      default:
+         rglSetError( GL_INVALID_ENUM );
+         return GL_FALSE;
+   }
+   rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
+
+   bufferObject->mapped = GL_FALSE;
+
+   GLboolean result = rglPlatformBufferObjectUnmap( bufferObject );
+
+   return result;
+}
+
+GLAPI void APIENTRY glDeleteBuffers( GLsizei n, const GLuint *buffers )
+{
+   RGLcontext *LContext = _CurrentContext;
+   for (int i = 0; i < n; ++i)
+   {
+      if(!rglTexNameSpaceIsName(&LContext->bufferObjectNameSpace, buffers[i]))
+         continue;
+      if (buffers[i])
+      {
+         GLuint name = buffers[i];
+
+         if (LContext->ArrayBuffer == name)
+            LContext->ArrayBuffer = 0;
+         if (LContext->PixelUnpackBuffer == name)
+            LContext->PixelUnpackBuffer = 0;
+
+         for ( int i = 0;i < RGL_MAX_VERTEX_ATTRIBS;++i )
+         {
+            if ( LContext->attribs->attrib[i].arrayBuffer == name )
+            {
+               LContext->attribs->attrib[i].arrayBuffer = 0;
+               LContext->attribs->HasVBOMask &= ~( 1 << i );
+            }
+         }
+      }
+   }
+   rglTexNameSpaceDeleteNames( &LContext->bufferObjectNameSpace, n, buffers );
+}
+
+GLAPI void APIENTRY glGenBuffers( GLsizei n, GLuint *buffers )
+{
+   RGLcontext *LContext = _CurrentContext;
+   rglTexNameSpaceGenNames( &LContext->bufferObjectNameSpace, n, buffers );
+}
+
+GLAPI void APIENTRY glBufferData( GLenum target, GLsizeiptr size, const GLvoid * data, GLenum usage )
+{
+   RGLcontext *LContext = _CurrentContext;
+
+   GLuint name = 0;
+
+   switch ( target )
+   {
+      case GL_ARRAY_BUFFER:
+         name = LContext->ArrayBuffer;
+         break;
+      case GL_PIXEL_UNPACK_BUFFER_ARB:
+         name = LContext->PixelUnpackBuffer;
+         break;
+      case GL_TEXTURE_REFERENCE_BUFFER_SCE:
+         name = LContext->TextureBuffer;
+         break;
+      default:
+         rglSetError( GL_INVALID_ENUM );
+         return;
+   }
+   rglBufferObject* bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
+
+   if ( bufferObject->refCount > 1 )
+   {
+      rglTexNameSpaceDeleteNames( &LContext->bufferObjectNameSpace, 1, &name );
+      rglTexNameSpaceCreateNameLazy( &LContext->bufferObjectNameSpace, name );
+
+      bufferObject = (rglBufferObject*)LContext->bufferObjectNameSpace.data[name];
+   }
+
+   if (bufferObject->size > 0)
+      rglPlatformDestroyBufferObject( bufferObject );
+
+   bufferObject->size = size;
+   bufferObject->width = 0;
+   bufferObject->height = 0;
+   bufferObject->internalFormat = GL_NONE;
+
+   if ( size > 0 )
+   {
+      GLboolean created = rglpCreateBufferObject(bufferObject);
+      if ( !created )
+      {
+         rglSetError( GL_OUT_OF_MEMORY );
+         return;
+      }
+      if (data)
+         rglPlatformBufferObjectSetData( bufferObject, 0, size, data, GL_TRUE );
+   }
+}
+
+/*============================================================
+  FRAMEBUFFER
+  ============================================================ */
+
+GLAPI void APIENTRY glClearColor( GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha )
+{
+}
+
+GLAPI void APIENTRY glBlendColor( GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha )
+{
+   RGLcontext*	LContext = _CurrentContext;
+   LContext->BlendColor.R = rglClampf( red );
+   LContext->BlendColor.G = rglClampf( green );
+   LContext->BlendColor.B = rglClampf( blue );
+   LContext->BlendColor.A = rglClampf( alpha );
+
+   LContext->needValidate |= RGL_VALIDATE_BLENDING;
+}
+
+GLAPI void APIENTRY glBlendFunc( GLenum sfactor, GLenum dfactor )
+{
+   RGLcontext*	LContext = _CurrentContext;
+
+   LContext->BlendFactorSrcRGB = sfactor;
+   LContext->BlendFactorSrcAlpha = sfactor;
+   LContext->BlendFactorDestRGB = dfactor;
+   LContext->BlendFactorDestAlpha = dfactor;
+   LContext->needValidate |= RGL_VALIDATE_BLENDING;
+}
+
+/*============================================================
+  FRAMEBUFFER OBJECTS
+  ============================================================ */
+
+void rglFramebufferGetAttachmentTexture(
+      RGLcontext* LContext,
+      const rglFramebufferAttachment* attachment,
+      rglTexture** texture,
+      GLuint* face )
+{
+   switch ( attachment->type )
+   {
+      case RGL_FRAMEBUFFER_ATTACHMENT_NONE:
+         *texture = NULL;
+         *face = 0;
+         break;
+      case RGL_FRAMEBUFFER_ATTACHMENT_RENDERBUFFER:
+         break;
+      case RGL_FRAMEBUFFER_ATTACHMENT_TEXTURE:
+         *texture = rglGetTextureSafe( LContext, attachment->name );
+         *face = 0;
+         if ( *texture )
+         {
+            switch ( attachment->textureTarget )
+            {
+               case GL_TEXTURE_2D:
+                  break;
+               default:
+                  *texture = NULL;
+            }
+         }
+         break;
+      default:
+         *face = 0;
+         *texture = NULL;
+   }
+}
+
+rglFramebufferAttachment* rglFramebufferGetAttachment(void *data, GLenum attachment)
+{
+   rglFramebuffer *framebuffer = (rglFramebuffer*)data;
+
+   switch ( attachment )
+   {
+      case GL_COLOR_ATTACHMENT0_EXT:
+      case GL_COLOR_ATTACHMENT1_EXT:
+      case GL_COLOR_ATTACHMENT2_EXT:
+      case GL_COLOR_ATTACHMENT3_EXT:
+         return &framebuffer->color[attachment - GL_COLOR_ATTACHMENT0_EXT];
+      default:
+         rglSetError( GL_INVALID_ENUM );
+         return NULL;
+   }
+}
+
+GLAPI GLboolean APIENTRY glIsFramebufferOES( GLuint framebuffer )
 {
    RGLcontext* LContext = _CurrentContext;
-   GCM_FUNC( cellGcmSetFragmentProgramGammaEnable, LContext->ShaderSRGBRemap ? CELL_GCM_TRUE : CELL_GCM_FALSE); 
-   LContext->needValidate &= ~RGL_VALIDATE_SHADER_SRGB_REMAP;
+
+   if ( !rglTexNameSpaceIsName( &LContext->framebufferNameSpace, framebuffer ) )
+      return GL_FALSE;
+
+   return GL_TRUE;
+}
+
+GLAPI void APIENTRY glBindFramebufferOES( GLenum target, GLuint framebuffer )
+{
+   RGLcontext* LContext = _CurrentContext;
+
+   if ( framebuffer )
+      rglTexNameSpaceCreateNameLazy( &LContext->framebufferNameSpace, framebuffer );
+
+   LContext->framebuffer = framebuffer;
+   LContext->needValidate |= RGL_VALIDATE_FRAMEBUFFER;
+}
+
+GLAPI void APIENTRY glDeleteFramebuffersOES( GLsizei n, const GLuint *framebuffers )
+{
+   RGLcontext *LContext = _CurrentContext;
+
+   for ( int i = 0; i < n; ++i )
+   {
+      if ( framebuffers[i] && framebuffers[i] == LContext->framebuffer )
+         glBindFramebufferOES( GL_FRAMEBUFFER_OES, 0 );
+   }
+
+   rglTexNameSpaceDeleteNames( &LContext->framebufferNameSpace, n, framebuffers );
+}
+
+GLAPI void APIENTRY glGenFramebuffersOES( GLsizei n, GLuint *framebuffers )
+{
+   RGLcontext *LContext = _CurrentContext;
+   rglTexNameSpaceGenNames( &LContext->framebufferNameSpace, n, framebuffers );
+}
+
+GLAPI GLenum APIENTRY glCheckFramebufferStatusOES( GLenum target )
+{
+   RGLcontext* LContext = _CurrentContext;
+
+   if (LContext->framebuffer)
+   {
+      rglFramebuffer* framebuffer = rglGetFramebuffer( LContext, LContext->framebuffer );
+
+      return rglPlatformFramebufferCheckStatus( framebuffer );
+   }
+
+   return GL_FRAMEBUFFER_COMPLETE_OES;
+}
+
+GLAPI void APIENTRY glFramebufferTexture2DOES( GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level )
+{
+   RGLcontext* LContext = _CurrentContext;
+
+   rglFramebuffer* framebuffer = rglGetFramebuffer( LContext, LContext->framebuffer );
+   rglFramebufferAttachment* attach = rglFramebufferGetAttachment( framebuffer, attachment );
+
+   if (!attach)
+      return;
+
+   rglTexture *textureObject = NULL;
+   GLuint face;
+   rglFramebufferGetAttachmentTexture( LContext, attach, &textureObject, &face );
+
+   if (textureObject)
+      textureObject->framebuffers.removeElement( framebuffer );
+
+   if (texture)
+   {
+      attach->type = RGL_FRAMEBUFFER_ATTACHMENT_TEXTURE;
+      textureObject = (rglTexture*)LContext->textureNameSpace.data[texture];
+      textureObject->framebuffers.pushBack( framebuffer );
+   }
+   else
+      attach->type = RGL_FRAMEBUFFER_ATTACHMENT_NONE;
+   attach->name = texture;
+   attach->textureTarget = textarget;
+
+   framebuffer->needValidate = GL_TRUE;
+   LContext->needValidate |= RGL_VALIDATE_FRAMEBUFFER;
+}
+
+
+/*============================================================
+  IMAGE CONVERSION
+  ============================================================ */
+
+#define GL_UNSIGNED_INT_24_8      GL_UNSIGNED_INT_24_8_SCE
+#define GL_UNSIGNED_INT_8_24_REV  GL_UNSIGNED_INT_8_24_REV_SCE
+
+#define GL_UNSIGNED_SHORT_8_8		GL_UNSIGNED_SHORT_8_8_SCE
+#define GL_UNSIGNED_SHORT_8_8_REV	GL_UNSIGNED_SHORT_8_8_REV_SCE
+#define GL_UNSIGNED_INT_16_16		GL_UNSIGNED_INT_16_16_SCE
+#define GL_UNSIGNED_INT_16_16_REV	GL_UNSIGNED_INT_16_16_REV_SCE
+
+#define DECLARE_C_TYPES \
+   DECLARE_TYPE(GL_BYTE,GLbyte,127.f) \
+DECLARE_TYPE(GL_UNSIGNED_BYTE,GLubyte,255.f) \
+DECLARE_TYPE(GL_SHORT,GLshort,32767.f) \
+DECLARE_TYPE(GL_UNSIGNED_SHORT,GLushort,65535.f) \
+DECLARE_TYPE(GL_INT,GLint,2147483647.f) \
+DECLARE_TYPE(GL_UNSIGNED_INT,GLuint,4294967295.0) \
+DECLARE_TYPE(GL_FIXED,GLfixed,65535.f)
+
+#define DECLARE_UNPACKED_TYPES \
+   DECLARE_UNPACKED_TYPE(GL_BYTE) \
+DECLARE_UNPACKED_TYPE(GL_UNSIGNED_BYTE) \
+DECLARE_UNPACKED_TYPE(GL_SHORT) \
+DECLARE_UNPACKED_TYPE(GL_UNSIGNED_SHORT) \
+DECLARE_UNPACKED_TYPE(GL_INT) \
+DECLARE_UNPACKED_TYPE(GL_UNSIGNED_INT) \
+DECLARE_UNPACKED_TYPE(GL_HALF_FLOAT_ARB) \
+DECLARE_UNPACKED_TYPE(GL_FLOAT) \
+DECLARE_UNPACKED_TYPE(GL_FIXED)
+
+
+#define DECLARE_PACKED_TYPES \
+   DECLARE_PACKED_TYPE_AND_REV_2(UNSIGNED_BYTE,4,4) \
+DECLARE_PACKED_TYPE_AND_REV_2(UNSIGNED_BYTE,6,2) \
+DECLARE_PACKED_TYPE_AND_REV_3(UNSIGNED_BYTE,3,3,2) \
+DECLARE_PACKED_TYPE_AND_REV_4(UNSIGNED_BYTE,2,2,2,2) \
+DECLARE_PACKED_TYPE_AND_REV_2(UNSIGNED_SHORT,12,4) \
+DECLARE_PACKED_TYPE_AND_REV_2(UNSIGNED_SHORT,8,8) \
+DECLARE_PACKED_TYPE_AND_REV_3(UNSIGNED_SHORT,5,6,5) \
+DECLARE_PACKED_TYPE_AND_REV_4(UNSIGNED_SHORT,4,4,4,4) \
+DECLARE_PACKED_TYPE_AND_REV_4(UNSIGNED_SHORT,5,5,5,1) \
+DECLARE_PACKED_TYPE_AND_REV_2(UNSIGNED_INT,16,16) \
+DECLARE_PACKED_TYPE_AND_REV_2(UNSIGNED_INT,24,8) \
+DECLARE_PACKED_TYPE_AND_REV_4(UNSIGNED_INT,8,8,8,8) \
+DECLARE_PACKED_TYPE_AND_REV_4(UNSIGNED_INT,10,10,10,2)
+
+#define DECLARE_FORMATS \
+   DECLARE_FORMAT(GL_RGB,3) \
+DECLARE_FORMAT(GL_BGR,3) \
+DECLARE_FORMAT(GL_RGBA,4) \
+DECLARE_FORMAT(GL_BGRA,4) \
+DECLARE_FORMAT(GL_ABGR,4) \
+DECLARE_FORMAT(GL_ARGB_SCE,4) \
+DECLARE_FORMAT(GL_RED,1) \
+DECLARE_FORMAT(GL_GREEN,1) \
+DECLARE_FORMAT(GL_BLUE,1) \
+DECLARE_FORMAT(GL_ALPHA,1)
+
+#define DECLARE_TYPE(TYPE,CTYPE,MAXVAL) \
+   typedef CTYPE type_##TYPE; \
+static inline type_##TYPE rglFloatTo_##TYPE(float v) { return (type_##TYPE)(rglClampf(v)*MAXVAL); } \
+static inline float rglFloatFrom_##TYPE(type_##TYPE v) { return ((float)v)/MAXVAL; }
+DECLARE_C_TYPES
+#undef DECLARE_TYPE
+
+typedef GLfloat type_GL_FLOAT;
+typedef GLhalfARB type_GL_HALF_FLOAT_ARB;
+
+#define rglFloatTo_GL_FLOAT(v) (v)
+#define rglFloatFrom_GL_FLOAT(v) (v)
+#define rglFloatTo_GL_HALF_FLOAT_ARB(x) (rglFloatToHalf(x))
+#define rglFloatFrom_GL_HALF_FLOAT_ARB(x) (rglHalfToFloat(x))
+
+#define DECLARE_PACKED_TYPE_AND_REV_2(REALTYPE,S1,S2) \
+   DECLARE_PACKED_TYPE(GL_##REALTYPE,GL_##REALTYPE##_##S1##_##S2,2,S1,S2,0,0,) \
+DECLARE_PACKED_TYPE(GL_##REALTYPE,GL_##REALTYPE##_##S2##_##S1##_REV,2,S2,S1,0,0,_REV)
+
+#define DECLARE_PACKED_TYPE_AND_REV_3(REALTYPE,S1,S2,S3) \
+   DECLARE_PACKED_TYPE(GL_##REALTYPE,GL_##REALTYPE##_##S1##_##S2##_##S3,3,S1,S2,S3,0,) \
+DECLARE_PACKED_TYPE(GL_##REALTYPE,GL_##REALTYPE##_##S3##_##S2##_##S1##_REV,3,S3,S2,S1,0,_REV)
+
+#define DECLARE_PACKED_TYPE_AND_REV_4(REALTYPE,S1,S2,S3,S4) \
+   DECLARE_PACKED_TYPE(GL_##REALTYPE,GL_##REALTYPE##_##S1##_##S2##_##S3##_##S4,4,S1,S2,S3,S4,) \
+DECLARE_PACKED_TYPE(GL_##REALTYPE,GL_##REALTYPE##_##S4##_##S3##_##S2##_##S1##_REV,4,S4,S3,S2,S1,_REV)
+
+#define DECLARE_PACKED_TYPE_AND_REALTYPE(REALTYPE,N,S1,S2,S3,S4,REV) \
+   DECLARE_PACKED_TYPE(GL_##REALTYPE,PACKED_TYPE(REALTYPE,N,S1,S2,S3,S4,REV),N,S1,S2,S3,S4,REV)
+
+#define INDEX(N,X) (X)
+#define INDEX_REV(N,X) (N-1-X)
+
+#define GET_BITS(to,from,first,count) if ((count)>0) to=((GLfloat)(((from)>>(first))&((1<<(count))-1)))/(GLfloat)((1<<((count==0)?1:count))-1)
+#define PUT_BITS(from,to,first,count) if ((count)>0) to|=((unsigned int)((from)*((GLfloat)((1<<((count==0)?1:count))-1))))<<(first);
+
+inline static int rglGetComponentCount( GLenum format )
+{
+   switch ( format )
+   {
+#define DECLARE_FORMAT(FORMAT,COUNT) \
+      case FORMAT: \
+                   return COUNT;
+      DECLARE_FORMATS
+#undef DECLARE_FORMAT
+      case GL_PALETTE8_RGB8_OES:
+      case GL_PALETTE8_RGBA8_OES:
+      case GL_PALETTE8_R5_G6_B5_OES:
+      case GL_PALETTE8_RGBA4_OES:
+      case GL_PALETTE8_RGB5_A1_OES:
+         return 1;
+      default:
+         return 0;
+   }
+}
+
+int rglGetTypeSize( GLenum type )
+{
+   switch ( type )
+   {
+
+#define DECLARE_PACKED_TYPE(REALTYPE,TYPE,N,S1,S2,S3,S4,REV) \
+      case TYPE: \
+                 return sizeof(type_##REALTYPE);
+      DECLARE_PACKED_TYPES
+#undef DECLARE_PACKED_TYPE
+
+#define DECLARE_UNPACKED_TYPE(TYPE) \
+      case TYPE: \
+                 return sizeof(type_##TYPE);
+         DECLARE_UNPACKED_TYPES
+#undef DECLARE_UNPACKED_TYPE
+
+      default:
+         return 0;
+   }
+}
+int rglGetPixelSize( GLenum format, GLenum type )
+{
+   int componentSize;
+   switch ( type )
+   {
+
+#define DECLARE_PACKED_TYPE(REALTYPE,TYPE,N,S1,S2,S3,S4,REV) \
+      case TYPE: \
+                 return sizeof(type_##REALTYPE);
+      DECLARE_PACKED_TYPES
+#undef DECLARE_PACKED_TYPE
+
+#define DECLARE_UNPACKED_TYPE(TYPE) \
+      case TYPE: \
+                 componentSize=sizeof(type_##TYPE); \
+         break;
+         DECLARE_UNPACKED_TYPES
+#undef DECLARE_UNPACKED_TYPE
+
+      default:
+         return 0;
+   }
+   return rglGetComponentCount( format )*componentSize;
+}
+
+void rglRawRasterToImage(const void *in_data,
+      void *out_data, GLuint x, GLuint y, GLuint z )
+{
+   const rglRaster* raster = (const rglRaster*)in_data;
+   rglImage *image = (rglImage*)out_data;
+   const int pixelBits = rglGetPixelSize( image->format, image->type ) * 8;
+
+   const GLuint size = pixelBits / 8;
+
+   if ( raster->xstride == image->xstride &&
+         raster->ystride == image->ystride &&
+         raster->zstride == image->zstride )
+   {
+      memcpy((char*)image->data +
+            x*image->xstride + y*image->ystride + z*image->zstride,
+            raster->data, raster->depth*raster->zstride );
+
+      return;
+   }
+   else if ( raster->xstride == image->xstride )
+   {
+      const GLuint lineBytes = raster->width * raster->xstride;
+      for ( int i = 0; i < raster->depth; ++i )
+      {
+         for ( int j = 0; j < raster->height; ++j )
+         {
+            const char *src = ( const char * )raster->data +
+               i * raster->zstride + j * raster->ystride;
+            char *dst = ( char * )image->data +
+               ( i + z ) * image->zstride +
+               ( j + y ) * image->ystride +
+               x * image->xstride;
+            memcpy( dst, src, lineBytes );
+         }
+      }
+
+      return;
+   }
+
+   for ( int i = 0; i < raster->depth; ++i )
+   {
+      for ( int j = 0; j < raster->height; ++j )
+      {
+         const char *src = ( const char * )raster->data +
+            i * raster->zstride + j * raster->ystride;
+         char *dst = ( char * )image->data +
+            ( i + z ) * image->zstride +
+            ( j + y ) * image->ystride +
+            x * image->xstride;
+
+         for ( int k = 0; k < raster->width; ++k )
+         {
+            memcpy( dst, src, size );
+
+            src += raster->xstride;
+            dst += image->xstride;
+         }
+      }
+   }
+}
+
+void rglImageAllocCPUStorage (void *data)
+{
+   rglImage *image = (rglImage*)data;
+
+   if (( image->storageSize > image->mallocStorageSize ) || ( !image->mallocData ) )
+   {
+      if (image->mallocData)
+         free( image->mallocData );
+
+      image->mallocData = (char *)malloc( image->storageSize + 128 );
+      image->mallocStorageSize = image->storageSize;
+   }
+   image->data = rglPadPtr( image->mallocData, 128 );
+}
+
+void rglImageFreeCPUStorage(void *data)
+{
+   rglImage *image = (rglImage*)data;
+
+   if (!image->mallocData)
+      return;
+
+   free( image->mallocData );
+   image->mallocStorageSize = 0;
+   image->data = NULL;
+   image->mallocData = NULL;
+   image->dataState &= ~RGL_IMAGE_DATASTATE_HOST;
+}
+
+void rglSetImage(void *data, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment, GLenum format, GLenum type, const void *pixels )
+{
+   rglImage *image = (rglImage*)data;
+
+   image->width = width;
+   image->height = height;
+   image->depth = depth;
+   image->alignment = alignment;
+
+   image->xblk = 0;
+   image->yblk = 0;
+
+   image->xstride = 0;
+   image->ystride = 0;
+   image->zstride = 0;
+
+   image->format = 0;
+   image->type = 0;
+   image->internalFormat = 0;
+   const GLenum status = rglPlatformChooseInternalStorage( image, internalFormat );
+   (( void )status );
+
+   image->data = NULL;
+   image->mallocData = NULL;
+   image->mallocStorageSize = 0;
+
+   image->isSet = GL_TRUE;
+
+   {
+      if ( image->xstride == 0 )
+         image->xstride = rglGetPixelSize( image->format, image->type );
+      if ( image->ystride == 0 )
+         image->ystride = image->width * image->xstride;
+      if ( image->zstride == 0 )
+         image->zstride = image->height * image->ystride;
+   }
+
+   if (pixels)
+   {
+      rglImageAllocCPUStorage( image );
+      if ( !image->data )
+         return;
+
+      rglRaster raster;
+      raster.format = format;
+      raster.type = type;
+      raster.width = width;
+      raster.height = height;
+      raster.depth = depth;
+      raster.data = (void*)pixels;
+
+      raster.xstride = rglGetPixelSize( raster.format, raster.type );
+      raster.ystride = (raster.width * raster.xstride + alignment - 1) / alignment * alignment;
+      raster.zstride = raster.height * raster.ystride;
+
+      rglRawRasterToImage( &raster, image, 0, 0, 0 );
+      image->dataState = RGL_IMAGE_DATASTATE_HOST;
+   }
+   else
+      image->dataState = RGL_IMAGE_DATASTATE_UNSET;
+}
+
+/*============================================================
+  ENGINE
+  ============================================================ */
+
+static char* rglVendorString = "RetroArch";
+
+static char* rglRendererString = "RGL";
+static char* rglExtensionsString = "";
+
+static char* rglVersionNumber = "2.00";
+char* rglVersion = "2.00";
+
+RGLcontext* _CurrentContext = NULL;
+
+RGL_EXPORT RGLcontextHookFunction rglContextCreateHook = NULL;
+RGL_EXPORT RGLcontextHookFunction rglContextDestroyHook = NULL;
+
+void rglSetError( GLenum error )
+{
+}
+
+GLAPI GLenum APIENTRY glGetError(void)
+{
+   if (!_CurrentContext )
+      return GL_INVALID_OPERATION;
+   else
+   {
+      GLenum error = _CurrentContext->error;
+
+      _CurrentContext->error = GL_NO_ERROR;
+      return error;
+   }
+}
+
+GLAPI void APIENTRY glGetIntegerv(GLenum pname, GLint* params)
+{
+   switch (pname)
+   {
+      case GL_MAX_TEXTURE_SIZE:
+         params[0] = RGLP_MAX_TEXTURE_SIZE;
+         break;
+      default:
+         fprintf(stderr, "glGetIntegerv: enum not supported.\n");
+         break;
+   }
+}
+
+static void rglResetContext (void *data)
+{
+   RGLcontext *LContext = (RGLcontext*)data;
+
+   rglTexNameSpaceResetNames( &LContext->textureNameSpace );
+   rglTexNameSpaceResetNames( &LContext->bufferObjectNameSpace );
+   rglTexNameSpaceResetNames( &LContext->framebufferNameSpace );
+   rglTexNameSpaceResetNames( &LContext->fenceObjectNameSpace );
+
+   LContext->ViewPort.X = 0;
+   LContext->ViewPort.Y = 0;
+   LContext->ViewPort.XSize = 0;
+   LContext->ViewPort.YSize = 0;
+
+   LContext->DepthNear = 0.f;
+   LContext->DepthFar = 1.f;
+
+   LContext->DrawBuffer = LContext->ReadBuffer = GL_COLOR_ATTACHMENT0_EXT;
+
+   LContext->ShaderSRGBRemap = GL_FALSE;
+
+   LContext->Blending = GL_FALSE;
+   LContext->BlendColor.R = 0.0f;
+   LContext->BlendColor.G = 0.0f;
+   LContext->BlendColor.B = 0.0f;
+   LContext->BlendColor.A = 0.0f;
+   LContext->BlendEquationRGB = GL_FUNC_ADD;
+   LContext->BlendEquationAlpha = GL_FUNC_ADD;
+   LContext->BlendFactorSrcRGB = GL_ONE;
+   LContext->BlendFactorDestRGB = GL_ZERO;
+   LContext->BlendFactorSrcAlpha = GL_ONE;
+   LContext->BlendFactorDestAlpha = GL_ZERO;
+
+   LContext->ColorLogicOp = GL_FALSE;
+   LContext->LogicOp = GL_COPY;
+
+   LContext->Dithering = GL_TRUE;
+
+   LContext->TexCoordReplaceMask = 0;
+
+   for ( int i = 0;i < RGL_MAX_TEXTURE_IMAGE_UNITS;++i )
+   {
+      rglTextureImageUnit *tu = LContext->TextureImageUnits + i;
+      tu->bound2D = 0;
+
+      tu->enable2D = GL_FALSE;
+      tu->fragmentTarget = 0;
+
+      tu->lodBias = 0.f;
+      tu->currentTexture = NULL;
+   }
+
+   LContext->ActiveTexture = 0;
+   LContext->CurrentImageUnit = LContext->TextureImageUnits;
+
+   LContext->packAlignment = 4;
+   LContext->unpackAlignment = 4;
+
+   rglAttributeState *as = (rglAttributeState*)&LContext->defaultAttribs0;
+
+   for ( int i = 0; i < RGL_MAX_VERTEX_ATTRIBS; ++i )
+   {
+      as->attrib[i].clientSize = 4;
+      as->attrib[i].clientType = GL_FLOAT;
+      as->attrib[i].clientStride = 16;
+      as->attrib[i].clientData = NULL;
+
+      as->attrib[i].value[0] = 0.0f;
+      as->attrib[i].value[1] = 0.0f;
+      as->attrib[i].value[2] = 0.0f;
+      as->attrib[i].value[3] = 1.0f;
+
+      as->attrib[i].normalized = GL_FALSE;
+      as->attrib[i].frequency = 1;
+
+      as->attrib[i].arrayBuffer = 0;
+   }
+
+   as->attrib[RGL_ATTRIB_PRIMARY_COLOR_INDEX].value[0] = 1.0f;
+   as->attrib[RGL_ATTRIB_PRIMARY_COLOR_INDEX].value[1] = 1.0f;
+   as->attrib[RGL_ATTRIB_PRIMARY_COLOR_INDEX].value[2] = 1.0f;
+   as->attrib[RGL_ATTRIB_PRIMARY_COLOR_INDEX].value[3] = 1.0f;
+
+   as->attrib[RGL_ATTRIB_SECONDARY_COLOR_INDEX].value[0] = 1.0f;
+   as->attrib[RGL_ATTRIB_SECONDARY_COLOR_INDEX].value[1] = 1.0f;
+   as->attrib[RGL_ATTRIB_SECONDARY_COLOR_INDEX].value[2] = 1.0f;
+   as->attrib[RGL_ATTRIB_SECONDARY_COLOR_INDEX].value[3] = 1.0f;
+
+   as->attrib[RGL_ATTRIB_NORMAL_INDEX].value[0] = 0.f;
+   as->attrib[RGL_ATTRIB_NORMAL_INDEX].value[1] = 0.f;
+   as->attrib[RGL_ATTRIB_NORMAL_INDEX].value[2] = 1.f;
+
+   as->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
+   as->EnabledMask = 0;
+   as->HasVBOMask = 0;
+
+   LContext->attribs = &LContext->defaultAttribs0;
+
+   LContext->framebuffer = 0;
+
+   LContext->VertexProgram = GL_FALSE;
+   LContext->BoundVertexProgram = 0;
+
+   LContext->FragmentProgram = GL_FALSE;
+   LContext->BoundFragmentProgram = 0;
+
+   LContext->ArrayBuffer = 0;
+   LContext->PixelUnpackBuffer = 0;
+   LContext->TextureBuffer = 0;
+
+   LContext->VSync = GL_FALSE;
+}
+
+static rglTexture *rglAllocateTexture(void)
+{
+   GLuint size = sizeof(rglTexture) + sizeof(rglGcmTexture);
+   rglTexture *texture = (rglTexture*)malloc(size);
+   memset( texture, 0, size );
+   texture->target = 0;
+   texture->minFilter = GL_NEAREST_MIPMAP_LINEAR;
+   texture->magFilter = GL_LINEAR;
+   texture->minLod = -1000.f;
+   texture->maxLod = 1000.f;
+   texture->maxLevel = 1000;
+   texture->wrapS = GL_REPEAT;
+   texture->wrapT = GL_REPEAT;
+   texture->wrapR = GL_REPEAT;
+   texture->lodBias = 0.f;
+   texture->maxAnisotropy = 1.f;
+   texture->compareMode = GL_NONE;
+   texture->compareFunc = GL_LEQUAL;
+   texture->gammaRemap = 0;
+   texture->vertexEnable = GL_FALSE;
+   texture->usage = 0;
+   texture->isRenderTarget = GL_FALSE;
+   texture->image = NULL;
+   texture->isComplete = GL_FALSE;
+   texture->imageCount = 0;
+   texture->revalidate = 0;
+   texture->referenceBuffer = NULL;
+   new( &texture->framebuffers ) RGL::Vector<rglFramebuffer *>();
+   rglPlatformCreateTexture( texture );
+   return texture;
+}
+
+static void rglFreeTexture (void *data)
+{
+   rglTexture *texture = (rglTexture*)data;
+   rglTextureTouchFBOs(texture);
+   texture->framebuffers.~Vector<rglFramebuffer *>();
+
+   if ( texture->image )
+   {
+      rglImage *image = texture->image;
+      rglImageFreeCPUStorage( image );
+      free( texture->image );
+   }
+   if ( texture->referenceBuffer )
+      texture->referenceBuffer->textureReferences.removeElement( texture );
+   rglPlatformDestroyTexture( texture );
+   free( texture );
+}
+
+RGLcontext* psglCreateContext(void)
+{
+   RGLcontext* LContext = (RGLcontext*)malloc(sizeof(RGLcontext));
+
+   if (!LContext)
+      return NULL;
+
+   memset(LContext, 0, sizeof(RGLcontext));
+
+   LContext->error = GL_NO_ERROR;
+
+   rglTexNameSpaceInit( &LContext->textureNameSpace, ( rglTexNameSpaceCreateFunction )rglAllocateTexture, ( rglTexNameSpaceDestroyFunction )rglFreeTexture );
+
+   for ( int i = 0;i < RGL_MAX_TEXTURE_IMAGE_UNITS;++i )
+   {
+      rglTextureImageUnit *tu = LContext->TextureImageUnits + i;
+
+      tu->default2D = rglAllocateTexture();
+      if ( !tu->default2D )
+      {
+         psglDestroyContext( LContext );
+         return NULL;
+      }
+      tu->default2D->target = GL_TEXTURE_2D;
+   }
+
+   rglTexNameSpaceInit( &LContext->bufferObjectNameSpace, ( rglTexNameSpaceCreateFunction )rglCreateBufferObject, ( rglTexNameSpaceDestroyFunction )rglFreeBufferObject );
+   rglTexNameSpaceInit( &LContext->framebufferNameSpace, ( rglTexNameSpaceCreateFunction )rglCreateFramebuffer, ( rglTexNameSpaceDestroyFunction )rglDestroyFramebuffer );
+
+   LContext->needValidate = 0;
+   LContext->everAttached = 0;
+
+   LContext->RGLcgLastError = CG_NO_ERROR;
+   LContext->RGLcgErrorCallbackFunction = NULL;
+   LContext->RGLcgContextHead = ( CGcontext )NULL;
+
+   rglInitNameSpace( &LContext->cgProgramNameSpace );
+   rglInitNameSpace( &LContext->cgParameterNameSpace );
+   rglInitNameSpace( &LContext->cgContextNameSpace );
+
+   rglResetContext( LContext );
+
+   if (rglContextCreateHook)
+      rglContextCreateHook( LContext );
+
+   return( LContext );
+}
+
+void RGL_EXPORT psglResetCurrentContext(void)
+{
+   RGLcontext *context = _CurrentContext;
+   rglResetContext(context);
+   context->needValidate |= RGL_VALIDATE_ALL;
+}
+
+RGLcontext *psglGetCurrentContext(void)
+{
+   return _CurrentContext;
+}
+
+void RGL_EXPORT psglDestroyContext (void *data)
+{
+   RGLcontext *LContext = (RGLcontext*)data;
+   if ( _CurrentContext == LContext )
+   {
+      GCM_FUNC_NO_ARGS( cellGcmSetInvalidateVertexCache );
+      rglGcmFifoFinish( &rglGcmState_i.fifo );
+   }
+
+   while ( LContext->RGLcgContextHead != ( CGcontext )NULL )
+   {
+      RGLcontext* current = _CurrentContext;
+      _CurrentContext = LContext;
+      cgDestroyContext( LContext->RGLcgContextHead );
+      _CurrentContext = current;
+   }
+   rglFreeNameSpace( &LContext->cgProgramNameSpace );
+   rglFreeNameSpace( &LContext->cgParameterNameSpace );
+   rglFreeNameSpace( &LContext->cgContextNameSpace );
+
+   if ( rglContextDestroyHook ) rglContextDestroyHook( LContext );
+
+   for ( int i = 0; i < RGL_MAX_TEXTURE_IMAGE_UNITS; ++i )
+   {
+      rglTextureImageUnit* tu = LContext->TextureImageUnits + i;
+      if ( tu->default2D ) rglFreeTexture( tu->default2D );
+   }
+
+   rglTexNameSpaceFree( &LContext->textureNameSpace );
+   rglTexNameSpaceFree( &LContext->bufferObjectNameSpace );
+   rglTexNameSpaceFree( &LContext->fenceObjectNameSpace );
+   rglTexNameSpaceFree( &LContext->framebufferNameSpace );
+
+   if ( _CurrentContext == LContext )
+      psglMakeCurrent( NULL, NULL );
+
+   free( LContext );
+}
+
+GLAPI void APIENTRY glEnable( GLenum cap )
+{
+   RGLcontext* LContext = _CurrentContext;
+
+   switch ( cap )
+   {
+      case GL_TEXTURE_2D:
+         LContext->CurrentImageUnit->enable2D = GL_TRUE;
+         LContext->CurrentImageUnit->currentTexture = rglGetCurrentTexture( LContext->CurrentImageUnit,
+               LContext->CurrentImageUnit->fragmentTarget );
+         LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
+         break;
+      case GL_SHADER_SRGB_REMAP_SCE:
+         LContext->ShaderSRGBRemap = GL_TRUE;
+         LContext->needValidate |= RGL_VALIDATE_SHADER_SRGB_REMAP;
+         break;
+      case GL_BLEND:
+         LContext->Blending = GL_TRUE;
+         LContext->needValidate |= RGL_VALIDATE_BLENDING;
+         break;
+      case GL_DITHER:
+         LContext->Dithering = GL_TRUE;
+         break;
+      case GL_VSYNC_SCE:
+         LContext->VSync = GL_TRUE;
+         break;
+      default:
+         rglSetError( GL_INVALID_ENUM );
+         return;
+   }
+}
+
+GLAPI void APIENTRY glDisable( GLenum cap )
+{
+   RGLcontext* LContext = _CurrentContext;
+
+   switch ( cap )
+   {
+      case GL_TEXTURE_2D:
+         LContext->CurrentImageUnit->enable2D = GL_FALSE;
+         LContext->CurrentImageUnit->currentTexture = rglGetCurrentTexture( LContext->CurrentImageUnit,
+               LContext->CurrentImageUnit->fragmentTarget );
+         LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
+         break;
+      case GL_SHADER_SRGB_REMAP_SCE:
+         LContext->ShaderSRGBRemap = GL_FALSE;
+         LContext->needValidate |= RGL_VALIDATE_SHADER_SRGB_REMAP;
+         break;
+      case GL_BLEND:
+         LContext->Blending = GL_FALSE;
+         LContext->needValidate |= RGL_VALIDATE_BLENDING;
+         break;
+      case GL_DITHER:
+         LContext->Dithering = GL_FALSE;
+         break;
+      case GL_VSYNC_SCE:
+         LContext->VSync = GL_FALSE;
+         break;
+      default:
+         rglSetError( GL_INVALID_ENUM );
+         return;
+   }
+}
+
+GLAPI void APIENTRY glEnableClientState( GLenum array )
+{
+   switch ( array )
+   {
+      case GL_VERTEX_ARRAY:
+         rglEnableVertexAttribArrayNV( RGL_ATTRIB_POSITION_INDEX );
+         break;
+      case GL_COLOR_ARRAY:
+         rglEnableVertexAttribArrayNV( RGL_ATTRIB_PRIMARY_COLOR_INDEX );
+         break;
+      case GL_NORMAL_ARRAY:
+         rglEnableVertexAttribArrayNV( RGL_ATTRIB_NORMAL_INDEX );
+         break;
+      default:
+         rglSetError( GL_INVALID_ENUM );
+         return;
+   }
+}
+
+GLAPI void APIENTRY glDisableClientState( GLenum array )
+{
+   switch ( array )
+   {
+      case GL_VERTEX_ARRAY:
+         rglDisableVertexAttribArrayNV( RGL_ATTRIB_POSITION_INDEX );
+         break;
+      case GL_COLOR_ARRAY:
+         rglDisableVertexAttribArrayNV( RGL_ATTRIB_PRIMARY_COLOR_INDEX );
+         break;
+      case GL_NORMAL_ARRAY:
+         rglDisableVertexAttribArrayNV( RGL_ATTRIB_NORMAL_INDEX );
+         break;
+      default:
+         rglSetError( GL_INVALID_ENUM );
+         return;
+   }
+}
+
+GLAPI const GLubyte* APIENTRY glGetString( GLenum name )
+{
+   switch ( name )
+   {
+      case GL_VENDOR:
+         return(( GLubyte* )rglVendorString );
+      case GL_RENDERER:
+         return(( GLubyte* )rglRendererString );
+      case GL_VERSION:
+         return(( GLubyte* )rglVersionNumber );
+      case GL_EXTENSIONS:
+         return(( GLubyte* )rglExtensionsString );
+      default:
+         {
+            rglSetError( GL_INVALID_ENUM );
+            return(( GLubyte* )NULL );
+         }
+   }
+}
+
+void psglInit (void *data)
+{
+   RGLinitOptions *options = (RGLinitOptions*)data;
+   rglPsglPlatformInit(options);
+}
+
+void psglExit(void)
+{
+   rglPsglPlatformExit();
+}
+
+/*============================================================
+  RASTER
+  ============================================================ */
+
+GLAPI void APIENTRY glViewport( GLint x, GLint y, GLsizei width, GLsizei height )
+{
+   RGLcontext*	LContext = _CurrentContext;
+
+   LContext->ViewPort.X = x;
+   LContext->ViewPort.Y = y;
+   LContext->ViewPort.XSize = width;
+   LContext->ViewPort.YSize = height;
+   LContext->needValidate |= RGL_VALIDATE_VIEWPORT;
+}
+
+/*============================================================
+  TEXTURES (INTERNAL)
+  ============================================================ */
+
+// Reallocate images held by a texture
+void rglReallocateImages (void *data, GLint level, GLsizei dimension )
+{
+   rglTexture *texture = (rglTexture*)data;
+   GLuint oldCount = texture->imageCount;
+
+   if (dimension <= 0)
+      dimension = 1;
+
+   GLuint n = level + 1 + rglLog2( dimension );
+   n = MAX( n, oldCount );
+
+   rglImage *image = ( rglImage * )realloc( texture->image, n * sizeof( rglImage ) );
+   memset( image + oldCount, 0, ( n - oldCount )*sizeof( rglImage ) );
+
+   texture->image = image;
+   texture->imageCount = n;
+}
+
+rglTexture *rglGetCurrentTexture (const void *data, GLenum target)
+{
+   const rglTextureImageUnit *unit = (const rglTextureImageUnit*)data;
+   RGLcontext*	LContext = _CurrentContext;
+   GLuint name = unit->bound2D;
+   rglTexture *defaultTexture = unit->default2D;
+
+   if (name)
+      return ( rglTexture * )LContext->textureNameSpace.data[name];
+   else
+      return defaultTexture;
+}
+
+static void rglGetImage( GLenum target, GLint level, rglTexture **texture, rglImage **image, GLsizei reallocateSize )
+{
+   RGLcontext*	LContext = _CurrentContext;
+   rglTextureImageUnit *unit = LContext->CurrentImageUnit;
+
+   GLenum expectedTarget = GL_TEXTURE_2D;
+
+   rglTexture *tex = rglGetCurrentTexture( unit, expectedTarget );
+
+   if (level >= ( int )tex->imageCount)
+      rglReallocateImages( tex, level, reallocateSize );
+
+   *image = tex->image + level;
+   *texture = tex;
+}
+
+void rglBindTextureInternal (void *data, GLuint name, GLenum target )
+{
+   rglTextureImageUnit *unit = (rglTextureImageUnit*)data;
+   RGLcontext*	LContext = _CurrentContext;
+   rglTexture *texture = NULL;
+
+   if (name)
+   {
+      rglTexNameSpaceCreateNameLazy( &LContext->textureNameSpace, name );
+      texture = ( rglTexture * )LContext->textureNameSpace.data[name];
+
+      if (!texture->target)
+         texture->target = target;
+   }
+
+   unit->bound2D = name;
+   unit->currentTexture = rglGetCurrentTexture( unit, unit->fragmentTarget );
+
+   LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
+}
+
+/*============================================================
+  TEXTURES
+  ============================================================ */
+
+GLAPI void APIENTRY glGenTextures( GLsizei n, GLuint *textures )
+{
+   RGLcontext*	LContext = _CurrentContext;
+   rglTexNameSpaceGenNames( &LContext->textureNameSpace, n, textures );
+}
+
+GLAPI void APIENTRY glDeleteTextures( GLsizei n, const GLuint *textures )
+{
+   RGLcontext*	LContext = _CurrentContext;
+
+   for ( int i = 0;i < n;++i )
+   {
+      if (textures[i])
+      {
+         GLuint name = textures[i];
+         int unit;
+
+         for ( unit = 0; unit < RGL_MAX_TEXTURE_IMAGE_UNITS; ++unit)
+         {
+            rglTextureImageUnit *tu = LContext->TextureImageUnits + unit;
+            GLboolean dirty = GL_FALSE;
+            if ( tu->bound2D == name )
+            {
+               tu->bound2D = 0;
+               dirty = GL_TRUE;
+            }
+            if ( dirty )
+            {
+               tu->currentTexture = rglGetCurrentTexture( tu, tu->fragmentTarget );
+               LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
+            }
+         }
+      }
+   }
+
+   rglTexNameSpaceDeleteNames( &LContext->textureNameSpace, n, textures );
+}
+
+GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param )
+{
+   RGLcontext*	LContext = _CurrentContext;
+   rglTexture *texture = rglGetCurrentTexture( LContext->CurrentImageUnit, target );
+   switch ( pname )
+   {
+      case GL_TEXTURE_MIN_FILTER:
+         texture->minFilter = param;
+         if ( texture->referenceBuffer == 0 )
+            texture->revalidate |= RGL_TEXTURE_REVALIDATE_LAYOUT;
+         break;
+      case GL_TEXTURE_MAG_FILTER:
+         texture->magFilter = param;
+         break;
+      case GL_TEXTURE_MAX_LEVEL:
+         texture->maxLevel = param;
+         break;
+      case GL_TEXTURE_WRAP_S:
+         texture->wrapS = param;
+         break;
+      case GL_TEXTURE_WRAP_T:
+         texture->wrapT = param;
+         break;
+      case GL_TEXTURE_WRAP_R:
+         texture->wrapR = param;
+         break;
+      case GL_TEXTURE_FROM_VERTEX_PROGRAM_SCE:
+         if ( param != 0 )
+            texture->vertexEnable = GL_TRUE;
+         else
+            texture->vertexEnable = GL_FALSE;
+         texture->revalidate |= RGL_TEXTURE_REVALIDATE_LAYOUT;
+         break;
+      case GL_TEXTURE_COMPARE_MODE_ARB:
+         texture->compareMode = param;
+         break;
+      case GL_TEXTURE_COMPARE_FUNC_ARB:
+         texture->compareFunc = param;
+         break;
+      case GL_TEXTURE_GAMMA_REMAP_R_SCE:
+      case GL_TEXTURE_GAMMA_REMAP_G_SCE:
+      case GL_TEXTURE_GAMMA_REMAP_B_SCE:
+      case GL_TEXTURE_GAMMA_REMAP_A_SCE:
+         {
+            GLuint bit = 1 << ( pname - GL_TEXTURE_GAMMA_REMAP_R_SCE );
+            if ( param ) texture->gammaRemap |= bit;
+            else texture->gammaRemap &= ~bit;
+         }
+         break;
+      default:
+         rglSetError( GL_INVALID_ENUM );
+         return;
+   }
+   texture->revalidate |= RGL_TEXTURE_REVALIDATE_PARAMETERS;
+   LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
+}
+
+GLAPI void APIENTRY glBindTexture( GLenum target, GLuint name )
+{
+   RGLcontext*	LContext = _CurrentContext;
+   rglTextureImageUnit *unit = LContext->CurrentImageUnit;
+
+   rglBindTextureInternal( unit, name, target );
+}
+
+GLAPI void APIENTRY glTexImage2D( GLenum target, GLint level, GLint internalFormat,
+      GLsizei width, GLsizei height, GLint border, GLenum format,
+      GLenum type, const GLvoid *pixels )
+{
+   RGLcontext*	LContext = _CurrentContext;
+
+   rglTexture *texture;
+   rglImage *image;
+   rglGetImage(target, level, &texture, &image, MAX(width, height));
+
+   image->dataState = RGL_IMAGE_DATASTATE_UNSET;
+
+   rglBufferObject* bufferObject = NULL;
+   if ( LContext->PixelUnpackBuffer != 0 )
+   {
+      bufferObject = 
+         (rglBufferObject*)LContext->bufferObjectNameSpace.data[LContext->PixelUnpackBuffer];
+      pixels = rglPlatformBufferObjectMap( bufferObject, GL_READ_ONLY ) +
+         (( const GLubyte* )pixels - ( const GLubyte* )NULL );
+   }
+
+   rglSetImage(
+         image,
+         internalFormat,
+         width, height, 1,
+         LContext->unpackAlignment,
+         format, type,
+         pixels );
+
+
+   if ( LContext->PixelUnpackBuffer != 0 )
+      rglPlatformBufferObjectUnmap( bufferObject );
+
+   texture->revalidate |= RGL_TEXTURE_REVALIDATE_IMAGES;
+
+   rglTextureTouchFBOs( texture );
+
+   LContext->needValidate |= RGL_VALIDATE_TEXTURES_USED;
+}
+
+GLAPI void APIENTRY glActiveTexture( GLenum texture )
+{
+   RGLcontext*	LContext = _CurrentContext;
+
+   int unit = texture - GL_TEXTURE0;
+   LContext->ActiveTexture = unit;
+
+   if(unit < RGL_MAX_TEXTURE_IMAGE_UNITS)
+      LContext->CurrentImageUnit = LContext->TextureImageUnits + unit;
+   else
+      LContext->CurrentImageUnit = NULL;
+}
+
+/*============================================================
+  VERTEX ARRAYS
+  ============================================================ */
+
+GLAPI void APIENTRY glVertexPointer( GLint size, GLenum type, GLsizei stride, const GLvoid* pointer )
+{
+   rglVertexAttribPointerNV( RGL_ATTRIB_POSITION_INDEX, size, type, GL_FALSE, stride, pointer );
+}
+
+void rglVertexAttribPointerNV(
+      GLuint index,
+      GLint fsize,
+      GLenum type,
+      GLboolean normalized,
+      GLsizei stride,
+      const void* pointer)
+{
+   RGLcontext*	LContext = _CurrentContext;
+
+   GLsizei defaultStride = 0;
+   switch (type)
+   {
+      case GL_FLOAT:
+      case GL_HALF_FLOAT_ARB:
+      case GL_BYTE:
+      case GL_UNSIGNED_BYTE:
+      case GL_SHORT:
+      case GL_FIXED:
+         defaultStride = fsize * rglGetTypeSize( type );
+         break;
+      case GL_FIXED_11_11_10_SCE:
+         defaultStride = 4;
+         break;
+      default:
+         rglSetError( GL_INVALID_ENUM );
+         return;
+   }
+
+   rglAttributeState* as = LContext->attribs;
+   rglAttribute* attrib = as->attrib + index;
+   attrib->clientSize = fsize;
+   attrib->clientType = type;
+   attrib->clientStride = stride ? stride : defaultStride;
+   attrib->clientData = (void*)pointer;
+   attrib->arrayBuffer = LContext->ArrayBuffer;
+   attrib->normalized = normalized;
+   RGLBIT_ASSIGN( as->HasVBOMask, index, attrib->arrayBuffer != 0 );
+
+   RGLBIT_TRUE( as->DirtyMask, index );
+}
+
+void rglEnableVertexAttribArrayNV (GLuint index)
+{
+   RGLcontext *LContext = _CurrentContext;
+
+   RGLBIT_TRUE( LContext->attribs->EnabledMask, index );
+   RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
+}
+
+void rglDisableVertexAttribArrayNV (GLuint index)
+{
+   RGLcontext *LContext = _CurrentContext;
+
+   RGLBIT_FALSE( LContext->attribs->EnabledMask, index );
+   RGLBIT_TRUE( LContext->attribs->DirtyMask, index );
+}
+
+/*============================================================
+  DEVICE CONTEXT CREATION
+  ============================================================ */
+
+RGLdevice *_CurrentDevice = NULL;
+
+void rglDeviceInit (void *data)
+{
+   RGLinitOptions *options = (RGLinitOptions*)data;
+   rglPlatformDeviceInit(options);
+}
+
+void rglDeviceExit(void)
+{
+   rglPlatformDeviceExit();
+}
+
+RGL_EXPORT RGLdevice*	psglCreateDeviceAuto( GLenum colorFormat, GLenum depthFormat, GLenum multisamplingMode )
+{
+   return rglPlatformCreateDeviceAuto(colorFormat, depthFormat, multisamplingMode);
+}
+
+RGL_EXPORT RGLdevice*	psglCreateDeviceExtended (const void *data)
+{
+   const RGLdeviceParameters *parameters = (const RGLdeviceParameters*)data;
+   return rglPlatformCreateDeviceExtended(parameters);
+}
+
+RGL_EXPORT GLfloat psglGetDeviceAspectRatio (const void *data)
+{
+   const RGLdevice *device = (const RGLdevice*)data;
+   return rglPlatformGetDeviceAspectRatio(device);
+}
+
+RGL_EXPORT void psglGetDeviceDimensions (const RGLdevice * device, GLuint *width, GLuint *height)
+{
+   *width = device->deviceParameters.width;
+   *height = device->deviceParameters.height;
+}
+
+RGL_EXPORT void psglGetRenderBufferDimensions (const RGLdevice * device, GLuint *width, GLuint *height)
+{
+   *width = device->deviceParameters.renderWidth;
+   *height = device->deviceParameters.renderHeight;
+}
+
+RGL_EXPORT void psglDestroyDevice (void *data)
+{
+   RGLdevice *device = (RGLdevice*)data;
+   if (_CurrentDevice == device)
+      psglMakeCurrent( NULL, NULL );
+
+   if (device->rasterDriver)
+      rglPlatformRasterExit( device->rasterDriver );
+
+   rglPlatformDestroyDevice( device );
+
+   free( device );
+}
+
+void RGL_EXPORT psglMakeCurrent (RGLcontext *context, RGLdevice *device)
+{
+   if ( context && device )
+   {
+      rglPlatformMakeCurrent( device->platformDevice );
+      _CurrentContext = context;
+      _CurrentDevice = device;
+      if ( !device->rasterDriver )
+      {
+         device->rasterDriver = rglPlatformRasterInit();
+      }
+
+      //attach context
+      if (!context->everAttached)
+      {
+         context->ViewPort.XSize = device->deviceParameters.width;
+         context->ViewPort.YSize = device->deviceParameters.height;
+         context->needValidate |= RGL_VALIDATE_VIEWPORT;
+         context->everAttached = GL_TRUE;
+      }
+
+      context->needValidate = RGL_VALIDATE_ALL;
+      context->attribs->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
+   }
+   else
+   {
+      rglPlatformMakeCurrent( NULL );
+      _CurrentContext = NULL;
+      _CurrentDevice = NULL;
+   }
+}
+
+RGLdevice *psglGetCurrentDevice (void)
+{
+   return _CurrentDevice;
 }
 
 #include "rgl_ps3_cg.cpp"

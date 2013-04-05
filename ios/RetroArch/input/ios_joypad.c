@@ -14,10 +14,9 @@
  */
 
 #include "input/input_common.h"
-#include "BTStack/wiimote.h"
+#include "ios_input.h"
+#include "BTStack/btpad.h"
 #include "general.h"
-
-static uint32_t g_buttons[MAX_PLAYERS];
 
 static bool ios_joypad_init(void)
 {
@@ -42,25 +41,31 @@ static bool ios_joypad_button(unsigned port, uint16_t joykey)
    if (GET_HAT_DIR(joykey))
       return false;
    else // Check the button
-      return (port < MAX_PLAYERS && joykey < 32) ? (g_buttons[port] & (1 << joykey)) != 0 : false;
+      return (port == 0 && joykey < 32) ? (g_ios_input_data.pad_buttons & (1 << joykey)) != 0 : false;
 }
 
 static int16_t ios_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   return 0;
+   if (joyaxis == AXIS_NONE || port != 0)
+      return 0;
+
+   int16_t val = 0;
+   if (AXIS_NEG_GET(joyaxis) < 4)
+   {
+      val = g_ios_input_data.pad_axis[AXIS_NEG_GET(joyaxis)];
+      val = (val < 0) ? val : 0;
+   }
+   else if(AXIS_POS_GET(joyaxis) < 4)
+   {
+      val = g_ios_input_data.pad_axis[AXIS_POS_GET(joyaxis)];
+      val = (val > 0) ? val : 0;
+   }
+
+   return val;
 }
 
 static void ios_joypad_poll(void)
 {
-   for (int i = 0; i != MAX_PLAYERS; i ++)
-   {
-      g_buttons[i] = 0;
-      if (i < myosd_num_of_joys)
-      {
-         g_buttons[i] = joys[i].btns;
-         g_buttons[i] |= (joys[i].exp.type == EXP_CLASSIC) ? (joys[i].exp.classic.btns << 16) : 0;
-      }
-   }
 }
 
 const rarch_joypad_driver_t ios_joypad = {

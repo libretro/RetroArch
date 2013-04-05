@@ -16,8 +16,13 @@
 #ifndef __IOS_RARCH_WRAPPER_H__
 #define __IOS_RARCH_WRAPPER_H__
 
-// These functions must only be called in gfx/context/ioseagl_ctx.c
+// The result needs to be free()'d
+char* ios_get_rarch_system_directory();
 
+// These functions should only be called as arguments to dispatch_sync
+void ios_rarch_exited(void* result);
+
+// These functions must only be called in gfx/context/ioseagl_ctx.c
 bool ios_init_game_view();
 void ios_destroy_game_view();
 void ios_flip_game_view();
@@ -25,4 +30,6 @@ void ios_set_game_view_sync(bool on);
 void ios_get_game_view_size(unsigned *width, unsigned *height);
 void ios_bind_game_view_fbo();
 
+// Thread safe
+void ios_add_log_message(const char* format, ...);
 #endif

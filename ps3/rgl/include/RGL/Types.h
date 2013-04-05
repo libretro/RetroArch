@@ -140,7 +140,6 @@ extern "C" {
       GLuint magFilter;
       GLfloat minLod;
       GLfloat maxLod;
-      GLuint baseLevel;
       GLuint maxLevel;
       GLuint wrapS;
       GLuint wrapT;
@@ -166,7 +165,6 @@ extern "C" {
       RGL::Vector<rglFramebuffer *> framebuffers;
 
       GLuint		imageCount;
-      GLuint		faceCount;
       rglImage*	image;
       void * platformTexture[]; // C99 flexible array member
    } rglTexture;
@@ -350,8 +348,6 @@ extern "C" {
       GLclampf		DepthNear;
       GLclampf		DepthFar;
 
-      GLenum			PerspectiveCorrectHint;
-
       rglAttributeState defaultAttribs0;	// a default rglAttributeState, for bind = 0
       rglAttributeState *attribs;			// ptr to current rglAttributeState
 
@@ -404,7 +400,6 @@ extern "C" {
       struct _CGprogram*	BoundFragmentProgram;
       unsigned int	LastFPConstantModification;
 
-      GLboolean		AllowTXPDemotion;
       GLboolean		VSync;
       GLboolean       SkipFirstVSync;
 

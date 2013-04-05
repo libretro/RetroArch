@@ -78,9 +78,6 @@ typedef struct
    int index;
 } CGELFProgram;
 
-extern CGbool rglpSupportsVertexProgram( CGprofile p );
-extern CGbool rglpSupportsFragmentProgram( CGprofile p );
-extern CGprofile rglpGetLatestProfile( CGGLenum profile_type );
 extern int rglpCopyProgram (void *src_data, void *dst_data);
 extern int rglpGenerateFragmentProgram (void *data,
    const CgProgramHeader *programHeader, const void *ucode,

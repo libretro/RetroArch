@@ -16,25 +16,16 @@
 #import <UIKit/UIKit.h>
 #import <GLKit/GLKit.h>
 
-#import "RAConfig.h"
+#import "RAModuleInfo.h"
 
 @interface RAGameView : UIViewController
 + (RAGameView*)get;
 - (void)openPauseMenu;
 - (void)closePauseMenu;
+
+- (void)suspend;
+- (void)resume;
 @end
 
-@interface RAModuleInfo : NSObject
-@property (strong) NSString* displayName;
-@property (strong) NSString* path;
-@property (strong) NSString* configPath;
-@property (strong) RAConfig* data;
-@property (strong) NSArray* supportedExtensions;
-
-+ (RAModuleInfo*)moduleWithPath:(NSString*)thePath data:(RAConfig*)theData;
-- (bool)supportsFileAtPath:(NSString*)path;
-@end
-
-@interface RAModuleInfoList : UITableViewController
-- (id)initWithModuleInfo:(RAModuleInfo*)info;
+@interface RALogView : UITableViewController
 @end

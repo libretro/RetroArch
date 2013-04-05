@@ -16,11 +16,15 @@ Daniel De Matteis - <autechre1024@hotmail.com>
    - Android port
    - OpenSL ES audio driver
    - Gamecube/Wii libogc port
+   - Blackberry 10/Playbook port
 
 Jason Fetters - <TBA>
    - Phoenix Java frontend
    - Android port patches
    - iOS port
+
+CatalystG - <catalystgdev@gmail.com>
+   - Blackberry 10/Playbook input driver
 
 David Reichelt - <freakdave@hotmail.com>
    - XBox 1 port
@@ -39,6 +43,7 @@ Darren Alton -
 
 Fabian Knopf -
    - WGL multi-monitor support
+   - D3D9 overlay support
 
 Gražvydas Ignotas -
    - ARM Linux patches

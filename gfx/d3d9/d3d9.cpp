@@ -394,6 +394,10 @@ D3DVideo::D3DVideo(const video_info_t *info) :
 {
    gfx_set_dwm();
 
+#ifdef HAVE_OVERLAY
+   std::memset(&overlay, 0, sizeof(overlay));
+#endif
+
    std::memset(&windowClass, 0, sizeof(windowClass));
    windowClass.cbSize        = sizeof(windowClass);
    windowClass.style         = CS_HREDRAW | CS_VREDRAW;
@@ -449,7 +453,11 @@ D3DVideo::D3DVideo(const video_info_t *info) :
    driver.video_display = 0;
    driver.video_window  = (uintptr_t)hWnd;
 
-   show_cursor(!info->fullscreen);
+   show_cursor(!info->fullscreen
+#ifdef HAVE_OVERLAY
+      || overlay.overlay_enabled
+#endif
+   );
    Callback::quit = false;
 
    ShowWindow(hWnd, SW_RESTORE);
@@ -485,6 +493,12 @@ void D3DVideo::deinit()
 D3DVideo::~D3DVideo()
 {
    deinit();
+#ifdef HAVE_OVERLAY
+   if (overlay.tex)
+      overlay.tex->Release();
+   if (overlay.vert_buf)
+      overlay.vert_buf->Release();
+#endif
    if (dev)
       dev->Release();
    if (g_pD3D)
@@ -557,6 +571,11 @@ bool D3DVideo::frame(const void *frame,
 
       dev->EndScene();
    }
+
+#ifdef HAVE_OVERLAY
+   if (overlay.overlay_enabled)
+      overlay_render();
+#endif
 
    RARCH_PERFORMANCE_STOP(d3d_frame);
 
@@ -864,6 +883,8 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
    std::vector<unsigned> abses_x;
    std::vector<unsigned> abses_y;
    std::vector<bool> filters;
+   std::vector<unsigned> frame_count_mods;
+   std::vector<bool> float_fbos;
 
    // Shader paths.
    for (int i = 0; i < shaders; i++)
@@ -912,9 +933,9 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
       }
       else
       {
-         if (conf.get(attr_type_x, attr))
+         if (conf.get(attr_type_x, attr_x))
             has_scale = true;
-         if (conf.get(attr_type_y, attr))
+         if (conf.get(attr_type_y, attr_y))
             has_scale = true;
       }
 
@@ -977,6 +998,26 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
       filters.push_back(filter);
    }
 
+   // Frame counter modulo.
+   for (int i = 0; i < shaders; i++)
+   {
+      char attr_frame_count_mod[64];
+      snprintf(attr_frame_count_mod, sizeof(attr_frame_count_mod), "frame_count_mod%d", i);
+      unsigned frame_count_mod = 0;
+      conf.get(attr_frame_count_mod, frame_count_mod);
+      frame_count_mods.push_back(frame_count_mod);
+   }
+
+   // Floating point framebuffers.
+   for (int i = 0; i < shaders; i++)
+   {
+      char attr_float_framebuffer[64];
+      snprintf(attr_float_framebuffer, sizeof(attr_float_framebuffer), "float_framebuffer%d", i);
+      bool float_framebuffer = false;
+      conf.get(attr_float_framebuffer, float_framebuffer);
+      float_fbos.push_back(float_framebuffer);
+   }
+
    // Setup information for first pass.
    LinkInfo link_info = {0};
    link_info.shader_path = shader_paths[0];
@@ -998,6 +1039,9 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
 
    link_info.filter_linear = filters[0];
    link_info.tex_w = link_info.tex_h = info.input_scale * RARCH_SCALE_BASE;
+
+   link_info.frame_count_mod = frame_count_mods[0];
+   link_info.float_framebuffer = false;
 
    chain = std::unique_ptr<RenderChain>(
          new RenderChain(
@@ -1026,6 +1070,8 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
       link_info.scale_type_y = scale_types_y[i];
       link_info.filter_linear = filters[i];
       link_info.shader_path = shader_paths[i];
+      link_info.frame_count_mod = frame_count_mods[i];
+      link_info.float_framebuffer = float_fbos[i-1];
 
       current_width = out_width;
       current_height = out_height;
@@ -1051,6 +1097,7 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
       link_info.tex_w = next_pow2(out_width);
       link_info.tex_h = next_pow2(out_height);
       link_info.shader_path = "";
+      link_info.float_framebuffer = float_fbos.back();
       chain->add_pass(link_info);
    }
 
@@ -1157,6 +1204,190 @@ void D3DVideo::resize(unsigned new_width, unsigned new_height)
    }
 }
 
+#ifdef HAVE_OVERLAY
+bool D3DVideo::overlay_load(const uint32_t *image, unsigned width, unsigned height)
+{
+   if (overlay.tex)
+      overlay.tex->Release();
+   if (FAILED(dev->CreateTexture(width, height, 1,
+               0,
+               D3DFMT_A8R8G8B8,
+               D3DPOOL_MANAGED,
+               &overlay.tex, nullptr)))
+   {
+      RARCH_ERR("[D3D9]: Failed to create overlay texture\n");
+      return false;
+   }
+   
+   D3DLOCKED_RECT d3dlr;
+   if (SUCCEEDED(overlay.tex->LockRect(0, &d3dlr, nullptr, D3DLOCK_NOSYSLOCK)))
+   {
+      std::memcpy(d3dlr.pBits, image, height * d3dlr.Pitch);
+      overlay.tex->UnlockRect(0);
+   }
+
+   overlay_tex_geom(0, 0, 1, 1); // Default. Stretch to whole screen.
+   overlay_vertex_geom(0, 0, 1, 1);
+
+   return true;
+}
+
+void D3DVideo::overlay_tex_geom(float x, float y, float w, float h)
+{
+   overlay.tex_coords.x = x;
+   overlay.tex_coords.y = y;
+   overlay.tex_coords.w = w;
+   overlay.tex_coords.h = h;
+}
+
+void D3DVideo::overlay_vertex_geom(float x, float y, float w, float h)
+{
+   y = 1.0f - y;
+   h = -h;
+   overlay.vert_coords.x = x;
+   overlay.vert_coords.y = y;
+   overlay.vert_coords.w = w;
+   overlay.vert_coords.h = h;
+}
+
+void D3DVideo::overlay_enable(bool state)
+{
+   overlay.overlay_enabled = state;
+   show_cursor(state);
+}
+
+void D3DVideo::overlay_full_screen(bool enable)
+{
+   overlay.overlay_fullscreen = enable;
+}
+
+void D3DVideo::overlay_set_alpha(float mod)
+{
+   overlay.overlay_alpha_mod = mod;
+}
+
+void D3DVideo::overlay_render()
+{  
+   struct overlay_vertex
+   {
+      float x, y, z;
+      float u, v;
+      float r, g, b, a;
+   } vert[4];
+
+   if (!overlay.vert_buf)
+   {
+      dev->CreateVertexBuffer(
+            sizeof(vert),
+            dev->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
+            0,
+            D3DPOOL_MANAGED,
+            &overlay.vert_buf,
+            nullptr);
+   }
+
+   for (unsigned i = 0; i < 4; i++)
+   {
+      vert[i].z = 0.5f;
+      vert[i].r = vert[i].g = vert[i].b = 1.0f;
+      vert[i].a = overlay.overlay_alpha_mod;
+   }
+
+   float overlay_width = final_viewport.Width;
+   float overlay_height = final_viewport.Height;
+
+   vert[0].x = overlay.vert_coords.x * overlay_width;
+   vert[1].x = (overlay.vert_coords.x + overlay.vert_coords.w) * overlay_width;
+   vert[2].x = overlay.vert_coords.x * overlay_width;
+   vert[3].x = (overlay.vert_coords.x + overlay.vert_coords.w) * overlay_width;
+   vert[0].y = overlay.vert_coords.y * overlay_height;
+   vert[1].y = overlay.vert_coords.y * overlay_height;
+   vert[2].y = (overlay.vert_coords.y + overlay.vert_coords.h) * overlay_height;
+   vert[3].y = (overlay.vert_coords.y + overlay.vert_coords.h) * overlay_height;
+
+   vert[0].u = overlay.tex_coords.x;
+   vert[1].u = overlay.tex_coords.x + overlay.tex_coords.w;
+   vert[2].u = overlay.tex_coords.x;
+   vert[3].u = overlay.tex_coords.x + overlay.tex_coords.w;
+   vert[0].v = overlay.tex_coords.y;
+   vert[1].v = overlay.tex_coords.y;
+   vert[2].v = overlay.tex_coords.y + overlay.tex_coords.h;
+   vert[3].v = overlay.tex_coords.y + overlay.tex_coords.h;
+
+   // Align texels and vertices.
+   for (unsigned i = 0; i < 4; i++)
+   {
+      vert[i].x -= 0.5f;
+      vert[i].y += 0.5f;
+   }
+
+   void *verts;
+   overlay.vert_buf->Lock(0, sizeof(vert), &verts, 0);
+   std::memcpy(verts, vert, sizeof(vert));
+   overlay.vert_buf->Unlock();
+
+   // enable alpha
+   dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+   dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+   dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+
+   // set vertex decl for overlay
+   D3DVERTEXELEMENT9 vElems[4] = {
+      {0, 0,  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0},
+      {0, 12, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0},
+      {0, 20, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0},
+      D3DDECL_END()
+   };
+   IDirect3DVertexDeclaration9 * vertex_decl;
+   dev->CreateVertexDeclaration(vElems, &vertex_decl);
+   dev->SetVertexDeclaration(vertex_decl);
+   vertex_decl->Release();
+
+   dev->SetStreamSource(0, overlay.vert_buf, 0, sizeof(overlay_vertex));
+
+   if (overlay.overlay_fullscreen)
+   {
+      // set viewport to full window
+      D3DVIEWPORT9 vp_full;
+      vp_full.X = 0;
+      vp_full.Y = 0;
+      vp_full.Width = screen_width;
+      vp_full.Height = screen_height;
+      vp_full.MinZ = 0.0f;
+      vp_full.MaxZ = 1.0f;
+      dev->SetViewport(&vp_full);
+
+      // clear new area
+      D3DRECT clear_rects[2];
+      clear_rects[0].y2 = clear_rects[1].y2 = vp_full.Height;
+      clear_rects[0].y1 = clear_rects[1].y1 = 0;
+      clear_rects[0].x1 = 0;
+      clear_rects[0].x2 = final_viewport.X;
+      clear_rects[1].x1 = final_viewport.X + final_viewport.Width;
+      clear_rects[1].x2 = vp_full.Width;
+
+      dev->Clear(2, clear_rects, D3DCLEAR_TARGET, 0, 1, 0);
+   }
+
+   // render overlay
+   dev->SetTexture(0, overlay.tex);
+   dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+   dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+   if (SUCCEEDED(dev->BeginScene()))
+   {
+      dev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+      dev->EndScene();
+   }
+
+   //restore previous state
+   dev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+   dev->SetViewport(&final_viewport);
+}
+
+#endif
+
 static void *d3d9_init(const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
@@ -1242,6 +1473,57 @@ static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char 
    return reinterpret_cast<D3DVideo*>(data)->set_shader(path);
 }
 
+#ifdef HAVE_OVERLAY
+static bool d3d9_overlay_load(void *data, const uint32_t *image, unsigned width, unsigned height)
+{
+   return reinterpret_cast<D3DVideo*>(data)->overlay_load(image, width, height);
+}
+
+static void d3d9_overlay_tex_geom(void *data,
+      float x, float y,
+      float w, float h)
+{
+   return reinterpret_cast<D3DVideo*>(data)->overlay_tex_geom(x, y, w, h);
+}
+
+static void d3d9_overlay_vertex_geom(void *data,
+      float x, float y,
+      float w, float h)
+{
+   return reinterpret_cast<D3DVideo*>(data)->overlay_vertex_geom(x, y, w, h);
+}
+
+static void d3d9_overlay_enable(void *data, bool state)
+{
+   return reinterpret_cast<D3DVideo*>(data)->overlay_enable(state);
+}
+
+static void d3d9_overlay_full_screen(void *data, bool enable)
+{
+   return reinterpret_cast<D3DVideo*>(data)->overlay_full_screen(enable);
+}
+
+static void d3d9_overlay_set_alpha(void *data, float mod)
+{
+   return reinterpret_cast<D3DVideo*>(data)->overlay_set_alpha(mod);
+}
+
+static const video_overlay_interface_t d3d9_overlay_interface = {
+   d3d9_overlay_enable,
+   d3d9_overlay_load,
+   d3d9_overlay_tex_geom,
+   d3d9_overlay_vertex_geom,
+   d3d9_overlay_full_screen,
+   d3d9_overlay_set_alpha,
+};
+
+static void d3d9_get_overlay_interface(void *data, const video_overlay_interface_t **iface)
+{
+   (void)data;
+   *iface = &d3d9_overlay_interface;
+}
+#endif
+
 const video_driver_t video_d3d9 = {
    d3d9_init,
    d3d9_frame,
@@ -1251,8 +1533,15 @@ const video_driver_t video_d3d9 = {
    d3d9_set_shader,
    d3d9_free,
    "d3d9",
+#ifdef HAVE_RGUI
+   NULL,
+   NULL,
+   NULL,
+#endif
    d3d9_set_rotation,
    d3d9_viewport_info,
    d3d9_read_viewport,
+#ifdef HAVE_OVERLAY
+   d3d9_get_overlay_interface,
+#endif
 };
-

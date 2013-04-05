@@ -19,6 +19,7 @@
 #include "compat/posix_string.h"
 #include "file.h"
 #include <string.h>
+#include <ctype.h>
 
 #ifdef RARCH_CONSOLE
 #include "console/rarch_console.h"
@@ -89,7 +90,6 @@ void *(*pretro_get_memory_data)(unsigned);
 size_t (*pretro_get_memory_size)(unsigned);
 
 static void set_environment(void);
-static void set_environment_defaults(void);
 
 #ifdef HAVE_DYNAMIC
 #if defined(__APPLE__)
@@ -256,6 +256,33 @@ static void load_symbols(void)
    SYM(retro_get_memory_size);
 }
 
+void libretro_get_current_core_pathname(char *name, size_t size)
+{
+   if (size == 0)
+      return;
+
+   struct retro_system_info info = {0};
+   pretro_get_system_info(&info);
+   const char *id = info.library_name ? info.library_name : "Unknown";
+
+   if (!id || strlen(id) >= size)
+   {
+      name[0] = '\0';
+      return;
+   }
+
+   name[strlen(id)] = '\0';
+
+   for (size_t i = 0; id[i] != '\0'; i++)
+   {
+      char c = id[i];
+      if (isspace(c) || isblank(c))
+         name[i] = '_';
+      else
+         name[i] = tolower(c);
+   }
+}
+
 void init_libretro_sym(void)
 {
    // Guarantee that we can do "dirty" casting.
@@ -282,8 +309,6 @@ void init_libretro_sym(void)
 #endif
 
    load_symbols();
-
-   set_environment_defaults();
    set_environment();
 }
 
@@ -365,44 +390,34 @@ static bool environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_VARIABLE:
       {
          struct retro_variable *var = (struct retro_variable*)data;
-         if (var->key)
-         {
-            // Split string has '\0' delimiters so we have to find the position in original string,
-            // then pass the corresponding offset into the split string.
-            const char *key = strstr(g_extern.system.environment, var->key);
-            size_t key_len = strlen(var->key);
-            if (key && key[key_len] == '=')
-            {
-               ptrdiff_t offset = key - g_extern.system.environment;
-               var->value = &g_extern.system.environment_split[offset + key_len + 1];
-            }
-            else
-               var->value = NULL;
-         }
-         else
-            var->value = g_extern.system.environment;
+         RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
 
-         RARCH_LOG("Environ GET_VARIABLE: %s=%s\n",
-               var->key ? var->key : "null",
-               var->value ? var->value : "null");
+         if (g_extern.system.core_options)
+            core_option_get(g_extern.system.core_options, var);
+         else
+            var->value = NULL;
 
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
+         *(bool*)data = g_extern.system.core_options ?
+            core_option_updated(g_extern.system.core_options) : false;
+         break;
+
       case RETRO_ENVIRONMENT_SET_VARIABLES:
       {
-         RARCH_LOG("Environ SET_VARIABLES:\n");
-         RARCH_LOG("=======================\n");
-         const struct retro_variable *vars = (const struct retro_variable*)data;
-         while (vars->key)
-         {
-            RARCH_LOG("\t%s :: %s\n",
-                  vars->key,
-                  vars->value ? vars->value : "N/A");
+         RARCH_LOG("Environ SET_VARIABLES.\n");
 
-            vars++;
+         if (g_extern.system.core_options)
+         {
+            core_option_flush(g_extern.system.core_options);
+            core_option_free(g_extern.system.core_options);
          }
-         RARCH_LOG("=======================\n");
+
+         const struct retro_variable *vars = (const struct retro_variable*)data;
+         g_extern.system.core_options = core_option_new(g_settings.core_options_path, vars);
+
          break;
       }
 
@@ -528,6 +543,46 @@ static bool environment_cb(unsigned cmd, void *data)
          g_extern.system.disk_control = *(const struct retro_disk_control_callback*)data;
          break;
 
+      case RETRO_ENVIRONMENT_SET_HW_RENDER:
+      {
+         RARCH_LOG("Environ SET_HW_RENDER.\n");
+         struct retro_hw_render_callback *cb = (struct retro_hw_render_callback*)data;
+         switch (cb->context_type)
+         {
+            case RETRO_HW_CONTEXT_NONE:
+               RARCH_LOG("Requesting no HW context.\n");
+               break;
+
+#if defined(HAVE_OPENGLES2)
+            case RETRO_HW_CONTEXT_OPENGLES2:
+               RARCH_LOG("Requesting OpenGLES2 context.\n");
+               driver.video = &video_gl;
+               break;
+
+            case RETRO_HW_CONTEXT_OPENGL:
+               RARCH_ERR("Requesting OpenGL context, but RetroArch is compiled against OpenGLES2. Cannot use HW context.\n");
+               return false;
+#elif defined(HAVE_OPENGL)
+            case RETRO_HW_CONTEXT_OPENGLES2:
+               RARCH_ERR("Requesting OpenGLES2 context, but RetroArch is compiled against OpenGL. Cannot use HW context.\n");
+               return false;
+
+            case RETRO_HW_CONTEXT_OPENGL:
+               RARCH_LOG("Requesting OpenGL context.\n");
+               driver.video = &video_gl;
+               break;
+#endif
+
+            default:
+               RARCH_LOG("Requesting unknown context.\n");
+               return false;
+         }
+         cb->get_current_framebuffer = driver_get_current_framebuffer;
+         cb->get_proc_address = driver_get_proc_address;
+         memcpy(&g_extern.system.hw_render_callback, cb, sizeof(*cb));
+         break;
+      }
+
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;
@@ -539,15 +594,5 @@ static bool environment_cb(unsigned cmd, void *data)
 static void set_environment(void)
 {
    pretro_set_environment(environment_cb);
-}
-
-static void set_environment_defaults(void)
-{
-   char *save;
-
-   // Split up environment variables beforehand.
-   if (g_extern.system.environment_split &&
-         strtok_r(g_extern.system.environment_split, ";", &save))
-      while (strtok_r(NULL, ";", &save));
 }
 

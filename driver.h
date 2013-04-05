@@ -107,9 +107,9 @@ enum // RetroArch specific bind IDs.
    RARCH_OVERLAY_NEXT,
    RARCH_DISK_EJECT_TOGGLE,
    RARCH_DISK_NEXT,
+   RARCH_GRAB_MOUSE_TOGGLE,
 
    RARCH_MENU_TOGGLE,
-   RARCH_MENU_QUICKMENU_TOGGLE,
 
    RARCH_BIND_LIST_END,
    RARCH_BIND_LIST_END_NULL
@@ -250,6 +250,7 @@ enum input_devices
    DEVICE_NYKO_PLAYPAD_PRO,
    DEVICE_TOODLES_2008_CHIMP,
    DEVICE_MOGA,
+   DEVICE_SEGA_VIRTUA_STICK_HIGH_GRADE,
    DEVICE_CCPCREATIONS_WIIUSE_IME,
    DEVICE_KEYBOARD_RETROPAD,
 #elif defined(GEKKO)
@@ -298,6 +299,8 @@ typedef struct input_driver
    void (*free)(void *data);
    void (*set_keybinds)(void *data, unsigned device, unsigned port, unsigned id, unsigned keybind_action);
    const char *ident;
+
+   void (*grab_mouse)(void *data, bool state);
 } input_driver_t;
 
 struct rarch_viewport;
@@ -323,6 +326,8 @@ typedef struct video_poke_interface
 #ifdef HAVE_FBO
    void (*set_fbo_state)(void *data, unsigned state);
    unsigned (*get_fbo_state)(void *data);
+   uintptr_t (*get_current_framebuffer)(void *data);
+   retro_proc_address_t (*get_proc_address)(void *data, const char *sym);
 #endif
    void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
    void (*apply_state_changes)(void *data);
@@ -332,6 +337,9 @@ typedef struct video_poke_interface
    void (*set_rgui_texture)(void *data, const void *frame);
 #endif
    void (*set_osd_msg)(void *data, const char *msg, void *userdata);
+
+   void (*show_mouse)(void *data, bool state);
+   void (*grab_mouse_toggle)(void *data);
 } video_poke_interface_t;
 
 typedef struct video_driver
@@ -348,8 +356,7 @@ typedef struct video_driver
    void (*free)(void *data);
    const char *ident;
 
-   // Callbacks essentially useless on PC, but useful on consoles where the drivers are used for more stuff.
-#ifdef RARCH_CONSOLE
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI)
    void (*start)(void);
    void (*stop)(void);
    void (*restart)(void);
@@ -446,6 +453,10 @@ void init_audio(void);
 void uninit_audio(void);
 
 void driver_set_monitor_refresh_rate(float hz);
+
+// Used by RETRO_ENVIRONMENT_SET_HW_RENDER.
+uintptr_t driver_get_current_framebuffer(void);
+retro_proc_address_t driver_get_proc_address(const char *sym);
 
 extern driver_t driver;
 

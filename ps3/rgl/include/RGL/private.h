@@ -4,7 +4,6 @@
 #include "../export/RGL/rgl.h"
 #include "Types.h"
 #include "Utils.h"
-#include "ReportInternal.h"
 
 #ifndef OS_VERSION_NUMERIC
 #define OS_VERSION_NUMERIC 0x160
@@ -37,34 +36,18 @@ extern RGL_EXPORT RGLcontextHookFunction rglContextDestroyHook;
 extern RGLcontext*	rglContextCreate();
 extern void		rglContextFree( RGLcontext* LContext );
 extern void		rglSetError( GLenum error );
-extern GLuint	rglValidateStates( GLuint mask );
-void rglAttachContext( RGLdevice *device, RGLcontext* context );
 void rglDetachContext( RGLdevice *device, RGLcontext* context );
-void rglInvalidateAllStates (void *data);
-void rglResetAttributeState(void *data);
 void rglSetFlipHandler(void (*handler)(const GLuint head), RGLdevice *device);
 void rglSetVBlankHandler(void (*handler)(const GLuint head), RGLdevice *device);
 
 //----------------------------------------
 // Texture.c
 //----------------------------------------
-rglTexture *rglAllocateTexture (void);
-void rglFreeTexture (void *data);
-void rglTextureUnbind (void *data, GLuint name );
 extern int	rglTextureInit( RGLcontext* context, GLuint name );
 extern void	rglTextureDelete( RGLcontext* context, GLuint name );
 extern GLboolean rglTextureHasValidLevels( const rglTexture *texture, int levels, int width, int height, int depth, GLenum format, GLenum type, GLenum internalFormat );
-extern GLboolean rglTextureIsValid( const rglTexture* texture );
-GLenum rglGetEnabledTextureMode (const void *data);
 extern rglTexture *rglGetCurrentTexture (const void *data, GLenum target);
-RGL_EXPORT void rglUpdateCurrentTextureCache (void *data);
 void rglReallocateImages (void *data, GLint level, GLsizei dimension);
-extern int rglGetImage( GLenum target, GLint level, rglTexture **texture, rglImage **image, GLsizei reallocateSize );
-
-static inline rglTexture* rglGetTexture (RGLcontext *LContext, GLuint name)
-{
-   return ( rglTexture* )LContext->textureNameSpace.data[name];
-}
 
 static inline rglTexture* rglGetTextureSafe (RGLcontext *LContext, GLuint name)
 {
@@ -91,7 +74,7 @@ static inline void rglTextureTouchFBOs (void *data)
          rglFramebuffer* framebuffer = texture->framebuffers[i];
          framebuffer->needValidate = GL_TRUE;
          if (RGL_UNLIKELY( framebuffer == contextFramebuffer))
-            LContext->needValidate |= PSGL_VALIDATE_SCISSOR_BOX | PSGL_VALIDATE_FRAMEBUFFER;
+            LContext->needValidate |= PSGL_VALIDATE_FRAMEBUFFER;
       }
    }
 }
@@ -116,9 +99,6 @@ static inline int rglGetStorageSize( GLenum format, GLenum type, GLsizei width, 
 extern int rglGetTypeSize( GLenum type );
 extern int	rglGetMaxBitSize( GLenum type );
 extern int	rglGetStorageSize( GLenum format, GLenum type, GLsizei width, GLsizei height, GLsizei depth );
-extern void rglImageToRaster( const rglImage* image, rglRaster* raster, GLuint x, GLuint y, GLuint z );
-extern void rglRasterToImage( const rglRaster* raster, rglImage* image, GLuint x, GLuint y, GLuint z );
-extern void rglRawRasterToImage (const void *in_data, void *out_data, GLuint x, GLuint y, GLuint z);
 
 //----------------------------------------
 // FramebufferObject.c
@@ -139,33 +119,13 @@ static inline rglFramebuffer *rglGetFramebufferSafe( RGLcontext *LContext, GLuin
 void rglFramebufferGetAttachmentTexture( RGLcontext* LContext, const rglFramebufferAttachment* attachment, rglTexture** texture, GLuint* face );
 GLenum rglPlatformFramebufferCheckStatus (void *data);
 void rglPlatformFramebufferGetParameteriv( GLenum pname, GLint* params );
-void rglGetFramebufferSize( GLuint* width, GLuint* height );
 
 //----------------------------------------
 // VertexArray.c
 //----------------------------------------
-void rglVertexAttrib1fNV( GLuint index, GLfloat x );
-void rglVertexAttrib1fvNV( GLuint index, const GLfloat* v );
-void rglVertexAttrib2fNV( GLuint index, GLfloat x, GLfloat y );
-void rglVertexAttrib2fvNV( GLuint index, const GLfloat* v );
-void rglVertexAttrib3fNV( GLuint index, GLfloat x, GLfloat y, GLfloat z );
-void rglVertexAttrib3fvNV( GLuint index, const GLfloat* v );
-void rglVertexAttrib4fNV( GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w );
-void rglVertexAttrib4fvNV( GLuint index, const GLfloat* v );
 void rglVertexAttribPointerNV( GLuint index, GLint fsize, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid* pointer );
-void rglVertexAttribElementFunc( GLuint index, GLenum func, GLuint frequency );
 void rglEnableVertexAttribArrayNV( GLuint index );
 void rglDisableVertexAttribArrayNV( GLuint index );
-GLint rglConvertStream( rglAttributeState* asDst, const rglAttributeState* asSrc, GLuint index,
-      GLint skip, GLint first, GLint count,
-      const void* indices, GLenum indexType );
-void rglComputeMinMaxIndices( RGLcontext* LContext, GLuint* min, GLuint* max, const void* indices, GLenum indexType, GLsizei count );
-
-//----------------------------------------
-// Platform/Init.c
-//----------------------------------------
-extern void rglPlatformInit (void *data);
-extern void rglPlatformExit (void);
 
 //----------------------------------------
 // Device/Device.c
@@ -193,54 +153,29 @@ extern const GLvoid*	rglPlatformGetProcAddress (const char *funcName);
 void*	rglPlatformRasterInit (void);
 void	rglPlatformRasterExit (void* data);
 void	rglPlatformRasterDestroyResources (void);
-void	rglPlatformDraw (void *data);
 GLboolean rglPlatformNeedsConversion (const rglAttributeState* as, GLuint index);
 // [YLIN] Try to avoid LHS inside this function.
 //   In oringinal implementation, indexType and indexCount will be stored right before this function
 //   and since we will load them right after enter this function, there are LHS.
 GLboolean rglPlatformRequiresSlowPath (void *data, const GLenum indexType, uint32_t indexCount);
 void rglPlatformRasterGetIntegerv( GLenum pname, GLint* params );
-void	rglPlatformRasterFlush (void);
-void	rglPlatformRasterFinish (void);
-void	rglValidateFragmentProgram (void);
-void	rglValidateFragmentProgramSharedConstants (void);
-void	rglValidateClipPlanes (void);
 void	rglInvalidateAttributes (void);
-GLuint	rglValidateAttributes (const void* indices, GLboolean *isMain);
-GLuint	rglValidateAttributesSlow (void *data, GLboolean *isMain);
 
 //----------------------------------------
 // Raster/.../PlatformTexture.c
 //----------------------------------------
-extern int	rglPlatformTextureSize (void);
-extern int	rglPlatformTextureMaxUnits (void);
 extern void	rglPlatformCreateTexture (void *data);
 extern void	rglPlatformDestroyTexture (void *data);
-extern void	rglPlatformValidateTextureStage (int unit, void *data);
 void rglPlatformValidateVertexTextures (void);
 extern GLenum rglPlatformChooseInternalStorage (void *data, GLenum internalformat);
-extern GLenum rglPlatformTranslateTextureFormat( GLenum internalFormat );
 extern void rglPlatformCopyTexSubImage3D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height );
-GLenum rglPlatformChooseInternalFormat( GLenum internalformat );
-void rglPlatformExpandInternalFormat( GLenum internalformat, GLenum *format, GLenum *type );
 void rglPlatformGetImageData( GLenum target, GLint level, rglTexture *texture, rglImage *image );
-GLboolean rglPlatformTextureReference (void *data, GLuint pitch, void *data_buf, GLintptr offset);
 
 //----------------------------------------
 // Raster/.../PlatformFBops.c
 //----------------------------------------
-extern void rglFBClear( GLbitfield mask );
-extern void rglValidateFramebuffer( void );
-extern void rglValidateFFXVertexProgram (void);
-extern void rglValidateFFXFragmentProgram (void);
 extern void rglPlatformReadPixels( GLint x, GLint y, GLsizei width, GLsizei height, GLboolean flip, GLenum format, GLenum type, GLvoid *pixels );
 extern GLboolean rglPlatformReadPBOPixels( GLint x, GLint y, GLsizei width, GLsizei height, GLboolean flip, GLenum format, GLenum type, GLvoid *pixels );
-
-//----------------------------------------
-// Raster/.../PlatformTNL.c
-//----------------------------------------
-void rglValidateVertexProgram (void);
-void rglValidateVertexConstants (void);
 
 //----------------------------------------
 // Raster/.../PlatformBuffer.c
@@ -249,7 +184,6 @@ int rglPlatformBufferObjectSize (void);
 GLboolean rglPlatformCreateBufferObject( rglBufferObject* bufferObject );
 void rglPlatformDestroyBufferObject (void *data);
 void rglPlatformBufferObjectSetData (void *buf_data, GLintptr offset, GLsizeiptr size, const GLvoid *data, GLboolean tryImmediateCopy );
-GLvoid rglPlatformBufferObjectCopyData (void *dst, void *src);
 char *rglPlatformBufferObjectMap (void *data, GLenum access );
 GLboolean rglPlatformBufferObjectUnmap (void *data);
 void rglPlatformGetBufferParameteriv( rglBufferObject *bufferObject, GLenum pname, int *params );

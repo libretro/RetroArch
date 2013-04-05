@@ -29,6 +29,15 @@
 
 #include <Cg/CgCommon.h>
 
+// endian swapping of the fragment uniforms, if necessary
+#if RGL_ENDIAN == RGL_BIG_ENDIAN
+#define SWAP_IF_BIG_ENDIAN(arg) endianSwapWordByHalf(arg)
+#elif RGL_ENDIAN == RGL_LITTLE_ENDIAN
+#define SWAP_IF_BIG_ENDIAN(arg) arg
+#else
+#error include missing for endianness
+#endif
+
 void rglPsglPlatformInit (void *data);
 void rglPsglPlatformExit (void);
 

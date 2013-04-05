@@ -23,6 +23,7 @@
 #include "boolean.h"
 #include "libretro.h"
 #include "driver.h"
+#include "gfx/gfx_common.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -73,6 +74,7 @@ enum
    INPUT_XINPUT,
    INPUT_LINUXRAW,
    INPUT_IOS,
+   INPUT_QNX,
    INPUT_NULL
 };
 
@@ -160,6 +162,8 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_X
 #elif defined(IOS)
 #define INPUT_DEFAULT_DRIVER INPUT_IOS
+#elif defined(__BLACKBERRY_QNX__)
+#define INPUT_DEFAULT_DRIVER INPUT_QNX
 #else
 #define INPUT_DEFAULT_DRIVER INPUT_NULL
 #endif
@@ -264,6 +268,12 @@ static const bool scale_integer = false;
 // Controls aspect ratio handling.
 static const float aspect_ratio = DEFAULT_ASPECT_RATIO; // Automatic
 static const bool aspect_ratio_auto = false; // 1:1 PAR
+
+#if defined(__CELLOS_LV2) || defined(_XBOX360)
+static unsigned aspect_ratio_idx = ASPECT_RATIO_16_9;
+#else
+static unsigned aspect_ratio_idx = ASPECT_RATIO_4_3;
+#endif
 
 // Crop overscanned frames (7/8 or 15/15 for interlaced frames).
 static const bool crop_overscan = true;
@@ -546,8 +556,8 @@ static const bool input_autodetect_enable = true;
 #define RETRO_LBL_OVERLAY_NEXT "Next Overlay"
 #define RETRO_LBL_DISK_EJECT_TOGGLE "Disk Eject Toggle"
 #define RETRO_LBL_DISK_NEXT "Disk Swap Next"
+#define RETRO_LBL_GRAB_MOUSE_TOGGLE "Grab mouse toggle"
 #define RETRO_LBL_MENU_TOGGLE "Menu toggle"
-#define RETRO_LBL_MENU_QUICKMENU_TOGGLE "Menu quickmenu toggle"
 
 // Player 1
 static const struct retro_keybind retro_keybinds_1[] = {
@@ -618,6 +628,7 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_OVERLAY_NEXT,             RETRO_LBL_OVERLAY_NEXT,         RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_DISK_EJECT_TOGGLE,        RETRO_LBL_DISK_EJECT_TOGGLE,    RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_DISK_NEXT,                RETRO_LBL_DISK_NEXT,            RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
+   { true, RARCH_GRAB_MOUSE_TOGGLE,        RETRO_LBL_GRAB_MOUSE_TOGGLE,    RETROK_F11,     NO_BTN, 0, AXIS_NONE },
 #ifdef HAVE_RGUI
    { true, RARCH_MENU_TOGGLE,              RETRO_LBL_MENU_TOGGLE,          RETROK_F1,      NO_BTN, 0, AXIS_NONE },
 #endif

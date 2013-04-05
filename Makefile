@@ -17,11 +17,13 @@ OBJ = frontend/frontend.o \
 		input/overlay.o \
 		patch.o \
 		fifo_buffer.o \
+		core_options.o \
 		compat/compat.o \
 		cheats.o \
 		conf/config_file.o \
 		screenshot.o \
 		gfx/scaler/scaler.o \
+		gfx/shader_parse.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/filter.o \
@@ -79,7 +81,7 @@ ifneq ($(findstring Linux,$(OS)),)
 endif
 
 ifeq ($(HAVE_RGUI), 1)
-   OBJ += frontend/menu/rgui.o frontend/menu/utils/file_list.o frontend/menu/menu_settings.o
+   OBJ += frontend/menu/rgui.o frontend/menu/utils/file_list.o
 endif
 
 ifeq ($(HAVE_THREADS), 1)
@@ -303,6 +305,9 @@ ifeq ($(HAVE_SINC), 1)
 
    ifeq ($(HAVE_NEON),1)
       OBJ += audio/sinc_neon.o
+		# When compiled without this, tries to attempt to compile sinc lerp,
+		# which will error out
+		DEFINES += -DSINC_LOWER_QUALITY
    endif
 endif
 OBJ += audio/utils.o

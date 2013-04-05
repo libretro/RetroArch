@@ -22,7 +22,7 @@
 #include "../../general.h"
 #include "../../input/input_common.h"
 
-void x11_hide_mouse(Display *dpy, Window win)
+static void x11_hide_mouse(Display *dpy, Window win)
 {
    Cursor no_ptr;
    Pixmap bm_no;
@@ -45,6 +45,14 @@ void x11_hide_mouse(Display *dpy, Window win)
       XFreePixmap(dpy, bm_no);
 
    XFreeColors(dpy, colormap, &black.pixel, 1, 0);
+}
+
+void x11_show_mouse(Display *dpy, Window win, bool state)
+{
+   if (state)
+      XUndefineCursor(dpy, win);
+   else
+      x11_hide_mouse(dpy, win);
 }
 
 static Atom XA_NET_WM_STATE;

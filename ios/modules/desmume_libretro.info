@@ -1,5 +1,5 @@
 display_name = "Nintendo DS"
 recommended_extensions = "nds"
-emuname = "DeSmuME"
+corename = "DeSmuME"
 manufacturer = "Nintendo"
 systemname = "Nintendo DS"

@@ -32,6 +32,7 @@
 #include "audio/ext/rarch_dsp.h"
 #include "compat/strl.h"
 #include "performance.h"
+#include "core_options.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -126,9 +127,8 @@ enum menu_enums
    MODE_EXTLAUNCH_MULTIMAN,
    MODE_EXIT,
    MODE_EXITSPAWN,
-#ifdef ANDROID
+   MODE_EXITSPAWN_MULTIMAN,
    MODE_INPUT_XPERIA_PLAY_HACK,
-#endif
    MODE_VIDEO_TRIPLE_BUFFERING_ENABLE,
    MODE_VIDEO_FLICKER_FILTER_ENABLE,
    MODE_VIDEO_SOFT_FILTER_ENABLE,
@@ -179,7 +179,7 @@ struct settings
       bool scale_integer;
       unsigned aspect_ratio_idx;
       char cg_shader_path[PATH_MAX];
-      char bsnes_shader_path[PATH_MAX];
+      char xml_shader_path[PATH_MAX];
       char filter_path[PATH_MAX];
       enum rarch_shader_type shader_type;
       float refresh_rate;
@@ -260,6 +260,8 @@ struct settings
       char overlay[PATH_MAX];
       float overlay_opacity;
    } input;
+
+   char core_options_path[PATH_MAX];
 
    char libretro[PATH_MAX];
    char cheat_database[PATH_MAX];
@@ -376,9 +378,6 @@ struct global
       struct retro_system_av_info av_info;
       float aspect_ratio;
 
-      char *environment;
-      char *environment_split;
-
       unsigned rotation;
       bool shutdown;
       unsigned performance_level;
@@ -393,6 +392,9 @@ struct global
       retro_keyboard_event_t key_event;
 
       struct retro_disk_control_callback disk_control; 
+      struct retro_hw_render_callback hw_render_callback;
+
+      core_option_manager_t *core_options;
    } system;
 
    struct
@@ -624,6 +626,7 @@ struct global
    bool error_in_init;
    char error_string[1024];
    jmp_buf error_sjlj_context;
+   unsigned menu_toggle_behavior;
 };
 
 struct rarch_main_wrap
@@ -636,12 +639,58 @@ struct rarch_main_wrap
    bool verbose;
 };
 
+enum
+{
+   S_ASPECT_RATIO_DECREMENT = 0,
+   S_ASPECT_RATIO_INCREMENT,
+   S_AUDIO_MUTE,
+   S_AUDIO_CONTROL_RATE_DECREMENT,
+   S_AUDIO_CONTROL_RATE_INCREMENT,
+   S_FRAME_ADVANCE,
+   S_HW_TEXTURE_FILTER,
+   S_HW_TEXTURE_FILTER_2,
+   S_OVERSCAN_DECREMENT,
+   S_OVERSCAN_INCREMENT,
+   S_RESOLUTION_PREVIOUS,
+   S_RESOLUTION_NEXT,
+   S_ROTATION_DECREMENT,
+   S_ROTATION_INCREMENT,
+   S_REWIND,
+   S_SAVESTATE_DECREMENT,
+   S_SAVESTATE_INCREMENT,
+   S_SCALE_ENABLED,
+   S_SCALE_FACTOR_DECREMENT,
+   S_SCALE_FACTOR_INCREMENT,
+   S_THROTTLE,
+   S_TRIPLE_BUFFERING,
+   S_REFRESH_RATE_DECREMENT,
+   S_REFRESH_RATE_INCREMENT,
+   S_INFO_DEBUG_MSG_TOGGLE,
+   S_INFO_MSG_TOGGLE,
+   S_DEF_ASPECT_RATIO,
+   S_DEF_AUDIO_MUTE,
+   S_DEF_AUDIO_CONTROL_RATE,
+   S_DEF_HW_TEXTURE_FILTER,
+   S_DEF_HW_TEXTURE_FILTER_2,
+   S_DEF_OVERSCAN,
+   S_DEF_ROTATION,
+   S_DEF_THROTTLE,
+   S_DEF_TRIPLE_BUFFERING,
+   S_DEF_SAVE_STATE,
+   S_DEF_SCALE_ENABLED,
+   S_DEF_SCALE_FACTOR,
+   S_DEF_REFRESH_RATE,
+   S_DEF_INFO_DEBUG_MSG,
+   S_DEF_INFO_MSG,
+};
+
 // Public functions
 void config_load(void);
 void config_set_defaults(void);
 const char *config_get_default_video(void);
 const char *config_get_default_audio(void);
 const char *config_get_default_input(void);
+void settings_set(uint64_t settings);
 
 #include "conf/config_file.h"
 bool config_load_file(const char *path);
@@ -664,6 +713,7 @@ void rarch_render_cached_frame(void);
 void rarch_init_msg_queue(void);
 void rarch_deinit_msg_queue(void);
 void rarch_input_poll(void);
+void rarch_check_overlay(void);
 void rarch_init_rewind(void);
 void rarch_deinit_rewind(void);
 

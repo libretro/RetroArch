@@ -14,19 +14,12 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _FRONTEND_CONSOLE_H
-#define _FRONTEND_CONSOLE_H
+#ifndef _FRONTEND_SALAMANDER_H
+#define _FRONTEND_SALAMANDER_H
 
-//optional RetroArch forward declarations
-static void verbose_log_init(void);
-
-#ifdef IS_SALAMANDER
 //optional Salamander forward declarations
 static void find_first_libretro_core(char *first_file,
    size_t size_of_first_file, const char *dir,
    const char * ext);
-#endif
-
-static void get_libretro_core_name(char *name, size_t size);
 
 #endif

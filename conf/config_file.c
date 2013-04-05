@@ -696,6 +696,13 @@ void config_set_int(config_file_t *conf, const char *key, int val)
    config_set_string(conf, key, buf);
 }
 
+void config_set_hex(config_file_t *conf, const char *key, unsigned val)
+{
+   char buf[128];
+   snprintf(buf, sizeof(buf), "%x", val);
+   config_set_string(conf, key, buf);
+}
+
 void config_set_uint64(config_file_t *conf, const char *key, uint64_t val)
 {
    char buf[128];

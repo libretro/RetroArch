@@ -76,6 +76,7 @@ CONFIG FILE
 #endif
 
 #include "../conf/config_file.c"
+#include "../core_options.c"
 
 /*============================================================
 CHEATS
@@ -109,6 +110,7 @@ VIDEO SHADERS
 ============================================================ */
 
 #ifdef HAVE_CG
+#include "../gfx/shader_parse.c"
 #include "../gfx/shader_cg.c"
 #endif
 
@@ -241,6 +243,16 @@ INPUT
 #elif defined(ANDROID)
 #include "../android/native/jni/input_autodetect.c"
 #include "../android/native/jni/input_android.c"
+#elif defined(IOS)
+#include "../ios/RetroArch/input/ios_input.c"
+#include "../ios/RetroArch/input/ios_joypad.c"
+#include "../ios/RetroArch/input/BTStack/btdynamic.c"
+#include "../ios/RetroArch/input/BTStack/wiimote.c"
+#include "../ios/RetroArch/input/BTStack/btpad.c"
+#include "../ios/RetroArch/input/BTStack/btpad_ps3.c"
+#include "../ios/RetroArch/input/BTStack/btpad_wii.c"
+#elif defined(__BLACKBERRY_QNX__)
+#include "../playbook/qnx_input.c"
 #endif
 
 #if defined(HAVE_NULLINPUT)
@@ -383,6 +395,8 @@ MAIN
 #include "../frontend/frontend_bbqnx.c"
 #elif defined(ANDROID)
 #include "../frontend/frontend_android.c"
+#elif defined(IOS)
+#include "../frontend/frontend_ios.c"
 #endif
 
 #if !defined(ANDROID) && !defined(IOS)
@@ -426,7 +440,6 @@ SCREENSHOTS
 MENU
 ============================================================ */
 #if defined(HAVE_RMENU_GUI)
-#include "../frontend/menu/utils/menu_stack.c"
 #include "../frontend/menu/rmenu.c"
 #endif
 
@@ -438,8 +451,6 @@ MENU
 #if defined(_XBOX360)
 #include "../frontend/menu/rmenu_xui.cpp"
 #endif
-
-#include "../frontend/menu/menu_settings.c"
 
 #ifdef __cplusplus
 extern "C" {

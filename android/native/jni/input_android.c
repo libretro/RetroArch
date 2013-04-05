@@ -807,6 +807,23 @@ static void android_input_set_keybinds(void *data, unsigned device,
             keycode_lut[AKEYCODE_BUTTON_L1] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
             keycode_lut[AKEYCODE_BUTTON_R1] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
             break;
+         case DEVICE_SEGA_VIRTUA_STICK_HIGH_GRADE:
+            g_settings.input.device[port] = device;
+            strlcpy(g_settings.input.device_names[port], "Sega Virtua Stick",
+                  sizeof(g_settings.input.device_names[port]));
+
+            keycode_lut[AKEYCODE_BUTTON_A] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_X] |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_B] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_C] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_Z] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_R1] |=  ((RETRO_DEVICE_ID_JOYPAD_R2+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_Y] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_L1] |=  ((RETRO_DEVICE_ID_JOYPAD_L2+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_R2] |=  ((RETRO_DEVICE_ID_JOYPAD_START+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_MODE] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)      << shift);
+            keycode_lut[AKEYCODE_BUTTON_L2] |=  ((RARCH_MENU_TOGGLE+1)      << shift);
+            break;
          case DEVICE_PSMOVE_NAVI:
             /* TODO - unfinished */
             g_settings.input.device[port] = device;

@@ -1,6 +1,6 @@
 display_name = "PlayStation"
 supported_extensions = "cue|toc"
-emuname = "Mednafen PSX"
+corename = "Mednafen PSX"
 manufacturer = "Sony"
 systemname = "PlayStation"
 

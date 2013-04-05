@@ -204,6 +204,7 @@ static const struct cmd_map map[] = {
    { "OVERLAY_NEXT",           RARCH_OVERLAY_NEXT },
    { "DISK_EJECT_TOGGLE",      RARCH_DISK_EJECT_TOGGLE },
    { "DISK_NEXT",              RARCH_DISK_NEXT },
+   { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
 };
 

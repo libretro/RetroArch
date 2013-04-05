@@ -19,65 +19,79 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include <screen/screen.h>
-#include <bps/navigator.h>
-#include <bps/screen.h>
 #include <bps/bps.h>
-#include <bps/event.h>
-
-#include "../playbook/src/bbutil.h"
-
-screen_context_t screen_ctx;
 
 int rarch_main(int argc, char *argv[])
 {
    //Initialize bps
    bps_initialize();
 
-   RARCH_LOG("Initializing screen context\n");
-
-   // Create a screen context that will be used to create an EGL surface to receive libscreen events
-   screen_create_context(&screen_ctx, 0);
-
-   if (screen_request_events(screen_ctx) != BPS_SUCCESS)
-   {
-      RARCH_ERR("screen_request_events failed.\n");
-      goto error;
-   }
-
-   if (navigator_request_events(0) != BPS_SUCCESS)
-   {
-      RARCH_ERR("navigator_request_events failed.\n");
-      goto error;
-   }
-
-   if (navigator_rotation_lock(false) != BPS_SUCCESS)
-   {
-      RARCH_ERR("navigator_location_lock failed.\n");
-      goto error;
-   }
-
    rarch_main_clear_state();
+
+   strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
+   strlcpy(g_settings.libretro, "app/native/lib", sizeof(g_settings.libretro));
+
+   config_load();
+   global_init_drivers();
 
    g_extern.verbose = true;
 
-   int init_ret;
-   struct rarch_main_wrap args = {0};
+   menu_init();
+   g_extern.lifecycle_mode_state |= 1ULL << MODE_MENU;
 
-   args.verbose = g_extern.verbose;
-   args.sram_path = NULL;
-   args.state_path = NULL;
-   args.rom_path = "/accounts/1000/shared/documents/roms/quake/pak0.pak";
-   args.libretro_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/lib/test.so";
-   args.config_path = "/accounts/1000/appdata/com.RetroArch.testDev_m_RetroArch181dafc7/app/native/retroarch.cfg";
-
-   if ((init_ret = rarch_main_init_wrap(&args)))
+   for (;;)
    {
-      return init_ret;
+      if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
+      {
+	     while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
+	        g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+      }
+      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_INIT))
+      {
+	     if (g_extern.main_is_init)
+	        rarch_main_deinit();
+
+	     struct rarch_main_wrap args = {0};
+
+        args.verbose = g_extern.verbose;
+        args.sram_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? g_extern.console.main_wrap.default_sram_dir : NULL;
+        args.state_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? g_extern.console.main_wrap.default_savestate_dir : NULL;
+        args.rom_path = g_extern.fullpath;
+        args.libretro_path = g_settings.libretro;
+
+        if (path_file_exists(g_extern.config_path))
+           args.config_path = g_extern.config_path;
+        else
+           args.config_path = NULL;
+
+	     int init_ret = rarch_main_init_wrap(&args);
+	     if (init_ret == 0)
+	     {
+	        RARCH_LOG("rarch_main_init() succeeded.\n");
+	        g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+	     }
+	     else
+	     {
+	        RARCH_ERR("rarch_main_init() failed.\n");
+	        g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+	     }
+
+	     g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
+      }
+      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
+      {
+         g_extern.lifecycle_mode_state |= 1ULL << MODE_MENU_PREINIT;
+         while (menu_iterate());
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
+      }
+      else
+         break;
    }
-   rarch_init_msg_queue();
-   while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
-   rarch_main_deinit();
+
+   menu_free();
+   if (g_extern.main_is_init)
+      rarch_main_deinit();
+
    rarch_deinit_msg_queue();
 
 #ifdef PERF_TEST
@@ -85,7 +99,6 @@ int rarch_main(int argc, char *argv[])
 #endif
 
 error:
-   screen_stop_events(screen_ctx);
    bps_shutdown();
 
    return 0;

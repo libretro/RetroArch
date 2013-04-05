@@ -27,6 +27,7 @@ struct Vertex
    float x, y, z;
    float u, v;
    float lut_u, lut_v;
+   float r, g, b, a;
 };
 
 struct LinkInfo
@@ -39,6 +40,9 @@ struct LinkInfo
    unsigned abs_x, abs_y;
    bool filter_linear;
    ScaleType scale_type_x, scale_type_y;
+
+   unsigned frame_count_mod;
+   bool float_framebuffer;
 
    std::string shader_path;
 };
@@ -112,6 +116,8 @@ class RenderChain
       };
       std::vector<Pass> passes;
 
+      CGprogram vStock, fStock;
+
       struct lut_info
       {
          IDirect3DTexture9 *tex;
@@ -124,7 +130,7 @@ class RenderChain
       unsigned frame_count;
 
       void create_first_pass(const LinkInfo &info, PixelFormat fmt);
-      void compile_shaders(Pass &pass, const std::string &shader);
+      void compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::string &shader);
 
       void set_vertices(Pass &pass,
             unsigned width, unsigned height,
@@ -133,8 +139,10 @@ class RenderChain
             unsigned rotation);
       void set_viewport(const D3DVIEWPORT9 &vp);
 
-      void set_shaders(Pass &pass);
-      void set_cg_mvp(Pass &pass, const D3DXMATRIX &matrix);
+      void set_shaders(CGprogram &fPrg, CGprogram &vPrg);
+      void set_cg_mvp(CGprogram &vPrg,
+            unsigned vp_width, unsigned vp_height,
+            unsigned rotation);
       void set_cg_params(Pass &pass,
             unsigned input_w, unsigned input_h,
             unsigned tex_w, unsigned tex_h,

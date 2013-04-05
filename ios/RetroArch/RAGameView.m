@@ -15,21 +15,19 @@
 
 #include "general.h"
 #include "rarch_wrapper.h"
+#include "input/ios_input.h"
 
 static const float ALMOST_INVISIBLE = .021f;
 static float g_screen_scale;
-static int g_frame_skips = 4;
+static int g_fast_forward_skips;
 static bool g_is_syncing = true;
 static RAGameView* g_instance;
+static GLKView* g_view;
+static EAGLContext* g_context;
+static UIView* g_pause_view;;
+static UIView* g_pause_indicator_view;
 
 @implementation RAGameView
-{
-   EAGLContext* _glContext;
-
-   UIView* _pauseView;
-   UIView* _pauseIndicatorView;
-}
-
 + (RAGameView*)get
 {
    if (!g_instance)
@@ -42,51 +40,22 @@ static RAGameView* g_instance;
 {
    self = [super init];
 
-   UINib* xib = [UINib nibWithNibName:@"PauseView" bundle:nil];
-   _pauseView = [[xib instantiateWithOwner:[RetroArch_iOS get] options:nil] lastObject];
-   
-   xib = [UINib nibWithNibName:@"PauseIndicatorView" bundle:nil];
-   _pauseIndicatorView = [[xib instantiateWithOwner:[RetroArch_iOS get] options:nil] lastObject];
-
-   self.view = [GLKView new];
-   self.view.multipleTouchEnabled = YES;
-   [self.view addSubview:_pauseView];
-   [self.view addSubview:_pauseIndicatorView];
-
-   return self;
-}
-
-// Driver
-- (void)driverInit
-{
    g_screen_scale = [[UIScreen mainScreen] scale];
 
-   _glContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-   [EAGLContext setCurrentContext:_glContext];
-   ((GLKView*)self.view).context = _glContext;
+   UINib* xib = [UINib nibWithNibName:@"PauseView" bundle:nil];
+   g_pause_view = [[xib instantiateWithOwner:[RetroArch_iOS get] options:nil] lastObject];
+   
+   xib = [UINib nibWithNibName:@"PauseIndicatorView" bundle:nil];
+   g_pause_indicator_view = [[xib instantiateWithOwner:[RetroArch_iOS get] options:nil] lastObject];
 
-   // Show pause button for a few seconds, so people know it's there
-   _pauseIndicatorView.alpha = 1.0f;
-   [self performSelector:@selector(hidePauseButton) withObject:self afterDelay:3.0f];
-}
+   g_view = [GLKView new];
+   g_view.multipleTouchEnabled = YES;
+   g_view.enableSetNeedsDisplay = NO;
+   [g_view addSubview:g_pause_view];
+   [g_view addSubview:g_pause_indicator_view];
 
-- (void)driverQuit
-{
-   glFinish();
-
-   ((GLKView*)self.view).context = nil;
-   [EAGLContext setCurrentContext:nil];
-   _glContext = nil;
-}
-
-- (void)flip
-{
-   if (--g_frame_skips < 0)
-   {
-      [self.view setNeedsDisplay];
-      [(GLKView*)self.view bindDrawable];
-      g_frame_skips = g_is_syncing ? 0 : 3;
-   }
+   self.view = g_view;
+   return self;
 }
 
 // Pause Menus
@@ -101,72 +70,123 @@ static RAGameView* g_instance;
    float tenpctw = width / 10.0f;
    float tenpcth = height / 10.0f;
    
-   _pauseView.frame = CGRectMake(width / 2.0f - 150.0f, height / 2.0f - 150.0f, 300.0f, 300.0f);
-   _pauseIndicatorView.frame = CGRectMake(tenpctw * 4.0f, 0.0f, tenpctw * 2.0f, tenpcth);
+   g_pause_view.frame = CGRectMake(width / 2.0f - 150.0f, height / 2.0f - 150.0f, 300.0f, 300.0f);
+   g_pause_indicator_view.frame = CGRectMake(tenpctw * 4.0f, 0.0f, tenpctw * 2.0f, tenpcth);
 }
 
 - (void)openPauseMenu
 {
    // Setup save state selector
-   UISegmentedControl* stateSelect = (UISegmentedControl*)[_pauseView viewWithTag:1];
+   UISegmentedControl* stateSelect = (UISegmentedControl*)[g_pause_view viewWithTag:1];
    stateSelect.selectedSegmentIndex = (g_extern.state_slot < 10) ? g_extern.state_slot : -1;
+
+   g_extern.is_paused = true;
 
    //
    [UIView animateWithDuration:0.2
-      animations:^ { _pauseView.alpha = 1.0f; }
+      animations:^ { g_pause_view.alpha = 1.0f; }
       completion:^(BOOL finished){}];
 }
 
 - (void)closePauseMenu
 {
    [UIView animateWithDuration:0.2
-      animations:^ { _pauseView.alpha = 0.0f; }
+      animations:^ { g_pause_view.alpha = 0.0f; }
       completion:^(BOOL finished) { }
    ];
+   
+   g_extern.is_paused = false;
 }
 
 - (void)hidePauseButton
 {
    [UIView animateWithDuration:0.2
-      animations:^ { _pauseIndicatorView.alpha = ALMOST_INVISIBLE; }
+      animations:^ { g_pause_indicator_view.alpha = ALMOST_INVISIBLE; }
          completion:^(BOOL finished) { }
       ];
+}
+
+- (void)suspend
+{
+   g_view.context = nil;
+   [EAGLContext setCurrentContext:nil];
+}
+
+- (void)resume
+{
+   g_view.context = g_context;
+   [EAGLContext setCurrentContext:g_context];
 }
 
 @end
 
 bool ios_init_game_view()
 {
-   [RAGameView.get driverInit];
+   dispatch_sync(dispatch_get_main_queue(), ^{
+      // Make sure the view was created
+      [RAGameView get];
+
+      g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+      [EAGLContext setCurrentContext:g_context];
+      g_view.context = g_context;
+
+      // Show pause button for a few seconds, so people know it's there
+      g_pause_indicator_view.alpha = 1.0f;
+      [g_instance performSelector:@selector(hidePauseButton) withObject:g_instance afterDelay:3.0f];
+   });
+
+   [EAGLContext setCurrentContext:g_context];
+
    return true;
 }
 
 void ios_destroy_game_view()
 {
-   [RAGameView.get driverQuit];
+   dispatch_sync(dispatch_get_main_queue(), ^{
+      glFinish();
+
+      g_view.context = nil;
+      [EAGLContext setCurrentContext:nil];
+      g_context = nil;
+   });
+   
+   [EAGLContext setCurrentContext:nil];
 }
 
 void ios_flip_game_view()
 {
-   [RAGameView.get flip];
+   if (--g_fast_forward_skips < 0)
+   {
+      dispatch_sync(dispatch_get_main_queue(), ^{
+         [g_view display];
+
+         // HACK: While here, copy input structures
+         ios_copy_input(&g_ios_input_data);
+      });
+      g_fast_forward_skips = g_is_syncing ? 0 : 3;
+   }
 }
 
 void ios_set_game_view_sync(bool on)
 {
    g_is_syncing = on;
-   g_frame_skips = on ? 0 : 3;
+   g_fast_forward_skips = on ? 0 : 3;
 }
 
 void ios_get_game_view_size(unsigned *width, unsigned *height)
 {
-   *width  = RAGameView.get.view.bounds.size.width * g_screen_scale;
+   *width  = g_view.bounds.size.width * g_screen_scale;
    *width = *width ? *width : 640;
    
-   *height = RAGameView.get.view.bounds.size.height * g_screen_scale;
+   *height = g_view.bounds.size.height * g_screen_scale;
    *height = *height ? *height : 480;
 }
 
 void ios_bind_game_view_fbo()
 {
-   [(GLKView*)RAGameView.get.view bindDrawable];
+   dispatch_sync(dispatch_get_main_queue(), ^{
+      if (g_context)
+         [g_view bindDrawable];
+   });
 }
+

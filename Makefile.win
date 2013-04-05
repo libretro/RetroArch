@@ -15,6 +15,7 @@ OBJ = frontend/frontend.o \
 		movie.o \
 		gfx/gfx_common.o \
 		input/input_common.o \
+		core_options.o \
 		patch.o \
 		compat/compat.o \
 		screenshot.o \
@@ -28,6 +29,7 @@ OBJ = frontend/frontend.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/filter.o \
 		gfx/state_tracker.o \
+		gfx/shader_parse.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
 		gfx/image.o \
@@ -94,7 +96,7 @@ JLIBS =
 
 ifeq ($(HAVE_RGUI), 1)
    DEFINES += -DHAVE_RGUI
-   OBJ += frontend/menu/rgui.o frontend/menu/utils/file_list.o frontend/menu/menu_settings.o
+   OBJ += frontend/menu/rgui.o frontend/menu/utils/file_list.o
 endif
 
 ifeq ($(HAVE_SDL), 1)
@@ -155,8 +157,14 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
    OBJ += gfx/rpng/rpng.o file_extract.o
-   LIBS += -lz
-   DEFINES += -DHAVE_ZLIB_DEFLATE
+   DEFINES += -DHAVE_ZLIB
+   ifeq ($(WANT_MINIZ), 1)
+      OBJ += deps/miniz/miniz.o
+      DEFINES += -DWANT_MINIZ
+   else
+      LIBS += -lz
+      DEFINES += -DHAVE_ZLIB_DEFLATE
+   endif
 endif
 
 ifeq ($(HAVE_LIBXML2), 1)
@@ -268,7 +276,9 @@ else
 endif
 
 clean:
-	rm -f *.o 
+	rm -f *.o
+	rm -f deps/miniz/*.o
+	rm -f frontend/*.o
 	rm -f frontend/menu/*.o
 	rm -f frontend/menu/utils/*.o
 	rm -f audio/*.o
@@ -283,6 +293,7 @@ clean:
 	rm -f gfx/math/*.o
 	rm -f gfx/fonts/*.o
 	rm -f gfx/py_state/*.o
+	rm -f gfx/rpng/*.o
 	rm -f record/*.o
 	rm -f input/*.o
 	rm -f $(TARGET)

@@ -155,6 +155,9 @@ static const input_driver_t *input_drivers[] = {
 #ifdef IOS
    &input_ios,
 #endif
+#ifdef __BLACKBERRY_QNX__
+   &input_qnx,
+#endif
 #ifdef HAVE_NULLINPUT
    &input_null,
 #endif
@@ -267,6 +270,26 @@ void driver_set_monitor_refresh_rate(float hz)
 
 }
 
+uintptr_t driver_get_current_framebuffer(void)
+{
+#ifdef HAVE_FBO
+   if (driver.video_poke && driver.video_poke->get_current_framebuffer)
+      return driver.video_poke->get_current_framebuffer(driver.video_data);
+   else
+#endif
+      return 0;
+}
+
+retro_proc_address_t driver_get_proc_address(const char *sym)
+{
+#ifdef HAVE_FBO
+   if (driver.video_poke && driver.video_poke->get_proc_address)
+      return driver.video_poke->get_proc_address(driver.video_data, sym);
+   else
+#endif
+      return NULL;
+}
+
 // Only called once on init and deinit.
 // Video and input drivers need to be active (owned)
 // before retroarch core starts.
@@ -278,10 +301,19 @@ void driver_set_monitor_refresh_rate(float hz)
 void global_init_drivers(void)
 {
    init_drivers_pre(); // Set driver.* function callbacks.
-#ifdef RARCH_CONSOLE
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    driver.video->start(); // Statically starts video driver. Sets driver.video_data.
 #endif
    driver.input_data = driver.input->init();
+
+#ifdef HAVE_OVERLAY
+   if (*g_settings.input.overlay)
+   {
+      driver.overlay = input_overlay_new(g_settings.input.overlay);
+      if (!driver.overlay)
+	     RARCH_ERR("Failed to load overlay.\n");
+   }
+#endif
 }
 
 void global_uninit_drivers(void)
@@ -310,6 +342,10 @@ void init_drivers(void)
    adjust_system_rates();
 
    init_video_input();
+
+   if (g_extern.system.hw_render_callback.context_reset)
+      g_extern.system.hw_render_callback.context_reset();
+
    init_audio();
 }
 
@@ -633,6 +669,12 @@ static void init_filter(bool rgb32)
    if (!*g_settings.video.filter_path)
       return;
 
+   if (g_extern.system.hw_render_callback.context_type)
+   {
+      RARCH_WARN("Cannot use CPU filters when hardware rendering is used.\n");
+      return;
+   }
+
    RARCH_LOG("Loading bSNES filter from \"%s\"\n", g_settings.video.filter_path);
    g_extern.filter.lib = dylib_load(g_settings.video.filter_path);
    if (!g_extern.filter.lib)
@@ -847,7 +889,7 @@ void init_video_input(void)
 
    const input_driver_t *tmp = driver.input;
 #ifdef HAVE_THREADS
-   if (g_settings.video.threaded)
+   if (g_settings.video.threaded && !g_extern.system.hw_render_callback.context_type) // Can't do hardware rendering with threaded driver currently.
    {
       find_video_driver(); // Need to grab the "real" video driver interface on a reinit.
       RARCH_LOG("Starting threaded video driver ...\n");

@@ -200,8 +200,6 @@ random libretro core and write this to the config file.
 ------------------------------------------------------------------------------
 What can you expect in the future?
 ------------------------------------------------------------------------------
-- Do a Blackberry Playbook/Blackberry 10 RetroArch port
-- Do an iOS port of RetroArch (will need hardware for this - gifts appreciated)
 - Make the libxenon port release-worthy.
 - Add console-friendly features (nicely formatted names for FBA, some better
 way to do core switching, etc)

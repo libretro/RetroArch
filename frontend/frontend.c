@@ -15,7 +15,7 @@
  */
 
 #include "../general.h"
-#include "conf/config_file.h"
+#include "../conf/config_file.h"
 #include "../file.h"
 
 #ifdef HAVE_RGUI
@@ -40,9 +40,6 @@ int main(int argc, char *argv[])
 
    int init_ret;
    if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
-
-   // Avoid reloading config on every ROM load.
-   g_extern.block_config_read = true;
 
 #ifdef HAVE_RGUI
    menu_init();

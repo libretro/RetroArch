@@ -64,6 +64,15 @@ static retro_input_state_t input_state_cb;
 void retro_set_environment(retro_environment_t cb)
 {
    environ_cb = cb;
+
+   static const struct retro_variable vars[] = {
+      { "test_opt0", "Test option #0; false|true" },
+      { "test_opt1", "Test option #1; 0" },
+      { "test_opt2", "Test option #2; 0|1|foo|3" },
+      { NULL, NULL },
+   };
+
+   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
 }
 
 void retro_set_audio_sample(retro_audio_sample_t cb)
@@ -94,6 +103,8 @@ void retro_set_video_refresh(retro_video_refresh_t cb)
 static unsigned x_coord;
 static unsigned y_coord;
 static unsigned phase;
+static int mouse_rel_x;
+static int mouse_rel_y;
 
 void retro_reset(void)
 {
@@ -135,6 +146,17 @@ static void update_input(void)
    if (mouse_r)
       fprintf(stderr, "Mouse R pressed.\n");
 
+   mouse_rel_x += mouse_x;
+   mouse_rel_y += mouse_y;
+   if (mouse_rel_x >= 310)
+      mouse_rel_x = 309;
+   else if (mouse_rel_x < 10)
+      mouse_rel_x = 10;
+   if (mouse_rel_y >= 230)
+      mouse_rel_y = 229;
+   else if (mouse_rel_y < 10)
+      mouse_rel_y = 10;
+
    bool pointer_pressed = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
    int16_t pointer_x = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
    int16_t pointer_y = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
@@ -166,6 +188,10 @@ static void render_checkered(void)
       }
    }
 
+   for (unsigned y = mouse_rel_y - 5; y <= mouse_rel_y + 5; y++)
+      for (unsigned x = mouse_rel_x - 5; x <= mouse_rel_x + 5; x++)
+         frame_buf[y * 320 + x] = 0x1f;
+
    video_cb(frame_buf, 320, 240, 320 << 1);
 }
 
@@ -180,11 +206,29 @@ static void render_audio(void)
    phase %= 100;
 }
 
+static void check_variables(void)
+{
+   struct retro_variable var = {0};
+   var.key = "test_opt0";
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      fprintf(stderr, "Key -> Val: %s -> %s.\n", var.key, var.value);
+   var.key = "test_opt1";
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      fprintf(stderr, "Key -> Val: %s -> %s.\n", var.key, var.value);
+   var.key = "test_opt2";
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      fprintf(stderr, "Key -> Val: %s -> %s.\n", var.key, var.value);
+}
+
 void retro_run(void)
 {
    update_input();
    render_checkered();
    render_audio();
+
+   bool updated = false;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+      check_variables();
 }
 
 static void keyboard_cb(bool down, unsigned keycode,
@@ -197,10 +241,10 @@ static void keyboard_cb(bool down, unsigned keycode,
 bool retro_load_game(const struct retro_game_info *info)
 {
    struct retro_input_descriptor desc[] = {
-      { .port = 0, .device = RETRO_DEVICE_JOYPAD, .index = 0, .id = RETRO_DEVICE_ID_JOYPAD_LEFT,  .description = "Left" },
-      { .port = 0, .device = RETRO_DEVICE_JOYPAD, .index = 0, .id = RETRO_DEVICE_ID_JOYPAD_UP,    .description = "Up" },
-      { .port = 0, .device = RETRO_DEVICE_JOYPAD, .index = 0, .id = RETRO_DEVICE_ID_JOYPAD_DOWN,  .description = "Down" },
-      { .port = 0, .device = RETRO_DEVICE_JOYPAD, .index = 0, .id = RETRO_DEVICE_ID_JOYPAD_RIGHT, .description = "Right" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "Left" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "Up" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,  "Down" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "Right" },
       { 0 },
    };
 
@@ -215,6 +259,8 @@ bool retro_load_game(const struct retro_game_info *info)
 
    struct retro_keyboard_callback cb = { keyboard_cb };
    environ_cb(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &cb);
+
+   check_variables();
 
    (void)info;
    return true;

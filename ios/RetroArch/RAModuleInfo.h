@@ -13,16 +13,19 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-@interface RAConfig : NSObject
-- (id)initWithPath:(NSString*)path;
-- (void)writeToFile:(NSString*)path;
+#include "conf/config_file.h"
 
-- (bool)getBoolNamed:(NSString*)name withDefault:(bool)def;
-- (int)getIntNamed:(NSString*)name withDefault:(int)def;
-- (unsigned)getUintNamed:(NSString*)name withDefault:(unsigned)def;
-- (double)getDoubleNamed:(NSString*)name withDefault:(double)def;
-- (NSString*)getStringNamed:(NSString*)name withDefault:(NSString*)def;
+@interface RAModuleInfo : NSObject
+@property (strong) NSString* path;
+@property config_file_t* data;
+@property (strong) NSString* configPath;
+@property (strong) NSString* displayName;
+@property (strong) NSArray* supportedExtensions;
 
-- (void)putIntNamed:(NSString*)name value:(int)value;
-- (void)putStringNamed:(NSString*)name value:(NSString*)value;
++ (NSArray*)getModules;
+- (bool)supportsFileAtPath:(NSString*)path;
+@end
+
+@interface RAModuleInfoList : UITableViewController
+- (id)initWithModuleInfo:(RAModuleInfo*)info;
 @end

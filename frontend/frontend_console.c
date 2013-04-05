@@ -20,9 +20,7 @@
 #include <string.h>
 
 #include "../config.def.h"
-#include "frontend_console.h"
 #include "menu/rmenu.h"
-#include "menu/menu_settings.h"
 
 #if defined(__CELLOS_LV2__)
 #include "platform/platform_ps3_exec.c"
@@ -43,152 +41,69 @@
 
 default_paths_t default_paths;
 
-#ifdef IS_SALAMANDER
-
-//We need to set libretro to the first entry in the cores
-//directory so that it will be saved to the config file
-static void find_first_libretro_core(char *first_file,
-   size_t size_of_first_file, const char *dir,
-   const char * ext)
+static inline void inl_logger_init(void)
 {
-   bool ret = false;
-
-   RARCH_LOG("Searching for valid libretro implementation in: \"%s\".\n", dir);
-
-   struct string_list *list = dir_list_new(dir, ext, false);
-   if (!list)
-   {
-      RARCH_ERR("Couldn't read directory. Cannot infer default libretro core.\n");
-      return;
-   }
-   
-   for (size_t i = 0; i < list->size && !ret; i++)
-   {
-      RARCH_LOG("Checking library: \"%s\".\n", list->elems[i].data);
-      const char * libretro_elem = list->elems[i].data;
-
-      if (libretro_elem)
-      {
-         char fname[PATH_MAX];
-         fill_pathname_base(fname, libretro_elem, sizeof(fname));
-
-         if (strncmp(fname, SALAMANDER_FILE, sizeof(fname)) == 0)
-         {
-            if ((i + 1) == list->size)
-            {
-               RARCH_WARN("Entry is RetroArch Salamander itself, but is last entry. No choice but to set it.\n");
-               strlcpy(first_file, fname, size_of_first_file);
-            }
-
-            continue;
-         }
-
-         strlcpy(first_file, fname, size_of_first_file);
-         RARCH_LOG("First found libretro core is: \"%s\".\n", first_file);
-         ret = true;
-      }
-   }
-
-   dir_list_free(list);
-}
-
-int main(int argc, char *argv[])
-{
-   system_init();
-   get_environment_settings(argc, argv);
-   salamander_init_settings();
-   system_deinit();
-   system_exitspawn();
-
-   return 1;
-}
-
-#else
-
-static void verbose_log_init(void)
-{
-   if (g_extern.verbose)
-      return;
-
+#if defined(HAVE_LOGGER)
    g_extern.verbose = true;
-   RARCH_LOG("Turning on verbose logging...\n");
+   logger_init();
+#elif defined(HAVE_FILE_LOGGER)
+   g_extern.verbose = true;
+   g_extern.log_file = fopen("/retroarch-log.txt", "w");
+#endif
 }
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-
-// Transforms a library id to a name suitable as a pathname.
-static void get_libretro_core_name(char *name, size_t size)
+static inline void inl_logger_deinit(void)
 {
-   if (size == 0)
-      return;
-
-   struct retro_system_info info;
-   retro_get_system_info(&info);
-   const char *id = info.library_name ? info.library_name : "Unknown";
-
-   if (!id || strlen(id) >= size)
-   {
-      name[0] = '\0';
-      return;
-   }
-
-   name[strlen(id)] = '\0';
-
-   for (size_t i = 0; id[i] != '\0'; i++)
-   {
-      char c = id[i];
-      if (isspace(c) || isblank(c))
-         name[i] = '_';
-      else
-         name[i] = tolower(c);
-   }
+#if defined(HAVE_LOGGER)
+   logger_shutdown();
+#elif defined(HAVE_FILE_LOGGER)
+   if (g_extern.log_file)
+      fclose(g_extern.log_file);
+   g_extern.log_file = NULL;
+#endif
 }
 
-// If a CORE executable of name CORE.extension exists, rename filename
-// to a more sane name.
-static bool install_libretro_core(const char *core_exe_path, const char *tmp_path, const char *extension)
+/* If a CORE executable of name CORE.extension exists, rename filename
+ * to a more sane name. */
+static bool libretro_install_core(const char *path_prefix, const char *extension)
 {
-   int ret = 0;
-   char tmp_path2[PATH_MAX], tmp_pathnewfile[PATH_MAX];
+   char core_exe_path[256];
+   char tmp_path[PATH_MAX], tmp_pathnewfile[PATH_MAX];
 
-   get_libretro_core_name(tmp_path2, sizeof(tmp_path2));
+   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
 
-   strlcat(tmp_path2, extension, sizeof(tmp_path2));
-   snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", tmp_path, tmp_path2);
+   if (!path_file_exists(core_exe_path))
+      return false;
 
+   libretro_get_current_core_pathname(tmp_path, sizeof(tmp_path));
+
+   strlcat(tmp_path, extension, sizeof(tmp_path));
+   snprintf(tmp_pathnewfile, sizeof(tmp_pathnewfile), "%s%s", path_prefix, tmp_path);
+
+   /* If core already exists, we are upgrading the core - 
+    * delete existing file first. */
    if (path_file_exists(tmp_pathnewfile))
    {
-      // If core already exists, we are upgrading the core -
-      // delete existing file first.
-
-      RARCH_LOG("Upgrading emulator core...\n");
-      ret = remove(tmp_pathnewfile);
-
-      if (ret == 0)
-         RARCH_LOG("Succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+      if (remove(tmp_pathnewfile) == 0)
+         RARCH_LOG("Upgrading, succeeded in removing pre-existing libretro core: [%s].\n", tmp_pathnewfile);
       else
-         RARCH_ERR("Failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
+         RARCH_ERR("Upgrading, failed to remove pre-existing libretro core: [%s].\n", tmp_pathnewfile);
    }
 
-   // Now attempt the renaming of the core.
-   ret = rename(core_exe_path, tmp_pathnewfile);
-
-   if (ret == 0)
+   /* Now attempt the renaming of the core. */
+   if (rename(core_exe_path, tmp_pathnewfile) == 0)
    {
       RARCH_LOG("Libretro core [%s] successfully renamed to: [%s].\n", core_exe_path, tmp_pathnewfile);
       strlcpy(g_settings.libretro, tmp_pathnewfile, sizeof(g_settings.libretro));
    }
    else
    {
-      RARCH_ERR("Failed to rename CORE executable.\n");
-      RARCH_WARN("CORE executable was not found, or some other error occurred. Will attempt to load libretro core path from config file.\n");
+      RARCH_ERR("Failed to rename CORE executable. Will attempt to load libretro core path from config file.\n");
       return false;
    }
 
    return true;
 }
-
-#endif
 
 int rarch_main(int argc, char *argv[])
 {
@@ -196,7 +111,7 @@ int rarch_main(int argc, char *argv[])
 
    rarch_main_clear_state();
 
-   verbose_log_init();
+   g_extern.verbose = true;
 
    get_environment_settings(argc, argv);
    config_load();
@@ -207,28 +122,18 @@ int rarch_main(int argc, char *argv[])
    global_init_drivers();
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-   char core_exe_path[PATH_MAX];
    char path_prefix[PATH_MAX];
-   const char *extension = DEFAULT_EXE_EXT;
-   char slash;
 #if defined(_WIN32)
-   slash = '\\';
+   char slash = '\\';
 #else
-   slash = '/';
+   char slash = '/';
 #endif
 
    snprintf(path_prefix, sizeof(path_prefix), "%s%c", default_paths.core_dir, slash);
-   snprintf(core_exe_path, sizeof(core_exe_path), "%sCORE%s", path_prefix, extension);
 
-   if (path_file_exists(core_exe_path))
-   {
-      RARCH_LOG("core_exe_path: %s\n", core_exe_path);
-      if (install_libretro_core(core_exe_path, path_prefix, extension))
-      {
-         RARCH_LOG("New default libretro core saved to config file: %s.\n", g_settings.libretro);
-         config_save_file(g_extern.config_path);
-      }
-   }
+   // Save new libretro core path to config file
+   if (libretro_install_core(path_prefix, DEFAULT_EXE_EXT))
+      config_save_file(g_extern.config_path);
 #endif
 
    init_libretro_sym();
@@ -283,7 +188,7 @@ begin_loop:
       {
          RARCH_ERR("rarch_main_init failed.\n");
          g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-         menu_settings_msg(S_MSG_ROM_LOADING_ERROR, 180);
+         msg_queue_push(g_extern.msg_queue, "ERROR - An error occurred during ROM loading.", 1, 180);
       }
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
    }
@@ -319,5 +224,3 @@ begin_shutdown:
 
    return 1;
 }
-
-#endif

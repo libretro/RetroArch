@@ -141,10 +141,18 @@ static void take_screenshot(void)
 
    bool ret = false;
 
-   if (g_settings.video.gpu_screenshot && driver.video->read_viewport && driver.video->viewport_info)
-      ret = take_screenshot_viewport();
-   else if (g_extern.frame_cache.data)
-      ret = take_screenshot_raw();
+   if (g_extern.frame_cache.data)
+   {
+      if ((g_settings.video.gpu_screenshot ||
+               (g_extern.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID)) &&
+            driver.video->read_viewport &&
+            driver.video->viewport_info)
+         ret = take_screenshot_viewport();
+      else if (g_extern.frame_cache.data && (g_extern.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID))
+         ret = take_screenshot_raw();
+      else
+         RARCH_ERR("Cannot take screenshot. GPU rendering is used and read_viewport is not supported.\n");
+   }
 
    const char *msg = NULL;
    if (ret)
@@ -329,10 +337,14 @@ void rarch_render_cached_frame(void)
    g_extern.recording = false;
 #endif
 
+   const void *frame = g_extern.frame_cache.data;
+   if (frame == RETRO_HW_FRAME_BUFFER_VALID)
+      frame = NULL; // Dupe
+
    // Not 100% safe, since the library might have
    // freed the memory, but no known implementations do this :D
    // It would be really stupid at any rate ...
-   video_frame(g_extern.frame_cache.data,
+   video_frame(frame,
          g_extern.frame_cache.width,
          g_extern.frame_cache.height,
          g_extern.frame_cache.pitch);
@@ -1290,6 +1302,12 @@ static void init_recording(void)
 {
    if (!g_extern.recording)
       return;
+
+   if (!g_settings.video.gpu_record && g_extern.system.hw_render_callback.context_type)
+   {
+      RARCH_WARN("Libretro core is hardware rendered. Must use post-shaded FFmpeg recording as well.\n");
+      return;
+   }
 
    double fps = g_extern.system.av_info.timing.fps;
    double samplerate = g_extern.system.av_info.timing.sample_rate;
@@ -2563,7 +2581,7 @@ static void check_block_hotkey(void)
 }
 
 #ifdef HAVE_OVERLAY
-static void check_overlay(void)
+void rarch_check_overlay(void)
 {
    if (!driver.overlay)
       return;
@@ -2572,6 +2590,29 @@ static void check_overlay(void)
    bool pressed = input_key_pressed_func(RARCH_OVERLAY_NEXT);
    if (pressed && !old_pressed)
       input_overlay_next(driver.overlay);
+
+   old_pressed = pressed;
+}
+#endif
+
+#ifndef RARCH_CONSOLE
+static void check_grab_mouse_toggle(void)
+{
+   static bool old_pressed;
+   bool pressed = input_key_pressed_func(RARCH_GRAB_MOUSE_TOGGLE) &&
+      driver.input->grab_mouse;
+
+   static bool grab_mouse_state;
+
+   if (pressed && !old_pressed)
+   {
+      grab_mouse_state = !grab_mouse_state;
+      RARCH_LOG("Grab mouse state: %s.\n", grab_mouse_state ? "yes" : "no");
+      driver.input->grab_mouse(driver.input_data, grab_mouse_state);
+
+      if (driver.video_poke && driver.video_poke->show_mouse)
+         driver.video_poke->show_mouse(driver.video_data, !grab_mouse_state);
+   }
 
    old_pressed = pressed;
 }
@@ -2591,8 +2632,12 @@ static void do_state_checks(void)
 
    check_turbo();
 
+#ifndef RARCH_CONSOLE
+   check_grab_mouse_toggle();
+#endif
+
 #ifdef HAVE_OVERLAY
-   check_overlay();
+   rarch_check_overlay();
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -2656,9 +2701,6 @@ static void init_state(void)
 void rarch_main_clear_state(void)
 {
    memset(&g_settings, 0, sizeof(g_settings));
-
-   free(g_extern.system.environment);
-   free(g_extern.system.environment_split);
 
    if (g_extern.log_file)
       fclose(g_extern.log_file);
@@ -2854,7 +2896,7 @@ static inline bool check_enter_rgui(void)
    bool rmenu_toggle = input_key_pressed_func(RARCH_MENU_TOGGLE);
    if (rmenu_toggle && !old_rmenu_toggle)
    {
-      if (input_key_pressed_func(RARCH_MENU_QUICKMENU_TOGGLE))
+      if (g_extern.menu_toggle_behavior == 0)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME);
 
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
@@ -2993,6 +3035,13 @@ void rarch_main_deinit(void)
          RARCH_ERR("Failed to remove temporary file: %s.\n", g_extern.last_rom);
       g_extern.rom_file_temporary = false;
    }
+
+   if (g_extern.system.core_options)
+   {
+      core_option_flush(g_extern.system.core_options);
+      core_option_free(g_extern.system.core_options);
+   }
+   g_extern.system.core_options = NULL;
 
    g_extern.main_is_init = false;
 }

@@ -7,29 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		96096DD816D1ABAF00BF4499 /* RAModuleInfoList.m in Sources */ = {isa = PBXBuildFile; fileRef = 96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */; };
+		9605EA9B170288EA001D47B0 /* RAModuleInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = 9605EA9A170288EA001D47B0 /* RAModuleInfo.m */; };
 		962979F616C43B9500E6DCE0 /* ic_dir.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F416C43B9500E6DCE0 /* ic_dir.png */; };
 		962979F716C43B9500E6DCE0 /* ic_file.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F516C43B9500E6DCE0 /* ic_file.png */; };
-		96297A0C16C5AD8D00E6DCE0 /* RetroArch_iOS.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0B16C5AD8D00E6DCE0 /* RetroArch_iOS.m */; };
 		96297A0F16C5AEA100E6DCE0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 96297A0E16C5AEA100E6DCE0 /* main.m */; };
 		96297A2716C82FF100E6DCE0 /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 96297A2616C82FF100E6DCE0 /* overlays */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
-		963F5AC016CC522F009BBD19 /* RAButtonGetter.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABC16CC522F009BBD19 /* RAButtonGetter.m */; };
-		963F5AC116CC522F009BBD19 /* RASettingEnumerationList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABD16CC522F009BBD19 /* RASettingEnumerationList.m */; };
-		963F5AC216CC522F009BBD19 /* RASettingsSubList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABE16CC522F009BBD19 /* RASettingsSubList.m */; };
-		963F5AC316CC522F009BBD19 /* RASettingsList.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5ABF16CC522F009BBD19 /* RASettingsList.m */; };
 		963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 963F5AC516CC523B009BBD19 /* RAGameView.m */; };
-		966B9C8A16E40D44005B61E1 /* ios_input.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8616E40D44005B61E1 /* ios_input.m */; };
-		966B9C8B16E40D44005B61E1 /* ios_joypad.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8716E40D44005B61E1 /* ios_joypad.m */; };
-		966B9C8C16E40D44005B61E1 /* RAInputResponder.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C8916E40D44005B61E1 /* RAInputResponder.m */; };
-		966B9CA216E418B7005B61E1 /* BTDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C9116E418B7005B61E1 /* BTDevice.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		966B9CA416E418B7005B61E1 /* BTstackManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C9C16E418B7005B61E1 /* BTstackManager.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		966B9CA616E418B7005B61E1 /* wiimote.c in Sources */ = {isa = PBXBuildFile; fileRef = 966B9C9E16E418B7005B61E1 /* wiimote.c */; };
-		966B9CA716E418B7005B61E1 /* WiiMoteHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CA116E418B7005B61E1 /* WiiMoteHelper.m */; };
 		966B9CAE16E41C07005B61E1 /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAA16E41C07005B61E1 /* browser.m */; };
-		966B9CB016E41C07005B61E1 /* RADirectoryGrid.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAB16E41C07005B61E1 /* RADirectoryGrid.m */; };
-		966B9CB216E41C07005B61E1 /* RADirectoryList.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAC16E41C07005B61E1 /* RADirectoryList.m */; };
 		966B9CB416E41C07005B61E1 /* RAModuleList.m in Sources */ = {isa = PBXBuildFile; fileRef = 966B9CAD16E41C07005B61E1 /* RAModuleList.m */; };
 		966B9CBD16E41E7A005B61E1 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */; };
 		966B9CBF16E41E7A005B61E1 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 966B9CB916E41E7A005B61E1 /* Default.png */; };
@@ -46,52 +32,27 @@
 		96AFAE3016C1D4EA009DE44C /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; };
 		96AFAE3216C1D4EA009DE44C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 		96AFAE3816C1D4EA009DE44C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 96AFAE3616C1D4EA009DE44C /* InfoPlist.strings */; };
-		96C19C3016D7045700FE8D5A /* RAConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 96C19C2F16D7045700FE8D5A /* RAConfig.m */; };
-		96F9C26A16F7D9E2002455B3 /* btdynamic.c in Sources */ = {isa = PBXBuildFile; fileRef = 96F9C26816F7D9E2002455B3 /* btdynamic.c */; };
+		96F9C28316FFA55F002455B3 /* RALogView.m in Sources */ = {isa = PBXBuildFile; fileRef = 96F9C28216FFA55F002455B3 /* RALogView.m */; };
 		D48581DE16F823F9004BEB17 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = D48581DD16F823F9004BEB17 /* griffin.c */; };
+		D486CA88170D4EAF004DC638 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = D486CA87170D4EAF004DC638 /* settings.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleInfoList.m; sourceTree = "<group>"; };
+		9605EA99170288EA001D47B0 /* RAModuleInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAModuleInfo.h; sourceTree = "<group>"; };
+		9605EA9A170288EA001D47B0 /* RAModuleInfo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleInfo.m; sourceTree = "<group>"; };
 		9614C71F16DDC018000B36EF /* RetroArch copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch copy-Info.plist"; path = "/Users/jason/Documents/Projects/ios/RetroArch/ios/RetroArch copy-Info.plist"; sourceTree = "<absolute>"; };
 		962979F416C43B9500E6DCE0 /* ic_dir.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_dir.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_dir.png"; sourceTree = "<group>"; };
 		962979F516C43B9500E6DCE0 /* ic_file.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_file.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_file.png"; sourceTree = "<group>"; };
 		96297A0A16C5AD8D00E6DCE0 /* RetroArch_iOS.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RetroArch_iOS.h; sourceTree = "<group>"; };
-		96297A0B16C5AD8D00E6DCE0 /* RetroArch_iOS.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RetroArch_iOS.m; sourceTree = "<group>"; };
 		96297A0D16C5ADDA00E6DCE0 /* views.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = views.h; sourceTree = "<group>"; };
 		96297A0E16C5AEA100E6DCE0 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		96297A2616C82FF100E6DCE0 /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../media/overlays; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		96366C7216CAF62200D64A22 /* settings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settings.h; sourceTree = "<group>"; };
-		963F5ABC16CC522F009BBD19 /* RAButtonGetter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAButtonGetter.m; sourceTree = "<group>"; };
-		963F5ABD16CC522F009BBD19 /* RASettingEnumerationList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RASettingEnumerationList.m; sourceTree = "<group>"; };
-		963F5ABE16CC522F009BBD19 /* RASettingsSubList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RASettingsSubList.m; sourceTree = "<group>"; };
-		963F5ABF16CC522F009BBD19 /* RASettingsList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RASettingsList.m; sourceTree = "<group>"; };
 		963F5AC516CC523B009BBD19 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAGameView.m; sourceTree = "<group>"; };
-		9664F4A116E4409100FB28F9 /* keycode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = keycode.h; sourceTree = "<group>"; };
-		966B9C8616E40D44005B61E1 /* ios_input.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ios_input.m; sourceTree = "<group>"; };
-		966B9C8716E40D44005B61E1 /* ios_joypad.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ios_joypad.m; sourceTree = "<group>"; };
-		966B9C8816E40D44005B61E1 /* RAInputResponder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAInputResponder.h; sourceTree = "<group>"; };
-		966B9C8916E40D44005B61E1 /* RAInputResponder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAInputResponder.m; sourceTree = "<group>"; };
-		966B9C9016E418B7005B61E1 /* BTDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BTDevice.h; sourceTree = "<group>"; };
-		966B9C9116E418B7005B61E1 /* BTDevice.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BTDevice.m; sourceTree = "<group>"; };
-		966B9C9516E418B7005B61E1 /* btstack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btstack.h; sourceTree = "<group>"; };
-		966B9C9616E418B7005B61E1 /* hci_cmds.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hci_cmds.h; sourceTree = "<group>"; };
-		966B9C9716E418B7005B61E1 /* linked_list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = linked_list.h; sourceTree = "<group>"; };
-		966B9C9816E418B7005B61E1 /* run_loop.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = run_loop.h; sourceTree = "<group>"; };
-		966B9C9916E418B7005B61E1 /* sdp_util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sdp_util.h; sourceTree = "<group>"; };
-		966B9C9A16E418B7005B61E1 /* utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utils.h; sourceTree = "<group>"; };
-		966B9C9B16E418B7005B61E1 /* BTstackManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BTstackManager.h; sourceTree = "<group>"; };
-		966B9C9C16E418B7005B61E1 /* BTstackManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BTstackManager.m; sourceTree = "<group>"; };
-		966B9C9E16E418B7005B61E1 /* wiimote.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = wiimote.c; sourceTree = "<group>"; };
-		966B9C9F16E418B7005B61E1 /* wiimote.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wiimote.h; sourceTree = "<group>"; };
-		966B9CA016E418B7005B61E1 /* WiiMoteHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WiiMoteHelper.h; sourceTree = "<group>"; };
-		966B9CA116E418B7005B61E1 /* WiiMoteHelper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WiiMoteHelper.m; sourceTree = "<group>"; };
 		966B9CA916E41C07005B61E1 /* browser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = browser.h; sourceTree = "<group>"; };
 		966B9CAA16E41C07005B61E1 /* browser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = browser.m; sourceTree = "<group>"; };
-		966B9CAB16E41C07005B61E1 /* RADirectoryGrid.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RADirectoryGrid.m; sourceTree = "<group>"; };
-		966B9CAC16E41C07005B61E1 /* RADirectoryList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RADirectoryList.m; sourceTree = "<group>"; };
 		966B9CAD16E41C07005B61E1 /* RAModuleList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAModuleList.m; sourceTree = "<group>"; };
 		966B9CB816E41E7A005B61E1 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
 		966B9CB916E41E7A005B61E1 /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
@@ -116,11 +77,9 @@
 		96AFAF4516C1E00A009DE44C /* bitmap.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = bitmap.bin; sourceTree = "<group>"; };
 		96AFAF4616C1E00A009DE44C /* bitmap.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; path = bitmap.bmp; sourceTree = "<group>"; };
 		96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rarch_wrapper.h; sourceTree = "<group>"; };
-		96C19C2E16D7045600FE8D5A /* RAConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAConfig.h; sourceTree = "<group>"; };
-		96C19C2F16D7045700FE8D5A /* RAConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RAConfig.m; sourceTree = "<group>"; };
-		96F9C26816F7D9E2002455B3 /* btdynamic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = btdynamic.c; sourceTree = "<group>"; };
-		96F9C26916F7D9E2002455B3 /* btdynamic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btdynamic.h; sourceTree = "<group>"; };
+		96F9C28216FFA55F002455B3 /* RALogView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RALogView.m; sourceTree = "<group>"; };
 		D48581DD16F823F9004BEB17 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../griffin/griffin.c; sourceTree = "<group>"; };
+		D486CA87170D4EAF004DC638 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settings.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -144,57 +103,10 @@
 		96366C6F16CAF62200D64A22 /* settings */ = {
 			isa = PBXGroup;
 			children = (
-				963F5ABC16CC522F009BBD19 /* RAButtonGetter.m */,
-				963F5ABD16CC522F009BBD19 /* RASettingEnumerationList.m */,
-				963F5ABF16CC522F009BBD19 /* RASettingsList.m */,
-				963F5ABE16CC522F009BBD19 /* RASettingsSubList.m */,
+				D486CA87170D4EAF004DC638 /* settings.m */,
 				96366C7216CAF62200D64A22 /* settings.h */,
 			);
 			path = settings;
-			sourceTree = "<group>";
-		};
-		966B9C8516E40D44005B61E1 /* input */ = {
-			isa = PBXGroup;
-			children = (
-				966B9C8F16E418B7005B61E1 /* BTStack */,
-				966B9C8616E40D44005B61E1 /* ios_input.m */,
-				966B9C8716E40D44005B61E1 /* ios_joypad.m */,
-				9664F4A116E4409100FB28F9 /* keycode.h */,
-				966B9C8816E40D44005B61E1 /* RAInputResponder.h */,
-				966B9C8916E40D44005B61E1 /* RAInputResponder.m */,
-			);
-			path = input;
-			sourceTree = "<group>";
-		};
-		966B9C8F16E418B7005B61E1 /* BTStack */ = {
-			isa = PBXGroup;
-			children = (
-				96F9C26816F7D9E2002455B3 /* btdynamic.c */,
-				96F9C26916F7D9E2002455B3 /* btdynamic.h */,
-				966B9C9016E418B7005B61E1 /* BTDevice.h */,
-				966B9C9116E418B7005B61E1 /* BTDevice.m */,
-				966B9C9416E418B7005B61E1 /* btstack */,
-				966B9C9B16E418B7005B61E1 /* BTstackManager.h */,
-				966B9C9C16E418B7005B61E1 /* BTstackManager.m */,
-				966B9C9E16E418B7005B61E1 /* wiimote.c */,
-				966B9C9F16E418B7005B61E1 /* wiimote.h */,
-				966B9CA016E418B7005B61E1 /* WiiMoteHelper.h */,
-				966B9CA116E418B7005B61E1 /* WiiMoteHelper.m */,
-			);
-			path = BTStack;
-			sourceTree = "<group>";
-		};
-		966B9C9416E418B7005B61E1 /* btstack */ = {
-			isa = PBXGroup;
-			children = (
-				966B9C9516E418B7005B61E1 /* btstack.h */,
-				966B9C9616E418B7005B61E1 /* hci_cmds.h */,
-				966B9C9716E418B7005B61E1 /* linked_list.h */,
-				966B9C9816E418B7005B61E1 /* run_loop.h */,
-				966B9C9916E418B7005B61E1 /* sdp_util.h */,
-				966B9C9A16E418B7005B61E1 /* utils.h */,
-			);
-			path = btstack;
 			sourceTree = "<group>";
 		};
 		966B9CA816E41C07005B61E1 /* browser */ = {
@@ -202,8 +114,6 @@
 			children = (
 				966B9CA916E41C07005B61E1 /* browser.h */,
 				966B9CAA16E41C07005B61E1 /* browser.m */,
-				966B9CAB16E41C07005B61E1 /* RADirectoryGrid.m */,
-				966B9CAC16E41C07005B61E1 /* RADirectoryList.m */,
 				966B9CAD16E41C07005B61E1 /* RAModuleList.m */,
 			);
 			path = browser;
@@ -266,16 +176,14 @@
 			isa = PBXGroup;
 			children = (
 				966B9CA816E41C07005B61E1 /* browser */,
-				966B9C8516E40D44005B61E1 /* input */,
 				96366C6F16CAF62200D64A22 /* settings */,
 				96297A0E16C5AEA100E6DCE0 /* main.m */,
-				96C19C2E16D7045600FE8D5A /* RAConfig.h */,
-				96C19C2F16D7045700FE8D5A /* RAConfig.m */,
 				963F5AC516CC523B009BBD19 /* RAGameView.m */,
-				96096DD716D1ABAF00BF4499 /* RAModuleInfoList.m */,
+				96F9C28216FFA55F002455B3 /* RALogView.m */,
+				9605EA9A170288EA001D47B0 /* RAModuleInfo.m */,
+				9605EA99170288EA001D47B0 /* RAModuleInfo.h */,
 				96C19C2616D455BE00FE8D5A /* rarch_wrapper.h */,
 				96297A0A16C5AD8D00E6DCE0 /* RetroArch_iOS.h */,
-				96297A0B16C5AD8D00E6DCE0 /* RetroArch_iOS.m */,
 				96297A0D16C5ADDA00E6DCE0 /* views.h */,
 			);
 			path = RetroArch;
@@ -413,28 +321,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				96297A0C16C5AD8D00E6DCE0 /* RetroArch_iOS.m in Sources */,
 				96297A0F16C5AEA100E6DCE0 /* main.m in Sources */,
-				963F5AC016CC522F009BBD19 /* RAButtonGetter.m in Sources */,
-				963F5AC116CC522F009BBD19 /* RASettingEnumerationList.m in Sources */,
-				963F5AC216CC522F009BBD19 /* RASettingsSubList.m in Sources */,
-				963F5AC316CC522F009BBD19 /* RASettingsList.m in Sources */,
 				963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */,
-				96096DD816D1ABAF00BF4499 /* RAModuleInfoList.m in Sources */,
-				96C19C3016D7045700FE8D5A /* RAConfig.m in Sources */,
-				966B9C8A16E40D44005B61E1 /* ios_input.m in Sources */,
-				966B9C8B16E40D44005B61E1 /* ios_joypad.m in Sources */,
-				966B9C8C16E40D44005B61E1 /* RAInputResponder.m in Sources */,
-				966B9CA216E418B7005B61E1 /* BTDevice.m in Sources */,
-				966B9CA416E418B7005B61E1 /* BTstackManager.m in Sources */,
-				966B9CA616E418B7005B61E1 /* wiimote.c in Sources */,
-				966B9CA716E418B7005B61E1 /* WiiMoteHelper.m in Sources */,
 				966B9CAE16E41C07005B61E1 /* browser.m in Sources */,
-				966B9CB016E41C07005B61E1 /* RADirectoryGrid.m in Sources */,
-				966B9CB216E41C07005B61E1 /* RADirectoryList.m in Sources */,
 				966B9CB416E41C07005B61E1 /* RAModuleList.m in Sources */,
-				96F9C26A16F7D9E2002455B3 /* btdynamic.c in Sources */,
 				D48581DE16F823F9004BEB17 /* griffin.c in Sources */,
+				96F9C28316FFA55F002455B3 /* RALogView.m in Sources */,
+				9605EA9B170288EA001D47B0 /* RAModuleInfo.m in Sources */,
+				D486CA88170D4EAF004DC638 /* settings.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -500,6 +394,8 @@
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
 					"-DWANT_MINIZ",
+					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_SINC",
 				);
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -548,6 +444,8 @@
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
 					"-DWANT_MINIZ",
+					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_SINC",
 				);
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -570,6 +468,7 @@
 					"\"$(SRCROOT)/RetroArch/input/BTStack\"",
 					"\"$(SRCROOT)/Assets\"",
 				);
+				LD_NO_PIE = YES;
 				OTHER_CFLAGS = (
 					"-DHAVE_RARCH_MAIN_WRAP",
 					"-DHAVE_GRIFFIN",
@@ -591,6 +490,8 @@
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
 					"-DWANT_MINIZ",
+					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_SINC",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
@@ -614,6 +515,7 @@
 					"\"$(SRCROOT)/RetroArch/input/BTStack\"",
 					"\"$(SRCROOT)/Assets\"",
 				);
+				LD_NO_PIE = YES;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
@@ -637,6 +539,8 @@
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
 					"-DWANT_MINIZ",
+					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_SINC",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";

@@ -76,25 +76,18 @@ extern "C" {
 
    // names API
 
-   RGL_EXPORT void rglInitNameSpace (void *data);
-   RGL_EXPORT void rglFreeNameSpace (void *data);
    RGL_EXPORT unsigned int rglCreateName (void *data, void* object);
    RGL_EXPORT unsigned int rglIsName( void *data, unsigned int name);
    RGL_EXPORT void rglEraseName (void *data, unsigned int name);
 
    static inline void *rglGetNamedValue(void *data, unsigned int name )
    {
-      struct rglNameSpace *ns = (struct rglNameSpace*)data;
-      return ns->data[name - 1];
+      return ((struct rglNameSpace*)data)->data[name - 1];
    }
 
-   void rglTexNameSpaceInit(void *data, rglTexNameSpaceCreateFunction create, rglTexNameSpaceDestroyFunction destroy );
-   void rglTexNameSpaceFree(void *data);
    void rglTexNameSpaceResetNames(void *data);
-   GLuint rglTexNameSpaceGetFree(void *data);
    GLboolean rglTexNameSpaceCreateNameLazy(void *data, GLuint name );
    GLboolean rglTexNameSpaceIsName(void *data, GLuint name );
-   void rglTexNameSpaceGenNames(void *data, GLsizei n, GLuint *names );
    void rglTexNameSpaceDeleteNames(void *data, GLsizei n, const GLuint *names );
    void rglTexNameSpaceReinit(void *saved, void *active);
 

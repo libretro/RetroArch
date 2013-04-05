@@ -328,6 +328,18 @@ static void dinput_free(void *data)
    dinput_destroy_context();
 }
 
+static void dinput_grab_mouse(void *data, bool state)
+{
+   struct dinput_input *di = (struct dinput_input*)data;
+   IDirectInputDevice8_Unacquire(di->mouse);
+   IDirectInputDevice8_SetCooperativeLevel(di->mouse,
+      (HWND)driver.video_window,
+      state ?
+      (DISCL_EXCLUSIVE | DISCL_FOREGROUND) :
+      (DISCL_NONEXCLUSIVE | DISCL_FOREGROUND));
+   IDirectInputDevice8_Acquire(di->mouse);
+}
+
 const input_driver_t input_dinput = {
    dinput_init,
    dinput_poll,
@@ -336,6 +348,8 @@ const input_driver_t input_dinput = {
    dinput_free,
    NULL,
    "dinput",
+
+   dinput_grab_mouse,
 };
 
 static void dinput_joypad_destroy(void)

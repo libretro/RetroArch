@@ -220,8 +220,7 @@ static void xdk_input_poll(void *data)
          (1ULL << RARCH_STATE_SLOT_MINUS) | 
          (1ULL << RARCH_REWIND) |
          (1ULL << RARCH_QUIT_KEY) |
-         (1ULL << RARCH_MENU_TOGGLE) |
-         (1ULL << RARCH_MENU_QUICKMENU_TOGGLE));
+         (1ULL << RARCH_MENU_TOGGLE));
 
    if (dpad_emulation)
    {
@@ -243,11 +242,6 @@ static void xdk_input_poll(void *data)
    {
       if((*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
          *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
-      if(!(*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)) && (*state_p1 & (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)))
-      {
-         *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
-         *lifecycle_state |= (1ULL << RARCH_MENU_QUICKMENU_TOGGLE);
-      }
    }
 }
 

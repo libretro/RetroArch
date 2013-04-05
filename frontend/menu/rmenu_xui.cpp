@@ -26,7 +26,6 @@
 #include "utils/file_browser.h"
 
 #include "../../console/rarch_console.h"
-#include "menu_settings.h"
 
 #include "../../gfx/gfx_common.h"
 #include "../../gfx/gfx_context.h"
@@ -46,6 +45,19 @@ enum {
    MENU_XUI_ITEM_RESET,
    MENU_XUI_ITEM_RETURN_TO_GAME,
    MENU_XUI_ITEM_QUIT_RARCH,
+};
+
+enum
+{
+   S_LBL_ASPECT_RATIO = 0,
+   S_LBL_SHADER,
+   S_LBL_SHADER_2,
+   S_LBL_RARCH_VERSION,
+   S_LBL_SCALE_FACTOR,
+   S_LBL_ROTATION,
+   S_LBL_LOAD_STATE_SLOT,
+   S_LBL_SAVE_STATE_SLOT,
+   S_LBL_REWIND_GRANULARITY,
 };
 
 class CRetroArch : public CXuiModule
@@ -268,7 +280,37 @@ static void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned se
 {
    char str[PATH_MAX];
 
-   menu_settings_create_menu_item_label(str, setting, sizeof(str));
+   switch (setting)
+   {
+      case S_LBL_ASPECT_RATIO:
+         snprintf(str, size, "Aspect Ratio: %s", aspectratio_lut[g_settings.video.aspect_ratio_idx].name);
+         break;
+      case S_LBL_SHADER:
+         snprintf(str, size, "Shader #1: %s", g_settings.video.cg_shader_path);
+         break;
+      case S_LBL_SHADER_2:
+         snprintf(str, size, "Shader #2: %s", g_settings.video.second_pass_shader);
+         break;
+      case S_LBL_RARCH_VERSION:
+         snprintf(str, size, "RetroArch %s", PACKAGE_VERSION);
+         break;
+      case S_LBL_SCALE_FACTOR:
+         snprintf(str, size, "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
+         break;
+      case S_LBL_ROTATION:
+         snprintf(str, size, "Rotation: %s", rotation_lut[g_extern.console.screen.orientation]);
+         break;
+      case S_LBL_LOAD_STATE_SLOT:
+         snprintf(str, size, "Load State #%d", g_extern.state_slot);
+         break;
+      case S_LBL_SAVE_STATE_SLOT:
+         snprintf(str, size, "Save State #%d", g_extern.state_slot);
+         break;
+      case S_LBL_REWIND_GRANULARITY:
+         snprintf(str, size, "Rewind granularity: %d", g_settings.rewind_granularity);
+         break;
+   }
+
    convert_char_to_wchar(strwbuf, str, size);
 }
 
@@ -327,7 +369,7 @@ static void browser_update(filebrowser_t * b, uint64_t input, const char *extens
       ret = filebrowser_iterate(b, action);
 
    if(!ret)
-      menu_settings_msg(S_MSG_DIR_LOADING_ERROR, 180);
+      msg_queue_push(g_extern.msg_queue, "ERROR - Failed to open directory.", 1, 180);
 }
 
 HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
@@ -679,11 +721,11 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
       switch(current_index)
       {
          case SETTING_EMU_REWIND_ENABLED:
-            menu_settings_set(S_REWIND);
+            settings_set(1ULL << S_REWIND);
             m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_RESTART_RARCH, 180);
+               msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
             break;
 	 case SETTING_EMU_REWIND_GRANULARITY:
 	    g_settings.rewind_granularity++;
@@ -753,7 +795,8 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             hCur = app.hShaderBrowser;
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_SELECT_SHADER, 180);
+               msg_queue_push(g_extern.msg_queue,
+                     "INFO - Select a shader from the menu.", 1, 180);
 
             NavigateForward(app.hShaderBrowser);
             break;
@@ -766,7 +809,8 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             hCur = app.hShaderBrowser;
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_SELECT_SHADER, 180);
+               msg_queue_push(g_extern.msg_queue,
+                     "INFO - Select a shader from the menu.", 1, 180);
 
             NavigateForward(app.hShaderBrowser);
             break;
@@ -810,11 +854,11 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
          switch(current_index)
          {
             case SETTING_EMU_REWIND_ENABLED:
-               menu_settings_set(S_REWIND);
+               settings_set(1ULL << S_REWIND);
                m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  menu_settings_msg(S_MSG_RESTART_RARCH, 180);
+                  msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
                break;
 	    case SETTING_EMU_REWIND_GRANULARITY:
 	       if (g_settings.rewind_granularity > 1)
@@ -882,7 +926,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                   {
                      if((g_settings.video.fbo.scale_x > MIN_SCALING_FACTOR))
                      {
-                        menu_settings_set(S_SCALE_FACTOR_DECREMENT);
+                        settings_set(1ULL << S_SCALE_FACTOR_DECREMENT);
 
                         if (driver.video_poke->set_fbo_state)
                         {
@@ -961,11 +1005,11 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
                break;
             case SETTING_EMU_REWIND_ENABLED:
-               menu_settings_set(S_REWIND);
+               settings_set(1ULL << S_REWIND);
                m_settingslist.SetText(SETTING_EMU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
 
                if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  menu_settings_msg(S_MSG_RESTART_RARCH, 180);
+                  msg_queue_push(g_extern.msg_queue, "INFO - You need to restart RetroArch.", 1, 180);
                break;
 	    case SETTING_EMU_REWIND_GRANULARITY:
 	       g_settings.rewind_granularity++;
@@ -994,7 +1038,7 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                   {
                      if((g_settings.video.fbo.scale_x < MAX_SCALING_FACTOR))
                      {
-                        menu_settings_set(S_SCALE_FACTOR_INCREMENT);
+                        settings_set(1ULL << S_SCALE_FACTOR_INCREMENT);
 
                         if (driver.video_poke->set_fbo_state)
                            driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
@@ -1091,11 +1135,11 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
                m_quickmenulist.SetText(MENU_XUI_ITEM_SAVE_STATE, strw_buffer);
                break;
             case MENU_XUI_ITEM_ASPECT_RATIO:
-               menu_settings_set(S_ASPECT_RATIO_DECREMENT);
+               settings_set(1ULL << S_ASPECT_RATIO_DECREMENT);
                aspectratio_changed = true;
                break;
             case MENU_XUI_ITEM_ORIENTATION:
-               menu_settings_set(S_ROTATION_DECREMENT);
+               settings_set(1ULL << S_ROTATION_DECREMENT);
                menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_XUI_ITEM_ORIENTATION, strw_buffer);
                driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
@@ -1116,11 +1160,11 @@ HRESULT CRetroArchQuickMenu::OnControlNavigate(XUIMessageControlNavigate *pContr
                m_quickmenulist.SetText(MENU_XUI_ITEM_SAVE_STATE, strw_buffer);
                break;
             case MENU_XUI_ITEM_ASPECT_RATIO:
-               menu_settings_set(S_ASPECT_RATIO_INCREMENT);
+               settings_set(1ULL << S_ASPECT_RATIO_INCREMENT);
                aspectratio_changed = true;
                break;
             case MENU_XUI_ITEM_ORIENTATION:
-               menu_settings_set(S_ROTATION_INCREMENT);
+               settings_set(1ULL << S_ROTATION_INCREMENT);
                menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
                m_quickmenulist.SetText(MENU_XUI_ITEM_ORIENTATION, strw_buffer);
                driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
@@ -1188,14 +1232,14 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             }
             break;
          case MENU_XUI_ITEM_ASPECT_RATIO:
-            menu_settings_set_default(S_DEF_ASPECT_RATIO);
+            settings_set(1ULL << S_DEF_ASPECT_RATIO);
             if (driver.video_poke->set_aspect_ratio)
                driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
             menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
             m_quickmenulist.SetText(MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
             break;
          case MENU_XUI_ITEM_ORIENTATION:
-            menu_settings_set_default(S_DEF_ROTATION);
+            settings_set(1ULL << S_DEF_ROTATION);
             menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
             m_quickmenulist.SetText(MENU_XUI_ITEM_ORIENTATION, strw_buffer);
             driver.video->set_rotation(driver.video_data, g_extern.console.screen.orientation);
@@ -1207,13 +1251,13 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
             m_quickmenulist.SetText(MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
 
             if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               menu_settings_msg(S_MSG_RESIZE_SCREEN, 270);
+               msg_queue_push(g_extern.msg_queue, "INFO - Resize the screen by moving around the two analog sticks.\n", 1, 270);
             break;
          case MENU_XUI_ITEM_FRAME_ADVANCE:
             if (g_extern.main_is_init)
             {
                g_extern.lifecycle_state |= (1ULL << RARCH_FRAMEADVANCE);
-               menu_settings_set(S_FRAME_ADVANCE);
+               settings_set(1ULL << S_FRAME_ADVANCE);
                process_input_ret = -1;
             }
             break;
@@ -1281,7 +1325,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.cg_shader_path, RARCH_SHADER_INDEX_PASS0);
                   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, 180);
+                     msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
                   XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
                }
                else
@@ -1296,7 +1340,7 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                {
                   driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.second_pass_shader, RARCH_SHADER_INDEX_PASS1);
                   if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     menu_settings_msg(S_MSG_SHADER_LOADING_SUCCEEDED, 180);
+                     msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
                }
                else
                   RARCH_ERR("Shaders are unsupported on this platform.\n");
@@ -1420,7 +1464,8 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hCur = app.hControlsMenu;
 
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         menu_settings_msg(S_MSG_CHANGE_CONTROLS, 180);
+         msg_queue_push(g_extern.msg_queue,
+               "INFO - Press LEFT/RIGHT to change the controls, and press\n[RetroPad Start] to reset a button to default values.", 1, 180);
 
       NavigateForward(app.hControlsMenu);
    }
@@ -1433,7 +1478,8 @@ HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
       hCur = app.hCoreBrowser;
 
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         menu_settings_msg(S_MSG_SELECT_LIBRETRO_CORE, 180);
+         msg_queue_push(g_extern.msg_queue,
+               "INFO - Select a Libretro core from the menu.", 1, 180);
 
       NavigateForward(app.hCoreBrowser);
    }
@@ -1588,7 +1634,14 @@ bool menu_iterate(void)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME))
    {
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-         menu_settings_msg(S_MSG_LOADING_ROM, 100);
+      {
+         char tmp[PATH_MAX];
+         char str[PATH_MAX];
+
+         fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
+         snprintf(str, sizeof(str), "INFO - Loading %s...", tmp);
+         msg_queue_push(g_extern.msg_queue, str, 1, 1);
+      }
 
       g_extern.lifecycle_mode_state |= (1ULL << MODE_INIT);
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME);

@@ -6,7 +6,6 @@
 #include "../export/RGL/rgl.h"
 #include "../RGL/private.h"
 
-#include <vector>
 #include <string>
 
 #include "Cg/CgInternal.h"
@@ -44,20 +43,6 @@ typedef struct CgRuntimeParameter
    CGparameter id;
 } CgRuntimeParameter;
 
-typedef struct
-{
-   CgRuntimeParameter* child;
-   CgRuntimeParameter* parent;
-   CgRuntimeParameter* top;
-   _cgSetArrayIndexFunction childOnBindSetter;
-} CgParameterConnection;
-
-typedef struct
-{
-   CgRuntimeParameter* param;
-   std::vector<char> semantic;
-} CgRuntimeSemantic;
-
 struct _CGprogram
 {
    struct _CGprogram*   next;          // link to next in NULL-terminated singly linked list of programs
@@ -82,8 +67,6 @@ struct _CGprogram
    unsigned int         samplerCount;
    unsigned int *       samplerIndices;
    unsigned int *       samplerUnits;
-
-   unsigned int         controlFlowBools;
 
    //binary format additions
    //info previously contained in platformProgram ( loadAddress + nvBinary )
@@ -128,15 +111,6 @@ struct _CGprogram
    _CGprogramGroup *programGroup;
    int programIndexInGroup;
 
-   // supports runtime created parameters
-   std::vector<CgRuntimeParameter*> runtimeCreatedParameters;
-
-   // supports parameter connections
-   std::vector<CgParameterConnection> connectionTable;
-
-   // supports runtime allocation of semantics
-   std::vector<CgRuntimeSemantic> parameterSemantics;
-
    //runtime compilation / conversion
    void *runtimeElf;
 };
@@ -149,10 +123,6 @@ typedef struct _CGcontext
    struct _CGprogram* programList;     // head of singly linked list of programs
 
    CGenum             compileType;     // compile manual, immediate or lazy (unused so far)
-   CGbool             GLmanageTextures;
-
-   unsigned int         controlFlowBoolsSharedMask;
-   unsigned int         controlFlowBoolsShared;
 
    // default program, fake owner of the context parameters
    _CGprogram        defaultProgram;
@@ -171,16 +141,13 @@ RGL_EXPORT void rglCgRaiseError( CGerror error );
 // interface between object types
 extern void rglCgProgramDestroyAll( _CGcontext* c );
 extern void rglCgDestroyContextParam( CgRuntimeParameter* p );
-RGL_EXPORT CgRuntimeParameter*rglCgCreateParameterInternal( _CGprogram *program, const char* name, CGtype type );
 RGL_EXPORT void rglCgProgramErase( _CGprogram* prog );
 
 // default setters
 void _cgRaiseInvalidParam( void *data, const void*v );
 void _cgRaiseNotMatrixParam( void *data, const void*v );
 void _cgIgnoreSetParam( void *dat, const void*v );
-void _cgRaiseInvalidParamIndex( void *dat, const void*v, const int index );
-void _cgRaiseNotMatrixParamIndex( void *dat, const void*v, const int index );
-void _cgIgnoreSetParamIndex( void *dat, const void*v, const int index );
+void _cgIgnoreParamIndex( void *dat, const void*v, const int index );
 
 // cg helpers
 
@@ -213,7 +180,6 @@ static inline bool isSampler (CGtype type)
 
 
 unsigned int rglCountFloatsInCgType( CGtype type );
-CGbool _cgMatrixDimensions( CGtype type, unsigned int* nrows, unsigned int* ncols );
 
 unsigned int rglGetTypeRowCount( CGtype parameterType );
 unsigned int rglGetTypeColCount( CGtype parameterType );
@@ -250,51 +216,6 @@ static inline int rglGetSizeofSubArray( const unsigned short *dimensions, unsign
    return res;
 }
 
-static inline CGresource rglGetBaseResource( CGresource resource )
-{
-   switch ( resource )
-   {
-      case CG_ATTR0: case CG_ATTR1: case CG_ATTR2: case CG_ATTR3:
-      case CG_ATTR4: case CG_ATTR5: case CG_ATTR6: case CG_ATTR7:
-      case CG_ATTR8: case CG_ATTR9: case CG_ATTR10: case CG_ATTR11:
-      case CG_ATTR12: case CG_ATTR13: case CG_ATTR14: case CG_ATTR15:
-         return CG_ATTR0;
-      case CG_HPOS:
-         return CG_HPOS;
-      case CG_COL0: case CG_COL1: case CG_COL2: case CG_COL3:
-         return CG_COL0;
-      case CG_TEXCOORD0: case CG_TEXCOORD1: case CG_TEXCOORD2: case CG_TEXCOORD3:
-      case CG_TEXCOORD4: case CG_TEXCOORD5: case CG_TEXCOORD6: case CG_TEXCOORD7:
-      case CG_TEXCOORD8: case CG_TEXCOORD9:
-         return CG_TEXCOORD0;
-      case CG_TEXUNIT0: case CG_TEXUNIT1: case CG_TEXUNIT2: case CG_TEXUNIT3:
-      case CG_TEXUNIT4: case CG_TEXUNIT5: case CG_TEXUNIT6: case CG_TEXUNIT7:
-      case CG_TEXUNIT8: case CG_TEXUNIT9: case CG_TEXUNIT10: case CG_TEXUNIT11:
-      case CG_TEXUNIT12: case CG_TEXUNIT13: case CG_TEXUNIT14: case CG_TEXUNIT15:
-         return CG_TEXUNIT0;
-      case CG_FOGCOORD:
-         return CG_FOGCOORD;
-      case CG_PSIZ:
-         return CG_PSIZ;
-      case CG_WPOS:
-         return CG_WPOS;
-      case CG_COLOR0: case CG_COLOR1: case CG_COLOR2: case CG_COLOR3:
-         return CG_COLOR0;
-      case CG_DEPTH0:
-         return CG_DEPTH0;
-      case CG_C:
-         return CG_C;
-      case CG_B:
-         return CG_B;
-      case CG_CLP0: case CG_CLP1: case CG_CLP2: case CG_CLP3: case CG_CLP4: case CG_CLP5:
-         return CG_CLP0;
-      case CG_UNDEFINED:
-         return CG_UNDEFINED;
-      default:
-         return CG_UNDEFINED;
-   }
-}
-
 // platform API
 CGprofile rglPlatformGetLatestProfile( CGGLenum profile_type );
 int rglPlatformCopyProgram( _CGprogram* source, _CGprogram* destination );
@@ -315,113 +236,6 @@ void rglPlatformSetFragmentRegisterBlock (unsigned int reg, unsigned int count, 
 void rglPlatformSetBoolVertexRegisters (unsigned int values );
 
 // names API
-RGL_EXPORT unsigned int _cgHashString (const char *str);
-
-inline static void _pullConnectedParameterValues (void *data)
-{
-   _CGprogram *ptr = (_CGprogram*)data;
-   // we now use a pull method to get the data into the children parameters
-   // when their program is bound they pull the data from their parents
-   std::vector<CgParameterConnection>::iterator connectionIter = ptr->connectionTable.begin();
-   while ( connectionIter != ptr->connectionTable.end() )
-   {
-      // pull data into connectionIter->child from connectionIter->top
-      connectionIter->childOnBindSetter( connectionIter->child, connectionIter->top->pushBufferPointer, 0 );
-      connectionIter++;
-   }
-}
-
-static inline void _cgGLBindVertexProgram (void *data)
-{
-   _CGprogram *program = (_CGprogram*)data;
-   // the program is a vertex program, just update the GL state
-   _CurrentContext->BoundVertexProgram = program;
-
-   // and inform the GL state to re-upload the vertex program
-   _CurrentContext->needValidate |= PSGL_VALIDATE_VERTEX_PROGRAM;
-
-   // This must happen before the sampler setters so texture parameters have the correct value in their push buffers for that routine
-   _pullConnectedParameterValues( program );
-
-   CGbool is_managed = program->parentContext->GLmanageTextures;
-   // enable texture parameters if the managed flag is set.
-   if ( is_managed )
-   {
-      for ( GLuint index = 0; index < program->samplerCount; ++index )
-      {
-         // walk the array of sampler parameters
-         CgRuntimeParameter *rtParameter = program->runtimeParameters + program->samplerIndices[index];
-         rtParameter->samplerSetter( rtParameter, NULL, 0 );
-      }
-   }
-}
-
-static inline void _cgGLBindFragmentProgram (void *data)
-{
-   _CGprogram *program = (_CGprogram*)data;
-   _CurrentContext->BoundFragmentProgram = program;
-
-   // need to revalidate the textures in order to update which targets to fetch from
-   _CurrentContext->needValidate |= PSGL_VALIDATE_FRAGMENT_PROGRAM | PSGL_VALIDATE_TEXTURES_USED | PSGL_VALIDATE_FRAGMENT_SHARED_CONSTANTS;
-
-   // This must happen before the sampler setters so texture parameters have the correct value in their push buffers for that routine
-   _pullConnectedParameterValues( program );
-
-   // TODO: push texture state
-   //  Needs to be done per profile. Can't use glPushAttrib.
-
-   CGbool is_managed = program->parentContext->GLmanageTextures;
-
-   // deal with the texture parameters now.
-   for ( GLuint index = 0; index < program->samplerCount; ++index )
-   {
-      // walk the array of sampler parameters
-      CgRuntimeParameter *rtParameter = program->runtimeParameters + program->samplerIndices[index];
-      CgParameterResource *parameter = ( CgParameterResource * )( program->parameterResources + rtParameter->parameterEntry->typeIndex );
-      // find out which texture unit this parameter has been assigned to
-      unsigned int unit = parameter->resource - CG_TEXUNIT0;
-
-      _CurrentContext->TextureImageUnits[unit].fragmentTarget = rtParameter->glType;
-
-      // enable texture parameters if the managed flag is set.
-      if ( is_managed )
-      {
-         //tmp
-         rtParameter->samplerSetter( rtParameter, NULL, 0 );
-      }
-      else
-      {
-         rglUpdateCurrentTextureCache( &_CurrentContext->TextureImageUnits[unit] );
-      }
-   }
-}
-
-static inline void _cgGLUnbindVertexProgram (void)
-{
-   _CurrentContext->BoundVertexProgram = NULL;
-   _CurrentContext->needValidate |= PSGL_VALIDATE_VERTEX_PROGRAM;
-}
-
-static inline void rglLeaveFFXFP (void *data)
-{
-   RGLcontext *LContext = (RGLcontext*)data;
-   LContext->FragmentProgram = GL_TRUE;
-   struct _CGprogram* current = LContext->BoundFragmentProgram;
-   if ( current )
-   {
-      for ( GLuint i = 0; i < current->samplerCount; ++i )
-      {
-         int unit = current->samplerUnits[i];
-         rglUpdateCurrentTextureCache( &_CurrentContext->TextureImageUnits[unit] );
-      }
-   }
-   LContext->needValidate |= PSGL_VALIDATE_FRAGMENT_PROGRAM | PSGL_VALIDATE_TEXTURES_USED | PSGL_VALIDATE_FRAGMENT_SHARED_CONSTANTS;
-}
-
-static inline void _cgGLUnbindFragmentProgram (void)
-{
-   _CurrentContext->BoundFragmentProgram = NULL;
-}
 
 static inline GLenum rglCgGetSamplerGLTypeFromCgType( CGtype type )
 {
@@ -440,24 +254,10 @@ static inline GLenum rglCgGetSamplerGLTypeFromCgType( CGtype type )
    }
 }
 
-static inline int is_created_param( CgRuntimeParameter* ptr )
-{
-   if ( ptr->parameterEntry->flags & CGP_RTCREATED )
-      return 1;
-   return 0;
-}
-
 struct rglNameSpace;
 
 #define VERTEX_PROFILE_INDEX 0
 #define FRAGMENT_PROFILE_INDEX 1
-
-// these functions return the statically allocated table of function pointers originally
-// written for NV unshared vertex parameter setters, but now also used by runtime
-// created parameters cause these setters just do straight copies into the pushbuffer memory
-//
-_cgSetArrayIndexFunction getVectorTypeIndexSetterFunction( unsigned short a, unsigned short b, unsigned short c, unsigned short d );
-_cgSetArrayIndexFunction getMatrixTypeIndexSetterFunction( unsigned short a, unsigned short b, unsigned short c, unsigned short d, unsigned short e, unsigned short f );
 
 // -------------------------------------------
 
@@ -475,7 +275,7 @@ extern RGL_EXPORT CgprogramHookFunction _cgProgramCreateHook;
 extern RGL_EXPORT CgprogramHookFunction _cgProgramDestroyHook;
 extern RGL_EXPORT CgprogramCopyHookFunction _cgProgramCopyHook;
 
-typedef int (*cgRTCgcCompileHookFunction) (const char*, const char *, const char*, const char**, char**);
+typedef int (*cgRTCgcCompileHookFunction) (const char*, const char*, const char*, const char**, char**);
 typedef void(*cgRTCgcFreeHookFunction) (char*);
 extern RGL_EXPORT cgRTCgcCompileHookFunction _cgRTCgcCompileProgramHook;
 extern RGL_EXPORT cgRTCgcFreeHookFunction _cgRTCgcFreeCompiledProgramHook;
@@ -483,12 +283,6 @@ extern RGL_EXPORT cgRTCgcFreeHookFunction _cgRTCgcFreeCompiledProgramHook;
 
 //-----------------------------------------------
 //inlined helper functions
-static inline int rglGetParameterType (const void *data, const CgParameterEntry *entry)
-{
-   const CGprogram *program = (const CGprogram*)data;
-   return (entry->flags & CGP_TYPE_MASK);
-}
-
 static inline const CgParameterResource *rglGetParameterResource (const void *data, const CgParameterEntry *entry )
 {
    const _CGprogram *program = (const _CGprogram*)data;

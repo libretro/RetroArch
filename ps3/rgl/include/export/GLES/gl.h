@@ -476,7 +476,6 @@ extern "C"
    GLAPI void APIENTRY glClearDepthx( GLclampx depth );
    GLAPI void APIENTRY glClearStencil( GLint s );
    GLAPI void APIENTRY glClientActiveTexture( GLenum texture );
-   GLAPI void APIENTRY glColor4f( GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha );
    GLAPI void APIENTRY glColor4x( GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha );
    GLAPI void APIENTRY glColorMask( GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha );
    GLAPI void APIENTRY glColorPointer( GLint size, GLenum type, GLsizei stride, const GLvoid *pointer );
@@ -514,7 +513,6 @@ extern "C"
    GLAPI void APIENTRY glMultiTexCoord4x( GLenum target, GLfixed s, GLfixed t, GLfixed r, GLfixed q );
    GLAPI void APIENTRY glNormal3f( GLfloat nx, GLfloat ny, GLfloat nz );
    GLAPI void APIENTRY glNormal3x( GLfixed nx, GLfixed ny, GLfixed nz );
-   GLAPI void APIENTRY glNormalPointer( GLenum type, GLsizei stride, const GLvoid *pointer );
    GLAPI void APIENTRY glOrthof( GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar );
    GLAPI void APIENTRY glOrthox( GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed zNear, GLfixed zFar );
    GLAPI void APIENTRY glPixelStorei( GLenum pname, GLint param );
@@ -539,9 +537,7 @@ extern "C"
    GLAPI void APIENTRY glTexParameterf( GLenum target, GLenum pname, GLfloat param );
    GLAPI void APIENTRY glTexParameterx( GLenum target, GLenum pname, GLfixed param );
    GLAPI void APIENTRY glTexSubImage2D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels );
-   GLAPI void APIENTRY glTranslatef( GLfloat x, GLfloat y, GLfloat z );
-   GLAPI void APIENTRY glTranslatex( GLfixed x, GLfixed y, GLfixed z );
-   GLAPI void APIENTRY glVertexPointer( GLint size, GLenum type, GLsizei stride, const GLvoid *pointer );
+   GLAPI void APIENTRY glVertexPointer( GLint size, GLenum type, Glsizei stride, const GLvoid *pointer );
    GLAPI void APIENTRY glViewport( GLint x, GLint y, GLsizei width, GLsizei height );
 
 #ifdef __cplusplus

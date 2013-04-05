@@ -1,6 +1,6 @@
 display_name = "Virtual Boy"
 supported_extensions = "vb|vboy|bin"
-emuname = "Mednafen VB"
+corename = "Mednafen VB"
 manufacturer = "Nintendo"
 systemname = "Virtual Boy"
 

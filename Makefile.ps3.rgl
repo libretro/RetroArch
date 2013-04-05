@@ -20,14 +20,9 @@ INCDIRS = -I. -Ips3/rgl/include
 
 RGL_DIR = ps3/rgl/src
 
-PPU_SRCS		=  $(RGL_DIR)/Utils/NameSpace.cpp \
-			  $(RGL_DIR)/Utils/TexNameSpace.cpp \
-			  $(RGL_DIR)/Utils/EnumMap.cpp \
-			  $(RGL_DIR)/libelf/readelf.cpp \
-			  $(RGL_DIR)/rgl.cpp \
-			  $(RGL_DIR)/rgl_cg.cpp \
-			  $(RGL_DIR)/ps3/rgl_ps3.cpp \
-			  $(RGL_DIR)/ps3/rgl_ps3_raster.cpp 
+PPU_SRCS		=  $(RGL_DIR)/libelf/readelf.cpp \
+			  $(RGL_DIR)/ps3/rgl_ps3_raster.cpp \
+			  $(RGL_DIR)/ps3/rgl_ps3.cpp
 
 
 ifeq ($(CELL_BUILD_TOOLS), SNC)

@@ -137,11 +137,13 @@ enum filter_type
    RARCH_GL_NEAREST
 };
 
+static char glsl_prefix[64];
+
 static bool glsl_enable;
 static bool glsl_modern;
 static GLuint gl_program[RARCH_GLSL_MAX_SHADERS];
 static enum filter_type gl_filter_type[RARCH_GLSL_MAX_SHADERS];
-static struct gl_fbo_scale gl_scale[RARCH_GLSL_MAX_SHADERS];
+static struct gfx_fbo_scale gl_scale[RARCH_GLSL_MAX_SHADERS];
 static unsigned gl_num_programs;
 static unsigned active_index;
 
@@ -167,12 +169,14 @@ struct shader_program
    char *fragment;
    enum filter_type filter;
 
+   bool fp_fbo;
    float scale_x;
    float scale_y;
    unsigned abs_x;
    unsigned abs_y;
-   enum gl_scale_type type_x;
-   enum gl_scale_type type_y;
+   enum gfx_scale_type type_x;
+   enum gfx_scale_type type_y;
+   unsigned frame_count_mod;
 
    bool valid_scale;
 };
@@ -198,6 +202,7 @@ struct shader_uniforms
    int texture_size;
 
    int frame_count;
+   unsigned frame_count_mod;
    int frame_direction;
 
    int lut_texture[MAX_TEXTURES];
@@ -218,34 +223,34 @@ static const char *stock_vertex_legacy =
    "}";
 
 static const char *stock_fragment_legacy =
-   "uniform sampler2D rubyTexture;\n"
+   "uniform sampler2D Texture;\n"
    "varying vec4 color;\n"
    "void main() {\n"
-   "   gl_FragColor = color * texture2D(rubyTexture, gl_TexCoord[0].xy);\n"
+   "   gl_FragColor = color * texture2D(Texture, gl_TexCoord[0].xy);\n"
    "}";
 
 static const char *stock_vertex_modern =
-   "attribute vec2 rubyTexCoord;\n"
-   "attribute vec2 rubyVertexCoord;\n"
-   "attribute vec4 rubyColor;\n"
-   "uniform mat4 rubyMVPMatrix;\n"
+   "attribute vec2 TexCoord;\n"
+   "attribute vec2 VertexCoord;\n"
+   "attribute vec4 Color;\n"
+   "uniform mat4 MVPMatrix;\n"
    "varying vec2 tex_coord;\n"
    "varying vec4 color;\n"
    "void main() {\n"
-   "   gl_Position = rubyMVPMatrix * vec4(rubyVertexCoord, 0.0, 1.0);\n"
-   "   tex_coord = rubyTexCoord;\n"
-   "   color = rubyColor;\n"
+   "   gl_Position = MVPMatrix * vec4(VertexCoord, 0.0, 1.0);\n"
+   "   tex_coord = TexCoord;\n"
+   "   color = Color;\n"
    "}";
 
 static const char *stock_fragment_modern =
    "#ifdef GL_ES\n"
    "precision mediump float;\n"
    "#endif\n"
-   "uniform sampler2D rubyTexture;\n"
+   "uniform sampler2D Texture;\n"
    "varying vec2 tex_coord;\n"
    "varying vec4 color;\n"
    "void main() {\n"
-   "   gl_FragColor = color * texture2D(rubyTexture, tex_coord);\n"
+   "   gl_FragColor = color * texture2D(Texture, tex_coord);\n"
    "}";
 
 static bool xml_get_prop(char *buf, size_t size, xmlNodePtr node, const char *prop)
@@ -300,6 +305,8 @@ static char *xml_replace_if_file(char *content, const char *path, xmlNodePtr nod
 
 static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
 {
+   prog->frame_count_mod = 0;
+   prog->fp_fbo = false;
    prog->scale_x = 1.0;
    prog->scale_y = 1.0;
    prog->type_x = prog->type_y = RARCH_SCALE_INPUT;
@@ -329,6 +336,7 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
    char attr_scale[64], attr_scale_x[64], attr_scale_y[64];
    char attr_size[64], attr_size_x[64], attr_size_y[64];
    char attr_outscale[64], attr_outscale_x[64], attr_outscale_y[64];
+   char frame_count_mod[64], fp_fbo[64];
 
    xml_get_prop(attr_scale, sizeof(attr_scale), ptr, "scale");
    xml_get_prop(attr_scale_x, sizeof(attr_scale_x), ptr, "scale_x");
@@ -339,8 +347,18 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
    xml_get_prop(attr_outscale, sizeof(attr_outscale), ptr, "outscale");
    xml_get_prop(attr_outscale_x, sizeof(attr_outscale_x), ptr, "outscale_x");
    xml_get_prop(attr_outscale_y, sizeof(attr_outscale_y), ptr, "outscale_y");
+   xml_get_prop(frame_count_mod, sizeof(frame_count_mod), ptr, "frame_count_mod");
+   xml_get_prop(fp_fbo, sizeof(fp_fbo), ptr, "float_framebuffer");
+
+   prog->fp_fbo = strcmp(fp_fbo, "true") == 0;
 
    unsigned x_attr_cnt = 0, y_attr_cnt = 0;
+
+   if (*frame_count_mod)
+   {
+      prog->frame_count_mod = strtoul(frame_count_mod, NULL, 0);
+      RARCH_LOG("Got frame count mod attr: %u\n", prog->frame_count_mod);
+   }
 
    if (*attr_scale)
    {
@@ -440,6 +458,40 @@ static bool get_xml_attrs(struct shader_program *prog, xmlNodePtr ptr)
       return false;
 
    return true;
+}
+
+static const char *glsl_prefixes[] = {
+   glsl_prefix,
+   "",
+   "ruby",
+};
+
+static GLint get_uniform(GLuint prog, const char *base)
+{
+   for (unsigned i = 0; i < ARRAY_SIZE(glsl_prefixes); i++)
+   {
+      char buf[64];
+      snprintf(buf, sizeof(buf), "%s%s", glsl_prefixes[i], base);
+      GLint loc = pglGetUniformLocation(prog, buf);
+      if (loc >= 0)
+         return loc;
+   }
+
+   return -1;
+}
+
+static GLint get_attrib(GLuint prog, const char *base)
+{
+   for (unsigned i = 0; i < ARRAY_SIZE(glsl_prefixes); i++)
+   {
+      char buf[64];
+      snprintf(buf, sizeof(buf), "%s%s", glsl_prefixes[i], base);
+      GLint loc = pglGetAttribLocation(prog, buf);
+      if (loc >= 0)
+         return loc;
+   }
+
+   return -1;
 }
 
 static bool get_texture_image(const char *shader_path, xmlNodePtr ptr)
@@ -711,8 +763,13 @@ static unsigned get_xml_shaders(const char *path, struct shader_program *prog, s
       xml_get_prop(attr, sizeof(attr), cur, "style");
       glsl_modern = strcmp(attr, "GLES2") == 0;
 
+      if (xml_get_prop(glsl_prefix, sizeof(glsl_prefix), cur, "prefix"))
+         RARCH_LOG("[GL]: Using uniform and attrib prefix: %s\n", glsl_prefix);
+
       if (glsl_modern)
          RARCH_LOG("[GL]: Shader reports a GLES2 style shader.\n");
+      else
+         RARCH_WARN("[GL]: Legacy shaders are deprecated.\n");
       break;
    }
 
@@ -948,7 +1005,7 @@ static bool compile_programs(GLuint *gl_prog, struct shader_program *progs, size
             goto end;
          }
 
-         GLint location = pglGetUniformLocation(gl_prog[i], "rubyTexture");
+         GLint location = get_uniform(gl_prog[i], "Texture");
          pglUniform1i(location, 0);
          pglUseProgram(0);
       }
@@ -985,45 +1042,45 @@ static void find_uniforms_frame(GLuint prog, struct shader_uniforms_frame *frame
    snprintf(input_size, sizeof(input_size), "%s%s", base, "InputSize");
    snprintf(tex_coord, sizeof(tex_coord), "%s%s", base, "TexCoord");
 
-   frame->texture      = pglGetUniformLocation(prog, texture);
-   frame->texture_size = pglGetUniformLocation(prog, texture_size);
-   frame->input_size   = pglGetUniformLocation(prog, input_size);
-   frame->tex_coord    = pglGetAttribLocation(prog, tex_coord);
+   frame->texture      = get_uniform(prog, texture);
+   frame->texture_size = get_uniform(prog, texture_size);
+   frame->input_size   = get_uniform(prog, input_size);
+   frame->tex_coord    = get_attrib(prog, tex_coord);
 }
 
 static void find_uniforms(GLuint prog, struct shader_uniforms *uni)
 {
    pglUseProgram(prog);
 
-   uni->mvp           = pglGetUniformLocation(prog, "rubyMVPMatrix");
-   uni->tex_coord     = pglGetAttribLocation(prog, "rubyTexCoord");
-   uni->vertex_coord  = pglGetAttribLocation(prog, "rubyVertexCoord");
-   uni->color         = pglGetAttribLocation(prog, "rubyColor");
-   uni->lut_tex_coord = pglGetAttribLocation(prog, "rubyLUTTexCoord");
+   uni->mvp           = get_uniform(prog, "MVPMatrix");
+   uni->tex_coord     = get_attrib(prog, "TexCoord");
+   uni->vertex_coord  = get_attrib(prog, "VertexCoord");
+   uni->color         = get_attrib(prog, "Color");
+   uni->lut_tex_coord = get_attrib(prog, "LUTTexCoord");
 
-   uni->input_size    = pglGetUniformLocation(prog, "rubyInputSize");
-   uni->output_size   = pglGetUniformLocation(prog, "rubyOutputSize");
-   uni->texture_size  = pglGetUniformLocation(prog, "rubyTextureSize");
+   uni->input_size    = get_uniform(prog, "InputSize");
+   uni->output_size   = get_uniform(prog, "OutputSize");
+   uni->texture_size  = get_uniform(prog, "TextureSize");
 
-   uni->frame_count     = pglGetUniformLocation(prog, "rubyFrameCount");
-   uni->frame_direction = pglGetUniformLocation(prog, "rubyFrameDirection");
+   uni->frame_count     = get_uniform(prog, "FrameCount");
+   uni->frame_direction = get_uniform(prog, "FrameDirection");
 
    for (unsigned i = 0; i < gl_teximage_cnt; i++)
       uni->lut_texture[i] = pglGetUniformLocation(prog, gl_teximage_uniforms[i]);
 
-   find_uniforms_frame(prog, &uni->orig, "rubyOrig");
+   find_uniforms_frame(prog, &uni->orig, "Orig");
 
    char frame_base[64];
    for (unsigned i = 0; i < RARCH_GLSL_MAX_SHADERS; i++)
    {
-      snprintf(frame_base, sizeof(frame_base), "rubyPass%u", i + 1);
+      snprintf(frame_base, sizeof(frame_base), "Pass%u", i + 1);
       find_uniforms_frame(prog, &uni->pass[i], frame_base);
    }
 
-   find_uniforms_frame(prog, &uni->prev[0], "rubyPrev");
+   find_uniforms_frame(prog, &uni->prev[0], "Prev");
    for (unsigned i = 1; i < PREV_TEXTURES; i++)
    {
-      snprintf(frame_base, sizeof(frame_base), "rubyPrev%u", i);
+      snprintf(frame_base, sizeof(frame_base), "Prev%u", i);
       find_uniforms_frame(prog, &uni->prev[i], frame_base);
    }
 
@@ -1069,6 +1126,7 @@ static bool gl_glsl_load_shader(unsigned index, const char *path)
       }
 
       find_uniforms(gl_program[index], &gl_uniforms[index]);
+      gl_uniforms[index].frame_count_mod = prog.frame_count_mod;
    }
    else
    {
@@ -1177,6 +1235,7 @@ bool gl_glsl_init(const char *path)
    for (unsigned i = 0; i < num_progs; i++)
    {
       gl_filter_type[i + 1]   = progs[i].filter;
+      gl_scale[i + 1].fp_fbo  = progs[i].fp_fbo;
       gl_scale[i + 1].type_x  = progs[i].type_x;
       gl_scale[i + 1].type_y  = progs[i].type_y;
       gl_scale[i + 1].scale_x = progs[i].scale_x;
@@ -1192,10 +1251,10 @@ bool gl_glsl_init(const char *path)
    // RetroArch custom two-pass with two different files.
    if (num_progs == 1 && *g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
    {
-      unsigned secondary_progs = get_xml_shaders(g_settings.video.second_pass_shader, progs, 1);
+      unsigned secondary_progs = get_xml_shaders(g_settings.video.second_pass_shader, progs + 1, 1);
       if (secondary_progs == 1)
       {
-         if (!compile_programs(&gl_program[2], progs, 1))
+         if (!compile_programs(&gl_program[2], progs + 1, 1))
          {
             RARCH_ERR("Failed to compile second pass shader.\n");
             return false;
@@ -1212,6 +1271,9 @@ bool gl_glsl_init(const char *path)
 
    for (unsigned i = 0; i <= num_progs; i++)
       find_uniforms(gl_program[i], &gl_uniforms[i]);
+
+   for (unsigned i = 1; i <= num_progs; i++)
+      gl_uniforms[i].frame_count_mod = progs[i - 1].frame_count_mod;
 
 #ifdef GLSL_DEBUG
    if (!gl_check_error())
@@ -1318,7 +1380,12 @@ void gl_glsl_set_params(unsigned width, unsigned height,
       pglUniform2fv(uni->texture_size, 1, texture_size);
 
    if (uni->frame_count >= 0)
-      pglUniform1i(uni->frame_count, frame_count);
+   {
+      unsigned count = frame_count;
+      if (uni->frame_count_mod)
+         count %= uni->frame_count_mod;
+      pglUniform1i(uni->frame_count, count);
+   }
 
    if (uni->frame_direction >= 0)
       pglUniform1i(uni->frame_direction, g_extern.frame_is_reverse ? -1 : 1);
@@ -1545,7 +1612,7 @@ bool gl_glsl_filter_type(unsigned index, bool *smooth)
    }
 }
 
-void gl_glsl_shader_scale(unsigned index, struct gl_fbo_scale *scale)
+void gl_glsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
 {
    if (glsl_enable)
       *scale = gl_scale[index];

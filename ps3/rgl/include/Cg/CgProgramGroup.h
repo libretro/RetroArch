@@ -30,7 +30,6 @@ _CGprogramGroup;
 typedef struct _CGprogramGroup *CGprogramGroup;
 
 CGprogramGroup rglCgCreateProgramGroup( CGcontext ctx, const char *name, void *ptr, int size );
-CGprogramGroup rglCgCreateProgramGroupFromFile( CGcontext ctx, const char *group_file );
 void rglCgDestroyProgramGroup( CGprogramGroup group );
 
 int rglCgGetProgramCount( CGprogramGroup group );
