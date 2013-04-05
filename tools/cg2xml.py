@@ -32,20 +32,20 @@ def keep_line_if(func, lines):
 
 def replace_global_vertex(source):
    replace_table = [
-         ('POSITION', 'rubyVertexCoord'),
-         ('TEXCOORD0', 'rubyTexCoord'),
-         ('TEXCOORD', 'rubyTexCoord'),
-         ('uniform vec4 _modelViewProj1[4]', 'uniform mat4 rubyMVPMatrix'),
-         ('_modelViewProj1', 'rubyMVPMatrix'),
-         ('rubyMVPMatrix[0]', 'rubyMVPMatrix_[0]'),
-         ('rubyMVPMatrix[1]', 'rubyMVPMatrix_[1]'),
-         ('rubyMVPMatrix[2]', 'rubyMVPMatrix_[2]'),
-         ('rubyMVPMatrix[3]', 'rubyMVPMatrix_[3]'),
-         ('_IN1._video_size', 'rubyInputSize'),
-         ('_IN1._texture_size', 'rubyTextureSize'),
-         ('_IN1._output_size', 'rubyOutputSize'),
-         ('_IN1._frame_count', 'rubyFrameCount'),
-         ('rubyFrameCount', 'float(rubyFrameCount)'),
+         ('POSITION', 'VertexCoord'),
+         ('TEXCOORD0', 'TexCoord'),
+         ('TEXCOORD', 'TexCoord'),
+         ('uniform vec4 _modelViewProj1[4]', 'uniform mat4 MVPMatrix'),
+         ('_modelViewProj1', 'MVPMatrix'),
+         ('MVPMatrix[0]', 'MVPMatrix_[0]'),
+         ('MVPMatrix[1]', 'MVPMatrix_[1]'),
+         ('MVPMatrix[2]', 'MVPMatrix_[2]'),
+         ('MVPMatrix[3]', 'MVPMatrix_[3]'),
+         ('_IN1._video_size', 'InputSize'),
+         ('_IN1._texture_size', 'TextureSize'),
+         ('_IN1._output_size', 'OutputSize'),
+         ('_IN1._frame_count', 'FrameCount'),
+         ('FrameCount', 'float(FrameCount)'),
          ('input', 'input_dummy'), # 'input' is reserved in GLSL.
          ('output', 'output_dummy'), # 'output' is reserved in GLSL.
    ]
@@ -140,17 +140,17 @@ def hack_source_vertex(source):
    code_index = 0
    for index, line in enumerate(source):
       if 'void main()' in line:
-         source.insert(index + 2, '    mat4 rubyMVPMatrix_ = transpose_(rubyMVPMatrix);') # transpose() is GLSL 1.20+, doesn't exist in GLSL ES 1.0
+         source.insert(index + 2, '    mat4 MVPMatrix_ = transpose_(MVPMatrix);') # transpose() is GLSL 1.20+, doesn't exist in GLSL ES 1.0
          source.insert(index, '#endif')
-         source.insert(index, 'uniform vec2 rubyInputSize;')
-         source.insert(index, 'uniform vec2 rubyTextureSize;')
-         source.insert(index, 'uniform vec2 rubyOutputSize;')
+         source.insert(index, 'uniform vec2 InputSize;')
+         source.insert(index, 'uniform vec2 TextureSize;')
+         source.insert(index, 'uniform vec2 OutputSize;')
          source.insert(index, '#else')
-         source.insert(index, 'uniform mediump vec2 rubyInputSize;')
-         source.insert(index, 'uniform mediump vec2 rubyTextureSize;')
-         source.insert(index, 'uniform mediump vec2 rubyOutputSize;')
+         source.insert(index, 'uniform mediump vec2 InputSize;')
+         source.insert(index, 'uniform mediump vec2 TextureSize;')
+         source.insert(index, 'uniform mediump vec2 OutputSize;')
          source.insert(index, '#ifdef GL_ES')
-         source.insert(index, 'uniform int rubyFrameCount;')
+         source.insert(index, 'uniform int FrameCount;')
 
          source.insert(index, """
          mat4 transpose_(mat4 matrix)
@@ -170,11 +170,11 @@ def hack_source_vertex(source):
 
 def replace_global_fragment(source):
    replace_table = [
-         ('_IN1._video_size', 'rubyInputSize'),
-         ('_IN1._texture_size', 'rubyTextureSize'),
-         ('_IN1._output_size', 'rubyOutputSize'),
-         ('_IN1._frame_count', 'rubyFrameCount'),
-         ('rubyFrameCount', 'float(rubyFrameCount)'),
+         ('_IN1._video_size', 'InputSize'),
+         ('_IN1._texture_size', 'TextureSize'),
+         ('_IN1._output_size', 'OutputSize'),
+         ('_IN1._frame_count', 'FrameCount'),
+         ('FrameCount', 'float(FrameCount)'),
          ('input', 'input_dummy'),
          ('output', 'output_dummy'), # 'output' is reserved in GLSL.
    ]
@@ -188,15 +188,15 @@ def hack_source_fragment(source):
    for index, line in enumerate(source):
       if 'void main()' in line:
          source.insert(index, '#endif')
-         source.insert(index, 'uniform vec2 rubyInputSize;')
-         source.insert(index, 'uniform vec2 rubyTextureSize;')
-         source.insert(index, 'uniform vec2 rubyOutputSize;')
+         source.insert(index, 'uniform vec2 InputSize;')
+         source.insert(index, 'uniform vec2 TextureSize;')
+         source.insert(index, 'uniform vec2 OutputSize;')
          source.insert(index, '#else')
-         source.insert(index, 'uniform mediump vec2 rubyInputSize;')
-         source.insert(index, 'uniform mediump vec2 rubyTextureSize;')
-         source.insert(index, 'uniform mediump vec2 rubyOutputSize;')
+         source.insert(index, 'uniform mediump vec2 InputSize;')
+         source.insert(index, 'uniform mediump vec2 TextureSize;')
+         source.insert(index, 'uniform mediump vec2 OutputSize;')
          source.insert(index, '#ifdef GL_ES')
-         source.insert(index, 'uniform int rubyFrameCount;')
+         source.insert(index, 'uniform int FrameCount;')
          break
 
    for line in source:
@@ -207,7 +207,7 @@ def hack_source_fragment(source):
 
    ret = []
    for line in source:
-      ret.append(line.replace(sampler, 'rubyTexture'))
+      ret.append(line.replace(sampler, 'Texture'))
 
    ret = destructify_varyings(ret)
    return ret
