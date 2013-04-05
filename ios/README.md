@@ -33,48 +33,38 @@ When RetroArch is built into an IPA, it will embed this provisioning profile int
 
 After you've configured the right things, you're ready for building. You'll want to run these from the `ios` directory of the RetroArch project.
 
-### Everything
+### Emulator Cores
 
-To build everything at once, just run:
+Before building the app, you'll need to build the emulator cores.
+
+You'll need to clone down the [libretro/libretro-super](https://github.com/libretro/libretro-super) repo into the same directory where you cloned this repo.
+
+Your directories should look like this:
+
+```
+your-repos-dir/libretro-super
+your-repos-dir/RetroArch
+```
+
+Run the libretro-super iOS build script to build the emulator cores.
+
+```sh
+./libretro-build-ios.sh
+```
+
+This will clone down their repos, build them, and copy them into the appropriate directory for RetroArch iOS.
+
+### Build RetroArch iOS app
+
+Now just run:
 
 ```sh
 script/build
 ```
 
-This will build the emulator cores, and the RetroArch iOS app.
-
-### Emulator Cores
-
-If you'd like to build just the emulator cores, run:
-
-```sh
-script/build_cores
-```
-
-This will clone down their repos, build them, and copy them into the RetroArch project.
-
-
-### RetroArch iOS app
-
-If you'd like to just build the RetroArch iOS app, run:
-
-```sh
-script/build_app
-```
-
 This will build the iOS app, codesign everything that needs to, and package it into a distributable IPA.
 
 Once completed, you can find the IPA inside the `ios/build/Release-iphoneos` directory.
-
-## Cleaning
-
-If you want to wipe everything out and start from scratch, run:
-
-```sh
-script/clean
-```
-
-This will delete all the emulator core repos. The next time you build these, they will do a fresh clone on their repos.
 
 ## Roms
 
