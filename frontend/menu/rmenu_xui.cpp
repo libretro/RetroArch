@@ -288,9 +288,6 @@ static void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned se
       case S_LBL_SHADER:
          snprintf(str, size, "Shader #1: %s", g_settings.video.cg_shader_path);
          break;
-      case S_LBL_SHADER_2:
-         snprintf(str, size, "Shader #2: %s", g_settings.video.second_pass_shader);
-         break;
       case S_LBL_RARCH_VERSION:
          snprintf(str, size, "RetroArch %s", PACKAGE_VERSION);
          break;
@@ -692,7 +689,6 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
    m_settingslist.SetText(SETTING_AUDIO_RESAMPLER_TYPE, strstr(g_settings.audio.resampler, "sinc") ? L"Audio Resampler: Sinc" : L"Audio Resampler: Hermite");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
-   m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
    m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SHADER, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SHADER, strw_buffer);
@@ -800,27 +796,9 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
 
             NavigateForward(app.hShaderBrowser);
             break;
-         case SETTING_SHADER_2:
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_SECOND_SHADER);
-            hr = XuiSceneCreate((g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
-            if (hr < 0)
-               RARCH_ERR("Failed to load scene.\n");
-
-            hCur = app.hShaderBrowser;
-
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               msg_queue_push(g_extern.msg_queue,
-                     "INFO - Select a shader from the menu.", 1, 180);
-
-            NavigateForward(app.hShaderBrowser);
-            break;
          case SETTING_HW_TEXTURE_FILTER:
             g_settings.video.smooth = !g_settings.video.smooth;
             m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
-            break;
-         case SETTING_HW_TEXTURE_FILTER_2:
-            g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
-            m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
             break;
          case SETTING_SCALE_ENABLED:
             g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
@@ -944,10 +922,6 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                g_settings.video.smooth = !g_settings.video.smooth;
                m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
                break;
-            case SETTING_HW_TEXTURE_FILTER_2:
-               g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
-               m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
-               break;
             case SETTING_SCALE_ENABLED:
                g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
                m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
@@ -1051,10 +1025,6 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
             case SETTING_HW_TEXTURE_FILTER:
                g_settings.video.smooth = !g_settings.video.smooth;
                m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
-               break;
-            case SETTING_HW_TEXTURE_FILTER_2:
-               g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
-               m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER_2, g_settings.video.second_pass_smooth ? L"Hardware filtering shader #2: Linear interpolation" : L"Hardware filtering shader #2: Point filtering");
                break;
             case SETTING_SCALE_ENABLED:
                g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
@@ -1331,20 +1301,6 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
                else
                   RARCH_ERR("Shaders are unsupported on this platform.\n");
                g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_FIRST_SHADER);
-         }
-
-         if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_SECOND_SHADER))
-         {
-               snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", tmp_browser->directory_path, str_buffer);
-               if (g_settings.video.shader_type != RARCH_SHADER_NONE)
-               {
-                  driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.second_pass_shader, RARCH_SHADER_INDEX_PASS1);
-                  if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
-               }
-               else
-                  RARCH_ERR("Shaders are unsupported on this platform.\n");
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_SECOND_SHADER);
          }
       }
       else if(tmp_browser->current_dir.list->elems[index].attr.b)
