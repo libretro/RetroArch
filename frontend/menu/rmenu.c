@@ -681,7 +681,6 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->setting_text, rotation_lut[g_extern.console.screen.orientation], sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "Change orientation of the screen.", sizeof(current_item->comment));
          break;
-#ifdef HAVE_FBO
       case INGAME_MENU_RESIZE_MODE:
          strlcpy(current_item->text, "Resize Mode", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
