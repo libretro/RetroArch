@@ -264,21 +264,8 @@ static bool load_plain(const char *path)
       prg[1] = prg[0];
    }
 
-   if (*g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
-   {
-      if (!load_program(2, g_settings.video.second_pass_shader, true))
-      {
-         RARCH_ERR("Failed to load HLSL shader %s into secondpass.\n", path);
-         prg[2] = prg[0];
-      }
-
-      hlsl_shader_num = 2;
-   }
-   else
-   {
-      prg[2] = prg[0];
-      hlsl_shader_num = 1;
-   }
+   prg[2] = prg[0];
+   hlsl_shader_num = 1;
 
    return true;
 }
