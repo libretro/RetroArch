@@ -32,8 +32,8 @@
    {
       result.coverPath = [NSString stringWithFormat:@"%@/.coverart/%@.png", [result.path stringByDeletingLastPathComponent], [[result.path lastPathComponent] stringByDeletingPathExtension]];
       
-      if (!ra_ios_is_file(result.coverPath))
-         result.coverPath = nil;
+      if (ra_ios_is_file(result.coverPath))
+         result.hasCover = true;
    }
    
    return result;
@@ -167,6 +167,9 @@ NSString* ra_ios_check_path(NSString* path)
 {
    NSString* _path;
    NSArray* _list;
+   
+   UIPopoverController* _imageSelect;
+   uint32_t _imageSelectIndex;
 }
 
 - (id)initWithPath:(NSString*)path
@@ -195,7 +198,10 @@ NSString* ra_ios_check_path(NSString* path)
    [self.collectionView registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:@"dircell"];
    [self.collectionView registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:@"textcell"];
    [self.collectionView registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:@"imagecell"];
-   
+
+   UILongPressGestureRecognizer* gesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)];
+   [self.collectionView addGestureRecognizer:gesture];
+
    return self;
 }
 
@@ -219,6 +225,59 @@ NSString* ra_ios_check_path(NSString* path)
       [[RetroArch_iOS get] pushViewController:[[RAModuleList alloc] initWithGame:path.path] animated:YES];
 }
 
+- (void)longPress:(UILongPressGestureRecognizer*)gesture
+{
+   if (gesture.state == UIGestureRecognizerStateRecognized)
+   {
+      CGPoint location = [gesture locationInView:self.collectionView];
+      NSIndexPath* indexPath = [self.collectionView indexPathForItemAtPoint:location];
+   
+      _imageSelectIndex = indexPath.row;
+  
+      UICollectionViewCell* cell = [self.collectionView cellForItemAtIndexPath:indexPath];
+      if (cell)
+      {
+         UIImagePickerController* pick = [UIImagePickerController new];
+         pick.delegate = self;
+         pick.sourceType = UIImagePickerControllerSourceTypeSavedPhotosAlbum;
+         
+         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
+         {
+            _imageSelect = [[UIPopoverController alloc] initWithContentViewController:pick];
+            [_imageSelect presentPopoverFromRect:cell.frame inView:self.collectionView permittedArrowDirections:UIPopoverArrowDirectionAny animated:YES];
+         }
+         else
+            [self presentViewController:pick animated:YES completion:nil];
+      }
+   }
+}
+
+- (void)imagePickerController:(UIImagePickerController*)picker didFinishPickingMediaWithInfo:(NSDictionary*)info
+{
+   [self imagePickerControllerDidCancel:picker];
+   
+   // Copy image
+   RADirectoryItem* path = _list[_imageSelectIndex];
+   
+   UIImage* image = [info valueForKey:@"UIImagePickerControllerOriginalImage"];
+   [UIImagePNGRepresentation(image) writeToFile:path.coverPath atomically:YES];
+   path.hasCover = true;
+   
+   [self.collectionView reloadData];
+}
+
+- (void)imagePickerControllerDidCancel:(UIImagePickerController*)picker
+{
+   if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
+   {
+      [_imageSelect dismissPopoverAnimated:YES];
+      _imageSelect = nil;
+   }
+   else
+      [picker dismissViewControllerAnimated:YES completion:nil];
+}
+
+
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
    RADirectoryItem* path = [_list objectAtIndex: indexPath.row];
@@ -234,7 +293,7 @@ NSString* ra_ios_check_path(NSString* path)
          ((UIImageView*)cell.backgroundView).contentMode = UIViewContentModeScaleAspectFit;
       }
    }
-   else if (path.coverPath)
+   else if (path.hasCover)
    {
       cell = [self.collectionView dequeueReusableCellWithReuseIdentifier:@"imagecell" forIndexPath:indexPath];
       

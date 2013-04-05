@@ -21,10 +21,11 @@ extern NSString* ra_ios_check_path(NSString* path);
 @interface RADirectoryItem : NSObject
 @property (strong) NSString* path;
 @property (strong) NSString* coverPath;
+@property bool hasCover;
 @property bool isDirectory;
 @end
 
-@interface RADirectoryGrid : UICollectionViewController
+@interface RADirectoryGrid : UICollectionViewController<UIImagePickerControllerDelegate,UINavigationControllerDelegate>
 - (id)initWithPath:(NSString*)path;
 @end
 
