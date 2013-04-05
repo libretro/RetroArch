@@ -53,18 +53,6 @@ void gl_cg_set_compiler_args(const char **argv);
 
 bool gl_cg_load_shader(unsigned index, const char *path);
 
-struct gl_cg_cgp_info
-{
-   const char *shader[2];
-   bool filter_linear[2];
-   bool render_to_texture;
-   float fbo_scale;
-
-   const char *lut_texture_path;
-   const char *lut_texture_id;
-   bool lut_texture_absolute;
-};
-
 void gl_cg_invalidate_context(void); // Call when resetting GL context on PS3.
 extern const gl_shader_backend_t gl_cg_backend;
 
