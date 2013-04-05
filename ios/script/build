@@ -1,0 +1,19 @@
+#!/bin/sh
+
+set -e
+
+. script/build.config
+
+xcodebuild clean
+rm -rf build
+
+xcodebuild -verbose -sdk iphoneos -configuration Release
+
+if ! $nocodesign ; then
+  codesign -fs "$CODE_SIGN_IDENTITY" "$BUILD_PATH/RetroArch.app/modules/*.dylib"
+  xcrun -sdk iphoneos PackageApplication "$BUILD_PATH/RetroArch.app" -o "$BUILD_PATH/RetroArch.ipa" --sign "$CODE_SIGN_IDENTITY" --embed "$PROVISIONING"
+fi
+
+
+echo "######### RetroArch build Complete!! #########"
+echo "You can find the resulting app in the $BUILD_PATH directory.\n"
