@@ -185,8 +185,8 @@ void ios_get_game_view_size(unsigned *width, unsigned *height)
 void ios_bind_game_view_fbo()
 {
    dispatch_sync(dispatch_get_main_queue(), ^{
-         if (g_context)
-            [g_view display];
+      if (g_context)
+         [g_view bindDrawable];
    });
 }
 

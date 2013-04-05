@@ -312,6 +312,7 @@ static void event_reload_config(void* userdata)
    if (pthread_create(&_retroThread, 0, rarch_main_ios, load_data))
    {
       [self rarchExited:NO];
+      return;
    }
    pthread_detach(_retroThread);
    
