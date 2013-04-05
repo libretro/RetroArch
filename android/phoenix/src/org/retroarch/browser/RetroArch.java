@@ -400,16 +400,6 @@ public class RetroArch extends Activity implements
 			config.setString("video_bsnes_shader", "");
 		}
 		
-		config.setBoolean("video_render_to_texture", prefs.getBoolean("video_render_to_texture", false));
-		config.setString("video_second_pass_shader",
-				prefs.getBoolean("video_second_pass_shader_enable", false) ?
-						prefs.getString("video_second_pass_shader", "") : "");
-		
-		config.setBoolean("video_second_pass_smooth", prefs.getBoolean("video_second_pass_smooth", true));
-		
-		config.setString("video_fbo_scale_x", prefs.getString("video_fbo_scale", "2.0"));
-		config.setString("video_fbo_scale_y", prefs.getString("video_fbo_scale", "2.0"));
-		
 		boolean useOverlay = prefs.getBoolean("input_overlay_enable", true);
 		if (useOverlay) {
 			String overlayPath = prefs.getString("input_overlay", getCacheDir() + "/Overlays/snes-landscape.cfg");
