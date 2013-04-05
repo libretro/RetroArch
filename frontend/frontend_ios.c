@@ -17,10 +17,11 @@
 #include <dispatch/dispatch.h>
 #include <pthread.h>
 
-#include "../ios/RetroArch/rarch_wrapper.h"
 #include "../general.h"
 #include "../conf/config_file.h"
 #include "../file.h"
+
+#include "../ios/RetroArch/rarch_wrapper.h"
 
 #ifdef HAVE_RGUI
 #include "../frontend/menu/rgui.h"
@@ -89,6 +90,8 @@ void* rarch_main_ios(void* args)
    }
 
 #ifdef HAVE_RGUI
+   char* system_directory = ios_get_rarch_system_directory();
+
    menu_init();
    g_extern.lifecycle_mode_state |= 1ULL << MODE_GAME;
 
@@ -114,8 +117,8 @@ void* rarch_main_ios(void* args)
 
          args.verbose       = g_extern.verbose;
          args.config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
-         args.sram_path     = NULL;
-         args.state_path    = NULL;
+         args.sram_path     = system_directory;
+         args.state_path    = system_directory;
          args.rom_path      = g_extern.fullpath;
          args.libretro_path = g_settings.libretro;
 
@@ -149,6 +152,8 @@ void* rarch_main_ios(void* args)
    menu_free();
    if (g_extern.main_is_init)
       rarch_main_deinit();
+
+   free(system_directory);
 #else
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
    rarch_main_deinit();

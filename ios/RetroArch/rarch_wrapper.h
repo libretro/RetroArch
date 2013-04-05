@@ -16,6 +16,9 @@
 #ifndef __IOS_RARCH_WRAPPER_H__
 #define __IOS_RARCH_WRAPPER_H__
 
+// The result needs to be free()'d
+char* ios_get_rarch_system_directory();
+
 // These functions should only be called as arguments to dispatch_sync
 void ios_rarch_exited(void* result);
 

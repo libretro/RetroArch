@@ -454,3 +454,8 @@ void ios_rarch_exited(void* result)
 {
    [[RetroArch_iOS get] rarchExited:result ? NO : YES];
 }
+
+char* ios_get_rarch_system_directory()
+{
+   return strdup([RetroArch_iOS.get.system_directory UTF8String]);
+}
