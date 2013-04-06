@@ -133,7 +133,6 @@ enum menu_enums
    MODE_VIDEO_SOFT_FILTER_ENABLE,
    MODE_VIDEO_SCREENSHOTS_ENABLE,
    MODE_VIDEO_THROTTLE_ENABLE,
-   MODE_VIDEO_OVERSCAN_ENABLE,
    MODE_VIDEO_PAL_ENABLE,
    MODE_VIDEO_PAL_TEMPORAL_ENABLE,
    MODE_VIDEO_PAL_VSYNC_BLOCK,
@@ -565,7 +564,6 @@ struct global
          } viewports;
 
          unsigned orientation;
-         float overscan_amount;
          unsigned gamma_correction;
          unsigned char flicker_filter_index;
          unsigned char soft_filter_index;
@@ -639,8 +637,6 @@ enum
    S_FRAME_ADVANCE,
    S_HW_TEXTURE_FILTER,
    S_HW_TEXTURE_FILTER_2,
-   S_OVERSCAN_DECREMENT,
-   S_OVERSCAN_INCREMENT,
    S_RESOLUTION_PREVIOUS,
    S_RESOLUTION_NEXT,
    S_ROTATION_DECREMENT,
@@ -662,7 +658,6 @@ enum
    S_DEF_AUDIO_CONTROL_RATE,
    S_DEF_HW_TEXTURE_FILTER,
    S_DEF_HW_TEXTURE_FILTER_2,
-   S_DEF_OVERSCAN,
    S_DEF_ROTATION,
    S_DEF_THROTTLE,
    S_DEF_TRIPLE_BUFFERING,

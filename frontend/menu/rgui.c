@@ -447,9 +447,6 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_VIDEO_ASPECT_RATIO:
                strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(type_str));
                break;
-            case RGUI_SETTINGS_VIDEO_OVERSCAN:
-               snprintf(type_str, sizeof(type_str), "%.2f", g_extern.console.screen.overscan_amount);
-               break;
             case RGUI_SETTINGS_VIDEO_ROTATION:
                snprintf(type_str, sizeof(type_str), "Rotation: %s",
                      rotation_lut[g_extern.console.screen.orientation]);
@@ -796,26 +793,6 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
             video_set_rotation_func(g_extern.console.screen.orientation);
          }
          break;
-      case RGUI_SETTINGS_VIDEO_OVERSCAN:
-         if (action == RGUI_ACTION_START)
-         {
-            settings_set(1ULL << S_DEF_OVERSCAN);
-            if (driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(driver.video_data);
-         }
-         else if (action == RGUI_ACTION_LEFT)
-         {
-            settings_set(1ULL << S_OVERSCAN_DECREMENT);
-            if (driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(driver.video_data);
-         }
-         else if (action == RGUI_ACTION_RIGHT)
-         {
-            settings_set(1ULL << S_OVERSCAN_INCREMENT);
-            if (driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(driver.video_data);
-         }
-         break;
       case RGUI_SETTINGS_AUDIO_MUTE:
          if (action == RGUI_ACTION_START)
             settings_set(1ULL << S_DEF_AUDIO_MUTE);
@@ -1050,7 +1027,6 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #endif
    rgui_list_push(rgui->selection_buf, "Aspect Ratio", RGUI_SETTINGS_VIDEO_ASPECT_RATIO, 0);
    rgui_list_push(rgui->selection_buf, "Custom Ratio", RGUI_SETTINGS_CUSTOM_VIEWPORT, 0);
-   rgui_list_push(rgui->selection_buf, "Overscan", RGUI_SETTINGS_VIDEO_OVERSCAN, 0);
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
    rgui_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
    rgui_list_push(rgui->selection_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);

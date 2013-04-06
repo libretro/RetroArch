@@ -495,11 +495,6 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->comment, "INFO - Toggle the [Soft Display Filter].", sizeof(current_item->comment));
          break;
 #endif
-      case SETTING_HW_OVERSCAN_AMOUNT:
-         strlcpy(current_item->text, "Overscan", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_extern.console.screen.overscan_amount);
-         strlcpy(current_item->comment, "INFO - Adjust or decrease [Overscan]. Set this to higher than 0.000\nif the screen doesn't fit on your TV/monitor.", sizeof(current_item->comment));
-         break;
       case SETTING_REFRESH_RATE:
          strlcpy(current_item->text, "Refresh rate", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fHz", g_settings.video.refresh_rate);
@@ -803,11 +798,6 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->text, "Aspect Ratio", sizeof(current_item->text));
          strlcpy(current_item->setting_text, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "Change the aspect ratio of the screen.", sizeof(current_item->comment));
-         break;
-      case INGAME_MENU_OVERSCAN:
-         strlcpy(current_item->text, "Overscan", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%f", g_extern.console.screen.overscan_amount);
-         strlcpy(current_item->comment, "Change overscan correction.", sizeof(current_item->comment));
          break;
       case INGAME_MENU_ROTATION:
          strlcpy(current_item->text, "Rotation", sizeof(current_item->text));
@@ -1729,29 +1719,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
          break;
 #endif
-      case SETTING_HW_OVERSCAN_AMOUNT:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
-         {
-            settings_set(1ULL << S_OVERSCAN_DECREMENT);
-
-            if (driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(driver.video_data);
-         }
-         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-            settings_set(1ULL << S_OVERSCAN_INCREMENT);
-
-            if (driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(driver.video_data);
-         }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
-         {
-            settings_set(1ULL << S_DEF_OVERSCAN);
-
-            if (driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(driver.video_data);
-         }
-         break;
       case SETTING_REFRESH_RATE:
          if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
          {

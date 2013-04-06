@@ -253,9 +253,7 @@ void config_set_defaults(void)
 
    // g_extern
    strlcpy(g_extern.console.main_wrap.default_sram_dir, default_paths.sram_dir, sizeof(g_extern.console.main_wrap.default_sram_dir));
-   g_extern.console.screen.overscan_amount = 0.0f;
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
-   g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE);
    g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_THROTTLE_ENABLE);
@@ -474,7 +472,6 @@ bool config_load_file(const char *path)
    bool throttle_enable = false;
    bool triple_buffering_enable = false;
    bool custom_bgm_enable = false;
-   bool overscan_enable = false;
    bool screenshots_enable = false;
    bool flicker_filter_enable = false;
    bool soft_filter_enable = false;
@@ -518,14 +515,6 @@ bool config_load_file(const char *path)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
       else
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
-   }
-
-   if (config_get_bool(conf, "overscan_enable", &overscan_enable))
-   {
-      if (overscan_enable)
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
-      else
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
    }
 
    if (config_get_bool(conf, "custom_bgm_enable", &custom_bgm_enable))
@@ -576,7 +565,6 @@ bool config_load_file(const char *path)
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
    }
 
-   CONFIG_GET_FLOAT_EXTERN(console.screen.overscan_amount, "overscan_amount");
    CONFIG_GET_INT_EXTERN(console.screen.flicker_filter_index, "flicker_filter_index");
    CONFIG_GET_INT_EXTERN(console.screen.soft_filter_index, "soft_filter_index");
 #ifdef _XBOX1
@@ -1196,11 +1184,6 @@ bool config_save_file(const char *path)
       config_set_int(conf, "rmenu_low_ram_mode_enable", 0);
 #endif
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_OVERSCAN_ENABLE))
-      config_set_bool(conf, "overscan_enable", true);
-   else
-      config_set_bool(conf, "overscan_enable", false);
-
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE))
       config_set_bool(conf, "screenshots_enable", true);
    else
@@ -1246,7 +1229,6 @@ bool config_save_file(const char *path)
 #ifdef HAVE_RMENU
    config_set_string(conf, "menu_texture_path", g_extern.console.menu_texture_path);
 #endif
-   config_set_float(conf, "overscan_amount", g_extern.console.screen.overscan_amount);
    config_set_float(conf, "video_font_size", g_settings.video.font_size);
 
    // g_extern
@@ -1344,22 +1326,6 @@ void settings_set(uint64_t settings)
 
    if (settings & (1ULL << S_HW_TEXTURE_FILTER))
       g_settings.video.smooth = !g_settings.video.smooth;
-
-   if (settings & (1ULL << S_OVERSCAN_DECREMENT))
-   {
-      g_extern.console.screen.overscan_amount -= 0.01f;
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
-      if(g_extern.console.screen.overscan_amount == 0.0f)
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
-   }
-
-   if (settings & (1ULL << S_OVERSCAN_INCREMENT))
-   {
-      g_extern.console.screen.overscan_amount += 0.01f;
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
-      if(g_extern.console.screen.overscan_amount == 0.0f)
-         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
-   }
 
    if (settings & (1ULL << S_RESOLUTION_PREVIOUS))
    {
@@ -1461,12 +1427,6 @@ void settings_set(uint64_t settings)
 
    if (settings & (1ULL << S_DEF_HW_TEXTURE_FILTER))
       g_settings.video.smooth = video_smooth;
-
-   if (settings & (1ULL << S_DEF_OVERSCAN))
-   {
-      g_extern.console.screen.overscan_amount = 0.0f;
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_VIDEO_OVERSCAN_ENABLE);
-   }
 
    if (settings & (1ULL << S_DEF_ROTATION))
       g_extern.console.screen.orientation = ORIENTATION_NORMAL;

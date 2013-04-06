@@ -274,13 +274,6 @@ static void xdk_d3d_set_viewport(bool force_full)
    font_x = vp.X;
    font_y = vp.Y;
 #endif
-
-   //if (gl->overscan_enable && !force_full)
-   //{
-   //	m_left = -gl->overscan_amount/2;
-   //	m_right = 1 + gl->overscan_amount/2;
-   //	m_bottom = -gl->overscan_amount/2;
-   //}
 }
 
 static void xdk_d3d_set_rotation(void *data, unsigned orientation)

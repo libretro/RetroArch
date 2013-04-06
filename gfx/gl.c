@@ -792,12 +792,6 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
 {
    gl_t *gl = (gl_t*)data;
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_OVERSCAN_ENABLE))
-   {
-      ortho->left = -g_extern.console.screen.overscan_amount / 2;
-      ortho->right = 1 + g_extern.console.screen.overscan_amount / 2;
-      ortho->bottom = -g_extern.console.screen.overscan_amount / 2;
-   }
 
    // Calculate projection.
    matrix_ortho(&gl->mvp_no_rot, ortho->left, ortho->right,

@@ -761,13 +761,6 @@ static void gx_resize(void *data)
    Mtx44 m1, m2;
    float top = 1, bottom = -1, left = -1, right = 1;
 
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_OVERSCAN_ENABLE))
-   {
-      top    -= g_extern.console.screen.overscan_amount / 2;
-      left   += g_extern.console.screen.overscan_amount / 2;
-      right  -= g_extern.console.screen.overscan_amount / 2;
-      bottom += g_extern.console.screen.overscan_amount / 2;
-   }
    guOrtho(m1, top, bottom, left, right, 0, 1);
    GX_LoadPosMtxImm(m1, GX_PNMTX1);
 
