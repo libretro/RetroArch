@@ -442,12 +442,7 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.aspect_ratio_auto, "video_aspect_ratio_auto");
    CONFIG_GET_FLOAT(video.refresh_rate, "video_refresh_rate");
 
-   if (config_get_path(conf, "video_cg_shader", tmp_str, sizeof(tmp_str)))
-   {
-      if (strlen(tmp_str) > 0)
-         strlcpy(g_settings.video.cg_shader_path, tmp_str, sizeof(g_settings.video.cg_shader_path));
-   }
-
+   CONFIG_GET_PATH(video.cg_shader, "video_cg_shader");
    CONFIG_GET_PATH(video.xml_shader_path, "video_xml_shader");
    CONFIG_GET_BOOL(video.allow_rotate, "video_allow_rotate");
 
