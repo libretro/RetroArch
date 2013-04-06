@@ -907,7 +907,8 @@ void gl_cg_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
 
 void gl_cg_set_menu_shader(const char *path)
 {
-   free(menu_cg_program);
+   if (menu_cg_program)
+      free(menu_cg_program);
    menu_cg_program = strdup(path);
 }
 
