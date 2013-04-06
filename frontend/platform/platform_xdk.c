@@ -312,7 +312,6 @@ static void get_environment_settings(int argc, char *argv[])
 #ifdef IS_SALAMANDER
    strlcpy(default_paths.config_path, "game:\\retroarch.cfg", sizeof(default_paths.config_path));
 #else
-   strlcpy(default_paths.shader_file, "game:\\media\\shaders\\stock.cg", sizeof(default_paths.shader_file));
    strlcpy(g_extern.config_path, "game:\\retroarch.cfg", sizeof(g_extern.config_path));
 #endif
    strlcpy(default_paths.savestate_dir, "game:\\savestates", sizeof(default_paths.savestate_dir));

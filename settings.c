@@ -244,9 +244,6 @@ void config_set_defaults(void)
 
 #ifdef RARCH_CONSOLE
    g_extern.lifecycle_mode_state |= ((1ULL << MODE_INFO_DRAW) | (1ULL << MODE_MENU));
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-   strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
-#endif
 
    strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
 
@@ -445,7 +442,12 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.aspect_ratio_auto, "video_aspect_ratio_auto");
    CONFIG_GET_FLOAT(video.refresh_rate, "video_refresh_rate");
 
-   CONFIG_GET_PATH(video.cg_shader_path, "video_cg_shader");
+   if (config_get_path(conf, "video_cg_shader", tmp_str, sizeof(tmp_str)))
+   {
+      if (strlen(tmp_str) > 0)
+         strlcpy(g_settings.video.cg_shader_path, tmp_str, sizeof(g_settings.video.cg_shader_path));
+   }
+
    CONFIG_GET_PATH(video.xml_shader_path, "video_xml_shader");
    CONFIG_GET_BOOL(video.allow_rotate, "video_allow_rotate");
 

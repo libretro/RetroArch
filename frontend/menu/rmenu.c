@@ -1588,7 +1588,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
+            strlcpy(g_settings.video.cg_shader_path, "", sizeof(g_settings.video.cg_shader_path));
             if (g_settings.video.shader_type != RARCH_SHADER_NONE)
             {
                driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, NULL, RARCH_SHADER_INDEX_PASS0);
