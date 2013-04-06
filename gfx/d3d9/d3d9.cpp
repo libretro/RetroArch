@@ -653,10 +653,31 @@ void D3DVideo::init_chain_singlepass(const video_info_t &video_info)
    info.shader_path = cg_shader;
 #endif
 
-   info.scale_x            = info.scale_y = 1.0f;
-   info.filter_linear      = video_info.smooth;
-   info.tex_w = info.tex_h = RARCH_SCALE_BASE * video_info.input_scale;
-   info.scale_type_x       = info.scale_type_y = LinkInfo::Viewport;
+   bool second_pass = g_settings.video.render_to_texture;
+
+   if (second_pass)
+   {
+      info.scale_x       = g_settings.video.fbo.scale_x;
+      info.scale_y       = g_settings.video.fbo.scale_y;
+      info.filter_linear = video_info.smooth;
+      info.tex_w         = next_pow2(RARCH_SCALE_BASE * video_info.input_scale);
+      info.tex_h         = next_pow2(RARCH_SCALE_BASE * video_info.input_scale);
+      info.scale_type_x  = info.scale_type_y = LinkInfo::Relative;
+
+      info_second.scale_x       = info_second.scale_y = 1.0f;
+      info_second.scale_type_x  = info_second.scale_type_y = LinkInfo::Viewport;
+      info_second.filter_linear = g_settings.video.second_pass_smooth;
+      info_second.tex_w         = next_pow2(info.tex_w * info.scale_x);
+      info_second.tex_h         = next_pow2(info.tex_h * info.scale_y);
+      info_second.shader_path   = g_settings.video.second_pass_shader;
+   }
+   else
+   {
+      info.scale_x            = info.scale_y = 1.0f;
+      info.filter_linear      = video_info.smooth;
+      info.tex_w = info.tex_h = RARCH_SCALE_BASE * video_info.input_scale;
+      info.scale_type_x       = info.scale_type_y = LinkInfo::Viewport;
+   }
 
    chain = std::unique_ptr<RenderChain>(new RenderChain(
                video_info,
@@ -664,6 +685,9 @@ void D3DVideo::init_chain_singlepass(const video_info_t &video_info)
                info,
                video_info.rgb32 ? RenderChain::ARGB : RenderChain::RGB565,
                final_viewport));
+
+   if (second_pass)
+      chain->add_pass(info_second);
 }
 
 static std::vector<std::string> tokenize(const std::string &str)
