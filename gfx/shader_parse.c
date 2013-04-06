@@ -237,6 +237,8 @@ static bool shader_parse_imports(config_file_t *conf, struct gfx_shader *shader)
          return false;
       }
 
+      enum state_ram_type ram_type = RARCH_STATE_NONE;
+
       if (strcmp(semantic, "capture") == 0)
          var->type = RARCH_STATE_CAPTURE;
       else if (strcmp(semantic, "transition") == 0)
