@@ -965,8 +965,8 @@ static bool xdk_d3d_frame(void *data, const void *frame,
 #endif
       xdk_d3d_set_viewport(false);
 
-      d3dr->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-      d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+      d3dr->SetSamplerState(0, D3DSAMP_MINFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+      d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER, g_settings.video.second_pass_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
       d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
       d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       d3dr->SetVertexDeclaration(d3d->v_decl);
