@@ -56,11 +56,7 @@ struct gfx_shader_pass
    union
    {
       char cg[PATH_MAX];
-      struct
-      {
-         char vertex[PATH_MAX];
-         char fragment[PATH_MAX];
-      } glsl;
+      // Can allow for more types later.
    } source;
 
    struct gfx_fbo_scale fbo;
