@@ -274,6 +274,12 @@ static void texture_image_border_load(const char *path)
 
 static void rmenu_gfx_init(void)
 {
+   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &g_extern.console.menu_panel);
+
+   //Center the text
+   xpos = d3d->win_width == 640 ? 65 : 400;
+   ypos = d3d->win_width == 640 ? 430 : 670;
+
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
       return;
 
@@ -284,12 +290,7 @@ static void rmenu_gfx_init(void)
          sizeof(g_extern.console.menu_texture_path));
 
    texture_image_load(g_extern.console.menu_texture_path, &g_extern.console.menu_texture);
-   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &g_extern.console.menu_panel);
 
-   //Display some text
-   //Center the text (hardcoded)
-   xpos = d3d->win_width == 640 ? 65 : 400;
-   ypos = d3d->win_width == 640 ? 430 : 670;
 #else
    texture_image_border_load(g_extern.console.menu_texture_path);
 #endif
