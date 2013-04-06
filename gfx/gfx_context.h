@@ -94,12 +94,13 @@ typedef struct gfx_ctx_driver
    // Wraps whatever gl_proc_address() there is.
    gfx_ctx_proc_t (*get_proc_address)(const char*);
 
+#ifdef HAVE_EGL
    // Returns true if this context supports EGLImage buffers for screen drawing and was initalized correctly.
    bool (*init_egl_image_buffer)(const video_info_t*);
-
    // Writes the frame to the EGLImage and sets image_handle to it. Returns true if a new image handle is created.
    // Always returns true the first time it's called for a new index. The graphics core must handle a change in the handle correctly.
    bool (*write_egl_image)(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle);
+#endif
 
    // Shows or hides mouse. Can be NULL if context doesn't have a concept of mouse pointer.
    void (*show_mouse)(bool state);
