@@ -23,7 +23,6 @@ OBJ = frontend/frontend.o \
 		conf/config_file.o \
 		screenshot.o \
 		gfx/scaler/scaler.o \
-		gfx/shader_parse.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/filter.o \

@@ -92,7 +92,6 @@ bool config_get_bool(config_file_t *conf, const char *entry, bool *in);
 void config_set_double(config_file_t *conf, const char *entry, double value);
 void config_set_float(config_file_t *conf, const char *entry, float value);
 void config_set_int(config_file_t *conf, const char *entry, int val);
-void config_set_hex(config_file_t *conf, const char *entry, unsigned val);
 void config_set_uint64(config_file_t *conf, const char *entry, uint64_t val);
 void config_set_char(config_file_t *conf, const char *entry, char val);
 void config_set_string(config_file_t *conf, const char *entry, const char *val);

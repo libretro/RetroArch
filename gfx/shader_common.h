@@ -19,7 +19,6 @@
 #include "../boolean.h"
 #include "gl_common.h"
 #include "gfx_context.h"
-#include "shader_parse.h"
 #include "math/matrix.h"
 
 struct gl_shader_backend
@@ -37,7 +36,7 @@ struct gl_shader_backend
    void (*use)(unsigned index);
    unsigned (*num_shaders)(void);
    bool (*filter_type)(unsigned index, bool *smooth);
-   void (*shader_scale)(unsigned index, struct gfx_fbo_scale *scale);
+   void (*shader_scale)(unsigned index, struct gl_fbo_scale *scale);
    bool (*set_coords)(const struct gl_coords *coords);
    bool (*set_mvp)(const math_matrix *mat);
 

@@ -22,7 +22,6 @@
 #include "gfx_context.h"
 #include "scaler/scaler.h"
 #include "fonts/gl_font.h"
-#include "shader_parse.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -161,6 +160,25 @@ struct gl_fbo_rect
    unsigned height;
 };
 
+enum gl_scale_type
+{
+   RARCH_SCALE_ABSOLUTE,
+   RARCH_SCALE_INPUT,
+   RARCH_SCALE_VIEWPORT
+};
+
+struct gl_fbo_scale
+{
+   bool fp_fbo;
+   enum gl_scale_type type_x;
+   enum gl_scale_type type_y;
+   float scale_x;
+   float scale_y;
+   unsigned abs_x;
+   unsigned abs_y;
+   bool valid;
+};
+
 struct gl_ortho
 {
    GLfloat left;
@@ -221,7 +239,7 @@ typedef struct gl
    GLuint fbo[MAX_SHADERS];
    GLuint fbo_texture[MAX_SHADERS];
    struct gl_fbo_rect fbo_rect[MAX_SHADERS];
-   struct gfx_fbo_scale fbo_scale[MAX_SHADERS];
+   struct gl_fbo_scale fbo_scale[MAX_SHADERS];
    int fbo_pass;
    bool fbo_inited;
 

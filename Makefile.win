@@ -29,7 +29,6 @@ OBJ = frontend/frontend.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/filter.o \
 		gfx/state_tracker.o \
-		gfx/shader_parse.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
 		gfx/image.o \
