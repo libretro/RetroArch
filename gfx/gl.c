@@ -2440,30 +2440,6 @@ static void gl_set_filtering(void *data, unsigned index, bool smooth)
 }
 
 #ifdef HAVE_FBO
-static void gl_set_fbo_state(void *data, unsigned mode)
-{
-   gl_t *gl = (gl_t*)data;
-
-   switch (mode)
-   {
-      case FBO_DEINIT:
-         gl_deinit_fbo(gl);
-         break;
-      case FBO_REINIT:
-         gl_deinit_fbo(gl);
-         // Fallthrough
-      case FBO_INIT:
-         gl_init_fbo(gl, gl->tex_w, gl->tex_h);
-         break;
-   }
-}
-
-static unsigned gl_get_fbo_state(void *data)
-{
-   gl_t *gl = (gl_t*)data;
-   return gl->fbo_inited ? FBO_INIT : FBO_DEINIT;
-}
-
 static uintptr_t gl_get_current_framebuffer(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -2538,8 +2514,6 @@ static const video_poke_interface_t gl_poke_interface = {
    gl_set_blend,
    gl_set_filtering,
 #ifdef HAVE_FBO
-   gl_set_fbo_state,
-   gl_get_fbo_state,
    gl_get_current_framebuffer,
    gl_get_proc_address,
 #endif

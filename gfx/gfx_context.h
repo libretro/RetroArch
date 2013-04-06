@@ -29,15 +29,6 @@
 
 #define MAX_EGLIMAGE_TEXTURES 32
 
-#ifdef HAVE_FBO
-enum fbo_option
-{
-   FBO_DEINIT = 0,
-   FBO_INIT,
-   FBO_REINIT
-};
-#endif
-
 enum gfx_ctx_api
 {
    GFX_CTX_OPENGL_API,

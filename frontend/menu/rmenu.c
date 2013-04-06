@@ -1059,15 +1059,6 @@ static int select_file(uint8_t menu_type, uint64_t input)
                break;
             case PRESET_CHOICE:
                strlcpy(g_extern.file_state.cgp_path, path, sizeof(g_extern.file_state.cgp_path));
-
-               if (driver.video_poke->set_fbo_state)
-                  driver.video_poke->set_fbo_state(driver.video_data, FBO_DEINIT);
-#ifdef HAVE_OPENGL
-               gl_cg_reinit(path);
-#endif
-
-               if (driver.video_poke->set_fbo_state)
-                  driver.video_poke->set_fbo_state(driver.video_data, FBO_INIT);
                break;
 #endif
             case INPUT_PRESET_CHOICE:

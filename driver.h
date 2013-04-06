@@ -324,8 +324,6 @@ typedef struct video_poke_interface
    void (*set_blend)(void *data, bool enable);
    void (*set_filtering)(void *data, unsigned index, bool smooth);
 #ifdef HAVE_FBO
-   void (*set_fbo_state)(void *data, unsigned state);
-   unsigned (*get_fbo_state)(void *data);
    uintptr_t (*get_current_framebuffer)(void *data);
    retro_proc_address_t (*get_proc_address)(void *data, const char *sym);
 #endif
