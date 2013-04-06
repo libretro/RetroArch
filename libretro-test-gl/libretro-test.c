@@ -79,7 +79,6 @@ static void init_gl_proc(void)
 }
 
 static GLuint prog;
-static GLuint vao;
 static GLuint vbo;
 
 static const GLfloat vertex_data[] = {
@@ -131,22 +130,11 @@ static void setup_vao(void)
 {
    pglUseProgram(prog);
 
-   pglGenVertexArrays(1, &vao);
-   pglBindVertexArray(vao);
-
    pglGenBuffers(1, &vbo);
    pglBindBuffer(GL_ARRAY_BUFFER, vbo);
    pglBufferData(GL_ARRAY_BUFFER, sizeof(vertex_data), vertex_data, GL_STATIC_DRAW);
 
-   int vloc = pglGetAttribLocation(prog, "aVertex");
-   pglVertexAttribPointer(vloc, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-   pglEnableVertexAttribArray(vloc);
-   int cloc = pglGetAttribLocation(prog, "aColor");
-   pglVertexAttribPointer(cloc, 4, GL_FLOAT, GL_FALSE, 0, (void*)(8 * sizeof(GLfloat)));
-   pglEnableVertexAttribArray(cloc);
-
    pglBindBuffer(GL_ARRAY_BUFFER, 0);
-   pglBindVertexArray(0);
    pglUseProgram(0);
 }
 
@@ -239,9 +227,17 @@ void retro_run(void)
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
    pglUseProgram(prog);
-   pglBindVertexArray(vao);
 
    glEnable(GL_DEPTH_TEST);
+
+   pglBindBuffer(GL_ARRAY_BUFFER, vbo);
+   int vloc = pglGetAttribLocation(prog, "aVertex");
+   pglVertexAttribPointer(vloc, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+   pglEnableVertexAttribArray(vloc);
+   int cloc = pglGetAttribLocation(prog, "aColor");
+   pglVertexAttribPointer(cloc, 4, GL_FLOAT, GL_FALSE, 0, (void*)(8 * sizeof(GLfloat)));
+   pglEnableVertexAttribArray(cloc);
+   pglBindBuffer(GL_ARRAY_BUFFER, 0);
 
    int loc = pglGetUniformLocation(prog, "uMVP");
 
@@ -271,9 +267,10 @@ void retro_run(void)
 
    pglUniformMatrix4fv(loc, 1, GL_FALSE, mvp2);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   pglDisableVertexAttribArray(vloc);
+   pglDisableVertexAttribArray(cloc);
 
    pglUseProgram(0);
-   pglBindVertexArray(0);
 
    video_cb(RETRO_HW_FRAME_BUFFER_VALID, 512, 512, 0);
 }
