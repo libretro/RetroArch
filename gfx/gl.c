@@ -239,7 +239,7 @@ static inline bool load_gl_proc_win32(gl_t *gl)
 #define pglUnmapBuffer glUnmapBuffer
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(HAVE_PSGL)
 #define GL_RGBA32F GL_RGBA32F_ARB
 #endif
 
@@ -559,7 +559,6 @@ static void gl_create_fbo_textures(void *data)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_type);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_type);
 
-#ifndef HAVE_PSGL
       bool fp_fbo = gl->fbo_scale[i].valid && gl->fbo_scale[i].fp_fbo;
 
       if (fp_fbo)
@@ -583,7 +582,6 @@ static void gl_create_fbo_textures(void *data)
          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 
                gl->fbo_rect[i].width, gl->fbo_rect[i].height,
                0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-#endif
       }
       else
 #endif
@@ -1186,32 +1184,23 @@ static void gl_init_rgui_texture(void *data)
 }
 #endif
 
-#if defined(HAVE_PSGL)
-static inline void gl_copy_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch)
-{
-   gl_t *gl = (gl_t*)data;
-   size_t buffer_addr        = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
-   size_t buffer_stride      = gl->tex_w * gl->base_size;
-   const uint8_t *frame_copy = frame;
-   size_t frame_copy_size    = width * gl->base_size;
-
-   uint8_t *buffer = (uint8_t*)glMapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, GL_READ_WRITE) + buffer_addr;
-   for (unsigned h = 0; h < height; h++, buffer += buffer_stride, frame_copy += pitch)
-      memcpy(buffer, frame_copy, frame_copy_size);
-
-   glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
-}
-
 static void gl_init_textures(void *data, const video_info_t *video)
 {
    gl_t *gl = (gl_t*)data;
-   
+#if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
+   gl->egl_images = load_eglimage_proc(gl) && context_init_egl_image_buffer_func(video);
+#else
+   (void)video;
+#endif
+
+#ifdef HAVE_PSGL
    if (!gl->pbo)
       glGenBuffers(1, &gl->pbo);
 
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
    glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
          gl->tex_w * gl->tex_h * gl->base_size * TEXTURES, NULL, GL_STREAM_DRAW);
+#endif
 
    glGenTextures(TEXTURES, gl->texture);
 
@@ -1228,20 +1217,29 @@ static void gl_init_textures(void *data, const video_info_t *video)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
 
+#ifdef HAVE_PSGL
       glTextureReferenceSCE(GL_TEXTURE_2D, 1,
             gl->tex_w, gl->tex_h, 0, 
             gl->internal_fmt,
             gl->tex_w * gl->base_size,
             gl->tex_w * gl->tex_h * i * gl->base_size);
+#else
+      if (!gl->egl_images)
+      {
+         glTexImage2D(GL_TEXTURE_2D,
+               0, gl->internal_fmt, gl->tex_w, gl->tex_h, 0, gl->texture_type,
+               gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
+      }
+#endif
    }
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
-#else
+
 static inline void gl_copy_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
    gl_t *gl = (gl_t*)data;
-#ifdef HAVE_OPENGLES2
-#ifdef HAVE_EGL
+#if defined(HAVE_OPENGLES2)
+#if defined(HAVE_EGL)
    if (gl->egl_images)
    {
       EGLImageKHR img = 0;
@@ -1295,6 +1293,17 @@ static inline void gl_copy_frame(void *data, const void *frame, unsigned width, 
          }
       }
    }
+#elif defined(HAVE_PSGL)
+   size_t buffer_addr        = gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size;
+   size_t buffer_stride      = gl->tex_w * gl->base_size;
+   const uint8_t *frame_copy = frame;
+   size_t frame_copy_size    = width * gl->base_size;
+
+   uint8_t *buffer = (uint8_t*)glMapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, GL_READ_WRITE) + buffer_addr;
+   for (unsigned h = 0; h < height; h++, buffer += buffer_stride, frame_copy += pitch)
+      memcpy(buffer, frame_copy, frame_copy_size);
+
+   glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
 #else
    glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
    if (gl->base_size == 2)
@@ -1316,41 +1325,6 @@ static inline void gl_copy_frame(void *data, const void *frame, unsigned width, 
    }
 #endif
 }
-
-static void gl_init_textures(void *data, const video_info_t *video)
-{
-   gl_t *gl = (gl_t*)data;
-#if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
-   gl->egl_images = load_eglimage_proc(gl) && context_init_egl_image_buffer_func(video);
-#else
-   (void)video;
-#endif
-
-   glGenTextures(TEXTURES, gl->texture);
-
-#ifdef HAVE_RGUI
-   gl_init_rgui_texture(gl);
-#endif
-
-   for (unsigned i = 0; i < TEXTURES; i++)
-   {
-      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
-
-      if (!gl->egl_images)
-      {
-         glTexImage2D(GL_TEXTURE_2D,
-               0, gl->internal_fmt, gl->tex_w, gl->tex_h, 0, gl->texture_type,
-               gl->texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
-      }
-   }
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-}
-#endif
 
 static inline void gl_set_prev_texture(void *data, const struct gl_tex_info *tex_info)
 {
