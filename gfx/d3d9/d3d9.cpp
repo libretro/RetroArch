@@ -654,7 +654,7 @@ void D3DVideo::init_chain_singlepass(const video_info_t &video_info)
 #endif
 
    info.scale_x            = info.scale_y = 1.0f;
-   ino.filter_linear       = video_info.smooth;
+   info.filter_linear      = video_info.smooth;
    info.tex_w = info.tex_h = RARCH_SCALE_BASE * video_info.input_scale;
    info.scale_type_x       = info.scale_type_y = LinkInfo::Viewport;
 

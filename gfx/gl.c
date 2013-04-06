@@ -335,8 +335,11 @@ static inline void gl_shader_deinit(void *data)
 #ifndef NO_GL_FF_VERTEX
 static void gl_set_coords(const struct gl_coords *coords)
 {
-   pglClientActiveTexture(GL_TEXTURE0);
+   pglClientActiveTexture(GL_TEXTURE1);
+   glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
+   pglClientActiveTexture(GL_TEXTURE0);
    glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
    glEnableClientState(GL_VERTEX_ARRAY);
 
@@ -345,11 +348,16 @@ static void gl_set_coords(const struct gl_coords *coords)
 
    glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+}
 
+static void gl_disable_client_arrays(void)
+{
    pglClientActiveTexture(GL_TEXTURE1);
-   glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    pglClientActiveTexture(GL_TEXTURE0);
+   glDisableClientState(GL_VERTEX_ARRAY);
+   glDisableClientState(GL_COLOR_ARRAY);
+   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 #endif
 
@@ -1558,12 +1566,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl_shader_use_func(gl, 0);
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
-      pglClientActiveTexture(GL_TEXTURE1);
-      glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-      pglClientActiveTexture(GL_TEXTURE0);
-      glDisableClientState(GL_VERTEX_ARRAY);
-      glDisableClientState(GL_COLOR_ARRAY);
-      glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+      gl_disable_client_arrays();
 #endif
    }
 #endif
@@ -1582,15 +1585,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    return true;
 }
-
-#ifndef NO_GL_FF_VERTEX
-static void gl_disable_client_arrays(void)
-{
-   glDisableClientState(GL_VERTEX_ARRAY);
-   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-   glDisableClientState(GL_COLOR_ARRAY);
-}
-#endif
 
 static void gl_free(void *data)
 {
