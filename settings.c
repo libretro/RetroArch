@@ -183,6 +183,13 @@ void config_set_defaults(void)
    g_settings.video.msg_color_g = ((message_color >>  8) & 0xff) / 255.0f;
    g_settings.video.msg_color_b = ((message_color >>  0) & 0xff) / 255.0f;
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+   g_settings.video.render_to_texture = render_to_texture;
+   g_settings.video.second_pass_smooth = second_pass_smooth;
+   g_settings.video.fbo.scale_x = fbo_scale_x;
+   g_settings.video.fbo.scale_y = fbo_scale_y;
+#endif
+
    g_settings.video.refresh_rate = refresh_rate;
    g_settings.video.post_filter_record = post_filter_record;
    g_settings.video.gpu_record = gpu_record;
@@ -246,6 +253,7 @@ void config_set_defaults(void)
    g_extern.lifecycle_mode_state |= ((1ULL << MODE_INFO_DRAW) | (1ULL << MODE_MENU));
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    strlcpy(g_settings.video.cg_shader_path, default_paths.shader_file, sizeof(g_settings.video.cg_shader_path));
+   strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
 #endif
 
    strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
@@ -447,6 +455,11 @@ bool config_load_file(const char *path)
 
    CONFIG_GET_PATH(video.cg_shader_path, "video_cg_shader");
    CONFIG_GET_PATH(video.xml_shader_path, "video_xml_shader");
+   CONFIG_GET_PATH(video.second_pass_shader, "video_second_pass_shader");
+   CONFIG_GET_BOOL(video.render_to_texture, "video_render_to_texture");
+   CONFIG_GET_FLOAT(video.fbo.scale_x, "video_fbo_scale_x");
+   CONFIG_GET_FLOAT(video.fbo.scale_y, "video_fbo_scale_y");
+   CONFIG_GET_BOOL(video.second_pass_smooth, "video_second_pass_smooth");
    CONFIG_GET_BOOL(video.allow_rotate, "video_allow_rotate");
 
    CONFIG_GET_PATH(video.font_path, "video_font_path");
@@ -1173,6 +1186,13 @@ bool config_save_file(const char *path)
    config_set_int(conf, "rewind_granularity", g_settings.rewind_granularity);
    config_set_string(conf, "video_cg_shader", g_settings.video.cg_shader_path);
    config_set_float(conf, "video_aspect_ratio", g_extern.system.aspect_ratio);
+#ifdef HAVE_FBO
+   config_set_float(conf, "video_fbo_scale_x", g_settings.video.fbo.scale_x);
+   config_set_float(conf, "video_fbo_scale_y", g_settings.video.fbo.scale_y);
+   config_set_string(conf, "video_second_pass_shader", g_settings.video.second_pass_shader);
+   config_set_bool(conf, "video_render_to_texture", g_settings.video.render_to_texture);
+   config_set_bool(conf, "video_second_pass_smooth", g_settings.video.second_pass_smooth);
+#endif
    config_set_bool(conf, "video_smooth", g_settings.video.smooth);
    config_set_bool(conf, "video_vsync", g_settings.video.vsync);
    config_set_int(conf, "aspect_ratio_index", g_settings.video.aspect_ratio_idx);
@@ -1348,6 +1368,9 @@ void settings_set(uint64_t settings)
    if (settings & (1ULL << S_HW_TEXTURE_FILTER))
       g_settings.video.smooth = !g_settings.video.smooth;
 
+   if (settings & (1ULL << S_HW_TEXTURE_FILTER_2))
+      g_settings.video.second_pass_smooth = !g_settings.video.second_pass_smooth;
+
    if (settings & (1ULL << S_OVERSCAN_DECREMENT))
    {
       g_extern.console.screen.overscan_amount -= 0.01f;
@@ -1409,6 +1432,21 @@ void settings_set(uint64_t settings)
    if (settings & (1ULL << S_SAVESTATE_INCREMENT))
       g_extern.state_slot++;
 
+   if (settings & (1ULL << S_SCALE_ENABLED))
+      g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
+
+   if (settings & (1ULL << S_SCALE_FACTOR_DECREMENT))
+   {
+      g_settings.video.fbo.scale_x -= 1.0f;
+      g_settings.video.fbo.scale_y -= 1.0f;
+   }
+
+   if (settings & (1ULL << S_SCALE_FACTOR_INCREMENT))
+   {
+      g_settings.video.fbo.scale_x += 1.0f;
+      g_settings.video.fbo.scale_y += 1.0f;
+   }
+
    if (settings & (1ULL << S_THROTTLE))
    {
       if(!g_extern.system.force_nonblock)
@@ -1465,6 +1503,9 @@ void settings_set(uint64_t settings)
    if (settings & (1ULL << S_DEF_HW_TEXTURE_FILTER))
       g_settings.video.smooth = video_smooth;
 
+   if (settings & (1ULL << S_DEF_HW_TEXTURE_FILTER_2))
+      g_settings.video.second_pass_smooth = second_pass_smooth;
+
    if (settings & (1ULL << S_DEF_OVERSCAN))
    {
       g_extern.console.screen.overscan_amount = 0.0f;
@@ -1485,6 +1526,19 @@ void settings_set(uint64_t settings)
 
    if (settings & (1ULL << S_DEF_SAVE_STATE))
       g_extern.state_slot = 0;
+
+   if (settings & (1ULL << S_DEF_SCALE_ENABLED))
+   {
+      g_settings.video.render_to_texture = render_to_texture;
+      g_settings.video.fbo.scale_x = fbo_scale_x;
+      g_settings.video.fbo.scale_y = fbo_scale_y;
+   }
+
+   if (settings & (1ULL << S_DEF_SCALE_FACTOR))
+   {
+      g_settings.video.fbo.scale_x = fbo_scale_x;
+      g_settings.video.fbo.scale_y = fbo_scale_y;
+   }
 
    if (settings & (1ULL << S_DEF_REFRESH_RATE))
       g_settings.video.refresh_rate = refresh_rate;

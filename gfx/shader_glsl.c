@@ -1248,6 +1248,27 @@ bool gl_glsl_init(const char *path)
    if (!compile_programs(&gl_program[1], progs, num_progs))
       return false;
 
+   // RetroArch custom two-pass with two different files.
+   if (num_progs == 1 && *g_settings.video.second_pass_shader && g_settings.video.render_to_texture)
+   {
+      unsigned secondary_progs = get_xml_shaders(g_settings.video.second_pass_shader, progs + 1, 1);
+      if (secondary_progs == 1)
+      {
+         if (!compile_programs(&gl_program[2], progs + 1, 1))
+         {
+            RARCH_ERR("Failed to compile second pass shader.\n");
+            return false;
+         }
+
+         num_progs++;
+      }
+      else
+      {
+         RARCH_ERR("Did not find exactly one valid shader in secondary shader file.\n");
+         return false;
+      }
+   }
+
    for (unsigned i = 0; i <= num_progs; i++)
       find_uniforms(gl_program[i], &gl_uniforms[i]);
 

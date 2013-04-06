@@ -185,6 +185,16 @@ struct settings
       float refresh_rate;
       bool threaded;
 
+      bool render_to_texture;
+
+      struct
+      {
+         float scale_x;
+         float scale_y;
+      } fbo;
+
+      char second_pass_shader[PATH_MAX];
+      bool second_pass_smooth;
       char shader_dir[PATH_MAX];
 
       char font_path[PATH_MAX];
