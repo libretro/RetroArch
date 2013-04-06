@@ -48,7 +48,6 @@ bool gl_cg_set_coords(const struct gl_coords *coords);
 
 #define RARCH_CG_MAX_SHADERS 16
 #define RARCH_CG_MENU_SHADER_INDEX (RARCH_CG_MAX_SHADERS - 1)
-void gl_cg_set_menu_shader(const char *path);
 void gl_cg_set_compiler_args(const char **argv);
 
 bool gl_cg_load_shader(unsigned index, const char *path);

@@ -38,7 +38,6 @@ typedef struct
    char port_dir[MAXIMUM_PATH];
    char savestate_dir[MAXIMUM_PATH];
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-   char menu_shader_file[MAXIMUM_PATH];
    char shader_file[MAXIMUM_PATH];
    char shader_dir[MAXIMUM_PATH];
 #endif

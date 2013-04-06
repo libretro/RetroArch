@@ -1891,11 +1891,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->full_y = gl->win_height;
    }
 
-#if defined(HAVE_RMENU) && defined(HAVE_CG)
-   RARCH_LOG("Initializing CG menu shader ...\n");
-   gl_cg_set_menu_shader(default_paths.menu_shader_file);
-#endif
-
 #ifdef HAVE_GLSL
    gl_glsl_set_get_proc_address(gl->ctx_driver->get_proc_address);
 #endif

@@ -59,7 +59,37 @@ static const char *stock_cg_program =
       "   return color * tex2D(s0, tex);"
       "}";
 
-static char *menu_cg_program;
+static const char *menu_cg_program =
+      "struct input"
+      "{"
+         "float2 video_size;"
+         "float2 texture_size;"
+         "float2 output_size;"
+         "float frame_count;"
+         "float frame_direction;"
+         "float frame_rotation;"
+      "};"
+      "void main_vertex"
+      "("
+         "float4 position : POSITION,"
+         "out float4 oPosition : POSITION,"
+         "uniform float4x4 modelViewProj,"
+         "float4 color : COLOR,"
+         "out float4 oColor : COLOR,"
+         "float2 tex_border : TEXCOORD1,"
+         "out float2 otex_border : TEXCOORD1,"
+         "uniform input IN"
+      ")"
+      "{"
+         "oPosition = mul(modelViewProj, position);"
+         "oColor = color;"
+         "otex_border = tex_border;"
+      "}"
+      "float4 main_fragment (float2 tex_border : TEXCOORD1, uniform sampler2D bg : TEXUNIT0, uniform input IN) : COLOR"
+      "{"
+         "float4 background = tex2D(bg, tex_border);"
+         "return background;"
+      "}";
 
 #ifdef RARCH_CG_DEBUG
 static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
@@ -371,12 +401,6 @@ static void gl_cg_deinit_state(void)
 // Final deinit.
 static void gl_cg_deinit_context_state(void)
 {
-   if (menu_cg_program)
-   {
-      free(menu_cg_program);
-      menu_cg_program = NULL;
-   }
-
    // Destroying context breaks on PS3 for some unknown reason.
 #ifndef __CELLOS_LV2__
    if (cgCtx)
@@ -502,7 +526,7 @@ static bool load_plain(const char *path)
 
 static bool load_menu_shader(void)
 {
-   return load_program(RARCH_CG_MENU_SHADER_INDEX, menu_cg_program, true);
+   return load_program(RARCH_CG_MENU_SHADER_INDEX, menu_cg_program, false);
 }
 
 #define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
@@ -846,7 +870,7 @@ bool gl_cg_init(const char *path)
          return false;
    }
 
-   if (menu_cg_program && !load_menu_shader())
+   if (!load_menu_shader())
       return false;
 
    prg[0].mvp = cgGetNamedParameter(prg[0].vprg, "modelViewProj");
@@ -854,8 +878,7 @@ bool gl_cg_init(const char *path)
    for (unsigned i = 1; i <= cg_shader->passes; i++)
       set_program_attributes(i);
 
-   if (menu_cg_program)
-      set_program_attributes(RARCH_CG_MENU_SHADER_INDEX);
+   set_program_attributes(RARCH_CG_MENU_SHADER_INDEX);
 
    cgGLBindProgram(prg[1].fprg);
    cgGLBindProgram(prg[1].vprg);
@@ -903,13 +926,6 @@ void gl_cg_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
       *scale = cg_shader->pass[index - 1].fbo;
    else
       scale->valid = false;
-}
-
-void gl_cg_set_menu_shader(const char *path)
-{
-   if (menu_cg_program)
-      free(menu_cg_program);
-   menu_cg_program = strdup(path);
 }
 
 void gl_cg_set_compiler_args(const char **argv)
