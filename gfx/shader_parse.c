@@ -16,6 +16,7 @@
 #include "shader_parse.h"
 #include "../compat/posix_string.h"
 #include "../msvc/msvc_compat.h"
+#include "../file.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -507,5 +508,17 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
       for (unsigned i = 0; i < shader->variables; i++)
          shader_write_variable(conf, &shader->variable[i]);
    }
+}
+
+enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader_type fallback)
+{
+   const char *ext = path_get_extension(path);
+
+   if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)
+      return RARCH_SHADER_CG;
+   else if (strcmp(ext, "shader") == 0)
+      return RARCH_SHADER_GLSL;
+
+   return fallback;
 }
 

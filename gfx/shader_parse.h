@@ -90,5 +90,7 @@ struct gfx_shader
 bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader);
 void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *shader);
 
+enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader_type fallback);
+
 #endif
 

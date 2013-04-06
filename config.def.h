@@ -176,18 +176,6 @@ enum
 #define DEFAULT_ASPECT_RATIO -1.0f
 #endif
 
-#if defined(_XBOX360)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
-#elif defined(__PSL1GHT__)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
-#elif defined(__CELLOS_LV2__)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_CG
-#elif defined(ANDROID)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
-#else
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_AUTO
-#endif
-
 #ifdef HAVE_DYNAMIC
 #ifdef _WIN32
 #define EXT_EXECUTABLES "dll|DLL"
@@ -259,6 +247,9 @@ static const bool video_smooth = true;
 
 // On resize and fullscreen, rendering area will stay 4:3
 static const bool force_aspect = true; 
+
+// Enable use of shaders.
+static const bool shader_enable = false;
 
 // Only scale in integer steps.
 // The base size depends on system-reported geometry and aspect ratio.

@@ -170,7 +170,7 @@ void config_set_defaults(void)
    g_settings.video.crop_overscan = crop_overscan;
    g_settings.video.aspect_ratio = aspect_ratio;
    g_settings.video.aspect_ratio_auto = aspect_ratio_auto; // Let implementation decide if automatic, or 1:1 PAR.
-   g_settings.video.shader_type = DEFAULT_SHADER_TYPE;
+   g_settings.video.shader_enable = shader_enable;
    g_settings.video.allow_rotate = allow_rotate;
 
    g_settings.video.font_enable = font_enable;
@@ -440,8 +440,9 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(video.aspect_ratio_auto, "video_aspect_ratio_auto");
    CONFIG_GET_FLOAT(video.refresh_rate, "video_refresh_rate");
 
-   CONFIG_GET_PATH(video.cg_shader_path, "video_cg_shader");
-   CONFIG_GET_PATH(video.xml_shader_path, "video_xml_shader");
+   CONFIG_GET_PATH(video.shader_path, "video_shader");
+   CONFIG_GET_BOOL(video.shader_enable, "video_shader_enable");
+
    CONFIG_GET_BOOL(video.allow_rotate, "video_allow_rotate");
 
    CONFIG_GET_PATH(video.font_path, "video_font_path");
@@ -596,18 +597,6 @@ bool config_load_file(const char *path)
 #ifdef HAVE_DYLIB
    CONFIG_GET_PATH(video.filter_path, "video_filter");
 #endif
-
-   if (config_get_array(conf, "video_shader_type", tmp_str, sizeof(tmp_str)))
-   {
-      if (strcmp("cg", tmp_str) == 0)
-         g_settings.video.shader_type = RARCH_SHADER_CG;
-      else if (strcmp("bsnes", tmp_str) == 0)
-         g_settings.video.shader_type = RARCH_SHADER_GLSL;
-      else if (strcmp("auto", tmp_str) == 0)
-         g_settings.video.shader_type = RARCH_SHADER_AUTO;
-      else if (strcmp("none", tmp_str) == 0)
-         g_settings.video.shader_type = RARCH_SHADER_NONE;
-   }
 
    CONFIG_GET_PATH(video.shader_dir, "video_shader_dir");
 

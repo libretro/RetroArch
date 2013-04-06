@@ -143,9 +143,20 @@ enum rarch_shader_type
    RARCH_SHADER_CG,
    RARCH_SHADER_HLSL,
    RARCH_SHADER_GLSL,
-   RARCH_SHADER_AUTO,
    RARCH_SHADER_NONE
 };
+
+#if defined(_XBOX360)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
+#elif defined(__PSL1GHT__)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
+#elif defined(__CELLOS_LV2__)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_CG
+#elif defined(HAVE_OPENGLES2)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
+#else
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_NONE
+#endif
 
 enum rarch_shader_index
 {
