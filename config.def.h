@@ -294,16 +294,6 @@ static const float message_pos_offset_y = 0.05;
 // Color of the message.
 static const uint32_t message_color = 0xffff00; // RGB hex value.
 
-// Render-to-texture before rendering to screen (multi-pass shaders)
-#if defined(__CELLOS_LV2__)
-static const bool render_to_texture = true;
-#else
-static const bool render_to_texture = false;
-#endif
-static const float fbo_scale_x = 2.0;
-static const float fbo_scale_y = 2.0;
-static const bool second_pass_smooth = true;
-
 // Record post-filtered (CPU filter) video rather than raw game output.
 static const bool post_filter_record = false;
 

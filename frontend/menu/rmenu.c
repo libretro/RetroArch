@@ -304,12 +304,6 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "INFO - Select a shader as [Shader #1].", sizeof(current_item->comment));
          break;
-      case SETTING_SHADER_2:
-         fill_pathname_base(fname, g_settings.video.second_pass_shader, sizeof(fname));
-         strlcpy(current_item->text, "Shader #2", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Select a shader as [Shader #2].", sizeof(current_item->comment));
-         break;
 #endif
       case SETTING_EMU_SKIN:
          fill_pathname_base(fname, g_extern.console.menu_texture_path, sizeof(fname));
@@ -356,41 +350,6 @@ static void populate_setting_item(void *data, unsigned input)
                   sizeof(current_item->comment));
          }
          break;
-#ifdef HAVE_FBO
-      case SETTING_HW_TEXTURE_FILTER_2:
-         strlcpy(current_item->text, "Hardware filtering #2", sizeof(current_item->text));
-         if (g_settings.video.second_pass_smooth)
-         {
-            strlcpy(current_item->setting_text, "Bilinear", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - Hardware filtering #2 is set to Bilinear.",
-                  sizeof(current_item->comment));
-         }
-         else
-         {
-            strlcpy(current_item->setting_text, "Point", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - Hardware filtering #2 is set to Point.",
-                  sizeof(current_item->comment));
-         }
-         break;
-      case SETTING_SCALE_ENABLED:
-         strlcpy(current_item->text, "FBO Mode", sizeof(current_item->text));
-         if (g_settings.video.render_to_texture)
-         {
-            strlcpy(current_item->setting_text, "ON", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - FBO Mode is set to 'ON' - 2x shaders will look much\nbetter, and you can select a shader for [Shader #2].", sizeof(current_item->comment));
-         }
-         else
-         {
-            strlcpy(current_item->setting_text, "OFF", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - FBO Mode is set to 'OFF'.", sizeof(current_item->comment));
-         }
-         break;
-      case SETTING_SCALE_FACTOR:
-         strlcpy(current_item->text, "Scaling Factor", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
-         snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Scaling Factor is set to: '%fx (X) / %fx (Y)'.", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
-         break;
-#endif
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
          strlcpy(current_item->text, "Flicker Filter", sizeof(current_item->text));
@@ -722,13 +681,6 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->setting_text, rotation_lut[g_extern.console.screen.orientation], sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "Change orientation of the screen.", sizeof(current_item->comment));
          break;
-#ifdef HAVE_FBO
-      case INGAME_MENU_SCALE_FACTOR:
-         strlcpy(current_item->text, "Scaling Factor", sizeof(current_item->text));
-         snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%fx (X) / %fx (Y)", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
-         strlcpy(current_item->comment, "Change scaling of the screen.", sizeof(current_item->comment));
-         break;
-#endif
       case INGAME_MENU_RESIZE_MODE:
          strlcpy(current_item->text, "Resize Mode", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
@@ -1104,22 +1056,6 @@ static int select_file(uint8_t menu_type, uint64_t input)
 
                   g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_FIRST_SHADER);
                }
-
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_SECOND_SHADER))
-               {
-                  strlcpy(g_settings.video.second_pass_shader, path, sizeof(g_settings.video.second_pass_shader));
-
-                  if (g_settings.video.shader_type != RARCH_SHADER_NONE)
-                  {
-                     driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS1);
-                     if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                        msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
-                  }
-                  else
-                     RARCH_ERR("Shaders are unsupported on this platform.\n");
-
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_SECOND_SHADER);
-               }
                break;
             case PRESET_CHOICE:
                strlcpy(g_extern.file_state.cgp_path, path, sizeof(g_extern.file_state.cgp_path));
@@ -1415,16 +1351,7 @@ static bool osk_callback_enter_filename(void *data)
          case SHADER_PRESET_FILE:
             snprintf(filepath, sizeof(filepath), "%s/%s.cgp", default_paths.cgp_dir, tmp_str);
             RARCH_LOG("[osk_callback_enter_filename]: filepath is: %s.\n", filepath);
-
-            struct gl_cg_cgp_info current_settings;
-            memset(&current_settings, 0, sizeof(current_settings));
-            current_settings.shader[0] = g_settings.video.cg_shader_path;
-            current_settings.shader[1] = g_settings.video.second_pass_shader;
-            current_settings.filter_linear[0] = g_settings.video.smooth;
-            current_settings.filter_linear[1] = g_settings.video.second_pass_smooth;
-            current_settings.render_to_texture = true;
-            current_settings.fbo_scale = g_settings.video.fbo.scale_x; //fbo.scale_x and y are the same anyway
-            gl_cg_save_cgp(filepath, &current_settings);
+            /* TODO - stub */
             break;
          case INPUT_PRESET_FILE:
             snprintf(filepath, sizeof(filepath), "%s/%s.cfg", default_paths.input_presets_dir, tmp_str);
@@ -1551,26 +1478,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                RARCH_ERR("Shaders are unsupported on this platform.\n");
          }
          break;
-      case SETTING_SHADER_2:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-            menu_stack_push(SHADER_CHOICE);
-            filebrowser_set_root_and_ext(filebrowser, EXT_SHADERS, default_paths.shader_dir);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_SECOND_SHADER);
-         }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
-         {
-            strlcpy(g_settings.video.second_pass_shader, default_paths.shader_file, sizeof(g_settings.video.second_pass_shader));
-            if (g_settings.video.shader_type != RARCH_SHADER_NONE)
-            {
-               driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, NULL, RARCH_SHADER_INDEX_PASS1);
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
-            }
-            else
-               RARCH_ERR("Shaders are unsupported on this platform.\n");
-         }
-         break;
       case SETTING_EMU_SKIN:
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
@@ -1670,84 +1577,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
          }
          break;
-#ifdef HAVE_FBO
-      case SETTING_HW_TEXTURE_FILTER_2:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-            settings_set(1ULL << S_HW_TEXTURE_FILTER_2);
-
-            if (driver.video_poke->set_filtering)
-               driver.video_poke->set_filtering(driver.video_data, 2, g_settings.video.second_pass_smooth);
-         }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
-         {
-            settings_set(1ULL << S_DEF_HW_TEXTURE_FILTER_2);
-
-            if (driver.video_poke->set_filtering)
-               driver.video_poke->set_filtering(driver.video_data, 2, g_settings.video.second_pass_smooth);
-         }
-         break;
-      case SETTING_SCALE_ENABLED:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-            settings_set(1ULL << S_SCALE_ENABLED);
-
-            if (driver.video_poke->set_fbo_state)
-            {
-               if (g_settings.video.render_to_texture)
-                  driver.video_poke->set_fbo_state(driver.video_data, FBO_INIT);
-               else
-                  driver.video_poke->set_fbo_state(driver.video_data, FBO_DEINIT);
-            }
-         }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
-         {
-            settings_set(1ULL << S_DEF_SCALE_ENABLED);
-
-            if (driver.video_poke->set_fbo_state)
-               driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
-         }
-         break;
-      case SETTING_SCALE_FACTOR:
-      case INGAME_MENU_SCALE_FACTOR:
-         if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
-         {
-            if (g_settings.video.render_to_texture)
-            {
-               bool should_decrement = g_settings.video.fbo.scale_x > MIN_SCALING_FACTOR;
-
-               if (should_decrement)
-               {
-                  settings_set(1ULL << S_SCALE_FACTOR_DECREMENT);
-
-                  if (driver.video_poke->set_fbo_state)
-                     driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
-               }
-            }
-         }
-         if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-            if (g_settings.video.render_to_texture)
-            {
-               bool should_increment = g_settings.video.fbo.scale_x < MAX_SCALING_FACTOR;
-               if (should_increment)
-               {
-                  settings_set(1ULL << S_SCALE_FACTOR_INCREMENT);
-
-                  if (driver.video_poke->set_fbo_state)
-                     driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
-               }
-            }
-         }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
-         {
-            settings_set(1ULL << S_DEF_SCALE_FACTOR);
-
-            if (driver.video_poke->set_fbo_state)
-               driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
-         }
-         break;
-#endif
 #ifdef _XBOX1
       case SETTING_FLICKER_FILTER:
          if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
@@ -1884,7 +1713,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          {
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
             set_setting_action(NULL, SETTING_SHADER, 1ULL << RMENU_DEVICE_NAV_START);
-            set_setting_action(NULL, SETTING_SHADER_2, 1ULL << RMENU_DEVICE_NAV_START);
 #endif
          }
          break;

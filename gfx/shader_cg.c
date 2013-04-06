@@ -492,30 +492,14 @@ static bool load_plain(const char *path)
 
       if (!load_program(1, path, true))
          return false;
-
-      if (*g_settings.video.second_pass_shader
-#ifndef RARCH_CONSOLE
-            && g_settings.video.render_to_texture
-#endif
-         )
-      {
-         if (!load_program(2, g_settings.video.second_pass_shader, true))
-            return false;
-
-         cg_shader_num = 2;
-      }
-      else
-      {
-         prg[2] = prg[0];
-         cg_shader_num = 1;
-      }
    }
    else
    {
       RARCH_LOG("Loading stock Cg file.\n");
-      prg[2] = prg[1] = prg[0];
-      cg_shader_num = 1;
+      prg[1] = prg[0];
    }
+
+   cg_shader_num = 1;
 
    return true;
 }
@@ -818,11 +802,6 @@ static bool load_shader(const char *cgp_path, unsigned i, config_file_t *conf)
          strlcpy(g_settings.video.cg_shader_path,
                path_buf, sizeof(g_settings.video.cg_shader_path));
          break;
-
-      case 1:
-         strlcpy(g_settings.video.second_pass_shader,
-               path_buf, sizeof(g_settings.video.second_pass_shader));
-         break;
    }
 #endif
 
@@ -961,16 +940,6 @@ static bool load_shader_params(unsigned i, config_file_t *conf)
       }
    }
 
-#ifdef HAVE_RMENU
-   // In RMenu, need to set FBO scaling factors for first pass.
-   if (i == 0 && scale->type_x == RARCH_SCALE_INPUT && scale->type_y && RARCH_SCALE_INPUT
-         && scale->scale_x == scale->scale_y)
-   {
-      g_settings.video.fbo.scale_x = scale->scale_x;
-      g_settings.video.fbo.scale_y = scale->scale_y;
-   }
-#endif
-
    return true;
 }
 
@@ -1033,10 +1002,6 @@ static bool load_preset(const char *path)
       {
          case 0:
             g_settings.video.smooth = fbo_smooth[1] == FILTER_LINEAR;
-            break;
-
-         case 1:
-            g_settings.video.second_pass_smooth = fbo_smooth[2] == FILTER_LINEAR;
             break;
       }
 #endif
@@ -1349,46 +1314,6 @@ bool gl_cg_load_shader(unsigned index, const char *path)
       prg[index] = prg[0];
       return true;
    }
-}
-
-bool gl_cg_save_cgp(const char *path, const struct gl_cg_cgp_info *info)
-{
-   if (!info->shader[0] || !*info->shader[0])
-      return false;
-
-   FILE *file = fopen(path, "w");
-   if (!file)
-      return false;
-
-   unsigned shaders = info->shader[1] && *info->shader[1] ? 2 : 1;
-   fprintf(file, "shaders = %u\n", shaders);
-
-   fprintf(file, "shader0 = \"%s\"\n", info->shader[0]);
-   if (shaders == 2)
-      fprintf(file, "shader1 = \"%s\"\n", info->shader[1]);
-
-   fprintf(file, "filter_linear0 = %s\n", info->filter_linear[0] ? "true" : "false");
-
-   if (info->render_to_texture)
-   {
-      fprintf(file, "filter_linear1 = %s\n", info->filter_linear[1] ? "true" : "false");
-      fprintf(file, "scale_type0 = source\n");
-      fprintf(file, "scale0 = %.1f\n", info->fbo_scale);
-   }
-
-   if (info->lut_texture_path && info->lut_texture_id)
-   {
-      fprintf(file, "textures = %s\n", info->lut_texture_id);
-      fprintf(file, "%s = \"%s\"\n",
-            info->lut_texture_id, info->lut_texture_path);
-
-      fprintf(file, "%s_absolute = %s\n",
-            info->lut_texture_id,
-            info->lut_texture_absolute ? "true" : "false");
-   }
-
-   fclose(file);
-   return true;
 }
 
 void gl_cg_invalidate_context(void)

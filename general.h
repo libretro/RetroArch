@@ -109,7 +109,6 @@ enum menu_enums
    MODE_LOAD_GAME_SRAM_DIR_ENABLE,
    MODE_LOAD_GAME_STATE_DIR_ENABLE,
    MODE_LOAD_FIRST_SHADER,
-   MODE_LOAD_SECOND_SHADER,
    MODE_INIT,
    MODE_MENU,
    MODE_MENU_WIDESCREEN,
@@ -185,16 +184,6 @@ struct settings
       float refresh_rate;
       bool threaded;
 
-      bool render_to_texture;
-
-      struct
-      {
-         float scale_x;
-         float scale_y;
-      } fbo;
-
-      char second_pass_shader[PATH_MAX];
-      bool second_pass_smooth;
       char shader_dir[PATH_MAX];
 
       char font_path[PATH_MAX];

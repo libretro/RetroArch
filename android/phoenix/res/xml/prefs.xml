@@ -132,39 +132,6 @@
                     android:targetPackage="org.retroarch" />
             </Preference>
         </PreferenceCategory>
-        <PreferenceCategory android:title="Shaders (Multi-pass)" >
-            <CheckBoxPreference
-                android:defaultValue="false"
-                android:key="video_render_to_texture"
-                android:summary="Render first pass to texture (FBO). Stretch to screen with second shader."
-                android:title="Render to texture" />
-            <CheckBoxPreference
-                android:defaultValue="false"
-                android:key="video_second_pass_shader_enable"
-                android:summary="Enable custom shader for use after rendering to FBO (WARNING: recommended system requirements for these shaders is a Tegra 4/Exynos5 class GPU and/or higher)."
-                android:title="Enable shader #2" />
-
-            <Preference
-                android:summary="Sets shader to use for second pass."
-                android:title="XML shader (2nd pass)"
-                android:dependency="video_second_pass_shader_enable" >
-                <intent
-                    android:targetClass="org.retroarch.browser.Shader2Activity"
-                    android:targetPackage="org.retroarch" />
-            </Preference>
-
-            <ListPreference
-                android:entries="@array/fbo_scales"
-                android:entryValues="@array/fbo_scale_values"
-                android:key="video_fbo_scale"
-                android:summary="Scale to use when rendering to FBO."
-                android:title="FBO scale" />
-            <CheckBoxPreference
-                android:defaultValue="true"
-                android:key="video_second_pass_smooth"
-                android:summary="Use Bilinear filtering on FBO texture on second pass."
-                android:title="Second pass Bilinear Filtering" />
-        </PreferenceCategory>
         <PreferenceCategory android:title="Fonts">
             <CheckBoxPreference android:title="Enable on-screen fonts"
                 android:summary="Enable rendering of on-screen fonts for messages."

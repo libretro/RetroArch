@@ -534,7 +534,7 @@ static void gl_create_fbo_textures(void *data)
 
    glGenTextures(gl->fbo_pass, gl->fbo_texture);
 
-   GLuint base_filt = g_settings.video.second_pass_smooth ? GL_LINEAR : GL_NEAREST;
+   GLuint base_filt = gl->tex_filter;
    for (int i = 0; i < gl->fbo_pass; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
@@ -662,7 +662,7 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
    // No need to use FBOs.
 #ifndef RARCH_CONSOLE
    /* we always want FBO to be at least initialized on startup for consoles */
-   if (!g_settings.video.render_to_texture && gl_shader_num_func(gl) == 0)
+   if (gl_shader_num_func(gl) == 0)
       return;
 #endif
 
@@ -673,7 +673,7 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
    // No need to use FBOs.
 #ifndef RARCH_CONSOLE
    /* we always want FBO to be at least initialized on startup for consoles */
-   if (gl_shader_num_func(gl) == 1 && !scale.valid && !g_settings.video.render_to_texture)
+   if (gl_shader_num_func(gl) == 1 && !scale.valid)
       return;
 #endif
 
@@ -692,8 +692,8 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 
    if (!scale.valid)
    {
-      scale.scale_x = g_settings.video.fbo.scale_x;
-      scale.scale_y = g_settings.video.fbo.scale_y;
+      scale.scale_x = 1.0f;
+      scale.scale_y = 1.0f; 
       scale.type_x  = scale.type_y = RARCH_SCALE_INPUT;
       scale.valid   = true;
    }
@@ -2254,11 +2254,6 @@ static void gl_start(void)
 
    // Comes too early for console - moved to gl_start
    gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
-
-#ifdef HAVE_FBO
-   if (!g_settings.video.render_to_texture)
-      gl_deinit_fbo(gl);
-#endif
 
 #ifdef HAVE_RMENU
    context_get_available_resolutions_func();
