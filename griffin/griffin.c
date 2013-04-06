@@ -110,7 +110,6 @@ VIDEO SHADERS
 ============================================================ */
 
 #ifdef HAVE_CG
-#include "../gfx/shader_parse.c"
 #include "../gfx/shader_cg.c"
 #endif
 
