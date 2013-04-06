@@ -42,6 +42,15 @@
 #define EXT_CGP_PRESETS "cgp|CGP"
 #define EXT_INPUT_PRESETS "cfg|CFG"
 
+#if defined(_XBOX1)
+#define ROM_PANEL_WIDTH 510
+#define ROM_PANEL_HEIGHT 20
+// Rom list coordinates
+int xpos, ypos;
+unsigned m_menuMainRomListPos_x = 60;
+unsigned m_menuMainRomListPos_y = 80;
+#endif
+
 static bool set_libretro_core_as_launch;
 
 filebrowser_t *browser;
@@ -219,6 +228,128 @@ static void menu_set_default_pos(rmenu_default_positions_t *position)
    position->core_msg_x_position = 0.3f;
    position->core_msg_y_position = 0.06f;
    position->core_msg_font_size = COMMENT_Y_POSITION;
+#endif
+}
+
+/*============================================================
+  RMENU GRAPHICS
+  ============================================================ */
+
+#ifdef HAVE_OPENGL
+GLuint menu_texture_id;
+#endif
+
+static void texture_image_border_load(const char *path)
+{
+#ifdef HAVE_OPENGL
+   gl_t *gl = driver.video_data;
+
+   if (!gl)
+      return;
+
+   glGenTextures(1, &menu_texture_id);
+
+   RARCH_LOG("Loading texture image for menu...\n");
+   if (!texture_image_load(path, &g_extern.console.menu_texture))
+   {
+      RARCH_ERR("Failed to load texture image for menu.\n");
+      return;
+   }
+
+   glBindTexture(GL_TEXTURE_2D, menu_texture_id);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+   glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
+         g_extern.console.menu_texture.width, g_extern.console.menu_texture.height, 0,
+         RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, g_extern.console.menu_texture.pixels);
+
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+
+   free(g_extern.console.menu_texture.pixels);
+#endif
+}
+
+static void rmenu_gfx_init(void)
+{
+   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
+      return;
+
+#ifdef _XBOX1
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
+
+   strlcpy(g_extern.console.menu_texture_path,"D:\\Media\\main-menu_480p.png",
+         sizeof(g_extern.console.menu_texture_path));
+
+   texture_image_load(g_extern.console.menu_texture_path, &g_extern.console.menu_texture);
+   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &g_extern.console.menu_panel);
+
+   //Display some text
+   //Center the text (hardcoded)
+   xpos = d3d->win_width == 640 ? 65 : 400;
+   ypos = d3d->win_width == 640 ? 430 : 670;
+#else
+   texture_image_border_load(g_extern.console.menu_texture_path);
+#endif
+}
+
+static void rmenu_gfx_draw_panel(rarch_position_t *position)
+{
+#ifdef _XBOX1
+   g_extern.console.menu_panel.x = position->x;
+   g_extern.console.menu_panel.y = position->y;
+   g_extern.console.menu_panel.width = ROM_PANEL_WIDTH;
+   g_extern.console.menu_panel.height = ROM_PANEL_HEIGHT;
+   texture_image_render(&g_extern.console.menu_panel);
+#endif
+}
+
+static void rmenu_gfx_draw_bg(rarch_position_t *position)
+{
+#ifdef _XBOX1
+   g_extern.console.menu_texture.x = 0;
+   g_extern.console.menu_texture.y = 0;
+   texture_image_render(&g_extern.console.menu_texture);
+#endif
+}
+
+static void rmenu_gfx_frame(void *data)
+{
+   (void)data;
+#if defined(HAVE_OPENGL)
+   gl_t *gl = (gl_t*)data;
+
+   gl_shader_use(gl, RARCH_CG_MENU_SHADER_INDEX);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
+
+   if (gl->shader)
+   {
+      gl->shader->set_params(gl->win_width, gl->win_height, 
+            gl->win_width, gl->win_height, 
+            gl->win_width, gl->win_height, 
+            g_extern.frame_count, NULL, NULL, NULL, 0);
+   }
+
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, menu_texture_id);
+
+   gl->coords.vertex = vertexes_flipped;
+
+   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
+
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+#endif
+}
+
+static void rmenu_gfx_free(void)
+{
+#ifdef _XBOX1
+   texture_image_free(&g_extern.console.menu_texture);
+   texture_image_free(&g_extern.console.menu_panel);
 #endif
 }
 
@@ -736,10 +867,10 @@ static void populate_setting_item(void *data, unsigned input)
 static void display_menubar(uint8_t menu_type)
 {
    char title[32];
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-   filebrowser_t *fb = browser;
    char msg[128];
    font_params_t font_parms = {0};
+
+   filebrowser_t *fb = browser;
 
    rmenu_default_positions_t default_pos;
    menu_set_default_pos(&default_pos);
@@ -882,7 +1013,7 @@ static void display_menubar(uint8_t menu_type)
    }
 
    rarch_position_t position = {0};
-   device_ptr->ctx_driver->rmenu_draw_bg(&position);
+   rmenu_gfx_draw_bg(&position);
    
    font_parms.x = default_pos.core_msg_x_position;
    font_parms.y = default_pos.core_msg_y_position;
@@ -949,7 +1080,6 @@ static void browser_update(void *data, uint64_t input, const char *extensions)
 static void browser_render(void *data)
 {
    filebrowser_t *b = (filebrowser_t*)data;
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    unsigned file_count = b->current_dir.list->size;
    unsigned current_index = 0;
    unsigned page_number = 0;
@@ -979,7 +1109,7 @@ static void browser_render(void *data)
          rarch_position_t position = {0};
          position.x = default_pos.x_position;
          position.y = default_pos.starting_y_position;
-         device_ptr->ctx_driver->rmenu_draw_panel(&position);
+         rmenu_gfx_draw_panel(&position);
       }
 
       font_parms.x = default_pos.x_position;
@@ -1392,7 +1522,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          {
             if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
             {
-               if (gfx_ctx_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
+               if (g_extern.console.screen.pal_enable)
                   g_extern.lifecycle_mode_state |= (1ULL<< MODE_VIDEO_PAL_ENABLE);
             }
             else
@@ -2275,9 +2405,6 @@ static int select_setting(uint8_t menu_type, uint64_t input)
 
    int ret = 0;
 
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-
-
    switch (menu_type)
    {
       case GENERAL_VIDEO_MENU:
@@ -2360,7 +2487,7 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       position.x = default_pos.x_position;
       position.y = default_pos.starting_y_position;
 
-      device_ptr->ctx_driver->rmenu_draw_panel(&position);
+      rmenu_gfx_draw_panel(&position);
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.comment_y_position;
@@ -2984,7 +3111,6 @@ static int ingame_menu(uint8_t menu_type, uint64_t input)
    uint8_t max_settings = MAX_NO_OF_INGAME_MENU_SETTINGS;
 
    int ret = 0;
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    font_params_t font_parms = {0};
 
    rmenu_default_positions_t default_pos;
@@ -3035,7 +3161,7 @@ static int ingame_menu(uint8_t menu_type, uint64_t input)
       position.x = default_pos.x_position;
       position.y = default_pos.starting_y_position;
 
-      device_ptr->ctx_driver->rmenu_draw_panel(&position);
+      rmenu_gfx_draw_panel(&position);
 
       font_parms.x = default_pos.x_position;
       font_parms.y = default_pos.comment_y_position;
@@ -3145,10 +3271,9 @@ static int menu_input_process(uint8_t menu_type, uint64_t old_state)
   RMENU API
   ============================================================ */
 
+
 void menu_init(void)
 {
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-
    browser    = (filebrowser_t*)filebrowser_init(g_extern.console.main_wrap.default_rom_startup_dir, g_extern.system.valid_extensions);
    tmpBrowser = (filebrowser_t*)filebrowser_init(default_paths.filesystem_root_dir, "");
 
@@ -3157,11 +3282,14 @@ void menu_init(void)
 
    menu_stack_push(FILE_BROWSER_MENU);
 
-   device_ptr->ctx_driver->rmenu_init();
+   rmenu_gfx_init();
 }
+
 
 void menu_free(void)
 {
+   rmenu_gfx_free();
+
    filebrowser_free(browser);
    filebrowser_free(tmpBrowser);
 }
@@ -3182,7 +3310,7 @@ bool menu_iterate(void)
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
 
 #ifndef __CELLOS_LV2__
-      device_ptr->ctx_driver->rmenu_init();
+      rmenu_gfx_init();
 #endif
 
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
@@ -3213,6 +3341,7 @@ bool menu_iterate(void)
       }
 
       rarch_render_cached_frame();
+      rmenu_gfx_frame(driver.video_data);
    }
 
    //first button input frame
@@ -3370,8 +3499,8 @@ deinit:
 
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
 
-#ifndef __CELLOS_LV2__
-   device_ptr->ctx_driver->rmenu_free();
+#ifdef _XBOX1
+   rmenu_gfx_free();
 #endif
 
    return false;

@@ -569,6 +569,7 @@ struct global
          unsigned gamma_correction;
          unsigned char flicker_filter_index;
          unsigned char soft_filter_index;
+         bool pal_enable;
       } screen;
 
       struct

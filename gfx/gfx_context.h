@@ -108,13 +108,6 @@ typedef struct gfx_ctx_driver
    const char *ident;
 
 #if defined(HAVE_RMENU)
-   void (*get_available_resolutions)(void);
-   int  (*check_resolution)(unsigned resolution_id);
-   bool (*rmenu_init)(void);
-   void (*rmenu_frame)(void *data);
-   void (*rmenu_free)(void);
-   void (*rmenu_draw_bg)(rarch_position_t *position);
-   void (*rmenu_draw_panel)(rarch_position_t *position);
    void (*rmenu_screenshot_enable)(bool enable);
    void (*rmenu_screenshot_dump)(void *data);
 #endif

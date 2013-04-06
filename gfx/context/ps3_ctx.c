@@ -42,19 +42,10 @@
 #include "../shader_cg.h"
 #endif
 
-#if defined(HAVE_RMENU)
-GLuint menu_texture_id;
-#endif
-
 #if defined(HAVE_PSGL)
 static PSGLdevice* gl_device;
 static PSGLcontext* gl_context;
 #endif
-
-static int gfx_ctx_check_resolution(unsigned resolution_id)
-{
-   return cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, resolution_id, CELL_VIDEO_OUT_ASPECT_AUTO, 0);
-}
 
 static unsigned gfx_ctx_get_resolution_width(unsigned resolution_id)
 {
@@ -141,7 +132,8 @@ static void gfx_ctx_get_available_resolutions (void)
    resolution_count = 0;
    for (unsigned i = 0; i < num_videomodes; i++)
    {
-      if(gfx_ctx_check_resolution(videomode[i]))
+      if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i],
+               CELL_VIDEO_OUT_ASPECT_AUTO, 0))
          resolution_count++;
    }
 
@@ -150,7 +142,8 @@ static void gfx_ctx_get_available_resolutions (void)
 
    for (unsigned i = 0; i < num_videomodes; i++)
    {
-      if(gfx_ctx_check_resolution(videomode[i]))
+      if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i],
+               CELL_VIDEO_OUT_ASPECT_AUTO, 0))
       {
          g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.count++] = videomode[i];
          g_extern.console.screen.resolutions.initial.id = videomode[i];
@@ -215,94 +208,6 @@ static void gfx_ctx_swap_buffers(void)
 }
 
 static void gfx_ctx_set_resize(unsigned width, unsigned height) { }
-
-void texture_image_border_load(const char *path)
-{
-   gl_t *gl = driver.video_data;
-
-   if (!gl)
-      return;
-
-#ifdef HAVE_RMENU
-   glGenTextures(1, &menu_texture_id);
-
-   RARCH_LOG("Loading texture image for menu...\n");
-   if (!texture_image_load(path, &g_extern.console.menu_texture))
-   {
-      RARCH_ERR("Failed to load texture image for menu.\n");
-      return;
-   }
-
-   glBindTexture(GL_TEXTURE_2D, menu_texture_id);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-   glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
-         g_extern.console.menu_texture.width, g_extern.console.menu_texture.height, 0,
-         RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, g_extern.console.menu_texture.pixels);
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-
-   free(g_extern.console.menu_texture.pixels);
-#endif
-}
-
-static bool gfx_ctx_rmenu_init(void)
-{
-#ifdef HAVE_RMENU
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
-      return true;
-
-   texture_image_border_load(g_extern.console.menu_texture_path);
-#endif
-
-   return true;
-}
-
-#if defined(HAVE_RMENU)
-static void gfx_ctx_rmenu_free(void)
-{
-}
-
-static void gfx_ctx_rmenu_frame(void *data)
-{
-   gl_t *gl = (gl_t*)data;
-
-   gl_shader_use(gl, RARCH_CG_MENU_SHADER_INDEX);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
-
-   if (gl->shader)
-   {
-      gl->shader->set_params(gl->win_width, gl->win_height, 
-            gl->win_width, gl->win_height, 
-            gl->win_width, gl->win_height, 
-            g_extern.frame_count, NULL, NULL, NULL, 0);
-   }
-
-   glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, menu_texture_id);
-
-   gl->coords.vertex = vertexes_flipped;
-
-   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-}
-
-static void gfx_ctx_menu_draw_panel(rarch_position_t *position)
-{
-   (void)position;
-}
-
-static void gfx_ctx_menu_draw_bg(rarch_position_t *position)
-{
-   (void)position;
-}
-#endif
 
 static void gfx_ctx_update_window_title(bool reset) { }
 
@@ -376,6 +281,10 @@ static bool gfx_ctx_init(void)
    psglResetCurrentContext();
 #endif
 
+   g_extern.console.screen.pal_enable = cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, CELL_VIDEO_OUT_RESOLUTION_576, CELL_VIDEO_OUT_ASPECT_AUTO, 0);
+
+   gfx_ctx_get_available_resolutions();
+
    return true;
 }
 
@@ -433,13 +342,6 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    NULL,
    "ps3",
 #ifdef HAVE_RMENU
-   gfx_ctx_get_available_resolutions,
-   gfx_ctx_check_resolution,
-   gfx_ctx_rmenu_init,
-   gfx_ctx_rmenu_frame,
-   gfx_ctx_rmenu_free,
-   gfx_ctx_menu_draw_bg,
-   gfx_ctx_menu_draw_panel,
    rmenu_ctx_ps3_screenshot_enable,
    rmenu_ctx_ps3_screenshot_dump,
 #endif

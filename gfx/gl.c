@@ -1573,9 +1573,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
 
 #if defined(HAVE_RMENU)
-   if (lifecycle_mode_state & (1ULL << MODE_MENU_DRAW))
-      context_rmenu_frame_func(gl);
-   else
+   if (!(lifecycle_mode_state & (1ULL << MODE_MENU_DRAW)))
 #endif
       context_swap_buffers_func();
 
@@ -1595,11 +1593,6 @@ static void gl_free(void *data)
 #endif
 
    gl_t *gl = (gl_t*)data;
-
-#ifdef HAVE_RMENU
-   if (gl->ctx_driver->rmenu_free)
-      context_rmenu_free_func();
-#endif
 
    if (gl->font_ctx)
       gl->font_ctx->deinit(gl);
@@ -2249,13 +2242,6 @@ static void gl_start(void)
 
    // Comes too early for console - moved to gl_start
    gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size);
-
-#ifdef HAVE_RMENU
-   context_get_available_resolutions_func();
-
-   if (gl->ctx_driver->rmenu_init)
-      context_rmenu_init_func();
-#endif
 }
 
 static void gl_stop(void)

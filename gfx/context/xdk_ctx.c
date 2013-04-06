@@ -42,15 +42,6 @@
 #define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
 #endif
 
-#if defined(_XBOX1) && defined(HAVE_RMENU)
-#define ROM_PANEL_WIDTH 510
-#define ROM_PANEL_HEIGHT 20
-// Rom list coordinates
-int xpos, ypos;
-unsigned m_menuMainRomListPos_x;
-unsigned m_menuMainRomListPos_y;
-#endif
-
 static void gfx_ctx_xdk_set_swap_interval(unsigned interval)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
@@ -61,11 +52,6 @@ static void gfx_ctx_xdk_set_swap_interval(unsigned interval)
    else
       d3dr->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_IMMEDIATE);
 }
-
-static void gfx_ctx_xdk_get_available_resolutions (void)
-{
-}
-
 
 static void gfx_ctx_xdk_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
@@ -83,58 +69,6 @@ static void gfx_ctx_xdk_check_window(bool *quit,
 
 static void gfx_ctx_xdk_set_resize(unsigned width, unsigned height) { }
 
-static bool gfx_ctx_xdk_menu_init(void)
-{
-#if defined(_XBOX1) && defined(HAVE_RMENU)
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-
-   int width  = d3d->win_width;
-
-   // Load background image
-   if(width == 640)
-   {
-      strlcpy(g_extern.console.menu_texture_path,"D:\\Media\\main-menu_480p.png",
-            sizeof(g_extern.console.menu_texture_path));
-      m_menuMainRomListPos_x = 60;
-      m_menuMainRomListPos_y = 80;
-   }
-   else if(width == 1280)
-   {
-      strlcpy(g_extern.console.menu_texture_path, "D:\\Media\\main-menu_720p.png",
-            sizeof(g_extern.console.menu_texture_path));
-      m_menuMainRomListPos_x = 360;
-      m_menuMainRomListPos_y = 130;
-   }
-
-   if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE)) { }
-   else
-      texture_image_load(g_extern.console.menu_texture_path, &g_extern.console.menu_texture);
-
-   // Load rom selector panel
-   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &g_extern.console.menu_panel);
-   
-   //Display some text
-   //Center the text (hardcoded)
-   xpos = width == 640 ? 65 : 400;
-   ypos = width == 640 ? 430 : 670;
-#endif
-
-   return true;
-}
-
-static void gfx_ctx_xdk_menu_frame(void* data)
-{
-	(void)data;
-}
-
-static void gfx_ctx_xdk_menu_free(void)
-{
-#if defined(_XBOX1) && defined(HAVE_RMENU)
-   texture_image_free(&g_extern.console.menu_texture);
-   texture_image_free(&g_extern.console.menu_panel);
-#endif
-}
-
 static void gfx_ctx_xdk_swap_buffers(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
@@ -148,26 +82,6 @@ static void gfx_ctx_xdk_swap_buffers(void)
 static bool gfx_ctx_xdk_window_has_focus(void)
 {
    return true;
-}
-
-static void gfx_ctx_xdk_menu_draw_bg(rarch_position_t *position)
-{
-#if defined(_XBOX1) && defined(HAVE_RMENU)
-   g_extern.console.menu_texture.x = 0;
-   g_extern.console.menu_texture.y = 0;
-   texture_image_render(&g_extern.console.menu_texture);
-#endif
-}
-
-static void gfx_ctx_xdk_menu_draw_panel(rarch_position_t *position)
-{
-#if defined(_XBOX1) && defined(HAVE_RMENU)
-   g_extern.console.menu_panel.x = position->x;
-   g_extern.console.menu_panel.y = position->y;
-   g_extern.console.menu_panel.width = ROM_PANEL_WIDTH;
-   g_extern.console.menu_panel.height = ROM_PANEL_HEIGHT;
-   texture_image_render(&g_extern.console.menu_panel);
-#endif
 }
 
 static void gfx_ctx_xdk_menu_screenshot_enable(bool enable)
@@ -357,17 +271,6 @@ static bool gfx_ctx_xdk_bind_api(enum gfx_ctx_api api)
 #endif
 }
 
-/*============================================================
-	MISC
-        TODO: Refactor
-============================================================ */
-
-int gfx_ctx_xdk_check_resolution(unsigned resolution_id)
-{
-   /* TODO: implement */
-   return 0;
-}
-
 static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
 {
    return false;
@@ -398,13 +301,6 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    NULL,
    "xdk",
 #if defined(HAVE_RMENU)
-   gfx_ctx_xdk_get_available_resolutions,
-   gfx_ctx_xdk_check_resolution,
-   gfx_ctx_xdk_menu_init,
-   gfx_ctx_xdk_menu_frame,
-   gfx_ctx_xdk_menu_free,
-   gfx_ctx_xdk_menu_draw_bg,
-   gfx_ctx_xdk_menu_draw_panel,
    gfx_ctx_xdk_menu_screenshot_enable,
    gfx_ctx_xdk_menu_screenshot_dump,
 #endif

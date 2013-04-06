@@ -76,8 +76,6 @@
 #define context_get_video_size_func(win, height)     gl->ctx_driver->get_video_size(win, height)
 #define context_update_window_title_func(var)        gl->ctx_driver->update_window_title(var)
 #define context_destroy_func()                       gl->ctx_driver->destroy()
-#define context_set_fbo_func(var)                    gl->ctx_driver->set_fbo(var)
-#define context_get_available_resolutions_func()     gl->ctx_driver->get_available_resolutions()
 #define context_translate_aspect_func(width, height) gl->ctx_driver->translate_aspect(width, height)
 #define context_set_resize_func(width, height)       gl->ctx_driver->set_resize(width, height)
 #define context_swap_buffers_func()                  gl->ctx_driver->swap_buffers()
@@ -90,12 +88,6 @@
 #define context_update_window_title_func(var)        gl->ctx_driver->update_window_title(var)
 #define context_set_video_mode_func(width, height, fullscreen) gl->ctx_driver->set_video_mode(width, height, fullscreen)
 #define context_input_driver_func(input, input_data) gl->ctx_driver->input_driver(input, input_data)
-
-#ifdef HAVE_RMENU
-#define context_rmenu_init_func()                    gl->ctx_driver->rmenu_init()
-#define context_rmenu_frame_func(ctx)                gl->ctx_driver->rmenu_frame(ctx)
-#define context_rmenu_free_func()                    gl->ctx_driver->rmenu_free()
-#endif
 
 #ifdef HAVE_EGL
 #define context_init_egl_image_buffer_func(video)    gl->ctx_driver->init_egl_image_buffer(video)
