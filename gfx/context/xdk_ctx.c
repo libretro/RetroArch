@@ -30,10 +30,6 @@
 #include "config.h"
 #endif
 
-#include <xgraphics.h>
-
-#include "../../screenshot.h"
-
 #include "../fonts/d3d_font.h"
 
 #if defined(_XBOX1)
@@ -86,33 +82,6 @@ static bool gfx_ctx_xdk_window_has_focus(void)
 
 static void gfx_ctx_xdk_menu_screenshot_enable(bool enable)
 {
-}
-
-static void gfx_ctx_xdk_menu_screenshot_dump(void *data)
-{
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   HRESULT ret = S_OK;
-   char filename[PATH_MAX];
-   char shotname[PATH_MAX];
-
-   fill_dated_filename(shotname, "bmp", sizeof(shotname));
-   snprintf(filename, sizeof(filename), "%s\\%s", default_paths.screenshots_dir, shotname);
-   
-#if defined(_XBOX1)
-   D3DSurface *surf = NULL;
-   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
-   ret = XGWriteSurfaceToFile(surf, filename);
-   surf->Release();
-#elif defined(_XBOX360)
-   ret = 1; //false
-   //ret = D3DXSaveTextureToFile(filename, D3DXIFF_BMP, d3d->lpTexture, NULL);
-#endif
-
-   if(ret == S_OK)
-   {
-      RARCH_LOG("Screenshot saved: %s.\n", filename);
-      msg_queue_push(g_extern.msg_queue, "Screenshot saved.", 1, 30);
-   }
 }
 
 static void gfx_ctx_xdk_update_window_title(bool reset) { }
@@ -260,8 +229,6 @@ static void gfx_ctx_xdk_destroy(void)
 
 static void gfx_ctx_xdk_input_driver(const input_driver_t **input, void **input_data) { }
 
-
-
 static bool gfx_ctx_xdk_bind_api(enum gfx_ctx_api api)
 {
 #if defined(_XBOX1)
@@ -302,6 +269,5 @@ const gfx_ctx_driver_t gfx_ctx_xdk = {
    "xdk",
 #if defined(HAVE_RMENU)
    gfx_ctx_xdk_menu_screenshot_enable,
-   gfx_ctx_xdk_menu_screenshot_dump,
 #endif
 };

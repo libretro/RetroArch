@@ -100,11 +100,6 @@ static void rmenu_ctx_ps3_screenshot_enable(bool enable)
 #endif
 }
 
-static void rmenu_ctx_ps3_screenshot_dump(void *data)
-{
-   (void)data;
-}
-
 static void gfx_ctx_get_available_resolutions (void)
 {
    bool defaultresolution;
@@ -343,7 +338,6 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    "ps3",
 #ifdef HAVE_RMENU
    rmenu_ctx_ps3_screenshot_enable,
-   rmenu_ctx_ps3_screenshot_dump,
 #endif
 };
 

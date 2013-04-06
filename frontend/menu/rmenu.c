@@ -3082,8 +3082,6 @@ static int ingame_menu_resize(uint8_t menu_type, uint64_t input)
 
 static int ingame_menu_screenshot(uint8_t menu_type, uint64_t input)
 {
-   DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
@@ -3094,9 +3092,21 @@ static int ingame_menu_screenshot(uint8_t menu_type, uint64_t input)
          g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
       }
 
+#ifdef HAVE_SCREENSHOTS
       if (input & (1ULL << RMENU_DEVICE_NAV_B))
-         if (device_ptr->ctx_driver->rmenu_screenshot_dump)
-            device_ptr->ctx_driver->rmenu_screenshot_dump(NULL);
+      {
+         const uint16_t *data = (const uint16_t*)g_extern.frame_cache.data;
+         unsigned width       = g_extern.frame_cache.width;
+         unsigned height      = g_extern.frame_cache.height;
+         int pitch            = g_extern.frame_cache.pitch;
+
+         // Negative pitch is needed as screenshot takes bottom-up,
+         // but we use top-down.
+         screenshot_dump(g_settings.screenshot_directory,
+               data + (height - 1) * (pitch >> 1), 
+               width, height, -pitch, false);
+      }
+#endif
    }
 
    return 0;

@@ -109,7 +109,6 @@ typedef struct gfx_ctx_driver
 
 #if defined(HAVE_RMENU)
    void (*rmenu_screenshot_enable)(bool enable);
-   void (*rmenu_screenshot_dump)(void *data);
 #endif
 } gfx_ctx_driver_t;
 
