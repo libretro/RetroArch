@@ -295,7 +295,7 @@ static void get_environment_settings(int argc, char *argv[])
       snprintf(default_paths.input_presets_dir, sizeof(default_paths.input_presets_dir), "%s/input", default_paths.cgp_dir);
       snprintf(default_paths.border_dir, sizeof(default_paths.border_dir), "%s/borders", default_paths.core_dir);
 #if defined(HAVE_CG) || defined(HAVE_GLSL)
-      snprintf(default_paths.shader_dir, sizeof(default_paths.shader_dir), "%s/shaders", default_paths.core_dir);
+      snprintf(g_settings.video.shader_dir, sizeof(g_settings.video.shader_dir), "%s/shaders", default_paths.core_dir);
 #endif
 
 #ifdef IS_SALAMANDER

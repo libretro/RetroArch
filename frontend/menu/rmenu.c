@@ -1583,7 +1583,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
             menu_stack_push(SHADER_CHOICE);
-            filebrowser_set_root_and_ext(filebrowser, EXT_SHADERS, default_paths.shader_dir);
+            filebrowser_set_root_and_ext(filebrowser, EXT_SHADERS, g_settings.video.shader_dir);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_FIRST_SHADER);
          }
          if (input & (1ULL << RMENU_DEVICE_NAV_START))

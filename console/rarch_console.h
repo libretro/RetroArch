@@ -37,9 +37,6 @@ typedef struct
    char screenshots_dir[MAXIMUM_PATH];
    char port_dir[MAXIMUM_PATH];
    char savestate_dir[MAXIMUM_PATH];
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-   char shader_dir[MAXIMUM_PATH];
-#endif
    char sram_dir[MAXIMUM_PATH];
    char system_dir[MAXIMUM_PATH];
 } default_paths_t;
