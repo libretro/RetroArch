@@ -19,7 +19,7 @@
 #include "../gfx_common.h"
 #include "../gl_common.h"
 
-#include <EGL/egl.h> /* Requires NDK r5 or newer */
+#include <EGL/egl.h>
 #include <android/looper.h>
 
 #include "../../frontend/frontend_android.h"
