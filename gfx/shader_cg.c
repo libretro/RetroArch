@@ -487,15 +487,17 @@ static bool load_plain(const char *path)
 
       if (!load_program(1, path, true))
          return false;
+
+      prg[2] = prg[0];
+      cg_shader_num = 1;
    }
    else
    {
       RARCH_LOG("Loading stock Cg file.\n");
-      prg[1] = prg[0];
+      prg[2] = prg[1] = prg[0];
       cg_shader_num = 1;
    }
 
-   cg_shader_num = 1;
    return true;
 }
 
