@@ -2395,10 +2395,11 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
    return 0;
 }
 
+static uint8_t selected = 0;
+
 static int select_setting(uint8_t menu_type, uint64_t input)
 {
    static uint8_t first_setting = FIRST_VIDEO_SETTING;
-   static uint8_t selected = 0;
    static uint8_t page_number = 0;
    uint8_t items_pages[SETTING_LAST] = {0};
    uint8_t max_settings = 0;
@@ -2436,6 +2437,10 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       case CONTROLS_MENU:
          first_setting = FIRST_CONTROLS_SETTING_PAGE_1;
          max_settings = MAX_NO_OF_CONTROLS_SETTINGS;
+         break;
+      case INGAME_MENU:
+         first_setting = FIRST_INGAME_MENU_SETTING;
+         max_settings = MAX_NO_OF_INGAME_MENU_SETTINGS;
          break;
    }
 
@@ -2498,6 +2503,16 @@ static int select_setting(uint8_t menu_type, uint64_t input)
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, item.comment, &font_parms);
+   }
+
+   if (menu_type == INGAME_MENU)
+   {
+      if (input & (1ULL << RMENU_DEVICE_NAV_A))
+      {
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+         return -1;
+      }
    }
 
    if (input & (1ULL << RMENU_DEVICE_NAV_UP))
@@ -2590,6 +2605,9 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       return ret;
 
    display_menubar(menu_type);
+
+   if (menu_type == INGAME_MENU)
+      return 0;
 
    struct platform_bind key_label_l3 = {0};
    struct platform_bind key_label_r3 = {0};
@@ -3114,114 +3132,6 @@ static int ingame_menu_screenshot(uint8_t menu_type, uint64_t input)
    return 0;
 }
 
-static int ingame_menu(uint8_t menu_type, uint64_t input)
-{
-   static uint8_t first_setting = FIRST_INGAME_MENU_SETTING;
-   static uint8_t selected = FIRST_INGAME_MENU_SETTING;
-   static uint8_t page_number = 0;
-   uint8_t items_pages[SETTING_LAST] = {0};
-   uint8_t max_settings = MAX_NO_OF_INGAME_MENU_SETTINGS;
-
-   int ret = 0;
-   font_params_t font_parms = {0};
-
-   rmenu_default_positions_t default_pos;
-   menu_set_default_pos(&default_pos);
-
-   uint8_t i = 0;
-   uint8_t j = 0;
-   uint8_t item_page = 0;
-
-   for(i = first_setting; i < max_settings; i++)
-   {
-      item item;
-      populate_setting_item(&item, i);
-
-      if (!(j < default_pos.entries_per_page))
-      {
-         j = 0;
-         item_page++;
-      }
-
-      item.page = item_page;
-      items_pages[i] = item_page;
-      j++;
-
-      if (item.page != page_number)
-         continue;
-
-      default_pos.starting_y_position += default_pos.y_position_increment;
-
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.starting_y_position;
-      font_parms.scale = default_pos.variable_font_size;
-      font_parms.color = selected == item.enum_id ? YELLOW : WHITE;
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, item.text, &font_parms);
-
-      font_parms.x = default_pos.x_position_center;
-      font_parms.color = WHITE;
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, item.setting_text, &font_parms);
-
-      if (item.enum_id != selected)
-         continue;
-
-      rarch_position_t position = {0};
-      position.x = default_pos.x_position;
-      position.y = default_pos.starting_y_position;
-
-      rmenu_gfx_draw_panel(&position);
-
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.comment_y_position;
-      font_parms.scale = default_pos.font_size;
-      font_parms.color = WHITE;
-
-      if (driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, item.comment, &font_parms);
-   }
-
-   if (input & (1ULL << RMENU_DEVICE_NAV_A))
-   {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
-      return -1;
-   }
-
-   if (input & (1ULL << RMENU_DEVICE_NAV_UP))
-   {
-      if (selected == first_setting)
-         selected = max_settings-1;
-      else
-         selected--;
-
-      if (items_pages[selected] != page_number)
-         page_number = items_pages[selected];
-   }
-      
-   if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
-   {
-      selected++;
-
-      if (selected >= max_settings)
-         selected = first_setting; 
-      if (items_pages[selected] != page_number)
-         page_number = items_pages[selected];
-   }
-
-   ret = set_setting_action(menu_type, selected, input);
-
-   if (ret != 0)
-      return ret;
-
-   display_menubar(menu_type);
-
-   return 0;
-}
-
 static int menu_input_process(uint8_t menu_type, uint64_t old_state)
 {
    bool quit = false;
@@ -3317,7 +3227,10 @@ bool menu_iterate(void)
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_PREINIT))
    {
       if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
+      {
+         selected = FIRST_INGAME_MENU_SETTING;
          menu_stack_push(INGAME_MENU);
+      }
 
       g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
 
@@ -3424,10 +3337,6 @@ bool menu_iterate(void)
 
    switch(menu_id)
    {
-      case INGAME_MENU:
-         input_entry_ret = ingame_menu(menu_id, input);
-         input_process_ret = menu_input_process(menu_id, old_state);
-         break;
       case INGAME_MENU_RESIZE:
          input_entry_ret = ingame_menu_resize(menu_id, input);
          input_process_ret = menu_input_process(menu_id, old_state);
@@ -3465,6 +3374,7 @@ bool menu_iterate(void)
       case EMU_AUDIO_MENU:
       case PATH_MENU:
       case CONTROLS_MENU:
+      case INGAME_MENU:
          input_entry_ret = select_setting(menu_id, input);
          input_process_ret = menu_input_process(menu_id, old_state);
          break;
