@@ -53,6 +53,7 @@ enum
    S_LBL_SHADER,
    S_LBL_SHADER_2,
    S_LBL_RARCH_VERSION,
+   S_LBL_SCALE_FACTOR,
    S_LBL_ROTATION,
    S_LBL_LOAD_STATE_SLOT,
    S_LBL_SAVE_STATE_SLOT,
@@ -289,6 +290,9 @@ static void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned se
          break;
       case S_LBL_RARCH_VERSION:
          snprintf(str, size, "RetroArch %s", PACKAGE_VERSION);
+         break;
+      case S_LBL_SCALE_FACTOR:
+         snprintf(str, size, "Scale Factor: %f (X) / %f (Y)", g_settings.video.fbo.scale_x, g_settings.video.fbo.scale_y);
          break;
       case S_LBL_ROTATION:
          snprintf(str, size, "Rotation: %s", rotation_lut[g_extern.console.screen.orientation]);
@@ -685,10 +689,13 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
    m_settingslist.SetText(SETTING_AUDIO_RESAMPLER_TYPE, strstr(g_settings.audio.resampler, "sinc") ? L"Audio Resampler: Sinc" : L"Audio Resampler: Hermite");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
+   m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SHADER, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SHADER, strw_buffer);
    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SHADER_2, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_SHADER_2, strw_buffer);
+   menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
+   m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_EMU_REWIND_GRANULARITY, strw_buffer);
    m_settingslist.SetText(SETTING_ENABLE_SRAM_PATH, (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? L"SRAM Path Enable: ON" : L"SRAM Path Enable: OFF");
@@ -793,6 +800,18 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             g_settings.video.smooth = !g_settings.video.smooth;
             m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
             break;
+         case SETTING_SCALE_ENABLED:
+            g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
+            m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
+
+            if (driver.video_poke->set_fbo_state)
+            {
+               if(g_settings.video.render_to_texture)
+                  driver.video_poke->set_fbo_state(driver.video_data, FBO_INIT);
+               else
+                  driver.video_poke->set_fbo_state(driver.video_data, FBO_DEINIT);
+            }
+            break;
       }
    }
 
@@ -878,9 +897,41 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
                driver.video->restart();
                m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
                break;
+            case SETTING_SCALE_FACTOR:
+               if (driver.video_poke->get_fbo_state)
+               {
+                  if(driver.video_poke->get_fbo_state(driver.video_data))
+                  {
+                     if((g_settings.video.fbo.scale_x > MIN_SCALING_FACTOR))
+                     {
+                        settings_set(1ULL << S_SCALE_FACTOR_DECREMENT);
+
+                        if (driver.video_poke->set_fbo_state)
+                        {
+                           if(g_settings.video.render_to_texture)
+                              driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
+                        }
+
+                        menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
+                        m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
+                     }
+                  }
+               }
+               break;
             case SETTING_HW_TEXTURE_FILTER:
                g_settings.video.smooth = !g_settings.video.smooth;
                m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
+               break;
+            case SETTING_SCALE_ENABLED:
+               g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
+               m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
+               if (driver.video_poke->set_fbo_state)
+               {
+                  if(g_settings.video.render_to_texture)
+                     driver.video_poke->set_fbo_state(driver.video_data, FBO_INIT);
+                  else
+                     driver.video_poke->set_fbo_state(driver.video_data, FBO_DEINIT);
+               }
                break;
             default:
                break;
@@ -954,9 +1005,38 @@ HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pContro
            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE);
 	    m_settingslist.SetText(SETTING_ENABLE_STATE_PATH, (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? L"Savestate Path Enable: ON" : L"Savestate Path Enable: OFF");
         break;
+            case SETTING_SCALE_FACTOR:
+               if (driver.video_poke->get_fbo_state)
+               {
+                  if(driver.video_poke->get_fbo_state(driver.video_data))
+                  {
+                     if((g_settings.video.fbo.scale_x < MAX_SCALING_FACTOR))
+                     {
+                        settings_set(1ULL << S_SCALE_FACTOR_INCREMENT);
+
+                        if (driver.video_poke->set_fbo_state)
+                           driver.video_poke->set_fbo_state(driver.video_data, FBO_REINIT);
+                        menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SCALE_FACTOR, sizeof(strw_buffer));
+                        m_settingslist.SetText(SETTING_SCALE_FACTOR, strw_buffer);
+                     }
+                  }
+               }
+               break;
             case SETTING_HW_TEXTURE_FILTER:
                g_settings.video.smooth = !g_settings.video.smooth;
                m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
+               break;
+            case SETTING_SCALE_ENABLED:
+               g_settings.video.render_to_texture = !g_settings.video.render_to_texture;
+               m_settingslist.SetText(SETTING_SCALE_ENABLED, g_settings.video.render_to_texture ? L"Custom Scaling/Dual Shaders: ON" : L"Custom Scaling/Dual Shaders: OFF");
+
+               if (driver.video_poke->set_fbo_state)
+               {
+                  if(g_settings.video.render_to_texture)
+                     driver.video_poke->set_fbo_state(driver.video_data, FBO_INIT);
+                  else
+                     driver.video_poke->set_fbo_state(driver.video_data, FBO_DEINIT);
+               }
                break;
             default:
                break;

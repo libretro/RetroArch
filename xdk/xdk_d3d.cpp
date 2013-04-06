@@ -348,7 +348,9 @@ void xdk_d3d_init_fbo(void *data)
    HRESULT ret;
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
 
-#if 0
+   if (!g_settings.video.render_to_texture)
+      return;
+
    xdk_d3d_deinit_fbo(d3d);
 
    ret = d3d->d3d_render_device->CreateTexture(d3d->tex_w * g_settings.video.fbo.scale_x, d3d->tex_h * g_settings.video.fbo.scale_y,
@@ -376,7 +378,6 @@ void xdk_d3d_init_fbo(void *data)
    xdk_convert_texture_to_as16_srgb(&d3d->lpTexture_ot_as16srgb);
 
    d3d->fbo_inited = true;
-#endif
 }
 #endif
 
