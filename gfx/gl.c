@@ -291,7 +291,7 @@ static bool gl_shader_init(void *data)
 
 #ifdef HAVE_CG
       case RARCH_SHADER_CG:
-         backend     = &gl_cg_backend;
+         backend = &gl_cg_backend;
          if (*g_settings.video.cg_shader_path)
             shader_path = g_settings.video.cg_shader_path;
          break;
@@ -299,8 +299,9 @@ static bool gl_shader_init(void *data)
 
 #ifdef HAVE_GLSL
       case RARCH_SHADER_GLSL:
-         backend     = &gl_glsl_backend;
-         shader_path = g_settings.video.xml_shader_path;
+         backend = &gl_glsl_backend;
+         if (*g_settings.video.xml_shader_path)
+            shader_path = g_settings.video.xml_shader_path;
          break;
 #endif
 

@@ -835,7 +835,7 @@ bool gl_cg_init(const char *path)
    cgGLEnableProfile(cgFProf);
    cgGLEnableProfile(cgVProf);
 
-   if (strstr(path, ".cgp"))
+   if (path && strstr(path, ".cgp"))
    {
       if (!load_preset(path))
          return false;
