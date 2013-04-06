@@ -18,6 +18,7 @@
 
 #include "d3d9.hpp"
 #include "../state_tracker.h"
+#include "../shader_parse.h"
 #include <map>
 #include <utility>
 #include <memory>
@@ -32,19 +33,8 @@ struct Vertex
 
 struct LinkInfo
 {
-   enum ScaleType { Relative, Absolute, Viewport };
-
    unsigned tex_w, tex_h;
-
-   float scale_x, scale_y;
-   unsigned abs_x, abs_y;
-   bool filter_linear;
-   ScaleType scale_type_x, scale_type_y;
-
-   unsigned frame_count_mod;
-   bool float_framebuffer;
-
-   std::string shader_path;
+   struct gfx_shader_pass *pass;
 };
 
 class RenderChain

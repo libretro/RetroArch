@@ -28,7 +28,7 @@
 
 #include "d3d9.hpp"
 #include "render_chain.hpp"
-#include "config_file.hpp"
+#include "../../file.h"
 #include "../gfx_common.h"
 #include "../../compat/posix_string.h"
 #include "../../performance.h"
@@ -475,6 +475,8 @@ D3DVideo::D3DVideo(const video_info_t *info) :
       cg_shader = g_settings.video.cg_shader_path;
 #endif
 
+   process_shader();
+
    video_info = *info;
    init(video_info);
 
@@ -644,26 +646,12 @@ void D3DVideo::deinit_cg()
 }
 #endif
 
-void D3DVideo::init_chain_singlepass(const video_info_t &video_info)
+void D3DVideo::init_singlepass()
 {
-   LinkInfo info = {0};
-   LinkInfo info_second = {0};
-
-#ifdef HAVE_CG
-   info.shader_path = cg_shader;
-#endif
-
-   info.scale_x            = info.scale_y = 1.0f;
-   info.filter_linear      = video_info.smooth;
-   info.tex_w = info.tex_h = RARCH_SCALE_BASE * video_info.input_scale;
-   info.scale_type_x       = info.scale_type_y = LinkInfo::Viewport;
-
-   chain = std::unique_ptr<RenderChain>(new RenderChain(
-               video_info,
-               dev, cgCtx,
-               info,
-               video_info.rgb32 ? RenderChain::ARGB : RenderChain::RGB565,
-               final_viewport));
+   memset(&shader, 0, sizeof(shader));
+   shader.passes = 1;
+   gfx_shader_pass &pass = shader.pass[0];
+   strlcpy(pass.source.cg, cg_shader.c_str(), sizeof(pass.source.cg));
 }
 
 static std::vector<std::string> tokenize(const std::string &str)
@@ -683,105 +671,13 @@ static std::vector<std::string> tokenize(const std::string &str)
    return list;
 }
 
-void D3DVideo::init_imports(ConfigFile &conf, const std::string &basedir)
+void D3DVideo::init_imports()
 {
-   std::string imports;
-   if (!conf.get("imports", imports))
-      return;
-
-   std::vector<std::string> list = tokenize(imports);
-
    state_tracker_info tracker_info = {0};
-   std::vector<state_tracker_uniform_info> uniforms;
-
-   for (auto itr = list.begin(); itr != list.end(); ++itr)
-   {
-      auto &elem = *itr;
-
-      state_tracker_uniform_info info;
-      std::memset(&info, 0, sizeof(info));
-      std::string semantic, wram, input_slot, mask, equal;
-
-      state_tracker_type tracker_type;
-      state_ram_type ram_type = RARCH_STATE_NONE;
-
-      conf.get(elem + "_semantic", semantic);
-      if (semantic == "capture")
-         tracker_type = RARCH_STATE_CAPTURE;
-      else if (semantic == "transition")
-         tracker_type = RARCH_STATE_TRANSITION;
-      else if (semantic == "transition_count")
-         tracker_type = RARCH_STATE_TRANSITION_COUNT;
-      else if (semantic == "capture_previous")
-         tracker_type = RARCH_STATE_CAPTURE_PREV;
-      else if (semantic == "transition_previous")
-         tracker_type = RARCH_STATE_TRANSITION_PREV;
-#ifdef HAVE_PYTHON
-      else if (semantic == "python")
-         tracker_type = RARCH_STATE_PYTHON;
-#endif
-      else
-         throw std::logic_error("Invalid semantic.");
-
-      unsigned addr = 0;
-#ifdef HAVE_PYTHON
-      if (tracker_type != RARCH_STATE_PYTHON)
-#endif
-      {
-         unsigned input_slot = 0;
-         if (conf.get_hex(elem + "_input_slot", input_slot))
-         {
-            switch (input_slot)
-            {
-               case 1:
-                  ram_type = RARCH_STATE_INPUT_SLOT1;
-                  break;
-
-               case 2:
-                  ram_type = RARCH_STATE_INPUT_SLOT2;
-                  break;
-
-               default:
-                  throw std::logic_error("Invalid input slot for import.");
-            }
-         }
-         else if (conf.get_hex(elem + "_wram", addr))
-            ram_type = RARCH_STATE_WRAM;
-         else
-            throw std::logic_error("No address assigned to semantic.");
-      }
-
-      unsigned memtype;
-      switch (ram_type)
-      {
-         case RARCH_STATE_WRAM:
-            memtype = RETRO_MEMORY_SYSTEM_RAM;
-            break;
-
-         default:
-            memtype = -1u;
-      }
-
-      if ((memtype != -1u) && (addr >= pretro_get_memory_size(memtype)))
-         throw std::logic_error("Semantic address out of bounds.");
-
-      unsigned bitmask = 0, bitequal = 0;
-      conf.get_hex(elem + "_mask", bitmask);
-      conf.get_hex(elem + "_equal", bitequal);
-
-      strlcpy(info.id, elem.c_str(), sizeof(info.id));
-      info.addr     = addr;
-      info.type     = tracker_type;
-      info.ram_type = ram_type;
-      info.mask     = bitmask;
-      info.equal    = bitequal;
-
-      uniforms.push_back(info);
-   }
 
    tracker_info.wram = (uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
-   tracker_info.info = uniforms.data();
-   tracker_info.info_elem = uniforms.size();
+   tracker_info.info = shader.variable;
+   tracker_info.info_elem = shader.variables;
 
    std::string py_path;
    std::string py_class;
@@ -802,41 +698,31 @@ void D3DVideo::init_imports(ConfigFile &conf, const std::string &basedir)
    chain->add_state_tracker(tracker);
 }
 
-void D3DVideo::init_luts(ConfigFile &conf, const std::string &basedir)
+void D3DVideo::init_luts()
 {
-   std::string textures;
-   if (!conf.get("textures", textures))
-      return;
-
-   std::vector<std::string> list = tokenize(textures);
-
-   for (unsigned i = 0; i < list.size(); i++)
+   for (unsigned i = 0; i < shader.luts; i++)
    {
-      const std::string &id = list[i];
-
-      bool smooth = true;
-      conf.get(id + "_filter", smooth);
-
-      std::string path;
-      if (!conf.get(id, path))
-         throw std::runtime_error("Failed to get LUT texture path!");
-
-      chain->add_lut(id, basedir + path, smooth);
+      chain->add_lut(shader.lut[i].id, shader.lut[i].path, shader.lut[i].filter == RARCH_FILTER_LINEAR);
    }
 }
 
-void D3DVideo::init_chain_multipass(const video_info_t &info)
+void D3DVideo::init_multipass()
 {
-   ConfigFile conf(cg_shader);
+   config_file_t *conf = config_file_new(cg_shader.c_str());
+   if (!conf)
+      throw std::runtime_error("Failed to load preset");
 
-   int shaders = 0;
-   if (!conf.get("shaders", shaders))
-      throw std::runtime_error("Couldn't find \"shaders\" in meta-shader");
+   memset(&shader, 0, sizeof(shader));
 
-   if (shaders < 1)
-      throw std::runtime_error("Must have at least one shader!");
+   if (!gfx_shader_read_conf_cgp(conf, &shader))
+   {
+      config_file_free(conf);
+      throw std::runtime_error("Failed to parse CGP file.");
+   }
 
-   RARCH_LOG("[D3D9 Meta-Cg] Found %d shaders.\n", shaders);
+   config_file_free(conf);
+
+   RARCH_LOG("[D3D9 Meta-Cg] Found %d shaders.\n", shader.passes);
 
    std::string basedir = cg_shader;
    size_t pos = basedir.rfind('/');
@@ -848,237 +734,24 @@ void D3DVideo::init_chain_multipass(const video_info_t &info)
    else
       basedir = "./";
 
-   bool use_extra_pass = false;
-   bool use_first_pass_only = false;
-
-   std::vector<std::string> shader_paths;
-   std::vector<LinkInfo::ScaleType> scale_types_x;
-   std::vector<LinkInfo::ScaleType> scale_types_y;
-   std::vector<float> scales_x;
-   std::vector<float> scales_y;
-   std::vector<unsigned> abses_x;
-   std::vector<unsigned> abses_y;
-   std::vector<bool> filters;
-   std::vector<unsigned> frame_count_mods;
-   std::vector<bool> float_fbos;
-
-   // Shader paths.
-   for (int i = 0; i < shaders; i++)
+   for (unsigned i = 0; i < shader.passes; i++)
    {
-      char buf[256];
-      snprintf(buf, sizeof(buf), "shader%d", i);
-
-      std::string relpath;
-      if (!conf.get(buf, relpath))
-         throw std::runtime_error("Couldn't locate shader path in meta-shader");
-
-      shader_paths.push_back(basedir);
-      shader_paths.back() += relpath;
-   }
-
-   // Dimensions.
-   for (int i = 0; i < shaders; i++)
-   {
-      char attr_type[64];
-      char attr_type_x[64];
-      char attr_type_y[64];
-      char attr_scale[64];
-      char attr_scale_x[64];
-      char attr_scale_y[64];
-      int abs_x = RARCH_SCALE_BASE * info.input_scale;
-      int abs_y = RARCH_SCALE_BASE * info.input_scale;
-      double scale_x = 1.0f;
-      double scale_y = 1.0f;
-
-      std::string attr   = "source";
-      std::string attr_x = "source";
-      std::string attr_y = "source";
-      snprintf(attr_type,    sizeof(attr_type),    "scale_type%d", i);
-      snprintf(attr_type_x,  sizeof(attr_type_x),  "scale_type_x%d", i);
-      snprintf(attr_type_y,  sizeof(attr_type_x),  "scale_type_y%d", i);
-      snprintf(attr_scale,   sizeof(attr_scale),   "scale%d", i);
-      snprintf(attr_scale_x, sizeof(attr_scale_x), "scale_x%d", i);
-      snprintf(attr_scale_y, sizeof(attr_scale_y), "scale_y%d", i);
-
-      bool has_scale = false;
-
-      if (conf.get(attr_type, attr))
+      if (!shader.pass[i].fbo.valid)
       {
-         attr_x = attr_y = attr;
-         has_scale = true;
+         shader.pass[i].fbo.scale_x = shader.pass[i].fbo.scale_y = 1.0f;
+         shader.pass[i].fbo.type_x = shader.pass[i].fbo.type_y = RARCH_SCALE_INPUT;
       }
-      else
-      {
-         if (conf.get(attr_type_x, attr_x))
-            has_scale = true;
-         if (conf.get(attr_type_y, attr_y))
-            has_scale = true;
-      }
-
-      if (attr_x == "source")
-         scale_types_x.push_back(LinkInfo::Relative);
-      else if (attr_x == "viewport")
-         scale_types_x.push_back(LinkInfo::Viewport);
-      else if (attr_x == "absolute")
-         scale_types_x.push_back(LinkInfo::Absolute);
-      else
-         throw std::runtime_error("Invalid scale_type_x!");
-
-      if (attr_y == "source")
-         scale_types_y.push_back(LinkInfo::Relative);
-      else if (attr_y == "viewport")
-         scale_types_y.push_back(LinkInfo::Viewport);
-      else if (attr_y == "absolute")
-         scale_types_y.push_back(LinkInfo::Absolute);
-      else
-         throw std::runtime_error("Invalid scale_type_y!");
-
-      double scale = 0.0;
-      if (conf.get(attr_scale, scale))
-         scale_x = scale_y = scale;
-      else
-      {
-         conf.get(attr_scale_x, scale_x);
-         conf.get(attr_scale_y, scale_y);
-      }
-
-      int absolute = 0;
-      if (conf.get(attr_scale, absolute))
-         abs_x = abs_y = absolute;
-      else
-      {
-         conf.get(attr_scale_x, abs_x);
-         conf.get(attr_scale_y, abs_y);
-      }
-
-      scales_x.push_back(scale_x);
-      scales_y.push_back(scale_y);
-      abses_x.push_back(abs_x);
-      abses_y.push_back(abs_y);
-
-      if (has_scale && i == shaders - 1)
-         use_extra_pass = true;
-      else if (!has_scale && i == 0)
-         use_first_pass_only = true;
-      else if (i > 0)
-         use_first_pass_only = false;
+      std::string rel_shader = shader.pass[i].source.cg;
+      fill_pathname_resolve_relative(shader.pass[i].source.cg, basedir.c_str(),
+         rel_shader.c_str(), sizeof(shader.pass[i].source.cg));
    }
 
-   // Filter options.
-   for (int i = 0; i < shaders; i++)
+   for (unsigned i = 0; i < shader.luts; i++)
    {
-      char attr_filter[64];
-      snprintf(attr_filter, sizeof(attr_filter), "filter_linear%d", i);
-      bool filter = info.smooth;
-      conf.get(attr_filter, filter);
-      filters.push_back(filter);
+      std::string rel_lut = shader.lut[i].path;
+      fill_pathname_resolve_relative(shader.lut[i].path, basedir.c_str(),
+         rel_lut.c_str(), sizeof(shader.lut[i].path));
    }
-
-   // Frame counter modulo.
-   for (int i = 0; i < shaders; i++)
-   {
-      char attr_frame_count_mod[64];
-      snprintf(attr_frame_count_mod, sizeof(attr_frame_count_mod), "frame_count_mod%d", i);
-      unsigned frame_count_mod = 0;
-      conf.get(attr_frame_count_mod, frame_count_mod);
-      frame_count_mods.push_back(frame_count_mod);
-   }
-
-   // Floating point framebuffers.
-   for (int i = 0; i < shaders; i++)
-   {
-      char attr_float_framebuffer[64];
-      snprintf(attr_float_framebuffer, sizeof(attr_float_framebuffer), "float_framebuffer%d", i);
-      bool float_framebuffer = false;
-      conf.get(attr_float_framebuffer, float_framebuffer);
-      float_fbos.push_back(float_framebuffer);
-   }
-
-   // Setup information for first pass.
-   LinkInfo link_info = {0};
-   link_info.shader_path = shader_paths[0];
-
-   if (use_first_pass_only)
-   {
-      link_info.scale_x = link_info.scale_y = 1.0f;
-      link_info.scale_type_x = link_info.scale_type_y = LinkInfo::Viewport;
-   }
-   else
-   {
-      link_info.scale_x = scales_x[0];
-      link_info.scale_y = scales_y[0];
-      link_info.abs_x = abses_x[0];
-      link_info.abs_y = abses_y[0];
-      link_info.scale_type_x = scale_types_x[0];
-      link_info.scale_type_y = scale_types_y[0];
-   }
-
-   link_info.filter_linear = filters[0];
-   link_info.tex_w = link_info.tex_h = info.input_scale * RARCH_SCALE_BASE;
-
-   link_info.frame_count_mod = frame_count_mods[0];
-   link_info.float_framebuffer = false;
-
-   chain = std::unique_ptr<RenderChain>(
-         new RenderChain(
-            video_info,
-            dev, cgCtx,
-            link_info,
-            info.rgb32 ? RenderChain::ARGB : RenderChain::RGB565,
-            final_viewport));
-
-   unsigned current_width = link_info.tex_w;
-   unsigned current_height = link_info.tex_h;
-   unsigned out_width = 0;
-   unsigned out_height = 0;
-
-   for (int i = 1; i < shaders; i++)
-   {
-      RenderChain::convert_geometry(link_info,
-            out_width, out_height,
-            current_width, current_height, final_viewport);
-
-      link_info.scale_x = scales_x[i];
-      link_info.scale_y = scales_y[i];
-      link_info.tex_w = next_pow2(out_width);
-      link_info.tex_h = next_pow2(out_height);
-      link_info.scale_type_x = scale_types_x[i];
-      link_info.scale_type_y = scale_types_y[i];
-      link_info.filter_linear = filters[i];
-      link_info.shader_path = shader_paths[i];
-      link_info.frame_count_mod = frame_count_mods[i];
-      link_info.float_framebuffer = float_fbos[i-1];
-
-      current_width = out_width;
-      current_height = out_height;
-
-      if (i == shaders - 1 && !use_extra_pass)
-      {
-         link_info.scale_x = link_info.scale_y = 1.0f;
-         link_info.scale_type_x = link_info.scale_type_y = LinkInfo::Viewport;
-      }
-
-      chain->add_pass(link_info);
-   }
-
-   if (use_extra_pass)
-   {
-      RenderChain::convert_geometry(link_info,
-            out_width, out_height,
-            current_width, current_height, final_viewport);
-
-      link_info.scale_x = link_info.scale_y = 1.0f;
-      link_info.scale_type_x = link_info.scale_type_y = LinkInfo::Viewport;
-      link_info.filter_linear = info.smooth;
-      link_info.tex_w = next_pow2(out_width);
-      link_info.tex_h = next_pow2(out_height);
-      link_info.shader_path = "";
-      link_info.float_framebuffer = float_fbos.back();
-      chain->add_pass(link_info);
-   }
-
-   init_luts(conf, basedir);
-   init_imports(conf, basedir);
 }
 
 bool D3DVideo::set_shader(const std::string &path)
@@ -1088,6 +761,7 @@ bool D3DVideo::set_shader(const std::string &path)
    try
    {
       cg_shader = path;
+      process_shader();
       restore();
    }
    catch (const std::exception &e)
@@ -1099,20 +773,98 @@ bool D3DVideo::set_shader(const std::string &path)
    if (restore_old)
    {
       cg_shader = old_shader;
+      process_shader();
       restore();
    }
 
    return !restore_old;
 }
 
+void D3DVideo::process_shader()
+{
+   if (cg_shader.find(".cgp") != std::string::npos)
+      init_multipass();
+   else
+      init_singlepass();
+}
+
 bool D3DVideo::init_chain(const video_info_t &video_info)
 {
    try
    {
-      if (cg_shader.find(".cgp") != std::string::npos)
-         init_chain_multipass(video_info);
-      else
-         init_chain_singlepass(video_info);
+      // Setup information for first pass.
+      LinkInfo link_info = {0};
+
+      if (shader.passes == 1 && !shader.pass[0].fbo.valid)
+      {
+         gfx_shader_pass &pass = shader.pass[0];
+         pass.filter = video_info.smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
+         pass.fbo.scale_x = pass.fbo.scale_y = 1.0f;
+         pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
+      }
+
+      link_info.pass = &shader.pass[0];
+      link_info.tex_w = link_info.tex_h = video_info.input_scale * RARCH_SCALE_BASE;
+
+      chain = std::unique_ptr<RenderChain>(
+            new RenderChain(
+               video_info,
+               dev, cgCtx,
+               link_info,
+               video_info.rgb32 ? RenderChain::ARGB : RenderChain::RGB565,
+               final_viewport));
+
+      unsigned current_width = link_info.tex_w;
+      unsigned current_height = link_info.tex_h;
+      unsigned out_width = 0;
+      unsigned out_height = 0;
+
+      bool use_extra_pass = shader.pass[shader.passes - 1].fbo.valid;
+
+      for (int i = 1; i < shader.passes; i++)
+      {
+         RenderChain::convert_geometry(link_info,
+               out_width, out_height,
+               current_width, current_height, final_viewport);
+
+         link_info.pass = &shader.pass[i];
+         link_info.tex_w = next_pow2(out_width);
+         link_info.tex_h = next_pow2(out_height);
+
+         current_width = out_width;
+         current_height = out_height;
+
+         if (i == shader.passes - 1 && !use_extra_pass)
+         {
+            gfx_shader_pass &pass = shader.pass[i];
+            pass.filter = video_info.smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
+            pass.fbo.scale_x = pass.fbo.scale_y = 1.0f;
+            pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
+         }
+
+         chain->add_pass(link_info);
+      }
+
+      if (use_extra_pass)
+      {
+         RenderChain::convert_geometry(link_info,
+               out_width, out_height,
+               current_width, current_height, final_viewport);
+
+         gfx_shader_pass &pass = shader.pass[shader.passes - 1];
+         pass.filter = video_info.smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
+         pass.fbo.scale_x = pass.fbo.scale_y = 1.0f;
+         pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
+
+         link_info.pass = &pass;
+         link_info.tex_w = next_pow2(out_width);
+         link_info.tex_h = next_pow2(out_height);
+      
+         chain->add_pass(link_info);
+      }
+
+      init_luts();
+      init_imports();
    }
    catch (const std::exception &e)
    {

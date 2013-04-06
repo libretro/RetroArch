@@ -18,6 +18,7 @@
 
 #include "../../general.h"
 #include "../../driver.h"
+#include "../shader_parse.h"
 
 #include <d3d9.h>
 #include <d3dx9.h>
@@ -31,7 +32,6 @@
 #include <vector>
 #include <memory>
 
-class ConfigFile;
 class RenderChain;
 
 class D3DVideo
@@ -51,6 +51,7 @@ class D3DVideo
       bool read_viewport(uint8_t *buffer);
       void resize(unsigned new_width, unsigned new_height);
       bool set_shader(const std::string &path);
+      void process_shader();
 
 #ifdef HAVE_OVERLAY
       bool overlay_load(const uint32_t *image, unsigned width, unsigned height);
@@ -79,6 +80,8 @@ class D3DVideo
 
       std::string cg_shader;
 
+      struct gfx_shader shader;
+
       void process();
 
       void init(const video_info_t &info);
@@ -97,10 +100,10 @@ class D3DVideo
       void deinit_cg();
 #endif
 
-      void init_imports(ConfigFile &conf, const std::string &basedir);
-      void init_luts(ConfigFile &conf, const std::string &basedir);
-      void init_chain_singlepass(const video_info_t &video_info);
-      void init_chain_multipass(const video_info_t &video_info);
+      void init_imports();
+      void init_luts();
+      void init_singlepass();
+      void init_multipass();
       bool init_chain(const video_info_t &video_info);
       std::unique_ptr<RenderChain> chain;
       void deinit_chain();

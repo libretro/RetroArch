@@ -115,7 +115,7 @@ void RenderChain::add_pass(const LinkInfo &info)
    pass.last_width = 0;
    pass.last_height = 0;
 
-   compile_shaders(pass.fPrg, pass.vPrg, info.shader_path);
+   compile_shaders(pass.fPrg, pass.vPrg, info.pass->source.cg);
    init_fvf(pass);
 
    if (FAILED(dev->CreateVertexBuffer(
@@ -131,7 +131,7 @@ void RenderChain::add_pass(const LinkInfo &info)
 
    if (FAILED(dev->CreateTexture(info.tex_w, info.tex_h, 1,
                D3DUSAGE_RENDERTARGET,
-               info.float_framebuffer ? D3DFMT_A32B32G32R32F : D3DFMT_X8R8G8B8,
+               passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_X8R8G8B8,
                D3DPOOL_DEFAULT,
                &pass.tex, nullptr)))
    {
@@ -319,15 +319,15 @@ void RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
 
       dev->SetTexture(0, prev.tex[i]);
       dev->SetSamplerState(0, D3DSAMP_MINFILTER,
-            info.filter_linear ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+            info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
       dev->SetSamplerState(0, D3DSAMP_MAGFILTER,
-            info.filter_linear ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+            info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
       dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
       dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       dev->SetTexture(0, nullptr);
    }
 
-   compile_shaders(pass.fPrg, pass.vPrg, info.shader_path);
+   compile_shaders(pass.fPrg, pass.vPrg, info.pass->source.cg);
    init_fvf(pass);
    passes.push_back(pass);
 }
@@ -514,8 +514,8 @@ void RenderChain::set_cg_params(Pass &pass,
    set_cg_param(pass.fPrg, "IN.output_size", output_size);
 
    float frame_cnt = frame_count;
-   if (pass.info.frame_count_mod)
-      frame_cnt = frame_count % pass.info.frame_count_mod;
+   if (pass.info.pass->frame_count_mod)
+      frame_cnt = frame_count % pass.info.pass->frame_count_mod;
    set_cg_param(pass.fPrg, "IN.frame_count", frame_cnt);
    set_cg_param(pass.vPrg, "IN.frame_count", frame_cnt);
 }
@@ -535,33 +535,33 @@ void RenderChain::convert_geometry(const LinkInfo &info,
       unsigned width, unsigned height,
       const D3DVIEWPORT9 &final_viewport)
 {
-   switch (info.scale_type_x)
+   switch (info.pass->fbo.type_x)
    {
-      case LinkInfo::Viewport:
-         out_width = info.scale_x * final_viewport.Width;
+      case RARCH_SCALE_VIEWPORT:
+         out_width = info.pass->fbo.scale_x * final_viewport.Width;
          break;
 
-      case LinkInfo::Absolute:
-         out_width = info.abs_x;
+      case RARCH_SCALE_ABSOLUTE:
+         out_width = info.pass->fbo.abs_x;
          break;
 
-      case LinkInfo::Relative:
-         out_width = info.scale_x * width;
+      case RARCH_SCALE_INPUT:
+         out_width = info.pass->fbo.scale_x * width;
          break;
    }
 
-   switch (info.scale_type_y)
+   switch (info.pass->fbo.type_y)
    {
-      case LinkInfo::Viewport:
-         out_height = info.scale_y * final_viewport.Height;
+      case RARCH_SCALE_VIEWPORT:
+         out_height = info.pass->fbo.scale_y * final_viewport.Height;
          break;
 
-      case LinkInfo::Absolute:
-         out_height = info.abs_y;
+      case RARCH_SCALE_ABSOLUTE:
+         out_height = info.pass->fbo.abs_y;
          break;
 
-      case LinkInfo::Relative:
-         out_height = info.scale_y * height;
+      case RARCH_SCALE_INPUT:
+         out_height = info.pass->fbo.scale_y * height;
          break;
    }
 }
@@ -593,9 +593,9 @@ void RenderChain::render_pass(Pass &pass, unsigned pass_index)
    set_shaders(pass.fPrg, pass.vPrg);
    dev->SetTexture(0, pass.tex);
    dev->SetSamplerState(0, D3DSAMP_MINFILTER,
-         pass.info.filter_linear ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+         pass.info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    dev->SetSamplerState(0, D3DSAMP_MAGFILTER,
-         pass.info.filter_linear ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+         pass.info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
 
    dev->SetVertexDeclaration(pass.vertex_decl);
    for (unsigned i = 0; i < 4; i++)
@@ -631,38 +631,38 @@ void RenderChain::log_info(const LinkInfo &info)
    RARCH_LOG("\tTexture height: %u\n", info.tex_h);
 
    RARCH_LOG("\tScale type (X): ");
-   switch (info.scale_type_x)
+   switch (info.pass->fbo.type_x)
    {
-      case LinkInfo::Relative:
-         RARCH_LOG("Relative @ %fx\n", info.scale_x);
+      case RARCH_SCALE_INPUT:
+         RARCH_LOG("Relative @ %fx\n", info.pass->fbo.scale_x);
          break;
 
-      case LinkInfo::Viewport:
-         RARCH_LOG("Viewport @ %fx\n", info.scale_x);
+      case RARCH_SCALE_VIEWPORT:
+         RARCH_LOG("Viewport @ %fx\n", info.pass->fbo.scale_x);
          break;
 
-      case LinkInfo::Absolute:
-         RARCH_LOG("Absolute @ %d px\n", info.abs_x);
+      case RARCH_SCALE_ABSOLUTE:
+         RARCH_LOG("Absolute @ %d px\n", info.pass->fbo.scale_x);
          break;
    }
 
    RARCH_LOG("\tScale type (Y): ");
-   switch (info.scale_type_y)
+   switch (info.pass->fbo.type_y)
    {
-      case LinkInfo::Relative:
-         RARCH_LOG("Relative @ %fx\n", info.scale_y);
+      case RARCH_SCALE_INPUT:
+         RARCH_LOG("Relative @ %fx\n", info.pass->fbo.scale_y);
          break;
 
-      case LinkInfo::Viewport:
-         RARCH_LOG("Viewport @ %fx\n", info.scale_y);
+      case RARCH_SCALE_VIEWPORT:
+         RARCH_LOG("Viewport @ %fx\n", info.pass->fbo.scale_y);
          break;
 
-      case LinkInfo::Absolute:
-         RARCH_LOG("Absolute @ %d px\n", info.abs_y);
+      case RARCH_SCALE_ABSOLUTE:
+         RARCH_LOG("Absolute @ %d px\n", info.pass->fbo.scale_y);
          break;
    }
 
-   RARCH_LOG("\tBilinear filter: %s\n", info.filter_linear ? "true" : "false");
+   RARCH_LOG("\tBilinear filter: %s\n", info.pass->filter == RARCH_FILTER_LINEAR ? "true" : "false");
 }
 
 void RenderChain::bind_orig(Pass &pass)
@@ -686,9 +686,9 @@ void RenderChain::bind_orig(Pass &pass)
       unsigned index = cgGetParameterResourceIndex(param);
       dev->SetTexture(index, passes[0].tex);
       dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
-            passes[0].info.filter_linear ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+            passes[0].info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
       dev->SetSamplerState(index, D3DSAMP_MINFILTER,
-            passes[0].info.filter_linear ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+            passes[0].info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
       dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
       dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       bound_tex.push_back(index);
@@ -750,9 +750,9 @@ void RenderChain::bind_prev(Pass &pass)
          bound_tex.push_back(index);
 
          dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
-               passes[0].info.filter_linear ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+               passes[0].info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
          dev->SetSamplerState(index, D3DSAMP_MINFILTER,
-               passes[0].info.filter_linear ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+               passes[0].info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
          dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
          dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       }
@@ -810,9 +810,9 @@ void RenderChain::bind_pass(Pass &pass, unsigned pass_index)
 
          dev->SetTexture(index, passes[i].tex);
          dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
-               passes[i].info.filter_linear ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+               passes[i].info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
          dev->SetSamplerState(index, D3DSAMP_MINFILTER,
-               passes[i].info.filter_linear ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+               passes[i].info.pass->filter == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT);
          dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
          dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       }
