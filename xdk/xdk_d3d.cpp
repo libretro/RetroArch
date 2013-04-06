@@ -380,6 +380,7 @@ void xdk_d3d_init_fbo(void *data)
    d3d->fbo_inited = true;
 #endif
 }
+#endif
 
 static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const char *path, unsigned index)
 {
