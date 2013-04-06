@@ -666,7 +666,7 @@ static bool load_preset(const char *path)
 
    config_file_free(conf);
 
-#if 0 // Debugging
+#if 1
    config_file_t *save_test = config_file_new(NULL);
    gfx_shader_write_conf_cgp(conf, cg_shader);
    config_file_write(save_test, "/tmp/load.cgp");
