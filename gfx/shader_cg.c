@@ -123,34 +123,24 @@ struct cg_program
    CGparameter frame_dir_v;
    CGparameter mvp;
 
-   unsigned frame_count_mod;
-
    struct cg_fbo_params fbo[RARCH_CG_MAX_SHADERS];
    struct cg_fbo_params orig;
    struct cg_fbo_params prev[PREV_TEXTURES];
 };
 
-#define FILTER_UNSPEC 0
-#define FILTER_LINEAR 1
-#define FILTER_NEAREST 2
-
 static struct cg_program prg[RARCH_CG_MAX_SHADERS];
 static const char **cg_arguments;
-static bool cg_active = false;
+static bool cg_active;
 static CGprofile cgVProf, cgFProf;
-static unsigned active_index = 0;
-static unsigned cg_shader_num = 0;
-static struct gl_fbo_scale cg_scale[RARCH_CG_MAX_SHADERS];
-static unsigned fbo_smooth[RARCH_CG_MAX_SHADERS];
+static unsigned active_index;
 
+static struct gfx_shader *cg_shader;
+
+static state_tracker_t *state_tracker;
 static GLuint lut_textures[MAX_TEXTURES];
-static unsigned lut_textures_num = 0;
-static char lut_textures_uniform[MAX_TEXTURES][64];
 
 static CGparameter cg_attribs[PREV_TEXTURES + 1 + 4 + RARCH_CG_MAX_SHADERS];
 static unsigned cg_attrib_index;
-
-static state_tracker_t *state_tracker = NULL;
 
 static void gl_cg_reset_attrib(void)
 {
@@ -222,8 +212,9 @@ void gl_cg_set_params(unsigned width, unsigned height,
 
    if (prg[active_index].frame_cnt_f || prg[active_index].frame_cnt_v)
    {
-      if (prg[active_index].frame_count_mod)
-         frame_count %= prg[active_index].frame_count_mod;
+      unsigned modulo = cg_shader->pass[active_index - 1].frame_count_mod;
+      if (modulo)
+         frame_count %= modulo;
 
       set_param_1f(prg[active_index].frame_cnt_f, (float)frame_count);
       set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count);
@@ -275,9 +266,9 @@ void gl_cg_set_params(unsigned width, unsigned height,
    }
 
    // Set lookup textures.
-   for (unsigned i = 0; i < lut_textures_num; i++)
+   for (unsigned i = 0; i < cg_shader->luts; i++)
    {
-      CGparameter param = cgGetNamedParameter(prg[active_index].fprg, lut_textures_uniform[i]);
+      CGparameter param = cgGetNamedParameter(prg[active_index].fprg, cg_shader->lut[i].id);
       if (param)
       {
          cgGLSetTextureParameter(param, lut_textures[i]);
@@ -357,23 +348,24 @@ static void gl_cg_deinit_progs(void)
 static void gl_cg_deinit_state(void)
 {
    gl_cg_reset_attrib();
-
    cg_active = false;
-   cg_shader_num = 0;
 
    gl_cg_deinit_progs();
 
-   memset(cg_scale, 0, sizeof(cg_scale));
-   memset(fbo_smooth, 0, sizeof(fbo_smooth));
-
-   glDeleteTextures(lut_textures_num, lut_textures);
-   lut_textures_num = 0;
+   if (cg_shader && cg_shader->luts)
+   {
+      glDeleteTextures(cg_shader->luts, lut_textures);
+      memset(lut_textures, 0, sizeof(lut_textures));
+   }
 
    if (state_tracker)
    {
       state_tracker_free(state_tracker);
       state_tracker = NULL;
    }
+
+   free(cg_shader);
+   cg_shader = NULL;
 }
 
 // Final deinit.
@@ -486,10 +478,16 @@ static bool load_plain(const char *path)
    if (!load_stock())
       return false;
 
+   cg_shader = (struct gfx_shader*)calloc(1, sizeof(*cg_shader));
+   if (!cg_shader)
+      return false;
+
+   cg_shader->passes = 1;
+
    if (path)
    {
       RARCH_LOG("Loading Cg file: %s\n", path);
-
+      strlcpy(cg_shader->pass[0].source.cg, path, sizeof(cg_shader->pass[0].source.cg));
       if (!load_program(1, path, true))
          return false;
    }
@@ -498,8 +496,6 @@ static bool load_plain(const char *path)
       RARCH_LOG("Loading stock Cg file.\n");
       prg[1] = prg[0];
    }
-
-   cg_shader_num = 1;
 
    return true;
 }
@@ -517,10 +513,9 @@ static bool load_menu_shader(void)
 #define BORDER_FUNC GL_CLAMP_TO_BORDER
 #endif
 
-static void load_texture_data(GLuint *obj, const struct texture_image *img, bool smooth)
+static void load_texture_data(GLuint obj, const struct texture_image *img, bool smooth)
 {
-   glGenTextures(1, obj);
-   glBindTexture(GL_TEXTURE_2D, *obj);
+   glBindTexture(GL_TEXTURE_2D, obj);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, BORDER_FUNC);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, BORDER_FUNC);
@@ -537,41 +532,18 @@ static void load_texture_data(GLuint *obj, const struct texture_image *img, bool
    free(img->pixels);
 }
 
-static bool load_textures(const char *cgp_path, config_file_t *conf)
+static bool load_textures(const char *cgp_path)
 {
-   bool ret = true;
-   char *textures = NULL;
-   if (!config_get_string(conf, "textures", &textures)) // No textures here ...
+   if (!cg_shader->luts)
       return true;
 
-   char *save;
-   const char *id = strtok_r(textures, ";", &save);
-   while (id && lut_textures_num < MAX_TEXTURES)
+   glGenTextures(cg_shader->luts, lut_textures);
+
+   for (unsigned i = 0; i < cg_shader->luts; i++)
    {
-      char path[PATH_MAX];
-      if (!config_get_array(conf, id, path, sizeof(path)))
-      {
-         RARCH_ERR("Cannot find path to texture \"%s\" ...\n", id);
-         ret = false;
-         goto end;
-      }
-
-      char id_filter[64];
-      print_buf(id_filter, "%s_linear", id);
-
-      bool smooth = true;
-      if (!config_get_bool(conf, id_filter, &smooth))
-         smooth = true;
-
-      char id_absolute[64];
-      print_buf(id_absolute, "%s_absolute", id);
-
-      bool absolute = false;
-      if (!config_get_bool(conf, id_absolute, &absolute))
-         absolute = false;
-
       char image_path[PATH_MAX];
-      fill_pathname_resolve_relative(image_path, cgp_path, path, sizeof(image_path));
+      fill_pathname_resolve_relative(image_path, cgp_path,
+            cg_shader->lut[i].path, sizeof(image_path));
 
       RARCH_LOG("Loading image from: \"%s\".\n", image_path);
 
@@ -579,130 +551,25 @@ static bool load_textures(const char *cgp_path, config_file_t *conf)
       if (!texture_image_load(image_path, &img))
       {
          RARCH_ERR("Failed to load picture ...\n");
-         ret = false;
-         goto end;
+         return false;
       }
 
-      strlcpy(lut_textures_uniform[lut_textures_num],
-            id, sizeof(lut_textures_uniform[lut_textures_num]));
-
-      load_texture_data(&lut_textures[lut_textures_num], &img, smooth);
-      lut_textures_num++;
-
-      id = strtok_r(NULL, ";", &save);
+      load_texture_data(lut_textures[i], &img,
+            cg_shader->lut[i].filter != RARCH_FILTER_NEAREST);
    }
 
-end:
-   free(textures);
    glBindTexture(GL_TEXTURE_2D, 0);
-   return ret;
+   return true;
 }
 
-static bool load_imports(const char *cgp_path, config_file_t *conf)
+static bool load_imports(const char *cgp_path)
 {
-   bool ret = true;
-   char *imports = NULL;
-
-   if (!config_get_string(conf, "imports", &imports))
-      return true;
-
-   struct state_tracker_uniform_info info[MAX_VARIABLES];
-   unsigned info_cnt = 0;
    struct state_tracker_info tracker_info = {0};
 
-#ifdef HAVE_PYTHON
-   char script_path[PATH_MAX];
-   char *script = NULL;
-   char *script_class = NULL; 
-#endif
-
-   char *save;
-   const char *id = strtok_r(imports, ";", &save);
-   while (id && info_cnt < MAX_VARIABLES)
+   for (unsigned i = 0; i < cg_shader->variables; i++)
    {
-      char semantic_buf[64];
-      char wram_buf[64];
-      char input_slot_buf[64];
-      char mask_buf[64];
-      char equal_buf[64];
-
-      print_buf(semantic_buf, "%s_semantic", id);
-      print_buf(wram_buf, "%s_wram", id);
-      print_buf(input_slot_buf, "%s_input_slot", id);
-      print_buf(mask_buf, "%s_mask", id);
-      print_buf(equal_buf, "%s_equal", id);
-
-      char *semantic = NULL;
-
-      config_get_string(conf, semantic_buf, &semantic);
-   
-      if (!semantic)
-      {
-         RARCH_ERR("No semantic for import variable.\n");
-         ret = false;
-         goto end;
-      }
-
-      enum state_tracker_type tracker_type;
-      enum state_ram_type ram_type = RARCH_STATE_NONE;
-
-      if (strcmp(semantic, "capture") == 0)
-         tracker_type = RARCH_STATE_CAPTURE;
-      else if (strcmp(semantic, "transition") == 0)
-         tracker_type = RARCH_STATE_TRANSITION;
-      else if (strcmp(semantic, "transition_count") == 0)
-         tracker_type = RARCH_STATE_TRANSITION_COUNT;
-      else if (strcmp(semantic, "capture_previous") == 0)
-         tracker_type = RARCH_STATE_CAPTURE_PREV;
-      else if (strcmp(semantic, "transition_previous") == 0)
-         tracker_type = RARCH_STATE_TRANSITION_PREV;
-#ifdef HAVE_PYTHON
-      else if (strcmp(semantic, "python") == 0)
-         tracker_type = RARCH_STATE_PYTHON;
-#endif
-      else
-      {
-         RARCH_ERR("Invalid semantic.\n");
-         ret = false;
-         goto end;
-      }
-
-      unsigned addr = 0;
-#ifdef HAVE_PYTHON
-      if (tracker_type != RARCH_STATE_PYTHON)
-#endif
-      {
-         unsigned input_slot = 0;
-         if (config_get_hex(conf, input_slot_buf, &input_slot))
-         {
-            switch (input_slot)
-            {
-               case 1:
-                  ram_type = RARCH_STATE_INPUT_SLOT1;
-                  break;
-
-               case 2:
-                  ram_type = RARCH_STATE_INPUT_SLOT2;
-                  break;
-
-               default:
-                  RARCH_ERR("Invalid input slot for import.\n");
-                  ret = false;
-                  goto end;
-            }
-         }
-         else if (config_get_hex(conf, wram_buf, &addr))
-            ram_type = RARCH_STATE_WRAM;
-         else
-         {
-            RARCH_ERR("No address assigned to semantic.\n");
-            ret = false;
-            goto end;
-         }
-      }
-
       unsigned memtype;
-      switch (ram_type)
+      switch (cg_shader->variable[i].ram_type)
       {
          case RARCH_STATE_WRAM:
             memtype = RETRO_MEMORY_SYSTEM_RAM;
@@ -712,336 +579,118 @@ static bool load_imports(const char *cgp_path, config_file_t *conf)
             memtype = -1u;
       }
 
-      if ((memtype != -1u) && (addr >= pretro_get_memory_size(memtype)))
+      if ((memtype != -1u) && (cg_shader->variable[i].addr >= pretro_get_memory_size(memtype)))
       {
          RARCH_ERR("Address out of bounds.\n");
-         ret = false;
-         goto end;
+         return false;
       }
-
-      unsigned bitmask = 0;
-      if (!config_get_hex(conf, mask_buf, &bitmask))
-         bitmask = 0;
-      unsigned bitequal = 0;
-      if (!config_get_hex(conf, equal_buf, &bitequal))
-         bitequal = 0;
-
-      strlcpy(info[info_cnt].id, id, sizeof(info[info_cnt].id));
-      info[info_cnt].addr = addr;
-      info[info_cnt].type = tracker_type;
-      info[info_cnt].ram_type = ram_type;
-      info[info_cnt].mask = bitmask;
-      info[info_cnt].equal = bitequal;
-
-      info_cnt++;
-      free(semantic);
-
-      id = strtok_r(NULL, ";", &save);
    }
 
    tracker_info.wram = (uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
-   tracker_info.info = info;
-   tracker_info.info_elem = info_cnt;
+   tracker_info.info = cg_shader->variable;
+   tracker_info.info_elem = cg_shader->variables;
 
 #ifdef HAVE_PYTHON
-   if (config_get_string(conf, "import_script", &script))
+   if (*cg_shader->script_path)
    {
-      fill_pathname_resolve_relative(script_path, cgp_path, script, sizeof(script_path));
+      char script_path[PATH_MAX];
+      fill_pathname_resolve_relative(script_path, cgp_path,
+            cg_shader->script_path, sizeof(script_path));
       tracker_info.script = script_path;
+      tracker_info.script_is_file = true;
    }
-   if (config_get_string(conf, "import_script_class", &script_class))
-      tracker_info.script_class = script_class;
 
-   tracker_info.script_is_file = true;
+   tracker_info.script_class = *cg_shader->script_class ? cg_shader->script_class : NULL;
 #endif
 
    state_tracker = state_tracker_init(&tracker_info);
    if (!state_tracker)
       RARCH_WARN("Failed to initialize state tracker.\n");
 
-#ifdef HAVE_PYTHON
-   if (script)
-      free(script);
-   if (script_class)
-      free(script_class);
-#endif
-
-end:
-   free(imports);
-   return ret;
+   return true;
 }
 
-static bool load_shader(const char *cgp_path, unsigned i, config_file_t *conf)
+static bool load_shader(const char *cgp_path, unsigned i)
 {
-   char *shader_path = NULL;
-   char attr_buf[64];
    char path_buf[PATH_MAX];
-
-   print_buf(attr_buf, "shader%u", i);
-   if (config_get_string(conf, attr_buf, &shader_path))
-   {
-      fill_pathname_resolve_relative(path_buf, cgp_path, shader_path, sizeof(path_buf));
-      free(shader_path);
-   }
-   else
-   {
-      RARCH_ERR("Didn't find shader path in config ...\n");
-      return false;
-   }
+   fill_pathname_resolve_relative(path_buf, cgp_path,
+         cg_shader->pass[i].source.cg, sizeof(path_buf));
 
    RARCH_LOG("Loading Cg shader: \"%s\".\n", path_buf);
 
    if (!load_program(i + 1, path_buf, true))
       return false;
 
-#ifdef HAVE_RMENU
-   // In RMenu, need to display shaders in menu.
-   switch (i)
-   {
-      case 0:
-         strlcpy(g_settings.video.cg_shader_path,
-               path_buf, sizeof(g_settings.video.cg_shader_path));
-         break;
-   }
-#endif
-
-   return true;
-}
-
-static bool load_shader_params(unsigned i, config_file_t *conf)
-{
-   char scale_type[64] = {0};
-   char scale_type_x[64] = {0};
-   char scale_type_y[64] = {0};
-
-   prg[i + 1].frame_count_mod = 0;
-   char frame_count_mod[64] = {0};
-   char frame_count_mod_buf[64];
-   print_buf(frame_count_mod_buf, "frame_count_mod%u", i);
-   if (config_get_array(conf, frame_count_mod_buf, frame_count_mod, sizeof(frame_count_mod)))
-      prg[i + 1].frame_count_mod = strtoul(frame_count_mod, NULL, 0);
-
-   char scale_name_buf[64];
-   print_buf(scale_name_buf, "scale_type%u", i);
-   config_get_array(conf, scale_name_buf, scale_type, sizeof(scale_type));
-
-   print_buf(scale_name_buf, "scale_type_x%u", i);
-   config_get_array(conf, scale_name_buf, scale_type_x, sizeof(scale_type_x));
-
-   print_buf(scale_name_buf, "scale_type_y%u", i);
-   config_get_array(conf, scale_name_buf, scale_type_y, sizeof(scale_type_y));
-
-   if (!*scale_type && !*scale_type_x && !*scale_type_y)
-      return true;
-
-   if (*scale_type)
-   {
-      strlcpy(scale_type_x, scale_type, sizeof(scale_type_x));
-      strlcpy(scale_type_y, scale_type, sizeof(scale_type_y));
-   }
-
-   char attr_name_buf[64];
-   float fattr = 0.0f;
-   int iattr = 0;
-   struct gl_fbo_scale *scale = &cg_scale[i + 1]; // Shader 0 is passthrough shader. Start at 1.
-
-   scale->valid = true;
-   scale->type_x = RARCH_SCALE_INPUT;
-   scale->type_y = RARCH_SCALE_INPUT;
-   scale->scale_x = 1.0;
-   scale->scale_y = 1.0;
-
-   char fp_fbo_buf[64];
-   print_buf(fp_fbo_buf, "float_framebuffer%u", i);
-   scale->fp_fbo = false;
-   config_get_bool(conf, fp_fbo_buf, &scale->fp_fbo);
-
-   const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
-   scale->abs_x = geom->base_width;
-   scale->abs_y = geom->base_height;
-
-   if (*scale_type_x)
-   {
-      if (strcmp(scale_type_x, "source") == 0)
-         scale->type_x = RARCH_SCALE_INPUT;
-      else if (strcmp(scale_type_x, "viewport") == 0)
-         scale->type_x = RARCH_SCALE_VIEWPORT;
-      else if (strcmp(scale_type_x, "absolute") == 0)
-         scale->type_x = RARCH_SCALE_ABSOLUTE;
-      else
-      {
-         RARCH_ERR("Invalid attribute.\n");
-         return false;
-      }
-   }
-
-   if (*scale_type_y)
-   {
-      if (strcmp(scale_type_y, "source") == 0)
-         scale->type_y = RARCH_SCALE_INPUT;
-      else if (strcmp(scale_type_y, "viewport") == 0)
-         scale->type_y = RARCH_SCALE_VIEWPORT;
-      else if (strcmp(scale_type_y, "absolute") == 0)
-         scale->type_y = RARCH_SCALE_ABSOLUTE;
-      else
-      {
-         RARCH_ERR("Invalid attribute.\n");
-         return false;
-      }
-   }
-
-   if (scale->type_x == RARCH_SCALE_ABSOLUTE)
-   {
-      print_buf(attr_name_buf, "scale%u", i);
-      if (config_get_int(conf, attr_name_buf, &iattr))
-         scale->abs_x = iattr;
-      else
-      {
-         print_buf(attr_name_buf, "scale_x%u", i);
-         if (config_get_int(conf, attr_name_buf, &iattr))
-            scale->abs_x = iattr;
-      }
-   }
-   else
-   {
-      print_buf(attr_name_buf, "scale%u", i);
-      if (config_get_float(conf, attr_name_buf, &fattr))
-         scale->scale_x = fattr;
-      else
-      {
-         print_buf(attr_name_buf, "scale_x%u", i);
-         if (config_get_float(conf, attr_name_buf, &fattr))
-            scale->scale_x = fattr;
-      }
-   }
-
-   if (scale->type_y == RARCH_SCALE_ABSOLUTE)
-   {
-      print_buf(attr_name_buf, "scale%u", i);
-      if (config_get_int(conf, attr_name_buf, &iattr))
-         scale->abs_y = iattr;
-      else
-      {
-         print_buf(attr_name_buf, "scale_y%u", i);
-         if (config_get_int(conf, attr_name_buf, &iattr))
-            scale->abs_y = iattr;
-      }
-   }
-   else
-   {
-      print_buf(attr_name_buf, "scale%u", i);
-      if (config_get_float(conf, attr_name_buf, &fattr))
-         scale->scale_y = fattr;
-      else
-      {
-         print_buf(attr_name_buf, "scale_y%u", i);
-         if (config_get_float(conf, attr_name_buf, &fattr))
-            scale->scale_y = fattr;
-      }
-   }
-
    return true;
 }
 
 static bool load_preset(const char *path)
 {
-   bool ret = true;
-
    if (!load_stock())
       return false;
-
-   int shaders = 0;
 
    RARCH_LOG("Loading Cg meta-shader: %s\n", path);
    config_file_t *conf = config_file_new(path);
    if (!conf)
    {
       RARCH_ERR("Failed to load preset.\n");
-      ret = false;
-      goto end;
+      return false;
    }
 
-   if (!config_get_int(conf, "shaders", &shaders))
+   if (!cg_shader)
+      cg_shader = (struct gfx_shader*)calloc(1, sizeof(*cg_shader));
+   if (!cg_shader)
+      return false;
+
+   if (!gfx_shader_read_conf_cgp(conf, cg_shader))
    {
-      RARCH_ERR("Cannot find \"shaders\" param.\n");
-      ret = false;
-      goto end;
+      RARCH_ERR("Failed to parse CGP file.\n");
+      config_file_free(conf);
+      return false;
    }
 
-   if (shaders < 1)
-   {
-      RARCH_ERR("Need to define at least 1 shader.\n");
-      ret = false;
-      goto end;
-   }
+   config_file_free(conf);
 
-   cg_shader_num = shaders;
-   if (shaders > RARCH_CG_MAX_SHADERS - 3)
+#if 0 // Debugging
+   config_file_t *save_test = config_file_new(NULL);
+   gfx_shader_write_conf_cgp(conf, cg_shader);
+   config_file_write(save_test, "/tmp/load.cgp");
+   config_file_free(save_test);
+#endif
+
+   if (cg_shader->passes > RARCH_CG_MAX_SHADERS - 3)
    {
       RARCH_WARN("Too many shaders ... Capping shader amount to %d.\n", RARCH_CG_MAX_SHADERS - 3);
-      cg_shader_num = shaders = RARCH_CG_MAX_SHADERS - 3;
+      cg_shader->passes = RARCH_CG_MAX_SHADERS - 3;
    }
    // If we aren't using last pass non-FBO shader, 
    // this shader will be assumed to be "fixed-function".
    // Just use prg[0] for that pass, which will be
    // pass-through.
-   prg[shaders + 1] = prg[0]; 
+   prg[cg_shader->passes + 1] = prg[0]; 
 
-   // Check filter params.
-   for (int i = 0; i < shaders; i++)
+   for (unsigned i = 0; i < cg_shader->passes; i++)
    {
-      bool smooth = false;
-      char filter_name_buf[64];
-      print_buf(filter_name_buf, "filter_linear%u", i);
-      if (config_get_bool(conf, filter_name_buf, &smooth))
-         fbo_smooth[i + 1] = smooth ? FILTER_LINEAR : FILTER_NEAREST;
-
-#ifdef HAVE_RMENU
-      // In RMenu, need to set smoothing for first and second passes.
-      switch (i)
-      {
-         case 0:
-            g_settings.video.smooth = fbo_smooth[1] == FILTER_LINEAR;
-            break;
-      }
-#endif
-   }
-
-   for (int i = 0; i < shaders; i++)
-   {
-      if (!load_shader_params(i, conf))
-      {
-         RARCH_ERR("Failed to load shader params ...\n");
-         ret = false;
-         goto end;
-      }
-
-      if (!load_shader(path, i, conf))
+      if (!load_shader(path, i))
       {
          RARCH_ERR("Failed to load shaders ...\n");
-         ret = false;
-         goto end;
+         return false;
       }
    }
 
-   if (!load_textures(path, conf))
+   if (!load_textures(path))
    {
       RARCH_ERR("Failed to load lookup textures ...\n");
-      ret = false;
-      goto end;
+      return false;
    }
 
-   if (!load_imports(path, conf))
+   if (!load_imports(path))
    {
       RARCH_ERR("Failed to load imports ...\n");
-      ret = false;
-      goto end;
+      return false;
    }
 
-end:
-   if (conf)
-      config_file_free(conf);
-   return ret;
+   return true;
 }
 
 static void set_program_base_attrib(unsigned i)
@@ -1202,7 +851,7 @@ bool gl_cg_init(const char *path)
 
    prg[0].mvp = cgGetNamedParameter(prg[0].vprg, "modelViewProj");
 
-   for (unsigned i = 1; i <= cg_shader_num; i++)
+   for (unsigned i = 1; i <= cg_shader->passes; i++)
       set_program_attributes(i);
 
    if (menu_cg_program)
@@ -1230,37 +879,35 @@ void gl_cg_use(unsigned index)
 unsigned gl_cg_num(void)
 {
    if (cg_active)
-      return cg_shader_num;
+      return cg_shader->passes;
    else
       return 0;
 }
 
 bool gl_cg_filter_type(unsigned index, bool *smooth)
 {
-   if (cg_active)
+   if (cg_active && index)
    {
-      if (fbo_smooth[index] == FILTER_UNSPEC)
+      if (cg_shader->pass[index - 1].filter == RARCH_FILTER_UNSPEC)
          return false;
-      *smooth = (fbo_smooth[index] == FILTER_LINEAR);
+      *smooth = cg_shader->pass[index - 1].filter == RARCH_FILTER_LINEAR;
       return true;
    }
    else
       return false;
 }
 
-void gl_cg_shader_scale(unsigned index, struct gl_fbo_scale *scale)
+void gl_cg_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
 {
-   if (cg_active)
-      *scale = cg_scale[index];
+   if (cg_active && index)
+      *scale = cg_shader->pass[index - 1].fbo;
    else
       scale->valid = false;
 }
 
 void gl_cg_set_menu_shader(const char *path)
 {
-   if (menu_cg_program)
-      free(menu_cg_program);
-
+   free(menu_cg_program);
    menu_cg_program = strdup(path);
 }
 
@@ -1319,22 +966,6 @@ bool gl_cg_load_shader(unsigned index, const char *path)
 void gl_cg_invalidate_context(void)
 {
    cgCtx = NULL;
-}
-
-unsigned gl_cg_get_lut_info(struct gl_cg_lut_info *info, unsigned elems)
-{
-   if (!cg_active)
-      return 0;
-
-   elems = elems > lut_textures_num ? lut_textures_num : elems;
-
-   for (unsigned i = 0; i < elems; i++)
-   {
-      strlcpy(info[i].id, lut_textures_uniform[i], sizeof(info[i].id));
-      info[i].tex = lut_textures[i];
-   }
-
-   return elems;
 }
 
 const gl_shader_backend_t gl_cg_backend = {

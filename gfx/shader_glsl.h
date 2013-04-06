@@ -39,7 +39,7 @@ void gl_glsl_use(unsigned index);
 unsigned gl_glsl_num(void);
 
 bool gl_glsl_filter_type(unsigned index, bool *smooth);
-void gl_glsl_shader_scale(unsigned index, struct gl_fbo_scale *scale);
+void gl_glsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale);
 
 bool gl_glsl_set_coords(const struct gl_coords *coords);
 bool gl_glsl_set_mvp(const math_matrix *mat);
