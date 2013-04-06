@@ -27,14 +27,12 @@ typedef struct
 {
    char menu_border_file[MAXIMUM_PATH];
    char border_dir[MAXIMUM_PATH];
-   char cgp_dir[MAXIMUM_PATH];
    char core_dir[MAXIMUM_PATH];
    char config_path[MAXIMUM_PATH];
    char libretro_path[MAXIMUM_PATH];
    char filebrowser_startup_dir[MAXIMUM_PATH];
    char filesystem_root_dir[MAXIMUM_PATH];
    char input_presets_dir[MAXIMUM_PATH];
-   char screenshots_dir[MAXIMUM_PATH];
    char port_dir[MAXIMUM_PATH];
    char savestate_dir[MAXIMUM_PATH];
    char sram_dir[MAXIMUM_PATH];

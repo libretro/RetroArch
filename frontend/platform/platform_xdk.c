@@ -304,11 +304,11 @@ static void get_environment_settings(int argc, char *argv[])
    strlcpy(default_paths.system_dir, "D:\\system", sizeof(default_paths.system_dir));
    strlcpy(default_paths.filesystem_root_dir, "D:", sizeof(default_paths.filesystem_root_dir));
    strlcpy(default_paths.filebrowser_startup_dir, "D:", sizeof(default_paths.filebrowser_startup_dir));
-   strlcpy(default_paths.screenshots_dir, "D:\\screenshots", sizeof(default_paths.screenshots_dir));
+   strlcpy(g_settings.screenshot_directory, "D:\\screenshots", sizeof(g_settings.screenshot_directory));
 #elif defined(_XBOX360)
    strlcpy(default_paths.core_dir, "game:", sizeof(default_paths.core_dir));
    strlcpy(default_paths.filesystem_root_dir, "game:\\", sizeof(default_paths.filesystem_root_dir));
-   strlcpy(default_paths.screenshots_dir, "game:", sizeof(default_paths.screenshots_dir));
+   strlcpy(g_settings.screenshot_directory, "game:", sizeof(g_settings.screenshot_directory));
 #ifdef IS_SALAMANDER
    strlcpy(default_paths.config_path, "game:\\retroarch.cfg", sizeof(default_paths.config_path));
 #else

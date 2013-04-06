@@ -34,7 +34,7 @@ bool screenshot_dump(const char *folder, const void *frame,
    char shotname[PATH_MAX];
 
    fill_dated_filename(shotname, "bmp", sizeof(shotname));
-   snprintf(filename, sizeof(filename), "%s\\%s", default_paths.screenshots_dir, shotname);
+   snprintf(filename, sizeof(filename), "%s\\%s", g_settings.screenshot_directory, shotname);
    
    D3DSurface *surf = NULL;
    d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);

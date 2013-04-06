@@ -1470,7 +1470,7 @@ static bool osk_callback_enter_filename(void *data)
          case CONFIG_FILE:
             break;
          case SHADER_PRESET_FILE:
-            snprintf(filepath, sizeof(filepath), "%s/%s.cgp", default_paths.cgp_dir, tmp_str);
+            snprintf(filepath, sizeof(filepath), "%s/%s.cgp", g_settings.video.shader_dir, tmp_str);
             RARCH_LOG("[osk_callback_enter_filename]: filepath is: %s.\n", filepath);
             /* TODO - stub */
             break;
@@ -1573,7 +1573,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             if (g_extern.main_is_init)
             {
                menu_stack_push(PRESET_CHOICE);
-               filebrowser_set_root_and_ext(filebrowser, EXT_CGP_PRESETS, default_paths.cgp_dir);
+               filebrowser_set_root_and_ext(filebrowser, EXT_CGP_PRESETS, g_settings.video.shader_dir);
             }
          }
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
