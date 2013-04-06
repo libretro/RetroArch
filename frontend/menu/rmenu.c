@@ -274,18 +274,19 @@ static void texture_image_border_load(const char *path)
 
 static void rmenu_gfx_init(void)
 {
+#ifdef _XBOX1
+   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &g_extern.console.menu_panel);
 
    //Center the text
    xpos = d3d->win_width == 640 ? 65 : 400;
    ypos = d3d->win_width == 640 ? 430 : 670;
+#endif
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
       return;
 
 #ifdef _XBOX1
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-
    strlcpy(g_extern.console.menu_texture_path,"D:\\Media\\main-menu_480p.png",
          sizeof(g_extern.console.menu_texture_path));
 
