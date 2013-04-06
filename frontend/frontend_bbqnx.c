@@ -41,7 +41,9 @@ int rarch_main(int argc, char *argv[])
 
    for (;;)
    {
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
+      if (g_extern.system.shutdown)
+         break;
+      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
       {
 	     while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
 	        g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
@@ -54,15 +56,11 @@ int rarch_main(int argc, char *argv[])
 	     struct rarch_main_wrap args = {0};
 
         args.verbose = g_extern.verbose;
+         args.config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
         args.sram_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? g_extern.console.main_wrap.default_sram_dir : NULL;
         args.state_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? g_extern.console.main_wrap.default_savestate_dir : NULL;
         args.rom_path = g_extern.fullpath;
         args.libretro_path = g_settings.libretro;
-
-        if (path_file_exists(g_extern.config_path))
-           args.config_path = g_extern.config_path;
-        else
-           args.config_path = NULL;
 
 	     int init_ret = rarch_main_init_wrap(&args);
 	     if (init_ret == 0)
@@ -81,12 +79,14 @@ int rarch_main(int argc, char *argv[])
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
       {
          g_extern.lifecycle_mode_state |= 1ULL << MODE_MENU_PREINIT;
-         while (menu_iterate());
+         while (!g_extern.system.shutdown && menu_iterate());
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
       }
       else
          break;
    }
+
+   g_extern.system.shutdown = false;
 
    menu_free();
    if (g_extern.main_is_init)

@@ -98,9 +98,7 @@ void* rarch_main_ios(void* args)
    for (;;)
    {
       if (g_extern.system.shutdown)
-      {
          break;
-      }
       else if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
       {
          while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate())
@@ -132,6 +130,7 @@ void* rarch_main_ios(void* args)
          {
             RARCH_ERR("rarch_main_init() failed.\n");
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+            msg_queue_push(g_extern.msg_queue, "ERROR - An error occurred during ROM loading.", 1, 180);
          }
 
          g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);

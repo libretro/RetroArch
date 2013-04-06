@@ -144,74 +144,76 @@ int rarch_main(int argc, char *argv[])
 
    system_process_args(argc, argv);
 
-begin_loop:
-   if(g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
+   for (;;)
    {
-      driver.input->poll(NULL);
-
-      if (driver.video_poke->set_aspect_ratio)
-         driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
-         audio_start_func();
-
-      while(rarch_main_iterate());
-
-      if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
-         audio_stop_func();
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
-   }
-   else if (g_extern.lifecycle_mode_state & (1ULL << MODE_INIT))
-   {
-      if(g_extern.main_is_init)
-         rarch_main_deinit();
-
-      struct rarch_main_wrap args = {0};
-
-      args.verbose = g_extern.verbose;
-      args.sram_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? g_extern.console.main_wrap.default_sram_dir : NULL;
-      args.state_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? g_extern.console.main_wrap.default_savestate_dir : NULL;
-      args.rom_path = g_extern.fullpath;
-      args.libretro_path = g_settings.libretro;
-
-      if (path_file_exists(g_extern.config_path))
-         args.config_path = g_extern.config_path;
-      else
-         args.config_path = NULL;
-
-      if (rarch_main_init_wrap(&args) == 0)
+      if (g_extern.system.shutdown)
+         break;
+      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_GAME))
       {
-         RARCH_LOG("rarch_main_init succeeded.\n");
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+         driver.input->poll(NULL);
+
+         if (driver.video_poke->set_aspect_ratio)
+            driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
+            audio_start_func();
+
+         while(rarch_main_iterate());
+
+         if (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_THROTTLE_ENABLE))
+            audio_stop_func();
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_GAME);
+      }
+      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_INIT))
+      {
+         if (g_extern.main_is_init)
+            rarch_main_deinit();
+
+         struct rarch_main_wrap args = {0};
+
+         args.verbose = g_extern.verbose;
+         args.config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
+         args.sram_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? g_extern.console.main_wrap.default_sram_dir : NULL;
+         args.state_path = (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_STATE_DIR_ENABLE)) ? g_extern.console.main_wrap.default_savestate_dir : NULL;
+         args.rom_path = g_extern.fullpath;
+         args.libretro_path = g_settings.libretro;
+
+         int init_ret = rarch_main_init_wrap(&args);
+         if (init_ret == 0)
+         {
+            RARCH_LOG("rarch_main_init succeeded.\n");
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_GAME);
+         }
+         else
+         {
+            RARCH_ERR("rarch_main_init failed.\n");
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
+            msg_queue_push(g_extern.msg_queue, "ERROR - An error occurred during ROM loading.", 1, 180);
+         }
+
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
+      }
+      else if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
+      {
+         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_PREINIT);
+         while (!g_extern.system.shutdown && menu_iterate());
+         g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
       }
       else
-      {
-         RARCH_ERR("rarch_main_init failed.\n");
-         g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
-         msg_queue_push(g_extern.msg_queue, "ERROR - An error occurred during ROM loading.", 1, 180);
-      }
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_INIT);
+         break;
    }
-   else if(g_extern.lifecycle_mode_state & (1ULL << MODE_MENU))
-   {
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_PREINIT);
-      while (menu_iterate());
-      g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU);
-   }
-   else
-      goto begin_shutdown;
 
-   goto begin_loop;
+   g_extern.system.shutdown = false;
 
-begin_shutdown:
+   menu_free();
+
    config_save_file(g_extern.config_path);
 
    system_deinit_save();
 
-   if(g_extern.main_is_init)
+   if (g_extern.main_is_init)
       rarch_main_deinit();
 
-   menu_free();
    global_uninit_drivers();
 
 #ifdef PERF_TEST
@@ -219,6 +221,7 @@ begin_shutdown:
 #endif
 
    system_deinit();
+
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_EXITSPAWN))
       system_exitspawn();
 
