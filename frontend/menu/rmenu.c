@@ -1507,6 +1507,8 @@ static bool osk_callback_enter_filename_init(void *data)
 #endif
 #endif
 
+static uint8_t selected = 0;
+
 static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t input)
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
@@ -2348,6 +2350,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          {
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU);
             g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_INGAME_EXIT);
+            selected = FIRST_VIDEO_SETTING;
             return 0;
          }
          break;
@@ -2394,8 +2397,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
 
    return 0;
 }
-
-static uint8_t selected = 0;
 
 static int select_setting(uint8_t menu_type, uint64_t input)
 {
