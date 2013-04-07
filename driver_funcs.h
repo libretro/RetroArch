@@ -130,7 +130,7 @@ static inline bool input_key_pressed_func(int key)
 #define video_set_rotation_func(rotation)	MAKENAME_VIDEO(_set_rotation)(driver.video_data, rotation)
 #define video_stop_func() MAKENAME_VIDEO(_stop)()
 #define video_start_func() MAKENAME_VIDEO(_start)()
-#define video_set_shader_func(type, path, mask) MAKENAME_VIDEO(_set_shader)(driver.video_data, type, path, mask)
+#define video_set_shader_func(type, path) MAKENAME_VIDEO(_set_shader)(driver.video_data, type, path)
 #define video_xml_shader_func(path) driver.video->xml_shader(driver.video_data, path)
 
 /*============================================================

@@ -793,7 +793,7 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
       float desired_aspect = g_extern.system.aspect_ratio;
       float delta;
 
-#ifdef HAVE_RGUI
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          x      = g_extern.console.screen.viewports.custom_vp.x;
@@ -1304,7 +1304,7 @@ static void gl_pbo_async_readback(void *data)
 }
 #endif
 
-#ifdef HAVE_RGUI
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
 static inline void gl_draw_texture(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -1438,7 +1438,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    gl_set_prev_texture(gl, &tex_info);
 
-#ifdef HAVE_RGUI
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    if (gl->rgui_texture_enable)
       gl_draw_texture(gl);
 #endif
@@ -1520,7 +1520,7 @@ static void gl_free(void *data)
 
    glDeleteTextures(TEXTURES, gl->texture);
 
-#ifdef HAVE_RGUI
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    if (gl->rgui_texture)
       glDeleteTextures(1, &gl->rgui_texture);
 #endif
@@ -1655,7 +1655,7 @@ static inline void gl_reinit_textures(void *data, const video_info_t *video)
       glBindTexture(GL_TEXTURE_2D, 0);
       glDeleteTextures(TEXTURES, gl->texture);
 
-#ifdef HAVE_RGUI
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
       glDeleteTextures(1, &gl->rgui_texture);
 #endif
 
@@ -2340,7 +2340,7 @@ static void gl_set_blend(void *data, bool enable)
       glDisable(GL_BLEND);
 }
 
-#ifdef HAVE_RGUI
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
 static void gl_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
@@ -2361,8 +2361,10 @@ static void gl_set_texture_frame(void *data,
 
    gl->rgui_texture_alpha = alpha;
 
+#ifndef HAVE_PSGL
    unsigned base_size = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * base_size));
+#endif
 
    if (rgb32)
    {
@@ -2420,7 +2422,7 @@ static const video_poke_interface_t gl_poke_interface = {
 #endif
    gl_set_aspect_ratio,
    gl_apply_state_changes,
-#ifdef HAVE_RGUI
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    gl_set_texture_frame,
    gl_set_texture_enable,
 #endif

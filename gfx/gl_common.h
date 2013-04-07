@@ -285,7 +285,7 @@ typedef struct gl
    struct scaler_ctx pbo_readback_scaler;
 #endif
 
-#ifdef HAVE_RGUI
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    GLuint rgui_texture;
    bool rgui_texture_enable;
    GLfloat rgui_texture_alpha;

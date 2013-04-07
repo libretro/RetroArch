@@ -71,7 +71,7 @@ typedef struct thread_video
    const input_driver_t **input;
    void **input_data;
 
-#ifdef HAVE_RGUI
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    struct
    {
       void *frame;
@@ -303,7 +303,7 @@ static void thread_loop(void *data)
       {
          slock_lock(thr->frame.lock);
 
-#ifdef HAVE_RGUI
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
          if (thr->texture.frame_updated)
          {
             thr->poke->set_texture_frame(thr->driver_data,
@@ -425,7 +425,7 @@ static bool thread_frame(void *data, const void *frame_,
       // If we are going to render menu,
       // we'll want to block to avoid stepping menu
       // at crazy speeds.
-#ifdef HAVE_RGUI
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
       if (thr->texture.enable)
       {
          while (thr->frame.updated)
@@ -639,7 +639,7 @@ static void thread_set_aspect_ratio(void *data, unsigned aspectratio_index)
    thread_wait_reply(thr, CMD_POKE_SET_ASPECT_RATIO);
 }
 
-#ifdef HAVE_RGUI
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
 static void thread_set_texture_frame(void *data, const void *frame,
       bool rgb32, unsigned width, unsigned height, float alpha)
 {
@@ -692,7 +692,7 @@ static const video_poke_interface_t thread_poke = {
 #endif
    thread_set_aspect_ratio,
    thread_apply_state_changes,
-#ifdef HAVE_RGUI
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    thread_set_texture_frame,
    thread_set_texture_enable,
 #endif
