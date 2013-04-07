@@ -250,13 +250,11 @@ static bool gl_shader_init(void *data)
    gl_t *gl = (gl_t*)data;
    const gl_shader_backend_t *backend = NULL;
 
-#if DEFAULT_SHADER_TYPE == RARCH_SHADER_NONE
-   if (!g_settings.video.shader_enable)
+   if (DEFAULT_SHADER_TYPE == RARCH_SHADER_NONE && !g_settings.video.shader_enable)
    {
       RARCH_LOG("[GL]: Not loading any shader.\n");
       return true;
    }
-#endif
 
    const char *shader_path = *g_settings.video.shader_path ? g_settings.video.shader_path : NULL;
    enum rarch_shader_type type = gfx_shader_parse_type(g_settings.video.shader_path, DEFAULT_SHADER_TYPE);
