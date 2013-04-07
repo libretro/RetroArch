@@ -613,9 +613,11 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
                action == RGUI_ACTION_LEFT ||
                action == RGUI_ACTION_RIGHT)
          {
-            settings_set(1ULL < S_REWIND);
+            settings_set(1ULL << S_REWIND);
             if (g_settings.rewind_enable)
                rarch_init_rewind();
+            else
+               rarch_deinit_rewind();
          }
          else if (action == RGUI_ACTION_START)
          {
