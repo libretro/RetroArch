@@ -2971,6 +2971,8 @@ static int ingame_menu_resize(uint8_t menu_type, uint64_t input)
 
 static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
 {
+   static unsigned core_opt_selected = 0;
+
    if (input & (1ULL << RMENU_DEVICE_NAV_A))
    {
       menu_stack_pop();
@@ -2992,6 +2994,23 @@ static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
 
    if (g_extern.system.core_options)
    {
+      size_t opts = core_option_size(g_extern.system.core_options);
+      for (size_t i = 0; i < opts; i++, font_parms.y += default_pos.y_position_increment)
+      {
+         font_parms.x = default_pos.x_position;
+         font_parms.color = (core_opt_selected == i) ? YELLOW : WHITE;
+
+         if (driver.video_poke->set_osd_msg)
+            driver.video_poke->set_osd_msg(driver.video_data,
+                  core_option_get_desc(g_extern.system.core_options, i), &font_parms);
+
+         font_parms.x = default_pos.x_position_center;
+         font_parms.color = WHITE;
+
+         if (driver.video_poke->set_osd_msg)
+            driver.video_poke->set_osd_msg(driver.video_data,
+                  core_option_get_val(g_extern.system.core_options, i), &font_parms);
+      }
    }
    else if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, "No options available.", &font_parms);
