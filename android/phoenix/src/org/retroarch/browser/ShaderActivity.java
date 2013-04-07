@@ -12,7 +12,7 @@ public class ShaderActivity extends DirectoryActivity {
 			super.setStartDirectory(shaderDir.getAbsolutePath());
 		
 		super.addAllowedExt(".shader");
-		super.setPathSettingKey("video_bsnes_shader");
+		super.setPathSettingKey("video_shader");
 		super.onCreate(savedInstanceState);
 	}
 }

@@ -391,15 +391,12 @@ public class RetroArch extends Activity implements
 		
 		config.setBoolean("video_scale_integer", prefs.getBoolean("video_scale_integer", false));
 		
-		String shaderPath = prefs.getString("video_bsnes_shader", "");
-		if (prefs.getBoolean("video_shader_enable", false) && new File(shaderPath).exists()) {
-			config.setString("video_shader_type", "bsnes");
-			config.setString("video_bsnes_shader", shaderPath);
-		} else {
-			config.setString("video_shader_type", "none");
-			config.setString("video_bsnes_shader", "");
-		}
-		
+		String shaderPath = prefs.getString("video_shader", "");
+		config.setString("video_shader", shaderPath);
+		config.setBoolean("video_shader_enable",
+				prefs.getBoolean("video_shader_enable", false)
+						&& new File(shaderPath).exists());
+
 		boolean useOverlay = prefs.getBoolean("input_overlay_enable", true);
 		if (useOverlay) {
 			String overlayPath = prefs.getString("input_overlay", getCacheDir() + "/Overlays/snes-landscape.cfg");
