@@ -29,6 +29,7 @@
 #include "../../file.h"
 #include "../../dynamic.h"
 #include "../../compat/posix_string.h"
+#include "../../gfx/shader_parse.h"
 
 #ifdef HAVE_OPENGL
 #include "../../gfx/gl_common.h"
@@ -123,6 +124,10 @@ struct rgui_handle
    char libretro_dir[PATH_MAX];
 #endif
    struct retro_system_info info;
+
+#ifdef HAVE_CG
+   struct gfx_shader shader;
+#endif
 };
 
 static const unsigned rgui_controller_lut[] = {
@@ -349,6 +354,12 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
    free(msg);
 }
 
+#ifdef HAVE_CG
+static void shader_manager_get_str(rgui_handle_t *rgui,
+      char *type_str, size_t type_str_size, unsigned type);
+static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action);
+#endif
+
 static void render_text(rgui_handle_t *rgui)
 {
    if (rgui->need_refresh && 
@@ -380,9 +391,9 @@ static void render_text(rgui_handle_t *rgui)
    else if ((menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ||
          (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
          menu_type == RGUI_SETTINGS)
-      snprintf(title, sizeof(title), "SETTINGS: %s", dir);
+      snprintf(title, sizeof(title), "SETTINGS %s", dir);
    else
-      snprintf(title, sizeof(title), "FILE BROWSER: %s", dir);
+      snprintf(title, sizeof(title), "FILE BROWSER %s", dir);
 
    blit_line(rgui, TERM_START_X + 15, 15, title, true);
 
@@ -404,10 +415,14 @@ static void render_text(rgui_handle_t *rgui)
       int w = (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ? 26 : 19;
       unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
       
+#ifdef HAVE_CG
+      if (type >= RGUI_SETTINGS_SHADER_APPLY &&
+            type <= RGUI_SETTINGS_SHADER_LAST)
+         shader_manager_get_str(rgui, type_str, sizeof(type_str), type);
+      else
+#endif
       if (type >= RGUI_SETTINGS_CORE_OPTION_START)
-      {
          strlcpy(type_str, core_option_get_val(g_extern.system.core_options, type - RGUI_SETTINGS_CORE_OPTION_START), sizeof(type_str));
-      }
       else
       {
          switch (type)
@@ -610,10 +625,16 @@ static int rgui_core_setting_toggle(unsigned setting, rgui_action_t action)
    return 0;
 }
 
-static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, unsigned menu_type)
+static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action, unsigned menu_type)
 {
    unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
 
+   (void)rgui;
+
+#ifdef HAVE_CG
+   if (setting >= RGUI_SETTINGS_SHADER_APPLY && setting <= RGUI_SETTINGS_SHADER_LAST)
+      return shader_manager_toggle_setting(rgui, setting, action);
+#endif
    if (setting >= RGUI_SETTINGS_CORE_OPTION_START)
       return rgui_core_setting_toggle(setting, action);
 
@@ -1039,12 +1060,109 @@ static void rgui_settings_core_options_populate_entries(rgui_handle_t *rgui)
       rgui_list_push(rgui->selection_buf, "No options available.", RGUI_SETTINGS_CORE_OPTION_NONE, 0);
 }
 
+#ifdef HAVE_CG
 static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
-   rgui_list_push(rgui->selection_buf, "Apply changes", RGUI_SETTINGS_SHADER_APPLY, 0);
-   rgui_list_push(rgui->selection_buf, "Shader passes", RGUI_SETTINGS_SHADER_PASSES, 0);
+   rgui_list_push(rgui->selection_buf, "Apply changes",
+         RGUI_SETTINGS_SHADER_APPLY, 0);
+   rgui_list_push(rgui->selection_buf, "Shader passes",
+         RGUI_SETTINGS_SHADER_PASSES, 0);
+
+   for (unsigned i = 0; i < rgui->shader.passes; i++)
+   {
+      char buf[64];
+
+      snprintf(buf, sizeof(buf), "Shader #%u", i);
+      rgui_list_push(rgui->selection_buf, buf,
+            RGUI_SETTINGS_SHADER_0 + 3 * i, 0);
+
+      snprintf(buf, sizeof(buf), "Shader #%u filter", i);
+      rgui_list_push(rgui->selection_buf, buf,
+            RGUI_SETTINGS_SHADER_0_FILTER + 3 * i, 0);
+
+      snprintf(buf, sizeof(buf), "Shader #%u scale", i);
+      rgui_list_push(rgui->selection_buf, buf,
+            RGUI_SETTINGS_SHADER_0_SCALE + 3 * i, 0);
+   }
 }
+
+static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action)
+{
+   if (setting != RGUI_SETTINGS_SHADER_PASSES)
+      return 0;
+
+   switch (action)
+   {
+      case RGUI_ACTION_START:
+         rgui->shader.passes = 0;
+         break;
+
+      case RGUI_ACTION_LEFT:
+         if (rgui->shader.passes)
+            rgui->shader.passes--;
+         break;
+
+      case RGUI_ACTION_RIGHT:
+         if (rgui->shader.passes < 4)
+            rgui->shader.passes++;
+         break;
+
+      default:
+         break;
+   }
+
+   rgui->need_refresh = true;
+   return 0;
+}
+
+static void shader_manager_get_str(rgui_handle_t *rgui,
+      char *type_str, size_t type_str_size, unsigned type)
+{
+   if (type == RGUI_SETTINGS_SHADER_APPLY)
+      *type_str = '\0';
+   else if (type == RGUI_SETTINGS_SHADER_PASSES)
+      snprintf(type_str, type_str_size, "%u", rgui->shader.passes);
+   else
+   {
+      unsigned pass = (type - RGUI_SETTINGS_SHADER_0) / 3;
+      switch ((type - RGUI_SETTINGS_SHADER_0) % 3)
+      {
+         case 0:
+            fill_pathname_base(type_str,
+                  rgui->shader.pass[pass].source.cg, type_str_size);
+            break;
+
+         case 1:
+            switch (rgui->shader.pass[pass].filter)
+            {
+               case RARCH_FILTER_LINEAR:
+                  strlcpy(type_str, "Linear", type_str_size);
+                  break;
+
+               case RARCH_FILTER_NEAREST:
+                  strlcpy(type_str, "Nearest", type_str_size);
+                  break;
+
+               case RARCH_FILTER_UNSPEC:
+                  strlcpy(type_str, "Don't care", type_str_size);
+                  break;
+            }
+            break;
+
+         case 2:
+         {
+            unsigned scale = rgui->shader.pass[pass].fbo.scale_x;
+            if (!scale)
+               strlcpy(type_str, "Don't care", type_str_size);
+            else
+               snprintf(type_str, type_str_size, "%ux", scale);
+            break;
+         }
+      }
+   }
+}
+#endif
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
 {
@@ -1269,7 +1387,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else
          {
-            int ret = rgui_settings_toggle_setting(type, action, menu_type);
+            int ret = rgui_settings_toggle_setting(rgui, type, action, menu_type);
 
             if (ret != 0)
                return ret;
@@ -1299,8 +1417,10 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          rgui_settings_controller_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
          rgui_settings_core_options_populate_entries(rgui);
+#ifdef HAVE_CG
       else if (menu_type == RGUI_SETTINGS_SHADER_MANAGER)
          rgui_settings_shader_manager_populate_entries(rgui);
+#endif
       else
          rgui_settings_populate_entries(rgui);
    }
