@@ -157,7 +157,11 @@ static RASettingData* custom_action(NSString* action)
          boolean_setting(config, @"video_crop_overscan", @"Crop Overscan", @"true"),
          boolean_setting(config, @"video_scale_integer", @"Integer Scaling", @"false"),
          aspect_setting(config, @"Aspect Ratio"),
-         subpath_setting(config, @"video_xml_shader", @"Shader", @"", shader_path, @"shader"),
+         nil],
+         
+      [NSArray arrayWithObjects:@"GPU Shader",         
+         boolean_setting(config, @"video_shader_enable", @"Enable Shader", @"false"),
+         subpath_setting(config, @"video_shader", @"Shader", @"", shader_path, @"shader"),
          nil],
 
       [NSArray arrayWithObjects:@"Audio",

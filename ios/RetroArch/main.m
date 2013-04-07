@@ -205,7 +205,7 @@ static void event_reload_config(void* userdata)
 {
    // Need to clear these otherwise stale versions may be used!
    memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
-   memset(g_settings.video.xml_shader_path, 0, sizeof(g_settings.video.xml_shader_path));
+   memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
 
    uninit_drivers();
    g_extern.block_config_read = false;
@@ -353,7 +353,7 @@ static void event_reload_config(void* userdata)
    {
       // Need to clear these otherwise stale versions may be used!
       memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
-      memset(g_settings.video.xml_shader_path, 0, sizeof(g_settings.video.xml_shader_path));
+      memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
    }
 }
 
