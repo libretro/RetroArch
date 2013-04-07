@@ -615,9 +615,9 @@ static bool load_imports(const char *cgp_path)
    tracker_info.info_elem = cg_shader->variables;
 
 #ifdef HAVE_PYTHON
+   char script_path[PATH_MAX];
    if (*cg_shader->script_path)
    {
-      char script_path[PATH_MAX];
       fill_pathname_resolve_relative(script_path, cgp_path,
             cg_shader->script_path, sizeof(script_path));
       tracker_info.script = script_path;

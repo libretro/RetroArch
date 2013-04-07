@@ -642,7 +642,7 @@ void RenderChain::log_info(const LinkInfo &info)
          break;
 
       case RARCH_SCALE_ABSOLUTE:
-         RARCH_LOG("Absolute @ %d px\n", info.pass->fbo.scale_x);
+         RARCH_LOG("Absolute @ %u px\n", info.pass->fbo.abs_x);
          break;
    }
 
@@ -658,7 +658,7 @@ void RenderChain::log_info(const LinkInfo &info)
          break;
 
       case RARCH_SCALE_ABSOLUTE:
-         RARCH_LOG("Absolute @ %d px\n", info.pass->fbo.scale_y);
+         RARCH_LOG("Absolute @ %u px\n", info.pass->fbo.abs_y);
          break;
    }
 

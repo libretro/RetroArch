@@ -469,10 +469,9 @@ D3DVideo::D3DVideo(const video_info_t *info) :
    // to avoid set_shader() to be overridden
    // later.
 #ifdef HAVE_CG
-   auto shader_type = g_settings.video.shader_type;
-   if ((shader_type == RARCH_SHADER_CG ||
-            shader_type == RARCH_SHADER_AUTO) && *g_settings.video.cg_shader_path)
-      cg_shader = g_settings.video.cg_shader_path;
+   enum rarch_shader_type type = gfx_shader_parse_type(g_settings.video.shader_path, RARCH_SHADER_NONE);
+   if (g_settings.video.shader_enable && type == RARCH_SHADER_CG)
+      cg_shader = g_settings.video.shader_path;
 #endif
 
    process_shader();
@@ -654,37 +653,28 @@ void D3DVideo::init_singlepass()
    strlcpy(pass.source.cg, cg_shader.c_str(), sizeof(pass.source.cg));
 }
 
-static std::vector<std::string> tokenize(const std::string &str)
-{
-   std::vector<std::string> list;
-   char *elem = strdup(str.c_str());
-
-   char *save;
-   const char *tex = strtok_r(elem, ";", &save);
-   while (tex)
-   {
-      list.push_back(tex);
-      tex = strtok_r(nullptr, ";", &save);
-   }
-   free(elem);
-
-   return list;
-}
-
 void D3DVideo::init_imports()
 {
+   if (!shader.variables)
+      return;
+
    state_tracker_info tracker_info = {0};
 
    tracker_info.wram = (uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
    tracker_info.info = shader.variable;
    tracker_info.info_elem = shader.variables;
 
-   std::string py_path;
-   std::string py_class;
 #ifdef HAVE_PYTHON
-   conf.get("import_script", py_path);
-   conf.get("import_script_class", py_class);
-   tracker_info.script_is_file = true;
+   if (*shader.script_path)
+   {
+      std::string rel_path = shader.script_path;
+      fill_pathname_resolve_relative(shader.script_path, cg_shader.c_str(),
+            rel_path.c_str(), sizeof(shader.script_path));
+      tracker_info.script = shader.script_path;
+      tracker_info.script_is_file = true;
+   }
+
+   tracker_info.script_class = *shader.script_class ? shader.script_class : nullptr;
 #endif
 
    state_tracker_t *state_tracker = state_tracker_init(&tracker_info);
@@ -724,16 +714,6 @@ void D3DVideo::init_multipass()
 
    RARCH_LOG("[D3D9 Meta-Cg] Found %d shaders.\n", shader.passes);
 
-   std::string basedir = cg_shader;
-   size_t pos = basedir.rfind('/');
-   if (pos == std::string::npos)
-      pos = basedir.rfind('\\');
-
-   if (pos != std::string::npos)
-      basedir.replace(basedir.begin() + pos + 1, basedir.end(), "");
-   else
-      basedir = "./";
-
    for (unsigned i = 0; i < shader.passes; i++)
    {
       if (!shader.pass[i].fbo.valid)
@@ -741,15 +721,16 @@ void D3DVideo::init_multipass()
          shader.pass[i].fbo.scale_x = shader.pass[i].fbo.scale_y = 1.0f;
          shader.pass[i].fbo.type_x = shader.pass[i].fbo.type_y = RARCH_SCALE_INPUT;
       }
+
       std::string rel_shader = shader.pass[i].source.cg;
-      fill_pathname_resolve_relative(shader.pass[i].source.cg, basedir.c_str(),
+      fill_pathname_resolve_relative(shader.pass[i].source.cg, cg_shader.c_str(),
          rel_shader.c_str(), sizeof(shader.pass[i].source.cg));
    }
 
    for (unsigned i = 0; i < shader.luts; i++)
    {
       std::string rel_lut = shader.lut[i].path;
-      fill_pathname_resolve_relative(shader.lut[i].path, basedir.c_str(),
+      fill_pathname_resolve_relative(shader.lut[i].path, cg_shader.c_str(),
          rel_lut.c_str(), sizeof(shader.lut[i].path));
    }
 }
@@ -821,7 +802,7 @@ bool D3DVideo::init_chain(const video_info_t &video_info)
 
       bool use_extra_pass = shader.pass[shader.passes - 1].fbo.valid;
 
-      for (int i = 1; i < shader.passes; i++)
+      for (unsigned i = 1; i < shader.passes; i++)
       {
          RenderChain::convert_geometry(link_info,
                out_width, out_height,

@@ -21,6 +21,10 @@
 #include "state_tracker.h"
 #include "../general.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define GFX_MAX_SHADERS 16
 #define GFX_MAX_TEXTURES 8
 #define GFX_MAX_VARIABLES 64
@@ -91,6 +95,10 @@ bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader);
 void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *shader);
 
 enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader_type fallback);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
