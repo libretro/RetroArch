@@ -1117,8 +1117,6 @@ int unzOpenCurrentFile3 (unzFile file, int *method, int *level, int raw, const c
     if ((s->cur_file_info.compression_method==Z_DEFLATED) &&
         (!raw))
     {
-      pfile_in_zip_read_info->stream.zalloc = (mz_alloc_func)0;
-      pfile_in_zip_read_info->stream.zfree = (mz_free_func)0;
       pfile_in_zip_read_info->stream.opaque = 0;
       pfile_in_zip_read_info->stream.next_in = 0;
       pfile_in_zip_read_info->stream.avail_in = 0;
