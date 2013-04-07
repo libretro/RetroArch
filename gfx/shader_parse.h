@@ -57,10 +57,14 @@ struct gfx_fbo_scale
 
 struct gfx_shader_pass
 {
-   union
+   struct
    {
       char cg[PATH_MAX];
-      // Can allow for more types later.
+      struct
+      {
+         char *vertex; // Dynamically allocated. Must be free'd.
+         char *fragment; // Dynamically allocated. Must be free'd.
+      } xml;
    } source;
 
    struct gfx_fbo_scale fbo;
@@ -79,6 +83,11 @@ struct gfx_shader_lut
 // Avoid lots of allocation for convenience.
 struct gfx_shader
 {
+   enum rarch_shader_type type;
+
+   bool modern; // Only used for XML shaders.
+   char prefix[64];
+
    unsigned passes;
    struct gfx_shader_pass pass[GFX_MAX_SHADERS];
 
@@ -88,10 +97,12 @@ struct gfx_shader
    unsigned variables;
    struct state_tracker_uniform_info variable[GFX_MAX_VARIABLES];
    char script_path[PATH_MAX];
+   char *script; // Dynamically allocated. Must be free'd. Only used by XML.
    char script_class[512];
 };
 
 bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader);
+bool gfx_shader_read_xml(const char *path, struct gfx_shader *shader);
 void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *shader);
 
 enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader_type fallback);
