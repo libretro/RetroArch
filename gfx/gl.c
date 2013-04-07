@@ -856,9 +856,9 @@ void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_ful
 
 static void gl_set_rotation(void *data, unsigned rotation)
 {
+   gl_t *gl = (gl_t*)data;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
 
-   gl_t *gl = (gl_t*)driver.video_data;
    gl->rotation = 90 * rotation;
    gl_set_projection(gl, &ortho, true);
 }
