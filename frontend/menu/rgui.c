@@ -1371,7 +1371,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui_list_push(rgui->menu_stack, rgui->base_path, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
             rgui->need_refresh = true;
          }
-         else if (menu_type_is_settings(menu_type) && action == RGUI_ACTION_OK)
+         else if (menu_type_is_settings(type) && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
             rgui->selection_ptr = 0;
