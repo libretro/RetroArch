@@ -255,6 +255,7 @@ static bool gfx_ctx_has_focus(void)
    return true;
 }
 
+#ifdef HAVE_EGL
 static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
 {
    return false;
@@ -264,6 +265,7 @@ static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned 
 {
    return false;
 }
+#endif
 
 const gfx_ctx_driver_t gfx_ctx_android = {
    gfx_ctx_init,
@@ -280,8 +282,10 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
    NULL,
+#ifdef HAVE_EGL
    gfx_ctx_init_egl_image_buffer,
    gfx_ctx_write_egl_image,
+#endif
    NULL,
    "android",
 };
