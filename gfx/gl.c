@@ -642,6 +642,9 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 
    gl_update_tex_filter_frame(gl);
 
+   if (gl_shader_num_func(gl) == 0)
+      return;
+
    struct gfx_fbo_scale scale, scale_last;
    gl_shader_scale(gl, 1, &scale);
    gl_shader_scale(gl, gl_shader_num_func(gl), &scale_last);
