@@ -642,23 +642,13 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 
    gl_update_tex_filter_frame(gl);
 
-   // No need to use FBOs.
-#ifndef RARCH_CONSOLE
-   /* we always want FBO to be at least initialized on startup for consoles */
-   if (gl_shader_num_func(gl) == 0)
-      return;
-#endif
-
    struct gfx_fbo_scale scale, scale_last;
    gl_shader_scale(gl, 1, &scale);
    gl_shader_scale(gl, gl_shader_num_func(gl), &scale_last);
 
-   // No need to use FBOs.
-#ifndef RARCH_CONSOLE
    /* we always want FBO to be at least initialized on startup for consoles */
    if (gl_shader_num_func(gl) == 1 && !scale.valid)
       return;
-#endif
 
    if (!load_fbo_proc(gl))
    {
