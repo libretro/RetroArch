@@ -36,16 +36,23 @@ Info messages:
 Debug info messages:
 Audio Resampler:
 Gamma Correction:
-Shader #1:
-Shader #2:
 Hardware filtering shader #1:
-Hardware filtering shader #2:
-Cutom Scaling/Dual Shaders:
-Cutom Scaling Factor:
 SRAM Path Enable:
 Savestate Path Enable:
 </ItemsText>
 </Properties>
+<XuiListItem>
+<Properties>
+<Id>control_ListItem</Id>
+<Width>226.000000</Width>
+<Height>45.000000</Height>
+<Position>7.000000,22.000000,0.000000</Position>
+<Anchor>5</Anchor>
+<Show>false</Show>
+<Visual>XuiButton</Visual>
+<InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
+</Properties>
+</XuiListItem>
 <XuiListItem>
 <Properties>
 <Id>control_ListItem</Id>

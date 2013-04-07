@@ -168,9 +168,9 @@ static void check_window(void *data)
 static bool hlsl_shader_init(void)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   const char *shader_path = g_settings.video.cg_shader_path;
+   const char *shader_path = g_settings.video.shader_path;
 
-   return hlsl_init(g_settings.video.cg_shader_path, d3d->d3d_render_device);
+   return hlsl_init(shader_path, d3d->d3d_render_device);
 }
 #endif
 
@@ -1109,6 +1109,10 @@ static void xdk_d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 static const video_poke_interface_t d3d_poke_interface = {
    xdk_d3d_set_blend,
    xdk_d3d_set_filtering,
+#ifdef HAVE_FBO
+   NULL,
+   NULL,
+#endif
    xdk_d3d_set_aspect_ratio,
    xdk_d3d_apply_state_changes,
 #ifdef HAVE_RGUI

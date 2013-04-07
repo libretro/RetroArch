@@ -41,7 +41,6 @@ enum {
    MENU_XUI_ITEM_ORIENTATION,
    MENU_XUI_ITEM_RESIZE_MODE,
    MENU_XUI_ITEM_FRAME_ADVANCE,
-   MENU_XUI_ITEM_SCREENSHOT_MODE,
    MENU_XUI_ITEM_RESET,
    MENU_XUI_ITEM_RETURN_TO_GAME,
    MENU_XUI_ITEM_QUIT_RARCH,
@@ -50,7 +49,6 @@ enum {
 enum
 {
    S_LBL_ASPECT_RATIO = 0,
-   S_LBL_SHADER,
    S_LBL_RARCH_VERSION,
    S_LBL_ROTATION,
    S_LBL_LOAD_STATE_SLOT,
@@ -282,9 +280,6 @@ static void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned se
    {
       case S_LBL_ASPECT_RATIO:
          snprintf(str, size, "Aspect Ratio: %s", aspectratio_lut[g_settings.video.aspect_ratio_idx].name);
-         break;
-      case S_LBL_SHADER:
-         snprintf(str, size, "Shader #1: %s", g_settings.video.cg_shader_path);
          break;
       case S_LBL_RARCH_VERSION:
          snprintf(str, size, "RetroArch %s", PACKAGE_VERSION);
@@ -684,8 +679,6 @@ HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
    m_settingslist.SetText(SETTING_AUDIO_RESAMPLER_TYPE, strstr(g_settings.audio.resampler, "sinc") ? L"Audio Resampler: Sinc" : L"Audio Resampler: Hermite");
    m_settingslist.SetText(SETTING_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Hardware filtering shader #1: Linear interpolation" : L"Hardware filtering shader #1: Point filtering");
-   menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SHADER, sizeof(strw_buffer));
-   m_settingslist.SetText(SETTING_SHADER, strw_buffer);
    menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
    m_settingslist.SetText(SETTING_EMU_REWIND_GRANULARITY, strw_buffer);
    m_settingslist.SetText(SETTING_ENABLE_SRAM_PATH, (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? L"SRAM Path Enable: ON" : L"SRAM Path Enable: OFF");
@@ -770,21 +763,6 @@ HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled 
             g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
             driver.video->restart();
             m_settingslist.SetText(SETTING_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-            break;
-         case SETTING_SHADER:
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_FIRST_SHADER);
-            hr = XuiSceneCreate((g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_HD)) ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_shader_browser.xur", NULL, &app.hShaderBrowser);
-
-            if (hr < 0)
-               RARCH_ERR("Failed to load scene.\n");
-
-            hCur = app.hShaderBrowser;
-
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               msg_queue_push(g_extern.msg_queue,
-                     "INFO - Select a shader from the menu.", 1, 180);
-
-            NavigateForward(app.hShaderBrowser);
             break;
          case SETTING_HW_TEXTURE_FILTER:
             g_settings.video.smooth = !g_settings.video.smooth;
@@ -1148,10 +1126,6 @@ HRESULT CRetroArchQuickMenu::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled
                process_input_ret = -1;
             }
             break;
-         case MENU_XUI_ITEM_SCREENSHOT_MODE:
-            if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-               device_ptr->ctx_driver->rmenu_screenshot_dump(NULL);
-            break;
          case MENU_XUI_ITEM_RESET:
             if (g_extern.main_is_init)
             {
@@ -1204,35 +1178,6 @@ HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHand
       if(path_file_exists(tmp_browser->current_dir.list->elems[index].data))
       {
          convert_wchar_to_char(str_buffer, (const wchar_t *)m_list.GetText(index), sizeof(str_buffer));
-
-         if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_FIRST_SHADER))
-         {
-               snprintf(g_settings.video.cg_shader_path, sizeof(g_settings.video.cg_shader_path), "%s\\%s", tmp_browser->directory_path, str_buffer);
-               if (g_settings.video.shader_type != RARCH_SHADER_NONE)
-               {
-                  driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.cg_shader_path, RARCH_SHADER_INDEX_PASS0);
-                  if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
-                  XuiSceneNavigateBack(hCur, app.hMainScene, XUSER_INDEX_ANY);
-               }
-               else
-                  RARCH_ERR("Shaders are unsupported on this platform.\n");
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_FIRST_SHADER);
-         }
-
-         if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_SECOND_SHADER))
-         {
-               snprintf (g_settings.video.second_pass_shader, sizeof(g_settings.video.second_pass_shader), "%s\\%s", tmp_browser->directory_path, str_buffer);
-               if (g_settings.video.shader_type != RARCH_SHADER_NONE)
-               {
-                  driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, g_settings.video.second_pass_shader, RARCH_SHADER_INDEX_PASS1);
-                  if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                     msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
-               }
-               else
-                  RARCH_ERR("Shaders are unsupported on this platform.\n");
-               g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_SECOND_SHADER);
-         }
       }
       else if(tmp_browser->current_dir.list->elems[index].attr.b)
       {
