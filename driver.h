@@ -268,6 +268,10 @@ enum input_devices
    DEVICE_XBOX_PAD = 0,
 #elif defined(__CELLOS_LV2__)
    DEVICE_SIXAXIS = 0,
+#elif defined(__BLACKBERRY_QNX__)
+   DEVICE_NONE,
+   DEVICE_WIIMOTE,
+   DEVICE_UNKNOWN,
 #endif
    DEVICE_LAST
 };

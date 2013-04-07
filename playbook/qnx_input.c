@@ -20,6 +20,7 @@
 #include <bps/navigator.h>
 
 #define MAX_TOUCH 16
+#define MAX_PADS 8
 
 struct touches
 {
@@ -32,6 +33,193 @@ static struct touches touch[MAX_TOUCH];
 static unsigned touch_count;
 
 //Internal helper functions
+#ifdef HAVE_BB10
+static unsigned pads_connected;
+
+typedef struct {
+    // Static device info.
+    screen_device_t handle;
+    int type;
+    int analogCount;
+    int buttonCount;
+    char id[64];
+    char vendor[64];
+    char product[64];
+
+    // Current state.
+    int buttons;
+    int analog0[3];
+    int analog1[3];
+} Gamepad_t;
+
+Gamepad_t devices[MAX_PADS];
+
+const struct platform_bind platform_keys[] = {
+   { SCREEN_A_GAME_BUTTON, "A button" },
+   { SCREEN_B_GAME_BUTTON, "B button" },
+   { SCREEN_C_GAME_BUTTON, "C button" },
+   { SCREEN_X_GAME_BUTTON, "X button" },
+   { SCREEN_Y_GAME_BUTTON, "Y button" },
+   { SCREEN_Z_GAME_BUTTON, "Z button" },
+   { SCREEN_MENU1_GAME_BUTTON, "Menu1 button" },
+   { SCREEN_MENU2_GAME_BUTTON, "Menu2 button" },
+   { SCREEN_MENU3_GAME_BUTTON, "Menu3 button" },
+   { SCREEN_MENU4_GAME_BUTTON, "Menu4 button" },
+   { SCREEN_L1_GAME_BUTTON, "L1 Button" },
+   { SCREEN_L2_GAME_BUTTON, "L2 Button" },
+   { SCREEN_L3_GAME_BUTTON, "L3 Button" },
+   { SCREEN_R1_GAME_BUTTON, "R1 Button" },
+   { SCREEN_R2_GAME_BUTTON, "R2 Button" },
+   { SCREEN_R3_GAME_BUTTON, "R3 Button" },
+   { SCREEN_DPAD_UP_GAME_BUTTON, "D-Pad Up" },
+   { SCREEN_DPAD_DOWN_GAME_BUTTON, "D-Pad Down" },
+   { SCREEN_DPAD_LEFT_GAME_BUTTON, "D-Pad Left" },
+   { SCREEN_DPAD_RIGHT_GAME_BUTTON, "D-Pad Right" },
+};
+
+static void process_gamepad_event(screen_event_t screen_event, int type)
+{
+   screen_device_t device;
+   screen_get_event_property_pv(screen_event, SCREEN_PROPERTY_DEVICE, (void**)&device);
+
+   Gamepad_t* controller = NULL;
+   int i;
+   for (i = 0; i < MAX_PADS; ++i)
+   {
+      if (device == devices[i].handle)
+      {
+         controller = &devices[i];
+         break;
+      }
+   }
+
+   if (!controller)
+      return;
+
+   // Store the controller's new state.
+   screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_BUTTONS, &controller->buttons);
+
+   if (controller->analogCount > 0)
+   {
+      screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_ANALOG0, controller->analog0);
+   }
+
+   if (controller->analogCount == 2)
+   {
+      screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_ANALOG1, controller->analog1);
+   }
+}
+
+static void initController(Gamepad_t* controller)
+{
+    // Initialize controller values.
+    controller->handle = 0;
+    controller->type = 0;
+    controller->analogCount = 0;
+    controller->buttonCount = 0;
+    controller->buttons = 0;
+    controller->analog0[0] = controller->analog0[1] = controller->analog0[2] = 0;
+    controller->analog1[0] = controller->analog1[1] = controller->analog1[2] = 0;
+    memset(controller->id, 0, sizeof(controller->id));
+}
+
+static void qnx_input_autodetect_gamepad(Gamepad_t* controller)
+{
+   int device;
+
+   //The wiimote I have, not sure if generic.
+   if (strcmp(controller->id, "0-057E-0306-58.22") == 0)
+   {
+      device = DEVICE_WIIMOTE;
+   }
+   else if (controller->id)
+   {
+      device = DEVICE_UNKNOWN;
+   }
+   else
+   {
+      device = DEVICE_NONE;
+   }
+
+   if (driver.input->set_keybinds)
+      driver.input->set_keybinds((void*)controller, device, pads_connected, 0,
+            (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+}
+
+static void loadController(Gamepad_t* controller)
+{
+   int device;
+
+   // Query libscreen for information about this device.
+   screen_get_device_property_iv(controller->handle, SCREEN_PROPERTY_TYPE, &controller->type);
+   screen_get_device_property_cv(controller->handle, SCREEN_PROPERTY_ID_STRING, sizeof(controller->id), controller->id);
+   screen_get_device_property_cv(controller->handle, SCREEN_PROPERTY_VENDOR, sizeof(controller->id), controller->vendor);
+   screen_get_device_property_cv(controller->handle, SCREEN_PROPERTY_PRODUCT, sizeof(controller->id), controller->product);
+   screen_get_device_property_iv(controller->handle, SCREEN_PROPERTY_BUTTON_COUNT, &controller->buttonCount);
+
+   // Check for the existence of analog sticks.
+   if (!screen_get_device_property_iv(controller->handle, SCREEN_PROPERTY_ANALOG0, controller->analog0))
+   {
+      ++controller->analogCount;
+   }
+
+   if (!screen_get_device_property_iv(controller->handle, SCREEN_PROPERTY_ANALOG1, controller->analog1))
+   {
+      ++controller->analogCount;
+   }
+
+   //Screen service will map supported controllers, we still might need to adjust.
+   qnx_input_autodetect_gamepad(controller);
+
+   if (controller->type == SCREEN_EVENT_GAMEPAD)
+   {
+      RARCH_LOG("Gamepad Device Connected:\n");
+   }
+   else
+   {
+      RARCH_LOG("Joystick Device Connected:\n");
+   }
+
+   RARCH_LOG("\tID: %s\n", controller->id);
+   RARCH_LOG("\tVendor: %s\n", controller->vendor);
+   RARCH_LOG("\tProduct: %s\n", controller->product);
+   RARCH_LOG("\tButton Count: %d\n", controller->buttonCount);
+   RARCH_LOG("\tAnalog Count: %d\n", controller->analogCount);
+}
+
+extern screen_context_t screen_ctx;
+static void discoverControllers()
+{
+   // Get an array of all available devices.
+   int deviceCount;
+   screen_get_context_property_iv(screen_ctx, SCREEN_PROPERTY_DEVICE_COUNT, &deviceCount);
+   screen_device_t* devices_found = (screen_device_t*)calloc(deviceCount, sizeof(screen_device_t));
+   screen_get_context_property_pv(screen_ctx, SCREEN_PROPERTY_DEVICES, (void**)devices_found);
+
+   // Scan the list for gamepad and joystick devices.
+   int i;
+   for (i = 0; i < deviceCount; i++)
+   {
+      int type;
+      screen_get_device_property_iv(devices_found[i], SCREEN_PROPERTY_TYPE, &type);
+
+      if (type == SCREEN_EVENT_GAMEPAD || type == SCREEN_EVENT_JOYSTICK)
+      {
+         devices[pads_connected].handle = devices_found[i];
+         loadController(&devices[pads_connected]);
+
+         pads_connected++;
+         if (pads_connected == MAX_PADS)
+         {
+            break;
+         }
+      }
+   }
+
+   free(devices_found);
+}
+#endif
+
 static void process_touch_event(screen_event_t event, int type)
 {
    int contact_id;
@@ -95,6 +283,7 @@ static void handle_screen_event(bps_event_t *event)
 #ifdef HAVE_BB10
       case SCREEN_EVENT_GAMEPAD:
       case SCREEN_EVENT_JOYSTICK:
+         process_gamepad_event(screen_event, type);
          break;
       case SCREEN_EVENT_DEVICE:
          {
@@ -114,18 +303,35 @@ static void handle_screen_event(bps_event_t *event)
 
             int i;
 
-            if (attached && (type == SCREEN_EVENT_GAMEPAD ||
-                     type == SCREEN_EVENT_JOYSTICK))
+            if (attached && (type == SCREEN_EVENT_GAMEPAD || type == SCREEN_EVENT_JOYSTICK))
             {
-               //Load controller
+               for (i = 0; i < MAX_PADS; ++i)
+               {
+                  if (!devices[i].handle)
+                  {
+                     devices[i].handle = device;
+                     loadController(&devices[i]);
+                     break;
+                  }
+               }
             }
             else
             {
-               //Remove controller
+               for (i = 0; i < MAX_PADS; ++i)
+               {
+                  if (device == devices[i].handle)
+                  {
+                     RARCH_LOG("Device %s: Disconnected.\n", devices[i].id);
+                     initController(&devices[i]);
+                     break;
+                  }
+               }
             }
-            break;
          }
+         break;
 #endif
+      default:
+         break;
    }
 }
 
@@ -186,6 +392,16 @@ static void *qnx_input_init(void)
    for (i = 0; i < MAX_TOUCH; ++i)
       touch[i].contact_id = -1;
 
+#ifdef HAVE_BB10
+   for (i = 0; i < MAX_PADS; ++i)
+      initController(&devices[i]);
+
+   pads_connected = 0;
+
+   //Find currently connected gamepads
+   discoverControllers();
+#endif
+
    return (void*)-1;
 }
 
@@ -221,16 +437,31 @@ static void qnx_input_poll(void *data)
 static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_keybinds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
    (void)data;
-   (void)retro_keybinds;
-   (void)port;
-   (void)device;
-   (void)index;
-   (void)id;
 
    switch (device)
    {
+#ifdef HAVE_BB10
       case RETRO_DEVICE_JOYPAD:
-         return false;
+         return ((devices[port].buttons & retro_keybinds[port][id].joykey) && (port < pads_connected));
+      case RETRO_DEVICE_ANALOG:
+         //Need to return [-0x8000, 0x7fff]
+         //Gamepad API gives us [-128, 127] with (0,0) center
+         //Untested
+         switch ((index << 1) | id)
+         {
+            case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
+               return devices[port].analog0[0] * 256;
+            case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
+               return devices[port].analog0[1] * 256;
+            case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X:
+               return devices[port].analog1[0] * 256;
+            case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
+               return devices[port].analog1[1] * 256;
+            default:
+               break;
+         }
+         break;
+#endif
       case RARCH_DEVICE_POINTER_SCREEN:
          {
             switch (id)
@@ -259,14 +490,158 @@ static void qnx_input_free_input(void *data)
    (void)data;
 }
 
-static void qnx_set_keybinds(void *data, unsigned device,
-      unsigned port, unsigned id, unsigned keybind_action)
+static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
+      unsigned id, unsigned keybind_action)
 {
-   (void)data;
+#ifdef HAVE_BB10
+   uint64_t *key = &g_settings.input.binds[port][id].joykey;
+   uint64_t joykey = *key;
+   size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
+
    (void)device;
-   (void)port;
-   (void)id;
-   (void)keybind_action;
+
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_DECREMENT_BIND))
+   {
+      if (joykey == NO_BTN)
+         *key = platform_keys[arr_size - 1].joykey;
+      else if (platform_keys[0].joykey == joykey)
+         *key = NO_BTN;
+      else
+      {
+         *key = NO_BTN;
+         for (size_t i = 1; i < arr_size; i++)
+         {
+            if (platform_keys[i].joykey == joykey)
+            {
+               *key = platform_keys[i - 1].joykey;
+               break;
+            }
+         }
+      }
+   }
+
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_INCREMENT_BIND))
+   {
+      if (joykey == NO_BTN)
+         *key = platform_keys[0].joykey;
+      else if (platform_keys[arr_size - 1].joykey == joykey)
+         *key = NO_BTN;
+      else
+      {
+         *key = NO_BTN;
+         for (size_t i = 0; i < arr_size - 1; i++)
+         {
+            if (platform_keys[i].joykey == joykey)
+            {
+               *key = platform_keys[i + 1].joykey;
+               break;
+            }
+         }
+      }
+   }
+
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND))
+      *key = g_settings.input.binds[port][id].def_joykey;
+
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS))
+   {
+      switch (device)
+      {
+         case DEVICE_WIIMOTE:
+            strlcpy(g_settings.input.device_names[port], "Wiimote",
+               sizeof(g_settings.input.device_names[port]));
+            g_settings.input.device[port] = device;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = SCREEN_Y_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = SCREEN_B_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joykey = SCREEN_MENU1_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joykey  = SCREEN_MENU2_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joykey     = SCREEN_DPAD_UP_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joykey   = SCREEN_DPAD_DOWN_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joykey   = SCREEN_DPAD_LEFT_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joykey  = SCREEN_DPAD_RIGHT_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joykey      = SCREEN_X_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey      = SCREEN_A_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey      = SCREEN_L1_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey      = SCREEN_R1_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey     = SCREEN_L2_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = SCREEN_R2_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = SCREEN_L3_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = SCREEN_R3_GAME_BUTTON;
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            break;
+         case DEVICE_UNKNOWN:
+            strlcpy(g_settings.input.device_names[port], "Unknown",
+               sizeof(g_settings.input.device_names[port]));
+            g_settings.input.device[port] = device;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = SCREEN_B_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = SCREEN_Y_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joykey = SCREEN_MENU1_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joykey  = SCREEN_MENU2_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joykey     = SCREEN_DPAD_UP_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joykey   = SCREEN_DPAD_DOWN_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joykey   = SCREEN_DPAD_LEFT_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joykey  = SCREEN_DPAD_RIGHT_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joykey      = SCREEN_A_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey      = SCREEN_X_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey      = SCREEN_L1_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey      = SCREEN_R1_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey     = SCREEN_L2_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = SCREEN_R2_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = SCREEN_L3_GAME_BUTTON;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = SCREEN_R3_GAME_BUTTON;
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            break;
+         case DEVICE_NONE:
+         default:
+            strlcpy(g_settings.input.device_names[port], "None",
+               sizeof(g_settings.input.device_names[port]));
+            g_settings.input.device[port] = device;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joykey = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joykey  = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joykey   = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joykey   = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joykey  = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joykey      = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey      = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey      = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey      = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = 0;
+            break;
+      }
+
+      for (unsigned i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+      {
+         g_settings.input.binds[port][i].id = i;
+         g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
+      }
+   }
+
+   if (keybind_action & (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL))
+   {
+      struct platform_bind *ret = (struct platform_bind*)data;
+
+      if (ret->joykey == NO_BTN)
+         strlcpy(ret->desc, "No button", sizeof(ret->desc));
+      else
+      {
+         for (size_t i = 0; i < arr_size; i++)
+         {
+            if (platform_keys[i].joykey == ret->joykey)
+            {
+               strlcpy(ret->desc, platform_keys[i].desc, sizeof(ret->desc));
+               return;
+            }
+         }
+         strlcpy(ret->desc, "Unknown", sizeof(ret->desc));
+      }
+   }
+#endif
 }
 
 const input_driver_t input_qnx = {
@@ -275,7 +650,7 @@ const input_driver_t input_qnx = {
    qnx_input_state,
    qnx_input_key_pressed,
    qnx_input_free_input,
-   qnx_set_keybinds,
+   qnx_input_set_keybinds,
    "qnx_input",
 };
 
