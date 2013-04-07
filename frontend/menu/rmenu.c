@@ -775,6 +775,11 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "Allows you to resize the screen.", sizeof(current_item->comment));
          break;
+      case INGAME_MENU_CORE_OPTIONS_MODE:
+         strlcpy(current_item->text, "Core Options", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "Set core-specific options.", sizeof(current_item->comment));
+         break;
       case INGAME_MENU_FRAME_ADVANCE:
          strlcpy(current_item->text, "Frame Advance", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
@@ -873,6 +878,7 @@ static void display_menubar(uint8_t menu_type)
             driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
          break;
       case CONTROLS_MENU:
+      case INGAME_MENU_CORE_OPTIONS:
       case INGAME_MENU_RESIZE:
          if (driver.input->set_keybinds)
             driver.input->set_keybinds(&key_label_l, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
@@ -914,6 +920,9 @@ static void display_menubar(uint8_t menu_type)
          break;
       case INGAME_MENU:
          strlcpy(title, "Ingame Menu", sizeof(title));
+         break;
+      case INGAME_MENU_CORE_OPTIONS:
+         strlcpy(title, "Core Options", sizeof(title));
          break;
       case INGAME_MENU_RESIZE:
          strlcpy(title, "Resize Menu", sizeof(title));
@@ -2188,6 +2197,10 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << RMENU_DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_RESIZE);
          break;
+      case INGAME_MENU_CORE_OPTIONS_MODE:
+         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+            menu_stack_push(INGAME_MENU_CORE_OPTIONS);
+         break;
       case INGAME_MENU_SCREENSHOT_MODE:
          if (input & (1ULL << RMENU_DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_SCREENSHOT);
@@ -2956,6 +2969,36 @@ static int ingame_menu_resize(uint8_t menu_type, uint64_t input)
    return 0;
 }
 
+static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
+{
+   if (input & (1ULL << RMENU_DEVICE_NAV_A))
+   {
+      menu_stack_pop();
+      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
+   }
+
+   display_menubar(menu_type);
+
+   rmenu_default_positions_t default_pos;
+   menu_set_default_pos(&default_pos);
+
+   default_pos.starting_y_position += default_pos.y_position_increment;
+
+   font_params_t font_parms = {0};
+   font_parms.x = default_pos.x_position;
+   font_parms.y = default_pos.starting_y_position;
+   font_parms.scale = default_pos.current_path_font_size;
+   font_parms.color = WHITE;
+
+   if (g_extern.system.core_options)
+   {
+   }
+   else if (driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data, "No options available.", &font_parms);
+
+   return 0;
+}
+
 static int ingame_menu_screenshot(uint8_t menu_type, uint64_t input)
 {
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
@@ -3195,15 +3238,15 @@ bool menu_iterate(void)
    {
       case INGAME_MENU_RESIZE:
          input_entry_ret = ingame_menu_resize(menu_id, input);
-         input_process_ret = menu_input_process(menu_id, old_state);
+         break;
+      case INGAME_MENU_CORE_OPTIONS:
+         input_entry_ret = ingame_menu_core_options(menu_id, input);
          break;
       case INGAME_MENU_SCREENSHOT:
          input_entry_ret = ingame_menu_screenshot(menu_id, input);
-         input_process_ret = menu_input_process(menu_id, old_state);
          break;
       case FILE_BROWSER_MENU:
          input_entry_ret = select_rom(menu_id, input);
-         input_process_ret = menu_input_process(menu_id, old_state);
          break;
       case LIBRETRO_CHOICE:
       case PRESET_CHOICE:
@@ -3211,7 +3254,6 @@ bool menu_iterate(void)
       case SHADER_CHOICE:
       case BORDER_CHOICE:
          input_entry_ret = select_file(menu_id, input);
-         input_process_ret = menu_input_process(menu_id, old_state);
          break;
       case PATH_DEFAULT_ROM_DIR_CHOICE:
       case PATH_SAVESTATES_DIR_CHOICE:
@@ -3221,7 +3263,6 @@ bool menu_iterate(void)
 #endif
       case PATH_SYSTEM_DIR_CHOICE:
          input_entry_ret = select_directory(menu_id, input);
-         input_process_ret = menu_input_process(menu_id, old_state);
          break;
       case GENERAL_VIDEO_MENU:
       case GENERAL_AUDIO_MENU:
@@ -3232,10 +3273,10 @@ bool menu_iterate(void)
       case CONTROLS_MENU:
       case INGAME_MENU:
          input_entry_ret = select_setting(menu_id, input);
-         input_process_ret = menu_input_process(menu_id, old_state);
          break;
    }
 
+   input_process_ret = menu_input_process(menu_id, old_state);
    msg = msg_queue_pull(g_extern.msg_queue);
 
    font_parms.x = default_pos.msg_queue_x_position;
