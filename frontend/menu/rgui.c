@@ -179,6 +179,14 @@ static void init_font(rgui_handle_t *rgui, const uint8_t *font_bmp_buf)
    rgui->font = font;
 }
 
+static bool menu_type_is_settings(unsigned type)
+{
+   return type == RGUI_SETTINGS ||
+      type == RGUI_SETTINGS_CORE_OPTIONS ||
+      type == RGUI_SETTINGS_SHADER_MANAGER ||
+      (type >= RGUI_SETTINGS_CONTROLLER_1 && type <= RGUI_SETTINGS_CONTROLLER_4);
+}
+
 rgui_handle_t *rgui_init(const char *base_path,
       uint16_t *framebuf, size_t framebuf_pitch,
       const uint8_t *font_bmp_buf, const uint8_t *font_bin_buf) 
@@ -365,6 +373,8 @@ static void render_text(rgui_handle_t *rgui)
 
    if (menu_type == RGUI_SETTINGS_CORE)
       strlcpy(title, "CORE SELECTION", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_SHADER_MANAGER)
+      strlcpy(title, "SHADER MANAGER", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
       strlcpy(title, "CORE OPTIONS", sizeof(title));
    else if ((menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ||
@@ -471,6 +481,7 @@ static void render_text(rgui_handle_t *rgui)
                break;
             case RGUI_SETTINGS_OPEN_FILEBROWSER:
             case RGUI_SETTINGS_CORE_OPTIONS:
+            case RGUI_SETTINGS_SHADER_MANAGER:
             case RGUI_SETTINGS_CUSTOM_VIEWPORT:
             case RGUI_SETTINGS_CORE:
             case RGUI_SETTINGS_CONTROLLER_1:
@@ -966,6 +977,9 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Core", RGUI_SETTINGS_CORE, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Core Options", RGUI_SETTINGS_CORE_OPTIONS, 0);
+#ifdef HAVE_CG
+   rgui_list_push(rgui->selection_buf, "Shader Manager", RGUI_SETTINGS_SHADER_MANAGER, 0);
+#endif
    rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
    rgui_list_push(rgui->selection_buf, "Rewind granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
    if (g_extern.main_is_init)
@@ -1023,6 +1037,13 @@ static void rgui_settings_core_options_populate_entries(rgui_handle_t *rgui)
    }
    else
       rgui_list_push(rgui->selection_buf, "No options available.", RGUI_SETTINGS_CORE_OPTION_NONE, 0);
+}
+
+static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
+{
+   rgui_list_clear(rgui->selection_buf);
+   rgui_list_push(rgui->selection_buf, "Apply changes", RGUI_SETTINGS_SHADER_APPLY, 0);
+   rgui_list_push(rgui->selection_buf, "Shader passes", RGUI_SETTINGS_SHADER_PASSES, 0);
 }
 
 static void rgui_settings_controller_populate_entries(rgui_handle_t *rgui)
@@ -1227,8 +1248,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_RIGHT:
       case RGUI_ACTION_OK:
       case RGUI_ACTION_START:
-         if (((type >= RGUI_SETTINGS_CONTROLLER_1 && type <= RGUI_SETTINGS_CONTROLLER_4) ||
-                  type == RGUI_SETTINGS_CORE || type == RGUI_SETTINGS_CORE_OPTIONS) && action == RGUI_ACTION_OK)
+         if (menu_type_is_settings(menu_type) && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
             rgui->selection_ptr = 0;
@@ -1279,6 +1299,8 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          rgui_settings_controller_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
          rgui_settings_core_options_populate_entries(rgui);
+      else if (menu_type == RGUI_SETTINGS_SHADER_MANAGER)
+         rgui_settings_shader_manager_populate_entries(rgui);
       else
          rgui_settings_populate_entries(rgui);
    }
@@ -1389,7 +1411,7 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
    int ret = 0;
 
-   if (menu_type == RGUI_SETTINGS || menu_type == RGUI_SETTINGS_CORE_OPTIONS || (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4))
+   if (menu_type_is_settings(menu_type))
       return rgui_settings_iterate(rgui, action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
       return rgui_viewport_iterate(rgui, action);
