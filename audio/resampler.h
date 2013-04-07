@@ -65,9 +65,13 @@ bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const
    *handle = NULL; \
 } while(0)
 
+#ifdef RARCH_CONSOLE
+#define rarch_resampler_process(backend, handle, data) resampler_sinc_process(handle, data)
+#else
 #define rarch_resampler_process(backend, handle, data) do { \
    (backend)->process(handle, data); \
 } while(0)
+#endif
 
 #endif
 

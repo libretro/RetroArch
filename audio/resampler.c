@@ -22,36 +22,14 @@
 
 #include "../general.h"
 
-static const rarch_resampler_t *backends[] = {
-   &sinc_resampler,
-};
-
 bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const char *ident, double bw_ratio)
 {
    if (*re && *backend)
       (*backend)->free(*re);
 
-   *re      = NULL;
-   *backend = NULL;
-
-   if (ident)
-   {
-      for (unsigned i = 0; i < ARRAY_SIZE(backends); i++)
-      {
-         if (strcmp(backends[i]->ident, ident) == 0)
-         {
-            *backend = backends[i];
-            break;
-         }
-      }
-   }
-   else
-      *backend = backends[0];
-
-   if (!*backend)
-      return false;
-
+   *backend = &sinc_resampler;
    *re = (*backend)->init(bw_ratio);
+
    if (!*re)
    {
       *backend = NULL;
