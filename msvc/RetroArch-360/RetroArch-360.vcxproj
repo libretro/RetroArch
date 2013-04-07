@@ -540,23 +540,6 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\media\360\shaders\stock.cg">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\shaders\stock.cg;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\shaders\stock.cg;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\shaders\stock.cg;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">$(OutDir)media\shaders\stock.cg;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">$(OutDir)media\shaders\stock.cg;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">$(OutDir)media\shaders\stock.cg;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">copy %(FullPath) $(OutDir)media\shaders\stock.cg</Command>
-    </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
     <CustomBuild Include="..\..\media\360\hd\rarch_filebrowser.xui">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_filebrowser.xui" "$(OutDir)media\hd\rarch_filebrowser.xur"</Command>

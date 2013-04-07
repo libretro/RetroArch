@@ -41,8 +41,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\console\griffin\griffin.c">
-      <Filter>Source Files\console\griffin</Filter>
+    <ClCompile Include="..\..\griffin\griffin.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -137,9 +137,6 @@
     </CustomBuild>
     <CustomBuild Include="..\..\media\360\Arial_12.rdf">
       <Filter>Source Files\media</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\shaders\stock.cg">
-      <Filter>Source Files\media\shaders</Filter>
     </CustomBuild>
     <CustomBuild Include="..\..\media\360\sd\rarch_filebrowser.xui">
       <Filter>Source Files\media\sd</Filter>
