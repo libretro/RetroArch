@@ -30,5 +30,4 @@ HAVE_FREETYPE=auto      # Enable FreeType support
 HAVE_XVIDEO=auto        # Enable XVideo support
 HAVE_SDL_IMAGE=auto     # Enable SDL_image support
 HAVE_PYTHON=auto        # Enable Python 3 support for shaders
-HAVE_SINC=yes           # Disable SINC resampler
 HAVE_BSV_MOVIE=yes      # Disable BSV movie support

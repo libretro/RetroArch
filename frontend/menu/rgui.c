@@ -460,12 +460,6 @@ static void render_text(rgui_handle_t *rgui)
             case RGUI_SETTINGS_AUDIO_CONTROL_RATE:
                snprintf(type_str, sizeof(type_str), "%.3f", g_settings.audio.rate_control_delta);
                break;
-            case RGUI_SETTINGS_RESAMPLER_TYPE:
-               if (strstr(g_settings.audio.resampler, "sinc"))
-                  strlcpy(type_str, "Sinc", sizeof(type_str));
-               else
-                  strlcpy(type_str, "Hermite", sizeof(type_str));
-               break;
             case RGUI_SETTINGS_SRAM_DIR:
                snprintf(type_str, sizeof(type_str), (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE)) ? "ON" : "OFF");
                break;
@@ -807,40 +801,6 @@ static int rgui_settings_toggle_setting(unsigned setting, rgui_action_t action, 
          else if (action == RGUI_ACTION_RIGHT)
             settings_set(1ULL << S_AUDIO_CONTROL_RATE_INCREMENT);
          break;
-      case RGUI_SETTINGS_RESAMPLER_TYPE:
-         {
-            bool changed = false;
-            if (action == RGUI_ACTION_START)
-            {
-#ifdef HAVE_SINC
-               strlcpy(g_settings.audio.resampler, "sinc", sizeof(g_settings.audio.resampler));
-#else
-               strlcpy(g_settings.audio.resampler, "hermite", sizeof(g_settings.audio.resampler));
-#endif
-               changed = true;
-            }
-            else if (action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
-            {
-#ifdef HAVE_SINC
-               if( strstr(g_settings.audio.resampler, "hermite"))
-                  strlcpy(g_settings.audio.resampler, "sinc", sizeof(g_settings.audio.resampler));
-               else
-#endif
-                  strlcpy(g_settings.audio.resampler, "hermite", sizeof(g_settings.audio.resampler));
-               changed = true;
-            }
-
-            if (g_extern.main_is_init && changed)
-            {
-               if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
-                        g_settings.audio.resampler, g_extern.audio_data.orig_src_ratio == 0.0 ? 1.0 : g_extern.audio_data.orig_src_ratio))
-               {
-                  RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
-                  g_extern.audio_active = false;
-               }
-            }
-         }
-         break;
       case RGUI_SETTINGS_SRAM_DIR:
          if (action == RGUI_ACTION_START || action == RGUI_ACTION_LEFT)
             g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_GAME_SRAM_DIR_ENABLE);
@@ -1030,7 +990,6 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Rotation", RGUI_SETTINGS_VIDEO_ROTATION, 0);
    rgui_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
    rgui_list_push(rgui->selection_buf, "Audio Control Rate", RGUI_SETTINGS_AUDIO_CONTROL_RATE, 0);
-   rgui_list_push(rgui->selection_buf, "Audio Resampler", RGUI_SETTINGS_RESAMPLER_TYPE, 0);
 #ifdef GEKKO
    rgui_list_push(rgui->selection_buf, "SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR, 0);
    rgui_list_push(rgui->selection_buf, "State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR, 0);

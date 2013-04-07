@@ -50,7 +50,6 @@ typedef struct rarch_resampler
    const char *ident;
 } rarch_resampler_t;
 
-extern const rarch_resampler_t hermite_resampler;
 extern const rarch_resampler_t sinc_resampler;
 
 // Reallocs resampler. Will free previous handle before allocating a new one.

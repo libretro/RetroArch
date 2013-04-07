@@ -30,7 +30,6 @@ OBJ = frontend/frontend.o \
 		gfx/image.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
-		audio/hermite.o \
 		audio/resampler.o \
 		performance.o
 
@@ -300,16 +299,15 @@ ifeq ($(HAVE_PYTHON), 1)
    OBJ += gfx/py_state/py_state.o
 endif
 
-ifeq ($(HAVE_SINC), 1)
-   OBJ += audio/sinc.o
+OBJ += audio/sinc.o
 
-   ifeq ($(HAVE_NEON),1)
-      OBJ += audio/sinc_neon.o
-		# When compiled without this, tries to attempt to compile sinc lerp,
-		# which will error out
-		DEFINES += -DSINC_LOWER_QUALITY
-   endif
+ifeq ($(HAVE_NEON),1)
+	OBJ += audio/sinc_neon.o
+	# When compiled without this, tries to attempt to compile sinc lerp,
+	# which will error out
+	DEFINES += -DSINC_LOWER_QUALITY
 endif
+
 OBJ += audio/utils.o
 ifeq ($(HAVE_NEON),1)
    OBJ += audio/utils_neon.o

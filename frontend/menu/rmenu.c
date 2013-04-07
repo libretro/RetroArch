@@ -557,21 +557,6 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "INFO - Set all [General Audio Settings] back to their 'DEFAULT' values.", sizeof(current_item->comment));
          break;
-      case SETTING_RESAMPLER_TYPE:
-         strlcpy(current_item->text, "Sound resampler", sizeof(current_item->text));
-#ifdef HAVE_SINC
-         if (strstr(g_settings.audio.resampler, "sinc"))
-         {
-            strlcpy(current_item->setting_text, "Sinc", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - [Sinc resampler] - slightly slower but better sound quality at high frequencies.", sizeof(current_item->comment));
-         }
-         else
-#endif
-         {
-            strlcpy(current_item->setting_text, "Hermite", sizeof(current_item->setting_text));
-            strlcpy(current_item->comment, "INFO - [Hermite resampler] - faster but less accurate at high frequencies.", sizeof(current_item->comment));
-         }
-         break;
       case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
          strlcpy(current_item->text, "Current save state slot", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.state_slot);
@@ -1875,46 +1860,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             g_extern.lifecycle_mode_state &= ~((1ULL << MODE_GAME));
             g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
             return -1;
-         }
-         break;
-      case SETTING_RESAMPLER_TYPE:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-#ifdef HAVE_SINC
-            if ( strstr(g_settings.audio.resampler, "hermite"))
-               strlcpy(g_settings.audio.resampler, "sinc", sizeof(g_settings.audio.resampler));
-            else
-#endif
-               strlcpy(g_settings.audio.resampler, "hermite", sizeof(g_settings.audio.resampler));
-
-            if (g_extern.main_is_init)
-            {
-               if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
-                        g_settings.audio.resampler, g_extern.audio_data.orig_src_ratio == 0.0 ? 1.0 : g_extern.audio_data.orig_src_ratio))
-               {
-                  RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
-                  g_extern.audio_active = false;
-               }
-            }
-
-         }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
-         {
-#ifdef HAVE_SINC
-            strlcpy(g_settings.audio.resampler, "sinc", sizeof(g_settings.audio.resampler));
-#else
-            strlcpy(g_settings.audio.resampler, "hermite", sizeof(g_settings.audio.resampler));
-#endif
-
-            if (g_extern.main_is_init)
-            {
-               if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
-                        g_settings.audio.resampler, g_extern.audio_data.orig_src_ratio == 0.0 ? 1.0 : g_extern.audio_data.orig_src_ratio))
-               {
-                  RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
-                  g_extern.audio_active = false;
-               }
-            }
          }
          break;
       case SETTING_EMU_AUDIO_MUTE:

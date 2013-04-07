@@ -106,9 +106,6 @@
     <ClInclude Include="..\..\360\msvc_compat.h">
       <Filter>Header Files\360</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\audio\hermite.h">
-      <Filter>Header Files\audio</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\audio\utils.h">
       <Filter>Header Files\audio</Filter>
     </ClInclude>

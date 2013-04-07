@@ -198,9 +198,6 @@
     <ClCompile Include="..\..\audio\resampler.c">
       <Filter>Source Files\audio</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\audio\hermite.c">
-      <Filter>Source Files\audio</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\cheats.c">
       <Filter>Source Files</Filter>
     </ClCompile>

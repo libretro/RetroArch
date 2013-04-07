@@ -23,10 +23,7 @@
 #include "../general.h"
 
 static const rarch_resampler_t *backends[] = {
-#ifdef HAVE_SINC
    &sinc_resampler,
-#endif
-   &hermite_resampler,
 };
 
 bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const char *ident, double bw_ratio)

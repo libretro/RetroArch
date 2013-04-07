@@ -282,10 +282,7 @@ FIFO BUFFER
 AUDIO RESAMPLER
 ============================================================ */
 #include "../audio/resampler.c"
-#ifdef HAVE_SINC
 #include "../audio/sinc.c"
-#endif
-#include "../audio/hermite.c"
 
 /*============================================================
 RSOUND

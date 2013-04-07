@@ -2,7 +2,6 @@ RARCH_VERSION		= "0.9.8.4"
 LOCAL_PATH := $(call my-dir)
 PERF_TEST := 0
 HAVE_NEON := 1
-HAVE_SINC := 1
 HAVE_LOGGER := 1
 
 include $(CLEAR_VARS)
@@ -22,12 +21,10 @@ LOCAL_CFLAGS += -DHAVE_NEON
 LOCAL_SRC_FILES += ../../../audio/utils_neon.S.neon
 endif
 
-ifeq ($(HAVE_SINC),1)
 ifeq ($(HAVE_NEON),1)
 LOCAL_SRC_FILES += ../../../audio/sinc_neon.S.neon
 endif
-LOCAL_CFLAGS += -DHAVE_SINC -DSINC_LOWER_QUALITY
-endif
+LOCAL_CFLAGS += -DSINC_LOWER_QUALITY
 
 LOCAL_CFLAGS += -DANDROID_ARM_V7
 endif

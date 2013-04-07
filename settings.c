@@ -199,7 +199,6 @@ void config_set_defaults(void)
    g_settings.audio.rate_control = rate_control;
    g_settings.audio.rate_control_delta = rate_control_delta;
    g_settings.audio.volume = audio_volume;
-   strlcpy(g_settings.audio.resampler, audio_resampler, sizeof(g_settings.audio.resampler));
 
    g_settings.rewind_enable = rewind_enable;
    g_settings.rewind_buffer_size = rewind_buffer_size;
@@ -620,7 +619,6 @@ bool config_load_file(const char *path)
    CONFIG_GET_BOOL(audio.rate_control, "audio_rate_control");
    CONFIG_GET_FLOAT(audio.rate_control_delta, "audio_rate_control_delta");
    CONFIG_GET_FLOAT(audio.volume, "audio_volume");
-   CONFIG_GET_STRING(audio.resampler, "audio_resampler");
 
    CONFIG_GET_STRING(video.driver, "video_driver");
    CONFIG_GET_STRING(video.gl_context, "video_gl_context");
@@ -1155,7 +1153,6 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
    config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
    config_set_string(conf, "system_directory", g_settings.system_directory);
-   config_set_string(conf, "audio_resampler", g_settings.audio.resampler);
 
 #ifdef ANDROID
    config_set_int(conf, "input_back_behavior", input.back_behavior);

@@ -33,7 +33,6 @@ OBJ = frontend/frontend.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
 		gfx/image.o \
-		audio/hermite.o \
 		audio/resampler.o \
 		performance.o
 
@@ -57,7 +56,6 @@ HAVE_D3D9 = 1
 HAVE_NETPLAY = 1
 HAVE_STDIN_CMD = 1
 HAVE_THREADS = 1
-HAVE_SINC = 1
 HAVE_RGUI = 1
 DYNAMIC = 1
 
@@ -223,10 +221,7 @@ ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/ffemu.o
 endif
 
-ifeq ($(HAVE_SINC), 1)
    OBJ += audio/sinc.o
-   DEFINES += -DHAVE_SINC
-endif
 
 ifneq ($(V), 1)
    Q := @

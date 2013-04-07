@@ -395,7 +395,6 @@
 					"-DHAVE_ZLIB",
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
-					"-DHAVE_SINC",
 				);
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -445,7 +444,6 @@
 					"-DHAVE_ZLIB",
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
-					"-DHAVE_SINC",
 				);
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -491,7 +489,6 @@
 					"-DHAVE_ZLIB",
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
-					"-DHAVE_SINC",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
@@ -540,7 +537,6 @@
 					"-DHAVE_ZLIB",
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
-					"-DHAVE_SINC",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
