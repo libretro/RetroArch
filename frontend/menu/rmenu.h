@@ -98,7 +98,6 @@ enum
 #endif
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    SETTING_SHADER_PRESETS,
-   SETTING_SHADER,
 #endif
    SETTING_FONT_SIZE,
    SETTING_KEEP_ASPECT_RATIO,

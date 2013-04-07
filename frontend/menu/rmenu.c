@@ -431,12 +431,6 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->comment, "INFO - Select a [CG Preset] script.", sizeof(current_item->comment));
          strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
          break;
-      case SETTING_SHADER:
-         fill_pathname_base(fname, g_settings.video.cg_shader_path, sizeof(fname));
-         strlcpy(current_item->text, "Shader #1", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Select a shader as [Shader #1].", sizeof(current_item->comment));
-         break;
 #endif
       case SETTING_EMU_SKIN:
          fill_pathname_base(fname, g_extern.console.menu_texture_path, sizeof(fname));
@@ -1163,21 +1157,6 @@ static int select_file(uint8_t menu_type, uint64_t input)
          {
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
             case SHADER_CHOICE:
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_LOAD_FIRST_SHADER))
-               {
-                  strlcpy(g_settings.video.cg_shader_path, path, sizeof(g_settings.video.cg_shader_path));
-
-                  if (g_settings.video.shader_type != RARCH_SHADER_NONE)
-                  {
-                     driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, path, RARCH_SHADER_INDEX_PASS0);
-                     if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                        msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
-                  }
-                  else
-                     RARCH_ERR("Shaders are unsupported on this platform.\n");
-
-                  g_extern.lifecycle_mode_state &= ~(1ULL << MODE_LOAD_FIRST_SHADER);
-               }
                break;
             case PRESET_CHOICE:
                strlcpy(g_extern.file_state.cgp_path, path, sizeof(g_extern.file_state.cgp_path));
@@ -1573,26 +1552,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
             strlcpy(g_extern.file_state.cgp_path, "", sizeof(g_extern.file_state.cgp_path));
          break;
-      case SETTING_SHADER:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-            menu_stack_push(SHADER_CHOICE);
-            filebrowser_set_root_and_ext(filebrowser, EXT_SHADERS, g_settings.video.shader_dir);
-            g_extern.lifecycle_mode_state |= (1ULL << MODE_LOAD_FIRST_SHADER);
-         }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
-         {
-            strlcpy(g_settings.video.cg_shader_path, "", sizeof(g_settings.video.cg_shader_path));
-            if (g_settings.video.shader_type != RARCH_SHADER_NONE)
-            {
-               driver.video->set_shader(driver.video_data, (enum rarch_shader_type)g_settings.video.shader_type, NULL, RARCH_SHADER_INDEX_PASS0);
-               if (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW))
-                  msg_queue_push(g_extern.msg_queue, "INFO - Shader successfully loaded.", 1, 180);
-            }
-            else
-               RARCH_ERR("Shaders are unsupported on this platform.\n");
-         }
-         break;
       case SETTING_EMU_SKIN:
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
@@ -1803,9 +1762,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SETTING_DEFAULT_VIDEO_ALL:
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-            set_setting_action(NULL, SETTING_SHADER, 1ULL << RMENU_DEVICE_NAV_START);
-#endif
          }
          break;
       case SETTING_SOUND_MODE:
