@@ -994,7 +994,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
 
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
    rgui_list_push(rgui->selection_buf, "Core", RGUI_SETTINGS_CORE, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Core Options", RGUI_SETTINGS_CORE_OPTIONS, 0);
@@ -1030,9 +1030,6 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
 #ifdef GEKKO
    rgui_list_push(rgui->selection_buf, "SRAM Saves in \"sram\" Dir", RGUI_SETTINGS_SRAM_DIR, 0);
    rgui_list_push(rgui->selection_buf, "State Saves in \"state\" Dir", RGUI_SETTINGS_STATE_DIR, 0);
-#endif
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-   rgui_list_push(rgui->selection_buf, "Core", RGUI_SETTINGS_CORE, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Controller #1 Config", RGUI_SETTINGS_CONTROLLER_1, 0);
    rgui_list_push(rgui->selection_buf, "Controller #2 Config", RGUI_SETTINGS_CONTROLLER_2, 0);
@@ -1371,7 +1368,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
             rgui_list_push(rgui->menu_stack, rgui->base_path, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
             rgui->need_refresh = true;
          }
-         else if (menu_type_is_settings(type) && action == RGUI_ACTION_OK)
+         else if ((menu_type_is_settings(type) || type == RGUI_SETTINGS_CORE) && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
             rgui->selection_ptr = 0;
