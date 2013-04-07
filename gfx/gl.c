@@ -250,7 +250,7 @@ static bool gl_shader_init(void *data)
    gl_t *gl = (gl_t*)data;
    const gl_shader_backend_t *backend = NULL;
 
-#if DEFAULT_SHADER == RARCH_SHADER_NONE
+#if DEFAULT_SHADER_TYPE == RARCH_SHADER_NONE
    if (!g_settings.video.shader_enable)
       return true;
 #endif
