@@ -23,7 +23,6 @@
 #if (CELL_SDK_VERSION > 0x340000)
 #include <sysutil/sysutil_bgmplayback.h>
 #endif
-
 #endif
 
 #include "../../console/rarch_console.h"
@@ -41,15 +40,6 @@
 #define EXT_SHADERS "cg|CG"
 #define EXT_CGP_PRESETS "cgp|CGP"
 #define EXT_INPUT_PRESETS "cfg|CFG"
-
-#if defined(_XBOX1)
-#define ROM_PANEL_WIDTH 510
-#define ROM_PANEL_HEIGHT 20
-// Rom list coordinates
-int xpos, ypos;
-unsigned m_menuMainRomListPos_x = 60;
-unsigned m_menuMainRomListPos_y = 80;
-#endif
 
 static bool set_libretro_core_as_launch;
 
@@ -160,21 +150,22 @@ static const char *menu_drive_mapping_next(void)
 #if defined(_XBOX1)
 #define HARDCODE_FONT_SIZE 21
 
-#define POSITION_X m_menuMainRomListPos_x
-#define POSITION_X_CENTER (m_menuMainRomListPos_x + 350)
-#define POSITION_Y_START m_menuMainRomListPos_y
+#define POSITION_X 60
+#define POSITION_X_CENTER (POSITION_X + 350)
+#define POSITION_Y_START 80
+#define Y_POSITION 430
 #define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
 #define POSITION_Y_INCREMENT 20
-#define COMMENT_Y_POSITION (ypos - ((POSITION_Y_INCREMENT/2) * 3))
-#define COMMENT_TWO_Y_POSITION (ypos - ((POSITION_Y_INCREMENT/2) * 1))
+#define COMMENT_Y_POSITION (Y_POSITION - ((POSITION_Y_INCREMENT/2) * 3))
+#define COMMENT_TWO_Y_POSITION (Y_POSITION - ((POSITION_Y_INCREMENT/2) * 1))
 
 #define MSG_QUEUE_X_POSITION POSITION_X
-#define MSG_QUEUE_Y_POSITION (ypos - ((POSITION_Y_INCREMENT/2) * 7) + 5)
+#define MSG_QUEUE_Y_POSITION (Y_POSITION - ((POSITION_Y_INCREMENT/2) * 7) + 5)
 #define MSG_QUEUE_FONT_SIZE HARDCODE_FONT_SIZE
 
 #define MSG_PREV_NEXT_Y_POSITION 24
 
-#define CURRENT_PATH_Y_POSITION (m_menuMainRomListPos_y - ((POSITION_Y_INCREMENT/2)))
+#define CURRENT_PATH_Y_POSITION (POSITION_Y_START - ((POSITION_Y_INCREMENT/2)))
 #define CURRENT_PATH_FONT_SIZE 21
 
 #define FONT_SIZE 21 
@@ -277,10 +268,6 @@ static void rmenu_gfx_init(void)
 #ifdef _XBOX1
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
    texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &g_extern.console.menu_panel);
-
-   //Center the text
-   xpos = d3d->win_width == 640 ? 65 : 400;
-   ypos = d3d->win_width == 640 ? 430 : 670;
 #endif
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
@@ -302,8 +289,8 @@ static void rmenu_gfx_draw_panel(rarch_position_t *position)
 #ifdef _XBOX1
    g_extern.console.menu_panel.x = position->x;
    g_extern.console.menu_panel.y = position->y;
-   g_extern.console.menu_panel.width = ROM_PANEL_WIDTH;
-   g_extern.console.menu_panel.height = ROM_PANEL_HEIGHT;
+   g_extern.console.menu_panel.width = 510;
+   g_extern.console.menu_panel.height = 20;
    texture_image_render(&g_extern.console.menu_panel);
 #endif
 }
