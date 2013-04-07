@@ -1060,6 +1060,9 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
 
 enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader_type fallback)
 {
+   if (!path)
+      return fallback;
+
    const char *ext = path_get_extension(path);
 
    if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)

@@ -249,7 +249,11 @@ static const bool video_smooth = true;
 static const bool force_aspect = true; 
 
 // Enable use of shaders.
+#ifdef RARCH_CONSOLE
+static const bool shader_enable = true;
+#else
 static const bool shader_enable = false;
+#endif
 
 // Only scale in integer steps.
 // The base size depends on system-reported geometry and aspect ratio.
