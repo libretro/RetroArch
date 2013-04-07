@@ -41,7 +41,6 @@ struct gl_shader_backend
    bool (*set_coords)(const struct gl_coords *coords);
    bool (*set_mvp)(const math_matrix *mat);
 
-   bool (*load_shader)(unsigned index, const char *path);
    enum rarch_shader_type type;
 };
 

@@ -1165,12 +1165,8 @@ static bool d3d9_read_viewport(void *data, uint8_t *buffer)
    return reinterpret_cast<D3DVideo*>(data)->read_viewport(buffer);
 }
 
-static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char *path, unsigned index)
+static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char *path)
 {
-   // TODO: Add support for directly setting this param.
-   if (index != RARCH_SHADER_INDEX_MULTIPASS)
-      return false;
-
 #ifdef HAVE_CG
    if (type != RARCH_SHADER_CG)
    {

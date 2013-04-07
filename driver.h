@@ -158,13 +158,6 @@ enum rarch_shader_type
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_NONE
 #endif
 
-enum rarch_shader_index
-{
-   RARCH_SHADER_INDEX_MULTIPASS = 0,
-   RARCH_SHADER_INDEX_PASS0 = 1,
-   RARCH_SHADER_INDEX_PASS1 = 2
-};
-
 typedef struct video_info
 {
    unsigned width;
@@ -361,7 +354,7 @@ typedef struct video_driver
    // Is the window still active?
    bool (*alive)(void *data);
    bool (*focus)(void *data); // Does the window have focus?
-   bool (*set_shader)(void *data, enum rarch_shader_type type, const char *path, unsigned index); // Sets shader. Might not be implemented.
+   bool (*set_shader)(void *data, enum rarch_shader_type type, const char *path); // Sets shader. Might not be implemented. Will be moved to poke_interface later.
    void (*free)(void *data);
    const char *ident;
 

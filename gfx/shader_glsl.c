@@ -993,7 +993,6 @@ const gl_shader_backend_t gl_glsl_backend = {
    gl_glsl_set_coords,
    gl_glsl_set_mvp,
 
-   NULL,
    RARCH_SHADER_GLSL,
 };
 

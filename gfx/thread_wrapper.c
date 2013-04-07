@@ -93,7 +93,6 @@ typedef struct thread_video
       {
          enum rarch_shader_type type;
          const char *path;
-         unsigned index;
       } set_shader;
 
       struct
@@ -213,8 +212,7 @@ static void thread_loop(void *data)
          {
             bool ret = thr->driver->set_shader(thr->driver_data,
                   thr->cmd_data.set_shader.type,
-                  thr->cmd_data.set_shader.path,
-                  thr->cmd_data.set_shader.index);
+                  thr->cmd_data.set_shader.path);
             thr->cmd_data.b = ret;
             thread_reply(thr, CMD_SET_SHADER);
             break;
@@ -462,12 +460,11 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info, const inp
    return thr->cmd_data.b;
 }
 
-static bool thread_set_shader(void *data, enum rarch_shader_type type, const char *path, unsigned index)
+static bool thread_set_shader(void *data, enum rarch_shader_type type, const char *path)
 {
    thread_video_t *thr = (thread_video_t*)data;
    thr->cmd_data.set_shader.type = type;
    thr->cmd_data.set_shader.path = path;
-   thr->cmd_data.set_shader.index = index;
    thread_send_cmd(thr, CMD_SET_SHADER);
    thread_wait_reply(thr, CMD_SET_SHADER);
    return thr->cmd_data.b;
