@@ -58,10 +58,6 @@
 #include "../frontend/frontend_android.h"
 #endif
 
-#ifdef HAVE_RGUI
-#include "../frontend/menu/rgui.h"
-#endif
-
 // Used for the last pass when rendering to the back buffer.
 const GLfloat vertexes_flipped[] = {
    0, 1,
@@ -1131,20 +1127,6 @@ static void gl_init_textures_data(void *data)
    }
 }
 
-#ifdef HAVE_RGUI
-static void gl_init_rgui_texture(void *data)
-{
-   gl_t *gl = (gl_t*)data;
-
-   glGenTextures(1, &gl->rgui_texture);
-   glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-}
-#endif
-
 static void gl_init_textures(void *data, const video_info_t *video)
 {
    gl_t *gl = (gl_t*)data;
@@ -1164,10 +1146,6 @@ static void gl_init_textures(void *data, const video_info_t *video)
 #endif
 
    glGenTextures(TEXTURES, gl->texture);
-
-#ifdef HAVE_RGUI
-   gl_init_rgui_texture(gl);
-#endif
 
    for (unsigned i = 0; i < TEXTURES; i++)
    {
@@ -1327,18 +1305,20 @@ static void gl_pbo_async_readback(void *data)
 #endif
 
 #ifdef HAVE_RGUI
-static inline void gl_draw_rgui(void *data)
+static inline void gl_draw_texture(void *data)
 {
    gl_t *gl = (gl_t*)data;
+
+   const GLfloat color[] = {
+      1.0f, 1.0f, 1.0f, gl->rgui_texture_alpha,
+      1.0f, 1.0f, 1.0f, gl->rgui_texture_alpha,
+      1.0f, 1.0f, 1.0f, gl->rgui_texture_alpha,
+      1.0f, 1.0f, 1.0f, gl->rgui_texture_alpha,
+   };
+
    gl->coords.tex_coord = tex_coords;
-
+   gl->coords.color = color;
    glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
-
-   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(RGUI_WIDTH * 2));
-   // RGUI is always packed so pitch = width * bpp
-   glTexImage2D(GL_TEXTURE_2D,
-         0, GL_RGBA, RGUI_WIDTH, RGUI_HEIGHT, 0, GL_RGBA,
-         GL_UNSIGNED_SHORT_4_4_4_4, gl->rgui_data);
 
    gl_shader_use_func(gl, 0);
    gl_shader_set_coords_func(gl, &gl->coords, &gl->mvp_no_rot);
@@ -1348,6 +1328,7 @@ static inline void gl_draw_rgui(void *data)
    glDisable(GL_BLEND);
 
    gl->coords.tex_coord = gl->tex_coords;
+   gl->coords.color = white_color;
 }
 #endif
 
@@ -1458,8 +1439,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_set_prev_texture(gl, &tex_info);
 
 #ifdef HAVE_RGUI
-   if (gl->rgui_data)
-      gl_draw_rgui(gl);
+   if (gl->rgui_texture_enable)
+      gl_draw_texture(gl);
 #endif
 
 #ifdef FPS_COUNTER
@@ -1540,7 +1521,8 @@ static void gl_free(void *data)
    glDeleteTextures(TEXTURES, gl->texture);
 
 #ifdef HAVE_RGUI
-   glDeleteTextures(1, &gl->rgui_texture);
+   if (gl->rgui_texture)
+      glDeleteTextures(1, &gl->rgui_texture);
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -2359,10 +2341,51 @@ static void gl_set_blend(void *data, bool enable)
 }
 
 #ifdef HAVE_RGUI
-static void gl_set_rgui_texture(void *data, const void *frame)
+static void gl_set_texture_frame(void *data,
+      const void *frame, bool rgb32, unsigned width, unsigned height,
+      float alpha)
 {
    gl_t *gl = (gl_t*)data;
-   gl->rgui_data = frame;
+
+   if (!gl->rgui_texture)
+   {
+      glGenTextures(1, &gl->rgui_texture);
+      glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->border_type);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->border_type);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   }
+   else
+      glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
+
+   gl->rgui_texture_alpha = alpha;
+
+   unsigned base_size = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * base_size));
+
+   if (rgb32)
+   {
+      glTexImage2D(GL_TEXTURE_2D,
+            0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
+            width, height,
+            0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
+            RARCH_GL_FORMAT32, frame);
+   }
+   else
+   {
+      glTexImage2D(GL_TEXTURE_2D,
+            0, GL_RGBA, width, height, 0, GL_RGBA,
+            GL_UNSIGNED_SHORT_4_4_4_4, frame);
+   }
+
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+}
+
+static void gl_set_texture_enable(void *data, bool state)
+{
+   gl_t *gl = (gl_t*)data;
+   gl->rgui_texture_enable = state;
 }
 #endif
 
@@ -2398,7 +2421,8 @@ static const video_poke_interface_t gl_poke_interface = {
    gl_set_aspect_ratio,
    gl_apply_state_changes,
 #ifdef HAVE_RGUI
-   gl_set_rgui_texture,
+   gl_set_texture_frame,
+   gl_set_texture_enable,
 #endif
    gl_set_osd_msg,
 

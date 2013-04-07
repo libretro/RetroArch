@@ -298,7 +298,8 @@ typedef struct input_driver
 {
    void *(*init)(void);
    void (*poll)(void *data);
-   int16_t (*input_state)(void *data, const struct retro_keybind **retro_keybinds, unsigned port, unsigned device, unsigned index, unsigned id);
+   int16_t (*input_state)(void *data, const struct retro_keybind **retro_keybinds,
+         unsigned port, unsigned device, unsigned index, unsigned id);
    bool (*key_pressed)(void *data, int key);
    void (*free)(void *data);
    void (*set_keybinds)(void *data, unsigned device, unsigned port, unsigned id, unsigned keybind_action);
@@ -334,9 +335,9 @@ typedef struct video_poke_interface
    void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
    void (*apply_state_changes)(void *data);
 
-   // Set to NULL if RGUI texture is not supposed to be rendered.
-#ifdef HAVE_RGUI
-   void (*set_rgui_texture)(void *data, const void *frame);
+#if defined(HAVE_RGUI)
+   void (*set_texture_frame)(void *data, const void *frame, bool rgb32, unsigned width, unsigned height, float alpha); // Update texture.
+   void (*set_texture_enable)(void *data, bool enable); // Enable/disable rendering.
 #endif
    void (*set_osd_msg)(void *data, const char *msg, void *userdata);
 

@@ -287,7 +287,8 @@ typedef struct gl
 
 #ifdef HAVE_RGUI
    GLuint rgui_texture;
-   const void *rgui_data;
+   bool rgui_texture_enable;
+   GLfloat rgui_texture_alpha;
 #endif
 
 } gl_t;

@@ -918,7 +918,7 @@ static bool gx_frame(void *data, const void *frame,
       DCFlushRange(g_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
    }
 
-   if (gx->menu_data)
+   if (gx->menu_enable && gx->menu_data)
    {
       convert_texture16(gx->menu_data, menu_tex.data, RGUI_WIDTH, RGUI_HEIGHT, RGUI_WIDTH * 2);
       DCFlushRange(menu_tex.data, RGUI_WIDTH * RGUI_HEIGHT * 2);
@@ -1019,10 +1019,22 @@ static bool gx_set_shader(void *data, enum rarch_shader_type type, const char *p
    return false;
 }
 
-static void gx_set_rgui_texture(void *data, const void *frame)
+static void gx_set_texture_frame(void *data, const void *frame,
+      bool rgb32, unsigned width, unsigned height, float alpha)
 {
+   (void)rgb32;
+   (void)width;
+   (void)height;
+   (void)alpha;
+
    gx_video_t *gx = (gx_video_t*)data;
    gx->menu_data = (uint32_t*)frame;
+}
+
+static void gx_set_texture_enable(void *data, bool enable)
+{
+   gx_video_t *gx = (gx_video_t*)data;
+   gx->menu_enable = enable;
 }
 
 static void gx_apply_state_changes(void *data)
@@ -1042,7 +1054,8 @@ static const video_poke_interface_t gx_poke_interface = {
    NULL,
    gx_set_aspect_ratio,
    gx_apply_state_changes,
-   gx_set_rgui_texture,
+   gx_set_texture_frame,
+   gx_set_texture_enable,
 };
 
 static void gx_get_poke_interface(void *data, const video_poke_interface_t **iface)

@@ -1801,13 +1801,17 @@ bool menu_iterate(void)
    input_entry_ret = rgui_iterate(rgui, action);
 
    // draw last frame for loading messages
-   if (driver.video_poke && driver.video_poke->set_rgui_texture)
-      driver.video_poke->set_rgui_texture(driver.video_data, menu_framebuf);
+   if (driver.video_poke && driver.video_poke->set_texture_enable)
+   {
+      driver.video_poke->set_texture_frame(driver.video_data, menu_framebuf,
+            false, RGUI_WIDTH, RGUI_HEIGHT, 1.0f);
+      driver.video_poke->set_texture_enable(driver.video_data, true);
+   }
 
    rarch_render_cached_frame();
 
-   if (driver.video_poke && driver.video_poke->set_rgui_texture)
-      driver.video_poke->set_rgui_texture(driver.video_data, NULL);
+   if (driver.video_poke && driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_enable(driver.video_data, false);
 
    input_process_ret = menu_input_process(NULL, NULL);
 

@@ -72,7 +72,17 @@ typedef struct thread_video
    void **input_data;
 
 #ifdef HAVE_RGUI
-   const void *rgui_texture;
+   struct
+   {
+      void *frame;
+      size_t frame_cap;
+      bool frame_updated;
+      bool rgb32;
+      unsigned width;
+      unsigned height;
+      float alpha;
+      bool enable;
+   } texture;
 #endif
    bool apply_state_changes;
 
@@ -294,8 +304,17 @@ static void thread_loop(void *data)
          slock_lock(thr->frame.lock);
 
 #ifdef HAVE_RGUI
-         thr->poke->set_rgui_texture(thr->driver_data, thr->rgui_texture);
+         if (thr->texture.frame_updated)
+         {
+            thr->poke->set_texture_frame(thr->driver_data,
+                  thr->texture.frame, thr->texture.rgb32,
+                  thr->texture.width, thr->texture.height,
+                  thr->texture.alpha);
+            thr->texture.frame_updated = false;
+         }
+         thr->poke->set_texture_enable(thr->driver_data, thr->texture.enable);
 #endif
+
          if (thr->apply_state_changes)
          {
             thr->poke->apply_state_changes(thr->driver_data);
@@ -407,7 +426,7 @@ static bool thread_frame(void *data, const void *frame_,
       // we'll want to block to avoid stepping menu
       // at crazy speeds.
 #ifdef HAVE_RGUI
-      if (thr->rgui_texture)
+      if (thr->texture.enable)
       {
          while (thr->frame.updated)
             scond_wait(thr->cond_cmd, thr->lock);
@@ -510,6 +529,7 @@ static void thread_free(void *data)
    thread_wait_reply(thr, CMD_FREE);
    sthread_join(thr->thread);
 
+   free(thr->texture.frame);
    free(thr->frame.buffer);
    slock_free(thr->frame.lock);
    slock_free(thr->lock);
@@ -620,12 +640,37 @@ static void thread_set_aspect_ratio(void *data, unsigned aspectratio_index)
 }
 
 #ifdef HAVE_RGUI
-static void thread_set_rgui_texture(void *data, const void *frame)
+static void thread_set_texture_frame(void *data, const void *frame,
+      bool rgb32, unsigned width, unsigned height, float alpha)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
    slock_lock(thr->frame.lock);
-   thr->rgui_texture = frame;
+   size_t required = width * height * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
+   if (required > thr->texture.frame_cap)
+   {
+      thr->texture.frame = realloc(thr->texture.frame, required);
+      thr->texture.frame_cap = required;
+   }
+
+   if (thr->texture.frame)
+   {
+      memcpy(thr->texture.frame, frame, required);
+      thr->texture.frame_updated = true;
+      thr->texture.rgb32  = rgb32;
+      thr->texture.width  = width;
+      thr->texture.height = height;
+      thr->texture.alpha  = alpha;
+   }
+   slock_unlock(thr->frame.lock);
+}
+
+static void thread_set_texture_enable(void *data, bool state)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   slock_lock(thr->frame.lock);
+   thr->texture.enable = state;
    slock_unlock(thr->frame.lock);
 }
 #endif
@@ -648,7 +693,8 @@ static const video_poke_interface_t thread_poke = {
    thread_set_aspect_ratio,
    thread_apply_state_changes,
 #ifdef HAVE_RGUI
-   thread_set_rgui_texture,
+   thread_set_texture_frame,
+   thread_set_texture_enable,
 #endif
 };
 

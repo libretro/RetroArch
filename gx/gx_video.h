@@ -25,6 +25,7 @@ typedef struct gx_video
    bool double_strike;
    bool rgb32;
    uint32_t *menu_data; // FIXME: Should be const uint16_t*.
+   bool menu_enable;
    rarch_viewport_t vp;
    unsigned scale;
 } gx_video_t;
