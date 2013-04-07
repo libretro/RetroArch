@@ -221,7 +221,6 @@ struct settings
       bool rate_control;
       float rate_control_delta;
       float volume; // dB scale
-
       char resampler[32];
    } audio;
 

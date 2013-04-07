@@ -34,6 +34,7 @@ OBJ = frontend/frontend.o \
 		gfx/fonts/bitmapfont.o \
 		gfx/image.o \
 		audio/resampler.o \
+		audio/sinc.o \
 		performance.o
 
 JOBJ := conf/config_file.o \
@@ -220,8 +221,6 @@ ifeq ($(HAVE_FFMPEG), 1)
    DEFINES += -DHAVE_FFMPEG -Iffmpeg
    OBJ += record/ffemu.o
 endif
-
-   OBJ += audio/sinc.o
 
 ifneq ($(V), 1)
    Q := @

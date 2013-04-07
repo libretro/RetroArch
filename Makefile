@@ -31,6 +31,7 @@ OBJ = frontend/frontend.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
 		audio/resampler.o \
+		audio/sinc.o \
 		performance.o
 
 JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
@@ -298,8 +299,6 @@ ifeq ($(HAVE_PYTHON), 1)
    LIBS += $(PYTHON_LIBS)
    OBJ += gfx/py_state/py_state.o
 endif
-
-OBJ += audio/sinc.o
 
 ifeq ($(HAVE_NEON),1)
 	OBJ += audio/sinc_neon.o
