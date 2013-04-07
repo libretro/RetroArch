@@ -529,7 +529,9 @@ static void thread_free(void *data)
    thread_wait_reply(thr, CMD_FREE);
    sthread_join(thr->thread);
 
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
    free(thr->texture.frame);
+#endif
    free(thr->frame.buffer);
    slock_free(thr->frame.lock);
    slock_free(thr->lock);
