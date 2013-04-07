@@ -125,7 +125,7 @@ struct rgui_handle
 #endif
    struct retro_system_info info;
 
-#ifdef HAVE_CG
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    struct gfx_shader shader;
 #endif
 };
@@ -354,7 +354,7 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
    free(msg);
 }
 
-#ifdef HAVE_CG
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 static void shader_manager_get_str(rgui_handle_t *rgui,
       char *type_str, size_t type_str_size, unsigned type);
 static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action);
@@ -415,7 +415,7 @@ static void render_text(rgui_handle_t *rgui)
       int w = (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ? 26 : 19;
       unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
       
-#ifdef HAVE_CG
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
       if (type >= RGUI_SETTINGS_SHADER_APPLY &&
             type <= RGUI_SETTINGS_SHADER_LAST)
          shader_manager_get_str(rgui, type_str, sizeof(type_str), type);
@@ -631,7 +631,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
 
    (void)rgui;
 
-#ifdef HAVE_CG
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    if (setting >= RGUI_SETTINGS_SHADER_APPLY && setting <= RGUI_SETTINGS_SHADER_LAST)
       return shader_manager_toggle_setting(rgui, setting, action);
 #endif
@@ -998,7 +998,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Core", RGUI_SETTINGS_CORE, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Core Options", RGUI_SETTINGS_CORE_OPTIONS, 0);
-#ifdef HAVE_CG
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    rgui_list_push(rgui->selection_buf, "Shader Manager", RGUI_SETTINGS_SHADER_MANAGER, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
@@ -1060,7 +1060,7 @@ static void rgui_settings_core_options_populate_entries(rgui_handle_t *rgui)
       rgui_list_push(rgui->selection_buf, "No options available.", RGUI_SETTINGS_CORE_OPTION_NONE, 0);
 }
 
-#ifdef HAVE_CG
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
@@ -1417,7 +1417,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          rgui_settings_controller_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
          rgui_settings_core_options_populate_entries(rgui);
-#ifdef HAVE_CG
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
       else if (menu_type == RGUI_SETTINGS_SHADER_MANAGER)
          rgui_settings_shader_manager_populate_entries(rgui);
 #endif
