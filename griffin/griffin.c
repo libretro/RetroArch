@@ -109,7 +109,7 @@ VIDEO CONTEXT
 VIDEO SHADERS
 ============================================================ */
 
-#if defined(HAVE_CG) || defined(HAVE_HLSL)
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #include "../gfx/shader_parse.c"
 #endif
 

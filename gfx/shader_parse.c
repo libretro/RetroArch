@@ -211,6 +211,10 @@ static bool shader_parse_imports(config_file_t *conf, struct gfx_shader *shader)
 
    char *save;
    const char *id = strtok_r(imports, ";", &save);
+
+   /* FIXME - unused variable and then redefined again in for loop? */
+   (void)id;
+
    for (const char *id = strtok_r(imports, ";", &save);
          id && shader->variables < GFX_MAX_VARIABLES;
          shader->variables++, id = strtok_r(NULL, ";", &save))

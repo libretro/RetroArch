@@ -558,9 +558,9 @@ static void gl_create_fbo_textures(void *data)
          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 
                gl->fbo_rect[i].width, gl->fbo_rect[i].height,
                0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+#endif
       }
       else
-#endif
       {
          glTexImage2D(GL_TEXTURE_2D,
                0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
