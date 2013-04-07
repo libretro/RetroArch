@@ -123,7 +123,6 @@ static PFNGLVERTEXATTRIBPOINTERPROC pglVertexAttribPointer;
 static struct gfx_shader *glsl_shader;
 
 static bool glsl_enable;
-static bool glsl_modern;
 static GLuint gl_program[GFX_MAX_SHADERS];
 static unsigned active_index;
 
@@ -594,10 +593,13 @@ bool gl_glsl_init(const char *path)
    if (!glsl_shader)
       return false;
 
-   if (path && !gfx_shader_read_xml(path, glsl_shader))
+   if (path)
    {
-      RARCH_ERR("[GL]: Failed to parse XML shader.\n");
-      return false;
+      if (!gfx_shader_read_xml(path, glsl_shader))
+      {
+         RARCH_ERR("[GL]: Failed to parse XML shader.\n");
+         return false;
+      }
    }
    else
    {
@@ -887,7 +889,7 @@ void gl_glsl_set_params(unsigned width, unsigned height,
 
 bool gl_glsl_set_mvp(const math_matrix *mat)
 {
-   if (!glsl_enable || !glsl_modern)
+   if (!glsl_enable || !glsl_shader->modern)
       return false;
 
    int loc = gl_uniforms[active_index].mvp;
@@ -899,7 +901,7 @@ bool gl_glsl_set_mvp(const math_matrix *mat)
 
 bool gl_glsl_set_coords(const struct gl_coords *coords)
 {
-   if (!glsl_enable || !glsl_modern)
+   if (!glsl_enable || !glsl_shader->modern)
       return false;
 
    const struct shader_uniforms *uni = &gl_uniforms[active_index];
