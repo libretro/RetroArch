@@ -87,18 +87,7 @@ GLboolean rglIsFormat( GLenum format );
 GLboolean rglIsValidPair( GLenum format, GLenum type );
 void rglImageAllocCPUStorage (void *data);
 void rglImageFreeCPUStorage (void *data);
-extern void	rglSetImage(void *data, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment, GLenum format, GLenum type, const GLvoid* pixels );
-extern void	rglSetSubImage( GLenum target, GLint level, rglTexture *texture, rglImage* image, GLint x, GLint y, GLint z, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment, GLenum format, GLenum type, const GLvoid* pixels );
 extern int	rglGetPixelSize( GLenum format, GLenum type );
-
-static inline int rglGetStorageSize( GLenum format, GLenum type, GLsizei width, GLsizei height, GLsizei depth )
-{
-   return rglGetPixelSize( format, type )*width*height*depth;
-}
-
-extern int rglGetTypeSize( GLenum type );
-extern int	rglGetMaxBitSize( GLenum type );
-extern int	rglGetStorageSize( GLenum format, GLenum type, GLsizei width, GLsizei height, GLsizei depth );
 
 //----------------------------------------
 // FramebufferObject.c
@@ -140,10 +129,8 @@ extern PSGLdeviceParameters * rglShadowDeviceParameters (void);
 //----------------------------------------
 extern GLboolean rglPlatformDeviceInit (void *data);
 extern void		rglPlatformDeviceExit (void);
-extern int		rglPlatformDeviceSize (void);
 extern int		rglPlatformCreateDevice (void *data);
 extern void		rglPlatformDestroyDevice (void *data);
-extern void		rglPlatformMakeCurrent (void *data);
 extern void		rglPlatformSwapBuffers (void *data);
 extern const GLvoid*	rglPlatformGetProcAddress (const char *funcName);
 

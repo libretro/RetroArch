@@ -1176,9 +1176,6 @@ void rglPlatformBufferObjectSetData(void *buf_data, GLintptr offset, GLsizeiptr 
             rglGcmSend( rglBuffer->bufferId, offset, rglBuffer->pitch, ( const char * )data, size );
          }
       }
-
-   // be conservative here. Whenever we write to any Buffer Object, invalidate the vertex cache
-   driver->invalidateVertexCache = GL_TRUE;
 }
 
 GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data )
@@ -1228,9 +1225,6 @@ GLAPI void APIENTRY glBufferSubData( GLenum target, GLintptr offset, GLsizeiptr 
       rglGcmBufferObject* src = (rglGcmBufferObject*)in_src->platformBufferObject;
 
       rglGcmTransferData( dst->bufferId, 0, src->bufferSize, src->bufferId, 0, src->bufferSize, src->bufferSize, 1 );
-
-      // be conservative here. Whenever we write to any Buffer Object, invalidate the vertex cache
-      driver->invalidateVertexCache = GL_TRUE;
    }
 
    rglPlatformBufferObjectSetData( bufferObject, offset, size, data, GL_FALSE );
@@ -2218,7 +2212,7 @@ static GLuint rglGetGcmTextureSize (void *data)
 
 // Calculate pitch for a texture
 // TransferVid2Vid needs 64byte pitch alignment
-#define GET_TEXTURE_PITCH(texture) (rglPad( rglGetStorageSize( texture->image->format, texture->image->type, texture->image->width, 1, 1 ), 64 ))
+#define GET_TEXTURE_PITCH(texture) (rglPad(rglGetPixelSize(texture->image->format, texture->image->type) * texture->image->width, 64))
 
 // Create a gcm texture by initializing memory to 0
 void rglPlatformCreateTexture (void *data)
@@ -2472,20 +2466,15 @@ source:		RGLGCM_SURFACE_SOURCE_TEXTURE,
    rglGcmTexture *platformTexture = ( rglGcmTexture * )texture->platformTexture;
    rglGcmTextureLayout *layout = &platformTexture->gpuLayout;
 
-   // max aniso
-   // revalidate the texture registers cache.
-   int maxAniso = ( int )texture->maxAnisotropy;
-   GLuint minFilter = texture->minFilter;
-   GLuint magFilter = texture->magFilter;
-
    // XXX make sure that REVALIDATE_PARAMETERS is set if the format of the texture changes
    // revalidate the texture registers cache just to ensure we are in the correct filtering mode
    // based on the internal format.
 
    // -----------------------------------------------------------------------
    // map the SET_TEXTURE_FILTER method.
-   platformTexture->gcmMethods.filter.min = rglGcmMapMinTextureFilter( minFilter );
-   platformTexture->gcmMethods.filter.mag = rglGcmMapMagTextureFilter( magFilter );
+   platformTexture->gcmMethods.filter.min = rglGcmMapMinTextureFilter(texture->minFilter);
+   platformTexture->gcmMethods.filter.mag = (texture->magFilter == GL_NEAREST) 
+      ? CELL_GCM_TEXTURE_NEAREST : CELL_GCM_TEXTURE_LINEAR;
    platformTexture->gcmMethods.filter.conv = CELL_GCM_TEXTURE_CONVOLUTION_QUINCUNX;
    // We don't actually expose this, but still need to set it up properly incase we expose this later
    // hw expects a 5.8 twos-complement fixed-point // XXX  what is the - .26f ?
@@ -2849,8 +2838,8 @@ GLenum rglPlatformChooseInternalStorage (void *data, GLenum internalFormat )
    // this member is used to configure texture loads and unloads.  If this
    // value is wrong (e.g. contains unnecessary padding) it will corrupt
    // the GPU memory layout.
-   image->storageSize = rglGetStorageSize(image->format, image->type,
-         image->width, image->height, image->depth );
+   image->storageSize = rglGetPixelSize(image->format, image->type) *
+      image->width * image->height * image->depth;
 
    return GL_NO_ERROR;
 }

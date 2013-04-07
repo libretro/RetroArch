@@ -145,22 +145,6 @@ static inline GLuint rglGcmMapMinTextureFilter( GLenum filter )
    return filter;
 }
 
-static inline GLuint rglGcmMapMagTextureFilter( GLenum filter )
-{
-   switch ( filter )
-   {
-      case GL_NEAREST:
-         return CELL_GCM_TEXTURE_NEAREST;
-         break;
-      case GL_LINEAR:
-         return CELL_GCM_TEXTURE_LINEAR;
-         break;
-      default:
-         return 0;
-   }
-   return filter;
-}
-
 static inline GLuint rglGcmMapWrapMode( GLuint mode )
 {
    switch ( mode )

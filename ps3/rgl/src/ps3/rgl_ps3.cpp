@@ -1248,8 +1248,6 @@ static uint8_t gmmInternalSweep(void *data)
             while (pTempBlock != pBlock->pNext)
             {
                pTempBlock->base.address -= moveDistance;
-
-
                pTempBlock = pTempBlock->pNext;
             }
          }
@@ -1577,8 +1575,6 @@ uint32_t gmmAlloc(void *data,
   FIFO BUFFER
   ============================================================ */
 
-const uint32_t c_rounded_size_ofrglDrawParams = (sizeof(rglDrawParams)+0x7f)&~0x7f;
-
 void rglGcmFifoFinish (void *data)
 {
    rglGcmFifo *fifo = (rglGcmFifo*)data;
@@ -1886,7 +1882,6 @@ enable: 0,
 };
 
 static int rglInitCompleted = 0;
-int _getJsInitCompleted(){ return rglInitCompleted; } // accessor
 
 void rglPsglPlatformInit (void *data)
 {
@@ -1894,31 +1889,8 @@ void rglPsglPlatformInit (void *data)
 
    if ( !rglInitCompleted )
    {
-      int ret = cellSysmoduleLoadModule( CELL_SYSMODULE_GCM_SYS );
-      switch ( ret )
-      {
-         case CELL_OK:
-            //printf( "GCM wasn't loaded; good thing we did\n" );
-            break;
-         case CELL_SYSMODULE_ERROR_DUPLICATED:
-            //printf( "GCM was loaded already\n" );
-            break;
-         default:
-            break;
-      }
-
-      ret = cellSysmoduleLoadModule( CELL_SYSMODULE_RESC );
-      switch ( ret )
-      {
-         case CELL_OK:
-            //printf( "RESC wasn't loaded; good thing we did\n" );
-            break;
-         case CELL_SYSMODULE_ERROR_DUPLICATED:
-            //printf( "RESC was loaded already\n" );
-            break;
-         default:
-            break;
-      }
+      cellSysmoduleLoadModule( CELL_SYSMODULE_GCM_SYS );
+      cellSysmoduleLoadModule( CELL_SYSMODULE_RESC );
 
       rglDeviceInit( options );
       _CurrentContext = NULL;
@@ -1959,63 +1931,56 @@ RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceAuto( GLenum colorFormat, GLenum de
 RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceExtended (const void *data)
 {
    RGLdeviceParameters *parameters = (RGLdeviceParameters*)data;
-   RGLdevice *device = (RGLdevice*)malloc( sizeof( RGLdevice ) + rglPlatformDeviceSize() );
+   RGLdevice *device = (RGLdevice*)malloc( sizeof( RGLdevice ) + sizeof( rglGcmDevice ) );
    if ( !device )
    {
       rglSetError( GL_OUT_OF_MEMORY );
       return NULL;
    }
-   memset( device, 0, sizeof( RGLdevice ) + rglPlatformDeviceSize() );
+   memset( device, 0, sizeof( RGLdevice ) + sizeof(rglGcmDevice) );
 
    // initialize fields
    memcpy( &device->deviceParameters, parameters, sizeof( RGLdeviceParameters ) );
 
    if (( parameters->enable & RGL_DEVICE_PARAMETERS_COLOR_FORMAT ) == 0 )
-   {
       device->deviceParameters.colorFormat = defaultParameters.colorFormat;
-   }
+
    if (( parameters->enable & RGL_DEVICE_PARAMETERS_DEPTH_FORMAT ) == 0 )
-   {
       device->deviceParameters.depthFormat = defaultParameters.depthFormat;
-   }
+
    if (( parameters->enable & RGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE ) == 0 )
-   {
       device->deviceParameters.multisamplingMode = defaultParameters.multisamplingMode;
-   }
+
    if (( parameters->enable & RGL_DEVICE_PARAMETERS_TV_STANDARD ) == 0 )
-   {
       device->deviceParameters.TVStandard = defaultParameters.TVStandard;
-   }
+
    if (( parameters->enable & RGL_DEVICE_PARAMETERS_CONNECTOR ) == 0 )
-   {
       device->deviceParameters.connector = defaultParameters.connector;
-   }
+
    if (( parameters->enable & RGL_DEVICE_PARAMETERS_BUFFERING_MODE ) == 0 )
-   {
       device->deviceParameters.bufferingMode = defaultParameters.bufferingMode;
-   }
+
    if (( parameters->enable & RGL_DEVICE_PARAMETERS_WIDTH_HEIGHT ) == 0 )
    {
       device->deviceParameters.width = defaultParameters.width;
       device->deviceParameters.height = defaultParameters.height;
    }
+
    if (( parameters->enable & RGL_DEVICE_PARAMETERS_RESC_RENDER_WIDTH_HEIGHT ) == 0 )
    {
       device->deviceParameters.renderWidth = defaultParameters.renderWidth;
       device->deviceParameters.renderHeight = defaultParameters.renderHeight;
    }
+   
    if (( parameters->enable & RGL_DEVICE_PARAMETERS_RESC_RATIO_MODE ) == 0 )
-   {
       device->deviceParameters.rescRatioMode = defaultParameters.rescRatioMode;
-   }
+
    if (( parameters->enable & RGL_DEVICE_PARAMETERS_RESC_PAL_TEMPORAL_MODE ) == 0 )
-   {
       device->deviceParameters.rescPalTemporalMode = defaultParameters.rescPalTemporalMode;
-   }
+
    if (( parameters->enable & RGL_DEVICE_PARAMETERS_RESC_INTERLACE_MODE ) == 0 )
-   {
       device->deviceParameters.rescInterlaceMode = defaultParameters.rescInterlaceMode;
-   }
+
    if (( parameters->enable & RGL_DEVICE_PARAMETERS_RESC_ADJUST_ASPECT_RATIO ) == 0 )
    {
       device->deviceParameters.horizontalScale = defaultParameters.horizontalScale;
@@ -2026,8 +1991,7 @@ RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceExtended (const void *data)
 
    // platform-specific initialization
    //  This creates the default framebuffer.
-   int result = rglPlatformCreateDevice( device );
-   if ( result < 0 )
+   if ( rglPlatformCreateDevice(device) < 0 )
    {
       free( device );
       return NULL;
@@ -2305,17 +2269,6 @@ void rglPlatformDeviceExit (void)
    rglGcmDestroy();
    rglGcmDestroyRM( &rglGcmResource );
 }
-
-
-int rglPlatformDeviceSize (void)
-{
-   return sizeof( rglGcmDevice );
-}
-
-
-void rglPlatformMakeCurrent( void *dev )
-{}
-
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -3625,18 +3578,6 @@ DECLARE_PACKED_TYPE_AND_REV_2(UNSIGNED_INT,24,8) \
 DECLARE_PACKED_TYPE_AND_REV_4(UNSIGNED_INT,8,8,8,8) \
 DECLARE_PACKED_TYPE_AND_REV_4(UNSIGNED_INT,10,10,10,2)
 
-#define DECLARE_FORMATS \
-   DECLARE_FORMAT(GL_RGB,3) \
-DECLARE_FORMAT(GL_BGR,3) \
-DECLARE_FORMAT(GL_RGBA,4) \
-DECLARE_FORMAT(GL_BGRA,4) \
-DECLARE_FORMAT(GL_ABGR,4) \
-DECLARE_FORMAT(GL_ARGB_SCE,4) \
-DECLARE_FORMAT(GL_RED,1) \
-DECLARE_FORMAT(GL_GREEN,1) \
-DECLARE_FORMAT(GL_BLUE,1) \
-DECLARE_FORMAT(GL_ALPHA,1)
-
 #define DECLARE_TYPE(TYPE,CTYPE,MAXVAL) \
    typedef CTYPE type_##TYPE; \
 static inline type_##TYPE rglFloatTo_##TYPE(float v) { return (type_##TYPE)(rglClampf(v)*MAXVAL); } \
@@ -3673,27 +3614,29 @@ DECLARE_PACKED_TYPE(GL_##REALTYPE,GL_##REALTYPE##_##S4##_##S3##_##S2##_##S1##_RE
 #define GET_BITS(to,from,first,count) if ((count)>0) to=((GLfloat)(((from)>>(first))&((1<<(count))-1)))/(GLfloat)((1<<((count==0)?1:count))-1)
 #define PUT_BITS(from,to,first,count) if ((count)>0) to|=((unsigned int)((from)*((GLfloat)((1<<((count==0)?1:count))-1))))<<(first);
 
-inline static int rglGetComponentCount( GLenum format )
+static inline int rglGetComponentCount (GLenum format)
 {
    switch ( format )
    {
-#define DECLARE_FORMAT(FORMAT,COUNT) \
-      case FORMAT: \
-                   return COUNT;
-      DECLARE_FORMATS
-#undef DECLARE_FORMAT
-      case GL_PALETTE8_RGB8_OES:
-      case GL_PALETTE8_RGBA8_OES:
-      case GL_PALETTE8_R5_G6_B5_OES:
-      case GL_PALETTE8_RGBA4_OES:
-      case GL_PALETTE8_RGB5_A1_OES:
+      case GL_RGB:
+      case GL_BGR:
+         return 3;
+      case GL_RGBA:
+      case GL_BGRA:
+      case GL_ABGR:
+      case GL_ARGB_SCE:
+         return 4;
+      case GL_RED:
+      case GL_GREEN:
+      case GL_BLUE:
+      case GL_ALPHA:
          return 1;
       default:
          return 0;
    }
 }
 
-int rglGetTypeSize( GLenum type )
+static inline int rglGetTypeSize( GLenum type )
 {
    switch ( type )
    {
@@ -3714,6 +3657,7 @@ int rglGetTypeSize( GLenum type )
          return 0;
    }
 }
+
 int rglGetPixelSize( GLenum format, GLenum type )
 {
    int componentSize;
@@ -3736,10 +3680,10 @@ int rglGetPixelSize( GLenum format, GLenum type )
       default:
          return 0;
    }
-   return rglGetComponentCount( format )*componentSize;
+   return rglGetComponentCount(format) * componentSize;
 }
 
-void rglRawRasterToImage(const void *in_data,
+static void rglRawRasterToImage(const void *in_data,
       void *out_data, GLuint x, GLuint y, GLuint z )
 {
    const rglRaster* raster = (const rglRaster*)in_data;
@@ -3829,7 +3773,7 @@ void rglImageFreeCPUStorage(void *data)
    image->dataState &= ~RGL_IMAGE_DATASTATE_HOST;
 }
 
-void rglSetImage(void *data, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment, GLenum format, GLenum type, const void *pixels )
+static void rglSetImage(void *data, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLsizei alignment, GLenum format, GLenum type, const void *pixels )
 {
    rglImage *image = (rglImage*)data;
 
@@ -4609,7 +4553,7 @@ void rglVertexAttribPointerNV(
       case GL_UNSIGNED_BYTE:
       case GL_SHORT:
       case GL_FIXED:
-         defaultStride = fsize * rglGetTypeSize( type );
+         defaultStride = fsize * rglGetTypeSize(type);
          break;
       case GL_FIXED_11_11_10_SCE:
          defaultStride = 4;
@@ -4710,15 +4654,16 @@ RGL_EXPORT void psglDestroyDevice (void *data)
 
 void RGL_EXPORT psglMakeCurrent (RGLcontext *context, RGLdevice *device)
 {
+   _CurrentContext = NULL;
+   _CurrentDevice = NULL;
+
    if ( context && device )
    {
-      rglPlatformMakeCurrent( device->platformDevice );
       _CurrentContext = context;
       _CurrentDevice = device;
+
       if ( !device->rasterDriver )
-      {
          device->rasterDriver = rglPlatformRasterInit();
-      }
 
       //attach context
       if (!context->everAttached)
@@ -4731,12 +4676,6 @@ void RGL_EXPORT psglMakeCurrent (RGLcontext *context, RGLdevice *device)
 
       context->needValidate = RGL_VALIDATE_ALL;
       context->attribs->DirtyMask = ( 1 << RGL_MAX_VERTEX_ATTRIBS ) - 1;
-   }
-   else
-   {
-      rglPlatformMakeCurrent( NULL );
-      _CurrentContext = NULL;
-      _CurrentDevice = NULL;
    }
 }
 
