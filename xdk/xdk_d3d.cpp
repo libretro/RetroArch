@@ -113,42 +113,6 @@ const DWORD g_MapLinearToSrgbGpuFormat[] =
 };
 #endif
 
-#ifdef HAVE_RGUI
-static bool xdk_d3d_init_rgui_texture(void *data)
-{
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-   struct texture_image *out_img = &d3d->rgui_texture;
-   out_img->pixels      = NULL;
-   out_img->vertex_buf  = NULL;
-
-   HRESULT ret = D3DXCreateTexture(d3d->d3d_render_device,
-         RGUI_WIDTH, RGUI_HEIGHT, D3DX_DEFAULT, 0, D3DFMT_A4R4G4B4,
-         D3DPOOL_MANAGED, &out_img->pixels);
-
-   if(FAILED(ret))
-   {
-      RARCH_ERR("Error occurred during D3DXCreateTexture (RGUI texture init).\n");
-      return false;
-   }
-
-   // create a vertex buffer for the quad that will display the texture
-   ret = d3d->d3d_render_device->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats),
-         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &out_img->vertex_buf);
-
-   if (FAILED(ret))
-   {
-      RARCH_ERR("Error occurred during CreateVertexBuffer().\n");
-      out_img->pixels->Release();
-      return false;
-   }
-
-   out_img->width = RGUI_WIDTH;
-   out_img->height = RGUI_HEIGHT;
-
-   return true;
-}
-#endif
-
 static void check_window(void *data)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
@@ -375,32 +339,10 @@ void xdk_d3d_init_fbo(void *data)
 }
 #endif
 
-static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const char *path, unsigned index)
+static bool xdk_d3d_set_shader(void *data, enum rarch_shader_type type, const char *path)
 {
+   /* TODO - stub */
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-
-   switch (type)
-   {
-#if defined(HAVE_HLSL)
-      case RARCH_SHADER_HLSL:
-         if (index == RARCH_SHADER_INDEX_MULTIPASS)
-         {
-            if (!hlsl_init(path, d3d->d3d_render_device))
-               return false;
-         }
-         else
-         {
-            if (!hlsl_load_shader(index, path))
-               return false;
-         }
-         break;
-#endif
-      case RARCH_SHADER_NONE:
-      default:
-         RARCH_ERR("Invalid shader type in gl_set_shader().\n");
-         return false;
-   }
-
    return true;
 }
 
@@ -509,10 +451,6 @@ static void xdk_d3d_init_textures(void *data, const video_info_t *video)
       return;
    }
 
-#ifdef HAVE_RGUI
-   xdk_d3d_init_rgui_texture(d3d);
-#endif
-
    D3DLOCKED_RECT d3dlr;
    d3d->lpTexture->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
@@ -561,10 +499,6 @@ static void xdk_d3d_reinit_textures(void *data, const video_info_t *video)
    {
       RARCH_LOG("Reinitializing textures (%u x %u @ %u bpp)\n", d3d->tex_w,
             d3d->tex_h, d3d->base_size * CHAR_BIT);
-
-#ifdef HAVE_RGUI
-      texture_image_free(&d3d->rgui_texture);
-#endif
 
       xdk_d3d_init_textures(d3d, video);
 
@@ -729,80 +663,6 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
    //really returns driver.video_data to driver.video_data - see comment above
    return d3d;
 }
-
-#ifdef HAVE_RGUI
-static inline void xdk_d3d_draw_rgui(void *data)
-{
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   texture_image *out_img = (texture_image*)&d3d->rgui_texture;
-   D3DLOCKED_RECT d3dlr;
-   unsigned pitch = RGUI_WIDTH * 2;
-   unsigned base_size = RGUI_WIDTH * 2;
-   unsigned y;
-
-   out_img->pixels->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-
-   for (y = 0; y < RGUI_HEIGHT; y++)
-   {
-         const uint8_t *in = (const uint8_t*)d3d->rgui_data + y * pitch;
-         uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
-         memcpy(out, in, base_size);
-   }
-   out_img->pixels->UnlockRect(0);
-
-   if (out_img->pixels == NULL || out_img->vertex_buf == NULL)
-      return;
-
-   int x = out_img->x;
-   y = out_img->y;
-   int w = RGUI_WIDTH;
-   int h = RGUI_HEIGHT;
-
-   float fX = static_cast<float>(x);
-   float fY = static_cast<float>(y);
-
-   // create the new vertices
-   DrawVerticeFormats newVerts[] =
-   {
-      // x,           y,              z,     color, u ,v
-      {fX,            fY,             0.0f,  0,     0, 0},
-      {fX + w,        fY,             0.0f,  0,     1, 0},
-      {fX + w,        fY + h,         0.0f,  0,     1, 1},
-      {fX,            fY + h,         0.0f,  0,     0, 1}
-   };
-
-   // load the existing vertices
-   DrawVerticeFormats *pCurVerts;
-
-   HRESULT ret = out_img->vertex_buf->Lock(0, 0, (unsigned char**)&pCurVerts, 0);
-
-   if (FAILED(ret))
-   {
-      RARCH_ERR("[RGUI Draw] - Error occurred during m_pVertexBuffer->Lock().\n");
-      return;
-   }
-
-   // copy the new verts over the old verts
-   memcpy(pCurVerts, newVerts, 4 * sizeof(DrawVerticeFormats));
-
-   out_img->vertex_buf->Unlock();
-
-   d3d->d3d_render_device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-   d3d->d3d_render_device->SetRenderState(D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
-   d3d->d3d_render_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-
-   // also blend the texture with the set alpha value
-   d3d->d3d_render_device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-   d3d->d3d_render_device->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
-   d3d->d3d_render_device->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
-
-   // draw the quad
-   d3d->d3d_render_device->SetTexture(0, out_img->pixels);
-   d3d->d3d_render_device->SetStreamSource(0, out_img->vertex_buf, sizeof(DrawVerticeFormats));
-   d3d->d3d_render_device->SetVertexShader(D3DFVF_CUSTOMVERTEX);
-   d3d->d3d_render_device->DrawPrimitive(D3DPT_QUADLIST, 0, 1);
-}
-#endif
 
 static bool xdk_d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
@@ -981,10 +841,6 @@ static bool xdk_d3d_frame(void *data, const void *frame,
    float msg_height = mem_height + 50;
 #endif
 
-#ifdef HAVE_RGUI
-   if (d3d->rgui_data)
-      xdk_d3d_draw_rgui(d3d);
-#endif
    font_params_t font_parms = {0};
 
    if (lifecycle_mode_state & (1ULL << MODE_FPS_DRAW))
@@ -1089,11 +945,22 @@ static void xdk_d3d_apply_state_changes(void *data)
    d3d->should_resize = true;
 }
 
-#ifdef HAVE_RGUI
-static void xdk_d3d_set_rgui_texture(void *data, const void *frame)
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+static void xdk_d3d_set_texture_frame(void *data,
+   const void *frame, bool rgb32, unsigned width, unsigned height,
+   float alpha)
+{
+   (void)frame;
+   (void)rgb32;
+   (void)width;
+   (void)height;
+   (void)alpha;
+}
+
+static void xdk_d3d_set_texture_enable(void *data, bool state)
 {
    xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
-   d3d->rgui_data = frame;
+   d3d->rgui_texture_enable = state;
 }
 #endif
 
@@ -1115,8 +982,9 @@ static const video_poke_interface_t d3d_poke_interface = {
 #endif
    xdk_d3d_set_aspect_ratio,
    xdk_d3d_apply_state_changes,
-#ifdef HAVE_RGUI
-   xdk_d3d_set_rgui_texture,
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+   xdk_d3d_set_texture_frame,
+   xdk_d3d_set_texture_enable,
 #endif
    xdk_d3d_set_osd_msg,
 };
@@ -1189,7 +1057,11 @@ const video_driver_t video_xdk_d3d = {
    xdk_d3d_set_nonblock_state,
    xdk_d3d_alive,
    xdk_d3d_focus,
+#if defined(HAVE_HLSL)
    xdk_d3d_set_shader,
+#else
+   NULL,
+#endif
    xdk_d3d_free,
    "xdk_d3d",
    xdk_d3d_start,

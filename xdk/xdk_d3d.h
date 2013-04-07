@@ -64,9 +64,8 @@ typedef struct xdk_d3d_video
    LPDIRECT3DTEXTURE lpTexture_ot;
    IDirect3DVertexDeclaration9* v_decl;
 #endif
-#ifdef HAVE_RGUI
-   texture_image rgui_texture;
-   const void *rgui_data;
+#if defined(HAVE_RGUI) || defined(HAVE_RMENU)
+   bool rgui_texture_enable;
 #endif
    const d3d_font_renderer_t *font_ctx;
    D3DFORMAT internal_fmt;
