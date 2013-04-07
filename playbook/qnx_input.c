@@ -127,8 +127,12 @@ static void qnx_input_autodetect_gamepad(Gamepad_t* controller)
 {
    int device;
 
-   //The wiimote I have, not sure if generic.
-   if (strcmp(controller->id, "0-057E-0306-58.22") == 0)
+   //ID: A-BBBB-CCCC-D.D
+   //A is the device's index in the array returned by screen_get_context_property_pv()
+   //BBBB is the device's Vendor ID (in hexadecimal)
+   //CCCC is the device's Product ID (also in hexadecimal)
+   //D.D is the device's version number
+   if (strstr(controller->id, "057E-0306"))
    {
       device = DEVICE_WIIMOTE;
    }
