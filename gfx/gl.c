@@ -1363,6 +1363,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl_update_resize(gl);
    }
 
+#ifdef IOS // Apparently the viewport is lost each frame, thanks apple.
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+#endif
+
    if (frame) // Can be NULL for frame dupe / NULL render.
    {
       gl->tex_index = (gl->tex_index + 1) & TEXTURES_MASK;
@@ -1388,10 +1392,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          RARCH_PERFORMANCE_START(copy_frame);
          gl_copy_frame(gl, frame, width, height, pitch);
          RARCH_PERFORMANCE_STOP(copy_frame);
-
-#ifdef IOS // Apparently the viewport is lost each frame, thanks apple.
-         gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-#endif
       }
    }
    else
