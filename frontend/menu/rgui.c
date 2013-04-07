@@ -1366,7 +1366,12 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
       case RGUI_ACTION_RIGHT:
       case RGUI_ACTION_OK:
       case RGUI_ACTION_START:
-         if (menu_type_is_settings(menu_type) && action == RGUI_ACTION_OK)
+         if (type == RGUI_SETTINGS_OPEN_FILEBROWSER && action == RGUI_ACTION_OK)
+         {
+            rgui_list_push(rgui->menu_stack, rgui->base_path, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
+            rgui->need_refresh = true;
+         }
+         else if (menu_type_is_settings(menu_type) && action == RGUI_ACTION_OK)
          {
             rgui_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
             rgui->selection_ptr = 0;
@@ -1379,11 +1384,6 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
             if (driver.video_poke->set_aspect_ratio)
                driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-         }
-         else if (type == RGUI_SETTINGS_OPEN_FILEBROWSER && action == RGUI_ACTION_OK)
-         {
-            rgui_list_push(rgui->menu_stack, rgui->base_path, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
-            rgui->need_refresh = true;
          }
          else
          {
