@@ -20,6 +20,8 @@
 #include "../../driver.h"
 #include "../shader_parse.h"
 
+#include "../gfx_common.h"
+
 #include <d3d9.h>
 #include <d3dx9.h>
 #include <d3dx9core.h>
@@ -33,6 +35,22 @@
 #include <memory>
 
 class RenderChain;
+
+typedef struct
+{
+   struct Coords
+   {
+      float x, y, w, h;
+   };
+   Coords tex_coords;
+   Coords vert_coords;
+   unsigned tex_w, tex_h;
+   bool enabled;
+   bool fullscreen;
+   float alpha_mod;
+   IDirect3DTexture9 *tex;
+   IDirect3DVertexBuffer9 *vert_buf;
+} overlay_t;
 
 class D3DVideo
 {
@@ -53,6 +71,12 @@ class D3DVideo
       bool set_shader(const std::string &path);
       void process_shader();
 
+      void set_blend(bool state);
+      void set_filtering(unsigned index, bool smooth);
+      void set_font_rect(font_params_t *params);
+
+      void overlay_render(overlay_t &overlay);
+
 #ifdef HAVE_OVERLAY
       bool overlay_load(const uint32_t *image, unsigned width, unsigned height);
       void overlay_tex_geom(float x, float y, float w, float h);
@@ -60,8 +84,17 @@ class D3DVideo
       void overlay_enable(bool state);
       void overlay_full_screen(bool enable);
       void overlay_set_alpha(float mod);
-      void overlay_render();
 #endif
+
+#ifdef HAVE_RGUI
+      void set_rgui_texture_frame(const void *frame,
+            bool rgb32, unsigned width, unsigned height,
+            float alpha);
+      void set_rgui_texture_enable(bool state);
+#endif
+
+      bool restore();
+      void render_msg(const char *msg, font_params_t *params = nullptr);
 
    private:
 
@@ -92,7 +125,6 @@ class D3DVideo
       video_info_t video_info;
 
       bool needs_restore;
-      bool restore();
 
 #ifdef HAVE_CG
       CGcontext cgCtx;
@@ -117,20 +149,11 @@ class D3DVideo
       void update_title();
 
 #ifdef HAVE_OVERLAY
-      struct
-      {
-         struct Coords
-         {
-            float x, y, w, h;
-         };
-         Coords tex_coords;
-         Coords vert_coords;
-         bool overlay_enabled;
-         bool overlay_fullscreen;
-         float overlay_alpha_mod;
-         IDirect3DTexture9 *tex;
-         IDirect3DVertexBuffer9 *vert_buf;
-      } overlay;
+      overlay_t overlay;
+#endif
+
+#ifdef HAVE_RGUI
+      overlay_t rgui;
 #endif
 };
 

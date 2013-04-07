@@ -215,18 +215,34 @@ void D3DVideo::set_viewport(unsigned x, unsigned y, unsigned width, unsigned hei
    viewport.MinZ = 0.0f;
    viewport.MaxZ = 1.0f;
 
-   font_rect.left = x + width * g_settings.video.msg_pos_x;
-   font_rect.right = x + width;
-   font_rect.top = y + (1.0f - g_settings.video.msg_pos_y) * height - g_settings.video.font_size; 
-   font_rect.bottom = height;
+   final_viewport = viewport;
+
+   set_font_rect(nullptr);
+}
+
+void D3DVideo::set_font_rect(font_params_t *params)
+{
+   float pos_x = g_settings.video.msg_pos_x;
+   float pos_y = g_settings.video.msg_pos_y;
+   float font_size = g_settings.video.font_size;
+
+   if (params)
+   {
+      pos_x = params->x;
+      pos_y = params->y;
+      font_size *= params->scale;
+   }
+
+   font_rect.left = final_viewport.X + final_viewport.Width * pos_x;
+   font_rect.right = final_viewport.X + final_viewport.Width;
+   font_rect.top = final_viewport.Y + (1.0f - pos_y) * final_viewport.Height - font_size; 
+   font_rect.bottom = final_viewport.Height;
 
    font_rect_shifted = font_rect;
    font_rect_shifted.left -= 2;
    font_rect_shifted.right -= 2;
    font_rect_shifted.top += 2;
    font_rect_shifted.bottom += 2;
-
-   final_viewport = viewport;
 }
 
 void D3DVideo::set_rotation(unsigned rot)
@@ -398,6 +414,18 @@ D3DVideo::D3DVideo(const video_info_t *info) :
    std::memset(&overlay, 0, sizeof(overlay));
 #endif
 
+#ifdef HAVE_RGUI
+   std::memset(&rgui, 0, sizeof(rgui));
+   rgui.tex_coords.x = 0;
+   rgui.tex_coords.y = 0;
+   rgui.tex_coords.w = 1;
+   rgui.tex_coords.h = 1;
+   rgui.vert_coords.x = 0;
+   rgui.vert_coords.y = 1;
+   rgui.vert_coords.w = 1;
+   rgui.vert_coords.h = -1;
+#endif
+
    std::memset(&windowClass, 0, sizeof(windowClass));
    windowClass.cbSize        = sizeof(windowClass);
    windowClass.style         = CS_HREDRAW | CS_VREDRAW;
@@ -455,7 +483,7 @@ D3DVideo::D3DVideo(const video_info_t *info) :
 
    show_cursor(!info->fullscreen
 #ifdef HAVE_OVERLAY
-      || overlay.overlay_enabled
+      || overlay.enabled
 #endif
    );
    Callback::quit = false;
@@ -499,6 +527,12 @@ D3DVideo::~D3DVideo()
       overlay.tex->Release();
    if (overlay.vert_buf)
       overlay.vert_buf->Release();
+#endif
+#ifdef HAVE_RGUI
+   if (rgui.tex)
+      rgui.tex->Release();
+   if (rgui.vert_buf)
+      rgui.vert_buf->Release();
 #endif
    if (dev)
       dev->Release();
@@ -554,6 +588,35 @@ bool D3DVideo::frame(const void *frame,
       return false;
    }
 
+   render_msg(msg);
+
+#ifdef HAVE_RGUI
+   if (rgui.enabled)
+      overlay_render(rgui);
+#endif
+
+#ifdef HAVE_OVERLAY
+   if (overlay.enabled)
+      overlay_render(overlay);
+#endif
+
+   RARCH_PERFORMANCE_STOP(d3d_frame);
+
+   if (dev->Present(nullptr, nullptr, nullptr, nullptr) != D3D_OK)
+   {
+      needs_restore = true;
+      return true;
+   }
+
+   update_title();
+   return true;
+}
+
+void D3DVideo::render_msg(const char *msg, font_params_t *params)
+{
+   if (params)
+      set_font_rect(params);
+
    if (msg && SUCCEEDED(dev->BeginScene()))
    {
       font->DrawTextA(nullptr,
@@ -573,21 +636,8 @@ bool D3DVideo::frame(const void *frame,
       dev->EndScene();
    }
 
-#ifdef HAVE_OVERLAY
-   if (overlay.overlay_enabled)
-      overlay_render();
-#endif
-
-   RARCH_PERFORMANCE_STOP(d3d_frame);
-
-   if (dev->Present(nullptr, nullptr, nullptr, nullptr) != D3D_OK)
-   {
-      needs_restore = true;
-      return true;
-   }
-
-   update_title();
-   return true;
+   if (params)
+      set_font_rect(NULL);
 }
 
 void D3DVideo::set_nonblock_state(bool state)
@@ -647,7 +697,7 @@ void D3DVideo::deinit_cg()
 
 void D3DVideo::init_singlepass()
 {
-   memset(&shader, 0, sizeof(shader));
+   std::memset(&shader, 0, sizeof(shader));
    shader.passes = 1;
    gfx_shader_pass &pass = shader.pass[0];
    strlcpy(pass.source.cg, cg_shader.c_str(), sizeof(pass.source.cg));
@@ -702,7 +752,7 @@ void D3DVideo::init_multipass()
    if (!conf)
       throw std::runtime_error("Failed to load preset");
 
-   memset(&shader, 0, sizeof(shader));
+   std::memset(&shader, 0, sizeof(shader));
 
    if (!gfx_shader_read_conf_cgp(conf, &shader))
    {
@@ -913,6 +963,27 @@ void D3DVideo::resize(unsigned new_width, unsigned new_height)
    }
 }
 
+void D3DVideo::set_blend(bool state)
+{
+   if (state)
+   {
+      dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+      dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+      dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   }
+   else
+      dev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+}
+
+void D3DVideo::set_filtering(unsigned index, bool smooth)
+{
+   gfx_filter_type filter_type = smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
+   if (index >= 1 && index <= shader.passes)
+   {
+      shader.pass[index - 1].filter = filter_type;
+   }
+}
+
 #ifdef HAVE_OVERLAY
 bool D3DVideo::overlay_load(const uint32_t *image, unsigned width, unsigned height)
 {
@@ -934,6 +1005,9 @@ bool D3DVideo::overlay_load(const uint32_t *image, unsigned width, unsigned heig
       std::memcpy(d3dlr.pBits, image, height * d3dlr.Pitch);
       overlay.tex->UnlockRect(0);
    }
+
+   overlay.tex_w = width;
+   overlay.tex_h = height;
 
    overlay_tex_geom(0, 0, 1, 1); // Default. Stretch to whole screen.
    overlay_vertex_geom(0, 0, 1, 1);
@@ -961,21 +1035,23 @@ void D3DVideo::overlay_vertex_geom(float x, float y, float w, float h)
 
 void D3DVideo::overlay_enable(bool state)
 {
-   overlay.overlay_enabled = state;
+   overlay.enabled = state;
    show_cursor(state);
 }
 
 void D3DVideo::overlay_full_screen(bool enable)
 {
-   overlay.overlay_fullscreen = enable;
+   overlay.fullscreen = enable;
 }
 
 void D3DVideo::overlay_set_alpha(float mod)
 {
-   overlay.overlay_alpha_mod = mod;
+   overlay.alpha_mod = mod;
 }
 
-void D3DVideo::overlay_render()
+#endif
+
+void D3DVideo::overlay_render(overlay_t &overlay)
 {  
    struct overlay_vertex
    {
@@ -999,7 +1075,7 @@ void D3DVideo::overlay_render()
    {
       vert[i].z = 0.5f;
       vert[i].r = vert[i].g = vert[i].b = 1.0f;
-      vert[i].a = overlay.overlay_alpha_mod;
+      vert[i].a = overlay.alpha_mod;
    }
 
    float overlay_width = final_viewport.Width;
@@ -1036,9 +1112,7 @@ void D3DVideo::overlay_render()
    overlay.vert_buf->Unlock();
 
    // enable alpha
-   dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-   dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-   dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   set_blend(true);
 
    // set vertex decl for overlay
    D3DVERTEXELEMENT9 vElems[4] = {
@@ -1054,7 +1128,7 @@ void D3DVideo::overlay_render()
 
    dev->SetStreamSource(0, overlay.vert_buf, 0, sizeof(overlay_vertex));
 
-   if (overlay.overlay_fullscreen)
+   if (overlay.fullscreen)
    {
       // set viewport to full window
       D3DVIEWPORT9 vp_full;
@@ -1091,10 +1165,62 @@ void D3DVideo::overlay_render()
    }
 
    //restore previous state
-   dev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+   set_blend(false);
    dev->SetViewport(&final_viewport);
 }
 
+#ifdef HAVE_RGUI
+void D3DVideo::set_rgui_texture_frame(const void *frame,
+      bool rgb32, unsigned width, unsigned height,
+      float alpha)
+{
+   if (!rgui.tex || rgui.tex_w != width || rgui.tex_h != height)
+   {
+      if (rgui.tex)
+         rgui.tex->Release();
+      if (FAILED(dev->CreateTexture(width, height, 1,
+                  0,
+                  rgb32 ? D3DFMT_A8R8G8B8 : D3DFMT_A4R4G4B4,
+                  D3DPOOL_MANAGED,
+                  &rgui.tex, nullptr)))
+      {
+         RARCH_ERR("[D3D9]: Failed to create rgui texture\n");
+         return;
+      }
+      rgui.tex_w = width;
+      rgui.tex_h = height;
+   }
+
+   rgui.alpha_mod = alpha;
+
+
+   D3DLOCKED_RECT d3dlr;
+   if (SUCCEEDED(rgui.tex->LockRect(0, &d3dlr, nullptr, D3DLOCK_NOSYSLOCK)))
+   {
+      if (rgb32)
+         std::memcpy(d3dlr.pBits, frame, height * d3dlr.Pitch);
+      else
+      {
+         for (unsigned h = 0; h < height; h++)
+         {
+            uint16_t *dst = (uint16_t *)d3dlr.pBits + h * width;
+            uint16_t *src = (uint16_t *)frame + h * width;
+
+            for (unsigned w = 0; w < width; w++)
+            {
+               *dst++ = ((*src & 0xf) << 12) | ((*src >> 4) & 0xfff);
+               src++;
+            }
+         }
+      }
+      rgui.tex->UnlockRect(0);
+   }
+}
+
+void D3DVideo::set_rgui_texture_enable(bool state)
+{
+   rgui.enabled = state;
+}
 #endif
 
 static void *d3d9_init(const video_info_t *info, const input_driver_t **input,
@@ -1178,6 +1304,50 @@ static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char 
    return reinterpret_cast<D3DVideo*>(data)->set_shader(path);
 }
 
+#if defined(HAVE_RGUI)
+static void d3d9_get_poke_interface(void *data, const video_poke_interface_t **iface);
+
+static void d3d9_start(void)
+{
+   // TODO: check if this actually works
+
+   video_info_t video_info = {0};
+
+   // Might have to supply correct values here.
+   video_info.vsync = g_settings.video.vsync;
+   video_info.force_aspect = false;
+   video_info.smooth = g_settings.video.smooth;
+   video_info.input_scale = 2;
+   video_info.fullscreen = true;
+
+   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   {
+      video_info.width  = g_extern.console.screen.viewports.custom_vp.width;
+      video_info.height = g_extern.console.screen.viewports.custom_vp.height;
+   }
+
+   driver.video_data = d3d9_init(&video_info, NULL, NULL);
+
+   d3d9_get_poke_interface(driver.video_data, &driver.video_poke);
+}
+
+static void d3d9_stop(void)
+{
+   void *data = driver.video_data;
+   driver.video_data = NULL;
+   d3d9_free(data);
+}
+
+static void d3d9_restart(void)
+{
+   if (!driver.video_data)
+	   return;
+
+   d3d9_stop();
+   d3d9_start();
+}
+#endif
+
 #ifdef HAVE_OVERLAY
 static bool d3d9_overlay_load(void *data, const uint32_t *image, unsigned width, unsigned height)
 {
@@ -1229,6 +1399,87 @@ static void d3d9_get_overlay_interface(void *data, const video_overlay_interface
 }
 #endif
 
+static void d3d9_set_blend(void *data, bool enable)
+{
+   reinterpret_cast<D3DVideo*>(data)->set_blend(enable);
+}
+
+static void d3d9_set_filtering(void *data, unsigned index, bool smooth)
+{
+   reinterpret_cast<D3DVideo*>(data)->set_filtering(index, smooth);
+}
+
+static uintptr_t d3d9_get_current_framebuffer(void *data)
+{
+   return NULL;
+}
+
+static retro_proc_address_t d3d9_get_proc_address(void *data, const char *sym)
+{
+   return NULL;
+}
+
+static void d3d9_set_aspect_ratio(void *data, unsigned aspectratio_index)
+{
+   // TODO: figure out what to do here
+   return;
+}
+
+static void d3d9_apply_state_changes(void *data)
+{
+   // TODO: check if shader dimensions have changed, restore only if true ?
+   //reinterpret_cast<D3DVideo*>(data)->restore();
+}
+
+static void d3d9_set_osd_msg(void *data, const char *msg, void *userdata)
+{
+   font_params_t *params = (font_params_t*)userdata;
+   reinterpret_cast<D3DVideo*>(data)->render_msg(msg,params);
+}
+
+static void d3d9_show_mouse(void *data, bool state)
+{
+   show_cursor(state);
+}
+
+#ifdef HAVE_RGUI
+static void d3d9_set_rgui_texture_frame(void *data,
+      const void *frame, bool rgb32, unsigned width, unsigned height,
+      float alpha)
+{
+   reinterpret_cast<D3DVideo*>(data)->set_rgui_texture_frame(frame, rgb32, width, height, alpha);
+}
+
+static void d3d9_set_rgui_texture_enable(void *data, bool state)
+{
+   reinterpret_cast<D3DVideo*>(data)->set_rgui_texture_enable(state);
+}
+#endif
+
+static const video_poke_interface_t d3d9_poke_interface = {
+   d3d9_set_blend,
+   d3d9_set_filtering,
+#ifdef HAVE_FBO
+   d3d9_get_current_framebuffer,
+   d3d9_get_proc_address,
+#endif
+   d3d9_set_aspect_ratio,
+   d3d9_apply_state_changes,
+#ifdef HAVE_RGUI
+   d3d9_set_rgui_texture_frame,
+   d3d9_set_rgui_texture_enable,
+#endif
+   d3d9_set_osd_msg,
+
+   d3d9_show_mouse,
+};
+
+static void d3d9_get_poke_interface(void *data, const video_poke_interface_t **iface)
+{
+   (void)data;
+   *iface = &d3d9_poke_interface;
+}
+
 const video_driver_t video_d3d9 = {
    d3d9_init,
    d3d9_frame,
@@ -1239,9 +1490,9 @@ const video_driver_t video_d3d9 = {
    d3d9_free,
    "d3d9",
 #ifdef HAVE_RGUI
-   NULL,
-   NULL,
-   NULL,
+   d3d9_start,
+   d3d9_stop,
+   d3d9_restart,
 #endif
    d3d9_set_rotation,
    d3d9_viewport_info,
@@ -1249,4 +1500,5 @@ const video_driver_t video_d3d9 = {
 #ifdef HAVE_OVERLAY
    d3d9_get_overlay_interface,
 #endif
+   d3d9_get_poke_interface
 };
