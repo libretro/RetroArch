@@ -252,7 +252,10 @@ static bool gl_shader_init(void *data)
 
 #if DEFAULT_SHADER_TYPE == RARCH_SHADER_NONE
    if (!g_settings.video.shader_enable)
+   {
+      RARCH_LOG("[GL]: Not loading any shader.\n");
       return true;
+   }
 #endif
 
    const char *shader_path = *g_settings.video.shader_path ? g_settings.video.shader_path : NULL;
@@ -265,12 +268,14 @@ static bool gl_shader_init(void *data)
    {
 #ifdef HAVE_CG
       case RARCH_SHADER_CG:
+         RARCH_LOG("[GL]: Using Cg shader backend.\n");
          backend = &gl_cg_backend;
          break;
 #endif
 
 #ifdef HAVE_GLSL
       case RARCH_SHADER_GLSL:
+         RARCH_LOG("[GL]: Using GLSL shader backend.\n");
          backend = &gl_glsl_backend;
          break;
 #endif
@@ -280,7 +285,10 @@ static bool gl_shader_init(void *data)
    }
 
    if (!backend)
+   {
+      RARCH_ERR("[GL]: Didn't find valid shader backend. Continuing without shaders.\n");
       return true;
+   }
 
    gl->shader = backend;
    return gl->shader->init(shader_path);
