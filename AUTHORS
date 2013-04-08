@@ -43,7 +43,7 @@ Darren Alton -
 
 Fabian Knopf -
    - WGL multi-monitor support
-   - D3D9 overlay support
+   - D3D9 overlay, multi-monitor and RGUI support
 
 Gražvydas Ignotas -
    - ARM Linux patches
