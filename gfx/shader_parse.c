@@ -613,15 +613,6 @@ static bool add_import_value(struct gfx_shader *shader, xmlNodePtr ptr)
    xml_get_prop(bitmask, sizeof(bitmask), ptr, "mask");
    xml_get_prop(bitequal, sizeof(bitequal), ptr, "equal");
 
-   uint32_t addr = 0;
-   unsigned mask_value = 0;
-   unsigned mask_equal = 0;
-
-   /* TODO - variables never used? */
-   (void)addr;
-   (void)mask_value;
-   (void)mask_equal;
-
    if (!*semantic || !*var->id)
    {
       RARCH_ERR("No semantic or ID for import value.\n");
