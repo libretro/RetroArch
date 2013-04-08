@@ -34,6 +34,7 @@ static unsigned touch_count;
 
 //Internal helper functions
 #ifdef HAVE_BB10
+#include <sys/keycodes.h>
 static unsigned pads_connected;
 
 typedef struct {
@@ -136,6 +137,10 @@ static void qnx_input_autodetect_gamepad(Gamepad_t* controller)
    {
       device = DEVICE_WIIMOTE;
    }
+   else if (strstr(controller->id, "0A5C-8502"))
+   {
+      device = DEVICE_KEYBOARD;
+   }
    else if (controller->id)
    {
       device = DEVICE_UNKNOWN;
@@ -159,17 +164,21 @@ static void loadController(Gamepad_t* controller)
    screen_get_device_property_cv(controller->handle, SCREEN_PROPERTY_ID_STRING, sizeof(controller->id), controller->id);
    screen_get_device_property_cv(controller->handle, SCREEN_PROPERTY_VENDOR, sizeof(controller->id), controller->vendor);
    screen_get_device_property_cv(controller->handle, SCREEN_PROPERTY_PRODUCT, sizeof(controller->id), controller->product);
-   screen_get_device_property_iv(controller->handle, SCREEN_PROPERTY_BUTTON_COUNT, &controller->buttonCount);
 
-   // Check for the existence of analog sticks.
-   if (!screen_get_device_property_iv(controller->handle, SCREEN_PROPERTY_ANALOG0, controller->analog0))
+   if (controller->type == SCREEN_EVENT_GAMEPAD || controller->type == SCREEN_EVENT_JOYSTICK)
    {
-      ++controller->analogCount;
-   }
+      screen_get_device_property_iv(controller->handle, SCREEN_PROPERTY_BUTTON_COUNT, &controller->buttonCount);
 
-   if (!screen_get_device_property_iv(controller->handle, SCREEN_PROPERTY_ANALOG1, controller->analog1))
-   {
-      ++controller->analogCount;
+      // Check for the existence of analog sticks.
+      if (!screen_get_device_property_iv(controller->handle, SCREEN_PROPERTY_ANALOG0, controller->analog0))
+      {
+         ++controller->analogCount;
+      }
+
+      if (!screen_get_device_property_iv(controller->handle, SCREEN_PROPERTY_ANALOG1, controller->analog1))
+      {
+         ++controller->analogCount;
+      }
    }
 
    //Screen service will map supported controllers, we still might need to adjust.
@@ -179,9 +188,13 @@ static void loadController(Gamepad_t* controller)
    {
       RARCH_LOG("Gamepad Device Connected:\n");
    }
-   else
+   else if (controller->type == SCREEN_EVENT_JOYSTICK)
    {
       RARCH_LOG("Joystick Device Connected:\n");
+   }
+   else if (controller->type == SCREEN_EVENT_KEYBOARD)
+   {
+      RARCH_LOG("Keyboard Device Connected:\n");
    }
 
    RARCH_LOG("\tID: %s\n", controller->id);
@@ -207,7 +220,7 @@ static void discoverControllers()
       int type;
       screen_get_device_property_iv(devices_found[i], SCREEN_PROPERTY_TYPE, &type);
 
-      if (type == SCREEN_EVENT_GAMEPAD || type == SCREEN_EVENT_JOYSTICK)
+      if (type == SCREEN_EVENT_GAMEPAD || type == SCREEN_EVENT_JOYSTICK || type == SCREEN_EVENT_KEYBOARD)
       {
          devices[pads_connected].handle = devices_found[i];
          loadController(&devices[pads_connected]);
@@ -222,8 +235,58 @@ static void discoverControllers()
 
    free(devices_found);
 }
-#endif
 
+
+static void process_keyboard_event(screen_event_t event, int type)
+{
+   //Get Keyboard state
+   int sym = 0;
+   screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_SYM, &sym);
+   int modifiers = 0;
+   screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_MODIFIERS, &modifiers);
+   int flags = 0;
+   screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_FLAGS, &flags);
+   int scan = 0;
+   screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_SCAN, &scan);
+   int cap = 0;
+   screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_CAP, &cap);
+
+   //Find device that pressed the key
+   screen_device_t device;
+   screen_get_event_property_pv(event, SCREEN_PROPERTY_DEVICE, (void**)&device);
+
+   Gamepad_t* controller = NULL;
+   int i;
+   for (i = 0; i < MAX_PADS; ++i)
+   {
+      if (device == devices[i].handle)
+      {
+         controller = &devices[i];
+         break;
+      }
+   }
+
+   if (!controller)
+      return;
+
+   int b;
+   for (b = 0; b < RARCH_FIRST_CUSTOM_BIND; ++b)
+   {
+      if ((unsigned int)g_settings.input.binds[i][b].joykey == (unsigned int)(sym&0xFF))
+      {
+         if (flags & KEY_DOWN)
+         {
+            controller->buttons |= 1 << b;
+         }
+         else
+         {
+            controller->buttons &= ~(1<<b);
+         }
+      }
+
+   }
+}
+#endif
 static void process_touch_event(screen_event_t event, int type)
 {
    int contact_id;
@@ -282,9 +345,10 @@ static void handle_screen_event(bps_event_t *event)
       case SCREEN_EVENT_MTOUCH_MOVE:
          process_touch_event(screen_event, type);
          break;
-      case SCREEN_EVENT_KEYBOARD:
-         break;
 #ifdef HAVE_BB10
+      case SCREEN_EVENT_KEYBOARD:
+         process_keyboard_event(screen_event, type);
+         break;
       case SCREEN_EVENT_GAMEPAD:
       case SCREEN_EVENT_JOYSTICK:
          process_gamepad_event(screen_event, type);
@@ -307,7 +371,7 @@ static void handle_screen_event(bps_event_t *event)
 
             int i;
 
-            if (attached && (type == SCREEN_EVENT_GAMEPAD || type == SCREEN_EVENT_JOYSTICK))
+            if (attached && (type == SCREEN_EVENT_GAMEPAD || type == SCREEN_EVENT_JOYSTICK || type == SCREEN_EVENT_KEYBOARD))
             {
                for (i = 0; i < MAX_PADS; ++i)
                {
@@ -446,7 +510,11 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
    {
 #ifdef HAVE_BB10
       case RETRO_DEVICE_JOYPAD:
-         return ((devices[port].buttons & retro_keybinds[port][id].joykey) && (port < pads_connected));
+         if (g_settings.input.device[port] == DEVICE_KEYBOARD)
+            return ((devices[port].buttons & (1 << id)) && (port < pads_connected));
+         else
+            return ((devices[port].buttons & retro_keybinds[port][id].joykey) && (port < pads_connected));
+
       case RETRO_DEVICE_ANALOG:
          //Need to return [-0x8000, 0x7fff]
          //Gamepad API gives us [-128, 127] with (0,0) center
@@ -573,6 +641,28 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = SCREEN_R3_GAME_BUTTON;
             g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
             break;
+         case DEVICE_KEYBOARD:
+            strlcpy(g_settings.input.device_names[port], "BlackBerry BT Keyboard",
+               sizeof(g_settings.input.device_names[port]));
+            g_settings.input.device[port] = device;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = KEYCODE_Z & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = KEYCODE_A & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joykey = KEYCODE_RIGHT_SHIFT & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joykey  = KEYCODE_RETURN & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joykey     = KEYCODE_UP & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joykey   = KEYCODE_DOWN & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joykey   = KEYCODE_LEFT & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joykey  = KEYCODE_RIGHT & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joykey      = KEYCODE_X & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey      = KEYCODE_S & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey      = KEYCODE_Q & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey      = KEYCODE_W & 0xFF;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey     = 0;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = 0;
+            g_settings.input.dpad_emulation[port] = ANALOG_DPAD_NONE;
+            break;
          case DEVICE_UNKNOWN:
             strlcpy(g_settings.input.device_names[port], "Unknown",
                sizeof(g_settings.input.device_names[port]));
@@ -626,6 +716,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
       }
    }
 
+   //TODO: Handle keyboard mappings
    if (keybind_action & (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL))
    {
       struct platform_bind *ret = (struct platform_bind*)data;

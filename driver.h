@@ -271,6 +271,7 @@ enum input_devices
 #elif defined(__BLACKBERRY_QNX__)
    DEVICE_NONE,
    DEVICE_WIIMOTE,
+   DEVICE_KEYBOARD,
    DEVICE_UNKNOWN,
 #endif
    DEVICE_LAST
