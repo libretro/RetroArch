@@ -26,7 +26,7 @@ void ios_rarch_exited(void* result);
 bool ios_init_game_view();
 void ios_destroy_game_view();
 void ios_flip_game_view();
-void ios_set_game_view_sync(bool on);
+void ios_set_game_view_sync(unsigned interval);
 void ios_get_game_view_size(unsigned *width, unsigned *height);
 void ios_bind_game_view_fbo();
 

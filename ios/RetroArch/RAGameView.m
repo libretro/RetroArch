@@ -167,10 +167,10 @@ void ios_flip_game_view()
    }
 }
 
-void ios_set_game_view_sync(bool on)
+void ios_set_game_view_sync(unsigned interval)
 {
-   g_is_syncing = on;
-   g_fast_forward_skips = on ? 0 : 3;
+   g_is_syncing = interval ? true : false;
+   g_fast_forward_skips = interval ? 0 : 3;
 }
 
 void ios_get_game_view_size(unsigned *width, unsigned *height)

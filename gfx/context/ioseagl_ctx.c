@@ -25,35 +25,25 @@
 #include "../shader_glsl.h"
 #endif
 
-// C interface
-static void gfx_ctx_set_swap_interval(unsigned interval)
+#include "../../ios/RetroArch/rarch_wrapper.h"
+
+static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
 {
-   extern void ios_set_game_view_sync(bool on);
-   ios_set_game_view_sync(interval ? true : false);
+   return api == GFX_CTX_OPENGL_ES_API;
 }
 
-static void gfx_ctx_destroy(void)
+static bool gfx_ctx_set_video_mode(
+      unsigned width, unsigned height,
+      bool fullscreen)
 {
-   extern void ios_destroy_game_view();
-   ios_destroy_game_view();
+   (void)width;
+   (void)height;
+   (void)fullscreen;
+   return true;
 }
 
-static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+static void gfx_ctx_update_window_title(bool reset)
 {
-   extern void ios_get_game_view_size(unsigned *, unsigned *);
-   ios_get_game_view_size(width, height);
-}
-
-static bool gfx_ctx_init(void)
-{
-   extern bool ios_init_game_view();
-   return ios_init_game_view();
-}
-
-static void gfx_ctx_swap_buffers(void)
-{
-   extern void ios_flip_game_view();
-   ios_flip_game_view();
 }
 
 static void gfx_ctx_check_window(bool *quit,
@@ -64,7 +54,7 @@ static void gfx_ctx_check_window(bool *quit,
    *quit = false;
 
    unsigned new_width, new_height;
-   gfx_ctx_get_video_size(&new_width, &new_height);
+   ios_get_game_view_size(&new_width, &new_height);
    if (new_width != *width || new_height != *height)
    {
       *width  = new_width;
@@ -79,18 +69,14 @@ static void gfx_ctx_set_resize(unsigned width, unsigned height)
    (void)height;
 }
 
-static void gfx_ctx_update_window_title(bool reset)
+static bool gfx_ctx_has_focus(void)
 {
+   return true;
 }
 
-static bool gfx_ctx_set_video_mode(
-      unsigned width, unsigned height,
-      bool fullscreen)
+static void gfx_ctx_swap_buffers(void)
 {
-   (void)width;
-   (void)height;
-   (void)fullscreen;
-   return true;
+   ios_flip_game_view();
 }
 
 static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
@@ -99,43 +85,23 @@ static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data
    *input_data = NULL;
 }
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api)
-{
-   return api == GFX_CTX_OPENGL_ES_API;
-}
-
-static bool gfx_ctx_has_focus(void)
-{
-   return true;
-}
-
-static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
-{
-   return false;
-}
-
-static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
-{
-   return false;
-}
+// The ios_* functions are implemented in ios/RetroArch/RAGameView.m
 
 const gfx_ctx_driver_t gfx_ctx_ios = {
-   gfx_ctx_init,
-   gfx_ctx_destroy,
+   ios_init_game_view,
+   ios_destroy_game_view,
    gfx_ctx_bind_api,
-   gfx_ctx_set_swap_interval,
+   ios_set_game_view_sync,
    gfx_ctx_set_video_mode,
-   gfx_ctx_get_video_size,
+   ios_get_game_view_size,
    NULL,
    gfx_ctx_update_window_title,
    gfx_ctx_check_window,
    gfx_ctx_set_resize,
    gfx_ctx_has_focus,
-   gfx_ctx_swap_buffers,
+   ios_flip_game_view,
    gfx_ctx_input_driver,
    NULL,
-   gfx_ctx_init_egl_image_buffer,
-   gfx_ctx_write_egl_image,
    NULL,
    "ios",
 };
