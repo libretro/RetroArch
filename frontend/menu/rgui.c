@@ -196,6 +196,13 @@ static bool menu_type_is_settings(unsigned type)
       (type >= RGUI_SETTINGS_CONTROLLER_1 && type <= RGUI_SETTINGS_CONTROLLER_4);
 }
 
+static bool menu_type_is_shader_browser(unsigned type)
+{
+   return type >= RGUI_SETTINGS_SHADER_0 &&
+         type <= RGUI_SETTINGS_SHADER_LAST &&
+         ((type - RGUI_SETTINGS_SHADER_0) % 3) == 0;
+}
+
 rgui_handle_t *rgui_init(const char *base_path,
       uint16_t *framebuf, size_t framebuf_pitch,
       const uint8_t *font_bmp_buf, const uint8_t *font_bin_buf) 
@@ -392,6 +399,8 @@ static void render_text(rgui_handle_t *rgui)
       strlcpy(title, "SHADER MANAGER", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
       strlcpy(title, "CORE OPTIONS", sizeof(title));
+   else if (menu_type_is_shader_browser(menu_type))
+      snprintf(title, sizeof(title), "SHADER %s", dir);
    else if ((menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ||
          (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
          menu_type == RGUI_SETTINGS)
@@ -422,7 +431,17 @@ static void render_text(rgui_handle_t *rgui)
 #ifdef HAVE_SHADER_MANAGER
       if (type >= RGUI_SETTINGS_SHADER_APPLY &&
             type <= RGUI_SETTINGS_SHADER_LAST)
-         shader_manager_get_str(rgui, type_str, sizeof(type_str), type);
+      {
+         // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
+         if (menu_type_is_shader_browser(menu_type) && menu_type_is_shader_browser(type))
+         {
+            type = RGUI_FILE_DIRECTORY;
+            strlcpy(type_str, "(DIR)", sizeof(type_str));
+            w = 5;
+         }
+         else
+            shader_manager_get_str(rgui, type_str, sizeof(type_str), type);
+      }
       else
 #endif
       if (type >= RGUI_SETTINGS_CORE_OPTION_START)
@@ -694,6 +713,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
       case RGUI_SETTINGS_SCREENSHOT:
          if (action == RGUI_ACTION_OK)
          {
+            // FIXME: Forces 16-bit. Doesn't handle 32-bit.
             const uint16_t *data = (const uint16_t*)g_extern.frame_cache.data;
             unsigned width       = g_extern.frame_cache.width;
             unsigned height      = g_extern.frame_cache.height;
@@ -1095,9 +1115,7 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
    unsigned dist_scale  = setting - RGUI_SETTINGS_SHADER_0_SCALE;
 
    if (setting == RGUI_SETTINGS_SHADER_APPLY)
-   {
       RARCH_LOG("Applying shader ...\n");
-   }
    else if (setting == RGUI_SETTINGS_SHADER_PASSES)
    {
       switch (action)
@@ -1126,7 +1144,24 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
    else if ((dist_shader % 3) == 0)
    {
       dist_shader /= 3;
-      // TODO
+      struct gfx_shader_pass *pass = &rgui->shader.pass[dist_shader];
+      switch (action)
+      {
+         case RGUI_ACTION_LEFT:
+         case RGUI_ACTION_RIGHT:
+         case RGUI_ACTION_OK:
+            rgui_list_push(rgui->menu_stack, g_settings.video.shader_dir, setting, rgui->selection_ptr);
+            rgui->selection_ptr = 0;
+            rgui->need_refresh = true;
+            break;
+
+         case RGUI_ACTION_START:
+            *pass->source.cg = '\0';
+            break;
+
+         default:
+            break;
+      }
    }
    else if ((dist_filter % 3) == 0)
    {
@@ -1195,8 +1230,13 @@ static void shader_manager_get_str(rgui_handle_t *rgui,
       switch ((type - RGUI_SETTINGS_SHADER_0) % 3)
       {
          case 0:
-            fill_pathname_base(type_str,
-                  rgui->shader.pass[pass].source.cg, type_str_size);
+            if (*rgui->shader.pass[pass].source.cg)
+            {
+               fill_pathname_base(type_str,
+                     rgui->shader.pass[pass].source.cg, type_str_size);
+            }
+            else
+               strlcpy(type_str, "N/A", type_str_size);
             break;
 
          case 1:
@@ -1475,7 +1515,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
 
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
 
-   if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY || 
+   if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY || menu_type_is_shader_browser(menu_type) ||
             menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE))
    {
       rgui->need_refresh = false;
@@ -1496,9 +1536,9 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
    return 0;
 }
 
-static bool directory_parse(rgui_handle_t *rgui, const char *directory, void *userdata, void *ctx)
+static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned menu_type, void *ctx)
 {
-   bool core_chooser = (userdata) ? *(unsigned*)userdata == RGUI_SETTINGS_CORE : false;
+   bool core_chooser = menu_type == RGUI_SETTINGS_CORE;
 
    if (!*directory)
    {
@@ -1549,10 +1589,16 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, void *us
    const char *exts;
    if (core_chooser)
       exts = EXT_EXECUTABLES;
+#ifdef HAVE_SHADER_MANAGER
+   else if (menu_type_is_shader_browser(menu_type))
+      exts = "cg";
+#endif
    else if (rgui->info.valid_extensions)
       exts = rgui->info.valid_extensions;
    else
       exts = g_extern.system.valid_extensions;
+
+   RARCH_LOG("directory_parse: type: %u, using exts: %s.\n", menu_type, exts ? exts : "null");
 
    char dir[PATH_MAX];
    if (*directory)
@@ -1582,7 +1628,7 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, void *us
          path = path_basename(path);
 
       rgui_list_push(ctx, path,
-            is_dir ? RGUI_FILE_DIRECTORY : RGUI_FILE_PLAIN, 0);
+            is_dir ? menu_type : RGUI_FILE_PLAIN, 0);
    }
 
    string_list_free(list);
@@ -1652,12 +1698,12 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          unsigned type = 0;
          rgui_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &path, &type, NULL);
 
-         if (type == RGUI_FILE_DIRECTORY)
+         if (menu_type_is_shader_browser(type) || type == RGUI_FILE_DIRECTORY)
          {
             char cat_path[PATH_MAX];
             fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
 
-            rgui_list_push(rgui->menu_stack, cat_path, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
+            rgui_list_push(rgui->menu_stack, cat_path, type, rgui->selection_ptr);
             rgui->selection_ptr = 0;
             rgui->need_refresh = true;
          }
@@ -1669,6 +1715,15 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
          }
          else
          {
+#ifdef HAVE_SHADER_MANAGER
+            if (menu_type_is_shader_browser(menu_type))
+            {
+               unsigned pass = (menu_type - RGUI_SETTINGS_SHADER_0) / 3;
+               fill_pathname_join(rgui->shader.pass[pass].source.cg,
+                     dir, path, sizeof(rgui->shader.pass[pass].source.cg));
+            }
+            else
+#endif
             if (menu_type == RGUI_SETTINGS_CORE)
             {
                rgui->selection_ptr = directory_ptr;
@@ -1746,13 +1801,13 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
    // refresh values in case the stack changed
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, &directory_ptr);
 
-   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || 
+   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY || menu_type_is_shader_browser(menu_type) ||
             menu_type == RGUI_FILE_DEVICE || menu_type == RGUI_SETTINGS_CORE))
    {
       rgui->need_refresh = false;
       rgui_list_clear(rgui->selection_buf);
 
-      directory_parse(rgui, dir, &menu_type, rgui->selection_buf);
+      directory_parse(rgui, dir, menu_type, rgui->selection_buf);
    }
 
    render_text(rgui);
