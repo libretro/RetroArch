@@ -21,6 +21,8 @@
 
 #include <bps/bps.h>
 
+#include "menu/rgui.h"
+
 int rarch_main(int argc, char *argv[])
 {
    //Initialize bps
