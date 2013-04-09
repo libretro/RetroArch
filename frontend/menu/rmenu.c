@@ -41,6 +41,10 @@
 #define EXT_CGP_PRESETS "cgp|CGP"
 #define EXT_INPUT_PRESETS "cfg|CFG"
 
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#define HAVE_SHADER_MANAGER
+#endif
+
 static bool set_libretro_core_as_launch;
 
 filebrowser_t *browser;
@@ -411,7 +415,7 @@ static void populate_setting_item(void *data, unsigned input)
          }
          break;
 #endif
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#ifdef HAVE_SHADER_MANAGER
       case SETTING_SHADER_PRESETS:
          strlcpy(current_item->text, "Shader Presets (CGP)", sizeof(current_item->text));
          fill_pathname_base(fname, g_extern.file_state.cgp_path, sizeof(fname));
@@ -496,7 +500,7 @@ static void populate_setting_item(void *data, unsigned input)
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Screenshots feature is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? "ON" : "OFF");
          break;
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#ifdef HAVE_SHADER_MANAGER
       case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
          strlcpy(current_item->text, "APPLY SHADER PRESET ON STARTUP", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
@@ -743,7 +747,7 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "INFO - Set all RetroArch settings to defaults.", sizeof(current_item->comment));
          break;
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#ifdef HAVE_SHADER_MANAGER
       case SETTING_SAVE_SHADER_PRESET:
          strlcpy(current_item->text, "SAVE SETTINGS AS CGP PRESET", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
@@ -1136,7 +1140,7 @@ static int select_file(uint8_t menu_type, uint64_t input)
 
          switch(menu_type)
          {
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#ifdef HAVE_SHADER_MANAGER
             case SHADER_CHOICE:
                break;
             case PRESET_CHOICE:
@@ -1520,7 +1524,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          break;
 #endif
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#ifdef HAVE_SHADER_MANAGER
       case SETTING_SHADER_PRESETS:
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
@@ -1723,7 +1727,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             device_ptr->ctx_driver->rmenu_screenshot_enable((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? true : false);
          }
          break;
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#ifdef HAVE_SHADER_MANAGER
       case SETTING_SAVE_SHADER_PRESET:
 #ifdef HAVE_OSKUTIL
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
