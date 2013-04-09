@@ -97,6 +97,10 @@ unsigned rgui_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 unsigned rgui_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+#define HAVE_SHADER_MANAGER
+#endif
+
 unsigned RGUI_WIDTH = 320;
 unsigned RGUI_HEIGHT = 240;
 uint16_t menu_framebuf[400 * 240];
@@ -125,7 +129,7 @@ struct rgui_handle
 #endif
    struct retro_system_info info;
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+#ifdef HAVE_SHADER_MANAGER
    struct gfx_shader shader;
 #endif
 };
@@ -354,7 +358,7 @@ static void render_messagebox(rgui_handle_t *rgui, const char *message)
    free(msg);
 }
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+#ifdef HAVE_SHADER_MANAGER
 static void shader_manager_get_str(rgui_handle_t *rgui,
       char *type_str, size_t type_str_size, unsigned type);
 static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action);
@@ -415,7 +419,7 @@ static void render_text(rgui_handle_t *rgui)
       int w = (menu_type >= RGUI_SETTINGS_CONTROLLER_1 && menu_type <= RGUI_SETTINGS_CONTROLLER_4) ? 26 : 19;
       unsigned port = menu_type - RGUI_SETTINGS_CONTROLLER_1;
       
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+#ifdef HAVE_SHADER_MANAGER
       if (type >= RGUI_SETTINGS_SHADER_APPLY &&
             type <= RGUI_SETTINGS_SHADER_LAST)
          shader_manager_get_str(rgui, type_str, sizeof(type_str), type);
@@ -631,7 +635,7 @@ static int rgui_settings_toggle_setting(rgui_handle_t *rgui, unsigned setting, r
 
    (void)rgui;
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+#ifdef HAVE_SHADER_MANAGER
    if (setting >= RGUI_SETTINGS_SHADER_APPLY && setting <= RGUI_SETTINGS_SHADER_LAST)
       return shader_manager_toggle_setting(rgui, setting, action);
 #endif
@@ -998,7 +1002,7 @@ static void rgui_settings_populate_entries(rgui_handle_t *rgui)
    rgui_list_push(rgui->selection_buf, "Core", RGUI_SETTINGS_CORE, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Core Options", RGUI_SETTINGS_CORE_OPTIONS, 0);
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+#ifdef HAVE_SHADER_MANAGER
    rgui_list_push(rgui->selection_buf, "Shader Manager", RGUI_SETTINGS_SHADER_MANAGER, 0);
 #endif
    rgui_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
@@ -1057,7 +1061,7 @@ static void rgui_settings_core_options_populate_entries(rgui_handle_t *rgui)
       rgui_list_push(rgui->selection_buf, "No options available.", RGUI_SETTINGS_CORE_OPTION_NONE, 0);
 }
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+#ifdef HAVE_SHADER_MANAGER
 static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
 {
    rgui_list_clear(rgui->selection_buf);
@@ -1086,30 +1090,95 @@ static void rgui_settings_shader_manager_populate_entries(rgui_handle_t *rgui)
 
 static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, rgui_action_t action)
 {
-   if (setting != RGUI_SETTINGS_SHADER_PASSES)
-      return 0;
+   unsigned dist_shader = setting - RGUI_SETTINGS_SHADER_0;
+   unsigned dist_filter = setting - RGUI_SETTINGS_SHADER_0_FILTER;
+   unsigned dist_scale  = setting - RGUI_SETTINGS_SHADER_0_SCALE;
 
-   switch (action)
+   if (setting == RGUI_SETTINGS_SHADER_APPLY)
    {
-      case RGUI_ACTION_START:
-         rgui->shader.passes = 0;
-         break;
+      RARCH_LOG("Applying shader ...\n");
+   }
+   else if (setting == RGUI_SETTINGS_SHADER_PASSES)
+   {
+      switch (action)
+      {
+         case RGUI_ACTION_START:
+            rgui->shader.passes = 0;
+            break;
 
-      case RGUI_ACTION_LEFT:
-         if (rgui->shader.passes)
-            rgui->shader.passes--;
-         break;
+         case RGUI_ACTION_LEFT:
+            if (rgui->shader.passes)
+               rgui->shader.passes--;
+            break;
 
-      case RGUI_ACTION_RIGHT:
-         if (rgui->shader.passes < 4)
-            rgui->shader.passes++;
-         break;
+         case RGUI_ACTION_RIGHT:
+         case RGUI_ACTION_OK:
+            if (rgui->shader.passes < RGUI_MAX_SHADERS)
+               rgui->shader.passes++;
+            break;
 
-      default:
+         default:
+            break;
+      }
+
+      rgui->need_refresh = true;
+   }
+   else if ((dist_shader % 3) == 0)
+   {
+      dist_shader /= 3;
+      // TODO
+   }
+   else if ((dist_filter % 3) == 0)
+   {
+      dist_filter /= 3;
+      struct gfx_shader_pass *pass = &rgui->shader.pass[dist_filter];
+      switch (action)
+      {
+         case RGUI_ACTION_START:
+            rgui->shader.pass[dist_filter].filter = RARCH_FILTER_UNSPEC;
+            break;
+
+         case RGUI_ACTION_LEFT:
+         case RGUI_ACTION_RIGHT:
+         case RGUI_ACTION_OK:
+         {
+            unsigned delta = action == RGUI_ACTION_LEFT ? 2 : 1;
+            pass->filter = (enum gfx_filter_type)((pass->filter + delta) % 3);
+            break;
+         }
+
+         default:
          break;
+      }
+   }
+   else if ((dist_scale % 3) == 0)
+   {
+      dist_scale /= 3;
+      struct gfx_shader_pass *pass = &rgui->shader.pass[dist_scale];
+      switch (action)
+      {
+         case RGUI_ACTION_START:
+            pass->fbo.scale_x = pass->fbo.scale_y = 0;
+            pass->fbo.valid = false;
+            break;
+
+         case RGUI_ACTION_LEFT:
+         case RGUI_ACTION_RIGHT:
+         case RGUI_ACTION_OK:
+         {
+            unsigned current_scale = pass->fbo.scale_x;
+            unsigned delta = action == RGUI_ACTION_LEFT ? 5 : 1;
+            current_scale = (current_scale + delta) % 6;
+            pass->fbo.valid = current_scale;
+            pass->fbo.scale_x = pass->fbo.scale_y = current_scale;
+            break;
+         }
+
+         default:
+         break;
+      }
    }
 
-   rgui->need_refresh = true;
    return 0;
 }
 
@@ -1414,7 +1483,7 @@ static int rgui_settings_iterate(rgui_handle_t *rgui, rgui_action_t action)
          rgui_settings_controller_populate_entries(rgui);
       else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
          rgui_settings_core_options_populate_entries(rgui);
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+#ifdef HAVE_SHADER_MANAGER
       else if (menu_type == RGUI_SETTINGS_SHADER_MANAGER)
          rgui_settings_shader_manager_populate_entries(rgui);
 #endif
