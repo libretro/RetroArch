@@ -1140,7 +1140,7 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
          ret = video_set_shader_func(RARCH_SHADER_CG, NULL);
 
       if (!ret)
-         RARCH_ERR("Setting RGUI CGP.\n");
+         RARCH_ERR("Setting RGUI CGP failed.\n");
    }
    else if (setting == RGUI_SETTINGS_SHADER_PASSES)
    {
