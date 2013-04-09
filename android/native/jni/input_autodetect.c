@@ -67,7 +67,7 @@ end:
    (*vm)->DetachCurrentThread(vm);
 }
 
-void input_autodetect_setup (void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source)
+void input_autodetect_setup(void *data, char *msg, size_t sizeof_msg, unsigned port, unsigned id, int source)
 {
    struct android_app *android_app = (struct android_app*)data;
  
