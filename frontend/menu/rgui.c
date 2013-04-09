@@ -389,7 +389,7 @@ static void render_text(rgui_handle_t *rgui)
    render_background(rgui);
 
    char title[256];
-   const char *dir = 0;
+   const char *dir = NULL;
    unsigned menu_type = 0;
    rgui_list_get_last(rgui->menu_stack, &dir, &menu_type, NULL);
 
@@ -1721,6 +1721,20 @@ int rgui_iterate(rgui_handle_t *rgui, rgui_action_t action)
                unsigned pass = (menu_type - RGUI_SETTINGS_SHADER_0) / 3;
                fill_pathname_join(rgui->shader.pass[pass].source.cg,
                      dir, path, sizeof(rgui->shader.pass[pass].source.cg));
+
+               // Pop stack until we hit shader manager again.
+               // We don't have to do this in CORE selection because it only
+               // uses one directory.
+               unsigned type = 0;
+               const char *dir = NULL;
+               rgui_list_pop(rgui->menu_stack);
+               rgui_list_get_last(rgui->menu_stack, &dir, &type, NULL);
+               while (type != RGUI_SETTINGS_SHADER_MANAGER)
+               {
+                  rgui_list_pop(rgui->menu_stack);
+                  rgui_list_get_last(rgui->menu_stack, &dir, &type, NULL);
+               }
+               rgui->need_refresh = true;
             }
             else
 #endif
