@@ -44,7 +44,7 @@ static EGLDisplay g_egl_dpy;
 static EGLConfig egl_config;
 static bool g_resize;
 
-static screen_context_t screen_ctx;
+screen_context_t screen_ctx;
 static screen_window_t screen_win;
 static screen_display_t screen_disp;
 
