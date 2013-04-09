@@ -106,14 +106,10 @@ static void process_gamepad_event(screen_event_t screen_event, int type)
    screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_BUTTONS, &controller->buttons);
 
    if (controller->analogCount > 0)
-   {
       screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_ANALOG0, controller->analog0);
-   }
 
    if (controller->analogCount == 2)
-   {
       screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_ANALOG1, controller->analog1);
-   }
 }
 
 static void loadController(input_device_t* controller)
@@ -132,31 +128,21 @@ static void loadController(input_device_t* controller)
 
       // Check for the existence of analog sticks.
       if (!screen_get_device_property_iv(controller->handle, SCREEN_PROPERTY_ANALOG0, controller->analog0))
-      {
          ++controller->analogCount;
-      }
 
       if (!screen_get_device_property_iv(controller->handle, SCREEN_PROPERTY_ANALOG1, controller->analog1))
-      {
          ++controller->analogCount;
-      }
    }
 
    //Screen service will map supported controllers, we still might need to adjust.
    qnx_input_autodetect_gamepad(controller);
 
    if (controller->type == SCREEN_EVENT_GAMEPAD)
-   {
       RARCH_LOG("Gamepad Device Connected:\n");
-   }
    else if (controller->type == SCREEN_EVENT_JOYSTICK)
-   {
       RARCH_LOG("Joystick Device Connected:\n");
-   }
    else if (controller->type == SCREEN_EVENT_KEYBOARD)
-   {
       RARCH_LOG("Keyboard Device Connected:\n");
-   }
 
    RARCH_LOG("\tID: %s\n", controller->id);
    RARCH_LOG("\tVendor: %s\n", controller->vendor);
@@ -176,6 +162,7 @@ static void discoverControllers()
 
    // Scan the list for gamepad and joystick devices.
    int i;
+
    for (i = 0; i < deviceCount; i++)
    {
       int type;
@@ -188,9 +175,7 @@ static void discoverControllers()
 
          pads_connected++;
          if (pads_connected == MAX_PADS)
-         {
             break;
-         }
       }
    }
 
@@ -230,21 +215,13 @@ static void qnx_input_autodetect_gamepad(input_device_t* controller)
    //CCCC is the device's Product ID (also in hexadecimal)
    //D.D is the device's version number
    if (strstr(controller->id, "057E-0306"))
-   {
       device = DEVICE_WIIMOTE;
-   }
    else if (strstr(controller->id, "0A5C-8502"))
-   {
       device = DEVICE_KEYBOARD;
-   }
    else if (controller->id)
-   {
       device = DEVICE_UNKNOWN;
-   }
    else
-   {
       device = DEVICE_NONE;
-   }
 
    if (driver.input->set_keybinds)
       driver.input->set_keybinds((void*)controller, device, pads_connected, 0,
@@ -294,13 +271,9 @@ static void process_keyboard_event(screen_event_t event, int type)
       if ((unsigned int)g_settings.input.binds[i][b].joykey == (unsigned int)(sym&0xFF))
       {
          if (flags & KEY_DOWN)
-         {
             controller->buttons |= 1 << b;
-         }
          else
-         {
             controller->buttons &= ~(1<<b);
-         }
       }
 
    }
@@ -479,7 +452,6 @@ static void *qnx_input_init(void)
    for (i = 0; i < MAX_TOUCH; ++i)
       touch[i].contact_id = -1;
 
-
    for (i = 0; i < MAX_PADS; ++i)
       initController(&devices[i]);
 #ifdef HAVE_BB10
@@ -531,9 +503,7 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
    {
       case RETRO_DEVICE_JOYPAD:
          if (g_settings.input.device[port] == DEVICE_KEYBOARD)
-         {
             return ((devices[port].buttons & (1 << id)) && (port < pads_connected));
-         }
          else
             return ((devices[port].buttons & retro_keybinds[port][id].joykey) && (port < pads_connected));
 #ifdef HAVE_BB10
