@@ -228,6 +228,17 @@ rgui_handle_t *rgui_init(const char *base_path,
       g_extern.lifecycle_mode_state |= (1ULL << MODE_EXIT);
    }
 
+#ifdef HAVE_SHADER_MANAGER
+   char cgp_path[PATH_MAX];
+   const char *shader_dir = *g_settings.video.shader_dir ?
+      g_settings.video.shader_dir : g_settings.system_directory;
+   fill_pathname_join(cgp_path, shader_dir, "rgui.cgp", sizeof(cgp_path));
+   config_file_t *conf = config_file_new(cgp_path);
+   if (conf)
+      gfx_shader_read_conf_cgp(conf, &rgui->shader);
+   config_file_free(conf);
+#endif
+
    return rgui;
 }
 
