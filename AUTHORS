@@ -17,6 +17,7 @@ Daniel De Matteis - <autechre1024@hotmail.com>
    - OpenSL ES audio driver
    - Gamecube/Wii libogc port
    - Blackberry 10/Playbook port
+   - iOS port patches
 
 Jason Fetters - <TBA>
    - Phoenix Java frontend
@@ -25,6 +26,7 @@ Jason Fetters - <TBA>
 
 CatalystG - <catalystgdev@gmail.com>
    - Blackberry 10/Playbook input driver
+   - Blackberry 10/Playbook patches
 
 David Reichelt - <freakdave@hotmail.com>
    - XBox 1 port
