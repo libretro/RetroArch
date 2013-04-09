@@ -3115,6 +3115,16 @@ static int menu_input_process(uint8_t menu_type, uint64_t old_state)
 
       if (return_to_game_enable)
       {
+         /* TODO : need to make a 'parent' menu_type of some sort so that we have
+          * a cleaner way of telling RMenu that the menu stack should be popped
+          * for a submenu when doing the menu quit hotkey */
+         if (menu_type == INGAME_MENU_CORE_OPTIONS | menu_type == INGAME_MENU_RESIZE
+               || menu_type == LIBRETRO_CHOICE)
+         {
+            menu_stack_pop();
+            g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
+         }
+
          int ret = -1;
          if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_INGAME))
          {
