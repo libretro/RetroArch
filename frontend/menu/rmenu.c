@@ -2997,6 +2997,11 @@ static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
       size_t opts = core_option_size(g_extern.system.core_options);
       for (size_t i = 0; i < opts; i++, font_parms.y += default_pos.y_position_increment)
       {
+         char type_str[256];
+         /* not on same page? */
+         if ((i / NUM_ENTRY_PER_PAGE) != (core_opt_selected / NUM_ENTRY_PER_PAGE))
+            continue;
+
          font_parms.x = default_pos.x_position;
          font_parms.color = (core_opt_selected == i) ? YELLOW : WHITE;
 
@@ -3007,13 +3012,40 @@ static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
          font_parms.x = default_pos.x_position_center;
          font_parms.color = WHITE;
 
+         strlcpy(type_str, core_option_get_val(g_extern.system.core_options, i), sizeof(type_str));
+
          if (driver.video_poke->set_osd_msg)
-            driver.video_poke->set_osd_msg(driver.video_data,
-                  core_option_get_val(g_extern.system.core_options, i), &font_parms);
+            driver.video_poke->set_osd_msg(driver.video_data, type_str, &font_parms);
+
       }
+
+      if (input & (1ULL << RMENU_DEVICE_NAV_LEFT))
+         core_option_prev(g_extern.system.core_options, core_opt_selected);
+
+      if ((input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         core_option_next(g_extern.system.core_options, core_opt_selected);
+
+      if (input & (1ULL << RMENU_DEVICE_NAV_START))
+         core_option_set_default(g_extern.system.core_options, core_opt_selected);
    }
    else if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, "No options available.", &font_parms);
+
+   if (input & (1ULL << RMENU_DEVICE_NAV_UP))
+   {
+      if (core_opt_selected == 0)
+         core_opt_selected = core_option_size(g_extern.system.core_options);
+      else
+         core_opt_selected--;
+   }
+      
+   if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
+   {
+      core_opt_selected++;
+
+      if (core_opt_selected >= core_option_size(g_extern.system.core_options))
+         core_opt_selected = 0; 
+   }
 
    return 0;
 }
