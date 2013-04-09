@@ -153,6 +153,7 @@ static const char *menu_drive_mapping_next(void)
 
 #if defined(_XBOX1)
 #define HARDCODE_FONT_SIZE 21
+#define FONT_SIZE_VARIABLE FONT_SIZE
 
 #define POSITION_X 60
 #define POSITION_X_CENTER (POSITION_X + 350)
@@ -160,15 +161,15 @@ static const char *menu_drive_mapping_next(void)
 #define Y_POSITION 430
 #define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
 #define POSITION_Y_INCREMENT 20
-#define COMMENT_Y_POSITION (Y_POSITION - ((POSITION_Y_INCREMENT/2) * 3))
-#define COMMENT_TWO_Y_POSITION (Y_POSITION - ((POSITION_Y_INCREMENT/2) * 1))
-
+#define COMMENT_POSITION_Y (Y_POSITION - ((POSITION_Y_INCREMENT/2) * 3))
+#define COMMENT_TWO_POSITION_Y (Y_POSITION - ((POSITION_Y_INCREMENT/2) * 1))
+#define CORE_MSG_POSITION_X FONT_SIZE
+#define CORE_MSG_POSITION_Y (MSG_PREV_NEXT_Y_POSITION + 0.01f)
+#define CORE_MSG_FONT_SIZE FONT_SIZE
 #define MSG_QUEUE_X_POSITION POSITION_X
 #define MSG_QUEUE_Y_POSITION (Y_POSITION - ((POSITION_Y_INCREMENT/2) * 7) + 5)
 #define MSG_QUEUE_FONT_SIZE HARDCODE_FONT_SIZE
-
 #define MSG_PREV_NEXT_Y_POSITION 24
-
 #define CURRENT_PATH_Y_POSITION (POSITION_Y_START - ((POSITION_Y_INCREMENT/2)))
 #define CURRENT_PATH_FONT_SIZE 21
 
@@ -177,13 +178,17 @@ static const char *menu_drive_mapping_next(void)
 #define NUM_ENTRY_PER_PAGE 12
 #elif defined(__CELLOS_LV2__)
 #define HARDCODE_FONT_SIZE 0.91f
+#define FONT_SIZE_VARIABLE g_settings.video.font_size
 #define POSITION_X 0.09f
 #define POSITION_X_CENTER 0.5f
 #define POSITION_Y_START 0.17f
 #define POSITION_Y_INCREMENT 0.035f
 #define POSITION_Y_BEGIN (POSITION_Y_START + POSITION_Y_INCREMENT)
-#define COMMENT_TWO_Y_POSITION 0.91f
-#define COMMENT_Y_POSITION 0.82f
+#define COMMENT_TWO_POSITION_Y 0.91f
+#define COMMENT_POSITION_Y 0.82f
+#define CORE_MSG_POSITION_X 0.3f
+#define CORE_MSG_POSITION_Y 0.06f
+#define CORE_MSG_FONT_SIZE COMMENT_POSITION_Y
 
 #define MSG_QUEUE_X_POSITION g_settings.video.msg_pos_x
 #define MSG_QUEUE_Y_POSITION 0.76f
@@ -191,40 +196,10 @@ static const char *menu_drive_mapping_next(void)
 
 #define MSG_PREV_NEXT_Y_POSITION 0.03f
 #define CURRENT_PATH_Y_POSITION 0.15f
+#define CURRENT_PATH_FONT_SIZE (g_settings.video.font_size)
 
 #define NUM_ENTRY_PER_PAGE 15
 #endif
-
-static void menu_set_default_pos(rmenu_default_positions_t *position)
-{
-   position->x_position = POSITION_X;
-   position->x_position_center = POSITION_X_CENTER;
-   position->y_position = POSITION_Y_BEGIN;
-   position->comment_y_position = COMMENT_Y_POSITION;
-   position->y_position_increment = POSITION_Y_INCREMENT;
-   position->starting_y_position = POSITION_Y_START;
-   position->comment_two_y_position = COMMENT_TWO_Y_POSITION;
-   position->font_size = HARDCODE_FONT_SIZE;
-   position->msg_queue_x_position = MSG_QUEUE_X_POSITION;
-   position->msg_queue_y_position = MSG_QUEUE_Y_POSITION;
-   position->msg_queue_font_size= MSG_QUEUE_FONT_SIZE;
-   position->msg_prev_next_y_position = MSG_PREV_NEXT_Y_POSITION;
-   position->current_path_y_position = CURRENT_PATH_Y_POSITION;
-   position->entries_per_page = NUM_ENTRY_PER_PAGE;
-#if defined(_XBOX1)
-   position->current_path_font_size = CURRENT_PATH_FONT_SIZE;
-   position->variable_font_size = FONT_SIZE;
-   position->core_msg_x_position = position->x_position;
-   position->core_msg_y_position = position->msg_prev_next_y_position + 0.01f;
-   position->core_msg_font_size = position->font_size;
-#elif defined(__CELLOS_LV2__)
-   position->current_path_font_size = g_settings.video.font_size;
-   position->variable_font_size = g_settings.video.font_size;
-   position->core_msg_x_position = 0.3f;
-   position->core_msg_y_position = 0.06f;
-   position->core_msg_font_size = COMMENT_Y_POSITION;
-#endif
-}
 
 /*============================================================
   RMENU GRAPHICS
@@ -418,9 +393,7 @@ static void populate_setting_item(void *data, unsigned input)
 #ifdef HAVE_SHADER_MANAGER
       case SETTING_SHADER_PRESETS:
          strlcpy(current_item->text, "Shader Presets (CGP)", sizeof(current_item->text));
-         fill_pathname_base(fname, g_extern.file_state.cgp_path, sizeof(fname));
          strlcpy(current_item->comment, "INFO - Select a [CG Preset] script.", sizeof(current_item->comment));
-         strlcpy(current_item->setting_text, fname, sizeof(current_item->setting_text));
          break;
 #endif
       case SETTING_EMU_SKIN:
@@ -839,12 +812,9 @@ static void display_menubar(uint8_t menu_type)
 
    filebrowser_t *fb = browser;
 
-   rmenu_default_positions_t default_pos;
-   menu_set_default_pos(&default_pos);
-
-   font_parms.x = default_pos.x_position;
-   font_parms.y = default_pos.current_path_y_position;
-   font_parms.scale = default_pos.current_path_font_size;
+   font_parms.x = POSITION_X; 
+   font_parms.y = CURRENT_PATH_Y_POSITION;
+   font_parms.scale = CURRENT_PATH_FONT_SIZE;
    font_parms.color = WHITE;
 
    struct platform_bind key_label_r = {0};
@@ -986,16 +956,16 @@ static void display_menubar(uint8_t menu_type)
    rarch_position_t position = {0};
    rmenu_gfx_draw_bg(&position);
    
-   font_parms.x = default_pos.core_msg_x_position;
-   font_parms.y = default_pos.core_msg_y_position;
-   font_parms.scale = default_pos.core_msg_font_size;
+   font_parms.x = CORE_MSG_POSITION_X;
+   font_parms.y = CORE_MSG_POSITION_Y;
+   font_parms.scale = CORE_MSG_FONT_SIZE;
    font_parms.color = WHITE;
 
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, g_extern.title_buf, &font_parms);
 #ifdef __CELLOS_LV2__
 
-   font_parms.x = default_pos.x_position;
+   font_parms.x = POSITION_X; 
    font_parms.y = 0.05f;
    font_parms.scale = 1.4f;
    font_parms.color = WHITE;
@@ -1056,35 +1026,33 @@ static void browser_render(void *data)
    unsigned page_number = 0;
    unsigned page_base = 0;
    unsigned i;
+   float y_increment = POSITION_Y_START;
    font_params_t font_parms = {0};
-   rmenu_default_positions_t default_pos = {0};
-
-   menu_set_default_pos(&default_pos);
 
    current_index = b->current_dir.ptr;
-   page_number = current_index / default_pos.entries_per_page;
-   page_base = page_number * default_pos.entries_per_page;
+   page_number = current_index / NUM_ENTRY_PER_PAGE;
+   page_base = page_number * NUM_ENTRY_PER_PAGE;
 
-   font_parms.scale = default_pos.variable_font_size;
+   font_parms.scale = FONT_SIZE_VARIABLE;
 
-   for (i = page_base; i < file_count && i < page_base + default_pos.entries_per_page; ++i)
+   for (i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
    {
       char fname_tmp[128];
       fill_pathname_base(fname_tmp, b->current_dir.list->elems[i].data, sizeof(fname_tmp));
-      default_pos.starting_y_position += default_pos.y_position_increment;
+      y_increment += POSITION_Y_INCREMENT;
 
       //check if this is the currently selected file
       const char *current_pathname = filebrowser_get_current_path(b);
       if (strcmp(current_pathname, b->current_dir.list->elems[i].data) == 0)
       {
          rarch_position_t position = {0};
-         position.x = default_pos.x_position;
-         position.y = default_pos.starting_y_position;
+         font_parms.x = POSITION_X; 
+         position.y = y_increment; 
          rmenu_gfx_draw_panel(&position);
       }
 
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.starting_y_position;
+      font_parms.x = POSITION_X; 
+      font_parms.y = y_increment;
       font_parms.color = i == current_index ? RED : b->current_dir.list->elems[i].attr.b ? GREEN : WHITE;
 
       if (driver.video_poke->set_osd_msg)
@@ -1101,8 +1069,6 @@ static int select_file(uint8_t menu_type, uint64_t input)
    font_params_t font_parms = {0};
 
    filebrowser_t *filebrowser = tmpBrowser;
-   rmenu_default_positions_t default_pos;
-   menu_set_default_pos(&default_pos);
 
    switch(menu_type)
    {
@@ -1187,9 +1153,9 @@ static int select_file(uint8_t menu_type, uint64_t input)
 
    display_menubar(menu_type);
 
-   font_parms.x = default_pos.x_position;
-   font_parms.y = default_pos.comment_y_position;
-   font_parms.scale = default_pos.font_size;
+   font_parms.x = POSITION_X; 
+   font_parms.y = COMMENT_POSITION_Y;
+   font_parms.scale = HARDCODE_FONT_SIZE;
    font_parms.color = WHITE;
 
    if (driver.video_poke->set_osd_msg)
@@ -1210,7 +1176,7 @@ static int select_file(uint8_t menu_type, uint64_t input)
    }
 
    snprintf(comment, sizeof(comment), "[%s] - return to settings [%s] - Reset Startdir", key_label_x.desc, key_label_start.desc);
-   font_parms.y = default_pos.comment_two_y_position;
+   font_parms.y = COMMENT_TWO_POSITION_Y;
    font_parms.color = YELLOW;
 
    if (driver.video_poke->set_osd_msg)
@@ -1230,9 +1196,6 @@ static int select_directory(uint8_t menu_type, uint64_t input)
    bool ret = true;
 
    filebrowser_t *filebrowser = tmpBrowser;
-   rmenu_default_positions_t default_pos;
-
-   menu_set_default_pos(&default_pos);
 
    bool is_dir = filebrowser_iterate(filebrowser, FILEBROWSER_ACTION_PATH_ISDIR);
    browser_update(filebrowser, input, "empty");
@@ -1327,9 +1290,9 @@ static int select_directory(uint8_t menu_type, uint64_t input)
 
    snprintf(msg, sizeof(msg), "[%s] - Enter dir | [%s] - Go back", key_label_b.desc, key_label_x.desc);
 
-   font_parms.x = default_pos.x_position;
-   font_parms.y = default_pos.comment_two_y_position;
-   font_parms.scale = default_pos.font_size;
+   font_parms.x = POSITION_X; 
+   font_parms.y = COMMENT_TWO_POSITION_Y;
+   font_parms.scale = HARDCODE_FONT_SIZE;
    font_parms.color = YELLOW;
 
    if (driver.video_poke->set_osd_msg)
@@ -1337,14 +1300,14 @@ static int select_directory(uint8_t menu_type, uint64_t input)
 
    snprintf(msg, sizeof(msg), "[%s] - Reset to startdir", key_label_start.desc);
 
-   font_parms.y = default_pos.comment_two_y_position + (default_pos.y_position_increment * 1);
+   font_parms.y = COMMENT_TWO_POSITION_Y + (POSITION_Y_INCREMENT * 1);
 
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
    snprintf(msg, sizeof(msg), "INFO - Browse to a directory and assign it as the path by\npressing [%s].", key_label_y.desc);
 
-   font_parms.y = default_pos.comment_y_position;
+   font_parms.y = COMMENT_POSITION_Y;
    font_parms.color = WHITE;
 
    if (driver.video_poke->set_osd_msg)
@@ -2317,10 +2280,7 @@ static int select_setting(uint8_t menu_type, uint64_t input)
          break;
    }
 
-   rmenu_default_positions_t default_pos;
-
-   menu_set_default_pos(&default_pos);
-
+   float y_increment = POSITION_Y_START;
    char msg[256];
    uint8_t i = 0;
    uint8_t j = 0;
@@ -2331,7 +2291,7 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       item item;
       populate_setting_item(&item, i);
 
-      if (!(j < default_pos.entries_per_page))
+      if (!(j < NUM_ENTRY_PER_PAGE))
       {
          j = 0;
          item_page++;
@@ -2344,17 +2304,17 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       if (item.page != page_number)
          continue;
 
-      default_pos.starting_y_position += default_pos.y_position_increment;
+      y_increment += POSITION_Y_INCREMENT;
 
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.starting_y_position;
-      font_parms.scale = default_pos.variable_font_size;
+      font_parms.x = POSITION_X; 
+      font_parms.y = y_increment;
+      font_parms.scale = FONT_SIZE_VARIABLE;
       font_parms.color = selected == item.enum_id ? YELLOW : WHITE;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, item.text, &font_parms);
 
-      font_parms.x = default_pos.x_position_center;
+      font_parms.x = POSITION_X_CENTER;
       font_parms.color = WHITE;
 
       if (driver.video_poke->set_osd_msg)
@@ -2364,14 +2324,14 @@ static int select_setting(uint8_t menu_type, uint64_t input)
          continue;
 
       rarch_position_t position = {0};
-      position.x = default_pos.x_position;
-      position.y = default_pos.starting_y_position;
+      position.x = POSITION_X;
+      position.y = y_increment;
 
       rmenu_gfx_draw_panel(&position);
 
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.comment_y_position;
-      font_parms.scale = default_pos.font_size;
+      font_parms.x = POSITION_X; 
+      font_parms.y = COMMENT_POSITION_Y;
+      font_parms.scale = HARDCODE_FONT_SIZE;
       font_parms.color = WHITE;
 
       if (driver.video_poke->set_osd_msg)
@@ -2502,16 +2462,16 @@ static int select_setting(uint8_t menu_type, uint64_t input)
 
    snprintf(msg, sizeof(msg), "[%s] + [%s] - Resume game", key_label_l3.desc, key_label_r3.desc);
 
-   font_parms.x = default_pos.x_position;
-   font_parms.y = default_pos.comment_two_y_position;
-   font_parms.scale = default_pos.font_size;
+   font_parms.x = POSITION_X; 
+   font_parms.y = COMMENT_TWO_POSITION_Y;
+   font_parms.scale = HARDCODE_FONT_SIZE;
    font_parms.color = YELLOW;
 
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
    snprintf(msg, sizeof(msg), "[%s] - Reset to default", key_label_start.desc);
-   font_parms.y = default_pos.comment_two_y_position + (default_pos.y_position_increment * 1);
+   font_parms.y = COMMENT_TWO_POSITION_Y + (POSITION_Y_INCREMENT * 1);
 
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
@@ -2523,7 +2483,6 @@ static int select_rom(uint8_t menu_type, uint64_t input)
 {
    font_params_t font_parms = {0};
    char msg[128];
-   rmenu_default_positions_t default_pos;
    filebrowser_t *filebrowser = browser;
 
    struct platform_bind key_label_b = {0};
@@ -2547,8 +2506,6 @@ static int select_rom(uint8_t menu_type, uint64_t input)
       driver.input->set_keybinds(&key_label_select, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
       driver.input->set_keybinds(&key_label_b, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
    }
-
-   menu_set_default_pos(&default_pos);
 
    browser_update(filebrowser, input, g_extern.system.valid_extensions);
 
@@ -2593,9 +2550,9 @@ static int select_rom(uint8_t menu_type, uint64_t input)
    else
       snprintf(msg, sizeof(msg), "INFO - Press [%s] to load the game.", key_label_b.desc);
 
-   font_parms.x = default_pos.x_position;
-   font_parms.y = default_pos.comment_y_position;
-   font_parms.scale = default_pos.font_size;
+   font_parms.x = POSITION_X; 
+   font_parms.y = COMMENT_POSITION_Y;
+   font_parms.scale = HARDCODE_FONT_SIZE;
    font_parms.color = WHITE;
 
    if (driver.video_poke->set_osd_msg)
@@ -2605,7 +2562,7 @@ static int select_rom(uint8_t menu_type, uint64_t input)
 
    snprintf(msg, sizeof(msg), "[%s] + [%s] - resume game", key_label_l3.desc, key_label_r3.desc);
 
-   font_parms.y = default_pos.comment_two_y_position;
+   font_parms.y = COMMENT_TWO_POSITION_Y;
    font_parms.color = YELLOW;
 
    if (driver.video_poke->set_osd_msg)
@@ -2613,7 +2570,7 @@ static int select_rom(uint8_t menu_type, uint64_t input)
 
    snprintf(msg, sizeof(msg), "[%s] - Settings", key_label_select.desc);
 
-   font_parms.y = default_pos.comment_two_y_position + (default_pos.y_position_increment * 1);
+   font_parms.y = COMMENT_TWO_POSITION_Y + (POSITION_Y_INCREMENT * 1);
 
    if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
@@ -2629,9 +2586,6 @@ static int ingame_menu_resize(uint8_t menu_type, uint64_t input)
    font_params_t font_parms = {0};
 
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
-
-   rmenu_default_positions_t default_pos;
-   menu_set_default_pos(&default_pos);
 
    g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
    
@@ -2792,179 +2746,179 @@ static int ingame_menu_resize(uint8_t menu_type, uint64_t input)
       snprintf(viewport_w, sizeof(viewport_w), "Viewport W: #%d", g_extern.console.screen.viewports.custom_vp.width);
       snprintf(viewport_h, sizeof(viewport_h), "Viewport H: #%d", g_extern.console.screen.viewports.custom_vp.height);
 
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.y_position;
-      font_parms.scale = default_pos.font_size;
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN;
+      font_parms.scale = HARDCODE_FONT_SIZE;
       font_parms.color = GREEN;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, viewport_x, &font_parms);
 
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 1);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 1);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, viewport_y, &font_parms);
 
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 2);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 2);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, viewport_w, &font_parms);
 
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 3);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 3);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, viewport_h, &font_parms);
 
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 4);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 4);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "CONTROLS:", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_left.desc);
 
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 5);
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 5);
       font_parms.color = WHITE;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-      font_parms.x = default_pos.x_position_center;
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 5);
+      font_parms.x = POSITION_X_CENTER;
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 5);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport X--", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_right.desc);
 
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 6);
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 6);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-      font_parms.x = default_pos.x_position_center;
+      font_parms.x = POSITION_X_CENTER;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport X++", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_up.desc);
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 7);
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 7);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-      font_parms.x = default_pos.x_position_center;
+      font_parms.x = POSITION_X_CENTER;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport Y++", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", key_label_dpad_down.desc);
 
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 8);
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 8);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-      font_parms.x = default_pos.x_position_center;
+      font_parms.x = POSITION_X_CENTER;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport Y--", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", key_label_l1.desc);
 
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 9);
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 9);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-      font_parms.x = default_pos.x_position_center;
+      font_parms.x = POSITION_X_CENTER;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport W--", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", key_label_r1.desc);
 
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 10);
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 10);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-      font_parms.x = default_pos.x_position_center;
+      font_parms.x = POSITION_X_CENTER;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport W++", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", key_label_l2.desc);
 
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 11);
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 11);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-      font_parms.x = default_pos.x_position_center;
+      font_parms.x = POSITION_X_CENTER;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport H++", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", key_label_r2.desc);
 
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 12);
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 12);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-      font_parms.x = default_pos.x_position_center;
+      font_parms.x = POSITION_X_CENTER;
       
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Viewport H--", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", key_label_x.desc);
 
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 13);
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 13);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-      font_parms.x = default_pos.x_position_center;
+      font_parms.x = POSITION_X_CENTER;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Reset To Defaults", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", key_label_y.desc);
 
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 14);
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 14);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
 
-      font_parms.x = default_pos.x_position_center;
+      font_parms.x = POSITION_X_CENTER;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, "- Show Game", &font_parms);
 
       snprintf(msg, sizeof(msg), "[%s]", key_label_a.desc);
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.y_position + (default_pos.y_position_increment * 15);
+      font_parms.x = POSITION_X; 
+      font_parms.y = POSITION_Y_BEGIN + (POSITION_Y_INCREMENT * 15);
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(device_ptr, msg, &font_parms);
 
-      font_parms.x = default_pos.x_position_center;
+      font_parms.x = POSITION_X_CENTER;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(device_ptr, "- Go back", &font_parms);
 
       snprintf(msg, sizeof(msg), "Press [%s] to reset to defaults.", key_label_x.desc);
-      font_parms.x = default_pos.x_position;
-      font_parms.y = default_pos.comment_y_position;
+      font_parms.x = POSITION_X; 
+      font_parms.y = COMMENT_POSITION_Y;
 
       if (driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
@@ -2976,6 +2930,7 @@ static int ingame_menu_resize(uint8_t menu_type, uint64_t input)
 static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
 {
    static unsigned core_opt_selected = 0;
+   float y_increment = POSITION_Y_START;
 
    if (input & (1ULL << RMENU_DEVICE_NAV_A))
    {
@@ -2985,35 +2940,32 @@ static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
 
    display_menubar(menu_type);
 
-   rmenu_default_positions_t default_pos;
-   menu_set_default_pos(&default_pos);
-
-   default_pos.starting_y_position += default_pos.y_position_increment;
+   y_increment += POSITION_Y_INCREMENT;
 
    font_params_t font_parms = {0};
-   font_parms.x = default_pos.x_position;
-   font_parms.y = default_pos.starting_y_position;
-   font_parms.scale = default_pos.current_path_font_size;
+   font_parms.x = POSITION_X; 
+   font_parms.y = y_increment;
+   font_parms.scale = CURRENT_PATH_FONT_SIZE;
    font_parms.color = WHITE;
 
    if (g_extern.system.core_options)
    {
       size_t opts = core_option_size(g_extern.system.core_options);
-      for (size_t i = 0; i < opts; i++, font_parms.y += default_pos.y_position_increment)
+      for (size_t i = 0; i < opts; i++, font_parms.y += POSITION_Y_INCREMENT)
       {
          char type_str[256];
          /* not on same page? */
          if ((i / NUM_ENTRY_PER_PAGE) != (core_opt_selected / NUM_ENTRY_PER_PAGE))
             continue;
 
-         font_parms.x = default_pos.x_position;
+         font_parms.x = POSITION_X; 
          font_parms.color = (core_opt_selected == i) ? YELLOW : WHITE;
 
          if (driver.video_poke->set_osd_msg)
             driver.video_poke->set_osd_msg(driver.video_data,
                   core_option_get_desc(g_extern.system.core_options, i), &font_parms);
 
-         font_parms.x = default_pos.x_position_center;
+         font_parms.x = POSITION_X_CENTER;
          font_parms.color = WHITE;
 
          strlcpy(type_str, core_option_get_val(g_extern.system.core_options, i), sizeof(type_str));
@@ -3207,10 +3159,6 @@ bool menu_iterate(void)
 
    g_extern.frame_count++;
 
-
-   rmenu_default_positions_t default_pos;
-   menu_set_default_pos(&default_pos);
-
    if ((g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE)))
    {
 #if defined(HAVE_OPENGL)
@@ -3344,9 +3292,9 @@ bool menu_iterate(void)
    input_process_ret = menu_input_process(menu_id, old_state);
    msg = msg_queue_pull(g_extern.msg_queue);
 
-   font_parms.x = default_pos.msg_queue_x_position;
-   font_parms.y = default_pos.msg_queue_y_position;
-   font_parms.scale = default_pos.msg_queue_font_size;
+   font_parms.x = MSG_QUEUE_X_POSITION;
+   font_parms.y = MSG_QUEUE_Y_POSITION;
+   font_parms.scale = MSG_QUEUE_FONT_SIZE;
    font_parms.color = WHITE;
 
    if (msg && (g_extern.lifecycle_mode_state & (1ULL << MODE_INFO_DRAW)))
