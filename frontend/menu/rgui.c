@@ -1115,7 +1115,33 @@ static int shader_manager_toggle_setting(rgui_handle_t *rgui, unsigned setting, 
    unsigned dist_scale  = setting - RGUI_SETTINGS_SHADER_0_SCALE;
 
    if (setting == RGUI_SETTINGS_SHADER_APPLY)
+   {
+      if (!driver.video->set_shader || action != RGUI_ACTION_OK)
+         return 0;
+
       RARCH_LOG("Applying shader ...\n");
+
+      bool ret = false;
+      if (rgui->shader.passes)
+      {
+         char cgp_path[PATH_MAX];
+         const char *shader_dir = *g_settings.video.shader_dir ?
+            g_settings.video.shader_dir : g_settings.system_directory;
+         fill_pathname_join(cgp_path, shader_dir, "rgui.cgp", sizeof(cgp_path));
+         config_file_t *conf = config_file_new(NULL);
+         if (!conf)
+            return 0;
+         gfx_shader_write_conf_cgp(conf, &rgui->shader);
+         config_file_write(conf, cgp_path);
+         config_file_free(conf);
+         ret = video_set_shader_func(RARCH_SHADER_CG, cgp_path); 
+      }
+      else
+         ret = video_set_shader_func(RARCH_SHADER_CG, NULL);
+
+      if (!ret)
+         RARCH_ERR("Setting RGUI CGP.\n");
+   }
    else if (setting == RGUI_SETTINGS_SHADER_PASSES)
    {
       switch (action)
@@ -1597,8 +1623,6 @@ static bool directory_parse(rgui_handle_t *rgui, const char *directory, unsigned
       exts = rgui->info.valid_extensions;
    else
       exts = g_extern.system.valid_extensions;
-
-   RARCH_LOG("directory_parse: type: %u, using exts: %s.\n", menu_type, exts ? exts : "null");
 
    char dir[PATH_MAX];
    if (*directory)
