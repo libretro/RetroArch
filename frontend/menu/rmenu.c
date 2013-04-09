@@ -3027,25 +3027,25 @@ static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
 
       if (input & (1ULL << RMENU_DEVICE_NAV_START))
          core_option_set_default(g_extern.system.core_options, core_opt_selected);
+
+      if (input & (1ULL << RMENU_DEVICE_NAV_UP))
+      {
+         if (core_opt_selected == 0)
+            core_opt_selected = core_option_size(g_extern.system.core_options) - 1;
+         else
+            core_opt_selected--;
+      }
+      
+      if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
+      {
+         core_opt_selected++;
+
+         if (core_opt_selected >= core_option_size(g_extern.system.core_options))
+            core_opt_selected = 0; 
+      }
    }
    else if (driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, "No options available.", &font_parms);
-
-   if (input & (1ULL << RMENU_DEVICE_NAV_UP))
-   {
-      if (core_opt_selected == 0)
-         core_opt_selected = core_option_size(g_extern.system.core_options);
-      else
-         core_opt_selected--;
-   }
-      
-   if (input & (1ULL << RMENU_DEVICE_NAV_DOWN))
-   {
-      core_opt_selected++;
-
-      if (core_opt_selected >= core_option_size(g_extern.system.core_options))
-         core_opt_selected = 0; 
-   }
 
    return 0;
 }
