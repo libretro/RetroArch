@@ -1107,7 +1107,7 @@ static int select_file(uint8_t menu_type, uint64_t input)
                break;
             case BORDER_CHOICE:
 #ifdef _XBOX1
-               texture_image_load(path);
+               texture_image_load(path, &menu_texture);
 #else
                texture_image_border_load(path);
 #endif
@@ -3066,7 +3066,7 @@ static int menu_input_process(uint8_t menu_type, uint64_t old_state)
          /* TODO : need to make a 'parent' menu_type of some sort so that we have
           * a cleaner way of telling RMenu that the menu stack should be popped
           * for a submenu when doing the menu quit hotkey */
-         if (menu_type == INGAME_MENU_CORE_OPTIONS | menu_type == INGAME_MENU_RESIZE
+         if (menu_type == INGAME_MENU_CORE_OPTIONS || menu_type == INGAME_MENU_RESIZE
                || menu_type == LIBRETRO_CHOICE)
          {
             menu_stack_pop();
