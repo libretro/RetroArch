@@ -1490,6 +1490,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
             strlcpy(g_extern.file_state.cgp_path, "", sizeof(g_extern.file_state.cgp_path));
          break;
+#endif
       case SETTING_EMU_SKIN:
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
@@ -1505,7 +1506,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             }
          }
          break;
-#endif
       case SETTING_EMU_LOW_RAM_MODE_ENABLE:
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
