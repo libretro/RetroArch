@@ -106,7 +106,5 @@ void input_init_keyboard_lut(const struct rarch_key_map *map);
 enum retro_key input_translate_keysym_to_rk(unsigned sym);
 unsigned input_translate_rk_to_keysym(enum retro_key key);
 
-unsigned input_str_to_bind(const char *str);
-
 #endif
 

@@ -81,6 +81,82 @@ struct input_overlay
    unsigned next_index;
 };
 
+struct str_to_bind_map
+{
+   const char *str;
+   unsigned bind;
+};
+
+static const struct str_to_bind_map str_to_bind[] = {
+   { "b",                     RETRO_DEVICE_ID_JOYPAD_B },
+   { "y",                     RETRO_DEVICE_ID_JOYPAD_Y },
+   { "select",                RETRO_DEVICE_ID_JOYPAD_SELECT },
+   { "start",                 RETRO_DEVICE_ID_JOYPAD_START },
+   { "up",                    RETRO_DEVICE_ID_JOYPAD_UP },
+   { "down",                  RETRO_DEVICE_ID_JOYPAD_DOWN },
+   { "left",                  RETRO_DEVICE_ID_JOYPAD_LEFT },
+   { "right",                 RETRO_DEVICE_ID_JOYPAD_RIGHT },
+   { "a",                     RETRO_DEVICE_ID_JOYPAD_A },
+   { "x",                     RETRO_DEVICE_ID_JOYPAD_X },
+   { "l",                     RETRO_DEVICE_ID_JOYPAD_L },
+   { "r",                     RETRO_DEVICE_ID_JOYPAD_R },
+   { "l2",                    RETRO_DEVICE_ID_JOYPAD_L2 },
+   { "r2",                    RETRO_DEVICE_ID_JOYPAD_R2 },
+   { "l3",                    RETRO_DEVICE_ID_JOYPAD_L3 },
+   { "r3",                    RETRO_DEVICE_ID_JOYPAD_R3 },
+   { "turbo",                 RARCH_TURBO_ENABLE },
+   { "l_x_plus",              RARCH_ANALOG_LEFT_X_PLUS },
+   { "l_x_minus",             RARCH_ANALOG_LEFT_X_MINUS },
+   { "l_y_plus",              RARCH_ANALOG_LEFT_Y_PLUS },
+   { "l_y_minus",             RARCH_ANALOG_LEFT_Y_MINUS },
+   { "r_x_plus",              RARCH_ANALOG_RIGHT_X_PLUS },
+   { "r_x_minus",             RARCH_ANALOG_RIGHT_X_MINUS },
+   { "r_y_plus",              RARCH_ANALOG_RIGHT_Y_PLUS },
+   { "r_y_minus",             RARCH_ANALOG_RIGHT_Y_MINUS },
+   { "toggle_fast_forward",   RARCH_FAST_FORWARD_KEY },
+   { "hold_fast_forward",     RARCH_FAST_FORWARD_HOLD_KEY },
+   { "load_state",            RARCH_LOAD_STATE_KEY },
+   { "save_state",            RARCH_SAVE_STATE_KEY },
+   { "toggle_fullscreen",     RARCH_FULLSCREEN_TOGGLE_KEY },
+   { "exit_emulator",         RARCH_QUIT_KEY },
+   { "state_slot_increase",   RARCH_STATE_SLOT_PLUS },
+   { "state_slot_decrease",   RARCH_STATE_SLOT_MINUS },
+   { "rewind",                RARCH_REWIND },
+   { "movie_record_toggle",   RARCH_MOVIE_RECORD_TOGGLE },
+   { "pause_toggle",          RARCH_PAUSE_TOGGLE },
+   { "frame_advance",         RARCH_FRAMEADVANCE },
+   { "reset",                 RARCH_RESET },
+   { "shader_next",           RARCH_SHADER_NEXT },
+   { "shader_prev",           RARCH_SHADER_PREV },
+   { "cheat_index_plus",      RARCH_CHEAT_INDEX_PLUS },
+   { "cheat_index_minus",     RARCH_CHEAT_INDEX_MINUS },
+   { "cheat_toggle",          RARCH_CHEAT_TOGGLE },
+   { "screenshot",            RARCH_SCREENSHOT },
+   { "dsp_config",            RARCH_DSP_CONFIG },
+   { "audio_mute",            RARCH_MUTE },
+   { "netplay_flip_players",  RARCH_NETPLAY_FLIP },
+   { "slowmotion",            RARCH_SLOWMOTION },
+   { "enable_hotkey",         RARCH_ENABLE_HOTKEY },
+   { "volume_up",             RARCH_VOLUME_UP },
+   { "volume_down",           RARCH_VOLUME_DOWN },
+   { "overlay_next",          RARCH_OVERLAY_NEXT },
+   { "disk_eject_toggle",     RARCH_DISK_EJECT_TOGGLE },
+   { "disk_next",             RARCH_DISK_NEXT },
+   { "grab_mouse_toggle",     RARCH_GRAB_MOUSE_TOGGLE },
+   { "menu_toggle",           RARCH_MENU_TOGGLE },
+};
+
+static unsigned input_str_to_bind(const char *str)
+{
+   for (unsigned i = 0; i < ARRAY_SIZE(str_to_bind); i++)
+   {
+      if (!strcmp(str_to_bind[i].str, str))
+         return str_to_bind[i].bind;
+   }
+
+   return RARCH_BIND_LIST_END;
+}
+
 static void input_overlay_scale(struct overlay *overlay, float scale)
 {
    if (overlay->block_scale)
