@@ -310,6 +310,7 @@ static void menu_stack_push(unsigned menu_id)
   EVENT CALLBACKS (AND RELATED)
   ============================================================ */
 
+
 static void populate_setting_item(void *data, unsigned input)
 {
    item *current_item = (item*)data;
@@ -319,7 +320,7 @@ static void populate_setting_item(void *data, unsigned input)
    unsigned currentsetting = input;
    current_item->enum_id = input;
 
-   switch(currentsetting)
+   switch (currentsetting)
    {
 #ifdef __CELLOS_LV2__
       case SETTING_CHANGE_RESOLUTION:
@@ -343,13 +344,6 @@ static void populate_setting_item(void *data, unsigned input)
             strlcpy(current_item->setting_text, "OFF", sizeof(current_item->setting_text));
             strlcpy(current_item->comment, "INFO - [PAL60 Mode is set to 'OFF'.\nframes are not converted.", sizeof(current_item->comment));
          }
-         break;
-#endif
-#ifdef HAVE_SHADER_MANAGER
-      case SETTING_SHADER_PRESETS:
-         strlcpy(current_item->text, "Shader Presets (CGP)", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Select a CGP file.", sizeof(current_item->comment));
          break;
 #endif
       case SETTING_EMU_SKIN:
@@ -429,13 +423,6 @@ static void populate_setting_item(void *data, unsigned input)
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? "ON" : "OFF");
          snprintf(current_item->comment, sizeof(current_item->comment), "INFO - Screenshots feature is set to '%s'.", (g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? "ON" : "OFF");
          break;
-#ifdef HAVE_SHADER_MANAGER
-      case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
-         strlcpy(current_item->text, "APPLY SHADER PRESET ON STARTUP", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Auto-load at startup the current shader settings.", sizeof(current_item->comment));
-         break;
-#endif
       case SETTING_DEFAULT_VIDEO_ALL:
          strlcpy(current_item->text, "DEFAULTS", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
@@ -676,13 +663,6 @@ static void populate_setting_item(void *data, unsigned input)
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "INFO - Set all RetroArch settings to defaults.", sizeof(current_item->comment));
          break;
-#ifdef HAVE_SHADER_MANAGER
-      case SETTING_SAVE_SHADER_PRESET:
-         strlcpy(current_item->text, "SAVE SETTINGS AS CGP PRESET", sizeof(current_item->text));
-         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
-         strlcpy(current_item->comment, "INFO - Save current shader settings to a CGP file.", sizeof(current_item->comment));
-         break;
-#endif
       case INGAME_MENU_LOAD_STATE:
          strlcpy(current_item->text, "Load State", sizeof(current_item->text));
          snprintf(current_item->setting_text, sizeof(current_item->setting_text), "%d", g_extern.state_slot);
@@ -715,7 +695,7 @@ static void populate_setting_item(void *data, unsigned input)
          break;
 #ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_MANAGER_MODE:
-         strlcpy(current_item->text, "ShaderMan", sizeof(current_item->text));
+         strlcpy(current_item->text, "Shader Manager", sizeof(current_item->text));
          strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
          strlcpy(current_item->comment, "Set and manage shader options.", sizeof(current_item->comment));
          break;
@@ -764,6 +744,28 @@ static void populate_setting_item(void *data, unsigned input)
          break;
       default:
          break;
+#ifdef HAVE_SHADER_MANAGER
+      case SHADERMAN_LOAD_CGP:
+         strlcpy(current_item->text, "Load CGP", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Select a CGP file.", sizeof(current_item->comment));
+         break;
+      case SHADERMAN_AUTOSTART_CGP_ON_STARTUP:
+         strlcpy(current_item->text, "Autostart CGP at startup", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Auto-load at startup the current shader settings.", sizeof(current_item->comment));
+         break;
+      case SHADERMAN_SAVE_CGP:
+         strlcpy(current_item->text, "Save CGP", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Save current shader settings to a CGP file.", sizeof(current_item->comment));
+         break;
+      case SHADERMAN_APPLY_CHANGES:
+         strlcpy(current_item->text, "Apply changes", sizeof(current_item->text));
+         strlcpy(current_item->setting_text, "", sizeof(current_item->setting_text));
+         strlcpy(current_item->comment, "INFO - Apply the changes made below.", sizeof(current_item->comment));
+         break;
+#endif
    }
 }
 
@@ -866,7 +868,7 @@ static void display_menubar(uint8_t menu_type)
          break;
 #ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_MANAGER:
-         strlcpy(title, "Shader Manager", sizeof(title));
+         strlcpy(title, "ShaderMan", sizeof(title));
          break;
 #endif
       case INGAME_MENU_RESIZE:
@@ -1090,6 +1092,13 @@ static int select_file(uint8_t menu_type, uint64_t input)
                   if (conf)
                      gfx_shader_read_conf_cgp(conf, &shader);
                   config_file_free(conf);
+
+#ifdef HAVE_CG
+                  if (!video_set_shader_func(RARCH_SHADER_CG, path))
+                     RARCH_ERR("Setting CGP failed.\n");
+#else
+                     RARCH_WARN("Setting CGP not yet implemented.\n");
+#endif
                }
                break;
 #endif
@@ -1423,12 +1432,13 @@ static bool osk_callback_enter_filename_init(void *data)
 
 static uint8_t selected = 0;
 
+
 static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t input)
 {
    DEVICE_CAST device_ptr = (DEVICE_CAST)driver.video_data;
    filebrowser_t *filebrowser = tmpBrowser;
 
-   switch(switchvalue)
+   switch (switchvalue)
    {
 #ifdef __CELLOS_LV2__
       case SETTING_CHANGE_RESOLUTION:
@@ -1482,20 +1492,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
                driver.video->restart();
             }
          }
-         break;
-#endif
-#ifdef HAVE_SHADER_MANAGER
-      case SETTING_SHADER_PRESETS:
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-            if (g_extern.main_is_init)
-            {
-               menu_stack_push(PRESET_CHOICE);
-               filebrowser_set_root_and_ext(filebrowser, EXT_CGP_PRESETS, g_settings.video.shader_dir);
-            }
-         }
-         if (input & (1ULL << RMENU_DEVICE_NAV_START))
-            strlcpy(g_extern.file_state.cgp_path, "", sizeof(g_extern.file_state.cgp_path));
          break;
 #endif
       case SETTING_EMU_SKIN:
@@ -1687,23 +1683,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             device_ptr->ctx_driver->rmenu_screenshot_enable((g_extern.lifecycle_mode_state & (1ULL << MODE_VIDEO_SCREENSHOTS_ENABLE)) ? true : false);
          }
          break;
-#ifdef HAVE_SHADER_MANAGER
-      case SETTING_SAVE_SHADER_PRESET:
-#ifdef HAVE_OSKUTIL
-         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
-         {
-            if (g_extern.main_is_init)
-            {
-               rmenu_state.osk_param = SHADER_PRESET_FILE;
-               rmenu_state.osk_init = osk_callback_enter_filename_init;
-               rmenu_state.osk_callback = osk_callback_enter_filename;
-            }
-         }
-#endif
-         break;
-      case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
-         break;
-#endif
       case SETTING_DEFAULT_VIDEO_ALL:
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
          {
@@ -2165,12 +2144,6 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          if (input & (1ULL << RMENU_DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_CORE_OPTIONS);
          break;
-#ifdef HAVE_SHADER_MANAGER
-      case INGAME_MENU_SHADER_MANAGER_MODE:
-         if (input & (1ULL << RMENU_DEVICE_NAV_B))
-            menu_stack_push(INGAME_MENU_SHADER_MANAGER);
-         break;
-#endif
       case INGAME_MENU_SCREENSHOT_MODE:
          if (input & (1ULL << RMENU_DEVICE_NAV_B))
             menu_stack_push(INGAME_MENU_SCREENSHOT);
@@ -2231,6 +2204,44 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
             return -1;
          }
          break;
+#ifdef HAVE_SHADER_MANAGER
+      case INGAME_MENU_SHADER_MANAGER_MODE:
+         if (input & (1ULL << RMENU_DEVICE_NAV_B))
+         {
+            selected = FIRST_SHADERMAN_SETTING;
+            menu_stack_push(INGAME_MENU_SHADER_MANAGER);
+         }
+         break;
+#endif
+#ifdef HAVE_SHADER_MANAGER
+      case SHADERMAN_LOAD_CGP:
+         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         {
+            if (g_extern.main_is_init)
+            {
+               menu_stack_push(PRESET_CHOICE);
+               filebrowser_set_root_and_ext(filebrowser, EXT_CGP_PRESETS, g_settings.video.shader_dir);
+            }
+         }
+         if (input & (1ULL << RMENU_DEVICE_NAV_START))
+            strlcpy(g_extern.file_state.cgp_path, "", sizeof(g_extern.file_state.cgp_path));
+         break;
+      case SHADERMAN_SAVE_CGP:
+#ifdef HAVE_OSKUTIL
+         if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
+         {
+            if (g_extern.main_is_init)
+            {
+               rmenu_state.osk_param = SHADER_PRESET_FILE;
+               rmenu_state.osk_init = osk_callback_enter_filename_init;
+               rmenu_state.osk_callback = osk_callback_enter_filename;
+            }
+         }
+#endif
+         break;
+      case SHADERMAN_AUTOSTART_CGP_ON_STARTUP:
+         break;
+#endif
    }
 
    return 0;
@@ -2280,6 +2291,10 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       case INGAME_MENU:
          first_setting = FIRST_INGAME_MENU_SETTING;
          max_settings = MAX_NO_OF_INGAME_MENU_SETTINGS;
+         break;
+      case INGAME_MENU_SHADER_MANAGER:
+         first_setting = FIRST_SHADERMAN_SETTING;
+         max_settings = MAX_NO_OF_SHADERMAN_SETTINGS;
          break;
    }
 
@@ -2398,6 +2413,9 @@ static int select_setting(uint8_t menu_type, uint64_t input)
             break;
          case CONTROLS_MENU:
             selected = FIRST_PATH_SETTING;
+            break;
+         case INGAME_MENU_SHADER_MANAGER:
+            selected = FIRST_INGAME_MENU_SETTING;
             break;
          default:
             break;
@@ -3011,39 +3029,6 @@ static int ingame_menu_core_options(uint8_t menu_type, uint64_t input)
    return 0;
 }
 
-#ifdef HAVE_SHADER_MANAGER
-static int ingame_menu_shader_manager(uint8_t menu_type, uint64_t input)
-{
-   static unsigned shader_opt_selected = 0;
-   float y_increment = POSITION_Y_START;
-
-   (void)menu_type;
-   (void)input;
-
-   (void)shader_opt_selected;
-
-   if (input & (1ULL << RMENU_DEVICE_NAV_A))
-   {
-      menu_stack_pop();
-      g_extern.lifecycle_mode_state |= (1ULL << MODE_MENU_DRAW);
-   }
-
-   display_menubar(menu_type);
-
-   y_increment += POSITION_Y_INCREMENT;
-
-   font_params_t font_parms = {0};
-   font_parms.x = POSITION_X; 
-   font_parms.y = y_increment;
-   font_parms.scale = CURRENT_PATH_FONT_SIZE;
-   font_parms.color = WHITE;
-
-   (void)font_parms;
-
-   return 0;
-}
-#endif
-
 static int ingame_menu_screenshot(uint8_t menu_type, uint64_t input)
 {
    g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_DRAW);
@@ -3307,11 +3292,6 @@ bool menu_iterate(void)
       case INGAME_MENU_CORE_OPTIONS:
          input_entry_ret = ingame_menu_core_options(menu_id, input);
          break;
-#ifdef HAVE_SHADER_MANAGER
-      case INGAME_MENU_SHADER_MANAGER:
-         input_entry_ret = ingame_menu_shader_manager(menu_id, input);
-         break;
-#endif
       case INGAME_MENU_SCREENSHOT:
          input_entry_ret = ingame_menu_screenshot(menu_id, input);
          break;
@@ -3342,6 +3322,9 @@ bool menu_iterate(void)
       case PATH_MENU:
       case CONTROLS_MENU:
       case INGAME_MENU:
+#ifdef HAVE_SHADER_MANAGER
+      case INGAME_MENU_SHADER_MANAGER:
+#endif
          input_entry_ret = select_setting(menu_id, input);
          break;
    }
