@@ -2292,10 +2292,12 @@ static int select_setting(uint8_t menu_type, uint64_t input)
          first_setting = FIRST_INGAME_MENU_SETTING;
          max_settings = MAX_NO_OF_INGAME_MENU_SETTINGS;
          break;
+#ifdef HAVE_SHADER_MANAGER
       case INGAME_MENU_SHADER_MANAGER:
          first_setting = FIRST_SHADERMAN_SETTING;
          max_settings = MAX_NO_OF_SHADERMAN_SETTINGS;
          break;
+#endif
    }
 
    float y_increment = POSITION_Y_START;
@@ -2414,9 +2416,11 @@ static int select_setting(uint8_t menu_type, uint64_t input)
          case CONTROLS_MENU:
             selected = FIRST_PATH_SETTING;
             break;
+#ifdef HAVE_SHADER_MANAGER
          case INGAME_MENU_SHADER_MANAGER:
             selected = FIRST_INGAME_MENU_SETTING;
             break;
+#endif
          default:
             break;
       }
