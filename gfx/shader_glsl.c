@@ -342,9 +342,10 @@ static void print_linker_log(GLuint obj)
    free(info_log);
 }
 
-static bool compile_shader(GLuint shader, const char *program)
+static bool compile_shader(GLuint shader, const char *define, const char *program)
 {
-   pglShaderSource(shader, 1, &program, 0);
+   const char *source[] = { define, program };
+   pglShaderSource(shader, ARRAY_SIZE(source), source, NULL);
    pglCompileShader(shader);
 
    GLint status;
@@ -381,7 +382,7 @@ static GLuint compile_program(const char *vertex, const char *fragment, unsigned
    {
       RARCH_LOG("Found GLSL vertex shader.\n");
       GLuint shader = pglCreateShader(GL_VERTEX_SHADER);
-      if (!compile_shader(shader, vertex))
+      if (!compile_shader(shader, "#define VERTEX\n", vertex))
       {
          RARCH_ERR("Failed to compile vertex shader #%u\n", i);
          return false;
@@ -394,7 +395,7 @@ static GLuint compile_program(const char *vertex, const char *fragment, unsigned
    {
       RARCH_LOG("Found GLSL fragment shader.\n");
       GLuint shader = pglCreateShader(GL_FRAGMENT_SHADER);
-      if (!compile_shader(shader, fragment))
+      if (!compile_shader(shader, "#define FRAGMENT\n", fragment))
       {
          RARCH_ERR("Failed to compile fragment shader #%u\n", i);
          return false;
@@ -421,12 +422,36 @@ static GLuint compile_program(const char *vertex, const char *fragment, unsigned
    return prog;
 }
 
-static bool compile_programs(GLuint *gl_prog)
+static bool load_source_path(struct gfx_shader_pass *pass, const char *base, const char *path)
+{
+   char fullpath[PATH_MAX];
+   fill_pathname_resolve_relative(fullpath, base, path, sizeof(fullpath));
+   if (read_file(fullpath, (void**)&pass->source.xml.vertex) <= 0)
+      return false;
+
+   pass->source.xml.fragment = strdup(pass->source.xml.vertex);
+   return pass->source.xml.fragment && pass->source.xml.vertex;
+}
+
+static bool compile_programs(const char *base, GLuint *gl_prog)
 {
    for (unsigned i = 0; i < glsl_shader->passes; i++)
    {
-      const char *vertex   = glsl_shader->pass[i].source.xml.vertex;
-      const char *fragment = glsl_shader->pass[i].source.xml.fragment;
+      struct gfx_shader_pass *pass = &glsl_shader->pass[i];
+
+      // If we load from GLSLP (CGP),
+      // load the file here, and pretend
+      // we were really using XML all along.
+      if (*pass->source.cg && !load_source_path(pass, base, pass->source.cg))
+      {
+         RARCH_ERR("Failed to load GLSL shader: %s.\n", pass->source.cg);
+         return false;
+      }
+      *pass->source.cg = '\0';
+
+      const char *vertex   = pass->source.xml.vertex;
+      const char *fragment = pass->source.xml.fragment;
+
       gl_prog[i] = compile_program(vertex, fragment, i);
 
       if (!gl_prog[i])
@@ -595,9 +620,32 @@ bool gl_glsl_init(const char *path)
 
    if (path)
    {
-      if (!gfx_shader_read_xml(path, glsl_shader))
+      bool ret;
+      if (strcmp(path_get_extension(path), "glsl") == 0)
       {
-         RARCH_ERR("[GL]: Failed to parse XML shader.\n");
+         strlcpy(glsl_shader->pass[0].source.cg, path, sizeof(glsl_shader->pass[0].source.cg));
+         glsl_shader->passes = 1;
+         glsl_shader->modern = true;
+         ret = true;
+      }
+      else if (strcmp(path_get_extension(path), "glslp") == 0)
+      {
+         config_file_t *conf = config_file_new(path);
+         if (conf)
+         {
+            ret = gfx_shader_read_conf_cgp(conf, glsl_shader);
+            glsl_shader->modern = true;
+            config_file_free(conf);
+         }
+         else
+            ret = false;
+      }
+      else
+         ret = gfx_shader_read_xml(path, glsl_shader);
+
+      if (!ret)
+      {
+         RARCH_ERR("[GL]: Failed to parse GLSL shader.\n");
          return false;
       }
    }
@@ -630,7 +678,7 @@ bool gl_glsl_init(const char *path)
       return false;
    }
 
-   if (!compile_programs(&gl_program[1]))
+   if (!compile_programs(path, &gl_program[1]))
    {
       gl_glsl_free_shader();
       return false;

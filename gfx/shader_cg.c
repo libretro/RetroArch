@@ -810,7 +810,7 @@ bool gl_cg_init(const char *path)
    cgGLEnableProfile(cgFProf);
    cgGLEnableProfile(cgVProf);
 
-   if (path && strstr(path, ".cgp"))
+   if (path && strcmp(path_get_extension(path), "cgp") == 0)
    {
       if (!load_preset(path))
          return false;

@@ -1063,7 +1063,7 @@ enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader
 
    if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)
       return RARCH_SHADER_CG;
-   else if (strcmp(ext, "shader") == 0)
+   else if (strcmp(ext, "shader") == 0 || strcmp(ext, "glslp") == 0 || strcmp(ext, "glsl") == 0)
       return RARCH_SHADER_GLSL;
 
    return fallback;
