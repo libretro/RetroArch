@@ -665,7 +665,7 @@ static void *xdk_d3d_init(const video_info_t *video, const input_driver_t **inpu
 }
 
 #ifdef HAVE_RMENU
-extern struct texture_image menu_texture;
+extern struct texture_image *menu_texture;
 #endif
 
 #if defined(HAVE_RGUI) || defined(HAVE_RMENU)
@@ -677,10 +677,10 @@ static inline void xdk_d3d_draw_texture(void *data)
 #if defined(HAVE_RMENU_XUI)
    menu_iterate_xui();
 #elif defined(HAVE_RMENU)
-   menu_texture.x = 0;
-   menu_texture.y = 0;
+   menu_texture->x = 0;
+   menu_texture->y = 0;
 
-   texture_image_render(&menu_texture);
+   texture_image_render(menu_texture);
 #endif
 }
 #endif

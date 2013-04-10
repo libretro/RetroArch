@@ -45,12 +45,15 @@
 #define HAVE_SHADER_MANAGER
 #endif
 
+#ifdef _XBOX1
+#define HAVE_MENU_PANEL
+#endif
+
 static bool set_libretro_core_as_launch;
 
-struct texture_image menu_texture;
-
-#ifdef _XBOX1
-struct texture_image menu_panel;
+struct texture_image *menu_texture;
+#ifdef HAVE_MENU_PANEL
+struct texture_image *menu_panel;
 #endif
 
 filebrowser_t *browser;
@@ -213,22 +216,39 @@ static const char *menu_drive_mapping_next(void)
 
 static void rmenu_gfx_init(void)
 {
-#ifdef _XBOX1
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", &menu_panel);
+   menu_texture = calloc(1, sizeof(*menu_texture));
+#ifdef HAVE_MENU_PANEL
+   menu_panel = calloc(1, sizeof(*menu_panel));
+   texture_image_load("D:\\Media\\menuMainRomSelectPanel.png", menu_panel);
 #endif
 
    if (g_extern.lifecycle_mode_state & (1ULL << MODE_MENU_LOW_RAM_MODE_ENABLE))
       return;
 
-   texture_image_load(g_extern.menu_texture_path, &menu_texture);
+   texture_image_load(g_extern.menu_texture_path, menu_texture);
 }
 
 static void rmenu_gfx_free(void)
 {
 #ifdef _XBOX1
-   texture_image_free(&menu_texture);
-   texture_image_free(&menu_panel);
+#ifdef HAVE_MENU_PANEL
+   texture_image_free(menu_panel);
+#endif
+   texture_image_free(menu_texture);
+#else
+#ifdef HAVE_MENU_PANEL
+   if (menu_panel)
+   {
+      free(menu_panel->pixels);
+      menu_panel->pixels = NULL;
+   }
+#endif
+
+   if (menu_texture)
+   {
+      free(menu_texture->pixels);
+      menu_texture->pixels = NULL;
+   }
 #endif
 }
 
@@ -949,18 +969,18 @@ static void browser_render(void *data)
       fill_pathname_base(fname_tmp, b->current_dir.list->elems[i].data, sizeof(fname_tmp));
       y_increment += POSITION_Y_INCREMENT;
 
+#ifdef HAVE_MENU_PANEL
       //check if this is the currently selected file
       const char *current_pathname = filebrowser_get_current_path(b);
       if (strcmp(current_pathname, b->current_dir.list->elems[i].data) == 0)
       {
-#ifdef _XBOX1
-         menu_panel.x = 0;
-         menu_panel.y = y_increment;
-         menu_panel.width = 510;
-         menu_panel.height = 20;
-         texture_image_render(&menu_panel);
-#endif
+         menu_panel->x = 0;
+         menu_panel->y = y_increment;
+         menu_panel->width = 510;
+         menu_panel->height = 20;
+         texture_image_render(menu_panel);
       }
+#endif
 
       font_parms.x = POSITION_X; 
       font_parms.y = y_increment;
@@ -1029,7 +1049,17 @@ static int select_file(uint8_t menu_type, uint64_t input)
                config_read_keybinds(path);
                break;
             case BORDER_CHOICE:
-               texture_image_load(path, &menu_texture);
+               if (menu_texture)
+               {
+#ifdef _XBOX
+                  texture_image_free(menu_texture);
+#else
+                  free(menu_texture->pixels);
+                  menu_texture->pixels = NULL;
+#endif
+                  menu_texture = calloc(1, sizeof(*menu_texture));
+               }
+               texture_image_load(path, menu_texture);
                strlcpy(g_extern.menu_texture_path, path, sizeof(g_extern.menu_texture_path));
                break;
             case LIBRETRO_CHOICE:
@@ -1418,7 +1448,7 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
          }
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
          {
-            if (!texture_image_load(default_paths.menu_border_file, &menu_texture))
+            if (!texture_image_load(default_paths.menu_border_file, menu_texture))
             {
                RARCH_ERR("Failed to load texture image for menu.\n");
                return false;
@@ -2232,12 +2262,12 @@ static int select_setting(uint8_t menu_type, uint64_t input)
       if (item.enum_id != selected)
          continue;
 
-#ifdef _XBOX1
-      menu_panel.x = POSITION_X;
-      menu_panel.y = y_increment;
-      menu_panel.width = 510;
-      menu_panel.height = 20;
-      texture_image_render(&menu_panel);
+#ifdef HAVE_MENU_PANEL
+      menu_panel->x = POSITION_X;
+      menu_panel->y = y_increment;
+      menu_panel->width = 510;
+      menu_panel->height = 20;
+      texture_image_render(menu_panel);
 #endif
 
       font_parms.x = POSITION_X; 
@@ -3091,8 +3121,8 @@ bool menu_iterate(void)
       // draw last frame for loading messages
       if (driver.video_poke && driver.video_poke->set_texture_enable)
       {
-         driver.video_poke->set_texture_frame(driver.video_data, menu_texture.pixels,
-               true, menu_texture.width, menu_texture.height, 1.0f);
+         driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
+               true, menu_texture->width, menu_texture->height, 1.0f);
          driver.video_poke->set_texture_enable(driver.video_data, true);
       }
 
