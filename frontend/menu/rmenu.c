@@ -3093,6 +3093,8 @@ bool menu_iterate(void)
 
 #ifndef __CELLOS_LV2__
       rmenu_gfx_init();
+      tmpBrowser = (filebrowser_t*)filebrowser_init(default_paths.filesystem_root_dir, "");
+      filebrowser_set_root_and_ext(tmpBrowser, NULL, default_paths.filesystem_root_dir);
 #endif
 
       g_extern.lifecycle_mode_state &= ~(1ULL << MODE_MENU_PREINIT);
@@ -3284,6 +3286,7 @@ deinit:
 
 #ifdef _XBOX1
    rmenu_gfx_free();
+   filebrowser_free(tmpBrowser);
 #endif
 
    return false;
