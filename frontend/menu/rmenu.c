@@ -2217,11 +2217,8 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
       case SHADERMAN_LOAD_CGP:
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            if (g_extern.main_is_init)
-            {
-               menu_stack_push(PRESET_CHOICE);
-               filebrowser_set_root_and_ext(filebrowser, EXT_CGP_PRESETS, g_settings.video.shader_dir);
-            }
+            menu_stack_push(PRESET_CHOICE);
+            filebrowser_set_root_and_ext(filebrowser, EXT_CGP_PRESETS, g_settings.video.shader_dir);
          }
          if (input & (1ULL << RMENU_DEVICE_NAV_START))
             strlcpy(g_extern.file_state.cgp_path, "", sizeof(g_extern.file_state.cgp_path));
@@ -2230,12 +2227,9 @@ static int set_setting_action(uint8_t menu_type, unsigned switchvalue, uint64_t 
 #ifdef HAVE_OSKUTIL
          if ((input & (1ULL << RMENU_DEVICE_NAV_LEFT)) || (input & (1ULL << RMENU_DEVICE_NAV_RIGHT)) || (input & (1ULL << RMENU_DEVICE_NAV_B)))
          {
-            if (g_extern.main_is_init)
-            {
-               rmenu_state.osk_param = SHADER_PRESET_FILE;
-               rmenu_state.osk_init = osk_callback_enter_filename_init;
-               rmenu_state.osk_callback = osk_callback_enter_filename;
-            }
+            rmenu_state.osk_param = SHADER_PRESET_FILE;
+            rmenu_state.osk_init = osk_callback_enter_filename_init;
+            rmenu_state.osk_callback = osk_callback_enter_filename;
          }
 #endif
          break;
